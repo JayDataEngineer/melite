@@ -19,9 +19,11 @@
 //   2. discover-miss (T3) — q="anime" tags=image returns ZERO live rows
 //      (the transcript's exact miss, reproduced at HEAD); the full
 //      sentence "anime girl" misses too. Slice 3 re-cuts to a ranked hit.
-//   3. load-dump (T1/T8) — the live load face serves 11 image-gen params
-//      and 54 h3-timeline params, and h3 still names `last_frame`
-//      (the retired seam, alive on the face). Slice 1/4 re-cut.
+//   3. load-face (T1/T8) — the live load face serves 11 image-gen params
+//      and 50+ h3-timeline params; the any-frame lane rides it and the
+//      hidden `last_frame` alias is off it (slices 1/4 + the 2026-11-12
+//      setup truth: "NO FIRST FRAME NOR LAST FRAME, ARBITRARY FRAMES
+//      WHENEVER"). The digest re-cut the dump arm.
 //   4. verb-guard (P5, persists) — the no-verb payload refuses loud.
 //      Schema-required verbs keep this arm green through the rework.
 //   5. t4-voice (T4) — the load voice names a tool the mode owns. The
@@ -103,7 +105,13 @@ describe("THE VIBE SUITE BASELINE — the agent flow's acceptance harness (v0 pi
     const kf = h3.signature.params_schema.properties["keyframes"] as { type?: string; description?: string };
     assert.equal(kf?.type, "array", "the pin lane serves as the array class (the calls/audio_clips precedent)");
     assert.match(String(kf?.description ?? ""), /ANY FRAME, ANY TIME/, "the lane teaches its own shape on the face — never a bare key");
-    assert.ok("last_frame" in h3.signature.params_schema.properties, "the retired first/last seam is ALIVE on the param face (cure-8 killed it in the engine — the face never buried it; ADD-FIRST: the retirement rides the owed surface-truth reconciliation, not slice 2)");
+    // THE SETUP TRUTH (operator 2026-11-12: "NOTICE THE SETUP, THERE
+    // IS NO FIRST FRAME NOR LAST FRAME, JUST ARBITRARY FRAMES
+    // WHENEVER"): the hidden last_frame alias is OFF the face; the
+    // opening pin is a frame-0 shorthand, never a first-frame physics.
+    assert.ok(!("last_frame" in h3.signature.params_schema.properties), "the end-anchor alias is gone from the face (add-first retirement)");
+    const img = h3.signature.params_schema.properties["image"] as { description?: string };
+    assert.doesNotMatch(String(img?.description ?? ""), /First frame/i, "the opening pin is not taught as a first frame");
   });
 
   it("T1/T8 DIGEST (slice 4): the load face serves counts by default and the FULL surface only on request", () => {

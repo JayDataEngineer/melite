@@ -47,7 +47,10 @@ export const paramSchema = z.object({
     // one prompt from N windows, actions.ts). A textless call refuses
     // at compose — this field never substituted for one by its own
     // doc; it was dead weight on the global recipe's face.
-    image: z.string().role('path').description("First frame image").extra('extra', bag({ order: null, wtype: 'image', tooltip: "Absolute path to the PNG the video must start on (first-frame anchoring). Optional for h3/h3-timeline." })),
+    // (operator 2026-11-12: "THERE IS NO FIRST FRAME NOR LAST FRAME,
+    // JUST ARBITRARY FRAMES WHENEVER") — `image` is the frame-0 PIN
+    // shorthand, never a first-frame physics; keyframes is the setup.
+    image: z.string().role('path').description("An image pin at the film's opening — the frame-0 shorthand (use keyframes for any other frame)").extra('extra', bag({ order: null, wtype: 'image', tooltip: "Absolute path to the PNG pinned at the film's opening (frame 0). For any other frame use keyframes — there is no first/last frame setup." })),
     // THE INPUT SURFACE (the H3 architecture truth — two DIFFERENT
     // mechanics, the FL2VA latent anchors vs the Ref2VA conditioning
     // bus): first_frame/last_frame are PIXEL anchors (bundle inputs
@@ -60,18 +63,26 @@ export const paramSchema = z.object({
     // `expected array length <= 8`), never rides silent. The legacy
     // `refs` stanza bag keeps its compose-side wireList readers; the
     // declared fields are the primary surface.
-    last_frame: z.string().role('path').description("Last frame (end anchor)").extra('extra', bag({ order: null, wtype: 'image', tooltip: "FL2VA end anchor — bundle input 2. Locks the final frame's pixels; H3 generates the motion between the two anchors." })),
+    // THE ADD-FIRST RETIREMENT (operator 2026-11-12: "NOTICE THE
+    // SETUP, THERE IS NO FIRST FRAME NOR LAST FRAME, JUST ARBITRARY
+    // FRAMES WHENEVER"): last_frame is a HIDDEN alias — a validation
+    // key for old drafts and the FL2VA translation, never a face
+    // (extra.hidden keeps it out of BOTH projections; params-emit.ts).
+    // No wtype: a never-rendered field's wtype is dead surface (the
+    // card-wtype-judge's law). The setup is keyframes.
+    last_frame: z.string().role('path').description("Legacy FL2VA end anchor — a hidden validation key for old drafts, never a face; pins ride keyframes").extra('extra', bag({ order: null, hidden: true, tooltip: "Legacy FL2VA end anchor (bundle input 2) — translation only. The setup is keyframes: pin ANY frame, any time." })),
     // THE ANY-FRAME PIN LANE (cure 8 RULED CLOSED, operator 2026-11-12:
     // "WE DO NOT DO FIRST FRAME LAST FRAME, WE DO ANY FRAME ANY TIME").
     // The engine lane was real since slice 2 (actions.ts applyKeyframeCompose
     // reads p.keyframes; DECL.studio.writes lists it) but NO face declared
     // it — so the agent saw only image/last_frame and reasoned in the
     // retired first/last physics for nine minutes (session 384a13cd).
-    // ADD-FIRST (v2 slice 1): the lane now rides BOTH faces (carrier →
-    // load face + form spec) while image/last_frame keep their translation
-    // (deprecation/refusal is the voice-contract slice). Placement is the
-    // compose gate's (schema() below + the build door): film-absolute
-    // frame, inside a window, image names media.
+    // ADD-FIRST (v2 slice 1) + THE SETUP TRUTH (operator 2026-11-12):
+    // the lane rides BOTH faces (carrier → load face + form spec) and
+    // IS the frame setup; image is the frame-0 shorthand and last_frame
+    // is a hidden translation alias. Placement is the compose gate's
+    // (schema() below + the build door): film-absolute frame, inside a
+    // window, image names media.
     keyframes: z.array(z.object({
         // The row's runtime law is assertKeyframeRowShape (below) — the
         // named first door; the zod node stays permissive so schemastery

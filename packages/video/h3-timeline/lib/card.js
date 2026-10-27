@@ -97,8 +97,11 @@ export function registerCard(ctx, comfy) {
         preview: { historyStrip: false },
         surface: { size: 'huge', layout: 'studio' },
         flowKinds: {
-            // THE RAIL (the operator's law, 2026-09-20): first frame +
-            // last frame + the reference buses — one shared rail; the
+            // THE RAIL (the operator's law, 2026-09-20; re-read 2026-11-12:
+            // "THERE IS NO FIRST FRAME NOR LAST FRAME, JUST ARBITRARY FRAMES
+            // WHENEVER"): the image pin + the reference buses — one shared
+            // rail. `last_frame` stays a WIRING slot as the FL2VA end-anchor
+            // translation; the frame setup is the keyframes param lane. The
             // kinds are the SLOT kinds (the rail seats image/file slots,
             // never names). THE NAMING LAW rider (2026-10-09, "fix it
             // all"): the reference stacks are REAL input seats on the

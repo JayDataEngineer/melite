@@ -41,9 +41,12 @@ describe("THE H3 WINDOW PROJECTION SEAM — carrier, served envelope, and film r
     // which fresh cards never author; the timeline's calls own the
     // window. Stays schema-declared (compose reads p.length) but the
     // Layer-A face never serves it.
+    // last_frame: the legacy FL2VA end anchor — a hidden validation
+    // key for old drafts (the any-frame setup retired the face; pins
+    // ride params.keyframes), kept so an old doc still walks.
     assert.deepEqual(
       spec.carrierInternal,
-      ["fps", "fps_seconds", "image_name", "interp_switch", "k", "length", "noise_seed", "sharpen_switch", "sla_switch"],
+      ["fps", "fps_seconds", "image_name", "interp_switch", "k", "last_frame", "length", "noise_seed", "sharpen_switch", "sla_switch"],
     );
     for (const k of spec.carrierInternal) {
       const field = (paramSchema.dict as Record<string, { meta?: { extra?: Record<string, unknown> } }>)[k];
@@ -79,7 +82,11 @@ describe("THE H3 WINDOW PROJECTION SEAM — carrier, served envelope, and film r
     // length: a wire row the compose still reads (span-less calls +
     // CALL_KNOB_KEYS' per-call pin) — the face unserves it because
     // the timeline's calls own the window (B1-1).
+    // last_frame: the family door still declares the legacy FL2VA
+    // end anchor (old drafts state it; the compose reads it), while
+    // the any-frame setup retired it from the carrier face — pins
+    // ride keyframes.
     // Family-declared wire/internal, UI-unserved by law.
-    assert.deepEqual(spec.unservedDeclared, ["image_name", "interp_switch", "length", "sharpen_switch", "sla_switch"]);
+    assert.deepEqual(spec.unservedDeclared, ["image_name", "interp_switch", "last_frame", "length", "sharpen_switch", "sla_switch"]);
   });
 });

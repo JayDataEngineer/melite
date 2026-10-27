@@ -42,25 +42,32 @@ describe("the h3 model plugin (the ONE H3 family — timeline + single-shot + ke
     // spellings stay distinct (scalar vs stack)
     assert.equal(rows.get("ref_images"), "image_list");
     // THE PLANES AGREE (the debt's done-line): the declared plane's
-    // "image" rows and the serve plane's wtype: 'image' rows name the
-    // same two seats — toJSON() is the serialization the estate
-    // serves, the envelope the form walker reads for the media face.
+    // "image" row and the serve plane's wtype: 'image' row name the
+    // same seat — toJSON() is the serialization the estate serves,
+    // the envelope the form walker reads for the media face.
     const json = paramSchema.toJSON() as unknown as {
       uid: number
-      refs: Record<string, { dict?: Record<string, number>; meta?: { extra?: { wtype?: string } } }>
+      refs: Record<string, { dict?: Record<string, number>; meta?: { extra?: { wtype?: string; hidden?: boolean } } }>
     };
     const root = json.refs[String(json.uid)];
     assert.ok(root?.dict, "the carrier serializes its field map");
-    for (const seat of ["image", "last_frame"]) {
-      const node: { dict?: Record<string, number>; meta?: { extra?: { wtype?: string } } } | undefined =
-        json.refs[String(root.dict![seat]!)];
-      assert.equal(node?.meta?.extra?.wtype, "image", `the served envelope renders '${seat}' as the media face`);
-    }
-    // and the family's lane surface still names both seats (the
-    // name list is the serve claim; the action rows are the tier)
-    for (const seat of ["image", "last_frame"]) {
-      assert.ok((DECL.params ?? []).includes(seat), `the lane surface names '${seat}'`);
-    }
+    const imageNode = json.refs[String(root.dict!["image"]!)];
+    assert.equal(imageNode?.meta?.extra?.wtype, "image", "the served envelope renders 'image' as the media face");
+    // last_frame is a HIDDEN alias (the add-first retirement): no
+    // wtype — a never-rendered field's wtype is dead surface (the
+    // card-wtype-judge's law) — and hidden keeps it out of both
+    // projections while the carrier keeps the key for old drafts.
+    const lastNode = json.refs[String(root.dict!["last_frame"]!)];
+    assert.equal(lastNode?.meta?.extra?.hidden, true, "the end-anchor alias is hidden by the carrier's own law");
+    assert.equal(lastNode?.meta?.extra?.wtype, undefined, "a hidden field carries no wtype — dead surface");
+    // THE ANY-FRAME SETUP (operator 2026-11-12: "THERE IS NO FIRST
+    // FRAME NOR LAST FRAME, JUST ARBITRARY FRAMES WHENEVER"): the
+    // family's lane surface names the keyframes pin lane, and the
+    // hidden last_frame alias is NOT a served knob (the carrier keeps
+    // it as the FL2VA translation; extra.hidden keeps it out of both
+    // projections).
+    assert.ok((DECL.params ?? []).includes("keyframes"), "the lane surface names the any-frame pin lane");
+    assert.ok(!(DECL.params ?? []).includes("last_frame"), "the hidden end-anchor alias is not a served knob");
   });
 
   it("MODEL names the checkpoint — the family id carries NO lane flavor (anima isn't anima-generate)", () => {

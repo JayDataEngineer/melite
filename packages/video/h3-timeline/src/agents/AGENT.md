@@ -48,9 +48,14 @@ the schema listing alone under-describes this card by design.
   per-call compatibility keys may be retained but do not add behavior.
 
 Describe motion, subject continuity, ambient sound, and style in each call's
-`text`. Use a stable seed for re-rolls of the same shot. Use `image`,
-`last_frame`, `ref_images`, `ref_videos`, and `ref_audios` only when they
-serve the task; each reference rail narrows the generation.
+`text`. Use a stable seed for re-rolls of the same shot.
+
+**Frames are arbitrary.** There is no first-frame/last-frame setup:
+`params.keyframes` is `[{frame, image}]` — a film-absolute frame plus the
+image that must appear there, inside a window (`[start, end)`). Pin any
+frame, any time. `image` is only the frame-0 shorthand. Use `ref_images`,
+`ref_videos`, and `ref_audios` as references (identity, style, motion),
+not pins; each reference rail narrows the generation.
 
 ## Audio clips
 

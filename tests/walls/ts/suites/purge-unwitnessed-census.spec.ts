@@ -245,7 +245,11 @@ function valueCells(): Cell[] {
     sla_switch: { anchor: 'ARM 31 — a stated sla_switch rides the t4r attention pick verbatim (both poles), the branches stay SLA-direct vs chunked by edge, and the unstated doc rides the PrimitiveBoolean-false default node', note: 'NOT retired — the t4r arm READS it at the attention pick (the census note that called it retired was the narration drift; corrected 2026-11-09)' },
     refine_denoise: { anchor: 'ARM 4b — a stated refine_denoise reaches the rider scheduler; unstated rides the declared 0.35 refinement window', note: 'denoise at the RIDER BasicScheduler (the primary scheduler untouched); the [0.05,1] window law rides resolveRefineSeat (the refine-window cure 77ad9eee0 added the row without its class cell — the census reded until this mapping landed); the default re-aimed 1.0 → 0.35 by the P0 parameter audit 2026-11-10 (this anchor synced with the re-titled arm)' },
     image: { anchor: 'ARM 19 — the media lanes reach their load/trim consumers', note: 'the first frame at LoadImage' },
-    last_frame: { anchor: 'ARM 19 — the media lanes reach their load/trim consumers', note: 'the end anchor at LoadImage' },
+    // last_frame left the DECL surface with the any-frame setup
+    // (2026-11-12): the hidden validation key composes through the
+    // same seats the keyframes lane fills, and the lane's class arm
+    // (ARM 47) is the witness.
+    keyframes: { anchor: 'ARM 47 — the keyframes lane reaches its consumers', note: 'start pin → the bundle input_1 anchor seat, end pin → input_2, interior pin → MiniMaxH3AddGuide frame_idx (the any-frame setup, 2026-11-12)' },
     ref_images: { anchor: 'ARM 19 — the media lanes reach their load/trim consumers', note: 'each stated path at its LoadImage' },
     ref_videos: { anchor: 'ARM 19 — the media lanes reach their load/trim consumers', note: 'file at LoadVideo' },
     ref_video_trims: { anchor: 'ARM 19 — the media lanes reach their load/trim consumers', note: 'start/duration at Video Slice' },

@@ -179,9 +179,14 @@ describe("the input surface: EVERY slot declares its slot shape (the freeform-te
       ((def.schemaCarrier ?? def.schema) as unknown as { toJSON(): unknown }).toJSON() as never,
     ).find((f) => f.name === name)?.type;
 
-  it("the FL2VA pixel anchors project as IMAGE rail rows, never text boxes", () => {
-    assert.equal(typeOf("image"), "image", "First frame is a slot");
-    assert.equal(typeOf("last_frame"), "image", "Last frame is a slot");
+  it("the frame surface: the opening pin projects as an IMAGE row, the end-anchor alias never projects", () => {
+    // THE SETUP TRUTH (operator 2026-11-12: "THERE IS NO FIRST FRAME
+    // NOR LAST FRAME, JUST ARBITRARY FRAMES WHENEVER"): image is the
+    // frame-0 shorthand slot; last_frame is a hidden validation key
+    // (extra.hidden — the FL2VA translation), and the setup is the
+    // keyframes param lane.
+    assert.equal(typeOf("image"), "image", "the opening pin is a slot");
+    assert.equal(typeOf("last_frame"), undefined, "the end-anchor alias is validation-only — never a form row");
   });
 
   it("VALIDATION-ONLY KEYS NEVER PROJECT — the renderer vocabulary, the legacy aliases, and the renderer spelling are gate keys, not surface fields (the blank-rows catch, 2026-09-21)", () => {
@@ -192,7 +197,7 @@ describe("the input surface: EVERY slot declares its slot shape (the freeform-te
     // schema enforcement and kills the face row. The aliases
     // (interp/sharpen/sla switches) are the mods' switches' old
     // spellings; image_name is the renderer's guide-image key — the
-    // rail's First frame is the user face.
+    // rail's opening pin is the user face.
     const names = fieldsOfEnvelope(
       ((def.schemaCarrier ?? def.schema) as unknown as { toJSON(): unknown }).toJSON() as never,
     ).map((f) => f.name);

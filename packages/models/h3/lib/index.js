@@ -321,7 +321,7 @@ export const DECL = {
     // sharpen_switch are retired aliases — the primaries own their
     // switches (23/32).
     "params": [
-        "image", "last_frame",
+        "image", "keyframes",
         "ref_images", "ref_videos", "ref_video_trims", "ref_audios", "ref_mods",
         "duck_depth_db",
         "seed", "width", "height", "length", "steps", "denoise",

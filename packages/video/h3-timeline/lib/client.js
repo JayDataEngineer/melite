@@ -9516,7 +9516,8 @@ window.__ModuleLoader__.load({
 		* @param model the model id the variant pool belongs to.
 		* @param known the offered variant ids, door order.
 		* @returns the refusal body, frame-free. */
-		function unknownVariantVoice(stated, model, known) {
+		function unknownVariantVoice(stated, model, known, familyLanes) {
+			if (familyLanes !== void 0 && familyLanes.includes(stated)) return JSON.stringify(stated) + " is a WINDOW FAMILY, not a variant — model " + JSON.stringify(model) + " derives its window family from the doc's own shape (" + familyLanes.join(", ") + "; derived, never stated). Drop the variant and the doc derives its family, or state one of the model variants (known: " + known.join(", ") + ").";
 			return "unknown variant " + JSON.stringify(stated) + " for model " + JSON.stringify(model) + " (known: " + known.join(", ") + ")";
 		}
 		/** The variant rail's unknown-quant refusal body — same contract as
@@ -9809,6 +9810,43 @@ window.__ModuleLoader__.load({
 				cell,
 				quant: cell !== null && typeof cell.quant === "string" ? cell.quant : ""
 			};
+		}
+		/** THE CELL-ARTIFACT COORDINATES (the kroma fetch cure, 2026-11-12):
+		*  a missing-weight filename IS the DECL's own identity of the file —
+		*  the anchor-at-the-door law names the cell artifact's source_url
+		*  basename "the lane file's name". A family plan resolves ONE
+		*  coordinate (the stated one, else the family default), so the
+		*  acquire door's filename filter matched no plan item for any
+		*  NON-default lane's weights and refused them item-not-found — the
+		*  refusal's anchor spoke the URL while the door's hands were empty.
+		*  This read derives the (variant, quant) whose own cell artifact
+		*  carries the filename, so the caller re-plans at the file's own
+		*  coordinate. First declared match wins (the matrix walk's law);
+		*  the query/fragment strip is the C5 basename law.
+		*
+		*  @param variants the DECL's variant matrix (any ResolverVariantRow
+		*  rows whose cells may carry an `artifact` with a `source_url`).
+		*  @param filename the requested weight file's basename, verbatim.
+		*  @returns the artifact's coordinates, or null when no declared
+		*  cell artifact carries the filename (the caller keeps its
+		*  item-not-found refusal — never a guessed coordinate). */
+		function cellArtifactCoordinates(variants, filename) {
+			const want = filename.trim();
+			if (want === "") return null;
+			for (const v of variants) for (const c of v.cells ?? []) {
+				const artifact = c.artifact;
+				const url = typeof artifact?.source_url === "string" ? artifact.source_url : "";
+				if (url === "") continue;
+				let base = url.slice(url.lastIndexOf("/") + 1);
+				const cut = Math.max(base.indexOf("?"), base.indexOf("#"));
+				if (cut >= 0) base = base.slice(0, cut);
+				if (base !== want) continue;
+				return {
+					variant: typeof v.id === "string" ? v.id : "",
+					quant: typeof c.quant === "string" ? c.quant : ""
+				};
+			}
+			return null;
 		}
 		/** THE FLAT-MATRIX FOLD (the mirror's P2 face of the one resolver):
 		*  the served spec flattens cells into `group: 'Quant'` rows with
@@ -10960,6 +10998,7 @@ window.__ModuleLoader__.load({
 			benchSessionOf: () => benchSessionOf,
 			canonicalRunMediaUrl: () => canonicalRunMediaUrl,
 			cardResultFromRecord: () => cardResultFromRecord,
+			cellArtifactCoordinates: () => cellArtifactCoordinates,
 			cnEntriesOf: () => cnEntriesOf,
 			crossRootOrder: () => crossRootOrder,
 			deriveFamilyLane: () => deriveFamilyLane$1,

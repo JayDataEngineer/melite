@@ -1511,6 +1511,66 @@ describe("the h3 latent-upscale route: the handoff arm mounts behind second_pass
     assert.equal(edgeUpstream(graph, rider[0], "sigmas", "BasicScheduler").node.inputs.denoise, 1,
       "the off-arm rider scheduler does not carry the stated full-denoise 1.0 — the taomate mechanic broke behind the handoff refusal");
   });
+
+  it("ARM 47 — the keyframes lane reaches its consumers: a boundary pin fills the window's silent anchor/end seats (the bundle's input_1/input_2), an interior pin rides MiniMaxH3AddGuide at its generation-local frame_idx", async () => {
+    // THE CLASS ARM the census owes for `keyframes` (the DECL row the
+    // any-frame setup serves, 2026-11-12): the doc's FILM-absolute
+    // pins map to per-window seats at the build door
+    // (applyKeyframeCompose) — start pin → the anchor seat, end pin →
+    // the FL2VA end anchor, interior → the AddGuide image chain.
+    // Value, not presence: the images are read back from the
+    // LoadImage nodes the seats wire, and the guide's frame_idx is
+    // the pin's generation-local row (no carry on window 1).
+    const graph = await composeH3({
+      length: 175,
+      calls: [SHOT({ text: "first", end_frame: 90 }), SHOT({ text: "then a turn", start_frame: 90, end_frame: 175 })],
+      keyframes: [
+        { image: "pin_open.png", frame: 0 },
+        { image: "pin_mid.png", frame: 20 },
+        { image: "pin_end.png", frame: 89 },
+      ],
+    }, "h3_knob_arm47");
+    // THE EDGE READER: a graph input that names another node is a
+    // [id, slot] tuple (the serialized OutputHandle).
+    const srcOf = (v: unknown): string | null =>
+      Array.isArray(v) && typeof v[0] === "string" ? v[0] : null;
+    const loadImageCarrying = (path: string): string => {
+      const hit = Object.entries(graph).find(
+        ([, n]) => n.class_type === "LoadImage" && n.inputs.image === path,
+      );
+      assert.ok(hit, `KEYFRAMES VALUE ARM: no LoadImage carries '${path}' — the pin never reached the disk handoff (hop [5])`);
+      return hit[0];
+    };
+    const bundle = Object.values(graph).find((n) => n.class_type === "PlagueKindBundleIn");
+    assert.ok(bundle, "the pinned windows compose the reference bus (the pins are an image-guide seat)");
+    // start pin → bundle input_1 → resize → LoadImage(pin_open.png)
+    const anchorMask = srcOf(bundle!.inputs.input_1);
+    assert.ok(anchorMask, "the start pin never filled the anchor seat (bundle input_1 unwired)");
+    assert.equal(
+      srcOf(graph0(graph, anchorMask!).inputs.image),
+      loadImageCarrying("pin_open.png"),
+      "KEYFRAMES VALUE ARM: bundle input_1 does not trace to the frame-0 pin — the anchor seat took a different image",
+    );
+    // end pin → bundle input_2 → resize → LoadImage(pin_end.png)
+    const endMask = srcOf(bundle!.inputs.input_2);
+    assert.ok(endMask, "the end pin never filled the end-anchor seat (bundle input_2 unwired)");
+    assert.equal(
+      srcOf(graph0(graph, endMask!).inputs.image),
+      loadImageCarrying("pin_end.png"),
+      "KEYFRAMES VALUE ARM: bundle input_2 does not trace to the ef-1 pin — the end-anchor seat took a different image",
+    );
+    // interior pin → AddGuide(image) at the pin's generation-local row
+    const guide = Object.entries(graph).find(
+      ([id, n]) => n.class_type === "MiniMaxH3AddGuide" && n.inputs.image !== undefined && id.startsWith("window1_"),
+    );
+    assert.ok(guide, "KEYFRAMES VALUE ARM: no window1_ MiniMaxH3AddGuide carries an image — the interior pin never composed");
+    assert.equal(guide![1].inputs.frame_idx, 20, "the interior pin's frame_idx is not its generation-local row");
+    assert.equal(
+      srcOf(guide![1].inputs.image),
+      loadImageCarrying("pin_mid.png"),
+      "KEYFRAMES VALUE ARM: the guide's image does not trace to the interior pin",
+    );
+  });
 });
 
 /** Fetch one node by id with the assert voice (the CONTROL arms'
