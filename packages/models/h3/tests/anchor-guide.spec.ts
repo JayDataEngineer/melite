@@ -94,19 +94,25 @@ describe("the anchor contract (a window's reference image)", () => {
     expect(json).toContain("ref_images.ref_image_0")
   })
 
-  it("THE CONDITIONING ORPHAN (timeline audit cure 8, 2026-10-27): the i2v marker composes and NOTHING consumes it — the ref-arm-only truth, pinned until the operator rules", () => {
-    // H3_TIMELINE_RESERACH's hybrid row seats first/last-frame
-    // conditioning as KEYFRAMES; this estate rides anchors as
-    // REFERENCE bus images and composes the t4r family key as an
-    // orphaned MiniMaxH3ImageToVideo (actions.ts:1407-1412 —
-    // registered for the marker, consumed by nothing). Until the
-    // operator rules (land the FL2VA keyframe channel or bless the
-    // ref-arm truth), this arm pins the CURRENT law on both edges:
-    // the marker EXISTS (a silent removal of the family key reds)
-    // and it stays ORPHANED (a silent flip to keyframe conditioning
-    // — anything consuming the i2v node — reds too). The law cannot
-    // silently flip either way; it can only change by changing this
-    // arm alongside the code.
+  it("THE CONDITIONING LAW (cure 8 RULED CLOSED, operator 2026-11-12): ANY FRAME, ANY TIME — the i2v marker composes and NOTHING consumes it; anchors are references, keyframes are arbitrary AddGuide pins", () => {
+    // THE RULING (operator, 2026-11-12, verbatim): "WE DO NOT DO
+    // FIRST FRAME LAST FRAME, WE DO ANY FRAME ANY TIME." The
+    // keyframe channel is the ARBITRARY pin lane (the keyframe-lane
+    // describe beside this arm — the doc's flat keyframes[]
+    // list, any frame, any time; interior rows compose AddGuide at
+    // their generation-local index, boundary rows fill silent anchor
+    // seats, stated seats win, nothing drops), landed slice 2,
+    // 2026-11-05. The OLD cure-8 framing ("land the FL2VA keyframe
+    // channel or bless the ref-arm-only truth") asked the wrong
+    // question — a first/last special-case seat was proposed and
+    // REVERTED the same day under this ruling (correction record
+    // dev_docs/audits/features/h3-keyframe-channel-correction-2026-11-12.md).
+    // This arm pins the law on all edges: the i2v marker EXISTS (a
+    // silent removal of the t4r family key reds), it stays ORPHANED
+    // (one generation lane, one truth — anything consuming the i2v
+    // node reds), and the graph carries NO first/last keyframe
+    // conditioning seam (anchors ride the reference bus as
+    // references; the only keyframe seats are the arbitrary pins).
     const walked = walk({ loras: LORA, seed: 7, calls: [{ text: "she waves", start_frame: 0, end_frame: 90, image: "e2e_anchor.png" }] })
     const g = new GraphBuilder()
     instantiateAction(film, walked, WINDOW_MODEL, g, "run_anchor_orphan")
@@ -116,10 +122,11 @@ describe("the anchor contract (a window's reference image)", () => {
     const consumers = Object.entries(graph).filter(([, n]) =>
       Object.values(n.inputs).some((v) =>
         typeof v === "string" && v.startsWith(`${marker![0]}.`)))
-    expect(consumers, `the i2v marker is consumed by ${String(consumers.map(([id]) => id))} — the conditioning flipped to the keyframe channel without touching this arm`).toHaveLength(0)
-    // and the anchor's real lane is the REFERENCE bus (the arm above
-    // pins the wiring; this pins the interpretation: first/last
-    // frames ride ref_images slots, never a keyframes input)
+    expect(consumers, `the i2v marker is consumed by ${String(consumers.map(([id]) => id))} — the conditioning lane flipped without touching this arm`).toHaveLength(0)
+    // and the anchor's lane is the REFERENCE bus (the arm above pins
+    // the wiring; this pins the interpretation: first/last frames
+    // ride ref_images slots as references, never a keyframes seam —
+    // the only keyframe channel is the arbitrary pin lane)
     expect(JSON.stringify(graph)).not.toContain("keyframes")
   })
 })
