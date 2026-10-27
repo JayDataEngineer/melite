@@ -38,20 +38,31 @@ describe("the krea-2 model plugin (the whole model, one package)", () => {
     assert.equal(rd["steps"], 52);
   });
 
-  it("carries the kroma lanes — the Chroma-OPD fine-tune, distinct routes per lane, shift declared per-variant", () => {
-    // (operator drop, 2026-11-07) two lanes, one family, distinct
-    // route addresses per lane (the h3-singularity law); the
-    // required-defaults law: every Variant row declares its own
+  it("carries the kroma lanes — the Chroma-OPD fine-tune, distinct routes per lane, each lane its own sampling truth", () => {
+    // (operator drop, 2026-11-07; sampling re-pinned to upstream
+    // 2026-11-12, the lane-truth audit: the v0.3.1-turbo-opd distill
+    // samples 8-12 steps / CFG 1.0-1.5 / shift 1.15; the v0.3-base
+    // checkpoint is the RAW-weights full fine-tune, sampled as the
+    // Krea 2 raw checkpoint — no shift, 30-60 steps, CFG 2-6.)
+    // The required-defaults law: every Variant row declares its own
     // steps+cfg in resolver_defaults.
     const kroma = DECL.variants.find((v) => v.id === "kroma")!;
+    assert.equal(kroma.label, "Kroma Turbo",
+      "the label names the distill — 'Kroma' alone read as the same model twice beside Kroma Base");
     assert.equal(kroma.route, "kroma");
     assert.deepEqual(kroma.resolver_defaults, { model: "kroma", steps: 8, cfg: 1 });
+    assert.deepEqual(kroma.sampler_envelope, { steps: [4, 12], cfg: [1, 2] },
+      "the turbo envelope covers upstream's own 8-12-step marriage — an 11-step run is not a refusal");
     assert.equal((kroma.lane_inputs as Record<string, unknown>)["sampling_shift"], 1.15,
       "the distilled lane rides the live ModelSamplingAuraFlow arm, never the family's inert 0");
     const kromaBase = DECL.variants.find((v) => v.id === "kroma-base")!;
     assert.equal(kromaBase.route, "kroma-base");
-    assert.deepEqual(kromaBase.resolver_defaults, { model: "kroma-base", steps: 28, cfg: 4 });
-    assert.equal((kromaBase.lane_inputs as Record<string, unknown>)["sampling_shift"], 1.15);
+    assert.deepEqual(kromaBase.resolver_defaults, { model: "kroma-base", steps: 52, cfg: 3.5 },
+      "the raw-weights base rides the RAW schedule (52/3.5), not a turbo-flavored mid envelope");
+    assert.deepEqual(kromaBase.sampler_envelope, { steps: [30, 60], cfg: [2, 6] },
+      "the base envelope mirrors the raw lane's — upstream: sample it as you would the Krea 2 raw checkpoint");
+    assert.equal(kromaBase.lane_inputs, undefined,
+      "the base weights are the RAW weights' fine-tune: NO lane override at all — the turbo lane's shift 1.15 here was bleed-through drift, and the raw spelling is the family's inert 0");
     // the per-quant cell law: each cell names its own unet file and
     // its own route address (anima precedent)
     const cellFiles = kroma.cells.map((c) =>

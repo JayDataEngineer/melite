@@ -132,26 +132,36 @@ export const DECL: ModelDecl = {
         }
       ]
     },
-    // THE KROMA LANES (operator drop, 2026-11-07): lodestones' Kroma
-    // — the Krea-2 checkpoint fine-tuned with Chroma's OPD distill.
-    // Two lanes, one family, distinct route addresses per lane (the
-    // h3-singularity law): the turbo lane rides the OPD-distilled
-    // weights (8 steps at flow shift 1.15 — the distill's own
-    // sampling marriage; a stated negative composes but buys nothing
-    // on distilled weights, so the honest run is clean), the base
-    // lane keeps negatives fully functional at CFG 3.5-5. Both lanes
-    // declare the shift per-variant (the merged lane_inputs feed the
-    // t2i action's ModelSamplingAuraFlow arm — the family's 0 is the
-    // present-and-inert spelling, 1.15 is the live arm).
+    // THE KROMA LANES (operator drop, 2026-11-07; sampling re-pinned
+    // to upstream 2026-11-12, the lane-truth audit): lodestones'
+    // Kroma — the Krea-2 checkpoint fine-tune. Upstream states the
+    // two weights' own marriages (the repo readme, via the ComfyUI
+    // Wiki's v0.3/v0.3.1 releases): the v0.3.1-turbo-opd distill
+    // samples at Turbo settings — 8-12 steps, CFG 1.0-1.5, flow
+    // shift (mu) 1.15 — and the v0.3-base checkpoint is the FULL
+    // FINE-TUNE OF THE KREA-2 RAW (NON-DISTILLED) WEIGHTS, sampled
+    // "as you would for the Krea 2 raw checkpoint" — no shift arm,
+    // the raw schedule (30-60 steps, CFG 2-6), negatives fully
+    // functional. Two lanes, one family, distinct route addresses
+    // per lane (the h3-singularity law). The turbo lane rides the
+    // OPD-distilled weights (a stated negative composes but buys
+    // nothing on distilled weights, so the honest run is clean);
+    // the base lane keeps the raw-weights spelling — the turbo
+    // shift 1.15 it briefly carried was bleed-through drift (the
+    // raw lane runs no AuraFlow arm, and neither does base). Both
+    // lanes declare their shift per-variant (the merged lane_inputs
+    // feed the t2i action's ModelSamplingAuraFlow arm — the family's
+    // 0 is the present-and-inert spelling, the turbo lane's 1.15 is
+    // the live arm, and base's absence IS the declaration).
     {
       "id": "kroma",
-      "label": "Kroma",
-      "hint": "Kroma Turbo — the Chroma-OPD distilled Krea-2: 8 steps at shift 1.15, run it clean (negatives do nothing on the distill). INT8 ConvRot DEFAULT.",
+      "label": "Kroma Turbo",
+      "hint": "Kroma Turbo — lodestones' v0.3.1-turbo-opd distill of the Krea-2 fine-tune: 8-12 steps at CFG 1.0-1.5, flow shift 1.15 (the distill's own marriage; run it clean — negatives do nothing on the distill). INT8 ConvRot DEFAULT.",
       "group": "Variant",
       "route": "kroma",
       "order": 2,
       "sampler_envelope": {
-        "steps": [4, 8],
+        "steps": [4, 12],
         "cfg": [1, 2]
       },
       "resolver_defaults": {
@@ -207,24 +217,28 @@ export const DECL: ModelDecl = {
     {
       "id": "kroma-base",
       "label": "Kroma Base",
-      "hint": "Kroma base checkpoint — 25-35 steps at CFG 3.5-5, negatives fully functional. The dtype-mapped BF16 tier (upstream's fp32 original is a 51GB impracticality).",
+      "hint": "Kroma base — the v0.3 full fine-tune of Krea-2's RAW (non-distilled) weights: sample like Krea 2 Raw, 30-60 steps at CFG 2-6 (52/3.5 default), NO flow shift, negatives fully functional. The dtype-mapped BF16 tier (upstream's fp32 original is a 51GB impracticality).",
       "group": "Variant",
       "route": "kroma-base",
       "order": 3,
       "sampler_envelope": {
-        "steps": [25, 35],
-        "cfg": [3.5, 5]
+        "steps": [30, 60],
+        "cfg": [2, 6]
       },
       "resolver_defaults": {
         "model": "kroma-base",
-        // The base face declared, never inherited: 28 / 4 — the
-        // non-distilled marriage, mid-envelope.
-        "steps": 28,
-        "cfg": 4
+        // The base face declared, never inherited: 52 / 3.5 — the RAW
+        // schedule the base weights fine-tune (upstream: sample it as
+        // you would the Krea 2 raw checkpoint). The earlier 28/4 +
+        // shift 1.15 marriage was the turbo lane's bleed-through.
+        "steps": 52,
+        "cfg": 3.5
       },
-      "lane_inputs": {
-        "sampling_shift": 1.15
-      },
+      // NO sampling_shift: the base weights are the RAW weights'
+      // fine-tune, and the raw lane runs no ModelSamplingAuraFlow arm
+      // (the family's 0 is present-and-inert). Declaring the turbo
+      // lane's 1.15 here sampled the raw-weights checkpoint on the
+      // distill's schedule — the drift the lane-truth audit removed.
       "cells": [
         {
           "quant": "bf16",
@@ -302,7 +316,7 @@ export const DECL: ModelDecl = {
     {
       "id": "Variant",
       "label": "Variant",
-      "tooltip": "Base checkpoint — Turbo (8-step distilled, fast/photorealistic), Raw (52-step base, for LoRA training), or the Kroma lanes (the Chroma-OPD fine-tune: Turbo distilled 8-step, or Base with working negatives).",
+      "tooltip": "Base checkpoint — Turbo (8-step distilled, fast/photorealistic), Raw (52-step base, for LoRA training), or the Kroma lanes (the Kroma fine-tune: Turbo = the v0.3.1 OPD distill at 8-12 steps/shift 1.15, Base = the raw-weights full fine-tune sampled like Krea 2 Raw, negatives working).",
     },
     {
       "id": "Quant",
