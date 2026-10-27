@@ -29,25 +29,31 @@ client are retired; they are not alternate launch paths.
 The agent and developer contract is [`AGENTS.md`](AGENTS.md). Read it before
 changing the harness or composing media.
 
-## Install from a GitHub release
+## Install
 
-The publish channel is the GitHub release, not a package registry. Every
-melite-owned package in a release carries one identical version, and the
-release tag is exactly `v<that version>`; the tarball filenames say the
-same string. Pre-releases carry a `-alpha.N` suffix on every channel.
+The publish channel is npm: `release:bump` sets one version across the
+estate, `release:mint` gates and packs every tarball (the license,
+hygiene, and payload gates above), the seats publish to the registry,
+and the GitHub release lands the same bytes as the asset record with
+`release-manifest.json`. Every melite-owned package in a release
+carries one identical version, and the release tag is exactly
+`v<that version>`. Pre-releases carry a `-alpha.N` suffix on every
+channel. The full sequence — including the registry-lookup shape
+pre- and post-publish — is proven on every release by
+`tools/release-rehearsal.mjs` (one command, nine receipts, in a fresh
+container).
 
-Consumers install through the `dsh` CLI over the release assets — the
-same sequence `tools/release-rehearsal.mjs` proves on every release
-(one command, nine receipts, in a fresh container):
+Consumers install through the `dsh` CLI:
 
 ```sh
 npm install -g @deepseek-ai/dsh@0.2.0-rc.2   # the profile CLI
 corepack enable && corepack prepare pnpm@10.33.2 --activate
+dsh plugin --profile <name> add @melite/harness-tools@<version>
+dsh plugin --profile <name> install
 ```
 
-The plugin verb resolves a profile's packages against release tarballs
-(see `release-manifest.json` on the release page). Two dsh runtime
-facts the install must honor, both proven by the rehearsal:
+Two dsh runtime facts the install must honor, both proven by the
+rehearsal:
 
 - the CLI's profile template pins older member versions; pin
   `@deepseek-ai/dsh-base` and the four members named in the rehearsal
