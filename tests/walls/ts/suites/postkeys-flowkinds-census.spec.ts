@@ -260,11 +260,16 @@ describe("THE CARD↔FLOWS CROSS-PLANE CENSUS (SD-4 estate-wide — every compos
     expect(def, "the h3-timeline card is registered (the estate boot)").toBeDefined();
     const { ports, admits } = flowChannelsOf(def!);
     // PORT SANITY (the roster's own half): the rail the card declares
-    // today — first frame, last frame, the reference buses, and the
-    // retired alias — must be exactly the media rail; the judgment
-    // table below leans on it.
+    // today — first frame, last frame, the reference buses, the
+    // retired alias, and the re-shoot source seat — must be exactly
+    // the media rail; the judgment table below leans on it.
+    // reshoot_clip joined the rail 2026-10-27 (feature 024): a single
+    // video producer — the clip the new camera move is shot FROM —
+    // wired by the lattice like any media edge; arming rides the
+    // schema's reshoot_enabled switch, and the graph stays
+    // byte-identical until a clip is seated.
     expect(ports.sort(), "the declared ports are the media rail (the rail law the judgments lean on)").toEqual(
-      ["image", "image_name", "last_frame", "ref_audios", "ref_images", "ref_videos"].sort(),
+      ["image", "image_name", "last_frame", "ref_audios", "ref_images", "ref_videos", "reshoot_clip"].sort(),
     );
     const face = await composeFaceOf("h3-timeline");
     expect(face).not.toBeNull();
