@@ -1743,13 +1743,23 @@ describe("THE OVERLAP LAW (schema ∩ lane — no path admits a both-violating s
     // Lane-legal means NO stated size (the latent law): the lane's
     // surface owns no axis, so the legal state carries steps inside
     // the schema's domain and leaves geometry to the source frame.
+    // THE FLIP-PARITY CURE (2026-11-12): the UNSTATED lane is the
+    // turbo envelope [4,8]; the base [8,30] is a deliberate pick.
     const verdict = await svc.admitStageRelations("image-edit", {
       model: "qwen-img-edit-21",
       prompt: "x",
       image1: "x.png",
-      steps: 20,
+      steps: 8,
     });
     expect(verdict.ok).toBe(true);
+    const verdictBase = await svc.admitStageRelations("image-edit", {
+      model: "qwen-img-edit-21",
+      variant: "base",
+      prompt: "x",
+      image1: "x.png",
+      steps: 20,
+    });
+    expect(verdictBase.ok).toBe(true);
   });
 });
 

@@ -1114,7 +1114,7 @@ export class CardRegistryService extends Service {
     let selPrior: VariantSelection | null = null;
     let prevSurface: readonly string[] | null;
     try {
-      selNext = selectCardVariant(prepNext.mid, famNext, params, "admission", familyLanesOf(prepNext.decl.boarded));
+      selNext = selectCardVariant(prepNext.mid, famNext, params, "admission", familyLanesOf(prepNext.decl.boarded), prepNext.fam);
       if (prepPrior === null) {
         prevSurface = unionPrevSurface();
       } else {
@@ -1124,7 +1124,7 @@ export class CardRegistryService extends Service {
         // as some other lane's, so the seat stands aside exactly as
         // it always did.
         if (famPrior === undefined) return params;
-        const priorSel: VariantSelection = selectCardVariant(prepPrior.mid, famPrior, priorParams, "admission", familyLanesOf(prepPrior.decl.boarded));
+        const priorSel: VariantSelection = selectCardVariant(prepPrior.mid, famPrior, priorParams, "admission", familyLanesOf(prepPrior.decl.boarded), prepPrior.fam);
         selPrior = priorSel;
         prevSurface = laneSurfaceOf(
           famPrior.params,
@@ -1527,7 +1527,7 @@ export class CardRegistryService extends Service {
     // legacy families exactly the nothing they had.
     let sel: VariantSelection;
     try {
-      sel = selectCardVariant(mid, famRow, params, "admission", familyLanesOf(prep.decl.boarded));
+      sel = selectCardVariant(mid, famRow, params, "admission", familyLanesOf(prep.decl.boarded), prep.fam);
     } catch {
       /* v8 ignore next -- prepareCardParams already ran the SAME
        * selection on the same mid/famRow/body (cardsCompose.ts:296)

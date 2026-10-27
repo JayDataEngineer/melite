@@ -343,7 +343,7 @@ export function prepareCardParams(
         "card_compose",
       );
     }
-    const sel: VariantSelection = selectCardVariant(mid, famRow, body, phase, familyLanesOf(decl.boarded));
+    const sel: VariantSelection = selectCardVariant(mid, famRow, body, phase, familyLanesOf(decl.boarded), fam);
     const stamped: Record<string, unknown> = stampCardOverlay(body, famRow, decl, sel, phase, fam);
     return {
       mid,

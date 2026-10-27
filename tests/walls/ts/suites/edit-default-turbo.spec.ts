@@ -81,4 +81,52 @@ describe("the image edit family's default variant is the turbo (burn c)", () => 
     assert.equal(turbo.resolver_defaults?.steps, 8,
       "the turbo default's own steps are 8 (the distilled count — the default a fresh card opens runs the fast lane)");
   });
+
+  it("ARM 4 — THE FLIP PARITY: the door's family-head spelling resolves pool[0] for EVERY family (one resolver, one default — the edit-steps burn, audit 013)", async () => {
+    // The burn (session 0c711390): an agent composed image-edit
+    // unstated; the DOOR (selectCardVariant, address = mid = the
+    // family id) claimed the BASE row (its route equals the family
+    // id) and stamped steps 25 + base weights, while the client
+    // mirror's '' spelling fell to pool[0] = turbo — the UI showed
+    // the turbo envelope [4,8] over a base-composed run. ARM 2
+    // above tested only the mirror's spelling; this arm rides the
+    // DOOR's own selectCardVariant with the family-head spelling.
+    const { Context } = await import("@deepseek-ai/cordis");
+    const { CardRegistryService } = await import("../../../../packages/harness/estate-queue/src/cardsRegistry.ts");
+    const { selectCardVariant } = await import("../../../../packages/harness/estate-queue/src/cardsVariant.ts");
+    const ctx = new Context();
+    const svc = new CardRegistryService(ctx);
+    await svc.prime();
+    const facts = svc.modelFacts() as Record<string, { variants?: VariantRow[] }>;
+    // THE BURN'S OWN FAMILY, named: the door resolves the turbo.
+    const editRow = facts[FAMILY];
+    assert.ok(editRow, `the booted facts serve ${FAMILY}`);
+    const doorSel = selectCardVariant(FAMILY, editRow as never, {}, "wall", undefined, FAMILY);
+    assert.equal(doorSel.variantId, "turbo",
+      `the door's family-head spelling resolves pool[0] (turbo) — saw '${doorSel.variantId}'; the address claim must not capture the base row whose route equals the family id`);
+    // THE ESTATE SWEEP: for every multi-variant family, the door's
+    // head spelling and the mirror's '' spelling resolve the SAME
+    // row — one resolver, one default, every family (the z-image
+    // class guards itself here).
+    const splits: string[] = [];
+    let swept = 0;
+    for (const [fam, row] of Object.entries(facts)) {
+      const variants = (row.variants ?? []).filter((v) => v.group === "Variant");
+      if (variants.length < 2) continue;
+      const mirror = resolveVariantRow(variants as never, { variant: null }, "", "offered");
+      if (mirror.status !== "resolved") continue; // the hidden-lane families refuse both spellings
+      const mirrorId = String((mirror.variant as VariantRow).id);
+      let doorId: string | null = null;
+      try {
+        doorId = selectCardVariant(fam, row as never, {}, "wall", undefined, fam).variantId;
+      } catch {
+        doorId = null; // the door's refusal against a mirror-resolved family IS a split
+      }
+      swept++;
+      if (doorId !== mirrorId) splits.push(`${fam}: door='${String(doorId)}' mirror='${mirrorId}'`);
+    }
+    assert.ok(swept >= 5, `the sweep judges the multi-variant families (swept ${swept} — a vacuous pass over zero families is the hole this closes)`);
+    assert.deepEqual(splits, [],
+      "every family's door spelling agrees with the mirror spelling on an unstated variant — a split is one resolver serving two defaults (the edit-steps burn's class)");
+  }, 120_000);
 });

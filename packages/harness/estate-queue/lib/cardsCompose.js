@@ -266,7 +266,7 @@ export function prepareCardParams(deps, body, mid, phase, factsArg) {
         throw new CardArmError(400, "card_compose phase " + phase + ": unknown card " + JSON.stringify(famRow.card) +
             " (no registered card definition for the card model " + JSON.stringify(mid) + " names)", "card_compose");
     }
-    const sel = selectCardVariant(mid, famRow, body, phase, familyLanesOf(decl.boarded));
+    const sel = selectCardVariant(mid, famRow, body, phase, familyLanesOf(decl.boarded), fam);
     const stamped = stampCardOverlay(body, famRow, decl, sel, phase, fam);
     return {
         mid,

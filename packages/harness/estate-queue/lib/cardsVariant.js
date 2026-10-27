@@ -32,7 +32,7 @@ function normalizeEnvelope(raw) {
  *  to the address claim, else the first non-Recipe variant / first
  *  cell (Model.resolve — the family default). Unknown coordinates
  *  refuse LOUD (never a silent neighbor cell). */
-export function selectCardVariant(mid, famRow, body, phase, familyLanes) {
+export function selectCardVariant(mid, famRow, body, phase, familyLanes, familyId) {
     const variants = famRow.variants ?? [];
     const hiddenRoute = variants.find((v) => v.hide_from_dropdown === true && (v.route === mid || v.id === mid || (v.cells ?? []).some((c) => c.route === mid)));
     const hiddenCellRoute = variants.some((v) => (v.cells ?? []).some((c) => c.hide_from_dropdown === true && c.route === mid));
@@ -57,7 +57,20 @@ export function selectCardVariant(mid, famRow, body, phase, familyLanes) {
     // the stated search runs over the whole handed matrix (a hidden hit
     // is the door's not-offered refusal, a miss speaks the matrix's own
     // ids); the unstated coordinate is the address claim, else pool[0].
-    const vres = resolveVariantRow(variants, rawVariant, mid, "offered");
+    //
+    // THE FAMILY HEAD IS NOT A PIN (the flip-parity cure, 2026-11-12,
+    // audit 013 — the edit-steps burn): the address claim exists for
+    // ROUTE pins (a draft naming a variant-level lane like
+    // 'krea-2-raw'). When the door's address IS the family's own head
+    // id, the doc states the FAMILY, not a pin — and the claim captured
+    // the BASE row for every family whose base route equals the family
+    // id (qwen-img-edit-21: door resolved base/25 while the client
+    // mirror's '' spelling fell to pool[0]/turbo — one resolver, two
+    // spellings, the UI banner over a base-composed run). The head
+    // spelling narrows to '' so the door and the mirror read pool[0] —
+    // the DECL-walk law: first declared = the default.
+    const address = familyId !== undefined && mid === familyId ? "" : mid;
+    const vres = resolveVariantRow(variants, rawVariant, address, "offered");
     if (vres.status === "missing") {
         throw phaseRefusal(phase, unknownVariantVoice(vres.stated, mid, vres.known, familyLanes));
     }

@@ -343,9 +343,28 @@ const ACTION_CARDS_WITHOUT_ENVELOPE: string[] = [];
       model: "qwen-img-edit-21",
       prompt: "make it night",
       image1: "x.png",
+      steps: 8,
+    });
+    assert.ok(lawful.ok, "the lawful body admits on the DEFAULT lane (unstated resolves the turbo envelope, steps 8 — the refusals below are not vacuous)");
+    // THE FLIP-PARITY CURE (2026-11-12, the edit-steps burn): the base
+    // 25 is a DELIBERATE pick (variant: "base"), never the seat the
+    // unstated door falls to; the burn's exact body (25 unstated) now
+    // refuses on the default lane.
+    const lawfulBase = registry.admitStageRelations("image-edit", {
+      model: "qwen-img-edit-21",
+      variant: "base",
+      prompt: "make it night",
+      image1: "x.png",
       steps: 25,
     });
-    assert.ok(lawful.ok, "the lawful body admits (the refusals below are not vacuous)");
+    assert.ok(lawfulBase.ok, "the deliberate base pick admits its own 25");
+    const stale = registry.admitStageRelations("image-edit", {
+      model: "qwen-img-edit-21",
+      prompt: "make it night",
+      image1: "x.png",
+      steps: 25,
+    });
+    assert.ok(!stale.ok, "steps 25 UNSTATED is refused — the default is the turbo [4,8]; the pre-cure door silently composed the base lane");
     // LAW C's teeth: outside the DECL's own domain → refused, named
     const over = registry.admitStageRelations("image-edit", {
       model: "qwen-img-edit-21",

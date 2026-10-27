@@ -77,6 +77,7 @@ export function selectCardVariant(
   body: Record<string, unknown>,
   phase: string,
   familyLanes?: readonly string[],
+  familyId?: string,
 ): VariantSelection {
   const variants: ResolvedVariantRow[] = famRow.variants ?? [];
   const hiddenRoute = variants.find((v) => v.hide_from_dropdown === true && (
@@ -112,7 +113,20 @@ export function selectCardVariant(
   // the stated search runs over the whole handed matrix (a hidden hit
   // is the door's not-offered refusal, a miss speaks the matrix's own
   // ids); the unstated coordinate is the address claim, else pool[0].
-  const vres = resolveVariantRow(variants, rawVariant, mid, "offered");
+  //
+  // THE FAMILY HEAD IS NOT A PIN (the flip-parity cure, 2026-11-12,
+  // audit 013 — the edit-steps burn): the address claim exists for
+  // ROUTE pins (a draft naming a variant-level lane like
+  // 'krea-2-raw'). When the door's address IS the family's own head
+  // id, the doc states the FAMILY, not a pin — and the claim captured
+  // the BASE row for every family whose base route equals the family
+  // id (qwen-img-edit-21: door resolved base/25 while the client
+  // mirror's '' spelling fell to pool[0]/turbo — one resolver, two
+  // spellings, the UI banner over a base-composed run). The head
+  // spelling narrows to '' so the door and the mirror read pool[0] —
+  // the DECL-walk law: first declared = the default.
+  const address = familyId !== undefined && mid === familyId ? "" : mid;
+  const vres = resolveVariantRow(variants, rawVariant, address, "offered");
   if (vres.status === "missing") {
     throw phaseRefusal(phase, unknownVariantVoice(vres.stated, mid, vres.known, familyLanes));
   }

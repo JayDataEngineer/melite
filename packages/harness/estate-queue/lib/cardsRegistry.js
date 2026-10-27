@@ -1053,7 +1053,7 @@ export class CardRegistryService extends Service {
         let selPrior = null;
         let prevSurface;
         try {
-            selNext = selectCardVariant(prepNext.mid, famNext, params, "admission", familyLanesOf(prepNext.decl.boarded));
+            selNext = selectCardVariant(prepNext.mid, famNext, params, "admission", familyLanesOf(prepNext.decl.boarded), prepNext.fam);
             if (prepPrior === null) {
                 prevSurface = unionPrevSurface();
             }
@@ -1065,7 +1065,7 @@ export class CardRegistryService extends Service {
                 // it always did.
                 if (famPrior === undefined)
                     return params;
-                const priorSel = selectCardVariant(prepPrior.mid, famPrior, priorParams, "admission", familyLanesOf(prepPrior.decl.boarded));
+                const priorSel = selectCardVariant(prepPrior.mid, famPrior, priorParams, "admission", familyLanesOf(prepPrior.decl.boarded), prepPrior.fam);
                 selPrior = priorSel;
                 prevSurface = laneSurfaceOf(famPrior.params, famPrior.variants.find((v) => v.id === priorSel.variantId)?.params, cellOf(famPrior, priorSel));
             }
@@ -1459,7 +1459,7 @@ export class CardRegistryService extends Service {
         // legacy families exactly the nothing they had.
         let sel;
         try {
-            sel = selectCardVariant(mid, famRow, params, "admission", familyLanesOf(prep.decl.boarded));
+            sel = selectCardVariant(mid, famRow, params, "admission", familyLanesOf(prep.decl.boarded), prep.fam);
         }
         catch {
             /* v8 ignore next -- prepareCardParams already ran the SAME
