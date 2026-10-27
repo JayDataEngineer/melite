@@ -301,7 +301,9 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
   "qwen3-tts-voicedesign-base",
   "qwen3-tts-voicedesign-design",
   "seedvr2-ema",
-  "seedvr2-ema-7b",
+  // (removed 2026-11-12, the 7B death: the row offered a body with no
+  //  cells and no provision — a dead door; the servability arm in the
+  //  family's decl.spec refuses the class at DECL time now)
   "seedvr2-ema-fp8",
   "seedvr2-ema-vae-fp16",
   "transfer-rig",

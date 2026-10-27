@@ -218,7 +218,7 @@ describe("the models plane feeds the compose/flows plane (A2)", () => {
     // 67 -> 74 (2026-11-10, the fibo2-edit board): dev + edit-turbo
     // variant routes + the int8_convrot/bf16 cell routes join (the
     // facts-total census rose with the same board).
-    assert.equal(total, 74, `the facts roster is 74 rows (saw ${String(total)}) — a new family route is a deliberate edit`);
+    assert.equal(total, 73, `the facts roster is 73 rows (saw ${String(total)}) — a new family route is a deliberate edit`); // 74→73 2026-11-12: seedvr2-ema-7b died (the 7B death)
   });
 });
 

@@ -51,7 +51,7 @@ const GOOD_DECL = {
   // the variant row carries its label + group (the VariantRow seam:
   // label/group always written — the probe authors a valid row).
   // The axis the row rides is declared (plane canon L2, 2026-11-02).
-  variants: [{ id: "base", label: "Base", group: "Variant", route: "", cells: [] }],
+  variants: [{ id: "base", label: "Base", group: "Variant", route: "", cells: [{ quant: "fp16", route: "", lane_inputs: {} }] }],
   variant_groups: [{ id: "Variant", label: "Variant" }],
 };
 
@@ -203,7 +203,7 @@ describe("the declaration gates a synthetic family can reach", () => {
         group: "Variant",
         route: "",
         relations: { requires: [{ field: "voice", needs: [7] }] },
-        cells: [],
+        cells: [{ quant: "fp16", route: "", lane_inputs: {} }],
       },
     ]);
     assert.throws(

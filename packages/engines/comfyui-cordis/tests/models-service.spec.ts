@@ -165,6 +165,45 @@ describe("registerFamily (the metaclass gates)", () => {
     })), "Variant = the axis token, cells = the quant tiers");
   });
 
+  it("THE SERVABILITY LAW (audit 018 / the 7B death, 2026-11-12): an offered Variant row with no offered cell refuses at registration", () => {
+    // seedvr2-ema's 7b row shipped offered-with-zero-cells for a
+    // month under an all-green suite: any quant under it refused
+    // "declares no cells — DECL/projection sync break" at the
+    // operator's RUN PRESS (2026-11-12), and unstated it would have
+    // fallen to the family lane_inputs and silently run the 3B
+    // file. The dead row cannot boot anymore. LAW 4 red-proof:
+    // toggle the servability loop out of validateDecl and every arm
+    // here reds.
+    assert.throws(
+      () => fresh().registerFamily(clone({
+        id: "servability-burn",
+        variants: [variant({ id: "dead", label: "Dead Body", group: "Variant", cells: [] })],
+      })),
+      /the offered variant 'dead' declares no offered cells — a dead door \(the 7B class\)/,
+      "an offered row with no cells refuses",
+    );
+    assert.throws(
+      () => fresh().registerFamily(clone({
+        id: "servability-burn",
+        variants: [variant({ id: "shy", label: "All Hidden", group: "Variant", cells: [cell({ quant: "fp16", hide_from_dropdown: true })] })],
+      })),
+      /the offered variant 'shy' declares no offered cells/,
+      "a row whose every cell is hidden is still a dead door",
+    );
+    // the lawful shapes pass: offered row with an offered cell; a
+    // HIDDEN row with no cells (the vae helper's real fold) never
+    // enters the offered space.
+    assert.doesNotThrow(() => fresh().registerFamily(clone({
+      variants: [variant({ id: "live", label: "Live", group: "Variant", cells: [cell({ quant: "fp16" })] })],
+    })), "offered + offered cell passes");
+    assert.doesNotThrow(() => fresh().registerFamily(clone({
+      variants: [
+        variant({ id: "live", label: "Live", group: "Variant", cells: [cell({ quant: "fp16" })] }),
+        variant({ id: "folded", label: "Folded Helper", group: "Variant", hide_from_dropdown: true, cells: [] }),
+      ],
+    })), "a hidden fold with no cells never offers");
+  });
+
   it("THE FOUR-PLANE CANON (2026-11-02): a DECL breaking the plane law refuses at registration, in the canon's voice", () => {
     // LAW 4 red-proof: each arm below fires ONLY through the
     // validateDecl → planeRefusals wire (models service). Toggle the
@@ -798,7 +837,8 @@ describe("registryModel + getModel (the two planes)", () => {
     const cellless = clone({
       id: "synth-a",
       defaults: undefined,
-      variants: [{ ...variant({ route: "r", resolver_defaults: { x: 1 }, cells: [] }) }],
+      // hidden: the servability law (2026-11-12) refuses an OFFERED cell-less Variant row — the address semantics ride a hidden fold
+      variants: [{ ...variant({ route: "r", resolver_defaults: { x: 1 }, cells: [], hide_from_dropdown: true }) }],
     });
     cellless.actions = [surf(["x"])];
     svc.registerFamily(cellless);
@@ -848,7 +888,7 @@ describe("variantOf + cellOf (the coordinates)", () => {
       id: "synth-a",
       variants: [
         { ...variant({ id: "v1", cells: [cell({ quant: "int8" })] }) },
-        { ...variant({ id: "v2", cells: [] }) },
+        { ...variant({ id: "v2", cells: [], hide_from_dropdown: true }) }, // hidden: the servability law refuses offered cell-less rows
       ],
     }));
     const decl = svc.registryModel("synth-a");

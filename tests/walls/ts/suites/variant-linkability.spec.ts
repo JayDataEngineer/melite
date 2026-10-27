@@ -269,13 +269,40 @@ describe("THE LINKABILITY WALL (burn d: no-link variants never sail green)", () 
     for (const row of KREA_ROWS) {
       if (loraFate(row as unknown as Record<string, unknown>).never) loraNever += 1;
     }
-    assert.equal(selectable, 189, "the selectable-variant census moved — update this pin deliberately");
+    assert.equal(selectable, 183, "the selectable-variant census moved — update this pin deliberately"); // 189→183 2026-11-12: the seedvr2 7B death (audit 018's live burn) — the row died at every seedvr2 address view (-6)
     assert.deepEqual(
       [...diskOnlyByFamily.entries()].sort(),
       [["moss-sfx", 1], ["qwen3-tts", 5], ["qwen3-tts-base", 5], ["qwen3-tts-voicedesign", 5], ["qwen3-tts-voicedesign-base", 5], ["qwen3-tts-voicedesign-design", 5]],
       "the disk-only register moved — a new hand-placed tree owes a dated receipt (row + reason), a cured one deletes its flag here",
     );
     assert.equal(loraNever, KREA_ROWS.length, "every mods lora row must carry its never-fetch fate — no partial rulings");
+  });
+
+  // ARM 5 — THE SERVABILITY SWEEP (audit 018 / the 7B death,
+  // 2026-11-12): every OFFERED Variant row on every BOOTED family
+  // owns at least one offered cell. The registration gate
+  // (validateDecl's servability law) refuses the row at boot; this
+  // arm is the walls-tier twin — it sweeps the composed roster the
+  // door actually serves (projection included), so a dead coordinate
+  // cannot sail through any injection path that skips DECL
+  // validation. seedvr2-ema's 7b burned for a month here: offered,
+  // zero cells, no provision — any quant refused at the operator's
+  // run press ("declares no cells — DECL/projection sync break"),
+  // and unstated it fell to the family lane_inputs and would have
+  // silently run the 3B weights.
+  it("ARM 5 — SERVABILITY: an offered Variant row owns an offered cell on every booted family (the 7B law)", () => {
+    const offenders: string[] = [];
+    for (const id of modelIds()) {
+      const view = getModel(id);
+      for (const variant of view.variants ?? []) {
+        if (variant.group !== "Variant" || variant.hide_from_dropdown) continue;
+        const offered = (variant.cells ?? []).filter((c) => !c.hide_from_dropdown);
+        if (offered.length === 0) {
+          offenders.push(`${id} / ${variant.id}: offered with zero offered cells — a dead door (land its provision + cell or hide the row)`);
+        }
+      }
+    }
+    assert.deepEqual(offenders, [], `servability offenders (the 7B class, 2026-11-12):\n${offenders.join("\n")}`);
   });
 
   // ARM 4 — THE ANCHOR-AT-THE-DOOR LAW (the kroma burn, operator

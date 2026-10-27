@@ -66,7 +66,7 @@ import { describe, it } from "vitest";
 // route).
 // 67 -> 74 (2026-11-08, the third edit lane): fibo2-edit serves its
 // family route + two lanes × variant/cell routes (7 addresses).
-const SERVED_ADDR_CENSUS = 74
+const SERVED_ADDR_CENSUS = 73 // 74→73 2026-11-12: seedvr2-ema-7b died (the 7B death — no cells, no provision)
 // 24 -> 25 (2026-10-22, audit 006/U1): flux-klein claims its own
 // atom (the family's routes resolve to its declared owners)
 // 25 -> 24 (2026-10-13, the autoremesher excision — the pack the owner removed from the system)

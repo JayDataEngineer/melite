@@ -66,21 +66,21 @@ export const DECL: ModelDecl = {
       ]
     },
     {
-      "id": "7b",
-      "label": "7B",
-      "hint": "7B EMA fp8_e4m3fn (mixed block-35 fp16) — beefier fine detail, ~3× slower. One precision body; no tier choice.",
-      "group": "Variant",
-      "route": "seedvr2-ema-7b",
-      "order": 1,
-      "cells": []
-    },
-    {
+      // THE 7B DEATH (2026-11-12, the operator's live burn): this row
+      // once offered "7B" with cells: [] and no provision anywhere —
+      // a dead door (any quant under it refused "declares no cells";
+      // unstated, it would have fallen to the family lane_inputs and
+      // SILENTLY RUN 3B WEIGHTS). A body variant that cannot resolve
+      // its own weights is refused at DECL time by the servability
+      // arm (decl.spec) — the row returns only with a real provision
+      // (url + sha256 + size) and its own cell.
       "id": "vae-fp16",
       "label": "VAE FP16",
-      "hint": "EMA VAE helper weights — hidden (folded in 2026-08-16)",
+      "hint": "EMA VAE helper weights — hidden (folded in 2026-08-16; the fold is REAL in the offered space since 2026-11-12)",
       "group": "Variant",
       "route": "seedvr2-ema-vae-fp16",
       "order": 4,
+      "hide_from_dropdown": true,
       "cells": []
     },
     {

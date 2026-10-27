@@ -90,12 +90,35 @@ describe("THE QUANT AXIS CONTRACT (E2-4 — the tiers are axis rows, never label
   });
 
   it("variant labels carry NO precision face — the Quant axis owns the vocabulary", () => {
-    // the two BODY variants (the offered faces the axes grammar
-    // names); the vae helper row names its FILE identity and rides
-    // its own fold — a separate finding if it ever leaks an axis.
-    for (const v of DECL.variants.filter((v) => v.group === "Variant" && (v.id === "3b" || v.id === "7b"))) {
+    // EVERY offered Variant row, derived — the arm once enumerated
+    // id === "3b" || id === "7b", a literal a new row simply bypasses.
+    for (const v of DECL.variants.filter((x) => x.group === "Variant" && !x.hide_from_dropdown)) {
       assert.ok(!/fp\s?\d|fp8|fp16|int8|bf16/i.test(v.label),
         `variant '${v.id}' label '${v.label}' stuffs a quant face — the axis row owns it (the shared-vocab contract)`);
+    }
+  });
+
+  it("SERVABILITY — an offered body variant resolves weights: at least one offered cell (the 7B law)", () => {
+    // THE OPERATOR'S LIVE BURN (2026-11-12): the "7B" row was offered
+    // with cells: [] and no provision anywhere — any quant under it
+    // refused "declares no cells for this variant — DECL/projection
+    // sync break" at the operator's run press, and UNSTATED it would
+    // have fallen to the family lane_inputs and silently run the 3B
+    // file. A body variant the estate cannot serve is refused HERE,
+    // at DECL time — never at a run press. Hidden rows (the vae
+    // helper's real fold) are exempt: they are never offered.
+    const offered = DECL.variants.filter((x) => x.group === "Variant" && !x.hide_from_dropdown);
+    assert.ok(offered.length >= 1, "the family offers at least one body variant");
+    for (const v of offered) {
+      const offeredCells = (v.cells ?? []).filter((c) => !c.hide_from_dropdown);
+      assert.ok(offeredCells.length >= 1,
+        `variant '${v.id}' is offered with no offered cells — a dead door (the 7B class, 2026-11-12): land its provision + cell or hide the row`);
+      for (const c of offeredCells) {
+        const unet = (c.lane_inputs as Record<string, unknown> | undefined)?.["unet"];
+        const declared = (DECL.provisions ?? []).some((p) => p.name === unet);
+        assert.ok(declared,
+          `variant '${v.id}' cell '${String(c.quant)}': ${String(unet)} is a declared provision — no phantom weights`);
+      }
     }
   });
 });
