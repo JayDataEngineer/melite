@@ -17,7 +17,8 @@
 // very files: same inode, same mtime, one truth.
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
-import { existsSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { execSync } from "node:child_process";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -104,5 +105,30 @@ describe("THE SERVED-BUNDLE FRESHNESS LAW", () => {
     assert.equal(isStale(now - 3600_000, now), true, "a bundle backdated one hour IS stale");
     assert.equal(isStale(now, now - 3600_000), false, "a bundle one hour newer than src is fresh");
     assert.equal(isStale(now, now), false, "a same-instant bundle is fresh (the predicate is strict)");
+  });
+
+  // THE CANONICAL MAP LAW (sweep F5b, 2026-10-26 — cured 2026-10-27):
+  // tsdown's map serialization races on the trailing byte (one run
+  // ends the JSON with a newline, the next without — a one-byte
+  // churn class that put 988KB of spurious diff in post-commit
+  // rebuilds while client.js + .src-stamp stayed clean). The
+  // canonical form is the repo's own file-end law: exactly one
+  // trailing newline. The wall judges every TRACKED lib/*.map —
+  // a rebuild that flips the byte reds here before it churns a
+  // diff; the builder normalizes (scripts/canonicalize-sourcemaps.mjs).
+  it("every tracked lib/*.map ends with exactly one trailing newline (the canonical form — the tsdown flip class dies here)", () => {
+    const tracked = execSync("git ls-files", { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 })
+      .split("\n")
+      .filter((f) => /\/lib\/.*\.map$/.test(f));
+    assert.ok(tracked.length > 1000, `the tracked-map roster collapsed (${tracked.length}) — the walk broke`);
+    const offenders: string[] = [];
+    for (const f of tracked) {
+      const abs = join(ROOT, f);
+      if (!existsSync(abs)) continue;
+      const buf = readFileSync(abs);
+      if (!(buf.length > 0 && buf[buf.length - 1] === 0x0a)) offenders.push(`${f}: no trailing newline`);
+      else if (buf.length > 1 && buf[buf.length - 2] === 0x0a) offenders.push(`${f}: more than one trailing newline`);
+    }
+    assert.deepEqual(offenders, [], `non-canonical sourcemaps (rebuild with scripts/canonicalize-sourcemaps.mjs):\n${offenders.join("\n")}`);
   });
 });
