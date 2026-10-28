@@ -690,6 +690,17 @@ function specModifiers(svc, card, key, decl, def, enveloped, engineLoras) {
         // as declared (the re-audit, 2026-10-16).
         if (k.requires !== undefined)
             entry.requires = k.requires;
+        // THE MENU ATTRIBUTION (the mod-liveness ARM 3 law, 2026-10-28,
+        // the swap build): the card-declared kind stamps its own
+        // schema_key (its kind name — the card IS the catalog). Served
+        // verbatim. A present-but-empty stamping refuses loud — an
+        // unattributed menu face is the wall's own red class.
+        if (k.schema_key !== undefined) {
+            if (typeof k.schema_key !== 'string' || k.schema_key === '') {
+                throw new Error(`form-spec: card '${card}' declares a malformed mod kind schema_key (a non-empty string names the catalog) — ${JSON.stringify(k).slice(0, 120)}`);
+            }
+            entry.schema_key = k.schema_key;
+        }
         out.push(entry);
     }
     return out;

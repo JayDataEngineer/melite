@@ -38,27 +38,6 @@ export declare function TriStateAtom({ label, value, onEdit, name, disabled }: {
     name: string;
     disabled?: boolean;
 }): ReturnType<typeof h>;
-/** THE SETTLE LAW for slider atoms (hour 15, stroke C — grown from
- *  mask-studio's draft absorber, 2026-08-10): a drag fires input
- *  60×/sec; if every step wrote to the card, updateStageParams →
- *  _recomputeKeys would hash multi-MB paint data 60×/sec and freeze
- *  the editor. The atom shows the drag locally and persists ONCE on
- *  settle (the change event = release / keyboard step). External
- *  writes (agent, revive) re-sync the display when the backing
- *  value actually moves.
- *
- *  THE VARIANT-ENVELOPE CLAMP (the dragbar law, 2026-10-13): the
- *  track clamps to the ACTIVE variant's declared envelope (min and
- *  max intersected with the field's own bounds) — an
- *  out-of-envelope value cannot be dragged or saved from the form
- *  while the wire gate stays loud for API authors. A HELD value
- *  outside the envelope renders AS ITSELF, refused (the
- *  no-fallback law): the track never paints a clamped neighbor over
- *  an impossible contract. @param f the knob's field row.
- *  @param value the resolved display value.
- *  @param onEdit the settle seam.
- *  @param envelope the active variant's [min,max] for THIS knob,
- *  null when the variant declares none. */
 export declare function SpecSliderAtom({ f, value, onEdit, envelope }: {
     f: SpecField;
     value: unknown;
@@ -67,7 +46,7 @@ export declare function SpecSliderAtom({ f, value, onEdit, envelope }: {
 }): ReturnType<typeof h>;
 /** One spec atom — typed by the declaration, edited as a raw string
  *  while typing (decimal dots survive; coercion happens once at patch). */
-export declare function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder, ghost, envelope }: {
+export declare function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder, ghost, envelope, hideSquareLabel }: {
     f: SpecField;
     value: unknown;
     onEdit(name: string, v: unknown): void;
@@ -93,6 +72,14 @@ export declare function SpecAtom({ f, value, onEdit, square, wireCandidates, pla
      *  The call site authors the label ('inherit', or the richer
      *  '← on' when the inherited value is known). */
     ghost?: string;
+    /** THE DUPLICATE-LABEL LAW (the 2026-09-15 burn, repeated on the
+     *  mod leaf 2026-11-12): when the OWNING surface already renders
+     *  the field's caption (the mod leaf's span), the square's own
+     *  under-label hides — the SourceRow hideLabel idiom. The aria
+     *  name stays (the seat is still named for readers); only the
+     *  painted caption goes. Default shows it (the card face's rail
+     *  and slot cells ride the square's label as their ONLY caption). */
+    hideSquareLabel?: boolean;
 }): ReturnType<typeof h>;
 /** THE MODEL AXES (the pass-along law, 2026-09-12): the Model select
  *  plus ONE SELECT PER SERVED AXIS GROUP — Variant, Quant, Recipe,

@@ -16684,9 +16684,9 @@ window.__ModuleLoader__.load({
 			}, live ? (0, react.createElement)("span", {
 				className: card_module_css_default.drillProgress,
 				"data-testid": "drill-progress"
-			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconLoadingOutlineRegular, { size: 14 }), (0, react.createElement)("span", null, [act !== "" ? act : "running", pct !== null ? " · " + String(pct) + "%" : ""].join("")), pct !== null ? (0, react.createElement)("span", { className: card_module_css_default.zoomMeter }, (0, react.createElement)("span", {
+			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconLoadingOutlineRegular, { size: 14 }), (0, react.createElement)("span", null, [act !== "" ? act : "running", pct === null ? "" : prog !== null && prog.value >= prog.max ? " · finishing" : " · " + String(pct) + "%"].join("")), pct !== null ? (0, react.createElement)("span", { className: card_module_css_default.zoomMeter }, (0, react.createElement)("span", {
 				className: card_module_css_default.zoomMeterFill,
-				style: { width: pct + "%" }
+				style: { width: (prog !== null && prog.value >= prog.max ? 100 : pct) + "%" }
 			})) : null) : shownBarError !== null ? (0, react.createElement)("span", {
 				className: card_module_css_default.runError,
 				"data-testid": "drill-run-error"
@@ -16905,7 +16905,7 @@ window.__ModuleLoader__.load({
 				className: card_module_css_default.tilePct,
 				"data-testid": "tile-progress",
 				"aria-label": chromeCopy.progressPercent
-			}, Math.floor(100 * row.progress.value / row.progress.max) + "%") : null) : null, grouping ? null : (0, react.createElement)("button", {
+			}, row.progress.value >= row.progress.max ? "finishing" : Math.floor(100 * row.progress.value / row.progress.max) + "%") : null) : null, grouping ? null : (0, react.createElement)("button", {
 				className: card_module_css_default.tileIconBtn + " " + card_module_css_default.tileTrash,
 				type: "button",
 				"aria-label": chromeCopy.removeStage,
@@ -20125,18 +20125,18 @@ window.__ModuleLoader__.load({
 			};
 			const activity = typeof stage.activity === "string" ? stage.activity : "";
 			const progress = stage.progress ?? null;
-			const pct = progress !== null && progress.max > 0 ? Math.floor(100 * progress.value / progress.max) : null;
+			const bounded = progress !== null && progress.max > 0;
 			const webhookFeed = (0, react.createElement)("div", {
 				className: card_module_css_default.runRow,
 				"data-testid": "drill-webhooks"
 			}, activity !== "" ? (0, react.createElement)("span", {
 				className: card_module_css_default.tilePct,
 				"aria-label": chromeCopy.engineActivity
-			}, activity) : null, progress !== null && pct !== null ? (0, react.createElement)("span", {
+			}, activity) : null, bounded ? (0, react.createElement)("span", {
 				className: card_module_css_default.tilePct,
 				"data-testid": "drill-progress",
 				"aria-label": chromeCopy.progressPercent
-			}, pct + "% (" + String(progress.value) + "/" + String(progress.max) + ")") : null);
+			}, progress.value >= progress.max ? "finishing (" + String(progress.value) + "/" + String(progress.max) + ")" : Math.floor(100 * progress.value / progress.max) + "% (" + String(progress.value) + "/" + String(progress.max) + ")") : null);
 			const seamFilmUrl = spec?.preview?.timeline === true ? previewArtifactsFor(stage).find((a) => primaryKindFor(spec, a.url) === "video")?.url ?? null : null;
 			const genericDetail = () => (0, react.createElement)(ScrollLockedDetail, null, webhookFeed, (0, react.createElement)(_melite_card_base_client.StudioShell, {
 				bottom: seamFilmUrl !== null ? (0, react.createElement)(ScrollLockedDetail, { testid: "timeline-seam-bottom" }, (0, react.createElement)(FilmSeamBar, { seam: filmSeam })) : void 0,

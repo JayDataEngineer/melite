@@ -4,10 +4,12 @@ import { createElement as h } from 'react';
 import { type InputSquareVerbs } from './square.js';
 import { type SpecField } from './spec.js';
 /** THE OS-DIALOG ACCEPT, derived per field (primitive ③): mesh rows
- *  offer the GLB pair; everything else keeps the image triad (the
- *  historic default). The provider's ONE hidden input re-targets
- *  imperatively at click time — the accept is a property of the
- *  field being picked, never of the provider instance. */
+ *  offer the GLB pair; video-hinted rows offer the video formats
+ *  (the same media hint the picker rides); everything else keeps
+ *  the image triad (the historic default). The provider's ONE
+ *  hidden input re-targets imperatively at click time — the accept
+ *  is a property of the field being picked, never of the provider
+ *  instance. */
 export declare function acceptOfField(f: SpecField | null): string;
 /** THE ONE square provider (the old SlotGrid law, DSH substrate):
  *  every slot-shaped field of a stage gets the same verbs — file
@@ -101,8 +103,19 @@ export interface SquareHost {
     /** The last upload refusal's voice for this field (THE REFUSAL
      *  FACE): '' while an attempt is in flight, the refusal text after
      *  a failure, absent after any successful settle. NEVER a param
-     *  value — the value seam stays estate-path-only. */
+     *  value — the value seam stays estate-path-only. The attempt's
+     *  own face is `busy`, never this seat in danger color. */
     error?: string | null;
+    /** The in-flight upload's filename (THE UPLOADING FACE): present
+     *  from the first tick of an attempt until its settle (success
+     *  or refusal). The square renders it neutrally — in flight is
+     *  not a refusal. */
+    busy?: string | null;
+    /** The finished in-flight line (THE ALREADY-LOCALIZED PROP): the
+     *  provider assembles t('uploading') and the face renders it
+     *  verbatim — atoms.tsx owns no dictionary key. Null exactly when
+     *  `busy` is null (no attempt in flight). */
+    busyVoice?: string | null;
 }
 /** The picker half of the square provider: candidates are the OTHER
  *  stages' LATEST OUTPUTS (title + the media-route url the run wrote

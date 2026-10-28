@@ -44,6 +44,13 @@ const FieldRow = z.object({
   // unless via_rtdetr). Served verbatim to the leaf.
   required_when: z.string(),
   wtype: z.string(),
+  // THE SINGLE-FIELD MEDIA HINT (the operator's picker law, live
+  // lane 2026-10-28: "media seats as FREEFORM TEXT when NOT ALL
+  // SHOULD BE"): a `file` field carrying media 'video' narrows the
+  // square's picker to the video library and the OS accept to the
+  // video formats — SpecField.media's own vocabulary (MEDIA_SET),
+  // the same hint the typed stacks ride.
+  media: z.string(),
   // FACE-OWNED (stroke 95, the embedded leaf): the declared canvas
   // owns this field's value (the bbox quad) — the leaf hides it
   // when the canvas renders (the degrade law shows it otherwise).
@@ -89,16 +96,27 @@ const ModKind = z.object({
   // rows omit entry/option_key the same way — the resolve fills
   // nothing, the drift check reads carried-vs-kept).
   requires: z.array(z.string()),
+  // THE MENU ATTRIBUTION (the mod-liveness ARM 3 law, 2026-10-28,
+  // the swap build): the card-declared kind's schema_key (its kind
+  // name — the card IS the catalog). Bare like every optional row.
+  schema_key: z.string(),
 });
 
 /** The field types the wire carries; each demands its own
- *  default's JS type (the type-truth law). */
+ *  default's JS type (the type-truth law). image/file/text are the
+ *  PRESENTATION vocabulary (the leaf's square gate claims type
+ *  image|file|mesh — WTYPE_SET's atom spellings; the picker law,
+ *  live lane 2026-10-28): an image or file seat renders the
+ *  media square, never freeform text. */
 const FIELD_TYPES: Record<string, "string" | "number" | "boolean"> = {
   string: "string",
   path: "string",
   select: "string",
   number: "number",
   boolean: "boolean",
+  text: "string",
+  image: "string",
+  file: "string",
 };
 
 const typeofDefault = (v: unknown): string => (v === null ? "null" : Array.isArray(v) ? "array" : typeof v);
@@ -108,7 +126,7 @@ const typeofDefault = (v: unknown): string => (v === null ? "null" : Array.isArr
 function checkField(where: string, f: Record<string, unknown>): void {
   const want = FIELD_TYPES[String(f["type"])];
   if (want === undefined) {
-    throw new Error(`${where}: field '${String(f["name"])}' declares type '${String(f["type"])}' — not a wire type (string|path|select|number|boolean)`);
+    throw new Error(`${where}: field '${String(f["name"])}' declares type '${String(f["type"])}' — not a wire type (${Object.keys(FIELD_TYPES).join("|")})`);
   }
   if (f["default"] !== undefined && typeofDefault(f["default"]) !== want) {
     throw new Error(`${where}: field '${String(f["name"])}' declares type '${String(f["type"])}' but its default is ${typeofDefault(f["default"])} — the default must match the declared type`);

@@ -61,6 +61,23 @@ export function SourceRow(props) {
         value: shown,
         ...(host.verbs),
     }), 
+    // THE UPLOADING FACE (2026-10-28): the attempt voices its own
+    // filename UNDER the square in the neutral color — a busy
+    // square is never mute, and never danger-colored (in flight is
+    // not a refusal). role=status so the live region announces the
+    // attempt without the alert semantics a refusal carries. The
+    // line arrives ALREADY LOCALIZED on host.busyVoice (assembled
+    // in the provider's t seat) — this face owns no dictionary key.
+    // The truncation title keeps the raw filename (the reference's
+    // own truncation-span idiom).
+    typeof host.busyVoice === 'string' && host.busyVoice !== ''
+        ? h('p', {
+            className: css.sourceRowBusy,
+            'data-slot-busy': props.label,
+            title: host.busy ?? host.busyVoice,
+            role: 'status',
+        }, host.busyVoice)
+        : null, 
     // THE REFUSAL FACE (2026-10-24): a failed upload's voice renders
     // UNDER the square in the danger color — it NEVER enters the
     // value seam, so it can never land in the input stack as a
@@ -181,6 +198,10 @@ function useLocalSliderValue(value) {
  *  @param onEdit the settle seam.
  *  @param envelope the active variant's [min,max] for THIS knob,
  *  null when the variant declares none. */
+/** The zero-law sentence a declaration may state in its tooltip
+ * ("0 = the clip's own width (…).") — the first sentence, chipped on
+ * the face exactly while the knob holds the 0 (cure D, 2026-10-28). */
+const ZERO_LAW_RE = /^0 =[^.]*\./;
 export function SpecSliderAtom({ f, value, onEdit, envelope }) {
     const shown = useLocalSliderValue(value);
     // THE BOX'S OWN SETTLE (the blank law): a clear writes '' through
@@ -264,11 +285,21 @@ export function SpecSliderAtom({ f, value, onEdit, envelope }) {
             onEdit(f.name, raw);
         },
         'aria-label': f.label,
-    }));
+    }), 
+    // THE ZERO-LAW CHIP (cure D, 2026-10-28): a held 0 whose
+    // declaration's tooltip states a "0 = …" law SHOWS the law on
+    // the face — the openjutsu burn: Width/Height 0 (inherit the
+    // clip's geometry) painted a bare 0 with the law buried in the
+    // hover tooltip. Derived from the DECL's own sentence — no
+    // per-card special case; off the 0 the law is not the live
+    // state and the chip goes.
+    ...(shown.value === 0 && typeof f.tooltip === 'string' && f.tooltip.startsWith('0 =')
+        ? [h('span', { className: css.specSliderZero, 'data-zero-law': f.name }, ZERO_LAW_RE.exec(f.tooltip)?.[0] ?? f.tooltip)]
+        : []));
 }
 /** One spec atom — typed by the declaration, edited as a raw string
  *  while typing (decimal dots survive; coercion happens once at patch). */
-export function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder, ghost, envelope }) {
+export function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder, ghost, envelope, hideSquareLabel }) {
     // THE INPUT SQUARE (the old law: slot-shaped values render the ONE
     // square with the three source verbs — never a bare text Input).
     // THE CONSTRUCTION LAW: an emitted image/file input constructs THIS
@@ -297,7 +328,10 @@ export function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder
         // null+metric pair painted the PLUS on a full slot with no way
         // out.
         return h(InputSquare, {
-            label: f.label !== '' ? f.label : f.name,
+            label: hideSquareLabel === true ? '' : (f.label !== '' ? f.label : f.name),
+            // the aria seat stays even under the hidden caption (the
+            // SourceRow idiom: readers keep the name, sighted get one)
+            ...(hideSquareLabel === true ? { ariaLabel: f.label !== '' ? f.label : f.name } : {}),
             value: shown,
             ...square.verbs,
         });

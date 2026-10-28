@@ -77,6 +77,25 @@ describe("the declared mod-kind schema gate (registerCard's third door)", () => 
     );
   });
 
+  it("image/file/text ride the wire; media hints a file seat (the picker law, live lane 2026-10-28)", () => {
+    // The presentation types pass clean — an image/file seat is the
+    // media square on the leaf, and a media hint narrows its picker.
+    validateDeclaredMods("c", [base({
+      category: "standalone",
+      fields: [
+        { name: "still", label: "Still", type: "image", default: "" },
+        { name: "clip", label: "Clip", type: "file", media: "video", default: "" },
+        { name: "prompt", label: "Prompt", type: "text", default: "" },
+      ],
+    })]);
+    // Type-truth reaches the presentation types: a number default on
+    // an image seat refuses exactly as it does on a string seat.
+    assert.throws(
+      () => validateDeclaredMods("c", [base({ fields: [{ name: "still", label: "S", type: "image", default: 1 }] })]),
+      /default is number/,
+    );
+  });
+
   it("an unknown mod-kind key refuses as drift (the strict resolve)", () => {
     assert.throws(
       () => validateDeclaredMods("c", [base({ feilds: [] })]),

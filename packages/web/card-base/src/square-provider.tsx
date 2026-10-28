@@ -5,8 +5,10 @@ import { Menu, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import {
   DEFAULT_SQUARE_ACCEPT,
   MESH_SQUARE_ACCEPT,
+  VIDEO_SQUARE_ACCEPT,
   type InputSquareVerbs,
   isImageUrl,
+  isVideoUrl,
 } from './square.tsx'
 import { readAsDataURL } from './chrome.ts'
 import { uploadInputFile } from './wire.ts'
@@ -24,20 +26,29 @@ import css from './card.module.css'
  *  `media/kind`, so asking it for `mesh` was a guaranteed refusal that
  *  the picker swallowed into an empty list (the "From media" row was
  *  empty for every mesh field, with no error anywhere). file fields
- *  take the whole library (their accept narrows client-side per row). */
+ *  take the whole library unless a media hint narrows the seat (a
+ *  video-hinted file field lists the video library only). */
 function mediaKindForField(f: SpecField): string {
   if (f.type === 'image') return 'image'
   if (f.type === 'mesh') return 'model'
+  // The single-field media hint (the operator's picker law, live
+  // lane 2026-10-28: video seats never list the whole catalog).
+  if (f.type === 'file' && f.media === 'video') return 'video'
   return 'all'
 }
 
 /** THE OS-DIALOG ACCEPT, derived per field (primitive ③): mesh rows
- *  offer the GLB pair; everything else keeps the image triad (the
- *  historic default). The provider's ONE hidden input re-targets
- *  imperatively at click time — the accept is a property of the
- *  field being picked, never of the provider instance. */
+ *  offer the GLB pair; video-hinted rows offer the video formats
+ *  (the same media hint the picker rides); everything else keeps
+ *  the image triad (the historic default). The provider's ONE
+ *  hidden input re-targets imperatively at click time — the accept
+ *  is a property of the field being picked, never of the provider
+ *  instance. */
 export function acceptOfField(f: SpecField | null): string {
-  return f !== null && f.type === 'mesh' ? MESH_SQUARE_ACCEPT : DEFAULT_SQUARE_ACCEPT
+  if (f === null) return DEFAULT_SQUARE_ACCEPT
+  if (f.type === 'mesh') return MESH_SQUARE_ACCEPT
+  if (f.media === 'video') return VIDEO_SQUARE_ACCEPT
+  return DEFAULT_SQUARE_ACCEPT
 }
 
 /** THE ONE square provider (the old SlotGrid law, DSH substrate):
@@ -59,6 +70,14 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
   // OS dialog. The flat click-through picker is dead (the operator:
   // "Flat pick didn't even make any sense").
   const [modalAt, setModalAt] = useState<{ mode: 'flow' | 'media'; field: SpecField } | null>(null)
+  // THE PICKER SEARCH (2026-11-12, the operator's burn: "THERE IS
+  // NO SEARCH" over a library the picker lists bare): one query
+  // string filtering BOTH row sources client-side by label
+  // substring — the library door's own filtering stays kind-scoped
+  // (the seat's media hint); this is the find-in-list the operator
+  // asked for. Reset on every modal open (a stale query hiding the
+  // next seat's rows is its own burn).
+  const [pickQuery, setPickQuery] = useState('')
   // the From file capture: the menu closes (pickAt → null) BEFORE the
   // OS dialog answers — the field rides a ref from the menu click.
   const fieldRef = useRef<SpecField | null>(null)
@@ -170,8 +189,12 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
     onSelect: (id: string) => {
       const f = pickAt.field
       setPickAt(null)
-      if (id === '__flow__') { setModalAt({ mode: 'flow', field: f }); return }
-      if (id === '__media__') { setModalAt({ mode: 'media', field: f }); return }
+      // the query resets IN THE SAME BATCH as the open (an effect
+      // keyed on modalAt re-rendered the modal once even for a
+      // no-op '' → '' — the seam claim double-fired; the operators'
+      // own rule: a stale query never hides the next seat's rows)
+      if (id === '__flow__') { setPickQuery(''); setModalAt({ mode: 'flow', field: f }); return }
+      if (id === '__media__') { setPickQuery(''); setModalAt({ mode: 'media', field: f }); return }
       if (id === '__file__') {
         fieldRef.current = f
         // THE ACCEPT IS THE FIELD'S (mesh → the GLB pair): the ONE
@@ -224,9 +247,15 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
   }, [modalAt, loadMedia])
   const pickerModal = modalAt === null ? null : (() => {
     const f = modalAt.field
-    const candidates = modalAt.mode === 'flow'
+    const rawCandidates = modalAt.mode === 'flow'
       ? (wire.candidatesFor !== undefined ? wire.candidatesFor(f) : wire.candidates)
       : (mediaRows ?? [])
+    // the search narrows by LABEL (case-insensitive substring); an
+    // empty query is the whole list, the historic behavior
+    const q = pickQuery.trim().toLowerCase()
+    const candidates = q === ''
+      ? rawCandidates
+      : rawCandidates.filter((c) => c.label.toLowerCase().includes(q))
     const req = { mode: modalAt.mode, kind: mediaKindForField(f), field: f, candidates }
     const pick = (url: string): void => {
       setModalAt(null)
@@ -241,7 +270,13 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
         : t('mediaDescription', { kindSuffix: req.kind !== 'all' ? ' (' + req.kind + ')' : '' }),
       closeLabel: t('closePicker'),
     },
-      candidates.length === 0
+      q !== '' && rawCandidates.length > 0 && candidates.length === 0
+        // THE NO-MATCH FACE (2026-11-12): a filtered-empty list is
+        // the query's own result, never "nothing to pick" — the
+        // operator would read a healthy library as empty.
+        ? h('p', { className: css.pickEmpty },
+            t('noMatchFor', { query: pickQuery.trim() }))
+        : candidates.length === 0
         // THE EMPTY LAW (S7 class-4 residue, 2026-11-05): the picker's
         // empty face rides EmptyState (layout.tsx) — the DSH
         // empty-state shape (WorkspaceBrowser.tsx:266-280), the same
@@ -258,7 +293,22 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
                 ? t('mediaUnavailable', { reason: mediaErr })
                 : t('nothingToPick'),
           })
-        : h('ul', { className: css.pickList },
+        : h(Fragment, null,
+          h('div', { className: css.pickSearch },
+            h('input', {
+              // ARGUED RAW SEAT (the row-face class, S7j): no search
+              // atom in the ui-primitives catalog; DSH's own picker
+              // dialogs ride the native input (WorkspaceBrowser's
+              // filter row) — same grammar as the OS picker's own
+              // find field.
+              type: 'search',
+              className: css.pickSearchInput,
+              value: pickQuery,
+              placeholder: t('searchPlaceholder'),
+              'aria-label': t('searchPlaceholder'),
+              onChange: (e: { target: { value: string } }): void => { setPickQuery(e.target.value) },
+            })),
+          h('ul', { className: css.pickList },
             candidates.map((c) => h('li', { key: c.id, className: css.pickRow },
               h('button', {
                 // ARGUED RAW SEAT (S7j, the row-face class): a
@@ -270,12 +320,21 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
                 'data-testid': 'source-pick-row',
                 onClick: () => { pick(c.url) },
               },
+                // THE VIDEO PREVIEW SEAT (2026-11-12, the operator's
+                // burn: "VIDEOS HAVE NO IMAGE PREVIEWS" — a video row
+                // was a letter glyph): a video URL renders the same
+                // 40px thumb seat as an image, riding a muted
+                // metadata-preload video element (the first frame;
+                // the stage-preview strip's own idiom). Non-media
+                // rows keep the glyph.
                 isImageUrl(c.url)
                   ? h('img', { className: css.pickThumb, src: c.url, alt: c.label, loading: 'lazy' })
-                  : h('span', { className: css.pickGlyph }, c.label.slice(0, 1).toUpperCase()),
+                  : isVideoUrl(c.url)
+                    ? h('video', { className: css.pickThumb, src: c.url, alt: c.label, muted: true, playsInline: true, preload: 'metadata' })
+                    : h('span', { className: css.pickGlyph }, c.label.slice(0, 1).toUpperCase()),
                 h('span', { className: css.pickLabel }, c.label),
               ),
-            ))),
+            )))),
     )
     return wire.renderSourcePick !== undefined ? wire.renderSourcePick(req, fallback) : fallback
   })()

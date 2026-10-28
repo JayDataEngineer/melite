@@ -10862,8 +10862,8 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:packages/web/card-base/src/card.module.css.mjs
-		const css$4 = ".emezXW_specForm :where(input,textarea,select,button){box-sizing:border-box}.emezXW_specForm{flex-direction:column;gap:12px;display:flex}.emezXW_specGroup{flex-direction:column;gap:8px;display:flex}.emezXW_modelAxes{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;display:grid}.emezXW_modelAxes .emezXW_specGroupTitle{grid-column:1/-1;margin-bottom:0}.emezXW_modelAxes>.emezXW_specHint{grid-column:1/-1}.emezXW_axesPair{grid-column:1/-1;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start;gap:10px;display:grid}.emezXW_axesPair>*{min-width:0}.emezXW_specGroupTitle{color:var(--dsw-alias-label-secondary);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.emezXW_specField{flex-direction:column;gap:6px;display:flex}.emezXW_specFieldKey{color:var(--dsw-alias-label-secondary);align-items:center;min-height:20px;font-size:12px;display:flex}.emezXW_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.emezXW_specHint{color:var(--dsw-alias-label-secondary);font-size:11px}.emezXW_laneWarn{border-top:1px solid var(--dsw-alias-state-critical,#e5484d);border-bottom:1px solid var(--dsw-alias-state-critical,#e5484d);color:var(--dsw-alias-state-critical,#e5484d);margin:0;padding:6px 0;font-size:11px;line-height:1.5}.emezXW_laneWarn p{margin:0}.emezXW_specInfo{border:1px solid var(--dsw-alias-label-secondary);width:12px;height:12px;color:var(--dsw-alias-label-secondary);cursor:help;vertical-align:middle;user-select:none;border-radius:50%;flex:none;justify-content:center;align-items:center;margin-left:5px;font-family:Georgia,Times New Roman,serif;font-size:9px;font-style:italic;line-height:1;display:inline-flex}.emezXW_specFieldHead{justify-content:space-between;align-items:center;gap:6px;display:flex}.emezXW_specDice{width:20px;height:20px;color:var(--dsw-alias-label-secondary);cursor:pointer;opacity:.65;background:0 0;border:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.emezXW_specDice:hover{opacity:1}.emezXW_specDiceOn{color:var(--dsw-alias-accent-primary,#4a7dbd);opacity:1}select option{color:canvastext;background:canvas}.emezXW_specSelect{color-scheme:light;background:var(--dsw-alias-interactive-bg-hover);border:.5px solid var(--dsw-alias-border-l2);box-sizing:border-box;color:inherit;font:inherit;text-overflow:ellipsis;white-space:nowrap;border-radius:6px;width:100%;min-width:0;padding:5px 8px;font-size:13px;display:block;overflow:hidden}.emezXW_specSelectText{text-overflow:ellipsis;white-space:nowrap;min-width:0;display:block;overflow:hidden}.emezXW_specSelectStatic{cursor:default;justify-content:center;display:flex}.emezXW_specSliderRow{align-items:center;gap:8px;display:flex}.emezXW_specSlider{accent-color:var(--dsw-alias-accent,#3b82f6);flex:1}.emezXW_specSliderInput{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;width:7ch;min-width:6ch;font-size:12px}.emezXW_specSliderValue{color:var(--dsw-alias-label-secondary);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.emezXW_specTextarea{background:var(--dsw-alias-interactive-bg-hover);border:.5px solid var(--dsw-alias-border-l2);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.emezXW_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.emezXW_squareOff{opacity:.5;pointer-events:none}.emezXW_squareBox{border:.5px solid var(--dsw-alias-border-l2);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.emezXW_squareOver{border-color:var(--dsw-alias-border-l3);box-shadow:0 0 0 2px var(--dsw-alias-border-l1)}.emezXW_squareThumb{object-fit:cover;width:100%;height:100%}.emezXW_squareMesh{pointer-events:none;position:absolute;inset:0}.emezXW_squareGlyph{color:var(--dsw-alias-label-tertiary)}.emezXW_squareEmptyIcon{align-items:center;display:flex}.emezXW_squareHeld{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;max-width:100%;font-size:9px;overflow:hidden}.emezXW_squareActions{pointer-events:none;justify-content:flex-end;align-items:flex-end;padding:4px;display:flex;position:absolute;inset:0}.emezXW_squareActions>*{pointer-events:auto}.emezXW_squarePick{background:var(--dsw-alias-interactive-bg-hover-solid);border:.5px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;border-radius:999px;justify-content:center;align-items:center;width:22px;height:22px;padding:0;display:flex;position:absolute;top:4px;left:4px}.emezXW_squareBadge{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;max-width:100%;font-size:10px;line-height:17px;overflow:hidden}.emezXW_squareX{background:var(--dsw-alias-interactive-bg-hover-solid);border:.5px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.emezXW_squareLabel{color:var(--dsw-alias-label-primary);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.emezXW_squareMetric{color:var(--dsw-alias-label-tertiary);font-size:10px;line-height:17px}.emezXW_squareFileInput{display:none}.emezXW_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.emezXW_modHead{align-items:baseline;gap:8px;display:flex}.emezXW_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.emezXW_modHint{opacity:.45;font-size:9px}.emezXW_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.emezXW_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.emezXW_modTile:active{cursor:grabbing}.emezXW_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.emezXW_modTileStrength{opacity:.55;font-size:9px}.emezXW_modTileSteps{opacity:.55;font-variant-numeric:tabular-nums;font-size:9px}.emezXW_modAddSquare{border:1px dashed var(--dsw-alias-border-l3);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out), background-color var(--ds-transition-duration) var(--ds-ease-in-out);background:0 0;border-radius:8px;justify-content:center;align-items:center;width:64px;display:flex}.emezXW_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4);opacity:1}.emezXW_tileDragging{opacity:.5}.emezXW_modTileRecipe{cursor:default;border-style:dashed}.emezXW_modTileRecipe .emezXW_modTileStrength:after{content:\" · recipe\"}.emezXW_specChips{flex-wrap:wrap;gap:4px;display:flex}.emezXW_modLeafModal{width:min(760px,100vw - 32px);max-height:min(80vh,760px);overflow-y:auto}.emezXW_modLeafSplit{grid-template-columns:minmax(0,7fr) minmax(240px,5fr);align-items:start;gap:12px;display:grid}.emezXW_modLeafStage{min-width:0}.emezXW_modStageCaption{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}@media (width<=720px){.emezXW_modLeafSplit{grid-template-columns:minmax(0,1fr)}}.emezXW_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.emezXW_modLeafFields{gap:8px;display:grid}.emezXW_modLeafActions{gap:8px;display:flex}.emezXW_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.emezXW_modLeafError{color:#e06c5f;margin:0;font-size:11px}.emezXW_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.emezXW_pickRow{display:block}.emezXW_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out), background-color var(--ds-transition-duration) var(--ds-ease-in-out);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.emezXW_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.emezXW_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.emezXW_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.emezXW_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.emezXW_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.emezXW_sourceRow{flex-direction:column;display:flex}.emezXW_sourceRowErr{color:#e06c5f;word-break:break-word;margin:2px 0 0;font-size:11px}.emezXW_specSlotRow{flex-wrap:wrap;align-items:flex-start;gap:8px;display:flex}.emezXW_specGrid{align-items:start;gap:8px;display:grid}.emezXW_specSlotCell{flex-direction:column;gap:4px;display:flex}.emezXW_inputRail{gap:10px}.emezXW_specStack{flex-direction:column;gap:6px;display:flex}[data-stack-add] .emezXW_squareBox{border-style:dashed}.emezXW_sz14{flex:none;width:14px;height:14px}.emezXW_wireDialog{width:min(448px,100vw - 32px);max-height:60vh;overflow-y:auto}.emezXW_wireUnwire{text-align:left;cursor:pointer;border:0;border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);width:100%;color:var(--dsw-alias-state-error-primary);background:0 0;align-items:center;gap:8px;padding:8px 12px;font-size:11px;display:flex}.emezXW_wireUnwire:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.emezXW_wireList{margin:0;padding:0;list-style:none}.emezXW_wireList>li+li{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent)}.emezXW_wireEmpty{color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);padding:12px;font-size:11px}.emezXW_wireOption{text-align:left;cursor:pointer;width:100%;color:var(--dsw-alias-label-primary);background:0 0;border:0;align-items:center;gap:8px;padding:8px 12px;display:flex}.emezXW_wireOption:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.emezXW_wireSelected{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent)}.emezXW_wireIdx{font-variant-numeric:tabular-nums;background:color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;font-size:9px;font-weight:700;display:flex}.emezXW_wireThumb{object-fit:cover;border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);border-radius:4px;flex:none;width:32px;height:32px}.emezXW_wireThumbFallback{border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;display:flex}.emezXW_wireMeta{flex:1;min-width:0}.emezXW_wireTitle{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-primary);font-size:11px;font-weight:500;overflow:hidden}.emezXW_wireOut{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);margin-left:4px;font-size:9px}.emezXW_wireSub{text-overflow:ellipsis;white-space:nowrap;font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);font-size:9px;overflow:hidden}.emezXW_wiredTag{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);color:var(--dsw-alias-brand-primary);border-radius:4px;flex:none;padding:2px 6px;font-size:9px;font-weight:600}.emezXW_specLinkBtn{font:inherit;cursor:pointer;color:var(--dsw-alias-state-business-primary);background:0 0;border:none;padding:0;text-decoration:underline}.emezXW_specLinkBtn:disabled{cursor:default;color:var(--dsw-alias-label-tertiary);text-decoration:none}.emezXW_specGrid :where(input,select){width:100%}.emezXW_tipAnchor{display:inline-flex}.emezXW_tipFill{display:block}.emezXW_ctlRow,.emezXW_ctlRowSm{color:var(--dsw-alias-label-secondary);justify-content:space-between;align-items:center;gap:8px;font-size:10px;display:flex}.emezXW_ctlRow select,.emezXW_ctlRowSm select{font-size:10px}.emezXW_sectionLabel{justify-content:space-between;align-items:baseline;gap:8px;display:flex}.emezXW_sectionLabelText{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.emezXW_sectionLabelTail{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.emezXW_emptyPane,.emezXW_emptyOverlay{text-align:center;flex-direction:column;justify-content:center;align-items:center;gap:6px;display:flex}.emezXW_emptyPane{box-sizing:border-box;width:100%;height:100%;padding:24px 0}.emezXW_emptyOverlay{pointer-events:none;padding:24px;position:absolute;inset:0}.emezXW_emptyTitle{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px;font-weight:500}.emezXW_emptyHint{color:var(--dsw-alias-label-tertiary);max-width:25rem;margin:0;font-size:10px;line-height:1.6}.emezXW_paneHeaderPreview{flex:none;align-items:baseline;gap:6px;padding-bottom:6px;display:flex}.emezXW_paneHeaderStrip{border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);align-items:center;gap:8px;padding:4px 10px;display:flex}.emezXW_paneTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:10px;font-weight:600}.emezXW_paneMeta{color:var(--dsw-alias-label-tertiary);font-size:9px}.emezXW_paneMetaNum{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.emezXW_paneHint{color:var(--dsw-alias-label-tertiary);margin-left:auto;font-size:9px}.emezXW_paneShell{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);border-radius:6px;flex:none;overflow:hidden}@keyframes emezXW_panePulse{0%,to{opacity:1}50%{opacity:.45}}.emezXW_skeleton{background:color-mix(in srgb, var(--dsw-alias-label-secondary) 22%, transparent);border-radius:6px;animation:1.6s ease-in-out infinite emezXW_panePulse}";
-		const tagId$4 = "@melite/card-base/card.module.css@a9536419";
+		const css$4 = ".emezXW_specForm :where(input,textarea,select,button){box-sizing:border-box}.emezXW_specForm{flex-direction:column;gap:12px;display:flex}.emezXW_specGroup{flex-direction:column;gap:8px;display:flex}.emezXW_modelAxes{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;display:grid}.emezXW_modelAxes .emezXW_specGroupTitle{grid-column:1/-1;margin-bottom:0}.emezXW_modelAxes>.emezXW_specHint{grid-column:1/-1}.emezXW_axesPair{grid-column:1/-1;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start;gap:10px;display:grid}.emezXW_axesPair>*{min-width:0}.emezXW_specGroupTitle{color:var(--dsw-alias-label-secondary);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.emezXW_specField{flex-direction:column;gap:6px;display:flex}.emezXW_specFieldKey{color:var(--dsw-alias-label-secondary);align-items:center;min-height:20px;font-size:12px;display:flex}.emezXW_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.emezXW_specHint{color:var(--dsw-alias-label-secondary);font-size:11px}.emezXW_laneWarn{border-top:1px solid var(--dsw-alias-state-critical,#e5484d);border-bottom:1px solid var(--dsw-alias-state-critical,#e5484d);color:var(--dsw-alias-state-critical,#e5484d);margin:0;padding:6px 0;font-size:11px;line-height:1.5}.emezXW_laneWarn p{margin:0}.emezXW_specInfo{border:1px solid var(--dsw-alias-label-secondary);width:12px;height:12px;color:var(--dsw-alias-label-secondary);cursor:help;vertical-align:middle;user-select:none;border-radius:50%;flex:none;justify-content:center;align-items:center;margin-left:5px;font-family:Georgia,Times New Roman,serif;font-size:9px;font-style:italic;line-height:1;display:inline-flex}.emezXW_specFieldHead{justify-content:space-between;align-items:center;gap:6px;display:flex}.emezXW_specDice{width:20px;height:20px;color:var(--dsw-alias-label-secondary);cursor:pointer;opacity:.65;background:0 0;border:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.emezXW_specDice:hover{opacity:1}.emezXW_specDiceOn{color:var(--dsw-alias-accent-primary,#4a7dbd);opacity:1}select option{color:canvastext;background:canvas}.emezXW_specSelect{color-scheme:light;background:var(--dsw-alias-interactive-bg-hover);border:.5px solid var(--dsw-alias-border-l2);box-sizing:border-box;color:inherit;font:inherit;text-overflow:ellipsis;white-space:nowrap;border-radius:6px;width:100%;min-width:0;padding:5px 8px;font-size:13px;display:block;overflow:hidden}.emezXW_specSelectText{text-overflow:ellipsis;white-space:nowrap;min-width:0;display:block;overflow:hidden}.emezXW_specSelectStatic{cursor:default;justify-content:center;display:flex}.emezXW_specSliderRow{align-items:center;gap:8px;display:flex}.emezXW_specSlider{accent-color:var(--dsw-alias-accent,#3b82f6);flex:1}.emezXW_specSliderInput{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;width:7ch;min-width:6ch;font-size:12px}.emezXW_specSliderValue{color:var(--dsw-alias-label-secondary);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.emezXW_specSliderZero{color:var(--dsw-alias-label-secondary);white-space:nowrap;text-overflow:ellipsis;max-width:22ch;font-size:11px;overflow:hidden}.emezXW_specTextarea{background:var(--dsw-alias-interactive-bg-hover);border:.5px solid var(--dsw-alias-border-l2);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.emezXW_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.emezXW_squareOff{opacity:.5;pointer-events:none}.emezXW_squareBox{border:.5px solid var(--dsw-alias-border-l2);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.emezXW_squareOver{border-color:var(--dsw-alias-border-l3);box-shadow:0 0 0 2px var(--dsw-alias-border-l1)}.emezXW_squareThumb{object-fit:cover;width:100%;height:100%}.emezXW_squareMesh{pointer-events:none;position:absolute;inset:0}.emezXW_squareGlyph{color:var(--dsw-alias-label-tertiary)}.emezXW_squareEmptyIcon{align-items:center;display:flex}.emezXW_squareHeld{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;max-width:100%;font-size:9px;overflow:hidden}.emezXW_squareActions{pointer-events:none;justify-content:flex-end;align-items:flex-end;padding:4px;display:flex;position:absolute;inset:0}.emezXW_squareActions>*{pointer-events:auto}.emezXW_squarePick{background:var(--dsw-alias-interactive-bg-hover-solid);border:.5px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;border-radius:999px;justify-content:center;align-items:center;width:22px;height:22px;padding:0;display:flex;position:absolute;top:4px;left:4px}.emezXW_squareBadge{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;max-width:100%;font-size:10px;line-height:17px;overflow:hidden}.emezXW_squareX{background:var(--dsw-alias-interactive-bg-hover-solid);border:.5px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.emezXW_squareLabel{color:var(--dsw-alias-label-primary);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.emezXW_squareMetric{color:var(--dsw-alias-label-tertiary);font-size:10px;line-height:17px}.emezXW_squareFileInput{display:none}.emezXW_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.emezXW_modHead{align-items:baseline;gap:8px;display:flex}.emezXW_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.emezXW_modHint{opacity:.45;font-size:9px}.emezXW_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.emezXW_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.emezXW_modTile:active{cursor:grabbing}.emezXW_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.emezXW_modTileStrength{opacity:.55;font-size:9px}.emezXW_modTileSteps{opacity:.55;font-variant-numeric:tabular-nums;font-size:9px}.emezXW_modAddSquare{border:1px dashed var(--dsw-alias-border-l3);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out), background-color var(--ds-transition-duration) var(--ds-ease-in-out);background:0 0;border-radius:8px;justify-content:center;align-items:center;width:64px;display:flex}.emezXW_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4);opacity:1}.emezXW_tileDragging{opacity:.5}.emezXW_modTileRecipe{cursor:default;border-style:dashed}.emezXW_modTileRecipe .emezXW_modTileStrength:after{content:\" · recipe\"}.emezXW_specChips{flex-wrap:wrap;gap:4px;display:flex}.emezXW_modLeafModal{width:min(760px,100vw - 32px);max-height:min(80vh,760px);overflow-y:auto}.emezXW_modLeafSplit{grid-template-columns:minmax(0,7fr) minmax(240px,5fr);align-items:start;gap:12px;display:grid}.emezXW_modLeafStage{min-width:0}.emezXW_modStageCaption{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}@media (width<=720px){.emezXW_modLeafSplit{grid-template-columns:minmax(0,1fr)}}.emezXW_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.emezXW_modLeafFields{gap:8px;display:grid}.emezXW_modLeafActions{gap:8px;display:flex}.emezXW_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.emezXW_modLeafError{color:#e06c5f;margin:0;font-size:11px}.emezXW_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.emezXW_pickRow{display:block}.emezXW_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out), background-color var(--ds-transition-duration) var(--ds-ease-in-out);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.emezXW_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.emezXW_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.emezXW_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.emezXW_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.emezXW_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.emezXW_sourceRow{flex-direction:column;display:flex}.emezXW_sourceRowErr{color:#e06c5f;word-break:break-word;margin:2px 0 0;font-size:11px}.emezXW_sourceRowBusy{color:var(--dsw-alias-label-secondary);word-break:break-word;margin:2px 0 0;font-size:11px}.emezXW_specSlotRow{flex-wrap:wrap;align-items:flex-start;gap:8px;display:flex}.emezXW_specGrid{align-items:start;gap:8px;display:grid}.emezXW_specSlotCell{flex-direction:column;gap:4px;display:flex}.emezXW_inputRail{gap:10px}.emezXW_specStack{flex-direction:column;gap:6px;display:flex}[data-stack-add] .emezXW_squareBox{border-style:dashed}.emezXW_sz14{flex:none;width:14px;height:14px}.emezXW_wireDialog{width:min(448px,100vw - 32px);max-height:60vh;overflow-y:auto}.emezXW_wireUnwire{text-align:left;cursor:pointer;border:0;border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);width:100%;color:var(--dsw-alias-state-error-primary);background:0 0;align-items:center;gap:8px;padding:8px 12px;font-size:11px;display:flex}.emezXW_wireUnwire:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.emezXW_wireList{margin:0;padding:0;list-style:none}.emezXW_wireList>li+li{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent)}.emezXW_wireEmpty{color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);padding:12px;font-size:11px}.emezXW_wireOption{text-align:left;cursor:pointer;width:100%;color:var(--dsw-alias-label-primary);background:0 0;border:0;align-items:center;gap:8px;padding:8px 12px;display:flex}.emezXW_wireOption:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.emezXW_wireSelected{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent)}.emezXW_wireIdx{font-variant-numeric:tabular-nums;background:color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;font-size:9px;font-weight:700;display:flex}.emezXW_wireThumb{object-fit:cover;border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);border-radius:4px;flex:none;width:32px;height:32px}.emezXW_wireThumbFallback{border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;display:flex}.emezXW_wireMeta{flex:1;min-width:0}.emezXW_wireTitle{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-primary);font-size:11px;font-weight:500;overflow:hidden}.emezXW_wireOut{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);margin-left:4px;font-size:9px}.emezXW_wireSub{text-overflow:ellipsis;white-space:nowrap;font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);font-size:9px;overflow:hidden}.emezXW_wiredTag{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);color:var(--dsw-alias-brand-primary);border-radius:4px;flex:none;padding:2px 6px;font-size:9px;font-weight:600}.emezXW_specLinkBtn{font:inherit;cursor:pointer;color:var(--dsw-alias-state-business-primary);background:0 0;border:none;padding:0;text-decoration:underline}.emezXW_specLinkBtn:disabled{cursor:default;color:var(--dsw-alias-label-tertiary);text-decoration:none}.emezXW_specGrid :where(input,select){width:100%}.emezXW_tipAnchor{display:inline-flex}.emezXW_tipFill{display:block}.emezXW_ctlRow,.emezXW_ctlRowSm{color:var(--dsw-alias-label-secondary);justify-content:space-between;align-items:center;gap:8px;font-size:10px;display:flex}.emezXW_ctlRow select,.emezXW_ctlRowSm select{font-size:10px}.emezXW_sectionLabel{justify-content:space-between;align-items:baseline;gap:8px;display:flex}.emezXW_sectionLabelText{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.emezXW_sectionLabelTail{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.emezXW_emptyPane,.emezXW_emptyOverlay{text-align:center;flex-direction:column;justify-content:center;align-items:center;gap:6px;display:flex}.emezXW_emptyPane{box-sizing:border-box;width:100%;height:100%;padding:24px 0}.emezXW_emptyOverlay{pointer-events:none;padding:24px;position:absolute;inset:0}.emezXW_emptyTitle{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px;font-weight:500}.emezXW_emptyHint{color:var(--dsw-alias-label-tertiary);max-width:25rem;margin:0;font-size:10px;line-height:1.6}.emezXW_paneHeaderPreview{flex:none;align-items:baseline;gap:6px;padding-bottom:6px;display:flex}.emezXW_paneHeaderStrip{border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);align-items:center;gap:8px;padding:4px 10px;display:flex}.emezXW_paneTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:10px;font-weight:600}.emezXW_paneMeta{color:var(--dsw-alias-label-tertiary);font-size:9px}.emezXW_paneMetaNum{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.emezXW_paneHint{color:var(--dsw-alias-label-tertiary);margin-left:auto;font-size:9px}.emezXW_paneShell{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);border-radius:6px;flex:none;overflow:hidden}@keyframes emezXW_panePulse{0%,to{opacity:1}50%{opacity:.45}}.emezXW_skeleton{background:color-mix(in srgb, var(--dsw-alias-label-secondary) 22%, transparent);border-radius:6px;animation:1.6s ease-in-out infinite emezXW_panePulse}.emezXW_pickSearch{margin:0 0 8px}.emezXW_pickSearchInput{background:var(--dsw-alias-interactive-bg-default,transparent);border:1px solid var(--dsw-alias-border-l2);box-sizing:border-box;color:var(--dsw-alias-label-primary);border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.emezXW_pickSearchInput:focus{border-color:var(--dsw-alias-border-l4);outline:none}";
+		const tagId$4 = "@melite/card-base/card.module.css@11399026";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$4) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/card-base";
@@ -10916,12 +10916,15 @@ window.__ModuleLoader__.load({
 			"pickLabel": "emezXW_pickLabel",
 			"pickList": "emezXW_pickList",
 			"pickRow": "emezXW_pickRow",
+			"pickSearch": "emezXW_pickSearch",
+			"pickSearchInput": "emezXW_pickSearchInput",
 			"pickThumb": "emezXW_pickThumb",
 			"sectionLabel": "emezXW_sectionLabel",
 			"sectionLabelTail": "emezXW_sectionLabelTail",
 			"sectionLabelText": "emezXW_sectionLabelText",
 			"skeleton": "emezXW_skeleton",
 			"sourceRow": "emezXW_sourceRow",
+			"sourceRowBusy": "emezXW_sourceRowBusy",
 			"sourceRowErr": "emezXW_sourceRowErr",
 			"specChips": "emezXW_specChips",
 			"specDice": "emezXW_specDice",
@@ -10944,6 +10947,7 @@ window.__ModuleLoader__.load({
 			"specSliderInput": "emezXW_specSliderInput",
 			"specSliderRow": "emezXW_specSliderRow",
 			"specSliderValue": "emezXW_specSliderValue",
+			"specSliderZero": "emezXW_specSliderZero",
 			"specSlotCell": "emezXW_specSlotCell",
 			"specSlotRow": "emezXW_specSlotRow",
 			"specStack": "emezXW_specStack",
@@ -11973,8 +11977,8 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:packages/web/card-base/src/preview.module.css.mjs
-		const css$3 = ".oHl7Va_stagePreview{flex-direction:column;flex:1;gap:8px;min-height:0;display:flex;position:relative;overflow:hidden}.oHl7Va_inputPin{z-index:3;position:absolute;top:8px;right:8px}.oHl7Va_figureError{z-index:2;color:var(--dsw-alias-label-error);background:var(--dsw-alias-bg-solid);border:1px solid var(--dsh-alias-border-l2);border-radius:6px;padding:4px 8px;font-size:11px;position:absolute;top:8px;left:8px;right:8px}.oHl7Va_hero{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsh-alias-border-l2);border-radius:6px;flex:1;width:100%;min-height:0}.oHl7Va_heroImg{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsh-alias-border-l2);border-radius:6px;flex:none;width:auto;min-width:0;max-width:100%;height:46vh;margin:0 auto;display:block}.oHl7Va_heroAudio{flex:none;width:100%;min-height:48px;margin:auto 0}.oHl7Va_empty{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsh-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;gap:6px;font-size:11px;display:flex}.oHl7Va_emptyGlyph{opacity:.7;flex:none;width:14px;height:14px}.oHl7Va_textSeat{flex-direction:column;flex:1;justify-content:center;gap:6px;min-height:0;display:flex}.oHl7Va_textHero{max-height:320px;color:var(--dsh-alias-text-primary);white-space:pre-wrap;word-break:break-word;text-align:left;border:1px solid var(--dsh-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:6px;flex:0 auto;margin:auto 0;padding:10px 12px;font-family:ui-monospace,monospace;font-size:11px;line-height:1.6;overflow:auto}.oHl7Va_textCopy{flex:none;align-self:flex-end}.oHl7Va_strip{flex:none;gap:6px;display:flex;overflow-x:auto}.oHl7Va_stripLink{color:var(--dsw-alias-brand-primary);white-space:nowrap;border:1px solid var(--dsh-alias-border-l2);border-radius:6px;padding:2px 6px;font-size:10px;text-decoration:none}.oHl7Va_thumbVideoBtn{box-sizing:border-box;cursor:pointer;background:0 0;border:1px solid #0000;border-radius:8px;flex-direction:column;gap:2px;width:128px;padding:2px;display:flex}.oHl7Va_thumbVideoBtn:hover{border-color:var(--dsh-alias-border-l2)}.oHl7Va_thumbVideoActive{border-color:var(--dsw-alias-brand-primary)}.oHl7Va_thumbVideo{background:var(--dsw-alias-bg-base);object-fit:contain;border-radius:6px;width:100%;height:66px;display:block}.oHl7Va_thumbVideoName{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;font-size:10px;overflow:hidden}.oHl7Va_thumbRow{overscroll-behavior:contain;flex-wrap:wrap;flex:none;gap:6px;display:flex;overflow-x:auto}.oHl7Va_thumb{border:1px solid var(--dsh-alias-border-l2);border-radius:4px;height:48px}.oHl7Va_thumbFace{box-sizing:content-box;border:1px solid var(--dsh-alias-border-l2);width:16px;height:16px;color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-bg-base);border-radius:4px;flex:none;padding:15px}.oHl7Va_historyBlock{overscroll-behavior:contain;flex-direction:column;flex:none;gap:4px;max-height:240px;padding-top:4px;display:flex;overflow-y:auto}.oHl7Va_historyTitle{color:var(--dsw-alias-label-secondary);font-size:11px}.oHl7Va_historyTile{cursor:pointer;background:0 0;border:1px solid #0000;border-radius:4px;padding:0;display:inline-flex}.oHl7Va_historyTile:hover,.oHl7Va_historyTileActive{border-color:var(--dsh-alias-border-l2)}.oHl7Va_staleBadge{flex:none;align-self:flex-start}.oHl7Va_layerRow{flex:none;gap:6px;display:flex}.oHl7Va_layerChip{flex:none}.oHl7Va_reportCard{border:1px solid var(--dsh-alias-border-l2);background:var(--dsw-alias-bg-base);text-align:left;border-radius:8px;flex-direction:column;gap:6px;padding:8px 10px;display:flex}.oHl7Va_reportHead{align-items:center;gap:6px;min-width:0;display:flex}.oHl7Va_reportStatus{letter-spacing:.04em;color:var(--dsw-alias-label-secondary);font-size:10px}.oHl7Va_reportTitle{color:var(--dsw-alias-label-primary);text-overflow:ellipsis;white-space:nowrap;font-size:11px;overflow:hidden}.oHl7Va_reportChips{flex-wrap:wrap;gap:4px;display:flex}.oHl7Va_reportChip{color:var(--dsw-alias-label-tertiary);border:1px solid var(--dsw-alias-border-l1);border-radius:6px;flex:none;padding:1px 6px;font-size:10px}.oHl7Va_reportRows{flex-direction:column;gap:2px;margin:0;display:flex}.oHl7Va_reportRow{justify-content:space-between;gap:12px;min-width:0;display:flex}.oHl7Va_reportKey{overflow-wrap:anywhere;min-width:0;color:var(--dsw-alias-label-dimmed);flex:0 auto;font-size:10px}.oHl7Va_reportVal{font-family:var(--dsw-alias-font-mono);color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;margin:0;font-size:10px}.oHl7Va_stageCanvas{touch-action:none;width:100%;height:100%;min-height:320px;max-height:46vh;display:block}.oHl7Va_heroIncoming{opacity:0;pointer-events:none;width:100%;height:100%;position:absolute;inset:0}";
-		const tagId$3 = "@melite/card-base/preview.module.css@5892dc32";
+		const css$3 = ".oHl7Va_stagePreview{flex-direction:column;flex:1;gap:8px;min-height:0;display:flex;position:relative;overflow:hidden}.oHl7Va_inputPin{z-index:3;position:absolute;top:8px;right:8px}.oHl7Va_figureError{z-index:2;color:var(--dsw-alias-label-error);background:var(--dsw-alias-bg-solid);border:1px solid var(--dsh-alias-border-l2);border-radius:6px;padding:4px 8px;font-size:11px;position:absolute;top:8px;left:8px;right:8px}.oHl7Va_hero,.oHl7Va_heroImg{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsh-alias-border-l2);border-radius:6px;flex:none;width:auto;min-width:0;max-width:100%;height:46vh;margin:0 auto;display:block}.oHl7Va_heroAudio{flex:none;width:100%;min-height:48px;margin:auto 0}.oHl7Va_empty{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsh-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;gap:6px;font-size:11px;display:flex}.oHl7Va_emptyGlyph{opacity:.7;flex:none;width:14px;height:14px}.oHl7Va_textSeat{flex-direction:column;flex:1;justify-content:center;gap:6px;min-height:0;display:flex}.oHl7Va_textHero{max-height:320px;color:var(--dsh-alias-text-primary);white-space:pre-wrap;word-break:break-word;text-align:left;border:1px solid var(--dsh-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:6px;flex:0 auto;margin:auto 0;padding:10px 12px;font-family:ui-monospace,monospace;font-size:11px;line-height:1.6;overflow:auto}.oHl7Va_textCopy{flex:none;align-self:flex-end}.oHl7Va_strip{flex:none;gap:6px;display:flex;overflow-x:auto}.oHl7Va_stripLink{color:var(--dsw-alias-brand-primary);white-space:nowrap;border:1px solid var(--dsh-alias-border-l2);border-radius:6px;padding:2px 6px;font-size:10px;text-decoration:none}.oHl7Va_thumbVideoBtn{box-sizing:border-box;cursor:pointer;background:0 0;border:1px solid #0000;border-radius:8px;flex-direction:column;gap:2px;width:128px;padding:2px;display:flex}.oHl7Va_thumbVideoBtn:hover{border-color:var(--dsh-alias-border-l2)}.oHl7Va_thumbVideoActive{border-color:var(--dsw-alias-brand-primary)}.oHl7Va_thumbVideo{background:var(--dsw-alias-bg-base);object-fit:contain;border-radius:6px;width:100%;height:66px;display:block}.oHl7Va_thumbVideoName{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;font-size:10px;overflow:hidden}.oHl7Va_thumbRow{overscroll-behavior:contain;flex-wrap:wrap;flex:none;gap:6px;display:flex;overflow-x:auto}.oHl7Va_thumb{border:1px solid var(--dsh-alias-border-l2);border-radius:4px;height:48px}.oHl7Va_thumbFace{box-sizing:content-box;border:1px solid var(--dsh-alias-border-l2);width:16px;height:16px;color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-bg-base);border-radius:4px;flex:none;padding:15px}.oHl7Va_historyBlock{overscroll-behavior:contain;flex-direction:column;flex:none;gap:4px;max-height:240px;padding-top:4px;display:flex;overflow-y:auto}.oHl7Va_historyTitle{color:var(--dsw-alias-label-secondary);font-size:11px}.oHl7Va_historyTile{cursor:pointer;background:0 0;border:1px solid #0000;border-radius:4px;padding:0;display:inline-flex}.oHl7Va_historyTile:hover,.oHl7Va_historyTileActive{border-color:var(--dsh-alias-border-l2)}.oHl7Va_staleBadge{flex:none;align-self:flex-start}.oHl7Va_layerRow{flex:none;gap:6px;display:flex}.oHl7Va_layerChip{flex:none}.oHl7Va_reportCard{border:1px solid var(--dsh-alias-border-l2);background:var(--dsw-alias-bg-base);text-align:left;border-radius:8px;flex-direction:column;gap:6px;padding:8px 10px;display:flex}.oHl7Va_reportHead{align-items:center;gap:6px;min-width:0;display:flex}.oHl7Va_reportStatus{letter-spacing:.04em;color:var(--dsw-alias-label-secondary);font-size:10px}.oHl7Va_reportTitle{color:var(--dsw-alias-label-primary);text-overflow:ellipsis;white-space:nowrap;font-size:11px;overflow:hidden}.oHl7Va_reportChips{flex-wrap:wrap;gap:4px;display:flex}.oHl7Va_reportChip{color:var(--dsw-alias-label-tertiary);border:1px solid var(--dsw-alias-border-l1);border-radius:6px;flex:none;padding:1px 6px;font-size:10px}.oHl7Va_reportRows{flex-direction:column;gap:2px;margin:0;display:flex}.oHl7Va_reportRow{justify-content:space-between;gap:12px;min-width:0;display:flex}.oHl7Va_reportKey{overflow-wrap:anywhere;min-width:0;color:var(--dsw-alias-label-dimmed);flex:0 auto;font-size:10px}.oHl7Va_reportVal{font-family:var(--dsw-alias-font-mono);color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;margin:0;font-size:10px}.oHl7Va_stageCanvas{touch-action:none;width:100%;height:100%;min-height:320px;max-height:46vh;display:block}.oHl7Va_heroIncoming{opacity:0;pointer-events:none;width:100%;height:100%;position:absolute;inset:0}";
+		const tagId$3 = "@melite/card-base/preview.module.css@ea8280e1";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$3) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/card-base";
@@ -12554,6 +12558,10 @@ window.__ModuleLoader__.load({
 			mediaUnavailable: (p) => "media library unavailable — " + p.reason,
 			/** Empty state: the list is honestly empty. */
 			nothingToPick: "nothing to pick yet",
+			/** Picker search field placeholder + aria name (2026-11-12). */
+			searchPlaceholder: "Search by name",
+			/** Filtered-empty face: the query matched no row (2026-11-12). */
+			noMatchFor: (p) => "no match for “" + p.query + "”",
 			/** The detach button (square). */
 			detach: "Detach",
 			/** The held face's hover title: the slot holds a value no preview
@@ -12582,7 +12590,12 @@ window.__ModuleLoader__.load({
 			/** Row sub-line for an upstream that has not run. */
 			notRunYet: "not run yet",
 			/** Selected-row tag. */
-			wired: "wired"
+			wired: "wired",
+			/** In-flight upload face: "uploading <name>…" — a tens-of-MB
+			*  clip's base64 POST runs minutes with no engine events, and the
+			*  old mute face (empty string, rendered as nothing) read as a
+			*  dead square (the operator's upload-lag burn). */
+			uploading: (p) => "uploading " + p.name + "…"
 		};
 		/** Resolve one copy entry. Plain-string entries return verbatim;
 		*  template entries receive their params (a plain entry given params
@@ -12660,6 +12673,39 @@ window.__ModuleLoader__.load({
 			const name = m[1];
 			return IMAGE_EXT_RE.test(name) ? "/v1/assets/inputs/" + encodeURIComponent(name) : null;
 		}
+		/** THE VIDEO FACE of the same rule (the operator's live burn,
+		*  2026-10-28: a clip value — `data/input/Makhna clip.webm`, the
+		*  uploads door's own param currency — rendered the HELD face (raw
+		*  text, never a player), and an in-flight video upload's data-URL
+		*  mirror rendered megabytes of base64 AS TEXT. The assets door
+		*  already answers video bytes (video/mp4, doors.ts's own doc
+		*  line); the square just never asked). A video value — a data:
+		*  video URL, an estate input path with a video extension, or any
+		*  servable video URL — renders the ONE square with a muted inline
+		*  <video> (metadata preload, no autoplay: a grid that plays is a
+		*  burn of its own). The classifier is the shared vocabulary's
+		*  (mediaKindOf — never a private extension list); blob: mirrors
+		*  are image-arm only (the provider mints them from image Files).
+		*/
+		/**
+		* @param value - the attached value to test (estate path, artifact URL, or data URL).
+		* @returns true when the value renders an inline video player on the square.
+		*/
+		function isVideoUrl(value) {
+			if (/^data:video\//i.test(value)) return true;
+			if (/^blob:/i.test(value)) return false;
+			return mediaKindOf(value.split(/[?#]/, 1)[0] ?? value) === "video";
+		}
+		/**
+		* @param value - the attached value (an estate input path or any other string).
+		* @returns the assets-door display URL for an estate input path with a video extension, else null.
+		*/
+		function estateInputVideoUrl(value) {
+			const m = /^data\/input\/([^/]+)$/.exec(value);
+			if (m === null) return null;
+			const name = m[1];
+			return mediaKindOf(name) === "video" ? "/v1/assets/inputs/" + encodeURIComponent(name) : null;
+		}
 		/** THE MESH FACE of the same rule (the mesh wire type, 2026-09-21 —
 		*  the base-gaps primitive ③): a .glb/.gltf value — an estate path
 		*  ('data/input/x.glb') or a run artifact URL — renders the ONE
@@ -12674,6 +12720,7 @@ window.__ModuleLoader__.load({
 		}
 		const DEFAULT_SQUARE_ACCEPT = "image/png,image/jpeg,image/webp";
 		const MESH_SQUARE_ACCEPT = ".glb,.gltf";
+		const VIDEO_SQUARE_ACCEPT = "video/mp4,video/webm,video/quicktime";
 		/**
 		* @param props - the field's label, attached value, verbs (pick/file/asset/clear), and optional chrome (badge, metric, emptyIcon, accept, showFileAction).
 		* @returns the square: thumb/empty face, the verbs' controls, and the caption.
@@ -12686,8 +12733,9 @@ window.__ModuleLoader__.load({
 			const [over, setOver] = (0, react.useState)(false);
 			const thumb = typeof value === "string" ? estateInputUrl(value) ?? (isImageUrl(value) ? value : null) : null;
 			const mesh = thumb === null && typeof value === "string" && value !== "" && isMeshUrl(value) ? value : null;
+			const video = thumb === null && mesh === null && typeof value === "string" && value !== "" ? estateInputVideoUrl(value) ?? (isVideoUrl(value) ? value : null) : null;
 			const held = typeof value === "string" && value !== "";
-			const empty = thumb === null && mesh === null && !held;
+			const empty = thumb === null && mesh === null && video === null && !held;
 			const acceptsDrop = (event) => {
 				if (event.dataTransfer.getData("application/tech-noir-asset") !== "" || event.dataTransfer.files.length > 0) return true;
 				const types = event.dataTransfer.types;
@@ -12734,6 +12782,12 @@ window.__ModuleLoader__.load({
 				className: card_module_css_default.squareThumb,
 				src: thumb,
 				alt: label
+			}) : video !== null ? (0, react.createElement)("video", {
+				className: card_module_css_default.squareThumb,
+				src: video,
+				muted: true,
+				playsInline: true,
+				preload: "metadata"
 			}) : mesh !== null ? (0, react.createElement)("div", { className: card_module_css_default.squareMesh }, (0, react.createElement)(GlbStagePreview, {
 				assets: [{
 					id: "square-mesh",
@@ -13376,19 +13430,19 @@ window.__ModuleLoader__.load({
 		*  system handles the conversion — the door's own gates (type
 		*  whitelist, one clean segment) are the law; the client only voices
 		*  its refusals, never invents its own. */
-		async function uploadInputFile(file, signal) {
+		async function uploadInputFile(file, signal, dataUrl) {
 			const isMedia = file.type.startsWith("image/") || file.type.startsWith("video/") || file.type.startsWith("audio/");
 			const glbName = /\.glb$/i.test(file.name) || /\.gltf$/i.test(file.name);
 			const isMesh = file.type === "model/gltf-binary" || file.type === "model/gltf+json" || file.type === "application/octet-stream" && glbName;
 			if (!isMedia && !isMesh) throw new Error("Input cards don’t accept " + (file.type !== "" ? file.type : "that file") + " — drop an image, video, audio, or .glb/.gltf file");
-			const dataUrl = await readAsDataURL(file);
+			const payload = dataUrl ?? await readAsDataURL(file);
 			const res = await fetch("/v1/uploads", {
 				method: "POST",
 				headers: { "content-type": "application/json" },
 				signal: dialed(signal, UPLOAD_DIAL_MS),
 				body: JSON.stringify({
 					filename: file.name,
-					data: dataUrl
+					data: payload
 				})
 			});
 			if (!res.ok) {
@@ -13416,19 +13470,26 @@ window.__ModuleLoader__.load({
 		*  `media/kind`, so asking it for `mesh` was a guaranteed refusal that
 		*  the picker swallowed into an empty list (the "From media" row was
 		*  empty for every mesh field, with no error anywhere). file fields
-		*  take the whole library (their accept narrows client-side per row). */
+		*  take the whole library unless a media hint narrows the seat (a
+		*  video-hinted file field lists the video library only). */
 		function mediaKindForField(f) {
 			if (f.type === "image") return "image";
 			if (f.type === "mesh") return "model";
+			if (f.type === "file" && f.media === "video") return "video";
 			return "all";
 		}
 		/** THE OS-DIALOG ACCEPT, derived per field (primitive ③): mesh rows
-		*  offer the GLB pair; everything else keeps the image triad (the
-		*  historic default). The provider's ONE hidden input re-targets
-		*  imperatively at click time — the accept is a property of the
-		*  field being picked, never of the provider instance. */
+		*  offer the GLB pair; video-hinted rows offer the video formats
+		*  (the same media hint the picker rides); everything else keeps
+		*  the image triad (the historic default). The provider's ONE
+		*  hidden input re-targets imperatively at click time — the accept
+		*  is a property of the field being picked, never of the provider
+		*  instance. */
 		function acceptOfField(f) {
-			return f !== null && f.type === "mesh" ? MESH_SQUARE_ACCEPT : DEFAULT_SQUARE_ACCEPT;
+			if (f === null) return DEFAULT_SQUARE_ACCEPT;
+			if (f.type === "mesh") return MESH_SQUARE_ACCEPT;
+			if (f.media === "video") return VIDEO_SQUARE_ACCEPT;
+			return DEFAULT_SQUARE_ACCEPT;
 		}
 		/** THE ONE square provider (the old SlotGrid law, DSH substrate):
 		*  every slot-shaped field of a stage gets the same verbs — file
@@ -13442,11 +13503,13 @@ window.__ModuleLoader__.load({
 			const [mirror, setMirror] = (0, react.useState)({});
 			const [pickAt, setPickAt] = (0, react.useState)(null);
 			const [modalAt, setModalAt] = (0, react.useState)(null);
+			const [pickQuery, setPickQuery] = (0, react.useState)("");
 			const fieldRef = (0, react.useRef)(null);
 			const [mediaRows, setMediaRows] = (0, react.useState)(null);
 			const [mediaErr, setMediaErr] = (0, react.useState)(null);
 			const fileRef = (0, react.useRef)(null);
 			const [uploadErr, setUploadErr] = (0, react.useState)({});
+			const [uploadBusy, setUploadBusy] = (0, react.useState)({});
 			const onFile = (0, react.useCallback)(async (f, file) => {
 				if (wire.onFile !== void 0) {
 					wire.onFile(file);
@@ -13456,13 +13519,27 @@ window.__ModuleLoader__.load({
 					...m,
 					[f.name]: ""
 				}));
+				setUploadBusy((m) => ({
+					...m,
+					[f.name]: file.name
+				}));
 				try {
 					const dataUrl = await readAsDataURL(file);
 					if (f.type !== "mesh") setMirror((m) => ({
 						...m,
 						[f.name]: dataUrl
 					}));
-					const { name } = await uploadInputFile(file);
+					const { name } = await uploadInputFile(file, void 0, dataUrl);
+					setUploadErr((m) => {
+						const n = { ...m };
+						delete n[f.name];
+						return n;
+					});
+					setUploadBusy((m) => {
+						const n = { ...m };
+						delete n[f.name];
+						return n;
+					});
 					setUploadErr((m) => {
 						const n = { ...m };
 						delete n[f.name];
@@ -13479,13 +13556,21 @@ window.__ModuleLoader__.load({
 						...m,
 						[f.name]: rejectionVoice(e)
 					}));
+					setUploadBusy((m) => {
+						const n = { ...m };
+						delete n[f.name];
+						return n;
+					});
 				}
 			}, [onEdit, wire.onFile]);
 			const square = (f) => {
 				if (f.type !== "image" && f.type !== "file" && f.type !== "mesh") return void 0;
+				const busyName = uploadBusy[f.name] ?? null;
 				return {
 					display: mirror[f.name] ?? null,
 					error: uploadErr[f.name] ?? null,
+					busy: busyName,
+					busyVoice: busyName === null || busyName === "" ? null : t("uploading", { name: busyName }),
 					verbs: {
 						onPick: (anchor) => {
 							const el = anchor instanceof HTMLElement ? anchor : null;
@@ -13555,6 +13640,7 @@ window.__ModuleLoader__.load({
 					const f = pickAt.field;
 					setPickAt(null);
 					if (id === "__flow__") {
+						setPickQuery("");
 						setModalAt({
 							mode: "flow",
 							field: f
@@ -13562,6 +13648,7 @@ window.__ModuleLoader__.load({
 						return;
 					}
 					if (id === "__media__") {
+						setPickQuery("");
 						setModalAt({
 							mode: "media",
 							field: f
@@ -13613,7 +13700,9 @@ window.__ModuleLoader__.load({
 			}, [modalAt, loadMedia]);
 			const pickerModal = modalAt === null ? null : (() => {
 				const f = modalAt.field;
-				const candidates = modalAt.mode === "flow" ? wire.candidatesFor !== void 0 ? wire.candidatesFor(f) : wire.candidates : mediaRows ?? [];
+				const rawCandidates = modalAt.mode === "flow" ? wire.candidatesFor !== void 0 ? wire.candidatesFor(f) : wire.candidates : mediaRows ?? [];
+				const q = pickQuery.trim().toLowerCase();
+				const candidates = q === "" ? rawCandidates : rawCandidates.filter((c) => c.label.toLowerCase().includes(q));
 				const req = {
 					mode: modalAt.mode,
 					kind: mediaKindForField(f),
@@ -13632,11 +13721,20 @@ window.__ModuleLoader__.load({
 					title: modalAt.mode === "flow" ? t("fromFlow") : t("fromMedia"),
 					description: modalAt.mode === "flow" ? t("flowDescription", { kindSuffix: req.kind !== "all" ? " (" + req.kind + ")" : "" }) : t("mediaDescription", { kindSuffix: req.kind !== "all" ? " (" + req.kind + ")" : "" }),
 					closeLabel: t("closePicker")
-				}, candidates.length === 0 ? (0, react.createElement)(EmptyState, {
+				}, q !== "" && rawCandidates.length > 0 && candidates.length === 0 ? (0, react.createElement)("p", { className: card_module_css_default.pickEmpty }, t("noMatchFor", { query: pickQuery.trim() })) : candidates.length === 0 ? (0, react.createElement)(EmptyState, {
 					variant: "bare",
 					className: card_module_css_default.pickEmpty,
 					title: modalAt.mode === "media" && mediaRows === null ? t("loading") : mediaErr !== null ? t("mediaUnavailable", { reason: mediaErr }) : t("nothingToPick")
-				}) : (0, react.createElement)("ul", { className: card_module_css_default.pickList }, candidates.map((c) => (0, react.createElement)("li", {
+				}) : (0, react.createElement)(react.Fragment, null, (0, react.createElement)("div", { className: card_module_css_default.pickSearch }, (0, react.createElement)("input", {
+					type: "search",
+					className: card_module_css_default.pickSearchInput,
+					value: pickQuery,
+					placeholder: t("searchPlaceholder"),
+					"aria-label": t("searchPlaceholder"),
+					onChange: (e) => {
+						setPickQuery(e.target.value);
+					}
+				})), (0, react.createElement)("ul", { className: card_module_css_default.pickList }, candidates.map((c) => (0, react.createElement)("li", {
 					key: c.id,
 					className: card_module_css_default.pickRow
 				}, (0, react.createElement)("button", {
@@ -13651,7 +13749,14 @@ window.__ModuleLoader__.load({
 					src: c.url,
 					alt: c.label,
 					loading: "lazy"
-				}) : (0, react.createElement)("span", { className: card_module_css_default.pickGlyph }, c.label.slice(0, 1).toUpperCase()), (0, react.createElement)("span", { className: card_module_css_default.pickLabel }, c.label))))));
+				}) : isVideoUrl(c.url) ? (0, react.createElement)("video", {
+					className: card_module_css_default.pickThumb,
+					src: c.url,
+					alt: c.label,
+					muted: true,
+					playsInline: true,
+					preload: "metadata"
+				}) : (0, react.createElement)("span", { className: card_module_css_default.pickGlyph }, c.label.slice(0, 1).toUpperCase()), (0, react.createElement)("span", { className: card_module_css_default.pickLabel }, c.label)))))));
 				return wire.renderSourcePick !== void 0 ? wire.renderSourcePick(req, fallback) : fallback;
 			})();
 			const fileInput = (0, react.createElement)("input", {
@@ -13706,7 +13811,12 @@ window.__ModuleLoader__.load({
 				...props.ariaLabel !== void 0 ? { ariaLabel: props.ariaLabel } : {},
 				value: shown,
 				...host.verbs
-			}), typeof host.error === "string" && host.error !== "" ? (0, react.createElement)("p", {
+			}), typeof host.busyVoice === "string" && host.busyVoice !== "" ? (0, react.createElement)("p", {
+				className: card_module_css_default.sourceRowBusy,
+				"data-slot-busy": props.label,
+				title: host.busy ?? host.busyVoice,
+				role: "status"
+			}, host.busyVoice) : null, typeof host.error === "string" && host.error !== "" ? (0, react.createElement)("p", {
 				className: card_module_css_default.sourceRowErr,
 				"data-slot-error": props.label,
 				title: host.error,
@@ -13815,6 +13925,10 @@ window.__ModuleLoader__.load({
 		*  @param onEdit the settle seam.
 		*  @param envelope the active variant's [min,max] for THIS knob,
 		*  null when the variant declares none. */
+		/** The zero-law sentence a declaration may state in its tooltip
+		* ("0 = the clip's own width (…).") — the first sentence, chipped on
+		* the face exactly while the knob holds the 0 (cure D, 2026-10-28). */
+		const ZERO_LAW_RE = /^0 =[^.]*\./;
 		function SpecSliderAtom({ f, value, onEdit, envelope }) {
 			const shown = useLocalSliderValue(value);
 			const [boxText, setBoxText] = (0, react.useState)(null);
@@ -13870,15 +13984,19 @@ window.__ModuleLoader__.load({
 					onEdit(f.name, raw);
 				},
 				"aria-label": f.label
-			}));
+			}), ...shown.value === 0 && typeof f.tooltip === "string" && f.tooltip.startsWith("0 =") ? [(0, react.createElement)("span", {
+				className: card_module_css_default.specSliderZero,
+				"data-zero-law": f.name
+			}, ZERO_LAW_RE.exec(f.tooltip)?.[0] ?? f.tooltip)] : []);
 		}
 		/** One spec atom — typed by the declaration, edited as a raw string
 		*  while typing (decimal dots survive; coercion happens once at patch). */
-		function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder, ghost, envelope }) {
+		function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder, ghost, envelope, hideSquareLabel }) {
 			if ((f.type === "image" || f.type === "file" || f.type === "mesh") && square !== void 0) {
 				const shown = square.display !== void 0 && square.display !== null && square.display !== "" ? square.display : (typeof value === "string" ? estateInputUrl(value) : null) ?? (typeof value === "string" ? value : null);
 				return (0, react.createElement)(InputSquare, {
-					label: f.label !== "" ? f.label : f.name,
+					label: hideSquareLabel === true ? "" : f.label !== "" ? f.label : f.name,
+					...hideSquareLabel === true ? { ariaLabel: f.label !== "" ? f.label : f.name } : {},
 					value: shown,
 					...square.verbs
 				});
@@ -15729,6 +15847,7 @@ window.__ModuleLoader__.load({
 							[name]: coerceFieldEdit(f, v)
 						});
 					},
+					hideSquareLabel: true,
 					...sq !== void 0 ? { square: sq } : {}
 				});
 				const caption = (0, react.createElement)("span", { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name, leafStar(f));
@@ -15818,6 +15937,7 @@ window.__ModuleLoader__.load({
 							[name]: coerceFieldEdit(f, v)
 						});
 					},
+					hideSquareLabel: true,
 					...sq !== void 0 ? { square: sq } : {}
 				});
 				return sq !== void 0 ? (0, react.createElement)("div", { className: card_module_css_default.modField }, (0, react.createElement)("span", { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name, leafStar(f)), atom) : (0, react.createElement)("label", { className: card_module_css_default.modField }, f.label ?? f.name, leafStar(f), atom);
@@ -15835,6 +15955,7 @@ window.__ModuleLoader__.load({
 							[name]: coerceFieldEdit(f, v)
 						});
 					},
+					hideSquareLabel: true,
 					...sq !== void 0 ? { square: sq } : {}
 				});
 				return sq !== void 0 ? (0, react.createElement)("div", { className: card_module_css_default.modField }, (0, react.createElement)("span", { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name, leafStar(f)), atom) : (0, react.createElement)("label", { className: card_module_css_default.modField }, f.label ?? f.name, leafStar(f), atom);
@@ -17593,6 +17714,19 @@ window.__ModuleLoader__.load({
 				className: preview_module_css_default.empty,
 				icon: (0, react.createElement)(Film, { className: preview_module_css_default.emptyGlyph }),
 				title: isLiveRunStatus(props.runStatus) ? "rendering… the film lands here" : "No render yet — run lands the film here"
+			}) : isVideoUrl(hero.url) ? (0, react.createElement)("video", {
+				className: preview_module_css_default.hero,
+				controls: true,
+				playsInline: true,
+				key: hero.url,
+				src: hero.url,
+				"data-testid": "stage-preview-video-hero"
+			}) : isImageUrl(hero.url) ? (0, react.createElement)("img", {
+				className: preview_module_css_default.heroImg,
+				key: hero.url,
+				src: hero.url,
+				alt: hero.name,
+				"data-testid": "stage-preview-video-hero"
 			}) : (0, react.createElement)("video", {
 				className: preview_module_css_default.hero,
 				controls: true,
@@ -17613,13 +17747,18 @@ window.__ModuleLoader__.load({
 					e.stopPropagation();
 					setFaceUrl(a.url !== faceUrl ? a.url : null);
 				}
-			}, (0, react.createElement)("video", {
+			}, isImageUrl(a.url) ? (0, react.createElement)("img", {
+				className: preview_module_css_default.thumbVideo,
+				src: a.url,
+				alt: a.name,
+				loading: "lazy"
+			}) : isVideoUrl(a.url) ? (0, react.createElement)("video", {
 				className: preview_module_css_default.thumbVideo,
 				src: a.url,
 				muted: true,
 				playsInline: true,
 				preload: "metadata"
-			}), (0, react.createElement)("span", { className: preview_module_css_default.thumbVideoName }, a.name)))) : null, HistoryStrip(props, promote, "stage-output-history", picked));
+			}) : (0, react.createElement)(Film, { className: preview_module_css_default.thumbVideo }), (0, react.createElement)("span", { className: preview_module_css_default.thumbVideoName }, a.name)))) : null, HistoryStrip(props, promote, "stage-output-history", picked));
 		}
 		/** THE IMAGE PREVIEW — the latest render hero (native <img>), the
 		*  active set's thumbs beneath (the CURRENT run's gallery, or the
@@ -17987,6 +18126,7 @@ window.__ModuleLoader__.load({
 		exports.TriStateAtom = TriStateAtom;
 		exports.Type = Type;
 		exports.Upload = Upload;
+		exports.VIDEO_SQUARE_ACCEPT = VIDEO_SQUARE_ACCEPT;
 		exports.VideoStagePreview = VideoStagePreview;
 		exports.ViewportAnchor = ViewportAnchor;
 		exports.ViewportFrame = ViewportFrame;
@@ -18031,6 +18171,7 @@ window.__ModuleLoader__.load({
 		exports.dropStaleReopenCarry = dropStaleReopenCarry;
 		exports.entryFieldsOfEnvelope = entryFieldsOfEnvelope;
 		exports.estateInputUrl = estateInputUrl;
+		exports.estateInputVideoUrl = estateInputVideoUrl;
 		exports.estateRemote = estateRemote;
 		exports.fetchCardCatalog = fetchCardCatalog;
 		exports.fetchFormSpec = fetchFormSpec;
@@ -18064,6 +18205,7 @@ window.__ModuleLoader__.load({
 		exports.isMalformedCapabilityDrop = isMalformedCapabilityDrop;
 		exports.isMeshUrl = isMeshUrl;
 		exports.isOptionKind = isOptionKind;
+		exports.isVideoUrl = isVideoUrl;
 		exports.kindScalarFieldsOfEnvelope = kindScalarFieldsOfEnvelope;
 		exports.laneBoundsFor = laneBoundsFor;
 		exports.laneRelationsFor = laneRelationsFor;

@@ -2,7 +2,7 @@
  * operator's DRY audit law: one seam, one small file, one wall). */
 import { createElement as h, Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { Menu, Modal } from '@deepseek-ai/dsh-client-ui-primitives';
-import { DEFAULT_SQUARE_ACCEPT, MESH_SQUARE_ACCEPT, isImageUrl, } from "./square.js";
+import { DEFAULT_SQUARE_ACCEPT, MESH_SQUARE_ACCEPT, VIDEO_SQUARE_ACCEPT, isImageUrl, isVideoUrl, } from "./square.js";
 import { readAsDataURL } from "./chrome.js";
 import { uploadInputFile } from "./wire.js";
 import { rejectionVoice } from "./rejection-voice.js";
@@ -17,21 +17,34 @@ import css from './card.module.css';
  *  `media/kind`, so asking it for `mesh` was a guaranteed refusal that
  *  the picker swallowed into an empty list (the "From media" row was
  *  empty for every mesh field, with no error anywhere). file fields
- *  take the whole library (their accept narrows client-side per row). */
+ *  take the whole library unless a media hint narrows the seat (a
+ *  video-hinted file field lists the video library only). */
 function mediaKindForField(f) {
     if (f.type === 'image')
         return 'image';
     if (f.type === 'mesh')
         return 'model';
+    // The single-field media hint (the operator's picker law, live
+    // lane 2026-10-28: video seats never list the whole catalog).
+    if (f.type === 'file' && f.media === 'video')
+        return 'video';
     return 'all';
 }
 /** THE OS-DIALOG ACCEPT, derived per field (primitive ③): mesh rows
- *  offer the GLB pair; everything else keeps the image triad (the
- *  historic default). The provider's ONE hidden input re-targets
- *  imperatively at click time — the accept is a property of the
- *  field being picked, never of the provider instance. */
+ *  offer the GLB pair; video-hinted rows offer the video formats
+ *  (the same media hint the picker rides); everything else keeps
+ *  the image triad (the historic default). The provider's ONE
+ *  hidden input re-targets imperatively at click time — the accept
+ *  is a property of the field being picked, never of the provider
+ *  instance. */
 export function acceptOfField(f) {
-    return f !== null && f.type === 'mesh' ? MESH_SQUARE_ACCEPT : DEFAULT_SQUARE_ACCEPT;
+    if (f === null)
+        return DEFAULT_SQUARE_ACCEPT;
+    if (f.type === 'mesh')
+        return MESH_SQUARE_ACCEPT;
+    if (f.media === 'video')
+        return VIDEO_SQUARE_ACCEPT;
+    return DEFAULT_SQUARE_ACCEPT;
 }
 /** THE ONE square provider (the old SlotGrid law, DSH substrate):
  *  every slot-shaped field of a stage gets the same verbs — file
@@ -49,6 +62,14 @@ export function useSquareProvider(onEdit, wire) {
     // OS dialog. The flat click-through picker is dead (the operator:
     // "Flat pick didn't even make any sense").
     const [modalAt, setModalAt] = useState(null);
+    // THE PICKER SEARCH (2026-11-12, the operator's burn: "THERE IS
+    // NO SEARCH" over a library the picker lists bare): one query
+    // string filtering BOTH row sources client-side by label
+    // substring — the library door's own filtering stays kind-scoped
+    // (the seat's media hint); this is the find-in-list the operator
+    // asked for. Reset on every modal open (a stale query hiding the
+    // next seat's rows is its own burn).
+    const [pickQuery, setPickQuery] = useState('');
     // the From file capture: the menu closes (pickAt → null) BEFORE the
     // OS dialog answers — the field rides a ref from the menu click.
     const fieldRef = useRef(null);
@@ -66,12 +87,21 @@ export function useSquareProvider(onEdit, wire) {
     // on the square, and clears with the next attempt or any
     // successful settle.
     const [uploadErr, setUploadErr] = useState({});
+    // THE IN-FLIGHT SEAT (the upload-lag cure, 2026-10-28): the old
+    // attempt face was the empty string in the refusal seat —
+    // rendered as NOTHING, so a minutes-long clip POST read as a
+    // dead square. The attempt now carries its own seat (the dropped
+    // filename) with its own neutral face; the refusal seat stays
+    // refusal-only ('' at attempt-start clears the last refusal, text
+    // on failure, deleted on success).
+    const [uploadBusy, setUploadBusy] = useState({});
     const onFile = useCallback(async (f, file) => {
         if (wire.onFile !== undefined) {
             wire.onFile(file);
             return;
         }
         setUploadErr((m) => ({ ...m, [f.name]: '' }));
+        setUploadBusy((m) => ({ ...m, [f.name]: file.name }));
         try {
             const dataUrl = await readAsDataURL(file);
             // THE MESH EXCEPTION: a freshly read GLB is a data: URL with no
@@ -80,7 +110,11 @@ export function useSquareProvider(onEdit, wire) {
             // their data-URL preview; a mesh waits for its named path.
             if (f.type !== 'mesh')
                 setMirror((m) => ({ ...m, [f.name]: dataUrl }));
-            const { name } = await uploadInputFile(file);
+            // THE SINGLE READ rides along: the mirror above already paid
+            // the full-file base64 — the door posts it, never re-reads.
+            const { name } = await uploadInputFile(file, undefined, dataUrl);
+            setUploadErr((m) => { const n = { ...m }; delete n[f.name]; return n; });
+            setUploadBusy((m) => { const n = { ...m }; delete n[f.name]; return n; });
             setUploadErr((m) => { const n = { ...m }; delete n[f.name]; return n; });
             // THE MIRROR DIES WITH THE COMMIT (2026-10-24, the operator's
             // burn "two image references go in"): the pick's data-URL
@@ -94,6 +128,7 @@ export function useSquareProvider(onEdit, wire) {
         }
         catch (e) {
             setUploadErr((m) => ({ ...m, [f.name]: rejectionVoice(e) }));
+            setUploadBusy((m) => { const n = { ...m }; delete n[f.name]; return n; });
         }
     }, [onEdit, wire.onFile]);
     const square = (f) => {
@@ -102,11 +137,22 @@ export function useSquareProvider(onEdit, wire) {
         // the inline GLB thumb; every other type is not slot-shaped.
         if (f.type !== 'image' && f.type !== 'file' && f.type !== 'mesh')
             return undefined;
+        // THE ALREADY-LOCALIZED PROP (the square-copy locale law): the
+        // in-flight line is assembled HERE in the trio (square-provider
+        // owns a t seat) and rides the host as finished copy — atoms.tsx
+        // renders the prop verbatim and owns no dictionary key, so the
+        // dead-key arm keeps judging the trio alone.
+        const busyName = uploadBusy[f.name] ?? null;
         return {
             display: mirror[f.name] ?? null,
             // THE REFUSAL FACE rides the host (empty string = an attempt in
-            // flight; a non-empty string = the last refusal's voice).
+            // flight; a non-empty string = the last refusal's voice). The
+            // attempt's OWN face rides `busy` (the dropped filename, the
+            // truncation title) + `busyVoice` (the finished line) —
+            // never the danger color: in flight is not a refusal.
             error: uploadErr[f.name] ?? null,
+            busy: busyName,
+            busyVoice: busyName === null || busyName === '' ? null : t('uploading', { name: busyName }),
             verbs: {
                 onPick: (anchor) => {
                     const el = anchor instanceof HTMLElement ? anchor : null;
@@ -141,11 +187,17 @@ export function useSquareProvider(onEdit, wire) {
         onSelect: (id) => {
             const f = pickAt.field;
             setPickAt(null);
+            // the query resets IN THE SAME BATCH as the open (an effect
+            // keyed on modalAt re-rendered the modal once even for a
+            // no-op '' → '' — the seam claim double-fired; the operators'
+            // own rule: a stale query never hides the next seat's rows)
             if (id === '__flow__') {
+                setPickQuery('');
                 setModalAt({ mode: 'flow', field: f });
                 return;
             }
             if (id === '__media__') {
+                setPickQuery('');
                 setModalAt({ mode: 'media', field: f });
                 return;
             }
@@ -204,9 +256,15 @@ export function useSquareProvider(onEdit, wire) {
     }, [modalAt, loadMedia]);
     const pickerModal = modalAt === null ? null : (() => {
         const f = modalAt.field;
-        const candidates = modalAt.mode === 'flow'
+        const rawCandidates = modalAt.mode === 'flow'
             ? (wire.candidatesFor !== undefined ? wire.candidatesFor(f) : wire.candidates)
             : (mediaRows ?? []);
+        // the search narrows by LABEL (case-insensitive substring); an
+        // empty query is the whole list, the historic behavior
+        const q = pickQuery.trim().toLowerCase();
+        const candidates = q === ''
+            ? rawCandidates
+            : rawCandidates.filter((c) => c.label.toLowerCase().includes(q));
         const req = { mode: modalAt.mode, kind: mediaKindForField(f), field: f, candidates };
         const pick = (url) => {
             setModalAt(null);
@@ -221,35 +279,62 @@ export function useSquareProvider(onEdit, wire) {
                 ? t('flowDescription', { kindSuffix: req.kind !== 'all' ? ' (' + req.kind + ')' : '' })
                 : t('mediaDescription', { kindSuffix: req.kind !== 'all' ? ' (' + req.kind + ')' : '' }),
             closeLabel: t('closePicker'),
-        }, candidates.length === 0
-            // THE EMPTY LAW (S7 class-4 residue, 2026-11-05): the picker's
-            // empty face rides EmptyState (layout.tsx) — the DSH
-            // empty-state shape (WorkspaceBrowser.tsx:266-280), the same
-            // component the stage previews speak; the copy stays the
-            // locale's (loading / the door's refusal / nothing to pick).
-            ? h(EmptyState, {
-                variant: 'bare', className: css.pickEmpty,
-                title: modalAt.mode === 'media' && mediaRows === null
-                    ? t('loading')
-                    // the door REFUSED — say so. An empty list that is really
-                    // a refusal is how the mesh picker stayed mysteriously
-                    // empty for a release (the mesh/model kind mismatch).
-                    : mediaErr !== null
-                        ? t('mediaUnavailable', { reason: mediaErr })
-                        : t('nothingToPick'),
-            })
-            : h('ul', { className: css.pickList }, candidates.map((c) => h('li', { key: c.id, className: css.pickRow }, h('button', {
-                // ARGUED RAW SEAT (S7j, the row-face class): a
-                // full-width selection row carrying a thumb — DSH's
-                // own lists type row buttons raw + module css
-                // (ui-deliverables ChangedFiles.tsx:83 css.row).
-                type: 'button',
-                className: css.pickBtn,
-                'data-testid': 'source-pick-row',
-                onClick: () => { pick(c.url); },
-            }, isImageUrl(c.url)
-                ? h('img', { className: css.pickThumb, src: c.url, alt: c.label, loading: 'lazy' })
-                : h('span', { className: css.pickGlyph }, c.label.slice(0, 1).toUpperCase()), h('span', { className: css.pickLabel }, c.label))))));
+        }, q !== '' && rawCandidates.length > 0 && candidates.length === 0
+            // THE NO-MATCH FACE (2026-11-12): a filtered-empty list is
+            // the query's own result, never "nothing to pick" — the
+            // operator would read a healthy library as empty.
+            ? h('p', { className: css.pickEmpty }, t('noMatchFor', { query: pickQuery.trim() }))
+            : candidates.length === 0
+                // THE EMPTY LAW (S7 class-4 residue, 2026-11-05): the picker's
+                // empty face rides EmptyState (layout.tsx) — the DSH
+                // empty-state shape (WorkspaceBrowser.tsx:266-280), the same
+                // component the stage previews speak; the copy stays the
+                // locale's (loading / the door's refusal / nothing to pick).
+                ? h(EmptyState, {
+                    variant: 'bare', className: css.pickEmpty,
+                    title: modalAt.mode === 'media' && mediaRows === null
+                        ? t('loading')
+                        // the door REFUSED — say so. An empty list that is really
+                        // a refusal is how the mesh picker stayed mysteriously
+                        // empty for a release (the mesh/model kind mismatch).
+                        : mediaErr !== null
+                            ? t('mediaUnavailable', { reason: mediaErr })
+                            : t('nothingToPick'),
+                })
+                : h(Fragment, null, h('div', { className: css.pickSearch }, h('input', {
+                    // ARGUED RAW SEAT (the row-face class, S7j): no search
+                    // atom in the ui-primitives catalog; DSH's own picker
+                    // dialogs ride the native input (WorkspaceBrowser's
+                    // filter row) — same grammar as the OS picker's own
+                    // find field.
+                    type: 'search',
+                    className: css.pickSearchInput,
+                    value: pickQuery,
+                    placeholder: t('searchPlaceholder'),
+                    'aria-label': t('searchPlaceholder'),
+                    onChange: (e) => { setPickQuery(e.target.value); },
+                })), h('ul', { className: css.pickList }, candidates.map((c) => h('li', { key: c.id, className: css.pickRow }, h('button', {
+                    // ARGUED RAW SEAT (S7j, the row-face class): a
+                    // full-width selection row carrying a thumb — DSH's
+                    // own lists type row buttons raw + module css
+                    // (ui-deliverables ChangedFiles.tsx:83 css.row).
+                    type: 'button',
+                    className: css.pickBtn,
+                    'data-testid': 'source-pick-row',
+                    onClick: () => { pick(c.url); },
+                }, 
+                // THE VIDEO PREVIEW SEAT (2026-11-12, the operator's
+                // burn: "VIDEOS HAVE NO IMAGE PREVIEWS" — a video row
+                // was a letter glyph): a video URL renders the same
+                // 40px thumb seat as an image, riding a muted
+                // metadata-preload video element (the first frame;
+                // the stage-preview strip's own idiom). Non-media
+                // rows keep the glyph.
+                isImageUrl(c.url)
+                    ? h('img', { className: css.pickThumb, src: c.url, alt: c.label, loading: 'lazy' })
+                    : isVideoUrl(c.url)
+                        ? h('video', { className: css.pickThumb, src: c.url, alt: c.label, muted: true, playsInline: true, preload: 'metadata' })
+                        : h('span', { className: css.pickGlyph }, c.label.slice(0, 1).toUpperCase()), h('span', { className: css.pickLabel }, c.label)))))));
         return wire.renderSourcePick !== undefined ? wire.renderSourcePick(req, fallback) : fallback;
     })();
     // THE FILE INPUT lives OUTSIDE the Menu (the Menu's close path

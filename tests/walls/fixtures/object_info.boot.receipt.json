@@ -1,12 +1,12 @@
 {
- "derived_at": "2026-10-27T19:04:21.043Z",
+ "derived_at": "2026-10-28T15:30:21.781Z",
  "tool": "scripts/regen-node-vocab.mjs --boot",
  "source": {
   "path": "data/tmp/object_info_prod.json",
   "sha256": "092ebf94c70d599d4cd0633633b36bbd63e7a5868f1e32528083f006726d8cf6",
   "mtime_ms": 1793127860803.4746,
   "class_count": 1689,
-  "origin": "live"
+  "origin": "capture"
  },
  "bootstrap_seed": {
   "path": "tests/walls/fixtures/object_info.boot.bootstrap.json",
@@ -15,21 +15,21 @@
  },
  "derivation": {
   "facts_path": "packages/engines/comfyui-cordis/data/model-facts.json",
-  "addressed_class_count": 100,
+  "addressed_class_count": 95,
   "bootstrap_class_count": 72,
-  "fixture_class_count": 171,
-  "rows_probed": 32,
+  "fixture_class_count": 167,
+  "rows_probed": 31,
   "refused_rows": 0
  },
  "delta": {
-  "added": [
+  "added": [],
+  "pruned": [
    "ManualSigmas",
    "VHS_VideoCombine",
    "ViggleAnimateConditioning",
    "ViggleTextCondLoader"
   ],
-  "pruned": [],
   "updated": [],
-  "reordered_keys": 0
+  "reordered_keys": 101
  }
 }

@@ -1057,6 +1057,11 @@ function ModLeaf(props: {
                 // so the coerce rides here (never at save, never
                 // scattered Number() at the consumers).
                 onEdit: (name: string, v: unknown) => { onDraft.setDraftParams({ ...onDraft.draftParams, [name]: coerceFieldEdit(f, v) }) },
+                // THE DUPLICATE-LABEL LAW: the caption span above owns
+                // the visible name — the square paints none (2026-11-12,
+                // the operator burn: every seat listed twice in the
+                // Replace leaf)
+                hideSquareLabel: true,
                 ...(sq !== undefined ? { square: sq } : {}),
               })
               const caption = h('span', { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name, leafStar(f))
@@ -1194,6 +1199,11 @@ function ModLeaf(props: {
                     value: onDraft.draftParams[f.name],
                     // the leaf's patch boundary (see the hybrid arm)
                     onEdit: (name: string, v: unknown) => { onDraft.setDraftParams({ ...onDraft.draftParams, [name]: coerceFieldEdit(f, v) }) },
+                    // THE DUPLICATE-LABEL LAW: the caption span above owns
+                // the visible name — the square paints none (2026-11-12,
+                // the operator burn: every seat listed twice in the
+                // Replace leaf)
+                    hideSquareLabel: true,
                     ...(sq !== undefined ? { square: sq } : {}),
                   })
                   return sq !== undefined
@@ -1225,6 +1235,11 @@ function ModLeaf(props: {
                 value: onDraft.draftParams[f.name],
                 // the leaf's patch boundary (see the hybrid arm)
                 onEdit: (name: string, v: unknown) => { onDraft.setDraftParams({ ...onDraft.draftParams, [name]: coerceFieldEdit(f, v) }) },
+                // THE DUPLICATE-LABEL LAW: the caption span above owns
+                // the visible name — the square paints none (2026-11-12,
+                // the operator burn: every seat listed twice in the
+                // Replace leaf)
+                hideSquareLabel: true,
                 ...(sq !== undefined ? { square: sq } : {}),
               })
               return sq !== undefined

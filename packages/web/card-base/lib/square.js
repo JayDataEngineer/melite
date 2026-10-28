@@ -29,7 +29,7 @@
  * file field ever again.
  */
 import { createElement as h, useRef, useState } from 'react';
-import { isModelUrl, mediaVocab } from '@melite/contracts/mediaKinds';
+import { isModelUrl, mediaKindOf, mediaVocab } from '@melite/contracts/mediaKinds';
 import { IconPlusOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives';
 import { GlbStagePreview } from "./glb-stage.js";
 import { ASSET_DRAG_MIME, parseAssetDrop } from "./chrome.js";
@@ -82,6 +82,45 @@ export function estateInputUrl(value) {
     const name = m[1];
     return IMAGE_EXT_RE.test(name) ? '/v1/assets/inputs/' + encodeURIComponent(name) : null;
 }
+/** THE VIDEO FACE of the same rule (the operator's live burn,
+ *  2026-10-28: a clip value — `data/input/Makhna clip.webm`, the
+ *  uploads door's own param currency — rendered the HELD face (raw
+ *  text, never a player), and an in-flight video upload's data-URL
+ *  mirror rendered megabytes of base64 AS TEXT. The assets door
+ *  already answers video bytes (video/mp4, doors.ts's own doc
+ *  line); the square just never asked). A video value — a data:
+ *  video URL, an estate input path with a video extension, or any
+ *  servable video URL — renders the ONE square with a muted inline
+ *  <video> (metadata preload, no autoplay: a grid that plays is a
+ *  burn of its own). The classifier is the shared vocabulary's
+ *  (mediaKindOf — never a private extension list); blob: mirrors
+ *  are image-arm only (the provider mints them from image Files).
+ */
+/**
+ * @param value - the attached value to test (estate path, artifact URL, or data URL).
+ * @returns true when the value renders an inline video player on the square.
+ */
+export function isVideoUrl(value) {
+    if (/^data:video\//i.test(value))
+        return true;
+    if (/^blob:/i.test(value))
+        return false;
+    // split with a limit still splits (the isModelUrl idiom): [0] is
+    // the query/fragment-stripped name the vocabulary judges.
+    const withoutQuery = value.split(/[?#]/, 1)[0] ?? value;
+    return mediaKindOf(withoutQuery) === 'video';
+}
+/**
+ * @param value - the attached value (an estate input path or any other string).
+ * @returns the assets-door display URL for an estate input path with a video extension, else null.
+ */
+export function estateInputVideoUrl(value) {
+    const m = /^data\/input\/([^/]+)$/.exec(value);
+    if (m === null)
+        return null;
+    const name = m[1];
+    return mediaKindOf(name) === 'video' ? '/v1/assets/inputs/' + encodeURIComponent(name) : null;
+}
 /** THE MESH FACE of the same rule (the mesh wire type, 2026-09-21 —
  *  the base-gaps primitive ③): a .glb/.gltf value — an estate path
  *  ('data/input/x.glb') or a run artifact URL — renders the ONE
@@ -99,6 +138,7 @@ export function isMeshUrl(value) {
 }
 export const DEFAULT_SQUARE_ACCEPT = 'image/png,image/jpeg,image/webp';
 export const MESH_SQUARE_ACCEPT = '.glb,.gltf';
+export const VIDEO_SQUARE_ACCEPT = 'video/mp4,video/webm,video/quicktime';
 /**
  * @param props - the field's label, attached value, verbs (pick/file/asset/clear), and optional chrome (badge, metric, emptyIcon, accept, showFileAction).
  * @returns the square: thumb/empty face, the verbs' controls, and the caption.
@@ -118,6 +158,15 @@ export function InputSquare(props) {
         : null;
     const mesh = thumb === null && typeof value === 'string' && value !== '' && isMeshUrl(value)
         ? value : null;
+    // THE VIDEO ARM (the no-preview cure, 2026-10-28): below the image
+    // arm (the vocabularies are disjoint, so order never misfires —
+    // mediaKindsDisjoint pins it), above mesh. An estate video path
+    // renders from the assets door; a data: video URL renders
+    // verbatim (the in-flight upload mirror — never megabytes of
+    // base64 as text again).
+    const video = thumb === null && mesh === null && typeof value === 'string' && value !== ''
+        ? estateInputVideoUrl(value) ?? (isVideoUrl(value) ? value : null)
+        : null;
     // THE DETACH LAW (2026-11-04, the stale-✕ cure): `held` is the
     // durable fact — the slot OWNS a value. `empty` is the VIEW fact —
     // nothing renders. The ✕ (a write verb) rides HELD, never the
@@ -127,7 +176,7 @@ export function InputSquare(props) {
     // affordance gated on presentation inverted the presenter law
     // (the face derives from the value; the verb belongs to the fact).
     const held = typeof value === 'string' && value !== '';
-    const empty = thumb === null && mesh === null && !held;
+    const empty = thumb === null && mesh === null && video === null && !held;
     const acceptsDrop = (event) => {
         // PAYLOAD FIRST (the typeless-drop law): a drop carrying an asset
         // payload or files IS a drop — types is a hint browsers populate,
@@ -181,17 +230,19 @@ export function InputSquare(props) {
         },
     }, thumb !== null
         ? h('img', { className: css.squareThumb, src: thumb, alt: label })
-        : mesh !== null
-            ? h('div', { className: css.squareMesh }, h(GlbStagePreview, { assets: [{ id: 'square-mesh', url: mesh }], label: 'square-mesh' }))
-            // THE HELD FACE: a full slot shows WHAT it holds — the raw
-            // value in the mono line — never the PLUS "add" glyph (the
-            // same detach law's view arm; the hover title is the
-            // locale's, the content is data, not copy).
-            : held
-                ? h('span', { className: css.squareHeld, title: t('heldNoPreview') }, value)
-                : props.emptyIcon === undefined
-                    ? h(IconPlusOutlineRegular, { className: css.squareGlyph })
-                    : h('span', { className: css.squareEmptyIcon }, props.emptyIcon), props.actions !== undefined && props.actions !== null && props.actions !== false && !disabled
+        : video !== null
+            ? h('video', { className: css.squareThumb, src: video, muted: true, playsInline: true, preload: 'metadata' })
+            : mesh !== null
+                ? h('div', { className: css.squareMesh }, h(GlbStagePreview, { assets: [{ id: 'square-mesh', url: mesh }], label: 'square-mesh' }))
+                // THE HELD FACE: a full slot shows WHAT it holds — the raw
+                // value in the mono line — never the PLUS "add" glyph (the
+                // same detach law's view arm; the hover title is the
+                // locale's, the content is data, not copy).
+                : held
+                    ? h('span', { className: css.squareHeld, title: t('heldNoPreview') }, value)
+                    : props.emptyIcon === undefined
+                        ? h(IconPlusOutlineRegular, { className: css.squareGlyph })
+                        : h('span', { className: css.squareEmptyIcon }, props.emptyIcon), props.actions !== undefined && props.actions !== null && props.actions !== false && !disabled
         ? h('span', {
             className: css.squareActions,
             onClick: (event) => { event.stopPropagation(); },

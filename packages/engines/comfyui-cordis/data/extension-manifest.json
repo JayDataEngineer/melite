@@ -204,31 +204,51 @@
     "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/video/h3-timeline/nodes.yaml"
   },
   {
-    "name": "ComfyUI-Viggle-Animate-H3",
-    "url": "https://github.com/bhardwajRahul/ComfyUI-Viggle-Animate-H3",
-    "ref": "6ae081af5b3175f99ef7cddebd5dfaf93390ab70",
+    "name": "comfyui-h3-oneclick-swap",
+    "url": "https://github.com/D3voz/comfyui-h3-oneclick-swap",
+    "ref": "df67f4bfa7348742e1b340dd11cc64714d83f323",
     "required": true,
-    "desc": "The openjutsu swap lane's engine pack (Apache-2.0, v1.3.2). Graph-addressed classes: ViggleTextCondLoader (frozen text conditioning from models/text_cond/), ViggleAnimateConditioning (the ref2va conditioning: cond_video + ref_image + text_cond -> positive/latent), and the lane's secondary paths — ViggleAnimateConditioningWindowed / ViggleChunkedSampler / ViggleChunkLoopStart / ViggleSampleChunk / ViggleChunkLoopEnd / ViggleAssembleChunkLatents (the chunked multi-window lanes, unboarded until a lane needs them). DMD lora required on the active path (strength 1.0 + the 4-point sigma schedule). Pip: nothing beyond the ComfyUI base env.",
+    "desc": "H3PeopleMask + H3GreyMannequins + H3SourceSlice (the Source Slice commit is HEAD) + swap/montage plans — the mask + mannequin + slice seats. No extra pip deps (upstream: torch/numpy/Pillow ride ComfyUI).",
     "pip": [],
-    "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/video/viggle-animate/nodes.yaml"
+    "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/video/nodes.yaml"
+  },
+  {
+    "name": "ComfyUI-MiniMaxH3-Context-Loop",
+    "url": "https://github.com/ethanfel/ComfyUI-MiniMaxH3-Context-Loop",
+    "ref": "43afeffcc570beb5f7382593e79e4b211c7e02f6",
+    "required": true,
+    "desc": "Clip chaining, checkpoints, masked targets (ContexMaskedTarget), MaskGridPreview, final assembly — the edit-target + loop seats. Upstream floor 0.7.3+ (no tags published; pinned at HEAD, re-pin on drift). No requirements file upstream.",
+    "pip": [],
+    "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/video/nodes.yaml"
+  },
+  {
+    "name": "ComfyUI-Fantastic-MiniMaxH3-PromptBuilder",
+    "url": "https://github.com/Adudeguyman/ComfyUI-Fantastic-MiniMaxH3-PromptBuilder",
+    "ref": "22e719fe89336c628383363182a4da3cb58d4f9b",
+    "required": true,
+    "desc": "MiniMaxH3FantasticVideoEditLatent — the masked edit latent seat for the R1 replace mod.",
+    "pip": [
+      "av"
+    ],
+    "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/video/nodes.yaml"
   },
   {
     "name": "ComfyUI-CrossViewWarp",
     "url": "https://github.com/cseti007/ComfyUI-CrossViewWarp",
     "ref": "3266a83a84eaa6833a9ebc38ac7cdd8789e44f5b",
     "required": true,
-    "desc": "CrossViewWarp (Apache-2.0, v0.11.0) — depth-warp conditioning node for the CrossView-Warp IC-LoRA. Declared beside the swap lane so a composed camera move can ride the same engine; no openjutsu graph addresses its class yet (CrossViewWarp). Pip: nothing beyond the ComfyUI base env.",
+    "desc": "CrossViewWarp (Apache-2.0, v0.11.0) — depth-warp conditioning node for the CrossView-Warp IC-LoRA. Declared on the video plane for camera-move compositions; no graph addresses its class yet (CrossViewWarp). Pip: nothing beyond the ComfyUI base env.",
     "pip": [],
-    "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/video/viggle-animate/nodes.yaml"
+    "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/video/nodes.yaml"
   },
   {
     "name": "ComfyUI-CameraReference3D",
     "url": "https://github.com/lovemachine100/ComfyUI-CameraReference3D",
     "ref": "3b360a2bc76bd46b8367ab72384e0a71bb8bf701",
     "required": true,
-    "desc": "CameraReference3D (MIT, kongo_jun, v3.0.1) — model-agnostic camera-motion hub: CameraReference3D (parametric moves + timeline DSL), CameraTrajectoryExport, CameraPathFromVideo. Declared beside the swap lane for camera-driven swap compositions; no openjutsu graph addresses its classes yet. Pip: numpy + Pillow (both core-provided by the ComfyUI base env).",
+    "desc": "CameraReference3D (MIT, kongo_jun, v3.0.1) — model-agnostic camera-motion hub: CameraReference3D (parametric moves + timeline DSL), CameraTrajectoryExport, CameraPathFromVideo. Declared on the video plane for camera-driven compositions; no graph addresses its classes yet. Pip: numpy + Pillow (both core-provided by the ComfyUI base env).",
     "pip": [],
-    "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/video/viggle-animate/nodes.yaml"
+    "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/video/nodes.yaml"
   },
   {
     "name": "comfyui-impact-pack",

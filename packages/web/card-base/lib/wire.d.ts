@@ -80,7 +80,7 @@ export declare function fetchFormsTable(signal?: AbortSignal): Promise<Record<st
  *  system handles the conversion — the door's own gates (type
  *  whitelist, one clean segment) are the law; the client only voices
  *  its refusals, never invents its own. */
-export declare function uploadInputFile(file: File, signal?: AbortSignal): Promise<{
+export declare function uploadInputFile(file: File, signal?: AbortSignal, dataUrl?: string): Promise<{
     name: string;
     file: string;
 }>;

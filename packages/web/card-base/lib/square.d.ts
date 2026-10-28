@@ -50,6 +50,30 @@ export declare function isImageUrl(value: string): boolean;
  * @returns the assets-door display URL for an estate input path, else null.
  */
 export declare function estateInputUrl(value: string): string | null;
+/** THE VIDEO FACE of the same rule (the operator's live burn,
+ *  2026-10-28: a clip value — `data/input/Makhna clip.webm`, the
+ *  uploads door's own param currency — rendered the HELD face (raw
+ *  text, never a player), and an in-flight video upload's data-URL
+ *  mirror rendered megabytes of base64 AS TEXT. The assets door
+ *  already answers video bytes (video/mp4, doors.ts's own doc
+ *  line); the square just never asked). A video value — a data:
+ *  video URL, an estate input path with a video extension, or any
+ *  servable video URL — renders the ONE square with a muted inline
+ *  <video> (metadata preload, no autoplay: a grid that plays is a
+ *  burn of its own). The classifier is the shared vocabulary's
+ *  (mediaKindOf — never a private extension list); blob: mirrors
+ *  are image-arm only (the provider mints them from image Files).
+ */
+/**
+ * @param value - the attached value to test (estate path, artifact URL, or data URL).
+ * @returns true when the value renders an inline video player on the square.
+ */
+export declare function isVideoUrl(value: string): boolean;
+/**
+ * @param value - the attached value (an estate input path or any other string).
+ * @returns the assets-door display URL for an estate input path with a video extension, else null.
+ */
+export declare function estateInputVideoUrl(value: string): string | null;
 /** THE MESH FACE of the same rule (the mesh wire type, 2026-09-21 —
  *  the base-gaps primitive ③): a .glb/.gltf value — an estate path
  *  ('data/input/x.glb') or a run artifact URL — renders the ONE
@@ -74,6 +98,7 @@ export interface InputSquareVerbs {
 }
 export declare const DEFAULT_SQUARE_ACCEPT = "image/png,image/jpeg,image/webp";
 export declare const MESH_SQUARE_ACCEPT = ".glb,.gltf";
+export declare const VIDEO_SQUARE_ACCEPT = "video/mp4,video/webm,video/quicktime";
 export interface InputSquareProps extends InputSquareVerbs {
     /** Short field key shown under the square (e.g. "input_image").
      *  Empty string = NO caption (the owning section already names it

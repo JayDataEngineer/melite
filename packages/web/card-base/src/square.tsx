@@ -159,6 +159,7 @@ export interface InputSquareVerbs {
 
 export const DEFAULT_SQUARE_ACCEPT = 'image/png,image/jpeg,image/webp'
 export const MESH_SQUARE_ACCEPT = '.glb,.gltf'
+export const VIDEO_SQUARE_ACCEPT = 'video/mp4,video/webm,video/quicktime'
 
 export interface InputSquareProps extends InputSquareVerbs {
   /** Short field key shown under the square (e.g. "input_image").

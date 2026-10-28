@@ -8,6 +8,7 @@ import { crossRootOrder } from '@melite/contracts/rootsManifest';
 import { segmentConfined, servableLeaf } from '@melite/contracts/mediaKinds';
 import { contentTypeForArtifact } from '@melite/contracts/mediaKinds';
 import { parseRangeHeader } from '@melite/contracts/mediaRange';
+import { noteRunTreeChanged } from '@melite/estate-queue';
 export const name = 'infer-gallery';
 /** Routes arrive with the webServer service. */
 export const inject = ['webServer'];
@@ -512,6 +513,10 @@ export function apply(ctx, config = {}) {
                     }
                     throw error;
                 }
+                // THE ROW CACHE NOTICE (the rename door's twin): a subdir
+                // unlink bumps neither cached mtime — the feed would keep
+                noteRunTreeChanged(full);
+                // listing the deleted file.
                 const ok = JSON.stringify({ ok: true, path: target });
                 res.writeHead(200, { ...JSON_HEADERS, 'content-length': String(Buffer.byteLength(ok)) });
                 res.end(Buffer.from(ok));
@@ -545,6 +550,27 @@ export function apply(ctx, config = {}) {
                 }
                 if (!isBareFileName(name)) {
                     fail(res, 400, 'bad_name', { message: 'name must be one bare file segment (no slashes, no leading _)', name });
+                    return;
+                }
+                // THE EXTENSION-PRESERVATION LAW (the operator's live burn,
+                // 2026-10-28: a rename of `x.mp4` to `swap-her-final` answered
+                // 200 and the file VANISHED — the runs seat types artifacts by
+                // extension (unknown kinds hit `continue` and drop from the
+                // feed), the serve door maps the content-type by extension
+                // (unknown → application/octet-stream), and the gallery
+                // classifier returns null for an extensionless url — so a
+                // rename that re-types kills the kind on all three doors at
+                // once. A rename RENAMES, never re-types: the new leaf keeps
+                // the source leaf's extension (case-insensitive), else a LOUD
+                // 400 naming the refusal. The caption keeps its kind; the
+                // preview keeps its player.
+                const extOf = (leaf) => {
+                    const dot = leaf.lastIndexOf('.');
+                    return dot < 0 ? '' : leaf.slice(dot + 1).toLowerCase();
+                };
+                const sourceLeaf = target.slice(target.lastIndexOf('/') + 1);
+                if (extOf(name) !== extOf(sourceLeaf)) {
+                    fail(res, 400, 'extension_changed', { message: 'rename keeps the file extension (the extension is the kind — a re-type unlists the artifact)', name });
                     return;
                 }
                 if (gatewayUrl !== '') {
@@ -600,6 +626,13 @@ export function apply(ctx, config = {}) {
                     // absent — the rename may proceed.
                 }
                 await fs.rename(full, fullNext);
+                // THE ROW CACHE NOTICE (the staleness half of the rename
+                // burn): the runs seat caches the built row on the run dir +
+                // sidecar mtimes — a subdir rename bumps neither, so without
+                // this the feed keeps listing the old name after a 200.
+                // The notice takes the FILE path (the run-id segment inside
+                // is the identity — never a guessed dir).
+                noteRunTreeChanged(full);
                 const ok = JSON.stringify({ ok: true, path: next, url: proxyAssetUrl(next) });
                 res.writeHead(200, { ...JSON_HEADERS, 'content-length': String(Buffer.byteLength(ok)) });
                 res.end(Buffer.from(ok));

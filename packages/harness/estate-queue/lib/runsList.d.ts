@@ -66,6 +66,25 @@ export declare function parseIntOrNull(s: string): number | null;
  *  value wins; the shared ctx parseQuery keeps blanks, so the
  *  filter lives here (parse_qs default). */
 export declare function firstQuery(qs: Record<string, string[]>, name: string, dflt: string): string;
+/** THE MUTATION NOTICE (the gallery-rename staleness cure,
+ *  2026-10-28): rowCache keys a built row on the RUN DIR mtime +
+ *  the sidecar mtime — but a gallery rename/delete inside a SUBDIR
+ *  (every real artifact lives one level down: openjutsu/,
+ *  h3-film/, generate/) bumps the SUBDIR's mtime, never the run
+ *  dir's, and no sidecar rewrites — so the cached row keeps the
+ *  pre-mutation artifact names and the gallery keeps listing the
+ *  old name after a 200 rename (the operator's "rename fails":
+ *  door renamed, feed lied). The mutating doors call this with the
+ *  mutated FILE's full path after a successful mutation; the next
+ *  list rebuilds that one row. Matched on the RUN-ID SEGMENT found
+ *  inside the path (`run-<id>`), not on a computed dir: the caller
+ *  must not guess which tree won — the basename (`run-<id>`) is
+ *  the identity across roots. The scan cache (the media sort bit)
+ *  rides along: a delete-to-empty must flip it too.
+ * @param mutatedPath - any path inside the run (the file, its dir —
+ *  the run-id segment is what matters).
+ */
+export declare function noteRunTreeChanged(mutatedPath: string): void;
 /** The runs-list envelope (the restore port): the output-root scan, media-first + newest sort, the limit parse (raw STRING — the lane/remote pass the raw text; underscores parse, non-ints refuse), refused cards SKIPPED but counted. */
 /** url/thumbnail are run-RELATIVE (the /v1/assets prefix died with the app — the header's law). */
 export declare function listRuns(stateRoot: string, limit: number, hasDraft: (draftId: DraftId) => Promise<boolean>): Promise<{

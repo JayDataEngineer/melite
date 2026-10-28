@@ -652,6 +652,25 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     reviewBy: "2026-12-07",
     reason: "one branch path of the switch-law surface dropped below the regen face SUSTAINED: six consecutive full-gate runs (two triples) measured branches 98.03 with every test green — not jitter but the current fleet's stable face (one dom arm's branch interleave lost under the grown walls load); pinned at the sustained face",
   },
+  // THE SWAP BUILD'S TWO ROWS (2026-10-28, R6): the parity landing's
+  // own arms — seated at the stable clean-pool face (two consecutive
+  // env-clean full runs, A==B, zero drift). The 59 pre-existing gate
+  // reds (83 at HEAD) and the wholesale K=1 margin era are the
+  // coverage track's ledger, NOT this argument's.
+  '**/packages/harness/melite-tools/src/discovery.ts': {
+    from: { statements: 98.91, branches: 99.47, functions: 98.14, lines: 98.66 },
+    to: { statements: 98.65, branches: 99.23, functions: 98.14, lines: 98.36 },
+    roadmapHeading: "The swap build's two-row coverage re-seat — discovery schema_key arms and the h3-timeline replace emission",
+    reviewBy: "2026-11-28",
+    reason: "the card-declared schema_key pass-through added its verbatim-passthrough and refusal arms; the pool exercises the passthrough (every declared kind rides it) but not the refusal face — the row seats at the stable clean-pool face until the refusal arms get spec rows",
+  },
+  '**/packages/video/h3-timeline/src/card.ts': {
+    from: { statements: 100, branches: 100, functions: 100, lines: 100 },
+    to: { statements: 97.87, branches: 97.72, functions: 100, lines: 97.36 },
+    roadmapHeading: "The swap build's two-row coverage re-seat — discovery schema_key arms and the h3-timeline replace emission",
+    reviewBy: "2026-11-28",
+    reason: "the REPLACE_MOD schema_key stamp and the replace emission's pending arms (the mannequin-via-REF conditioning and the pending-build refusal paths) sit behind the operator press round — the row seats at the stable clean-pool face until the firing round covers the emission end-to-end",
+  },
   // THE 2026-10-23 REGEN SPREAD (61 rows — vram-gate era drift): the
   // tables above are verbatim from scripts/coverage-regen.mjs; the
   // spread rides LAST so a key this regen re-drops (a row the 11-06

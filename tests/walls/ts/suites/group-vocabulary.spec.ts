@@ -69,6 +69,14 @@ const GENRE_GROUPS = new Map([
   // sampling nor reference, owned by the declaring model kit.
   ['reshoot', 'h3'],
   ['chain', 'motion'], ['guidance', 'motion'], ['output', 'motion'],
+  // THE MANNEQUIN ARM'S OWN SURFACE (the swap-parity build,
+  // 2026-10-28, renamed video-mask -> track 2026-10-28: the disclose
+  // door matches card tails by hyphen-suffix, so person-mask still
+  // ended in -mask — the track id is suffix-clean): the track card's
+  // grey-motion-reference dials (body blur + face blur) are their own
+  // subcategory behind the mannequin group — neither mask nor
+  // general, owned by the declaring card kit.
+  ['mannequin', 'track'],
 ])
 /** The DEBT register (L1–L3): spellings that violate the law today,
  *  owed renames — this wall fires the moment a NEW one appears and

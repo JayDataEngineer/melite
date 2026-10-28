@@ -140,7 +140,12 @@ export const cardPackages: string[] = [
     // character-swap video card — Viggle-Animate (the Ref2VA
     // fine-tune) boards here; the schema-form twin beside the
     // timeline studio, not a second timeline.
-    '@melite/video-openjutsu/card',
+    // THE SWAP-PARITY R0 DOORS (2026-10-28, the swap build): trim +
+    // frames + mask stage the swap inputs for the timeline's
+    // replace mod — pure VHS/SAM preprocessing, no film path touched.
+    '@melite/video-trim/card',
+    '@melite/video-frames/card',
+    '@melite/video-track/card',
   // RETIRED 2026-09-16 (operator order, stroke 86): 3d-clothing-
   // placement — the LAST CLI-proxy-era card (it required
   // melite-blender-proxy-nodes and carried mcp_addr/autoboot knobs).
@@ -244,7 +249,6 @@ export const composeModPlane = async (ctx: Context): Promise<void> => {
     // THE VIGGLE BAG (the Openjutsu lane): the DMD accelerator +
     // the character-swap adapter — the h3 loras catalog's sibling
     // catalog for the swap lane's own default and drift cure.
-    ['@melite/models-viggle-animate/mods/loras', 'viggle-animate loras'],
     // THE 2.1 MASK BOARDING (2026-09-22, the operator's lane call):
     // the region contract absorbs onto the CURRENT edit lane — the
     // GPU receipt caught the gap (the compose door's admission

@@ -482,12 +482,6 @@
   "@melite/models-trellis2-native": [
     "./packages/models/trellis2-native/src/index.ts"
   ],
-  "@melite/models-viggle-animate": [
-    "./packages/models/viggle-animate/src/index.ts"
-  ],
-  "@melite/models-viggle-animate/mods/loras": [
-    "./packages/models/viggle-animate/mods/loras.ts"
-  ],
   "@melite/models-wd14": [
     "./packages/models/wd14/src/index.ts"
   ],
@@ -521,6 +515,12 @@
   "@melite/motion-motion/tool": [
     "./packages/motion/motion/src/tool.ts"
   ],
+  "@melite/video-frames": [
+    "./packages/video/frames/src/index.ts"
+  ],
+  "@melite/video-frames/card": [
+    "./packages/video/frames/src/card.ts"
+  ],
   "@melite/video-h3-timeline": [
     "./packages/video/h3-timeline/src/index.ts"
   ],
@@ -533,11 +533,17 @@
   "@melite/video-h3-timeline/tool": [
     "./packages/video/h3-timeline/src/tool.ts"
   ],
-  "@melite/video-openjutsu": [
-    "./packages/video/openjutsu/src/index.ts"
+  "@melite/video-track": [
+    "./packages/video/track/src/index.ts"
   ],
-  "@melite/video-openjutsu/card": [
-    "./packages/video/openjutsu/src/card.ts"
+  "@melite/video-track/card": [
+    "./packages/video/track/src/card.ts"
+  ],
+  "@melite/video-trim": [
+    "./packages/video/trim/src/index.ts"
+  ],
+  "@melite/video-trim/card": [
+    "./packages/video/trim/src/card.ts"
   ],
   "@melite/catalog": [
     "./packages/web-kit/catalog/src/index.ts"

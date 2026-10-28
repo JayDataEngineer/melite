@@ -313,9 +313,9 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
   // (removed 2026-10-26 machine, the quant cure: the phantom bf16 cells
   //  died — they served the convrot file under a bf16 face)
   "trellis2-native-int8",
-  // (2026-10-27, the openjutsu lane: the viggle family's origins ride
-  //  the provisioner catalog — its INT8 body is the untyped cell)
-  "viggle-animate",
+  // (removed 2026-11-12: the openjutsu lane deleted by operator order —
+  //  the viggle family rode the provisioner catalog; its untyped cell
+  //  died with the lane)
   "wd14",
   "z-image",
   "z-image-base",
@@ -372,10 +372,8 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
       "qwen-img-edit-21",
       "qwen-img-edit-2511",
       "qwen3-tts",
-      // 2026-10-27, the openjutsu lane: viggle-animate boards the
-      // loras pack (the DMD distill is the default bag; the h3
-      // married-bag law rides the animate action).
-      "viggle-animate",
+      // (removed 2026-11-12: viggle-animate deleted with the openjutsu
+      //  lane — operator order; the h3 married-bag law stays the owner)
       "z-image",
     ]);
   });
@@ -502,9 +500,9 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // 64 -> 66 (2026-11-08, the third edit lane): fibo2-edit serves
     // dev + edit-turbo (each a Variant row with its own envelope and
     // resolver pair — no Recipe group, the scoped judgment).
-    // 66 -> 67 (2026-10-27, the openjutsu lane, feature 023):
-    // viggle-animate serves its one variant (the ref2va body row).
-    assert.equal(variants, 67);
+    // 67 -> 66 (2026-11-12: the openjutsu lane deleted by operator
+    // order — viggle-animate's one variant died with the lane).
+    assert.equal(variants, 66);
     // 85 -> 84 (2026-10-13, the autoremesher excision): the family's
     // one cell left with the pack the owner removed.
     // 84 -> 86 (2026-10-23): the turbo cells join (turbo_int8_convrot + turbo_bf16).
@@ -532,9 +530,8 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // cells join — dev + edit-turbo, each int8_convrot + bf16.
     // 82 -> 83 (2026-10-27, audit 014 C5): music3's fp16 offered cell
     // joins on the music3 route (the int8 body rides music3-int8).
-    // 83 -> 84 (2026-10-27, the openjutsu lane, feature 023):
-    // viggle-animate's int8_convrot_pruned cell joins (the INT8 body
-    // is the variant's one serving cell).
-    assert.equal(cells, 84);
+    // 84 -> 83 (2026-11-12): the openjutsu lane deleted by operator
+    // order — viggle-animate's int8_convrot_pruned cell dies with it.
+    assert.equal(cells, 83);
   });
 });

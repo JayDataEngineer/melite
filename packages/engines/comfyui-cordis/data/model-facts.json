@@ -106,18 +106,6 @@
         }
       ]
     },
-    "openjutsu": {
-      "outputs": [
-        {
-          "label": "Swapped video",
-          "many": false,
-          "patterns": [
-            ".mp4",
-            ".webm"
-          ]
-        }
-      ]
-    },
     "sfx": {
       "outputs": [
         {
@@ -236,16 +224,6 @@
     "ComfyUI-VideoHelperSuite": [
       "VHS_LoadVideoPath",
       "VHS_VideoCombine"
-    ],
-    "ComfyUI-Viggle-Animate-H3": [
-      "ViggleTextCondLoader",
-      "ViggleAnimateConditioning",
-      "ViggleAnimateConditioningWindowed",
-      "ViggleChunkedSampler",
-      "ViggleChunkLoopStart",
-      "ViggleSampleChunk",
-      "ViggleChunkLoopEnd",
-      "ViggleAssembleChunkLatents"
     ],
     "ComfyUI-WD14-Tagger": [
       "WD14Tagger|pysssss"
@@ -367,6 +345,26 @@
       "SDXL Power Prompt - Positive (rgthree)",
       "SDXL Power Prompt - Simple / Negative (rgthree)",
       "Seed (rgthree)"
+    ],
+    "comfyui-h3-oneclick-swap": [
+      "H3PeopleMask",
+      "H3GreyMannequins",
+      "H3SourceSlice",
+      "H3OneClickSwapPlan",
+      "H3AdvancedSwapPlan",
+      "H3ObjectSwapPlan",
+      "H3ClipShots",
+      "H3MontagePlan",
+      "H3FaceChunks",
+      "H3FaceJoin"
+    ],
+    "ComfyUI-MiniMaxH3-Context-Loop": [
+      "MiniMaxH3ContexMaskedTarget",
+      "MiniMaxH3ContexMaskGridPreview",
+      "MiniMaxH3ChainCurrent"
+    ],
+    "ComfyUI-Fantastic-MiniMaxH3-PromptBuilder": [
+      "MiniMaxH3FantasticVideoEditLatent"
     ]
   },
   "core_node_types": {
@@ -479,9 +477,6 @@
     },
     "trellis2-native": {
       "card": "img-to-mesh"
-    },
-    "viggle-animate": {
-      "card": "openjutsu"
     },
     "wd14": {
       "card": "tagger"

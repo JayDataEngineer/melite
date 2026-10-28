@@ -166,7 +166,9 @@ describe("the recipe schema-master (Rule A/B/C — semantic validation over the 
     // openjutsu card carries viggle-animate — its Recipe group
     // (standard/four-step/identity-lock, default standard) judges
     // like every card-carried declarer.
-    assert.equal(checked, 24, `the law reaches the table, exactly (checked ${String(checked)})`);
+    // 24 -> 23 (2026-11-12): the openjutsu lane deleted by operator
+    // order — viggle-animate's recipe rows leave the table.
+    assert.equal(checked, 23, `the law reaches the table, exactly (checked ${String(checked)})`);
   });
 
   it("LAW K (k cure, 2026-11-08): every card-carrying Recipe family DECLARES its group default, and the default names an existing Recipe row (the initial-recipe law — DECL-declared, never row-order-emergent; the birth stamp reads this declaration)", async (): Promise<void> => {
@@ -195,7 +197,8 @@ describe("the recipe schema-master (Rule A/B/C — semantic validation over the 
     }
     // the same 23-family census as LAW A (21 -> 23, 2026-11-09,
     // the h3-timeline board==offer cure — see LAW A)
-    assert.equal(checked, 24, `the k law reaches the same table (checked ${String(checked)})`);
+    // 24 -> 23 (2026-11-12): same removal — the k law's table shrinks with it.
+    assert.equal(checked, 23, `the k law reaches the same table (checked ${String(checked)})`);
   });
 
   it("DEBT RETIRED: the 15-family census resolutions hold (stamps stamp, scoped stay scoped)", async (): Promise<void> => {

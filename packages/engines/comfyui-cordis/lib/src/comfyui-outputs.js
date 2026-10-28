@@ -332,17 +332,45 @@ export function mapHistoryEntry(entry) {
         : {};
     if (rec["status_str"] === "error") {
         const msgs = rec["messages"];
-        let detail = JSON.stringify(rec).slice(0, 400);
         if (Array.isArray(msgs)) {
             for (const m of msgs) {
                 if (Array.isArray(m) &&
                     m.length > 1 &&
                     m[0] === "execution_error") {
-                    detail = voiceExecutionError(m[1]);
-                    break;
+                    return { kind: "failed", detail: voiceExecutionError(m[1]) };
                 }
             }
+            // THE INTERRUPT ARM (cure C, 2026-10-28): a Stop press or an
+            // estate teardown folds the run to error with
+            // execution_interrupted — never execution_error. The old
+            // fallback sliced the status JSON's head at 400 chars and the
+            // operator read a truncated dump cut mid-token with no cause.
+            // Name the interrupt honestly, prompt id and all.
+            for (const m of msgs) {
+                if (Array.isArray(m) && m.length > 1 && m[0] === "execution_interrupted") {
+                    const payload = m[1];
+                    const pid = typeof payload?.["prompt_id"] === "string" ? payload["prompt_id"] : "";
+                    return {
+                        kind: "failed",
+                        detail: "run interrupted before completion — a Stop press or an estate teardown reached the engine" +
+                            (pid !== "" ? " (prompt " + pid + ")" : ""),
+                    };
+                }
+            }
+            // Unknown error shape: the EVENT NAMES + the last message
+            // verbatim (the decisive tail), never a 400-char head slice
+            // cut mid-token. The names row is bounded (history messages
+            // are the terminal set, not the progress stream).
+            const rows = msgs.filter((m) => Array.isArray(m));
+            const names = rows.map((r) => String(r[0])).join(", ").slice(0, 300);
+            const last = rows.length > 0 ? rows[rows.length - 1] : undefined;
+            const lastText = last === undefined ? "" : " last: " + JSON.stringify(last).slice(0, 800);
+            return {
+                kind: "failed",
+                detail: "engine run failed (no execution_error event; events: " + names + ")" + lastText,
+            };
         }
+        const detail = JSON.stringify(rec).slice(0, 400);
         return { kind: "failed", detail };
     }
     if (rec["completed"] !== true)

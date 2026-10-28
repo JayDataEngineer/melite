@@ -218,7 +218,7 @@ describe("the models plane feeds the compose/flows plane (A2)", () => {
     // 67 -> 74 (2026-11-10, the fibo2-edit board): dev + edit-turbo
     // variant routes + the int8_convrot/bf16 cell routes join (the
     // facts-total census rose with the same board).
-    assert.equal(total, 75, `the facts roster is 75 rows (saw ${String(total)}) — a new family route is a deliberate edit`); // 74→75 2026-10-27: viggle-animate rides (the openjutsu lane, feature 023); 74→73 2026-11-12: seedvr2-ema-7b died (the 7B death); 73→74 2026-10-27: music3-int8 rides (audit 014 C5, the int8 low-VRAM lane)
+    assert.equal(total, 74, `the facts roster is 74 rows (saw ${String(total)}) — a new family route is a deliberate edit`); // 75→74 2026-11-12: the openjutsu lane deleted (operator order) — viggle-animate's route dies; earlier 74→75 2026-10-27: viggle-animate rode (feature 023); 74→73 2026-11-12: seedvr2-ema-7b died (the 7B death); 73→74 2026-10-27: music3-int8 rides (audit 014 C5, the int8 low-VRAM lane)
   });
 });
 
@@ -285,7 +285,7 @@ describe("the facts FILE is pinned against the registry (E-C2)", () => {
   // 29 -> 28 (2026-11-02): the h3-keyframe row left WITH its route
   // (the 2026-10-27 fold lesson — a stale facts row false-admits a
   // dead family through the selection-tolerance catch).
-  const FACTS_ROW_CENSUS = 32; // +1 (2026-10-27, the openjutsu lane — the openjutsu card boards viggle-animate, the compose plane's reverse arm demands the row); -1 (2026-10-13, the autoremesher excision); +1 (2026-11-07, the operator's drop — moss-image's card-owned row joins); +1 (2026-11-09, the h3-timeline board==offer cure — the card boards its offered h3-singularity lane address, so the compose plane's reverse arm demands its row); +1 (2026-11-10, fibo2-edit boards onto image-edit — the facts row lands with the core pin hop to 87ed5a06, TextEncodeFibo2 serving live)
+  const FACTS_ROW_CENSUS = 31; // 32→31 (2026-11-12): the openjutsu lane deleted by operator order — its boarding row dies; earlier +1 (2026-10-27, the openjutsu lane); -1 (2026-10-13, the autoremesher excision); +1 (2026-11-07, the operator's drop — moss-image's card-owned row joins); +1 (2026-11-09, the h3-timeline board==offer cure — the card boards its offered h3-singularity lane address, so the compose plane's reverse arm demands its row); +1 (2026-11-10, fibo2-edit boards onto image-edit — the facts row lands with the core pin hop to 87ed5a06, TextEncodeFibo2 serving live)
 
   it("the frozen roster is exact, and the frozen-variant escape hatch census is named", async (): Promise<void> => {
     await loadCardDefs();

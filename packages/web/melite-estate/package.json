@@ -63,7 +63,6 @@
     "@melite/models-somax": "workspace:*",
     "@melite/models-transfer-rig": "workspace:*",
     "@melite/models-trellis2-native": "workspace:*",
-    "@melite/models-viggle-animate": "workspace:*",
     "@melite/models-wd14": "workspace:*",
     "@melite/models-yue2": "workspace:*",
     "@melite/models-z-image": "workspace:*"

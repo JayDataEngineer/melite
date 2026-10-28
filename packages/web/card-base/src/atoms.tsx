@@ -344,7 +344,7 @@ export function SpecSliderAtom({ f, value, onEdit, envelope }: {
 
 /** One spec atom — typed by the declaration, edited as a raw string
  *  while typing (decimal dots survive; coercion happens once at patch). */
-export function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder, ghost, envelope }: {
+export function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder, ghost, envelope, hideSquareLabel }: {
   f: SpecField
   value: unknown
   onEdit(name: string, v: unknown): void
@@ -366,6 +366,14 @@ export function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder
    *  The call site authors the label ('inherit', or the richer
    *  '← on' when the inherited value is known). */
   ghost?: string
+  /** THE DUPLICATE-LABEL LAW (the 2026-09-15 burn, repeated on the
+   *  mod leaf 2026-11-12): when the OWNING surface already renders
+   *  the field's caption (the mod leaf's span), the square's own
+   *  under-label hides — the SourceRow hideLabel idiom. The aria
+   *  name stays (the seat is still named for readers); only the
+   *  painted caption goes. Default shows it (the card face's rail
+   *  and slot cells ride the square's label as their ONLY caption). */
+  hideSquareLabel?: boolean
 }): ReturnType<typeof h> {
   // THE INPUT SQUARE (the old law: slot-shaped values render the ONE
   // square with the three source verbs — never a bare text Input).
@@ -395,7 +403,10 @@ export function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder
     // null+metric pair painted the PLUS on a full slot with no way
     // out.
     return h(InputSquare, {
-      label: f.label !== '' ? f.label : f.name,
+      label: hideSquareLabel === true ? '' : (f.label !== '' ? f.label : f.name),
+      // the aria seat stays even under the hidden caption (the
+      // SourceRow idiom: readers keep the name, sighted get one)
+      ...(hideSquareLabel === true ? { ariaLabel: f.label !== '' ? f.label : f.name } : {}),
       value: shown,
       ...square.verbs,
     })

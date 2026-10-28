@@ -41,7 +41,12 @@ const defs: Map<string, CardDefinition> = await loadCardDefs();
 // 14: the quad-remesh card left with the autoremesher excision
 // (458c4001); voice-lock died earlier (2026-09-21).
 // 14 -> 15 (2026-10-27, the swap lane's boarding card: openjutsu, audit 023).
-  assert.equal(defs.size, 15, `the registry serves exactly 15 cards (got ${defs.size}) — a card dying or being born is a deliberate edit (voice-lock died 2026-09-21, quad-remesh 2026-10-22)`);
+// 15 -> 18 (2026-10-28, the swap build, R0a/b/c): the trim, frames,
+// track cards join the registry — the swap lane's three preprocessing
+// doors, each composing loud-or-lawful through the door below.
+// 18 -> 17 (2026-11-12): the openjutsu card deleted by operator order
+// (R15) — the swap lane's own three doors stay.
+  assert.equal(defs.size, 17, `the registry serves exactly 17 cards (got ${defs.size}) — a card dying or being born is a deliberate edit (voice-lock died 2026-09-21, quad-remesh 2026-10-22)`);
 
 const boot = async (): Promise<ComfyUIService> => {
   const ctx = new Context();

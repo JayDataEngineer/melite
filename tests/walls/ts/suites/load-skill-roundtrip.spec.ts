@@ -115,7 +115,23 @@ interface SkillLine { id?: string }
 // SKILL.md) rides the card walk like its siblings — round-tripped
 // 200 + body in the arm above; the byte-equal served twin is the
 // seated wall's own arm (viggle-openjutsu-seated.spec.ts).
-const EXPECTED_CARD_SKILLS = 35;
+// 35 -> 36 (2026-10-28, the swap build): the h3-timeline swap
+// SKILL.md joins the card-skill plane — the R0a/b/c doors ride
+// AGENT.md only (the mask precedent: full doc under agents, never
+// a tier-1 line), so the trio adds no lines.
+// 36 -> 35 (2026-11-12): the openjutsu lane deleted by operator
+// order — its card's skill line dies with the card.
+// 35 -> 36 (2026-11-13, the reshoot build): the h3-timeline
+// reshoot SKILL.md joins the card-skill plane — the census owed
+// this bump the day it landed (the mixed tree hid it until the
+// Tier-1 batch forced the recount).
+// 36 -> 47 (2026-11-13, the qwen-img-edit-21 Tier-1 batch): the
+// family's authored entrance (agents/AGENT.md) + ten craft skills
+// (design-sheet, headshot, product-shot, poster, try-on,
+// outfit-swap, relight, zooms, angles, whats-next) ride the
+// image-edit card's load line — every id round-tripped 200 with a
+// body in the arm above before the bump.
+const EXPECTED_CARD_SKILLS = 47;
 // 8 → 11 (2026-10-11): object-forge's skillRefs — image-gen +
 // img-to-mesh card lines and z-image's prompt-enhance ride the flow
 // bundle (card:quad-remesh resolves null — the card ships no agent

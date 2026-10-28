@@ -87,7 +87,7 @@ describe("the runs door through the lane's models seat", () => {
     // surfaced only when this suite next ran (the boarding wave never
     // did); the count now names the booted truth again.
     // 32 -> 33 (2026-10-27, the swap family: viggle-animate, audit 023).
-    assert.equal(seat.allDecls().length, 33, "the booted table, not a bare service (the FAMILY_PKGS census)");
+    assert.equal(seat.allDecls().length, 32, "the booted table, not a bare service (the FAMILY_PKGS census)"); // 33 -> 32 (2026-11-12): the openjutsu lane deleted — viggle-animate dies
     const err = await remote(() =>
       svc.start({ draft_id: "d1", test: false, flow: "fit-seat" }, new AbortController().signal),
     );

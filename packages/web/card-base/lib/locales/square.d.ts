@@ -42,6 +42,12 @@ export declare const squareCopy: {
     }) => string;
     /** Empty state: the list is honestly empty. */
     nothingToPick: string;
+    /** Picker search field placeholder + aria name (2026-11-12). */
+    searchPlaceholder: string;
+    /** Filtered-empty face: the query matched no row (2026-11-12). */
+    noMatchFor: (p: {
+        query: string;
+    }) => string;
     /** The detach button (square). */
     detach: string;
     /** The held face's hover title: the slot holds a value no preview
@@ -79,6 +85,13 @@ export declare const squareCopy: {
     notRunYet: string;
     /** Selected-row tag. */
     wired: string;
+    /** In-flight upload face: "uploading <name>…" — a tens-of-MB
+     *  clip's base64 POST runs minutes with no engine events, and the
+     *  old mute face (empty string, rendered as nothing) read as a
+     *  dead square (the operator's upload-lag burn). */
+    uploading: (p: {
+        name: string;
+    }) => string;
 };
 /** The dictionary's key union — the typed `t` seat's domain. */
 export type SquareCopyKey = keyof typeof squareCopy;

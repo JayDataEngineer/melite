@@ -931,6 +931,27 @@ test('THE SQUARE CAPTION: a slot-shaped leaf entry field with no label and no to
   expect(screen.getByText('mystery')).not.toBeNull()
 })
 
+test('THE DUPLICATE-LABEL LAW: a slot-shaped leaf field paints its caption ONCE (the span owns the name; the square paints none)', () => {
+  const kind = {
+    kind: 'mask', label: 'Mask', param_key: 'masks', cardinality: 'multi',
+    fields: [
+      { name: 'image', type: 'image', label: 'Person mask' },
+      { name: 'clip', type: 'file', media: 'video', label: 'Source clip' },
+    ],
+  } as unknown as ModifierKind
+  openLeaf({ kinds: [kind], values: {} })
+  openCreate('Mask')
+  // the operator burn (2026-11-12, the Replace leaf): every media
+  // seat listed TWICE — the caption span AND the square's own
+  // under-label. The span owns the visible name (tooltip + star
+  // live there); the square's label hides, its aria seat stays.
+  expect(screen.queryAllByText('Person mask')).toHaveLength(1)
+  expect(screen.queryAllByText('Source clip')).toHaveLength(1)
+  // the square keeps its ACCESSIBLE seat name (a hidden caption is
+  // not an unnamed square — the SourceRow hideLabel idiom)
+  expect(document.querySelector('[aria-label*="Person mask"]')).not.toBeNull()
+})
+
 test('THE ACTION-CARD SPLIT: the knobs column edits live and captions a label-less square by NAME', () => {
   const kind = {
     kind: 'mask', label: 'Mask', param_key: 'masks', cardinality: 'multi',

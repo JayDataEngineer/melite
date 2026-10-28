@@ -84,7 +84,11 @@ import { cardPackages, loadCardDefs } from "@melite/comfyui-cordis";
 // 14 -> 15 (2026-10-27, the openjutsu lane, feature 023): the
 // openjutsu card joins the composition roster — nine fields judged
 // against the animate action's ParamSpec rows.
-const CARD_ROSTER = 15;
+// 15 -> 18 (2026-10-28, the swap build, R0a/b/c): the trim, frames,
+// track cards join the composition roster — the swap lane's
+// three preprocessing doors, every field wtype-agreeing with its
+// zod shape (judged arm below greens on the same run).
+const CARD_ROSTER = 17; // 18→17 2026-11-12: the openjutsu card deleted by operator order
 // 466 (2026-11-06): input-prep's crop-studio field joined the estate.
 // 466 -> 467 (2026-11-08, the model choice): input-prep's scale_model
 // select — the standard upscale-model vocabulary (union of consts →
@@ -134,7 +138,14 @@ const CARD_ROSTER = 15;
 // shape, the cards-h3-reshoot-chain row); +9 the openjutsu card's
 // fields (the concurrent lane's family landing observed on the same
 // tree — the roster pin CARD_ROSTER owes its own bump to that lane).
-const FIELD_ROSTER = 496;
+// 496 -> 513 (2026-10-28, the swap build, R0a/b/c): +3 the trim
+// card's window (clip + start/end_seconds) +3 the frames card's fan
+// (clip + every_nth/frame_load_cap) +11 the track card's track
+// arms (clip + prompt + face_prompt + detection_threshold + the
+// edit-arm trio + mask_expand + the mannequin blur pair +
+// frame_load_cap) — every wtype agreeing with its zod shape, argued
+// here.
+const FIELD_ROSTER = 504; // 513→504 2026-11-12: the openjutsu card's nine fields leave with it
 
 interface DictField {
   readonly type?: string;

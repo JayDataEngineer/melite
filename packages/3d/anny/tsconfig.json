@@ -17,11 +17,13 @@
       "node"
     ],
     "paths": {
+        "@melite/video-frames": ["./../../video/frames/src/index.ts"],
+        "@melite/video-frames/card": ["./../../video/frames/src/card.ts"],
+        "@melite/video-track": ["./../../video/track/src/index.ts"],
+        "@melite/video-track/card": ["./../../video/track/src/card.ts"],
+        "@melite/video-trim": ["./../../video/trim/src/index.ts"],
+        "@melite/video-trim/card": ["./../../video/trim/src/card.ts"],
         "@melite/contracts/media-probe": ["./../../web-kit/contracts/src/media-probe.ts"],
-        "@melite/models-viggle-animate": ["./../../models/viggle-animate/src/index.ts"],
-        "@melite/models-viggle-animate/mods/loras": ["./../../models/viggle-animate/mods/loras.ts"],
-        "@melite/video-openjutsu": ["./../../video/openjutsu/src/index.ts"],
-        "@melite/video-openjutsu/card": ["./../../video/openjutsu/src/card.ts"],
         "@melite/contracts/familyLane": ["./../../web-kit/contracts/src/familyLane.ts"],
         "@melite/models-fibo2-edit": ["./../../models/fibo2-edit/src/index.ts"],
         "@melite/models-fibo2-edit/mods/loras": ["./../../models/fibo2-edit/mods/loras.ts"],

@@ -24,6 +24,10 @@ export const squareCopy = {
     mediaUnavailable: (p) => 'media library unavailable \u2014 ' + p.reason,
     /** Empty state: the list is honestly empty. */
     nothingToPick: 'nothing to pick yet',
+    /** Picker search field placeholder + aria name (2026-11-12). */
+    searchPlaceholder: 'Search by name',
+    /** Filtered-empty face: the query matched no row (2026-11-12). */
+    noMatchFor: (p) => 'no match for “' + p.query + '”',
     /** The detach button (square). */
     detach: 'Detach',
     /** The held face's hover title: the slot holds a value no preview
@@ -53,6 +57,11 @@ export const squareCopy = {
     notRunYet: 'not run yet',
     /** Selected-row tag. */
     wired: 'wired',
+    /** In-flight upload face: "uploading <name>…" — a tens-of-MB
+     *  clip's base64 POST runs minutes with no engine events, and the
+     *  old mute face (empty string, rendered as nothing) read as a
+     *  dead square (the operator's upload-lag burn). */
+    uploading: (p) => 'uploading ' + p.name + '\u2026',
 };
 /** Resolve one copy entry. Plain-string entries return verbatim;
  *  template entries receive their params (a plain entry given params

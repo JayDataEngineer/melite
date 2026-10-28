@@ -28,9 +28,6 @@
 [submodule "vendor/comfyui_extensions/Comfyui_Minimax_h3_latent_Upscaler-Plus"]
 	path = vendor/comfyui_extensions/Comfyui_Minimax_h3_latent_Upscaler-Plus
 	url = https://github.com/xmarre/Comfyui_Minimax_h3_latent_Upscaler-Plus
-[submodule "vendor/comfyui_extensions/ComfyUI-Viggle-Animate-H3"]
-	path = vendor/comfyui_extensions/ComfyUI-Viggle-Animate-H3
-	url = https://github.com/bhardwajRahul/ComfyUI-Viggle-Animate-H3
 [submodule "vendor/comfyui_extensions/ComfyUI-CrossViewWarp"]
 	path = vendor/comfyui_extensions/ComfyUI-CrossViewWarp
 	url = https://github.com/cseti007/ComfyUI-CrossViewWarp

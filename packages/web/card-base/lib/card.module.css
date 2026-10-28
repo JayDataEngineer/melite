@@ -248,6 +248,17 @@ select option {
   min-width: 4ch;
   text-align: right;
 }
+/* THE ZERO-LAW CHIP (cure D, 2026-10-28): the declaration's own
+ * "0 = …" sentence shown beside the knob exactly while it holds
+ * the 0 — the inherit law made visible, never a hover-only secret. */
+.specSliderZero {
+  color: var(--dsw-alias-label-secondary);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 22ch;
+}
 .specTextarea {
   background: var(--dsw-alias-interactive-bg-hover);
   border: 0.5px solid var(--dsw-alias-border-l2);
@@ -444,6 +455,11 @@ select option {
 /* THE REFUSAL FACE (2026-10-24): a failed upload's voice under the
  * square — danger color, never a param value. */
 .sourceRowErr { margin: 2px 0 0; font-size: 11px; color: #e06c5f; word-break: break-word; }
+
+/* THE UPLOADING FACE (2026-10-28): the attempt's own voice under the
+ * square — the label-secondary neutral, never the danger color (in
+ * flight is not a refusal). Same box, different fact. */
+.sourceRowBusy { margin: 2px 0 0; font-size: 11px; color: var(--dsw-alias-label-secondary); word-break: break-word; }
 
 /* THE SLOT ROW (2026-09-13, the old melite's input-zone grammar): the
  * slot-shaped fields of one group render side-by-side — their labels
@@ -705,3 +721,23 @@ select option {
   animation: panePulse 1.6s ease-in-out infinite;
 }
 
+
+.pickSearch {
+  margin: 0 0 8px;
+}
+
+.pickSearchInput {
+  background: var(--dsw-alias-interactive-bg-default, transparent);
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 6px;
+  box-sizing: border-box;
+  color: var(--dsw-alias-label-primary);
+  font-size: 13px;
+  padding: 6px 8px;
+  width: 100%;
+}
+
+.pickSearchInput:focus {
+  border-color: var(--dsw-alias-border-l4);
+  outline: none;
+}

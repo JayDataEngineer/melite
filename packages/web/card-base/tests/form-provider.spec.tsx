@@ -142,6 +142,26 @@ test('FROM MEDIA: a mesh field asks the list door for the MODEL kind', async () 
   expect(seen).toEqual(['model'])
 })
 
+test('a video-hinted file seat narrows the picker kind and the OS accept (the picker law)', async () => {
+  // THE SINGLE-FIELD MEDIA HINT (live lane 2026-10-28: video seats
+  // rendered freeform text and the OS dialog offered images): a
+  // file field carrying media 'video' lists the VIDEO library and
+  // the OS accept offers the video formats.
+  const seen: string[] = []
+  const loadMedia = async (kind: string, _signal: AbortSignal): Promise<Array<{ url: string; name: string }>> => {
+    seen.push(kind)
+    return []
+  }
+  const CLIP = { name: 'clip', label: 'Clip', type: 'file', media: 'video' } as SpecField
+  expect(acceptOfField(CLIP)).toBe('video/mp4,video/webm,video/quicktime')
+  const { cap } = captureProvider({ candidates: [], loadMedia })
+  const host = cap().square(CLIP) as { verbs: { onPick: () => void } }
+  act(() => { host.verbs.onPick() })
+  fireEvent.click(screen.getByRole('menuitem', { name: 'From media' }))
+  expect(await screen.findByText(/runs library \(video\)/)).not.toBeNull()
+  expect(seen).toEqual(['video'])
+})
+
 test('FROM MEDIA: a door REFUSAL is stated, not rendered as an empty library', async () => {
   // The no-silent-drop arm: the catch used to swallow the refusal into
   // "nothing to pick yet", which is how the kind mismatch above shipped
@@ -278,6 +298,53 @@ test('FROM FLOW: the seam claim receives the whole request (mode, kind, field, r
   expect(seen[0]!.kind).toBe('image')
   expect(seen[0]!.field.name).toBe('__source_row__')
   expect(seen[0]!.candidates.length).toBe(1)
+})
+
+// THE 2026-11-12 PICKER BURN WALL ("THERE IS NO SEARCH. AND VIDEOS
+// HAVE NO IMAGE PREVIEWS"): the search seat, the video thumb seat,
+// and the no-match face each get their own arm — the operator hit
+// all three in one sentence.
+test('FROM MEDIA: the search narrows rows by label; no-match is the query\u2019s own face', async () => {
+  bindMedia([
+    { url: 'https://host/clip-a.mp4', name: 'clip-a.mp4' },
+    { url: 'https://host/clip-b.mp4', name: 'clip-b.mp4' },
+  ])
+  try {
+    render(h(SourceRow, { label: 'Input', kind: 'image', value: null, onEdit: () => {}, loadMedia: fetchMediaLibrary }))
+    fireEvent.click(screen.getByRole('button', { name: 'Input source' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'From media' }))
+    const box = await screen.findByLabelText('Search by name')
+    expect((await screen.findAllByTestId('source-pick-row')).length).toBe(2)
+    fireEvent.change(box, { target: { value: 'clip-b' } })
+    const rows = screen.getAllByTestId('source-pick-row')
+    expect(rows.length).toBe(1)
+    expect(rows[0]!.textContent).toContain('clip-b.mp4')
+    fireEvent.change(box, { target: { value: 'no-such-clip' } })
+    expect(screen.queryAllByTestId('source-pick-row').length).toBe(0)
+    expect(screen.getByText(/no match for \u201cno-such-clip\u201d/)).not.toBeNull()
+  } finally {
+    unbindEstateRemote()
+  }
+})
+
+test('FROM MEDIA: a video row renders a video thumb, not a letter glyph (the preview seat)', async () => {
+  bindMedia([
+    { url: 'https://host/clip-a.mp4', name: 'clip-a.mp4' },
+    { url: 'data/input/b.txt', name: 'b.txt' },
+  ])
+  try {
+    render(h(SourceRow, { label: 'Input', kind: 'image', value: null, onEdit: () => {}, loadMedia: fetchMediaLibrary }))
+    fireEvent.click(screen.getByRole('button', { name: 'Input source' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'From media' }))
+    const rows = await screen.findAllByTestId('source-pick-row')
+    const video = rows[0]!.querySelector('video')
+    expect(video?.getAttribute('src')).toBe('https://host/clip-a.mp4')
+    expect(video?.getAttribute('preload')).toBe('metadata')
+    // non-media rows keep the glyph
+    expect(rows[1]!.querySelector('video')).toBeNull()
+  } finally {
+    unbindEstateRemote()
+  }
 })
 
 test('FROM MEDIA: the library rows — thumbs for images, glyphs for the rest; the pick writes', async () => {
