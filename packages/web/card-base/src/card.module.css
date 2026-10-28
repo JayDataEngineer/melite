@@ -721,3 +721,23 @@ select option {
   animation: panePulse 1.6s ease-in-out infinite;
 }
 
+
+.pickSearch {
+  margin: 0 0 8px;
+}
+
+.pickSearchInput {
+  background: var(--dsw-alias-interactive-bg-default, transparent);
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 6px;
+  box-sizing: border-box;
+  color: var(--dsw-alias-label-primary);
+  font-size: 13px;
+  padding: 6px 8px;
+  width: 100%;
+}
+
+.pickSearchInput:focus {
+  border-color: var(--dsw-alias-border-l4);
+  outline: none;
+}

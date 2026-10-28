@@ -433,3 +433,26 @@ test('THE TEXT HISTORY LAW: promote swaps the hero and REFETCHES its words', asy
   expect(seen.filter((u) => u.includes('/prev/')).length).toBe(1)
   expect(screen.getByTestId('history-stale-badge')).not.toBeNull()
 })
+
+test('THE URL-KIND LAW (2026-11-12 zoom burn: "PNG renders in a <video> tag") — the temp window frames ride IMG thumbs, and a promoted PNG owns the hero as an image, never a dead player', () => {
+  const owner = video({
+    artifacts: [
+      { name: 'film', url: '/runs/cur/film.mp4' },
+      { name: 'ComfyUI_temp_guthf_00001_.png', url: '/runs/cur/ComfyUI_temp_guthf_00001_.png' },
+    ],
+  })
+  const { container } = render(h(VideoStagePreview, owner))
+  const strip = screen.getByTestId('stage-preview-video-strip')
+  // the mp4 thumb keeps the playable seat; the PNG thumb is an IMG
+  expect(strip.querySelector('video')?.getAttribute('src')).toBe('/runs/cur/film.mp4')
+  expect(strip.querySelector('img')?.getAttribute('src')).toBe('/runs/cur/ComfyUI_temp_guthf_00001_.png')
+  // the film stays the hero — the product, not the ingredient
+  const hero = screen.getByTestId('stage-preview-video-hero')
+  expect(hero.tagName).toBe('VIDEO')
+  // promote the PNG: the hero renders the artifact's OWN kind
+  fireEvent.click(strip.querySelectorAll('button')[1]!)
+  const promoted = screen.getByTestId('stage-preview-video-hero')
+  expect(promoted.tagName, 'a PNG hero is an IMG seat — a <video> paints it dead').toBe('IMG')
+  expect(promoted.getAttribute('src')).toBe('/runs/cur/ComfyUI_temp_guthf_00001_.png')
+  void container
+})

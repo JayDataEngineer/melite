@@ -21,6 +21,7 @@ import { EmptyState } from './layout.tsx'
 import type { PreviewArtifact, PreviewOwnerProps } from '@melite/contracts'
 import { isLiveRunStatus } from '@melite/contracts/stageView'
 import { cn } from './chrome.ts'
+import { isImageUrl, isVideoUrl } from './square.tsx'
 import { chromeCopy } from './locales/chromeCopy.ts'
 import s from './preview.module.css'
 import { pickCellOf, readPick, writePick } from './pick-store.ts'
@@ -312,10 +313,26 @@ export function VideoStagePreview(props: PreviewOwnerProps): ReturnType<typeof h
           variant: 'bare', className: s.empty, icon: h(Film, { className: s.emptyGlyph }),
           title: isLiveRunStatus(props.runStatus) ? 'rendering… the film lands here' : 'No render yet — run lands the film here',
         })
-      : h('video', {
-          className: s.hero, controls: true, playsInline: true, key: hero.url,
-          src: hero.url, 'data-testid': 'stage-preview-video-hero',
-        }),
+      // THE URL-KIND HERO (operator 2026-11-12: "PNG renders in a
+      // <video> tag" — a film run's artifact set carries the engine's
+      // temp WINDOW FRAMES alongside the film; the hero seat is a
+      // <video> by GENRE, so a promoted or default PNG painted dead.
+      // The seat renders the artifact's OWN kind: a video URL keeps
+      // the native player, an image URL rides the heroImg fit law).
+      : isVideoUrl(hero.url)
+        ? h('video', {
+            className: s.hero, controls: true, playsInline: true, key: hero.url,
+            src: hero.url, 'data-testid': 'stage-preview-video-hero',
+          })
+        : isImageUrl(hero.url)
+          ? h('img', {
+              className: s.heroImg, key: hero.url, src: hero.url, alt: hero.name,
+              'data-testid': 'stage-preview-video-hero',
+            })
+          : h('video', {
+              className: s.hero, controls: true, playsInline: true, key: hero.url,
+              src: hero.url, 'data-testid': 'stage-preview-video-hero',
+            }),
     others.length > 0
       ? h('div', { className: s.strip, 'data-testid': 'stage-preview-video-strip' },
           others.map((a) => h('button', {
@@ -329,7 +346,15 @@ export function VideoStagePreview(props: PreviewOwnerProps): ReturnType<typeof h
             title: a.name + (a.url === faceUrl ? chromeCopy.filmViewingSuffix : chromeCopy.filmPreviewSuffix),
             onClick: (e: MouseEvent) => { e.stopPropagation(); setFaceUrl(a.url !== faceUrl ? a.url : null) },
           },
-            h('video', { className: s.thumbVideo, src: a.url, muted: true, playsInline: true, preload: 'metadata' }),
+            // THE URL-KIND THUMB (same burn as the hero's: a PNG in a
+            // <video> seat paints nothing — the thumb renders the
+            // artifact's own kind, image arm first, video arm for
+            // clips, glyph for anything else).
+            isImageUrl(a.url)
+              ? h('img', { className: s.thumbVideo, src: a.url, alt: a.name, loading: 'lazy' })
+              : isVideoUrl(a.url)
+                ? h('video', { className: s.thumbVideo, src: a.url, muted: true, playsInline: true, preload: 'metadata' })
+                : h(Film, { className: s.thumbVideo }),
             h('span', { className: s.thumbVideoName }, a.name))))
       : null,
     HistoryStrip(props, promote, 'stage-output-history', picked),

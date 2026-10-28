@@ -38,6 +38,10 @@ export const squareCopy = {
   mediaUnavailable: (p: { reason: string }): string => 'media library unavailable \u2014 ' + p.reason,
   /** Empty state: the list is honestly empty. */
   nothingToPick: 'nothing to pick yet',
+  /** Picker search field placeholder + aria name (2026-11-12). */
+  searchPlaceholder: 'Search by name',
+  /** Filtered-empty face: the query matched no row (2026-11-12). */
+  noMatchFor: (p: { query: string }): string => 'no match for “' + p.query + '”',
   /** The detach button (square). */
   detach: 'Detach',
   /** The held face's hover title: the slot holds a value no preview

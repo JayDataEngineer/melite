@@ -40,10 +40,23 @@
   background: var(--dsw-alias-bg-solid);
   border: 1px solid var(--dsh-alias-border-l2);
 }
+/* THE VIDEO HERO FIT LAW (operator 2026-11-12: the zoom-card video
+ * "not shrink-to-fit" — the old flex-fill law assumed a
+ * height-bounded chain, but the shell's preview cell is a SCROLL
+ * seat (auto-height content): a portrait film resolved to its
+ * intrinsic height and overflowed the card. Same law as .heroImg's
+ * own (2026-09-21): the hero rides its OWN aspect at the 46vh cap,
+ * centered, width auto — no painted full-width box, no intrinsic
+ * overflow. The strip owns its capped lane below; the cell scrolls
+ * when the whole column needs it (the shell's own law). */
 .hero {
-  flex: 1 1 0%;
-  width: 100%;
-  min-height: 0;
+  display: block;
+  flex: 0 0 auto;
+  height: 46vh;
+  width: auto;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0 auto;
   object-fit: contain;
   background: var(--dsw-alias-bg-base);
   border: 1px solid var(--dsh-alias-border-l2);
