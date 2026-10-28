@@ -439,15 +439,19 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
           (live || shownBarError !== null)
           ? h('div', { key: 'status', className: css.zoomWebhook, role: 'status', 'data-testid': 'zoom-status' },
             live
+              // THE FINISHING LAW (cure B, 2026-10-28): a ceiling
+              // value on a still-running row says finishing — never
+              // a run-wide 100%. The meter holds full: the tap's
+              // last node did finish, only the eventless tail runs.
               ? h('span', { className: css.drillProgress, 'data-testid': 'drill-progress' },
                 h(IconLoadingOutlineRegular, { size: 14 }),
                 h('span', null, [
                   act !== '' ? act : 'running',
-                  pct !== null ? ' · ' + String(pct) + '%' : '',
+                  pct === null ? '' : prog !== null && prog.value >= prog.max ? ' · finishing' : ' · ' + String(pct) + '%',
                 ].join('')),
                 pct !== null
                   ? h('span', { className: css.zoomMeter },
-                    h('span', { className: css.zoomMeterFill, style: { width: pct + '%' } }))
+                    h('span', { className: css.zoomMeterFill, style: { width: (prog !== null && prog.value >= prog.max ? 100 : pct) + '%' } }))
                   : null,
               )
               : shownBarError !== null

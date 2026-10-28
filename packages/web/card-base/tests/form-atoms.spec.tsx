@@ -765,3 +765,30 @@ test('MIXED KNOB ROUTE: poison keeps the typed face; a ghost keeps the typed fac
     assert.equal(edits.length, 1, 'one edit per click')
     assert.deepEqual(edits[0], ['second_pass_enabled', true], 'the edit is a real boolean on the wire name')
   })
+
+test('THE ZERO-LAW CHIP (cure D, 2026-10-28): a held 0 whose tooltip declares the "0 = …" law SHOWS the law on the face', () => {
+  // the operator's burn: the openjutsu card's Width/Height held 0
+  // (inherit the clip's geometry — the real compose law) but the
+  // face painted a bare 0 with the law buried in a hover tooltip.
+  // The chip derives from the DECL's own tooltip — no per-card
+  // special case, every card whose declaration states the law.
+  const onEdit = vi.fn()
+  const f = F({
+    name: 'width', label: 'Width', type: 'slider', min: 0, max: 16384, step: 32,
+    tooltip: "0 = the clip's own width (the evaluated configuration).",
+  })
+  const { container, rerender } = render(h(SpecSliderAtom, { f, value: 0, onEdit }))
+  const chip = container.querySelector('[data-zero-law="width"]') as HTMLElement | null
+  assert.ok(chip !== null, 'the zero-law chip mounts at the held 0')
+  assert.ok(chip.textContent !== null && chip.textContent.includes("0 = the clip's own width"),
+    'the chip carries the tooltip\'s own law sentence')
+  // a non-zero hold: the law is not the live state — no chip
+  rerender(h(SpecSliderAtom, { f, value: 640, onEdit }))
+  assert.equal(container.querySelector('[data-zero-law="width"]'), null, 'no chip off the 0')
+  // a tooltip without the 0=-law never chips (no false affordance)
+  rerender(h(SpecSliderAtom, {
+    f: F({ name: 'width', label: 'Width', type: 'slider', min: 0, max: 16384, step: 32, tooltip: 'Pixels wide.' }),
+    value: 0, onEdit,
+  }))
+  assert.equal(container.querySelector('[data-zero-law="width"]'), null)
+})

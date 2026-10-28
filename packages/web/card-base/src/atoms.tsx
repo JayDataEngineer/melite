@@ -210,6 +210,11 @@ function useLocalSliderValue(value: unknown): { value: number | null, set(n: num
  *  @param onEdit the settle seam.
  *  @param envelope the active variant's [min,max] for THIS knob,
  *  null when the variant declares none. */
+/** The zero-law sentence a declaration may state in its tooltip
+ * ("0 = the clip's own width (…).") — the first sentence, chipped on
+ * the face exactly while the knob holds the 0 (cure D, 2026-10-28). */
+const ZERO_LAW_RE = /^0 =[^.]*\./
+
 export function SpecSliderAtom({ f, value, onEdit, envelope }: {
   f: SpecField
   value: unknown
@@ -306,6 +311,17 @@ export function SpecSliderAtom({ f, value, onEdit, envelope }: {
       },
       'aria-label': f.label,
     }),
+    // THE ZERO-LAW CHIP (cure D, 2026-10-28): a held 0 whose
+    // declaration's tooltip states a "0 = …" law SHOWS the law on
+    // the face — the openjutsu burn: Width/Height 0 (inherit the
+    // clip's geometry) painted a bare 0 with the law buried in the
+    // hover tooltip. Derived from the DECL's own sentence — no
+    // per-card special case; off the 0 the law is not the live
+    // state and the chip goes.
+    ...(shown.value === 0 && typeof f.tooltip === 'string' && f.tooltip.startsWith('0 =')
+      ? [h('span', { className: css.specSliderZero, 'data-zero-law': f.name },
+          ZERO_LAW_RE.exec(f.tooltip)?.[0] ?? f.tooltip)]
+      : []),
   )
 }
 

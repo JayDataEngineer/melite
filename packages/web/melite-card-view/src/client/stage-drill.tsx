@@ -1616,10 +1616,17 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
   const activity = typeof (stage as { activity?: unknown }).activity === 'string'
     ? (stage as { activity?: unknown }).activity as string : ''
   const progress = (stage as { progress?: { value: number, max: number } | null }).progress ?? null
-  const pct = progress !== null && progress.max > 0 ? Math.floor((100 * progress.value) / progress.max) : null
+  // THE FINISHING LAW (cure B, 2026-10-28): same per-node lie as the
+  // tile — a ceiling value on a still-running row says finishing,
+  // never a run-wide 100%. The zero-max face is the old law: no
+  // percent at all, never a divide.
+  const bounded = progress !== null && progress.max > 0
   const webhookFeed = h('div', { className: css.runRow, 'data-testid': 'drill-webhooks' },
     activity !== '' ? h('span', { className: css.tilePct, 'aria-label': chromeCopy.engineActivity }, activity) : null,
-    progress !== null && pct !== null ? h('span', { className: css.tilePct, 'data-testid': 'drill-progress', 'aria-label': chromeCopy.progressPercent }, pct + '% (' + String(progress.value) + '/' + String(progress.max) + ')') : null,
+    bounded ? h('span', { className: css.tilePct, 'data-testid': 'drill-progress', 'aria-label': chromeCopy.progressPercent },
+      progress.value >= progress.max
+        ? 'finishing (' + String(progress.value) + '/' + String(progress.max) + ')'
+        : Math.floor((100 * progress.value) / progress.max) + '% (' + String(progress.value) + '/' + String(progress.max) + ')') : null,
   )
   // THE SEAM'S LANDED FILM (shared by both slots): the spec claims
   // preview.timeline AND a video artifact exists — else no seam.

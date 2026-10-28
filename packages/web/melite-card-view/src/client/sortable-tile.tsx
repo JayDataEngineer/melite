@@ -193,11 +193,19 @@ export function SortableTile({ row, entered, onOpen, grouping, selected, onToggl
                 // THE PROGRESS FACE (2026-09-13): the tap's percent
                 // rides beside the spinner — the operator's "forward
                 // the comfyui progress webhooks like before".
+                // THE FINISHING LAW (cure B, 2026-10-28): the
+                // engine's progress is per-node — a ceiling value on
+                // a still-running row means the tap's last node
+                // finished and the eventless tail (decode, combine,
+                // mux) is still in flight. A run-wide "100%" at
+                // that moment is a LIE (the operator pressed Stop on
+                // a live run reading it) — the face says finishing.
                 row.progress !== null && row.progress.max > 0
                   ? h('span', {
                       className: css.tilePct, 'data-testid': 'tile-progress',
                       'aria-label': chromeCopy.progressPercent,
-                    }, Math.floor((100 * row.progress.value) / row.progress.max) + '%')
+                    }, row.progress.value >= row.progress.max ? 'finishing'
+                      : Math.floor((100 * row.progress.value) / row.progress.max) + '%')
                   : null,
               )
             : null,

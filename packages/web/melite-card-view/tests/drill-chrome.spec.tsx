@@ -21,7 +21,7 @@
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
-import { createElement } from 'react'
+import { createElement, createElement as h } from 'react'
 import { mountEstateFakes } from './estate-harness.ts'
 import { unbindEstateRemote } from '@melite/card-base/client'
 
@@ -148,6 +148,42 @@ test('the running drill shows stop + the tap fold; the tile shows the percent', 
   const prog = within(drill).getByTestId('drill-progress')
   expect(prog.textContent).toContain('sampling 7/20')
   expect(prog.textContent).toContain('35%')
+})
+
+test('THE FINISHING FACE (cure B, 2026-10-28): a live row whose last progress node is complete NEVER paints a run-percent', async () => {
+  // the operator's burn: the face read "100%" + "waiting on engine
+  // (48s)" while the sampler was DONE and the eventless tail (VAE
+  // decode, combine, audio mux) still ran — the operator pressed
+  // Stop on a live run. The engine's progress is PER-NODE; a
+  // ceiling value on a live row means the tail is running, and the
+  // face must say that, never a run-wide 100%. The ceilinged bench
+  // goes in THROUGH the same faker the other arms use: the hook
+  // serves a LIVE-mapped variant (progress 20/20 + the waiting
+  // activity), like the estate-harness faker serves typed hook
+  // payloads (the harness's own fixture law).
+  RUNNING_BENCH.stages[0]!.result = {
+    run_id: 'run-9', progress: { value: 20, max: 20 },
+    activity: 'waiting on engine (48s — no engine events)',
+  }
+  stubWire()
+  const user = userEvent.setup()
+  mount()
+  // THE TILE: the percent pill says finishing, never 100%
+  await waitFor(() => {
+    expect(screen.getByTestId('tile-progress').textContent).toContain('finishing')
+  })
+  expect(screen.getByTestId('tile-progress').textContent).not.toContain('100%')
+  // THE DRILL: same law on the drilled face
+  await user.click(tileButtons()[0] as HTMLElement)
+  await screen.findByText('Prompt', {}, { timeout: 4000 })
+  const drill = document.querySelector('div[class*="zoomCard"]') as HTMLElement
+  const prog = within(drill).getByTestId('drill-progress')
+  expect(prog.textContent).toContain('finishing')
+  expect(prog.textContent).not.toContain('100%')
+  // RESTORE the shared fixture (the other arms' 7/20 fold stays)
+  RUNNING_BENCH.stages[0]!.result = {
+    run_id: 'run-9', progress: { value: 7, max: 20 }, activity: 'sampling 7/20',
+  }
 })
 
 test('THE STATUS SEAT RIDES CONTENT, NOT GEOMETRY (2026-09-21, operator: the permanent margin was struck; the SCROLL LOCK owns the geometry law — the seat exists ONLY while live or failed carries text)', async () => {

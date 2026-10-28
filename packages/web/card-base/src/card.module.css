@@ -248,6 +248,17 @@ select option {
   min-width: 4ch;
   text-align: right;
 }
+/* THE ZERO-LAW CHIP (cure D, 2026-10-28): the declaration's own
+ * "0 = …" sentence shown beside the knob exactly while it holds
+ * the 0 — the inherit law made visible, never a hover-only secret. */
+.specSliderZero {
+  color: var(--dsw-alias-label-secondary);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 22ch;
+}
 .specTextarea {
   background: var(--dsw-alias-interactive-bg-hover);
   border: 0.5px solid var(--dsw-alias-border-l2);
