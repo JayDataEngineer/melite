@@ -520,12 +520,56 @@ describe("mapHistoryEntry (the verdict)", () => {
     });
     expect((longCause as { detail: string }).detail.length).toBeLessThanOrEqual(2001);
   });
-  it("non-array message rows ride the whole-rec voice too", () => {
+  it("non-array message rows ride the event-names voice (the last row verbatim, never a JSON head slice)", () => {
     const v = mapHistoryEntry({
       status: { status_str: "error", messages: ["plain", { o: 1 }, ["x"]] },
     });
     expect(v.kind).toBe("failed");
-    expect((v as { detail: string }).detail).toContain("status_str");
+    expect((v as { detail: string }).detail).toContain("events: x");
+    expect((v as { detail: string }).detail).toContain('last: ["x"]');
+  });
+  it("THE INTERRUPT ARM (cure C, 2026-10-28): an interrupted run names the interrupt — never a 400-char JSON head slice", () => {
+    // the operator's burn: a Stop-press run folded to a failure whose
+    // stored error was the status JSON's first 400 chars, cut
+    // mid-token ("...\"openjutsu::Man"), unreadable
+    const v = mapHistoryEntry({
+      status: {
+        status_str: "error",
+        completed: false,
+        messages: [
+          ["execution_start", { prompt_id: "c7f3b702", timestamp: 1793174675048 }],
+          ["execution_cached", { nodes: ["a", "b"] }],
+          ["execution_interrupted", { prompt_id: "c7f3b702" }],
+        ],
+      },
+    });
+    expect(v.kind).toBe("failed");
+    const detail = (v as { detail: string }).detail;
+    expect(detail).toContain("interrupted");
+    expect(detail).toContain("c7f3b702");
+    expect(detail).not.toContain('{"status_str"');
+  });
+  it("an unknown error shape carries the event names + the LAST message verbatim (the decisive tail)", () => {
+    const v = mapHistoryEntry({
+      status: {
+        status_str: "error",
+        completed: false,
+        messages: [
+          ["execution_start", { prompt_id: "p1" }],
+          ["execution_cached", { nodes: ["openjutsu::SamplerCustomAdvanced.0"] }],
+        ],
+      },
+    });
+    expect(v.kind).toBe("failed");
+    const detail = (v as { detail: string }).detail;
+    expect(detail).toContain("no execution_error event");
+    expect(detail).toContain("events: execution_start, execution_cached");
+    expect(detail).toContain("execution_cached");
+    // the last message rides bounded, and the voice never cuts
+    // mid-token the way the old slice did
+    expect(detail.length).toBeLessThanOrEqual(1400);
+    // the last message rides VERBATIM (complete JSON, not a head slice)
+    expect(detail).toContain('last: ["execution_cached",{"nodes":["openjutsu::SamplerCustomAdvanced.0"]}]');
   });
   it("error status without the message voices the whole rec (sliced)", () => {
     const v = mapHistoryEntry({ status: { status_str: "error", messages: "flat" } });
