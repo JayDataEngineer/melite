@@ -145,6 +145,10 @@ const CENSUS_SKIP_ROSTER: readonly string[] = [
   ...["default", "lightning", "standard", "strong-identity", "upstream-solvers"].map(
     (lane) => "qwen-img-edit-2511/" + lane,
   ),
+  // (2026-10-28) seedvr2-ema/vae-fp16: the fp16 VAE face went
+  // hide_from_dropdown (DECL row) — its selection throws in the
+  // census, so the lane never composes. Re-offering it reds here.
+  "seedvr2-ema/vae-fp16",
 ];
 
 const LARGE = "qwen3-tts-voicedesign";

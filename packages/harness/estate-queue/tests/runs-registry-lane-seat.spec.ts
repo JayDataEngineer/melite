@@ -86,7 +86,8 @@ describe("the runs door through the lane's models seat", () => {
     // third image-edit family joins the load table — the census red
     // surfaced only when this suite next ran (the boarding wave never
     // did); the count now names the booted truth again.
-    assert.equal(seat.allDecls().length, 32, "the booted table, not a bare service (the FAMILY_PKGS census)");
+    // 32 -> 33 (2026-10-27, the swap family: viggle-animate, audit 023).
+    assert.equal(seat.allDecls().length, 33, "the booted table, not a bare service (the FAMILY_PKGS census)");
     const err = await remote(() =>
       svc.start({ draft_id: "d1", test: false, flow: "fit-seat" }, new AbortController().signal),
     );

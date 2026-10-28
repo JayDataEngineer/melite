@@ -32,8 +32,14 @@ describe("the qwen-img-edit-21 model plugin (the cached-reference edit lane of t
     // VAEEncode-of-source (the 2511 lane) — the row declares no
     // latent member; the ACTION owns that class.
     assert.equal((DECL.lane_inputs ?? {} as Record<string, unknown>).latent_node, undefined);
-    assert.equal((DECL.defaults ?? {} as Record<string, unknown>).steps, 25);
-    assert.equal((DECL.defaults ?? {} as Record<string, unknown>).cfg, 1);
+    // steps/cfg are VARIANT-CLASS (the turbo-default flip, commit
+    // 25a35ebf8): no top-level defaults row exists to pin — the
+    // variant rows' own resolver_defaults own the values. The
+    // BASE row still carries the full 25/1 recipe; turbo rides 8.
+    assert.equal((DECL.defaults ?? {} as Record<string, unknown>).steps, undefined);
+    const base = (DECL.variants ?? []).find((v) => v.id === "base") as { resolver_defaults?: Record<string, unknown> } | undefined;
+    assert.equal(base?.resolver_defaults?.steps, 25);
+    assert.equal(base?.resolver_defaults?.cfg, 1);
   });
 
   it("declares NO stated size — the latent law (2026-11-08): the encoder's own anchor-sized latent is the geometry", () => {

@@ -33,8 +33,13 @@ describe("the qwen-img-edit-2511 model plugin (the whole model, one package)", (
   // washed-out, broken edit the operator reported.
   it("defaults match the pinned unet's recipe (standard int8_convrot ⇒ 20 steps, cfg 2.5)", () => {
     assert.equal(DECL.lane_inputs!.unet, "qwen_image_edit_2511_int8_convrot.safetensors");
-    assert.equal(DECL.defaults!.steps, 20, "standard weights need the full step count");
-    assert.equal(DECL.defaults!.cfg, 2.5, "the standard recipe's guidance");
+    // steps/cfg are VARIANT-CLASS (audit 013 cure 3's law, the same
+    // cure as the 21 sibling): the STANDARD row's resolver_defaults
+    // own the recipe — no top-level defaults row exists to pin.
+    assert.equal(DECL.defaults!.steps, undefined);
+    const standard = DECL.variants.find((v) => v.id === "standard") as { resolver_defaults?: Record<string, unknown> } | undefined;
+    assert.equal(standard?.resolver_defaults?.steps, 20, "standard weights need the full step count");
+    assert.equal(standard?.resolver_defaults?.cfg, 2.5, "the standard recipe's guidance");
   });
 
   it("the lightning variant swaps BOTH the recipe and the unet — never one without the other", () => {    const lightning = DECL.variants.find((v) => v.id === "lightning")!;

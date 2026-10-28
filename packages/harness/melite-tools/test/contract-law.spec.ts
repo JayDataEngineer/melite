@@ -284,8 +284,10 @@ describe('THE ESTATE CONTRACT LAWS (every card × family × mod, three faces)', 
     // rail's seats (image/video/audio lists are the typed stacks,
     // seg is the mask modality, text stays params, data/mesh the
     // 3d lanes). A new kind is a contract act.
+    // (2026-10-27, feature 024): 'video' joined — the re-shoot
+    // source seat (reshoot_clip), a single video producer edge.
     expect([...edgeKinds].sort(), 'edge kinds (a new kind is a contract act)').toEqual(
-      ['audio', 'audio_list', 'data', 'image', 'image_list', 'mesh', 'seg', 'text', 'video_list']
+      ['audio', 'audio_list', 'data', 'image', 'image_list', 'mesh', 'seg', 'text', 'video', 'video_list']
     )
   })
 
