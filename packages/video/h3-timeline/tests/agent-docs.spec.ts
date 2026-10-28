@@ -55,6 +55,49 @@ describe("THE AGENT-DOCS WALL (the live law, where agents load it)", () => {
     for (const [name, re] of RETIRED) expect(md, `retired ${name}`).not.toMatch(re);
   });
 
+  it("the swap skill teaches the bag container, the mask convention, and the confirm lane clause (friction-report #2/#3/#5)", () => {
+    const md = read("agents/skills/swap/SKILL.md");
+    // #2: the entry rides params.replace as an array on every door —
+    // never flat (the flat spelling refuses as unknown param(s)).
+    expect(md).toMatch(/params\.replace = \[entry\]/);
+    expect(md).toMatch(/never flat/);
+    // #3: the mask seat takes one union image, never the folder —
+    // and there is no mask_sequence seat to guess at.
+    expect(md).toMatch(/UNION/);
+    expect(md).toMatch(/never its staged/);
+    expect(md).toMatch(/no `mask_sequence` seat/);
+    // #5: the confirm wait is chat-lane law — a headless commission
+    // states values in the run record and executes, never stalls.
+    expect(md).toMatch(/THE LANE CLAUSE/);
+    expect(md).toMatch(/brief IS the confirmation/);
+  });
+
+  it("AGENT.md teaches the lane test (friction-report #5: deliverable = execute, draft = compose)", () => {
+    const md = read("agents/AGENT.md");
+    expect(md).toMatch(/THE LANE TEST/);
+    expect(md).toMatch(/DELIVERABLE\? Execute/);
+  });
+
+  it("the reshoot skill teaches the knob-group door, the not-a-regen boundary, and the mutual refusal", () => {
+    const md = read("agents/skills/reshoot/SKILL.md");
+    // the door's shape: a knob group on the film, never a mod bag —
+    // and never confused with a fresh regen (a moved camera, not a
+    // re-roll).
+    expect(md).toMatch(/reshoot_enabled/);
+    expect(md).toMatch(/NOT.*fresh regen/i);
+    expect(md).toMatch(/NOT.*replace mod/i);
+    // one door per doc: armed replace + armed reshoot refuses loud.
+    expect(md).toMatch(/One door per doc/);
+    // the armed-missing-clip law: loud refusal naming the seat,
+    // never a silent disarm.
+    expect(md).toMatch(/refuses LOUD naming the seat/);
+    // the identity camera: untouched knobs re-render the same view.
+    expect(md).toMatch(/identity camera/);
+    // generic lane law: the maker runbook, no machine-specific
+    // ports or service names anywhere in the doc.
+    expect(md).toMatch(/maker\s+runbook/);
+    expect(md).not.toMatch(/3088|33081|systemctl|127\.0\.0\.1|localhost/);
+  });
   it("the served params spec (tool.ts) exposes audio_clips with the text obligation — agents can SEE the field", () => {
     // source-text wall: the builder's parameters block is the served
     // spec an agent reads via melite_load; the text obligation and

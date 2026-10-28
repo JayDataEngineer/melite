@@ -17,7 +17,7 @@ melite_discover → melite_load → melite_construct
 
 Use `melite_construct` with `verb: "add_stage"`, card `h3-timeline`, and
 `params.calls`. Browser sessions stop at the user's Run press. A sanctioned
-headless commission may use `melite_flow` and `run_status` under the 3088
+headless commission may use `melite_flow` and `run_status` under the maker
 runbook. Never shell out to ComfyUI or hand-build a graph.
 
 ## Direct card shape

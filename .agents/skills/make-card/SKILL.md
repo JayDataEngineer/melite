@@ -168,15 +168,19 @@ configuration and the coverage gate.
 
 ## 6. Restart the lane, prove the card
 
-The gateway (:33081) died 2026-09-10 — never restart it. The estate
-serves from the DSH lane:
+The standalone gateway is retired (2026-09-10) — never restart it and
+never invent a second process; the estate serves from the one DSH
+lane. Restart that lane service the way THIS deployment runs it (the
+unit/process name is per-installation — never assume a specific one),
+then prove the card's flow validates against the running lane's own
+base URL:
 
 ```sh
-systemctl --user restart dsh-melite-test.service
-# prove the card's flow validates (flow id = the card's FLOW name):
-curl -s -X POST http://127.0.0.1:3088/v1/flows/validate \
+# restart the estate lane service for this installation, then:
+curl -s -X POST "$LANE/v1/flows/validate" \
   -H 'content-type: application/json' \
   -d '{"id":"<flow>","stages":[{"id":"s_0","engine":"comfyui","params":{}}]}'
+# $LANE = the base URL this deployment's estate answers on
 # expect {"ok":true,"flow":"<flow>",...}
 # the studio proof is build-time + test-time (the client spec), and
 # live on the lane's GUI (the cards.stage.view seam serves it).

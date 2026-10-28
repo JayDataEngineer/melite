@@ -16,6 +16,13 @@ IS that press — melite_flow executes there).
 Iterate ONLY at **`duration: 30`**; render the final at `duration: 90–120`
 once the caption is locked (no `preset` knob exists — duration is the
 draft/final lever; the caption itself rides `params.prompt`).
+**LENGTH LIVES IN `params.lyrics`, not duration** (operator 2026-11-12):
+duration is a CEILING — the model ends the song when its plan ends.
+Instrumentals need a sequential section-tag roadmap in `lyrics`
+(`[intro]` / `[instrumental]` / `[solo]` blocks, one per line,
+~20-40s each — repeat blocks to target length; an empty box wraps
+~35s), plus "Strictly instrumental. No vocals, no choir, no humming"
+in the caption so extended blocks stay voiceless.
 Variations = same caption, new seeds.
 
 ## Gotcha

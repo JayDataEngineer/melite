@@ -202,6 +202,21 @@ export function hydrateLayerA(rawDoc: Record<string, unknown> | undefined): Laye
     refmod_pool: optNum("refmod_pool"),
     refmod_identity: optNum("refmod_identity"),
     refmod_save: raw?.refmod_save === false ? false : undefined,
+    // THE RE-SHOOT GROUP (the stuck-switch cure, 2026-11-12): the
+    // switch hydrates its true pole only (absent = off, the family
+    // default); the clip and dials hydrate when stated so an
+    // agent-authored armed reshoot survives a studio open→save.
+    reshoot_enabled: raw?.reshoot_enabled === true,
+    reshoot_clip: optStr("reshoot_clip"),
+    reshoot_orbit: optNum("reshoot_orbit"),
+    reshoot_tilt: optNum("reshoot_tilt"),
+    reshoot_dolly: optNum("reshoot_dolly"),
+    reshoot_zoom: optNum("reshoot_zoom"),
+    reshoot_pan: optNum("reshoot_pan"),
+    reshoot_strength: optNum("reshoot_strength"),
+    reshoot_depth_ratio: optNum("reshoot_depth_ratio"),
+    reshoot_smooth_depth: raw?.reshoot_smooth_depth === true,
+    reshoot_invert_depth: raw?.reshoot_invert_depth === true,
     // THE ATTENTION BACKEND (2026-10-16: caught by the contract
     // wall's new two-directional law — the pick had a schema row and
     // a compose read but NO studio seat: a UI state the doc never
@@ -346,6 +361,12 @@ export const LAYERA_KEY_UNIVERSE: ReadonlySet<string> = new Set([
   // the true-gated switch riders + their stamps
   "sr_switch", "sr_model", "sr_resolution",
   "second_pass_enabled", "refine_lora", "refine_strength", "refine_steps", "refine_denoise",
+  // the re-shoot master + its clip and dials (the stuck-switch cure,
+  // 2026-11-12): the true-gated master riders the delete pole when
+  // flipped back off — the same OFF-POLE law as second_pass_enabled.
+  "reshoot_enabled", "reshoot_clip", "reshoot_orbit", "reshoot_tilt",
+  "reshoot_dolly", "reshoot_zoom", "reshoot_pan", "reshoot_strength",
+  "reshoot_depth_ratio", "reshoot_smooth_depth", "reshoot_invert_depth",
   "upscale_route", "upscale_model",
   // the bake's stated dials (the override-gated riders + the
   // false-gated save)
@@ -420,6 +441,23 @@ export function serializeLayerA(a: LayerA, base?: Record<string, unknown>): Reco
   if (a.refmod_pool != null) out.refmod_pool = a.refmod_pool
   if (a.refmod_identity != null) out.refmod_identity = a.refmod_identity
   if (a.refmod_save === false) out.refmod_save = false
+  // THE RE-SHOOT MASTER rides only when ON (absent = off — the
+  // family default; the same ride law as sr_switch / the second-pass
+  // master). The clip rides when seated; the dials ride when stated —
+  // the compose door (reshootArmed) reads exactly this doc surface.
+  if (a.reshoot_enabled === true) {
+    out.reshoot_enabled = true
+    if (a.reshoot_clip != null && a.reshoot_clip !== "") out.reshoot_clip = a.reshoot_clip
+    if (a.reshoot_orbit != null) out.reshoot_orbit = a.reshoot_orbit
+    if (a.reshoot_tilt != null) out.reshoot_tilt = a.reshoot_tilt
+    if (a.reshoot_dolly != null) out.reshoot_dolly = a.reshoot_dolly
+    if (a.reshoot_zoom != null) out.reshoot_zoom = a.reshoot_zoom
+    if (a.reshoot_pan != null) out.reshoot_pan = a.reshoot_pan
+    if (a.reshoot_strength != null) out.reshoot_strength = a.reshoot_strength
+    if (a.reshoot_depth_ratio != null) out.reshoot_depth_ratio = a.reshoot_depth_ratio
+    if (a.reshoot_smooth_depth === true) out.reshoot_smooth_depth = true
+    if (a.reshoot_invert_depth === true) out.reshoot_invert_depth = true
+  }
   // (Layer A NLE) positioned audio clips — only when present (an empty
   // array = no clips = absent; the engine default is silence).
   if (a.audio_clips?.length) out.audio_clips = a.audio_clips

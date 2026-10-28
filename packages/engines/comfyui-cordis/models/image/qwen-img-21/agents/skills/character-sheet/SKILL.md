@@ -72,6 +72,7 @@ panel set is the sheet; do not ask for two characters on one page.
 ## Hand-off
 
 The sheet is input, not a deliverable: pass it as the reference image to
-an edit lane (qwen-img-edit-2511 — see the pose-iteration skill) or as
+an edit lane (qwen-img-edit-21 — for the full production sheet see the
+design-sheet skill) or as
 the first frame to a video lane. Lock the ten-section prompt with the
 seed in the character's record so the sheet can be regenerated.

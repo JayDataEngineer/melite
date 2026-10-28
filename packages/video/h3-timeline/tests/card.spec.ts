@@ -42,7 +42,22 @@ const SHOT = (over: Record<string, unknown> = {}): Record<string, unknown> => ({
 
 describe("the h3-timeline compose gate", () => {
   it("declares its JSON array contract and refuses non-array containers", () => {
-    assert.deepEqual(def.flowOutputBindings, [{ channel: "default", node: "*", nodeClass: "SaveVideo" }]);
+    // THE SWAP-PARITY GATE (friction-report #1): the film door
+    // answers only when the replace arm is empty; the armed swap
+    // answers MiniMaxH3ChainAssemble (the swap terminal,
+    // copy_to_output true). An unconditional SaveVideo pin here let
+    // the estate refuse every swap with `expects * as SaveVideo,
+    // got missing`.
+    const bindings = [...(def.flowOutputBindings ?? [])];
+    assert.equal(bindings.length, 2, "two conditional doors: film vs swap");
+    const film = bindings.find((b) => b.nodeClass === "SaveVideo");
+    const swap = bindings.find((b) => b.nodeClass === "MiniMaxH3ChainAssemble");
+    assert.ok(film?.when, "the film door is conditional");
+    assert.ok(swap?.when, "the swap door is conditional");
+    assert.equal(film.when!({}), true, "empty params ride the film door");
+    assert.equal(film.when!({ replace: [{ source_clip: "c" }] }), false, "an armed bag leaves the film door");
+    assert.equal(swap.when!({}), false, "empty params leave the swap door");
+    assert.equal(swap.when!({ replace: [{ source_clip: "c" }] }), true, "an armed bag rides the swap door");
     // SLICE 1: keyframes joined the JSON row contract (the any-frame
     // pin bus) — the census grows WITH the behavior, and the new
     // container refusal is judged in the same arm.

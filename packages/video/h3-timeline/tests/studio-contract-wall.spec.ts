@@ -113,6 +113,15 @@ const LAYER_A_ALL_KEYS: string[] = [
   "ref_video_trims", "duck_depth_db",
   // THE BAKE'S STATED DIALS (study §5/§7.2; value-arms ARMs 13/14)
   "refmod_mode", "refmod_pool", "refmod_identity", "refmod_save",
+  // THE RE-SHOOT GROUP (operator 2026-11-12: "THE RESHOOT SWITCH
+  // DOESN'T EVEN DO ANYTHING, IT IS STUCK") — the served rows had
+  // no serializer seat: the flip died at the save, the resolved
+  // default false snapped the switch back. The second-pass
+  // disease's own shape; the fixture rows make the two-directional
+  // arm own them.
+  "reshoot_enabled", "reshoot_clip", "reshoot_orbit", "reshoot_tilt",
+  "reshoot_dolly", "reshoot_zoom", "reshoot_pan", "reshoot_strength",
+  "reshoot_depth_ratio", "reshoot_smooth_depth", "reshoot_invert_depth",
 ]
 
 /** A maximally-populated Layer A (every value non-default, every
@@ -162,6 +171,18 @@ function populatedMax(): Record<string, unknown> {
     // THE LATENT-UPSCALE ROUTE (SOTA plan Phase P2): the sub-gate
     // rides the latent_2x pole (off = absent = the default, never a
     // populated state) and the weight rides the on-disk LBH v1 file
+    // the re-shoot group: master true (absent = off is the family
+    // default), a seated clip, and every dial at a NON-default value
+    // (presence by stated value, never by coincidence with default)
+    else if (key === "reshoot_enabled" || key === "reshoot_smooth_depth" || key === "reshoot_invert_depth") populated[key] = true
+    else if (key === "reshoot_clip") populated[key] = "data/input/clip.mp4"
+    else if (key === "reshoot_orbit") populated[key] = 30
+    else if (key === "reshoot_tilt") populated[key] = 10
+    else if (key === "reshoot_dolly") populated[key] = 1.5
+    else if (key === "reshoot_zoom") populated[key] = 35
+    else if (key === "reshoot_pan") populated[key] = 0.1
+    else if (key === "reshoot_strength") populated[key] = 1.5
+    else if (key === "reshoot_depth_ratio") populated[key] = 8
     else if (key === "upscale_route") populated[key] = "latent_2x"
     else if (key === "upscale_model") populated[key] = "minimax_h3_latent_upscaler_3d_bf16.safetensors"
     else if (key === "attention_backend") populated[key] = "pytorch attention"
