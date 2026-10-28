@@ -603,3 +603,50 @@ describe("spliceWorkflow's absent-inject toll", () => {
     expect((g["n1"] as { inputs: Record<string, number> }).inputs["a"]).toBe(1);
   });
 });
+
+describe("THE ENGINE-BIRTH POINTER ARM (the preview-after-harvest cure, 2026-10-28)", () => {
+  // Nine graphs died today on MeliteFrameSheet / VHS twins carrying
+  // `<engine>/output/<name>` paths whose files the estate had ALREADY
+  // harvested into the run trees — the absolute arm's miss law rode
+  // the dead pointer verbatim into the graph and the engine refused
+  // "no media file". A dead `*/output/<leaf>` pointer is a POINTER,
+  // never a local file (the estate/gallery arms' own law): strip the
+  // engine's collision suffix (`__<hex>`), find the artifact in the
+  // cross-roots run trees, stage the found copy; a total miss
+  // refuses LOUD — never rides verbatim.
+  beforeAll(() => {
+    mkdirSync(join(ROOT, "run-h3-82"), { recursive: true });
+    writeFileSync(join(ROOT, "run-h3-82", "h3_t4_w1_00082_.mp4"), "film-bytes");
+    writeFileSync(join(ROOT, "run-h3-82", "plain_take.mp4"), "plain-bytes");
+  });
+  it("a harvested engine-birth pointer (collision-suffixed) re-stages from the run tree", async () => {
+    const { graph } = await uploadReferenced(fakeClient(), {
+      n: { class_type: "VHS_LoadVideo", inputs: { video: "/home/user/tools/comfyui/output/h3_t4_w1_00082__491994e8a99b.mp4" } },
+    }, { runsRoot: ROOT });
+    expect((graph["n"] as { inputs: { video: string } }).inputs["video"]).toMatch(/^h3_t4_w1_00082__[0-9a-f]{12}\.mp4$/);
+  });
+  it("a suffix-less harvested pointer re-stages too", async () => {
+    const { graph } = await uploadReferenced(fakeClient(), {
+      n: { class_type: "X", inputs: { v: "/home/user/tools/comfyui/output/plain_take.mp4" } },
+    }, { runsRoot: ROOT });
+    expect((graph["n"] as { inputs: { v: string } }).inputs["v"]).toMatch(/^plain_take_[0-9a-f]{12}\.mp4$/);
+  });
+  it("an existing engine-output file still stages through the absolute arm (unchanged law)", async () => {
+    mkdirSync(join(DIR, "engine", "output"), { recursive: true });
+    writeFileSync(join(DIR, "engine", "output", "live.mp4"), "live");
+    const { graph } = await uploadReferenced(fakeClient(), {
+      n: { class_type: "X", inputs: { v: join(DIR, "engine", "output", "live.mp4") } },
+    }, { runsRoot: ROOT });
+    expect((graph["n"] as { inputs: { v: string } }).inputs["v"]).toMatch(/^live_[0-9a-f]{12}\.mp4$/);
+  });
+  it("a dead pointer no run tree holds refuses LOUD (never rides verbatim)", async () => {
+    await expect(uploadReferenced(fakeClient(), {
+      n: { class_type: "X", inputs: { v: "/home/user/tools/comfyui/output/gone_0000dead0000.mp4" } },
+    }, { runsRoot: ROOT })).rejects.toThrow(/engine output pointer not found.*harvested.*gone\.mp4/);
+  });
+  it("a dead pointer with no runsRoot refuses loud (the caller seam, never a silent ride)", async () => {
+    await expect(uploadReferenced(fakeClient(), {
+      n: { class_type: "X", inputs: { v: "/home/user/tools/comfyui/output/gone_0000dead0000.mp4" } },
+    }, undefined)).rejects.toThrow(/engine output pointer not found/);
+  });
+});

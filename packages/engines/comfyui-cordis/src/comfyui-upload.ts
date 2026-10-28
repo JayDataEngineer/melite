@@ -4,7 +4,7 @@
 import { LEGACY_RUN_MEDIA_PREFIX, RUN_MEDIA_PREFIX, RUN_ID_RE } from '@melite/contracts/benchStage';
 import { contentTypeForArtifact, segmentConfined, servableLeaf } from '@melite/contracts/mediaKinds';
 import { randomBytes } from "node:crypto";
-import { readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { createHash } from "node:crypto";
 import { basename, dirname, join } from "node:path";
@@ -547,7 +547,54 @@ export async function uploadReferenced(
       }
     }
     const cand: string = p.startsWith("/") ? p : join(process.cwd(), p);
-    if (!isFile(cand)) return v;
+    if (!isFile(cand)) {
+      // THE ENGINE-BIRTH POINTER ARM (2026-10-28 — the
+      // preview-after-harvest burn): nine graphs died on nodes
+      // carrying `<engine>/output/<name>` paths whose files the
+      // estate had already harvested into the run trees; riding the
+      // dead pointer verbatim is the silent mid-render death this
+      // walk exists to kill. A dead absolute `*/output/<leaf>` is a
+      // POINTER, never a local file (the estate/gallery arms' own
+      // law): strip the engine's collision suffix (`__<hex>` before
+      // the extension), search the cross-roots run trees for any
+      // run holding the artifact, stage the found copy, and refuse
+      // LOUD on a total miss — never a verbatim ride.
+      if (p.startsWith("/") && /\/output\/[^/]+$/.test(p)) {
+        const leaf = basename(p);
+        // the ext gate above already proved a stageable tail. The
+        // engine's collision suffix is ONE underscore + 8-16 hex
+        // (VHS SaveVideo: stem_ + _<hash> — `h3_t4_w1_00082_` +
+        // `_491994e8a99b`), the same shape as this walk's own
+        // content-addressed staged names; the stem's own trailing
+        // underscore survives the strip.
+        const stripped = leaf.replace(/_[0-9a-f]{8,16}(?=\.[^.]+$)/, "");
+        const names = stripped !== leaf ? [stripped, leaf] : [leaf];
+        const trees = opts?.runsRoot !== undefined ? candidateTrees(opts.runsRoot, opts.stateRoots) : [];
+        let hit: string | null = null;
+        search: for (const tree of trees) {
+          let runs: string[];
+          try {
+            runs = readdirSync(tree);
+          } catch {
+            continue;
+          }
+          for (const run of runs) {
+            for (const n of names) {
+              const c = join(tree, run, n);
+              if (isFile(c)) { hit = c; break search; }
+            }
+          }
+        }
+        if (hit === null) {
+          throw new ComfyError(
+            "engine output pointer not found (" + p + ") — the artifact left the engine output tree (harvested) and no run tree holds '" + stripped + "'; re-run the producer card " + searchedVoice(trees),
+          );
+        }
+        if (!(hit in seen)) seen[hit] = (await uploadFile(client, hit)).name;
+        return seen[hit] as string;
+      }
+      return v;
+    }
     if (!(cand in seen)) seen[cand] = (await uploadFile(client, cand)).name;
     return seen[cand] as string;
   };
