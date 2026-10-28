@@ -563,12 +563,13 @@ export async function executeSingleInner(
   await gateVramForStage(server, params, client);
   const staged = await uploadReferenced(client, wf, { runsRoot: dirname(String(runDir)), stateRoots: opts.stateRoots });
   const timeoutS: number = normalizeTimeoutS(params["timeout_s"]);
-  const deadline: number = Date.now() + timeoutS * 1000;
-  const { promptId, clientId } = await withBound(
+  let deadline: number = Date.now() + timeoutS * 1000;
+  const { promptId: firstPromptId, clientId } = await withBound(
     () => submitPrompt(client, staged.graph),
     SUBMIT_BOUND_MS,
     "POST /prompt",
   );
+  let promptId = firstPromptId;
   active.set(String(runDir), {
     promptId,
     clientId,
@@ -582,12 +583,39 @@ export async function executeSingleInner(
   let unhook: ProgressTap | null = null;
   try {
     unhook = hookProgress(client, promptId, opts.report);
-    const entry: Record<string, EngineJson> = await waitTerminal(
+    let entry: Record<string, EngineJson> = await waitTerminal(
       client,
       promptId,
       deadline,
       opts.shouldStop ?? ((): boolean => false),
     );
+    // THE H3 CHAIN REQUEUE DRIVER (2026-10-28, the swap-chain burn:
+    // top_level_requeue mode checkpoints each scene and ends its
+    // prompt with a durable handoff row — the ui row
+    // `h3_chain_top_level_requeue` is the ONLY machine-readable
+    // owed-scene signal; without a driver, scene N+1 never runs and
+    // the operator re-posts by hand (which re-rendered scene 1: the
+    // bare re-POST keeps LoopStart.start_clip at its default 1).
+    // The choreography rides the pack's OWN handoff routes on this
+    // engine (claim → patch LoopStart to the owed scene → transition
+    // queued → submit → transition consumed) until the final prompt
+    // answers `h3_chain_top_level_complete`; outputs then harvest
+    // from the FINAL entry (the film assembles only there). Every
+    // non-chain graph carries no row and skips this loop untouched.
+    entry = await driveH3ChainRequeue(client, entry, staged.graph, {
+      report: opts.report,
+      shouldStop: opts.shouldStop,
+      deadline: (): number => {
+        deadline = Date.now() + timeoutS * 1000;
+        return deadline;
+      },
+      activeKey: String(runDir),
+      active,
+      retap: (nextId: string): void => {
+        unhook?.();
+        unhook = hookProgress(client, nextId, opts.report);
+      },
+    });
     const arts: string[] = await fetchOutputs(client, String(runDir), entry, params["timeout_s"]);
     const outputs: Record<string, EngineJson> = { prompt_id: promptId };
     Object.assign(outputs, publishOutputChannels(nodeOutputs, arts));
@@ -624,6 +652,228 @@ export async function executeSingleInner(
   }
 }
 
+// ── THE H3 CHAIN REQUEUE DRIVER ──────────────────────────────────────────────
+// top_level_requeue turns a multi-scene H3 chain into N top-level
+// prompts (no recursion depth, no subgraph-id breakage): each scene's
+// LoopEnd checkpoints its take, persists a durable handoff, and ends
+// the prompt TERMINAL-SUCCESS with a ui row. The driver below is the
+// frontend coordinator the pack's routes were built for — the estate
+// IS that frontend (the operator's run press executes the stage; the
+// stage does not finish until the chain does).
+
+/** The handoff row's payload (the pack's _write_next_scene_handoff /
+ * ui contract — subset the driver reads; unknown extras ride along). */
+export interface H3RequeueRow {
+  readonly run_name: string;
+  readonly handoff_id: string;
+  readonly scene: number;
+  readonly end_clip: number;
+  readonly [key: string]: EngineJson;
+}
+
+/** The scenes-per-stage ceiling: a chain longer than this is a
+ * mis-authored plan, not a run — refuse loud rather than spin the
+ * requeue loop on a hostile graph. */
+const H3_CHAIN_SCENE_CAP = 32;
+
+function outputRowsOf(
+  entry: Record<string, EngineJson>,
+  key: string,
+): Record<string, EngineJson>[] {
+  const outputs = entry["outputs"];
+  if (outputs === null || typeof outputs !== "object" || Array.isArray(outputs)) return [];
+  const rows: Record<string, EngineJson>[] = [];
+  for (const node of Object.values(outputs as Record<string, Record<string, EngineJson>>)) {
+    if (node === null || typeof node !== "object" || Array.isArray(node)) continue;
+    const raw = node[key];
+    if (Array.isArray(raw)) {
+      for (const row of raw) {
+        if (row !== null && typeof row === "object" && !Array.isArray(row)) {
+          rows.push(row as Record<string, EngineJson>);
+        }
+      }
+    }
+  }
+  return rows;
+}
+
+/** The owed-scene row of a terminal history entry, or null when the
+ * entry is chain-complete (or not a chain prompt at all). */
+export function h3RequeueRowOf(entry: Record<string, EngineJson>): H3RequeueRow | null {
+  for (const row of outputRowsOf(entry, "h3_chain_top_level_requeue")) {
+    const runName = row["run_name"];
+    const handoffId = row["handoff_id"];
+    const scene = row["scene"];
+    const endClip = row["end_clip"];
+    if (typeof runName === "string" && runName !== "" &&
+        typeof handoffId === "string" && handoffId !== "" &&
+        typeof scene === "number" && typeof endClip === "number") {
+      return row as unknown as H3RequeueRow;
+    }
+  }
+  return null;
+}
+
+/** Whether the entry is a chain's FINAL prompt (the pack emits
+ * `h3_chain_top_level_complete` only when the last scene lands). */
+export function h3ChainCompleteOf(entry: Record<string, EngineJson>): boolean {
+  return outputRowsOf(entry, "h3_chain_top_level_complete").length > 0;
+}
+
+/** Patch the stored graph's LoopStart to the owed scene: start_clip
+ * is the scene the handoff names, scene_range the range it carries
+ * (absent view fields leave the stored input untouched). Returns a
+ * FRESH graph object — the staged original is never mutated (each
+ * re-submission derives from it again). */
+export function patchChainLoopStart(
+  graph: Record<string, EngineJson>,
+  view: Record<string, EngineJson>,
+): Record<string, EngineJson> {
+  const next: Record<string, EngineJson> = { ...graph };
+  let loopStartId = "";
+  for (const [id, node] of Object.entries(graph)) {
+    const classType = (node as Record<string, EngineJson> | null)?.["class_type"];
+    if (typeof classType === "string" && /ChainLoopStart$/.test(classType)) {
+      loopStartId = id;
+      break;
+    }
+  }
+  if (loopStartId === "") {
+    throw new ComfyError(
+      "H3 chain requeue: the graph carries no MiniMaxH3ChainLoopStart node to patch — the handoff row promised a chain graph",
+    );
+  }
+  const node = { ...(next[loopStartId] as Record<string, EngineJson>) };
+  const inputs = { ...(node["inputs"] as Record<string, EngineJson>) };
+  const startClip = view["start_clip"];
+  if (typeof startClip === "number") inputs["start_clip"] = startClip;
+  const sceneRange = view["scene_range"];
+  if (typeof sceneRange === "string") inputs["scene_range"] = sceneRange;
+  node["inputs"] = inputs;
+  next[loopStartId] = node;
+  return next;
+}
+
+/** One handoff-route call (the routes live on this engine's own
+ * PromptServer — the SDK client's fetchApi reaches them same-origin
+ * with the session auth). */
+async function handoffCall(
+  client: Client,
+  path: string,
+  body?: Record<string, EngineJson>,
+): Promise<Record<string, EngineJson>> {
+  const res = await withBound(
+    (): Promise<{ json(): Promise<unknown> }> => client.fetchApi(path, {
+      method: body === undefined ? "GET" : "POST",
+      headers: body === undefined ? undefined : { "Content-Type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    }) as unknown as Promise<{ json(): Promise<unknown> }>,
+    SUBMIT_BOUND_MS,
+    "POST /minimax_h3_context_loop/handoffs",
+  );
+  const parsed = (await res.json()) as Record<string, EngineJson>;
+  const error = parsed["error"];
+  if (typeof error === "string" && error !== "") {
+    throw new ComfyError(`H3 chain handoff route refused ${path}: ${error}`);
+  }
+  return parsed;
+}
+
+/** The driver loop — see executeSingleInner's call site. Each scene:
+ * claim (exactly-once; a 409 means another coordinator holds the
+ * chain — refuse loud, never spin), patch, transition queued,
+ * submit, wait, transition consumed, report the scene row. The
+ * deadline re-arms per scene (the budget is per engine prompt); a
+ * stop between scenes releases the handoff and refuses loud (the
+ * checkpoints survive; the owed-scene resume is the handoff's own).
+ * The submit/wait seams exist for the driver's own wall (the
+ * choreography is the contract; the transports are injectable —
+ * defaults ride the real prompt door). */
+export async function driveH3ChainRequeue(
+  client: Client,
+  firstEntry: Record<string, EngineJson>,
+  graph: Record<string, EngineJson>,
+  ride: {
+    report?: (updates: Record<string, EngineJson>) => void;
+    shouldStop?: () => boolean;
+    deadline: () => number;
+    activeKey: string;
+    active: Map<string, ActivePrompt>;
+    retap: (promptId: string) => void;
+    submit?: (graph: Record<string, EngineJson>) => Promise<{ promptId: string }>;
+    wait?: (promptId: string, deadline: number) => Promise<Record<string, EngineJson>>;
+  },
+): Promise<Record<string, EngineJson>> {
+  let entry = firstEntry;
+  let scenes = 0;
+  for (;;) {
+    const row = h3RequeueRowOf(entry);
+    if (row === null) {
+      if (!h3ChainCompleteOf(entry) && scenes > 0) {
+        throw new ComfyError(
+          "H3 chain requeue: the prompt ended without a requeue row or a completion row — the chain state is uncertain (inspect the run's checkpoints before re-pressing)",
+        );
+      }
+      return entry;
+    }
+    if (++scenes > H3_CHAIN_SCENE_CAP) {
+      throw new ComfyError(
+        `H3 chain requeue: exceeded ${H3_CHAIN_SCENE_CAP} scenes in one stage — a plan this long is mis-authored, refusing the loop`,
+      );
+    }
+    if (ride.shouldStop?.() === true) {
+      await handoffCall(client, "/minimax_h3_context_loop/handoffs/release", {
+        run_name: row.run_name, handoff_id: row.handoff_id,
+        reason: "estate run stopped between chain scenes",
+      }).catch(() => { /* best-effort: the refusal voice owns the stop */ });
+      throw new ComfyError(
+        `H3 chain: stopped between scenes (scene ${row.scene} of ${row.end_clip} owed; handoff released — checkpoints survive)`,
+      );
+    }
+    const claimed = await handoffCall(client, "/minimax_h3_context_loop/handoffs/claim", {
+      run_name: row.run_name,
+      handoff_id: row.handoff_id,
+    });
+    const view = claimed["handoff"];
+    if (view === null || typeof view !== "object") {
+      throw new ComfyError(
+        `H3 chain handoff claim answered no handoff view for ${row.handoff_id}`,
+      );
+    }
+    const nextGraph = patchChainLoopStart(graph, view as Record<string, EngineJson>);
+    await handoffCall(client, "/minimax_h3_context_loop/handoffs/transition", {
+      run_name: row.run_name, handoff_id: row.handoff_id, status: "queued",
+    });
+    const submit = ride.submit ?? ((g: Record<string, EngineJson>): Promise<{ promptId: string }> =>
+      submitPrompt(client, g));
+    const { promptId } = await submit(nextGraph);
+    ride.retap(promptId);
+    const existing = ride.active.get(ride.activeKey);
+    if (existing !== undefined) {
+      ride.active.set(ride.activeKey, { ...existing, promptId });
+    }
+    // consumed carries the accepted prompt id — the pack's exactly-once
+    // audit key (a crashed driver leaves the handoff claimable again).
+    await handoffCall(client, "/minimax_h3_context_loop/handoffs/transition", {
+      run_name: row.run_name, handoff_id: row.handoff_id,
+      status: "consumed", accepted_prompt_id: promptId,
+    });
+    const wait = ride.wait ?? ((id: string, dl: number): Promise<Record<string, EngineJson>> =>
+      waitTerminal(client, id, dl, ride.shouldStop ?? ((): boolean => false)));
+    try {
+      entry = await wait(promptId, ride.deadline());
+    } catch (err) {
+      await handoffCall(client, "/minimax_h3_context_loop/handoffs/transition", {
+        run_name: row.run_name, handoff_id: row.handoff_id, status: "failed",
+      }).catch(() => { /* best-effort: the scene's own voice owns the failure */ });
+      throw err;
+    }
+    ride.report?.({
+      activity: `h3 chain scene ${Math.max(0, row.scene)}/${row.end_clip} checkpointed (requeue consumed)`,
+    });
+  }
+}
+
 /** The non-plugin execute face (walls/probes/unit — no Context).
  *  Plugin paths (doors) use ComfyUIHostService.executeSingle (same
  *  inner, fiber-owned prompts map + service-resolved server).
@@ -638,4 +888,151 @@ export async function executeSingle(
   const server: string =
     serverOverride !== "" ? serverOverride : resolveEngineBaseUrl();
   return executeSingleInner(runDir, nodeParams, nodeOutputs, opts, server, ACTIVE);
+}
+
+// ── THE HEADLESS RESUME BRIDGE (h3-swap-chain-failures fix 5) ────────────────
+// A crashed chain (the 2026-10-28 recursive burn: scenes 1-2
+// checkpointed, scene 3 owed, no handoff row ever emitted) had NO
+// headless resume: the browser's Checkpoint Manager owns the
+// branch-attribution machinery and LoopStart's bare re-press
+// re-renders scene 1 — forking the chapter branch and staling every
+// later saved take. The bridge is the estate surface the burn asked
+// for: read the run's checkpoint state headlessly (the pack's
+// GET /minimax_h3_context_loop/checkpoints), derive the first OWED
+// scene (one past the contiguous active prefix — LoopStart's own
+// resume gate refuses any stale predecessor, so the contiguous
+// active prefix is exactly what it will accept), patch the stored
+// graph to resume there AS A REQUEUE CHAIN (recursive cannot expand
+// past clip 2 — the pack refuses >2-scene recursive plans at hop 1),
+// and let driveH3ChainRequeue finish the film.
+
+/** One checkpoint row from the pack's listing (subset the derive
+ * reads; unknown extras ride along; `inactive_reason` is absent for
+ * active takes). */
+export interface H3CheckpointRow {
+  readonly scene: number;
+  readonly [key: string]: EngineJson;
+}
+
+/** The first scene a resume press owes, or null when nothing is
+ * saved: one past the highest CONTIGUOUS active scene counted from
+ * scene 1. An inactive take is not resumable through (the resume
+ * gate would refuse it) — the chain re-renders from that scene. */
+export function nextOwedH3Scene(rows: readonly H3CheckpointRow[]): number | null {
+  const active = new Set<number>();
+  for (const row of rows) {
+    const reason = row["inactive_reason"];
+    if (typeof row.scene === "number" &&
+        (reason === undefined || reason === "")) {
+      active.add(row.scene);
+    }
+  }
+  if (active.size === 0) return null;
+  let next = 1;
+  while (active.has(next)) next += 1;
+  return next;
+}
+
+/** Patch the stored graph's LoopEnd into requeue mode: a crashed
+ * recursive run resumes as a top-level requeue chain (each remaining
+ * scene is its own prompt; recursive expansion dies past clip 2).
+ * Fresh graph object, loud refusal when no LoopEnd rides the graph. */
+export function patchChainLoopEndRequeue(
+  graph: Record<string, EngineJson>,
+): Record<string, EngineJson> {
+  const next: Record<string, EngineJson> = { ...graph };
+  for (const [id, node] of Object.entries(graph)) {
+    const classType = (node as Record<string, EngineJson> | null)?.["class_type"];
+    if (typeof classType === "string" && /ChainLoopEnd$/.test(classType)) {
+      const patched = { ...(next[id] as Record<string, EngineJson>) };
+      const inputs = { ...(patched["inputs"] as Record<string, EngineJson>) };
+      inputs["execution_mode"] = "top_level_requeue";
+      patched["inputs"] = inputs;
+      next[id] = patched;
+      return next;
+    }
+  }
+  throw new ComfyError(
+    "H3 chain resume: the graph carries no MiniMaxH3ChainLoopEnd node to patch — not a chain graph",
+  );
+}
+
+/** One checkpoint-listing call (the pack's own headless read route). */
+async function fetchCheckpointListing(
+  client: Client,
+  runName: string,
+): Promise<H3CheckpointRow[]> {
+  const res = await withBound(
+    (): Promise<{ json(): Promise<unknown> }> => client.fetchApi(
+      `/minimax_h3_context_loop/checkpoints?run_name=${
+        encodeURIComponent(runName)
+      }&include_graph=false`,
+      { method: "GET" },
+    ) as unknown as Promise<{ json(): Promise<unknown> }>,
+    SUBMIT_BOUND_MS,
+    "GET /minimax_h3_context_loop/checkpoints",
+  );
+  const parsed = (await res.json()) as Record<string, EngineJson>;
+  const error = parsed["error"];
+  if (typeof error === "string" && error !== "") {
+    throw new ComfyError(`H3 chain checkpoint listing refused: ${error}`);
+  }
+  const rows = parsed["checkpoints"];
+  if (!Array.isArray(rows)) return [];
+  return rows.filter((row): row is H3CheckpointRow =>
+    row !== null && typeof row === "object" && !Array.isArray(row));
+}
+
+/** Resume a crashed chain from its own checkpoints, headlessly: the
+ * stored graph is patched to the first owed scene in requeue mode,
+ * submitted once, and the requeue driver completes the chain. The
+ * seams mirror the driver's (fetchListing/submit/wait injectable for
+ * the wall; defaults ride the real routes). */
+export async function resumeH3ChainFromCheckpoints(
+  client: Client,
+  graph: Record<string, EngineJson>,
+  opts: {
+    runName: string;
+    deadline: () => number;
+    report?: (updates: Record<string, EngineJson>) => void;
+    shouldStop?: () => boolean;
+    retap?: (promptId: string) => void;
+    submit?: (graph: Record<string, EngineJson>) => Promise<{ promptId: string }>;
+    wait?: (promptId: string, deadline: number) => Promise<Record<string, EngineJson>>;
+    fetchListing?: (runName: string) => Promise<H3CheckpointRow[]>;
+  },
+): Promise<Record<string, EngineJson>> {
+  const listing = await (opts.fetchListing ??
+    ((rn: string): Promise<H3CheckpointRow[]> => fetchCheckpointListing(client, rn)))(
+    opts.runName);
+  const next = nextOwedH3Scene(listing);
+  if (next === null) {
+    throw new ComfyError(
+      `H3 chain resume: run ${opts.runName} has no active checkpoints to resume from — start a fresh run instead`,
+    );
+  }
+  opts.report?.({
+    activity: `h3 chain resume: scenes 1-${next - 1} checkpointed, resuming at scene ${next} (requeue mode)`,
+  });
+  const resumeGraph = patchChainLoopEndRequeue(
+    patchChainLoopStart(graph, { start_clip: next, scene_range: "" }));
+  const submit = opts.submit ?? ((g: Record<string, EngineJson>): Promise<{ promptId: string }> =>
+    submitPrompt(client, g));
+  const wait = opts.wait ?? ((id: string, dl: number): Promise<Record<string, EngineJson>> =>
+    waitTerminal(client, id, dl, opts.shouldStop ?? ((): boolean => false)));
+  const { promptId } = await submit(resumeGraph);
+  opts.retap?.(promptId);
+  let entry = await wait(promptId, opts.deadline());
+  // The resume scene itself may hand off the next — the driver loop
+  // completes the chain from the same patched graph.
+  return driveH3ChainRequeue(client, entry, resumeGraph, {
+    report: opts.report,
+    shouldStop: opts.shouldStop,
+    deadline: opts.deadline,
+    activeKey: opts.runName,
+    active: new Map(),
+    retap: opts.retap ?? ((): void => {}),
+    submit,
+    wait,
+  });
 }

@@ -59,6 +59,17 @@ vi.mock("../src/comfyui-config.ts", () => ({
 }));
 vi.mock("../src/comfyui-execute.ts", () => ({
   submitPrompt: async () => ({ promptId: "p-9", clientId: "client-1" }),
+  // THE REQUEUE DRIVER, PASSED THROUGH (2026-10-28 retest gap 3): the
+  // merge seat drives the chain loop after waitTerminal — this spec's
+  // fixtures carry no h3_chain_top_level_requeue row, so the REAL
+  // driver would return the entry untouched; the passthrough pins
+  // that additive law here while the driver's own wall
+  // (h3-merge-requeue-door.spec.ts + h3-chain-requeue-driver.spec.ts)
+  // rides the real choreography.
+  driveH3ChainRequeue: async (
+    _client: unknown,
+    entry: Record<string, unknown>,
+  ): Promise<Record<string, unknown>> => entry,
   waitTerminal: async (
     _c: unknown,
     _p: unknown,
