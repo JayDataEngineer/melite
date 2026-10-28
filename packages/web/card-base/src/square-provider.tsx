@@ -76,9 +76,18 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
   // on the square, and clears with the next attempt or any
   // successful settle.
   const [uploadErr, setUploadErr] = useState<Record<string, string>>({})
+  // THE IN-FLIGHT SEAT (the upload-lag cure, 2026-10-28): the old
+  // attempt face was the empty string in the refusal seat —
+  // rendered as NOTHING, so a minutes-long clip POST read as a
+  // dead square. The attempt now carries its own seat (the dropped
+  // filename) with its own neutral face; the refusal seat stays
+  // refusal-only ('' at attempt-start clears the last refusal, text
+  // on failure, deleted on success).
+  const [uploadBusy, setUploadBusy] = useState<Record<string, string>>({})
   const onFile = useCallback(async (f: SpecField, file: File): Promise<void> => {
     if (wire.onFile !== undefined) { wire.onFile(file); return }
     setUploadErr((m) => ({ ...m, [f.name]: '' }))
+    setUploadBusy((m) => ({ ...m, [f.name]: file.name }))
     try {
       const dataUrl = await readAsDataURL(file)
       // THE MESH EXCEPTION: a freshly read GLB is a data: URL with no
@@ -86,7 +95,11 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
       // (the estate path the door is about to answer). Images keep
       // their data-URL preview; a mesh waits for its named path.
       if (f.type !== 'mesh') setMirror((m) => ({ ...m, [f.name]: dataUrl }))
-      const { name } = await uploadInputFile(file)
+      // THE SINGLE READ rides along: the mirror above already paid
+      // the full-file base64 — the door posts it, never re-reads.
+      const { name } = await uploadInputFile(file, undefined, dataUrl)
+      setUploadErr((m) => { const n = { ...m }; delete n[f.name]; return n })
+      setUploadBusy((m) => { const n = { ...m }; delete n[f.name]; return n })
       setUploadErr((m) => { const n = { ...m }; delete n[f.name]; return n })
       // THE MIRROR DIES WITH THE COMMIT (2026-10-24, the operator's
       // burn "two image references go in"): the pick's data-URL
@@ -99,6 +112,7 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
       onEdit(f.name, name)
     } catch (e: unknown) {
       setUploadErr((m) => ({ ...m, [f.name]: rejectionVoice(e) }))
+      setUploadBusy((m) => { const n = { ...m }; delete n[f.name]; return n })
     }
   }, [onEdit, wire.onFile])
   const square = (f: SpecField): SquareHost | undefined => {
@@ -106,11 +120,22 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
     // and mesh — a .glb value renders the same square grammar with
     // the inline GLB thumb; every other type is not slot-shaped.
     if (f.type !== 'image' && f.type !== 'file' && f.type !== 'mesh') return undefined
+    // THE ALREADY-LOCALIZED PROP (the square-copy locale law): the
+    // in-flight line is assembled HERE in the trio (square-provider
+    // owns a t seat) and rides the host as finished copy — atoms.tsx
+    // renders the prop verbatim and owns no dictionary key, so the
+    // dead-key arm keeps judging the trio alone.
+    const busyName = uploadBusy[f.name] ?? null
     return {
       display: mirror[f.name] ?? null,
       // THE REFUSAL FACE rides the host (empty string = an attempt in
-      // flight; a non-empty string = the last refusal's voice).
+      // flight; a non-empty string = the last refusal's voice). The
+      // attempt's OWN face rides `busy` (the dropped filename, the
+      // truncation title) + `busyVoice` (the finished line) —
+      // never the danger color: in flight is not a refusal.
       error: uploadErr[f.name] ?? null,
+      busy: busyName,
+      busyVoice: busyName === null || busyName === '' ? null : t('uploading', { name: busyName }),
       verbs: {
         onPick: (anchor?: unknown) => {
           const el = anchor instanceof HTMLElement ? anchor : null
@@ -364,8 +389,19 @@ export interface SquareHost {
   /** The last upload refusal's voice for this field (THE REFUSAL
    *  FACE): '' while an attempt is in flight, the refusal text after
    *  a failure, absent after any successful settle. NEVER a param
-   *  value — the value seam stays estate-path-only. */
+   *  value — the value seam stays estate-path-only. The attempt's
+   *  own face is `busy`, never this seat in danger color. */
   error?: string | null
+  /** The in-flight upload's filename (THE UPLOADING FACE): present
+   *  from the first tick of an attempt until its settle (success
+   *  or refusal). The square renders it neutrally — in flight is
+   *  not a refusal. */
+  busy?: string | null
+  /** The finished in-flight line (THE ALREADY-LOCALIZED PROP): the
+   *  provider assembles t('uploading') and the face renders it
+   *  verbatim — atoms.tsx owns no dictionary key. Null exactly when
+   *  `busy` is null (no attempt in flight). */
+  busyVoice?: string | null
 }
 
 /** The picker half of the square provider: candidates are the OTHER

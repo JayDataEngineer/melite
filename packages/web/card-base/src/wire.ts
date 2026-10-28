@@ -185,7 +185,7 @@ export async function fetchFormsTable(signal?: AbortSignal): Promise<Record<stri
  *  system handles the conversion — the door's own gates (type
  *  whitelist, one clean segment) are the law; the client only voices
  *  its refusals, never invents its own. */
-export async function uploadInputFile(file: File, signal?: AbortSignal): Promise<{ name: string; file: string }> {
+export async function uploadInputFile(file: File, signal?: AbortSignal, dataUrl?: string): Promise<{ name: string; file: string }> {
   // ANY MEDIA family boards (image | video | audio MIME prefixes) —
   // the estate's own classifier grammar (mediaKinds), not a client
   // sublist. THE MESH ARM (primitive ③): .glb/.gltf rides the same
@@ -197,7 +197,13 @@ export async function uploadInputFile(file: File, signal?: AbortSignal): Promise
   if (!isMedia && !isMesh) {
     throw new Error('Input cards don\u2019t accept ' + (file.type !== '' ? file.type : 'that file') + ' \u2014 drop an image, video, audio, or .glb/.gltf file')
   }
-  const dataUrl: string = await readAsDataURL(file)
+  // THE SINGLE READ (the upload-lag cure, 2026-10-28): the square
+  // already FileReads every pick for its preview mirror — a second
+  // full-file read here doubled a tens-of-MB clip's in-memory base64
+  // before the POST even started. A caller that already read the
+  // file passes its data URL; the door's own read is the fallback
+  // for callers with no mirror (bench drops, stage drills).
+  const payload: string = dataUrl ?? await readAsDataURL(file)
   const res = await fetch('/v1/uploads', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -208,7 +214,7 @@ export async function uploadInputFile(file: File, signal?: AbortSignal): Promise
     // so the staged name lied about the local file and masked the
     // serve door's own decode gap). The rail judges the name with
     // the shared grammar; the client reports what the user dropped.
-    body: JSON.stringify({ filename: file.name, data: dataUrl }),
+    body: JSON.stringify({ filename: file.name, data: payload }),
   })
   if (!res.ok) {
     // the door's own voice rides (audit X-S2): a refusal body's

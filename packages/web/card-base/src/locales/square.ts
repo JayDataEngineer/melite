@@ -67,6 +67,11 @@ export const squareCopy = {
   notRunYet: 'not run yet',
   /** Selected-row tag. */
   wired: 'wired',
+  /** In-flight upload face: "uploading <name>…" — a tens-of-MB
+   *  clip's base64 POST runs minutes with no engine events, and the
+   *  old mute face (empty string, rendered as nothing) read as a
+   *  dead square (the operator's upload-lag burn). */
+  uploading: (p: { name: string }): string => 'uploading ' + p.name + '\u2026',
 }
 
 /** The dictionary's key union — the typed `t` seat's domain. */

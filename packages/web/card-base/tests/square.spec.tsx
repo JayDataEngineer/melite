@@ -9,7 +9,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { createElement as h, useState } from 'react'
 import { afterEach, expect, test, vi } from 'vitest'
 
-import { ASSET_DRAG_MIME, InputSquare, isImageUrl, isMeshUrl } from '../src/square.tsx'
+import { ASSET_DRAG_MIME, InputSquare, estateInputVideoUrl, isImageUrl, isMeshUrl, isVideoUrl } from '../src/square.tsx'
 import { readAsDataURL } from '../src/chrome.ts'
 
 afterEach(() => { cleanup(); vi.restoreAllMocks() })
@@ -139,6 +139,54 @@ test('THE MESH SQUARE: a GLB value renders the inline viewport (never the image 
   expect(container.querySelector('img')).toBeNull()
   expect(container.querySelector('[data-viewport="square-mesh"]')).not.toBeNull()
   expect(screen.getByText('loading mesh…')).not.toBeNull()
+})
+
+test('THE VIDEO RULE: data: video, estate video paths, and video URLs pass; images/mesh/blob stay out', () => {
+  for (const good of [
+    'data:video/webm;base64,AAA',
+    'DATA:VIDEO/MP4;BASE64,AAA',
+    'data/input/Makhna clip.webm',
+    'data/input/clip.mp4',
+    'https://host/film.MP4?x=1#y',
+    '//host/h3_t4_w1_00082__abc123def456.mp4',
+  ]) expect(isVideoUrl(good)).toBe(true)
+  for (const bad of [
+    '', 'notaurl', 'https://host/noext',
+    'data:image/png;base64,AAA',
+    'https://host/a.png', 'https://host/mesh.glb',
+    'https://host/clip.mp4.evil',
+    'blob:https://host/uuid',
+  ]) expect(isVideoUrl(bad)).toBe(false)
+  // the display half: an estate video path maps onto the assets
+  // door (which answers video/mp4); anything else maps nowhere.
+  expect(estateInputVideoUrl('data/input/Makhna clip.webm')).toBe('/v1/assets/inputs/Makhna%20clip.webm')
+  expect(estateInputVideoUrl('data/input/still.png')).toBeNull()
+  expect(estateInputVideoUrl('https://host/clip.mp4')).toBeNull()
+})
+
+test('THE VIDEO SQUARE: a clip value renders a muted inline player (never raw text, never the PLUS)', () => {
+  // the operator's burn: the clip slot's HELD face printed the raw
+  // estate path — a video preview that never plays.
+  const onClear = vi.fn()
+  const { container } = render(h(InputSquare, { label: 'driving_clip', value: 'data/input/Makhna clip.webm', onClear }))
+  const video = container.querySelector('video')
+  expect(video).not.toBeNull()
+  expect(video?.getAttribute('src')).toBe('/v1/assets/inputs/Makhna%20clip.webm')
+  expect(container.querySelector('img')).toBeNull()
+  expect(screen.queryByText('data/input/Makhna clip.webm')).toBeNull()
+  // no autoplay on a grid seat — muted inline metadata only.
+  expect(video?.muted).toBe(true)
+  expect(video?.getAttribute('preload')).toBe('metadata')
+  // the ✕ rides the held fact, not the face — armed over video too.
+  fireEvent.click(screen.getByRole('button', { name: 'Detach driving_clip' }))
+  expect(onClear).toHaveBeenCalledTimes(1)
+})
+
+test('THE VIDEO MIRROR: an in-flight upload renders the player, never megabytes of base64 as text', () => {
+  const mirror = 'data:video/webm;base64,' + 'AAA'.repeat(100)
+  const { container } = render(h(InputSquare, { label: 'driving_clip', value: mirror }))
+  expect(container.querySelector('video')).not.toBeNull()
+  expect(screen.queryByText(mirror)).toBeNull()
 })
 
 test('THE SLOT IS THE WIRE: with a picker attached the click opens it, anchored on the square', () => {

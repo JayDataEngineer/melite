@@ -331,8 +331,36 @@ test('uploadInputFile: an unreadable drop REFUSES (never an empty upload)', asyn
   }
 })
 
-test('uploadInputFile: a refusing door + a pathless answer both REFUSE loud', async () => {
-  // THE DOOR'S VOICE RIDES (audit X-S2): a refusal body's error field
+test('uploadInputFile: THE SINGLE READ — a pre-read data URL posts verbatim and the FileReader never runs', async () => {
+  // the square mirrors every pick for its preview (one full-file
+  // base64) — the door posting a SECOND read doubled a tens-of-MB
+  // clip's memory before the POST started. The mirror rides in; the
+  // reader double below THROWS on any touch, so a green run proves
+  // the door never read.
+  const calls = useFake({ '/v1/uploads': () => json({ path: 'data/input/clip.webm' }) })
+  const RealReader = globalThis.FileReader
+  let touched = false
+  globalThis.FileReader = class {
+    readAsDataURL(): void {
+      touched = true
+      throw new Error('must not read — the mirror rides')
+    }
+  } as unknown as typeof RealReader
+  try {
+    await expect(uploadInputFile(
+      new File(['x'], 'clip.webm', { type: 'video/webm' }),
+      undefined,
+      'data:video/webm;base64,QUJD',
+    )).resolves.toEqual({ name: 'data/input/clip.webm', file: 'clip.webm' })
+  } finally {
+    globalThis.FileReader = RealReader
+  }
+  expect(touched).toBe(false)
+  const sent = JSON.parse(String(calls[0]!.init?.body)) as Record<string, unknown>
+  expect(sent['data']).toBe('data:video/webm;base64,QUJD')
+})
+
+test('uploadInputFile: a refusing door + a pathless answer both REFUSE loud', async () => {  // THE DOOR'S VOICE RIDES (audit X-S2): a refusal body's error field
   // names the gate — the bare status number never did
   useFake({ '/v1/uploads': () => new Response(JSON.stringify({ error: 'too large' }), { status: 413 }) })
   await expect(uploadInputFile(new File(['x'], 'a.png', { type: 'image/png' })))

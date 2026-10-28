@@ -456,6 +456,11 @@ select option {
  * square — danger color, never a param value. */
 .sourceRowErr { margin: 2px 0 0; font-size: 11px; color: #e06c5f; word-break: break-word; }
 
+/* THE UPLOADING FACE (2026-10-28): the attempt's own voice under the
+ * square — the label-secondary neutral, never the danger color (in
+ * flight is not a refusal). Same box, different fact. */
+.sourceRowBusy { margin: 2px 0 0; font-size: 11px; color: var(--dsw-alias-label-secondary); word-break: break-word; }
+
 /* THE SLOT ROW (2026-09-13, the old melite's input-zone grammar): the
  * slot-shaped fields of one group render side-by-side — their labels
  * live under their squares, not in stacked key rows. Token-only. */

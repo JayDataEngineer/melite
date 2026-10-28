@@ -65,6 +65,7 @@
     "@melite/card-base": "workspace:*",
     "@melite/catalog": "workspace:*",
     "@melite/contracts": "workspace:*",
+    "@melite/estate-queue": "workspace:*",
     "@melite/formats": "workspace:*",
     "@melite/three-client": "workspace:*"
   },

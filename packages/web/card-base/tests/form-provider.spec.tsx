@@ -390,6 +390,42 @@ test('FROM FILE: an empty answer writes nothing (never a write from thin air)', 
   expect(inp.value).toBe('')
 })
 
+test('FROM FILE: the uploading face — in flight the square voices the filename, never a refusal', async () => {
+  // THE WALL (operator live burn 2026-10-28: "input-box media load
+  // lags" — a tens-of-MB clip's upload ran mute, then landed; the
+  // operator could not tell attempt from stall). While the door is
+  // still open the seat shows data-slot-busy in the neutral color
+  // with role=status — in flight is not a refusal, so role=alert
+  // and the danger face must both be ABSENT. Toggle the busy seat
+  // out of the provider and this reds (no busy face renders).
+  const RealReader = globalThis.FileReader
+  globalThis.FileReader = fakeReader()
+  let release!: (res: Response) => void
+  const gate = new Promise<Response>((resolve) => { release = resolve })
+  const realFetch = globalThis.fetch
+  globalThis.fetch = ((_input: unknown) => gate) as typeof fetch
+  try {
+    const onEdit = vi.fn()
+    const view = render(h(SourceRow, { label: 'Input', kind: 'image', value: null, onEdit }))
+    fireEvent.click(screen.getByRole('button', { name: 'Input source' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'From file' }))
+    const inp = providerFileInput()
+    Object.defineProperty(inp, 'files', { value: [png()], configurable: true })
+    fireEvent.change(inp)
+    await screen.findByText('uploading a.png…')
+    const busy = view.container.querySelector('[data-slot-busy]')
+    expect(busy).not.toBeNull()
+    expect(busy!.getAttribute('role')).toBe('status')
+    expect(view.container.querySelector('[data-slot-error]')).toBeNull()
+    release(Response.json({ path: 'data/input/a.png' }))
+    await waitFor(() => { expect(onEdit).toHaveBeenCalledWith('data/input/a.png') })
+    expect(view.container.querySelector('[data-slot-busy]')).toBeNull()
+  } finally {
+    globalThis.FileReader = RealReader
+    globalThis.fetch = realFetch
+  }
+})
+
 test('THE DROP: files ride the default door (mirror first, estate path on the param)', async () => {
   const RealReader = globalThis.FileReader
   globalThis.FileReader = fakeReader()

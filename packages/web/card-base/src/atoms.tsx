@@ -65,6 +65,23 @@ export function SourceRow(props: SourceRowProps): ReturnType<typeof h> {
       value: shown,
       ...(host.verbs),
     }),
+    // THE UPLOADING FACE (2026-10-28): the attempt voices its own
+    // filename UNDER the square in the neutral color — a busy
+    // square is never mute, and never danger-colored (in flight is
+    // not a refusal). role=status so the live region announces the
+    // attempt without the alert semantics a refusal carries. The
+    // line arrives ALREADY LOCALIZED on host.busyVoice (assembled
+    // in the provider's t seat) — this face owns no dictionary key.
+    // The truncation title keeps the raw filename (the reference's
+    // own truncation-span idiom).
+    typeof host.busyVoice === 'string' && host.busyVoice !== ''
+      ? h('p', {
+          className: css.sourceRowBusy,
+          'data-slot-busy': props.label,
+          title: host.busy ?? host.busyVoice,
+          role: 'status',
+        }, host.busyVoice)
+      : null,
     // THE REFUSAL FACE (2026-10-24): a failed upload's voice renders
     // UNDER the square in the danger color — it NEVER enters the
     // value seam, so it can never land in the input stack as a

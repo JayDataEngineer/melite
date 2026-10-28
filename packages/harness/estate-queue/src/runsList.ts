@@ -681,6 +681,35 @@ async function buildRunCard(
   return applyDraftOverlay(built, hasDraft);
 }
 
+/** THE MUTATION NOTICE (the gallery-rename staleness cure,
+ *  2026-10-28): rowCache keys a built row on the RUN DIR mtime +
+ *  the sidecar mtime — but a gallery rename/delete inside a SUBDIR
+ *  (every real artifact lives one level down: openjutsu/,
+ *  h3-film/, generate/) bumps the SUBDIR's mtime, never the run
+ *  dir's, and no sidecar rewrites — so the cached row keeps the
+ *  pre-mutation artifact names and the gallery keeps listing the
+ *  old name after a 200 rename (the operator's "rename fails":
+ *  door renamed, feed lied). The mutating doors call this with the
+ *  mutated FILE's full path after a successful mutation; the next
+ *  list rebuilds that one row. Matched on the RUN-ID SEGMENT found
+ *  inside the path (`run-<id>`), not on a computed dir: the caller
+ *  must not guess which tree won — the basename (`run-<id>`) is
+ *  the identity across roots. The scan cache (the media sort bit)
+ *  rides along: a delete-to-empty must flip it too.
+ * @param mutatedPath - any path inside the run (the file, its dir —
+ *  the run-id segment is what matters).
+ */
+export function noteRunTreeChanged(mutatedPath: string): void {
+  const seg = mutatedPath.split(/[/\\]+/).find((s) => RUN_ID_RE.test(s));
+  if (seg === undefined) return;
+  for (const key of [...rowCache.keys()]) {
+    if (key.replace(/[/\\]+$/, "").split(/[/\\]/).pop() === seg) rowCache.delete(key);
+  }
+  for (const key of [...scanCache.keys()]) {
+    if (key.replace(/[/\\]+$/, "").split(/[/\\]/).pop() === seg) scanCache.delete(key);
+  }
+}
+
 /** The FRESH overlay on a served row: the draft probe is registry
  *  state, never disk truth — it re-runs on every serve, mutating a
  *  CLONE so the cache never learns the probe's answer. */

@@ -19,7 +19,20 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync, existsSync } from 'node:
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
+// THE NOTICE SEAM (the staleness wall): the door under test calls
+// the seat's noteRunTreeChanged through the package root (built lib
+// in production, where door + seat share the instance). The wall
+// below judges door + seat + cache as ONE instance — without this
+// redirect the door would notice lib's cache while the arm lists
+// src's, and the arm would red on instance split-brain instead of
+// the law. Production has no such split (both ride lib).
+vi.mock('@melite/estate-queue', () => import('../../../harness/estate-queue/src/runsList.ts'))
+
 import { apply, type Config } from '../src/index.ts'
+// THE STALENESS WALL rides source, never built lib (the depth
+// law): the door under test calls the seat's notice through the
+// package root, but this arm judges the seat's own truth from src.
+import { listRuns } from '../../../harness/estate-queue/src/runsList.ts'
 
 interface Route {
   kind: string
@@ -660,6 +673,69 @@ describe('POST /infer-gallery/artifact-rename', () => {
     expect(saw.status).toBe(200)
     expect(seen[0]?.url).toBe('https://owner.example/infer-gallery/artifact-rename')
     expect((seen[0]?.init as { body?: string }).body).toBe(JSON.stringify({ path: `${RUN}/a.png`, name: 'b.png' }))
+  })
+
+  // THE EXTENSION-PRESERVATION LAW (the operator's live burn,
+  // 2026-10-28: `x.mp4` → `swap-her-final` answered 200 and the file
+  // vanished from every gallery tab — the runs seat, the serve door,
+  // and the classifier all type by extension). A rename that
+  // re-types (strips or swaps the extension) refuses LOUD with
+  // extension_changed; the same extension in another case still
+  // lands (the compare is case-insensitive, the file keeps its
+  // author-spelled name).
+  it('a rename that strips or swaps the extension refuses LOUD (never a silent unlist)', async () => {
+    writeTreeArtifact(`${RUN}/gen/clip.mp4`, new Uint8Array([9, 9]))
+    writeTreeArtifact(`${RUN}/gen/still.PNG`, new Uint8Array([7]))
+    const ctx = mount({ flowDir })
+    const stripped = await post(ctx, '/infer-gallery/artifact-rename', { path: `${RUN}/gen/clip.mp4`, name: 'swap-her-final' })
+    expect(stripped.status).toBe(400)
+    expect((json(stripped) as { error: string }).error).toBe('extension_changed')
+    const swapped = await post(ctx, '/infer-gallery/artifact-rename', { path: `${RUN}/gen/clip.mp4`, name: 'clip.mp3' })
+    expect(swapped.status).toBe(400)
+    expect((json(swapped) as { error: string }).error).toBe('extension_changed')
+    // the refused source is untouched on disk.
+    const stillThere = await hit(ctx, '/infer-gallery/artifact', `/infer-gallery/artifact?path=${encodeURIComponent(`${RUN}/gen/clip.mp4`)}`)
+    expect(stillThere.status).toBe(200)
+    // same extension, other case: lands.
+    const recased = await post(ctx, '/infer-gallery/artifact-rename', { path: `${RUN}/gen/still.PNG`, name: 'still.png' })
+    expect(recased.status).toBe(200)
+    expect((json(recased) as { path: string }).path).toBe(`${RUN}/gen/still.png`)
+  })
+
+  // THE ROW-CACHE NOTICE (the staleness half of the rename burn,
+  // 2026-10-28): the runs seat caches the built row on the run dir
+  // + sidecar mtimes — a subdir rename bumps neither, so the feed
+  // kept listing the old name after a 200 rename (the operator's
+  // "rename fails": the door renamed, the feed lied). The rename
+  // door notices the seat; the next list rebuilds the row. This arm
+  // rides the REAL list + REAL cache + REAL door: prime the cache,
+  // rename through the door, re-list — the new name must be there
+  // and the old one gone (no notice = the stale name serves).
+  it('a subdir rename re-lists under the new name (the feed never serves the stale row)', async () => {
+    const state = mkdtempSync(join(tmpdir(), 'gallery-stale-'))
+    try {
+      const output = join(state, 'output')
+      mkdirSync(join(output, RUN, 'openjutsu'), { recursive: true })
+      writeFileSync(join(output, RUN, '_flow.json'), JSON.stringify({
+        status: 'completed', pipeline: 'viggle-animate', created_at: 100,
+      }))
+      writeFileSync(join(output, RUN, 'openjutsu', 'clip.mp4'), Buffer.from([10, 20, 30]))
+      const ctx = mount({ flowDir: output })
+      const namesOf = (rows: Array<Record<string, unknown>>): string[] => {
+        const row = rows.find((r) => String(r['run_id'] ?? '') !== '')
+        const arts = (row?.['artifacts'] ?? []) as Array<{ name?: unknown }>
+        return arts.map((a) => String(a.name ?? ''))
+      }
+      const before = await listRuns(state, 10, async () => true)
+      expect(namesOf(before.runs)).toContain('clip.mp4')
+      const saw = await post(ctx, '/infer-gallery/artifact-rename', { path: `${RUN}/openjutsu/clip.mp4`, name: 'still.mp4' })
+      expect(saw.status).toBe(200)
+      const after = await listRuns(state, 10, async () => true)
+      expect(namesOf(after.runs)).toContain('still.mp4')
+      expect(namesOf(after.runs)).not.toContain('clip.mp4')
+    } finally {
+      rmSync(state, { recursive: true, force: true })
+    }
   })
 })
 
