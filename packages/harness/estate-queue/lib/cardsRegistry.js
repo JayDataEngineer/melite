@@ -1862,6 +1862,21 @@ export class CardRegistryService extends Service {
      *  registration. The $spell branch composes NO graph (the pool
      *  passes — the two-card-flow handoff). */
     async phase1Card(body, mid) {
+        // THE CLIP-GEOMETRY DEFAULT (2026-10-28, the operator's burn:
+        // "width and height are defaulting to zero for viggle… it needs
+        // to follow what image edit does and default to the input size
+        // of the video"): a body carrying a `clip` param AND
+        // width/height knobs riding the family's 0 default (the
+        // follow-the-clip convention) gets the clip's OWN geometry
+        // stamped into the body BEFORE any resolution or judge runs —
+        // prepareCardParams, the lane verdict, the ledger and the graph
+        // all read real numbers, never a zero that reads broken. Both
+        // stated = the user owns the geometry; a probe miss (an
+        // unreadable file or an unrecognized container, webm today)
+        // leaves the 0s riding — the engine's own follow-the-clip
+        // contract still renders (receipts run-be048a52385d mp4 →
+        // 928×1344, run-9c267ef6c8fd webm → 928×1344).
+        stampClipGeometry(body);
         const prep = prepareCardParams(this, body, mid, "1");
         // THE BOARD CHECK RIDES THE RUN SEAT TOO (the behavioural
         // re-check's BYPASS 1: the bench refused an unoffered model
@@ -1878,23 +1893,6 @@ export class CardRegistryService extends Service {
             // refusal.
             throw new CardArmError(400, boardCheck.error, "invalid_request");
         }
-        // THE CLIP-GEOMETRY DEFAULT (2026-10-28, the operator's burn:
-        // "width and height are defaulting to zero for viggle… it needs
-        // to follow what image edit does and default to the input size
-        // of the video"): a body carrying a `clip` param AND
-        // width/height knobs riding the family's 0 default (the
-        // follow-the-clip convention) gets the clip's OWN geometry
-        // stamped into the body BEFORE any judge or compose runs — the
-        // lane verdict, the ledger and the graph all read real numbers,
-        // never a zero that reads broken. Both stated = the user owns
-        // the geometry; a probe miss (an unrecognized container, webm
-        // today) leaves the 0s riding — the engine's own
-        // follow-the-clip contract still renders (receipts
-        // run-be048a52385d mp4 → 928×1344, run-9c267ef6c8fd webm →
-        // 928×1344). Stamps in place on the BODY: every downstream seat
-        // (this door and the bench-write door's twin below) judges one
-        // spelling.
-        stampClipGeometry(body);
         // THE REFUSAL-ORDER LAW (2026-09-21, roadmap §10's e2e debt):
         // ADMISSION runs before the lane-presence gate — a body-shape
         // refusal is knowable without any weights (box-independent);

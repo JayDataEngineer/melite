@@ -659,6 +659,14 @@ export const COVERAGE_BASELINE: Record<string, {
   // on top; lift with the lane law's own arms)
   '**/packages/web-kit/contracts/src/familyLane.ts': { statements: 45.45, branches: 54.54, functions: 57.14, lines: 43.47 },
   '**/packages/web-kit/contracts/src/loraTypes.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  // (new-row pin 2026-10-28, the ratchet's rowless-file refusal caught
+  // the clip-geometry stamp's landing: media-probe.ts (commit 20d0a760e)
+  // — the mp4/wav byte probe moved to its zero-dep contracts seat to
+  // break the harness-tools↔estate-queue cycle — entered the gated
+  // tree without a row. Verbatim copy of mp4Probe.ts, a 100-file on
+  // both seats; the stamp wall's craftMinimalMp4 fixture exercises
+  // probeMp4's tkhd-fallback arm from the estate-queue face)
+  '**/packages/web-kit/contracts/src/media-probe.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/contracts/src/mediaKinds.ts': { statements: 97.5, branches: 91.3, functions: 100, lines: 100 },
   // (row re-pin 2026-11-06, coverage-gaps F1: the 2026-11-01 comment
   // was already stale — the planeRefusals wire arms at

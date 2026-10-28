@@ -222,12 +222,18 @@ describe("the models plane feeds the compose/flows plane (A2)", () => {
   });
 });
 
-  it("facts.mods ≡ DECL.mods (the boarding rides to consumption — one spelling is truth, the other is walled)", async (): Promise<void> => {
+  it("facts.mods ≡ boardedPacks(DECL.mods) (the boarding rides to consumption — one spelling is truth, the other is walled)", async (): Promise<void> => {
     // THE CONSUMPTION GATE's data leg: ModelFacts.mods is what the
     // kit gate reads; the DECL is truth. Route-keys (folds) pin
     // against their owning atom; action-card lanes carry no
     // boarding (their mutations, if any, are card-owned).
+    // (2026-10-28, the marriage-grammar cure): DECL.mods rows may be
+    // {pack, marries} objects; the TRUTH spelling is the normalized
+    // pack NAME on both sides — boardedPacks(), the one normalizer
+    // facts.ts and guard.ts share. The wall's own blind cast here
+    // was the same bug class the cure deleted in facts.ts.
     const { registryModel } = await import("../../../../packages/engines/comfyui-cordis/src/models/models.ts");
+    const { boardedPacks } = await import("../../../../packages/engines/comfyui-card-kit/src/mods/guard.ts");
     const actions = await actionCardLanes();
     const ownerOf = new Map<string, string>();
     for (const rid of registryIds()) {
@@ -249,7 +255,7 @@ describe("the models plane feeds the compose/flows plane (A2)", () => {
       judged++;
       const owner = registryIds().includes(id) ? id : ownerOf.get(id);
       assert.ok(owner !== undefined, `facts family '${id}' is neither registry, route, nor action lane`);
-      const truth = (registryModel(owner).mods ?? []) as readonly string[];
+      const truth = boardedPacks(registryModel(owner).mods as readonly unknown[]);
       const riding = ((row as { mods?: readonly string[] }).mods ?? []) as readonly string[];
       assert.deepEqual([...riding].sort(), [...truth].sort(), `${id}: facts.mods ≠ DECL.mods of ${owner}`);
     }

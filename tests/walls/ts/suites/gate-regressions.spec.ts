@@ -604,7 +604,10 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // 622 (2026-10-27): the openjutsu lane's five lib faces (audit 023)
   // — viggle-animate's actions/index/mods-loras + openjutsu's
   // card/index: the swap family and its boarding card, one landing.
-  const LIB_CENSUS_PIN = 622;
+  // 623 (2026-10-28): contracts' media-probe.js — the mp4/wav byte
+  // probe's zero-dep seat (the clip-geometry stamp cure, commit
+  // 20d0a760e); the harness-tools mp4-probe face is now its re-export.
+  const LIB_CENSUS_PIN = 623;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {
