@@ -546,7 +546,14 @@ const PINS: Record<string, number> = {
   // 405/422 error strings in index.ts ×18, decode.ts drop counters ×4,
   // media-kinds.ts fallback word ×1) — wire grammar the fetch caller
   // reads, never sidebar chrome.
-  'packages/web/infer-gallery/src': 23,
+  // RE-PIN 23→24 (2026-10-28, the gallery rename-law cure): +1 the
+  // extension_changed refusal voice (index.ts:656 — "rename keeps the
+  // file extension (the extension is the kind — a re-type unlists the
+  // artifact)"). The sentence IS the door's refusal identity (the
+  // 400's machine key travels beside it; the contract row
+  // cards-gallery-rename-law pins the wording) — same class as the
+  // ×18 above; localizing forks the door's identity per locale.
+  'packages/web/infer-gallery/src': 24,
   // action_cards: 0 — the pose stage, motion poster/viewer and poster
   // shell ride actionCopy.ts.
   'packages/engines/comfyui/src/action_cards': 0,

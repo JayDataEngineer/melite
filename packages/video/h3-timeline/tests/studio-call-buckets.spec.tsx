@@ -298,8 +298,15 @@ describe("SOURCE — the slice-4 cures ride their atoms (the card's one grammar)
 
 describe("the chip face law (2026-11-04 — THE ONE DISPLAY SPELLING rides every chip)", () => {
   it("a chip whose artifact exists shows the SERVED url — the FULL artifacts map, not the candidates", () => {
+    // THE PLAYER FACE (the E-b re-pin, 2026-10-28): a servable video
+    // value renders the muted inline player, never URL text — the
+    // name → served-url translation now rides the player's src. The
+    // law's intent (the FULL map translates, never the bare name)
+    // is unchanged; only the seat moved from text to src.
     card({ refs: { videos: "shot-01.mp4" } }, [{ name: "shot-01.mp4", url: "https://serve/shot-01.mp4" }])
-    assert.ok(screen.getByText("https://serve/shot-01.mp4"), "the display translated name → served url")
+    const player = document.querySelector("video")
+    assert.ok(player, "the mapped video chip plays (never raw text)")
+    assert.equal(player.getAttribute("src"), "https://serve/shot-01.mp4", "the display translated name → served url")
   })
 
   it("an unmapped chip rides its raw value as the held face — the detach verb stays armed (never PLUS on a full slot)", () => {
@@ -310,8 +317,13 @@ describe("the chip face law (2026-11-04 — THE ONE DISPLAY SPELLING rides every
   })
 
   it("a data: chip passes verbatim — the face never mangles the wire", () => {
+    // THE PLAYER FACE (the E-b re-pin, 2026-10-28): the in-flight
+    // data: mirror renders the player whose src IS the verbatim URL —
+    // never megabytes of base64 as text, never a mangled wire.
     card({ refs: { videos: "data:video/mp4;base64,AAA" } })
-    assert.ok(screen.getByText("data:video/mp4;base64,AAA"), "the data: URL rides the face verbatim")
+    const player = document.querySelector("video")
+    assert.ok(player, "the data: chip plays (never base64 as text)")
+    assert.equal(player.getAttribute("src"), "data:video/mp4;base64,AAA", "the data: URL rides the face verbatim")
   })
 
   // THE NAME WAS NEVER CURRENCY (J2, refs-mods journey audit
