@@ -7,7 +7,7 @@ import type { ActivePrompt, EngineJson } from "./comfyui-types.ts";
 import { resolveEngineBaseUrl } from "./comfyui-config.ts";
 import { uploadReferenced } from "./comfyui-upload.ts";
 import { assertPublishedOutputChannels, fetchOutputArtifacts, loudnessOf, normalizeTimeoutS, publishOutputChannels, qvoiceFreshnessOf, qvoicePathsOf } from "./comfyui-outputs.ts";
-import { hookProgress, submitPrompt, waitTerminal } from "./comfyui-execute.ts";
+import { driveH3ChainRequeue, hookProgress, submitPrompt, waitTerminal } from "./comfyui-execute.ts";
 import { ensureVramHeadroom, normalizeVramBudgetMb } from "./comfyui-vram.ts";
 import { sdkClient, withBound } from "./comfyui-transport.ts";
 import type { ExecuteOpts, ProgressTap } from "./comfyui-execute.ts";
@@ -507,12 +507,35 @@ export async function executeFlowInner(
   const deadline: number = Date.now() + floor * 1000;
   try {
     unhook = hookProgress(client, promptId, opts.report);
-    const entry: Record<string, EngineJson> = await waitTerminal(
+    let entry: Record<string, EngineJson> = await waitTerminal(
       client,
       promptId,
       deadline,
       opts.shouldStop ?? ((): boolean => false),
     );
+    // THE H3 CHAIN REQUEUE DRIVER — THE MERGE SEAT (2026-10-28
+    // retest gap 3: "an estate bench run in requeue mode stops
+    // after scene 1 with the handoff pending and nothing re-queues
+    // it"). The single-prompt seat has driven the loop since the
+    // swap-chain burn, but EVERY estate run rides the MERGED path
+    // here — which harvested scene 1's terminal entry and declared
+    // the run complete with the handoff still pending. Same driver,
+    // same choreography (claim → patch LoopStart to the owed scene →
+    // queued → submit → consumed), the deadline re-armed per scene
+    // on the same merged floor; outputs then harvest from the FINAL
+    // entry (the film assembles only there). Non-chain graphs carry
+    // no requeue row and pass through untouched.
+    entry = await driveH3ChainRequeue(client, entry, staged.graph, {
+      report: opts.report,
+      shouldStop: opts.shouldStop,
+      deadline: (): number => Date.now() + floor * 1000,
+      activeKey: String(runDir),
+      active,
+      retap: (nextId: string): void => {
+        unhook?.();
+        unhook = hookProgress(client, nextId, opts.report);
+      },
+    });
     const allOutputs = entry["outputs"];
     const allRec: Record<string, EngineJson> =
       typeof allOutputs === "object" && allOutputs !== null && !Array.isArray(allOutputs)
