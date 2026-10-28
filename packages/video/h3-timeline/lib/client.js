@@ -6403,6 +6403,17 @@ window.__ModuleLoader__.load({
 				refmod_pool: optNum("refmod_pool"),
 				refmod_identity: optNum("refmod_identity"),
 				refmod_save: raw?.refmod_save === false ? false : void 0,
+				reshoot_enabled: raw?.reshoot_enabled === true,
+				reshoot_clip: optStr("reshoot_clip"),
+				reshoot_orbit: optNum("reshoot_orbit"),
+				reshoot_tilt: optNum("reshoot_tilt"),
+				reshoot_dolly: optNum("reshoot_dolly"),
+				reshoot_zoom: optNum("reshoot_zoom"),
+				reshoot_pan: optNum("reshoot_pan"),
+				reshoot_strength: optNum("reshoot_strength"),
+				reshoot_depth_ratio: optNum("reshoot_depth_ratio"),
+				reshoot_smooth_depth: raw?.reshoot_smooth_depth === true,
+				reshoot_invert_depth: raw?.reshoot_invert_depth === true,
 				attention_backend: raw?.attention_backend === "pytorch attention" || raw?.attention_backend === "comfy kitchen attention" ? raw.attention_backend : void 0,
 				second_pass_enabled: raw?.second_pass_enabled === true,
 				refine_lora: typeof raw?.refine_lora === "string" && raw.refine_lora !== "" ? raw.refine_lora : void 0,
@@ -6519,6 +6530,17 @@ window.__ModuleLoader__.load({
 			"refine_strength",
 			"refine_steps",
 			"refine_denoise",
+			"reshoot_enabled",
+			"reshoot_clip",
+			"reshoot_orbit",
+			"reshoot_tilt",
+			"reshoot_dolly",
+			"reshoot_zoom",
+			"reshoot_pan",
+			"reshoot_strength",
+			"reshoot_depth_ratio",
+			"reshoot_smooth_depth",
+			"reshoot_invert_depth",
 			"upscale_route",
 			"upscale_model",
 			"refmod_mode",
@@ -6567,6 +6589,19 @@ window.__ModuleLoader__.load({
 			if (a.refmod_pool != null) out.refmod_pool = a.refmod_pool;
 			if (a.refmod_identity != null) out.refmod_identity = a.refmod_identity;
 			if (a.refmod_save === false) out.refmod_save = false;
+			if (a.reshoot_enabled === true) {
+				out.reshoot_enabled = true;
+				if (a.reshoot_clip != null && a.reshoot_clip !== "") out.reshoot_clip = a.reshoot_clip;
+				if (a.reshoot_orbit != null) out.reshoot_orbit = a.reshoot_orbit;
+				if (a.reshoot_tilt != null) out.reshoot_tilt = a.reshoot_tilt;
+				if (a.reshoot_dolly != null) out.reshoot_dolly = a.reshoot_dolly;
+				if (a.reshoot_zoom != null) out.reshoot_zoom = a.reshoot_zoom;
+				if (a.reshoot_pan != null) out.reshoot_pan = a.reshoot_pan;
+				if (a.reshoot_strength != null) out.reshoot_strength = a.reshoot_strength;
+				if (a.reshoot_depth_ratio != null) out.reshoot_depth_ratio = a.reshoot_depth_ratio;
+				if (a.reshoot_smooth_depth === true) out.reshoot_smooth_depth = true;
+				if (a.reshoot_invert_depth === true) out.reshoot_invert_depth = true;
+			}
 			if (a.audio_clips?.length) out.audio_clips = a.audio_clips;
 			if (a.ref_images?.length) out.ref_images = a.ref_images;
 			if (a.ref_videos?.length) out.ref_videos = a.ref_videos;

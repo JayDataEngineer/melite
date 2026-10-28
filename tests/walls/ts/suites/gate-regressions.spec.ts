@@ -601,13 +601,19 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // 617 (2026-10-27): h3's reshoot.js — the camera re-shoot chain module
   // (audit 024): VDA depth trio + CrossViewWarp double pass + the
   // disocclusion mask, armed per-compose on the h3 card.
-  // 622 (2026-10-27): the openjutsu lane's five lib faces (audit 023)
-  // — viggle-animate's actions/index/mods-loras + openjutsu's
-  // card/index: the swap family and its boarding card, one landing.
+  // 622 -> 618 (2026-11-12): the openjutsu lane DELETED by operator
+  // order — viggle-animate's actions/index/mods-loras + openjutsu's
+  // card/index (five lib faces) leave the tree.
   // 623 (2026-10-28): contracts' media-probe.js — the mp4/wav byte
   // probe's zero-dep seat (the clip-geometry stamp cure, commit
   // 20d0a760e); the harness-tools mp4-probe face is now its re-export.
-  const LIB_CENSUS_PIN = 623;
+  // 618 -> 625 (2026-11-12, inherited): the swap build's lib faces
+  // (swap.js + the actions/reshoot/mods re-emits) joined the index
+  // unpinned — staged by the swap session, repinned here the day the
+  // repair build found them.
+  // 625 -> 626 (2026-11-12): repair.js — the masked second-pass
+  // renderer seat (Tier A repair, operator order "Okay do it all").
+  const LIB_CENSUS_PIN = 626;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {

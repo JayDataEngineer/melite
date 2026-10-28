@@ -13,14 +13,42 @@ import { join } from "node:path";
 
 const REPO = new URL("..", import.meta.url).pathname;
 
+// THE WORKSPACE EXCLUSION LAW (the typert fast-fail, 2026-11-12):
+// pnpm-workspace.yaml EXCLUDES packages/vendor/typert-protocol (the
+// hoist-shadow kill, 2026-09-29 — as a member it linked the hoisted
+// copy and split RemoteResult identity across two 0.2.0 dts trees;
+// the wall is tests/walls/ts/suites/typert-artifact-law.spec.ts).
+// A non-member never materializes node_modules, so it can never
+// carry the .bin/tsc this battery spawns — the walker below read
+// the same tree WITHOUT the negation and failed the whole battery
+// on the vendor's own `typecheck` script before any tsc ran. The
+// workspace file is the truth; this walker honors its `!` entries
+// (exact paths — the one live exclusion is exact, and a globbed
+// exclusion would need a matcher here the day one lands).
+function workspaceExclusions() {
+  const yaml = readFileSync(join(REPO, "pnpm-workspace.yaml"), "utf8");
+  const out = [];
+  let inPackages = false;
+  for (const line of yaml.split("\n")) {
+    if (/^packages:/.test(line)) { inPackages = true; continue; }
+    if (inPackages && /^\S/.test(line) && !line.startsWith("#")) break;
+    const m = inPackages ? line.match(/^\s*-\s*'!(.+?)'\s*$/) : null;
+    if (m) out.push(m[1]); // walker spelling: dir.slice(REPO.length), no leading slash
+  }
+  return out;
+}
+
 // Every package owning a `typecheck` script (tsc --noEmit in its dir),
 // DERIVED from the workspace manifests — never hardcoded. The
 // hardcoded list drifted twice (a dead packages/web/editor path;
 // estate/models + web/melite-run-wire silently ungated), so the
 // battery now reads the truth: any package that declares the script
-// is gated, the day it declares it (gate-found 2026-09-12).
+// is gated, the day it declares it (gate-found 2026-09-12). A
+// package the workspace excludes is not gated — pnpm never installs
+// it, so its script is the vendor's own build face, never ours.
 function typecheckPackages() {
   const out = [];
+  const excluded = new Set(workspaceExclusions());
   const genres = readdirSync(join(REPO, "packages"), { withFileTypes: true })
     .filter((d) => d.isDirectory());
   for (const genre of genres) {
@@ -31,6 +59,8 @@ function typecheckPackages() {
       .map((d) => join(genreDir, d.name))]) {
       const manifest = join(dir, "package.json");
       if (!existsSync(manifest)) continue;
+      const rel = dir.slice(REPO.length);
+      if (excluded.has(rel)) continue; // the workspace's own `!` law
       let scripts;
       try {
         scripts = JSON.parse(readFileSync(manifest, "utf8")).scripts ?? {};
@@ -38,7 +68,7 @@ function typecheckPackages() {
         continue; // unparseable manifest: not this battery's wall
       }
       if (typeof scripts.typecheck === "string") {
-        out.push(dir.slice(REPO.length));
+        out.push(rel);
       }
     }
   }

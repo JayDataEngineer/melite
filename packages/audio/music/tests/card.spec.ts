@@ -234,3 +234,40 @@ describe("THE EVERY-ADDRESS WALL — every served address composes its own decla
     );
   });
 });
+
+describe("THE DURATION TRUTH LAW (2026-11-12 operator burn: instrumentals wrap ~35s)", () => {
+  // The engine's own seats, read from the vendored core this composes:
+  // MiniMaxMusic3TextEncode caps the AR (max_duration → decode_limit,
+  // nodes_minimax_music.py:35) and the AR ends the song when it samples
+  // <|audio_end|> (ar.py:293) — free from frame 0. The plan, not the
+  // knob, owns the length: a song plans by LYRICS (prompt.py:60), an
+  // instrumental plans by the caption's arrangement timeline. The
+  // card's knob copy must NAME both levers — a "target length" knob
+  // that hides them is the burn itself.
+  const tooltipOf = (key: string): string => {
+    // The walked schema's serialized face (toJSON is optional on the
+    // callable type — the card's schema is always a schemastery
+    // object, so this guard is typing, never runtime).
+    const toJSON = (def.schema as unknown as { toJSON?: () => unknown }).toJSON;
+    const shape = (typeof toJSON === "function" ? toJSON.call(def.schema) : undefined) as {
+      uid: string; refs: Record<string, unknown>;
+    };
+    const root = shape.refs[shape.uid] as { dict: Record<string, number> };
+    const node = shape.refs[root.dict[key]!] as unknown as { meta: { extra: { tooltip: string } } };
+    return node.meta.extra.tooltip;
+  };
+
+  it("the duration tooltip carries the ceiling law AND names the lyrics-field plan as the length lever", () => {
+    const tip = tooltipOf("duration");
+    if (!/CEILING/i.test(tip)) throw new Error("the duration tooltip lost the CEILING truth (the model ends the song when its plan ends)");
+    if (!/LYRICS/i.test(tip)) throw new Error("the duration tooltip lost the length lever — the plan lives in the lyrics field");
+    if (!/~35s/.test(tip)) throw new Error("the duration tooltip lost the burn's own number — an empty/single-tag plan wraps ~35s");
+  });
+
+  it("the lyrics tooltip carries the instrumental roadmap law (2026-11-12 operator order: sequential section tags, one per line, ~20-40s each)", () => {
+    const tip = tooltipOf("lyrics");
+    if (!/\[intro\]/.test(tip) || !/\[instrumental\]/.test(tip)) throw new Error("the lyrics tooltip lost the section-tag roadmap example");
+    if (!/20-40s/.test(tip)) throw new Error("the lyrics tooltip lost the per-block length grant (~20-40s)");
+    if (!/~35s phrase/.test(tip)) throw new Error("the lyrics tooltip lost the empty-box warning — an empty or lone-tag box plans one phrase");
+  });
+});

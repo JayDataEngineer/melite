@@ -20,7 +20,15 @@ export declare const VARIANT_ADDRESSES: string[];
  *  the h3 family's declared film action composes the whole lane-true
  *  segment from the gated, lifted doc this card's plane produced —
  *  resolved off the DECL at boarding (the interlock: an unbound
- *  family refuses loud, never a legacy fallback). */
+ *  family refuses loud, never a legacy fallback). THE REPLACE BRANCH
+ *  (the swap-parity build): a non-empty replace bag never enters the
+ *  film action — it dispatches to the family's swap seat, which
+ *  renders the masked-edit chain (models/h3 renderH3Swap, ending in MiniMaxH3ChainAssemble). A bag
+ *  under an ARMED RESHOOT refuses loud at this door (one door per
+ *  doc — the swap branch returns before the film action, so a
+ *  reshoot under it would be silently dropped). The film path below
+ *  is byte-identical with the arm empty (the suite pins it — a swap
+ *  seat must never reshape a film graph). */
 export declare const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string) => void>;
 export declare const identity: {
     label: string;

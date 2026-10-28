@@ -21,6 +21,7 @@
 // the h3 family's own finalizeH3 (t4r strips nothing; the i2v
 // dead-branch node marks the t4r family in the serialized graph).
 import type { Context } from '@melite/comfyui-card-kit/card-definition'
+import type { DeclaredModifierKind } from '@melite/comfyui-card-kit/params-emit'
 import { DECL as h3Decl } from '@melite/models-h3'
 import type { Family } from '@melite/models-h3/schema'
 import {
@@ -35,6 +36,10 @@ import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
 import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission'
 import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit'
 import { finalizeH3 } from '@melite/models-h3'
+import { renderH3Swap } from '@melite/models-h3'
+import { renderH3Repair } from '@melite/models-h3'
+import { reshootArmed } from '@melite/models-h3'
+import { parseH3Facts } from '@melite/models-h3/actions'
 import { assertOverlayGated } from '@melite/models-h3'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 
@@ -81,13 +86,189 @@ export const BOARDED: string[] = [h3Decl.id]
 // rework; h3-singularity joined 2026-10-17 as the checkpoint axis.
 export const VARIANT_ADDRESSES: string[] = ['h3-timeline', 'h3-singularity']
 
+/** THE REPLACE KIND (the swap-parity build, 2026-10-28): the
+ *  card-declared modifier kind carrying the upstream swap seats —
+ *  ONE entry per doc (max_stack 1, ordered — a swap is one render,
+ *  never a stack). The media seats arrive as staged artifact names
+ *  (the controlnet clip/mask channel precedent: a pipeline-wired
+ *  name, never bytes); the plan scalars mirror the reference
+ *  H3OneClickSwapPlan operating point (clip_seconds 6, overlap 39,
+ *  steps 6, seed 0, resolution 736p — the reference's own values,
+ *  restated here so the skill binds against this declaration, never
+ *  memory). THE PACKS ride the kind's own `requires` (the mask SAM2
+ *  law: declared, then auto provisioned) — presence-gated at the
+ *  compose door's arm gate, so an unused arm never blocks a film
+ *  run, while the card-level `requires` above stays the always-on
+ *  gate for the film's own packs. Served VERBATIM on the modifiers
+ *  channel; the emission seat is the family's renderH3Swap (the
+ *  card branches there on a non-empty bag — the film action is
+ *  never entered with swap seats present). */
+const REPLACE_MOD: DeclaredModifierKind = {
+  kind: 'replace',
+  label: 'Replace',
+  param_key: 'replace',
+  schema_key: 'replace',
+  // THE MENU ATTRIBUTION (the mod-liveness ARM 3 law, 2026-10-28):
+  // the kind stamps its own name as its catalog — the card IS the
+  // catalog (no pack envelope derives it). Served verbatim.
+  category: 'ordered',
+  cardinality: 'list',
+  max_stack: 1,
+  requires: [
+    'comfyui-h3-oneclick-swap',
+    'ComfyUI-MiniMaxH3-Context-Loop',
+    'ComfyUI-Fantastic-MiniMaxH3-PromptBuilder',
+  ],
+  section: 'Swap — replace the person in the source clip (upstream openjutsu recipe: still + mannequin + mask masked-edit). Film runs leave this arm empty.',
+  fields: [
+    // The seat TYPES are the picker law (operator, live lane
+    // 2026-10-28: "media seats as FREEFORM TEXT when NOT ALL SHOULD
+    // BE"): image seats claim the image square; video seats are
+    // `file` + media 'video' (the video library + the video OS
+    // accept); resolution is a select over the plan's own tiers.
+    { name: 'source_clip', label: 'Source clip', type: 'file', media: 'video', default: '', tooltip: 'The source video whose person is replaced. Binds ONE staged leaf: the VHS slice loader + the core LoadVideo both read it by staged name, and the timeline reads it back off the native VIDEO wire (friction-report #4 — its video_path string rides along staged but unread).' },
+    { name: 'still', label: 'Replacement still', type: 'image', default: '', tooltip: 'The replacement still (the R2V ref_images LoadImage + the plan picture_1).' },
+    { name: 'mannequin', label: 'Mannequin video', type: 'file', media: 'video', default: '', tooltip: 'The mannequin video from the track-card run (the R2V ref_videos H3GreyMannequins output).' },
+    { name: 'mask', label: 'Person mask', type: 'image', default: '', tooltip: 'ONE staged PNG (no per-frame mask sequence is wired): bind a single representative from the track-card run — the pixel-max UNION of its grown per-frame masks is recommended. Per-frame motion rides the mannequin video (reference GrowMaskWithBlur expand 40). A folder path never rides this seat — bind one file.' },
+    { name: 'swap_prompt', label: 'Swap prompt', type: 'text', default: '', tooltip: 'The swap action text — agent-composed, user-confirmed (the R2V prompt via H3FillShots).' },
+    { name: 'keep_audio', label: 'Keep source audio', type: 'boolean', default: true, tooltip: 'ON: the source clip\'s audio rides the swap unchanged (the reference posture — preserve source audio, assemble from source). OFF: the soundtrack is generated fresh with the swap (generate all audio, assemble generated).' },
+    { name: 'roles', label: 'Roles', type: 'text', default: '', tooltip: 'Which person to replace (the plan roles seat; empty = the detected lead).' },
+    { name: 'seed', label: 'Plan seed', type: 'number', default: 0, min: 0, max: 4294967295, step: 1, tooltip: 'The chain plan base_seed (the reference runs 0; the sampler seed stays the doc seed).' },
+    { name: 'steps', label: 'Plan steps', type: 'number', default: 6, min: 1, max: 30, step: 1, tooltip: 'The chain plan default_steps (reference 6; the sampler steps stay the doc marriage).' },
+    { name: 'clip_seconds', label: 'Clip seconds', type: 'number', default: 6, min: 1, max: 60, step: 1, tooltip: 'The plan clip_seconds (reference 6).' },
+    { name: 'overlap_frames', label: 'Overlap frames', type: 'number', default: 39, min: 0, max: 362, step: 1, tooltip: 'The plan overlap_frames (reference 39; the R1 single clip carries it through the plan head).' },
+    { name: 'resolution', label: 'Plan resolution', type: 'select', default: '736p', options: [
+      { value: '480p', label: '480p — quick preview' },
+      { value: '576p', label: '576p' },
+      { value: '736p', label: '736p — reference default' },
+      { value: '768p', label: '768p' },
+      { value: '1080p', label: '1080p — ~2.5× slower, needs much more memory' },
+    ], tooltip: "The plan resolution tier (reference '736p')." },
+  ],
+}
+
+/** THE REPAIR KIND (Tier A, operator order 2026-11-12: "Okay do it
+ *  all" — hands, maybe the body): a masked SECOND pass over a region
+ *  of the source clip. ONE entry per doc (max_stack 1). The region
+ *  is a FREE-TEXT SAM3 detection prompt — "hands", "a person", "a
+ *  face" are param VALUES (the region-agnostic law: no
+ *  card-per-region, ever). The mask is composed INLINE from engine
+ *  core nodes (SAM3_VideoTrack + SAM3_TrackToMask over the window
+ *  frames — per-frame, better than the swap's staged single-PNG
+ *  union), so no mask seat and no track-card handoff exists on this
+ *  arm. The pass re-renders ONLY the masked region at partial
+ *  denoise (default 0.32; >= 1 refuses loud at the compose door —
+ *  the refine window law, actions.ts's refine arm the precedent):
+ *  the source clip rides its own reference seat as the identity
+ *  anchor. Zero new pixel positions — small-in-frame hands cannot
+ *  gain detail here (that is crop-scale Tier B, blocked on the
+ *  unvendored producer). Audio is the source's own, always. The
+ *  packs ride the kind's `requires` (presence-gated: an unused arm
+ *  never blocks a film run). Emission seat: the family's
+ *  renderH3Repair — the same chain spine + lora plane the swap
+ *  rides, ending in MiniMaxH3ChainAssemble. */
+const REPAIR_MOD: DeclaredModifierKind = {
+  kind: 'repair',
+  label: 'Repair',
+  param_key: 'repair',
+  schema_key: 'repair',
+  category: 'ordered',
+  cardinality: 'list',
+  max_stack: 1,
+  requires: [
+    'ComfyUI-VideoHelperSuite',
+    'ComfyUI-MiniMaxH3-Context-Loop',
+    'ComfyUI-Fantastic-MiniMaxH3-PromptBuilder',
+    'ComfyUI-KJNodes',
+    'comfyui-h3-oneclick-swap',
+  ],
+  section: 'Repair — re-render a region of the source clip (hands, body, face) with a per-frame SAM3 mask at partial denoise. The rest of the frame and the audio are held. Film runs leave this arm empty.',
+  fields: [
+    // The seat TYPES (the picker law, the replace arm's own): video
+    // seats are `file` + media 'video'; the two prompt seats are
+    // text (agent-composed, user-confirmed).
+    { name: 'source_clip', label: 'Source clip', type: 'file', media: 'video', default: '', tooltip: 'The clip whose region is repaired. Binds ONE staged leaf: the VHS window loader + the core LoadVideo both read it by staged name, and the timeline reads it back off the native VIDEO wire.' },
+    { name: 'repair_prompt', label: 'Repair prompt', type: 'text', default: '', tooltip: 'The repair action text — what the masked region should become (agent-composed, user-confirmed; rides the reference-video prompt seat).' },
+    { name: 'region_prompt', label: 'Region prompt', type: 'text', default: '', tooltip: 'The free-text SAM3 detection target naming the region — "hands", "a person", "a face". The mask tracks every matching object frame by frame and grows by mask_grow px.' },
+    { name: 'denoise', label: 'Denoise', type: 'number', default: 0.32, min: 0.05, max: 0.5, step: 0.01, tooltip: 'The partial-denoise strength of the masked pass (the refine window is 0.30–0.35; lower = subtler). 1 or more is refused — a repair is a refine, never a re-render.' },
+    { name: 'mask_grow', label: 'Mask grow px', type: 'number', default: 16, min: 0, max: 96, step: 1, tooltip: 'Pixels the tracked mask grows before the edit (seam ring protection; 0 repairs exactly the detected region — the grow-0 seam test).' },
+    { name: 'detection_threshold', label: 'Detection threshold', type: 'number', default: 0.5, min: 0, max: 1, step: 0.01, tooltip: 'The SAM3 text-detection score threshold (lower finds more objects, noisier masks).' },
+    { name: 'window_start', label: 'Window start (frames)', type: 'number', default: 0, min: 0, max: 100000, step: 1, tooltip: 'Frames (at the film clock, 24 fps) to skip before the repair window — 0 starts at the clip head.' },
+    { name: 'window_length', label: 'Window length (frames)', type: 'number', default: 0, min: 0, max: 100000, step: 1, tooltip: 'Frames in the repair window — 0 runs to the end of the clip (the whole-clip posture). clip_seconds still caps the render budget.' },
+    { name: 'seed', label: 'Plan seed', type: 'number', default: 0, min: 0, max: 4294967295, step: 1, tooltip: 'The chain plan base_seed (the reference runs 0; the sampler seed stays the doc seed).' },
+    { name: 'steps', label: 'Plan steps', type: 'number', default: 6, min: 1, max: 30, step: 1, tooltip: 'The chain plan default_steps (reference 6; the sampler steps stay the doc marriage).' },
+    { name: 'clip_seconds', label: 'Clip seconds', type: 'number', default: 6, min: 1, max: 60, step: 1, tooltip: 'The plan clip_seconds (reference 6) — the render budget the window is cut within.' },
+    { name: 'overlap_frames', label: 'Overlap frames', type: 'number', default: 39, min: 0, max: 362, step: 1, tooltip: 'The plan overlap_frames (reference 39).' },
+    { name: 'resolution', label: 'Plan resolution', type: 'select', default: '736p', options: [
+      { value: '480p', label: '480p — quick preview' },
+      { value: '576p', label: '576p' },
+      { value: '736p', label: '736p — reference default' },
+      { value: '768p', label: '768p' },
+      { value: '1080p', label: '1080p — ~2.5× slower, needs much more memory' },
+    ], tooltip: "The plan resolution tier (reference '736p')." },
+  ],
+}
+
 /** THE FAMILY ACTION BINDING (the atom vocabulary's video stroke):
  *  the h3 family's declared film action composes the whole lane-true
  *  segment from the gated, lifted doc this card's plane produced —
  *  resolved off the DECL at boarding (the interlock: an unbound
- *  family refuses loud, never a legacy fallback). */
+ *  family refuses loud, never a legacy fallback). THE REPLACE BRANCH
+ *  (the swap-parity build): a non-empty replace bag never enters the
+ *  film action — it dispatches to the family's swap seat, which
+ *  renders the masked-edit chain (models/h3 renderH3Swap, ending in MiniMaxH3ChainAssemble). A bag
+ *  under an ARMED RESHOOT refuses loud at this door (one door per
+ *  doc — the swap branch returns before the film action, so a
+ *  reshoot under it would be silently dropped). The film path below
+ *  is byte-identical with the arm empty (the suite pins it — a swap
+ *  seat must never reshape a film graph). */
 export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string) => void> = {
   [h3Decl.id]: (p, model, g, runId) => {
+    // An ABSENT or EMPTY bag is the unused arm — the film below, byte-stable.
+    // A PRESENT bag must be one entry (max_stack 1); anything else refuses loud here.
+    const raw = p.replace as Array<Record<string, unknown>> | undefined
+    if (raw !== undefined && !(Array.isArray(raw) && raw.length === 0)) {
+      if (!Array.isArray(raw) || raw.length === 0) {
+        throw new Error('h3-timeline replace: the replace bag is present but carries no entry — state exactly one swap entry (max_stack 1) or omit the arm')
+      }
+    }
+    const rep = p.repair as Array<Record<string, unknown>> | undefined
+    if (rep !== undefined && !(Array.isArray(rep) && rep.length === 0)) {
+      if (!Array.isArray(rep) || rep.length === 0) {
+        throw new Error('h3-timeline repair: the repair bag is present but carries no entry — state exactly one repair entry (max_stack 1) or omit the arm')
+      }
+    }
+    const replaceArmed = Array.isArray(raw) && raw.length > 0
+    const repairArmed = Array.isArray(rep) && rep.length > 0
+    // THE REPLACE↔REPAIR REFUSAL (the one-door-per-doc law's second
+    // edge, 2026-11-12): both arms render through the same chain
+    // spine and the same sampler tail — two armed bags would race
+    // for one emission. Refuse loud, never a quiet first-wins.
+    if (replaceArmed && repairArmed) {
+      throw new Error('h3-timeline: Replace and Repair are both armed — one door per doc (both ride the same masked-edit spine; two armed bags would race for one emission). Empty the Replace arm for a repair, or the Repair arm for a swap.')
+    }
+    if (replaceArmed) {
+      // THE MUTUAL REFUSAL (operator, live lane 2026-10-28: "IS
+      // RESHOOT SUPPOSED TO BE IN THE CARD ITSELF OR JUST IN THE
+      // MODS, THEY WILL CONFLICT"): this branch returns before the
+      // film action, so an armed reshoot under a swap would be
+      // silently dropped. One door per doc — refuse loud, never a
+      // quiet half-run.
+      if (reshootArmed(p)) {
+        throw new Error('h3-timeline: Replace and Reshoot are both armed — the swap branch never enters the film action, so an armed reshoot would be silently dropped. Pick one door: empty the Replace arm for a reshoot, or switch Reshoot off for a swap.')
+      }
+      renderH3Swap(raw[0] as Record<string, unknown>, p, parseH3Facts(model.lane_inputs), g, runId)
+      return
+    }
+    if (repairArmed) {
+      // The same reshoot refusal, mirrored (the repair branch also
+      // returns before the film action).
+      if (reshootArmed(p)) {
+        throw new Error('h3-timeline: Repair and Reshoot are both armed — the repair branch never enters the film action, so an armed reshoot would be silently dropped. Pick one door: empty the Repair arm for a reshoot, or switch Reshoot off for a repair.')
+      }
+      renderH3Repair(rep[0] as Record<string, unknown>, p, parseH3Facts(model.lane_inputs), g, runId)
+      return
+    }
     instantiateAction(declaredAction(h3Decl, 'film'), p, model, g, runId)
   },
 }
@@ -189,7 +370,20 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
       outputs: { default: 'video' },
       requiresModel: false,
     },
-    flowOutputBindings: [{ channel: 'default', node: '*', nodeClass: 'SaveVideo' }],
+    flowOutputBindings: [
+    {
+      channel: 'default',
+      node: '*',
+      nodeClass: 'SaveVideo',
+      when: (p) => !((Array.isArray(p.replace) && p.replace.length > 0) || (Array.isArray(p.repair) && p.repair.length > 0)),
+    },
+    {
+      channel: 'default',
+      node: '*',
+      nodeClass: 'MiniMaxH3ChainAssemble',
+      when: (p) => (Array.isArray(p.replace) && p.replace.length > 0) || (Array.isArray(p.repair) && p.repair.length > 0),
+    },
+  ],
     // ADMISSION EXTRAS (the class-attr half verbatim: the
     // retired row's admits minus the boarded families' studio
     // writes, which the projection unions from the facts file —
@@ -207,7 +401,13 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
     // produce. A doc carrying it now refuses LOUD at the door
     // ('unknown-param') instead of riding as an inert rider; seedUser
     // already deletes it on drill-open (the dead-layer law).
-    admits: ['ctx_*', 'fps_seconds', 'image_name', 'k', 'noise_seed', 'quant', 'ref_image_size', 'sla_*', 'variant'],
+    admits: ['ctx_*', 'fps_seconds', 'image_name', 'k', 'noise_seed', 'quant', 'ref_image_size', 'repair', 'replace', 'sla_*', 'variant'],
+    // THE CARD-DECLARED KINDS (CONTRACT A — served VERBATIM on the
+    // features.modifiers channel): the swap + repair arms. The mask
+    // card's sam3/sam2/draw precedent — one kind per arm, entry
+    // fields as the popup's tiles, requires as the presence-gated
+    // arm packs.
+    mods: [REPLACE_MOD, REPAIR_MOD],
     jsonArrayParams: JSON_ARRAY_PARAMS,
     // the packs the window graph rides (EXTENSION LAW) + the film
     // tail's file boundary (melite-utility-nodes: MeliteUnload +
@@ -317,7 +517,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
       // loud here, which is the dead-layer law working.
       p = gatedResolve('h3-timeline', schemaFn, [
         'calls', 'audio_clips', 'keyframes', 'fps', 'audio_stem', 'document', 'loras',
-        'refs', 'variant', 'quant', 'refine', 'model', '__steps_pinned', '__shift_pinned', 'ctx_*',
+        'refs', 'replace', 'repair', 'variant', 'quant', 'refine', 'model', '__steps_pinned', '__shift_pinned', 'ctx_*',
       ], gateInput)
       // THE SINGLE-CALL LIFT runs FIRST (the guard below reads the
       // lifted anchor): a one-call doc's row IS the window — its

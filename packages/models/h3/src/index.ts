@@ -94,14 +94,23 @@ export const DECL: ModelDecl = {
       "refmod_identity",
       "refmod_save",
       "loras",
-      // THE RE-SHOOT SURFACE (feature 024): deliberately NOT on the
-      // writes row — the studio's Layer-A serializer never authors the
-      // re-shoot knobs (agent/API-door seats), and the A7 law is
-      // EXACT: writes mirrors what the studio authors, so a seat
-      // outside the serializer universe would red the
-      // studio-contract-wall's planes pin. The served rows carry
-      // named exemptions in that wall's orphan arm instead (the
-      // ref_image_size precedent's shape).
+      // THE RE-SHOOT GROUP (feature 024's missing seat, landed
+      // 2026-11-12): the rows served and the panel authors them
+      // (the flip binds through the served envelope's walk), so the
+      // writes row mirrors the serializer's universe — an armed
+      // reshoot the studio flips is authored STATED state, the
+      // commit seam persists it, the compose's reshootArmed reads it.
+      "reshoot_enabled",
+      "reshoot_clip",
+      "reshoot_orbit",
+      "reshoot_tilt",
+      "reshoot_dolly",
+      "reshoot_zoom",
+      "reshoot_pan",
+      "reshoot_strength",
+      "reshoot_depth_ratio",
+      "reshoot_smooth_depth",
+      "reshoot_invert_depth",
       "document"
     ],
     "kind": "custom",
@@ -572,6 +581,9 @@ export const family: Plugin = {
 };
 
 export { finalizeH3, H3_T4_STRIP } from "./finalize.js"
+export { renderH3Swap } from "./swap.js"
+export { renderH3Repair } from "./repair.js"
+export { reshootArmed } from "./reshoot.js"
 export { assertOverlayGated } from "./actions.js"
 export { serveWindowSpec, type WindowSpecProjection } from "./windowSpec.js"
 

@@ -24,6 +24,37 @@ const loraStackDefault = () => {
     }
     return JSON.stringify([{ on: true, lora: row.filename, str: row.default_strength, v: 1, a: 1, t: 1 }]);
 };
+/** THE LORA PLANE'S ONE OWNER (the swap build, 2026-10-28 — operator:
+ * "KEEP OUR CURRENT LORA SETUP FOR NOW"): the stack_data string every
+ * compose on this family reads — the doc's `loras` mod bag resolved
+ * by the service, else the absent-bag family default. The film
+ * renderer and the swap renderer (swap.ts) BOTH come through here;
+ * neither may hand-roll a stack or a fixed accelerator row.
+ * @param p the walked doc params */
+export function h3LoraStackOf(p) {
+    return Array.isArray(p.loras)
+        ? JSON.stringify(p.loras.map((r) => ({
+            // the service resolves every row against the family catalog
+            // (unknown ids refuse LOUD upstream) — {name, strength} is
+            // the guaranteed wire shape, read directly
+            on: true,
+            lora: r.name,
+            str: r.strength,
+            v: 1, a: 1, t: 1,
+        })))
+        : loraStackDefault();
+}
+/** THE MARRIED SHIFT'S ONE OWNER (same law as the lora plane): the
+ * sigma-shift grid the doc's lora plane owns — a pinned shift is the
+ * user's word, an unstated one marries the bag's highest-count row
+ * (marriedBagKnob), else the doc's own row. Both renderers read this.
+ * @param p the walked doc params */
+export function h3ShiftVideoOf(p) {
+    const married = marriedBagKnob(p, 'shift_video');
+    return p.__shift_pinned === true || married === null
+        ? p.shift_video
+        : married;
+}
 // THE MARRIED-KNOB CONSULT (SOTA limb 2, 2026-10-20 — the steps
 // marriage's own math, one spelling for both knobs): while a
 // counting bag row rides, the married knob (steps, shift_video) is
@@ -165,7 +196,7 @@ const SHARPEN_DEFAULTS = { method: 'rcas', strength: 0.3, radius: 1.0, threshold
  * is the one home the VAE filename owns in this package (the
  * video drift audit, 2026-10-13: a bare literal at the node seat
  * was a second copy nobody owned). */
-const LANE_FILES = {
+export const LANE_FILES = {
     clip: 'qwen3vl_32b_minimax_h3_int8_convrot.safetensors',
     vae_video: 'minimax_h3_video_vae_int8_convrot.safetensors',
     vae_audio: 'minimax_h3_audio_vae_fp32.safetensors',
@@ -927,18 +958,10 @@ function renderH3Window(p, g, facts, model) {
     // nothing loads; only an ABSENT bag (unset) rides the family
     // catalog's default row (the mod plane's own default, built
     // from the catalog so the value has one owner). ONE surface, one
-    // owner, two honest poles.
-    const loraStack = Array.isArray(p.loras)
-        ? JSON.stringify(p.loras.map((r) => ({
-            // the service resolves every row against the family catalog
-            // (unknown ids refuse LOUD upstream) — {name, strength} is
-            // the guaranteed wire shape, read directly
-            on: true,
-            lora: r.name,
-            str: r.strength,
-            v: 1, a: 1, t: 1,
-        })))
-        : loraStackDefault();
+    // owner, two honest poles — and since the swap build the stack
+    // string comes from h3LoraStackOf (the plane's ONE owner, shared
+    // with swap.ts; never restated here).
+    const loraStack = h3LoraStackOf(p);
     // t4r templates carry shift_video 8.0; the t4 family carries the INT
     // NO SILENT RESOLUTION LAW: the walked shift_video IS the value
     // (declared default 8; the family literals retired with the
@@ -949,10 +972,9 @@ function renderH3Window(p, g, facts, model) {
     // 6, native rows declare none and keep 8) — UNLESS the doc stated
     // its own shift (the __shift_pinned stamp: an explicit value is
     // the user's word, the marriage applies only to the unstated).
-    const marriedShift = marriedBagKnob(p, 'shift_video');
-    const shiftVideo = p.__shift_pinned === true || marriedShift === null
-        ? p.shift_video
-        : marriedShift;
+    // One owner since the swap build: h3ShiftVideoOf (shared with
+    // swap.ts).
+    const shiftVideo = h3ShiftVideoOf(p);
     const clip = g.node('CLIPLoader', {
         clip_name: facts.clip, type: 'minimax',
         ...(isT4r ? { device: 'default' } : {}), // t4 templates OMIT it

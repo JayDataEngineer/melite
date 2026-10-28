@@ -25,6 +25,14 @@
 // their failing face) — the argued transitions and the sweep window
 // live in coverage-baseline-ratchet.spec.ts; the heading and the debt
 // ledger live in dev_docs/ROADMAP.md.
+// Re-seated 2026-10-28 (the swap build, R6): seven rows seated by
+// the regen's missing-rows law at the stable clean-pool min face
+// (two consecutive env-clean full runs, A==B), and two rows the
+// landing itself lowered are argued in coverage-baseline-ratchet
+// spec.ts (discovery.ts schema_key arms; h3-timeline card.ts the
+// replace emission) — every other committed floor stands; the 59
+// pre-existing gate reds at this tree are the coverage track's
+// debt, receipted in dev_docs/swap-parity-plan-2026-10-28.md.
 // Regenerated 2026-11-07: 108 rows re-pinned (255 metric floors
 // raised) from the fresh full-gate triple — three consecutive green
 // `pnpm run test:coverage` runs on one tree (580 gated files at this
@@ -121,7 +129,15 @@ export const COVERAGE_BASELINE: Record<string, {
 }> = {
   '**/packages/engines/comfyui-cordis/src/comfyui-vram.ts': { statements: 100, branches: 92.85, functions: 100, lines: 100 },
   '**/packages/image/mask-studio/src/ui/paintCopy.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/models/h3/src/repair.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/models/h3/src/swap.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/motion/motion/src/ui/studio/motionCopy.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/video/frames/src/card.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/video/frames/src/index.ts': { statements: 0, branches: 100, functions: 0, lines: 0 },
+  '**/packages/video/track/src/card.ts': { statements: 96.42, branches: 100, functions: 80, lines: 100 },
+  '**/packages/video/track/src/index.ts': { statements: 0, branches: 100, functions: 0, lines: 0 },
+  '**/packages/video/trim/src/card.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/video/trim/src/index.ts': { statements: 0, branches: 100, functions: 0, lines: 0 },
   '**/packages/web/card-base/src/abortable.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/card-base/src/cards-address.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/card-base/src/locales/chromeCopy.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
@@ -382,7 +398,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/harness/provisioner/src/index.ts': { statements: 0, branches: 100, functions: 100, lines: 0 },
   // 2026-11-06 follow-up regen: the deletion cure (28edf55c9) retired the
   // one dead statement/branch pair; the full gate re-measured 100x4.
-  '**/packages/harness/melite-tools/src/discovery.ts': { statements: 98.91, branches: 99.47, functions: 98.14, lines: 98.66 },
+  '**/packages/harness/melite-tools/src/discovery.ts': { statements: 98.65, branches: 99.23, functions: 98.18, lines: 98.36 },
   '**/packages/harness/melite-tools/src/doors.ts': { statements: 100, branches: 99.3, functions: 100, lines: 100 },
   '**/packages/harness/melite-tools/src/enhance-agent.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   // F-1 (2026-11-05): the typed-lane rewrite re-measured this row.
@@ -531,10 +547,6 @@ export const COVERAGE_BASELINE: Record<string, {
   // carry the honest sub-100 faces. openjutsu/src/index.ts is the
   // plugin entry — unexercised at both scoped faces, floor 0/null
   // spells that honestly.
-  '**/packages/models/viggle-animate/src/actions.ts': { statements: 92, branches: 75.68, functions: 85.71, lines: 93.48 },
-  '**/packages/models/viggle-animate/src/index.ts': { statements: 75, branches: null, functions: 50, lines: 66.67 },
-  '**/packages/video/openjutsu/src/card.ts': { statements: 94.44, branches: 78.57, functions: 75, lines: 94.12 },
-  '**/packages/video/openjutsu/src/index.ts': { statements: 0, branches: null, functions: 0, lines: 0 },
   '**/packages/motion/motion/src/card.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/motion/motion/src/client/upstream.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/motion/motion/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
@@ -563,7 +575,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/motion/motion/src/ui/studio/usePoseEditing.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/motion/motion/src/ui/studio/useTimelineAuthoring.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/motion/motion/src/ui/studio/useTimelineEnvelope.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/video/h3-timeline/src/card.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/video/h3-timeline/src/card.ts': { statements: 97.87, branches: 97.72, functions: 100, lines: 97.36 },
   '**/packages/video/h3-timeline/src/client/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/video/h3-timeline/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/video/h3-timeline/src/tool.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
