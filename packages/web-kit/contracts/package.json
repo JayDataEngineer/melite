@@ -110,6 +110,10 @@
     "./planes": {
       "types": "./lib/planes.d.ts",
       "default": "./lib/planes.js"
+    },
+    "./media-probe": {
+      "types": "./lib/media-probe.d.ts",
+      "default": "./lib/media-probe.js"
     }
   },
   "version": "0.1.5-pre-alpha",

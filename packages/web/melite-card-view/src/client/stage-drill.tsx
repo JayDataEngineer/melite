@@ -1595,8 +1595,16 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     // — its attached arm renders the GLB as-is and retires the
     // figure inside — with the identical takeover law. THE ATTACHED
     // IMAGE (the (l) law) rides it too: a held image-kind input
-    // owns the seat over both (compose's image > glb > parametric).
-    if ((owner.figure !== undefined || owner.attachedMesh !== undefined || owner.attachedImage !== undefined) && artifacts.length === 0) {
+    // owns the seat over both (compose's image > glb > parametric)
+    // — ON THE MESH LANE ALONE (the estimator's own home, the anny
+    // burn the law was cut for). The openjutsu burn (2026-10-28,
+    // operator: "the preview has the image I input… it should be
+    // blank until the video is there" + "it says rendering… mesh
+    // lands here"): a VIDEO card whose ref_image is image-kind rode
+    // the ungated arm into the mesh tombstone pre-run. Every other
+    // kind keeps its OWN face's honest empty state — a video card
+    // is blank until the film lands.
+    if ((owner.figure !== undefined || owner.attachedMesh !== undefined || (owner.attachedImage !== undefined && kind === 'mesh')) && artifacts.length === 0) {
       return renderPreview(owner, h(MeshStagePreview, owner))
     }
     return renderPreview(owner, fallback)

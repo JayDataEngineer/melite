@@ -233,6 +233,7 @@
       "@melite/contracts/stagePreview": ["./packages/web-kit/contracts/src/stagePreview.ts"],
       "@melite/contracts/modifierFaces": ["./packages/web-kit/contracts/src/modifierFaces.ts"],
       "@melite/contracts/planes": ["./packages/web-kit/contracts/src/planes.ts"],
+      "@melite/contracts/media-probe": ["./packages/web-kit/contracts/src/media-probe.ts"],
       "@melite/formats/b64": ["./packages/web-kit/formats/src/b64.ts"],
       "@melite/formats/bodyPresets": ["./packages/web-kit/formats/src/bodyPresets.ts"],
       "@melite/formats/captionSplitter": ["./packages/web-kit/formats/src/captionSplitter.ts"],

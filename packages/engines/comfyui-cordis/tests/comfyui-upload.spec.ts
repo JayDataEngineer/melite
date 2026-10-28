@@ -502,18 +502,30 @@ describe("uploadReferenced (the staging walk)", () => {
     expect((graph["rel"] as { inputs: { v: string } }).inputs["v"]).toMatch(/_[0-9a-f]{12}(?:\.[a-z0-9]+)?$/);
     expect((graph["miss"] as { inputs: { v: string } }).inputs["v"]).toBe("not-there.png");
   });
-  it("the VHS video exemption rides the file path untouched", async () => {
+  it("the VHS video exemption splits by twin: Path rides, LoadVideo stages (the openjutsu lane burn)", async () => {
+    // 2026-10-27 — run run-d571ef7ced8e burned: the openjutsu lane's
+    // VHS_LoadVideo carried a raw workspace path in `video`, the old
+    // exemption (mirrored from native._upload_referenced for BOTH twins)
+    // rode it verbatim, and the engine refused at the node's input-dir
+    // validation while sources=2 sat staged-but-unwired. The cure splits
+    // the exemption: the Path twin reads real filesystem paths server-side
+    // and keeps it; LoadVideo's `video` rides the walk so an existing file
+    // uploads and the node receives its staged input-dir name.
     const { graph } = await uploadReferenced(fakeClient(), {
       vhs: {
         class_type: "VHS_LoadVideoPath",
         inputs: { video: "/abs/should/not/stage.mp4", other: join(DIR, "abs.gif") },
       },
-      vhs2: { class_type: "VHS_LoadVideo", inputs: { video: "keep.webp" } },
+      vhsStage: { class_type: "VHS_LoadVideo", inputs: { video: join(DIR, "abs.gif") } },
+      vhsBare: { class_type: "VHS_LoadVideo", inputs: { video: "keep.webp" } },
     });
     const v = graph["vhs"] as { inputs: Record<string, string> };
     expect(v.inputs["video"]).toBe("/abs/should/not/stage.mp4");
     expect(v.inputs["other"]).toMatch(/_[0-9a-f]{12}(?:\.[a-z0-9]+)?$/);
-    expect((graph["vhs2"] as { inputs: Record<string, string> }).inputs["video"]).toBe("keep.webp");
+    // the lane arm: an existing file STAGES (staged input-dir name comes back)
+    expect((graph["vhsStage"] as { inputs: Record<string, string> }).inputs["video"]).toMatch(/_[0-9a-f]{12}(?:\.[a-z0-9]+)?$/);
+    // a bare name that resolves nowhere rides (an already-staged name passes)
+    expect((graph["vhsBare"] as { inputs: Record<string, string> }).inputs["video"]).toBe("keep.webp");
   });
   it("objects descend, arrays walk, non-strings ride", async () => {
     const { graph } = await uploadReferenced(fakeClient(), {

@@ -15,6 +15,7 @@ import {
   parseEditCap,
   requireText,
 } from "../src/facts.ts";
+import { assertModUse } from "../src/mods/guard.ts";
 
 // TMP NOTE (stroke 13): this tree mints at MODULE scope (before any
 // test exists — onTestFinished can't own it); the global sweep
@@ -37,6 +38,16 @@ const reads = {
   },
   getModel: (id: string): unknown => {
     if (id === "bare-model") return { mods: [], accepts: [] };
+    if (id === "married-model") return {
+      // THE MARRIAGE GRAMMAR (#36, the openjutsu lane burn 2026-10-28):
+      // viggle-animate + h3 board loras as {pack, marries} rows, not
+      // bare names — the derived row must carry PACK NAMES or the
+      // consumption gate (assertModUse) refuses a boarding family's
+      // own run (card_compose phase 1, run-d571ef7ced8e).
+      defaults: {}, lane_inputs: {},
+      mods: [{ pack: "loras", marries: { steps: "max" } }],
+      variants: [{ group: "g", route: "married-model", cells: [] }],
+    };
     if (id === "alias-route") return {
       variants: [
         { group: "g", route: "base-model", cells: [] },
@@ -86,6 +97,7 @@ const slice = {
     // cure — the hand roster's drift can no longer strand a
     // registry-claimed route)
     "base-model": { card: "the-card", card_knobs: [] },
+    "married-model": { card: "the-card", card_knobs: [] },
   },
   cards: { "the-card": { outputs: [], requires_by_family: { fam: ["steps"] } } },
   extension_node_types: { Custom: ["a", "b"] },
@@ -115,6 +127,19 @@ describe("loadFacts (the derivation arms)", () => {
     assert.deepEqual(row.mods, ["loras"]);
     assert.deepEqual(row.accepts, ["image"]);
     assert.deepEqual(row.studio, { panel: "gen" });
+  });
+
+  it("THE MARRIAGE GRAMMAR ARM (openjutsu burn 2026-10-28): {pack, marries} mods rows derive as PACK NAMES — a boarding family's gate must pass", () => {
+    // The old blind cast (d.mods as string[]) carried the objects
+    // verbatim; assertModUse's .includes('loras') then refused a
+    // family whose own DECL had boarded the pack — card_compose
+    // phase 1 died before a single node composed. This arm reds the
+    // day the normalize is dropped: the objects come back and the
+    // deepEqual fails FIRST.
+    const row = facts.models["married-model"]!;
+    assert.deepEqual(row.mods, ["loras"], "the {pack, marries} row carries its pack NAME");
+    // the consumption gate itself: the derived row boards the pack.
+    assertModUse({ id: row.id, mods: row.mods }, "loras");
   });
 
   it("artifact basenames take filename, then source_url, then nothing", () => {

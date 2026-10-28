@@ -668,6 +668,9 @@
   "@melite/contracts/planes": [
     "./packages/web-kit/contracts/src/planes.ts"
   ],
+  "@melite/contracts/media-probe": [
+    "./packages/web-kit/contracts/src/media-probe.ts"
+  ],
   "@melite/formats/b64": [
     "./packages/web-kit/formats/src/b64.ts"
   ],

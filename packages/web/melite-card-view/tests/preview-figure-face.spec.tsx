@@ -222,6 +222,31 @@ test('a non-figure card keeps its declared-kind tombstone, pre-run', async () =>
   expect(document.querySelector('[data-testid="stage-preview-mesh"]')).toBeNull()
 })
 
+/** THE OPENJUTSU BURN (2026-10-28, operator, verbatim: "the preview
+ *  has the image I input for some reason, it should be blank until
+ *  the video is there" + "it says rendering… mesh lands here"): a
+ *  VIDEO card whose ref_image is image-kind rode the (l) law's
+ *  ungated arm into the MESH tombstone pre-run. The image pin owns
+ *  the pre-run seat on the MESH lane alone (the estimator's home);
+ *  every other kind keeps its own face's empty state — a video card
+ *  is blank until the film lands. */
+test('(openjutsu) a video card with a stated image input opens on the FILM tombstone — never the mesh face, never the pasted photo', async () => {
+  const { bench } = stubWire({
+    card: 'openjutsu', outputs: { default: 'video' },
+    imageInputs: { ref_image: '/v1/assets/inputs/me.png' },
+  })
+  const user = userEvent.setup()
+  mountTab(bench)
+  await user.click(tileButton())
+  expect(await screen.findByText('Prompt', {}, { timeout: 4000 })).toBeTruthy()
+  // the video face's own honest empty state owns the stage…
+  expect(document.querySelector('[data-testid="stage-preview-video"]')).not.toBeNull()
+  expect(await screen.findByText('No render yet — run lands the film here', {}, { timeout: 4000 })).toBeTruthy()
+  // …and the mesh tombstone never mounts (the "mesh lands here" disease)
+  expect(document.querySelector('[data-testid="stage-preview-mesh"]')).toBeNull()
+  expect(screen.queryByText(/mesh lands here/)).toBeNull()
+})
+
 /** THE TAKEOVER (stroke 90's second half): once artifacts exist the
  *  DECLARED kind takes the stage — the figure retires until the
  *  outputs are gone again. */

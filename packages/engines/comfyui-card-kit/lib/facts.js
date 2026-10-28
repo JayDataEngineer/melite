@@ -93,6 +93,7 @@ export function parseEditCap(raw, label) {
     }
     return Math.floor(cap);
 }
+import { boardedPacks } from "./mods/guard.js";
 /** address → ladder owner, built from the registry ladders (variant
  *  + cell route claims; first claimant wins — boardings resolve
  *  before ladders at assembly). */
@@ -259,8 +260,16 @@ function deriveRow(reads, address, card, outputs, requires, owners) {
     if (d.bounds !== undefined && d.bounds !== null) {
         row.bounds = JSON.parse(JSON.stringify(d.bounds));
     }
-    const mods = d.mods;
-    if (mods !== undefined && mods.length > 0)
+    // THE MARRIAGE GRAMMAR (#36, the openjutsu lane burn 2026-10-28):
+    // DECL.mods entries are pack names or {pack, marries} rows — the
+    // consumption gate (guard.ts assertModUse) reads PACK NAMES. The
+    // old blind cast carried the objects verbatim, a boarding family
+    // (viggle-animate, h3) then failed .includes('loras') and
+    // card_compose phase 1 refused the run its own DECL had boarded.
+    // One spelling: boardedPacks, the same grammar the service's
+    // boot gates and the walls' census arms read.
+    const mods = boardedPacks(d.mods);
+    if (mods.length > 0)
         row.mods = mods;
     const accepts = d.accepts;
     if (accepts !== undefined && accepts.length > 0)

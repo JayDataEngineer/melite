@@ -149,6 +149,7 @@ export function parseEditCap(raw: LaneInputsFacts, label: string): number {
 }
 
 import type { LaneRelations, SamplerEnvelope } from '@melite/contracts/laneRelations'
+import { boardedPacks } from './mods/guard.ts'
 
 /** THE RELATION WORDS, wire twin — DERIVED, NOT SPELLED (2026-10-10,
  *  the four-agent contract audit's top finding: this interface was a
@@ -552,8 +553,16 @@ function deriveRow(
   if (d.bounds !== undefined && d.bounds !== null) {
     row.bounds = JSON.parse(JSON.stringify(d.bounds)) as Record<string, { min?: number; max?: number }>
   }
-  const mods = d.mods as string[] | undefined
-  if (mods !== undefined && mods.length > 0) row.mods = mods
+  // THE MARRIAGE GRAMMAR (#36, the openjutsu lane burn 2026-10-28):
+  // DECL.mods entries are pack names or {pack, marries} rows — the
+  // consumption gate (guard.ts assertModUse) reads PACK NAMES. The
+  // old blind cast carried the objects verbatim, a boarding family
+  // (viggle-animate, h3) then failed .includes('loras') and
+  // card_compose phase 1 refused the run its own DECL had boarded.
+  // One spelling: boardedPacks, the same grammar the service's
+  // boot gates and the walls' census arms read.
+  const mods = boardedPacks(d.mods as readonly unknown[])
+  if (mods.length > 0) row.mods = mods
   const accepts = d.accepts as string[] | undefined
   if (accepts !== undefined && accepts.length > 0) row.accepts = accepts
   if (d.studio !== undefined && d.studio !== null) row.studio = d.studio as StudioFacts

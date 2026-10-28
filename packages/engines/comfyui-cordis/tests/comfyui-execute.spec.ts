@@ -207,6 +207,27 @@ const fakeClient = (over: Partial<Record<string, unknown>> = {}): Client =>
   }) as unknown as Client;
 
 describe("submitPrompt (the receipt law)", () => {
+  it("THE WORKFLOW-SLOT ARM (openjutsu burn 2026-10-28): the SDK's extra_pnginfo.workflow rides an OBJECT, never null", async () => {
+    // The SDK wraps opts.workflow verbatim into
+    // extra_data.extra_pnginfo = {workflow: <opts.workflow>}. `null`
+    // shipped {workflow: null}: the key present, so VHS_VideoCombine's
+    // `.get('workflow', {})` returned null and its `.get('extra', {})
+    // crashed POST-SAMPLING ('NoneType' object has no attribute 'get',
+    // runs dd6b4477/3d6484224 — the whole lane red after 6 nodes
+    // executed). This arm reds the day the slot goes null again.
+    const seen: unknown[] = [];
+    const r = await submitPrompt(fakeClient({
+      queuePrompt: async (_q: number, opts: unknown) => {
+        seen.push(opts);
+        return { prompt_id: "p-wf" };
+      },
+    }), { n: {} });
+    expect(r.promptId).toBe("p-wf");
+    expect(seen).toHaveLength(1);
+    const wf = (seen[0] as { workflow: unknown }).workflow;
+    expect(wf).not.toBeNull();
+    expect(typeof wf).toBe("object");
+  });
   it("a string prompt_id rides back with the client id", async () => {
     const r = await submitPrompt(fakeClient(), { n: {} });
     expect(r).toEqual({ promptId: "p-1", clientId: "client-1" });

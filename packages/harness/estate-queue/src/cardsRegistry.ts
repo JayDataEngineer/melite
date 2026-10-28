@@ -70,7 +70,7 @@
 
 import { Service } from "@deepseek-ai/cordis";
 import type { Context } from "@deepseek-ai/cordis";
-import { statSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 // CROSS-COPY LAW (the estate's documented topology): the engine
 // package resolves the REGISTRY cordis instance; this package's
 // "@deepseek-ai/cordis" is the vendor instance. The service TYPE
@@ -81,9 +81,11 @@ import { statSync } from "node:fs";
  *  package (the registry-keyed instance ComfyUIService mounts on),
  *  imported through the engine's public surface like every other
  *  engine dep. No deep path, no runtime-only dodge. */
-import { bootModels, cardDefsNow, ComposeRefusal, getModel, liveScanOrder, loadCardDefs, loadFacts, owningAtom, registryIds, registryModel, resolveCardFlowOutputs, theService } from "@melite/comfyui-cordis";
+import { bootModels, cardDefsNow, ComposeRefusal, getModel, liveScanOrder, loadCardDefs, loadFacts, owningAtom, registryIds, registryModel, resolveCardFlowOutputs, resolveRepoRoot, theService } from "@melite/comfyui-cordis";
 import type { FactsFile, FactsReads } from "@melite/comfyui-cordis";
 import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition';
+import { probeMedia } from '@melite/contracts/media-probe';
+import type { ProbeResult } from '@melite/contracts/media-probe';
 import { DOOR_KEYS } from "./runsGates.ts";
 import type { FlowsSeatService } from "./flowsData.ts";
 // (type-only: loads ./service's Context augmentation — `queue` — that
@@ -237,6 +239,45 @@ export function familyFace(fam: string): string {
  *  the sentence stem (isUnstatedRequiredVoice — the one spelling).
  *  Named — the run seat's refusal code and the write door's filter
  *  spell the same class through it. */
+/** THE CLIP-GEOMETRY DEFAULT's probe arm (see phase1Card's stamp
+ *  comment for the law): resolves the body's `clip` param (an
+ *  estate uploads path `data/input/<name>` or an absolute path),
+ *  probes the container, and stamps the clip's own width/height
+ *  onto every zeroed size knob. Both stated (or a non-numeric /
+ *  negative value — the door's own bounds judges those after) =
+ *  no stamp; an unreadable file or an unrecognized container =
+ *  no stamp, never a refusal (the engine's follow-the-clip
+ *  contract is the belt). */
+function stampClipGeometry(body: Record<string, unknown>): void {
+  const clip = body["clip"];
+  if (typeof clip !== "string" || clip === "") return;
+  const w = body["width"];
+  const h = body["height"];
+  if (typeof w !== "number" || typeof h !== "number") return;
+  if (w !== 0 && h !== 0) return;
+  const abs = clip.startsWith("/")
+    ? clip
+    : resolveRepoRoot() + "/" + clip.replace(/^\/+/, "");
+  let bytes: Uint8Array;
+  try {
+    const st = statSync(abs);
+    if (!st.isFile()) return;
+    bytes = new Uint8Array(readFileSync(abs));
+  } catch {
+    return;
+  }
+  let probed: ProbeResult;
+  try {
+    probed = probeMedia(bytes);
+  } catch {
+    return;
+  }
+  const stream = probed.streams.find((s) => s.width !== undefined && s.height !== undefined);
+  if (stream === undefined) return;
+  if (w === 0) body["width"] = stream.width;
+  if (h === 0) body["height"] = stream.height;
+}
+
 function isUnstatedRequiredWord(message: string): boolean {
   return isUnstatedRequiredVoice(message);
 }
@@ -1890,6 +1931,21 @@ export class CardRegistryService extends Service {
     body: Record<string, unknown>,
     mid: string,
   ): Promise<Phase1Card> {
+    // THE CLIP-GEOMETRY DEFAULT (2026-10-28, the operator's burn:
+    // "width and height are defaulting to zero for viggle… it needs
+    // to follow what image edit does and default to the input size
+    // of the video"): a body carrying a `clip` param AND
+    // width/height knobs riding the family's 0 default (the
+    // follow-the-clip convention) gets the clip's OWN geometry
+    // stamped into the body BEFORE any resolution or judge runs —
+    // prepareCardParams, the lane verdict, the ledger and the graph
+    // all read real numbers, never a zero that reads broken. Both
+    // stated = the user owns the geometry; a probe miss (an
+    // unreadable file or an unrecognized container, webm today)
+    // leaves the 0s riding — the engine's own follow-the-clip
+    // contract still renders (receipts run-be048a52385d mp4 →
+    // 928×1344, run-9c267ef6c8fd webm → 928×1344).
+    stampClipGeometry(body);
     const prep: PreparedCard = prepareCardParams(this, body, mid, "1");
     // THE BOARD CHECK RIDES THE RUN SEAT TOO (the behavioural
     // re-check's BYPASS 1: the bench refused an unoffered model

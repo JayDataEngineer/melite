@@ -68,9 +68,17 @@ export async function submitPrompt(
 ): Promise<{ promptId: string; clientId: string }> {
   let res: Record<string, unknown>;
   try {
+    // THE WORKFLOW SLOT (the openjutsu lane burn, 2026-10-28): the
+    // SDK wraps this verbatim into extra_data.extra_pnginfo.workflow.
+    // `null` shipped {workflow: null} — the key PRESENT, so VHS's
+    // `.get('workflow', {})` default never fired and every
+    // VHS_VideoCombine died post-sampling ("'NoneType' object has
+    // no attribute 'get'", runs dd6b4477/3d6484224 — 6 nodes
+    // executed first). An OBJECT rides: metadata-reading nodes see
+    // an empty workflow, never null.
     res = await client.queuePrompt(0, {
       prompt: graph,
-      workflow: null,
+      workflow: {},
     }) as Record<string, unknown>;
   } catch (err) {
     // WO-1 (the 2026-10-22 input-prep audit, cured 2026-11-12): the

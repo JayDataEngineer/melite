@@ -292,7 +292,13 @@ function requireServableLeaf(face: string, p: string, leaf: string): void {
 }
 
 /** Walk the FINAL graph; stage every existing local-media path,
- *  with the VHS_LoadVideoPath/VHS_LoadVideo `video` exemption.
+ *  with the VHS_LoadVideoPath `video` exemption. VHS_LoadVideo's
+ *  `video` RIDES the walk (2026-10-27, the openjutsu lane burn: the
+ *  node validates its file against the engine's INPUT DIR, so a raw
+ *  workspace path rode the exemption into "Custom validation
+ *  failed" while sources=2 sat staged-but-unwired — run
+ *  run-d571ef7ced8e; the Path twin reads real filesystem paths
+ *  server-side and keeps the exemption).
  *
  *  opts.runsRoot (the runs OUTPUT tree root — callers hold the run
  *  dir; its dirname is the root) arms the ESTATE-ASSET arm: URLs the
@@ -574,8 +580,7 @@ export async function uploadReferenced(
     if (typeof node === "object" && node !== null && !Array.isArray(node)) {
       const rec = node as Record<string, EngineJson>;
       if (
-        (rec["class_type"] === "VHS_LoadVideoPath" ||
-          rec["class_type"] === "VHS_LoadVideo") &&
+        rec["class_type"] === "VHS_LoadVideoPath" &&
         typeof rec["inputs"] === "object" &&
         rec["inputs"] !== null &&
         !Array.isArray(rec["inputs"])
@@ -583,6 +588,11 @@ export async function uploadReferenced(
         const ins = rec["inputs"] as Record<string, EngineJson>;
         const next: Record<string, EngineJson> = {};
         for (const [k, x] of Object.entries(ins)) {
+          // THE PATH TWIN'S EXEMPTION (2026-10-27 split): VHS_LoadVideoPath
+          // reads real filesystem paths server-side, so its `video` rides
+          // untouched. VHS_LoadVideo fell off this branch the same day — its
+          // `video` must land in the engine's input dir (the walk's staged
+          // name), or the node's own validation refuses it.
           next[k] = k === "video" ? x : await stageOne(x);
         }
         out[nid] = { ...rec, inputs: next };

@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
       "paths": {
+        "@melite/contracts/media-probe": ["./../../web-kit/contracts/src/media-probe.ts"],
         "@melite/models-viggle-animate": ["./../../models/viggle-animate/src/index.ts"],
         "@melite/models-viggle-animate/mods/loras": ["./../../models/viggle-animate/mods/loras.ts"],
         "@melite/video-openjutsu": ["./../../video/openjutsu/src/index.ts"],

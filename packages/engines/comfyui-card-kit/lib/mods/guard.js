@@ -20,6 +20,19 @@
 // pinned ≡ DECL.mods by the flows wall (one spelling is truth,
 // the other is walled to it).
 /**
+ * DECL.mods marriage grammar (#36): entries are pack names or
+ * {pack, marries} rows — every consumer reads PACK NAMES. One
+ * spelling across the boot gates (the service's boarding tests),
+ * the walls' census arms, and the facts derivation: a verbatim
+ * object carry makes `.includes(pack)` false and a boarding family
+ * refuses its own mutation (the openjutsu lane burn, 2026-10-28).
+ */
+export function boardedPacks(mods) {
+    return (mods ?? [])
+        .map((m) => (typeof m === "string" ? m : m.pack))
+        .filter((p) => typeof p === "string");
+}
+/**
  * Refuse LOUD unless the atom boarded the pack. Call BEFORE firing
  * the pack's mutation (stackLoras, qvoice stems, lanpaint arms…).
  * An empty/absent pick list never reaches here — no mutation, no

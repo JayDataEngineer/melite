@@ -68,7 +68,7 @@ vi.mock("../src/cardsCompose.ts", async (importOriginal) => {
 
 import { installLaneStoreOverlay, restoreLaneStoreOverlay } from "../../../../tests/helpers/lane-store-overlay.ts";
 import { Context } from "@deepseek-ai/cordis";
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { EnginesService } from "@melite/engine-contract";
@@ -645,6 +645,43 @@ describe("composeValidateCard (the validate refusal voice)", () => {
 });
 
 describe("phase1Card + phase2Card (the two phases, one compose seat)", () => {
+  it("THE CLIP-GEOMETRY STAMP (2026-10-28, the operator's burn: width/height defaulting to zero for viggle): zeroed size knobs take the clip's OWN geometry before any resolution or judge", async () => {
+    // A hand-crafted minimal MP4 (ftyp + moov{trak{tkhd, mdia{hdlr:
+    // vide}}}) — the probe's tkhd fallback arm reads the display
+    // size, so 928×1344 rides 16.16 fixed. The stamp fires at
+    // phase1Card's head: the BODY mutates in place, and every seat
+    // after (prep, lane verdict, compose) reads real numbers. The
+    // toggle-out proof: without the stamp the 0s ride and this arm
+    // reds on the first expect.
+    const mp4 = craftMinimalMp4(928, 1344);
+    const dir = mkdtempSync(join(tmpdir(), "clip-geo-"));
+    const clipPath = join(dir, "drive.mp4");
+    writeFileSync(clipPath, mp4);
+    const body: Record<string, unknown> = {
+      clip: clipPath, width: 0, height: 0, length: 90,
+      ref_image: "ref.png", model: "viggle-animate",
+    };
+    await svc.phase1Card(body, "viggle-animate").catch(() => undefined);
+    expect(body["width"]).toBe(928);
+    expect(body["height"]).toBe(1344);
+    // BOTH STATED = the user owns the geometry (no stamp)
+    const own: Record<string, unknown> = {
+      clip: clipPath, width: 640, height: 480, length: 90,
+      ref_image: "ref.png", model: "viggle-animate",
+    };
+    await svc.phase1Card(own, "viggle-animate").catch(() => undefined);
+    expect(own["width"]).toBe(640);
+    expect(own["height"]).toBe(480);
+    // AN UNREADABLE CLIP = no stamp, never a refusal (the engine's
+    // follow-the-clip contract is the belt)
+    const miss: Record<string, unknown> = {
+      clip: join(dir, "not-there.mp4"), width: 0, height: 0, length: 90,
+      ref_image: "ref.png", model: "viggle-animate",
+    };
+    await svc.phase1Card(miss, "viggle-animate").catch(() => undefined);
+    expect(miss["width"]).toBe(0);
+    expect(miss["height"]).toBe(0);
+  });
   it("a spell body pools its $ inputs and composes NO graph", async () => {
     // upscale-tools carries spells: ['input_image'] — a $ value
     // pools and phase-1 composes nothing (the two-card handoff)
@@ -1063,3 +1100,29 @@ describe("the hermetic engine (the gate-37 flake cure: no live socket on the boo
     expect(bootSeat.fetches).toBeGreaterThan(0);
   });
 });
+
+/** A minimal probe-able MP4 for the clip-geometry stamp arm: ftyp +
+ *  moov{trak{tkhd(display size), mdia{hdlr: vide}}} — the probe's
+ *  tkhd fallback reads width/height as 16.16 fixed points; no stsd
+ *  needed (the fallback arm is the point). Pure bytes, hermetic. */
+function craftMinimalMp4(width: number, height: number): Buffer {
+  const box = (type: string, body: Buffer): Buffer => {
+    const head = Buffer.alloc(8);
+    head.writeUInt32BE(body.length + 8, 0);
+    head.write(type, 4, "ascii");
+    return Buffer.concat([head, body]);
+  };
+  const tkhd = Buffer.alloc(84);
+  tkhd.writeUInt32BE(0, 0); // version 0 + flags
+  // created/modified/track_id/reserved/duration (20), reserved (8),
+  // layer/alt/volume/reserved (8), matrix (36) all stay zero
+  tkhd.writeUInt32BE(width << 16, 76);
+  tkhd.writeUInt32BE(height << 16, 80);
+  const hdlr = Buffer.alloc(24);
+  // handler fourcc at body offset 8: version/flags(4) + pre_defined(4)
+  hdlr.write("vide", 8, "ascii");
+  const trak = Buffer.concat([box("tkhd", tkhd), box("mdia", box("hdlr", hdlr))]);
+  const ftyp = Buffer.alloc(8);
+  ftyp.write("isom", 4, "ascii");
+  return Buffer.concat([box("ftyp", ftyp), box("moov", box("trak", trak))]);
+}
