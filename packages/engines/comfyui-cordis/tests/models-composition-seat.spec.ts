@@ -31,14 +31,20 @@ import { mountRoster, rosterRows, waitFor } from './models-composition-helpers.t
 /** A valid family DECL the probe registers live — shape mirrors
  * families-transaction's GOOD_DECL (label/group rows always
  * written). The axis the row rides is declared (plane canon L2,
- * 2026-11-02) — an undeclared group refuses at registration. */
+ * 2026-11-02) — an undeclared group refuses at registration. The
+ * offered Variant row carries a real offered cell (the servability
+ * law, the 7B class 2026-11-12: an offered row with no offered
+ * cell is a dead door and refuses at registration). */
 const PROBE_DECL = {
   id: 'probe-composed-first',
   label: 'Probe',
   engine: 'comfyui',
   form: 'form_generate',
   genre: 'misc',
-  variants: [{ id: 'base', label: 'Base', group: 'Variant', route: '', cells: [] }],
+  variants: [{
+    id: 'base', label: 'Base', group: 'Variant', route: '',
+    cells: [{ quant: 'fp16', label: 'FP16', route: 'probe', lane_inputs: { unet: 'probe_fp16.safetensors' } }],
+  }],
   variant_groups: [{ id: 'Variant', label: 'Variant' }],
 }
 

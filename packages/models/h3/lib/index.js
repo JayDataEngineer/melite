@@ -357,6 +357,13 @@ export const DECL = {
         // rows, the compose's stated inputs).
         "refmod_mode", "refmod_pool", "refmod_identity", "refmod_save",
         "image_name",
+        // THE RE-SHOOT GROUP (feature 024, landed without this row — the
+        // claim law caught it: the card claims reshoot_enabled but the
+        // family's declared surface named no member). The schema group +
+        // the film action's rows are the truth; this list mirrors them.
+        "reshoot_enabled", "reshoot_clip", "reshoot_orbit", "reshoot_tilt",
+        "reshoot_dolly", "reshoot_zoom", "reshoot_pan", "reshoot_strength",
+        "reshoot_depth_ratio", "reshoot_smooth_depth", "reshoot_invert_depth",
     ],
     "provisions": [
         {
