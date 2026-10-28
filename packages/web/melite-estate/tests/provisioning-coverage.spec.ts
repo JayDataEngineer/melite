@@ -392,7 +392,10 @@ describe.sequential("estate provisioning composition paths", () => {
     const extension = await mounted.ctx.provisioning.plan({ kind: "extension", id: "demo" });
     assert.equal(extension.items[0]?.provider, "git",
       "the plan must resolve off the shipped facts when the repo facts are absent — an ENOENT here is the audit-019 install burn one file over");
-    assert.deepEqual(extension.items[0]?.nodeTypes ?? [], [],
+    // the plan row union: nodeTypes is the extension row's own face —
+    // narrow by membership, never a blind cast through the union
+    const extensionRow = extension.items[0];
+    assert.deepEqual(!("nodeTypes" in extensionRow) || extensionRow.nodeTypes === undefined ? [] : extensionRow.nodeTypes, [],
       "the shipped facts carry no row for the fixture's pack — the node-type surface is honestly empty, never a fabricated class");
   });
 

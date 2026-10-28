@@ -109,7 +109,8 @@ describe("the h3 camera re-shoot chain (feature 024)", () => {
     instantiateAction(film, bag(), H3, g, "run_rs_apply");
     const entries = nodes(g);
     const apply = entries.find(([, n]) => n.class_type === "MiniMaxH3FunControlNetApply")!;
-    expect(apply[1].strength).toBeUndefined(); // noise guard: the dial reads below
+    // the dial reads below — the node face carries no top-level strength
+    expect(Object.hasOwn(apply[1], "strength")).toBe(false);
     expect(apply[1].inputs.strength).toBe(1);
     expect(apply[1].inputs.start_percent).toBe(0);
     expect(apply[1].inputs.end_percent).toBe(1);
