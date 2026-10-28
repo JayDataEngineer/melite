@@ -56,10 +56,14 @@ export interface FlowSummary {
 }
 
 /** The search surface a card def offers (the def itself satisfies
- *  this — structural, no import of the engine service). */
+ *  this — structural, no import of the engine service). boarded is
+ *  the card's family roster — a model name in q must route, so the
+ *  corpus carries the family ids, never just the card's own words
+ *  (friction-report #5: q ignored model names). */
 export interface SearchableCard {
   readonly identity?: { readonly label?: string; readonly description?: string; readonly genre?: string };
   readonly tags?: readonly string[];
+  readonly boarded?: readonly string[];
 }
 
 /** The words a user sentence carries but no card owns — articles,
@@ -174,7 +178,13 @@ export function searchCards(
     const label: string = def.identity?.label ?? id;
     const description: string = def.identity?.description ?? "";
     const genre: string = def.identity?.genre ?? "";
-    const words: readonly string[] = (id + " " + label + " " + description + " " + low.join(" ")).toLowerCase().split(/[^a-z0-9]+/).filter((w): boolean => w !== "");
+    // THE FAMILY CORPUS (friction-report #5): the boarded family ids
+    // ride the corpus split on separators, so `krea` routes to the
+    // card boarding krea-2 (fuzzy on the whole id already caught the
+    // full spelling — the splits catch the bare name).
+    const fams: readonly string[] = def.boarded ?? [];
+    const famWords: string = fams.flatMap((f) => [f, ...f.split(/[-_]+/)]).join(" ");
+    const words: readonly string[] = (id + " " + label + " " + description + " " + low.join(" ") + " " + famWords).toLowerCase().split(/[^a-z0-9]+/).filter((w): boolean => w !== "");
     const why: string[] = want.length > 0 ? ["tags=" + want.join(",")] : [];
     let score = 0;
     for (const tok of toks) {
@@ -301,33 +311,53 @@ export class DiscloseDirectoryService extends Service {
 
   /** GET /v1/discover: unknown
    *  lookup refuses with the door's own voice; the body carries the
-   *  requested planes only. */
+   *  requested planes only. totals is the UNFILTERED estate size
+   *  (friction-report #5: a filtered answer must say "N cards, M
+   *  matched" — never present the match as the catalog); missed_tags
+   *  is the tag vocabulary of cards the filter removed, so a miss is
+   *  discoverable in one hop. */
   discover(
     lookup: string,
     q: string,
     tags: string,
-  ): { flows?: FlowSummary[]; cards?: DiscoveredCard[] } {
+  ): { flows?: FlowSummary[]; cards?: DiscoveredCard[]; totals: { flows: number; cards: number }; missed_tags?: string[] } {
     if (lookup !== "all" && lookup !== "cards" && lookup !== "flows") {
       throw new Error(
         "unknown lookup '" + lookup + "' (all | cards | flows)",
       );
     }
-    const body: { flows?: FlowSummary[]; cards?: DiscoveredCard[] } = {};
+    const allFlows = flowSummaryRows(resolveRepoRoot(), this.ctx.get("meliteFlows") as FlowsSeat | undefined);
+    const cards: CardRegistryService = this.ctx.cardRegistry;
+    const defs = cards.defsSync() as ReadonlyMap<string, SearchableCard>;
+    const filtering = q !== "" || tags !== "";
+    const body: { flows?: FlowSummary[]; cards?: DiscoveredCard[]; totals: { flows: number; cards: number }; missed_tags?: string[] } = {
+      totals: { flows: allFlows.length, cards: defs.size },
+    };
     if (lookup === "all" || lookup === "flows") {
-      body.flows = searchFlows(
-        flowSummaryRows(resolveRepoRoot(), this.ctx.get("meliteFlows") as FlowsSeat | undefined),
-        q,
-      );
+      body.flows = searchFlows(allFlows, q);
     }
     if (lookup === "all" || lookup === "cards") {
       // property read: the hard inject (above) is the fiber's
       // contract — the legal spelling under the tutorial's law.
-      const cards: CardRegistryService = this.ctx.cardRegistry;
-      body.cards = searchCards(
-        cards.defsSync() as ReadonlyMap<string, SearchableCard>,
-        q,
-        tags,
-      );
+      body.cards = searchCards(defs, q, tags);
+      if (filtering) {
+        // THE MISS VOCABULARY (friction-report #5): tags carried by
+        // NO matched card — the rows the filter removed, so a miss is
+        // discoverable in one hop (a second q/tags off this list).
+        const matchedIds = new Set((body.cards ?? []).map((c) => c.id));
+        const matchedTags = new Set<string>();
+        for (const c of body.cards ?? []) {
+          for (const t of defs.get(c.id)?.tags ?? []) matchedTags.add(t);
+        }
+        const missed = new Set<string>();
+        for (const [id, def] of defs) {
+          if (matchedIds.has(id)) continue;
+          for (const t of def.tags ?? []) {
+            if (!matchedTags.has(t)) missed.add(t);
+          }
+        }
+        body.missed_tags = [...missed].sort().slice(0, 40);
+      }
     }
     return body;
   }

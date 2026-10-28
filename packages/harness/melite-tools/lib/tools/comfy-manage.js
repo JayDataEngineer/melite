@@ -144,7 +144,7 @@ function operationText(value) {
     const path = typeof row.path === 'string' ? row.path : undefined;
     return 'operation ' + id + (name === undefined ? '' : ' · ' + name) + ' · ' + state + outcome + (path === undefined ? '' : ' · ' + path);
 }
-function statusText(data) {
+function statusText(data, verbose) {
     const value = recordValue(data);
     if (value === null)
         return [];
@@ -176,8 +176,17 @@ function statusText(data) {
     const engineQueue = recordValue(value.engine_queue);
     if (engineQueue !== null)
         out.push('engine queue: running ' + asText(engineQueue.running) + ' · pending ' + asText(engineQueue.pending));
-    if (Array.isArray(value.stale_claims) && value.stale_claims.length > 0)
-        out.push('stale_claims (historical, never settled): ' + value.stale_claims.map(asText).join(', '));
+    // THE STALE-COUNT LAW (friction-report #10, 2026-10-28): a long
+    // unsettled-sidecar roster dumps a wall of historical parentheticals
+    // on every status read. The default names only the COUNT; verbose=true
+    // lists each claim for the operator digging into one.
+    if (Array.isArray(value.stale_claims) && value.stale_claims.length > 0) {
+        out.push('stale_claims (historical, never settled): ' + String(value.stale_claims.length) + ' claim(s)' + (verbose === true ? '' : ' (pass verbose=true to list each claim)'));
+        if (verbose === true) {
+            for (const claim of value.stale_claims)
+                out.push('  stale claim: ' + asText(claim));
+        }
+    }
     if (typeof value.active_runs_note === 'string')
         out.push('note: ' + value.active_runs_note);
     if (Array.isArray(value.resources)) {
@@ -241,11 +250,15 @@ function inferredNext(action, data) {
         return 'restart';
     return undefined;
 }
-function renderManage(_args, value) {
+function renderManage(args, value) {
     const result = recordValue(value);
     const action = typeof result?.action === 'string' ? result.action : '?';
     const detail = typeof result?.detail === 'string' ? result.detail : '';
     const data = result?.data;
+    // THE VERBOSE OPT-IN (friction-report #10, 2026-10-28): the status
+    // render threads the tool args so verbose=true can open the
+    // stale-claim roster; the default stays a count.
+    const verbose = recordValue(args)?.verbose === true;
     const first = 'comfy_manage ' + action + ': ' + detail;
     const lines = [first];
     if (result === null)
@@ -256,7 +269,7 @@ function renderManage(_args, value) {
             lines.push('error: ' + result.error);
     }
     if (action === 'status') {
-        lines.push(...statusText(data));
+        lines.push(...statusText(data, verbose));
     }
     else if (action === 'logs' || action === 'search_models' || action === 'list_extensions' || action === 'snapshot_list') {
         lines.push(...actionRows(action, data, result.rows));
@@ -397,7 +410,11 @@ export function comfyManage(estate) {
             quant: { type: 'string', description: 'provision_model / acquire_weight: optional quant cell id.' },
             file: { type: 'string', description: 'acquire_weight: the missing weight filename for display (e.g. "sam2.1_hiera_large.pt"); the DECL owns the fetch source.' },
             operation_id: { type: 'string', description: 'acquire_weight: poll key — the operation_id from the start answer; the tracker polls the same action with this until a terminal state.' },
-            query: { type: 'string', description: 'search_models: search text.' },
+            query: { type: 'string', description: 'search_models: search text (omit or empty lists the whole Manager external catalog, capped at 50).' },
+            verbose: {
+                type: 'boolean',
+                description: 'status: pass true to list every stale claim — the default names only the count.',
+            },
             tail: { type: 'integer', description: 'logs: line count (default 200).' },
             version: { type: 'string', description: 'switch_version: target ComfyUI version.' },
             target: {

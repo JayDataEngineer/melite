@@ -1,11 +1,11 @@
 ---
-description: Qwen Image Edit 2511 — the anchored instruction-edit lane: EditPlus conditioning, source-resolution edits, LanPaint inpaint, Lightning distill.
+description: Qwen Image Edit 2511 — the anchored instruction-edit lane: EditPlus conditioning, source-resolution edits, crop_stitch region detail, Lightning distill.
 kind: package-library
 ---
 
 # qwen-img-edit-2511
 
-qwen-img-edit-2511 registers Qwen Image Edit 2511 (form `form_edit`, label "Qwen Image Edit 2511", genre `image`): instruction-driven editing on the 2511 lane. The graph: loaders → lora stack → per-slot LoadImage anchors → the TextEncodeQwenImageEditPlus pair (references ride the stock node's native image2/image3 optionals — THREE images total; past that the kit refuses loud) → ModelSamplingAuraFlow fixed at shift 1.0 → either the LanPaint inpaint arm (mask stated), the crop_stitch region detailer, or the plain VAEEncode-of-source → KSampler → decode and save under `<run>/edit`. Edits happen at SOURCE resolution: the input image IS the latent; the family declares no width/height and refuses a stated size.
+qwen-img-edit-2511 registers Qwen Image Edit 2511 (form `form_edit`, label "Qwen Image Edit 2511", genre `image`): instruction-driven editing on the 2511 lane. The graph: loaders → lora stack → per-slot LoadImage anchors → the TextEncodeQwenImageEditPlus pair (references ride the stock node's native image2/image3 optionals — THREE images total; past that the kit refuses loud) → ModelSamplingAuraFlow fixed at shift 1.0 → either the crop_stitch region detailer (mask stated with mask_mode crop_stitch), or the plain VAEEncode-of-source → KSampler → decode and save under `<run>/edit` (auto+mask refuses — no lane inpaints in place since the 2026-11-12 inline-inpaint retirement). Edits happen at SOURCE resolution: the input image IS the latent; the family declares no width/height and refuses a stated size.
 
 ## Defaults and the recipe-weights law
 
@@ -15,13 +15,13 @@ Variants: `standard` (INT8 ConvRot merge, 20 steps / cfg 2.5, about 20 GB VRAM, 
 
 ## Mod surface
 
-Three boarded flavors: `lanpaint` (bare — image1 required; the inpaint sampler arm), `mask` (bare — feeds the inpaint flow), and the LoRA board — `./mods/loras` declares three rows: Lightning 4-Step (lightx2v, strength 1, steps 4), Multiple Angles (the fal camera-control adapter; `<sks>` is its trigger vocabulary, strength 0.8), and MCNL Multi-Concept (strength 0.8). Rows are picker vocabulary, never auto-fetched. Provisions: the Qwen2.5-VL 7B text encoder (fp8 scaled, about 9.4 GB) and the Qwen image VAE (about 254 MB); the unet rides the variant cells.
+Two boarded flavors: `mask` (bare — feeds the crop_stitch region flow), and the LoRA board — `./mods/loras` declares three rows: Lightning 4-Step (lightx2v, strength 1, steps 4), Multiple Angles (the fal camera-control adapter; `<sks>` is its trigger vocabulary, strength 0.8), and MCNL Multi-Concept (strength 0.8). Rows are picker vocabulary, never auto-fetched. Provisions: the Qwen2.5-VL 7B text encoder (fp8 scaled, about 9.4 GB) and the Qwen image VAE (about 254 MB); the unet rides the variant cells.
 
 ## Model Experience
 
 ### Request context and condition
 
-A run needs at least one anchor image and the edit instruction; up to three images ride the stock slots, and an optional mask routes the run onto the LanPaint inpaint arm.
+A run needs at least one anchor image and the edit instruction; up to three images ride the stock slots, and an optional mask with mask_mode crop_stitch routes the run onto the region detailer (auto+mask refuses).
 
 #### What the model sees
 
@@ -42,4 +42,4 @@ Independent across runs; within a run the EditPlus node conditions on the anchor
 - **No width/height** — stated sizes are refused; resolution control means resizing the input first.
 - **Live behavior unobserved** — not verified against the running model, except where run evidence is cited above.
 
-Exports: the plugin root, `./package.json`, `./mods/lanpaint`, `./mods/loras`, `./mods/mask`.
+Exports: the plugin root, `./package.json`, `./mods/loras`, `./mods/mask`.

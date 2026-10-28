@@ -613,7 +613,34 @@ describe('comfy_manage contract projection matrix', () => {
     })
     assert.ok(value.includes('active_runs: none'))
     assert.ok(value.includes('engine queue: running 0 · pending 0'))
-    assert.ok(value.includes('stale_claims (historical, never settled): run-a (claimed live; engine queue empty'))
+    assert.ok(value.includes('stale_claims (historical, never settled): 1 claim(s) (pass verbose=true to list each claim)'))
+  })
+
+  test('THE STALE-COUNT LAW (friction-report #10, 2026-10-28): the default names the count, verbose=true lists each claim', () => {
+    // THE OPERATOR'S READ: a long unsettled-sidecar roster dumped a
+    // wall of historical parentheticals on every status read. The
+    // default summarizes to a count with the opt-in named; verbose
+    // opens the roster for the dig into one claim.
+    const body = {
+      ok: true,
+      action: 'status',
+      detail: 'status',
+      data: {
+        state: 'up',
+        active_runs: [],
+        engine_queue: { running: 0, pending: 0 },
+        stale_claims: ['run-a (claimed live; engine queue empty)', 'run-b (claimed live; engine queue empty)'],
+      },
+    }
+    const quiet = text(body)
+    assert.ok(quiet.includes('stale_claims (historical, never settled): 2 claim(s)'))
+    assert.ok(!quiet.includes('run-a (claimed live'), 'the default never dumps the roster')
+    const tool = comfyManage(stubEstate())
+    const loud = (tool.output.render({ verbose: true }, asJson(body)) as Array<{ text?: string }>)
+      .map((part) => part.text ?? '').join('\n')
+    assert.ok(loud.includes('stale_claims (historical, never settled): 2 claim(s)'))
+    assert.ok(loud.includes('stale claim: run-a (claimed live; engine queue empty)'))
+    assert.ok(loud.includes('stale claim: run-b (claimed live; engine queue empty)'))
   })
 
   test('THE FINDING-10 SPLIT: surplus claims render the one-run-law note', () => {

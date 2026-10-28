@@ -76,7 +76,6 @@ export const DECL = {
         "double_reference",
     ],
     "mods": [
-        "lanpaint",
         "loras",
         "mask"
     ],

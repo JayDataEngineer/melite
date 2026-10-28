@@ -2,9 +2,10 @@
 // 2026-09-12). TWO admissions (prompt + the anchor image1) plus the
 // FIRING REFUSALS (refuseImageEditFiring — knobs whose graph this
 // plane does not build refuse loud instead of silently
-// plain-editing) plus the REVIVED LANPAINT ARM (2026-09-15 — a
-// stated region switches to LanPaint_KSamplerAdvanced; the arm's
-// exact wiring is pinned below).
+// plain-editing) plus the RETIRED INLINE-INPAINT ARM (2026-11-12 —
+// no lane inpaints in place: a stated region in auto refuses
+// field-named, and stale inpaint/outpaint knobs refuse as
+// undeclared params at admission).
 import "../../../../tests/helpers/boot-models.ts";
 import { describe, it, beforeAll } from "vitest";
 import assert from "node:assert/strict";
@@ -179,13 +180,21 @@ describe("the image-edit compose gate", () => {
     assert.match(String(field.meta?.extra?.tooltip), /Masked region/);
   });
 
-  it("THE SCHEMA GATE: the mod-plane surface passes the walk verbatim (anchor + region + firing knobs reach the composer)", () => {
+  it("THE SCHEMA GATE: the mod-plane surface passes the walk verbatim — but stale inpaint knobs refuse at admission (undeclared params never compose)", () => {
     const doc = def.schema({
-      prompt: "x", image1: "/m/i.png", input_mask: "/m/region.png", lanpaint_num_steps: 20,
+      prompt: "x", image1: "/m/i.png", input_mask: "/m/region.png",
     }) as Record<string, unknown>;
     assert.equal(doc.image1, "/m/i.png", "the declared anchor survives the gate");
     assert.equal(doc.input_mask, "/m/region.png", "the hidden mask-seat gate key survives the gate (declared, hidden — never a face)");
-    assert.equal(doc.lanpaint_num_steps, 20, "the undeclared lanpaint knob survives the gate");
+    // the retired arm's knobs are undeclared on every surface now —
+    // admission refuses them before the firing gate ever runs.
+    for (const stale of ["lanpaint_enabled", "lanpaint_num_steps", "lanpaint_lambda", "outpaint_top", "outpaint_overlap"]) {
+      assert.throws(
+        () => def.compose(def.schema({ prompt: "x", image1: "/m/i.png", [stale]: 1 }), model, new GraphBuilder(), "r_stale"),
+        new RegExp(`undeclared param\\(s\\): ${stale}`),
+        `the stale ${stale} knob refuses at admission`,
+      );
+    }
   });
 
   it("THE MIGRATION LAW: a stated input_images folds the legacy keys away (the operator's old drafts run forward)", () => {
@@ -203,20 +212,22 @@ describe("the image-edit compose gate", () => {
   });
 
   it("the firing refusals name the unbuildable graph (no silent plain-edit)", () => {
+    // stale inpaint/outpaint knobs refuse EARLIER — at admission
+    // (undeclared params, pinned in the schema-gate test above), so
+    // the firing gate never sees them. What reaches the gate and no
+    // graph carries refuses field-named here.
+    const undeclared = (key: string): RegExp => new RegExp(`undeclared param\\(s\\): ${key}`);
     const arms: Array<[Record<string, unknown>, RegExp]> = [
       // (the merge's old mixed-vocab refusal is RETIRED — the
       // migration law folds legacy keys under a stated input_images;
       // pinned in its own test below)
       [{ double_reference: true }, /'double_reference' fires .*\(the second encode/],
-      // forcing the sampler with no region stated refuses —
-      // there is nothing to regenerate.
-      [{ lanpaint_enabled: true }, /'lanpaint_enabled' fires .*\(force LanPaint with no region/],
-      // retired upstream (fixed 1/15 on the new node) — the fields
-      // stay declared for form-spec parity and refuse off-default.
-      [{ lanpaint_beta: 0.9 }, /'lanpaint_beta' fires .*\(retired upstream/],
-      [{ lanpaint_friction: 0.9 }, /'lanpaint_friction' fires .*\(retired upstream/],
-      [{ outpaint_top: 64 }, /'outpaint_top' fires .*\(canvas expansion/],
-      [{ outpaint_overlap: 32 }, /'outpaint_overlap' fires .*off its lane promise/],
+      // the retired arm's knobs are undeclared — admission refuses.
+      [{ lanpaint_enabled: true }, undeclared("lanpaint_enabled")],
+      [{ lanpaint_beta: 0.9 }, undeclared("lanpaint_beta")],
+      [{ lanpaint_friction: 0.9 }, undeclared("lanpaint_friction")],
+      [{ outpaint_top: 64 }, undeclared("outpaint_top")],
+      [{ outpaint_overlap: 32 }, undeclared("outpaint_overlap")],
       // a bare-string mask states nothing the arm can read.
       [{ mask: "/m/mask.png" }, /'mask' fires .*\(the mask bag is a list/],
       [{ mask: [{ input_mask: "/m/a.png" }, { input_mask: "/m/b.png" }] }, /'mask' fires .*\(one region per run/],
@@ -224,7 +235,6 @@ describe("the image-edit compose gate", () => {
       [{ mask_detector: "yolo" }, /'mask_detector' fires .*\(unknown region detector/],
       [{ mask_mode: "crop_stitch" }, /'mask_mode' fires .*needs a region/],
       [{ mask_mode: "crop_stitch", input_mask: "/m/a.png", mask_detector: "face" }, /'mask_detector' fires .*both stated/],
-      [{ mask_mode: "crop_stitch", input_mask: "/m/a.png", lanpaint_enabled: true }, /'lanpaint_enabled' fires .*\(pick one sampler/],
       [{ mask_mode: "crop_stitch", input_mask: "/m/a.png", mask_threshold: 0.5 }, /'mask_threshold' fires .*re-binarizes/],
       [{ mask_detector: "face" }, /'mask_detector' fires .*ride crop_stitch only/],
       [{ mask_detector_threshold: 0.7 }, /'mask_detector_threshold' fires .*rides crop_stitch only/],
@@ -232,6 +242,10 @@ describe("the image-edit compose gate", () => {
       [{ mask_denoise: 0.8 }, /'mask_denoise' fires .*rides crop_stitch only/],
       [{ mask_context_pad: 128 }, /'mask_context_pad' fires .*rides crop_stitch only/],
       [{ mask_threshold: 0.5 }, /'mask_threshold' fires .*\(no core node re-binarizes/],
+      // the retired arm: a stated region in auto refuses field-named
+      // on EVERY lane — the voice teaches crop_stitch.
+      [{ input_mask: "/m/a.png" }, /'input_mask' fires .*no edit lane inpaints in place.*state mask_mode crop_stitch/],
+      [{ mask: [{ input_mask: "/m/a.png" }] }, /'input_mask' fires .*no edit lane inpaints in place/],
     ];
     for (const [over, voice] of arms) {
       assert.throws(
@@ -247,69 +261,49 @@ describe("the image-edit compose gate", () => {
     );
   });
 
-  it("a stated region switches to the lanpaint sampler (the revived arm)", () => {
+  it("a stated region in auto refuses through the card door (the retired inline-inpaint arm — no lane inpaints in place)", () => {
+    assert.throws(
+      () => def.compose(
+        def.schema({
+          prompt: "remove the watermark", image1: "/m/i.png", seed: 42,
+          input_mask: "/m/region.png",
+        }),
+        model, new GraphBuilder(), "run_lp",
+      ),
+      /'input_mask' fires .*no edit lane inpaints in place.*state mask_mode crop_stitch/,
+    );
+    // the same region under crop_stitch composes the detailer — the
+    // refusal names the fix, and the fix works.
     const g = new GraphBuilder();
     def.compose(
       def.schema({
         prompt: "remove the watermark", image1: "/m/i.png", seed: 42,
-        input_mask: "/m/region.png", lanpaint_enabled: true,
-        lanpaint_num_steps: 20, lanpaint_lambda: 0.5, lanpaint_step_size: 1.0,
-        mask_grow: 8, mask_feather: 8,
+        input_mask: "/m/region.png", mask_mode: "crop_stitch",
       }),
-      model, g, "run_lp",
+      model, g, "run_cs_fix",
     );
-    const graph = g.toJSON() as Record<string, { inputs: Record<string, unknown> }>;
-    // the mask prep chain (the py host-side chain, node form).
-    assert.equal(graph["LoadImageMask.0"].inputs.channel, "alpha", "alpha marks the region");
-    assert.equal(graph["GrowMask.0"].inputs.expand, 8, "grow rides");
-    assert.deepEqual(
-      [graph["FeatherMask.0"].inputs.left, graph["FeatherMask.0"].inputs.top,
-       graph["FeatherMask.0"].inputs.right, graph["FeatherMask.0"].inputs.bottom],
-      [8, 8, 8, 8], "one feather radius, all four sides",
-    );
-    assert.ok(graph["LanPaint_ImageEncode.0"], "masked encode rides");
-    // the sampler — every drift from the pack pinned.
-    const ks = graph["LanPaint_KSamplerAdvanced.0"].inputs;
-    assert.equal(ks.steps, 20, "steps <- lanpaint_num_steps");
-    assert.equal(ks.noise_seed, 42, "the minted seed rides");
-    assert.equal(ks.add_noise, "enable", "their example wiring");
-    assert.equal(ks.LanPaint_NumSteps, 5, "upstream default, no pack knob");
-    assert.equal(ks.LanPaint_Lambda, 0.5, "pack default (lighter pull than their 5.0)");
-    assert.equal(ks.LanPaint_StepSize, 1.0, "pack default (theirs is 0.2)");
-    // The engine build declares no Beta/Friction (nor EarlyStop/
-    // Inner* / MinStepFrac) inputs — the compose restates nothing
-    // the node cannot spell (2026-10-21, the wiring gate's catch).
-    assert.equal(ks.LanPaint_Beta, undefined, "retired-upstream input never wired");
-    assert.equal(ks.LanPaint_Friction, undefined, "retired-upstream input never wired");
-    assert.equal(ks.LanPaint_PromptMode, "Image First", "negative maps image-first");
-    assert.equal(ks.start_at_step, 0, "their example wiring");
-    assert.equal(ks.end_at_step, 10000, "their example wiring");
-    assert.equal(ks.return_with_leftover_noise, "disable", "their example wiring");
-    // the decode merges back inside the mask.
-    assert.equal(graph["LanPaint_ImageDecode.0"].inputs.blend_overlap, 9, "MaskBlend-style boundary");
-    assert.ok(graph["SaveImage.0"], "the edit saves");
-    assert.ok(!graph["KSampler.0"], "no plain sampler beside the arm");
-    assert.ok(!graph["VAEEncode.0"], "no plain encode beside the arm");
+    const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+    assert.ok(Object.values(graph).some((n) => n.class_type === "DetailerForEach"), "the taught fix composes the region detailer");
+    assert.ok(!Object.values(graph).some((n) => (n.class_type ?? "").startsWith("LanPaint")), "no legacy inpaint topology beside the arm");
   });
 
-  it("positive prompt mode rides Prompt First, the bag feeds the arm", () => {
+  it("a bag-stated region feeds the detailer (the bag's painted mask drives MaskToSEGS)", () => {
     const g = new GraphBuilder();
     def.compose(
       def.schema({
         prompt: "x", image1: "/m/i.png",
-        mask: [{ input_mask: "/m/bag.png", mask_grow: 0, mask_feather: 0 }],
-        lanpaint_prompt_mode: "positive",
+        mask: [{ input_mask: "/m/bag.png", mask_mode: "crop_stitch", mask_grow: 0, mask_context_pad: 0 }],
       }),
       model, g, "r1",
     );
-    const graph = g.toJSON() as Record<string, { inputs: Record<string, unknown> }>;
-    assert.equal(
-      graph["LanPaint_KSamplerAdvanced.0"].inputs.LanPaint_PromptMode,
-      "Prompt First", "positive maps prompt-first",
+    const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+    assert.deepEqual(
+      graph["MaskToSEGS.0"].inputs.mask,
+      ["LoadImageMask.0", 0], "the bag's region feeds the segmenter",
     );
-    assert.ok(graph["LoadImageMask.0"], "the bag's region feeds the arm");
-    assert.ok(!graph["GrowMask.0"], "grow 0 builds no node");
-    assert.ok(!graph["FeatherMask.0"], "feather 0 builds no node");
+    assert.ok(graph["DetailerForEach.0"], "the bag's region feeds the detailer");
+    assert.ok(Object.values(graph).every((n) => !(n.class_type ?? "").startsWith("LanPaint")), "no legacy inpaint topology");
+    assert.ok(!graph["GrowMask.0"], "zero halo builds no node");
   });
   it("crop_stitch with a painted mask builds the region detailer (MaskToSEGS → DetailerForEach → save)", () => {
     const g = new GraphBuilder();
@@ -346,7 +340,7 @@ describe("the image-edit compose gate", () => {
     assert.ok(!graph["VAEDecode.0"], "no decode under an IMAGE output");
     assert.ok(!graph["KSampler.0"], "no plain sampler beside the arm");
     assert.ok(!graph["VAEEncode.0"], "no plain encode beside the arm");
-    assert.ok(!graph["LanPaint_KSamplerAdvanced.0"], "no lanpaint sampler beside the arm");
+    assert.ok(!graph["LanPaint_KSamplerAdvanced.0"], "no legacy inpaint sampler beside the arm");
   });
 
   // THE SPELL ARM (the wired-anchor law, 2026-10-09 — the operator's
@@ -584,18 +578,19 @@ describe("the image-edit compose gate", () => {
     assert.equal(rows.length, new Set(names).size, "every served row is reachable by some arm weight (no dead rows)");
   });
   it("the firing refusals pass the DEFAULT lanes (the blank() law)", () => {
-    // the lanpaint/outpaint/mask knobs at their declared defaults
-    // do NOT fire — the plain-edit graph builds.
+    // the mask knobs at their declared defaults do NOT fire — the
+    // plain-edit graph builds. (The retired inpaint/outpaint knobs
+    // are undeclared and refuse at admission — pinned above.)
     const g = new GraphBuilder();
     def.compose(
-      def.schema({ prompt: "make it night", image1: "/m/i.png", lanpaint_num_steps: 20, outpaint_overlap: 16, mask_grow: 8 }),
+      def.schema({ prompt: "make it night", image1: "/m/i.png", mask_grow: 8 }),
       model, g, "run_1",
     );
     const graph = g.toJSON();
     assert.ok(graph["TextEncodeQwenImageEditPlus.0"], "the family edit encoder rides");
     assert.ok(graph["LoadImage.0"], "the anchor loads");
     assert.ok(graph["KSampler.0"], "the stock sampler rides when no region is stated");
-    assert.ok(!graph["LanPaint_KSamplerAdvanced.0"], "no lanpaint arm without a region");
+    assert.ok(Object.values(graph).every((n) => !(n as { class_type: string }).class_type.startsWith("LanPaint")), "no legacy inpaint arm without a region");
   });
 
   it("full_frame and auto produce the same whole-image graph", () => {

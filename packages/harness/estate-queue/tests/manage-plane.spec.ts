@@ -966,11 +966,26 @@ describe("hStatus operations", () => {
 });
 
 describe("hSearch", () => {
-  it("needs a query, refuses byo, maps refusals, rethrows transports", async () => {
+  it("lists the whole catalog on an empty query, refuses byo, maps refusals, rethrows transports", async () => {
     mkRoot();
     try {
+      // THE EMPTY-QUERY LAW (friction-report #11, 2026-10-28): a bare
+      // call used to 422 on the missing query — the agent exploring
+      // the catalog hit a refusal instead of the roster. Omitted and
+      // empty queries list the whole cache (capped); the unfiltered
+      // detail teaches the filter syntax.
+      route(() =>
+        json({
+          models: [
+            { name: "Fast Art", type: "ckpt", base: "sdxl", filename: "fast.safetensors" },
+            { name: "Slow Photo", type: "lora" },
+          ],
+        }),
+      );
       const [, e0] = await manage({ action: "search_models" });
-      assert.match(e0.detail, /search_models requires: query/);
+      assert.match(e0.detail, /2 model\(s\) in the Manager external catalog \(no filter — pass query to narrow/);
+      const [, e0b] = await manage({ action: "search_models", query: "" });
+      assert.match(e0b.detail, /2 model\(s\) in the Manager external catalog \(no filter/);
       const [, e1] = await manage({ action: "search_models", query: "x" }, CTX({ endpoint: () => ({}) }));
       assert.match(e1.detail, /byo endpoint/);
       route(() => text("denied", 403));

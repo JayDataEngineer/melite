@@ -138,7 +138,7 @@ export function isFamilySchemaCachePopulated(): boolean {
  *  • SLOT / TRANSPORT VOCABULARY (the flow spec's slot + upstream
  *    injector vocabulary): input slots (first_frame, last_frame,
  *    input_glb, source_glb, outfit_glb, hair_glb, motion_npz,
- *    prev_motion_artifact, lanpaint_mask), modifier bags (loras,
+ *    prev_motion_artifact), modifier bags (loras,
  *    controlnets, modifiers), renderer weight filenames
  *    (model_name, t5_name, vae_name — read by the
  *    renderers), export flags, detect_mode (mask_studio field),
@@ -165,7 +165,7 @@ const WIRE_RELAXED_KEYS: ReadonlySet<string> = new Set([
   "image1", "image2", "image3",
   // Slot / transport vocabulary (slot_kinds + flow injector + renderers)
   "input_image", "first_frame", "last_frame", "input_glb",
-  "prev_motion_artifact", "lanpaint_mask",
+  "prev_motion_artifact",
   "source_glb", "outfit_glb", "hair_glb", "motion_npz",
   "loras", "controlnets", "modifiers",
   "service", "source", "preset",

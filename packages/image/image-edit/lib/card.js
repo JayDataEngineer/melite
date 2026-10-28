@@ -8,7 +8,7 @@ import { DECL as qwenImgEdit2511Decl } from '@melite/models-qwen-img-edit-2511';
 import { DECL as fibo2EditDecl } from '@melite/models-fibo2-edit';
 import { bag } from '@melite/contracts/extraKeys';
 import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission';
-import { MASK_RIDERS, LANPAINT_RIDERS } from '@melite/comfyui-card-kit/pack-fields';
+import { MASK_RIDERS } from '@melite/comfyui-card-kit/pack-fields';
 // THE STACK CAP (the max_images law — the card RIDES the models'
 // DECLs, never a hardcoded count): the roomiest boarded lane's
 // total image inputs, anchor included. A boarded family WITHOUT
@@ -24,13 +24,12 @@ export const declCap = (d) => {
 const EDIT_LIST_CAP = Math.max(declCap(qwenImgEdit2511Decl), declCap(qwenImgEdit21Decl), declCap(fibo2EditDecl));
 export const schema = z.object({
     // order = the field order. image1 IS THE PLAIN ANCHOR (2026-09-21,
-    // the 2.1 rework: it rode the lanpaint mod and was therefore
-    // 2511-hardcoded — the naming law makes the ANCHOR card-owned so
-    // every edit lane admits it; 2511's lanpaint flavor keeps its
-    // inpaint knobs mod-owned, the admission union serves both).
-    // Remaining mod-owned knobs (lanpaint_*; outpaint_*; loras;
+    // the 2.1 rework: the anchor is card-owned so
+    // every edit lane admits it; the region knobs stay mod-owned,
+    // the admission union serves every lane).
+    // Remaining mod-owned knobs (outpaint_*; loras;
     // mask/
-    // mask_*) live in mods/{lanpaint,loras,mask}.ts registering
+    // mask_*) live in mods/{loras,mask}.ts registering
     // through ctx.comfyui.registerMod (the _absorb_models
     // interlock). Schemastery passes unknown keys through, so
     // compose still reads p.image1/p.loras/... — validation of
@@ -154,7 +153,7 @@ export const ACTION_BINDINGS = {
  *  emitted tool row carries; the ring's spelling, stated once). */
 export const identity = {
     label: 'Edit Image',
-    description: 'Instruction-driven image editing — the edit_image interface card boarding three LANES: qwen-img-edit-2511 (the dedicated edit checkpoint — lightning/standard cascade, lanpaint flavor), qwen-img-edit-21 (the cached-reference edit lane of the same 2.1 weights as the t2i sibling family), and fibo2-edit (BRIA\'s licensed Fibo 2.0 model, the Comfy-Org repack — one TextEncodeFibo2 encoder conditioning both arms, dev/edit-turbo checkpoint pair, the encoder\'s own trained-size latent). The family names the model, the card names the operation. The surface scopes itself.',
+    description: 'Instruction-driven image editing — the edit_image interface card boarding three LANES: qwen-img-edit-2511 (the dedicated edit checkpoint — lightning/standard cascade), qwen-img-edit-21 (the cached-reference edit lane of the same 2.1 weights as the t2i sibling family), and fibo2-edit (BRIA\'s licensed Fibo 2.0 model, the Comfy-Org repack — one TextEncodeFibo2 encoder conditioning both arms, dev/edit-turbo checkpoint pair, the encoder\'s own trained-size latent). The family names the model, the card names the operation. The surface scopes itself.',
     genre: 'image',
     icon: 'edit',
     principles: [
@@ -162,7 +161,7 @@ export const identity = {
         'the list capacity rides each lane DECL\'s max_images (2.1: 16 total, fibo2-edit: 16 total, 2511: 3 total — anchor included); a list past the lane cap refuses loudly, never drops quietly',
         'Qwen-Image-Edit uses low CFG (flow-matching) — the Guidance Scale slider tops out at 10.0',
         'Without a mask modifier, image editing is whole-image by default; a mask modifier opts into masked-region editing',
-        'An input_mask alongside image1 in auto switches the 2511 lane to the LanPaint inpaint sampler (the masked region regenerates, the rest is preserved); the 2.1 and fibo2-edit lanes refuse auto+mask field-named — state crop_stitch there',
+        'An input_mask alongside image1 in auto refuses field-named on every lane — state mask_mode crop_stitch for region work',
         'Masked region (crop_stitch) runs the generic region detailer instead, on ALL THREE lanes (the operator\'s 2.1 rides its cache-wrapped model + encoder conditioning): region → SEGS → DetailerForEach crop/edit/paste — pixels outside the region never change; the region is the painted mask, or pick a detector (person/face/hand) and the Impact chain proposes it',
         'Region detail rides mask_detail_size (working size) + mask_denoise (rework strength); grow + context pad compose the region halo, feather blends the paste',
         'Mask prep (grow/feather/invert) rides in-graph ahead of the sampler; re-threshold has no node and refuses non-zero',
@@ -269,10 +268,10 @@ export function registerCard(ctx, comfy) {
             // card's own declaration validates the last hop into the
             // engine): schemastery walk enforces declared types + bounds (a
             // steps=999 draft refuses LOUD here, never composes), fills
-            // defaults, and passes the mod-plane surface (image1, lanpaint_*,
+            // defaults, and passes the mod-plane surface (image1,
             // mask bags, loras) through verbatim — nothing drops. The
             // composer's reads below are reads of the GATED doc.
-            const doc = gatedResolve('image-edit', schemaFn, ['model', 'loras', ...MASK_RIDERS, ...LANPAINT_RIDERS, 'mask_detector_threshold'], p);
+            const doc = gatedResolve('image-edit', schemaFn, ['model', 'loras', ...MASK_RIDERS, 'mask_detector_threshold'], p);
             if (!doc.prompt || !doc.prompt.trim()) {
                 throw new Error("required param 'prompt' missing or empty on the image-edit card (WHAT to change, not the whole image)");
             }

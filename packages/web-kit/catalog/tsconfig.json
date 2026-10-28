@@ -179,7 +179,6 @@
         "@melite/models-qwen-img-edit-21/mods/mask": ["./../../models/qwen-img-edit-21/mods/mask.ts"],
         "@melite/models-qwen-img-edit-2511": ["./../../models/qwen-img-edit-2511/src/index.ts"],
         "@melite/models-qwen-img-edit-2511/mods/loras": ["./../../models/qwen-img-edit-2511/mods/loras.ts"],
-        "@melite/models-qwen-img-edit-2511/mods/lanpaint": ["./../../models/qwen-img-edit-2511/mods/lanpaint.ts"],
         "@melite/models-qwen-img-edit-2511/mods/mask": ["./../../models/qwen-img-edit-2511/mods/mask.ts"],
         "@melite/models-qwen3-tts": ["./../../models/qwen3-tts/src/index.ts"],
         "@melite/models-qwen3-tts/mods/qvoice": ["./../../models/qwen3-tts/mods/qvoice.ts"],

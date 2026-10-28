@@ -166,26 +166,6 @@ export type DetectorEntry = {
     /** Model */
     model: string;
 };
-/**
- * LanpaintModelEntry
- * @description One synthesized LanPaint route declaration (2026-08-16/17).
- *
- *     Lives in a family's ``lanpaint_models:`` block. The entry declares
- *     NO weights — the loader SYNTHESIZES the route at load, copying
- *     size/sha256 from the ``carrier``'s resolved cell (one weights file,
- *     one pin record — the flat-file pattern that pinned z-image's cells
- *     twice is retired). THE LINK IS DECLARED HERE (2026-08-17 directive:
- *     "MODEL DOWNLOAD LINKS ARE IN YAML, NOT PYTHON"): every carrier
- *     declares its OWN ``source:`` + ``provision:`` in this YAML node —
- *     the loader never fabricates a link, and a divergent link (a URL or
- *     dest that differs from the carrier cell's) fails the load. The
- *     carrier MUST carry the declaration-only ``inpaint`` mod bag — the
- *     mod IS the capability gate, and a carrier without it fails the load.
- *     ``defaults`` are the route's recipe (verbatim from the retired flat
- *     entries; the LanPaint knobs themselves live on the mod bag's
- *     ``fields:`` and merge under the recipe).
- */
-
 export type FamilyEntryWire = {
     /** Label */
     label: string;
@@ -262,8 +242,6 @@ export type FamilyEntryWire = {
     presets?: {
         [key: string]: PresetEntry;
     } | null;
-    /** Lanpaint Models */
-    lanpaint_models?: LanpaintModelEntry[] | null;
     studio?: StudioBindingWire | null;
 } & {
     [key: string]: unknown;
@@ -274,21 +252,6 @@ export type FamilyEntryWire = {
  *     (input slot / full slot list / prompt-in-form) + typed variants.
  */
 
-export type LanpaintModelEntry = {
-    /** Carrier */
-    carrier: string;
-    /** Route */
-    route: string;
-    /** Label */
-    label?: string | null;
-    /** Source */
-    source?: string | null;
-    provision?: ProvisionArtifact | null;
-    /** Defaults */
-    defaults?: {
-        [key: string]: unknown;
-    } | null;
-};
 /**
  * MaskLayerKind
  * @description Provenance of a mask-studio output — which producer derived it.
@@ -639,7 +602,7 @@ export type PresetEntry = {
  *     ``strength`` rides along verbatim into the resolved wire params.
  *
  *     The resolution emits NO params for declaration_only bags (load-time
- *     effect only — the lanpaint synthesis) and ``{first_field_name:
+ *     effect only) and ``{first_field_name:
  *     option, **extras}`` for grid bags.
  */
 
@@ -820,7 +783,7 @@ export type StudioBindingWire = {
  *     ``mask`` is NOT in the vocabulary (removed 2026-08-14 with the input
  *     card's mask feature) — masked editing lives with the dedicated
  *     mask_studio family, whose inpaint slots consume
- *     ``input_mask``/``lanpaint_mask`` (a different, upload-key vocabulary in
+ *     ``input_mask`` (a different, upload-key vocabulary in
  *     never a gated source param here.
  *
  *     ONE declaration (the family's ``transforms:`` block) feeds TWO consumers:

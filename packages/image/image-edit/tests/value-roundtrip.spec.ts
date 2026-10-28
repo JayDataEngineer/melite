@@ -193,23 +193,22 @@ describe("P0 witness extension — the edit aliases, mask, and specialty seats",
     assert.equal((g2511["LoadImage.2"] as { inputs: { image: string } }).inputs.image, "/m/refa.png", "2511: reference_images[0] reaches LoadImage");
   });
 
-  it("E7 (operator's region seat): a stated input_mask reaches LoadImageMask on the 2511 lanpaint arm — and the 21 lane REFUSES it loud, naming the knob (never a silent text-only render)", () => {
+  it("E7 (operator's region seat): a stated input_mask in auto REFUSES loud on BOTH lanes naming the knob — and under crop_stitch it reaches LoadImageMask + the region detailer (never a silent text-only render)", () => {
+    for (const [m, lane] of [[m2511, "2511"], [m21, "21"]] as const) {
+      assert.throws(
+        () => composeDoc(m, { prompt: "p", image1: "/m/anchor.png", input_mask: "/m/mask.png" }, `r_e7_${lane}`),
+        /input_mask.*state mask_mode crop_stitch/,
+        `${lane}: a stated input_mask in auto refuses loud naming the knob + the fix`,
+      );
+    }
     const g2511 = composeDoc(m2511, {
-      prompt: "p", image1: "/m/anchor.png", input_mask: "/m/mask.png",
+      prompt: "p", image1: "/m/anchor.png", input_mask: "/m/mask.png", mask_mode: "crop_stitch",
     }, "r_e7_2511");
     const mask = g2511["LoadImageMask.0"];
-    assert.ok(mask, "2511: the lanpaint arm composes LoadImageMask (the mask's consumer)");
+    assert.ok(mask, "2511: the region arm composes LoadImageMask (the mask's consumer)");
     assert.equal(mask.inputs.image, "/m/mask.png", "2511: the stated mask reaches LoadImageMask.image verbatim");
     assert.equal(mask.inputs.channel, "alpha", "2511: the mask rides the alpha channel (the card's documented read)");
-    assert.ok(g2511["LanPaint_KSamplerAdvanced.0"], "2511: the lanpaint sampler mounts (the masked-region regenerator)");
-    // THE 21 REFUSAL: the mask fires on the 2511 lane only — a stated
-    // mask on 21 must refuse LOUD, never compose a text-only edit the
-    // operator believes is masked.
-    assert.throws(
-      () => composeDoc(m21, { prompt: "p", image1: "/m/anchor.png", input_mask: "/m/mask.png" }, "r_e7_21"),
-      /input_mask/,
-      "21: a stated input_mask refuses loud naming the knob",
-    );
+    assert.ok(g2511["DetailerForEach.0"], "2511: the region detailer mounts (the masked-region reworker)");
   });
 
   it("E8 (documented inert): match_input_resolution switches NOTHING — stated true and false compose structurally identical graphs (the tooltip's own law, pinned)", () => {

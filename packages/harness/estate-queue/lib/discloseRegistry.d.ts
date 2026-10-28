@@ -27,7 +27,10 @@ export interface FlowSummary {
     readonly skillRefs: readonly string[];
 }
 /** The search surface a card def offers (the def itself satisfies
- *  this — structural, no import of the engine service). */
+ *  this — structural, no import of the engine service). boarded is
+ *  the card's family roster — a model name in q must route, so the
+ *  corpus carries the family ids, never just the card's own words
+ *  (friction-report #5: q ignored model names). */
 export interface SearchableCard {
     readonly identity?: {
         readonly label?: string;
@@ -35,6 +38,7 @@ export interface SearchableCard {
         readonly genre?: string;
     };
     readonly tags?: readonly string[];
+    readonly boarded?: readonly string[];
 }
 /** Sørensen–Dice over character trigrams — the in-process fuzzy
  *  measure (no embeddings, per the 2026-11-12 adjudication: a 14-card
@@ -91,10 +95,19 @@ export declare class DiscloseDirectoryService extends Service {
     };
     /** GET /v1/discover: unknown
      *  lookup refuses with the door's own voice; the body carries the
-     *  requested planes only. */
+     *  requested planes only. totals is the UNFILTERED estate size
+     *  (friction-report #5: a filtered answer must say "N cards, M
+     *  matched" — never present the match as the catalog); missed_tags
+     *  is the tag vocabulary of cards the filter removed, so a miss is
+     *  discoverable in one hop. */
     discover(lookup: string, q: string, tags: string): {
         flows?: FlowSummary[];
         cards?: DiscoveredCard[];
+        totals: {
+            flows: number;
+            cards: number;
+        };
+        missed_tags?: string[];
     };
 }
 /** The disclose row: mounts after the card-registry provider (its

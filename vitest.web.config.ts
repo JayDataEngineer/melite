@@ -46,6 +46,15 @@ export default defineConfig({
       // snapshots/web/cards-tab).
       '@deepseek-ai/dsh-api-gateway/client': rootPath('packages/web/melite-card-view/tests/fixtures/gateway-client.ts'),
       'react/jsx-runtime': path.join(realpathSync(path.join(CARD_VIEW, 'node_modules/react')), 'jsx-runtime'),
+      // the media-panel scenario (2026-11-12): the snapshot tree has
+      // no pnpm importer of its own, so an `@testing-library/react`
+      // import from snapshots/web/ could never resolve — the tier
+      // red at import-analysis on ANY tree carrying the file (proven
+      // at clean 56bf3b5e9 with the lane's only such import). Pinned
+      // at the gallery's installed copy — the package whose
+      // MediaPanel the scenario mounts — through its node_modules
+      // link, the same derived-not-literal seat the react pair uses.
+      '@testing-library/react': path.join(realpathSync(path.join(CARD_VIEW, '../infer-gallery')), 'node_modules/@testing-library/react'),
       anser: rootPath('node_modules/anser'),
       'shiki/core': rootPath('node_modules/shiki/dist/core.mjs'),
       'shiki/engine/javascript': rootPath('node_modules/shiki/dist/engine-javascript.mjs'),

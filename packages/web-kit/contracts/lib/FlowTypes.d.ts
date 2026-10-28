@@ -146,7 +146,7 @@ export interface StageResult {
     /** Named artifacts → wireable URLs (Phase 5, named outputs). When a
     * multi-output brick (input_prep → media + mask) feeds a downstream
     * card, the slot picker offers each named output so the user can wire
-    * mask → lanpaint_mask (not just the primary via assetUrls[0]). Empty
+    * mask → input_mask (not just the primary via assetUrls[0]). Empty
     * for single-output bricks + legacy runs (named_urls absent). */
     artifacts: Record<string, string>;
     /** Metadata returned by the backend (timing, model info, etc.). */

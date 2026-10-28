@@ -112,8 +112,9 @@ export const DECL = {
     // is the legacy model… 2.1 is the new Qwen edit model"): the mask
     // pack's region contract absorbs onto THIS lane — crop_stitch (the
     // generic region detailer) rides the cache-wrapped model + encoder
-    // conditioning; auto+mask still refuses field-named (lanpaint is
-    // 2511's flavor — that sampler does not board here). THE LORAS
+    // conditioning; auto+mask still refuses field-named (no lane
+    // inpaints in place — the region detailer is the one mask arm
+    // on every lane). THE LORAS
     // BOARDING (operator 2026-11-06: every family applies LoRAs):
     // boards 'loras' beside 'mask' — the fired lane fires on every
     // boarding atom. FIRST-PARTY ROW (2026-11-08): the Consistency

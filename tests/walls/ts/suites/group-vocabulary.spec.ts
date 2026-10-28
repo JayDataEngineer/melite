@@ -17,7 +17,7 @@
  *    reference  reference inputs (images/lists)
  *  GENRE — a genre kit's own surface, declared where the kit lives
  *    (comfyui-card-kit): second_pass, mask, controlnet, ip_adapter,
- *    loras_controlnet, lanpaint, qvoice, input-prep's input.
+ *    loras_controlnet, qvoice, input-prep's input.
  *
  * MEMBERSHIP LAWS (distinct members — the operator's own words):
  *  L1 `seed` is NEVER a group id (the music card debt, dated).
@@ -40,7 +40,6 @@ const GENRE_GROUPS = new Map([
   ['controlnet', 'comfyui-card-kit'],
   ['ip_adapter', 'comfyui-card-kit'],
   ['loras_controlnet', 'comfyui-card-kit'],
-  ['lanpaint', 'comfyui-card-kit'],
   ['qvoice', 'comfyui-card-kit'],
   ['qvoice_save', 'comfyui-card-kit'],
   ['input', 'img-to-mesh + comfyui-card-kit'],

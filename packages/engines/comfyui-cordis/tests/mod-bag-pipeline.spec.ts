@@ -95,6 +95,19 @@ describe("THE MOD-BAG PIPELINE (studio bag → service door → loader stack)", 
     );
   });
 
+  it("A MIS-SHAPED ENTRY names the entry shape — an empty id is a shape miss, not a missing row", () => {
+    // friction-report #4: [{loras: ...}] and bare strings burned
+    // three refusals reading `id ''` — the voice now says what an
+    // entry carries before listing the catalog.
+    assert.throws(
+      () => svc.compose(H3_CARD, H3_MODEL, {
+        calls: [{ text: "x", start_frame: 0, end_frame: 90 }],
+        loras: [{ loras: "krea2_darkbrush" }],
+      }, "wall_shape"),
+      /neither 'name'.*nor 'id'.*entries are shaped/,
+    );
+  });
+
   // THE J1 SPLIT (journey audit refs-mods, 2026-10-16): `loras: []`
   // is the operator's NO-LORAS override — an EMPTY stack, zero rows;
   // an ABSENT bag is unset — the family default rides. The old arm

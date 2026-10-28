@@ -613,7 +613,11 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // repair build found them.
   // 625 -> 626 (2026-11-12): repair.js — the masked second-pass
   // renderer seat (Tier A repair, operator order "Okay do it all").
-  const LIB_CENSUS_PIN = 626;
+  // 626 -> 625 (2026-11-12): the lanpaint removal deletes
+  // packages/models/qwen-img-edit-2511's mods/lanpaint face (src +
+  // committed lib) — one tracked lib .js leaves the census by operator
+  // order, repinned here deliberately.
+  const LIB_CENSUS_PIN = 625;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {

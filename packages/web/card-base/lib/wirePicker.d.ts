@@ -21,7 +21,7 @@ export interface WirePickerModalProps {
  *
  * Named outputs: when an upstream stage produced >1 named artifact
  * (input_prep → media + mask), it expands into ONE ROW PER output so the
- * user can wire mask → lanpaint_mask specifically. Upstreams with 0–1
+ * user can wire mask → input_mask specifically. Upstreams with 0–1
  * named artifacts render as a single row (legacy — primary via
  * assetUrls[0]). The output name rides onPick → setSlotInput →
  * inputOutputs → collectUpstreamResults. */

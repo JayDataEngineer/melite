@@ -52,6 +52,15 @@ spaces instead of underscores; when a tag differs between Danbooru
 and Gelbooru, prefer the Gelbooru spelling. Artist tags take the `@`
 prefix (`@namie`, `@wlop`).
 
+## Character/series tags are the style anchor
+
+The single biggest stylization lever is a character + series tag pair
+(`hera (hades), hades (game)`): it drags the render toward that
+work's real art — composition, palette, and linework follow the tag,
+not the prose. When the operator wants a look anchored to a known
+game or show, state the pair FIRST and let the rest of the prompt
+describe the scene; prose alone cannot hold a house style.
+
 ## Structure beats length
 
 Double newlines to chunk the prompt; short structured sections beat

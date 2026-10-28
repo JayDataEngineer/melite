@@ -72,7 +72,7 @@ test('RAIL: a mod-owned field NEVER seats — it renders inside its mod modal (t
     inputs: [{ name: 'brick', kind: 'image' }],
     features: {
       modifiers: [{
-        param_key: 'lanpaint', label: 'Lanpaint', entry: 'field',
+        param_key: 'mask', label: 'Region Mask', entry: 'field',
         fields: [{ name: 'brick', label: 'Brick', type: 'image' }],
       }],
     },

@@ -34,7 +34,7 @@ tools.submit_mask_run(
    the brushed mask arrives as `paint_mask` (data URL); the brick uploads
    it and emits `mask_paint`.
 4. **Export** — the flags decide which masks the run outputs; the outputs
-   feed downstream inpaint/outpaint flows (FLUX-Fill, lanpaint, ...).
+   feed downstream region-edit flows (crop_stitch, ...).
 
 ## 4. The BBox refine loop (phase B/C)
 

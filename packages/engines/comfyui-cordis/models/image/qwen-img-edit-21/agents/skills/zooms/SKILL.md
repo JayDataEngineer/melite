@@ -31,10 +31,19 @@ leakage.
 
 ## Zoom out (the outpaint arm)
 
-The canvas grows, so the geometry law needs help FIRST: crop/extend
-the anchor to the wider frame (the input-prep card's crop — or the
-card's outpaint riders) so the output frame is the target, THEN
-edit. The prompt states the operation as outpainting:
+The canvas grows, so the geometry law needs help FIRST: the output
+inherits the anchor's frame, so stage the wider frame as pixels
+BEFORE the run — this is the pad-and-instruct recipe (the only
+outpaint path; no outpaint knobs exist on any door):
+
+1. Pad the anchor locally (PIL): paste the source at its edge of the
+   target canvas, fill the new band with a color sampled from the
+   source's adjacent background.
+2. Feed the padded canvas as the anchor with an instruction prompt
+   that names the band as content to fill ("Outpaint the solid dark
+   band at the bottom: …continue the scene…").
+
+THEN edit. The prompt states the operation as outpainting:
 
 "Zoom out: pull the camera back to show the subject in full with
 the surroundings continuing naturally — outpaint the newly visible

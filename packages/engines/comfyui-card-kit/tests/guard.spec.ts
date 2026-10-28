@@ -87,7 +87,13 @@ describe("fireKnob", () => {
 describe("assertPackFate (boot gate (d))", () => {
   it("a fated pack passes (fired AND refused fates both ride)", () => {
     assert.equal(assertPackFate("loras"), undefined);
-    assert.equal(assertPackFate("lanpaint"), undefined);
+  });
+
+  it("the retired pack has no fate (nothing boards it — a stray boarding would refuse loud)", () => {
+    assert.throws(
+      () => assertPackFate("lanpaint"),
+      /pack 'lanpaint' is boarded but has no fate in this plane/,
+    );
   });
 
   it("a fateless pack refuses loud, naming the pack", () => {

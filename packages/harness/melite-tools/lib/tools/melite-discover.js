@@ -111,7 +111,16 @@ export function meliteDiscover(estate, expandEstateDoors) {
                 // discover walks THE ESTATE CATALOG — every card/flow that
                 // exists — never the bench's staged working set. The line
                 // says so, and names the bench's read door.
-                const out = [`discover: ${nf} flows, ${nc} cards in the estate CATALOG (not your bench — read the bench's staged cards with melite_construct verb=read) — open one with melite_load`];
+                // THE FILTERED-COUNT LAW (friction-report #5): a filtered
+                // answer never presents the match AS the catalog — the first
+                // line carries the estate totals beside the match count.
+                const a = (args ?? {});
+                const filtering = (typeof a.q === 'string' && a.q !== '') || (typeof a.tags === 'string' && a.tags !== '');
+                const tf = typeof v?.totals?.flows === 'number' ? v.totals.flows : nf;
+                const tc = typeof v?.totals?.cards === 'number' ? v.totals.cards : nc;
+                const out = filtering
+                    ? [`discover: ${tc} cards, ${tf} flows in the estate CATALOG — ${nc} cards, ${nf} flows matched your filter (not your bench — read the bench's staged cards with melite_construct verb=read) — open one with melite_load`]
+                    : [`discover: ${nf} flows, ${nc} cards in the estate CATALOG (not your bench — read the bench's staged cards with melite_construct verb=read) — open one with melite_load`];
                 // THE EMPTY ANSWER TEACHES (2026-09-21, the blind-first-call
                 // audit: q is literal — a blind agent typing the user's
                 // sentence got a bare 0/0 and had to reinvent strategy).
@@ -140,6 +149,14 @@ export function meliteDiscover(estate, expandEstateDoors) {
                     const vocab = v.tag_vocabulary.filter((t) => typeof t === 'string');
                     if (vocab.length > 0)
                         out.push('tag vocabulary: ' + vocab.join(', '));
+                }
+                // THE MISS IS DISCOVERABLE (friction-report #5): a filtered
+                // answer surfaces the tag vocabulary of the rows the filter
+                // removed — the next q/tags is one hop away, never a guess.
+                if (Array.isArray(v?.missed_tags)) {
+                    const missed = v.missed_tags.filter((t) => typeof t === 'string');
+                    if (missed.length > 0)
+                        out.push('missed tags (your filter removed these rows — one hop away): ' + missed.join(', '));
                 }
                 if (typeof v?.hint === 'string' && v.hint !== '')
                     out.push('hint: ' + v.hint);
@@ -174,6 +191,8 @@ export function meliteDiscover(estate, expandEstateDoors) {
                 const r = res;
                 const flows = Array.isArray(r.flows) ? r.flows : [];
                 const cards = Array.isArray(r.cards) ? r.cards : [];
+                const totals = { flows: typeof r.totals?.flows === 'number' ? r.totals.flows : flows.length, cards: typeof r.totals?.cards === 'number' ? r.totals.cards : cards.length };
+                const missed_tags = Array.isArray(r.missed_tags) ? r.missed_tags.filter((t) => typeof t === 'string') : [];
                 if (a.detail !== true && (flows.length > CLAMP || cards.length > CLAMP)) {
                     const vocab = new Set();
                     for (const c of cards) {
@@ -185,7 +204,9 @@ export function meliteDiscover(estate, expandEstateDoors) {
                     }
                     return jsonClean({
                         counts: { flows: flows.length, cards: cards.length },
+                        totals,
                         tag_vocabulary: [...vocab].sort().slice(0, 40),
+                        missed_tags,
                         flows: flows.slice(0, CLAMP),
                         cards: cards.slice(0, CLAMP),
                         hint: 'clamped — narrow with tags/q, or detail=true for every line',
@@ -200,6 +221,8 @@ export function meliteDiscover(estate, expandEstateDoors) {
                     if (tagCount > 1) {
                         return jsonClean({
                             counts: { flows: 0, cards: 0 },
+                            totals,
+                            missed_tags,
                             hint: '0 rows — tags is an AND: a card must carry EVERY listed tag. One tag per search (e.g. tags=video), or detail the vocabulary with lookup=cards.',
                         });
                     }

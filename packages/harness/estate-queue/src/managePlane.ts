@@ -841,7 +841,12 @@ async function hLogs(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]
 }
 
 async function hSearch(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
-  need(req, "query");
+  // THE EMPTY-QUERY LAW (friction-report #11, 2026-10-28): a bare
+  // search_models call used to 422 on the missing query — the agent
+  // exploring the catalog hit a refusal instead of the roster. An
+  // omitted or empty query lists the whole cache (capped); a carried
+  // query filters it. The filter syntax rides the unfiltered detail
+  // so the agent learns it from the answer itself.
   const cfg = ctx.endpoint();
   estateOnly(req, cfg);
   let doc: unknown;
@@ -851,12 +856,17 @@ async function hSearch(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelop
     throw mapRail(e, req.action);
   }
   const models = (doc as { models?: unknown[] })["models"] ?? [];
-  const q = req.query.toLowerCase();
+  const raw = typeof req.query === "string" ? req.query : "";
+  const q = raw.toLowerCase();
   const hits = (models as Array<Record<string, unknown>>).filter((m) => {
+    if (q === "") return true;
     const hay = [m["name"], m["type"], m["base"], m["filename"]].map((v) => String(v ?? "").toLowerCase()).join(" ");
     return hay.includes(q);
   }).slice(0, 50);
-  return ok(req.action, hits.length + " hit(s) from Manager external catalog for '" + req.query + "'", hits);
+  const detail = q === ""
+    ? hits.length + " model(s) in the Manager external catalog (no filter — pass query to narrow: it case-folds over name/type/base/filename)"
+    : hits.length + " hit(s) from Manager external catalog for '" + req.query + "'";
+  return ok(req.action, detail, hits);
 }
 
 async function withManageTimeout<T>(

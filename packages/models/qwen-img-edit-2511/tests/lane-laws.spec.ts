@@ -2,9 +2,10 @@
 // (the kit-arm retirement, 2026-09-30). The 2.1 family's wall carried
 // two cases that are really about THIS lane, and the lane they pinned
 // now belongs here: the never-lie guard (a stated width/height wires
-// to nothing on this lane and refuses field-named) and the lanpaint
-// region arm (a stated mask fires the sampler; the refusal stays
-// lane-scoped, never global). The graph itself is pinned to committed
+// to nothing on this lane and refuses field-named) and the retired
+// inline-inpaint arm (a stated mask in auto refuses field-named on
+// every lane — the refusal is global, the region detailer is the one
+// mask arm). The graph itself is pinned to committed
 // goldens in action.spec.ts; the 2.1 lane's own laws live in
 // packages/models/qwen-img-edit-21/tests/lane-laws.spec.ts.
 import { describe, it } from "vitest";
@@ -27,10 +28,7 @@ const FACTS = {
   lane_inputs: (DECL as { lane_inputs: Record<string, unknown> }).lane_inputs,
 } as unknown as ModelFacts;
 
-const graphOf = (g: GraphBuilder): Record<string, { class_type: string; inputs: Record<string, unknown> }> =>
-  g.toJSON() as never;
-
-describe("the 2511 edit lane — the never-lie guard and the lanpaint arm", () => {
+describe("the 2511 edit lane — the never-lie guard and the retired inline-inpaint arm", () => {
   // the lane's own solver spelling (the 2.1 wall's constant, restored at
   // the lane's new home so the case states a complete doc)
   const SOLVER2511 = { seed: 3, steps: 20, cfg: 2.5, sampler: "euler", scheduler: "simple" };
@@ -45,14 +43,15 @@ describe("the 2511 edit lane — the never-lie guard and the lanpaint arm", () =
         err instanceof Error && err.message.includes("no edit lane takes a stated size"),
     );
   });
-  it("the same mask on the 2511 lane still fires the lanpaint arm (the refusal is lane-scoped, never global)", () => {
+  it("the same mask on the 2511 lane refuses in auto (no lane inpaints in place — the region detailer is the one mask arm)", () => {
     const g = new GraphBuilder({});
-    instantiateAction(edit,
-      { prompt: "fix the badge", image1: "in.png", input_mask: "mask.png", ...SOLVER2511 },
-      FACTS, g, "probe-mask-2511",
+    assert.throws(
+      () => instantiateAction(edit,
+        { prompt: "fix the badge", image1: "in.png", input_mask: "mask.png", ...SOLVER2511 },
+        FACTS, g, "probe-mask-2511",
+      ),
+      /no edit lane inpaints in place.*state mask_mode crop_stitch/,
     );
-    const nodes: Array<{ class_type: string }> = Object.values(graphOf(g));
-    assert.ok(nodes.some((n) => n.class_type.startsWith("LanPaint")), "the 2511 lane builds the lanpaint sampler");
   });
 // THE CANONICAL LIST'S OWN REFUSAL (the reader the card's firing gate
   // and both edit actions share): a stated input_images that is not a
@@ -66,20 +65,20 @@ describe("the 2511 edit lane — the never-lie guard and the lanpaint arm", () =
     assert.throws(() => refuse([42]), /'input_images' fires on the image-edit card/);
     assert.throws(() => refuse({ qvoice: 1 }), /'input_images' fires on the image-edit card/);
   });
-// THE LANPAINT SPELL ARM (the kit-arm retirement, 2026-09-30 — the
-  // case moved here with the lane): a stated mask spelled as a wired
-  // tensor is already mask-shaped upstream, so the spell rides the mask
-  // consumers and NO LoadImageMask is built; a path keeps the disk
-  // handoff.
-  it("THE SPELL ARM (lanpaint): a spelled region mask builds no loader", () => {
-    const params = { prompt: "fix the badge", image1: "in.png", seed: 3, steps: 20, cfg: 2.5, sampler: "euler", scheduler: "simple" };
+// THE RETIRED SPELL ARM (2026-11-12 — the inline-inpaint
+  // retirement): a stated mask spelled as a wired tensor is already
+  // mask-shaped upstream, so the spell rides the region consumers
+  // and NO LoadImageMask is built; a path keeps the disk handoff.
+  // Both ride the crop_stitch detailer — auto+mask refuses.
+  it("THE SPELL ARM (crop_stitch spelled mask): a spelled region mask builds no loader", () => {
+    const params = { prompt: "fix the badge", image1: "in.png", seed: 3, steps: 20, cfg: 2.5, sampler: "euler", scheduler: "simple", mask_mode: "crop_stitch" };
     const spelled = new GraphBuilder();
     instantiateAction(edit, { ...params, input_mask: "$mask.stage" }, FACTS, spelled, "probe-mask-spell");
     const spelledRow = spelled.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
     assert.ok(!Object.values(spelledRow).some((n) => n.class_type === "LoadImageMask"),
       "a spelled mask is already a tensor — no loader builds");
-    assert.ok(Object.values(spelledRow).some((n) => n.class_type.startsWith("LanPaint")),
-      "the lanpaint arm still fires");
+    assert.ok(Object.values(spelledRow).some((n) => n.class_type === "DetailerForEach"),
+      "the region detailer fires on the wired mask");
 
     const path = new GraphBuilder();
     instantiateAction(edit, { ...params, input_mask: "/m/mask.png" }, FACTS, path, "probe-mask-path");

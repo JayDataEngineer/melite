@@ -452,9 +452,6 @@
   "@melite/models-qwen-img-edit-2511/mods/loras": [
     "./packages/models/qwen-img-edit-2511/mods/loras.ts"
   ],
-  "@melite/models-qwen-img-edit-2511/mods/lanpaint": [
-    "./packages/models/qwen-img-edit-2511/mods/lanpaint.ts"
-  ],
   "@melite/models-qwen-img-edit-2511/mods/mask": [
     "./packages/models/qwen-img-edit-2511/mods/mask.ts"
   ],

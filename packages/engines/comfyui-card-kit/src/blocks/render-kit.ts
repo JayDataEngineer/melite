@@ -55,9 +55,9 @@ export function stackLoras(g: GraphBuilder, unet: OutputHandle, picks: Array<{ n
  *  a silent wrong run (LoadImage of "") is the one thing it never
  *  does.
  *
- *  THE SEAM (the packs.ts lanpaint precedent): the node pair is
- *  z-image's — a second controlnet family re-opens the node-selection
- *  seam here, never a silent node swap. */
+ *  THE SEAM: the node pair is z-image's — a second controlnet
+ *  family re-opens the node-selection seam here, never a silent
+ *  node swap. */
 export function stackControlNets(
   g: GraphBuilder,
   model: OutputHandle,

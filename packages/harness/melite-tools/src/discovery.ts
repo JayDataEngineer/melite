@@ -421,13 +421,6 @@ function groupContract(decl: ModelDecl | null): Record<string, { label?: string;
  *  unboarded (the phantom-capability gate). kind/label/cardinality
  *  are UI strings with no other live source — one row per pack,
  *  stated once.
- *  LANPAINT'S ROW (stroke 32 — the operator's missing-seat report:
- *  image-edit's required image1 never rendered): the port moved the
- *  anchor out of the schema into the lanpaint mod, so the old
- *  "rides inline" exemption became a dropped seat — the family
- *  boards lanpaint, mod_schemas serves it, compose requires it, but
- *  no modifiers entry ever offered the brick. The rail seats the
- *  anchor (the client half); this row offers the knobs.
  *  EXPORTED (022's self-critique #3, 2026-09-24): the load bundle's
  *  mods line serves the SAME grammar for DECL-boarded packs (the
  *  qvoice seats) — one table, two consumers, never a copy. */
@@ -451,19 +444,24 @@ export const MODIFIER_PACKS: Record<
      *  for lora/controlnet, weight for ip_adapter — served so the
      *  leaf never guesses off the kind name. */
     scalar_key?: string
+    /** THE ENTRY SHAPE (friction-report #4, 2026-10-28): the doc line
+     *  `entries: {...}` names the ENTRY shape, never the pack's field
+     *  names — the old `entries: {loras}` read as an entry shaped
+     *  `{loras: ...}` and burned three refusals. A pack whose entries
+     *  are catalog picks states the pick shape here. */
+    entry_shape?: string
     /** THE FLAT LAW (the qvoice_save burn, 2026-10-22): true = the
      *  pack's fields are the card's own knobs — commits ride the
      *  root, no bag forms (modCommitWrite, @melite/contracts). */
     flat?: true
   }
 > = {
-  loras: { kind: 'lora', label: 'LoRAs', cardinality: 'list', entry: 'option', option_key: 'id' },
+  loras: { kind: 'lora', label: 'LoRAs', cardinality: 'list', entry: 'option', option_key: 'id', entry_shape: '{id | name, strength?, steps?}' },
   // THE WIRE IS PLURAL (the retired bag: params.controlnets[] —
   // the kind stays singular, the storage stays plural; schema_key
   // names the pack envelope for the client's field walk).
   controlnet: { kind: 'controlnet', label: 'ControlNet', cardinality: 'list', max_stack: 5, param_key: 'controlnets', entry: 'hybrid', option_key: 'type' },
   mask: { kind: 'mask', label: 'Region Mask', cardinality: 'list', max_stack: 1 },
-  lanpaint: { kind: 'brick', label: 'Lanpaint', cardinality: 'list', max_stack: 1 },
   // THE SAME PLURAL LAW (the retired bag: params.ip_adapters[] —
   // kind singular, storage plural, schema_key names the pack
   // envelope). Hybrid like controlnet: the entry binds its option
@@ -478,10 +476,10 @@ export const MODIFIER_PACKS: Record<
   // clone pipeline's identity-strength knob) — boards qwen3-tts,
   // fires the studio generate lane in ttsT1 (the round-trip
   // stroke 2026-09-20: the AudiocoreTTS embedding path is dead at
-  // the C ABI), serves its
-  // envelope, but no row ever offered it (the lanpaint missing-seat
-  // disease verbatim). Field mode (the mask precedent): the entry
-  // IS the contract object, no catalog.
+  // the C ABI), serves its envelope, but no row ever offered it
+  // (the missing-seat disease: a boarded pack with no modifiers
+  // row renders no seat). Field mode (the mask precedent): the
+  // entry IS the contract object, no catalog.
   qvoice: { kind: 'qvoice', label: 'Voice', cardinality: 'list', max_stack: 1 },
   // THE DESIGN SEAT (the README stroke 2026-09-21 — the voice-lock
   // card dies, SAVE moves into the TTS card's mods): the

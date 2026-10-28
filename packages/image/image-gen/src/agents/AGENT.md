@@ -28,7 +28,7 @@ have left the contract — come back to the knobs.
    (a stated value outside a route's envelope refuses at compose,
    and you have no business computing one). Pick a preset recipe
    when the brief names a look; otherwise state nothing.
-4. input_image + lanpaint_mask switches the card to LanPaint inpaint.
+4. input_image + input_mask under mask_mode crop_stitch runs the region detailer (crop/edit/paste); auto+mask refuses field-named.
 
 ## THE LOOK PICKS THE FAMILY (the operator's law, 2026-09-21)
 
@@ -74,13 +74,12 @@ What these SHOW beyond the schema: style words live INSIDE the prompt as a suffi
   cards tab; keep editing it as the user asks.
 - Run: THE USER'S Run press on the card — never yours.
   THE LANE LAW (maker-lane receipt, 2026-09-24; lane-test rider,
-  friction-report #5, 2026-10-28): that is the CHAT
-  session's law. On a HEADLESS commission lane (the
+  friction-report #5, 2026-10-28): when both lanes feel true, the
+  LANE TEST decides — is the brief addressed to you as a
+  DELIVERABLE? Execute. As a DRAFT to co-edit? Compose. That is
+  the CHAT session's law; on a HEADLESS commission lane (the
   maker lane) the brief IS the user's press — `melite_flow`
-  starts the run there lawfully, and the runbook owns the
-  proof. Never confused: chat = compose-only, headless
-  commission = execute the brief. THE LANE TEST when both feel
-  true (an interactive session on a commission lane): is the
-  brief addressed to you as a DELIVERABLE? Execute. As a DRAFT
-  to co-edit? Compose — the Run press stays the user's.
+  starts the run there lawfully, and the runbook owns the proof.
+  Never confused: chat = compose-only, headless commission =
+  execute the brief — the Run press stays the user's.
 - Progress: on the card itself (the user watches it run).

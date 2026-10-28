@@ -1143,7 +1143,7 @@ describe('live door arms', () => {
       assert.ok(def !== undefined, 'the tts card boards')
       return specBody(svc, defs, { card: 'tts', service: 'qwen3-tts', model }).features?.modifiers ?? []
     }
-    // the owner lane offers the LOAD/USE seat (the lanpaint
+    // the owner lane offers the LOAD/USE seat (the retired-pack
     // precedent: boarded + enveloped + fired — the entry is owed)
     const owner = modsOf('qwen3-tts')
     const seat = owner.find((m) => m['kind'] === 'qvoice')

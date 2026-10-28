@@ -12934,7 +12934,6 @@ window.__ModuleLoader__.load({
 				"last_frame",
 				"input_glb",
 				"prev_motion_artifact",
-				"lanpaint_mask",
 				"source_glb",
 				"outfit_glb",
 				"hair_glb",
@@ -13089,7 +13088,7 @@ window.__ModuleLoader__.load({
 			};
 		}
 		/** Collect named artifacts from a run status → {name: URL}. The NAMED map
-		*  — lets a downstream slot wire a SPECIFIC output (mask → lanpaint_mask)
+		*  — lets a downstream slot wire a SPECIFIC output (mask → input_mask)
 		*  rather than only the primary (assetUrls[0]). Falls back to {} when the
 		*  backend didn't send named_urls (legacy runs / single-output bricks). */
 		function collectNamedArtifacts$1(stages) {
@@ -14778,7 +14777,6 @@ window.__ModuleLoader__.load({
 				"last_frame",
 				"input_glb",
 				"prev_motion_artifact",
-				"lanpaint_mask",
 				"source_glb",
 				"outfit_glb",
 				"hair_glb",
@@ -14933,7 +14931,7 @@ window.__ModuleLoader__.load({
 			};
 		}
 		/** Collect named artifacts from a run status → {name: URL}. The NAMED map
-		*  — lets a downstream slot wire a SPECIFIC output (mask → lanpaint_mask)
+		*  — lets a downstream slot wire a SPECIFIC output (mask → input_mask)
 		*  rather than only the primary (assetUrls[0]). Falls back to {} when the
 		*  backend didn't send named_urls (legacy runs / single-output bricks). */
 		function collectNamedArtifacts(stages) {

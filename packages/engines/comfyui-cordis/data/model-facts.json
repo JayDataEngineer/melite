@@ -195,20 +195,6 @@
       "ModelAttentionBackend",
       "ModelPreviewOverrideKJ"
     ],
-    "ComfyUI-LanPaint": [
-      "LanPaint_AVDecode",
-      "LanPaint_AVEncode",
-      "LanPaint_ImageDecode",
-      "LanPaint_ImageEncode",
-      "LanPaint_KSampler",
-      "LanPaint_KSamplerAdvanced",
-      "LanPaint_MaskBlend",
-      "LanPaint_MiniMaxAudioDecode",
-      "LanPaint_MiniMaxAudioEncode",
-      "LanPaint_SamplerCustom",
-      "LanPaint_SamplerCustomAdvanced",
-      "LanPaint_VideoMaskEditor"
-    ],
     "ComfyUI-MiniMaxH3Mod": [
       "MiniMaxH3RefModApply",
       "MiniMaxH3RefModsLoader"
@@ -390,7 +376,7 @@
     ]
   },
   "meta": {
-    "status": "CARD-OWNED SLICES (merged 2026-09-08, package-boundary extermination): model-owned keys (defaults/lane_inputs/variants/variant_groups/mods/accepts/studio) DERIVE from the registry at load (facts.ts) — this file keeps ONLY what the registry cannot carry: per-card outputs/requires_by_family, per-address card_knobs, the row roster, extension_node_types, core_node_types (2026-10-15: node classes the pinned engine CORE serves — never extension keys; the upstream gate proves each file carries its classes at infra/comfyui/core.pin). mask-studio RETIRED 2026-09-16 (CONTRACT D at parity, stroke 75): mask-form owns the mask surface; the studio rows left with the card.",
+    "status": "CARD-OWNED SLICES (merged 2026-09-08, package-boundary extermination): model-owned keys (defaults/lane_inputs/variants/variant_groups/mods/accepts/studio) DERIVE from the registry at load (facts.ts) \u2014 this file keeps ONLY what the registry cannot carry: per-card outputs/requires_by_family, per-address card_knobs, the row roster, extension_node_types, core_node_types (2026-10-15: node classes the pinned engine CORE serves \u2014 never extension keys; the upstream gate proves each file carries its classes at infra/comfyui/core.pin). mask-studio RETIRED 2026-09-16 (CONTRACT D at parity, stroke 75): mask-form owns the mask surface; the studio rows left with the card.",
     "wall": "tests/walls/ts/suites/models-flows.test.ts (AGREE + derivation)"
   },
   "rows": {

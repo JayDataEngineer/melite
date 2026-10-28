@@ -850,7 +850,14 @@ export class ComfyUIService extends Service {
                 const id = typeof e?.id === 'string' ? e.id : '';
                 const row = cat.rows.find((r) => r.id === id);
                 if (row === undefined) {
-                    throw new ComposeRefusal('unknown-lora', `card '${cardId}' names lora id '${id}' with no '${modelId}' flavor row (registered: ${cat.rows.map((r) => r.id).join(', ') || 'none'}) — pick from the served catalog, never hand-spell`);
+                    // THE SHAPE VOICE (friction-report #4, 2026-10-28): an empty
+                    // id usually means the ENTRY is mis-shaped (a bare string,
+                    // `{loras: ...}`), not that the catalog lacks the row — say
+                    // what an entry carries before listing the catalog.
+                    const shape = id === '' && typeof e?.name !== 'string'
+                        ? ` — the entry carries neither 'name' (raw filename) nor 'id' (catalog row); entries are shaped {id | name, strength?, steps?}, e.g. {id: "krea2_darkbrush"}`
+                        : '';
+                    throw new ComposeRefusal('unknown-lora', `card '${cardId}' names lora id '${id}' with no '${modelId}' flavor row${shape} (registered: ${cat.rows.map((r) => r.id).join(', ') || 'none'}) — pick from the served catalog, never hand-spell`);
                 }
                 // THE VALUE PLANE (D5): the row was found — by THIS family's
                 // own flavor, or by the boarded fallback (another family's).

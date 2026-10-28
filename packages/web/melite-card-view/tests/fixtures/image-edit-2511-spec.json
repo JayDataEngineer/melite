@@ -19,15 +19,6 @@
   "features": {
     "modifiers": [
       {
-        "kind": "brick",
-        "label": "Lanpaint",
-        "param_key": "lanpaint",
-        "schema_key": "lanpaint",
-        "cardinality": "list",
-        "max_stack": 1,
-        "options": []
-      },
-      {
         "kind": "lora",
         "label": "LoRAs",
         "param_key": "loras",
@@ -113,263 +104,6 @@
   "layout": null,
   "loader_info": null,
   "mod_schemas": {
-    "lanpaint": {
-      "uid": 96,
-      "refs": {
-        "81": {
-          "type": "string",
-          "meta": {
-            "role": "path",
-            "extra": {
-              "wtype": "image",
-              "group": "input",
-              "zone": "inputs",
-              "order": -1,
-              "width": 1,
-              "columns": 3,
-              "required": true
-            },
-            "description": "Image 1"
-          }
-        },
-        "82": {
-          "type": "boolean",
-          "meta": {
-            "default": false,
-            "description": "Force LanPaint",
-            "extra": {
-              "wtype": "boolean",
-              "group": "lanpaint",
-              "visible_when": "image1 != null",
-              "order": 1
-            }
-          }
-        },
-        "83": {
-          "type": "number",
-          "meta": {
-            "min": 1,
-            "max": 100,
-            "step": 1,
-            "default": 20,
-            "description": "Num Steps",
-            "extra": {
-              "wtype": "number",
-              "group": "lanpaint",
-              "visible_when": "lanpaint_enabled=true",
-              "order": 2,
-              "width": 1
-            }
-          }
-        },
-        "84": {
-          "type": "number",
-          "meta": {
-            "min": 0.1,
-            "max": 2,
-            "step": 0.1,
-            "default": 1,
-            "description": "Step Size",
-            "extra": {
-              "wtype": "slider",
-              "group": "lanpaint",
-              "visible_when": "lanpaint_enabled=true",
-              "order": 3,
-              "width": 1
-            }
-          }
-        },
-        "85": {
-          "type": "number",
-          "meta": {
-            "min": 0,
-            "max": 2,
-            "step": 0.05,
-            "default": 0.5,
-            "description": "Lambda",
-            "extra": {
-              "wtype": "slider",
-              "group": "lanpaint",
-              "visible_when": "lanpaint_enabled=true",
-              "order": 4,
-              "width": 1
-            }
-          }
-        },
-        "86": {
-          "type": "number",
-          "meta": {
-            "min": 0,
-            "max": 2,
-            "step": 0.05,
-            "default": 0.5,
-            "description": "Beta",
-            "extra": {
-              "wtype": "slider",
-              "group": "lanpaint",
-              "visible_when": "lanpaint_enabled=true",
-              "order": 5,
-              "width": 1
-            }
-          }
-        },
-        "87": {
-          "type": "number",
-          "meta": {
-            "min": 0,
-            "max": 2,
-            "step": 0.05,
-            "default": 0.5,
-            "description": "Friction",
-            "extra": {
-              "wtype": "slider",
-              "group": "lanpaint",
-              "visible_when": "lanpaint_enabled=true",
-              "order": 6,
-              "width": 1
-            }
-          }
-        },
-        "88": {
-          "type": "const",
-          "meta": {},
-          "value": "negative"
-        },
-        "89": {
-          "type": "const",
-          "meta": {},
-          "value": "positive"
-        },
-        "90": {
-          "type": "union",
-          "meta": {
-            "default": "negative",
-            "description": "Prompt Mode",
-            "extra": {
-              "wtype": "select",
-              "group": "lanpaint",
-              "visible_when": "lanpaint_enabled=true",
-              "order": 7,
-              "width": 1,
-              "options": [
-                "negative",
-                "positive"
-              ]
-            }
-          },
-          "list": [
-            88,
-            89
-          ]
-        },
-        "91": {
-          "type": "number",
-          "meta": {
-            "min": 0,
-            "max": 512,
-            "step": 8,
-            "default": 0,
-            "description": "Expand Top",
-            "extra": {
-              "wtype": "slider",
-              "group": "lanpaint",
-              "visible_when": "image1 != null",
-              "order": 8,
-              "width": 1
-            }
-          }
-        },
-        "92": {
-          "type": "number",
-          "meta": {
-            "min": 0,
-            "max": 512,
-            "step": 8,
-            "default": 0,
-            "description": "Expand Right",
-            "extra": {
-              "wtype": "slider",
-              "group": "lanpaint",
-              "visible_when": "image1 != null",
-              "order": 9,
-              "width": 1
-            }
-          }
-        },
-        "93": {
-          "type": "number",
-          "meta": {
-            "min": 0,
-            "max": 512,
-            "step": 8,
-            "default": 0,
-            "description": "Expand Bottom",
-            "extra": {
-              "wtype": "slider",
-              "group": "lanpaint",
-              "visible_when": "image1 != null",
-              "order": 10,
-              "width": 1
-            }
-          }
-        },
-        "94": {
-          "type": "number",
-          "meta": {
-            "min": 0,
-            "max": 512,
-            "step": 8,
-            "default": 0,
-            "description": "Expand Left",
-            "extra": {
-              "wtype": "slider",
-              "group": "lanpaint",
-              "visible_when": "image1 != null",
-              "order": 11,
-              "width": 1
-            }
-          }
-        },
-        "95": {
-          "type": "number",
-          "meta": {
-            "min": 0,
-            "max": 64,
-            "step": 1,
-            "default": 16,
-            "description": "Overlap",
-            "extra": {
-              "wtype": "slider",
-              "group": "lanpaint",
-              "visible_when": "image1 != null",
-              "order": 8,
-              "width": 1
-            }
-          }
-        },
-        "96": {
-          "type": "object",
-          "meta": {
-            "default": {}
-          },
-          "dict": {
-            "image1": 81,
-            "lanpaint_enabled": 82,
-            "lanpaint_num_steps": 83,
-            "lanpaint_step_size": 84,
-            "lanpaint_lambda": 85,
-            "lanpaint_beta": 86,
-            "lanpaint_friction": 87,
-            "lanpaint_prompt_mode": 90,
-            "outpaint_top": 91,
-            "outpaint_right": 92,
-            "outpaint_bottom": 93,
-            "outpaint_left": 94,
-            "outpaint_overlap": 95
-          }
-        }
-      }
-    },
     "loras": {
       "uid": 80,
       "refs": {
@@ -435,9 +169,9 @@
       }
     },
     "mask": {
-      "uid": 115,
+      "uid": 99,
       "refs": {
-        "97": {
+        "81": {
           "type": "any",
           "meta": {
             "description": "Region Mask",
@@ -450,7 +184,7 @@
             }
           }
         },
-        "98": {
+        "82": {
           "type": "string",
           "meta": {
             "role": "path",
@@ -461,27 +195,27 @@
               "order": -1,
               "width": 1,
               "columns": 3,
-              "tooltip": "RGBA PNG whose alpha channel marks the region. On its own: the mask selects this entry's region. Alongside lanpaint: the inpaint region — present with the input images, the run switches to the lanpaint sampler."
+              "tooltip": "RGBA PNG whose alpha channel marks the region. On its own: the mask selects this entry's region. With crop_stitch: the detailer crops, edits, and composites the region back."
             },
             "description": "Region Mask"
           }
         },
-        "99": {
+        "83": {
           "type": "const",
           "meta": {},
           "value": "auto"
         },
-        "100": {
+        "84": {
           "type": "const",
           "meta": {},
           "value": "crop_stitch"
         },
-        "101": {
+        "85": {
           "type": "const",
           "meta": {},
           "value": "full_frame"
         },
-        "102": {
+        "86": {
           "type": "union",
           "meta": {
             "default": "crop_stitch",
@@ -506,32 +240,32 @@
             }
           },
           "list": [
-            99,
-            100,
-            101
+            83,
+            84,
+            85
           ]
         },
-        "103": {
+        "87": {
           "type": "const",
           "meta": {},
           "value": "off"
         },
-        "104": {
+        "88": {
           "type": "const",
           "meta": {},
           "value": "person"
         },
-        "105": {
+        "89": {
           "type": "const",
           "meta": {},
           "value": "face"
         },
-        "106": {
+        "90": {
           "type": "const",
           "meta": {},
           "value": "hand"
         },
-        "107": {
+        "91": {
           "type": "union",
           "meta": {
             "default": "off",
@@ -552,13 +286,13 @@
             }
           },
           "list": [
-            103,
-            104,
-            105,
-            106
+            87,
+            88,
+            89,
+            90
           ]
         },
-        "108": {
+        "92": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -576,7 +310,7 @@
             }
           }
         },
-        "109": {
+        "93": {
           "type": "number",
           "meta": {
             "min": -32,
@@ -594,7 +328,7 @@
             }
           }
         },
-        "110": {
+        "94": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -612,7 +346,7 @@
             }
           }
         },
-        "111": {
+        "95": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -630,7 +364,7 @@
             }
           }
         },
-        "112": {
+        "96": {
           "type": "boolean",
           "meta": {
             "default": false,
@@ -645,7 +379,7 @@
             }
           }
         },
-        "113": {
+        "97": {
           "type": "number",
           "meta": {
             "min": 64,
@@ -663,7 +397,7 @@
             }
           }
         },
-        "114": {
+        "98": {
           "type": "number",
           "meta": {
             "min": 0.05,
@@ -681,23 +415,23 @@
             }
           }
         },
-        "115": {
+        "99": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "mask": 97,
-            "input_mask": 98,
-            "mask_mode": 102,
-            "mask_detector": 107,
-            "mask_context_pad": 108,
-            "mask_grow": 109,
-            "mask_feather": 110,
-            "mask_threshold": 111,
-            "mask_invert": 112,
-            "mask_detail_size": 113,
-            "mask_denoise": 114
+            "mask": 81,
+            "input_mask": 82,
+            "mask_mode": 86,
+            "mask_detector": 91,
+            "mask_context_pad": 92,
+            "mask_grow": 93,
+            "mask_feather": 94,
+            "mask_threshold": 95,
+            "mask_invert": 96,
+            "mask_detail_size": 97,
+            "mask_denoise": 98
           }
         }
       }

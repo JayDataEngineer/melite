@@ -1,7 +1,7 @@
 import { laneBlank } from '@melite/contracts/laneRelations'
 import { GraphBuilder, OutputHandle, stripAutofill } from './graph.ts'
 import type { NodeRef, PromptGraph, StripTable } from './graph.ts'
-import { laneStringOf, type ModelFacts } from './facts.ts'
+import { type ModelFacts } from './facts.ts'
 import { loadTextPair, decodeSave, stackLoras, stackControlNets } from './blocks/render-kit.ts'
 import { fireLoras, fireControlNets, refuseIPAdapterFiring } from './mods/guard.ts'
 import { mintSeed } from './graph-helpers.ts'
@@ -159,13 +159,6 @@ export function refuseImageEditFiring(p: Record<string, unknown>, model?: ModelF
   const cap = editImageCap(model)
   fire('input_images', list.length > cap, `this lane takes ${cap} input images total (the first is the one being edited, ${cap - 1} references — max_images ${cap}); drop ${list.length - cap}`)
   fire('double_reference', p.double_reference === true, 'the second encode needs nodes this plane does not build')
-  // THE LANPAINT LAW (revived 2026-09-15 — the arm above builds it):
-  // a stated region switches to the lanpaint sampler; forcing it
-  // with no region stated refuses (nothing to regenerate). The
-  // retired knobs (beta/friction — upstream fixed them 1/15) refuse
-  // off-default LOUD: the fields stay declared for form-spec
-  // but wire to no input, and this plane never drops a stated knob
-  // quietly.
   const bagN = Array.isArray(p.mask) ? (p.mask as unknown[]).length : 0
   const bagEntry = bagN === 1 && typeof (p.mask as Array<unknown>)[0] === 'object' && (p.mask as Array<unknown>)[0] !== null
     ? (p.mask as Array<Record<string, unknown>>)[0]!
@@ -189,21 +182,16 @@ export function refuseImageEditFiring(p: Record<string, unknown>, model?: ModelF
   const denoise = (region.mask_denoise ?? 0.5) as number
   fire('mask_mode', effectiveMode !== 'auto' && effectiveMode !== 'crop_stitch', `unknown region mode '${mode}' — choose auto or crop_stitch`)
   fire('mask_detector', detector !== 'off' && detector !== 'person' && detector !== 'face' && detector !== 'hand', `unknown region detector '${detector}' — pick off/person/face/hand`)
-  // THE LANE-SCOPED REGION LAW (revoked + re-scoped 2026-09-22, the
-  // operator's call: "2511 is the legacy model… 2.1 is the new Qwen
-  // edit model"): the REGION DETAILER (crop_stitch) rides BOTH
-  // lanes — it is lane-agnostic machinery (whatever model/clip/vae/
-  // conditioning the lane built). What stays 2511-only is the
-  // LANPAINT inline-inpaint arm (its sampler is that family's
-  // flavor). auto+mask on 2.1 still refuses field-named — but the
-  // voice now teaches the fix: state crop_stitch.
-  // F7 (2026-10-12): the lane pin reads through the facts door's
-  // typed reader — an absent, non-string, or empty
-  // text_encode_node is NOT the 2.1 lane (refuse), never an
-  // unchecked unknown slipping through the comparison.
-  const lanpaintLane = laneStringOf(model?.lane_inputs ?? {}, 'text_encode_node') !== 'TextEncodeQwenImage21'
-  fire('input_mask', maskStated && effectiveMode === 'auto' && !lanpaintLane,
-    'the lanpaint arm rides the 2511 lane only — for a region on this lane state mask_mode crop_stitch (the region detailer), or switch the model lane')
+  // THE REGION LAW (2026-11-12, the inline-inpaint retirement): NO lane
+  // inpaints in place anymore — the retired sampler is gone
+  // with its pack. auto+mask refuses field-named on EVERY lane, and
+  // the voice teaches the fix: state mask_mode crop_stitch (the
+  // region detailer — crop, edit, paste; pixels outside the region
+  // never change). A wider canvas is NOT a masked edit: pad the
+  // anchor and instruct the edit (the pad-and-instruct recipe in the
+  // zooms skill) — no outpaint knobs exist on any door.
+  fire('input_mask', maskStated && effectiveMode === 'auto',
+    'no edit lane inpaints in place (inline inpainting is retired) — for a region state mask_mode crop_stitch (the region detailer)')
   // width/height ride NO edit lane anymore (the latent law,
   // 2026-11-08): the 2.1 lane samples the encoder's own anchor-sized
   // latent, 2511 encodes the source outright, and the detailer sizes
@@ -211,14 +199,6 @@ export function refuseImageEditFiring(p: Record<string, unknown>, model?: ModelF
   // of either lane.
   fire('width', p.width !== undefined || p.height !== undefined,
     "no edit lane takes a stated size anymore — the latent law (2026-11-08): both lanes edit at the source's own frame; clear them and re-run")
-  fire('lanpaint_enabled', p.lanpaint_enabled === true && !maskStated, 'force LanPaint with no region stated — state input_mask (the region to regenerate)')
-  fire('lanpaint_beta', ((p.lanpaint_beta ?? 0.5) as number) !== 0.5, 'retired upstream — scraed/LanPaint fixes Beta 1.0, the pack knob wires to no input; back it to 0.5 or order a pack change')
-  fire('lanpaint_friction', ((p.lanpaint_friction ?? 0.5) as number) !== 0.5, 'retired upstream — scraed/LanPaint fixes Friction 15, the pack knob wires to no input; back it to 0.5 or order a pack change')
-  fire('outpaint_top', ((p.outpaint_top ?? 0) as number) !== 0, 'canvas expansion needs the outpaint pad chain this plane does not build')
-  fire('outpaint_right', ((p.outpaint_right ?? 0) as number) !== 0, 'canvas expansion needs the outpaint pad chain this plane does not build')
-  fire('outpaint_bottom', ((p.outpaint_bottom ?? 0) as number) !== 0, 'canvas expansion needs the outpaint pad chain this plane does not build')
-  fire('outpaint_left', ((p.outpaint_left ?? 0) as number) !== 0, 'canvas expansion needs the outpaint pad chain this plane does not build')
-  fire('outpaint_overlap', ((p.outpaint_overlap ?? 16) as number) !== 16, 'outpaint knob off its lane promise with no outpaint chain to carry it')
   fire('mask', bagN > 1, 'one region per run — the region arms take a single source')
   fire('mask', !blank(p.mask) && !Array.isArray(p.mask), 'the mask bag is a list — state one entry ([{input_mask, ...}]) or use the flat input_mask')
   if (effectiveMode === 'crop_stitch') {
@@ -226,7 +206,6 @@ export function refuseImageEditFiring(p: Record<string, unknown>, model?: ModelF
     // mask or the automated detector, never both, never neither.
     fire('mask_detector', maskStated && detector !== 'off', 'one region per run — the Region Mask and a detector are both stated; clear one')
     fire('mask_mode', !maskStated && detector === 'off', 'crop_stitch needs a region — state input_mask or pick a detector')
-    fire('lanpaint_enabled', p.lanpaint_enabled === true, 'pick one sampler — crop_stitch details the region itself; the LanPaint force flag belongs to auto')
     fire('mask_threshold', ((region.mask_threshold ?? 0) as number) !== 0, 'no core node re-binarizes — the soft feathered falloff rides as-is')
   } else {
     fire('mask_detector', detector !== 'off', 'detectors ride crop_stitch only — set mask_mode crop_stitch or back the detector to off')

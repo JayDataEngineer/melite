@@ -71,51 +71,53 @@
       "shift": 1
     }
   },
-  "FeatherMask.0": {
-    "class_type": "FeatherMask",
-    "inputs": {
-      "mask": "$region",
-      "left": 8,
-      "top": 8,
-      "right": 8,
-      "bottom": 8
-    }
-  },
   "InvertMask.0": {
     "class_type": "InvertMask",
     "inputs": {
-      "mask": [
-        "FeatherMask.0",
-        0
-      ]
+      "mask": "$region"
     }
   },
-  "LanPaint_ImageEncode.0": {
-    "class_type": "LanPaint_ImageEncode",
+  "MaskToSEGS.0": {
+    "class_type": "MaskToSEGS",
+    "inputs": {
+      "mask": [
+        "InvertMask.0",
+        0
+      ],
+      "combined": true,
+      "crop_factor": 3,
+      "bbox_fill": false,
+      "drop_size": 10,
+      "contour_fill": false
+    }
+  },
+  "DetailerForEach.0": {
+    "class_type": "DetailerForEach",
     "inputs": {
       "image": [
         "LoadImage.0",
+        0
+      ],
+      "segs": [
+        "MaskToSEGS.0",
+        0
+      ],
+      "model": [
+        "ModelSamplingAuraFlow.0",
+        0
+      ],
+      "clip": [
+        "CLIPLoader.0",
         0
       ],
       "vae": [
         "VAELoader.0",
         0
       ],
-      "mask": [
-        "InvertMask.0",
-        0
-      ]
-    }
-  },
-  "LanPaint_KSamplerAdvanced.0": {
-    "class_type": "LanPaint_KSamplerAdvanced",
-    "inputs": {
-      "model": [
-        "ModelSamplingAuraFlow.0",
-        0
-      ],
-      "add_noise": "enable",
-      "noise_seed": 7,
+      "guide_size": 512,
+      "guide_size_for": true,
+      "max_size": 1024,
+      "seed": 7,
       "steps": 20,
       "cfg": 2.5,
       "sampler_name": "euler",
@@ -128,48 +130,19 @@
         "TextEncodeQwenImageEditPlus.1",
         0
       ],
-      "latent_image": [
-        "LanPaint_ImageEncode.0",
-        0
-      ],
-      "start_at_step": 0,
-      "end_at_step": 10000,
-      "return_with_leftover_noise": "disable",
-      "LanPaint_NumSteps": 5,
-      "LanPaint_Lambda": 0.5,
-      "LanPaint_StepSize": 1,
-      "LanPaint_PromptMode": "Image First",
-      "LanPaint_Info": "LanPaint KSampler Adv.",
-      "Inpainting_mode": "🖼️ Image Inpainting"
-    }
-  },
-  "LanPaint_ImageDecode.0": {
-    "class_type": "LanPaint_ImageDecode",
-    "inputs": {
-      "samples": [
-        "LanPaint_KSamplerAdvanced.0",
-        0
-      ],
-      "vae": [
-        "VAELoader.0",
-        0
-      ],
-      "image": [
-        "LoadImage.0",
-        0
-      ],
-      "mask": [
-        "InvertMask.0",
-        0
-      ],
-      "blend_overlap": 9
+      "denoise": 0.5,
+      "feather": 8,
+      "noise_mask": true,
+      "force_inpaint": true,
+      "wildcard": "",
+      "cycle": 1
     }
   },
   "SaveImage.0": {
     "class_type": "SaveImage",
     "inputs": {
       "images": [
-        "LanPaint_ImageDecode.0",
+        "DetailerForEach.0",
         0
       ],
       "filename_prefix": "probe-spell/edit"

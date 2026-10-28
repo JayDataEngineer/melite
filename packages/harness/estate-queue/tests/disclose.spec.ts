@@ -79,6 +79,18 @@ describe("searchCards", () => {
     assert.equal(bare?.description, "");
     assert.equal(bare?.genre, "");
   });
+
+  it("a model name in q routes to the card boarding that family (friction-report #5)", () => {
+    const fams = defs([
+      ["image-gen", CARD({ identity: { label: "Generate", description: "makes pictures", genre: "image" }, tags: ["generate"], boarded: ["krea-2", "z-image"] })],
+      ["tagger", CARD({ identity: { label: "Tag", description: "labels pictures", genre: "image" }, tags: ["analyze"], boarded: ["joytag"] })],
+    ]);
+    // the bare family name routes (split corpus); the full id fuzzy-matches
+    assert.deepEqual(searchCards(fams, "krea", "").map((r) => r.id), ["image-gen"]);
+    assert.deepEqual(searchCards(fams, "krea-2", "").map((r) => r.id), ["image-gen"]);
+    // the card's own words still route (no regression on the base corpus)
+    assert.deepEqual(searchCards(fams, "tagger", "").map((r) => r.id), ["tagger"]);
+  });
 });
 
 describe("searchFlows", () => {
@@ -160,6 +172,29 @@ describe("DiscloseDirectoryService", () => {
     assert.equal(cards.flows, undefined);
     const all = seat().discover("all", "", "");
     assert.ok(Array.isArray(all.flows) && Array.isArray(all.cards));
+  });
+
+  it("totals ride every answer; a filtered answer names the miss vocabulary (friction-report #5)", () => {
+    const ctx = new Context();
+    new FlowsSeatService(ctx);
+    const svc = new DiscloseDirectoryService(ctx);
+    (ctx as unknown as { cardRegistry: unknown }).cardRegistry = {
+      defsSync: () =>
+        new Map([
+          ["gen", CARD({ identity: { label: "Generate", description: "makes pictures", genre: "image" }, tags: ["generate", "image"], boarded: ["krea-2"] })],
+          ["tagger", CARD({ identity: { label: "Tag", description: "labels pictures", genre: "image" }, tags: ["analyze"], boarded: ["joytag"] })],
+        ]),
+    };
+    const unfiltered = svc.discover("cards", "", "");
+    assert.equal(unfiltered.totals.cards, 2);
+    assert.equal(unfiltered.missed_tags, undefined);
+    // a filtered answer says "2 cards, 1 matched" at the door, and
+    // the miss vocabulary routes away (analyze is tagger's alone)
+    const filtered = svc.discover("cards", "krea", "");
+    assert.deepEqual(filtered.cards?.map((r) => r.id), ["gen"]);
+    assert.equal(filtered.totals.cards, 2);
+    assert.ok((filtered.missed_tags ?? []).includes("analyze"), "the removed row's tags route the next hop");
+    assert.ok(!(filtered.missed_tags ?? []).includes("generate"), "a matched tag is not a miss");
   });
 
   it("the provider mounts the seat", () => {

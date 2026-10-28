@@ -87,8 +87,11 @@ describe('form-spec read (keyless replay)', () => {
     // real compose, not a stub). 15 -> 14 (2026-10-11, the autoremesher
     // excision: the quad-remesh card package left with its vendored
     // pack); the pin caught up 2026-11-05 when a full battery first
-    // reached the snapshot arm past the lib-drift gate.
-    assert.equal(defs.size, 14, 'the compose seated the estate\'s cards')
+    // reached the snapshot arm past the lib-drift gate. 14 -> 17
+    // (2026-11-12, the swap-parity R0 doors: video-trim + video-frames
+    // + video-track stage the swap inputs for the timeline's replace
+    // mod — commit cbe0ab94f, operator-ordered reseat).
+    assert.equal(defs.size, 17, 'the compose seated the estate\'s cards')
     assert.ok(defs.has('image-edit'), 'the recorded session\'s card is seated')
     const ident = defs.get('image-edit')?.identity
     assert.ok(typeof ident?.label === 'string' && ident.label !== '', 'the identity rung is present on the seated card')

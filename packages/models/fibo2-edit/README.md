@@ -19,7 +19,7 @@ Variants: `dev` (30 steps CFG 5, the reference checkpoint) and `edit-turbo` (8 s
 
 ## Mod surface
 
-The DECL boards `mask` and `loras`. `./mods/mask` is the bare flavor whose region contract rides the crop_stitch detailer over the encoder conditioning; automatic inpainting with a named field refuses — the LanPaint sampler never boarded here. `./mods/loras` is the seam with an empty row set (no first-party Fibo adapters); user files ride the same bag the pack registers.
+The DECL boards `mask` and `loras`. `./mods/mask` is the bare flavor whose region contract rides the crop_stitch detailer over the encoder conditioning; automatic inpainting with a named field refuses on every lane — no lane inpaints in place. `./mods/loras` is the seam with an empty row set (no first-party Fibo adapters); user files ride the same bag the pack registers.
 
 ## Known Limitations and Deferred Work
 

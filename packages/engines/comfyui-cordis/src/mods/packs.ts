@@ -1,15 +1,9 @@
 // mods/packs.ts — THE MOD PACKS: the distinct category taxonomy
 // (operator order 2026-09-08: "we had a distinct mods category —
-// LORAS, CONTROLNETS, LAN-INPAINT, in that vein"). One file
-// registers every PACK CONTRACT — the Mod parents (ported from the RETIRED melite_cards dsl.py: LorasMod, ControlNetMod, LanPaintMod, MaskMod, the qvoice pack): the CATEGORY's field schema, inherited by every boarding family.
+// LORAS, CONTROLNETS, in that vein"). One file
+// registers every PACK CONTRACT — the Mod parents (ported from the RETIRED melite_cards dsl.py: LorasMod, ControlNetMod, MaskMod, the qvoice pack): the CATEGORY's field schema, inherited by every boarding family.
 // A flavor (the family's own mods/<pack>.ts under the family's packaged mods (packages/models/<id>/mods/ — the packagedFlavors table in cardDefs.ts)) boards the pack and carries ONLY data — rows, the runtime door, or a bare boarding.
 // Fields live HERE and nowhere else (subclassing: the flavor inherits, never re-declares).
-//
-// SEAM NOTE (image1): the lanpaint contract's image1 (REQUIRED,
-// input zone) is the qwen flavor's whole-declaration override,
-// inlined here because exactly one family boards lanpaint
-// byte-identical output. A second lanpaint family with a different
-// image1 story re-opens the flavor-fields seam.
 //
 // The Cordis contract shape: fields ARE a Schemastery object
 // schema, wire types + UI meta on .extra('extra', bag({...})).
@@ -122,37 +116,6 @@ const IPAdapterFields = z.object({
     .extra('extra', bag({ wtype: 'ip_adapters', group: 'ip_adapter', zone: 'mods', default: null, order: 3 })),
 })
 
-// ── LAN-INPAINT (the LanPaintMod + the qwen flavor's image1
-// override, inlined — see the seam note above) ──
-const LanpaintFields = z.object({
-  image1: z.string().role('path').description('Image 1')
-    .extra('extra', bag({ wtype: 'image', group: 'input', zone: 'inputs', order: -1, width: 1, columns: 3, required: true })),
-  lanpaint_enabled: z.boolean().default(false).description('Force LanPaint')
-    .extra('extra', bag({ wtype: 'boolean', group: 'lanpaint', visible_when: 'image1 != null', order: 1 })),
-  lanpaint_num_steps: z.number().min(1).max(100).step(1).default(20).description('Num Steps')
-    .extra('extra', bag({ wtype: 'number', group: 'lanpaint', visible_when: 'lanpaint_enabled=true', order: 2, width: 1 })),
-  lanpaint_step_size: z.number().min(0.1).max(2).step(0.1).default(1.0).description('Step Size')
-    .extra('extra', bag({ wtype: 'slider', group: 'lanpaint', visible_when: 'lanpaint_enabled=true', order: 3, width: 1 })),
-  lanpaint_lambda: z.number().min(0).max(2).step(0.05).default(0.5).description('Lambda')
-    .extra('extra', bag({ wtype: 'slider', group: 'lanpaint', visible_when: 'lanpaint_enabled=true', order: 4, width: 1 })),
-  lanpaint_beta: z.number().min(0).max(2).step(0.05).default(0.5).description('Beta')
-    .extra('extra', bag({ wtype: 'slider', group: 'lanpaint', visible_when: 'lanpaint_enabled=true', order: 5, width: 1 })),
-  lanpaint_friction: z.number().min(0).max(2).step(0.05).default(0.5).description('Friction')
-    .extra('extra', bag({ wtype: 'slider', group: 'lanpaint', visible_when: 'lanpaint_enabled=true', order: 6, width: 1 })),
-  lanpaint_prompt_mode: z.union([z.const('negative'), z.const('positive')]).default('negative').description('Prompt Mode')
-    .extra('extra', bag({ wtype: 'select', group: 'lanpaint', visible_when: 'lanpaint_enabled=true', order: 7, width: 1, options: ['negative', 'positive'] })),
-  outpaint_top: z.number().min(0).max(512).step(8).default(0).description('Expand Top')
-    .extra('extra', bag({ wtype: 'slider', group: 'lanpaint', visible_when: 'image1 != null', order: 8, width: 1 })),
-  outpaint_right: z.number().min(0).max(512).step(8).default(0).description('Expand Right')
-    .extra('extra', bag({ wtype: 'slider', group: 'lanpaint', visible_when: 'image1 != null', order: 9, width: 1 })),
-  outpaint_bottom: z.number().min(0).max(512).step(8).default(0).description('Expand Bottom')
-    .extra('extra', bag({ wtype: 'slider', group: 'lanpaint', visible_when: 'image1 != null', order: 10, width: 1 })),
-  outpaint_left: z.number().min(0).max(512).step(8).default(0).description('Expand Left')
-    .extra('extra', bag({ wtype: 'slider', group: 'lanpaint', visible_when: 'image1 != null', order: 11, width: 1 })),
-  outpaint_overlap: z.number().min(0).max(64).step(1).default(16).description('Overlap')
-    .extra('extra', bag({ wtype: 'slider', group: 'lanpaint', visible_when: 'image1 != null', order: 8, width: 1 })),
-})
-
 // ── MASK (the MaskMod): the region-modality contract ──
 const MaskFields = z.object({
   mask: z.any().description('Region Mask')
@@ -164,15 +127,13 @@ const MaskFields = z.object({
     .extra('extra', bag({
       // THE MOD-MODAL LAW (operator, 2026-10-10, final form): the
       // image mask IS a mod — its row renders INSIDE the mask mod's
-      // own modal, 1:1 with the lanpaint mod's image1 on image-gen
-      // (THE reference image the operator pointed at): a mod field
-      // styled as the mod's input seat — wtype image, group input,
-      // zone inputs, order -1, width 1, columns 3. NEVER a card-face
-      // inputs-section row of its own. The li stroke that pulled it
+      // own modal: a mod field styled as the mod's input seat —
+      // wtype image, group input, zone inputs, order -1, width 1,
+      // columns 3. NEVER a card-face inputs-section row of its own. The li stroke that pulled it
       // onto the card face was the deviation — erased to the
       // template, letter for letter.
       wtype: 'image', group: 'input', zone: 'inputs', order: -1, width: 1, columns: 3,
-      tooltip: 'RGBA PNG whose alpha channel marks the region. On its own: the mask selects this entry\'s region. Alongside lanpaint: the inpaint region — present with the input images, the run switches to the lanpaint sampler.',
+      tooltip: 'RGBA PNG whose alpha channel marks the region. On its own: the mask selects this entry\'s region. With crop_stitch: the detailer crops, edits, and composites the region back.',
     })),
   mask_mode: z.union([z.const('auto'), z.const('crop_stitch'), z.const('full_frame')]).default('crop_stitch').description('Edit Scope')
     .extra('extra', bag({
@@ -272,7 +233,6 @@ export function apply(ctx: Context): void {
   ctx.effect(() => comfy.registerPack({ pack: 'loras', fields: LorasFields as never }))
   ctx.effect(() => comfy.registerPack({ pack: 'controlnet', fields: ControlNetFields as never }))
   ctx.effect(() => comfy.registerPack({ pack: 'ip_adapter', fields: IPAdapterFields as never }))
-  ctx.effect(() => comfy.registerPack({ pack: 'lanpaint', fields: LanpaintFields as never }))
   ctx.effect(() => comfy.registerPack({ pack: 'mask', fields: MaskFields as never }))
   ctx.effect(() => comfy.registerPack({ pack: 'qvoice', fields: QvoiceFields as never }))
   ctx.effect(() => comfy.registerPack({ pack: 'qvoice_save', fields: QvoiceSaveFields as never }))

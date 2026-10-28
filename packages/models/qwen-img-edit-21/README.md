@@ -15,7 +15,7 @@ Defaults: 25 steps, `euler` / `simple`, cfg 1, 1024×1024. Variants: `int8` (abo
 
 ## Mod surface
 
-The DECL boards `mask` only: the bare flavor whose region contract rides the crop_stitch detailer over the cached model; automatic inpainting with a named field refuses — the LanPaint sampler is 2511's lane. `./mods/loras` is the seam with an empty row set (no first-party 2.1 adapters); nothing is fetched from either subpath.
+The DECL boards `mask` only: the bare flavor whose region contract rides the crop_stitch detailer over the cached model; automatic inpainting with a named field refuses on every lane — no lane inpaints in place. `./mods/loras` is the seam with an empty row set (no first-party 2.1 adapters); nothing is fetched from either subpath.
 
 ## Model Experience
 

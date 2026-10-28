@@ -91,12 +91,13 @@ describe("editImageCap (the max_images law — the lane rides the DECL, never a 
       /'input_images' fires .*no model pinned/, "anchor + one legacy named ref with no model refuses");
     refuseImageEditFiring({ input_images: ["/m/in.png"] });
     refuseImageEditFiring({ image1: "/m/in.png" });
-    refuseImageEditFiring({ mask: [{ input_mask: "m.png" }] });
+    assert.throws(() => refuseImageEditFiring({ mask: [{ input_mask: "m.png" }] }),
+      /no edit lane inpaints in place/, "a stated region in auto refuses even with no model — the region law is model-agnostic");
   });
 });
 
-// ── THE LANPAINT NEVER-LIE GAP (roadmap §10, the second wave;
-// re-scoped 2026-09-22) ── the lanpaint INLINE-INPAINT arm rides the
-// 2511 lane only; auto+mask on 2.1 refuses field-named (the voice
-// teaches crop_stitch). The REGION DETAILER (crop_stitch) itself now
-// rides BOTH lanes — the operator's call: 2.1 is the edit model.
+// ── THE INLINE-INPAINT NEVER-LIE GAP (roadmap §10, the second wave;
+// re-scoped 2026-09-22, arm retired 2026-11-12) ── the inline-inpaint
+// arm is gone from EVERY lane; auto+mask refuses field-named on both
+// (the voice teaches crop_stitch). The REGION DETAILER (crop_stitch)
+// itself rides BOTH lanes — the operator's call: 2.1 is the edit model.

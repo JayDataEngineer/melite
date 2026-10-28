@@ -31,7 +31,7 @@ export const edit = {
     // image-edit card schema's own types and bounds — the family
     // door judges defaults and variant presets against this row;
     // the closed sets resolve from the ONE engine vocabulary. The
-    // lanpaint knobs are mod-owned (the advanced tier) and ride the
+    // region knobs are mod-owned (the advanced tier) and ride the
     // mod plane, not this surface.
     params: [
         { name: "input_images", type: "image_list" },

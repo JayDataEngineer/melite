@@ -35,7 +35,7 @@ export const DECL = {
     // encoder's batch_size stays pinned at 1), no use_stock_nodes/
     // double_reference (the qwen lanes' own tuning pair). The card
     // auto+mask gate refuses on this lane (the crop_stitch detailer
-    // is the only mask arm here — the LanPaint sampler never boarded).
+    // is the only mask arm here — no lane inpaints in place).
     "params": [
         "input_images",
         "image1",

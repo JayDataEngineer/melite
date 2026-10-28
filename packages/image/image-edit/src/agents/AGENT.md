@@ -38,8 +38,8 @@ KSampler.steps) before blaming the prompt.
 1. ONE card per session. Compose, verify, done.
 2. image1 is required — an edit without a source fails.
 3. The prompt describes WHAT to change, never the whole image.
-4. Regions: auto + input_mask inpaints inline (LanPaint); crop_stitch
-   runs the region detailer (crop → edit → paste, rest preserved).
+4. Regions: auto + input_mask refuses field-named on every lane — state mask_mode crop_stitch to run
+   the region detailer (crop → edit → paste, rest preserved).
    The region is a painted mask, or a detector pick (person/face/hand)
    — exactly one source per run. Tune with mask_detail_size (working
    size) + mask_denoise (rework strength).
@@ -47,6 +47,12 @@ KSampler.steps) before blaming the prompt.
    2.1 rides cfg 1, 2511 standard rides 2.5 (leave the default).
 5. Lightning 4-step iterates fastest BUT needs its own FP8 weights —
    provision first or stay on standard.
+6. Wider canvas (outpaint) is pad-and-instruct — no outpaint knobs
+   exist on any door: pad the anchor to the target frame locally
+   (paste the source, fill the new band with a sampled background
+   color), then instruct the edit to fill the named band. The output
+   inherits the anchor's frame — the frame you want is the frame you
+   stage.
 
 ## Doors
 
@@ -55,13 +61,12 @@ KSampler.steps) before blaming the prompt.
   cards tab; keep editing it as the user asks.
 - Run: THE USER'S Run press on the card — never yours.
   THE LANE LAW (maker-lane receipt, 2026-09-24; lane-test rider,
-  friction-report #5, 2026-10-28): that is the CHAT
-  session's law. On a HEADLESS commission lane (the
+  friction-report #5, 2026-10-28): when both lanes feel true, the
+  LANE TEST decides — is the brief addressed to you as a
+  DELIVERABLE? Execute. As a DRAFT to co-edit? Compose. That is
+  the CHAT session's law; on a HEADLESS commission lane (the
   maker lane) the brief IS the user's press — `melite_flow`
-  starts the run there lawfully, and the runbook owns the
-  proof. Never confused: chat = compose-only, headless
-  commission = execute the brief. THE LANE TEST when both feel
-  true (an interactive session on a commission lane): is the
-  brief addressed to you as a DELIVERABLE? Execute. As a DRAFT
-  to co-edit? Compose — the Run press stays the user's.
+  starts the run there lawfully, and the runbook owns the proof.
+  Never confused: chat = compose-only, headless commission =
+  execute the brief — the Run press stays the user's.
 - Progress: on the card itself (the user watches it run).

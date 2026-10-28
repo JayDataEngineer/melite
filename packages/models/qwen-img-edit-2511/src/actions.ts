@@ -5,12 +5,11 @@
 // into the closed typed shape, and the segment factory composes the
 // 2511 edit lane — the stock TextEncodeQwenImageEditPlus pair,
 // ModelSamplingAuraFlow fixed at shift 1.0 (template-pinned lane
-// graph), then EITHER the lanpaint arm (input_mask stated → mask
-// prep → LanPaint_ImageEncode → LanPaint_KSamplerAdvanced →
-// LanPaint_ImageDecode) OR the crop_stitch region detailer OR the
-// plain VAEEncode-of-source → KSampler → decode/save under
+// graph), then EITHER the crop_stitch region detailer (input_mask
+// stated with mask_mode crop_stitch) OR the plain VAEEncode-of-source
+// → KSampler → decode/save under
 // <run>/edit — byte-identical to the legacy imageEdit 2511 arm
-// (proven in tests/action.spec.ts). Creation order IS node-id order
+// for the surviving arms (proven in tests/action.spec.ts). Creation order IS node-id order
 // (the recipe law). The params doc stays the card's walked shape
 // (the one-list merge, the mask bag, the region row beneath flat
 // params) — admission is the card's schema walk, never re-judged
@@ -56,19 +55,8 @@ export function parseEditFacts(raw: LaneInputsFacts): EditFacts {
  *  lora stack → text pair → per-slot LoadImage anchors →
  *  TextEncodeQwenImageEditPlus pair (refs on the stock node's native
  *  image2/image3 optionals) → ModelSamplingAuraFlow 1.0 → the
- *  lanpaint arm, the crop_stitch region detailer, or the plain
+ *  crop_stitch region detailer, or the plain
  *  VAEEncode-of-source → KSampler → decode + save under <run>/edit. */
-/** The knob read: the declared numeric row coerces the wire's
- *  string spill (a JSON form hands "12"; the node's input is a
- *  number — a bare cast rode the string verbatim and the graph
- *  lied), and a stated non-numeric refuses field-named. */
-function numOf(v: unknown, d: number, name: string): number {
-  if (v === undefined || v === null || v === "") return d;
-  const n = Number(v);
-  if (!Number.isFinite(n)) throw new Error(`qwen-img-edit-2511: '${name}' stated ${JSON.stringify(v)} — not a number`);
-  return n;
-}
-
 export const edit: ComfyActionSpec<EditParams, EditFacts> = {
   id: "edit",
   inputs: [],
@@ -76,10 +64,8 @@ export const edit: ComfyActionSpec<EditParams, EditFacts> = {
   // THE DECLARED SURFACE (the write plane, phase 2): the
   // image-edit card schema's own types and bounds — the family
   // door judges defaults and variant presets against this row;
-  // the closed sets resolve from the ONE engine vocabulary. The
-  // lanpaint_* knobs are mod-owned (the advanced tier —
-  // mods/lanpaint registers them) and ride the mod plane, not
-  // this surface.
+  // the closed sets resolve from the ONE engine vocabulary. Region
+  // rows (mask_*) ride the mask mod plane, not this surface.
   params: [
     { name: "input_images", type: "image_list" },
     { name: "image1", type: "string" },
@@ -165,49 +151,14 @@ export const edit: ComfyActionSpec<EditParams, EditFacts> = {
     // FIXED 1.0 (template-pinned lane graph — not a knob, not the
     // wire, never sampling_shift).
     const shifted = g.node("ModelSamplingAuraFlow", { model: unet, shift: 1.0 }).out();
-    // ── THE LANPAINT ARM: input_mask stated (+ the anchor) switches
-    // to the lanpaint sampler — mask prep in-graph (LoadImageMask
-    // alpha → GrowMask → FeatherMask → InvertMask; a spelled mask
-    // rides the tensor inputs verbatim) → LanPaint_ImageEncode →
-    // LanPaint_KSamplerAdvanced (NumSteps 5 fixed, Lambda/StepSize
-    // off the knobs, Beta/Friction 1/15 their example-canonical
-    // values) → LanPaint_ImageDecode → SaveImage. crop_stitch falls
-    // through to the region detailer below. ──
+    // ── THE RETIRED INLINE-INPAINT ARM (2026-11-12): input_mask
+    // stated with auto mode NO LONGER switches to an inline-inpaint
+    // sampler — no lane inpaints in place. The
+    // compose gate (refuseImageEditFiring) refuses auto+mask
+    // field-named; this throw is the same law for DIRECT action
+    // callers, who bypass the gate. State mask_mode crop_stitch. ──
     if (maskPath && !cropStitch) {
-      let m: TensorRef = isSpell(maskPath)
-        ? maskPath
-        : g.node("LoadImageMask", { image: maskPath, channel: "alpha" }).out();
-      const grow = numOf(merged.mask_grow, 8, "mask_grow");
-      if (grow !== 0) m = g.node("GrowMask", { mask: m, expand: grow, tapered_corners: true }).out();
-      const feather = numOf(merged.mask_feather, 8, "mask_feather");
-      if (feather > 0) {
-        m = g.node("FeatherMask", { mask: m, left: feather, top: feather, right: feather, bottom: feather }).out();
-      }
-      if ((merged.mask_invert ?? false) === true) m = g.node("InvertMask", { mask: m }).out();
-      const lpLatent = g.node("LanPaint_ImageEncode", { image, vae, mask: m }).out();
-      const promptMode = ((p.lanpaint_prompt_mode ?? "negative") as string) === "positive"
-        ? "Prompt First"
-        : "Image First";
-      const lpSampled = g.node("LanPaint_KSamplerAdvanced", {
-        model: shifted, add_noise: "enable", noise_seed: seed,
-        steps: numOf(p.lanpaint_num_steps, 20, "lanpaint_num_steps"), cfg: p.cfg,
-        sampler_name: laneSampler(p), scheduler: laneScheduler(p),
-        positive: pos.out(), negative: neg.out(), latent_image: lpLatent,
-        start_at_step: 0, end_at_step: 10000, return_with_leftover_noise: "disable",
-        LanPaint_NumSteps: 5,
-        LanPaint_Lambda: numOf(p.lanpaint_lambda, 0.5, "lanpaint_lambda"),
-        LanPaint_StepSize: numOf(p.lanpaint_step_size, 1.0, "lanpaint_step_size"),
-        // The engine build carries no Beta/Friction/EarlyStop/
-        // InnerThreshold/InnerPatience/MinStepFrac inputs (the
-        // live /object_info row declares exactly the 19 above) —
-        // the compose restates nothing the node cannot spell.
-        LanPaint_PromptMode: promptMode, LanPaint_Info: "LanPaint KSampler Adv.",
-        Inpainting_mode: "🖼️ Image Inpainting",
-      });
-      const lpDecoded = g.node("LanPaint_ImageDecode", {
-        samples: lpSampled.out(), vae, image, mask: m, blend_overlap: 9,
-      });
-      return g.node("SaveImage", { images: lpDecoded.out(), filename_prefix: `${runId}/edit` }).out();
+      throw new Error("'input_mask' fires on the image-edit card (no edit lane inpaints in place — inline inpainting is retired) — for a region state mask_mode crop_stitch (the region detailer); direct action callers take the same refusal the compose gate serves");
     }
     // ── THE CROP_STITCH ARM: the generic region detailer — region
     // source → SEGS → DetailerForEach (crop → edit → paste) on this

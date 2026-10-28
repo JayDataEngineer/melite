@@ -9,7 +9,7 @@
 //   - ABSORPTION: the absorbed envelope is pinned by live
 //     literals (field order IS the contract — schemastery
 //     preserves declaration order) for the two hardest keys —
-//     image-edit/qwen-img-edit-2511 (3 packs) and
+//     image-edit/qwen-img-edit-2511 (loras + mask) and
 //     image-gen/krea-2 (loras with rows);
 //   - FAMILY SCOPING: krea-2's loras never leak onto other
 //     families (the interlock's whole point);
@@ -69,11 +69,10 @@ test("mods registered through the service as plugins (PORT LAW: Schemastery cont
   // declaration order).
   assert.deepEqual(edit.flatMap(names), [
     // (D-M13: the exact absorbed surface, declaration order — the
-    // old arm's has() over six names let twenty fields drift past)
-    "image1",
-    "lanpaint_enabled", "lanpaint_num_steps", "lanpaint_step_size", "lanpaint_lambda",
-    "lanpaint_beta", "lanpaint_friction", "lanpaint_prompt_mode",
-    "outpaint_top", "outpaint_right", "outpaint_bottom", "outpaint_left", "outpaint_overlap",
+    // old arm's has() over six names let twenty fields drift past;
+    // 2026-11-12: lanpaint retired — image1 rode the lanpaint pack
+    // contract, so the whole 12-knob lanpaint/outpaint surface left
+    // with it. The absorbed surface is loras + the 11 mask riders.)
     "loras",
     "mask", "input_mask", "mask_mode", "mask_detector", "mask_context_pad",
     "mask_grow", "mask_feather", "mask_threshold", "mask_invert", "mask_detail_size", "mask_denoise",
@@ -328,8 +327,9 @@ test("the correction stroke: flavors are family-owned and the boarding is bidire
   // the pack taxonomy is the distinct category (controlnet LANDED
   // its boarder with the z-image restoration — seven union types;
   // ip_adapter boards refused — the ray receipt, four vocabulary
-  // rows, every stated entry refuses loud at fire time)
-  assert.deepEqual(svc.packNames(), ["controlnet", "ip_adapter", "lanpaint", "loras", "mask", "qvoice", "qvoice_save"]);
+  // rows, every stated entry refuses loud at fire time;
+  // 2026-11-12: lanpaint retired — six packs stand)
+  assert.deepEqual(svc.packNames(), ["controlnet", "ip_adapter", "loras", "mask", "qvoice", "qvoice_save"]);
   const boarded = new Set(svc.flavorRegistrations().flatMap((f) => [f.pack]));
   assert.ok(boarded.has("controlnet"), "z-image boards controlnet — the pack serves its seven union types");
   assert.equal(svc.modRows("controlnet", "z-image").length, 7);
@@ -448,19 +448,21 @@ test("THE CONSUMPTION GATE, qvoice leg: a stated artifact fires only on boarding
   instantiateAction(qwenSpeak, base, { ...qwen, mods: [] }, new GraphBuilder({}), "wall");
 });
 
-test("THE REVIVED LANPAINT, refused remainder: what the arm cannot carry refuses LOUD on the image-edit lane", async () => {
-  // lanpaint + mask board qwen-img-edit-2511 and this plane BUILDS
-  // the arm now (revived 2026-09-15, operator order "bring them
-  // back") — the firing gate refuses only what no graph carries:
-  // forcing with no region, the upstream-retired knobs, malformed
-  // bags, and the unbuilt chains. Everything the arm wires rides
-  // inert through the gate (never a silent plain run that drops a
-  // stated knob — the law that never changed).
+test("THE RETIRED LANPAINT, refused remainder: auto+mask refuses LOUD on the image-edit lane", async () => {
+  // lanpaint retired 2026-11-12 (no edit lane inpaints in place —
+  // the pack, its sampler arm, its 12-knob surface, and its flavor
+  // are gone): the firing gate refuses what no graph carries —
+  // auto+mask (the region law), malformed bags, and the unbuilt
+  // chains. Stale lanpaint_*/outpaint_* keys are UNDECLARED surface
+  // now — admission (gatedResolve 'unknown-param') refuses them
+  // before this gate ever runs (walled at the card: card.spec's
+  // stale-knobs arm), so the gate below does not name them.
+  // the pack itself is gone from the taxonomy and the fate table
+  assert.ok(!svc.packNames().includes("lanpaint"), "lanpaint retired from the pack taxonomy");
+  const guard = await import("../../../../packages/engines/comfyui-card-kit/src/mods/guard.ts");
+  assert.ok(!("lanpaint" in guard.PACK_FATE), "lanpaint retired from the fate table");
   // the refused remainder refuses field-named
   for (const [key, val] of [
-    ["lanpaint_enabled", true],
-    ["lanpaint_beta", 0.1],
-    ["lanpaint_friction", 0.1],
     ["mask", "some.png"],
     ["mask", [{ input_mask: "a.png" }, { input_mask: "b.png" }]],
     ["mask_mode", "bbox"],
@@ -472,18 +474,23 @@ test("THE REVIVED LANPAINT, refused remainder: what the arm cannot carry refuses
       (err: unknown): boolean => err instanceof Error && String(err.message).includes(`'${key}' fires on the image-edit card`),
     );
   }
-  // the revived set rides inert — the arm (not the gate) owns it
+  // THE REGION LAW: auto+mask refuses field-named, teaching crop_stitch
+  assert.throws(
+    () => refuseImageEditFiring({ input_mask: "region.png" }),
+    (err: unknown): boolean => err instanceof Error && /no edit lane inpaints in place/.test(String(err.message))
+      && /mask_mode crop_stitch/.test(String(err.message)),
+  );
+  assert.throws(
+    () => refuseImageEditFiring({ mask: [{ input_mask: "region.png" }] }),
+    (err: unknown): boolean => err instanceof Error && /no edit lane inpaints in place/.test(String(err.message)),
+  );
+  // the served set rides inert — the crop_stitch arm (not the gate) owns it
   for (const params of [
-    { lanpaint_num_steps: 99 },
-    { lanpaint_step_size: 2.5 },
-    { lanpaint_lambda: 0.1 },
-    { lanpaint_prompt_mode: "positive" },
-    { input_mask: "region.png" },
-    { mask: [{ input_mask: "region.png" }] },
-    { mask_grow: 1 },
-    { mask_feather: 1 },
-    { mask_invert: true },
-    { lanpaint_enabled: true, input_mask: "region.png" },
+    { input_mask: "region.png", mask_mode: "crop_stitch" },
+    { mask: [{ input_mask: "region.png" }], mask_mode: "crop_stitch" },
+    { mask_grow: 1, mask_mode: "crop_stitch", input_mask: "region.png" },
+    { mask_feather: 1, mask_mode: "crop_stitch", input_mask: "region.png" },
+    { mask_invert: true, mask_mode: "crop_stitch", input_mask: "region.png" },
   ] as Array<Record<string, unknown>>) {
     refuseImageEditFiring(params);
   }
@@ -563,7 +570,7 @@ test("§3.1 REVERTIBLE, every registration: card/pack/verb disposers retract (no
 
 test("gate (d), the pack fate: every boarded pack is fired or refused-loud", async () => {
   // controlnet LANDED its fate with the z-image restoration (the
-  // ModelPatchLoader → ZImageFunControlnet lane) — all five packs
+  // ModelPatchLoader → ZImageFunControlnet lane) — all six packs
   // pass. Live pin: every DECL pack entry has a fate (the boot
   // refuses otherwise, so this wall and the boot read one table).
   const guard = await import("../../../../packages/engines/comfyui-card-kit/src/mods/guard.ts");
@@ -571,9 +578,9 @@ test("gate (d), the pack fate: every boarded pack is fired or refused-loud", asy
   // hand while PACK_FATE carries SEVEN — qvoice_save and ip_adapter
   // walked past unchecked. The check DERIVES from the fate table
   // itself now (one truth, no second list), and the table's own
-  // census is exact: seven fates stand.
+  // census is exact: six fates stand (2026-11-12: lanpaint retired).
   for (const p of Object.keys(guard.PACK_FATE)) guard.assertPackFate(p);
-  assert.equal(Object.keys(guard.PACK_FATE).length, 7,
+  assert.equal(Object.keys(guard.PACK_FATE).length, 6,
     `the fate table carries its packs (${String(Object.keys(guard.PACK_FATE).length)} — a pack landed or retired without touching this census is drift)`);
   const { registryIds, registryModel } = await import("../../../../packages/engines/comfyui-cordis/src/models/models.ts");
   const verbs = new Set(svc.verbIds());

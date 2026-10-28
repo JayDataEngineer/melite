@@ -173,7 +173,7 @@ export const composeCards = async (ctx) => {
  *  to live here was DEAD CODE (ledger row 24, 2026-09-10). */
 export const composeModPlane = async (ctx) => {
     // THE MOD PACKS (the distinct category taxonomy — the Mod
-    // parents): the pack contracts (loras, controlnet, lanpaint,
+    // parents): the pack contracts (loras, controlnet,
     // mask, qvoice) live in the compose kit now (P46 — the web
     // promoted to @melite/card-kit; named import, no dir walk);
     // the service validates LOUD at registration. PACKS FIRST — a
@@ -208,7 +208,6 @@ export const composeModPlane = async (ctx) => {
         ['@melite/models-anny/mods/verbs', 'anny verbs'],
         ['@melite/models-qwen3-tts/mods/qvoice', 'qwen3-tts qvoice'],
         ['@melite/models-qwen3-tts/mods/qvoice_save', 'qwen3-tts qvoice_save'],
-        ['@melite/models-qwen-img-edit-2511/mods/lanpaint', 'qwen-img-edit-2511 lanpaint'],
         ['@melite/models-qwen-img-edit-2511/mods/loras', 'qwen-img-edit-2511 loras'],
         ['@melite/models-qwen-img-edit-2511/mods/mask', 'qwen-img-edit-2511 mask'],
         // THE THIRD EDIT LANE (fibo2-edit): the same boarding pair the

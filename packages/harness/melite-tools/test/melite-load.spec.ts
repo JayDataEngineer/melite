@@ -245,6 +245,10 @@ describe('melite_load render — the loaded line', () => {
     assert.match(text, /model:anima — Anima model row/)
     assert.match(text, /model:anima:prompt-enhance — Anima prompt rules — comma-separated Danbooru tags, NOT prose/)
     assert.match(text, /^prompting: read the per-model prompt rules with melite_skill_read BEFORE writing a prompt/m)
+    // THE SINGLE-OWNER LAW (friction-report #12, 2026-10-28): the
+    // line states the duty, never the style — the skill description
+    // above owns the rule, so the echo below would rot.
+    assert.doesNotMatch(text, /comma tags for the anime models/)
   })
 
   test('a bundle with NO prompt-enhance skill states no prompting law (the line never invents one)', () => {

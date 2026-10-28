@@ -81,7 +81,7 @@ const AXIS_KEYS = ["model", "variant", "quant"] as const;
  *  and are logged verbatim). */
 function probeFor(name: string): unknown {
   if (/^(seed|steps|width|height|num|count|max|min|batch|frames|dur|quality|strength|denoise|shift|cfg|top_k|top_p|temperature|speed|repetition_penalty)$/.test(name)) return 1;
-  if (/^(is|has|use|enable|show|allow|double|crop|mask_invert|lanpaint_enabled)$/i.test(name)) return false;
+  if (/^(is|has|use|enable|show|allow|double|crop|mask_invert)$/i.test(name)) return false;
   return "variant-switch probe " + name;
 }
 

@@ -34,7 +34,7 @@ export function boardedPacks(mods) {
 }
 /**
  * Refuse LOUD unless the atom boarded the pack. Call BEFORE firing
- * the pack's mutation (stackLoras, qvoice stems, lanpaint arms…).
+ * the pack's mutation (stackLoras, qvoice stems…).
  * An empty/absent pick list never reaches here — no mutation, no
  * gate (the gate guards the FIRING, not the knob's existence).
  */
@@ -232,7 +232,6 @@ export const PACK_FATE = {
     controlnet: "fired",
     qvoice: "fired",
     qvoice_save: "fired",
-    lanpaint: "refused",
     mask: "refused",
     ip_adapter: "refused",
 };

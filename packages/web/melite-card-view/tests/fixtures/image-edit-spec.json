@@ -175,7 +175,7 @@
               "order": -1,
               "width": 1,
               "columns": 3,
-              "tooltip": "RGBA PNG whose alpha channel marks the region. On its own: the mask selects this entry's region. Alongside lanpaint: the inpaint region — present with the input images, the run switches to the lanpaint sampler."
+              "tooltip": "RGBA PNG whose alpha channel marks the region. On its own: the mask selects this entry's region. With crop_stitch: the detailer crops, edits, and composites the region back."
             },
             "description": "Region Mask"
           }

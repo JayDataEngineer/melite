@@ -14,7 +14,7 @@ export interface ModBoarding {
 export declare function boardedPacks(mods: readonly unknown[] | null | undefined): string[];
 /**
  * Refuse LOUD unless the atom boarded the pack. Call BEFORE firing
- * the pack's mutation (stackLoras, qvoice stems, lanpaint arms…).
+ * the pack's mutation (stackLoras, qvoice stems…).
  * An empty/absent pick list never reaches here — no mutation, no
  * gate (the gate guards the FIRING, not the knob's existence).
  */

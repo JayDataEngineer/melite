@@ -217,8 +217,9 @@ describe("the estate-wide operator-copy law (no architecture vocabulary on any s
   // kinds are the mods plane's whole live census today).
   // 2026-11-10 (the pack-envelope arm): the mod-contracts walk
   // judges the absorbed pack envelopes over the same walker — the
-  // 7 registered pack contracts (controlnet, ip_adapter, lanpaint,
-  // loras, mask, qvoice, qvoice_save) each judged once.
+  // 6 registered pack contracts (controlnet, ip_adapter,
+  // loras, mask, qvoice, qvoice_save) each judged once
+  // (2026-11-12: lanpaint retired).
   // 2026-10-22 (THE MOD-PRESENCE LAW): the qvoice_save pack shrank
   // to its one boolean stamp — voice_name + the five sampling knobs
   // died with the duped-pane burn (the card's lane surface owns the
@@ -229,7 +230,7 @@ describe("the estate-wide operator-copy law (no architecture vocabulary on any s
   // no face, so no tooltip seat).
   const LABEL_FLOOR = 538;
   const TOOLTIP_FLOOR = 475;
-  const PACK_FLOOR = 7;
+  const PACK_FLOOR = 6;
 
   it("the judged set IS the served set: every composed card serves its schema dict, and every pack contract is walked", async () => {
     const { dictless, cards, packs } = await estateSeats();

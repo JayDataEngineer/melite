@@ -15,7 +15,7 @@ import { edit, parseEditFacts } from "../src/actions.ts";
 
 // The REAL resolved shape the service hands compose: the DECL's own
 // lane_inputs on a minimal family row (mods = the DECL's own
-// boarding — lanpaint, loras, mask).
+// boarding — loras, mask).
 const laneInputs = DECL.lane_inputs;
 assert.ok(laneInputs, "the qwen-img-edit-2511 DECL declares lane_inputs");
 const packs = (m: Array<string | { pack: string }>): string[] => m.map((x) => (typeof x === "string" ? x : x.pack));
@@ -73,45 +73,36 @@ describe("the edit action — byte-stability (the compatibility law)", () => {
     assert.ok(!("image2" in (enc2.inputs ?? {})), "a blank ref contributes no input at all (byte-stable plain graphs)");
   });
 
-  it("the golden holds on the lanpaint arm (mask prep → LanPaint sampler → decode → save)", () => {
-    const p = {
-      ...PARAMS,
-      input_mask: "input/region.png",
-      lanpaint_prompt_mode: "positive",
-      lanpaint_num_steps: 30,
-    };
-    const action = new GraphBuilder({});
-    instantiateAction(edit, p, FACTS, action, "probe-lp");
-    assertGraphGolden(golden("the-golden-holds-on-the-lanpaint-arm-mask-prep-la-4ed34f1f78"), graphOf(action), "the golden holds on the lanpaint arm (mask prep → LanPaint sampler → decode → save)");
-    const nodes = Object.values(action.toJSON() as Record<string, { class_type?: string }>);
-    assert.ok(nodes.some((n) => n.class_type === "LanPaint_ImageEncode"), "the lanpaint latent rides");
-    const sampler = Object.values(action.toJSON() as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>).find(
-      (n) => n.class_type === "LanPaint_KSamplerAdvanced",
-    )!;
-    assert.equal(sampler.inputs?.steps, 30, "lanpaint_num_steps maps to the sampler's steps");
-    assert.equal(sampler.inputs?.LanPaint_PromptMode, "Prompt First", "positive mode maps to Prompt First");
-    assert.ok(nodes.some((n) => n.class_type === "LanPaint_ImageDecode"), "the lanpaint decode rides");
-    assert.ok(nodes.some((n) => n.class_type === "VAEDecode") === false, "no plain decode on this arm");
+  it("auto+mask refuses on the direct action (the retired inline-inpaint arm — no lane inpaints in place)", () => {
+    assert.throws(
+      () => instantiateAction(edit, { ...PARAMS, input_mask: "input/region.png" }, FACTS, new GraphBuilder({}), "probe-lp"),
+      /no edit lane inpaints in place.*state mask_mode crop_stitch/,
+    );
+    assert.throws(
+      () => instantiateAction(edit, { ...PARAMS, input_mask: "input/region.png", mask: [{ mask_denoise: 0.4 }] }, FACTS, new GraphBuilder({}), "probe-lp-bag"),
+      /no edit lane inpaints in place.*state mask_mode crop_stitch/,
+      "a bag row without a mask_mode reads auto — the same refusal",
+    );
   });
 
-  it("THE STATED-KNOB WALL (models-hop56 wave-2): the lanpaint knobs ride their stated VALUES, not the defaults — feather 12, lambda 0.8, step size 1.5", () => {
+  it("THE STATED-KNOB WALL (models-hop56 wave-2, re-seated 2026-11-12): the region knobs ride their stated VALUES, not the defaults — grow 12, feather 10, denoise 0.8", () => {
     const p = {
       ...PARAMS,
       input_mask: "input/region.png",
-      mask_feather: "12",
-      lanpaint_lambda: "0.8",
-      lanpaint_step_size: "1.5",
+      mask_mode: "crop_stitch",
+      mask_grow: 12,
+      mask_feather: 10,
+      mask_denoise: 0.8,
     };
     const action = new GraphBuilder({});
     instantiateAction(edit, p, FACTS, action, "probe-stated");
     const nodes = Object.values(action.toJSON() as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>);
-    const feather = nodes.find((n) => n.class_type === "FeatherMask");
-    assert.ok(feather, "the stated mask rides the feather node");
-    assert.strictEqual(feather!.inputs?.left, 12, "FeatherMask.left carries the stated 12 (number, not the string)");
-    assert.strictEqual(feather!.inputs?.bottom, 12, "all four edges carry the stated feather");
-    const sampler = nodes.find((n) => n.class_type === "LanPaint_KSamplerAdvanced")!;
-    assert.strictEqual(sampler.inputs?.LanPaint_Lambda, 0.8, "the stated lambda rides");
-    assert.strictEqual(sampler.inputs?.LanPaint_StepSize, 1.5, "the stated step size rides");
+    const grow = nodes.find((n) => n.class_type === "GrowMask")!;
+    assert.ok(grow, "the stated mask prep rides the grow node");
+    assert.strictEqual(grow.inputs?.expand, 12 + 64, "GrowMask.expand carries grow + the default context pad");
+    const detailer = nodes.find((n) => n.class_type === "DetailerForEach")!;
+    assert.strictEqual(detailer.inputs?.feather, 10, "the stated feather rides the detailer");
+    assert.strictEqual(detailer.inputs?.denoise, 0.8, "the stated denoise rides the detailer");
   });
 
   it("the golden holds on the crop_stitch arm (the region detailer tail)", () => {
@@ -183,6 +174,7 @@ describe("the edit action — byte-stability (the compatibility law)", () => {
     const p = {
       ...PARAMS,
       input_mask: "input/flat-mask.png",
+      mask_mode: "crop_stitch",
       mask: [{ mask_mode: "crop_stitch", input_mask: "input/bag-mask.png", mask_denoise: 0.4 }],
     };
     const action = new GraphBuilder({});
@@ -195,22 +187,22 @@ describe("the edit action — byte-stability (the compatibility law)", () => {
     assert.ok(!bagRides, "the bag's own mask path rides nowhere");
   });
 
-  it("the golden holds on the lanpaint spell arm (a spelled mask rides verbatim; grow 0 skips GrowMask; invert rides)", () => {
+  it("the golden holds on the crop_stitch spell arm (a spelled mask rides verbatim; zero expand skips the grow node; invert rides)", () => {
     const p = {
       ...PARAMS,
       input_mask: "$region",
-      mask: [{ mask_grow: 0, mask_invert: true }],
+      mask_mode: "crop_stitch",
+      mask: [{ mask_grow: 0, mask_context_pad: 0, mask_invert: true }],
     };
     const action = new GraphBuilder({});
     instantiateAction(edit, p, FACTS, action, "probe-spell");
-    assertGraphGolden(golden("the-golden-holds-on-the-lanpaint-spell-arm-a-spel-d798fc2b90"), graphOf(action), "the golden holds on the lanpaint spell arm (a spelled mask rides verbatim; grow 0 skips GrowMask; invert rides)");
+    assertGraphGolden(golden("the-golden-holds-on-the-crop-stitch-spell-arm-a-sp-c9b0d4e1a2"), graphOf(action), "the golden holds on the crop_stitch spell arm (a spelled mask rides verbatim; zero expand skips the grow node; invert rides)");
     const graph = action.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
     const nodes = Object.values(graph);
     assert.ok(!nodes.some((n) => n.class_type === "LoadImageMask"), "a spelled mask rides verbatim — no mask load");
-    assert.ok(!nodes.some((n) => n.class_type === "GrowMask"), "grow 0 skips the grow node");
+    assert.ok(!nodes.some((n) => n.class_type === "GrowMask"), "grow + context pad at 0 skips the grow node");
     assert.ok(nodes.some((n) => n.class_type === "InvertMask"), "the stated invert rides");
-    const sampler = nodes.find((n) => n.class_type === "LanPaint_KSamplerAdvanced")!;
-    assert.equal(sampler.inputs.LanPaint_PromptMode, "Image First", "the default prompt mode is Image First");
+    assert.ok(nodes.some((n) => n.class_type === "DetailerForEach"), "the spell rides the region detailer");
   });
 
   it("the spell arm covers the input list too — a spelled anchor and reference ride verbatim, never a loader", () => {
@@ -233,54 +225,45 @@ describe("the edit action — byte-stability (the compatibility law)", () => {
     assert.equal(encode.inputs.pixels, "$image1", "the plain arm encodes the spelled anchor, not a re-load");
   });
 
-  it("full_frame is the auto edit scope — the same mask composes the SAME graph, never the region detailer", () => {
+  it("full_frame normalizes onto auto — the same mask refuses the same way, never the region detailer", () => {
     // mask_mode's declared vocabulary (pack-fields mask_mode union):
     // auto | crop_stitch | full_frame — full_frame declares "the mask
-    // covers the whole frame", so it must normalize onto auto at the
-    // arm choice (the kit's region arm reads the same law). A mapping
-    // that routes full_frame to the crop_stitch detailer diverges
-    // from the auto graph and this arm reads red.
-    const withMode = (mode: string): Record<string, { class_type: string; inputs: Record<string, unknown> }> => {
-      const action = new GraphBuilder({});
-      instantiateAction(edit, { ...PARAMS, input_mask: "input/region.png", mask_mode: mode }, FACTS, action, "probe-scope");
-      return action.toJSON() as never;
-    };
-    const full = withMode("full_frame");
-    assert.deepEqual(full, withMode("auto"), "full_frame composes the auto graph byte-for-byte");
-    const nodes = Object.values(full);
-    assert.ok(nodes.some((n) => n.class_type === "LanPaint_KSamplerAdvanced"), "the mask rides the lanpaint arm");
-    assert.ok(!nodes.some((n) => n.class_type === "DetailerForEach"), "full_frame never routes the region detailer");
-  });
-
-  it("a stated non-numeric knob refuses field-named — the wire's string spill is coerced, never cast", () => {
-    // numOf's refusal arm: a JSON form can spill "twenty" where the
-    // node's input wants a number; a bare cast would ride the string
-    // into the graph and the graph would lie. The knob's own name
-    // names the refusal.
+    // covers the whole frame", so it normalizes onto auto at the arm
+    // choice (the kit's region arm reads the same law) — and auto+mask
+    // refuses on every lane. A mapping that routes full_frame to the
+    // crop_stitch detailer diverges, and this arm reads red.
     assert.throws(
-      () => instantiateAction(
-        edit,
-        { ...PARAMS, input_mask: "input/region.png", lanpaint_num_steps: "twenty" },
-        FACTS,
-        new GraphBuilder({}),
-        "probe-non-numeric",
-      ),
-      /lanpaint_num_steps.*not a number/,
+      () => instantiateAction(edit, { ...PARAMS, input_mask: "input/region.png", mask_mode: "full_frame" }, FACTS, new GraphBuilder({}), "probe-scope"),
+      /no edit lane inpaints in place.*state mask_mode crop_stitch/,
     );
   });
 
-  it("a stated feather 0 skips FeatherMask — the rest of the mask prep still rides", () => {
-    // The feather<=0 arm of the mask-prep chain (the grow-0 twin the
-    // spell arm already pins): a stated 0 is a REAL stated value —
-    // only the feather node skips, the loaded mask and the default
-    // grow still compose.
-    const p = { ...PARAMS, input_mask: "input/region.png", mask_feather: "0" };
+  it("a stale lanpaint knob wires nothing — the removal leaves no sampler for it to reach", () => {
+    // Drafts written against the retired arm may still state
+    // lanpaint_num_steps; the direct action ignores unknown keys
+    // (the card's admission owns the surface), so the plain arm
+    // composes with no LanPaint node anywhere.
+    const action = new GraphBuilder({});
+    instantiateAction(edit, { ...PARAMS, input_mask: "input/region.png", mask_mode: "crop_stitch", lanpaint_num_steps: 30 }, FACTS, action, "probe-stale");
+    const nodes = Object.values(action.toJSON() as Record<string, { class_type?: string }>);
+    assert.ok(!nodes.some((n) => (n.class_type ?? "").startsWith("LanPaint")), "no LanPaint node composes");
+    assert.ok(nodes.some((n) => n.class_type === "DetailerForEach"), "the region detailer rides");
+  });
+
+  it("a stated feather 0 rides the detailer as 0 — feather lives on DetailerForEach, never a prep node", () => {
+    // Feather is a DetailerForEach input (the paste blend), not a
+    // mask-prep node: a stated 0 is a REAL stated value — the
+    // loaded mask and the default grow still compose, and no
+    // FeatherMask node exists on any arm.
+    const p = { ...PARAMS, input_mask: "input/region.png", mask_mode: "crop_stitch", mask_feather: 0 };
     const action = new GraphBuilder({});
     instantiateAction(edit, p, FACTS, action, "probe-feather-0");
-    const nodes = Object.values(action.toJSON() as Record<string, { class_type: string }>);
+    const graph = action.toJSON() as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>;
+    const nodes = Object.values(graph);
     assert.ok(nodes.some((n) => n.class_type === "LoadImageMask"), "the file mask still loads");
     assert.ok(nodes.some((n) => n.class_type === "GrowMask"), "the default grow still rides");
-    assert.ok(!nodes.some((n) => n.class_type === "FeatherMask"), "a stated feather 0 skips the feather node");
+    assert.ok(!nodes.some((n) => n.class_type === "FeatherMask"), "no FeatherMask node on any arm");
+    assert.strictEqual(nodes.find((n) => n.class_type === "DetailerForEach")!.inputs?.feather, 0, "the stated feather 0 rides the detailer");
   });
 
   it("GATE S rides the declared rule: the sentinel -1 mints a concrete seed, two runs differ", () => {

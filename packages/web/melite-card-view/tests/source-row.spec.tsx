@@ -118,8 +118,8 @@ test('without a signature the singles stay grouped — but the declared stack st
 // ── STROKE 32: THE MOD-OWNED SLOT LAW (the operator's missing-seat
 //    report: image-edit's REQUIRED image1 never rendered — the rail
 //    looked up signature names in schema fields only, and the
-//    lanpaint brick's anchor is mod-owned) ──
-// THE LANE SHAPE: image1 rides the lanpaint mod (not the schema);
+//    region brick's anchor is mod-owned) ──
+// THE LANE SHAPE: image1 rides the region mod (not the schema);
 // image2/3 are schema fields; the signature names all three.
 const modSlotSpec: FormSpecDoc = {
   form: 'mod-slot-fixture',
@@ -133,12 +133,12 @@ const modSlotSpec: FormSpecDoc = {
     image3: { type: 'string', meta: { description: 'Image 3', extra: { wtype: 'image' } } },
   }),
   features: {
-    modifiers: [{ kind: 'brick', label: 'Lanpaint', param_key: 'lanpaint', cardinality: 'one' }],
+    modifiers: [{ kind: 'brick', label: 'Region', param_key: 'region', cardinality: 'one' }],
   },
   mod_schemas: {
-    lanpaint: schemaEnvelope({
+    region: schemaEnvelope({
       image1: { type: 'string', meta: { description: 'Image 1', extra: { wtype: 'image', group: 'input', zone: 'inputs', order: -1, width: 1, required: true } } },
-      lanpaint_enabled: { type: 'boolean', meta: { description: 'Force LanPaint', extra: { wtype: 'boolean', group: 'lanpaint', order: 1 } } },
+      region_enabled: { type: 'boolean', meta: { description: 'Force Region', extra: { wtype: 'boolean', group: 'region', order: 1 } } },
     }),
   },
 }
@@ -167,11 +167,11 @@ test('THE MOD-MODAL LAW: the mod renders its own input seat — the reference im
     spec: modSlotSpec,
   }))
   await user.click(screen.getByRole('button', { name: 'Add modifier' }))
-  await user.click(await screen.findByRole('menuitem', { name: 'Lanpaint' }))
+  await user.click(await screen.findByRole('menuitem', { name: 'Region' }))
   // the leaf opens on the brick's KNOBS and its OWN input seat…
-  expect(await screen.findByText('Force LanPaint')).toBeTruthy()
+  expect(await screen.findByText('Force Region')).toBeTruthy()
   const dialog = screen.getByRole('dialog')
-  expect(dialog.textContent).toContain('Force LanPaint')
+  expect(dialog.textContent).toContain('Force Region')
   // …the reference input image rides INSIDE the mod, 1:1 with the
   // knobs — never on the base rail
   expect(dialog.textContent).toContain('Image 1')

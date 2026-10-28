@@ -256,7 +256,7 @@ opts = {}) {
                             + '; CARD-DECLARED ORDERED EXCEPTION (friction-report #2, 2026-10-28): the flat law above covers PACK-mod fields only — a card\'s OWN ordered kinds (each mods line names its `bag: params.<param_key>`, e.g. replace[] bag: params.replace) ride as an ARRAY under that key on EVERY door, bench included: params {replace: [{source_clip, still, mannequin, mask, swap_prompt, ...}]} (max_stack 1 = one entry) — never flat (the flat field names refuse at the compose door: unknown param(s): admission is knobs + admits, and only the bag key rides admits)');
                         const keyed = packSeats.filter((p) => p.param_key !== p.kind);
                         if (keyed.length > 0) {
-                            out.push('mod param_keys: ' + keyed.map((p) => p.kind + ' → ' + p.param_key + ' (entries: {' + p.fields.join(', ') + '})').join('; '));
+                            out.push('mod param_keys: ' + keyed.map((p) => p.kind + ' → ' + p.param_key + ' (entries: ' + (p.entry_shape ?? '{' + p.fields.join(', ') + '}') + ')').join('; '));
                         }
                     }
                     const lawWords = (rel, bounds) => {
@@ -381,9 +381,16 @@ opts = {}) {
                     // NO craft hint keeps the demanding law — the style is
                     // otherwise unknown.
                     if (skills.some((s) => /prompt-enhance/.test(str(s?.id)))) {
+                        // THE SINGLE-OWNER LAW (friction-report #12, 2026-10-28):
+                        // the parenthetical style-branch warning used to echo the
+                        // skill's own negative rule here ("comma tags ..., NOT
+                        // prose") — a second maintenance owner for a rule that
+                        // lives in the skill description two lines up. The line
+                        // states the DUTY (read the skill); the skill states the
+                        // style. Never both.
                         out.push(craftHint !== ''
                             ? 'prompting: the prompt style line above is the law — write from it; melite_skill_read deepens it when the ask is unusual (never a required pre-read)'
-                            : 'prompting: read the per-model prompt rules with melite_skill_read BEFORE writing a prompt — every model wants a different style (comma tags for the anime models, prose for others)');
+                            : 'prompting: read the per-model prompt rules with melite_skill_read BEFORE writing a prompt');
                     }
                 }
                 const digest = str(b.digest);
@@ -490,6 +497,7 @@ function familyPackSeats(families, servedKinds) {
                 param_key: meta.param_key ?? pack,
                 fields,
                 cardinality: meta.cardinality,
+                entry_shape: meta.entry_shape,
             });
         }
     }

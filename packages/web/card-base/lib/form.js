@@ -130,7 +130,7 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
     // THE MOD-OWNED SLOT LAW (stroke 32 — the operator's missing-seat
     // report: image-edit's required image1 never rendered): the
     // signature names SLOTS, not schema fields — a mod-owned slot
-    // (image1, the lanpaint brick's anchor) seats in the rail like any
+    // (image1, the mask brick's anchor) seats in the rail like any
     // other, so the rail falls back to the mod kinds' fields. The mod
     // leaf skips rail-seated fields (no double face) — the signature
     // is the seat, the brick keeps its knobs.

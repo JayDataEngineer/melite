@@ -85,15 +85,6 @@
     "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/image/joytag/nodes.yaml"
   },
   {
-    "name": "ComfyUI-LanPaint",
-    "url": "https://github.com/scraed/LanPaint",
-    "ref": "32cf848e93971da380d868936e007f5611218bee",
-    "required": true,
-    "desc": "LanPaint diffusion inpainting (LanPaint_ImageEncode / LanPaint_KSamplerAdvanced / LanPaint_ImageDecode) — the qwen-img-edit-2511 card's lanpaint mod flavor, branch-gated beyond the card probe's default flavor.",
-    "pip": [],
-    "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/image/qwen-img-edit-2511/nodes.yaml"
-  },
-  {
     "name": "ComfyUI-SeedVR2_VideoUpscaler",
     "url": "https://github.com/numz/ComfyUI-SeedVR2_VideoUpscaler.git",
     "ref": "4490bd1f482e026674543386bb2a4d176da245b9",

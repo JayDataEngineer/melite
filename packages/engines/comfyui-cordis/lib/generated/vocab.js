@@ -35,7 +35,7 @@ export const StudioLayoutValues = ["panel", "studio"];
 /** Studio body renderer claim (grammar.StudioKind). */
 export const StudioKindValues = ["assembly", "custom"];
 /** Canonical wire slots (slot_kinds.VOCAB — the closed set). */
-export const SlotValues = ["end_image", "first_frame", "image1", "image2", "image3", "input_glb", "input_image", "input_mask", "lanpaint_mask", "last_frame", "prev_motion_artifact", "preview_glb", "reference_audio", "reference_image", "source_glb", "source_image", "voice_file"];
+export const SlotValues = ["end_image", "first_frame", "image1", "image2", "image3", "input_glb", "input_image", "input_mask", "last_frame", "prev_motion_artifact", "preview_glb", "reference_audio", "reference_image", "source_glb", "source_image", "voice_file"];
 /** Card-kind behavior rows (card_kinds.TABLE — the wire kind strings). */
 export const CardKindValues = ["body", "card-compose", "chain", "compound", "generation", "input", "preview", "studio-link"];
 /** Universal sidebar sections (sorted — mirrors SidebarSection). */

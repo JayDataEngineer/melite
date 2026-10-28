@@ -4,7 +4,7 @@
 // and not in the card kit: the cached-reference topology (never the
 // 2511 VAEEncode-of-source), the autogrow image_N slots, the unified
 // reference order, the declared ceiling, the never-lie guard, the
-// unstated-solver defaults and the lanpaint region rules. The graph
+// unstated-solver defaults and the region rules. The graph
 // itself is pinned to committed goldens in action.spec.ts; these cases
 // pin the LAWS that shape it. (The t2i half of the old kit wall and
 // editImageCap's own law stay kit-side: the t2i lane is not retired
@@ -274,7 +274,7 @@ describe("the 2.1 edit lane — the reference stack (upstream: the node opens im
 });
 
 
-describe("the 2.1 edit lane — the lanpaint region never lies", () => {
+describe("the 2.1 edit lane — the region never lies", () => {
   const SOLVER21 = { seed: 3, steps: 25, cfg: 1, sampler: "euler", scheduler: "simple" };
   const SOLVER2511 = { seed: 3, steps: 20, cfg: 2.5, sampler: "euler", scheduler: "simple" };
   it("full_frame and auto share the 2.1 whole-image graph", () => {
@@ -289,7 +289,7 @@ describe("the 2.1 edit lane — the lanpaint region never lies", () => {
     assert.ok(Object.values(graphOf(fullFrame)).some((node) => node.class_type === "KSampler"));
     assert.ok(!Object.values(graphOf(fullFrame)).some((node) => node.class_type === "DetailerForEach"));
   });
-  it("input_mask stated on the 2.1 lane refuses field-named (no lanpaint sampler on this base — never a silent plain edit)", () => {
+  it("input_mask stated on the 2.1 lane refuses field-named (no lane inpaints in place — state crop_stitch there, never a silent plain edit)", () => {
     const g = new GraphBuilder({});
     const params21 = { prompt: "fix the badge", image1: "in.png", input_mask: "mask.png", ...SOLVER21 };
     // the card's own composition: the firing gate runs PRE-compose
@@ -298,15 +298,15 @@ describe("the 2.1 edit lane — the lanpaint region never lies", () => {
       (err: unknown): boolean =>
         err instanceof Error
         && err.message.includes("'input_mask' fires on the image-edit card")
-        && err.message.includes("2511"),
+        && err.message.includes("state mask_mode crop_stitch"),
     );
   });
-  it("an absent or non-string text_encode_node reads as NO 2.1 lane pin (F7: the typed reader judges garbage like absence — the lanpaint arm stays permitted, exactly as on the 2511 lane)", () => {
+  it("an absent or non-string text_encode_node reads as NO 2.1 lane pin (F7: the typed reader judges garbage like absence — auto+mask still refuses, exactly as on the 2511 lane)", () => {
     // the facts door's laneStringOf: absent, non-string, or empty
     // text_encode_node is undefined — never 'TextEncodeQwenImage21'
     // — so the firing gate treats a malformed pin like a 2511
-    // model: input_mask + auto rides the lanpaint arm rather than
-    // refusing. The 2.1-pin refusal is the :288 row above.
+    // model: input_mask + auto refuses the region-law refusal rather
+    // than firing a lane-scoped arm. The 2.1-pin refusal is the :288 row above.
     const garbage = {
       id: DECL.id, card: "image-edit", defaults: {}, card_knobs: [], variants: [],
       variant_groups: [], outputs: [], mods: [],
@@ -323,11 +323,12 @@ describe("the 2.1 edit lane — the lanpaint region never lies", () => {
       lane_inputs: { text_encode_node: "", unet: "u.safetensors" },
     } as unknown as ModelFacts;
     for (const facts of [garbage, missing, empty, FACTS_2511]) {
-      assert.doesNotThrow(() =>
+      assert.throws(() =>
         refuseImageEditFiring(
           { prompt: "fix the badge", image1: "in.png", input_mask: "mask.png", ...SOLVER21 },
           facts,
         ),
+        /no edit lane inpaints in place.*state mask_mode crop_stitch/,
       );
     }
   });

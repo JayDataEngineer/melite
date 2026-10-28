@@ -309,6 +309,22 @@ describe('melite_discover render — the counts line', () => {
       + "no match. q is ranked (tag/word/modality/trigram) — try the MODALITY as tags= (video, image, audio, 3d, generate, edit), fewer words, or lookup=all for the estate-wide first pass.",
     )
   })
+
+  test('a filtered answer never presents the match AS the catalog (friction-report #5)', () => {
+    const tool = meliteDiscover(stubEstate(), () => {})
+    const parts = tool.output.render(
+      { q: 'tagger interrogate' },
+      {
+        flows: [],
+        cards: [{ id: 'tagger', label: 'Tag', tags: ['analyze'], matched_by: 'word:tagger', score: 2 }],
+        totals: { flows: 0, cards: 17 },
+        missed_tags: ['generate', 'edit', 'image'],
+      } as never,
+    ) as Array<{ text?: string }>
+    const out = parts.map((p) => p?.text ?? '').join('\n')
+    assert.ok(out.startsWith('discover: 17 cards, 0 flows in the estate CATALOG — 1 cards, 0 flows matched your filter'), out)
+    assert.ok(out.includes('missed tags (your filter removed these rows — one hop away): generate, edit, image'), 'the miss is discoverable in one hop')
+  })
 })
 
 describe('melite_discover — the empty-AND hint (attempt-4 gap, verified)', () => {

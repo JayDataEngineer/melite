@@ -71,13 +71,6 @@ export declare function specVariants(decl: ModelDecl, key: string): FormVariantR
  *  unboarded (the phantom-capability gate). kind/label/cardinality
  *  are UI strings with no other live source — one row per pack,
  *  stated once.
- *  LANPAINT'S ROW (stroke 32 — the operator's missing-seat report:
- *  image-edit's required image1 never rendered): the port moved the
- *  anchor out of the schema into the lanpaint mod, so the old
- *  "rides inline" exemption became a dropped seat — the family
- *  boards lanpaint, mod_schemas serves it, compose requires it, but
- *  no modifiers entry ever offered the brick. The rail seats the
- *  anchor (the client half); this row offers the knobs.
  *  EXPORTED (022's self-critique #3, 2026-09-24): the load bundle's
  *  mods line serves the SAME grammar for DECL-boarded packs (the
  *  qvoice seats) — one table, two consumers, never a copy. */
@@ -99,6 +92,12 @@ export declare const MODIFIER_PACKS: Record<string, {
      *  for lora/controlnet, weight for ip_adapter — served so the
      *  leaf never guesses off the kind name. */
     scalar_key?: string;
+    /** THE ENTRY SHAPE (friction-report #4, 2026-10-28): the doc line
+     *  `entries: {...}` names the ENTRY shape, never the pack's field
+     *  names — the old `entries: {loras}` read as an entry shaped
+     *  `{loras: ...}` and burned three refusals. A pack whose entries
+     *  are catalog picks states the pick shape here. */
+    entry_shape?: string;
     /** THE FLAT LAW (the qvoice_save burn, 2026-10-22): true = the
      *  pack's fields are the card's own knobs — commits ride the
      *  root, no bag forms (modCommitWrite, @melite/contracts). */

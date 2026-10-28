@@ -195,7 +195,6 @@
         "@melite/models-qwen-img-edit-21/mods/mask": ["./mods/mask.ts"],
         "@melite/models-qwen-img-edit-2511": ["./../qwen-img-edit-2511/src/index.ts"],
         "@melite/models-qwen-img-edit-2511/mods/loras": ["./../qwen-img-edit-2511/mods/loras.ts"],
-        "@melite/models-qwen-img-edit-2511/mods/lanpaint": ["./../qwen-img-edit-2511/mods/lanpaint.ts"],
         "@melite/models-qwen-img-edit-2511/mods/mask": ["./../qwen-img-edit-2511/mods/mask.ts"],
         "@melite/models-qwen3-tts": ["./../qwen3-tts/src/index.ts"],
         "@melite/models-qwen3-tts/mods/qvoice": ["./../qwen3-tts/mods/qvoice.ts"],

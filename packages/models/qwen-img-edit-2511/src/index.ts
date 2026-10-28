@@ -88,7 +88,6 @@ export const DECL: ModelDecl = {
     "double_reference",
   ],
   "mods": [
-    "lanpaint",
     "loras",
     "mask"
   ],

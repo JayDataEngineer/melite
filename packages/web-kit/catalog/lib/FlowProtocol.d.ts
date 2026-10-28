@@ -103,7 +103,7 @@ export declare function collectStageUrls(stages?: Array<ArtifactSource>): string
  *  behave — never a null result while the result object is present. */
 export declare function sanitizeRevivedResult(raw: unknown): StageResult | null;
 /** Collect named artifacts from a run status → {name: URL}. The NAMED map
- *  — lets a downstream slot wire a SPECIFIC output (mask → lanpaint_mask)
+ *  — lets a downstream slot wire a SPECIFIC output (mask → input_mask)
  *  rather than only the primary (assetUrls[0]). Falls back to {} when the
  *  backend didn't send named_urls (legacy runs / single-output bricks). */
 export declare function collectNamedArtifacts(stages?: Array<ArtifactSource>): Record<string, string>;

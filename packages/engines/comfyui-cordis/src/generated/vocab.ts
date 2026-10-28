@@ -61,7 +61,7 @@ export const StudioKindValues = ["assembly", "custom"] as const;
 export type StudioKind = (typeof StudioKindValues)[number];
 
 /** Canonical wire slots (slot_kinds.VOCAB — the closed set). */
-export const SlotValues = ["end_image", "first_frame", "image1", "image2", "image3", "input_glb", "input_image", "input_mask", "lanpaint_mask", "last_frame", "prev_motion_artifact", "preview_glb", "reference_audio", "reference_image", "source_glb", "source_image", "voice_file"] as const;
+export const SlotValues = ["end_image", "first_frame", "image1", "image2", "image3", "input_glb", "input_image", "input_mask", "last_frame", "prev_motion_artifact", "preview_glb", "reference_audio", "reference_image", "source_glb", "source_image", "voice_file"] as const;
 export type Slot = (typeof SlotValues)[number];
 
 /** Card-kind behavior rows (card_kinds.TABLE — the wire kind strings). */

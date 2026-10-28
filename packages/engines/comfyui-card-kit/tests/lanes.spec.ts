@@ -181,17 +181,15 @@ describe("deriveDefaults (the autofill derivation)", () => {
 // goldens; this file keeps what is genuinely kit: the finalize
 // strips, the mesh-lift admissions, the rig copy and the helpers.
 
-// ── the lanpaint merge arms (kit.ts 171/260/266/268/272) ─────────
+// ── the region merge arms (the bag/flat law) ─────────
 // The card spec drives the happy region arm through the compose
 // door; THESE arms own the merge-law branches the door never
 // reaches (kit-direct, hand-rolled params — no schema defaults to
 // hide behind).
-describe("the lanpaint merge arms (the bag/flat law)", () => {
-  const editModel = (): import("../src/facts.ts").ModelFacts => facts.models["qwen-img-edit-2511"]!;
-
+describe("the region merge arms (the bag/flat law)", () => {
   it("a region-less single-entry bag states nothing (the ?? '' arm)", () => {
     // bagN === 1 but the entry carries no input_mask — bagMask falls
-    // back to '' (kit.ts:171), so no region is stated and the gate
+    // back to '' (lanes-image.ts), so no region is stated and the gate
     // passes the run through to the plain-edit lane.
     assert.doesNotThrow(
       () => refuseImageEditFiring({ mask: [{ mask_grow: 4 }] }),
@@ -210,10 +208,15 @@ describe("the lanpaint merge arms (the bag/flat law)", () => {
     );
   });
 
-  it("the gate merges the same row (flat wins, bag fills the rest)", () => {
+  it("the gate merges the same row (flat wins, bag fills the rest) — under crop_stitch it passes, under auto it refuses", () => {
     assert.doesNotThrow(
+      () => refuseImageEditFiring({ input_mask: "/m/flat.png", mask_mode: "crop_stitch", mask: [{ input_mask: "/m/bag.png" }] }),
+      "flat region + single bag entry passes the gate under crop_stitch — the flat key wins the merge",
+    );
+    assert.throws(
       () => refuseImageEditFiring({ input_mask: "/m/flat.png", mask: [{ input_mask: "/m/bag.png" }] }),
-      "flat region + single bag entry passes the gate — the flat key wins the merge",
+      /no edit lane inpaints in place.*state mask_mode crop_stitch/,
+      "the same merge under auto refuses — no lane inpaints in place",
     );
   });
 
