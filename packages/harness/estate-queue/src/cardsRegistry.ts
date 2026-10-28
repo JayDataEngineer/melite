@@ -251,10 +251,18 @@ export function familyFace(fam: string): string {
 function stampClipGeometry(body: Record<string, unknown>): void {
   const clip = body["clip"];
   if (typeof clip !== "string" || clip === "") return;
+  // UNSTATED has two spellings: an ABSENT key (the GUI wire omits
+  // untouched form knobs — the 2026-10-28 lane-1 replay carried no
+  // width/height at all, run-9e6585c227c8) and an explicit 0 (the
+  // form's stated default). Both mean "the user owns no geometry";
+  // either stamps. A stated non-zero number is the user's — never
+  // touched.
   const w = body["width"];
   const h = body["height"];
-  if (typeof w !== "number" || typeof h !== "number") return;
-  if (w !== 0 && h !== 0) return;
+  const unstated = (v: unknown): boolean => v === undefined || v === 0;
+  if (typeof w !== "number" && w !== undefined) return;
+  if (typeof h !== "number" && h !== undefined) return;
+  if (!unstated(w) && !unstated(h)) return;
   const abs = clip.startsWith("/")
     ? clip
     : resolveRepoRoot() + "/" + clip.replace(/^\/+/, "");
@@ -274,8 +282,8 @@ function stampClipGeometry(body: Record<string, unknown>): void {
   }
   const stream = probed.streams.find((s) => s.width !== undefined && s.height !== undefined);
   if (stream === undefined) return;
-  if (w === 0) body["width"] = stream.width;
-  if (h === 0) body["height"] = stream.height;
+  if (unstated(w)) body["width"] = stream.width;
+  if (unstated(h)) body["height"] = stream.height;
 }
 
 function isUnstatedRequiredWord(message: string): boolean {

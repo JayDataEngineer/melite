@@ -672,6 +672,17 @@ describe("phase1Card + phase2Card (the two phases, one compose seat)", () => {
     await svc.phase1Card(own, "viggle-animate").catch(() => undefined);
     expect(own["width"]).toBe(640);
     expect(own["height"]).toBe(480);
+    // ABSENT KEYS = the GUI wire's spelling of unstated (the GUI
+    // omits untouched form knobs — the 2026-10-28 lane-1 replay,
+    // run-9e6585c227c8, carried NO width/height and the stamp
+    // no-opped while the 0s rode): absent stamps exactly like 0
+    const bare: Record<string, unknown> = {
+      clip: clipPath, length: 90,
+      ref_image: "ref.png", model: "viggle-animate",
+    };
+    await svc.phase1Card(bare, "viggle-animate").catch(() => undefined);
+    expect(bare["width"]).toBe(928);
+    expect(bare["height"]).toBe(1344);
     // AN UNREADABLE CLIP = no stamp, never a refusal (the engine's
     // follow-the-clip contract is the belt)
     const miss: Record<string, unknown> = {
