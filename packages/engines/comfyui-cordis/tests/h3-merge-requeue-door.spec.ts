@@ -141,10 +141,12 @@ vi.mock("../src/comfyui-config.ts", () => ({
 
 import { executeFlowInner } from "../src/comfyui-merge.ts";
 import { ACTIVE } from "../src/comfyui-types.ts";
-import type { EngineJson, MergeRow } from "../src/comfyui-types.ts";
+import type { EngineJson } from "../src/comfyui-types.ts";
+import type { MergeRow } from "../src/comfyui-merge.ts";
 
 const chainRow = (): MergeRow => ({
   stageId: "film",
+  card: undefined,
   workflow: {
     "MiniMaxH3ChainLoopStart.0": {
       class_type: "MiniMaxH3ChainLoopStart",

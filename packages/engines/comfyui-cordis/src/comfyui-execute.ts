@@ -708,7 +708,7 @@ export function h3RequeueRowOf(entry: Record<string, EngineJson>): H3RequeueRow 
     if (typeof runName === "string" && runName !== "" &&
         typeof handoffId === "string" && handoffId !== "" &&
         typeof scene === "number" && typeof endClip === "number") {
-      return row as unknown as H3RequeueRow;
+      return { ...row, run_name: runName, handoff_id: handoffId, scene, end_clip: endClip };
     }
   }
   return null;
@@ -763,11 +763,11 @@ async function handoffCall(
   body?: Record<string, EngineJson>,
 ): Promise<Record<string, EngineJson>> {
   const res = await withBound(
-    (): Promise<{ json(): Promise<unknown> }> => client.fetchApi(path, {
+    (): Promise<Response> => client.fetchApi(path, {
       method: body === undefined ? "GET" : "POST",
       headers: body === undefined ? undefined : { "Content-Type": "application/json" },
       body: body === undefined ? undefined : JSON.stringify(body),
-    }) as unknown as Promise<{ json(): Promise<unknown> }>,
+    }),
     SUBMIT_BOUND_MS,
     "POST /minimax_h3_context_loop/handoffs",
   );
@@ -963,12 +963,12 @@ async function fetchCheckpointListing(
   runName: string,
 ): Promise<H3CheckpointRow[]> {
   const res = await withBound(
-    (): Promise<{ json(): Promise<unknown> }> => client.fetchApi(
+    (): Promise<Response> => client.fetchApi(
       `/minimax_h3_context_loop/checkpoints?run_name=${
         encodeURIComponent(runName)
       }&include_graph=false`,
       { method: "GET" },
-    ) as unknown as Promise<{ json(): Promise<unknown> }>,
+    ),
     SUBMIT_BOUND_MS,
     "GET /minimax_h3_context_loop/checkpoints",
   );

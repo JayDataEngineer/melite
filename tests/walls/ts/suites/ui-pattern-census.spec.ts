@@ -411,7 +411,13 @@ const HAND_ROLLED_CHROME_PIN: Record<string, number> = {
   // ships no textarea atom).
   'packages/video/h3-timeline/src/ui': 1,
   'packages/image/mask-studio/src/ui': 0,
-  'packages/web/card-base/src': 16,
+  // (re-pin 16 → 17, 2026-11-12) the picker search (the operator's
+  // "THERE IS NO SEARCH" burn): one h('input', {type:'search'}) in
+  // square-provider's modal — ARGUED RAW in the code (the row-face
+  // class, S7j): the ui-primitives catalog ships no search/find
+  // atom and DSH's own picker dialogs (WorkspaceBrowser's filter
+  // row) ride the native input.
+  'packages/web/card-base/src': 17,
   'packages/web/melite-card-view/src': 8,
   'packages/web/melite-card-deck/src': 2,
   'packages/web/melite-run-wire/src': 0,

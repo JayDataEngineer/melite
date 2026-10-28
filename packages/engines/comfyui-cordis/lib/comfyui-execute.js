@@ -554,7 +554,7 @@ export function h3RequeueRowOf(entry) {
         if (typeof runName === "string" && runName !== "" &&
             typeof handoffId === "string" && handoffId !== "" &&
             typeof scene === "number" && typeof endClip === "number") {
-            return row;
+            return { ...row, run_name: runName, handoff_id: handoffId, scene, end_clip: endClip };
         }
     }
     return null;
