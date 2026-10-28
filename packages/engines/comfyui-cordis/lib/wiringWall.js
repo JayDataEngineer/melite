@@ -265,7 +265,18 @@ function judgeValue(cardId, id, ct, key, value, spec) {
     if (typeof value === 'string' && (value.startsWith('$') || (isStagedArtifactRef(value) && canReceiveStagedArtifact(spec))))
         return;
     if (spec.enum !== undefined && !enumHas(spec.enum, value)) {
-        throw new ComposeRefusal('bad-value', `card '${cardId}' wired '${ct}.${key}' = ${JSON.stringify(value)} (as '${id}') — the input allows ${fmtEnum(spec.enum)}; the card's compose is stale against the engine build`);
+        // THE FOLDER-VALUE HINT (friction-report #3, 2026-10-28): a
+        // value shaped like a PATH that is not a stageable file is
+        // almost always a folder (a run-tree mask-frames dir wired to
+        // a single-image seat) — and folders never stage (the upload
+        // walk stages files, never directories). The bare "stale
+        // compose" suffix sent the agent re-reading the engine build;
+        // name the seat-shape miss instead. Fires only for path-like
+        // values — bare words keep the old text (pinned verbatim).
+        const folderHint = typeof value === 'string' && value.includes('/')
+            ? ' — a folder path never stages (the upload walk stages files, never directories); bind one staged file, never the folder'
+            : '';
+        throw new ComposeRefusal('bad-value', `card '${cardId}' wired '${ct}.${key}' = ${JSON.stringify(value)} (as '${id}') — the input allows ${fmtEnum(spec.enum)}${folderHint}; the card's compose is stale against the engine build`);
     }
     if (typeof value === 'number') {
         const bound = spec.min !== undefined && value < spec.min

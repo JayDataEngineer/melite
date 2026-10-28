@@ -48,6 +48,14 @@ export interface DeclaredModifierKind {
      *  (the card-level `requires` above stays the always-on gate).
      *  Served verbatim; absent = no arm requirements. */
     requires?: readonly string[];
+    /** THE MENU ATTRIBUTION (the mod-liveness ARM 3 law, 2026-10-28,
+     *  the swap build): the menu/compose flavor wall demands every
+     *  served modifier carry a schema_key naming its catalog. Pack
+     *  kinds inherit theirs from the MODIFIER_PACKS envelope; a
+     *  CARD-declared kind has no envelope — the card IS the catalog —
+     *  so the declarer stamps its own kind name. Served verbatim;
+     *  absent = unattributed (the wall reds the lane). */
+    schema_key?: string;
 }
 /** The carrier dict shape (shared with the no-cheat door). */
 export type Schema = {

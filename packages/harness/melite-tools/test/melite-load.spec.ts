@@ -516,6 +516,15 @@ test('THE MODS LINE RIDES (stroke 79 — the agent sees the kinds beside params)
   assert.ok(text.includes('THE BENCH GRAMMAR (melite_construct add_stage/patch, where you compose)'), 'the bench grammar leads')
   assert.ok(text.includes('its fields ride flat top-level'), 'the door voice is quoted')
   assert.ok(text.includes('bag-mode arrays under the kind keys exist ONLY for flow_inline/ad-hoc stages (melite_flow {flow}, never the bench)'), 'bag-mode is scoped, never leading')
+  // THE CARD-DECLARED ORDERED EXCEPTION (friction-report #2,
+  // 2026-10-28): pack-mod fields ride flat, but a card's OWN
+  // ordered kinds ride params.<param_key> as an array on every
+  // door — the agent that flattens a bag seat (replace's entry
+  // fields) burns an unknown-param(s) refusal it can never fix by
+  // reading the flat law. The bundle states the exception beside
+  // the bag-mode scope, with the container spelling.
+  assert.ok(text.includes('CARD-DECLARED ORDERED EXCEPTION'), 'the ordered-bag exception rides')
+  assert.ok(text.includes('params {replace: [{source_clip, still, mannequin, mask, swap_prompt, ...}]}'), 'the bag container spelling is stated')
   // THE VARIANT SEAT (025's self-critique #4): the lane select
   // rides inside card-mode params — stated, never guessed.
   assert.ok(text.includes('card-mode lane select'), 'the variant seat is stated')

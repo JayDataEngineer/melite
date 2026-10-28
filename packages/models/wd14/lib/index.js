@@ -37,8 +37,10 @@ export const DECL = {
     // pair per variant, single-file rows off the node's OWN upstream
     // map (pysssss.json — SmilingWolf/<repo>), the csv digests
     // estate-minted off the fetched bytes (git storage carries no LFS
-    // oid). The folder rides the wd14_tagger mount (store wd14/) —
-    // the flat renamed pair the node's loader reads.
+    // oid). The folder is the identity mount (store wd14_tagger/, the
+    // endpoint mapping's own spelling — the 2026-11-12 fix aligned a
+    // stale wd14/ mapping with the bytes' actual landing) — the flat
+    // renamed pair the node's loader reads.
     "provisions": [
         {
             "name": "wd-v1-4-moat-tagger-v2.onnx",

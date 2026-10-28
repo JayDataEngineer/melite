@@ -96,7 +96,7 @@ import { CardArmError, EnvelopeRefusal, phaseRefusal, phaseRefusalCode } from ".
 import { RUNS_ERROR_CODES } from "./runsErrorCodes.ts";
 export { CardArmError } from "./cardsArmError.ts";
 import type { CardDeclRow, ModelFactsRow, ResolvedVariantRow, VariantCellRow } from "./cardsFacts.ts";
-import { factsPath, deriveDecls, familyLanesOf } from "./cardsFacts.ts";
+import { cardAdmits, factsPath, deriveDecls, familyLanesOf } from "./cardsFacts.ts";
 import { WIRE_STAGE_KEYS } from "@melite/contracts/benchStage";
 import { reseatDeadKeys, type FamilyLaw } from "@melite/contracts/familyLane";
 import type { LaneRelations, LaneViolation } from "@melite/contracts/laneRelations";
@@ -111,6 +111,7 @@ export type { VariantSelection } from "./cardsVariant.ts";
 export type { CardDeclRow, ModelFactsRow, VariantCellRow, ResolvedVariantRow } from "./cardsFacts.ts";
 import { ComfyUIWiringService, deriveWiringDoc, liveObjectInfo, resolveEngineBaseUrl } from "@melite/comfyui-cordis";
 import { admissionRefusal, composeOnce, liftStanza, prepareCardParams } from "./cardsCompose.ts";
+import type { ComposeSeat } from "./cardsCompose.ts";
 /** The card-envelope keys: SELECT the graph, never ride it.
  *
  *  THE ROW COORDINATES ARE THE CONTRACT'S (the operator's live
@@ -247,8 +248,22 @@ export function familyFace(fam: string): string {
  *  negative value — the door's own bounds judges those after) =
  *  no stamp; an unreadable file or an unrecognized container =
  *  no stamp, never a refusal (the engine's follow-the-clip
- *  contract is the belt). */
-function stampClipGeometry(body: Record<string, unknown>): void {
+ *  contract is the belt).
+ *
+ *  THE STAMP IS CARD-SCOPED (the track-card admission burn,
+ *  2026-10-28, h3-swap-chain-failures fix 7): the stamp invents
+ *  nothing. A key the addressed card's own declaration refuses —
+ *  the track card carries `clip` but declares no width/height
+ *  knobs — is left unstamped, exactly like a probe miss; the
+ *  pre-stamp body sailed through admission while the stamped one
+ *  refused "unknown param(s) on the track card: height, width".
+ *  `admits` mirrors admission's own predicate (cardAdmits on the
+ *  resolved decl), so the two seats can never disagree about the
+ *  surface. */
+function stampClipGeometry(
+  body: Record<string, unknown>,
+  admits: (key: string) => boolean,
+): void {
   const clip = body["clip"];
   if (typeof clip !== "string" || clip === "") return;
   // UNSTATED has two spellings: an ABSENT key (the GUI wire omits
@@ -263,6 +278,7 @@ function stampClipGeometry(body: Record<string, unknown>): void {
   if (typeof w !== "number" && w !== undefined) return;
   if (typeof h !== "number" && h !== undefined) return;
   if (!unstated(w) && !unstated(h)) return;
+  if (!admits("width") && !admits("height")) return;
   const abs = clip.startsWith("/")
     ? clip
     : resolveRepoRoot() + "/" + clip.replace(/^\/+/, "");
@@ -282,8 +298,26 @@ function stampClipGeometry(body: Record<string, unknown>): void {
   }
   const stream = probed.streams.find((s) => s.width !== undefined && s.height !== undefined);
   if (stream === undefined) return;
-  if (unstated(w)) body["width"] = stream.width;
-  if (unstated(h)) body["height"] = stream.height;
+  if (unstated(w) && admits("width")) body["width"] = stream.width;
+  if (unstated(h) && admits("height")) body["height"] = stream.height;
+}
+
+/** The card-scope seat for the clip-geometry stamp: resolves the
+ *  card the run addresses — the family route's famRow.card, or the
+ *  familyless id itself — mirroring prepareCardParams's two arms,
+ *  then answers admission's own predicate for a key. An
+ *  unresolvable card admits nothing (the stamp no-ops; prepare's
+ *  own refusal owns that voice). */
+function clipGeometryAdmits(deps: ComposeSeat, mid: string): (key: string) => boolean {
+  const facts: Record<string, ModelFactsRow> = deps.modelFacts();
+  const resolves: boolean =
+    mid in facts || deps.resolveCardFamily(mid, facts) in facts || deps.modelMids().has(mid);
+  const fam: string = deps.resolveCardFamily(mid, facts);
+  const famRow: ModelFactsRow | undefined = facts[fam];
+  const card: string = resolves && famRow !== undefined ? famRow.card : mid;
+  const decls: Record<string, CardDeclRow> = deps.cardDecls(facts);
+  const decl: CardDeclRow | undefined = decls[card];
+  return (key: string): boolean => cardAdmits(decl, new Set(), key);
 }
 
 function isUnstatedRequiredWord(message: string): boolean {
@@ -1952,8 +1986,11 @@ export class CardRegistryService extends Service {
     // unreadable file or an unrecognized container, webm today)
     // leaves the 0s riding — the engine's own follow-the-clip
     // contract still renders (receipts run-be048a52385d mp4 →
-    // 928×1344, run-9c267ef6c8fd webm → 928×1344).
-    stampClipGeometry(body);
+    // 928×1344, run-9c267ef6c8fd webm → 928×1344). CARD-SCOPED
+    // since the track-card burn (fix 7): a card that declares no
+    // size knobs gets no stamped keys — the stamp may not invent
+    // params admission will refuse.
+    stampClipGeometry(body, clipGeometryAdmits(this, mid));
     const prep: PreparedCard = prepareCardParams(this, body, mid, "1");
     // THE BOARD CHECK RIDES THE RUN SEAT TOO (the behavioural
     // re-check's BYPASS 1: the bench refused an unoffered model

@@ -560,8 +560,8 @@ describe("toolRowFor — the mods projection (stroke 79)", () => {
     });
     const out = toolRowFor("c", def, toolBaseRows(new Map([["c", def]])));
     assert.deepEqual(out["modifiers"], [
-      { kind: "sam3", category: "standalone", cardinality: "list", fields: ["prompt", "bbox_x"] },
-      { kind: "draw", category: "ordered", cardinality: "list", fields: ["payload"] },
+      { kind: "sam3", param_key: "sam3", category: "standalone", cardinality: "list", fields: ["prompt", "bbox_x"] },
+      { kind: "draw", param_key: "draw", category: "ordered", cardinality: "list", fields: ["payload"] },
     ], "verbatim kinds; leaf_face stays a UI concern (never rides)");
   });
 
@@ -578,7 +578,7 @@ describe("toolRowFor — the mods projection (stroke 79)", () => {
     const nameless = DEF({
       mods: [{ kind: "loras", label: "L", param_key: "loras", cardinality: "list", fields: [{}, { name: "strength" }] }] as never,
     });
-    assert.deepEqual(out["modifiers"], [{ kind: "loras", cardinality: "list", fields: [] }]);
+    assert.deepEqual(out["modifiers"], [{ kind: "loras", param_key: "loras", cardinality: "list", fields: [] }]);
     assert.deepEqual(
       (toolRowFor("c", nameless, toolBaseRows(new Map([["c", nameless]])))["modifiers"] as Array<{ fields: string[] }>)[0]["fields"],
       ["", "strength"],

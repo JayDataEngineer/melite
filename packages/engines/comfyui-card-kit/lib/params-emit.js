@@ -263,6 +263,16 @@ export const emitParamsSchema = (schemaCarrier, boarded, semantic) => {
  *  rides (the agent composes VALUES, never faces). */
 export const emitModifierKinds = (mods) => (mods ?? []).map((k) => ({
     kind: k.kind,
+    // THE BAG KEY (friction-report #2, 2026-10-28): the agent plane
+    // used to strip param_key, so an ordered card-declared kind
+    // (h3-timeline replace) read as flat fields and the bench
+    // grammar taught the flat spelling — which the compose door
+    // refuses as unknown-param. The bag key IS the contract: entries
+    // ride as an array under params.<param_key> (max_stack 1 = one
+    // entry, never flattened). Served verbatim, like the form-spec
+    // face (discovery.ts specModifiers serves param_key already).
+    param_key: k.param_key,
+    ...(k.max_stack !== undefined ? { max_stack: k.max_stack } : {}),
     ...(k.category !== undefined ? { category: k.category } : {}),
     cardinality: k.cardinality,
     fields: (k.fields ?? []).map((f) => String(f['name'] ?? '')),

@@ -54,26 +54,36 @@ export const ACTION_BINDINGS = {
 // paths ride explicit params (API/bare bodies).
 const schema = z.object({
     input_image: z.string().role('path').description("Input image").extra('extra', bag(inputImageExtra({ tooltip: 'The image to invert. Absolute mount path or artifact ref.' }))),
-    threshold: z.number().description("Threshold").min(0).max(1).step(0.05).extra('extra', bag({ order: 1, group: "tagger", width: 1, tooltip: "General-tag confidence floor." })),
-    character_threshold: z.number().description("Character threshold").min(0).max(1).step(0.05).extra('extra', bag({ order: 2, group: "tagger", width: 1, tooltip: "Character-tag confidence floor — keep high." })),
-    exclude_tags: z.string().description("Exclude tags").extra('extra', bag({ order: 3, group: "tagger", width: 1, tooltip: "Comma-separated tags to prune from the output." })),
-    replace_underscore: z.boolean().description("Replace underscores").extra('extra', bag({ order: 4, group: "tagger", width: 1, tooltip: "Emit \"silver hair\" instead of \"silver_hair\"." })),
-    trailing_comma: z.boolean().description("Trailing comma").extra('extra', bag({ order: 5, group: "tagger", width: 1, tooltip: "Terminate the tag list with a comma (prompt-paste shape)." })),
-    add_tag: z.string().description("Add tag").extra('extra', bag({ order: 6, group: "tagger", width: 1, tooltip: "JoyTag: tags force-prepended to the output (comma-separated). Ignored by WD14." })),
-    remove_tag: z.string().description("Remove tag").extra('extra', bag({ order: 7, group: "tagger", width: 1, tooltip: "JoyTag: tags pruned from the output (comma-separated). Ignored by WD14." })),
-    caption_task: vocabulary([...TAGGER_CAPTION_TASKS]).default("more_detailed_caption").description("Caption task").extra('extra', bag({ order: 8, group: "tagger", width: 1, tooltip: "Florence-2: the vision task (live task vocabulary). Ignored by WD14/JoyTag.", wtype: 'select' })),
-    caption_type: vocabulary([...TAGGER_CAPTION_TYPES]).default("Descriptive").description("Caption style").extra('extra', bag({ order: 9, group: "tagger", width: 1, tooltip: "JoyCaption: the caption template (live vocabulary). Ignored by WD14/JoyTag/Florence-2.", wtype: 'select' })),
+    // FAMILY-SCOPED NUMBERS (the 2026-11-12 refused-face burn: a
+    // number knob with no floor on the families that never read it
+    // rendered "undefined — REFUSED: not a number"). Every knob
+    // scopes to the families whose declared action consumes it
+    // (wd14: threshold/character_threshold/exclude_tags/
+    // replace_underscore/trailing_comma; joytag: threshold/add_tag/
+    // remove_tag; florence2: caption_task; joycaption: caption_type/
+    // caption_length/extra_option) — an unscoped number is a
+    // refused face waiting to happen, a scoped one never renders
+    // for the family that has no floor for it.
+    threshold: z.number().description("Threshold").min(0).max(1).step(0.05).extra('extra', bag({ order: 1, group: "tagger", width: 1, families: ["wd14", "joytag"], tooltip: "General-tag confidence floor (WD14 + JoyTag)." })),
+    character_threshold: z.number().description("Character threshold").min(0).max(1).step(0.05).extra('extra', bag({ order: 2, group: "tagger", width: 1, families: ["wd14"], tooltip: "Character-tag confidence floor — keep high (WD14 only)." })),
+    exclude_tags: z.string().description("Exclude tags").extra('extra', bag({ order: 3, group: "tagger", width: 1, families: ["wd14"], tooltip: "Comma-separated tags to prune from the output (WD14 only)." })),
+    replace_underscore: z.boolean().description("Replace underscores").extra('extra', bag({ order: 4, group: "tagger", width: 1, families: ["wd14"], tooltip: "Emit \"silver hair\" instead of \"silver_hair\" (WD14 only)." })),
+    trailing_comma: z.boolean().description("Trailing comma").extra('extra', bag({ order: 5, group: "tagger", width: 1, families: ["wd14"], tooltip: "Terminate the tag list with a comma (prompt-paste shape; WD14 only)." })),
+    add_tag: z.string().description("Add tag").extra('extra', bag({ order: 6, group: "tagger", width: 1, families: ["joytag"], tooltip: "JoyTag: tags force-prepended to the output (comma-separated)." })),
+    remove_tag: z.string().description("Remove tag").extra('extra', bag({ order: 7, group: "tagger", width: 1, families: ["joytag"], tooltip: "JoyTag: tags pruned from the output (comma-separated)." })),
+    caption_task: vocabulary([...TAGGER_CAPTION_TASKS]).default("more_detailed_caption").description("Caption task").extra('extra', bag({ order: 8, group: "tagger", width: 1, families: ["florence2"], tooltip: "Florence-2: the vision task (live task vocabulary).", wtype: 'select' })),
+    caption_type: vocabulary([...TAGGER_CAPTION_TYPES]).default("Descriptive").description("Caption style").extra('extra', bag({ order: 9, group: "tagger", width: 1, families: ["joycaption"], tooltip: "JoyCaption: the caption template (live vocabulary).", wtype: 'select' })),
     // the FORM subset (the named six) of the kit's full set (which
     // also carries the node's 20-260 word counts, for bare/API
     // bodies) — a named subset, never a retyped copy that can
     // drift from the node's own vocabulary (the card-plane
     // audit's H2)
-    caption_length: vocabulary([...TAGGER_CAPTION_LENGTHS]).default("long").description("Caption length").extra('extra', bag({ order: 10, group: "tagger", width: 1, tooltip: "JoyCaption: target length (the named six; the node also takes word counts 20-260, which bare/API bodies may send). Ignored by other families.", wtype: 'select' })),
+    caption_length: vocabulary([...TAGGER_CAPTION_LENGTHS]).default("long").description("Caption length").extra('extra', bag({ order: 10, group: "tagger", width: 1, families: ["joycaption"], tooltip: "JoyCaption: target length (the named six; the node also takes word counts 20-260, which bare/API bodies may send).", wtype: 'select' })),
     // the FULL kit list: the card had retyped a 14-option subset and
     // one entry had ALREADY drifted into a truncated fork of the
     // upstream canned string, which rode verbatim into the node
     // (the card-plane audit's H2 — the one entry proved it)
-    extra_option: vocabulary([...TAGGER_EXTRA_OPTIONS]).default("").description("Extra instruction").extra('extra', bag({ order: 11, group: "tagger", width: 1, tooltip: "JoyCaption: one appended instruction (the full 27-option list rides bare/API bodies; the engine's own vulgar-caption row is dropped at this surface — release hygiene). Ignored by other families.", wtype: 'select' })),
+    extra_option: vocabulary([...TAGGER_EXTRA_OPTIONS]).default("").description("Extra instruction").extra('extra', bag({ order: 11, group: "tagger", width: 1, families: ["joycaption"], tooltip: "JoyCaption: one appended instruction (the full 27-option list rides bare/API bodies; the engine's own vulgar-caption row is dropped at this surface — release hygiene).", wtype: 'select' })),
     // NO filename_prefix (card: "the run routes outputs by run id
     // (compose stamps `<run>/tags`) — a user knob here was silently
     // overwritten, a dead promise"). Old drafts naming it still parse

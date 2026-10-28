@@ -271,6 +271,23 @@ describe("THE VALUE GATE (the audit's T2)", () => {
       () => assertWiringAgainst(nodes, inputs, "c1", loader("banana")),
       (e: unknown) => e instanceof ComposeRefusal && e.code === "bad-value" && /2 values/.test(e.message),
     );
+    // THE FOLDER-VALUE HINT (friction-report #3, 2026-10-28): a
+    // run-tree mask-frames FOLDER wired to the single-image seat
+    // refused with the bare "stale compose" suffix — the agent
+    // re-read the engine build instead of the seat shape. A
+    // path-like non-file value names the miss: folders never
+    // stage, bind one file. A bare word keeps the old text.
+    assert.throws(
+      () => assertWiringAgainst(nodes, inputs, "c1", loader("runs/run-abc/mask_frames")),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "bad-value"
+        && /a folder path never stages/.test(e.message)
+        && /bind one staged file/.test(e.message),
+    );
+    assert.throws(
+      () => assertWiringAgainst(nodes, inputs, "c1", loader("banana")),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "bad-value"
+        && !/a folder path never stages/.test(e.message),
+    );
   });
 
   it("an artifact-shaped string on a numeric-only enum still judges (T2's residual: a filename can never land there)", () => {

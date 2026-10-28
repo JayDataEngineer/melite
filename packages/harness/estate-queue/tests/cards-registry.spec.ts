@@ -653,23 +653,27 @@ describe("phase1Card + phase2Card (the two phases, one compose seat)", () => {
     // after (prep, lane verdict, compose) reads real numbers. The
     // toggle-out proof: without the stamp the 0s ride and this arm
     // reds on the first expect.
+    // (RECUT onto h3-timeline, fix 7: the stamp is CARD-SCOPED now —
+    // it fires only for a card whose own declaration admits
+    // width/height. The hermetic world carries no viggle provision
+    // row (its card resolves live only), and h3-timeline is the
+    // video card here that declares both knobs; the original burn's
+    // absent-key spelling stays the third arm below.)
     const mp4 = craftMinimalMp4(928, 1344);
     const dir = mkdtempSync(join(tmpdir(), "clip-geo-"));
     const clipPath = join(dir, "drive.mp4");
     writeFileSync(clipPath, mp4);
     const body: Record<string, unknown> = {
-      clip: clipPath, width: 0, height: 0, length: 90,
-      ref_image: "ref.png", model: "viggle-animate",
+      clip: clipPath, width: 0, height: 0,
     };
-    await svc.phase1Card(body, "viggle-animate").catch(() => undefined);
+    await svc.phase1Card(body, "h3-timeline").catch(() => undefined);
     expect(body["width"]).toBe(928);
     expect(body["height"]).toBe(1344);
     // BOTH STATED = the user owns the geometry (no stamp)
     const own: Record<string, unknown> = {
-      clip: clipPath, width: 640, height: 480, length: 90,
-      ref_image: "ref.png", model: "viggle-animate",
+      clip: clipPath, width: 640, height: 480,
     };
-    await svc.phase1Card(own, "viggle-animate").catch(() => undefined);
+    await svc.phase1Card(own, "h3-timeline").catch(() => undefined);
     expect(own["width"]).toBe(640);
     expect(own["height"]).toBe(480);
     // ABSENT KEYS = the GUI wire's spelling of unstated (the GUI
@@ -677,21 +681,45 @@ describe("phase1Card + phase2Card (the two phases, one compose seat)", () => {
     // run-9e6585c227c8, carried NO width/height and the stamp
     // no-opped while the 0s rode): absent stamps exactly like 0
     const bare: Record<string, unknown> = {
-      clip: clipPath, length: 90,
-      ref_image: "ref.png", model: "viggle-animate",
+      clip: clipPath,
     };
-    await svc.phase1Card(bare, "viggle-animate").catch(() => undefined);
+    await svc.phase1Card(bare, "h3-timeline").catch(() => undefined);
     expect(bare["width"]).toBe(928);
     expect(bare["height"]).toBe(1344);
     // AN UNREADABLE CLIP = no stamp, never a refusal (the engine's
     // follow-the-clip contract is the belt)
     const miss: Record<string, unknown> = {
-      clip: join(dir, "not-there.mp4"), width: 0, height: 0, length: 90,
-      ref_image: "ref.png", model: "viggle-animate",
+      clip: join(dir, "not-there.mp4"), width: 0, height: 0,
     };
-    await svc.phase1Card(miss, "viggle-animate").catch(() => undefined);
+    await svc.phase1Card(miss, "h3-timeline").catch(() => undefined);
     expect(miss["width"]).toBe(0);
     expect(miss["height"]).toBe(0);
+  });
+  it("THE STAMP IS CARD-SCOPED (fix 7, 2026-10-28 — the track-card admission burn): a card that declares no size knobs gets NO stamped keys; the stamp may not invent params admission refuses", async () => {
+    // The burn: the track card's ONE media seat is `clip`, its
+    // schema declares no width/height knobs, and the h3 swap press
+    // rode the absent-key spelling — the stamp wrote width/height
+    // onto the body and admission refused the run it was trying to
+    // help: "unknown param(s) on the track card: height, width".
+    // The identical shape on a .webm probe miss passed (no stamp).
+    // The cure scopes the stamp to admission's own predicate.
+    // Toggle-out proof: an unconditional stamp reds the first
+    // expect (width/height appear on the body).
+    const mp4 = craftMinimalMp4(928, 1344);
+    const dir = mkdtempSync(join(tmpdir(), "clip-geo-"));
+    const clipPath = join(dir, "drive.mp4");
+    writeFileSync(clipPath, mp4);
+    const body: Record<string, unknown> = { clip: clipPath, prompt: "person" };
+    const verdict = await svc.phase1Card(body, "track").then(
+      () => null,
+      (e: unknown) => e,
+    );
+    expect(body).not.toHaveProperty("width");
+    expect(body).not.toHaveProperty("height");
+    // and the run must not die in the burn's voice — a downstream
+    // refusal (weights, lanes) may speak, admission for stamped
+    // geometry may not
+    expect(verdict === null ? "" : String(verdict)).not.toMatch(/unknown param/);
   });
   it("a spell body pools its $ inputs and composes NO graph", async () => {
     // upscale-tools carries spells: ['input_image'] — a $ value

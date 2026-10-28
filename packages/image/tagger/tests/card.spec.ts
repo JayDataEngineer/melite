@@ -13,6 +13,7 @@ import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
 import { ACTION_BINDINGS } from "../src/card.ts";
+import { fieldsOfEnvelope, resolveValue } from "../../../web/card-base/src/spec.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -259,6 +260,35 @@ describe("THE EVERY-ADDRESS WALL — every served address composes its own decla
       assert.equal(save.inputs.filename_prefix, `wall_${family}/tags`, "compose stamps the run prefix");
     });
   }
+
+  it("THE REFUSED-FACE LAW (2026-11-12 burn: 'Character threshold — undefined — REFUSED: not a number'): every number knob that renders for a family resolves finite through the face's own cascade", () => {
+    // THE FACE'S OWN DEPTH (the journey law): the burn crossed the
+    // UI seat, so the wall rides the same two functions the seat
+    // rides — fieldsOfEnvelope (the families-scoped walk) over the
+    // served envelope + resolveValue (schema <- model_defaults <-
+    // user) with each family's own defaults row. A number knob that
+    // renders for a family with no floor anywhere is the refused
+    // face — the exact burn, judged at the hop it burned on.
+    for (const family of ["wd14", "joytag", "florence2", "joycaption"] as const) {
+      const fields = fieldsOfEnvelope(envelope() as never, family);
+      const knobs = fields.filter((f) => f.type === "slider");
+      // a family with no number knobs passes vacuously (florence2's
+      // face is a path + an enum — the law judges what RENDERS); the
+      // other three families render sliders, so the arm bites.
+      const resolved = resolveValue(
+        { model_defaults: facts.models[family]!.defaults } as never,
+        {},
+        undefined,
+      );
+      for (const f of knobs) {
+        const v = resolved[f.name];
+        assert.ok(
+          typeof v === "number" && Number.isFinite(v),
+          `number knob '${f.name}' renders for family '${family}' but resolves ${String(v)} — an unfloored number is the REFUSED face (scope it to the families whose action reads it, or floor it on the family row)`,
+        );
+      }
+    }
+  });
 
   it("THE DECLARED FALLBACK: an unboarded id REFUSES at the dispatch (declared, never silent)", () => {
     // No served facts row carries an id outside the four families —

@@ -95,6 +95,21 @@ describe('melite_load family pack seats', () => {
     expect(text).not.toContain('qvoice[]')
     expect(text).not.toContain('controlnet[]')
   })
+
+  test('a card-declared ordered kind names its bag key and the bench exception (friction-report #2)', () => {
+    const text = render({
+      signature: {
+        model: 'rich:base:fp16',
+        params_schema: { properties: {} },
+        modifiers: [{ kind: 'replace', category: 'ordered', cardinality: 'list', param_key: 'replace', max_stack: 1, fields: ['source_clip', 'still'] }],
+      },
+    })
+    // the bag key rides the line — the agent never greps card.ts
+    expect(text).toContain('replace[] (ordered; fields: source_clip, still bag: params.replace)')
+    // the bench grammar carves the exception: bags ride arrays, never flat
+    expect(text).toContain('CARD-DECLARED ORDERED EXCEPTION')
+    expect(text).toContain('params {replace: [{source_clip, still, mannequin, mask, swap_prompt, ...}]}')
+  })
 })
 
 // The lane-law words are rendered from DECL-declared relation rows, and
