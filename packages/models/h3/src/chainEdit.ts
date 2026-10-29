@@ -231,13 +231,27 @@ export interface ChainRender {
   readonly assemblePath: OutputHandle | null
 }
 
+/** The plan node's own widget band for clip_seconds (live
+ * object_info: FLOAT min 2.5 max 15.0). The estate's grid rungs run
+ * 22f–362f = 0.917s–15.083s, so the edge rungs (22/39/56f under,
+ * 362f over) used to build graphs the engine REFUSED at submit
+ * (validate_prompt's value_smaller_than_min — the works audit's F1:
+ * the card's own 2.33s default extend died there). The plan feed
+ * clamps into the band; the TRUE window length rides the chain's
+ * own seats (default_duration_seconds bounds 0.1–149.7,
+ * preview_frames), which never reject a rung. */
+const PLAN_CLIP_BAND = { min: 2.5, max: 15.0 } as const
+const planClipFeed = (seconds: number): number =>
+  Math.min(PLAN_CLIP_BAND.max, Math.max(PLAN_CLIP_BAND.min, seconds))
+
 /** Emit the shared masked-edit chain for one seat. The node
  * parameters are the three seats' historical spellings, verbatim;
  * the seat's deltas arrive through the seat interface. The emission
  * ends in LoopEnd (top_level_requeue) and, when configured,
  * ChainAssemble.
  * @param g the run's graph builder
- * @param seat the seat's deltas (see MaskedChainSeat) */
+ * @param seat the seat's deltas (see MaskedChainSeat)
+ * @returns the trimmed window + optional assemble path (see ChainRender) */
 export function renderMaskedEditChain(g: GraphBuilder, seat: MaskedChainSeat): ChainRender {
   const { p, facts } = seat
   // ── the family's own model + lora plane (the shared masked-edit
@@ -257,9 +271,12 @@ export function renderMaskedEditChain(g: GraphBuilder, seat: MaskedChainSeat): C
 
   // ── the plan head (the entry's scalars, engine-derived geometry;
   // picture_1 = the seat's anchor — the grid snap + tier scaling
-  // stay ENGINE-OWNED, never re-derived renderer-side) ──
+  // stay ENGINE-OWNED, never re-derived renderer-side). clip_seconds
+  // rides the WIDGET BAND clamp above (the node's own floor/ceiling
+  // would 400 the edge rungs at submit); the window's true length
+  // rides default_duration_seconds below, never this seat ──
   const plan = g.node('H3OneClickSwapPlan', {
-    clip_seconds: seat.clipSeconds,
+    clip_seconds: planClipFeed(seat.clipSeconds),
     overlap_frames: seat.overlapFrames,
     resolution: seat.resolution,
     steps: seat.steps,

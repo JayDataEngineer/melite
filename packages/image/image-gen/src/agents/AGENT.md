@@ -36,7 +36,7 @@ have left the contract — come back to the knobs.
 
 ## THE LOOK PICKS THE FAMILY (the operator's law, 2026-09-21)
 
-Four looks are boarded, and they are NOT interchangeable — the
+Six looks are boarded, and they are NOT interchangeable — the
 brief's words pick one, or you ask. Never silently take the
 signature default when the brief names a look:
 
@@ -47,9 +47,15 @@ signature default when the brief names a look:
   default when the brief names NO look.
 - **qwen-img-21** — the text-render specialist: signs, posters,
   legible typography in-image.
+- **flux-klein** — the low-VRAM lane: a 4-step distilled checkpoint
+  for modest cards (20-step base tier when quality outranks speed),
+  reference-guided.
+- **moss-image** — the 50-step SFT photoreal lane: typography
+  through quoted text, layout through native JSON bboxes in the
+  prompt.
 
 Ambiguous ("make it cool")? ASK the user which look — one line,
-the four options. The family rides `params.model` on the stage
+the options. The family rides `params.model` on the stage
 (that is a LOOK choice, not a checkpoint choice — law 3 stands:
 never steps/cfg, never weights).
 

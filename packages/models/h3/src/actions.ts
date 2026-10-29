@@ -298,24 +298,6 @@ export const assertOverlayGated = (doc: Record<string, unknown>, where: string):
   }
 }
 
-export interface WindowHandles {
-  latOut: OutputHandle
-  vdec: OutputHandle
-  vadec: OutputHandle
-  /** the DELIVERED clip — post-trim, post-sharpen: exactly the
-   *  streams that window's own SaveVideo plays; the film concat's
-   *  currency (the film must not differ from its windows). */
-  filmImages: OutputHandle
-  filmAudio: OutputHandle
-  /** the window's SaveVideo VIDEO passthrough — the film tail's
-   *  ordering wire: the MeliteUnload boundary consumes it, so the
-   *  file loaders provably wait for the saves (and the passthrough
-   *  tensor dies at the boundary — the §20 law). Assigned by BOTH
-   *  family arms (every family path saves); the film tail refuses
-   *  loud if a future arm forgets. */
-  savePassthrough?: OutputHandle
-}
-
 /** THE FILE-JOIN PRIMITIVE, half 1 — the boundary chain (the
  * multi-window unification, 2026-11-12 — the film tail's own §20
  * law, ONE spelling for every join-by-file seat). ONE MeliteUnload
@@ -326,9 +308,6 @@ export interface WindowHandles {
  * idempotent, weights stay resident).
  * @param g the run's graph builder
  * @param saves the members' SaveVideo passthroughs, film order
- * @param startAfter an existing token the chain continues (the
- *  film's audio-mix arm chains its stanza between the saves and the
- *  concat on the SAME wire)
  * @returns the chain's final token — the ordering proof */
 export function chainSaveBoundaries(
   g: GraphBuilder,

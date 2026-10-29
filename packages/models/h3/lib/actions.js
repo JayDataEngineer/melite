@@ -243,9 +243,6 @@ export const assertOverlayGated = (doc, where) => {
  * idempotent, weights stay resident).
  * @param g the run's graph builder
  * @param saves the members' SaveVideo passthroughs, film order
- * @param startAfter an existing token the chain continues (the
- *  film's audio-mix arm chains its stanza between the saves and the
- *  concat on the SAME wire)
  * @returns the chain's final token — the ordering proof */
 export function chainSaveBoundaries(g, saves) {
     if (saves.length === 0) {

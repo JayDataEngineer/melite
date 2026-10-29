@@ -162,7 +162,11 @@ export function readDoc(
   const gated: SkillRow = gateSkill(
     sid,
     fm.name !== "" ? fm.name : stem(leaf),
-    fm.description.slice(0, 200),
+    // SERVED WHOLE (operator 2026-11-12: "qwen 21 can accept very
+    // long prompts and skills — that is intentional"): the authored
+    // tier-1 line rides every load verbatim; the old .slice(0, 200)
+    // cut intentional lines mid-word with no wall ever seeing it.
+    fm.description,
     scope,
     genre,
     card,
@@ -296,7 +300,7 @@ function familyLane(
     row: gateSkill(
       "model:" + mid,
       mid,
-      mid + " family lane: " + String(skillRows.length) + " skill row(s) to read before writing a prompt",
+      mid + " family lane: " + String(skillRows.length) + " skill row(s) deepening the craft line when the ask is unusual (never required pre-reads)",
       "model-lane",
       genre,
       null,

@@ -42,13 +42,14 @@ stringify it into a silent snap).
   prefixes. Repeat the ambient soundscape; add one new layer where
   the story needs it.
 - `extend_seconds` (bag only, default 2.33) — seconds appended. Up to
-  15.08 = 362f the value must land on the engine grid (frames become
-  seconds at the schema fps default): 2.33 = 56f, 3.83 = 92f,
-  5.17 = 124f. Beyond 362f the door composes MULTIPLE windows of
+  15.08 = 362f — the largest SINGLE window — the value must land on
+  the engine grid (frames become seconds at the schema fps default):
+  2.33 = 56f, 3.75 = 90f, 5.17 = 124f. Beyond 362f the door composes
+  MULTIPLE windows of
   uniform grid length under a 39-frame context overlap — delivered
   frames = N×w − (N−1)×39 must equal the stated frames EXACTLY, or
   the door REFUSES naming the nearest under/over compositions (state
-  one of those delivered seconds instead). 15.79 = 379f composes as
+  one of those delivered seconds instead; the ceiling is 32 windows). 15.79 = 379f composes as
   2×209f−39; 20.00 = 480f refuses (nearest: 464f and 481f — state
   19.333 or 20.042). Off-exact values never snap silently.
 - `seed` (bag only, default 0) — the plan base seed. Same seed across

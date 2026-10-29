@@ -136,8 +136,8 @@ const REPLACE_MOD: DeclaredModifierKind = {
     { name: 'roles', label: 'Roles', type: 'text', default: '', tooltip: 'Which person to replace (the plan roles seat; empty = the detected lead).' },
     { name: 'seed', label: 'Plan seed', type: 'number', default: 0, min: 0, max: 4294967295, step: 1, tooltip: 'The chain plan base_seed (the reference runs 0; the sampler seed stays the doc seed).' },
     { name: 'steps', label: 'Plan steps', type: 'number', default: 6, min: 1, max: 30, step: 1, tooltip: 'The chain plan default_steps (reference 6; the sampler steps stay the doc marriage).' },
-    { name: 'clip_seconds', label: 'Clip seconds', type: 'number', default: 6, min: 1, max: 60, step: 1, tooltip: 'The plan clip_seconds (reference 6).' },
-    { name: 'overlap_frames', label: 'Overlap frames', type: 'number', default: 39, min: 0, max: 362, step: 1, tooltip: 'The plan overlap_frames (reference 39; the R1 single clip carries it through the plan head).' },
+    { name: 'clip_seconds', label: 'Clip seconds', type: 'number', default: 6, min: 2.5, max: 15, step: 0.1, tooltip: 'The plan clip_seconds (reference 6) — the plan node\'s own widget band [2.5, 15] is the law; anything else 400s at submit.' },
+    { name: 'overlap_frames', label: 'Overlap frames', type: 'number', default: 39, min: 22, max: 56, step: 17, tooltip: 'The plan overlap_frames (reference 39; the R1 single clip carries it through the plan head) — the engine combo is exactly [22, 39, 56] (step 17 from 22).' },
     { name: 'resolution', label: 'Plan resolution', type: 'select', default: '736p', options: [
       { value: '480p', label: '480p — quick preview' },
       { value: '576p', label: '576p' },
@@ -198,8 +198,8 @@ const REPAIR_MOD: DeclaredModifierKind = {
     { name: 'window_length', label: 'Window length (frames)', type: 'number', default: 0, min: 0, max: 100000, step: 1, tooltip: 'Frames in the repair window — 0 runs to the end of the clip (the whole-clip posture). clip_seconds still caps the render budget.' },
     { name: 'seed', label: 'Plan seed', type: 'number', default: 0, min: 0, max: 4294967295, step: 1, tooltip: 'The chain plan base_seed (the reference runs 0; the sampler seed stays the doc seed).' },
     { name: 'steps', label: 'Plan steps', type: 'number', default: 6, min: 1, max: 30, step: 1, tooltip: 'The chain plan default_steps (reference 6; the sampler steps stay the doc marriage).' },
-    { name: 'clip_seconds', label: 'Clip seconds', type: 'number', default: 6, min: 1, max: 60, step: 1, tooltip: 'The plan clip_seconds (reference 6) — the render budget the window is cut within.' },
-    { name: 'overlap_frames', label: 'Overlap frames', type: 'number', default: 39, min: 0, max: 362, step: 1, tooltip: 'The plan overlap_frames (reference 39).' },
+    { name: 'clip_seconds', label: 'Clip seconds', type: 'number', default: 6, min: 2.5, max: 15, step: 0.1, tooltip: 'The plan clip_seconds (reference 6) — the render budget the window is cut within; the plan node\'s own widget band [2.5, 15] is the law.' },
+    { name: 'overlap_frames', label: 'Overlap frames', type: 'number', default: 39, min: 22, max: 56, step: 17, tooltip: 'The plan overlap_frames (reference 39) — the engine combo is exactly [22, 39, 56].' },
     { name: 'resolution', label: 'Plan resolution', type: 'select', default: '736p', options: [
       { value: '480p', label: '480p — quick preview' },
       { value: '576p', label: '576p' },
@@ -244,10 +244,10 @@ const EXTEND_MOD: DeclaredModifierKind = {
     // (agent-composed, user-confirmed).
     { name: 'source_clip', label: 'Source clip', type: 'file', media: 'video', default: '', tooltip: 'The clip whose seconds are extended. Binds ONE staged leaf: the VHS loader + the core LoadVideo both read it by staged name, and the timeline reads it back off the native VIDEO wire.' },
     { name: 'extend_prompt', label: 'Extend prompt', type: 'text', default: '', tooltip: 'The continuation text — MOTION and SOUND for the appended seconds, picking up exactly where the clip ends (agent-composed, user-confirmed; rides the reference-video prompt seat).' },
-    { name: 'extend_seconds', label: 'Extend seconds', type: 'number', default: 2.33, min: 0.92, max: 15.08, step: 0.01, tooltip: 'Seconds appended — must land on the engine grid at 24fps (22+17k frames, refuse loud otherwise). Landable values: 2.33s = 56f, 3.83s = 92f, 5.17s = 124f, 15.08s = 362f.' },
+    { name: 'extend_seconds', label: 'Extend seconds', type: 'number', default: 2.33, min: 0.92, max: 432.29, step: 0.01, tooltip: 'Seconds appended — must add up exactly: a single window lands on the engine grid at 24fps (22+17k frames, refuse loud otherwise; landable: 2.33s = 56f, 3.75s = 90f, 5.17s = 124f, 15.08s = 362f — the largest single window); above 362f the door joins N uniform 22+17k windows under the 39f context overlap, exact delivery or a refusal naming the neighbors (ceiling 32 windows = 432.29s).' },
     { name: 'seed', label: 'Plan seed', type: 'number', default: 0, min: 0, max: 4294967295, step: 1, tooltip: 'The chain plan base_seed (the reference runs 0; the sampler seed stays the doc seed).' },
     { name: 'steps', label: 'Plan steps', type: 'number', default: 6, min: 1, max: 30, step: 1, tooltip: 'The chain plan default_steps (reference 6; the sampler steps stay the doc marriage).' },
-    { name: 'overlap_frames', label: 'Overlap frames', type: 'number', default: 39, min: 0, max: 362, step: 1, tooltip: 'The plan overlap_frames (reference 39; in-run-only — the join itself is the film tail file law).' },
+    { name: 'overlap_frames', label: 'Overlap frames', type: 'number', default: 39, min: 22, max: 56, step: 17, tooltip: 'The plan overlap_frames (reference 39; in-run-only — the join itself is the film tail file law). The multi-window composition law carries exactly 39: a multi-window extend under another value refuses loud (every law-home pins 39).' },
     { name: 'resolution', label: 'Plan resolution', type: 'select', default: '736p', options: [
       { value: '480p', label: '480p — quick preview' },
       { value: '576p', label: '576p' },

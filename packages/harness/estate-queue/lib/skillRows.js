@@ -117,7 +117,12 @@ export function readDoc(path, sid, scope, genre, card, model) {
     const fm = frontmatter(text);
     // (split never yields [] — pop is always a string here)
     const leaf = path.split("/").pop();
-    const gated = gateSkill(sid, fm.name !== "" ? fm.name : stem(leaf), fm.description.slice(0, 200), scope, genre, card, model, null, null);
+    const gated = gateSkill(sid, fm.name !== "" ? fm.name : stem(leaf), 
+    // SERVED WHOLE (operator 2026-11-12: "qwen 21 can accept very
+    // long prompts and skills — that is intentional"): the authored
+    // tier-1 line rides every load verbatim; the old .slice(0, 200)
+    // cut intentional lines mid-word with no wall ever seeing it.
+    fm.description, scope, genre, card, model, null, null);
     return { row: gated, path };
 }
 /** THE SPAWN PLANE (operator pin, stroke 87): leaves under
@@ -230,7 +235,7 @@ function familyLane(mdir, mid, genre, skillRows) {
         lines.push("- `" + r.row.id + "` — " + r.row.name + (r.row.description === "" ? "" : ": " + r.row.description));
     }
     return {
-        row: gateSkill("model:" + mid, mid, mid + " family lane: " + String(skillRows.length) + " skill row(s) to read before writing a prompt", "model-lane", genre, null, mid, null, null),
+        row: gateSkill("model:" + mid, mid, mid + " family lane: " + String(skillRows.length) + " skill row(s) deepening the craft line when the ask is unusual (never required pre-reads)", "model-lane", genre, null, mid, null, null),
         path: join(mdir, "agents", "skills"),
         bodyText: lines.join("\n") + "\n",
     };

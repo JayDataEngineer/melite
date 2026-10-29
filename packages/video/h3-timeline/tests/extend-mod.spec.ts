@@ -205,13 +205,64 @@ describe("the extend emission (the fresh-continuation chain)", () => {
     );
   });
 
-  it("feeds the plan the exact grid landing (56f → 2.333…s, engine and door agree)", () => {
+  it("feeds the plan node a value inside its OWN widget band while the true window length rides the chain's duration seat (the works-audit F1 cure)", () => {
+    // The plan node's live object_info bounds clip_seconds to
+    // [2.5, 15.0]; the grid rungs run 0.917s–15.083s, so an unclamped
+    // feed built graphs the engine REFUSED at submit (the card's own
+    // 2.33s default extend died there). The feed clamps into the
+    // band; the exact window length rides default_duration_seconds
+    // (bounds 0.1–149.7 — every rung legal).
     const walked = def.schema({ extend: [EXTEND_ENTRY()] }) as Record<string, unknown>;
     const g = new GraphBuilder();
     def.compose(walked, model, g, "run_extend_grid");
     const out = graphOf(g);
     const plan = ofClass(out, 'H3OneClickSwapPlan')[0]!;
-    assert.equal(plan[1].inputs.clip_seconds, 56 / 24, "the stated 2.33s lands on 56f and feeds the plan as the exact grid fraction");
+    assert.equal(plan[1].inputs.clip_seconds, 2.5, "the 2.333s window's plan feed clamps UP to the node's own 2.5 floor");
+    const chainPlan = ofClass(out, 'MiniMaxH3ChainPlanModern')[0]!;
+    assert.equal(chainPlan[1].inputs.default_duration_seconds, 56 / 24, "the TRUE window length (2.333s = 56f) rides the chain's duration seat unclamped");
+  });
+
+  it("EVERY grid rung's plan feed lands inside the plan node's [2.5, 15.0] band (the engine never 400s a composed extend)", () => {
+    // 22+17k ∈ [22,362]: the three rungs under the floor (22/39/56f)
+    // and the one over the ceiling (362f) are the rungs the unclamped
+    // feed used to kill at submit.
+    for (let frames = 22; frames <= 362; frames += 17) {
+      const walked = def.schema({
+        extend: [{ ...EXTEND_ENTRY(), extend_seconds: frames / 24 }],
+      }) as Record<string, unknown>;
+      const g = new GraphBuilder();
+      def.compose(walked, model, g, `run_rung_${frames}`);
+      const out = graphOf(g);
+      const plan = ofClass(out, 'H3OneClickSwapPlan')[0]!;
+      const feed = plan[1].inputs.clip_seconds as number;
+      assert.ok(feed >= 2.5 && feed <= 15.0, `rung ${frames}f: plan feed ${feed}s inside the node's own band`);
+      const chainPlan = ofClass(out, 'MiniMaxH3ChainPlanModern')[0]!;
+      assert.equal(chainPlan[1].inputs.default_duration_seconds, frames / 24, `rung ${frames}f: the true length rides the duration seat`);
+    }
+  });
+
+  it("refuses a multi-window extend under overlap_frames ≠ 39 LOUD (the seam law pins 39 — the dsh-docs MED-1 cure)", () => {
+    // 379f composes as 2×209−39 EXACTLY — but only under the policy's
+    // 39f overlap. A knob of 40 must refuse, never compose seam math
+    // the chain then stitches at a different carry.
+    const walked = def.schema({
+      extend: [{ ...EXTEND_ENTRY(), extend_seconds: 379 / 24, overlap_frames: 40 }],
+    }) as Record<string, unknown>;
+    const g = new GraphBuilder();
+    assert.throws(
+      () => def.compose(walked, model, g, "run_extend_overlap"),
+      /overlap_frames 40 — the multi-window composition law carries the policy's 39f context overlap/,
+      "a multi-window extend under a ≠39 knob refuses, naming the 39f law",
+    );
+    // the lawful 39 still composes: 2 windows of 209f.
+    const lawful = def.schema({
+      extend: [{ ...EXTEND_ENTRY(), extend_seconds: 379 / 24 }],
+    }) as Record<string, unknown>;
+    const g2 = new GraphBuilder();
+    def.compose(lawful, model, g2, "run_extend_overlap_lawful");
+    const out2 = graphOf(g2);
+    const chainPlan = ofClass(out2, 'MiniMaxH3ChainPlanModern')[0]!;
+    assert.equal(chainPlan[1].inputs.default_duration_seconds, 209 / 24, "the 2-window composition carries 209f windows (2×209−39 = 379 exactly)");
   });
 
   it("an armed extend resolves its default output to the LAST SaveVideo (the joined film)", () => {

@@ -396,8 +396,11 @@ export const VIDEO_EXTEND = {
             "source_clip key. The prompt states MOTION and SOUND picking up " +
             "where the clip ends. extend_seconds (default 2.33) must land on " +
             "the engine grid (frames become seconds at the schema fps " +
-            "default: 2.33s = 56f, 3.83s = 92f, 5.17s = 124f, cap 15.08s = " +
-            "362f; off-grid values refuse at the compose door) and states " +
+            "default: 2.33s = 56f, 3.75s = 90f, 5.17s = 124f, 15.08s = 362f " +
+            "the largest single window — beyond it the door composes N " +
+            "uniform windows under the 39f overlap, exact delivery or a " +
+            "loud refusal; off-grid values refuse at the compose door) and " +
+            "states " +
             "through params: {extend: [{extend_seconds: …, seed: …}]} — " +
             "numbers ride the bag, never the flow body.",
         properties: {

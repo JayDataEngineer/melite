@@ -1,6 +1,6 @@
 ---
 name: grid-authoring
-description: "Current H3 frame-grid guidance with the card's unvalidated cross-call gaps made explicit"
+description: "Current H3 frame-grid guidance: the 22+17k window grid and the card's cross-call tiling law — gaps and overlaps are refused, never absorbed"
 genre: video
 ---
 

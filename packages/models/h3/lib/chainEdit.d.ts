@@ -142,6 +142,7 @@ export interface ChainRender {
  * ends in LoopEnd (top_level_requeue) and, when configured,
  * ChainAssemble.
  * @param g the run's graph builder
- * @param seat the seat's deltas (see MaskedChainSeat) */
+ * @param seat the seat's deltas (see MaskedChainSeat)
+ * @returns the trimmed window + optional assemble path (see ChainRender) */
 export declare function renderMaskedEditChain(g: GraphBuilder, seat: MaskedChainSeat): ChainRender;
 //# sourceMappingURL=chainEdit.d.ts.map

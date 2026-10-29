@@ -91,10 +91,20 @@ export function renderH3Extend(entry, p, facts, g, runId) {
     const statedFrames = Math.round(num(entry, 'extend_seconds', 56 / 24) * 24);
     // THE COMPOSITION DOOR: one window keeps the landed grid law
     // verbatim; beyond it the solver composes N uniform windows and
-    // refuses every non-exact landing by name.
+    // refuses every non-exact landing by name. The solver ALWAYS
+    // carries the policy's 39f overlap (every law-home pins 39 —
+    // SKILL.md, the registry row, CONTEXT_OVERLAP_FRAMES, the refusal
+    // text); the entry knob never rides seam math. A multi-window
+    // extend under a knob ≠ 39 would compose exact-DELIVERY numbers
+    // the chain then stitches at a different carry — the exactness
+    // guarantee breaks silently — so it refuses loud instead (the
+    // dsh-docs audit's MED-1).
     const composition = statedFrames <= GRID_MAX_FRAMES
         ? { windows: 1, windowFrames: assertGridLength(statedFrames, 'h3-timeline extend'), deliveredFrames: statedFrames }
-        : solveWindowComposition(statedFrames, 'h3-timeline extend', overlapFrames);
+        : solveWindowComposition(statedFrames, 'h3-timeline extend');
+    if (composition.windows > 1 && overlapFrames !== CONTEXT_OVERLAP_FRAMES) {
+        throw new Error(`h3-timeline extend: overlap_frames ${overlapFrames} — the multi-window composition law carries the policy's ${CONTEXT_OVERLAP_FRAMES}f context overlap (every law-home pins 39; the knob feeds only the single-window plan head); re-state overlap_frames 39`);
+    }
     const clipSeconds = composition.windowFrames / 24;
     // ── the staged media: the WHOLE prior clip on the VHS seat
     // (force_rate 24 — the one clock) and its LAST FRAME as the

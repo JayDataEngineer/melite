@@ -20,7 +20,9 @@ prompt-side, not knob-side: repeat the subject block verbatim and the
 ambient bed in every window (the laws below), and let the engine own
 the seam geometry. To append seconds AFTER a finished film — instead
 of re-tiling — the extend-video flow anchors a fresh window on the
-film's last frame and joins the files (see the extend-flow skill).
+film's last frame and joins the files; a stated append beyond one
+window (362f) composes N uniform windows in-chain there too — the
+extend-flow skill owns that multi-window contract.
 
 The N-window law (operator order 2026-09-04) is "ONE card = N calls =
 ONE run = ONE film" — the lane runs **N** windows (any N, default

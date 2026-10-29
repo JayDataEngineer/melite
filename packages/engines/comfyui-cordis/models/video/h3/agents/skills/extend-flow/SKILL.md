@@ -28,8 +28,12 @@ the user's Run press. The seats:
   the anchor already defines composition, so the prompt drives what
   HAPPENS NEXT, never a static restatement).
 - `extend_seconds` — on the engine grid (frames become seconds at
-  the schema fps default): 2.33, 3.83, 5.17 … cap 15.08. Off-grid
-  refuses at the compose door, never a silent snap.
+  the schema fps default): 2.33, 3.75, 5.17 … 15.08 = 362f, the
+  largest SINGLE window. Off-grid refuses at the compose door, never
+  a silent snap. Beyond 362f the door composes N uniform windows
+  under the 39-frame context overlap — delivered = N×w − (N−1)×39
+  exactly, or a loud refusal naming the neighbors (ceiling 32
+  windows).
 - `seed` — the plan base seed; the reference runs 0. Same seed across
   re-extends of one clip keeps the world texture.
 
@@ -47,7 +51,12 @@ its final pose.
 
 The extended film: prior seconds verbatim (their own soundtrack), then
 the new seconds (fresh motion AND fresh audio), joined by the film
-tail's file law — one mp4 under the run's `extend_film` prefix. The
+tail's file law — one mp4 under the run's `extend_film` prefix.
+Multi-window extends (stated > 362f) use BOTH join primitives: the
+in-chain windows assemble under ChainAssemble (`extend_chain`
+prefix), then prior file + assembly join through the concat's
+`append` seat — one film, two joins composed (the flow skill's "What
+runs" carries the full wiring). The
 extended film is itself a stageable clip: chained extends feed
 `extend_film` back as the next call's `source_clip` (the
 timeline-craft skill owns the drift-control law for long chains —

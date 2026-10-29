@@ -17,12 +17,16 @@ import { FLOW_ID_RE } from '@melite/estate-queue';
 // re-read and re-apply. Reads are always fresh (no cache between
 // calls — staleness is structurally impossible).
 //
-// Verbs:
+// Verbs — ONE home, CONSTRUCT_VERBS below (the header, the mutation
+// set, the schema enum, and the param description all derive from
+// it; the skills-vs-dsh audit found four spellings, one stale):
 //   read         → {rev, intent, stages[], log heads} (auto-ensures)
 //   load         → replace the stages (template/restore/bulk)
 //   patch        → merge params onto one stage
 //   add_stage    → append a card stage (optional input wiring)
 //   remove_stage → splice a stage out
+//   clear        → every stage out in one rev (undo restores all)
+//   floor        → clamp resolution-group params to declared minimums
 //   rewire       → set/clear one input binding
 //   undo         → walk the log (author-filterable)
 //   validate     → compile the bench at the validate door (NO GPU)
@@ -31,6 +35,15 @@ import { FLOW_ID_RE } from '@melite/estate-queue';
 // outputs} + card for the kinds pass) plus presentation extras the
 // door tolerates and the wire projection strips (provenance,
 // runStatus, result).
+/** The construct verb set — ONE home (the skills-vs-dsh-autodocs
+ * audit's cure 1: the set was spelled four ways in this file, the
+ * header comment already stale-missing clear + floor). The schema
+ * enum, the mutation set, and the header list above all derive from
+ * this order; the estate wire's BenchVerb is a DIFFERENT law (the
+ * fiber's own mutation arms) and stays its own home. */
+export const CONSTRUCT_VERBS = [
+    'read', 'load', 'patch', 'add_stage', 'remove_stage', 'clear', 'floor', 'rewire', 'undo', 'validate',
+];
 import { createHash } from 'node:crypto';
 import { defineTool } from '@deepseek-ai/dsh-tools';
 import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol';
@@ -71,9 +84,7 @@ function benchKeyOf(a) {
  *  door cannot say whether the seat applied before it failed
  *  (slice 5's ambiguous_no_write landing state). Read-only verbs and
  *  validate never claim a landing. */
-const MUTATION_VERBS = new Set([
-    'load', 'patch', 'add_stage', 'remove_stage', 'clear', 'floor', 'rewire', 'undo',
-]);
+const MUTATION_VERBS = new Set(CONSTRUCT_VERBS.filter((v) => v !== 'read' && v !== 'validate'));
 /** The ambiguous-no-write landing fragment for a failed mutation —
  *  a Record so the payload's index signature stays JsonValue (an
  *  optional `landing?: undefined` property is not a JsonValue). */
@@ -835,8 +846,8 @@ export function meliteConstruct(estate, opts = {}) {
             verb: {
                 type: 'string',
                 required: true,
-                enum: ['read', 'load', 'patch', 'add_stage', 'remove_stage', 'clear', 'floor', 'rewire', 'undo', 'validate'],
-                description: 'REQUIRED — the schema refuses a call without it, and no payload ever derives one (a WRITE is never guessed; slice 5, the agent-flow rework). read (the state — before patch/rewire/remove_stage; add_stage needs no prior read) | load | patch | add_stage | remove_stage | clear | floor | rewire | undo | validate.',
+                enum: [...CONSTRUCT_VERBS],
+                description: 'REQUIRED — the schema refuses a call without it, and no payload ever derives one (a WRITE is never guessed; slice 5, the agent-flow rework). ' + CONSTRUCT_VERBS.join(' | ') + '.',
             },
             stage: { type: 'string', description: 'patch/remove_stage/rewire: the stage id.' },
             card: { type: 'string', description: 'add_stage: the card id (display + provenance hint).' },
