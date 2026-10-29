@@ -1,4 +1,4 @@
-import { chainSaveBoundaries, concatSavedFilms } from './actions.js';
+import { chainSaveBoundaries, concatSavedFilms, filmJoinAudio } from './actions.js';
 import { assertGridLength, solveWindowComposition, CONTEXT_OVERLAP_FRAMES, GRID_MAX_FRAMES, } from './timelineContract.js';
 export { solveWindowComposition } from './timelineContract.js';
 import { loadVideo, renderMaskedEditChain } from './chainEdit.js';
@@ -90,10 +90,13 @@ export function renderH3Extend(entry, p, facts, g, runId) {
         body: ({ cur, clip, vaeVideo, vaeAudio, mutedChainAudio, sliceAudio }) => {
             // The everywhere-generate mask: an all-white SolidMask sized
             // to the chain's own geometry (nothing held — extended
-            // seconds are new content).
+            // seconds are new content). `.out(0)`: a mask SEAT takes an
+            // output LINK `[key, slot]` — a bare node handle serializes
+            // `{"id": ...}` and the engine dies at reshape (the F10 burn,
+            // 2026-11-12; repair.ts's GrowMaskWithBlur is the pattern).
             const whiteMask = g.node('SolidMask', {
                 value: 1, width: cur.out(8), height: cur.out(9),
-            });
+            }).out(0);
             // ── the fresh-continuation body: the anchor rides BOTH
             // reference seats — the last frame as the pixel anchor
             // (ref_image_0) and the whole clip as the motion identity
@@ -136,7 +139,7 @@ export function renderH3Extend(entry, p, facts, g, runId) {
         // saved-file path (ChainAssemble's video_path output, wired:
         // the DAG itself proves the assembly completed before the join).
         const priorCreated = g.node('CreateVideo', {
-            images: priorFrames, audio: priorAudio, fps: 24, bit_depth: 8,
+            images: priorFrames, audio: filmJoinAudio(g, priorAudio), fps: 24, bit_depth: 8,
         });
         const priorSaved = g.node('SaveVideo', {
             video: priorCreated.out(), filename_prefix: `${runId}/x0`,
@@ -152,14 +155,14 @@ export function renderH3Extend(entry, p, facts, g, runId) {
     // the boundary chain orders them, the concat joins, the container
     // delivers <runId>/extend_film.
     const newCreated = g.node('CreateVideo', {
-        images: trimmed.out(0), audio: trimmed.out(1), fps: 24, bit_depth: 8,
+        images: trimmed.out(0), audio: filmJoinAudio(g, trimmed.out(1)), fps: 24, bit_depth: 8,
     });
     const newSaved = g.node('SaveVideo', {
         video: newCreated.out(), filename_prefix: `${runId}/x1`,
         format: 'mp4', codec: 'h264',
     }).out();
     const priorCreated = g.node('CreateVideo', {
-        images: priorFrames, audio: priorAudio, fps: 24, bit_depth: 8,
+        images: priorFrames, audio: filmJoinAudio(g, priorAudio), fps: 24, bit_depth: 8,
     });
     const priorSaved = g.node('SaveVideo', {
         video: priorCreated.out(), filename_prefix: `${runId}/x0`,

@@ -33,6 +33,21 @@ export declare const LANE_FILES: {
     readonly vae_audio: "minimax_h3_audio_vae_fp32.safetensors";
     readonly sr_vae: "ema_vae_fp16.safetensors";
 };
+/** The film's audio sample rate — ONE home for the join's rate law
+ * (F12, 2026-11-12: MeliteConcatVideos refuses members whose audio
+ * rates differ, and the H3 sound VAE emits 32 kHz while demuxed film
+ * rides 48 kHz — the first extend press died exactly there). Every
+ * JOIN leg states this rate at its own door via filmJoinAudio; a
+ * member's origin rate never leaks into the concat. */
+export declare const FILM_AUDIO_RATE = 48000;
+/** THE JOIN-RATE DOOR: one spelling for every audio leg that feeds a
+ * join's CreateVideo — the leg passes MeliteAudioResample at
+ * FILM_AUDIO_RATE (engine-core bandlimited sinc; equal-rate input
+ * passes the SAME dict through, so a leg already at the film rate
+ * pays nothing but the stated law).
+ * @param g the run's graph builder
+ * @param audio the leg's AUDIO output handle */
+export declare function filmJoinAudio(g: GraphBuilder, audio: OutputHandle): OutputHandle;
 /** The h3 facts door: the resolved lane_inputs parsed into the
  * loader names the renderers read (the unet from the row; the
  * three invariants from the package's own LANE_FILES).
