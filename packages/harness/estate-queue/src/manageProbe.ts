@@ -1,7 +1,7 @@
 // manageProbe.ts — the manage plane's estate probes (extracted
 // from managePlane.ts, the god-file cut): the TS-native status
 // walk, the active-runs census, and the manager security probe.
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { ManageCtx } from "./managePlane.ts";
 import { sweepOutputRoots } from "./cardsDangling.ts";
@@ -59,6 +59,78 @@ export function activeRuns(stateRoots: readonly string[]): string[] {
     }
   }
   return [...new Set(out)].sort();
+}
+
+/** The stale-claim settle (tts NEW-2, 2026-11-12): retire sidecars
+ *  that claim a live word but cannot be live. The caller owns the
+ *  liveness judgment (the engine-queue corroboration + the age rule
+ *  ride the handler — this sweep only judges DISK state); `eligible`
+ *  answers per sidecar, and only eligible rows are rewritten.
+ *
+ *  The rewrite marks the row "stopped" — the stop door's own word,
+ *  inside the settled triple the registry's resync adopts — with a
+ *  settle note naming the reason, so the row reads as operator
+ *  action, never a completed render. Unparseable rows are SKIPPED
+ *  (fail-closed: an unreadable row stays active, exactly like the
+ *  census reads it) and named, never silently dropped. */
+export interface SettleOutcome {
+  readonly settled: string[];
+  readonly skipped: string[];
+}
+
+export function settleStaleClaims(
+  stateRoots: readonly string[],
+  eligible: (name: string, mtimeMs: number) => boolean,
+): SettleOutcome {
+  const settled: string[] = [];
+  const skipped: string[] = [];
+  for (const dir of sweepOutputRoots(stateRoots)) {
+    let names: string[];
+    try {
+      names = readdirSync(dir);
+    } catch {
+      continue; // the census names unreadable roots; the settle only rewrites rows it can read
+    }
+    for (const name of names) {
+      if (!name.startsWith("run-")) continue;
+      const file = join(dir, name, "_flow.json");
+      let raw: string;
+      try {
+        raw = readFileSync(file, "utf-8");
+      } catch {
+        continue; // absent file — nothing to settle (the census agrees)
+      }
+      const m = STATUS_RE.exec(raw.slice(0, 8191));
+      if (!m || (m[1] !== "running" && m[1] !== "queued" && m[1] !== "stopping")) continue;
+      let mtimeMs = 0;
+      try {
+        mtimeMs = statSync(file).mtimeMs;
+      } catch {
+        skipped.push(name + " (stat unreadable)");
+        continue;
+      }
+      if (!eligible(name, mtimeMs)) continue;
+      let row: Record<string, unknown>;
+      try {
+        const parsed: unknown = JSON.parse(raw);
+        if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) throw new Error("not a row");
+        row = parsed as Record<string, unknown>;
+      } catch {
+        skipped.push(name + " (sidecar unparseable — left active)");
+        continue;
+      }
+      row["status"] = "stopped";
+      row["settle_stale"] = "operator settle: sidecar claimed '" + m[1] +
+        "' with an empty engine queue — historical, never settled (pre-rebuild claim); retired so the lifecycle doors stop refusing";
+      try {
+        writeFileSync(file, JSON.stringify(row));
+        settled.push(name);
+      } catch {
+        skipped.push(name + " (rewrite failed)");
+      }
+    }
+  }
+  return { settled: [...new Set(settled)].sort(), skipped: [...new Set(skipped)].sort() };
 }
 
 /** The manager's live security view (READ ONLY — the manager reads

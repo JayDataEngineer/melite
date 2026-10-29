@@ -208,7 +208,7 @@ function statusText(data: unknown, verbose: boolean): string[] {
   // on every status read. The default names only the COUNT; verbose=true
   // lists each claim for the operator digging into one.
   if (Array.isArray(value.stale_claims) && value.stale_claims.length > 0) {
-    out.push('stale_claims (historical, never settled): ' + String(value.stale_claims.length) + ' claim(s)' + (verbose === true ? '' : ' (pass verbose=true to list each claim)'))
+    out.push('stale_claims (historical, never settled): ' + String(value.stale_claims.length) + ' claim(s)' + (verbose === true ? '' : ' (pass verbose=true to list each claim)') + ' — retire them with the settle_stale action')
     if (verbose === true) {
       for (const claim of value.stale_claims) out.push('  stale claim: ' + asText(claim))
     }

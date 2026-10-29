@@ -46,7 +46,7 @@ import type {
 } from "@melite/estate-provisioning";
 import { AcquireBusyError, LIVE_ACQUIRE_STATES } from "@melite/estate-provisioning";
 import { ManagerApiError, managerGet, managerPost, planeUnavailable } from "./managerRail.ts";
-import { probeEndpoint, activeRuns, managerSecurity, engineQueueView } from "./manageProbe.ts";
+import { probeEndpoint, activeRuns, managerSecurity, engineQueueView, settleStaleClaims } from "./manageProbe.ts";
 import { runPreflight, preflightLine } from "./managePreflight.ts";
 import { base, mapManagerRefused, mapRail, railMs, estateOnly, awaitQueueDrained, systemctl, guardLifecycle } from "./manageOps.ts";
 import { holdLifecycle } from "./lifecycleLatch.ts";
@@ -90,6 +90,12 @@ export const ACTIONS = [
   "update",
   "switch_version",
   "free",
+  // THE SETTLE VERB (tts NEW-2, 2026-11-12): retire never-settled
+  // sidecars from before a rebuild. The lifecycle guard is sync and
+  // fail-closed — it cannot consult the engine — so the historical
+  // claims it refuses on are retired by explicit operator gesture,
+  // never by the guard looking away.
+  "settle_stale",
   "snapshot_save",
   "snapshot_restore",
   "lora_list",
@@ -720,7 +726,7 @@ async function hStatus(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelop
   const engineIdle = engineQueue !== null && engineQueue.running === 0 && engineQueue.pending === 0;
   const activeView = engineIdle ? [] : active;
   const staleClaims = engineIdle
-    ? active.map((name) => name + " (claimed live; engine queue empty — historical: the sidecar never settled; the boot sweep retires its own root at restart)")
+    ? active.map((name) => name + " (claimed live; engine queue empty — historical: the sidecar never settled; retire it with the settle_stale action)")
     : [];
   const routing = { mode: cfg["provision"] === "managed" ? "managed" : "byo" };
   let manager: Record<string, unknown> = {};
@@ -2042,6 +2048,45 @@ async function hFree(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]
   return ok(req.action, "free issued (next worker iteration)", { next_action: "status" });
 }
 
+/** THE STALE-CLAIM SETTLE (tts NEW-2, 2026-11-12): retire sidecars
+ *  that claim a live word but cannot be live, so the lifecycle
+ *  doors stop refusing on pre-rebuild history.
+ *
+ *  NEVER settles a live claim: the engine queue must corroborate
+ *  IDLE (ComfyUI executes serially — an empty queue means no claim
+ *  can be executing), and each sidecar must predate the last known
+ *  engine boot, or — with no boot receipt (engine booted outside
+ *  the estate's door) — sit untouched past the submit grace. A live
+ *  run pressed seconds ago with a transiently empty queue is never
+ *  eligible: its sidecar is younger than the grace. */
+const SETTLE_GRACE_MS = 120_000;
+
+async function hSettleStale(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
+  const queue = await engineQueueView(ctx);
+  if (queue === null) {
+    throw new Refused(409, "settle_stale refused: the engine queue is unreachable — no corroboration, nothing settles (fail-closed)");
+  }
+  if (queue.running > 0 || queue.pending > 0) {
+    throw new Refused(
+      409,
+      "settle_stale refused: the engine is working (running " + queue.running + " · pending " + queue.pending +
+        ") — every live-worded sidecar may be live; settle only against an idle engine",
+    );
+  }
+  const boot = engineBootRow(ctx);
+  const bootAt = boot["known"] === true ? Date.parse(String(boot["boot_at"])) : NaN;
+  const now = Date.now();
+  const outcome = settleStaleClaims(ctx.stateRoots, (_name, mtimeMs) => {
+    if (Number.isFinite(bootAt) && mtimeMs < bootAt) return true;
+    return mtimeMs < now - SETTLE_GRACE_MS;
+  });
+  return ok(
+    req.action,
+    "settled " + outcome.settled.length + " stale claim(s), skipped " + outcome.skipped.length,
+    { next_action: "status", settled: outcome.settled, skipped: outcome.skipped },
+  );
+}
+
 // ── endpoint_set: the operator's server URL change ────────────────
 // Validates FIRST (a live /system_stats probe — an unreachable URL
 // is refused, never written), then rewrites ONLY `url` in the
@@ -2507,6 +2552,7 @@ const HANDLERS: Record<ManageAction, Handler> = {
   update: hUpdate,
   switch_version: hSwitchVersion,
   free: hFree,
+  settle_stale: hSettleStale,
   snapshot_save: hSnapshotSave,
   snapshot_restore: hSnapshotRestore,
   lora_list: hLoraList,

@@ -1,7 +1,7 @@
 // manageProbe.ts — the manage plane's estate probes (extracted
 // from managePlane.ts, the god-file cut): the TS-native status
 // walk, the active-runs census, and the manager security probe.
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { sweepOutputRoots } from "./cardsDangling.js";
 import { deadline } from "@deepseek-ai/dsh-timeout";
@@ -62,6 +62,66 @@ export function activeRuns(stateRoots) {
         }
     }
     return [...new Set(out)].sort();
+}
+export function settleStaleClaims(stateRoots, eligible) {
+    const settled = [];
+    const skipped = [];
+    for (const dir of sweepOutputRoots(stateRoots)) {
+        let names;
+        try {
+            names = readdirSync(dir);
+        }
+        catch {
+            continue; // the census names unreadable roots; the settle only rewrites rows it can read
+        }
+        for (const name of names) {
+            if (!name.startsWith("run-"))
+                continue;
+            const file = join(dir, name, "_flow.json");
+            let raw;
+            try {
+                raw = readFileSync(file, "utf-8");
+            }
+            catch {
+                continue; // absent file — nothing to settle (the census agrees)
+            }
+            const m = STATUS_RE.exec(raw.slice(0, 8191));
+            if (!m || (m[1] !== "running" && m[1] !== "queued" && m[1] !== "stopping"))
+                continue;
+            let mtimeMs = 0;
+            try {
+                mtimeMs = statSync(file).mtimeMs;
+            }
+            catch {
+                skipped.push(name + " (stat unreadable)");
+                continue;
+            }
+            if (!eligible(name, mtimeMs))
+                continue;
+            let row;
+            try {
+                const parsed = JSON.parse(raw);
+                if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed))
+                    throw new Error("not a row");
+                row = parsed;
+            }
+            catch {
+                skipped.push(name + " (sidecar unparseable — left active)");
+                continue;
+            }
+            row["status"] = "stopped";
+            row["settle_stale"] = "operator settle: sidecar claimed '" + m[1] +
+                "' with an empty engine queue — historical, never settled (pre-rebuild claim); retired so the lifecycle doors stop refusing";
+            try {
+                writeFileSync(file, JSON.stringify(row));
+                settled.push(name);
+            }
+            catch {
+                skipped.push(name + " (rewrite failed)");
+            }
+        }
+    }
+    return { settled: [...new Set(settled)].sort(), skipped: [...new Set(skipped)].sort() };
 }
 /** The manager's live security view (READ ONLY — the manager reads
  *  config.ini once at ComfyUI startup, so a call-time write would be

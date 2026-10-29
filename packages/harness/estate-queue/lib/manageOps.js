@@ -145,7 +145,8 @@ export function guardLifecycle(req, ctx) {
     const active = activeRuns(ctx.stateRoots);
     if (active.length > 0) {
         throw new Refused(409, "refused: " + active.length + " active run(s) (" + active.slice(0, 4).join(", ") +
-            ") — stop them first (the stop door) or pass force=true");
+            ") — stop them first (the stop door) or pass force=true" +
+            " (pre-rebuild historical claims that never settled: status names them — the settle_stale action retires them)");
     }
     // MP-F3 (round 19, 2026-10-10): the guard was blind to provisioning
     // locks — a teardown during an in-flight fetch unloaded VRAM under

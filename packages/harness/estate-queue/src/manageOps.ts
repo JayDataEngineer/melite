@@ -150,7 +150,8 @@ export function guardLifecycle(req: Req, ctx: ManageCtx): void {
     throw new Refused(
       409,
       "refused: " + active.length + " active run(s) (" + active.slice(0, 4).join(", ") +
-        ") — stop them first (the stop door) or pass force=true",
+        ") — stop them first (the stop door) or pass force=true" +
+        " (pre-rebuild historical claims that never settled: status names them — the settle_stale action retires them)",
     );
   }
   // MP-F3 (round 19, 2026-10-10): the guard was blind to provisioning
