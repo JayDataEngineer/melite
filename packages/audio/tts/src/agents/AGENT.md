@@ -84,10 +84,15 @@ every line of the character is the same voice under any direction.
   character always takes a fresh name.
 - **Voice (qvoice)** — the INFERENCE half: a stated .qvoice performs
   the text through the clone pipeline, with the EMOTION instruct
-  (style_instruction) riding on top on the CustomVoice lane. THIS IS
-  THE LOCK: same file, same voice, every render (the seed derives
-  from the artifact path — never state a seed for a character's
-  lines unless asked; a stated seed overrides the lock).
+  (style_instruction — mapped to the engine's `instruct` on every
+  synthesis lane; only the export arms read `style_instruction`
+  directly) riding on top on the CustomVoice lane. THIS IS THE LOCK:
+  same file, same voice, every render (the seed derives from the
+  artifact path — never state a seed for a character's lines unless
+  asked; a stated seed overrides the lock). Verify the lock on
+  DECODED PCM (`ffmpeg -i out.flac -f s16le - | md5sum`), never on
+  FLAC file bytes — the container carries per-run metadata, so
+  byte-different FLACs can be the identical render.
 - voice_strength is the identity intensity: 1 = the saved voice as
   designed, below 1 pulls toward neutral, above 1 exaggerates. Leave
   1 unless the lock feels weak — then 1.2–1.4, not more.
