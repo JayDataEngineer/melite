@@ -196,6 +196,7 @@ export function admissionRefusal(
     // turn on `qvoice_save` — the pack rides fields, never its own
     // key). Pack → its family-scoped field names, same fold.
     const packFields = new Map<string, string[]>()
+  const fieldOwners = new Map<string, { pack: string; families: string[] }>()
     /* v8 ignore start -- theService() boots in the engine fiber, never
        the test fiber (always throws here): the mod surface stays empty
        in tests; knobs+admits still gate (2026-09-12) */
@@ -215,6 +216,24 @@ export function admissionRefusal(
         for (const n of names) modNames.add(n)
         if (!packFields.has(a.pack)) packFields.set(a.pack, names)
       }
+      // THE MOD-FIELD OWNERSHIP ROSTER (the tts dossier's B4 cure,
+      // 2026-11-12 — the .QVOICE PATH HINT pattern, lifted to the
+      // shared door): the fold above scopes mod fields to THIS run's
+      // atom, so a key that is a REGISTERED mod field of a DIFFERENT
+      // family refused as bare 'unknown' — an agent holding the
+      // field burned a probe turn learning which family owns it.
+      // Collect every row's ownership UNFILTERED; the refusal below
+      // names the owning family and the params.model cure for
+      // exactly the keys the envelope-scoped fold did not admit.
+      for (const a of theService().cardModFields(card)) {
+        const fams = a.families.filter((f) => f !== envelopeAtom)
+        if (fams.length === 0) continue
+        for (const n of Object.keys(a.fields.dict ?? {})) {
+          const row = fieldOwners.get(n)
+          if (row === undefined) fieldOwners.set(n, { pack: a.pack, families: [...fams] })
+          else for (const f of fams) if (!row.families.includes(f)) row.families.push(f)
+        }
+      }
       /* v8 ignore stop */
     } catch (modFoldError) {
       // modFoldError: card defs not booted in this fiber — the mod
@@ -227,11 +246,23 @@ export function admissionRefusal(
       const hints = unknown
         .filter((k) => packFields.has(k))
         .map((k) => " '" + k + "' is the '" + k + "' mod pack — it takes no key of its own; its fields ride flat top-level: " + packFields.get(k)!.join(", "))
+      // THE MOD-FIELD FAMILY HINT (B4): a refused key owned by
+      // ANOTHER family's mod pack names that family and the one
+      // write that reaches it — never a bare 'unknown'.
+      const fieldHints = unknown
+        .filter((k) => !packFields.has(k) && fieldOwners.has(k))
+        .map((k) => {
+          const o = fieldOwners.get(k)!
+          return " '" + k + "' is the '" + o.pack + "' mod field of " +
+            o.families.map((f) => "family '" + f + "'").join(" / ") +
+            " — state params.model on that family's lane to ride it"
+        })
       throw phaseRefusal(
         phase,
         "compose-door: unknown param(s) on the " + card + " card: " + unknown.join(", ") +
           " (admission is the declared surface — knobs + contract admits; see the card's TS definition)" +
-          (hints.length > 0 ? " Mod-pack keys:" + hints.join(";") : ""),
+          (hints.length > 0 ? " Mod-pack keys:" + hints.join(";") : "") +
+          (fieldHints.length > 0 ? " Mod-field families:" + fieldHints.join(";") : ""),
       )
     }
   }

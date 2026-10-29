@@ -112,6 +112,15 @@ beforeEach(() => {
   modFields.rows.length = 0;
 });
 
+const refusalMessage = (fn: () => unknown): string => {
+  try {
+    fn();
+  } catch (e) {
+    return (e as Error).message;
+  }
+  throw new Error("expected a refusal, composed green instead");
+};
+
 describe("composeOnce (the closed-engine laws)", () => {
   it("an unreachable engine refuses CLOSED (never composes blind)", async () => {
     await expect(composeOnce(seat({ primeObjectInfo: async () => false }), "mycard", "fam", {}, "r", "1"))
@@ -214,6 +223,38 @@ describe("prepareCardParams (steps 2-6, the refusal ladder)", () => {
     });
     expect(() => admissionRefusal(seat(), "mycard", "fam", { voice: 1 }, "1"))
       .toThrow(/Mod-pack keys: 'voice'.*speaker, style/);
+  });
+  // ── THE MOD-FIELD FAMILY HINT (the tts dossier's B4 cure,
+  //    2026-11-12): a refused key that is a REGISTERED mod field of
+  //    a DIFFERENT family names that family and the params.model
+  //    cure — never a bare 'unknown' (the .QVOICE PATH HINT pattern
+  //    lifted to the shared compose door). ──────────────────────
+  it("a refused key owned by ANOTHER family's mod names the family and the params.model cure (B4)", () => {
+    modFields.rows.push({
+      pack: "qvoice",
+      families: ["otherfam"],
+      fields: { dict: { qvoice: {} } },
+    });
+    expect(() => admissionRefusal(seat(), "mycard", "fam", { qvoice: "/v/ann.qvoice" }, "1"))
+      .toThrow(
+        /Mod-field families: 'qvoice' is the 'qvoice' mod field of family 'otherfam' — state params\.model on that family's lane to ride it/,
+      );
+  });
+  it("the hint stays silent for keys no family owns (the bare-unknown voice is unchanged)", () => {
+    const message = refusalMessage(() => admissionRefusal(seat(), "mycard", "fam", { mystery: 1 }, "1"));
+    expect(message).toMatch(/unknown param\(s\) on the mycard card: mystery/);
+    expect(message).not.toMatch(/Mod-field families/);
+  });
+  it("an envelope-owned field never takes the family hint (the fold admits it — no refusal at all)", () => {
+    modFields.rows.push({
+      pack: "qvoice",
+      families: ["fam"],
+      fields: { dict: { qvoice: {} } },
+    });
+    // the envelope-scoped fold ADMITS the run's own family's fields —
+    // the ownership roster must not turn admission into a hint
+    expect(() => admissionRefusal(seat(), "mycard", "fam", { qvoice: "/v/ann.qvoice" }, "1"))
+      .not.toThrow();
   });
   it("a registered card without a family row prepares family-less", () => {
     const cardless = { ...decl, skeleton: "" };
