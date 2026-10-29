@@ -28,6 +28,7 @@ import assert from 'node:assert/strict'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { ENGINE_FREE, ENGINE_HOST, ENGINE_PORT } from './engine-gate.ts'
+import { audioFileStats, isFlac, roarViolation } from './sfx-waveform.ts'
 import {
   type World,
   byClass,
@@ -414,6 +415,14 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: audio (tts lanes, music lengths, the s
       assert.equal(tts[0]![1].inputs?.duration_seconds, 30, 'the lane ceiling rides')
       assert.ok(byClass(s, 'SaveAudio').length >= 1, 'the bed saves')
       assert.ok(firstBytes(s).length > 1024, 'the audio artifact carries real bytes')
+      // THE SERVED-WAVEFORM JUDGE (the 2026-11-12 roar burn): bytes
+      // existing is not audio being sane — the Oct-29 roar shipped
+      // green. Decode the served FLAC and run the roar decision on
+      // its real waveform (offline arms: moss-sfx-served-waveform).
+      const art = join(s.runDir, s.stageUrl)
+      assert.ok(isFlac(art), 'the served artifact is a FLAC')
+      const roar = roarViolation(audioFileStats(art))
+      assert.equal(roar, null, roar ?? 'the served waveform is sane')
     })
   }, 600_000)
 })

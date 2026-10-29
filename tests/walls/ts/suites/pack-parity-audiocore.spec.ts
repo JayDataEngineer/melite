@@ -420,4 +420,92 @@ describe("the estate venv standard (the transformers/hf-hub pin law)", () => {
     }
     expect(out).toBe("judge-live");
   });
+
+  // THE CUDA LANE REFUSAL (the 2026-10-29 roar burn's "it ran on CPU"
+  // half, audit dev_docs/audits/moss-sfx-regression-2026-11-12.md
+  // §4 C3): the moss pipeline falls back to CPU SILENTLY at generate
+  // time (pipeline_moss_soundeffect.py) — a CUDA-less env serves a
+  // multi-minute crawl instead of a named refusal. Two arms: the
+  // wiring (assert_cuda_lane at pack import) and the judge (a forced
+  // CUDA-less torch reds with the remedy, the real env passes).
+  it("the pack refuses a CUDA-less env AT IMPORT — assert_cuda_lane fires before nodes load", () => {
+    const init = read(PACK, "__init__.py");
+    expect(init, `${PACK}/__init__.py exists`).not.toBeNull();
+    const body = init as string;
+    // Judge the ACTIVE call (a whole-line statement), never a
+    // commented-out spell — the 2026-11-12 toggle-proof caught
+    // indexOf matching its own commented toggle.
+    const activeCall = /^\s*assert_cuda_lane\(\)\s*$/m.exec(body);
+    expect(activeCall, "__init__.py CALLS assert_cuda_lane() (an active statement, not a comment)").not.toBeNull();
+    const callLine = body.indexOf(activeCall![0]);
+    const importIdx = body.indexOf("from .nodes import");
+    expect(importIdx, "__init__.py imports the nodes").toBeGreaterThan(-1);
+    expect(callLine, "the cuda assert fires BEFORE the nodes import").toBeLessThan(importIdx);
+    const env = read(PACK, "env_assert.py");
+    expect(env, `${PACK}/env_assert.py exists`).not.toBeNull();
+    expect((env as string).includes("is_available"), "the refusal judges torch.cuda.is_available").toBe(true);
+    expect((env as string).includes("CPU"), "the refusal names the CPU fallback it refuses").toBe(true);
+  });
+
+  it("the cuda judge reds a forced CUDA-less torch and passes this CUDA box", () => {
+    // Runs the pack's OWN judge in the engine venv: with
+    // is_available forced False it must raise the named remedy; as-is
+    // on this box it must pass silently.
+    const probe = [
+      "import sys; sys.path.insert(0, sys.argv[1])",
+      "import torch",
+      "torch.cuda.is_available = lambda: False",
+      "from env_assert import assert_cuda_lane",
+      "try:",
+      "    assert_cuda_lane()",
+      "    raise SystemExit('cuda-less env passed the judge — the refusal is dead')",
+      "except RuntimeError as e:",
+      "    assert 'no CUDA device' in str(e), 'the refusal names the missing device'",
+      "torch.cuda.is_available = lambda: True",
+      "assert_cuda_lane()",
+      "print('cuda-judge-live')",
+    ].join("\n");
+    let out: string;
+    try {
+      out = execFileSync("/home/user/tools/comfyui/.venv/bin/python", ["-c", probe, join(VENDOR, PACK)], { encoding: "utf8" }).trim();
+    } catch (e) {
+      const msg = String(e);
+      if (msg.includes("cuda-less env passed")) throw new Error(msg);
+      // engine venv absent (CI box): stand down like the deployed arm
+      return;
+    }
+    expect(out).toBe("cuda-judge-live");
+  });
+
+  // THE KEYED ENGINE RESIDENCY (the 2026-11-12 eviction cure, audit
+  // dev_docs/audits/moss-sfx-regression-2026-11-12.md §2 B6 + §4 C4):
+  // the single-slot _active_model handoff made qwen3_tts and
+  // moss_sfx_v2 evict each other on EVERY alternation — a measured
+  // 55 s reload per flip. The cure is a keyed (family, path,
+  // variant) residency dict with a cap and a free-VRAM guard; the
+  // cross-family eviction seam ("unloading X before loading Y") is
+  // GONE from every load path. Live receipt: the interleave log run
+  // of 2026-11-12 shows "loaded qwen3_tts" with NO moss eviction,
+  // then "reusing cached moss_sfx_v2 torch engine" (0 s flip).
+  it("the pack keeps audio engines resident per key — no cross-family eviction seam in any load path", () => {
+    const core = read(PACK, "core.py");
+    expect(core, `${PACK}/core.py exists`).not.toBeNull();
+    const src = core as string;
+    expect(src.includes("_engines:"), "the keyed residency dict is declared").toBe(true);
+    expect(src.includes("def _seat_resident"), "the seat helper exists").toBe(true);
+    expect(src.includes("_ENGINE_RESIDENCY_CAP"), "the residency cap constant exists").toBe(true);
+    expect(
+      src.includes("_RESIDENCY_HEADROOM_BYTES"),
+      "the free-VRAM guard constant exists (two engines must leave headroom)",
+    ).toBe(true);
+    expect(
+      src.includes("_active_model"),
+      "the retired single-slot seam is fully gone (no reference remains)",
+    ).toBe(false);
+    const evictions = src.match(/unloading %s before loading/g);
+    expect(
+      evictions === null,
+      "no load path evicts the previous family — the keyed cache owns eviction via cap + VRAM guard",
+    ).toBe(true);
+  });
 });

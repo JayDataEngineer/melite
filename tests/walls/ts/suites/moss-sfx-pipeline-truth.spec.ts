@@ -131,6 +131,21 @@ beforeAll(async () => {
   assert.ok(moss, "the moss-sfx facts row serves");
 });
 
+// ── THE ENGINE MODULE SURFACE (the residual defaults, ARM 7) ─────
+// The engine module's _DEFAULT_* constants are what a direct API
+// caller rides when no knob is stated — the surface that survived
+// the 2026-09-23 cure at 5.0/50 until the 2026-11-12 residual catch
+// (audit dev_docs/audits/moss-sfx-regression-2026-11-12.md §4 C5).
+const ENGINE_MODULE_PATH = join(
+  ROOT,
+  "vendor", "comfyui_extensions", "melite-audio-nodes",
+  "engines", "moss_sfx_v2.py",
+);
+const engineModuleSrc = readFileSync(ENGINE_MODULE_PATH, "utf8");
+const ENGINE_CFG = pyParam(engineModuleSrc, /_DEFAULT_CFG_SCALE = ([0-9.]+)/, "engine _DEFAULT_CFG_SCALE", ENGINE_MODULE_PATH);
+const ENGINE_STEPS = pyParam(engineModuleSrc, /_DEFAULT_INFERENCE_STEPS = (\d+)/, "engine _DEFAULT_INFERENCE_STEPS", ENGINE_MODULE_PATH);
+const ENGINE_SECONDS = pyParam(engineModuleSrc, /_DEFAULT_SECONDS = ([0-9.]+)/, "engine _DEFAULT_SECONDS", ENGINE_MODULE_PATH);
+
 const graphJSON = (g: GraphBuilder): Record<string, { class_type: string; inputs: Record<string, unknown> }> =>
   g.toJSON() as never;
 
@@ -269,6 +284,21 @@ describe("THE PIPELINE-TRUTH WALL — every moss-sfx stated surface equals the v
     assert.equal(
       synth.inputs.duration_seconds, PIPELINE_MAX_SECONDS,
       "the boundary duration rides verbatim — the ceiling refuses past it, never at it",
+    );
+  });
+
+  it("ARM 7 — the engine module's _DEFAULT_* constants are the pipeline's point (the direct-API residual surface)", () => {
+    assert.equal(
+      ENGINE_CFG, PIPELINE_CFG,
+      `engines/moss_sfx_v2.py _DEFAULT_CFG_SCALE (${ENGINE_CFG}) drifted from the vendored pipeline's cfg_scale (${PIPELINE_CFG}) — this is the surface a knob-less direct API call rides; the 5.0 residual re-armed the 2026-09-23 quality catch`,
+    );
+    assert.equal(
+      ENGINE_STEPS, PIPELINE_STEPS,
+      `engines/moss_sfx_v2.py _DEFAULT_INFERENCE_STEPS (${ENGINE_STEPS}) drifted from the vendored pipeline's default (${PIPELINE_STEPS}) — half the step budget was the burn's confirmed cause`,
+    );
+    assert.equal(
+      ENGINE_SECONDS, PIPELINE_SECONDS,
+      `engines/moss_sfx_v2.py _DEFAULT_SECONDS (${ENGINE_SECONDS}) drifted from the vendored pipeline's seconds default (${PIPELINE_SECONDS})`,
     );
   });
 });
