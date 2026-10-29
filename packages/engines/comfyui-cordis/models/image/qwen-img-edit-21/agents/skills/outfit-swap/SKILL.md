@@ -6,6 +6,8 @@ description: "Re-dress the subject of one image in a described outfit — the ga
 
 # Outfit Swap
 
+> VERIFIED LIVE 2026-11-12 against receipt `dev_docs/contracts/receipts/2026-11-12-models-qwen-edit-21-docs.md` (run run-a04c947b8fea-870a52ba — the Grecian-gown swap prompt rendered live end-to-end with face, body, pose, and scene held: the describe-the-garment pattern plus the invariant law this skill teaches). Geometry note: this doc's sizing passage was reworked to the render-sizing law after that press — the run proves the prompt pattern, density, and identity law; a post-rework stated-pair press is owed for the sizing seat.
+
 ## What it is for
 
 Outfit-swap is the ONE-image arm of try-on: the new garment comes

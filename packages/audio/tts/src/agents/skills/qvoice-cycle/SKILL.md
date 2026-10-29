@@ -6,6 +6,8 @@ genre: audio
 
 # The voice-lock cycle
 
+> VERIFIED LIVE 2026-11-12 against receipt `dev_docs/contracts/receipts/2026-11-12-cards-tts-qvoice-cycle-skill.md` (runs run-7ff0c865a624-871abb91 save + run-8591a6002407-876c85d0 perform — the two-artifact save, the locked-identity perform, the byte-identical PCM re-render run-e172061d383e-876d9b23, and the measured emotion ladder through run-03104187538c-877eea98, with the post-fix wire proven clean on run-d0f67aab33b4-891adb3e).
+
 A character is made ONCE and performed MANY times. Phase A builds the
 voice from a description and saves it as a `.qvoice`. Phase B performs
 that file under an emotion instruct. The `.qvoice` owns WHO; the

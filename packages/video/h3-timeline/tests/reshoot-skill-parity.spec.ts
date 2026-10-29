@@ -124,10 +124,14 @@ describe("the re-shoot skill's dial table agrees with the code's own homes", () 
     // F2's burn (h3-timeline friction report): the skill taught a dead
     // flat surface for a whole feature cycle because nothing tied the
     // prose to a dated verification. The stamp is the cheap check: a
-    // VERIFIED line naming its evidence, and the receipt it cites is a
-    // real file — a moved/deleted receipt reds rather than rots.
+    // VERIFIED LIVE line naming its evidence (the F2 sweep's one
+    // format everywhere — LIVE + date + receipt + run id), and the
+    // receipt it cites is a real file — a moved/deleted receipt reds
+    // rather than rots.
     const md = readSkill("reshoot");
-    const stamp = /VERIFIED (\d{4}-\d{2}-\d{2}) against ([\s\S]*?)(?=\n\n)/.exec(md);
+    assert.match(md, /VERIFIED LIVE \d{4}-\d{2}-\d{2} against/,
+      "reshoot/SKILL.md carries the canonical VERIFIED LIVE stamp (the F2 one-format law)");
+    const stamp = /VERIFIED (?:LIVE )?(\d{4}-\d{2}-\d{2}) against ([\s\S]*?)(?=\n\n)/.exec(md);
     assert.ok(stamp, "reshoot/SKILL.md carries a dated VERIFIED line (the doc-stamp law)");
     assert.match(stamp![1]!, /^2026-/, "the stamp is dated");
     const receipt = /receipts\/[a-z0-9-]+\.md/.exec(stamp![2]!);

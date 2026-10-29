@@ -6,6 +6,8 @@ description: "Change the framing — zoom in (tighten on the subject) or zoom ou
 
 # Zooms
 
+> VERIFIED LIVE 2026-11-12 against receipt `dev_docs/contracts/receipts/2026-11-12-models-qwen-edit-21-docs.md` (run run-c05b19aa5e19-870a5480 — the tight-portrait-crop prompt rendered live end-to-end with subject and scene held: the frame-change pattern this skill teaches).
+
 ## What it is for
 
 A zoom is a CAMERA-FRAME edit, not a content edit: the world stays,

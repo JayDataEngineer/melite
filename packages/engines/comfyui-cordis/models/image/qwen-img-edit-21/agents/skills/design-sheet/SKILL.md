@@ -6,6 +6,8 @@ description: "Production character/design sheet from one reference — the verba
 
 # Design Sheet
 
+> VERIFIED LIVE 2026-11-12 against receipt `dev_docs/contracts/receipts/2026-11-12-models-qwen-edit-21-docs.md` (run run-a3368f43ccea-877f316e — the 1,708-word ten-section draft rendered live into a clean native sheet with no card size stated and no post-resize: the density law and the contract-following behavior this skill teaches). Geometry note: this doc's sizing passage was reworked to the render-sizing law after that press — the run proves the prompt pattern, density, and identity law; a post-rework stated-pair press is owed for the sizing seat.
+
 ## What it is, and which sheet to reach for
 
 A design sheet is a single 3:2 landscape image carrying a character
