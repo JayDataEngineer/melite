@@ -165,8 +165,13 @@ describe("THE SURFACE WALL (a stated field outside the lane's declaration)", () 
   });
 
   it("a delivery style stated on the 0.6B (no instruction control there) refuses", () => {
+    // the small cell is pinned by COORDINATE (the B3 cure: the bare
+    // family head now means the 1.7B first cell, which DOES take
+    // style_instruction — the refusal arm must target the 0.6B itself)
     const verdict = svc.admitStageRelations("tts", {
       model: "qwen3-tts",
+      variant: "customvoice",
+      quant: "0_6b",
       text: "read this",
       style_instruction: "whispered",
     });
@@ -1095,9 +1100,12 @@ describe("THE RUN SEAT COMPOSES THE RESOLVED ADDRESS (BROKEN-C)", () => {
       "test",
     );
     expect(base.modelId, "the base variant re-points the engine at the clone route").toBe("qwen3-tts-voicedesign-base");
-    // a head-lane pick composes the head's own address
+    // THE B3 CURE (2026-11-12 tts dossier): a head-lane pick composes
+    // the FIRST declared cell's address — the head id is not a pin
+    // (it merely happens to be the 0.6B cell's route; the agent doc
+    // promises "ALWAYS the 1.7B cell" and the DECL leads with it).
     const head = prepareCardParams(svc, { variant: "customvoice", text: "speak" }, "qwen3-tts", "test");
-    expect(head.modelId).toBe("qwen3-tts");
+    expect(head.modelId).toBe("qwen3-tts-voicedesign");
     // a route ADDRESS with no variant composes ITS OWN cell (the
     // re-pinned direction, 2026-10-12: the old arm pinned pool[0]'s
     // ladder-first cell — 'qwen3-tts-base' composed CUSTOMVOICE/1_7b
@@ -1121,6 +1129,7 @@ describe("an export is styled on its performances, not while it is designed", ()
     const verdict = svc.admitStageRelations("tts", {
       model: "qwen3-tts",
       variant: "customvoice",
+      quant: "0_6b",
       text: "x",
       voice: "vivian",
       save_qvoice: true,

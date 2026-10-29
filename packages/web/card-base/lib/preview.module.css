@@ -158,6 +158,14 @@
   padding: 2px 6px;
   text-decoration: none;
 }
+/* THE EMBEDDING HINT (2026-11-12): the qvoice hero face — a named
+ * link plus this note; never a player. */
+.stripHint {
+  color: var(--dsh-alias-text-secondary, #888);
+  font-size: 10px;
+  white-space: nowrap;
+  align-self: center;
+}
 /* THE VIDEO THUMB STRIP (2026-09-22, the operator's catch b: "the
  * preview only shows one of the three clips") — a video set's other
  * clips render as PLAYABLE faces, never text links; click promotes

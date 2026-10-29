@@ -72,6 +72,18 @@ export function isModelUrl(value) {
     const withoutQuery = value.split(/[?#]/, 1)[0];
     return mediaKindOf(withoutQuery) === "model";
 }
+/** Is this name audio a PLAYER can decode (operator 2026-11-12: a
+ *  .qvoice output must carry no play button)? qvoice classifies as
+ *  audio so a preserved voice LISTS in the media library (the TTS
+ *  chain audit, 2026-10-15), but the container carries voice
+ *  EMBEDDINGS, not PCM — the player seat (not the classifier) asks
+ *  this predicate, so listing and playback stay two different
+ *  questions with one spelling between them. @param name the file
+ *  name or url (query/fragment stripped like every other seat). */
+export function isPlayableAudioName(name) {
+    const withoutQuery = name.split(/[?#]/, 1)[0];
+    return mediaKindOf(withoutQuery) === "audio" && !withoutQuery.toLowerCase().endsWith(".qvoice");
+}
 /** Does this name carry any media kind at all? (the hero filters'
  * ONE spelling — never a private extension regex again) */
 export function isMediaArtifactName(name) {

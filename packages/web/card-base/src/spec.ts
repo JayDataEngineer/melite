@@ -1583,13 +1583,14 @@ export function seedAxisValues(spec: FormSpecDoc, held: SpecValues): SpecValues 
   // claim rides the narrowed address through the shared resolver
   // (head spelling → '' → pool[0], the DECL-walk law; a route or
   // cell-route mid claims its OWNING variant). The CELL claim rides
-  // the RAW MID — the door passes mid as the cell address
-  // UNCONDITIONALLY, so a head spelling whose own cell carries it
-  // (qwen3-tts: the 0_6b cell's route IS the family id) claims that
-  // cell. Both honored per axis below against the WALK's own chain:
+  // the SAME narrowed address (the B3 mirror, 2026-11-12: the door
+  // narrowed its cell claim from the raw mid to the address at
+  // cardsVariant.ts:178 — a head spelling whose own cell carries it
+  // (qwen3-tts: the 0_6b cell's route IS the family id) must NOT
+  // claim that cell; the head is a FAMILY statement, pool-first).
+  // Both honored per axis below against the WALK's own chain:
   // the cell claim searches the composing rows of the ACTIVE variant
   // (a held variant overrides the claim's), never a precomputed row.
-  const rawMid = typeof spec.model === 'string' ? spec.model : ''
   const claimRes = resolveVariantRow(variantMatrixFromFlatRows(spec.variants ?? []), null, address, 'offered')
   const claimedVariantRow = claimRes.status === 'resolved' ? claimRes.variant : undefined
   for (const g of groups) {
@@ -1628,8 +1629,8 @@ export function seedAxisValues(spec: FormSpecDoc, held: SpecValues): SpecValues 
         claimed = claimedVariantRow !== undefined
           ? composing.find((row) => row.id === claimedVariantRow.id)
           : undefined
-      } else if (g === CATEGORIES.quant && rawMid !== '') {
-        claimed = composing.find((row) => row.route === rawMid)
+      } else if (g === CATEGORIES.quant && address !== '') {
+        claimed = composing.find((row) => row.route === address)
       }
       if (claimed !== undefined) {
         active[g] = claimed.id
@@ -1966,8 +1967,9 @@ export interface ComposeViolation {
  *  cure, 2026-11-10): the (variant × quant) the estate door resolves
  *  for this doc — the stated variant, else the spec's address claim
  *  (015 C1), else pool[0] (the shared resolver's own law); the
- *  stated quant, else the RAW MID'S cell claim (the door passes mid
- *  as the cell address unconditionally), else the variant's FIRST
+ *  stated quant, else the address claim's cell claim (the B3 mirror:
+ *  the door passes the narrowed address as the cell address, never
+ *  the raw mid), else the variant's FIRST
  *  cell (selectCardVariant's unstated law). Null when the coordinate
  *  does not resolve (a stated variant/quant the matrix does not
  *  know): the callers degrade, never guess. Exported for the mirror
@@ -1989,14 +1991,13 @@ export function resolvedLaneCoordinate(
     if (qres.status === 'missing') return null
     return { variantId: offered.id, quantId: qres.quant !== '' ? qres.quant : null }
   }
-  // unstated quant: THE RAW MID'S CELL CLAIM (the door passes mid
-  // as the cell address UNCONDITIONALLY — cardsVariant.ts quant
-  // resolveCellRow(mid, ...), so a head spelling whose own cell
-  // carries it (qwen3-tts: the 0_6b cell's route IS the family id)
-  // claims that cell), else the FIRST cell
-  const rawMid = typeof spec.model === 'string' ? spec.model : ''
-  const claimedCell = rawMid !== ''
-    ? (offered.cells ?? []).find((c) => c.route !== '' && c.route === rawMid)
+  // unstated quant: THE ADDRESS'S CELL CLAIM (the B3 mirror,
+  // 2026-11-12: the door narrowed its cell claim from the raw mid
+  // to the address at cardsVariant.ts:178 — the head spelling's ''
+  // makes NO cell claim, pool-first; only a cell-route mid claims
+  // its cell), else the FIRST cell
+  const claimedCell = address !== ''
+    ? (offered.cells ?? []).find((c) => c.route !== '' && c.route === address)
     : undefined
   const firstQuant = claimedCell?.quant ?? (offered.cells ?? [])[0]?.quant
   return { variantId: offered.id, quantId: typeof firstQuant === 'string' ? firstQuant : null }

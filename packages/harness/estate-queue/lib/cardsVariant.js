@@ -110,8 +110,15 @@ export function selectCardVariant(mid, famRow, body, phase, familyLanes, familyI
         // fold's coverage law — a draft pinned to 'qwen3-tts-base'
         // means the 0.6B clone; one pinned to 'qwen3-tts-voicedesign'
         // means the 1.7B persona), else the FIRST cell (Model.resolve's
-        // family default — the large rung leads every ladder).
-        const qres = resolveCellRow(variant, null, mid, "offered");
+        // family default — the large rung leads every ladder). The
+        // claim rides the NARROWED address (the B3 address trap,
+        // 2026-11-12 tts dossier): the raw mid here re-claimed the
+        // 0.6B cell for the family head 'qwen3-tts' — whose id IS that
+        // cell's route — so every family-stated compose stole the small
+        // model while the agent doc promised "ALWAYS the 1.7B cell".
+        // The head spelling narrows to '' (line 128), the claim goes
+        // unstated, and pool[0] (the declared 1.7B first cell) serves.
+        const qres = resolveCellRow(variant, null, address, "offered");
         cell = qres.status === "resolved" ? (qres.cell ?? undefined) : undefined;
         quant = qres.status === "resolved" ? qres.quant : "";
     }

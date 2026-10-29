@@ -375,9 +375,18 @@ describe("the lane-missing fold's structured artifact (the popup's payload, 2026
 });
 
 describe("the loras lane slot (the default bag's file rides the gate, 2026-10-11)", () => {
-  const TURBO8 = "minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors";
-  const TURBO8_URL =
-    "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/loras/minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors";
+  // DERIVED OFF THE LIVE DECL (the 2026-11-12 default-lora swap taught
+  // this arm its lesson): the default bag's file is whatever the h3
+  // family's lane_inputs.loras declares TODAY and the fetch hint is
+  // that file's provisions row — never a frozen name (a swap reds the
+  // arm only if the DECL fails to carry its own fetch truth).
+  const h3Decl = getModel("h3") as {
+    lane_inputs?: Record<string, string>;
+    provisions?: Array<{ name: string; url: string }>;
+  };
+  const TURBO8 = String(h3Decl.lane_inputs?.["loras"] ?? "");
+  const TURBO8_URL = String((h3Decl.provisions ?? []).find((p) => p.name === TURBO8)?.url ?? "");
+  assert.ok(TURBO8 !== "" && TURBO8_URL !== "", "the live h3 DECL carries the default lora + its provisions fetch row");
   const UNET = "minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors";
   const place = (relpath: string): void => {
     const d = join(MODELS, relpath, "..");
@@ -403,7 +412,7 @@ describe("the loras lane slot (the default bag's file rides the gate, 2026-10-11
     assert.ok(miss !== null, "the missing default bag file refuses");
     assert.match(miss.message, /declares loras '/, "the refusal names the loras slot");
     assert.match(miss.message, /loras\/h3/, "and the provision folder it probed last");
-    assert.match(miss.message, /fetch it: https:\/\/huggingface\.co\/Comfy-Org\/MiniMax-H3\//, "and the fetch hint");
+    assert.match(miss.message, new RegExp("fetch it: " + TURBO8_URL.replaceAll("/", "\\/")), "and the fetch hint");
     const details = (toRemoteError(cardRefusal(miss)).details ?? {}) as Record<string, unknown>;
     assert.equal(details["slot"], "loras");
     assert.equal(details["missing"], TURBO8);

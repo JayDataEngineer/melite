@@ -49,7 +49,13 @@ export declare function VideoStagePreview(props: PreviewOwnerProps): ReturnType<
 export declare function ImageStagePreview(props: PreviewOwnerProps): ReturnType<typeof h>;
 /** THE AUDIO PREVIEW — one hero track, one native player (the same
  *  law as the video preview: native <audio controls>; no library).
- *  The active set's named clips follow in the strip row. */
+ *  The active set's named clips follow in the strip row.
+ *  THE PLAYABLE HERO (operator 2026-11-12: a .qvoice output must
+ *  carry no play button): qvoice classifies as audio so it LISTS,
+ *  but the container carries voice embeddings, not PCM — the hero
+ *  seat prefers an artifact a player can actually decode, and a
+ *  qvoice hero renders as the embedding face (a named link, never
+ *  a player). */
 export declare function AudioStagePreview(props: PreviewOwnerProps): ReturnType<typeof h>;
 export declare function TextStagePreview(props: PreviewOwnerProps): ReturnType<typeof h>;
 /** THE MESH PREVIEW — the seam's adapter onto the raw-three

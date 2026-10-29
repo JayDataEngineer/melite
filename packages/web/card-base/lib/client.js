@@ -10415,7 +10415,6 @@ window.__ModuleLoader__.load({
 			if (groups.length === 0) return out;
 			const address = addressClaimOf(spec);
 			const active = {};
-			const rawMid = typeof spec.model === "string" ? spec.model : "";
 			const claimRes = resolveVariantRow(variantMatrixFromFlatRows(spec.variants ?? []), null, address, "offered");
 			const claimedVariantRow = claimRes.status === "resolved" ? claimRes.variant : void 0;
 			for (const g of groups) {
@@ -10429,7 +10428,7 @@ window.__ModuleLoader__.load({
 					const composing = composingRows(spec, g, active);
 					let claimed;
 					if (g === CATEGORIES.variant) claimed = claimedVariantRow !== void 0 ? composing.find((row) => row.id === claimedVariantRow.id) : void 0;
-					else if (g === CATEGORIES.quant && rawMid !== "") claimed = composing.find((row) => row.route === rawMid);
+					else if (g === CATEGORIES.quant && address !== "") claimed = composing.find((row) => row.route === address);
 					if (claimed !== void 0) {
 						active[g] = claimed.id;
 						write = axisStampOf(claimed);
@@ -10644,8 +10643,9 @@ window.__ModuleLoader__.load({
 		*  cure, 2026-11-10): the (variant × quant) the estate door resolves
 		*  for this doc — the stated variant, else the spec's address claim
 		*  (015 C1), else pool[0] (the shared resolver's own law); the
-		*  stated quant, else the RAW MID'S cell claim (the door passes mid
-		*  as the cell address unconditionally), else the variant's FIRST
+		*  stated quant, else the address claim's cell claim (the B3 mirror:
+		*  the door passes the narrowed address as the cell address, never
+		*  the raw mid), else the variant's FIRST
 		*  cell (selectCardVariant's unstated law). Null when the coordinate
 		*  does not resolve (a stated variant/quant the matrix does not
 		*  know): the callers degrade, never guess. Exported for the mirror
@@ -10665,8 +10665,7 @@ window.__ModuleLoader__.load({
 					quantId: qres.quant !== "" ? qres.quant : null
 				};
 			}
-			const rawMid = typeof spec.model === "string" ? spec.model : "";
-			const firstQuant = (rawMid !== "" ? (offered.cells ?? []).find((c) => c.route !== "" && c.route === rawMid) : void 0)?.quant ?? (offered.cells ?? [])[0]?.quant;
+			const firstQuant = (address !== "" ? (offered.cells ?? []).find((c) => c.route !== "" && c.route === address) : void 0)?.quant ?? (offered.cells ?? [])[0]?.quant;
 			return {
 				variantId: offered.id,
 				quantId: typeof firstQuant === "string" ? firstQuant : null

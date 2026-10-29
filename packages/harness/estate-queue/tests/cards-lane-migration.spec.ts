@@ -426,8 +426,12 @@ describe("THE FULL JOURNEY MATRIX (every ordered lane pair, the prior lane's own
 
 describe("THE CROSS-FAMILY SWITCH (the model axis, same variant id)", () => {
   it("1.7B customvoice (style_instruction) → 0.6B customvoice: the instruction drops — the 0.6B has no instruction control", () => {
+    // THE B3 CURE (2026-11-12 tts dossier): the family head no longer
+    // silently means the small cell — reaching 0.6B customvoice now
+    // REQUIRES the coordinate (quant "0_6b"), exactly the stated-
+    // coordinate arm in cards-variant.spec's B3 describe.
     const prior = { model: LARGE, variant: "customvoice", text: "words", voice: "ryan", style_instruction: "warm and slow" };
-    const landed = landPatch("tts", prior, { model: SMALL });
+    const landed = landPatch("tts", prior, { model: SMALL, quant: "0_6b" });
     expect(landed.ok).toBe(true);
     expect(landed.stored["style_instruction"]).toBeUndefined();
     // voice rides BOTH customvoice surfaces — it survives the family switch
@@ -435,7 +439,7 @@ describe("THE CROSS-FAMILY SWITCH (the model axis, same variant id)", () => {
   });
 
   it("0.6B → 1.7B customvoice: the switch lands clean", () => {
-    const prior = { model: SMALL, variant: "customvoice", text: "words", voice: "ryan" };
+    const prior = { model: SMALL, variant: "customvoice", quant: "0_6b", text: "words", voice: "ryan" };
     const landed = landPatch("tts", prior, { model: LARGE });
     expect(landed.ok).toBe(true);
     expect(landed.stored["voice"]).toBe("ryan");

@@ -438,3 +438,58 @@ describe("stampCardOverlay — the carry judge degrades with the fold (§D3)", (
     expect(carried["loras"]).toEqual([{ id: "krea2_realism_lora", strength: 0.8 }]);
   });
 });
+
+// THE B3 ADDRESS TRAP (the 2026-11-12 tts friction dossier,
+// dev_docs/audits/tts-friction-dossier-2026-11-12.md §2 cure 2) —
+// the deepest law of this seam, judged on the REAL qwen3-tts facts:
+// 'qwen3-tts' IS the 0.6B cell's route, so passing the raw mid as
+// the cell claim let every family-stated compose steal the small
+// model while the agent doc promised "ALWAYS the 1.7B cell". The
+// narrowed address (the head spelling → '') sends the head to
+// pool[0] — the declared first cell, the large rung; a real CELL
+// pin keeps its own claim.
+import "../../../../tests/helpers/boot-models.ts";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+import { loadFacts } from "@melite/comfyui-card-kit/facts";
+import { getModel, registryIds, registryModel } from "@melite/comfyui-cordis";
+
+const FACTS_PATH = join(
+  dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..",
+  "packages", "engines", "comfyui-cordis", "data", "model-facts.json",
+);
+const ttsRow = loadFacts(FACTS_PATH, { getModel, registryIds, registryModel })
+  .models["qwen3-tts"]! as unknown as ModelFactsRow;
+
+describe("selectCardVariant — THE B3 ADDRESS TRAP (real qwen3-tts facts: the head is a route-namesake)", () => {
+  it("the family head claims the FIRST cell (the 1.7B promise), never its own route-namesake", () => {
+    const sel = selectCardVariant("qwen3-tts", ttsRow, { variant: "customvoice" }, "compose", undefined, "qwen3-tts");
+    // The DECL's customvoice cells lead with 1.7B (route
+    // qwen3-tts-voicedesign); the 0.6B cell's route is the family
+    // id itself — the trap's shape.
+    expect(sel.variantId).toBe("customvoice");
+    expect(sel.cellRoute).toBe("qwen3-tts-voicedesign");
+    expect(sel.quant).toBe("1_7b");
+  });
+
+  it("the unstated variant rides the same law: head + no coordinates still claims the first cell", () => {
+    const sel = selectCardVariant("qwen3-tts", ttsRow, {}, "compose", undefined, "qwen3-tts");
+    expect(sel.cellRoute).not.toBe("qwen3-tts");
+    expect(sel.quant).toBe("1_7b");
+  });
+
+  it("a real CELL pin keeps its own claim: qwen3-tts-base still resolves the 0.6B clone", () => {
+    const sel = selectCardVariant("qwen3-tts-base", ttsRow, {}, "compose", undefined, "qwen3-tts");
+    // the base row's 0_6b cell routes as the pin's own namesake
+    // ('qwen3-tts-base'); the quant is the coordinate that matters.
+    expect(sel.variantId).toBe("base");
+    expect(sel.cellRoute).toBe("qwen3-tts-base");
+    expect(sel.quant).toBe("0_6b");
+  });
+
+  it("a stated quant overrides the claim anyway: head + 0_6b lands the small cell by COORDINATE", () => {
+    const sel = selectCardVariant("qwen3-tts", ttsRow, { variant: "customvoice", quant: "0_6b" }, "compose", undefined, "qwen3-tts");
+    expect(sel.cellRoute).toBe("qwen3-tts");
+    expect(sel.quant).toBe("0_6b");
+  });
+});

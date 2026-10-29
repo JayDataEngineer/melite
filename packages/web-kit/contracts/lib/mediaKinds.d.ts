@@ -38,6 +38,15 @@ export declare function mediaKindOf(name: string): MediaKind | undefined;
  *  vocabulary answers, and the glTF data-URI forms are recognised
  *  because a data URI has no extension. */
 export declare function isModelUrl(value: string): boolean;
+/** Is this name audio a PLAYER can decode (operator 2026-11-12: a
+ *  .qvoice output must carry no play button)? qvoice classifies as
+ *  audio so a preserved voice LISTS in the media library (the TTS
+ *  chain audit, 2026-10-15), but the container carries voice
+ *  EMBEDDINGS, not PCM — the player seat (not the classifier) asks
+ *  this predicate, so listing and playback stay two different
+ *  questions with one spelling between them. @param name the file
+ *  name or url (query/fragment stripped like every other seat). */
+export declare function isPlayableAudioName(name: string): boolean;
 /** Does this name carry any media kind at all? (the hero filters'
  * ONE spelling — never a private extension regex again) */
 export declare function isMediaArtifactName(name: string): boolean;

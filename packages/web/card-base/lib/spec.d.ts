@@ -507,8 +507,9 @@ export interface ComposeViolation {
  *  cure, 2026-11-10): the (variant × quant) the estate door resolves
  *  for this doc — the stated variant, else the spec's address claim
  *  (015 C1), else pool[0] (the shared resolver's own law); the
- *  stated quant, else the RAW MID'S cell claim (the door passes mid
- *  as the cell address unconditionally), else the variant's FIRST
+ *  stated quant, else the address claim's cell claim (the B3 mirror:
+ *  the door passes the narrowed address as the cell address, never
+ *  the raw mid), else the variant's FIRST
  *  cell (selectCardVariant's unstated law). Null when the coordinate
  *  does not resolve (a stated variant/quant the matrix does not
  *  know): the callers degrade, never guess. Exported for the mirror

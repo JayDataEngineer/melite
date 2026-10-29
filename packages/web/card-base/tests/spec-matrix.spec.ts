@@ -572,8 +572,9 @@ test('seedAxisValues: first-composing rows seed; the held always win; the family
 //    (cardsVariant.ts selectCardVariant) narrows a FAMILY-HEAD mid
 //    to '' (pool[0], the DECL-walk law) and passes every other key
 //    as the resolver's route claim; the quant cell claim rides the
-//    RAW mid unconditionally. These arms pin the mirror's units —
-//    the estate-wide parity is the card-client-mirror wall's own.
+//    SAME narrowed address (the B3 mirror, 2026-11-12 — never the
+//    raw mid). These arms pin the mirror's units — the estate-wide
+//    parity is the card-client-mirror wall's own.
 //    Shape mirrors the real serve: every Quant row owned, routes
 //    are per-row addresses (never a blanket), families board the
 //    head. ─────────────────────────────────────────────────────
@@ -606,14 +607,16 @@ test('addressClaimOf: a boarded head narrows to \'\'; a route key claims; empty 
   expect(addressClaimOf(claimSpec({ model: undefined }))).toBe('')
 })
 
-test('the head serve seeds pool[0] and the RAW-MID cell claim (a head route on a cell claims it)', () => {
+test('the head serve seeds pool[0] and its FIRST cell — a head id on a cell route claims nothing (B3 mirror)', () => {
   const head = claimSpec({ model: 'tts', families: [{ id: 'tts', present: true, label: 'TTS' }] })
   // the qwen3-tts shape: the family id IS the 0_6b cell's route —
-  // the door passes mid as the cell address unconditionally, so the
-  // quant axis seeds the CLAIMED cell (b-lo), not first-declared b-hi
-  expect(seedAxisValues(head, {})).toEqual({ variant: 'big', quant: 'lo', model: 'tts' })
-  // the same claim rides the resolved coordinate (the form's surface)
-  expect(resolvedLaneCoordinate(head, {})).toEqual({ variantId: 'big', quantId: 'lo' })
+  // the B3 cure (2026-11-12) narrowed the door's cell claim from the
+  // raw mid to the address (cardsVariant.ts:178), so the head
+  // spelling makes NO cell claim: the quant axis seeds first-declared
+  // b-hi, never the namesake cell b-lo
+  expect(seedAxisValues(head, {})).toEqual({ variant: 'big', quant: 'hi', model: 'tts' })
+  // the same pool-first read rides the resolved coordinate
+  expect(resolvedLaneCoordinate(head, {})).toEqual({ variantId: 'big', quantId: 'hi' })
   // offeredVariantOf without the spec is the head spelling — pool[0]
   expect(offeredVariantOf(head.variants ?? [], {})?.id).toBe('big')
   expect(offeredVariantOf(head.variants ?? [], {}, head)?.id).toBe('big')
