@@ -791,60 +791,98 @@ async function runSingle(
    * id and family alias is far under 80 chars, so the truncation arm
    * is defensive only (2026-10-13, the coverage-cure pass). */
   const intent = card.length > 80 ? card.slice(0, 77) + '…' : card
-  let draftId: DraftId
+  // F16 (2026-11-12): the stage the press writes must carry the
+  // model the start rides — the bench the press LEAVES BEHIND has to
+  // compile standalone (runsValidateStages' own voice was the burn:
+  // "card 'tts' requires params.model" on the tts stage a press
+  // minted without it). Pure-tool cards (requiresModel false) take
+  // no stamp — a phantom model seat pollutes nothing.
+  const stageParams: Record<string, unknown> =
+    cardDef?.requiresModel !== false ? { ...normalizedBag, model } : normalizedBag
+  // F15 — THE MERGE LAW (2026-11-12, the friction report's burn: a
+  // `card: tts` press WIPED a composed film/swap/track bench —
+  // stages dropped, intent flipped). A single-card press on a bench
+  // that already holds stages APPENDS through the bench's own
+  // add_stage verb (server CAS, server-minted id — the same door
+  // melite_construct's add_stage rides); stages and intent survive
+  // verbatim. Only an empty or missing bench births the one-stage
+  // draft (the CARD BIRTH LAW above keeps its intent seat there).
+  // THE RUN RIDES THE SINGLE-CARD BODY in both arms — the ONE-PRESS
+  // ONE-CARD LAW (operator 2026-10-26: "WHEN I RUN A CARD
+  // INDEPENDENTLY, OTHER CARDS RUN TOO????????"): the pressed card
+  // composes ONE stage, the bench compose stays the draft door's
+  // alone. The 2026-10-10 wired-bench diversion (restage every
+  // single-card press onto the whole-bench compose because the bench
+  // had wires) was that cursed shape's client twin — superseded
+  // here with the law that replaced it server-side.
+  let existing: { rev?: unknown; draft_id?: unknown; stages?: unknown } | null = null
   try {
-    draftId = await loadBench(estate, {
-      session: a.bench,
-      intent,
-      stages: [{
-        id: 's_0',
-        card,
-        engine: CARD_PLANE_ENGINE,
-        params: normalizedBag,
-      }],
-    }, signal)
-  } catch (e) {
-    return { mode: 'card', target: card, error: e instanceof Error ? e.message : String(e) }
+    existing = await estate.benchGet(a.bench, signal, DRAFT_TIMEOUT_MS) as { rev?: unknown; draft_id?: unknown; stages?: unknown }
+  } catch {
+    // bench/not-found or unreachable: the birth arm below names it
+    // (loadBench's own CAS read re-reads and its refusal surfaces).
+    existing = null
   }
-  // THE WIRED-BENCH CONTRACT (2026-10-10, the operator's a-priori
-  // order: "CONTRACTS SHOULD WORK A PRIORI"): a single-card body
-  // ({model, params}) composes ONE stage with inputNames: {} — every
-  // wire on the bench would be DISCARDED, and the run door refuses
-  // that loudly (the operator met the wall as "no FromStage links"
-  // nonsense). The tool holds the contract ITSELF now: after the
-  // ensure it reads the bench it just wrote; if ANY stage carries
-  // wiring, the start rides the FLOW arm (draft_id alone — the
-  // draft's stages compose with their wires as FromStage links,
-  // exactly the run door's own cure), never a single-card body. The
-  // wall can no longer be reached from this tool, whatever the
-  // bench holds.
-  let benchStages: Array<Record<string, unknown>> = []
-  try {
-    const row = await estate.benchGet(a.bench, signal, DRAFT_TIMEOUT_MS) as { stages?: unknown }
-    if (row !== null && typeof row === 'object' && Array.isArray(row['stages'])) {
-      benchStages = row['stages'].filter((st: unknown): st is Record<string, unknown> => typeof st === 'object' && st !== null)
+  const heldStages: Array<Record<string, unknown>> = existing !== null && Array.isArray(existing['stages'])
+    ? existing['stages'].filter((st: unknown): st is Record<string, unknown> => typeof st === 'object' && st !== null)
+    : []
+  let draftId: DraftId
+  let stageId = 's_0'
+  let rode: string | undefined
+  if (heldStages.length > 0 && existing !== null) {
+    try {
+      const appendOnce = (rev: unknown): Promise<Record<string, unknown>> =>
+        estate.benchVerb(a.bench, 'add_stage', {
+          card,
+          engine: CARD_PLANE_ENGINE,
+          params: stageParams,
+          ...(rev !== undefined && rev !== null ? { expect_rev: rev } : {}),
+        }, signal, DRAFT_TIMEOUT_MS) as Promise<Record<string, unknown>>
+      let appended: Record<string, unknown>
+      try {
+        appended = await appendOnce(existing['rev'])
+      } catch (e) {
+        // one bounded CAS rebase (postBenchVerb's law, the construct
+        // twin): a race between the read and the append re-reads the
+        // rev once — a second conflict is a real refusal.
+        if (remoteErrorOf(e)?.code !== 'bench/cas-conflict') throw e
+        const fresh = await estate.benchGet(a.bench, signal, DRAFT_TIMEOUT_MS) as { rev?: unknown }
+        appended = await appendOnce(fresh['rev'])
+      }
+      if (typeof appended['error'] === 'string' && appended['error'] !== '') {
+        return { mode: 'card', target: card, error: appended['error'] }
+      }
+      if (typeof appended['stage'] === 'string' && appended['stage'] !== '') stageId = appended['stage']
+      draftId = typeof existing['draft_id'] === 'string' && existing['draft_id'] !== ''
+        ? draftIdOf(existing['draft_id'])
+        : benchDraftIdOf(a.bench)
+      rode = `merge-arm (bench held ${String(heldStages.length)} stage(s) — appended ${stageId}, nothing replaced)`
+    } catch (e) {
+      return { mode: 'card', target: card, error: e instanceof Error ? e.message : String(e) }
     }
-  } catch { /* the read is advisory: an unreachable bench falls to the single-card arm and the run door's own wall names it */ }
-  const wired = benchStages.filter((st) => {
-    const ins = st['inputs']
-    return typeof ins === 'object' && ins !== null && !Array.isArray(ins) && Object.keys(ins).length > 0
-  })
-  if (wired.length > 0) {
-    const started = await startRun(estate, { test: wireBool(a.test), draft_id: draftId }, signal)
-    if (typeof started["error"] === "string") return { mode: 'card', target: card, rode: 'flow-arm (bench carries wiring — the wires ride as stage inputs)', ...started }
-    const runId = started['run_id']
-    if (typeof runId === 'string' && runId !== '') {
-      void observeAndAttribute(estate, draftId, 's_0', runId, new AbortController().signal, wireBool(a.test)).catch(String)
+  } else {
+    try {
+      draftId = await loadBench(estate, {
+        session: a.bench,
+        intent,
+        stages: [{
+          id: 's_0',
+          card,
+          engine: CARD_PLANE_ENGINE,
+          params: stageParams,
+        }],
+      }, signal)
+    } catch (e) {
+      return { mode: 'card', target: card, error: e instanceof Error ? e.message : String(e) }
     }
-    return { mode: 'card', target: card, model, draft_id: draftId, rode: 'flow-arm (bench carries wiring — the wires ride as stage inputs)', ...started }
   }
   const started = await startRun(estate, { ...normalizedBag, model, test: wireBool(a.test), draft_id: draftId }, signal)
-  if (typeof started["error"] === "string") return { mode: 'card', target: card, ...started }
+  if (typeof started["error"] === "string") return { mode: 'card', target: card, ...(rode !== undefined ? { rode } : {}), ...started }
   const runId = started['run_id']
   if (typeof runId === 'string' && runId !== '') {
-    void observeAndAttribute(estate, draftId, 's_0', runId, new AbortController().signal, wireBool(a.test)).catch(String)
+    void observeAndAttribute(estate, draftId, stageId, runId, new AbortController().signal, wireBool(a.test)).catch(String)
   }
-  return { mode: 'card', target: card, model, draft_id: draftId, ...started }
+  return { mode: 'card', target: card, model, draft_id: draftId, ...(rode !== undefined ? { rode } : {}), ...started }
 }
 
 /** TEMPLATE (the old flow_run path): drafts {flow,...} + start. */

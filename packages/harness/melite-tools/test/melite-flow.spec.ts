@@ -238,86 +238,99 @@ describe('melite_flow card — the live allowlist', () => {
   })
 
   // THE WIRED-BENCH CONTRACT (2026-10-10, the operator's a-priori
-  // order): a single-card body against a bench carrying wiring
-  // composes ONE stage with inputNames: {} — the wires would be
-  // discarded and the run door's wall reads as nonsense to the
-  // human ("no FromStage links"). The tool holds the contract
-  // ITSELF: it reads the bench it just ensured; ANY stage carrying
-  // wiring → the start rides the FLOW arm (draft_id alone, the
-  // wires ride as stage inputs), never a single-card body.
-  test('THE WIRED-BENCH CONTRACT: a bench carrying wiring rides the FLOW arm — never a single-card body', async () => {
-    const wiredBench = {
+  // F15 (2026-11-12) — THE MERGE LAW: a single-card press on a
+  // bench that already holds stages APPENDS through the bench's own
+  // add_stage verb and rides the ONE-PRESS ONE-CARD body (the
+  // operator's 2026-10-26 law: the pressed card composes ONE stage,
+  // never the whole bench). The 2026-10-10 wired-bench flow-arm
+  // diversion was the fan-out shape the operator cursed — dead with
+  // the wipe it followed, superseded here.
+  test('THE MERGE LAW (F15): a bench holding stages gains the pressed stage — never replaces, never fans out', async () => {
+    const heldBench = {
       rev: 3,
+      draft_id: 'd-held',
       stages: [
-        { id: 's_0', card: 'image-gen', params: { prompt: 'a cat' } },
-        { id: 's_1', card: 'image-edit', params: { input_images: '$input_images' },
+        { id: 's_0', card: 'image-gen', params: { prompt: 'a cat', model: 'image-gen-1' } },
+        { id: 's_1', card: 'image-edit', params: { prompt: 'edit', model: 'image-edit-21' },
           inputs: { input_images: { stage: 's_0', output: 'default' } } },
       ],
     }
-    // the wired GET handler FIRST (okBenchWith would answer the
-    // bench read with empty stages from further down the chain)
+    let patchBody: Record<string, unknown> | undefined
+    let resolvePatch!: () => void
+    const patched = new Promise<void>((resolve) => { resolvePatch = resolve })
     const seen = mockEstate([
-      // the post-ensure read (the one-bench law: no agent id →
-      // the main bench): the bench carries wiring
       (lane: string, args: unknown[]) => {
-        if (lane === 'benchGet') {
-          return { status: 200, body: wiredBench }
+        if (lane === 'benchGet') return { status: 200, body: heldBench }
+        if (lane === 'benchVerb') {
+          return { status: 200, body: { rev: 4, stage: 's_2' } }
         }
-        return undefined
-      },
-      okBenchWith('d-w'),
-      // the ensure answers with the wired doc (the door's answer
-      // carries the bench's stages)
-      (lane: string, _args: unknown[]) => {
-        if (lane === 'benchEnsure') {
-          return { status: 200, body: { draftId: 'd-w', stages: wiredBench.stages } }
-        }
-        return undefined
-      },
-      // the start: the flow arm's answer
-      (lane: string) => {
         if (lane === 'runsStart') {
-          return { status: 202, body: { run_id: 'r-w', status: 'queued' } }
+          return { status: 202, body: { run_id: 'r-merge', status: 'queued' } }
+        }
+        if (lane === 'runsStatus') {
+          return { status: 200, body: {
+            status: 'completed',
+            stages: [{ id: 's_2', url: 'tts/out.wav', gallery: [{ name: 'tts/out.wav' }] }],
+          } }
+        }
+        if (lane === 'draftsStagePatch' && args[1] === 's_2') {
+          patchBody = args[2] as Record<string, unknown>
+          resolvePatch()
+          return { status: 200, body: { delivered: true } }
         }
         return undefined
-      }])
+      },
+    ])
     const tool = meliteFlow(seen.request)
     const out = await tool.execute({
-      card: 'image-edit', model: 'image-edit-21',
-      params: { prompt: 'edit this' },
+      card: 'image-gen', model: 'image-gen-1',
+      params: { prompt: 'a new still' },
     }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.error, undefined)
-    assert.equal(out.run_id, 'r-w')
-    assert.match(String(out.rode), /flow-arm/)
-    // THE CONTRACT: the start body carries NO model, NO params — a
-    // single-card composition can never reach the door against a
-    // wired bench
+    assert.equal(out.run_id, 'r-merge')
+    assert.match(String(out.rode), /merge-arm \(bench held 2 stage\(s\) — appended s_2, nothing replaced\)/)
+    // NO ensure ever fired: the held stages + intent were never
+    // asked to move (the F15 burn's wipe class)
+    assert.equal(
+      seen.calls.some((c) => c.lane === 'benchEnsure'),
+      false,
+      'the merge arm must never ensure-overwrite the bench',
+    )
+    // the append rode the bench's own add_stage verb with the CAS
+    // rev and the F16 model stamp on the stage params
+    const verb = seen.calls.find((c) => c.lane === 'benchVerb')!
+    assert.equal(verb.args[0], 'main')
+    assert.equal(verb.args[1], 'add_stage')
+    const doc = verb.args[2] as Record<string, unknown>
+    assert.equal(doc['card'], 'image-gen')
+    assert.equal(doc['expect_rev'], 3)
+    assert.equal((doc['params'] as Record<string, unknown>)['model'], 'image-gen-1')
+    // the start rode the ONE-PRESS ONE-CARD body: model + params +
+    // the held draft — never a bare flow press
     const startBody = decodeJsonBody(seen.calls.find((c) => c.lane === 'runsStart')!.args)
-    assert.equal(startBody.model, undefined)
-    assert.equal(startBody.prompt, undefined)
-    assert.equal(startBody.draft_id, 'd-w')
+    assert.equal(startBody.model, 'image-gen-1')
+    assert.equal(startBody.prompt, 'a new still')
+    assert.equal(startBody.draft_id, 'd-held')
+    // the observer attributes to the MINTED stage id (s_2), not a
+    // hardcoded s_0
+    await patched
+    assert.deepEqual((patchBody as { result?: unknown }).result, {
+      run_id: 'r-merge',
+      url: '/melite-media/runs/r-merge/tts/out.wav',
+      artifacts: { 'tts/out.wav': '/melite-media/runs/r-merge/tts/out.wav' },
+      assetUrls: ['/melite-media/runs/r-merge/tts/out.wav'],
+    })
   })
 
-  test('a wired bench whose flow-arm start REFUSES carries the rode line + the refusal (never a silent single-card retry)', async () => {
-    // the wired-bench contract's error arm: the bench carries
-    // wiring, the start rides the FLOW arm, and the door refuses —
-    // the receipt names the arm it rode and the door's own error
-    // (no fallback re-press through the single-card body: that
-    // would discard the wires the contract exists to keep).
-    const wiredBench = {
-      session: 'main', rev: 0, log: [],
-      stages: [
-        { id: 's_0', card: 'image-gen', params: { prompt: 'a cat' } },
-        { id: 's_1', card: 'image-edit', params: { input_images: '$input_images' },
-          inputs: { input_images: { stage: 's_0', output: 'default' } } },
-      ],
+  test('a merged press whose start REFUSES carries the rode line + the refusal (never a silent retry)', async () => {
+    const heldBench = {
+      session: 'main', rev: 0, draft_id: 'd-held', log: [],
+      stages: [{ id: 's_0', card: 'image-gen', params: { prompt: 'a cat', model: 'image-gen-1' } }],
     }
     const seen = mockEstate([
       (lane: string, args: unknown[]) => {
-        if (lane === 'benchGet') return { status: 200, body: wiredBench }
-        if (lane === 'benchEnsure') {
-          return { status: 200, body: { bench: 'main', draft_id: 'd-w', stages: wiredBench.stages } }
-        }
+        if (lane === 'benchGet') return { status: 200, body: heldBench }
+        if (lane === 'benchVerb') return { status: 200, body: { rev: 1, stage: 's_1' } }
         if (lane === 'runsStart') {
           return { status: 409, body: { error: 'runs/active-run: a run is already pressing' } }
         }
@@ -329,33 +342,22 @@ describe('melite_flow card — the live allowlist', () => {
       card: 'image-edit', model: 'image-edit-21',
       params: { prompt: 'edit this' },
     }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
-    assert.match(String(out.rode), /flow-arm/)
+    assert.match(String(out.rode), /merge-arm/)
     assert.match(String(out.error), /active-run/)
     // and exactly ONE start press: the refusal never re-pressed
     const starts = seen.calls.filter((c) => c.lane === 'runsStart')
     assert.equal(starts.length, 1, 'the refusal retried the start')
   })
 
-  test('an empty run_id on the wired bench rides the flow arm with NO observation (the empty-error trap\'s twin)', async () => {
-    // startRun's twin trap (melite-flow.ts:245): an answer carrying
-    // `error: ''` is not a refusal, so the wired leg falls past it to
-    // the run_id gate — an EMPTY run id names no run, so the observer
-    // never starts and the receipt carries exactly what the door said
-    // (the re-audit, 2026-10-16).
-    const wiredBench = {
-      session: 'main', rev: 3, log: [],
-      stages: [
-        { id: 's_0', card: 'image-gen', params: { prompt: 'a cat' } },
-        { id: 's_1', card: 'image-edit', params: { input_images: '$input_images' },
-          inputs: { input_images: { stage: 's_0', output: 'default' } } },
-      ],
+  test('an empty run_id on a merged press rides with NO observation (the empty-error trap\'s twin)', async () => {
+    const heldBench = {
+      session: 'main', rev: 3, draft_id: 'd-held', log: [],
+      stages: [{ id: 's_0', card: 'image-gen', params: { prompt: 'a cat', model: 'image-gen-1' } }],
     }
     const seen = mockEstate([
       (lane: string, args: unknown[]) => {
-        if (lane === 'benchGet') return { status: 200, body: wiredBench }
-        if (lane === 'benchEnsure') {
-          return { status: 200, body: { bench: 'main', draft_id: 'd-w', stages: wiredBench.stages } }
-        }
+        if (lane === 'benchGet') return { status: 200, body: heldBench }
+        if (lane === 'benchVerb') return { status: 200, body: { rev: 4, stage: 's_1' } }
         if (lane === 'runsStart') {
           return { status: 202, body: { error: '', run_id: '' } }
         }
@@ -367,17 +369,98 @@ describe('melite_flow card — the live allowlist', () => {
       card: 'image-edit', model: 'image-edit-21',
       params: { prompt: 'edit this' },
     }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
-    assert.match(String(out.rode), /flow-arm/)
+    assert.match(String(out.rode), /merge-arm/)
     assert.equal(out.error, undefined, 'an empty error string is not a refusal')
     assert.equal(out.run_id, '', 'the door named no run — the receipt invents none')
-    // the observer is fired ONLY on a real run id: give the fire-and-
-    // forget a beat, then prove the poll never went out
     await new Promise((r): void => { setTimeout(r, 100) })
     assert.equal(
       seen.calls.some((c) => c.lane === 'runsStatus'),
       false,
       'an empty run_id must never start an observation',
     )
+  })
+
+  test('a CAS race on the append rebases ONCE — the second append rides the fresh rev (F15)', async () => {
+    const heldBench = {
+      session: 'main', rev: 7, draft_id: 'd-held', log: [],
+      stages: [{ id: 's_0', card: 'image-gen', params: { prompt: 'a cat', model: 'image-gen-1' } }],
+    }
+    let revReads = 0
+    const conflict = Object.assign(
+      new Error('bench/cas-conflict: the bench moved under the write'),
+      { name: 'RemoteError', isDSHRemoteError: true, code: 'bench/cas-conflict' },
+    )
+    // two-phase handlers: benchVerb refuses the rev-7 write once,
+    // then admits the fresh rev-8 write
+    const verbs: Array<Record<string, unknown>> = []
+    const mock = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchGet') {
+          revReads += 1
+          return { status: 200, body: { ...heldBench, rev: revReads === 1 ? 7 : 8 } }
+        }
+        if (lane === 'benchVerb') {
+          const doc = args[2] as Record<string, unknown>
+          verbs.push(doc)
+          if (doc['expect_rev'] === 7) throw conflict
+          return { status: 200, body: { rev: 9, stage: 's_1' } }
+        }
+        if (lane === 'runsStart') return { status: 202, body: { run_id: 'r-cas', status: 'queued' } }
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(mock.request)
+    const out = await tool.execute({
+      card: 'image-edit', model: 'image-edit-21',
+      params: { prompt: 'edit this' },
+    }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
+    assert.equal(out.error, undefined)
+    assert.equal(out.run_id, 'r-cas')
+    assert.equal(verbs.length, 2, 'exactly one rebase — a second conflict refuses')
+    assert.equal(verbs[0]!['expect_rev'], 7)
+    assert.equal(verbs[1]!['expect_rev'], 8)
+  })
+
+  test('F16: a birth press writes the model INTO the stage params — the bench it leaves behind compiles standalone', async () => {
+    // the burn: the tts stage a press minted carried no params.model,
+    // and the bench refused at compile ("card 'tts' requires
+    // params.model"). The stage row must carry what the start rode.
+    const seen = mockEstate([
+      okBenchWith('d-f16'),
+      okDraftThenStart('d-f16', 'r-f16'),
+    ])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({
+      card: 'image-gen', model: 'image-gen-1',
+      params: { prompt: 'a still' },
+    }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
+    assert.equal(out.error, undefined)
+    const ensureDoc = decodeJsonBody(seen.calls.find((c) => c.lane === 'benchEnsure')!.args)
+    const stage = (ensureDoc['stages'] as Array<Record<string, unknown>>)[0]!
+    assert.equal((stage['params'] as Record<string, unknown>)['model'], 'image-gen-1')
+  })
+
+  test('F16 negative: a pure-tool card (requiresModel false) takes NO model stamp on the stage', async () => {
+    // a phantom model seat pollutes nothing: image-edit composes
+    // without one (its def says requiresModel false), so neither the
+    // birth stage nor a merged append carries a model key.
+    const seen = mockEstate([
+      okBenchWith('d-f16n'),
+      okDraftThenStart('d-f16n', 'r-f16n'),
+    ])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({
+      card: 'image-edit', model: 'image-edit-21',
+      params: { prompt: 'edit this' },
+    }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
+    assert.equal(out.error, undefined)
+    const ensureDoc = decodeJsonBody(seen.calls.find((c) => c.lane === 'benchEnsure')!.args)
+    const stage = (ensureDoc['stages'] as Array<Record<string, unknown>>)[0]!
+    assert.equal('model' in (stage['params'] as Record<string, unknown>), false)
+    // the START body still carries the model key — the door's {model:}
+    // shape is unchanged; only the stage row is stamp-free
+    const startBody = decodeJsonBody(seen.calls.find((c) => c.lane === 'runsStart')!.args)
+    assert.equal(startBody.model, 'image-edit-21')
   })
 
   test('a bench read whose row carries no stages array falls to the single-card arm (the advisory read never lies)', async () => {
