@@ -103,7 +103,11 @@ describe("the reshoot kind (the fourth mod bag)", () => {
     );
     assert.equal(by.source_clip.type, 'file', "the clip seat claims the square");
     assert.equal(by.source_clip.media, 'video', "the clip seat claims the VIDEO square");
-    assert.ok(!(('type' in by.orbit) && by.orbit.type === 'text'), "the dials are numbers, never freeform");
+    for (const dial of ['orbit', 'tilt', 'dolly', 'zoom', 'pan', 'strength', 'depth_ratio']) {
+      assert.equal(by[dial].type, 'number', `${dial} is a number row (never freeform text)`);
+    }
+    assert.equal(by.smooth_depth.type, 'boolean');
+    assert.equal(by.invert_depth.type, 'boolean');
   });
 
   it("admits names the bag (the commission rides the same admission plane as its siblings)", () => {
@@ -176,9 +180,9 @@ describe("the reshoot kind (the fourth mod bag)", () => {
 
   it("an armed bag under each of the three edit arms refuses LOUD naming the conflict (one door per doc)", () => {
     const edges: Array<[string, Record<string, unknown>, RegExp]> = [
-      ['replace', { replace: [{ source_clip: 'c.mp4', swap_prompt: 'x' }] }, /Replace and Reshoot are both armed/],
-      ['repair', { repair: [{ source_clip: 'c.mp4', repair_prompt: 'x', region_prompt: 'hands' }] }, /Repair and Reshoot are both armed/],
-      ['extend', { extend: [{ source_clip: 'c.mp4', extend_prompt: 'x', extend_seconds: 3.75 }] }, /Extend and Reshoot are both armed/],
+      ['replace', { replace: [{ source_clip: 'c.mp4', swap_prompt: 'x' }] }, /Replace and Reshoot are both armed — the swap branch never enters the film action.*empty the Reshoot arm for a swap/],
+      ['repair', { repair: [{ source_clip: 'c.mp4', repair_prompt: 'x', region_prompt: 'hands' }] }, /Repair and Reshoot are both armed — the repair branch never enters the film action.*empty the Reshoot arm for a repair/],
+      ['extend', { extend: [{ source_clip: 'c.mp4', extend_prompt: 'x', extend_seconds: 3.75 }] }, /Extend and Reshoot are both armed — the extend branch never enters the film action.*empty the Reshoot arm for an extension/],
     ];
     for (const [name, arm, re] of edges) {
       const walked = def.schema({

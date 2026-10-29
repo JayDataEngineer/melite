@@ -627,7 +627,12 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // unification's shared spine (renderMaskedEditChain; loadVideo +
   // h3MaskedEditPlane moved here from swap.js, one owner), repinned
   // with its landing.
-  const LIB_CENSUS_PIN = 628;
+  // 628 -> 629 (2026-11-12): timelineContract.js — §9 moved the window
+  // composition solver (solveWindowComposition + the grid/overlap
+  // constants) out of extend.ts into its own browser-safe module so the
+  // studio and the compose door ask ONE home; the new lib face joined
+  // the index with that landing and is repinned here.
+  const LIB_CENSUS_PIN = 629;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {

@@ -136,7 +136,9 @@ const bagEntry = (p: Record<string, unknown>): Record<string, unknown> | undefin
   const bag = p.reshoot
   if (!Array.isArray(bag) || bag.length === 0) return undefined
   const e = bag[0]
-  return typeof e === 'object' && e !== null ? (e as Record<string, unknown>) : undefined
+  return typeof e === 'object' && e !== null && !Array.isArray(e)
+    ? (e as Record<string, unknown>)
+    : undefined
 }
 
 /** The neutral pose is the identity camera (no orbit, no tilt, the
@@ -160,13 +162,15 @@ export function readReshootKnobs(p: Record<string, unknown>): ReshootKnobs {
 
 /** The arm predicate: BAG PRESENCE — the same law as the replace/
  *  repair/extend arms (the fourth-mod-bag unification: a commission
- * is armed when its bag carries an entry). A bag whose entry names
- * no source clip stays ARMED and refuses loud at the chain build
- * (the compose's missing-required law) — the clip check never
- * quietly disarms the film. Absent or empty bag = the compose never
- * sees the chain (byte-stable graphs). */
+ *  is armed when its bag is a NON-EMPTY ARRAY, whatever its entry's
+ *  shape). A non-object entry and a bag whose entry names no source
+ *  clip both stay ARMED and refuse loud at the chain build (the
+ *  compose's missing-required law) — neither quietly disarms the
+ *  film. Absent or empty bag = the compose never sees the chain
+ *  (byte-stable graphs). */
 export function reshootArmed(p: Record<string, unknown>): boolean {
-  return bagEntry(p) !== undefined
+  const bag = p.reshoot
+  return Array.isArray(bag) && bag.length > 0
 }
 
 /** The run-level chain handles: built once per compose (film or

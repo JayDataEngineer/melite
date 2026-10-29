@@ -9,13 +9,17 @@
  * compose honored it, and the lane rendered as if nothing was armed —
  * the journey's UI hop was unwalled.
  *
- * THE LAW: a mod bag is ARMED by presence, exactly as the card reads
- * it (an absent or empty array is the unused arm — the film composes
- * and renders byte-identically). This module derives what an armed
- * bag COMMISSIONS — kind, the seats its entry names, and, for the
- * extend, the window composition it will build — for the rail to
- * draw. It READS; it never writes, never defaults a seat, and never
- * invents a commission the doc does not carry.
+ * THE LAW: a mod bag is ARMED when it is a non-empty ARRAY — the
+ * card's own predicate (`Array.isArray && length > 0`); an absent bag
+ * or an explicit empty array is the unused arm (the film composes and
+ * renders byte-identically). This module derives what an armed bag
+ * COMMISSIONS — kind, the seats its entry names, and, for the extend,
+ * the window composition it will build — for the rail to draw. A
+ * present NON-array or a non-object entry is armed-and-doomed at the
+ * run door, so it draws a refusal row instead of a clean lane (the
+ * burn class inverted: a doc that will refuse must never look fine).
+ * It READS; it never writes, never defaults a seat, and never invents
+ * a commission the doc does not carry.
  *
  * WHY A DERIVATION AND NOT A MIRROR: the bags live outside `LayerA`
  * and outside the studio's three write channels (calls, keyframes,
@@ -23,7 +27,9 @@
  * open→save by the bench's merge-patch — so the rail projects the
  * durable row and holds no state of its own.
  */
-import { solveWindowComposition, type WindowComposition } from '@melite/models-h3/timelineContract'
+import {
+  assertGridLength, GRID_MAX_FRAMES, solveWindowComposition, type WindowComposition,
+} from '@melite/models-h3/timelineContract'
 
 /** The four mod bags, in the card's own declaration order. */
 export const COMMISSION_KINDS = ['replace', 'repair', 'extend', 'reshoot'] as const
@@ -41,38 +47,48 @@ export interface CommissionSeat {
  *  the lane so N chained windows are visible, §9's own multiply). */
 export type CommissionGeometry = WindowComposition
 
+/** A malformed arm the run door refuses: the bag is present but is
+ *  not an array, or its entry is not an object. The rail draws the
+ *  row (armed by the card's presence predicate) with a note, never a
+ *  silent clean lane. */
+export type CommissionNote = 'malformed' | 'bad-entry'
+
 /** One armed commission, as the rail renders it. */
 export interface DocCommission {
   kind: CommissionKind
   /** The bag entry, verbatim (the rail names its seats). */
   seats: CommissionSeat[]
-  /** Extend only: the composition the door will compose (N windows,
-   *  each window's frames, the delivered frames). Absent for the
-   *  single-window arms and for every non-extend kind. */
+  /** Extend only (object entry): the composition the door will
+   *  compose (N windows, each window's frames, the delivered
+   *  frames). Absent for the single-window arms and every non-extend
+   *  kind. */
   geometry?: CommissionGeometry
-  /** Extend only: the compose door's refusal voice when the stated
-   *  seconds compose nowhere exactly — the rail shows the armed-and-
-   *  doomed doc instead of a lane that looks fine. */
+  /** The compose door's refusal voice when the stated seconds compose
+   *  nowhere exactly — the rail shows the armed-and-doomed doc
+   *  instead of a lane that looks fine. */
   refusal?: string
+  /** The malformed-arm note (the door's own refusal is the backstop;
+   *  the rail's dictionary names the UI face). */
+  note?: CommissionNote
 }
 
 /** The frames-per-second the composition's seconds readout divides by
  *  (the film clock — the solver's own divisor). */
 const FILM_FPS = 24
 
-/** Read one bag's single entry, exactly as the card's arm predicate
- *  does: an absent bag, a non-array, or an empty array is DISARMED.
- * @param params the durable bench row
- * @param kind the bag key
- * @returns the first entry, or undefined when the arm is unused */
-function bagEntry(
-  params: Record<string, unknown> | undefined,
-  kind: CommissionKind,
-): Record<string, unknown> | undefined {
-  const bag = params?.[kind]
-  if (!Array.isArray(bag) || bag.length === 0) return undefined
+/** Read one NON-EMPTY bag's single entry. The ARM predicate is the
+ *  card's own (non-empty array, whatever the entry's shape); this
+ *  helper only types an object entry, so a non-object entry stays
+ *  armed and the caller marks it `bad-entry`.
+ * @param bag the armed bag (the caller has already proven array + non-empty)
+ * @returns the first entry when it is an object, else undefined */
+function bagEntry(bag: unknown[]): Record<string, unknown> | undefined {
   const entry = bag[0]
-  return typeof entry === 'object' && entry !== null ? (entry as Record<string, unknown>) : undefined
+  // an ARRAY entry is not a seat object (the door refuses its missing
+  // seats); the rail marks it bad-entry rather than naming index keys
+  return typeof entry === 'object' && entry !== null && !Array.isArray(entry)
+    ? (entry as Record<string, unknown>)
+    : undefined
 }
 
 /** The seats an entry states, in the entry's own key order: strings
@@ -114,6 +130,16 @@ function geometryOf(entry: Record<string, unknown>): {
   const frames = Math.round(seconds * FILM_FPS)
   if (frames <= 0) return {}
   try {
+    // THE DOOR'S OWN BRANCH (the 2026-11-12 rail audit H1): one
+    // window keeps the landed grid law verbatim (its refusal voice is
+    // the grid sentence); beyond it the solver composes N uniform
+    // windows. Following the same branch keeps the rail's voice the
+    // door's voice for the SAME input — never a solver sentence for
+    // an input the door never asks the solver.
+    if (frames <= GRID_MAX_FRAMES) {
+      const windowFrames = assertGridLength(frames, 'h3-timeline extend')
+      return { geometry: { windows: 1, windowFrames, deliveredFrames: frames } }
+    }
     return { geometry: solveWindowComposition(frames, 'h3-timeline extend') }
   } catch (err) {
     return { refusal: err instanceof Error ? err.message : String(err) }
@@ -128,8 +154,19 @@ function geometryOf(entry: Record<string, unknown>): {
 export function deriveCommissions(params: Record<string, unknown> | undefined): DocCommission[] {
   const out: DocCommission[] = []
   for (const kind of COMMISSION_KINDS) {
-    const entry = bagEntry(params, kind)
-    if (entry === undefined) continue
+    const bag = params?.[kind]
+    if (bag === undefined) continue
+    // armed iff non-empty array; empty = explicit off (the unused arm)
+    if (!Array.isArray(bag)) {
+      out.push({ kind, seats: [], note: 'malformed' })
+      continue
+    }
+    if (bag.length === 0) continue
+    const entry = bagEntry(bag)
+    if (entry === undefined) {
+      out.push({ kind, seats: [], note: 'bad-entry' })
+      continue
+    }
     const commission: DocCommission = { kind, seats: seatsOf(entry) }
     if (kind === 'extend') {
       const { geometry, refusal } = geometryOf(entry)

@@ -119,19 +119,42 @@ describe("§9 — the studio strip's commission mapping", () => {
     const doomed: DocCommission = {
       kind: "extend",
       seats: [{ key: "source_clip", value: "clips/t3.mp4" }, { key: "extend_seconds", value: "5.31" }],
-      refusal: "h3-timeline extend: stated 127f composes nowhere exactly",
+      refusal: "h3-timeline extend: length 127f is off-grid — the engine renders 22+17k frames in [22,362] (nearest legal: 124f); the doc-proven geometry is 0→124→243→362",
     }
     const { container } = render(strip([doomed]))
     const lane = container.querySelector('[data-commission-lane="extend"]') as HTMLElement
     const head = container.querySelector('[data-lane-head="commission"][data-lane-head-id="extend"]') as HTMLElement
-    expect(head.title).toContain("composes nowhere exactly")
+    expect(head.title).toContain("is off-grid")
+    expect(head.title).toContain("[22,362]")
     // a refused composition draws NO window segments (nothing to draw)
     expect(container.querySelectorAll('[data-commission-segment^="extend-"]')).toHaveLength(1)
   })
 
-  it("ARM 6 — two armed bags draw two rows in the card's order (the rail is deterministic)", () => {
-    const { container } = render(strip([RESHOOT, EXTEND]))
+  it("ARM 6 — two armed bags draw two rows in the DERIVED order the pane is handed (the rail is deterministic)", () => {
+    // the derivation emits card order (extend before reshoot); the pane
+    // must not reorder what the rail was handed
+    const { container } = render(strip([EXTEND, RESHOOT]))
     const lanes = [...container.querySelectorAll("[data-commission-lane]")]
-    expect(lanes.map((l) => l.getAttribute("data-commission-lane"))).toEqual(["reshoot", "extend"])
+    expect(lanes.map((l) => l.getAttribute("data-commission-lane"))).toEqual(["extend", "reshoot"])
+  })
+
+  it("ARM 7 — a present NON-ARRAY bag shows the malformed row (the door refuses; the lane never looks fine)", () => {
+    const malformed: DocCommission = { kind: "extend", seats: [], note: "malformed" }
+    const { container } = render(strip([malformed]))
+    const head = container.querySelector('[data-lane-head="commission"][data-lane-head-id="extend"]') as HTMLElement
+    expect(head, "the malformed arm still draws its row").not.toBeNull()
+    expect(head.title).toBe(studioCopy.commissionMalformed("extend"))
+    expect(head.title).toContain("not an entry list")
+    // no window segments: nothing was composed
+    expect(container.querySelectorAll('[data-commission-segment^="extend-"]')).toHaveLength(1)
+  })
+
+  it("ARM 8 — a non-object entry shows the bad-entry row (armed, refused by the door, never hidden)", () => {
+    const badEntry: DocCommission = { kind: "reshoot", seats: [], note: "bad-entry" }
+    const { container } = render(strip([badEntry]))
+    const head = container.querySelector('[data-lane-head="commission"][data-lane-head-id="reshoot"]') as HTMLElement
+    expect(head, "the bad entry still draws its row").not.toBeNull()
+    expect(head.title).toBe(studioCopy.commissionBadEntry("reshoot"))
+    expect(head.title).toContain("entry is not an object")
   })
 })

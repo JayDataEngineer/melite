@@ -39,6 +39,9 @@ import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import { getModel, registryIds, registryModel } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
 import { deriveWiringDoc, assertWiringAgainst } from "../../../../packages/engines/comfyui-cordis/src/wiringWall.ts";
 import { RESHOOT_DIAL_BOUNDS } from "../../../../packages/models/h3/src/reshoot.ts";
+import {
+  hydrateLayerA, serializeLayerA, LAYERA_KEY_UNIVERSE,
+} from "../../../../packages/video/h3-timeline/src/ui/studio/docHydrate.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
 const FACTS_PATH = join(ROOT, "packages", "engines", "comfyui-cordis", "data", "model-facts.json");
@@ -119,27 +122,82 @@ describe("the h3 camera re-shoot wall (the fourth mod bag)", () => {
     assert.deepEqual([...servedBanded], [], "every emission band has a served field");
   });
 
-  it("ARM 3 — an out-of-domain dial refuses LOUD at the compose door, ahead of the engine; in-band extremes walk", () => {
-    for (const [name, value] of [
-      ["orbit", 181], ["tilt", -91], ["dolly", 0.05],
-      ["zoom", 121], ["pan", 1.5], ["strength", 10.5],
-      ["depth_ratio", 1],
-    ] as const) {
-      assert.throws(
-        () => compose({ ...BASE, reshoot: [{ source_clip: "sources/take3.mp4", [name]: value }] }),
-        new RegExp(`${name}.*outside the camera band|outside the camera band.*${name}`),
-        `${name}=${value} must refuse at the compose door, never a widget 400`,
-      );
+  it("ARM 3 — an out-of-domain dial refuses LOUD on BOTH sides of every band, ahead of the engine", () => {
+    // Both edges, derived from the emission's own bounds: a dial can
+    // drift in either direction, so each side gets its own firing
+    // value. The refusal is the composer's own voice (the band, the
+    // recorded value, and the never-a-widget-400 tail), not a bare
+    // "outside" fragment.
+    const EPS = 1e-6;
+    for (const [name, [lo, hi]] of Object.entries(RESHOOT_DIAL_BOUNDS)) {
+      for (const value of [lo - EPS, hi + EPS]) {
+        assert.throws(
+          () => compose({ ...BASE, reshoot: [{ source_clip: "sources/take3.mp4", [name]: value }] }),
+          new RegExp(`outside the camera band \\[${lo}, ${hi}\\].*never a widget 400`),
+          `${name}=${value} must refuse at the compose door naming the band`,
+        );
+      }
     }
-    // every dial at its band edge walks green (and arms)
-    const edge = compose({
+    // every dial at BOTH band edges walks green (and arms): the low
+    // doc and the high doc each compose the full warp pair; the two
+    // booleans walk on the high side (their own model + card legs).
+    const low = compose({
+      ...BASE,
+      reshoot: [{
+        source_clip: "sources/take3.mp4", orbit: -180, tilt: -90, dolly: 0.1,
+        zoom: 20, pan: -1, strength: 0, depth_ratio: 1.5,
+      }],
+    });
+    expect(ofClass(low, "CrossViewWarp")).toHaveLength(2);
+    const high = compose({
       ...BASE,
       reshoot: [{
         source_clip: "sources/take3.mp4", orbit: 180, tilt: 90, dolly: 3,
-        zoom: 20, pan: 0.5, strength: 10, depth_ratio: 1000,
+        zoom: 120, pan: 1, strength: 10, depth_ratio: 1000,
+        smooth_depth: true, invert_depth: true,
       }],
     });
-    expect(ofClass(edge, "CrossViewWarp")).toHaveLength(2);
+    expect(ofClass(high, "CrossViewWarp")).toHaveLength(2);
+  });
+
+  it("ARM 3b — a two-entry bag refuses at the compose door (max_stack 1, never a silent first-wins)", () => {
+    const entry = { source_clip: "sources/take3.mp4" };
+    assert.throws(
+      () => compose({ ...BASE, reshoot: [entry, { ...entry, orbit: 30 }] }),
+      /reshoot bag carries 2 entries — max_stack is 1.*Keep exactly one reshoot entry/,
+      "the second entry would be silently dropped; refuse loud instead",
+    );
+    // the four bags share the guard: the swap arm names its own noun
+    assert.throws(
+      () => compose({ ...BASE, replace: [{ source_clip: "c.mp4", swap_prompt: "x" }, { source_clip: "c.mp4" }] }),
+      /replace bag carries 2 entries — max_stack is 1.*Keep exactly one swap entry/,
+    );
+  });
+
+  it("ARM 3c — the studio hydrate→serialize ride keeps the armed bag and the film graph (the bench merge-patch path)", () => {
+    // JOURNEY hop 2: the doc that lands on the bench is hydrated into
+    // Layer A and serialized back as a merge-patch over the saved
+    // stage.params. The four bags live OUTSIDE LayerA's write
+    // channels, so the patch never states them and the bench's
+    // merge-patch preserves them — an upstream drop would disarm the
+    // commission silently (an absent bag is legal). Judge the real
+    // hydrate + serializer, then compose the round-tripped doc.
+    for (const bag of ["replace", "repair", "extend", "reshoot"]) {
+      assert.equal(LAYERA_KEY_UNIVERSE.has(bag), false,
+        `${bag} stays outside Layer A's write channels (the bag law's carrier)`);
+    }
+    const base = { ...BASE, reshoot: [{ source_clip: "sources/take3.mp4", orbit: 45 }] };
+    const patch = serializeLayerA(hydrateLayerA(base), base);
+    assert.equal("reshoot" in patch, false, "the serializer states no bag key — the base bag rides the merge-patch");
+    const saved: Record<string, unknown> = { ...base };
+    for (const [k, v] of Object.entries(patch)) {
+      if (v === null) delete saved[k];
+      else saved[k] = v;
+    }
+    assert.deepEqual(saved.reshoot, base.reshoot, "the armed bag survives open→save byte-equal");
+    const out = compose(saved);
+    expect(ofClass(out, "CrossViewWarp")).toHaveLength(2);
+    expect(ofClass(out, "MiniMaxH3FunControlNetApply").length).toBeGreaterThanOrEqual(1);
   });
 
   it("ARM 4 — an armed doc wires the full chain on the SHARED loader law, and the film's SaveVideo is its terminal", () => {

@@ -161,9 +161,9 @@ window long, and expect an impressionistic arc, not a tracked path.
 
 ### "Swap in the red-jacket character and lift the dolly from this clip."
 
-Two lanes, one film. WHO changes (the openjutsu swap flow — the
-viggle-animate family's `openjutsu` skill drives the character swap) and
-HOW the frame moves (this skill). The swap produces the identity
+Two lanes, one film. WHO changes (the h3-timeline's own `swap` skill —
+it binds the `replace` mod bag and drives the character swap through the
+masked-edit chain) and HOW the frame moves (this skill). The swap produces the identity
 reference; the reference clip donates the camera move:
 
 ```json
@@ -190,7 +190,7 @@ qwen-img-21 character-sheet skill is the strongest identity seat);
 `ref_videos` carries the move, trimmed to the 4 s that actually dollies;
 the prose CITES `<Video 1>` and names the move — the citation is what
 binds the transfer. Keep the two grammars in their lanes: identity
-questions (who, what they wear) ride the openjutsu swap flow; camera
+questions (who, what they wear) ride the card's `swap` skill; camera
 questions (framing, move, cut rhythm) ride this skill. One brief, two
 doors, one `add_stage`.
 
@@ -224,14 +224,14 @@ State the move you delivered in the words the card actually accepts —
 prose, pins, references, re-shoot plates — and let the user's Run press
 judge it.
 
-## openjutsu or cinemadir — which door
+## swap or cinemadir — which door
 
 - **Camera ask** (a move, a size, a cut, a rhythm): this skill. The
   frame changes; the subject's identity is already settled.
 - **Subject ask** (replace the actor, put this character in that clip):
-  the `openjutsu` swap flow (the viggle-animate family's swap skill).
-  The performance stays the source's; the WHO changes.
-- **Both** (the music-video shape): swap first (openjutsu produces the
+  the h3-timeline's `swap` skill (the `replace` mod bag). The
+  performance stays the source's; the WHO changes.
+- **Both** (the music-video shape): swap first (the `swap` skill produces the
   identity reference), then direct (this skill composes the move —
   prose, pins, `ref_videos` transfer). Example 3 above is the whole
   pattern in one `add_stage`.

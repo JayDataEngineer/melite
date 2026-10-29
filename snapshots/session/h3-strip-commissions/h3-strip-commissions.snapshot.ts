@@ -159,14 +159,19 @@ describe('h3 strip commissions (keyless replay)', () => {
     // ── HOP 3: the RUN's own door — the compose builds what the rail drew
     assert.ok(def, 'the composition root serves the h3-timeline card')
     const g = new GraphBuilder()
-    // the extend arm alone (the recorded doc's own calls + bag, without
-    // the re-shoot bag): this hop judges the extend branch's graph
+    // THE ONE-DOOR LAW makes the recorded TWO-bag doc unrunnable as
+    // saved: the card refuses two armed bags loud, so the operator
+    // clears one arm before Run. This hop judges the EXTEND row's own
+    // journey (the recorded doc's calls + extend bag); the re-shoot
+    // row's compose journey is the §8 wall's own
+    // (tests/walls/ts/suites/h3-reshoot-chain.spec.ts), never this
+    // snapshot's.
     const walked = def.schema({
       calls: DOC.calls, length: DOC.length, extend: DOC.extend,
     }) as Record<string, unknown>
     def.compose(walked, model, g, 'run_commissions')
-    const classes = Object.values(g.toJSON() as Record<string, { class_type: string }>)
-      .map((n) => n.class_type)
+    const nodes = Object.values(g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>)
+    const classes = nodes.map((n) => n.class_type)
     // the extend branch composed REAL windows: its chain emission and
     // its own file join, and NOT the re-shoot spine (the doc's reshoot
     // is cleared here so this arm judges the extend arm alone)
@@ -178,5 +183,17 @@ describe('h3 strip commissions (keyless replay)', () => {
       !classes.some((c) => /FunControlNet/.test(c)),
       'the extend-only doc never mounts the re-shoot controlnet spine',
     )
+    // THE COUNT (rail audit H3): the run plans the SAME number of
+    // windows the rail drew — read off the chain plan's own shots
+    // roster, and the multi-window terminal is present (every class
+    // above also appears on the single-window path, so presence
+    // alone never distinguishes the drawn 3)
+    const plan = nodes.find((n) => n.class_type === 'MiniMaxH3ChainPlanModern')
+    assert.ok(plan, 'the extend graph carries the chain plan')
+    const shots = (JSON.parse(String(plan.inputs.plan_json)) as { shots: unknown[] }).shots
+    assert.equal(shots.length, extend.geometry!.windows,
+      'the run plans the 3 windows the rail drew')
+    assert.ok(classes.includes('MiniMaxH3ChainAssemble'),
+      'N ≥ 2 assembles in-chain (the multi-window terminal the single-window path lacks)')
   })
 })

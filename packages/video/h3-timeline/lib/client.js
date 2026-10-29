@@ -693,6 +693,15 @@ window.__ModuleLoader__.load({
 			},
 			/** A commission's armed row voice (what the row means). */
 			commissionRowTitle: (kind) => `${studioCopy.commissionKindLabel(kind)} is armed — this row is the commission the compose will build (agent-authored; edit the mod bag to change it)`,
+			/** A present bag that is not an entry list: the run door refuses it
+			*  (a bag is an array of exactly one entry), so the row says so. */
+			commissionMalformed: (kind) => `${studioCopy.commissionKindLabel(kind)} bag is present but is not an entry list — the run door refuses this arm (a bag is an array holding exactly one entry)`,
+			/** A bag whose entry is not an object: armed, and the door refuses
+			*  its missing seats — the row says so instead of hiding the arm. */
+			commissionBadEntry: (kind) => `${studioCopy.commissionKindLabel(kind)} bag's entry is not an object — the run door refuses this arm (an entry states the arm's seats)`,
+			/** The seats↔geometry join on a commission row (punctuation owned
+			*  by the dictionary, like the seats' own middle dot). */
+			commissionDetailJoin: " — ",
 			/** The seats line: "source_clip clips/a.mp4 · strength 2". */
 			commissionSeats: (seats) => seats.map((s) => `${s.key} ${s.value}`).join(" · "),
 			/** The composition line: "4 × 243f · 12.730s". */
@@ -1012,6 +1021,13 @@ window.__ModuleLoader__.load({
 		*  drift into different laws. */
 		function isGridLength(length) {
 			return Number.isInteger(length) && length >= 22 && length <= 362 && (length - 22) % 17 === 0;
+		}
+		function assertGridLength(length, where) {
+			if (typeof length !== "number" || !isGridLength(length)) {
+				const nearest = typeof length === "number" && Number.isFinite(length) ? gridSnap(Math.min(362, Math.max(22, Math.round(length)))) : 124;
+				throw new Error(`${where}: length ${String(length)}f is off-grid — the engine renders 22+17k frames in [22,362] (nearest legal: ${nearest}f); the doc-proven geometry is 0→124→243→362`);
+			}
+			return length;
 		}
 		/** The largest 22+17k grid length ≤ x (floored at 22, capped 362). */
 		const gridFloorFrames = (x) => Math.min(362, 22 + 17 * Math.floor((x - 22) / 17));
@@ -4861,9 +4877,9 @@ window.__ModuleLoader__.load({
 				return {
 					id: c.kind,
 					label: studioCopy.commissionKindLabel(c.kind),
-					detail: [detail, geometryLine].filter((x) => x !== void 0 && x !== "").join(" — "),
+					detail: [detail, geometryLine].filter((x) => x !== void 0 && x !== "").join(studioCopy.commissionDetailJoin),
 					segments,
-					title: c.refusal ?? studioCopy.commissionRowTitle(c.kind)
+					title: c.refusal ?? (c.note === "malformed" ? studioCopy.commissionMalformed(c.kind) : c.note === "bad-entry" ? studioCopy.commissionBadEntry(c.kind) : studioCopy.commissionRowTitle(c.kind))
 				};
 			});
 			const kfChips = barLanes.map((k, i) => {
@@ -16699,13 +16715,17 @@ window.__ModuleLoader__.load({
 		* compose honored it, and the lane rendered as if nothing was armed —
 		* the journey's UI hop was unwalled.
 		*
-		* THE LAW: a mod bag is ARMED by presence, exactly as the card reads
-		* it (an absent or empty array is the unused arm — the film composes
-		* and renders byte-identically). This module derives what an armed
-		* bag COMMISSIONS — kind, the seats its entry names, and, for the
-		* extend, the window composition it will build — for the rail to
-		* draw. It READS; it never writes, never defaults a seat, and never
-		* invents a commission the doc does not carry.
+		* THE LAW: a mod bag is ARMED when it is a non-empty ARRAY — the
+		* card's own predicate (`Array.isArray && length > 0`); an absent bag
+		* or an explicit empty array is the unused arm (the film composes and
+		* renders byte-identically). This module derives what an armed bag
+		* COMMISSIONS — kind, the seats its entry names, and, for the extend,
+		* the window composition it will build — for the rail to draw. A
+		* present NON-array or a non-object entry is armed-and-doomed at the
+		* run door, so it draws a refusal row instead of a clean lane (the
+		* burn class inverted: a doc that will refuse must never look fine).
+		* It READS; it never writes, never defaults a seat, and never invents
+		* a commission the doc does not carry.
 		*
 		* WHY A DERIVATION AND NOT A MIRROR: the bags live outside `LayerA`
 		* and outside the studio's three write channels (calls, keyframes,
@@ -16723,16 +16743,15 @@ window.__ModuleLoader__.load({
 		/** The frames-per-second the composition's seconds readout divides by
 		*  (the film clock — the solver's own divisor). */
 		const FILM_FPS = 24;
-		/** Read one bag's single entry, exactly as the card's arm predicate
-		*  does: an absent bag, a non-array, or an empty array is DISARMED.
-		* @param params the durable bench row
-		* @param kind the bag key
-		* @returns the first entry, or undefined when the arm is unused */
-		function bagEntry(params, kind) {
-			const bag = params?.[kind];
-			if (!Array.isArray(bag) || bag.length === 0) return void 0;
+		/** Read one NON-EMPTY bag's single entry. The ARM predicate is the
+		*  card's own (non-empty array, whatever the entry's shape); this
+		*  helper only types an object entry, so a non-object entry stays
+		*  armed and the caller marks it `bad-entry`.
+		* @param bag the armed bag (the caller has already proven array + non-empty)
+		* @returns the first entry when it is an object, else undefined */
+		function bagEntry(bag) {
 			const entry = bag[0];
-			return typeof entry === "object" && entry !== null ? entry : void 0;
+			return typeof entry === "object" && entry !== null && !Array.isArray(entry) ? entry : void 0;
 		}
 		/** The seats an entry states, in the entry's own key order: strings
 		*  verbatim, finite numbers stringified, booleans only when true
@@ -16773,6 +16792,11 @@ window.__ModuleLoader__.load({
 			const frames = Math.round(seconds * FILM_FPS);
 			if (frames <= 0) return {};
 			try {
+				if (frames <= 362) return { geometry: {
+					windows: 1,
+					windowFrames: assertGridLength(frames, "h3-timeline extend"),
+					deliveredFrames: frames
+				} };
 				return { geometry: solveWindowComposition(frames, "h3-timeline extend") };
 			} catch (err) {
 				return { refusal: err instanceof Error ? err.message : String(err) };
@@ -16786,8 +16810,26 @@ window.__ModuleLoader__.load({
 		function deriveCommissions(params) {
 			const out = [];
 			for (const kind of COMMISSION_KINDS) {
-				const entry = bagEntry(params, kind);
-				if (entry === void 0) continue;
+				const bag = params?.[kind];
+				if (bag === void 0) continue;
+				if (!Array.isArray(bag)) {
+					out.push({
+						kind,
+						seats: [],
+						note: "malformed"
+					});
+					continue;
+				}
+				if (bag.length === 0) continue;
+				const entry = bagEntry(bag);
+				if (entry === void 0) {
+					out.push({
+						kind,
+						seats: [],
+						note: "bad-entry"
+					});
+					continue;
+				}
 				const commission = {
 					kind,
 					seats: seatsOf(entry)

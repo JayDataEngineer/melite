@@ -265,9 +265,12 @@ export function StudioStripPane({
     return {
       id: c.kind,
       label: studioCopy.commissionKindLabel(c.kind),
-      detail: [detail, geometryLine].filter((x): x is string => x !== undefined && x !== "").join(" — "),
+      detail: [detail, geometryLine].filter((x): x is string => x !== undefined && x !== "").join(studioCopy.commissionDetailJoin),
       segments,
-      title: c.refusal ?? studioCopy.commissionRowTitle(c.kind),
+      title: c.refusal
+        ?? (c.note === "malformed" ? studioCopy.commissionMalformed(c.kind)
+          : c.note === "bad-entry" ? studioCopy.commissionBadEntry(c.kind)
+            : studioCopy.commissionRowTitle(c.kind)),
     }
   })
 

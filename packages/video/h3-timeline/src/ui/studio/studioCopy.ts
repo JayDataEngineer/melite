@@ -303,6 +303,17 @@ export const studioCopy = {
   /** A commission's armed row voice (what the row means). */
   commissionRowTitle: (kind: string): string =>
     `${studioCopy.commissionKindLabel(kind)} is armed — this row is the commission the compose will build (agent-authored; edit the mod bag to change it)`,
+  /** A present bag that is not an entry list: the run door refuses it
+   *  (a bag is an array of exactly one entry), so the row says so. */
+  commissionMalformed: (kind: string): string =>
+    `${studioCopy.commissionKindLabel(kind)} bag is present but is not an entry list — the run door refuses this arm (a bag is an array holding exactly one entry)`,
+  /** A bag whose entry is not an object: armed, and the door refuses
+   *  its missing seats — the row says so instead of hiding the arm. */
+  commissionBadEntry: (kind: string): string =>
+    `${studioCopy.commissionKindLabel(kind)} bag's entry is not an object — the run door refuses this arm (an entry states the arm's seats)`,
+  /** The seats↔geometry join on a commission row (punctuation owned
+   *  by the dictionary, like the seats' own middle dot). */
+  commissionDetailJoin: " — ",
   /** The seats line: "source_clip clips/a.mp4 · strength 2". */
   commissionSeats: (seats: ReadonlyArray<{ key: string; value: string }>): string =>
     seats.map((s) => `${s.key} ${s.value}`).join(" · "),

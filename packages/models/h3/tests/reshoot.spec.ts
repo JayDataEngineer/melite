@@ -18,6 +18,7 @@ import { describe, it, expect } from "vitest";
 import { film } from "../src/actions.ts";
 import { instantiateAction } from "@melite/comfyui-card-kit";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
+import { readReshootKnobs, reshootArmed } from "../src/reshoot.ts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 
 const H3: ModelFacts = {
@@ -173,6 +174,29 @@ describe("the h3 camera re-shoot chain (the fourth mod bag)", () => {
         H3, g, "run_rs_noclip",
       )
     ).toThrow(/names no source clip/);
+  });
+
+  it("a non-array bag is DISARMED and the neutral knobs are the identity camera", () => {
+    // the card's guard refuses a present non-array bag loud; at the
+    // model tier it is simply not an arm (the same absent posture), and
+    // the knob reader falls back to the identity camera
+    expect(reshootArmed({ reshoot: "clips/take3.mp4" })).toBe(false);
+    expect(reshootArmed({ reshoot: [] })).toBe(false);
+    expect(readReshootKnobs({ reshoot: "clips/take3.mp4" })).toEqual({
+      orbit: 0, tilt: 0, dolly: 1, zoom: 50, pan: 0, strength: 1,
+      depthRatio: 6, smoothDepth: false, invertDepth: false,
+    });
+  });
+
+  it("a NON-OBJECT entry stays ARMED and refuses at the chain build (the presence predicate, never a silent disarm)", () => {
+    // the card's guard allows a non-empty array of any entry shape; the
+    // arm predicate is PRESENCE, so the entry reaches the build and the
+    // clip refusal fires — the same loud posture as [source_clip: ""]
+    const armedEntry = { ...bag(), reshoot: [42] };
+    expect(reshootArmed(armedEntry)).toBe(true);
+    const g = new GraphBuilder();
+    expect(() => instantiateAction(film, armedEntry, H3, g, "run_rs_bad_entry"))
+      .toThrow(/carries an entry but names no source clip/);
   });
 
   it("a two-shot film builds the chain ONCE and stamps an apply seat into every window", () => {

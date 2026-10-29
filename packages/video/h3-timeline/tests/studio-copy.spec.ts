@@ -150,7 +150,11 @@ describe("SOURCE — the copy dictionary owns the static faces", () => {
     // id = countMergedTail (the mods bucket's " · merged" count dot);
     // its sibling face modDeclaredChipTitle rides as a function,
     // outside this count by construction.
-    assert.equal(ids.length, 102, `the dictionary holds 102 copy ids (found ${ids.length}) — re-pin this wall when copy is added or removed`)
+    // RE-PIN 2026-11-12 (§9 rail-audit cure N1): 102 → 103. +1 flat id
+    // = commissionDetailJoin (the seats↔geometry separator, moved out
+    // of the pane's literal); its sibling faces commissionMalformed /
+    // commissionBadEntry ride as functions, outside this count.
+    assert.equal(ids.length, 103, `the dictionary holds 103 copy ids (found ${ids.length}) — re-pin this wall when copy is added or removed`)
     // RE-PIN 2026-10-16 (the square-grammar residue): 102 → 101.
     // removePack died with the strip Button (187eaf607 deleted the
     // verb; SourceRow's onEdit("") owns the detach) — a fossil id

@@ -20,11 +20,49 @@
 // surfaces the door's own refusal voice, and a bag the card REFUSES
 // (multi-window under a non-39 overlap) still shows as an armed row —
 // the operator sees the armed-and-doomed doc before pressing Run.
-import { describe, expect, it } from "vitest"
+import "../../../../tests/helpers/boot-models.ts"
+import { beforeAll, describe, expect, it } from "vitest"
+import assert from "node:assert/strict"
+import { dirname, join } from "node:path"
+import { fileURLToPath } from "node:url"
+import { GraphBuilder } from "@melite/comfyui-card-kit/graph"
+import { loadCardDefs } from "@melite/comfyui-cordis"
+import { loadFacts } from "@melite/comfyui-card-kit/facts"
+import type { ModelFacts } from "@melite/comfyui-card-kit/facts"
+import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition"
+import {
+  getModel, registryIds, registryModel,
+} from "../../../engines/comfyui-cordis/src/models/models.ts"
+import { solveWindowComposition } from "@melite/models-h3/timelineContract"
 import {
   COMMISSION_KINDS, deriveCommissions, type CommissionKind,
 } from "../src/ui/studio/commissions.ts"
-import { solveWindowComposition } from "@melite/models-h3/timelineContract"
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..")
+let def: CardDefinition
+let model: ModelFacts
+beforeAll(async () => {
+  def = (await loadCardDefs()).get("h3-timeline")!
+  assert.ok(def, "the composition root serves the h3-timeline card")
+  model = loadFacts(
+    join(ROOT, "packages", "engines", "comfyui-cordis", "data", "model-facts.json"),
+    { getModel, registryIds, registryModel },
+  ).models["h3-timeline"]!
+  assert.ok(model, "the h3-timeline family facts row serves")
+})
+
+type Node = { class_type: string; inputs: Record<string, unknown> }
+/** Compose the doc on the card's real door and read the composed
+ *  window count off the chain plan's own shots roster. */
+const composedWindows = (doc: Record<string, unknown>): number => {
+  const g = new GraphBuilder()
+  def.compose(def.schema(doc) as Record<string, unknown>, model, g, "run_cross_door")
+  const out = g.toJSON() as Record<string, Node>
+  const plan = Object.values(out).find((n) => n.class_type === "MiniMaxH3ChainPlanModern")
+  assert.ok(plan, "the extend graph carries the chain plan")
+  const parsed = JSON.parse(String(plan.inputs.plan_json)) as { shots: unknown[] }
+  return parsed.shots.length
+}
 
 const REPLACE = { source_clip: "clips/take1.mp4", prompt: "the same person, now indoors" }
 const REPAIR = { source_clip: "clips/take2.mp4", mask: "clips/mask.png", denoise: 0.32 }
@@ -40,7 +78,9 @@ describe("§9 — the studio's mod projection (the commission derivation)", () =
     const empty = Object.fromEntries(COMMISSION_KINDS.map((k) => [k, []]))
     expect(deriveCommissions(empty)).toEqual([])
     // and a non-array value is not a bag (the wire never coerces one)
-    expect(deriveCommissions({ replace: "clips/take1.mp4" } as never)).toEqual([])
+    // a present NON-array is armed-and-refused (ARM 11's own row), never
+    // a clean empty lane: the card's guard throws for it at the door
+    expect(deriveCommissions({ replace: "clips/take1.mp4" } as never)[0]!.note).toBe("malformed")
   })
 
   it("ARM 2 — each armed bag derives exactly one row, carrying its entry's seats", () => {
@@ -82,16 +122,31 @@ describe("§9 — the studio's mod projection (the commission derivation)", () =
     }
   })
 
-  it("ARM 5 — a stated extension that composes nowhere exactly surfaces the door's OWN refusal voice (never a lane that looks fine)", () => {
-    // 5s + an off-grid remainder: no uniform 22+17k composition delivers it
-    const doomed = { ...EXTEND, extend_seconds: 5.31 }
-    const row = deriveCommissions({ extend: [doomed] })[0]!
-    expect(row.refusal, "the armed-and-doomed doc shows the refusal").toBeDefined()
-    expect(row.refusal).toMatch(/h3-timeline extend: stated \d+f composes nowhere exactly/)
-    expect(row.geometry, "a refused composition draws no windows").toBeUndefined()
-    // the SAME voice the compose door raises — one sentence, two faces
-    expect(() => solveWindowComposition(Math.round(5.31 * 24), "h3-timeline extend"))
-      .toThrow(/composes nowhere exactly/)
+  it("ARM 5 — a refused extension surfaces the DOOR's own sentence for that input (both door branches, rail == door)", () => {
+    // THE DOOR'S OWN BRANCH (rail audit H1): one window (≤362f) takes
+    // assertGridLength; >362f takes the solver. The rail follows the
+    // same branch, so each input shows the sentence the door raises
+    // for THAT input — never the other branch's wording.
+    const gridBound = { ...EXTEND, extend_seconds: 5.31 } // 127f ≤ 362
+    const gridRow = deriveCommissions({ extend: [gridBound] })[0]!
+    expect(gridRow.refusal, "the armed-and-doomed doc shows the refusal").toBeDefined()
+    expect(gridRow.refusal).toMatch(/h3-timeline extend: length 127f is off-grid/)
+    expect(gridRow.refusal).toMatch(/22\+17k frames in \[22,362\]/)
+    expect(gridRow.geometry, "a refused composition draws no windows").toBeUndefined()
+    // the solver branch (>362f) keeps the solver's sentence
+    const solverBound = { ...EXTEND, extend_seconds: 20.13 } // 483f > 362
+    const solverRow = deriveCommissions({ extend: [solverBound] })[0]!
+    expect(solverRow.refusal, "483f refuses on the solver branch").toMatch(/stated 483f composes nowhere exactly/)
+    expect(solverRow.geometry).toBeUndefined()
+    // and the compose door raises the grind sentence on the SAME input
+    // when it refuses (one branch, one voice)
+    const boom = (doc: Record<string, unknown>): string => {
+      try { composedWindows(doc); return "" } catch (err) { return err instanceof Error ? err.message : String(err) }
+    }
+    const calls = [{ text: "she walks on", start_frame: 0, end_frame: 56 }]
+    expect(boom({ calls, length: 56, extend: [gridBound] })).toMatch(/length 127f is off-grid/)
+    expect(boom({ calls, length: 56, extend: [solverBound] }))
+      .toMatch(/stated 483f composes nowhere exactly/)
   })
 
   it("ARM 6 — only channels the operator can act on are named: empty strings, non-finite numbers, and stated-false flags drop", () => {
@@ -119,11 +174,23 @@ describe("§9 — the studio's mod projection (the commission derivation)", () =
     expect(JSON.stringify(params)).toBe(before)
   })
 
-  it("ARM 9 — a bag holding a NON-OBJECT entry derives no row (the card's reader treats it as disarmed)", () => {
-    // the entry's shape is the card's authority, not the rail's: a row that
-    // rendered here would name seats the compose door never reads
-    expect(deriveCommissions({ extend: [42] })).toEqual([])
-    expect(deriveCommissions({ reshoot: ["clips/take4.mp4"] })).toEqual([])
+  it("ARM 9 — a NON-OBJECT entry stays ARMED: the row says the door refuses it, never a clean lane", () => {
+    // THE CARD'S OWN PREDICATE (rail audit H4): armed = non-empty
+    // array, whatever the entry's shape. Every sibling arm refuses
+    // loud at the door on such an entry, so the rail must NOT hide
+    // the arm — a doc that will refuse shows as a refusal row.
+    for (const entry of [42, "clips/take4.mp4", null, ["nested"]]) {
+      const rows = deriveCommissions({ extend: [entry] })
+      expect(rows).toHaveLength(1)
+      expect(rows[0]!.kind).toBe("extend")
+      expect(rows[0]!.note).toBe("bad-entry")
+      expect(rows[0]!.seats).toEqual([])
+      expect(rows[0]!.geometry).toBeUndefined()
+    }
+    // the reshoot's predicate agrees (the model's armed law): armed,
+    // and its door refuses the missing clip loud
+    const rs = deriveCommissions({ reshoot: ["clips/take4.mp4"] })[0]!
+    expect(rs.note).toBe("bad-entry")
   })
 
   it("ARM 10 — an extension stating no usable seconds still draws its row, but no geometry (nothing was composed)", () => {
@@ -139,6 +206,37 @@ describe("§9 — the studio's mod projection (the commission derivation)", () =
       expect(row.kind).toBe("extend")
       expect(row.geometry, `geometry for ${String(stated.extend_seconds)}`).toBeUndefined()
       expect(row.refusal, "nothing was composed, so nothing refused").toBeUndefined()
+    }
+  })
+
+  it("ARM 11 — a present NON-ARRAY bag is armed-and-refused (the door throws; the rail shows the malformed row)", () => {
+    // the card's guard refuses a present non-array bag loud, so the
+    // rail must not draw a clean lane for it (H4's inverted-burn
+    // class: the doc that will refuse is the one that shows nothing)
+    const rows = deriveCommissions({ extend: "clips/take3.mp4" })
+    expect(rows).toHaveLength(1)
+    expect(rows[0]!.kind).toBe("extend")
+    expect(rows[0]!.note).toBe("malformed")
+    expect(rows[0]!.seats).toEqual([])
+    // an EMPTY array stays the unused arm — never a malformed row
+    expect(deriveCommissions({ extend: [] })).toEqual([])
+  })
+
+  it("ARM 12 — DRAWN windows == COMPOSED windows on the SAME doc (cross-door: the rail's geometry vs the chain plan)", () => {
+    // rail audit H2: comparing the rail's solver call against another
+    // solver call is agreement-by-shared-import. This arm feeds ONE
+    // doc through the rail and through def.compose, and counts the
+    // windows the RUN actually plans.
+    for (const seconds of [243 / 24, 362 / 24, 396 / 24]) {
+      const entry = { ...EXTEND, extend_seconds: seconds }
+      const drawn = deriveCommissions({ extend: [entry] })[0]!.geometry!
+      const composed = composedWindows({
+        calls: [{ text: "she walks on", start_frame: 0, end_frame: 56 }],
+        length: 56,
+        extend: [entry],
+      })
+      expect(composed, `${seconds}s: the run plans the ${drawn.windows} windows the rail draws`)
+        .toBe(drawn.windows)
     }
   })
 

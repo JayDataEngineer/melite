@@ -5,7 +5,7 @@
 // fresh agent would follow into dead params. The operator caught the
 // gap: mechanics live in the card, craft must live where agents load
 // it (AGENT.md, the skills, the served params spec).
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -98,6 +98,24 @@ describe("THE AGENT-DOCS WALL (the live law, where agents load it)", () => {
     // ports or service names anywhere in the doc.
     expect(md).toMatch(/maker\s+runbook/);
     expect(md).not.toMatch(/3088|33081|systemctl|127\.0\.0\.1|localhost/);
+  });
+  it("no agent-facing doc routes to the exterminated viggle-animate family — the subject door is this card's own swap skill", () => {
+    // THE EXTERMINATED ROUTE (operator: "We EXTERMINATED the viggle
+    // route"): cinemadir used to hand subject asks to the dead
+    // `openjutsu` swap flow, and nothing judged the doc tree for it.
+    // The roster is DERIVED (a walk of every agent doc), so a new
+    // skill cannot resurrect the route unseen; the live door is the
+    // h3-timeline `swap` skill's own replace bag.
+    const walk = (dir: string): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+        e.isDirectory() ? walk(join(dir, e.name)) : [join(dir, e.name)]);
+    const docs = walk(join(ROOT, "agents"));
+    expect(docs.length).toBeGreaterThan(5);
+    expect(docs.some((f) => f.endsWith("skills/cinemadir/SKILL.md")), "the walk reaches the skill bodies").toBe(true);
+    for (const f of docs) {
+      expect(readFileSync(f, "utf-8"), `dead viggle route in ${f}`)
+        .not.toMatch(/openjutsu|viggle/i);
+    }
   });
   it("the served params spec (tool.ts) exposes audio_clips with the text obligation — agents can SEE the field", () => {
     // source-text wall: the builder's parameters block is the served

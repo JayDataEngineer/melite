@@ -317,34 +317,30 @@ const RESHOOT_MOD: DeclaredModifierKind = {
 export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string) => void> = {
   [h3Decl.id]: (p, model, g, runId) => {
     // An ABSENT or EMPTY bag is the unused arm — the film below, byte-stable.
-    // A PRESENT bag must be one entry (max_stack 1); anything else refuses loud here.
+    // A PRESENT bag must be exactly one entry (max_stack 1) — an
+    // absent bag is the unused arm, an EMPTY bag is the explicit
+    // "off" override and stays legal. Anything else refuses loud
+    // here, ahead of the engine: a non-array, a null, and — the
+    // silent-drop class the one-door law kills — TWO entries, where
+    // the bag reader would quietly take the first.
+    const oneEntryBag = (key: string, bag: unknown, noun: string): void => {
+      if (bag === undefined) return
+      if (!Array.isArray(bag)) {
+        throw new Error(`h3-timeline ${key}: the ${key} bag is present but carries no entry — state exactly one ${noun} entry (max_stack 1) or omit the arm`)
+      }
+      if (bag.length > 1) {
+        throw new Error(`h3-timeline ${key}: the ${key} bag carries ${bag.length} entries — max_stack is 1, so every entry after the first would be silently dropped. Keep exactly one ${noun} entry.`)
+      }
+    }
     const raw = p.replace as Array<Record<string, unknown>> | undefined
-    if (raw !== undefined && !(Array.isArray(raw) && raw.length === 0)) {
-      if (!Array.isArray(raw) || raw.length === 0) {
-        throw new Error('h3-timeline replace: the replace bag is present but carries no entry — state exactly one swap entry (max_stack 1) or omit the arm')
-      }
-    }
     const rep = p.repair as Array<Record<string, unknown>> | undefined
-    if (rep !== undefined && !(Array.isArray(rep) && rep.length === 0)) {
-      if (!Array.isArray(rep) || rep.length === 0) {
-        throw new Error('h3-timeline repair: the repair bag is present but carries no entry — state exactly one repair entry (max_stack 1) or omit the arm')
-      }
-    }
     const ext = p.extend as Array<Record<string, unknown>> | undefined
-    if (ext !== undefined && !(Array.isArray(ext) && ext.length === 0)) {
-      if (!Array.isArray(ext) || ext.length === 0) {
-        throw new Error('h3-timeline extend: the extend bag is present but carries no entry — state exactly one extend entry (max_stack 1) or omit the arm')
-      }
-    }
-    // THE RESHOOT BAG (the fourth arm, §8): the same present-but-
-    // empty guard its three siblings carry — a bag on the doc must
-    // state exactly one commission.
+    // THE RESHOOT BAG (the fourth arm, §8) rides the same guard.
     const rsh = p.reshoot as Array<Record<string, unknown>> | undefined
-    if (rsh !== undefined && !(Array.isArray(rsh) && rsh.length === 0)) {
-      if (!Array.isArray(rsh) || rsh.length === 0) {
-        throw new Error('h3-timeline reshoot: the reshoot bag is present but carries no entry — state exactly one reshoot entry (max_stack 1) or omit the arm')
-      }
-    }
+    oneEntryBag('replace', raw, 'swap')
+    oneEntryBag('repair', rep, 'repair')
+    oneEntryBag('extend', ext, 'extend')
+    oneEntryBag('reshoot', rsh, 'reshoot')
     const replaceArmed = Array.isArray(raw) && raw.length > 0
     const repairArmed = Array.isArray(rep) && rep.length > 0
     const extendArmed = Array.isArray(ext) && ext.length > 0
