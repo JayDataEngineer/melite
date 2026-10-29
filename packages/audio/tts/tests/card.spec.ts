@@ -883,6 +883,25 @@ describe("the empty-string strip (B1: the wire carries what composed, nothing el
     assert.deepEqual(empties, [], "the studio wire is honest (the dossier's N3: qvoice_path '' dies too)");
   });
 
+  it("THE PRESET+QVOICE CONFLICT (B2): both stated refuses loud — the clone branch carries no speaker, one voice performs", () => {
+    assert.throws(
+      () => def.compose(
+        def.schema({ text: "sample", voice: "ryan", qvoice: [{ qvoice: "/v/ann.qvoice", voice_strength: 1 }] }),
+        ttsModel, new GraphBuilder(), "run_b2",
+      ),
+      /params 'voice' and 'qvoice' fire together on the tts card \(ONE voice performs — the saved persona rides the qvoice mod bag and the engine's clone branch carries no speaker; drop the preset or the \.qvoice\)/,
+    );
+    // the persona ALONE composes green (the .qvoice performs)
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({ text: "sample", qvoice: [{ qvoice: "/v/ann.qvoice", voice_strength: 1 }] }),
+      ttsModel, g, "run_b2_ok",
+    );
+    const studio = Object.values(g.toJSON() as Record<string, { class_type: string }>)
+      .find((n) => n.class_type === "AudiocoreVoiceStudio");
+    assert.ok(studio, "the persona's studio composes (the refusal guards the pair, never the persona)");
+  });
+
   it("STATED VALUES RIDE: a non-empty style survives the strip — only '' dies", () => {
     const graph = composeFinalized(
       { text: "sample", save_qvoice: true, voice: "ryan", style_instruction: "excited" },

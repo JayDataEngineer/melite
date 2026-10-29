@@ -402,6 +402,20 @@ export function registerCard(ctx, comfy) {
             if (!blank(doc.style_instruction) && !laneTakesStyleInstruction(model)) {
                 throw new Error("param 'style_instruction' fires nothing on the resolved TTS lane (this size cell has no instruction control — choose a lane with instruction control or drop the instruction)");
             }
+            // THE PRESET+QVOICE CONFLICT (the tts dossier's B2 cure,
+            // 2026-11-12 — mirrors the save-path conflict refusals above):
+            // the engine's qvoice branch has NO speaker (upstream
+            // generate_voice_clone carries none), so a stated preset beside
+            // a saved persona was silently dropped — the run performed the
+            // persona while the receipt claimed a speaker. ONE voice
+            // performs: refuse loud, naming both seats and the cure. (The
+            // overlay no longer STAMPS a preset beside a qvoice — the B7
+            // skip at stampCardOverlay; this guards the user's own
+            // explicit both-stated write.)
+            if (qvoiceStated(doc)
+                && typeof doc.voice === 'string' && doc.voice !== '' && doc.voice !== 'none') {
+                throw new Error("params 'voice' and 'qvoice' fire together on the tts card (ONE voice performs — the saved persona rides the qvoice mod bag and the engine's clone branch carries no speaker; drop the preset or the .qvoice)");
+            }
             // THE DECLARED ACTION (the atom vocabulary, stroke 3): the
             // boarded family's own speak action composes (branching on
             // the resolved synth_lane DATA); an unbound row refuses loud

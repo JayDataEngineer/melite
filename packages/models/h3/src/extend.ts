@@ -176,7 +176,7 @@ export function renderH3Extend(
       // seconds are new content).
       const whiteMask = g.node('SolidMask', {
         value: 1, width: cur.out(8), height: cur.out(9),
-      }).out(0)
+      })
       // ── the fresh-continuation body: the anchor rides BOTH
       // reference seats — the last frame as the pixel anchor
       // (ref_image_0) and the whole clip as the motion identity

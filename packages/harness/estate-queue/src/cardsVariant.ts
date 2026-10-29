@@ -357,11 +357,24 @@ export function stampCardOverlay(
   bagRefusal(body, bagFields, envelopeAtom, sel, phase, fam);
   const onSurface = (k: string): boolean => cardAdmits(decl, modNames, k);
   const out: Record<string, unknown> = { ...body };
+  // THE QVOICE-STATED PRESET SKIP (the tts dossier's B7 cure,
+  // 2026-11-12): the overlay is the only seat that can see both —
+  // a body carrying a non-empty qvoice (the saved-persona bag:
+  // string or rows) NEVER takes the 'voice' preset stamp. The
+  // engine's qvoice branch has no speaker at all (upstream
+  // generate_voice_clone carries none), so the stamped preset was
+  // inert currency the receipts lied about; with the stamp skipped,
+  // an EXPLICIT both-stated run refuses loud at the card's own
+  // compose (card.ts's B2 refusal), never silently drops one.
+  const qvoiceStated =
+    (typeof body["qvoice"] === "string" && (body["qvoice"] as string) !== "") ||
+    (Array.isArray(body["qvoice"]) && (body["qvoice"] as unknown[]).length > 0);
   for (const [k, v] of Object.entries(stamps)) {
     if (v === null || v === undefined || v === "") continue;
     if (!onSurface(k)) continue;
     if (k in out) continue;
     if ((CARD_ENVELOPE_KEYS as readonly string[]).includes(k)) continue;
+    if (k === "voice" && qvoiceStated) continue;
     out[k] = v;
   }
   return out;

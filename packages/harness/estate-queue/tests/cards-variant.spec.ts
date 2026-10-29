@@ -493,3 +493,37 @@ describe("selectCardVariant — THE B3 ADDRESS TRAP (real qwen3-tts facts: the h
     expect(sel.quant).toBe("0_6b");
   });
 });
+
+// ── THE QVOICE-STATED PRESET SKIP (the tts dossier's B7 cure,
+//    2026-11-12): the engine's qvoice branch has NO speaker (upstream
+//    generate_voice_clone carries none), so the resolver's 'voice'
+//    stamp beside a stated persona was inert currency. The overlay —
+//    the only seat that sees both — skips the preset stamp; an
+//    EXPLICIT both-stated write refuses loud at the card's compose
+//    (the B2 arm in packages/audio/tts/tests/card.spec.ts). ──────
+describe("stampCardOverlay — THE QVOICE-STATED PRESET SKIP (B7: a saved persona never takes a preset stamp)", () => {
+  const ttsDecl = decl({ schemaNames: ["text", "voice", "style_instruction"] });
+  const cvSel = selectCardVariant("qwen3-tts", ttsRow, { variant: "customvoice" }, "1");
+
+  it("a stated qvoice bag (rows form) suppresses the 'voice' preset stamp", () => {
+    const out = stampCardOverlay(
+      { qvoice: [{ qvoice: "/v/ann.qvoice", voice_strength: 1 }] },
+      ttsRow, ttsDecl, cvSel, "1", "qwen3-tts",
+    );
+    expect(out["voice"]).toBeUndefined("the persona performs — the engine's clone branch carries no speaker");
+    expect(out["qvoice"]).toEqual([{ qvoice: "/v/ann.qvoice", voice_strength: 1 }]);
+  });
+
+  it("a stated qvoice bag (bare-string form) suppresses the stamp too (the grammar accepts both)", () => {
+    const out = stampCardOverlay(
+      { qvoice: "/v/ann.qvoice" },
+      ttsRow, ttsDecl, cvSel, "1", "qwen3-tts",
+    );
+    expect(out["voice"]).toBeUndefined();
+  });
+
+  it("the control: with NO persona stated, the customvoice resolver's 'ryan' stamp rides (the no-non-speaker ruling stands)", () => {
+    const out = stampCardOverlay({}, ttsRow, ttsDecl, cvSel, "1", "qwen3-tts");
+    expect(out["voice"]).toBe("ryan");
+  });
+});
