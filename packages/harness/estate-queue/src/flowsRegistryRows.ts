@@ -336,6 +336,117 @@ export const IMAGE_UPSCALE: RegistryFlow = {
     "model:z-image:prompt-enhance",
   ],
 };
+export const VIDEO_EXTEND: RegistryFlow = {
+  id: "extend-video",
+  description:
+    "More seconds of coherent motion appended to a prior clip — the " +
+    "extend-video flow (report dev_docs/audits/features/" +
+    "extend-video-flow-2026-11-12.md): ONE card= stage on h3-timeline " +
+    "whose extend arm renders a fresh continuation anchored on the prior " +
+    "clip's LAST FRAME (negative batch index, in-graph), at full denoise " +
+    "under an all-white mask, then joins prior + new through the film " +
+    "tail's own file law (both parts save at SaveVideo prefixes; " +
+    "MeliteConcatVideos decodes them back strictly after every save). " +
+    "RUNS on the {flow:} door (the 2026-10-04 card-stage cure — the row " +
+    "composes through the card plane as one merged run); the {model:} " +
+    "door drives the same card with the extend mod armed on the bench.",
+  stages: [
+    plainStage({
+      id: "extend",
+      engine: CARD_PLANE_ENGINE,
+      card: "h3-timeline",
+      description:
+        "The continuation window via the h3-timeline card's extend arm — " +
+        "prior clip in (VHS force_rate 24), last-frame anchor, fresh " +
+        "denoise-1 window, joined film out",
+      inputs: {
+        source_clip: initial("source_clip"),
+        extend_prompt: initial("extend_prompt"),
+      },
+      // hand-written ONLY because the card's flowKinds declares
+      // none of these slots (the derivation law's exception clause:
+      // the row names what the card cannot know about its own
+      // initials). The numeric seats (extend_seconds, seed) ride NO
+      // initial — the initial kinds are the closed five
+      // (photo/video/glb/bake_params/text, flowsData.ts:74) and a
+      // number refuses every one; worse, a $spell ALWAYS resolves
+      // to its normalized STRING at the merge, so a numeric spell
+      // would land "2.33" in the bag and the renderer's typed read
+      // would silently snap to the default — the exact silent snap
+      // the grid door exists to kill. Numbers state through the
+      // WHOLE-BAG params override (applyFlowParamsOverlay: the
+      // array value replaces the bag raw, JSON numbers intact).
+      expected: { source_clip: "video", extend_prompt: "text" },
+      cardIo: { default: "video" },
+      params: {
+        model: "h3-timeline",
+        // THE MOD BAG (params-emit's law: entries ride as an array
+        // under params.<param_key>, never flattened): the two string
+        // seats are $spells resolved at the merge against this
+        // stage's wired initials — both REQUIRED, so every spell
+        // always resolves (an optional spell would refuse mid-run;
+        // the requiredInitials door guarantees the body carries
+        // both). The numeric seats (extend_seconds, seed) ride the
+        // renderer's own defaults (2.33s / seed 0); a caller pinning
+        // one passes params: {extend: [{…full bag…}]} and the
+        // override replaces this stamp wholesale with raw values.
+        extend: [
+          {
+            source_clip: "$source_clip",
+            extend_prompt: "$extend_prompt",
+          },
+        ],
+      },
+    }),
+  ],
+  initialValidators: { source_clip: "video", extend_prompt: "text" },
+  requiredInitials: ["source_clip", "extend_prompt"],
+  tool: {
+    name: "extend_video",
+    version: 1,
+    description:
+      "Append fresh seconds to a prior clip (one call: the prior clip + " +
+      "a continuation prompt in, the joined extended film out — the prior " +
+      "plays first, new motion and sound follow). The prior clip is a " +
+      "stageable video (mp4/webm/mkv/mov/m4v/avi — a /melite-media/runs/ " +
+      "artifact URL from an earlier run lands) and rides the flow body's " +
+      "source_clip key. The prompt states MOTION and SOUND picking up " +
+      "where the clip ends. extend_seconds (default 2.33) must land on " +
+      "the engine grid (frames become seconds at the schema fps " +
+      "default: 2.33s = 56f, 3.83s = 92f, 5.17s = 124f, cap 15.08s = " +
+      "362f; off-grid values refuse at the compose door) and states " +
+      "through params: {extend: [{extend_seconds: …, seed: …}]} — " +
+      "numbers ride the bag, never the flow body.",
+    properties: {
+      source_clip: {
+        ptype: "string",
+        description:
+          "the prior clip — a stageable video path (a /melite-media/" +
+          "runs/<run_id>/<file>.mp4 artifact URL from an earlier run " +
+          "lands; a browser-local blob/data URL refuses — upload first)",
+        default: null,
+        hasDefault: false,
+        minimum: null,
+        maximum: null,
+        enum: null,
+      },
+      extend_prompt: {
+        ptype: "string",
+        description:
+          "the continuation text — MOTION and SOUND for the appended " +
+          "seconds, picking up exactly where the clip ends",
+        default: null,
+        hasDefault: false,
+        minimum: null,
+        maximum: null,
+        enum: null,
+      },
+    },
+    required: ["source_clip", "extend_prompt"],
+    overlays: [],
+  },
+  skillRefs: ["card:h3-timeline"],
+};
 export const MUSIC_NATIVE: RegistryFlow = {
   id: "music-native",
   description:

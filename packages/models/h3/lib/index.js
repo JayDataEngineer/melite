@@ -555,6 +555,7 @@ export const family = {
 export { finalizeH3, H3_T4_STRIP } from "./finalize.js";
 export { renderH3Swap } from "./swap.js";
 export { renderH3Repair } from "./repair.js";
+export { renderH3Extend } from "./extend.js";
 export { reshootArmed } from "./reshoot.js";
 export { assertOverlayGated } from "./actions.js";
 export { serveWindowSpec } from "./windowSpec.js";

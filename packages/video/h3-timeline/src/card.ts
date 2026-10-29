@@ -38,6 +38,7 @@ import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit'
 import { finalizeH3 } from '@melite/models-h3'
 import { renderH3Swap } from '@melite/models-h3'
 import { renderH3Repair } from '@melite/models-h3'
+import { renderH3Extend } from '@melite/models-h3'
 import { reshootArmed } from '@melite/models-h3'
 import { parseH3Facts } from '@melite/models-h3/actions'
 import { assertOverlayGated } from '@melite/models-h3'
@@ -209,6 +210,54 @@ const REPAIR_MOD: DeclaredModifierKind = {
   ],
 }
 
+/** THE EXTEND KIND (the extend-video flow's arm, report
+ *  dev_docs/audits/features/extend-video-flow-2026-11-12.md): MORE
+ *  SECONDS appended to a prior clip — a fresh continuation anchored
+ *  on the prior clip's last frame (taken in-graph, negative batch
+ *  index), rendered at FULL denoise under an all-white mask (new
+ *  content, nothing held — the repair's opposite pole), joined to
+ *  the prior by the film tail's own file law (both parts save at
+ *  SaveVideo prefixes; MeliteConcatVideos decodes them back
+ *  strictly after every save). ONE entry per doc (max_stack 1).
+ *  Emission seat: the family's renderH3Extend — the same chain
+ *  spine + lora plane the swap and repair ride, ending in the
+ *  joined-film SaveVideo. */
+const EXTEND_MOD: DeclaredModifierKind = {
+  kind: 'extend',
+  label: 'Extend',
+  param_key: 'extend',
+  schema_key: 'extend',
+  category: 'ordered',
+  cardinality: 'list',
+  max_stack: 1,
+  requires: [
+    'ComfyUI-VideoHelperSuite',
+    'ComfyUI-MiniMaxH3-Context-Loop',
+    'ComfyUI-Fantastic-MiniMaxH3-PromptBuilder',
+    'comfyui-h3-oneclick-swap',
+    'melite-utility-nodes',
+  ],
+  section: 'Extend — append fresh seconds to a prior clip (a continuation anchored on its last frame, full denoise, joined into one film). The extension generates new motion and sound; the prior is never re-edited. Film runs leave this arm empty.',
+  fields: [
+    // The seat TYPES (the picker law, the replace arm's own): video
+    // seats are `file` + media 'video'; the prompt seat is text
+    // (agent-composed, user-confirmed).
+    { name: 'source_clip', label: 'Source clip', type: 'file', media: 'video', default: '', tooltip: 'The clip whose seconds are extended. Binds ONE staged leaf: the VHS loader + the core LoadVideo both read it by staged name, and the timeline reads it back off the native VIDEO wire.' },
+    { name: 'extend_prompt', label: 'Extend prompt', type: 'text', default: '', tooltip: 'The continuation text — MOTION and SOUND for the appended seconds, picking up exactly where the clip ends (agent-composed, user-confirmed; rides the reference-video prompt seat).' },
+    { name: 'extend_seconds', label: 'Extend seconds', type: 'number', default: 2.33, min: 0.92, max: 15.08, step: 0.01, tooltip: 'Seconds appended — must land on the engine grid at 24fps (22+17k frames, refuse loud otherwise). Landable values: 2.33s = 56f, 3.83s = 92f, 5.17s = 124f, 15.08s = 362f.' },
+    { name: 'seed', label: 'Plan seed', type: 'number', default: 0, min: 0, max: 4294967295, step: 1, tooltip: 'The chain plan base_seed (the reference runs 0; the sampler seed stays the doc seed).' },
+    { name: 'steps', label: 'Plan steps', type: 'number', default: 6, min: 1, max: 30, step: 1, tooltip: 'The chain plan default_steps (reference 6; the sampler steps stay the doc marriage).' },
+    { name: 'overlap_frames', label: 'Overlap frames', type: 'number', default: 39, min: 0, max: 362, step: 1, tooltip: 'The plan overlap_frames (reference 39; in-run-only — the join itself is the film tail file law).' },
+    { name: 'resolution', label: 'Plan resolution', type: 'select', default: '736p', options: [
+      { value: '480p', label: '480p — quick preview' },
+      { value: '576p', label: '576p' },
+      { value: '736p', label: '736p — reference default' },
+      { value: '768p', label: '768p' },
+      { value: '1080p', label: '1080p — ~2.5× slower, needs much more memory' },
+    ], tooltip: "The plan resolution tier (reference '736p')." },
+  ],
+}
+
 /** THE FAMILY ACTION BINDING (the atom vocabulary's video stroke):
  *  the h3 family's declared film action composes the whole lane-true
  *  segment from the gated, lifted doc this card's plane produced —
@@ -238,14 +287,33 @@ export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model:
         throw new Error('h3-timeline repair: the repair bag is present but carries no entry — state exactly one repair entry (max_stack 1) or omit the arm')
       }
     }
+    const ext = p.extend as Array<Record<string, unknown>> | undefined
+    if (ext !== undefined && !(Array.isArray(ext) && ext.length === 0)) {
+      if (!Array.isArray(ext) || ext.length === 0) {
+        throw new Error('h3-timeline extend: the extend bag is present but carries no entry — state exactly one extend entry (max_stack 1) or omit the arm')
+      }
+    }
     const replaceArmed = Array.isArray(raw) && raw.length > 0
     const repairArmed = Array.isArray(rep) && rep.length > 0
+    const extendArmed = Array.isArray(ext) && ext.length > 0
     // THE REPLACE↔REPAIR REFUSAL (the one-door-per-doc law's second
     // edge, 2026-11-12): both arms render through the same chain
     // spine and the same sampler tail — two armed bags would race
     // for one emission. Refuse loud, never a quiet first-wins.
     if (replaceArmed && repairArmed) {
       throw new Error('h3-timeline: Replace and Repair are both armed — one door per doc (both ride the same masked-edit spine; two armed bags would race for one emission). Empty the Replace arm for a repair, or the Repair arm for a swap.')
+    }
+    // THE EXTEND PAIRWISE REFUSALS (the one-door law's third edge —
+    // each pair its own firing arm, the split-brain lesson): extend
+    // rides the same chain spine, so it races replace and repair
+    // the same way, and its branch also returns before the film
+    // action, so an armed reshoot under it would be silently
+    // dropped.
+    if (replaceArmed && extendArmed) {
+      throw new Error('h3-timeline: Replace and Extend are both armed — one door per doc (both ride the same masked-edit spine; two armed bags would race for one emission). Empty the Replace arm for an extension, or the Extend arm for a swap.')
+    }
+    if (repairArmed && extendArmed) {
+      throw new Error('h3-timeline: Repair and Extend are both armed — one door per doc (both ride the same masked-edit spine; two armed bags would race for one emission). Empty the Repair arm for an extension, or the Extend arm for a repair.')
     }
     if (replaceArmed) {
       // THE MUTUAL REFUSAL (operator, live lane 2026-10-28: "IS
@@ -267,6 +335,15 @@ export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model:
         throw new Error('h3-timeline: Repair and Reshoot are both armed — the repair branch never enters the film action, so an armed reshoot would be silently dropped. Pick one door: empty the Repair arm for a reshoot, or switch Reshoot off for a repair.')
       }
       renderH3Repair(rep[0] as Record<string, unknown>, p, parseH3Facts(model.lane_inputs), g, runId)
+      return
+    }
+    if (extendArmed) {
+      // The same reshoot refusal, third edge (the extend branch also
+      // returns before the film action).
+      if (reshootArmed(p)) {
+        throw new Error('h3-timeline: Extend and Reshoot are both armed — the extend branch never enters the film action, so an armed reshoot would be silently dropped. Pick one door: empty the Extend arm for a reshoot, or switch Reshoot off for an extension.')
+      }
+      renderH3Extend(ext[0] as Record<string, unknown>, p, parseH3Facts(model.lane_inputs), g, runId)
       return
     }
     instantiateAction(declaredAction(h3Decl, 'film'), p, model, g, runId)
@@ -375,13 +452,24 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
       channel: 'default',
       node: '*',
       nodeClass: 'SaveVideo',
-      when: (p) => !((Array.isArray(p.replace) && p.replace.length > 0) || (Array.isArray(p.repair) && p.repair.length > 0)),
+      when: (p) => !((Array.isArray(p.replace) && p.replace.length > 0) || (Array.isArray(p.repair) && p.repair.length > 0) || (Array.isArray(p.extend) && p.extend.length > 0)),
     },
     {
       channel: 'default',
       node: '*',
       nodeClass: 'MiniMaxH3ChainAssemble',
       when: (p) => (Array.isArray(p.replace) && p.replace.length > 0) || (Array.isArray(p.repair) && p.repair.length > 0),
+    },
+    {
+      // THE EXTEND ARM: the extension's terminal is the joined-film
+      // SaveVideo (the film tail's own file law — no ChainAssemble:
+      // its `_final.mp4` name is not a prefix the concat can glob).
+      // The '*' scan picks the LAST SaveVideo in creation order —
+      // the joined film is created after its two part-saves.
+      channel: 'default',
+      node: '*',
+      nodeClass: 'SaveVideo',
+      when: (p) => Array.isArray(p.extend) && p.extend.length > 0,
     },
   ],
     // ADMISSION EXTRAS (the class-attr half verbatim: the
@@ -401,13 +489,13 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
     // produce. A doc carrying it now refuses LOUD at the door
     // ('unknown-param') instead of riding as an inert rider; seedUser
     // already deletes it on drill-open (the dead-layer law).
-    admits: ['ctx_*', 'fps_seconds', 'image_name', 'k', 'noise_seed', 'quant', 'ref_image_size', 'repair', 'replace', 'sla_*', 'variant'],
+    admits: ['ctx_*', 'extend', 'fps_seconds', 'image_name', 'k', 'noise_seed', 'quant', 'ref_image_size', 'repair', 'replace', 'sla_*', 'variant'],
     // THE CARD-DECLARED KINDS (CONTRACT A — served VERBATIM on the
-    // features.modifiers channel): the swap + repair arms. The mask
-    // card's sam3/sam2/draw precedent — one kind per arm, entry
-    // fields as the popup's tiles, requires as the presence-gated
-    // arm packs.
-    mods: [REPLACE_MOD, REPAIR_MOD],
+    // features.modifiers channel): the swap + repair + extend arms.
+    // The mask card's sam3/sam2/draw precedent — one kind per arm,
+    // entry fields as the popup's tiles, requires as the
+    // presence-gated arm packs.
+    mods: [REPLACE_MOD, REPAIR_MOD, EXTEND_MOD],
     jsonArrayParams: JSON_ARRAY_PARAMS,
     // the packs the window graph rides (EXTENSION LAW) + the film
     // tail's file boundary (melite-utility-nodes: MeliteUnload +
@@ -517,7 +605,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
       // loud here, which is the dead-layer law working.
       p = gatedResolve('h3-timeline', schemaFn, [
         'calls', 'audio_clips', 'keyframes', 'fps', 'audio_stem', 'document', 'loras',
-        'refs', 'replace', 'repair', 'variant', 'quant', 'refine', 'model', '__steps_pinned', '__shift_pinned', 'ctx_*',
+        'refs', 'replace', 'repair', 'extend', 'variant', 'quant', 'refine', 'model', '__steps_pinned', '__shift_pinned', 'ctx_*',
       ], gateInput)
       // THE SINGLE-CALL LIFT runs FIRST (the guard below reads the
       // lifted anchor): a one-call doc's row IS the window — its

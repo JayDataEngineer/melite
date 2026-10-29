@@ -162,6 +162,19 @@ describe("THE FLOW FACE'S CARRY LAW (SD-4) — an advertised param reaches the s
         }
         const carrier = def.schemaCarrier ?? def.schema;
         const admitted = new Set(Object.keys(carrier.dict ?? {}));
+        // THE MOD BAG KEYS (the extend-video recut, 2026-11-12): a
+        // card-declared modifier kind's bag rides stage params under
+        // its param_key — "the bag key IS the contract" (params-emit,
+        // emitModifierKinds) and the compose door carries it through
+        // the gatedResolve rider list (h3-timeline card.ts — replace,
+        // repair, extend). The carrier-schema proxy predates mod
+        // bags; the card's own declared mods are the truth this wall
+        // walks, exactly like the carrier row beside them.
+        for (const mod of def.mods ?? []) {
+          if (typeof mod.param_key === "string" && mod.param_key !== "") {
+            admitted.add(mod.param_key);
+          }
+        }
         for (const key of Object.keys(stage.params ?? {})) {
           judged += 1;
           if (!admitted.has(key) && !STAGE_ROUTING_KEYS.includes(key)) {
@@ -171,6 +184,15 @@ describe("THE FLOW FACE'S CARRY LAW (SD-4) — an advertised param reaches the s
       }
     }
     assert.ok(judged > 0, "no card-plane stage param was judged — the card-door join is vacuous");
+    // Non-vacuity canary for the recut: the mod-bag walk must judge
+    // the first bag-carrying row (extend-video) — a wall that walks
+    // nothing proves nothing.
+    const extendRow = SEAT.get("extend-video");
+    assert.ok(
+      extendRow !== undefined &&
+        Object.keys((extendRow.stages[0] as { params?: Record<string, unknown> })?.params ?? {}).includes("extend"),
+      "the extend-video row lost its mod bag stamp — the bag-key recut judged nothing",
+    );
     assert.deepEqual(failures, [], `FLOW FACE CARRY (arm 3) — ${failures.length} unadmitted stage param${failures.length === 1 ? "" : "s"} of ${judged} judged:\n${failures.join("\n")}`);
   });
 });

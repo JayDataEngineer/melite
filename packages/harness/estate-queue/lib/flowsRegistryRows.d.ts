@@ -5,6 +5,7 @@ export declare const AUDIO_NATIVE_TTS: RegistryFlow;
 export declare const BODY_TO_SOMAX: RegistryFlow;
 export declare const FIT_SEAT: RegistryFlow;
 export declare const IMAGE_UPSCALE: RegistryFlow;
+export declare const VIDEO_EXTEND: RegistryFlow;
 export declare const MUSIC_NATIVE: RegistryFlow;
 export declare const CRAFT_LOOP: RegistryFlow;
 export declare const CHARACTER_FACTORY: RegistryFlow;

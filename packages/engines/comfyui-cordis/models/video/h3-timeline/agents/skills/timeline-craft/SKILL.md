@@ -7,20 +7,20 @@ description: Plan and run multi-window H3 timelines — window count vs duration
 
 ## Why windows
 
-One H3 window is 48-192f (2-8s @ 24fps; the workflow default renders
-56f = 2.33s, production 124f = 5.17s) — longer spans are REFUSED by the
-tool (a named 400), not advised against. For anything longer — the
-challenge cap is 90s — you tile windows: every window after the first
-chains from the previous window's audio-video latent tail
-(`MotionContextSave` / `MotionContextLoadLatent`), the workflow's own
-carry widget
-(`carry_latent_frames`, latent slots) controlling how much. On the card
-that knob is `calls[i].seam_carry`: 6 = default (~0.8s carried
-continuity), 15 ≈ 2s, 0 = hard cut (standalone render). The carried
-head is sliced straight out of the latent — no decode/re-encode
-roundtrip, colour and motion carry bit-identical — and the stitch trims
-the pinned head so nothing double-plays. Join drift is grid-snapped to
-0.00ms.
+One H3 window is 22+17k frames, 22–362f (0.92–15.08s at the schema
+fps default; the
+workflow default renders 56f = 2.33s, production 124f = 5.17s) —
+off-grid lengths are REFUSED by the tool (a named 400), not advised
+against. For anything longer — the challenge cap is 90s — you tile
+windows: every window after the first carries the previous window's
+seam AUTOMATICALLY (the compose's own overlap machinery — no carrier
+node, no carry knob; a carried window's 22f generation head IS the
+seam, which is why its authored span is 17f). Drift control is
+prompt-side, not knob-side: repeat the subject block verbatim and the
+ambient bed in every window (the laws below), and let the engine own
+the seam geometry. To append seconds AFTER a finished film — instead
+of re-tiling — the extend-video flow anchors a fresh window on the
+film's last frame and joins the files (see the extend-flow skill).
 
 The N-window law (operator order 2026-09-04) is "ONE card = N calls =
 ONE run = ONE film" — the lane runs **N** windows (any N, default

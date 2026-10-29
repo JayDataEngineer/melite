@@ -81,7 +81,7 @@ export function linkedStage(flow, stage, id, inputs) {
  *  (default unlimited), inputs (the plus-box list). The stage
  *  params carry those fields at DRIVE time; the registry row is
  *  the template + the agent leaf. */
-import { BODY_TO_SOMAX, ANNY_HMR_ESTIMATOR, ANNY_PARAMS, AUDIO_NATIVE_TTS, CHARACTER_FACTORY, FIT_SEAT, IMAGE_UPSCALE, MUSIC_NATIVE, CRAFT_LOOP, OBJECT_FORGE, } from "./flowsRegistryRows.js";
+import { BODY_TO_SOMAX, ANNY_HMR_ESTIMATOR, ANNY_PARAMS, AUDIO_NATIVE_TTS, CHARACTER_FACTORY, FIT_SEAT, IMAGE_UPSCALE, MUSIC_NATIVE, CRAFT_LOOP, OBJECT_FORGE, VIDEO_EXTEND, } from "./flowsRegistryRows.js";
 import { Service } from "@deepseek-ai/cordis";
 const REGISTRY = {
     "craft-loop": CRAFT_LOOP,
@@ -90,6 +90,7 @@ const REGISTRY = {
     "character-factory": CHARACTER_FACTORY,
     "anny-params": ANNY_PARAMS,
     "audio-native-tts": AUDIO_NATIVE_TTS,
+    "extend-video": VIDEO_EXTEND,
     "fit-seat": FIT_SEAT,
     "image-upscale": IMAGE_UPSCALE,
     "music-native": MUSIC_NATIVE,
@@ -386,12 +387,14 @@ function checkFileInitial(key, kind, value, roots) {
         ? raw.split(/[?#]/)[0].slice(dot + 1).toLowerCase()
         : "";
     // The vocab is TYPED DATA now (mediaKinds.ts, REBUILD-7) — no
-    // repo-anchored kindsPath read survives the re-home.
+    // repo-anchored kindsPath read survives the re-home. The video
+    // kind rides the same vocab's video list (the extend-video flow's
+    // prior-clip initial — mp4/webm/mkv/mov/m4v/avi).
     const kinds = mediaVocab();
-    const allowed = kind === "photo" ? kinds.image : kinds.model;
+    const allowed = kind === "photo" ? kinds.image : kind === "video" ? kinds.video : kinds.model;
     if (!allowed.includes(ext)) {
         return ("initial " + JSON.stringify(key) + " is not a stageable " +
-            (kind === "photo" ? "image" : "mesh") + " (got extension " +
+            (kind === "photo" ? "image" : kind === "video" ? "video" : "mesh") + " (got extension " +
             JSON.stringify(ext) + ")");
     }
     if (raw.includes("..")) {

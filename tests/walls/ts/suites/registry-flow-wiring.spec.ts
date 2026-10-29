@@ -159,7 +159,9 @@ describe("the registry-flow wiring wall (the hand-authored graphs, judged)", () 
     // + character-factory (2026-10-09: lift→rig→motion, audit 012)
     // + object-forge (2026-10-11: concept→lift, all card= — its
     // remesh stage left 2026-10-13)
-    expect(names.length, "the registry flows judged, exact").toBe(10);
+    // + extend-video (2026-11-12: the first mod-bag card= flow —
+    // h3-timeline's extend arm)
+    expect(names.length, "the registry flows judged, exact").toBe(11);
     // (the atom vocabulary, stroke 4 — completed): EVERY census
     // stage's backend is a declared action now — anny's estimator
     // chains + verbatim bake, and the meld verbs' coat/seat (their

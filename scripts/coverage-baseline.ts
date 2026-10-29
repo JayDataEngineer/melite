@@ -129,6 +129,11 @@ export const COVERAGE_BASELINE: Record<string, {
 }> = {
   '**/packages/engines/comfyui-cordis/src/comfyui-vram.ts': { statements: 100, branches: 92.85, functions: 100, lines: 100 },
   '**/packages/image/mask-studio/src/ui/paintCopy.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  // the extend emission seat (extend-video flow, 2026-11-12):
+  // 100x4 measured over extend-mod.spec.ts — the card-door harness
+  // drives every branch (both refusal seats, the grid door, all three
+  // pairwise one-door edges, the empty-bag guard, the emission)
+  '**/packages/models/h3/src/extend.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/h3/src/repair.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/h3/src/swap.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/motion/motion/src/ui/studio/motionCopy.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },

@@ -71,7 +71,7 @@ export interface RegistryStage {
 }
 
 /** The compile-time initial kinds (flow.initial_validators). */
-export type RegistryInitialKind = "photo" | "glb" | "bake_params" | "text";
+export type RegistryInitialKind = "photo" | "video" | "glb" | "bake_params" | "text";
 
 /** One headless-tool overlay (FlowToolOverlay: tool param -> the
  *  stage doc path it stamps, with the value choices map). */
@@ -227,6 +227,7 @@ import { BODY_TO_SOMAX,
   MUSIC_NATIVE,
   CRAFT_LOOP,
   OBJECT_FORGE,
+  VIDEO_EXTEND,
 } from "./flowsRegistryRows.ts";
 import { Service } from "@deepseek-ai/cordis";
 import type { Context } from "@deepseek-ai/cordis";
@@ -238,6 +239,7 @@ const REGISTRY: Record<string, RegistryFlow> = {
   "character-factory": CHARACTER_FACTORY,
   "anny-params": ANNY_PARAMS,
   "audio-native-tts": AUDIO_NATIVE_TTS,
+  "extend-video": VIDEO_EXTEND,
   "fit-seat": FIT_SEAT,
   "image-upscale": IMAGE_UPSCALE,
   "music-native": MUSIC_NATIVE,
@@ -601,13 +603,16 @@ function checkFileInitial(
     ? (raw.split(/[?#]/)[0] as string).slice(dot + 1).toLowerCase()
     : "";
   // The vocab is TYPED DATA now (mediaKinds.ts, REBUILD-7) — no
-  // repo-anchored kindsPath read survives the re-home.
+  // repo-anchored kindsPath read survives the re-home. The video
+  // kind rides the same vocab's video list (the extend-video flow's
+  // prior-clip initial — mp4/webm/mkv/mov/m4v/avi).
   const kinds = mediaVocab();
-  const allowed: readonly string[] = kind === "photo" ? kinds.image : kinds.model;
+  const allowed: readonly string[] =
+    kind === "photo" ? kinds.image : kind === "video" ? kinds.video : kinds.model;
   if (!allowed.includes(ext)) {
     return (
       "initial " + JSON.stringify(key) + " is not a stageable " +
-      (kind === "photo" ? "image" : "mesh") + " (got extension " +
+      (kind === "photo" ? "image" : kind === "video" ? "video" : "mesh") + " (got extension " +
       JSON.stringify(ext) + ")"
     );
   }

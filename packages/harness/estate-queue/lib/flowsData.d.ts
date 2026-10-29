@@ -44,7 +44,7 @@ export interface RegistryStage {
     readonly fromFlow: RegistryFromFlow | null;
 }
 /** The compile-time initial kinds (flow.initial_validators). */
-export type RegistryInitialKind = "photo" | "glb" | "bake_params" | "text";
+export type RegistryInitialKind = "photo" | "video" | "glb" | "bake_params" | "text";
 /** One headless-tool overlay (FlowToolOverlay: tool param -> the
  *  stage doc path it stamps, with the value choices map). */
 export interface RegistryToolOverlay {

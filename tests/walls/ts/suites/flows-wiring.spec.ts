@@ -154,9 +154,12 @@ describe("the flow-registry wiring wall (the live door's own construction, over 
     // lift→rig→motion chain, gap audit 012)
     // + object-forge (2026-10-11: concept→lift, all card= — the
     // row's remesh stage left 2026-10-13; the second {flow:}-door
-    // one-shot).
+    // one-shot)
+    // + extend-video (2026-11-12: the first MOD-BAG-arming flow —
+    // one card= stage on h3-timeline whose extend bag rides $spells
+    // resolved against the wired initials).
     const names = SEED.names();
-    assert.equal(names.length, 10, `the registry serves exactly 10 flows, got ${names.length}`);
+    assert.equal(names.length, 11, `the registry serves exactly 11 flows, got ${names.length}`);
     assert.equal(new Set(names).size, names.length, "the registry's flow names are unique");
   });
 
