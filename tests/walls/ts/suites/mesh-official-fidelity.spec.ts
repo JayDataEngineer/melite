@@ -352,42 +352,50 @@ describe("img-to-mesh official-template fidelity (the default-workflow contract)
           `${fam.id}: quality stamps exactly the schema ceilings — 1536/2048/2M, never the silent default`);
         assert.match(hero.hint ?? "", /24GB|32GB|VRAM/i,
           `${fam.id}: the quality hint must name its VRAM cost — a 2048 remesh OOMs a 24GB card (RemeshMesh alone wants ~3.6 GiB over a ~19 GiB resident chain)`);
+        // THE DEFAULT TIER MOVED (operator 2026-11-12: "high quality,
+        // but not so high quality it can't be run" — the old standard
+        // default's output read poor/low quality; commit 9f1488e97):
+        // HIGH is the first Recipe row and the group default — 1536
+        // detail + a mid remesh tail, honestly priced under 24GB.
         const first = variants.find((v) => v.group === "Recipe");
-        assert.equal(first?.id, "standard",
-          `${fam.id}: STANDARD is the first Recipe row — the birth stamp lands every fresh card at the standard tier`);
-        assert.ok(first?.wire_defaults === undefined || Object.keys(first.wire_defaults).length === 0,
-          `${fam.id}: the standard recipe stamps nothing — the family defaults' floors ARE the official flow`);
+        assert.equal(first?.id, "high",
+          `${fam.id}: HIGH is the first Recipe row — the birth stamp lands every fresh card at the high tier`);
+        assert.deepEqual(first?.wire_defaults, { resolution: "1536", remesh_resolution: 1024, decimate_faces: 1000000 },
+          `${fam.id}: high stamps 1536 + remesh 1024 + 1M faces — between the poor standard floor and the 32GB-only quality tail`);
+        assert.match(first?.hint ?? "", /24GB/i,
+          `${fam.id}: the high hint must name its 24GB fit — the default must be honestly priced (the int8 chain peaks well under one)`);
         const group = (fam.DECL as { variant_groups?: Array<{ id: string; default?: string }> }).variant_groups
           ?.find((g) => g.id === "Recipe");
-        assert.equal(group?.default, "standard", `${fam.id}: the Recipe group default names the standard tier`);
+        assert.equal(group?.default, "high", `${fam.id}: the Recipe group default names the high tier`);
       });
 
       // THE STANDARD TIER (operator 2026-10-30: "we are lacking a
-      // standard"; reworked 2026-11-02 into the fast/standard/quality
-      // trio): the calibration rides the family defaults row as the
-      // FLOOR — one value, one owner (the old shape duplicated
-      // 768/700k across the defaults row AND standard_mesh stamps).
-      // STANDARD is the stamp-less first row (the h3 precedent: a
-      // recipe stamps only what DIFFERS from the floor); the birth
-      // stamp names it on every fresh card, and the defaults test
-      // above composes the very same calibration.
-      it("standard is the named every-GPU tier — the floors compose verbatim, and fast/quality bracket them", () => {
+      // standard"; 2026-11-02 the fast/standard/quality trio; 2026-11-12
+      // high seated first as the default, 9f1488e97): the calibration
+      // rides the family defaults row as the FLOOR — one value, one
+      // owner (the old shape duplicated 768/700k across the defaults
+      // row AND standard_mesh stamps). STANDARD keeps its stamp-less
+      // row as the explicit floor pick (the h3 precedent: a recipe
+      // stamps only what DIFFERS from the floor); its 24GB claim
+      // moved to high's "peaks well under a 24GB card" (the default
+      // owns the honesty now, the floor just names the calibration).
+      it("standard keeps the stamp-less calibrated floor — high leads the roster, fast/quality bracket it", () => {
         const variants = (fam.DECL as {
           variants?: Array<{ id: string; group?: string; hint?: string; wire_defaults?: Record<string, number | string> }>
         }).variants ?? [];
         const std = variants.find((v) => v.id === "standard" && v.group === "Recipe");
-        assert.ok(std, `${fam.id}: the standard recipe exists — the default tier`);
+        assert.ok(std, `${fam.id}: the standard recipe exists — the calibrated floor pick`);
         assert.ok(std?.wire_defaults === undefined || Object.keys(std.wire_defaults).length === 0,
           `${fam.id}: standard stamps NOTHING — the family defaults row owns the calibration (one value, one owner)`);
-        assert.match(std?.hint ?? "", /24GB/i,
-          `${fam.id}: the standard hint must name its 24GB fit — the tier exists because Quality does not fit`);
+        assert.match(std?.hint ?? "", /1024.*768.*700k|768.*700k/,
+          `${fam.id}: the standard hint must name the official calibration — 1024 + remesh 768 + 700k faces`);
         const ids = variants.filter((v) => v.group === "Recipe").map((v) => v.id);
-        assert.deepEqual(ids, ["standard", "fast", "quality"],
-          `${fam.id}: the recipe roster reads Standard (first — the birth stamp) → Fast → Quality`);
+        assert.deepEqual(ids, ["high", "standard", "fast", "quality"],
+          `${fam.id}: the recipe roster reads High (first — the birth stamp and group default) → Standard (floor) → Fast → Quality`);
         const fast = variants.find((v) => v.id === "fast");
         assert.deepEqual(fast?.wire_defaults, { remesh_resolution: 128, decimate_faces: 10000 },
           `${fam.id}: fast stamps ONLY the preview tail — resolution stays the 1024 floor`);
-        // the floors compose: the standard row's own flow rides the
+        // the floors compose: the family default flow rides the
         // calibrated mesh tail, not the fast floors or the ceilings
         const g = composeDefaults(fam);
         assert.equal(nodesOf(g, "RemeshMesh")[0]!.node.inputs["resolution"], OFFICIAL.remesh,

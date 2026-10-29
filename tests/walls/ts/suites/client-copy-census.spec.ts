@@ -487,7 +487,14 @@ const PINS: Record<string, number> = {
   // its VALUES — the same class as the clause triads above (the
   // wire.ts data-site argument, class 1 — the voice IS the door's
   // identity; localizing it forks the door per locale).
-  'packages/web/card-base/src': 50,
+  // RE-PIN 50→51 (2026-11-12, a7a5b1a05 the playable-hero split): +1
+  // arm-A title — preview.tsx:444's qvoice data-condition voice
+  // ("voice embedding — not audio; load it in the voice field"). The
+  // preview tree's standing residue class (the rendering/No-render
+  // data-condition titles above): the sentence names the media-kind
+  // mismatch the seat refuses — joined to the same adjudicated
+  // residue, localized only by forking the media-kind voice.
+  'packages/web/card-base/src': 51,
   // card-view: 13 — the D1 dictionary moves landed (the cards-tab
   // title/guide trio + the mention title now ride chromeCopy), so the
   // residue is two DEBT classes, every seat computed law-voiceing:

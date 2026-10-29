@@ -447,10 +447,10 @@ function sdCells(): Cell[] {
       note: 'CEMENTING re complaint — the pin holds the defect\'s face; line-click-to-seek stays U (next row)',
     },
     {
-      id: 'SD-8 scrubber line-click-to-seek (single-click seeks its frame)', status: 'W', sd: 'SD-8',
+      id: 'SD-8 scrubber line-click-to-seek REPEALED (single-click moves NOTHING)', status: 'W', sd: 'SD-8',
       wall: WALL.stripPane,
-      anchor: 'a ruler single-click seeks its frame (F-2 tenant integration — the bar\'s onFrameChange reaches the tenant\'s handleBarFrame; the click-away seat stays silent)',
-      note: 'P6 gesture receipt landed (row cards-timeline-ruler-click-seek: chrome seek+voice + bar-seat pass-through + this tenant arm)',
+      anchor: 'a ruler single-click moves NOTHING (the cap-only playhead law, operator 2026-10-29 told 10+ times',
+      note: 'P6 REPEALED by operator 2026-10-29 (row cards-timeline-ruler-click-seek superseded by cards-timeline-cap-only-seek, receipt 2026-11-12): this arm now fires in the INVERSE direction — the ruler click must leave rec.bar and rec.select empty',
     },
     {
       id: 'SD-8 keyframe-vs-audio lane asymmetry (diamonds on one thin lane vs 3 audio lanes)', status: 'W', sd: 'SD-8',

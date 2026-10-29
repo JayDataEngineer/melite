@@ -368,7 +368,7 @@ export function stampCardOverlay(
   // compose (card.ts's B2 refusal), never silently drops one.
   const qvoiceStated =
     (typeof body["qvoice"] === "string" && (body["qvoice"] as string) !== "") ||
-    (Array.isArray(body["qvoice"]) && (body["qvoice"] as unknown[]).length > 0);
+    (Array.isArray(body["qvoice"]) && body["qvoice"].length > 0);
   for (const [k, v] of Object.entries(stamps)) {
     if (v === null || v === undefined || v === "") continue;
     if (!onSurface(k)) continue;
