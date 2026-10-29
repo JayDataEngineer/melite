@@ -324,6 +324,39 @@ describe("the one-pack audiocore wall", () => {
     expect(m, `${PACK}: the parent index must record the gitlink`).toBeTruthy();
     expect(m![1], `${PACK}: the worktree HEAD is not the ref the parent records — commit the pack and stage the gitlink together`).toBe(head);
   });
+
+  it("the torch seats register in ComfyUI's model management (tts NEW-1: /free reaches them through the eviction loop, no bespoke route)", () => {
+    // THE /free SEAT (the 2026-11-12 warm-card burn: native /free
+    // freed ~6 GB while ~15 GB of torch seats stayed resident —
+    // neither torch loader registered, so the eviction loop never
+    // saw them). Both torch loaders register exactly like the
+    // native cold path does.
+    const core = readFileSync(join(VENDOR, PACK, "core.py"), "utf8");
+    const torchBody = core.slice(core.indexOf("def _load_torch("), core.indexOf("def _load_qwen3_torch("));
+    const qwenBody = core.slice(core.indexOf("def _load_qwen3_torch("), core.indexOf("def _register_in_model_management("));
+    expect(torchBody, "moss _load_torch must register the seat").toContain("_register_in_model_management()");
+    expect(qwenBody, "qwen3 _load_qwen3_torch must register the seat").toContain("_register_in_model_management()");
+  });
+
+  it("is_dead counts the torch seat (tts NEW-1: a torch seat with no native session is LIVE — free_memory skips dead seats)", () => {
+    // The old `_session is None` spelling read every torch seat as
+    // dead: free_memory's `not is_dead()` gate skipped exactly the
+    // seats it needed to evict, and the gc pass logged them as
+    // leaks. Registration without this read is decoration.
+    const core = readFileSync(join(VENDOR, PACK, "core.py"), "utf8");
+    const body = core.slice(core.indexOf("def is_dead(self) -> bool:"), core.indexOf("def real_model("));
+    expect(body, "is_dead must consult the torch engine too").toContain("_torch_engine");
+  });
+
+  it("eviction releases the warmed torch copy (tts NEW-1: the process-wide handle map is the seat native /free could never see)", () => {
+    // _WARMED_HANDLES survives every ManagedModel teardown — the
+    // Unload node's explicit gesture was its only owner. The
+    // eviction path owns it now: model_unload during ComfyUI's
+    // free_memory iteration drops it, mirroring the node.
+    const core = readFileSync(join(VENDOR, PACK, "core.py"), "utf8");
+    const body = core.slice(core.indexOf("def _free_session(self)"), core.indexOf("def _cleanup(self)"));
+    expect(body, "_free_session must release the warmed torch copy").toContain("release_warmed_handles");
+  });
 });
 
 describe("the estate venv standard (the transformers/hf-hub pin law)", () => {
