@@ -55,19 +55,22 @@ import {
 } from './reshoot.js'
 
 // THE ABSENT-BAG DEFAULT (h3-a, 2026-10-12; bytedance DMAD row
-// 2026-10-11 → the LightX2V Turbo 8-Step v1.0 row 2026-11-07 —
-// operator: the card's default lora is the 8-step light tricks): the
-// h3_turbo8_v1 row, built from the family lora
-// CATALOG (mods/loras.ts — the one owner of every lora filename and
-// default strength; the value was restated as a literal here, which
-// is how a catalog edit would have silently missed the default).
-// The wire shape matches a resolved bag row: on, lora (filename),
-// str (default_strength), plus the four fixed mode flags. A missing
-// catalog row refuses at load — the default would have no source.
+// 2026-10-11 → the LightX2V Turbo 8-Step v1.0 row 2026-11-07 → the
+// Larry + LightX2V dareties merge row 2026-11-12 — operator: the
+// merge takes the default seat, preferred for detail at 8 steps;
+// the standalone LightX2V turbos stay in the catalog for the
+// audio/dialogue routes): the h3_lightx2v_turbo row, built from the
+// family lora CATALOG (mods/loras.ts — the one owner of every lora
+// filename and default strength; the value was restated as a
+// literal here, which is how a catalog edit would have silently
+// missed the default). The wire shape matches a resolved bag row:
+// on, lora (filename), str (default_strength), plus the four fixed
+// mode flags. A missing catalog row refuses at load — the default
+// would have no source.
 const loraStackDefault = (): string => {
-  const row = H3_LORA_ROWS.find((r) => r.id === 'h3_turbo8_v1')
+  const row = H3_LORA_ROWS.find((r) => r.id === 'h3_lightx2v_turbo')
   if (row === undefined) {
-    throw new Error("h3 action: the lora catalog has no 'h3_turbo8_v1' row — the absent-bag default has no source; fix the catalog row id")
+    throw new Error("h3 action: the lora catalog has no 'h3_lightx2v_turbo' row — the absent-bag default has no source; fix the catalog row id")
   }
   return JSON.stringify([{ on: true, lora: row.filename, str: row.default_strength, v: 1, a: 1, t: 1 }])
 }

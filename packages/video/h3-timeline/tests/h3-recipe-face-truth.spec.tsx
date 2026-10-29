@@ -52,7 +52,10 @@ import {
 function birthParams(): Record<string, unknown> {
   return {
     variant: "timeline", quant: "int8", model: "h3",
-    loras: [{ id: "h3_turbo8_v1" }],
+    // the CURRENT standard bag (the DECL recipe wire_default — the
+    // Larry + LightX2V merge since 2026-11-12; the recognizer
+    // matches the declared bag, so this fixture rides it)
+    loras: [{ id: "h3_lightx2v_turbo" }],
     calls: [{ text: "A single shot — describe the action, camera, and mood.", start_frame: 0, end_frame: 90 }],
     seed: 42, sla_protect_audio: true, sla_stabilize_motion: true, sla_disable_fp16_accum: false,
     sharpen_enabled: false, interpolate_enabled: false,

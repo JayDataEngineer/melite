@@ -149,13 +149,13 @@ describe("the h3 model plugin (the ONE H3 family — timeline + single-shot + ke
     const wire = recipes[0]?.wire_defaults as Record<string, unknown>;
     // SELECTION ONLY: the id — strength 1 and the married 8-step
     // count ride from the flavor catalog row at compose.
-    assert.deepEqual(wire?.["loras"], [{ id: "h3_turbo8_v1" }], "the LightX2V Turbo 8-Step v1.0 bag row");
+    assert.deepEqual(wire?.["loras"], [{ id: "h3_lightx2v_turbo" }], "the Larry + LightX2V merge bag row (operator 2026-11-12)");
     // DRY (one value, one owner): standard stamps NO geometry — the
     // carrier schema's own 1344×768 floor IS the calibrated point.
     assert.ok(!("width" in (wire ?? {})), "standard stamps no width — the carrier floor 1344 owns it");
     assert.ok(!("height" in (wire ?? {})), "standard stamps no height — the carrier floor 768 owns it");
     assert.ok(!("steps" in (wire ?? {})), "steps UNSTATED — the lora row owns its married 8 (no hard pin)");
-    assert.ok(!("strength" in ((wire?.["loras"] as Array<Record<string, unknown>>)?.[0] ?? {})), "strength UNSTATED — the flavor's own default_strength 1 rides");
+    assert.ok(!("strength" in ((wire?.["loras"] as Array<Record<string, unknown>>)?.[0] ?? {})), "strength UNSTATED — the flavor's own default_strength rides");
     // the group default names the first row
     const group = (DECL.variant_groups ?? []).find((g) => g.id === "Recipe");
     assert.equal(group?.default, "standard", "the Recipe group default is the standard (the operator's directive)");
@@ -164,7 +164,7 @@ describe("the h3 model plugin (the ONE H3 family — timeline + single-shot + ke
     // good for the draft recipe) — the same bag, draft geometry.
     const draft = recipes.find((r) => r.id === "draft")!;
     assert.ok(draft, "the draft row serves");
-    assert.deepEqual((draft.wire_defaults as Record<string, unknown>)?.["loras"], [{ id: "h3_turbo8_v1" }], "draft rides the same turbo bag");
+    assert.deepEqual((draft.wire_defaults as Record<string, unknown>)?.["loras"], [{ id: "h3_lightx2v_turbo" }], "draft rides the same merge bag");
     assert.equal((draft.wire_defaults as Record<string, unknown>)?.["width"], 768, "draft geometry: low-res");
     assert.equal((draft.wire_defaults as Record<string, unknown>)?.["height"], 448, "draft geometry: low-res");
     assert.ok(!("steps" in (draft.wire_defaults ?? {})), "draft steps UNSTATED — the marriage law");
@@ -176,7 +176,7 @@ describe("the h3 model plugin (the ONE H3 family — timeline + single-shot + ke
     const final = recipes.find((r) => r.id === "final")!;
     assert.ok(final, "the final row serves");
     const fw = final.wire_defaults as Record<string, unknown>;
-    assert.deepEqual(fw?.["loras"], [{ id: "h3_turbo8_v1" }], "final rides the same turbo bag");
+    assert.deepEqual(fw?.["loras"], [{ id: "h3_lightx2v_turbo" }], "final rides the same merge bag");
     assert.equal(fw?.["second_pass_enabled"], true, "the second-pass master switch rides");
     assert.equal(fw?.["upscale_route"], "latent_2x", "the spec's latent handoff rides (2.0× in-band, the 0.35 window, pass 2 on the un-distilled base)");
     assert.ok(!("sr_switch" in fw), "sr_switch UNSTATED — pixel super-res is an explicit pick, never a recipe default (the spec ranks it below the latent route)");
@@ -187,8 +187,8 @@ describe("the h3 model plugin (the ONE H3 family — timeline + single-shot + ke
     const li = (DECL.lane_inputs ?? {}) as Record<string, string>;
     assert.equal(
       li["loras"],
-      "minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors",
-      "the LightX2V Turbo 8-Step v1.0 default is the family's declared loras lane file",
+      "minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors",
+      "the Larry + LightX2V merge default is the family's declared loras lane file (operator 2026-11-12)",
     );
     const prov = (DECL.provisions ?? []).find((p) => p.name === li["loras"]);
     assert.ok(prov, "the lane file has a provision row — the gate's fetch hint resolves");

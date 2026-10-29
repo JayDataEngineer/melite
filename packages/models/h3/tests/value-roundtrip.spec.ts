@@ -1287,7 +1287,7 @@ describe("the h3 latent-upscale route: the handoff arm mounts behind second_pass
     // still rides the pass-1 stack's conditioning (one prompt
     // voice), but its MODEL edge is FORKED off the pre-LoRA chain
     // whenever the primary bag carries a counting distill (the
-    // default bag does — h3_turbo8_v1). Walking the handoff's model
+    // default bag does — h3_lightx2v_turbo). Walking the handoff's model
     // edge upstream, the chain must NEVER cross an LTX_lora_loader
     // (the spec's diagnostic matrix: "Distilled LoRAs at low
     // denoise predict invalid noise fields" — the waxy-skin face),

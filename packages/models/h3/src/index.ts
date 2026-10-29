@@ -207,13 +207,14 @@ export const DECL: ModelDecl = {
         }
       ]
     },
-    // THE LIGHTX2V TURBO DEFAULT (operator, 2026-11-07: the card's
-    // default lora → the 8-step light tricks). Upstream naming fact:
-    // the 8-step series tops out at v1.0 — the v1.1/v1.2 tags exist
-    // only on the 4-step line — so the artifact is the Comfy-Org
-    // `minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors`
-    // (catalog row h3_turbo8_v1, provisioned below with its sha).
-    // History: the bytedance DMAD 4-step order (2026-10-11) and the
+    // THE MERGE DEFAULT (operator, 2026-11-12: the default lora → the
+    // Larry + LightX2V dareties merge — preferred for detail at 8
+    // steps; the standalone LightX2V turbos stay in the catalog for
+    // the audio/dialogue routes). The artifact is silveroxides'
+    // `minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors`
+    // (catalog row h3_lightx2v_turbo, provisioned below with its sha).
+    // History: the bytedance DMAD 4-step order (2026-10-11), the
+    // LightX2V Turbo 8-Step v1.0 order (2026-11-07), and the
     // recipe-trio rework (2026-11-02, "1 model, 1 variant, 1 quant,
     // and 3 recipes… Default is the standard") both carried forward —
     // the trio Draft / Standard / Final Cut still rides ONE lora,
@@ -236,10 +237,10 @@ export const DECL: ModelDecl = {
     {
       "id": "standard",
       "label": "Standard",
-      "hint": "The default — the LightX2V Turbo 8-Step v1.0 distill at the calibrated 1344×768. Steps derive from the lora marriage (8).",
+      "hint": "The default — the Larry + LightX2V merge (dareties, 768p) at the calibrated 1344×768. Steps derive from the lora marriage (8).",
       "group": "Recipe",
       "wire_defaults": {
-        "loras": [{ "id": "h3_turbo8_v1" }],
+        "loras": [{ "id": "h3_lightx2v_turbo" }],
       },
       "cells": [],
     },
@@ -250,10 +251,10 @@ export const DECL: ModelDecl = {
     {
       "id": "draft",
       "label": "Draft",
-      "hint": "Fast iteration — the same LightX2V Turbo 8-step bag at draft geometry (768×448). Steps derive from the lora marriage (8).",
+      "hint": "Fast iteration — the same merge bag at draft geometry (768×448). Steps derive from the lora marriage (8).",
       "group": "Recipe",
       "wire_defaults": {
-        "loras": [{ "id": "h3_turbo8_v1" }],
+        "loras": [{ "id": "h3_lightx2v_turbo" }],
         "width": 768,
         "height": 448,
       },
@@ -272,10 +273,10 @@ export const DECL: ModelDecl = {
     {
       "id": "final",
       "label": "Final Cut",
-      "hint": "The finishing pass — the 8-step bag plus the spec's latent handoff: 2.0× 3D latent upscale with a 0.35 refine window on the un-distilled base. Pixel super-res and interpolation stay explicit picks.",
+      "hint": "The finishing pass — the merge bag plus the spec's latent handoff: 2.0× 3D latent upscale with a 0.35 refine window on the un-distilled base. Pixel super-res and interpolation stay explicit picks.",
       "group": "Recipe",
       "wire_defaults": {
-        "loras": [{ "id": "h3_turbo8_v1" }],
+        "loras": [{ "id": "h3_lightx2v_turbo" }],
         "second_pass_enabled": true,
         "upscale_route": "latent_2x",
       },
@@ -309,13 +310,14 @@ export const DECL: ModelDecl = {
   "lane_inputs": {
     "unet": "minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors",
     // THE DEFAULT BAG'S FILE (operator, 2026-10-11 the bytedance
-    // order → 2026-11-07 the LightX2V turbo 8-step default: a run
+    // order → 2026-11-07 the LightX2V turbo 8-step default →
+    // 2026-11-12 the Larry + LightX2V merge default: a run
     // without the file refuses through the lane gate — the web
     // popup's install button and the agent seat both key on that one
     // refusal; "that is how it works").
     // BARE NAME: the gate probes the provision row's own folder
     // (loras/h3) as its last leg; the row below is the fetch truth.
-    "loras": "minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors",
+    "loras": "minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors",
   },
   // THE LANE SURFACE (the z-image precedent): exactly the knobs the
   // h3-timeline card serves — the window inputs, the shared render

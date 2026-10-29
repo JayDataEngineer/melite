@@ -198,7 +198,7 @@ describe("the replace kind", () => {
     const ltx = ofClass(out, 'LTX_lora_loader');
     assert.ok(ltx.length > 0, "the swap composes LTX_lora_loader (the family lora plane)");
     const absentBag = JSON.parse(String(ltx[0][1].inputs.stack_data)) as Array<{ lora: string }>;
-    assert.equal(absentBag[0].lora, 'h3/minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors',
+    assert.equal(absentBag[0].lora, 'h3/minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors',
       "an absent loras bag rides the family default row (the film's own default, one owner)");
     assert.equal(ofClass(out, 'LoraLoaderModelOnly').length, 0,
       "no fixed accelerator row rides (the reference's DMAD chain is NOT adopted)");
