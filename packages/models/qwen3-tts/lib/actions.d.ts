@@ -1,4 +1,4 @@
-import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
+import { type ComfyActionSpec } from "@melite/comfyui-card-kit";
 import type { LaneInputsFacts, ModelFacts } from "@melite/comfyui-card-kit/facts";
 /**
  * THE PRESET SPEAKER SET (2026-10-10, the card audit's M2).

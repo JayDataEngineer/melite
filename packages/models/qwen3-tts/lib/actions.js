@@ -1,3 +1,25 @@
+// actions.ts — the family's offered actions (the atom vocabulary,
+// stroke 3): the speak + export actions the tts card binds. The
+// DECL's lane_inputs are the ONE facts door (model_path — the
+// audiocore load key); the lane branch (synth_lane) rides the
+// LANE_TOPOLOGY below, keyed on the resolved variant — data, never
+// a family-id switch; the segment factories are the legacy ttsT1 /
+// ttsDesignT1 tree verbatim on the kit's OWN calibrated pins,
+// loaders, and guards (one owner; the lanes stay as the
+// byte-oracles, proven in tests/action.spec.ts). Creation order IS
+// node-id order (the recipe law). Keys the segment never reads
+// (instruction_control, checkpoint, … the strip shape) ride
+// unvalidated.
+//
+// NO seed-sentinel rule is declared on `speak` — DELIBERATELY. The
+// qvoice use-branch locks the studio seed to the artifact path when
+// the doc seed is -1/unstated (the voice-lock law); a sentinel
+// pre-mint would stamp a random concrete seed before the lock reads
+// it, drifting timbre on every reuse. The branch-local mints below
+// ride the ONE card-kit helper. `export` declares the rule: its
+// single mint has no lock to preserve, so the ported mint is a
+// pass-through.
+import { qvoiceUse } from "@melite/comfyui-card-kit";
 /**
  * THE PRESET SPEAKER SET (2026-10-10, the card audit's M2).
  *
@@ -68,6 +90,18 @@ export const speak = {
     facts: parseTtsFacts,
     build({ p, model, g, runId }) {
         const lane = laneTopologyOf(model).synth_lane;
+        // THE PRESET+QVOICE CONFLICT (the tts dossier's B7 family arm,
+        // 2026-11-12 — mirrors the card's B2 voice): the engine's qvoice
+        // branch has NO speaker, so a stated preset beside a saved
+        // persona is silently dropped — the run performs the persona
+        // while the receipt claims a speaker. ONE voice performs: refuse
+        // loud, naming both seats and the cure. The card judges the same
+        // pair at its own door; this is the family's own firing arm, so
+        // a direct action caller gets the law without the card.
+        if (qvoiceUse(p) !== undefined
+            && typeof p.voice === 'string' && p.voice !== '' && p.voice !== 'none') {
+            throw new Error("params 'voice' and 'qvoice' fire together on the qwen3-tts speak action (ONE voice performs — the saved persona rides the qvoice mod bag and the engine's clone branch carries no speaker; drop the preset or the .qvoice)");
+        }
         // three lanes under ONE family (the size-at-quant fold): the
         // design lane composes the studio in PREVIEW (the persona is
         // born and speaks the text — flac out, no persist), the clone

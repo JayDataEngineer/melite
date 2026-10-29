@@ -33,7 +33,15 @@ export const schema = z.object({
   // 0.6B-CustomVoice table row has NO instruction control — a
   // stated instruct on the small CustomVoice refuses at admission
   // below).
-  voice: vocabulary([...PRESET_SPEAKERS]).description("Preset Speaker").extra('extra', bag({ order: null, tooltip: "One of the 9 built-in CustomVoice speakers (Ryan, Vivian, …). CustomVoice HAS no non-speaker (operator 2026-11-12, told ten times): the picker rests on Ryan until you choose another — 'none' fired nothing and its run refused at the engine. A loaded .qvoice owns the timbre and never reads this row. The other models take no speaker: Base clones yours, VoiceDesign designs one", wtype: 'select' })),
+  // THE PANEL LAW (the tts dossier's B7 cure, 2026-11-12): a loaded
+  // .qvoice owns the timbre — the preset seat hides while the qvoice
+  // mod bag rides (the `qvoice=null` value guard, the ref_text
+  // `ref_audio!=null` precedent: the fieldVisible grammar reads the
+  // unset face, and the bag rides form state under its param_key).
+  // The wire half already landed (the B7 stamp skip); this is the
+  // panel half. An explicit both-stated write still refuses loud at
+  // compose (the B2 arm below) — the hide is a face, never the law.
+  voice: vocabulary([...PRESET_SPEAKERS]).description("Preset Speaker").extra('extra', bag({ order: null, visible_when: 'qvoice=null', tooltip: "One of the 9 built-in CustomVoice speakers (Ryan, Vivian, …). CustomVoice HAS no non-speaker (operator 2026-11-12, told ten times): the picker rests on Ryan until you choose another — 'none' fired nothing and its run refused at the engine. A loaded .qvoice owns the timbre and never reads this row. The other models take no speaker: Base clones yours, VoiceDesign designs one", wtype: 'select' })),
   // THE TASK-NAMED LABEL LAW (operator 2026-09-23: "they are
   // SPECIFIC TASKS, not INSTRUCT"): every instruction-ish row is
   // labeled by the TASK it performs on its lane, never the upstream
@@ -239,7 +247,12 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
     // the estate contract laws 2026-10-10): the audio lane reads
     // p.mode ('full' vs section modes) — a lane-consumed param the
     // family defaults stamp, never rendered, no card knob.
-    admits: ['mode'],
+    // THE BAG-KEY ADMIT (the tts dossier's B7 panel law, 2026-11-12
+    // — the reshoot/replace bag-key precedent: mod-owned names ride
+    // admits, the bag key only): the preset seat's visible_when
+    // names the qvoice mod bag, so the bag key rides the admitted
+    // surface the guard laws judge against (registration + CI).
+    admits: ['mode', 'qvoice'],
     compose(p, model, g, runId) {
       // THE .QVOICE PATH HINT (022's self-critique #5, 2026-09-24):
       // the vocabulary refusal on `voice` lists the preset enum and

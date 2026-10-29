@@ -16,6 +16,7 @@ import { readFileSync } from "node:fs";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import { CardDefinition } from '@melite/comfyui-card-kit/card-definition'
+import { fieldVisible, type SpecField } from "../../../web/card-base/src/spec.ts";
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
@@ -343,11 +344,12 @@ describe("the lane surface IS the visibility (2026-10-10, the YOU_ARE_A_LIAR fix
     // render on a LANE is the DECL's variant surface (voice on
     // CustomVoice, style_instruction on the 1.7B CustomVoice cell,
     // ref_audio/ref_text on Base), not a per-model guard table in the
-    // card. ONE exception rides a VALUE guard (operator 2026-10-12):
-    // the transcript row keys on its own audio riding — a sibling-
-    // field dependency (the rig precedent, mode=copy), never a lane
-    // table.
-    assert.equal(leaf("voice"), undefined, "the persona knob renders by the lane's declared surface, not a card-side guard");
+    // card. TWO exceptions ride VALUE guards: the transcript row keys
+    // on its own audio riding (operator 2026-10-12), and the preset
+    // seat hides while a .qvoice rides (the tts dossier's B7 panel
+    // half — a sibling-field dependency, the rig precedent
+    // mode=copy, never a lane table).
+    assert.equal(leaf("voice"), "qvoice=null", "the preset seat hides while a saved persona rides (B7 panel half — the value guard, not a lane table)");
     assert.equal(leaf("style_instruction"), undefined, "the instruction row's lane (1.7B CustomVoice) is declared, not guarded");
     assert.equal(leaf("ref_audio"), undefined, "the clone row's lane (Base) is declared, not guarded — the gate field stays always-visible so the pair flow can start");
     assert.equal(leaf("ref_text"), "ref_audio!=null", "the transcript row appears only once its audio rides (ONE source; a transcript with no clip is noise — operator 2026-10-12)");
@@ -362,6 +364,27 @@ describe("the lane surface IS the visibility (2026-10-10, the YOU_ARE_A_LIAR fix
     assert.equal(leaf("speed"), undefined);
     assert.equal(leaf("repetition_penalty"), undefined);
     assert.equal(leaf("top_k"), undefined);
+  });
+
+  it("THE PANEL LAW (B7): the preset seat hides while a .qvoice rides — the DECL pins visible_when 'qvoice=null' and the grammar honors the loaded bag", () => {
+    // the DECL half (the pin this wall owns): the voice row carries
+    // the value guard — the sibling-field dependency (the ref_text
+    // ref_audio!=null precedent), never a lane table.
+    const carrier = (def.schemaCarrier ?? def.schema) as unknown as { toJSON(): { refs: Record<number, { type?: string; dict?: Record<string, number>; meta?: { extra?: { visible_when?: string } } }> } };
+    const json = carrier.toJSON();
+    const root = Object.values(json.refs).find((n) => n.type === "object" && n.dict !== undefined);
+    assert.ok(root, "the schema envelope serves");
+    const voiceId = root!.dict!["voice"];
+    assert.notEqual(voiceId, undefined, "voice stays a declared schema leaf");
+    assert.equal(json.refs[voiceId!]?.meta?.extra?.visible_when, "qvoice=null", "the preset seat hides while the qvoice mod bag rides (the B7 panel half)");
+    // the GRAMMAR half (the behavior this wall owns): the declared
+    // rule shows the seat with no persona and hides it under both
+    // bag grammars the door accepts (rows form + bare-string form —
+    // the B7 skip's own pair).
+    const seat = { name: "voice", label: "Preset Speaker", type: "text", visible_when: "qvoice=null" } as SpecField;
+    assert.equal(fieldVisible(seat, {}), true, "no persona stated — the preset seat shows");
+    assert.equal(fieldVisible(seat, { qvoice: [{ qvoice: "Cherry.qvoice", voice_strength: 1 }] }), false, "a stated bag hides the preset seat");
+    assert.equal(fieldVisible(seat, { qvoice: "Cherry.qvoice" }), false, "the bare-string grammar hides it too");
   });
 
   it("THE NAME LEAF IS DEAD (the qvoice boolean law, operator 2026-10-22: \"Qvoice. Is a mod. It is not BAKED INTO THE DEFAULT CARD\"): voice_name is NO schema leaf — the save is the mod's boolean, never a base-lane field", () => {
@@ -486,8 +509,9 @@ describe("the three-lane surfaces (the README stroke 2026-09-21 — each model r
     // style_instruction on the 1.7B CustomVoice cell, sampling on the
     // family base. Those surfaces are pinned where they are authored
     // (the model DECLs + the lane-law wall). The card's ONE job is
-    // to carry the fields, unguarded — save the transcript's VALUE
-    // guard (ref_audio!=null, the pair-dependency ruling 2026-10-12).
+    // to carry the fields, unguarded — save the two VALUE guards
+    // (the transcript's ref_audio!=null, the pair-dependency ruling
+    // 2026-10-12, and the preset's qvoice=null, the B7 panel half).
     assert.equal(leaf("ref_audio"), undefined, "the cloner rows render by the Base variant's declared surface, not a card guard");
     assert.equal(leaf("ref_text"), "ref_audio!=null", "the transcript row follows its audio (one source — the value-guard ruling, not a lane guard)");
     assert.equal(leaf("temperature"), undefined, "synth sampling is family base — it renders where the DECL declares it");

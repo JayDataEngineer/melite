@@ -103,10 +103,15 @@ beforeAll(async () => {
       // every DECLARED root key (hidden included — lane-consumed
       // params are guardable) plus the axis params (axisKey: the
       // variant_groups' ids lowercased — the draft's durable seats)
+      // plus the card's admitted bag keys (def.admits — the B7 panel
+      // law: a guard may name a mod-bag seat the form state carries,
+      // the reshoot/replace bag-key precedent; LAW 5 names the same
+      // union for model_defaults)
       const root = doc.schema as unknown as Envelope
       const rootKeys = Object.keys(root.refs[root.uid]?.dict ?? {})
       const axes = Object.keys(doc.features?.variant_groups ?? {}).map(axisKey)
-      const vocab = [...rootKeys, ...axes, 'model']
+      const admits = ((def as { admits?: readonly string[] }).admits ?? [])
+      const vocab = [...rootKeys, ...axes, 'model', ...admits]
       arms.push({ card, family, doc, carrier, boarded: boarded.length > 0 ? boarded : [card], fields, tool, vocab })
       for (const edge of doc.inputs ?? []) {
         edgeKinds.add(edge.kind)

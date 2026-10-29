@@ -11,7 +11,13 @@
 // the CI suite; the one CI-only arm is the guard SIBLING check
 // against live model axes (the models registry is not the card
 // registry's to read here — registration-time allows the estate's
-// axis spellings, CI pins the exact per-doc axes).
+// axis spellings, CI pins the exact per-doc axes). THE ADMITTED
+// SEATS (the tts dossier's B7 panel law, 2026-11-12): a guard may
+// also name an ADMITTED key — the mod-bag seats the form state
+// carries (the qvoice bag rides form state under its param_key;
+// the reshoot/replace bag-key precedent seats mod-owned names on
+// admits). Registration allows siblings + axes + admits; CI pins
+// the exact per-doc set.
 import {
   EXTRA_KEY_SET, WTYPE_SET, MEDIA_SET, ZONE_SET, ROLE_SET,
 } from '@melite/contracts/extraKeys'
@@ -101,7 +107,7 @@ function checkBag(card: string, family: string, field: string, extra: Record<str
       const at = ne >= 0 ? ne : eq
       const key = g.slice(0, at).trim()
       check(key !== '', where(card, family, field) + ` visible_when guard '${g}' carries an empty key`)
-      check(siblings.includes(key), where(card, family, field) + ` visible_when guard key '${key}' is neither a declared sibling nor a known axis — CI's law suite pins the exact per-doc axes`)
+      check(siblings.includes(key), where(card, family, field) + ` visible_when guard key '${key}' is neither a declared sibling, a known axis, nor an admitted key — CI's law suite pins the exact per-doc axes`)
       const rhs = g.slice(at + (ne >= 0 ? 2 : 1)).trim()
       check(rhs !== '', where(card, family, field) + ` visible_when guard '${g}' carries an empty value`)
     }
@@ -148,7 +154,7 @@ export function assertEnvelopeLaws(def: CardDefinition): void {
   const schema = typeof carrier.toJSON === 'function' ? carrier.toJSON() as Envelope : null
   if (schema === null || schema.refs === undefined) return
   const rootKeys = Object.keys(schema.refs[schema.uid]?.dict ?? {})
-  const siblings = [...rootKeys, ...AXIS_KEYS]
+  const siblings = [...rootKeys, ...AXIS_KEYS, ...(def.admits ?? [])]
   for (const family of [...(def.boarded ?? []), def.id]) {
     walkEnvelope(def.id, family, schema, siblings)
   }
