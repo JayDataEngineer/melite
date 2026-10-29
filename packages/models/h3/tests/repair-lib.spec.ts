@@ -69,6 +69,44 @@ describe("renderH3Repair as a library (the bypass face)", () => {
     assert.equal(ofClass(o, "ImageToMask").length, 0, "no ImageToMask — the swap's staged-mask decoder never appears");
   });
 
+  // F7 — THE PER-SCENE MASK SLICE (whole-clip parity, 2026-11-12):
+  // the plan head segments engine-side and the loop drives the
+  // scenes, so the tracked mask TIMELINE must be sliced to the
+  // current scene's interval before the grow — never fed whole to
+  // every scene (the F7 burn's mask leg).
+  it("F7: the tracked mask timeline is SLICED per scene before the grow — whole-clip parity", () => {
+    const g = new GraphBuilder();
+    renderH3Repair(ENTRY(), {}, FACTS, g, "run_lib_slice");
+    const o = out(g);
+    const slice = ofClass(o, "MiniMaxH3ContexLoopMaskSlice");
+    assert.equal(slice.length, 1, "one loop mask slice — the tracked stack never feeds a scene whole");
+    const toMask = ofClass(o, "SAM3_TrackToMask");
+    assert.equal(toMask.length, 1);
+    assert.deepEqual(slice[0]![1].inputs.mask, [toMask[0]![0], 0],
+      "the slice reads the RAW tracked timeline (pre-grow), per the extension's own posture: slice, then Grow Mask");
+    // the slice rides the loop's CURRENT-SHOT state — the same state
+    // wire the source slice consumes (scene-locked, never a stale copy)
+    const srcSlice = ofClass(o, "H3SourceSlice");
+    assert.equal(srcSlice.length, 1);
+    assert.deepEqual(slice[0]![1].inputs.state, srcSlice[0]![1].inputs.state,
+      "the mask slice and the source slice answer ONE state — one scene clock");
+    assert.equal(slice[0]![1].inputs.source_fps, 24, "the film clock");
+    // the grow derives from the SLICE, and the edit + target consume
+    // the grown slice (the whole-stack wire is dead)
+    const grow = ofClass(o, "GrowMaskWithBlur");
+    assert.equal(grow.length, 1);
+    assert.deepEqual(grow[0]![1].inputs.mask, [slice[0]![0], 0],
+      "grow follows the slice — each scene grows its own interval");
+    const edit = ofClass(o, "MiniMaxH3FantasticVideoEditLatent");
+    assert.equal(edit.length, 1);
+    assert.deepEqual(edit[0]![1].inputs.mask, [grow[0]![0], 0],
+      "the edit latent masks with the scene's grown slice, never the whole timeline");
+    const target = ofClass(o, "MiniMaxH3ContexMaskedTarget");
+    assert.equal(target.length, 1);
+    assert.deepEqual(target[0]![1].inputs.mask, [grow[0]![0], 0],
+      "the masked target carries the same scene slice (mask_meaning's own law)");
+  });
+
   it("rides the source as its own identity anchor (no still, no mannequin)", () => {
     const g = new GraphBuilder();
     renderH3Repair(ENTRY(), {}, FACTS, g, "run_lib_anchor");

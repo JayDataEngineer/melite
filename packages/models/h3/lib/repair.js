@@ -67,10 +67,6 @@ export function renderH3Repair(entry, p, facts, g, runId) {
     const regionMasks = g.node('SAM3_TrackToMask', {
         track_data: track, object_indices: '',
     }).out(0);
-    const grown = g.node('GrowMaskWithBlur', {
-        mask: regionMasks, expand: Math.round(num(entry, 'mask_grow', 16)),
-        tapered_corners: true, blur_radius: 0,
-    }).out(0);
     // picture_1 for the plan head: the window's own first frame. The
     // plan node REQUIRES a picture (its describer vocabulary); the
     // repair's "replacement" is the source's own person, so the
@@ -103,6 +99,27 @@ export function renderH3Repair(entry, p, facts, g, runId) {
             filename: `${runId}/repair`,
         },
         body: ({ cur, clip, vaeVideo, vaeAudio, mutedChainAudio, sliceAudio }) => {
+            // ── F7 — THE PER-SCENE MASK SLICE (2026-11-12): whole-clip
+            // parity. The plan head segments the window engine-side (the
+            // swap's own choreography — planFromSource rides the same
+            // seat); the loop drives the scenes; ChainAssemble stitches.
+            // The one wire that never segmented was THE MASK: the tracked
+            // stack (the whole window's timeline) fed every scene whole,
+            // so a multi-scene repair saw rows it did not own (the F7
+            // burn: one oversized shot, the mask leg loop-posture-only).
+            // MiniMaxH3ContexLoopMaskSlice selects the current scene's
+            // interval off the loop state — the tracked mask stack sliced
+            // to each scene's frame range, BEFORE the grow (the
+            // extension's own posture: slice, then Grow Mask). A
+            // single-scene window slices its own whole interval — the
+            // cure is posture-uniform, never a branch. ──
+            const sceneMask = g.node('MiniMaxH3ContexLoopMaskSlice', {
+                state: cur.out(0), mask: regionMasks, source_fps: 24,
+            });
+            const grown = g.node('GrowMaskWithBlur', {
+                mask: sceneMask.out(0), expand: Math.round(num(entry, 'mask_grow', 16)),
+                tapered_corners: true, blur_radius: 0,
+            }).out(0);
             // ── the masked second-pass body: NO still, NO mannequin — the
             // source clip rides its own ref_video seat (the identity
             // anchor of a repair is the person already in the frame — the
