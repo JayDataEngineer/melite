@@ -404,7 +404,7 @@ export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model:
 
 export const identity = {
   label: 'Generate Video',
-  description: 'THE video interface — multi-window film with SLA sparse attention, joint video+audio per window, auto-stitched into one mp4. The calls document IS the timeline.',
+  description: 'THE video interface — multi-window film with SLA sparse attention, joint video+audio per window, auto-stitched into one mp4. Repair masked regions (hands, face, body), reshoot the scene from a new camera, extend the film with fresh seconds, and fix masked edits. The calls document IS the timeline.',
   genre: 'video',
   icon: 'video',
   principles: [
@@ -440,7 +440,10 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
     boarded: [...BOARDED, ...VARIANT_ADDRESSES],
     // THE video door (2026-09-21, operator order — video-gen
     // retired): a blind "make a video" must find THIS card first.
-    tags: ['video', 'generate', 'text-to-video', 'timeline', 'edit'],
+    // THE RETRIEVAL WORDS (friction F1): repair/reshoot/extend name
+    // the card's masked-edit arms — the discover seat's exact-tag
+    // facet routes those queries here, never derived (make-card law).
+    tags: ['video', 'generate', 'text-to-video', 'timeline', 'edit', 'repair', 'reshoot', 'extend'],
     // THE CARD-OWNED CRAFT LAW (the rework's slice 6, H5's split): the
     // CONTENT line the load digest serves. The FORMATTING law of this
     // card is already card-owned and mechanical — prompts.yaml's
