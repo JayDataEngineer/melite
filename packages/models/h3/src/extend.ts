@@ -173,10 +173,13 @@ export function renderH3Extend(
     body: ({ cur, clip, vaeVideo, vaeAudio, mutedChainAudio, sliceAudio }) => {
       // The everywhere-generate mask: an all-white SolidMask sized
       // to the chain's own geometry (nothing held — extended
-      // seconds are new content).
+      // seconds are new content). `.out(0)`: a mask SEAT takes an
+      // output LINK `[key, slot]` — a bare node handle serializes
+      // `{"id": ...}` and the engine dies at reshape (the F10 burn,
+      // 2026-11-12; repair.ts's GrowMaskWithBlur is the pattern).
       const whiteMask = g.node('SolidMask', {
         value: 1, width: cur.out(8), height: cur.out(9),
-      })
+      }).out(0)
       // ── the fresh-continuation body: the anchor rides BOTH
       // reference seats — the last frame as the pixel anchor
       // (ref_image_0) and the whole clip as the motion identity

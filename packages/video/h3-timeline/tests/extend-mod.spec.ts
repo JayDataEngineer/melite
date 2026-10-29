@@ -164,7 +164,16 @@ describe("the extend emission (the fresh-continuation chain)", () => {
     assert.equal(mask[0][1].inputs.value, 1, "the mask is all white (generate everywhere)");
     assert.ok(typeof mask[0][1].inputs.width !== 'number' && mask[0][1].inputs.width !== undefined,
       "the mask's width rides the chain's own geometry wire, never a hand literal");
+    // F10 (2026-11-12): a mask SEAT takes an output LINK `[key, slot]`
+    // — a bare node handle serializes `{"id": ...}` and the engine
+    // dies at reshape. BOTH mask seats (the edit latent and the
+    // context target) must ride the SolidMask's slot-0 link.
+    const editNode = ofClass(out, 'MiniMaxH3FantasticVideoEditLatent')[0]!;
+    assert.deepEqual(editNode[1].inputs.mask, [mask[0][0], 0],
+      "the edit latent's mask seat is a LINK [key, 0] — never a bare handle dict");
     const target = ofClass(out, 'MiniMaxH3ContexMaskedTarget')[0]!;
+    assert.deepEqual(target[1].inputs.mask, [mask[0][0], 0],
+      "the context target's mask seat is a LINK [key, 0] — never a bare handle dict");
     assert.equal(target[1].inputs.mask_meaning, 'white = generate', "white = generate (the fresh pole)");
     assert.equal(target[1].inputs.audio_mode, 'generate all audio', "the extension's seconds carry fresh audio");
     const sched = ofClass(out, 'BasicScheduler')[0]!;
