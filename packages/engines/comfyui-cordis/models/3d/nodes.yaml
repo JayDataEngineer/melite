@@ -26,7 +26,7 @@ extensions:
     # 2026-10-23 pack cure re-pin (same as the motion lane's row —
     # ONE install unit): f283926 reads the chain's own artifact name
     # and is pushed to origin/main.
-    ref: f2839262e60f02b94c3a0958450fd8e961458d2d
+    ref: 6685fa7f07706bf637d37b3e50ff1529f2408bfb
     required: false
     desc: >-
       Image -> Anny (all-age parametric human model), both engines:

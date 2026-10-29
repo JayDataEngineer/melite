@@ -2,7 +2,7 @@
   {
     "name": "melite-poser-nodes",
     "url": "https://github.com/JayDataEngineer/melite-poser-nodes",
-    "ref": "94db78c7bc189cfd207c39d6bfacbd0c29550ef2",
+    "ref": "1b700240319185f096ca0bebb9801e56719610f7",
     "required": true,
     "desc": "The character-assembly engine room (the ANNY stopgap pack) — CompositeCharacter (body+hair+outfit), RayRenderGLBViews (8-view turnaround), RaySAMSegmentHairClothing (SAM vit_b part sprites).",
     "pip": [],
@@ -11,7 +11,7 @@
   {
     "name": "melite-kimodo-nodes",
     "url": "https://github.com/JayDataEngineer/melite-kimodo-nodes",
-    "ref": "f2839262e60f02b94c3a0958450fd8e961458d2d",
+    "ref": "6685fa7f07706bf637d37b3e50ff1529f2408bfb",
     "required": false,
     "desc": "Image -> Anny (all-age parametric human model), both engines: MultiHMR2ImageToAnny wraps naver/multi-hmr2 (regression, in-process, VRAM-tracked via melite_model_base) — multi-person Anny params (.pkl world param) + meshes (.glb) + optional render. AnnyFitOptimize wraps naver/anny-fit (camera-space optimization, out-of-process over ANNYFIT_SRC) — preprocess (detect+ViTPose+ camera+densekp+VLM+MultiHMR init) -> optimize -> refined params (.npz) + before/after renders. NAVER non-commercial licenses on both upstreams; Anny itself Apache 2.0.",
     "pip": [
@@ -31,7 +31,7 @@
   {
     "name": "melite-autorig-nodes",
     "url": "https://github.com/JayDataEngineer/melite-autorig-nodes",
-    "ref": "8dd96d4bb12e661ac877d27ea2c88135644eace9",
+    "ref": "add7154fec4d31c051b881cf5dae5be34fe1560e",
     "required": true,
     "desc": "KimodoTransferWeights (GPU KNN weight transfer) + SaveRiggedModel (persist). Requires Blender binary on PATH (FBX export).",
     "pip": [],

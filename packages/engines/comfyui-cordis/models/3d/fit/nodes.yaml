@@ -9,6 +9,6 @@ extensions:
   # (the ref the live engine serves) — content verified non-functional vs
   # the prior pin (category strings only; receipt
   # 2026-10-21-estate-pin-recure.md).
-  ref: 94db78c7bc189cfd207c39d6bfacbd0c29550ef2
+  ref: 1b700240319185f096ca0bebb9801e56719610f7
   required: true
   desc: FitProp (socket/fit/grip placement surgery) + RayRenderGLBViews (proof turnaround).

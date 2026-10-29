@@ -16,7 +16,7 @@ extensions:
     # reaches the cure (receipt
     # dev_docs/contracts/receipts/2026-10-23-infra-vram-headroom-gate.md
     # names the drift).
-    ref: f2839262e60f02b94c3a0958450fd8e961458d2d
+    ref: 6685fa7f07706bf637d37b3e50ff1529f2408bfb
     required: true
     desc: KimodoLoader + KimodoTextToPose (the NVIDIA-package wrap — THE kimodo implementation) — text to SOMA-77 motion NPZ.
     # 2026-09-08 (red-closure lane): pip restated identical to the 3d
@@ -35,6 +35,6 @@ extensions:
     # (the ref the live engine serves) — content verified non-functional vs
     # the prior pin (category strings only; receipt
     # 2026-10-21-estate-pin-recure.md).
-    ref: 94db78c7bc189cfd207c39d6bfacbd0c29550ef2
+    ref: 1b700240319185f096ca0bebb9801e56719610f7
     required: true
     desc: RaySomaxBake — skins the motion NPZ onto a SOMAX-rigged character GLB.
