@@ -51,3 +51,8 @@ image-edit card, `model: qwen-img-edit-21`: `input_images` =
 anchor's frame; no ratio work needed unless the user asks for a
 different crop — then crop the anchor FIRST (the input-prep
 card's crop).
+
+## Density tripwire
+
+A prompt under ~200 words cannot render a designed layout — one
+paragraph per zone, every rendered string quoted.

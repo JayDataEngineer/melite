@@ -51,3 +51,8 @@ image-edit card, `model: qwen-img-edit-21`: the ordered
 ANCHOR's frame (the person's image) — pick or crop the person's
 photo to the target framing FIRST (the input-prep card's crop);
 the garment's own ratio never matters.
+
+## Density tripwire
+
+A prompt under ~200 words cannot render a designed layout — one
+paragraph per zone, every rendered string quoted.

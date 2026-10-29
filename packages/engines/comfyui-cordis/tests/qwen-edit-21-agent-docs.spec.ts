@@ -1,5 +1,7 @@
+// @contract models-qwen-edit-21-docs
 // qwen-edit-21-agent-docs.spec.ts — THE qwen-img-edit-21 FAMILY DOC
-// WALL (the Tier-1 skill batch, 2026-11). The family's agent face
+// WALL (the Tier-1 skill batch, 2026-11; the 2026-11-12
+// skills-vs-groundtruth cure set rides the same wall). The family's agent face
 // (agents/AGENT.md + ten craft skills) teaches the CURRENT lane's
 // law: the edit-instruction doctrine, the density law, the canvas
 // rule, the geometry law — and the design-sheet skill carries the
@@ -14,6 +16,10 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const FAMILY_DIR = join(import.meta.dirname, "..", "models", "image", "qwen-img-edit-21");
+
+/** Prose flattened: every run of whitespace to one space — the wall
+ *  matches taught PHRASES, never the column the editor wrapped at. */
+const flat = (t: string): string => t.replace(/\s+/g, " ");
 const AGENT_MD = join(FAMILY_DIR, "agents", "AGENT.md");
 
 /** The skill dirs the discovery walk publishes (dir/SKILL.md only). */
@@ -83,7 +89,12 @@ describe("the qwen-img-edit-21 family doc wall", () => {
     // numbers — never the retired no-resolution-seat line
     expect(md).toMatch(/finished edit may RESIZE as a deliverable/i);
     expect(md).toMatch(/flip Match Input/i);
-    expect(md).toMatch(/crop the anchor[\s\S]{0,60}first/i);
+    // the frame law (2026-11-12 audit C27/C28): the anchor's frame
+    // IS the render frame; prep at the target frame — never
+    // crop-first-to-ratio as the default mechanism
+    expect(flat(md)).toContain("THE FRAME LIVES ON THE ANCHOR");
+    expect(flat(md)).toMatch(/pad or outpaint to grow it/i);
+    expect(flat(md)).not.toMatch(/crop the anchor.{0,60}first/i);
   });
 
   it("every skill's read id rides the entrance (the family lane reaches them)", () => {
@@ -144,8 +155,69 @@ describe("the qwen-img-edit-21 family doc wall", () => {
     expect(md).toContain("Entity name: {{name}}");
     // the estate glue: the draft's destination, the geometry translation
     expect(md).toMatch(/ten sections go into `prompt`/);
-    expect(md).toMatch(/crop the reference to 3:2/i);
-    expect(md).toMatch(/input-prep/);
+    // the frame law (2026-11-12 audit): pad/outpaint to 3:2, never crop-first
+    expect(flat(md)).toContain("THE FRAME LIVES ON THE ANCHOR");
+    expect(flat(md)).toMatch(/pad or outpaint the reference to 3:2/i);
+    expect(flat(md)).toContain("NEVER crop first");
+    expect(flat(md)).not.toMatch(/crop the reference to 3:2/i);
+
+    // THE WORKED EXAMPLE (P1, 2026-11-12 audit cure 1): the run-proven
+    // exemplar rides the skill — ten numbered sections, density-floor
+    // words, identity locks restated at the tail, every label quoted
+    const ex = md.slice(md.indexOf("## Worked example"));
+    expect(ex.length, "the worked-example section exists").toBeGreaterThan(0);
+    const sections = ex.match(/^\d+\.\s/gm) ?? [];
+    expect(sections.length, "exactly ten numbered sections").toBe(10);
+    const exWords = ex.split(/\s+/).filter(Boolean).length;
+    expect(exWords, "the exemplar clears the density floor").toBeGreaterThanOrEqual(1700);
+    const paras = ex.split(/\n\n/).filter((p) => /^\d+\.\s/.test(p));
+    expect(paras.length, "each section is one paragraph").toBe(10);
+    expect(paras[9], "identity locks restated in the final section").toMatch(/Preserve|identical|same/i);
+    expect(paras[2], "identity locks restated in the hero section").toMatch(/full identity restatement|deep brown skin/i);
+    const quoted = ex.match(/"[^"]{2,}"/g) ?? [];
+    // the run-proven exemplar carries 36 quoted labels; 30 is the
+    // floor a ten-section sheet with quoted captions cannot duck under
+    expect(quoted.length, "every rendered string is quoted").toBeGreaterThanOrEqual(30);
+  });
+
+  it("the worked example composes legally (P2, the 2026-11-12 audit)", () => {
+    const md = readFileSync(join(FAMILY_DIR, "agents", "skills", "design-sheet", "SKILL.md"), "utf8");
+    const ex = md.slice(md.indexOf("## Worked example"));
+    // the example must be introduced by its provenance — a real run id
+    expect(ex).toMatch(/run-a3368f43ccea/);
+    // and no machine token may ride it (the genericity law arm above
+    // already bans /home\/user — this arm pins the section directly)
+    expect(ex).not.toMatch(/\/home\/|127\.0\.0\.1|localhost/);
+    // the ten sections each open with their zone contract sentence:
+    // section 1 places every zone, section 10 locks identity
+    expect(ex).toMatch(/Zone A LEFT METADATA COLUMN|Zone A left metadata column/i);
+    expect(ex).toMatch(/Zone G BOTTOM-RIGHT DETAIL GRID|Zone G bottom-right detail grid/i);
+    // every section is prose the model consumes — no fences, no JSON,
+    // no markdown headings inside the example body (the contract's
+    // own OUTPUT CONTRACT law, demonstrated)
+    expect(ex.slice(ex.indexOf("\n\n1. "))).not.toMatch(/^```/m);
+  });
+
+  it("every skill carries the density tripwire (P5, the 2026-11-12 audit)", () => {
+    for (const dir of skillDirs()) {
+      const md = readFileSync(join(FAMILY_DIR, "agents", "skills", dir, "SKILL.md"), "utf8");
+      // design-sheet weaves the tripwire into its density-law bullet
+      // (lower-case "a"); the other nine append it as its own line
+      expect(flat(md), `${dir}: density tripwire present`).toMatch(
+        /a prompt under ~200 words cannot render a designed layout/i,
+      );
+    }
+  });
+
+  it("headshot teaches the frame law, not crop-first (P4, the 2026-11-12 audit)", () => {
+    const md = readFileSync(join(FAMILY_DIR, "agents", "skills", "headshot", "SKILL.md"), "utf8");
+    expect(flat(md)).toContain("THE FRAME LIVES ON THE ANCHOR");
+    expect(flat(md)).toContain("DELIVERY resize of the finished edit, never a render size");
+    expect(flat(md)).not.toMatch(/crop the anchor to.{0,40}FIRST/i);
+  });
+
+  it("the drafting contract rides verbatim (legacy pin, kept whole)", () => {
+    const md = readFileSync(join(FAMILY_DIR, "agents", "skills", "design-sheet", "SKILL.md"), "utf8");
     // routing: the plain-subject arm points at the OTHER sheet skill
     expect(md).toMatch(/character-sheet` skill on the qwen-img-21/);
   });

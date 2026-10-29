@@ -59,3 +59,8 @@ image-edit card, `model: qwen-img-edit-21`: `input_images` =
 frame inherits the anchor; a viewpoint change that also wants a
 wider/taller frame stages the cropped anchor FIRST (the input-prep
 card's crop).
+
+## Density tripwire
+
+A prompt under ~200 words cannot render a designed layout — one
+paragraph per zone, every rendered string quoted.

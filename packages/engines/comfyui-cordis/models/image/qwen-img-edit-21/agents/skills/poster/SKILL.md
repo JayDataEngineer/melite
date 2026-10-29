@@ -66,3 +66,8 @@ image-edit card, `model: qwen-img-edit-21`: `input_images` =
 anchor's frame — posters are 2:3 or 3:4 portrait: crop or extend
 the anchor FIRST (the input-prep card's crop) so the frame is the
 poster's before the layout rides in.
+
+## Density tripwire
+
+A prompt under ~200 words cannot render a designed layout — one
+paragraph per zone, every rendered string quoted.

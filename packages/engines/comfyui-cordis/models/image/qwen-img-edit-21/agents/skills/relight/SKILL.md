@@ -61,3 +61,8 @@ film-grain or VHS look too, that is a second named change.
 image-edit card, `model: qwen-img-edit-21`: `input_images` =
 [the photo], the rig-spec prompt, fixed seed. The frame never
 changes — no crop needed; the geometry law and this skill agree.
+
+## Density tripwire
+
+A prompt under ~200 words cannot render a designed layout — one
+paragraph per zone, every rendered string quoted.

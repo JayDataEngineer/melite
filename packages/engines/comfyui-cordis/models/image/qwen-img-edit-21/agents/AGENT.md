@@ -64,9 +64,12 @@ Prose outside quotes follows the user's instruction language
 - `seed` — fix it to iterate; free it to explore.
 - steps/cfg ride the model's own recipe — leave them unset.
 
-**The geometry law**: the output inherits the anchor's frame. When
-the target ratio differs from the anchor, crop the anchor to the
-target ratio first (the input-prep card's crop), then edit. The
+**The geometry law**: THE FRAME LIVES ON THE ANCHOR — the lane
+samples the encoder's anchor-sized latent, so the anchor's frame IS
+the render frame. When the target ratio differs, prep the anchor AT
+the target frame before editing: pad or outpaint to grow it (never
+crop away content the edit needs), or crop only as a deliberate
+composition choice. The
 finished edit may RESIZE as a deliverable: flip Match Input
 Resolution OFF and state width AND height (both, whole pixels,
 ≥ 16px) — the edit still runs at the anchor's frame and the output

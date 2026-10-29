@@ -50,8 +50,15 @@ for. Leakage guard: nothing about the face changes at all.
 ## Composing the run
 
 image-edit card, `model: qwen-img-edit-21`: `input_images` =
-[the photo], the prompt, fixed seed to iterate. The output inherits
-the anchor's frame — a headshot is vertical, so crop the anchor to
-2:3 or 3:4 FIRST (the input-prep card's crop) when the source is
-landscape. Multiple looks (light rigs, backgrounds) are iterations:
-same seed family, one prompt change each.
+[the photo], the prompt, fixed seed to iterate. THE FRAME LIVES ON
+THE ANCHOR: a headshot is vertical, so prep the anchor at 2:3 or
+3:4 when the source is landscape — the anchor's frame IS the render
+frame. The card's width/height pair (match OFF) is the DELIVERY
+resize of the finished edit, never a render size. Multiple looks
+(light rigs, backgrounds) are iterations: same seed family, one
+prompt change each.
+
+## Density tripwire
+
+A prompt under ~200 words cannot render a designed layout — one
+paragraph per zone, every rendered string quoted.

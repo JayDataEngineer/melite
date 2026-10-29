@@ -73,3 +73,8 @@ image-edit card, `model: qwen-img-edit-21`: `input_images` =
 [the photo], the prompt, fixed seed. In: no prep. Out: prep the
 wider anchor FIRST — the output inherits the anchor's frame, so
 the frame you want is the frame you stage.
+
+## Density tripwire
+
+A prompt under ~200 words cannot render a designed layout — one
+paragraph per zone, every rendered string quoted.

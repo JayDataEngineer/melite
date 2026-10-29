@@ -57,3 +57,8 @@ image-edit card, `model: qwen-img-edit-21`: `input_images` =
 the world persists beat to beat. Hand a run of next-beats to the
 video lane as the shot sequence — or compose each as the first
 frame of its own shot.
+
+## Density tripwire
+
+A prompt under ~200 words cannot render a designed layout — one
+paragraph per zone, every rendered string quoted.
