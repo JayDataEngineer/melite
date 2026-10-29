@@ -1,6 +1,6 @@
-import { GraphBuilder, OutputHandle } from '../graph.js';
-import type { NodeRef } from '../graph.js';
-import type { LaneInputsFacts } from '../facts.js';
+import { GraphBuilder, OutputHandle } from '../graph.ts';
+import type { NodeRef } from '../graph.ts';
+import type { LaneInputsFacts } from '../facts.ts';
 /** The text-encode pair: CLIPLoader + VAELoader from lane rows.
  *  Returns OUTPUT HANDLES (never NodeRefs — a ref in an inputs bag
  *  serializes as a scalar and the wall goes red). */
@@ -8,15 +8,32 @@ export declare function loadTextPair(g: GraphBuilder, li: LaneInputsFacts): {
     clip: OutputHandle;
     vae: OutputHandle;
 };
-/** The image-lane tail: VAEDecode + SaveImage under the prefix.
- *  Returns the SaveImage NODE REF (terminal — no downstream wire):
- *  callers take `.out()` off it (kit.ts imageT2I) or discard it.
- *  (2026-09-08: the declared return was OutputHandle, which the
- *  implementation never returned — a NodeRef. OutputHandle has no
- *  .out() method, so "fixing" the implementation to match the
- *  declaration would crash kit.ts:88 at runtime; the declaration
- *  now names the truth. Type-level only; runtime-identical.) */
-export declare function decodeSave(g: GraphBuilder, sampled: OutputHandle, vae: OutputHandle, filenamePrefix: string): NodeRef;
+/** A stated deliverable size (the resize order, 2026-11-12): the
+ * edit lanes keep the source's own frame (the latent law); when the
+ * doc flips match_input_resolution off and states both axes, the
+ * DELIVERABLE resizes to this post-decode. Integers, min 16px — the
+ * firing gate owns those refusals; this type carries the vetted
+ * pair. */
+export interface DeliverableSize {
+    readonly width: number;
+    readonly height: number;
+}
+/** THE RESIZE BLOCK (one owner): lanczos scale of decoded pixels to
+ * a stated deliverable size. `size === undefined` returns the image
+ * handle UNCHANGED (the byte-stable default — every existing caller
+ * composes identical bytes). crop stays disabled: a stated size is a
+ * resize, never a center-crop. */
+export declare function scaleDeliverable(g: GraphBuilder, image: OutputHandle, size: DeliverableSize | undefined): OutputHandle;
+/** The image-lane tail: VAEDecode (+ optional deliverable resize) +
+ *  SaveImage under the prefix. Returns the SaveImage NODE REF
+ *  (terminal — no downstream wire): callers take `.out()` off it
+ *  (kit.ts imageT2I) or discard it. (2026-09-08: the declared return
+ *  was OutputHandle, which the implementation never returned — a
+ *  NodeRef. OutputHandle has no .out() method, so "fixing" the
+ *  implementation to match the declaration would crash kit.ts:88 at
+ *  runtime; the declaration now names the truth. Type-level only;
+ *  runtime-identical.) */
+export declare function decodeSave(g: GraphBuilder, sampled: OutputHandle, vae: OutputHandle, filenamePrefix: string, size?: DeliverableSize): NodeRef;
 /** The lora chain (empty picks → the bare unet, byte-stable).
  *  Every link returns an OUTPUT HANDLE — a NodeRef left in the
  *  chain serializes as {"id": ...} and the wall goes red (caught

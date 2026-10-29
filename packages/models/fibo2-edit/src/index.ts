@@ -17,7 +17,8 @@
 // image_16 autogrow slots, cited in-prompt as <image_N>) → KSampler
 // on the ENCODER'S OWN THIRD OUTPUT (a 128-channel zero latent at
 // the trained size — width/height 0 means the first image's aspect
-// at ~1MP; a stated size would shift the edit) → VAEDecode →
+// at ~1MP; a stated size in the latent would shift the edit —
+// the resize rides the deliverable tail instead) → VAEDecode →
 // SaveImage. No EmptyLatentImage, no VAEEncode-of-source.
 //
 // THE UPSTREAM BUG, RECORDED (issue 17248, open): the INT8 Qwen3-VL
@@ -37,17 +38,21 @@ export const DECL: ModelDecl = {
   "id": "fibo2-edit",
   "form": "form_edit",
   "label": "Fibo 2.0 Edit",
-  "description": "Instruction-driven image editing on Fibo 2.0 — BRIA's licensed model, boarded from the Comfy-Org repack. One TextEncodeFibo2 encoder emits positive AND negative from one call (an empty negative_prompt rides the model's trained null caption — CFG works text-only), cites input images as <image_N> (up to 16), and — with the VAE seat connected — splices reference latents into BOTH conditionings. The sampler works on the ENCODER'S OWN emitted latent (128-channel, trained-size: width/height 0 means the first input image's aspect at ~1MP), so no edit lane takes a stated size. KNOWN UPSTREAM BUG (issue 17248, open): the INT8 Qwen3-VL encoder fails on image-conditioned encoding — every edit here rides the BF16 encoder (qwen3vl_4b_bf16); the INT8 encoder's seat is the text-only FLUX-shared use and is deliberately not provisioned. Dev is the 30-step CFG 5 reference lane; Edit Turbo is the 8-step CFG 1 distilled lane (a community 4-step report exists and is deliberately not pinned).",
+  "description": "Instruction-driven image editing on Fibo 2.0 — BRIA's licensed model, boarded from the Comfy-Org repack. One TextEncodeFibo2 encoder emits positive AND negative from one call (an empty negative_prompt rides the model's trained null caption — CFG works text-only), cites input images as <image_N> (up to 16), and — with the VAE seat connected — splices reference latents into BOTH conditionings. The sampler works on the ENCODER'S OWN emitted latent (128-channel, trained-size: width/height 0 means the first input image's aspect at ~1MP), so no edit lane takes a stated size in the latent — a stated width/height pair with Match Input Resolution OFF resizes the finished edit as a deliverable. KNOWN UPSTREAM BUG (issue 17248, open): the INT8 Qwen3-VL encoder fails on image-conditioned encoding — every edit here rides the BF16 encoder (qwen3vl_4b_bf16); the INT8 encoder's seat is the text-only FLUX-shared use and is deliberately not provisioned. Dev is the 30-step CFG 5 reference lane; Edit Turbo is the 8-step CFG 1 distilled lane (a community 4-step report exists and is deliberately not pinned).",
   "engine": "comfyui",
   "defaults": {
     "steps": 30,
     "sampler": "euler",
     "scheduler": "simple",
     "cfg": 5
-    // THE GEOMETRY IS THE ENCODER'S OWN (the latent law): this lane
-    // samples TextEncodeFibo2's own emitted latent (its third
-    // output), so no stated size has a seat — width/height were
-    // never on this family's surface.
+    // THE GEOMETRY IS THE ENCODER'S OWN (the latent law, restated
+    // by the resize order 2026-11-12): this lane samples
+    // TextEncodeFibo2's own emitted latent (its third output), so no
+    // stated size has a seat IN THE LATENT — the pair is a RUN
+    // param (the deliverable tail, match OFF + both axes),
+    // surfaced on the lane beside the toggle, never a default
+    // (no geometry prefills — the form states it or the run
+    // matches source).
   },
   "genre": "image",
   // THE REQUIRED DEFAULTS (operator contract 2026-11-07): every
@@ -65,7 +70,12 @@ export const DECL: ModelDecl = {
   // serve (input_images, prompt, negative_prompt, the sampling
   // block) plus the card's validation-only aliases (image1/2/3,
   // reference_images, input_mask — the unified ordered list and the
-  // mask gate). No width/height (the latent law), no batch (the
+  // mask gate), plus the deliverable pair (the resize order: no
+  // width/height seat IN THE LATENT — the lane samples
+  // TextEncodeFibo2's own emitted latent — but the lane TAKES the
+  // pair as run params, match OFF + both axes mounting the kit's
+  // ImageScale tail; the shared size law judges values). No batch
+  // (the
   // encoder's batch_size stays pinned at 1), no use_stock_nodes/
   // double_reference (the qwen lanes' own tuning pair). The card
   // auto+mask gate refuses on this lane (the crop_stitch detailer
@@ -80,6 +90,8 @@ export const DECL: ModelDecl = {
     "prompt",
     "negative_prompt",
     "match_input_resolution",
+    "width",
+    "height",
     "seed",
     "steps",
     "cfg",

@@ -75,10 +75,22 @@ describe("the edit action — byte-stability (the compatibility law)", () => {
     assert.equal(enc!.inputs?.resolution, 0, "the reference budget is 0 — each reference at its own size (the node's law)");
   });
 
-  it("THE NEVER-LIE GUARD (the latent law): a stated width/height refuses field-named on a direct action call", () => {
+  it("THE SIZE DOOR (the resize order, operator 2026-11-12): match ON + stated refuses with the flip; match OFF + both axes builds through the REAL build() with ONE ImageScale deliverable tail", () => {
     assert.throws(
       () => instantiateAction(edit, { ...PARAMS, width: 832, height: 1216 }, FACTS, new GraphBuilder({}), "probe-neverlie"),
-      (err: unknown): boolean => err instanceof Error && err.message.includes("no edit lane takes a stated size"),
+      (err: unknown): boolean =>
+        err instanceof Error && err.message.includes("'width' fires") && err.message.includes("match_input_resolution is ON"),
+    );
+    const sized = new GraphBuilder({});
+    instantiateAction(edit, { ...PARAMS, match_input_resolution: false, width: 832, height: 1216 }, FACTS, sized, "probe-resize");
+    const tails = Object.values(sized.toJSON() as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>).filter(
+      (n) => n.class_type === "ImageScale",
+    );
+    assert.equal(tails.length, 1, "the stated pair lands on ONE ImageScale tail node through the family's own build()");
+    assert.deepEqual(
+      [tails[0]!.inputs?.width, tails[0]!.inputs?.height, tails[0]!.inputs?.upscale_method, tails[0]!.inputs?.crop],
+      [832, 1216, "lanczos", "disabled"],
+      "the tail scales lanczos to the stated pair with no crop",
     );
   });
 

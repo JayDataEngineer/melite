@@ -141,10 +141,10 @@ describe("the edit action — byte-stability (the compatibility law)", () => {
     assert.equal(unet.inputs?.unet_name, "qwen_image_edit_2511_fp8_e4m3fn_scaled_lightning_comfyui_4steps_v1.0.safetensors");
   });
 
-  it("the never-lie guard keeps stated sizes off the 2511 lane (no lane takes a stated size — the latent law)", () => {
+  it("the size door refuses match-ON stated sizes on the 2511 lane (half pairs refuse too — OFF demands both axes)", () => {
     assert.throws(
       () => instantiateAction(edit, { ...PARAMS, width: 1024 }, FACTS, new GraphBuilder({}), "probe-w"),
-      /no edit lane takes a stated size/,
+      /'width' fires.*match_input_resolution is ON/,
     );
   });
 

@@ -20,12 +20,15 @@ export const DECL = {
     "defaults": {
         "sampler": "euler",
         "scheduler": "simple"
-        // THE GEOMETRY IS THE ANCHOR'S OWN (the latent law, 2026-11-08):
-        // this lane samples the encoder's own anchor-sized latent, so a
-        // stated target size has no seat — width/height LEFT the surface
-        // (the 2026-10-09 empty-form cure declared them here; the cure's
-        // premise — the EmptyLatentImage target — is retired with the
-        // node that needed it).
+        // THE GEOMETRY IS THE ANCHOR'S OWN (the latent law, 2026-11-08,
+        // resized by the resize order, operator 2026-11-12): this lane
+        // samples the encoder's own anchor-sized latent, so a stated
+        // target size has no seat IN THE LATENT — the pair is a RUN
+        // param (the deliverable tail: the kit's ImageScale seat,
+        // owned by the card's match_input_resolution OFF + stated
+        // pair), surfaced on the lane beside the toggle, never a
+        // default (no geometry prefills — the form states it or the
+        // run matches source).
     },
     "genre": "image",
     // THE REQUIRED DEFAULTS (operator contract 2026-11-07): every
@@ -46,14 +49,16 @@ export const DECL = {
     // surface (input_images, prompt, negative_prompt, the sampling
     // block) plus the card's VALIDATION-ONLY aliases (image1/2/3,
     // reference_images, input_mask — hidden carriers, but a wire key
-    // the lane admits, so the surface owns them). width/height are
-    // NOT here (2026-11-08): the lane samples the encoder's own
-    // anchor-sized latent — the output IS the anchor's frame, a
-    // stated size has no seat, and a draft that states one refuses
-    // field-named at the write door. match_input_resolution stays
-    // admitted as the declared no-op it now is on BOTH edit lanes
-    // (the 2511 precedent): the toggle is retained for draft
-    // compatibility and switches nothing.
+    // the lane admits, so the surface owns them). width/height ARE
+    // here (the resize order, operator 2026-11-12 — the latent law's
+    // exclusion retired): the lane samples the encoder's own
+    // anchor-sized latent, so the pair has no seat IN THE LATENT —
+    // but the lane TAKES them as run params (the deliverable: match
+    // OFF + both axes mounts the kit's ImageScale tail — the edit
+    // runs at the source frame, the finished edit resizes). The
+    // SHARED size law judges their values (integer ≥ 16, both axes,
+    // toggle OFF — ON + a stated size refuses with the flip in the
+    // voice), never this list: surfacing admits, the law refines.
     // use_stock_nodes/double_reference are 2511's edit-tuning pair
     // and are NOT here: with a declared surface the bench-write door
     // refuses them on this family in the field's voice.
@@ -67,6 +72,8 @@ export const DECL = {
         "prompt",
         "negative_prompt",
         "match_input_resolution",
+        "width",
+        "height",
         "seed",
         "steps",
         "cfg",
@@ -99,10 +106,13 @@ export const DECL = {
         ],
     },
     // THE RANGE RULE (the width burn's cure, 2026-10-10, rewritten by
-    // the latent law 2026-11-08): the resolution span RETIRED — the
-    // lane samples the encoder's own anchor-sized latent, no stated
-    // numeric left to bound. The SOLVER span stays: steps rides the
-    // edit narrowing's [1,50] (KSampler steps beyond the envelope is
+    // the latent law 2026-11-08, restated by the resize order
+    // 2026-11-12): the resolution span RETIRED — the lane samples the
+    // encoder's own anchor-sized latent, no stated numeric left to
+    // bound in the latent. The deliverable pair rides the surface
+    // beside the toggle (integer ≥ 16, judged by the SHARED size law
+    // at every seat — judgeDeliverableSize, never this span). The
+    // SOLVER span stays: steps rides the edit narrowing's [1,50] (KSampler steps beyond the envelope is
     // the old washed-out-edit burn), so the write door keeps a live
     // domain to judge.
     "bounds": {

@@ -368,14 +368,16 @@ describe("the 2.1 edit lane — the region never lies", () => {
     assert.equal(byClass("VAEEncode").length, 0, "this lane never encodes the source");
     assert.equal(byClass("VAEDecode").length, 0, "no decode under an IMAGE output");
   });
-  it("width/height stated on ANY 2.1 run refuse at the firing gate field-named (no lane takes a stated size — the latent law)", () => {
+  it("stated sizes ride the deliverable, never the latent (the resize order): match ON refuses with the flip in the voice; match OFF + both axes passes the firing gate (refusals own the malformed pairs)", () => {
+    // match ON (the default face) + stated refuses — the flip is in
+    // the voice.
     assert.throws(
       () => refuseImageEditFiring(
         { prompt: "x", image1: "in.png", seed: 3, steps: 25, cfg: 1, sampler: "euler", scheduler: "simple", mask_mode: "crop_stitch", mask_detector: "face", width: 1024, height: 1024 },
         FACTS_21,
       ),
       (err: unknown): boolean =>
-        err instanceof Error && err.message.includes("'width' fires") && err.message.includes("no edit lane takes a stated size"),
+        err instanceof Error && err.message.includes("'width' fires") && err.message.includes("match_input_resolution is ON"),
     );
     // the plain arm refuses the same way — the gate's law is
     // mode-universal, not a detailer-scoped special case
@@ -385,7 +387,32 @@ describe("the 2.1 edit lane — the region never lies", () => {
         FACTS_21,
       ),
       (err: unknown): boolean =>
-        err instanceof Error && err.message.includes("'width' fires") && err.message.includes("no edit lane takes a stated size"),
+        err instanceof Error && err.message.includes("'width' fires") && err.message.includes("match_input_resolution is ON"),
     );
+    // match OFF + both axes passes (the resize rides the
+    // deliverable tail — the firing gate's only remaining refusals
+    // own malformed pairs). match OFF with NEITHER axis passes too
+    // (the flip-then-type identity — the card stays runnable while
+    // the numbers are empty; the deliverable keeps the source frame).
+    refuseImageEditFiring(
+      { prompt: "x", image1: "in.png", seed: 3, steps: 25, cfg: 1, sampler: "euler", scheduler: "simple", match_input_resolution: false, width: 1024, height: 768 },
+      FACTS_21,
+    );
+    refuseImageEditFiring(
+      { prompt: "x", image1: "in.png", seed: 3, steps: 25, cfg: 1, sampler: "euler", scheduler: "simple", match_input_resolution: false },
+      FACTS_21,
+    );
+    // the malformed pairs still refuse field-named
+    for (const [name, doc] of [
+      ["half", { match_input_resolution: false, width: 1024 }],
+      ["fractional", { match_input_resolution: false, width: 1024.5, height: 768 }],
+      ["blank", { match_input_resolution: false, width: 12, height: 12 }],
+    ] as const) {
+      assert.throws(
+        () => refuseImageEditFiring({ prompt: "x", image1: "in.png", seed: 3, steps: 25, cfg: 1, sampler: "euler", scheduler: "simple", ...doc }, FACTS_21),
+        (err: unknown): boolean => err instanceof Error && err.message.includes("'width' fires"),
+        `${name} still refuses — the gate owns malformed deliverables`,
+      );
+    }
   });
 });

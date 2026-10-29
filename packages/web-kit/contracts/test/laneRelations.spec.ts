@@ -6,6 +6,7 @@ import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import {
   cellArtifactCoordinates,
+  judgeDeliverableSize,
   judgeLaneRelations,
   judgeLaneSurface,
   judgeSamplerEnvelope,
@@ -405,6 +406,52 @@ describe("judgeLaneSurface (the surface half)", () => {
       out[0]?.message,
       "field 'cfg' fires nothing on this lane (the variant's declared surface is empty) — drop it or switch lane",
     );
+  });
+});
+
+describe("judgeDeliverableSize (the resize order's size law — one spelling, four seats)", () => {
+  it("match ON (default, unstated toggle included) + a stated axis refuses with the flip in the voice", () => {
+    for (const params of [
+      { width: 1024, height: 768 },
+      { match_input_resolution: true, width: 1024, height: 768 },
+      { match_input_resolution: true, width: 1024 },
+    ]) {
+      const out = judgeDeliverableSize(params);
+      assert.equal(out.length, 1);
+      assert.equal(out[0]?.field, "width");
+      assert.match(out[0]?.message ?? "", /flip match_input_resolution to false/);
+    }
+  });
+
+  it("match OFF with neither axis passes (the flip-then-type identity)", () => {
+    assert.deepEqual(judgeDeliverableSize({ match_input_resolution: false }), []);
+    assert.deepEqual(judgeDeliverableSize({}), []);
+  });
+
+  it("match OFF with exactly one axis refuses (a half deliverable is malformed)", () => {
+    for (const params of [
+      { match_input_resolution: false, width: 1024 },
+      { match_input_resolution: false, height: 768 },
+    ]) {
+      const out = judgeDeliverableSize(params);
+      assert.equal(out.length, 1);
+      assert.match(out[0]?.message ?? "", /state both width and height/);
+    }
+  });
+
+  it("match OFF with both axes demands integers >= 16 (the input-prep laws)", () => {
+    const fractional = judgeDeliverableSize({ match_input_resolution: false, width: 1024.5, height: 768 });
+    assert.equal(fractional.length, 1);
+    assert.match(fractional[0]?.message ?? "", /must be integers/);
+    const tiny = judgeDeliverableSize({ match_input_resolution: false, width: 8, height: 8 });
+    assert.equal(tiny.length, 1);
+    assert.match(tiny[0]?.message ?? "", /at least 16px/);
+    assert.deepEqual(judgeDeliverableSize({ match_input_resolution: false, width: 832, height: 1216 }), []);
+  });
+
+  it("the first law in the order wins (half before integer, integer before floor)", () => {
+    const out = judgeDeliverableSize({ match_input_resolution: false, width: 8.5 });
+    assert.match(out[0]?.message ?? "", /state both width and height/);
   });
 });
 

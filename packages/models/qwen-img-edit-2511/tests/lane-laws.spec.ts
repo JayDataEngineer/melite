@@ -28,19 +28,32 @@ const FACTS = {
   lane_inputs: (DECL as { lane_inputs: Record<string, unknown> }).lane_inputs,
 } as unknown as ModelFacts;
 
-describe("the 2511 edit lane — the never-lie guard and the retired inline-inpaint arm", () => {
+describe("the 2511 edit lane — the size door and the retired inline-inpaint arm", () => {
   // the lane's own solver spelling (the 2.1 wall's constant, restored at
   // the lane's new home so the case states a complete doc)
   const SOLVER2511 = { seed: 3, steps: 20, cfg: 2.5, sampler: "euler", scheduler: "simple" };
-  it("THE NEVER-LIE GUARD: width/height stated on the 2511 lane refuses field-named (no lane takes a stated size — the latent law)", () => {
-    const g = new GraphBuilder({});
+  it("THE SIZE DOOR (the resize order, operator 2026-11-12): match ON + stated refuses with the flip; match OFF + both axes builds through the REAL build() with ONE ImageScale deliverable tail", () => {
     assert.throws(
       () => instantiateAction(edit,
         { prompt: "x", negative_prompt: "", image1: "in.png", width: 1024, height: 768, seed: 1, steps: 20, cfg: 2.5, sampler: "euler", scheduler: "simple" },
-        FACTS, g, "probe-never-lie",
+        FACTS, new GraphBuilder({}), "probe-never-lie",
       ),
       (err: unknown): boolean =>
-        err instanceof Error && err.message.includes("no edit lane takes a stated size"),
+        err instanceof Error && err.message.includes("'width' fires") && err.message.includes("match_input_resolution is ON"),
+    );
+    const sized = new GraphBuilder({});
+    instantiateAction(edit,
+      { prompt: "x", negative_prompt: "", image1: "in.png", match_input_resolution: false, width: 1024, height: 768, seed: 1, steps: 20, cfg: 2.5, sampler: "euler", scheduler: "simple" },
+      FACTS, sized, "probe-resize",
+    );
+    const tails = Object.values(sized.toJSON() as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>).filter(
+      (n) => n.class_type === "ImageScale",
+    );
+    assert.equal(tails.length, 1, "the stated pair lands on ONE ImageScale tail node through the family's own build()");
+    assert.deepEqual(
+      [tails[0]!.inputs?.width, tails[0]!.inputs?.height, tails[0]!.inputs?.upscale_method, tails[0]!.inputs?.crop],
+      [1024, 768, "lanczos", "disabled"],
+      "the tail scales lanczos to the stated pair with no crop",
     );
   });
   it("the same mask on the 2511 lane refuses in auto (no lane inpaints in place — the region detailer is the one mask arm)", () => {

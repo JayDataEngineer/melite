@@ -70,23 +70,24 @@ export const schema = z.object({
     input_mask: z.string().role('path').description("Region Mask").extra('extra', bag({ hidden: true })),
     prompt: z.string().description("Prompt").extra('extra', bag(promptPairExtra().prompt)),
     negative_prompt: z.string().description("Negative Prompt").extra('extra', bag(promptPairExtra().negative_prompt)),
-    // WIDTH/HEIGHT (retired by the latent law, 2026-11-08): neither
-    // edit lane takes a stated size anymore — the 2.1 lane samples the
-    // encoder's own anchor-sized latent, 2511 encodes the source
-    // outright, and a stated axis refuses field-named on BOTH lanes
-    // (the never-lie guards). The keys stay declared for legacy drafts
-    // (they validate, then refuse with the fix in the message) and ride
-    // HIDDEN like the image2/image3 aliases: never a form row, never a
-    // tool param — a face row would offer a knob every lane refuses.
-    width: z.number().description("Width").extra('extra', bag({ hidden: true, tooltip: 'Retained for legacy drafts only — neither edit lane takes a stated size anymore (the latent law, 2026-11-08): both edit at the source\u2019s own frame, and a stated axis refuses field-named. Clear it and re-run.' })),
-    height: z.number().description("Height").extra('extra', bag({ hidden: true, tooltip: 'Retained for legacy drafts only — neither edit lane takes a stated size anymore (the latent law, 2026-11-08): both edit at the source\u2019s own frame, and a stated axis refuses field-named. Clear it and re-run.' })),
-    // THE MATCH TOGGLE (retained, the declared no-op — 2511
-    // precedent): both lanes admit it and it switches nothing — both
-    // edit at the source's own frame (the 2.1 lane samples the
-    // encoder's own latent; 2511 encodes the source). It stays on the
-    // declared surface so old drafts that state it never refuse; the
-    // crop_stitch detailer path owns the crop size either way.
-    match_input_resolution: z.boolean().description("Match Input Resolution").default(true).extra('extra', bag({ order: 2, group: 'resolution', columns: 3, width: 1, zone: 'params', tooltip: 'Retained for old drafts — it switches nothing: both edit models edit at the source\u2019s own frame (the 2.1 model samples the encoder\u2019s own latent; 2511 encodes the source).' })),
+    // WIDTH/HEIGHT (the resize order, 2026-11-12 — superseding the
+    // 2026-11-08 blanket retirement): the edit lanes STILL run at the
+    // source's own frame (the latent law holds — a stated size wired
+    // into the latent shifted the edit); a stated size is now a
+    // DELIVERABLE resize (post-decode lanczos, one artifact). The
+    // match toggle owns the door: ON (default) keeps the source's
+    // frame and a stated axis refuses field-named with the flip in
+    // the voice; OFF gates these two rows into the form (the numbers
+    // appear exactly when the switch flips) and demands BOTH axes —
+    // integers, >= 16px (the input-prep laws).
+    width: z.number().step(1).description("Width").extra('extra', bag({ order: 1, group: 'resolution', columns: 3, width: 1, zone: 'params', visible_when: 'match_input_resolution=false', tooltip: 'The deliverable\u2019s width in pixels (SET ONLY when Match Input Resolution is OFF — the form hides this until the switch flips; the agent face refuses it while match stays ON). The edit itself runs at the source\u2019s own frame (the latent law \u2014 any other latent size shifts the edit); this resizes the finished edit (lanczos) so quality survives. State height too.' })),
+    height: z.number().step(1).description("Height").extra('extra', bag({ order: 2, group: 'resolution', columns: 3, width: 1, zone: 'params', visible_when: 'match_input_resolution=false', tooltip: 'The deliverable\u2019s height in pixels (SET ONLY when Match Input Resolution is OFF — the form hides this until the switch flips; the agent face refuses it while match stays ON). The edit itself runs at the source\u2019s own frame (the latent law \u2014 any other latent size shifts the edit); this resizes the finished edit (lanczos) so quality survives. State width too.' })),
+    // THE MATCH TOGGLE (the resize order's switch, 2026-11-12): ON
+    // (default) delivers at the source's own frame — byte-stable with
+    // every draft before the order; OFF exposes width/height (the
+    // deliverable's stated size). Either way the EDIT runs at the
+    // source's frame; only the deliverable resizes.
+    match_input_resolution: z.boolean().description("Match Input Resolution").default(true).extra('extra', bag({ order: 0, group: 'resolution', columns: 3, width: 1, zone: 'params', tooltip: 'ON (default): the deliverable keeps the source\u2019s own resolution. OFF: state Width/Height below \u2014 the edit still runs at the source\u2019s frame (quality first) and the finished edit resizes (lanczos) to your stated size.' })),
     seed: z.number().description("Seed").step(1).default(-1).extra('extra', bag(seedExtra({ order: 4, group: 'sampling', width: 1, zone: 'params' }))),
     // RIDE-THE-MODEL (operator catch e, 2026-09-22): steps/cfg carry
     // NO schema default — a default here is one lane's recipe served
@@ -166,7 +167,7 @@ export const identity = {
         'Region detail rides mask_detail_size (working size) + mask_denoise (rework strength); grow + context pad compose the region halo, feather blends the paste',
         'Mask prep (grow/feather/invert) rides in-graph ahead of the sampler; re-threshold has no node and refuses non-zero',
         'Iterate HERE, not in video — an edit costs seconds, a render minutes; name what changes, state the rest as unchanged',
-        'THE GEOMETRY LAW (the latent law, 2026-11-08): all three edit lanes inherit their source\'s own frame — the 2.1 lane samples the encoder\'s anchor-sized latent (any other size shifts the edit, the node\'s own law), 2511 encodes the source outright, and fibo2-edit samples its encoder\'s emitted latent at the trained size (the first image\'s aspect); a stated Width/Height has no seat on any lane and refuses field-named. Match Input Resolution is retained for draft compatibility and switches nothing; the crop_stitch detailer owns the crop size',
+        'THE GEOMETRY LAW (the latent law, 2026-11-08 + the resize order, 2026-11-12): every edit lane RUNS at the source\'s own frame — the 2.1 lane samples the encoder\'s anchor-sized latent (any other size shifts the edit, the node\'s own law), 2511 encodes the source outright, fibo2-edit samples its encoder\'s latent at the trained size, and the crop_stitch detailer owns the crop size. The DELIVERABLE may resize: flip Match Input Resolution off and state Width/Height — the finished edit scales (lanczos, post-decode, one artifact) to that size. Match ON + a stated axis refuses field-named with the flip in the voice',
         'Previous card outputs ride as artifact URLs (/v1/assets/runs/<run>/<file>); the compose resolves them to data/runs/output/<run>/<file> and stages into the comfy input dir (phase 1 validates on the mounts BEFORE registration)',
     ],
 };
@@ -285,15 +286,13 @@ export function registerCard(ctx, comfy) {
                 throw new Error("required param 'input_images' missing on the image-edit card (the first image is the one being edited — an ordered list; legacy drafts may state image1 alone instead)");
             }
             refuseImageEditFiring(doc, model);
-            // THE GEOMETRY LAW (the latent law, 2026-11-08): nothing here
-            // overrides geometry anymore — the 2.1 lane samples the
-            // ENCODER'S OWN anchor-sized latent (any other size shifts the
-            // edit, the node's own law) and 2511 encodes the source
-            // outright, so both lanes inherit the source's frame and the
-            // retired source-geometry probe (2026-10-13) has no seat: it
-            // pinned an EmptyLatentImage to the anchor's exact header size
-            // while the encoder processed references at its resolution
-            // budget — the latent/refs mismatch WAS the drift class.
+            // THE GEOMETRY LAW (the latent law, 2026-11-08 + the resize
+            // order, 2026-11-12): the edit always runs at the source's own
+            // frame — the 2.1 lane samples the ENCODER'S OWN anchor-sized
+            // latent (any other size shifts the edit, the node's own law)
+            // and 2511 encodes the source outright. A stated size is a
+            // DELIVERABLE resize (degrees-freed from the latent): decode →
+            // lanczos ImageScale → save, one artifact.
             const bound = ACTION_BINDINGS[model.family ?? model.id];
             if (bound) {
                 bound(doc, model, g, runId);

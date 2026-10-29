@@ -64,11 +64,14 @@ Prose outside quotes follows the user's instruction language
 - `seed` — fix it to iterate; free it to explore.
 - steps/cfg ride the model's own recipe — leave them unset.
 
-**The geometry law**: the output inherits the anchor's frame. There
-is no resolution seat, and none is needed — when the target ratio
-differs from the anchor, crop the anchor to the target ratio first
-(the input-prep card's crop), then edit. Match Input Resolution is
-a retired knob that switches nothing.
+**The geometry law**: the output inherits the anchor's frame. When
+the target ratio differs from the anchor, crop the anchor to the
+target ratio first (the input-prep card's crop), then edit. The
+finished edit may RESIZE as a deliverable: flip Match Input
+Resolution OFF and state width AND height (both, whole pixels,
+≥ 16px) — the edit still runs at the anchor's frame and the output
+scales after. Leave Match ON unless the brief names a delivery
+size.
 
 ## The craft skills
 

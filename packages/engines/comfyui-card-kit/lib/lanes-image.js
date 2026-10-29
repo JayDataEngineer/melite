@@ -1,5 +1,6 @@
-import { laneBlank } from '@melite/contracts/laneRelations';
+import { judgeDeliverableSize, laneBlank } from '@melite/contracts/laneRelations';
 import { stripAutofill } from "./graph.js";
+import { scaleDeliverable } from "./blocks/render-kit.js";
 import { IMPACT_DETECTORS } from "./impact.js";
 // ── archetype I: the image-diffuse family ───────────────────────────
 // Loader chain → lora stack → text pair → controlnet stack → latent
@@ -180,12 +181,9 @@ export function refuseImageEditFiring(p, model) {
     // anchor and instruct the edit (the pad-and-instruct recipe in the
     // zooms skill) — no outpaint knobs exist on any door.
     fire('input_mask', maskStated && effectiveMode === 'auto', 'no edit lane inpaints in place (inline inpainting is retired) — for a region state mask_mode crop_stitch (the region detailer)');
-    // width/height ride NO edit lane anymore (the latent law,
-    // 2026-11-08): the 2.1 lane samples the encoder's own anchor-sized
-    // latent, 2511 encodes the source outright, and the detailer sizes
-    // each crop itself — a stated value wires to nothing on every arm
-    // of either lane.
-    fire('width', p.width !== undefined || p.height !== undefined, "no edit lane takes a stated size anymore — the latent law (2026-11-08): both lanes edit at the source's own frame; clear them and re-run");
+    // THE DELIVERABLE-SIZE LAW (the resize order, 2026-11-12): the
+    // shared door below — one law, the firing gate and every build.
+    refuseDeliverableSize(p);
     fire('mask', bagN > 1, 'one region per run — the region arms take a single source');
     fire('mask', !blank(p.mask) && !Array.isArray(p.mask), 'the mask bag is a list — state one entry ([{input_mask, ...}]) or use the flat input_mask');
     if (effectiveMode === 'crop_stitch') {
@@ -203,6 +201,33 @@ export function refuseImageEditFiring(p, model) {
         fire('mask_context_pad', (region.mask_context_pad ?? 64) !== 64, 'context padding rides crop_stitch only — set mask_mode crop_stitch or back it to 64');
         fire('mask_threshold', (region.mask_threshold ?? 0) !== 0, 'no core node re-binarizes — the soft feathered falloff rides as-is');
     }
+}
+/** THE DELIVERABLE-SIZE REFUSAL (the resize order, operator
+ * 2026-11-12): the size law as its throwing door — the firing gate
+ * AND each family's build() call it, so the engine path and the
+ * compose path can never disagree about what a stated size means.
+ * The law itself is the contracts floor's spelling
+ * (judgeDeliverableSize — the bench write/run door, the form gate
+ * and the compose mirror append the same judgment): this door
+ * throws the first violation's voice. The edit lanes STILL run at
+ * the source's own frame (the latent law holds); a stated size is
+ * a DELIVERABLE resize (post-decode lanczos), not a latent
+ * geometry. The match toggle owns the door: ON (default) + a
+ * stated axis refuses field-named with the flip in the voice; OFF
+ * with NEITHER axis is the composable identity (the flip-then-type
+ * flow — the card stays runnable while the numbers are empty);
+ * OFF with exactly ONE axis refuses (a half deliverable is
+ * malformed, never a half-resize); OFF with BOTH demands integers
+ * ≥ 16 (the blank-image and int laws, input-prep's precedent) and
+ * the deliverable lands at that size.
+ *
+ * @param p the run params (width/height/match_input_resolution).
+ */
+export function refuseDeliverableSize(p) {
+    const violations = judgeDeliverableSize(p);
+    if (violations.length === 0)
+        return;
+    throw new Error(violations[0].message);
 }
 export function statedRegion(doc) {
     const rawBag = doc['mask'];
@@ -295,7 +320,23 @@ export function regionSegs(g, region, image, maskPath) {
  * never change (the paste touches the seg mask only).
  * Lane-agnostic: the model/clip/vae/conditioning are whatever the
  * active lane built. */
-export function detailerSave(g, p, region, io, runId) {
+/** The vetted deliverable size off a GATED doc (the resize order's
+ * read half; refuseImageEditFiring owns the refusals — this helper
+ * serves only the lawful state): match_input_resolution OFF and
+ * BOTH axes stated integers. Every other shape returns undefined —
+ * the compose stays byte-stable (no ImageScale). */
+export function deliverableSizeOf(p) {
+    if (p.match_input_resolution !== false)
+        return undefined;
+    const width = p.width;
+    const height = p.height;
+    if (typeof width !== 'number' || typeof height !== 'number')
+        return undefined;
+    if (!Number.isInteger(width) || !Number.isInteger(height))
+        return undefined;
+    return { width, height };
+}
+export function detailerSave(g, p, region, io, runId, size) {
     const detailed = g.node('DetailerForEach', {
         image: io.image, segs: io.segs, model: io.model, clip: io.clip, vae: io.vae,
         guide_size: (region.mask_detail_size ?? 512), guide_size_for: true, max_size: 1024,
@@ -305,7 +346,7 @@ export function detailerSave(g, p, region, io, runId) {
         denoise: (region.mask_denoise ?? 0.5), feather: (region.mask_feather ?? 8),
         noise_mask: true, force_inpaint: true, wildcard: '', cycle: 1,
     }).out();
-    return g.node('SaveImage', { images: detailed, filename_prefix: `${runId}/edit` });
+    return g.node('SaveImage', { images: scaleDeliverable(g, detailed, size), filename_prefix: `${runId}/edit` });
 }
 /** THE GEN TWIN (the gen detailer serve, operator 2026-11-07): the
  *  SAME DetailerForEach arm over the SAME kit segs, saving under the

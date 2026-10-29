@@ -42,22 +42,24 @@ describe("the qwen-img-edit-21 model plugin (the cached-reference edit lane of t
     assert.equal(base?.resolver_defaults?.cfg, 1);
   });
 
-  it("declares NO stated size — the latent law (2026-11-08): the encoder's own anchor-sized latent is the geometry", () => {
+  it("declares the deliverable pair as RUN params, never defaults — the latent law (2026-11-08), resized (operator 2026-11-12)", () => {
     // The empty-form burn's cure (2026-10-09, width/height default
-    // 1024) is SUPERSEDED: the lane now samples the encoder's own
-    // third output ("Empty latent on the first reference image's
-    // size … any other size shifts the edit" — the node's own law),
-    // so a stated target size has no seat and the DECL carries
-    // neither the pair nor their bounds. A regression that
-    // re-declares them re-opens the drift class the probe pinned:
-    // the EmptyLatent baked the anchor's header size while the
-    // encoder processed references at its resolution budget.
+    // 1024) STANDS: no geometry prefills — but the latent law's
+    // exclusion is SUPERSEDED by the resize order: the lane samples
+    // the encoder's own third output ("Empty latent on the first
+    // reference image's size … any other size shifts the edit" —
+    // the node's own law), so a stated target size has no seat IN
+    // THE LATENT — yet the lane TAKES the pair as run params (the
+    // kit's ImageScale tail, match OFF + both axes). A regression
+    // that re-defaults them re-opens the drift class the probe
+    // pinned: the EmptyLatent baked the anchor's header size while
+    // the encoder processed references at its resolution budget.
     const d = DECL.defaults ?? {} as Record<string, unknown>;
-    assert.equal(d.width, undefined, "width has no default — the lane takes no stated size");
-    assert.equal(d.height, undefined, "height has no default — the lane takes no stated size");
-    assert.ok(!(DECL.params ?? []).includes("width"), "width is off the surface");
-    assert.ok(!(DECL.params ?? []).includes("height"), "height is off the surface");
-    assert.ok((DECL.params ?? []).includes("match_input_resolution"), "the match toggle stays admitted — the declared no-op, draft compatibility");
+    assert.equal(d.width, undefined, "width has no default — the deliverable is stated or source-matched, never prefilled");
+    assert.equal(d.height, undefined, "height has no default — the deliverable is stated or source-matched, never prefilled");
+    assert.ok((DECL.params ?? []).includes("width"), "width is surfaced — a run param the kit tail consumes");
+    assert.ok((DECL.params ?? []).includes("height"), "height is surfaced — a run param the kit tail consumes");
+    assert.ok((DECL.params ?? []).includes("match_input_resolution"), "the match toggle stays admitted — the deliverable switch");
     // THE SOLVER SPAN (the latent law's sibling, 2026-11-08): no
     // stated-size domain exists on this lane, but steps keeps the
     // edit narrowing's [1,50] — the write door judges a live domain,

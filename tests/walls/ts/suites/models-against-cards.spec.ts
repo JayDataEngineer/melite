@@ -285,6 +285,9 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // and the dict-less exemption census below already names the
     // neither-bucket cards.
     let surfaceSkips = 0;
+    // THE OPT-IN-TOGGLE GATE's own counter (the resize order's final
+    // shape): one skip per surfaced opt-in numeric per boarded family.
+    let toggleSkips = 0;
     for (const [cardId, def] of defs) {
       const carrier = (def as { schemaCarrier?: unknown }).schemaCarrier ??
         (def as { schema?: unknown }).schema;
@@ -309,6 +312,31 @@ describe("models against cards (the cross-validation, resurrected)", () => {
         if (field.type !== "number") continue; // strings' emptiness is honest
         if (meta?.default !== undefined) continue; // the schema owns it
         judged++;
+        // THE OPT-IN-TOGGLE GATE (the resize order's final shape,
+        // operator 2026-11-12): a numeric the schema shows ONLY under
+        // an opt-in toggle (`key=false` where the key is a boolean
+        // defaulting true) never starves — its HIDDEN face is the
+        // default (match-source: unstated IS the deliverable), its
+        // SHOWN face is explicit typing, and the absent pair composes
+        // the byte-stable identity (the E8 pin), never a silent
+        // hardcoded fallback. The gate is DERIVED (guard + the
+        // toggle's schema default), never a name: retype the guard
+        // or drop the default and the field falls back into the
+        // family loop. Counted and pinned below — a new opt-in knob
+        // moves the number and is argued there.
+        if (typeof guard === "string") {
+          const m = guard.match(/^([A-Za-z0-9_]+)=false$/);
+          const toggle = m?.[1] === undefined ? undefined : dict[m[1]];
+          if (m?.[1] !== undefined && toggle?.type === "boolean" && toggle.meta?.default === true) {
+            for (const fam of def.boarded) {
+              const decl = registryModel(fam);
+              if (decl === undefined) continue;
+              const surface = decl.params as string[] | undefined;
+              if (Array.isArray(surface) && surface.includes(name)) toggleSkips++;
+            }
+            continue;
+          }
+        }
         if (typeof guard === "string" && guard.startsWith("model=")) {
           // family-SCOPED knob: the named family is the one owner
           const fam = guard.slice("model=".length);
@@ -503,7 +531,15 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // 12 -> 6 (2026-11-12): the openjutsu lane deleted by operator
     // order — its six numeric knobs (the DMD envelope) leave the
     // judged set; every survivor keeps its default owner.
-    assert.equal(judged, 6,
+    // 6 -> 8 (2026-11-12, the resize order): the image-edit card's
+    // width/height pair LEAVES the hidden-compatibility zone and
+    // returns as served params-zone numerics (the deliverable-size
+    // seats — no schema defaults, unscoped). The starving array
+    // above stays empty by the OPT-IN-TOGGLE gate (a numeric shown
+    // only under a default-ON toggle never starves — unstated is
+    // the deliverable), never the surface-successor law: the final
+    // shape surfaces the pair on all three edit families.
+    assert.equal(judged, 8,
       `the census JUDGED the estate's numeric params fields (${String(judged)} of ${String(walked)} walked — re-typing them out of the judge MOVES this number down; a new judged knob moves it up and is argued here)`);
     // exact: the skips were qwen-img-edit-2511's declared
     // resolution rows (width/height are not its params — it
@@ -512,10 +548,20 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // left the params zone entirely (hidden compatibility keys —
     // the alias precedent), so the pair exits at the zone filter
     // upstream of the family loop and the skip class empties.
-    // GROWTH means a family emptied its params surface, and every
-    // skip is a knob the starving law no longer judges.
+    // 0 -> 6 (2026-11-12, the resize order's first shape): the pair
+    // RETURNED as served params-zone numerics, surface-excluded on
+    // all three edit families (2 knobs × 3 families — the
+    // deliverable tail is kit-owned, never a family param).
+    // 6 -> 0 (2026-11-12, the final shape): the lanes surface the
+    // pair as run params, so the skip class empties again — and the
+    // starving question moves to the opt-in-toggle gate above (2
+    // knobs × 3 surfaced families = 6 counted skips). GROWTH in
+    // either counter means a surface emptied or a new opt-in knob
+    // landed, and every skip is argued here.
     assert.equal(surfaceSkips, 0,
-      `surface-successor skips are 0 today — the latent law moved the retired pair out of the params zone (saw ${String(surfaceSkips)}: growth means a family emptied its params surface, and every skip is a knob the starving law no longer judges)`);
+      `surface-successor skips are 0 today — the edit lanes surface the deliverable pair (saw ${String(surfaceSkips)}: growth means a family emptied its params surface, and every skip is a knob the starving law no longer judges)`);
+    assert.equal(toggleSkips, 6,
+      `opt-in-toggle skips are 6 today — the deliverable pair under the default-ON match toggle on all three edit families (saw ${String(toggleSkips)}: growth means a new opt-in numeric landed, and every skip is argued here)`);
     assert.deepEqual(handWritten, HAND_WRITTEN_CARRIERS,
       `the hand-written-carrier exemption is pinned (seen ${handWritten.join(", ") || "—"} vs the named ${HAND_WRITTEN_CARRIERS.join(", ") || "—"} — a card that rewrites itself out of the census must be argued in this list)`);
   });
@@ -607,7 +653,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     const LEDGER: Record<string, { home: string; anchor: string }> = {
       "image-edit.match_input_resolution (boolean)": {
         home: "packages/image/image-edit/tests/value-roundtrip.spec.ts",
-        anchor: "E8 (documented inert): match_input_resolution switches NOTHING",
+        anchor: "E8 (the resize pole): match_input_resolution ON/OFF compose structurally identical graphs with NO stated size",
       },
       "image-edit.use_stock_nodes (boolean)": {
         home: "packages/image/image-edit/tests/value-roundtrip.spec.ts",

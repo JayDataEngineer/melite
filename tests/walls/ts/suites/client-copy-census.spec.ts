@@ -480,7 +480,14 @@ const PINS: Record<string, number> = {
   // draft arrives under), computed with the lane's live counts — the
   // door-voice mirror class (class 1), localized only by forking the
   // door's identity per locale.
-  'packages/web/card-base/src': 49,
+  // RE-PIN 49→50 (2026-11-12, the resize order's final shape): +1
+  // arm-A `message` voice — composeValidate's deliverable-size law
+  // ("card_compose: " + the shared size law's flip/refusal voice).
+  // The surface sanctions the pair, so the mirror must still speak
+  // its VALUES — the same class as the clause triads above (the
+  // wire.ts data-site argument, class 1 — the voice IS the door's
+  // identity; localizing it forks the door per locale).
+  'packages/web/card-base/src': 50,
   // card-view: 13 — the D1 dictionary moves landed (the cards-tab
   // title/guide trio + the mention title now ride chromeCopy), so the
   // residue is two DEBT classes, every seat computed law-voiceing:

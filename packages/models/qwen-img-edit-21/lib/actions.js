@@ -1,4 +1,4 @@
-import { loadTextPair, decodeSave, stackLoras, orderedInputImages, regionSegs, detailerSave, isSpell, laneSampler, laneScheduler } from "@melite/comfyui-card-kit";
+import { loadTextPair, decodeSave, stackLoras, orderedInputImages, regionSegs, detailerSave, isSpell, laneSampler, laneScheduler, deliverableSizeOf, refuseDeliverableSize } from "@melite/comfyui-card-kit";
 import { fireLoras } from "@melite/comfyui-card-kit/guard";
 import { parseDiffusionLaneFacts, parseEditCap } from "@melite/comfyui-card-kit/facts";
 import { EDIT_DIFFUSION_BOUNDS, diffusionParamRows } from "@melite/comfyui-card-kit/paramRows";
@@ -46,15 +46,15 @@ export const edit = {
     ],
     facts: parseEditFacts,
     build({ p, facts, model, g, runId }) {
-        // THE NEVER-LIE GUARD (the latent law, 2026-11-08): no edit lane
-        // takes a stated size anymore — this lane samples the encoder's
-        // own anchor-sized latent ("any other size shifts the edit", the
-        // node's law), so a stated width/height would wire to nothing.
-        // A stated knob that does nothing is a lying stack. Refuse
-        // field-named, symmetric with the 2511 lane's guard.
-        if (p.width !== undefined || p.height !== undefined) {
-            throw new Error("'width'/'height' fire on the image-edit card but no edit lane takes a stated size (the latent law, 2026-11-08): this lane samples the encoder's own anchor-sized latent and the 2511 lane encodes the source outright — clear them and re-run");
-        }
+        // THE SIZE DOOR (the resize order, operator 2026-11-12): the
+        // shared deliverable-size refusal — the same law the firing gate
+        // owns (match ON + stated refuses with the flip in the voice;
+        // match OFF demands both integer axes ≥ 16). The engine path and
+        // the compose path judge one law: the NEVER-LIE GUARD's blanket
+        // refusal died here (it threw on ANY stated pair, before the
+        // deliverable tail below ever ran — Match-OFF resizes refused at
+        // the engine while compose approved them).
+        refuseDeliverableSize(p);
         const seed = p.seed;
         let unet = g.node("UNETLoader", { unet_name: facts.unet, weight_dtype: "default" }).out();
         unet = stackLoras(g, unet, fireLoras(model, p));
@@ -144,7 +144,7 @@ export const edit = {
             return detailerSave(g, p, merged, {
                 image, segs, model: cached, clip, vae,
                 positive: enc21.out(0), negative: enc21.out(1), seed,
-            }, runId).out();
+            }, runId, deliverableSizeOf(p)).out();
         }
         // THE ENCODER'S LATENT (the latent law, 2026-11-08): KSampler
         // samples enc21's own third output — "Empty latent on the first
@@ -175,7 +175,7 @@ export const edit = {
         // whole, verified on this engine's own outputs. The official
         // background-removal template saves the plain decode too; no
         // SplitImageWithAlpha belongs here.
-        return decodeSave(g, sampled21.out(), vae, `${runId}/edit`).out();
+        return decodeSave(g, sampled21.out(), vae, `${runId}/edit`, deliverableSizeOf(p)).out();
     },
 };
 //# sourceMappingURL=actions.js.map

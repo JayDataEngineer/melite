@@ -155,11 +155,11 @@ describe("the fibo2-edit edit action — the lane's branches", () => {
     assert.equal(flatLoad![1].inputs.image, "flat-region.png", "explicit flat keys win over the bag");
   });
 
-  it("REFUSALS: stated width/height, an empty list, and an over-cap list refuse field-named", () => {
+  it("REFUSALS: match-ON stated sizes, an empty list, and an over-cap list refuse field-named — and match OFF + both axes builds with ONE ImageScale deliverable tail", () => {
     assert.throws(
       () => compose({ ...PARAMS, width: 1024 }),
-      /no edit lane takes a stated size/,
-      "the never-lie guard names the latent law",
+      /'width' fires.*match_input_resolution is ON/,
+      "the size door names the flip",
     );
     assert.throws(
       () => compose({ ...PARAMS, input_images: [] }),
@@ -170,6 +170,14 @@ describe("the fibo2-edit edit action — the lane's branches", () => {
       () => compose({ ...PARAMS, input_images: Array.from({ length: 17 }, (_, i) => `img_${i}.png`) }),
       /this lane takes 16 input images total/,
       "the node's own 16-slot capacity is the ONE ceiling",
+    );
+    const sized = compose({ ...PARAMS, match_input_resolution: false, width: 1024, height: 1024 });
+    const tails = Object.values(sized).filter((n) => n.class_type === "ImageScale");
+    assert.equal(tails.length, 1, "the stated pair lands on ONE ImageScale tail node through the family's own build()");
+    assert.deepEqual(
+      [tails[0]!.inputs.width, tails[0]!.inputs.height, tails[0]!.inputs.upscale_method, tails[0]!.inputs.crop],
+      [1024, 1024, "lanczos", "disabled"],
+      "the tail scales lanczos to the stated pair with no crop",
     );
   });
 

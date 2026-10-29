@@ -161,7 +161,9 @@ function valueCells(): Cell[] {
     image3: { anchor: 'E6 (both): the alias seats ride their encoder slots', note: 'LoadImage + the encoder numbered arm (21: images.image_3; 2511 folds under the 3-slot cap)' },
     reference_images: { anchor: 'E6 (both): the alias seats ride their encoder slots', note: 'each stated ref at LoadImage + the encoder slots after the numbered aliases (the merge order)' },
     input_mask: { anchor: "E7 (operator's region seat): a stated input_mask in auto REFUSES loud on BOTH lanes naming the knob — and under crop_stitch it reaches LoadImageMask + the region detailer (never a silent text-only render)", note: 'the region detailer (2511 + 21 both served); auto+mask REFUSES loud naming the knob' },
-    match_input_resolution: { anchor: 'E8 (documented inert): match_input_resolution switches NOTHING', note: 'structural-identity pin — stated true/false compose identical graphs (the tooltip\'s own law)' },
+    match_input_resolution: { anchor: 'E8 (the resize pole): match_input_resolution ON/OFF compose structurally identical graphs with NO stated size', note: 'structural-identity pin — the toggle alone switches nothing (the resize rides the stated pair, not the switch); match OFF + both axes mounts the deliverable resize' },
+    width: { anchor: 'E12 (the resize order): the stated deliverable pair lands VERBATIM at the ImageScale consumer on BOTH lanes', note: 'the kit tail (lanczos, crop disabled) — the value IS the witness' },
+    height: { anchor: 'E12 (the resize order): the stated deliverable pair lands VERBATIM at the ImageScale consumer on BOTH lanes', note: 'the kit tail (lanczos, crop disabled) — the value IS the witness' },
     use_stock_nodes: { anchor: 'E9 (single-plane law): use_stock_nodes takes no branch', note: 'structural-identity pin — both values compose the stock graph (the plane\'s only edit graph)' },
     double_reference: { anchor: 'E10 (unbuildable, honest): a stated double_reference=true REFUSES loud naming the knob', note: 'the refusal IS the witness — never a silent plain-edit' },
   }

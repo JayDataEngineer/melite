@@ -1,10 +1,10 @@
 import Schema from '@deepseek-ai/schemastery';
 export type { Context } from '@deepseek-ai/cordis';
-import type { GraphBuilder, PromptGraph } from './graph.js';
-import type { ModelFacts } from './facts.js';
-import type { Schema as CarrierSchema, DeclaredModifierKind } from './params-emit.js';
-import type { ProvisionRow } from './model-contract.js';
-import type { CardCraft } from './craft.js';
+import type { GraphBuilder, PromptGraph } from './graph.ts';
+import type { ModelFacts } from './facts.ts';
+import type { Schema as CarrierSchema, DeclaredModifierKind } from './params-emit.ts';
+import type { ProvisionRow } from './model-contract.ts';
+import type { CardCraft } from './craft.ts';
 export interface CardFlowOutputBinding {
     channel: string;
     node: string;

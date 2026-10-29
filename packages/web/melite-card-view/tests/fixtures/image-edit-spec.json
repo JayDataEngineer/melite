@@ -428,6 +428,8 @@
     "prompt",
     "negative_prompt",
     "match_input_resolution",
+    "width",
+    "height",
     "seed",
     "steps",
     "cfg",
@@ -819,20 +821,32 @@
       "64": {
         "type": "number",
         "meta": {
+          "step": 1,
           "description": "Width",
           "extra": {
-            "hidden": true,
-            "tooltip": "Retained for legacy drafts only — neither edit lane takes a stated size anymore (the latent law, 2026-11-08): both edit at the source’s own frame, and a stated axis refuses field-named. Clear it and re-run."
+            "order": 1,
+            "group": "resolution",
+            "columns": 3,
+            "width": 1,
+            "zone": "params",
+            "visible_when": "match_input_resolution=false",
+            "tooltip": "The deliverable’s width in pixels (SET ONLY when Match Input Resolution is OFF — the form hides this until the switch flips; the agent face refuses it while match stays ON). The edit itself runs at the source’s own frame (the latent law — any other latent size shifts the edit); this resizes the finished edit (lanczos) so quality survives. State height too."
           }
         }
       },
       "65": {
         "type": "number",
         "meta": {
+          "step": 1,
           "description": "Height",
           "extra": {
-            "hidden": true,
-            "tooltip": "Retained for legacy drafts only — neither edit lane takes a stated size anymore (the latent law, 2026-11-08): both edit at the source’s own frame, and a stated axis refuses field-named. Clear it and re-run."
+            "order": 2,
+            "group": "resolution",
+            "columns": 3,
+            "width": 1,
+            "zone": "params",
+            "visible_when": "match_input_resolution=false",
+            "tooltip": "The deliverable’s height in pixels (SET ONLY when Match Input Resolution is OFF — the form hides this until the switch flips; the agent face refuses it while match stays ON). The edit itself runs at the source’s own frame (the latent law — any other latent size shifts the edit); this resizes the finished edit (lanczos) so quality survives. State width too."
           }
         }
       },
@@ -842,12 +856,12 @@
           "description": "Match Input Resolution",
           "default": true,
           "extra": {
-            "order": 2,
+            "order": 0,
             "group": "resolution",
             "columns": 3,
             "width": 1,
             "zone": "params",
-            "tooltip": "Retained for old drafts — it switches nothing: both edit models edit at the source’s own frame (the 2.1 model samples the encoder’s own latent; 2511 encodes the source)."
+            "tooltip": "ON (default): the deliverable keeps the source’s own resolution. OFF: state Width/Height below — the edit still runs at the source’s frame (quality first) and the finished edit resizes (lanczos) to your stated size."
           }
         }
       },
@@ -1216,6 +1230,8 @@
       "prompt",
       "negative_prompt",
       "match_input_resolution",
+      "width",
+      "height",
       "seed",
       "steps",
       "cfg",

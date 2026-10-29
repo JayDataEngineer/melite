@@ -14,7 +14,7 @@
 // so the doc is loose by contract — admission is the card's schema
 // walk, never re-judged here.
 import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
-import { loadTextPair, decodeSave, stackLoras, orderedInputImages, regionSegs, detailerSave, isSpell, laneSampler, laneScheduler, type TensorRef } from "@melite/comfyui-card-kit";
+import { loadTextPair, decodeSave, stackLoras, orderedInputImages, regionSegs, detailerSave, isSpell, laneSampler, laneScheduler, deliverableSizeOf, refuseDeliverableSize, type TensorRef } from "@melite/comfyui-card-kit";
 import { fireLoras } from "@melite/comfyui-card-kit/guard";
 import type { OutputHandle } from "@melite/comfyui-card-kit/graph";
 import { parseDiffusionLaneFacts, parseEditCap, type LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
@@ -76,16 +76,13 @@ export const edit: ComfyActionSpec<EditParams, EditFacts> = {
   ],
   facts: parseEditFacts,
   build({ p, facts, model, g, runId }) {
-    // THE NEVER-LIE GUARD (the latent law, 2026-11-08): no edit lane
-    // takes a stated size anymore — this lane samples the encoder's
-    // own emitted latent (the node's width/height stay 0 = the
-    // trained size, the first image's aspect), so a stated
-    // width/height would wire to nothing. A stated knob that does
-    // nothing is a lying stack. Refuse field-named, symmetric with
-    // the qwen lanes' guards.
-    if (p.width !== undefined || p.height !== undefined) {
-      throw new Error("'width'/'height' fire on the image-edit card but no edit lane takes a stated size (the latent law, 2026-11-08): this lane samples the encoder's own trained-size latent — clear them and re-run");
-    }
+    // THE SIZE DOOR (the resize order, operator 2026-11-12): the
+    // shared deliverable-size refusal — the same law the firing gate
+    // owns (match ON + stated refuses with the flip in the voice;
+    // match OFF demands both integer axes ≥ 16). The NEVER-LIE
+    // GUARD's blanket refusal died here (it threw on ANY stated pair
+    // before the deliverable tail below ever ran).
+    refuseDeliverableSize(p);
     // THE VARIANT PAIR IS NEVER SILENTLY SUBSTITUTED (the
     // required-defaults contract): steps and cfg are variant-class —
     // a family default may not stand in for a variant's face (dev
@@ -178,7 +175,7 @@ export const edit: ComfyActionSpec<EditParams, EditFacts> = {
       return detailerSave(g, p, merged, {
         image, segs, model: unet, clip, vae,
         positive: enc.out(0), negative: enc.out(1), seed,
-      }, runId).out();
+      }, runId, deliverableSizeOf(p)).out();
     }
     // THE ENCODER'S LATENT (the latent law, 2026-11-08): KSampler
     // samples enc's own third output — the node emits a 128-channel
@@ -198,6 +195,6 @@ export const edit: ComfyActionSpec<EditParams, EditFacts> = {
       positive: enc.out(0),
       negative: enc.out(1),
     });
-    return decodeSave(g, sampled.out(), vae, `${runId}/edit`).out();
+    return decodeSave(g, sampled.out(), vae, `${runId}/edit`, deliverableSizeOf(p)).out();
   },
 };

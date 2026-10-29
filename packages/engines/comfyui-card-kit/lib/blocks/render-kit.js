@@ -9,17 +9,30 @@ export function loadTextPair(g, li) {
     const vae = g.node('VAELoader', { vae_name: li.vae }).out();
     return { clip, vae };
 }
-/** The image-lane tail: VAEDecode + SaveImage under the prefix.
- *  Returns the SaveImage NODE REF (terminal — no downstream wire):
- *  callers take `.out()` off it (kit.ts imageT2I) or discard it.
- *  (2026-09-08: the declared return was OutputHandle, which the
- *  implementation never returned — a NodeRef. OutputHandle has no
- *  .out() method, so "fixing" the implementation to match the
- *  declaration would crash kit.ts:88 at runtime; the declaration
- *  now names the truth. Type-level only; runtime-identical.) */
-export function decodeSave(g, sampled, vae, filenamePrefix) {
+/** THE RESIZE BLOCK (one owner): lanczos scale of decoded pixels to
+ * a stated deliverable size. `size === undefined` returns the image
+ * handle UNCHANGED (the byte-stable default — every existing caller
+ * composes identical bytes). crop stays disabled: a stated size is a
+ * resize, never a center-crop. */
+export function scaleDeliverable(g, image, size) {
+    if (size === undefined)
+        return image;
+    return g.node('ImageScale', {
+        image, upscale_method: 'lanczos', width: size.width, height: size.height, crop: 'disabled',
+    }).out(0);
+}
+/** The image-lane tail: VAEDecode (+ optional deliverable resize) +
+ *  SaveImage under the prefix. Returns the SaveImage NODE REF
+ *  (terminal — no downstream wire): callers take `.out()` off it
+ *  (kit.ts imageT2I) or discard it. (2026-09-08: the declared return
+ *  was OutputHandle, which the implementation never returned — a
+ *  NodeRef. OutputHandle has no .out() method, so "fixing" the
+ *  implementation to match the declaration would crash kit.ts:88 at
+ *  runtime; the declaration now names the truth. Type-level only;
+ *  runtime-identical.) */
+export function decodeSave(g, sampled, vae, filenamePrefix, size) {
     const decoded = g.node('VAEDecode', { samples: sampled, vae });
-    return g.node('SaveImage', { images: decoded.out(), filename_prefix: filenamePrefix });
+    return g.node('SaveImage', { images: scaleDeliverable(g, decoded.out(), size), filename_prefix: filenamePrefix });
 }
 /** The lora chain (empty picks → the bare unet, byte-stable).
  *  Every link returns an OUTPUT HANDLE — a NodeRef left in the

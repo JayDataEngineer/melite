@@ -179,17 +179,21 @@ describe("THE FIBO 2.0 EDIT FACTS — the third image-edit family's pinned truth
     expect(DECL.bounds).toMatchObject({ steps: { min: 1, max: 50 } });
   });
 
-  it("SURFACE: no Recipe group (the scoped judgment), no stated-size or batch rows", () => {
+  it("SURFACE: no Recipe group (the scoped judgment), the deliverable pair surfaced, no batch rows", () => {
     // LAW A (recipe-rows): a card-carrying family declaring a Recipe
     // group needs a stamping row; this family declares NO Recipe
     // group at all — the census knowingly skips it, and this arm
     // pins the judgment so a half-added group cannot drift in.
     expect(groups).toEqual(["Variant", "Quant"]);
     const names = new Set<string>((DECL.params ?? []) as string[]);
-    for (const banned of ["width", "height", "batch_size", "use_stock_nodes", "double_reference", "resolution"]) {
+    // THE DELIVERABLE PAIR (the resize order, operator 2026-11-12):
+    // surfaced as RUN params beside the toggle (the kit tail
+    // consumes the lawful pair) — the latent law's exclusion is
+    // retired; batch and the qwen tuning pair stay off.
+    for (const banned of ["batch_size", "use_stock_nodes", "double_reference", "resolution"]) {
       expect(names.has(banned), `'${banned}' stays off the fibo2-edit params surface`).toBe(false);
     }
-    for (const need of ["input_images", "prompt", "negative_prompt", "input_mask", "seed", "steps", "cfg", "sampler", "scheduler", "match_input_resolution"]) {
+    for (const need of ["input_images", "prompt", "negative_prompt", "input_mask", "seed", "steps", "cfg", "sampler", "scheduler", "match_input_resolution", "width", "height"]) {
       expect(names.has(need), `'${need}' serves on the fibo2-edit params surface`).toBe(true);
     }
   });
@@ -286,16 +290,20 @@ describe("THE FIBO 2.0 EDIT FACTS — the third image-edit family's pinned truth
     expect((save.inputs as Record<string, unknown>)["filename_prefix"]).toBe("fibo-wall/stitch/edit");
   });
 
-  it("REFUSALS: stated width/height and over-cap lists refuse field-named", () => {
+  it("REFUSALS: match-ON stated sizes and over-cap lists refuse field-named — and match OFF + both axes builds the ImageScale deliverable tail", () => {
     const model = getModel("fibo2-edit");
     const base = { input_images: ["a.png"], prompt: "x", seed: 1, steps: 30, cfg: 5 };
     expect(() =>
       edit.build({ p: { ...base, width: 1024 }, facts: lane, model, g: new GraphBuilder(), runId: "r" }),
-    ).toThrow(/no edit lane takes a stated size/);
+    ).toThrow(/'width' fires.*match_input_resolution is ON/);
     const seventeen = Array.from({ length: 17 }, (_, i) => `img_${i}.png`);
     expect(() =>
       edit.build({ p: { ...base, input_images: seventeen }, facts: lane, model, g: new GraphBuilder(), runId: "r" }),
     ).toThrow(/16 input images total/);
+    const g = new GraphBuilder();
+    edit.build({ p: { ...base, match_input_resolution: false, width: 1024, height: 1024 }, facts: lane, model, g, runId: "r-sized" });
+    const tails = Object.values(g.toJSON() as Record<string, { class_type: string }>).filter((n) => n.class_type === "ImageScale");
+    expect(tails).toHaveLength(1);
   });
 
   it("LOAD FACES: the engine roster and the web estate both name the package", () => {

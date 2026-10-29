@@ -211,16 +211,44 @@ describe("P0 witness extension — the edit aliases, mask, and specialty seats",
     assert.ok(g2511["DetailerForEach.0"], "2511: the region detailer mounts (the masked-region reworker)");
   });
 
-  it("E8 (documented inert): match_input_resolution switches NOTHING — stated true and false compose structurally identical graphs (the tooltip's own law, pinned)", () => {
-    // The row's tooltip: "Retained for draft compatibility — it
-    // switches nothing: both edit lanes edit at the source's own
-    // frame." The witness pins THAT: any future wiring that makes the
-    // knob switch something reds here first (with its own value arm).
+  it("E8 (the resize pole): match_input_resolution ON/OFF compose structurally identical graphs with NO stated size (the edit identity — the toggle alone switches nothing); match OFF + both axes mounts the deliverable resize", () => {
+    // ON (default) keeps the source's frame with zero wiring change;
+    // OFF with no stated axes composes identical (the firing gate
+    // demands the pair when asked to resize, and the absent pair is
+    // the byte-stable identity — the edit's own frame). OFF + both
+    // axes grows exactly one ImageScale (the deliverable resize).
     const doc = { prompt: "p", image1: "/m/anchor.png", seed: 424243 };
     const on = composeDoc(m2511, { ...doc, match_input_resolution: true }, "r_e8_on");
     const off = composeDoc(m2511, { ...doc, match_input_resolution: false }, "r_e8_off");
     assert.equal(fingerprint(on, "r_e8_on"), fingerprint(off, "r_e8_off"),
-      "match_input_resolution switched the graph — the documented-inert knob grew wiring; land the wiring WITH its own value arm");
+      "match OFF with NO stated size switches the graph — the identity broke; land the wiring WITH its own value arm");
+    const sized = composeDoc(m2511, { ...doc, match_input_resolution: false, width: 1024, height: 768 }, "r_e8_sized");
+    assert.ok(!Object.values(on as object).some((n: { class_type: string }) => n.class_type === "ImageScale"), "ON: no resize — the source's frame delivers");
+    assert.ok(Object.values(sized as object).some((n: { class_type: string; inputs: Record<string, unknown> }) => n.class_type === "ImageScale"),
+      "OFF + both axes: the deliverable resizes on the 2511 lane too");
+  });
+
+  it("E12 (the resize order): the stated deliverable pair lands VERBATIM at the ImageScale consumer on BOTH lanes — never a silent plain-edit", () => {
+    // The census hop-[5] witness for width/height (SD-6): the value
+    // law re-reads FROM the composed graph AT the consumer. The
+    // consumer is the kit's deliverable tail (lanczos, crop
+    // disabled), mounted only under match OFF + both axes — the
+    // E8 structural arm owns the mounting, this arm owns the
+    // VALUES. Distinctive sizes so a truncation/default rides red.
+    for (const [lane, m] of [["21", m21], ["2511", m2511]] as const) {
+      const graph = composeDoc(m, {
+        prompt: "p", image1: "/m/anchor.png", seed: SEED,
+        match_input_resolution: false, width: 1344, height: 768,
+      }, `r_e12_${lane}`);
+      const scales = Object.values(graph as object).filter(
+        (n: { class_type: string }) => n.class_type === "ImageScale",
+      ) as Array<{ inputs: Record<string, unknown> }>;
+      assert.equal(scales.length, 1, `${lane}: exactly one deliverable tail mounts`);
+      assert.equal(scales[0]!.inputs.width, 1344, `${lane}: the stated width lands at the ImageScale consumer verbatim`);
+      assert.equal(scales[0]!.inputs.height, 768, `${lane}: the stated height lands at the ImageScale consumer verbatim`);
+      assert.equal(scales[0]!.inputs.upscale_method, "lanczos", `${lane}: the tail resizes lanczos (quality first)`);
+      assert.equal(scales[0]!.inputs.crop, "disabled", `${lane}: the tail never crops the finished edit`);
+    }
   });
 
   it("E9 (single-plane law): use_stock_nodes takes no branch — BOTH values compose the stock graph (the TS plane's only edit graph), pinned so a future non-stock arm lands WITH its witness", () => {

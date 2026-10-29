@@ -38,16 +38,25 @@ KSampler.steps) before blaming the prompt.
 1. ONE card per session. Compose, verify, done.
 2. image1 is required — an edit without a source fails.
 3. The prompt describes WHAT to change, never the whole image.
-4. Regions: auto + input_mask refuses field-named on every lane — state mask_mode crop_stitch to run
+4. The DELIVERABLE SIZE (the resize order, operator 2026-11-12): the
+   edit always RUNS at the source's own frame (the latent law — a
+   stated size wired into the latent shifts the edit, so width/height
+   never touch the sampler). The finished edit may RESIZE: flip
+   Match Input Resolution OFF and state width AND height (both,
+   whole pixels, ≥ 16px) — the deliverable scales (lanczos) to that
+   size. Stating width/height while Match stays ON refuses at the
+   compose door with the fix in the message. Leave Match ON unless
+   the brief names a delivery size.
+5. Regions: auto + input_mask refuses field-named on every lane — state mask_mode crop_stitch to run
    the region detailer (crop → edit → paste, rest preserved).
    The region is a painted mask, or a detector pick (person/face/hand)
    — exactly one source per run. Tune with mask_detail_size (working
    size) + mask_denoise (rework strength).
-4. Qwen-Image-Edit uses low CFG (flow-matching) — guidance tops at 10;
+6. Qwen-Image-Edit uses low CFG (flow-matching) — guidance tops at 10;
    2.1 rides cfg 1, 2511 standard rides 2.5 (leave the default).
-5. Lightning 4-step iterates fastest BUT needs its own FP8 weights —
+7. Lightning 4-step iterates fastest BUT needs its own FP8 weights —
    provision first or stay on standard.
-6. Wider canvas (outpaint) is pad-and-instruct — no outpaint knobs
+8. Wider canvas (outpaint) is pad-and-instruct — no outpaint knobs
    exist on any door: pad the anchor to the target frame locally
    (paste the source, fill the new band with a sampled background
    color), then instruct the edit to fill the named band. The output

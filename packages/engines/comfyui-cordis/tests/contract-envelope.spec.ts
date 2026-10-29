@@ -91,20 +91,22 @@ describe('THE CONTRACT: the real image-edit envelope (every declared fact rides)
     expect(nodeOf('image1').meta?.['role']).toBe('path')
   })
 
-  test('prompt is required (extra.required — the declaration\'s spelling); width/height ride HIDDEN compatibility keys (the latent law) + the prompt layout', () => {
+  test('prompt is required (extra.required — the declaration\'s spelling); width/height ride SERVED run params under the toggle (the resize-order law) + the prompt layout', () => {
     const p = nodeOf('prompt')
     expect(extraOf(p)['required']).toBe(true)
     expect(extraOf(p)['wtype']).toBe('textarea')
     for (const nm of ['width', 'height']) {
       const n = nodeOf(nm)
-      // THE LATENT LAW (2026-11-08): neither edit lane takes a stated
-      // size — the pair stays DECLARED for legacy drafts (they
-      // validate, then refuse field-named at the door) and rides
-      // HIDDEN like the image2/image3 aliases: never a form row,
-      // never a tool param. No visible_when: no toggle state makes a
-      // dead knob usable.
-      expect(extraOf(n)['hidden'], nm).toBe(true)
-      expect(extraOf(n)['visible_when'], nm).toBeUndefined()
+      // THE RESIZE-ORDER LAW (operator 2026-11-12): the edit lanes
+      // surface the deliverable pair beside the card's
+      // match_input_resolution toggle — the pair has no seat in the
+      // latent but the lane takes it as a run param, mounting the
+      // kit's ImageScale tail. So the envelope SERVES it (never
+      // hidden) gated on the toggle OFF — the operator's verbatim
+      // burn (flipping the switch hid the numbers) stays red if
+      // this regresses.
+      expect(extraOf(n)['hidden'], nm).toBeUndefined()
+      expect(extraOf(n)['visible_when'], nm).toBe('match_input_resolution=false')
       expect(typeof extraOf(n)['tooltip'], nm).toBe('string')
     }
     // NO schema default — the geometry is the source's own frame on
@@ -126,16 +128,17 @@ describe('THE CONTRACT: the real image-edit envelope (every declared fact rides)
 })
 
 describe('THE EMIT PARITY (the tool face reads the same vocabulary the cards write)', () => {
-  test('THE RETIRED PAIR: width/height emit on NO served face (the latent law — neither DECL declares a stated size)', () => {
+  test('THE DELIVERABLE PAIR: width/height emit on the served face (the resize-order law — both DECLs surface the pair as run params)', () => {
     const emitted = emitParamsSchema(
       carrier as never,
       ['qwen-img-edit-21', 'qwen-img-edit-2511'],
     ) as { properties: Record<string, Record<string, unknown>> }
     for (const nm of ['width', 'height']) {
-      // the write-door law: a served face never offers a stated size
-      // — the intersection (card schema × boarded DECLs) drops the
-      // pair because NEITHER lane's DECL declares it anymore
-      expect(emitted.properties[nm], nm).toBeUndefined()
+      // the resize-order law: the surfaced pair is part of the
+      // served face's vocabulary — the intersection (card schema ×
+      // boarded DECLs) keeps it because BOTH lanes' DECLs declare
+      // it. The tool face and the cards can never disagree.
+      expect(emitted.properties[nm], nm).toBeDefined()
     }
   })
 

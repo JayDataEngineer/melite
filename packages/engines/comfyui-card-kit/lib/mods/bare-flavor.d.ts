@@ -1,4 +1,4 @@
-import type { Context } from '../card-definition.js';
+import type { Context } from '../card-definition.ts';
 export interface BareFlavorPlugin {
     inject: readonly string[];
     apply: (ctx: Context) => () => void;

@@ -45,18 +45,21 @@ export const DECL = {
         { "name": "input_images", "class": "user" },
         { "name": "prompt", "class": "user" }
     ],
-    // THE LANE SURFACE (fix shapes 1+2): the dedicated edit
-    // checkpoint lane edits at SOURCE resolution — the VAEEncode of
-    // the input IS the latent, so a stated width/height is not a
-    // slower path, it is a lane the family does not have. They are
-    // NOT on this surface (the card's visible_when guard that hid
-    // them is dead; with a declared surface the bench-write door now
-    // REFUSES them on this family in the field's voice — the same
-    // judgment the tooltip used to describe). The edit-tuning pair
-    // (use_stock_nodes, double_reference) is THIS lane's. The
-    // card-owned match toggle IS here (a no-op admit: the lane always
-    // edits at source resolution, so a default-ON draft never refuses
-    // on this family).
+    // THE LANE SURFACE (fix shapes 1+2, restated by the resize
+    // order 2026-11-12): the dedicated edit checkpoint lane edits at
+    // SOURCE resolution — the VAEEncode of the input IS the latent, so
+    // a stated width/height has no seat IN THE LATENT. They ARE on
+    // this surface anyway — as run params (the deliverable: match OFF
+    // + both axes mounts the kit's ImageScale tail — the edit runs at
+    // source resolution, the finished edit resizes). The SHARED size
+    // law judges their values (integer ≥ 16, both axes, toggle OFF —
+    // the compose door refuses ON + stated with the fix in the
+    // voice), never this list: surfacing admits, the law refines.
+    // The edit-tuning pair (use_stock_nodes, double_reference) is
+    // THIS lane's. The card-owned match toggle IS here (the
+    // deliverable switch: the lane always edits at source
+    // resolution, and a stated size without flipping it OFF refuses
+    // on every family).
     "params": [
         "input_images",
         "image1",
@@ -67,6 +70,8 @@ export const DECL = {
         "prompt",
         "negative_prompt",
         "match_input_resolution",
+        "width",
+        "height",
         "seed",
         "steps",
         "cfg",
@@ -86,10 +91,9 @@ export const DECL = {
     // shape, the tts incident's twin). `required: prompt` and the
     // legacy-aware anchor law are the card's own compose gates, stated
     // here so the bench-write door refuses them first, in the field's
-    // voice, on this family too (the 2511 lane edits at source
-    // resolution — no width/height pair HERE; that word stays the
-    // sibling's alone, a designed disagreement pinned in
-    // cards-lane-law).
+    // voice, on this family too (both edit lanes run at source
+    // resolution — width/height is no lane's required word, it is the
+    // card's own deliverable pair).
     "relations": {
         "required": [
             {
@@ -103,8 +107,10 @@ export const DECL = {
             },
         ],
     },
-    // THE SOLVER SPAN (the latent law's sibling, 2026-11-08): no
-    // stated-size domain exists on this lane, but steps keeps the edit
+    // THE SOLVER SPAN (the latent law's sibling, 2026-11-08,
+    // restated by the resize order 2026-11-12): no stated-size domain
+    // exists on this lane IN THE LATENT (the deliverable pair rides
+    // the card face, judged by the compose door), but steps keeps the edit
     // narrowing's [1,50] — the write door judges a live domain on both
     // edit lanes, never one.
     "bounds": {

@@ -1,4 +1,4 @@
-import { loadTextPair, decodeSave, stackLoras, orderedInputImages, regionSegs, detailerSave, isSpell, laneSampler, laneScheduler } from "@melite/comfyui-card-kit";
+import { loadTextPair, decodeSave, stackLoras, orderedInputImages, regionSegs, detailerSave, isSpell, laneSampler, laneScheduler, deliverableSizeOf, refuseDeliverableSize } from "@melite/comfyui-card-kit";
 import { fireLoras } from "@melite/comfyui-card-kit/guard";
 import { parseDiffusionLaneFacts, parseEditCap } from "@melite/comfyui-card-kit/facts";
 import { EDIT_DIFFUSION_BOUNDS, diffusionParamRows } from "@melite/comfyui-card-kit/paramRows";
@@ -82,15 +82,13 @@ export const edit = {
         const maskPath = (merged.input_mask ?? "").trim();
         const mode = (merged.mask_mode ?? "auto");
         const cropStitch = (mode === "full_frame" ? "auto" : mode) === "crop_stitch";
-        // THE NEVER-LIE GUARD (the firing law + the latent law,
-        // 2026-11-08): no edit lane takes a stated size anymore — this
-        // lane rides the source's own resolution through VAEEncode, and
-        // the 2.1 lane samples the encoder's own anchor-sized latent. A
-        // stated knob that does nothing is a lying stack. Refuse
-        // field-named, symmetric with the 2.1 lane's guard.
-        if (p.width !== undefined || p.height !== undefined) {
-            throw new Error("'width'/'height' fire on the image-edit card but no edit lane takes a stated size (the latent law, 2026-11-08): the 2511 lane edits at the source's own resolution and the 2.1 lane samples the encoder's own anchor-sized latent — clear them and re-run");
-        }
+        // THE SIZE DOOR (the resize order, operator 2026-11-12): the
+        // shared deliverable-size refusal — the same law the firing gate
+        // owns (match ON + stated refuses with the flip in the voice;
+        // match OFF demands both integer axes ≥ 16). The NEVER-LIE
+        // GUARD's blanket refusal died here (it threw on ANY stated pair
+        // before the deliverable tail below ever ran).
+        refuseDeliverableSize(p);
         // THE NODE-SHAPE ASSERT (not a second cap — a lying-DECL
         // guard): this lane builds the stock TextEncodeQwenImageEditPlus
         // graph, whose reference slots are image2/image3 and nothing
@@ -133,7 +131,7 @@ export const edit = {
             return detailerSave(g, p, merged, {
                 image, segs, model: shifted, clip, vae,
                 positive: pos.out(), negative: neg.out(), seed,
-            }, runId).out();
+            }, runId, deliverableSizeOf(p)).out();
         }
         const encoded = g.node("VAEEncode", { pixels: image, vae }).out();
         const sampled = g.node("KSampler", {
@@ -150,7 +148,7 @@ export const edit = {
             positive: pos.out(),
             negative: neg.out(),
         });
-        return decodeSave(g, sampled.out(), vae, `${runId}/edit`).out();
+        return decodeSave(g, sampled.out(), vae, `${runId}/edit`, deliverableSizeOf(p)).out();
     },
 };
 //# sourceMappingURL=actions.js.map

@@ -103,37 +103,77 @@ describe("the image-edit compose gate", () => {
     assert.equal(BOARDED[1], "qwen-img-edit-2511", "2511 is the BACKUP");
   });
 
-  // THE LATENT LAW AT THE CARD (2026-11-08): neither lane takes a
-  // stated size anymore. The compose face carries NO geometry
-  // override — the 2.1 lane samples the encoder's own anchor-sized
-  // latent, 2511 encodes the source outright — and a stated
-  // Width/Height refuses field-named on BOTH lanes (the never-lie
-  // guards), never silently ignores.
-  it("THE LATENT LAW AT THE CARD: no lane takes a stated size — the pair refuses field-named, and the clean compose carries no stated-size latent", () => {
+  // THE LATENT LAW AT THE CARD (2026-11-08 + the resize order,
+  // 2026-11-12): the edit RUNS at the source's own frame — the 2.1
+  // lane samples the encoder's own anchor-sized latent, 2511
+  // encodes the source outright — and a stated size is a
+  // DELIVERABLE resize (post-decode lanczos), never a latent
+  // geometry. The match toggle owns the door: ON + a stated axis
+  // refuses field-named with the flip in the voice (the clean
+  // compose builds no ImageScale); OFF + both axes composes the
+  // resize on the graph (an ImageScale whose wire carries the
+  // deliverable size).
+  it("THE LATENT LAW AT THE CARD: a stated size rides the deliverable, never the latent — match ON refuses with the flip in the voice, match OFF + both axes lands the resize", () => {
     const model21 = facts.models["qwen-img-edit-21"]!;
     assert.ok(model21, "the qwen-img-edit-21 facts row serves");
-    // A stated pair refuses on the 2.1 lane…
+    // Match ON (the default) + a stated pair refuses field-named,
+    // naming the flip — never a silent ignore.
     assert.throws(
       () => def.compose({ prompt: "make it night", image1: "/m/i.png", width: 512, height: 512, steps: 25, cfg: 1 }, model21, new GraphBuilder(), "r_size21"),
-      /no edit lane takes a stated size/,
-      "the 2.1 lane refuses the stated pair field-named",
+      /match_input_resolution is ON/,
+      "the 2.1 lane refuses the stated pair field-named, teaching the flip",
     );
     // …and on the 2511 lane (the same never-lie voice).
     assert.throws(
       () => def.compose(def.schema({ prompt: "dress the mannequin", image1: "/m/anchor.png", width: 512, height: 512 }), model, new GraphBuilder(), "r_size2511"),
-      /no edit lane takes a stated size/,
-      "the 2511 lane refuses the stated pair field-named",
+      /match_input_resolution is ON/,
+      "the 2511 lane refuses the stated pair field-named, teaching the flip",
     );
-    // The clean compose builds NO stated-size latent on the 2.1
-    // lane: its KSampler rides the encoder's own third output.
+    // The clean compose builds NO stated-size latent and NO resize:
+    // its KSampler rides the encoder's own third output.
     const g = new GraphBuilder();
     def.compose({ prompt: "make it night", image1: "/m/i.png", steps: 25, cfg: 1 }, model21, g, "r_latent21");
     const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
     assert.ok(!Object.values(graph).some((n) => n.class_type === "EmptyLatentImage"), "no EmptyLatentImage — the encoder's latent is the geometry");
+    assert.ok(!Object.values(graph).some((n) => n.class_type === "ImageScale"), "no ImageScale — match ON delivers at the source's frame");
     const sampler = Object.values(graph).find((n) => n.class_type === "KSampler");
     assert.match(String(sampler?.inputs?.latent_image ?? ""), /^TextEncodeQwenImage21/, "the latent wire is the encoder's own");
     const enc = Object.values(graph).find((n) => n.class_type === "TextEncodeQwenImage21");
     assert.equal(enc?.inputs?.resolution, 0, "the reference budget is 0 — each reference at its own size");
+    // Match OFF + both axes lands a post-decode lanczos resize at
+    // the deliverable size — and STILL no foreign latent.
+    const gSized = new GraphBuilder();
+    def.compose({ prompt: "make it night", image1: "/m/i.png", match_input_resolution: false, width: 1024, height: 768, steps: 25, cfg: 1 }, model21, gSized, "r_sizeoff21");
+    const sized = gSized.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+    assert.ok(!Object.values(sized).some((n) => n.class_type === "EmptyLatentImage"), "still no EmptyLatentImage — the edit ran at the source's frame");
+    const scales = Object.values(sized).filter((n) => n.class_type === "ImageScale");
+    assert.equal(scales.length, 1, "exactly one ImageScale — the deliverable resize");
+    assert.equal(scales[0].inputs.upscale_method, "lanczos", "the resize is lanczos — quality first");
+    assert.equal(scales[0].inputs.width, 1024, "the stated width lands");
+    assert.equal(scales[0].inputs.height, 768, "the stated height lands");
+    assert.equal(scales[0].inputs.crop, "disabled", "a stated size resizes — never center-crops");
+  });
+
+  // THE MATCH INCOMPLETE: match OFF demands BOTH axes (a single
+  // axis is a malformed deliverable, never a half-resize), and the
+  // axes must be whole pixels ≥ 16px (the input-prep laws).
+  it("THE MATCH INCOMPLETE: match OFF with one axis, a fractional axis, or a blank-sized axis refuses field-named", () => {
+    const model21 = facts.models["qwen-img-edit-21"]!;
+    assert.throws(
+      () => def.compose({ prompt: "make it night", image1: "/m/i.png", match_input_resolution: false, width: 1024, steps: 25, cfg: 1 }, model21, new GraphBuilder(), "r_half"),
+      /state both width and height/,
+      "a single stated axis refuses — the deliverable needs both",
+    );
+    assert.throws(
+      () => def.compose({ prompt: "make it night", image1: "/m/i.png", match_input_resolution: false, width: 1024.5, height: 768, steps: 25, cfg: 1 }, model21, new GraphBuilder(), "r_frac"),
+      /\$\.width expected number multiple of 1/,
+      "a fractional axis refuses at the schema — the step(1) integer spelling rejects before the compose door (still loud, still field-named)",
+    );
+    assert.throws(
+      () => def.compose({ prompt: "make it night", image1: "/m/i.png", match_input_resolution: false, width: 12, height: 12, steps: 25, cfg: 1 }, model21, new GraphBuilder(), "r_blank"),
+      /at least 16px/,
+      "a blank-sized axis refuses — the blank-image law",
+    );
   });
 
   // THE MATCH DEFAULT (the no-typing convenience): the schema default
@@ -143,10 +183,10 @@ describe("the image-edit compose gate", () => {
     assert.equal(walked.match_input_resolution, true, "the toggle defaults ON — no typing needed");
   });
 
-  // THE 2511 NO-OP: the toggle is admitted on the 2511 lane (a
-  // default-ON draft never refuses there) and changes nothing — that
-  // lane always edits at source resolution.
-  it("THE 2511 NO-OP: match_input_resolution rides the 2511 lane without refusal or effect", () => {
+  // THE 2511 POLE: the toggle is admitted on the 2511 lane (a
+  // default-ON draft never refuses there); ON edits and delivers at
+  // source resolution, OFF + both axes resizes the deliverable.
+  it("THE 2511 POLE: match_input_resolution ON composes clean, OFF demands the pair and resizes the deliverable", () => {
     const g = new GraphBuilder();
     def.compose(
       def.schema({ prompt: "dress the mannequin", image1: "/m/anchor.png", match_input_resolution: true }),
@@ -154,13 +194,15 @@ describe("the image-edit compose gate", () => {
     );
     const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
     assert.ok(Object.values(graph).some((n) => n.class_type === "TextEncodeQwenImageEditPlus"), "the 2511 lane still composes with the toggle on");
-    assert.ok(!Object.values(graph).some((n) => n.class_type === "EmptyLatentImage"), "the 2511 lane builds no target latent — the toggle changes nothing");
+    assert.ok(!Object.values(graph).some((n) => n.class_type === "EmptyLatentImage"), "the 2511 lane builds no target latent — the toggle changes nothing while ON");
+    assert.ok(!Object.values(graph).some((n) => n.class_type === "ImageScale"), "no resize — ON delivers at the source's frame");
     const gOff = new GraphBuilder();
     def.compose(
-      def.schema({ prompt: "dress the mannequin", image1: "/m/anchor.png", match_input_resolution: false }),
+      def.schema({ prompt: "dress the mannequin", image1: "/m/anchor.png", match_input_resolution: false, width: 1024, height: 1024 }),
       model, gOff, "r_match2511off",
     );
-    assert.ok(Object.values(gOff.toJSON() as Record<string, unknown>).length > 0, "match OFF is admitted too — a no-op either way");
+    const offGraph = gOff.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+    assert.ok(Object.values(offGraph).some((n) => n.class_type === "ImageScale"), "match OFF + both axes resizes the 2511 deliverable too");
   });
 
   it("the edit-scope field names whole-image and masked-region choices", () => {
@@ -489,8 +531,15 @@ describe("the image-edit compose gate", () => {
     assert.ok(!graph["VAEDecode.0"], "no decode under an IMAGE output");
   });
 
-  it("width/height on a 2.1 crop_stitch run refuse field-named (the detailer owns the crop size)", () => {
+  // THE RESIZE RIDES CROP_STITCH TOO (the resize order): the
+  // detailer owns the CROP size (guide 512/max 1024 per region —
+  // untouched); a stated Width/Height resizes the PASTED DELIVERABLE
+  // through the same match door as the plain arm (match ON +
+  // stated refuses with the flip; match OFF + both axes mounts one
+  // ImageScale after the DetailerForEach paste).
+  it("width/height on a 2.1 crop_stitch run ride the same match door (the detailer owns the crop size, the stated pair owns the deliverable)", () => {
     const model21 = facts.models["qwen-img-edit-21"]!;
+    // match ON (schema default) + stated refuses with the flip.
     assert.throws(
       () => def.compose(
         def.schema({
@@ -499,8 +548,28 @@ describe("the image-edit compose gate", () => {
         }),
         model21, new GraphBuilder(), "run_21wh",
       ),
-      /'width' fires .*clear them/,
+      /match_input_resolution is ON/,
+      "crop_stitch + match ON + stated refuses — teaching the flip",
     );
+    // match OFF + both axes mounts the deliverable resize AFTER the
+    // region paste (the DetailerForEach still owns the crop).
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({
+        prompt: "studio portrait", image1: "/m/i.png", seed: 7, steps: 25, cfg: 1,
+        mask_mode: "crop_stitch", mask_detector: "face",
+        match_input_resolution: false, width: 1600, height: 900,
+      }),
+      model21, g, "run_21resize",
+    );
+    const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+    assert.ok(Object.values(graph).some((n) => n.class_type === "DetailerForEach"), "the region detailer still mounts — the crop is its own");
+    const detailer = Object.values(graph).find((n) => n.class_type === "DetailerForEach");
+    assert.equal(detailer?.inputs?.guide_size, 512, "the crop size is untouched");
+    const scales = Object.values(graph).filter((n) => n.class_type === "ImageScale");
+    assert.equal(scales.length, 1, "exactly one ImageScale — the pasted deliverable resizes to the stated pair");
+    assert.equal(scales[0].inputs.width, 1600, "the stated width lands on the deliverable");
+    assert.equal(scales[0].inputs.height, 900, "the stated height lands on the deliverable");
   });
 
   it("crop_stitch with the hand detector wires the nano bbox chain", () => {
@@ -629,7 +698,7 @@ describe("the image-edit compose gate", () => {
 });
 
 describe("the lane-bespoke leaves (the DECL surface — fix shape 2's successor)", () => {
-  it("THE LEAVES RIDE THEIR DECL SURFACE: no lane owns a stated size (the latent law), use_stock_nodes/double_reference are 2511's — the card carries NO model guard; references are ONE unguarded stack", () => {
+  it("THE LEAVES RIDE THEIR DECL SURFACE: the deliverable pair is surfaced on every edit lane (the resize order), use_stock_nodes/double_reference are 2511's — the card carries NO model guard; references are ONE unguarded stack", () => {
     // the carrier dance (same as formSchemas: schemaCarrier ?? schema)
     const carrier = (def.schemaCarrier ?? def.schema) as unknown as { toJSON(): { refs: Record<number, { type?: string; dict?: Record<string, number>; meta?: { extra?: { visible_when?: string; max_stack?: number; hidden?: boolean; zone?: string } } }> } };
     const json = carrier.toJSON();
@@ -648,31 +717,34 @@ describe("the lane-bespoke leaves (the DECL surface — fix shape 2's successor)
     for (const name of ["match_input_resolution", "use_stock_nodes", "double_reference"]) {
       assert.equal(leaf(name), undefined, `${name} carries no model guard — its family is its DECL params surface`);
     }
-    // WIDTH/HEIGHT (retired by the latent law, 2026-11-08): the pair
-    // rides HIDDEN like the image2/image3 aliases — declared for
-    // legacy drafts, never a form row, never a tool param (a face row
-    // would offer a knob every lane refuses field-named). No
-    // visible_when guard: there is no toggle state that makes a dead
-    // knob usable.
-    const face = (name: string): { hidden?: boolean } | undefined => {
+    // WIDTH/HEIGHT (returned by the resize order, operator
+    // 2026-11-12): the pair is a SERVED face row, visible only when
+    // Match Input Resolution is OFF (the only toggle state that
+    // makes the knobs usable). The face never hides them: they are no
+    // longer legacy keys.
+    const face = (name: string): { hidden?: boolean; visible_when?: string } | undefined => {
       const refId = root!.dict![name];
       if (refId === undefined) return undefined;
       return json.refs[refId]?.meta?.extra;
     };
     for (const axis of ["width", "height"]) {
-      assert.equal(face(axis)?.hidden, true, `${axis} rides hidden:true — legacy drafts validate, the face never offers it`);
+      assert.equal(face(axis)?.hidden, undefined, `${axis} rides served — the face offers it under the toggle`);
+      assert.equal(face(axis)?.visible_when, "match_input_resolution=false", `${axis} appears only with Match OFF`);
     }
-    // the DECL surfaces themselves (the one truth): NEITHER lane owns
-    // a stated size anymore (the latent law — the 2.1 lane samples
-    // the encoder's own latent, 2511 encodes the source); 2511 owns
-    // the edit-tuning pair. The match toggle is SHARED (both lanes
-    // admit it as a declared no-op).
+    // the DECL surfaces themselves (the one truth): EVERY edit
+    // lane lists the deliverable pair (the resize order — the 2.1
+    // lane samples the encoder's own latent, 2511 encodes the
+    // source, fibo2 its emitted latent; the pair has no seat in the
+    // latent but each lane TAKES it as a run param, consumed by the
+    // kit's deliverable tail). 2511 owns the edit-tuning pair. The
+    // match toggle is SHARED (all lanes admit it as the deliverable
+    // switch).
     const decl21 = facts.models["qwen-img-edit-21"]!;
     const decl2511 = facts.models["qwen-img-edit-2511"]!;
     const surf = (m: { params?: string[] }): ReadonlySet<string> => new Set(m.params ?? []);
-    assert.ok(!surf(decl21).has("width") && !surf(decl21).has("height"), "2.1's surface excludes a stated size (the latent law)");
-    assert.ok(!surf(decl2511).has("width") && !surf(decl2511).has("height"), "2511's surface excludes a stated size (source-resolution lane)");
-    assert.ok(surf(decl21).has("match_input_resolution") && surf(decl2511).has("match_input_resolution"), "both lanes admit the match toggle (2511 as a no-op)");
+    assert.ok(surf(decl21).has("width") && surf(decl21).has("height"), "2.1's surface lists the deliverable pair (run params, kit tail)");
+    assert.ok(surf(decl2511).has("width") && surf(decl2511).has("height"), "2511's surface lists the deliverable pair (source-resolution lane, deliverable tail)");
+    assert.ok(surf(decl21).has("match_input_resolution") && surf(decl2511).has("match_input_resolution"), "both lanes admit the match toggle (the deliverable switch)");
     assert.ok(surf(decl2511).has("use_stock_nodes") && surf(decl2511).has("double_reference"), "2511's surface owns the edit-tuning pair");
     assert.ok(!surf(decl21).has("use_stock_nodes") && !surf(decl21).has("double_reference"), "2.1's surface excludes the 2511 tuning pair");
     // the SHARED surface never hides (no guard on the plain knobs)

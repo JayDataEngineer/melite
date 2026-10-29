@@ -65,27 +65,33 @@ describe('THE REAL image-edit CONTRACT drives the real form', () => {
     const prompt = byName.get('prompt')
     expect(prompt!.type).toBe('textarea')
     expect(prompt!.required).toBe(true)
-    // width/height are GONE FROM THE SERVED SURFACE (the stated-size
-    // law, 59fc746e9 — the empty-form burn recut: no DECL lane takes
-    // width/height, the serve carries NO geometry — never an empty
-    // field, never a ghost 1024; the size word is the user's stated
-    // word, refused field-named at both seats when off-lane). The
-    // old pin demanded the match-toggle pair with its visible_when —
-    // the wall rode the STALE fixture green until the weld refresh
-    // exposed it. The declared size word now lives nowhere.
-    expect(byName.has('width')).toBe(false)
-    expect(byName.has('height')).toBe(false)
+    // width/height are SERVED BY THE SCHEMA (the resize order,
+    // operator 2026-11-12): the deliverable pair rides the card's
+    // own face visible under the match toggle (visible_when), while
+    // no DECL lane surfaces them (the kit tail consumes the lawful
+    // pair — the bench carve judges them with the shared size law,
+    // never the surface). The old pin demanded their ABSENCE (the
+    // latent law's empty-form burn: no lane took a size, so the
+    // serve carried no geometry). The fixture weld refresh re-served
+    // them; this pin holds the new truth: served, gated, unsurfaced.
+    expect(byName.has('width')).toBe(true)
+    expect(byName.has('height')).toBe(true)
+    expect(byName.get('width')).toMatchObject({ group: 'resolution' })
     // the match toggle SURVIVES (it rides lanes.base — the card's
-    // own display axis); only the geometry pair died.
+    // own display axis); the pair hangs under it.
     expect(byName.has('match_input_resolution')).toBe(true)
     // the DECL surfaces serve: 2.1's lane words keep the solver span
-    // (the stated-size wall's own bound), and carry NO geometry.
-    expect(REAL21.lanes?.base).not.toContain('width')
-    expect(REAL21.lanes?.base).not.toContain('height')
+    // (the stated-size wall's own bound), and the pair rides the
+    // surface as RUN params (the resize order, operator 2026-11-12:
+    // surfaced, judged by the shared size law — the form renders
+    // them under the toggle, the bench admits the lawful pair).
+    expect(REAL21.lanes?.base).toContain('width')
+    expect(REAL21.lanes?.base).toContain('height')
     expect(REAL21.lanes?.bounds?.width).toBeUndefined()
     expect(REAL21.lanes?.bounds).toEqual({ steps: { min: 1, max: 50 } })
     // the 2511 doc is the sibling fixture (seated above)
-    expect(REAL2511.lanes?.base?.includes('width')).toBe(false)
+    expect(REAL2511.lanes?.base?.includes('width')).toBe(true)
+    expect(REAL2511.lanes?.base?.includes('height')).toBe(true)
     expect(REAL2511.lanes?.base?.includes('use_stock_nodes')).toBe(true)
   })
 
@@ -115,14 +121,13 @@ describe('THE REAL image-edit CONTRACT drives the real form', () => {
     expect(await screen.findByText('Input Images')).toBeTruthy()
     expect(screen.getByText('0 / 16')).toBeTruthy()
     expect(screen.getByLabelText('Add Input Images source')).toBeTruthy()
-    // THE NO-GEOMETRY RENDER (the stated-size law, 59fc746e9): the
-    // resolution group still seats (the match toggle is the card's
-    // own display axis and survives), but flipping it reveals
-    // NOTHING — the width/height pair is gone from the surface
-    // entirely (the size word is stated, never defaulted into the
-    // form). The old arm rode the stale fixture: it flipped the
-    // toggle and expected the pair at 1024. The pick re-serves the
-    // 2511 doc and the input stack + model axis carry.
+    // THE DELIVERABLE RENDER (the resize order, operator
+    // 2026-11-12): the resolution group seats the match toggle, and
+    // flipping it OFF reveals the Width/Height pair the toggle owns —
+    // the operator's verbatim burn ("WHEN I FLIP THE SWITCH ... THE
+    // NUMBERS TO MODIFY DO NOT APPEAR"). The old arm pinned their
+    // ABSENCE (the latent law: flipping revealed nothing). The pick
+    // re-serves the 2511 doc and the input stack + model axis carry.
     fireEvent.click(screen.getByRole('tab', { name: 'Resolution' }))
     const match = screen.getByRole('switch', { name: 'Match Input Resolution' })
     expect(match.getAttribute('aria-checked')).toBe('true')
@@ -130,8 +135,8 @@ describe('THE REAL image-edit CONTRACT drives the real form', () => {
     expect(screen.queryByLabelText('Height')).toBeNull()
     fireEvent.click(match)
     expect(match.getAttribute('aria-checked')).toBe('false')
-    expect(screen.queryByLabelText('Width')).toBeNull()
-    expect(screen.queryByLabelText('Height')).toBeNull()
+    expect(screen.getByLabelText('Width')).toBeTruthy()
+    expect(screen.getByLabelText('Height')).toBeTruthy()
     expect(screen.getByLabelText('Model')).toBeTruthy()
     act(() => { setHost!({ spec: REAL2511, user: { model: 'qwen-img-edit-2511', prompt: 'a cat' } }) })
     expect(screen.queryByLabelText('Width')).toBeNull()

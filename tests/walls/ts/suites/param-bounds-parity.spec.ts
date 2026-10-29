@@ -30,8 +30,12 @@
 // legacy aliases (`image1`/`image2`/`image3`/`reference_images`,
 // declared `extra.hidden` at image-edit/src/card.ts and dropped by
 // the emitter as validation-only), plus the synthesized `model`
-// picker on multi-family cards. Every skip is NAMED and counted —
-// a silent skip is a hole, not a pass.
+// picker on multi-family cards, plus the deliverable-size pair
+// (`width`/`height` — the resize order, operator 2026-11-12: card-level
+// deliverable knobs consumed by the kit's scaleDeliverable in the
+// family's own deliverable tail, declared as action rows NOWHERE
+// because they never touch the latent). Every skip is NAMED and
+// counted — a silent skip is a hole, not a pass.
 
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
@@ -142,8 +146,9 @@ describe("THE PARAM-BOUNDS PARITY WALL — the card's schema and the action's ro
       // use_stock_nodes joined them 2026-11-12 (the one-seat register's
       // first retirement: an execution internal dead at compose — E9 —
       // never a face row; the action still declares it, old drafts
-      // still validate).
-      cardOwned: ["model", "image1", "image2", "image3", "reference_images", "use_stock_nodes"] as readonly string[],
+      // still validate). width/height joined them the same day (the
+      // resize order: deliverable knobs, no action row anywhere).
+      cardOwned: ["model", "image1", "image2", "image3", "reference_images", "use_stock_nodes", "width", "height"] as readonly string[],
     },
   ] as const;
 

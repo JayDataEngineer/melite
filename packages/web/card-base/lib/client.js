@@ -1730,6 +1730,47 @@ window.__ModuleLoader__.load({
 			}
 			return out;
 		}
+		/** THE DELIVERABLE-SIZE JUDGMENT (the resize order, operator
+		*  2026-11-12): the size law as a pure judgment — the edit lanes
+		*  STILL run at the source's own frame (the latent law holds); a
+		*  stated size is a DELIVERABLE resize (post-decode lanczos), never
+		*  a latent geometry. The match toggle owns the door: ON (default,
+		*  including an unstated toggle — absence never opts out of the
+		*  source frame) + a stated axis refuses field-named with the flip
+		*  in the voice; OFF with NEITHER axis passes (the flip-then-type
+		*  flow — the card stays runnable while the numbers are empty);
+		*  OFF with exactly ONE axis refuses (a half deliverable is
+		*  malformed, never a half-resize); OFF with BOTH demands integers
+		*  ≥ 16 (the blank-image and int laws, input-prep's precedent).
+		*
+		*  ONE SPELLING, FOUR SEATS: the engine builds throw it (the kit's
+		*  refuseDeliverableSize — the throwing twin over this judgment),
+		*  the bench write/run door appends it (the deliverable carve), and
+		*  the client form gate + compose mirror append it too. Presence is
+		*  `undefined`-shaped — the builds' own read, moved verbatim (a
+		*  null is stated here, exactly as the firing gate reads it; the
+		*  lane judges' blank law does not apply inside the size door).
+		*
+		*  @param params the run params (match_input_resolution/width/height).
+		*  @returns the violation (at most one — the first law in the order
+		*  half, integer, floor, on-stated), empty when the state is lawful. */
+		function judgeDeliverableSize$1(params) {
+			const sizeMatched = params["match_input_resolution"] === false;
+			const width = params["width"];
+			const height = params["height"];
+			const voice = (why) => ({
+				field: "width",
+				message: "'width' fires on the image-edit card (" + why + ") — the TS plane builds the stock plain-edit graph only; refusing instead of silently plain-editing"
+			});
+			if (sizeMatched) {
+				if (width === void 0 !== (height === void 0)) return [voice("match_input_resolution is OFF — state both width and height (the deliverable's size; the edit itself runs at the source's own frame and the deliverable resizes post-edit)")];
+				if (width !== void 0 && !Number.isInteger(width) || height !== void 0 && !Number.isInteger(height)) return [voice("width/height must be integers — the resize takes whole pixels (the input-prep integer law)")];
+				if (typeof width === "number" && width < 16 || typeof height === "number" && height < 16) return [voice("width/height must be at least 16px — smaller targets upscale to a blank (the input-prep blank-image law)")];
+				return [];
+			}
+			if (width !== void 0 || height !== void 0) return [voice("match_input_resolution is ON — the deliverable keeps the source's own frame; flip match_input_resolution to false to state width/height (the edit itself runs at the source's frame either way)")];
+			return [];
+		}
 		/** THE LANE MIGRATION CARRY (operator 2026-10-12, the stuck-switch
 		*  incident — live on :3088: a CustomVoice draft carrying `voice`,
 		*  the variant switched to VoiceDesign, and the write REFUSED
@@ -4083,6 +4124,7 @@ window.__ModuleLoader__.load({
 			isTerminalStatus: () => isTerminalStatus$1,
 			isTogetherHalfVoice: () => isTogetherHalfVoice$1,
 			isUnstatedRequiredVoice: () => isUnstatedRequiredVoice$1,
+			judgeDeliverableSize: () => judgeDeliverableSize$1,
 			judgeLaneBounds: () => judgeLaneBounds$1,
 			judgeLaneRelations: () => judgeLaneRelations$1,
 			judgeLaneSurface: () => judgeLaneSurface$1,
@@ -8791,6 +8833,47 @@ window.__ModuleLoader__.load({
 			}
 			return out;
 		}
+		/** THE DELIVERABLE-SIZE JUDGMENT (the resize order, operator
+		*  2026-11-12): the size law as a pure judgment — the edit lanes
+		*  STILL run at the source's own frame (the latent law holds); a
+		*  stated size is a DELIVERABLE resize (post-decode lanczos), never
+		*  a latent geometry. The match toggle owns the door: ON (default,
+		*  including an unstated toggle — absence never opts out of the
+		*  source frame) + a stated axis refuses field-named with the flip
+		*  in the voice; OFF with NEITHER axis passes (the flip-then-type
+		*  flow — the card stays runnable while the numbers are empty);
+		*  OFF with exactly ONE axis refuses (a half deliverable is
+		*  malformed, never a half-resize); OFF with BOTH demands integers
+		*  ≥ 16 (the blank-image and int laws, input-prep's precedent).
+		*
+		*  ONE SPELLING, FOUR SEATS: the engine builds throw it (the kit's
+		*  refuseDeliverableSize — the throwing twin over this judgment),
+		*  the bench write/run door appends it (the deliverable carve), and
+		*  the client form gate + compose mirror append it too. Presence is
+		*  `undefined`-shaped — the builds' own read, moved verbatim (a
+		*  null is stated here, exactly as the firing gate reads it; the
+		*  lane judges' blank law does not apply inside the size door).
+		*
+		*  @param params the run params (match_input_resolution/width/height).
+		*  @returns the violation (at most one — the first law in the order
+		*  half, integer, floor, on-stated), empty when the state is lawful. */
+		function judgeDeliverableSize(params) {
+			const sizeMatched = params["match_input_resolution"] === false;
+			const width = params["width"];
+			const height = params["height"];
+			const voice = (why) => ({
+				field: "width",
+				message: "'width' fires on the image-edit card (" + why + ") — the TS plane builds the stock plain-edit graph only; refusing instead of silently plain-editing"
+			});
+			if (sizeMatched) {
+				if (width === void 0 !== (height === void 0)) return [voice("match_input_resolution is OFF — state both width and height (the deliverable's size; the edit itself runs at the source's own frame and the deliverable resizes post-edit)")];
+				if (width !== void 0 && !Number.isInteger(width) || height !== void 0 && !Number.isInteger(height)) return [voice("width/height must be integers — the resize takes whole pixels (the input-prep integer law)")];
+				if (typeof width === "number" && width < 16 || typeof height === "number" && height < 16) return [voice("width/height must be at least 16px — smaller targets upscale to a blank (the input-prep blank-image law)")];
+				return [];
+			}
+			if (width !== void 0 || height !== void 0) return [voice("match_input_resolution is ON — the deliverable keeps the source's own frame; flip match_input_resolution to false to state width/height (the edit itself runs at the source's frame either way)")];
+			return [];
+		}
 		/** The effective surface for one (family × variant) lane: the
 		*  family base plus the variant's additions (the cascade law —
 		*  later layers add, never subtract). Null family params = the
@@ -9850,8 +9933,10 @@ window.__ModuleLoader__.load({
 				stated[k] = v;
 			}
 			const bounds = laneBoundsFor(spec, variantId);
+			const servesDeliverableSwitch = names.some((n) => n === "match_input_resolution");
 			return dropAuthoringIncomplete([
 				...judgeLaneSurface(surface, names, stated),
+				...servesDeliverableSwitch ? judgeDeliverableSize(stated) : [],
 				...judgeLaneRelations(relations, stated),
 				...judgeLaneBounds(bounds, stated)
 			]);
@@ -10666,6 +10751,7 @@ window.__ModuleLoader__.load({
 					declared.add("model");
 					for (const k of spec.studio_writes ?? []) declared.add(k);
 					for (const k of modOwnedFields(spec)) declared.add(k);
+					const servesDeliverableSwitch = fieldsOf(spec).some((f) => f.name === "match_input_resolution");
 					for (const k of Object.keys(doc)) {
 						if (k === "model" || declared.has(k)) continue;
 						out.push({
@@ -10673,6 +10759,10 @@ window.__ModuleLoader__.load({
 							field: k
 						});
 					}
+					if (servesDeliverableSwitch) for (const v of judgeDeliverableSize(doc)) out.push({
+						message: "card_compose: " + v.message,
+						field: v.field
+					});
 				}
 			}
 			if (spec.familyLaw !== void 0) {

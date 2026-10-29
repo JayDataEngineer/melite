@@ -80,7 +80,7 @@ import { extraOf } from '@melite/contracts/extraKeys';
 import { CATEGORIES } from '@melite/contracts/planes';
 import { deriveFamilyLane, familyKeyPresent } from '@melite/contracts/familyLane';
 import { deepEqualJson } from '@deepseek-ai/dsh-util-values';
-import { dropAuthoringIncomplete, judgeLaneBounds, judgeLaneRelations, judgeLaneSurface, laneBlank, laneBoundsOf, laneSurfaceOf, judgeSamplerEnvelope, marriedKnobValues, resolveCellRow, resolveVariantRow, samplerEnvelopeCure, unknownQuantVoice, unknownVariantVoice, variantMatrixFromFlatRows, } from '@melite/contracts/laneRelations';
+import { dropAuthoringIncomplete, judgeDeliverableSize, judgeLaneBounds, judgeLaneRelations, judgeLaneSurface, laneBlank, laneBoundsOf, laneSurfaceOf, judgeSamplerEnvelope, marriedKnobValues, resolveCellRow, resolveVariantRow, samplerEnvelopeCure, unknownQuantVoice, unknownVariantVoice, variantMatrixFromFlatRows, } from '@melite/contracts/laneRelations';
 /** THE MOD-OWNED NAMES (the SubcardGrid law, enforced): every name a
  *  served modifier kind owns — its fields' names plus its param_key
  *  (the bag storage). CardForm EXCLUDES these from the flat param
@@ -821,8 +821,17 @@ export function laneViolations(spec, fields, user, base) {
     // keystroke bounced while every wall was green). The strip still
     // voices everything strict — conflicts, off-surface keys, bounds
     // — and the RUN press judges the halves.
+    // THE DELIVERABLE-SIZE LAW (the resize order, operator
+    // 2026-11-12): the same law the bench write door runs — the edit
+    // lanes surface the deliverable pair beside the served
+    // match_input_resolution toggle, so the surface judge sanctions
+    // it like any knob and the shared size law judges its values.
+    // Without the law the form flags lawful Match-OFF numbers while
+    // the user types.
+    const servesDeliverableSwitch = names.some((n) => n === 'match_input_resolution');
     return dropAuthoringIncomplete([
         ...judgeLaneSurface(surface, names, stated),
+        ...(servesDeliverableSwitch ? judgeDeliverableSize(stated) : []),
         ...judgeLaneRelations(relations, stated),
         ...judgeLaneBounds(bounds, stated),
     ]);
@@ -1987,6 +1996,12 @@ export function dropStaleReopenCarry(spec, held) {
     // hole. A key the DECL declares studio-owned is sanctioned exactly
     // as the mirror sanctions it — one truth, three seats.
     const studioKeys = new Set(spec.studio_writes ?? []);
+    // THE DELIVERABLE PAIR NEEDS NO CARVE (the resize order, operator
+    // 2026-11-12): the edit lanes surface width/height beside the
+    // toggle, so a persisted Match-OFF pair is sanctioned surface —
+    // the generic seat below keeps it. An ON doc carrying a stale
+    // pair is kept too (surfaced) and the form gate voices the flip
+    // — the write/run doors refuse that state field-named.
     for (const [k, v] of Object.entries(held)) {
         if (k === 'model' || k === 'variant' || k === 'quant' || axisKeys.has(k))
             continue;
@@ -2075,6 +2090,15 @@ export function composeValidate(spec, doc) {
             // never this clause's undeclared-surface voice.
             for (const k of modOwnedFields(spec))
                 declared.add(k);
+            // THE DELIVERABLE-SIZE LAW (the resize order, operator
+            // 2026-11-12): the edit lanes surface the deliverable pair,
+            // so the surface sanction above already owns it — no carve.
+            // The shared size law below still speaks about VALUES
+            // (match ON + stated refuses with the flip, the lawful pair
+            // passes). The served FIELD list is the declaration — never
+            // the doc's own toggle value (an ON doc carrying a stale
+            // pair still refuses, with the flip).
+            const servesDeliverableSwitch = fieldsOf(spec).some((f) => f.name === 'match_input_resolution');
             for (const k of Object.keys(doc)) {
                 if (k === 'model' || declared.has(k))
                     continue;
@@ -2082,6 +2106,11 @@ export function composeValidate(spec, doc) {
                     message: 'card_compose: field \'' + k + '\' fires nothing on this lane — the served surface (' + (spec.model ?? '') + ') does not declare it; the estate admission gate refuses the same key field-named at the write door.',
                     field: k,
                 });
+            }
+            if (servesDeliverableSwitch) {
+                for (const v of judgeDeliverableSize(doc)) {
+                    out.push({ message: 'card_compose: ' + v.message, field: v.field });
+                }
             }
         }
     }

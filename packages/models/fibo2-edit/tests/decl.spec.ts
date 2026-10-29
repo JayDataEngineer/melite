@@ -48,14 +48,17 @@ describe("the fibo2-edit model plugin (BRIA's Fibo 2.0 edit lane, the Comfy-Org 
     assert.equal(lane.latent_node, undefined, "the ACTION owns the encoder-emitted latent — no separate latent node row");
   });
 
-  it("declares NO stated size and NO batch face — the latent law; the solver span stays live", () => {
+  it("declares the deliverable pair as RUN params and NO batch face — the latent law, resized (operator 2026-11-12); the solver span stays live", () => {
     const d = DECL.defaults ?? {} as Record<string, unknown>;
-    assert.equal(d.width, undefined, "width has no default — the lane takes no stated size");
-    assert.equal(d.height, undefined, "height has no default — the lane takes no stated size");
-    for (const banned of ["width", "height", "batch_size", "use_stock_nodes", "double_reference"]) {
+    assert.equal(d.width, undefined, "width has no default — the deliverable is stated or source-matched, never prefilled");
+    assert.equal(d.height, undefined, "height has no default — the deliverable is stated or source-matched, never prefilled");
+    for (const banned of ["batch_size", "use_stock_nodes", "double_reference"]) {
       assert.ok(!(DECL.params ?? []).includes(banned), `${banned} is off the surface`);
     }
-    assert.ok((DECL.params ?? []).includes("match_input_resolution"), "the match toggle stays admitted — the declared no-op, draft compatibility");
+    for (const owned of ["width", "height"]) {
+      assert.ok((DECL.params ?? []).includes(owned), `${owned} is surfaced — a run param the kit tail consumes`);
+    }
+    assert.ok((DECL.params ?? []).includes("match_input_resolution"), "the match toggle stays admitted — the deliverable switch");
     assert.deepEqual(DECL.bounds, { steps: { min: 1, max: 50 } }, "bounds carries ONLY the solver span");
   });
 

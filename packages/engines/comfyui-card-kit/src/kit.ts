@@ -28,7 +28,7 @@
 // The package face re-exports the render-kit quartet (the reference's
 // subtree-top-index mechanism: consumers name the package, never a
 // path inside it — P46).
-export { loadTextPair, decodeSave, stackLoras, stackControlNets } from './blocks/render-kit.ts'
+export { loadTextPair, decodeSave, stackLoras, stackControlNets, scaleDeliverable, type DeliverableSize } from './blocks/render-kit.ts'
 export { isItemWrapped, unwrapItemArrays, coerceWireArrays, coerceWireNumbers, wireTypeLedger } from './coerceWireArrays.ts'
 export { collapsePromptSpace, type CardCraft, type CraftFix, type CraftRewrite } from './craft.ts'
 export { mintSeed, voiceLockSeed } from './graph-helpers.ts'
@@ -48,6 +48,7 @@ export {
   IMAGE_EDIT_STRIP,
   finalizeImageEdit,
   refuseImageEditFiring,
+  refuseDeliverableSize,
   editRefs,
   orderedInputImages,
   editImageCap,
@@ -56,6 +57,7 @@ export {
   regionSourceKind,
   detailerSave,
   genDetailerSave,
+  deliverableSizeOf,
   isSpell,
   laneSampler,
   laneScheduler,

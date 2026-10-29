@@ -78,7 +78,11 @@ describe("the qwen-img-edit-21 family doc wall", () => {
     expect(md).toMatch(/FIRST image is the canvas/);
     expect(md).toMatch(/`<image2>`/);
     expect(md).toMatch(/geometry law/i);
-    expect(md).toMatch(/no resolution seat/i);
+    // the resize-order law (operator 2026-11-12): the entrance
+    // teaches the deliverable resize — flip Match OFF, state both
+    // numbers — never the retired no-resolution-seat line
+    expect(md).toMatch(/finished edit may RESIZE as a deliverable/i);
+    expect(md).toMatch(/flip Match Input/i);
     expect(md).toMatch(/crop the anchor[\s\S]{0,60}first/i);
   });
 
