@@ -40,7 +40,7 @@ export { TAGGER_STRIP, finalizeTagger, finalizeMask, TAGGER_CAPTION_TASKS, TAGGE
 // the audio render blocks (the atom-vocabulary stroke 3: family
 // actions port the audiocore segments on the SAME calibrated pins
 // and loaders — one owner, the lanes stay as byte-oracles).
-export { AUDIACORE_TTS_AUTOFILL, AUDIACORE_STUDIO_AUTOFILL, loadAudiocore, saveAudio, laneStr, } from "./blocks/audio-kit.js";
+export { AUDIACORE_TTS_AUTOFILL, AUDIACORE_STUDIO_AUTOFILL, TTS_STRIP, finalizeTts, loadAudiocore, saveAudio, laneStr, } from "./blocks/audio-kit.js";
 // the 3D render blocks (the poser turnaround consensus: one place per
 // multi-node shape, so the anny/fit/skin families compose the sheet
 // instead of hand-rolling the node chain).

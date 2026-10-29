@@ -11,6 +11,8 @@ import { loadCardDefs } from "@melite/comfyui-cordis";
 import { judgeLaneRelations } from "@melite/contracts/laneRelations";
 import { DECL as qwenDecl, laneTopologyOf as ttsLaneTopologyOf } from "@melite/models-qwen3-tts";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
+import { finalizeTts, TTS_STRIP } from "@melite/comfyui-card-kit";
+import { readFileSync } from "node:fs";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import { CardDefinition } from '@melite/comfyui-card-kit/card-definition'
@@ -831,5 +833,97 @@ describe("THE EVERY-ADDRESS WALL — every served address composes its own decla
       () => def.compose(def.schema({ text: "sample", qvoice_save: true }), model, new GraphBuilder(), "wall_design_stale"),
       /param 'qvoice_save' names no surface on the tts card/,
     );
+  });
+});
+
+// ── THE EMPTY-STRING STRIP (the tts dossier's B1 cure, 2026-11-12)
+//    The engine nodes declare their unset optionals with default ""
+//    (vendored nodes.py INPUT_DECLARATIONS); the lane tables spread
+//    those rows verbatim and the builder's LIVE object_info autofill
+//    writes every one of them onto the wire — nine '' rows on a
+//    plain studio compose, which the engine's own runtime defense
+//    (kw = {k: v for ... if v not in (None, "")}) re-dropped. The
+//    serialized receipt lied about what composed. The cure rides the
+//    service finalize seam (def.finalize → finalizeTts → TTS_STRIP);
+//    these arms are the byte oracle: NO node input on ANY finalized
+//    tts graph is the empty string. ─────────────────────────────
+describe("the empty-string strip (B1: the wire carries what composed, nothing else)", () => {
+  /** Compose + finalize through the REAL seam order (service.ts:
+   *  compose → finalize), returning the serialized graph. */
+  const composeFinalized = (params: Record<string, unknown>, runId: string, model: ModelFacts = ttsModel)
+    : Record<string, { class_type: string; inputs: Record<string, unknown> }> => {
+    const g = new GraphBuilder();
+    def.compose(def.schema(params), model, g, runId);
+    const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+    assert.ok(def.finalize, "the tts card declares a finalize (the strip's seat — service.ts def.finalize seam)");
+    return def.finalize(graph) as typeof graph;
+  };
+
+  it("BYTE ORACLE (speak lane): a fresh finalized compose carries NO empty-string input on any node", () => {
+    const graph = composeFinalized({ text: "the words to speak" }, "run_strip_speak");
+    const empties: string[] = [];
+    for (const [id, node] of Object.entries(graph)) {
+      for (const [k, v] of Object.entries(node.inputs)) {
+        if (v === "") empties.push(`${id}.${k}`);
+      }
+    }
+    assert.deepEqual(empties, [], "the strip killed every '' autofill row (the receipt carries what composed)");
+  });
+
+  it("BYTE ORACLE (studio lane): a preset save's finalized compose carries NO empty-string input — qvoice_path included", () => {
+    const graph = composeFinalized({ text: "sample", save_qvoice: true, voice: "vivian" }, "run_strip_save");
+    const studio = Object.values(graph).find((n) => n.class_type === "AudiocoreVoiceStudio");
+    assert.ok(studio, "the studio fires (the nine-'' burn lane)");
+    const empties: string[] = [];
+    for (const [id, node] of Object.entries(graph)) {
+      for (const [k, v] of Object.entries(node.inputs)) {
+        if (v === "") empties.push(`${id}.${k}`);
+      }
+    }
+    assert.deepEqual(empties, [], "the studio wire is honest (the dossier's N3: qvoice_path '' dies too)");
+  });
+
+  it("STATED VALUES RIDE: a non-empty style survives the strip — only '' dies", () => {
+    const graph = composeFinalized(
+      { text: "sample", save_qvoice: true, voice: "ryan", style_instruction: "excited" },
+      "run_strip_style",
+    );
+    const studio = Object.values(graph).find((n) => n.class_type === "AudiocoreVoiceStudio");
+    assert.ok(studio, "the style save composes");
+    assert.equal((studio!.inputs as Record<string, unknown>).style_instruction, "excited",
+      "the strip deletes only the empty string — a stated value is the composer's own word");
+  });
+
+  it("THE STRIP IS WIRED: def.finalize is finalizeTts (dropping the wiring reds the byte oracles above)", () => {
+    assert.equal(def.finalize, finalizeTts, "the card def's finalize seat is the strip pass itself");
+  });
+
+  it("DEPTH: TTS_STRIP covers every empty-default pin the vendored nodes declare — a new '' pin the strip misses fires here", () => {
+    const nodesPy = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..", "vendor", "comfyui_extensions", "melite-audio-nodes", "nodes.py"),
+      "utf8",
+    );
+    // derive each class's empty-default keys off the SOURCE (the
+    // same walk the pin autofill performs — never a frozen list)
+    const declared: Record<string, string[]> = {};
+    let cls = "";
+    let cur: [string, string] | null = null;
+    for (const line of nodesPy.split("\n")) {
+      const cm = /^class (\w+)/.exec(line);
+      if (cm) cls = cm[1]!;
+      const km = /^\s*"([a-z_0-9]+)":\s*\(/.exec(line);
+      if (km && cls !== "") cur = [cls, km[1]!];
+      if (line.includes('"default": ""') && cur) {
+        (declared[cur[0]] ??= []).push(cur[1]);
+        cur = null;
+      }
+    }
+    for (const nodeClass of ["AudiocoreTTS", "AudiocoreVoiceStudio"]) {
+      const want = (declared[nodeClass] ?? []).sort();
+      assert.ok(want.length > 0, `the vendored ${nodeClass} declares its empty-default pins (the roster derived, never frozen)`);
+      const have = [...(TTS_STRIP[nodeClass] ?? [])].sort();
+      assert.deepEqual(have, want,
+        `TTS_STRIP.${nodeClass} covers exactly the node's own empty-default pins — a new "" pin the strip misses fires this arm`);
+    }
   });
 });

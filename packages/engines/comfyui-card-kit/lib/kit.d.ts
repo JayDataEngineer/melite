@@ -10,7 +10,7 @@ export type { ActionBinding } from './facts.js';
 export { qvoiceUse, type QVoiceUse } from './lanes-audio.js';
 export { ANNY_STRIP, finalizeAnny, MOTION_STRIP, finalizeMotion, MESH_RESOLUTIONS, MESH_BG_MODES, MESH_PIXAL_FOVS, MESH_BAKE_SIZES, MESH_ATLAS_SIZES, MESH_AO_SIZES, MESH_NORMAL_SIZES, admitMeshLiftShared, } from './lanes-3d.js';
 export { TAGGER_STRIP, finalizeTagger, finalizeMask, TAGGER_CAPTION_TASKS, TAGGER_CAPTION_TYPES, TAGGER_CAPTION_LENGTHS, TAGGER_EXTRA_OPTIONS, taggerSaveText, parseWeightlessFacts, assertTagInput, type WeightlessFacts, type WeightlessParams, } from './lanes-image-tools.js';
-export { AUDIACORE_TTS_AUTOFILL, AUDIACORE_STUDIO_AUTOFILL, loadAudiocore, saveAudio, laneStr, } from './blocks/audio-kit.js';
+export { AUDIACORE_TTS_AUTOFILL, AUDIACORE_STUDIO_AUTOFILL, TTS_STRIP, finalizeTts, loadAudiocore, saveAudio, laneStr, } from './blocks/audio-kit.js';
 export { renderGLBViews, renderGLBViewsNode, positive, } from './blocks/poser-kit.js';
 export type { StripTable } from './graph.js';
 //# sourceMappingURL=kit.d.ts.map

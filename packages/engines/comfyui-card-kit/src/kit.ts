@@ -99,6 +99,8 @@ export {
 export {
   AUDIACORE_TTS_AUTOFILL,
   AUDIACORE_STUDIO_AUTOFILL,
+  TTS_STRIP,
+  finalizeTts,
   loadAudiocore,
   saveAudio,
   laneStr,

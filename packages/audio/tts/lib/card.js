@@ -1,6 +1,6 @@
 import { laneBlank, judgeLaneRelations, laneSurfaceOf } from '@melite/contracts/laneRelations';
 import z from '@deepseek-ai/schemastery';
-import { declaredAction, qvoiceUse, instantiateAction } from '@melite/comfyui-card-kit';
+import { declaredAction, qvoiceUse, instantiateAction, finalizeTts } from '@melite/comfyui-card-kit';
 import { DECL as qwen3TtsDecl, PRESET_SPEAKERS, variantRoute, cellRoute, laneTopologyOf as ttsLaneTopologyOf } from '@melite/models-qwen3-tts';
 import { vocabulary } from '@melite/comfyui-card-kit/vocab';
 import { bag } from '@melite/contracts/extraKeys';
@@ -413,6 +413,14 @@ export function registerCard(ctx, comfy) {
                 throw new Error(`no declared action for family '${String(model.family ?? model.id)}' on the tts card — the boarded Qwen family (qwen3-tts) composes its own declared segment; this address owns none. State params.model (one of the boarded families) on the stage to compose it`);
             }
         },
+        // THE EMPTY-STRING STRIP (the tts dossier's B1 cure, 2026-11-12;
+        // the finalizeH3 precedent — the pass lives beside its lane): the
+        // engine nodes declare unset optionals with default "", the
+        // builder's live autofill writes them onto every node, and the
+        // wire carried nine '' rows the engine's own defense re-dropped —
+        // the serialized receipt lied about what composed. TTS_STRIP
+        // (audio-kit) kills them at THIS door; stated values ride.
+        finalize: finalizeTts,
     }));
 }
 //# sourceMappingURL=card.js.map
