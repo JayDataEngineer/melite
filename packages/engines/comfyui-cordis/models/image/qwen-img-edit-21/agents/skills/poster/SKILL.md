@@ -53,8 +53,11 @@ treatment; no extra words creep in around the edges (say "no
 additional text"). Under-editing guard: the result must clearly
 read as a DESIGNED poster — real hierarchy, real margins — not the
 photo with a caption. If the canvas grows (portrait poster from a
-landscape still), name it: "extend the scene upward/downward"
-(outpainting, stated as such).
+landscape still), a bare prompt cannot grow it — the output
+inherits the anchor's frame: pad the canvas to the poster ratio
+first (the pad-and-instruct recipe — stage the wider frame as
+pixels, then prompt the band as scene to continue; the zooms
+skill's outpaint arm owns the recipe).
 
 ## Composing the run
 

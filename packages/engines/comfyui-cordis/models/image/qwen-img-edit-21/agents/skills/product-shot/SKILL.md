@@ -45,9 +45,11 @@ Under-editing guard: the result must clearly read as a studio
 shoot, not the casual source photo. Leakage guard: no props, no
  reflections of a room, no "improvements" to the product — no
 cleaned scratches, no added features, no altered proportions. If
-the canvas must grow (float the product with more air), say
-"extend the backdrop" — that is outpainting and the prompt names it
-as such.
+the canvas must grow (float the product with more air), a bare
+prompt cannot grow it — the output inherits the anchor's frame:
+pad the canvas first (the pad-and-instruct recipe — stage the
+wider frame as pixels, then prompt the band as backdrop to fill;
+the zooms skill's outpaint arm owns the recipe).
 
 ## Composing the run
 

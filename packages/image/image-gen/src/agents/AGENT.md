@@ -27,7 +27,11 @@ have left the contract — come back to the knobs.
 3. NEVER state steps/cfg — the estate owns every sampler marriage
    (a stated value outside a route's envelope refuses at compose,
    and you have no business computing one). Pick a preset recipe
-   when the brief names a look; otherwise state nothing.
+   when the brief names a look; otherwise state nothing. ONE
+   exception: a boarded skill may PIN an in-envelope knob for its
+   recipe (character-sheet sets `cfg: 2` on qwen-img-21 — inside
+   that lane's [1, 2] envelope); the skill's named value is the
+   only sanctioned pin, never your own pick.
 4. input_image + input_mask under mask_mode crop_stitch runs the region detailer (crop/edit/paste); auto+mask refuses field-named.
 
 ## THE LOOK PICKS THE FAMILY (the operator's law, 2026-09-21)

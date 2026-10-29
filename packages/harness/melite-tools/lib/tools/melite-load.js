@@ -149,9 +149,20 @@ opts = {}) {
                     const req = Array.isArray(sig.params_schema?.required)
                         ? sig.params_schema.required.filter((r) => typeof r === 'string') : [];
                     if (keys.length > 0) {
+                        // THE NAMED-SURFACE LAW (operator order, 2026-11-12: "image
+                        // edit or image gen doesn't provide the size parameter" —
+                        // the default face printed a COUNT, so an agent that never
+                        // re-loaded with detail=true could not know width/height
+                        // existed). A listable surface (≤ 40 knobs) names every
+                        // knob on the default face; only the giant surfaces
+                        // (anny's 272, h3-timeline's 64) keep the count line — a
+                        // name wall serves nobody there, and lanes/detail carry it.
+                        const marked = keys.map((k) => req.includes(k) ? k + '*' : k);
                         if (detail) {
-                            const marked = keys.map((k) => req.includes(k) ? k + '*' : k);
-                            out.push('params: ' + marked.join(', ') + ' (* required)');
+                            out.push('params: ' + marked.join(', ') + (req.length > 0 ? ' (* required)' : ''));
+                        }
+                        else if (keys.length <= 40) {
+                            out.push('params: ' + marked.join(', ') + (req.length > 0 ? ' (* required)' : ''));
                         }
                         else {
                             out.push('params: ' + keys.length + ' (required: ' + (req.length > 0 ? req.join(', ') : 'none')
@@ -217,9 +228,15 @@ opts = {}) {
                         modLines.push(p.kind + '[] (' + p.cardinality + '; fields: ' + p.fields.join(', ') + ')');
                     }
                     if (modLines.length > 0 && !detail) {
-                        out.push('mods: ' + modLines.length + ' declared ('
-                            + modLines.map((line) => line.split(' ')[0]).join(', ')
-                            + ') — detail=true for the bench grammar and the exact field names');
+                        // THE NAMED-FIELDS CURE (same operator order, 2026-11-12:
+                        // "image edit should have more options as seen in the
+                        // skills") — the default face named only the KINDS, so the
+                        // mask mod's eleven operative fields (mask_mode
+                        // crop_stitch, detector, grow, feather…) were invisible
+                        // until a detail reload. The per-kind lines (fields + the
+                        // bag key) are compact: they ride by default; detail=true
+                        // keeps owning the bench grammar (flat vs bag-key law).
+                        out.push('mods: ' + modLines.join(', ') + ' — detail=true for the bench grammar (flat vs bag-key law)');
                     }
                     if (modLines.length > 0 && detail) {
                         // THE CARD-MODE ENVELOPE (023's self-critique #2,

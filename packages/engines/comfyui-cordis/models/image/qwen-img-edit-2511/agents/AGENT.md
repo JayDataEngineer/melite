@@ -1,13 +1,15 @@
 ---
-name: Qwen Image Edit (vn lora)
-description: Edit or pose stills with qwen-image-edit-2511 lightning — 4 steps, cfg 1.0, vn_character_sheet lora for character sheets. The cheap iterate loop before any expensive animation.
+name: Qwen Image Edit 2511
+description: Edit or pose stills with qwen-image-edit-2511 lightning — 4 steps, cfg 1.0. The cheap iterate loop before any expensive animation.
 ---
 
 # qwen-img-edit-2511 (image-edit lane, merged 2026-09-05)
 
 UNETLoader (diffusion-only checkpoint) + CLIPLoader type qwen_image +
-VAELoader qwen_image_vae + LoraLoader vn_character_sheet 0.9 +
-TextEncodeQwenImageEdit. Lightning: 4 steps, cfg 1.0, euler/simple.
+VAELoader qwen_image_vae + TextEncodeQwenImageEdit. Lightning: 4
+steps, cfg 1.0, euler/simple. (The vn_character_sheet lora this doc
+once taught is NOT boarded — no declared row, no weights on the
+engine; the family's boarded loras are the ones melite_load names.)
 
 Feed the base image via the run door `image` field (absolute path),
 or wire a previous card's output (the `/v1/assets/runs/<run>/<file>`

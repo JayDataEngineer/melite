@@ -549,6 +549,49 @@ test('THE MODS LINE RIDES (stroke 79 — the agent sees the kinds beside params)
   assert.ok(!(plain.map((p) => p?.text ?? '').join('\n').includes('mods:')), 'no mods line without kinds')
 })
 
+test('THE NAMED-SURFACE LAW (operator order, 2026-11-12): the default face names params and mod fields — no detail round-trip for width/height', () => {
+  // THE OPERATOR'S READ: "image edit or image gen doesn't provide
+  // the size parameter it seems" — the default face printed
+  // `params: 11 (required: prompt)` and `mods: 2 declared (mask[],
+  // lora[])`, so an agent that never re-loaded with detail=true
+  // could not know width/height existed, nor that the mask mod
+  // carries the crop_stitch field set. A listable surface (≤ 40
+  // knobs) names every knob by default; only the giant surfaces
+  // (anny 272, h3-timeline 64) keep the count line — a name wall
+  // serves nobody there.
+  const tool = meliteLoad(stubEstate())
+  const text = (args: Record<string, unknown>, bundle: Record<string, unknown>): string =>
+    (tool.output.render(args, { name: 'c', inference_type: 'card', bundle } as never) as Array<{ text?: string }>)
+      .map((p) => p?.text ?? '').join('\n')
+  // 1. the names ride by default, required marked
+  const named = text({ name: 'c', inference_type: 'card' }, {
+    kind: 'card', name: 'c',
+    signature: {
+      params_schema: {
+        properties: { model: {}, prompt: {}, width: {}, height: {}, seed: {} },
+        required: ['prompt'],
+      },
+      modifiers: [
+        { kind: 'mask', category: 'list', fields: ['mask', 'input_mask', 'mask_mode', 'mask_detector'] },
+        { kind: 'lora', category: 'list', fields: ['loras'], param_key: 'loras' },
+      ],
+    },
+  })
+  assert.ok(named.includes('params: model, prompt*, width, height, seed (* required)'), 'the knobs are named on the default face')
+  // 2. the mod FIELDS ride by default (the "more options as seen in
+  // the skills" half — the mask grammar is the operative surface)
+  assert.ok(named.includes('mask[] (list; fields: mask, input_mask, mask_mode, mask_detector)'), 'the mod fields ride by default')
+  assert.ok(named.includes('detail=true for the bench grammar (flat vs bag-key law)'), 'detail keeps owning the grammar, not the names')
+  // 3. the giant surfaces keep the count line
+  const giant: Record<string, unknown> = {}
+  for (let i = 0; i < 41; i++) giant[`k${i}`] = {}
+  const counted = text({ name: 'c', inference_type: 'card' }, {
+    kind: 'card', name: 'c',
+    signature: { params_schema: { properties: giant } },
+  })
+  assert.ok(counted.includes('params: 41 (required: none) — detail=true for every name'), 'the giant surface keeps the count')
+})
+
 // THE LANE LINE RIDES THE LOAD BUNDLE (2026-10-10): the agent's read
 // surface states which fields each declared lane accepts and which
 // pairs the relation words bind — the same declaration the form

@@ -9,8 +9,10 @@ description: Keyframe-first production loop — pose/edit stills cheaply with qw
 
 1. **Base frame** — generate or take a still (z-image, scan, drawing).
 2. **Pose it** — qwen-img-edit-2511 lane: qwen-image-edit-2511 lightning
-   (4 steps, cfg 1.0) + `vn_character_sheet` lora (0.9). Iterate HERE —
-   an edit costs seconds; a re-render costs minutes.
+   (4 steps, cfg 1.0). Iterate HERE — an edit costs seconds; a
+   re-render costs minutes. (A character-sheet lora is NOT boarded
+   on this family — pose iteration rides the plain lightning lane;
+   the family's boarded loras are the ones melite_load names.)
 3. **Approve** — look at the frame: composition, wardrobe, lighting.
 4. **Animate** — h3 with the approved PNG as the image input (I2VA
    first-frame anchoring). The video's first frame IS that PNG.

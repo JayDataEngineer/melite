@@ -154,12 +154,17 @@ describe("THE VIBE SUITE BASELINE — the agent flow's acceptance harness (v0 pi
     assert.ok(typeof h3.digest === "string" && h3.digest.length > 0, "the bundle carries its content digest");
   });
 
-  it("T1/T8 DIGEST (slice 4): the load face serves counts by default and the FULL surface only on request", () => {
+  it("T1/T8 DIGEST (slice 4, REPINNED 2026-11-12): the load face NAMES a listable surface by default; the count and the bench grammar stay deferred", () => {
     // THE BURN (transcript): image-gen's load dumped 12 params + a
-    // ~200-word bench grammar; h3's dumped 49 params. The digest
-    // serves the routing facts (counts, required, kinds, skills,
-    // digest); detail=true keeps the old surface for the moment
-    // composition needs exact names.
+    // ~200-word bench grammar; h3's dumped 49 params. Slice 4's cure
+    // was count-only defaults — but the operator's 2026-11-12 order
+    // ("image edit or image gen doesn't provide the size parameter")
+    // superseded it: an agent that never re-loaded with detail=true
+    // could not know width/height existed. The named-surface law
+    // (melite-load): ≤ 40 knobs are named by default with required
+    // markers; ONLY the giant surfaces (anny 272, h3-timeline 64)
+    // keep the count line — and the 200-word bench grammar stays
+    // detail-only either way (the original burn's real payload).
     const value = {
       name: "h3-timeline", inference_type: "card",
       bundle: {
@@ -179,11 +184,10 @@ describe("THE VIBE SUITE BASELINE — the agent flow's acceptance harness (v0 pi
       return parts.map((p) => p?.text ?? "").join("\n")
     }
     const digest = voice(false)
-    assert.match(digest, /params: 3 \(required: prompt\) — detail=true for every name/, "the digest states the count + required, not 3 names")
-    assert.ok(!digest.includes("params: prompt*, seed, keyframes"), "the default never dumps every name")
+    assert.match(digest, /params: prompt\*, seed, ref_images \(\* required\)/, "a listable surface (3 knobs) is NAMED on the default face")
     assert.ok(!digest.includes("THE BENCH GRAMMAR"), "the 200-word bench grammar is deferred")
     assert.match(digest, /lanes: 1 declared \(h3\)/, "the lane digest names the declared families")
-    assert.match(digest, /mods: 1 declared \(loras\[\]\)/, "the mods digest names the kinds")
+    assert.match(digest, /mods: loras\[\] \(ordered; fields: name, strength\)/, "the mods line names the kind AND its fields")
     assert.match(digest, /digest: d1 \(quote it to skip a reload\)/)
     const full = voice(true)
     assert.ok(full.includes("params: prompt*, seed, ref_images (* required)"), "detail=true serves every name (the synthetic face's own rows — the retired pin lane is not one of them)")
