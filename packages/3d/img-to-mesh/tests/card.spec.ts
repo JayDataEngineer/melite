@@ -134,10 +134,29 @@ describe("the family-scoped surface and output bindings", () => {
     assert.equal(lift.find((field) => field.name === "rigged_glb"), undefined);
   });
 
+  it("the Recipe default is HIGH — high quality that still runs (operator 2026-11-12)", () => {
+    // THE BURN: at the old standard default (1024 + remesh 768 +
+    // 700k) the output "looks poor and low quality"; the quality
+    // tier (2048/2M) is 32GB-only and cannot run. The default seat
+    // moves to HIGH — 1536 detail + a mid remesh tail — in BOTH
+    // mesh families, and the birth stamp takes it (first row).
+    for (const row of [pixal, trellis]) {
+      const recipes = row.variants.filter((v) => v.group === "Recipe");
+      assert.equal(recipes[0]?.id, "high", "HIGH is the first Recipe row — the birth stamp");
+      const group = (row as unknown as { variant_groups?: Array<{ id: string; default?: string }> })
+        .variant_groups?.find((g) => g.id === "Recipe");
+      assert.equal(group?.default, "high", "the Recipe group default names high");
+      assert.deepEqual(recipes[0]?.defaults, { resolution: "1536", remesh_resolution: 1024, decimate_faces: 1000000 },
+        "high stamps 1536 + remesh 1024 + 1M faces — between the poor standard floor and the 32GB-only quality tail");
+      assert.equal(recipes.some((v) => v.id === "standard"), true, "the calibrated standard floor stays an explicit pick");
+    }
+  });
+
   it("offers only engine-supported resolution and quant cells", () => {
-    // THE MESH TRIO (operator 2026-11-02: fast/standard/quality,
-    // defaulting to standard): the variant plane collapses to the
-    // single 1024 row — 1536 is the quality RECIPE's pick (a patch
+    // THE MESH TRIO (operator 2026-11-02: fast/standard/quality →
+    // 2026-11-12 high/standard/fast/quality, defaulting to high):
+    // the variant plane collapses to the
+    // single 1024 row — 1536 is a RECIPE pick (a patch
     // over the floor, not a served route), and the 512 lane left
     // the MESH_RESOLUTIONS envelope entirely.
     for (const row of [pixal, trellis]) {
@@ -149,7 +168,7 @@ describe("the family-scoped surface and output bindings", () => {
       // the served variant states its own pair.
       assert.deepEqual(row.variants.find((variant) => variant.id === "1024")?.resolver_defaults, { steps: 12, cfg: 7.5 });
       assert.equal(row.variants.find((variant) => variant.id === "1536"), undefined,
-        "the 1536 route is retired — quality's recipe stamp is the only 1536 door");
+        "the 1536 route is retired — the recipe stamps (high/quality) are the only 1536 doors");
       assert.equal(row.variants.find((variant) => variant.id === "512"), undefined,
         "the 512 lane left the engine vocabulary");
       for (const variant of row.variants) {

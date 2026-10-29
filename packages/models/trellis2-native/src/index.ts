@@ -108,13 +108,24 @@ export const DECL: ModelDecl = {
     // off-envelope and died with its variant row). The remesh tail
     // rides the family defaults row (the floors ARE the standard —
     // the h3 precedent: a recipe stamps only what DIFFERS from the
-    // floor). STANDARD is the stamp-less first row: the birth stamp
-    // takes the FIRST Recipe row, so every fresh card lands here
-    // named Standard with the calibration riding as floors.
+    // floor). HIGH is the FIRST row and the group default (operator
+    // 2026-11-12: "high quality, but not so high quality it can't
+    // be run" — the old standard default's output read poor/low
+    // quality): 1536 detail + a mid remesh tail, comfortably under
+    // a 24GB card. STANDARD is now the stamp-less second row — the
+    // calibrated floor as an explicit pick.
+    {
+      "id": "high",
+      "label": "High",
+      "hint": "The default — high quality that still runs: 1536 detail + remesh 1024 + 1M faces; the int8 chain peaks well under a 24GB card.",
+      "group": "Recipe",
+      "wire_defaults": { "resolution": "1536", "remesh_resolution": 1024, "decimate_faces": 1000000 },
+      "cells": [],
+    },
     {
       "id": "standard",
       "label": "Standard",
-      "hint": "The default — the official template's calibration as the floor: 1024 + remesh 768 + 700k faces; fits a 24GB card.",
+      "hint": "The official template's calibration as the floor: 1024 + remesh 768 + 700k faces.",
       "group": "Recipe",
       "cells": [],
     },
@@ -147,8 +158,8 @@ export const DECL: ModelDecl = {
     {
       "id": "Recipe",
       "label": "Recipe",
-      "tooltip": "One-click mesh tiers — patch-only rows: Fast (preview tail), Standard (the calibrated default), Quality (1536 hero pass).",
-      "default": "standard"
+      "tooltip": "One-click mesh tiers — patch-only rows: High (the runnable 1536 default), Fast (preview tail), Standard (the calibrated floor), Quality (1536 hero pass).",
+      "default": "high"
     }
   ],
   "provisions": [
