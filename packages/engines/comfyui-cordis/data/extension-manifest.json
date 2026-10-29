@@ -40,9 +40,9 @@
   {
     "name": "melite-audio-nodes",
     "url": "https://github.com/JayDataEngineer/melite-audio-nodes",
-    "ref": "aee650591ab2204521eb48ee8f61b669ea629d8f",
+    "ref": "99517c9ce6939fb3610822466c92184639cc6f48",
     "required": true,
-    "desc": "The ONE audio pack: Qwen3-TTS synthesis (qwen3_tts — card lane AND studio riding faster-qwen3-tts/torch since THE FLIP fcd25d0, 2026-10-22; native stays for moss_tts/ace_step only), Voice Studio (.qvoice), MOSS-SFX v2 diffusion, voice embeddings, MeliteQVoiceCopy, film/loudness utilities. Every Audiocore* class lives here. 2026-10-21 re-pin: the faster-backend cure (all synthesis through FasterQwen3TTS, silent default dead, 5.20 RoPE shim) with 3/3 lane renders + the served-lane proof render. 2026-10-22 re-pin: the studio VRAM law (warm-handle cache, capture-at-load, compat pre-init, seq-len 2048 / decode 1792 clamps, pre-load headroom gate, release-on-unload) — the Triton capture burn cured; receipt infra-qwen3-studio-vram-law.",
+    "desc": "The ONE audio pack: Qwen3-TTS synthesis (qwen3_tts — card lane AND studio riding faster-qwen3-tts/torch since THE FLIP fcd25d0, 2026-10-22; native stays for moss_tts/ace_step only), Voice Studio (.qvoice), MOSS-SFX v2 diffusion, voice embeddings, MeliteQVoiceCopy, film/loudness utilities. Every Audiocore* class lives here. 2026-11-12 re-pin: 0b75904 (sfx burn cures — keyed engine residency + boot cuda refusal + residual defaults; previously local-only, now pushed) + MeliteAudioResample, the join-rate door for the extend F12 cure (AUDIO + target INT -> AUDIO via engine-core comfy.audio.resample; equal-rate passthrough returns the SAME dict). 2026-10-21 re-pin: the faster-backend cure (all synthesis through FasterQwen3TTS, silent default dead, 5.20 RoPE shim) with 3/3 lane renders + the served-lane proof render. 2026-10-22 re-pin: the studio VRAM law (warm-handle cache, capture-at-load, compat pre-init, seq-len 2048 / decode 1792 clamps, pre-load headroom gate, release-on-unload) — the Triton capture burn cured; receipt infra-qwen3-studio-vram-law.",
     "pip": [],
     "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/audio/nodes.yaml"
   },

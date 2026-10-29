@@ -200,6 +200,27 @@ describe("the extend emission (the fresh-continuation chain)", () => {
     assert.equal(tokens.size, 1, "exactly one boundary chains onto the other — the concat's token depends on BOTH saves transitively");
     assert.equal(ofClass(out, 'MiniMaxH3ChainAssemble').length, 0,
       "no ChainAssemble terminal — its `_final.mp4` name is not a prefix the concat can glob (the join grammar this estate owns)");
+    // F12 (2026-11-12): the join's RATE LAW — MeliteConcatVideos
+    // refuses members whose audio rates differ (the H3 sound VAE
+    // emits 32 kHz, demuxed film rides 48 kHz; the first extend
+    // press died exactly there). EVERY audio leg feeding a join
+    // CreateVideo passes MeliteAudioResample at the film rate 48000.
+    const resamples = ofClass(out, 'MeliteAudioResample');
+    assert.equal(resamples.length, 2, "one resample per join leg (x0's prior audio, x1's generated sound)");
+    for (const [, n] of resamples) {
+      assert.equal(n.inputs.sample_rate, 48000, "the resample states the film rate — 48000, the one-home law");
+    }
+    const creates = ofClass(out, 'CreateVideo');
+    // the third CreateVideo is the concat tail's own container mux
+    // (audio = the concat's decoded stream — same-rate by
+    // construction); the TWO part legs must each ride a resample.
+    const resampleKeys = new Set(resamples.map(([k]) => k));
+    const riding = creates.filter(([, n]) => {
+      const seat = n.inputs.audio;
+      return Array.isArray(seat) && seat.length === 2 && resampleKeys.has(seat[0] as string);
+    });
+    assert.equal(riding.length, 2,
+      `exactly the two part-mux CreateVideos ride resample links (saw ${riding.length} of ${creates.length})`);
   });
 
   it("refuses off-grid extend_seconds LOUD (never a silent snap)", () => {

@@ -60,7 +60,7 @@
 // concatSavedFilms).
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import type { H3Facts } from './actions.js'
-import { chainSaveBoundaries, concatSavedFilms } from './actions.js'
+import { chainSaveBoundaries, concatSavedFilms, filmJoinAudio } from './actions.js'
 import {
   assertGridLength, solveWindowComposition, CONTEXT_OVERLAP_FRAMES, GRID_MAX_FRAMES,
 } from './timelineContract.js'
@@ -223,7 +223,7 @@ export function renderH3Extend(
     // saved-file path (ChainAssemble's video_path output, wired:
     // the DAG itself proves the assembly completed before the join).
     const priorCreated = g.node('CreateVideo', {
-      images: priorFrames, audio: priorAudio, fps: 24, bit_depth: 8,
+      images: priorFrames, audio: filmJoinAudio(g, priorAudio), fps: 24, bit_depth: 8,
     })
     const priorSaved = g.node('SaveVideo', {
       video: priorCreated.out(), filename_prefix: `${runId}/x0`,
@@ -239,14 +239,14 @@ export function renderH3Extend(
   // the boundary chain orders them, the concat joins, the container
   // delivers <runId>/extend_film.
   const newCreated = g.node('CreateVideo', {
-    images: trimmed.out(0), audio: trimmed.out(1), fps: 24, bit_depth: 8,
+    images: trimmed.out(0), audio: filmJoinAudio(g, trimmed.out(1)), fps: 24, bit_depth: 8,
   })
   const newSaved = g.node('SaveVideo', {
     video: newCreated.out(), filename_prefix: `${runId}/x1`,
     format: 'mp4', codec: 'h264',
   }).out()
   const priorCreated = g.node('CreateVideo', {
-    images: priorFrames, audio: priorAudio, fps: 24, bit_depth: 8,
+    images: priorFrames, audio: filmJoinAudio(g, priorAudio), fps: 24, bit_depth: 8,
   })
   const priorSaved = g.node('SaveVideo', {
     video: priorCreated.out(), filename_prefix: `${runId}/x0`,
