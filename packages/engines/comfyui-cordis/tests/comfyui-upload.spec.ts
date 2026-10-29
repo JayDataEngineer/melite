@@ -33,9 +33,21 @@ afterAll(() => {
 });
 
 const uploads: Array<{ name: string; type: string }> = [];
+// F17 probe door: names the fake engine's input dir "already
+// serves" — seeded per-arm; everything else 404s (the real
+// /view's miss shape).
+const stagedNames = new Set<string>();
+let probeGets = 0;
 const fakeClient = (over: Record<string, unknown> = {}): Client =>
   ({
-    fetchApi: async (_url: string, init: RequestInit) => {
+    fetchApi: async (url: string, init: RequestInit) => {
+      if (init?.method === "GET") {
+        probeGets += 1;
+        const m = /[?&]filename=([^&]+)/.exec(url);
+        const name = m === null ? "" : decodeURIComponent(m[1] as string);
+        const served = name !== "" && stagedNames.has(name);
+        return new Response(served ? "served" : "", { status: served ? 200 : 404 });
+      }
       const fd = init.body as FormData;
       const blob = fd.get("image") as Blob & { name?: string };
       uploads.push({ name: blob.name ?? "blob", type: blob.type });
@@ -416,19 +428,19 @@ describe("uploadReferenced (the staging walk)", () => {
     });
     // F6: the route boundary — .../artifact-evil is not the
     // artifact route, so the gallery arm never fires (no upload);
-    // the guard refuses it loud at its own door while the engine
-    // treats the dead string as its absolute-arm law does.
+    // the guard refuses it loud at its own door while the walk's
+    // F17 fall-through refuses the dead string (the pre-F17
+    // verbatim ride was the silent enum-400 death).
     it("an artifact-evil twin never stages (the boundary holds)", async () => {
       expect(isGalleryArtifactRoute("/infer-gallery/artifact-evil?path=" + encodeURIComponent(GAL + "/generate/a.png"))).toBe(false);
       expect(isGalleryArtifactRoute("/infer-gallery/artifact/?path=" + encodeURIComponent(GAL + "/generate/a.png"))).toBe(false);
       expect(isGalleryArtifactRoute("/infer-gallery/artifact?path=" + encodeURIComponent(GAL + "/generate/a.png"))).toBe(true);
       expect(isGalleryArtifactRoute("/INFER-GALLERY/ARTIFACT?path=" + encodeURIComponent(GAL + "/generate/a.png"))).toBe(true);
       const before = uploads.length;
-      const { graph } = await uploadReferenced(fakeClient(), {
+      await expect(uploadReferenced(fakeClient(), {
         n: { class_type: "LoadImage", inputs: { image: "/infer-gallery/artifact-evil?path=" + encodeURIComponent(GAL + "/generate/a.png") } },
-      }, { runsRoot: ROOT });
+      }, { runsRoot: ROOT })).rejects.toThrow(/media input stages nowhere/);
       expect(uploads.length).toBe(before);
-      expect((graph["n"] as { inputs: { image: string } }).inputs["image"]).toContain("artifact-evil");
     });
     // THE QUERY LAW (round-24 engine-walk audit): a ?query or
     // #fragment is not part of the leaf — `x.png?dl=1` refused as
@@ -484,23 +496,26 @@ describe("uploadReferenced (the staging walk)", () => {
       expect((graph["n"] as { inputs: { image: string } }).inputs["image"]).toMatch(/_poster_[0-9a-f]{12}\.jpg$/);
     });
   });
-  it("runs-relative names resolve under the root; a miss falls to cwd", async () => {
+  it("runs-relative names resolve under the root; a miss refuses (F17)", async () => {
     const { graph } = await uploadReferenced(fakeClient(), {
       hit: { class_type: "X", inputs: { v: "run-1/local.png" } },
-      miss: { class_type: "X", inputs: { v: "run-9/none.png" } },
     }, { runsRoot: ROOT });
     expect((graph["hit"] as { inputs: { v: string } }).inputs["v"]).toMatch(/_[0-9a-f]{12}(?:\.[a-z0-9]+)?$/);
-    expect((graph["miss"] as { inputs: { v: string } }).inputs["v"]).toBe("run-9/none.png");
+    // the pre-F17 miss rode verbatim — the silent enum-400 death.
+    await expect(uploadReferenced(fakeClient(), {
+      miss: { class_type: "X", inputs: { v: "run-9/none.png" } },
+    }, { runsRoot: ROOT })).rejects.toThrow(/media input stages nowhere \(run-9\/none\.png\)/);
   });
-  it("absolute and cwd-relative files stage; misses ride", async () => {
+  it("absolute and cwd-relative files stage; a miss refuses (F17)", async () => {
     const { graph } = await uploadReferenced(fakeClient(), {
       abs: { class_type: "X", inputs: { v: join(DIR, "abs.gif") } },
       rel: { class_type: "X", inputs: { v: "cwd-rel.webp" } },
-      miss: { class_type: "X", inputs: { v: "not-there.png" } },
     }, undefined);
     expect((graph["abs"] as { inputs: { v: string } }).inputs["v"]).toMatch(/_[0-9a-f]{12}(?:\.[a-z0-9]+)?$/);
     expect((graph["rel"] as { inputs: { v: string } }).inputs["v"]).toMatch(/_[0-9a-f]{12}(?:\.[a-z0-9]+)?$/);
-    expect((graph["miss"] as { inputs: { v: string } }).inputs["v"]).toBe("not-there.png");
+    await expect(uploadReferenced(fakeClient(), {
+      miss: { class_type: "X", inputs: { v: "not-there.png" } },
+    }, undefined)).rejects.toThrow(/media input stages nowhere/);
   });
   it("the VHS video exemption splits by twin: Path rides, LoadVideo stages (the openjutsu lane burn)", async () => {
     // 2026-10-27 — run run-d571ef7ced8e burned: the openjutsu lane's
@@ -517,15 +532,24 @@ describe("uploadReferenced (the staging walk)", () => {
         inputs: { video: "/abs/should/not/stage.mp4", other: join(DIR, "abs.gif") },
       },
       vhsStage: { class_type: "VHS_LoadVideo", inputs: { video: join(DIR, "abs.gif") } },
-      vhsBare: { class_type: "VHS_LoadVideo", inputs: { video: "keep.webp" } },
     });
     const v = graph["vhs"] as { inputs: Record<string, string> };
     expect(v.inputs["video"]).toBe("/abs/should/not/stage.mp4");
     expect(v.inputs["other"]).toMatch(/_[0-9a-f]{12}(?:\.[a-z0-9]+)?$/);
     // the lane arm: an existing file STAGES (staged input-dir name comes back)
     expect((graph["vhsStage"] as { inputs: Record<string, string> }).inputs["video"]).toMatch(/_[0-9a-f]{12}(?:\.[a-z0-9]+)?$/);
-    // a bare name that resolves nowhere rides (an already-staged name passes)
-    expect((graph["vhsBare"] as { inputs: Record<string, string> }).inputs["video"]).toBe("keep.webp");
+    // F17: a bare name the engine input dir already serves rides
+    // (the already-staged spelling — the probe's one legal ride);
+    // a dead one REFUSES (the pre-F17 blind ride was the
+    // openjutsu burn's silent death shape on this very twin).
+    stagedNames.add("keep.webp");
+    const { graph: g2 } = await uploadReferenced(fakeClient(), {
+      vhsBare: { class_type: "VHS_LoadVideo", inputs: { video: "keep.webp" } },
+    });
+    expect((g2["vhsBare"] as { inputs: Record<string, string> }).inputs["video"]).toBe("keep.webp");
+    await expect(uploadReferenced(fakeClient(), {
+      vhsDead: { class_type: "VHS_LoadVideo", inputs: { video: "dead.webp" } },
+    })).rejects.toThrow(/media input stages nowhere \(dead\.webp\)/);
   });
   it("objects descend, arrays walk, non-strings ride", async () => {
     const { graph } = await uploadReferenced(fakeClient(), {
@@ -648,5 +672,65 @@ describe("THE ENGINE-BIRTH POINTER ARM (the preview-after-harvest cure, 2026-10-
     await expect(uploadReferenced(fakeClient(), {
       n: { class_type: "X", inputs: { v: "/home/user/tools/comfyui/output/gone_0000dead0000.mp4" } },
     }, undefined)).rejects.toThrow(/engine output pointer not found/);
+  });
+});
+
+describe("uploadReferenced F17 (one media-seat law — the silent enum-400 burn)", () => {
+  // 2026-10-29 — the report's burn: the doc's audio stamps ride
+  // MeliteAudioSlice.audio, a Combo whose list is the LIVE
+  // input-dir listing filtered to audio/video; a stageable-tail
+  // string that resolved in NO arm rode VERBATIM, queued fine,
+  // and died after as "Value not in list" (HTTP 400) — every
+  // output of the run dropped with no compose-side voice. The
+  // cure: the fall-through probes GET /view (type=input); only a
+  // name the engine already serves may ride, everything else
+  // refuses LOUD naming the accepted spellings.
+  it("THE BURN ARM: a dead audio name on the Combo seat refuses loud, naming the spellings and the probe verdict", async () => {
+    await expect(uploadReferenced(fakeClient(), {
+      slice: { class_type: "MeliteAudioSlice", inputs: { audio: "dialogue_take1.mp3" } },
+    }, undefined)).rejects.toThrow(
+      /media input stages nowhere \(dialogue_take1\.mp3\).*\/view status 404.*already staged in the engine input dir/s,
+    );
+  });
+  it("a name the engine input dir serves rides verbatim (the already-staged spelling, no upload)", async () => {
+    stagedNames.add("dialogue_take1.mp3");
+    const before = uploads.length;
+    const { graph } = await uploadReferenced(fakeClient(), {
+      slice: { class_type: "MeliteAudioSlice", inputs: { audio: "dialogue_take1.mp3" } },
+    }, undefined);
+    expect((graph["slice"] as { inputs: Record<string, string> }).inputs["audio"]).toBe("dialogue_take1.mp3");
+    expect(uploads.length).toBe(before);
+  });
+  it("the probe rides ONLY on a resolved 200 — a throwing fetchApi refuses, never guesses staged", async () => {
+    // the real client's fetchApi THROWS on any non-2xx (HttpError),
+    // and ComfyUI's 404 body is empty so the throw surfaces as a
+    // parse error — the law must not read either as "staged".
+    const throwing = fakeClient({
+      fetchApi: async (_url: string, init: RequestInit) => {
+        if (init?.method === "GET") throw new TypeError("Unexpected end of JSON input");
+        return new Response(JSON.stringify({ name: "x.png" }), { status: 200 });
+      },
+    });
+    await expect(uploadReferenced(throwing, {
+      slice: { class_type: "MeliteAudioSlice", inputs: { audio: "sfx_boom.wav" } },
+    }, undefined)).rejects.toThrow(/media input stages nowhere \(sfx_boom\.wav\).*probe refused \(TypeError\)/s);
+  });
+  it("one probe per distinct name per walk (seats repeat names; the memo holds)", async () => {
+    const before = probeGets;
+    await expect(uploadReferenced(fakeClient(), {
+      a: { class_type: "MeliteAudioSlice", inputs: { audio: "music_bed.flac" } },
+      b: { class_type: "MeliteAudioSlice", inputs: { audio: "music_bed.flac" } },
+    }, undefined)).rejects.toThrow(/media input stages nowhere/);
+    expect(probeGets).toBe(before + 1);
+  });
+  it("non-stageable tails never probe (the ext gate is their own verbatim door)", async () => {
+    const before = probeGets;
+    const { graph } = await uploadReferenced(fakeClient(), {
+      n: { class_type: "X", inputs: { prompt: "a dark and stormy night, no file tail here", seed: "42" } },
+    }, undefined);
+    const ins = (graph["n"] as { inputs: Record<string, string> }).inputs;
+    expect(ins["prompt"]).toContain("stormy night");
+    expect(ins["seed"]).toBe("42");
+    expect(probeGets).toBe(before);
   });
 });

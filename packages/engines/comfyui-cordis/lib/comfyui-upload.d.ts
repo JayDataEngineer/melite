@@ -68,7 +68,17 @@ export declare function isGalleryArtifactRoute(t: string): boolean;
  *  run's output carries that URL in its params, and ComfyUI consumes
  *  only staged input-dir names. A prefixed URL that does not resolve
  *  under the root refuses LOUD (never a dangling URL in the graph);
- *  a runs-relative name that misses simply falls to the cwd arm. */
+ *  a runs-relative name that misses simply falls to the cwd arm.
+ *
+ *  ONE MEDIA-SEAT LAW (F17, 2026-10-29): a stageable-tail string
+ *  that resolves in NO arm may ride verbatim ONLY when the engine's
+ *  input dir already serves that name (probed once per name through
+ *  GET /view) — anything else refuses LOUD at compose. The pre-F17
+ *  verbatim ride was the silent enum-400 death: Combo seats
+ *  validate against the live input-dir listing, so a dead name
+ *  queued fine and dropped every output after. Non-stageable tails
+ *  (text, numeric params) still ride untouched — the ext gate is
+ *  their own verbatim door. */
 export declare function uploadReferenced(client: Client, wf: Record<string, EngineJson>, opts?: {
     runsRoot?: string;
     stateRoots?: readonly string[];

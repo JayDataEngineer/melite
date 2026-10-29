@@ -36,7 +36,7 @@ The executable contract is `packages/video/h3-timeline/src/card.ts` and
     "audio_clips": [
       {
         "id": "line-1",
-        "src": "<returned artifact reference>",
+        "src": "<run-id>/<spoken-file>",
         "start_frame": 12,
         "dur_frames": 91,
         "text": "I told you we would leave before dawn."
@@ -50,6 +50,14 @@ Use `params.calls` and `params.audio_clips`; do not wrap the card in an
 invented `document` object. A call needs `text`, integer `start_frame`, and
 an integer `end_frame` greater than its start. Keep the same seed when a
 re-roll should preserve world texture.
+
+An audio row's `src` is the spoken asset itself, spelled so the run can
+stage it: the run-relative `<run-id>/<file>` name of the TTS run's output,
+its estate URL (`/v1/assets/runs/...`), a gallery artifact URL, an http(s)
+URL, an absolute host path that exists, or a bare name already staged in
+the engine input dir. Every one of those auto-stages at compose. Any other
+spelling refuses at compose with `media input stages nowhere` — never ride
+a display name or an invented placeholder.
 
 ## Window and seam rules
 

@@ -271,9 +271,23 @@ function requireServableLeaf(face, p, leaf) {
  *  run's output carries that URL in its params, and ComfyUI consumes
  *  only staged input-dir names. A prefixed URL that does not resolve
  *  under the root refuses LOUD (never a dangling URL in the graph);
- *  a runs-relative name that misses simply falls to the cwd arm. */
+ *  a runs-relative name that misses simply falls to the cwd arm.
+ *
+ *  ONE MEDIA-SEAT LAW (F17, 2026-10-29): a stageable-tail string
+ *  that resolves in NO arm may ride verbatim ONLY when the engine's
+ *  input dir already serves that name (probed once per name through
+ *  GET /view) — anything else refuses LOUD at compose. The pre-F17
+ *  verbatim ride was the silent enum-400 death: Combo seats
+ *  validate against the live input-dir listing, so a dead name
+ *  queued fine and dropped every output after. Non-stageable tails
+ *  (text, numeric params) still ride untouched — the ext gate is
+ *  their own verbatim door. */
 export async function uploadReferenced(client, wf, opts) {
     const seen = {};
+    // F17 probe memo: one /view round-trip per distinct dead-tail
+    // name per walk (seats repeat names; the input dir does not
+    // change mid-walk).
+    const probedInput = {};
     const stageOne = async (v) => {
         if (Array.isArray(v)) {
             const out = [];
@@ -574,6 +588,44 @@ export async function uploadReferenced(client, wf, opts) {
                 if (!(hit in seen))
                     seen[hit] = (await uploadFile(client, hit)).name;
                 return seen[hit];
+            }
+            // F17 — ONE MEDIA-SEAT LAW (2026-10-29, the silent-enum-400
+            // burn): every arm above missed, yet the ext gate proved a
+            // stageable tail. Riding this string verbatim was the walk's
+            // one SILENT death — a Combo seat (MeliteAudioSlice.audio)
+            // validates against the LIVE input-dir listing, so an
+            // unstaged name queued fine and died after as "Value not in
+            // list" (HTTP 400), dropping every output of the run with no
+            // compose-side voice. The one spelling that may still ride is
+            // a name the engine's input dir ALREADY serves (GET /view
+            // with type=input — the same door the gallery serves input
+            // files through). The client's fetchApi THROWS on any
+            // non-2xx, and ComfyUI's 404 body is empty so the throw
+            // surfaces as a JSON parse error, not a status — the probe
+            // therefore rides ONLY on a resolved 200 and reports the raw
+            // verdict in the refusal voice (never guesses staged).
+            if (!(p in probedInput)) {
+                let verdict = "";
+                try {
+                    const resp = await client.fetchApi("/view?filename=" + encodeURIComponent(p) + "&type=input", { method: "GET" });
+                    if (resp.status === 200) {
+                        verdict = "staged";
+                        // the probe never reads the body — cancel so the
+                        // socket returns to the pool instead of idling on
+                        // bytes nobody wants.
+                        await resp.body?.cancel().catch(() => false);
+                    }
+                    else {
+                        verdict = "status " + resp.status;
+                    }
+                }
+                catch (e) {
+                    verdict = "probe refused (" + (e instanceof Error ? e.name : String(e)) + ")";
+                }
+                probedInput[p] = verdict === "staged";
+                if (!probedInput[p]) {
+                    throw new ComfyError("media input stages nowhere (" + p + ") — no arm resolved it and the engine input dir does not serve that name (/view " + verdict + "); use an absolute host path that exists, a '<run>/<file>' runs-relative name, an estate/gallery artifact URL, an http(s) URL, or a name already staged in the engine input dir");
+                }
             }
             return v;
         }

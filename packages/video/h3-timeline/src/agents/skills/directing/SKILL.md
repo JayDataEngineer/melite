@@ -45,7 +45,7 @@ runbook. Never shell out to ComfyUI or hand-build a graph.
     "audio_clips": [
       {
         "id": "line-1",
-        "src": "<returned artifact reference>",
+        "src": "<run-id>/<spoken-file>",
         "start_frame": 12,
         "dur_frames": 91,
         "text": "I told you we would leave before dawn."
@@ -59,6 +59,14 @@ runbook. Never shell out to ComfyUI or hand-build a graph.
 `start_frame`, and an integer `end_frame` greater than its start. The first
 call has no incoming seam. Omit `transition` for the automatic carry and set
 `transition: "cut"` on an incoming call when the shot should start fresh.
+
+An audio row's `src` is the spoken asset itself, spelled so the run can
+stage it: the run-relative `<run-id>/<file>` name of the TTS run's output,
+its estate URL (`/v1/assets/runs/...`), a gallery artifact URL, an http(s)
+URL, an absolute host path that exists, or a bare name already staged in
+the engine input dir. Every one of those auto-stages at compose. Any other
+spelling refuses at compose with `media input stages nowhere` — never ride
+a display name or an invented placeholder.
 
 ## Timeline rules
 
@@ -82,8 +90,9 @@ tests are authoritative over this prose.
 
 ## Audio guidance
 
-Generate a spoken asset first, then use its returned artifact reference and
-copy the exact words into the row's `text`. The row's `text` MUST carry the exact spoken words, unabridged. Spoken lines are NEVER a call field. Place
+Generate a spoken asset first, then spell its returned artifact as the
+run-relative `<run-id>/<file>` name or its estate URL (both auto-stage at
+compose) and copy the exact words into the row's `text`. The row's `text` MUST carry the exact spoken words, unabridged. Spoken lines are NEVER a call field. Place
 rows in film-time frame coordinates. Keep one conditioning class/lane per
 window as required by the loaded contract. The card owns the final mix and
 ducking; do not invent a film-wide bed parameter or an out-of-band ffmpeg
