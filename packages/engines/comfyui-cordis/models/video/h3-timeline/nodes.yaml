@@ -58,13 +58,15 @@ extensions:
   desc: RTXVideoSuperResolution (bypassed group; class must register).
 - name: melite-utility-nodes
   url: https://github.com/JayDataEngineer/melite-utility-nodes
-  # 2026-11-12 multi-window unification: re-pinned to a81448b (the
-  # append member — MeliteConcatVideos' optional append seats an exact
-  # wired saved-file as the join's last member; the multi-window extend
-  # compose face). Additive only: the boundary classes byte-untouched;
-  # pack tests 6/6 (_concat_append_unit_test.py); the vendor gitlink
-  # rides the same parent commit.
-  ref: a81448b42465143fdb210eee66388bf020de8160
+  # 2026-11-12 multi-window unification: re-pinned to 555f12e (the
+  # append member — MeliteConcatVideos' OPTIONAL append seats an exact
+  # wired saved-file as the join's last member; the multi-window
+  # extend compose face; 555f12e seats the input OPTIONAL, matching
+  # the docstring — required-with-default was functionally equivalent
+  # but UI-misleading; pack tests 7/7). Additive only: the boundary
+  # classes byte-untouched; the vendor gitlink rides the same parent
+  # commit.
+  ref: 555f12ec70e8f3e7762b7554e1739c6e7875efce
   required: true
   desc: >-
     MeliteUnload / MeliteConcatVideos — the film's window-save boundary
