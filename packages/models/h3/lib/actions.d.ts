@@ -1,4 +1,5 @@
 import type { OutputHandle } from '@melite/comfyui-card-kit/graph';
+import { GraphBuilder } from '@melite/comfyui-card-kit/graph';
 import type { ComfyActionSpec } from '@melite/comfyui-card-kit';
 /** THE LORA PLANE'S ONE OWNER (the swap build, 2026-10-28 — operator:
  * "KEEP OUR CURRENT LORA SETUP FOR NOW"): the stack_data string every
@@ -66,6 +67,41 @@ export interface WindowHandles {
      *  loud if a future arm forgets. */
     savePassthrough?: OutputHandle;
 }
+/** THE FILE-JOIN PRIMITIVE, half 1 — the boundary chain (the
+ * multi-window unification, 2026-11-12 — the film tail's own §20
+ * law, ONE spelling for every join-by-file seat). ONE MeliteUnload
+ * boundary per save, token-chained in film order: the final token
+ * transitively depends on EVERY save, so any downstream decode
+ * provably waits for them all — and each member's passthrough
+ * tensor dies at its own boundary (the memory law; the flush is
+ * idempotent, weights stay resident).
+ * @param g the run's graph builder
+ * @param saves the members' SaveVideo passthroughs, film order
+ * @param startAfter an existing token the chain continues (the
+ *  film's audio-mix arm chains its stanza between the saves and the
+ *  concat on the SAME wire)
+ * @returns the chain's final token — the ordering proof */
+export declare function chainSaveBoundaries(g: GraphBuilder, saves: readonly OutputHandle[]): OutputHandle;
+/** THE FILE-JOIN PRIMITIVE, half 2 — the concat + container (the
+ * film tail's own law, ONE spelling for every join-by-file seat):
+ * MeliteConcatVideos decodes the saved FILES back CPU-side strictly
+ * after the boundary token; CreateVideo → SaveVideo delivers the
+ * joined film.
+ * @param g the run's graph builder
+ * @param prefixes the members' SaveVideo prefixes, film order
+ * @param after the boundary chain's final token (the ordering proof)
+ * @param out the joined film's filename_prefix
+ * @param opts.audio an audio override for the container mux (the
+ *  film's mixed stem); absent = the concat's own decoded audio
+ * @param opts.append an exact saved-file path wired as the LAST
+ *  member after the prefix list (the multi-window extend's assembled
+ *  extension — ChainAssemble's video_path output; DAG-proven by its
+ *  own data dependency, no boundary needed)
+ * @returns the joined film's SaveVideo passthrough */
+export declare function concatSavedFilms(g: GraphBuilder, prefixes: readonly string[], after: OutputHandle, out: string, opts?: {
+    audio?: OutputHandle;
+    append?: OutputHandle;
+}): OutputHandle;
 /** The seam's cross-window wires: the RAW decode + sampler handles
  *  of one rendered window (pre-trim, pre-sharpen — the true tail). */
 export interface WindowHandles {

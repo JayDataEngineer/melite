@@ -41,10 +41,16 @@ stringify it into a silent snap).
   as the card's own prompting: one continuous action line, no shot
   prefixes. Repeat the ambient soundscape; add one new layer where
   the story needs it.
-- `extend_seconds` (bag only, default 2.33) — seconds appended, on
-  the engine grid (frames become seconds at the schema fps default):
-  2.33 = 56f, 3.83 = 92f, 5.17 = 124f, cap 15.08 = 362f.
-  Off-grid values REFUSE at the compose door (never a silent snap).
+- `extend_seconds` (bag only, default 2.33) — seconds appended. Up to
+  15.08 = 362f the value must land on the engine grid (frames become
+  seconds at the schema fps default): 2.33 = 56f, 3.83 = 92f,
+  5.17 = 124f. Beyond 362f the door composes MULTIPLE windows of
+  uniform grid length under a 39-frame context overlap — delivered
+  frames = N×w − (N−1)×39 must equal the stated frames EXACTLY, or
+  the door REFUSES naming the nearest under/over compositions (state
+  one of those delivered seconds instead). 15.79 = 379f composes as
+  2×209f−39; 20.00 = 480f refuses (nearest: 464f and 481f — state
+  19.333 or 20.042). Off-exact values never snap silently.
 - `seed` (bag only, default 0) — the plan base seed. Same seed across
   re-extends of one clip keeps the world texture.
 
@@ -75,8 +81,13 @@ the plan's anchor seat AND the r2v reference seats (pixel anchor +
 motion identity), the new window generates fresh (all-white mask, full
 denoise, fresh audio), and prior + window join through
 MeliteConcatVideos — the extended film lands as the run artifact
-(`<run_id>/extend_film` prefix). The prior is never re-edited: that is
-the repair/replace door, and one door per doc (extend + replace or
+(`<run_id>/extend_film` prefix). Multi-window extends (stated > 362f)
+generate each window's fresh motion carrying the chain's own latent
+context across the 39-frame overlap, assemble the IN-CHAIN windows
+(`ChainAssemble`, `<run_id>/extend_chain`), then join prior file +
+assembly through the concat's `append` member — one film, two join
+primitives composed. The prior is never re-edited: that is the
+repair/replace door, and one door per doc (extend + replace or
 repair or reshoot together refuses loud).
 
 ## Craft notes

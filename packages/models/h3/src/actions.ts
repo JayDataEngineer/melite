@@ -316,6 +316,77 @@ export interface WindowHandles {
   savePassthrough?: OutputHandle
 }
 
+/** THE FILE-JOIN PRIMITIVE, half 1 — the boundary chain (the
+ * multi-window unification, 2026-11-12 — the film tail's own §20
+ * law, ONE spelling for every join-by-file seat). ONE MeliteUnload
+ * boundary per save, token-chained in film order: the final token
+ * transitively depends on EVERY save, so any downstream decode
+ * provably waits for them all — and each member's passthrough
+ * tensor dies at its own boundary (the memory law; the flush is
+ * idempotent, weights stay resident).
+ * @param g the run's graph builder
+ * @param saves the members' SaveVideo passthroughs, film order
+ * @param startAfter an existing token the chain continues (the
+ *  film's audio-mix arm chains its stanza between the saves and the
+ *  concat on the SAME wire)
+ * @returns the chain's final token — the ordering proof */
+export function chainSaveBoundaries(
+  g: GraphBuilder,
+  saves: readonly OutputHandle[],
+): OutputHandle {
+  if (saves.length === 0) {
+    throw new Error('[h3-timeline] the boundary chain needs at least one save — a join with nothing to order refuses loud')
+  }
+  let boundaryAfter: OutputHandle | undefined
+  for (const save of saves) {
+    boundaryAfter = g.node('MeliteUnload', {
+      video: save, unload_models: false,
+      ...(boundaryAfter !== undefined ? { after: boundaryAfter } : {}),
+    }).out(0)
+  }
+  return boundaryAfter!
+}
+
+/** THE FILE-JOIN PRIMITIVE, half 2 — the concat + container (the
+ * film tail's own law, ONE spelling for every join-by-file seat):
+ * MeliteConcatVideos decodes the saved FILES back CPU-side strictly
+ * after the boundary token; CreateVideo → SaveVideo delivers the
+ * joined film.
+ * @param g the run's graph builder
+ * @param prefixes the members' SaveVideo prefixes, film order
+ * @param after the boundary chain's final token (the ordering proof)
+ * @param out the joined film's filename_prefix
+ * @param opts.audio an audio override for the container mux (the
+ *  film's mixed stem); absent = the concat's own decoded audio
+ * @param opts.append an exact saved-file path wired as the LAST
+ *  member after the prefix list (the multi-window extend's assembled
+ *  extension — ChainAssemble's video_path output; DAG-proven by its
+ *  own data dependency, no boundary needed)
+ * @returns the joined film's SaveVideo passthrough */
+export function concatSavedFilms(
+  g: GraphBuilder,
+  prefixes: readonly string[],
+  after: OutputHandle,
+  out: string,
+  opts: { audio?: OutputHandle; append?: OutputHandle } = {},
+): OutputHandle {
+  if (prefixes.length === 0) {
+    throw new Error('[h3-timeline] the concat needs at least one member prefix — a join with nothing to stitch refuses loud')
+  }
+  const concat = g.node('MeliteConcatVideos', {
+    videos: prefixes.join(','),
+    ...(opts.append !== undefined ? { append: opts.append } : {}),
+    after,
+  })
+  const created = g.node('CreateVideo', {
+    images: concat.out(0), audio: opts.audio ?? concat.out(1), fps: concat.out(2),
+    bit_depth: FILM_BIT_DEPTH,
+  })
+  return g.node('SaveVideo', {
+    video: created.out(), filename_prefix: out, format: 'mp4', codec: 'h264',
+  }).out()
+}
+
 /** THE MERGED FILM: ONE prompt, N windows under `window${k}_`
  *  scopes (GraphBuilder.scoped), with real seam edges between scopes
  *  (the executor orders windows off the graph) and per-window
@@ -809,23 +880,17 @@ function renderH3Film(
   // stitch: 960×576 leftovers globbed as windows) and
   // run-18ea8c810104 (loud no-match refusal on h3_t4_w2): cut
   // windows chain NOTHING and even chained windows' SAVE nodes are
-  // not downstream of one another, so the old single boundary on
-  // the LAST save rode a scheduler tie-break — window 2's save was
-  // an unordered island the loader could beat). Every window's
-  // SaveVideo passthrough feeds its OWN boundary; each boundary's
-  // optional 'after' wires the prior boundary's token, so the final
-  // token (the concat's 'after') transitively depends on EVERY
-  // save — and each window's passthrough tensor still dies at its
-  // own boundary (the §20 law; the flush is idempotent, weights
-  // stay resident).
-  let boundaryAfter: OutputHandle | undefined
-  for (const save of windowSaves) {
-    boundaryAfter = g.node('MeliteUnload', {
-      video: save, unload_models: false,
-      ...(boundaryAfter !== undefined ? { after: boundaryAfter } : {}),
-    }).out(0)
-  }
-  const after = boundaryAfter!
+  // not downstream of one another, so the old single boundary on the
+  // LAST save rode a scheduler tie-break — window 2's save was an
+  // unordered island the loader could beat). The shared boundary
+  // chain (chainSaveBoundaries — the file-join primitive, 2026-11-12
+  // unification) carries the law: every window's SaveVideo
+  // passthrough feeds its OWN boundary and the final token
+  // transitively depends on EVERY save, while each window's
+  // passthrough tensor dies at its own boundary (the §20 law; the
+  // flush is idempotent, weights stay resident).
+  const windowPrefixes = calls.map((_c, i): string => `h3_t4_w${i + 1}`)
+  const after = chainSaveBoundaries(g, windowSaves)
   if (clips.length > 0) {
     // THE VALVE'S SECOND ARM (2026-09-24 — the film mix leaves the
     // graph's generation half; GAP 1 CLOSED 2026-09-24 — the arm
@@ -842,7 +907,7 @@ function renderH3Film(
     // the mix, not the raw concat audio. Early return: the
     // clips-free arm below stays byte-frozen.
     const mix = g.node('MeliteFilmAudioMix', {
-      videos: calls.map((_c, i): string => `h3_t4_w${i + 1}`).join(','),
+      videos: windowPrefixes.join(','),
       after,
       // the manifest rendered verbatim: every placement's source,
       // film seat, duration, and class — doc order kept (the node's
@@ -870,29 +935,11 @@ function renderH3Film(
     // clips-free arm rides — container mux only (CreateVideo +
     // SaveVideo h264/mp4 on the decoded window files), never the
     // mix. The mix rides it: audio carries the node's output.
-    const join = g.node('MeliteConcatVideos', {
-      videos: calls.map((_c, i): string => `h3_t4_w${i + 1}`).join(','),
-      after,
+    return concatSavedFilms(g, windowPrefixes, after, 'h3_t4_film', {
+      audio: meter.out(0),
     })
-    const filmCreated = g.node('CreateVideo', {
-      images: join.out(0), audio: meter.out(0), fps: join.out(2), bit_depth: FILM_BIT_DEPTH,
-    })
-    return g.node('SaveVideo', {
-      video: filmCreated.out(), filename_prefix: 'h3_t4_film',
-      format: 'mp4', codec: 'h264',
-    }).out()
   }
-  const concat = g.node('MeliteConcatVideos', {
-    videos: calls.map((_c, i): string => `h3_t4_w${i + 1}`).join(','),
-    after,
-  })
-  const filmCreated = g.node('CreateVideo', {
-    images: concat.out(0), audio: concat.out(1), fps: concat.out(2), bit_depth: FILM_BIT_DEPTH,
-  })
-  return g.node('SaveVideo', {
-    video: filmCreated.out(), filename_prefix: 'h3_t4_film',
-    format: 'mp4', codec: 'h264',
-  }).out()
+  return concatSavedFilms(g, windowPrefixes, after, 'h3_t4_film')
 }
 
 /** The seam's cross-window wires: the RAW decode + sampler handles

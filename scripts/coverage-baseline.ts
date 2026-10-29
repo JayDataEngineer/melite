@@ -133,6 +133,7 @@ export const COVERAGE_BASELINE: Record<string, {
   // 100x4 measured over extend-mod.spec.ts — the card-door harness
   // drives every branch (both refusal seats, the grid door, all three
   // pairwise one-door edges, the empty-bag guard, the emission)
+  '**/packages/models/h3/src/chainEdit.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/h3/src/extend.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/h3/src/repair.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/h3/src/swap.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },

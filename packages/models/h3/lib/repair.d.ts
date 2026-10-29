@@ -3,8 +3,8 @@ import type { H3Facts } from './actions.js';
 /** The repair renderer: validates the bound entry, then composes the
  * masked second-pass chain. Like the swap, the film path never
  * reaches here (the card branches on a non-empty repair bag, refuses
- * a bag under an armed reshoot or an armed replace — one door per
- * doc), and the emission ends in MiniMaxH3ChainAssemble.
+ * a bag under an armed reshoot or replace — one door per doc), and
+ * the emission ends in MiniMaxH3ChainAssemble.
  * @param entry the repair mod's single bound entry
  * @param p the walked doc params (the lora mod bag + SLA/shift knobs
  * — the family plane this repair renders under)

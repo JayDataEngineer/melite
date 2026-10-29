@@ -1,5 +1,14 @@
-import { assertGridLength } from './timelineContract.js';
-import { loadVideo, h3MaskedEditPlane } from './swap.js';
+import { chainSaveBoundaries, concatSavedFilms } from './actions.js';
+import { assertGridLength, GRID_BASE_FRAMES, GRID_STEP_FRAMES, GRID_MAX_FRAMES, } from './timelineContract.js';
+import { loadVideo, renderMaskedEditChain } from './chainEdit.js';
+/** The chain policy's masked_av context — the overlap every seam
+ * after the first carries (the same 39 the swap's clips ride; the
+ * entry's overlap_frames knob feeds the plan node's slicing, the
+ * policy owns the carry). */
+const CONTEXT_OVERLAP_FRAMES = 39;
+/** The plan's scene cap (chain_nodes: a 32-scene cap refuses
+ * mis-authored loops). */
+const MAX_WINDOWS = 32;
 /** The extend entry's required seats (the reshoot/repair idiom: an
  * armed doc with an empty seat refuses loud naming the seat). */
 const REQUIRED_SEATS = [
@@ -8,12 +17,60 @@ const REQUIRED_SEATS = [
 ];
 const num = (p, k, d) => typeof p[k] === 'number' ? p[k] : d;
 const str = (p, k) => typeof p[k] === 'string' ? p[k] : '';
+/** The smallest 22+17k grid length ≥ x (capped at 362); null when x
+ * exceeds the grid — that window count cannot carry the total. */
+const gridCeil = (x) => {
+    const k = Math.ceil((x - GRID_BASE_FRAMES) / GRID_STEP_FRAMES);
+    const length = Math.max(GRID_BASE_FRAMES, GRID_BASE_FRAMES + GRID_STEP_FRAMES * k);
+    return length > GRID_MAX_FRAMES ? null : length;
+};
+/** The largest 22+17k grid length ≤ x (floored at 22, capped 362). */
+const gridFloor = (x) => Math.min(GRID_MAX_FRAMES, GRID_BASE_FRAMES + GRID_STEP_FRAMES * Math.floor((x - GRID_BASE_FRAMES) / GRID_STEP_FRAMES));
+/** THE COMPOSITION SOLVER (pure; the door's whole law beyond one
+ * window): across every legal window count, the grid lengths on
+ * both sides of the exact requirement — the smallest that delivers
+ * ≥ stated (ceil) and the largest that delivers ≤ stated (floor) —
+ * looking for an EXACT delivery; else a loud refusal naming the
+ * neighboring compositions (max under, min over).
+ * @param totalFrames the stated extension, frames at the film clock
+ * @param where the refusal's voice ('h3-timeline extend')
+ * @param overlap the per-seam context overlap (the policy's 39)
+ * @returns the exact composition */
+export function solveWindowComposition(totalFrames, where, overlap = CONTEXT_OVERLAP_FRAMES) {
+    let bestUnder = null;
+    let bestOver = null;
+    for (let windows = 1; windows <= MAX_WINDOWS; windows++) {
+        const exact = (totalFrames + (windows - 1) * overlap) / windows;
+        for (const windowFrames of [gridFloor(exact), gridCeil(exact)]) {
+            if (windowFrames === null)
+                continue;
+            const delivered = windows * windowFrames - (windows - 1) * overlap;
+            if (delivered === totalFrames)
+                return { windows, windowFrames, deliveredFrames: delivered };
+            const composition = { windows, windowFrames, deliveredFrames: delivered };
+            if (delivered < totalFrames) {
+                if (bestUnder === null || delivered > bestUnder.deliveredFrames)
+                    bestUnder = composition;
+            }
+            else if (bestOver === null || delivered < bestOver.deliveredFrames) {
+                bestOver = composition;
+            }
+        }
+    }
+    const neighbor = (c) => c === null ? '' :
+        ` nearest: ${c.windows} windows of ${c.windowFrames}f deliver ${c.deliveredFrames}f (${(c.deliveredFrames / 24).toFixed(3)}s);`;
+    throw new Error(`${where}: stated ${totalFrames}f composes nowhere exactly — ` +
+        `N uniform 22+17k windows under the ${overlap}f context overlap compose exactly nowhere;` +
+        `${neighbor(bestUnder)}${neighbor(bestOver)}` +
+        ` re-state extend_seconds as a composition's delivered seconds ` +
+        `(D frames round-trips D/24 exactly; a single window keeps the 22+17k grid door)`);
+}
 /** The extend renderer: validates the bound entry, then composes the
- * fresh-continuation chain plus the file join. Like the swap and
- * repair, the film path never reaches here (the card branches on a
- * non-empty extend bag and refuses a bag under an armed reshoot,
- * replace, or repair — one door per doc), and the emission ends in
- * the joined-film SaveVideo.
+ * fresh-continuation chain plus the join. Like the swap and repair,
+ * the film path never reaches here (the card branches on a non-empty
+ * extend bag and refuses a bag under an armed reshoot, replace, or
+ * repair — one door per doc), and the emission ends in the
+ * joined-film SaveVideo.
  * @param entry the extend mod's single bound entry
  * @param p the walked doc params (the lora mod bag + SLA/shift knobs
  * — the family plane this extension renders under)
@@ -31,16 +88,14 @@ export function renderH3Extend(entry, p, facts, g, runId) {
     const steps = num(entry, 'steps', 6);
     const overlapFrames = num(entry, 'overlap_frames', 39);
     const resolution = str(entry, 'resolution') || '736p';
-    // THE GRID DOOR (the uniform span gate's own posture — refuse
-    // loud, never a silent snap): the extension's stated seconds must
-    // land on the engine's 22+17k frame grid at the film clock. The
-    // exact landing then feeds the plan head, so the engine-owned
-    // geometry snap inside the plan agrees with the door.
-    const extendFrames = assertGridLength(Math.round(num(entry, 'extend_seconds', 56 / 24) * 24), 'h3-timeline extend');
-    const clipSeconds = extendFrames / 24;
-    // ── the family's own model + lora plane (the shared masked-edit
-    // seat — the same spine the swap and repair ride) ──
-    const { sigmaModel, samplerSel, clip, vaeVideo, vaeAudio } = h3MaskedEditPlane(g, p, facts, clipSeconds);
+    const statedFrames = Math.round(num(entry, 'extend_seconds', 56 / 24) * 24);
+    // THE COMPOSITION DOOR: one window keeps the landed grid law
+    // verbatim; beyond it the solver composes N uniform windows and
+    // refuses every non-exact landing by name.
+    const composition = statedFrames <= GRID_MAX_FRAMES
+        ? { windows: 1, windowFrames: assertGridLength(statedFrames, 'h3-timeline extend'), deliveredFrames: statedFrames }
+        : solveWindowComposition(statedFrames, 'h3-timeline extend', overlapFrames);
+    const clipSeconds = composition.windowFrames / 24;
     // ── the staged media: the WHOLE prior clip on the VHS seat
     // (force_rate 24 — the one clock) and its LAST FRAME as the
     // in-graph anchor (negative batch index, engine core) ──
@@ -48,149 +103,99 @@ export function renderH3Extend(entry, p, facts, g, runId) {
     const lastFrame = g.node('ImageFromBatch', {
         image: priorFrames, batch_index: -1, length: 1,
     }).out(0);
-    // ── the audio prep (the repair's posture: the source audio trims
-    // to the loop budget; the slice's copy is muted — the edit latent
-    // holds the source picture, never its sound) ──
-    const srcAudioTrim = g.node('TrimAudioDuration', {
-        start_index: 0, duration: 2048, audio: priorAudio,
-    }).out(0);
-    const sliceAudio = g.node('AudioAdjustVolume', {
-        volume: -100, audio: srcAudioTrim,
-    }).out(0);
-    // ── the plan head (the entry's scalars, engine-derived geometry;
-    // picture_1 = the prior clip's last frame — the truthful anchor
-    // of a continuation) ──
-    const plan = g.node('H3OneClickSwapPlan', {
-        clip_seconds: clipSeconds,
-        overlap_frames: overlapFrames,
-        resolution,
-        steps,
-        seed,
+    // ── THE SEAT'S OWN PLAN (clause 3): N continuation shots — the
+    // literal rules, plan_json_input stays UNWIRED (the plan node's
+    // source slicing is the swap's semantics, never a continuation's;
+    // the cure for the re-slice bug the unification's survey found) ──
+    const shots = Array.from({ length: composition.windows }, (_k, i) => ({
+        id: `extend-${i + 1}`, prompt: str(entry, 'extend_prompt'),
+    }));
+    const planJson = JSON.stringify({ shots });
+    const { trimmed, assemblePath } = renderMaskedEditChain(g, {
+        p, facts,
+        clipSeconds,
+        overlapFrames,
+        resolution, seed, steps,
         roles: '',
-        source_frames: priorFrames,
-        picture_1: lastFrame,
+        sourceClip: str(entry, 'source_clip'),
+        windowStart: 0,
+        picture1: lastFrame,
+        srcFrames: priorFrames,
+        srcAudio: priorAudio,
+        planJson,
+        planFromSource: false,
+        denoise: 1,
+        // THE LATENT-CARRY TERMINAL (clause 4): N ≥ 2 windows assemble
+        // IN-CHAIN — ChainAssemble owns the seams under the policy's
+        // overlap (fresh content's soundtrack assembles from the
+        // checkpointed H3 sound); one window joins by file directly.
+        assemble: composition.windows >= 2
+            ? { audioSource: 'generated', filename: `${runId}/extend_chain` }
+            : null,
+        body: ({ cur, clip, vaeVideo, vaeAudio, mutedChainAudio, sliceAudio }) => {
+            // The everywhere-generate mask: an all-white SolidMask sized
+            // to the chain's own geometry (nothing held — extended
+            // seconds are new content).
+            const whiteMask = g.node('SolidMask', {
+                value: 1, width: cur.out(8), height: cur.out(9),
+            }).out(0);
+            // ── the fresh-continuation body: the anchor rides BOTH
+            // reference seats — the last frame as the pixel anchor
+            // (ref_image_0) and the whole clip as the motion identity
+            // (ref_video_0), the swap/repair spine's own seats ──
+            const r2v = g.node('MiniMaxH3ReferenceToVideo', {
+                prompt: str(entry, 'extend_prompt'),
+                width: cur.out(8), height: cur.out(9), length: cur.out(6),
+                ref_image_size: 'match',
+                clip, vae: vaeVideo, audio_vae: vaeAudio,
+                'ref_images.ref_image_0': lastFrame,
+                'ref_videos.ref_video_0': priorFrames,
+                'ref_video_audios.ref_video_audio_0': mutedChainAudio,
+            });
+            const slice = g.node('H3SourceSlice', {
+                source_fps: 24, crop: 'center',
+                state: cur.out(0), latent: r2v.out(1),
+                audio_vae: vaeAudio, source_frames: priorFrames, source_audio: sliceAudio,
+            });
+            const edit = g.node('MiniMaxH3FantasticVideoEditLatent', {
+                grow: 0, keep_audio: false, megapixels: 0,
+                vae: vaeVideo, images: slice.out(0), mask: whiteMask,
+                audio_vae: vaeAudio, audio: slice.out(1),
+            }).out(0);
+            const target = g.node('MiniMaxH3ContexMaskedTarget', {
+                mask_meaning: 'white = generate',
+                audio_mode: 'generate all audio',
+                mask_conversion: 'H3 exact (causal/token max)',
+                target_latent: edit, mask: whiteMask,
+            }).out(0);
+            return { conditioning: r2v.out(0), targetLatent: target };
+        },
     });
-    const profile = g.node('MiniMaxH3GenerationProfile', {
-        scene_continuity: 'Hard picture + protected audio',
-        audio_profile: 'Generate audio',
-    }).out(0);
-    const chainPlan = g.node('MiniMaxH3ChainPlanModern', {
-        plan_json: JSON.stringify({ shots: [{ id: 'extend', prompt: str(entry, 'extend_prompt') }] }),
-        run_name: plan.out(3),
-        generation_fingerprint: '',
-        width: plan.out(1),
-        height: plan.out(2),
-        encode_mode: 'video',
-        crop: 'center',
-        default_duration_seconds: clipSeconds,
-        default_steps: steps,
-        base_seed: seed,
-        segment_crf: 16,
-        video_blend_frames: 0,
-        chain_policy: profile,
-        plan_json_input: plan.out(0),
-    }).out(0);
-    const timeline = g.node('MiniMaxH3SourceTimeline', {
-        video_path: str(entry, 'source_clip'), audio_path: '', embedded_audio: 'auto',
-        skip_first_frames: 0, source_audio: srcAudioTrim,
-        source_video: g.node('LoadVideo', {
-            file: str(entry, 'source_clip'),
-        }).out(0),
-    }).out(0);
-    const loop = g.node('MiniMaxH3ChainLoopStart', {
-        start_clip: 1, scene_range: '', verify_resume_history: true,
-        plan: chainPlan, source_timeline: timeline,
-    });
-    const cur = g.node('MiniMaxH3ChainCurrent', {
-        align_audio_reference: false, state: loop.out(1),
-    });
-    // The everywhere-generate mask: an all-white SolidMask sized to
-    // the chain's own geometry (nothing held — extended seconds are
-    // new content).
-    const whiteMask = g.node('SolidMask', {
-        value: 1, width: cur.out(8), height: cur.out(9),
-    });
-    // ── the fresh-continuation body ──
-    // The anchor rides BOTH reference seats: the last frame as the
-    // pixel anchor (ref_image_0) and the whole clip as the motion
-    // identity (ref_video_0) — the swap/repair spine's own seats.
-    const r2v = g.node('MiniMaxH3ReferenceToVideo', {
-        prompt: str(entry, 'extend_prompt'),
-        width: cur.out(8), height: cur.out(9), length: cur.out(6),
-        ref_image_size: 'match',
-        clip, vae: vaeVideo, audio_vae: vaeAudio,
-        'ref_images.ref_image_0': lastFrame,
-        'ref_videos.ref_video_0': priorFrames,
-        'ref_video_audios.ref_video_audio_0': g.node('AudioAdjustVolume', {
-            volume: -100, audio: cur.out(12),
-        }).out(0),
-    });
-    const slice = g.node('H3SourceSlice', {
-        source_fps: 24, crop: 'center',
-        state: cur.out(0), latent: r2v.out(1),
-        audio_vae: vaeAudio, source_frames: priorFrames, source_audio: sliceAudio,
-    });
-    const edit = g.node('MiniMaxH3FantasticVideoEditLatent', {
-        grow: 0, keep_audio: false, megapixels: 0,
-        vae: vaeVideo, images: slice.out(0), mask: whiteMask,
-        audio_vae: vaeAudio, audio: slice.out(1),
-    }).out(0);
-    const target = g.node('MiniMaxH3ContexMaskedTarget', {
-        mask_meaning: 'white = generate',
-        audio_mode: 'generate all audio',
-        mask_conversion: 'H3 exact (causal/token max)',
-        target_latent: edit, mask: whiteMask,
-    }).out(0);
-    const ctx = g.node('MiniMaxH3ChainContext', {
-        state: cur.out(0), conditioning: r2v.out(0),
-        vae: vaeVideo, latent: target, audio_vae: vaeAudio,
-    });
-    // ── the sampler tail — FULL DENOISE (the fresh-render pole: the
-    // extension generates new seconds, it never refines held ones —
-    // the repair's partial-denoise law is the OPPOSITE door) ──
-    const sample = g.node('SamplerCustomAdvanced', {
-        noise: g.node('RandomNoise', { noise_seed: cur.out(5) }).out(0),
-        guider: g.node('BasicGuider', { model: sigmaModel, conditioning: ctx.out(0) }).out(0),
-        sampler: samplerSel,
-        sigmas: g.node('BasicScheduler', {
-            scheduler: 'simple', steps: cur.out(7), denoise: 1, model: sigmaModel,
-        }).out(0),
-        latent_image: ctx.out(3),
-    }).out(0);
-    const decoded = g.node('VAEDecode', { samples: sample, vae: vaeVideo }).out(0);
-    const decodedAudio = g.node('VAEDecodeAudio', { samples: sample, vae: vaeAudio }).out(0);
-    const trimmed = g.node('MiniMaxH3LoopTrim', {
-        trim_frames: ctx.out(1), fps: 24, match_tail: true,
-        audio_trim_mode: 'sync_with_video',
-        images: decoded, audio: decodedAudio, state: cur.out(0),
-    });
-    const seg = g.node('MiniMaxH3ChainSegmentSave', {
-        state: cur.out(0), images: trimmed.out(0), sampled_latent: sample,
-        audio: trimmed.out(1), images_with_overlap: trimmed.out(2),
-    }).out(0);
-    const review = g.node('MiniMaxH3ChainReview', {
-        enabled: false, play_notification_sound: false,
-        auto_continue_timeout_minutes: 0, unload_models_while_waiting: false,
-        assemble_partial_on_stop: true, partial_audio_source: 'checkpointed',
-        candidate_count: 1, review_each_candidate: false,
-        state: cur.out(0), segment: seg, audio: trimmed.out(1),
-    }).out(0);
-    g.node('MiniMaxH3ChainLoopEnd', {
-        // top_level_requeue (the swap/repair law, mirrored): the
-        // estate's requeue driver owns continuation; the extension's
-        // single-shot plan ends its prompt terminal-success and the
-        // driver completes the chain.
-        between_scene_cleanup: 'off', execution_mode: 'top_level_requeue',
-        flow: loop.out(0), state: cur.out(0),
-        images: trimmed.out(0), sampled_latent: sample, segment: review,
-    });
-    // ── THE JOIN (the film tail's file law, actions.ts:745-895):
-    // both parts save at output-dir SaveVideo prefixes; ONE boundary
-    // per save, token-chained; MeliteConcatVideos decodes the FILES
-    // back CPU-side strictly after every save; CreateVideo →
-    // SaveVideo delivers the extended film. No ChainAssemble: its
-    // `_final.mp4` name is not a prefix the concat can glob. ──
-    // The NEW WINDOW first (x1): its tensors die at this save.
+    // ── THE JOIN (the file-join primitive; the initial raw boundary
+    // is the exception the latent carry cannot cross — clause 4) ──
+    if (assemblePath !== null) {
+        // MULTI-WINDOW: the prior re-muxes at x0 (the join grammar needs
+        // an output-dir file; the prior's frames + its own soundtrack
+        // ride verbatim — the extension never rewrites history); the
+        // ASSEMBLED extension rides the concat's append seat — an exact
+        // saved-file path (ChainAssemble's video_path output, wired:
+        // the DAG itself proves the assembly completed before the join).
+        const priorCreated = g.node('CreateVideo', {
+            images: priorFrames, audio: priorAudio, fps: 24, bit_depth: 8,
+        });
+        const priorSaved = g.node('SaveVideo', {
+            video: priorCreated.out(), filename_prefix: `${runId}/x0`,
+            format: 'mp4', codec: 'h264',
+        }).out();
+        const after = chainSaveBoundaries(g, [priorSaved]);
+        concatSavedFilms(g, [`${runId}/x0`], after, `${runId}/extend_film`, {
+            append: assemblePath,
+        });
+        return;
+    }
+    // SINGLE-WINDOW (the landed shape): both parts save at prefixes,
+    // the boundary chain orders them, the concat joins, the container
+    // delivers <runId>/extend_film.
     const newCreated = g.node('CreateVideo', {
         images: trimmed.out(0), audio: trimmed.out(1), fps: 24, bit_depth: 8,
     });
@@ -198,9 +203,6 @@ export function renderH3Extend(entry, p, facts, g, runId) {
         video: newCreated.out(), filename_prefix: `${runId}/x1`,
         format: 'mp4', codec: 'h264',
     }).out();
-    // The PRIOR clip re-saved (x0): the join grammar needs an
-    // output-dir file; the prior's frames + its own soundtrack ride
-    // verbatim (the extension never rewrites history).
     const priorCreated = g.node('CreateVideo', {
         images: priorFrames, audio: priorAudio, fps: 24, bit_depth: 8,
     });
@@ -208,23 +210,7 @@ export function renderH3Extend(entry, p, facts, g, runId) {
         video: priorCreated.out(), filename_prefix: `${runId}/x0`,
         format: 'mp4', codec: 'h264',
     }).out();
-    // ONE BOUNDARY PER SAVE, token-chained (the cut-film ordering
-    // fix): the concat's 'after' transitively depends on BOTH saves.
-    const b1 = g.node('MeliteUnload', {
-        video: newSaved, unload_models: false,
-    }).out(0);
-    const b0 = g.node('MeliteUnload', {
-        video: priorSaved, unload_models: false, after: b1,
-    }).out(0);
-    const concat = g.node('MeliteConcatVideos', {
-        videos: `${runId}/x0,${runId}/x1`, after: b0,
-    });
-    const filmCreated = g.node('CreateVideo', {
-        images: concat.out(0), audio: concat.out(1), fps: concat.out(2), bit_depth: 8,
-    });
-    g.node('SaveVideo', {
-        video: filmCreated.out(), filename_prefix: `${runId}/extend_film`,
-        format: 'mp4', codec: 'h264',
-    });
+    const after = chainSaveBoundaries(g, [newSaved, priorSaved]);
+    concatSavedFilms(g, [`${runId}/x0`, `${runId}/x1`], after, `${runId}/extend_film`);
 }
 //# sourceMappingURL=extend.js.map

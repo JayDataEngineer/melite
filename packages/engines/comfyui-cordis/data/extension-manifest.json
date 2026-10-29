@@ -161,9 +161,9 @@
   {
     "name": "melite-utility-nodes",
     "url": "https://github.com/JayDataEngineer/melite-utility-nodes",
-    "ref": "1eb2d8c9d2b1163ece239eea3fccea73b5db648a",
+    "ref": "a81448b42465143fdb210eee66388bf020de8160",
     "required": true,
-    "desc": "MeliteUnload / MeliteConcatVideos — the film's window-save boundary and video join. The card already requires this pack; no manifest    installed it (extension census, 2026-10-13).",
+    "desc": "MeliteUnload / MeliteConcatVideos — the film's window-save boundary and video join; ConcatVideos' optional append seats an exact wired saved-file as the join's last member (the multi-window extend compose face, 2026-11-12). The card already requires this pack; no manifest installed it (extension census, 2026-10-13).",
     "pip": [],
     "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/video/h3-timeline/nodes.yaml"
   },

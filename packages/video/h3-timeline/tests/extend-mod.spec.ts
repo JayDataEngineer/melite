@@ -267,3 +267,94 @@ describe("the one-door-per-doc law (extend's three pairwise edges)", () => {
     );
   });
 });
+
+describe("the plan-input cure (the seat's own shots, never a source re-slice)", () => {
+  // THE BUG (the unification survey, design §3): H3OneClickSwapPlan
+  // SLICES its source by clip_seconds and a non-empty plan_json_input
+  // OVERRIDES the literal — wiring it on extend would re-render the
+  // PRIOR's own timeline, never a continuation. The literal rules;
+  // the plan node contributes geometry only. Toggle-out red-proof:
+  // re-wire plan_json_input on the extend seat and both arms red.
+  it("single window: ChainPlanModern carries NO plan_json_input — the one literal continuation shot rules", () => {
+    const walked = def.schema({ extend: [EXTEND_ENTRY()] }) as Record<string, unknown>;
+    const g = new GraphBuilder();
+    def.compose(walked, model, g, "run_cure_single");
+    const out = graphOf(g);
+    const chainPlan = ofClass(out, 'MiniMaxH3ChainPlanModern')[0]!;
+    assert.ok(chainPlan, "the chain plan serves");
+    assert.equal(chainPlan[1].inputs.plan_json_input, undefined,
+      "plan_json_input stays UNWIRED — the plan node's source slicing is the swap's semantics, never a continuation's");
+    const plan = JSON.parse(chainPlan[1].inputs.plan_json as string) as { shots: Array<{ id: string; prompt: string }> };
+    assert.equal(plan.shots.length, 1, "one literal shot");
+    assert.equal(plan.shots[0]!.id, 'extend-1', "the shot is the extension's own");
+    assert.equal(plan.shots[0]!.prompt, EXTEND_ENTRY().extend_prompt, "the shot carries the continuation prompt verbatim");
+  });
+
+  it("multi window: the literal carries one shot per composed window", () => {
+    const walked = def.schema({
+      extend: [{ ...EXTEND_ENTRY(), extend_seconds: 379 / 24 }],
+    }) as Record<string, unknown>;
+    const g = new GraphBuilder();
+    def.compose(walked, model, g, "run_cure_multi");
+    const out = graphOf(g);
+    const chainPlan = ofClass(out, 'MiniMaxH3ChainPlanModern')[0]!;
+    assert.equal(chainPlan[1].inputs.plan_json_input, undefined,
+      "multi-window keeps the literal ruling too — N shots, never a source slice");
+    const plan = JSON.parse(chainPlan[1].inputs.plan_json as string) as { shots: Array<{ id: string }> };
+    assert.deepEqual(plan.shots.map((s) => s.id), ['extend-1', 'extend-2'],
+      "379f composes exactly 2 windows: two literal continuation shots");
+  });
+});
+
+describe("multi-window extend (the latent-carry assembly)", () => {
+  it("composes 379f exactly as 2 windows of 209f under the 39f carry, assembling in-chain then appending to the prior by file", () => {
+    const walked = def.schema({
+      extend: [{ ...EXTEND_ENTRY(), extend_seconds: 379 / 24 }],
+    }) as Record<string, unknown>;
+    const g = new GraphBuilder();
+    def.compose(walked, model, g, "runmw");
+    const out = graphOf(g);
+    // THE LATENT-CARRY LAW: N ≥ 2 windows assemble IN-CHAIN —
+    // ChainAssemble owns the seams under the policy's overlap; the
+    // assembled film then joins the raw prior BY FILE (the initial
+    // boundary is the exception: a raw prior has no latents).
+    const assemble = ofClass(out, 'MiniMaxH3ChainAssemble');
+    assert.equal(assemble.length, 1, "one in-chain assembly composes the N windows");
+    assert.equal(assemble[0][1].inputs.filename, 'runmw/extend_chain', "the assembled extension lands under the run id");
+    assert.equal(assemble[0][1].inputs.audio_source, 'generated', "fresh content assembles the checkpointed H3 sound");
+    const loopEnd = ofClass(out, 'MiniMaxH3ChainLoopEnd')[0]!;
+    assert.deepEqual(assemble[0][1].inputs.manifest, [loopEnd[0], 0],
+      "the assembly consumes the LoopEnd manifest — it fires only at true completion");
+    // THE COMPOSE JOIN: prior re-muxed at x0, the assembled film
+    // rides the concat's append seat (the exact wired path — the
+    // DAG itself proves the assembly completed before the join).
+    const saves = ofClass(out, 'SaveVideo');
+    assert.equal(saves.length, 2, "two saves only: the prior re-mux and the joined film (the windows ride checkpoints, not SaveVideo)");
+    const prefixes = saves.map(([, n]) => n.inputs.filename_prefix).sort();
+    assert.deepEqual(prefixes, ['runmw/extend_film', 'runmw/x0'], "the prior re-muxes at x0; the film is the deliverable");
+    const concat = ofClass(out, 'MeliteConcatVideos')[0]!;
+    assert.equal(concat[1].inputs.videos, 'runmw/x0', "the prior is the sole prefix member");
+    assert.deepEqual(concat[1].inputs.append, [assemble[0][0], 0],
+      "the assembled extension appends LAST — ChainAssemble's video_path, wired");
+    const boundaries = ofClass(out, 'MeliteUnload');
+    assert.equal(boundaries.length, 1, "one boundary for the one prefix member (the append is DAG-proven, never boundary-proven)");
+    const created = ofClass(out, 'CreateVideo');
+    assert.equal(created.length, 2, "two container muxes: the prior re-mux (fps 24) and the join's own deliverable mux");
+    assert.ok(created.some(([, n]) => n.inputs.fps === 24),
+      "the prior re-mux pins the film clock (the extension arrives as a finished file)");
+    const sched = ofClass(out, 'BasicScheduler')[0]!;
+    assert.equal(sched[1].inputs.denoise, 1, "every window generates fresh — full denoise, nothing held");
+  });
+
+  it("refuses uncomposable stated frames, naming both neighbors (never a silent snap)", () => {
+    const walked = def.schema({
+      extend: [{ ...EXTEND_ENTRY(), extend_seconds: 20.0 }],
+    }) as Record<string, unknown>;
+    const g = new GraphBuilder();
+    assert.throws(
+      () => def.compose(walked, model, g, "run_mw_refuse"),
+      /stated 480f composes nowhere exactly.*nearest: 5 windows of 124f deliver 464f.*nearest: 2 windows of 260f deliver 481f/s,
+      "20.0s = 480f lands nowhere; the door names the max-under (5×124−156=464f) and min-over (2×260−39=481f) compositions for re-statement",
+    );
+  });
+});
