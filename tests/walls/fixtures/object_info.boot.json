@@ -3959,6 +3959,199 @@
   "python_module": "custom_nodes.Comfyui-PlagueKind-Nodes",
   "search_aliases": null
  },
+ "H3OneClickSwapPlan": {
+  "category": "conditioning/minimax/context_loop",
+  "description": "Splits a source video into overlapping H3 clips and writes the character-swap prompt for each clip.",
+  "display_name": "H3 One-Click Swap Plan",
+  "has_intermediate_output": false,
+  "input": {
+   "optional": {
+    "no_lip_sync": [
+     "BOOLEAN",
+     {
+      "default": false,
+      "tooltip": "Turn on when the people in the video do not sing or talk along to the soundtrack, so H3 does not make them lip-sync it. Also turn on OPTIONAL - No lip-sync, which mutes the audio H3 hears and shows it the faces."
+     }
+    ],
+    "picture_1_text": [
+     "STRING",
+     {
+      "forceInput": true
+     }
+    ],
+    "picture_2": [
+     "IMAGE"
+    ],
+    "picture_2_text": [
+     "STRING",
+     {
+      "forceInput": true
+     }
+    ],
+    "picture_3": [
+     "IMAGE"
+    ],
+    "picture_3_text": [
+     "STRING",
+     {
+      "forceInput": true
+     }
+    ],
+    "picture_4": [
+     "IMAGE"
+    ],
+    "picture_4_text": [
+     "STRING",
+     {
+      "forceInput": true
+     }
+    ],
+    "short_edge": [
+     "INT",
+     {
+      "default": 0,
+      "max": 4096,
+      "min": 0,
+      "step": 32,
+      "tooltip": "Custom short edge in pixels, rounded to 32; replaces resolution when above 0."
+     }
+    ],
+    "video_people": [
+     "STRING",
+     {
+      "forceInput": true,
+      "tooltip": "Numbered list of the people in the video, most screen time first."
+     }
+    ]
+   },
+   "required": {
+    "clip_seconds": [
+     "FLOAT",
+     {
+      "default": 6,
+      "max": 15,
+      "min": 2.5,
+      "step": 0.1,
+      "tooltip": "Longest clip per H3 generation, rounded down to the 17k+5 grid."
+     }
+    ],
+    "overlap_frames": [
+     [
+      22,
+      39,
+      56
+     ],
+     {
+      "default": 39,
+      "tooltip": "Frames each clip repeats from the previous clip."
+     }
+    ],
+    "picture_1": [
+     "IMAGE"
+    ],
+    "resolution": [
+     [
+      "480p",
+      "576p",
+      "736p",
+      "768p",
+      "1080p"
+     ],
+     {
+      "default": "736p",
+      "tooltip": "Short edge of the generated video; the shape follows the source video. 480p is a quick preview; 1080p is about 2.5x slower than 736p and needs much more memory."
+     }
+    ],
+    "roles": [
+     "STRING",
+     {
+      "default": "",
+      "multiline": true,
+      "tooltip": "Optional. One line per picture naming who it replaces, e.g. 'the drummer - man in a red cap'. Text after ' - ' only helps the shot describer find the person; it never reaches H3. Blank uses the auto-detected people."
+     }
+    ],
+    "seed": [
+     "INT",
+     {
+      "default": 0,
+      "max": 4294967295,
+      "min": 0
+     }
+    ],
+    "source_frames": [
+     "IMAGE",
+     {
+      "tooltip": "Source video frames at 24 fps."
+     }
+    ],
+    "steps": [
+     "INT",
+     {
+      "default": 6,
+      "max": 100,
+      "min": 1
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "optional": [
+    "picture_2",
+    "picture_3",
+    "picture_4",
+    "picture_1_text",
+    "picture_2_text",
+    "picture_3_text",
+    "picture_4_text",
+    "video_people",
+    "no_lip_sync",
+    "short_edge"
+   ],
+   "required": [
+    "source_frames",
+    "picture_1",
+    "clip_seconds",
+    "overlap_frames",
+    "resolution",
+    "steps",
+    "seed",
+    "roles"
+   ]
+  },
+  "is_input_list": false,
+  "name": "H3OneClickSwapPlan",
+  "output": [
+   "STRING",
+   "INT",
+   "INT",
+   "STRING",
+   "STRING"
+  ],
+  "output_is_list": [
+   false,
+   false,
+   false,
+   false,
+   false
+  ],
+  "output_name": [
+   "plan_json",
+   "width",
+   "height",
+   "run_name",
+   "shot_prompt"
+  ],
+  "output_node": false,
+  "output_tooltips": [
+   "",
+   "",
+   "",
+   "",
+   "Instructions for a vision model that writes each clip's shot list; its answer replaces {SHOTS} in the clip prompt."
+  ],
+  "python_module": "custom_nodes.comfyui-h3-oneclick-swap",
+  "search_aliases": []
+ },
  "H3SLAAttention": {
   "api_node": false,
   "category": "PlagueKind/model_patches/minimax",

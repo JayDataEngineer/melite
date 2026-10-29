@@ -20,11 +20,8 @@
   "BboxDetectorSEGS": "the mask card's detector lanes (impact.ts provider configs) \u2014 composed against the primed boot doc by the estate walls' hermetic composes",
   "ColorToMask": "the h3 reshoot chain's disocclusion-mask fence (the magenta-hole mask the depth half fences for the warp half) \u2014 lane-gated behind an ARMED reshoot bag the fill loop's default probe never states; composed by the reshoot wall ARM 4 (F13c 2026-11-12: the armed compose addresses it, the plain probe never does)",
   "ComfyMathExpression": "the corpus's clock-gold inverse member (d1-compose-equivalence-corpus) \u2014 the unstated-clock film wires it against the boot declarations",
-  "CrossViewWarp": "the h3 reshoot chain's twin reprojection passes (depth-stack splat + RGB warp) \u2014 lane-gated behind an ARMED reshoot bag the fill loop never states; composed by the reshoot wall ARM 4 (F13c 2026-11-12)",
-  "LoadVideoDepthAnythingModel": "the h3 reshoot chain's depth-model load (the VDA-Small half) \u2014 lane-gated behind an ARMED reshoot bag; composed by the reshoot wall ARM 4 (F13c 2026-11-12)",
-  "VideoDepthAnythingOutput": "the h3 reshoot chain's depth output tail \u2014 the same ARMED-bag lane as the model load (F13c 2026-11-12)",
-  "VideoDepthAnythingProcess": "the h3 reshoot chain's depth process pass \u2014 the same ARMED-bag lane as the model load (F13c 2026-11-12)",
   "ControlNetLoader": "the z-image fun-controlnet lane's loader node \u2014 the h3/z-image lanes the film walls compose",
+  "CrossViewWarp": "the h3 reshoot chain's twin reprojection passes (depth-stack splat + RGB warp) \u2014 lane-gated behind an ARMED reshoot bag the fill loop never states; composed by the reshoot wall ARM 4 (F13c 2026-11-12)",
   "DetailerForEach": "the qwen-img-edit-2511 card's detailer stack (its golden) \u2014 composed against the primed boot doc by the golden driver's wiring gate",
   "FeatherMask": "the qwen-img-edit-2511 card's feather lane (its golden) \u2014 composed against the primed boot doc by the golden driver's wiring gate",
   "FitProp": "the fit action's prop lane (guard-gated build the fill loop does not unlock) \u2014 served through the primed registry's hermetic composes",
@@ -33,6 +30,7 @@
   "FrameInterpolationModelLoader": "the h3 second-pass FILM loader \u2014 the same second_pass_enabled + interpolate_enabled lane as FrameInterpolate (burn b 2026-10-26); composed by the same mirror wall ARM 3",
   "GetVideoComponents": "the h3 film's video-input lane \u2014 the film walls' composes against the boot declarations",
   "GrowMask": "the qwen-img-edit-21/2511 cards' inpaint mask lanes (their goldens) \u2014 composed against the primed boot doc by the golden driver's wiring gate",
+  "H3OneClickSwapPlan": "the masked-edit spine's plan head (swap/repair/extend all ride it through chainEdit.ts) \u2014 the F9 band judge reads this row's clip_seconds bounds as the engine's own word, so the renderer's PLAN_CLIP_BAND pin can never silently drift from the node's widget band (2026-11-12)",
   "ImageCrop": "the input card's crop lane (packages/models/input golden) \u2014 composed against the primed boot doc by the golden driver's wiring gate",
   "ImageScale": "the film graph's helper rescale \u2014 composed by the walls' hermetic film lanes",
   "ImageSharpenKJ": "the h3 second-pass sharpen limb \u2014 lane-gated behind second_pass_enabled + sharpen_enabled (burn b 2026-10-26: mounts only on an on doc); composed by tests/walls/ts/suites/h3-postchain-graph-mirror.spec.ts ARM 4 and value-roundtrip ARMs 10/18",
@@ -43,6 +41,7 @@
   "LoadImageMask": "the mask lane's loader \u2014 the mask/detailer stack's hermetic composes",
   "LoadMoGeModel": "the pixal3d card's geometry loader (packages/models/pixal3d golden) \u2014 composed against the primed boot doc by the golden driver's wiring gate",
   "LoadVideo": "the video lane's loader \u2014 the film walls' composes",
+  "LoadVideoDepthAnythingModel": "the h3 reshoot chain's depth-model load (the VDA-Small half) \u2014 lane-gated behind an ARMED reshoot bag; composed by the reshoot wall ARM 4 (F13c 2026-11-12)",
   "LoraLoader": "the h3 mods/loras lane (packages/models/h3/mods/loras.ts) and the estate lanes \u2014 loader nodes the film graph wires",
   "MaskToSEGS": "the qwen-img-edit-21 crop_stitch lane's region detailer tail (actions.ts compose, branch-gated beyond the card probe) \u2014 the family action goldens",
   "MeliteAudioSlice": "the D-M-E stamp lane's slice node (actions.ts stamp lanes) \u2014 the corpus's stamp members",
@@ -86,10 +85,12 @@
   "UltralyticsDetectorProvider": "the detector provider node (impact.ts:14) \u2014 the mask lanes' hermetic composes",
   "UnifiedResizeImageMask": "the mask resize lane \u2014 the mask stack's hermetic composes",
   "UpscaleModelLoader": "the upscale lane's loader \u2014 the film/upscale walls' composes",
+  "VAEDecodeAudioTiled": "the music3 tiled-decode lane (audit 014 C3) \u2014 lane-gated behind a stated tiled_decode=true or the low-VRAM/long-track derivation the fill loop's default probe never unlocks; composed by the music3 decode-tier spec and the music value-roundtrip tiled arms",
   "VHS_LoadVideo": "the VHS video loader (comfyui-upload lane helpers) \u2014 the video walls' composes",
   "VHS_LoadVideoPath": "the VHS video-path loader \u2014 the video walls' composes",
   "Video Slice": "the h3 video-slice stamp lane (actions.ts/schema.ts) \u2014 the corpus's stamp members compose it",
-  "ZImageFunControlnet": "the z-image fired-controlnets arm's stack node (actions.ts compose, fired only when a controlnet entry rides) \u2014 the family action goldens",
-  "VAEDecodeAudioTiled": "the music3 tiled-decode lane (audit 014 C3) \u2014 lane-gated behind a stated tiled_decode=true or the low-VRAM/long-track derivation the fill loop's default probe never unlocks; composed by the music3 decode-tier spec and the music value-roundtrip tiled arms"
+  "VideoDepthAnythingOutput": "the h3 reshoot chain's depth output tail \u2014 the same ARMED-bag lane as the model load (F13c 2026-11-12)",
+  "VideoDepthAnythingProcess": "the h3 reshoot chain's depth process pass \u2014 the same ARMED-bag lane as the model load (F13c 2026-11-12)",
+  "ZImageFunControlnet": "the z-image fired-controlnets arm's stack node (actions.ts compose, fired only when a controlnet entry rides) \u2014 the family action goldens"
  }
 }

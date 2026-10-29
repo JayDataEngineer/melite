@@ -19,6 +19,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { isGridLength, GRID_MAX_FRAMES } from "../src/timelineContract.ts";
 import { solveWindowComposition } from "../src/extend.ts";
+import { PLAN_CLIP_BAND } from "../src/chainEdit.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
 
@@ -117,4 +118,23 @@ describe("the served grid literals (every surface vs the code's own law)", () =>
       "the served 480f refusal names exactly 464f and 481f",
     )
   })
+
+  it("THE BAND PIN RIDES THE ENGINE'S WORD: PLAN_CLIP_BAND equals the boot census's H3OneClickSwapPlan clip_seconds bounds (F9 depth, 2026-11-12)", () => {
+    // The clamp pin was judged by nothing but itself — extend-mod's
+    // band arms hardcode the same 2.5/15.0 hand, so an engine-side
+    // widget move (min 3.0) would 400 every edge rung again while
+    // every wall stayed green. The boot fixture's plan row IS the
+    // engine's own word (derived from the live census); the pin must
+    // match it exactly, or this arm reds and the pin follows.
+    const boot = JSON.parse(readFileSync(
+      join(ROOT, "tests", "walls", "fixtures", "object_info.boot.json"), "utf8",
+    )) as { H3OneClickSwapPlan?: { input?: { required?: Record<string, unknown> } } };
+    const row = boot.H3OneClickSwapPlan?.input?.required?.clip_seconds as
+      [string, { min?: number; max?: number }] | undefined;
+    assert.ok(row, "the boot census carries H3OneClickSwapPlan (the band's truth home — regen the fixture if pruned)");
+    assert.equal(row[1]?.min, PLAN_CLIP_BAND.min,
+      `the clamp's floor ${PLAN_CLIP_BAND.min} is the engine's own clip_seconds min ${row[1]?.min} — an engine band move must red here`);
+    assert.equal(row[1]?.max, PLAN_CLIP_BAND.max,
+      `the clamp's ceiling ${PLAN_CLIP_BAND.max} is the engine's own clip_seconds max ${row[1]?.max}`);
+  });
 })

@@ -136,6 +136,23 @@ export interface ChainRender {
     /** ChainAssemble's video_path when the seat assembles; else null. */
     readonly assemblePath: OutputHandle | null;
 }
+/** The plan node's own widget band for clip_seconds (live
+ * object_info: FLOAT min 2.5 max 15.0). The estate's grid rungs run
+ * 22f–362f = 0.917s–15.083s, so the edge rungs (22/39/56f under,
+ * 362f over) used to build graphs the engine REFUSED at submit
+ * (validate_prompt's value_smaller_than_min — the works audit's F1:
+ * the card's own 2.33s default extend died there). The plan feed
+ * clamps into the band; the TRUE window length rides the chain's
+ * own seats (default_duration_seconds bounds 0.1–149.7,
+ * preview_frames), which never reject a rung. */
+/** @dev Judged against the boot census (served-grid-truth.spec.ts's
+ *  band arm): the fixture's H3OneClickSwapPlan row is the engine's
+ *  own word, and this pin must match it or the wall reds — an
+ *  engine-side band move can never silently outdate the clamp. */
+export declare const PLAN_CLIP_BAND: {
+    readonly min: 2.5;
+    readonly max: 15;
+};
 /** Emit the shared masked-edit chain for one seat. The node
  * parameters are the three seats' historical spellings, verbatim;
  * the seat's deltas arrive through the seat interface. The emission

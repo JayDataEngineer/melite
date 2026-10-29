@@ -1,49 +1,32 @@
 {
- "derived_at": "2026-10-29T18:11:52.676Z",
+ "derived_at": "2026-10-29T18:33:00.308Z",
  "tool": "scripts/regen-node-vocab.mjs --boot",
  "source": {
   "path": "data/tmp/object_info_prod.json",
   "sha256": "4c6820aa845146529f9d9b3c685ddff212400360026112104dda7b78fd10a7a9",
-  "mtime_ms": 1793297512441.6287,
+  "mtime_ms": 1793298780058.156,
   "class_count": 1815,
   "origin": "live"
  },
  "bootstrap_seed": {
   "path": "tests/walls/fixtures/object_info.boot.bootstrap.json",
-  "sha256": "e20954fe7596a955ecaf458c24d3073d100b9299ec91a91bf06339fbc0178acd",
-  "rows": 74
+  "sha256": "36b6994e1465103ec07a9930b7a72d855b9a7b831a0897b0b73e98fadb1bea35",
+  "rows": 75
  },
  "derivation": {
   "facts_path": "packages/engines/comfyui-cordis/data/model-facts.json",
   "addressed_class_count": 95,
-  "bootstrap_class_count": 74,
-  "fixture_class_count": 169,
+  "bootstrap_class_count": 75,
+  "fixture_class_count": 170,
   "rows_probed": 31,
   "refused_rows": 0
  },
  "delta": {
   "added": [
-   "ColorToMask",
-   "CrossViewWarp",
-   "LoadVideoDepthAnythingModel",
-   "VideoDepthAnythingOutput",
-   "VideoDepthAnythingProcess"
+   "H3OneClickSwapPlan"
   ],
-  "pruned": [
-   "LanPaint_ImageDecode",
-   "LanPaint_ImageEncode",
-   "LanPaint_KSamplerAdvanced"
-  ],
-  "updated": [
-   "LoadAudio",
-   "LoadImage",
-   "LoadImageMask",
-   "LoadVideo",
-   "MeliteAudioSlice",
-   "MeliteConcatVideos",
-   "UNETLoader",
-   "VHS_LoadVideo"
-  ],
-  "reordered_keys": 107
+  "pruned": [],
+  "updated": [],
+  "reordered_keys": 0
  }
 }

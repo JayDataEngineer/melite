@@ -97,7 +97,11 @@ export const h3MaskedEditPlane = (g, p, facts, clipSeconds) => {
  * clamps into the band; the TRUE window length rides the chain's
  * own seats (default_duration_seconds bounds 0.1–149.7,
  * preview_frames), which never reject a rung. */
-const PLAN_CLIP_BAND = { min: 2.5, max: 15.0 };
+/** @dev Judged against the boot census (served-grid-truth.spec.ts's
+ *  band arm): the fixture's H3OneClickSwapPlan row is the engine's
+ *  own word, and this pin must match it or the wall reds — an
+ *  engine-side band move can never silently outdate the clamp. */
+export const PLAN_CLIP_BAND = { min: 2.5, max: 15.0 };
 const planClipFeed = (seconds) => Math.min(PLAN_CLIP_BAND.max, Math.max(PLAN_CLIP_BAND.min, seconds));
 /** Emit the shared masked-edit chain for one seat. The node
  * parameters are the three seats' historical spellings, verbatim;
