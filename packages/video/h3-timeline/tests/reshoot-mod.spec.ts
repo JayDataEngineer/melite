@@ -118,6 +118,35 @@ describe("the reshoot kind (the fourth mod bag)", () => {
     }
   });
 
+  it("THE FLAT SURFACE REFUSES LOUD (F13b, 2026-11-12): a doc-following press with the retired reshoot_enabled/reshoot_clip knobs never composes an ordinary film — the admission plane names the keys", () => {
+    // The burn: the skill doc taught `reshoot_enabled`/`reshoot_clip`
+    // while the code read the `reshoot` bag, and the retired flat
+    // knobs composed an ordinary film with NO refusal — the doc's
+    // own "never silently disarms" law broken by a silent drop. The
+    // knobs retired with §8; the admission gate is what refuses now,
+    // and this arm pins that it refuses (a re-declared knob would
+    // green the compose and red this arm — the toggle-proof).
+    assert.throws(
+      () => def.compose(def.schema({
+        calls: [{ text: 'a slow push in', start_frame: 0, end_frame: 56 }],
+        reshoot_enabled: true,
+        reshoot_clip: 'clips/take3.mp4',
+      }) as Record<string, unknown>, model, new GraphBuilder(), 'run_rsmod_flat'),
+      /undeclared param\(s\): reshoot_clip, reshoot_enabled.*typo'd key never composes/,
+      "the retired flat knobs refuse at admission, naming every key — never a silent disarmed film",
+    );
+    // the pointed sibling: a lone flat camera dial refuses too (the
+    // whole retired group, not just the master switch)
+    assert.throws(
+      () => def.compose(def.schema({
+        calls: [{ text: 'a slow push in', start_frame: 0, end_frame: 56 }],
+        reshoot_orbit: 24,
+      }) as Record<string, unknown>, model, new GraphBuilder(), 'run_rsmod_flat_dial'),
+      /undeclared param\(s\): reshoot_orbit/,
+      "a lone retired camera dial refuses at admission (no partial flat surface)",
+    );
+  });
+
   it("a doc with no reshoot bag leaves the film path byte-identical (zero chain classes)", () => {
     const walked = def.schema({
       calls: [{ text: 'a slow push in', start_frame: 0, end_frame: 56 }], length: 56,

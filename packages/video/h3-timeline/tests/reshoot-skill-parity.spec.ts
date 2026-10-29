@@ -15,7 +15,7 @@
 // card refuses (four bags → six unordered pairs), derived from the card's
 // own armed kinds rather than a hand list.
 import "../../../../tests/helpers/boot-models.ts";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { beforeAll, describe, expect, it } from "vitest";
@@ -118,5 +118,24 @@ describe("the re-shoot skill's dial table agrees with the code's own homes", () 
       }
       assert.match(md, /one door per doc/i, `${skill}/SKILL.md states the law`);
     }
+  });
+
+  it("THE STAMP LAW (F2, 2026-11-12): the re-shoot skill carries its verified-against line, and the receipt it names EXISTS on disk", () => {
+    // F2's burn (h3-timeline friction report): the skill taught a dead
+    // flat surface for a whole feature cycle because nothing tied the
+    // prose to a dated verification. The stamp is the cheap check: a
+    // VERIFIED line naming its evidence, and the receipt it cites is a
+    // real file — a moved/deleted receipt reds rather than rots.
+    const md = readSkill("reshoot");
+    const stamp = /VERIFIED (\d{4}-\d{2}-\d{2}) against ([\s\S]*?)(?=\n\n)/.exec(md);
+    assert.ok(stamp, "reshoot/SKILL.md carries a dated VERIFIED line (the doc-stamp law)");
+    assert.match(stamp![1]!, /^2026-/, "the stamp is dated");
+    const receipt = /receipts\/[a-z0-9-]+\.md/.exec(stamp![2]!);
+    assert.ok(receipt, "the stamp names a receipt under dev_docs/contracts/receipts/");
+    const root = join(HERE, "..", "..", "..", "..");
+    const receiptPath = join(root, "dev_docs", "contracts", receipt![0]!);
+    assert.ok(existsSync(receiptPath), `the named receipt exists: ${receipt![0]}`);
+    assert.match(stamp![2]!, /NOT yet verified live/i,
+      "the stamp names what is STILL unproven (the honest half — never a blanket 'verified live' over an unrendered chain)");
   });
 });

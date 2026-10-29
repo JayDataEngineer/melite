@@ -11,7 +11,7 @@ import { Button, IconChevronLeftOutlineRegular } from "@deepseek-ai/dsh-client-u
 import { Tip } from "@melite/card-base/client"
 import type { MouseEvent } from "react"
 import s from "./studio.module.css"
-import { studioCopy } from "./studioCopy"
+import { studioCopy } from "./studioCopy.ts"
 
 /** The one back-to-global door: ghost chevron + the global verb,
  * tip explains the click-away shortcut (the bar's empty spot). */

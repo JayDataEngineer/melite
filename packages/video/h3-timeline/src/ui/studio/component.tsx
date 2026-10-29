@@ -73,7 +73,7 @@ import { manageRemote, type ManageNamespace } from '@melite/card-base/client'
 import {
   Button,
 } from '@deepseek-ai/dsh-client-ui-primitives'
-import { RailBackButton } from './RailBackButton'
+import { RailBackButton } from './RailBackButton.tsx'
 import { cn } from '@melite/card-base/client'
 import { fieldsOf, useFormSpec, type SpecField } from "@melite/card-base/client"
 import { useEffect, useMemo, useState } from "react"

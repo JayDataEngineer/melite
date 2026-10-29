@@ -28,15 +28,15 @@
  * pattern).
  */
 import { createElement as h } from 'react';
-import { type BboxFaceComponent, type PaintFaceComponent } from './mods.tsx';
-import { type FormSpecDoc, type FormVariantRow, type SpecField, type SpecValues } from './spec.ts';
-import { type FieldAtomClaim, type SquareHost, type SquareWire } from './square-provider.tsx';
-export { useFormSpec } from './use-form-spec.ts';
-export { useSquareProvider, type SquareHost, type SquareWire, type FieldAtomClaim, type SourceRowProps } from './square-provider.tsx';
-export { SourceRow, TriStateAtom, SpecSliderAtom, SpecAtom } from './atoms.tsx';
-export { SeedDice, SpecFieldRow, OverlayKnob } from './rows.tsx';
-export { SpecPanel, panelSectionsOf, type SpecPanelRow, type SpecPanelSection } from './spec-panel.tsx';
-export { PackPrompt, ModelAxes, RecipePills } from './axes.tsx';
+import { type BboxFaceComponent, type PaintFaceComponent } from './mods.js';
+import { type FormSpecDoc, type FormVariantRow, type SpecField, type SpecValues } from './spec.js';
+import { type FieldAtomClaim, type SquareHost, type SquareWire } from './square-provider.js';
+export { useFormSpec } from './use-form-spec.js';
+export { useSquareProvider, type SquareHost, type SquareWire, type FieldAtomClaim, type SourceRowProps } from './square-provider.js';
+export { SourceRow, TriStateAtom, SpecSliderAtom, SpecAtom } from './atoms.js';
+export { SeedDice, SpecFieldRow, OverlayKnob } from './rows.js';
+export { SpecPanel, panelSectionsOf, type SpecPanelRow, type SpecPanelSection } from './spec-panel.js';
+export { PackPrompt, ModelAxes, RecipePills } from './axes.js';
 /** THE CARD FORM (the constructor's surface half) — the emission's
  *  fields walked off the schema envelope, grouped, visible-when
  *  honored; the RESOLVED value derives per render (resolveValue —

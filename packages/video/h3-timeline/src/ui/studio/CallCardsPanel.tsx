@@ -14,7 +14,7 @@
  */
 import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
 import { EmptyState } from '@melite/card-base/client'
-import { RailBackButton } from './RailBackButton'
+import { RailBackButton } from './RailBackButton.tsx'
 import { SectionLabel, Tip, type SpecField } from '@melite/card-base/client'
 import { readAsDataURL, Upload, useSquareProvider } from '@melite/card-base/client'
 import s from "./studio.module.css"

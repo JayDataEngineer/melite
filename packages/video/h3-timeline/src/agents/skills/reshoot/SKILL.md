@@ -12,6 +12,13 @@ genre: video
 > → Fun ControlNet depth conditioning per window, disocclusions
 > inpainted. Prose never overrides the loaded bundle: the fields
 > below are quoted off the card's served reshoot kind.
+>
+> VERIFIED 2026-11-12 against the served kind + the compose door
+> (`packages/video/h3-timeline/tests/reshoot-mod.spec.ts`), the
+> pack's live census (the VDA classes serve on :8188), and receipt
+> `dev_docs/contracts/receipts/2026-11-12-cards-h3-reshoot-chain.md`.
+> NOT yet verified live: a rendered re-shoot on the GPU lane — treat
+> the chain's visual output as unproven until that run lands.
 
 ## What it is (and is NOT)
 
