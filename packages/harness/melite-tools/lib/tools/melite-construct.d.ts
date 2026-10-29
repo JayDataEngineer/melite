@@ -4,7 +4,7 @@
  * enum, the mutation set, and the header list above all derive from
  * this order; the estate wire's BenchVerb is a DIFFERENT law (the
  * fiber's own mutation arms) and stays its own home. */
-export declare const CONSTRUCT_VERBS: readonly ["read", "load", "patch", "add_stage", "remove_stage", "clear", "floor", "rewire", "undo", "validate"];
+export declare const CONSTRUCT_VERBS: readonly ["read", "load", "patch", "add_stage", "remove_stage", "archive", "unarchive", "clear", "floor", "rewire", "undo", "validate"];
 export type ConstructVerb = typeof CONSTRUCT_VERBS[number];
 import type { Estate } from '../estate.js';
 import type { ToolDefinition } from '../types.js';

@@ -6,6 +6,7 @@ import {
   patchBench,
   addStageBench,
   removeStageBench,
+  archiveBench,
   rewireBench,
   reorderBench,
   groupBench,
@@ -623,4 +624,80 @@ describe("MUTATION CONTAINMENT — a mutation touches only what it names", () =>
     assert.equal(JSON.stringify(targetRest), JSON.stringify(beforeRest),
       "the target's non-input members are untouched");
   });
+});
+
+// ── archive: F11's spent-stage mark (2026-11-12) ─────────────────
+// The friction burn: spent stages re-ran ahead of newer stages,
+// blocking the queue until manually removed. The mark keeps the row
+// (result + history — the provenance remove_stage destroys) and
+// every run face skips it. A LIVE stage wiring the row refuses the
+// archive (the wire would dangle at run time).
+
+test("archive marks the row and keeps its provenance; every run face reads the mark", async () => {
+  const drafts = await boot();
+  await seed(drafts, "arc1", {
+    stages: [
+      { id: "a", card: "hero", params: { steps: 4 },
+        runStatus: "done", result: { run_id: "r-1", url: "/runs/r-1/out.png" } },
+      { id: "b", card: "side", params: { steps: 2 } },
+    ],
+  });
+  const ans = await archiveBench(drafts, "arc1", { stage: "a", expect_rev: 0 });
+  assert.equal(ans.stage, "a");
+  const stages = getBench(drafts, "arc1").stages as Array<Record<string, unknown>>;
+  assert.equal(stages.length, 2, "the row STAYS — archive never removes");
+  assert.equal(stages[0]!["archived"], true, "the mark rides the spent row");
+  assert.deepEqual(stages[0]!["result"], { run_id: "r-1", url: "/runs/r-1/out.png" },
+    "the provenance remove_stage destroys survives the mark");
+  assert.equal(stages[1]!["archived"], undefined, "the live row is untouched");
+  // the log entry carries the inverse
+  const log = getBench(drafts, "arc1").log as Array<Record<string, unknown>>;
+  assert.equal(log[log.length - 1]!["kind"], "archive");
+  // unarchive clears it
+  await archiveBench(drafts, "arc1", { stage: "a", off: true, expect_rev: 1 });
+  const after = getBench(drafts, "arc1").stages as Array<Record<string, unknown>>;
+  assert.equal(after[0]!["archived"], undefined, "off: true restores the run set");
+});
+
+test("archiving a stage a LIVE stage wires to REFUSES naming the wire (never a dangling run input)", async () => {
+  const drafts = await boot();
+  await seed(drafts, "arc2", {
+    stages: [
+      { id: "up", card: "hero", params: { steps: 4 } },
+      { id: "down", card: "side", params: { source: "$source" },
+        inputs: { source: { stage: "up", output: "default" } } },
+    ],
+  });
+  const refusal = await codeOf(archiveBench(drafts, "arc2", { stage: "up", expect_rev: 0 }));
+  assert.ok(refusal.startsWith("bench/wire-stage-not-found|"), refusal);
+  assert.match(refusal, /wired by live stage\(s\) down/);
+  // archiving BOTH in dependency order lands: the consumer first,
+  // then the upstream (no live row wires it anymore)
+  await archiveBench(drafts, "arc2", { stage: "down", expect_rev: 0 });
+  await archiveBench(drafts, "arc2", { stage: "up", expect_rev: 1 });
+  const stages = getBench(drafts, "arc2").stages as Array<Record<string, unknown>>;
+  assert.equal(stages[0]!["archived"], true);
+  assert.equal(stages[1]!["archived"], true);
+});
+
+test("archive refuses unknown keys, a missing stage, and a ghost id loud", async () => {
+  const drafts = await boot();
+  await seed(drafts, "arc3", { stages: [{ id: "a", card: "hero", params: {} }] });
+  assert.ok(
+    (await codeOf(archiveBench(drafts, "arc3", { stage: "a", bogus: 1, expect_rev: 0 } as Record<string, unknown>)))
+      .startsWith("bench/bad-body|"),
+  );
+  assert.ok(
+    (await codeOf(archiveBench(drafts, "arc3", { expect_rev: 0 })))
+      .startsWith("bench/bad-body|"),
+  );
+  assert.ok(
+    (await codeOf(archiveBench(drafts, "arc3", { stage: "ghost", expect_rev: 0 })))
+      .startsWith("bench/stage-not-found|"),
+  );
+  // CAS holds: a stale expect_rev refuses
+  assert.ok(
+    (await codeOf(archiveBench(drafts, "arc3", { stage: "a", expect_rev: 99 })))
+      .startsWith("bench/cas-conflict|"),
+  );
 });

@@ -35,6 +35,7 @@ import {
   type BenchChangeSeam,
   type LaneMigration,
   type FamilyReseat,
+  archiveBench,
   getBench,
   groupBench,
   patchBench,
@@ -1572,6 +1573,24 @@ export class BenchRemoteService extends TypertRemoteService {
     signal: AbortSignal,
   ): Promise<BenchStagesRow> {
     return await this.addStages(sessionKey, doc, signal);
+  }
+
+  /** Endpoint `bench/archive` — F11's housekeeping verb: mark a
+   *  spent stage archived (off: true restores it); the row stays
+   *  with its provenance, every run face skips it. */
+  @Remote("archive")
+  async remoteExportArchive(
+    sessionKey: string,
+    doc: BenchDoc,
+    signal: AbortSignal,
+  ): Promise<BenchStageRow> {
+    signal.throwIfAborted();
+    return withBenchWrite(benchDraftIdOf(sessionKey), async () => {
+      const drafts: Domain<DraftsDomainSpec> = await this.open(signal);
+      const row = await archiveBench(drafts, sessionKey, doc);
+      notifyBenchChange(sessionKey);
+      return row;
+    });
   }
 
   /** Endpoint `bench/remove-stage` — splice one stage out. */

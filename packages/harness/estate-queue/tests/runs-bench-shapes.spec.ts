@@ -369,6 +369,48 @@ describe("the benches the census does not walk", () => {
     );
   });
 
+  it("an ARCHIVED row composes nowhere on the bench run — the spent stage never re-runs (F11)", async () => {
+    // THE FRICTION BURN: spent stages re-ran ahead of newer stages,
+    // blocking the queue. The archived mark keeps the row on the
+    // bench (provenance) and the compose leaves it out: the run's
+    // composed stage list carries the live rows only.
+    const s = seat({}, {
+      stages: [
+        { id: "s_0", card: "image-gen", params: { prompt: "a cat" } },
+        {
+          id: "s_1",
+          card: "image-edit",
+          params: { prompt: "x" },
+          inputs: { image: { stage: "s_0", output: "default" } },
+        },
+        // the SPENT stage: marked archived, unwired (the bench door
+        // refuses archiving a live-wired upstream, so lawful archived
+        // rows are consumers or unwired)
+        { id: "s_2", card: "image-gen", params: { prompt: "y" }, archived: true },
+      ],
+    });
+    // the draft door: {draft_id} alone composes every live stage
+    const ans = (await s.svc.start(
+      { draft_id: "d1", test: false },
+      sig(),
+    )) as { run_id: string };
+    assert.ok(ans.run_id !== "", "the wired bench ran");
+    const rec = s.core.runs.get(ans.run_id) as RunRecord | undefined;
+    assert.ok(rec !== undefined, "the run registered");
+    const benchIds = new Set(
+      (rec.stages as Array<{ id?: string }>)
+        .map((st) => st.id)
+        .filter((id): id is string => typeof id === "string"),
+    );
+    assert.ok(benchIds.has("s_0"), "the live upstream composed");
+    assert.ok(benchIds.has("s_1"), "the live consumer composed");
+    assert.equal(
+      benchIds.has("s_2"),
+      false,
+      "the archived row composes nowhere — the spent stage never re-runs",
+    );
+  });
+
   it("an UNWIRED bench rides the card arm's snapshot: junk rows pass through, params that are not a bag coerce to themselves", async () => {
     // The card arm registers with the bench doc beside it, and that
     // registration maps every row on a COPY: a null row is not a row

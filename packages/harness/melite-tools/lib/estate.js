@@ -89,7 +89,7 @@ async function trySeats(ctx, method, path, body, signal) {
     if (method === 'POST') {
         // "clear" (2026-10-10, the operator's demanded clear-all) — the
         // nuclear arm: every stage out, one log entry, undoable whole.
-        const arm = /^\/v1\/bench\/([^/?]+)\/(patch|add_stage|add_stages|remove_stage|clear|rewire|undo)$/.exec(path);
+        const arm = /^\/v1\/bench\/([^/?]+)\/(patch|add_stage|add_stages|remove_stage|archive|clear|rewire|undo)$/.exec(path);
         if (arm !== null) {
             if (seats.benchRemote === undefined)
                 return undefined;
@@ -103,12 +103,13 @@ async function trySeats(ctx, method, path, body, signal) {
                 case 'add_stage': return seats.benchRemote.addStage(session, doc, signal);
                 case 'add_stages': return seats.benchRemote.addStages(session, doc, signal);
                 case 'remove_stage': return seats.benchRemote.removeStage(session, doc, signal);
+                case 'archive': return seats.benchRemote.archive(session, doc, signal);
                 case 'clear': return seats.benchRemote.clear(session, doc, signal);
                 case 'rewire': return seats.benchRemote.rewire(session, doc, signal);
                 case 'undo': return seats.benchRemote.undo(session, doc, signal);
                 default: {
                     // CLOSED UNION, LOUD END (cordis-architecture F6, 2026-10-20):
-                    // the regex group admits six arms and six arms only — a
+                    // the regex group admits seven arms and seven arms only — a
                     // seventh added to the pattern without its seat here fails
                     // LOUD at the first call, never by falling through the
                     // match block unanswered.
@@ -519,12 +520,13 @@ export function makeEstate(ctx) {
                 case 'add_stage': return bench.addStage(session, doc, signal);
                 case 'add_stages': return bench.addStages(session, doc, signal);
                 case 'remove_stage': return bench.removeStage(session, doc, signal);
+                case 'archive': return bench.archive(session, doc, signal);
                 case 'clear': return bench.clear(session, doc, signal);
                 case 'rewire': return bench.rewire(session, doc, signal);
                 case 'undo': return bench.undo(session, doc, signal);
                 default: {
                     // CLOSED UNION, LOUD END — same law as the router's arm.
-                    /* v8 ignore next 2 -- BenchVerb admits exactly the six cased arms; no honest input reaches the throw */
+                    /* v8 ignore next 2 -- BenchVerb admits exactly the seven cased arms; no honest input reaches the throw */
                     const exhaustive = verb;
                     throw new Error(`bench arm ${String(exhaustive)} matched its pattern but has no seat`);
                 }

@@ -851,6 +851,47 @@ describe('melite_flow tile contract — the chat hydrates from the render', () =
     assert.ok(!text.includes('→'), 'no arrow prints — there is no id to point at')
   })
 
+  test('F11: an ARCHIVED row is skipped on the pass — a spent stage never re-runs ahead of newer work', async () => {
+    // the archived mark keeps the row for provenance and the pass
+    // leaves it out: skipped 'archived' in the pass rows, zero
+    // starts for it, the live row ahead of it still runs.
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchGet') {
+          return { status: 200, body: { draft_id: 'd_arc', rev: 3, stages: [
+            { id: 's_0', card: 'tts', archived: true, runStatus: 'done', params: {} },
+            { id: 's_1', card: 'sfx', params: { sfx: 'boom' } },
+          ] } }
+        }
+        if (lane === 'runsStart') {
+          return { status: 202, body: { run_id: 'r_live', status: 'queued' } }
+        }
+        if (lane === 'runsStatus') {
+          return { status: 200, body: { status: 'completed', stages: [
+            { id: 's_1', url: 'sfx/boom.flac', gallery: [{ name: 'sfx/boom.flac' }] },
+          ] } }
+        }
+        if (lane === 'draftsStagePatch') {
+          return { status: 200, body: { delivered: true } }
+        }
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(6000))) as Record<string, unknown>
+    const pass = out.pass as Array<Record<string, unknown>>
+    assert.deepEqual(pass[0], { stage: 's_0', card: 'tts', skipped: 'archived' })
+    assert.ok(String(pass[1]!['stage']) === 's_1', 'the live row runs')
+    const starts = seen.calls.filter((c) => c.lane === 'runsStart')
+    assert.equal(starts.length, 1, 'exactly one start — the archived row never presses')
+    const text = (tool.output.render({ bench: true }, out as never) as Array<{ text?: string }>)
+      .map((p) => p?.text ?? '').join('\n')
+    assert.ok(
+      text.includes('s_0 tts [skipped archived — spent stage resting; unarchive to run it again]'),
+      'the pass names the archived skip in the operator voice',
+    )
+  })
+
   test('AN UNREADABLE ROW WORD RUNS, NEVER THROWS (2026-10-12 follow-through): unreachable is not done', async () => {
     // 'unreachable' riding a persisted runStatus is the ERA spelling
     // (the escalation writes the health channel since 2026-10-12) —

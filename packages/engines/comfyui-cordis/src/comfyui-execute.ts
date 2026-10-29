@@ -270,6 +270,9 @@ export interface EngineLostPolicy {
   /** Test seam for the salvage re-read sleep (production rides
    *  SALVAGE_RETRY_SLEEP_MS). */
   readonly salvageRetrySleepMs?: number;
+  /** Test seam for the F8 health gate's liveness bound (production
+   *  rides HEALTH_BOUND_MS). */
+  readonly healthBoundMs?: number;
 }
 
 /** The read-bound refusal's own type (2026-10-12): the abort reason
@@ -303,7 +306,12 @@ async function salvageHistoryEntry(
  *  salvage rode their bounds, and the run face served
  *  failed-with-no-artifacts for work that landed. Each attempt is
  *  bounded; a stop request or an exhausted run budget ends the arm
- *  before the next attempt — the re-read never becomes a hang. */
+ *  before the next attempt — the re-read never becomes a hang. The
+ *  bound GROWS per attempt (F8, 2026-11-12): sustained starvation —
+ *  a whole-film repair window's load+track — outlasts the flat read
+ *  bound on every attempt alike; doubling gives the busy engine a
+ *  widening window to answer while a wedged one still settles
+ *  inside the finite sum. */
 async function salvageAtClose(
   client: Client,
   promptId: string,
@@ -319,7 +327,7 @@ async function salvageAtClose(
       if (shouldStop() || deadline - Date.now() <= 0) break;
     }
     try {
-      const entry = await salvageHistoryEntry(client, promptId, boundMs);
+      const entry = await salvageHistoryEntry(client, promptId, boundMs * 2 ** attempt);
       return { answered: true, entry };
     } catch {
       // this attempt refused — the next re-read decides
@@ -327,6 +335,33 @@ async function salvageAtClose(
   }
   return { answered: false };
 }
+
+/** F8 — the health gate (2026-11-12, the friction report's burn: a
+ *  whole-film repair window's load+track outlasted the 10s read
+ *  bound and every salvage bound while the engine kept working; the
+ *  driver stood the wedged diagnosis, interrupted, and abandoned
+ *  the run row). /system_stats is the cheap in-memory answer an
+ *  engine under read starvation still serves — ANY answer inside
+ *  the bound means ALIVE-but-busy: the caller resumes polling (the
+ *  run's own deadline still bounds the wait), never fails a run on
+ *  a live engine. Silence is the only diagnosis that stands. */
+const HEALTH_BOUND_MS = 30_000;
+
+/** One cheap liveness read: resolved = alive, refused = silent. */
+async function engineAnswersHealth(client: Client, boundMs: number): Promise<boolean> {
+  try {
+    await withBound(
+      (): Promise<unknown> =>
+        client.fetchApi("/system_stats", { signal: new AbortController().signal }),
+      boundMs,
+      "GET /system_stats (health gate)",
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function waitTerminal(
   client: Client,
   promptId: string,
@@ -422,6 +457,23 @@ export async function waitTerminal(
           }
           downStreak = 0;
           cadence = 250;
+          continue;
+        }
+        // F8 — THE HEALTH GATE: every salvage read refused its bound,
+        // but a BUSY engine is not a wedged one. /system_stats
+        // answers under the read starvation a heavy graph causes;
+        // an answering engine resumes polling on a backed-off
+        // cadence (the run's own deadline bounds the wait — the
+        // budget check above still interrupts there), and only a
+        // silent engine falls through to the loud diagnosis.
+        if (
+          await engineAnswersHealth(
+            client,
+            policy?.healthBoundMs ?? HEALTH_BOUND_MS,
+          )
+        ) {
+          downStreak = 0;
+          cadence = Math.min(cadence * 4, backoffCapMs);
           continue;
         }
       }

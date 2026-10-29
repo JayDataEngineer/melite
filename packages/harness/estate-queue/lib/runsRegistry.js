@@ -893,6 +893,12 @@ export class RunsRuntimeService extends Service {
             if (typeof st !== "object" || st === null)
                 continue;
             const row = st;
+            // F11 — THE ARCHIVED SKIP (2026-11-12): a spent stage marked
+            // archived composes nowhere — the row keeps its provenance on
+            // the bench, the run leaves it out (the friction burn: spent
+            // stages re-ran ahead of newer stages, blocking the queue).
+            if (row["archived"] === true)
+                continue;
             const id = typeof row["id"] === "string" && row["id"] !== "" ? row["id"] : "s_" + String(i);
             // A STAGE WITH NO CARD (an mcp/flow row) composes nowhere here
             // — the bench run is the CARD bench; a foreign stage is named

@@ -106,6 +106,10 @@ interface Seats {
     // write — one rev, one history event, whole-batch refusals.
     addStages(session: string, doc: Record<string, unknown>, signal?: AbortSignal): Promise<unknown>
     removeStage(session: string, doc: Record<string, unknown>, signal?: AbortSignal): Promise<unknown>
+    // THE SPENT-STAGE MARK (F11, 2026-11-12): archive keeps the row
+    // (its result + history) and skips every run face; off: true
+    // restores it.
+    archive(session: string, doc: Record<string, unknown>, signal?: AbortSignal): Promise<unknown>
     // THE CLEAR ALL (2026-10-10, the operator's demanded door) — the
     // drafts bench's clear verb, beside removeStage.
     clear(session: string, doc: Record<string, unknown>, signal?: AbortSignal): Promise<unknown>
@@ -247,7 +251,7 @@ async function trySeats(
   if (method === 'POST') {
     // "clear" (2026-10-10, the operator's demanded clear-all) — the
     // nuclear arm: every stage out, one log entry, undoable whole.
-    const arm = /^\/v1\/bench\/([^/?]+)\/(patch|add_stage|add_stages|remove_stage|clear|rewire|undo)$/.exec(path)
+    const arm = /^\/v1\/bench\/([^/?]+)\/(patch|add_stage|add_stages|remove_stage|archive|clear|rewire|undo)$/.exec(path)
     if (arm !== null) {
       if (seats.benchRemote === undefined) return undefined
       if (body === undefined || typeof body !== 'object' || body === null) {
@@ -260,12 +264,13 @@ async function trySeats(
         case 'add_stage': return seats.benchRemote.addStage(session, doc, signal)
         case 'add_stages': return seats.benchRemote.addStages(session, doc, signal)
         case 'remove_stage': return seats.benchRemote.removeStage(session, doc, signal)
+        case 'archive': return seats.benchRemote.archive(session, doc, signal)
         case 'clear': return seats.benchRemote.clear(session, doc, signal)
         case 'rewire': return seats.benchRemote.rewire(session, doc, signal)
         case 'undo': return seats.benchRemote.undo(session, doc, signal)
         default: {
           // CLOSED UNION, LOUD END (cordis-architecture F6, 2026-10-20):
-          // the regex group admits six arms and six arms only — a
+          // the regex group admits seven arms and seven arms only — a
           // seventh added to the pattern without its seat here fails
           // LOUD at the first call, never by falling through the
           // match block unanswered.
@@ -646,9 +651,11 @@ async function performEstateRequest(
 // the same text either face serves. A served `undefined` reads as
 // seatless (the router's exact fall-through law, preserved).
 
-/** The bench plane's mutation verbs — the six arms the bench seat
- *  answers 1:1 (the router's regex admits the same six). */
-export type BenchVerb = 'patch' | 'add_stage' | 'add_stages' | 'remove_stage' | 'clear' | 'rewire' | 'undo'
+/** The bench plane's mutation verbs — the seven arms the bench
+ *  seat answers 1:1 (the router's regex admits the same seven;
+ *  `archive` is F11's spent-stage mark — the row stays, every run
+ *  face skips it). */
+export type BenchVerb = 'patch' | 'add_stage' | 'add_stages' | 'remove_stage' | 'archive' | 'clear' | 'rewire' | 'undo'
 
 /** The tool plane's ONE estate seam: the typed lanes. A tool factory
  *  takes `Estate` and calls methods — never `request('GET', path)`. */
@@ -772,12 +779,13 @@ export function makeEstate(ctx: EstateHost): Estate {
           case 'add_stage': return bench.addStage(session, doc, signal)
           case 'add_stages': return bench.addStages(session, doc, signal)
           case 'remove_stage': return bench.removeStage(session, doc, signal)
+          case 'archive': return bench.archive(session, doc, signal)
           case 'clear': return bench.clear(session, doc, signal)
           case 'rewire': return bench.rewire(session, doc, signal)
           case 'undo': return bench.undo(session, doc, signal)
           default: {
             // CLOSED UNION, LOUD END — same law as the router's arm.
-            /* v8 ignore next 2 -- BenchVerb admits exactly the six cased arms; no honest input reaches the throw */
+            /* v8 ignore next 2 -- BenchVerb admits exactly the seven cased arms; no honest input reaches the throw */
             const exhaustive: never = verb
             throw new Error(`bench arm ${String(exhaustive)} matched its pattern but has no seat`)
           }

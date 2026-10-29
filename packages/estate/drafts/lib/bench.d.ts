@@ -134,7 +134,7 @@ interface BenchEntry {
     rev: number;
     at: number;
     author: Author;
-    kind: "patch" | "add_stage" | "add_stages" | "remove_stage" | "rewire" | "reorder" | "group" | "ungroup" | "load" | "clear" | "undo";
+    kind: "patch" | "add_stage" | "add_stages" | "remove_stage" | "archive" | "rewire" | "reorder" | "group" | "ungroup" | "load" | "clear" | "undo";
     stage?: string;
     summary?: string;
     /** Kind-specific inverse payload (undo applies it). */
@@ -347,6 +347,18 @@ export declare function ungroupBench(drafts: Domain<DraftsDomainSpec>, session: 
 /** remove_stage — splice one stage out (the inverse carries row +
  *  index for undo). */
 export declare function removeStageBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>): Promise<BenchStageRow>;
+/** archive — F11 (2026-11-12, the friction report's housekeeping
+ *  burn: spent stages re-ran ahead of newer stages, blocking the
+ *  queue until manually removed). Sets (or, with off: true, clears)
+ *  the row's `archived` mark: the row STAYS on the bench with its
+ *  result and history (the provenance remove_stage destroys), but
+ *  every run face skips it — the bench compose and the agent's
+ *  bench pass both exclude archived rows, so a spent stage never
+ *  re-runs ahead of newer work. A LIVE (non-archived) stage wiring
+ *  an input to the row REFUSES the archive, naming the wire — an
+ *  archived upstream composes nowhere, the wire would dangle at
+ *  run time; unarchive or rewire first. */
+export declare function archiveBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>): Promise<BenchStageRow>;
 /** The clear row. */
 export interface BenchClearRow {
     readonly draft_id: DraftId;

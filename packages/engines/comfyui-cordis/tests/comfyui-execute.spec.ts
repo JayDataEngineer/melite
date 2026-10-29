@@ -418,6 +418,7 @@ describe("waitTerminal (verdict order + the loop)", () => {
       waitTerminal(c, "p-1", Date.now() + 60_000, () => false, {
         readBoundMs: 40,
         salvageAttempts: 1,
+        healthBoundMs: 40,
       }),
     ).rejects.toThrow(/stopped answering its queue\/history reads/);
   });
@@ -521,6 +522,80 @@ describe("waitTerminal (verdict order + the loop)", () => {
     ).resolves.toBeTruthy();
     expect(historyReads).toBe(2);
   });
+  // F8 (2026-11-12) — THE HEALTH GATE: the friction report's burn
+  // had a whole-film repair window's load+track outlast the 10s
+  // read bound AND every salvage bound while the engine itself kept
+  // working — the driver stood the wedged diagnosis, interrupted,
+  // and abandoned the run row. /system_stats answers under that
+  // starvation: an answering engine is ALIVE-but-busy, polling
+  // resumes, and the run settles by its own truth (or its own
+  // budget) — never by the read bound. Silence is the only
+  // diagnosis that stands.
+  it("an engine answering health under read contention is ALIVE — polling resumes, the run completes (F8)", async () => {
+    let queueReads = 0;
+    let historyReads = 0;
+    const c = fakeClient({
+      fetchApi: (route: string, init?: { signal?: AbortSignal }): Promise<unknown> =>
+        new Promise((resolve, reject) => {
+          if (route.startsWith("/system_stats")) {
+            resolve({ ok: true, json: async () => ({ devices: [] }) } as unknown as never);
+            return;
+          }
+          if (route.startsWith("/history")) {
+            historyReads++;
+            if (historyReads === 1) {
+              // the salvage read rides its (grown) bound and refuses —
+              // the contention window outlasts it
+              init?.signal?.addEventListener("abort", () => reject(init.signal?.reason), { once: true });
+              return;
+            }
+            // the resumed loop's verdict read: the run completed
+            resolve({ ok: true, json: async () => historyBody ?? {} } as unknown as never);
+            return;
+          }
+          queueReads++;
+          if (queueReads === 1) {
+            // the read bound fires here: the engine is starved
+            init?.signal?.addEventListener("abort", () => reject(init.signal?.reason), { once: true });
+            return;
+          }
+          // the resumed poll: the starved window cleared
+          resolve({
+            ok: true,
+            json: async () => ({ queue_running: [], queue_pending: [] }),
+          } as unknown as never);
+        }),
+    } as Partial<Record<string, unknown>>);
+    await expect(
+      waitTerminal(c, "p-1", Date.now() + 5_000, () => false, {
+        readBoundMs: 40,
+        salvageAttempts: 1,
+        salvageRetrySleepMs: 5,
+        healthBoundMs: 40,
+      }),
+    ).resolves.toBeTruthy();
+    expect(queueReads).toBe(2);
+    expect(historyReads).toBe(2);
+  });
+  it("a silent engine stands the loud diagnosis even when named — the gate never saves a wedged one (F8)", async () => {
+    let interrupts = 0;
+    const c = fakeClient({
+      fetchApi: (_route: string, init?: { signal?: AbortSignal }): Promise<unknown> =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => reject(init.signal?.reason), { once: true });
+        }),
+      interrupt: async () => { interrupts++; },
+    } as Partial<Record<string, unknown>>);
+    await expect(
+      waitTerminal(c, "p-1", Date.now() + 5_000, () => false, {
+        readBoundMs: 40,
+        salvageAttempts: 1,
+        salvageRetrySleepMs: 5,
+        healthBoundMs: 40,
+      }),
+    ).rejects.toThrow(/stopped answering its queue\/history reads/);
+    expect(interrupts).toBe(1);
+  });
   it("every salvage attempt refused stands the diagnosis loud (the close stays bounded)", async () => {
     const c = fakeClient({
       fetchApi: (_route: string, init?: { signal?: AbortSignal }): Promise<unknown> =>
@@ -533,6 +608,7 @@ describe("waitTerminal (verdict order + the loop)", () => {
         readBoundMs: 40,
         salvageAttempts: 2,
         salvageRetrySleepMs: 5,
+        healthBoundMs: 40,
       }),
     ).rejects.toThrow(/stopped answering its queue\/history reads/);
   });

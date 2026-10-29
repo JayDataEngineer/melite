@@ -25,6 +25,10 @@ import { FLOW_ID_RE } from '@melite/estate-queue'
 //   patch        → merge params onto one stage
 //   add_stage    → append a card stage (optional input wiring)
 //   remove_stage → splice a stage out
+//   archive      → F11's spent-stage mark: the row stays, every run
+//                  face skips it
+//   unarchive    → restore an archived stage to the run set
+
 //   clear        → every stage out in one rev (undo restores all)
 //   floor        → clamp resolution-group params to declared minimums
 //   rewire       → set/clear one input binding
@@ -43,7 +47,7 @@ import { FLOW_ID_RE } from '@melite/estate-queue'
  * this order; the estate wire's BenchVerb is a DIFFERENT law (the
  * fiber's own mutation arms) and stays its own home. */
 export const CONSTRUCT_VERBS = [
-  'read', 'load', 'patch', 'add_stage', 'remove_stage', 'clear', 'floor', 'rewire', 'undo', 'validate',
+  'read', 'load', 'patch', 'add_stage', 'remove_stage', 'archive', 'unarchive', 'clear', 'floor', 'rewire', 'undo', 'validate',
 ] as const
 export type ConstructVerb = typeof CONSTRUCT_VERBS[number]
 import { createHash } from 'node:crypto'
@@ -908,7 +912,7 @@ export function meliteConstruct(
       + 'chain it with {stage, output}) | load (replace stages wholesale — DESTRUCTIVE on THE CONVERSATION\'S '
       + 'SHARED BENCH: this is the bench the user watches in their cards tab, and overwrite:true replaces whatever '
       + 'was there — load a throwaway TEST/scratch flow only when replacing is the intent, never to "try" a shape; '
-      + 'refused on a non-empty bench unless overwrite:true confirms it; prefer add_stage to grow the bench) | patch {stage, params} | add_stage {card, params?, '
+      + 'refused on a non-empty bench unless overwrite:true confirms it; prefer add_stage to grow the bench) | patch {stage, params} | archive/unarchive {stage} (the F11 spent-stage mark: the row stays with its result, every run face skips it) | add_stage {card, params?, '
       + 'inputs?, expected?, outputs?} (inputs wire PRIOR STAGES through the card\'s declared ports, never files: '
       + 'inputs {image1: {stage: "s_0", output: "default"}} AND params {image1: "$image1"} — the $spell is the CHANNEL REFERENCE ONLY: it resolves at run time to that wired stage output or a request initial the USER attaches at the Run press, nothing else; for a REAL FILE on disk use its asset path from melite_view, never a $spell; to chain '
       + 'the last generation, bind its stage, never hunt its artifact on disk; kinds derive from the card\'s ports — '
@@ -1268,7 +1272,7 @@ export function meliteConstruct(
         return jsonClean<ConstructResult>({
           verb, bench, ok: false,
           error: 'verb is required — the call was refused before anything was read or written (a payload never derives a verb; a WRITE is never guessed). '
-            + "State one: 'read' | 'load' {stages} | 'patch' {stage, params} | 'add_stage' {card, params?, inputs?} | 'remove_stage' {stage} | 'clear' | 'floor' {stage?} | 'rewire' {stage, input, from?} | 'undo' {n?, author?} | 'validate'.",
+            + "State one: 'read' | 'load' {stages} | 'patch' {stage, params} | 'add_stage' {card, params?, inputs?} | 'remove_stage' {stage} | 'archive'/'unarchive' {stage} | 'clear' | 'floor' {stage?} | 'rewire' {stage, input, from?} | 'undo' {n?, author?} | 'validate'.",
           error_kind: 'verb-required',
         })
       }
@@ -1497,6 +1501,19 @@ export function meliteConstruct(
           const r = await postBenchVerb(estate, bench, 'remove_stage',
             { stage: a.stage, expect_rev: a.expect_rev }, signal)
           return out({ rev: r.rev, stage: r.stage })
+        }
+        if (verb === 'archive' || verb === 'unarchive') {
+          // F11 — THE SPENT-STAGE MARK (2026-11-12): a spent stage
+          // marked archived keeps its row (result + history, the
+          // provenance remove_stage destroys) but runs NOWHERE — the
+          // bench compose and the agent's bench pass both skip it, so
+          // spent stages never re-run ahead of newer work. The door
+          // refuses archiving a stage a LIVE stage wires to (the wire
+          // would dangle — rewire or archive the consumers first);
+          // unarchive restores it to the run set.
+          const r = await postBenchVerb(estate, bench, 'archive',
+            { stage: a.stage, off: verb === 'unarchive', expect_rev: a.expect_rev }, signal)
+          return out({ rev: r.rev, stage: r.stage, archived: verb === 'archive' })
         }
         if (verb === 'clear') {
           // THE CLEAR ALL (2026-10-10, the operator: "THERE IS NO

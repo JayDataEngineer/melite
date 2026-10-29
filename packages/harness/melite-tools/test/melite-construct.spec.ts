@@ -492,6 +492,24 @@ describe('melite_construct mutations — every verb', () => {
     assert.deepEqual(seen[0]!.args[2], { stage: 's1', expect_rev: 7 })
   })
 
+  // F11 (2026-11-12) — THE SPENT-STAGE MARK: archive keeps the row
+  // (result + history) and skips every run face; unarchive restores
+  // it. The verb rides the bench's own archive door with its CAS.
+  test('archive marks a spent stage; unarchive restores it (F11)', async () => {
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchVerb' && args[1] === 'archive') return { rev: 9, stage: 's1' }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const tool = meliteConstruct(estate)
+    const out = await tool.execute({ verb: 'archive', stage: 's1', expect_rev: 8 }, exec()) as Record<string, unknown>
+    assert.equal(out.stage, 's1')
+    assert.equal(out.archived, true)
+    assert.deepEqual(seen[0]!.args[2], { stage: 's1', off: false, expect_rev: 8 })
+    const out2 = await tool.execute({ verb: 'unarchive', stage: 's1', expect_rev: 9 }, exec()) as Record<string, unknown>
+    assert.equal(out2.archived, false)
+    assert.deepEqual(seen[1]!.args[2], { stage: 's1', off: true, expect_rev: 9 })
+  })
+
   // THE CLEAR ALL (2026-10-10, the operator: "THERE IS NO CLEAR ALL"
   // — the bench wedge left no way out but the wedge).
   test('clear empties the bench in one verb (the demanded clear all)', async () => {
@@ -586,7 +604,7 @@ describe('melite_construct mutations — every verb', () => {
       (e: unknown) => {
         assert.ok(e instanceof ToolArgsError)
         assert.match((e as ToolArgsError).message,
-          /"verb" must be one of \["read","load","patch","add_stage","remove_stage","clear","floor","rewire","undo","validate"\]/)
+          /"verb" must be one of \["read","load","patch","add_stage","remove_stage","archive","unarchive","clear","floor","rewire","undo","validate"\]/)
         return true
       },
     )

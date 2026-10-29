@@ -169,7 +169,7 @@ interface BenchEntry {
   author: Author;
   // "clear" (2026-10-10, the operator's demanded clear-all) — the
   // nuclear verb: every stage out, one entry, inverse restores all.
-  kind: "patch" | "add_stage" | "add_stages" | "remove_stage" | "rewire" | "reorder" | "group" | "ungroup" | "load" | "clear" | "undo";
+  kind: "patch" | "add_stage" | "add_stages" | "remove_stage" | "archive" | "rewire" | "reorder" | "group" | "ungroup" | "load" | "clear" | "undo";
   stage?: string;
   summary?: string;
   /** Kind-specific inverse payload (undo applies it). */
@@ -2295,6 +2295,88 @@ export async function removeStageBench(
     stage: stageId,
     summary: "remove " + String(row["card"] ?? stageId),
     inverse: { stage: stageId, row, index: idx },
+  });
+  return { draft_id: loaded.draftId, session, rev: newRev, stage: stageId };
+}
+
+const ARCHIVE_KEYS = ["stage", "off", "expect_rev", "author"];
+
+/** archive — F11 (2026-11-12, the friction report's housekeeping
+ *  burn: spent stages re-ran ahead of newer stages, blocking the
+ *  queue until manually removed). Sets (or, with off: true, clears)
+ *  the row's `archived` mark: the row STAYS on the bench with its
+ *  result and history (the provenance remove_stage destroys), but
+ *  every run face skips it — the bench compose and the agent's
+ *  bench pass both exclude archived rows, so a spent stage never
+ *  re-runs ahead of newer work. A LIVE (non-archived) stage wiring
+ *  an input to the row REFUSES the archive, naming the wire — an
+ *  archived upstream composes nowhere, the wire would dangle at
+ *  run time; unarchive or rewire first. */
+export async function archiveBench(
+  drafts: Domain<DraftsDomainSpec>,
+  session: string,
+  body: Record<string, unknown>,
+): Promise<BenchStageRow> {
+  refuseUnknown(body, ARCHIVE_KEYS);
+  const loaded: LoadedBench = await loadBench(drafts, session);
+  casCheck(loaded.block, body["expect_rev"], session);
+  const stageId: unknown = body["stage"];
+  if (typeof stageId !== "string" || stageId === "") {
+    throw new RemoteError("bench/bad-body", "stage is required", {});
+  }
+  const off = body["off"] === true;
+  const author: Author = authorOk(body["author"])
+    ? (body["author"] as Author)
+    : "agent";
+  const stages: Record<string, unknown>[] = stagesOf(loaded.doc);
+  const idx: number = stages.findIndex(
+    (s: Record<string, unknown>): boolean => s["id"] === stageId,
+  );
+  if (idx < 0) {
+    throw new RemoteError(
+      "bench/stage-not-found",
+      "stage not found: " + stageId,
+      { session, stage: stageId },
+    );
+  }
+  if (!off) {
+    // THE LIVE-WIRE GUARD: an archived row composes nowhere, so a
+    // live row's wire to it would dangle at run time. Names every
+    // live consumer; archived consumers are already excluded.
+    const liveWired: string[] = [];
+    for (const other of stages) {
+      if (other === stages[idx] || other["archived"] === true) continue;
+      const ins = other["inputs"];
+      if (ins === null || typeof ins !== "object" || Array.isArray(ins)) continue;
+      for (const ref of Object.values(ins as Record<string, unknown>)) {
+        const up: { stage?: unknown } = wireUpstreamOf(ref);
+        if (up.stage === stageId) {
+          const oid = typeof other["id"] === "string" ? other["id"] : "?";
+          if (!liveWired.includes(oid)) liveWired.push(oid);
+        }
+      }
+    }
+    if (liveWired.length > 0) {
+      throw new RemoteError(
+        "bench/wire-stage-not-found",
+        "stage " + stageId + " is wired by live stage(s) " +
+        liveWired.join(", ") +
+        " — an archived stage composes nowhere, the wire would dangle at run time; rewire or archive the consumers first (off: true restores it)",
+        { session, stage: stageId, input: "", live: liveWired },
+      );
+    }
+  }
+  const before: Record<string, unknown>[] = [...stages];
+  if (off) delete stages[idx]["archived"];
+  else stages[idx]["archived"] = true;
+  loaded.doc["stages"] = stages;
+  syncIntent(loaded.doc, before, stages);
+  const newRev: number = await appendAndSave(drafts, loaded, {
+    author,
+    kind: "archive",
+    stage: stageId,
+    summary: (off ? "unarchive " : "archive ") + String(stages[idx]["card"] ?? stageId),
+    inverse: { stage: stageId, off: !off },
   });
   return { draft_id: loaded.draftId, session, rev: newRev, stage: stageId };
 }

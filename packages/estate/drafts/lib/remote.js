@@ -42,7 +42,7 @@ export { STAGE_PATCH_KEYS };
 import { unwrapItemArrays } from "@melite/comfyui-card-kit";
 import { openDraftsDomain } from "./store.js";
 import { DRAFT_ID_RE } from "./spec.js";
-import { addStageBench, addStagesBench, ensureBench, notifyBenchChange, notifyBenchDocWrite, onBenchChange, clearBenchChangeSeam, setBenchChangeSeam, getBench, groupBench, patchBench, clearBench, removeStageBench, reorderBench, rewireBench, undoBench, ungroupBench, } from "./bench.js";
+import { addStageBench, addStagesBench, ensureBench, notifyBenchChange, notifyBenchDocWrite, onBenchChange, clearBenchChangeSeam, setBenchChangeSeam, archiveBench, getBench, groupBench, patchBench, clearBench, removeStageBench, reorderBench, rewireBench, undoBench, ungroupBench, } from "./bench.js";
 import { benchDraftIdOf, draftIdOf } from "@melite/contracts/benchStage";
 /** Install the typed bench event seam on a Context: `bench.ts`
  *  (the pure domain module) emits and subscribes through it.
@@ -1057,6 +1057,7 @@ let BenchRemoteService = (() => {
     let _remoteExportPatch_decorators;
     let _remoteExportAddStage_decorators;
     let _remoteExportAddStages_decorators;
+    let _remoteExportArchive_decorators;
     let _remoteExportRemoveStage_decorators;
     let _remoteExportClear_decorators;
     let _remoteExportRewire_decorators;
@@ -1073,6 +1074,7 @@ let BenchRemoteService = (() => {
             _remoteExportPatch_decorators = [Remote("patch")];
             _remoteExportAddStage_decorators = [Remote("add-stage")];
             _remoteExportAddStages_decorators = [Remote("add-stages")];
+            _remoteExportArchive_decorators = [Remote("archive")];
             _remoteExportRemoveStage_decorators = [Remote("remove-stage")];
             _remoteExportClear_decorators = [Remote("clear")];
             _remoteExportRewire_decorators = [Remote("rewire")];
@@ -1086,6 +1088,7 @@ let BenchRemoteService = (() => {
             __esDecorate(this, null, _remoteExportPatch_decorators, { kind: "method", name: "remoteExportPatch", static: false, private: false, access: { has: obj => "remoteExportPatch" in obj, get: obj => obj.remoteExportPatch }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _remoteExportAddStage_decorators, { kind: "method", name: "remoteExportAddStage", static: false, private: false, access: { has: obj => "remoteExportAddStage" in obj, get: obj => obj.remoteExportAddStage }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _remoteExportAddStages_decorators, { kind: "method", name: "remoteExportAddStages", static: false, private: false, access: { has: obj => "remoteExportAddStages" in obj, get: obj => obj.remoteExportAddStages }, metadata: _metadata }, null, _instanceExtraInitializers);
+            __esDecorate(this, null, _remoteExportArchive_decorators, { kind: "method", name: "remoteExportArchive", static: false, private: false, access: { has: obj => "remoteExportArchive" in obj, get: obj => obj.remoteExportArchive }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _remoteExportRemoveStage_decorators, { kind: "method", name: "remoteExportRemoveStage", static: false, private: false, access: { has: obj => "remoteExportRemoveStage" in obj, get: obj => obj.remoteExportRemoveStage }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _remoteExportClear_decorators, { kind: "method", name: "remoteExportClear", static: false, private: false, access: { has: obj => "remoteExportClear" in obj, get: obj => obj.remoteExportClear }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _remoteExportRewire_decorators, { kind: "method", name: "remoteExportRewire", static: false, private: false, access: { has: obj => "remoteExportRewire" in obj, get: obj => obj.remoteExportRewire }, metadata: _metadata }, null, _instanceExtraInitializers);
@@ -1254,6 +1257,18 @@ let BenchRemoteService = (() => {
          * event). */
         async remoteExportAddStages(sessionKey, doc, signal) {
             return await this.addStages(sessionKey, doc, signal);
+        }
+        /** Endpoint `bench/archive` — F11's housekeeping verb: mark a
+         *  spent stage archived (off: true restores it); the row stays
+         *  with its provenance, every run face skips it. */
+        async remoteExportArchive(sessionKey, doc, signal) {
+            signal.throwIfAborted();
+            return withBenchWrite(benchDraftIdOf(sessionKey), async () => {
+                const drafts = await this.open(signal);
+                const row = await archiveBench(drafts, sessionKey, doc);
+                notifyBenchChange(sessionKey);
+                return row;
+            });
         }
         /** Endpoint `bench/remove-stage` — splice one stage out. */
         async remoteExportRemoveStage(sessionKey, doc, signal) {

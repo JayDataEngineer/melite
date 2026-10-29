@@ -43,6 +43,9 @@ export interface EngineLostPolicy {
     /** Test seam for the salvage re-read sleep (production rides
      *  SALVAGE_RETRY_SLEEP_MS). */
     readonly salvageRetrySleepMs?: number;
+    /** Test seam for the F8 health gate's liveness bound (production
+     *  rides HEALTH_BOUND_MS). */
+    readonly healthBoundMs?: number;
 }
 export declare function waitTerminal(client: Client, promptId: string, deadline: number, shouldStop: () => boolean, policy?: EngineLostPolicy): Promise<Record<string, EngineJson>>;
 /** The tap's handle: the unhook itself (callable, the finally's

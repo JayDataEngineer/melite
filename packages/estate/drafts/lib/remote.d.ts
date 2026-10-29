@@ -352,6 +352,10 @@ export declare class BenchRemoteService extends TypertRemoteService {
      * restore law: the CAS chains server-side, one save, one history
      * event). */
     remoteExportAddStages(sessionKey: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchStagesRow>;
+    /** Endpoint `bench/archive` — F11's housekeeping verb: mark a
+     *  spent stage archived (off: true restores it); the row stays
+     *  with its provenance, every run face skips it. */
+    remoteExportArchive(sessionKey: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchStageRow>;
     /** Endpoint `bench/remove-stage` — splice one stage out. */
     remoteExportRemoveStage(sessionKey: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchStageRow>;
     /** Endpoint `bench/clear` — THE OPERATOR'S CLEAR ALL (2026-10-10,

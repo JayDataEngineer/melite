@@ -362,6 +362,16 @@ async function runBench(
     // now writes the health channel) — so the classifier's refusal
     // must not kill the tool call; an unreadable row is simply not
     // done and runs.
+    // F11 — THE ARCHIVED SKIP (judged FIRST: archived outranks done —
+    // a spent stage resting is the operator's own mark, the honest
+    // voice names it even when the row also carries a done memory):
+    // a spent stage marked archived runs nowhere on the pass (the
+    // row stays for provenance; unarchive restores it to the run
+    // set).
+    if (row['archived'] === true) {
+      pass.push({ stage: stageId, card, skipped: 'archived' })
+      continue
+    }
     {
       const folded = statusOrPendingOf(typeof row['runStatus'] === 'string' ? row['runStatus'] as string : '')
       if (folded === 'done' || folded === 'cached' || folded === 'reused') {
@@ -1154,7 +1164,9 @@ export function meliteFlow(estate: Estate): ToolDefinition {
             // minted run, and the agent hunted a run that never
             // existed. The skip says WHAT it skipped and WHY.
             + ' [' + (p['status'] === undefined && p['skipped'] !== undefined
-              ? 'skipped ' + String(p['skipped']) + ' — unchanged since its last run; patch params to re-run'
+              ? 'skipped ' + String(p['skipped']) + (p['skipped'] === 'archived'
+                ? ' — spent stage resting; unarchive to run it again'
+                : ' — unchanged since its last run; patch params to re-run')
               : String(p['status'] ?? p['skipped'] ?? '?')) + ']'
             // THE LOUD MISS FACE (the no-feedback defect): a stamp
             // that never landed means the watching user's cards tab
