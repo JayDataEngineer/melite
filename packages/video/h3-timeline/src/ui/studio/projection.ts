@@ -32,7 +32,10 @@ function recordOf(value: unknown): Record<string, unknown> {
 }
 
 function isWindowName(name: string): boolean {
-  return /^h3_t4_w\d+_\d+_\.mp4$/i.test(name) || /^video_w\d+_/.test(name)
+  // F14 (2026-11-12): window saves ride `<runId>/h3_t4_w<k>` — the
+  // run row key may carry a leading run path or harvest nodeId
+  // segment before the canonical stem. Both eras match.
+  return /(?:^|[/_])h3_t4_w\d+_\d+_\.mp4$/i.test(name) || /^video_w\d+_/.test(name)
 }
 
 function videoUrlOf(
@@ -46,7 +49,7 @@ function videoUrlOf(
       const [name, url] = entry
       return typeof url === 'string' && url !== '' && refGenreOf(name, url) === 'video'
     })
-  const film = rows.find(([name, url]) => /(?:^|\/)h3_t4_film_\d+_\.mp4$/i.test(name) || /h3_t4_film_\d+_\.mp4(?:$|[?#])/i.test(url))
+  const film = rows.find(([name, url]) => /(?:^|[/_])h3_t4_film_\d+_\.mp4$/i.test(name) || /h3_t4_film_\d+_\.mp4(?:$|[?#])/i.test(url))
   if (film !== undefined) return film[1] as string
   if (typeof direct === 'string' && direct !== '' && refGenreOf('', direct) === 'video') return direct
   const named = rows.find(([name]) => allowWindow || !isWindowName(name))

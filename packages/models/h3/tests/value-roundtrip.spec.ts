@@ -828,7 +828,7 @@ describe("the h3 class knobs ride VERBATIM to their consumers (P0 witness extens
     assertValueAtConsumer(graph, "MiniMaxH3RefModExtract", "save", false, "refmod_save");
   });
 
-  it("ARM 21 — the k pin: a two-window film's window ordinal reaches the graph as the save naming (w1 AND w2)", async () => {
+  it("ARM 21 — the k pin: a two-window film's window ordinal reaches the graph as the run-scoped save naming (w1 AND w2)", async () => {
     const graph = await composeH3({
       length: 124,
       calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
@@ -836,7 +836,10 @@ describe("the h3 class knobs ride VERBATIM to their consumers (P0 witness extens
     const prefixes = Object.values(graph)
       .filter((n) => n.class_type === "SaveVideo")
       .map((n) => n.inputs.filename_prefix);
-    for (const w of ["h3_t4_w1", "h3_t4_w2"]) {
+    // F14 (2026-11-12): the film family's saves ride the run scope
+    // (`<runId>/…`) like every chain save — the flat prefix was the
+    // harvest outlier. The ordinal law is unchanged: k rides the name.
+    for (const w of ["h3_value_arm21/h3_t4_w1", "h3_value_arm21/h3_t4_w2", "h3_value_arm21/h3_t4_film"]) {
       assert.ok(prefixes.includes(w), `WINDOW ORDINAL VALUE ARM: no SaveVideo names '${w}' (saw ${JSON.stringify(prefixes)}) — the window index never reached the engine's save face`);
     }
   });
@@ -1781,10 +1784,10 @@ const CENSUS_ROWS: readonly CensusRow[] = [
   { kind: "at", param: "attention_backend", doc: "backend", cls: "ModelAttentionBackend", input: "attention", value: "pytorch attention" },
   { kind: "at", param: "ref_image_size", doc: "first", cls: "MiniMaxH3ReferenceToVideo", input: "ref_image_size", value: "match" },
   {
-    kind: "judge", param: "k", doc: "kpin", why: "the window ordinal IS the save naming (ARM 21)",
+    kind: "judge", param: "k", doc: "kpin", why: "the window ordinal IS the run-scoped save naming (ARM 21)",
     judge: (g) => {
       const prefixes = Object.values(g).filter((n) => n.class_type === "SaveVideo").map((n) => n.inputs.filename_prefix);
-      assert.deepEqual(prefixes, ["h3_t4_w3"], "CENSUS k: a stated k never became the save naming (the window ordinal seat)");
+      assert.deepEqual(prefixes, ["h3_census_kpin/h3_t4_w3"], "CENSUS k: a stated k never became the save naming (the window ordinal seat)");
     },
   },
   // ── the master gate + the V9 post chain ───────────────────────

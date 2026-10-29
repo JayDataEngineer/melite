@@ -113,10 +113,13 @@ export function useDerivedView(args: {
     const arts = res?.artifacts ?? {}
     const urls = Array.isArray(res?.assetUrls) ? res.assetUrls : []
     // both eras, one matcher: video_w<k>_… (legacy) | h3_t4_w<k>_<n>_.mp4 (real)
+    // F14 (2026-11-12): the real saves ride `<runId>/h3_t4_w<k>`, so
+    // the run row key may carry a leading run path or harvest nodeId
+    // segment before the canonical stem — both eras match.
     const windowIndexOf = (n: string): number | null => {
       const legacy = /^video_w(\d+)_/.exec(n)
       if (legacy !== null) return Number(legacy[1])
-      const real = /^h3_t4_w(\d+)_\d+_\.mp4$/.exec(n)
+      const real = /(?:^|[/_])h3_t4_w(\d+)_\d+_\.mp4$/.exec(n)
       if (real !== null) return Number(real[1])
       return null
     }
@@ -156,16 +159,16 @@ export function useDerivedView(args: {
     // NAME (filmLead.ts's regex, mirrored here for the browser bundle)
     // — the legacy 'video' key and the flat list trail it. A run whose
     // gallery carries the film can never preview a window as the cut.
-    const filmName = Object.keys(arts).find((n): boolean => /^h3_t4_film_\d+_\.mp4$/.test(n))
+    const filmName = Object.keys(arts).find((n): boolean => /(?:^|[/_])h3_t4_film_\d+_\.mp4$/.test(n))
     const filmUrl = filmName !== undefined && typeof arts[filmName] === "string" && arts[filmName] !== ""
       ? arts[filmName] as string : ""
     const namedVideo = Object.entries(arts).find(([name, url]) =>
       typeof url === "string" && url !== "" && refGenreOf(name, url) === "video"
-      && !/^h3_t4_w\d+_\d+_\.mp4$/i.test(name) && !/^video_w\d+_/.test(name),
+      && !/(?:^|[/_])h3_t4_w\d+_\d+_\.mp4$/i.test(name) && !/^video_w\d+_/.test(name),
     )?.[1]
     const flatVideo = urls.find((url) =>
       refGenreOf("", url) === "video"
-      && !/(?:^|\/)h3_t4_w\d+_\d+_\.mp4$/i.test(url)
+      && !/(?:^|[/_])h3_t4_w\d+_\d+_\.mp4$/i.test(url)
       && !/(?:^|\/)video_w\d+_/.test(url),
     )
     return {

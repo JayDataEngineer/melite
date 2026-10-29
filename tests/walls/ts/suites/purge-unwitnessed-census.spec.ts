@@ -260,7 +260,7 @@ function valueCells(): Cell[] {
     refmod_pool: { anchor: 'ARM 20 — the refmod dials verbatim at the bake head: mode/pool/identity/save ride MiniMaxH3RefModExtract', note: 'pool_h AND pool_w at the bake head (the square fold)' },
     refmod_identity: { anchor: 'ARM 20 — the refmod dials verbatim at the bake head: mode/pool/identity/save ride MiniMaxH3RefModExtract', note: 'identity at the bake head' },
     refmod_save: { anchor: 'ARM 20 — the refmod dials verbatim at the bake head: mode/pool/identity/save ride MiniMaxH3RefModExtract', note: 'save at the bake head' },
-    k: { anchor: "ARM 21 — the k pin: a two-window film's window ordinal reaches the graph as the save naming (w1 AND w2)", note: 'the window ordinal at SaveVideo.filename_prefix' },
+    k: { anchor: "ARM 21 — the k pin: a two-window film's window ordinal reaches the graph as the run-scoped save naming (w1 AND w2)", note: 'the window ordinal at SaveVideo.filename_prefix' },
     duck_depth_db: { anchor: 'ARM 22 — duck_depth_db verbatim at the film mix (duck_db) + the image_name alias reaches LoadImage', note: 'duck_db at MeliteFilmAudioMix' },
     image_name: { anchor: 'ARM 22 — duck_depth_db verbatim at the film mix (duck_db) + the image_name alias reaches LoadImage', note: "the call-level alias at LoadImage (the compose's documented read)" },
     second_pass_enabled: { anchor: 'ARM 4 — second_pass_enabled + refine seats mount the T3 refine rider (TWO SamplerCustomAdvanced; the LTX stack carries the catalog file + stated strength; the rider scheduler carries the stated steps)', note: "the master gate — ARM 4's mount + ARMs 5/10-12 the guards" },

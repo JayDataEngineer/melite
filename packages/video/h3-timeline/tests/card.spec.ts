@@ -90,7 +90,10 @@ describe("the h3-timeline compose gate", () => {
     assert.deepEqual(flow.outputs, { default: "video" });
     const node = graph[flow.outputNodes.default!]!;
     assert.equal(node.class_type, "SaveVideo");
-    assert.equal(node.inputs.filename_prefix, "h3_t4_film");
+    // F14 (2026-11-12): the film save rides the run scope —
+    // `<runId>/h3_t4_film` — like every chain save, so the harvest
+    // walks it run-scoped (the flat prefix was the outlier).
+    assert.equal(node.inputs.filename_prefix, "run_output_binding/h3_t4_film");
   });
 
   it("a fresh press (params {}) composes the card's own one-shot document", () => {
@@ -214,10 +217,10 @@ describe("the h3-timeline compose gate", () => {
     // 1. the plain multi-window film: windows save, THEN the file
     //    tail assembles — boundary → concat → film save
     const openRows = nodeRows(windowsDoc);
-    assert.ok(savePrefixes(openRows).includes("h3_t4_film"), "the film saves in-graph (the file tail)");
+    assert.ok(savePrefixes(openRows).includes("run_valve/h3_t4_film"), "the film saves in-graph (the file tail)");
     assert.deepEqual(
-      savePrefixes(openRows).filter((p) => p.startsWith("h3_t4_w")).sort(),
-      ["h3_t4_w1", "h3_t4_w2"],
+      savePrefixes(openRows).filter((p) => /(?:^|[/_])h3_t4_w\d+$/.test(p)).sort(),
+      ["run_valve/h3_t4_w1", "run_valve/h3_t4_w2"],
       "both windows save their own files",
     );
     const unloads = byClass(openRows, "MeliteUnload");
@@ -231,7 +234,7 @@ describe("the h3-timeline compose gate", () => {
     const byId = new Map(openRows);
     const windowSaveIds = new Set(
       openRows
-        .filter(([, n]) => n.class_type === "SaveVideo" && String(n.inputs["filename_prefix"]).startsWith("h3_t4_w"))
+        .filter(([, n]) => n.class_type === "SaveVideo" && /(?:^|[/_])h3_t4_w\d+$/.test(String(n.inputs["filename_prefix"])))
         .map(([id]) => id),
     );
     const boundaryVideoSrcs = unloads.map(([, n]) => (n.inputs["video"] as [string, number])[0]);
@@ -252,7 +255,7 @@ describe("the h3-timeline compose gate", () => {
       cursor = afterSrc(node);
     }
     assert.equal(walked, unloads.length, "the chain threads EVERY boundary — the loader provably waits for all saves");
-    assert.equal(concats[0]![1].inputs["videos"], "h3_t4_w1,h3_t4_w2", "the loader names the window files in film order");
+    assert.equal(concats[0]![1].inputs["videos"], "run_valve/h3_t4_w1,run_valve/h3_t4_w2", "the loader names the window files in film order");
     assert.ok(
       !openRows.some(([, n]) => n.class_type === "MiniMaxH3FiniteSegmentFinalize" && "accumulated_images" in n.inputs),
       "no accumulation node — nothing holds window 1's tensors while window 2 samples (a per-window finalize without accumulated_images may remain — that one is window-local)",
@@ -271,7 +274,7 @@ describe("the h3-timeline compose gate", () => {
       audio_clips: [{ src: "/assets/line.flac", start_frame: 10, dur_frames: 40, text: "hello" }],
     });
     assert.ok(
-      savePrefixes(closedRows).includes("h3_t4_film"),
+      savePrefixes(closedRows).includes("run_valve/h3_t4_film"),
       "the clips arm delivers the film mp4 (GAP 1 — same file-tail join, mixed audio wired in)",
     );
     assert.equal(byClass(closedRows, "MeliteConcatVideos").length, 1, "exactly one file-tail video join for clips docs");
@@ -280,10 +283,10 @@ describe("the h3-timeline compose gate", () => {
     assert.equal(byClass(closedRows, "MeliteUnload").length, 2, "windows still free per-window behind the chained boundaries");
     const filmMix = byClass(closedRows, "MeliteFilmAudioMix");
     assert.equal(filmMix.length, 1, "one post-generation mix node");
-    assert.equal(filmMix[0]![1].inputs["videos"], "h3_t4_w1,h3_t4_w2", "the mix names the window files in film order");
+    assert.equal(filmMix[0]![1].inputs["videos"], "run_valve/h3_t4_w1,run_valve/h3_t4_w2", "the mix names the window files in film order");
     const audioSaves = byClass(closedRows, "SaveAudio");
     assert.equal(audioSaves.length, 1, "one film-audio save");
-    assert.equal(audioSaves[0]![1].inputs["filename_prefix"], "h3_t4_film_audio", "under the film-audio name");
+    assert.equal(audioSaves[0]![1].inputs["filename_prefix"], "run_valve/h3_t4_film_audio", "under the film-audio name");
     assert.ok(
       !closedRows.some(([, n]) => n.class_type === "MiniMaxH3FiniteSegmentFinalize" && "accumulated_images" in n.inputs),
       "no film accumulation composes for positioned clips either",
@@ -292,7 +295,7 @@ describe("the h3-timeline compose gate", () => {
     //    dispatch keeps single-call docs byte-identical (one window
     //    artifact, no film nodes, no decode round)
     const singleRows = nodeRows({ calls: [SHOT()], length: 56 });
-    assert.deepEqual(savePrefixes(singleRows), ["h3_t4_w1"], "a single-window doc saves exactly one window file — the film tail is a multi-call property");
+    assert.deepEqual(savePrefixes(singleRows), ["run_valve/h3_t4_w1"], "a single-window doc saves exactly one window file — the film tail is a multi-call property");
     assert.equal(byClass(singleRows, "MeliteConcatVideos").length, 0, "no decode round for a lone window");
     assert.equal(byClass(singleRows, "MeliteUnload").length, 0, "no boundary needed — nothing to order");
   });

@@ -323,7 +323,7 @@ export function concatSavedFilms(g, prefixes, after, out, opts = {}) {
  *  (the node's context_frames arm). prev_sec scales the carry:
  *  picture snapped to the node's legal context lengths (5/22/39/56
  *  frames — only whole latent steps), audio at 24 frames/second. */
-function renderH3Film(p, g, facts, model) {
+function renderH3Film(p, g, facts, model, runId) {
     // (the compose dispatch guarantees calls is a non-empty array here)
     const calls = p.calls;
     const str = (v) => (typeof v === 'string' ? v : '');
@@ -704,7 +704,7 @@ function renderH3Film(p, g, facts, model) {
             stanza.sfx_slice = stamps.sfx;
         if (stamps.music !== undefined)
             stanza.music_slice = stamps.music;
-        const h = g.scoped(`window${k}_`, (w) => renderH3Window(stanza, w, facts, model));
+        const h = g.scoped(`window${k}_`, (w) => renderH3Window(stanza, w, facts, model, runId));
         prev = h;
         /* v8 ignore next 1 -- both family arms assign the passthrough (every path saves); a future arm that forgets is refused loud at the film tail */
         if (h.savePassthrough !== undefined)
@@ -790,7 +790,12 @@ function renderH3Film(p, g, facts, model) {
     // transitively depends on EVERY save, while each window's
     // passthrough tensor dies at its own boundary (the §20 law; the
     // flush is idempotent, weights stay resident).
-    const windowPrefixes = calls.map((_c, i) => `h3_t4_w${i + 1}`);
+    // F14 (2026-11-12): the prefixes ride the run scope — the film's
+    // saves, the windows' saves, and this concat/mix prefix list are
+    // ONE truth (`<runId>/h3_t4_w<k>` both sides), so the file tail
+    // resolves them under the output root's `<runId>/` subfolder and
+    // the harvest walks them run-scoped like every chain save.
+    const windowPrefixes = calls.map((_c, i) => `${runId}/h3_t4_w${i + 1}`);
     const after = chainSaveBoundaries(g, windowSaves);
     if (clips.length > 0) {
         // THE VALVE'S SECOND ARM (2026-09-24 — the film mix leaves the
@@ -831,16 +836,16 @@ function renderH3Film(p, g, facts, model) {
         // calibrated against ffmpeg's ebur128 to within 0.1 LU on tones,
         // noise, gating, and mono.
         const meter = g.node('MeliteLoudness', { audio: mix.out(0) });
-        saveAudio(g, meter.out(0), 'h3_t4_film_audio');
+        saveAudio(g, meter.out(0), `${runId}/h3_t4_film_audio`);
         // THE FILM MP4 (GAP 1): the same file-tail video join the
         // clips-free arm rides — container mux only (CreateVideo +
         // SaveVideo h264/mp4 on the decoded window files), never the
         // mix. The mix rides it: audio carries the node's output.
-        return concatSavedFilms(g, windowPrefixes, after, 'h3_t4_film', {
+        return concatSavedFilms(g, windowPrefixes, after, `${runId}/h3_t4_film`, {
             audio: meter.out(0),
         });
     }
-    return concatSavedFilms(g, windowPrefixes, after, 'h3_t4_film');
+    return concatSavedFilms(g, windowPrefixes, after, `${runId}/h3_t4_film`);
 }
 /** THE FUN-CONTROLNET CHAIN (002 H2/H4 + 007 L7): family-owned,
  *  the LTX_lora_loader precedent — the node pair is the family's
@@ -878,7 +883,7 @@ function applyH3FunControlNets(g, model, vae, picks) {
     }
     return cur;
 }
-function renderH3Window(p, g, facts, model) {
+function renderH3Window(p, g, facts, model, runId) {
     // REFS IMPLY THE R2V LANE (the bundle IS the r2v input): a
     // refs-carrying window is t4r even without a guide still — the
     // same law the film renderer applies per call. The DECLARED input
@@ -1929,13 +1934,17 @@ function renderH3Window(p, g, facts, model) {
             images: vdec, audio: vadec, fps: fpsInput, bit_depth: FILM_BIT_DEPTH,
             // color_space: pin autofill "sRGB"
         });
-        // ONE WINDOW-NAMING LAW (2026-09-22, the file-tail amendment):
-        // every window saves under h3_t4_w<k> — the t4r arm's legacy
+        // ONE WINDOW-NAMING LAW (2026-09-22, the file-tail amendment;
+        // F14 2026-11-12 — the run-scope seat): every window saves
+        // under `<runId>/h3_t4_w<k>` — the t4r arm's legacy
         // 'video/ComfyUI' prefix died (multi-window anchored films were
-        // unaddressable: every window collided on one prefix, and the
-        // file tail's loader could not name them).
+        // unaddressable), then the flat `h3_t4_w<k>` died too (the
+        // harvest outlier: the swap chain's `${runId}/…` prefixes
+        // harvest run-scoped, the film's flat prefixes stranded at the
+        // engine output root). The subfolder is the same run-scope
+        // spelling every chain save rides.
         const saved = g.node('SaveVideo', {
-            video: created.out(), filename_prefix: `h3_t4_w${k}`,
+            video: created.out(), filename_prefix: `${runId}/h3_t4_w${k}`,
             format: 'auto', codec: 'h264',
             'codec.encoding': 're-encode', 'codec.encoding.crf': 10.0,
         });
@@ -2024,7 +2033,7 @@ function renderH3Window(p, g, facts, model) {
             // color_space: pin autofill "sRGB"
         });
         const saved = g.node('SaveVideo', {
-            video: created.out(), filename_prefix: `h3_t4_w${k}`,
+            video: created.out(), filename_prefix: `${runId}/h3_t4_w${k}`,
             format: 'mp4', codec: 'h264',
         });
         rawHandles.savePassthrough = saved.out(0);
@@ -2264,7 +2273,7 @@ export const film = {
         { name: "image_name", type: "string" },
     ],
     facts: parseH3Facts,
-    build({ p: docIn, facts, g, model }) {
+    build({ p: docIn, facts, g, model, runId }) {
         const p = { ...docIn };
         // THE KEYFRAME PLAN GATE (the keyframe lane, slice 1 — 2026-11-05):
         // a pin's frame is FILM-absolute and must fall INSIDE some call's
@@ -2468,7 +2477,7 @@ export const film = {
         const docCalls = Array.isArray(p.calls) ? p.calls : null;
         const isFilm = docCalls !== null && docCalls.length > 1 && p.k === undefined;
         if (isFilm)
-            return renderH3Film(p, g, facts, model);
+            return renderH3Film(p, g, facts, model, runId);
         // THE CLIPS-STITCH LAW (2026-09-21): the Music row's mix is a
         // FILM-path consumer (it rides the accumulated film audio).
         // On the frozen single-window shape it would be a silent
@@ -2521,7 +2530,7 @@ export const film = {
         // refusal here was already refused upstream. The film loop
         // judges its stanza post-marriage; this face closes the same
         // TOCTOU — one schema, one voice.
-        const handles = renderH3Window(p, g, facts, model);
+        const handles = renderH3Window(p, g, facts, model, runId);
         assertOverlayGated(p, 'h3-timeline single-window knobs');
         return handles.savePassthrough;
     },

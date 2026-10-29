@@ -90,7 +90,7 @@ describe("the extend kind", () => {
     const g1 = new GraphBuilder();
     def.compose(bare, model, g1, "run_film_bare");
     const g2 = new GraphBuilder();
-    def.compose(withBag, model, g2, "run_film_bag");
+    def.compose(withBag, model, g2, "run_film_bare"); // F14: same runId — the byte-identical arm judges the extend bag, not the run namespace
     assert.deepEqual(graphOf(g2), graphOf(g1), "the empty extend bag leaves the film graph byte-identical");
     for (const cls of EXTEND_CLASSES) {
       assert.equal(ofClass(graphOf(g1), cls).length, 0, `a film graph carries zero ${cls}`);

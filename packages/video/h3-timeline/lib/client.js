@@ -3915,14 +3915,14 @@ window.__ModuleLoader__.load({
 			return typeof value === "object" && value !== null && !Array.isArray(value) ? value : {};
 		}
 		function isWindowName(name) {
-			return /^h3_t4_w\d+_\d+_\.mp4$/i.test(name) || /^video_w\d+_/.test(name);
+			return /(?:^|[/_])h3_t4_w\d+_\d+_\.mp4$/i.test(name) || /^video_w\d+_/.test(name);
 		}
 		function videoUrlOf(artifacts, assetUrls, direct, allowWindow = false) {
 			const rows = Object.entries(artifacts).filter((entry) => {
 				const [name, url] = entry;
 				return typeof url === "string" && url !== "" && refGenreOf(name, url) === "video";
 			});
-			const film = rows.find(([name, url]) => /(?:^|\/)h3_t4_film_\d+_\.mp4$/i.test(name) || /h3_t4_film_\d+_\.mp4(?:$|[?#])/i.test(url));
+			const film = rows.find(([name, url]) => /(?:^|[/_])h3_t4_film_\d+_\.mp4$/i.test(name) || /h3_t4_film_\d+_\.mp4(?:$|[?#])/i.test(url));
 			if (film !== void 0) return film[1];
 			if (typeof direct === "string" && direct !== "" && refGenreOf("", direct) === "video") return direct;
 			const named = rows.find(([name]) => allowWindow || !isWindowName(name));
@@ -16871,7 +16871,7 @@ window.__ModuleLoader__.load({
 				const windowIndexOf = (n) => {
 					const legacy = /^video_w(\d+)_/.exec(n);
 					if (legacy !== null) return Number(legacy[1]);
-					const real = /^h3_t4_w(\d+)_\d+_\.mp4$/.exec(n);
+					const real = /(?:^|[/_])h3_t4_w(\d+)_\d+_\.mp4$/.exec(n);
 					if (real !== null) return Number(real[1]);
 					return null;
 				};
@@ -16894,10 +16894,10 @@ window.__ModuleLoader__.load({
 						});
 					}
 				}
-				const filmName = Object.keys(arts).find((n) => /^h3_t4_film_\d+_\.mp4$/.test(n));
+				const filmName = Object.keys(arts).find((n) => /(?:^|[/_])h3_t4_film_\d+_\.mp4$/.test(n));
 				const filmUrl = filmName !== void 0 && typeof arts[filmName] === "string" && arts[filmName] !== "" ? arts[filmName] : "";
-				const namedVideo = Object.entries(arts).find(([name, url]) => typeof url === "string" && url !== "" && refGenreOf(name, url) === "video" && !/^h3_t4_w\d+_\d+_\.mp4$/i.test(name) && !/^video_w\d+_/.test(name))?.[1];
-				const flatVideo = urls.find((url) => refGenreOf("", url) === "video" && !/(?:^|\/)h3_t4_w\d+_\d+_\.mp4$/i.test(url) && !/(?:^|\/)video_w\d+_/.test(url));
+				const namedVideo = Object.entries(arts).find(([name, url]) => typeof url === "string" && url !== "" && refGenreOf(name, url) === "video" && !/(?:^|[/_])h3_t4_w\d+_\d+_\.mp4$/i.test(name) && !/^video_w\d+_/.test(name))?.[1];
+				const flatVideo = urls.find((url) => refGenreOf("", url) === "video" && !/(?:^|[/_])h3_t4_w\d+_\d+_\.mp4$/i.test(url) && !/(?:^|\/)video_w\d+_/.test(url));
 				return {
 					windows,
 					final: filmUrl !== "" ? filmUrl : typeof namedVideo === "string" ? namedVideo : flatVideo ?? null

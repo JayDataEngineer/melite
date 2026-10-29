@@ -8,8 +8,10 @@
 // names.
 
 /** The ENGINE FILM artifact — the in-graph assembly's output
- *  (SaveVideo prefix h3_t4_film + ComfyUI's counter suffix). */
-const ENGINE_FILM_RE = /(?:^|\/)h3_t4_film_\d+_\.mp4$/;
+ *  (SaveVideo prefix `<runId>/h3_t4_film` + ComfyUI's counter
+ *  suffix; F14 2026-11-12 — the run row key may carry a leading run
+ *  path or harvest nodeId segment before the canonical stem). */
+const ENGINE_FILM_RE = /(?:^|[/_])h3_t4_film_\d+_\.mp4$/;
 
 /** The engine-composed film's name among a stage's artifacts, if
  *  any — presentation order only, never composition. */

@@ -160,6 +160,30 @@ describe("filmstrip (the last run's windows)", () => {
     )
   })
 
+  // F14 (2026-11-12) — THE RUN-SCOPE KEY SHAPES: film saves ride
+  // `<runId>/…`, so the run row key may arrive with a leading run
+  // path (the subfolder spelling) or a leading harvest nodeId
+  // segment (the flat `<nodeId>_<name>` spelling). Both must hero
+  // the film and tile the windows — the name contract's run-scoped
+  // era, never a regression to flat-only matching.
+  it("run-scoped keys: the film is the hero, windows tile by index (path and nodeId shapes)", () => {
+    const { result } = view({
+      stage: stageWith({
+        artifacts: {
+          "run-abc123/h3_t4_film_00001_.mp4": "https://r/film.mp4",
+          "run-abc123/h3_t4_w1_00001_.mp4": "https://r/w1.mp4",
+          "42_h3_t4_w2_00001_.mp4": "https://r/w2.mp4",
+        },
+        assetUrls: ["https://r/film.mp4", "https://r/w1.mp4", "https://r/w2.mp4"],
+      }),
+    })
+    assert.equal(result.current.filmstrip.final, "https://r/film.mp4")
+    assert.deepEqual(
+      result.current.filmstrip.windows.map((w) => w.url),
+      ["https://r/w1.mp4", "https://r/w2.mp4"],
+    )
+  })
+
   it("a window can never impersonate the hero when the film is absent", () => {
     const { result } = view({
       stage: stageWith({

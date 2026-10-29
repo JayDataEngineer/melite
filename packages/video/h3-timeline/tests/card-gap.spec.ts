@@ -379,7 +379,7 @@ describe("the merged film (the drift-control seam, automatic)", () => {
     // and the film assembles from the saved files, never tensors
     const concat = ofClass(out, "MeliteConcatVideos");
     assert.equal(concat.length, 1, "one file-decoding tail assembles the film");
-    assert.match(String(concat[0]![1].inputs.videos), /h3_t4_w1,h3_t4_w2,h3_t4_w3,h3_t4_w4/,
+    assert.match(String(concat[0]![1].inputs.videos), /run_standing_seam\/h3_t4_w1,run_standing_seam\/h3_t4_w2,run_standing_seam\/h3_t4_w3,run_standing_seam\/h3_t4_w4/,
       "the concat names every saved window in order");
   });
 
@@ -1003,7 +1003,7 @@ describe("the single-window doors", () => {
     // prompt key is dead at this door; the sole call carries the text.
     def.compose({ variant: "t4_open", calls: [SHOT({ text: "a slow push in" })] }, model, g, "run_nocalls");
     const saves = ofClass(graphOf(g), "SaveVideo");
-    assert.ok(saves.some(([, n]) => n.inputs.filename_prefix === "h3_t4_w1"));
+    assert.ok(saves.some(([, n]) => n.inputs.filename_prefix === "run_nocalls/h3_t4_w1"));
   });
 
   it("a bogus variant at the window door derives its lane (the DERIVED family rides, never a throw)", () => {
@@ -1323,7 +1323,7 @@ describe("the clips-stitch (positioned clips land in the post-generation mix nod
     // clips-free arm's own file-tail machinery with the mixed audio
     // wired into CreateVideo → SaveVideo h3_t4_film.
     assert.ok(
-      Object.values(out).some((n) => n.class_type === "SaveVideo" && String(n.inputs.filename_prefix) === "h3_t4_film"),
+      Object.values(out).some((n) => n.class_type === "SaveVideo" && String(n.inputs.filename_prefix) === "run_clips_mix/h3_t4_film"),
       "the film mp4 saves in-graph (GAP 1 — the video join rides the clips arm)",
     );
     assert.equal(ofClass(out, "MeliteAudioDuck").length, 0, "no in-graph duck — the duck matrix rides the mix node");
@@ -1348,7 +1348,7 @@ describe("the clips-stitch (positioned clips land in the post-generation mix nod
     assert.equal(manifest.musicDuckSpanString, "", "a lone music span never ducks the music bus");
     const mixes = ofClass(out, "MeliteFilmAudioMix");
     assert.equal(mixes.length, 1, "exactly one post-generation mix node");
-    assert.equal(mixes[0]![1].inputs.videos, "h3_t4_w1,h3_t4_w2", "the mix names the window files in film order");
+    assert.equal(mixes[0]![1].inputs.videos, "run_clips_mix/h3_t4_w1,run_clips_mix/h3_t4_w2", "the mix names the window files in film order");
     assert.deepEqual(
       JSON.parse(String(mixes[0]![1].inputs.clips_json)),
       [{ src: "data:audio/wav;base64,AAA", start_sec: 4.167, dur_sec: 2, class: "music" }],
@@ -1359,7 +1359,7 @@ describe("the clips-stitch (positioned clips land in the post-generation mix nod
     assert.equal(mixes[0]![1].inputs.duck_db, -14, "the duck rides the declared default depth");
     const saves = ofClass(out, "SaveAudio");
     assert.equal(saves.length, 1, "the film's audio saves once");
-    assert.equal(saves[0]![1].inputs.filename_prefix, "h3_t4_film_audio", "under the film-audio name");
+    assert.equal(saves[0]![1].inputs.filename_prefix, "run_clips_mix/h3_t4_film_audio", "under the film-audio name");
     // THE METER TAP (§39, 2026-09-25): a passthrough MeliteLoudness
     // sits between the mix and its consumers — the save (and the
     // film mux below) carry the METER's output, which is the mix's
@@ -1417,7 +1417,7 @@ describe("the clips-stitch (positioned clips land in the post-generation mix nod
     // film in-graph (the 27-film precedent — never OOM'd)
     assert.equal(ofClass(out, "MeliteConcatVideos").length, 1, "the file-tail loader still assembles clips-free films");
     assert.ok(
-      Object.values(out).some((n) => n.class_type === "SaveVideo" && String(n.inputs.filename_prefix) === "h3_t4_film"),
+      Object.values(out).some((n) => n.class_type === "SaveVideo" && String(n.inputs.filename_prefix) === "run_clips_absent/h3_t4_film"),
       "the clips-free film still saves in-graph",
     );
   });
@@ -1502,7 +1502,7 @@ describe("the valve's second arm (audio-carrying films free per-window)", () => 
     assert.equal(ofClass(out, "MeliteConcatVideos").length, 1, "exactly one file-tail video join");
     assert.equal(ofClass(out, "CreateVideo").filter(([id]) => !id.startsWith("window")).length, 1, "exactly one film-level CreateVideo");
     assert.ok(
-      Object.values(out).some((n) => n.class_type === "SaveVideo" && String(n.inputs.filename_prefix) === "h3_t4_film"),
+      Object.values(out).some((n) => n.class_type === "SaveVideo" && String(n.inputs.filename_prefix) === "run_valve_absent/h3_t4_film"),
       "the film mp4 saves in-graph",
     );
     // the windows themselves still render + save (the valve's law)
@@ -1511,12 +1511,12 @@ describe("the valve's second arm (audio-carrying films free per-window)", () => 
     const saves = Object.entries(out).filter(([, n]) => n.class_type === "SaveVideo");
     assert.deepEqual(
       saves.map(([, n]) => String(n.inputs.filename_prefix)).sort(),
-      ["h3_t4_film", "h3_t4_w1", "h3_t4_w2"],
+      ["run_valve_absent/h3_t4_film", "run_valve_absent/h3_t4_w1", "run_valve_absent/h3_t4_w2"],
       "the window files + the film mp4 save as video — nothing else",
     );
     const audioSaves = ofClass(out, "SaveAudio");
     assert.equal(audioSaves.length, 1, "exactly one film-audio save");
-    assert.equal(audioSaves[0]![1].inputs.filename_prefix, "h3_t4_film_audio", "under the film-audio name");
+    assert.equal(audioSaves[0]![1].inputs.filename_prefix, "run_valve_absent/h3_t4_film_audio", "under the film-audio name");
   });
 
   it("(b) the mix node carries the clips' spans + duck depth, ordered after every save", () => {
@@ -1576,7 +1576,7 @@ describe("the valve's second arm (audio-carrying films free per-window)", () => 
     assert.equal(mixes.length, 1, "exactly one mix node");
     const joins = ofClass(out, "MeliteConcatVideos");
     assert.equal(joins.length, 1, "exactly one file-tail join");
-    assert.equal(joins[0]![1].inputs.videos, "h3_t4_w1,h3_t4_w2", "the join names the window files in film order");
+    assert.equal(joins[0]![1].inputs.videos, "run_valve_join/h3_t4_w1,run_valve_join/h3_t4_w2", "the join names the window files in film order");
     // the join waits on the same chained boundary token as the mix
     assert.deepEqual(joins[0]![1].inputs.after, mixes[0]![1].inputs.after, "join + mix share the boundary token");
     const created = ofClass(out, "CreateVideo").filter(([id]) => !id.startsWith("window"));
@@ -1589,7 +1589,7 @@ describe("the valve's second arm (audio-carrying films free per-window)", () => 
     assert.deepEqual(created[0]![1].inputs.fps, [joins[0]![0], 2], "the clock is the join's fps");
     assert.equal(created[0]![1].inputs.bit_depth, 8, "8-bit, per the clips-free arm");
     const filmSaves = Object.entries(out).filter(
-      ([, n]) => n.class_type === "SaveVideo" && String(n.inputs.filename_prefix) === "h3_t4_film",
+      ([, n]) => n.class_type === "SaveVideo" && String(n.inputs.filename_prefix) === "run_valve_join/h3_t4_film",
     );
     assert.equal(filmSaves.length, 1, "exactly one film save");
     assert.deepEqual(filmSaves[0]![1].inputs.video, [created[0]![0], 0], "the save carries the film CreateVideo");
