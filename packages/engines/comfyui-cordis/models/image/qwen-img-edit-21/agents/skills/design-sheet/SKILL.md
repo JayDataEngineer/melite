@@ -100,14 +100,16 @@ Entity name: {{name}}
 - The `{{name}}` seat is the entity name the user gives (the
   sheet's title); everything else comes from looking at the
   reference.
-- THE FRAME LIVES ON THE ANCHOR: the lane samples the encoder's
-  anchor-sized latent — the anchor's frame IS the render frame — so
-  prep the anchor AT the target frame (pad or outpaint the reference
-  to 3:2; poster's instinct). NEVER crop first: cropping to the ratio
-  destroys pixels the sheet needs. The card's width/height pair
-  (match OFF) is the DELIVERY resize of the finished edit, never a
-  render size; the contract's own "no pixel resolutions" rule and
-  this agree — the ratio rides the anchor's frame, never the prompt.
+- THE RENDER SIZES ITSELF (the ground-truth cure, 2026-11-12): the
+  card's width/height pair (match OFF) IS the render size — the
+  encoder processes the references at a matched budget and the
+  sampler renders an exact latent at the stated canvas, so a 3:2
+  sheet states 1536×1024 (or its equal) directly and the delivered
+  frame IS the rendered frame. NEVER crop the reference to the
+  ratio: cropping destroys pixels the sheet needs. The contract's
+  "no pixel resolutions" rule rides the PROMPT (the ratio rides the
+  card pair, never prompt prose) — pad the reference to grow it if
+  you need more canvas, and let the pair size the render.
 - The density law at work: 900–1600 words is not a risk on this
   model — it is the design. Draft the full spec. The tripwire cuts
   the other way too: a prompt under ~200 words cannot render a
@@ -117,8 +119,10 @@ Entity name: {{name}}
 ## Composing the run
 
 image-edit card, `model: qwen-img-edit-21`: `input_images` =
-[the reference cropped to 3:2], the ten-section draft in `prompt`,
-a fixed seed. Lock the draft with the seed in the character's
+[the reference, uncropped], the ten-section draft in `prompt`,
+a fixed seed, and the render pair stated on the card (match OFF,
+1536×1024 for the 3:2 sheet — the reference is never cropped to
+fit). Lock the draft with the seed in the character's
 record so the sheet regenerates identically on iteration; hand the
 sheet to the edit or video lane as the identity reference.
 

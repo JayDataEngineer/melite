@@ -47,10 +47,12 @@ untouched.
 ## Composing the run
 
 image-edit card, `model: qwen-img-edit-21`: `input_images` =
-[the photo], the prompt, fixed seed. The output inherits the
-anchor's frame; no ratio work needed unless the user asks for a
-different crop — then crop the anchor FIRST (the input-prep
-card's crop).
+[the photo], the prompt, fixed seed. THE RENDER SIZES ITSELF
+(the ground-truth cure, 2026-11-12): the output keeps the anchor's
+frame; a different ratio states the new pair on the card (match
+OFF) and the sampler renders that exact canvas — never crop the
+anchor to change the ratio (pad to grow when the look needs more
+room).
 
 ## Density tripwire
 

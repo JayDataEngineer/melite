@@ -55,10 +55,12 @@ the same relative positions").
 ## Composing the run
 
 image-edit card, `model: qwen-img-edit-21`: `input_images` =
-[the photo], the degrees-and-direction prompt, fixed seed. The
-frame inherits the anchor; a viewpoint change that also wants a
-wider/taller frame stages the cropped anchor FIRST (the input-prep
-card's crop).
+[the photo], the degrees-and-direction prompt, fixed seed. THE
+RENDER SIZES ITSELF (the ground-truth cure, 2026-11-12): a
+viewpoint change that also wants a wider/taller frame states the
+new pair on the card (match OFF) and the sampler renders that exact
+canvas — never crop the anchor to reframe (pad to grow when the
+wider view needs more room).
 
 ## Density tripwire
 

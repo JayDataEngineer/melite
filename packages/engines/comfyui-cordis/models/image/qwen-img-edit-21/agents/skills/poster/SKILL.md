@@ -62,10 +62,12 @@ skill's outpaint arm owns the recipe).
 ## Composing the run
 
 image-edit card, `model: qwen-img-edit-21`: `input_images` =
-[the source], the prompt, fixed seed. The output inherits the
-anchor's frame — posters are 2:3 or 3:4 portrait: crop or extend
-the anchor FIRST (the input-prep card's crop) so the frame is the
-poster's before the layout rides in.
+[the source], the prompt, fixed seed. THE RENDER SIZES ITSELF (the
+ground-truth cure, 2026-11-12): state the poster's portrait pair on
+the card (match OFF, 2:3 or 3:4 — e.g. 832×1216) and the sampler
+renders that exact canvas — never crop the anchor to portrait (pad
+the canvas to grow it instead when the layout needs more room; the
+outpaint arm owns that recipe).
 
 ## Density tripwire
 

@@ -50,13 +50,14 @@ for. Leakage guard: nothing about the face changes at all.
 ## Composing the run
 
 image-edit card, `model: qwen-img-edit-21`: `input_images` =
-[the photo], the prompt, fixed seed to iterate. THE FRAME LIVES ON
-THE ANCHOR: a headshot is vertical, so prep the anchor at 2:3 or
-3:4 when the source is landscape — the anchor's frame IS the render
-frame. The card's width/height pair (match OFF) is the DELIVERY
-resize of the finished edit, never a render size. Multiple looks
-(light rigs, backgrounds) are iterations: same seed family, one
-prompt change each.
+[the photo], the prompt, fixed seed to iterate. THE RENDER SIZES
+ITSELF (the ground-truth cure, 2026-11-12): a headshot is vertical,
+so state the pair on the card (match OFF, 2:3 or 3:4 portrait —
+e.g. 832×1216) and the sampler renders that exact canvas — never
+crop the photo to make it vertical (a crop throws away the pixels
+the portrait composes with; the pair changes the ratio natively).
+Multiple looks (light rigs, backgrounds) are iterations: same seed
+family, one prompt change each.
 
 ## Density tripwire
 

@@ -162,10 +162,12 @@ describe("the qwen-img-edit-21 family doc wall", () => {
     expect(md).toContain("Entity name: {{name}}");
     // the estate glue: the draft's destination, the geometry translation
     expect(md).toMatch(/ten sections go into `prompt`/);
-    // the frame law (2026-11-12 audit): pad/outpaint to 3:2, never crop-first
-    expect(flat(md)).toContain("THE FRAME LIVES ON THE ANCHOR");
-    expect(flat(md)).toMatch(/pad or outpaint the reference to 3:2/i);
-    expect(flat(md)).toContain("NEVER crop first");
+    // the render-sizing law (the ground-truth cure, 2026-11-12):
+    // the card pair IS the render size; the reference is never
+    // cropped to the ratio
+    expect(flat(md)).toContain("THE RENDER SIZES ITSELF");
+    expect(flat(md)).toMatch(/1536×1024 for the 3:2 sheet/i);
+    expect(flat(md)).toContain("NEVER crop the reference to the");
     expect(flat(md)).not.toMatch(/crop the reference to 3:2/i);
 
     // THE WORKED EXAMPLE (P1, 2026-11-12 audit cure 1): the run-proven
@@ -216,11 +218,11 @@ describe("the qwen-img-edit-21 family doc wall", () => {
     }
   });
 
-  it("headshot teaches the frame law, not crop-first (P4, the 2026-11-12 audit)", () => {
+  it("headshot teaches the render-sizing law, not crop-first (P4 audit, restated by the ground-truth cure 2026-11-12)", () => {
     const md = readFileSync(join(FAMILY_DIR, "agents", "skills", "headshot", "SKILL.md"), "utf8");
-    expect(flat(md)).toContain("THE FRAME LIVES ON THE ANCHOR");
-    expect(flat(md)).toContain("DELIVERY resize of the finished edit, never a render size");
-    expect(flat(md)).not.toMatch(/crop the anchor to.{0,40}FIRST/i);
+    expect(flat(md)).toContain("THE RENDER SIZES ITSELF");
+    expect(flat(md)).toMatch(/state the pair on the card \(match OFF, 2:3 or 3:4 portrait/i);
+    expect(flat(md)).toMatch(/never\s+crop the photo to make it vertical/i);
   });
 
   it("the drafting contract rides verbatim (legacy pin, kept whole)", () => {
