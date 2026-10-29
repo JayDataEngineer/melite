@@ -11,6 +11,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
   interface TypertRemoteNamespace$62656e6368 {
     'add-stage': (sessionKey: string, doc: BenchDoc, signal?: AbortSignal) => Promise<RemoteResult<BenchStageRow>>
     'add-stages': (sessionKey: string, doc: BenchDoc, signal?: AbortSignal) => Promise<RemoteResult<BenchStagesRow>>
+    archive: (sessionKey: string, doc: BenchDoc, signal?: AbortSignal) => Promise<RemoteResult<BenchStageRow>>
     clear: (sessionKey: string, doc: BenchDoc, signal?: AbortSignal) => Promise<RemoteResult<BenchClearRow>>
     ensure: (doc: BenchDoc, signal?: AbortSignal) => Promise<RemoteResult<BenchEnsureRow>>
     get: (sessionKey: string, signal?: AbortSignal) => Promise<RemoteResult<BenchGetRow>>
@@ -32,6 +33,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
   interface TypertRemoteMap {
     'bench/add-stage': (sessionKey: string, doc: BenchDoc, signal?: AbortSignal) => Promise<RemoteResult<BenchStageRow>>
     'bench/add-stages': (sessionKey: string, doc: BenchDoc, signal?: AbortSignal) => Promise<RemoteResult<BenchStagesRow>>
+    'bench/archive': (sessionKey: string, doc: BenchDoc, signal?: AbortSignal) => Promise<RemoteResult<BenchStageRow>>
     'bench/clear': (sessionKey: string, doc: BenchDoc, signal?: AbortSignal) => Promise<RemoteResult<BenchClearRow>>
     'bench/ensure': (doc: BenchDoc, signal?: AbortSignal) => Promise<RemoteResult<BenchEnsureRow>>
     'bench/get': (sessionKey: string, signal?: AbortSignal) => Promise<RemoteResult<BenchGetRow>>
@@ -57,6 +59,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
 export declare const TYPERT_REMOTE: TypertRemoteInfo<{
   readonly 'bench/add-stage': TypertRemoteMethod<{ readonly 'sessionKey': string; readonly 'doc': BenchDoc }, BenchStageRow>
   readonly 'bench/add-stages': TypertRemoteMethod<{ readonly 'sessionKey': string; readonly 'doc': BenchDoc }, BenchStagesRow>
+  readonly 'bench/archive': TypertRemoteMethod<{ readonly 'sessionKey': string; readonly 'doc': BenchDoc }, BenchStageRow>
   readonly 'bench/clear': TypertRemoteMethod<{ readonly 'sessionKey': string; readonly 'doc': BenchDoc }, BenchClearRow>
   readonly 'bench/ensure': TypertRemoteMethod<{ readonly 'doc': BenchDoc }, BenchEnsureRow>
   readonly 'bench/get': TypertRemoteMethod<{ readonly 'sessionKey': string }, BenchGetRow>

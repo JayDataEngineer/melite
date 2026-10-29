@@ -37,6 +37,8 @@ let JsonValueRemoteCodec$schema16$value
 const JsonValueRemoteCodec$schema16 = () => (JsonValueRemoteCodec$schema16$value ??= z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema16())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema16())).readonly()]))
 let JsonValueRemoteCodec$schema17$value
 const JsonValueRemoteCodec$schema17 = () => (JsonValueRemoteCodec$schema17$value ??= z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema17())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema17())).readonly()]))
+let JsonValueRemoteCodec$schema18$value
+const JsonValueRemoteCodec$schema18 = () => (JsonValueRemoteCodec$schema18$value ??= z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema18())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema18())).readonly()]))
 let _melite_estate_drafts_bench_add_stage_parameter_0$schema$value
 const _melite_estate_drafts_bench_add_stage_parameter_0$schema = () => (_melite_estate_drafts_bench_add_stage_parameter_0$schema$value ??= z.string())
 let _melite_estate_drafts_bench_add_stage_parameter_1$schema$value
@@ -59,10 +61,21 @@ const _melite_estate_drafts_bench_add_stages_result$schema = () => (_melite_esta
   'rev': z.number().readonly(),
   'stages': z.array(z.string()).readonly(),
 }))
+let _melite_estate_drafts_bench_archive_parameter_0$schema$value
+const _melite_estate_drafts_bench_archive_parameter_0$schema = () => (_melite_estate_drafts_bench_archive_parameter_0$schema$value ??= z.string())
+let _melite_estate_drafts_bench_archive_parameter_1$schema$value
+const _melite_estate_drafts_bench_archive_parameter_1$schema = () => (_melite_estate_drafts_bench_archive_parameter_1$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema8())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema8())).readonly()])).readonly())
+let _melite_estate_drafts_bench_archive_result$schema$value
+const _melite_estate_drafts_bench_archive_result$schema = () => (_melite_estate_drafts_bench_archive_result$schema$value ??= z.object({
+  'draft_id': z.string().readonly(),
+  'session': z.string().readonly(),
+  'rev': z.number().readonly(),
+  'stage': z.string().readonly(),
+}))
 let _melite_estate_drafts_bench_clear_parameter_0$schema$value
 const _melite_estate_drafts_bench_clear_parameter_0$schema = () => (_melite_estate_drafts_bench_clear_parameter_0$schema$value ??= z.string())
 let _melite_estate_drafts_bench_clear_parameter_1$schema$value
-const _melite_estate_drafts_bench_clear_parameter_1$schema = () => (_melite_estate_drafts_bench_clear_parameter_1$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema9())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema9())).readonly()])).readonly())
+const _melite_estate_drafts_bench_clear_parameter_1$schema = () => (_melite_estate_drafts_bench_clear_parameter_1$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema10())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema10())).readonly()])).readonly())
 let _melite_estate_drafts_bench_clear_result$schema$value
 const _melite_estate_drafts_bench_clear_result$schema = () => (_melite_estate_drafts_bench_clear_result$schema$value ??= z.object({
   'draft_id': z.string().readonly(),
@@ -95,7 +108,7 @@ const _melite_estate_drafts_bench_get_result$schema = () => (_melite_estate_draf
 let _melite_estate_drafts_bench_group_parameter_0$schema$value
 const _melite_estate_drafts_bench_group_parameter_0$schema = () => (_melite_estate_drafts_bench_group_parameter_0$schema$value ??= z.string())
 let _melite_estate_drafts_bench_group_parameter_1$schema$value
-const _melite_estate_drafts_bench_group_parameter_1$schema = () => (_melite_estate_drafts_bench_group_parameter_1$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema12())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema12())).readonly()])).readonly())
+const _melite_estate_drafts_bench_group_parameter_1$schema = () => (_melite_estate_drafts_bench_group_parameter_1$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema13())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema13())).readonly()])).readonly())
 let _melite_estate_drafts_bench_group_result$schema$value
 const _melite_estate_drafts_bench_group_result$schema = () => (_melite_estate_drafts_bench_group_result$schema$value ??= z.object({
   'draft_id': z.string().readonly(),
@@ -120,7 +133,7 @@ const _melite_estate_drafts_bench_patch_result$schema = () => (_melite_estate_dr
 let _melite_estate_drafts_bench_remove_stage_parameter_0$schema$value
 const _melite_estate_drafts_bench_remove_stage_parameter_0$schema = () => (_melite_estate_drafts_bench_remove_stage_parameter_0$schema$value ??= z.string())
 let _melite_estate_drafts_bench_remove_stage_parameter_1$schema$value
-const _melite_estate_drafts_bench_remove_stage_parameter_1$schema = () => (_melite_estate_drafts_bench_remove_stage_parameter_1$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema8())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema8())).readonly()])).readonly())
+const _melite_estate_drafts_bench_remove_stage_parameter_1$schema = () => (_melite_estate_drafts_bench_remove_stage_parameter_1$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema9())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema9())).readonly()])).readonly())
 let _melite_estate_drafts_bench_remove_stage_result$schema$value
 const _melite_estate_drafts_bench_remove_stage_result$schema = () => (_melite_estate_drafts_bench_remove_stage_result$schema$value ??= z.object({
   'draft_id': z.string().readonly(),
@@ -131,7 +144,7 @@ const _melite_estate_drafts_bench_remove_stage_result$schema = () => (_melite_es
 let _melite_estate_drafts_bench_reorder_parameter_0$schema$value
 const _melite_estate_drafts_bench_reorder_parameter_0$schema = () => (_melite_estate_drafts_bench_reorder_parameter_0$schema$value ??= z.string())
 let _melite_estate_drafts_bench_reorder_parameter_1$schema$value
-const _melite_estate_drafts_bench_reorder_parameter_1$schema = () => (_melite_estate_drafts_bench_reorder_parameter_1$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema11())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema11())).readonly()])).readonly())
+const _melite_estate_drafts_bench_reorder_parameter_1$schema = () => (_melite_estate_drafts_bench_reorder_parameter_1$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema12())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema12())).readonly()])).readonly())
 let _melite_estate_drafts_bench_reorder_result$schema$value
 const _melite_estate_drafts_bench_reorder_result$schema = () => (_melite_estate_drafts_bench_reorder_result$schema$value ??= z.object({
   'draft_id': z.string().readonly(),
@@ -144,7 +157,7 @@ const _melite_estate_drafts_bench_reorder_result$schema = () => (_melite_estate_
 let _melite_estate_drafts_bench_rewire_parameter_0$schema$value
 const _melite_estate_drafts_bench_rewire_parameter_0$schema = () => (_melite_estate_drafts_bench_rewire_parameter_0$schema$value ??= z.string())
 let _melite_estate_drafts_bench_rewire_parameter_1$schema$value
-const _melite_estate_drafts_bench_rewire_parameter_1$schema = () => (_melite_estate_drafts_bench_rewire_parameter_1$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema10())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema10())).readonly()])).readonly())
+const _melite_estate_drafts_bench_rewire_parameter_1$schema = () => (_melite_estate_drafts_bench_rewire_parameter_1$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema11())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema11())).readonly()])).readonly())
 let _melite_estate_drafts_bench_rewire_result$schema$value
 const _melite_estate_drafts_bench_rewire_result$schema = () => (_melite_estate_drafts_bench_rewire_result$schema$value ??= z.object({
   'draft_id': z.string().readonly(),
@@ -167,19 +180,19 @@ const _melite_estate_drafts_bench_subscribe_result$schema = () => (_melite_estat
 let _melite_estate_drafts_bench_undo_parameter_0$schema$value
 const _melite_estate_drafts_bench_undo_parameter_0$schema = () => (_melite_estate_drafts_bench_undo_parameter_0$schema$value ??= z.string())
 let _melite_estate_drafts_bench_undo_parameter_1$schema$value
-const _melite_estate_drafts_bench_undo_parameter_1$schema = () => (_melite_estate_drafts_bench_undo_parameter_1$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema14())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema14())).readonly()])).readonly())
+const _melite_estate_drafts_bench_undo_parameter_1$schema = () => (_melite_estate_drafts_bench_undo_parameter_1$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema15())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema15())).readonly()])).readonly())
 let _melite_estate_drafts_bench_undo_result$schema$value
 const _melite_estate_drafts_bench_undo_result$schema = () => (_melite_estate_drafts_bench_undo_result$schema$value ??= z.object({
   'draft_id': z.string().readonly(),
   'session': z.string().readonly(),
   'rev': z.number().readonly(),
   'undone': z.array(z.number()).readonly(),
-  'stages': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema15())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema15())).readonly()]).readonly(),
+  'stages': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema16())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema16())).readonly()]).readonly(),
 }))
 let _melite_estate_drafts_bench_ungroup_parameter_0$schema$value
 const _melite_estate_drafts_bench_ungroup_parameter_0$schema = () => (_melite_estate_drafts_bench_ungroup_parameter_0$schema$value ??= z.string())
 let _melite_estate_drafts_bench_ungroup_parameter_1$schema$value
-const _melite_estate_drafts_bench_ungroup_parameter_1$schema = () => (_melite_estate_drafts_bench_ungroup_parameter_1$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema13())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema13())).readonly()])).readonly())
+const _melite_estate_drafts_bench_ungroup_parameter_1$schema = () => (_melite_estate_drafts_bench_ungroup_parameter_1$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema14())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema14())).readonly()])).readonly())
 let _melite_estate_drafts_bench_ungroup_result$schema$value
 const _melite_estate_drafts_bench_ungroup_result$schema = () => (_melite_estate_drafts_bench_ungroup_result$schema$value ??= z.object({
   'draft_id': z.string().readonly(),
@@ -196,7 +209,7 @@ const _melite_estate_drafts_drafts_delete_result$schema = () => (_melite_estate_
 let _melite_estate_drafts_drafts_get_parameter_0$schema$value
 const _melite_estate_drafts_drafts_get_parameter_0$schema = () => (_melite_estate_drafts_drafts_get_parameter_0$schema$value ??= z.string())
 let _melite_estate_drafts_drafts_get_result$schema$value
-const _melite_estate_drafts_drafts_get_result$schema = () => (_melite_estate_drafts_drafts_get_result$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema16())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema16())).readonly()])).readonly())
+const _melite_estate_drafts_drafts_get_result$schema = () => (_melite_estate_drafts_drafts_get_result$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema17())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema17())).readonly()])).readonly())
 let _melite_estate_drafts_drafts_list_result$schema$value
 const _melite_estate_drafts_drafts_list_result$schema = () => (_melite_estate_drafts_drafts_list_result$schema$value ??= z.object({
   'count': z.number().readonly(),
@@ -212,12 +225,12 @@ let _melite_estate_drafts_drafts_patch_parameter_1$schema$value
 const _melite_estate_drafts_drafts_patch_parameter_1$schema = () => (_melite_estate_drafts_drafts_patch_parameter_1$schema$value ??= z.string())
 let _melite_estate_drafts_drafts_patch_parameter_2$schema$value
 const _melite_estate_drafts_drafts_patch_parameter_2$schema = () => (_melite_estate_drafts_drafts_patch_parameter_2$schema$value ??= z.object({
-  'params': z.union([z.undefined(), z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema17())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema17())).readonly()])), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema17())).readonly()]).optional(),
-  'result': z.union([z.undefined(), z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema17())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema17())).readonly()])), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema17())).readonly()]).optional(),
-  'runStatus': z.union([z.undefined(), z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema17())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema17())).readonly()])), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema17())).readonly()]).optional(),
-  'health': z.union([z.undefined(), z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema17())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema17())).readonly()])), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema17())).readonly()]).optional(),
-  'inputs': z.union([z.undefined(), z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema17())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema17())).readonly()])), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema17())).readonly()]).optional(),
-  'inputOutputs': z.union([z.undefined(), z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema17())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema17())).readonly()])), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema17())).readonly()]).optional(),
+  'params': z.union([z.undefined(), z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema18())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema18())).readonly()])), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema18())).readonly()]).optional(),
+  'result': z.union([z.undefined(), z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema18())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema18())).readonly()])), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema18())).readonly()]).optional(),
+  'runStatus': z.union([z.undefined(), z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema18())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema18())).readonly()])), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema18())).readonly()]).optional(),
+  'health': z.union([z.undefined(), z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema18())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema18())).readonly()])), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema18())).readonly()]).optional(),
+  'inputs': z.union([z.undefined(), z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema18())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema18())).readonly()])), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema18())).readonly()]).optional(),
+  'inputOutputs': z.union([z.undefined(), z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema18())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema18())).readonly()])), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema18())).readonly()]).optional(),
 }))
 let _melite_estate_drafts_drafts_patch_parameter_3$schema$value
 const _melite_estate_drafts_drafts_patch_parameter_3$schema = () => (_melite_estate_drafts_drafts_patch_parameter_3$schema$value ??= z.union([z.literal(null), z.number()]))
@@ -254,6 +267,8 @@ let closed$JsonValueRemoteCodec$schema11$value
 const closed$JsonValueRemoteCodec$schema11 = () => (closed$JsonValueRemoteCodec$schema11$value ??= z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => closed$JsonValueRemoteCodec$schema11())), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema11())).readonly()]))
 let closed$JsonValueRemoteCodec$schema12$value
 const closed$JsonValueRemoteCodec$schema12 = () => (closed$JsonValueRemoteCodec$schema12$value ??= z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => closed$JsonValueRemoteCodec$schema12())), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema12())).readonly()]))
+let closed$JsonValueRemoteCodec$schema13$value
+const closed$JsonValueRemoteCodec$schema13 = () => (closed$JsonValueRemoteCodec$schema13$value ??= z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => closed$JsonValueRemoteCodec$schema13())), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema13())).readonly()]))
 let _melite_estate_drafts_bench_add_stage_parameter_0_strict$schema$value
 const _melite_estate_drafts_bench_add_stage_parameter_0_strict$schema = () => (_melite_estate_drafts_bench_add_stage_parameter_0_strict$schema$value ??= z.string())
 let _melite_estate_drafts_bench_add_stage_parameter_1_strict$schema$value
@@ -262,10 +277,14 @@ let _melite_estate_drafts_bench_add_stages_parameter_0_strict$schema$value
 const _melite_estate_drafts_bench_add_stages_parameter_0_strict$schema = () => (_melite_estate_drafts_bench_add_stages_parameter_0_strict$schema$value ??= z.string())
 let _melite_estate_drafts_bench_add_stages_parameter_1_strict$schema$value
 const _melite_estate_drafts_bench_add_stages_parameter_1_strict$schema = () => (_melite_estate_drafts_bench_add_stages_parameter_1_strict$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => closed$JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema4())).readonly()])).readonly())
+let _melite_estate_drafts_bench_archive_parameter_0_strict$schema$value
+const _melite_estate_drafts_bench_archive_parameter_0_strict$schema = () => (_melite_estate_drafts_bench_archive_parameter_0_strict$schema$value ??= z.string())
+let _melite_estate_drafts_bench_archive_parameter_1_strict$schema$value
+const _melite_estate_drafts_bench_archive_parameter_1_strict$schema = () => (_melite_estate_drafts_bench_archive_parameter_1_strict$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => closed$JsonValueRemoteCodec$schema5())), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema5())).readonly()])).readonly())
 let _melite_estate_drafts_bench_clear_parameter_0_strict$schema$value
 const _melite_estate_drafts_bench_clear_parameter_0_strict$schema = () => (_melite_estate_drafts_bench_clear_parameter_0_strict$schema$value ??= z.string())
 let _melite_estate_drafts_bench_clear_parameter_1_strict$schema$value
-const _melite_estate_drafts_bench_clear_parameter_1_strict$schema = () => (_melite_estate_drafts_bench_clear_parameter_1_strict$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => closed$JsonValueRemoteCodec$schema6())), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema6())).readonly()])).readonly())
+const _melite_estate_drafts_bench_clear_parameter_1_strict$schema = () => (_melite_estate_drafts_bench_clear_parameter_1_strict$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => closed$JsonValueRemoteCodec$schema7())), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema7())).readonly()])).readonly())
 let _melite_estate_drafts_bench_ensure_parameter_0_strict$schema$value
 const _melite_estate_drafts_bench_ensure_parameter_0_strict$schema = () => (_melite_estate_drafts_bench_ensure_parameter_0_strict$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => closed$JsonValueRemoteCodec$schema())), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema())).readonly()])).readonly())
 let _melite_estate_drafts_bench_get_parameter_0_strict$schema$value
@@ -273,7 +292,7 @@ const _melite_estate_drafts_bench_get_parameter_0_strict$schema = () => (_melite
 let _melite_estate_drafts_bench_group_parameter_0_strict$schema$value
 const _melite_estate_drafts_bench_group_parameter_0_strict$schema = () => (_melite_estate_drafts_bench_group_parameter_0_strict$schema$value ??= z.string())
 let _melite_estate_drafts_bench_group_parameter_1_strict$schema$value
-const _melite_estate_drafts_bench_group_parameter_1_strict$schema = () => (_melite_estate_drafts_bench_group_parameter_1_strict$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => closed$JsonValueRemoteCodec$schema9())), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema9())).readonly()])).readonly())
+const _melite_estate_drafts_bench_group_parameter_1_strict$schema = () => (_melite_estate_drafts_bench_group_parameter_1_strict$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => closed$JsonValueRemoteCodec$schema10())), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema10())).readonly()])).readonly())
 let _melite_estate_drafts_bench_patch_parameter_0_strict$schema$value
 const _melite_estate_drafts_bench_patch_parameter_0_strict$schema = () => (_melite_estate_drafts_bench_patch_parameter_0_strict$schema$value ??= z.string())
 let _melite_estate_drafts_bench_patch_parameter_1_strict$schema$value
@@ -281,25 +300,25 @@ const _melite_estate_drafts_bench_patch_parameter_1_strict$schema = () => (_meli
 let _melite_estate_drafts_bench_remove_stage_parameter_0_strict$schema$value
 const _melite_estate_drafts_bench_remove_stage_parameter_0_strict$schema = () => (_melite_estate_drafts_bench_remove_stage_parameter_0_strict$schema$value ??= z.string())
 let _melite_estate_drafts_bench_remove_stage_parameter_1_strict$schema$value
-const _melite_estate_drafts_bench_remove_stage_parameter_1_strict$schema = () => (_melite_estate_drafts_bench_remove_stage_parameter_1_strict$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => closed$JsonValueRemoteCodec$schema5())), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema5())).readonly()])).readonly())
+const _melite_estate_drafts_bench_remove_stage_parameter_1_strict$schema = () => (_melite_estate_drafts_bench_remove_stage_parameter_1_strict$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => closed$JsonValueRemoteCodec$schema6())), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema6())).readonly()])).readonly())
 let _melite_estate_drafts_bench_reorder_parameter_0_strict$schema$value
 const _melite_estate_drafts_bench_reorder_parameter_0_strict$schema = () => (_melite_estate_drafts_bench_reorder_parameter_0_strict$schema$value ??= z.string())
 let _melite_estate_drafts_bench_reorder_parameter_1_strict$schema$value
-const _melite_estate_drafts_bench_reorder_parameter_1_strict$schema = () => (_melite_estate_drafts_bench_reorder_parameter_1_strict$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => closed$JsonValueRemoteCodec$schema8())), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema8())).readonly()])).readonly())
+const _melite_estate_drafts_bench_reorder_parameter_1_strict$schema = () => (_melite_estate_drafts_bench_reorder_parameter_1_strict$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => closed$JsonValueRemoteCodec$schema9())), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema9())).readonly()])).readonly())
 let _melite_estate_drafts_bench_rewire_parameter_0_strict$schema$value
 const _melite_estate_drafts_bench_rewire_parameter_0_strict$schema = () => (_melite_estate_drafts_bench_rewire_parameter_0_strict$schema$value ??= z.string())
 let _melite_estate_drafts_bench_rewire_parameter_1_strict$schema$value
-const _melite_estate_drafts_bench_rewire_parameter_1_strict$schema = () => (_melite_estate_drafts_bench_rewire_parameter_1_strict$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => closed$JsonValueRemoteCodec$schema7())), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema7())).readonly()])).readonly())
+const _melite_estate_drafts_bench_rewire_parameter_1_strict$schema = () => (_melite_estate_drafts_bench_rewire_parameter_1_strict$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => closed$JsonValueRemoteCodec$schema8())), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema8())).readonly()])).readonly())
 let _melite_estate_drafts_bench_subscribe_parameter_0_strict$schema$value
 const _melite_estate_drafts_bench_subscribe_parameter_0_strict$schema = () => (_melite_estate_drafts_bench_subscribe_parameter_0_strict$schema$value ??= z.string())
 let _melite_estate_drafts_bench_undo_parameter_0_strict$schema$value
 const _melite_estate_drafts_bench_undo_parameter_0_strict$schema = () => (_melite_estate_drafts_bench_undo_parameter_0_strict$schema$value ??= z.string())
 let _melite_estate_drafts_bench_undo_parameter_1_strict$schema$value
-const _melite_estate_drafts_bench_undo_parameter_1_strict$schema = () => (_melite_estate_drafts_bench_undo_parameter_1_strict$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => closed$JsonValueRemoteCodec$schema11())), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema11())).readonly()])).readonly())
+const _melite_estate_drafts_bench_undo_parameter_1_strict$schema = () => (_melite_estate_drafts_bench_undo_parameter_1_strict$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => closed$JsonValueRemoteCodec$schema12())), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema12())).readonly()])).readonly())
 let _melite_estate_drafts_bench_ungroup_parameter_0_strict$schema$value
 const _melite_estate_drafts_bench_ungroup_parameter_0_strict$schema = () => (_melite_estate_drafts_bench_ungroup_parameter_0_strict$schema$value ??= z.string())
 let _melite_estate_drafts_bench_ungroup_parameter_1_strict$schema$value
-const _melite_estate_drafts_bench_ungroup_parameter_1_strict$schema = () => (_melite_estate_drafts_bench_ungroup_parameter_1_strict$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => closed$JsonValueRemoteCodec$schema10())), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema10())).readonly()])).readonly())
+const _melite_estate_drafts_bench_ungroup_parameter_1_strict$schema = () => (_melite_estate_drafts_bench_ungroup_parameter_1_strict$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => closed$JsonValueRemoteCodec$schema11())), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema11())).readonly()])).readonly())
 let _melite_estate_drafts_drafts_delete_parameter_0_strict$schema$value
 const _melite_estate_drafts_drafts_delete_parameter_0_strict$schema = () => (_melite_estate_drafts_drafts_delete_parameter_0_strict$schema$value ??= z.string())
 let _melite_estate_drafts_drafts_get_parameter_0_strict$schema$value
@@ -310,12 +329,12 @@ let _melite_estate_drafts_drafts_patch_parameter_1_strict$schema$value
 const _melite_estate_drafts_drafts_patch_parameter_1_strict$schema = () => (_melite_estate_drafts_drafts_patch_parameter_1_strict$schema$value ??= z.string())
 let _melite_estate_drafts_drafts_patch_parameter_2_strict$schema$value
 const _melite_estate_drafts_drafts_patch_parameter_2_strict$schema = () => (_melite_estate_drafts_drafts_patch_parameter_2_strict$schema$value ??= z.strictObject({
-  'params': z.union([z.undefined(), z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => closed$JsonValueRemoteCodec$schema12())), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema12())).readonly()])), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema12())).readonly()]).optional(),
-  'result': z.union([z.undefined(), z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => closed$JsonValueRemoteCodec$schema12())), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema12())).readonly()])), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema12())).readonly()]).optional(),
-  'runStatus': z.union([z.undefined(), z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => closed$JsonValueRemoteCodec$schema12())), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema12())).readonly()])), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema12())).readonly()]).optional(),
-  'health': z.union([z.undefined(), z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => closed$JsonValueRemoteCodec$schema12())), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema12())).readonly()])), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema12())).readonly()]).optional(),
-  'inputs': z.union([z.undefined(), z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => closed$JsonValueRemoteCodec$schema12())), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema12())).readonly()])), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema12())).readonly()]).optional(),
-  'inputOutputs': z.union([z.undefined(), z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => closed$JsonValueRemoteCodec$schema12())), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema12())).readonly()])), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema12())).readonly()]).optional(),
+  'params': z.union([z.undefined(), z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => closed$JsonValueRemoteCodec$schema13())), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema13())).readonly()])), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema13())).readonly()]).optional(),
+  'result': z.union([z.undefined(), z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => closed$JsonValueRemoteCodec$schema13())), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema13())).readonly()])), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema13())).readonly()]).optional(),
+  'runStatus': z.union([z.undefined(), z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => closed$JsonValueRemoteCodec$schema13())), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema13())).readonly()])), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema13())).readonly()]).optional(),
+  'health': z.union([z.undefined(), z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => closed$JsonValueRemoteCodec$schema13())), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema13())).readonly()])), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema13())).readonly()]).optional(),
+  'inputs': z.union([z.undefined(), z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => closed$JsonValueRemoteCodec$schema13())), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema13())).readonly()])), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema13())).readonly()]).optional(),
+  'inputOutputs': z.union([z.undefined(), z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => closed$JsonValueRemoteCodec$schema13())), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema13())).readonly()])), z.record(z.string(), z.lazy(() => closed$JsonValueRemoteCodec$schema13())).readonly()]).optional(),
 }))
 let _melite_estate_drafts_drafts_patch_parameter_3_strict$schema$value
 const _melite_estate_drafts_drafts_patch_parameter_3_strict$schema = () => (_melite_estate_drafts_drafts_patch_parameter_3_strict$schema$value ??= z.union([z.literal(null), z.number()]))
@@ -369,7 +388,7 @@ const $remote = createTypertRemoteInfo({
         create: _melite_estate_drafts_bench_add_stage_result$schema,
         jsonSchema: {"type":"object","properties":{"draft_id":{"type":"string"},"session":{"type":"string"},"rev":{"type":"number"},"stage":{"type":"string"}},"required":["draft_id","session","rev","stage"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1557,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1558,"column":9},
     },
     'bench/add-stages': {
       service: 'benchRemote',
@@ -417,7 +436,55 @@ const $remote = createTypertRemoteInfo({
         create: _melite_estate_drafts_bench_add_stages_result$schema,
         jsonSchema: {"type":"object","properties":{"draft_id":{"type":"string"},"session":{"type":"string"},"rev":{"type":"number"},"stages":{"type":"array","items":{"type":"string"}}},"required":["draft_id","session","rev","stages"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1569,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1570,"column":9},
+    },
+    'bench/archive': {
+      service: 'benchRemote',
+      description: 'Endpoint `bench/archive` — F11\'s housekeeping verb: mark a spent stage archived (off: true restores it); the row stays with its provenance, every run face skips it.',
+      implementation: 'remoteExportArchive',
+      invocation: { kind: 'direct' },
+      parameters: [
+        {
+          name: 'sessionKey',
+          source: 'json',
+          codec: {
+            mode: 'strict',
+            typeSymbol: '@melite/estate-drafts#bench/archive:sessionKey',
+            create: _melite_estate_drafts_bench_archive_parameter_0$schema,
+            jsonSchema: {"type":"string"},
+          },
+          strictCodec: {
+            mode: 'strict',
+            typeSymbol: '@melite/estate-drafts#bench/archive:sessionKey',
+            create: _melite_estate_drafts_bench_archive_parameter_0_strict$schema,
+            jsonSchema: {"type":"string"},
+          },
+        },
+        {
+          name: 'doc',
+          source: 'json',
+          codec: {
+            mode: 'strict',
+            typeSymbol: '@melite/estate-drafts/types#BenchDoc',
+            create: _melite_estate_drafts_bench_archive_parameter_1$schema,
+            jsonSchemaError: 'typert tool schema: recursive selected type requires a supported JSON value declaration',
+          },
+          strictCodec: {
+            mode: 'strict',
+            typeSymbol: '@melite/estate-drafts/types#BenchDoc',
+            create: _melite_estate_drafts_bench_archive_parameter_1_strict$schema,
+            jsonSchemaError: 'typert tool schema: recursive selected type requires a supported JSON value declaration',
+          },
+        },
+      ],
+      cancellation: { parameter: 'signal' },
+      result: {
+        mode: 'strict',
+        typeSymbol: '@melite/estate-drafts/types#BenchStageRow',
+        create: _melite_estate_drafts_bench_archive_result$schema,
+        jsonSchema: {"type":"object","properties":{"draft_id":{"type":"string"},"session":{"type":"string"},"rev":{"type":"number"},"stage":{"type":"string"}},"required":["draft_id","session","rev","stage"],"additionalProperties":true},
+      },
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1582,"column":9},
     },
     'bench/clear': {
       service: 'benchRemote',
@@ -465,7 +532,7 @@ const $remote = createTypertRemoteInfo({
         create: _melite_estate_drafts_bench_clear_result$schema,
         jsonSchema: {"type":"object","properties":{"draft_id":{"type":"string"},"session":{"type":"string"},"rev":{"type":"number"},"cleared":{"type":"number"}},"required":["draft_id","session","rev","cleared"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1592,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1611,"column":9},
     },
     'bench/ensure': {
       service: 'benchRemote',
@@ -497,7 +564,7 @@ const $remote = createTypertRemoteInfo({
         create: _melite_estate_drafts_bench_ensure_result$schema,
         jsonSchemaError: 'typert tool schema: recursive selected type requires a supported JSON value declaration',
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1488,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1489,"column":9},
     },
     'bench/get': {
       service: 'benchRemote',
@@ -529,7 +596,7 @@ const $remote = createTypertRemoteInfo({
         create: _melite_estate_drafts_bench_get_result$schema,
         jsonSchemaError: 'typert tool schema: recursive selected type requires a supported JSON value declaration',
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1383,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1384,"column":9},
     },
     'bench/group': {
       service: 'benchRemote',
@@ -577,7 +644,7 @@ const $remote = createTypertRemoteInfo({
         create: _melite_estate_drafts_bench_group_result$schema,
         jsonSchema: {"type":"object","properties":{"draft_id":{"type":"string"},"session":{"type":"string"},"rev":{"type":"number"},"stage":{"type":"string"}},"required":["draft_id","session","rev","stage"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1630,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1649,"column":9},
     },
     'bench/patch': {
       service: 'benchRemote',
@@ -625,7 +692,7 @@ const $remote = createTypertRemoteInfo({
         create: _melite_estate_drafts_bench_patch_result$schema,
         jsonSchema: {"type":"object","properties":{"draft_id":{"type":"string"},"session":{"type":"string"},"rev":{"type":"number"},"stage":{"type":"string"},"patched":{"type":"array","items":{"type":"string"}},"dropped":{"type":"array","items":{"type":"string"},"description":"THE FAMILY RESEAT'S RECEIPT (the ERROR g/h cure, 2026-11-08): the family-dead keys the settlement dropped off the merged view (the flip's own strand — the arrival flipped the derived family under carried stamps). Empty/absent when nothing dropped. The drop rides the row so it SPEAKS — never a silent strip."},"stale":{"type":"boolean","const":true,"description":"Present-and-true when the patch changed what the next run composes (the done mark cleared — the skip law cannot fold it). Absent when the patch was idempotent."}},"required":["draft_id","session","rev","stage","patched"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1547,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1548,"column":9},
     },
     'bench/remove-stage': {
       service: 'benchRemote',
@@ -673,7 +740,7 @@ const $remote = createTypertRemoteInfo({
         create: _melite_estate_drafts_bench_remove_stage_result$schema,
         jsonSchema: {"type":"object","properties":{"draft_id":{"type":"string"},"session":{"type":"string"},"rev":{"type":"number"},"stage":{"type":"string"}},"required":["draft_id","session","rev","stage"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1579,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1598,"column":9},
     },
     'bench/reorder': {
       service: 'benchRemote',
@@ -721,7 +788,7 @@ const $remote = createTypertRemoteInfo({
         create: _melite_estate_drafts_bench_reorder_result$schema,
         jsonSchema: {"type":"object","properties":{"draft_id":{"type":"string"},"session":{"type":"string"},"rev":{"type":"number"},"stage":{"type":"string"},"from":{"type":"number"},"to":{"type":"number"}},"required":["draft_id","session","rev","stage","from","to"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1613,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1632,"column":9},
     },
     'bench/rewire': {
       service: 'benchRemote',
@@ -769,7 +836,7 @@ const $remote = createTypertRemoteInfo({
         create: _melite_estate_drafts_bench_rewire_result$schema,
         jsonSchema: {"type":"object","properties":{"draft_id":{"type":"string"},"session":{"type":"string"},"rev":{"type":"number"},"stage":{"type":"string"},"input":{"type":"string"}},"required":["draft_id","session","rev","stage","input"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1602,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1621,"column":9},
     },
     'bench/subscribe': {
       service: 'benchRemote',
@@ -801,7 +868,7 @@ const $remote = createTypertRemoteInfo({
         create: _melite_estate_drafts_bench_subscribe_result$schema,
         jsonSchemaError: 'typert tool schema: recursive selected type requires a supported JSON value declaration',
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1401,"column":10},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1402,"column":10},
     },
     'bench/undo': {
       service: 'benchRemote',
@@ -849,7 +916,7 @@ const $remote = createTypertRemoteInfo({
         create: _melite_estate_drafts_bench_undo_result$schema,
         jsonSchemaError: 'typert tool schema: recursive selected type requires a supported JSON value declaration',
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1662,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1681,"column":9},
     },
     'bench/ungroup': {
       service: 'benchRemote',
@@ -897,7 +964,7 @@ const $remote = createTypertRemoteInfo({
         create: _melite_estate_drafts_bench_ungroup_result$schema,
         jsonSchema: {"type":"object","properties":{"draft_id":{"type":"string"},"session":{"type":"string"},"rev":{"type":"number"},"stage":{"type":"string"}},"required":["draft_id","session","rev","stage"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1646,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1665,"column":9},
     },
     'drafts/delete': {
       service: 'draftsRemote',
@@ -929,7 +996,7 @@ const $remote = createTypertRemoteInfo({
         create: _melite_estate_drafts_drafts_delete_result$schema,
         jsonSchema: {"type":"object","properties":{"draft_id":{"type":"string","description":"The canonical draft id the door removed (branded at the door)."}},"required":["draft_id"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":787,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":788,"column":9},
     },
     'drafts/get': {
       service: 'draftsRemote',
@@ -961,7 +1028,7 @@ const $remote = createTypertRemoteInfo({
         create: _melite_estate_drafts_drafts_get_result$schema,
         jsonSchemaError: 'typert tool schema: recursive selected type requires a supported JSON value declaration',
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":772,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":773,"column":9},
     },
     'drafts/list': {
       service: 'draftsRemote',
@@ -977,7 +1044,7 @@ const $remote = createTypertRemoteInfo({
         create: _melite_estate_drafts_drafts_list_result$schema,
         jsonSchema: {"type":"object","properties":{"count":{"type":"number"},"drafts":{"type":"array","items":{"type":"object","properties":{"draft_id":{"type":"string"},"model":{"type":"string"},"name":{"type":"string"}},"required":["draft_id","model","name"],"additionalProperties":true}}},"required":["count","drafts"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":764,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":765,"column":9},
     },
     'drafts/patch': {
       service: 'draftsRemote',
@@ -1057,7 +1124,7 @@ const $remote = createTypertRemoteInfo({
         create: _melite_estate_drafts_drafts_patch_result$schema,
         jsonSchema: {"type":"object","properties":{"draftId":{"type":"string"},"stageId":{"type":"string"},"delivered":{"type":"boolean"},"reason":{"type":"string"},"patched":{"type":"array","items":{"type":"string"}},"rev":{"type":"number"}},"required":["draftId","stageId","delivered"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":910,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":911,"column":9},
     },
   },
 }, z)
@@ -1133,6 +1200,13 @@ export const TYPERT = {
             "signature": "@Remote(\"add-stages\") async remoteExportAddStages( sessionKey: string, doc: BenchDoc, signal: AbortSignal, ): Promise<BenchStagesRow>",
             "summary": "Endpoint `bench/add-stages` — append N stages as ONE write (the restore law: the CAS chains server-side, one save, one history event).",
             "jsDoc": "/** Endpoint `bench/add-stages` — append N stages as ONE write (the\n * restore law: the CAS chains server-side, one save, one history\n * event). */"
+          },
+          {
+            "kind": "method",
+            "name": "remoteExportArchive",
+            "signature": "@Remote(\"archive\") async remoteExportArchive( sessionKey: string, doc: BenchDoc, signal: AbortSignal, ): Promise<BenchStageRow>",
+            "summary": "Endpoint `bench/archive` — F11's housekeeping verb: mark a spent stage archived (off: true restores it); the row stays with its provenance, every run face skips it.",
+            "jsDoc": "/** Endpoint `bench/archive` — F11's housekeeping verb: mark a\n *  spent stage archived (off: true restores it); the row stays\n *  with its provenance, every run face skips it. */"
           },
           {
             "kind": "method",
