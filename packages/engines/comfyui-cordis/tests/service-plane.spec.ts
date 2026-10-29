@@ -1045,6 +1045,23 @@ describe("compose (the model path)", () => {
     assert.equal(seen[0]!["refine_steps"], 4, "the stated count rides through to the card door");
     assert.ok(!("refine" in seen[0]!), "the service assembles no `refine` key — the compose door owns the assembly");
   });
+  // ── THE FIFTH-BAG SHAPE LAW (2026-10-29 — the h3 second-pass
+  // refine arm): the card serves a `refine` MOD BAG (an ARRAY) on
+  // the purge's key. One owner per shape: the service still
+  // assembles nothing, but it deletes ONLY the stale non-array
+  // class (the purge's service-assembled {name, strength, steps}
+  // object, never an array) — the card's own array bag passes
+  // through to the card door, where renderH3Refine owns the
+  // validation and the emission. ──
+  it("a refine ARRAY bag passes through while the stale refine OBJECT is still deleted (one owner per shape)", async () => {
+    const seen: Record<string, unknown>[] = [];
+    const svc = await bootModel({ compose: (params) => { seen.push({ ...params }); } });
+    svc.compose("card1", "fam1", { refine: [{ source_clip: "c.mp4", refine_prompt: "sharper weave" }] }, "fifth-bag");
+    assert.deepEqual(seen[0]!["refine"], [{ source_clip: "c.mp4", refine_prompt: "sharper weave" }],
+      "the card's array bag rides through to the card door untouched");
+    svc.compose("card1", "fam1", { refine: { name: "stale.safetensors", strength: 1.0, steps: 3 } }, "stale-object");
+    assert.ok(!("refine" in seen[1]!), "the purge's stale object class is still deleted, never honored");
+  });
   // (purge F2: the two tests below are DELETED with the service's T3
   // block — "the refine rider resolves" pinned the deleted assembler
   // (row seeds / overrides / unknown-id + count-less refusals) and

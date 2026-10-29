@@ -114,7 +114,7 @@ describe("the reshoot kind (the fourth mod bag)", () => {
   it("admits names the bag (the commission rides the same admission plane as its siblings)", () => {
     const admits = (def as { admits?: string[] }).admits ?? [];
     for (const seat of ['replace', 'repair', 'extend', 'reshoot']) {
-      assert.ok(admits.includes(seat), `admits carries '${seat}' — the four bags share one plane`);
+      assert.ok(admits.includes(seat), `admits carries '${seat}' — the five bags share one plane`);
     }
   });
 

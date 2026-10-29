@@ -573,6 +573,7 @@ export { finalizeH3, H3_T4_STRIP } from "./finalize.js"
 export { renderH3Swap } from "./swap.js"
 export { renderH3Repair } from "./repair.js"
 export { renderH3Extend } from "./extend.js"
+export { refineArmed, renderH3Refine, REFINE_UPSCALE_MODEL } from "./refine.js"
 export { reshootArmed } from "./reshoot.js"
 // F18 — the cross-regime join admission (the two resolution regimes
 // in one family: film width/height vs the mod bags' plan tiers).

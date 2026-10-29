@@ -525,6 +525,43 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
     }
   }, 600_000)
 
+  it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline'))('h3-timeline refine: the second-pass RefineHandoff RUNS live at 2x (one variant path, locked audio) and renders real bytes', async () => {
+    const w = await bootWorld('recipes-h3-refine-arm-')
+    try {
+      // THE LIVE PROOF for the fifth mod bag: the standalone second
+      // pass (report-named MinimaxH3LatentUpscaler3DRefineHandoff) runs
+      // against a staged h3 film — no film windows, no chain lineage,
+      // the soundtrack locked to the source's own. THE VRAM LAW (live
+      // attempts 2026-10-29): the whole-clip 2x OOMs a 24 GB card at
+      // the handoff — one 19.25 GiB alloc for the 430-frame swap film,
+      // and even the 124-frame film leaves only 0.9 GiB free against
+      // the ~20 GB resident film stack (joint temporal attention at
+      // 2x is the wall, not the frame count alone) — so the proof
+      // rides the smallest staged joint-AV h3 clip (34 frames,
+      // 768×448), the largest whole-clip second pass the card fits.
+      // Judged on the RUN workflow (the serialized graph the engine
+      // actually executed) + real bytes.
+      const s = await runCard(w, {
+        model: 'h3',
+        calls: [{ text: 'a slow push in', start_frame: 0, end_frame: 56, knobs: { width: 768, height: 448 } }],
+        loras: [{ id: 'h3_turbo8_v1' }],
+        refine: [{ source_clip: 'h3_t4_w2_00004__a1fa72843541.mp4', refine_prompt: 'the same scene, sharper fabric weave and cleaner edges' }],
+      }, 'h3 refine live')
+      // THE ONE VARIANT PATH, judged on the run workflow: exactly one
+      // handoff, the learned weights, 2x, locked audio.
+      const hands = byClass(s, 'MinimaxH3LatentUpscaler3DRefineHandoff')
+      assert.equal(hands.length, 1, 'exactly one handoff mounts — no second sampler, no loop lineage')
+      assert.equal(hands[0]![1].inputs?.['model_name'], 'minimax_h3_latent_upscaler_3d_bf16.safetensors', 'the learned 3D-conv weights')
+      assert.equal(hands[0]![1].inputs?.['scale'], 2.0, 'the 2x variant path')
+      assert.equal(hands[0]![1].inputs?.['lock_audio'], true, 'the soundtrack is the source\u2019s own, fixed')
+      const saves = byClass(s, 'SaveVideo')
+      assert.ok(saves.some(([, n]) => String(n.inputs?.['filename_prefix']).endsWith('/refine')), 'the refine terminal saves under the run-scoped refine prefix')
+      assert.equal(firstBytes(s).length > 1024, true, 'the refined video artifact is real bytes')
+    } finally {
+      w.stop()
+      await w.ctx.fiber.dispose()
+    }
+  }, 600_000)
 
   it.skipIf(!ENGINE_FREE || !weightsPresent('kimodo'))('motion (kimodo): the Rule B panel-path writes (steps/seed/duration) compose and RUN', async () => {
     const w = await bootWorld('recipes-motion-')

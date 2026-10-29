@@ -39,6 +39,7 @@ import { finalizeH3 } from '@melite/models-h3'
 import { renderH3Swap } from '@melite/models-h3'
 import { renderH3Repair } from '@melite/models-h3'
 import { renderH3Extend } from '@melite/models-h3'
+import { renderH3Refine } from '@melite/models-h3'
 import { reshootArmed } from '@melite/models-h3'
 import { parseH3Facts } from '@melite/models-h3/actions'
 import { assertOverlayGated } from '@melite/models-h3'
@@ -258,6 +259,52 @@ const EXTEND_MOD: DeclaredModifierKind = {
   ],
 }
 
+/** THE REFINE KIND (the fifth mod bag): a standalone SECOND pass
+ *  over a staged source clip — the H3 latent-upscale refine chain's
+ *  minimal emission (models/h3 renderH3Refine). The report-named
+ *  second-pass stack (MinimaxH3LatentUpscaler3D, the RefineHandoff
+ *  with its sampler/sigmas seats, the ChainUpscale loop family,
+ *  SeedVR2 3B, the LTX 2.3 upscalers) exists engine-side with no
+ *  card surface; this arm is the first door: the handoff node (2x
+ *  learned upscale + the low-sigma refinement pass, one node) over
+ *  the clip's own frames + soundtrack. ONE entry per doc
+ *  (max_stack 1). ONE variant path: scale 2.0, lock_audio, bf16 —
+ *  the entry carries only the refine seats (source_clip,
+ *  refine_prompt, denoise, steps, seed, clip_seconds); the model
+ *  plane stays family-owned. The deferred ChainUpscale LOOP (prior-
+ *  run lineage, recursive expand, no estate requeue driver) is the
+ *  named follow-up, never this arm. Emission ends in the refine
+ *  SaveVideo (the extend terminal's own file law — no
+ *  ChainAssemble: a refine has no loop lineage to assemble). */
+const REFINE_MOD: DeclaredModifierKind = {
+  kind: 'refine',
+  label: 'Refine',
+  param_key: 'refine',
+  schema_key: 'refine',
+  category: 'ordered',
+  cardinality: 'list',
+  max_stack: 1,
+  requires: [
+    'ComfyUI-VideoHelperSuite',
+    'ComfyUI-KJNodes',
+    'ComfyUI-MiniMaxH3Mod',
+    'Comfyui_Minimax_h3_latent_Upscaler-Plus',
+    'melite-utility-nodes',
+  ],
+  section: 'Refine — a standalone second pass over a source clip: 2x learned latent upscale + the low-sigma H3 refinement pass in one node (the film handoff\'s own spelling), decoded and saved as one film. The soundtrack is the source\'s own, always. Film runs leave this arm empty.',
+  fields: [
+    // The seat TYPES (the picker law, the siblings' own): the video
+    // seat is `file` + media 'video'; the prompt seat is text
+    // (agent-composed, user-confirmed); the dials are numbers.
+    { name: 'source_clip', label: 'Source clip', type: 'file', media: 'video', default: '', tooltip: 'The clip whose frames the second pass refines. Binds ONE staged leaf: the VHS loader reads it by staged name at the film clock, and the encode seats read its frames + soundtrack.' },
+    { name: 'refine_prompt', label: 'Refine prompt', type: 'text', default: '', tooltip: 'The refine text — what the upscaled frames should hold (agent-composed, user-confirmed; rides the CLIPTextEncode positive seat — the node refuses without model + positive).' },
+    { name: 'denoise', label: 'Denoise', type: 'number', default: 0.32, min: 0.05, max: 0.5, step: 0.01, tooltip: 'The partial-denoise strength of the refinement pass (the refine window is 0.30–0.35; lower = subtler). 1 or more is refused — a refine is never a re-render (the handoff\'s sigmas law: 0 <= sigmas[0] < 1).' },
+    { name: 'steps', label: 'Refine steps', type: 'number', default: 6, min: 1, max: 30, step: 1, tooltip: 'The refinement schedule steps (the low-sigma second pass; the sampler steps stay the doc marriage).' },
+    { name: 'seed', label: 'Refine seed', type: 'number', default: 0, min: 0, max: 4294967295, step: 1, tooltip: 'The refinement noise seed (0 runs the reference posture).' },
+    { name: 'clip_seconds', label: 'Clip seconds', type: 'number', default: 6, min: 0.5, max: 60, step: 0.1, tooltip: 'The clip budget the preview override frames from (in-run-only — the pass refines the whole staged clip).' },
+  ],
+}
+
 /** THE RESHOOT KIND (the fourth mod bag — the §8 unification,
  * 2026-11-12): re-render the same scene from a NEW camera. The
  * commission the flat knob group could never state: one bag entry
@@ -339,15 +386,23 @@ export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model:
     const raw = p.replace as Array<Record<string, unknown>> | undefined
     const rep = p.repair as Array<Record<string, unknown>> | undefined
     const ext = p.extend as Array<Record<string, unknown>> | undefined
+    // THE REFINE BAG (the fifth arm) rides the same guard.
+    const ref = p.refine as Array<Record<string, unknown>> | undefined
     // THE RESHOOT BAG (the fourth arm, §8) rides the same guard.
     const rsh = p.reshoot as Array<Record<string, unknown>> | undefined
     oneEntryBag('replace', raw, 'swap')
     oneEntryBag('repair', rep, 'repair')
     oneEntryBag('extend', ext, 'extend')
+    oneEntryBag('refine', ref, 'refine')
     oneEntryBag('reshoot', rsh, 'reshoot')
     const replaceArmed = Array.isArray(raw) && raw.length > 0
     const repairArmed = Array.isArray(rep) && rep.length > 0
     const extendArmed = Array.isArray(ext) && ext.length > 0
+    // THE REFINE CHECK (the fifth arm) rides the same aliased
+    // boolean as its siblings — the alias narrows `ref` for the
+    // branch below (the imported refineArmed(p) predicate states
+    // the same truth for outside callers; inside compose the
+    // sibling pattern is what the compiler narrows).
     // THE REPLACE↔REPAIR REFUSAL (the one-door-per-doc law's second
     // edge, 2026-11-12): both arms render through the same chain
     // spine and the same sampler tail — two armed bags would race
@@ -366,6 +421,21 @@ export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model:
     }
     if (repairArmed && extendArmed) {
       throw new Error('h3-timeline: Repair and Extend are both armed — one door per doc (both ride the same masked-edit spine; two armed bags would race for one emission). Empty the Repair arm for an extension, or the Extend arm for a repair.')
+    }
+    const refineBagArmed = Array.isArray(ref) && ref.length > 0
+    // THE REFINE PAIRWISE REFUSALS (the one-door law's fourth edge —
+    // each pair its own firing arm, the split-brain lesson): the
+    // refine branch returns before the film action, so it races the
+    // three edit arms the same way, and an armed reshoot under it
+    // would be silently dropped.
+    if (replaceArmed && refineBagArmed) {
+      throw new Error('h3-timeline: Replace and Refine are both armed — one door per doc (the refine branch never enters the film action; two armed bags would race for one emission). Empty the Replace arm for a refine, or the Refine arm for a swap.')
+    }
+    if (repairArmed && refineBagArmed) {
+      throw new Error('h3-timeline: Repair and Refine are both armed — one door per doc (the refine branch never enters the film action; two armed bags would race for one emission). Empty the Repair arm for a refine, or the Refine arm for a repair.')
+    }
+    if (extendArmed && refineBagArmed) {
+      throw new Error('h3-timeline: Extend and Refine are both armed — one door per doc (the refine branch never enters the film action; two armed bags would race for one emission). Empty the Extend arm for a refine, or the Refine arm for an extension.')
     }
     if (replaceArmed) {
       // THE MUTUAL REFUSAL (operator, live lane 2026-10-28: "IS
@@ -396,6 +466,15 @@ export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model:
         throw new Error('h3-timeline: Extend and Reshoot are both armed — the extend branch never enters the film action, so an armed reshoot would be silently dropped. Pick one door: empty the Extend arm for a reshoot, or empty the Reshoot arm for an extension.')
       }
       renderH3Extend(ext[0] as Record<string, unknown>, p, parseH3Facts(model.lane_inputs), g, runId)
+      return
+    }
+    if (refineBagArmed) {
+      // The same reshoot refusal, fourth edge (the refine branch also
+      // returns before the film action).
+      if (reshootArmed(p)) {
+        throw new Error('h3-timeline: Refine and Reshoot are both armed — the refine branch never enters the film action, so an armed reshoot would be silently dropped. Pick one door: empty the Refine arm for a reshoot, or empty the Reshoot arm for a refine.')
+      }
+      renderH3Refine(ref[0] as Record<string, unknown>, p, parseH3Facts(model.lane_inputs), g, runId)
       return
     }
     instantiateAction(declaredAction(h3Decl, 'film'), p, model, g, runId)
@@ -505,7 +584,12 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
       channel: 'default',
       node: '*',
       nodeClass: 'SaveVideo',
-      when: (p) => !((Array.isArray(p.replace) && p.replace.length > 0) || (Array.isArray(p.repair) && p.repair.length > 0) || (Array.isArray(p.extend) && p.extend.length > 0)),
+      // the REFINE arm's own emission is a SaveVideo too (the
+      // extend-terminal posture) — but the LAST-of-class scan needs
+      // the refine save to be the armed refine's, never a film
+      // save, so the default edge yields when refine is armed and
+      // the refine edge below names it.
+      when: (p) => !((Array.isArray(p.replace) && p.replace.length > 0) || (Array.isArray(p.repair) && p.repair.length > 0) || (Array.isArray(p.extend) && p.extend.length > 0) || (Array.isArray(p.refine) && p.refine.length > 0)),
     },
     {
       channel: 'default',
@@ -523,6 +607,17 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
       node: '*',
       nodeClass: 'SaveVideo',
       when: (p) => Array.isArray(p.extend) && p.extend.length > 0,
+    },
+    {
+      // THE REFINE ARM: the refinement's terminal is its own
+      // single SaveVideo (`<runId>/refine` — the extend terminal's
+      // file law, no ChainAssemble: a refine has no loop lineage to
+      // assemble). The only SaveVideo in the graph, so the '*'
+      // scan resolves it.
+      channel: 'default',
+      node: '*',
+      nodeClass: 'SaveVideo',
+      when: (p) => Array.isArray(p.refine) && p.refine.length > 0,
     },
   ],
     // ADMISSION EXTRAS (the class-attr half verbatim: the
@@ -542,13 +637,13 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
     // produce. A doc carrying it now refuses LOUD at the door
     // ('unknown-param') instead of riding as an inert rider; seedUser
     // already deletes it on drill-open (the dead-layer law).
-    admits: ['ctx_*', 'extend', 'fps_seconds', 'image_name', 'k', 'noise_seed', 'quant', 'ref_image_size', 'repair', 'replace', 'reshoot', 'sla_*', 'variant'],
+    admits: ['ctx_*', 'extend', 'fps_seconds', 'image_name', 'k', 'noise_seed', 'quant', 'ref_image_size', 'refine', 'repair', 'replace', 'reshoot', 'sla_*', 'variant'],
     // THE CARD-DECLARED KINDS (CONTRACT A — served VERBATIM on the
     // features.modifiers channel): the swap + repair + extend arms.
     // The mask card's sam3/sam2/draw precedent — one kind per arm,
     // entry fields as the popup's tiles, requires as the
     // presence-gated arm packs.
-    mods: [REPLACE_MOD, REPAIR_MOD, EXTEND_MOD, RESHOOT_MOD],
+    mods: [REPLACE_MOD, REPAIR_MOD, EXTEND_MOD, REFINE_MOD, RESHOOT_MOD],
     jsonArrayParams: JSON_ARRAY_PARAMS,
     // the packs the window graph rides (EXTENSION LAW) + the film
     // tail's file boundary (melite-utility-nodes: MeliteUnload +

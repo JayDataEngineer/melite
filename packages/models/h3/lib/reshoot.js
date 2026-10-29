@@ -174,6 +174,26 @@ export function buildH3Reshoot(p, g) {
         precision: 'fp16',
     }).out();
     const depthStack = g.node(VDA_OUTPUT_NODE, { depths, colormap: 'gray' }).out();
+    // THE DEPTH-FRAME GRID MATCH (F13d, the live burn run-e7a5182d153c-
+    // 88fd3236): VDA returns at its OWN internal resolution (max_res
+    // 1280 → 1280×718 on a 1312×736 clip) and CrossViewWarp multiplies
+    // the depth against full-size frames — `ValueError: operands could
+    // not be broadcast together (736,1312) (718,1280)`. VDA exposes no
+    // match-to-input toggle, so the depth stack RESIZES TO THE FRAMES'
+    // OWN GRID here, before both warps: ImageResizeKJ with get_image_size
+    // wired to the frames (width/height 0 — the reference owns the
+    // size), keep_proportion false (an exact grid copy, never a letter-
+    // box), bilinear (depth is a scalar field — interpolation is safe,
+    // no nearest stair-steps in the point cloud).
+    const depthMatched = g.node('ImageResizeKJ', {
+        image: depthStack,
+        width: 0,
+        height: 0,
+        upscale_method: 'bilinear',
+        keep_proportion: false,
+        divisible_by: 0,
+        get_image_size: frames,
+    }).out();
     // the warp inputs, spelled once for both passes (same pose, same
     // geometry — the two outputs stay aligned)
     const pose = {
@@ -192,15 +212,15 @@ export function buildH3Reshoot(p, g) {
     // z-buffered warp, so the output IS the warped depth map)
     const control = g.node(CROSSVIEW_WARP_NODE, {
         ...pose,
-        frames: depthStack,
-        depth: depthStack,
+        frames: depthMatched,
+        depth: depthMatched,
     }).out();
     // pass 1 — the reprojected RGB: color anchor + the hole map's
     // source (identical pose → identical holes)
     const source = g.node(CROSSVIEW_WARP_NODE, {
         ...pose,
         frames,
-        depth: depthStack,
+        depth: depthMatched,
     }).out();
     // the disocclusion mask: magenta holes → 1 (the apply node's own
     // semantics — "1 marks the regions to regenerate")

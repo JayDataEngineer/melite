@@ -899,7 +899,18 @@ export class ComfyUIService extends Service {
         // resolves the row, enforces the domain, and mounts the rider.
         // A stale `refine` key (pre-F2 films) is deleted, never honored:
         // two assemblers was the split brain; the door is the one owner.
-        delete merged.refine;
+        // THE FIFTH BAG (2026-10-29 — the h3 second-pass refine arm): the
+        // card serves a `refine` MOD BAG (an ARRAY of entries) on this
+        // same top-level key. The purge's stale class was the
+        // service-assembled OBJECT ({name, strength, steps} — the old
+        // second assembler, never an array, never card-authored): a
+        // non-array `refine` is still deleted, never honored. An ARRAY
+        // is the card's own bag and passes through to the card door
+        // untouched — the door (renderH3Refine) validates the seats,
+        // enforces max_stack 1, and owns the emission. One owner per
+        // shape; the service still assembles nothing.
+        if (!Array.isArray(merged.refine))
+            delete merged.refine;
         // CONTROLNET WIRE RESOLUTION (the z-image restoration — the
         // type/model split, the LoRA law above): the leaf emits
         // catalog-keyed rows ({type, strength, ...} — model + preprocessor

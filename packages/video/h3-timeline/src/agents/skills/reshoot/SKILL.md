@@ -32,13 +32,15 @@ It is NOT:
   model stack just renders from the moved camera.
 
 One door per doc: ANY two armed mod bags REFUSE loud naming both —
-the six pairs are replace↔repair, replace↔extend, repair↔extend,
-replace↔reshoot, repair↔reshoot, extend↔reshoot. The three edit
-branches each return before the film action, so an armed reshoot
-under any of them would be silently dropped; two edit arms would
-race for one emission. Pick one and empty the others. (Armed = the
-bag is PRESENT and non-empty; an absent or empty `reshoot` bag is an
-unused arm — the film composes exactly as before, byte-identical.)
+the ten pairs are replace↔repair, replace↔extend, repair↔extend,
+replace↔reshoot, repair↔reshoot, extend↔reshoot, replace↔refine,
+repair↔refine, extend↔refine, reshoot↔refine. The three edit
+branches and the refine branch each return before the film action,
+so an armed reshoot under any of them would be silently dropped;
+two edit arms would race for one emission. Pick one and empty the
+others. (Armed = the bag is PRESENT and non-empty; an absent or
+empty `reshoot` bag is an unused arm — the film composes exactly
+as before, byte-identical.)
 
 ## The flow (bind, confirm, press)
 

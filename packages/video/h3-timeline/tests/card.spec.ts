@@ -49,27 +49,37 @@ describe("the h3-timeline compose gate", () => {
     // the estate refuse every swap with `expects * as SaveVideo,
     // got missing`.
     const bindings = [...(def.flowOutputBindings ?? [])];
-    // THREE conditional doors (the extend arm's law, 2026-11-12):
-    // film (SaveVideo, the graph terminal) vs swap/repair
-    // (MiniMaxH3ChainAssemble) vs extend (the joined-film SaveVideo
-    // — no ChainAssemble: its `_final.mp4` name is not a prefix the
-    // concat can glob).
-    assert.equal(bindings.length, 3, "three conditional doors: film vs swap/repair vs extend");
+    // FOUR conditional doors (the extend arm's law, 2026-11-12; the
+    // refine arm, 2026-10-29): film (SaveVideo, the graph terminal)
+    // vs swap/repair (MiniMaxH3ChainAssemble) vs extend (the
+    // joined-film SaveVideo — no ChainAssemble: its `_final.mp4`
+    // name is not a prefix the concat can glob) vs refine (the
+    // second-pass SaveVideo).
+    assert.equal(bindings.length, 4, "four conditional doors: film vs swap/repair vs extend vs refine");
     const film = bindings.find((b) => b.nodeClass === "SaveVideo" && b.when!({}));
     const swap = bindings.find((b) => b.nodeClass === "MiniMaxH3ChainAssemble");
     const extend = bindings.find((b) => b.nodeClass === "SaveVideo" && b.when!({ extend: [{ source_clip: "c" }] }));
+    const refine = bindings.find((b) => b.nodeClass === "SaveVideo" && b.when!({ refine: [{ source_clip: "c" }] }));
     assert.ok(film?.when, "the film door is conditional");
     assert.ok(swap?.when, "the swap door is conditional");
     assert.ok(extend?.when, "the extend door is conditional");
+    assert.ok(refine?.when, "the refine door is conditional");
     assert.equal(film.when!({}), true, "empty params ride the film door");
     assert.equal(film.when!({ replace: [{ source_clip: "c" }] }), false, "an armed bag leaves the film door");
     assert.equal(film.when!({ extend: [{ source_clip: "c" }] }), false, "an armed extend bag leaves the film door");
+    assert.equal(film.when!({ refine: [{ source_clip: "c" }] }), false, "an armed refine bag leaves the film door");
     assert.equal(swap.when!({}), false, "empty params leave the swap door");
     assert.equal(swap.when!({ replace: [{ source_clip: "c" }] }), true, "an armed bag rides the swap door");
     assert.equal(swap.when!({ extend: [{ source_clip: "c" }] }), false, "an armed extend bag never rides the swap door");
+    assert.equal(swap.when!({ refine: [{ source_clip: "c" }] }), false, "an armed refine bag never rides the swap door");
     assert.equal(extend.when!({}), false, "empty params leave the extend door");
     assert.equal(extend.when!({ extend: [{ source_clip: "c" }] }), true, "an armed extend bag rides the extend door");
     assert.equal(extend.when!({ replace: [{ source_clip: "c" }] }), false, "an armed replace bag never rides the extend door");
+    assert.equal(extend.when!({ refine: [{ source_clip: "c" }] }), false, "an armed refine bag never rides the extend door");
+    assert.equal(refine.when!({}), false, "empty params leave the refine door");
+    assert.equal(refine.when!({ refine: [{ source_clip: "c" }] }), true, "an armed refine bag rides the refine door");
+    assert.equal(refine.when!({ replace: [{ source_clip: "c" }] }), false, "an armed replace bag never rides the refine door");
+    assert.equal(refine.when!({ extend: [{ source_clip: "c" }] }), false, "an armed extend bag never rides the refine door");
     // SLICE 1: keyframes joined the JSON row contract (the any-frame
     // pin bus) — the census grows WITH the behavior, and the new
     // container refusal is judged in the same arm.

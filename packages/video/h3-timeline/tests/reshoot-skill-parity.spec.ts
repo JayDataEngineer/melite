@@ -11,8 +11,8 @@
 // THE LAW here: every bounded dial the emission enforces appears in the
 // SKILL.md table with the SAME band and the SAME served default; every
 // served field is documented with the same default; the boolean seats are
-// documented as false; and both bag skills name ALL SIX one-door pairs the
-// card refuses (four bags → six unordered pairs), derived from the card's
+// documented as false; and both bag skills name ALL TEN one-door pairs the
+// card refuses (five bags → ten unordered pairs), derived from the card's
 // own armed kinds rather than a hand list.
 import "../../../../tests/helpers/boot-models.ts";
 import { existsSync, readFileSync } from "node:fs";
@@ -95,19 +95,19 @@ describe("the re-shoot skill's dial table agrees with the code's own homes", () 
     }
   });
 
-  it("ARM 3 — both bag skills name ALL SIX one-door pairs, derived from the card's armed kinds", () => {
+  it("ARM 3 — both bag skills name ALL TEN one-door pairs, derived from the card's armed kinds", () => {
     // the armed bags are the card's own list (param_key + max_stack 1);
-    // four kinds → six unordered pairs, so a fifth bag forces both docs
+    // five kinds → ten unordered pairs, so a sixth bag forces both docs
     // to state its five new pairs
     const kinds = ((def as unknown as { mods?: Array<Record<string, unknown>> }).mods ?? [])
       .filter((k) => typeof k.param_key === "string" && k.max_stack === 1)
       .map((k) => String(k.param_key));
-    expect(kinds.sort()).toEqual(["extend", "repair", "replace", "reshoot"]);
+    expect(kinds.sort()).toEqual(["extend", "refine", "repair", "replace", "reshoot"]);
     const pairs: string[] = [];
     for (let i = 0; i < kinds.length; i++) {
       for (let j = i + 1; j < kinds.length; j++) pairs.push(`${kinds[i]}↔${kinds[j]}`);
     }
-    expect(pairs).toHaveLength(6);
+    expect(pairs).toHaveLength(10);
     for (const skill of ["reshoot", "swap"]) {
       const md = readSkill(skill);
       const lower = md.toLowerCase();
