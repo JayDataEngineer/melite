@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 import { loadCardDefs } from "@melite/comfyui-cordis";
 import { judgeLaneRelations } from "@melite/contracts/laneRelations";
 import { DECL as qwenDecl, laneTopologyOf as ttsLaneTopologyOf } from "@melite/models-qwen3-tts";
-import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
+import { GraphBuilder, type JsonValue } from "@melite/comfyui-card-kit/graph";
 import { finalizeTts, TTS_STRIP } from "@melite/comfyui-card-kit";
 import { readFileSync } from "node:fs";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
@@ -875,12 +875,12 @@ describe("the empty-string strip (B1: the wire carries what composed, nothing el
   /** Compose + finalize through the REAL seam order (service.ts:
    *  compose → finalize), returning the serialized graph. */
   const composeFinalized = (params: Record<string, unknown>, runId: string, model: ModelFacts = ttsModel)
-    : Record<string, { class_type: string; inputs: Record<string, unknown> }> => {
+    : Record<string, { class_type: string; inputs: Record<string, JsonValue> }> => {
     const g = new GraphBuilder();
     def.compose(def.schema(params), model, g, runId);
-    const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+    const graph = g.toJSON();
     assert.ok(def.finalize, "the tts card declares a finalize (the strip's seat — service.ts def.finalize seam)");
-    return def.finalize(graph) as typeof graph;
+    return def.finalize(graph);
   };
 
   it("BYTE ORACLE (speak lane): a fresh finalized compose carries NO empty-string input on any node", () => {

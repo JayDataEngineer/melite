@@ -5,7 +5,7 @@ description: Extend a clip with more seconds — when the take is RIGHT and the 
 
 # Extend Flow
 
-> VERIFIED LIVE 2026-11-12 against receipt `dev_docs/contracts/receipts/2026-11-12-cards-h3-extend-anchor-fresh-join.md` (run run-2f1562f35f9f-88f40dfb — extend_seconds 3.75 on the engine grid with the 39-frame overlap joined live into one film at the 48 kHz film rate: the last-frame anchor law, the mask-link law, and the join-rate law all rendered, not just composed).
+> VERIFIED LIVE 2026-11-12 against receipt `contracts/receipts/2026-11-12-cards-h3-extend-anchor-fresh-join.md` (run run-2f1562f35f9f-88f40dfb — extend_seconds 3.75 on the engine grid with the 39-frame overlap joined live into one film at the 48 kHz film rate: the last-frame anchor law, the mask-link law, and the join-rate law all rendered, not just composed).
 
 ## The decision
 

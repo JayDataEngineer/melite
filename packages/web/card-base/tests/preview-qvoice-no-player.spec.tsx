@@ -11,7 +11,7 @@
  * embedding face (a named link + note), never an <audio> element.
  */
 import { cleanup, render } from '@testing-library/react'
-import { afterEach, expect, test } from 'vitest'
+import { afterEach, describe, expect, test } from 'vitest'
 import { createElement as h } from 'react'
 
 import { AudioStagePreview } from '../src/preview.tsx'
@@ -25,6 +25,7 @@ const owner = (artifacts: Array<{ name: string, url: string }>): PreviewOwnerPro
   kind: 'audio',
   artifacts,
   runStatus: 'completed',
+  stageId: 'spec-stage',
 })
 
 describe('isPlayableAudioName — one spelling of playable', () => {

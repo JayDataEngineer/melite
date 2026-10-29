@@ -508,6 +508,11 @@ export const COVERAGE_BASELINE: Record<string, {
   // spec), K=1 margin mint — the file is feature-024's in-flight
   // reshoot module; its own spec carries the 100 face.
   '**/packages/models/h3/src/reshoot.ts': { statements: 96.55, branches: 95, functions: 80, lines: 96.55 },
+  // h3 F19 (2026-11-12): first seat at the scoped json-summary face
+  // (models/h3 tests/ alone — refine.spec.ts drives renderH3Refine's
+  // full surface incl. the RefineHandoff 2x emission), measured
+  // 100x4: 28/28 statements, 10/10 branches, 3/3 functions.
+  '**/packages/models/h3/src/refine.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/h3/src/schema.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/h3/src/timelineContract.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/input/src/actions.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },

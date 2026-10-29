@@ -632,7 +632,10 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // constants) out of extend.ts into its own browser-safe module so the
   // studio and the compose door ask ONE home; the new lib face joined
   // the index with that landing and is repinned here.
-  const LIB_CENSUS_PIN = 629;
+  // 629 -> 630 (2026-11-12): refine.js — the h3 second-pass
+  // renderer seat (F19, renderH3Refine; the RefineHandoff 2x
+  // emission on the fifth mod bag), repinned with its landing.
+  const LIB_CENSUS_PIN = 630;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {

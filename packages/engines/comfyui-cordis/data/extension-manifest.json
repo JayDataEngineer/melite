@@ -40,7 +40,7 @@
   {
     "name": "melite-audio-nodes",
     "url": "https://github.com/JayDataEngineer/melite-audio-nodes",
-    "ref": "99517c9ce6939fb3610822466c92184639cc6f48",
+    "ref": "34002e659cda1451b176023173fc9274566d4210",
     "required": true,
     "desc": "The ONE audio pack: Qwen3-TTS synthesis (qwen3_tts — card lane AND studio riding faster-qwen3-tts/torch since THE FLIP fcd25d0, 2026-10-22; native stays for moss_tts/ace_step only), Voice Studio (.qvoice), MOSS-SFX v2 diffusion, voice embeddings, MeliteQVoiceCopy, film/loudness utilities. Every Audiocore* class lives here. 2026-10-21 re-pin: the faster-backend cure (all synthesis through FasterQwen3TTS, silent default dead, 5.20 RoPE shim) with 3/3 lane renders + the served-lane proof render. 2026-10-22 re-pin: the studio VRAM law (warm-handle cache, capture-at-load, compat pre-init, seq-len 2048 / decode 1792 clamps, pre-load headroom gate, release-on-unload) — the Triton capture burn cured; receipt infra-qwen3-studio-vram-law. 2026-11-12 re-pin (F12): 0b75904 pushed (sfx burn cures) + MeliteAudioResample, the join-rate door (engine-core sinc, equal-rate passthrough).",
     "pip": [],

@@ -6,7 +6,7 @@ description: "Professional headshot from a reference photo — identity locked b
 
 # Headshot
 
-> VERIFIED LIVE 2026-11-12 against receipt `dev_docs/contracts/receipts/2026-11-12-models-qwen-edit-21-docs.md` (run run-5248b62e167f-870a5339 — the editorial-headshot prompt rendered live end-to-end with the face held by pointing at the image, never described: the identity law this skill teaches). Geometry note: this doc's sizing passage was reworked to the render-sizing law after that press — the run proves the prompt pattern, density, and identity law; a post-rework stated-pair press is owed for the sizing seat.
+> VERIFIED LIVE 2026-11-12 against receipt `contracts/receipts/2026-11-12-models-qwen-edit-21-docs.md` (run run-5248b62e167f-870a5339 — the editorial-headshot prompt rendered live end-to-end with the face held by pointing at the image, never described: the identity law this skill teaches). Geometry note: this doc's sizing passage was reworked to the render-sizing law after that press — the run proves the prompt pattern, density, and identity law; a post-rework stated-pair press is owed for the sizing seat.
 
 ## What it is for
 

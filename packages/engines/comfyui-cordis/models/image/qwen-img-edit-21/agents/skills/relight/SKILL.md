@@ -6,7 +6,7 @@ description: "Replace the light — a full rig spec (key/fill/rim with direction
 
 # Relight
 
-> VERIFIED LIVE 2026-11-12 against receipt `dev_docs/contracts/receipts/2026-11-12-models-qwen-edit-21-docs.md` (run run-4d0291d1515b-87074820 — the hard-cold-key relight prompt rendered live end-to-end with geometry, identity, wardrobe, and composition held: the rig-spec plus blanket-clause pattern this skill teaches).
+> VERIFIED LIVE 2026-11-12 against receipt `contracts/receipts/2026-11-12-models-qwen-edit-21-docs.md` (run run-4d0291d1515b-87074820 — the hard-cold-key relight prompt rendered live end-to-end with geometry, identity, wardrobe, and composition held: the rig-spec plus blanket-clause pattern this skill teaches).
 
 ## What it is for
 

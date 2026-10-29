@@ -91,6 +91,7 @@
   "Video Slice": "the h3 video-slice stamp lane (actions.ts/schema.ts) \u2014 the corpus's stamp members compose it",
   "VideoDepthAnythingOutput": "the h3 reshoot chain's depth output tail \u2014 the same ARMED-bag lane as the model load (F13c 2026-11-12)",
   "VideoDepthAnythingProcess": "the h3 reshoot chain's depth process pass \u2014 the same ARMED-bag lane as the model load (F13c 2026-11-12)",
-  "ZImageFunControlnet": "the z-image fired-controlnets arm's stack node (actions.ts compose, fired only when a controlnet entry rides) \u2014 the family action goldens"
+  "ZImageFunControlnet": "the z-image fired-controlnets arm's stack node (actions.ts compose, fired only when a controlnet entry rides) \u2014 the family action goldens",
+  "ImageResizeKJ": "the h3 reshoot chain's depth-match resize (the shared video_size fence the twin CrossViewWarp passes ride) \u2014 lane-gated behind an ARMED reshoot bag the fill loop never states; composed by the reshoot wall ARM 4 (F13d 2026-11-12: the depth-half frames leg and the RGB-half frames leg both ride the resized size, the warp inputs carry no width/height of their own)"
  }
 }

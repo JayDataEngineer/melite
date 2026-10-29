@@ -6,7 +6,7 @@ description: "Advance the moment — the next beat as a still: state deltas name
 
 # What's Next
 
-> VERIFIED LIVE 2026-11-12 against receipt `dev_docs/contracts/receipts/2026-11-12-models-qwen-edit-21-docs.md` (run run-6477ced34d3c-8707495a — the next-beat prompt rendered live end-to-end with the world held and the state advanced: the named-deltas pattern this skill teaches).
+> VERIFIED LIVE 2026-11-12 against receipt `contracts/receipts/2026-11-12-models-qwen-edit-21-docs.md` (run run-6477ced34d3c-8707495a — the next-beat prompt rendered live end-to-end with the world held and the state advanced: the named-deltas pattern this skill teaches).
 
 ## What it is for
 

@@ -510,7 +510,8 @@ describe("stampCardOverlay — THE QVOICE-STATED PRESET SKIP (B7: a saved person
       { qvoice: [{ qvoice: "/v/ann.qvoice", voice_strength: 1 }] },
       ttsRow, ttsDecl, cvSel, "1", "qwen3-tts",
     );
-    expect(out["voice"]).toBeUndefined("the persona performs — the engine's clone branch carries no speaker");
+    // the persona performs — the engine's clone branch carries no speaker
+    expect(out["voice"]).toBeUndefined();
     expect(out["qvoice"]).toEqual([{ qvoice: "/v/ann.qvoice", voice_strength: 1 }]);
   });
 

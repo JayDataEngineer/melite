@@ -222,13 +222,25 @@ describe("the h3 camera re-shoot wall (the fourth mod bag)", () => {
     // color anchor + the hole source)
     const warps = ofClass(out, "CrossViewWarp");
     expect(warps).toHaveLength(2);
-    const depthPass = warps.filter(([, w]) => String(w.inputs.frames).includes("VideoDepthAnythingOutput"));
+    const depthPass = warps.filter(([, w]) => String(w.inputs.frames).includes("ImageResizeKJ"));
     const rgbPass = warps.filter(([, w]) => String(w.inputs.frames).includes("VHS_LoadVideo"));
     expect(depthPass).toHaveLength(1);
     expect(rgbPass).toHaveLength(1);
     for (const [, w] of warps) {
-      expect(String(w.inputs.depth)).toContain("VideoDepthAnythingOutput");
+      expect(String(w.inputs.depth)).toContain("ImageResizeKJ");
     }
+    // THE DEPTH-GRID MATCH (F13d, the live burn run-e7a5182d153c):
+    // VDA returns at its OWN grid (1280x718 on a 1312x736 clip) and
+    // the warp multiplies depth against full-size frames — the depth
+    // stack resizes to the frames' own grid here, before both warps
+    const resize = ofClass(out, "ImageResizeKJ");
+    expect(resize).toHaveLength(1);
+    expect(String(resize[0]![1].inputs.image)).toContain("VideoDepthAnythingOutput");
+    expect(String(resize[0]![1].inputs.get_image_size)).toContain("VHS_LoadVideo");
+    expect(resize[0]![1].inputs.width).toBe(0);
+    expect(resize[0]![1].inputs.height).toBe(0);
+    expect(resize[0]![1].inputs.keep_proportion).toBe(false);
+    expect(resize[0]![1].inputs.upscale_method).toBe("bilinear");
     // the disocclusion mask reads the RGB warp, the pack's magenta
     const mask = ofClass(out, "ColorToMask");
     expect(mask).toHaveLength(1);

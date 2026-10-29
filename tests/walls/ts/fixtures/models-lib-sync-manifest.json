@@ -38,8 +38,8 @@
       "libHash": "00bfa878335330ad211f4d2babd13fa58785b612a32a81d62d43ea7d742371c9"
     },
     "h3": {
-      "srcHash": "1cb0e2b9dfd97ce71439e7fc6aa034e4304652199635bf15fb57541c417214ba",
-      "libHash": "49f97e63ff1dd4e9fe3a84188c656e8c92269d4a6ad1944a9a475f7fdac31bad"
+      "srcHash": "af8323cb8caf14ffb0a9810bdaf68474225e25d5acba0ecc235421ea65e8bd7a",
+      "libHash": "763833af72ab39137963f7d6d81f56f2a8b73200035f6bec4eeaf4de367347d6"
     },
     "input": {
       "srcHash": "16478f6a1db09de7d2f6a76437a325a997c6c942efb994c542799c032d2415d3",
@@ -78,24 +78,24 @@
       "libHash": "7e76f7edadd2a0f2366a00792aec6ab1b173c61f6cbd84ed4bc4e397fe966ca7"
     },
     "pixal3d": {
-      "srcHash": "7dafe24541653545ea88a995322ecccf94564cfbe23fd2436a6f2a585406b25a",
-      "libHash": "57672424fbe6f600b5d3450dc7701af7742c3897cf7d08e7b2f7685396ebe555"
+      "srcHash": "9303672962a9571707151663a3d9661aae530b883ef467700038f4592d16826c",
+      "libHash": "fb0dd6a50e28106b5d233711b941178cabdf90fdf2ce0ca030ca8fce4c31edaf"
     },
     "qwen-img-21": {
       "srcHash": "f53083adc18efa2f7945775e989fe350c6043bf1fe05ad07b624799ecbb67066",
       "libHash": "d061935b2b62aa16380876e647064133faebc1369aa87630fbe1c3ad4ea31cc3"
     },
     "qwen-img-edit-21": {
-      "srcHash": "5642a6f2a8a1aa68414a7f4f369b355f517ba307ccf1e5b67841edfa8ddbb5aa",
-      "libHash": "1d691aa96f13eb9ce6ed11816ec801f222a5afadba5e3862dc25acaa2d9655ba"
+      "srcHash": "5117645d5a57182a1f7f0bbebbc67558fd3730ed610c6965a6fa0483a7bb298f",
+      "libHash": "df9a2db807f4a0e9356e8acd73287428fe3efcd1a374559ea698249ca9cc84a5"
     },
     "qwen-img-edit-2511": {
       "srcHash": "8711dd50d760db62177c49d3808197c29709e34eb7d9a448aed49b7068f3b023",
       "libHash": "a68703f8a998a67d1e244ad6d9f541456ccc50e1b10bec9e068a0798b649d18c"
     },
     "qwen3-tts": {
-      "srcHash": "14b5a6936b78b8215edb84e008172d7a318d2e4f8f2ecacc085ee586385bd92e",
-      "libHash": "ada6cfe5b469e4e854ff052d5cdc824a8b285a1f65e931486a723da8d8998f41"
+      "srcHash": "6fea27a9d693bb271c07b9d86083d3d8133533c137f70688cc7a07399c626806",
+      "libHash": "0b607f361c1430602bfb3a813f183726be74f1de13e6c0ceb8a48ff17daad5c2"
     },
     "seedvr2-ema": {
       "srcHash": "152692a0de31eb0397a29e06c57bbd56371da6726a42ba6dbada7e878fc77811",
@@ -114,8 +114,8 @@
       "libHash": "7ca5c65aaeb7610c3be49ce009f26eaf1ebea060aba99d1083f65f892daffc26"
     },
     "trellis2-native": {
-      "srcHash": "c5e3de13a653e0beed5f21661304646328c9b4a06cd1f2c18c42a0ec59a5fad8",
-      "libHash": "a152265284e41516d640d8d282cd4a49786d71349cdfb9df24409a93842c7b51"
+      "srcHash": "269f9a4e621306c8fec45979f1d0420042a9145984d042bb02e4b45929a88100",
+      "libHash": "65c1a2d21821b4486e08fdde6dc7b20a1fc6a0f4e6dd79e13b4d4b33243acbe0"
     },
     "wd14": {
       "srcHash": "780206f8e262c9d1d239d961d40712e005eb46fd4571018c5bd7cc72baa044dd",

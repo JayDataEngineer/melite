@@ -6,7 +6,7 @@ description: "Poster or flyer layout — zones, type hierarchy, and the rendered
 
 # Poster
 
-> VERIFIED LIVE 2026-11-12 against receipt `dev_docs/contracts/receipts/2026-11-12-models-qwen-edit-21-docs.md` (run run-71735c425e1c-870a53d1 — the key-art poster prompt rendered live end-to-end with the subject carried as hero and the copy zones composed: the rendered-text doctrine in action). Geometry note: this doc's sizing passage was reworked to the render-sizing law after that press — the run proves the prompt pattern, density, and identity law; a post-rework stated-pair press is owed for the sizing seat.
+> VERIFIED LIVE 2026-11-12 against receipt `contracts/receipts/2026-11-12-models-qwen-edit-21-docs.md` (run run-71735c425e1c-870a53d1 — the key-art poster prompt rendered live end-to-end with the subject carried as hero and the copy zones composed: the rendered-text doctrine in action). Geometry note: this doc's sizing passage was reworked to the render-sizing law after that press — the run proves the prompt pattern, density, and identity law; a post-rework stated-pair press is owed for the sizing seat.
 
 ## What it is for
 
