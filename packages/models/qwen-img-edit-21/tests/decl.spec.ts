@@ -42,18 +42,15 @@ describe("the qwen-img-edit-21 model plugin (the cached-reference edit lane of t
     assert.equal(base?.resolver_defaults?.cfg, 1);
   });
 
-  it("declares the deliverable pair as RUN params, never defaults — the latent law (2026-11-08), resized (operator 2026-11-12)", () => {
+  it("declares the deliverable pair as RUN params, never defaults — the latent law (2026-11-08), restated (the ground-truth cure, 2026-11-12)", () => {
     // The empty-form burn's cure (2026-10-09, width/height default
-    // 1024) STANDS: no geometry prefills — but the latent law's
-    // exclusion is SUPERSEDED by the resize order: the lane samples
-    // the encoder's own third output ("Empty latent on the first
-    // reference image's size … any other size shifts the edit" —
-    // the node's own law), so a stated target size has no seat IN
-    // THE LATENT — yet the lane TAKES the pair as run params (the
-    // kit's ImageScale tail, match OFF + both axes). A regression
-    // that re-defaults them re-opens the drift class the probe
-    // pinned: the EmptyLatent baked the anchor's header size while
-    // the encoder processed references at its resolution budget.
+    // 1024) STANDS: no geometry prefills — and the stated pair now
+    // sizes the render through the lane's own wiring (the encoder
+    // budget derives from w·h, the exact empty latent mounts at
+    // w×h, scale-matched). A regression that re-defaults them
+    // re-opens the drift class the probe pinned: the EmptyLatent
+    // baked the anchor's header size while the encoder processed
+    // references at its resolution budget.
     const d = DECL.defaults ?? {} as Record<string, unknown>;
     assert.equal(d.width, undefined, "width has no default — the deliverable is stated or source-matched, never prefilled");
     assert.equal(d.height, undefined, "height has no default — the deliverable is stated or source-matched, never prefilled");

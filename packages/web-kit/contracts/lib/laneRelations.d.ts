@@ -156,18 +156,19 @@ export declare function isPurelyUnstatedRequiredVoice(text: string): boolean;
  *  declares none) judges nothing — legacy families keep the card's
  *  union table until they declare. */
 export declare function judgeLaneSurface(surface: readonly string[] | null | undefined, schemaFields: readonly string[], values: Record<string, unknown>): LaneViolation[];
-/** THE DELIVERABLE-SIZE JUDGMENT (the resize order, operator
- *  2026-11-12): the size law as a pure judgment — the edit lanes
- *  STILL run at the source's own frame (the latent law holds); a
- *  stated size is a DELIVERABLE resize (post-decode lanczos), never
- *  a latent geometry. The match toggle owns the door: ON (default,
- *  including an unstated toggle — absence never opts out of the
- *  source frame) + a stated axis refuses field-named with the flip
- *  in the voice; OFF with NEITHER axis passes (the flip-then-type
- *  flow — the card stays runnable while the numbers are empty);
- *  OFF with exactly ONE axis refuses (a half deliverable is
- *  malformed, never a half-resize); OFF with BOTH demands integers
- *  ≥ 16 (the blank-image and int laws, input-prep's precedent).
+/** THE DELIVERABLE-SIZE JUDGMENT (the ground-truth cure,
+ *  2026-11-12): the size law as a pure judgment — a stated pair
+ *  SIZES THE RENDER (the lane derives the encoder's pixel budget
+ *  from w·h and samples an exact w×h latent; the delivered frame
+ *  is the rendered frame, no post-decode resize). The match toggle
+ *  owns the door: ON (default, including an unstated toggle —
+ *  absence never opts out of the source frame) + a stated axis
+ *  refuses field-named with the flip in the voice; OFF with
+ *  NEITHER axis passes (the flip-then-type flow — the card stays
+ *  runnable while the numbers are empty); OFF with exactly ONE
+ *  axis refuses (a half deliverable is malformed); OFF with BOTH
+ *  demands integers ≥ 16 (the blank-image and int laws,
+ *  input-prep's precedent).
  *
  *  ONE SPELLING, FOUR SEATS: the engine builds throw it (the kit's
  *  refuseDeliverableSize — the throwing twin over this judgment),

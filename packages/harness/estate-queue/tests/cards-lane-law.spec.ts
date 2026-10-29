@@ -707,7 +707,7 @@ describe("THE CLAIM LAW (the card claims nothing the model did not declare)", ()
     }
     expect(judged, "at least one card binds against declaring families (else this wall is vacuous)").toBeGreaterThan(0);
     // THE EXEMPT ROSTER (deliberate edits touch THIS list): the h3
-    // hidden last_frame alias. The resize order surfaced the edit
+    // hidden last_frame alias. The size door surfaced the edit
     // deliverable pair (visible_when under the match toggle, ON the
     // lanes' surfaces as run params), so the claim loop above
     // sanctions width/height — no roster, no carve: served, surfaced,
@@ -1469,7 +1469,7 @@ describe("THE REQUIRED WORD ON A REAL LANE", () => {
     expect(body).toMatch(/\.sort\(\)/);
   });
 
-  it("the sibling disagreement is DEAD — the word is gone, and the named lane refuses what the unnamed draft holds (image-edit, resize order 2026-11-12)", async () => {
+  it("the sibling disagreement is DEAD — the word is gone, and the named lane refuses what the unnamed draft holds (image-edit, size door 2026-11-12)", async () => {
     // The old pin judged the `together: [width, height]` intersection:
     // NEITHER lane owns a stated size as a param anymore, so there is
     // no together row to intersect — the relation is retired from both
@@ -1490,8 +1490,8 @@ describe("THE REQUIRED WORD ON A REAL LANE", () => {
     // the downstream pin that keeps the model-less admit honest: the
     // same state refuses at the RUN seat the moment the lane is
     // named — and the run seat voices the FIX (the deliverable-size
-    // law's flip: the edit runs at the source frame either way, the
-    // toggle owns the size), not the surface echo.
+    // law's flip: the toggle owns the render's size), not the
+    // surface echo.
     await expect(
       svc.phase1Card({ ...base, width: 1024 }, "qwen-img-edit-21"),
     ).rejects.toThrow("flip match_input_resolution to false");
@@ -1597,17 +1597,17 @@ describe("THE REQUIRED WORD ON A REAL LANE", () => {
   });
 });
 
-describe("THE STATED-SIZE WALL (the resize order, operator 2026-11-12 — a stated size is a deliverable, not a latent)", () => {
+describe("THE STATED-SIZE WALL (the size door, 2026-11-12 — a stated pair SIZES THE RENDER on the 2.1 lane)", () => {
   // The range rule died with the law it guarded, and the latent law
-  // died with the never-lie guard: the edit lanes run at the source's
-  // own frame and a stated size is a DELIVERABLE resize (the kit's
-  // lanczos ImageScale tail, owned by match OFF + both axes). The
-  // lanes surface the pair, so the surface sanctions it — and the
-  // SHARED size law judges the VALUES: match ON + stated refuses
-  // with the flip in the voice, and the lawful pair admits at the
-  // write seat. The old probe values below are kept (same numbers)
-  // with the law's new voice: a regression to range or latent
-  // language reds.
+  // died with the never-lie guard: under the ground-truth cure a
+  // stated pair sizes the render itself (the 2.1 lane derives the
+  // encoder budget from w·h and samples an exact w×h latent; the
+  // legacy lanes keep their post-decode tails). The lanes surface
+  // the pair, so the surface sanctions it — and the SHARED size law
+  // judges the VALUES: match ON + stated refuses with the flip in
+  // the voice, and the lawful pair admits at the write seat. The
+  // old probe values below are kept (same numbers) with the law's
+  // new voice: a regression to range or latent language reds.
   it("match ON (the default — unstated toggle included) + a stated pair refuses AT WRITE TIME, with the flip in the voice", () => {
     const verdict = svc.admitStageRelations("image-edit", {
       model: "qwen-img-edit-21",

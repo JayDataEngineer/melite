@@ -409,7 +409,7 @@ describe("judgeLaneSurface (the surface half)", () => {
   });
 });
 
-describe("judgeDeliverableSize (the resize order's size law — one spelling, four seats)", () => {
+describe("judgeDeliverableSize (the size door's size law — one spelling, four seats)", () => {
   it("match ON (default, unstated toggle included) + a stated axis refuses with the flip in the voice", () => {
     for (const params of [
       { width: 1024, height: 768 },

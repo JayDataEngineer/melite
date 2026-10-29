@@ -1607,20 +1607,20 @@ export class CardRegistryService extends Service {
         // derivable class the ONE SEAT wall reads.
         const documentPlane = new Set((famRow.studio?.writes ?? []).map(String));
         const knobFields = prep.decl.schemaNames.filter((n) => !documentPlane.has(n));
-        // THE DELIVERABLE-SIZE LAW (the resize order, operator
-        // 2026-11-12): the edit lanes SURFACE the deliverable pair
-        // (width/height beside the card's match_input_resolution toggle
-        // — the pair has no seat in the latent but the lane takes it as
-        // a run param, mounting the kit's ImageScale tail), so the
-        // surface judge sanctions the pair like any knob — and the
-        // SHARED size law judges its VALUES (judgeDeliverableSize — the
-        // same spelling the firing gate throws and every build()
-        // throws, so the bench and the engine can never disagree). ON +
-        // stated refuses with the flip in the voice; OFF + neither
-        // passes (the flip-then-type identity); OFF + half/non-integer/
-        // <16 refuses field-named. The toggle's presence in the served
-        // schema IS the law's declaration (today only the image-edit
-        // card serves it).
+        // THE DELIVERABLE-SIZE LAW (the ground-truth cure, 2026-11-12):
+        // the edit lanes SURFACE the deliverable pair (width/height
+        // beside the card's match_input_resolution toggle — the pair
+        // sizes the render: the lane derives the encoder budget from
+        // w·h and mounts the exact w×h empty latent, no ImageScale
+        // tail), so the surface judge sanctions the pair like any knob
+        // — and the SHARED size law judges its VALUES
+        // (judgeDeliverableSize — the same spelling the firing gate
+        // throws and every build() throws, so the bench and the engine
+        // can never disagree). ON + stated refuses with the flip in the
+        // voice; OFF + neither passes (the flip-then-type identity);
+        // OFF + half/non-integer/<16 refuses field-named. The toggle's
+        // presence in the served schema IS the law's declaration
+        // (today only the image-edit card serves it).
         const servesDeliverableSwitch = knobFields.includes("match_input_resolution");
         const judgedFam = [
             ...judgeLaneSurface(surface, knobFields, prep.params),

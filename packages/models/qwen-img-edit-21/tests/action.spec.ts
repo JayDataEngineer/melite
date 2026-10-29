@@ -75,7 +75,7 @@ describe("the edit action — byte-stability (the compatibility law)", () => {
     assert.equal(enc!.inputs?.resolution, 0, "the reference budget is 0 — each reference at its own size (the node's law)");
   });
 
-  it("THE SIZE DOOR (the resize order, operator 2026-11-12): match ON + stated refuses with the flip; match OFF + both axes builds through the REAL build() with ONE ImageScale deliverable tail", () => {
+  it("THE SIZE DOOR (the ground-truth cure, 2026-11-12): match ON + stated refuses with the flip; match OFF + both axes sizes the RENDER — resolution budget + exact empty latent, NO ImageScale tail", () => {
     assert.throws(
       () => instantiateAction(edit, { ...PARAMS, width: 832, height: 1216 }, FACTS, new GraphBuilder({}), "probe-neverlie"),
       (err: unknown): boolean =>
@@ -83,15 +83,26 @@ describe("the edit action — byte-stability (the compatibility law)", () => {
     );
     const sized = new GraphBuilder({});
     instantiateAction(edit, { ...PARAMS, match_input_resolution: false, width: 832, height: 1216 }, FACTS, sized, "probe-resize");
-    const tails = Object.values(sized.toJSON() as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>).filter(
-      (n) => n.class_type === "ImageScale",
-    );
-    assert.equal(tails.length, 1, "the stated pair lands on ONE ImageScale tail node through the family's own build()");
-    assert.deepEqual(
-      [tails[0]!.inputs?.width, tails[0]!.inputs?.height, tails[0]!.inputs?.upscale_method, tails[0]!.inputs?.crop],
-      [832, 1216, "lanczos", "disabled"],
-      "the tail scales lanczos to the stated pair with no crop",
-    );
+    const rows = Object.values(sized.toJSON() as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>);
+    // THE TAIL IS DEAD: a post-decode ImageScale can only STRETCH a
+    // finished render (the pixel proof, run-f0609a19538a — same
+    // composition, squeezed). The stated pair sizes the latent.
+    assert.equal(rows.filter((n) => n.class_type === "ImageScale").length, 0,
+      "no ImageScale tail — the delivered frame IS the rendered frame");
+    const empty = rows.find((n) => n.class_type === "EmptyLatentImage");
+    assert.ok(empty, "the stated pair renders through an exact empty latent");
+    assert.deepEqual([empty!.inputs?.width, empty!.inputs?.height, empty!.inputs?.batch_size],
+      [832, 1216, 1], "the latent IS the stated canvas (the official template's switch arm)");
+    const sampler = rows.find((n) => n.class_type === "KSampler")!;
+    assert.match(String(sampler.inputs?.latent_image), /^EmptyLatentImage/,
+      "the sampler samples the stated canvas, not the anchor's frame");
+    const enc = rows.find((n) => n.class_type === "TextEncodeQwenImage21")!;
+    // sqrt(832·1216) = 1005.8 → round32 = 992 → the node's own
+    // working band floors it at 1024 — the reference tokens process
+    // at the SAME scale as the sampled latent (the 2026-11-08 probe's
+    // mismatch was this budget disagreement)
+    assert.equal(enc.inputs?.resolution, 1024,
+      "the encoder budget matches the stated scale (round32(sqrt(w·h)), clamped 1024–2048)");
   });
 
   it("the golden holds with stated references — the autogrow keys map contiguously", () => {

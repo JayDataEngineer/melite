@@ -103,17 +103,16 @@ describe("the image-edit compose gate", () => {
     assert.equal(BOARDED[1], "qwen-img-edit-2511", "2511 is the BACKUP");
   });
 
-  // THE LATENT LAW AT THE CARD (2026-11-08 + the resize order,
-  // 2026-11-12): the edit RUNS at the source's own frame — the 2.1
-  // lane samples the encoder's own anchor-sized latent, 2511
-  // encodes the source outright — and a stated size is a
-  // DELIVERABLE resize (post-decode lanczos), never a latent
-  // geometry. The match toggle owns the door: ON + a stated axis
-  // refuses field-named with the flip in the voice (the clean
-  // compose builds no ImageScale); OFF + both axes composes the
-  // resize on the graph (an ImageScale whose wire carries the
-  // deliverable size).
-  it("THE LATENT LAW AT THE CARD: a stated size rides the deliverable, never the latent — match ON refuses with the flip in the voice, match OFF + both axes lands the resize", () => {
+  // THE SIZE LAW AT THE CARD (2026-11-08, restated by the
+  // ground-truth cure 2026-11-12): a stated pair SIZES THE RENDER —
+  // the 2.1 lane derives the encoder's pixel budget from w·h and
+  // samples an exact w×h empty latent (the delivered frame is the
+  // rendered frame, NO post-decode ImageScale); 2511 (legacy)
+  // keeps its own post-decode resize. The match toggle owns the
+  // door: ON + a stated axis refuses field-named with the flip in
+  // the voice (the clean compose builds no stated-size latent);
+  // OFF + both axes composes the render-sizing on the graph.
+  it("THE SIZE LAW AT THE CARD: a stated pair sizes the render — match ON refuses with the flip in the voice, match OFF + both axes renders at the stated canvas", () => {
     const model21 = facts.models["qwen-img-edit-21"]!;
     assert.ok(model21, "the qwen-img-edit-21 facts row serves");
     // Match ON (the default) + a stated pair refuses field-named,
@@ -140,18 +139,26 @@ describe("the image-edit compose gate", () => {
     assert.match(String(sampler?.inputs?.latent_image ?? ""), /^TextEncodeQwenImage21/, "the latent wire is the encoder's own");
     const enc = Object.values(graph).find((n) => n.class_type === "TextEncodeQwenImage21");
     assert.equal(enc?.inputs?.resolution, 0, "the reference budget is 0 — each reference at its own size");
-    // Match OFF + both axes lands a post-decode lanczos resize at
-    // the deliverable size — and STILL no foreign latent.
+    // Match OFF + both axes SIZES THE RENDER: an exact empty latent
+    // at the stated canvas, a matched encoder budget, and ZERO
+    // ImageScale (a post-decode stretch is the pixel defect).
     const gSized = new GraphBuilder();
     def.compose({ prompt: "make it night", image1: "/m/i.png", match_input_resolution: false, width: 1024, height: 768, steps: 25, cfg: 1 }, model21, gSized, "r_sizeoff21");
     const sized = gSized.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
-    assert.ok(!Object.values(sized).some((n) => n.class_type === "EmptyLatentImage"), "still no EmptyLatentImage — the edit ran at the source's frame");
-    const scales = Object.values(sized).filter((n) => n.class_type === "ImageScale");
-    assert.equal(scales.length, 1, "exactly one ImageScale — the deliverable resize");
-    assert.equal(scales[0].inputs.upscale_method, "lanczos", "the resize is lanczos — quality first");
-    assert.equal(scales[0].inputs.width, 1024, "the stated width lands");
-    assert.equal(scales[0].inputs.height, 768, "the stated height lands");
-    assert.equal(scales[0].inputs.crop, "disabled", "a stated size resizes — never center-crops");
+    assert.equal(Object.values(sized).filter((n) => n.class_type === "ImageScale").length, 0,
+      "no ImageScale — the delivered frame IS the rendered frame");
+    const empty = Object.values(sized).find((n) => n.class_type === "EmptyLatentImage")!;
+    assert.ok(empty, "the stated pair renders through an exact empty latent");
+    assert.deepEqual([empty.inputs.width, empty.inputs.height, empty.inputs.batch_size], [1024, 768, 1],
+      "the latent IS the stated canvas");
+    const sizedSampler = Object.values(sized).find((n) => n.class_type === "KSampler")!;
+    assert.match(String(sizedSampler.inputs.latent_image), /^EmptyLatentImage/,
+      "the sampler samples the stated canvas");
+    const sizedEnc = Object.values(sized).find((n) => n.class_type === "TextEncodeQwenImage21")!;
+    // sqrt(1024·768) = 886.8 → round32 = 896 → the node's own
+    // working band floors it at 1024 — references process at the
+    // stated scale
+    assert.equal(sizedEnc.inputs.resolution, 1024, "the encoder budget derives from the stated pair (round32·sqrt(w·h), clamped)");
   });
 
   // THE MATCH INCOMPLETE: match OFF demands BOTH axes (a single
@@ -531,12 +538,14 @@ describe("the image-edit compose gate", () => {
     assert.ok(!graph["VAEDecode.0"], "no decode under an IMAGE output");
   });
 
-  // THE RESIZE RIDES CROP_STITCH TOO (the resize order): the
-  // detailer owns the CROP size (guide 512/max 1024 per region —
-  // untouched); a stated Width/Height resizes the PASTED DELIVERABLE
-  // through the same match door as the plain arm (match ON +
-  // stated refuses with the flip; match OFF + both axes mounts one
-  // ImageScale after the DetailerForEach paste).
+  // THE DELIVERABLE RESIZE RIDES CROP_STITCH TOO (the size door):
+  // the detailer owns the CROP size (guide 512/max 1024 per region
+  // — untouched); a stated Width/Height resizes the PASTED
+  // DELIVERABLE through the same match door as the plain arm
+  // (match ON + stated refuses with the flip; match OFF + both
+  // axes mounts one ImageScale after the DetailerForEach paste —
+  // the detailer path is byte-stable under the ground-truth cure;
+  // the plain arm's cure sizes its render instead).
   it("width/height on a 2.1 crop_stitch run ride the same match door (the detailer owns the crop size, the stated pair owns the deliverable)", () => {
     const model21 = facts.models["qwen-img-edit-21"]!;
     // match ON (schema default) + stated refuses with the flip.
@@ -698,7 +707,7 @@ describe("the image-edit compose gate", () => {
 });
 
 describe("the lane-bespoke leaves (the DECL surface — fix shape 2's successor)", () => {
-  it("THE LEAVES RIDE THEIR DECL SURFACE: the deliverable pair is surfaced on every edit lane (the resize order), use_stock_nodes/double_reference are 2511's — the card carries NO model guard; references are ONE unguarded stack", () => {
+  it("THE LEAVES RIDE THEIR DECL SURFACE: the deliverable pair is surfaced on every edit lane (the size door), use_stock_nodes/double_reference are 2511's — the card carries NO model guard; references are ONE unguarded stack", () => {
     // the carrier dance (same as formSchemas: schemaCarrier ?? schema)
     const carrier = (def.schemaCarrier ?? def.schema) as unknown as { toJSON(): { refs: Record<number, { type?: string; dict?: Record<string, number>; meta?: { extra?: { visible_when?: string; max_stack?: number; hidden?: boolean; zone?: string } } }> } };
     const json = carrier.toJSON();
@@ -717,8 +726,8 @@ describe("the lane-bespoke leaves (the DECL surface — fix shape 2's successor)
     for (const name of ["match_input_resolution", "use_stock_nodes", "double_reference"]) {
       assert.equal(leaf(name), undefined, `${name} carries no model guard — its family is its DECL params surface`);
     }
-    // WIDTH/HEIGHT (returned by the resize order, operator
-    // 2026-11-12): the pair is a SERVED face row, visible only when
+    // WIDTH/HEIGHT (served by the size door, 2026-11-12): the pair
+    // is a SERVED face row, visible only when
     // Match Input Resolution is OFF (the only toggle state that
     // makes the knobs usable). The face never hides them: they are no
     // longer legacy keys.
@@ -732,11 +741,10 @@ describe("the lane-bespoke leaves (the DECL surface — fix shape 2's successor)
       assert.equal(face(axis)?.visible_when, "match_input_resolution=false", `${axis} appears only with Match OFF`);
     }
     // the DECL surfaces themselves (the one truth): EVERY edit
-    // lane lists the deliverable pair (the resize order — the 2.1
-    // lane samples the encoder's own latent, 2511 encodes the
-    // source, fibo2 its emitted latent; the pair has no seat in the
-    // latent but each lane TAKES it as a run param, consumed by the
-    // kit's deliverable tail). 2511 owns the edit-tuning pair. The
+    // lane lists the deliverable pair (the size door — 2.1 sizes
+    // its render through the pair: encoder budget + exact latent;
+    // 2511 and fibo2 keep their own deliverable tails). 2511 owns
+    // the edit-tuning pair. The
     // match toggle is SHARED (all lanes admit it as the deliverable
     // switch).
     const decl21 = facts.models["qwen-img-edit-21"]!;

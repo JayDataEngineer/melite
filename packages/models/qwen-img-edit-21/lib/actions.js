@@ -46,14 +46,15 @@ export const edit = {
     ],
     facts: parseEditFacts,
     build({ p, facts, model, g, runId }) {
-        // THE SIZE DOOR (the resize order, operator 2026-11-12): the
-        // shared deliverable-size refusal — the same law the firing gate
-        // owns (match ON + stated refuses with the flip in the voice;
-        // match OFF demands both integer axes ≥ 16). The engine path and
-        // the compose path judge one law: the NEVER-LIE GUARD's blanket
-        // refusal died here (it threw on ANY stated pair, before the
-        // deliverable tail below ever ran — Match-OFF resizes refused at
-        // the engine while compose approved them).
+        // THE SIZE DOOR (the shared refusal, restated by the
+        // ground-truth cure 2026-11-12): the shared deliverable-size
+        // law — the same law the firing gate owns (match ON + stated
+        // refuses with the flip in the voice; match OFF demands both
+        // integer axes ≥ 16). The engine path and the compose path
+        // judge one law: the NEVER-LIE GUARD's blanket refusal died
+        // here (it threw on ANY stated pair, before the render-sizing
+        // arm below ever ran — Match-OFF renders refused at the engine
+        // while compose approved them).
         refuseDeliverableSize(p);
         const seed = p.seed;
         let unet = g.node("UNETLoader", { unet_name: facts.unet, weight_dtype: "default" }).out();
@@ -128,8 +129,27 @@ export const edit = {
         // pixel-budget default; this lane edits the anchor's native
         // frame — the budget's rescale would shrink large sources
         // silently, and the DECL carries no override knob by design.
+        // THE STATED-SIZE ARM (the ground-truth cure, 2026-11-12): the
+        // resize-order law's premise — "the pair has no seat in the
+        // latent" — is FALSE: TextEncodeQwenImage21.resolution IS the
+        // latent seat (the pixel proof: a post-decode ImageScale
+        // lanczos can only STRETCH a render — run-f0609a19538a squeezed
+        // a portrait into 1536×1024). A stated pair now sizes the
+        // render ITSELF, two seats in agreement: the encoder processes
+        // references at a proportional pixel budget (round32(sqrt(w·h)),
+        // clamped to the node's own 1024–2048 working band) and the
+        // sampler renders an EmptyLatentImage at the EXACT stated
+        // canvas — the official template's switch arm, scale-matched so
+        // the encoder's reference tokens and the sampled latent agree
+        // in scale (the zoom/shift class the 2026-11-08 probe pinned
+        // was a scale MISMATCH, not the empty-latent arm itself). No
+        // ImageScale tail anywhere: the delivered frame IS the rendered
+        // frame.
+        const stated = deliverableSizeOf(p);
         const enc21 = g.node("TextEncodeQwenImage21", {
-            clip, vae, prompt: p.prompt, negative_prompt: p.negative_prompt ?? "", resolution: 0,
+            clip, vae, prompt: p.prompt, negative_prompt: p.negative_prompt ?? "",
+            resolution: stated === undefined ? 0
+                : Math.min(2048, Math.max(1024, Math.round(Math.sqrt(stated.width * stated.height) / 32) * 32)),
             ...images21,
         });
         // THE REGION DETAILER: the SAME generic arm as the 2511 tail,
@@ -156,6 +176,13 @@ export const edit = {
         // encoder processed references at its resolution budget — the
         // mismatch IS the zoom/shift class this removes. There is no
         // stated size anymore: the output IS the anchor's frame.
+        // THE STATED-SIZE ARM (the ground-truth cure, 2026-11-12): with
+        // a stated pair the sampler renders the EXACT canvas through
+        // EmptyLatentImage — the official template's switch arm — while
+        // the encoder budget above matches the same SCALE, so no
+        // foreign geometry is sampled (the 2026-11-08 probe's mismatch
+        // was the budget disagreement, cured by the budget line above,
+        // not the empty latent itself).
         const sampled21 = g.node("KSampler", {
             seed,
             steps: p.steps,
@@ -163,7 +190,8 @@ export const edit = {
             sampler_name: laneSampler(p),
             scheduler: laneScheduler(p),
             denoise: 1.0,
-            latent_image: enc21.out(2),
+            latent_image: stated === undefined ? enc21.out(2)
+                : g.node("EmptyLatentImage", { width: stated.width, height: stated.height, batch_size: 1 }).out(0),
             model: cached,
             positive: enc21.out(0),
             negative: enc21.out(1),
@@ -174,8 +202,13 @@ export const edit = {
         // 4-channel tensor RGBA on disk — the transparent PNG lands
         // whole, verified on this engine's own outputs. The official
         // background-removal template saves the plain decode too; no
-        // SplitImageWithAlpha belongs here.
-        return decodeSave(g, sampled21.out(), vae, `${runId}/edit`, deliverableSizeOf(p)).out();
+        // SplitImageWithAlpha belongs here. NO ImageScale tail (the
+        // ground-truth cure, 2026-11-12): a stated pair sizes the
+        // render itself (the resolution budget + the exact empty
+        // latent above) — a post-decode resize can only stretch what
+        // the sampler already rendered (the pixel proof,
+        // run-f0609a19538a: same composition, squeezed).
+        return decodeSave(g, sampled21.out(), vae, `${runId}/edit`).out();
     },
 };
 //# sourceMappingURL=actions.js.map

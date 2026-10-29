@@ -428,18 +428,19 @@ export function judgeLaneSurface(  surface: readonly string[] | null | undefined
   return out
 }
 
-/** THE DELIVERABLE-SIZE JUDGMENT (the resize order, operator
- *  2026-11-12): the size law as a pure judgment — the edit lanes
- *  STILL run at the source's own frame (the latent law holds); a
- *  stated size is a DELIVERABLE resize (post-decode lanczos), never
- *  a latent geometry. The match toggle owns the door: ON (default,
- *  including an unstated toggle — absence never opts out of the
- *  source frame) + a stated axis refuses field-named with the flip
- *  in the voice; OFF with NEITHER axis passes (the flip-then-type
- *  flow — the card stays runnable while the numbers are empty);
- *  OFF with exactly ONE axis refuses (a half deliverable is
- *  malformed, never a half-resize); OFF with BOTH demands integers
- *  ≥ 16 (the blank-image and int laws, input-prep's precedent).
+/** THE DELIVERABLE-SIZE JUDGMENT (the ground-truth cure,
+ *  2026-11-12): the size law as a pure judgment — a stated pair
+ *  SIZES THE RENDER (the lane derives the encoder's pixel budget
+ *  from w·h and samples an exact w×h latent; the delivered frame
+ *  is the rendered frame, no post-decode resize). The match toggle
+ *  owns the door: ON (default, including an unstated toggle —
+ *  absence never opts out of the source frame) + a stated axis
+ *  refuses field-named with the flip in the voice; OFF with
+ *  NEITHER axis passes (the flip-then-type flow — the card stays
+ *  runnable while the numbers are empty); OFF with exactly ONE
+ *  axis refuses (a half deliverable is malformed); OFF with BOTH
+ *  demands integers ≥ 16 (the blank-image and int laws,
+ *  input-prep's precedent).
  *
  *  ONE SPELLING, FOUR SEATS: the engine builds throw it (the kit's
  *  refuseDeliverableSize — the throwing twin over this judgment),
@@ -466,7 +467,7 @@ export function judgeDeliverableSize(
   if (sizeMatched) {
     const half = (width === undefined) !== (height === undefined);
     if (half) {
-      return [voice('match_input_resolution is OFF — state both width and height (the deliverable\'s size; the edit itself runs at the source\'s own frame and the deliverable resizes post-edit)')];
+      return [voice('match_input_resolution is OFF — state both width and height (the render\'s canvas; the pair sizes the render itself — encoder budget + exact latent)')];
     }
     if ((width !== undefined && !Number.isInteger(width)) || (height !== undefined && !Number.isInteger(height))) {
       return [voice('width/height must be integers — the resize takes whole pixels (the input-prep integer law)')];
@@ -477,7 +478,7 @@ export function judgeDeliverableSize(
     return [];
   }
   if (width !== undefined || height !== undefined) {
-    return [voice('match_input_resolution is ON — the deliverable keeps the source\'s own frame; flip match_input_resolution to false to state width/height (the edit itself runs at the source\'s frame either way)')];
+    return [voice('match_input_resolution is ON — the render keeps the source\'s own frame; flip match_input_resolution to false to state width/height (the pair then sizes the render itself)')];
   }
   return [];
 }

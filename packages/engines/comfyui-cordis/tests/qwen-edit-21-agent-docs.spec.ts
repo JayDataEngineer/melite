@@ -49,11 +49,14 @@ const SKILL_READ_IDS = [
   "model:qwen-img-edit-21:whats-next",
 ];
 
-// the retired law, banned from every doc this family serves
+// the retired law, banned from every doc this family serves.
+// `resolution:` stays banned as a DOC knob (the lever is the card's
+// width/height pair; the encoder budget it derives is the lane's
+// own wiring, never prompt prose) — the ground-truth cure, 2026-11-12.
 const RETIRED: Array<[string, RegExp]> = [
   ["the legacy edit family", /qwen-img-edit-2511/],
   ["lora seats", /\bloras?\b/i],
-  ["the dead resolution knob", /match_input_resolution|\bresolution:\s/],
+  ["resolution prose (the lever is the card pair)", /\bresolution:\s/],
   ["machine tokens", /3088|33081|dsh-melite|systemctl|127\.0\.0\.1|localhost|\/home\/user/],
 ];
 
@@ -84,16 +87,20 @@ describe("the qwen-img-edit-21 family doc wall", () => {
     expect(md).toMatch(/FIRST image is the canvas/);
     expect(md).toMatch(/`<image2>`/);
     expect(md).toMatch(/geometry law/i);
-    // the resize-order law (operator 2026-11-12): the entrance
-    // teaches the deliverable resize — flip Match OFF, state both
-    // numbers — never the retired no-resolution-seat line
-    expect(md).toMatch(/finished edit may RESIZE as a deliverable/i);
+    // the ground-truth cure (2026-11-12): the entrance teaches the
+    // render-sizing lever — flip Match OFF, state both numbers; the
+    // pair sizes the render (budget + exact latent), never a
+    // post-render resize — the retired 'resize as a deliverable'
+    // line is the pixel defect's own teaching
+    expect(flat(md)).toMatch(/SIZE AND\s*RATIO BELONG TO THE CARD/i);
+    expect(flat(md)).toMatch(/delivered frame IS the\s*rendered frame/i);
     expect(md).toMatch(/flip Match Input/i);
-    // the frame law (2026-11-12 audit C27/C28): the anchor's frame
-    // IS the render frame; prep at the target frame — never
-    // crop-first-to-ratio as the default mechanism
-    expect(flat(md)).toContain("THE FRAME LIVES ON THE ANCHOR");
-    expect(flat(md)).toMatch(/pad or outpaint to grow it/i);
+    // the anti-crop law (2026-11-12 audit C27/C28, restated by the
+    // cure): a ratio brief is never satisfied by cropping the
+    // anchor — pad to grow, or state the pair and let the render
+    // compose
+    expect(flat(md)).toMatch(/Never satisfy a ratio brief by cropping/i);
+    expect(flat(md)).toMatch(/pad to grow instead/i);
     expect(flat(md)).not.toMatch(/crop the anchor.{0,60}first/i);
   });
 

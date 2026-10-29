@@ -54,24 +54,24 @@ export declare function orderedInputImages(p: Record<string, unknown>): string[]
  *  the lane re-pins the same ceiling for direct callers. An absent
  *  model refuses (the old law — direct lane callers pin it). */
 export declare function refuseImageEditFiring(p: Record<string, unknown>, model?: ModelFacts): void;
-/** THE DELIVERABLE-SIZE REFUSAL (the resize order, operator
+/** THE DELIVERABLE-SIZE REFUSAL (the ground-truth cure,
  * 2026-11-12): the size law as its throwing door — the firing gate
  * AND each family's build() call it, so the engine path and the
  * compose path can never disagree about what a stated size means.
  * The law itself is the contracts floor's spelling
  * (judgeDeliverableSize — the bench write/run door, the form gate
  * and the compose mirror append the same judgment): this door
- * throws the first violation's voice. The edit lanes STILL run at
- * the source's own frame (the latent law holds); a stated size is
- * a DELIVERABLE resize (post-decode lanczos), not a latent
- * geometry. The match toggle owns the door: ON (default) + a
- * stated axis refuses field-named with the flip in the voice; OFF
- * with NEITHER axis is the composable identity (the flip-then-type
- * flow — the card stays runnable while the numbers are empty);
- * OFF with exactly ONE axis refuses (a half deliverable is
- * malformed, never a half-resize); OFF with BOTH demands integers
- * ≥ 16 (the blank-image and int laws, input-prep's precedent) and
- * the deliverable lands at that size.
+ * throws the first violation's voice. A stated pair SIZES THE
+ * RENDER (the lane derives the encoder's pixel budget from w·h
+ * and samples an exact w×h latent — the delivered frame is the
+ * rendered frame, no post-decode resize). The match toggle owns
+ * the door: ON (default) + a stated axis refuses field-named with
+ * the flip in the voice; OFF with NEITHER axis is the composable
+ * identity (the flip-then-type flow — the card stays runnable
+ * while the numbers are empty); OFF with exactly ONE axis refuses
+ * (a half deliverable is malformed); OFF with BOTH demands
+ * integers ≥ 16 (the blank-image and int laws, input-prep's
+ * precedent) and the render lands at that size.
  *
  * @param p the run params (width/height/match_input_resolution).
  */
@@ -116,11 +116,12 @@ export declare function regionSegs(g: GraphBuilder, region: Record<string, unkno
  * never change (the paste touches the seg mask only).
  * Lane-agnostic: the model/clip/vae/conditioning are whatever the
  * active lane built. */
-/** The vetted deliverable size off a GATED doc (the resize order's
+/** The vetted deliverable size off a GATED doc (the size door's
  * read half; refuseImageEditFiring owns the refusals — this helper
  * serves only the lawful state): match_input_resolution OFF and
  * BOTH axes stated integers. Every other shape returns undefined —
- * the compose stays byte-stable (no ImageScale). */
+ * the compose stays byte-stable (the anchor-frame render, no
+ * stated-size seats wired). */
 export declare function deliverableSizeOf(p: Record<string, unknown>): DeliverableSize | undefined;
 export declare function detailerSave(g: GraphBuilder, p: Record<string, unknown>, region: Record<string, unknown>, io: {
     image: TensorRef;

@@ -20,15 +20,16 @@ export const DECL = {
     "defaults": {
         "sampler": "euler",
         "scheduler": "simple"
-        // THE GEOMETRY IS THE ANCHOR'S OWN (the latent law, 2026-11-08,
-        // resized by the resize order, operator 2026-11-12): this lane
-        // samples the encoder's own anchor-sized latent, so a stated
-        // target size has no seat IN THE LATENT — the pair is a RUN
-        // param (the deliverable tail: the kit's ImageScale seat,
-        // owned by the card's match_input_resolution OFF + stated
-        // pair), surfaced on the lane beside the toggle, never a
-        // default (no geometry prefills — the form states it or the
-        // run matches source).
+        // THE GEOMETRY SIZES THE RENDER (the ground-truth cure,
+        // 2026-11-12, retiring the resize order): with a stated pair
+        // (match OFF) the encoder processes references at a matched
+        // pixel budget (round32·sqrt(w·h), clamped to the node's
+        // working band) and the sampler renders an exact empty latent
+        // at w×h — the delivered frame IS the rendered frame, no
+        // post-decode ImageScale. With no stated pair the lane samples
+        // the encoder's own anchor-sized latent (the 2026-11-08 law,
+        // intact on that arm). Never a default — no geometry prefills;
+        // the form states it or the run matches source.
     },
     "genre": "image",
     // THE REQUIRED DEFAULTS (operator contract 2026-11-07): every
@@ -50,15 +51,15 @@ export const DECL = {
     // block) plus the card's VALIDATION-ONLY aliases (image1/2/3,
     // reference_images, input_mask — hidden carriers, but a wire key
     // the lane admits, so the surface owns them). width/height ARE
-    // here (the resize order, operator 2026-11-12 — the latent law's
-    // exclusion retired): the lane samples the encoder's own
-    // anchor-sized latent, so the pair has no seat IN THE LATENT —
-    // but the lane TAKES them as run params (the deliverable: match
-    // OFF + both axes mounts the kit's ImageScale tail — the edit
-    // runs at the source frame, the finished edit resizes). The
-    // SHARED size law judges their values (integer ≥ 16, both axes,
-    // toggle OFF — ON + a stated size refuses with the flip in the
-    // voice), never this list: surfacing admits, the law refines.
+    // here (the size seat, ground-truth cure 2026-11-12 — the latent
+    // law's exclusion retired): match OFF + a stated pair sizes the
+    // RENDER — the encoder budget matches the stated scale and the
+    // sampler renders an exact w×h empty latent (the official
+    // template's switch arm), so the delivered frame is the rendered
+    // frame. The SHARED size law judges their values (integer ≥ 16,
+    // both axes, toggle OFF — ON + a stated size refuses with the
+    // flip in the voice), never this list: surfacing admits, the law
+    // refines.
     // use_stock_nodes/double_reference are 2511's edit-tuning pair
     // and are NOT here: with a declared surface the bench-write door
     // refuses them on this family in the field's voice.
@@ -106,12 +107,14 @@ export const DECL = {
         ],
     },
     // THE RANGE RULE (the width burn's cure, 2026-10-10, rewritten by
-    // the latent law 2026-11-08, restated by the resize order
-    // 2026-11-12): the resolution span RETIRED — the lane samples the
-    // encoder's own anchor-sized latent, no stated numeric left to
-    // bound in the latent. The deliverable pair rides the surface
-    // beside the toggle (integer ≥ 16, judged by the SHARED size law
-    // at every seat — judgeDeliverableSize, never this span). The
+    // the latent law 2026-11-08, restated by the ground-truth cure
+    // 2026-11-12): the resolution span RETIRED — the stated pair
+    // sizes the render through the lane's own wiring (the encoder
+    // budget derives from w·h; the exact latent mounts at w×h), no
+    // stated numeric left to bound here. The deliverable pair rides
+    // the surface beside the toggle (integer ≥ 16, judged by the
+    // SHARED size law at every seat — judgeDeliverableSize, never
+    // this span). The
     // SOLVER span stays: steps rides the edit narrowing's [1,50] (KSampler steps beyond the envelope is
     // the old washed-out-edit burn), so the write door keeps a live
     // domain to judge.

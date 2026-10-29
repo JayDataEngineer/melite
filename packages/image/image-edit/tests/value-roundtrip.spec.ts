@@ -228,26 +228,49 @@ describe("P0 witness extension — the edit aliases, mask, and specialty seats",
       "OFF + both axes: the deliverable resizes on the 2511 lane too");
   });
 
-  it("E12 (the resize order): the stated deliverable pair lands VERBATIM at the ImageScale consumer on BOTH lanes — never a silent plain-edit", () => {
+  it("E12 (the size door, ground-truth cure 2026-11-12): the stated pair lands VERBATIM at its consumer on BOTH lanes — the 2.1 render's exact latent, the 2511 deliverable tail — never a silent plain-edit", () => {
     // The census hop-[5] witness for width/height (SD-6): the value
     // law re-reads FROM the composed graph AT the consumer. The
-    // consumer is the kit's deliverable tail (lanczos, crop
-    // disabled), mounted only under match OFF + both axes — the
-    // E8 structural arm owns the mounting, this arm owns the
-    // VALUES. Distinctive sizes so a truncation/default rides red.
-    for (const [lane, m] of [["21", m21], ["2511", m2511]] as const) {
-      const graph = composeDoc(m, {
+    // consumers split by lane under the ground-truth cure: 2.1
+    // sizes the render itself (the stated pair wires the
+    // EmptyLatentImage canvas and the encoder's derived budget —
+    // no ImageScale anywhere), 2511 (legacy) keeps the kit's
+    // deliverable tail (lanczos, crop disabled). Both mount only
+    // under match OFF + both axes — the E8 structural arm owns the
+    // mounting, this arm owns the VALUES. Distinctive sizes so a
+    // truncation/default rides red.
+    {
+      const graph = composeDoc(m21, {
         prompt: "p", image1: "/m/anchor.png", seed: SEED,
         match_input_resolution: false, width: 1344, height: 768,
-      }, `r_e12_${lane}`);
+      }, "r_e12_21") as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>;
+      const rows = Object.values(graph);
+      assert.equal(rows.filter((n) => n.class_type === "ImageScale").length, 0,
+        "21: no ImageScale — the delivered frame IS the rendered frame");
+      const empty = rows.find((n) => n.class_type === "EmptyLatentImage")!;
+      assert.deepEqual([empty.inputs?.width, empty.inputs?.height, empty.inputs?.batch_size], [1344, 768, 1],
+        "21: the stated pair lands at the latent canvas verbatim");
+      const sampler = rows.find((n) => n.class_type === "KSampler")!;
+      assert.match(String(sampler.inputs?.latent_image), /^EmptyLatentImage/,
+        "21: the sampler samples the stated canvas");
+      const enc = rows.find((n) => n.class_type === "TextEncodeQwenImage21")!;
+      // sqrt(1344·768) = 1016.2 → round32 = 1024 — in-band verbatim
+      assert.equal(enc.inputs?.resolution, 1024,
+        "21: the encoder budget derives from the stated pair (round32·sqrt(w·h), clamped 1024–2048)");
+    }
+    {
+      const graph = composeDoc(m2511, {
+        prompt: "p", image1: "/m/anchor.png", seed: SEED,
+        match_input_resolution: false, width: 1344, height: 768,
+      }, "r_e12_2511");
       const scales = Object.values(graph as object).filter(
         (n: { class_type: string }) => n.class_type === "ImageScale",
       ) as Array<{ inputs: Record<string, unknown> }>;
-      assert.equal(scales.length, 1, `${lane}: exactly one deliverable tail mounts`);
-      assert.equal(scales[0]!.inputs.width, 1344, `${lane}: the stated width lands at the ImageScale consumer verbatim`);
-      assert.equal(scales[0]!.inputs.height, 768, `${lane}: the stated height lands at the ImageScale consumer verbatim`);
-      assert.equal(scales[0]!.inputs.upscale_method, "lanczos", `${lane}: the tail resizes lanczos (quality first)`);
-      assert.equal(scales[0]!.inputs.crop, "disabled", `${lane}: the tail never crops the finished edit`);
+      assert.equal(scales.length, 1, "2511: exactly one deliverable tail mounts (the legacy lane keeps its resize)");
+      assert.equal(scales[0]!.inputs.width, 1344, "2511: the stated width lands at the ImageScale consumer verbatim");
+      assert.equal(scales[0]!.inputs.height, 768, "2511: the stated height lands at the ImageScale consumer verbatim");
+      assert.equal(scales[0]!.inputs.upscale_method, "lanczos", "2511: the tail resizes lanczos (quality first)");
+      assert.equal(scales[0]!.inputs.crop, "disabled", "2511: the tail never crops the finished edit");
     }
   });
 

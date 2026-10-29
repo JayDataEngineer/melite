@@ -64,17 +64,23 @@ Prose outside quotes follows the user's instruction language
 - `seed` — fix it to iterate; free it to explore.
 - steps/cfg ride the model's own recipe — leave them unset.
 
-**The geometry law**: THE FRAME LIVES ON THE ANCHOR — the lane
-samples the encoder's anchor-sized latent, so the anchor's frame IS
-the render frame. When the target ratio differs, prep the anchor AT
-the target frame before editing: pad or outpaint to grow it (never
-crop away content the edit needs), or crop only as a deliberate
-composition choice. The
-finished edit may RESIZE as a deliverable: flip Match Input
-Resolution OFF and state width AND height (both, whole pixels,
-≥ 16px) — the edit still runs at the anchor's frame and the output
-scales after. Leave Match ON unless the brief names a delivery
-size.
+**The geometry law** (the ground-truth cure, 2026-11-12): SIZE AND
+RATIO BELONG TO THE CARD'S width/height PAIR — never to the prompt.
+A stated ratio in prose adds nothing the latent does not already
+carry, and the model may cram the layout obeying it. THE RENDER
+SIZES ITSELF: flip Match Input Resolution OFF and state width AND
+height (both, whole pixels, ≥ 16px) — the encoder processes the
+references at a matched pixel budget and the sampler renders an
+exact latent at the stated canvas, so the delivered frame IS the
+rendered frame (no post-render resize, no stretch — the pixel
+proof: a portrait squeezed into 1536×1024 by the retired lanczos
+tail). A RATIO CHANGE is lawful the same way: state the new pair;
+the model composes into that canvas natively. Match ON (or no
+stated pair) keeps the anchor's own frame — the encoder's
+anchor-sized latent. Never satisfy a ratio brief by cropping the
+anchor (an 832×1216 crop to 3:2 is 832×555 — half the pixels,
+guaranteed soft); pad to grow instead, or state the pair and let
+the render compose.
 
 ## The craft skills
 
