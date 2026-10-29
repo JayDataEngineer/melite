@@ -131,12 +131,22 @@ interface SkillLine { id?: string }
 // outfit-swap, relight, zooms, angles, whats-next) ride the
 // image-edit card's load line — every id round-tripped 200 with a
 // body in the arm above before the bump.
-const EXPECTED_CARD_SKILLS = 47;
+// 47 -> 48 (2026-11-12, the extend-video flow): the h3 family's
+// extend-flow skill (when to extend vs re-roll, the anchor law)
+// joins the h3-timeline card's load line with its landing.
+const EXPECTED_CARD_SKILLS = 48;
 // 8 → 11 (2026-10-11): object-forge's skillRefs — image-gen +
 // img-to-mesh card lines and z-image's prompt-enhance ride the flow
 // bundle (card:quad-remesh resolves null — the card ships no agent
 // doc — so it is not in the row's refs).
-const EXPECTED_FLOW_SKILLS = 11;
+// 11 → 18 (2026-11-12, recounted at the extend-video landing): the
+// mixed tree accumulated seven uncounted rides since the 11 pin
+// (skill-ref rows and leaves landed with their flows without a
+// census bump — the same mixed-tree drift the card-skills' 36→47
+// recount met) plus the extend-video leaf SKILL.md; every advertised
+// id round-tripped 200 with a body in the arm above before this
+// repin (the census's own law).
+const EXPECTED_FLOW_SKILLS = 18;
 
 describe("the id namespace law: load-advertised ids round-trip through the read door", () => {
   it("every CARD skill line it advertises, hSkillRead serves 200 with a body", async () => {

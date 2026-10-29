@@ -620,7 +620,10 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // 625 -> 626 (2026-11-12): managePreflight.js — audit 019 C3's
   // first-boot preflight core (the five-axis read the preflight verb
   // and the estate boot note ride), repinned with its landing.
-  const LIB_CENSUS_PIN = 626;
+  // 626 -> 627 (2026-11-12): extend.js — the h3 extend arm's
+  // renderer seat (the extend-video flow, report §3 staged plan),
+  // repinned with its landing.
+  const LIB_CENSUS_PIN = 627;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {

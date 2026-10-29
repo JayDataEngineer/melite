@@ -231,6 +231,35 @@ const ROW_PORT_JUDGMENT: Record<string, { lane: string; door: string }> = {
     lane: "the forge's photo→mesh lift (input_image seated; the stage PRODUCES the rigged mesh)",
     door: "the re-drive-with-target rail rides the {model:} door (the img-to-mesh card's full face)",
   },
+  // THE EXTEND-VIDEO CURATED LANE (2026-11-12): the row drives ONE
+  // arm — the fresh continuation — whose anchor (the prior clip's
+  // last frame) and references (the whole clip on both buses) are
+  // taken IN-GRAPH off the seated source_clip, never wired rails.
+  // Every media rail the card declares stays the {model:} door's.
+  "extend-video/extend:image": {
+    lane: "the extend's fresh-continuation lane (source_clip seated; the anchor is the prior clip's own tail, taken in-graph)",
+    door: "the guide-image rail rides the {model:} door (the h3-timeline card's full face)",
+  },
+  "extend-video/extend:last_frame": {
+    lane: "the extend's fresh-continuation lane (the last frame IS the in-graph anchor — ImageFromBatch -1 off source_clip, never a wired rail)",
+    door: "the FL2VA end-anchor rail rides the {model:} door (the h3-timeline card's full face)",
+  },
+  "extend-video/extend:ref_images": {
+    lane: "the extend's fresh-continuation lane (the pixel anchor is the prior's own tail frame, wired in-graph off source_clip)",
+    door: "the image-reference bus rides the {model:} door (the h3-timeline card's full face)",
+  },
+  "extend-video/extend:ref_videos": {
+    lane: "the extend's fresh-continuation lane (the motion identity is the whole prior clip, wired in-graph off source_clip)",
+    door: "the video-reference bus rides the {model:} door (the h3-timeline card's full face)",
+  },
+  "extend-video/extend:ref_audios": {
+    lane: "the extend's fresh-continuation lane (the extension generates fresh audio — the muted reference is the chain's own, never a wired rail)",
+    door: "the audio-reference bus rides the {model:} door (the h3-timeline card's full face)",
+  },
+  "extend-video/extend:reshoot_clip": {
+    lane: "the extend's fresh-continuation lane (one door per doc — the reshoot arm refuses under an armed extend at the compose door)",
+    door: "the re-shoot source rail rides the {model:} door (the h3-timeline card's full face)",
+  },
 };
 
 // ── THE CENSUS ──────────────────────────────────────────────────────
