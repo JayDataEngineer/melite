@@ -13,6 +13,28 @@ import type { H3Facts } from './actions.js';
  * @param skipFirstFrames the window's start (repair skips here)
  * @returns [frames, audio] — the loader's slots 0 and 2 */
 export declare const loadVideo: (g: GraphBuilder, path: string, frameLoadCap?: number, skipFirstFrames?: number) => OutputHandle[];
+export declare const RESOLUTION_SHORT_EDGE: Readonly<Record<string, number>>;
+/** The engine's plan_clips shape math, ported (ext lines 270-273):
+ * scale the source by shortEdge/min(w,h), snap both edges to 32
+ * (round), floor 32. Cited, never re-derived — an engine-side move
+ * of this math must update this port or the admission lies. */
+export declare const planTierShape: (width: number, height: number, shortEdge: number) => {
+    width: number;
+    height: number;
+};
+/** THE CROSS-REGIME JOIN ADMISSION: given the film regime's shape
+ * (the doc's width/height — the shape this estate's film arm
+ * renders and the join appends onto) and the mod bag's tier, answer
+ * the admission text when the tier would render a DIFFERENT shape,
+ * null when the join is shape-true. The text names both regimes,
+ * the engine-derived mod shape, and the pin (the tier whose short
+ * edge matches the film's — 768p for the film regime's 768 short
+ * edge — or the plan node's short_edge knob for any other shape).
+ * @param filmWidth the film regime's width (the doc knob)
+ * @param filmHeight the film regime's height (the doc knob)
+ * @param tier the mod bag's resolution tier (e.g. '736p')
+ * @returns the admission warning text, or null when shapes agree */
+export declare const admitCrossRegimeJoin: (filmWidth: number, filmHeight: number, tier: string) => string | null;
 /** The family's model + lora plane EVERY masked-edit seat rides
  * (extracted 2026-11-12 when the repair seat joined; ONE sequence,
  * every caller, zero drift — the unification's first stroke). The

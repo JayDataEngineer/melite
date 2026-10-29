@@ -892,6 +892,79 @@ describe('melite_flow tile contract — the chat hydrates from the render', () =
     )
   })
 
+  // F18 — THE CROSS-REGIME JOIN ADMISSION at the pass face: an
+  // h3-timeline stage whose armed mod bag carries a tier that renders
+  // a different shape than the doc's film regime ADMITS the mismatch
+  // on its pass row (warning + the rendered ⚠ face), naming both
+  // regimes and the pin — and the shape-true tier stays silent.
+  test('F18: an h3 mod stage joining a mismatched regime ADMITS it on the pass row (warn, never refuse)', async () => {
+    const seen = mockEstate([
+      (lane: string, _args: unknown[]) => {
+        if (lane === 'benchGet') {
+          return { status: 200, body: { draft_id: 'd_f18', rev: 1, stages: [
+            { id: 's_0', card: 'h3-timeline', params: {
+              width: 1344, height: 768,
+              extend: [{ source_clip: 'film_a', extend_prompt: 'more', resolution: '736p' }],
+            } },
+          ] } }
+        }
+        if (lane === 'runsStart') return { status: 202, body: { run_id: 'r_f18', status: 'queued' } }
+        if (lane === 'runsStatus') {
+          return { status: 200, body: { status: 'completed', stages: [
+            { id: 's_0', url: '/runs/film_b.mp4' },
+          ] } }
+        }
+        if (lane === 'draftsStagePatch') return { status: 200, body: { delivered: true } }
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(6000))) as Record<string, unknown>
+    assert.equal(out.status, 'done', 'the admission NEVER refuses — the run completes')
+    const pass = out.pass as Array<Record<string, unknown>>
+    const warning = String(pass[0]!['warning'] ?? '')
+    assert.ok(warning.startsWith('h3-timeline: CROSS-REGIME JOIN'),
+      'the pass row carries the admission: ' + JSON.stringify(pass[0]))
+    assert.ok(warning.includes("tier '736p' renders 1280×736"), 'the admission names the derived mod shape')
+    assert.ok(warning.includes("pin the bag's resolution 768p"), 'the admission names the shape-true pin')
+    const text = (tool.output.render({ bench: true }, out as never) as Array<{ text?: string }>)
+      .map((p) => p?.text ?? '').join('\n')
+    assert.ok(text.includes('⚠ h3-timeline: CROSS-REGIME JOIN'),
+      'the render PRINTS the admission in the row prose — the maker reads the render')
+  })
+
+  test('F18: the shape-true tier stays SILENT — a reconciled join never nags, other cards never speak', async () => {
+    const seen = mockEstate([
+      (lane: string, _args: unknown[]) => {
+        if (lane === 'benchGet') {
+          return { status: 200, body: { draft_id: 'd_f18_true', rev: 1, stages: [
+            { id: 's_0', card: 'h3-timeline', params: {
+              width: 1344, height: 768,
+              repair: [{ source_clip: 'film_a', resolution: '768p' }],
+            } },
+            { id: 's_1', card: 'image-gen', params: { prompt: 'a cat', model: 'image-gen-1' } },
+          ] } }
+        }
+        if (lane === 'runsStart') {
+          return { status: 202, body: { run_id: 'r_f18_true', status: 'queued' } }
+        }
+        if (lane === 'runsStatus') {
+          return { status: 200, body: { status: 'completed', stages: [
+            { id: 's_0', url: '/runs/film_c.mp4' }, { id: 's_1', url: '/runs/cat.png' },
+          ] } }
+        }
+        if (lane === 'draftsStagePatch') return { status: 200, body: { delivered: true } }
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(6000))) as Record<string, unknown>
+    assert.equal(out.status, 'done')
+    const pass = out.pass as Array<Record<string, unknown>>
+    assert.equal(pass[0]!['warning'], undefined, '768p renders 1344×768 exactly — no admission')
+    assert.equal(pass[1]!['warning'], undefined, 'a foreign card never speaks in the family\'s voice')
+  })
+
   test('AN UNREADABLE ROW WORD RUNS, NEVER THROWS (2026-10-12 follow-through): unreachable is not done', async () => {
     // 'unreachable' riding a persisted runStatus is the ERA spelling
     // (the escalation writes the health channel since 2026-10-12) —

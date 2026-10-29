@@ -546,6 +546,9 @@ export { renderH3Swap } from "./swap.js";
 export { renderH3Repair } from "./repair.js";
 export { renderH3Extend } from "./extend.js";
 export { reshootArmed } from "./reshoot.js";
+// F18 — the cross-regime join admission (the two resolution regimes
+// in one family: film width/height vs the mod bags' plan tiers).
+export { RESOLUTION_SHORT_EDGE, planTierShape, admitCrossRegimeJoin, } from "./chainEdit.js";
 export { assertOverlayGated } from "./actions.js";
 export { serveWindowSpec } from "./windowSpec.js";
 // The Loader-row face: DSH loads plugin rows by bare specifier and

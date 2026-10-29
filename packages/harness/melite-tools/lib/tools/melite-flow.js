@@ -32,6 +32,7 @@ import { benchKeyOfExec } from "./melite-construct.js";
 import { loadCardDefs } from '@melite/comfyui-cordis';
 import { boardedMap, resolveSpecKeyForTool } from "../discovery.js";
 import { isTerminalStatus, statusOf, statusOrPendingOf } from '@melite/contracts/stageView';
+import { admitCrossRegimeJoin } from '@melite/models-h3';
 /** The row's model (the QUEUE LANE LAW, agent-side): the row's
  *  params may name `model` explicitly; otherwise the card id
  *  resolves through form-spec's OWN alias law (boarded[0] — the
@@ -55,6 +56,29 @@ async function modelForCard(card, params) {
     // guard above already returned for those — the check keeps the
     // minted-model kill's type honest (no phantom seat, no phantom id).
     return res !== null && res.model !== undefined ? res.model : '';
+}
+/** F18 — the cross-regime join admission, pass-side seat: for an
+ * h3-timeline stage carrying an armed mod bag (replace/repair/
+ * extend) with a plan tier, answer the family's own admission text
+ * (models/h3 chainEdit.ts — the engine's tier math, cited) when the
+ * tier would render a different shape than the doc's film regime
+ * (width/height knobs, the film path's own defaults 1344×768);
+ * null otherwise (no armed bag, a shape-true tier, or another
+ * card — the admission never speaks outside its family). */
+function crossRegimeAdmissionOf(card, params) {
+    if (card !== 'h3-timeline')
+        return null;
+    const bag = ['replace', 'repair', 'extend']
+        .map((k) => params[k])
+        .find((v) => Array.isArray(v) && v.length > 0 && typeof v[0] === 'object' && v[0] !== null);
+    if (bag === undefined)
+        return null;
+    const tier = typeof bag[0]['resolution'] === 'string' ? bag[0]['resolution'] : '';
+    if (tier === '')
+        return null;
+    const width = typeof params['width'] === 'number' ? params['width'] : 1344;
+    const height = typeof params['height'] === 'number' ? params['height'] : 768;
+    return admitCrossRegimeJoin(width, height, tier);
 }
 /** Fold flat connects into per-stage typed edges. LOUD on shapes the
  * gateway would only bounce later — the agent reads the refusal HERE,
@@ -377,6 +401,19 @@ async function runBench(estate, a, signal) {
             }
         }
         const model = await modelForCard(card, resolved);
+        // F18 — THE CROSS-REGIME JOIN ADMISSION (2026-11-12): the
+        // h3-timeline family carries two resolution regimes — the film
+        // path renders the doc's width/height (1344×768 by default),
+        // the mod bags (replace/repair/extend) render a plan TIER the
+        // engine resolves against the source's own shape (736p on a
+        // film-shaped source = 1280×736 — the join F18 burned on). The
+        // admission warns loud BEFORE the stage runs, naming both
+        // regimes and the pin; it never refuses (the operator's call,
+        // 2026-11-12: an admission, not a gate). The law itself lives
+        // in the family (models/h3 chainEdit.ts — the engine's own tier
+        // math, cited); this is the pass voice, the one face the
+        // operator reads during a bench press.
+        const regimeWarning = crossRegimeAdmissionOf(card, resolved);
         // A familyless stage presses the DRAFT ARM alone (the same body
         // runSingle's wired path rides): the run door composes the bench's
         // stages — the familyless one by its own card id. A model key here
@@ -394,6 +431,7 @@ async function runBench(estate, a, signal) {
         const runId = started['run_id'];
         const outcome = await observeAndAttribute(estate, draftId, stageId, runId, signal, wireBool(a.test));
         pass.push({ stage: stageId, card, run_id: runId, status: outcome.status,
+            ...(regimeWarning !== null ? { warning: regimeWarning } : {}),
             ...(outcome.url !== '' ? { url: outcome.url } : {}),
             ...(outcome.artifacts.length > 0 ? { artifacts: outcome.artifacts } : {}),
             ...(outcome.host_paths.length > 0 ? { host_paths: outcome.host_paths } : {}),
@@ -1104,6 +1142,14 @@ export function meliteFlow(estate) {
                         // and say so, not report a run the user cannot find.
                         + (typeof p['stamp_note'] === 'string' && p['stamp_note'] !== ''
                             ? ' — STAMP MISSED (' + p['stamp_note'] + '): the user\u2019s cards tab will NOT show this run'
+                            : '')
+                        // F18 — THE CROSS-REGIME JOIN ADMISSION face: a row that
+                        // joined the film regime to a mismatched mod tier prints
+                        // the admission in the row prose (the maker reads the
+                        // render, not the payload — the same law the stamp-miss
+                        // face obeys).
+                        + (typeof p['warning'] === 'string' && p['warning'] !== ''
+                            ? '\n    ⚠ ' + p['warning']
                             : '')
                         + (typeof p['url'] === 'string' && p['url'] !== '' ? ' ' + p['url'] : '')
                         + (Array.isArray(p['host_paths']) && p['host_paths'].length > 0

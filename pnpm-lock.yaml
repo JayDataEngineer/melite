@@ -1005,6 +1005,9 @@ importers:
       '@melite/image-image-gen':
         specifier: workspace:*
         version: link:../../image/image-gen
+      '@melite/models-h3':
+        specifier: workspace:*
+        version: link:../../models/h3
       '@melite/motion-motion':
         specifier: workspace:*
         version: link:../../motion/motion
@@ -14738,7 +14741,7 @@ snapshots:
       lightningcss: 1.33.0
       postcss-load-config: 6.0.1(jiti@2.7.0)(postcss@8.5.30)(yaml@2.9.1)
       rolldown: 1.2.7
-      tsdown: 0.22.14(@tsdown/css@0.22.14)(oxc-resolver@11.24.2)(publint@0.3.25)(typescript@6.0.3)(unrun@0.3.1)
+      tsdown: 0.22.14(@tsdown/css@0.22.14)(oxc-resolver@11.24.2)(publint@0.3.25)(typescript@5.9.3)(unrun@0.3.1)
     optionalDependencies:
       postcss: 8.5.30
     transitivePeerDependencies:

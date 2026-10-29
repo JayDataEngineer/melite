@@ -7,6 +7,7 @@ export { renderH3Swap } from "./swap.js";
 export { renderH3Repair } from "./repair.js";
 export { renderH3Extend } from "./extend.js";
 export { reshootArmed } from "./reshoot.js";
+export { RESOLUTION_SHORT_EDGE, planTierShape, admitCrossRegimeJoin, } from "./chainEdit.js";
 export { assertOverlayGated } from "./actions.js";
 export { serveWindowSpec, type WindowSpecProjection } from "./windowSpec.js";
 export { family as default };

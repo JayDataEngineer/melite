@@ -55,6 +55,72 @@ export const loadVideo = (
   return [n.out(0), n.out(2)]
 }
 
+// ── F18 — THE CROSS-REGIME ADMISSION (2026-11-12) ──────────────────
+// Two resolution regimes live in one family: the FILM path renders
+// at the doc's own width/height (schema defaults 1344×768), the mod
+// bags (replace/repair/extend) render at a plan TIER — a short-edge
+// label the engine resolves against the source's own shape. Mixed
+// film+mod chains joined mismatched shapes silently (friction F18):
+// the film at 1344×768, the mod window at 736p = 1280×736. The cure
+// is an ADMISSION WARNING at the compose door (operator order
+// 2026-11-12: warn loud, name both regimes and the pin — no render
+// output changes, never a refusal). The tier math below is the
+// ENGINE'S OWN LAW, ported verbatim from the live extension
+// (comfyui-h3-oneclick-swap/__init__.py): RESOLUTIONS at line 28
+// maps every tier to its short edge; plan_clips at lines 268-273
+// scales the SOURCE shape by shortEdge/min(w,h) and snaps both
+// edges to 32. The port cites the pin too: a tier whose short edge
+// equals the film's own short edge composes the film's shape
+// exactly (768p on 1344×768: scale 1.0 — the join stays
+// shape-true), and any other shape reconciles through the plan
+// node's optional short_edge knob (step 32), never by re-rendering
+// the film.
+export const RESOLUTION_SHORT_EDGE: Readonly<Record<string, number>> = {
+  '480p': 480, '576p': 576, '736p': 736, '768p': 768, '1080p': 1080,
+}
+
+/** The engine's plan_clips shape math, ported (ext lines 270-273):
+ * scale the source by shortEdge/min(w,h), snap both edges to 32
+ * (round), floor 32. Cited, never re-derived — an engine-side move
+ * of this math must update this port or the admission lies. */
+export const planTierShape = (
+  width: number, height: number, shortEdge: number,
+): { width: number; height: number } => {
+  const scale = shortEdge / Math.min(width, height)
+  return {
+    width: Math.max(32, Math.round(width * scale / 32) * 32),
+    height: Math.max(32, Math.round(height * scale / 32) * 32),
+  }
+}
+
+/** THE CROSS-REGIME JOIN ADMISSION: given the film regime's shape
+ * (the doc's width/height — the shape this estate's film arm
+ * renders and the join appends onto) and the mod bag's tier, answer
+ * the admission text when the tier would render a DIFFERENT shape,
+ * null when the join is shape-true. The text names both regimes,
+ * the engine-derived mod shape, and the pin (the tier whose short
+ * edge matches the film's — 768p for the film regime's 768 short
+ * edge — or the plan node's short_edge knob for any other shape).
+ * @param filmWidth the film regime's width (the doc knob)
+ * @param filmHeight the film regime's height (the doc knob)
+ * @param tier the mod bag's resolution tier (e.g. '736p')
+ * @returns the admission warning text, or null when shapes agree */
+export const admitCrossRegimeJoin = (
+  filmWidth: number, filmHeight: number, tier: string,
+): string | null => {
+  const shortEdge = RESOLUTION_SHORT_EDGE[tier]
+  if (shortEdge === undefined) return null
+  const shape = planTierShape(filmWidth, filmHeight, shortEdge)
+  if (shape.width === filmWidth && shape.height === filmHeight) return null
+  const filmShort = Math.min(filmWidth, filmHeight)
+  const pin = Object.entries(RESOLUTION_SHORT_EDGE)
+    .find(([, e]) => e === filmShort)?.[0]
+  const pinText = pin !== undefined
+    ? `pin the bag's resolution ${pin} (short edge ${String(filmShort)} — the plan then composes ${String(filmWidth)}×${String(filmHeight)} exactly)`
+    : `pin the plan's short_edge ${String(filmShort)} (the film's own short edge — no tier spells it)`
+  return `h3-timeline: CROSS-REGIME JOIN — the film regime renders ${String(filmWidth)}×${String(filmHeight)} but the mod bag's tier '${tier}' renders ${String(shape.width)}×${String(shape.height)} on a film-shaped source (the engine scales the short edge to ${String(shortEdge)}, snaps to 32); the join mismatches shapes. To join shape-true, ${pinText}; to keep the mismatch, carry on — this admission warns, it never refuses.`
+}
+
 /** The family's model + lora plane EVERY masked-edit seat rides
  * (extracted 2026-11-12 when the repair seat joined; ONE sequence,
  * every caller, zero drift — the unification's first stroke). The
