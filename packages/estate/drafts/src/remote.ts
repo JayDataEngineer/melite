@@ -15,6 +15,9 @@ import {
 import type { Domain } from "@deepseek-ai/dsh-storage-domain";
 import { admitWiring, benchBlockOf, strippedForAdmission, toleratedByRow, type BenchBlock } from "./bench.js";
 import { STAGE_PATCH_KEYS, type StagePatchKey, RESTORED_PROVENANCE_SPELLING } from "@melite/contracts/benchStage";
+import { segmentConfined } from "@melite/contracts/mediaKinds";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 export { STAGE_PATCH_KEYS, type StagePatchKey };
 import { unwrapItemArrays } from "@melite/comfyui-card-kit";
 import { openDraftsDomain } from "./store.js";
@@ -432,6 +435,87 @@ const BENCH_ID_PREFIX = "bench-";
 /** A plain record (the module's own shape guard). */
 const isObj = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
+
+// ── THE HOST-PATH CURRENCY ARM (minor-a, 2026-11-12) ──────────────
+// An author pasting a HOST-ABSOLUTE media path ("/home/…/foo.png")
+// into a params slot left a row no reader could serve: the compose
+// door wants uploads-door currency, the drilled-out card's preview
+// (estateInputUrl) maps ONLY data/input/<name> to /v1/assets/inputs.
+// The patch seam now buys the currency itself: copy the host file
+// into the estate's data/input tree (the uploads rail's own root),
+// rewrite the value to "data/input/<name>" — one truth for compose
+// and preview. Judged per VALUE (any key, string or string-array),
+// never per key name: absolute path + media extension + the file
+// exists on host. Anything else rides VERBATIM — a missing file or
+// non-media path is the compose door's refusal to make, not a new
+// voice here.
+
+/** Media extensions the currency arm boards (the uploads rail's
+ *  any-media law: image / video / audio + the mesh pair). */
+const CURRENCY_EXT = /\.(?:png|jpe?g|webp|mp4|webm|mov|mp3|wav|ogg|flac|glb|gltf)$/i;
+
+/** The uploads tree's root — MELITE_REPO_ROOT override, else the
+ *  source-relative repo root (mirrors resolveRepoRoot's law in
+ *  @melite/comfyui-cordis/comfyui-config; a local mirror, not a
+ *  cross-layer dependency). */
+function inputTreeRoot(): string {
+  const override = process.env["MELITE_REPO_ROOT"] ?? "";
+  if (override !== "") return resolve(join(override, "data", "input"));
+  const here = dirname(fileURLToPath(import.meta.url));
+  // src→drafts→estate→packages→repo (4 hops), then data/input.
+  return resolve(here, "..", "..", "..", "..", "data", "input");
+}
+
+/** One host-absolute media path → uploads-door currency. The one
+ *  name = one file law rides: a taken name with identical bytes
+ *  reuses the seat; different bytes take a hash-suffixed seat (the
+ *  uploads door's SEG grammar judged on the basename).
+ *  @param value the param value as authored.
+ *  @returns the currency path, or the value verbatim when it is
+ *  not a convertible host path. */
+async function hostPathToCurrency(value: string): Promise<string> {
+  if (!value.startsWith("/") || !CURRENCY_EXT.test(value)) return value;
+  const path = await import("node:path");
+  const name = path.basename(value);
+  if (name.includes("/") || name.includes("\\") || !segmentConfined(name)) return value;
+  const fs = await import("node:fs/promises");
+  let bytes: Buffer;
+  try {
+    bytes = await fs.readFile(value);
+  } catch {
+    return value; // not on host — the compose door's refusal owns it
+  }
+  const dir = inputTreeRoot();
+  await fs.mkdir(dir, { recursive: true });
+  let seat = name;
+  try {
+    const existing = await fs.readFile(path.join(dir, name));
+    if (!existing.equals(bytes)) {
+      const { createHash } = await import("node:crypto");
+      const dot = name.lastIndexOf(".");
+      const stem = dot === -1 ? name : name.slice(0, dot);
+      const ext = dot === -1 ? "" : name.slice(dot);
+      seat = `${stem}-${createHash("sha256").update(bytes).digest("hex").slice(0, 8)}${ext}`;
+    }
+  } catch {
+    // seat free — the basename lands under its own name
+  }
+  await fs.writeFile(path.join(dir, seat), bytes);
+  return `data/input/${seat}`;
+}
+
+/** The currency walk over a param value: strings convert, arrays of
+ *  strings convert item-wise, every other shape rides untouched.
+ *  @param v the authored param value.
+ *  @returns the value with any host-absolute media paths bought
+ *  into uploads-door currency. */
+async function currencyWalk(v: unknown): Promise<unknown> {
+  if (typeof v === "string") return await hostPathToCurrency(v);
+  if (Array.isArray(v) && v.every((x): x is string => typeof x === "string")) {
+    return await Promise.all(v.map((s) => hostPathToCurrency(s)));
+  }
+  return v;
+}
 
 /** THE LANE ADMISSION SEAT (2026-10-10, the YOU_ARE_A_LIAR fix
  *  shape 3): after the model admission passes, the registry judges
@@ -1060,7 +1144,10 @@ export class DraftsRemoteService extends TypertRemoteService {
       ) as Record<string, unknown>;
       for (const k of Object.keys(incoming)) {
         if (incoming[k] === null) delete merged[k];
-        else merged[k] = incoming[k];
+        // THE HOST-PATH CURRENCY ARM: buy any host-absolute media
+        // path into uploads-door currency before it lands (the row
+        // the next run composes and the preview both read).
+        else merged[k] = await currencyWalk(incoming[k]);
       }
       // ONE LAW, BOTH TRANSPORTS (operator 2026-11-11, attempt 11 —
       // "ALL I DID WAS CHANGE THE QWEN TTS MODEL"): the lane-shift
