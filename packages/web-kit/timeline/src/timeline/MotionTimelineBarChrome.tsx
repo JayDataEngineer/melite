@@ -8,11 +8,10 @@
 import { Film, ListMusic, Mic, Music, Upload, Zap, ZoomIn, ZoomOut } from './icons.tsx'
 import { clsx as cn } from "clsx"
 import { Button, IconCloseOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
-import { AUDIO_CARDS_H, AUDIO_H, GUTTER_W, LANE_H, RULER_H, ZOOM_STEP, fmtTimecode, rgb } from "./MotionTimelineBarLayout.ts"
+import { AUDIO_CARDS_H, AUDIO_H, GUTTER_W, LANE_H, RULER_H, ZOOM_STEP, rgb } from "./MotionTimelineBarLayout.ts"
 import { Tip } from "@melite/card-base/client"
 import css from "./timeline.module.css"
 import type * as React from "react"
-import { useState } from "react"
 import type { TimelineTrack } from "./viser-timeline/types.ts"
 import type { AudioLayer, TimelineBeat } from "./MotionTimelineBar.tsx"
 import { timelineCopy } from "../timelineCopy.ts"
@@ -261,44 +260,33 @@ export interface TimelineRulerProps {
   ticks: number[]
   stepSec: number
   fps: number
-  frameIdx: number
   barBg: string
   frameToPx: (f: number) => number
   frameAt: (clientX: number) => number | null
   onPromptAdd?: (frame: number) => void
-  /** P6 GESTURE RECEIPT (purge §7 P6): the single-click seek seat — the
-   *  tenant's playhead-move callback (the scrub drag's onFrameChange).
-   *  Absent = the chrome faces the reason instead (the voice below). */
-  onSeekFrame?: (frame: number) => void
 }
 
-/** The ruler: ticks + sticky timecode. NOT a scrub surface (operator
- *  2026-11: the scrub gesture belongs to the playhead CAP alone — the
- *  white circle at the top of the line — never the bar's middle); its
- *  gestures are the double-click ADD (bar line 947) and the
- *  single-click SEEK (P6: a click on the time line moves the playhead —
- *  a jump, never a drag — or faces why not). */
+/** The ruler: ticks only. NOT a scrub surface and NOT a seek surface
+ *  (operator, told 10+ times, 2026-10-29: the playhead moves ONLY by
+ *  dragging the CAP — the white circle at the top of the line — never
+ *  a click anywhere on the timeline): the P6 single-click seek and
+ *  its click-voice chip are DEAD, and the sticky timecode chip is
+ *  DEAD with them (it read the bar's fps axis, which can mismatch
+ *  the film's own rate — a readout that can lie is removed, not
+ *  patched). The ruler's one gesture is the double-click ADD. */
 export function TimelineRuler(props: TimelineRulerProps) {
   const {
-    ticks, stepSec, fps, frameIdx, barBg,
-    frameToPx, frameAt, onPromptAdd, onSeekFrame,
+    ticks, stepSec, fps, barBg,
+    frameToPx, frameAt, onPromptAdd,
   } = props
-  // THE CLICK RECEIPT (P6's voice): every ruler click announces where
-  // the playhead went — or why it didn't. A seek that announces
-  // itself is still a receipt.
-  const [clickVoice, setClickVoice] = useState("")
   return (
     <>
       {/* Ruler — double-click ADDS a clip at that frame (the additive
           gesture's always-computable home — the calls row's clips own
-          their own double-click for editing). Single-click SEEKS (the
-          NLE parity: click the time line, the playhead jumps — the
-          tenant resolves through onSeekFrame). Scrubbing is the cap's.
-          fill (E2-10 THE SHRINK): the Tip anchor is block-level and
-          DEFINITE — the width-auto band fills it. The hug face
-          shrink-wrapped this band to its 62px chip (live-measured in
-          1064px of content): a full-width face with a chip-wide hit
-          seat, clicks past the chip deselecting instead of seeking. */}
+          their own double-click for editing). Single-click does
+          NOTHING (the playhead moves only by the cap, operator told
+          10+ times). fill (E2-10 THE SHRINK): the Tip anchor is
+          block-level and DEFINITE — the width-auto band fills it. */}
       <Tip
         fill
         tip={
@@ -311,22 +299,6 @@ export function TimelineRuler(props: TimelineRulerProps) {
           data-testid="motion-timeline-ruler"
           className={css.ruler}
           style={{ height: RULER_H }}
-          onClick={(e) => {
-            // P6 SINGLE-CLICK SEEK: the NLE parity — click the time
-            // line and the playhead jumps to that frame (a jump, never
-            // a drag; the drag session is never entered, so the scrub
-            // law holds). The tenant resolves through onSeekFrame; when
-            // no seat is wired the chrome faces the reason instead of
-            // voiding (P6's either half).
-            const f = frameAt(e.clientX)
-            if (f == null) return
-            if (onSeekFrame) {
-              onSeekFrame(f)
-              setClickVoice(`playhead ${fmtTimecode(f, fps)}`)
-            } else {
-              setClickVoice("ruler click seeks when the tenant wires the seek seat — drag the playhead cap to scrub")
-            }
-          }}
           onDoubleClick={(e) => {
             if (!onPromptAdd) return
             // UNclamped (the tail-pull precedent): a double-click
@@ -335,17 +307,6 @@ export function TimelineRuler(props: TimelineRulerProps) {
             if (f != null) onPromptAdd(f)
           }}
         >
-        {/* THE CLICK RECEIPT (P6's voice, aria-live): what the last
-            ruler click did — the seek's own announcement, or the faced
-            reason. Empty until the first click (no noise). */}
-        <span
-          data-testid="motion-timeline-click-voice"
-          aria-live="polite"
-          className={css.timecode}
-          style={{ display: clickVoice ? undefined : "none" }}
-        >
-          {clickVoice}
-        </span>
         {ticks.map((s) => (
           <div key={s} className={css.tick} style={{ left: frameToPx(s * fps) }}>
             <div className={css.tickLine} />
@@ -354,19 +315,6 @@ export function TimelineRuler(props: TimelineRulerProps) {
             </span>
           </div>
         ))}
-        {/* POSITION INDICATOR (audit F5a, DaVinci parity): the
-            playhead's timecode mm:ss:ff, sticky-pinned at the
-            bar's left edge — 1:1 with the playhead (same frameIdx,
-            same fps axis the clips are drawn on; audit F2 unifies
-            the axis in the tenant). A readout only: scrubbing is
-            the cap's gesture, and this chip rides no pointer. */}
-        <span
-          data-testid="motion-timeline-timecode"
-          className={css.timecode}
-          style={{ background: barBg, boxShadow: "2px 0 6px -2px color-mix(in srgb, var(--dsw-alias-bg-base) 80%, transparent)" }}
-        >
-          {fmtTimecode(frameIdx, fps)}
-        </span>
         </div>
       </Tip>
     </>

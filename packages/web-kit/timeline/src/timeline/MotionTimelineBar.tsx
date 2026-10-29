@@ -411,9 +411,8 @@ export function MotionTimelineBar({
         suppressClickRef={drag.suppressClickRef} onSelect={onSelect}
       >
         <TimelineRuler
-          ticks={ticks} stepSec={stepSec} fps={fps} frameIdx={frameIdx} barBg={barBg}
+          ticks={ticks} stepSec={stepSec} fps={fps} barBg={barBg}
           frameToPx={scale.frameToPx} frameAt={scale.frameAt} onPromptAdd={onPromptAdd}
-          onSeekFrame={onFrameChange}
         />
         <TimelinePromptsLane
           prompts={prompts} fps={fps} promptsHeight={promptsHeight} emptyPromptsHint={emptyPromptsHint}

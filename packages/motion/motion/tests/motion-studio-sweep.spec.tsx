@@ -523,9 +523,16 @@ describe('coverage sweep (scans / convert errors / guards)', () => {
       if (!document.body.querySelector(scrubSel)) throw new Error('no slider yet')
     }, { timeout: 10000 })
     const range = document.body.querySelector(scrubSel) as HTMLInputElement
+    // ORACLE (2026-10-29): the sticky timecode chip is gone (operator
+    // order — it read the bar's fps axis and lied); the dialog's own
+    // scrub count "frame+1 / T" is the live readout. Park reads
+    // '1 / 4'; seeking to frame 2 (0-based) must read '3 / 4'.
+    const countSel = '[class*="scrubCount"]'
+    const count = () => document.body.querySelector(countSel)?.textContent ?? '??'
+    if (count() !== '1 / 4') throw new Error(`not parked (count ${count()}) — the seek below would pass vacuously`)
     fireEvent.change(range, { target: { value: '2' } })
     await vi.waitFor(() => {
-      if (!document.body.textContent?.includes('00:00:02')) throw new Error('no seek yet')
+      if (count() !== '3 / 4') throw new Error(`no seek yet (count ${count()})`)
     }, { timeout: 10000 })
     await vi.waitFor(() => {
       if (!document.body.querySelector('[aria-label="Play (Space)"]')) throw new Error('not paused yet')

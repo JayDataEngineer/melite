@@ -26,8 +26,13 @@ test('probe (e2-10-green): post-cure journey verdict — ruler spans, line swall
   await playhead.waitFor({ timeout: 30_000 })
   const ruler = page.locator('[data-testid="motion-timeline-ruler"]').first()
   const content = page.locator('[data-testid="motion-timeline-content"]').first()
-  const timecode = page.locator('[data-testid="motion-timeline-timecode"]').first()
-  const readTC = async (): Promise<string> => (await timecode.textContent()) ?? '??'
+  // POSITION ORACLE (2026-10-29): the sticky timecode chip is GONE
+  // (operator order — it read the bar's fps axis and lied); the
+  // playhead's own x IS the position oracle now.
+  const readTC = async (): Promise<string> => {
+    const box = await playhead.boundingBox()
+    return box === null ? '??' : String(Math.round(box.x))
+  }
 
   // SEAT 1 — THE SHRINK: the ruler spans its content (no 62px chip).
   const geo = await page.evaluate(() => {
@@ -75,10 +80,10 @@ test('probe (e2-10-green): post-cure journey verdict — ruler spans, line swall
   await page.mouse.click(lx, ly)
   await page.waitForTimeout(800)
   expect(await readTC()).toBe(tcScrubbed)
-  const voice = page.locator('[data-testid="motion-timeline-click-voice"]').first()
-  if (await voice.count() > 0) {
-    expect(await voice.textContent()).toBe('')
-  }
+  // the click-voice chip is GONE with the ruler click (operator:
+  // a timeline click must do NOTHING — no seek, no voice, no chip)
+  expect(await page.locator('[data-testid="motion-timeline-click-voice"]').count()).toBe(0)
+  expect(await page.locator('[data-testid="motion-timeline-timecode"]').count()).toBe(0)
 
   // SEAT 2 — THE SWALLOW, drag path: a press-drag on the line in the
   // calls lane moves no clip and seeks nothing.

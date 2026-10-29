@@ -250,17 +250,19 @@ describe('timeline (prompts + keyframes)', () => {
     fireEvent.pointerMove(window, { clientX: 0 })
     fireEvent.pointerUp(window, { clientX: 0 })
     await vi.waitFor(() => {
-      if (document.body.querySelector('[data-testid="motion-timeline-timecode"]')?.textContent !== '00:00:00') {
-        throw new Error('not parked yet')
-      }
+      const left = (document.body.querySelector('[data-testid="motion-timeline-playhead"]') as HTMLElement | null)?.style.left
+      if (left !== '0px') throw new Error(`not parked yet (left ${left ?? '??'})`)
     }, { timeout: 10000 })
     const diamond = document.body.querySelector('[data-kf]') as HTMLElement
     fireEvent.pointerDown(diamond, { clientX: 16, button: 0 })
     fireEvent.pointerUp(window, { clientX: 16 })
+    // SCALE DERIVATION: this suite's stubScrollerRect pins the strip
+    // at 800px → the bar's fit gives effPpf = 10; clientX 16 rounds to
+    // frame 2 → playhead left = 2 × 10 = '20px' (the old '00:00:02'
+    // expectation was the same frame read through the deleted chip).
     await vi.waitFor(() => {
-      if (document.body.querySelector('[data-testid="motion-timeline-timecode"]')?.textContent !== '00:00:02') {
-        throw new Error('seek did not land yet')
-      }
+      const left = (document.body.querySelector('[data-testid="motion-timeline-playhead"]') as HTMLElement | null)?.style.left
+      if (left !== '20px') throw new Error(`seek did not land yet (left ${left ?? '??'})`)
     }, { timeout: 10000 })
   })
 
@@ -271,20 +273,24 @@ describe('timeline (prompts + keyframes)', () => {
   test('the playhead cap drags the playhead; the ruler body never scrubs', async () => {
     await paused(await mountedWithRun())
     stubScrollerRect()
-    const timecode = () =>
-      document.body.querySelector('[data-testid="motion-timeline-timecode"]')?.textContent
+    const left = () =>
+      (document.body.querySelector('[data-testid="motion-timeline-playhead"]') as HTMLElement | null)?.style.left ?? '??'
     const cap = document.body.querySelector('[data-testid="motion-timeline-playhead-cap"]') as HTMLElement
     // THE GRAB NEVER JUMPS: press alone (even a press-and-release)
     // leaves the playhead exactly where it was
     fireEvent.pointerDown(cap, { clientX: 0, button: 0 })
     fireEvent.pointerUp(window, { clientX: 0 })
-    if (timecode() !== '00:00:00') throw new Error(`the grab jumped to ${timecode() ?? '??'}`)
+    if (left() !== '0px') throw new Error(`the grab jumped to ${left()}`)
     // the drag proper: cap press + move seeks absolutely
     fireEvent.pointerDown(cap, { clientX: 0, button: 0 })
     fireEvent.pointerMove(window, { clientX: 16 })
     fireEvent.pointerUp(window, { clientX: 16 })
+    // SCALE DERIVATION: this suite's stubScrollerRect pins the strip
+    // at 800px → the bar's fit gives effPpf = 10; clientX 16 rounds to
+    // frame 2 → playhead left = 2 × 10 = '20px' (the old '00:00:02'
+    // expectation was the same frame read through the deleted chip).
     await vi.waitFor(() => {
-      if (timecode() !== '00:00:02') {
+      if (left() !== '20px') {
         throw new Error('scrub did not land yet')
       }
     }, { timeout: 10000 })
@@ -295,27 +301,30 @@ describe('timeline (prompts + keyframes)', () => {
     fireEvent.pointerMove(window, { clientX: 64 })
     fireEvent.pointerUp(window, { clientX: 64 })
     await new Promise((r) => setTimeout(r, 50))
-    if (timecode() !== '00:00:02') throw new Error(`the ruler body scrubbed to ${timecode() ?? '??'}`)
+    if (left() !== '20px') throw new Error(`the ruler body scrubbed to ${left()}`)
   })
 
-  test('F-2 RULER SINGLE-CLICK SEEKS (tenant integration — the bar seat reaches useTimelineAuthoring)', async () => {
-    // THE JOURNEY AUDIT'S F-2 (ruler-click-seek verdict): the motion
-    // tenant's TRUE ROOT (MotionTimelineSection onFrameChange →
-    // handleTimelineFrameChange = setFrameIdx + setPlaying(false))
-    // was read-verified but no suite executed click→seek at tenant
-    // depth. This arm single-clicks the REAL ruler in the REAL
-    // tenant: the playhead must jump to the clicked frame (clientX
-    // 16 → frame 2, the scrub spec's own scale precedent) while the
-    // press+move scrub law above still holds on the ruler body.
+  test('a ruler single-click moves NOTHING (the cap-only playhead law, operator 2026-10-29 told 10+ times)', async () => {
+    // F-2's ruler-click seek is DEAD by direct operator order: the
+    // playhead moves ONLY by dragging the cap circle. The oracle is
+    // the playhead's own left px (the sticky timecode chip is gone
+    // with the seek — it read the bar's fps axis and could lie).
     await paused(await mountedWithRun())
     stubScrollerRect()
-    const timecode = () =>
-      document.body.querySelector('[data-testid="motion-timeline-timecode"]')?.textContent
-    if (timecode() !== '00:00:00') throw new Error(`not parked at zero (saw ${timecode() ?? '??'}) — the seek below would pass vacuously`)
-    fireEvent.click(document.body.querySelector('[data-testid="motion-timeline-ruler"]') as HTMLElement, { clientX: 16 })
+    const left = () =>
+      (document.body.querySelector('[data-testid="motion-timeline-playhead"]') as HTMLElement | null)?.style.left ?? '??'
+    // park at frame 0 via the CAP (the one gesture that lives)
+    const cap = document.body.querySelector('[data-testid="motion-timeline-playhead-cap"]') as HTMLElement
+    fireEvent.pointerDown(cap, { clientX: 0, button: 0 })
+    fireEvent.pointerMove(window, { clientX: 0 })
+    fireEvent.pointerUp(window, { clientX: 0 })
     await vi.waitFor(() => {
-      if (timecode() !== '00:00:02') throw new Error('ruler click did not seek yet')
+      if (left() !== '0px') throw new Error(`not parked yet (left ${left()})`)
     }, { timeout: 10000 })
+    // a single click on the ruler moves NOTHING
+    fireEvent.click(document.body.querySelector('[data-testid="motion-timeline-ruler"]') as HTMLElement, { clientX: 16 })
+    await new Promise((r) => setTimeout(r, 50))
+    if (left() !== '0px') throw new Error(`the ruler click moved the playhead (left ${left()})`)
   })
 
   test('prompt double-click edits and commits text', async () => {

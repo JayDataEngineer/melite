@@ -668,22 +668,17 @@ describe("drag gestures (every door maps film→doc)", () => {
     assert.deepEqual(rec.bar, [[40]])
   })
 
-  it("a ruler single-click seeks its frame (F-2 tenant integration — the bar's onFrameChange reaches the tenant's handleBarFrame; the click-away seat stays silent)", () => {
-    // THE JOURNEY AUDIT'S F-2 (ruler-click-seek verdict): the TRUE
-    // ROOT (bar onFrameChange → handleBarFrame → setFrameIdx +
-    // filmRef.seekTo) was read-verified but no suite executed
-    // click→seek at tenant depth — the chrome wall stops at the
-    // bar boundary. This arm clicks the REAL ruler inside the REAL
-    // tenant: the tenant's frame handler must fire with the
-    // clicked frame (the bar's real film frame for clientX 60 under
-    // the stubbed 800px rect: 18 — the seek door is RAW by design,
-    // docFromFilm rides the doc-WRITING doors only (cf. the
-    // keyframe-click arm's [[40]]: the playhead is session/film
-    // state, never a doc write). Any unwiring → [] → red; any
-    // remap → mismatch → red.
+  it("a ruler single-click moves NOTHING (the cap-only playhead law, operator 2026-10-29 told 10+ times: the playhead moves ONLY by dragging the circle on top)", () => {
+    // THE F-2 RULER-CLICK SEEK IS DEAD by direct operator order: a
+    // click anywhere on the timeline (the ruler band included) never
+    // moves the playhead — the cap drag is the one gesture that
+    // does. This arm clicks the REAL ruler inside the REAL tenant:
+    // the tenant's frame handler must stay silent (rec.bar []) and
+    // the click-away seat too (rec.select []). Any reintroduced
+    // seek wiring → rec.bar grows → red.
     const { rec } = strip()
     fireEvent.click(screen.getByTestId("motion-timeline-ruler"), { clientX: 60 })
-    assert.deepEqual(rec.bar, [[18]])
+    assert.deepEqual(rec.bar, [])
     assert.deepEqual(rec.select, [])
   })
 

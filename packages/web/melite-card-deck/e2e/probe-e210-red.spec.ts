@@ -25,8 +25,12 @@ test('probe (e2-10-red): the video studio line press/drag does nothing; the cap 
   const playhead = page.locator('[data-testid="motion-timeline-playhead"]').first()
   await playhead.waitFor({ timeout: 30_000 })
   const ruler = page.locator('[data-testid="motion-timeline-ruler"]').first()
-  const timecode = page.locator('[data-testid="motion-timeline-timecode"]').first()
-  const readTC = async (): Promise<string> => (await timecode.textContent()) ?? '??'
+  // POSITION ORACLE (2026-10-29): the sticky timecode chip is GONE;
+  // the playhead's own x IS the position oracle.
+  const readTC = async (): Promise<string> => {
+    const box = await playhead.boundingBox()
+    return box === null ? '??' : String(Math.round(box.x))
+  }
   const lineBox = await playhead.boundingBox()
   const rulerBox = await ruler.boundingBox()
   console.log('LINE_BOX=' + JSON.stringify(lineBox))
@@ -83,7 +87,7 @@ test('probe (e2-10-red): the video studio line press/drag does nothing; the cap 
     await page.waitForTimeout(800)
     console.log('TC_AFTER_LINE_CLICK_IN_RULER=' + await readTC())
     const voice = page.locator('[data-testid="motion-timeline-click-voice"]').first()
-    console.log('RULER_VOICE_AFTER_LINE_CLICK=' + JSON.stringify(await voice.textContent()))
+    console.log('RULER_VOICE_AFTER_LINE_CLICK=' + JSON.stringify((await voice.count()) === 0 ? '(chip deleted 2026-10-29)' : await voice.textContent()))
   }
 
   // BURN 2: press-drag the LINE in the calls lane (below the ruler).

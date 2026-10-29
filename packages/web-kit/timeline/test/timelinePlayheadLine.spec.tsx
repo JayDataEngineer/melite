@@ -140,15 +140,15 @@ describe("E2-10 THE LINE SWALLOWS (the dot-and-line burn, third seating)", () =>
     expect(onScrubEnd, "release closes").toHaveBeenCalledTimes(1)
   })
 
-  it("LOCK (P6 survives): a ruler click off the line's column still seeks", () => {
-    // The playhead sits at frame 48 (px 400 at 800px/96f); the click
-    // lands at clientX 60 — ruler pixels, not line pixels — so the
-    // ruler's own seat answers. Dispatched on the ruler element itself
-    // (its own seat, unaffected by the line's swallow).
+  it("LOCK (P6 repealed 2026-10-29): a ruler click anywhere moves NOTHING", () => {
+    // OPERATOR ORDER (verbatim, told 10+ times): the playhead moves
+    // ONLY via click-and-drag on the circle on top. The P6 ruler
+    // single-click seek is DEAD — a click anywhere on the timeline
+    // must do nothing: no seek, no deselect.
     const { onFrameChange, onSelect } = renderBar()
     fireEvent.click(screen.getByTestId("motion-timeline-ruler"), { clientX: 60 })
-    expect(onSelect, "the ruler carve-out still holds — never a deselect").not.toHaveBeenCalled()
-    expect(onFrameChange, "P6: the ruler click still seeks").toHaveBeenCalledTimes(1)
+    expect(onSelect, "a ruler click never deselects").not.toHaveBeenCalled()
+    expect(onFrameChange, "P6 repealed: the ruler click must not seek").not.toHaveBeenCalled()
   })
 
   it("HOOKS-ON (right edge): dragging the END of a clip moves the end — the playhead stays put", () => {

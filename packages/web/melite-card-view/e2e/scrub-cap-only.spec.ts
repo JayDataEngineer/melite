@@ -40,7 +40,13 @@ test('the playhead LINE drags nothing; the CAP scrubs (real pointer, real hit-te
 
   const line = page.locator('[data-testid="motion-timeline-playhead"]')
   const cap = page.locator('[data-testid="motion-timeline-playhead-cap"]')
-  const timecode = page.locator('[data-testid="motion-timeline-timecode"]')
+  // THE POSITION ORACLE (2026-10-29): the sticky timecode chip is
+  // GONE (operator: constantly inaccurate — it read the bar's fps
+  // axis); the playhead's own x IS the position.
+  const timecode = { textContent: async (): Promise<string | null> => {
+    const box = await line.boundingBox()
+    return box === null ? null : String(Math.round(box.x))
+  } }
   await expect(line).toBeVisible({ timeout: 20_000 })
   await expect(cap).toBeVisible()
 
