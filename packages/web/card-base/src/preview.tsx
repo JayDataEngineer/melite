@@ -20,6 +20,7 @@ import { AudioLines, Box, Film, Image, Type } from './icons.tsx'
 import { EmptyState } from './layout.tsx'
 import type { PreviewArtifact, PreviewOwnerProps } from '@melite/contracts'
 import { isLiveRunStatus } from '@melite/contracts/stageView'
+import { isPlayableAudioName } from '@melite/contracts/mediaKinds'
 import { cn } from './chrome.ts'
 import { isImageUrl, isVideoUrl } from './square.tsx'
 import { chromeCopy } from './locales/chromeCopy.ts'
@@ -411,9 +412,21 @@ export function ImageStagePreview(props: PreviewOwnerProps): ReturnType<typeof h
 
 /** THE AUDIO PREVIEW — one hero track, one native player (the same
  *  law as the video preview: native <audio controls>; no library).
- *  The active set's named clips follow in the strip row. */
+ *  The active set's named clips follow in the strip row.
+ *  THE PLAYABLE HERO (operator 2026-11-12: a .qvoice output must
+ *  carry no play button): qvoice classifies as audio so it LISTS,
+ *  but the container carries voice embeddings, not PCM — the hero
+ *  seat prefers an artifact a player can actually decode, and a
+ *  qvoice hero renders as the embedding face (a named link, never
+ *  a player). */
 export function AudioStagePreview(props: PreviewOwnerProps): ReturnType<typeof h> {
-  const { hero, rest, viewingHistory, note, picked, promote, returnToCurrent } = useHistoryHero(props)
+  const { hero, rest, viewingHistory, note, picked, promote, returnToCurrent } = useHistoryHero(props, {
+    heroIndex: (src) => {
+      const playable = src.findIndex((a) => isPlayableAudioName(a.name ?? a.url))
+      return playable >= 0 ? playable : 0
+    },
+  })
+  const heroPlayable = hero !== undefined && isPlayableAudioName(hero.name ?? hero.url)
   return h('div', { className: s.stagePreview, 'data-testid': 'stage-preview-audio' },
     viewingHistory ? h(StaleBadge, { note, onReturn: returnToCurrent }) : null,
     hero === undefined
@@ -421,10 +434,14 @@ export function AudioStagePreview(props: PreviewOwnerProps): ReturnType<typeof h
           variant: 'bare', className: s.empty, icon: h(AudioLines, { className: s.emptyGlyph }),
           title: isLiveRunStatus(props.runStatus) ? 'rendering… the track lands here' : 'No render yet — run lands the track here',
         })
-      : h('audio', {
-          className: s.heroAudio, controls: true, key: hero.url,
-          src: hero.url, 'data-testid': 'stage-preview-audio-hero',
-        }),
+      : heroPlayable
+        ? h('audio', {
+            className: s.heroAudio, controls: true, key: hero.url,
+            src: hero.url, 'data-testid': 'stage-preview-audio-hero',
+          })
+        : h('div', { className: s.strip, 'data-testid': 'stage-preview-audio-embedding' },
+            seatSafeLink(hero, -1),
+            h('span', { className: s.stripHint }, 'voice embedding — not audio; load it in the voice field')),
     rest.length > 0
       ? h('div', { className: s.strip },
           rest.map(seatSafeLink))
