@@ -61,10 +61,10 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
    *  never re-shows a refusal the operator already closed. */
   onDrillClose?: () => void
 }): ReturnType<typeof h> {
-  // The LIVE bench: the resource snapshot is the first frame only (the
-  // provider's bench stream ends after one snapshot), so the view owns
-  // its copy and reloads after its own edits — same-address navigation
-  // does not re-run the stream.
+  // The LIVE bench: the resource provider streams a fresh value on
+  // every write (bench/subscribe), the view re-seats its copy on rev
+  // drift, and the open drill's row follows by id below — the agent's
+  // writes are the OTHER author of this one flow.
   const [live, setLive] = useState<CardsBenchValue>(bench)
   useEffect(() => { setLive(bench) }, [bench.draftId, bench.rev])
   // TILE-POP (the old tree's animate-tile-pop): a tile whose id was not
@@ -82,6 +82,15 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
     }
   }, [live.stages])
   const [open, setOpen] = useState<BenchStageView | null>(null)
+  // THE DRILLED ROW FOLLOWS THE BENCH (2026-11-12, the operator's
+  // "the timeline visuals don't update" report): the drill captured
+  // the stage OBJECT it was clicked with, so a mod the agent armed
+  // after open never reached the studio's params. The stream's new
+  // value re-maps the open stage by id — the same keepOpen law the
+  // reload path already held, now pushed instead of polled.
+  useEffect(() => {
+    setOpen((cur) => cur === null ? null : (bench.stages.find((s) => s.id === cur.id) ?? null))
+  }, [bench.draftId, bench.rev])
   const [adding, setAdding] = useState(false)
   // THE PROFESSIONAL NAMES (operator 2026-11-06): the tile faces
   // and the zoom drill face the catalog's labels, never the card

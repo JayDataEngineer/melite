@@ -1,6 +1,36 @@
 /** stage-drill.tsx — THE SHARED DRILLDOWN: the spec-formatted stage
  * editor, the zoom face, the preview seam consult (extracted from
  * CardsTab.tsx hour 15 — the biggest seam). */
+/** THE LIVE DOC BENEATH THE FORM LAYER (2026-11-12, the operator's
+ * "when the AI used one of these specialized mods, IT WOULD NOT UPDATE
+ * THE TIMELINE VISUALS" law): the user map seeds with EVERY held key
+ * at open (seedUser's pass-along law), so a plain `{ ...held, ...user }`
+ * pinned the open-time snapshot against every later bench write — an
+ * agent's calls rewrite, or a pre-existing mod bag's arm/change/disarm,
+ * never reached the studio even though the bench carried it. The LIVE
+ * row is the base; only a key with an UNRESOLVED authorial gesture
+ * (in flight or refused) keeps the user's face on top — so a foreign
+ * write flows the moment the drill's own edit settles (the settle
+ * effect below retires the touch once the row confirms the authored
+ * value), and an agent's DELETE of a seeded key reads as gone.
+ * @param held the LIVE bench row's params (the doc the agent writes)
+ * @param user the drill's form layer (seeded at open, gestures since)
+ * @param touched the keys THIS drill authored and not yet settled
+ * @returns the card surface's effective params. */
+export function liveEffectiveParams(
+  held: SpecValues,
+  user: SpecValues,
+  touched: ReadonlySet<string>,
+): SpecValues {
+  const out: SpecValues = { ...held }
+  for (const k of touched) {
+    if (k in user) out[k] = user[k]
+    else delete out[k]
+  }
+  return out
+}
+
+
 
 import { createElement as h, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { Button, IconCloseOutlineRegular, Input, Modal, Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
@@ -350,6 +380,26 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     touchedRef.current = new Set()
     droppedRef.current = new Set()
   }, [stage.id])
+  // THE SETTLE RETIRE (the live-doc law's other half): a touch is
+  // "an unresolved authorial gesture" — in flight or refused. The
+  // moment the LIVE row confirms the authored value (or, for an
+  // unset, no longer carries the key) and the write ledger holds no
+  // failure for it, the gesture is settled: retire the touch so the
+  // key returns to live-follow and the NEXT foreign write flows. A
+  // refused write keeps its face (Run gates it); a racing foreign
+  // write that lands first simply differs — no retire, the user's
+  // pending face holds until their own write settles or fails.
+  useEffect(() => {
+    const failed = new Set(stageWriteState(bench.draftId, stage.id).failedKeys)
+    for (const k of touchedRef.current) {
+      if (failed.has(k)) continue
+      if (k in user) {
+        if (JSON.stringify(held[k]) === JSON.stringify(user[k])) touchedRef.current.delete(k)
+      } else if (!(k in held)) {
+        touchedRef.current.delete(k)
+      }
+    }
+  }, [bench.draftId, bench.rev, stage.id, held, user])
   // THE ENHANCE FLIGHT (audit V-E4): the ✦ verb's controller — the
   // drill's unmount aborts a hung LLM wait, and an aborted settle
   // writes nothing on a closed drill.
@@ -1156,6 +1206,10 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
           sweptPatch['negative_prompt'] = coerceFieldEdit(fieldByName.get('negative_prompt'), r.negative)
         }
       }
+      // the sweep is drill authorship: its keys take the gesture face
+      // while the atomic write flies (the live-doc law below reads the
+      // touch, so the enhanced value shows the moment it is authored)
+      for (const k of Object.keys(sweptPatch)) touchedRef.current.add(k)
       setUser((m) => ({ ...m, ...sweptPatch }))
       if (Object.keys(sweptPatch).length > 0) {
         // ONE atomic write (2026-10-12 construction law): the sweep is
@@ -1884,6 +1938,8 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         'aria-label': chromeCopy.dismissError,
         onClick: () => { setMissDismissed(true) },
       }, h(IconCloseOutlineRegular, { size: 12 }))))
+  const effectiveParams = liveEffectiveParams(held, user, touchedRef.current)
+
   return renderStageView({
     stageId: stage.id,
     hasUnsettledWrites: (): boolean => {
@@ -1933,7 +1989,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     runId: runId ?? null,
     effective: {
       model: modelKey !== '' ? modelKey : String(stage.card ?? stage.engine ?? ''),
-      params: { ...held, ...user },
+      params: effectiveParams,
       inputSlots: (spec?.inputs ?? []).map((input) => input.name),
     },
     priorStageIds,

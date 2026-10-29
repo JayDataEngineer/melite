@@ -146,6 +146,29 @@ krea-2's variant envelopes served on the wire the browser reads
 plus the variant-axis reseed on every model switch (the stale
 variant cure) and the model-switch refetch receipt.
 
+## The open studio follows the agent (studio-agent-writes.spec.ts, 2026-11-12)
+
+The operator's live report — "when the AI used one of these
+specialized mods, IT WOULD NOT UPDATE THE TIMELINE VISUALS" — burned
+at two seams this spec pins: the open zoom drill kept its
+click-captured stage object (a streamed bench frame updated the
+tiles, never the drill), and the drill's form layer seeds with every
+held key at open, so a plain held-over-user merge pinned the
+open-time snapshot (an agent's calls rewrite or a pre-existing mod
+bag's arm/change/disarm never reached the studio; only freshly-added
+keys flowed — the masking that hid the bug for a day). No mint
+needed: the spec seeds its own stage through `bench/add-stage`, then
+drives `bench/patch` exactly as the agent does — arm extend at 379f
+(two solver windows), change the bag in place, disarm with null,
+rewrite `calls` to four splits (four `[data-prompt-clip]` clips),
+arm replace — five arms on ONE open zoom, because a reload or reopen
+between steps would pass while the bug stood. The stage carries its
+own durable fingerprint (a seed key + marker texts), and cleanup
+removes every stage the wall ever left, so a failed run never
+poisons the next ride. Registry row
+`cards-open-studio-follows-agent`; the unit tier pins the params
+seam's pure helper (`tests/stage-drill-live-params.spec.ts`).
+
 ## THE AI OPT-IN (the mint is a real model turn)
 
 `tour.ts`'s `openAConversation` — the mint every browser-plane spec

@@ -19366,6 +19366,28 @@ window.__ModuleLoader__.load({
 		/** stage-drill.tsx — THE SHARED DRILLDOWN: the spec-formatted stage
 		* editor, the zoom face, the preview seam consult (extracted from
 		* CardsTab.tsx hour 15 — the biggest seam). */
+		/** THE LIVE DOC BENEATH THE FORM LAYER (2026-11-12, the operator's
+		* "when the AI used one of these specialized mods, IT WOULD NOT UPDATE
+		* THE TIMELINE VISUALS" law): the user map seeds with EVERY held key
+		* at open (seedUser's pass-along law), so a plain `{ ...held, ...user }`
+		* pinned the open-time snapshot against every later bench write — an
+		* agent's calls rewrite, or a pre-existing mod bag's arm/change/disarm,
+		* never reached the studio even though the bench carried it. The LIVE
+		* row is the base; only a key with an UNRESOLVED authorial gesture
+		* (in flight or refused) keeps the user's face on top — so a foreign
+		* write flows the moment the drill's own edit settles (the settle
+		* effect below retires the touch once the row confirms the authored
+		* value), and an agent's DELETE of a seeded key reads as gone.
+		* @param held the LIVE bench row's params (the doc the agent writes)
+		* @param user the drill's form layer (seeded at open, gestures since)
+		* @param touched the keys THIS drill authored and not yet settled
+		* @returns the card surface's effective params. */
+		function liveEffectiveParams(held, user, touched) {
+			const out = { ...held };
+			for (const k of touched) if (k in user) out[k] = user[k];
+			else delete out[k];
+			return out;
+		}
 		/** THE SHARED DRILLDOWN — spec-formatted (the old system's law): the
 		*  stage's card carries a DECLARED form (/v1/form-spec — typed atoms,
 		*  groups, defaults); the drill renders THAT, never a raw key/value
@@ -19553,6 +19575,21 @@ window.__ModuleLoader__.load({
 				touchedRef.current = /* @__PURE__ */ new Set();
 				droppedRef.current = /* @__PURE__ */ new Set();
 			}, [stage.id]);
+			(0, react.useEffect)(() => {
+				const failed = new Set(stageWriteState(bench.draftId, stage.id).failedKeys);
+				for (const k of touchedRef.current) {
+					if (failed.has(k)) continue;
+					if (k in user) {
+						if (JSON.stringify(held[k]) === JSON.stringify(user[k])) touchedRef.current.delete(k);
+					} else if (!(k in held)) touchedRef.current.delete(k);
+				}
+			}, [
+				bench.draftId,
+				bench.rev,
+				stage.id,
+				held,
+				user
+			]);
 			const enhanceAbort = (0, react.useRef)(null);
 			(0, react.useEffect)(() => () => {
 				enhanceAbort.current?.abort();
@@ -19955,6 +19992,7 @@ window.__ModuleLoader__.load({
 						if (field === "prompt" || declared.has(field)) sweptPatch[field] = (0, _melite_card_base_client.coerceFieldEdit)(fieldByName.get(field), r.positive);
 						if (field === "prompt" && declared.has("negative_prompt") && typeof r.negative === "string" && r.negative !== "") sweptPatch["negative_prompt"] = (0, _melite_card_base_client.coerceFieldEdit)(fieldByName.get("negative_prompt"), r.negative);
 					}
+					for (const k of Object.keys(sweptPatch)) touchedRef.current.add(k);
 					setUser((m) => ({
 						...m,
 						...sweptPatch
@@ -20330,6 +20368,7 @@ window.__ModuleLoader__.load({
 					setMissDismissed(true);
 				}
 			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, { size: 12 }))));
+			const effectiveParams = liveEffectiveParams(held, user, touchedRef.current);
 			return renderStageView({
 				stageId: stage.id,
 				hasUnsettledWrites: () => {
@@ -20370,10 +20409,7 @@ window.__ModuleLoader__.load({
 				runId: runId ?? null,
 				effective: {
 					model: modelKey !== "" ? modelKey : String(stage.card ?? stage.engine ?? ""),
-					params: {
-						...held,
-						...user
-					},
+					params: effectiveParams,
 					inputSlots: (spec?.inputs ?? []).map((input) => input.name)
 				},
 				priorStageIds
@@ -20516,6 +20552,9 @@ window.__ModuleLoader__.load({
 				});
 			}, [live.stages]);
 			const [open, setOpen] = (0, react.useState)(null);
+			(0, react.useEffect)(() => {
+				setOpen((cur) => cur === null ? null : bench.stages.find((s) => s.id === cur.id) ?? null);
+			}, [bench.draftId, bench.rev]);
 			const [adding, setAdding] = (0, react.useState)(false);
 			const labelOf = useCardLabels();
 			const [reloadError, setReloadError] = (0, react.useState)(null);
