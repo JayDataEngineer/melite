@@ -603,6 +603,10 @@ export const COVERAGE_BASELINE: Record<string, {
   // the wire-picker re-wiring orphaned — branches argued to the
   // measured face, every other metric climbed. Receipt: the
   // ARGUED_FLOOR_DROPS entry + the roadmap heading.
+  // §9 NEW ROW 100x4 (2026-11-12): the studio's mod projection — its
+  // derivation spec + the refusal-coercion spec cover every branch
+  // (disarmed/non-object entries, seat filtering, doomed geometry).
+  '**/packages/video/h3-timeline/src/ui/studio/commissions.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/video/h3-timeline/src/ui/studio/CallCard.tsx': { statements: 99.42, branches: 96.06, functions: 98.52, lines: 100 },
   '**/packages/video/h3-timeline/src/ui/studio/CallCardPrompt.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/video/h3-timeline/src/ui/studio/CallCardsPanel.tsx': { statements: 98.33, branches: 95.83, functions: 100, lines: 100 },
@@ -765,6 +769,10 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web-kit/timeline/src/store/timelineUi.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/timeline/src/store/timelineVariants.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/timeline/src/timeline/FilmPlayer.tsx': { statements: 100, branches: 100, functions: 90.47, lines: 100 },
+  // §9 NEW ROW 100x4 (2026-11-12): the commission rail — its own spec
+  // (packages/web-kit/timeline/test/commissionsRail.spec.tsx) covers
+  // every branch (opt-in empty, bare label span, window segments).
+  '**/packages/web-kit/timeline/src/timeline/CommissionsRail.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/timeline/src/timeline/MotionTimelineBar.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/timeline/src/timeline/MotionTimelineBarChrome.tsx': { statements: 78.18, branches: 84, functions: 84.21, lines: 81.63 },
   '**/packages/web-kit/timeline/src/timeline/MotionTimelineBarDrag.ts': { statements: 90.07, branches: 73.28, functions: 80.95, lines: 94.87 },

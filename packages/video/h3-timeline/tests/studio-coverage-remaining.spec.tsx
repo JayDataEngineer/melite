@@ -77,6 +77,8 @@ function makeStripProps(rec: StripRecord, over: Partial<StripProps> = {}): Strip
     barPrompts: [],
     barLanes: [],
     barAudioClips: [],
+    // (§9) no armed mod bag in this fixture — the rail renders no row
+    commissions: [],
     barTotal: 96,
     frameIdx: 0,
     callPreviews: {},

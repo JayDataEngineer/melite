@@ -1,22 +1,28 @@
 // h3-reshoot-chain.spec.ts — THE CAMERA RE-SHOOT WALL (feature 024,
 // the ComfyUI "Open Source Higgsfield" entry: the same scene
-// re-rendered from a NEW camera).
+// re-rendered from a NEW camera) — THE FOURTH-MOD-BAG LAW (§8 of the
+// multiwindow unification audit, 2026-11-12).
 //
-// The chain: source clip frames → video-consistent depth (VDA-Small)
-// → point-cloud reprojection under the new camera (CrossViewWarp,
-// twice — once for the depth stack, once for the RGB) → the warped
-// depth conditions the generation through the Fun ControlNet Union
-// 2.0 patch, with the magenta disocclusion holes fenced as the
-// inpaint mask. The wall pins the operator-facing contract on the
-// card's own doors: a disarmed doc composes byte-stable graphs
-// (ARM 1), the eleven knobs exist 1:1 on all three faces — advertised
-// (the action's params doc), served (the schema walk's domains),
-// declared (the family's studio writes) — with matching bounds
-// (ARM 2), the gate refuses out-of-domain knobs ahead of the engine
-// (ARM 3), an armed doc wires the full chain with the apply seat
-// mounted ahead of the file-based picks (ARM 4), and — once the
-// reprojection pack lands on the engine — the armed graph passes the
-// RUN-door wiring gate and the card names its packs (ARM 5).
+// The chain: source clip frames (the SHARED loader law —
+// force-rate-24 VHS, never a private LoadVideo pair) →
+// video-consistent depth (VDA-Small) → point-cloud reprojection
+// under the new camera (CrossViewWarp, twice — once for the depth
+// stack, once for the RGB) → the warped depth conditions the
+// generation through the Fun ControlNet Union 2.0 patch, with the
+// magenta disocclusion holes fenced as the inpaint mask.
+//
+// The wall pins the operator-facing contract on the card's own
+// doors: an absent or EMPTY bag composes byte-stable graphs with
+// the flat-knob noise gone (ARM 1), the bag's ten entry fields
+// exist on the served kind with the emission's own dial bands in
+// 1:1 agreement — the two homes the bag law splits the old
+// three-face match into (ARM 2), out-of-domain dials refuse LOUD at
+// the compose door ahead of the engine (ARM 3), an armed doc wires
+// the full chain on the shared loader with the apply seat mounted
+// ahead of the file-based picks and the FILM's SaveVideo as its
+// terminal (ARM 4), and — once the depth pack lands on the engine —
+// the armed graph passes the RUN-door wiring gate and the arm's
+// requires rows name the packs (ARM 5).
 //
 // Run: npx vitest run tests/walls/ts/suites/h3-reshoot-chain.spec.ts
 import "../../../helpers/boot-models.ts";
@@ -26,15 +32,13 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
-import { loadCardDefs } from "@melite/comfyui-cordis";
+import { loadCardDefs, resolveCardFlowOutputs } from "@melite/comfyui-cordis";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import { getModel, registryIds, registryModel } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
-import { fieldDomains } from "../../../../packages/engines/comfyui-cordis/src/models/validate.ts";
 import { deriveWiringDoc, assertWiringAgainst } from "../../../../packages/engines/comfyui-cordis/src/wiringWall.ts";
-import { fieldsOfEnvelope } from "@melite/card-base/client";
-import { film } from "../../../../packages/models/h3/src/actions.ts";
+import { RESHOOT_DIAL_BOUNDS } from "../../../../packages/models/h3/src/reshoot.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
 const FACTS_PATH = join(ROOT, "packages", "engines", "comfyui-cordis", "data", "model-facts.json");
@@ -59,104 +63,95 @@ const compose = (doc: Record<string, unknown>): Record<string, Node> => {
 const ofClass = (out: Record<string, Node>, cls: string): [string, Node][] =>
   Object.entries(out).filter(([, n]) => n.class_type === cls);
 
-// The eleven knobs, with the bounds the served face enforces —
-// restated HERE as the wall's own expectation, judged against the
-// advertised and served faces (a drift on either side reds ARM 2).
-const KNOBS: ReadonlyArray<{ name: string; type: string; bounds?: readonly [number, number] }> = [
-  { name: "reshoot_enabled", type: "boolean" },
-  { name: "reshoot_clip", type: "image" },
-  { name: "reshoot_orbit", type: "number", bounds: [-180, 180] },
-  { name: "reshoot_tilt", type: "number", bounds: [-90, 90] },
-  { name: "reshoot_dolly", type: "number", bounds: [0.1, 3] },
-  { name: "reshoot_zoom", type: "number", bounds: [20, 120] },
-  { name: "reshoot_pan", type: "number", bounds: [-1, 1] },
-  { name: "reshoot_strength", type: "number", bounds: [0, 10] },
-  { name: "reshoot_depth_ratio", type: "number", bounds: [1.5, 1000] },
-  { name: "reshoot_smooth_depth", type: "boolean" },
-  { name: "reshoot_invert_depth", type: "boolean" },
-];
-
 const BASE = {
   calls: [{ text: "a slow push in", start_frame: 0, end_frame: 56 }],
 };
-const ARMED = { ...BASE, reshoot_enabled: true, reshoot_clip: "sources/take3.mp4" };
+const ARMED = { ...BASE, reshoot: [{ source_clip: "sources/take3.mp4" }] };
 
-describe("the h3 camera re-shoot wall (feature 024)", () => {
-  it("ARM 1 — a disarmed doc composes byte-stable: the switch off, the knobs ride as noise", () => {
+const RESHOOT_CLASSES = [
+  "LoadVideoDepthAnythingModel", "VideoDepthAnythingProcess", "VideoDepthAnythingOutput",
+  "CrossViewWarp", "ColorToMask", "ModelPatchLoader", "MiniMaxH3FunControlNetApply",
+];
+
+const reshootKind = () =>
+  ((def as unknown as { mods?: Array<Record<string, unknown>> }).mods ?? [])
+    .find((k) => k.kind === "reshoot");
+
+describe("the h3 camera re-shoot wall (the fourth mod bag)", () => {
+  it("ARM 1 — no bag and EMPTY bag compose byte-identical films (the unused arm is surface, never noise)", () => {
     const plain = compose(BASE);
-    const off = compose({ ...BASE, reshoot_enabled: false, reshoot_clip: "sources/take3.mp4", reshoot_orbit: -30, reshoot_strength: 4 });
-    expect(JSON.stringify(off)).toBe(JSON.stringify(plain));
+    const empty = compose({ ...BASE, reshoot: [] });
+    expect(JSON.stringify(empty)).toBe(JSON.stringify(plain));
     const flat = Object.values(plain).map((n) => n.class_type);
-    for (const cls of ["LoadVideoDepthAnythingModel", "VideoDepthAnythingProcess", "VideoDepthAnythingOutput", "CrossViewWarp", "ColorToMask", "ModelPatchLoader", "MiniMaxH3FunControlNetApply"]) {
+    for (const cls of RESHOOT_CLASSES) {
       expect(flat, `${cls} composes on no disarmed graph`).not.toContain(cls);
     }
   });
 
-  it("ARM 2 — the eleven knobs exist 1:1 on all three faces with matching bounds", () => {
-    // the ADVERTISED face: the film action's params doc
-    const advertised = new Map(film.params.map((r) => [r.name, r]));
-    // the SERVED face: the schema walk's own domains (the wall reads
-    // the walk through fieldDomains — never a hand-copied literal)
-    const carrier = def.schemaCarrier as unknown as { dict?: Record<string, unknown>; toJSON(): unknown };
-    assert.ok(carrier?.dict, "the card's schema carrier exposes its field dict");
-    const served = fieldDomains(carrier.dict as Parameters<typeof fieldDomains>[0]);
-    // the PROJECTED face: the form spec the operator's panel renders
-    // (fieldsOfEnvelope over the carrier's own envelope — the seat the
-    // client actually paints, group + visibility + bounds included)
-    const projected = new Map(
-      fieldsOfEnvelope(carrier.toJSON() as never).map((f) => [f.name, f]),
+  it("ARM 2 — the bag's fields ride the served kind, and the emission's dial bands agree 1:1 (the two homes of the bag law)", () => {
+    const kind = reshootKind();
+    assert.ok(kind, "the card serves the reshoot kind on the modifiers channel");
+    assert.equal(kind.param_key, "reshoot", "the bag rides param_key 'reshoot'");
+    assert.equal(kind.max_stack, 1, "one re-shoot per doc");
+    const fields = new Map(
+      ((kind.fields as Array<Record<string, unknown>>) ?? []).map((f) => [f.name as string, f]),
     );
-    for (const knob of KNOBS) {
-      const ad = advertised.get(knob.name);
-      assert.ok(ad, `${knob.name} is advertised on the film action's params doc`);
-      assert.equal(ad.type, knob.type, `${knob.name} advertises as ${knob.type}`);
-      assert.deepEqual(ad.bounds, knob.bounds, `${knob.name} advertises bounds ${JSON.stringify(knob.bounds)}`);
-      assert.ok(served.has(knob.name), `${knob.name} is served by the schema walk`);
-      const dom = served.get(knob.name)!;
-      if (knob.bounds) {
-        assert.equal(dom.min, knob.bounds[0], `${knob.name} serves min ${knob.bounds[0]}`);
-        assert.equal(dom.max, knob.bounds[1], `${knob.name} serves max ${knob.bounds[1]}`);
-      }
-      const pf = projected.get(knob.name);
-      assert.ok(pf, `${knob.name} projects on the card's form face`);
-      assert.equal(pf.group, "reshoot", `${knob.name} paints in the reshoot group`);
-      if (knob.name === "reshoot_enabled") {
-        assert.equal(pf.visible_when ?? "", "", "the master switch paints unguarded");
-      } else {
-        assert.equal(pf.visible_when, "reshoot_enabled=true", `${knob.name} paints behind the master switch`);
-      }
-      if (knob.bounds) {
-        assert.equal(pf.min, knob.bounds[0], `${knob.name} projects min ${knob.bounds[0]}`);
-        assert.equal(pf.max, knob.bounds[1], `${knob.name} projects max ${knob.bounds[1]}`);
+    // the clip + the nine dials, exactly (no missing seat, no ghost)
+    expect([...fields.keys()]).toEqual([
+      "source_clip", "orbit", "tilt", "dolly", "zoom", "pan",
+      "strength", "depth_ratio", "smooth_depth", "invert_depth",
+    ]);
+    // the clip seat claims the VIDEO square (the picker law)
+    assert.equal(fields.get("source_clip")!.type, "file");
+    assert.equal(fields.get("source_clip")!.media, "video");
+    // THE 1:1 BAND AGREEMENT: every dial the emission bounds is a
+    // served field with the same band, and every bounded served
+    // field is an emission band — neither home can drift alone
+    const servedBanded = new Set(Object.keys(RESHOOT_DIAL_BOUNDS));
+    for (const [name, row] of fields) {
+      if (servedBanded.has(name)) {
+        const [lo, hi] = RESHOOT_DIAL_BOUNDS[name]!;
+        assert.equal(row.min, lo, `${name} serves min ${lo} (the emission's own band)`);
+        assert.equal(row.max, hi, `${name} serves max ${hi}`);
+        servedBanded.delete(name);
       }
     }
+    assert.deepEqual([...servedBanded], [], "every emission band has a served field");
   });
 
-  it("ARM 3 — the gate refuses out-of-domain knobs ahead of the engine, in-bounds knobs walk", () => {
+  it("ARM 3 — an out-of-domain dial refuses LOUD at the compose door, ahead of the engine; in-band extremes walk", () => {
     for (const [name, value] of [
-      ["reshoot_orbit", 181], ["reshoot_tilt", -91], ["reshoot_dolly", 0.05],
-      ["reshoot_zoom", 121], ["reshoot_pan", 0.51], ["reshoot_strength", 10.5],
-      ["reshoot_depth_ratio", 1],
+      ["orbit", 181], ["tilt", -91], ["dolly", 0.05],
+      ["zoom", 121], ["pan", 1.5], ["strength", 10.5],
+      ["depth_ratio", 1],
     ] as const) {
       assert.throws(
-        () => def.schema({ ...ARMED, [name]: value }),
-        new RegExp(name),
-        `${name}=${value} must refuse at the schema gate`,
+        () => compose({ ...BASE, reshoot: [{ source_clip: "sources/take3.mp4", [name]: value }] }),
+        new RegExp(`${name}.*outside the camera band|outside the camera band.*${name}`),
+        `${name}=${value} must refuse at the compose door, never a widget 400`,
       );
     }
-    // every knob at an in-bounds value walks green (and arms)
-    const walked = def.schema({
-      ...ARMED, reshoot_orbit: 180, reshoot_tilt: 90, reshoot_dolly: 3,
-      reshoot_zoom: 20, reshoot_pan: 0.5, reshoot_strength: 10, reshoot_depth_ratio: 1000,
-    }) as Record<string, unknown>;
-    assert.equal(walked.reshoot_enabled, true);
+    // every dial at its band edge walks green (and arms)
+    const edge = compose({
+      ...BASE,
+      reshoot: [{
+        source_clip: "sources/take3.mp4", orbit: 180, tilt: 90, dolly: 3,
+        zoom: 20, pan: 0.5, strength: 10, depth_ratio: 1000,
+      }],
+    });
+    expect(ofClass(edge, "CrossViewWarp")).toHaveLength(2);
   });
 
-  it("ARM 4 — an armed doc wires the full chain and the guider renders patched", () => {
+  it("ARM 4 — an armed doc wires the full chain on the SHARED loader law, and the film's SaveVideo is its terminal", () => {
     const out = compose(ARMED);
-    // the source clip + its frames
-    expect(out["LoadVideo.0"]?.inputs.file).toBe("sources/take3.mp4");
-    expect(ofClass(out, "GetVideoComponents")).toHaveLength(1);
+    // THE SHARED LOADER LAW: the clip rides force-rate-24 VHS — the
+    // private LoadVideo→GetVideoComponents pair is dead
+    expect(ofClass(out, "LoadVideo")).toHaveLength(0);
+    expect(ofClass(out, "GetVideoComponents")).toHaveLength(0);
+    const vhs = ofClass(out, "VHS_LoadVideo");
+    expect(vhs.length).toBeGreaterThanOrEqual(1);
+    expect(vhs[0]![1].inputs.video).toBe("sources/take3.mp4");
+    expect(vhs[0]![1].inputs.force_rate).toBe(24);
     // the depth chain, exactly once
     expect(ofClass(out, "LoadVideoDepthAnythingModel")).toHaveLength(1);
     const proc = ofClass(out, "VideoDepthAnythingProcess");
@@ -170,7 +165,7 @@ describe("the h3 camera re-shoot wall (feature 024)", () => {
     const warps = ofClass(out, "CrossViewWarp");
     expect(warps).toHaveLength(2);
     const depthPass = warps.filter(([, w]) => String(w.inputs.frames).includes("VideoDepthAnythingOutput"));
-    const rgbPass = warps.filter(([, w]) => String(w.inputs.frames).includes("GetVideoComponents"));
+    const rgbPass = warps.filter(([, w]) => String(w.inputs.frames).includes("VHS_LoadVideo"));
     expect(depthPass).toHaveLength(1);
     expect(rgbPass).toHaveLength(1);
     for (const [, w] of warps) {
@@ -183,7 +178,7 @@ describe("the h3 camera re-shoot wall (feature 024)", () => {
     expect(mask[0]![1].inputs.green).toBe(0);
     expect(mask[0]![1].inputs.red).toBe(255);
     expect(mask[0]![1].inputs.threshold).toBe(10);
-    expect(String(mask[0]![1].images ?? mask[0]![1].inputs.images)).toBe(`${rgbPass[0]![0]},0`);
+    expect(String(mask[0]![1].inputs.images)).toBe(`${rgbPass[0]![0]},0`);
     // the union 2.0 patch + the apply seat, the guider riding it
     expect(ofClass(out, "ModelPatchLoader")[0]![1].inputs.name)
       .toBe("h3-fun-controlnet/minimax_h3_fun_controlnet_union_2.0_pruned_bf16.safetensors");
@@ -196,13 +191,17 @@ describe("the h3 camera re-shoot wall (feature 024)", () => {
     expect(String(apply[0]![1].inputs.model_patch)).toContain("ModelPatchLoader");
     const guider = ofClass(out, "BasicGuider")[0]!;
     expect(String(guider[1].inputs.model)).toContain("MiniMaxH3FunControlNetApply");
+    // THE TERMINAL: the reshoot is a film AUGMENTATION — the film
+    // tail's SaveVideo serves it, never the chain terminal
+    expect(ofClass(out, "MiniMaxH3ChainAssemble")).toHaveLength(0);
+    const flow = resolveCardFlowOutputs(def, def.schema(ARMED) as Record<string, unknown>, out);
+    expect(out[flow.outputNodes.default!]!.class_type).toBe("SaveVideo");
   });
 
-  // THE PACK-PRESENT GATE: the reprojection + depth packs are the
-  // parallel lane's vendor surface (comfyui-viggle-animate-h3,
-  // ComfyUI-CrossViewWarp + the VDA ComfyUI pack) — absent from the
-  // engine census today, so the run-door wiring gate cannot judge an
-  // armed graph here without reding on the MISSING plane (an
+  // THE PACK-PRESENT GATE: the depth chain's VDA pack is still an
+  // unprovisioned upstream (the named feature-024 debt — the warp
+  // pack IS landed); the run-door wiring gate cannot judge an armed
+  // graph here without reding on the MISSING plane (an
   // environmental absence, not a contract break). The arm stands up
   // the moment the census carries the classes; until then the skip
   // names exactly what is missing.
@@ -216,8 +215,9 @@ describe("the h3 camera re-shoot wall (feature 024)", () => {
   if (missing.length > 0) {
     console.warn(
       `[h3-reshoot-chain] ARM 5 SKIPPED — the re-shoot packs are not on the engine census yet; ` +
-      `missing surfaces: ${missing.join("; ")}. The arm fires when the parallel provision lands ` +
-      `(then the card's requires rows + the manifest pins land with it).`,
+      `missing surfaces: ${missing.join("; ")}. The arm fires when the VDA provision lands ` +
+      `(the viggle parallel lane it once leaned on is exterminated; the arm's own requires rows ` +
+      `land with the provision).`,
     );
   }
 
@@ -226,10 +226,12 @@ describe("the h3 camera re-shoot wall (feature 024)", () => {
     assertWiringAgainst(boot.nodes, boot.inputs, "h3-timeline", out);
   });
 
-  it.skipIf(!warpLanded || !vdaLanded)("ARM 5b — with the packs live, the card names them (the requires rows land with the provision)", () => {
-    const requires: readonly string[] = def.requires ?? [];
+  it.skipIf(!warpLanded || !vdaLanded)("ARM 5b — with the packs live, the arm's requires rows name them (the pack gate lands with the provision)", () => {
+    const kind = reshootKind();
+    assert.ok(kind);
+    const requires = (kind.requires as string[]) ?? [];
     for (const pack of ["ComfyUI-CrossViewWarp", "ComfyUI-Video-Depth-Anything"]) {
-      expect(requires, `${pack} must be required once it is served`).toContain(pack);
+      expect(requires, `${pack} must be on the arm once it is served`).toContain(pack);
     }
   });
 });

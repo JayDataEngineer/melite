@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { type CommissionRow } from "./CommissionsRail.js";
 import type { TimelineKeyframe, TimelinePrompt, TimelineTrack } from "./viser-timeline/types.js";
 /** One Layer C prompt segment (video timeline) rendered in its OWN row
  * UNDER the calls: {text, start, end} within a call — a SUBSET of the
@@ -164,6 +165,15 @@ export interface MotionTimelineBarProps {
      * blocks. Opt-in; absent → byte-identical 24px blocks (the motion
      * tenant's six kf tracks never change). */
     kfLaneCards?: boolean;
+    /** (the studio's mod projection, §9 of the multiwindow unification
+     *  audit 2026-11-12) THE COMMISSION RAIL — one row per ARMED mod bag
+     *  (replace / repair / extend / reshoot), its seats named and, for
+     *  the multi-window extend, its windows drawn on the bar's geometry.
+     *  The bag is agent-authored and read-only here: the lane renders
+     *  what the compose will build, it never edits the commission.
+     *  Opt-in; absent or empty → byte-identical (the audioClipCards /
+     *  kfLaneCards precedent). */
+    commissions?: CommissionRow[];
     /** ── STYLING SEAM (2026-09-07, the shadcn rule): the bar is a
      *  shared component and takes className/style like every other
      *  primitive — the tenant's shell (border, rounding) rides the
@@ -234,5 +244,5 @@ export { LaneHead } from "./LaneHead.js";
 export type { LaneHeadProps } from "./LaneHead.js";
 export { TimelineAudioLanes, TimelineBeatsLane, TimelineKeyframeLanes, TimelinePromptsLane } from "./MotionTimelineBarLanes.js";
 export type { TimelineAudioLanesProps, TimelineBeatsLaneProps, TimelineKeyframeLanesProps, TimelinePromptsLaneProps } from "./MotionTimelineBarLanes.js";
-export declare function MotionTimelineBar({ prompts, keyframes, frameIdx, onFrameChange, onScrubStart, onScrubEnd, totalFrames, fps, initialSeconds, onKeyframeAdd, onKeyframeMove, onKeyframeDelete, onPromptUpdate, onPromptMove, onPromptResize, onPromptDelete, onExtend, tracks, promptsLabel, laneHint, packed, emptyPromptsHint, promptsHeight, beats, beatsLabel, beatsHeight, beatsHint, onBeatAdd, onPromptAdd, previews, selectedId, onSelect, audioLayers, onAudioDrop, onAudioDropAt, onAudioFileDrop, onAudioClipMove, onAudioClipDelete, onAudioLaneActivate, onAudioDetach, onTrackAdd, audioClipCards, kfLaneCards, className, style, theme, }: MotionTimelineBarProps): import("react").JSX.Element;
+export declare function MotionTimelineBar({ prompts, keyframes, frameIdx, onFrameChange, onScrubStart, onScrubEnd, totalFrames, fps, initialSeconds, onKeyframeAdd, onKeyframeMove, onKeyframeDelete, onPromptUpdate, onPromptMove, onPromptResize, onPromptDelete, onExtend, tracks, promptsLabel, laneHint, packed, emptyPromptsHint, promptsHeight, beats, beatsLabel, beatsHeight, beatsHint, onBeatAdd, onPromptAdd, previews, selectedId, onSelect, audioLayers, onAudioDrop, onAudioDropAt, onAudioFileDrop, onAudioClipMove, onAudioClipDelete, onAudioLaneActivate, onAudioDetach, onTrackAdd, audioClipCards, kfLaneCards, commissions, className, style, theme, }: MotionTimelineBarProps): import("react").JSX.Element;
 //# sourceMappingURL=MotionTimelineBar.d.ts.map

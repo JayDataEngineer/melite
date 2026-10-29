@@ -214,6 +214,48 @@ const EXTEND_MOD = {
             ], tooltip: "The plan resolution tier (reference '736p')." },
     ],
 };
+/** THE RESHOOT KIND (the fourth mod bag — the §8 unification,
+ * 2026-11-12): re-render the same scene from a NEW camera. The
+ * commission the flat knob group could never state: one bag entry
+ * (max_stack 1) carrying the source clip + the camera dials, the
+ * same admission plane as its three siblings (replace/repair/
+ * extend), the same one-door law. Emission stays the film-window
+ * AUGMENTATION it always was (the depth-warp chain patches every
+ * window's model pre-scheduler — applyH3Reshoot is a model-patch
+ * seat, not a masked-edit body; forcing the chain spine would be
+ * the wrong body class); the film's own SaveVideo is its terminal.
+ * The soundtrack difference rides (the reshoot clip's audio never
+ * carries — the generation's own sound). */
+const RESHOOT_MOD = {
+    kind: 'reshoot',
+    label: 'Reshoot',
+    param_key: 'reshoot',
+    schema_key: 'reshoot',
+    category: 'ordered',
+    cardinality: 'list',
+    max_stack: 1,
+    requires: [
+        'ComfyUI-VideoHelperSuite',
+        'ComfyUI-KJNodes',
+        'ComfyUI-MiniMaxH3Mod',
+        'ComfyUI-CrossViewWarp',
+    ],
+    section: 'Reshoot — re-render the same scene from a new camera (the scene rebuilds from video depth, the moved view renders through the Fun ControlNet depth checkpoint, and what the new camera reveals is inpainted). The reshoot clip\'s own soundtrack never carries. Film runs leave this arm empty.',
+    fields: [
+        // The seat TYPES (the picker law, the siblings' own): the video
+        // seat is `file` + media 'video'; the dials are numbers.
+        { name: 'source_clip', label: 'Source clip', type: 'file', media: 'video', default: '', tooltip: 'The clip whose scene the new camera views. Binds ONE staged leaf on the shared force-rate-24 loader (the same seat the replace/repair/extend sources ride). Its frames rebuild the scene; its soundtrack does not carry over.' },
+        { name: 'orbit', label: 'Orbit', type: 'number', default: 0, min: -180, max: 180, step: 1, tooltip: 'Orbit the camera left/right around the subject, in degrees. Negative orbits left, positive right. ±45° is the tested range; past 90° the hidden side is invented.' },
+        { name: 'tilt', label: 'Tilt', type: 'number', default: 0, min: -90, max: 90, step: 1, tooltip: 'Raise or lower the camera, in degrees. Positive looks down from above the subject, negative looks up from below. Rising is the weak direction — keep above about -20°.' },
+        { name: 'dolly', label: 'Dolly', type: 'number', default: 1, min: 0.1, max: 3, step: 0.05, tooltip: 'Camera distance where 1.0 keeps the source distance. Below 1 dollies in; above 1 pulls back — pulling back reveals area the source never framed, so more of the shot is invented.' },
+        { name: 'zoom', label: 'Zoom (lens FOV)', type: 'number', default: 50, min: 20, max: 120, step: 1, tooltip: 'The lens field of view in degrees (50 is a normal lens): smaller = zoomed in and tighter, larger = wider. Change it when the clip is clearly wide-angle or telephoto.' },
+        { name: 'pan', label: 'Pan (framing shift)', type: 'number', default: 0, min: -1, max: 1, step: 0.02, tooltip: 'Framing shift as a fraction of frame height. Positive moves the picture down (framing up) and rescues a clipped head — the camera does not move, so the parallax is unchanged.' },
+        { name: 'strength', label: 'Reshoot strength', type: 'number', default: 1, min: 0, max: 10, step: 0.05, tooltip: 'How hard the new view\'s depth steers the generation. 1.0 is full; raise toward 2 only when the shot ignores the camera move.' },
+        { name: 'depth_ratio', label: 'Scene depth', type: 'number', default: 6, min: 1.5, max: 1000, step: 0.5, tooltip: 'How deep the scene is (far/near ratio). 2.5–4 for close-up faces, 4–8 for mid shots, 8–16 for deep or wide scenes.' },
+        { name: 'smooth_depth', label: 'Smooth depth', type: 'boolean', default: false, tooltip: 'Smooth the depth edges before warping. Turn on when the re-shot frames show speckle holes — trades a little sharpness for cleaner hole edges.' },
+        { name: 'invert_depth', label: 'Invert depth', type: 'boolean', default: false, tooltip: 'Flip the depth polarity (near ↔ far). Leave off; turn on only if the re-shot renders inside-out — background moving like foreground, or the subject caving in.' },
+    ],
+};
 /** THE FAMILY ACTION BINDING (the atom vocabulary's video stroke):
  *  the h3 family's declared film action composes the whole lane-true
  *  segment from the gated, lifted doc this card's plane produced —
@@ -249,6 +291,15 @@ export const ACTION_BINDINGS = {
                 throw new Error('h3-timeline extend: the extend bag is present but carries no entry — state exactly one extend entry (max_stack 1) or omit the arm');
             }
         }
+        // THE RESHOOT BAG (the fourth arm, §8): the same present-but-
+        // empty guard its three siblings carry — a bag on the doc must
+        // state exactly one commission.
+        const rsh = p.reshoot;
+        if (rsh !== undefined && !(Array.isArray(rsh) && rsh.length === 0)) {
+            if (!Array.isArray(rsh) || rsh.length === 0) {
+                throw new Error('h3-timeline reshoot: the reshoot bag is present but carries no entry — state exactly one reshoot entry (max_stack 1) or omit the arm');
+            }
+        }
         const replaceArmed = Array.isArray(raw) && raw.length > 0;
         const repairArmed = Array.isArray(rep) && rep.length > 0;
         const extendArmed = Array.isArray(ext) && ext.length > 0;
@@ -279,7 +330,7 @@ export const ACTION_BINDINGS = {
             // silently dropped. One door per doc — refuse loud, never a
             // quiet half-run.
             if (reshootArmed(p)) {
-                throw new Error('h3-timeline: Replace and Reshoot are both armed — the swap branch never enters the film action, so an armed reshoot would be silently dropped. Pick one door: empty the Replace arm for a reshoot, or switch Reshoot off for a swap.');
+                throw new Error('h3-timeline: Replace and Reshoot are both armed — the swap branch never enters the film action, so an armed reshoot would be silently dropped. Pick one door: empty the Replace arm for a reshoot, or empty the Reshoot arm for a swap.');
             }
             renderH3Swap(raw[0], p, parseH3Facts(model.lane_inputs), g, runId);
             return;
@@ -288,7 +339,7 @@ export const ACTION_BINDINGS = {
             // The same reshoot refusal, mirrored (the repair branch also
             // returns before the film action).
             if (reshootArmed(p)) {
-                throw new Error('h3-timeline: Repair and Reshoot are both armed — the repair branch never enters the film action, so an armed reshoot would be silently dropped. Pick one door: empty the Repair arm for a reshoot, or switch Reshoot off for a repair.');
+                throw new Error('h3-timeline: Repair and Reshoot are both armed — the repair branch never enters the film action, so an armed reshoot would be silently dropped. Pick one door: empty the Repair arm for a reshoot, or empty the Reshoot arm for a repair.');
             }
             renderH3Repair(rep[0], p, parseH3Facts(model.lane_inputs), g, runId);
             return;
@@ -297,7 +348,7 @@ export const ACTION_BINDINGS = {
             // The same reshoot refusal, third edge (the extend branch also
             // returns before the film action).
             if (reshootArmed(p)) {
-                throw new Error('h3-timeline: Extend and Reshoot are both armed — the extend branch never enters the film action, so an armed reshoot would be silently dropped. Pick one door: empty the Extend arm for a reshoot, or switch Reshoot off for an extension.');
+                throw new Error('h3-timeline: Extend and Reshoot are both armed — the extend branch never enters the film action, so an armed reshoot would be silently dropped. Pick one door: empty the Extend arm for a reshoot, or empty the Reshoot arm for an extension.');
             }
             renderH3Extend(ext[0], p, parseH3Facts(model.lane_inputs), g, runId);
             return;
@@ -388,12 +439,10 @@ export function registerCard(ctx, comfy) {
                 ref_images: 'image_list',
                 ref_videos: 'video_list',
                 ref_audios: 'audio_list',
-                // The re-shoot source seat (feature 024): the clip the new
-                // camera move is shot FROM — a single video producer, not a
-                // stack (one re-shoot per film). Arming rides the schema's
-                // reshoot_enabled switch; an unseated clip leaves the film
-                // graph byte-identical.
-                reshoot_clip: 'video',
+                // (The re-shoot source seat retired 2026-11-12 with the
+                // fourth-mod-bag unification: the RESHOOT_MOD bag's
+                // source_clip field owns the seat — the same picker law the
+                // replace/repair/extend clips ride; no standalone rail slot.)
             },
             legacyAliases: { image_name: 'image' },
             outputs: { default: 'video' },
@@ -441,13 +490,13 @@ export function registerCard(ctx, comfy) {
         // produce. A doc carrying it now refuses LOUD at the door
         // ('unknown-param') instead of riding as an inert rider; seedUser
         // already deletes it on drill-open (the dead-layer law).
-        admits: ['ctx_*', 'extend', 'fps_seconds', 'image_name', 'k', 'noise_seed', 'quant', 'ref_image_size', 'repair', 'replace', 'sla_*', 'variant'],
+        admits: ['ctx_*', 'extend', 'fps_seconds', 'image_name', 'k', 'noise_seed', 'quant', 'ref_image_size', 'repair', 'replace', 'reshoot', 'sla_*', 'variant'],
         // THE CARD-DECLARED KINDS (CONTRACT A — served VERBATIM on the
         // features.modifiers channel): the swap + repair + extend arms.
         // The mask card's sam3/sam2/draw precedent — one kind per arm,
         // entry fields as the popup's tiles, requires as the
         // presence-gated arm packs.
-        mods: [REPLACE_MOD, REPAIR_MOD, EXTEND_MOD],
+        mods: [REPLACE_MOD, REPAIR_MOD, EXTEND_MOD, RESHOOT_MOD],
         jsonArrayParams: JSON_ARRAY_PARAMS,
         // the packs the window graph rides (EXTENSION LAW) + the film
         // tail's file boundary (melite-utility-nodes: MeliteUnload +
@@ -559,7 +608,7 @@ export function registerCard(ctx, comfy) {
             // loud here, which is the dead-layer law working.
             p = gatedResolve('h3-timeline', schemaFn, [
                 'calls', 'audio_clips', 'keyframes', 'fps', 'audio_stem', 'document', 'loras',
-                'refs', 'replace', 'repair', 'extend', 'variant', 'quant', 'refine', 'model', '__steps_pinned', '__shift_pinned', 'ctx_*',
+                'refs', 'replace', 'repair', 'extend', 'reshoot', 'variant', 'quant', 'refine', 'model', '__steps_pinned', '__shift_pinned', 'ctx_*',
             ], gateInput);
             // THE SINGLE-CALL LIFT runs FIRST (the guard below reads the
             // lifted anchor): a one-call doc's row IS the window — its

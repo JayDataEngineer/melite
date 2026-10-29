@@ -1731,17 +1731,11 @@ const CENSUS_DOCS = {
       { image: "pin_end.png", frame: 89 },
     ],
   },
-  // ── the re-shoot chain (feature 024): every dial stated, the doc
-  // the census's reshoot rows judge. The disarmed twin is `film`
-  // (no reshoot members — the chain composes nothing there).
-  reshoot: {
-    length: 56,
-    reshoot_enabled: true, reshoot_clip: "sources/take3.mp4",
-    reshoot_orbit: 30, reshoot_tilt: -10, reshoot_dolly: 1.4,
-    reshoot_zoom: 65, reshoot_pan: 0.5, reshoot_strength: 1.5,
-    reshoot_depth_ratio: 4, reshoot_smooth_depth: true, reshoot_invert_depth: true,
-    calls: [SHOT()],
-  },
+  // ── the re-shoot commission rides the CARD RESHOOT_MOD bag
+  // (the fourth-mod-bag unification, §8 2026-11-12) — no longer a
+  // DECL schema param, so no census row can judge it; the whole
+  // bag law (arm presence, loader seat, dial plumbing, ordering)
+  // is witnessed by tests/reshoot.spec.ts (eight arms).
 } as const satisfies Record<string, CensusDoc>;
 
 type CensusRow =
@@ -1885,25 +1879,13 @@ const CENSUS_ROWS: readonly CensusRow[] = [
   { kind: "at", param: "refmod_save", doc: "media", cls: "MiniMaxH3RefModExtract", input: "save", value: false },
   { kind: "at", param: "image_name", doc: "alias", cls: "LoadImage", input: "image", value: "data/input/alias.png", mode: "some" },
   // ── THE REGISTER (the shrinkable half) ───────────────────────
-  // ── THE RE-SHOOT GROUP (feature 024) — every dial witnessed at
-  // its consumer (the warp pose pair / the apply strength), the
-  // master switch as a gate row against the disarmed film twin.
-  {
-    kind: "gate", param: "reshoot_enabled", on: "reshoot", off: "film",
-    classes: ["CrossViewWarp", "MiniMaxH3FunControlNetApply", "ColorToMask"],
-  },
-  { kind: "at", param: "reshoot_clip", doc: "reshoot", cls: "LoadVideo", input: "file", value: "sources/take3.mp4", mode: "some" },
-  // both warps carry the SAME camera pose (the depth and color
-  // reprojections share one geometry) — judged on every CrossViewWarp
-  { kind: "at", param: "reshoot_orbit", doc: "reshoot", cls: "CrossViewWarp", input: "azimuth", value: 30 },
-  { kind: "at", param: "reshoot_tilt", doc: "reshoot", cls: "CrossViewWarp", input: "elevation", value: -10 },
-  { kind: "at", param: "reshoot_dolly", doc: "reshoot", cls: "CrossViewWarp", input: "distance", value: 1.4 },
-  { kind: "at", param: "reshoot_zoom", doc: "reshoot", cls: "CrossViewWarp", input: "hfov", value: 65 },
-  { kind: "at", param: "reshoot_pan", doc: "reshoot", cls: "CrossViewWarp", input: "vertical_shift", value: 0.5 },
-  { kind: "at", param: "reshoot_depth_ratio", doc: "reshoot", cls: "CrossViewWarp", input: "depth_ratio", value: 4 },
-  { kind: "at", param: "reshoot_smooth_depth", doc: "reshoot", cls: "CrossViewWarp", input: "smooth_depth", value: true },
-  { kind: "at", param: "reshoot_invert_depth", doc: "reshoot", cls: "CrossViewWarp", input: "invert_depth", value: true },
-  { kind: "at", param: "reshoot_strength", doc: "reshoot", cls: "MiniMaxH3FunControlNetApply", input: "strength", value: 1.5 },
+  // ── THE RE-SHOOT BAG retired from the census (the fourth-mod-
+  // bag unification, §8 2026-11-12): the commission is a CARD mod
+  // bag now, not a DECL schema param — the census judges DECL
+  // params only, and a row for a card-plane bag would be a ghost.
+  // The bag law is witnessed by tests/reshoot.spec.ts (the VHS
+  // loader seat, the pose pair on both warps, the apply strength,
+  // the once-per-compose build, the pick ordering).
   {
     kind: "unstatable", param: "sharpen_switch",
     why: "the renderer-era alias is gate-admitted for old drafts, but the second-pass wiring reads only the sharpen_enabled primary — a stated alias mounts nothing (ARM 32)",

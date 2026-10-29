@@ -13,6 +13,7 @@ import { refGenreOf } from '@melite/models-h3/timelineContract'
 import type { LinkArtifact } from "./refUtils.ts"
 import type { TimelineSelection } from "./useViewSelection.ts"
 import type { useFilmAudio } from "./useFilmAudio.ts"
+import { deriveCommissions, type DocCommission } from "./commissions.ts"
 
 type FilmMap = ReturnType<typeof useFilmAudio>["filmMap"]
 type FilmFromDoc = ReturnType<typeof useFilmAudio>["filmFromDoc"]
@@ -35,10 +36,15 @@ export function useDerivedView(args: {
    *  to a displayable thumb URL. Absent (tests, motion) = names never
    *  thumb — the diamond-only chip. */
   artifactIndex?: { byName: ReadonlyMap<string, string> }
+  /** THE DURABLE BENCH ROW (§9's mod projection): the doc's own params,
+   *  where the four mod bags live — outside Layer A and outside the
+   *  studio's three write channels. The commission rail projects them
+   *  read-only; absent (tests, motion) = no commissions. */
+  docParams?: Record<string, unknown>
 }) {
   const {
     upstreams, stage, calls, layerA, keyframes,
-    filmMap, filmFromDoc, selected, fps, totalFrames, artifactIndex,
+    filmMap, filmFromDoc, selected, fps, totalFrames, artifactIndex, docParams,
   } = args
   // ── Upstream artifact vocabulary (the source picker's datalist — the
   // same ctx-key vocabulary _normalize_guides resolves: an upstream
@@ -281,6 +287,16 @@ export function useDerivedView(args: {
     [filmstrip.windows, calls.length],
   )
 
+  /** THE COMMISSIONS (§9 of the multiwindow unification audit): one row
+   *  per ARMED mod bag — the bag's entry seats, and (extend) the window
+   *  composition the compose door will build. Read-only: the studio
+   *  authors no bag, so there is no op overlay to fold in — the durable
+   *  row IS the truth. */
+  const commissions: DocCommission[] = useMemo(
+    () => deriveCommissions(docParams),
+    [docParams],
+  )
+
   /** The bar's selected clip id (a call — the only selectable clip
    *  since Layer C left the bar, 2026-09-15) — the ring the bar
    *  draws. */
@@ -289,6 +305,6 @@ export function useDerivedView(args: {
     sourceOptions, linkGroups, guideLinks, filmstrip, prompts, lanes,
     filmDurSec, setFilmDurSec, barTotal,
     barPrompts, barLanes, barAudioClips, callPreviews, selectedBarId,
-    voicePinnedCalls, refAudiosPresent, audioClipsPresent,
+    voicePinnedCalls, refAudiosPresent, audioClipsPresent, commissions,
   }
 }

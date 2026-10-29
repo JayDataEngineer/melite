@@ -61,11 +61,13 @@ const GENRE_GROUPS = new Map([
   // family's bake tuning — neither sampling nor reference, their own
   // subcategory, owned by the declaring model kit.
   ['refmod', 'h3'],
-  // THE RE-SHOOT SURFACE (feature 024, 2026-10-27): the camera
-  // re-shoot chain's eleven knobs (the master switch, the source
-  // clip, the five camera words, strength/depth/smooth/invert) are
-  // their own subcategory behind the reshoot group — neither
-  // sampling nor reference, owned by the declaring model kit.
+  // THE RE-SHOOT SURFACE (feature 024, 2026-10-27 → §8 2026-11-12):
+  // the camera re-shoot chain's eleven knobs rode their own
+  // subcategory behind the reshoot group; the fourth-mod-bag law
+  // retired the knob group into the reshoot mod bag (the card's
+  // modifiers-channel entry), so no `group: 'reshoot'` DECL row
+  // survives — the roster row below stays as the vocabulary's
+  // memory of the spelling, never a live claim.
   ['reshoot', 'h3'],
   ['chain', 'motion'], ['guidance', 'motion'], ['output', 'motion'],
   // THE MANNEQUIN ARM'S OWN SURFACE (the swap-parity build,

@@ -228,6 +228,9 @@ export function VideoTimelineStudio(owner: StageViewOwnerProps) {
     // (slice 3) the pin chip's bare-name thumb resolution rides the
     // index the audio lanes already built.
     artifactIndex: audio.artifactIndex,
+    // (§9's mod projection) the DURABLE row — where the four mod bags
+    // live. The rail projects them read-only; the studio authors none.
+    docParams: stage.params ?? undefined,
   })
   const handleDuration = (sec: number) => derived.setFilmDurSec(sec)
 
@@ -404,6 +407,7 @@ export function VideoTimelineStudio(owner: StageViewOwnerProps) {
             barPrompts={derived.barPrompts}
             barLanes={derived.barLanes}
             barAudioClips={derived.barAudioClips}
+            commissions={derived.commissions}
             barTotal={derived.barTotal}
             frameIdx={view.frameIdx}
             callPreviews={derived.callPreviews}

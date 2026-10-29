@@ -272,21 +272,15 @@ function valueCells(): Cell[] {
     // partial-denoise refusal) — witnessed, never unclassed.
     upscale_route: { anchor: 'ARM 37 (mount)', note: 'the sub-gate mounts the handoff on edges (ARM 40 the on-parity, ARM 46 the denoise-1.0 refusal voice)' },
     upscale_model: { anchor: 'ARM 37 (mount)', note: 'the file surface rides model_name on the handoff edge (ARM 42 the off-leaf drop)' },
-    // THE RE-SHOOT CHAIN (feature 024, 2026-10-28): every dial's
-    // class cell rides the consumer-map census — its `reshoot` doc
-    // arms the chain, each row fires on its own consumer seat, and
-    // the gate row disarms against the film twin.
-    reshoot_enabled: { anchor: 'THE H3 CONSUMER-MAP CENSUS (item #10) — every DECL param is witnessed at its consumer or named unstatable', note: 'the master switch — the census gate row (on reshoot / off film) with CrossViewWarp + MiniMaxH3FunControlNetApply + ColorToMask classes; the chain topology itself is walled in reshoot.spec.ts' },
-    reshoot_clip: { anchor: 'THE H3 CONSUMER-MAP CENSUS (item #10) — every DECL param is witnessed at its consumer or named unstatable', note: 'file at LoadVideo (the census at-row)' },
-    reshoot_orbit: { anchor: 'THE H3 CONSUMER-MAP CENSUS (item #10) — every DECL param is witnessed at its consumer or named unstatable', note: 'azimuth at CrossViewWarp' },
-    reshoot_tilt: { anchor: 'THE H3 CONSUMER-MAP CENSUS (item #10) — every DECL param is witnessed at its consumer or named unstatable', note: 'elevation at CrossViewWarp' },
-    reshoot_dolly: { anchor: 'THE H3 CONSUMER-MAP CENSUS (item #10) — every DECL param is witnessed at its consumer or named unstatable', note: 'distance at CrossViewWarp' },
-    reshoot_zoom: { anchor: 'THE H3 CONSUMER-MAP CENSUS (item #10) — every DECL param is witnessed at its consumer or named unstatable', note: 'hfov at CrossViewWarp' },
-    reshoot_pan: { anchor: 'THE H3 CONSUMER-MAP CENSUS (item #10) — every DECL param is witnessed at its consumer or named unstatable', note: 'vertical_shift at CrossViewWarp' },
-    reshoot_strength: { anchor: 'THE H3 CONSUMER-MAP CENSUS (item #10) — every DECL param is witnessed at its consumer or named unstatable', note: 'strength at MiniMaxH3FunControlNetApply' },
-    reshoot_depth_ratio: { anchor: 'THE H3 CONSUMER-MAP CENSUS (item #10) — every DECL param is witnessed at its consumer or named unstatable', note: 'depth_ratio at CrossViewWarp' },
-    reshoot_smooth_depth: { anchor: 'THE H3 CONSUMER-MAP CENSUS (item #10) — every DECL param is witnessed at its consumer or named unstatable', note: 'smooth_depth at CrossViewWarp' },
-    reshoot_invert_depth: { anchor: 'THE H3 CONSUMER-MAP CENSUS (item #10) — every DECL param is witnessed at its consumer or named unstatable', note: 'invert_depth at CrossViewWarp' },
+    // THE RE-SHOOT CHAIN (feature 024, 2026-10-28 → §8 2026-11-12):
+    // the eleven flat reshoot_* DECL knobs RETIRED into the reshoot
+    // mod bag (the card's fourth modifiers-channel entry — clip +
+    // nine dials on `reshoot`, armed by bag presence). No DECL param
+    // remains, so no class-arm row survives here; the bag's seats are
+    // walled at the compose door (tests/walls h3-reshoot-chain ARM 2–4:
+    // kind fields, band refusals, the shared-loader chain on the
+    // film's SaveVideo) and the card plane
+    // (packages/video/h3-timeline/tests/reshoot-mod.spec.ts).
   }
   for (const knob of paramsOf('h3')) {
     if (H3_PINNED.has(knob)) {

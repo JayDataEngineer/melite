@@ -1,8 +1,9 @@
 import type * as React from "react";
 export interface LaneHeadProps {
-    /** The shell's variant — one of the four former grammars, kept as a
-     *  data hook so tenants and walls can address each row class. */
-    variant: "prompts" | "beats" | "audio" | "kf";
+    /** The shell's variant — one of the four former grammars plus the
+     *  commission row (§9's mod projection), kept as a data hook so
+     *  tenants and walls can address each row class. */
+    variant: "prompts" | "beats" | "audio" | "kf" | "commission";
     /** The identity slot: an icon element (prompts/beats/audio) or a
      *  dot color (kf tracks — the track's rgb). Exactly one. */
     glyph?: React.ReactNode;
@@ -26,6 +27,10 @@ export interface LaneHeadProps {
     door?: React.ReactNode;
     /** The detach slot (the × button element). */
     detach?: React.ReactNode;
+    /** The row's stable id (`data-lane-head-id`) — how a tenant's dynamic
+     *  rows (the commission heads) are addressed by walls and by the lane
+     *  body they pair with. Absent → no attr, byte-identical. */
+    rowId?: string;
 }
 /** One head, one grammar (SD-8). */
 export declare function LaneHead(props: LaneHeadProps): React.JSX.Element;

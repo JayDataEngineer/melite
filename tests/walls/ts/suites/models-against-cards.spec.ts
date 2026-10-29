@@ -514,9 +514,13 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // frame_load_cap). Six new fields, argued here.
     // 513 -> 504 (2026-11-12): the openjutsu lane deleted by
     // operator order — its card's nine fields leave the walked set.
+    // 504 -> 493 (2026-11-12, §8's fourth-mod-bag law): h3's eleven
+    // flat reshoot_* knobs retire into the card's reshoot mod bag —
+    // the bag's entry fields ride the modifiers channel, never the
+    // judged params face.
     // (Earlier: 502 -> 513, 2026-10-28 swap build R0a — the track
     // card's eleven fields joined.)
-    assert.equal(walked, 504,
+    assert.equal(walked, 493,
       `the census walked the estate's fields (${String(walked)} — a re-zoned or re-typed field set MOVES this number; growth is argued here, loss means the census emptied an arm)`);
     // judged 8 -> 6 (2026-11-08, the latent law): the image-edit
     // card's width/height leave the params zone (hidden compatibility
@@ -1996,7 +2000,7 @@ describe("THE TWO-HOMES BOUNDS-SYNC WALL (card schema == action ParamSpec, every
     // ParamSpec rows sync against the card schema per carried
     // address (length/width/height/steps/shift_video/shift_audio
     // bounds + the seed sentinel; offenders empty).
-    assert.equal(pairs, 829, "the shared-name pair census changed — update this pin deliberately"); // 838→829 2026-11-12: the openjutsu card's nine shared-name pairs leave
+    assert.equal(pairs, 796, "the shared-name pair census changed — update this pin deliberately"); // 829→796 2026-11-12 (§8): the eleven flat reshoot_* knobs retire from the h3 schema AND its three action ParamSpec faces — 11 × 3 shared-name pairs leave both homes together
     assert.deepEqual(offenders, [], `two-homes drift (card schema vs action ParamSpec):\n${offenders.join("\n")}`);
   });
 });

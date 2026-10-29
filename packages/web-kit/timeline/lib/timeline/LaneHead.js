@@ -14,7 +14,7 @@ import { clsx as cn } from "clsx";
 import css from "./timeline.module.css";
 /** One head, one grammar (SD-8). */
 export function LaneHead(props) {
-    const { variant, glyph, dotColor, label, accent, height, title, iconAttr, door, detach } = props;
-    return (_jsxs("div", { className: cn(css.laneHeadShell), "data-lane-head": variant, "data-audio-icon": iconAttr, style: { height, ...(accent ? { color: accent } : {}) }, title: title, children: [glyph, dotColor && (_jsx("span", { className: css.laneDot, "data-lane-dot": variant, style: { background: dotColor }, "aria-hidden": true })), _jsx("span", { className: css.gutterLabel, children: label }), door, detach] }));
+    const { variant, glyph, dotColor, label, accent, height, title, iconAttr, door, detach, rowId } = props;
+    return (_jsxs("div", { className: cn(css.laneHeadShell), "data-lane-head": variant, "data-lane-head-id": rowId, "data-audio-icon": iconAttr, style: { height, ...(accent ? { color: accent } : {}) }, title: title, children: [glyph, dotColor && (_jsx("span", { className: css.laneDot, "data-lane-dot": variant, style: { background: dotColor }, "aria-hidden": true })), _jsx("span", { className: css.gutterLabel, children: label }), door, detach] }));
 }
 //# sourceMappingURL=LaneHead.js.map

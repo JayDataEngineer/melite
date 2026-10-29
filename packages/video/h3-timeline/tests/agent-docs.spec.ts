@@ -78,12 +78,13 @@ describe("THE AGENT-DOCS WALL (the live law, where agents load it)", () => {
     expect(md).toMatch(/DELIVERABLE\? Execute/);
   });
 
-  it("the reshoot skill teaches the knob-group door, the not-a-regen boundary, and the mutual refusal", () => {
+  it("the reshoot skill teaches the mod-bag door, the not-a-regen boundary, and the mutual refusal", () => {
     const md = read("agents/skills/reshoot/SKILL.md");
-    // the door's shape: a knob group on the film, never a mod bag —
+    // the door's shape: the fourth mod bag on the film, never flat —
     // and never confused with a fresh regen (a moved camera, not a
     // re-roll).
-    expect(md).toMatch(/reshoot_enabled/);
+    expect(md).toMatch(/params\.reshoot = \[entry\]/);
+    expect(md).toMatch(/never flat/);
     expect(md).toMatch(/NOT.*fresh regen/i);
     expect(md).toMatch(/NOT.*replace mod/i);
     // one door per doc: armed replace + armed reshoot refuses loud.

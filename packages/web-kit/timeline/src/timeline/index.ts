@@ -21,6 +21,7 @@
  * test-owing debt — the wave spends no tests on corpses.)
  */
 export * from "./MotionTimelineBar.tsx";
+export * from "./CommissionsRail.tsx";
 export * from "./FilmPlayer.tsx";
 export * from "./TimelineScrubBar.tsx";
 export * from "./viser-timeline/index.ts";

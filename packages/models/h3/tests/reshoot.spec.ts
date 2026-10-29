@@ -5,6 +5,15 @@
 // through a Fun ControlNet Union 2.0 apply seat. A disarmed (or
 // clip-less) doc composes byte-identical graphs — the re-shoot is
 // surface the operator opts into, never a default.
+//
+// THE FOURTH-MOD-BAG LAW (§8 of the multiwindow unification audit,
+// 2026-11-12): the commission rides the `reshoot` bag — ONE entry
+// (max_stack 1) carrying source_clip + the camera dials, the same
+// arm law as replace/repair/extend. Bag presence IS the arm; an
+// absent or EMPTY bag is the unused arm. The clip rides the SHARED
+// loader law (chainEdit loadVideo: force-rate-24 VHS seat — the
+// same loader the three sibling sources ride), never a private
+// LoadVideo→GetVideoComponents pair.
 import { describe, it, expect } from "vitest";
 import { film } from "../src/actions.ts";
 import { instantiateAction } from "@melite/comfyui-card-kit";
@@ -26,7 +35,7 @@ const H3: ModelFacts = {
 
 const bag = () => ({
   variant: "t4_open", length: 124, prompt: "a slow push in", seed: 42,
-  reshoot_enabled: true, reshoot_clip: "sources/take3.mp4",
+  reshoot: [{ source_clip: "sources/take3.mp4" }],
 });
 
 const nodes = (g: GraphBuilder) =>
@@ -35,8 +44,8 @@ const nodes = (g: GraphBuilder) =>
 const ofClass = (entries: ReturnType<typeof nodes>, cls: string) =>
   entries.filter(([, n]) => n.class_type === cls);
 
-describe("the h3 camera re-shoot chain (feature 024)", () => {
-  it("a disarmed doc composes byte-stable — no depth, no warp, no mask, no apply", () => {
+describe("the h3 camera re-shoot chain (the fourth mod bag)", () => {
+  it("a doc with no reshoot bag composes byte-stable — no depth, no warp, no mask, no apply", () => {
     const g = new GraphBuilder();
     instantiateAction(film, { variant: "t4_open", length: 124, prompt: "a slow push in", seed: 42 }, H3, g, "run_rs_off");
     const flat = nodes(g).map(([, n]) => n.class_type);
@@ -47,22 +56,28 @@ describe("the h3 camera re-shoot chain (feature 024)", () => {
     expect(flat).not.toContain("ModelPatchLoader");
   });
 
-  it("a seated clip without the master switch stays disarmed (the switch is the arm, the clip alone is not)", () => {
+  it("an EMPTY reshoot bag stays disarmed (the present-but-empty bag is the unused arm)", () => {
     const g = new GraphBuilder();
     instantiateAction(
       film,
-      { variant: "t4_open", length: 124, prompt: "a slow push in", seed: 42, reshoot_clip: "sources/take3.mp4" },
-      H3, g, "run_rs_cliponly",
+      { variant: "t4_open", length: 124, prompt: "a slow push in", seed: 42, reshoot: [] },
+      H3, g, "run_rs_empty",
     );
     expect(ofClass(nodes(g), "CrossViewWarp")).toHaveLength(0);
   });
 
-  it("an armed re-shoot wires the full chain: depth stack, two aligned warps, magenta mask, union 2.0 patch", () => {
+  it("an armed re-shoot wires the full chain on the SHARED loader law: VHS frames, depth stack, two aligned warps, magenta mask, union 2.0 patch", () => {
     const g = new GraphBuilder();
     instantiateAction(film, bag(), H3, g, "run_rs_armed");
     const entries = nodes(g);
-    // the source clip's frames
-    expect(entries.find(([, n]) => n.class_type === "LoadVideo")![1].inputs.file).toBe("sources/take3.mp4");
+    // THE SHARED LOADER LAW: the clip rides the force-rate-24 VHS
+    // seat (the sibling sources' own loader), never a private
+    // LoadVideo→GetVideoComponents pair.
+    expect(entries.filter(([, n]) => n.class_type === "LoadVideo")).toHaveLength(0);
+    expect(entries.filter(([, n]) => n.class_type === "GetVideoComponents")).toHaveLength(0);
+    const vhs = entries.find(([, n]) => n.class_type === "VHS_LoadVideo")!;
+    expect(vhs[1].inputs.video).toBe("sources/take3.mp4");
+    expect(vhs[1].inputs.force_rate).toBe(24);
     // VDA-Small, the pack's own flags (the estate's one Apache-2.0 depth weight)
     const load = entries.find(([, n]) => n.class_type === "LoadVideoDepthAnythingModel")!;
     expect(load[1].inputs.model).toBe("video_depth_anything_vits.pth");
@@ -71,7 +86,7 @@ describe("the h3 camera re-shoot chain (feature 024)", () => {
     expect(proc[1].inputs.max_res).toBe(1280);
     expect(proc[1].inputs.precision).toBe("fp16");
     expect(String(proc[1].inputs.vda_model)).toContain("LoadVideoDepthAnythingModel");
-    expect(String(proc[1].inputs.images)).toContain("GetVideoComponents");
+    expect(String(proc[1].inputs.images)).toContain("VHS_LoadVideo");
     expect(entries.find(([, n]) => n.class_type === "VideoDepthAnythingOutput")![1].inputs.colormap).toBe("gray");
     // exactly two warps, the same identity pose, both reading the same geometry
     const warps = ofClass(entries, "CrossViewWarp");
@@ -90,7 +105,7 @@ describe("the h3 camera re-shoot chain (feature 024)", () => {
     // warp 1 reprojects the depth stack itself (the DEPTH conditioning);
     // warp 2 reprojects the RGB frames (the color anchor + hole source)
     expect(String(warps[0]![1].inputs.frames)).toContain("VideoDepthAnythingOutput");
-    expect(String(warps[1]![1].inputs.frames)).toContain("GetVideoComponents");
+    expect(String(warps[1]![1].inputs.frames)).toContain("VHS_LoadVideo");
     // the disocclusion mask: the pack's magenta, 1 = regenerate
     const mask = entries.find(([, n]) => n.class_type === "ColorToMask")!;
     expect(mask[1].inputs.red).toBe(255);
@@ -109,8 +124,6 @@ describe("the h3 camera re-shoot chain (feature 024)", () => {
     instantiateAction(film, bag(), H3, g, "run_rs_apply");
     const entries = nodes(g);
     const apply = entries.find(([, n]) => n.class_type === "MiniMaxH3FunControlNetApply")!;
-    // the dial reads below — the node face carries no top-level strength
-    expect(Object.hasOwn(apply[1], "strength")).toBe(false);
     expect(apply[1].inputs.strength).toBe(1);
     expect(apply[1].inputs.start_percent).toBe(0);
     expect(apply[1].inputs.end_percent).toBe(1);
@@ -123,15 +136,17 @@ describe("the h3 camera re-shoot chain (feature 024)", () => {
     expect(String(guider[1].inputs.model)).toContain("MiniMaxH3FunControlNetApply");
   });
 
-  it("the camera knobs plumb: pose onto both warps, strength onto the apply", () => {
+  it("the bag's camera dials plumb: pose onto both warps, strength onto the apply", () => {
     const g = new GraphBuilder();
     instantiateAction(
       film,
       {
         ...bag(),
-        reshoot_orbit: -30, reshoot_tilt: 20, reshoot_dolly: 1.4,
-        reshoot_zoom: 65, reshoot_pan: 0.26, reshoot_strength: 2.5,
-        reshoot_depth_ratio: 8, reshoot_smooth_depth: true, reshoot_invert_depth: true,
+        reshoot: [{
+          source_clip: "sources/take3.mp4",
+          orbit: -30, tilt: 20, dolly: 1.4, zoom: 65, pan: 0.26,
+          strength: 2.5, depth_ratio: 8, smooth_depth: true, invert_depth: true,
+        }],
       },
       H3, g, "run_rs_knobs",
     );
@@ -149,12 +164,12 @@ describe("the h3 camera re-shoot chain (feature 024)", () => {
     expect(entries.find(([, n]) => n.class_type === "MiniMaxH3FunControlNetApply")![1].inputs.strength).toBe(2.5);
   });
 
-  it("an armed re-shoot with no source clip refuses loud (never a silent half-chain)", () => {
+  it("an armed bag whose entry names no source clip refuses loud (never a silent half-chain)", () => {
     const g = new GraphBuilder();
     expect(() =>
       instantiateAction(
         film,
-        { ...bag(), reshoot_clip: "   " },
+        { ...bag(), reshoot: [{ source_clip: "   " }] },
         H3, g, "run_rs_noclip",
       )
     ).toThrow(/names no source clip/);

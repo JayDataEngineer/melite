@@ -2206,20 +2206,10 @@ export const film = {
         // checkpoint (single-member vocabulary, the sr_model precedent).
         { name: "upscale_route", type: "enum", options: ["off", "latent_2x"] },
         { name: "upscale_model", type: "enum", options: ["minimax_h3_latent_upscaler_3d_bf16.safetensors"] },
-        // THE RE-SHOOT SURFACE (feature 024): the camera-reshoot chain's
-        // own knobs, advertised 1:1 with the carrier rows (the door
-        // refuses anything else — the write-plane law above).
-        { name: "reshoot_enabled", type: "boolean" },
-        { name: "reshoot_clip", type: "image" },
-        { name: "reshoot_orbit", type: "number", bounds: [-180, 180] },
-        { name: "reshoot_tilt", type: "number", bounds: [-90, 90] },
-        { name: "reshoot_dolly", type: "number", bounds: [0.1, 3] },
-        { name: "reshoot_zoom", type: "number", bounds: [20, 120] },
-        { name: "reshoot_pan", type: "number", bounds: [-1, 1] },
-        { name: "reshoot_strength", type: "number", bounds: [0, 10] },
-        { name: "reshoot_depth_ratio", type: "number", bounds: [1.5, 1000] },
-        { name: "reshoot_smooth_depth", type: "boolean" },
-        { name: "reshoot_invert_depth", type: "boolean" },
+        // THE RE-SHOOT SURFACE (feature 024): the commission rides the
+        // card's RESHOOT_MOD bag now (the fourth-mod-bag unification,
+        // §8) — the door's flat rows died with the schema group; the
+        // bag's own field rows are the served truth.
         { name: "attention_backend", type: "enum", options: ["comfy kitchen attention", "pytorch attention"] },
         { name: "sr_switch", type: "boolean" },
         { name: "sr_resolution", type: "number", bounds: [720, 2160] },

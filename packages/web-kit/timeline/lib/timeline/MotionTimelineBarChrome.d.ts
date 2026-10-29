@@ -1,6 +1,7 @@
 import type * as React from "react";
 import type { TimelineTrack } from "./viser-timeline/types.js";
 import type { AudioLayer, TimelineBeat } from "./MotionTimelineBar.js";
+import { type CommissionRow } from "./CommissionsRail.js";
 export interface TimelineGutterScale {
     zoom: (factor: number) => void;
     anchorRef: React.MutableRefObject<{
@@ -38,6 +39,10 @@ export interface TimelineGutterProps {
      *  heads' card height (44) when the tenant opts in — the
      *  audioClipCards precedent; absent → the 24px block, byte-identical. */
     kfLaneCards?: boolean;
+    /** (§9's mod projection) the commission heads — one per armed mod
+     *  bag, mirroring the body rows the bar renders under the prompts
+     *  lane. Opt-in; absent/empty → no head, byte-identical. */
+    commissions?: CommissionRow[];
     tracks: TimelineTrack[];
 }
 /** The pinned label gutter (bar line 820): the zoom cluster + lane

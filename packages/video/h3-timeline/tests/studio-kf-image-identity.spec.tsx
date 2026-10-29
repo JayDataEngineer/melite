@@ -133,6 +133,8 @@ function openStripDoor(): { added: [string, number][]; unmount: () => void } {
       barPrompts={[] as never}
       barLanes={[] as never}
       barAudioClips={[]}
+      // (§9) no armed mod bag in this fixture — the rail renders no row
+      commissions={[]}
       barTotal={200}
       frameIdx={0}
       callPreviews={{}}

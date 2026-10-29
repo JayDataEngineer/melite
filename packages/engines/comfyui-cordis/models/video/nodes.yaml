@@ -38,8 +38,9 @@ extensions:
   desc: >-
     CrossViewWarp (Apache-2.0, v0.11.0) — depth-warp conditioning node for
     the CrossView-Warp IC-LoRA. Declared on the video plane for camera-move
-    compositions; no graph addresses its class yet (CrossViewWarp). Pip:
-    nothing beyond the ComfyUI base env.
+    compositions; addressed by the h3-timeline re-shoot chain (feature 024 —
+    two CrossViewWarp passes per armed film: the depth-stack splat and the
+    RGB reprojection). Pip: nothing beyond the ComfyUI base env.
 - name: ComfyUI-CameraReference3D
   url: https://github.com/lovemachine100/ComfyUI-CameraReference3D
   ref: 3b360a2bc76bd46b8367ab72384e0a71bb8bf701

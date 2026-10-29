@@ -65,6 +65,7 @@ import {
   TimelineKeyframeLanes,
   TimelinePromptsLane,
 } from "./MotionTimelineBarLanes.tsx"
+import { CommissionLane, type CommissionRow } from "./CommissionsRail.tsx"
 import css from "./timeline.module.css"
 import type { TimelineKeyframe, TimelinePrompt, TimelineTrack } from "./viser-timeline/types.ts"
 import { timelineCopy } from "../timelineCopy.ts"
@@ -239,6 +240,15 @@ export interface MotionTimelineBarProps {
    * blocks. Opt-in; absent → byte-identical 24px blocks (the motion
    * tenant's six kf tracks never change). */
   kfLaneCards?: boolean
+  /** (the studio's mod projection, §9 of the multiwindow unification
+   *  audit 2026-11-12) THE COMMISSION RAIL — one row per ARMED mod bag
+   *  (replace / repair / extend / reshoot), its seats named and, for
+   *  the multi-window extend, its windows drawn on the bar's geometry.
+   *  The bag is agent-authored and read-only here: the lane renders
+   *  what the compose will build, it never edits the commission.
+   *  Opt-in; absent or empty → byte-identical (the audioClipCards /
+   *  kfLaneCards precedent). */
+  commissions?: CommissionRow[]
   /** ── STYLING SEAM (2026-09-07, the shadcn rule): the bar is a
    *  shared component and takes className/style like every other
    *  primitive — the tenant's shell (border, rounding) rides the
@@ -361,6 +371,7 @@ export function MotionTimelineBar({
   onTrackAdd,
   audioClipCards = false,
   kfLaneCards = false,
+  commissions,
   className,
   style,
   theme,
@@ -393,6 +404,7 @@ export function MotionTimelineBar({
         beats={beats} beatsLabel={beatsLabel} beatsHeight={beatsHeight}
         audioLayers={audioLayers} onAudioDetach={onAudioDetach} tracks={tracks} audioClipCards={audioClipCards}
         onTrackAdd={onTrackAdd} kfLaneCards={kfLaneCards}
+        commissions={commissions}
       />
       <TimelineContent
         scrollRef={scrollRef} contentW={scale.contentW}
@@ -410,6 +422,14 @@ export function MotionTimelineBar({
           frameToPx={scale.frameToPx} frameAt={scale.frameAt} startDrag={drag.startDrag} playhead={playhead}
           onPromptUpdate={onPromptUpdate} onPromptDelete={onPromptDelete}
         />
+        {commissions?.map((row) => (
+          <CommissionLane
+            key={row.id}
+            row={row}
+            frameToPx={scale.frameToPx}
+            totalFrames={totalFrames}
+          />
+        ))}
         {beats && (
           <TimelineBeatsLane
             beats={beats} beatsHeight={beatsHeight} beatsHint={beatsHint} fps={fps} selectedId={selectedId}

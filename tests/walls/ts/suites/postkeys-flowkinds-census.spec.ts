@@ -256,10 +256,12 @@ const ROW_PORT_JUDGMENT: Record<string, { lane: string; door: string }> = {
     lane: "the extend's fresh-continuation lane (the extension generates fresh audio — the muted reference is the chain's own, never a wired rail)",
     door: "the audio-reference bus rides the {model:} door (the h3-timeline card's full face)",
   },
-  "extend-video/extend:reshoot_clip": {
-    lane: "the extend's fresh-continuation lane (one door per doc — the reshoot arm refuses under an armed extend at the compose door)",
-    door: "the re-shoot source rail rides the {model:} door (the h3-timeline card's full face)",
-  },
+  // THE RESHOOT RETIREMENT (§8 of the multiwindow unification audit,
+  //  2026-11-12): the re-shoot clip rode the flowKinds rail as
+  //  reshoot_clip; the fourth-mod-bag law seats it on the reshoot mod
+  //  bag instead (the entry's source_clip field), so the rail slot is
+  //  retired and the one-door refusal rides the bag predicate — the
+  //  judgment row below dies with the slot.
 };
 
 // ── THE CENSUS ──────────────────────────────────────────────────────
@@ -289,16 +291,14 @@ describe("THE CARD↔FLOWS CROSS-PLANE CENSUS (SD-4 estate-wide — every compos
     expect(def, "the h3-timeline card is registered (the estate boot)").toBeDefined();
     const { ports, admits } = flowChannelsOf(def!);
     // PORT SANITY (the roster's own half): the rail the card declares
-    // today — first frame, last frame, the reference buses, the
-    // retired alias, and the re-shoot source seat — must be exactly
-    // the media rail; the judgment table below leans on it.
-    // reshoot_clip joined the rail 2026-10-27 (feature 024): a single
-    // video producer — the clip the new camera move is shot FROM —
-    // wired by the lattice like any media edge; arming rides the
-    // schema's reshoot_enabled switch, and the graph stays
-    // byte-identical until a clip is seated.
+    // today — first frame, last frame, the reference buses, and the
+    // retired alias — must be exactly the media rail; the judgment
+    // table below leans on it. reshoot_clip rode the rail 2026-10-27
+    // → 2026-11-12 (feature 024, then §8's fourth-mod-bag law: the
+    // clip seats on the reshoot bag's source_clip field, never a
+    // rail slot).
     expect(ports.sort(), "the declared ports are the media rail (the rail law the judgments lean on)").toEqual(
-      ["image", "image_name", "last_frame", "ref_audios", "ref_images", "ref_videos", "reshoot_clip"].sort(),
+      ["image", "image_name", "last_frame", "ref_audios", "ref_images", "ref_videos"].sort(),
     );
     const face = await composeFaceOf("h3-timeline");
     expect(face).not.toBeNull();

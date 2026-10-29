@@ -305,25 +305,15 @@ export interface LayerA {
   refmod_pool?: number
   refmod_identity?: number
   refmod_save?: boolean
-  /** THE RE-SHOOT GROUP (feature 024's missing seat, landed
-   * 2026-11-12 — the operator's burn: "THE RESHOOT SWITCH DOESN'T
-   * EVEN DO ANYTHING, IT IS STUCK"). The rows served from the spec
-   * but no serializer key carried them, so the flip died at the
-   * save and the resolved default false snapped the switch back —
-   * the second_pass_enabled disease's own shape (its comment above
-   * is this one's precedent). Master absent = off (the family
-   * default); the clip and dials ride only under the master. */
-  reshoot_enabled?: boolean
-  reshoot_clip?: string
-  reshoot_orbit?: number
-  reshoot_tilt?: number
-  reshoot_dolly?: number
-  reshoot_zoom?: number
-  reshoot_pan?: number
-  reshoot_strength?: number
-  reshoot_depth_ratio?: number
-  reshoot_smooth_depth?: boolean
-  reshoot_invert_depth?: boolean
+  /** THE RE-SHOOT GROUP RETIRED (the fourth-mod-bag unification,
+   * §8, 2026-11-12): re-shoot rides the card's RESHOOT_MOD bag —
+   * authored through the mods surface like replace/repair/extend,
+   * carried on the doc as the `reshoot` array (outside Layer A's
+   * vocabulary, preserved by the bench's merge-patch like its three
+   * siblings), projected by the studio's commission derivation. The
+   * eleven flat keys died with the schema group; the stuck-switch
+   * cure's lesson (state what the compose reads) lives on in the
+   * contract wall's bag round-trip arm. */
   /** THE SECOND-PASS MASTER (operator 2026-09-22: "it is very
    * unclear if it is on or off" — and 2026-10-16: the switch was
    * STILL broken, because the 10-15 "walled at both depths" cure

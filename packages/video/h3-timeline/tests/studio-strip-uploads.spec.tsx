@@ -37,6 +37,8 @@ function strip(over?: Record<string, unknown>) {
       barPrompts: [P1] as never,
       barLanes: [] as never,
       barAudioClips: [CLIP],
+      // (§9) no armed mod bag in this fixture — the rail renders no row
+      commissions: [],
       barTotal: 200,
       frameIdx: 0,
       callPreviews: {},

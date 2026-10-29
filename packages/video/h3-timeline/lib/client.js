@@ -678,6 +678,27 @@ window.__ModuleLoader__.load({
 			laneBlockedMessage: "reference audio is wired on a call — the dialogue / music / SFX lanes are LOCKED (the clips and the audio inputs are mutually exclusive; clear the call's Ref audios to place clips)",
 			/** The bar's calls lane label. */
 			callsLabel: "Calls",
+			/** ── THE COMMISSION RAIL (§9's mod projection) ────────────────────
+			*  One row per ARMED mod bag. The kind's face is the operator's own
+			*  word for the door; the seats line names what the entry states;
+			*  the geometry line names the windows the extend will build. */
+			commissionKindLabel: (kind) => {
+				switch (kind) {
+					case "replace": return "Replace";
+					case "repair": return "Repair";
+					case "extend": return "Extend";
+					case "reshoot": return "Reshoot";
+					default: return kind;
+				}
+			},
+			/** A commission's armed row voice (what the row means). */
+			commissionRowTitle: (kind) => `${studioCopy.commissionKindLabel(kind)} is armed — this row is the commission the compose will build (agent-authored; edit the mod bag to change it)`,
+			/** The seats line: "source_clip clips/a.mp4 · strength 2". */
+			commissionSeats: (seats) => seats.map((s) => `${s.key} ${s.value}`).join(" · "),
+			/** The composition line: "4 × 243f · 12.730s". */
+			commissionGeometry: (args) => `${args.windows} × ${args.windowFrames}f · ${(args.deliveredFrames / 24).toFixed(3)}s`,
+			/** One window segment's face on the drawn window strip. */
+			commissionWindowSegment: (index, windowFrames) => `w${index + 1} · ${windowFrames}f`,
 			/** The document readout (calls, seconds, guides, knobbed calls). */
 			docReadout: (args) => `${args.calls} call${args.calls === 1 ? "" : "s"} · ${args.seconds}s · ${args.guides} guide${args.guides === 1 ? "" : "s"}${args.knobs > 0 ? ` · ${args.knobs} call${args.knobs === 1 ? "" : "s"} with knobs` : ""}`,
 			/** The unwired-keyframes warning (C6: the studio's gate face names
@@ -991,6 +1012,57 @@ window.__ModuleLoader__.load({
 		*  drift into different laws. */
 		function isGridLength(length) {
 			return Number.isInteger(length) && length >= 22 && length <= 362 && (length - 22) % 17 === 0;
+		}
+		/** The largest 22+17k grid length ≤ x (floored at 22, capped 362). */
+		const gridFloorFrames = (x) => Math.min(362, 22 + 17 * Math.floor((x - 22) / 17));
+		/** The smallest 22+17k grid length ≥ x (capped at 362); null when x
+		*  exceeds the grid — that window count cannot carry the total. */
+		const gridCeilFrames = (x) => {
+			const k = Math.ceil((x - 22) / 17);
+			const length = Math.max(22, 22 + 17 * k);
+			return length > 362 ? null : length;
+		};
+		/** THE COMPOSITION SOLVER (pure; the door's whole law beyond one
+		*  window): across every legal window count, the grid lengths on
+		*  both sides of the exact requirement — the smallest that delivers
+		*  ≥ stated (ceil) and the largest that delivers ≤ stated (floor) —
+		*  looking for an EXACT delivery; else a loud refusal naming the
+		*  neighboring compositions (max under, min over).
+		*
+		*  It lives HERE, on the client-safe contract face, because TWO
+		*  consumers ask the same question: the extend renderer (what to
+		*  compose) and the studio's commission rail (what to DRAW — the
+		*  multiwindow unification audit's §9: the operator could not see
+		*  the N windows an agent had strung together).
+		* @param totalFrames the stated extension, frames at the film clock
+		* @param where the refusal's voice ('h3-timeline extend')
+		* @param overlap the per-seam context overlap (the policy's 39)
+		* @returns the exact composition */
+		function solveWindowComposition(totalFrames, where, overlap = 39) {
+			let bestUnder = null;
+			let bestOver = null;
+			for (let windows = 1; windows <= 32; windows++) {
+				const exact = (totalFrames + (windows - 1) * overlap) / windows;
+				for (const windowFrames of [gridFloorFrames(exact), gridCeilFrames(exact)]) {
+					if (windowFrames === null) continue;
+					const delivered = windows * windowFrames - (windows - 1) * overlap;
+					if (delivered === totalFrames) return {
+						windows,
+						windowFrames,
+						deliveredFrames: delivered
+					};
+					const composition = {
+						windows,
+						windowFrames,
+						deliveredFrames: delivered
+					};
+					if (delivered < totalFrames) {
+						if (bestUnder === null || delivered > bestUnder.deliveredFrames) bestUnder = composition;
+					} else if (bestOver === null || delivered < bestOver.deliveredFrames) bestOver = composition;
+				}
+			}
+			const neighbor = (c) => c === null ? "" : ` nearest: ${c.windows} windows of ${c.windowFrames}f deliver ${c.deliveredFrames}f (${(c.deliveredFrames / 24).toFixed(3)}s);`;
+			throw new Error(`${where}: stated ${totalFrames}f composes nowhere exactly — N uniform 22+17k windows under the ${overlap}f context overlap compose exactly nowhere;${neighbor(bestUnder)}${neighbor(bestOver)} re-state extend_seconds as a composition's delivered seconds (D frames round-trips D/24 exactly; a single window keeps the 22+17k grid door)`);
 		}
 		function deliveredFrames(call, index) {
 			const span = call.end_frame - call.start_frame;
@@ -1673,8 +1745,8 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:packages/web-kit/timeline/src/timeline/timeline.module.css.mjs
-		const css = ".t2WLSa_root{user-select:none;display:flex}.t2WLSa_gutter{border-right:1px solid var(--dsw-alias-border-l2);flex-direction:column;flex:none;display:flex}.t2WLSa_zoomRow{border-bottom:1px solid var(--dsw-alias-border-l2);justify-content:center;align-items:center;gap:2px;display:flex}.t2WLSa_zoomBtn{width:20px;height:20px;color:var(--dsw-alias-label-secondary);font-size:inherit;cursor:pointer;background:0 0;border:none;border-radius:4px;justify-content:center;align-items:center;padding:0;line-height:1;display:inline-flex}.t2WLSa_zoomBtn:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-brand-primary)}.t2WLSa_zoomBtn svg{width:14px;height:14px}.t2WLSa_zoomPct{min-width:32px;height:auto;color:var(--dsw-alias-label-secondary);text-align:center;font-variant-numeric:tabular-nums;cursor:pointer;background:0 0;border:none;border-radius:4px;padding:0 2px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px}.t2WLSa_zoomPct:hover{color:var(--dsw-alias-brand-primary)}.t2WLSa_laneHeadShell{border-bottom:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);align-items:center;gap:6px;padding:0 8px;display:flex}.t2WLSa_laneHeadShell:last-child{border-bottom:0}.t2WLSa_laneHeadShell>svg{width:14px;height:14px;color:var(--dsw-alias-brand-primary);flex:none}.t2WLSa_laneHeadShell[data-lane-head=audio]>svg{width:12px;height:12px;color:var(--dsw-alias-state-business-primary)}.t2WLSa_gutterLabel{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:10px;font-weight:500;overflow:hidden}.t2WLSa_detachBtn{width:16px;height:16px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:4px;flex:none;justify-content:center;align-items:center;margin-left:auto;padding:0;display:inline-flex}.t2WLSa_detachBtn:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.t2WLSa_detachBtn svg{width:10px;height:10px}.t2WLSa_uploadBtn{width:16px;height:16px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:4px;flex:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.t2WLSa_uploadBtn:hover{background:color-mix(in srgb, var(--dsw-alias-label-tertiary) 14%, transparent);color:var(--dsw-alias-label-primary)}.t2WLSa_uploadBtn svg{width:10px;height:10px}.t2WLSa_laneDot{border-radius:9999px;flex:none;width:6px;height:6px}.t2WLSa_contentWrap{flex:1;min-width:0;position:relative}.t2WLSa_scroller{scrollbar-width:thin;scrollbar-color:var(--dsw-alias-border-l3) transparent;height:100%;overflow:auto hidden}.t2WLSa_scroller::-webkit-scrollbar{height:8px}.t2WLSa_scroller::-webkit-scrollbar-track{background:0 0}.t2WLSa_scroller::-webkit-scrollbar-thumb{background:var(--dsw-alias-border-l2);border-radius:4px}.t2WLSa_content{position:relative}.t2WLSa_ruler{border-bottom:1px solid var(--dsw-alias-border-l2);position:relative}.t2WLSa_tick{position:absolute;top:0;bottom:0}.t2WLSa_tickLine{background:var(--dsw-alias-border-l2);width:1px;height:100%}.t2WLSa_tickLabel{color:var(--dsw-alias-label-tertiary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1;position:absolute;top:2px;left:4px}.t2WLSa_timecode{z-index:10;font-variant-numeric:tabular-nums;height:100%;color:var(--dsw-alias-brand-primary);align-items:center;padding-left:6px;padding-right:8px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1;display:flex;position:sticky;left:0}.t2WLSa_promptsLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_canAdd{cursor:copy}.t2WLSa_emptyCenter{justify-content:center;align-items:center;display:flex;position:absolute;inset:0}.t2WLSa_emptyHint{color:var(--dsw-alias-label-tertiary);font-size:10px}.t2WLSa_promptClip{touch-action:none;cursor:grab;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;position:absolute;top:4px;bottom:4px;overflow:hidden}.t2WLSa_promptClip:hover{border-color:var(--dsw-alias-border-l4)}.t2WLSa_clipSelected{z-index:30;border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);border-width:0}.t2WLSa_clipSelected:hover{border-color:var(--dsw-alias-brand-primary)}.t2WLSa_clipMoving{z-index:30;cursor:grabbing;border:1px solid var(--dsw-alias-brand-primary);box-shadow:0 20px 25px -5px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent), 0 8px 10px -6px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent), 0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 70%, transparent)}.t2WLSa_edgeL{z-index:30;touch-action:none;cursor:ew-resize;justify-content:center;align-items:center;width:12px;display:flex;position:absolute;top:0;bottom:0;left:0}.t2WLSa_edgeL:hover{background:var(--dsw-alias-interactive-bg-hover)}.t2WLSa_edgeDead{cursor:default;opacity:.35}.t2WLSa_edgeDead:hover{background:0 0}.t2WLSa_gripPill{background:color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);border-radius:9999px;width:3px;height:20px}.t2WLSa_promptClip:hover .t2WLSa_gripPill{background:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent)}.t2WLSa_seamDot{z-index:35;border-radius:9999px;width:8px;height:8px;position:absolute;top:0;left:0;transform:translate(-50%,-50%)}.t2WLSa_edgeR{z-index:30;touch-action:none;cursor:ew-resize;justify-content:center;align-items:center;width:12px;display:flex;position:absolute;top:16px;bottom:0;right:0}.t2WLSa_edgeR:hover{background:var(--dsw-alias-interactive-bg-hover)}.t2WLSa_edgeWide{width:16px}.t2WLSa_gripPillR{background:color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);border-radius:9999px;width:3px;height:20px}.t2WLSa_gripPillBright{background:color-mix(in srgb, var(--dsw-alias-label-primary) 45%, transparent)}.t2WLSa_promptClip:hover .t2WLSa_gripPillR{background:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent)}.t2WLSa_promptClip:hover .t2WLSa_gripPillBright{background:color-mix(in srgb, var(--dsw-alias-label-primary) 80%, transparent)}.t2WLSa_clipEditor{background:color-mix(in srgb, var(--dsw-alias-bg-base) 60%, transparent);height:24px;box-shadow:0 0 0 1px color-mix(in srgb, var(--dsw-alias-brand-primary) 50%, transparent);pointer-events:auto;border:none;border-radius:4px;align-items:center;padding:0 6px;display:inline-flex;position:absolute;top:50%;left:8px;right:8px;transform:translateY(-50%)}.t2WLSa_clipEditor input{width:100%;min-width:0;height:100%;color:var(--dsw-alias-label-primary);background:0 0;border:none;outline:none;flex:1;padding:0;font-size:11px;line-height:1.5}.t2WLSa_clipEditor input::placeholder{color:var(--dsw-alias-label-tertiary)}.t2WLSa_previewWrap{z-index:10;pointer-events:none;position:absolute;inset:0;overflow:hidden}.t2WLSa_previewVideo{object-fit:cover;opacity:.6;width:100%;height:100%;position:absolute;inset:0}.t2WLSa_scrim{background:linear-gradient(to top, color-mix(in srgb, var(--dsw-alias-bg-base) 85%, transparent), color-mix(in srgb, var(--dsw-alias-bg-base) 45%, transparent) 50%, color-mix(in srgb, var(--dsw-alias-bg-base) 10%, transparent));position:absolute;inset:0}.t2WLSa_clipTextCol{z-index:20;flex-direction:column;gap:2px;padding:0 12px 6px;display:flex;position:absolute;bottom:0;left:0;right:0}.t2WLSa_clipTextStack{z-index:10;pointer-events:none;flex-direction:column;justify-content:center;gap:2px;padding:0 12px;display:flex;position:absolute;inset:0}.t2WLSa_clipTitle{text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:500;overflow:hidden}.t2WLSa_clipEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.t2WLSa_clipDur{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:10px}.t2WLSa_knobDot{z-index:20;background:var(--dsw-alias-brand-primary);width:6px;height:6px;box-shadow:0 0 6px color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);pointer-events:none;border-radius:9999px;position:absolute;top:4px;right:6px}.t2WLSa_refAudioBadge{z-index:20;width:10px;height:10px;color:var(--dsw-alias-state-business-primary);pointer-events:none;position:absolute;top:12px;right:4px}.t2WLSa_refBadge{z-index:20;pointer-events:none;align-items:center;gap:1px;display:flex;position:absolute;top:22px;right:2px}.t2WLSa_refBadge svg{width:8px;height:8px;color:var(--dsw-alias-state-success-primary)}.t2WLSa_refCount{color:var(--dsw-alias-state-success-primary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:8px;line-height:1}.t2WLSa_promptDelete{z-index:40;background:var(--dsw-alias-state-error-primary);opacity:0;cursor:pointer;border:none;border-radius:9999px;justify-content:center;align-items:center;width:16px;height:16px;padding:0;display:inline-flex;position:absolute;top:4px;right:4px}.t2WLSa_promptDelete:hover{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary))}.t2WLSa_promptClip:hover .t2WLSa_promptDelete{opacity:1}.t2WLSa_promptDelete svg{width:8px;height:8px;color:var(--dsw-alias-label-primary)}.t2WLSa_beatsLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_beatsAdd{cursor:crosshair}.t2WLSa_beatsEmpty{align-items:center;padding-left:12px;display:flex;position:absolute;inset:0}.t2WLSa_hintLine{color:var(--dsw-alias-label-tertiary);font-size:10px}.t2WLSa_beatClip{border:1px solid var(--dsw-alias-border-l2);cursor:pointer;border-radius:6px;position:absolute;top:4px;bottom:4px;overflow:hidden}.t2WLSa_beatClip:hover{border-color:var(--dsw-alias-border-l4)}.t2WLSa_beatSelected{z-index:30;border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent)}.t2WLSa_beatSelected:hover{border-color:var(--dsw-alias-brand-primary)}.t2WLSa_beatLabel{color:var(--dsw-alias-label-secondary);pointer-events:none;align-items:center;padding:0 6px;font-size:10px;line-height:1.25;display:flex;position:absolute;inset:0}.t2WLSa_truncate{text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.t2WLSa_beatEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.t2WLSa_audioLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_audioClip{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);cursor:grab;touch-action:none;border-radius:2px;position:absolute;top:2px;bottom:2px;overflow:hidden}.t2WLSa_audioClip:active{cursor:grabbing}.t2WLSa_audioCard{border-radius:6px;top:3px;bottom:3px}.t2WLSa_audioCardIcon{pointer-events:none;display:flex;position:absolute;top:50%;left:5px;transform:translateY(-50%)}.t2WLSa_audioCardIcon svg{width:13px;height:13px}.t2WLSa_audioCard .t2WLSa_audioClipLabel{flex-direction:column;justify-content:center;align-items:flex-start;gap:1px;font-size:10px;display:flex;left:23px;right:4px}.t2WLSa_audioCard .t2WLSa_audioTime{margin-left:0}.t2WLSa_gainFill{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);pointer-events:none;position:absolute;bottom:0;left:0;right:0}.t2WLSa_audioClipLabel{text-overflow:ellipsis;white-space:nowrap;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-primary));pointer-events:none;align-items:center;padding:0 4px;font-size:9px;line-height:1;display:flex;position:absolute;inset:0;overflow:hidden}.t2WLSa_audioName{text-overflow:ellipsis;white-space:nowrap;font-weight:500;overflow:hidden}.t2WLSa_audioTime{font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 50%, var(--dsw-alias-label-tertiary));flex:none;margin-left:4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.t2WLSa_audioClipDelete{background:color-mix(in srgb, var(--dsw-alias-bg-base) 40%, transparent);width:14px;height:14px;color:var(--dsw-alias-label-tertiary);cursor:pointer;border:none;border-radius:0 0 0 4px;justify-content:center;align-items:center;padding:0;display:none;position:absolute;top:0;right:0}.t2WLSa_audioClipDelete:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.t2WLSa_audioClip:hover .t2WLSa_audioClipDelete{display:flex}.t2WLSa_audioClipDelete svg{width:8px;height:8px}.t2WLSa_audioSlice{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 15%, transparent);border-radius:2px;position:absolute;top:2px;bottom:2px;overflow:hidden}.t2WLSa_sliceLabel{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-secondary));pointer-events:none;justify-content:center;align-items:center;padding:0 4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:9px;display:flex;position:absolute;inset:0;overflow:hidden}.t2WLSa_audioDrop{border:1px dashed color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);pointer-events:none;border-radius:4px;justify-content:center;align-items:center;display:flex;position:absolute;inset:2px 4px}.t2WLSa_dropHint{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);padding:0 8px;font-size:9px;overflow:hidden}.t2WLSa_kfLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_kfLane:last-child{border-bottom:0}.t2WLSa_kfLane[data-kf-cards=true]{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 3%, transparent)}.t2WLSa_kfDropWell{border:1px dashed color-mix(in srgb, var(--dsw-alias-label-tertiary) 25%, transparent);pointer-events:none;border-radius:4px;justify-content:center;align-items:center;display:flex;position:absolute;inset:2px 4px}.t2WLSa_kfWrap{position:absolute;top:0;bottom:0}.t2WLSa_kfBtn{cursor:grab;background:0 0;border:none;justify-content:center;align-items:center;width:16px;height:16px;padding:0;display:flex;position:absolute;top:50%;left:0;transform:translate(-50%,-50%)}.t2WLSa_kfBtn:active{cursor:grabbing;transform:translate(-50%)}.t2WLSa_kfDiamond{width:10px;height:10px;box-shadow:0 0 0 1px var(--dsw-alias-border-l4);border:1px solid;display:block;transform:rotate(45deg)}.t2WLSa_kfMoving{transform:rotate(45deg)scale(1.25)}.t2WLSa_kfDelete{z-index:10;background:var(--dsw-alias-state-error-primary);opacity:0;cursor:pointer;border:none;border-radius:9999px;justify-content:center;align-items:center;width:14px;height:14px;padding:0;display:inline-flex;position:absolute;top:0;left:6px}.t2WLSa_kfDelete:hover{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary))}.t2WLSa_kfWrap:hover .t2WLSa_kfDelete{opacity:1}.t2WLSa_kfDelete svg{width:8px;height:8px;color:var(--dsw-alias-label-primary)}.t2WLSa_playhead{z-index:40;pointer-events:auto;position:absolute;top:0;bottom:0}.t2WLSa_playheadCap{border:1px solid var(--dsw-alias-border-l4);pointer-events:auto;cursor:grab;touch-action:none;border-radius:9999px;width:8px;height:8px;position:absolute;top:0;left:50%;transform:translate(-50%)}.t2WLSa_playheadCap:active{cursor:grabbing}.t2WLSa_playheadCap:before{content:\"\";border-radius:9999px;position:absolute;inset:-5px}.t2WLSa_miniBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);width:20px;height:20px;color:var(--dsw-alias-brand-primary);cursor:pointer;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0;font-size:13px;line-height:1;display:inline-flex}.t2WLSa_miniBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent)}.t2WLSa_miniFitBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);height:20px;color:var(--dsw-alias-brand-primary);cursor:pointer;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0 6px;font-size:10px;font-weight:600;display:inline-flex}.t2WLSa_miniFitBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent)}.t2WLSa_scrubBar{align-items:center;gap:8px;width:100%;display:flex}.t2WLSa_scrubToggle{cursor:pointer;background:0 0;border:none;flex:none;padding:4px 2px;font-size:11px;line-height:1}.t2WLSa_scrubTrack{cursor:pointer;touch-action:none;flex:1;min-width:0;height:18px;position:relative}.t2WLSa_scrubFill{background:var(--dsw-alias-interactive-bg-active);border-radius:2px;height:4px;position:absolute;top:7px;left:0}.t2WLSa_scrubHead{background:var(--dsw-alias-label-primary);border-radius:1px;width:2px;height:10px;margin-left:-1px;position:absolute;top:4px}.t2WLSa_scrubReadout{color:var(--dsw-alias-label-secondary);white-space:nowrap;flex:none;font-size:11px}";
-		const tagId = "@melite/video-h3-timeline/timeline.module.css@e3997468";
+		const css = ".t2WLSa_root{user-select:none;display:flex}.t2WLSa_gutter{border-right:1px solid var(--dsw-alias-border-l2);flex-direction:column;flex:none;display:flex}.t2WLSa_zoomRow{border-bottom:1px solid var(--dsw-alias-border-l2);justify-content:center;align-items:center;gap:2px;display:flex}.t2WLSa_zoomBtn{width:20px;height:20px;color:var(--dsw-alias-label-secondary);font-size:inherit;cursor:pointer;background:0 0;border:none;border-radius:4px;justify-content:center;align-items:center;padding:0;line-height:1;display:inline-flex}.t2WLSa_zoomBtn:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-brand-primary)}.t2WLSa_zoomBtn svg{width:14px;height:14px}.t2WLSa_zoomPct{min-width:32px;height:auto;color:var(--dsw-alias-label-secondary);text-align:center;font-variant-numeric:tabular-nums;cursor:pointer;background:0 0;border:none;border-radius:4px;padding:0 2px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px}.t2WLSa_zoomPct:hover{color:var(--dsw-alias-brand-primary)}.t2WLSa_laneHeadShell{border-bottom:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);align-items:center;gap:6px;padding:0 8px;display:flex}.t2WLSa_laneHeadShell:last-child{border-bottom:0}.t2WLSa_laneHeadShell>svg{width:14px;height:14px;color:var(--dsw-alias-brand-primary);flex:none}.t2WLSa_laneHeadShell[data-lane-head=audio]>svg{width:12px;height:12px;color:var(--dsw-alias-state-business-primary)}.t2WLSa_gutterLabel{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:10px;font-weight:500;overflow:hidden}.t2WLSa_detachBtn{width:16px;height:16px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:4px;flex:none;justify-content:center;align-items:center;margin-left:auto;padding:0;display:inline-flex}.t2WLSa_detachBtn:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.t2WLSa_detachBtn svg{width:10px;height:10px}.t2WLSa_uploadBtn{width:16px;height:16px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:4px;flex:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.t2WLSa_uploadBtn:hover{background:color-mix(in srgb, var(--dsw-alias-label-tertiary) 14%, transparent);color:var(--dsw-alias-label-primary)}.t2WLSa_uploadBtn svg{width:10px;height:10px}.t2WLSa_laneDot{border-radius:9999px;flex:none;width:6px;height:6px}.t2WLSa_contentWrap{flex:1;min-width:0;position:relative}.t2WLSa_scroller{scrollbar-width:thin;scrollbar-color:var(--dsw-alias-border-l3) transparent;height:100%;overflow:auto hidden}.t2WLSa_scroller::-webkit-scrollbar{height:8px}.t2WLSa_scroller::-webkit-scrollbar-track{background:0 0}.t2WLSa_scroller::-webkit-scrollbar-thumb{background:var(--dsw-alias-border-l2);border-radius:4px}.t2WLSa_content{position:relative}.t2WLSa_ruler{border-bottom:1px solid var(--dsw-alias-border-l2);position:relative}.t2WLSa_tick{position:absolute;top:0;bottom:0}.t2WLSa_tickLine{background:var(--dsw-alias-border-l2);width:1px;height:100%}.t2WLSa_tickLabel{color:var(--dsw-alias-label-tertiary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1;position:absolute;top:2px;left:4px}.t2WLSa_timecode{z-index:10;font-variant-numeric:tabular-nums;height:100%;color:var(--dsw-alias-brand-primary);align-items:center;padding-left:6px;padding-right:8px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1;display:flex;position:sticky;left:0}.t2WLSa_promptsLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_canAdd{cursor:copy}.t2WLSa_emptyCenter{justify-content:center;align-items:center;display:flex;position:absolute;inset:0}.t2WLSa_emptyHint{color:var(--dsw-alias-label-tertiary);font-size:10px}.t2WLSa_promptClip{touch-action:none;cursor:grab;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;position:absolute;top:4px;bottom:4px;overflow:hidden}.t2WLSa_promptClip:hover{border-color:var(--dsw-alias-border-l4)}.t2WLSa_clipSelected{z-index:30;border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);border-width:0}.t2WLSa_clipSelected:hover{border-color:var(--dsw-alias-brand-primary)}.t2WLSa_clipMoving{z-index:30;cursor:grabbing;border:1px solid var(--dsw-alias-brand-primary);box-shadow:0 20px 25px -5px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent), 0 8px 10px -6px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent), 0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 70%, transparent)}.t2WLSa_edgeL{z-index:30;touch-action:none;cursor:ew-resize;justify-content:center;align-items:center;width:12px;display:flex;position:absolute;top:0;bottom:0;left:0}.t2WLSa_edgeL:hover{background:var(--dsw-alias-interactive-bg-hover)}.t2WLSa_edgeDead{cursor:default;opacity:.35}.t2WLSa_edgeDead:hover{background:0 0}.t2WLSa_gripPill{background:color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);border-radius:9999px;width:3px;height:20px}.t2WLSa_promptClip:hover .t2WLSa_gripPill{background:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent)}.t2WLSa_seamDot{z-index:35;border-radius:9999px;width:8px;height:8px;position:absolute;top:0;left:0;transform:translate(-50%,-50%)}.t2WLSa_edgeR{z-index:30;touch-action:none;cursor:ew-resize;justify-content:center;align-items:center;width:12px;display:flex;position:absolute;top:16px;bottom:0;right:0}.t2WLSa_edgeR:hover{background:var(--dsw-alias-interactive-bg-hover)}.t2WLSa_edgeWide{width:16px}.t2WLSa_gripPillR{background:color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);border-radius:9999px;width:3px;height:20px}.t2WLSa_gripPillBright{background:color-mix(in srgb, var(--dsw-alias-label-primary) 45%, transparent)}.t2WLSa_promptClip:hover .t2WLSa_gripPillR{background:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent)}.t2WLSa_promptClip:hover .t2WLSa_gripPillBright{background:color-mix(in srgb, var(--dsw-alias-label-primary) 80%, transparent)}.t2WLSa_clipEditor{background:color-mix(in srgb, var(--dsw-alias-bg-base) 60%, transparent);height:24px;box-shadow:0 0 0 1px color-mix(in srgb, var(--dsw-alias-brand-primary) 50%, transparent);pointer-events:auto;border:none;border-radius:4px;align-items:center;padding:0 6px;display:inline-flex;position:absolute;top:50%;left:8px;right:8px;transform:translateY(-50%)}.t2WLSa_clipEditor input{width:100%;min-width:0;height:100%;color:var(--dsw-alias-label-primary);background:0 0;border:none;outline:none;flex:1;padding:0;font-size:11px;line-height:1.5}.t2WLSa_clipEditor input::placeholder{color:var(--dsw-alias-label-tertiary)}.t2WLSa_previewWrap{z-index:10;pointer-events:none;position:absolute;inset:0;overflow:hidden}.t2WLSa_previewVideo{object-fit:cover;opacity:.6;width:100%;height:100%;position:absolute;inset:0}.t2WLSa_scrim{background:linear-gradient(to top, color-mix(in srgb, var(--dsw-alias-bg-base) 85%, transparent), color-mix(in srgb, var(--dsw-alias-bg-base) 45%, transparent) 50%, color-mix(in srgb, var(--dsw-alias-bg-base) 10%, transparent));position:absolute;inset:0}.t2WLSa_clipTextCol{z-index:20;flex-direction:column;gap:2px;padding:0 12px 6px;display:flex;position:absolute;bottom:0;left:0;right:0}.t2WLSa_clipTextStack{z-index:10;pointer-events:none;flex-direction:column;justify-content:center;gap:2px;padding:0 12px;display:flex;position:absolute;inset:0}.t2WLSa_clipTitle{text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:500;overflow:hidden}.t2WLSa_clipEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.t2WLSa_clipDur{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:10px}.t2WLSa_knobDot{z-index:20;background:var(--dsw-alias-brand-primary);width:6px;height:6px;box-shadow:0 0 6px color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);pointer-events:none;border-radius:9999px;position:absolute;top:4px;right:6px}.t2WLSa_refAudioBadge{z-index:20;width:10px;height:10px;color:var(--dsw-alias-state-business-primary);pointer-events:none;position:absolute;top:12px;right:4px}.t2WLSa_refBadge{z-index:20;pointer-events:none;align-items:center;gap:1px;display:flex;position:absolute;top:22px;right:2px}.t2WLSa_refBadge svg{width:8px;height:8px;color:var(--dsw-alias-state-success-primary)}.t2WLSa_refCount{color:var(--dsw-alias-state-success-primary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:8px;line-height:1}.t2WLSa_promptDelete{z-index:40;background:var(--dsw-alias-state-error-primary);opacity:0;cursor:pointer;border:none;border-radius:9999px;justify-content:center;align-items:center;width:16px;height:16px;padding:0;display:inline-flex;position:absolute;top:4px;right:4px}.t2WLSa_promptDelete:hover{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary))}.t2WLSa_promptClip:hover .t2WLSa_promptDelete{opacity:1}.t2WLSa_promptDelete svg{width:8px;height:8px;color:var(--dsw-alias-label-primary)}.t2WLSa_beatsLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_beatsAdd{cursor:crosshair}.t2WLSa_beatsEmpty{align-items:center;padding-left:12px;display:flex;position:absolute;inset:0}.t2WLSa_hintLine{color:var(--dsw-alias-label-tertiary);font-size:10px}.t2WLSa_beatClip{border:1px solid var(--dsw-alias-border-l2);cursor:pointer;border-radius:6px;position:absolute;top:4px;bottom:4px;overflow:hidden}.t2WLSa_beatClip:hover{border-color:var(--dsw-alias-border-l4)}.t2WLSa_beatSelected{z-index:30;border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent)}.t2WLSa_beatSelected:hover{border-color:var(--dsw-alias-brand-primary)}.t2WLSa_beatLabel{color:var(--dsw-alias-label-secondary);pointer-events:none;align-items:center;padding:0 6px;font-size:10px;line-height:1.25;display:flex;position:absolute;inset:0}.t2WLSa_truncate{text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.t2WLSa_beatEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.t2WLSa_audioLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_audioClip{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);cursor:grab;touch-action:none;border-radius:2px;position:absolute;top:2px;bottom:2px;overflow:hidden}.t2WLSa_audioClip:active{cursor:grabbing}.t2WLSa_audioCard{border-radius:6px;top:3px;bottom:3px}.t2WLSa_audioCardIcon{pointer-events:none;display:flex;position:absolute;top:50%;left:5px;transform:translateY(-50%)}.t2WLSa_audioCardIcon svg{width:13px;height:13px}.t2WLSa_audioCard .t2WLSa_audioClipLabel{flex-direction:column;justify-content:center;align-items:flex-start;gap:1px;font-size:10px;display:flex;left:23px;right:4px}.t2WLSa_audioCard .t2WLSa_audioTime{margin-left:0}.t2WLSa_gainFill{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);pointer-events:none;position:absolute;bottom:0;left:0;right:0}.t2WLSa_audioClipLabel{text-overflow:ellipsis;white-space:nowrap;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-primary));pointer-events:none;align-items:center;padding:0 4px;font-size:9px;line-height:1;display:flex;position:absolute;inset:0;overflow:hidden}.t2WLSa_audioName{text-overflow:ellipsis;white-space:nowrap;font-weight:500;overflow:hidden}.t2WLSa_audioTime{font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 50%, var(--dsw-alias-label-tertiary));flex:none;margin-left:4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.t2WLSa_audioClipDelete{background:color-mix(in srgb, var(--dsw-alias-bg-base) 40%, transparent);width:14px;height:14px;color:var(--dsw-alias-label-tertiary);cursor:pointer;border:none;border-radius:0 0 0 4px;justify-content:center;align-items:center;padding:0;display:none;position:absolute;top:0;right:0}.t2WLSa_audioClipDelete:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.t2WLSa_audioClip:hover .t2WLSa_audioClipDelete{display:flex}.t2WLSa_audioClipDelete svg{width:8px;height:8px}.t2WLSa_audioSlice{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 15%, transparent);border-radius:2px;position:absolute;top:2px;bottom:2px;overflow:hidden}.t2WLSa_sliceLabel{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-secondary));pointer-events:none;justify-content:center;align-items:center;padding:0 4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:9px;display:flex;position:absolute;inset:0;overflow:hidden}.t2WLSa_audioDrop{border:1px dashed color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);pointer-events:none;border-radius:4px;justify-content:center;align-items:center;display:flex;position:absolute;inset:2px 4px}.t2WLSa_dropHint{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);padding:0 8px;font-size:9px;overflow:hidden}.t2WLSa_kfLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_kfLane:last-child{border-bottom:0}.t2WLSa_kfLane[data-kf-cards=true]{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 3%, transparent)}.t2WLSa_kfDropWell{border:1px dashed color-mix(in srgb, var(--dsw-alias-label-tertiary) 25%, transparent);pointer-events:none;border-radius:4px;justify-content:center;align-items:center;display:flex;position:absolute;inset:2px 4px}.t2WLSa_kfWrap{position:absolute;top:0;bottom:0}.t2WLSa_kfBtn{cursor:grab;background:0 0;border:none;justify-content:center;align-items:center;width:16px;height:16px;padding:0;display:flex;position:absolute;top:50%;left:0;transform:translate(-50%,-50%)}.t2WLSa_kfBtn:active{cursor:grabbing;transform:translate(-50%)}.t2WLSa_kfDiamond{width:10px;height:10px;box-shadow:0 0 0 1px var(--dsw-alias-border-l4);border:1px solid;display:block;transform:rotate(45deg)}.t2WLSa_kfMoving{transform:rotate(45deg)scale(1.25)}.t2WLSa_kfDelete{z-index:10;background:var(--dsw-alias-state-error-primary);opacity:0;cursor:pointer;border:none;border-radius:9999px;justify-content:center;align-items:center;width:14px;height:14px;padding:0;display:inline-flex;position:absolute;top:0;left:6px}.t2WLSa_kfDelete:hover{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary))}.t2WLSa_kfWrap:hover .t2WLSa_kfDelete{opacity:1}.t2WLSa_kfDelete svg{width:8px;height:8px;color:var(--dsw-alias-label-primary)}.t2WLSa_playhead{z-index:40;pointer-events:auto;position:absolute;top:0;bottom:0}.t2WLSa_playheadCap{border:1px solid var(--dsw-alias-border-l4);pointer-events:auto;cursor:grab;touch-action:none;border-radius:9999px;width:8px;height:8px;position:absolute;top:0;left:50%;transform:translate(-50%)}.t2WLSa_playheadCap:active{cursor:grabbing}.t2WLSa_playheadCap:before{content:\"\";border-radius:9999px;position:absolute;inset:-5px}.t2WLSa_miniBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);width:20px;height:20px;color:var(--dsw-alias-brand-primary);cursor:pointer;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0;font-size:13px;line-height:1;display:inline-flex}.t2WLSa_miniBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent)}.t2WLSa_miniFitBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);height:20px;color:var(--dsw-alias-brand-primary);cursor:pointer;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0 6px;font-size:10px;font-weight:600;display:inline-flex}.t2WLSa_miniFitBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent)}.t2WLSa_scrubBar{align-items:center;gap:8px;width:100%;display:flex}.t2WLSa_scrubToggle{cursor:pointer;background:0 0;border:none;flex:none;padding:4px 2px;font-size:11px;line-height:1}.t2WLSa_scrubTrack{cursor:pointer;touch-action:none;flex:1;min-width:0;height:18px;position:relative}.t2WLSa_scrubFill{background:var(--dsw-alias-interactive-bg-active);border-radius:2px;height:4px;position:absolute;top:7px;left:0}.t2WLSa_scrubHead{background:var(--dsw-alias-label-primary);border-radius:1px;width:2px;height:10px;margin-left:-1px;position:absolute;top:4px}.t2WLSa_scrubReadout{color:var(--dsw-alias-label-secondary);white-space:nowrap;flex:none;font-size:11px}.t2WLSa_commissionHead{align-items:center;gap:6px;padding:0 8px;display:flex;overflow:hidden}.t2WLSa_commissionKind{letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;text-overflow:ellipsis;font-size:10px;font-weight:600;overflow:hidden}.t2WLSa_commissionLane{width:100%;position:relative}.t2WLSa_commissionSpan{border-left:3px solid var(--dsw-alias-brand-primary);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 12%, transparent);border-radius:4px;align-items:center;gap:4px;padding:0 6px;display:flex;position:absolute;top:3px;bottom:3px;left:0;overflow:hidden}.t2WLSa_commissionWindows .t2WLSa_commissionSegment{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 14%, transparent);border-radius:3px;flex:1 1 0;min-width:0;padding:1px 4px}.t2WLSa_commissionSegment{color:var(--dsw-alias-label-secondary);white-space:nowrap;text-overflow:ellipsis;font-variant-numeric:tabular-nums;font-size:10px;line-height:1.5;overflow:hidden}";
+		const tagId = "@melite/video-h3-timeline/timeline.module.css@4f42746b";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/video-h3-timeline";
@@ -1709,6 +1781,12 @@ window.__ModuleLoader__.load({
 			"clipTextCol": "t2WLSa_clipTextCol",
 			"clipTextStack": "t2WLSa_clipTextStack",
 			"clipTitle": "t2WLSa_clipTitle",
+			"commissionHead": "t2WLSa_commissionHead",
+			"commissionKind": "t2WLSa_commissionKind",
+			"commissionLane": "t2WLSa_commissionLane",
+			"commissionSegment": "t2WLSa_commissionSegment",
+			"commissionSpan": "t2WLSa_commissionSpan",
+			"commissionWindows": "t2WLSa_commissionWindows",
 			"content": "t2WLSa_content",
 			"contentWrap": "t2WLSa_contentWrap",
 			"detachBtn": "t2WLSa_detachBtn",
@@ -1903,10 +1981,11 @@ window.__ModuleLoader__.load({
 		*/
 		/** One head, one grammar (SD-8). */
 		function LaneHead(props) {
-			const { variant, glyph, dotColor, label, accent, height, title, iconAttr, door, detach } = props;
+			const { variant, glyph, dotColor, label, accent, height, title, iconAttr, door, detach, rowId } = props;
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: clsx(timeline_module_css_default.laneHeadShell),
 				"data-lane-head": variant,
+				"data-lane-head-id": rowId,
 				"data-audio-icon": iconAttr,
 				style: {
 					height,
@@ -1930,6 +2009,34 @@ window.__ModuleLoader__.load({
 				]
 			});
 		}
+		/** One commission row's BODY: the span (or the N window segments) the
+		*  commission covers, drawn in bar space.
+		*  @param props.row the commission
+		*  @param props.frameToPx the bar's own frame→pixel scale
+		*  @param props.totalFrames the doc's length (the single-span width)
+		*/
+		function CommissionLane(props) {
+			const { row, frameToPx, totalFrames } = props;
+			const segments = row.segments !== void 0 && row.segments.length > 0 ? row.segments : [row.detail ?? row.label];
+			const width = Math.max(2, frameToPx(totalFrames) - frameToPx(0));
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+				className: timeline_module_css_default.commissionLane,
+				"data-commission-lane": row.id,
+				style: { height: 30 },
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+					className: clsx(timeline_module_css_default.commissionSpan, segments.length > 1 && timeline_module_css_default.commissionWindows),
+					style: {
+						width,
+						...row.accent ? { borderLeftColor: row.accent } : {}
+					},
+					children: segments.map((segment, i) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						className: timeline_module_css_default.commissionSegment,
+						"data-commission-segment": `${row.id}-${String(i)}`,
+						children: segment
+					}, `${row.id}-${String(i)}`))
+				})
+			});
+		}
 		//#endregion
 		//#region ../../web-kit/timeline/src/timeline/MotionTimelineBarChrome.tsx
 		/**
@@ -1942,7 +2049,7 @@ window.__ModuleLoader__.load({
 		/** The pinned label gutter (bar line 820): the zoom cluster + lane
 		*  heads. The Fit pin reads the live scale — the body is the bar's. */
 		function TimelineGutter(props) {
-			const { scale, scrollRef, frameIdx, promptsHeight, promptsLabel, beats, beatsLabel, beatsHeight, audioLayers, onAudioDetach, tracks, audioClipCards, onTrackAdd, kfLaneCards } = props;
+			const { scale, scrollRef, frameIdx, promptsHeight, promptsLabel, beats, beatsLabel, beatsHeight, audioLayers, onAudioDetach, tracks, audioClipCards, onTrackAdd, kfLaneCards, commissions } = props;
 			const { zoom, anchorRef, frameToPx, setPpf, setBasePpf, fitPpf, effPpf, basePpf } = scale;
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: timeline_module_css_default.gutter,
@@ -1999,6 +2106,15 @@ window.__ModuleLoader__.load({
 						label: promptsLabel,
 						height: promptsHeight
 					}),
+					commissions?.map((row) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(LaneHead, {
+						variant: "commission",
+						rowId: row.id,
+						glyph: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Film, { "aria-hidden": true }),
+						label: row.label,
+						accent: row.accent,
+						height: 30,
+						title: row.title
+					}, row.id)),
 					beats && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(LaneHead, {
 						variant: "beats",
 						glyph: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ListMusic, { "aria-hidden": true }),
@@ -2839,7 +2955,7 @@ window.__ModuleLoader__.load({
 		const PLAYHEAD = "var(--dsw-alias-brand-primary)";
 		/** Unified background for the timeline bar and its sticky timecode chip. */
 		const BAR_BG = "var(--dsw-alias-bg-layer-1)";
-		function MotionTimelineBar({ prompts, keyframes, frameIdx, onFrameChange, onScrubStart, onScrubEnd, totalFrames, fps, initialSeconds, onKeyframeAdd, onKeyframeMove, onKeyframeDelete, onPromptUpdate, onPromptMove, onPromptResize, onPromptDelete, onExtend, tracks = MOTION_TIMELINE_TRACKS, promptsLabel = timelineCopy.lanePrompts, laneHint = timelineCopy.laneHintDefault, packed = false, emptyPromptsHint = timelineCopy.emptyPromptsHint, promptsHeight = 36, beats, beatsLabel = timelineCopy.laneBeats, beatsHeight = 26, beatsHint = timelineCopy.beatsHintDefault, onBeatAdd, onPromptAdd, previews, selectedId = null, onSelect, audioLayers, onAudioDrop, onAudioDropAt, onAudioFileDrop, onAudioClipMove, onAudioClipDelete, onAudioLaneActivate, onAudioDetach, onTrackAdd, audioClipCards = false, kfLaneCards = false, className, style, theme }) {
+		function MotionTimelineBar({ prompts, keyframes, frameIdx, onFrameChange, onScrubStart, onScrubEnd, totalFrames, fps, initialSeconds, onKeyframeAdd, onKeyframeMove, onKeyframeDelete, onPromptUpdate, onPromptMove, onPromptResize, onPromptDelete, onExtend, tracks = MOTION_TIMELINE_TRACKS, promptsLabel = timelineCopy.lanePrompts, laneHint = timelineCopy.laneHintDefault, packed = false, emptyPromptsHint = timelineCopy.emptyPromptsHint, promptsHeight = 36, beats, beatsLabel = timelineCopy.laneBeats, beatsHeight = 26, beatsHint = timelineCopy.beatsHintDefault, onBeatAdd, onPromptAdd, previews, selectedId = null, onSelect, audioLayers, onAudioDrop, onAudioDropAt, onAudioFileDrop, onAudioClipMove, onAudioClipDelete, onAudioLaneActivate, onAudioDetach, onTrackAdd, audioClipCards = false, kfLaneCards = false, commissions, className, style, theme }) {
 			const barBg = theme?.barBg ?? BAR_BG;
 			const playhead = theme?.playhead ?? PLAYHEAD;
 			const scrollRef = (0, react.useRef)(null);
@@ -2895,7 +3011,8 @@ window.__ModuleLoader__.load({
 					tracks,
 					audioClipCards,
 					onTrackAdd,
-					kfLaneCards
+					kfLaneCards,
+					commissions
 				}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(TimelineContent, {
 					scrollRef,
 					contentW: scale.contentW,
@@ -2931,6 +3048,11 @@ window.__ModuleLoader__.load({
 							onPromptUpdate,
 							onPromptDelete
 						}),
+						commissions?.map((row) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(CommissionLane, {
+							row,
+							frameToPx: scale.frameToPx,
+							totalFrames
+						}, row.id)),
 						beats && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TimelineBeatsLane, {
 							beats,
 							beatsHeight,
@@ -4642,7 +4764,7 @@ window.__ModuleLoader__.load({
 		const loadAudioMedia = async (_kind, signal) => {
 			return (await (0, _melite_card_base_client.fetchMediaLibrary)("all", signal)).filter((r) => AUDIO_ROW_RE.test(r.url) || AUDIO_ROW_RE.test(r.name));
 		};
-		function StudioStripPane({ calls, fps, barPrompts, barLanes, barAudioClips, barTotal, frameIdx, callPreviews, selectedBarId, filmMap, handleBarFrame, handleScrubStart, handleScrubEnd, handleKeyframeMove, handleKeyframeDelete, handlePromptUpdate, handlePromptMove, handlePromptResize, handlePromptDelete, handleExtend, addCallAt, handleTimelineSelect, layerA, refAudiosBlocked, addAudioClip, takeAudioFile, moveAudioClip, deleteAudioClip, updateAudioClip, setLayerAKey, artifactIndex, docFromFilm, keyframes, addKeyframeWithImage, enterKfView, enterAudioView }) {
+		function StudioStripPane({ calls, fps, barPrompts, barLanes, barAudioClips, barTotal, frameIdx, commissions, callPreviews, selectedBarId, filmMap, handleBarFrame, handleScrubStart, handleScrubEnd, handleKeyframeMove, handleKeyframeDelete, handlePromptUpdate, handlePromptMove, handlePromptResize, handlePromptDelete, handleExtend, addCallAt, handleTimelineSelect, layerA, refAudiosBlocked, addAudioClip, takeAudioFile, moveAudioClip, deleteAudioClip, updateAudioClip, setLayerAKey, artifactIndex, docFromFilm, keyframes, addKeyframeWithImage, enterKfView, enterAudioView }) {
 			const pickLane = (0, react.useRef)("music");
 			const [laneErr, setLaneErr] = (0, react.useState)(null);
 			const laneField = (lane) => ({
@@ -4732,6 +4854,18 @@ window.__ModuleLoader__.load({
 			const openTrackAdd = (_trackUuid, anchor) => {
 				kfAddSquare(kfAddField)?.verbs.onPick?.(anchor);
 			};
+			const commissionRows = commissions.map((c) => {
+				const detail = studioCopy.commissionSeats(c.seats);
+				const segments = c.geometry !== void 0 ? Array.from({ length: c.geometry.windows }, (_v, i) => studioCopy.commissionWindowSegment(i, c.geometry.windowFrames)) : void 0;
+				const geometryLine = c.geometry !== void 0 ? studioCopy.commissionGeometry(c.geometry) : void 0;
+				return {
+					id: c.kind,
+					label: studioCopy.commissionKindLabel(c.kind),
+					detail: [detail, geometryLine].filter((x) => x !== void 0 && x !== "").join(" — "),
+					segments,
+					title: c.refusal ?? studioCopy.commissionRowTitle(c.kind)
+				};
+			});
 			const kfChips = barLanes.map((k, i) => {
 				const docFrame = keyframes[i]?.frame;
 				const verdict = typeof docFrame === "number" ? pinDropVerdict(calls, docFrame) : null;
@@ -4806,6 +4940,7 @@ window.__ModuleLoader__.load({
 						tracks: VIDEO_TIMELINE_TRACKS.map((t) => ({ ...t })),
 						packed: true,
 						promptsLabel: studioCopy.callsLabel,
+						commissions: commissionRows,
 						laneHint: studioCopy.keyframeLaneHint,
 						emptyPromptsHint: studioCopy.stripEmptyPromptsHint,
 						promptsHeight: 64,
@@ -6403,17 +6538,6 @@ window.__ModuleLoader__.load({
 				refmod_pool: optNum("refmod_pool"),
 				refmod_identity: optNum("refmod_identity"),
 				refmod_save: raw?.refmod_save === false ? false : void 0,
-				reshoot_enabled: raw?.reshoot_enabled === true,
-				reshoot_clip: optStr("reshoot_clip"),
-				reshoot_orbit: optNum("reshoot_orbit"),
-				reshoot_tilt: optNum("reshoot_tilt"),
-				reshoot_dolly: optNum("reshoot_dolly"),
-				reshoot_zoom: optNum("reshoot_zoom"),
-				reshoot_pan: optNum("reshoot_pan"),
-				reshoot_strength: optNum("reshoot_strength"),
-				reshoot_depth_ratio: optNum("reshoot_depth_ratio"),
-				reshoot_smooth_depth: raw?.reshoot_smooth_depth === true,
-				reshoot_invert_depth: raw?.reshoot_invert_depth === true,
 				attention_backend: raw?.attention_backend === "pytorch attention" || raw?.attention_backend === "comfy kitchen attention" ? raw.attention_backend : void 0,
 				second_pass_enabled: raw?.second_pass_enabled === true,
 				refine_lora: typeof raw?.refine_lora === "string" && raw.refine_lora !== "" ? raw.refine_lora : void 0,
@@ -6530,17 +6654,6 @@ window.__ModuleLoader__.load({
 			"refine_strength",
 			"refine_steps",
 			"refine_denoise",
-			"reshoot_enabled",
-			"reshoot_clip",
-			"reshoot_orbit",
-			"reshoot_tilt",
-			"reshoot_dolly",
-			"reshoot_zoom",
-			"reshoot_pan",
-			"reshoot_strength",
-			"reshoot_depth_ratio",
-			"reshoot_smooth_depth",
-			"reshoot_invert_depth",
 			"upscale_route",
 			"upscale_model",
 			"refmod_mode",
@@ -6589,19 +6702,6 @@ window.__ModuleLoader__.load({
 			if (a.refmod_pool != null) out.refmod_pool = a.refmod_pool;
 			if (a.refmod_identity != null) out.refmod_identity = a.refmod_identity;
 			if (a.refmod_save === false) out.refmod_save = false;
-			if (a.reshoot_enabled === true) {
-				out.reshoot_enabled = true;
-				if (a.reshoot_clip != null && a.reshoot_clip !== "") out.reshoot_clip = a.reshoot_clip;
-				if (a.reshoot_orbit != null) out.reshoot_orbit = a.reshoot_orbit;
-				if (a.reshoot_tilt != null) out.reshoot_tilt = a.reshoot_tilt;
-				if (a.reshoot_dolly != null) out.reshoot_dolly = a.reshoot_dolly;
-				if (a.reshoot_zoom != null) out.reshoot_zoom = a.reshoot_zoom;
-				if (a.reshoot_pan != null) out.reshoot_pan = a.reshoot_pan;
-				if (a.reshoot_strength != null) out.reshoot_strength = a.reshoot_strength;
-				if (a.reshoot_depth_ratio != null) out.reshoot_depth_ratio = a.reshoot_depth_ratio;
-				if (a.reshoot_smooth_depth === true) out.reshoot_smooth_depth = true;
-				if (a.reshoot_invert_depth === true) out.reshoot_invert_depth = true;
-			}
 			if (a.audio_clips?.length) out.audio_clips = a.audio_clips;
 			if (a.ref_images?.length) out.ref_images = a.ref_images;
 			if (a.ref_videos?.length) out.ref_videos = a.ref_videos;
@@ -16587,6 +16687,121 @@ window.__ModuleLoader__.load({
 			]);
 		}
 		//#endregion
+		//#region src/ui/studio/commissions.ts
+		/**
+		* commissions.ts — THE STUDIO'S MOD PROJECTION (§9 of the multiwindow
+		* unification audit, 2026-11-12).
+		*
+		* THE BURN it answers (operator, live lane: "the UI that displays the
+		* timeline and all the separate clips isn't updating. It looks
+		* default, despite the AI agent using the card to string together
+		* multiple clips with a mod"): the doc carried the commission, the
+		* compose honored it, and the lane rendered as if nothing was armed —
+		* the journey's UI hop was unwalled.
+		*
+		* THE LAW: a mod bag is ARMED by presence, exactly as the card reads
+		* it (an absent or empty array is the unused arm — the film composes
+		* and renders byte-identically). This module derives what an armed
+		* bag COMMISSIONS — kind, the seats its entry names, and, for the
+		* extend, the window composition it will build — for the rail to
+		* draw. It READS; it never writes, never defaults a seat, and never
+		* invents a commission the doc does not carry.
+		*
+		* WHY A DERIVATION AND NOT A MIRROR: the bags live outside `LayerA`
+		* and outside the studio's three write channels (calls, keyframes,
+		* layerA). They are the agent's commissions, preserved across
+		* open→save by the bench's merge-patch — so the rail projects the
+		* durable row and holds no state of its own.
+		*/
+		/** The four mod bags, in the card's own declaration order. */
+		const COMMISSION_KINDS = [
+			"replace",
+			"repair",
+			"extend",
+			"reshoot"
+		];
+		/** The frames-per-second the composition's seconds readout divides by
+		*  (the film clock — the solver's own divisor). */
+		const FILM_FPS = 24;
+		/** Read one bag's single entry, exactly as the card's arm predicate
+		*  does: an absent bag, a non-array, or an empty array is DISARMED.
+		* @param params the durable bench row
+		* @param kind the bag key
+		* @returns the first entry, or undefined when the arm is unused */
+		function bagEntry(params, kind) {
+			const bag = params?.[kind];
+			if (!Array.isArray(bag) || bag.length === 0) return void 0;
+			const entry = bag[0];
+			return typeof entry === "object" && entry !== null ? entry : void 0;
+		}
+		/** The seats an entry states, in the entry's own key order: strings
+		*  verbatim, finite numbers stringified, booleans only when true
+		*  (an unstated dial and a stated-false dial compose identically, so
+		*  only the stated positive is news to the operator). Nested objects
+		*  are skipped — a commission's seats are scalar by the bag law.
+		* @param entry the bag's first entry
+		* @returns the named seats */
+		function seatsOf(entry) {
+			const out = [];
+			for (const [key, value] of Object.entries(entry)) if (typeof value === "string") {
+				const trimmed = value.trim();
+				if (trimmed !== "") out.push({
+					key,
+					value: trimmed
+				});
+			} else if (typeof value === "number" && Number.isFinite(value)) out.push({
+				key,
+				value: String(value)
+			});
+			else if (value === true) out.push({
+				key,
+				value: "true"
+			});
+			return out;
+		}
+		/** THE COMPOSITION PROJECTION (extend only): the same solver the
+		*  compose door runs, so the rail draws the windows the run will
+		*  actually build. A stated extension the solver refuses is NOT
+		*  silently hidden — the rail shows the refusal as the commission's
+		*  own note, so the operator sees the armed-and-doomed doc before
+		*  pressing Run rather than a lane that looks fine.
+		* @param entry the extend bag's first entry
+		* @returns the composition, or the refusal's voice */
+		function geometryOf(entry) {
+			const seconds = entry.extend_seconds;
+			if (typeof seconds !== "number" || !Number.isFinite(seconds)) return {};
+			const frames = Math.round(seconds * FILM_FPS);
+			if (frames <= 0) return {};
+			try {
+				return { geometry: solveWindowComposition(frames, "h3-timeline extend") };
+			} catch (err) {
+				return { refusal: err instanceof Error ? err.message : String(err) };
+			}
+		}
+		/** Derive the doc's armed commissions, in the card's bag order.
+		*  Disarmed bags contribute nothing — the rail's empty state is the
+		*  honest "no commission" lane, never a placeholder row.
+		* @param params the durable bench row (the doc's own params)
+		* @returns one row per armed mod bag */
+		function deriveCommissions(params) {
+			const out = [];
+			for (const kind of COMMISSION_KINDS) {
+				const entry = bagEntry(params, kind);
+				if (entry === void 0) continue;
+				const commission = {
+					kind,
+					seats: seatsOf(entry)
+				};
+				if (kind === "extend") {
+					const { geometry, refusal } = geometryOf(entry);
+					if (geometry !== void 0) commission.geometry = geometry;
+					if (refusal !== void 0) commission.refusal = refusal;
+				}
+				out.push(commission);
+			}
+			return out;
+		}
+		//#endregion
 		//#region src/ui/studio/useDerivedView.ts
 		/**
 		* h3-timeline studio split (2026-09-06) — PURE MOVE from
@@ -16596,7 +16811,7 @@ window.__ModuleLoader__.load({
 		/** Upstream vocabulary, filmstrip, bar-space memos (tenant §10).
 		*  Verbatim lines 2474–2628. */
 		function useDerivedView(args) {
-			const { upstreams, stage, calls, layerA, keyframes, filmMap, filmFromDoc, selected, fps, totalFrames, artifactIndex } = args;
+			const { upstreams, stage, calls, layerA, keyframes, filmMap, filmFromDoc, selected, fps, totalFrames, artifactIndex, docParams } = args;
 			const sourceOptions = (0, react.useMemo)(() => {
 				const opts = [];
 				for (const u of upstreams ?? []) {
@@ -16773,6 +16988,16 @@ window.__ModuleLoader__.load({
 			* for docs that already carry both (it strips, never crashes). */
 			const refAudiosPresent = (0, react.useMemo)(() => calls.some((c) => !!(c.refs?.audios ?? "").trim()), [calls]);
 			const audioClipsPresent = (layerA.audio_clips?.length ?? 0) > 0;
+			/** Window render → call clip (previews INSIDE the bar clips): window
+			* index ↔ call index 1:1 (best effort — a forced mid-call split
+			* shifts later windows; index-based like the artifact naming). */
+			const callPreviews = (0, react.useMemo)(() => Object.fromEntries(filmstrip.windows.slice(0, calls.length).map((w, i) => [`call-${i}`, w.url])), [filmstrip.windows, calls.length]);
+			/** THE COMMISSIONS (§9 of the multiwindow unification audit): one row
+			*  per ARMED mod bag — the bag's entry seats, and (extend) the window
+			*  composition the compose door will build. Read-only: the studio
+			*  authors no bag, so there is no op overlay to fold in — the durable
+			*  row IS the truth. */
+			const commissions = (0, react.useMemo)(() => deriveCommissions(docParams), [docParams]);
 			return {
 				sourceOptions,
 				linkGroups,
@@ -16786,11 +17011,12 @@ window.__ModuleLoader__.load({
 				barPrompts,
 				barLanes,
 				barAudioClips,
-				callPreviews: (0, react.useMemo)(() => Object.fromEntries(filmstrip.windows.slice(0, calls.length).map((w, i) => [`call-${i}`, w.url])), [filmstrip.windows, calls.length]),
+				callPreviews,
 				selectedBarId: selected ? `call-${selected.callIdx}` : null,
 				voicePinnedCalls,
 				refAudiosPresent,
-				audioClipsPresent
+				audioClipsPresent,
+				commissions
 			};
 		}
 		//#endregion
@@ -16897,7 +17123,8 @@ window.__ModuleLoader__.load({
 				selected,
 				fps,
 				totalFrames,
-				artifactIndex: audio.artifactIndex
+				artifactIndex: audio.artifactIndex,
+				docParams: stage.params ?? void 0
 			});
 			const handleDuration = (sec) => derived.setFilmDurSec(sec);
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.StudioShell, {
@@ -17020,6 +17247,7 @@ window.__ModuleLoader__.load({
 					barPrompts: derived.barPrompts,
 					barLanes: derived.barLanes,
 					barAudioClips: derived.barAudioClips,
+					commissions: derived.commissions,
 					barTotal: derived.barTotal,
 					frameIdx: view.frameIdx,
 					callPreviews: derived.callPreviews,

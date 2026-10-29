@@ -157,6 +157,36 @@ export declare function gridSnap(length: number): number;
  *  drift into different laws. */
 export declare function isGridLength(length: number): boolean;
 export declare function assertGridLength(length: unknown, where: string): number;
+/** The chain policy's masked_av context — the overlap every composed
+ *  seam after the first carries (the swap's clip law, shared with the
+ *  extend's window composition). */
+export declare const CONTEXT_OVERLAP_FRAMES = 39;
+/** The plan's scene cap (chain_nodes: a 32-scene cap refuses
+ *  mis-authored loops) — the composition solver's window ceiling. */
+export declare const MAX_COMPOSED_WINDOWS = 32;
+/** One legal composition of a stated extension. */
+export interface WindowComposition {
+    readonly windows: number;
+    readonly windowFrames: number;
+    readonly deliveredFrames: number;
+}
+/** THE COMPOSITION SOLVER (pure; the door's whole law beyond one
+ *  window): across every legal window count, the grid lengths on
+ *  both sides of the exact requirement — the smallest that delivers
+ *  ≥ stated (ceil) and the largest that delivers ≤ stated (floor) —
+ *  looking for an EXACT delivery; else a loud refusal naming the
+ *  neighboring compositions (max under, min over).
+ *
+ *  It lives HERE, on the client-safe contract face, because TWO
+ *  consumers ask the same question: the extend renderer (what to
+ *  compose) and the studio's commission rail (what to DRAW — the
+ *  multiwindow unification audit's §9: the operator could not see
+ *  the N windows an agent had strung together).
+ * @param totalFrames the stated extension, frames at the film clock
+ * @param where the refusal's voice ('h3-timeline extend')
+ * @param overlap the per-seam context overlap (the policy's 39)
+ * @returns the exact composition */
+export declare function solveWindowComposition(totalFrames: number, where: string, overlap?: number): WindowComposition;
 /** THE UNIFORM SPAN GATE: one refusal for every window shape. A
  *  carried window generates span+carry frames, so its authored span
  *  must be 17k; a first or cut window generates its span verbatim, so

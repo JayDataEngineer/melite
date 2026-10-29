@@ -287,6 +287,31 @@ export const studioCopy = {
   laneBlockedMessage: "reference audio is wired on a call — the dialogue / music / SFX lanes are LOCKED (the clips and the audio inputs are mutually exclusive; clear the call's Ref audios to place clips)",
   /** The bar's calls lane label. */
   callsLabel: "Calls",
+  /** ── THE COMMISSION RAIL (§9's mod projection) ────────────────────
+   *  One row per ARMED mod bag. The kind's face is the operator's own
+   *  word for the door; the seats line names what the entry states;
+   *  the geometry line names the windows the extend will build. */
+  commissionKindLabel: (kind: string): string => {
+    switch (kind) {
+      case "replace": return "Replace"
+      case "repair": return "Repair"
+      case "extend": return "Extend"
+      case "reshoot": return "Reshoot"
+      default: return kind
+    }
+  },
+  /** A commission's armed row voice (what the row means). */
+  commissionRowTitle: (kind: string): string =>
+    `${studioCopy.commissionKindLabel(kind)} is armed — this row is the commission the compose will build (agent-authored; edit the mod bag to change it)`,
+  /** The seats line: "source_clip clips/a.mp4 · strength 2". */
+  commissionSeats: (seats: ReadonlyArray<{ key: string; value: string }>): string =>
+    seats.map((s) => `${s.key} ${s.value}`).join(" · "),
+  /** The composition line: "4 × 243f · 12.730s". */
+  commissionGeometry: (args: { windows: number; windowFrames: number; deliveredFrames: number }): string =>
+    `${args.windows} × ${args.windowFrames}f · ${(args.deliveredFrames / 24).toFixed(3)}s`,
+  /** One window segment's face on the drawn window strip. */
+  commissionWindowSegment: (index: number, windowFrames: number): string =>
+    `w${index + 1} · ${windowFrames}f`,
   /** The document readout (calls, seconds, guides, knobbed calls). */
   docReadout: (args: { calls: number; seconds: string; guides: number; knobs: number }): string =>
     `${args.calls} call${args.calls === 1 ? "" : "s"} · ${args.seconds}s · ${args.guides} guide${args.guides === 1 ? "" : "s"}${args.knobs > 0 ? ` · ${args.knobs} call${args.knobs === 1 ? "" : "s"} with knobs` : ""}`,

@@ -1,14 +1,7 @@
 import { chainSaveBoundaries, concatSavedFilms } from './actions.js';
-import { assertGridLength, GRID_BASE_FRAMES, GRID_STEP_FRAMES, GRID_MAX_FRAMES, } from './timelineContract.js';
+import { assertGridLength, solveWindowComposition, CONTEXT_OVERLAP_FRAMES, GRID_MAX_FRAMES, } from './timelineContract.js';
+export { solveWindowComposition } from './timelineContract.js';
 import { loadVideo, renderMaskedEditChain } from './chainEdit.js';
-/** The chain policy's masked_av context — the overlap every seam
- * after the first carries (the same 39 the swap's clips ride; the
- * entry's overlap_frames knob feeds the plan node's slicing, the
- * policy owns the carry). */
-const CONTEXT_OVERLAP_FRAMES = 39;
-/** The plan's scene cap (chain_nodes: a 32-scene cap refuses
- * mis-authored loops). */
-const MAX_WINDOWS = 32;
 /** The extend entry's required seats (the reshoot/repair idiom: an
  * armed doc with an empty seat refuses loud naming the seat). */
 const REQUIRED_SEATS = [
@@ -17,54 +10,6 @@ const REQUIRED_SEATS = [
 ];
 const num = (p, k, d) => typeof p[k] === 'number' ? p[k] : d;
 const str = (p, k) => typeof p[k] === 'string' ? p[k] : '';
-/** The smallest 22+17k grid length ≥ x (capped at 362); null when x
- * exceeds the grid — that window count cannot carry the total. */
-const gridCeil = (x) => {
-    const k = Math.ceil((x - GRID_BASE_FRAMES) / GRID_STEP_FRAMES);
-    const length = Math.max(GRID_BASE_FRAMES, GRID_BASE_FRAMES + GRID_STEP_FRAMES * k);
-    return length > GRID_MAX_FRAMES ? null : length;
-};
-/** The largest 22+17k grid length ≤ x (floored at 22, capped 362). */
-const gridFloor = (x) => Math.min(GRID_MAX_FRAMES, GRID_BASE_FRAMES + GRID_STEP_FRAMES * Math.floor((x - GRID_BASE_FRAMES) / GRID_STEP_FRAMES));
-/** THE COMPOSITION SOLVER (pure; the door's whole law beyond one
- * window): across every legal window count, the grid lengths on
- * both sides of the exact requirement — the smallest that delivers
- * ≥ stated (ceil) and the largest that delivers ≤ stated (floor) —
- * looking for an EXACT delivery; else a loud refusal naming the
- * neighboring compositions (max under, min over).
- * @param totalFrames the stated extension, frames at the film clock
- * @param where the refusal's voice ('h3-timeline extend')
- * @param overlap the per-seam context overlap (the policy's 39)
- * @returns the exact composition */
-export function solveWindowComposition(totalFrames, where, overlap = CONTEXT_OVERLAP_FRAMES) {
-    let bestUnder = null;
-    let bestOver = null;
-    for (let windows = 1; windows <= MAX_WINDOWS; windows++) {
-        const exact = (totalFrames + (windows - 1) * overlap) / windows;
-        for (const windowFrames of [gridFloor(exact), gridCeil(exact)]) {
-            if (windowFrames === null)
-                continue;
-            const delivered = windows * windowFrames - (windows - 1) * overlap;
-            if (delivered === totalFrames)
-                return { windows, windowFrames, deliveredFrames: delivered };
-            const composition = { windows, windowFrames, deliveredFrames: delivered };
-            if (delivered < totalFrames) {
-                if (bestUnder === null || delivered > bestUnder.deliveredFrames)
-                    bestUnder = composition;
-            }
-            else if (bestOver === null || delivered < bestOver.deliveredFrames) {
-                bestOver = composition;
-            }
-        }
-    }
-    const neighbor = (c) => c === null ? '' :
-        ` nearest: ${c.windows} windows of ${c.windowFrames}f deliver ${c.deliveredFrames}f (${(c.deliveredFrames / 24).toFixed(3)}s);`;
-    throw new Error(`${where}: stated ${totalFrames}f composes nowhere exactly — ` +
-        `N uniform 22+17k windows under the ${overlap}f context overlap compose exactly nowhere;` +
-        `${neighbor(bestUnder)}${neighbor(bestOver)}` +
-        ` re-state extend_seconds as a composition's delivered seconds ` +
-        `(D frames round-trips D/24 exactly; a single window keeps the 22+17k grid door)`);
-}
 /** The extend renderer: validates the bound entry, then composes the
  * fresh-continuation chain plus the join. Like the swap and repair,
  * the film path never reaches here (the card branches on a non-empty

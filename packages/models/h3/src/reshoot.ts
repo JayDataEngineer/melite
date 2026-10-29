@@ -10,7 +10,8 @@
 // window — the per-window model chain consumes the SHARED handles so
 // a multi-window film pays for depth + warp exactly once):
 //
-//   LoadVideo(reshoot_clip) → GetVideoComponents → frames
+//   loadVideo(source_clip — the shared loader law, force-rate-24 VHS)
+//     → frames at the film clock
 //   LoadVideoDepthAnythingModel(vits) → VideoDepthAnythingProcess
 //     → VideoDepthAnythingOutput(gray) → depth stack (brightness RGB)
 //   CrossViewWarp(depth stack as frames, depth=depth stack, pose)
@@ -29,20 +30,20 @@
 // view, the reprojected RGB anchors color behind the inpaint mask,
 // and the mask invents exactly the disoccluded regions.
 //
-// THE DECLARED PACK SURFACE — this lane CONSUMES the parallel lane's
-// vendored packs (vendor/comfyui_extensions/{comfyui-viggle-animate-h3,
-// ComfyUI-CrossViewWarp, ComfyUI-CameraReference3D} + the
-// @melite/models-viggle-animate provision rows); it never duplicates
-// them. Node class names below are the packs' DECLARED names —
-// `CrossViewWarp` verified verbatim against the pack's
-// crossview_warp_node.py NODE_CLASS_MAPPINGS (/tmp staging copy,
-// 2026-10-27); the three Video-Depth-Anything classes are the VDA
-// ComfyUI pack's own (node.py NODE_CLASS_MAPPINGS — upstream
-// github.com/yuvraj108c/ComfyUI-Video-Depth-Anything, the same
-// classes the parallel lane provisions VDA-Small through). When the
-// parallel lane lands, its provision rows own the two filenames
-// below (the one-owner law); until then they live HERE as the
-// declared constants, provenance-stamped.
+// THE DECLARED PACK SURFACE — the arm's own requires (the RESHOOT_MOD
+// kind's arm-conditional list, enforced only when the bag is armed):
+// ComfyUI-CrossViewWarp (the vendored warp pack, estate manifest's
+// video-plane row), ComfyUI-KJNodes (ColorToMask),
+// ComfyUI-MiniMaxH3Mod (the Fun ControlNet apply node),
+// ComfyUI-VideoHelperSuite (the shared loader law below). The VDA
+// three-node depth chain rides upstream
+// github.com/yuvraj108c/ComfyUI-Video-Depth-Anything — NOT yet
+// provisioned estate-side (the named feature-024 debt; the arm
+// declares the pack ids it can, the VDA provisioning is owed with
+// the live GPU proof). The viggle-animate parallel lane this chain
+// once leaned on is EXTERMINATED (operator 2026-11-12) — no
+// reference survives.
+import { loadVideo } from './chainEdit.js'
 import type { OutputHandle } from '@melite/comfyui-card-kit/graph'
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 
@@ -82,8 +83,10 @@ export const FUN_UNION_2_0_PATCH =
 export const DISOCCLUSION_COLOR = { red: 255, green: 0, blue: 255 } as const
 export const DISOCCLUSION_THRESHOLD = 10
 
-/** The pose + conditioning knobs the chain reads (the carrier walk
- *  has already typed and bounded them; these are the wire names). */
+/** The pose + conditioning knobs the chain reads (the RESHOOT_MOD
+ * bag entry's own wire names — the flat reshoot_* doc prefix died
+ * with the fourth-mod-bag unification; the card's field rows own
+ * the bounds, these are the names on the wire). */
 export interface ReshootKnobs {
   readonly orbit: number
   readonly tilt: number
@@ -96,9 +99,44 @@ export interface ReshootKnobs {
   readonly invertDepth: boolean
 }
 
-const num = (p: Record<string, unknown>, key: string): number | undefined => {
-  const v = p[key]
-  return typeof v === 'number' && Number.isFinite(v) ? v : undefined
+const num = (e: Record<string, unknown>, key: string, fallback: number): number => {
+  const v = e[key]
+  return typeof v === 'number' && Number.isFinite(v) ? v : fallback
+}
+
+/** The dial bands — MIRRORED from the card's RESHOOT_MOD field rows
+ *  (the UI's own bounds; the wall judges the two homes in 1:1
+ *  agreement). The flat schema's zod bounds died with the knob
+ *  group; a bag entry rides the compose door as a loose dict, so
+ *  the READER owns the refusal — out-of-domain dials refuse LOUD
+ *  here, ahead of the engine, never as a ComfyUI widget 400. */
+export const RESHOOT_DIAL_BOUNDS: Readonly<Record<string, readonly [number, number]>> = {
+  orbit: [-180, 180],
+  tilt: [-90, 90],
+  dolly: [0.1, 3],
+  zoom: [20, 120],
+  pan: [-1, 1],
+  strength: [0, 10],
+  depth_ratio: [1.5, 1000],
+}
+
+const banded = (e: Record<string, unknown>, key: string, fallback: number): number => {
+  const v = num(e, key, fallback)
+  const [lo, hi] = RESHOOT_DIAL_BOUNDS[key]!
+  if (v < lo || v > hi) {
+    throw new Error(
+      `h3 re-shoot: the bag's ${key} dial is ${v} — outside the camera band [${lo}, ${hi}] (the card's Reshoot rows state the same bounds); refuse ahead of the engine, never a widget 400`,
+    )
+  }
+  return v
+}
+
+/** The bag's first (and only — max_stack 1) entry, typed loose. */
+const bagEntry = (p: Record<string, unknown>): Record<string, unknown> | undefined => {
+  const bag = p.reshoot
+  if (!Array.isArray(bag) || bag.length === 0) return undefined
+  const e = bag[0]
+  return typeof e === 'object' && e !== null ? (e as Record<string, unknown>) : undefined
 }
 
 /** The neutral pose is the identity camera (no orbit, no tilt, the
@@ -106,26 +144,29 @@ const num = (p: Record<string, unknown>, key: string): number | undefined => {
  *  re-shoot with untouched knobs re-renders the scene from the same
  *  viewpoint rather than inventing a move nobody asked for. */
 export function readReshootKnobs(p: Record<string, unknown>): ReshootKnobs {
+  const e = bagEntry(p) ?? {}
   return {
-    orbit: num(p, 'reshoot_orbit') ?? 0,
-    tilt: num(p, 'reshoot_tilt') ?? 0,
-    dolly: num(p, 'reshoot_dolly') ?? 1.0,
-    zoom: num(p, 'reshoot_zoom') ?? 50,
-    pan: num(p, 'reshoot_pan') ?? 0,
-    strength: num(p, 'reshoot_strength') ?? 1,
-    depthRatio: num(p, 'reshoot_depth_ratio') ?? 6,
-    smoothDepth: p.reshoot_smooth_depth === true,
-    invertDepth: p.reshoot_invert_depth === true,
+    orbit: banded(e, 'orbit', 0),
+    tilt: banded(e, 'tilt', 0),
+    dolly: banded(e, 'dolly', 1.0),
+    zoom: banded(e, 'zoom', 50),
+    pan: banded(e, 'pan', 0),
+    strength: banded(e, 'strength', 1),
+    depthRatio: banded(e, 'depth_ratio', 6),
+    smoothDepth: e.smooth_depth === true,
+    invertDepth: e.invert_depth === true,
   }
 }
 
-/** The arm predicate: the master switch alone. A switch-on doc with
- *  no source clip stays ARMED and refuses loud at the chain build
- *  (the compose's missing-required law) — the clip check never
- *  quietly disarms the film. Absent or false = the compose never
- *  sees the chain (byte-stable graphs). */
+/** The arm predicate: BAG PRESENCE — the same law as the replace/
+ *  repair/extend arms (the fourth-mod-bag unification: a commission
+ * is armed when its bag carries an entry). A bag whose entry names
+ * no source clip stays ARMED and refuses loud at the chain build
+ * (the compose's missing-required law) — the clip check never
+ * quietly disarms the film. Absent or empty bag = the compose never
+ * sees the chain (byte-stable graphs). */
 export function reshootArmed(p: Record<string, unknown>): boolean {
-  return p.reshoot_enabled === true
+  return bagEntry(p) !== undefined
 }
 
 /** The run-level chain handles: built once per compose (film or
@@ -145,24 +186,27 @@ export interface ReshootChain {
 /**
  * Build the re-shoot chain on the run's graph (once per compose).
  *
- * @param p the gated compose doc (reshoot_enabled + reshoot_clip and
- *   the camera knobs are read here)
+ * @param p the gated compose doc (the reshoot bag's entry carries
+ *   source_clip + the camera knobs; reshootArmed gates the build)
  * @param g the run's graph builder
  * @returns the shared handles for the per-window apply seats
  */
 export function buildH3Reshoot(p: Record<string, unknown>, g: GraphBuilder): ReshootChain {
-  const clip = (p.reshoot_clip as string).trim()
+  const entry = bagEntry(p)
+  const clip = ((entry?.source_clip as string | undefined) ?? '').trim()
   if (clip === '') {
     throw new Error(
-      'h3 re-shoot: reshoot_enabled is on but reshoot_clip names no source clip — a re-shoot needs the video whose scene the new camera views',
+      'h3 re-shoot: the reshoot bag carries an entry but names no source clip — a re-shoot needs the video whose scene the new camera views',
     )
   }
   const knobs = readReshootKnobs(p)
-  // the source clip's frames (the audio track rides out — the
-  // re-shoot's soundtrack is the generation's own)
-  const frames = g.node('GetVideoComponents', {
-    video: g.node('LoadVideo', { file: clip }).out(),
-  }).out(0)
+  // THE SHARED LOADER LAW (the fourth-mod-bag unification, §8): the
+  // clip rides the same force-rate-24 VHS seat the swap/repair/
+  // extend sources ride (chainEdit loadVideo) — never its own
+  // LoadVideo→GetVideoComponents pair. The depth + warps read the
+  // film clock's frames; the audio track rides out (slot 2 unused —
+  // the re-shoot's soundtrack is the generation's own).
+  const frames = loadVideo(g, clip)[0]
   // VDA-Small depth: video-consistent depth for the point cloud
   // (per-frame single-image depth flickers; the video model does not)
   const vdaModel = g.node(VDA_LOAD_NODE, { model: VDA_CHECKPOINT }).out()

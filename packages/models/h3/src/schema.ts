@@ -320,32 +320,18 @@ export const paramSchema = z.object({
   // literal, and every other value refuse LOUD at the schema gate,
   // ahead of the engine — never as a ComfyUI 400.
   ref_image_size: vocabulary(["match"]).description("Ref size").default("match").extra('extra', bag({ order: null, group: 'sampling', wtype: 'select', tooltip: "How the bundle resizes ref images: match the anchor's aspect. The engine's own list also offers 'max', but the spec's diagnostic matrix seats the aspect-distortion failure on max (the max edge warps the reference's aspect into the output frame), and explicit WxH refuses at the engine's queue validation — match is the only value both truths admit." })),
-  // ── THE RE-SHOOT GROUP (feature 024, the "Open Source Higgsfield"
-  // entry): re-render the same scene from a NEW camera. A source clip
-  // + five camera words (the warp matrix in plain terms) — the chain
-  // builds the scene's point cloud from video-consistent depth,
-  // reprojects it under the new camera, and conditions the generation
-  // on the new view's depth through the Fun ControlNet Union 2.0
-  // patch; the disoccluded regions (where the moved camera sees what
-  // the source never framed) are inpainted through the same patch.
-  // Master switch first (the second_pass pattern): off (default) =
-  // the graphs are byte-stable, no re-shoot node composes.
-  // LICENSE FRAME: the Fun ControlNet Union 2.0 patch and the whole
-  // chain inherit the MiniMax H3 Community License (worldwide
-  // EXCLUDING EU/UK/KR/US); the depth checkpoint is VDA-Small, the
-  // one Apache-2.0 Video-Depth-Anything weight (Base/Large are
-  // CC-BY-NC and never offered).
-  reshoot_enabled: z.boolean().description("Re-shoot (new camera)").default(false).extra('extra', bag({ order: null, group: 'reshoot', wtype: 'boolean', tooltip: "Re-shoot the source clip from a new camera: the scene rebuilds from depth, the new view renders through the Fun ControlNet depth checkpoint, and the regions the moved camera reveals are inpainted. Off (default) = the film renders exactly as before." })),
-  reshoot_clip: z.string().role('path').description("Re-shoot source clip").extra('extra', bag({ order: null, group: 'reshoot', visible_when: "reshoot_enabled=true", wtype: 'image', media: 'video', tooltip: "The video whose scene the new camera views — pick the clip (or a stage producing one). Its frames rebuild the scene; its soundtrack does not carry over." })),
-  reshoot_orbit: z.number().description("Orbit").min(-180).max(180).step(1).default(0).extra('extra', bag({ order: null, group: 'reshoot', visible_when: "reshoot_enabled=true", wtype: 'number', tooltip: "Orbit the camera left/right around the subject, in degrees. Negative orbits left, positive right. ±45° is the tested range; past 90° the hidden side is invented." })),
-  reshoot_tilt: z.number().description("Tilt").min(-90).max(90).step(1).default(0).extra('extra', bag({ order: null, group: 'reshoot', visible_when: "reshoot_enabled=true", wtype: 'number', tooltip: "Raise or lower the camera, in degrees. Positive looks down from above the subject, negative looks up from below. Rising is the weak direction — keep above about -20°." })),
-  reshoot_dolly: z.number().description("Dolly").min(0.1).max(3).step(0.05).default(1).extra('extra', bag({ order: null, group: 'reshoot', visible_when: "reshoot_enabled=true", wtype: 'number', tooltip: "Camera distance where 1.0 keeps the source distance. Below 1 dollies in; above 1 pulls back — pulling back reveals area the source never framed, so more of the shot is invented." })),
-  reshoot_zoom: z.number().description("Zoom (lens FOV)").min(20).max(120).step(1).default(50).extra('extra', bag({ order: null, group: 'reshoot', visible_when: "reshoot_enabled=true", wtype: 'number', tooltip: "The lens field of view in degrees (50 is a normal lens): smaller = zoomed in and tighter, larger = wider. Change it when the clip is clearly wide-angle or telephoto." })),
-  reshoot_pan: z.number().description("Pan (framing shift)").min(-1).max(1).step(0.02).default(0).extra('extra', bag({ order: null, group: 'reshoot', visible_when: "reshoot_enabled=true", wtype: 'number', tooltip: "Framing shift as a fraction of frame height. Positive moves the picture down (framing up) and rescues a clipped head — the camera does not move, so the parallax is unchanged." })),
-  reshoot_strength: z.number().description("Re-shoot strength").min(0).max(10).step(0.05).default(1).extra('extra', bag({ order: null, group: 'reshoot', visible_when: "reshoot_enabled=true", wtype: 'number', tooltip: "How hard the new view's depth steers the generation. 1.0 is full; raise toward 2 only when the shot ignores the camera move." })),
-  reshoot_depth_ratio: z.number().description("Scene depth").min(1.5).max(1000).step(0.5).default(6).extra('extra', bag({ order: null, group: 'reshoot', visible_when: "reshoot_enabled=true", wtype: 'number', tooltip: "How deep the scene is (far/near ratio). 2.5–4 for close-up faces, 4–8 for mid shots, 8–16 for deep or wide scenes." })),
-  reshoot_smooth_depth: z.boolean().description("Smooth depth").default(false).extra('extra', bag({ order: null, group: 'reshoot', visible_when: "reshoot_enabled=true", wtype: 'boolean', tooltip: "Smooth the depth edges before warping. Turn on when the re-shot frames show speckle holes — trades a little sharpness for cleaner hole edges." })),
-  reshoot_invert_depth: z.boolean().description("Invert depth").default(false).extra('extra', bag({ order: null, group: 'reshoot', visible_when: "reshoot_enabled=true", wtype: 'boolean', tooltip: "Flip the depth polarity (near ↔ far). Leave off; turn on only if the re-shot renders inside-out — background moving like foreground, or the subject caving in." })),
+  // ── THE RE-SHOOT GROUP IS RETIRED FROM THE FLAT SURFACE (the
+  // fourth-mod-bag unification, §8 of the multiwindow audit,
+  // 2026-11-12): re-shoot was the one commission riding FLAT doc
+  // knobs outside the admission plane while replace/repair/extend
+  // ride card-declared mod bags — the disjointedness the operator
+  // named ("it's disjointed to how we usually handle using video
+  // inputs"). The camera chain's knobs now live on the card's
+  // RESHOOT_MOD kind (card.ts, served on features.modifiers like
+  // its three siblings); the emission predicates read the bag
+  // (reshoot.ts reshootArmed); the studio panel authors it through
+  // the mods surface. The LICENSE FRAME and the chain's own law are
+  // narrated at their one remaining home: reshoot.ts.
   // NO SILENT RESOLUTION LAW (2026-09-20, the operator's order):
   // one truth, one owner. shift_video is a NUMBER, default 8, served
   // and walked identically. The old z.const(null) arm — the

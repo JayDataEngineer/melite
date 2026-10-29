@@ -996,3 +996,60 @@
 /* (2026-11-05, the keyframes-lane upload door) — the audio lane
    heads' icon grammar: icon-only, lane-padded, never a labeled
    button (the gutter is narrow). */
+
+/* ── THE COMMISSION ROW (§9's mod projection, 2026-11-12) ──────────
+   One row per ARMED mod bag: a kind head in the gutter and a span in
+   the lane. The span carries the commission's seats (or its N window
+   segments) as a readout — the operator sees what the agent strung
+   together. Opt-in per tenant (the audioClipCards precedent): an
+   absent prop renders no row at all. */
+.commissionHead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  overflow: hidden;
+}
+.commissionKind {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.commissionLane {
+  position: relative;
+  width: 100%;
+}
+.commissionSpan {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 6px;
+  border-left: 3px solid var(--dsw-alias-brand-primary);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 12%, transparent);
+  overflow: hidden;
+}
+.commissionWindows .commissionSegment {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 14%, transparent);
+}
+.commissionSegment {
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--dsw-alias-label-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}

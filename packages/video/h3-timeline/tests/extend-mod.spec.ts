@@ -309,7 +309,7 @@ describe("the one-door-per-doc law (extend's three pairwise edges)", () => {
   it("extend + reshoot refuses, naming the silently-dropped arm", () => {
     const walked = def.schema({
       extend: [EXTEND_ENTRY()],
-      reshoot_enabled: true,
+      reshoot: [{ source_clip: 'sources/take3.mp4' }],
     }) as Record<string, unknown>;
     const g = new GraphBuilder();
     assert.throws(

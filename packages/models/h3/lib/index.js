@@ -68,23 +68,13 @@ export const DECL = {
             "refmod_identity",
             "refmod_save",
             "loras",
-            // THE RE-SHOOT GROUP (feature 024's missing seat, landed
-            // 2026-11-12): the rows served and the panel authors them
-            // (the flip binds through the served envelope's walk), so the
-            // writes row mirrors the serializer's universe — an armed
-            // reshoot the studio flips is authored STATED state, the
-            // commit seam persists it, the compose's reshootArmed reads it.
-            "reshoot_enabled",
-            "reshoot_clip",
-            "reshoot_orbit",
-            "reshoot_tilt",
-            "reshoot_dolly",
-            "reshoot_zoom",
-            "reshoot_pan",
-            "reshoot_strength",
-            "reshoot_depth_ratio",
-            "reshoot_smooth_depth",
-            "reshoot_invert_depth",
+            // THE RE-SHOOT GROUP RETIRED from the writes row (the
+            // fourth-mod-bag unification, §8 2026-11-12): the flat knobs
+            // died at the schema and Layer A no longer seats them — the
+            // RESHOOT_MOD bag is authored through the card's mods surface
+            // like replace/repair/extend (none of which ride this row);
+            // the studio projects it (the commission rail) but never
+            // authors it through the Layer-A serializer.
             "document"
         ],
         "kind": "custom",
@@ -366,13 +356,10 @@ export const DECL = {
         // rows, the compose's stated inputs).
         "refmod_mode", "refmod_pool", "refmod_identity", "refmod_save",
         "image_name",
-        // THE RE-SHOOT GROUP (feature 024, landed without this row — the
-        // claim law caught it: the card claims reshoot_enabled but the
-        // family's declared surface named no member). The schema group +
-        // the film action's rows are the truth; this list mirrors them.
-        "reshoot_enabled", "reshoot_clip", "reshoot_orbit", "reshoot_tilt",
-        "reshoot_dolly", "reshoot_zoom", "reshoot_pan", "reshoot_strength",
-        "reshoot_depth_ratio", "reshoot_smooth_depth", "reshoot_invert_depth",
+        // THE RE-SHOOT COMMISSION left this map (the fourth-mod-bag
+        // unification, §8 2026-11-12): it is a CARD mod bag now — the
+        // knob→seat map mirrors DECL params, and the bag's law is
+        // witnessed by tests/reshoot.spec.ts, not by this census.
     ],
     "provisions": [
         {

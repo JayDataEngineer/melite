@@ -18,6 +18,8 @@ import { refUploadError, REF_READ_ERROR, FOREIGN_URL_REFUSAL, estateMediaChip, c
 import s from "./studio.module.css"
 import { VIDEO_TIMELINE_TRACKS } from "./docModel.ts"
 import type { DocCall, DocKeyframe, LayerA, SetLayerAKey } from "./docModel.ts"
+import type { DocCommission } from "./commissions.ts"
+import type { CommissionRow } from "@melite-plugin/timeline/ui/timeline"
 import { pinDropVerdict } from "./docGrid.ts"
 import { studioCopy } from "./studioCopy.ts"
 
@@ -47,6 +49,7 @@ const loadAudioMedia = async (_kind: string, signal: AbortSignal) => {
 export function StudioStripPane({
   calls, fps,
   barPrompts, barLanes, barAudioClips, barTotal, frameIdx,
+  commissions,
   callPreviews, selectedBarId, filmMap,
   handleBarFrame, handleScrubStart, handleScrubEnd,
   handleKeyframeMove, handleKeyframeDelete,
@@ -63,6 +66,9 @@ export function StudioStripPane({
   barAudioClips: Array<{ id: string; name: string; start_frame: number; dur_frames: number; gain?: number; class?: "dialogue" | "sfx" | "music"; text?: string }>
   barTotal: number
   frameIdx: number
+  /** (§9's mod projection) the doc's ARMED mod bags, derived — one rail
+   *  row per armed commission (read-only; the studio authors no bag). */
+  commissions: DocCommission[]
   callPreviews: Record<string, string>
   selectedBarId: string | null
   filmMap: { fps?: number } | null
@@ -241,6 +247,30 @@ export function StudioStripPane({
   // keyframes[i]: keyframesToLanes maps the doc pins 1:1 in order and
   // the film map translates frames in place. Hints are VISUAL ONLY —
   // the drag still writes the raw frame through the spine.
+  // ── THE COMMISSION RAIL (§9's mod projection, 2026-11-12) ──────────
+  // The tenant's half of the mapping: the kit draws spans, the studio
+  // supplies the words. One row per ARMED bag; the extend's geometry
+  // becomes its N window segments (the operator finally sees the
+  // windows an agent strung together); a doomed composition shows the
+  // compose door's own refusal voice instead of a lane that looks fine.
+  const commissionRows: CommissionRow[] = commissions.map((c) => {
+    const detail = studioCopy.commissionSeats(c.seats)
+    const segments = c.geometry !== undefined
+      ? Array.from({ length: c.geometry.windows }, (_v, i) =>
+          studioCopy.commissionWindowSegment(i, c.geometry!.windowFrames))
+      : undefined
+    const geometryLine = c.geometry !== undefined
+      ? studioCopy.commissionGeometry(c.geometry)
+      : undefined
+    return {
+      id: c.kind,
+      label: studioCopy.commissionKindLabel(c.kind),
+      detail: [detail, geometryLine].filter((x): x is string => x !== undefined && x !== "").join(" — "),
+      segments,
+      title: c.refusal ?? studioCopy.commissionRowTitle(c.kind),
+    }
+  })
+
   const kfChips = barLanes.map((k, i) => {
     const docFrame = keyframes[i]?.frame
     const verdict = typeof docFrame === "number" ? pinDropVerdict(calls, docFrame) : null
@@ -360,6 +390,7 @@ export function StudioStripPane({
       tracks={VIDEO_TIMELINE_TRACKS.map((t) => ({ ...t }))}
       packed
       promptsLabel={studioCopy.callsLabel}
+      commissions={commissionRows}
       // (F11, 2026-11-05) the strip's two hints are the dictionary's —
       // the pane feeds the atoms, it owns no literals.
       laneHint={studioCopy.keyframeLaneHint}

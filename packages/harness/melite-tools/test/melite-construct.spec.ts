@@ -2052,9 +2052,10 @@ describe('melite_construct — slice 5 (first-door wire grammar + landing states
     assert.equal(out['error_kind'], 'unknown-lane')
     assert.match(String(out['error']), /"reference_images" is not a port of card "h3-timeline"/)
     assert.match(String(out['error']), /ref_images/, 'the refusal names the lanes the card DOES declare')
-    // 2026-10-28: reshoot_clip joined (feature 024 — the re-shoot
-    // source seat, a single video producer).
-    assert.deepEqual(out['allowed_lanes'], ['image', 'last_frame', 'ref_images', 'ref_videos', 'ref_audios', 'reshoot_clip'])
+    // 2026-11-12: reshoot_clip retires with §8 — the re-shoot rides
+    // the `reshoot` mod bag (bags are not lanes), so the rail roster
+    // carries the film's five slots only.
+    assert.deepEqual(out['allowed_lanes'], ['image', 'last_frame', 'ref_images', 'ref_videos', 'ref_audios'])
     assert.equal(seen.length, 0, 'nothing was read or written')
   })
 

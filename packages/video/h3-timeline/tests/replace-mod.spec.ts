@@ -172,7 +172,7 @@ describe("the replace kind", () => {
   });
 
   it("a bound arm under an armed reshoot refuses naming the conflict (one door per doc)", () => {
-    const walked = def.schema({ replace: [SWAP_ENTRY()], reshoot_enabled: true }) as Record<string, unknown>;
+    const walked = def.schema({ replace: [SWAP_ENTRY()], reshoot: [{ source_clip: 'sources/take3.mp4' }] }) as Record<string, unknown>;
     assert.throws(
       () => def.compose(walked, model, new GraphBuilder(), "run_replace_reshoot_conflict"),
       /Replace and Reshoot are both armed/,

@@ -62,19 +62,10 @@ import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import type { H3Facts } from './actions.js'
 import { chainSaveBoundaries, concatSavedFilms } from './actions.js'
 import {
-  assertGridLength, GRID_BASE_FRAMES, GRID_STEP_FRAMES, GRID_MAX_FRAMES,
+  assertGridLength, solveWindowComposition, CONTEXT_OVERLAP_FRAMES, GRID_MAX_FRAMES,
 } from './timelineContract.js'
+export { solveWindowComposition, type WindowComposition } from './timelineContract.js'
 import { loadVideo, renderMaskedEditChain } from './chainEdit.js'
-
-/** The chain policy's masked_av context — the overlap every seam
- * after the first carries (the same 39 the swap's clips ride; the
- * entry's overlap_frames knob feeds the plan node's slicing, the
- * policy owns the carry). */
-const CONTEXT_OVERLAP_FRAMES = 39
-
-/** The plan's scene cap (chain_nodes: a 32-scene cap refuses
- * mis-authored loops). */
-const MAX_WINDOWS = 32
 
 /** The extend entry's required seats (the reshoot/repair idiom: an
  * armed doc with an empty seat refuses loud naming the seat). */
@@ -88,70 +79,6 @@ const num = (p: Record<string, unknown>, k: string, d: number): number =>
 
 const str = (p: Record<string, unknown>, k: string): string =>
   typeof p[k] === 'string' ? (p[k] as string) : ''
-
-/** The smallest 22+17k grid length ≥ x (capped at 362); null when x
- * exceeds the grid — that window count cannot carry the total. */
-const gridCeil = (x: number): number | null => {
-  const k = Math.ceil((x - GRID_BASE_FRAMES) / GRID_STEP_FRAMES)
-  const length = Math.max(GRID_BASE_FRAMES, GRID_BASE_FRAMES + GRID_STEP_FRAMES * k)
-  return length > GRID_MAX_FRAMES ? null : length
-}
-
-/** The largest 22+17k grid length ≤ x (floored at 22, capped 362). */
-const gridFloor = (x: number): number => Math.min(
-  GRID_MAX_FRAMES,
-  GRID_BASE_FRAMES + GRID_STEP_FRAMES * Math.floor((x - GRID_BASE_FRAMES) / GRID_STEP_FRAMES),
-)
-
-/** One legal composition of the stated extension. */
-export interface WindowComposition {
-  readonly windows: number
-  readonly windowFrames: number
-  readonly deliveredFrames: number
-}
-
-/** THE COMPOSITION SOLVER (pure; the door's whole law beyond one
- * window): across every legal window count, the grid lengths on
- * both sides of the exact requirement — the smallest that delivers
- * ≥ stated (ceil) and the largest that delivers ≤ stated (floor) —
- * looking for an EXACT delivery; else a loud refusal naming the
- * neighboring compositions (max under, min over).
- * @param totalFrames the stated extension, frames at the film clock
- * @param where the refusal's voice ('h3-timeline extend')
- * @param overlap the per-seam context overlap (the policy's 39)
- * @returns the exact composition */
-export function solveWindowComposition(
-  totalFrames: number,
-  where: string,
-  overlap: number = CONTEXT_OVERLAP_FRAMES,
-): WindowComposition {
-  let bestUnder: WindowComposition | null = null
-  let bestOver: WindowComposition | null = null
-  for (let windows = 1; windows <= MAX_WINDOWS; windows++) {
-    const exact = (totalFrames + (windows - 1) * overlap) / windows
-    for (const windowFrames of [gridFloor(exact), gridCeil(exact)] as const) {
-      if (windowFrames === null) continue
-      const delivered = windows * windowFrames - (windows - 1) * overlap
-      if (delivered === totalFrames) return { windows, windowFrames, deliveredFrames: delivered }
-      const composition: WindowComposition = { windows, windowFrames, deliveredFrames: delivered }
-      if (delivered < totalFrames) {
-        if (bestUnder === null || delivered > bestUnder.deliveredFrames) bestUnder = composition
-      } else if (bestOver === null || delivered < bestOver.deliveredFrames) {
-        bestOver = composition
-      }
-    }
-  }
-  const neighbor = (c: WindowComposition | null): string =>
-    c === null ? '' :
-      ` nearest: ${c.windows} windows of ${c.windowFrames}f deliver ${c.deliveredFrames}f (${(c.deliveredFrames / 24).toFixed(3)}s);`
-  throw new Error(
-    `${where}: stated ${totalFrames}f composes nowhere exactly — ` +
-      `N uniform 22+17k windows under the ${overlap}f context overlap compose exactly nowhere;` +
-      `${neighbor(bestUnder)}${neighbor(bestOver)}` +
-      ` re-state extend_seconds as a composition's delivered seconds ` +
-      `(D frames round-trips D/24 exactly; a single window keeps the 22+17k grid door)`,
-  )
-}
 
 /** The extend renderer: validates the bound entry, then composes the
  * fresh-continuation chain plus the join. Like the swap and repair,

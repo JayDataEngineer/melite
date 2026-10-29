@@ -257,6 +257,85 @@ export function assertGridLength(length: unknown, where: string): number {
   return length
 }
 
+/** The chain policy's masked_av context — the overlap every composed
+ *  seam after the first carries (the swap's clip law, shared with the
+ *  extend's window composition). */
+export const CONTEXT_OVERLAP_FRAMES = 39
+
+/** The plan's scene cap (chain_nodes: a 32-scene cap refuses
+ *  mis-authored loops) — the composition solver's window ceiling. */
+export const MAX_COMPOSED_WINDOWS = 32
+
+/** One legal composition of a stated extension. */
+export interface WindowComposition {
+  readonly windows: number
+  readonly windowFrames: number
+  readonly deliveredFrames: number
+}
+
+/** The largest 22+17k grid length ≤ x (floored at 22, capped 362). */
+const gridFloorFrames = (x: number): number => Math.min(
+  GRID_MAX_FRAMES,
+  GRID_BASE_FRAMES + GRID_STEP_FRAMES * Math.floor((x - GRID_BASE_FRAMES) / GRID_STEP_FRAMES),
+)
+
+/** The smallest 22+17k grid length ≥ x (capped at 362); null when x
+ *  exceeds the grid — that window count cannot carry the total. */
+const gridCeilFrames = (x: number): number | null => {
+  const k = Math.ceil((x - GRID_BASE_FRAMES) / GRID_STEP_FRAMES)
+  const length = Math.max(GRID_BASE_FRAMES, GRID_BASE_FRAMES + GRID_STEP_FRAMES * k)
+  return length > GRID_MAX_FRAMES ? null : length
+}
+
+/** THE COMPOSITION SOLVER (pure; the door's whole law beyond one
+ *  window): across every legal window count, the grid lengths on
+ *  both sides of the exact requirement — the smallest that delivers
+ *  ≥ stated (ceil) and the largest that delivers ≤ stated (floor) —
+ *  looking for an EXACT delivery; else a loud refusal naming the
+ *  neighboring compositions (max under, min over).
+ *
+ *  It lives HERE, on the client-safe contract face, because TWO
+ *  consumers ask the same question: the extend renderer (what to
+ *  compose) and the studio's commission rail (what to DRAW — the
+ *  multiwindow unification audit's §9: the operator could not see
+ *  the N windows an agent had strung together).
+ * @param totalFrames the stated extension, frames at the film clock
+ * @param where the refusal's voice ('h3-timeline extend')
+ * @param overlap the per-seam context overlap (the policy's 39)
+ * @returns the exact composition */
+export function solveWindowComposition(
+  totalFrames: number,
+  where: string,
+  overlap: number = CONTEXT_OVERLAP_FRAMES,
+): WindowComposition {
+  let bestUnder: WindowComposition | null = null
+  let bestOver: WindowComposition | null = null
+  for (let windows = 1; windows <= MAX_COMPOSED_WINDOWS; windows++) {
+    const exact = (totalFrames + (windows - 1) * overlap) / windows
+    for (const windowFrames of [gridFloorFrames(exact), gridCeilFrames(exact)] as const) {
+      if (windowFrames === null) continue
+      const delivered = windows * windowFrames - (windows - 1) * overlap
+      if (delivered === totalFrames) return { windows, windowFrames, deliveredFrames: delivered }
+      const composition: WindowComposition = { windows, windowFrames, deliveredFrames: delivered }
+      if (delivered < totalFrames) {
+        if (bestUnder === null || delivered > bestUnder.deliveredFrames) bestUnder = composition
+      } else if (bestOver === null || delivered < bestOver.deliveredFrames) {
+        bestOver = composition
+      }
+    }
+  }
+  const neighbor = (c: WindowComposition | null): string =>
+    c === null ? '' :
+      ` nearest: ${c.windows} windows of ${c.windowFrames}f deliver ${c.deliveredFrames}f (${(c.deliveredFrames / 24).toFixed(3)}s);`
+  throw new Error(
+    `${where}: stated ${totalFrames}f composes nowhere exactly — ` +
+      `N uniform 22+17k windows under the ${overlap}f context overlap compose exactly nowhere;` +
+      `${neighbor(bestUnder)}${neighbor(bestOver)}` +
+      ` re-state extend_seconds as a composition's delivered seconds ` +
+      `(D frames round-trips D/24 exactly; a single window keeps the 22+17k grid door)`,
+  )
+}
+
 /** THE UNIFORM SPAN GATE: one refusal for every window shape. A
  *  carried window generates span+carry frames, so its authored span
  *  must be 17k; a first or cut window generates its span verbatim, so

@@ -156,7 +156,7 @@ describe("the repair kind", () => {
   });
 
   it("a bound arm under an armed reshoot refuses naming the conflict (one door per doc)", () => {
-    const walked = def.schema({ repair: [REPAIR_ENTRY()], reshoot_enabled: true }) as Record<string, unknown>;
+    const walked = def.schema({ repair: [REPAIR_ENTRY()], reshoot: [{ source_clip: 'sources/take3.mp4' }] }) as Record<string, unknown>;
     assert.throws(
       () => def.compose(walked, model, new GraphBuilder(), "run_repair_reshoot_conflict"),
       /Repair and Reshoot are both armed/,

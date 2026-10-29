@@ -228,7 +228,7 @@
     "url": "https://github.com/cseti007/ComfyUI-CrossViewWarp",
     "ref": "3266a83a84eaa6833a9ebc38ac7cdd8789e44f5b",
     "required": true,
-    "desc": "CrossViewWarp (Apache-2.0, v0.11.0) — depth-warp conditioning node for the CrossView-Warp IC-LoRA. Declared on the video plane for camera-move compositions; no graph addresses its class yet (CrossViewWarp). Pip: nothing beyond the ComfyUI base env.",
+    "desc": "CrossViewWarp (Apache-2.0, v0.11.0) — depth-warp conditioning node for the CrossView-Warp IC-LoRA. Declared on the video plane for camera-move compositions; addressed by the h3-timeline re-shoot chain (feature 024 — two CrossViewWarp passes per armed film: the depth-stack splat and the RGB reprojection). Pip: nothing beyond the ComfyUI base env.",
     "pip": [],
     "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/video/nodes.yaml"
   },

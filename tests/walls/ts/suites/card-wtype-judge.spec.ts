@@ -145,7 +145,7 @@ const CARD_ROSTER = 17; // 18→17 2026-11-12: the openjutsu card deleted by ope
 // edit-arm trio + mask_expand + the mannequin blur pair +
 // frame_load_cap) — every wtype agreeing with its zod shape, argued
 // here.
-const FIELD_ROSTER = 504; // 513→504 2026-11-12: the openjutsu card's nine fields leave with it
+const FIELD_ROSTER = 493; // 504→493 2026-11-12: the eleven flat reshoot_* knob fields retire into the reshoot mod bag (§8 — the kind's entry fields ride the modifiers channel, outside the judged face)
 
 interface DictField {
   readonly type?: string;

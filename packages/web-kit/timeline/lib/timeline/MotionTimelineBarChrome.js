@@ -14,16 +14,17 @@ import css from "./timeline.module.css";
 import { useState } from "react";
 import { timelineCopy } from "../timelineCopy.js";
 import { LaneHead } from "./LaneHead.js";
+import { COMMISSION_H } from "./CommissionsRail.js";
 /** The pinned label gutter (bar line 820): the zoom cluster + lane
  *  heads. The Fit pin reads the live scale — the body is the bar's. */
 export function TimelineGutter(props) {
-    const { scale, scrollRef, frameIdx, promptsHeight, promptsLabel, beats, beatsLabel, beatsHeight, audioLayers, onAudioDetach, tracks, audioClipCards, onTrackAdd, kfLaneCards, } = props;
+    const { scale, scrollRef, frameIdx, promptsHeight, promptsLabel, beats, beatsLabel, beatsHeight, audioLayers, onAudioDetach, tracks, audioClipCards, onTrackAdd, kfLaneCards, commissions, } = props;
     const { zoom, anchorRef, frameToPx, setPpf, setBasePpf, fitPpf, effPpf, basePpf, } = scale;
     return (_jsx(_Fragment, { children: _jsxs("div", { className: css.gutter, style: { width: GUTTER_W }, children: [_jsxs("div", { className: css.zoomRow, style: { height: RULER_H }, children: [_jsx(Tip, { tip: "Zoom out (back toward fit)", children: _jsx(Button, { variant: "ghost", size: "sm", onClick: () => zoom(1 / ZOOM_STEP), "aria-label": timelineCopy.zoomOutAria, className: css.zoomBtn, children: _jsx(ZoomOut, {}) }) }), _jsx(Tip, { tip: "Fit the whole motion in view", children: _jsxs(Button, { variant: "ghost", size: "sm", onClick: () => {
                                     anchorRef.current = { frame: frameIdx, off: frameToPx(frameIdx) - (scrollRef.current?.scrollLeft ?? 0) };
                                     setPpf(Math.max(1, fitPpf));
                                     setBasePpf(Math.max(1, fitPpf));
-                                }, className: css.zoomPct, children: [Math.round((effPpf / (basePpf ?? fitPpf)) * 100), "%"] }) }), _jsx(Tip, { tip: "Zoom in \u2014 more pixels per frame (the bar scrolls horizontally)", children: _jsx(Button, { variant: "ghost", size: "sm", onClick: () => zoom(ZOOM_STEP), "aria-label": timelineCopy.zoomInAria, className: css.zoomBtn, children: _jsx(ZoomIn, {}) }) })] }), _jsx(LaneHead, { variant: "prompts", glyph: _jsx(Film, { "aria-hidden": true }), label: promptsLabel, height: promptsHeight }), beats && (_jsx(LaneHead, { variant: "beats", glyph: _jsx(ListMusic, { "aria-hidden": true }), label: beatsLabel, height: beatsHeight })), audioLayers?.map((L) => {
+                                }, className: css.zoomPct, children: [Math.round((effPpf / (basePpf ?? fitPpf)) * 100), "%"] }) }), _jsx(Tip, { tip: "Zoom in \u2014 more pixels per frame (the bar scrolls horizontally)", children: _jsx(Button, { variant: "ghost", size: "sm", onClick: () => zoom(ZOOM_STEP), "aria-label": timelineCopy.zoomInAria, className: css.zoomBtn, children: _jsx(ZoomIn, {}) }) })] }), _jsx(LaneHead, { variant: "prompts", glyph: _jsx(Film, { "aria-hidden": true }), label: promptsLabel, height: promptsHeight }), commissions?.map((row) => (_jsx(LaneHead, { variant: "commission", rowId: row.id, glyph: _jsx(Film, { "aria-hidden": true }), label: row.label, accent: row.accent, height: COMMISSION_H, title: row.title }, row.id))), beats && (_jsx(LaneHead, { variant: "beats", glyph: _jsx(ListMusic, { "aria-hidden": true }), label: beatsLabel, height: beatsHeight })), audioLayers?.map((L) => {
                     // (2026-09-22, the D-M-E card law) the lane's OWN glyph +
                     // accent — dialogue a mic, sfx a bolt, music the note; the
                     // accent tints the glyph so the gutter reads like the clips.

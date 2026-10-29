@@ -69,6 +69,8 @@ function strip(over?: Record<string, unknown>) {
       barPrompts={[] as never}
       barLanes={keyframesToLanes([WIRED]) as never}
       barAudioClips={[]}
+      // (§9) no armed mod bag in this fixture — the rail renders no row
+      commissions={[]}
       barTotal={200}
       frameIdx={0}
       callPreviews={{}}

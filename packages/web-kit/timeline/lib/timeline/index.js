@@ -21,6 +21,7 @@
  * test-owing debt — the wave spends no tests on corpses.)
  */
 export * from "./MotionTimelineBar.js";
+export * from "./CommissionsRail.js";
 export * from "./FilmPlayer.js";
 export * from "./TimelineScrubBar.js";
 export * from "./viser-timeline/index.js";

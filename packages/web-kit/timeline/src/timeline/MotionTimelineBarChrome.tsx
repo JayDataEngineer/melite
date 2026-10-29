@@ -17,6 +17,7 @@ import type { TimelineTrack } from "./viser-timeline/types.ts"
 import type { AudioLayer, TimelineBeat } from "./MotionTimelineBar.tsx"
 import { timelineCopy } from "../timelineCopy.ts"
 import { LaneHead } from "./LaneHead.tsx"
+import { COMMISSION_H, type CommissionRow } from "./CommissionsRail.tsx"
 
 export interface TimelineGutterScale {
   zoom: (factor: number) => void
@@ -53,6 +54,10 @@ export interface TimelineGutterProps {
    *  heads' card height (44) when the tenant opts in — the
    *  audioClipCards precedent; absent → the 24px block, byte-identical. */
   kfLaneCards?: boolean
+  /** (§9's mod projection) the commission heads — one per armed mod
+   *  bag, mirroring the body rows the bar renders under the prompts
+   *  lane. Opt-in; absent/empty → no head, byte-identical. */
+  commissions?: CommissionRow[]
   tracks: TimelineTrack[]
 }
 
@@ -62,7 +67,7 @@ export function TimelineGutter(props: TimelineGutterProps) {
   const {
     scale, scrollRef, frameIdx, promptsHeight, promptsLabel,
     beats, beatsLabel, beatsHeight, audioLayers, onAudioDetach, tracks, audioClipCards,
-    onTrackAdd, kfLaneCards,
+    onTrackAdd, kfLaneCards, commissions,
   } = props
   const {
     zoom, anchorRef, frameToPx, setPpf, setBasePpf, fitPpf, effPpf, basePpf,
@@ -119,6 +124,18 @@ export function TimelineGutter(props: TimelineGutterProps) {
           label={promptsLabel}
           height={promptsHeight}
         />
+        {commissions?.map((row) => (
+          <LaneHead
+            key={row.id}
+            variant="commission"
+            rowId={row.id}
+            glyph={<Film aria-hidden />}
+            label={row.label}
+            accent={row.accent}
+            height={COMMISSION_H}
+            title={row.title}
+          />
+        ))}
         {beats && (
           <LaneHead
             variant="beats"
