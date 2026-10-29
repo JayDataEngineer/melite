@@ -45,6 +45,11 @@ const ACTIONS = [
     // SSOT's ACTIONS row voices the amended law.
     'lora_fetch',
     'refmods_list',
+    // THE PREFLIGHT VERB (audit 019 C3): the named setup-miss list —
+    // engine/manager/packs/store/wiring, each miss with its door. The
+    // estate fires it once at boot; an agent setting up a lane calls
+    // it FIRST instead of discovering misses as mid-run burns.
+    'preflight',
 ];
 function recordValue(value) {
     return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -271,6 +276,18 @@ function renderManage(args, value) {
     if (action === 'status') {
         lines.push(...statusText(data, verbose));
     }
+    else if (action === 'preflight') {
+        // THE NAMED MISS LIST (audit 019 C3): every miss on its own line
+        // with its door — the render IS the one-refusal-per-miss face;
+        // green axes ride one compact line each below the misses.
+        const misses = Array.isArray(result.misses) ? result.misses : [];
+        for (const miss of misses)
+            lines.push('MISS ' + String(miss));
+        if (misses.length === 0)
+            lines.push('no misses — every axis green');
+        for (const r of (Array.isArray(result.rows) ? result.rows : []).slice(0, 8))
+            lines.push('  ' + String(r));
+    }
     else if (action === 'logs' || action === 'search_models' || action === 'list_extensions' || action === 'snapshot_list') {
         lines.push(...actionRows(action, data, result.rows));
     }
@@ -356,7 +373,7 @@ export function comfyManage(estate) {
             + 'add a lora to <family>: lora_fetch url → auto restart → the mod appears in the family\'s mods (the human\'s operator_confirmed gates it like '
             + 'every external fetch; the answer carries the combo name, whether the engine already lists it, and a row_suggestion for the family\'s rows); '
             + 'refmods_list (the engine\'s own '
-            + 'MiniMaxH3RefModsLoader mod combos off /object_info — the refmod picker\'s candidate feed, read-only); restart, stop, launch, update '
+            + 'MiniMaxH3RefModsLoader mod combos off /object_info — the refmod picker\'s candidate feed, read-only); preflight — THE SETUP READ (call it FIRST on a fresh lane): one named list of every setup miss (engine reachable, Manager present, required declared packs landed, store root on disk, extra-model wiring visible), each miss naming the door that closes it — never discover them as mid-run burns; restart, stop, launch, update '
             + '(target comfy), switch_version, free. INFRA UPKEEP only — it '
             + 'never runs inference, and lifecycle actions are refused while runs are '
             + 'active (stop them or pass force).',

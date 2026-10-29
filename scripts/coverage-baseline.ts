@@ -347,6 +347,12 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/harness/estate-queue/src/loadRegistry.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/harness/estate-queue/src/manageOps.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/harness/estate-queue/src/managePlane.ts': { statements: 97.8, branches: 96.13, functions: 100, lines: 97.75 },
+  // managePreflight (audit 019 C3, measured 2026-11-12 over
+  // manage-preflight.spec.ts: the uncovered branch arms are the
+  // defensive optional-field variants — probe.reason undefined,
+  // per-key sub default, the wiring-budget stop, the packs-cascade
+  // engine arm split).
+  '**/packages/harness/estate-queue/src/managePreflight.ts': { statements: 98.59, branches: 82.6, functions: 100, lines: 100 },
   '**/packages/harness/estate-queue/src/manageProbe.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/harness/estate-queue/src/manageRegistry.ts': { statements: 93.75, branches: 100, functions: 83.33, lines: 93.33 },
   '**/packages/harness/estate-queue/src/managerRail.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },

@@ -355,6 +355,51 @@ const rows: readonly Plugin[] = [
   // The management seat (REBUILD-15): the ComfyUI-Manager plane —
   // gates on the timer seat (the rail's timeouts).
   manageProvider,
+  // THE PREFLIGHT BOOT NOTE (audit 019 C3): one console note naming
+  // every setup miss with its door, fired once after boot — instead
+  // of null presence + mid-run burns. Rides the manage seat's own
+  // preflight verb (one spelling of the axis logic); the brain axis
+  // is the agent-row's own note above (one home — the config row
+  // that owns it). Deferred: boot never waits on an absent engine
+  // (the probes carry their own fuses); a failed note is one loud
+  // line, never a wedged boot.
+  {
+    name: "melite-preflight-note",
+    inject: ["manage"],
+    apply: (ctx: Context): void => {
+      const say = (line: string): void => {
+        // console, not ctx.logger: the lane log owns stdout (the
+        // craft row's law — never quiet-resolve a boot decision)
+        console.log("[melite-estate] " + line);
+      };
+      // NO DEFER: the row is ordered after manageProvider (mount
+      // order is load order), so the manage seat exists at apply
+      // time; the act itself is async and every error is caught —
+      // boot never waits on an absent engine (the probes carry
+      // their own fuses).
+      const run = (): void => {
+        void (async () => {
+          const manage = ctx.get("manage") as
+            | { act(doc: unknown, signal: AbortSignal): Promise<{ detail?: unknown; misses?: unknown }> }
+            | undefined;
+          if (manage === undefined) {
+            say("preflight: the manage seat is absent on this lane — no boot note (the verb stays callable where the seat mounts)");
+            return;
+          }
+          const answer = await manage.act({ action: "preflight" }, AbortSignal.timeout(60_000));
+          const misses = Array.isArray(answer.misses) ? answer.misses : [];
+          if (misses.length === 0) {
+            say("preflight: " + String(answer.detail ?? "all axes green"));
+            return;
+          }
+          for (const miss of misses) say("preflight MISS " + String(miss));
+        })().catch((e: unknown) => {
+          say("preflight note failed (" + (e instanceof Error ? e.message : String(e)).slice(0, 160) + ") — the comfy_manage preflight verb remains the on-demand read");
+        });
+      };
+      run();
+    },
+  },
   // The manage remote (the browser tab's plane): the Typert
   // namespace `manage` over the seat above.
   manageRemotePlugin,

@@ -617,7 +617,10 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // packages/models/qwen-img-edit-2511's mods/lanpaint face (src +
   // committed lib) — one tracked lib .js leaves the census by operator
   // order, repinned here deliberately.
-  const LIB_CENSUS_PIN = 625;
+  // 625 -> 626 (2026-11-12): managePreflight.js — audit 019 C3's
+  // first-boot preflight core (the five-axis read the preflight verb
+  // and the estate boot note ride), repinned with its landing.
+  const LIB_CENSUS_PIN = 626;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {

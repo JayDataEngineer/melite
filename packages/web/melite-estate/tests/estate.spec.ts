@@ -723,3 +723,100 @@ describe('the subprocess row — stand down when the host already provides', () 
     }
   })
 })
+
+// ── THE PREFLIGHT BOOT NOTE (audit 019 C3) ───────────────────────────
+//
+// One console note naming every setup miss with its door, fired once
+// after boot through the manage seat's own preflight verb — instead
+// of null presence + mid-run burns. The brain axis is the agent-row's
+// note (one home); this row owns the engine-plane five.
+describe('melite-preflight-note — the boot note rides the manage seat', () => {
+  it('mounts after the manage provider (the seat exists before the note defers to it)', async () => {
+    const ctx = await mount({ repoRoot: '/tmp/pin' })
+    const names = ctx.plugins.map((p) => p.name)
+    const at = names.indexOf('melite-preflight-note')
+    const manageAt = names.indexOf('estate-manage')
+    expect(at).toBeGreaterThan(-1)
+    expect(manageAt).toBeGreaterThan(-1)
+    expect(at).toBeGreaterThan(manageAt)
+  })
+
+  it('voices every miss the verb names (one MISS line each), through the seat door', async () => {
+    const lines = silence()
+    try {
+      const noteApply = (await rowApply('melite-preflight-note')).fn
+      const calls: Array<Record<string, unknown> | undefined> = []
+      const fakeCtx = {
+        get: (n: string): unknown =>
+          n === 'manage'
+            ? {
+                act: (doc: Record<string, unknown>) => {
+                  calls.push(doc)
+                  return Promise.resolve({
+                    detail: '5 axis(es) checked, 2 miss(es): engine, wiring',
+                    misses: [
+                      'engine: miss — unreachable at http://x — door: endpoint_set',
+                      'wiring: miss — none registered — door: provision paths',
+                    ],
+                  })
+                },
+              }
+            : undefined,
+        effect: (fn: () => unknown): unknown => fn(),
+        // fire the defer immediately: the note runs in-test
+        timeout: (cb: () => void): (() => void) => { cb(); return () => {} },
+      }
+      noteApply(fakeCtx as never, undefined)
+      await new Promise((r) => setTimeout(r, 0))
+      expect(calls).toEqual([{ action: 'preflight' }])
+      expect(lines.filter((l) => l.includes('preflight MISS engine:')).length).toBe(1)
+      expect(lines.filter((l) => l.includes('preflight MISS wiring:')).length).toBe(1)
+    } finally {
+      vi.restoreAllMocks()
+    }
+  })
+
+  it('all-green answers one summary line, not a MISS roster', async () => {
+    const lines = silence()
+    try {
+      const noteApply = (await rowApply('melite-preflight-note')).fn
+      const fakeCtx = {
+        get: (n: string): unknown =>
+          n === 'manage'
+            ? { act: () => Promise.resolve({ detail: '5 axis(es) checked, all green', misses: [] }) }
+            : undefined,
+        effect: (fn: () => unknown): unknown => fn(),
+        timeout: (cb: () => void): (() => void) => { cb(); return () => {} },
+      }
+      noteApply(fakeCtx as never, undefined)
+      await new Promise((r) => setTimeout(r, 0))
+      expect(lines.some((l) => l.includes('preflight: 5 axis(es) checked, all green'))).toBe(true)
+      expect(lines.some((l) => l.includes('MISS'))).toBe(false)
+    } finally {
+      vi.restoreAllMocks()
+    }
+  })
+
+  it('a seatless lane says so loud; a failed act is one line, never a wedged boot', async () => {
+    const lines = silence()
+    try {
+      const noteApply = (await rowApply('melite-preflight-note')).fn
+      noteApply({ get: () => undefined, effect: (fn: () => unknown) => fn(), timeout: (cb: () => void) => { cb(); return () => {} } } as never, undefined)
+      await new Promise((r) => setTimeout(r, 0))
+      expect(lines.some((l) => l.includes('the manage seat is absent on this lane'))).toBe(true)
+
+      lines.length = 0
+      const throwing = {
+        get: (n: string): unknown =>
+          n === 'manage' ? { act: () => Promise.reject(new Error('seat wedged')) } : undefined,
+        effect: (fn: () => unknown): unknown => fn(),
+        timeout: (cb: () => void): (() => void) => { cb(); return () => {} },
+      }
+      noteApply(throwing as never, undefined)
+      await new Promise((r) => setTimeout(r, 0))
+      expect(lines.some((l) => l.includes('preflight note failed') && l.includes('seat wedged'))).toBe(true)
+    } finally {
+      vi.restoreAllMocks()
+    }
+  })
+})

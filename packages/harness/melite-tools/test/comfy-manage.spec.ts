@@ -163,6 +163,52 @@ describe('comfy_manage render — the action line', () => {
      assert.match(provision, /item: pack — restart_required/)
     assert.match(provision, /next_action: status/)
   })
+
+  test('THE PREFLIGHT RENDER (audit 019 C3): every miss is its own MISS line with its door; green answers say so', () => {
+    const tool = comfyManage(stubEstate())
+    const text = (value: unknown): string => (tool.output.render({ action: 'preflight' }, asJson(value)) as Array<{ text?: string }>)
+      .map((part) => part.text ?? '').join('\n')
+    const missy = text({
+      ok: true,
+      action: 'preflight',
+      detail: '5 axis(es) checked, 2 miss(es): engine, wiring',
+      rows: [
+        'engine: miss — unreachable at http://engine:8188 · door: endpoint_set',
+        'manager: miss — unchecked — the engine axis missed above · door: endpoint_set',
+        'packs: miss — unchecked — the engine axis missed above · door: endpoint_set',
+        'store: green — no estate store configured',
+        'wiring: miss — none of the 2 declared extra-model folder(s) answer · door: provision paths',
+      ],
+      misses: [
+        'engine: miss — unreachable at http://engine:8188 · door: endpoint_set',
+        'wiring: miss — none of the 2 declared extra-model folder(s) answer · door: provision paths',
+      ],
+      data: { axes: [] },
+    })
+    // one MISS line per miss, door included — the render IS the
+    // one-refusal-per-miss face
+    assert.match(missy, /MISS engine: miss — unreachable at http:\/\/engine:8188 · door: endpoint_set/)
+    assert.match(missy, /MISS wiring: miss — none of the 2 declared extra-model folder\(s\) answer/)
+    assert.doesNotMatch(missy, /MISS manager/, 'cascades ride rows, not the MISS roster')
+    assert.match(missy, /store: green/)
+
+    const clean = text({
+      ok: true,
+      action: 'preflight',
+      detail: '5 axis(es) checked, all green',
+      rows: [
+        'engine: green — reachable at http://engine:8188',
+        'manager: green — answered',
+        'packs: green — every required declared pack landed',
+        'store: green — the configured weights store exists',
+        'wiring: green — 2/2 declared folder(s) registered',
+      ],
+      misses: [],
+      data: { axes: [] },
+    })
+    assert.match(clean, /no misses — every axis green/)
+    assert.doesNotMatch(clean, /MISS/)
+  })
 })
 
 describe('comfy_manage execute — the exec-signal miswire', () => {

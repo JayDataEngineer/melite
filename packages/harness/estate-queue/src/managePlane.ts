@@ -47,6 +47,7 @@ import type {
 import { AcquireBusyError, LIVE_ACQUIRE_STATES } from "@melite/estate-provisioning";
 import { ManagerApiError, managerGet, managerPost, planeUnavailable } from "./managerRail.ts";
 import { probeEndpoint, activeRuns, managerSecurity, engineQueueView } from "./manageProbe.ts";
+import { runPreflight, preflightLine } from "./managePreflight.ts";
 import { base, mapManagerRefused, mapRail, railMs, estateOnly, awaitQueueDrained, systemctl, guardLifecycle } from "./manageOps.ts";
 import { holdLifecycle } from "./lifecycleLatch.ts";
 import { deadline as deadlineOf, timeoutOf } from "@deepseek-ai/dsh-timeout";
@@ -115,6 +116,14 @@ export const ACTIONS = [
   // square): the H3 refmods loader's own mod_N combo, read off the
   // same cached /object_info doc lora_list rides — the stems, sorted.
   "refmods_list",
+  // THE PREFLIGHT VERB (audit 019 C3, 2026-11-12): one named list of
+  // every setup miss (engine reachable? Manager present? required
+  // declared packs landed? store root on disk? wiring visible?) —
+  // each miss names its door, instead of null presence + mid-run
+  // burns. A READ on any posture (BYO is its primary audience — no
+  // estateOnly); a probe that throws is a named miss, so the answer
+  // can never degrade to all-green over an unchecked axis.
+  "preflight",
 ] as const;
 
 export type ManageAction = (typeof ACTIONS)[number];
@@ -2200,6 +2209,29 @@ async function hSnapshotList(req: Req, ctx: ManageCtx): Promise<[number, ManageE
   return withNextAction(ok(req.action, items.length + " snapshot(s)", items), "snapshot_save");
 }
 
+// THE PREFLIGHT HANDLER (audit 019 C3): the five-axis read — one
+// row per axis, misses named with their doors, never a degraded
+// green (a probe throw IS a miss — see managePreflight.ts). ok
+// stays true: the read succeeded; the misses are the read's
+// payload, voiced by the render and the estate's boot note.
+async function hPreflight(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
+  const rows = await runPreflight(ctx);
+  const misses = rows.filter((r) => r.state === "miss");
+  const lines = rows.map(preflightLine);
+  return [
+    200,
+    {
+      action: req.action,
+      ok: true,
+      detail: rows.length + " axis(es) checked, " +
+        (misses.length === 0 ? "all green" : misses.length + " miss(es): " + misses.map((m) => m.axis).join(", ")),
+      rows: lines,
+      misses: misses.map(preflightLine),
+      data: { axes: rows },
+    },
+  ];
+}
+
 async function hSnapshotSave(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
   const cfg = ctx.endpoint();
   estateOnly(req, cfg);
@@ -2481,6 +2513,7 @@ const HANDLERS: Record<ManageAction, Handler> = {
   lora_install: hLoraInstall,
   lora_fetch: hLoraFetch,
   refmods_list: hRefmodsList,
+  preflight: hPreflight,
 };
 
 function refusalDataFields(data: unknown): Partial<ManageEnvelope> {
