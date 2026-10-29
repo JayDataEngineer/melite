@@ -264,8 +264,7 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       // same turbo SELECTION + the draft geometry stamps.
       const s = await runCard(w, {
         model: 'h3',
-        prompt: 'a red cube slides slowly across a white table',
-        image: anchor, width: 768, height: 448,
+        calls: [{ text: 'a red cube slides slowly across a white table', image: anchor, knobs: { width: 768, height: 448 } }],
         loras: [{ id: 'h3_turbo8_v1' }],
       }, 'h3 draft')
       const ltx = nodesWith(s, /LTX_lora_loader/)
@@ -308,8 +307,7 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       // 768×448 on every fresh card).
       const s = await runCard(w, {
         model: 'h3',
-        prompt: 'a red cube slides slowly across a white table',
-        image: anchor,
+        calls: [{ text: 'a red cube slides slowly across a white table', image: anchor }],
         loras: [{ id: 'h3_turbo8_v1' }],
       }, 'h3 standard')
       const ltx = nodesWith(s, /LTX_lora_loader/)
@@ -455,6 +453,78 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       await w.ctx.fiber.dispose()
     }
   }, 600_000)
+
+  it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline'))('h3-timeline reshoot: the camera re-shoot RUNS live with the F13d depth-grid match (no broadcast crash) and renders real bytes', async () => {
+    const w = await bootWorld('recipes-h3-reshoot-')
+    try {
+      // THE LIVE PROOF the friction report's §5 demanded: the reshoot
+      // arm's first deep run died at CrossViewWarp (`operands could
+      // not be broadcast (736,1312) (718,1280)` — run-e7a5182d153c).
+      // With the F13d cure the depth stack resizes to the frames'
+      // grid BEFORE both warps and the render completes.
+      const s = await runCard(w, {
+        model: 'h3',
+        calls: [{ text: 'the camera orbits slowly around the subject', start_frame: 0, end_frame: 56, knobs: { width: 768, height: 448 } }],
+        loras: [{ id: 'h3_turbo8_v1' }],
+        reshoot: [{ source_clip: 'swap_film_v1.mp4', orbit: 12 }],
+      }, 'h3 reshoot live')
+      // THE F13d CURE, judged on the RUN workflow (the serialized
+      // graph the engine actually executed): exactly one resize seat,
+      // reference-wired to the VHS frames, feeding BOTH warps.
+      const rs = byClass(s, 'ImageResizeKJ')
+      assert.equal(rs.length, 1, 'exactly one depth-grid resize seat')
+      assert.equal(rs[0]![1].inputs?.['keep_proportion'], false, 'an exact grid copy — never a letterbox')
+      assert.equal(rs[0]![1].inputs?.['width'], 0, 'the reference owns the size')
+      assert.equal(String(rs[0]![1].inputs?.['get_image_size']).includes('VHS_LoadVideo'), true,
+        'the resize reference is the clip frames themselves')
+      const warps = byClass(s, 'CrossViewWarp')
+      assert.equal(warps.length, 2, 'both warp passes mount')
+      for (const [id, wp] of warps) {
+        assert.equal(String(wp.inputs?.['depth']).includes('ImageResizeKJ'), true,
+          `${id}: the warp depth rides the MATCHED stack (the raw VDA grid was the crash)`)
+      }
+      assert.equal(firstBytes(s).length > 1024, true, 'the re-shot video artifact is real bytes')
+    } finally {
+      w.stop()
+      await w.ctx.fiber.dispose()
+    }
+  }, 600_000)
+
+  it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline'))('h3-timeline extend: the single-window join RUNS live (F10 mask link + F12 resample standing) and renders real bytes', async () => {
+    const w = await bootWorld('recipes-h3-extend-')
+    try {
+      // THE LIVE PROOF for the extend chain's two cures: F10 (the
+      // SolidMask handle rides as a LINK, not a raw dict) and F12
+      // (MeliteAudioResample on the join legs — the 32 kHz
+      // soundtrack meets the 48 kHz film without bleeding). The
+      // staged prior is the report's own swap film (17.9 s, 1312×736).
+      const s = await runCard(w, {
+        model: 'h3',
+        calls: [{ text: 'the scene continues smoothly', start_frame: 0, end_frame: 56, knobs: { width: 768, height: 448 } }],
+        loras: [{ id: 'h3_turbo8_v1' }],
+        extend: [{ source_clip: 'swap_film_v1.mp4', extend_seconds: 3.75, extend_prompt: 'the scene continues smoothly' }],
+      }, 'h3 extend live')
+      // F10: the mask seat carries a real link (["node", slot]), not
+      // a bare node dict — the AttributeError's exact shape.
+      const edit = byClass(s, 'MiniMaxH3FantasticVideoEditLatent')
+      assert.ok(edit.length >= 1, 'the extend body mounts')
+      for (const [id, n] of edit) {
+        const mask = n.inputs?.['mask']
+        assert.equal(Array.isArray(mask), true,
+          `${id}: the mask seat is a LINK (F10 — a raw dict died at reshape)`)
+      }
+      // F12: the join legs resample to the film standard.
+      const resample = byClass(s, 'MeliteAudioResample')
+      assert.ok(resample.length >= 1, 'the join resample mounts (F12)')
+      const join = byClass(s, 'MeliteConcatVideos')
+      assert.equal(join.length, 1, 'the join mounts once')
+      assert.equal(firstBytes(s).length > 1024, true, 'the joined film artifact is real bytes')
+    } finally {
+      w.stop()
+      await w.ctx.fiber.dispose()
+    }
+  }, 600_000)
+
 
   it.skipIf(!ENGINE_FREE || !weightsPresent('kimodo'))('motion (kimodo): the Rule B panel-path writes (steps/seed/duration) compose and RUN', async () => {
     const w = await bootWorld('recipes-motion-')

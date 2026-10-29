@@ -101,11 +101,11 @@ describe("the h3 camera re-shoot chain (the fourth mod bag)", () => {
       expect(w.inputs.depth_ratio).toBe(6);
       expect(w.inputs.smooth_depth).toBe(false);
       expect(w.inputs.invert_depth).toBe(false);
-      expect(String(w.inputs.depth)).toContain("VideoDepthAnythingOutput");
+      expect(String(w.inputs.depth)).toContain("ImageResizeKJ");
     }
     // warp 1 reprojects the depth stack itself (the DEPTH conditioning);
     // warp 2 reprojects the RGB frames (the color anchor + hole source)
-    expect(String(warps[0]![1].inputs.frames)).toContain("VideoDepthAnythingOutput");
+    expect(String(warps[0]![1].inputs.frames)).toContain("ImageResizeKJ");
     expect(String(warps[1]![1].inputs.frames)).toContain("VHS_LoadVideo");
     // the disocclusion mask: the pack's magenta, 1 = regenerate
     const mask = entries.find(([, n]) => n.class_type === "ColorToMask")!;
@@ -118,6 +118,37 @@ describe("the h3 camera re-shoot chain (the fourth mod bag)", () => {
     // the union 2.0 patch, the model_patches shelf spelling
     expect(entries.find(([, n]) => n.class_type === "ModelPatchLoader")![1].inputs.name)
       .toBe("h3-fun-controlnet/minimax_h3_fun_controlnet_union_2.0_pruned_bf16.safetensors");
+  });
+
+  it("THE DEPTH-FRAME GRID MATCH (F13d): the VDA depth stack resizes to the frames' own grid before both warps — never a broadcast crash", () => {
+    // The live burn (run-e7a5182d153c-88fd3236): VDA returns at its
+    // internal max_res grid (1280×718) while the clip runs 1312×736,
+    // and CrossViewWarp multiplies the two — `ValueError: operands
+    // could not be broadcast together with shapes (736,1312)
+    // (718,1280)`. VDA exposes no match-to-input toggle, so the
+    // resize seat is the chain's own law: ImageResizeKJ with
+    // get_image_size wired to the VHS frames (the reference owns the
+    // grid), an exact copy (keep_proportion false — no letterbox),
+    // bilinear (depth is a scalar field).
+    const g = new GraphBuilder();
+    instantiateAction(film, bag(), H3, g, "run_rs_gridmatch");
+    const entries = nodes(g);
+    const rs = ofClass(entries, "ImageResizeKJ");
+    expect(rs).toHaveLength(1);
+    const [id, r] = rs[0]!;
+    expect(String(r.inputs.image), `${id} source`).toContain("VideoDepthAnythingOutput");
+    expect(String(r.inputs.get_image_size), `${id} reference`).toContain("VHS_LoadVideo");
+    expect(r.inputs.width).toBe(0);
+    expect(r.inputs.height).toBe(0);
+    expect(r.inputs.keep_proportion).toBe(false);
+    expect(r.inputs.upscale_method).toBe("bilinear");
+    expect(r.inputs.divisible_by).toBe(0);
+    // BOTH warps read the matched stack — a raw VDA handle at a warp
+    // depth/frames seat is the crash the burn pinned
+    for (const [wid, w] of ofClass(entries, "CrossViewWarp")) {
+      expect(String(w.inputs.depth), `${wid} depth`).toContain("ImageResizeKJ");
+    }
+    expect(String(ofClass(entries, "CrossViewWarp")[0]![1].inputs.frames)).toContain("ImageResizeKJ");
   });
 
   it("the window's apply seat rides the chain: warped depth conditions, the mask fences, the guider renders patched", () => {
