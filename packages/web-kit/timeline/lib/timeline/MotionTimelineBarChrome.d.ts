@@ -61,22 +61,19 @@ export interface TimelineRulerProps {
     ticks: number[];
     stepSec: number;
     fps: number;
-    frameIdx: number;
     barBg: string;
     frameToPx: (f: number) => number;
     frameAt: (clientX: number) => number | null;
     onPromptAdd?: (frame: number) => void;
-    /** P6 GESTURE RECEIPT (purge §7 P6): the single-click seek seat — the
-     *  tenant's playhead-move callback (the scrub drag's onFrameChange).
-     *  Absent = the chrome faces the reason instead (the voice below). */
-    onSeekFrame?: (frame: number) => void;
 }
-/** The ruler: ticks + sticky timecode. NOT a scrub surface (operator
- *  2026-11: the scrub gesture belongs to the playhead CAP alone — the
- *  white circle at the top of the line — never the bar's middle); its
- *  gestures are the double-click ADD (bar line 947) and the
- *  single-click SEEK (P6: a click on the time line moves the playhead —
- *  a jump, never a drag — or faces why not). */
+/** The ruler: ticks only. NOT a scrub surface and NOT a seek surface
+ *  (operator, told 10+ times, 2026-10-29: the playhead moves ONLY by
+ *  dragging the CAP — the white circle at the top of the line — never
+ *  a click anywhere on the timeline): the P6 single-click seek and
+ *  its click-voice chip are DEAD, and the sticky timecode chip is
+ *  DEAD with them (it read the bar's fps axis, which can mismatch
+ *  the film's own rate — a readout that can lie is removed, not
+ *  patched). The ruler's one gesture is the double-click ADD. */
 export declare function TimelineRuler(props: TimelineRulerProps): React.JSX.Element;
 export interface TimelinePlayheadProps {
     frameIdx: number;
