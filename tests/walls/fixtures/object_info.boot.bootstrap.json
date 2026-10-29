@@ -13,11 +13,17 @@
   "fixture against exactly address-set + these rows \u2014 an unreceipted",
   "extra row reds as over-growth, a missing addressed class reds as",
   "stale. Pruning a row: delete it here with the consumer wall that",
-  "proved it dead named in the pruning commit."
+  "proved it dead named in the pruning commit.",
+  ""
  ],
  "bootstrap": {
   "BboxDetectorSEGS": "the mask card's detector lanes (impact.ts provider configs) \u2014 composed against the primed boot doc by the estate walls' hermetic composes",
+  "ColorToMask": "the h3 reshoot chain's disocclusion-mask fence (the magenta-hole mask the depth half fences for the warp half) \u2014 lane-gated behind an ARMED reshoot bag the fill loop's default probe never states; composed by the reshoot wall ARM 4 (F13c 2026-11-12: the armed compose addresses it, the plain probe never does)",
   "ComfyMathExpression": "the corpus's clock-gold inverse member (d1-compose-equivalence-corpus) \u2014 the unstated-clock film wires it against the boot declarations",
+  "CrossViewWarp": "the h3 reshoot chain's twin reprojection passes (depth-stack splat + RGB warp) \u2014 lane-gated behind an ARMED reshoot bag the fill loop never states; composed by the reshoot wall ARM 4 (F13c 2026-11-12)",
+  "LoadVideoDepthAnythingModel": "the h3 reshoot chain's depth-model load (the VDA-Small half) \u2014 lane-gated behind an ARMED reshoot bag; composed by the reshoot wall ARM 4 (F13c 2026-11-12)",
+  "VideoDepthAnythingOutput": "the h3 reshoot chain's depth output tail \u2014 the same ARMED-bag lane as the model load (F13c 2026-11-12)",
+  "VideoDepthAnythingProcess": "the h3 reshoot chain's depth process pass \u2014 the same ARMED-bag lane as the model load (F13c 2026-11-12)",
   "ControlNetLoader": "the z-image fun-controlnet lane's loader node \u2014 the h3/z-image lanes the film walls compose",
   "DetailerForEach": "the qwen-img-edit-2511 card's detailer stack (its golden) \u2014 composed against the primed boot doc by the golden driver's wiring gate",
   "FeatherMask": "the qwen-img-edit-2511 card's feather lane (its golden) \u2014 composed against the primed boot doc by the golden driver's wiring gate",
@@ -33,9 +39,6 @@
   "ImageUpscaleWithModel": "the input card's upscale lane (packages/models/input golden) \u2014 composed against the primed boot doc by the golden driver's wiring gate",
   "InvertMask": "the qwen-img-edit-2511 lanpaint flavor's mask-invert arm (actions.ts compose, branch-gated beyond the card probe) \u2014 the family action goldens",
   "KimodoExportFBX": "the gem-soma card's export lane (packages/models/gem-soma golden) \u2014 composed against the primed boot doc by the golden driver's wiring gate",
-  "LanPaint_ImageDecode": "the qwen-img-edit-2511 lanpaint flavor's latent decode (actions.ts compose, branch-gated beyond the card probe) \u2014 the family action goldens",
-  "LanPaint_ImageEncode": "the qwen-img-edit-2511 lanpaint flavor's latent encode (actions.ts compose, branch-gated beyond the card probe's default flavor) \u2014 the family action goldens",
-  "LanPaint_KSamplerAdvanced": "the qwen-img-edit-2511 lanpaint flavor's sampler (actions.ts compose, branch-gated beyond the card probe) \u2014 the family action goldens",
   "LoadAudio": "the audio lane's loader \u2014 the film/audio walls' composes",
   "LoadImageMask": "the mask lane's loader \u2014 the mask/detailer stack's hermetic composes",
   "LoadMoGeModel": "the pixal3d card's geometry loader (packages/models/pixal3d golden) \u2014 composed against the primed boot doc by the golden driver's wiring gate",

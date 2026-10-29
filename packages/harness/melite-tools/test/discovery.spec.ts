@@ -606,10 +606,12 @@ describe('live door arms', () => {
     assert.equal('recipes' in spec, false, 'stroke 34 — the recipe catalog layer is dead on every tier')
     const rows = spec['variants'] as Array<{ id: string; group: string; defaults: Record<string, unknown>; hint: string | null }>
     const ids = rows.filter((r) => r.group === 'Recipe').map((r) => r.id)
-    // STANDARD leads (the birth stamp lands the FIRST Recipe row)
-    assert.equal(ids[0], 'standard', 'the standard tier leads the Recipe rows')
-    assert.deepEqual([...ids].sort(), ['fast', 'quality', 'standard'], 'the mesh trio serves complete')
+    // HIGH leads (the 2026-11-12 flip: high is the runnable default
+    // tier — 1536 detail that still fits a 24GB card)
+    assert.equal(ids[0], 'high', 'the high tier leads the Recipe rows')
+    assert.deepEqual([...ids].sort(), ['fast', 'high', 'quality', 'standard'], 'the mesh quad serves complete')
     const byId = new Map(rows.filter((r) => r.group === 'Recipe').map((r) => [r.id, r]))
+    assert.deepEqual(byId.get('high')!.defaults, { resolution: '1536', remesh_resolution: 1024, decimate_faces: 1000000 }, 'high stamps the runnable 1536 wire')
     assert.deepEqual(byId.get('standard')!.defaults, {}, 'standard stamps nothing — the family floors ARE the tier')
     assert.deepEqual(byId.get('fast')!.defaults, { remesh_resolution: 128, decimate_faces: 10000 }, 'fast stamps the light tail only')
     assert.deepEqual(byId.get('quality')!.defaults, { resolution: '1536', remesh_resolution: 2048, decimate_faces: 2000000 }, 'quality stamps the schema ceilings')

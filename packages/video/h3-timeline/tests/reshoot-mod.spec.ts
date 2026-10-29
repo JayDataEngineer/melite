@@ -86,7 +86,8 @@ describe("the reshoot kind (the fourth mod bag)", () => {
       'ComfyUI-KJNodes',
       'ComfyUI-MiniMaxH3Mod',
       'ComfyUI-CrossViewWarp',
-    ], "the arm names its four packs (the loader law's VHS, ColorToMask's KJNodes, the apply's H3Mod, the warp pack)");
+      'ComfyUI-Video-Depth-Anything',
+    ], "the arm names its five packs (the loader law's VHS, ColorToMask's KJNodes, the apply's H3Mod, the warp pack, and the depth chain's VDA — F13c 2026-11-12: the bag compose died unknown-node LoadVideoDepthAnythingModel until the pack was declared)");
     const fields = (reshoot.fields as Array<Record<string, unknown>>) ?? [];
     const names = fields.map((f) => f.name);
     assert.deepEqual(names, [

@@ -1324,19 +1324,6 @@ window.__ModuleLoader__.load({
 		const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 		/** Zoom bounds: multiplier steps + the px-per-frame ceiling. */
 		const ZOOM_STEP = 1.6;
-		/** mm:ss:ff at the bar's axis fps — the DaVinci position readout
-		* (2026-09-01 audit F5: the bar had NO position indicator; the only
-		* readout lived under the player with a different fps divisor). */
-		const fmtTimecode = (frame, fps) => {
-			const f = Math.max(0, Math.round(frame));
-			const safeFps = Math.max(1, Math.round(fps));
-			const ff = f % safeFps;
-			const totalSec = Math.floor(f / safeFps);
-			const ss = totalSec % 60;
-			const mm = Math.floor(totalSec / 60);
-			const p = (n) => String(n).padStart(2, "0");
-			return `${p(mm)}:${p(ss)}:${p(ff)}`;
-		};
 		//#endregion
 		//#region ../../web-kit/timeline/src/timeline/MotionTimelineBarScale.ts
 		/**
@@ -2224,61 +2211,36 @@ window.__ModuleLoader__.load({
 				})
 			}) });
 		}
-		/** The ruler: ticks + sticky timecode. NOT a scrub surface (operator
-		*  2026-11: the scrub gesture belongs to the playhead CAP alone — the
-		*  white circle at the top of the line — never the bar's middle); its
-		*  gestures are the double-click ADD (bar line 947) and the
-		*  single-click SEEK (P6: a click on the time line moves the playhead —
-		*  a jump, never a drag — or faces why not). */
+		/** The ruler: ticks only. NOT a scrub surface and NOT a seek surface
+		*  (operator, told 10+ times, 2026-10-29: the playhead moves ONLY by
+		*  dragging the CAP — the white circle at the top of the line — never
+		*  a click anywhere on the timeline): the P6 single-click seek and
+		*  its click-voice chip are DEAD, and the sticky timecode chip is
+		*  DEAD with them (it read the bar's fps axis, which can mismatch
+		*  the film's own rate — a readout that can lie is removed, not
+		*  patched). The ruler's one gesture is the double-click ADD. */
 		function TimelineRuler(props) {
-			const { ticks, stepSec, fps, frameIdx, barBg, frameToPx, frameAt, onPromptAdd, onSeekFrame } = props;
-			const [clickVoice, setClickVoice] = (0, react.useState)("");
+			const { ticks, stepSec, fps, barBg, frameToPx, frameAt, onPromptAdd } = props;
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
 				fill: true,
 				tip: onPromptAdd ? "Drag the playhead cap to scrub — double-click here to add a call at that frame" : "Drag the playhead cap to scrub",
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 					"data-testid": "motion-timeline-ruler",
 					className: timeline_module_css_default.ruler,
 					style: { height: 28 },
-					onClick: (e) => {
-						const f = frameAt(e.clientX);
-						if (f == null) return;
-						if (onSeekFrame) {
-							onSeekFrame(f);
-							setClickVoice(`playhead ${fmtTimecode(f, fps)}`);
-						} else setClickVoice("ruler click seeks when the tenant wires the seek seat — drag the playhead cap to scrub");
-					},
 					onDoubleClick: (e) => {
 						if (!onPromptAdd) return;
 						const f = frameAt(e.clientX);
 						if (f != null) onPromptAdd(f);
 					},
-					children: [
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							"data-testid": "motion-timeline-click-voice",
-							"aria-live": "polite",
-							className: timeline_module_css_default.timecode,
-							style: { display: clickVoice ? void 0 : "none" },
-							children: clickVoice
-						}),
-						ticks.map((s) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							className: timeline_module_css_default.tick,
-							style: { left: frameToPx(s * fps) },
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { className: timeline_module_css_default.tickLine }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: timeline_module_css_default.tickLabel,
-								children: timelineCopy.tickSeconds({ value: stepSec < 1 ? s.toFixed(1) : String(s) })
-							})]
-						}, s)),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							"data-testid": "motion-timeline-timecode",
-							className: timeline_module_css_default.timecode,
-							style: {
-								background: barBg,
-								boxShadow: "2px 0 6px -2px color-mix(in srgb, var(--dsw-alias-bg-base) 80%, transparent)"
-							},
-							children: fmtTimecode(frameIdx, fps)
-						})
-					]
+					children: ticks.map((s) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: timeline_module_css_default.tick,
+						style: { left: frameToPx(s * fps) },
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { className: timeline_module_css_default.tickLine }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							className: timeline_module_css_default.tickLabel,
+							children: timelineCopy.tickSeconds({ value: stepSec < 1 ? s.toFixed(1) : String(s) })
+						})]
+					}, s))
 				})
 			}) });
 		}
@@ -3039,12 +3001,10 @@ window.__ModuleLoader__.load({
 							ticks,
 							stepSec,
 							fps,
-							frameIdx,
 							barBg,
 							frameToPx: scale.frameToPx,
 							frameAt: scale.frameAt,
-							onPromptAdd,
-							onSeekFrame: onFrameChange
+							onPromptAdd
 						}),
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(TimelinePromptsLane, {
 							prompts,

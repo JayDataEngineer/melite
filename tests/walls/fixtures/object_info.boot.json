@@ -1470,6 +1470,95 @@
    "model"
   ]
  },
+ "ColorToMask": {
+  "category": "KJNodes/masking",
+  "description": "\nConverts chosen RGB value to a mask.  \nWith batch inputs, the **per_batch**  \ncontrols the number of images processed at once.\n",
+  "display_name": "Color To Mask",
+  "has_intermediate_output": false,
+  "input": {
+   "required": {
+    "blue": [
+     "INT",
+     {
+      "default": 0,
+      "max": 255,
+      "min": 0,
+      "step": 1
+     }
+    ],
+    "green": [
+     "INT",
+     {
+      "default": 0,
+      "max": 255,
+      "min": 0,
+      "step": 1
+     }
+    ],
+    "images": [
+     "IMAGE"
+    ],
+    "invert": [
+     "BOOLEAN",
+     {
+      "default": false
+     }
+    ],
+    "per_batch": [
+     "INT",
+     {
+      "default": 16,
+      "max": 4096,
+      "min": 1,
+      "step": 1
+     }
+    ],
+    "red": [
+     "INT",
+     {
+      "default": 0,
+      "max": 255,
+      "min": 0,
+      "step": 1
+     }
+    ],
+    "threshold": [
+     "INT",
+     {
+      "default": 10,
+      "max": 255,
+      "min": 0,
+      "step": 1
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "images",
+    "invert",
+    "red",
+    "green",
+    "blue",
+    "threshold",
+    "per_batch"
+   ]
+  },
+  "is_input_list": false,
+  "name": "ColorToMask",
+  "output": [
+   "MASK"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "MASK"
+  ],
+  "output_node": false,
+  "python_module": "custom_nodes.ComfyUI-KJNodes",
+  "search_aliases": []
+ },
  "ComfyMathExpression": {
   "api_node": false,
   "category": "utilities",
@@ -1896,6 +1985,293 @@
   "search_aliases": [
    "images to video"
   ]
+ },
+ "CrossViewWarp": {
+  "category": "CrossView",
+  "description": "",
+  "display_name": "CrossView Warp",
+  "has_intermediate_output": false,
+  "input": {
+   "hidden": {
+    "unique_id": "UNIQUE_ID"
+   },
+   "optional": {
+    "camera_info": [
+     "LOAD3D_CAMERA",
+     {
+      "tooltip": "Exact target camera, from Create Camera Info or a Load 3D viewport. When connected the pose comes from it, and the orbit controls - angles, distance, hfov, the pivot and the keyframe path - are all ignored."
+     }
+    ],
+    "depth": [
+     "IMAGE",
+     {
+      "tooltip": "Depth map for the same frames, from a Depth Anything V2 node. Brightness = depth; polarity is handled by invert_depth. Leave unconnected if you are feeding moge_geometry instead."
+     }
+    ],
+    "frame_count": [
+     "INT",
+     {
+      "default": 0,
+      "max": 100000,
+      "min": 0,
+      "step": 1,
+      "tooltip": "Retired and ignored. The clip length comes from the cached preview."
+     }
+    ],
+    "frame_index": [
+     "INT",
+     {
+      "default": 1,
+      "max": 100000,
+      "min": 1,
+      "step": 1,
+      "tooltip": "Playhead for the live preview, counted from 1. The scrub bar under the preview drives it; it does not affect the output and needs no re-run."
+     }
+    ],
+    "interp_motion": [
+     [
+      "linear",
+      "ease_in",
+      "ease_out",
+      "ease_in_out",
+      "smooth"
+     ],
+     {
+      "default": "linear",
+      "tooltip": "Shape and timing of the camera path. linear = straight legs at constant speed. ease_in / ease_out / ease_in_out = the same legs with the camera settling into every keyframe. smooth = a Catmull-Rom spline gliding through them with no corner. Only used while use_keyframes is ON."
+     }
+    ],
+    "interpolation": [
+     [
+      "linear",
+      "smooth"
+     ],
+     {
+      "default": "linear",
+      "tooltip": "Driven by interp_motion."
+     }
+    ],
+    "keep_source_aim": [
+     "BOOLEAN",
+     {
+      "default": false,
+      "tooltip": "Which point the orbiting camera looks at. OFF: it looks at the pivot, so the pivot sits dead centre and moving it reframes the shot. ON: it looks where the SOURCE camera looked, so your original framing is kept and the pivot is only the orbit centre. Needs pivot_x or pivot_y off zero to do anything - on the optical axis both aims are the same point. ON is what the training data does and scores 28.9 against 42.3 measured on the training warps; OFF by default for compatibility, turn it ON for new work."
+     }
+    ],
+    "keyframes": [
+     "STRING",
+     {
+      "default": "",
+      "multiline": false,
+      "tooltip": "Camera path as JSON - normally written for you by the KEY button on the preview, or by right-clicking the orbit sphere. Each entry: 'f' is the frame number counted from 1, 'az'/'el' are degrees, 'dist' is the distance. Optional 'vs' (vertical shift) and 'px'/'py'/'pz' (the pivot) inherit the static widgets when left out; px/py/pz need pivot_override ON. Example: [{\"f\":1,\"az\":-30,\"el\":20,\"dist\":1.0},{\"f\":49,\"az\":45,\"el\":10,\"dist\":1.2}] . The pose is held before the first and after the last keyframe, so a path may cover only part of the clip. Empty = no move."
+     }
+    ],
+    "moge_geometry": [
+     "MOGE_GEOMETRY",
+     {
+      "tooltip": "Metric geometry from Run MoGe Inference, used instead of the depth image. Depth then arrives in real metres, so depth_ratio, invert_depth and smooth_depth no longer apply, and pivot and distance become real distances. Measured against ground truth it roughly halves the warp error. hfov comes from its intrinsics when hfov is 0."
+     }
+    ],
+    "pivot_override": [
+     "BOOLEAN",
+     {
+      "default": true,
+      "tooltip": "Orbit around the explicit pivot below instead of an auto- estimated one. ON by default, which is the recommended setup."
+     }
+    ],
+    "pivot_x": [
+     "FLOAT",
+     {
+      "default": 0,
+      "max": 1000,
+      "min": -1000,
+      "step": 0.01,
+      "tooltip": "Pivot X in the source camera frame (+ = right), in depth units. 0 = image centre. The camera aims at the pivot, so moving this also reframes the shot - unless keep_source_aim is ON, where it only moves the orbit centre."
+     }
+    ],
+    "pivot_y": [
+     "FLOAT",
+     {
+      "default": 0,
+      "max": 1000,
+      "min": -1000,
+      "step": 0.01,
+      "tooltip": "Pivot Y (+ = down), in depth units. 0 = image centre. Doubles as a reframe like pivot_x. Use vertical_shift to reframe without moving the camera."
+     }
+    ],
+    "pivot_z": [
+     "FLOAT",
+     {
+      "default": 1.05,
+      "max": 1000,
+      "min": 0.01,
+      "step": 0.01,
+      "tooltip": "Pivot depth. ~1.05 sits on the nearest subject in the middle of the frame; raise it to orbit something further back. The orbit radius is distance * |pivot|, so this widens the arc as well as moving its centre."
+     }
+    ],
+    "preview_size": [
+     "INT",
+     {
+      "default": 512,
+      "max": 768,
+      "min": 128,
+      "step": 32,
+      "tooltip": "Longest side the clip is cached at for the live preview. The warp is scale-invariant, so this trades sharpness and memory for frame rate: about 1 MB per frame and 18 fps at 384, 1.8 MB and 11 fps at 512. Takes effect on the next run."
+     }
+    ],
+    "roll_lock": [
+     "BOOLEAN",
+     {
+      "default": true,
+      "tooltip": "Retired and ignored. It rolled the camera to hold the subject's projected lean, but the orbit introduces no roll to correct - a level source gives a level target at every angle - and what it was reacting to is keystone from elevation, which a roll cannot fix. Both training datasets have exactly 0 camera roll."
+     }
+    ],
+    "use_keyframes": [
+     "BOOLEAN",
+     {
+      "default": false,
+      "tooltip": "Animate the camera along the keyframes path instead of holding one pose. Switched on for you when the first keyframe is placed."
+     }
+    ]
+   },
+   "required": {
+    "azimuth": [
+     "FLOAT",
+     {
+      "default": -30,
+      "max": 180,
+      "min": -180,
+      "step": 1,
+      "tooltip": "Horizontal orbit angle (deg). Negative orbits LEFT, positive RIGHT. The strongest control: +-45 is where the model has been checked, and the training set covers out to +-90 evenly. Past 90 the hidden side is invented."
+     }
+    ],
+    "depth_ratio": [
+     "FLOAT",
+     {
+      "default": 6,
+      "max": 1000,
+      "min": 1.5,
+      "step": 0.5,
+      "tooltip": "Max far/near depth ratio of the scene. Lower = flatter relief and a cleaner warp; higher = more parallax but messier on cluttered scenes. Close-up faces: 2.5-4; mid shots: 4-8; deep/wide scenes: 8-16."
+     }
+    ],
+    "distance": [
+     "FLOAT",
+     {
+      "default": 1,
+      "max": 3,
+      "min": 0.1,
+      "step": 0.05,
+      "tooltip": "Camera distance (1.0 = same as the source). Below 1 moves closer, above 1 pulls back - and pulling back reveals area the source never framed, so the magenta holes grow. The current LoRA does not follow this reliably."
+     }
+    ],
+    "elevation": [
+     "FLOAT",
+     {
+      "default": 20,
+      "max": 90,
+      "min": -90,
+      "step": 1,
+      "tooltip": "Vertical orbit angle (deg). Positive rises above the subject, negative looks up from below. UP is the weak direction: only 3.1% of the training set sits below -20."
+     }
+    ],
+    "frames": [
+     "IMAGE",
+     {
+      "tooltip": "Input video frames. Feed the same frames you send to the depth node."
+     }
+    ],
+    "hfov": [
+     "FLOAT",
+     {
+      "default": 50,
+      "max": 120,
+      "min": 0,
+      "step": 1,
+      "tooltip": "Assumed horizontal field of view (deg). ~50 is a normal lens; change it if the clip is clearly wide-angle or telephoto. 0 takes it from moge_geometry, which runs about 10% short - set it yourself if you know the lens."
+     }
+    ],
+    "invert_depth": [
+     "BOOLEAN",
+     {
+      "default": false,
+      "tooltip": "Flip depth polarity (near<->far). Leave OFF for the standard DA-V2 node. Turn ON only if the warp looks inside-out - background moving like foreground, or the subject caving in."
+     }
+    ],
+    "smooth_depth": [
+     "BOOLEAN",
+     {
+      "default": false,
+      "tooltip": "Edge-aware depth smoothing before warping. Turn ON if the warp has too many speckle holes; it trades a little sharpness for cleaner disocclusion."
+     }
+    ],
+    "vertical_shift": [
+     "FLOAT",
+     {
+      "default": 0,
+      "max": 1,
+      "min": -1,
+      "step": 0.02,
+      "tooltip": "Vertical lens shift, as a fraction of image height. Positive moves the picture DOWN, i.e. the framing up, which rescues a clipped head. The camera does not move, so parallax is unchanged. Leave at 0 unless the framing needs it."
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "hidden": [
+    "unique_id"
+   ],
+   "optional": [
+    "roll_lock",
+    "pivot_override",
+    "pivot_x",
+    "pivot_y",
+    "pivot_z",
+    "use_keyframes",
+    "frame_count",
+    "keyframes",
+    "interp_motion",
+    "interpolation",
+    "keep_source_aim",
+    "depth",
+    "moge_geometry",
+    "camera_info",
+    "preview_size",
+    "frame_index"
+   ],
+   "required": [
+    "frames",
+    "azimuth",
+    "elevation",
+    "distance",
+    "hfov",
+    "vertical_shift",
+    "depth_ratio",
+    "smooth_depth",
+    "invert_depth"
+   ]
+  },
+  "is_input_list": false,
+  "name": "CrossViewWarp",
+  "output": [
+   "IMAGE",
+   "IMAGE"
+  ],
+  "output_is_list": [
+   false,
+   false
+  ],
+  "output_name": [
+   "warp",
+   "orbit_view"
+  ],
+  "output_node": true,
+  "output_tooltips": [
+   "The warp control video (magenta = disoccluded holes) -> connect to the IC-LoRA reference guide for the WARP stream.",
+   "Front view of the orbit globe with the camera marker at the requested az/el/dist - wire to a PreviewImage/SaveImage to document the camera setup."
+  ],
+  "python_module": "custom_nodes.ComfyUI-CrossViewWarp",
+  "search_aliases": []
  },
  "DecimateMesh": {
   "api_node": false,
@@ -5505,355 +5881,6 @@
   "python_module": "custom_nodes.Comfyui-PlagueKind-Nodes",
   "search_aliases": []
  },
- "LanPaint_ImageDecode": {
-  "category": "image",
-  "description": "Decode an inpainted latent, resize to the original image's exact dimensions, and merge with the original inside the mask (replaces VAEDecode + MaskBlend).",
-  "display_name": "LanPaint Image Decode",
-  "has_intermediate_output": false,
-  "input": {
-   "optional": {
-    "blend_overlap": [
-     "INT",
-     {
-      "default": 9,
-      "max": 51,
-      "min": 1,
-      "step": 2,
-      "tooltip": "Boundary blend width in pixels between the inpainted and original image (MaskBlend-style)."
-     }
-    ],
-    "image": [
-     "IMAGE",
-     {
-      "tooltip": "The original image. When given, the decoded output is resized to its exact dimensions."
-     }
-    ],
-    "mask": [
-     "MASK",
-     {
-      "tooltip": "The inpainting mask (1 = take the inpainted pixels, 0 = keep the original)."
-     }
-    ]
-   },
-   "required": {
-    "samples": [
-     "LATENT",
-     {
-      "tooltip": "The inpainted latent to decode."
-     }
-    ],
-    "vae": [
-     "VAE",
-     {
-      "tooltip": "The VAE."
-     }
-    ]
-   }
-  },
-  "input_order": {
-   "optional": [
-    "image",
-    "mask",
-    "blend_overlap"
-   ],
-   "required": [
-    "samples",
-    "vae"
-   ]
-  },
-  "is_input_list": false,
-  "name": "LanPaint_ImageDecode",
-  "output": [
-   "IMAGE"
-  ],
-  "output_is_list": [
-   false
-  ],
-  "output_name": [
-   "image"
-  ],
-  "output_node": false,
-  "python_module": "custom_nodes.LanPaint",
-  "search_aliases": []
- },
- "LanPaint_ImageEncode": {
-  "category": "image",
-  "description": "Encode an image and attach an inpainting mask to the latent (replaces VAEEncode + SetLatentNoiseMask).",
-  "display_name": "LanPaint Image Encode",
-  "has_intermediate_output": false,
-  "input": {
-   "optional": {
-    "mask": [
-     "MASK",
-     {
-      "tooltip": "Inpainting mask [H, W] (1 = regenerate, 0 = keep). Snapped to the latent size automatically."
-     }
-    ]
-   },
-   "required": {
-    "image": [
-     "IMAGE",
-     {
-      "tooltip": "The image to encode (1 = regenerate region comes from the mask)."
-     }
-    ],
-    "vae": [
-     "VAE",
-     {
-      "tooltip": "The VAE."
-     }
-    ]
-   }
-  },
-  "input_order": {
-   "optional": [
-    "mask"
-   ],
-   "required": [
-    "image",
-    "vae"
-   ]
-  },
-  "is_input_list": false,
-  "name": "LanPaint_ImageEncode",
-  "output": [
-   "LATENT"
-  ],
-  "output_is_list": [
-   false
-  ],
-  "output_name": [
-   "latent"
-  ],
-  "output_node": false,
-  "python_module": "custom_nodes.LanPaint",
-  "search_aliases": []
- },
- "LanPaint_KSamplerAdvanced": {
-  "category": "sampling",
-  "description": "",
-  "display_name": "LanPaint KSampler (Advanced)",
-  "has_intermediate_output": false,
-  "input": {
-   "hidden": {
-    "LanPaint_Beta": "DEFAULT",
-    "LanPaint_EarlyStop": "DEFAULT",
-    "LanPaint_Friction": "DEFAULT",
-    "LanPaint_InnerPatience": "DEFAULT",
-    "LanPaint_InnerThreshold": "DEFAULT",
-    "LanPaint_MinStepFrac": "DEFAULT"
-   },
-   "required": {
-    "Inpainting_mode": [
-     [
-      "\ud83d\uddbc\ufe0f Image Inpainting",
-      "\ud83c\udfac Video Inpainting"
-     ],
-     {
-      "default": "\ud83d\uddbc\ufe0f Image Inpainting",
-      "tooltip": "Choose Image mode for photos or Video mode for video frames with temporal consistency"
-     }
-    ],
-    "LanPaint_Info": [
-     "STRING",
-     {
-      "default": "LanPaint KSampler Adv.",
-      "tooltip": "For more info, visit https://github.com/scraed/LanPaint. If you find it useful, please give a star \u2b50\ufe0f!"
-     }
-    ],
-    "LanPaint_Lambda": [
-     "FLOAT",
-     {
-      "default": 5,
-      "max": 50,
-      "min": 0.1,
-      "round": 0.1,
-      "step": 0.1,
-      "tooltip": "The bidirectional guidance scale. Higher values align with known regions more closely, but may result in instability."
-     }
-    ],
-    "LanPaint_NumSteps": [
-     "INT",
-     {
-      "default": 5,
-      "max": 100,
-      "min": 0,
-      "tooltip": "The number of steps for the Langevin dynamics, representing the turns of thinking per step."
-     }
-    ],
-    "LanPaint_PromptMode": [
-     [
-      "Image First",
-      "Prompt First"
-     ],
-     {
-      "tooltip": "Image First: emphasis image quality, Prompt First: emphasis prompt following"
-     }
-    ],
-    "LanPaint_StepSize": [
-     "FLOAT",
-     {
-      "default": 0.2,
-      "max": 1,
-      "min": 0.0001,
-      "round": 0.001,
-      "step": 0.01,
-      "tooltip": "The step size for the Langevin dynamics. Higher values result in faster convergence but may be unstable."
-     }
-    ],
-    "add_noise": [
-     [
-      "enable",
-      "disable"
-     ]
-    ],
-    "cfg": [
-     "FLOAT",
-     {
-      "default": 5,
-      "max": 100,
-      "min": 0,
-      "round": 0.01,
-      "step": 0.1
-     }
-    ],
-    "end_at_step": [
-     "INT",
-     {
-      "default": 10000,
-      "max": 10000,
-      "min": 0
-     }
-    ],
-    "latent_image": [
-     "LATENT"
-    ],
-    "model": [
-     "MODEL"
-    ],
-    "negative": [
-     "CONDITIONING"
-    ],
-    "noise_seed": [
-     "INT",
-     {
-      "default": 0,
-      "max": 18446744073709552000,
-      "min": 0
-     }
-    ],
-    "positive": [
-     "CONDITIONING"
-    ],
-    "return_with_leftover_noise": [
-     [
-      "disable",
-      "enable"
-     ]
-    ],
-    "sampler_name": [
-     [
-      "euler",
-      "euler_ancestral",
-      "heun",
-      "heunpp2",
-      "dpm_2",
-      "dpm_2_ancestral",
-      "dpm_fast",
-      "dpmpp_sde",
-      "dpmpp_sde_gpu",
-      "dpmpp_2m",
-      "dpmpp_2m_sde",
-      "dpmpp_2m_sde_gpu",
-      "dpmpp_3m_sde",
-      "dpmpp_3m_sde_gpu",
-      "ddpm",
-      "deis",
-      "res_multistep",
-      "res_multistep_ancestral",
-      "gradient_estimation",
-      "er_sde",
-      "seeds_2",
-      "seeds_3"
-     ]
-    ],
-    "scheduler": [
-     [
-      "simple",
-      "sgm_uniform",
-      "karras",
-      "exponential",
-      "ddim_uniform",
-      "beta",
-      "normal",
-      "linear_quadratic",
-      "kl_optimal"
-     ]
-    ],
-    "start_at_step": [
-     "INT",
-     {
-      "default": 0,
-      "max": 10000,
-      "min": 0
-     }
-    ],
-    "steps": [
-     "INT",
-     {
-      "default": 30,
-      "max": 10000,
-      "min": 1
-     }
-    ]
-   }
-  },
-  "input_order": {
-   "hidden": [
-    "LanPaint_Beta",
-    "LanPaint_Friction",
-    "LanPaint_EarlyStop",
-    "LanPaint_InnerThreshold",
-    "LanPaint_InnerPatience",
-    "LanPaint_MinStepFrac"
-   ],
-   "required": [
-    "model",
-    "add_noise",
-    "noise_seed",
-    "steps",
-    "cfg",
-    "sampler_name",
-    "scheduler",
-    "positive",
-    "negative",
-    "latent_image",
-    "start_at_step",
-    "end_at_step",
-    "return_with_leftover_noise",
-    "LanPaint_NumSteps",
-    "LanPaint_Lambda",
-    "LanPaint_StepSize",
-    "LanPaint_PromptMode",
-    "LanPaint_Info",
-    "Inpainting_mode"
-   ]
-  },
-  "is_input_list": false,
-  "name": "LanPaint_KSamplerAdvanced",
-  "output": [
-   "LATENT"
-  ],
-  "output_is_list": [
-   false
-  ],
-  "output_name": [
-   "LATENT"
-  ],
-  "output_node": false,
-  "python_module": "custom_nodes.LanPaint",
-  "search_aliases": []
- },
  "LoadAudio": {
   "api_node": false,
   "category": "audio",
@@ -5874,19 +5901,50 @@
       "options": [
        "01 Dildolech (Kelis Milkshake Parody_7699f5cb82b7.mp3",
        "07 - Sex and Violence (feat. Melissa McNaught)_fd1a34c11c44.flac",
+       "Makhna clip 10s-15s_e7258bfa8214.webm",
+       "SaveAudio.0_design_00001_38b227c8bdcf.flac",
        "SaveAudio.0_sfx_00001_a3590a151fe9.flac",
        "SaveAudioAdvanced.0_music_00001_10c86983ccba.mp3",
+       "VHS_VideoCombine.0_mannequin_00001_89e1fea228bb.mp4",
+       "VHS_VideoCombine.0_openjutsu_00001-audio_09e163466dfd.mp4",
+       "VHS_VideoCombine.0_openjutsu_00001-audio_67d4712670b8.mp4",
+       "VHS_VideoCombine.0_openjutsu_00001-audio_78b3e868f8de.mp4",
+       "VHS_VideoCombine.0_openjutsu_00001-audio_8b8cc8e50c4c.mp4",
+       "anime-girl.mp4",
+       "anime-girl_26185d275266.mp4",
        "cards-gpu-tts-base-ref_bfe2acab4b33.wav",
+       "cut_mannequin.mp4",
+       "cut_source.webm",
+       "cut_source_fix.webm",
+       "cut_source_v2.webm",
+       "cut_tail_df3180418e40.webm",
+       "cut_tail_exact_1a0f24c3a378.mp4",
        "film_b5daccf1bb15.mp4",
        "h3_t4_film_00001__ac34e57f53c3.mp4",
        "h3_t4_film_00002__13e27f55cc1c.mp4",
+       "h3_t4_film_00004__f4d2cd453178.mp4",
+       "h3_t4_film_00005__2aa467ff757e.mp4",
        "h3_t4_w1_00001__a7c9b7cb82a6.mp4",
        "h3_t4_w1_00068__533aceec71e5.mp4",
        "h3_t4_w1_00069__7f612db51789.mp4",
        "h3_t4_w1_00077__91fd20bc2a27.mp4",
        "h3_t4_w1_00078__26185d275266.mp4",
+       "h3_t4_w1_00081__21d43cbfd869.mp4",
+       "h3_t4_w1_00082__491994e8a99b.mp4",
+       "h3_t4_w2_00004__a1fa72843541.mp4",
        "input-prep-verify-tone_3c2a21677dcd.wav",
-       "line_e853f3067188.flac"
+       "line_e853f3067188.flac",
+       "makhna_clip_e7258bfa8214.webm",
+       "makhna_cut16_afa3cf8b8e89.webm",
+       "soft-piano_5d082fcabbb3.mp3",
+       "swap_film_v1.mp4",
+       "swap_film_v1_9c383840d58f.mp4",
+       "swap_mannequin.mp4",
+       "swap_source_clip.webm",
+       "tail_mannequin.mp4",
+       "tail_source.webm",
+       "tts_line1.flac",
+       "voice_c02d117219a9.m4a"
       ]
      }
     ]
@@ -6025,9 +6083,12 @@
       "SaveImage.0_edit_00001__ab16b046de27.png",
       "SaveImage.0_edit_00001__ba84b265f65d.png",
       "SaveImage.0_edit_00001__c1775484286d.png",
+      "SaveImage.0_edit_00001__c50c76c5132a.png",
       "SaveImage.0_edit_00001__c646d3ccbc27.png",
+      "SaveImage.0_edit_00001__d18c63de9ec6.png",
       "SaveImage.0_edit_00001__f57d1713bfb3.png",
       "SaveImage.0_gen_00001__09689fe61e7a.png",
+      "SaveImage.0_gen_00001__1413e536053c.png",
       "SaveImage.0_gen_00001__1ac37322189c.png",
       "SaveImage.0_gen_00001__2193b347e808.png",
       "SaveImage.0_gen_00001__329b23c3f4de.png",
@@ -6040,13 +6101,23 @@
       "SaveImage.0_gen_00001__62b97ce19787.png",
       "SaveImage.0_gen_00001__7bbaa6b64c60.png",
       "SaveImage.0_gen_00001__85379519f4df.png",
+      "SaveImage.0_gen_00001__b39603162638.png",
       "SaveImage.0_gen_00001__c0aa96997f3e.png",
       "SaveImage.0_gen_00001__e2a6713311a9.png",
       "SaveImage.0_gen_00001__f5d9b3b3a1c9.png",
+      "SaveImage.0_gen_00001__f99a509d3b3e.png",
       "SaveImage.0_gen_00003__b2c4aa63c9eb.png",
+      "SaveImage.0_input_prep_00001__8cea4dcdf6f1.png",
       "SaveImage.0_input_prep_00001__abe3b0054abe.png",
+      "SaveImage.0_input_prep_00001__c6b7f7f620fe.png",
       "SaveImage.0_instance_00001__ffe7e1274cdf.png",
+      "SaveImage.0_openjutsu_00028__5bcfe0dce8a5.png",
       "SaveImage.1_detect_boxes_00001__e1ba45bbc14e.png",
+      "anime-girl-blue-hair_c646d3ccbc27.png",
+      "anime-girl-ref-crop_8fc3bd3a7d83.png",
+      "anime-girl-ref_d777a2dfd38a.png",
+      "anime-girl.png",
+      "anime-girl_5600ae8fc592.png",
       "bake-variance-probe-anchor_e79e0539a052.png",
       "cards-gpu-h3-bake-anchor_e79e0539a052.png",
       "cards-gpu-h3-dare-anchor_e79e0539a052.png",
@@ -6054,10 +6125,18 @@
       "cards-gpu-h3-hd-anchor_e79e0539a052.png",
       "cards-gpu-seedvr2-anchor_e79e0539a052.png",
       "character_img_00009__fb3e000684f8.png",
+      "cut_mask_union.png",
+      "cut_masks_union_ab20cd8cb48d.png",
+      "cut_still.png",
+      "ddd_9c427ecf8043.png",
       "download (2)_c47310e743c1.png",
       "e2e_anchor (1).png",
       "e2e_anchor.png",
       "example.png",
+      "hera_hades2_anima_v7_f8d779bcf1ed.png",
+      "hera_sheet_anchor_1536x1024_5df608653ee5.png",
+      "hera_tall_anchor_2x_d126cba5aadb.png",
+      "hera_tall_anchor_532cfa15cb8c.png",
       "heroine_baldsrc_back_1ef8663b7812.png",
       "heroine_baldsrc_front_e7ab636a20c7.png",
       "heroine_baldsrc_side_002cf9baed88.png",
@@ -6079,7 +6158,11 @@
       "pit_316dc8d3861c.png",
       "source_7804de2d8921.png",
       "sss_b8f4d80c061c.webp",
-      "stage_mesh_42053183f429.png"
+      "stage_mesh_42053183f429.png",
+      "style_reference_013012c51fb1.webp",
+      "swap_mask_union.png",
+      "swap_ninja_still.png",
+      "tail_mask_union.png"
      ],
      {
       "image_upload": true
@@ -6154,9 +6237,12 @@
       "SaveImage.0_edit_00001__ab16b046de27.png",
       "SaveImage.0_edit_00001__ba84b265f65d.png",
       "SaveImage.0_edit_00001__c1775484286d.png",
+      "SaveImage.0_edit_00001__c50c76c5132a.png",
       "SaveImage.0_edit_00001__c646d3ccbc27.png",
+      "SaveImage.0_edit_00001__d18c63de9ec6.png",
       "SaveImage.0_edit_00001__f57d1713bfb3.png",
       "SaveImage.0_gen_00001__09689fe61e7a.png",
+      "SaveImage.0_gen_00001__1413e536053c.png",
       "SaveImage.0_gen_00001__1ac37322189c.png",
       "SaveImage.0_gen_00001__2193b347e808.png",
       "SaveImage.0_gen_00001__329b23c3f4de.png",
@@ -6169,13 +6255,23 @@
       "SaveImage.0_gen_00001__62b97ce19787.png",
       "SaveImage.0_gen_00001__7bbaa6b64c60.png",
       "SaveImage.0_gen_00001__85379519f4df.png",
+      "SaveImage.0_gen_00001__b39603162638.png",
       "SaveImage.0_gen_00001__c0aa96997f3e.png",
       "SaveImage.0_gen_00001__e2a6713311a9.png",
       "SaveImage.0_gen_00001__f5d9b3b3a1c9.png",
+      "SaveImage.0_gen_00001__f99a509d3b3e.png",
       "SaveImage.0_gen_00003__b2c4aa63c9eb.png",
+      "SaveImage.0_input_prep_00001__8cea4dcdf6f1.png",
       "SaveImage.0_input_prep_00001__abe3b0054abe.png",
+      "SaveImage.0_input_prep_00001__c6b7f7f620fe.png",
       "SaveImage.0_instance_00001__ffe7e1274cdf.png",
+      "SaveImage.0_openjutsu_00028__5bcfe0dce8a5.png",
       "SaveImage.1_detect_boxes_00001__e1ba45bbc14e.png",
+      "anime-girl-blue-hair_c646d3ccbc27.png",
+      "anime-girl-ref-crop_8fc3bd3a7d83.png",
+      "anime-girl-ref_d777a2dfd38a.png",
+      "anime-girl.png",
+      "anime-girl_5600ae8fc592.png",
       "bake-variance-probe-anchor_e79e0539a052.png",
       "cards-gpu-h3-bake-anchor_e79e0539a052.png",
       "cards-gpu-h3-dare-anchor_e79e0539a052.png",
@@ -6183,10 +6279,18 @@
       "cards-gpu-h3-hd-anchor_e79e0539a052.png",
       "cards-gpu-seedvr2-anchor_e79e0539a052.png",
       "character_img_00009__fb3e000684f8.png",
+      "cut_mask_union.png",
+      "cut_masks_union_ab20cd8cb48d.png",
+      "cut_still.png",
+      "ddd_9c427ecf8043.png",
       "download (2)_c47310e743c1.png",
       "e2e_anchor (1).png",
       "e2e_anchor.png",
       "example.png",
+      "hera_hades2_anima_v7_f8d779bcf1ed.png",
+      "hera_sheet_anchor_1536x1024_5df608653ee5.png",
+      "hera_tall_anchor_2x_d126cba5aadb.png",
+      "hera_tall_anchor_532cfa15cb8c.png",
       "heroine_baldsrc_back_1ef8663b7812.png",
       "heroine_baldsrc_front_e7ab636a20c7.png",
       "heroine_baldsrc_side_002cf9baed88.png",
@@ -6208,7 +6312,11 @@
       "pit_316dc8d3861c.png",
       "source_7804de2d8921.png",
       "sss_b8f4d80c061c.webp",
-      "stage_mesh_42053183f429.png"
+      "stage_mesh_42053183f429.png",
+      "style_reference_013012c51fb1.webp",
+      "swap_mask_union.png",
+      "swap_ninja_still.png",
+      "tail_mask_union.png"
      ],
      {
       "image_upload": true
@@ -6306,14 +6414,41 @@
      {
       "multiselect": false,
       "options": [
+       "Makhna clip 10s-15s_e7258bfa8214.webm",
+       "VHS_VideoCombine.0_mannequin_00001_89e1fea228bb.mp4",
+       "VHS_VideoCombine.0_openjutsu_00001-audio_09e163466dfd.mp4",
+       "VHS_VideoCombine.0_openjutsu_00001-audio_67d4712670b8.mp4",
+       "VHS_VideoCombine.0_openjutsu_00001-audio_78b3e868f8de.mp4",
+       "VHS_VideoCombine.0_openjutsu_00001-audio_8b8cc8e50c4c.mp4",
+       "anime-girl.mp4",
+       "anime-girl_26185d275266.mp4",
+       "cut_mannequin.mp4",
+       "cut_source.webm",
+       "cut_source_fix.webm",
+       "cut_source_v2.webm",
+       "cut_tail_df3180418e40.webm",
+       "cut_tail_exact_1a0f24c3a378.mp4",
        "film_b5daccf1bb15.mp4",
        "h3_t4_film_00001__ac34e57f53c3.mp4",
        "h3_t4_film_00002__13e27f55cc1c.mp4",
+       "h3_t4_film_00004__f4d2cd453178.mp4",
+       "h3_t4_film_00005__2aa467ff757e.mp4",
        "h3_t4_w1_00001__a7c9b7cb82a6.mp4",
        "h3_t4_w1_00068__533aceec71e5.mp4",
        "h3_t4_w1_00069__7f612db51789.mp4",
        "h3_t4_w1_00077__91fd20bc2a27.mp4",
-       "h3_t4_w1_00078__26185d275266.mp4"
+       "h3_t4_w1_00078__26185d275266.mp4",
+       "h3_t4_w1_00081__21d43cbfd869.mp4",
+       "h3_t4_w1_00082__491994e8a99b.mp4",
+       "h3_t4_w2_00004__a1fa72843541.mp4",
+       "makhna_clip_e7258bfa8214.webm",
+       "makhna_cut16_afa3cf8b8e89.webm",
+       "swap_film_v1.mp4",
+       "swap_film_v1_9c383840d58f.mp4",
+       "swap_mannequin.mp4",
+       "swap_source_clip.webm",
+       "tail_mannequin.mp4",
+       "tail_source.webm"
       ],
       "video_upload": true
      }
@@ -6348,6 +6483,48 @@
    "open video",
    "video file"
   ]
+ },
+ "LoadVideoDepthAnythingModel": {
+  "category": "VideoDepthAnything",
+  "description": "",
+  "display_name": "Load Video Depth Anything Model",
+  "has_intermediate_output": false,
+  "input": {
+   "required": {
+    "model": [
+     [
+      "video_depth_anything_vits.pth",
+      "video_depth_anything_vitb.pth",
+      "video_depth_anything_vitl.pth",
+      "metric_video_depth_anything_vits.pth",
+      "metric_video_depth_anything_vitb.pth",
+      "metric_video_depth_anything_vitl.pth"
+     ],
+     {
+      "default": "video_depth_anything_vits.safetensors"
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "model"
+   ]
+  },
+  "is_input_list": false,
+  "name": "LoadVideoDepthAnythingModel",
+  "output": [
+   "VDAMODEL"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "vda_model"
+  ],
+  "output_node": false,
+  "python_module": "custom_nodes.ComfyUI-Video-Depth-Anything",
+  "search_aliases": []
  },
  "LoraLoader": {
   "category": "model/loaders",
@@ -6560,19 +6737,50 @@
      [
       "01 Dildolech (Kelis Milkshake Parody_7699f5cb82b7.mp3",
       "07 - Sex and Violence (feat. Melissa McNaught)_fd1a34c11c44.flac",
+      "Makhna clip 10s-15s_e7258bfa8214.webm",
+      "SaveAudio.0_design_00001_38b227c8bdcf.flac",
       "SaveAudio.0_sfx_00001_a3590a151fe9.flac",
       "SaveAudioAdvanced.0_music_00001_10c86983ccba.mp3",
+      "VHS_VideoCombine.0_mannequin_00001_89e1fea228bb.mp4",
+      "VHS_VideoCombine.0_openjutsu_00001-audio_09e163466dfd.mp4",
+      "VHS_VideoCombine.0_openjutsu_00001-audio_67d4712670b8.mp4",
+      "VHS_VideoCombine.0_openjutsu_00001-audio_78b3e868f8de.mp4",
+      "VHS_VideoCombine.0_openjutsu_00001-audio_8b8cc8e50c4c.mp4",
+      "anime-girl.mp4",
+      "anime-girl_26185d275266.mp4",
       "cards-gpu-tts-base-ref_bfe2acab4b33.wav",
+      "cut_mannequin.mp4",
+      "cut_source.webm",
+      "cut_source_fix.webm",
+      "cut_source_v2.webm",
+      "cut_tail_df3180418e40.webm",
+      "cut_tail_exact_1a0f24c3a378.mp4",
       "film_b5daccf1bb15.mp4",
       "h3_t4_film_00001__ac34e57f53c3.mp4",
       "h3_t4_film_00002__13e27f55cc1c.mp4",
+      "h3_t4_film_00004__f4d2cd453178.mp4",
+      "h3_t4_film_00005__2aa467ff757e.mp4",
       "h3_t4_w1_00001__a7c9b7cb82a6.mp4",
       "h3_t4_w1_00068__533aceec71e5.mp4",
       "h3_t4_w1_00069__7f612db51789.mp4",
       "h3_t4_w1_00077__91fd20bc2a27.mp4",
       "h3_t4_w1_00078__26185d275266.mp4",
+      "h3_t4_w1_00081__21d43cbfd869.mp4",
+      "h3_t4_w1_00082__491994e8a99b.mp4",
+      "h3_t4_w2_00004__a1fa72843541.mp4",
       "input-prep-verify-tone_3c2a21677dcd.wav",
-      "line_e853f3067188.flac"
+      "line_e853f3067188.flac",
+      "makhna_clip_e7258bfa8214.webm",
+      "makhna_cut16_afa3cf8b8e89.webm",
+      "soft-piano_5d082fcabbb3.mp3",
+      "swap_film_v1.mp4",
+      "swap_film_v1_9c383840d58f.mp4",
+      "swap_mannequin.mp4",
+      "swap_source_clip.webm",
+      "tail_mannequin.mp4",
+      "tail_source.webm",
+      "tts_line1.flac",
+      "voice_c02d117219a9.m4a"
      ],
      {
       "audio upload": "audio"
@@ -6624,6 +6832,16 @@
   "display_name": "\ud83c\udfac Melite Concat Videos (file tail)",
   "has_intermediate_output": false,
   "input": {
+   "optional": {
+    "append": [
+     "STRING",
+     {
+      "default": "",
+      "multiline": false,
+      "tooltip": "Optional EXACT saved-file path appended as the last member (e.g. ChainAssemble's wired video_path) \u2014 the in-chain assembly compose face"
+     }
+    ]
+   },
    "required": {
     "after": [
      "STRING",
@@ -6642,6 +6860,9 @@
    }
   },
   "input_order": {
+   "optional": [
+    "append"
+   ],
    "required": [
     "videos",
     "after"
@@ -14411,14 +14632,26 @@
      [
       "Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors",
       "Wan2_2_VACE_A14B_HIGH_fp8_e4m3fn_scaled_KJ_merged.safetensors",
+      "anima-aesthetic-v1.1-int8convrot.safetensors",
+      "anima-aesthetic-v1.1.safetensors",
       "anima-base-v1.0-int8convrot.safetensors",
       "anima-base-v1.0.safetensors",
+      "anima-turbo-v1.1-int8convrot.safetensors",
+      "anima-turbo-v1.1.safetensors",
+      "fibo2_dev_bf16.safetensors",
       "fibo2_dev_int8_convrot.safetensors",
+      "fibo2_edit_turbo_bf16.safetensors",
       "fibo2_edit_turbo_int8_convrot.safetensors",
+      "flux-2-klein-4b.safetensors",
+      "flux-2-klein-base-4b.safetensors",
       "ideogram4_nvfp4_mixed.safetensors",
       "ideogram4_unconditional_nvfp4_mixed.safetensors",
       "krea2_raw_int8_convrot.safetensors",
       "krea2_turbo_int8_convrot.safetensors",
+      "kroma-v0.3-base-dtype-mapped.safetensors",
+      "kroma-v0.3.1-turbo-opd-int8-convrot.safetensors",
+      "kroma-v0.3.1-turbo-opd.safetensors",
+      "minimax_h3_fl2va_int8_convrot.safetensors",
       "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
       "minimax_h3_hybrid_fl2va_ref2va_b25-49-int8.safetensors",
       "minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors",
@@ -14427,8 +14660,10 @@
       "minimax_h3_ref2va_viggle_pruned_int8_convrot.safetensors",
       "minimax_music3_dit_fp16.safetensors",
       "minimax_music3_dit_int8_convrot.safetensors",
+      "moss_image_sft_bf16.safetensors",
       "moss_image_sft_int8_convrot.safetensors",
       "pixal3d_int8_convrot.safetensors",
+      "qwen_image_2.1_bf16.safetensors",
       "qwen_image_2.1_int8_convrot.safetensors",
       "qwen_image_2.1_turbo_bf16.safetensors",
       "qwen_image_2.1_turbo_int8_convrot.safetensors",
@@ -15261,14 +15496,41 @@
     ],
     "video": [
      [
+      "Makhna clip 10s-15s_e7258bfa8214.webm",
+      "VHS_VideoCombine.0_mannequin_00001_89e1fea228bb.mp4",
+      "VHS_VideoCombine.0_openjutsu_00001-audio_09e163466dfd.mp4",
+      "VHS_VideoCombine.0_openjutsu_00001-audio_67d4712670b8.mp4",
+      "VHS_VideoCombine.0_openjutsu_00001-audio_78b3e868f8de.mp4",
+      "VHS_VideoCombine.0_openjutsu_00001-audio_8b8cc8e50c4c.mp4",
+      "anime-girl.mp4",
+      "anime-girl_26185d275266.mp4",
+      "cut_mannequin.mp4",
+      "cut_source.webm",
+      "cut_source_fix.webm",
+      "cut_source_v2.webm",
+      "cut_tail_df3180418e40.webm",
+      "cut_tail_exact_1a0f24c3a378.mp4",
       "film_b5daccf1bb15.mp4",
       "h3_t4_film_00001__ac34e57f53c3.mp4",
       "h3_t4_film_00002__13e27f55cc1c.mp4",
+      "h3_t4_film_00004__f4d2cd453178.mp4",
+      "h3_t4_film_00005__2aa467ff757e.mp4",
       "h3_t4_w1_00001__a7c9b7cb82a6.mp4",
       "h3_t4_w1_00068__533aceec71e5.mp4",
       "h3_t4_w1_00069__7f612db51789.mp4",
       "h3_t4_w1_00077__91fd20bc2a27.mp4",
-      "h3_t4_w1_00078__26185d275266.mp4"
+      "h3_t4_w1_00078__26185d275266.mp4",
+      "h3_t4_w1_00081__21d43cbfd869.mp4",
+      "h3_t4_w1_00082__491994e8a99b.mp4",
+      "h3_t4_w2_00004__a1fa72843541.mp4",
+      "makhna_clip_e7258bfa8214.webm",
+      "makhna_cut16_afa3cf8b8e89.webm",
+      "swap_film_v1.mp4",
+      "swap_film_v1_9c383840d58f.mp4",
+      "swap_mannequin.mp4",
+      "swap_source_clip.webm",
+      "tail_mannequin.mp4",
+      "tail_source.webm"
      ]
     ]
    }
@@ -15799,6 +16061,108 @@
    "frame load cap",
    "start time"
   ]
+ },
+ "VideoDepthAnythingOutput": {
+  "category": "VideoDepthAnything",
+  "description": "",
+  "display_name": "Video Depth Anything Output Depth Map",
+  "has_intermediate_output": false,
+  "input": {
+   "required": {
+    "colormap": [
+     [
+      "inferno",
+      "gray"
+     ],
+     {
+      "default": "gray"
+     }
+    ],
+    "depths": [
+     "DEPTHS"
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "depths",
+    "colormap"
+   ]
+  },
+  "is_input_list": false,
+  "name": "VideoDepthAnythingOutput",
+  "output": [
+   "IMAGE"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "images"
+  ],
+  "output_node": false,
+  "python_module": "custom_nodes.ComfyUI-Video-Depth-Anything",
+  "search_aliases": []
+ },
+ "VideoDepthAnythingProcess": {
+  "category": "VideoDepthAnything",
+  "description": "",
+  "display_name": "Video Depth Anything Process",
+  "has_intermediate_output": false,
+  "input": {
+   "required": {
+    "images": [
+     "IMAGE"
+    ],
+    "input_size": [
+     "INT",
+     {
+      "default": 518
+     }
+    ],
+    "max_res": [
+     "INT",
+     {
+      "default": 1280
+     }
+    ],
+    "precision": [
+     [
+      "fp16",
+      "fp32"
+     ],
+     {
+      "default": "fp16"
+     }
+    ],
+    "vda_model": [
+     "VDAMODEL"
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "vda_model",
+    "images",
+    "input_size",
+    "max_res",
+    "precision"
+   ]
+  },
+  "is_input_list": false,
+  "name": "VideoDepthAnythingProcess",
+  "output": [
+   "DEPTHS"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "depths"
+  ],
+  "output_node": false,
+  "python_module": "custom_nodes.ComfyUI-Video-Depth-Anything",
+  "search_aliases": []
  },
  "WD14Tagger|pysssss": {
   "category": "image",

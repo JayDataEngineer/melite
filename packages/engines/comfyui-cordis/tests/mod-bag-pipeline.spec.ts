@@ -51,9 +51,11 @@ const stackRows = (graph: Graph): Array<Array<Record<string, unknown>>> =>
 // while the truth burns). Import the served rows; never retype them.
 import { H3_LORA_ROWS } from "@melite/models-h3/mods/loras";
 const turbo = H3_LORA_ROWS.find((r) => r.id === "h3_lightx2v_turbo")!;
-// the DECL's birth row (2026-11-07: the LightX2V Turbo 8-Step v1.0
-// replaced the bytedance DMAD 4-step as the trio's bag)
-const birth = H3_LORA_ROWS.find((r) => r.id === "h3_turbo8_v1")!
+// the DECL's birth row (2026-11-12, the merge-default order: the
+// Larry + LightX2V dareties merge took the default seat —
+// loraStackDefault in actions.ts resolves THIS row id; the arm
+// derives from the same catalog so the two can never drift)
+const birth = H3_LORA_ROWS.find((r) => r.id === "h3_lightx2v_turbo")!
 
 describe("THE MOD-BAG PIPELINE (studio bag → service door → loader stack)", () => {
   let svc: ComfyUIService;
@@ -131,7 +133,7 @@ describe("THE MOD-BAG PIPELINE (studio bag → service door → loader stack)", 
     // filename, derived — the wall rots no more hand-copies
     assert.ok(
       rows.some((r) => r.lora === birth.filename),
-      `the default row is the DECL's turbo8 filename (${birth.filename})`,
+      `the default row is the DECL's merge filename (${birth.filename})`,
     );
   });
 

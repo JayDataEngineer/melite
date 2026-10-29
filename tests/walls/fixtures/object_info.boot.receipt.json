@@ -1,35 +1,49 @@
 {
- "derived_at": "2026-10-28T15:30:21.781Z",
+ "derived_at": "2026-10-29T18:11:52.676Z",
  "tool": "scripts/regen-node-vocab.mjs --boot",
  "source": {
   "path": "data/tmp/object_info_prod.json",
-  "sha256": "092ebf94c70d599d4cd0633633b36bbd63e7a5868f1e32528083f006726d8cf6",
-  "mtime_ms": 1793127860803.4746,
-  "class_count": 1689,
-  "origin": "capture"
+  "sha256": "4c6820aa845146529f9d9b3c685ddff212400360026112104dda7b78fd10a7a9",
+  "mtime_ms": 1793297512441.6287,
+  "class_count": 1815,
+  "origin": "live"
  },
  "bootstrap_seed": {
   "path": "tests/walls/fixtures/object_info.boot.bootstrap.json",
-  "sha256": "6dd1f1ad41248300340c98eba4c58bfdcca91117713900b22b238501ccedf515",
-  "rows": 72
+  "sha256": "e20954fe7596a955ecaf458c24d3073d100b9299ec91a91bf06339fbc0178acd",
+  "rows": 74
  },
  "derivation": {
   "facts_path": "packages/engines/comfyui-cordis/data/model-facts.json",
   "addressed_class_count": 95,
-  "bootstrap_class_count": 72,
-  "fixture_class_count": 167,
+  "bootstrap_class_count": 74,
+  "fixture_class_count": 169,
   "rows_probed": 31,
   "refused_rows": 0
  },
  "delta": {
-  "added": [],
-  "pruned": [
-   "ManualSigmas",
-   "VHS_VideoCombine",
-   "ViggleAnimateConditioning",
-   "ViggleTextCondLoader"
+  "added": [
+   "ColorToMask",
+   "CrossViewWarp",
+   "LoadVideoDepthAnythingModel",
+   "VideoDepthAnythingOutput",
+   "VideoDepthAnythingProcess"
   ],
-  "updated": [],
-  "reordered_keys": 101
+  "pruned": [
+   "LanPaint_ImageDecode",
+   "LanPaint_ImageEncode",
+   "LanPaint_KSamplerAdvanced"
+  ],
+  "updated": [
+   "LoadAudio",
+   "LoadImage",
+   "LoadImageMask",
+   "LoadVideo",
+   "MeliteAudioSlice",
+   "MeliteConcatVideos",
+   "UNETLoader",
+   "VHS_LoadVideo"
+  ],
+  "reordered_keys": 107
  }
 }

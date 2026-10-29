@@ -41,6 +41,30 @@ extensions:
     compositions; addressed by the h3-timeline re-shoot chain (feature 024 —
     two CrossViewWarp passes per armed film: the depth-stack splat and the
     RGB reprojection). Pip: nothing beyond the ComfyUI base env.
+- name: ComfyUI-Video-Depth-Anything
+  url: https://github.com/yuvraj108c/ComfyUI-Video-Depth-Anything
+  ref: a0db08e63d1ea571601c45cde4aaee0acdd0544d
+  required: true
+  desc: >-
+    Video-Depth-Anything (MIT, yuvraj108c) — the three-node video depth
+    chain LoadVideoDepthAnythingModel -> VideoDepthAnythingProcess ->
+    VideoDepthAnythingOutput (+ SaveEXR, unused here) the h3-timeline
+    reshoot arm's depth half rides (feature 024 / friction F13c,
+    2026-11-12: the bag compose died unknown-node until this row).
+    Weights read from models/videodepthanything (video_depth_anything_
+    vits.pth already provisioned); the gray colormap output feeds
+    CrossViewWarp's brightness-depth seat. Pip: opencv-python,
+    matplotlib, pillow, imageio, imageio-ffmpeg, einops, easydict,
+    tqdm, huggingface_hub, Imath, OpenEXR (SaveEXR-only; the estate
+    chain never addresses it).
+  pip:
+    - opencv-python
+    - matplotlib
+    - imageio
+    - imageio-ffmpeg
+    - easydict
+    - Imath
+    - OpenEXR
 - name: ComfyUI-CameraReference3D
   url: https://github.com/lovemachine100/ComfyUI-CameraReference3D
   ref: 3b360a2bc76bd46b8367ab72384e0a71bb8bf701

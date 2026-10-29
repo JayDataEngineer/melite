@@ -422,11 +422,15 @@ export function ImageStagePreview(props: PreviewOwnerProps): ReturnType<typeof h
 export function AudioStagePreview(props: PreviewOwnerProps): ReturnType<typeof h> {
   const { hero, rest, viewingHistory, note, picked, promote, returnToCurrent } = useHistoryHero(props, {
     heroIndex: (src) => {
-      const playable = src.findIndex((a) => isPlayableAudioName(a.name ?? a.url))
+      // the PLAYER plays the url — the name is a display label by
+      // construction (seatSafeLink renders it as link text: 'track',
+      // 'film'), so the url owns the decodability question; the name
+      // only speaks when no url is carried
+      const playable = src.findIndex((a) => isPlayableAudioName(a.url ?? a.name))
       return playable >= 0 ? playable : 0
     },
   })
-  const heroPlayable = hero !== undefined && isPlayableAudioName(hero.name ?? hero.url)
+  const heroPlayable = hero !== undefined && isPlayableAudioName(hero.url ?? hero.name)
   return h('div', { className: s.stagePreview, 'data-testid': 'stage-preview-audio' },
     viewingHistory ? h(StaleBadge, { note, onReturn: returnToCurrent }) : null,
     hero === undefined

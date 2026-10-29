@@ -278,11 +278,15 @@ const RESHOOT_MOD: DeclaredModifierKind = {
   category: 'ordered',
   cardinality: 'list',
   max_stack: 1,
+  // F13c (2026-11-12): the depth half's pack rides the list too —
+  // LoadVideoDepthAnything* died unknown-node until the manifest row
+  // + this listing landed.
   requires: [
     'ComfyUI-VideoHelperSuite',
     'ComfyUI-KJNodes',
     'ComfyUI-MiniMaxH3Mod',
     'ComfyUI-CrossViewWarp',
+    'ComfyUI-Video-Depth-Anything',
   ],
   section: 'Reshoot — re-render the same scene from a new camera (the scene rebuilds from video depth, the moved view renders through the Fun ControlNet depth checkpoint, and what the new camera reveals is inpainted). The reshoot clip\'s own soundtrack never carries. Film runs leave this arm empty.',
   fields: [

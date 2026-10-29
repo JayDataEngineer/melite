@@ -17920,10 +17920,10 @@ window.__ModuleLoader__.load({
 		*  a player). */
 		function AudioStagePreview(props) {
 			const { hero, rest, viewingHistory, note, picked, promote, returnToCurrent } = useHistoryHero(props, { heroIndex: (src) => {
-				const playable = src.findIndex((a) => isPlayableAudioName(a.name ?? a.url));
+				const playable = src.findIndex((a) => isPlayableAudioName(a.url ?? a.name));
 				return playable >= 0 ? playable : 0;
 			} });
-			const heroPlayable = hero !== void 0 && isPlayableAudioName(hero.name ?? hero.url);
+			const heroPlayable = hero !== void 0 && isPlayableAudioName(hero.url ?? hero.name);
 			return (0, react.createElement)("div", {
 				className: preview_module_css_default.stagePreview,
 				"data-testid": "stage-preview-audio"

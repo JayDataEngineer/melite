@@ -151,6 +151,17 @@ test('THE AUDIO HERO: one native player keyed on the hero url', () => {
   expect(hero.hasAttribute('controls')).toBe(true)
 })
 
+test('THE QVOICE HERO: a .qvoice hero renders the embedding face — never a player (the 2026-11-12 playable fork; the label-first spelling played the display label, so an extless label with an .mp3 url rendered embedding — the url owns decodability, the name only speaks when no url is carried)', () => {
+  const { unmount } = render(h(AudioStagePreview, audio({
+    artifacts: [{ name: 'voice', url: '/runs/cur/voice.qvoice' }],
+  })))
+  expect(screen.getByTestId('stage-preview-audio-embedding')).toBeTruthy()
+  expect(screen.queryByTestId('stage-preview-audio-hero')).toBeNull()
+  unmount()
+  render(h(AudioStagePreview, audio()))
+  expect(screen.getByTestId('stage-preview-audio-hero')).toBeTruthy()
+})
+
 test('THE AUDIO EMPTY: honest about the live-run flag (rendering vs never-run)', () => {
   const running = render(h(AudioStagePreview, audio({ artifacts: [], runStatus: 'running' })))
   expect(running.container.textContent).toContain('rendering… the track lands here')
