@@ -623,7 +623,11 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // 626 -> 627 (2026-11-12): extend.js — the h3 extend arm's
   // renderer seat (the extend-video flow, report §3 staged plan),
   // repinned with its landing.
-  const LIB_CENSUS_PIN = 627;
+  // 627 -> 628 (2026-11-12): chainEdit.js — the masked-edit
+  // unification's shared spine (renderMaskedEditChain; loadVideo +
+  // h3MaskedEditPlane moved here from swap.js, one owner), repinned
+  // with its landing.
+  const LIB_CENSUS_PIN = 628;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {
