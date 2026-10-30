@@ -165,6 +165,25 @@ describe("the refine loop (F24: one press walks the film)", () => {
     );
   });
 
+  it("ARM 7 — the loop mounts NO continuation node: the carry node needs a JOINT AV latent the split-latent handoff cannot build", () => {
+    const g = new GraphBuilder()
+    renderH3RefineWindows(entry, {}, facts, g, "run-carry", { windows: 2, overlapFrames: 22 })
+    const o = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>
+    const cont = Object.entries(o).filter(([, n]) => n.class_type === "MiniMaxH3FiniteLatentContinuation")
+    assert.equal(cont.length, 0,
+      "no MiniMaxH3FiniteLatentContinuation on the refine path — it splits a JOINT AV latent (_h3_streams) and the handoff consumes SPLIT streams; the census has no joint-AV constructor, so the wiring cannot run")
+    // the handoff itself is what CANNOT carry: it samples internally
+    // with split `latent`/`audio_latent`, so a carry needs the
+    // chain store (upscale[]'s) or the Continuum pack, never a
+    // hand-wired continuation on this seat
+    const hand = Object.entries(o).filter(([, n]) => n.class_type === "MinimaxH3LatentUpscaler3DRefineHandoff")
+    assert.equal(hand.length, 2, "two windows, two handoffs")
+    for (const [, n] of hand) {
+      assert.ok(n.inputs["latent"] !== undefined && n.inputs["audio_latent"] !== undefined,
+        "each handoff takes split streams — the shape the continuation node cannot accept")
+    }
+  })
+
   it("ARM 6 — the loop refuses a zero-window walk and a short overlap LOUD", () => {
     assert.throws(
       () => renderH3RefineWindows(entry, {}, facts, new GraphBuilder(), "run", { windows: 0, overlapFrames: 22 }),
