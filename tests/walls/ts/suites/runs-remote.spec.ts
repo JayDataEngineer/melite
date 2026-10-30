@@ -854,6 +854,64 @@ test("W9 THE BENCH DIGEST (the invisible-press cure, 2026-10-20): a single-card 
   await fiber.dispose();
 });
 
+test("W9b THE PRESS NAMES ITS ROW (the F21 burn, 2026-10-30): a single-card press over a MULTI-stage bench binds its digest to the pressed row — and a claim naming no row refuses loud", async () => {
+  // The operator's round-3 burn: six stages, presses minted runs, every
+  // stage read `last_run null (no run in the window names this stage)`
+  // — the card arm could only answer a ONE-row bench (benchStageIdOf's
+  // single-row rule), so a multi-stage press fell back to the card
+  // skeleton ('generate'), a namespace the draft never heard of. The
+  // bench read's membership ticket missed, so the next press re-rendered
+  // every spent stage (a silent double spend on the GPU). The cure: the
+  // press names the row it came from (`bench_stage_id`, door
+  // vocabulary), the arm judges membership against the draft, and the
+  // digest speaks the draft's namespace.
+  const { runs, fiber, root } = await boot();
+  const sig = new AbortController().signal;
+  writeFileSync(join(root, "drafts", "d_multi.json"), JSON.stringify({
+    draft_id: "d_multi",
+    status: "draft",
+    createdAt: 1700000000000,
+    completedAt: null,
+    intent: "two-stage bench",
+    stages: [{ id: "s_0", inputs: [""], provenance: "agent" }, { id: "s_1", inputs: [""], provenance: "agent" }],
+  }));
+  const started = await runs.start(
+    { model: "krea-2", test: true, draft_id: "d_multi", bench_stage_id: "s_1", params: { prompt: "a red boat" } },
+    sig,
+  );
+  const flowDoc = JSON.parse(
+    readFileSync(join(root, "test-output", started.run_id, "_flow.json"), "utf8"),
+  ) as Record<string, unknown>;
+  assert.equal(flowDoc["stage_ids"], "s_1",
+    "the digest names the PRESSED row on a multi-stage bench, never the card skeleton");
+  const stageRow = (flowDoc["stages"] as Array<Record<string, unknown>>)[0]!;
+  assert.equal(stageRow["bench_stage_id"], "s_1", "the stage row carries the pressed row's address");
+  assert.equal(stageRow["id"], "generate", "the card skeleton still names the stage row itself");
+  // A claim naming no row of THIS draft refuses, named — a stale tab's
+  // id must never stamp a row nobody pressed.
+  await assert.rejects(
+    () => runs.start(
+      { model: "krea-2", test: true, draft_id: "d_multi", bench_stage_id: "s_9", params: { prompt: "a red boat" } },
+      sig,
+    ),
+    (e: unknown) => (remoteErrorOf(e)?.code ?? "") === "runs/invalid-request"
+      && /bench_stage_id "s_9" names no stage row of draft "d_multi"/.test((e as Error).message),
+  );
+  // THE LEGACY FALLBACK, PINNED: a press that names no row on a
+  // multi-row bench still composes (the skeleton namespace) — the
+  // precondition the cure removed for every tab-driven press, kept
+  // honest here so a future reader sees which arm is which.
+  const bare = await runs.start(
+    { model: "krea-2", test: true, draft_id: "d_multi", params: { prompt: "a red boat" } },
+    sig,
+  );
+  const bareDoc = JSON.parse(
+    readFileSync(join(root, "test-output", bare.run_id, "_flow.json"), "utf8"),
+  ) as Record<string, unknown>;
+  assert.equal(bareDoc["stage_ids"], "generate", "no claim + ambiguous bench = the legacy skeleton fallback");
+  await fiber.dispose();
+});
+
 test("runs {flow:} — the named-flow shim: live expansion, the door's voices (REBUILD-13)", async () => {
   const { ctx, runs, fiber, root } = await boot();
   const sig = new AbortController().signal;

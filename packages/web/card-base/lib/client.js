@@ -16520,6 +16520,7 @@ window.__ModuleLoader__.load({
 				...input.params,
 				model: input.model,
 				draft_id: input.draftId,
+				...input.stageId !== void 0 && input.stageId !== "" ? { bench_stage_id: input.stageId } : {},
 				test: input.test ?? false
 			}, signal);
 		}

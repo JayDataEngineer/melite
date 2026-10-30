@@ -138,6 +138,7 @@ const STAGES: BenchStageView[] = [
 
 interface EstateOpts {
   startDocs?: Array<Record<string, unknown>>;
+  runDocs?: Array<Record<string, unknown>>;
   refusals?: EstateRefusal[];
   throws?: EstateRefusal[];
 }
@@ -154,6 +155,7 @@ function estateOpts(stages: BenchStageView[], estate?: EstateOpts): Parameters<t
     draftStages: draftRows as Array<Record<string, unknown>>,
     draftBenchRev: 1,
     startDocs: estate?.startDocs,
+    runDocs: estate?.runDocs,
     refusals: estate?.refusals,
     throws: estate?.throws,
   };
@@ -575,6 +577,34 @@ describe("the Play start — the first card mints and the pass rides", () => {
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /Play/ }).hasAttribute("disabled")).toBe(true);
     }, { timeout: 5000 });
+  });
+});
+
+// THE PASS VOICES ITS OUTCOMES (the F20 burn, 2026-10-30): Run ALL
+// used to finish in silence — a skipped card and a stopped pass read
+// exactly like a clean one, so the operator re-pressed and re-paid.
+// The face is the settle line: every outcome named, a ghost × to
+// retire it, never a modal.
+describe("the pass summary — the settle line names what happened", () => {
+  test("a clean two-card pass voices both runs and the × retires the line", async () => {
+    const settled = (rid: string): Record<string, unknown> => ({
+      run_id: rid, status: "completed",
+      stages: [{ id: "default", url: "/melite-media/runs/" + rid + "/out.png" }],
+    });
+    mount([...STAGES, { id: "s_1", card: "image-gen", engine: "comfyui", params: { prompt: "a shed" } }],
+      { startDocs: [{ run_id: "r_1" }, { run_id: "r_2" }], runDocs: [settled("r_1"), settled("r_2")] });
+    await screen.findByText("rev 1");
+    fireEvent.click(screen.getByRole("button", { name: /Play/ }));
+    const line = await waitFor(() => {
+      const el = document.querySelector('[data-testid="run-pass-summary"]');
+      if (el === null) throw new Error("no pass summary yet");
+      return el as HTMLElement;
+    }, { timeout: 5000 });
+    expect(line.textContent).toBe("run all: ran s_0, s_1");
+    // the × is the catalog close glyph on the ghost control — one
+    // press retires the face outright (no second press needed)
+    fireEvent.click(within(line).getByRole("button", { name: "Dismiss error" }));
+    expect(document.querySelector('[data-testid="run-pass-summary"]')).toBeNull();
   });
 });
 

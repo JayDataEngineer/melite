@@ -84,6 +84,9 @@ export const chromeCopy = {
   passRunning: 'the pass is running',
   /** Play button hover: the pass runs every card in bench order. */
   runAllHint: 'run every card in bench order — one run per card, stop on failure',
+  // the settle line's own opener (the F20 pass summary: the outcome
+  // words are structure, the prefix is copy — locale-owned here)
+  passSummaryPrefix: 'run all:',
   /** Clear button hover once armed (the second press clears). */
   clearConfirm: 'confirm: every stage leaves the bench (undo restores them)',
   /** Clear button hover while idle (the wedge cure's one-click door). */

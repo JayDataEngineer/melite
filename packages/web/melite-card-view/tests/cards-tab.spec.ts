@@ -17,7 +17,7 @@
 // jsdom — the pure laws above are what pinned the regressions.
 import { describe, expect, test, afterEach, vi } from "vitest";
 import { resetCardFamiliesCache } from "@melite-plugin/melite-run-wire";
-import { resolveCardsAddress, groupStagesByCard, runCardStage, runBenchSequential } from "../src/client/CardsTab.tsx";
+import { resolveCardsAddress, groupStagesByCard, runCardStage, runBenchSequential, describePass } from "../src/client/CardsTab.tsx";
 import { schemaEnvelope } from '@melite/card-base/client';
 import { readRun, restoreRunToBench } from "../src/client/cards-resource.ts";
 import type { BenchStageView, CardsBenchValue, CardsRunValue } from "../src/client/cards-resource.ts";
@@ -419,11 +419,15 @@ describe("runCardStage / runBenchSequential — the door contract", () => {
     // THE PRESS KEY rides every start doc (the one-press law): one
     // mint per press, a transport retry replays the SAME doc — the
     // wall pins presence and stringness, never the uuid value.
+    // THE BENCH IDENTITY rides too (the F21 burn): the press names
+    // the draft row it came from, so the run's digest binds the row
+    // and the bench read's last_run stops answering null.
     expect(calls[1]?.args).toEqual({ doc: {
       input_image: "drop.png",
       resolution: "1024",
       model: "trellis2-native",
       draft_id: "bench-main",
+      bench_stage_id: "s_9",
       test: false,
       press_key: expect.any(String),
     } });
@@ -481,11 +485,15 @@ describe("runCardStage / runBenchSequential — the door contract", () => {
     }));
     expect(res).toEqual({ runId: "run-9" });
     expect(calls.map((c) => c.method)).toEqual(["drafts/get", "runs/start"]);
+    // THE BENCH IDENTITY rides too (the F21 burn): the press names
+    // the draft row it came from, so the run's digest binds the row
+    // and the bench read's last_run stops answering null.
     expect(calls[1]?.args).toEqual({ doc: {
       input_image: "drop.png",
       resolution: "1024",
       model: "trellis2-native",
       draft_id: "bench-main",
+      bench_stage_id: "s_9",
       test: false,
       press_key: expect.any(String),
     } });
@@ -519,7 +527,11 @@ describe("runCardStage / runBenchSequential — the door contract", () => {
       stage({ id: "s_2", card: "img-to-mesh", params: { input_image: "/melite-media/runs/run-1/out.png" } }),
     ] };
     const res = await runBenchSequential(bench);
-    expect(res).toEqual({ ran: ["s_1", "s_2"], stoppedAt: null, refused: null });
+    expect(res).toEqual({ ran: ["s_1", "s_2"], stoppedAt: null, refused: null, outcomes: [
+      { stageId: "s_1", out: "ran", why: "run run-1" },
+      { stageId: "s_2", out: "ran", why: "run run-1" },
+    ] });
+    expect(describePass(res)).toBe("run all: ran s_1, s_2");
     // ONE run per card, in bench order
     const starts = calls.filter((c) => c.method === "runs/start");
     expect(starts.map((c) => (c.args["doc"] as Record<string, unknown>)["input_image"] ?? (c.args["doc"] as Record<string, unknown>)["prompt"])).toEqual(["x", "/melite-media/runs/run-1/out.png"]);
@@ -545,8 +557,17 @@ describe("runCardStage / runBenchSequential — the door contract", () => {
     ] };
     const res = await runBenchSequential(bench);
     // s_0 skipped (cache-hit); s_1 ran + done; s_2 ran + FAILED → the
-    // pass stops there (a stopped card still RAN — it's in the list)
-    expect(res).toEqual({ ran: ["s_1", "s_2"], stoppedAt: "s_2", refused: null });
+    // pass stops there (a stopped card still RAN — it's in the list).
+    // THE F20 FACE: the skip says WHY, and the summary names it — a
+    // press that ends early can never read as a complete one.
+    expect(res).toEqual({ ran: ["s_1", "s_2"], stoppedAt: "s_2", refused: null, outcomes: [
+      { stageId: "s_0", out: "skipped", why: 'already done (runStatus "done")' },
+      { stageId: "s_1", out: "ran", why: "run run-1" },
+      { stageId: "s_2", out: "failed", why: "run run-1 settled failed" },
+    ] });
+    // (the summary reads the OUTCOMES: a failed stage is not "ran",
+    // whatever the pass's started-list carries)
+    expect(describePass(res)).toBe('run all: ran s_1 · skipped s_0 (already done (runStatus "done")) · stopped at s_2 (failed: run run-1 settled failed)');
     expect(calls.filter((c) => c.method === "runs/start").length).toBe(2); // s_0 never started
   });
 
@@ -564,6 +585,12 @@ describe("runCardStage / runBenchSequential — the door contract", () => {
     expect(res.stoppedAt).toBe("s_1");
     expect(String(res.refused)).toContain("input_image");
     expect(calls.filter((c) => c.method === "runs/start").length).toBe(1);
+    // THE STRANDED STAGE IS NAMED: the refusal stopped the pass and
+    // s_2 was never queued — the summary says so instead of reporting
+    // completion (the F20 burn's second face).
+    expect(res.outcomes.map((o) => [o.stageId, o.out])).toEqual([["s_1", "refused"], ["s_2", "not_run"]]);
+    expect(describePass(res)).toContain("never queued s_2");
+    expect(describePass(res)).toContain("refused at s_1");
   });
 
   test("the refusal's details bag rides the batch outcome (the lane popup's row)", async () => {
@@ -625,7 +652,11 @@ describe("runCardStage / runBenchSequential — the door contract", () => {
     // observe answers null — the pass stops at this card, the settle
     // hook never fires (the mapping stays seated so the orphaned run
     // stays stoppable), and the refusal lane stays null.
-    expect(res).toEqual({ ran: ["s_1"], stoppedAt: "s_1", refused: null });
+    expect(res).toEqual({ ran: ["s_1"], stoppedAt: "s_1", refused: null, outcomes: [
+      { stageId: "s_1", out: "unknown", why: "the observe was aborted before it settled (run run-1 stays live)" },
+      { stageId: "s_2", out: "not_run", why: "the pass stopped at s_1" },
+    ] });
+    expect(describePass(res)).toBe('run all: ran nothing · stopped at s_1 (unknown: the observe was aborted before it settled (run run-1 stays live)) · never queued s_2');
     expect(settled).toEqual([]);
     expect(calls.filter((c) => c.method === "runs/start").length).toBe(1);
   });

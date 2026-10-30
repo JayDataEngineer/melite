@@ -55,7 +55,7 @@ export interface StageViewRenderSlot {
 // the door-contract specs) already rides — no importer moves.
 export { CardsTab, resolveCardsAddress } from './cards-tab-body.tsx'
 export { loadFormsEdgeMeta } from './forms-edge-meta.ts'
-export { runCardStage, runBenchSequential } from './stage-run.ts'
+export { runCardStage, runBenchSequential, describePass } from './stage-run.ts'
 export { previewKindFor, primaryKindFor, paramsDiffKeys, previewArtifactsFor, previewReportsFor } from './preview-kinds.ts'
 export { groupStagesByCard, benchRow } from './bench-row.ts'
 export type { CardRowLineTabRow } from './bench-row.ts'

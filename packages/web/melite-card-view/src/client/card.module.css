@@ -175,6 +175,19 @@
  * .failed/.missing/.loading law verbatim): .runError's <p> rows had
  * no margin rule, so UA 1em block margins shoved the bench panel's
  * save/reload voices out of the scroll content. Pinned to zero. */
+/* THE PASS SUMMARY (the F20 burn, 2026-10-30): the Run ALL pass's
+ * one sentence — every stage named (ran / skipped / failed / never
+ * queued). An informational row, never an accusation: secondary
+ * label ink, the same zero margins as .runError so the bench panel's
+ * chrome keeps its place, and the × rides .errorDismiss' anchor law. */
+.runSummary {
+  color: var(--dsw-alias-label-secondary);
+  font-size: 11px;
+  margin: 0;
+  overflow-wrap: anywhere;
+  position: relative;
+}
+
 .runError {
   color: var(--dsw-alias-state-error-primary);
   font-size: 11px;

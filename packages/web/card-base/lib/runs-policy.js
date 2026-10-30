@@ -192,6 +192,7 @@ export async function startCardRun(input, signal) {
         ...input.params,
         model: input.model,
         draft_id: input.draftId,
+        ...(input.stageId !== undefined && input.stageId !== '' ? { bench_stage_id: input.stageId } : {}),
         test: input.test ?? false,
     }, signal);
 }

@@ -150,6 +150,14 @@ export const CARD_ENVELOPE_KEYS: readonly string[] = [
   // the whole suite stayed green (the contract-depth red,
   // 2026-10-24): no wall drove a press_key-carrying body.
   "press_key",
+  // bench_stage_id is the SINGLE-CARD press's bench identity (the
+  // F21 burn, 2026-10-30): the draft row the press came from. Door
+  // vocabulary — the card never sees it as a knob, and the composed
+  // stage stamps it (runsRegistry's card arm) so the run sidecar's
+  // digest names the row the operator pressed, which is what the
+  // bench read's `last_run` binds to. Unregistered, it would land in
+  // every card's params as an unknown knob and refuse the press.
+  "bench_stage_id",
   // seeds is the submit door's seed-sweep coordinate (friction #9,
   // 2026-10-28): the door fans one press out to one run per seed —
   // door vocabulary consumed before any card composes, never a card

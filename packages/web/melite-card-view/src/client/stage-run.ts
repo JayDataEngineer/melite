@@ -12,6 +12,7 @@ import type { CardsBenchValue, BenchStageView } from './cards-resource.ts'
 import { freshStageRow, readStageRow, observeRunOutcome } from './cards-resource.ts'
 import { refuseForUnlandedWrite } from './draft.ts'
 import { rejectionVoice } from './rejection-voice.ts'
+import { chromeCopy } from '../chromeCopy.ts'
 
 /** The generic MCP card's id (the ONE engine-served card the run
  * press routes on — the subagent-spawn card, engine 'agent'). */
@@ -231,7 +232,65 @@ export async function runCardStage(
   // THE REFUSAL CODE rides from the door (StartOutcome): the tab's
   // carry sites read refusedCode to split the incomplete-draft class
   // (bench state, never a run face) from stated-wrong failures.
-  return await startCardRun({ model, params: doc, draftId })
+  // THE BENCH IDENTITY (the F21 burn, 2026-10-30): the press names
+  // the draft row it came from, so the minted run's digest binds the
+  // row (the bench read's `last_run`) and the next press skips a
+  // spent stage instead of re-rendering it.
+  return await startCardRun({ model, params: doc, draftId, stageId: src.id })
+}
+
+/** One stage's outcome in a sequential pass — the press-face trust
+ *  repair (the F20 burn, 2026-10-30): a pass that ends must SAY what
+ *  happened to every stage it walked past. The operator pressed Run
+ *  on a six-stage bench, two stages ran, and the summary reported
+ *  completion while four stages were silently never queued. */
+export interface PassStageOutcome {
+  readonly stageId: string
+  /** ran — minted and settled done; skipped — the cache-hit skip
+   *  (why names the word it read); failed/stopped/unknown — the
+   *  terminal it settled on; refused — the door refused its start;
+   *  not_run — the pass stopped before reaching it. */
+  readonly out: 'ran' | 'skipped' | 'failed' | 'stopped' | 'unknown' | 'refused' | 'not_run'
+  readonly why: string
+}
+
+export interface PassResult {
+  readonly ran: string[]
+  readonly stoppedAt: string | null
+  readonly refused: string | null
+  readonly refusedCode?: string
+  readonly refusedDetails?: Record<string, unknown>
+  /** EVERY stage the pass walked, in bench order — the summary's
+   *  evidence (ran/skipped/failed/refused/not_run with a reason). */
+  readonly outcomes: PassStageOutcome[]
+}
+
+/** THE PASS SUMMARY (pure — the press face's one sentence): counts
+ *  by outcome and NAMES the stages, so a press that stops early can
+ *  never read as a complete one. */
+export function describePass(res: PassResult): string {
+  const ids = (out: PassStageOutcome['out']): string[] =>
+    res.outcomes.filter((o) => o.out === out).map((o) => o.stageId)
+  const ran = ids('ran')
+  const skipped = ids('skipped')
+  const stopped = res.outcomes.filter((o) => o.out === 'failed' || o.out === 'stopped' || o.out === 'unknown')
+  const refused = ids('refused')
+  const notRun = ids('not_run')
+  const parts: string[] = []
+  parts.push(ran.length > 0 ? 'ran ' + ran.join(', ') : 'ran nothing')
+  if (skipped.length > 0) {
+    const why = res.outcomes.find((o) => o.out === 'skipped')?.why ?? ''
+    parts.push('skipped ' + skipped.join(', ') + (why !== '' ? ' (' + why + ')' : ''))
+  }
+  if (stopped.length > 0) {
+    const first = stopped[0]!
+    parts.push('stopped at ' + first.stageId + ' (' + first.out + ': ' + first.why + ')')
+  }
+  if (refused.length > 0) {
+    parts.push('refused at ' + refused.join(', ') + ' — ' + (res.refused ?? ''))
+  }
+  if (notRun.length > 0) parts.push('never queued ' + notRun.join(', '))
+  return chromeCopy.passSummaryPrefix + ' ' + parts.join(' · ')
 }
 
 /** THE SEQUENTIAL PASS — Run ALL, the old system's composer law
@@ -241,8 +300,10 @@ export async function runCardStage(
  *  run; the flow_inline door serves the chain/graph surface, not
  *  this one). Skip stages already done (the cache-hit skip). A
  *  failed or refused stage STOPS the pass — fail loud, never a
- *  doomed downstream run. The per-card observer patches each row as
- *  it goes (running → terminal), so the tiles flip one by one and
+ *  doomed downstream run — and every stage the stop stranded is
+ *  named in the outcomes (the F20 burn: a silent stop read as a
+ *  finished pass). The per-card observer patches each row as it
+ *  goes (running → terminal), so the tiles flip one by one and
  *  the bench is never taken over. Exported for the door-contract
  *  spec. */
 export async function runBenchSequential(
@@ -260,10 +321,20 @@ export async function runBenchSequential(
     onTouched?: () => void
     signal?: AbortSignal
   } = {},
-): Promise<{ ran: string[]; stoppedAt: string | null; refused: string | null; refusedCode?: string; refusedDetails?: Record<string, unknown> }> {
+): Promise<PassResult> {
   const ran: string[] = []
-  for (const stage of bench.stages) {
-    if (hooks.signal?.aborted === true) return { ran, stoppedAt: null, refused: null }
+  const outcomes: PassStageOutcome[] = []
+  /** The stages the pass never reached — named, never implied. */
+  const strand = (from: number, why: string): void => {
+    for (const later of bench.stages.slice(from)) {
+      outcomes.push({ stageId: later.id, out: 'not_run', why })
+    }
+  }
+  for (const [i, stage] of bench.stages.entries()) {
+    if (hooks.signal?.aborted === true) {
+      strand(i, 'the pass was cancelled')
+      return { ran, stoppedAt: null, refused: null, outcomes }
+    }
     // THE CACHE-HIT SKIP, folded (2026-10-01): the raw 'done' compare
     // re-ran every stage the estate settles 'completed' and every
     // 'cached'/'reused' row — the skip now recognizes the whole done
@@ -272,8 +343,12 @@ export async function runBenchSequential(
     // plane writes 'unreachable') is not door-validated — an
     // unreadable row runs, never throws the pass.
     {
-      const folded = statusOrPendingOf(typeof stage.runStatus === 'string' ? stage.runStatus : '')
-      if (folded === 'done' || folded === 'cached' || folded === 'reused') continue
+      const word = typeof stage.runStatus === 'string' ? stage.runStatus : ''
+      const folded = statusOrPendingOf(word)
+      if (folded === 'done' || folded === 'cached' || folded === 'reused') {
+        outcomes.push({ stageId: stage.id, out: 'skipped', why: 'already ' + folded + ' (runStatus ' + JSON.stringify(word) + ')' })
+        continue
+      }
     }
     const res = await runCardStage(bench.draftId, stage)
     // refusedCode rides through (the wire-chain audit cure,
@@ -282,22 +357,38 @@ export async function runBenchSequential(
     // batch pass never re-plumbs the discrimination. refusedDetails
     // rides beside it (the lane-miss popup's artifact, 2026-10-22).
     if ('refused' in res) {
+      outcomes.push({ stageId: stage.id, out: 'refused', why: res.refused })
+      strand(i + 1, 'the pass stopped at ' + stage.id)
       return {
         ran,
         stoppedAt: stage.id,
         refused: res.refused,
         refusedCode: res.refusedCode,
         ...(res.refusedDetails !== undefined ? { refusedDetails: res.refusedDetails } : {}),
+        outcomes,
       }
     }
     hooks.onCardStarted?.(res.runId, { draftId: bench.draftId, stageId: stage.id })
     const terminal = await observeRunOutcome(bench.draftId, stage.id, res.runId, hooks.signal, hooks.onTouched)
     if (terminal !== null) hooks.onCardSettled?.(res.runId, { draftId: bench.draftId, stageId: stage.id })
     if (terminal !== 'done') {
-      // failed / stopped / unknown — the pass stops at this card
-      return { ran: [...ran, stage.id], stoppedAt: stage.id, refused: null }
+      // failed / stopped / unknown — the pass stops at this card, and
+      // every stage behind it is named as never queued.
+      const out: PassStageOutcome['out'] = terminal === 'failed' || terminal === 'stopped'
+        ? terminal
+        : 'unknown'
+      outcomes.push({
+        stageId: stage.id,
+        out,
+        why: terminal === null
+          ? 'the observe was aborted before it settled (run ' + res.runId + ' stays live)'
+          : 'run ' + res.runId + ' settled ' + terminal,
+      })
+      strand(i + 1, 'the pass stopped at ' + stage.id)
+      return { ran: [...ran, stage.id], stoppedAt: stage.id, refused: null, outcomes }
     }
     ran.push(stage.id)
+    outcomes.push({ stageId: stage.id, out: 'ran', why: 'run ' + res.runId })
   }
-  return { ran, stoppedAt: null, refused: null }
+  return { ran, stoppedAt: null, refused: null, outcomes }
 }

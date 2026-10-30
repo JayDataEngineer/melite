@@ -96,6 +96,13 @@ export interface StartCardRunInput {
     model: string;
     params: Record<string, unknown>;
     draftId: DraftId;
+    /** THE BENCH IDENTITY (the F21 burn, 2026-10-30): the draft stage
+     *  row the press came from. The estate stamps it on the composed
+     *  stage, its run sidecar digest names the row, and the bench
+     *  read's `last_run` binds — a press-minted run that names no
+     *  stage leaves every stage reading `last_run null`, so the next
+     *  press re-renders it (a silent double spend). */
+    stageId?: string;
     /** Default false — a real run. */
     test?: boolean;
 }

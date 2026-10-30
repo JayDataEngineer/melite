@@ -81,6 +81,7 @@ export declare const chromeCopy: {
     readonly passRunning: "the pass is running";
     /** Play button hover: the pass runs every card in bench order. */
     readonly runAllHint: "run every card in bench order — one run per card, stop on failure";
+    readonly passSummaryPrefix: "run all:";
     /** Clear button hover once armed (the second press clears). */
     readonly clearConfirm: "confirm: every stage leaves the bench (undo restores them)";
     /** Clear button hover while idle (the wedge cure's one-click door). */

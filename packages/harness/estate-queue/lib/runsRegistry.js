@@ -1481,7 +1481,7 @@ export class RunsRuntimeService extends Service {
                 // run-4610e1c38d75 was "edit" here vs "s_2" in the draft
                 // doc). Multi-row benches compose through the bench loop,
                 // which stamps each row's own id.
-                benchStageId: benchStageIdOf(benchDoc, skeleton),
+                benchStageId: benchStageIdOf(benchDoc, skeleton, typeof body["bench_stage_id"] === "string" ? body["bench_stage_id"] : undefined),
                 // The {model:} card door's engine (the compose plane is
                 // ComfyUI's — the card arm rides it by construction).
                 engine: CARD_PLANE_ENGINE,
@@ -2682,11 +2682,43 @@ export class RunsRuntimeService extends Service {
         notifyRunChanged(run.runId);
     }
 }
-/** The single-stage bench doc's DRAFT row id (the model arm's
- *  identity seam): exactly one stage row with a string id → that id;
- *  any other shape composes ambiguous → undefined (the mirror falls
- *  back to the run row's id, the legacy coincidental path). */
-function benchStageIdOf(benchDoc, skeleton) {
+/** The pressed stage's DRAFT row id (the model arm's identity seam).
+ *
+ *  THE CLAIMED ID (the F21 burn, 2026-10-30): a single-card press over
+ *  a MULTI-stage bench names the row it came from (`bench_stage_id`,
+ *  the client's own draft address). Without it, only a one-row bench
+ *  can answer (exactly one stage row with a string id → that id; any
+ *  other shape composes ambiguous → undefined, the mirror falls back
+ *  to the run row's id — the legacy coincidental path). A multi-stage
+ *  bench then minted a run whose digest named the CARD SKELETON
+ *  ('generate'), a namespace the draft never heard of, so every stage
+ *  read `last_run null` and the next press re-rendered it.
+ *
+ *  A claim is JUDGED, never trusted: it must name a stage row of this
+ *  very draft (the doc is the membership ledger) — a stale or foreign
+ *  id would stamp a row nobody pressed.
+ *  @param benchDoc the draft doc the press read (undefined when the
+ *         snapshot read failed — then only a claim can answer)
+ *  @param skeleton the composed stage's card skeleton id
+ *  @param claimed the press body's `bench_stage_id`, when sent
+ *  @returns the draft row id, or undefined (legacy fallback)
+ *  @throws RemoteError runs/invalid-request when the claim names no
+ *          stage row of the draft */
+function benchStageIdOf(benchDoc, skeleton, claimed) {
+    if (claimed !== undefined && claimed !== "") {
+        if (benchDoc === undefined)
+            return claimed;
+        const rows = benchDoc["stages"];
+        const known = Array.isArray(rows)
+            ? rows.some((r) => typeof r === "object" && r !== null && r["id"] === claimed)
+            : false;
+        if (!known) {
+            throw new RemoteError("runs/invalid-request", "bench_stage_id " + JSON.stringify(claimed) +
+                " names no stage row of draft " + JSON.stringify(String(benchDoc["draft_id"] ?? "")) +
+                " — the press names the row it came from, and that row must exist on the bench (reopen the tab and press again)", { loc: "bench_stage_id" });
+        }
+        return claimed;
+    }
     if (benchDoc === undefined)
         return undefined;
     const rows = benchDoc["stages"];

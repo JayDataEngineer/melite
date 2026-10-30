@@ -55,7 +55,7 @@ import { cardLlmArg } from '@melite/catalog'
 import type { CatalogCard, FormSpecDoc, ModifierKind, SpecValues, StartOutcome } from '@melite/card-base/client'
 import { forgetStageWrites, paramFields, patchStageOutcome, patchStageParams, scheduleStagePatch, unlandedWriteVoice } from './draft.ts'
 import css from './card.module.css'
-import { runCardStage, runBenchSequential } from './stage-run.ts'
+import { runCardStage, runBenchSequential, describePass } from './stage-run.ts'
 import type { CardsBenchValue, CardsDraftValue, CardsRunValue, BenchStageView } from './cards-resource.ts'
 import { fetchMediaLibrary, CARDS_BENCH_ADDRESS, benchAddressOf, benchSessionKey, benchSessionOfAddress, cardsRunAddress, fetchBench, fetchLatestRunForDraft, freshStageRow, markCardsSurface, observeRunOutcome, openCardsResource, parseCardsAddress, reconcileBenchRuns, restoreRunToBench } from './cards-resource.ts'
 import { uploadInputFile } from '@melite/card-base/client'
@@ -218,6 +218,11 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     return () => { alive = false }
   }, [lastRunId, snapshot?.value])
   const [localRunError, setLocalRunError] = useState<RunClaim | null>(null)
+  // THE PASS SUMMARY (the F20 burn, 2026-10-30): a sequential press
+  // ends with EVERY stage's outcome named — ran / skipped (why) /
+  // failed (why) / never queued. Before this, a press that ran two of
+  // six stages reported completion and the other four vanished.
+  const [passSummary, setPassSummary] = useState<string | null>(null)
   // THE ERROR DISMISS (operator 2026-11-05: the strip stuck FOREVER
   // with no way out): the red × retires the strip — a LOCAL claim
   // retires outright (it was this tab's own refusal); a DERIVED row
@@ -428,6 +433,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     }
     setRunningLive(true)
     setLocalRunError(null)
+    setPassSummary(null)
     runAllAbort.current?.abort()
     const ctrl = new AbortController()
     runAllAbort.current = ctrl
@@ -459,6 +465,11 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
       onTouched: touchBench,
     }).then((res) => {
       setRunningLive(false)
+      // THE SUMMARY IS ALWAYS VOICED (the F20 burn): a clean pass too —
+      // "ran s_0 · skipped s_1 (already done)" is the trust the
+      // operator pressed for, and an early stop names the stranded
+      // stages instead of reading as completion.
+      setPassSummary(describePass(res))
       if (res.refused !== null) {
         setLocalRunError(startClaim(res.refused, rescueOfLaneDetails(res.refusedDetails) ?? undefined))
       }
@@ -515,6 +526,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     }
     setRunningLive(true)
     setLocalRunError(null)
+    setPassSummary(null)
     const draftId = snapshot.value.draftId
     // The rev fences THIS callback's two row writes below — the
     // refusal/failure carry and the heal (stale revs rebase inside
@@ -679,6 +691,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     }
     setRunningLive(true)
     setLocalRunError(null)
+    setPassSummary(null)
     // THE GATE LIVES IN runCardStage (the one-press/one-engine law —
     // the draft editor's Run rides the same composing door, so the
     // refusal (with its row carry below) covers it with no second
@@ -861,6 +874,15 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
         // the strip — the rescue unmounts with it (it keys on the
         // same runError), and the next refusal re-arms. Ghost sm +
         // the catalog close glyph (the S6d close-× idiom).
+        passSummary !== null ? h('p', {
+          className: css.runSummary, 'data-testid': 'run-pass-summary',
+        }, passSummary,
+          h(Button, {
+            size: 'sm', variant: 'ghost', className: css.errorDismiss,
+            'aria-label': chromeCopy.dismissError,
+            onClick: () => { setPassSummary(null) },
+          }, h(IconCloseOutlineRegular, { size: 12 })),
+        ) : null,
         runError !== null ? h('p', { className: css.runError }, runError,
           h(Button, {
             size: 'sm', variant: 'ghost', className: css.errorDismiss,
