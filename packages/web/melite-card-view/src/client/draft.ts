@@ -67,6 +67,7 @@ export type FlowEventFrame =
 
 import { toRunMediaUrl, type RunStageStatus } from '@melite-plugin/melite-run-wire'
 import { estateRemote, unwrapRemote, parseNumericInput, isCasConflict, type DraftsNamespace } from '@melite/card-base/client'
+import type { RunStartDoc } from '@melite/estate-runs/types'
 import { isTerminalStatus, statusOrPendingOf, type CardStatus } from '@melite/contracts/stageView'
 import { type DraftId } from '@melite/contracts/benchStage'
 import { rejectionVoice } from './rejection-voice.ts'
@@ -901,8 +902,9 @@ export async function patchStageOutcome(
  *  spend). Both live press receipts (run-c6bfa91defe7,
  *  run-9dacc8612feb) omitted it. */
 export async function startDraft(draftId: DraftId, stageId?: string): Promise<string> {
-  const body: Record<string, unknown> = { draft_id: draftId }
-  if (stageId !== undefined && stageId !== '') body['bench_stage_id'] = stageId
+  const body: RunStartDoc = stageId !== undefined && stageId !== ''
+    ? { draft_id: draftId, bench_stage_id: stageId }
+    : { draft_id: draftId }
   const row = await unwrapRemote(estateRemote().runs.start(body), 'runs/start') as unknown as Record<string, unknown>
   if (typeof row['run_id'] !== 'string') {
     throw new Error('runs/start: no run_id in the answer')

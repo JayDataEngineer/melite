@@ -1463,7 +1463,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1582,
+						"line": 1601,
 						"column": 9
 					}
 				},
@@ -1527,7 +1527,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1611,
+						"line": 1624,
 						"column": 9
 					}
 				},
@@ -1659,7 +1659,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1649,
+						"line": 1662,
 						"column": 9
 					}
 				},
@@ -1802,7 +1802,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1598,
+						"line": 1611,
 						"column": 9
 					}
 				},
@@ -1870,7 +1870,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1632,
+						"line": 1645,
 						"column": 9
 					}
 				},
@@ -1936,7 +1936,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1621,
+						"line": 1634,
 						"column": 9
 					}
 				},
@@ -2019,7 +2019,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1681,
+						"line": 1694,
 						"column": 9
 					}
 				},
@@ -2083,7 +2083,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1665,
+						"line": 1678,
 						"column": 9
 					}
 				},
@@ -4524,8 +4524,10 @@ window.__ModuleLoader__.load({
 		*  spend). Both live press receipts (run-c6bfa91defe7,
 		*  run-9dacc8612feb) omitted it. */
 		async function startDraft(draftId, stageId) {
-			const body = { draft_id: draftId };
-			if (stageId !== void 0 && stageId !== "") body["bench_stage_id"] = stageId;
+			const body = stageId !== void 0 && stageId !== "" ? {
+				draft_id: draftId,
+				bench_stage_id: stageId
+			} : { draft_id: draftId };
 			const row = await (0, _melite_card_base_client.unwrapRemote)((0, _melite_card_base_client.estateRemote)().runs.start(body), "runs/start");
 			if (typeof row["run_id"] !== "string") throw new Error("runs/start: no run_id in the answer");
 			return row["run_id"];

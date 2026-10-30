@@ -2,7 +2,7 @@
   "name": "@melite/image-image-gen",
   "private": true,
   "license": "AGPL-3.0-or-later",
-  "version": "0.1.5-pre-alpha",
+  "version": "0.2.0-alpha",
   "type": "module",
   "exports": {
     ".": {

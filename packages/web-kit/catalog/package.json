@@ -79,7 +79,7 @@
       "default": "./lib/waveform-peaks.js"
     }
   },
-  "version": "0.1.5-pre-alpha",
+  "version": "0.2.0-alpha",
   "types": "./src/index.ts",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",

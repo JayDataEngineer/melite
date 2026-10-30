@@ -346,7 +346,8 @@ describe("the refine kind (the fifth mod bag)", () => {
     assert.ok(kind, 'the card declares the refine bag');
     const green = String(REFINE_DEFAULT_CLIP_SECONDS * 24);
     const ceiling = String(REFINE_2X_OOM_FRAMES);
-    const clip = (kind!.fields ?? []).find((f) => f.name === 'clip_seconds');
+    type SeatRow = { name: string; tooltip?: string; default?: unknown };
+    const clip = ((kind!.fields ?? []) as SeatRow[]).find((f) => f.name === 'clip_seconds');
     assert.ok(clip?.tooltip?.includes(`${green} f`), `the served tooltip names the green window derived from the constant (${green} f)`);
     assert.ok(clip?.tooltip?.includes(`${ceiling} f`), `and the OOM ceiling derived from the constant (${ceiling} f)`);
     assert.equal(typeof clip?.default, 'number');

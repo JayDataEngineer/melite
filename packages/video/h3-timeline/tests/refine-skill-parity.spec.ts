@@ -169,7 +169,7 @@ describe("the refine skill's dial table agrees with the code's own homes", () =>
     assert.match(md, /photoreal/i, "the doc names the failure mode (the photoreal drift)");
     // THE SERVED SEAT CARRIES THE SAME LAW — a user editing the form
     // never learns it from the doc alone
-    const tooltip = String(fields().get("refine_prompt")?.tooltip ?? "");
+    const tooltip = String((fields().get("refine_prompt") as { tooltip?: string } | undefined)?.tooltip ?? "");
     assert.match(tooltip, /ONLY STYLE LEVER/,
       "the served refine_prompt tooltip names the same law");
     assert.match(tooltip, /restyles the shot|restate the source/i,
@@ -192,7 +192,7 @@ describe("the refine skill's dial table agrees with the code's own homes", () =>
     assert.match(md, /Never describe a\s+press here as "the second pass"/i,
       "the doc names the wrong label an agent must not use");
     // THE SERVED SEAT carries the same fact, so a form user learns it
-    const tooltip = String(fields().get("refine_prompt")?.tooltip ?? "");
+    const tooltip = String((fields().get("refine_prompt") as { tooltip?: string } | undefined)?.tooltip ?? "");
     assert.match(tooltip, /RESTYLES decoded pixels and carries no lineage/i,
       "the served refine_prompt tooltip states the no-lineage fact");
     assert.match(tooltip, /chain 2-pass door/i,

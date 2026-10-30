@@ -84,7 +84,19 @@ if (pinned.length > 0) {
 }
 
 const moved = []
+const versionless = []
 for (const p of packages) {
+  // A PRIVATE package with NO version row is outside the release set:
+  // the docs site (@melite/docs) ships no artifact and pack-real-install
+  // never names it. Skips are NAMED on stdout, never silent — a future
+  // versionless package would otherwise vanish from the release census.
+  if (typeof p.manifest.version !== 'string' || p.manifest.version === '') {
+    if (p.manifest.private !== true) {
+      die(`${p.name}: no version row and not private — a public package must carry the release number`)
+    }
+    versionless.push(p.name)
+    continue
+  }
   if (p.manifest.version === args.to) continue
   moved.push(`${p.name}: ${p.manifest.version} -> ${args.to}`)
   if (args.dryRun) continue
@@ -95,6 +107,7 @@ for (const p of packages) {
   writeFileSync(path, next)
 }
 console.log(`bump-release-version: ${String(moved.length)} package(s) moved to ${args.to} (of ${String(packages.length)} discovered)`)
+if (versionless.length > 0) console.log(`  versionless private package(s), outside the release set: ${versionless.join(', ')}`)
 for (const line of moved) console.log(`  ${line}`)
 if (args.dryRun) console.log('bump-release-version: DRY RUN — nothing written')
 else console.log(`bump-release-version: ${args.to} is in every manifest under ${join(REPO, 'packages')}`)

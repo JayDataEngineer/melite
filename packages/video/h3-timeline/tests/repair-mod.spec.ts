@@ -267,7 +267,7 @@ describe("the repair kind", () => {
     // say nothing: an empty surface reads as "name the clip and I fix
     // the film". Judge the served section text (the surface the agent
     // reads), never a doc the client may not load.
-    const repair = def.mods.find((k) => (k as unknown as { param_key?: string }).param_key === 'repair')! as unknown as { section: string; max_stack: number };
+    const repair = (def.mods ?? []).find((k) => (k as unknown as { param_key?: string }).param_key === 'repair')! as unknown as { section: string; max_stack: number };
     assert.equal(repair.max_stack, 1, "one entry per doc (the bag is the window seat)");
     assert.match(repair.section, /ONE WINDOW PER DOC/,
       "the served section names the one-window law");

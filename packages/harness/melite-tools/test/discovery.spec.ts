@@ -960,7 +960,7 @@ describe('live door arms', () => {
     // SHIFT (SOTA limb 2): shift_video joins — the distill's own
     // sigma grid (8-step 12, 4-step 6; larryvrh declares none).
     assert.deepEqual(lora!['marries'], { steps: 'max', shift_video: 'max' }, 'the loras kind declares the steps + shift marriage (max aggregation)')
-    const opts = (lora!['options'] ?? []) as Array<Record<string, unknown> & { value?: string }>
+    const opts = (lora!['options'] ?? []) as unknown as Array<Record<string, unknown> & { value?: string }>
     assert.equal(opts.length, 11, 'the mirrored catalog serves every DECL row on the kind itself')
     const dareties = opts.find((o) => o.value === 'h3_lightx2v_dareties')
     const turbo = opts.find((o) => o.value === 'h3_lightx2v_turbo')
@@ -997,7 +997,7 @@ describe('live door arms', () => {
     const modifiers = spec.features?.modifiers ?? []
     const lora = modifiers.find((m) => m['param_key'] === 'loras')
     assert.ok(lora !== undefined)
-    const options = (lora!['options'] ?? []) as Array<Record<string, unknown>>
+    const options = (lora!['options'] ?? []) as unknown as Array<Record<string, unknown>>
     assert.ok(options.some((option) => option['value'] === 'h3_lightx2v_turbo'))
     assert.deepEqual(
       options.find((option) => option['value'] === 'h3_lightx2v_turbo')!['defaults'],

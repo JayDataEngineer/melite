@@ -1,6 +1,6 @@
 {
   "name": "@melite/estate-media",
-  "version": "0.1.5-pre-alpha",
+  "version": "0.2.0-alpha",
   "type": "module",
   "exports": {
     ".": {
