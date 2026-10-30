@@ -353,15 +353,21 @@ describe("the h3 camera re-shoot wall (the fourth mod bag, official rework)", ()
     !prepareLanded ? "ComfyUI-CrossViewWarp @ fbb1e93c (class CrossViewPrepareClip — the engine restart + boot-fixture regen debt)" : null,
     !loraLanded ? "LoraLoaderModelOnly (the boot fixture's address set — the regen debt)" : null,
   ].filter((s): s is string => s !== null);
-  if (missing.length > 0) {
-    console.warn(
-      `[h3-reshoot-chain] ARM 5 SKIPPED — the official re-shoot chain's classes are not on the engine census yet; ` +
-      `missing surfaces: ${missing.join("; ")}. The arm fires when the operator restarts the engine over the ` +
-      `re-pinned fork and the boot fixture regens (regen-node-vocab --boot).`,
+  // THE SKIP DIED (the journey audit's 2026-10-30 finding): ARM 5a used
+  // to `skipIf` the classes were absent, and a skip decays silently —
+  // the boot double could lose the fork and the arm would read green
+  // forever. The census now serves all three (the operator's restart,
+  // 2026-10-30), so the arm always fires: a regressed fixture reds HERE
+  // with the missing surfaces named, and the cure is the regen the
+  // message states.
+  it("ARM 5a — an armed graph passes the RUN-door wiring gate (the engine owns every class)", () => {
+    assert.deepEqual(
+      missing,
+      [],
+      "the official re-shoot chain's classes left the boot double — " +
+      "regenerate it with `node scripts/regen-node-vocab.mjs --boot --live` " +
+      "and keep the four classes in the address-set residue",
     );
-  }
-
-  it.skipIf(!warpLanded || !prepareLanded || !loraLanded)("ARM 5a — an armed graph passes the RUN-door wiring gate (the engine owns every class)", () => {
     const out = compose(ARMED);
     assertWiringAgainst(boot.nodes, boot.inputs, "h3-timeline", out);
   });
