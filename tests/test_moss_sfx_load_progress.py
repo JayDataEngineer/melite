@@ -6,7 +6,11 @@ import types
 from pathlib import Path
 from types import SimpleNamespace
 
-import torch
+import pytest
+
+# The CI pytest seat installs pytest alone — torch rides the engine
+# env (the view-sheet wall's own law). Skip, never false-fail.
+torch = pytest.importorskip("torch", reason="the moss-sfx progress wall rides torch tensors")
 
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1] / "vendor" / "comfyui_extensions" / "melite-audio-nodes"
