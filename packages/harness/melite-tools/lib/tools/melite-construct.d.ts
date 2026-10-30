@@ -6,8 +6,8 @@
  * fiber's own mutation arms) and stays its own home. */
 export declare const CONSTRUCT_VERBS: readonly ["read", "load", "patch", "add_stage", "remove_stage", "archive", "unarchive", "clear", "floor", "rewire", "undo", "validate"];
 export type ConstructVerb = typeof CONSTRUCT_VERBS[number];
-import type { Estate } from '../estate.ts';
-import type { ToolDefinition } from '../types.ts';
+import type { Estate } from '../estate.js';
+import type { ToolDefinition } from '../types.js';
 /** The default bench — the unattributed seat (headless runs,
  *  legacy callers). */
 export declare const DEFAULT_BENCH = "main";

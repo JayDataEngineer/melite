@@ -1,6 +1,6 @@
 import { type DraftId } from '@melite/contracts/benchStage';
-import type { Estate } from '../estate.ts';
-import type { ToolDefinition } from '../types.ts';
+import type { Estate } from '../estate.js';
+import type { ToolDefinition } from '../types.js';
 export interface MeliteConnectArg {
     from?: unknown;
     to?: unknown;
