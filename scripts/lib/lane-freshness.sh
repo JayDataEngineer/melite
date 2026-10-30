@@ -40,7 +40,7 @@ check_lane_freshness() {
     [ -d "$pkg_dir/src" ] || continue
     local live
     live="$(cd "$pkg_dir" && find src \( -name '*.ts' -o -name '*.tsx' \) \
-      | sort | xargs sha256sum 2>/dev/null | sha256sum | cut -c1-16)"
+      | LC_ALL=C sort | xargs sha256sum 2>/dev/null | sha256sum | cut -c1-16)"
     local seated
     seated="$(tr -d '[:space:]' < "$stamp_file")"
     if [ "$live" != "$seated" ]; then

@@ -131,4 +131,32 @@ describe("THE SERVED-BUNDLE FRESHNESS LAW", () => {
     }
     assert.deepEqual(offenders, [], `non-canonical sourcemaps (rebuild with scripts/canonicalize-sourcemaps.mjs):\n${offenders.join("\n")}`);
   });
+
+  // THE STAMP CANONICALITY LAW (tiers lib-drift, 2026-10-30): the
+  // stamp recipe sorted with the shell's ambient sort, whose order
+  // is a function of the builder's locale (en_US.UTF-8 interfiles
+  // upper/lowercase differently than C) — a stamp built on a dev
+  // box NEVER matched a CI recompute, so the tiers lib-drift gate
+  // could never pass. The recipe is LC_ALL=C now (ship-lane.sh
+  // stamp_src, lane-freshness.sh, build-plane.mjs writeSrcStamp);
+  // this arm recomputes every tracked lib/.src-stamp through the
+  // canonical pipeline and refuses on mismatch — a stale stamp OR
+  // a recipe drift reds here, derivation over literal.
+  it("every tracked lib/.src-stamp equals the canonical (LC_ALL=C) recompute of its own src", () => {
+    const tracked = execSync("git ls-files", { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 })
+      .split("\n")
+      .filter((f) => /\/lib\/\.src-stamp$/.test(f));
+    assert.ok(tracked.length >= 4, `the stamp roster collapsed (${tracked.length}) — the walk broke`);
+    const offenders: string[] = [];
+    for (const f of tracked) {
+      const pkgDir = join(ROOT, dirname(dirname(f))); // the package root — find src runs there, not in lib/
+      const live = execSync(
+        "find src \\( -name '*.ts' -o -name '*.tsx' \\) | LC_ALL=C sort | xargs sha256sum 2>/dev/null | sha256sum | cut -c1-16",
+        { cwd: pkgDir, encoding: "utf8" },
+      ).trim();
+      const seated = readFileSync(join(ROOT, f), "utf8").trim();
+      if (live !== seated) offenders.push(`${f}: canonical ${live}, seated ${seated}`);
+    }
+    assert.deepEqual(offenders, [], `non-canonical src stamps (rebuild them with the LC_ALL=C recipe):\n${offenders.join("\n")}`);
+  });
 });

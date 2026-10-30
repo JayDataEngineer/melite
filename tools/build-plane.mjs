@@ -741,9 +741,11 @@ export function buildOne(pkgDir) {
 // sorted src/*.ts(x) list, sha256 of the sha256sum lines, first 16.
 // SHELLED, not reimplemented — a JS sort collates differently from
 // the shell's sort and the stamp must match the ship's verifier
-// byte-for-byte (the motion seat proved the drift).
+// byte-for-byte (the motion seat proved the drift). LC_ALL=C pinned
+// 2026-10-30: the shell's OWN sort collates by locale, and an
+// en_US-built stamp never matched a CI recompute (tiers lib-drift).
 function writeSrcStamp(pkgDir) {
-  const r = spawnSync('bash', ['-c', "find src \\( -name '*.ts' -o -name '*.tsx' \\) | sort | xargs sha256sum 2>/dev/null | sha256sum | cut -c1-16"], { cwd: pkgDir, encoding: 'utf8' })
+  const r = spawnSync('bash', ['-c', "find src \\( -name '*.ts' -o -name '*.tsx' \\) | LC_ALL=C sort | xargs sha256sum 2>/dev/null | sha256sum | cut -c1-16"], { cwd: pkgDir, encoding: 'utf8' })
   const stamp = (r.stdout || '').trim()
   writeFileSync(join(pkgDir, 'lib/.src-stamp'), stamp + '\n')
   return stamp

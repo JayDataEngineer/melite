@@ -341,7 +341,11 @@ fi
 # (--no-build included) recomputes and compares, and a mismatch
 # refuses: the lane would run a stale build of this tree.
 stamp_src() { # $1 = package dir with a src/ tree
-  (cd "$REPO/$1" && find src \( -name '*.ts' -o -name '*.tsx' \) | sort | xargs sha256sum 2>/dev/null | sha256sum | cut -c1-16)
+  # LC_ALL=C: the sort order is the hash input, and a locale-collated
+  # sort (en_US.UTF-8 interfiles case differently than C) made the
+  # stamp a function of the builder's locale — the committed stamp
+  # never matched a CI recompute (tiers lib-drift, 2026-10-30).
+  (cd "$REPO/$1" && find src \( -name '*.ts' -o -name '*.tsx' \) | LC_ALL=C sort | xargs sha256sum 2>/dev/null | sha256sum | cut -c1-16)
 }
 write_stamp() { # $1 = package dir
   stamp_src "$1" > "$REPO/$1/lib/.src-stamp" 2>/dev/null || true
