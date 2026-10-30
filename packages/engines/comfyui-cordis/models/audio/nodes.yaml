@@ -16,19 +16,29 @@ extensions:
   # extension_lane manifest refused to serve.
   - name: melite-audio-nodes
     url: https://github.com/JayDataEngineer/melite-audio-nodes
-    # 34002e6 2026-11-12 (tts NEW-1, the eviction-loop cure): torch
-    # seats register in model management (is_dead reads the live
-    # seat; free evicts the warmed copy) — ComfyUI owns the door,
-    # no bespoke route. Prior 99517c9 (2026-11-12, F12): 0b75904
-    # pushed (sfx burn cures — keyed engine residency + boot cuda
-    # refusal + residual defaults; previously local-only) +
-    # MeliteAudioResample (AUDIO + target INT -> AUDIO via
-    # engine-core comfy.audio.resample; equal-rate passthrough
-    # returns the SAME dict) — the extend join leg rate law's
-    # Layer C half. Prior aee6505 (2026-11-12): the boot env assert
-    # (audit 016) — the pack refuses import when the shared venv
-    # un-converges under it
-    ref: 34002e659cda1451b176023173fc9274566d4210
+    # c8a718b 2026-11-12 (tts NEW-3, the release door): POST
+    # /audiocore/release_warmed fires release_warmed_handles() —
+    # the warmed qwen3 torch seats (~4.3 GB + graphs per variant)
+    # are engine-owned process-wide handles ComfyUI's native /free
+    # cannot see, and no estate door could feed the Unload node
+    # (it needs an AUDIOCORE_MODEL handle no caller holds outside
+    # a run); comfy_manage free chains this route after native
+    # /free (tolerant — a pack-less engine 404s without failing
+    # the unload). Unit wall 3/3 + the control-side chain wall
+    # toggle-proven. ENGINE RESTART OWED: the route serves bytes
+    # only after the engine restarts. Prior 34002e6 (2026-11-12):
+    # the model-management registration claim — the live probe
+    # released zero bytes; the registration is absent from the
+    # tree and the route is the report's named cure. Prior 99517c9
+    # (2026-11-12, F12): 0b75904 pushed (sfx burn cures — keyed
+    # engine residency + boot cuda refusal + residual defaults;
+    # previously local-only) + MeliteAudioResample (AUDIO + target
+    # INT -> AUDIO via engine-core comfy.audio.resample; equal-rate
+    # passthrough returns the SAME dict) — the extend join leg rate
+    # law's Layer C half. Prior aee6505 (2026-11-12): the boot env
+    # assert (audit 016) — the pack refuses import when the shared
+    # venv un-converges under it
+    ref: c8a718ba29e1a936c3dc8c0273f980c13feb2602
     required: true
     desc: >-
       The ONE audio pack: Qwen3-TTS synthesis (qwen3_tts — card lane

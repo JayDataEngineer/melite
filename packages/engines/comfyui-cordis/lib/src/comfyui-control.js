@@ -59,5 +59,22 @@ export async function unloadModelsInner(server) {
         throw new ComfyError("ComfyUI /free refused (models may still be resident): " +
             (e instanceof Error ? e.message : String(e)));
     }
+    // NEW-3 (2026-11-12): the qwen3 torch engine's process-wide warmed
+    // handles (~4.3 GB + graphs per variant) are seats ComfyUI's own
+    // /free cannot see — they are engine-owned, not core-tracked, and
+    // no estate door could reach the Unload node (it needs an
+    // AUDIOCORE_MODEL handle no caller holds outside a run). The
+    // vendored melite-audio-nodes pack serves POST
+    // /audiocore/release_warmed (same release_warmed_handles() the
+    // Unload node fires); chain it AFTER native /free so one free door
+    // drops both seat classes. TOLERANT: the route exists only when
+    // that pack serves — its absence must never fail an unload that
+    // already succeeded (the native /free refusal above stays loud).
+    try {
+        await withBound(() => sdkClient(server).fetchApi("/audiocore/release_warmed", { method: "POST" }), UNLOAD_BOUND_MS, "POST /audiocore/release_warmed");
+    }
+    catch {
+        // tolerant by design: a pack-less engine 404s — nothing to release
+    }
 }
 //# sourceMappingURL=comfyui-control.js.map
