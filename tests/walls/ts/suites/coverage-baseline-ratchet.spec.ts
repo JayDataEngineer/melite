@@ -2339,6 +2339,22 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     reviewBy: string,
     reason: string,
   }>,
+  // (2026-10-30, the proving-gate flap) service.ts branches: the
+  // a8cfccc00 mint took min(1018,1017,1017) covered over the
+  // A/C/final faces and minted (1017−1)/1104 = 92.03; the first
+  // full-gate proving run after the flake sweep measured 1016
+  // (92.02) — the jitter tail is TWO paths under worker load, one
+  // beyond the K=1 margin. Seated at the K=1 mint over the observed
+  // worst face: (1016−1)/1104 = 91.94. The flap clause's own class
+  // (PoseViewer3D): a floor at the high face flaps the gate with
+  // CI load.
+  '**/packages/estate/provisioning/src/service.ts': {
+    from: { statements: 95.74, branches: 92.03, functions: 94.39, lines: 97.1 },
+    to: { statements: 95.74, branches: 91.94, functions: 94.39, lines: 97.1 },
+    roadmapHeading: "The service.ts load-jitter flap — branches seated at the K=1 mint over the observed worst face",
+    reviewBy: "2026-11-30",
+    reason: "load-nondeterministic branch count under the full gate: the A/C/final faces minted 92.03, the proving face measured 1016/1104 (92.02) — one path beyond the margin; seated with one path of headroom",
+  },
 };
 
 /** The pre-regeneration floors (the poisoned-era faces the 2026-10-22

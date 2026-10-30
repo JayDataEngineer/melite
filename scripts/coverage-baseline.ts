@@ -315,7 +315,7 @@ export const COVERAGE_BASELINE: Record<string, {
   // create arm (executeEnsure's synchronous seed dominates it, no
   // deletion path) and the .then/.catch current-undefined arms (both
   // start paths seed the id before attaching handlers).
-  '**/packages/estate/provisioning/src/service.ts': { statements: 95.74, branches: 92.03, functions: 94.39, lines: 97.1 },
+  '**/packages/estate/provisioning/src/service.ts': { statements: 95.74, branches: 91.94, functions: 94.39, lines: 97.1 },
   // the snapshot channel's pure helpers (2026-10-21): measured with
   // the wall seated — the uncovered branches are the external-JSON
   // defensive arms (null body, non-array siblings, non-string
