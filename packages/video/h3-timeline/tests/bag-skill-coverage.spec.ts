@@ -249,4 +249,20 @@ describe("every served mod bag has a skill leaf an agent can read", () => {
     assert.match(section, /never weld a\s+repair window onto a different step/i,
       "the recipe forbids the seam drift");
   });
+
+  it("ARM 8 — the extend leaf states the measured SEAM LAW (an anchor is not a pixel lock)", () => {
+    // Extend does not pop the way refine does — its continuation is
+    // generated across the boundary — but the anchor is an IMAGE
+    // reference, not a pixel lock: measured Δ24.8 from the source's
+    // last frame to extension[0] against Δ2.8–4.1 between adjacent
+    // frames. The leaf must say so before the press, or an agent sells
+    // a seamless join the arm cannot make.
+    const md = readFileSync(join(ROOT, LEAF_SEAT["extend"]!.path), "utf-8");
+    assert.match(md, /IMAGE REFERENCE, not a pixel lock/,
+      "the extend leaf names what the anchor is");
+    assert.match(md, /Δ24\.8/, "the extend leaf carries the measured join step");
+    assert.match(md, /Δ2\.8–4\.1/, "the extend leaf carries the in-source adjacent delta it is measured against");
+    assert.match(md, /visible step at the join|step at the join/i,
+      "the extend leaf states the verdict in words");
+  });
 });
