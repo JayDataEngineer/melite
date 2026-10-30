@@ -85,10 +85,13 @@ const RESHOOT_CLASSES = [
 
 // The FIRST CUT's classes (VDA depth + Fun ControlNet + the private
 // loader pair) — retired with the 2026-11-13 rework; they must stay
-// dead on every doc, disarmed or armed.
+// dead on every doc, disarmed or armed. ColorToMask left this list
+// with the F30 cure (2026-10-30): the official pack keys its magenta
+// fill out with it, so the class is live again as the plate fill's
+// keyer — ARM 4 pins its literals.
 const RETIRED_CLASSES = [
   "LoadVideoDepthAnythingModel", "VideoDepthAnythingProcess", "VideoDepthAnythingOutput",
-  "ImageResizeKJ", "ColorToMask", "ModelPatchLoader", "MiniMaxH3FunControlNetApply",
+  "ImageResizeKJ", "ModelPatchLoader", "MiniMaxH3FunControlNetApply",
   "GetVideoComponents",
 ];
 
@@ -234,9 +237,18 @@ describe("the h3 camera re-shoot wall (the fourth mod bag, official rework)", ()
     // stage 1 — the clip normalization, the official literals
     const prep = ofClass(out, "CrossViewPrepareClip");
     expect(prep).toHaveLength(1);
-    expect(prep[0]![1].inputs.duration).toBe(5);
+    // THE GUIDE WINDOW IS THE FILM'S OWN (the F28 cure, 2026-10-30):
+    // the prepare node's duration is the span the re-shoot re-renders
+    // (the doc's 56-frame stanza at 24 fps), never a fixed 5 — a
+    // longer span would truncate the guide under the picture it
+    // guided. The floor (one second) is the arm's refusal law.
+    expect(prep[0]![1].inputs.duration).toBeCloseTo(56 / 24, 6);
     expect(prep[0]![1].inputs.aspect_ratio).toBe("source");
-    expect(prep[0]![1].inputs.megapixels).toBe(0.5);
+    // THE PLATE BUDGET IS THE RENDER TARGET (the F31 cure, 2026-10-30):
+    // the prepare node's megapixels is the film's own frame budget
+    // (the schema default 1344×768), not a fixed 0.5 — a smaller
+    // guide plate is resampled up to a bigger render and lands soft.
+    expect(prep[0]![1].inputs.megapixels).toBe(Number(((1344 * 768) / 1e6).toFixed(3)));
     expect(prep[0]![1].inputs.multiple).toBe(32);
     expect(String(prep[0]![1].inputs.video)).toBe(`${lv[0]![0]},0`);
     // stage 2 — MoGe-2 metric geometry, the official checkpoint + flags
@@ -276,13 +288,30 @@ describe("the h3 camera re-shoot wall (the fourth mod bag, official rework)", ()
     // the appearance + guide + LoRA seats: the prepared clip IS
     // ref_video_0 (no ref audio on the slot — the official graph
     // wires none), the warp pins at row 0, the LoRA loads at 0.8
+    // THE FILLED PLATE (the F30 cure, 2026-10-30): the warp's own
+    // frame is the destination, the prepared clip the source, and a
+    // soft hole mask (the magenta fill keyed, grown, blurred) makes
+    // the two read as one clip — the reference the r2v binds is the
+    // COMPOSITE, never the bare warp (whose unpainted border would
+    // land as a magenta frame). Both rails stay the plate.
+    const comp = ofClass(out, "ImageCompositeMasked");
+    expect(comp).toHaveLength(1);
+    expect(String(comp[0]![1].inputs.destination)).toBe(`${ofClass(out, "CrossViewWarp")[0]![0]},0`);
+    expect(String(comp[0]![1].inputs.source)).toBe(`${prep[0]![0]},0`);
+    expect(String(comp[0]![1].inputs.mask)).toContain("GrowMaskWithBlur");
+    const keyed = ofClass(out, "ColorToMask");
+    expect(keyed).toHaveLength(1);
+    expect(keyed[0]![1].inputs).toMatchObject({ red: 255, green: 0, blue: 255, threshold: 10 });
+    const grown = ofClass(out, "GrowMaskWithBlur");
+    expect(grown).toHaveLength(1);
+    expect(grown[0]![1].inputs).toMatchObject({ expand: 3, blur_radius: 12 });
     const r2v = ofClass(out, "MiniMaxH3ReferenceToVideo");
     expect(r2v).toHaveLength(1);
     expect(r2v[0]![1].inputs.prompt).toBe("crossview. a slow push in");
-    expect(String(r2v[0]![1].inputs["ref_videos.ref_video_0"])).toBe(`${prep[0]![0]},0`);
+    expect(String(r2v[0]![1].inputs["ref_videos.ref_video_0"])).toBe(`${comp[0]![0]},0`);
     expect(r2v[0]![1].inputs["ref_video_audios.ref_video_audio_0"]).toBeUndefined();
     const guide = ofClass(out, "MiniMaxH3AddGuide")
-      .filter(([, n]) => String(n.inputs.image).includes("CrossViewWarp"));
+      .filter(([, n]) => String(n.inputs.image).includes("ImageCompositeMasked"));
     expect(guide).toHaveLength(1);
     expect(guide[0]![1].inputs.frame_idx).toBe(0);
     expect(String(guide[0]![1].inputs.positive)).toContain("MiniMaxH3ReferenceToVideo");

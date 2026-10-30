@@ -1986,6 +1986,104 @@
    "images to video"
   ]
  },
+ "CrossViewPrepareClip": {
+  "category": "CrossView",
+  "description": "",
+  "display_name": "CrossView Prepare Clip",
+  "has_intermediate_output": false,
+  "input": {
+   "required": {
+    "aspect_ratio": [
+     [
+      "source",
+      "16:9",
+      "9:16",
+      "1:1",
+      "4:3",
+      "3:4",
+      "21:9"
+     ],
+     {
+      "default": "source",
+      "tooltip": "Output shape. 'source' keeps the clip's own ratio; the others centre-crop to it."
+     }
+    ],
+    "duration": [
+     "FLOAT",
+     {
+      "default": 5,
+      "max": 15,
+      "min": 0.2,
+      "step": 0.1,
+      "tooltip": "Seconds of the clip to use, from its start. Snapped to the nearest frame count H3 accepts (17k+5 at 24 fps) and capped at the clip."
+     }
+    ],
+    "megapixels": [
+     "FLOAT",
+     {
+      "default": 0.5,
+      "max": 4,
+      "min": 0.1,
+      "step": 0.05
+     }
+    ],
+    "multiple": [
+     "INT",
+     {
+      "default": 32,
+      "max": 128,
+      "min": 8,
+      "step": 8
+     }
+    ],
+    "video": [
+     "VIDEO"
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "video",
+    "duration",
+    "aspect_ratio",
+    "megapixels",
+    "multiple"
+   ]
+  },
+  "is_input_list": false,
+  "name": "CrossViewPrepareClip",
+  "output": [
+   "IMAGE",
+   "INT",
+   "INT",
+   "INT",
+   "AUDIO"
+  ],
+  "output_is_list": [
+   false,
+   false,
+   false,
+   false,
+   false
+  ],
+  "output_name": [
+   "frames",
+   "width",
+   "height",
+   "length",
+   "audio"
+  ],
+  "output_node": false,
+  "output_tooltips": [
+   "The frames both stages use, at 24 fps.",
+   "Frame width.",
+   "Frame height.",
+   "Frame count, on H3's 17k+5 grid.",
+   "The clip's own audio over exactly those frames, silence if it has none."
+  ],
+  "python_module": "custom_nodes.ComfyUI-CrossViewWarp",
+  "search_aliases": []
+ },
  "CrossViewWarp": {
   "category": "CrossView",
   "description": "",
@@ -3900,6 +3998,116 @@
    "shrink mask"
   ]
  },
+ "GrowMaskWithBlur": {
+  "category": "KJNodes/masking",
+  "description": "\n# GrowMaskWithBlur\n- mask: Input mask or mask batch\n- expand: Expand or contract mask or mask batch by a given amount\n- incremental_expandrate: increase expand rate by a given amount per frame\n- tapered_corners: use tapered corners\n- flip_input: flip input mask\n- blur_radius: value higher than 0 will blur the mask\n- lerp_alpha: alpha value for interpolation between frames\n- decay_factor: decay value for interpolation between frames\n- fill_holes: fill holes in the mask (slow)",
+  "display_name": "Grow Mask With Blur",
+  "has_intermediate_output": false,
+  "input": {
+   "optional": {
+    "fill_holes": [
+     "BOOLEAN",
+     {
+      "default": false
+     }
+    ]
+   },
+   "required": {
+    "blur_radius": [
+     "FLOAT",
+     {
+      "default": 0,
+      "max": 100,
+      "min": 0,
+      "step": 0.1
+     }
+    ],
+    "decay_factor": [
+     "FLOAT",
+     {
+      "default": 1,
+      "max": 1,
+      "min": 0,
+      "step": 0.01
+     }
+    ],
+    "expand": [
+     "INT",
+     {
+      "default": 0,
+      "max": 16384,
+      "min": -16384,
+      "step": 1
+     }
+    ],
+    "flip_input": [
+     "BOOLEAN",
+     {
+      "default": false
+     }
+    ],
+    "incremental_expandrate": [
+     "FLOAT",
+     {
+      "default": 0,
+      "max": 100,
+      "min": 0,
+      "step": 0.1
+     }
+    ],
+    "lerp_alpha": [
+     "FLOAT",
+     {
+      "default": 1,
+      "max": 1,
+      "min": 0,
+      "step": 0.01
+     }
+    ],
+    "mask": [
+     "MASK"
+    ],
+    "tapered_corners": [
+     "BOOLEAN",
+     {
+      "default": true
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "optional": [
+    "fill_holes"
+   ],
+   "required": [
+    "mask",
+    "expand",
+    "incremental_expandrate",
+    "tapered_corners",
+    "flip_input",
+    "blur_radius",
+    "lerp_alpha",
+    "decay_factor"
+   ]
+  },
+  "is_input_list": false,
+  "name": "GrowMaskWithBlur",
+  "output": [
+   "MASK",
+   "MASK"
+  ],
+  "output_is_list": [
+   false,
+   false
+  ],
+  "output_name": [
+   "mask",
+   "mask_inverted"
+  ],
+  "output_node": false,
+  "python_module": "custom_nodes.ComfyUI-KJNodes",
+  "search_aliases": []
+ },
  "H3AdaLNLoRAFix": {
   "api_node": false,
   "category": "PlagueKind/model_patches/minimax",
@@ -4326,6 +4534,95 @@
   "price_badge": null,
   "python_module": "custom_nodes.Comfyui-PlagueKind-Nodes",
   "search_aliases": null
+ },
+ "ImageCompositeMasked": {
+  "api_node": false,
+  "category": "image/compositing",
+  "deprecated": false,
+  "description": "",
+  "dev_only": false,
+  "display_name": "Image Composite Masked",
+  "essentials_category": null,
+  "experimental": false,
+  "has_intermediate_output": false,
+  "input": {
+   "optional": {
+    "mask": [
+     "MASK",
+     {}
+    ]
+   },
+   "required": {
+    "destination": [
+     "IMAGE",
+     {}
+    ],
+    "resize_source": [
+     "BOOLEAN",
+     {
+      "default": false
+     }
+    ],
+    "source": [
+     "IMAGE",
+     {}
+    ],
+    "x": [
+     "INT",
+     {
+      "default": 0,
+      "max": 16384,
+      "min": 0,
+      "step": 1
+     }
+    ],
+    "y": [
+     "INT",
+     {
+      "default": 0,
+      "max": 16384,
+      "min": 0,
+      "step": 1
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "optional": [
+    "mask"
+   ],
+   "required": [
+    "destination",
+    "source",
+    "x",
+    "y",
+    "resize_source"
+   ]
+  },
+  "is_input_list": false,
+  "name": "ImageCompositeMasked",
+  "output": [
+   "IMAGE"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_matchtypes": null,
+  "output_name": [
+   "IMAGE"
+  ],
+  "output_node": false,
+  "output_tooltips": [
+   null
+  ],
+  "price_badge": null,
+  "python_module": "comfy_extras.nodes_mask",
+  "search_aliases": [
+   "overlay",
+   "layer",
+   "paste image",
+   "images composition"
+  ]
  },
  "ImageCrop": {
   "api_node": false,
@@ -6085,6 +6382,7 @@
       "h3/H3-PK-Parasyte-Turbo.safetensors",
       "h3/MiniMax-H3-FL2VA-Acc-8Step_pruned_comfy.safetensors",
       "h3/MiniMax-H3-Ref2VA-Acc-8Step_pruned_comfy.safetensors",
+      "h3/MiniMax-H3_Ref2VA-LoRA-CrossView-Warp_v1_3500.safetensors",
       "h3/dmad_minimax_h3_4step_lora_critic_comfyui.safetensors",
       "h3/h3_character_swap_v1.5.safetensors",
       "h3/minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors",
@@ -6202,7 +6500,10 @@
        "Makhna clip 10s-15s_e7258bfa8214.webm",
        "SaveAudio.0_design_00001_38b227c8bdcf.flac",
        "SaveAudio.0_sfx_00001_a3590a151fe9.flac",
+       "SaveAudio.0_tts_00001_f21427d87c2e.flac",
        "SaveAudioAdvanced.0_music_00001_10c86983ccba.mp3",
+       "SaveVideo.0_h3_t4_w1_00001__727eaada1377.mp4",
+       "SaveVideo.2_extend_film_00001__2701a65532ba.mp4",
        "VHS_VideoCombine.0_mannequin_00001_89e1fea228bb.mp4",
        "VHS_VideoCombine.0_openjutsu_00001-audio_09e163466dfd.mp4",
        "VHS_VideoCombine.0_openjutsu_00001-audio_67d4712670b8.mp4",
@@ -6234,6 +6535,13 @@
        "line_e853f3067188.flac",
        "makhna_clip_e7258bfa8214.webm",
        "makhna_cut16_afa3cf8b8e89.webm",
+       "refine_small_56.mp4",
+       "refine_small_56_61378b33e3e0.mp4",
+       "refine_small_56_ee39c08ee8e4.mp4",
+       "reshoot_124f_bad.mp4",
+       "reshoot_tail_175.mp4",
+       "reshoot_tail_175_15e3c96e469e.mp4",
+       "run-7492bb0d9f57-8b4b87f8_repair_6145791d9a19.mp4",
        "soft-piano_5d082fcabbb3.mp3",
        "swap_film_v1.mp4",
        "swap_film_v1_9c383840d58f.mp4",
@@ -6369,6 +6677,7 @@
       "MummyGirl_5dc5418fd089.jpg",
       "SaveImage.0_edit_00001__0235d3eccb02.png",
       "SaveImage.0_edit_00001__239d72f5b56e.png",
+      "SaveImage.0_edit_00001__2cd42b55e762.png",
       "SaveImage.0_edit_00001__37e8ff902419.png",
       "SaveImage.0_edit_00001__3986d4d09264.png",
       "SaveImage.0_edit_00001__41b018ade25b.png",
@@ -6384,8 +6693,10 @@
       "SaveImage.0_edit_00001__c50c76c5132a.png",
       "SaveImage.0_edit_00001__c646d3ccbc27.png",
       "SaveImage.0_edit_00001__d18c63de9ec6.png",
+      "SaveImage.0_edit_00001__ea9aa3d5baad.png",
       "SaveImage.0_edit_00001__f57d1713bfb3.png",
       "SaveImage.0_gen_00001__09689fe61e7a.png",
+      "SaveImage.0_gen_00001__0ce3280a3d13.png",
       "SaveImage.0_gen_00001__1413e536053c.png",
       "SaveImage.0_gen_00001__1ac37322189c.png",
       "SaveImage.0_gen_00001__2193b347e808.png",
@@ -6454,6 +6765,7 @@
       "melite-data-d51c0532d60a18db_6002e3c934d8.png",
       "melite-data-f89cdad5ffb1023f_5600aecdb168.jpg",
       "pit_316dc8d3861c.png",
+      "qa_frame_reshoot.png",
       "source_7804de2d8921.png",
       "sss_b8f4d80c061c.webp",
       "stage_mesh_42053183f429.png",
@@ -6523,6 +6835,7 @@
       "MummyGirl_5dc5418fd089.jpg",
       "SaveImage.0_edit_00001__0235d3eccb02.png",
       "SaveImage.0_edit_00001__239d72f5b56e.png",
+      "SaveImage.0_edit_00001__2cd42b55e762.png",
       "SaveImage.0_edit_00001__37e8ff902419.png",
       "SaveImage.0_edit_00001__3986d4d09264.png",
       "SaveImage.0_edit_00001__41b018ade25b.png",
@@ -6538,8 +6851,10 @@
       "SaveImage.0_edit_00001__c50c76c5132a.png",
       "SaveImage.0_edit_00001__c646d3ccbc27.png",
       "SaveImage.0_edit_00001__d18c63de9ec6.png",
+      "SaveImage.0_edit_00001__ea9aa3d5baad.png",
       "SaveImage.0_edit_00001__f57d1713bfb3.png",
       "SaveImage.0_gen_00001__09689fe61e7a.png",
+      "SaveImage.0_gen_00001__0ce3280a3d13.png",
       "SaveImage.0_gen_00001__1413e536053c.png",
       "SaveImage.0_gen_00001__1ac37322189c.png",
       "SaveImage.0_gen_00001__2193b347e808.png",
@@ -6608,6 +6923,7 @@
       "melite-data-d51c0532d60a18db_6002e3c934d8.png",
       "melite-data-f89cdad5ffb1023f_5600aecdb168.jpg",
       "pit_316dc8d3861c.png",
+      "qa_frame_reshoot.png",
       "source_7804de2d8921.png",
       "sss_b8f4d80c061c.webp",
       "stage_mesh_42053183f429.png",
@@ -6713,6 +7029,8 @@
       "multiselect": false,
       "options": [
        "Makhna clip 10s-15s_e7258bfa8214.webm",
+       "SaveVideo.0_h3_t4_w1_00001__727eaada1377.mp4",
+       "SaveVideo.2_extend_film_00001__2701a65532ba.mp4",
        "VHS_VideoCombine.0_mannequin_00001_89e1fea228bb.mp4",
        "VHS_VideoCombine.0_openjutsu_00001-audio_09e163466dfd.mp4",
        "VHS_VideoCombine.0_openjutsu_00001-audio_67d4712670b8.mp4",
@@ -6741,6 +7059,13 @@
        "h3_t4_w2_00004__a1fa72843541.mp4",
        "makhna_clip_e7258bfa8214.webm",
        "makhna_cut16_afa3cf8b8e89.webm",
+       "refine_small_56.mp4",
+       "refine_small_56_61378b33e3e0.mp4",
+       "refine_small_56_ee39c08ee8e4.mp4",
+       "reshoot_124f_bad.mp4",
+       "reshoot_tail_175.mp4",
+       "reshoot_tail_175_15e3c96e469e.mp4",
+       "run-7492bb0d9f57-8b4b87f8_repair_6145791d9a19.mp4",
        "swap_film_v1.mp4",
        "swap_film_v1_9c383840d58f.mp4",
        "swap_mannequin.mp4",
@@ -6782,48 +7107,6 @@
    "video file"
   ]
  },
- "LoadVideoDepthAnythingModel": {
-  "category": "VideoDepthAnything",
-  "description": "",
-  "display_name": "Load Video Depth Anything Model",
-  "has_intermediate_output": false,
-  "input": {
-   "required": {
-    "model": [
-     [
-      "video_depth_anything_vits.pth",
-      "video_depth_anything_vitb.pth",
-      "video_depth_anything_vitl.pth",
-      "metric_video_depth_anything_vits.pth",
-      "metric_video_depth_anything_vitb.pth",
-      "metric_video_depth_anything_vitl.pth"
-     ],
-     {
-      "default": "video_depth_anything_vits.safetensors"
-     }
-    ]
-   }
-  },
-  "input_order": {
-   "required": [
-    "model"
-   ]
-  },
-  "is_input_list": false,
-  "name": "LoadVideoDepthAnythingModel",
-  "output": [
-   "VDAMODEL"
-  ],
-  "output_is_list": [
-   false
-  ],
-  "output_name": [
-   "vda_model"
-  ],
-  "output_node": false,
-  "python_module": "custom_nodes.ComfyUI-Video-Depth-Anything",
-  "search_aliases": []
- },
  "LoraLoader": {
   "category": "model/loaders",
   "description": "This LoRA loader is used to modify both diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together.",
@@ -6843,6 +7126,7 @@
       "h3/H3-PK-Parasyte-Turbo.safetensors",
       "h3/MiniMax-H3-FL2VA-Acc-8Step_pruned_comfy.safetensors",
       "h3/MiniMax-H3-Ref2VA-Acc-8Step_pruned_comfy.safetensors",
+      "h3/MiniMax-H3_Ref2VA-LoRA-CrossView-Warp_v1_3500.safetensors",
       "h3/dmad_minimax_h3_4step_lora_critic_comfyui.safetensors",
       "h3/h3_character_swap_v1.5.safetensors",
       "h3/minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors",
@@ -6945,6 +7229,100 @@
    "lora model"
   ]
  },
+ "LoraLoaderModelOnly": {
+  "category": "model/loaders",
+  "description": "This LoRAs loader is used to modify the diffusion model, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together.",
+  "display_name": "Load LoRA",
+  "essentials_category": "Image Generation",
+  "has_intermediate_output": false,
+  "input": {
+   "required": {
+    "lora_name": [
+     [
+      "h3/H3-PK-Parasyte-Turbo.safetensors",
+      "h3/MiniMax-H3-FL2VA-Acc-8Step_pruned_comfy.safetensors",
+      "h3/MiniMax-H3-Ref2VA-Acc-8Step_pruned_comfy.safetensors",
+      "h3/MiniMax-H3_Ref2VA-LoRA-CrossView-Warp_v1_3500.safetensors",
+      "h3/dmad_minimax_h3_4step_lora_critic_comfyui.safetensors",
+      "h3/h3_character_swap_v1.5.safetensors",
+      "h3/minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors",
+      "h3/minimax_h3_fl2v_lightx2v_v0.1_dareties_v4_step600_comfy_fro.safetensors",
+      "h3/minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16.safetensors",
+      "h3/minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors",
+      "h3/minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors",
+      "h3/minimax_h3_taomate_3step_lora_avg_rank_19_bf16.safetensors",
+      "h3/minimax_h3_turbo_v4_step600_ema.safetensors",
+      "krea-2/krea2_darkbrush.safetensors",
+      "krea-2/krea2_dotmatrix.safetensors",
+      "krea-2/krea2_kidsdrawing.safetensors",
+      "krea-2/krea2_neondrip.safetensors",
+      "krea-2/krea2_rainywindow.safetensors",
+      "krea-2/krea2_realism_lora.safetensors",
+      "krea-2/krea2_retroanime.safetensors",
+      "krea-2/krea2_softwatercolor.safetensors",
+      "krea-2/krea2_sunsetblur.safetensors",
+      "krea-2/krea2_turbo_lora_rank_64_bf16.safetensors",
+      "krea-2/krea2_vintagetarot.safetensors",
+      "krea-2/krea2filterbypass3.safetensors",
+      "qwen-img-edit-21/qwen-image-2.1-consistency.safetensors",
+      "qwen/Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors",
+      "qwen/qwen-image-edit-2511-multiple-angles-lora.safetensors",
+      "qwen/qwen-image-edit-plus-nsfw-lora.safetensors",
+      "z-image/z-image-3d-mmorpg.safetensors",
+      "z-image/z-image-classic-painting.safetensors",
+      "z-image/z-image-coloring-book.safetensors",
+      "z-image/z-image-dejpeg.safetensors",
+      "z-image/z-image-pixel-art.safetensors",
+      "z-image/z-image-realism.safetensors",
+      "z-image/z-image-sunbleached.safetensors"
+     ]
+    ],
+    "model": [
+     "MODEL"
+    ],
+    "strength_model": [
+     "FLOAT",
+     {
+      "default": 1,
+      "max": 100,
+      "min": -100,
+      "step": 0.01
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "model",
+    "lora_name",
+    "strength_model"
+   ]
+  },
+  "is_input_list": false,
+  "name": "LoraLoaderModelOnly",
+  "output": [
+   "MODEL"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "MODEL"
+  ],
+  "output_node": false,
+  "output_tooltips": [
+   "The modified diffusion model.",
+   "The modified CLIP model."
+  ],
+  "python_module": "nodes",
+  "search_aliases": [
+   "lora",
+   "load lora",
+   "apply lora",
+   "lora loader",
+   "lora model"
+  ]
+ },
  "MaskToSEGS": {
   "category": "ImpactPack/Operation",
   "description": "",
@@ -7024,6 +7402,48 @@
   "python_module": "custom_nodes.ComfyUI-Impact-Pack",
   "search_aliases": []
  },
+ "MeliteAudioResample": {
+  "category": "audio/melite",
+  "description": "Resample an AUDIO stream to a target integer rate (engine-core bandlimited sinc; equal rate passes the SAME dict through untouched).",
+  "display_name": "Melite Audio Resample",
+  "has_intermediate_output": false,
+  "input": {
+   "required": {
+    "audio": [
+     "AUDIO"
+    ],
+    "sample_rate": [
+     "INT",
+     {
+      "default": 48000,
+      "max": 768000,
+      "min": 1,
+      "tooltip": "the join's stated rate \u2014 the film standard is 48000"
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "audio",
+    "sample_rate"
+   ]
+  },
+  "is_input_list": false,
+  "name": "MeliteAudioResample",
+  "output": [
+   "AUDIO"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "AUDIO"
+  ],
+  "output_node": false,
+  "python_module": "custom_nodes.melite-audio-nodes",
+  "search_aliases": []
+ },
  "MeliteAudioSlice": {
   "category": "audio/melite",
   "description": "Cut a bed track at start_seconds for duration_seconds, padding silence when the source runs short.",
@@ -7038,7 +7458,10 @@
       "Makhna clip 10s-15s_e7258bfa8214.webm",
       "SaveAudio.0_design_00001_38b227c8bdcf.flac",
       "SaveAudio.0_sfx_00001_a3590a151fe9.flac",
+      "SaveAudio.0_tts_00001_f21427d87c2e.flac",
       "SaveAudioAdvanced.0_music_00001_10c86983ccba.mp3",
+      "SaveVideo.0_h3_t4_w1_00001__727eaada1377.mp4",
+      "SaveVideo.2_extend_film_00001__2701a65532ba.mp4",
       "VHS_VideoCombine.0_mannequin_00001_89e1fea228bb.mp4",
       "VHS_VideoCombine.0_openjutsu_00001-audio_09e163466dfd.mp4",
       "VHS_VideoCombine.0_openjutsu_00001-audio_67d4712670b8.mp4",
@@ -7070,6 +7493,13 @@
       "line_e853f3067188.flac",
       "makhna_clip_e7258bfa8214.webm",
       "makhna_cut16_afa3cf8b8e89.webm",
+      "refine_small_56.mp4",
+      "refine_small_56_61378b33e3e0.mp4",
+      "refine_small_56_ee39c08ee8e4.mp4",
+      "reshoot_124f_bad.mp4",
+      "reshoot_tail_175.mp4",
+      "reshoot_tail_175_15e3c96e469e.mp4",
+      "run-7492bb0d9f57-8b4b87f8_repair_6145791d9a19.mp4",
       "soft-piano_5d082fcabbb3.mp3",
       "swap_film_v1.mp4",
       "swap_film_v1_9c383840d58f.mp4",
@@ -15795,6 +16225,8 @@
     "video": [
      [
       "Makhna clip 10s-15s_e7258bfa8214.webm",
+      "SaveVideo.0_h3_t4_w1_00001__727eaada1377.mp4",
+      "SaveVideo.2_extend_film_00001__2701a65532ba.mp4",
       "VHS_VideoCombine.0_mannequin_00001_89e1fea228bb.mp4",
       "VHS_VideoCombine.0_openjutsu_00001-audio_09e163466dfd.mp4",
       "VHS_VideoCombine.0_openjutsu_00001-audio_67d4712670b8.mp4",
@@ -15823,6 +16255,13 @@
       "h3_t4_w2_00004__a1fa72843541.mp4",
       "makhna_clip_e7258bfa8214.webm",
       "makhna_cut16_afa3cf8b8e89.webm",
+      "refine_small_56.mp4",
+      "refine_small_56_61378b33e3e0.mp4",
+      "refine_small_56_ee39c08ee8e4.mp4",
+      "reshoot_124f_bad.mp4",
+      "reshoot_tail_175.mp4",
+      "reshoot_tail_175_15e3c96e469e.mp4",
+      "run-7492bb0d9f57-8b4b87f8_repair_6145791d9a19.mp4",
       "swap_film_v1.mp4",
       "swap_film_v1_9c383840d58f.mp4",
       "swap_mannequin.mp4",
@@ -16359,108 +16798,6 @@
    "frame load cap",
    "start time"
   ]
- },
- "VideoDepthAnythingOutput": {
-  "category": "VideoDepthAnything",
-  "description": "",
-  "display_name": "Video Depth Anything Output Depth Map",
-  "has_intermediate_output": false,
-  "input": {
-   "required": {
-    "colormap": [
-     [
-      "inferno",
-      "gray"
-     ],
-     {
-      "default": "gray"
-     }
-    ],
-    "depths": [
-     "DEPTHS"
-    ]
-   }
-  },
-  "input_order": {
-   "required": [
-    "depths",
-    "colormap"
-   ]
-  },
-  "is_input_list": false,
-  "name": "VideoDepthAnythingOutput",
-  "output": [
-   "IMAGE"
-  ],
-  "output_is_list": [
-   false
-  ],
-  "output_name": [
-   "images"
-  ],
-  "output_node": false,
-  "python_module": "custom_nodes.ComfyUI-Video-Depth-Anything",
-  "search_aliases": []
- },
- "VideoDepthAnythingProcess": {
-  "category": "VideoDepthAnything",
-  "description": "",
-  "display_name": "Video Depth Anything Process",
-  "has_intermediate_output": false,
-  "input": {
-   "required": {
-    "images": [
-     "IMAGE"
-    ],
-    "input_size": [
-     "INT",
-     {
-      "default": 518
-     }
-    ],
-    "max_res": [
-     "INT",
-     {
-      "default": 1280
-     }
-    ],
-    "precision": [
-     [
-      "fp16",
-      "fp32"
-     ],
-     {
-      "default": "fp16"
-     }
-    ],
-    "vda_model": [
-     "VDAMODEL"
-    ]
-   }
-  },
-  "input_order": {
-   "required": [
-    "vda_model",
-    "images",
-    "input_size",
-    "max_res",
-    "precision"
-   ]
-  },
-  "is_input_list": false,
-  "name": "VideoDepthAnythingProcess",
-  "output": [
-   "DEPTHS"
-  ],
-  "output_is_list": [
-   false
-  ],
-  "output_name": [
-   "depths"
-  ],
-  "output_node": false,
-  "python_module": "custom_nodes.ComfyUI-Video-Depth-Anything",
-  "search_aliases": []
  },
  "WD14Tagger|pysssss": {
   "category": "image",

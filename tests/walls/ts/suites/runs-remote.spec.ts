@@ -909,6 +909,20 @@ test("W9b THE PRESS NAMES ITS ROW (the F21 burn, 2026-10-30): a single-card pres
     readFileSync(join(root, "test-output", bare.run_id, "_flow.json"), "utf8"),
   ) as Record<string, unknown>;
   assert.equal(bareDoc["stage_ids"], "generate", "no claim + ambiguous bench = the legacy skeleton fallback");
+  // ── THE RECIPE ECHO, SERVED (the F27 burn, 2026-10-30): the live
+  // status row carries the exact card + admitted authoring body that
+  // ran (`card_snapshot`) — restore rebuilds from THIS, never from
+  // the mutable draft it may have drifted from. The sidecar has held
+  // it since stroke 45; nothing served it, so the client could not
+  // hear it.
+  const statusDoc = await runs.status(started.run_id, sig) as unknown as Record<string, unknown>;
+  const recipe = statusDoc["card_recipe"] as { card?: unknown; params?: unknown } | undefined;
+  assert.ok(recipe !== undefined, "the status row serves the run's own admitted recipe");
+  assert.equal(recipe.card, "image-gen", "the recipe names the card that ran");
+  assert.equal((recipe.params as Record<string, unknown>)["prompt"], "a red boat",
+    "the recipe carries the knob doc that ran — envelope lifted, stanza unwrapped (restore pastes THIS, never a later draft edit)");
+  assert.equal((recipe.params as Record<string, unknown>)["test"], undefined,
+    "door vocabulary never leaks into the recipe's params (an undeclared knob would refuse the restore)");
   await fiber.dispose();
 });
 
