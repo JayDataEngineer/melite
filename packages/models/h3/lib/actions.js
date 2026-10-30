@@ -5,7 +5,7 @@ import { assertKeyframeRowShape, FAMILIES, paramSchema, wireList, H3_RECOMMENDED
 import { H3_LORA_ROWS } from '@melite/models-h3/mods/loras';
 import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from '@melite/comfyui-card-kit/vocab';
 import { computeFilmMix, parseFilmMixClips, spanOverlap, stanzaSecs } from './filmMix.js';
-import { GRID_REMAINDER, GRID_STEP_FRAMES, IMAGE_BUS_SLOTS, REF_CAPS, assertGridLength, assertSpanGrid, imageReferenceCap, isMediaRef, DOC_FPS_DEFAULT, spanStanzaFrames, transitionOverlap, } from './timelineContract.js';
+import { GRID_REMAINDER, GRID_STEP_FRAMES, IMAGE_BUS_SLOTS, REF_CAPS, assertGridLength, assertSpanGrid, imageReferenceCap, isGridLength, isMediaRef, DOC_FPS_DEFAULT, spanStanzaFrames, transitionOverlap, } from './timelineContract.js';
 import { applyH3ReshootCond, applyH3ReshootModel, buildH3Reshoot, reshootArmed, reshootPrompt, } from './reshoot.js';
 // THE ABSENT-BAG DEFAULT (h3-a, 2026-10-12; bytedance DMAD row
 // 2026-10-11 → the LightX2V Turbo 8-Step v1.0 row 2026-11-07 → the
@@ -409,8 +409,23 @@ function renderH3Film(p, g, facts, model, runId) {
     // pinned a 124-frame guide into a 90-frame window and the engine
     // refused at the AddGuide seat, killing every film with a short
     // call.
+    // F28 (folded, round-6 audit): a call's knobs.length PIN overrides
+    // the span snap for that window, so the shortest-generation min must
+    // count the pinned number too — the round-5 cure derived from spans
+    // alone and a film whose short call PINNED its length still pinned a
+    // longer guide than that call renders.
+    const windowFrames = spans.map((s, i) => {
+        const pin = (calls[i]?.knobs ?? {})['length'];
+        // only a grid-legal pin counts here: an off-grid or mistyped pin
+        // is the film loop's own gate to refuse (one voice, the span
+        // voice — the loop's assertGridLength names the window and span),
+        // so the min falls through to the snap it will never render.
+        if (typeof pin === 'number' && isGridLength(pin))
+            return pin;
+        return spanStanzaFrames(s, i > 0 ? spanOverlap(s) : 0);
+    });
     const reshootChain = reshootArmed(p)
-        ? buildH3Reshoot(p, g, Math.min(...spans.map((s, i) => spanStanzaFrames(s, i > 0 ? spanOverlap(s) : 0))), runId)
+        ? buildH3Reshoot(p, g, Math.min(...windowFrames), runId)
         : undefined;
     // (the clip text law lives where the text is consumed: THE
     // TRANSCRIPT — dialogue words ride the <d> prompt tag, sfx text
@@ -1554,6 +1569,16 @@ function renderH3Window(p, g, facts, model, runId) {
         };
         if (reshootChain !== undefined) {
             r2vInputs2['ref_videos.ref_video_0'] = reshootChain.refFrames;
+            // F5 (round-6 audit): node 20 takes its width/height from the
+            // PREPARE node's own outputs — the prepared clip's shape is the
+            // render shape, so a source aspect that differs from the doc's
+            // literals cannot feed aspect-faithful refs into a differently
+            // shaped latent. `length` deliberately stays the window's own
+            // (one guide is shared across windows of different lengths:
+            // prep.out(3) would shorten the longer ones — documented
+            // divergence beside duration, F28).
+            r2vInputs2['width'] = reshootChain.prepWidth;
+            r2vInputs2['height'] = reshootChain.prepHeight;
         }
         const r2v = g.node('MiniMaxH3ReferenceToVideo', r2vInputs2);
         cond = r2v.out(0);

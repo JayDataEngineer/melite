@@ -246,6 +246,23 @@ export interface ReshootChain {
    *  INCLUDED (the official chain's MiniMaxH3AddGuide image seat;
    *  the magenta disocclusions are the LoRA's training signal). */
   readonly warp: OutputHandle
+  /** CrossViewPrepareClip's own width/height outputs (slots 1/2) —
+   *  the shape the prepared clip was cropped to at the render
+   *  target's pixel budget (aspect 'source', multiple 32). The
+   *  official graph feeds these straight into
+   *  MiniMaxH3ReferenceToVideo's width/height (node 20), so the
+   *  reference frames and the rendered latent can never disagree
+   *  about shape (a source whose aspect differs from the doc's
+   *  literal would otherwise feed aspect-faithful refs into a
+   *  differently-shaped latent — the soft-render class). */
+  readonly prepWidth: OutputHandle
+  readonly prepHeight: OutputHandle
+  /** CrossViewPrepareClip's frame-count output (slot 3) — the
+   *  SHORTEST window's legal length. It is NOT wired into a film
+   *  window's render length: one guide is shared by every window, so
+   *  its own count would shorten longer windows (the documented
+   *  divergence from node 20, beside duration). */
+  readonly prepLength: OutputHandle
   /** The warp clip's saved frames (the official app's own
    *  `crossview/warp` witness): the run delivers the exact image the
    *  guide pins, holes and all, without re-deriving it from the film.
@@ -403,7 +420,15 @@ export function buildH3Reshoot(
     images: warpNode.out(1),
     filename_prefix: `${runId}/reshoot_orbit`,
   }).out(0)
-  return { refFrames: source, warp, plateSave, orbitSave }
+  return {
+    refFrames: source,
+    warp,
+    plateSave,
+    orbitSave,
+    prepWidth: prep.out(1),
+    prepHeight: prep.out(2),
+    prepLength: prep.out(3),
+  }
 }
 
 /**

@@ -298,7 +298,11 @@ describe("the stage drill's faces each carry a × that retires only its own face
     const face = await screen.findByText("ungroup failed", {}, { timeout: 8000 });
     const row = face.closest("div") as HTMLElement;
     dismissIn(row);
-    await waitFor(() => { expect(screen.queryByText("ungroup failed")).toBeNull(); });
+    // THE LOAD BUDGET (the round-6 battery): this repaint is one state
+    // commit, but under the full 1000-file battery the paint can land
+    // past testing-library's 1 s default and red a cure that holds —
+    // the same under-load class the lane-strike note carries (FLAKE 5).
+    await waitFor(() => { expect(screen.queryByText("ungroup failed")).toBeNull(); }, { timeout: 8000 });
   });
 });
 

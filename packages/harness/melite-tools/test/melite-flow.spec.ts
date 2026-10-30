@@ -1319,6 +1319,43 @@ describe('melite_flow presentCall/render/meta — the faces', () => {
 })
 
 describe('melite_flow bench — the agent drives THE shared bench', () => {
+  test('F20 (thrown half) — a stage whose start THROWS records the failure and the pass keeps pressing', async () => {
+    // before this cure a thrown start aborted the whole tool call and
+    // took pass[] with it: the operator saw a stack and none of the
+    // stages' outcomes. A settled failure continues; so does a throw.
+    let starts = 0
+    const seen = mockEstate([
+      (lane: string) => {
+        if (lane === 'benchGet') {
+          return { status: 200, body: { draft_id: 'd_bench', rev: 1, stages: [
+            { id: 's_0', card: 'image-gen', params: {} },
+            { id: 's_1', card: 'image-gen', params: {} },
+          ] } }
+        }
+        if (lane === 'runsStart') {
+          starts += 1
+          if (starts === 1) throw new Error('transport died mid-start')
+          return { status: 202, body: { run_id: 'rb1', status: 'queued' } }
+        }
+        if (lane === 'runsStatus') {
+          return { status: 200, body: { status: 'completed', stages: [{ id: 's_1', url: 'img/a.png' }] } }
+        }
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({ bench: true, test: true }, fakeExec(AbortSignal.timeout(6000))) as Record<string, unknown>
+    assert.equal(out.status, 'stopped')
+    assert.equal(out.stoppedAt, 's_0')
+    assert.match(String(out.error), /threw \(a transport or resolution error/)
+    const rows = out.pass as Array<Record<string, unknown>>
+    // the thrown stage is IN the pass, and the next stage still ran
+    assert.equal(rows[0]!['stage'], 's_0')
+    assert.match(String(rows[0]!['thrown']), /transport died mid-start/)
+    assert.equal(rows[1]!['run_id'], 'rb1')
+    assert.equal(starts, 2, 'the press reached the second stage after the throw')
+  })
+
   test('the sequential pass: done rows skip, one {model: card-id} start per runnable row, rows attribute through the DRAFTS stage door (the skip-done hole, transcript-011)', async () => {
     // THE SKIP-DONE HOLE (transcript-011's duplicate GPU runs, fixed
     // 2026-09-24): the old observer posted runStatus/result to the

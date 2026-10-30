@@ -228,7 +228,10 @@ describe('the strike note — the named heal at the drill seat', () => {
     // waitFor, not a sync assert: the mount cascade can still be
     // settling when the click lands (the 2026-10-30 flake audit's
     // FLAKE 5 — the repainted note raced this read under load)
-    await waitFor(() => expect(screen.queryByTestId('lane-strike-note')).toBeNull())
+    // 8 s, not the 1 s default: the note is already documented as
+    // racing this read under load (FLAKE 5) and the full 1000-file
+    // battery pushed the repaint past the default twice in three runs.
+    await waitFor(() => expect(screen.queryByTestId('lane-strike-note')).toBeNull(), { timeout: 8000 })
     // a NEW strike set (a fresh stage whose base holds a departed
     // non-axis ghost) re-voices — the silence never eats a fresh
     // strike

@@ -284,7 +284,15 @@ export function buildH3Reshoot(p, g, windowFrames, runId) {
         images: warpNode.out(1),
         filename_prefix: `${runId}/reshoot_orbit`,
     }).out(0);
-    return { refFrames: source, warp, plateSave, orbitSave };
+    return {
+        refFrames: source,
+        warp,
+        plateSave,
+        orbitSave,
+        prepWidth: prep.out(1),
+        prepHeight: prep.out(2),
+        prepLength: prep.out(3),
+    };
 }
 /**
  * The per-window MODEL seat: the CrossView LoRA on the window's

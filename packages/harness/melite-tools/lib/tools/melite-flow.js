@@ -434,14 +434,38 @@ async function runBench(estate, a, signal) {
         // but nothing wrote it, so every live press (run-c6bfa91defe7,
         // run-9dacc8612feb) omitted the key and the row's binding could
         // never resolve. The pass already knows the stage — it stamps it.
-        const started = await startRun(estate, model === ''
-            ? { test: wireBool(a.test), draft_id: draftId, bench_stage_id: stageId }
-            : { ...resolved, model, test: wireBool(a.test), draft_id: draftId, bench_stage_id: stageId }, signal);
+        // F20 residual, thrown half (2026-10-30): a stage that THROWS — a
+        // transport death inside startRun/observeAndAttribute, a card
+        // resolution failure — used to abort the whole tool call and take
+        // `pass[]` with it, so the operator saw a stack and none of the
+        // stages' outcomes. The same law as a settled failure now holds:
+        // record it, name it at the end, keep pressing.
+        let started;
+        try {
+            started = await startRun(estate, model === ''
+                ? { test: wireBool(a.test), draft_id: draftId, bench_stage_id: stageId }
+                : { ...resolved, model, test: wireBool(a.test), draft_id: draftId, bench_stage_id: stageId }, signal);
+        }
+        catch (thrown) {
+            const why = thrown instanceof Error ? thrown.message : String(thrown);
+            pass.push({ stage: stageId, card, thrown: why });
+            failures.push({ stage: stageId, card, status: 'threw', run_id: '' });
+            continue;
+        }
         if (typeof started['error'] === 'string') {
             return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId, error: started['error'], pass };
         }
         const runId = started['run_id'];
-        const outcome = await observeAndAttribute(estate, draftId, stageId, runId, signal, wireBool(a.test));
+        let outcome;
+        try {
+            outcome = await observeAndAttribute(estate, draftId, stageId, runId, signal, wireBool(a.test));
+        }
+        catch (thrown) {
+            const why = thrown instanceof Error ? thrown.message : String(thrown);
+            pass.push({ stage: stageId, card, run_id: runId, thrown: why });
+            failures.push({ stage: stageId, card, status: 'threw', run_id: runId });
+            continue;
+        }
         pass.push({ stage: stageId, card, run_id: runId, status: outcome.status,
             ...(regimeWarning !== null ? { warning: regimeWarning } : {}),
             ...(outcome.url !== '' ? { url: outcome.url } : {}),
@@ -503,7 +527,7 @@ async function runBench(estate, a, signal) {
         const first = failures[0];
         return { mode: 'bench', target, draft_id: draftId, run_id: lastRun, status: 'stopped',
             stoppedAt: first.stage,
-            error: `stage ${first.stage} (${first.card}) ended ${first.status}` + (failures.length > 1 ? ` — ${failures.length} stages failed (the pass still pressed every stage; read pass[])` : ' (the pass still pressed the remaining stages)'),
+            error: `stage ${first.stage} (${first.card}) ` + (first.status === 'threw' ? 'threw (a transport or resolution error — read pass[] for the rest)' : `ended ${first.status}`) + (failures.length > 1 ? ` — ${failures.length} stages failed (the pass still pressed every stage; read pass[])` : ' (the pass still pressed the remaining stages)'),
             ...(lastHosts.length > 0 ? { host_paths: lastHosts } : {}), pass };
     }
     return { mode: 'bench', target, draft_id: draftId, run_id: lastRun, status: 'done',

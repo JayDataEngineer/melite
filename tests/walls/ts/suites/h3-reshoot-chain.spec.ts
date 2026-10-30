@@ -85,10 +85,10 @@ const RESHOOT_CLASSES = [
 
 // The FIRST CUT's classes (VDA depth + Fun ControlNet + the private
 // loader pair) — retired with the 2026-11-13 rework; they must stay
-// dead on every doc, disarmed or armed. ColorToMask left this list
-// with the F30 cure (2026-10-30): the official pack keys its magenta
-// fill out with it, so the class is live again as the plate fill's
-// keyer — ARM 4 pins its literals.
+// dead on every doc, disarmed or armed. ColorToMask belongs to the
+// OPPOSITE law: the official port (2026-10-30) runs NO hole fill, so
+// the class and its three fill siblings are pinned ABSENT in ARM 4 —
+// a hand that re-arms a filler reds the wall.
 const RETIRED_CLASSES = [
   "LoadVideoDepthAnythingModel", "VideoDepthAnythingProcess", "VideoDepthAnythingOutput",
   "ImageResizeKJ", "ModelPatchLoader", "MiniMaxH3FunControlNetApply",
@@ -285,6 +285,26 @@ describe("the h3 camera re-shoot wall (the fourth mod bag, official rework)", ()
     // posture: no smoothing, no inversion of the MoGe depth
     expect(w.smooth_depth).toBe(false);
     expect(w.invert_depth).toBe(false);
+    // THE POSE IS THE OFFICIAL APP'S OPENING POSE (audit F1): the
+    // documented default is -30/+20, and an identity camera (0/0) is
+    // the ONE warp the CrossView pack's README says its LoRA
+    // misbehaves on. Judged here against the exported default so a
+    // silent drift of either number reds THIS wall, not just the
+    // action-tier spec.
+    // The numbers are LITERALS on purpose: they are the reference
+    // workflow's own opening pose (comfy-reshoot
+    // workflows/generate.api.json, node 5: azimuth -30, elevation 20),
+    // an external specification like the census — judging them against
+    // our own constant would let the constant drift to any non-identity
+    // pose with this wall still green.
+    expect(w.azimuth).toBe(-30);
+    expect(w.elevation).toBe(20);
+    // THE TWO WITNESSES (§8.7, audit F6): the raw warp's own save and
+    // the pack's orbit gizmo are part of the shipped arm — a drop
+    // would leave the operator with no cheap feedback but a render.
+    const saves = ofClass(out, "SaveImage").map(([, n]) => String(n.inputs.filename_prefix));
+    expect(saves.some((p) => p.endsWith("/reshoot_warp"))).toBe(true);
+    expect(saves.some((p) => p.endsWith("/reshoot_orbit"))).toBe(true);
     // the appearance + guide + LoRA seats: the prepared clip IS
     // ref_video_0 (no ref audio on the slot — the official graph
     // wires none), the warp pins at row 0, the LoRA loads at 0.8.
@@ -303,6 +323,14 @@ describe("the h3 camera re-shoot wall (the fourth mod bag, official rework)", ()
     expect(r2v).toHaveLength(1);
     expect(r2v[0]![1].inputs.prompt).toBe("crossview. a slow push in");
     expect(String(r2v[0]![1].inputs["ref_videos.ref_video_0"])).toBe(`${prepId},0`);
+    // THE SHAPE IS THE PREPARE NODE'S OWN (audit F5): node 20 takes
+    // width/height from CrossViewPrepareClip's slots 1/2, so the
+    // prepared clip's shape and the rendered latent cannot disagree.
+    // (length stays the window's own — one guide is shared across
+    // windows of different lengths; documented divergence beside
+    // duration, F28.)
+    expect(String(r2v[0]![1].inputs.width)).toBe(`${prepId},1`);
+    expect(String(r2v[0]![1].inputs.height)).toBe(`${prepId},2`);
     expect(r2v[0]![1].inputs["ref_video_audios.ref_video_audio_0"]).toBeUndefined();
     const guide = ofClass(out, "MiniMaxH3AddGuide")
       .filter(([, n]) => String(n.inputs.image).includes("CrossViewWarp"));

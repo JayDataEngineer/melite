@@ -204,6 +204,20 @@ describe("the h3 camera re-shoot chain (the fourth mod bag, official rework)", (
     // the 90-frame call owns the guide; 124/24 would have been the round-4
     // burn's guide and the engine's refusal
     expect(prep[1].inputs.duration).toBe(90 / 24);
+    // F28 fold (round-6 audit): that call PINNED its length, and the
+    // compose renders the pin ({...p, ...knobs}), so the shortest-window
+    // min must count the pin — the span snap alone said 90 and the engine
+    // would have taken a 90-frame guide into a 73-frame window.
+    const pinned = {
+      ...two,
+      calls: [
+        { text: "step in", start_frame: 0, end_frame: 124 },
+        { text: "turn", start_frame: 124, end_frame: 214, transition: "cut", knobs: { length: 73 } },
+      ],
+    };
+    const gp = new GraphBuilder();
+    instantiateAction(film, pinned, H3, gp, "run_rs_pinned");
+    expect(nodes(gp).find(([, n]) => n.class_type === "CrossViewPrepareClip")![1].inputs.duration).toBe(73 / 24);
     // below the ONE-SECOND floor the compose itself refuses, naming the law
     expect(() => instantiateAction(
       film,
@@ -212,7 +226,7 @@ describe("the h3 camera re-shoot chain (the fourth mod bag, official rework)", (
     )).toThrow(/window too short for the camera guide — 22 frames is below the 24-frame floor/);
   });
 
-  it("F30 (SUPERSEDED, 2026-10-30) — the official app runs NO hole fill: no mask, no grow, no composite, no blur touches the warp", () => {
+  it("the official app runs NO hole fill — no mask, no grow, no composite, no blur touches the warp (the ACTIVE anti-fill law; the invented filler is retired)", () => {
     // Round 4 invented a fill (magenta mask -> grown -> composite) because
     // a "two girls" render was blamed on subject-shaped holes. Round 5
     // measured the fill itself pasting a second full-size subject, and the

@@ -484,7 +484,7 @@ export const TYPERT_REMOTE = createTypertRemoteInfo({
         create: _melite_estate_drafts_bench_archive_result$schema,
         jsonSchema: {"type":"object","properties":{"draft_id":{"type":"string"},"session":{"type":"string"},"rev":{"type":"number"},"stage":{"type":"string"}},"required":["draft_id","session","rev","stage"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1582,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1601,"column":9},
     },
     'bench/clear': {
       service: 'benchRemote',
@@ -532,7 +532,7 @@ export const TYPERT_REMOTE = createTypertRemoteInfo({
         create: _melite_estate_drafts_bench_clear_result$schema,
         jsonSchema: {"type":"object","properties":{"draft_id":{"type":"string"},"session":{"type":"string"},"rev":{"type":"number"},"cleared":{"type":"number"}},"required":["draft_id","session","rev","cleared"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1611,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1624,"column":9},
     },
     'bench/ensure': {
       service: 'benchRemote',
@@ -644,7 +644,7 @@ export const TYPERT_REMOTE = createTypertRemoteInfo({
         create: _melite_estate_drafts_bench_group_result$schema,
         jsonSchema: {"type":"object","properties":{"draft_id":{"type":"string"},"session":{"type":"string"},"rev":{"type":"number"},"stage":{"type":"string"}},"required":["draft_id","session","rev","stage"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1649,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1662,"column":9},
     },
     'bench/patch': {
       service: 'benchRemote',
@@ -740,7 +740,7 @@ export const TYPERT_REMOTE = createTypertRemoteInfo({
         create: _melite_estate_drafts_bench_remove_stage_result$schema,
         jsonSchema: {"type":"object","properties":{"draft_id":{"type":"string"},"session":{"type":"string"},"rev":{"type":"number"},"stage":{"type":"string"}},"required":["draft_id","session","rev","stage"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1598,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1611,"column":9},
     },
     'bench/reorder': {
       service: 'benchRemote',
@@ -788,7 +788,7 @@ export const TYPERT_REMOTE = createTypertRemoteInfo({
         create: _melite_estate_drafts_bench_reorder_result$schema,
         jsonSchema: {"type":"object","properties":{"draft_id":{"type":"string"},"session":{"type":"string"},"rev":{"type":"number"},"stage":{"type":"string"},"from":{"type":"number"},"to":{"type":"number"}},"required":["draft_id","session","rev","stage","from","to"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1632,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1645,"column":9},
     },
     'bench/rewire': {
       service: 'benchRemote',
@@ -836,7 +836,7 @@ export const TYPERT_REMOTE = createTypertRemoteInfo({
         create: _melite_estate_drafts_bench_rewire_result$schema,
         jsonSchema: {"type":"object","properties":{"draft_id":{"type":"string"},"session":{"type":"string"},"rev":{"type":"number"},"stage":{"type":"string"},"input":{"type":"string"}},"required":["draft_id","session","rev","stage","input"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1621,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1634,"column":9},
     },
     'bench/subscribe': {
       service: 'benchRemote',
@@ -916,7 +916,7 @@ export const TYPERT_REMOTE = createTypertRemoteInfo({
         create: _melite_estate_drafts_bench_undo_result$schema,
         jsonSchemaError: 'typert tool schema: recursive selected type requires a supported JSON value declaration',
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1681,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1694,"column":9},
     },
     'bench/ungroup': {
       service: 'benchRemote',
@@ -964,7 +964,7 @@ export const TYPERT_REMOTE = createTypertRemoteInfo({
         create: _melite_estate_drafts_bench_ungroup_result$schema,
         jsonSchema: {"type":"object","properties":{"draft_id":{"type":"string"},"session":{"type":"string"},"rev":{"type":"number"},"stage":{"type":"string"}},"required":["draft_id","session","rev","stage"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1665,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1678,"column":9},
     },
     'drafts/delete': {
       service: 'draftsRemote',
