@@ -64,8 +64,7 @@ describe("the bench stage contract — one row, one shape, one spelling", () => 
     }) as Record<string, unknown>;
     expect(JSON.stringify(healed)).toContain("/melite-media/runs/run-1/a.png");
     expect(JSON.stringify(healed)).toContain("/melite-media/runs/run-1/b.flac");
-    expect(JSON.stringify(healed)).not.toContain("/v1/assets/runs/run-1/a.png",
-      "the legacy spelling heals everywhere, deep");
+    expect(JSON.stringify(healed), "the legacy spelling heals everywhere, deep").not.toContain("/v1/assets/runs/run-1/a.png");
     expect(healed["keep"]).toEqual(["/home/user/a.png", "$spell", "https://x.test/a.png"]);
   });
 

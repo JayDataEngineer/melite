@@ -113,7 +113,7 @@ describe('THE GROUP VOCABULARY (operator 2026-11-05: universal subcategories wit
   it('every served group id comes from the vocabulary — a card cannot invent one on the fly', () => {
     const known = new Set([...UNIVERSAL_GROUPS, ...GENRE_GROUPS.keys(), ...DATED_DEBT])
     const swept = sweepGroups()
-    expect(swept.length).toBeGreaterThan(5, 'the sweep must find the real DECLs (a frozen census is a dead wall)')
+    expect(swept.length, 'the sweep must find the real DECLs (a frozen census is a dead wall)').toBeGreaterThan(5)
     const invented: string[] = []
     for (const { file, groups } of swept) {
       for (const g of groups) {

@@ -34,6 +34,44 @@ import { fieldsOfEnvelope } from '@melite/card-base/spec';
 import { loadCardDefs } from "@melite/comfyui-cordis";
 import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 
+/** The "name" keys in [open, close) — string- and comment-aware (the
+ * 2026-10-30 cures audit's F-2: a raw /"name":\s*"…"/ regex also
+ * sees the token inside string VALUES and comments; the provisions
+ * tree is TS, not JSON — four families carry comments or trailing
+ * commas, so JSON.parse is not an option). Same walk discipline as
+ * the bracket walk: structural strings are skipped byte-wise, line
+ * and block comments are skipped whole. */
+function provisionNamesOf(text: string, open: number, close: number): string[] {
+  const names: string[] = [];
+  for (let i = open; i < close; i++) {
+    const c = text[i]!;
+    if (c === "\"") {
+      let j = i + 1;
+      while (j < close && text[j] !== "\"") j += text[j] === "\\" ? 2 : 1;
+      const key = text.slice(i + 1, j);
+      let k = j + 1;
+      while (k < close && /\s/.test(text[k]!)) k++;
+      if (key === "name" && text[k] === ":") {
+        k++;
+        while (k < close && /\s/.test(text[k]!)) k++;
+        if (text[k] === "\"") {
+          let e = k + 1;
+          while (e < close && text[e] !== "\"") e += text[e] === "\\" ? 2 : 1;
+          names.push(text.slice(k + 1, e));
+        }
+      }
+      i = j; // the loop's i++ lands past the closing quote
+    } else if (c === "/" && text[i + 1] === "/") {
+      while (i < close && text[i] !== "\n") i++;
+    } else if (c === "/" && text[i + 1] === "*") {
+      i += 2;
+      while (i < close - 1 && !(text[i] === "*" && text[i + 1] === "/")) i++;
+      i++; // land on the '/', the loop's i++ steps past it
+    }
+  }
+  return names;
+}
+
 /** The walk's served shape for one card (the same bytes the lane's
  * form-spec door serves — formSchemas' own serialization). */
 function servedFields(def: CardDefinition) {
@@ -266,9 +304,13 @@ describe("THE CLIENT↔GATE PARITY WALL: the walk IS the gate's truth, every car
           if (depth === 0) close = i;
         }
       }
-      const seg = text.slice(open, close === -1 ? open + 8000 : close);
-      for (const name of seg.matchAll(/"name":\s*"([^"]+)"/g)) {
-        provisioned.add(name[1]);
+      // no silent window fallback (the 2026-10-30 cures audit's F-1):
+      // an unclosed array is a malformed tree, not a reason to
+      // rescan a frozen 8000-char slice that ghosts tail rows
+      assert.ok(close !== -1,
+        `packages/models/${dir}/src/index.ts: the provisions array never closes — no matching ] for the walk (a silent 8000-char window would rescan ghost rows)`);
+      for (const name of provisionNamesOf(text, open, close)) {
+        provisioned.add(name);
       }
     }
     assert.ok(provisioned.size > 0, "the estate file register must carry provisions");

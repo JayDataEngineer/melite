@@ -30,8 +30,7 @@ describe("the make-model skill teaches the live tree (F4)", () => {
     // closure-gate idiom; here the DOC is the artifact, so the
     // retired NAME must not appear at all)
     expect(skill).not.toContain("FAMILY_PLUGINS");
-    expect(skill).not.toMatch(/import \{ family as/u,
-      "the static barrel import is the retired Face 1 — the string table replaced it");
+    expect(skill, "the static barrel import is the retired Face 1 — the string table replaced it").not.toMatch(/import \{ family as/u);
     // and the teaching target is REAL (the wall rides the live door)
     expect(table).toMatch(/export const FAMILY_PKGS: readonly string\[\]/u);
     expect(table).toMatch(/await import\(pkg\)/u,

@@ -1810,7 +1810,11 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         // per violation, so equality is identity; the unlanded-write
         // template is shared by DIFFERENT events (a refused typed
         // write beside a refused run flush) — those keep both rows,
-        // each with its own ×.
+        // each with its own ×. (The 2026-10-30 flake audit's FLAKE 1
+        // — one refused event painting the settle face AND the strip
+        // in one window — is a poll artifact, not a second voice:
+        // BOTH seats are the law here; arms query by seat, never by
+        // singular text.)
         writeFace !== null && !(writeFace === error && gateRefusalMessage(error) !== null)
           && !(gateRefusalMessage(writeFace) !== null && gateSet.some((v) => v.message === gateRefusalMessage(writeFace)))
           ? h('div', { className: css.drillRunRow },

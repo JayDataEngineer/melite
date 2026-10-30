@@ -284,7 +284,18 @@ describe("the stage drill's faces each carry a × that retires only its own face
     const user = userEvent.setup();
     await user.click(firstTile());
     fireEvent.click(await screen.findByText("Ungroup", {}, { timeout: 4000 }));
-    const face = await screen.findByText("ungroup failed", {}, { timeout: 4000 });
+    // (2026-10-30 flake audit FLAKE 2) await the verb's THROW before
+    // polling the DOM: the withRebase transport throw propagates
+    // immediately, but the face's paint rides the still-settling
+    // mount cascade — under the full pool the fixed 4000ms poll reded
+    // while the throw was already recorded, closing the coverage
+    // window on the group face's span. The fake's own call record is
+    // the settle point; the paint then gets double budget.
+    await waitFor(
+      () => { expect(fakes?.calls.some((c) => c.method === "bench/ungroup")).toBe(true); },
+      { timeout: 8000 },
+    );
+    const face = await screen.findByText("ungroup failed", {}, { timeout: 8000 });
     const row = face.closest("div") as HTMLElement;
     dismissIn(row);
     await waitFor(() => { expect(screen.queryByText("ungroup failed")).toBeNull(); });

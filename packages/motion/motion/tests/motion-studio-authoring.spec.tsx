@@ -492,9 +492,15 @@ describe('timeline (prompts + keyframes)', () => {
       if (!document.body.querySelector('[data-prompt-clip]')) throw new Error('no seeded clip yet')
     }, { timeout: 10000 })
     const clip = document.body.querySelector('[data-prompt-clip]') as HTMLElement
+    // (2026-10-30, flake audit FLAKE 3; the wave-32 idiom 25 lines
+    // below) the drag spans 1000px: the move law is startF + dx/effPpf
+    // with effPpf pinned from a mount-measured box race — a 10px drag
+    // is sub-frame at some pinned fits and commits NOTHING (the arm
+    // red-flaked 'drag did not land' under load). 1000px clears a
+    // frame at ANY fit by construction.
     fireEvent.pointerDown(clip, { clientX: 10, button: 0 })
-    fireEvent.pointerMove(window, { clientX: 20 })
-    fireEvent.pointerUp(window, { clientX: 20 })
+    fireEvent.pointerMove(window, { clientX: 1010 })
+    fireEvent.pointerUp(window, { clientX: 1010 })
     await vi.waitFor(() => {
       if (clip.style.left === '0px' || clip.style.left === '') throw new Error('drag did not land')
     }, { timeout: 10000 })

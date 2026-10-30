@@ -225,7 +225,10 @@ describe('the strike note — the named heal at the drill seat', () => {
     const dismiss = within(screen.getByTestId('lane-strike-note')).getByRole("button", { name: "Dismiss error" });
     expect(screen.getByTestId('lane-strike-note').contains(dismiss), 'the × rides INSIDE the note (the anchor law)').toBe(true)
     fireEvent.click(dismiss)
-    expect(screen.queryByTestId('lane-strike-note')).toBeNull()
+    // waitFor, not a sync assert: the mount cascade can still be
+    // settling when the click lands (the 2026-10-30 flake audit's
+    // FLAKE 5 — the repainted note raced this read under load)
+    await waitFor(() => expect(screen.queryByTestId('lane-strike-note')).toBeNull())
     // a NEW strike set (a fresh stage whose base holds a departed
     // non-axis ghost) re-voices — the silence never eats a fresh
     // strike

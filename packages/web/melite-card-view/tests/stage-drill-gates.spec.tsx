@@ -676,7 +676,15 @@ describe("the unset's refused write and the run seat's refused sync — both spe
     const area = await screen.findByLabelText("Prompt", {}, { timeout: 4000 });
     fireEvent.change(area, { target: { value: "a red cube" } });
     bound();
-    const strip = await screen.findByText(/THE WRITE DID NOT LAND/, {}, { timeout: 8000 });
+    // (2026-10-30 flake audit FLAKE 1) query the SEAT, not the words:
+    // the run flush forces its single trailing write synchronously,
+    // so one refused event legitimately paints BOTH the settle face
+    // and this strip with the same template in one window — a
+    // singular findByText(/THE WRITE DID NOT LAND/) red-flaked with
+    // "Found multiple elements" on the poll tick that caught the
+    // window. Both rows are the law (each with its own ×); this arm
+    // judges the STRIP.
+    const strip = await screen.findByTestId("stage-error-strip", {}, { timeout: 8000 });
     // the strip seat, not the write face: the discrete face never
     // painted (no discrete write refused — this is the flush's own
     // refusal the strip voices).
@@ -2440,5 +2448,41 @@ describe("the reopen carry drop (a saved doc resolved to a lane its stated keys 
     await openDrill();
     await awaitWriteSettled();
     expect(patchCalls().filter((c) => c.method === "drafts/patch")).toEqual([]);
+  });
+
+  test("a REFUSED reopen heal is never a silent swallow — the console row names the reason and the doc stays as-saved", async () => {
+    // the 2026-10-30 flake audit's headline: the refusal catch
+    // (stage-drill.tsx '[stage-drill] reopen carry drop refused:')
+    // had NO covering arm anywhere in the tree, so the branch rode
+    // below the floor (98.62 vs 98.77) and the coverage gate reded
+    // on every run. The contract under test: the heal write fires
+    // once, its refusal warns with the verbatim prefix + reason,
+    // and the form still opens — Run's own refusal names the fields
+    // at the press; the heal itself voices no face.
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      mountBench(
+        [stage({ model: "qwen3-tts", variant: "small", persona: "gritty host" })],
+        { patchFailures: [{ reason: "reopen heal refused" }] },
+        lanesSpecDoc(),
+      );
+      await openDrill();
+      await screen.findByLabelText("Prompt", {}, { timeout: 4000 });
+      // the heal WAS attempted — exactly one atomic persona null
+      await waitFor(() => {
+        const heals = patchCalls().filter((c) =>
+          ((c["patch"] as Record<string, unknown> | undefined)?.["params"] as Record<string, unknown> | undefined)?.["persona"] === null);
+        if (heals.length !== 1) throw new Error("expected one refused heal attempt, saw " + heals.length + " of " + patchCalls().length);
+      }, { timeout: 8000 });
+      // ...and its refusal surfaced on the console, verbatim
+      await waitFor(() => {
+        const row = warnSpy.mock.calls.find((c) => String(c[0]).includes("reopen carry drop refused"));
+        if (!row) throw new Error("the refusal never warned; saw: " + JSON.stringify(warnSpy.mock.calls.map((c) => String(c[0]))));
+        expect(String(row[1])).toContain("reopen heal refused");
+      }, { timeout: 8000 });
+      await awaitWriteSettled();
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 });
