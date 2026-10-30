@@ -36,5 +36,19 @@
   ],
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.5"
-  }
+  },
+  "description": "Anny 3D character-assembly family, identity-slider body baking with turnaround sheets and sub-action verbs.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JayDataEngineer/melite.git",
+    "directory": "packages/models/anny"
+  },
+  "keywords": [
+    "melite",
+    "comfyui",
+    "cordis",
+    "agent",
+    "media-generation",
+    "library"
+  ]
 }

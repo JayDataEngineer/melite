@@ -68,7 +68,7 @@ vi.mock("../src/cardsCompose.ts", async (importOriginal) => {
 
 import { installLaneStoreOverlay, restoreLaneStoreOverlay } from "../../../../tests/helpers/lane-store-overlay.ts";
 import { Context } from "@deepseek-ai/cordis";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { EnginesService } from "@melite/engine-contract";
@@ -727,6 +727,84 @@ describe("phase1Card + phase2Card (the two phases, one compose seat)", () => {
     expect(miss["width"]).toBe(0);
     expect(miss["height"]).toBe(0);
   });
+  it("THE STAMP'S STATED/UNSTATED MATRIX (the write-door's guard rows): junk geometry, a half-owned size, a repo-relative clip, and every no-stamp source severity", async () => {
+    // The stamp only ever touches knobs the user does not own. A
+    // STATED non-number width (the GUI wire's string spelling) is
+    // owned-but-unjudgeable: the door refuses downstream, it never
+    // silently replaces the word. One arm per guard row, each asserting
+    // the body the door hands the judges.
+    const dir = mkdtempSync(join(tmpdir(), "clip-geo-matrix-"));
+    const clipPath = join(dir, "drive.mp4");
+    writeFileSync(clipPath, craftMinimalMp4(928, 1344));
+    try {
+      // junk width: stated, non-number -> the whole stamp stands down
+      // (the unstated twin stays 0 too — no partial stamp on junk)
+      const junkW: Record<string, unknown> = { clip: clipPath, width: "640", height: 0 };
+      await svc.phase1Card(junkW, "h3-timeline").catch(() => undefined);
+      expect(junkW["width"]).toBe("640");
+      expect(junkW["height"]).toBe(0);
+      // junk height: same guard, other axis
+      const junkH: Record<string, unknown> = { clip: clipPath, width: 0, height: "480" };
+      await svc.phase1Card(junkH, "h3-timeline").catch(() => undefined);
+      expect(junkW["width"]).toBe("640"); // (a prior arm's body is unchanged)
+      expect(junkH["width"]).toBe(0);
+      expect(junkH["height"]).toBe("480");
+      // HALF-OWNED GEOMETRY: one knob stated non-zero = the user owns
+      // that axis; the unstated twin still takes the clip's truth
+      const wOwn: Record<string, unknown> = { clip: clipPath, width: 640 };
+      await svc.phase1Card(wOwn, "h3-timeline").catch(() => undefined);
+      expect(wOwn["width"]).toBe(640);
+      expect(wOwn["height"]).toBe(1344);
+      const hOwn: Record<string, unknown> = { clip: clipPath, height: 480 };
+      await svc.phase1Card(hOwn, "h3-timeline").catch(() => undefined);
+      expect(hOwn["width"]).toBe(928);
+      expect(hOwn["height"]).toBe(480);
+      // THE ESTATE-UPLOADS SPELLING: a repo-relative `data/input/<name>`
+      // clip resolves against the repo root and stamps like an absolute
+      // one (the probe arm's path seat; the root is pointed at a throwaway
+      // tree so the arm stays hermetic).
+      const repoTmp = mkdtempSync(join(tmpdir(), "clip-geo-rel-"));
+      mkdirSync(join(repoTmp, "data", "input"), { recursive: true });
+      const relName = "clip-geo-rel-drive.mp4";
+      writeFileSync(join(repoTmp, "data", "input", relName), craftMinimalMp4(928, 1344));
+      process.env["MELITE_REPO_ROOT"] = repoTmp;
+      try {
+        const rel: Record<string, unknown> = { clip: "data/input/" + relName, width: 0, height: 0 };
+        await svc.phase1Card(rel, "h3-timeline").catch(() => undefined);
+        expect(rel["width"]).toBe(928);
+        expect(rel["height"]).toBe(1344);
+      } finally {
+        delete process.env["MELITE_REPO_ROOT"];
+        rmSync(repoTmp, { recursive: true, force: true });
+      }
+      // A CLIP THAT IS A DIRECTORY: stat answers, the file check
+      // refuses — no stamp, never a refusal (the follow-the-clip
+      // contract's belt)
+      const dirClip: Record<string, unknown> = { clip: dir, width: 0, height: 0 };
+      await svc.phase1Card(dirClip, "h3-timeline").catch(() => undefined);
+      expect(dirClip["width"]).toBe(0);
+      expect(dirClip["height"]).toBe(0);
+      // A PROBE THE READER CANNOT NAME: a readable file of bytes no
+      // container parser claims -> the probe refuses -> no stamp
+      const junk = join(dir, "junk.bin");
+      writeFileSync(junk, "this is not a media container");
+      const junkClip: Record<string, unknown> = { clip: junk, width: 0, height: 0 };
+      await svc.phase1Card(junkClip, "h3-timeline").catch(() => undefined);
+      expect(junkClip["width"]).toBe(0);
+      expect(junkClip["height"]).toBe(0);
+      // A READABLE CONTAINER WITH NO VIDEO STREAM: the probe answers
+      // (audio-only WAV) but no stream carries a display size — the
+      // stamp has no geometry to take and the 0s ride
+      const wav = join(dir, "tone.wav");
+      writeFileSync(wav, craftMinimalWav());
+      const wavClip: Record<string, unknown> = { clip: wav, width: 0, height: 0 };
+      await svc.phase1Card(wavClip, "h3-timeline").catch(() => undefined);
+      expect(wavClip["width"]).toBe(0);
+      expect(wavClip["height"]).toBe(0);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
   it("THE SILENT-SOURCE REFUSAL (F26, round 6): an armed sound-carrying bag whose source has NO audio track refuses at the door, naming the lane and the file — never mid-render in the VHS extractor's raw dump", async () => {
     // The burn: a bag source with no audio died mid-run inside the
     // vendored ffmpeg extractor AFTER the GPU bill. The door probes a
@@ -1236,4 +1314,28 @@ function craftMinimalMp4(width: number, height: number, audio = false): Buffer {
     box("ftyp", ftyp),
     box("moov", audio ? Buffer.concat([box("trak", trak), strak()]) : box("trak", trak)),
   ]);
+}
+
+/** A minimal probe-able PCM WAV (RIFF/WAVE + fmt + data): the probe
+ *  answers with ONE audio stream that carries no display size — the
+ *  clip-geometry stamp's no-video-stream arm. Pure bytes, hermetic. */
+function craftMinimalWav(): Buffer {
+  const fmt = Buffer.alloc(16);
+  fmt.writeUInt16LE(1, 0); // PCM tag
+  fmt.writeUInt16LE(1, 2); // channels
+  fmt.writeUInt32LE(44100, 4); // sample rate
+  fmt.writeUInt32LE(88200, 8); // byte rate
+  fmt.writeUInt16LE(2, 12); // block align
+  fmt.writeUInt16LE(16, 14); // bits
+  const chunk = (id: string, body: Buffer): Buffer => {
+    const h = Buffer.alloc(8);
+    h.writeUInt32LE(body.length, 0);
+    h.write(id, 4, "ascii");
+    return Buffer.concat([h, body]);
+  };
+  const riff = Buffer.alloc(12);
+  riff.write("RIFF", 0, "ascii");
+  riff.writeUInt32LE(4 + 8 + 16 + 8 + 4, 4);
+  riff.write("WAVE", 8, "ascii");
+  return Buffer.concat([riff, chunk("fmt ", fmt), chunk("data", Buffer.alloc(4))]);
 }

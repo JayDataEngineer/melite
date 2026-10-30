@@ -30,5 +30,19 @@
   ],
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.5"
-  }
+  },
+  "description": "Florence-2 captioning family, a PromptGen-tuned natural-language image tagger for prompt inversion.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JayDataEngineer/melite.git",
+    "directory": "packages/models/florence2"
+  },
+  "keywords": [
+    "melite",
+    "comfyui",
+    "cordis",
+    "agent",
+    "media-generation",
+    "library"
+  ]
 }

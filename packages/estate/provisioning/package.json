@@ -4,7 +4,7 @@
   "private": true,
   "license": "AGPL-3.0-or-later",
   "type": "module",
-  "description": "Cordis provisioning service definition and provider for declared model and extension resources.",
+  "description": "The Cordis provisioning capability for declared model and extension resources — plans, per-resource state, acquisition locks, Manager/provider adapters, verified artifact landing.",
   "types": "./lib/index.d.ts",
   "exports": {
     ".": {
@@ -46,5 +46,18 @@
   ],
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.5"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JayDataEngineer/melite.git",
+    "directory": "packages/estate/provisioning"
+  },
+  "keywords": [
+    "melite",
+    "comfyui",
+    "cordis",
+    "agent",
+    "media-generation",
+    "library"
+  ]
 }

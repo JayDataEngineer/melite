@@ -65,11 +65,9 @@ __pycache__/
 *.pyc
 
 # === Secrets / credentials ===
-# Root config — required on every install, contains machine-specific
-# paths (model storage roots, engine URLs). Created by the user (or
-# by the provisioner's bootstrap on a fresh checkout); NEVER commit —
-# `py/estate_config.py` is its ONE parser and tests/walls/suites/test_estate_config.py
-# asserts the file is present on disk.
+# The tracked estate default config (a local copy with machine paths —
+# engine URLs, model storage roots — stays uncommitted by convention;
+# the row keeps an untracked copy out of history).
 inference.config.json
 .env
 .env.*

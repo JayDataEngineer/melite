@@ -4,7 +4,7 @@
   "private": true,
   "license": "AGPL-3.0-or-later",
   "type": "module",
-  "description": "The comfyui engine's Cordis compose plane + models registry — one package, two services (ctx.models + ctx.comfyui). Runtime is node --experimental-strip-types (erasable-syntax TS); no build step. Cards are one-folder units (card-folder-shape design record): card.ts (host face) + ui/ (browser face — deps below exist for the studios' module resolution; the editor's vite/vitest compiles them, the engine tsc program excludes ui/) + agents/ (model context, served by the planes door).",
+  "description": "The ComfyUI engine's Cordis package — one package, two services (ctx.models declarations and ctx.comfyui composition) plus the merged-single-graph engines adapter.",
   "exports": {
     ".": {
       "types": "./lib/index.d.ts",
@@ -131,5 +131,18 @@
   ],
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.5"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JayDataEngineer/melite.git",
+    "directory": "packages/engines/comfyui-cordis"
+  },
+  "keywords": [
+    "melite",
+    "comfyui",
+    "cordis",
+    "agent",
+    "media-generation",
+    "library"
+  ]
 }

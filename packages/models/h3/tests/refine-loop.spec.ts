@@ -204,3 +204,59 @@ describe("the refine loop (F24: one press walks the film)", () => {
     );
   });
 });
+
+describe("the window renderer's whole-frame seat refusals (the loop's loader seats are whole frame counts)", () => {
+  it("a window cap that is not a whole positive frame count refuses at the door, naming the count and the safe default", () => {
+    assert.throws(
+      () => renderH3RefineWindow(entry, {}, facts, new GraphBuilder(), {
+        cap: 0, skip: 0, overlapFrames: 0, prefix: "run-bad-cap/refine",
+      }),
+      /a 0 f window — a refine window needs frames .* the safe default is 3\.75 s = 90 f/,
+    );
+    assert.throws(
+      () => renderH3RefineWindow(entry, {}, facts, new GraphBuilder(), {
+        cap: 45.5, skip: 0, overlapFrames: 0, prefix: "run-bad-cap/refine",
+      }),
+      /a 45\.5 f window — a refine window needs frames/,
+    );
+  });
+
+  it("a window that starts before the clip's first frame (or off the whole-frame grid) refuses at the door", () => {
+    assert.throws(
+      () => renderH3RefineWindow(entry, {}, facts, new GraphBuilder(), {
+        cap: 90, skip: -1, overlapFrames: 0, prefix: "run-bad-skip/refine",
+      }),
+      /a window starting at frame -1 — a window starts at or after the clip's first frame/,
+    );
+    assert.throws(
+      () => renderH3RefineWindow(entry, {}, facts, new GraphBuilder(), {
+        cap: 90, skip: 0.5, overlapFrames: 0, prefix: "run-bad-skip/refine",
+      }),
+      /a window starting at frame 0\.5/,
+    );
+  });
+
+  it("the loop plan refuses a carried overlap that is not a whole non-negative frame count", () => {
+    assert.throws(
+      () => renderH3RefineWindows(entry, {}, facts, new GraphBuilder(), "run-bad-overlap", {
+        windows: 1, overlapFrames: -1,
+      }),
+      /overlap -1 f — the carried overlap is a whole frame count at or above zero/,
+    );
+    assert.throws(
+      () => renderH3RefineWindows(entry, {}, facts, new GraphBuilder(), "run-bad-overlap", {
+        windows: 1, overlapFrames: 22.5,
+      }),
+      /overlap 22\.5 f — the carried overlap is a whole frame count at or above zero/,
+    );
+  });
+
+  it("the loop plan refuses a window length that books no frames (clip_seconds 0)", () => {
+    assert.throws(
+      () => renderH3RefineWindows({ ...entry, clip_seconds: 0 }, {}, facts, new GraphBuilder(), "run-bad-clip", {
+        windows: 1, overlapFrames: 22,
+      }),
+      /clip_seconds 0 — a refine window needs frames .* seconds × 24 at the film clock/,
+    );
+  });
+});

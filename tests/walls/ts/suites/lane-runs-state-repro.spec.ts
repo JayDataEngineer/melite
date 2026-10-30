@@ -39,7 +39,7 @@
 // removed in afterEach.
 import { assertHermeticRode } from "../../../helpers/hermetic-engine.ts";
 import "../../../helpers/boot-models.ts";
-import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { appendFileSync, cpSync, existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -313,6 +313,39 @@ describe("the false-death hunt's four laws", () => {
     // floor under the whole law, not just the queue seat
     const registered = await everyDeclaredSeatResolves(ctx2, 5_000);
     expect(registered, "every service the context registered is settled (a registered-but-unsettled seat is the false death)").toEqual([]);
+  });
+
+  it("5. THE DIRTY TREE: a real boot settles over a corrupt sidecar and steals a dead holder's lock (cold-boot audit F10.2)", { timeout: 40_000 }, async () => {
+    expect(existsSync(REAL_RUNS)).toBe(true);
+    const root = join(sandbox("law5-dirty"), "runs");
+    copyRealTree(root);
+    // a truncated sidecar: one copied state file ends mid-JSON — the
+    // corrupt-tolerance class (plan-tier walls prove the census;
+    // this arm proves the COMPOSITION tolerates it: no row dies)
+    const outputs = await (await import("node:fs/promises")).readdir(join(root, "test-output"), { withFileTypes: true }).catch(() => [] as import("node:fs").Dirent[]);
+    const runDir = outputs.find((d) => d.isDirectory());
+    const sidecar = runDir === undefined ? undefined : join(root, "test-output", runDir.name, "_flow.json");
+    if (sidecar !== undefined && existsSync(sidecar)) appendFileSync(sidecar, "{");
+    // a lock held by a pid beyond pid_max — dead by construction
+    writeFileSync(join(root, "gateway.lock"), "2000000000");
+    const ctx = await bootBundle(root);
+    const missing = await settleMissing(ctx, SEATS, 20_000);
+    expect(missing).toEqual([]);
+    // the steal happened: the lock now carries OUR pid, never the dead holder's
+    expect(readFileSync(join(root, "gateway.lock"), "utf8")).toBe(String(process.pid));
+  });
+
+  it("6. THE J12 GHOST: a set MELITE_STATE_ROOT env never pins the boot — the config root wins and the ghost path is never created (cold-boot audit F10.3)", { timeout: 40_000 }, async () => {
+    const ghost = join(sandbox("law6-ghost"), "ghost-runs");
+    process.env["MELITE_STATE_ROOT"] = ghost;
+    const root = join(sandbox("law6-real"), "runs");
+    const ctx = await bootBundle(root);
+    const missing = await settleMissing(ctx, SEATS, 20_000);
+    expect(missing).toEqual([]);
+    // the retired env is retired at the composition door too: the
+    // ghost path was never created, the config root serves the queue
+    expect(existsSync(ghost)).toBe(false);
+    expect(existsSync(join(root, "gateway.lock"))).toBe(true);
   });
 
   it("4. THE LOCK LAW: a live-pid lock refuses the gate; dead is stolen; clean acquires", { timeout: 20_000 }, async (t) => {

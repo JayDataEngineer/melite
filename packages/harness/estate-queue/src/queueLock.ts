@@ -88,32 +88,39 @@ export function isPidAlive(pid: number): boolean {
   }
 }
 
-function writePidFile(lockPath: string, pid: number): boolean {
+/** Write the holder pid O_EXCL. Returns "" on success, else the
+ * failing open/write errno code (EACCES: the runs root is not
+ * writable by this user — the 0500 class; EEXIST/EISDIR: a holder
+ * shape already sits at the path) so the refusal names its reason
+ * (the cold-boot audit F5: a reason-blind "steal failed" sent the
+ * operator hunting a lock that was never the problem). */
+function writePidFile(lockPath: string, pid: number): string {
   let fd: number = -1;
   try {
     fd = openSync(lockPath, "wx", 0o644);
-  } catch {
-    return false;
+  } catch (exc: unknown) {
+    return String((exc as { code?: unknown }).code ?? "UNKNOWN");
   }
   try {
     writeSync(fd, String(pid));
   /* v8 ignore start -- a fresh lock-file write never fails in practice
      (disk-full class, unfaultable here): the abort never fires (2026-09-12) */
-  } catch {
+  } catch (exc: unknown) {
+    const why: string = String((exc as { code?: unknown }).code ?? "UNKNOWN");
     try {
       closeSync(fd);
     } catch {
-      /* gone */
+      /* fd already gone — nothing left to close */
     }
-    return false;
+    return why;
   /* v8 ignore stop */
   }
   try {
     closeSync(fd);
   } catch {
-    /* closed */
+    /* already closed — the pid bytes are on disk */
   }
-  return true;
+  return "";
 }
 
 /** R2 single-writer: O_CREAT|O_EXCL acquire; on
@@ -127,7 +134,8 @@ export function acquireLock(
 ): LockResult {
   const lockPath: string = lockPathFor(stateRoot);
   mkdirSync(stateRoot, { recursive: true });
-  if (writePidFile(lockPath, pid)) return { ok: true, note: "acquired" };
+  const first = writePidFile(lockPath, pid);
+  if (first === "") return { ok: true, note: "acquired" };
   let holder: string = "";
   try {
     holder = readFileSync(lockPath, "utf8").trim();
@@ -146,10 +154,11 @@ export function acquireLock(
     /* already gone */
   }
   appendLedger(stateRoot, "server.lock_stolen", { stale_pid: hpid }, nowS);
-  if (writePidFile(lockPath, pid)) {
+  const stole = writePidFile(lockPath, pid);
+  if (stole === "") {
     return { ok: true, note: "stolen from dead pid " + hpid };
   }
-  return { ok: false, note: "lock steal failed: " + lockPath };
+  return { ok: false, note: "lock steal failed: " + lockPath + " (open " + stole + (stole === "EACCES" ? " — the runs root is not writable by this user)" : ")") };
 }
 
 /** PID-CHECKED release (release_lock 4450-4468): a boot that never

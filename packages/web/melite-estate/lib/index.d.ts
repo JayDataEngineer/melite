@@ -77,12 +77,29 @@ export declare const Config: Schema<Config>;
  * repo law (<repoRoot>/data/runs for the state tree, and NO store
  * default — the checkout's tracked configs derive the store at
  * apply, loadStoreRoot's own law); else — the cold install — the
- * per-user data home names both roots (~/.local/share/melite). The
- * home default is per-user, so the single-writer lock law holds one
- * estate per user, exactly as one estate per repo.
+ * per-user data home names both roots (~/.local/share/melite; the
+ * XDG data home is deliberately NOT read — one deterministic
+ * default, no environment guessing). The home default is per-user,
+ * so the single-writer lock law holds one estate per user, exactly
+ * as one estate per repo.
+ *
+ * Two naming laws refuse LOUD rather than fall to a cwd tree (the
+ * silent-relative-root death, the 2026-11-30 cold-boot audit):
+ * - the empty string is ABSENT, all three fields — a profile row
+ *   templated from the retired MELITE_STATE_ROOT env renders ""
+ *   exactly where the var is unset, and resolveStateRoot's own
+ *   law already treats "" as unnamed; the cold derivation must not
+ *   read it as a named root one layer up;
+ * - every named root (and the home-derived pair) must be ABSOLUTE —
+ *   a relative root pins the estate to the process cwd, and a
+ *   second boot from another cwd is a different estate with no
+ *   lock collision: the pin law's one-writer promise voided
+ *   silently.
  * @param config the estate row's config face (the three root fields).
  * @returns the state root the composition pins, and the weights
  * store root to forward (undefined = the provisioning row derives).
+ * @throws on a relative named root or a home that resolves relative
+ * (HOME empty or relative) — refusing before any row mounts.
  */
 export declare function coldInstallRoots(config: Readonly<Pick<Config, "repoRoot" | "stateRoot" | "storeRoot">>): {
     stateRoot: string;

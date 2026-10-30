@@ -30,5 +30,19 @@
   ],
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.5"
-  }
+  },
+  "description": "Danbooru-style image tagger family — the CXH_JoyTag graph, weightless facts, tag text saved under the run directory.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JayDataEngineer/melite.git",
+    "directory": "packages/models/joytag"
+  },
+  "keywords": [
+    "melite",
+    "comfyui",
+    "cordis",
+    "agent",
+    "media-generation",
+    "library"
+  ]
 }

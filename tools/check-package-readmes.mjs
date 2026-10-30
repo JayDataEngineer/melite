@@ -93,6 +93,32 @@ for (const group of readdirSync(packagesDir).sort()) {
       }
     }
 
+    // 2.5 — THE REGISTRY FACE (2026-11-30, the public-face audit):
+    // npmjs renders the manifest description verbatim and DERIVES one
+    // from the README frontmatter when the manifest field is absent —
+    // mangled YAML on the package page. The manifest is the registry
+    // truth: description must equal the frontmatter line (one home,
+    // the README stays the prose owner), and the repository link must
+    // point home with the package's own directory. Melite-owned names
+    // only — vendored trees keep their upstream identities.
+    if (typeof manifest.name === 'string' && manifest.name.startsWith('@melite')) {
+      if (typeof manifest.description !== 'string' || manifest.description === '') {
+        offenders.push(`${rel}: manifest description missing — npmjs derives a mangled one from the README frontmatter`)
+      } else if (fm) {
+        const descLine = fm[1].match(/^description:\s*(\S.*)$/m)
+        if (descLine && descLine[1].trim() !== manifest.description) {
+          offenders.push(`${rel}: manifest description drifts from the README frontmatter line (one home: the README owns the prose, the manifest mirrors it)`)
+        }
+      }
+      const repo = manifest.repository
+      if (!repo || !repo.url || !repo.url.includes('JayDataEngineer/melite') || !repo.directory) {
+        offenders.push(`${rel}: manifest repository missing/foreign — the npm page must link the package's own directory in the source repo`)
+      }
+      if (!Array.isArray(manifest.keywords) || manifest.keywords.length === 0) {
+        offenders.push(`${rel}: manifest keywords missing — npm search finds nothing`)
+      }
+    }
+
     // 3 — one H1, depth ceiling H3
     const h1s = [...text.matchAll(/^# (?!=) *(.+)$/gm)]
     if (h1s.length !== 1) offenders.push(`${rel}: ${h1s.length} H1 headings (need exactly 1)`)

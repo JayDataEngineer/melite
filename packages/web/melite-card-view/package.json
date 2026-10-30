@@ -101,5 +101,19 @@
     "lib/**/*.d.ts",
     "lib/**/*.module.css",
     "cordis.patch.yml"
+  ],
+  "description": "The studio's card surfaces bundle — mounts the estate remotes into the browser graph and hosts the right-sidebar cards tab.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JayDataEngineer/melite.git",
+    "directory": "packages/web/melite-card-view"
+  },
+  "keywords": [
+    "melite",
+    "comfyui",
+    "cordis",
+    "agent",
+    "media-generation",
+    "dsh-bundle"
   ]
 }

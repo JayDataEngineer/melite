@@ -99,3 +99,30 @@ test('the armed set makes the probe once-per-run (idempotent across refreshes)',
     fakes.unmount()
   }
 })
+
+test('a file-era list that is DOWN reads as gone — the honest stopped still lands', async () => {
+  // the gone-verdict's transport face (2026-11-30): the status door
+  // REFUSED (an answered estate refusal — the phantom shape) and the
+  // runs/list probe itself REJECTS (the wire is down). The probe's
+  // catch reads that as "no list answer" — the run is gone, never a
+  // fabricated verdict — and the stopped still lands in this tick.
+  const fakes = mountEstateFakes({
+    refusals: [{ method: 'runs/status', message: 'unknown run_id' }],
+    throws: [{ method: 'runs/list', message: 'list wire down' }],
+  })
+  try {
+    const armed = new Set<string>()
+    await reconcileBenchRuns(bench('running'), { armed })
+    const patch = fakes.calls.find((c) => c.method === 'drafts/patch')
+    expect(patch?.args).toMatchObject({
+      draftId: 'bench-p', stageId: 's_h3',
+      patch: { runStatus: 'stopped', result: { run_id: 'run-dead-1' } },
+    })
+    // the list WAS probed (the verdict came from its refusal, not from
+    // a skipped probe) and the landed verdict keeps the claim spent
+    expect(fakes.calls.some((c) => c.method === 'runs/list')).toBe(true)
+    expect(armed.has('s_h3:run-dead-1')).toBe(true)
+  } finally {
+    fakes.unmount()
+  }
+})

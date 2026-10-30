@@ -30,5 +30,19 @@
   ],
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.5"
-  }
+  },
+  "description": "NVIDIA Kimodo-SOMA text-to-pose motion family — SOMA-77 NPZ clips plus an optional rigged-GLB bake at 30 fps.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JayDataEngineer/melite.git",
+    "directory": "packages/models/kimodo"
+  },
+  "keywords": [
+    "melite",
+    "comfyui",
+    "cordis",
+    "agent",
+    "media-generation",
+    "library"
+  ]
 }

@@ -45,5 +45,19 @@
     "lib/**/*.js",
     "lib/**/*.d.ts",
     "cordis.patch.yml"
+  ],
+  "description": "The one compiled instance of three.js for the browser graph, mounted as a single module-table row.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JayDataEngineer/melite.git",
+    "directory": "packages/web/three-client"
+  },
+  "keywords": [
+    "melite",
+    "comfyui",
+    "cordis",
+    "agent",
+    "media-generation",
+    "dsh-bundle"
   ]
 }

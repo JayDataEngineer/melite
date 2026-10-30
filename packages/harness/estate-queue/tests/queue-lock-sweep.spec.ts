@@ -97,6 +97,11 @@ describe("the lock plane's tail arms", () => {
       assert.equal(outRootFor(root, true), join(root, "test-output"));
       assert.equal(outRootFor(root, false), join(root, "output"));
       assert.equal(ledgerPathFor(root), join(root, "output", "_ledger.jsonl"));
+      // THE DOUBLE-UNNAMED FALLBACK: a config naming NEITHER root
+      // resolves the repo-relative default — the empty repoRoot joins
+      // data/runs relative to the process cwd, never an invented
+      // absolute.
+      assert.equal(resolveStateRoot({}), join("data", "runs"));
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

@@ -34,5 +34,19 @@
     "lib/estateCall.js",
     "lib/**/*.js",
     "lib/**/*.d.ts"
+  ],
+  "description": "The one lane-call contract and card-tool builder — transport, flow-envelope output schema, and the executor test battery shared by every card tool.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JayDataEngineer/melite.git",
+    "directory": "packages/harness/estate-call"
+  },
+  "keywords": [
+    "melite",
+    "comfyui",
+    "cordis",
+    "agent",
+    "media-generation",
+    "library"
   ]
 }

@@ -36,7 +36,7 @@
     "@deepseek-ai/cordis": "^4.0.5"
   },
   "name": "@melite/audio-tts",
-  "description": "the tts card (the audio lane) — one card one package: card.ts host face + tool.ts flow face + agents/ context (no ui/ — the view is constructed by @melite/card-base from the emission)",
+  "description": "Text-to-speech card and agent tool over the one qwen3-tts family (Base/CustomVoice/VoiceDesign variants), with preset voices and saved qvoice personas.",
   "files": [
     "lib/index.js",
     "lib/**/*.js",
@@ -44,5 +44,18 @@
   ],
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.5"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JayDataEngineer/melite.git",
+    "directory": "packages/audio/tts"
+  },
+  "keywords": [
+    "melite",
+    "comfyui",
+    "cordis",
+    "agent",
+    "media-generation",
+    "library"
+  ]
 }

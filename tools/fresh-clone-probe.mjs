@@ -38,7 +38,7 @@
 //   node tools/fresh-clone-probe.mjs [--remote <url>] [--branch <name>]
 //        [--workdir <dir>] [--keep] [--skip-snapshot]
 //   --remote      default https://github.com/JayDataEngineer/melite.git
-//   --branch      default cordis
+//   --branch      default main
 //   --workdir     default /var/tmp/melite-fresh-<pid>
 //   --keep        keep the sandbox on disk after the run (debug)
 //   --skip-snapshot   skip the keyless snapshot step (engine proof
@@ -78,7 +78,7 @@ function sandboxRoot() {
 }
 
 const REMOTE = flag("--remote", "https://github.com/JayDataEngineer/melite.git");
-const BRANCH = flag("--branch", "cordis");
+const BRANCH = flag("--branch", "main");
 const WORKDIR = resolve(flag("--workdir",
   join(sandboxRoot(), "melite-fresh-" + String(process.pid))));
 const KEEP = boolFlag("--keep");
@@ -265,7 +265,7 @@ async function main() {
   if (!ok) { report(); teardown(); process.exit(1); }
 
   // 2 — the documented submodule step (README quick start): a plain
-  // clone leaves the 15 vendored trees empty; the README names the
+  // clone leaves the 12 vendored trees empty; the README names the
   // init, the probe runs it, and the census below asserts it held
   ok = await runStep("submodule-init", {
     cmd: "git", args: ["submodule", "update", "--init", "--recursive"], cwd: CLONE,

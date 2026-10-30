@@ -970,3 +970,96 @@ function expectVaeEdge(
   assert.ok(loader, "the family's H3 video VAE loader composes");
   return [loader[0], 0];
 }
+
+// ── THE DYNAMIC COMBO'S DEGENERATE DECLARATIONS (2026-11-30, the
+// coverage burn): dynamicComboChildren reads a raw /object_info
+// tuple, and a raw tuple can carry any shape. A detail that is not an
+// object, a detail without an options list, and option rows that are
+// not objects each contribute NOTHING — no child seat, no throw. The
+// judge is deriveWiringDoc, the walk's one production caller: the
+// derived doc is what the node gate and the completeness grammar read.
+describe("the dynamic combo's degenerate declarations (a doc that says nothing seats no children)", () => {
+  it("a detail that is not an object — string, number, null, array — seats no children", () => {
+    const { inputs } = deriveWiringDoc({
+      DegenerateCombo: {
+        input: {
+          required: {
+            by_string: ["COMFY_DYNAMICCOMBO_V3", "not-an-object"],
+            by_number: ["COMFY_DYNAMICCOMBO_V3", 7],
+            by_null: ["COMFY_DYNAMICCOMBO_V3", null],
+            by_array: ["COMFY_DYNAMICCOMBO_V3", ["not", "a", "detail"]],
+          },
+        },
+      },
+    });
+    const row = inputs.get("DegenerateCombo")!;
+    // exactly the declared top-level keys ride; no child seat exists
+    // for any of them, and the derivation never throws
+    assert.deepEqual([...row.keys()].sort(), ["by_array", "by_null", "by_number", "by_string"]);
+    for (const spec of row.values()) {
+      assert.equal(spec.type, "COMFY_DYNAMICCOMBO_V3", "the string head still names the type");
+      assert.equal(spec.enum, undefined, "a dynamic combo without object options carries no enum");
+    }
+  });
+
+  it("a detail whose options row is missing or not an array seats no children", () => {
+    const { inputs } = deriveWiringDoc({
+      OptionlessCombo: {
+        input: {
+          required: {
+            no_row: ["COMFY_DYNAMICCOMBO_V3", { tooltip: "the declaration never lists options" }],
+            not_a_list: ["COMFY_DYNAMICCOMBO_V3", { options: "two words are not a list" }],
+          },
+        },
+      },
+    });
+    assert.deepEqual([...inputs.get("OptionlessCombo")!.keys()].sort(), ["no_row", "not_a_list"]);
+  });
+
+  it("option rows that are not objects are skipped; the object rows' children still seat, optional", () => {
+    const { inputs } = deriveWiringDoc({
+      MixedRows: {
+        input: {
+          required: {
+            mode: ["COMFY_DYNAMICCOMBO_V3", {
+              options: [
+                "a bare string is not a choice",
+                7,
+                null,
+                { key: "a.safetensors", inputs: { required: { scale: ["FLOAT", { default: 1.0, min: 0, max: 8 }] } } },
+                { key: "b.safetensors", inputs: { optional: { tiling: ["BOOLEAN", { default: false }] } } },
+              ],
+            }],
+          },
+        },
+      },
+    });
+    const row = inputs.get("MixedRows")!;
+    // exactly the object rows' children seat — the flat wire keys a
+    // composer can emit — and the degenerate rows contribute nothing
+    assert.deepEqual([...row.keys()].sort(), ["mode", "scale", "tiling"]);
+    assert.equal(row.get("scale")!.required, false, "children ride OPTIONAL seats");
+    assert.equal(row.get("scale")!.type, "FLOAT", "the child keeps its own value facts");
+    assert.equal(row.get("scale")!.min, 0, "the child's declared bounds ride");
+    assert.equal(row.get("tiling")!.required, false, "the optional group's children seat too");
+  });
+});
+
+// ── THE BOUND REFUSAL'S UNTYPED VOICE (same burn): WiringInputSpec's
+// type fact is OPTIONAL at the doc-owner's seam — an inputs map may
+// state bounds alone. The refusal must still read as a sentence: the
+// input is 'a number', never the undefined word.
+describe("the bound refusal over a spec that states bounds without a type name", () => {
+  it("reads the input as 'a number' (the optional type fact never renders as undefined)", () => {
+    const { nodes } = deriveWiringDoc(DOC);
+    const inputs = new Map<string, Map<string, WiringInputSpec>>([
+      ["KSampler", new Map([["cfg", { required: true, min: 0, max: 100 }]])],
+    ]);
+    assert.throws(
+      () => assertWiringAgainst(nodes, inputs, "c1", ks({ cfg: -5 })),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "bad-value"
+        && /the input is a number and the value is below its declared min 0/.test(e.message)
+        && !e.message.includes("undefined"),
+    );
+  });
+});

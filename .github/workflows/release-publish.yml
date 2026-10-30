@@ -91,7 +91,7 @@ jobs:
           # The publishable set only: the mint leaves private vendor-tier
           # tarballs (no melite- prefix, upstream licenses) in the same
           # directory, and their digests do not belong in the public
-          # transparency log. ~98 subjects fit the action's 1024 cap;
+          # transparency log. ~81 subjects fit the action's 1024 cap;
           # a single attestation carries all of them.
           subject-path: dist/npm/melite-*.tgz
 

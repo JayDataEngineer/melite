@@ -45,5 +45,19 @@
       "reason": "cordis plugin loaded by the host runtime, not imported by root"
     }
   },
-  "license": "AGPL-3.0-or-later"
+  "license": "AGPL-3.0-or-later",
+  "description": "The motion action-card UI plugin for the melite estate.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JayDataEngineer/melite.git",
+    "directory": "packages/engines/comfyui/src/action_cards/motion/ui"
+  },
+  "keywords": [
+    "melite",
+    "comfyui",
+    "cordis",
+    "agent",
+    "media-generation",
+    "library"
+  ]
 }

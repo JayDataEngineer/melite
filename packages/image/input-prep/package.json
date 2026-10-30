@@ -3,7 +3,7 @@
   "private": true,
   "license": "AGPL-3.0-or-later",
   "type": "module",
-  "description": "the input-prep card (the image lane) \u2014 one card one package: card.ts host face + the ANNY-style crop/scale studio (src/ui/studio, registered on cards.stage.view by ./client)",
+  "description": "Source-intake card that stages an image or audio file, optionally crops and scales it, and emits it for downstream cards.",
   "exports": {
     ".": {
       "types": "./lib/index.d.ts",
@@ -59,5 +59,18 @@
     "bundle": {
       "patch": "./cordis.patch.yml"
     }
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JayDataEngineer/melite.git",
+    "directory": "packages/image/input-prep"
+  },
+  "keywords": [
+    "melite",
+    "comfyui",
+    "cordis",
+    "agent",
+    "media-generation",
+    "dsh-bundle"
+  ]
 }

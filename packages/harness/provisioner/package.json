@@ -3,7 +3,7 @@
   "version": "0.2.0-alpha",
   "private": true,
   "license": "AGPL-3.0-or-later",
-  "description": "Vanilla-DSH provisioner for the inference.cpp media stack: one bundle mounts the estate row (in-process seats, no second process), the tool surface, the card view/deck, media previews, and the runs gallery — and the infer-provision bin renders ready-to-boot profiles (inference / headless / estate / melite-test) into any DSH_HOME.",
+  "description": "The vanilla-DSH provisioner — mounts the Melite estate bundle and renders ready-to-boot profiles into any DSH_HOME.",
   "type": "module",
   "exports": {
     ".": {
@@ -48,5 +48,18 @@
   },
   "peerDependencies": {
     "@deepseek-ai/dsh": ">=0.2.1-rc.2 <0.3.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JayDataEngineer/melite.git",
+    "directory": "packages/harness/provisioner"
+  },
+  "keywords": [
+    "melite",
+    "comfyui",
+    "cordis",
+    "agent",
+    "media-generation",
+    "dsh-bundle"
+  ]
 }

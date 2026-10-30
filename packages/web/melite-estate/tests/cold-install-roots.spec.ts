@@ -58,4 +58,58 @@ describe("coldInstallRoots — the cold profile boots with zero config", () => {
       }
     }
   });
+
+  // ── the empty-string law (cold-boot audit F1/F2, 2026-11-30) ──
+  // A profile row templated from the retired MELITE_STATE_ROOT env
+  // renders "" exactly where the var is unset. resolveStateRoot
+  // already treats "" as unnamed; the cold derivation must not read
+  // it as a NAMED root one layer up — the split-brain death (runs
+  // tree in the process cwd via "data/runs", store in ~).
+
+  it("stateRoot: \"\" is ABSENT — the cold pair fires, never the relative cwd tree", () => {
+    expect(coldInstallRoots({ stateRoot: "" }))
+      .toEqual({ stateRoot: join(DATA_HOME, "runs"), storeRoot: join(DATA_HOME, "store") });
+  });
+
+  it("repoRoot: \"\" is ABSENT — the repo law does NOT fire on the empty string (the store arm stays on)", () => {
+    expect(coldInstallRoots({ repoRoot: "" }))
+      .toEqual({ stateRoot: join(DATA_HOME, "runs"), storeRoot: join(DATA_HOME, "store") });
+  });
+
+  it("storeRoot: \"\" is ABSENT — the per-user store default fires", () => {
+    expect(coldInstallRoots({ storeRoot: "" }).storeRoot)
+      .toBe(join(DATA_HOME, "store"));
+  });
+
+  it("a RELATIVE named root refuses LOUD — the cwd-tree death class is dead at the naming door", () => {
+    for (const field of ["stateRoot", "repoRoot", "storeRoot"] as const) {
+      expect(() => coldInstallRoots({ [field]: "data/runs" } as Record<string, string>), field)
+        .toThrow(new RegExp(`config\\.${field} must be an absolute path`));
+    }
+  });
+
+  it("a relative HOME refuses LOUD rather than pinning a relative cold root (cold-boot audit F3)", () => {
+    const saved = process.env["HOME"];
+    try {
+      process.env["HOME"] = "";
+      expect(() => coldInstallRoots({}))
+        .toThrow(/per-user data home is not an absolute path.*name config\.stateRoot and config\.storeRoot/);
+      process.env["HOME"] = "relative/home";
+      expect(() => coldInstallRoots({}))
+        .toThrow(/per-user data home is not an absolute path/);
+      // the escape hatch the message names, honored exactly: fully
+      // named roots never derive from the home — no refusal fires
+      // (a named stateRoot alone still leaves the COLD store to the
+      // home, so the refusal holds until both are named)
+      expect(() => coldInstallRoots({ stateRoot: "/srv/runs" }))
+        .toThrow(/per-user data home is not an absolute path/);
+      expect(coldInstallRoots({ stateRoot: "/srv/runs", storeRoot: "/mnt/models" }))
+        .toEqual({ stateRoot: "/srv/runs", storeRoot: "/mnt/models" });
+      expect(coldInstallRoots({ repoRoot: "/opt/checkout" }))
+        .toEqual({ stateRoot: "/opt/checkout/data/runs", storeRoot: undefined });
+    } finally {
+      if (saved === undefined) delete process.env["HOME"];
+      else process.env["HOME"] = saved;
+    }
+  });
 });

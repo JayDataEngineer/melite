@@ -435,6 +435,22 @@ export function stripPackedTarballs (files) {
       }
       delete manifest.private
       manifest.publishConfig = { ...manifest.publishConfig, access: 'public' }
+      // THE REGISTRY FACE (2026-11-30, the public-face audit): npmjs
+      // renders the manifest description verbatim and DERIVES a
+      // mangled one from the tarball README's YAML frontmatter when
+      // the field is absent; a missing repository leaves the package
+      // page unlinked to the source. Melite-owned names refuse to
+      // ship without either — the fields are fixed at source and the
+      // docs gate (check-package-readmes) judges the drift.
+      if (typeof manifest.name === 'string' && manifest.name.startsWith('@melite')) {
+        if (typeof manifest.description !== 'string' || manifest.description === '') {
+          throw new Error(`registry face: ${f.split('/').pop()} ships no description — npmjs would derive a mangled one from the README frontmatter`)
+        }
+        const repo = manifest.repository
+        if (typeof repo !== 'object' || repo === null || typeof repo.url !== 'string' || !repo.url.includes('JayDataEngineer/melite') || typeof repo.directory !== 'string') {
+          throw new Error(`registry face: ${f.split('/').pop()} ships no repository link to its own directory — the npm page must link the source`)
+        }
+      }
       writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n')
       run('bash', ['-c', `tar -czf ${f}.new -C ${dir} package && mv ${f}.new ${f}`])
     } finally { rmSync(dir, { recursive: true, force: true }) }

@@ -145,5 +145,19 @@
     "lib/**/*.js",
     "lib/**/*.d.ts",
     "lib/**/*.json"
+  ],
+  "description": "Pure browser-side media codecs and math — NPZ, skins, poses, masks, image metadata — fetch-free by law.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JayDataEngineer/melite.git",
+    "directory": "packages/web-kit/formats"
+  },
+  "keywords": [
+    "melite",
+    "comfyui",
+    "cordis",
+    "agent",
+    "media-generation",
+    "library"
   ]
 }

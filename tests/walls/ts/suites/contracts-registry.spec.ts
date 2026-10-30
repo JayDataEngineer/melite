@@ -65,7 +65,18 @@ function specsOf(r: Record<string, unknown>): string[] {
 
 const base = (p: string) => p.slice(p.lastIndexOf('/') + 1)
 
-describe('THE REGISTRY WALL (every law accounted, every account true)', () => {
+// THE CLONE LAW (fresh-clone audit F1, 2026-11-30): dev_docs/ is
+// deliberately untracked (developer-local material, never pushed),
+// so a fresh clone — and CI — carries no registry to judge. The
+// wall reds deterministically there (rows()=[] names every suite
+// unaccounted), which made `pnpm run test` fail on every fresh
+// clone. The coverage-baseline wall owns the same shape and
+// NAMED-skips when dev_docs is absent; this wall does the same:
+// the skip is visible with its law, never silent, and a tree that
+// DOES carry dev_docs (every development machine) judges every arm.
+const REGISTRY_PRESENT = existsSync(join(REGISTRY, 'infra-tier.yaml'))
+
+describe.skipIf(!REGISTRY_PRESENT)('THE REGISTRY WALL (every law accounted, every account true)', () => {
   it('every registry row names a wall spec that exists — a row with no wall is a lie', () => {
     const all = rows()
     expect(all.length, 'the registry is migrated (§3 ledger retired 2026-10-16)').toBeGreaterThan(0)
@@ -272,5 +283,20 @@ describe('THE REGISTRY WALL (every law accounted, every account true)', () => {
     // the grammar must actually find homes — an arm that judges zero
     // tokens is the vacuous-green class (debt: a registry of prose)
     expect(judged, 'truth_home paths judged').toBeGreaterThan(200)
+  })
+})
+
+// THE SKIP-SENTINEL (C-M10, the permanent-skip-is-a-permanent-hole
+// law): the skipIf above must fire ONLY on the clone shape — dev_docs
+// absent ENTIRELY. A tree that carries dev_docs but lost the registry
+// directory would skip the whole wall while claiming developer
+// material; this always-on arm names that state red.
+describe('THE REGISTRY WALL (skip sentinel)', () => {
+  it('the skip fires only on the clone shape: registry absent ⇔ dev_docs absent entirely', () => {
+    const docs = existsSync(join(ROOT, 'dev_docs', 'ROADMAP.md'))
+    expect(REGISTRY_PRESENT, REGISTRY_PRESENT
+      ? 'registry present — the full wall above judged every arm'
+      : 'registry absent: dev_docs must be absent entirely (the clone shape), never a half-tree that disarms the wall')
+      .toBe(docs)
   })
 })

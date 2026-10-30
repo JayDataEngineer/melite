@@ -353,6 +353,17 @@ describe("the keyframe lane (placement refuses; endpoints ride the seats, interi
       .toThrow(/keyframes\[0\]: frame is required/s)
   })
 
+  it("a NULL (or sparse) row refuses loud, naming the index — a hole is not a pin, the row-shape walk's own fallback", () => {
+    // agent-shaped docs carry holes: a null row and a sparse slot are
+    // both "no pin here" — the shape walk normalizes the slot to an
+    // empty row and refuses it at its own index, before any placement
+    expect(() => buildJson({ ...FILM_DOC, keyframes: [null] }))
+      .toThrow(/keyframes\[0\]: frame is required/s)
+    expect(() => buildJson({ ...FILM_DOC, keyframes: [
+      { image: "a.png", frame: 45 }, undefined,
+    ] })).toThrow(/keyframes\[1\]: frame is required/s)
+  })
+
   it("a row without an image refuses loud — a pin without a source anchors nothing (slice 2's shape arm)", () => {
     expect(() => buildJson({ ...FILM_DOC, keyframes: [{ frame: 45 }] }))
       .toThrow(/keyframes\[0\]: image is required.*a row without a source anchors nothing/s)

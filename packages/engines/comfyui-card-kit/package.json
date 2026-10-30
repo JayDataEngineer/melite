@@ -4,7 +4,7 @@
   "private": true,
   "license": "AGPL-3.0-or-later",
   "type": "module",
-  "description": "The compose kit — the named package deep card domains reach for instead of climbing (P46: 1:1 with the reference; ui-tool's toolviews imports @deepseek-ai/dsh-client-ui-primitives from depth, never a relative climb). Pure graph-compose functions: kit lanes, GraphBuilder, facts derivation, block/mod helpers, the ONE vocabulary. Runtime is node --experimental-strip-types (erasable-syntax TS); no build step.",
+  "description": "The compose kit — pure graph-compose functions (kit lanes, GraphBuilder, facts, generated vocabularies) that card domains reach for instead of hand-building ComfyUI graphs.",
   "exports": {
     ".": {
       "types": "./lib/kit.d.ts",
@@ -106,5 +106,18 @@
     "lib/kit.js",
     "lib/**/*.js",
     "lib/**/*.d.ts"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JayDataEngineer/melite.git",
+    "directory": "packages/engines/comfyui-card-kit"
+  },
+  "keywords": [
+    "melite",
+    "comfyui",
+    "cordis",
+    "agent",
+    "media-generation",
+    "library"
   ]
 }

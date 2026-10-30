@@ -4,7 +4,7 @@
 // instantiate — never a silent route to a stock lane.
 import { describe, it, expect, vi } from "vitest";
 import { readFileSync } from "node:fs";
-import { FILM_AUDIO_RATE, film, parseH3Facts } from "../src/actions.ts";
+import { FILM_AUDIO_RATE, film, h3DefaultLoraEntry, parseH3Facts } from "../src/actions.ts";
 import { schema as h3schema } from "../src/schema.ts";
 import { DOC_FPS_DEFAULT } from "../src/timelineContract.ts";
 import { stanzaSecs } from "../src/filmMix.ts";
@@ -112,6 +112,15 @@ describe("the film build's single-window arms (no calls wrapper)", () => {
       { variant: "t4_open", length: 124, prompt: "a slow push in", seed: 42 },
       WINDOW_MODEL, g, "run_no_turbo",
     )).toThrow(/the lora catalog has no 'h3_lightx2v_turbo' row/);
+  });
+
+  it("THE GHOST CHIP'S SOURCE (F34's chip half): the resolved ENTRY reads the same catalog row — a catalog that lost it refuses the entry face too, same voice", () => {
+    // h3DefaultLoraEntry is the card's ghost-chip face (the adapter the
+    // film will actually run); loraStackDefault is the compose wire.
+    // One catalog, one refusal voice, BOTH faces — this file's
+    // stripped catalog is the loss, so the entry has no source either.
+    expect(() => h3DefaultLoraEntry())
+      .toThrow(/the lora catalog has no 'h3_lightx2v_turbo' row — the absent-bag default has no source; fix the catalog row id/);
   });
 
   it("a calls-less window marries the bag's steps (no call knobs to consult, the doc face reads the bag)", () => {
@@ -711,6 +720,40 @@ describe("the refmod seat (audit 010/R1, 2026-10-18)", () => {
     const slice24 = Object.values(g3.toJSON() as Doc).find((n) => n.class_type === "MeliteAudioSlice");
     expect(slice24, "the absent-clock stamps still compose").toBeDefined();
     expect(slice24!.inputs.duration_seconds).toBeCloseTo(64 / 24, 3);
+  });
+
+  it("THE RAW DOOR'S CLOCK (the walk-bypass face): a doc that reaches the action with no fps key books the stamps at the DECLARED default — the ternary's fallback arm fires, never a foreign divisor", () => {
+    // SEAT 6 walks first, so the walk's own fill (fps 24) makes the
+    // stamps' `p.fps` a positive number before the ternary is read.
+    // THIS arm bypasses the walk (the action's own raw-caller face —
+    // the single-window raw arms above ride the same seam), so the
+    // action door itself owns the default: a 40-frame slice from a
+    // clip starting at frame 24 books 1.667 s and pins the guide at
+    // round(1 s × 24) = frame 24 — both faces of the ONE CLOCK (the
+    // booking here, the delay reconvert at the pin).
+    const g4 = new GraphBuilder();
+    instantiateAction(
+      film,
+      {
+        loras: [{ name: "distill-8.safetensors", strength: 0.6 }], seed: 11,
+        calls: [
+          { text: "quiet open", start_frame: 0, end_frame: 90 },
+          { text: "quiet close", start_frame: 90, end_frame: 175 },
+        ],
+        audio_clips: [{ src: "/a/open.flac", start_frame: 24, dur_frames: 40, text: "Open." }],
+      } as Record<string, unknown>,
+      WINDOW_MODEL, g4, "run_one_clock_raw",
+    );
+    const doc = g4.toJSON() as Doc;
+    const slice = Object.values(doc).find((n) => n.class_type === "MeliteAudioSlice");
+    expect(slice, "the raw doc's dialogue stamp still composes").toBeDefined();
+    expect(slice!.inputs.duration_seconds).toBeCloseTo(40 / DOC_FPS_DEFAULT, 3);
+    // the pin: the booked delay (1 s at the default clock) reconverts
+    // at the SAME default clock — frame 24, not the /24 literal's
+    // ghost nor any other divisor
+    const guide = Object.values(doc).find((n) => n.class_type === "MiniMaxH3AddGuide");
+    expect(guide, "the dialogue audio pin composes on the stamped (t4r) window").toBeDefined();
+    expect(guide!.inputs.frame_idx).toBe(24);
   });
 
   it("ref_mods compose the loader→apply chain, stems out, wired into the guider's conditioning", () => {

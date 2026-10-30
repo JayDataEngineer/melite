@@ -138,7 +138,7 @@ afterEach(() => {
 // present by default (the healthy lane); the settle-gate arms below
 // delete one to replay the 2026-10-23 silent-green wedge.
 async function mount(
-  config?: { repoRoot?: string; blenderPath?: string; allowGuttedLane?: boolean; mcpEngines?: string | string[]; criticRoute?: string; agentRoute?: string; stateRoots?: string[] | string; seatSettleBudgetMs?: number },
+  config?: { repoRoot?: string; blenderPath?: string; allowGuttedLane?: boolean; mcpEngines?: string | string[]; criticRoute?: string; agentRoute?: string; stateRoots?: string[] | string; seatSettleBudgetMs?: number; stateRoot?: string; storeRoot?: string },
   loaderNames?: string[],
   seatsOverride?: Record<string, unknown>,
 ): Promise<Ctx> {
@@ -289,6 +289,31 @@ describe('dispatch — mount order is load order', () => {
      expect(mcpRow?.cfg).toEqual({ engines: [] })
   })
 
+
+  it('threads config.stateRoot/storeRoot verbatim through the real apply — the queue pin and the provisioning forward (cold-boot audit F10.1)', async () => {
+    const ctx = await mount({ stateRoot: '/srv/runs', storeRoot: '/mnt/models' })
+    const queue = ctx.plugins.find((p) => p.name === 'estate-queue')
+    // the explicit pin wins verbatim — never rewritten, never the
+    // cold default (the pure-function tier proves the same law;
+    // this arm proves the COMPOSITION threads it)
+    expect(queue?.cfg).toEqual({ repoRoot: undefined, stateRoot: '/srv/runs', stateRoots: [] })
+    const provisioning = ctx.plugins.find((p) => p.name === 'estate-provisioning-composition')
+    expect(provisioning?.cfg).toEqual({ storeRoot: '/mnt/models' })
+  })
+
+  it('the "" shapes thread as ABSENT — the derived cold pin fires through the real apply (cold-boot audit F1)', async () => {
+    const ctx = await mount({ stateRoot: '', storeRoot: '' })
+    const queue = ctx.plugins.find((p) => p.name === 'estate-queue')
+    expect(queue?.cfg).toEqual({ repoRoot: undefined, stateRoot: coldInstallRoots({}).stateRoot, stateRoots: [] })
+    const provisioning = ctx.plugins.find((p) => p.name === 'estate-provisioning-composition')
+    expect(provisioning?.cfg).toEqual({ storeRoot: coldInstallRoots({}).storeRoot })
+  })
+
+  it('a RELATIVE stateRoot refuses the whole boot before any row mounts (cold-boot audit F1)', async () => {
+    await expect(mount({ stateRoot: 'data/runs' })).rejects.toThrow(
+      /config\.stateRoot must be an absolute path.*voids the one-writer lock law/,
+    )
+  })
 
   it('applies bare rows naked and defaults the config face', async () => {
     const ctx = await mount()

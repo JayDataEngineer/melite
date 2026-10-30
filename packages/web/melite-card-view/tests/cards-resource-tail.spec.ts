@@ -33,10 +33,14 @@ interface FakeBench {
   isOpen: (key: string) => boolean;
 }
 
-function fakeRemote(): FakeBench {
+/** `refuseFirstDispose` makes the FIRST-opened stream's dispose
+ *  reject (the rekey's replaced-transport face); later streams stay
+ *  clean so the arm under test stays isolated. */
+function fakeRemote(hooks: { refuseFirstDispose?: boolean } = {}): FakeBench {
   const channels: Channel[] = [];
   const pending = new Map<string, Array<Record<string, unknown>>>();
   const rejections = new Map<string, Error>();
+  let streamsCreated = 0;
   const isOpen = (key: string): boolean => channels.some((c) => c.key === key && c.open);
   const openChannel = (key: string): AsyncIterable<Record<string, unknown>> => {
     const reject = rejections.get(key);
@@ -76,6 +80,7 @@ function fakeRemote(): FakeBench {
     ended: (accepted: boolean) => Error;
     carrierFailed?: (error: RemoteStreamCarrierError) => void;
   }): { [Symbol.asyncIterator](): AsyncIterator<RemoteStreamItem<T>>; dispose(): Promise<void> } => {
+    const mine = streamsCreated++;
     const lifetime = new AbortController();
     const queue: Array<RemoteStreamItem<T>> = [];
     const parked: Array<{
@@ -147,7 +152,12 @@ function fakeRemote(): FakeBench {
             parked.push({ resolve, reject });
           }),
       }),
-      dispose: async (): Promise<void> => { lifetime.abort(); },
+      dispose: async (): Promise<void> => {
+        if (mine === 0 && hooks.refuseFirstDispose === true) {
+          throw new Error("dispose kablam");
+        }
+        lifetime.abort();
+      },
     };
   };
   const bench = {
@@ -534,6 +544,74 @@ describe("the watcher's supervisor voice — a never-opened channel names itself
       expect(cap.lines).toHaveLength(1);
       expect(cap.lines[0]!.join(" ")).toContain("spotlight stream failed");
       expect(cap.lines[0]!.join(" ")).toContain("never opened");
+    } finally {
+      cap.restore();
+    }
+  });
+});
+
+// ── THE DISPOSE REFUSALS (the 2026-11-30 coverage burn): a stream
+// whose dispose rejects must never kill the watcher — each refusal is
+// a named warn row and the watch carries on. The two seats are
+// distinct rows: the REKEY's replaced stream and the tail's own
+// finally dispose.
+describe("the watcher's dispose refusals — noise, never a death", () => {
+  const captureWarn = (): { warns: unknown[][]; restore: () => void } => {
+    const warns: unknown[][] = [];
+    const orig = console.warn;
+    console.warn = (...args: unknown[]): void => { warns.push(args); };
+    return { warns, restore: (): void => { console.warn = orig; } };
+  };
+
+  test("a rekey whose replaced stream refuses dispose voices the refusal and still serves the new key", async () => {
+    const cap = captureWarn();
+    try {
+      const bench = fakeRemote({ refuseFirstDispose: true });
+      const script = ["k1", "k2", "k2"]; // guard read, race read
+      let calls = 0;
+      const getSession = (): string => script[Math.min(calls++, script.length - 1)]!;
+      let fire: (() => void) | undefined;
+      let unsubscribed = 0;
+      const lands: string[] = [];
+      const stop = watchBenchLands(
+        getSession, (k) => { lands.push(k); }, undefined,
+        bench.remote, bench.remote.bench,
+        (fn) => { fire = fn; return (): void => { unsubscribed++; }; },
+      );
+      await until(() => bench.isOpen("k1"));
+      fire!(); // the guard sees k2 — the rekey disposes k1's stream
+      await until(() => bench.isOpen("k2"));
+      bench.push("k2", benchDoc(20, "user")); // the reopened key re-baselines
+      bench.push("k2", benchDoc(21, "agent"));
+      await until(() => lands.length === 1);
+      expect(lands).toEqual(["k2"]);
+      expect(cap.warns.some((w) => w.join(" ").includes("spotlight rekey dispose refused"))).toBe(true);
+      // THE LAZY STOP (the watcher's standing shape): halt parks until
+      // the next wake — the tail's release (unsubscribe + clean
+      // dispose) lands when the parked race settles, here on a final
+      // user write that never reveals
+      stop();
+      bench.push("k2", benchDoc(22, "user"));
+      await until(() => unsubscribed === 1);
+      expect(lands).toEqual(["k2"]);
+      expect(cap.warns.filter((w) => w.join(" ").includes("spotlight dispose refused"))).toEqual([]);
+    } finally {
+      cap.restore();
+    }
+  });
+
+  test("a tail dispose refusal after a clean end voices the warn and still releases the subscription", async () => {
+    const cap = captureWarn();
+    try {
+      let unsubscribed = 0;
+      const remote = bespokeStream([{ doc: benchDoc(3, "user") }, { done: true }], {
+        disposed: (): void => { throw new Error("dispose kablam"); },
+      });
+      const lands: string[] = [];
+      watchBenchLands(() => "main", (k) => { lands.push(k); }, undefined, remote, benchNs as never, () => (): void => { unsubscribed++; });
+      await until(() => unsubscribed === 1);
+      expect(lands).toEqual([]);
+      expect(cap.warns.some((w) => w.join(" ").includes("spotlight dispose refused"))).toBe(true);
     } finally {
       cap.restore();
     }

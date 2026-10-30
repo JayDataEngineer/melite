@@ -3,7 +3,7 @@
   "private": true,
   "license": "AGPL-3.0-or-later",
   "type": "module",
-  "description": "the img-to-mesh card (the 3d lane) — one card one package: card.ts host face + agents/ context (no tool face, no ui/ — the view is constructed by @melite/card-base from the emission)",
+  "description": "Image-to-mesh card that boards three mesh families — pixal3d, trellis2-native, and transfer-rig — plus the mesh studio client.",
   "exports": {
     ".": {
       "types": "./lib/index.d.ts",
@@ -60,5 +60,18 @@
   ],
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.5"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JayDataEngineer/melite.git",
+    "directory": "packages/3d/img-to-mesh"
+  },
+  "keywords": [
+    "melite",
+    "comfyui",
+    "cordis",
+    "agent",
+    "media-generation",
+    "library"
+  ]
 }

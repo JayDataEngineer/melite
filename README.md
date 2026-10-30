@@ -3,7 +3,7 @@
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
 [![docs](https://img.shields.io/github/actions/workflow/status/JayDataEngineer/melite/docs.yml?branch=main&label=docs)](https://github.com/JayDataEngineer/melite/actions/workflows/docs.yml)
 [![tests](https://img.shields.io/github/actions/workflow/status/JayDataEngineer/melite/tests.yml?branch=main&label=tests)](https://github.com/JayDataEngineer/melite/actions/workflows/tests.yml)
-[![Release](https://img.shields.io/github/v/release/JayDataEngineer/melite)](https://github.com/JayDataEngineer/melite/releases)
+[![Release](https://img.shields.io/github/v/release/JayDataEngineer/melite?include_prereleases)](https://github.com/JayDataEngineer/melite/releases)
 
 Melite is an agent media-creation kit. Users and agents compose cards on a
 shared bench; the estate validates the card, queues one run, calls ComfyUI or
@@ -36,10 +36,10 @@ hygiene, and payload gates above), the seats publish to the registry,
 and the GitHub release lands the same bytes as the asset record with
 `release-manifest.json`. Every melite-owned package in a release
 carries one identical version, and the release tag is exactly
-`v<that version>`. Pre-releases carry a `-alpha.N` suffix on every
+`v<that version>`. Pre-releases carry an `-alpha` suffix on every
 channel. The full sequence — including the registry-lookup shape
 pre- and post-publish — is proven on every release by
-`tools/release-rehearsal.mjs` (one command, nine receipts, in a fresh
+`tools/release-rehearsal.mjs` (one command, ten receipts, in a fresh
 container).
 
 Consumers install through the `dsh` CLI:
@@ -47,9 +47,16 @@ Consumers install through the `dsh` CLI:
 ```sh
 npm install -g @deepseek-ai/dsh@0.2.1-rc.2   # the profile CLI
 corepack enable && corepack prepare pnpm@10.33.2 --activate
-dsh plugin --profile <name> add @melite/harness-tools@<version>
+dsh plugin --profile <name> add @melite/harness-tools@0.2.0-alpha
 dsh plugin --profile <name> install
 ```
+
+The npm channel fills in registry-throttled batches (five packages per
+walk, dependency order first); while a batch walk is mid-flight the
+entry package may not resolve on the registry yet — the same gated
+tarballs are always downloadable from the
+[v0.2.0-alpha release assets](https://github.com/JayDataEngineer/melite/releases/tag/v0.2.0-alpha)
+as an interim source.
 
 Two dsh runtime facts the install must honor, both proven by the
 rehearsal:
@@ -90,9 +97,10 @@ PRESS on the card — never the agent's.
 
 Requirements:
 
-- Node.js and pnpm
+- Node.js ≥ 22.18 and pnpm ≥ 10 (via corepack)
 - git (with network access for submodules — the vendored engine
-  extensions and reference trees ride submodules)
+  extensions ride submodules; the Cordis/DSH reference material is
+  developer-local and untracked, never a submodule)
 - a reachable ComfyUI instance, or the managed-instance recipe
 - `dsh` on `PATH` for profile boot
 - the Cordis/DSH reference checkout when implementing framework behavior
@@ -141,10 +149,11 @@ Check the configured ComfyUI endpoint and declarations:
 pnpm run provision -- verify
 ```
 
-If you cloned or moved the checkout, repin the profile paths once:
+If you cloned or moved the checkout, repin the profile paths once by
+re-rendering them:
 
 ```sh
-pnpm run profile:regen
+node packages/harness/provisioner/bin/infer-provision.mjs all
 ```
 
 `inference.config.json` is the estate default configuration. The engine reads
@@ -238,7 +247,7 @@ checkout is available.
 | `packages/web-kit/` and `packages/web/` | shared UI primitives and DSH web surfaces |
 | `vendor/comfyui_extensions/` | first-party Layer C packs |
 | `vendor/cordis_plugins/` | pinned Cordis platform packages |
-| `references/` | read-only study material; the DSH reference checkout is external |
+| `references/` | read-only study material; developer-local and untracked — seeded from a DSH source checkout, never a submodule |
 | `dev_docs/` | developer-local material (untracked): working plan, ledger, audits, runbooks |
 
 ## Documentation
@@ -271,7 +280,7 @@ The working plan and the forward-looking work index live in `dev_docs/`
 Code: GNU AGPL-3.0-or-later ([LICENSE](LICENSE)). Model weights, LoRAs,
 control nets, and other provisioned artifacts keep their own upstream
 licenses, which prevail over AGPL for those artifacts — scope and
-carve-outs in [NOTICE](NOTICE). Vendored code under `vendor/`
+carve-outs in [NOTICE](NOTICE) (mirrored publicly as [NOTICE.md](NOTICE.md)). Vendored code under `vendor/`
 retains its upstream licenses.
 
 One family needs plain words: the MiniMax H3 weights and their

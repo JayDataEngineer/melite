@@ -54,7 +54,7 @@ const paceArg = flagValue('--pace-ms')
 // release under the limiter instead of tripping into backoff.
 const paceMs = typeof paceArg === 'string' && /^\d+$/.test(paceArg) ? Number(paceArg) : 0
 // --limit N: publish at most N packages this invocation (registry
-// probes and skips are free). The batch boundary is how a 98-package
+// probes and skips are free). The batch boundary is how a many-package
 // release rides under the account limiter: N per walk, exit 4, and
 // the workflow's re-arm spaces the next batch out.
 const limitArg = flagValue('--limit')

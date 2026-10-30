@@ -38,5 +38,19 @@
   ],
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.5"
-  }
+  },
+  "description": "Qwen Image Edit 2511 — the anchored instruction-edit lane: EditPlus conditioning, source-resolution edits, crop_stitch region detail, Lightning distill.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JayDataEngineer/melite.git",
+    "directory": "packages/models/qwen-img-edit-2511"
+  },
+  "keywords": [
+    "melite",
+    "comfyui",
+    "cordis",
+    "agent",
+    "media-generation",
+    "library"
+  ]
 }

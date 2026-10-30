@@ -25,5 +25,19 @@
     "lib/**/*.js",
     "lib/**/*.d.ts"
   ],
-  "license": "AGPL-3.0-or-later"
+  "license": "AGPL-3.0-or-later",
+  "description": "Transport-free run-status laws and the card-family catalog door shared by the studio's card surfaces.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JayDataEngineer/melite.git",
+    "directory": "packages/web/melite-run-wire"
+  },
+  "keywords": [
+    "melite",
+    "comfyui",
+    "cordis",
+    "agent",
+    "media-generation",
+    "dsh-bundle"
+  ]
 }

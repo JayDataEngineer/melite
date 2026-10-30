@@ -99,5 +99,19 @@
   "peerDependencies": {
     "immer": "^10.2.0",
     "zustand": "^5.0.15"
-  }
+  },
+  "description": "The served-truth reader of the web estate — resilient transport, catalog and run-status contracts, and the stores that hold their verdicts.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JayDataEngineer/melite.git",
+    "directory": "packages/web-kit/catalog"
+  },
+  "keywords": [
+    "melite",
+    "comfyui",
+    "cordis",
+    "agent",
+    "media-generation",
+    "library"
+  ]
 }

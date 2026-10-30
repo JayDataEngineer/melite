@@ -50,7 +50,7 @@
     "@deepseek-ai/cordis": "^4.0.5"
   },
   "name": "@melite/video-h3-timeline",
-  "description": "the h3-timeline card (the video lane) — one card one package: card.ts host face + ui/ studio + agents/ context",
+  "description": "The video lane's only door — the h3-timeline card, tool, and studio that tile H3 film windows and score them with dialogue, sfx, and music clips.",
   "dsh": {
     "client": {
       "platform": "web",
@@ -73,5 +73,18 @@
     "lib/**/*.d.ts",
     "lib/**/*.module.css",
     "cordis.patch.yml"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JayDataEngineer/melite.git",
+    "directory": "packages/video/h3-timeline"
+  },
+  "keywords": [
+    "melite",
+    "comfyui",
+    "cordis",
+    "agent",
+    "media-generation",
+    "dsh-bundle"
   ]
 }

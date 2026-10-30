@@ -53,5 +53,19 @@
     "lib/index.js",
     "lib/**/*.js",
     "lib/**/*.d.ts"
+  ],
+  "description": "The melite viewer's seam layer — slot contracts, run-scoped URL builders, and the default run-card view, as a plain library.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JayDataEngineer/melite.git",
+    "directory": "packages/web/viewer-base"
+  },
+  "keywords": [
+    "melite",
+    "comfyui",
+    "cordis",
+    "agent",
+    "media-generation",
+    "library"
   ]
 }

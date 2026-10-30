@@ -65,8 +65,8 @@ import { craftEngineAutoRoute } from "@melite/engine-craft";
 // serves — one storage, a new serving path).
 import { agentEngine } from "@melite/engine-agent";
 import type { FlowsSeat } from "@melite/estate-queue";
-import { findSkill, disclosureRoot, resolveStateRoot } from "@melite/estate-queue";
-import { join } from "node:path";
+import { findSkill, disclosureRoot, resolveStateRoot, lockPathFor, isPidAlive } from "@melite/estate-queue";
+import { isAbsolute, join } from "node:path";
 import { homedir } from "node:os";
 import type { FamilyModelsSeat } from "@melite/estate-queue";
 import { readFile } from "node:fs/promises";
@@ -89,7 +89,7 @@ import queuePlugin, {
 import { manageRemotePlugin } from "@melite/estate-manage";
 // THE SELECTION CATALOG (the skill rework's close): zero rows on an
 // empty bench; the bench's card+family craft carries on selection.
-import { appendFileSync } from "node:fs";
+import { appendFileSync, readFileSync } from "node:fs";
 import { runsRemotePlugin } from "@melite/estate-runs";
 // The runs media route (the /v1/assets face's DSH-native
 // replacement): run artifacts served same-origin from the queue
@@ -519,21 +519,60 @@ export const Config: Schema<Config> = Schema.object({
  * repo law (<repoRoot>/data/runs for the state tree, and NO store
  * default — the checkout's tracked configs derive the store at
  * apply, loadStoreRoot's own law); else — the cold install — the
- * per-user data home names both roots (~/.local/share/melite). The
- * home default is per-user, so the single-writer lock law holds one
- * estate per user, exactly as one estate per repo.
+ * per-user data home names both roots (~/.local/share/melite; the
+ * XDG data home is deliberately NOT read — one deterministic
+ * default, no environment guessing). The home default is per-user,
+ * so the single-writer lock law holds one estate per user, exactly
+ * as one estate per repo.
+ *
+ * Two naming laws refuse LOUD rather than fall to a cwd tree (the
+ * silent-relative-root death, the 2026-11-30 cold-boot audit):
+ * - the empty string is ABSENT, all three fields — a profile row
+ *   templated from the retired MELITE_STATE_ROOT env renders ""
+ *   exactly where the var is unset, and resolveStateRoot's own
+ *   law already treats "" as unnamed; the cold derivation must not
+ *   read it as a named root one layer up;
+ * - every named root (and the home-derived pair) must be ABSOLUTE —
+ *   a relative root pins the estate to the process cwd, and a
+ *   second boot from another cwd is a different estate with no
+ *   lock collision: the pin law's one-writer promise voided
+ *   silently.
  * @param config the estate row's config face (the three root fields).
  * @returns the state root the composition pins, and the weights
  * store root to forward (undefined = the provisioning row derives).
+ * @throws on a relative named root or a home that resolves relative
+ * (HOME empty or relative) — refusing before any row mounts.
  */
 export function coldInstallRoots(
   config: Readonly<Pick<Config, "repoRoot" | "stateRoot" | "storeRoot">>,
 ): { stateRoot: string; storeRoot: string | undefined } {
-  const dataHome = join(homedir(), ".local", "share", "melite");
-  const cold = config.repoRoot === undefined;
+  const namedState = config.stateRoot === "" ? undefined : config.stateRoot;
+  const namedStore = config.storeRoot === "" ? undefined : config.storeRoot;
+  const namedRepo = config.repoRoot === "" ? undefined : config.repoRoot;
+  const named: ReadonlyArray<readonly ["stateRoot" | "repoRoot" | "storeRoot", string | undefined]> = [
+    ["stateRoot", namedState],
+    ["repoRoot", namedRepo],
+    ["storeRoot", namedStore],
+  ];
+  for (const [field, value] of named) {
+    if (value !== undefined && !isAbsolute(value)) {
+      throw new Error(`[estate] config.${field} must be an absolute path (got ${JSON.stringify(value)}) — a relative root pins the estate to the process cwd and silently voids the one-writer lock law`);
+    }
+  }
+  const home = homedir();
+  // the home refusal fires only when a root would DERIVE from it:
+  // fully-named roots (state + store, or a repo) never touch the
+  // home — the message's own escape hatch, honored exactly
+  const homeNamesState = namedState === undefined && namedRepo === undefined;
+  const homeNamesStore = namedStore === undefined && namedRepo === undefined;
+  if ((homeNamesState || homeNamesStore) && !isAbsolute(home)) {
+    throw new Error(`[estate] the per-user data home is not an absolute path (got ${JSON.stringify(home)} — is HOME empty or relative?) — name config.stateRoot and config.storeRoot (or a repoRoot) explicitly`);
+  }
+  const dataHome = join(home, ".local", "share", "melite");
+  const cold = namedRepo === undefined;
   return {
-    stateRoot: config.stateRoot ?? (cold ? join(dataHome, "runs") : join(config.repoRoot ?? "", "data", "runs")),
-    storeRoot: config.storeRoot ?? (cold ? join(dataHome, "store") : undefined),
+    stateRoot: namedState ?? (cold ? join(dataHome, "runs") : join(namedRepo ?? "", "data", "runs")),
+    storeRoot: namedStore ?? (cold ? join(dataHome, "store") : undefined),
   };
 }
 
@@ -683,11 +722,32 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     const missing = requiredSeats.filter((n) => ctx.get(n) === undefined);
     if (missing.length === 0) break;
     if (disposed || Date.now() >= deadline) {
+      // THE LOCK FACTS (the cold-boot audit F4, 2026-11-30): the
+      // most common silent queue death is the single-writer lock,
+      // and cordis buries the queue row's throw — which names the
+      // holder pid and the lock path — in a fiber log line the
+      // operator never reads. When queue is a missing seat, read
+      // the lock once more here (read-only) and put the actionable
+      // facts in the estate's own refusal.
+      let lockFacts = "";
+      if (missing.includes("queue")) {
+        const lockPath = lockPathFor(stateRoot);
+        try {
+          const raw = readFileSync(lockPath, "utf8").trim();
+          const pid = Number.parseInt(raw, 10);
+          lockFacts = Number.isInteger(pid) && pid > 0
+            ? `; the runs gateway lock ${lockPath} is held by pid ${String(pid)} (${isPidAlive(pid) ? "ALIVE — another estate owns this root (one writer per root)" : "dead — a stale lock the next acquire steals; the queue died for another reason"})`
+            : `; the runs gateway lock ${lockPath} is present but unreadable (${JSON.stringify(raw.slice(0, 40))})`;
+        } catch {
+          lockFacts = `; no gateway lock at ${lockPath} — the queue row died for another reason (see its fiber log)`;
+        }
+      }
       throw new Error(
         "[melite-estate] the composition refused to settle: seat(s) " + missing.join(", ")
         + " never activated within " + String(budgetMs) + "ms — a required row died silently "
-        + "(the 2026-10-23 lane wedge class: check the queue row's state-root lock and the drafts row's storage root); "
-        + "refusing to boot a half-up estate (catalog green, every seat door 502)",
+        + "(the 2026-10-23 lane wedge class: check the queue row's state-root lock and the drafts row's storage root)"
+        + lockFacts
+        + "; refusing to boot a half-up estate (catalog green, every seat door 502)",
       );
     }
     await new Promise((resolve) => { setTimeout(resolve, 250); });

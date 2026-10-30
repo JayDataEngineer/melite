@@ -4,7 +4,7 @@
   "private": true,
   "license": "AGPL-3.0-or-later",
   "type": "module",
-  "description": "the mask card (the swap lane R0a preprocessing door) \u2014 clip in, tracked person mask + grey-mannequin motion reference + staged mask frames out (SAM3 track + H3 arms)",
+  "description": "the mask card (the swap lane R0a preprocessing door) — clip in, tracked person mask + grey-mannequin motion reference + staged mask frames out (SAM3 track + H3 arms)",
   "exports": {
     ".": {
       "types": "./lib/index.d.ts",
@@ -38,5 +38,18 @@
   ],
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.5"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JayDataEngineer/melite.git",
+    "directory": "packages/video/track"
+  },
+  "keywords": [
+    "melite",
+    "comfyui",
+    "cordis",
+    "agent",
+    "media-generation",
+    "library"
+  ]
 }

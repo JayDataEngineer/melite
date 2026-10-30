@@ -3,7 +3,7 @@
   "private": true,
   "license": "AGPL-3.0-or-later",
   "type": "module",
-  "description": "the mask-studio carrier, DEMOTED (CONTRACT D — the card retired at parity): ui/ survives as the leaf-face carrier (paint + bbox); the takeover client is gone",
+  "description": "Leaf-face carrier of the retired mask card's studio surfaces — paint and bbox canvases embedded in modifier leaves.",
   "exports": {
     ".": {
       "types": "./lib/index.d.ts",
@@ -50,5 +50,18 @@
     "lib/**/*.d.ts",
     "lib/**/*.js",
     "lib/**/*.module.css"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JayDataEngineer/melite.git",
+    "directory": "packages/image/mask-studio"
+  },
+  "keywords": [
+    "melite",
+    "comfyui",
+    "cordis",
+    "agent",
+    "media-generation",
+    "library"
   ]
 }

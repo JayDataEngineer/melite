@@ -4,16 +4,16 @@ The publish channel is npm: one version across the estate
 (`release:bump`), gated tarballs (`release:mint`), registry publish,
 and the GitHub release landing the same bytes as the asset record.
 Every melite package in a release carries one identical version, the
-tag is exactly `v<that version>`, and pre-releases carry a `-alpha.N`
+tag is exactly `v<that version>`, and pre-releases carry an `-alpha`
 suffix on every channel. The sequence is proven end-to-end on every
 release by `tools/release-rehearsal.mjs`.
 
 ## The consumer path: the `dsh` CLI
 
 ```sh
-npm install -g @deepseek-ai/dsh@<version>     # the profile CLI
+npm install -g @deepseek-ai/dsh@0.2.1-rc.2   # the profile CLI
 corepack enable && corepack prepare pnpm@10.33.2 --activate
-dsh plugin --profile <name> add @melite/harness-tools@<version>
+dsh plugin --profile <name> add @melite/harness-tools@0.2.0-alpha
 dsh plugin --profile <name> install
 ```
 

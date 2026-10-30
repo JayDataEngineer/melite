@@ -3,7 +3,7 @@
   "private": true,
   "license": "AGPL-3.0-or-later",
   "type": "module",
-  "description": "the rig card (the 3d lane) — skeleton + weights on any GLB: SOMA-77 auto (humanoid), rig-copy (donor→target), species (anyCreature bridge)",
+  "description": "Rigging card that puts a skeleton and weights on a GLB through three engine-native lanes — auto SOMA-77 weights, donor copy, and anyCreature species bridge.",
   "exports": {
     ".": {
       "types": "./lib/index.d.ts",
@@ -44,5 +44,18 @@
   ],
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.5"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JayDataEngineer/melite.git",
+    "directory": "packages/3d/rig"
+  },
+  "keywords": [
+    "melite",
+    "comfyui",
+    "cordis",
+    "agent",
+    "media-generation",
+    "library"
+  ]
 }

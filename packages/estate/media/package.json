@@ -51,5 +51,19 @@
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.5"
   },
-  "license": "AGPL-3.0-or-later"
+  "license": "AGPL-3.0-or-later",
+  "description": "The runs media route — serves run artifacts same-origin under the DSH origin with realpath containment, plus its Typert remote.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JayDataEngineer/melite.git",
+    "directory": "packages/estate/media"
+  },
+  "keywords": [
+    "melite",
+    "comfyui",
+    "cordis",
+    "agent",
+    "media-generation",
+    "library"
+  ]
 }

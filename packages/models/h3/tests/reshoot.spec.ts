@@ -19,7 +19,7 @@ import { describe, it, expect } from "vitest";
 import { film } from "../src/actions.ts";
 import { instantiateAction } from "@melite/comfyui-card-kit";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
-import { RESHOOT_DEFAULT_POSE, readReshootKnobs, reshootArmed } from "../src/reshoot.ts";
+import { RESHOOT_DEFAULT_POSE, crossviewGuideSeconds, readReshootKnobs, reshootArmed } from "../src/reshoot.ts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 
 const H3: ModelFacts = {
@@ -437,5 +437,31 @@ describe("the h3 camera re-shoot chain (the fourth mod bag, official rework)", (
     const applies = ofClass(entries, "MiniMaxH3FunControlNetApply");
     expect(applies).toHaveLength(1);
     expect(String(applies[0]![1].inputs.model)).toContain("LoraLoaderModelOnly");
+  });
+});
+
+describe("the re-shoot chain's compose-door refusals (F28/F31 — refuse at compose, never at the engine)", () => {
+  it("the guide duration refuses a window that cannot carry the camera — 0, negative, and non-finite all name the count", () => {
+    // the derivation's own guard: the guide is pinned into EVERY
+    // window, so its length must derive from a real frame count
+    expect(() => crossviewGuideSeconds(0))
+      .toThrow(/a re-shoot window of 0 frames cannot carry the camera guide/);
+    expect(() => crossviewGuideSeconds(-48))
+      .toThrow(/a re-shoot window of -48 frames cannot carry the camera guide/);
+    expect(() => crossviewGuideSeconds(Number.NaN))
+      .toThrow(/a re-shoot window of NaN frames cannot carry the camera guide/);
+  });
+
+  it("the plate budget reads the RENDER TARGET: an armed re-shoot on a doc without finite width/height refuses naming the gap", () => {
+    // the F31 law: the prepare node's megapixels derive from the doc's
+    // render target — a doc that carries neither must refuse loud
+    // instead of silently falling to the pack's 0.5 MP default (the
+    // soft-render burn: 48% of the plate discarded)
+    const doc: Record<string, unknown> = { ...bag() };
+    delete doc.width;
+    delete doc.height;
+    const g = new GraphBuilder();
+    expect(() => instantiateAction(film, doc, H3, g, "run_rs_no_target"))
+      .toThrow(/the plate budget reads the render target — the doc carries no finite width\/height \(undefined×undefined\)/);
   });
 });

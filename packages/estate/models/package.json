@@ -35,5 +35,19 @@
     "lib/**/*.js",
     "lib/**/*.d.ts"
   ],
-  "license": "AGPL-3.0-or-later"
+  "license": "AGPL-3.0-or-later",
+  "description": "The models provisions door — serves declared family provision files same-origin and delegates acquisition to the shared provisioning service.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JayDataEngineer/melite.git",
+    "directory": "packages/estate/models"
+  },
+  "keywords": [
+    "melite",
+    "comfyui",
+    "cordis",
+    "agent",
+    "media-generation",
+    "library"
+  ]
 }

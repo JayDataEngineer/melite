@@ -560,3 +560,62 @@ describe("stampCardOverlay — THE QVOICE-STATED PRESET SKIP (B7: a saved person
     expect(out["voice"]).toBe("ryan");
   });
 });
+
+// THE DERIVED-STAMP RELEASE (2026-11-13, the qvoice-only add-stage
+// burn): once a compile has written the resolver's preset into a doc,
+// a later add-stage that states a qvoice meets it as a both-stated
+// body the card's B2 gate refuses. A preset equal to THIS lane's own
+// stamp value is the overlay's residue — released at both seats; a
+// preset the author states beside the persona stays (the card's own
+// B2 refusal is the loud door for that).
+describe("stampCardOverlay — THE DERIVED-STAMP RELEASE (a lane's own residue preset dies beside a stated persona)", () => {
+  const ttsDecl = decl({ schemaNames: ["text", "voice", "style_instruction"] });
+  const cvSel = selectCardVariant("qwen3-tts", ttsRow, { variant: "customvoice" }, "1");
+
+  it("a stated preset equal to the lane's own stamp value is released from the flat seat; the persona rides", () => {
+    const out = stampCardOverlay(
+      { voice: "ryan", qvoice: "/v/ann.qvoice" },
+      ttsRow, ttsDecl, cvSel, "1", "qwen3-tts",
+    );
+    // the residue preset dies — the body's copy of the resolver's own
+    // word is indistinguishable from a compile's write
+    expect(out["voice"]).toBeUndefined();
+    expect(out["qvoice"]).toBe("/v/ann.qvoice");
+  });
+
+  it("the same release rides the stanza seat (a compile writes the preset INTO params)", () => {
+    const out = stampCardOverlay(
+      { params: { text: "line", voice: "ryan", qvoice: "/v/ann.qvoice" } },
+      ttsRow, ttsDecl, cvSel, "1", "qwen3-tts",
+    );
+    const stanza = out["params"] as Record<string, unknown>;
+    expect(stanza["voice"]).toBeUndefined();
+    expect(stanza["text"]).toBe("line");
+    expect(out["voice"]).toBeUndefined();
+  });
+
+  it("a family with NO declared stamp value releases nothing: an authored preset beside a persona RIDES (the B2 gate owns that refusal)", () => {
+    // defaults-less rows: the derived seat reads the resolver's stamp
+    // (the release's second source); with the resolver mute too, the
+    // seat has no residue vocabulary and never touches the author's word
+    const bareRow = row({
+      defaults: undefined,
+      variants: [
+        { id: "cv", group: "", route: "", cells: [], resolver_defaults: { voice: "ryan" } },
+        { id: "mute", group: "", route: "", cells: [], resolver_defaults: {} },
+      ],
+    });
+    const cvBare = selectCardVariant("m", bareRow, { variant: "cv" }, "1");
+    const released = stampCardOverlay(
+      { voice: "ryan", qvoice: "/v/x" }, bareRow, decl({ schemaNames: ["voice"] }), cvBare, "1", FAM,
+    );
+    expect("voice" in released).toBe(false);
+    expect(released["qvoice"]).toBe("/v/x");
+    const muteSel = selectCardVariant("m", bareRow, { variant: "mute" }, "1");
+    const riding = stampCardOverlay(
+      { voice: "authored", qvoice: "/v/x" }, bareRow, decl({ schemaNames: ["voice"] }), muteSel, "1", FAM,
+    );
+    expect(riding["voice"]).toBe("authored");
+    expect(riding["qvoice"]).toBe("/v/x");
+  });
+});

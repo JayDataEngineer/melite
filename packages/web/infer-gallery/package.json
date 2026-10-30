@@ -75,5 +75,19 @@
     "lib/**/*.d.ts",
     "lib/**/*.module.css",
     "cordis.patch.yml"
+  ],
+  "description": "The DSH web GUI's media sidebar — one Media tab over same-origin run-artifact and draft routes served by its host half.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JayDataEngineer/melite.git",
+    "directory": "packages/web/infer-gallery"
+  },
+  "keywords": [
+    "melite",
+    "comfyui",
+    "cordis",
+    "agent",
+    "media-generation",
+    "dsh-bundle"
   ]
 }

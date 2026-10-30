@@ -56,5 +56,19 @@
     "lib/**/*.js",
     "lib/**/*.d.ts",
     "lib/**/*.module.css"
+  ],
+  "description": "The run-viewer composition — same-origin run proxy routes host-side and default run-card toolview claims client-side.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JayDataEngineer/melite.git",
+    "directory": "packages/web/viewer"
+  },
+  "keywords": [
+    "melite",
+    "comfyui",
+    "cordis",
+    "agent",
+    "media-generation",
+    "library"
   ]
 }

@@ -67,5 +67,19 @@
     "lib/**/*.d.ts",
     "cordis.patch.yml"
   ],
-  "license": "AGPL-3.0-or-later"
+  "license": "AGPL-3.0-or-later",
+  "description": "The estate's DSH tool surface as a bundle — the compose-only browser toolset, the headless delegated-operator doors, and the editor's Enhance host routes.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JayDataEngineer/melite.git",
+    "directory": "packages/harness/melite-tools"
+  },
+  "keywords": [
+    "melite",
+    "comfyui",
+    "cordis",
+    "agent",
+    "media-generation",
+    "dsh-bundle"
+  ]
 }

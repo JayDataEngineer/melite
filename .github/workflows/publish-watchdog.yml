@@ -23,8 +23,9 @@ on:
     types: [completed]
   schedule:
     # Every 15 minutes. Scheduled workflows auto-disable after 60 days
-    # of repository inactivity; the publish sequence reaching 98/98
-    # retires this watchdog before that matters.
+    # of repository inactivity; the census reaching the release set's
+    # own count retires this watchdog (disables its workflow) before
+    # that matters.
     - cron: '*/15 * * * *'
   workflow_dispatch: {}
 
@@ -104,7 +105,11 @@ jobs:
 
       - name: Sequence complete — retire the watchdog
         if: steps.alive.outputs.alive == '0' && steps.census.outputs.live == steps.census.outputs.count
-        run: echo "census ${{ steps.census.outputs.live }}/${{ steps.census.outputs.count }} — the release sequence is fully published; nothing left to arm"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "census ${{ steps.census.outputs.live }}/${{ steps.census.outputs.count }} — the release sequence is fully published; retiring this watchdog"
+          gh workflow disable publish-watchdog.yml --repo "$GITHUB_REPOSITORY"
 
       - name: Arm one walk
         if: steps.census.outcome == 'success' && steps.census.outputs.live != steps.census.outputs.count

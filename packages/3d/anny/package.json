@@ -3,7 +3,7 @@
   "private": true,
   "license": "AGPL-3.0-or-later",
   "type": "module",
-  "description": "the anny card (the 3d lane) — one card one package: the form card (schema groups → the base form's parameter submenu) + agents/ context",
+  "description": "Parametric human form card that bakes a GLB body from identity numbers, morph sliders, and an optional reference body.",
   "exports": {
     ".": {
       "types": "./lib/index.d.ts",
@@ -38,5 +38,18 @@
   ],
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.5"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JayDataEngineer/melite.git",
+    "directory": "packages/3d/anny"
+  },
+  "keywords": [
+    "melite",
+    "comfyui",
+    "cordis",
+    "agent",
+    "media-generation",
+    "library"
+  ]
 }

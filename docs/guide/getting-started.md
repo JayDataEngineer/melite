@@ -4,9 +4,10 @@ The development path from a fresh clone to a booted studio.
 
 ## Requirements
 
-- Node.js and pnpm
+- Node.js ≥ 22.18 and pnpm ≥ 10 (via corepack)
 - git with network access for submodules — the vendored engine extensions
-  and reference trees ride submodules
+  ride submodules (the Cordis/DSH reference material is developer-local
+  and untracked, never a submodule)
 - a reachable ComfyUI instance, or the managed-instance recipe below
 - `dsh` on `PATH` for profile boot
 

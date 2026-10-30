@@ -263,4 +263,87 @@ describe("reconcileBenchRuns — the poller converges on the settled verdict", (
       fakes.unmount();
     }
   });
+
+  test("PC-7: a file-era LIVE row arms a real watcher — a watch that dies mid-poll still releases the claim", async () => {
+    // the live arm of the gone-verdict vocabulary (2026-11-30): the
+    // status door refuses and the file-era list answers a LIVE word —
+    // the run is alive per the list, so the reconcile must NOT heal the
+    // row; it arms a real watcher (the heal's own law) and the watcher
+    // owns the row from there. The watch's death face here is the
+    // REJECTION face: an abort mid-backoff-sleep kills the poll promise
+    // itself (abortableSleep rejects), and the armed claim still
+    // releases — "a dead watch never holds the claim" rides the
+    // rejection arm too, not just the null exit.
+    const fakes = stubEstate({
+      refusals: [{ method: "runs/status", message: "unknown run_id" }],
+      listRows: [{ run_id: "r_1", status: "running" }],
+    });
+    try {
+      const armed = new Set<string>();
+      const ctrl = new AbortController();
+      await reconcileBenchRuns(bench(), { armed, signal: ctrl.signal });
+      // the watcher bound the row live: the queued start stamp + the
+      // live flip, and NO terminal heal patch (the observer owns it)
+      await vi.waitFor(() => { expect(patchesOf(fakes)).toHaveLength(2); });
+      const stamps = patchesOf(fakes).map((p) => (p["patch"] as Record<string, unknown>)["runStatus"]);
+      expect(stamps).toEqual(["queued", "queued"]);
+      // the watch is asleep on its poll cadence — abort it mid-sleep:
+      // the watch promise rejects, and the rejection releases the claim
+      ctrl.abort();
+      await vi.waitFor(() => { expect(armed.has("s_0:r_1"), "the mid-poll dead watch still holds the armed claim").toBe(false); });
+    } finally {
+      fakes.unmount();
+    }
+  });
+
+  test("PC-8: the settled read resolves the run's stage by id — the matched stage's url rides the verdict", async () => {
+    // the terminal read's stage resolution (2026-11-30): a status row
+    // that ANSWERS terminal carries per-stage artifacts, and the
+    // verdict patch must carry the MATCHED stage's url — exact id
+    // match first, so a multi-stage run never reads a sibling's frame.
+    const fakes = stubEstate({
+      runDocs: [{
+        run_id: "r_1", status: "completed",
+        stages: [{ id: "s_0", url: "/melite-media/runs/r_1/out.png" }],
+      }],
+    });
+    try {
+      const armed = new Set<string>();
+      await reconcileBenchRuns(bench(), { armed });
+      expect(statusCalls(fakes), "the settled run was re-polled by a delegated observer").toBe(1);
+      expect(patchesOf(fakes)[0]).toMatchObject({
+        draftId: "d_1", stageId: "s_0",
+        patch: { runStatus: "done", result: { run_id: "r_1", url: "/melite-media/runs/r_1/out.png" } },
+      });
+    } finally {
+      fakes.unmount();
+    }
+  });
+
+  test("PC-8 (the fallback face): a one-stage run whose stage names the card's skeleton still carries its url", async () => {
+    // the single-stage fallback (runs-policy's own law): the {model:}
+    // door names its run stage by the card's declared skeleton
+    // ('img-to-mesh'), not the bench row id the caller holds — a
+    // one-stage run's only stage IS the asked stage, and its artifact
+    // must ride the verdict even though no id matched.
+    const fakes = stubEstate({
+      runDocs: [{
+        run_id: "r_1", status: "completed",
+        stages: [{ id: "img-to-mesh", url: "/melite-media/runs/r_1/mesh.glb" }],
+      }],
+    });
+    try {
+      const armed = new Set<string>();
+      await reconcileBenchRuns(bench(), { armed });
+      expect(statusCalls(fakes)).toBe(1);
+      expect(patchesOf(fakes)[0]).toMatchObject({
+        draftId: "d_1", stageId: "s_0",
+        patch: { runStatus: "done", result: { run_id: "r_1", url: "/melite-media/runs/r_1/mesh.glb" } },
+      });
+      // the delivered verdict keeps the claim spent
+      expect(armed.has("s_0:r_1")).toBe(true);
+    } finally {
+      fakes.unmount();
+    }
+  });
 });

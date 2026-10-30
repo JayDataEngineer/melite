@@ -49,5 +49,19 @@
       "reason": "UI library imported through its ui/* subpaths and inlined by consumer client bundles — no plugin, no loader face (F1 demotion, nativity audit 2026-11-05)"
     }
   },
-  "license": "AGPL-3.0-or-later"
+  "license": "AGPL-3.0-or-later",
+  "description": "The shared timeline element and its storyboard document store — the bar and state both the motion card and the video card render.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JayDataEngineer/melite.git",
+    "directory": "packages/web-kit/timeline"
+  },
+  "keywords": [
+    "melite",
+    "comfyui",
+    "cordis",
+    "agent",
+    "media-generation",
+    "library"
+  ]
 }

@@ -88,5 +88,19 @@
     "lib/**/*.d.ts",
     "lib/**/*.module.css",
     "cordis.patch.yml"
+  ],
+  "description": "Dual-face base for the studio's card surfaces — the one browser row of shared atoms plus the form-spec emission contract.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JayDataEngineer/melite.git",
+    "directory": "packages/web/card-base"
+  },
+  "keywords": [
+    "melite",
+    "comfyui",
+    "cordis",
+    "agent",
+    "media-generation",
+    "dsh-bundle"
   ]
 }

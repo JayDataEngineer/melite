@@ -40,5 +40,18 @@
     "lib/**/*.js",
     "lib/**/*.d.ts",
     "lib/**/*.module.css"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JayDataEngineer/melite.git",
+    "directory": "packages/engines/comfyui/src/action_cards"
+  },
+  "keywords": [
+    "melite",
+    "comfyui",
+    "cordis",
+    "agent",
+    "media-generation",
+    "library"
   ]
 }

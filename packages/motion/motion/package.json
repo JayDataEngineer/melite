@@ -53,7 +53,7 @@
     "@deepseek-ai/cordis": "^4.0.5"
   },
   "name": "@melite/motion-motion",
-  "description": "the motion card (the motion lane) — one card one package: card.ts host face + ui/ studio + agents/ context",
+  "description": "Text-to-motion card, motion agent tool, and browser studio over the Kimodo TextToPose family, with chained re-skinning through RaySomaxBake.",
   "dsh": {
     "client": {
       "platform": "web",
@@ -77,5 +77,18 @@
     "lib/**/*.d.ts",
     "lib/**/*.module.css",
     "cordis.patch.yml"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JayDataEngineer/melite.git",
+    "directory": "packages/motion/motion"
+  },
+  "keywords": [
+    "melite",
+    "comfyui",
+    "cordis",
+    "agent",
+    "media-generation",
+    "dsh-bundle"
   ]
 }
