@@ -32,6 +32,33 @@ export interface QVoiceUse {
   strength: number | undefined
 }
 
+/**
+ * The Audiocore voice bank: the studio node's own default
+ * `voices_dir` (melite-audio-nodes/nodes.py:743) and the directory
+ * the estate's save lanes write personas into (`export_path` in the
+ * saved runs' graphs, e.g. /mnt/data/models/audio/voices/x.qvoice).
+ * A bare persona name resolves here — the engine's load branch reads
+ * only ComfyUI's input directory or a real host path (nodes.py:885
+ * via _resolve_input_path, nodes.py:327), so a bare name ridden into
+ * the graph verbatim dies as `no such file: <name>`.
+ */
+export const QVOICE_BANK_ROOT = '/mnt/data/models/audio/voices'
+
+/** The qvoice reference's ONE spelling at the wire: a bare persona
+ *  name expands to the bank path; a value the caller already spelled
+ *  as a path (absolute, run-relative, or an uploaded input leaf that
+ *  carries the .qvoice extension) rides verbatim.
+ *  @param ref the persona reference as stated on the doc
+ *  @returns the path the AudiocoreVoiceStudio seat receives
+ */
+export function resolveQvoicePath(ref: string): string {
+  const path = ref.trim()
+  if (path === '') return path
+  if (path.startsWith('/') || path.includes('/')) return path
+  if (path.endsWith('.qvoice')) return path
+  return QVOICE_BANK_ROOT + '/' + path + '.qvoice'
+}
+
 const QVOICE_NUMBER = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/
 
 function qvoiceStrength(value: unknown): number | undefined {
@@ -51,7 +78,7 @@ function qvoiceRow(value: unknown, fallbackStrength: unknown): QVoiceUse | undef
   if (value === undefined || value === null) return undefined
   if (typeof value === 'string') {
     const path = value.trim()
-    return path ? { path, strength: qvoiceStrength(fallbackStrength) } : undefined
+    return path ? { path: resolveQvoicePath(path), strength: qvoiceStrength(fallbackStrength) } : undefined
   }
   if (Array.isArray(value)) {
     if (value.length === 0) return undefined
@@ -71,7 +98,7 @@ function qvoiceRow(value: unknown, fallbackStrength: unknown): QVoiceUse | undef
   if (typeof pathValue !== 'string') {
     throw new Error('qvoice bag entry requires a string qvoice path')
   }
-  const path = pathValue.trim()
+  const path = resolveQvoicePath(pathValue)
   if (!path) return undefined
   const strength = record['voice_strength'] ?? fallbackStrength
   return { path, strength: qvoiceStrength(strength) }

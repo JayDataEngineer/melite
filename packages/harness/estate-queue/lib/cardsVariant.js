@@ -293,6 +293,35 @@ export function stampCardOverlay(body, famRow, decl, sel, phase, fam) {
         qvoiceSeats.push(stanzaRow["qvoice"]);
     const qvoiceStated = qvoiceSeats.some((q) => (typeof q === "string" && q !== "") ||
         (Array.isArray(q) && q.length > 0));
+    // THE DERIVED-STAMP RELEASE (2026-11-13, the qvoice-only add-stage
+    // burn): the 'voice' stamp above is DERIVED currency, never the
+    // author's word — but once a compile has written it into the doc, a
+    // later add-stage that states a qvoice meets it as a both-stated
+    // body and the card's B2 gate refuses. Patching {voice: null} could
+    // not hold: JSON-merge-patch deletes the key and the next compile
+    // re-stamps it, so the saved doc could never reach a legal
+    // qvoice-only stage. Release the derived seat instead: while a
+    // persona is stated, a preset equal to THIS lane's own stamp value
+    // is the overlay's residue, so it is dropped at both seats. A
+    // preset the author states beside the persona stays — the card's
+    // own B2 refusal (ONE voice performs) is the loud door for that.
+    if (qvoiceStated) {
+        const derived = new Set();
+        for (const v of [stamps["voice"], (famRow.defaults ?? {})["voice"], sel.resolverDefaults["voice"]]) {
+            if (typeof v === "string" && v !== "")
+                derived.add(v);
+        }
+        if (derived.size > 0) {
+            if (derived.has(out["voice"]))
+                delete out["voice"];
+            const held = out["params"];
+            if (held !== null && typeof held === "object" && !Array.isArray(held) && derived.has(held["voice"])) {
+                const next = { ...held };
+                delete next["voice"];
+                out["params"] = next;
+            }
+        }
+    }
     for (const [k, v] of Object.entries(stamps)) {
         if (v === null || v === undefined || v === "")
             continue;
