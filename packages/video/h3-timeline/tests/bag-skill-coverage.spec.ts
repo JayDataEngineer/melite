@@ -157,6 +157,36 @@ describe("every served mod bag has a skill leaf an agent can read", () => {
       "the doc quotes the served default adapter id verbatim");
   });
 
+  it("ARM 6 — the swap leaf states the SIX-arm exclusivity as the 15 DERIVED pairs, and that loras coexists", () => {
+    // The doc said "ANY two armed mod bags REFUSE loud" — false as a
+    // universal: `loras` is the SEVENTH bag and rides inside every arm
+    // (the swap's own law above says the lora plane is the doc's).
+    // Judge the DERIVED pair list off the card's own armed bags, so a
+    // seventh arm kind cannot land without the leaf naming its pairs.
+    const md = readSkill("swap");
+    const armed = kinds.filter((k) => k.max_stack === 1).map((k) => k.param_key!);
+    expect(armed.length).toBe(6);
+    const cap = (w: string): string => w[0]!.toUpperCase() + w.slice(1);
+    const canonical = (a: string, b: string): string => [a, b].sort().join("↔");
+    const pairs = armed.flatMap((a, i) => armed.slice(i + 1).map((b) => canonical(cap(a), cap(b))));
+    expect(pairs.length).toBe(15);
+    // the doc's OWN pair spellings, order-normalized (the leaf lists
+    // Reshoot↔Refine where the derivation says Refine↔Reshoot)
+    const stated = new Set([...md.matchAll(/([A-Z][a-z]+)↔([A-Z][a-z]+)/g)]
+      .map((m) => canonical(m[1]!, m[2]!)));
+    for (const pair of pairs) {
+      expect(stated.has(pair), `swap/SKILL.md names the ${pair} refusal`).toBe(true);
+    }
+    expect(stated.size, "no pair the card does not refuse is taught").toBe(15);
+    // never the false universal again
+    expect(md).not.toMatch(/ANY two armed mod bags/i);
+    // and the coexistence half: loras is named as the seventh bag
+    expect(md).toMatch(/SEVENTH bag/i);
+    expect(md).toMatch(/COEXISTS/i);
+    expect(md).toMatch(/THE LORA BAG IS NOT AN ARM/);
+    expect(md).toMatch(/empty `loras` to disarm/i);
+  });
+
   it("ARM 5 — THE STAMP LAW: each new leaf carries a dated VERIFIED line, a receipt that EXISTS, and its unproven half", () => {
     for (const name of ["repair", "upscale", "loras"]) {
       const md = readSkill(name);
