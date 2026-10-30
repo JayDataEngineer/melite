@@ -25,7 +25,11 @@ type Mod = {
   kind?: string; label?: string; param_key?: string;
   cardinality?: string; max_stack?: number;
   fields?: Array<{ name?: string }>;
-  options?: Array<{ value?: string; defaults?: Record<string, unknown> }>;
+  options?: Array<{
+    value?: string
+    model?: string
+    defaults?: Record<string, unknown>
+  }>;
 };
 
 let mods: Mod[];
@@ -108,5 +112,28 @@ describe("the served modifier list carries one row per bag", () => {
     const seats = [...modLine.matchAll(/\b(loras|lora)\[\]/g)].map((m) => m[1])
     expect(seats, `one LoRA seat on the load line (got: ${modLine})`).toEqual(["loras"])
     expect(text).toContain("bag: params.loras")
+  });
+
+  // THE READ SEAT (F34 audit F3, 2026-11-13): the served row's
+  // TOP-LEVEL `options` is what every client consumer reads — the add
+  // menu and picker, `optionOf` seeds, the steps facts, the marriage
+  // resolver's catalog. It rides the CATALOG MIRROR (the suppressed
+  // pack row). The card's own `fields[].options` is a display roster
+  // nobody seeds from, so an arm reading it (the old one) passed while
+  // the read seat could go empty.
+  it("ARM 5 — the served LoRA row's TOP-LEVEL options carry the catalog's facts (the seat the client reads)", () => {
+    const row = mods.find((m) => m.param_key === "loras")
+    assert.ok(row !== undefined, "the loras row is served")
+    const opts = row!.options ?? []
+    expect(opts.length, "the mirror serves the whole catalog on the kind itself").toBe(11)
+    const turbo = opts.find((o) => o.value === "h3_lightx2v_turbo")
+    assert.ok(turbo !== undefined, "the default row rides the mirrored catalog")
+    expect(turbo!.defaults, "the turbo row's married facts ride the read seat").toEqual({
+      strength: 0.6, steps: 8, steps_min: 4, steps_max: 8, shift_video: 12,
+    })
+    expect(String(turbo!.model), "the resolved filename rides beside the facts").toContain("turbo_4to8step")
+    for (const o of opts) {
+      expect(typeof o.value === "string" && o.value !== "", "every mirrored option names a value").toBe(true)
+    }
   });
 });

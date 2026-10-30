@@ -1,78 +1,99 @@
 ---
 name: timeline-craft
-description: Plan and run multi-window H3 timelines — window count vs duration, seam conditioning, audio continuity across windows, auto-stitch. Use when building a piece longer than one H3 window (max ~15s) or when audio must evolve across the film.
+description: "Plan and run multi-window H3 timelines — window count vs duration, seam conditioning, audio continuity across windows, in-graph assembly. Use when building a piece longer than one H3 window (max 362 f, ~15 s) or when audio must evolve across the film."
 ---
 
 # H3 Timeline Craft
 
 ## Why windows
 
-One H3 window is 22+17k frames, 22–362f (0.92–15.08s at the schema
-fps default; the
-workflow default renders 56f = 2.33s, production 124f = 5.17s) —
-off-grid lengths are REFUSED by the tool (a named 400), not advised
-against. For anything longer — the challenge cap is 90s — you tile
-windows: every window after the first carries the previous window's
-seam AUTOMATICALLY (the compose's own overlap machinery — no carrier
-node, no carry knob; a carried window's 22f generation head IS the
-seam, which is why its authored span is 17f). Drift control is
-prompt-side, not knob-side: repeat the subject block verbatim and the
-ambient bed in every window (the laws below), and let the engine own
-the seam geometry. To append seconds AFTER a finished film — instead
-of re-tiling — the extend-video flow anchors a fresh window on the
-film's last frame and joins the files; a stated append beyond one
-window (362f) composes N uniform windows in-chain there too — the
-extend-flow skill owns that multi-window contract.
+One H3 window is `22 + 17k` frames — base 22, step 17, cap
+`GRID_MAX_FRAMES = 362` (0.92–15.08 s at the 24 fps doc clock; 362 f is
+22 + 17 × 20). Off-grid lengths are REFUSED at the compose door with the
+nearest legal value named (`assertGridLength`,
+`models/h3/src/timelineContract.ts`) — never silently re-framed. A
+longer piece is MORE WINDOWS, never one oversized window.
+
+Every window after the first carries the previous window's seam
+AUTOMATICALLY (the compose's own overlap machinery — no carrier node, no
+carry knob; a carried window's 22 f generation head IS the seam, which is
+why its authored span is `17k`). Drift control is prompt-side, not
+knob-side: repeat the subject block verbatim and the ambient bed in every
+window (the laws below), and let the engine own the seam geometry.
+
+To append seconds AFTER a finished film — instead of re-tiling — the
+extend-video flow anchors a fresh window on the film's last frame and
+joins the files; a stated append beyond one window composes N uniform
+windows in-chain there too — the extend-flow skill owns that multi-window
+contract.
 
 The N-window law (operator order 2026-09-04) is "ONE card = N calls =
 ONE run = ONE film" — the lane runs **N** windows (any N, default
 templated 4), not strictly 4. Fewer calls hold the last on tail windows
-(an airlock hold), so three calls is legal. The card composes the
-entire multi-window film in a SINGLE ComfyUI submission
-(`h3-film` skeleton, ONE `native.execute`).
+(an airlock hold), so three calls is legal. The card composes the entire
+multi-window film in a SINGLE ComfyUI submission (ONE `native.execute`);
+windows save their own clips and the film is assembled in-graph, never by
+the harness (no ffmpeg, no disk stitch).
 
-## Budget math
+## The recipe you do not tune
 
-- The lane is 1:1 PlagueKind's V7 recipe (operator law; enforced
-  statically by `tests/walls/suites/test_h3_renderer_parity.py` — the
-  post-flip python parity runner, 21/21 fields): UNET hybrid_fl2va_ref2va_b30-49-int8 + int8_convrot CLIP +
-  MiniMaxH3ReferenceToVideo (audio_vae wired, ref_image_size "match"),
-  HIS two-LoRA chain — LoraLoader.0
-  fl2v_lightx2v_v0.1_dareties_v4_step600 @ 0.4 + LoraLoader.1
-  fl2v_lightx2v_turbo_4to8step_768p_v4_step600_dareties @ 0.6 —
-  ModelAttentionBackend "comfy kitchen attention",
-  euler/simple/6/denoise 1, SigmaShift 8/5, 1344x768, SLA sparse
-  attention ON at 0.9 — output VHS h264-mp4 yuv420p crf 19, 24 fps,
-  trim_to_audio. NEVER send lora/lora_strength/resolution/sampler/
-  steps/shift knobs unless the user names them — omitting rides HIS
-  values baked in the templates; sending the old numbers (8step @ 0.95,
-  res_multistep/20, 12/3, 960x544) STOMPS his recipe.
-- Draft vs production is now the CALLS, not knobs: same recipe rides
-  every render; a draft is 2-3 short calls, production is the full
-  shot list (90-124f windows).
-- 90s cap / ~5.17s = 17 windows max; plan 12-16 to leave headroom.
-- Render time: ~3-6 min/window on a 4090 at his 6-step turbo recipe,
-  1344x768. Render a short draft first, keep the prompt plan,
-  re-render only failed windows.
+The card's DECL owns the render recipe — it is the calibrated point, not a
+suggestion, and every default is the model's own (judged by the model
+package's specs, `packages/models/h3/tests/decl.spec.ts` and
+`value-roundtrip.spec.ts`):
+
+- 1344×768 (the carrier floor; a lane that stamps no width rides it),
+  euler/simple, **denoise 1**, h264 mp4 crf 19, 24 fps doc clock.
+- `shift_video` default **8**.
+- `sla_enabled` default **true**, `sla_sparsity` default **0.85** (the
+  density the speed LoRA was distilled against; **0.90 is the stated
+  speed preset**, ~15 % faster). `attention_backend` (default "comfy
+  kitchen attention") is what the engine falls back to when SLA is OFF —
+  SLA replaces it while on.
+- The audio of a joined film is **48 kHz** (`FILM_AUDIO_RATE`,
+  `models/h3/src/actions.ts`) — every window and every join speak one
+  rate.
+- The distill adapter is a MOD, not a knob: the card's `loras` bag
+  (max_stack 4) carries whole rows {id, strength, steps}. ABSENT the bag,
+  the family's own catalog default resolves (the merge row —
+  `h3_lightx2v_turbo`, strength 0.6, 8 steps, `shift_video` 12 — from
+  `mods/loras.ts`); the standalone LightX2V turbos stay pick-only for
+  audio/dialogue routes. NEVER hand-write a lora filename or a legacy
+  `lora` / `lora_strength` knob: an unknown id refuses at the door, and
+  the old flat knobs are not in the schema at all.
+- Do not "improve" a render by sending sampler/steps/shift/resolution
+  numbers the user did not ask for: omitting rides the card's own values;
+  sending the retired numbers (8-step @ 0.95, res_multistep/20, 12/3,
+  960×544) stomps the calibrated recipe.
+
+Draft vs production is now the CALLS, not knobs: same recipe rides every
+render; a draft is 2–3 short calls, production is the full shot list
+(90–124 f windows).
+
+Render time: ~3–6 min/window on a 4090 at the 6-step turbo recipe,
+1344×768. Render a short draft first, keep the prompt plan, re-render only
+failed windows.
 
 ## The prompt law (compose owns it)
 
-Every window prompt carries HIS preamble automatically — do NOT write
-it yourself: window 1 gets the starter ("establish coherent subject
-identity... animate naturally forward"), windows 2+ get the
-continuation contract ("no cut, reset, or re-establishment; the
-incoming protected AV latent prefix is authoritative...") plus
-"[Shot N]". Your call text is ONLY the scene/action — the preamble
-rides in front at compose time. Bare text was the drunk-vision drift:
-the model restarted shots without the contract.
+Every window prompt carries the family preamble automatically — do NOT
+write it yourself: window 1 gets the starter ("establish coherent subject
+identity... animate naturally forward"), windows 2+ get the continuation
+contract ("no cut, reset, or re-establishment; the incoming protected AV
+latent prefix is authoritative...") plus "[Shot N]". Your call text is
+ONLY the scene/action — the preamble rides in front at compose time. Bare
+text was the drunk-vision drift: the model restarted shots without the
+contract.
 
 ## Planning the windows
 
 Write the film as a numbered shot list FIRST, one window per shot:
 
 1. `w1 (t2v)` — establish. Same opening line as the film's first shot.
+   Its span is `22 + 17k`.
 2. `w2..wN (fl2va)` — each continues motion from the previous last frame.
-   Prompt the CHANGE, not the scene: the scene is already on screen.
+   Prompt the CHANGE, not the scene: the scene is already on screen. A
+   carried window's span is `17k` (its 22 f head is the seam).
 3. Last window — land the ending beat; its final frame is the film's
    final frame.
 
@@ -99,6 +120,8 @@ Each window renders its own audio. Sound must EVOLVE, not restart:
 - Music: if you use `non_diegetic_music`, repeat the same music
   description in every window — it regenerates per window, so describe
   the TRACK (instrumentation, tempo), not the moment.
+- A joined film needs audio in EVERY window (the concat is audio-bearing);
+  the lane muxes per window by default.
 
 ## Running it
 
@@ -112,30 +135,31 @@ model="h3-timeline"` + your window plan (no curl):
     {"start_frame": 0,   "end_frame": 90,  "text": "w1 shot"},
     {"start_frame": 90,  "end_frame": 158, "text": "w2 shot"},
     {"start_frame": 158, "end_frame": 209, "text": "w3 shot"}],
-    "fps": 24, "seed": 42, "intent": "film", "continuity": "chain"}
+    "fps": 24, "seed": 42}
 }
 ```
 
 - Spans are FRAMES (start_frame/end_frame) and calls TILE: every call
-  starts exactly where the previous one ended (no gaps, no overlaps).
-- The engine renders 22+17k frames per window, so authored spans are
+  starts exactly where the previous one ended (no gaps, no overlaps — a
+  gap or overlap is refused, not absorbed).
+- The engine renders `22+17k` frames per window, so authored spans are
   NOT interchangeable: the FIRST call (and any `"transition": "cut"`
-  call) must be 22+17f — 90, 107, 124, 141 … — while a carried
-  (non-cut) later call is 17f — 51, 68, 119, 153 … — because its 22f
-  seam comes from the generation head, not the span. The strict gate
-  names any violation with the nearest legal frame; nothing is
-  silently re-framed.
-
+  call) must be `22+17k` — 90, 107, 124, 141 … — while a carried
+  (non-cut) later call is `17k` — 51, 68, 119, 153 … — because its 22 f
+  seam is the generation head, not the span. The gate names any violation
+  with the nearest legal frame; nothing is silently re-framed.
 - The lane runs N windows (any N, default templated 4). Fewer calls hold
   the last on tail windows (an airlock hold), so three calls is legal.
 - Audio-guided variant: add top-level `"audio": "/abs/path.wav"` — window 1
   runs the AddGuide variant (the card's `audio` knob resolves to the
-  `h3-film` graph's guide-audio branch), later windows chain.
+  guide-audio branch), later windows chain.
 - Same seed across windows = consistent world texture.
-- Artifacts: `window1..N_video_0.mp4` and the final `stitch_video_0.mp4`
-  (auto-concatenated, h264+aac 32kHz, faststart, join loudness matched).
-- The stitch node needs audio in EVERY window (concat a=1) — the lane
-  muxes audio per window by default.
+- Artifacts (all under `<runId>/`, ComfyUI's counter suffix appended):
+  `h3_t4_w<k>_*.mp4` per window (its own clip and its own audio stem),
+  `h3_t4_film_*.mp4` the assembled film, and `h3_t4_film_audio_*` the
+  film's mixed track.
+- Do not name `intent` or `continuity` params — they do not exist; the
+  calls themselves are the plan.
 
 ## Verify before shipping
 
@@ -149,13 +173,18 @@ model="h3-timeline"` + your window plan (no curl):
    a run's TEXT sidecars (`_request.json`, `_flow.json`) — run-scoped and
    text-only, so it is the door for receipts and `melite_view` is the door
    for pictures.
-1. `ffprobe stitch_video_0.mp4` — duration ≈ the sum of the calls'
-   spans (the stitch trims each carried head; a 3×124f piece is
-   ~15.5s), aac 32kHz stream present, no gaps.
-2. `tests/timeline/seam_probe.py <run_dir>` — per-join level step and
-   spectral distance vs the within-window control (gated); exit 1 = FAIL.
-3. `tests/timeline/freeze_detect.py <run_dir>` — held shots must keep
-   micro-motion; join motion ratio vs control (gated).
-4. Scrub each seam: frame continuity (no teleport), audio bed present
-   on both sides.
-5. 90s cap — the stitched file's duration is the submission duration.
+
+1. Duration is ARITHMETIC, not the sum of spans: the film's frames are
+   `Σ spans − 22 × (windows − 1)` (each carried window's 22 f head is
+   trimmed at the join), at the doc clock — `3 × 124 f` is 328 f = **13.67
+   s** at 24 fps, not 15.5 s. A measured duration that disagrees with that
+   arithmetic is a real finding, not a rounding.
+2. Audio: one 48 kHz stream present, no gaps across joins, and the mixed
+   track audible on both sides of every seam.
+3. Scrub each seam: frame continuity (no teleport), audio bed present on
+   both sides, no held-shot freeze (a held shot must keep micro-motion).
+4. Re-read the run's `_request.json` when a render surprises you: the doc
+   that composed it is the truth of what was sent.
+5. The submission's own duration cap (if the piece is for a challenge) is
+   the submission's rule — the ENGINE has no 90 s cap; it has the 362 f
+   per-window cap and as many windows as you spend.
