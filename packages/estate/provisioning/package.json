@@ -5,7 +5,7 @@
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "description": "Cordis provisioning service definition and provider for declared model and extension resources.",
-  "types": "./src/index.ts",
+  "types": "./lib/index.d.ts",
   "exports": {
     ".": {
       "types": "./lib/index.d.ts",

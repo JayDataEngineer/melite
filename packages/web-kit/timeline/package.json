@@ -2,7 +2,6 @@
   "name": "@melite-plugin/timeline",
   "version": "0.2.0-alpha",
   "type": "module",
-  "types": "./src/timeline/index.ts",
   "exports": {
     "./ui/timeline": {
       "types": "./lib/timeline/index.d.ts",

@@ -128,7 +128,7 @@
     }
   },
   "version": "0.2.0-alpha",
-  "types": "./src/index.ts",
+  "types": "./lib/index.d.ts",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit"
