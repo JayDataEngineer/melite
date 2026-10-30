@@ -1,16 +1,12 @@
 import type { Context } from "@deepseek-ai/cordis";
-export type { JsonValue, RunStartDoc, RunRow } from "./types.js";
-import type { RunStartDoc, RunRow } from "./types.js";
+export type { JsonValue, RunStartDoc, RunRow, RunStartRow } from "./types.js";
+import type { RunStartDoc, RunRow, RunStartRow } from "./types.js";
 import { TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
 /** The registry seat's adapter-facing surface (structural — the
  *  implementation is RunsRegistryService in @melite/estate-queue;
  *  the wall pins the delegation byte-for-byte). */
 interface RunsSeat {
-    start(doc: unknown, signal: AbortSignal): Promise<{
-        run_id: string;
-        status: string;
-        queue_position: number;
-    }>;
+    start(doc: unknown, signal: AbortSignal): Promise<RunStartRow>;
     status(runId: string, signal: AbortSignal, includeLog?: boolean): Promise<Record<string, unknown>>;
     stop(runId: string, signal: AbortSignal): Promise<Record<string, unknown>>;
     list(rawLimit: string, signal: AbortSignal): Promise<{
@@ -36,11 +32,7 @@ export declare class RunsRemoteService extends TypertRemoteService {
     static inject: string[];
     constructor(ctx: Context);
     /** Endpoint `runs/start` — the submit chain (registry seat). */
-    remoteExportStart(doc: RunStartDoc, signal: AbortSignal): Promise<{
-        run_id: string;
-        status: string;
-        queue_position: number;
-    }>;
+    remoteExportStart(doc: RunStartDoc, signal: AbortSignal): Promise<RunStartRow>;
     /** Endpoint `runs/status` — the live row (registry seat). */
     remoteExportStatus(runId: string, signal: AbortSignal): Promise<RunRow>;
     /** Endpoint `runs/stop` — the flag + interrupt (registry seat). */

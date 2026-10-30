@@ -5,12 +5,12 @@ import type {
   TypertRemoteInfo,
   TypertRemoteMethod,
 } from '@deepseek-ai/dsh-typert-protocol'
-import type { RunRow, RunStartDoc } from '@melite/estate-runs/types'
+import type { RunRow, RunStartDoc, RunStartRow } from '@melite/estate-runs/types'
 
 declare module '@deepseek-ai/dsh-typert-protocol' {
   interface TypertRemoteNamespace$72756e73 {
     list: (rawLimit: string, signal?: AbortSignal) => Promise<RemoteResult<{ count: number; runs: RunRow[]; }>>
-    start: (doc: RunStartDoc, signal?: AbortSignal) => Promise<RemoteResult<{ run_id: string; status: string; queue_position: number; }>>
+    start: (doc: RunStartDoc, signal?: AbortSignal) => Promise<RemoteResult<RunStartRow>>
     status: (runId: string, signal?: AbortSignal) => Promise<RemoteResult<RunRow>>
     stop: (runId: string, signal?: AbortSignal) => Promise<RemoteResult<RunRow>>
     subscribe: (runId: string, signal?: AbortSignal) => RemoteStreamHandle<RunRow, never>
@@ -18,7 +18,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
   }
   interface TypertRemoteMap {
     'runs/list': (rawLimit: string, signal?: AbortSignal) => Promise<RemoteResult<{ count: number; runs: RunRow[]; }>>
-    'runs/start': (doc: RunStartDoc, signal?: AbortSignal) => Promise<RemoteResult<{ run_id: string; status: string; queue_position: number; }>>
+    'runs/start': (doc: RunStartDoc, signal?: AbortSignal) => Promise<RemoteResult<RunStartRow>>
     'runs/status': (runId: string, signal?: AbortSignal) => Promise<RemoteResult<RunRow>>
     'runs/stop': (runId: string, signal?: AbortSignal) => Promise<RemoteResult<RunRow>>
     'runs/subscribe': (runId: string, signal?: AbortSignal) => RemoteStreamHandle<RunRow, never>
@@ -31,7 +31,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
 
 export declare const TYPERT_REMOTE: TypertRemoteInfo<{
   readonly 'runs/list': TypertRemoteMethod<{ readonly 'rawLimit': string }, { count: number; runs: RunRow[]; }>
-  readonly 'runs/start': TypertRemoteMethod<{ readonly 'doc': RunStartDoc }, { run_id: string; status: string; queue_position: number; }>
+  readonly 'runs/start': TypertRemoteMethod<{ readonly 'doc': RunStartDoc }, RunStartRow>
   readonly 'runs/status': TypertRemoteMethod<{ readonly 'runId': string }, RunRow>
   readonly 'runs/stop': TypertRemoteMethod<{ readonly 'runId': string }, RunRow>
   readonly 'runs/subscribe': TypertRemoteMethod<{ readonly 'runId': string }, RunRow, 'stream'>

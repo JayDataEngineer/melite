@@ -31,6 +31,7 @@ const _melite_estate_runs_runs_start_result$schema = () => (_melite_estate_runs_
   'run_id': z.string(),
   'status': z.string(),
   'queue_position': z.number(),
+  'sweep_runs': z.union([z.undefined(), z.array(z.string())]).readonly().optional().describe('The sweep family (seed order); undefined on a single press.'),
 }))
 let _melite_estate_runs_runs_status_parameter_0$schema$value
 const _melite_estate_runs_runs_status_parameter_0$schema = () => (_melite_estate_runs_runs_status_parameter_0$schema$value ??= z.string())
@@ -126,9 +127,9 @@ const $remote = createTypertRemoteInfo({
       cancellation: { parameter: 'signal' },
       result: {
         mode: 'strict',
-        typeSymbol: '@melite/estate-runs#runs/start:result',
+        typeSymbol: '@melite/estate-runs/types#RunStartRow',
         create: _melite_estate_runs_runs_start_result$schema,
-        jsonSchema: {"type":"object","properties":{"run_id":{"type":"string"},"status":{"type":"string"},"queue_position":{"type":"number"}},"required":["run_id","status","queue_position"],"additionalProperties":true},
+        jsonSchema: {"type":"object","properties":{"run_id":{"type":"string"},"status":{"type":"string"},"queue_position":{"type":"number"},"sweep_runs":{"type":"array","items":{"type":"string"},"description":"The sweep family (seed order); undefined on a single press."}},"required":["run_id","status","queue_position"],"additionalProperties":true},
       },
       sourceLocation: {"file":"packages/estate/runs/src/index.ts","line":82,"column":9},
     },
@@ -282,7 +283,7 @@ export const TYPERT = {
           {
             "kind": "method",
             "name": "remoteExportStart",
-            "signature": "@Remote(\"start\") async remoteExportStart( doc: RunStartDoc, signal: AbortSignal, ): Promise<{ run_id: string; status: string; queue_position: number }>",
+            "signature": "@Remote(\"start\") async remoteExportStart( doc: RunStartDoc, signal: AbortSignal, ): Promise<RunStartRow>",
             "summary": "Endpoint `runs/start` — the submit chain (registry seat).",
             "jsDoc": "/** Endpoint `runs/start` — the submit chain (registry seat). */"
           },
@@ -334,6 +335,10 @@ export const TYPERT = {
           {
             "name": "RunStartDoc",
             "declaration": "export type RunStartDoc = { readonly [key: string]: JsonValue; };"
+          },
+          {
+            "name": "RunStartRow",
+            "declaration": "export interface RunStartRow {\n    run_id: string;\n    status: string;\n    queue_position: number;\n    readonly sweep_runs?: readonly string[];\n}"
           }
         ]
       }

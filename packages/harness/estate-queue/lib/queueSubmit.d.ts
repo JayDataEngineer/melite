@@ -56,6 +56,42 @@ export declare function submitEnvelopeStructuralRefusal(doc: unknown): QueueRefu
 /** Door-selection order (resolve_request 302: flow/flow_inline/
  *  model fixed order — ambiguity lists in DOOR order, not sorted). */
 export declare const SUBMIT_DOORS: readonly string[];
+/** THE SEED-SWEEP CAP (the GPU-spend law): one press fans out to at
+ *  most this many runs — a runaway array mints that many runs, each
+ *  a full render. Larger compares split across presses. */
+export declare const SEED_SWEEP_MAX = 16;
+/** The door's KNOB PRESENCE-PROBES (the envelope wall's counterpart
+ *  list): card knob names the submit door reads the PRESENCE of to
+ *  refuse an ambiguous press — never consumed, never lifted, and
+ *  deliberately NEVER envelope-registered (a registered probe would
+ *  stop being a knob and liftCardParams would drop it from the
+ *  card's params). Today: `seed`, probed so a `seeds` sweep never
+ *  silently overrides a stated single seed at either seat (the
+ *  sibling top-level key or the params stanza — siblings win the
+ *  lift, so the override would be silent). */
+export declare const DOOR_KNOB_PROBES: readonly string[];
+/** The seed-sweep expansion's verdict: no `seeds` key (the legacy
+ *  single run), a judged sweep, or a loud refusal. */
+export type SeedSweep = {
+    kind: "single";
+} | {
+    kind: "sweep";
+    seeds: readonly number[];
+} | {
+    kind: "refusal";
+    refusal: QueueRefusal;
+};
+/** THE SEED-SWEEP EXPANSION (friction #9, the melite friction report
+ *  2026-10-28: "no batch/seed-sweep primitive" — each seed roll was
+ *  a separate press + status + view cycle, and ~5 of 7 generation
+ *  rounds were seed iterations): a {model:} card body may carry
+ *  `seeds: [...]` — the press fans out to ONE run per seed, the same
+ *  card and params with the seed alone varying, under one shared
+ *  run-id prefix. Judged HERE, in the shared envelope's one home,
+ *  BEFORE any run registers — a malformed sweep mints nothing.
+ * @param body the admitted request body.
+ * @returns the expansion's verdict (never throws). */
+export declare function expandSeedSweep(body: Record<string, unknown>): SeedSweep;
 /** The walker's chain in order: non-object body (bad_envelope/body)
  *  -> non-bool test (bad_envelope/test) -> draft required
  *  (draft_required) -> malformed (draft_malformed) -> unknown doc

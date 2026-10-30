@@ -1385,11 +1385,11 @@ describe("validate", () => {
     const s = modelDoorSeat({
       SaveImage: { class_type: "SaveImage", inputs: { filename_prefix: "gen" } },
     });
-    const ans = (await s.svc.start(
+    const ans = await s.svc.start(
       { draft_id: "d1", test: false, model: "m1", params: { prompt: "a cat" } },
       sig(),
-    )) as Record<string, unknown>;
-    assert.match(String(ans["run_id"]), /^run-/);
+    );
+    assert.match(ans.run_id, /^run-/);
   });
 
   it("prepare failures fold CardArmErrors and rethrow the rest", async () => {

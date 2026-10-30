@@ -68,6 +68,16 @@ export declare class QueueCore {
  *  The mint is one of the brand's two producers; the return cast is
  *  the construction door. */
 export declare function newRunId(): RunId;
+/** THE SWEEP RUN-ID FAMILY (friction #9, the seed sweep): one press,
+ *  N seeds — every run of the sweep carries ONE shared `run-<base>`
+ *  prefix plus its own `-s<k>` seat in seed order, so the family is
+ *  identifiable in the registry, the runs tree, and the sweep
+ *  answer's sweep_runs list. The base is one newRunId mint (the
+ *  same producer); the suffix seats are part of the construction.
+ * @param count the sweep's seed count (the expansion already capped
+ *  it at SEED_SWEEP_MAX).
+ * @returns the run ids, index k for seed k. */
+export declare function sweepRunIds(count: number): RunId[];
 /** The terminal broadcast frame (worker 1413-1414): every
  *  subscriber gets the final status exactly once. Shape pinned
  *  here so the P6 bus port inherits it. */

@@ -4,6 +4,16 @@ import type { RunId } from "./queueCore.js";
 export { toRemoteError } from "./runsRefusalVoices.js";
 import type { FlowsValidateAnswer } from "./runsValidate.js";
 import type { RunRecord } from "./runsTypes.js";
+/** THE START SUMMARY (the door's answer face): what start() and the
+ *  concurrent-press reservation both answer with. `sweep_runs` rides
+ *  ONLY a seed-sweep press (friction #9): every run id the one
+ *  press minted, first seed first — absent on every single run. */
+interface PressStartSummary {
+    run_id: string;
+    status: string;
+    queue_position: number;
+    readonly sweep_runs?: readonly string[];
+}
 /** The runs Remote failure codes, merged into the protocol's ONE
  *  vocabulary (cookbook §2: declaration merging, next to the
  *  throws). The codes ride kebab-cased; the byte-pinned prose
@@ -242,11 +252,41 @@ export declare class RunsRuntimeService extends Service {
      *  never passes this (two-arg wire calls only). */
     reuse?: {
         runId: RunId;
-    }): Promise<{
-        run_id: string;
-        status: string;
-        queue_position: number;
-    }>;
+    }): Promise<PressStartSummary>;
+    /** THE SWEEP START (friction #9's fan-out): one press, N seeds —
+     *  each seed its own run, all under one shared run-id prefix.
+     *  Every per-run law rides startReserved unchanged (phase gates,
+     *  spell gate, self-wire gate, the registration door); the press
+     *  laws wrap the WHOLE family: one press_key answers the sweep
+     *  (a replay re-mints NOTHING — the sweep mirror holds every id),
+     *  the twin reservation settles once after the last run registers,
+     *  and a refusal anywhere propagates with the runs already minted
+     *  standing (registered runs never un-register — the registry's
+     *  own law; the retry law is the stale-key law's).
+     *  @param seeds the judged sweep (capped, integer, model-door).
+     *  @param checked the envelope's ok face for the sweep press.
+     *  @param signal the caller's abort. */
+    private startSweep;
+    /** The sweep's mint loop: N startReserved calls, one per seed —
+     *  the seed stamped into its own body, the sweep's runId handed
+     *  through the INTERNAL reuse seat (the deterministic-id seam, the
+     *  same seat the boot-resurrect replay rides). The answer carries
+     *  the first run's summary face plus sweep_runs (every id, seed
+     *  order). @param pressKey undefined on the inner calls — the
+     *  per-run press memory would clobber the family's one entry; this
+     *  loop owns the memory after every run stands. */
+    private mintSweep;
+    /** THE SWEEP MIRROR (audit N-E1's sweep half): press_key -> every
+     *  run id the sweep minted. A replay answers the family only while
+     *  EVERY row still stands — one swept row is the stale-key law's
+     *  (the whole sweep re-runs on retry, the same class as the single
+     *  door). Capped beside the single mirror. */
+    private readonly sweepPresses;
+    private rememberSweepPress;
+    /** The sweep replay: the family's answer while every row stands,
+     *  null when the key is unknown or stale (the mirror entry dies
+     *  with the verdict). */
+    private sweepReplay;
     /** THE PRESS REPLAY (audit N-E1): a key this process already
      *  answered names a run that exists — return ITS summary, mint
      *  nothing, enqueue nothing. The row is gone (swept, or its seat

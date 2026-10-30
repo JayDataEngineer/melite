@@ -18,8 +18,8 @@
 // registry, codes declared next to the throws in estate-queue) —
 // the adapters add nothing, never catch, never wrap.
 import type { Context } from "@deepseek-ai/cordis";
-export type { JsonValue, RunStartDoc, RunRow } from "./types.ts";
-import type { RunStartDoc, RunRow } from "./types.ts";
+export type { JsonValue, RunStartDoc, RunRow, RunStartRow } from "./types.ts";
+import type { RunStartDoc, RunRow, RunStartRow } from "./types.ts";
 
 import {
   Remote,
@@ -35,7 +35,7 @@ interface RunsSeat {
   start(
     doc: unknown,
     signal: AbortSignal,
-  ): Promise<{ run_id: string; status: string; queue_position: number }>;
+  ): Promise<RunStartRow>;
   status(
     runId: string,
     signal: AbortSignal,
@@ -82,7 +82,7 @@ export class RunsRemoteService extends TypertRemoteService {
   async remoteExportStart(
     doc: RunStartDoc,
     signal: AbortSignal,
-  ): Promise<{ run_id: string; status: string; queue_position: number }> {
+  ): Promise<RunStartRow> {
     return await this.ctx.runs.start(doc, signal);
   }
 

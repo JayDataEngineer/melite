@@ -150,6 +150,13 @@ export const CARD_ENVELOPE_KEYS: readonly string[] = [
   // the whole suite stayed green (the contract-depth red,
   // 2026-10-24): no wall drove a press_key-carrying body.
   "press_key",
+  // seeds is the submit door's seed-sweep coordinate (friction #9,
+  // 2026-10-28): the door fans one press out to one run per seed —
+  // door vocabulary consumed before any card composes, never a card
+  // knob. The per-run body carries the SEAT's `seed` (a real knob,
+  // deliberately NOT on this list — liftCardParams must carry it
+  // into the card's params); the sweep key itself rides the envelope.
+  "seeds",
   // the bench row's own non-wire coordinates (benchStage's stage row
   // carries these beside the wire keys; they select, they never ride)
   "author",

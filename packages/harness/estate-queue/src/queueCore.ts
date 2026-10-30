@@ -158,6 +158,23 @@ export function newRunId(): RunId {
   return "run-" + rand + "-" + ts as RunId;
 }
 
+/** THE SWEEP RUN-ID FAMILY (friction #9, the seed sweep): one press,
+ *  N seeds — every run of the sweep carries ONE shared `run-<base>`
+ *  prefix plus its own `-s<k>` seat in seed order, so the family is
+ *  identifiable in the registry, the runs tree, and the sweep
+ *  answer's sweep_runs list. The base is one newRunId mint (the
+ *  same producer); the suffix seats are part of the construction.
+ * @param count the sweep's seed count (the expansion already capped
+ *  it at SEED_SWEEP_MAX).
+ * @returns the run ids, index k for seed k. */
+export function sweepRunIds(count: number): RunId[] {
+  const base: string = newRunId();
+  return Array.from(
+    { length: count },
+    (_v: unknown, k: number): RunId => (base + "-s" + String(k)) as RunId,
+  );
+}
+
 /** The terminal broadcast frame (worker 1413-1414): every
  *  subscriber gets the final status exactly once. Shape pinned
  *  here so the P6 bus port inherits it. */

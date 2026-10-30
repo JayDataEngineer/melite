@@ -31,6 +31,7 @@ import { fetchEngineMem, filmLoadOf, filmMemoryWarn } from "./filmMemoryWarn.js"
 import { searchedVoice } from "./rootsManifest.js";
 import { newRunId, outRootFor, pipelineOf, strictBodyCheck, planResurrect, bootSweep, appendLedger, refusal, walkSubmitEnvelope } from "./queue.js";
 import { graphReceiptOf, graphReceiptStageOf } from "./queueSidecar.js";
+import { sweepRunIds } from "./queueCore.js";
 import { cardRefusal, toRemoteError, refusePreview } from "./runsRefusalVoices.js";
 import { lifecycleInFlight } from "./lifecycleLatch.js";
 import { lanePresenceRefusal } from "./cardsLanes.js";
@@ -42,6 +43,7 @@ import { readFileSync } from "node:fs";
 import { CardArmError, } from "./cardsRegistry.js";
 import { FLOW_ID_RE } from "./runsGates.js";
 import { compileFlowInline, registerCompiledRun, selectSubmitDoor, } from "./runsStart.js";
+import { expandSeedSweep } from "./queueSubmit.js";
 import { listRunsAcross, parseIntOrNull } from "./runsList.js";
 import { claimPersist, errText, runLogTail, settlePersist, RUN_STATUSES, } from "./runsTypes.js";
 import { runOne, runEngine as runEngineOf } from "./runsExecute.js";
@@ -961,6 +963,22 @@ export class RunsRuntimeService extends Service {
         if (lifecycleHeld !== null) {
             throw toRemoteError(refusal(409, "refused: lifecycle " + lifecycleHeld + " in flight — retry the press when it settles (the teardown holds the run gate until it completes)", "lifecycle_inflight"));
         }
+        // THE SEED-SWEEP EXPANSION (friction #9, the melite friction
+        // report 2026-10-28: "no batch/seed-sweep primitive" — each seed
+        // roll was a separate press + status + view cycle, and ~5 of 7
+        // generation rounds were seed iterations): a {model:} card body
+        // may carry `seeds: [...]` — the press fans out to ONE run per
+        // seed under one shared run-id prefix, the same card and params
+        // with the seed alone varying. Judged BEFORE the press laws
+        // (a malformed sweep mints nothing); the fan-out itself rides
+        // startSweep, which wraps the whole family in the same replay /
+        // reservation laws a single press holds.
+        const sweep = expandSeedSweep(checked.body);
+        if (sweep.kind === "refusal")
+            throw toRemoteError(sweep.refusal);
+        if (sweep.kind === "sweep") {
+            return await this.startSweep(sweep.seeds, checked, signal);
+        }
         // THE PRESS REPLAY (audit N-E1): a key this process already
         // answered names a run that exists — return ITS summary, mint
         // nothing, enqueue nothing. The row is gone (swept, or its seat
@@ -998,6 +1016,121 @@ export class RunsRuntimeService extends Service {
             }
         }
         return this.startReserved(undefined, checked, signal, reuse);
+    }
+    /** THE SWEEP START (friction #9's fan-out): one press, N seeds —
+     *  each seed its own run, all under one shared run-id prefix.
+     *  Every per-run law rides startReserved unchanged (phase gates,
+     *  spell gate, self-wire gate, the registration door); the press
+     *  laws wrap the WHOLE family: one press_key answers the sweep
+     *  (a replay re-mints NOTHING — the sweep mirror holds every id),
+     *  the twin reservation settles once after the last run registers,
+     *  and a refusal anywhere propagates with the runs already minted
+     *  standing (registered runs never un-register — the registry's
+     *  own law; the retry law is the stale-key law's).
+     *  @param seeds the judged sweep (capped, integer, model-door).
+     *  @param checked the envelope's ok face for the sweep press.
+     *  @param signal the caller's abort. */
+    async startSweep(seeds, checked, signal) {
+        signal.throwIfAborted();
+        const pressKey = typeof checked.body["press_key"] === "string"
+            ? checked.body["press_key"]
+            : undefined;
+        if (pressKey === undefined)
+            return await this.mintSweep(seeds, checked, signal, undefined);
+        const replay = this.sweepReplay(pressKey);
+        if (replay !== null)
+            return replay;
+        // THE CONCURRENT-PRESS RESERVATION, sweep-shaped (the double-mint
+        // cure's law): the reservation goes in SYNCHRONOUSLY after the
+        // miss, exactly one caller becomes the minter, and the twin
+        // answers the family's summary.
+        const twin = this.reservePress(pressKey);
+        if (twin !== null)
+            return await this.awaitTwin(twin, signal);
+        try {
+            const summary = await this.mintSweep(seeds, checked, signal, pressKey);
+            this.resolvePress(pressKey, summary);
+            return summary;
+        }
+        catch (error) {
+            this.failPress(pressKey, error);
+            throw error;
+        }
+        finally {
+            this.pendingPresses.delete(pressKey);
+        }
+    }
+    /** The sweep's mint loop: N startReserved calls, one per seed —
+     *  the seed stamped into its own body, the sweep's runId handed
+     *  through the INTERNAL reuse seat (the deterministic-id seam, the
+     *  same seat the boot-resurrect replay rides). The answer carries
+     *  the first run's summary face plus sweep_runs (every id, seed
+     *  order). @param pressKey undefined on the inner calls — the
+     *  per-run press memory would clobber the family's one entry; this
+     *  loop owns the memory after every run stands. */
+    async mintSweep(seeds, checked, signal, pressKey) {
+        const runIds = sweepRunIds(seeds.length);
+        const summaries = [];
+        for (const [k, seed] of seeds.entries()) {
+            const bodyK = { ...checked.body, seed };
+            delete bodyK["seeds"];
+            summaries.push(await this.startReserved(undefined, { ...checked, body: bodyK }, signal, { runId: runIds[k] }));
+        }
+        const first = summaries[0];
+        const sweepRunList = summaries.map((s) => s.run_id);
+        const sweepSummary = {
+            run_id: first.run_id,
+            status: first.status,
+            queue_position: first.queue_position,
+            sweep_runs: sweepRunList,
+        };
+        if (pressKey !== undefined) {
+            // the family's one memory entry: the single mirror holds the
+            // first id (the answer's run_id), the sweep mirror holds all
+            this.rememberPress(pressKey, runIds[0]);
+            this.rememberSweepPress(pressKey, sweepRunList);
+        }
+        return sweepSummary;
+    }
+    /** THE SWEEP MIRROR (audit N-E1's sweep half): press_key -> every
+     *  run id the sweep minted. A replay answers the family only while
+     *  EVERY row still stands — one swept row is the stale-key law's
+     *  (the whole sweep re-runs on retry, the same class as the single
+     *  door). Capped beside the single mirror. */
+    sweepPresses = new Map();
+    rememberSweepPress(pressKey, runIds) {
+        this.sweepPresses.delete(pressKey); // refresh recency before the cap read
+        this.sweepPresses.set(pressKey, runIds);
+        while (this.sweepPresses.size > RunsRuntimeService.PRESS_MEMORY_MAX) {
+            const oldest = this.sweepPresses.keys().next();
+            /* v8 ignore next -- the map holds >0 entries whenever the loop
+             * runs (size > PRESS_MEMORY_MAX > 0), so next() always yields —
+             * the single mirror's rememberPress carries the same vacuous
+             * guard shape unexecuted. */
+            if (oldest.done)
+                break;
+            this.sweepPresses.delete(oldest.value);
+        }
+    }
+    /** The sweep replay: the family's answer while every row stands,
+     *  null when the key is unknown or stale (the mirror entry dies
+     *  with the verdict). */
+    sweepReplay(pressKey) {
+        const ids = this.sweepPresses.get(pressKey);
+        if (ids === undefined)
+            return null;
+        const rows = ids.map((id) => this.core.runs.get(id));
+        if (rows.some((row) => row === undefined)) {
+            this.sweepPresses.delete(pressKey);
+            return null;
+        }
+        const first = rows[0];
+        return {
+            run_id: first.runId,
+            status: first.status,
+            queue_position: this.core.queuePosition(first.runId),
+            sweep_runs: ids,
+        };
     }
     /** THE PRESS REPLAY (audit N-E1): a key this process already
      *  answered names a run that exists — return ITS summary, mint

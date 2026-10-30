@@ -25,3 +25,15 @@ export type RunStartDoc = { readonly [key: string]: JsonValue };
 /** The run status/stop answer + the list row — JSON-flat rows (the
  *  registry's envelope is honestly JSON all the way down). */
 export type RunRow = { readonly [key: string]: JsonValue };
+
+/** The start answer's row (friction #9's sweep face): the first
+ *  run's summary plus, on a seed-sweep press, every run id the ONE
+ *  press minted (seed order) — `sweep_runs` is absent on every
+ *  single-run press. */
+export interface RunStartRow {
+  run_id: string;
+  status: string;
+  queue_position: number;
+  /** The sweep family (seed order); undefined on a single press. */
+  readonly sweep_runs?: readonly string[];
+}

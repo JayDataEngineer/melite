@@ -28,6 +28,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { liftCardParams } from "../../../../packages/harness/estate-queue/src/cardsVariant.ts";
 import { CARD_ENVELOPE_KEYS } from "../../../../packages/harness/estate-queue/src/cardsRegistry.ts";
+import { DOOR_KNOB_PROBES } from "../../../../packages/harness/estate-queue/src/queueSubmit.ts";
 import { prepareCardParams } from "../../../../packages/harness/estate-queue/src/cardsCompose.ts";
 import type { ComposeSeat } from "../../../../packages/harness/estate-queue/src/cardsCompose.ts";
 import { deriveDecls } from "../../../../packages/harness/estate-queue/src/cardsFacts.ts";
@@ -127,7 +128,8 @@ describe("the run-protocol envelope (the press_key live red's wall)", () => {
     const reads = new Set<string>();
     for (const m of src.matchAll(/body\[["']([\w-]+)["']\]/g)) reads.add(m[1]);
     assert.ok(reads.size > 0, "the sweep found the door's body reads");
-    const unregistered = [...reads].filter((k) => !CARD_ENVELOPE_KEYS.includes(k) && k !== "params");
+    const unregistered = [...reads].filter((k) =>
+      !CARD_ENVELOPE_KEYS.includes(k) && k !== "params" && !DOOR_KNOB_PROBES.includes(k));
     assert.deepEqual(
       unregistered,
       [],
@@ -135,5 +137,25 @@ describe("the run-protocol envelope (the press_key live red's wall)", () => {
       "card's admission as unknown params (register them beside draft_id/test/service): " +
       unregistered.join(", "),
     );
+  });
+
+  it("THE PROBES: the door's knob presence-probes are knobs, never door vocabulary", () => {
+    // The seed-sweep's counterpart law (friction #9): a probe is a
+    // card knob the door reads the PRESENCE of to refuse an
+    // ambiguous press. A probe that is ALSO envelope-registered is
+    // the collision class — liftCardParams would drop it from the
+    // card's params, so the knob the probe guards would never ride
+    // the compose and the refusal would guard a ghost.
+    const collisions = DOOR_KNOB_PROBES.filter((k) => CARD_ENVELOPE_KEYS.includes(k));
+    assert.deepEqual(
+      collisions,
+      [],
+      "DOOR_KNOB_PROBES entries that are also CARD_ENVELOPE_KEYS — the probe's knob " +
+      "would be lifted off the card's params (a probe guards a real knob, never door " +
+      "vocabulary): " + collisions.join(", "),
+    );
+    // And the probe list is never silently empty — an emptied list
+    // would quietly retire the both-stated guard.
+    assert.ok(DOOR_KNOB_PROBES.length > 0, "the probe list names its knobs");
   });
 });

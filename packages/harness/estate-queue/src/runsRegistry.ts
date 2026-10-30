@@ -46,6 +46,7 @@ import { newRunId, outRootFor, pipelineOf, strictBodyCheck, draftIdOk, planResur
 import { graphReceiptOf, graphReceiptStageOf } from "./queueSidecar.ts";
 import type { GraphReceiptStageRow } from "./queueSidecar.ts";
 import type { RunId } from "./queueCore.ts";
+import { sweepRunIds } from "./queueCore.ts";
 import { cardRefusal, toRemoteError, refusePreview } from "./runsRefusalVoices.ts";
 import { lifecycleInFlight } from "./lifecycleLatch.ts";
 import { lanePresenceRefusal } from "./cardsLanes.ts";
@@ -65,6 +66,7 @@ import {
   registerCompiledRun,
   selectSubmitDoor,
 } from "./runsStart.ts";
+import { expandSeedSweep } from "./queueSubmit.ts";
 import type { CompiledStage } from "./runsStart.ts";
 import { listRunsAcross, parseIntOrNull } from "./runsList.ts";
 import type { FlowsValidateAnswer } from "./runsValidate.ts";
@@ -86,11 +88,14 @@ import { BENCH_DRAFT_PREFIX_RE, benchDraftIdOf } from '@melite/contracts/benchSt
 // typert-protocol resolves the vendor instance. The engine seam
 // below casts STRUCTURALLY (never instanceof across copies).
 /** THE START SUMMARY (the door's answer face): what start() and the
- *  concurrent-press reservation both answer with. */
+ *  concurrent-press reservation both answer with. `sweep_runs` rides
+ *  ONLY a seed-sweep press (friction #9): every run id the one
+ *  press minted, first seed first — absent on every single run. */
 interface PressStartSummary {
   run_id: string;
   status: string;
   queue_position: number;
+  readonly sweep_runs?: readonly string[];
 }
 
 type EngineCtx = Parameters<typeof needComfyUI>[0];
@@ -1082,7 +1087,7 @@ export class RunsRuntimeService extends Service {
      *  run id when replaying its _request.json — the remote surface
      *  never passes this (two-arg wire calls only). */
     reuse?: { runId: RunId },
-  ): Promise<{ run_id: string; status: string; queue_position: number }> {
+  ): Promise<PressStartSummary> {
     signal.throwIfAborted();
     // The pre-registration chain, order (queue.ts's envelope
     // walk with the draft probe handed in): non-object, test-bool,
@@ -1123,6 +1128,21 @@ export class RunsRuntimeService extends Service {
         ),
       );
     }
+    // THE SEED-SWEEP EXPANSION (friction #9, the melite friction
+    // report 2026-10-28: "no batch/seed-sweep primitive" — each seed
+    // roll was a separate press + status + view cycle, and ~5 of 7
+    // generation rounds were seed iterations): a {model:} card body
+    // may carry `seeds: [...]` — the press fans out to ONE run per
+    // seed under one shared run-id prefix, the same card and params
+    // with the seed alone varying. Judged BEFORE the press laws
+    // (a malformed sweep mints nothing); the fan-out itself rides
+    // startSweep, which wraps the whole family in the same replay /
+    // reservation laws a single press holds.
+    const sweep = expandSeedSweep(checked.body);
+    if (sweep.kind === "refusal") throw toRemoteError(sweep.refusal);
+    if (sweep.kind === "sweep") {
+      return await this.startSweep(sweep.seeds, checked, signal);
+    }
     // THE PRESS REPLAY (audit N-E1): a key this process already
     // answered names a run that exists — return ITS summary, mint
     // nothing, enqueue nothing. The row is gone (swept, or its seat
@@ -1157,6 +1177,131 @@ export class RunsRuntimeService extends Service {
       }
     }
     return this.startReserved(undefined, checked, signal, reuse);
+  }
+
+  /** THE SWEEP START (friction #9's fan-out): one press, N seeds —
+   *  each seed its own run, all under one shared run-id prefix.
+   *  Every per-run law rides startReserved unchanged (phase gates,
+   *  spell gate, self-wire gate, the registration door); the press
+   *  laws wrap the WHOLE family: one press_key answers the sweep
+   *  (a replay re-mints NOTHING — the sweep mirror holds every id),
+   *  the twin reservation settles once after the last run registers,
+   *  and a refusal anywhere propagates with the runs already minted
+   *  standing (registered runs never un-register — the registry's
+   *  own law; the retry law is the stale-key law's).
+   *  @param seeds the judged sweep (capped, integer, model-door).
+   *  @param checked the envelope's ok face for the sweep press.
+   *  @param signal the caller's abort. */
+  private async startSweep(
+    seeds: readonly number[],
+    checked: Extract<Awaited<ReturnType<typeof walkSubmitEnvelope>>, { kind: "ok" }>,
+    signal: AbortSignal,
+  ): Promise<PressStartSummary> {
+    signal.throwIfAborted();
+    const pressKey: string | undefined =
+      typeof checked.body["press_key"] === "string"
+        ? (checked.body["press_key"] as string)
+        : undefined;
+    if (pressKey === undefined) return await this.mintSweep(seeds, checked, signal, undefined);
+    const replay = this.sweepReplay(pressKey);
+    if (replay !== null) return replay;
+    // THE CONCURRENT-PRESS RESERVATION, sweep-shaped (the double-mint
+    // cure's law): the reservation goes in SYNCHRONOUSLY after the
+    // miss, exactly one caller becomes the minter, and the twin
+    // answers the family's summary.
+    const twin = this.reservePress(pressKey);
+    if (twin !== null) return await this.awaitTwin(twin, signal);
+    try {
+      const summary = await this.mintSweep(seeds, checked, signal, pressKey);
+      this.resolvePress(pressKey, summary);
+      return summary;
+    } catch (error: unknown) {
+      this.failPress(pressKey, error);
+      throw error;
+    } finally {
+      this.pendingPresses.delete(pressKey);
+    }
+  }
+
+  /** The sweep's mint loop: N startReserved calls, one per seed —
+   *  the seed stamped into its own body, the sweep's runId handed
+   *  through the INTERNAL reuse seat (the deterministic-id seam, the
+   *  same seat the boot-resurrect replay rides). The answer carries
+   *  the first run's summary face plus sweep_runs (every id, seed
+   *  order). @param pressKey undefined on the inner calls — the
+   *  per-run press memory would clobber the family's one entry; this
+   *  loop owns the memory after every run stands. */
+  private async mintSweep(
+    seeds: readonly number[],
+    checked: Extract<Awaited<ReturnType<typeof walkSubmitEnvelope>>, { kind: "ok" }>,
+    signal: AbortSignal,
+    pressKey: string | undefined,
+  ): Promise<PressStartSummary> {
+    const runIds = sweepRunIds(seeds.length);
+    const summaries: PressStartSummary[] = [];
+    for (const [k, seed] of seeds.entries()) {
+      const bodyK: Record<string, unknown> = { ...checked.body, seed };
+      delete bodyK["seeds"];
+      summaries.push(
+        await this.startReserved(undefined, { ...checked, body: bodyK }, signal, { runId: runIds[k]! }),
+      );
+    }
+    const first: PressStartSummary = summaries[0]!;
+    const sweepRunList: readonly string[] = summaries.map((s): string => s.run_id);
+    const sweepSummary: PressStartSummary = {
+      run_id: first.run_id,
+      status: first.status,
+      queue_position: first.queue_position,
+      sweep_runs: sweepRunList,
+    };
+    if (pressKey !== undefined) {
+      // the family's one memory entry: the single mirror holds the
+      // first id (the answer's run_id), the sweep mirror holds all
+      this.rememberPress(pressKey, runIds[0]!);
+      this.rememberSweepPress(pressKey, sweepRunList);
+    }
+    return sweepSummary;
+  }
+
+  /** THE SWEEP MIRROR (audit N-E1's sweep half): press_key -> every
+   *  run id the sweep minted. A replay answers the family only while
+   *  EVERY row still stands — one swept row is the stale-key law's
+   *  (the whole sweep re-runs on retry, the same class as the single
+   *  door). Capped beside the single mirror. */
+  private readonly sweepPresses = new Map<string, readonly string[]>();
+
+  private rememberSweepPress(pressKey: string, runIds: readonly string[]): void {
+    this.sweepPresses.delete(pressKey); // refresh recency before the cap read
+    this.sweepPresses.set(pressKey, runIds);
+    while (this.sweepPresses.size > RunsRuntimeService.PRESS_MEMORY_MAX) {
+      const oldest = this.sweepPresses.keys().next();
+      /* v8 ignore next -- the map holds >0 entries whenever the loop
+       * runs (size > PRESS_MEMORY_MAX > 0), so next() always yields —
+       * the single mirror's rememberPress carries the same vacuous
+       * guard shape unexecuted. */
+      if (oldest.done) break;
+      this.sweepPresses.delete(oldest.value);
+    }
+  }
+
+  /** The sweep replay: the family's answer while every row stands,
+   *  null when the key is unknown or stale (the mirror entry dies
+   *  with the verdict). */
+  private sweepReplay(pressKey: string): PressStartSummary | null {
+    const ids = this.sweepPresses.get(pressKey);
+    if (ids === undefined) return null;
+    const rows = ids.map((id: string) => this.core.runs.get(id as RunId));
+    if (rows.some((row): boolean => row === undefined)) {
+      this.sweepPresses.delete(pressKey);
+      return null;
+    }
+    const first = rows[0]!;
+    return {
+      run_id: first.runId,
+      status: first.status,
+      queue_position: this.core.queuePosition(first.runId),
+      sweep_runs: ids,
+    };
   }
 
   /** THE PRESS REPLAY (audit N-E1): a key this process already

@@ -159,6 +159,88 @@ export const SUBMIT_DOORS = [
     "flow_inline",
     "model",
 ];
+/** THE SEED-SWEEP CAP (the GPU-spend law): one press fans out to at
+ *  most this many runs — a runaway array mints that many runs, each
+ *  a full render. Larger compares split across presses. */
+export const SEED_SWEEP_MAX = 16;
+/** The door's KNOB PRESENCE-PROBES (the envelope wall's counterpart
+ *  list): card knob names the submit door reads the PRESENCE of to
+ *  refuse an ambiguous press — never consumed, never lifted, and
+ *  deliberately NEVER envelope-registered (a registered probe would
+ *  stop being a knob and liftCardParams would drop it from the
+ *  card's params). Today: `seed`, probed so a `seeds` sweep never
+ *  silently overrides a stated single seed at either seat (the
+ *  sibling top-level key or the params stanza — siblings win the
+ *  lift, so the override would be silent). */
+export const DOOR_KNOB_PROBES = ["seed"];
+/** One seat of a stated knob: the sibling key, or the params stanza
+ *  member (liftCardParams treats both as the same knob — the probe
+ *  must too, or the stanza seat dodges the refusal). */
+const knobStated = (body, knob) => {
+    if (body[knob] !== undefined)
+        return true;
+    const stanza = body["params"];
+    if (typeof stanza === "object" && stanza !== null && !Array.isArray(stanza)) {
+        return stanza[knob] !== undefined;
+    }
+    return false;
+};
+/** THE SEED-SWEEP EXPANSION (friction #9, the melite friction report
+ *  2026-10-28: "no batch/seed-sweep primitive" — each seed roll was
+ *  a separate press + status + view cycle, and ~5 of 7 generation
+ *  rounds were seed iterations): a {model:} card body may carry
+ *  `seeds: [...]` — the press fans out to ONE run per seed, the same
+ *  card and params with the seed alone varying, under one shared
+ *  run-id prefix. Judged HERE, in the shared envelope's one home,
+ *  BEFORE any run registers — a malformed sweep mints nothing.
+ * @param body the admitted request body.
+ * @returns the expansion's verdict (never throws). */
+export function expandSeedSweep(body) {
+    const raw = body["seeds"];
+    if (raw === undefined)
+        return { kind: "single" };
+    const doors = submitDoorsOf(body);
+    if (doors.length !== 1 || doors[0] !== "model") {
+        const named = doors.length === 0 ? "no door" : JSON.stringify(doors);
+        return {
+            kind: "refusal",
+            refusal: refusal(400, "`seeds` rides the model (card) door alone — this body names " +
+                named +
+                ". Send seeds with a {model: …} card body: the sweep mints one run per seed", "invalid_request"),
+        };
+    }
+    if (knobStated(body, "seed")) {
+        return {
+            kind: "refusal",
+            refusal: refusal(400, 'both "seed" and "seeds" stated — the sweep sets seed per run; state exactly one (a single seed for one roll, seeds: [...] for the sweep)', "invalid_request"),
+        };
+    }
+    if (!Array.isArray(raw) || raw.length === 0) {
+        return {
+            kind: "refusal",
+            refusal: refusal(400, '"seeds" must be a non-empty array of integers — the sweep mints one run per seed', "invalid_request"),
+        };
+    }
+    const seeds = [];
+    for (const [i, v] of raw.entries()) {
+        if (typeof v !== "number" || !Number.isSafeInteger(v)) {
+            return {
+                kind: "refusal",
+                refusal: refusal(400, "seeds[" + i + "] is " + JSON.stringify(v) +
+                    " — every sweep seat is a safe integer (the engine seed's own domain)", "invalid_request"),
+            };
+        }
+        seeds.push(v);
+    }
+    if (seeds.length > SEED_SWEEP_MAX) {
+        return {
+            kind: "refusal",
+            refusal: refusal(400, "seeds carries " + seeds.length + " entries — the sweep mints one run per seed and caps at " +
+                SEED_SWEEP_MAX + " (the GPU-spend law); split larger compares across presses", "invalid_request"),
+        };
+    }
+    return { kind: "sweep", seeds };
+}
 /** The walker's chain in order: non-object body (bad_envelope/body)
  *  -> non-bool test (bad_envelope/test) -> draft required
  *  (draft_required) -> malformed (draft_malformed) -> unknown doc
