@@ -38,7 +38,12 @@ extensions:
     # law's Layer C half. Prior aee6505 (2026-11-12): the boot env
     # assert (audit 016) — the pack refuses import when the shared
     # venv un-converges under it
-    ref: c8a718ba29e1a936c3dc8c0273f980c13feb2602
+    # 58c8afd 2026-11-12 (tts NEW-1 pointer, same day as c8a718b):
+    # the fit gate's refusal names the REACHABLE cure — the estate's
+    # free door (comfy_manage free) chains /audiocore/release_warmed
+    # and drops the warmed torch seats the gate starves against, not
+    # just the Unload node no estate door can feed.
+    ref: 58c8afd47d863c9c7fb7f58ddb70068fe7876897
     required: true
     desc: >-
       The ONE audio pack: Qwen3-TTS synthesis (qwen3_tts — card lane
