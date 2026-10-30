@@ -814,7 +814,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web-kit/timeline/src/timeline/CommissionsRail.tsx': { statements: 83.33, branches: 90, functions: 50, lines: 83.33 },
   '**/packages/web-kit/timeline/src/timeline/MotionTimelineBar.tsx': { statements: 90, branches: 94.44, functions: 50, lines: 90 },
   '**/packages/web-kit/timeline/src/timeline/MotionTimelineBarChrome.tsx': { statements: 77.08, branches: 84.09, functions: 78.95, lines: 79.07 },
-  '**/packages/web-kit/timeline/src/timeline/MotionTimelineBarDrag.ts': { statements: 89.36, branches: 74.05, functions: 76.19, lines: 94.02 },
+  '**/packages/web-kit/timeline/src/timeline/MotionTimelineBarDrag.ts': { statements: 89.36, branches: 73.28, functions: 76.19, lines: 94.02 },
   '**/packages/web-kit/timeline/src/timeline/motionTimelineState.ts': { statements: 85.71, branches: 83.33, functions: 50, lines: 83.33 },
   '**/packages/web-kit/timeline/src/timeline/MotionTimelineBarLanes.tsx': { statements: 69.17, branches: 76.4, functions: 64.29, lines: 73 },
   '**/packages/web-kit/timeline/src/timeline/MotionTimelineBarLayout.ts': { statements: 61.54, branches: null, functions: 25, lines: 60.87 },

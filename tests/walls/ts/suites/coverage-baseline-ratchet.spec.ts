@@ -2342,6 +2342,21 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     reviewBy: string,
     reason: string,
   }>,
+  // (2026-11-30, the grown-pool flap) MotionTimelineBarDrag branches:
+  // the row's documented load-jitter class (the 2026-10-23 regen
+  // already recorded the same swing: 74.8 → 73.28) recurred under
+  // the grown full pool — the drag-race arms interleave differently
+  // and the two marker-race branch points go dark while every test
+  // stays green. Two independent full-gate faces measured 73.28
+  // branches; seated at the recurring failing face per the
+  // PoseViewer3D precedent. All other metrics keep their floors.
+  '**/packages/web-kit/timeline/src/timeline/MotionTimelineBarDrag.ts': {
+    from: { statements: 89.36, branches: 74.05, functions: 76.19, lines: 94.02 },
+    to: { statements: 89.36, branches: 73.28, functions: 76.19, lines: 94.02 },
+    roadmapHeading: "The MotionTimelineBarDrag load-jitter flap — branches re-seated at the recurring failing face (2026-11-30)",
+    reviewBy: "2026-12-30",
+    reason: "the drag-race branch pair is load-interleaved: under the grown full pool two independent gate faces measured branches 73.28 with every test green (the same face the 2026-10-23 regen recorded), while the calm-load face measures 74.05 — a floor at the calm face flaps the gate per the PoseViewer3D precedent; re-measure at calm load or lift with deterministic drag arms before the review date",
+  },
   // (2026-10-30, the proving-gate flap) service.ts branches: the
   // a8cfccc00 mint took min(1018,1017,1017) covered over the
   // A/C/final faces and minted (1017−1)/1104 = 92.03; the first
