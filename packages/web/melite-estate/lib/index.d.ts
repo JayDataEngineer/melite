@@ -18,8 +18,8 @@ export interface Config {
     repoRoot?: string;
     /** The runs state root, named absolute (J12: the retired
      *  MELITE_STATE_ROOT env seam's config twin — wins over
-     *  repoRoot's data/runs default; the queue boot gate refuses
-     *  when neither root is named). */
+     *  repoRoot's data/runs default; a cold profile that names
+     *  neither gets the per-user default — coldInstallRoots). */
     stateRoot?: string;
     /** §23 cross-roots manifest extras, in search order after the
      *  own root (J12: the retired MELITE_STATE_ROOTS env seam's
@@ -43,7 +43,9 @@ export interface Config {
      *  default brain). */
     agentRoute?: string;
     /** The provisioning weights store root (unset: the checkout's
-     *  tracked configs derive it at apply — loadStoreRoot). */
+     *  tracked configs derive it at apply — loadStoreRoot; a cold
+     *  profile with no repoRoot gets the per-user default —
+     *  coldInstallRoots). */
     storeRoot?: string;
     /** THE ACQUIRE STALL BUDGET (ERRORS.md k2, P5 F1): how long a
      *  direct fetch may land no bytes before the stall watchdog
@@ -67,6 +69,25 @@ export interface Config {
 }
 /** The validator twin of {@link Config}. */
 export declare const Config: Schema<Config>;
+/**
+ * THE COLD-PROFILE ROOTS (operator 2026-10-30, "as easy as possible
+ * to setup"): the deterministic defaults a fresh install boots on
+ * when the estate row names no roots. Precedence, one function:
+ * config.stateRoot wins verbatim; else a named repoRoot keeps the
+ * repo law (<repoRoot>/data/runs for the state tree, and NO store
+ * default — the checkout's tracked configs derive the store at
+ * apply, loadStoreRoot's own law); else — the cold install — the
+ * per-user data home names both roots (~/.local/share/melite). The
+ * home default is per-user, so the single-writer lock law holds one
+ * estate per user, exactly as one estate per repo.
+ * @param config the estate row's config face (the three root fields).
+ * @returns the state root the composition pins, and the weights
+ * store root to forward (undefined = the provisioning row derives).
+ */
+export declare function coldInstallRoots(config: Readonly<Pick<Config, "repoRoot" | "stateRoot" | "storeRoot">>): {
+    stateRoot: string;
+    storeRoot: string | undefined;
+};
 export declare function apply(ctx: Context, config?: Config): Promise<void>;
 /** The cordis row shape: a plugin object (name + apply). */
 declare const _default: {

@@ -62,6 +62,7 @@ import { craftEngineAutoRoute } from "@melite/engine-craft";
 import { agentEngine } from "@melite/engine-agent";
 import { findSkill, disclosureRoot, resolveStateRoot } from "@melite/estate-queue";
 import { join } from "node:path";
+import { homedir } from "node:os";
 import { readFile } from "node:fs/promises";
 // The drafts service only — the storage PROVIDERS (hub, json
 // backend, domain form) belong to the composition site: dsh-base
@@ -421,6 +422,29 @@ export const Config = Schema.object({
     downloadClaimIntervalMs: Schema.number(),
     seatSettleBudgetMs: Schema.number(),
 });
+/**
+ * THE COLD-PROFILE ROOTS (operator 2026-10-30, "as easy as possible
+ * to setup"): the deterministic defaults a fresh install boots on
+ * when the estate row names no roots. Precedence, one function:
+ * config.stateRoot wins verbatim; else a named repoRoot keeps the
+ * repo law (<repoRoot>/data/runs for the state tree, and NO store
+ * default — the checkout's tracked configs derive the store at
+ * apply, loadStoreRoot's own law); else — the cold install — the
+ * per-user data home names both roots (~/.local/share/melite). The
+ * home default is per-user, so the single-writer lock law holds one
+ * estate per user, exactly as one estate per repo.
+ * @param config the estate row's config face (the three root fields).
+ * @returns the state root the composition pins, and the weights
+ * store root to forward (undefined = the provisioning row derives).
+ */
+export function coldInstallRoots(config) {
+    const dataHome = join(homedir(), ".local", "share", "melite");
+    const cold = config.repoRoot === undefined;
+    return {
+        stateRoot: config.stateRoot ?? (cold ? join(dataHome, "runs") : join(config.repoRoot ?? "", "data", "runs")),
+        storeRoot: config.storeRoot ?? (cold ? join(dataHome, "store") : undefined),
+    };
+}
 export async function apply(ctx, config = {}) {
     // THE BUNDLE GATE RUNS FIRST: a configuration refusal precedes any
     // composition — nothing mounts before it, so a gutted tree fails
@@ -471,8 +495,16 @@ export async function apply(ctx, config = {}) {
     // THE STATE-ROOT RESOLVE (J12): one spelling for the queue row
     // AND the drafts row — config.stateRoot wins over repoRoot's
     // data/runs default (resolveStateRoot, estate-queue's law), the
-    // manifest extras resolve string|list once.
-    const stateRoot = resolveStateRoot({ repoRoot: config.repoRoot, stateRoot: config.stateRoot });
+    // manifest extras resolve string|list once. THE COLD-PROFILE
+    // DEFAULT (operator 2026-10-30, "as easy as possible to setup"):
+    // a fresh install's estate row names NO roots, and the queue row
+    // rightly refuses an unpinned boot — so the ESTATE ROW names the
+    // per-user default itself (coldInstallRoots below): the pin law
+    // keeps its teeth (the queue still receives a NAMED absolute
+    // root, one writer per root), and `dsh plugin install` alone
+    // boots a green estate with zero config.
+    const coldRoots = coldInstallRoots(config);
+    const stateRoot = resolveStateRoot({ repoRoot: config.repoRoot, stateRoot: coldRoots.stateRoot });
     const stateRoots = (Array.isArray(config.stateRoots)
         ? config.stateRoots
         : (config.stateRoots ?? "").split(":").map((x) => x.trim()).filter((x) => x !== ""));
@@ -490,7 +522,7 @@ export async function apply(ctx, config = {}) {
             // estate row forwards its provisioning fields into the
             // composition's own Config — never a second declaration site.
             await ctx.plugin(row, {
-                ...(config.storeRoot === undefined ? {} : { storeRoot: config.storeRoot }),
+                ...(coldRoots.storeRoot === undefined ? {} : { storeRoot: coldRoots.storeRoot }),
                 ...(config.acquireStallTimeoutMs === undefined ? {} : { acquireStallTimeoutMs: config.acquireStallTimeoutMs }),
                 ...(config.durableDownloads === undefined ? {} : { durableDownloads: config.durableDownloads }),
                 ...(config.downloadClaimIntervalMs === undefined ? {} : { downloadClaimIntervalMs: config.downloadClaimIntervalMs }),
@@ -499,7 +531,10 @@ export async function apply(ctx, config = {}) {
         }
         // the queue row receives the pin (its QueueConfig roots)
         if (row === queuePlugin) {
-            ctx.plugin(row, { repoRoot: config.repoRoot, stateRoot: config.stateRoot, stateRoots });
+            // stateRoot is the DERIVED pin (config's verbatim root, the
+            // repo default, or the cold-profile default) — the queue row
+            // never sees an unpinned boot from this composition.
+            ctx.plugin(row, { repoRoot: config.repoRoot, stateRoot, stateRoots });
             continue;
         }
         // the drafts row rides the SAME resolved root (its unit-file

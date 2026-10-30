@@ -67,6 +67,7 @@ import { agentEngine } from "@melite/engine-agent";
 import type { FlowsSeat } from "@melite/estate-queue";
 import { findSkill, disclosureRoot, resolveStateRoot } from "@melite/estate-queue";
 import { join } from "node:path";
+import { homedir } from "node:os";
 import type { FamilyModelsSeat } from "@melite/estate-queue";
 import { readFile } from "node:fs/promises";
 // The drafts service only — the storage PROVIDERS (hub, json
@@ -444,8 +445,8 @@ export interface Config {
   repoRoot?: string;
   /** The runs state root, named absolute (J12: the retired
    *  MELITE_STATE_ROOT env seam's config twin — wins over
-   *  repoRoot's data/runs default; the queue boot gate refuses
-   *  when neither root is named). */
+   *  repoRoot's data/runs default; a cold profile that names
+   *  neither gets the per-user default — coldInstallRoots). */
   stateRoot?: string;
   /** §23 cross-roots manifest extras, in search order after the
    *  own root (J12: the retired MELITE_STATE_ROOTS env seam's
@@ -469,7 +470,9 @@ export interface Config {
    *  default brain). */
   agentRoute?: string;
   /** The provisioning weights store root (unset: the checkout's
-   *  tracked configs derive it at apply — loadStoreRoot). */
+   *  tracked configs derive it at apply — loadStoreRoot; a cold
+   *  profile with no repoRoot gets the per-user default —
+   *  coldInstallRoots). */
   storeRoot?: string;
   /** THE ACQUIRE STALL BUDGET (ERRORS.md k2, P5 F1): how long a
    *  direct fetch may land no bytes before the stall watchdog
@@ -507,6 +510,32 @@ export const Config: Schema<Config> = Schema.object({
   downloadClaimIntervalMs: Schema.number(),
   seatSettleBudgetMs: Schema.number(),
 });
+
+/**
+ * THE COLD-PROFILE ROOTS (operator 2026-10-30, "as easy as possible
+ * to setup"): the deterministic defaults a fresh install boots on
+ * when the estate row names no roots. Precedence, one function:
+ * config.stateRoot wins verbatim; else a named repoRoot keeps the
+ * repo law (<repoRoot>/data/runs for the state tree, and NO store
+ * default — the checkout's tracked configs derive the store at
+ * apply, loadStoreRoot's own law); else — the cold install — the
+ * per-user data home names both roots (~/.local/share/melite). The
+ * home default is per-user, so the single-writer lock law holds one
+ * estate per user, exactly as one estate per repo.
+ * @param config the estate row's config face (the three root fields).
+ * @returns the state root the composition pins, and the weights
+ * store root to forward (undefined = the provisioning row derives).
+ */
+export function coldInstallRoots(
+  config: Readonly<Pick<Config, "repoRoot" | "stateRoot" | "storeRoot">>,
+): { stateRoot: string; storeRoot: string | undefined } {
+  const dataHome = join(homedir(), ".local", "share", "melite");
+  const cold = config.repoRoot === undefined;
+  return {
+    stateRoot: config.stateRoot ?? (cold ? join(dataHome, "runs") : join(config.repoRoot ?? "", "data", "runs")),
+    storeRoot: config.storeRoot ?? (cold ? join(dataHome, "store") : undefined),
+  };
+}
 
 export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   // THE BUNDLE GATE RUNS FIRST: a configuration refusal precedes any
@@ -559,8 +588,16 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   // THE STATE-ROOT RESOLVE (J12): one spelling for the queue row
   // AND the drafts row — config.stateRoot wins over repoRoot's
   // data/runs default (resolveStateRoot, estate-queue's law), the
-  // manifest extras resolve string|list once.
-  const stateRoot = resolveStateRoot({ repoRoot: config.repoRoot, stateRoot: config.stateRoot });
+  // manifest extras resolve string|list once. THE COLD-PROFILE
+  // DEFAULT (operator 2026-10-30, "as easy as possible to setup"):
+  // a fresh install's estate row names NO roots, and the queue row
+  // rightly refuses an unpinned boot — so the ESTATE ROW names the
+  // per-user default itself (coldInstallRoots below): the pin law
+  // keeps its teeth (the queue still receives a NAMED absolute
+  // root, one writer per root), and `dsh plugin install` alone
+  // boots a green estate with zero config.
+  const coldRoots = coldInstallRoots(config);
+  const stateRoot = resolveStateRoot({ repoRoot: config.repoRoot, stateRoot: coldRoots.stateRoot });
   const stateRoots = (Array.isArray(config.stateRoots)
     ? config.stateRoots
     : (config.stateRoots ?? "").split(":").map((x) => x.trim()).filter((x) => x !== "")
@@ -579,7 +616,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       // estate row forwards its provisioning fields into the
       // composition's own Config — never a second declaration site.
       await ctx.plugin(row, {
-        ...(config.storeRoot === undefined ? {} : { storeRoot: config.storeRoot }),
+        ...(coldRoots.storeRoot === undefined ? {} : { storeRoot: coldRoots.storeRoot }),
         ...(config.acquireStallTimeoutMs === undefined ? {} : { acquireStallTimeoutMs: config.acquireStallTimeoutMs }),
         ...(config.durableDownloads === undefined ? {} : { durableDownloads: config.durableDownloads }),
         ...(config.downloadClaimIntervalMs === undefined ? {} : { downloadClaimIntervalMs: config.downloadClaimIntervalMs }),
@@ -588,7 +625,10 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     }
     // the queue row receives the pin (its QueueConfig roots)
     if (row === queuePlugin) {
-      ctx.plugin(row, { repoRoot: config.repoRoot, stateRoot: config.stateRoot, stateRoots });
+      // stateRoot is the DERIVED pin (config's verbatim root, the
+      // repo default, or the cold-profile default) — the queue row
+      // never sees an unpinned boot from this composition.
+      ctx.plugin(row, { repoRoot: config.repoRoot, stateRoot, stateRoots });
       continue;
     }
     // the drafts row rides the SAME resolved root (its unit-file
