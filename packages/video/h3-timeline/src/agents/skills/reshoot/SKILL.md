@@ -66,10 +66,12 @@ as before, byte-identical.)
    disarms.
 3. **Set ONE camera intent.** The entry fields (the card's served
    ranges, tested guidance):
-   - `orbit` (±180, 0) — orbit left/right. ±45° tested;
-     past 90° the hidden side is invented.
-   - `tilt` (±90, 0) — raise/lower the camera. Rising is
-     the weak direction — keep above about −20°.
+   - `orbit` (±180, −30) — orbit left/right. The default is the
+     official comfy-reshoot app's own slider value; ±45° tested, past
+     90° the hidden side is invented.
+   - `tilt` (±90, +20) — raise/lower the camera. The default is the
+     app's own slider value; looking up is the weak direction — keep
+     above about −20°.
    - `dolly` (0.1–3, 1.0) — distance; below 1 dollies in,
      above 1 pulls back (pulling back reveals more invented area).
    - `zoom` (20–120, 50) — lens FOV; change it when the
@@ -86,9 +88,20 @@ as before, byte-identical.)
      disocclusion holes, invert only if the render looks
      inside-out.
    Out-of-band dials refuse LOUD at the compose door (ahead of the
-   engine, never a widget 400). Untouched dials = the identity camera:
-   an armed re-shoot with no move re-renders the scene from the SAME
-   viewpoint.
+   engine, never a widget 400). Untouched dials are the OFFICIAL app's
+   pose (−30° orbit, +20° tilt) — never the identity camera: the
+   CrossView pack documents a near-zero pose as the one its LoRA
+   misbehaves on ("avoid near-zero angles — the warp is almost
+   identical to the source"), so a pose with |orbit| and |tilt| both
+   under 5° refuses at the compose door.
+   The chain itself is the reference app's graph, ported line for
+   line (Comfy-Org/comfy-reshoot, `workflows/generate.api.json`): the
+   RAW warp — magenta disocclusions and all — pins through
+   `MiniMaxH3AddGuide` at frame 0 as the geometric prior, the
+   PREPARED source clip is `ref_videos.ref_video_0` as the
+   appearance/identity prior, and nothing fills the holes. Three
+   "fill the holes" cures landed before the reference graph was read;
+   all three painted a second subject and all three are retired.
 4. **Confirm.** Show the bound clip, the camera intent in words
    ("orbit 30° right, dolly to 0.8"), and that replace is empty.
    THE LANE CLAUSE: that wait is chat-lane law — on a headless

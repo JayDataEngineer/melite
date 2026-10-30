@@ -84,7 +84,11 @@ export function renderH3Refine(entry, p, facts, g, runId) {
         noise, sampler: samplerSel, sigmas: sched,
         model: sigmaModel, positive,
         model_name: REFINE_UPSCALE_MODEL,
-        mode: upMode, scale: upScale,
+        // F23 (2026-10-30): the multiplexer's CHILD is addressed by its
+        // DOTTED path — the engine rejects a bare `scale` with
+        // required_input_missing + extra_info.input_name "mode.scale"
+        // (prompt 46bf3a93 proved the dotted key validates and runs).
+        mode: upMode, 'mode.scale': upScale,
         // Multiplier mode ignores these (the film's own note at its
         // handoff mount) — they ride the upscaler's own defaults.
         width: 1280, height: 704, megapixels: 1,

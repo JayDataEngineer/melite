@@ -144,6 +144,19 @@ const num = (e: Record<string, unknown>, key: string, fallback: number): number 
  *  agreement). A bag entry rides the compose door as a loose dict,
  *  so the READER owns the refusal — out-of-domain dials refuse LOUD
  *  here, ahead of the engine, never as a ComfyUI widget 400. */
+/** The app's default camera move (see {@link readReshootKnobs}). */
+export const RESHOOT_DEFAULT_POSE: Readonly<{ orbit: number; tilt: number }> = {
+  orbit: -30,
+  tilt: 20,
+}
+
+/** The smallest pose the CrossView LoRA accepts as a camera MOVE. The
+ *  pack's README: "Avoid near-zero angles — the LoRA misbehaves when
+ *  the warp is almost identical to the source." Below this both-angle
+ *  floor the warp is the input clip plus hole noise, and the guide
+ *  prior contradicts the source prior instead of extending it. */
+export const RESHOOT_MIN_POSE_DEGREES = 5
+
 export const RESHOOT_DIAL_BOUNDS: Readonly<Record<string, readonly [number, number]>> = {
   orbit: [-180, 180],
   tilt: [-90, 90],
@@ -175,17 +188,24 @@ const bagEntry = (p: Record<string, unknown>): Record<string, unknown> | undefin
     : undefined
 }
 
-/** The neutral pose is the identity camera (no orbit, no tilt, the
- *  source distance, a normal 50° lens, no framing shift) — an armed
- *  re-shoot with untouched knobs re-renders the scene from the same
- *  viewpoint rather than inventing a move nobody asked for. The
+/** THE OFFICIAL APP'S POSE (Comfy-Org/comfy-reshoot,
+ *  workflows/generate.api.json node 5: azimuth -30, elevation 20, the
+ *  app's own slider defaults) — never the identity camera. The pack's
+ *  README names the failure mode verbatim: "Avoid near-zero angles —
+ *  the LoRA misbehaves when the warp is almost identical to the
+ *  source." The identity default shipped a warp indistinguishable from
+ *  the input, fed it to a camera LoRA as the geometric prior, and
+ *  round 5 measured the result (a second subject at a second scale).
+ *  The neutral pose is therefore the app's DEFAULT camera move: orbit
+ *  -30°, tilt +20° (inside the green training zone), the source
+ *  distance, a normal 50° lens, no framing shift. The
  *  strength default is the official 0.8 (the LoRA's own tested
  *  band is 0.5–1, served default 0.8). */
 export function readReshootKnobs(p: Record<string, unknown>): ReshootKnobs {
   const e = bagEntry(p) ?? {}
   return {
-    orbit: banded(e, 'orbit', 0),
-    tilt: banded(e, 'tilt', 0),
+    orbit: banded(e, 'orbit', RESHOOT_DEFAULT_POSE.orbit),
+    tilt: banded(e, 'tilt', RESHOOT_DEFAULT_POSE.tilt),
     dolly: banded(e, 'dolly', 1.0),
     zoom: banded(e, 'zoom', 50),
     pan: banded(e, 'pan', 0),
@@ -267,6 +287,18 @@ export function buildH3Reshoot(
     )
   }
   const knobs = readReshootKnobs(p)
+  // THE IDENTITY CAMERA IS NOT A RE-SHOOT (the pack README's warning as
+  // a compose-door refusal): a pose with no orbit and no tilt builds a
+  // warp almost identical to the source, which is the one condition the
+  // CrossView LoRA documents as misbehaving.
+  if (
+    Math.abs(knobs.orbit) < RESHOOT_MIN_POSE_DEGREES &&
+    Math.abs(knobs.tilt) < RESHOOT_MIN_POSE_DEGREES
+  ) {
+    throw new Error(
+      `h3 re-shoot: the camera pose is ${knobs.orbit}° orbit / ${knobs.tilt}° tilt — both under the ${RESHOOT_MIN_POSE_DEGREES}° floor, so the warp is almost identical to the source; the CrossView pack documents that pose as the one the LoRA misbehaves on ("avoid near-zero angles"). Set orbit or tilt to a real move (the app's default is -30° / +20°)`,
+    )
+  }
   // THE OFFICIAL LOADER (the 2026-11-13 rework): core LoadVideo, the
   // one node that emits the VIDEO type CrossViewPrepareClip demands.
   // The sibling arms' VHS seat stays theirs — VHS serves force-rate

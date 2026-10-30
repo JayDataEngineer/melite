@@ -253,7 +253,10 @@ describe("THE GESTURE — open drill, edit, Run = patch FIRST, then start", () =
       expectRev: 3,
     });
     const start = seen.find((c) => c.method === "runs/start");
-    expect(start?.args).toEqual({ doc: { draft_id: "draft-1" } });
+    // F21 (2026-10-30): the drill's press names its bench stage —
+    // bench_stage_id is what the run door persists and the sidecar maps
+    // back as benchStageId, the tile's last_run binding
+    expect(start?.args).toEqual({ doc: { draft_id: "draft-1", bench_stage_id: "s_0" } });
     // the patch LANDED BEFORE the start read it (the shared-state law)
     expect(seen.map((c) => c.method).indexOf("drafts/patch"))
       .toBeLessThan(seen.map((c) => c.method).indexOf("runs/start"));

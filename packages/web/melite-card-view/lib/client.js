@@ -4513,9 +4513,20 @@ window.__ModuleLoader__.load({
 		async function patchStageOutcome(draftId, stageId, outcome, expectRev) {
 			await patchWithRebase(draftId, stageId, outcome, expectRev);
 		}
-		/** Start the run; returns the run_id or throws the door's named refusal. */
-		async function startDraft(draftId) {
-			const row = await (0, _melite_card_base_client.unwrapRemote)((0, _melite_card_base_client.estateRemote)().runs.start({ draft_id: draftId }), "runs/start");
+		/** Start the run; returns the run_id or throws the door's named
+		*  refusal.
+		*
+		*  F21 (2026-10-30): the press names the BENCH STAGE it came from. The
+		*  run door persists `bench_stage_id` onto the queue row and the
+		*  sidecar maps it back as `benchStageId`, which is what binds a
+		*  press-minted run to its tile — without the key the row's `last_run`
+		*  stays null and the next press re-renders the stage (a silent double
+		*  spend). Both live press receipts (run-c6bfa91defe7,
+		*  run-9dacc8612feb) omitted it. */
+		async function startDraft(draftId, stageId) {
+			const body = { draft_id: draftId };
+			if (stageId !== void 0 && stageId !== "") body["bench_stage_id"] = stageId;
+			const row = await (0, _melite_card_base_client.unwrapRemote)((0, _melite_card_base_client.estateRemote)().runs.start(body), "runs/start");
 			if (typeof row["run_id"] !== "string") throw new Error("runs/start: no run_id in the answer");
 			return row["run_id"];
 		}
@@ -7969,7 +7980,7 @@ window.__ModuleLoader__.load({
 							if (patch !== null) await patchStageParams(draftId, openRow.stageId, patch);
 							const gate = await refuseForUnlandedWrite(draftId, openRow.stageId);
 							if (gate !== null) throw new Error(gate);
-							startedRun(await startDraft(draftId));
+							startedRun(await startDraft(draftId, openRow.stageId));
 							setOpenStage(null);
 							refresh();
 						},

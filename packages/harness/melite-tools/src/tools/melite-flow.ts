@@ -489,9 +489,14 @@ async function runBench(
     // every $spell a wire resolves left as a concrete value; a spell
     // with NO wire still rides — the door's spell gate names it, the
     // one honest wall left for a genuinely unresolvable promise.
+    // F21 — THE PRESS ROW'S OWN KEY (2026-10-30): the run door persists
+    // bench_stage_id onto the queue row and the sidecar maps it back,
+    // but nothing wrote it, so every live press (run-c6bfa91defe7,
+    // run-9dacc8612feb) omitted the key and the row's binding could
+    // never resolve. The pass already knows the stage — it stamps it.
     const started = await startRun(estate, model === ''
-      ? { test: wireBool(a.test), draft_id: draftId }
-      : { ...resolved, model, test: wireBool(a.test), draft_id: draftId },
+      ? { test: wireBool(a.test), draft_id: draftId, bench_stage_id: stageId }
+      : { ...resolved, model, test: wireBool(a.test), draft_id: draftId, bench_stage_id: stageId },
     signal)
     if (typeof started['error'] === 'string') {
       return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId, error: started['error'], pass }

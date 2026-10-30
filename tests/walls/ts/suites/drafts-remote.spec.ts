@@ -15,7 +15,7 @@
 import { assertHermeticRode } from "../../../helpers/hermetic-engine.ts";
 import { test, onTestFinished } from "vitest";
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, writeFileSync, utimesSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, utimesSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Context, type Plugin } from '@deepseek-ai/cordis';
@@ -853,3 +853,58 @@ test("the bench survives a dispose + re-boot on one root", async () => {
 test("the hermetic engine (the gate-37 flake cure): every prime rode the mock", () => {
   assertHermeticRode();
 });
+
+// ── F22 — THE SEAT/ENDPOINT PARITY LAW (2026-10-30) ───────────────
+// The tool dispatch (packages/harness/melite-tools/src/estate.ts, the
+// bench lane's closed union) calls the plain SEAT methods; the
+// `@Remote("<verb>")` endpoints are the HTTP face. Every other verb
+// exposed both, archive exposed ONLY the endpoint — so the live tool
+// called a method that never existed (`bench.archive is not a
+// function`, measured on run-9dacc8612feb). This arm judges the
+// objects the lane actually calls: each verb must be a function on the
+// service, and archive must complete a real round-trip through the
+// seat (never through the endpoint alias).
+test("F22 — every bench verb the tools dispatch is a plain SEAT, and archive rides its seat end-to-end", async () => {
+  const ctx = await boot();
+  const bench = ctx.benchRemote;
+  // the verb list is DERIVED from the tool dispatch — the door that
+  // calls the seats (packages/harness/melite-tools/src/estate.ts),
+  // never a hand-kept list that can drift from it
+  const toolSrc = readFileSync(
+    join(__dirname, "..", "..", "..", "..", "packages", "harness", "melite-tools", "src", "estate.ts"),
+    "utf8",
+  );
+  const seatCalls = new Set(
+    [...toolSrc.matchAll(/bench(?:Remote)?\.([A-Za-z_][A-Za-z0-9_]*)\(/g)].map((m) => m[1]!),
+  );
+  assert.ok(seatCalls.size >= 8, `the dispatch names the bench seats (saw ${[...seatCalls].join(", ")})`);
+  for (const verb of seatCalls) {
+    assert.equal(
+      typeof (bench as unknown as Record<string, unknown>)[verb],
+      "function",
+      `bench.${verb} must be a seat METHOD (the tool dispatch calls the seat, never the @Remote endpoint)`,
+    );
+  }
+  await bench.ensure({ session: "sarch", stages: [{ id: "s_0" }] }, sig);
+  // the verb's own polarity: off:false ARCHIVES the row (the stage
+  // leaves every run face), off:true restores it
+  const row = await bench.archive("sarch", { stage: "s_0", off: false, expect_rev: 0 }, sig);
+  assert.equal(row.stage, "s_0");
+  assert.equal(row.session, "sarch");
+  assert.equal(row.rev, 1);
+  const archived = await bench.get("sarch", sig);
+  const archivedStage = (archived.stages as unknown as Record<string, unknown>[]).find((x) => x["id"] === "s_0")!;
+  assert.equal(archivedStage["archived"], true, "the seat persisted the archive flag");
+  // the restore half of the same seat walks the rev back
+  const restored = await bench.archive("sarch", { stage: "s_0", off: true, expect_rev: 1 }, sig);
+  assert.equal(restored.rev, 2);
+  const back = await bench.get("sarch", sig);
+  const backStage = (back.stages as unknown as Record<string, unknown>[]).find((x) => x["id"] === "s_0")!;
+  assert.equal(backStage["archived"], undefined, "restore drops the flag");
+});
+
+// ── F21 — the press row's bench_stage_id has a WRITER ─────────────
+// runsRegistry reads body["bench_stage_id"] and the sidecar persists
+// it, but nothing wrote it: both live requests (run-c6bfa91defe7,
+// run-9dacc8612feb) omitted the key, so the press row's binding could
+// never resolve. The press composer knows the stage — it must stamp it.

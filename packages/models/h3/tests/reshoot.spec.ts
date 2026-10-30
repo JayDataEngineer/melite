@@ -19,7 +19,7 @@ import { describe, it, expect } from "vitest";
 import { film } from "../src/actions.ts";
 import { instantiateAction } from "@melite/comfyui-card-kit";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
-import { readReshootKnobs, reshootArmed } from "../src/reshoot.ts";
+import { RESHOOT_DEFAULT_POSE, readReshootKnobs, reshootArmed } from "../src/reshoot.ts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 
 const H3: ModelFacts = {
@@ -315,16 +315,39 @@ describe("the h3 camera re-shoot chain (the fourth mod bag, official rework)", (
     ).toThrow(/names no source clip/);
   });
 
-  it("a non-array bag is DISARMED and the neutral knobs are the identity camera at the LoRA's own 0.8", () => {
+  it("a non-array bag is DISARMED and untouched knobs are the OFFICIAL app's pose (-30 / +20), never the identity camera", () => {
     // the card's guard refuses a present non-array bag loud; at the
     // model tier it is simply not an arm (the same absent posture), and
-    // the knob reader falls back to the identity camera
+    // the knob reader falls back to the app's own slider defaults.
+    // Round 5 burned on the identity default: a zero-angle warp is
+    // "almost identical to the source", the one pose the pack's README
+    // says the LoRA misbehaves on.
     expect(reshootArmed({ reshoot: "clips/take3.mp4" })).toBe(false);
     expect(reshootArmed({ reshoot: [] })).toBe(false);
     expect(readReshootKnobs({ reshoot: "clips/take3.mp4" })).toEqual({
-      orbit: 0, tilt: 0, dolly: 1, zoom: 50, pan: 0, strength: 0.8,
+      orbit: -30, tilt: 20, dolly: 1, zoom: 50, pan: 0, strength: 0.8,
       depthRatio: 6, smoothDepth: false, invertDepth: false,
     });
+    expect(RESHOOT_DEFAULT_POSE).toEqual({ orbit: -30, tilt: 20 });
+  });
+
+  it("a near-zero pose REFUSES at compose — the pack's own documented failure mode, named at the door", () => {
+    // the app's README: "Avoid near-zero angles — the LoRA misbehaves
+    // when the warp is almost identical to the source"
+    expect(() => instantiateAction(
+      film,
+      { ...bag(), reshoot: [{ source_clip: "sources/take3.mp4", orbit: 0, tilt: 0 }] },
+      H3, new GraphBuilder(), "run_rs_identity",
+    )).toThrow(/both under the 5° floor, so the warp is almost identical to the source/);
+    // ONE real axis is enough to walk off the floor
+    const g = new GraphBuilder();
+    instantiateAction(
+      film,
+      { ...bag(), reshoot: [{ source_clip: "sources/take3.mp4", orbit: 0, tilt: 12 }] },
+      H3, g, "run_rs_tilt_only",
+    );
+    const [, w] = nodes(g).find(([, n]) => n.class_type === "CrossViewWarp")!;
+    expect(w.inputs.tilt ?? w.inputs.elevation).toBe(12);
   });
 
   it("a NON-OBJECT entry stays ARMED and refuses at the chain build (the presence predicate, never a silent disarm)", () => {

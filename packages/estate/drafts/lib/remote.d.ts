@@ -352,6 +352,12 @@ export declare class BenchRemoteService extends TypertRemoteService {
      * restore law: the CAS chains server-side, one save, one history
      * event). */
     remoteExportAddStages(sessionKey: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchStagesRow>;
+    /** The plain `archive` seat the tools call (F22, 2026-10-30). Every
+     *  other bench verb exposes the seat AND the endpoint; archive
+     *  exposed only the endpoint, so `melite_flow`'s housekeeping case
+     *  called a method that never existed (`bench.archive is not a
+     *  function`, measured live on run-9dacc8612feb). */
+    archive(session: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchStageRow>;
     /** Endpoint `bench/archive` — F11's housekeeping verb: mark a
      *  spent stage archived (off: true restores it); the row stays
      *  with its provenance, every run face skips it. */

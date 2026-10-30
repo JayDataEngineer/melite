@@ -188,7 +188,10 @@ describe("the upscale kind (the sixth mod bag)", () => {
     const u = ups[0]![1].inputs;
     assert.equal(u['model_name'], 'minimax_h3_latent_upscaler_3d_bf16.safetensors', 'the family weights (the file the engine store carries)');
     assert.equal(u['mode'], 'scale by multiplier', 'the multiplier spelling');
-    assert.equal(u['scale'], 2.0, 'ONE variant path: 2x');
+    // F23 (2026-10-30): the multiplexer's child rides its DOTTED path —
+    // a bare `scale` is `required_input_missing` engine-side
+    assert.equal(u['mode.scale'], 2.0, 'ONE variant path: 2x');
+    assert.equal(u['scale'], undefined, 'never the bare child key');
     assert.equal(u['precision'], 'bf16', 'bf16 weights, bf16 compute');
     assert.equal(u['offload_after_upscale'], true, 'offload after — the recipe posture, VRAM freed for pass 2');
     // pass 2: Pass2Prepare + the res_multistep tail at the entry's

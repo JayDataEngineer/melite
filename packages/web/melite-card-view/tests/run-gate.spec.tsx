@@ -213,8 +213,11 @@ test('THE WEDGE FENCE (audit V-E1): a THROWN Run ALL pass un-wedges Play — the
   const user = userEvent.setup()
   const btn = await screen.findByRole('button', { name: /Play/ }, { timeout: 4000 })
   await user.click(btn)
+  // the rejection lands as a FACE — the tab's error line AND the pass
+  // accounting both name it (the settled-outcome row), so the arm
+  // asserts presence, never a single node
   await waitFor(() => {
-    expect(screen.getByText(/wire down/)).toBeTruthy()
+    expect(screen.getAllByText(/wire down/).length).toBeGreaterThan(0)
   }, { timeout: 4000 })
   // the fence lifts: the button is live again, and the re-press
   // reaches the door (the throw entry was one-shot — the second

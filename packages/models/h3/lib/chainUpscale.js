@@ -81,7 +81,8 @@ export function renderH3ChainUpscale(entry, p, facts, g, runId) {
     const upscaled = g.node('MinimaxH3LatentUpscaler3D', {
         latent: cur.out(2),
         model_name: REFINE_UPSCALE_MODEL,
-        mode: 'scale by multiplier', scale: 2.0,
+        // F23 — the combo's child rides its DOTTED path (see refine.ts)
+        mode: 'scale by multiplier', 'mode.scale': 2.0,
         align: 32, keep_proportion: true,
         device: 'cuda', precision: 'bf16', offload_after_upscale: true,
     }).out(0);

@@ -214,6 +214,11 @@ test('Run in the drill patches the domain FIRST, then starts the run', async () 
   expect(methods.indexOf('drafts/get')).toBeGreaterThan(methods.indexOf('drafts/patch'))
   const start = calls.find((c) => c.method === 'runs/start')
   expect(start?.args).toMatchObject({ doc: { prompt: typed, steps: 20 } })
+  // F21 (2026-10-30): the press NAMES its bench stage. The run door
+  // persists bench_stage_id and the sidecar maps it back as
+  // benchStageId — the binding the tile's last_run reads. Both live
+  // press receipts omitted the key before this stamp.
+  expect(start?.args).toMatchObject({ doc: { bench_stage_id: 's_0' } })
   // THE BENCH IS NEVER TAKEN OVER (2026-09-12): the started run
   // stays a TILE — no navigation, the bench surface stays; the
   // observer writes running/terminal onto the row

@@ -74,11 +74,29 @@ export interface ReshootKnobs {
  *  agreement). A bag entry rides the compose door as a loose dict,
  *  so the READER owns the refusal — out-of-domain dials refuse LOUD
  *  here, ahead of the engine, never as a ComfyUI widget 400. */
+/** The app's default camera move (see {@link readReshootKnobs}). */
+export declare const RESHOOT_DEFAULT_POSE: Readonly<{
+    orbit: number;
+    tilt: number;
+}>;
+/** The smallest pose the CrossView LoRA accepts as a camera MOVE. The
+ *  pack's README: "Avoid near-zero angles — the LoRA misbehaves when
+ *  the warp is almost identical to the source." Below this both-angle
+ *  floor the warp is the input clip plus hole noise, and the guide
+ *  prior contradicts the source prior instead of extending it. */
+export declare const RESHOOT_MIN_POSE_DEGREES = 5;
 export declare const RESHOOT_DIAL_BOUNDS: Readonly<Record<string, readonly [number, number]>>;
-/** The neutral pose is the identity camera (no orbit, no tilt, the
- *  source distance, a normal 50° lens, no framing shift) — an armed
- *  re-shoot with untouched knobs re-renders the scene from the same
- *  viewpoint rather than inventing a move nobody asked for. The
+/** THE OFFICIAL APP'S POSE (Comfy-Org/comfy-reshoot,
+ *  workflows/generate.api.json node 5: azimuth -30, elevation 20, the
+ *  app's own slider defaults) — never the identity camera. The pack's
+ *  README names the failure mode verbatim: "Avoid near-zero angles —
+ *  the LoRA misbehaves when the warp is almost identical to the
+ *  source." The identity default shipped a warp indistinguishable from
+ *  the input, fed it to a camera LoRA as the geometric prior, and
+ *  round 5 measured the result (a second subject at a second scale).
+ *  The neutral pose is therefore the app's DEFAULT camera move: orbit
+ *  -30°, tilt +20° (inside the green training zone), the source
+ *  distance, a normal 50° lens, no framing shift. The
  *  strength default is the official 0.8 (the LoRA's own tested
  *  band is 0.5–1, served default 0.8). */
 export declare function readReshootKnobs(p: Record<string, unknown>): ReshootKnobs;

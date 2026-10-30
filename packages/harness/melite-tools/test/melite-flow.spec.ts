@@ -1359,6 +1359,13 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
     assert.equal(out.target, 'bench-main @ rev 3')
     assert.equal(out.draft_id, 'd_bench')
     assert.equal(out.status, 'done')
+    // F21 — THE PRESS ROW'S OWN KEY (2026-10-30): the run door persists
+    // bench_stage_id and the sidecar maps it back onto the row; before
+    // this the bench press never wrote it, so every live press
+    // (run-c6bfa91defe7, run-9dacc8612feb) omitted the key and the
+    // stage's last_run stayed null forever.
+    const pressBody = decodeJsonBody(seen.calls.find((c) => c.lane === 'runsStart')!.args)
+    assert.equal(pressBody.bench_stage_id, 's_1', 'the press stamps the stage it presses')
     assert.deepEqual(out.pass, [
       { stage: 's_0', card: 'img-to-mesh', skipped: 'done' },
       { stage: 's_1', card: 'image-gen', run_id: 'rb1', status: 'done', url: '/melite-media/runs/rb1/img/SaveImage_00001_.png',

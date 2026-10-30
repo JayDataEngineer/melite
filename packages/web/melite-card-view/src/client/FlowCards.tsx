@@ -436,7 +436,7 @@ export function FlowCards({ block, openSurface, openMedia }: FlowCardsProps) {
             if (patch !== null) await patchStageParams(draftId, openRow.stageId, patch)
             const gate = await refuseForUnlandedWrite(draftId, openRow.stageId)
             if (gate !== null) throw new Error(gate)
-            startedRun(await startDraft(draftId))
+            startedRun(await startDraft(draftId, openRow.stageId))
             setOpenStage(null)
             refresh()
           }}

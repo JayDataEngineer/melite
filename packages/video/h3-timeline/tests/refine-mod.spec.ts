@@ -184,7 +184,10 @@ describe("the refine kind (the fifth mod bag)", () => {
     const h = hands[0]![1].inputs;
     assert.equal(h['model_name'], 'minimax_h3_latent_upscaler_3d_bf16.safetensors', 'the learned 3D-conv weights');
     assert.equal(h['mode'], 'scale by multiplier', 'the film handoff spelling');
-    assert.equal(h['scale'], 2.0, 'the default variant: 2x');
+    // F23 (2026-10-30): the combo's CHILD rides the DOTTED path — the
+    // engine rejects a bare `scale` (extra_info.input_name "mode.scale")
+    assert.equal(h['mode.scale'], 2.0, 'the default variant: 2x');
+    assert.equal(h['scale'], undefined, 'never the bare child key');
     assert.equal(h['lock_audio'], true, 'the soundtrack is the source\'s own, fixed');
     assert.equal(h['precision'], 'bf16', 'the film handoff precision');
     assert.equal(h['device'], 'cuda', 'the film handoff device');
@@ -210,7 +213,8 @@ describe("the refine kind (the fifth mod bag)", () => {
     const hands = ofClass(graphOf(g), 'MinimaxH3LatentUpscaler3DRefineHandoff');
     assert.equal(hands.length, 1);
     const h = hands[0]![1].inputs;
-    assert.equal(h['scale'], 1, 'the stated capacity lever rides verbatim');
+    assert.equal(h['mode.scale'], 1, 'the stated capacity lever rides verbatim (the DOTTED child)');
+    assert.equal(h['scale'], undefined, 'never the bare child key');
     assert.equal(h['mode'], 'scale by multiplier', 'the stated mode rides verbatim');
     // a target-dimensions pass is the other served capacity route
     const exact = def.schema({

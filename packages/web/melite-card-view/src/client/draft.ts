@@ -890,9 +890,20 @@ export async function patchStageOutcome(
   await patchWithRebase(draftId, stageId, outcome, expectRev)
 }
 
-/** Start the run; returns the run_id or throws the door's named refusal. */
-export async function startDraft(draftId: DraftId): Promise<string> {
-  const row = await unwrapRemote(estateRemote().runs.start({ draft_id: draftId }), 'runs/start') as unknown as Record<string, unknown>
+/** Start the run; returns the run_id or throws the door's named
+ *  refusal.
+ *
+ *  F21 (2026-10-30): the press names the BENCH STAGE it came from. The
+ *  run door persists `bench_stage_id` onto the queue row and the
+ *  sidecar maps it back as `benchStageId`, which is what binds a
+ *  press-minted run to its tile — without the key the row's `last_run`
+ *  stays null and the next press re-renders the stage (a silent double
+ *  spend). Both live press receipts (run-c6bfa91defe7,
+ *  run-9dacc8612feb) omitted it. */
+export async function startDraft(draftId: DraftId, stageId?: string): Promise<string> {
+  const body: Record<string, unknown> = { draft_id: draftId }
+  if (stageId !== undefined && stageId !== '') body['bench_stage_id'] = stageId
+  const row = await unwrapRemote(estateRemote().runs.start(body), 'runs/start') as unknown as Record<string, unknown>
   if (typeof row['run_id'] !== 'string') {
     throw new Error('runs/start: no run_id in the answer')
   }

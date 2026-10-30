@@ -1575,6 +1575,25 @@ export class BenchRemoteService extends TypertRemoteService {
     return await this.addStages(sessionKey, doc, signal);
   }
 
+  /** The plain `archive` seat the tools call (F22, 2026-10-30). Every
+   *  other bench verb exposes the seat AND the endpoint; archive
+   *  exposed only the endpoint, so `melite_flow`'s housekeeping case
+   *  called a method that never existed (`bench.archive is not a
+   *  function`, measured live on run-9dacc8612feb). */
+  async archive(
+    session: string,
+    doc: BenchDoc,
+    signal: AbortSignal,
+  ): Promise<BenchStageRow> {
+    signal.throwIfAborted();
+    return withBenchWrite(benchDraftIdOf(session), async () => {
+      const drafts: Domain<DraftsDomainSpec> = await this.open(signal);
+      const row = await archiveBench(drafts, session, doc);
+      notifyBenchChange(session);
+      return row;
+    });
+  }
+
   /** Endpoint `bench/archive` — F11's housekeeping verb: mark a
    *  spent stage archived (off: true restores it); the row stays
    *  with its provenance, every run face skips it. */
@@ -1584,13 +1603,7 @@ export class BenchRemoteService extends TypertRemoteService {
     doc: BenchDoc,
     signal: AbortSignal,
   ): Promise<BenchStageRow> {
-    signal.throwIfAborted();
-    return withBenchWrite(benchDraftIdOf(sessionKey), async () => {
-      const drafts: Domain<DraftsDomainSpec> = await this.open(signal);
-      const row = await archiveBench(drafts, sessionKey, doc);
-      notifyBenchChange(sessionKey);
-      return row;
-    });
+    return await this.archive(sessionKey, doc, signal);
   }
 
   /** Endpoint `bench/remove-stage` — splice one stage out. */

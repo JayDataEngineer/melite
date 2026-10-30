@@ -81,7 +81,11 @@ describe("runCardStage — the fresh-read law's fallback arms", () => {
     // the held prompt is GONE (the fresh row won), the model rode
     // the press key rides every start doc (the one-press law) —
     // presence and stringness, never the uuid value
-    expect(startDoc()).toEqual({ model: "trellis2-native", draft_id: "bench-main", test: false, press_key: expect.any(String) });
+    // F21: the press names its bench stage (the tile's last_run binding)
+    expect(startDoc()).toEqual({
+      model: "trellis2-native", draft_id: "bench-main", test: false,
+      bench_stage_id: "s_1", press_key: expect.any(String),
+    });
   });
 
   test("a fresh row naming no card refuses (the held card never overrules)", async () => {
@@ -141,7 +145,12 @@ describe("runBenchSequential — the pre-aborted pass returns empty", () => {
       stage({ id: "s_1", card: "image-gen", params: { prompt: "never" } }),
     ] };
     const res = await runBenchSequential(bench, { signal: AbortSignal.abort() });
-    expect(res).toEqual({ ran: [], stoppedAt: null, refused: null });
+    // the abort is a FACE, not a silence: nothing ran and the unpublished
+    // stage is accounted for in outcomes (the F20 accounting)
+    expect(res).toEqual({
+      ran: [], stoppedAt: null, refused: null,
+      outcomes: [{ stageId: "s_1", out: "not_run", why: "the pass was cancelled" }],
+    });
     expect(calls).toEqual([]);
   });
 });
