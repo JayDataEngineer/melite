@@ -210,9 +210,15 @@ jobs:
       # binary (floor 0.2.0-rc.1, enforced in-lane) — a fresh runner
       # has none, and REQUIRE mode loud-failed the seat on every run.
       # The version rides the provisioner's own range (no literal to
-      # rot); pnpm/action-setup keeps the global bin on PATH.
+      # rot); pnpm/action-setup keeps the global bin on PATH. The
+      # step runs INSIDE the provisioner dir so the require spells a
+      # short relative path — the gitleaks llm-keystore-key rule
+      # fires on 32+ [A-Za-z0-9/] runs, and the repo-rooted manifest
+      # path is one (a path, not a key; same false-positive class as
+      # the manifest directory rows).
       - name: Install dsh (the studio lane's provisioned runtime)
-        run: pnpm add -g "@deepseek-ai/dsh@$(node -p "require('./packages/harness/provisioner/package.json').peerDependencies['@deepseek-ai/dsh']")"
+        working-directory: packages/harness/provisioner
+        run: pnpm add -g "@deepseek-ai/dsh@$(node -p "require('./package.json').peerDependencies['@deepseek-ai/dsh']")"
       - name: Install Playwright browsers (the studio lane's own)
         run: pnpm --filter @melite-plugin/dsh-card-view exec playwright install --with-deps chromium
       - name: Studio browser wall (tracked seed, REQUIRE mode)
