@@ -1,5 +1,5 @@
 {
- "derived_at": "2026-10-30T09:27:32.653Z",
+ "derived_at": "2026-10-30T10:29:56.529Z",
  "tool": "scripts/regen-node-vocab.mjs --boot",
  "source": {
   "path": "data/tmp/object_info_prod.json",
@@ -10,26 +10,23 @@
  },
  "bootstrap_seed": {
   "path": "tests/walls/fixtures/object_info.boot.bootstrap.json",
-  "sha256": "95cb9a84dbc8e502026df065bea91c6e28167db26b46c94125ef1ed054471f68",
-  "rows": 74
+  "sha256": "edede8b57bcecdfd24f46218253ac68ee49c0f01b5b72cabef9f0677dfe99e2a",
+  "rows": 75
  },
  "derivation": {
   "facts_path": "packages/engines/comfyui-cordis/data/model-facts.json",
   "addressed_class_count": 96,
-  "bootstrap_class_count": 74,
-  "fixture_class_count": 170,
+  "bootstrap_class_count": 75,
+  "fixture_class_count": 171,
   "rows_probed": 31,
   "refused_rows": 0
  },
  "delta": {
-  "added": [],
-  "pruned": [
-   "ColorToMask",
-   "ImageBlur",
-   "ImageCompositeMasked",
-   "ImageResizeKJ"
+  "added": [
+   "ImageFromBatch"
   ],
+  "pruned": [],
   "updated": [],
-  "reordered_keys": 157
+  "reordered_keys": 0
  }
 }

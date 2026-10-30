@@ -270,14 +270,25 @@ export function buildH3Reshoot(p, g, windowFrames, runId) {
     // collapse is what starved the render.
     const warp = warpNode.out(0);
     const source = prep.out(0);
-    // THE TWO WITNESSES (§8.7): the warp's own clip and the pack's
+    // THE TWO WITNESSES (§8.7): the plate the guide PINS and the pack's
     // `orbit_view` gizmo (output 1: the camera dome with its
     // az/el/dist overlay). Both save under the run's folder — zero
-    // extra compute (the tensors already exist), and the harvest
-    // lists them beside the film, so the popup can show the exact
-    // plate the guide pinned and the gizmo that explains the dials.
+    // extra compute (the tensors already exist), and the harvest lists
+    // them beside the film.
+    //
+    // ONE plate, never the warp clip: CrossViewWarp emits every warped
+    // frame, so saving `warp` raw wrote N PNGs per re-shoot (the
+    // operator's 90-file harvest of one still, report §13.1). The guide
+    // reads frame 0 (`MiniMaxH3AddGuide.frame_idx 0`), so the witness
+    // selects exactly that frame — the same take the guide pinned,
+    // holes and all, which is what makes the witness evidence.
+    const plate = g.node('ImageFromBatch', {
+        image: warp,
+        batch_index: 0,
+        length: 1,
+    }).out(0);
     const plateSave = g.node('SaveImage', {
-        images: warp,
+        images: plate,
         filename_prefix: `${runId}/reshoot_warp`,
     }).out(0);
     const orbitSave = g.node('SaveImage', {

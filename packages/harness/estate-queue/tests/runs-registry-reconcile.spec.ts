@@ -332,6 +332,56 @@ describe("stroke-83 boot reconcile (resurrect REBORN as a replay)", () => {
     assert.ok(ledger.includes("\"event\":\"run.resurrected\"") || ledger.includes("run.resurrected"));
   });
 
+  // F8's OTHER HALF (round-6 audit residual): the lever is admitted,
+  // stamped on the row and read by both execute seats — but a restart
+  // must not lose it. The replay re-admits `_request.json`, so the
+  // ceiling rides the dead process's own bytes: a revived long run
+  // keeps the ceiling it was born with instead of silently regaining
+  // the deployment's default fuse. This arm pins the whole roundtrip
+  // against a config default that WOULD kill the executor.
+  it("F8 — the per-run ceiling survives the boot replay: the revived row keeps the dead request's execute_ceil_ms", async () => {
+    const s = seat();
+    const engine = engineSeat(s);
+    // the deployment default is a 5 ms fuse; the request states 5 s and
+    // the executor needs ~60 ms — only a preserved ceiling completes
+    const ctx = (s.svc as unknown as { ctx: Context }).ctx;
+    (ctx as unknown as { queue: Record<string, unknown> }).queue["executeCeilMs"] = 5;
+    engine.onFlow = async (rows) => new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({
+          stages: Object.fromEntries(rows.map((r) => [r.stageId, { outputs: {}, artifacts: [] }])),
+          promptId: "p",
+        });
+      }, 60);
+    });
+    const dir = join(s.state, "output", "run-ceil");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, "_flow.json"),
+      JSON.stringify({
+        status: "queued",
+        draft_id: "d1",
+        created_at: 1,
+        graph: [],
+        stages: [{ id: "s", name: "s", index: 0, status: "queued", outputs: {}, expected: {} }],
+        skipped_stages: [],
+        artifacts: [],
+      }),
+    );
+    writeFileSync(
+      join(dir, "_request.json"),
+      JSON.stringify({ ...wfBody82(), execute_ceil_ms: 5_000 }),
+    );
+    s.svc.reconciled = false;
+    assert.deepEqual(await s.svc.bootReconcile(), ["run-ceil"]);
+    const row = s.core.runs.get("run-ceil") as RunRecord;
+    assert.equal(row.executeCeilMs, 5_000, "the replay re-admits the request's own ceiling");
+    const settled = await settleWait(s, "run-ceil");
+    assert.equal(settled.status, "completed",
+      "the preserved ceiling outlasts the 5 ms config default — a dropped ceiling fails this run at the fuse, error: " +
+      settled.error);
+  });
+
   it("a POISON request settles failed LOUD in place (never a haunting queued row)", async () => {
     const s = seat();
     engineSeat(s);

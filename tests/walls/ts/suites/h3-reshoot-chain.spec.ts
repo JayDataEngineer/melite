@@ -302,9 +302,24 @@ describe("the h3 camera re-shoot wall (the fourth mod bag, official rework)", ()
     // THE TWO WITNESSES (§8.7, audit F6): the raw warp's own save and
     // the pack's orbit gizmo are part of the shipped arm — a drop
     // would leave the operator with no cheap feedback but a render.
-    const saves = ofClass(out, "SaveImage").map(([, n]) => String(n.inputs.filename_prefix));
+    const saveRows = ofClass(out, "SaveImage");
+    const saves = saveRows.map(([, n]) => String(n.inputs.filename_prefix));
     expect(saves.some((p) => p.endsWith("/reshoot_warp"))).toBe(true);
     expect(saves.some((p) => p.endsWith("/reshoot_orbit"))).toBe(true);
+    // ONE plate frame, never the warp clip (report §13.1: saving
+    // warp.out(0) raw wrote a PNG per warped frame — 90 files of
+    // harvest noise for the ONE still the guide pins). The plate save
+    // reads an ImageFromBatch selector pinned at frame 0, exactly the
+    // frame MiniMaxH3AddGuide reads.
+    const plateSave = saveRows.find(([, n]) => String(n.inputs.filename_prefix).endsWith("/reshoot_warp"))!;
+    const plateSrc = String(plateSave[1].inputs.images);
+    const selectors = ofClass(out, "ImageFromBatch");
+    expect(selectors).toHaveLength(1);
+    const [selectId, select] = selectors[0]!;
+    expect(plateSrc).toBe(`${selectId},0`);
+    expect(select.inputs.batch_index).toBe(0);
+    expect(select.inputs.length).toBe(1);
+    expect(String(select.inputs.image)).toBe(`${ofClass(out, "CrossViewWarp")[0]![0]},0`);
     // the appearance + guide + LoRA seats: the prepared clip IS
     // ref_video_0 (no ref audio on the slot — the official graph
     // wires none), the warp pins at row 0, the LoRA loads at 0.8.

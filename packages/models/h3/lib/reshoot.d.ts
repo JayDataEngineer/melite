@@ -140,10 +140,11 @@ export interface ReshootChain {
      *  its own count would shorten longer windows (the documented
      *  divergence from node 20, beside duration). */
     readonly prepLength: OutputHandle;
-    /** The warp clip's saved frames (the official app's own
-     *  `crossview/warp` witness): the run delivers the exact image the
-     *  guide pins, holes and all, without re-deriving it from the film.
-     *  Saved under `<runId>/reshoot_warp`. */
+    /** The ONE plate frame the guide pins (CrossViewWarp's frame 0),
+     *  saved through `ImageFromBatch { batch_index: 0, length: 1 }` —
+     *  never the whole warp clip (N PNGs for one still). The run
+     *  delivers the exact image the guide reads, holes and all, without
+     *  re-deriving it from the film. Saved under `<runId>/reshoot_warp`. */
     readonly plateSave: OutputHandle;
     /** The pack's `orbit_view` gizmo (CrossViewWarp output 1: the
      *  camera dome with the az/el/dist overlay). Emitted by every

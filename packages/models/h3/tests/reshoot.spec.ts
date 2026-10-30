@@ -255,24 +255,32 @@ describe("the h3 camera re-shoot chain (the fourth mod bag, official rework)", (
     expect(String(guide[1].inputs.image)).not.toBe(String(r2v[1].inputs["ref_videos.ref_video_0"]));
   });
 
-  it("§8.7 — the run DELIVERS both unspent warp views (the filled plate and the camera gizmo), run-scoped", () => {
+  it("§8.7 — the run DELIVERS the plate the guide PINNED and the camera gizmo, run-scoped", () => {
     const g = new GraphBuilder();
     instantiateAction(film, bag(), H3, g, "run_rs_witness");
     const entries = nodes(g);
-    // CrossViewWarp returns TWO images: 0 = the holed plate, 1 = the
-    // orbit gizmo. Both are computed on every re-shoot, so saving them
-    // costs no extra work — and the operator's only feedback used to be
-    // a multi-minute film that came back wrong.
+    // CrossViewWarp returns TWO images: 0 = the warp clip (every
+    // warped frame), 1 = the orbit gizmo. The gizmo is one image.
     const saves = ofClass(entries, "SaveImage");
     const warpIdPlate = ofClass(entries, "CrossViewWarp")[0]![0];
-    expect(saves, "two witnesses, one per warp output").toHaveLength(2);
+    expect(saves, "two witnesses, one per seat").toHaveLength(2);
     const byPrefix = new Map(saves.map(([, n]) => [String(n.inputs.filename_prefix), n]));
     const plate = byPrefix.get("run_rs_witness/reshoot_warp");
     const orbit = byPrefix.get("run_rs_witness/reshoot_orbit");
-    expect(plate, "the warp clip saves under the run's own folder").toBeDefined();
+    expect(plate, "the plate saves under the run's own folder").toBeDefined();
     expect(orbit, "the gizmo saves under the run's own folder").toBeDefined();
-    // the warp save reads the warp's FIRST output, unfilled
-    expect(String(plate!.inputs.images)).toBe(`${warpIdPlate},0`);
+    // ONE plate, never the whole warp clip: saving warp.out(0) raw wrote
+    // a PNG per warped frame (the operator's 90-file harvest of one
+    // still, report §13.1). The guide reads frame 0, so the witness
+    // selects exactly that frame through ImageFromBatch and the save
+    // reads the selector.
+    const selectors = ofClass(entries, "ImageFromBatch");
+    expect(selectors, "one selector pins the plate frame").toHaveLength(1);
+    const [selectId, selector] = selectors[0]!;
+    expect(selector.inputs.batch_index).toBe(0);
+    expect(selector.inputs.length).toBe(1);
+    expect(String(selector.inputs.image)).toBe(`${warpIdPlate},0`);
+    expect(String(plate!.inputs.images)).toBe(`${selectId},0`);
     // …and the gizmo reads the warp's SECOND output (socket 1), which is
     // the whole point: output 1 was unspent before this cure
     const orbitSrc = String(orbit!.inputs.images);
