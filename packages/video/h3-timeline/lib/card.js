@@ -175,7 +175,7 @@ const REPAIR_MOD = {
         'ComfyUI-KJNodes',
         'comfyui-h3-oneclick-swap',
     ],
-    section: 'Repair — re-render a region of the source clip (hands, body, face) with a per-frame SAM3 mask at partial denoise. The rest of the frame and the audio are held. Film runs leave this arm empty.',
+    section: 'Repair — re-render a region of the source clip (hands, body, face) with a per-frame SAM3 mask at partial denoise. The rest of the frame and the audio are held. Film runs leave this arm empty. ONE WINDOW PER DOC: a longer film is one press per window at the 68 f step, each repaired window replacing its own slot — this arm emits a window, never a re-assembled film.',
     fields: [
         // The seat TYPES (the picker law, the replace arm's own): video
         // seats are `file` + media 'video'; the two prompt seats are
