@@ -47,15 +47,18 @@ export interface WiringDoc {
 export declare function parseInputSpec(spec: unknown, required: boolean): WiringInputSpec;
 /** One dynamic-combo input's child input names, off its raw
  *  declaration.
- *  THE NESTED WIRE KEYS (the F23 burn, 2026-10-30): ComfyUI's
- *  `_expand_schema_for_dynamic` reads `live_inputs[<combo key>]` as
- *  the SELECTED OPTION KEY (a plain string) and registers that
- *  option's children as TOP-LEVEL wire keys — the h3 upscale pack's
- *  `mode` carries `scale`/`width`/`height`/`megapixels` that way, so
- *  the engine accepts `mode: 'scale by multiplier'` beside a flat
- *  `scale: 2.0`. `/object_info` declares them NESTED, so a
- *  derivation that reads only the top level refuses exactly the
- *  keys the engine accepts (the compose refusal the operator hit).
+ *  THE NESTED WIRE KEYS (the F23 burn, 2026-10-30): a DynamicCombo's
+ *  children are CONDITIONAL seats of the node — `/object_info`
+ *  declares them nested under `mode`, so a derivation that reads only
+ *  the top level refuses exactly the keys the composer emits. They
+ *  ride this map as OPTIONAL seats (the node gate must know them; the
+ *  completeness grammar must not owe them), and the composer
+ *  addresses one with its DOTTED path (`mode.scale`).
+ *  THE OTHER HALF OF THE LAW (round-6 audit): a class whose `mode` is
+ *  a PLAIN combo declares its child flat and required on the node
+ *  itself (MinimaxH3LatentUpscaler3DRefineHandoff's `scale: FLOAT`);
+ *  the two spellings are not interchangeable, and each composer
+ *  follows its own class's declaration.
  *  @param spec the raw input tuple from /object_info
  *  @returns the child inputs of every option ([name, raw tuple]), or
  *           undefined for a non-dynamic input */

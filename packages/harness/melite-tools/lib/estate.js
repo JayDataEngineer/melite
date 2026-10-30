@@ -109,11 +109,11 @@ async function trySeats(ctx, method, path, body, signal) {
                 case 'undo': return seats.benchRemote.undo(session, doc, signal);
                 default: {
                     // CLOSED UNION, LOUD END (cordis-architecture F6, 2026-10-20):
-                    // the regex group admits seven arms and seven arms only — a
-                    // seventh added to the pattern without its seat here fails
+                    // the regex group admits eight arms and eight arms only — an
+                    // arm added to the pattern without its seat here fails
                     // LOUD at the first call, never by falling through the
                     // match block unanswered.
-                    /* v8 ignore next 2 -- the regex group admits exactly the six cased arms; no honest input reaches the throw (2026-10-20) */
+                    /* v8 ignore next 2 -- the regex group admits exactly the eight cased arms; no honest input reaches the throw (2026-10-20) */
                     const exhaustive = arm[2];
                     throw new Error(`bench arm ${String(exhaustive)} matched its pattern but has no seat`);
                 }

@@ -727,6 +727,35 @@ describe("phase1Card + phase2Card (the two phases, one compose seat)", () => {
     expect(miss["width"]).toBe(0);
     expect(miss["height"]).toBe(0);
   });
+  it("THE SILENT-SOURCE REFUSAL (F26, round 6): an armed sound-carrying bag whose source has NO audio track refuses at the door, naming the lane and the file — never mid-render in the VHS extractor's raw dump", async () => {
+    // The burn: a bag source with no audio died mid-run inside the
+    // vendored ffmpeg extractor AFTER the GPU bill. The door probes a
+    // positive reading now: no `soun` track = refuse, zero GPU. A
+    // container the probe cannot read stays the engine's belt (the
+    // clip-geometry stamp's own posture).
+    const dir = mkdtempSync(join(tmpdir(), "silent-src-"));
+    const silent = join(dir, "silent.mp4");
+    writeFileSync(silent, craftMinimalMp4(928, 1344));
+    const withSound = join(dir, "with-sound.mp4");
+    writeFileSync(withSound, craftMinimalMp4(928, 1344, true));
+    const body = (clip: string): Record<string, unknown> => ({
+      prompt: "a yard at dusk",
+      refine: [{ source_clip: clip, refine_prompt: "sharpen the leaves" }],
+    });
+    await expect(svc.phase1Card(body(silent), "h3-timeline")).rejects.toThrow(
+      /the refine pass carries the source clip's soundtrack, and ".*silent\.mp4" has no audio track/,
+    );
+    // the same bag over a track-carrying source hears no such voice
+    const ok: Record<string, unknown> = body(withSound);
+    await svc.phase1Card(ok, "h3-timeline").catch(() => undefined);
+    // (a downstream refusal — weights, lanes — may speak; this door's
+    // sentence must not)
+    try {
+      await svc.phase1Card(body(withSound), "h3-timeline");
+    } catch (e: unknown) {
+      expect(String((e as Error).message)).not.toMatch(/has no audio track/);
+    }
+  });
   it("THE STAMP IS CARD-SCOPED (fix 7, 2026-10-28 — the track-card admission burn): a card that declares no size knobs gets NO stamped keys; the stamp may not invent params admission refuses", async () => {
     // The burn: the track card's ONE media seat is `clip`, its
     // schema declares no width/height knobs, and the h3 swap press
@@ -1176,7 +1205,7 @@ describe("the hermetic engine (the gate-37 flake cure: no live socket on the boo
  *  moov{trak{tkhd(display size), mdia{hdlr: vide}}} — the probe's
  *  tkhd fallback reads width/height as 16.16 fixed points; no stsd
  *  needed (the fallback arm is the point). Pure bytes, hermetic. */
-function craftMinimalMp4(width: number, height: number): Buffer {
+function craftMinimalMp4(width: number, height: number, audio = false): Buffer {
   const box = (type: string, body: Buffer): Buffer => {
     const head = Buffer.alloc(8);
     head.writeUInt32BE(body.length + 8, 0);
@@ -1193,7 +1222,18 @@ function craftMinimalMp4(width: number, height: number): Buffer {
   // handler fourcc at body offset 8: version/flags(4) + pre_defined(4)
   hdlr.write("vide", 8, "ascii");
   const trak = Buffer.concat([box("tkhd", tkhd), box("mdia", box("hdlr", hdlr))]);
+  // THE SOUND TRACK (the F26 arm): a second trak whose mdia/hdlr says
+  // `soun` — the probe reports it as an audio stream, which is all the
+  // silent-source door reads.
+  const strak = (): Buffer => {
+    const shdlr = Buffer.alloc(24);
+    shdlr.write("soun", 8, "ascii");
+    return box("trak", box("mdia", box("hdlr", shdlr)));
+  };
   const ftyp = Buffer.alloc(8);
   ftyp.write("isom", 4, "ascii");
-  return Buffer.concat([box("ftyp", ftyp), box("moov", box("trak", trak))]);
+  return Buffer.concat([
+    box("ftyp", ftyp),
+    box("moov", audio ? Buffer.concat([box("trak", trak), strak()]) : box("trak", trak)),
+  ]);
 }

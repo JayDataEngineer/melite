@@ -44,8 +44,8 @@ export declare function seatFamilyForPath(path: string): SeatFamily;
  *  2026-09-10 — migrate to a named Typert remote") read as a broken
  *  registry and sent an agent hunting doors for an hour. */
 export declare function makeEstateRequest(ctx: EstateHost): EstateRequest;
-/** The bench plane's mutation verbs — the seven arms the bench
- *  seat answers 1:1 (the router's regex admits the same seven;
+/** The bench plane's mutation verbs — the eight arms the bench
+ *  seat answers 1:1 (the router's regex admits the same eight;
  *  `archive` is F11's spent-stage mark — the row stays, every run
  *  face skips it). */
 export type BenchVerb = 'patch' | 'add_stage' | 'add_stages' | 'remove_stage' | 'archive' | 'clear' | 'rewire' | 'undo';
@@ -61,7 +61,7 @@ export interface Estate {
      *  CAS one-retry law lives in the ONE lane both faces share). */
     cardCompose(body: Record<string, unknown>, signal: AbortSignal, timeoutMs?: number): Promise<unknown>;
     /** The bench plane: the shared-bench read, the ensure (birth/load),
-     *  the six mutation verbs. */
+     *  the eight mutation verbs. */
     benchGet(session: string, signal: AbortSignal, timeoutMs?: number): Promise<unknown>;
     benchEnsure(doc: Record<string, unknown>, signal: AbortSignal, timeoutMs?: number): Promise<unknown>;
     benchVerb(session: string, verb: BenchVerb, doc: Record<string, unknown>, signal: AbortSignal, timeoutMs?: number): Promise<unknown>;

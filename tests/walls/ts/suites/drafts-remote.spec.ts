@@ -903,8 +903,19 @@ test("F22 — every bench verb the tools dispatch is a plain SEAT, and archive r
   assert.equal(backStage["archived"], undefined, "restore drops the flag");
 });
 
-// ── F21 — the press row's bench_stage_id has a WRITER ─────────────
-// runsRegistry reads body["bench_stage_id"] and the sidecar persists
-// it, but nothing wrote it: both live requests (run-c6bfa91defe7,
-// run-9dacc8612feb) omitted the key, so the press row's binding could
-// never resolve. The press composer knows the stage — it must stamp it.
+// ── F21 — the press row's bench_stage_id ──────────────────────────
+// runsRegistry reads body["bench_stage_id"], the sidecar persists it,
+// and the settle mirror addresses the draft row by it. The arms live
+// ONE hop down, where the writers are drivable over their real seam —
+// this file's facades carry no run-start door, so a copy here would be
+// a weaker second home:
+//   * the WRITERS (the card-press pass and the drill start) stamp
+//     `bench_stage_id: stageId` — packages/harness/melite-tools/test/
+//     melite-flow.spec.ts ("the press body carries bench_stage_id").
+//   * the READER judges the claim — packages/harness/estate-queue/
+//     tests/runs-registry-doors.spec.ts ("a bench_stage_id naming NO
+//     row of the draft refuses", "the claim BINDS … a failed snapshot
+//     read TRUSTS it").
+// Registry row: flows-tier `flows-card-pass-presses-all` (its wall is
+// the package spec above — the registry wall accepts package @contract
+// arms as first-class walls).

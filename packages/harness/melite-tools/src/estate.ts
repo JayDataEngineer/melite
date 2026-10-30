@@ -270,11 +270,11 @@ async function trySeats(
         case 'undo': return seats.benchRemote.undo(session, doc, signal)
         default: {
           // CLOSED UNION, LOUD END (cordis-architecture F6, 2026-10-20):
-          // the regex group admits seven arms and seven arms only — a
-          // seventh added to the pattern without its seat here fails
+          // the regex group admits eight arms and eight arms only — an
+          // arm added to the pattern without its seat here fails
           // LOUD at the first call, never by falling through the
           // match block unanswered.
-          /* v8 ignore next 2 -- the regex group admits exactly the six cased arms; no honest input reaches the throw (2026-10-20) */
+          /* v8 ignore next 2 -- the regex group admits exactly the eight cased arms; no honest input reaches the throw (2026-10-20) */
           const exhaustive: never = arm[2] as never
           throw new Error(`bench arm ${String(exhaustive)} matched its pattern but has no seat`)
         }
@@ -651,8 +651,8 @@ async function performEstateRequest(
 // the same text either face serves. A served `undefined` reads as
 // seatless (the router's exact fall-through law, preserved).
 
-/** The bench plane's mutation verbs — the seven arms the bench
- *  seat answers 1:1 (the router's regex admits the same seven;
+/** The bench plane's mutation verbs — the eight arms the bench
+ *  seat answers 1:1 (the router's regex admits the same eight;
  *  `archive` is F11's spent-stage mark — the row stays, every run
  *  face skips it). */
 export type BenchVerb = 'patch' | 'add_stage' | 'add_stages' | 'remove_stage' | 'archive' | 'clear' | 'rewire' | 'undo'
@@ -669,7 +669,7 @@ export interface Estate {
    *  CAS one-retry law lives in the ONE lane both faces share). */
   cardCompose(body: Record<string, unknown>, signal: AbortSignal, timeoutMs?: number): Promise<unknown>
   /** The bench plane: the shared-bench read, the ensure (birth/load),
-   *  the six mutation verbs. */
+   *  the eight mutation verbs. */
   benchGet(session: string, signal: AbortSignal, timeoutMs?: number): Promise<unknown>
   benchEnsure(doc: Record<string, unknown>, signal: AbortSignal, timeoutMs?: number): Promise<unknown>
   benchVerb(session: string, verb: BenchVerb, doc: Record<string, unknown>, signal: AbortSignal, timeoutMs?: number): Promise<unknown>

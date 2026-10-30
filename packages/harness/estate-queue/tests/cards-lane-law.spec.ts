@@ -1213,7 +1213,13 @@ describe("THE RE-CHECK'S TWO BYPASSES ARE CLOSED", () => {
     expect(bench.ok, "run seat must refuse ace-step-bf16 exactly as the bench does").toBe(false);
     const src = readFileSync(new URL("../src/cardsRegistry.ts", import.meta.url), "utf8");
     const phase1 = src.slice(src.indexOf("async phase1Card("));
-    expect(phase1.slice(0, 2000)).toContain("admitStageModel");
+    // THE METHOD BODY, not a character budget (round-6 audit): the old
+    // 2000-char window was a proxy for "phase1Card's body" and a
+    // five-line insert above the board check pushed `admitStageModel`
+    // out of it — the law still held, the window had drifted. Cut at
+    // the next member instead.
+    const body = phase1.slice(0, phase1.search(/\n  (?:async |private |public |\/\*\*)/));
+    expect(body).toContain("admitStageModel");
   });
 
   it("a variant's OWN route composes (the board admits the route's family)", () => {

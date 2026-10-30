@@ -1675,6 +1675,7 @@ export class RunsRuntimeService extends Service {
           benchDoc,
           skeleton,
           typeof body["bench_stage_id"] === "string" ? body["bench_stage_id"] : undefined,
+          checked.draftId,
         ),
         // The {model:} card door's engine (the compose plane is
         // ComfyUI's — the card arm rides it by construction).
@@ -3008,13 +3009,18 @@ export class RunsRuntimeService extends Service {
  *         snapshot read failed — then only a claim can answer)
  *  @param skeleton the composed stage's card skeleton id
  *  @param claimed the press body's `bench_stage_id`, when sent
+ *  @param pressedDraft the draft the press named — the refusal's own
+ *         name for it (the doc's `draft_id` is the author's field and
+ *         may be absent; a refusal that printed `draft ""` named
+ *         nothing at all)
  *  @returns the draft row id, or undefined (legacy fallback)
  *  @throws RemoteError runs/invalid-request when the claim names no
  *          stage row of the draft */
 function benchStageIdOf(
   benchDoc: Record<string, unknown> | undefined,
   skeleton: string,
-  claimed?: string,
+  claimed: string | undefined,
+  pressedDraft: string,
 ): string | undefined {
   if (claimed !== undefined && claimed !== "") {
     if (benchDoc === undefined) return claimed;
@@ -3027,7 +3033,7 @@ function benchStageIdOf(
       throw new RemoteError(
         "runs/invalid-request",
         "bench_stage_id " + JSON.stringify(claimed) +
-        " names no stage row of draft " + JSON.stringify(String(benchDoc["draft_id"] ?? "")) +
+        " names no stage row of draft " + JSON.stringify(pressedDraft) +
         " — the press names the row it came from, and that row must exist on the bench (reopen the tab and press again)",
         { loc: "bench_stage_id" },
       );

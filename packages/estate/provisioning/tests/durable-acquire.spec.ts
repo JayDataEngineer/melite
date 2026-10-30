@@ -286,12 +286,20 @@ describe("THE DURABLE DOWNLOAD SEAT (transient requests, durable claims, 2026-10
     // requested face first (the transient's own memory)
     const queued = await transient.service.readProgress(id);
     assert.equal(queued?.state, "requested");
-    // after the claim, the transient reads the DURABLE's truth
-    await untilLedger(
-      () => durable.service.progressOf(id),
-      (r) => r.state === "active",
-      "durable settled",
-    );
+    // after the claim, the transient reads the DURABLE's truth — the
+    // wait is on the STORE row, not the durable's memory (memory flips
+    // to 'active' a beat before the row write lands; waiting on memory
+    // then reading the store raced 'verifying' under load — the battery
+    // red of 2026-10-30). The arm still judges the poll's own branch: a
+    // poll answering its stale local 'requested' reds on the line below.
+    const store = new FileOperationStore(opRoot);
+    let settled: string | undefined;
+    for (let attempt = 0; attempt < 1500 && settled !== "active"; attempt += 1) {
+      settled = (await store.load(id))?.state;
+      if (settled !== "active") await new Promise((resolve) => { setTimeout(resolve, 10); });
+    }
+    assert.equal(settled, "active", "the durable's row must settle active in the SHARED store");
+    assert.equal(durable.service.progressOf(id)?.state, "active", "the durable's own memory agrees");
     const foreign = await transient.service.readProgress(id);
     assert.equal(foreign?.state, "active");
     // an unknown id stays null (never a fake zero)

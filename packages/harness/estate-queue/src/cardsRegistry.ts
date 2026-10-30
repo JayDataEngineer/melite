@@ -317,6 +317,73 @@ function stampClipGeometry(
   if (unstated(h) && admits("height")) body["height"] = stream.height;
 }
 
+/** The h3 bags whose second pass CARRIES the source clip's
+ *  soundtrack (each composes a VHS [frames, audio] load and feeds
+ *  the sound VAE — replace swaps the cast, repair cleans it, extend
+ *  continues it, refine upscales it; the reshoot bag is absent on
+ *  purpose, its card states the soundtrack does not carry over). */
+const H3_SOUND_CARRYING_BAGS = ["replace", "repair", "extend", "refine"] as const;
+
+/** Resolve a bag source to a readable file: absolute, repo-relative
+ *  (the compose's own staged-leaf posture), else the estate input
+ *  index by basename. */
+function bagSourceBytes(leaf: string): Uint8Array | null {
+  const candidates: string[] = [];
+  if (leaf.startsWith("/")) candidates.push(leaf);
+  candidates.push(resolveRepoRoot() + "/" + leaf.replace(/^\/+/, ""));
+  const base = leaf.split("/").pop() ?? "";
+  if (base !== "") candidates.push(resolveRepoRoot() + "/data/input/" + base);
+  for (const abs of candidates) {
+    try {
+      const st = statSync(abs);
+      if (!st.isFile()) continue;
+      return new Uint8Array(readFileSync(abs));
+    } catch {
+      /* the next spelling — a leaf that resolves nowhere is the
+       * compose door's own voice (dead sources refuse at the run
+       * door), never this probe's */
+    }
+  }
+  return null;
+}
+
+/** THE SILENT-SOURCE REFUSAL (friction F26, round 6): a bag source
+ *  with no audio track used to die mid-run inside the vendored VHS
+ *  extractor's raw ffmpeg dump — after the GPU bill. The door now
+ *  probes an armed sound-carrying bag's source BEFORE the run
+ *  registers and refuses with the file and the lane named. A
+ *  container this probe cannot read (webm) is left to the engine's
+ *  own belt, exactly like the clip-geometry stamp's posture: the
+ *  probe refuses only on a positive "no audio stream" reading. */
+function refuseSilentSource(card: string, params: Record<string, unknown>): void {
+  if (card !== "h3-timeline") return;
+  for (const lane of H3_SOUND_CARRYING_BAGS) {
+    const bag = params[lane];
+    if (!Array.isArray(bag) || bag.length === 0) continue;
+    for (const entry of bag) {
+      if (entry === null || typeof entry !== "object" || Array.isArray(entry)) continue;
+      const leaf = (entry as Record<string, unknown>)["source_clip"];
+      if (typeof leaf !== "string" || leaf.trim() === "") continue;
+      const bytes = bagSourceBytes(leaf.trim());
+      if (bytes === null) continue;
+      let probed: ProbeResult;
+      try {
+        probed = probeMedia(bytes);
+      } catch {
+        continue;
+      }
+      if (probed.streams.some((stream) => stream.codec_type === "audio" || stream.sample_rate !== undefined)) continue;
+      throw new CardArmError(
+        400,
+        `the ${lane} pass carries the source clip's soundtrack, and "${leaf.trim()}" has no audio track ` +
+          `(probed ${probed.streams.length} stream(s), none audio) — add a track, or pick a source that has one; ` +
+          `a silent source dies mid-render inside the video loader`,
+        "invalid_request",
+      );
+    }
+  }
+}
+
 /** The card-scope seat for the clip-geometry stamp: resolves the
  *  card the run addresses — the family route's famRow.card, or the
  *  familyless id itself — mirroring prepareCardParams's two arms,
@@ -2023,6 +2090,11 @@ export class CardRegistryService extends Service {
     // params admission will refuse.
     stampClipGeometry(body, clipGeometryAdmits(this, mid));
     const prep: PreparedCard = prepareCardParams(this, body, mid, "1");
+    // THE SILENT-SOURCE REFUSAL (F26): an armed sound-carrying bag's
+    // source must carry audio — refused here, zero GPU, with the lane
+    // and the file named (the run door's own envelope walk, so the
+    // validate seat hears the same sentence).
+    refuseSilentSource(prep.card, prep.params);
     // THE BOARD CHECK RIDES THE RUN SEAT TOO (the behavioural
     // re-check's BYPASS 1: the bench refused an unoffered model
     // address, but `validate` with the SAME address composed the

@@ -454,7 +454,11 @@ export function sidecarDoc(args: {
     graph: args.graph,
     ...(args.cardSnapshot !== undefined ? { card_snapshot: args.cardSnapshot } : {}),
     // THE RECIPE (the F27 cure): the admitted card doc — envelope
-    // lifted, stanza unwrapped — rides beside the raw request echo.
+    // lifted, stanza unwrapped — is a DIFFERENT document from the
+    // request that carried it (the raw body is `_request.json`, an
+    // envelope the compose never read); restore overlays THIS key so a
+    // restored stage is re-editable, never a fresh timeline with the
+    // artifact pasted in.
     ...(args.cardRecipe !== undefined ? { card_recipe: args.cardRecipe } : {}),
     ...(args.benchSnapshot !== undefined ? { bench_snapshot: args.benchSnapshot } : {}),
     ...(args.warnings !== undefined && args.warnings.length > 0 ? { warnings: [...args.warnings] } : {}),

@@ -816,11 +816,15 @@ const DYNAMIC_DOC = {
   },
 };
 
-/** The shipped multiplier arm — chainUpscale.ts's own inputs row. */
+/** The shipped multiplier arm — chainUpscale.ts's own inputs row: a
+ *  DynamicCombo child is addressed by its DOTTED path (`mode.scale`),
+ *  the spelling the live receipt (prompt 46bf3a93) proved validates.
+ *  This is the OTHER class's law — the flat handoff below takes a flat
+ *  `scale` (its own required top-level seat). */
 const UPSCALE_MULTIPLIER_ROW = {
   latent: ["1", 2],
   model_name: "minimax_h3_latent_upscaler_3d_bf16.safetensors",
-  mode: "scale by multiplier", scale: 2.0,
+  mode: "scale by multiplier", "mode.scale": 2.0,
   align: 32, keep_proportion: true,
   device: "cuda", precision: "bf16", offload_after_upscale: true,
 };
@@ -842,11 +846,93 @@ describe("THE DYNAMIC-COMBO WIRE (the F23 burn: nested children ARE wire keys)",
     assert.equal(decl.get("scale")!.min, 1, "a flattened child keeps the value facts its option declares");
     assert.equal(decl.get("scale")!.max, 4, "the factor ceiling rides the child");
     // THE BURN'S OWN ROW: red before this cure ('the node declares no
-    // such input … scale'), green after — the engine accepts it
-    // (`_expand_schema_for_dynamic`: live_inputs['mode'] names the
-    // option, its children register as top-level keys).
+    // such input … scale'), green after — the derivation now declares
+    // the combo's children, and the shipped composer addresses them
+    // with the dotted `mode.child` spelling that validated live.
     assertWiringAgainst(nodes, inputs, "h3-timeline", { "3": { class_type: "MinimaxH3LatentUpscaler3D", inputs: UPSCALE_MULTIPLIER_ROW } });
   });
+
+/**
+ * THE FLAT HANDOFF'S OWN DECLARATION (production /object_info, the
+ * round-6 audit's F23 blocker): MinimaxH3LatentUpscaler3DRefineHandoff
+ * is a DIFFERENT node from the DynamicCombo one above — its `mode` is
+ * a plain combo and `scale` is a required TOP-LEVEL FLOAT. The refine
+ * composer mounts THIS class (packages/models/h3/src/refine.ts); the
+ * dotted `mode.scale` spelling belongs to MinimaxH3LatentUpscaler3D
+ * only. A future hand that "fixes" the refine row to the dotted child
+ * reds here with unknown-input naming mode.scale.
+ */
+const FLAT_HANDOFF_DOC = {
+  MinimaxH3LatentUpscaler3DRefineHandoff: {
+    input: {
+      required: {
+        latent: ["LATENT"],
+        noise: ["NOISE"],
+        sampler: ["SAMPLER"],
+        sigmas: ["SIGMAS"],
+        model_name: ["COMBO", { options: ["minimax_h3_latent_upscaler_3d_bf16.safetensors"] }],
+        mode: ["COMBO", { options: ["scale by multiplier", "target dimensions", "megapixels"], default: "scale by multiplier" }],
+        scale: ["FLOAT", { default: 2, min: 1, max: 4, step: 0.05 }],
+        width: ["INT", { default: 1280, min: 64, max: 4096, step: 8 }],
+        height: ["INT", { default: 704, min: 64, max: 4096, step: 8 }],
+        megapixels: ["FLOAT", { default: 1, min: 0.1, max: 8, step: 0.1 }],
+        align: ["INT", { default: 32, min: 1, max: 512, step: 1 }],
+        keep_proportion: ["BOOLEAN", { default: true }],
+        lock_audio: ["BOOLEAN", { default: true }],
+        cfg: ["FLOAT", { default: 1, min: 0, max: 100, step: 0.1 }],
+        device: ["COMBO", { default: "cuda", options: ["cuda", "cpu"] }],
+        precision: ["COMBO", { default: "fp16", options: ["fp32", "fp16", "bf16"] }],
+        offload_after_upscale: ["BOOLEAN", { default: false }],
+      },
+      optional: {
+        audio_latent: ["LATENT"],
+        refine_state: ["REFINE_STATE"],
+        model: ["MODEL"],
+        positive: ["CONDITIONING"],
+        negative: ["CONDITIONING"],
+      },
+    },
+  },
+};
+
+/** The refine composer's own row (flat mode + flat required scale). */
+const REFINE_FLAT_ROW = {
+  latent: ["1", 0],
+  noise: ["2", 0],
+  sampler: ["3", 0],
+  sigmas: ["4", 0],
+  model_name: "minimax_h3_latent_upscaler_3d_bf16.safetensors",
+  mode: "scale by multiplier", scale: 2.0,
+  lock_audio: true, cfg: 1.0, device: "cuda", precision: "bf16",
+  width: 1280, height: 704, megapixels: 1,
+  keep_proportion: true, align: 32, offload_after_upscale: false,
+};
+
+describe("THE FLAT HANDOFF'S SPELLING (F23 blocker: the dotted child is the OTHER class's)", () => {
+  it("the refine composer's flat row walks the flat class green", () => {
+    const { nodes, inputs } = deriveWiringDoc(FLAT_HANDOFF_DOC);
+    assertWiringAgainst(nodes, inputs, "h3-timeline", {
+      "9": { class_type: "MinimaxH3LatentUpscaler3DRefineHandoff", inputs: REFINE_FLAT_ROW },
+    });
+  });
+
+  it("the same row spelled with the DynamicCombo's dotted child REFUSES — the class declares no mode.scale seat, so `scale` reads MISSING", () => {
+    // The engine's own voice for the round-5 mistake: `required input is
+    // missing`. The flat class declares no dotted child, so the dotted
+    // row loses its required `scale` and the dotted key is unknown.
+    const { nodes, inputs, } = deriveWiringDoc(FLAT_HANDOFF_DOC);
+    assert.equal(inputs.get("MinimaxH3LatentUpscaler3DRefineHandoff")!.has("mode.scale"), false,
+      "no dotted child exists on the flat class");
+    const dotted = { ...REFINE_FLAT_ROW, "mode.scale": REFINE_FLAT_ROW.scale };
+    delete (dotted as Record<string, unknown>)["scale"];
+    assert.throws(
+      () => assertWiringAgainst(nodes, inputs, "h3-timeline", {
+        "9": { class_type: "MinimaxH3LatentUpscaler3DRefineHandoff", inputs: dotted },
+      }),
+      (e: unknown) => e instanceof ComposeRefusal && /without its declared-required input 'scale'/.test(e.message),
+    );
+  });
+});
 
   it("the value gate still judges the selection itself: a mode outside the declared options REFUSES", () => {
     const { nodes, inputs } = deriveWiringDoc(DYNAMIC_DOC);

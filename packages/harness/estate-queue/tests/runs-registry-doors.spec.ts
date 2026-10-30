@@ -2726,6 +2726,76 @@ describe("the one-press one-card law — the press is one card, and the draft-do
     )) as { run_id: string };
     assert.ok(ans.run_id !== "", "an engine-less card stage composes — the door derives the card plane's engine");
   });
+
+  // ── F21 — the claimed bench stage is JUDGED, never trusted (the
+  //    benchStageIdOf contract): a claim must name a row of the very
+  //    draft the press read, because the settle mirror addresses the
+  //    draft row by that id — a stale claim would stamp a row nobody
+  //    pressed. The ONE exception is a failed snapshot read: no doc,
+  //    nothing to judge against, the claim rides (the row names the
+  //    absent snapshot so the wand knows to restore). ──────────────
+  it("a bench_stage_id naming NO row of the draft refuses at the door, and mints nothing", async () => {
+    const s = modelDoorSeat(
+      { SaveImage: { class_type: "SaveImage", inputs: { filename_prefix: "gen" } } },
+      { stages: [{ id: "s_0", card: "image-gen", params: { model: "m1", prompt: "x" } }] },
+    );
+    const err = await remote(() =>
+      s.svc.start(
+        { draft_id: "d1", test: false, model: "m1", params: { prompt: "x" }, bench_stage_id: "s_9" },
+        sig(),
+      ),
+    );
+    assert.equal(err.code, "runs/invalid-request");
+    assert.match(err.message, /bench_stage_id "s_9" names no stage row of draft "d1"/);
+    assert.equal(s.core.runs.size, 0, "a foreign claim never mints a run");
+  });
+
+  it("the claim BINDS when the doc knows the row; a failed snapshot read TRUSTS it and names the absence", async () => {
+    const bound = modelDoorSeat(
+      { SaveImage: { class_type: "SaveImage", inputs: { filename_prefix: "gen" } } },
+      { stages: [{ id: "s_0", card: "image-gen", params: { model: "m1", prompt: "x" } }] },
+    );
+    const ans = (await bound.svc.start(
+      { draft_id: "d1", test: false, model: "m1", params: { prompt: "x" }, bench_stage_id: "s_0" },
+      sig(),
+    )) as { run_id: string };
+    const row = bound.core.runs.get(ans.run_id) as unknown as {
+      stages: Array<{ benchStageId?: string }>;
+    };
+    assert.equal(row.stages[0]?.benchStageId, "s_0",
+      "the press's claim is the draft row the settle mirror addresses");
+    // THE OUTAGE: the existence probe answers, the SNAPSHOT read fails —
+    // there is no doc to judge the claim against, so it rides verbatim
+    const dark = modelDoorSeat(
+      { SaveImage: { class_type: "SaveImage", inputs: { filename_prefix: "gen" } } },
+      { stages: [{ id: "s_0", card: "image-gen", params: { model: "m1", prompt: "x" } }] },
+    );
+    const ctx = (dark.svc as unknown as { ctx: Context }).ctx;
+    const drafts = (ctx as unknown as {
+      draftsRemote: { get: (id: string, signal: AbortSignal) => Promise<unknown> };
+    }).draftsRemote;
+    const real = drafts.get.bind(drafts);
+    let calls = 0;
+    drafts.get = async (id: string, signal: AbortSignal): Promise<unknown> => {
+      calls += 1;
+      if (calls > 1) throw new Error("transport down");
+      return await real(id, signal);
+    };
+    const darkAns = (await dark.svc.start(
+      { draft_id: "d1", test: false, model: "m1", params: { prompt: "x" }, bench_stage_id: "s_7" },
+      sig(),
+    )) as { run_id: string };
+    const darkRow = dark.core.runs.get(darkAns.run_id) as unknown as {
+      stages: Array<{ benchStageId?: string }>;
+      warnings?: string[];
+    };
+    assert.equal(darkRow.stages[0]?.benchStageId, "s_7",
+      "with no snapshot the claim is trusted, never silently dropped");
+    assert.ok(
+      (darkRow.warnings ?? []).some((w) => /bench snapshot read failed/.test(w)),
+      "the row names the absent snapshot: " + JSON.stringify(darkRow.warnings),
+    );
+  });
 });
 
 // ── THE WIRE CENSUS (benchWiring, the pure projection): the door's

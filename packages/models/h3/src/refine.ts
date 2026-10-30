@@ -151,11 +151,15 @@ export function renderH3Refine(
     noise, sampler: samplerSel, sigmas: sched,
     model: sigmaModel, positive,
     model_name: REFINE_UPSCALE_MODEL,
-    // F23 (2026-10-30): the multiplexer's CHILD is addressed by its
-    // DOTTED path — the engine rejects a bare `scale` with
-    // required_input_missing + extra_info.input_name "mode.scale"
-    // (prompt 46bf3a93 proved the dotted key validates and runs).
-    mode: upMode, 'mode.scale': upScale,
+    // THE FLAT CLASS (F23 blocker, round-6 audit): THIS handoff
+    // declares `mode` as a plain combo and `scale` as its OWN required
+    // top-level FLOAT (production /object_info + the vendored
+    // minimax_h3_refine.py:349-353) — there is no `mode.scale` seat on
+    // it. The dotted spelling belongs to MinimaxH3LatentUpscaler3D
+    // (COMFY_DYNAMICCOMBO_V3, chainUpscale.ts), a DIFFERENT node; the
+    // round-5 cure crossed the two and reintroduced
+    // required_input_missing on this member.
+    mode: upMode, scale: upScale,
     // Multiplier mode ignores these (the film's own note at its
     // handoff mount) — they ride the upscaler's own defaults.
     width: 1280, height: 704, megapixels: 1,
