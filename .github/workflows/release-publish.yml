@@ -53,7 +53,12 @@ jobs:
     # job below). Verified by anyone:
     #   gh attestation verify <tarball> --repo "$GITHUB_REPOSITORY"
     permissions:
-      contents: read
+      # The mint uploads its gated tarballs onto the tag's GitHub
+      # release, and creating/locating that release is a contents-write
+      # act. Spelled here because a visibility flip resets the repo's
+      # default token to read-only (0.2.0-alpha's first mint died on
+      # HTTP 403 "Resource not accessible by integration").
+      contents: write
       id-token: write
       attestations: write
       artifact-metadata: write
