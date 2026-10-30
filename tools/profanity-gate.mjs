@@ -130,6 +130,7 @@ export const ALLOWLIST = [
   { word: 'girl on', reason: '2026-11-05: innocuous prompt fixture ("a girl on the left side") vs naughty:en phrase entry' },
   { word: 'butt', reason: '2026-11-05: NLE editing term "butt" (butt cut/join, h3 timeline copy) vs leo:en entry' },
   { word: 'xxx', reason: '2026-11-05: FIXME/TODO/XXX marker census vocabulary vs leo:en entry' },
+  { word: 'pot', reason: "2026-11-05: three.js JSDoc acronym \"POT\" (power of two) inside the built three-client bundle vs naughty:nl entry" },
 ]
 
 const run = (cmd, args, opts = {}) => execFileSync(cmd, args, { encoding: 'utf8', ...opts })
