@@ -13,17 +13,22 @@
   description = "LLM keystore symmetric key"
   regex = '''[A-Za-z0-9+/]{32,}={0,2}'''
   tags = ["key", "llm"]
-  # The entropy heuristic also matches long slash-bearing paths. These
-  # files hold coverage tables (per-file glob keys) and workspace
-  # manifests (repository.directory fields) — path data, never keys.
-  # Scoped to THIS rule only; the keyword rules below stay armed on
-  # every file.
+  # The entropy heuristic also matches long slash-bearing paths and
+  # 40-hex git SHAs. These files hold coverage tables (per-file glob
+  # keys), workspace manifests (repository.directory fields),
+  # extension pins (git SHAs — the pin IS the ref), and the lib-sync
+  # judge's own output (srcHash/libHash rows) — reference data,
+  # never keys. Scoped to THIS rule only; the keyword rules below
+  # stay armed on every file.
   [[rules.allowlists]]
-    description = "coverage tables and workspace manifests carry paths, not keys"
+    description = "coverage tables, manifests, pins, and judge output carry references, not keys"
     paths = [
       '''scripts/coverage-baseline\.ts''',
       '''tests/walls/ts/suites/coverage-baseline-ratchet\.spec\.ts''',
       '''(^|/)package\.json$''',
+      '''packages/engines/comfyui-cordis/models/(.*/)?nodes\.yaml$''',
+      '''packages/engines/comfyui-cordis/data/extension-manifest\.json$''',
+      '''tests/walls/ts/fixtures/models-lib-sync-manifest\.json$''',
     ]
 
 [[rules]]
