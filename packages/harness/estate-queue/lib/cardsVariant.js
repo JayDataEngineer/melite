@@ -278,8 +278,21 @@ export function stampCardOverlay(body, famRow, decl, sel, phase, fam) {
     // inert currency the receipts lied about; with the stamp skipped,
     // an EXPLICIT both-stated run refuses loud at the card's own
     // compose (card.ts's B2 refusal), never silently drops one.
-    const qvoiceStated = (typeof body["qvoice"] === "string" && body["qvoice"] !== "") ||
-        (Array.isArray(body["qvoice"]) && body["qvoice"].length > 0);
+    // THE STANZA SEAT (the B7 residue, the second rebuild's live
+    // refusal): the bench-save shape carries the bag INSIDE the
+    // params stanza ({model, params:{…qvoice…}}) — a top-level-only
+    // look missed it, stamped 'ryan' at the top level, and the lift
+    // merged stamp + stanza into a both-stated body the card refused
+    // verbatim (card-mode qvoice compose, no voice stated anywhere).
+    // The skip reads BOTH seats: the flat agent body AND the stanza.
+    const stanzaRow = typeof body["params"] === "object" && body["params"] !== null && !Array.isArray(body["params"])
+        ? body["params"]
+        : null;
+    const qvoiceSeats = [body["qvoice"]];
+    if (stanzaRow !== null)
+        qvoiceSeats.push(stanzaRow["qvoice"]);
+    const qvoiceStated = qvoiceSeats.some((q) => (typeof q === "string" && q !== "") ||
+        (Array.isArray(q) && q.length > 0));
     for (const [k, v] of Object.entries(stamps)) {
         if (v === null || v === undefined || v === "")
             continue;
