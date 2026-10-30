@@ -692,6 +692,19 @@ function specModifiers(svc, card, key, decl, def, enveloped, engineLoras) {
                 throw new Error(`form-spec: card '${card}' declares a malformed mod kind schema_key (a non-empty string names the catalog) — ${JSON.stringify(k).slice(0, 120)}`);
             }
             entry.schema_key = k.schema_key;
+            // THE CATALOG MIRROR (the mod-liveness ARM 3 law's second face,
+            // 2026-10-30): a card kind that attributes itself to a pack the
+            // DECL already boards serves THAT entry's options — the live
+            // catalog (flavor rows + the engine's own listing) the pack
+            // walk resolved above, never a hand-typed copy of it. A card
+            // kind naming its own catalog (replace, repair, …) has no twin
+            // and keeps no options, which the wall reads as the empty menu
+            // against the empty compose face — the honest-empty pair.
+            if (servedOptionsRow === undefined) {
+                const mirrored = out.find((m) => m.schema_key === k.schema_key && m.options !== undefined);
+                if (mirrored?.options !== undefined)
+                    entry.options = mirrored.options;
+            }
         }
         out.push(entry);
     }

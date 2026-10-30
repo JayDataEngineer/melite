@@ -1618,7 +1618,46 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
     }
   })
 
-  test('a failed terminal STOPS the pass — later rows never run', async () => {
+  test('a failed stage is RECORDED and the pass presses the REST (F20 residual — never a silent abandon)', async () => {
+    // The round-4 burn: `run all` stopped at the first failed stage, so
+    // the later stages never got their press and the operator re-pressed
+    // blind. The pass now presses every stage, records the failure, and
+    // the final status still says stopped + names the FIRST failure.
+    const starts: string[] = []
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchGet') {
+          return { status: 200, body: { draft_id: 'd_bench', rev: 3, stages: [
+            { id: 's_0', card: 'image-gen', params: {} },
+            { id: 's_1', card: 'upscale-tools', params: {} },
+          ] } }
+        }
+        if (lane === 'runsStart') {
+          starts.push('start')
+          return { status: 202, body: { run_id: 'r' + String(starts.length), status: 'queued' } }
+        }
+        if (lane === 'runsStatus') {
+          // the FIRST stage settles failed; every later stage completes
+          return { status: 200, body: { status: starts.length === 1 ? 'failed' : 'completed', stages: [] } }
+        }
+        if (lane === 'benchVerb' && args[1] === 'patch') return { status: 200, body: { rev: 4, stage: 's_0', patched: ['runStatus'] } }
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(6000))) as Record<string, unknown>
+    assert.equal(out.status, 'stopped', 'a pass with a failed stage never reads clean')
+    assert.equal(out.stoppedAt, 's_0', 'the FIRST failure is named')
+    assert.equal(out.error, 'stage s_0 (image-gen) ended error (the pass still pressed the remaining stages)')
+    // the LATER stage ran: two starts, and its own pass row carries its run id
+    assert.equal(starts.length, 2, 's_1 reached the queue after s_0 failed')
+    const pass = out.pass as Array<Record<string, unknown>>
+    assert.equal(pass.length, 2, 'both stages have an outcome row')
+    assert.equal(pass[0]!.status, 'error')
+    assert.equal(pass[1]!.status, 'done')
+  })
+
+  test('a failed stage never reads clean — the pass still presses the rest and names the first failure', async () => {
     let polls = 0
     const seen = mockEstate([
       (lane: string, args: unknown[]) => {
@@ -1644,18 +1683,23 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
     // 2026-10-01 vocab law: the stop prose rides the FOLDED CardStatus —
     // raw 'failed' folds to 'error' at the owner (statusOf), so the
     // message carries the one vocabulary every row already speaks.
-    assert.equal(out.error, 'stage s_0 (image-gen) ended error')
+    assert.equal(out.error, 'stage s_0 (image-gen) ended error — 2 stages failed (the pass still pressed every stage; read pass[])')
     assert.equal(out.run_id, 'rb9')
     // THE RENDER LAW (transcript-016): a stopped-mid-flow refusal PRINTS
     // the run id — the maker must never glob output/ to find a run it
     // already paid for (ten wasted calls before this pin).
     const rendered = tool.output!.render!({ bench: true } as never, asJson(out))
-    assert.match(asText(rendered[0]), /melite_flow REFUSED: stage s_0 \(image-gen\) ended error — run rb9 \(poll with run_status\)/)
+    assert.match(asText(rendered[0]), /melite_flow REFUSED: stage s_0 \(image-gen\) ended error — 2 stages failed \(the pass still pressed every stage; read pass\[\]\) — run rb9 \(poll with run_status\)/)
     // a PRE-RUN refusal (no run started) renders without the run clause
     const preRun = tool.output!.render!({ bench: true } as never, { mode: 'bench', target: 'x', status: 'stopped', error: 'stage s_0 names no card' })
     assert.equal(asText(preRun[0]), 'melite_flow REFUSED: stage s_0 names no card')
-    // ONE start total — s_1 never reached the queue
-    assert.equal(seen.calls.filter((c) => c.lane === 'runsStart').length, 1)
+    // THE PRESS KEEPS GOING (F20 residual, 2026-10-30): s_1 IS pressed
+    // after s_0 failed — the round-4 burn was the silent abandon, never
+    // a lost refusal
+    assert.equal(seen.calls.filter((c) => c.lane === 'runsStart').length, 2)
+    const pass = out.pass as Array<Record<string, unknown>>
+    assert.equal(pass.length, 2)
+    assert.equal(pass[1]!.status, 'error')
   })
 
   test('a bench without draft_id/rev falls back honestly', async () => {
@@ -2372,7 +2416,7 @@ describe('melite_flow bench — the degenerate-shape arms', () => {
     const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(8000))) as Record<string, unknown>
     assert.equal(out.status, 'stopped')
     // folded: the classified unknown-outcome arm speaks the CardStatus
-    assert.equal(out.error, 'stage s_0 (image-gen) ended stopped')
+    assert.equal(out.error, 'stage s_0 (image-gen) ended stopped (the pass still pressed the remaining stages)')
   })
 })
 
@@ -2512,7 +2556,7 @@ describe('melite_flow bench — the status distill arms', () => {
     const tool = meliteFlow(seen.request)
     const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(8000))) as Record<string, unknown>
     assert.equal(out.status, 'stopped')
-    assert.equal(out.error, 'stage s_0 (image-gen) ended stopped')
+    assert.equal(out.error, 'stage s_0 (image-gen) ended stopped (the pass still pressed the remaining stages)')
   })
 })
 

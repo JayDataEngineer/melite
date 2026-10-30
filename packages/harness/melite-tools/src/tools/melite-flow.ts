@@ -373,6 +373,13 @@ async function runBench(
   const draftId = typeof b['draft_id'] === 'string' ? draftIdOf(b['draft_id']) : benchDraftIdOf(a.bench)
   const target = `${benchDraftIdOf(a.bench)} @ rev ${String(b['rev'] ?? '?')}`
   const pass: Array<Record<string, unknown>> = []
+  // THE PRESS KEEPS GOING (F20 residual, 2026-10-30): a stage that
+  // settled FAILED is recorded here and the pass moves on — the run
+  // press never abandons the remaining stages because an earlier one
+  // burned. The final status still says 'stopped' and names the FIRST
+  // failure, so no caller can read a pass with a failed stage as
+  // clean.
+  const failures: Array<{ stage: string, card: string, status: string, run_id: string }> = []
   for (const row of rows) {
     const stageId = row['id'] as string
     const card = typeof row['card'] === 'string' && row['card'] !== '' ? row['card'] as string : ''
@@ -507,8 +514,17 @@ async function runBench(
       return { mode: 'bench', target, draft_id: draftId, status: 'pending', stoppedAt: stageId, run_id: runId, pass }
     }
     if (outcome.status !== 'done') {
-      return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId, run_id: runId,
-        error: `stage ${stageId} (${card}) ended ${outcome.status}`, pass }
+      // THE PASS CONTINUES (F20 residual, 2026-10-30): a stage that
+      // ran and FAILED is that stage's outcome — it must not cancel
+      // the press's remaining stages (the round-4 burn: `run all`
+      // stopped at the first failure and the later stages never got
+      // their press). The failure is recorded in `pass` and named at
+      // the END, so the operator sees every stage's outcome AND the
+      // press finishes what it can. A pre-run REFUSAL above still
+      // stops (the doc itself is wrong); only a settled non-done
+      // status continues.
+      failures.push({ stage: stageId, card, status: outcome.status, run_id: runId })
+      continue
     }
   }
   // THE RUN-ID VISIBILITY LAW (commissions 032/033, the transcript-016
@@ -536,6 +552,13 @@ async function runBench(
     }
     return acc
   })()
+  if (failures.length > 0) {
+    const first = failures[0]!
+    return { mode: 'bench', target, draft_id: draftId, run_id: lastRun, status: 'stopped',
+      stoppedAt: first.stage,
+      error: `stage ${first.stage} (${first.card}) ended ${first.status}` + (failures.length > 1 ? ` — ${failures.length} stages failed (the pass still pressed every stage; read pass[])` : ' (the pass still pressed the remaining stages)'),
+      ...(lastHosts.length > 0 ? { host_paths: lastHosts } : {}), pass }
+  }
   return { mode: 'bench', target, draft_id: draftId, run_id: lastRun, status: 'done',
     ...(lastHosts.length > 0 ? { host_paths: lastHosts } : {}), pass }
 }
