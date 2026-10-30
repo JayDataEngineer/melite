@@ -551,6 +551,42 @@ describe("uploadReferenced (the staging walk)", () => {
       vhsDead: { class_type: "VHS_LoadVideo", inputs: { video: "dead.webp" } },
     })).rejects.toThrow(/media input stages nowhere \(dead\.webp\)/);
   });
+  it("THE VIEW-SEAT EXEMPTION (F14): MeliteFrameSheet/MeliteWaveform host paths ride verbatim — staging them is the reshoot burn", async () => {
+    // 2026-11-12, the §6 melite_view miss: the sheet graph carried
+    // `video: <run-tree abs path>`, the walk staged the film
+    // content-addressed, and the node (absolute-as-is, else
+    // OUTPUT-dir-relative) answered "no media file at
+    // '<engine-output>/<staged leaf>'" while the film sat in the
+    // run's own tree. The view seats read real filesystem paths
+    // server-side — same class as VHS_LoadVideoPath — so their path
+    // inputs ride untouched; every OTHER input on the node (and
+    // every other node in the graph) still walks.
+    const before = uploads.length;
+    const film = join(ROOT, "run-f14-view", "SaveVideo.0_h3_t4_w1_00001_.mp4");
+    mkdirSync(join(ROOT, "run-f14-view"), { recursive: true });
+    writeFileSync(film, "film-bytes");
+    const { graph, uploaded } = await uploadReferenced(fakeClient(), {
+      sheet: { class_type: "MeliteFrameSheet", inputs: { video: film, stamps: 6, width: 320 } },
+      wave: { class_type: "MeliteWaveform", inputs: { audio: join(DIR, "abs.gif"), width: 640 } },
+      // the walk still walks: a non-exempt seat on the same graph
+      // stages the very same bytes the view seats rode verbatim
+      consumer: { class_type: "VHS_LoadVideo", inputs: { video: film } },
+    }, { runsRoot: ROOT });
+    expect((graph["sheet"] as { inputs: Record<string, unknown> }).inputs["video"]).toBe(film);
+    expect((graph["wave"] as { inputs: Record<string, unknown> }).inputs["audio"]).toBe(join(DIR, "abs.gif"));
+    expect((graph["consumer"] as { inputs: { video: string } }).inputs["video"]).toMatch(/^SaveVideo\.0_h3_t4_w1_00001__[0-9a-f]{12}\.mp4$/);
+    // exactly ONE upload left the host: the consumer's stage. The
+    // view seats rode verbatim — zero bytes moved for them.
+    expect(uploads.length).toBe(before + 1);
+    expect(Object.keys(uploaded)).toEqual([film]);
+    // a NON-path input on an exempt node still stages (the exemption
+    // is per-seat, never per-node)
+    const { graph: g2 } = await uploadReferenced(fakeClient(), {
+      sheet: { class_type: "MeliteFrameSheet", inputs: { video: film, overlay: join(DIR, "abs.gif") } },
+    });
+    expect((g2["sheet"] as { inputs: Record<string, unknown> }).inputs["video"]).toBe(film);
+    expect((g2["sheet"] as { inputs: Record<string, unknown> }).inputs["overlay"]).toMatch(/_[0-9a-f]{12}(?:\.[a-z0-9]+)?$/);
+  });
   it("objects descend, arrays walk, non-strings ride", async () => {
     const { graph } = await uploadReferenced(fakeClient(), {
       n: { class_type: "X", inputs: { nested: { deep: join(DIR, "abs.gif") }, arr: ["cwd-rel.webp", 5, null] } },

@@ -253,8 +253,29 @@ function requireServableLeaf(face, p, leaf) {
         throw new ComfyError(face + " is a run-state file, not servable media (" + p + ") — re-link a served artifact");
     }
 }
+/** Host-path input seats (F14, 2026-11-12): node inputs that read
+ *  REAL FILESYSTEM paths server-side (the engine host's own tree,
+ *  never the input dir). Staging such a seat rewrites the value to
+ *  an input-dir leaf the node cannot resolve — the reshoot burn:
+ *  melite_view's contact-sheet graph carried
+ *  `video: <run-tree abs path>`, the walk staged the film
+ *  content-addressed (`SaveVideo.0_h3_t4_w1_00001__<sha1-12>.mp4`,
+ *  found verbatim in the engine input dir), and MeliteFrameSheet —
+ *  whose resolver reads absolute paths as-is, everything else
+ *  output-dir-relative — answered `no media file at
+ *  '<engine-output>/<staged leaf>'` while the film sat in the run's
+ *  own tree. VHS_LoadVideoPath keeps its 2026-10-27 seat here (the
+ *  openjutsu burn: the Path twin reads real paths server-side);
+ *  VHS_LoadVideo is DELIBERATELY absent — its `video` validates
+ *  against the input dir and wants the staged name. */
+const HOST_PATH_INPUTS = {
+    VHS_LoadVideoPath: new Set(["video"]),
+    MeliteFrameSheet: new Set(["video"]),
+    MeliteWaveform: new Set(["audio"]),
+};
 /** Walk the FINAL graph; stage every existing local-media path,
- *  with the VHS_LoadVideoPath `video` exemption. VHS_LoadVideo's
+ *  with the host-path seat exemptions above (VHS_LoadVideoPath's
+ *  `video` among them). VHS_LoadVideo's
  *  `video` RIDES the walk (2026-10-27, the openjutsu lane burn: the
  *  node validates its file against the engine's INPUT DIR, so a raw
  *  workspace path rode the exemption into "Custom validation
@@ -664,19 +685,28 @@ export async function uploadReferenced(client, wf, opts) {
     for (const [nid, node] of Object.entries(wf)) {
         if (typeof node === "object" && node !== null && !Array.isArray(node)) {
             const rec = node;
-            if (rec["class_type"] === "VHS_LoadVideoPath" &&
+            const hostSeats = typeof rec["class_type"] === "string"
+                ? HOST_PATH_INPUTS[rec["class_type"]]
+                : undefined;
+            if (hostSeats !== undefined &&
                 typeof rec["inputs"] === "object" &&
                 rec["inputs"] !== null &&
                 !Array.isArray(rec["inputs"])) {
                 const ins = rec["inputs"];
                 const next = {};
                 for (const [k, x] of Object.entries(ins)) {
-                    // THE PATH TWIN'S EXEMPTION (2026-10-27 split): VHS_LoadVideoPath
-                    // reads real filesystem paths server-side, so its `video` rides
-                    // untouched. VHS_LoadVideo fell off this branch the same day — its
-                    // `video` must land in the engine's input dir (the walk's staged
-                    // name), or the node's own validation refuses it.
-                    next[k] = k === "video" ? x : await stageOne(x);
+                    // THE PATH-SEAT EXEMPTION (the openjutsu 2026-10-27 split,
+                    // generalized 2026-11-12 by the F14 reshoot burn): seats in
+                    // HOST_PATH_INPUTS read real filesystem paths server-side —
+                    // VHS_LoadVideoPath and the estate's own view nodes — so
+                    // their path input rides untouched (staging would hand the
+                    // node an input-dir leaf its resolver re-roots at the
+                    // OUTPUT dir, the exact "no media file" death the view
+                    // seats burned on). Every other input on the node still
+                    // walks (the VHS_LoadVideo twin fell OFF this branch the
+                    // same day its Path twin joined: an input-dir seat WANTS
+                    // the staged name).
+                    next[k] = hostSeats.has(k) ? x : await stageOne(x);
                 }
                 out[nid] = { ...rec, inputs: next };
                 continue;

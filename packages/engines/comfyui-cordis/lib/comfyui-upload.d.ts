@@ -51,7 +51,8 @@ export declare const GALLERY_ARTIFACT_ROUTE = "/infer-gallery/artifact";
  *  pointer. Case-insensitive like every estate prefix. */
 export declare function isGalleryArtifactRoute(t: string): boolean;
 /** Walk the FINAL graph; stage every existing local-media path,
- *  with the VHS_LoadVideoPath `video` exemption. VHS_LoadVideo's
+ *  with the host-path seat exemptions above (VHS_LoadVideoPath's
+ *  `video` among them). VHS_LoadVideo's
  *  `video` RIDES the walk (2026-10-27, the openjutsu lane burn: the
  *  node validates its file against the engine's INPUT DIR, so a raw
  *  workspace path rode the exemption into "Custom validation

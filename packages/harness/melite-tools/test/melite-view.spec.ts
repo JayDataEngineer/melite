@@ -565,6 +565,35 @@ describe('melite_view film — the §24 observe arm (fakes for the engine render
     assert.equal(asks[0]!.inputs['width'], 320)
   })
 
+  test('F14 SPELLING-NORMALIZED MATCH: every printed spelling of one film resolves the run\'s own row', async () => {
+    // the §6 reshoot burn: the caller named the clip by the STAGED
+    // spelling (`<stem>__<sha1-12>.mp4`, the content-address law's
+    // copy in the engine input dir) and the raw substring missed the
+    // run's harvested row. One film, three printed spellings — the
+    // staged leaf, the engine-flat name, the run row's full path.
+    const f14 = join(root, 'output', 'run-face010-f14')
+    mkdirSync(join(f14, 'h3-film'), { recursive: true })
+    copyFileSync(new URL('./fixtures/film-2s.mp4', import.meta.url), join(f14, 'h3-film', 'SaveVideo.0_h3_t4_w1_00001_.mp4'))
+    const { ctx } = fakeCtx()
+    const tool = meliteView(ctx, fakeProc())
+    for (const token of [
+      'SaveVideo.0_h3_t4_w1_00001__727eaada1377.mp4', // staged (content-hash suffix)
+      'h3_t4_w1_00001_.mp4', // engine-flat (pre-namespace films)
+      'run-face010-f14/h3-film/SaveVideo.0_h3_t4_w1_00001_.mp4', // the run row's own printed path
+      'SaveVideo.0_h3_t4_w1_00001_', // the stem alone
+    ]) {
+      const out = await tool.execute({ run_id: 'run-face010-f14', artifact: token }, visualExec as never) as ViewedImageValue
+      assert.equal(out.film!.file, 'h3-film/SaveVideo.0_h3_t4_w1_00001_.mp4', token)
+      assert.equal(out.host, join(f14, 'h3-film', 'SaveVideo.0_h3_t4_w1_00001_.mp4'), token)
+    }
+    // the raw substring law still owns its own: a token nothing
+    // matches (even stem-normalized) refuses naming the holdings
+    await assert.rejects(
+      tool.execute({ run_id: 'run-face010-f14', artifact: 'reshoot_other_take' }, visualExec as never),
+      /has no film artifact containing "reshoot_other_take"/,
+    )
+  })
+
   test('the artifact substring picks the film; a miss lists the holdings', async () => {
     const { ctx } = fakeCtx()
     const tool = meliteView(ctx, fakeProc())

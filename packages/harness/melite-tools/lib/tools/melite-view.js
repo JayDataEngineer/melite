@@ -56,6 +56,37 @@ const firstRootWithRun = async (seat, kind, runId) => {
 };
 /** The run-id grammar (estate/media's containment law, verbatim). */
 const RUN_ID = RUN_ID_RE;
+/** F14 (2026-11-12) — SPELLING-NORMALIZED ARTIFACT MATCH. The caller
+ *  names an artifact by whatever spelling a surface printed, and the
+ *  estate prints THREE for one film: the run row's own
+ *  `<run>/<rel>`, the content-addressed staged leaf
+ *  (`<stem>__<sha1-12>.mp4` — the staging walk's copy in the engine
+ *  input dir), and the engine's own collision-suffixed output name.
+ *  Raw substring matching missed every non-row spelling (the §6
+ *  reshoot burn: the staged spelling found the row not at all), so
+ *  the door answers a token by its STEM: strip the collision/content
+ *  hash (`__<hex8-16>` / `_<hex8-16>` before the extension) and the
+ *  engine's trailing stem underscore from both sides, then match
+ *  basename-stem contains. The raw substring arm stays FIRST (every
+ *  spelling that already hits keeps hitting); an empty token still
+ *  picks the newest row. */
+const COLLISION_HASH = /_{1,2}[0-9a-f]{8,16}$/;
+const artifactStem = (spelling) => {
+    const leaf = basename(spelling.trim());
+    const dot = leaf.lastIndexOf(".");
+    const ext = dot > 0 ? leaf.slice(dot) : "";
+    let stem = dot > 0 ? leaf.slice(0, dot) : leaf;
+    stem = stem.replace(COLLISION_HASH, "").replace(/_+$/, "");
+    return stem === "" ? leaf : stem + ext;
+};
+const artifactRowMatches = (rowName, token) => {
+    if (token === "")
+        return true;
+    if (rowName.includes(token))
+        return true;
+    const want = artifactStem(token);
+    return want !== "" && artifactStem(rowName).includes(want);
+};
 /**
  * Extension → declared media type for the image walk. THE EXT SET IS
  * DERIVED from mediaVocab's galleryImage mint set (the SSOT — the
@@ -256,7 +287,7 @@ export async function viewFilmArtifact(seat, runId, artifact, exec, ctx, attachm
         throw new Error('run "' + runId + '" produced no image artifacts (and no viewable film — the run holds no video artifacts either) ' + searchedVoice(rootsManifest(seat.stateRoot, seat.stateRoots ?? [])));
     }
     const own = found.own;
-    const picked = artifact.length > 0 ? own.filter((i) => i.name.includes(artifact)) : own;
+    const picked = artifact.length > 0 ? own.filter((i) => artifactRowMatches(i.name, artifact)) : own;
     if (picked.length === 0) {
         throw new Error('run "' + runId + '" has no film artifact containing "' + artifact + '" — the run holds: ' + own.slice(0, 8).map((i) => i.name).join(', ') + ' ' + searchedVoice(rootsManifest(seat.stateRoot, seat.stateRoots ?? [])));
     }
@@ -321,7 +352,7 @@ export async function viewAudioArtifact(seat, runId, artifact, exec, ctx, attach
         throw new Error('run "' + runId + '" produced no image artifacts (and no viewable film or audio — the run holds no image/video/audio artifacts either) ' + searchedVoice(rootsManifest(seat.stateRoot, seat.stateRoots ?? [])));
     }
     const own = found.own;
-    const picked = artifact.length > 0 ? own.filter((i) => i.name.includes(artifact)) : own;
+    const picked = artifact.length > 0 ? own.filter((i) => artifactRowMatches(i.name, artifact)) : own;
     if (picked.length === 0) {
         throw new Error('run "' + runId + '" has no audio artifact containing "' + artifact + '" — the run holds: ' + own.slice(0, 8).map((i) => i.name).join(', ') + ' ' + searchedVoice(rootsManifest(seat.stateRoot, seat.stateRoots ?? [])));
     }
@@ -590,7 +621,7 @@ export async function viewModelArtifact(seat, runId, artifact, exec, ctx, attach
         throw new Error('run "' + runId + '" produced no image artifacts (and no viewable film or audio — the run holds no image/video/audio artifacts either) (and no mesh: the run holds no .glb/.gltf artifact either) ' + searchedVoice(rootsManifest(seat.stateRoot, seat.stateRoots ?? [])));
     }
     const own = found.own;
-    const picked = artifact.length > 0 ? own.filter((i) => i.name.includes(artifact)) : own;
+    const picked = artifact.length > 0 ? own.filter((i) => artifactRowMatches(i.name, artifact)) : own;
     if (picked.length === 0) {
         throw new Error('run "' + runId + '" has no mesh artifact containing "' + artifact + '" — the run holds: ' + own.slice(0, 8).map((i) => i.name).join(', ') + ' ' + searchedVoice(rootsManifest(seat.stateRoot, seat.stateRoots ?? [])));
     }
@@ -912,7 +943,7 @@ export function meliteView(ctx, render = defaultMediaSheetRender) {
                 }
             }
             const own = found.own;
-            const picked = artifact.length > 0 ? own.filter((i) => i.name.includes(artifact)) : own;
+            const picked = artifact.length > 0 ? own.filter((i) => artifactRowMatches(i.name, artifact)) : own;
             if (picked.length === 0) {
                 throw new Error('run "' + runId + '" has no image artifact containing "' + artifact + '" — the run holds: ' + own.slice(0, 8).map((i) => i.name).join(', '));
             }
