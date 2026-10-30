@@ -393,6 +393,29 @@ describe('G1.5 — publish rewrite (hygiene strip + registry manifest)', () => {
     } finally { rmSync(fx.dir, { recursive: true, force: true }) }
   })
 
+  it('injects the Node floor when the manifest carries no engines row; an existing row wins untouched (fresh-clone F9)', () => {
+    const bare = fixture({
+      'package.json': okManifest({}),
+      'lib/index.js': 'export const x = 1\n',
+      'lib/index.d.ts': 'export declare const x: number\n',
+    })
+    const own = fixture({
+      'package.json': okManifest({ engines: { node: '>=22.18.0' } }),
+      'lib/index.js': 'export const x = 1\n',
+      'lib/index.d.ts': 'export declare const x: number\n',
+    })
+    try {
+      gates.stripPackedTarballs([bare.f, own.f])
+      const injected = JSON.parse(execFileSync('bash', ['-c', `tar -xzOf ${bare.f} package/package.json`], { encoding: 'utf8' })) as { engines?: { node?: string } }
+      expect(injected.engines?.node).toBe('>=22.18.0')
+      const kept = JSON.parse(execFileSync('bash', ['-c', `tar -xzOf ${own.f} package/package.json`], { encoding: 'utf8' })) as { engines?: { node?: string } }
+      expect(kept.engines?.node).toBe('>=22.18.0')
+    } finally {
+      rmSync(bare.dir, { recursive: true, force: true })
+      rmSync(own.dir, { recursive: true, force: true })
+    }
+  })
+
   it('strips the YAML frontmatter block from the packed README — npmjs renders it as literal text (registry face F5)', () => {
     const fx = fixture({
       'package.json': okManifest({ description: 'The compose plane.' }),

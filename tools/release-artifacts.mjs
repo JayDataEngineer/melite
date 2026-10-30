@@ -456,6 +456,14 @@ export function stripPackedTarballs (files) {
       // typescript) render as if they were dependency facts (the
       // npm-consumer audit F4).
       delete manifest.devDependencies
+      // THE NODE FLOOR (fresh-clone audit F9): the estate requires
+      // Node >= 22.18 (README/docs state it); the packed manifest
+      // carries the fact so a consumer's installer sees it too. An
+      // existing row wins untouched — the point is a floor, never a
+      // overwrite of a package's own stricter contract.
+      if (manifest.engines === undefined || manifest.engines === null) {
+        manifest.engines = { node: '>=22.18.0' }
+      }
       manifest.publishConfig = { ...manifest.publishConfig, access: 'public' }
       // THE REGISTRY FACE (2026-11-30, the public-face audit): npmjs
       // renders the manifest description verbatim and DERIVES a

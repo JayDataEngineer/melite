@@ -4,7 +4,7 @@
   "private": true,
   "license": "AGPL-3.0-or-later",
   "type": "module",
-  "description": "The Cordis provisioning capability for declared model and extension resources — plans, per-resource state, acquisition locks, Manager/provider adapters, verified artifact landing.",
+  "description": "The Cordis provisioning capability for declared model and extension resources \u2014 plans, per-resource state, acquisition locks, Manager/provider adapters, verified artifact landing.",
   "types": "./lib/index.d.ts",
   "exports": {
     ".": {
@@ -37,7 +37,7 @@
     "@deepseek-ai/cordis": "^4.0.5"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22.18.0"
   },
   "files": [
     "lib/index.js",
