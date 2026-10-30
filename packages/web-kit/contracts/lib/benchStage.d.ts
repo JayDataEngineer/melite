@@ -19,6 +19,24 @@ export declare function runMediaPrefixOf(value: string): string | null;
  *  live one. Everything else — a local file, an https URL, a $spell,
  *  a run-relative name — rides verbatim. */
 export declare function canonicalRunMediaUrl(value: string): string;
+/** THE HOST-PATH MIRROR (the agent-slot preview burn, 2026-11-12: the
+ *  operator put an image into a card's image input slot and the square
+ *  painted the browser's broken-image glyph): melite_view hands an
+ *  agent BOTH lanes — `url` (the browser's /melite-media/runs/… URL)
+ *  and `host` (the same artifact's path under the estate's output
+ *  tree on the host). An agent that patches the HOST spelling into a
+ *  slot holds a real, run-stageable value (resolveArtifactFile accepts
+ *  absolute paths inside the output root) that no <img> can fetch —
+ *  isImageUrl passes any root-relative path with an image tail, so the
+ *  glyph burned. The run dir's OWN name (the run-id grammar) is the
+ *  one coordinate both lanes share: a host path carrying a run-id
+ *  segment names the same bytes the media route serves, so the display
+ *  rewrites it to that URL. DISPLAY ONLY — the param keeps the host
+ *  path verbatim (the currency law); a path that addresses no run
+ *  media, an already-serving media URL (both spellings —
+ *  canonicalRunMediaUrl owns those), and every scheme-ful or
+ *  protocol-relative value ride untouched (null). */
+export declare function runHostMediaUrl(value: string): string | null;
 /** Rewrite every legacy run-media path inside a value (deep,
  *  value-preserving, total). */
 export declare function healRunMediaPaths(value: unknown): unknown;

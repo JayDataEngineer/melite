@@ -10,6 +10,7 @@ import { createElement as h, useState } from 'react'
 import { afterEach, expect, test, vi } from 'vitest'
 
 import { ASSET_DRAG_MIME, InputSquare, estateInputVideoUrl, isImageUrl, isMeshUrl, isVideoUrl } from '../src/square.tsx'
+import { runHostMediaUrl } from '@melite/contracts/benchStage'
 import { readAsDataURL } from '../src/chrome.ts'
 
 afterEach(() => { cleanup(); vi.restoreAllMocks() })
@@ -111,6 +112,79 @@ test('THE HELD FACE: a full slot that renders nothing shows the raw value, never
   // the verb is armed over the held face
   fireEvent.click(screen.getByRole('button', { name: 'Detach x' }))
   expect(onClear).toHaveBeenCalledTimes(1)
+})
+
+test('THE HOST-PATH MIRROR (the agent-slot burn): a host run-artifact path previews from the media route, each arm gated by its own kind', () => {
+  // melite_view hands the agent TWO spellings of one artifact — the
+  // browser URL and the HOST path. The host path is a real,
+  // run-stageable value (resolveArtifactFile takes absolute paths
+  // inside the output root) that no <img> can fetch; the run dir's
+  // own name is the coordinate both lanes share. The contract's
+  // rewrite answers it — and refuses everything that is not a host
+  // path addressing run media.
+  expect(runHostMediaUrl('/mnt/data/estate/runs/run-8c7af0dc90e6-871a4422/s_0/out 1.png'))
+    .toBe('/melite-media/runs/run-8c7af0dc90e6-871a4422/s_0/out%201.png')
+  // already-serving media URLs (both spellings) are the canonical
+  // rewrite's own — never rewritten here
+  expect(runHostMediaUrl('/melite-media/runs/run-8c7af0dc90e6-871a4422/s_0/a.png')).toBeNull()
+  expect(runHostMediaUrl('/v1/assets/runs/run-8c7af0dc90e6-871a4422/s_0/a.png')).toBeNull()
+  // a host path addressing no run media, a relative path, a scheme-ful
+  // URL, and a protocol-relative URL all ride untouched
+  expect(runHostMediaUrl('/mnt/data/models/poster.png')).toBeNull()
+  expect(runHostMediaUrl('runs/run-8c7af0dc90e6-871a4422/s_0/a.png')).toBeNull()
+  expect(runHostMediaUrl('https://host/run-8c7af0dc90e6-871a4422/a.png')).toBeNull()
+  expect(runHostMediaUrl('//host/run-8c7af0dc90e6-871a4422/a.png')).toBeNull()
+  // THE IMAGE ARM: the agent's host spelling renders the square's
+  // <img> from the media route — never the raw path that burns
+  const { container } = render(h(InputSquare, {
+    label: 'input_image',
+    value: '/mnt/data/estate/runs/run-8c7af0dc90e6-871a4422/s_0/out 1.png',
+  }))
+  const img = container.querySelector('img')
+  expect(img?.getAttribute('src'))
+    .toBe('/melite-media/runs/run-8c7af0dc90e6-871a4422/s_0/out%201.png')
+  // THE KIND GATE: a host .mp4 path renders the VIDEO arm from the
+  // media route, never an <img> on a video tail
+  const { container: vc } = render(h(InputSquare, {
+    label: 'driving_clip',
+    value: '/mnt/data/estate/runs/run-8c7af0dc90e6-871a4422/s_0/clip 2.mp4',
+  }))
+  expect(vc.querySelector('img')).toBeNull()
+  expect(vc.querySelector('video')?.getAttribute('src'))
+    .toBe('/melite-media/runs/run-8c7af0dc90e6-871a4422/s_0/clip%202.mp4')
+  // THE MESH ARM: a host .glb path feeds the inline viewport the
+  // media URL, not the unfetchable host path
+  const { container: mc } = render(h(InputSquare, {
+    label: 'rigged_glb',
+    value: '/mnt/data/estate/runs/run-8c7af0dc90e6-871a4422/s_0/mesh.glb',
+  }))
+  expect(mc.querySelector('img')).toBeNull()
+  expect(mc.querySelector('[data-viewport="square-mesh"]')).not.toBeNull()
+})
+
+test('THE DEAD-SRC FACE: an image URL the origin cannot serve flips to the held face on its own error — never the browser broken glyph', () => {
+  // isImageUrl admits any root-relative path with an image tail; the
+  // origin decides what serves. When the fetch itself fails, the
+  // <img>'s onError owns the verdict: the held face (raw value, ✕
+  // armed) — the same face the unrenderable spellings paint.
+  const onClear = vi.fn()
+  const { container, rerender } = render(h(InputSquare, {
+    label: 'input_image',
+    value: '/mnt/nowhere/poster.png',
+    onClear,
+  }))
+  const img = container.querySelector('img')
+  expect(img?.getAttribute('src')).toBe('/mnt/nowhere/poster.png')
+  fireEvent.error(img as HTMLElement)
+  expect(container.querySelector('img')).toBeNull()
+  expect(screen.getByText('/mnt/nowhere/poster.png')).not.toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: 'Detach input_image' }))
+  expect(onClear).toHaveBeenCalledTimes(1)
+  // KEYED BY SRC: a new value retries its own fetch — the flip never
+  // poisons the next image
+  rerender(h(InputSquare, { label: 'input_image', value: '/melite-media/runs/run-8c7af0dc90e6-871a4422/s_0/a.png' }))
+  expect(container.querySelector('img')?.getAttribute('src'))
+    .toBe('/melite-media/runs/run-8c7af0dc90e6-871a4422/s_0/a.png')
 })
 
 test('THE EMPTY ARM: an empty value is the PLUS face with no ✕ (the verb needs a fact)', () => {

@@ -30,6 +30,7 @@
  */
 import { createElement as h, useRef, useState, type DragEvent, type ReactNode } from 'react'
 import { isModelUrl, mediaKindOf, mediaVocab } from '@melite/contracts/mediaKinds'
+import { runHostMediaUrl } from '@melite/contracts/benchStage'
 import { IconPlusOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import { GlbStagePreview } from './glb-stage.tsx'
 import { ASSET_DRAG_MIME, parseAssetDrop } from './chrome.ts'
@@ -196,15 +197,34 @@ export function InputSquare(props: InputSquareProps): ReturnType<typeof h> {
   const fileRef = useRef<HTMLInputElement | null>(null)
   const boxRef = useRef<HTMLDivElement | null>(null)
   const [over, setOver] = useState(false)
+  // THE DEAD-SRC FACE (the agent-slot burn's other half, 2026-11-12):
+  // a value isImageUrl passes but the origin cannot serve (a host
+  // path addressing no run media, a dead remote) renders the
+  // BROWSER'S broken-image glyph — an error the UI never chose. The
+  // <img>'s own onError flips that src to the HELD face (the value in
+  // the mono line, the detach ✕ still armed) — the same held face the
+  // unrenderable spellings paint, reached from the wire's own
+  // verdict. Keyed by src: a NEW value retries its own fetch.
+  const [dead, setDead] = useState<string | null>(null)
   // THE DISPLAY ORDER (the mirror law): a persisted estate upload
   // ('data/input/x.png') renders from the assets door — never a
   // blank face after close/reopen (the fresh-upload mirror rides a
   // different prop seat, SourceRow's shown).
+  // THE HOST-PATH ARM (the agent-slot preview burn, 2026-11-12): an
+  // agent patches melite_view's HOST spelling into the slot — a real,
+  // run-stageable artifact path no <img> can fetch. The contract's
+  // runHostMediaUrl rewrites it to the media route the same bytes
+  // serve from (run-id segment → /melite-media/runs/…), gated by each
+  // arm's own kind vocabulary so an .mp4 host path renders the video
+  // arm, never an <img>.
+  const hostMedia = typeof value === 'string' ? runHostMediaUrl(value) : null
   const thumb = typeof value === 'string'
-    ? estateInputUrl(value) ?? (isImageUrl(value) ? value : null)
+    ? estateInputUrl(value)
+      ?? (hostMedia !== null && IMAGE_EXT_RE.test(value) ? hostMedia : null)
+      ?? (isImageUrl(value) ? value : null)
     : null
   const mesh = thumb === null && typeof value === 'string' && value !== '' && isMeshUrl(value)
-    ? value : null
+    ? (hostMedia ?? value) : null
   // THE VIDEO ARM (the no-preview cure, 2026-10-28): below the image
   // arm (the vocabularies are disjoint, so order never misfires —
   // mediaKindsDisjoint pins it), above mesh. An estate video path
@@ -212,8 +232,15 @@ export function InputSquare(props: InputSquareProps): ReturnType<typeof h> {
   // verbatim (the in-flight upload mirror — never megabytes of
   // base64 as text again).
   const video = thumb === null && mesh === null && typeof value === 'string' && value !== ''
-    ? estateInputVideoUrl(value) ?? (isVideoUrl(value) ? value : null)
+    ? estateInputVideoUrl(value)
+      ?? (hostMedia !== null && isVideoUrl(value) ? hostMedia : null)
+      ?? (isVideoUrl(value) ? value : null)
     : null
+  // the dead-src flip only SPEAKS for the face it killed: a flipped
+  // thumb renders the held face below (a new value changes thumb, the
+  // flip goes stale, the img retries).
+  const thumbDead = dead !== null && dead === thumb
+  const videoDead = dead !== null && dead === video
   // THE DETACH LAW (2026-11-04, the stale-✕ cure): `held` is the
   // durable fact — the slot OWNS a value. `empty` is the VIEW fact —
   // nothing renders. The ✕ (a write verb) rides HELD, never the
@@ -268,10 +295,22 @@ export function InputSquare(props: InputSquareProps): ReturnType<typeof h> {
         if (file !== undefined && props.onFile !== undefined) props.onFile(file)
       },
     },
-      thumb !== null
-        ? h('img', { className: css.squareThumb, src: thumb, alt: label })
-        : video !== null
-          ? h('video', { className: css.squareThumb, src: video, muted: true, playsInline: true, preload: 'metadata' })
+      thumb !== null && !thumbDead
+        ? h('img', {
+          className: css.squareThumb,
+          src: thumb,
+          alt: label,
+          onError: (): void => { setDead(thumb) },
+        })
+        : video !== null && !videoDead
+          ? h('video', {
+            className: css.squareThumb,
+            src: video,
+            muted: true,
+            playsInline: true,
+            preload: 'metadata',
+            onError: (): void => { setDead(video) },
+          })
           : mesh !== null
           ? h('div', { className: css.squareMesh },
               h(GlbStagePreview, { assets: [{ id: 'square-mesh', url: mesh }], label: 'square-mesh' }))

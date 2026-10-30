@@ -1730,18 +1730,19 @@ window.__ModuleLoader__.load({
 			}
 			return out;
 		}
-		/** THE DELIVERABLE-SIZE JUDGMENT (the resize order, operator
-		*  2026-11-12): the size law as a pure judgment — the edit lanes
-		*  STILL run at the source's own frame (the latent law holds); a
-		*  stated size is a DELIVERABLE resize (post-decode lanczos), never
-		*  a latent geometry. The match toggle owns the door: ON (default,
-		*  including an unstated toggle — absence never opts out of the
-		*  source frame) + a stated axis refuses field-named with the flip
-		*  in the voice; OFF with NEITHER axis passes (the flip-then-type
-		*  flow — the card stays runnable while the numbers are empty);
-		*  OFF with exactly ONE axis refuses (a half deliverable is
-		*  malformed, never a half-resize); OFF with BOTH demands integers
-		*  ≥ 16 (the blank-image and int laws, input-prep's precedent).
+		/** THE DELIVERABLE-SIZE JUDGMENT (the ground-truth cure,
+		*  2026-11-12): the size law as a pure judgment — a stated pair
+		*  SIZES THE RENDER (the lane derives the encoder's pixel budget
+		*  from w·h and samples an exact w×h latent; the delivered frame
+		*  is the rendered frame, no post-decode resize). The match toggle
+		*  owns the door: ON (default, including an unstated toggle —
+		*  absence never opts out of the source frame) + a stated axis
+		*  refuses field-named with the flip in the voice; OFF with
+		*  NEITHER axis passes (the flip-then-type flow — the card stays
+		*  runnable while the numbers are empty); OFF with exactly ONE
+		*  axis refuses (a half deliverable is malformed); OFF with BOTH
+		*  demands integers ≥ 16 (the blank-image and int laws,
+		*  input-prep's precedent).
 		*
 		*  ONE SPELLING, FOUR SEATS: the engine builds throw it (the kit's
 		*  refuseDeliverableSize — the throwing twin over this judgment),
@@ -1763,12 +1764,12 @@ window.__ModuleLoader__.load({
 				message: "'width' fires on the image-edit card (" + why + ") — the TS plane builds the stock plain-edit graph only; refusing instead of silently plain-editing"
 			});
 			if (sizeMatched) {
-				if (width === void 0 !== (height === void 0)) return [voice("match_input_resolution is OFF — state both width and height (the deliverable's size; the edit itself runs at the source's own frame and the deliverable resizes post-edit)")];
+				if (width === void 0 !== (height === void 0)) return [voice("match_input_resolution is OFF — state both width and height (the render's canvas; the pair sizes the render itself — encoder budget + exact latent)")];
 				if (width !== void 0 && !Number.isInteger(width) || height !== void 0 && !Number.isInteger(height)) return [voice("width/height must be integers — the resize takes whole pixels (the input-prep integer law)")];
 				if (typeof width === "number" && width < 16 || typeof height === "number" && height < 16) return [voice("width/height must be at least 16px — smaller targets upscale to a blank (the input-prep blank-image law)")];
 				return [];
 			}
-			if (width !== void 0 || height !== void 0) return [voice("match_input_resolution is ON — the deliverable keeps the source's own frame; flip match_input_resolution to false to state width/height (the edit itself runs at the source's frame either way)")];
+			if (width !== void 0 || height !== void 0) return [voice("match_input_resolution is ON — the render keeps the source's own frame; flip match_input_resolution to false to state width/height (the pair then sizes the render itself)")];
 			return [];
 		}
 		/** THE LANE MIGRATION CARRY (operator 2026-10-12, the stuck-switch
@@ -3829,18 +3830,45 @@ window.__ModuleLoader__.load({
 		/** The run-media prefix a path addresses, or null when it addresses
 		*  none (the caller leaves such a value verbatim — this is a rewrite,
 		*  never a filter). */
-		function runMediaPrefixOf(value) {
-			if (value === "/melite-media/runs" || value.startsWith("/melite-media/runs/")) return RUN_MEDIA_PREFIX;
-			if (value === "/v1/assets/runs" || value.startsWith("/v1/assets/runs/")) return LEGACY_RUN_MEDIA_PREFIX;
+		function runMediaPrefixOf$1(value) {
+			if (value === "/melite-media/runs" || value.startsWith("/melite-media/runs/")) return RUN_MEDIA_PREFIX$1;
+			if (value === "/v1/assets/runs" || value.startsWith("/v1/assets/runs/")) return LEGACY_RUN_MEDIA_PREFIX$1;
 			return null;
 		}
 		/** THE ONE SPELLING: a run-media path in any spelling becomes the
 		*  live one. Everything else — a local file, an https URL, a $spell,
 		*  a run-relative name — rides verbatim. */
 		function canonicalRunMediaUrl(value) {
-			const prefix = runMediaPrefixOf(value);
+			const prefix = runMediaPrefixOf$1(value);
 			if (prefix === null || prefix === "/melite-media/runs") return value;
-			return RUN_MEDIA_PREFIX + value.slice(prefix.length);
+			return RUN_MEDIA_PREFIX$1 + value.slice(prefix.length);
+		}
+		/** THE HOST-PATH MIRROR (the agent-slot preview burn, 2026-11-12: the
+		*  operator put an image into a card's image input slot and the square
+		*  painted the browser's broken-image glyph): melite_view hands an
+		*  agent BOTH lanes — `url` (the browser's /melite-media/runs/… URL)
+		*  and `host` (the same artifact's path under the estate's output
+		*  tree on the host). An agent that patches the HOST spelling into a
+		*  slot holds a real, run-stageable value (resolveArtifactFile accepts
+		*  absolute paths inside the output root) that no <img> can fetch —
+		*  isImageUrl passes any root-relative path with an image tail, so the
+		*  glyph burned. The run dir's OWN name (the run-id grammar) is the
+		*  one coordinate both lanes share: a host path carrying a run-id
+		*  segment names the same bytes the media route serves, so the display
+		*  rewrites it to that URL. DISPLAY ONLY — the param keeps the host
+		*  path verbatim (the currency law); a path that addresses no run
+		*  media, an already-serving media URL (both spellings —
+		*  canonicalRunMediaUrl owns those), and every scheme-ful or
+		*  protocol-relative value ride untouched (null). */
+		function runHostMediaUrl$1(value) {
+			if (!value.startsWith("/") || value.startsWith("//")) return null;
+			if (runMediaPrefixOf$1(value) !== null) return null;
+			const segs = value.split("/");
+			for (let i = 0; i < segs.length - 1; i++) {
+				if (!RUN_ID_RE$1.test(segs[i])) continue;
+				return RUN_MEDIA_PREFIX$1 + "/" + segs.slice(i).map(encodeURIComponent).join("/");
+			}
+			return null;
 		}
 		/** Rewrite every legacy run-media path inside a value (deep,
 		*  value-preserving, total). */
@@ -3974,7 +4002,7 @@ window.__ModuleLoader__.load({
 			let found;
 			for (let i = 0; i < segments.length - 1; i++) {
 				if (segments[i + 1] === "") continue;
-				if (RUN_ID_RE.test(segments[i])) found = segments.slice(i).join("/");
+				if (RUN_ID_RE$1.test(segments[i])) found = segments.slice(i).join("/");
 			}
 			return found;
 		}
@@ -4009,11 +4037,11 @@ window.__ModuleLoader__.load({
 			if (SELF_NAMED_FAMILIES.has(card)) return;
 			delete bag["model"];
 		}
-		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, STAGE_PATCH_KEYS, WIRE_STAGE_KEYS, RESTORED_PROVENANCE_SPELLING, SESSION_RE, BENCH_DRAFT_RE, RUN_ID_RE, BENCH_DRAFT_PREFIX_RE, SELF_NAMED_FAMILIES;
+		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX$1, LEGACY_RUN_MEDIA_PREFIX$1, BIRTH_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, STAGE_PATCH_KEYS, WIRE_STAGE_KEYS, RESTORED_PROVENANCE_SPELLING, SESSION_RE, BENCH_DRAFT_RE, RUN_ID_RE$1, BENCH_DRAFT_PREFIX_RE, SELF_NAMED_FAMILIES;
 		var init_benchStage = __esmMin((() => {
 			CARD_PLANE_ENGINE = "comfyui";
-			RUN_MEDIA_PREFIX = "/melite-media/runs";
-			LEGACY_RUN_MEDIA_PREFIX = "/v1/assets/runs";
+			RUN_MEDIA_PREFIX$1 = "/melite-media/runs";
+			LEGACY_RUN_MEDIA_PREFIX$1 = "/v1/assets/runs";
 			BIRTH_STRIP_KEYS = [
 				"history",
 				"resultParams",
@@ -4058,7 +4086,7 @@ window.__ModuleLoader__.load({
 			RESTORED_PROVENANCE_SPELLING = "restored";
 			SESSION_RE = /^[A-Za-z0-9_-]{1,64}$/;
 			BENCH_DRAFT_RE = /^bench-([A-Za-z0-9_-]{1,64})$/;
-			RUN_ID_RE = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;
+			RUN_ID_RE$1 = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;
 			BENCH_DRAFT_PREFIX_RE = /^bench-/;
 			SELF_NAMED_FAMILIES = /* @__PURE__ */ new Set(["anny", "h3-timeline"]);
 		}));
@@ -4075,7 +4103,7 @@ window.__ModuleLoader__.load({
 			EXTRA_KEYS: () => EXTRA_KEYS$1,
 			EXTRA_KEY_SET: () => EXTRA_KEY_SET$1,
 			FLF_MODES: () => FLF_MODES,
-			LEGACY_RUN_MEDIA_PREFIX: () => LEGACY_RUN_MEDIA_PREFIX,
+			LEGACY_RUN_MEDIA_PREFIX: () => LEGACY_RUN_MEDIA_PREFIX$1,
 			LOAD_CARRY_KEYS: () => LOAD_CARRY_KEYS,
 			MEDIA_SET: () => MEDIA_SET,
 			NO_CN_SCHEMA: () => NO_CN_SCHEMA,
@@ -4085,8 +4113,8 @@ window.__ModuleLoader__.load({
 			RESTORED_PROVENANCE_SPELLING: () => RESTORED_PROVENANCE_SPELLING,
 			RESTORE_STRIP_KEYS: () => RESTORE_STRIP_KEYS,
 			ROLE_SET: () => ROLE_SET,
-			RUN_ID_RE: () => RUN_ID_RE,
-			RUN_MEDIA_PREFIX: () => RUN_MEDIA_PREFIX,
+			RUN_ID_RE: () => RUN_ID_RE$1,
+			RUN_MEDIA_PREFIX: () => RUN_MEDIA_PREFIX$1,
 			RUN_STATUS_WORDS: () => RUN_STATUS_WORDS,
 			SEGMENT_STATUSES: () => SEGMENT_STATUSES,
 			SELF_NAMED_FAMILIES: () => SELF_NAMED_FAMILIES,
@@ -4159,7 +4187,8 @@ window.__ModuleLoader__.load({
 			resolveCellRow: () => resolveCellRow$1,
 			resolveVariantRow: () => resolveVariantRow$1,
 			rootsManifest: () => rootsManifest,
-			runMediaPrefixOf: () => runMediaPrefixOf,
+			runHostMediaUrl: () => runHostMediaUrl$1,
+			runMediaPrefixOf: () => runMediaPrefixOf$1,
 			runTailOf: () => runTailOf,
 			samplerEnvelopeCure: () => samplerEnvelopeCure$1,
 			searchedVoice: () => searchedVoice,
@@ -8833,18 +8862,19 @@ window.__ModuleLoader__.load({
 			}
 			return out;
 		}
-		/** THE DELIVERABLE-SIZE JUDGMENT (the resize order, operator
-		*  2026-11-12): the size law as a pure judgment — the edit lanes
-		*  STILL run at the source's own frame (the latent law holds); a
-		*  stated size is a DELIVERABLE resize (post-decode lanczos), never
-		*  a latent geometry. The match toggle owns the door: ON (default,
-		*  including an unstated toggle — absence never opts out of the
-		*  source frame) + a stated axis refuses field-named with the flip
-		*  in the voice; OFF with NEITHER axis passes (the flip-then-type
-		*  flow — the card stays runnable while the numbers are empty);
-		*  OFF with exactly ONE axis refuses (a half deliverable is
-		*  malformed, never a half-resize); OFF with BOTH demands integers
-		*  ≥ 16 (the blank-image and int laws, input-prep's precedent).
+		/** THE DELIVERABLE-SIZE JUDGMENT (the ground-truth cure,
+		*  2026-11-12): the size law as a pure judgment — a stated pair
+		*  SIZES THE RENDER (the lane derives the encoder's pixel budget
+		*  from w·h and samples an exact w×h latent; the delivered frame
+		*  is the rendered frame, no post-decode resize). The match toggle
+		*  owns the door: ON (default, including an unstated toggle —
+		*  absence never opts out of the source frame) + a stated axis
+		*  refuses field-named with the flip in the voice; OFF with
+		*  NEITHER axis passes (the flip-then-type flow — the card stays
+		*  runnable while the numbers are empty); OFF with exactly ONE
+		*  axis refuses (a half deliverable is malformed); OFF with BOTH
+		*  demands integers ≥ 16 (the blank-image and int laws,
+		*  input-prep's precedent).
 		*
 		*  ONE SPELLING, FOUR SEATS: the engine builds throw it (the kit's
 		*  refuseDeliverableSize — the throwing twin over this judgment),
@@ -8866,12 +8896,12 @@ window.__ModuleLoader__.load({
 				message: "'width' fires on the image-edit card (" + why + ") — the TS plane builds the stock plain-edit graph only; refusing instead of silently plain-editing"
 			});
 			if (sizeMatched) {
-				if (width === void 0 !== (height === void 0)) return [voice("match_input_resolution is OFF — state both width and height (the deliverable's size; the edit itself runs at the source's own frame and the deliverable resizes post-edit)")];
+				if (width === void 0 !== (height === void 0)) return [voice("match_input_resolution is OFF — state both width and height (the render's canvas; the pair sizes the render itself — encoder budget + exact latent)")];
 				if (width !== void 0 && !Number.isInteger(width) || height !== void 0 && !Number.isInteger(height)) return [voice("width/height must be integers — the resize takes whole pixels (the input-prep integer law)")];
 				if (typeof width === "number" && width < 16 || typeof height === "number" && height < 16) return [voice("width/height must be at least 16px — smaller targets upscale to a blank (the input-prep blank-image law)")];
 				return [];
 			}
-			if (width !== void 0 || height !== void 0) return [voice("match_input_resolution is ON — the deliverable keeps the source's own frame; flip match_input_resolution to false to state width/height (the edit itself runs at the source's frame either way)")];
+			if (width !== void 0 || height !== void 0) return [voice("match_input_resolution is ON — the render keeps the source's own frame; flip match_input_resolution to false to state width/height (the pair then sizes the render itself)")];
 			return [];
 		}
 		/** The effective surface for one (family × variant) lane: the
@@ -11318,6 +11348,51 @@ window.__ModuleLoader__.load({
 			const withoutQuery = name.split(/[?#]/, 1)[0];
 			return mediaKindOf(withoutQuery) === "audio" && !withoutQuery.toLowerCase().endsWith(".qvoice");
 		}
+		//#endregion
+		//#region ../../web-kit/contracts/src/benchStage.ts
+		/** The LIVE run-media spelling. */
+		const RUN_MEDIA_PREFIX = "/melite-media/runs";
+		/** The spelling that died with the gateway app. Still SERVED forever
+		*  (the media route mounts both names) and healed on every write
+		*  here — nothing new is ever written dead, and nothing stored ever
+		*  breaks. */
+		const LEGACY_RUN_MEDIA_PREFIX = "/v1/assets/runs";
+		/** The run-media prefix a path addresses, or null when it addresses
+		*  none (the caller leaves such a value verbatim — this is a rewrite,
+		*  never a filter). */
+		function runMediaPrefixOf(value) {
+			if (value === "/melite-media/runs" || value.startsWith("/melite-media/runs/")) return RUN_MEDIA_PREFIX;
+			if (value === "/v1/assets/runs" || value.startsWith("/v1/assets/runs/")) return LEGACY_RUN_MEDIA_PREFIX;
+			return null;
+		}
+		/** THE HOST-PATH MIRROR (the agent-slot preview burn, 2026-11-12: the
+		*  operator put an image into a card's image input slot and the square
+		*  painted the browser's broken-image glyph): melite_view hands an
+		*  agent BOTH lanes — `url` (the browser's /melite-media/runs/… URL)
+		*  and `host` (the same artifact's path under the estate's output
+		*  tree on the host). An agent that patches the HOST spelling into a
+		*  slot holds a real, run-stageable value (resolveArtifactFile accepts
+		*  absolute paths inside the output root) that no <img> can fetch —
+		*  isImageUrl passes any root-relative path with an image tail, so the
+		*  glyph burned. The run dir's OWN name (the run-id grammar) is the
+		*  one coordinate both lanes share: a host path carrying a run-id
+		*  segment names the same bytes the media route serves, so the display
+		*  rewrites it to that URL. DISPLAY ONLY — the param keeps the host
+		*  path verbatim (the currency law); a path that addresses no run
+		*  media, an already-serving media URL (both spellings —
+		*  canonicalRunMediaUrl owns those), and every scheme-ful or
+		*  protocol-relative value ride untouched (null). */
+		function runHostMediaUrl(value) {
+			if (!value.startsWith("/") || value.startsWith("//")) return null;
+			if (runMediaPrefixOf(value) !== null) return null;
+			const segs = value.split("/");
+			for (let i = 0; i < segs.length - 1; i++) {
+				if (!RUN_ID_RE.test(segs[i])) continue;
+				return RUN_MEDIA_PREFIX + "/" + segs.slice(i).map(encodeURIComponent).join("/");
+			}
+			return null;
+		}
+		const RUN_ID_RE = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;
 		({}).env?.BASE_URL;
 		/**
 		* Normalize a loaded scene to a known viewing size: center X/Z, scale
@@ -12831,9 +12906,13 @@ window.__ModuleLoader__.load({
 			const fileRef = (0, react.useRef)(null);
 			const boxRef = (0, react.useRef)(null);
 			const [over, setOver] = (0, react.useState)(false);
-			const thumb = typeof value === "string" ? estateInputUrl(value) ?? (isImageUrl(value) ? value : null) : null;
-			const mesh = thumb === null && typeof value === "string" && value !== "" && isMeshUrl(value) ? value : null;
-			const video = thumb === null && mesh === null && typeof value === "string" && value !== "" ? estateInputVideoUrl(value) ?? (isVideoUrl(value) ? value : null) : null;
+			const [dead, setDead] = (0, react.useState)(null);
+			const hostMedia = typeof value === "string" ? runHostMediaUrl(value) : null;
+			const thumb = typeof value === "string" ? estateInputUrl(value) ?? (hostMedia !== null && IMAGE_EXT_RE.test(value) ? hostMedia : null) ?? (isImageUrl(value) ? value : null) : null;
+			const mesh = thumb === null && typeof value === "string" && value !== "" && isMeshUrl(value) ? hostMedia ?? value : null;
+			const video = thumb === null && mesh === null && typeof value === "string" && value !== "" ? estateInputVideoUrl(value) ?? (hostMedia !== null && isVideoUrl(value) ? hostMedia : null) ?? (isVideoUrl(value) ? value : null) : null;
+			const thumbDead = dead !== null && dead === thumb;
+			const videoDead = dead !== null && dead === video;
 			const held = typeof value === "string" && value !== "";
 			const empty = thumb === null && mesh === null && video === null && !held;
 			const acceptsDrop = (event) => {
@@ -12878,16 +12957,22 @@ window.__ModuleLoader__.load({
 					const file = e.dataTransfer.files[0];
 					if (file !== void 0 && props.onFile !== void 0) props.onFile(file);
 				}
-			}, thumb !== null ? (0, react.createElement)("img", {
+			}, thumb !== null && !thumbDead ? (0, react.createElement)("img", {
 				className: card_module_css_default.squareThumb,
 				src: thumb,
-				alt: label
-			}) : video !== null ? (0, react.createElement)("video", {
+				alt: label,
+				onError: () => {
+					setDead(thumb);
+				}
+			}) : video !== null && !videoDead ? (0, react.createElement)("video", {
 				className: card_module_css_default.squareThumb,
 				src: video,
 				muted: true,
 				playsInline: true,
-				preload: "metadata"
+				preload: "metadata",
+				onError: () => {
+					setDead(video);
+				}
 			}) : mesh !== null ? (0, react.createElement)("div", { className: card_module_css_default.squareMesh }, (0, react.createElement)(GlbStagePreview, {
 				assets: [{
 					id: "square-mesh",
@@ -13208,7 +13293,7 @@ window.__ModuleLoader__.load({
 		*  carry a scheme or lead with / pass verbatim (never double-encoded). */
 		function toRunMediaUrl(runId, url) {
 			if (url === "") return "";
-			if (!/^(https?:\/\/|\/)/.test(url)) return RUN_MEDIA_PREFIX + "/" + encodeURIComponent(runId) + "/" + url.split("/").map((seg) => encodeURIComponent(seg)).join("/");
+			if (!/^(https?:\/\/|\/)/.test(url)) return RUN_MEDIA_PREFIX$1 + "/" + encodeURIComponent(runId) + "/" + url.split("/").map((seg) => encodeURIComponent(seg)).join("/");
 			return url;
 		}
 		/** Fold the served `graph_receipt` face (the silent UI-drop
@@ -13308,7 +13393,7 @@ window.__ModuleLoader__.load({
 		function listArtifactMediaUrl(url) {
 			if (url === "") return null;
 			if (/^(https?:\/\/|\/)/.test(url)) return url;
-			return RUN_MEDIA_PREFIX + "/" + url.split("/").map((seg) => encodeURIComponent(seg)).join("/");
+			return RUN_MEDIA_PREFIX$1 + "/" + url.split("/").map((seg) => encodeURIComponent(seg)).join("/");
 		}
 		/** The list row's first media artifact url, rewritten onto the media
 		*  route (the row's own currency is run-prefixed, like the
