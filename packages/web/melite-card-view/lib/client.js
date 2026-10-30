@@ -382,6 +382,16 @@ window.__ModuleLoader__.load({
 			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema17())),
 			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema17())).readonly()
 		]);
+		let JsonValueRemoteCodec$schema18$value;
+		const JsonValueRemoteCodec$schema18 = () => JsonValueRemoteCodec$schema18$value ??= zod.z.union([
+			zod.z.literal(null),
+			zod.z.string(),
+			zod.z.number(),
+			zod.z.literal(false),
+			zod.z.literal(true),
+			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema18())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema18())).readonly()
+		]);
 		let _melite_estate_drafts_bench_add_stage_parameter_0$schema$value;
 		const _melite_estate_drafts_bench_add_stage_parameter_0$schema = () => _melite_estate_drafts_bench_add_stage_parameter_0$schema$value ??= zod.z.string();
 		let _melite_estate_drafts_bench_add_stage_parameter_1$schema$value;
@@ -420,6 +430,25 @@ window.__ModuleLoader__.load({
 			"rev": zod.z.number().readonly(),
 			"stages": zod.z.array(zod.z.string()).readonly()
 		});
+		let _melite_estate_drafts_bench_archive_parameter_0$schema$value;
+		const _melite_estate_drafts_bench_archive_parameter_0$schema = () => _melite_estate_drafts_bench_archive_parameter_0$schema$value ??= zod.z.string();
+		let _melite_estate_drafts_bench_archive_parameter_1$schema$value;
+		const _melite_estate_drafts_bench_archive_parameter_1$schema = () => _melite_estate_drafts_bench_archive_parameter_1$schema$value ??= zod.z.record(zod.z.string(), zod.z.union([
+			zod.z.literal(null),
+			zod.z.string(),
+			zod.z.number(),
+			zod.z.literal(false),
+			zod.z.literal(true),
+			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema8())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema8())).readonly()
+		])).readonly();
+		let _melite_estate_drafts_bench_archive_result$schema$value;
+		const _melite_estate_drafts_bench_archive_result$schema = () => _melite_estate_drafts_bench_archive_result$schema$value ??= zod.z.object({
+			"draft_id": zod.z.string().readonly(),
+			"session": zod.z.string().readonly(),
+			"rev": zod.z.number().readonly(),
+			"stage": zod.z.string().readonly()
+		});
 		let _melite_estate_drafts_bench_clear_parameter_0$schema$value;
 		const _melite_estate_drafts_bench_clear_parameter_0$schema = () => _melite_estate_drafts_bench_clear_parameter_0$schema$value ??= zod.z.string();
 		let _melite_estate_drafts_bench_clear_parameter_1$schema$value;
@@ -429,8 +458,8 @@ window.__ModuleLoader__.load({
 			zod.z.number(),
 			zod.z.literal(false),
 			zod.z.literal(true),
-			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema9())),
-			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema9())).readonly()
+			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema10())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema10())).readonly()
 		])).readonly();
 		let _melite_estate_drafts_bench_clear_result$schema$value;
 		const _melite_estate_drafts_bench_clear_result$schema = () => _melite_estate_drafts_bench_clear_result$schema$value ??= zod.z.object({
@@ -518,8 +547,8 @@ window.__ModuleLoader__.load({
 			zod.z.number(),
 			zod.z.literal(false),
 			zod.z.literal(true),
-			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema12())),
-			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema12())).readonly()
+			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema13())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema13())).readonly()
 		])).readonly();
 		let _melite_estate_drafts_bench_group_result$schema$value;
 		const _melite_estate_drafts_bench_group_result$schema = () => _melite_estate_drafts_bench_group_result$schema$value ??= zod.z.object({
@@ -559,8 +588,8 @@ window.__ModuleLoader__.load({
 			zod.z.number(),
 			zod.z.literal(false),
 			zod.z.literal(true),
-			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema8())),
-			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema8())).readonly()
+			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema9())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema9())).readonly()
 		])).readonly();
 		let _melite_estate_drafts_bench_remove_stage_result$schema$value;
 		const _melite_estate_drafts_bench_remove_stage_result$schema = () => _melite_estate_drafts_bench_remove_stage_result$schema$value ??= zod.z.object({
@@ -578,8 +607,8 @@ window.__ModuleLoader__.load({
 			zod.z.number(),
 			zod.z.literal(false),
 			zod.z.literal(true),
-			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema11())),
-			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema11())).readonly()
+			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema12())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema12())).readonly()
 		])).readonly();
 		let _melite_estate_drafts_bench_reorder_result$schema$value;
 		const _melite_estate_drafts_bench_reorder_result$schema = () => _melite_estate_drafts_bench_reorder_result$schema$value ??= zod.z.object({
@@ -599,8 +628,8 @@ window.__ModuleLoader__.load({
 			zod.z.number(),
 			zod.z.literal(false),
 			zod.z.literal(true),
-			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema10())),
-			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema10())).readonly()
+			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema11())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema11())).readonly()
 		])).readonly();
 		let _melite_estate_drafts_bench_rewire_result$schema$value;
 		const _melite_estate_drafts_bench_rewire_result$schema = () => _melite_estate_drafts_bench_rewire_result$schema$value ??= zod.z.object({
@@ -654,8 +683,8 @@ window.__ModuleLoader__.load({
 			zod.z.number(),
 			zod.z.literal(false),
 			zod.z.literal(true),
-			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema14())),
-			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema14())).readonly()
+			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema15())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema15())).readonly()
 		])).readonly();
 		let _melite_estate_drafts_bench_undo_result$schema$value;
 		const _melite_estate_drafts_bench_undo_result$schema = () => _melite_estate_drafts_bench_undo_result$schema$value ??= zod.z.object({
@@ -669,8 +698,8 @@ window.__ModuleLoader__.load({
 				zod.z.number(),
 				zod.z.literal(false),
 				zod.z.literal(true),
-				zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema15())),
-				zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema15())).readonly()
+				zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema16())),
+				zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema16())).readonly()
 			]).readonly()
 		});
 		let _melite_estate_drafts_bench_ungroup_parameter_0$schema$value;
@@ -682,8 +711,8 @@ window.__ModuleLoader__.load({
 			zod.z.number(),
 			zod.z.literal(false),
 			zod.z.literal(true),
-			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema13())),
-			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema13())).readonly()
+			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema14())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema14())).readonly()
 		])).readonly();
 		let _melite_estate_drafts_bench_ungroup_result$schema$value;
 		const _melite_estate_drafts_bench_ungroup_result$schema = () => _melite_estate_drafts_bench_ungroup_result$schema$value ??= zod.z.object({
@@ -705,8 +734,8 @@ window.__ModuleLoader__.load({
 			zod.z.number(),
 			zod.z.literal(false),
 			zod.z.literal(true),
-			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema16())),
-			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema16())).readonly()
+			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema17())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema17())).readonly()
 		])).readonly();
 		let _melite_estate_drafts_drafts_list_result$schema$value;
 		const _melite_estate_drafts_drafts_list_result$schema = () => _melite_estate_drafts_drafts_list_result$schema$value ??= zod.z.object({
@@ -736,10 +765,10 @@ window.__ModuleLoader__.load({
 					zod.z.number(),
 					zod.z.literal(false),
 					zod.z.literal(true),
-					zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema17())),
-					zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema17())).readonly()
+					zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema18())),
+					zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema18())).readonly()
 				])),
-				zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema17())).readonly()
+				zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema18())).readonly()
 			]).optional(),
 			"result": zod.z.union([
 				zod.z.undefined(),
@@ -754,10 +783,10 @@ window.__ModuleLoader__.load({
 					zod.z.number(),
 					zod.z.literal(false),
 					zod.z.literal(true),
-					zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema17())),
-					zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema17())).readonly()
+					zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema18())),
+					zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema18())).readonly()
 				])),
-				zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema17())).readonly()
+				zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema18())).readonly()
 			]).optional(),
 			"runStatus": zod.z.union([
 				zod.z.undefined(),
@@ -772,10 +801,10 @@ window.__ModuleLoader__.load({
 					zod.z.number(),
 					zod.z.literal(false),
 					zod.z.literal(true),
-					zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema17())),
-					zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema17())).readonly()
+					zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema18())),
+					zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema18())).readonly()
 				])),
-				zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema17())).readonly()
+				zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema18())).readonly()
 			]).optional(),
 			"health": zod.z.union([
 				zod.z.undefined(),
@@ -790,10 +819,10 @@ window.__ModuleLoader__.load({
 					zod.z.number(),
 					zod.z.literal(false),
 					zod.z.literal(true),
-					zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema17())),
-					zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema17())).readonly()
+					zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema18())),
+					zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema18())).readonly()
 				])),
-				zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema17())).readonly()
+				zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema18())).readonly()
 			]).optional(),
 			"inputs": zod.z.union([
 				zod.z.undefined(),
@@ -808,10 +837,10 @@ window.__ModuleLoader__.load({
 					zod.z.number(),
 					zod.z.literal(false),
 					zod.z.literal(true),
-					zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema17())),
-					zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema17())).readonly()
+					zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema18())),
+					zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema18())).readonly()
 				])),
-				zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema17())).readonly()
+				zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema18())).readonly()
 			]).optional(),
 			"inputOutputs": zod.z.union([
 				zod.z.undefined(),
@@ -826,10 +855,10 @@ window.__ModuleLoader__.load({
 					zod.z.number(),
 					zod.z.literal(false),
 					zod.z.literal(true),
-					zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema17())),
-					zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema17())).readonly()
+					zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema18())),
+					zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema18())).readonly()
 				])),
-				zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema17())).readonly()
+				zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema18())).readonly()
 			]).optional()
 		});
 		let _melite_estate_drafts_drafts_patch_parameter_3$schema$value;
@@ -963,6 +992,16 @@ window.__ModuleLoader__.load({
 			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema12())),
 			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema12())).readonly()
 		]);
+		let closed$JsonValueRemoteCodec$schema13$value;
+		const closed$JsonValueRemoteCodec$schema13 = () => closed$JsonValueRemoteCodec$schema13$value ??= zod.z.union([
+			zod.z.literal(null),
+			zod.z.string(),
+			zod.z.number(),
+			zod.z.literal(false),
+			zod.z.literal(true),
+			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema13())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema13())).readonly()
+		]);
 		let _melite_estate_drafts_bench_add_stage_parameter_0_strict$schema$value;
 		const _melite_estate_drafts_bench_add_stage_parameter_0_strict$schema = () => _melite_estate_drafts_bench_add_stage_parameter_0_strict$schema$value ??= zod.z.string();
 		let _melite_estate_drafts_bench_add_stage_parameter_1_strict$schema$value;
@@ -987,6 +1026,18 @@ window.__ModuleLoader__.load({
 			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema4())),
 			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema4())).readonly()
 		])).readonly();
+		let _melite_estate_drafts_bench_archive_parameter_0_strict$schema$value;
+		const _melite_estate_drafts_bench_archive_parameter_0_strict$schema = () => _melite_estate_drafts_bench_archive_parameter_0_strict$schema$value ??= zod.z.string();
+		let _melite_estate_drafts_bench_archive_parameter_1_strict$schema$value;
+		const _melite_estate_drafts_bench_archive_parameter_1_strict$schema = () => _melite_estate_drafts_bench_archive_parameter_1_strict$schema$value ??= zod.z.record(zod.z.string(), zod.z.union([
+			zod.z.literal(null),
+			zod.z.string(),
+			zod.z.number(),
+			zod.z.literal(false),
+			zod.z.literal(true),
+			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema5())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema5())).readonly()
+		])).readonly();
 		let _melite_estate_drafts_bench_clear_parameter_0_strict$schema$value;
 		const _melite_estate_drafts_bench_clear_parameter_0_strict$schema = () => _melite_estate_drafts_bench_clear_parameter_0_strict$schema$value ??= zod.z.string();
 		let _melite_estate_drafts_bench_clear_parameter_1_strict$schema$value;
@@ -996,8 +1047,8 @@ window.__ModuleLoader__.load({
 			zod.z.number(),
 			zod.z.literal(false),
 			zod.z.literal(true),
-			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema6())),
-			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema6())).readonly()
+			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema7())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema7())).readonly()
 		])).readonly();
 		let _melite_estate_drafts_bench_ensure_parameter_0_strict$schema$value;
 		const _melite_estate_drafts_bench_ensure_parameter_0_strict$schema = () => _melite_estate_drafts_bench_ensure_parameter_0_strict$schema$value ??= zod.z.record(zod.z.string(), zod.z.union([
@@ -1020,8 +1071,8 @@ window.__ModuleLoader__.load({
 			zod.z.number(),
 			zod.z.literal(false),
 			zod.z.literal(true),
-			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema9())),
-			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema9())).readonly()
+			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema10())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema10())).readonly()
 		])).readonly();
 		let _melite_estate_drafts_bench_patch_parameter_0_strict$schema$value;
 		const _melite_estate_drafts_bench_patch_parameter_0_strict$schema = () => _melite_estate_drafts_bench_patch_parameter_0_strict$schema$value ??= zod.z.string();
@@ -1044,8 +1095,8 @@ window.__ModuleLoader__.load({
 			zod.z.number(),
 			zod.z.literal(false),
 			zod.z.literal(true),
-			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema5())),
-			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema5())).readonly()
+			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema6())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema6())).readonly()
 		])).readonly();
 		let _melite_estate_drafts_bench_reorder_parameter_0_strict$schema$value;
 		const _melite_estate_drafts_bench_reorder_parameter_0_strict$schema = () => _melite_estate_drafts_bench_reorder_parameter_0_strict$schema$value ??= zod.z.string();
@@ -1056,8 +1107,8 @@ window.__ModuleLoader__.load({
 			zod.z.number(),
 			zod.z.literal(false),
 			zod.z.literal(true),
-			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema8())),
-			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema8())).readonly()
+			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema9())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema9())).readonly()
 		])).readonly();
 		let _melite_estate_drafts_bench_rewire_parameter_0_strict$schema$value;
 		const _melite_estate_drafts_bench_rewire_parameter_0_strict$schema = () => _melite_estate_drafts_bench_rewire_parameter_0_strict$schema$value ??= zod.z.string();
@@ -1068,8 +1119,8 @@ window.__ModuleLoader__.load({
 			zod.z.number(),
 			zod.z.literal(false),
 			zod.z.literal(true),
-			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema7())),
-			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema7())).readonly()
+			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema8())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema8())).readonly()
 		])).readonly();
 		let _melite_estate_drafts_bench_subscribe_parameter_0_strict$schema$value;
 		const _melite_estate_drafts_bench_subscribe_parameter_0_strict$schema = () => _melite_estate_drafts_bench_subscribe_parameter_0_strict$schema$value ??= zod.z.string();
@@ -1082,8 +1133,8 @@ window.__ModuleLoader__.load({
 			zod.z.number(),
 			zod.z.literal(false),
 			zod.z.literal(true),
-			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema11())),
-			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema11())).readonly()
+			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema12())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema12())).readonly()
 		])).readonly();
 		let _melite_estate_drafts_bench_ungroup_parameter_0_strict$schema$value;
 		const _melite_estate_drafts_bench_ungroup_parameter_0_strict$schema = () => _melite_estate_drafts_bench_ungroup_parameter_0_strict$schema$value ??= zod.z.string();
@@ -1094,8 +1145,8 @@ window.__ModuleLoader__.load({
 			zod.z.number(),
 			zod.z.literal(false),
 			zod.z.literal(true),
-			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema10())),
-			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema10())).readonly()
+			zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema11())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema11())).readonly()
 		])).readonly();
 		let _melite_estate_drafts_drafts_delete_parameter_0_strict$schema$value;
 		const _melite_estate_drafts_drafts_delete_parameter_0_strict$schema = () => _melite_estate_drafts_drafts_delete_parameter_0_strict$schema$value ??= zod.z.string();
@@ -1120,10 +1171,10 @@ window.__ModuleLoader__.load({
 					zod.z.number(),
 					zod.z.literal(false),
 					zod.z.literal(true),
-					zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema12())),
-					zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema12())).readonly()
+					zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema13())),
+					zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema13())).readonly()
 				])),
-				zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema12())).readonly()
+				zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema13())).readonly()
 			]).optional(),
 			"result": zod.z.union([
 				zod.z.undefined(),
@@ -1138,10 +1189,10 @@ window.__ModuleLoader__.load({
 					zod.z.number(),
 					zod.z.literal(false),
 					zod.z.literal(true),
-					zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema12())),
-					zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema12())).readonly()
+					zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema13())),
+					zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema13())).readonly()
 				])),
-				zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema12())).readonly()
+				zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema13())).readonly()
 			]).optional(),
 			"runStatus": zod.z.union([
 				zod.z.undefined(),
@@ -1156,10 +1207,10 @@ window.__ModuleLoader__.load({
 					zod.z.number(),
 					zod.z.literal(false),
 					zod.z.literal(true),
-					zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema12())),
-					zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema12())).readonly()
+					zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema13())),
+					zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema13())).readonly()
 				])),
-				zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema12())).readonly()
+				zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema13())).readonly()
 			]).optional(),
 			"health": zod.z.union([
 				zod.z.undefined(),
@@ -1174,10 +1225,10 @@ window.__ModuleLoader__.load({
 					zod.z.number(),
 					zod.z.literal(false),
 					zod.z.literal(true),
-					zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema12())),
-					zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema12())).readonly()
+					zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema13())),
+					zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema13())).readonly()
 				])),
-				zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema12())).readonly()
+				zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema13())).readonly()
 			]).optional(),
 			"inputs": zod.z.union([
 				zod.z.undefined(),
@@ -1192,10 +1243,10 @@ window.__ModuleLoader__.load({
 					zod.z.number(),
 					zod.z.literal(false),
 					zod.z.literal(true),
-					zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema12())),
-					zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema12())).readonly()
+					zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema13())),
+					zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema13())).readonly()
 				])),
-				zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema12())).readonly()
+				zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema13())).readonly()
 			]).optional(),
 			"inputOutputs": zod.z.union([
 				zod.z.undefined(),
@@ -1210,10 +1261,10 @@ window.__ModuleLoader__.load({
 					zod.z.number(),
 					zod.z.literal(false),
 					zod.z.literal(true),
-					zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema12())),
-					zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema12())).readonly()
+					zod.z.array(zod.z.lazy(() => closed$JsonValueRemoteCodec$schema13())),
+					zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema13())).readonly()
 				])),
-				zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema12())).readonly()
+				zod.z.record(zod.z.string(), zod.z.lazy(() => closed$JsonValueRemoteCodec$schema13())).readonly()
 			]).optional()
 		});
 		let _melite_estate_drafts_drafts_patch_parameter_3_strict$schema$value;
@@ -1281,7 +1332,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1470,
+						"line": 1558,
 						"column": 9
 					}
 				},
@@ -1348,7 +1399,71 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1482,
+						"line": 1570,
+						"column": 9
+					}
+				},
+				"bench/archive": {
+					service: "benchRemote",
+					description: "Endpoint `bench/archive` — F11's housekeeping verb: mark a spent stage archived (off: true restores it); the row stays with its provenance, every run face skips it.",
+					implementation: "remoteExportArchive",
+					invocation: { kind: "direct" },
+					parameters: [{
+						name: "sessionKey",
+						source: "json",
+						codec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-drafts#bench/archive:sessionKey",
+							create: _melite_estate_drafts_bench_archive_parameter_0$schema,
+							jsonSchema: { "type": "string" }
+						},
+						strictCodec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-drafts#bench/archive:sessionKey",
+							create: _melite_estate_drafts_bench_archive_parameter_0_strict$schema,
+							jsonSchema: { "type": "string" }
+						}
+					}, {
+						name: "doc",
+						source: "json",
+						codec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-drafts/types#BenchDoc",
+							create: _melite_estate_drafts_bench_archive_parameter_1$schema,
+							jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
+						},
+						strictCodec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-drafts/types#BenchDoc",
+							create: _melite_estate_drafts_bench_archive_parameter_1_strict$schema,
+							jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
+						}
+					}],
+					cancellation: { parameter: "signal" },
+					result: {
+						mode: "strict",
+						typeSymbol: "@melite/estate-drafts/types#BenchStageRow",
+						create: _melite_estate_drafts_bench_archive_result$schema,
+						jsonSchema: {
+							"type": "object",
+							"properties": {
+								"draft_id": { "type": "string" },
+								"session": { "type": "string" },
+								"rev": { "type": "number" },
+								"stage": { "type": "string" }
+							},
+							"required": [
+								"draft_id",
+								"session",
+								"rev",
+								"stage"
+							],
+							"additionalProperties": true
+						}
+					},
+					sourceLocation: {
+						"file": "packages/estate/drafts/src/remote.ts",
+						"line": 1582,
 						"column": 9
 					}
 				},
@@ -1412,7 +1527,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1505,
+						"line": 1611,
 						"column": 9
 					}
 				},
@@ -1446,7 +1561,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1401,
+						"line": 1489,
 						"column": 9
 					}
 				},
@@ -1480,7 +1595,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1296,
+						"line": 1384,
 						"column": 9
 					}
 				},
@@ -1544,7 +1659,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1543,
+						"line": 1649,
 						"column": 9
 					}
 				},
@@ -1623,7 +1738,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1460,
+						"line": 1548,
 						"column": 9
 					}
 				},
@@ -1687,7 +1802,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1492,
+						"line": 1598,
 						"column": 9
 					}
 				},
@@ -1755,7 +1870,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1526,
+						"line": 1632,
 						"column": 9
 					}
 				},
@@ -1821,7 +1936,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1515,
+						"line": 1621,
 						"column": 9
 					}
 				},
@@ -1855,7 +1970,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1314,
+						"line": 1402,
 						"column": 10
 					}
 				},
@@ -1904,7 +2019,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1575,
+						"line": 1681,
 						"column": 9
 					}
 				},
@@ -1968,7 +2083,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1559,
+						"line": 1665,
 						"column": 9
 					}
 				},
@@ -2010,7 +2125,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 703,
+						"line": 788,
 						"column": 9
 					}
 				},
@@ -2044,7 +2159,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 688,
+						"line": 773,
 						"column": 9
 					}
 				},
@@ -2087,7 +2202,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 680,
+						"line": 765,
 						"column": 9
 					}
 				},
@@ -2196,7 +2311,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 826,
+						"line": 911,
 						"column": 9
 					}
 				}
@@ -2303,7 +2418,8 @@ window.__ModuleLoader__.load({
 		const _melite_estate_runs_runs_start_result$schema = () => _melite_estate_runs_runs_start_result$schema$value ??= zod.z.object({
 			"run_id": zod.z.string(),
 			"status": zod.z.string(),
-			"queue_position": zod.z.number()
+			"queue_position": zod.z.number(),
+			"sweep_runs": zod.z.union([zod.z.undefined(), zod.z.array(zod.z.string())]).readonly().optional().describe("The sweep family (seed order); undefined on a single press.")
 		});
 		let _melite_estate_runs_runs_status_parameter_0$schema$value;
 		const _melite_estate_runs_runs_status_parameter_0$schema = () => _melite_estate_runs_runs_status_parameter_0$schema$value ??= zod.z.string();
@@ -2470,14 +2586,19 @@ window.__ModuleLoader__.load({
 					cancellation: { parameter: "signal" },
 					result: {
 						mode: "strict",
-						typeSymbol: "@melite/estate-runs#runs/start:result",
+						typeSymbol: "@melite/estate-runs/types#RunStartRow",
 						create: _melite_estate_runs_runs_start_result$schema,
 						jsonSchema: {
 							"type": "object",
 							"properties": {
 								"run_id": { "type": "string" },
 								"status": { "type": "string" },
-								"queue_position": { "type": "number" }
+								"queue_position": { "type": "number" },
+								"sweep_runs": {
+									"type": "array",
+									"items": { "type": "string" },
+									"description": "The sweep family (seed order); undefined on a single press."
+								}
 							},
 							"required": [
 								"run_id",
@@ -3033,6 +3154,33 @@ window.__ModuleLoader__.load({
 			const prefix = runMediaPrefixOf(value);
 			if (prefix === null || prefix === "/melite-media/runs") return value;
 			return RUN_MEDIA_PREFIX + value.slice(prefix.length);
+		}
+		/** THE HOST-PATH MIRROR (the agent-slot preview burn, 2026-11-12: the
+		*  operator put an image into a card's image input slot and the square
+		*  painted the browser's broken-image glyph): melite_view hands an
+		*  agent BOTH lanes — `url` (the browser's /melite-media/runs/… URL)
+		*  and `host` (the same artifact's path under the estate's output
+		*  tree on the host). An agent that patches the HOST spelling into a
+		*  slot holds a real, run-stageable value (resolveArtifactFile accepts
+		*  absolute paths inside the output root) that no <img> can fetch —
+		*  isImageUrl passes any root-relative path with an image tail, so the
+		*  glyph burned. The run dir's OWN name (the run-id grammar) is the
+		*  one coordinate both lanes share: a host path carrying a run-id
+		*  segment names the same bytes the media route serves, so the display
+		*  rewrites it to that URL. DISPLAY ONLY — the param keeps the host
+		*  path verbatim (the currency law); a path that addresses no run
+		*  media, an already-serving media URL (both spellings —
+		*  canonicalRunMediaUrl owns those), and every scheme-ful or
+		*  protocol-relative value ride untouched (null). */
+		function runHostMediaUrl(value) {
+			if (!value.startsWith("/") || value.startsWith("//")) return null;
+			if (runMediaPrefixOf(value) !== null) return null;
+			const segs = value.split("/");
+			for (let i = 0; i < segs.length - 1; i++) {
+				if (!RUN_ID_RE.test(segs[i])) continue;
+				return RUN_MEDIA_PREFIX + "/" + segs.slice(i).map(encodeURIComponent).join("/");
+			}
+			return null;
 		}
 		/** Rewrite every legacy run-media path inside a value (deep,
 		*  value-preserving, total). */
@@ -10088,18 +10236,19 @@ window.__ModuleLoader__.load({
 			}
 			return out;
 		}
-		/** THE DELIVERABLE-SIZE JUDGMENT (the resize order, operator
-		*  2026-11-12): the size law as a pure judgment — the edit lanes
-		*  STILL run at the source's own frame (the latent law holds); a
-		*  stated size is a DELIVERABLE resize (post-decode lanczos), never
-		*  a latent geometry. The match toggle owns the door: ON (default,
-		*  including an unstated toggle — absence never opts out of the
-		*  source frame) + a stated axis refuses field-named with the flip
-		*  in the voice; OFF with NEITHER axis passes (the flip-then-type
-		*  flow — the card stays runnable while the numbers are empty);
-		*  OFF with exactly ONE axis refuses (a half deliverable is
-		*  malformed, never a half-resize); OFF with BOTH demands integers
-		*  ≥ 16 (the blank-image and int laws, input-prep's precedent).
+		/** THE DELIVERABLE-SIZE JUDGMENT (the ground-truth cure,
+		*  2026-11-12): the size law as a pure judgment — a stated pair
+		*  SIZES THE RENDER (the lane derives the encoder's pixel budget
+		*  from w·h and samples an exact w×h latent; the delivered frame
+		*  is the rendered frame, no post-decode resize). The match toggle
+		*  owns the door: ON (default, including an unstated toggle —
+		*  absence never opts out of the source frame) + a stated axis
+		*  refuses field-named with the flip in the voice; OFF with
+		*  NEITHER axis passes (the flip-then-type flow — the card stays
+		*  runnable while the numbers are empty); OFF with exactly ONE
+		*  axis refuses (a half deliverable is malformed); OFF with BOTH
+		*  demands integers ≥ 16 (the blank-image and int laws,
+		*  input-prep's precedent).
 		*
 		*  ONE SPELLING, FOUR SEATS: the engine builds throw it (the kit's
 		*  refuseDeliverableSize — the throwing twin over this judgment),
@@ -10121,12 +10270,12 @@ window.__ModuleLoader__.load({
 				message: "'width' fires on the image-edit card (" + why + ") — the TS plane builds the stock plain-edit graph only; refusing instead of silently plain-editing"
 			});
 			if (sizeMatched) {
-				if (width === void 0 !== (height === void 0)) return [voice("match_input_resolution is OFF — state both width and height (the deliverable's size; the edit itself runs at the source's own frame and the deliverable resizes post-edit)")];
+				if (width === void 0 !== (height === void 0)) return [voice("match_input_resolution is OFF — state both width and height (the render's canvas; the pair sizes the render itself — encoder budget + exact latent)")];
 				if (width !== void 0 && !Number.isInteger(width) || height !== void 0 && !Number.isInteger(height)) return [voice("width/height must be integers — the resize takes whole pixels (the input-prep integer law)")];
 				if (typeof width === "number" && width < 16 || typeof height === "number" && height < 16) return [voice("width/height must be at least 16px — smaller targets upscale to a blank (the input-prep blank-image law)")];
 				return [];
 			}
-			if (width !== void 0 || height !== void 0) return [voice("match_input_resolution is ON — the deliverable keeps the source's own frame; flip match_input_resolution to false to state width/height (the edit itself runs at the source's frame either way)")];
+			if (width !== void 0 || height !== void 0) return [voice("match_input_resolution is ON — the render keeps the source's own frame; flip match_input_resolution to false to state width/height (the pair then sizes the render itself)")];
 			return [];
 		}
 		/** THE LANE MIGRATION CARRY (operator 2026-10-12, the stuck-switch
@@ -12016,6 +12165,7 @@ window.__ModuleLoader__.load({
 			resolveCellRow: () => resolveCellRow,
 			resolveVariantRow: () => resolveVariantRow,
 			rootsManifest: () => rootsManifest,
+			runHostMediaUrl: () => runHostMediaUrl,
 			runMediaPrefixOf: () => runMediaPrefixOf,
 			runTailOf: () => runTailOf,
 			samplerEnvelopeCure: () => samplerEnvelopeCure,
