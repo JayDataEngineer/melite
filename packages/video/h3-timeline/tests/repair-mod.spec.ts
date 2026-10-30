@@ -11,6 +11,7 @@
 import "../../../../tests/helpers/boot-models.ts";
 import { beforeAll, describe, it } from "vitest";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
@@ -256,6 +257,29 @@ describe("the repair kind", () => {
     assert.equal(vhs.frame_load_cap, 124, "VHS caps at the window length");
     assert.equal(ofClass(out, 'MiniMaxH3SourceTimeline')[0]![1].inputs.skip_first_frames, 48,
       "the timeline maps the same window (both loaders stamped identically)");
+  });
+
+  it("F4/F5: the served surface states ONE WINDOW PER DOC — the arm emits a window, never a film", () => {
+    // The friction report's F4/F5 (2026-10-30, still open as DESIGN
+    // debt): a doc carries ONE repair window and the arm assembles a
+    // WINDOW artifact, so an agent asked to repair a long film must
+    // press per window at the step the walk teaches. The door cannot
+    // say nothing: an empty surface reads as "name the clip and I fix
+    // the film". Judge the served section text (the surface the agent
+    // reads), never a doc the client may not load.
+    const repair = def.mods.find((k) => (k as unknown as { param_key?: string }).param_key === 'repair')! as unknown as { section: string; max_stack: number };
+    assert.equal(repair.max_stack, 1, "one entry per doc (the bag is the window seat)");
+    assert.match(repair.section, /ONE WINDOW PER DOC/,
+      "the served section names the one-window law");
+    assert.match(repair.section, /68 f step/,
+      "the served section names the step a film walk uses (window 90 − carry 22)");
+    assert.match(repair.section, /emits a window, never a re-assembled film/,
+      "the served section refuses the film promise the arm cannot keep");
+    // and the leaf's recipe agrees with the surface (one home per fact
+    // is not licence for two different numbers).
+    const md = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'agents', 'skills', 'repair', 'SKILL.md'), 'utf-8');
+    assert.match(md, /one press per window|ONE WINDOW PER DOC|one press, no splice/i,
+      "the leaf teaches the same window-per-press walk");
   });
 
   it("F3: the served window_length tooltip states the 22+17k grid the compose enforces", () => {
