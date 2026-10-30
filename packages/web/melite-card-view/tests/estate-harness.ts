@@ -419,6 +419,7 @@ export function mountEstateFakes(opts: EstateFakesOptions = {}): EstateFakes {
       reorder: (sessionKey: string, doc: Record<string, unknown>, signal?: AbortSignal) => benchDocVerb('bench/reorder', sessionKey, doc, signal) as unknown as Promise<RemoteResult<BenchReorderRow>>,
       group: (sessionKey: string, doc: Record<string, unknown>, signal?: AbortSignal) => benchDocVerb('bench/group', sessionKey, doc, signal) as unknown as Promise<RemoteResult<BenchStageRow>>,
       ungroup: (sessionKey: string, doc: Record<string, unknown>, signal?: AbortSignal) => benchDocVerb('bench/ungroup', sessionKey, doc, signal) as unknown as Promise<RemoteResult<BenchStageRow>>,
+      archive: (sessionKey: string, doc: Record<string, unknown>, signal?: AbortSignal) => benchDocVerb('bench/archive', sessionKey, doc, signal) as unknown as Promise<RemoteResult<BenchStageRow>>,
       subscribe: () => { throw new Error('estate-harness: bench/subscribe not faked') },
     },
     drafts: {
