@@ -18,10 +18,13 @@
 //  2. THE TREE — the same bundle against a COPY of the REAL
 //     data/runs tree (media filtered, lock deleted) settles every
 //     seat: the state tree does not kill the queue.
-//  3. THE ROOT PIN (stroke 45c → J12 config) — a boot without a
-//     stateRoot/repoRoot config buries the queue fiber silently
-//     (asserted directly: the QueueService constructor throws the
-//     unpinned voice; the retired env cannot pin it).
+//  3. THE ROOT PIN (stroke 45c → J12 config → the seamless-install
+//     cure) — the QueueService constructor itself still refuses an
+//     unpinned boot LOUD; the estate row is now the namer of last
+//     resort, pinning the per-user cold default (coldInstallRoots)
+//     so a zero-config boot SETTLES (asserted at the composition
+//     door with HOME redirected — the cold default lands inside
+//     the sandbox, never the operator's real home).
 //  4. THE LOCK LAW — a gateway.lock held by a LIVE pid refuses the
 //     boot gate (asserted directly: acquireLock on a live-pid lock
 //     refuses; dead pid is stolen; a clean root acquires). A repro
@@ -90,14 +93,20 @@ async function everyDeclaredSeatResolves(ctx: Context, ms: number): Promise<stri
 const contexts: Context[] = [];
 const sandboxes: string[] = [];
 let savedEnv: string | undefined;
+let savedHome: string | undefined;
 
 beforeEach(() => {
   savedEnv = process.env["MELITE_STATE_ROOT"];
+  savedHome = process.env["HOME"];
 });
 
 afterEach(async () => {
   if (savedEnv === undefined) delete process.env["MELITE_STATE_ROOT"];
   else process.env["MELITE_STATE_ROOT"] = savedEnv;
+  // HOME too — law 3's cold-boot arm redirects it (os.homedir()
+  // reads $HOME on POSIX) and must never leak into sibling arms
+  if (savedHome === undefined) delete process.env["HOME"];
+  else process.env["HOME"] = savedHome;
   // Context exposes no .dispose — its ROOT FIBER does (cordis
   // lib/types/fiber.d.ts: dispose(): Promise<void>). Tear each
   // boot down for real (best-effort: a disposal throw must not
@@ -259,35 +268,51 @@ describe("the false-death hunt's four laws", () => {
     expect(registered, "every service the context registered is settled (a registered-but-unsettled seat is the false death)").toEqual([]);
   });
 
-  it("3. THE ROOT PIN: with no config the queue constructor refuses LOUD (and the estate boot now refuses with it — the 2026-10-23 settle gate)", { timeout: 20_000 }, async () => {
+  it("3. THE ROOT PIN: the queue constructor refuses LOUD unpinned — and the zero-config estate now names the root itself (the seamless-install cure)", { timeout: 40_000 }, async () => {
     delete process.env["MELITE_STATE_ROOT"];
+    // The queue's own law keeps its teeth: the constructor refuses
+    // an unpinned boot. The cure seats the pin in the ESTATE row
+    // (coldInstallRoots), never a default buried inside the queue —
+    // so this direct seam must still throw.
     const ctx = new Context();
     contexts.push(ctx);
     await ctx.plugin(timerPlugin as unknown as Plugin);
     expect(() => new QueueService(ctx, {})).toThrow(/unpinned/);
-    // And through the bundle: the OLD truth was the burial — the
-    // row's fiber died silently and the seat NEVER settled while the
-    // estate booted green (the five-boot lane wedge, 2026-10-23:
-    // catalog 200, every queue-plane door seatless, no log line).
-    // The settle gate upgraded the law: an unpinned queue is now a
-    // WHOLE-ESTATE refusal — the boot rejects naming the seat, and
-    // the half-up lane class is dead at the composition layer.
+    // And through the bundle — the law's two ages:
+    //   2026-10-23: an unpinned queue was a WHOLE-ESTATE refusal
+    //     (the settle gate rejects naming the seat — the half-up
+    //     lane class died at the composition layer).
+    //   The seamless-install cure: the estate row is now the namer
+    //     of last resort — a NO-config boot pins the per-user cold
+    //     default itself and SETTLES. The refusal class above still
+    //     exists (estate.spec's firing arms toggle a dead seat to
+    //     prove it); this arm judges the new zero-config truth.
+    // Judged hermetically: HOME redirected into a sandbox
+    // (os.homedir() reads $HOME on POSIX), so the cold default
+    // ~/.local/share/melite/runs lands inside the sandbox — never
+    // the operator's real home, never the repo's live data/runs.
+    const home = sandbox("law3-cold-home");
+    process.env["HOME"] = home;
     const ctx2 = new Context();
     contexts.push(ctx2);
     await ctx2.plugin(timerPlugin as unknown as Plugin);
-    // the roster too — arm 3 isolates the QUEUE root-pin refusal;
-    // a census refusal from a family-less boot would bury queue for
-    // the wrong reason and the arm would judge nothing
+    await ctx2.plugin(Storage as unknown as Plugin);
+    await ctx2.plugin({ name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as unknown as Plugin, { root: join(home, "profile-data") });
+    await ctx2.plugin({ name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as unknown as Plugin, { backend: "json" });
+    await ctx2.plugin(draftsPlugin as unknown as Plugin, { storageRoot: join(home, "profile-data", "drafts") });
     await mountFamilyRoster(ctx2);
-    // a small settle budget: the deterministic unpinned refusal must
-    // surface fast, never the 30s lane default
-    await expect(
-      ctx2.plugin(estateBundle as unknown as Plugin, { seatSettleBudgetMs: 300 }),
-    ).rejects.toThrow(/refused to settle.*\bqueue\b/);
-    // the seat itself still never settles — the burial observation
-    // that named the class, kept as the floor under the new refusal
-    const missing = await settleMissing(ctx2, ["queue"], 1_000);
-    expect(missing).toEqual(["queue"]);
+    // the estate gets NO root config — only a bounded settle budget
+    await ctx2.plugin(estateBundle as unknown as Plugin, { seatSettleBudgetMs: 20_000 });
+    // the queue seat settles on the cold default, and the root the
+    // cure names exists on disk — the pin landed where the law says
+    const missing = await settleMissing(ctx2, ["queue"], 20_000);
+    expect(missing).toEqual([]);
+    const coldRuns = join(home, ".local", "share", "melite", "runs");
+    expect(existsSync(coldRuns), "the cold default ~/.local/share/melite/runs (HOME-redirected) was created by the zero-config boot").toBe(true);
+    // and every seat the boot registered resolves — the false-death
+    // floor under the whole law, not just the queue seat
+    const registered = await everyDeclaredSeatResolves(ctx2, 5_000);
+    expect(registered, "every service the context registered is settled (a registered-but-unsettled seat is the false death)").toEqual([]);
   });
 
   it("4. THE LOCK LAW: a live-pid lock refuses the gate; dead is stolen; clean acquires", { timeout: 20_000 }, async (t) => {
