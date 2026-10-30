@@ -24,6 +24,7 @@
           "node"
       ],
       "paths": {
+        "@deepseek-ai/cordis-plugin-timer": ["./../../../vendor/cordis_plugins/timer/src/index.ts"],
         "@melite/video-frames": ["./../../video/frames/src/index.ts"],
         "@melite/video-frames/card": ["./../../video/frames/src/card.ts"],
         "@melite/video-track": ["./../../video/track/src/index.ts"],

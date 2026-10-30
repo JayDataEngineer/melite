@@ -787,16 +787,19 @@ function facadeRows(dirs) {
 /** Rows the generator never emits into any face table (workspace audit
  *  M7): the name resolves to the REGISTRY copy the runtime executes,
  *  never a vendored src twin.
- *  - `@deepseek-ai/cordis-plugin-timer`: the timer seat is host-provided
- *    (registry 1.1.6, the copy DSH composes); estate-queue imports only
- *    `import type { TimerService }`, so its types must come from the
- *    same 1.1.6 declarations the host runs. A vendor-src row would
- *    re-split types (vendored 1.1.3) from runtime (registry 1.1.6).
- *    Skipped in workspacePathRows AND purged from faces that still
- *    carry the row. */
-const REGISTRY_PINNED_ROWS = new Map([
-  ['@deepseek-ai/cordis-plugin-timer', 'registry 1.1.6 (the host seat) — never vendor src'],
-])
+ *  - (2026-11-30, retired) `@deepseek-ai/cordis-plugin-timer` once sat
+ *    here: the registry 1.1.6 law assumed the host composed the
+ *    registry copy while estate-queue only borrowed its types. The
+ *    estate's own manifest already chose otherwise —
+ *    estate-queue/melite-estate declare the timer `workspace:~` (the
+ *    vendored 1.1.3), so runtime AND types ride the vendor tree, and
+ *    the vendored lib/ face is gitignored build output that never
+ *    exists on a fresh clone. The CI typecheck burn (2026-11-30)
+ *    proved the split: TS2307 on every clean tree, green only on
+ *    machines with a stale built lib. The timer now rides vendor src
+ *    in the generated faces like every workspace member — one truth,
+ *    no split. */
+const REGISTRY_PINNED_ROWS = new Map()
 
 /** Rows the manifests cannot seed (the tsdown consolidation): a
  *  client-leaf door with typecheck/test consumers but no node-half

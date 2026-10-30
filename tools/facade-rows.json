@@ -839,6 +839,9 @@
   "@deepseek-ai/cordis-plugin-logger-console": [
     "./vendor/cordis_plugins/logger-console/src/browser.ts"
   ],
+  "@deepseek-ai/cordis-plugin-timer": [
+    "./vendor/cordis_plugins/timer/src/index.ts"
+  ],
   "@melite-plugin/dsh-gallery/drilldown": [
     "./packages/web/infer-gallery/src/drilldown.tsx"
   ]

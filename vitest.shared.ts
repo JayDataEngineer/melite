@@ -154,7 +154,6 @@ export function rootPath(p: string): string {
  * through packages' private node_modules.
  */
 const DRAFTS_DEPS = path.join(import.meta.dirname, 'packages/estate/drafts/node_modules/@deepseek-ai')
-const QUEUE_DEPS = path.join(import.meta.dirname, 'packages/harness/estate-queue/node_modules/@deepseek-ai')
 
 export const RUNTIME_LIB_ALIAS: Record<string, string> = {
   '@deepseek-ai/cordis': path.join(DRAFTS_DEPS, 'cordis/lib/index.js'),
@@ -166,7 +165,11 @@ export const RUNTIME_LIB_ALIAS: Record<string, string> = {
   // row above would swallow it as a prefix, so the subpath anchors
   // first (the facade's longest-first law).
   '@deepseek-ai/dsh-typert-protocol/remote-info': path.join(DRAFTS_DEPS, 'dsh-typert-protocol/lib/types/remote-info.js'),
-  '@deepseek-ai/cordis-plugin-timer': path.join(QUEUE_DEPS, 'cordis-plugin-timer/lib/index.js'),
+  // The vendored timer rides SRC, like every workspace package: the
+  // vendor lib/ face is build output (gitignored) and never exists on
+  // a fresh clone — the 69 tsconfig faces map src for the same law
+  // (6adb0a840); this row must agree with them.
+  '@deepseek-ai/cordis-plugin-timer': path.join(import.meta.dirname, 'vendor/cordis_plugins/timer/src/index.ts'),
   // THE PHANTOM-KEY WALL's comparison primitive: the card-base-anchored
   // copy — the exact deepEqualJson own-key-count semantics the recipe
   // seam runs (card-base hosts the kit and the counting seam).
