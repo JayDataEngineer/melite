@@ -2,7 +2,7 @@
   "name": "@melite-plugin/motion",
   "version": "0.2.0-alpha",
   "type": "module",
-  "types": "./viewers/index.ts",
+  "types": "./lib/viewers/index.d.ts",
   "exports": {
     "./ui/viewers": {
       "types": "./lib/viewers/index.d.ts"
