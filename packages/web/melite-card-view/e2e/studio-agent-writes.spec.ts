@@ -84,7 +84,14 @@ async function removeWallStages(page: Page, sessionKey: string): Promise<void> {
 }
 
 test('an agent\'s bench writes redraw the open studio timeline', async ({ page }) => {
-  test.setTimeout(120_000)
+  // No local timeout override (2026-10-30): this spec ran at 120s while
+  // the config's own budget is 420s BECAUSE the host's activation grace
+  // alone can hold 120s+ on a cold lane home (the config comment's
+  // measured case) — settle() pays that grace before the spec's first
+  // step, so a cold host red the spec inside settle with the browser
+  // torn down mid-poll ("Target page, context or browser has been
+  // closed"), never reaching the contract. The 120s override predated
+  // the grace measurement; every sibling spec rides the config budget.
   const errors = collectPageErrors(page)
   await settle(page)
 
