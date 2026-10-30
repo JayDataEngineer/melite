@@ -57,6 +57,62 @@ describe("restoreRunToBench — the batch law (one write per restore)", () => {
     expect(typeof doc["expect_rev"]).toBe("number");
   });
 
+  // ── THE RECIPE WINS (the F27 burn, 2026-10-30): restore pasted
+  // the DRAFT's mutable rows beside the run's old outputs. A draft
+  // edited after the run restored the edit, not what ran. The run's
+  // own admitted snapshot (served off `card_snapshot`) is the recipe
+  // of record — when it differs, it rides and the report says so.
+  test("an edited draft restores the RUN's own recipe, never the edit (the card_snapshot echo)", async () => {
+    const fakes = mountEstateFakes({
+      draftStages: [
+        { id: 's_0', card: 'image-gen', title: 'hero', engine: 'comfyui', params: { prompt: 'EDITED after the run' } },
+      ],
+    });
+    const report = await restoreRunToBench({
+      ...run(),
+      cardSnapshot: { card: 'image-gen', params: { prompt: 'what actually ran' } },
+    }, 'owner');
+    expect(report.added).toBe(1);
+    const batch = fakes.calls.filter((c) => c.method === "bench/add-stages");
+    expect(batch.length).toBe(1);
+    const stages = ((batch[0]!.args["doc"] as Record<string, unknown>)["stages"]) as Array<Record<string, unknown>>;
+    expect((stages[0]!["params"] as Record<string, unknown>)["prompt"], "the run's recipe, not the later edit").toBe("what actually ran");
+    expect(report.notes.some((n) => n.includes("request echo")), "the rebuild is voiced: " + JSON.stringify(report.notes)).toBe(true);
+  });
+
+  test("a draft matching the run restores silently (no false 'edited' note)", async () => {
+    const fakes = mountEstateFakes({
+      draftStages: [
+        { id: 's_0', card: 'image-gen', title: 'hero', engine: 'comfyui', params: { prompt: 'what actually ran' } },
+      ],
+    });
+    const report = await restoreRunToBench({
+      ...run(),
+      cardSnapshot: { card: 'image-gen', params: { prompt: 'what actually ran' } },
+    }, 'owner');
+    expect(report.added).toBe(1);
+    expect(report.notes.some((n) => n.includes("request echo"))).toBe(false);
+    const batch = fakes.calls.filter((c) => c.method === "bench/add-stages");
+    const stages = ((batch[0]!.args["doc"] as Record<string, unknown>)["stages"]) as Array<Record<string, unknown>>;
+    expect((stages[0]!["params"] as Record<string, unknown>)["prompt"]).toBe("what actually ran");
+  });
+
+  test("a snapshot naming a DIFFERENT card never rewrites this row's params", async () => {
+    const fakes = mountEstateFakes({
+      draftStages: [
+        { id: 's_0', card: 'image-gen', title: 'hero', engine: 'comfyui', params: { prompt: 'the edit' } },
+      ],
+    });
+    const report = await restoreRunToBench({
+      ...run(),
+      cardSnapshot: { card: 'image-edit', params: { prompt: 'another card entirely' } },
+    }, 'owner');
+    expect(report.added).toBe(1);
+    const batch = fakes.calls.filter((c) => c.method === "bench/add-stages");
+    const stages = ((batch[0]!.args["doc"] as Record<string, unknown>)["stages"]) as Array<Record<string, unknown>>;
+    expect((stages[0]!["params"] as Record<string, unknown>)["prompt"]).toBe("the edit");
+  });
+
   test("a single-stage flow rides the same batch door — one call, not a special case", async () => {
     const fakes = mountEstateFakes({
       draftStages: [

@@ -3744,7 +3744,9 @@ window.__ModuleLoader__.load({
 				draftId: typeof doc["draft_id"] === "string" && doc["draft_id"] !== "" ? draftIdOf$1(doc["draft_id"]) : null,
 				stages,
 				...typeof doc["error"] === "string" && doc["error"] !== "" ? { error: doc["error"] } : {},
-				...receipt !== void 0 ? { graph_receipt: receipt } : {}
+				...receipt !== void 0 ? { graph_receipt: receipt } : {},
+				...doc["card_snapshot"] !== void 0 ? { card_snapshot: doc["card_snapshot"] } : {},
+				...doc["card_recipe"] !== void 0 ? { card_recipe: doc["card_recipe"] } : {}
 			};
 		}
 		/** The wire dial (audit X-E1, the card-base wire's law): every fetch
@@ -6167,6 +6169,35 @@ window.__ModuleLoader__.load({
 			return literal;
 		}
 		//#endregion
+		//#region ../../web-kit/contracts/src/benchSnapshot.ts
+		function isRecord$1(v) {
+			return typeof v === "object" && v !== null && !Array.isArray(v);
+		}
+		/** Judge a `card_snapshot` body exactly as the loader consumes it. */
+		function parseCardSnapshot(value) {
+			if (!isRecord$1(value)) return {
+				ok: false,
+				problems: ["card_snapshot: not an object"]
+			};
+			const card = value["card"];
+			if (typeof card !== "string" || card === "") return {
+				ok: false,
+				problems: ["card_snapshot.card: must be a non-empty string"]
+			};
+			const params = value["params"];
+			if (params !== void 0 && !isRecord$1(params)) return {
+				ok: false,
+				problems: ["card_snapshot.params: must be an object"]
+			};
+			return {
+				ok: true,
+				value: {
+					card,
+					params: isRecord$1(params) ? params : {}
+				}
+			};
+		}
+		//#endregion
 		//#region src/client/cards-resource.ts
 		/** The bench address (the legacy bare form serves 'main' — the
 		*  pre-session key records resolve unchanged). */
@@ -6730,6 +6761,8 @@ window.__ModuleLoader__.load({
 		}
 		function readRun(runId, doc) {
 			const row = readRunStatus(runId, doc);
+			const snap = parseCardSnapshot(row.card_recipe ?? row.card_snapshot);
+			const parsedSnapshot = snap.ok ? snap.value : void 0;
 			return {
 				kind: "run",
 				runId: row.runId,
@@ -6738,6 +6771,7 @@ window.__ModuleLoader__.load({
 				stages: row.stages,
 				...row.error !== void 0 ? { error: row.error } : {},
 				...row.graph_receipt !== void 0 ? { graphReceipt: row.graph_receipt } : {},
+				...parsedSnapshot !== void 0 ? { cardSnapshot: parsedSnapshot } : {},
 				lastFrame: void 0
 			};
 		}
@@ -6842,10 +6876,17 @@ window.__ModuleLoader__.load({
 					report.notes.push("skipped a stage with no card (add-stage requires one)");
 					continue;
 				}
+				const id = typeof st["id"] === "string" && st["id"] !== "" ? st["id"] : null;
 				const doc = { card };
 				if (typeof st["engine"] === "string" && st["engine"] !== "") doc["engine"] = st["engine"];
-				if (typeof st["params"] === "object" && st["params"] !== null && !Array.isArray(st["params"])) doc["params"] = st["params"];
-				const id = typeof st["id"] === "string" && st["id"] !== "" ? st["id"] : null;
+				let params;
+				if (typeof st["params"] === "object" && st["params"] !== null && !Array.isArray(st["params"])) params = st["params"];
+				const snap = run.cardSnapshot;
+				if (snap !== void 0 && snap.card === card && JSON.stringify(snap.params) !== JSON.stringify(params ?? {})) {
+					params = { ...snap.params };
+					report.notes.push("rebuilt " + (id ?? card) + " from the run's own request echo — the draft was edited after it ran");
+				}
+				if (params !== void 0) doc["params"] = params;
 				if (id !== null) {
 					if (benchStageIds.has(id)) report.notes.push(id + " was already on the bench — added under a fresh id");
 					else doc["id"] = id;

@@ -165,6 +165,12 @@ export interface CardsRunValue {
    *  hydrate; the live frames merge over the spread, so the receipt
    *  survives the poll). Absent where the estate stamped none. */
   graphReceipt?: GraphReceipt
+  /** THE RUN'S OWN RECIPE (the F27 burn, 2026-10-30): the exact card
+   *  + authoring body the press admitted, served off the run row (the
+   *  sidecar's `card_snapshot`). Restore rebuilds from THIS — the
+   *  draft is mutable and a later edit rewrote it. Absent on inline
+   *  runs (no card composed) and on pre-snapshot history rows. */
+  cardSnapshot?: CardSnapshotContract
   lastFrame: FlowEventFrame | undefined
 }
 
@@ -229,6 +235,7 @@ export const CARDS_BENCH_ADDRESS = 'dsh-resource://cards/bench'
 // stays for this module's callers, but there is no second producer
 // to drift.
 import { benchSessionOf, draftIdOf, type DraftId } from '@melite/contracts/benchStage'
+import { parseCardSnapshot, type CardSnapshotContract } from '@melite/contracts/benchSnapshot'
 import { isTerminalStatus, isLiveRunStatus, statusOf, RUN_STATUS_WORDS } from '@melite/contracts/stageView'
 export { benchSessionOf as benchSessionKey }
 
@@ -1087,6 +1094,12 @@ export function readRun(runId: string, doc: Record<string, unknown>): CardsRunVa
   // lives in the run-wire package; this wraps it into the protocol's
   // run value (lastFrame is the events face — undefined at hydrate).
   const row = readRunStatus(runId, doc)
+  // THE RECIPE FIRST (the F27 cure): the admitted card doc when the
+  // estate served it; the raw request echo is only a legacy fallback
+  // (and parses to a card doc shape only when the door already
+  // admitted it).
+  const snap = parseCardSnapshot(row.card_recipe ?? row.card_snapshot)
+  const parsedSnapshot = snap.ok ? snap.value : undefined
   return {
     kind: 'run',
     runId: row.runId,
@@ -1098,6 +1111,9 @@ export function readRun(runId: string, doc: Record<string, unknown>): CardsRunVa
     // run value under the client's spelling (camel — the row keeps
     // the estate's snake beside the sidecar).
     ...(row.graph_receipt !== undefined ? { graphReceipt: row.graph_receipt } : {}),
+    // THE RECIPE, PARSED AT THE SEAM (the F27 law): a malformed
+    // snapshot is dropped, never half-carried into a restore.
+    ...(parsedSnapshot !== undefined ? { cardSnapshot: parsedSnapshot } : {}),
     lastFrame: undefined,
   }
 }
@@ -1278,12 +1294,27 @@ export async function restoreRunToBench(
       report.notes.push('skipped a stage with no card (add-stage requires one)')
       continue
     }
+    const id = typeof st['id'] === 'string' && (st['id'] as string) !== '' ? (st['id'] as string) : null
     const doc: Record<string, unknown> = { card }
     if (typeof st['engine'] === 'string' && (st['engine'] as string) !== '') doc['engine'] = st['engine']
+    let params: Record<string, unknown> | undefined
     if (typeof st['params'] === 'object' && st['params'] !== null && !Array.isArray(st['params'])) {
-      doc['params'] = st['params']
+      params = st['params'] as Record<string, unknown>
     }
-    const id = typeof st['id'] === 'string' && (st['id'] as string) !== '' ? (st['id'] as string) : null
+    // THE RECIPE WINS (the F27 burn, 2026-10-30): the producing
+    // draft is MUTABLE — an edit after the run rewrote these rows,
+    // and restoring pasted the edited body beside the old output.
+    // The run's own admitted snapshot is what actually ran; when it
+    // names this card and differs, the snapshot's params ride and
+    // the report says so (a same-card bench can only have one
+    // snapshot — the run IS that stage).
+    const snap = run.cardSnapshot
+    if (snap !== undefined && snap.card === card
+      && JSON.stringify(snap.params) !== JSON.stringify(params ?? {})) {
+      params = { ...snap.params }
+      report.notes.push('rebuilt ' + (id ?? card) + ' from the run\'s own request echo — the draft was edited after it ran')
+    }
+    if (params !== undefined) doc['params'] = params
     if (id !== null) {
       if (benchStageIds.has(id)) {
         report.notes.push(id + ' was already on the bench — added under a fresh id')

@@ -15,6 +15,7 @@ import {
   fetchBench,
   freshStageRow,
   readDraft,
+  readRun,
   readStageRow,
   restoreRunToBench,
 } from "../src/client/cards-resource.ts";
@@ -32,6 +33,31 @@ function run(over: Partial<CardsRunValue> = {}): CardsRunValue {
     stages: [], lastFrame: undefined, ...over,
   };
 }
+
+// THE RECIPE ECHO AT THE SEAM (the F27 cure, 2026-10-30): the status
+// row's `card_recipe` parses onto the run value — restore pastes it
+// instead of the mutable draft. A malformed echo is dropped, never
+// half-carried (a bad snapshot must not become a bad restore).
+describe("readRun — the run's own recipe rides the value", () => {
+  const doc = (extra: Record<string, unknown>): Record<string, unknown> => ({
+    status: "completed", draft_id: "d_1", stages: [], ...extra,
+  });
+  test("the served admitted recipe parses onto the value", () => {
+    const v = readRun("r_1", doc({ card_recipe: { card: "image-gen", params: { prompt: "what ran" } } }));
+    expect(v.cardSnapshot).toEqual({ card: "image-gen", params: { prompt: "what ran" } });
+  });
+  test("the raw request echo is the legacy fallback when no admitted recipe was served", () => {
+    const v = readRun("r_1", doc({ card_snapshot: { card: "image-gen", params: { prompt: "raw" } } }));
+    expect(v.cardSnapshot).toEqual({ card: "image-gen", params: { prompt: "raw" } });
+  });
+  test("a malformed echo rides absent — no half-parsed recipe", () => {
+    const v = readRun("r_1", doc({ card_recipe: { card: "", params: "not an object" } }));
+    expect(v.cardSnapshot).toBeUndefined();
+  });
+  test("no echo at all stays absent (inline runs stamp none)", () => {
+    expect(readRun("r_1", doc({})).cardSnapshot).toBeUndefined();
+  });
+});
 
 describe("fetchBench — a missing bench is a zero state, not a failure", () => {
   test("a served bench reads through", async () => {

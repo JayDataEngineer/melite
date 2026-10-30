@@ -139,6 +139,10 @@ export function readRunStatus(runId, doc) {
         stages,
         ...(typeof doc['error'] === 'string' && doc['error'] !== '' ? { error: doc['error'] } : {}),
         ...(receipt !== undefined ? { graph_receipt: receipt } : {}),
+        // THE RECIPE ECHO (the F27 law): served verbatim — restore reads
+        // it instead of the mutable draft. Absent on inline runs.
+        ...(doc['card_snapshot'] !== undefined ? { card_snapshot: doc['card_snapshot'] } : {}),
+        ...(doc['card_recipe'] !== undefined ? { card_recipe: doc['card_recipe'] } : {}),
     };
 }
 // ── the list-row url laws ─────────────────────────────────────────

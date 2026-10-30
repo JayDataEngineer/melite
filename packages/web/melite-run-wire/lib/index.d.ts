@@ -127,6 +127,16 @@ export interface RunStatusRow {
      *  and on rows whose receipt is malformed (a broken receipt is no
      *  receipt — the status word keeps the row's only refusal). */
     graph_receipt?: GraphReceipt;
+    /** The run's own recipe (the F27 cure, 2026-10-30): the sidecar's
+     *  `card_snapshot` face — the exact card + admitted authoring body
+     *  that ran. Carried verbatim; the card view parses it at its seam
+     *  (a malformed snapshot is no snapshot). */
+    card_snapshot?: unknown;
+    /** The run's own ADMITTED recipe (the F27 cure): the card doc the
+     *  composer received — envelope lifted, stanza unwrapped. This is
+     *  the paste source for a restore; `card_snapshot` stays the raw
+     *  request echo. Absent on inline runs. */
+    card_recipe?: unknown;
 }
 export { isTerminalStatus as isTerminalRun, TERMINAL_RUN_STATUSES, RUN_STATUS_WORDS } from '@melite/contracts/stageView';
 /** The ONE media-url rewrite (readRunStatus + the file-era list

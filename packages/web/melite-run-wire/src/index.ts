@@ -130,6 +130,16 @@ export interface RunStatusRow {
    *  and on rows whose receipt is malformed (a broken receipt is no
    *  receipt — the status word keeps the row's only refusal). */
   graph_receipt?: GraphReceipt
+  /** The run's own recipe (the F27 cure, 2026-10-30): the sidecar's
+   *  `card_snapshot` face — the exact card + admitted authoring body
+   *  that ran. Carried verbatim; the card view parses it at its seam
+   *  (a malformed snapshot is no snapshot). */
+  card_snapshot?: unknown
+  /** The run's own ADMITTED recipe (the F27 cure): the card doc the
+   *  composer received — envelope lifted, stanza unwrapped. This is
+   *  the paste source for a restore; `card_snapshot` stays the raw
+   *  request echo. Absent on inline runs. */
+  card_recipe?: unknown
 }
 
 // THE TERMINAL VOCABULARY IS THE CONTRACT'S (2026-10-13, the card-UI
@@ -269,6 +279,10 @@ export function readRunStatus(runId: string, doc: Record<string, unknown>): RunS
     stages,
     ...(typeof doc['error'] === 'string' && doc['error'] !== '' ? { error: doc['error'] as string } : {}),
     ...(receipt !== undefined ? { graph_receipt: receipt } : {}),
+    // THE RECIPE ECHO (the F27 law): served verbatim — restore reads
+    // it instead of the mutable draft. Absent on inline runs.
+    ...(doc['card_snapshot'] !== undefined ? { card_snapshot: doc['card_snapshot'] } : {}),
+    ...(doc['card_recipe'] !== undefined ? { card_recipe: doc['card_recipe'] } : {}),
   }
 }
 
