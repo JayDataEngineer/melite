@@ -13,6 +13,18 @@
   description = "LLM keystore symmetric key"
   regex = '''[A-Za-z0-9+/]{32,}={0,2}'''
   tags = ["key", "llm"]
+  # The entropy heuristic also matches long slash-bearing paths. These
+  # files hold coverage tables (per-file glob keys) and workspace
+  # manifests (repository.directory fields) — path data, never keys.
+  # Scoped to THIS rule only; the keyword rules below stay armed on
+  # every file.
+  [[rules.allowlists]]
+    description = "coverage tables and workspace manifests carry paths, not keys"
+    paths = [
+      '''scripts/coverage-baseline\.ts''',
+      '''tests/walls/ts/suites/coverage-baseline-ratchet\.spec\.ts''',
+      '''(^|/)package\.json$''',
+    ]
 
 [[rules]]
   id = "api-key-generic"
