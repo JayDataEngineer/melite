@@ -452,6 +452,21 @@ describe("THE STALE-LIB SHIP (a green ship must prove the lane runs THIS tree)",
     expect(lane, "the boot verdict greps the activation-failure class").toContain('grep -q "did not activate"');
     expect(lane, "the refusal names the dead entries, not just the count").toContain('grep -nE "did not activate|failed to import"');
   });
+
+  it("the studio lane seeds its preview from a tracked asset when the AI screenshot is absent", () => {
+    // 2026-10-30: the lane unconditionally cp'd the AI-gated
+    // overflow screenshot (rail-overflow.png — written by
+    // rail-overflow.spec.ts, itself skipped without MELITE_E2E_AI=1,
+    // and never committed), dying on every keyless clone before one
+    // spec ran. The seed tile needs a servable <img>, not that
+    // screenshot: the lane prefers the fresh AI artifact when the
+    // keyed lane produced one, else the tracked static fallback.
+    const lane = read("scripts/e2e-studio-lane.sh");
+    expect(lane, "the lane falls back to the tracked seed preview").toContain("laneseed-preview.png");
+    const asset = "packages/web/melite-card-view/e2e/assets/laneseed-preview.png";
+    const tracked = execFileSync("git", ["ls-files", "--", asset], { cwd: REPO, encoding: "utf8" }).trim();
+    expect(tracked, "the fallback preview must be committed — an untracked asset is the same hole one layer down").toBe(asset);
+  });
 });
 
 describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () => {

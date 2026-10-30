@@ -50,6 +50,11 @@ downloaded_files/
 # the scail2 driving video (cluster E): 143 KB, 512x320x25f —
 # deterministic POSE input, committed like the png feeds
 !tests/integration/assets/**/drive_pose.mp4
+# the studio lane's seed-run preview (2026-10-30): the seed tile
+# needs a servable <img>, and the lane falls back to this 99-byte
+# static png when the AI-gated screenshot is absent — a keyless
+# clone must carry it, so it rides the repo, not the ignore.
+!packages/web/melite-card-view/e2e/assets/*.png
 
 # === Runtime / scratch ===
 .dsh_work/

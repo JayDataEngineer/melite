@@ -393,7 +393,20 @@ curl -s -b "$COOKIES" -X POST "http://127.0.0.1:$PORT/api/bench/add-stage" \
 # byte-scans (pipeline must not start with _ — the user-surface law).
 SEED_RUN="$RUNS_ROOT/output/run-3ca7-laneseed"
 mkdir -p "$SEED_RUN"
-cp "$REPO_ROOT/packages/web/melite-card-view/e2e/rail-overflow.png" "$SEED_RUN/preview.png"
+# THE SEED PREVIEW (tiers fresh-clone red, 2026-10-30): the preview
+# was the AI-gated overflow hunt's screenshot (rail-overflow.png —
+# written by rail-overflow.spec.ts, itself skipped without
+# MELITE_E2E_AI=1, and never committed), so the unconditional cp died
+# on every keyless clone before a single spec ran. The tile only
+# needs a servable <img> — prefer the fresh AI screenshot when the
+# keyed lane produced one, else the TRACKED static fallback
+# (e2e/assets/laneseed-preview.png, 99 bytes, content-agnostic by
+# design: no spec pixel-compares the seed tile). Both absent is a
+# broken checkout, and fails loud.
+SEED_PNG="$REPO_ROOT/packages/web/melite-card-view/e2e/rail-overflow.png"
+[ -f "$SEED_PNG" ] || SEED_PNG="$REPO_ROOT/packages/web/melite-card-view/e2e/assets/laneseed-preview.png"
+[ -f "$SEED_PNG" ] || { echo "[e2e-studio-lane] no seed preview (neither the AI screenshot nor the tracked fallback exists)" >&2; exit 1; }
+cp "$SEED_PNG" "$SEED_RUN/preview.png"
 printf '{"pipeline":"image-gen","status":"success","created_at":%s,"prompt":"the lane seed image run","seed":7}\n' \
   "$(date +%s000)" > "$SEED_RUN/_flow.json"
 
