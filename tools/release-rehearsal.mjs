@@ -36,19 +36,15 @@ const IMAGE = 'node:22-bookworm'
 const DSH_VERSION = '0.2.1-rc.2'
 const PNPM_VERSION = '10.33.2'
 const PROFILE = 'rehearsal'
-// the seed ORDER for the profile's bundle stack (mount order matters);
-// drops and additions are caught by the derived-bundle-set receipt and
-// the dump-config warning-absence receipt, not by this list itself.
-const BUNDLES = [
-  '@melite/harness-tools',
-  '@melite/harness-provisioner',
-  '@melite-plugin/dsh-estate',
-  '@melite-plugin/dsh-card-deck',
-  '@melite-plugin/dsh-card-view',
-  '@melite-plugin/dsh-gallery',
-  '@melite/motion-motion',
-  '@melite/video-h3-timeline',
-]
+// THE SEED STACK IS THE SERVED STACK: mount order lives in the web
+// profile seed the card-view e2e boots (its `dsh.profile.bundles`), and
+// this rehearsal takes that list verbatim. The hand list this replaced
+// drifted — `@melite/image-input-prep` joined the served stack while the
+// rehearsal still seeded eight bundles, and the dump-config receipt
+// named it missing on the 0.2.0-alpha mint.
+const PROFILE_SEED = 'packages/web/melite-card-view/e2e/profile-seed/package.json'
+const SEED_BUNDLES = JSON.parse(readFileSync(join(import.meta.dirname, '..', PROFILE_SEED), 'utf8'))
+  .dsh.profile.bundles
 // profile-template members whose template rows pin the previous rc
 // (the shipped rc.2 template still names rc.1 for these four); pinned
 // at the runtime version so the peer check never disables them
@@ -253,7 +249,7 @@ const seed = {
   name: `dsh-profile-${PROFILE}`,
   private: true,
   dependencies,
-  dsh: { profile: { bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', ...BUNDLES] } },
+  dsh: { profile: { bundles: SEED_BUNDLES } },
 }
 const seedPath = join(SCRATCH, 'rehearsal-seed.json')
 writeFileSync(seedPath, JSON.stringify(seed, null, 2))
