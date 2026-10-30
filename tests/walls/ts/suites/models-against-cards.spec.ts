@@ -1012,7 +1012,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
 // VDA-Small secondary-path files, the video VAE (h3's digest,
 // re-declared: the family owns every weight its lane loads) and the
 // frozen text embed (the pack repo's text_cond row).
-const PROVISION_ROW_COUNT = 95; // 102→95 2026-11-12: the openjutsu lane deleted (operator order) — viggle-animate's 7 provision rows die
+const PROVISION_ROW_COUNT = 96; // 95→96 2026-11-13: the reshoot official rework — h3 provisions the CrossView LoRA (Cseti/MiniMax-H3_Ref2VA-LoRA-CrossView-Warp_v1)
     const declarers: string[] = [];
     let judged = 0;
     for (const id of registryIds()) {

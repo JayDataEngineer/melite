@@ -1,8 +1,12 @@
-// @melite/models-h3 — the camera re-shoot chain (feature 024, the
-// ComfyUI "Open Source Higgsfield" entry): an armed re-shoot builds
-// its depth → reprojection → disocclusion-mask subgraph ONCE per
-// compose and every window's sampler renders from the moved camera
-// through a Fun ControlNet Union 2.0 apply seat. A disarmed (or
+// @melite/models-h3 — the camera re-shoot chain (feature 024),
+// REWORKED 2026-11-13 onto the OFFICIAL implementation: Comfy-Org's
+// comfy-reshoot reference app (workflows/generate.api.json at pack
+// revision fbb1e93c). An armed re-shoot builds its prepare → MoGe
+// metric geometry → warp subgraph ONCE per compose; every window
+// renders from the moved camera through THREE seats — the prepared
+// clip as r2v's ref_video_0 (appearance), the warp pinned through
+// MiniMaxH3AddGuide (geometry), and the CrossView LoRA on the model
+// (the trigger word `crossview` leads the prompt). A disarmed (or
 // clip-less) doc composes byte-identical graphs — the re-shoot is
 // surface the operator opts into, never a default.
 //
@@ -10,10 +14,7 @@
 // 2026-11-12): the commission rides the `reshoot` bag — ONE entry
 // (max_stack 1) carrying source_clip + the camera dials, the same
 // arm law as replace/repair/extend. Bag presence IS the arm; an
-// absent or EMPTY bag is the unused arm. The clip rides the SHARED
-// loader law (chainEdit loadVideo: force-rate-24 VHS seat — the
-// same loader the three sibling sources ride), never a private
-// LoadVideo→GetVideoComponents pair.
+// absent or EMPTY bag is the unused arm.
 import { describe, it, expect } from "vitest";
 import { film } from "../src/actions.ts";
 import { instantiateAction } from "@melite/comfyui-card-kit";
@@ -45,13 +46,26 @@ const nodes = (g: GraphBuilder) =>
 const ofClass = (entries: ReturnType<typeof nodes>, cls: string) =>
   entries.filter(([, n]) => n.class_type === cls);
 
-describe("the h3 camera re-shoot chain (the fourth mod bag)", () => {
-  it("a doc with no reshoot bag composes byte-stable — no depth, no warp, no mask, no apply", () => {
+const CHAIN_CLASSES = [
+  "CrossViewPrepareClip",
+  "LoadMoGeModel",
+  "MoGeInference",
+  "CrossViewWarp",
+] as const;
+
+describe("the h3 camera re-shoot chain (the fourth mod bag, official rework)", () => {
+  it("a doc with no reshoot bag composes byte-stable — no loader, no prepare, no geometry, no warp, no LoRA seat", () => {
     const g = new GraphBuilder();
     instantiateAction(film, { variant: "t4_open", length: 124, prompt: "a slow push in", seed: 42 }, H3, g, "run_rs_off");
     const flat = nodes(g).map(([, n]) => n.class_type);
+    for (const cls of CHAIN_CLASSES) {
+      expect(flat, cls).not.toContain(cls);
+    }
+    expect(flat).not.toContain("LoadVideo");
+    expect(flat).not.toContain("LoraLoaderModelOnly");
+    // the retired first-cut chain stays dead: no VDA depth, no
+    // magenta mask, no Fun ControlNet apply, no union patch
     expect(flat).not.toContain("LoadVideoDepthAnythingModel");
-    expect(flat).not.toContain("CrossViewWarp");
     expect(flat).not.toContain("ColorToMask");
     expect(flat).not.toContain("MiniMaxH3FunControlNetApply");
     expect(flat).not.toContain("ModelPatchLoader");
@@ -67,108 +81,86 @@ describe("the h3 camera re-shoot chain (the fourth mod bag)", () => {
     expect(ofClass(nodes(g), "CrossViewWarp")).toHaveLength(0);
   });
 
-  it("an armed re-shoot wires the full chain on the SHARED loader law: VHS frames, depth stack, two aligned warps, magenta mask, union 2.0 patch", () => {
+  it("an armed re-shoot wires the OFFICIAL chain verbatim: core LoadVideo → prepare → MoGe metric geometry → ONE warp", () => {
     const g = new GraphBuilder();
     instantiateAction(film, bag(), H3, g, "run_rs_armed");
     const entries = nodes(g);
-    // THE SHARED LOADER LAW: the clip rides the force-rate-24 VHS
-    // seat (the sibling sources' own loader), never a private
-    // LoadVideo→GetVideoComponents pair.
-    expect(entries.filter(([, n]) => n.class_type === "LoadVideo")).toHaveLength(0);
-    expect(entries.filter(([, n]) => n.class_type === "GetVideoComponents")).toHaveLength(0);
-    const vhs = entries.find(([, n]) => n.class_type === "VHS_LoadVideo")!;
-    expect(vhs[1].inputs.video).toBe("sources/take3.mp4");
-    expect(vhs[1].inputs.force_rate).toBe(24);
-    // VDA-Small, the pack's own flags (the estate's one Apache-2.0 depth weight)
-    const load = entries.find(([, n]) => n.class_type === "LoadVideoDepthAnythingModel")!;
-    expect(load[1].inputs.model).toBe("video_depth_anything_vits.pth");
-    const proc = entries.find(([, n]) => n.class_type === "VideoDepthAnythingProcess")!;
-    expect(proc[1].inputs.input_size).toBe(518);
-    expect(proc[1].inputs.max_res).toBe(1280);
-    expect(proc[1].inputs.precision).toBe("fp16");
-    expect(String(proc[1].inputs.vda_model)).toContain("LoadVideoDepthAnythingModel");
-    expect(String(proc[1].inputs.images)).toContain("VHS_LoadVideo");
-    expect(entries.find(([, n]) => n.class_type === "VideoDepthAnythingOutput")![1].inputs.colormap).toBe("gray");
-    // exactly two warps, the same identity pose, both reading the same geometry
+    // THE OFFICIAL LOADER: core LoadVideo (the VIDEO type the
+    // prepare node demands), the staged leaf by name
+    const load = entries.find(([, n]) => n.class_type === "LoadVideo")!;
+    expect(load[1].inputs.file).toBe("sources/take3.mp4");
+    // stage 1 — the clip normalization, the official literals
+    const prep = entries.find(([, n]) => n.class_type === "CrossViewPrepareClip")!;
+    expect(prep[1].inputs.duration).toBe(5.0);
+    expect(prep[1].inputs.aspect_ratio).toBe("source");
+    expect(prep[1].inputs.megapixels).toBe(0.5);
+    expect(prep[1].inputs.multiple).toBe(32);
+    expect(String(prep[1].inputs.video)).toContain("LoadVideo");
+    // stage 2 — MoGe-2 metric geometry (the official checkpoint +
+    // flags; brightness depth died with the first cut)
+    const moge = entries.find(([, n]) => n.class_type === "LoadMoGeModel")!;
+    expect(moge[1].inputs.model_name).toBe("moge_2_vitl_normal_fp16.safetensors");
+    const infer = entries.find(([, n]) => n.class_type === "MoGeInference")!;
+    expect(infer[1].inputs.resolution_level).toBe(2);
+    expect(infer[1].inputs.fov_x_degrees).toBe(0);
+    expect(infer[1].inputs.batch_size).toBe(4);
+    expect(infer[1].inputs.force_projection).toBe(true);
+    expect(infer[1].inputs.apply_mask).toBe(true);
+    expect(infer[1].inputs.refine_steps).toBe(3);
+    expect(String(infer[1].inputs.moge_model)).toContain("LoadMoGeModel");
+    expect(String(infer[1].inputs.image)).toContain("CrossViewPrepareClip");
+    // stage 3 — exactly ONE warp on the METRIC seat (moge_geometry,
+    // never a brightness depth input), the official posture literals
     const warps = ofClass(entries, "CrossViewWarp");
-    expect(warps).toHaveLength(2);
-    for (const [id, w] of warps) {
-      expect(w.inputs.azimuth, `${id} pose`).toBe(0);
-      expect(w.inputs.elevation).toBe(0);
-      expect(w.inputs.distance).toBe(1.0);
-      expect(w.inputs.hfov).toBe(50);
-      expect(w.inputs.vertical_shift).toBe(0);
-      expect(w.inputs.depth_ratio).toBe(6);
-      expect(w.inputs.smooth_depth).toBe(false);
-      expect(w.inputs.invert_depth).toBe(false);
-      expect(String(w.inputs.depth)).toContain("ImageResizeKJ");
-    }
-    // warp 1 reprojects the depth stack itself (the DEPTH conditioning);
-    // warp 2 reprojects the RGB frames (the color anchor + hole source)
-    expect(String(warps[0]![1].inputs.frames)).toContain("ImageResizeKJ");
-    expect(String(warps[1]![1].inputs.frames)).toContain("VHS_LoadVideo");
-    // the disocclusion mask: the pack's magenta, 1 = regenerate
-    const mask = entries.find(([, n]) => n.class_type === "ColorToMask")!;
-    expect(mask[1].inputs.red).toBe(255);
-    expect(mask[1].inputs.green).toBe(0);
-    expect(mask[1].inputs.blue).toBe(255);
-    expect(mask[1].inputs.threshold).toBe(10);
-    expect(mask[1].inputs.invert).toBe(false);
-    expect(String(mask[1].inputs.images)).toContain("CrossViewWarp");
-    // the union 2.0 patch, the model_patches shelf spelling
-    expect(entries.find(([, n]) => n.class_type === "ModelPatchLoader")![1].inputs.name)
-      .toBe("h3-fun-controlnet/minimax_h3_fun_controlnet_union_2.0_pruned_bf16.safetensors");
+    expect(warps).toHaveLength(1);
+    const [, w] = warps[0]!;
+    expect(String(w.inputs.frames)).toContain("CrossViewPrepareClip");
+    expect(String(w.inputs.moge_geometry)).toContain("MoGeInference");
+    expect(w.inputs.depth).toBeUndefined();
+    expect(w.inputs.keep_source_aim).toBe(true);
+    expect(w.inputs.roll_lock).toBe(false);
+    expect(w.inputs.use_keyframes).toBe(false);
+    expect(w.inputs.interpolation).toBe("linear");
+    expect(w.inputs.pivot_z).toBe(1.05);
+    // the first cut's seats stay dead: no VDA, no resize hack, no
+    // magenta mask, no union patch, no Fun ControlNet apply
+    expect(ofClass(entries, "LoadVideoDepthAnythingModel")).toHaveLength(0);
+    expect(ofClass(entries, "ImageResizeKJ")).toHaveLength(0);
+    expect(ofClass(entries, "ColorToMask")).toHaveLength(0);
+    expect(ofClass(entries, "ModelPatchLoader")).toHaveLength(0);
+    expect(ofClass(entries, "MiniMaxH3FunControlNetApply")).toHaveLength(0);
   });
 
-  it("THE DEPTH-FRAME GRID MATCH (F13d): the VDA depth stack resizes to the frames' own grid before both warps — never a broadcast crash", () => {
-    // The live burn (run-e7a5182d153c-88fd3236): VDA returns at its
-    // internal max_res grid (1280×718) while the clip runs 1312×736,
-    // and CrossViewWarp multiplies the two — `ValueError: operands
-    // could not be broadcast together with shapes (736,1312)
-    // (718,1280)`. VDA exposes no match-to-input toggle, so the
-    // resize seat is the chain's own law: ImageResizeKJ with
-    // get_image_size wired to the VHS frames (the reference owns the
-    // grid), an exact copy (keep_proportion false — no letterbox),
-    // bilinear (depth is a scalar field).
+  it("the appearance + guide + LoRA seats: the prepared clip IS ref_video_0, the warp pins at row 0, the CrossView LoRA loads at 0.8", () => {
     const g = new GraphBuilder();
-    instantiateAction(film, bag(), H3, g, "run_rs_gridmatch");
+    instantiateAction(film, bag(), H3, g, "run_rs_seats");
     const entries = nodes(g);
-    const rs = ofClass(entries, "ImageResizeKJ");
-    expect(rs).toHaveLength(1);
-    const [id, r] = rs[0]!;
-    expect(String(r.inputs.image), `${id} source`).toContain("VideoDepthAnythingOutput");
-    expect(String(r.inputs.get_image_size), `${id} reference`).toContain("VHS_LoadVideo");
-    expect(r.inputs.width).toBe(0);
-    expect(r.inputs.height).toBe(0);
-    expect(r.inputs.keep_proportion).toBe(false);
-    expect(r.inputs.upscale_method).toBe("bilinear");
-    expect(r.inputs.divisible_by).toBe(0);
-    // BOTH warps read the matched stack — a raw VDA handle at a warp
-    // depth/frames seat is the crash the burn pinned
-    for (const [wid, w] of ofClass(entries, "CrossViewWarp")) {
-      expect(String(w.inputs.depth), `${wid} depth`).toContain("ImageResizeKJ");
-    }
-    expect(String(ofClass(entries, "CrossViewWarp")[0]![1].inputs.frames)).toContain("ImageResizeKJ");
-  });
-
-  it("the window's apply seat rides the chain: warped depth conditions, the mask fences, the guider renders patched", () => {
-    const g = new GraphBuilder();
-    instantiateAction(film, bag(), H3, g, "run_rs_apply");
-    const entries = nodes(g);
-    const apply = entries.find(([, n]) => n.class_type === "MiniMaxH3FunControlNetApply")!;
-    expect(apply[1].inputs.strength).toBe(1);
-    expect(apply[1].inputs.start_percent).toBe(0);
-    expect(apply[1].inputs.end_percent).toBe(1);
-    expect(String(apply[1].inputs.control_video)).toContain("CrossViewWarp");
-    expect(String(apply[1].inputs.mask)).toContain("ColorToMask");
-    expect(String(apply[1].inputs.source_video)).toContain("CrossViewWarp");
-    expect(String(apply[1].inputs.model_patch)).toContain("ModelPatchLoader");
-    // the sampler chain renders from the patched model
+    // the r2v conditioning: trigger-led prompt, the prepared clip as
+    // the appearance reference, NO ref video audio on the slot (the
+    // official graph wires none — an absent lane, never mismatched)
+    const r2v = entries.find(([, n]) => n.class_type === "MiniMaxH3ReferenceToVideo")!;
+    expect(r2v[1].inputs.prompt).toBe("crossview. a slow push in");
+    expect(String(r2v[1].inputs["ref_videos.ref_video_0"])).toContain("CrossViewPrepareClip");
+    expect(r2v[1].inputs["ref_video_audios.ref_video_audio_0"]).toBeUndefined();
+    // the guide pin: the warp into the window's own latent at row 0
+    const guide = ofClass(entries, "MiniMaxH3AddGuide")
+      .filter(([, n]) => String(n.inputs.image).includes("CrossViewWarp"));
+    expect(guide).toHaveLength(1);
+    expect(guide[0]![1].inputs.frame_idx).toBe(0);
+    expect(String(guide[0]![1].inputs.positive)).toContain("MiniMaxH3ReferenceToVideo");
+    // the model seat: the CrossView LoRA, the official default 0.8
+    const lora = ofClass(entries, "LoraLoaderModelOnly");
+    expect(lora).toHaveLength(1);
+    expect(lora[0]![1].inputs.lora_name).toBe("h3/MiniMax-H3_Ref2VA-LoRA-CrossView-Warp_v1_3500.safetensors");
+    expect(lora[0]![1].inputs.strength_model).toBe(0.8);
+    // the sampler renders from the LoRA-loaded model and the
+    // guide-wrapped conditioning
     const guider = entries.find(([, n]) => n.class_type === "BasicGuider")!;
-    expect(String(guider[1].inputs.model)).toContain("MiniMaxH3FunControlNetApply");
+    expect(String(guider[1].inputs.model)).toContain("LoraLoaderModelOnly");
+    expect(String(guider[1].inputs.conditioning)).toContain("MiniMaxH3AddGuide");
   });
 
-  it("the bag's camera dials plumb: pose onto both warps, strength onto the apply", () => {
+  it("the bag's camera dials plumb: pose onto the warp, strength onto the CrossView LoRA", () => {
     const g = new GraphBuilder();
     instantiateAction(
       film,
@@ -177,23 +169,33 @@ describe("the h3 camera re-shoot chain (the fourth mod bag)", () => {
         reshoot: [{
           source_clip: "sources/take3.mp4",
           orbit: -30, tilt: 20, dolly: 1.4, zoom: 65, pan: 0.26,
-          strength: 2.5, depth_ratio: 8, smooth_depth: true, invert_depth: true,
+          strength: 1, depth_ratio: 8, smooth_depth: true, invert_depth: true,
         }],
       },
       H3, g, "run_rs_knobs",
     );
     const entries = nodes(g);
-    for (const [, w] of ofClass(entries, "CrossViewWarp")) {
-      expect(w.inputs.azimuth).toBe(-30);
-      expect(w.inputs.elevation).toBe(20);
-      expect(w.inputs.distance).toBe(1.4);
-      expect(w.inputs.hfov).toBe(65);
-      expect(w.inputs.vertical_shift).toBe(0.26);
-      expect(w.inputs.depth_ratio).toBe(8);
-      expect(w.inputs.smooth_depth).toBe(true);
-      expect(w.inputs.invert_depth).toBe(true);
-    }
-    expect(entries.find(([, n]) => n.class_type === "MiniMaxH3FunControlNetApply")![1].inputs.strength).toBe(2.5);
+    const [, w] = ofClass(entries, "CrossViewWarp")[0]!;
+    expect(w.inputs.azimuth).toBe(-30);
+    expect(w.inputs.elevation).toBe(20);
+    expect(w.inputs.distance).toBe(1.4);
+    expect(w.inputs.hfov).toBe(65);
+    expect(w.inputs.vertical_shift).toBe(0.26);
+    expect(w.inputs.depth_ratio).toBe(8);
+    expect(w.inputs.smooth_depth).toBe(true);
+    expect(w.inputs.invert_depth).toBe(true);
+    expect(ofClass(entries, "LoraLoaderModelOnly")[0]![1].inputs.strength_model).toBe(1);
+  });
+
+  it("the strength dial is the LoRA band 0.5–1 — the old Fun-ControlNet-era 2.5 refuses loud ahead of the engine", () => {
+    const g = new GraphBuilder();
+    expect(() =>
+      instantiateAction(
+        film,
+        { ...bag(), reshoot: [{ source_clip: "sources/take3.mp4", strength: 2.5 }] },
+        H3, g, "run_rs_band",
+      )
+    ).toThrow(/strength dial is 2.5 — outside the camera band \[0.5, 1\]/);
   });
 
   it("an armed bag whose entry names no source clip refuses loud (never a silent half-chain)", () => {
@@ -207,14 +209,14 @@ describe("the h3 camera re-shoot chain (the fourth mod bag)", () => {
     ).toThrow(/names no source clip/);
   });
 
-  it("a non-array bag is DISARMED and the neutral knobs are the identity camera", () => {
+  it("a non-array bag is DISARMED and the neutral knobs are the identity camera at the LoRA's own 0.8", () => {
     // the card's guard refuses a present non-array bag loud; at the
     // model tier it is simply not an arm (the same absent posture), and
     // the knob reader falls back to the identity camera
     expect(reshootArmed({ reshoot: "clips/take3.mp4" })).toBe(false);
     expect(reshootArmed({ reshoot: [] })).toBe(false);
     expect(readReshootKnobs({ reshoot: "clips/take3.mp4" })).toEqual({
-      orbit: 0, tilt: 0, dolly: 1, zoom: 50, pan: 0, strength: 1,
+      orbit: 0, tilt: 0, dolly: 1, zoom: 50, pan: 0, strength: 0.8,
       depthRatio: 6, smoothDepth: false, invertDepth: false,
     });
   });
@@ -230,7 +232,7 @@ describe("the h3 camera re-shoot chain (the fourth mod bag)", () => {
       .toThrow(/carries an entry but names no source clip/);
   });
 
-  it("a two-shot film builds the chain ONCE and stamps an apply seat into every window", () => {
+  it("a two-shot film builds the chain ONCE and stamps the LoRA + guide seats into every window", () => {
     const g = new GraphBuilder();
     instantiateAction(
       film,
@@ -247,23 +249,25 @@ describe("the h3 camera re-shoot chain (the fourth mod bag)", () => {
     const windows = ofClass(entries, "MeliteUnload").length;
     expect(windows).toBe(2);
     // the heavy subgraph exists exactly once — a multi-window film
-    // pays for depth + reprojection once, not per window
-    expect(ofClass(entries, "LoadVideoDepthAnythingModel")).toHaveLength(1);
-    expect(ofClass(entries, "VideoDepthAnythingProcess")).toHaveLength(1);
-    expect(ofClass(entries, "CrossViewWarp")).toHaveLength(2);
-    expect(ofClass(entries, "ColorToMask")).toHaveLength(1);
-    expect(ofClass(entries, "ModelPatchLoader")).toHaveLength(1);
-    // every window renders from the moved camera through its own seat
-    const applies = ofClass(entries, "MiniMaxH3FunControlNetApply");
-    expect(applies).toHaveLength(2);
-    for (const [id, a] of applies) {
+    // pays for prepare + geometry + warp once, not per window
+    expect(ofClass(entries, "LoadVideo")).toHaveLength(1);
+    expect(ofClass(entries, "CrossViewPrepareClip")).toHaveLength(1);
+    expect(ofClass(entries, "LoadMoGeModel")).toHaveLength(1);
+    expect(ofClass(entries, "MoGeInference")).toHaveLength(1);
+    expect(ofClass(entries, "CrossViewWarp")).toHaveLength(1);
+    // every window renders from the moved camera through its own
+    // LoRA seat and its own guide pin
+    const loras = ofClass(entries, "LoraLoaderModelOnly");
+    expect(loras).toHaveLength(2);
+    const guides = ofClass(entries, "MiniMaxH3AddGuide")
+      .filter(([, n]) => String(n.inputs.image).includes("CrossViewWarp"));
+    expect(guides).toHaveLength(2);
+    for (const [id, l] of loras) {
       expect(id.startsWith("window"), `${id} seats inside its window's scope`);
-      expect(String(a.inputs.control_video)).toContain("CrossViewWarp");
-      expect(String(a.inputs.mask)).toContain("ColorToMask");
     }
   });
 
-  it("the re-shoot seats AHEAD of file-based picks — the camera spine first, the picks refine on top", () => {
+  it("the re-shoot LoRA seats AHEAD of file-based picks — the camera spine first, the picks refine on top", () => {
     const g = new GraphBuilder();
     instantiateAction(
       film,
@@ -274,12 +278,13 @@ describe("the h3 camera re-shoot chain (the fourth mod bag)", () => {
       H3, g, "run_rs_order",
     );
     const entries = nodes(g);
+    const lora = ofClass(entries, "LoraLoaderModelOnly");
+    expect(lora).toHaveLength(1);
+    // the spine's model rides the raw sigma chain, never another
+    // Fun ControlNet apply — and the pick wraps the spine
+    expect(String(lora[0]![1].inputs.model)).not.toContain("MiniMaxH3FunControlNetApply");
     const applies = ofClass(entries, "MiniMaxH3FunControlNetApply");
-    expect(applies).toHaveLength(2);
-    const [spine, pick] = applies;
-    // the spine's model rides the raw sigma chain; the pick wraps the spine
-    expect(String(spine![1].inputs.model)).not.toContain("MiniMaxH3FunControlNetApply");
-    expect(String(pick![1].inputs.model)).toContain("MiniMaxH3FunControlNetApply");
-    expect(String(spine![1].inputs.control_video)).toContain("CrossViewWarp");
+    expect(applies).toHaveLength(1);
+    expect(String(applies[0]![1].inputs.model)).toContain("LoraLoaderModelOnly");
   });
 });

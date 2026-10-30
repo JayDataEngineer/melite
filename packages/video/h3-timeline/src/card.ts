@@ -326,27 +326,27 @@ const RESHOOT_MOD: DeclaredModifierKind = {
   category: 'ordered',
   cardinality: 'list',
   max_stack: 1,
-  // F13c (2026-11-12): the depth half's pack rides the list too —
-  // LoadVideoDepthAnything* died unknown-node until the manifest row
-  // + this listing landed.
+  // THE OFFICIAL REWORK (2026-11-13): the pack provision is the
+  // CrossViewWarp pack ONLY — the chain's other nodes are engine
+  // core (LoadVideo, LoadMoGeModel/MoGeInference, the MiniMaxH3
+  // trio, LoraLoaderModelOnly). The retired VDA depth chain
+  // (ComfyUI-Video-Depth-Anything, never provisioned), the Fun
+  // ControlNet apply seat (ComfyUI-MiniMaxH3Mod) and the KJNodes
+  // ColorToMask died with the rework.
   requires: [
-    'ComfyUI-VideoHelperSuite',
-    'ComfyUI-KJNodes',
-    'ComfyUI-MiniMaxH3Mod',
     'ComfyUI-CrossViewWarp',
-    'ComfyUI-Video-Depth-Anything',
   ],
-  section: 'Reshoot — re-render the same scene from a new camera (the scene rebuilds from video depth, the moved view renders through the Fun ControlNet depth checkpoint, and what the new camera reveals is inpainted). The reshoot clip\'s own soundtrack never carries. Film runs leave this arm empty.',
+  section: 'Reshoot — re-render the same scene from a new camera on the official comfy-reshoot chain (Comfy-Org\'s reference app): MoGe metric depth reprojects the scene under the moved camera, the warp guides H3 through its native reference+guide seats, and the CrossView LoRA (trigger `crossview`) makes the model follow the view. The reshoot clip\'s own soundtrack never carries. Film runs leave this arm empty.',
   fields: [
     // The seat TYPES (the picker law, the siblings' own): the video
     // seat is `file` + media 'video'; the dials are numbers.
-    { name: 'source_clip', label: 'Source clip', type: 'file', media: 'video', default: '', tooltip: 'The clip whose scene the new camera views. Binds ONE staged leaf on the shared force-rate-24 loader (the same seat the replace/repair/extend sources ride). Its frames rebuild the scene; its soundtrack does not carry over.' },
+    { name: 'source_clip', label: 'Source clip', type: 'file', media: 'video', default: '', tooltip: 'The clip whose scene the new camera views. Binds ONE staged leaf (the engine\'s core video loader reads it by staged name, hands the WHOLE video to the clip-prepare node — the official chain\'s own loader posture). Its frames rebuild the scene; its soundtrack does not carry over.' },
     { name: 'orbit', label: 'Orbit', type: 'number', default: 0, min: -180, max: 180, step: 1, tooltip: 'Orbit the camera left/right around the subject, in degrees. Negative orbits left, positive right. ±45° is the tested range; past 90° the hidden side is invented.' },
     { name: 'tilt', label: 'Tilt', type: 'number', default: 0, min: -90, max: 90, step: 1, tooltip: 'Raise or lower the camera, in degrees. Positive looks down from above the subject, negative looks up from below. Rising is the weak direction — keep above about -20°.' },
     { name: 'dolly', label: 'Dolly', type: 'number', default: 1, min: 0.1, max: 3, step: 0.05, tooltip: 'Camera distance where 1.0 keeps the source distance. Below 1 dollies in; above 1 pulls back — pulling back reveals area the source never framed, so more of the shot is invented.' },
     { name: 'zoom', label: 'Zoom (lens FOV)', type: 'number', default: 50, min: 20, max: 120, step: 1, tooltip: 'The lens field of view in degrees (50 is a normal lens): smaller = zoomed in and tighter, larger = wider. Change it when the clip is clearly wide-angle or telephoto.' },
     { name: 'pan', label: 'Pan (framing shift)', type: 'number', default: 0, min: -1, max: 1, step: 0.02, tooltip: 'Framing shift as a fraction of frame height. Positive moves the picture down (framing up) and rescues a clipped head — the camera does not move, so the parallax is unchanged.' },
-    { name: 'strength', label: 'Reshoot strength', type: 'number', default: 1, min: 0, max: 10, step: 0.05, tooltip: 'How hard the new view\'s depth steers the generation. 1.0 is full; raise toward 2 only when the shot ignores the camera move.' },
+    { name: 'strength', label: 'CrossView LoRA strength', type: 'number', default: 0.8, min: 0.5, max: 1, step: 0.05, tooltip: 'The CrossView LoRA\'s strength on the model — the official tested band is 0.8–1.0 (0.8 is the reference app\'s own setting; push toward 1.0 when the shot ignores the camera move).' },
     { name: 'depth_ratio', label: 'Scene depth', type: 'number', default: 6, min: 1.5, max: 1000, step: 0.5, tooltip: 'How deep the scene is (far/near ratio). 2.5–4 for close-up faces, 4–8 for mid shots, 8–16 for deep or wide scenes.' },
     { name: 'smooth_depth', label: 'Smooth depth', type: 'boolean', default: false, tooltip: 'Smooth the depth edges before warping. Turn on when the re-shot frames show speckle holes — trades a little sharpness for cleaner hole edges.' },
     { name: 'invert_depth', label: 'Invert depth', type: 'boolean', default: false, tooltip: 'Flip the depth polarity (near ↔ far). Leave off; turn on only if the re-shot renders inside-out — background moving like foreground, or the subject caving in.' },

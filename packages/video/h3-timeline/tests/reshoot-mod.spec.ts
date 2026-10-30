@@ -1,13 +1,15 @@
-// @melite/video-h3-timeline — the reshoot arm rows (the fourth mod
-// bag, §8 of the multiwindow unification audit 2026-11-12). Drives
-// the registered card's own doors (def.mods for the served kind,
-// def.compose for the film augmentation): the kind is served
-// verbatim with the arm-gated packs, an absent or EMPTY bag leaves
-// the film path byte-identical (zero chain classes), an armed bag
-// augments the film on the SHARED loader law (force-rate-24 VHS —
-// never a private LoadVideo pair), and every cross-arm pair refuses
-// LOUD naming the silently-dropped arm. Every row asserts served
-// truth or refusal text — never expect(true).
+// @melite/video/h3-timeline — the reshoot arm rows (the fourth mod
+// bag, §8 of the multiwindow unification audit 2026-11-12; the
+// emission REWORKED 2026-11-13 onto the official comfy-reshoot
+// chain). Drives the registered card's own doors (def.mods for the
+// served kind, def.compose for the film augmentation): the kind is
+// served verbatim with the arm-gated pack, an absent or EMPTY bag
+// leaves the film path byte-identical (zero chain classes), an
+// armed bag augments the film on the OFFICIAL loader posture (core
+// LoadVideo → CrossViewPrepareClip — the VIDEO type the prepare
+// node demands), and every cross-arm pair refuses LOUD naming the
+// silently-dropped arm. Every row asserts served truth or refusal
+// text — never expect(true).
 import "../../../../tests/helpers/boot-models.ts";
 import { beforeAll, describe, it } from "vitest";
 import assert from "node:assert/strict";
@@ -45,13 +47,25 @@ const graphOf = (g: GraphBuilder): Record<string, Node> =>
 const ofClass = (out: Record<string, Node>, cls: string): [string, Node][] =>
   Object.entries(out).filter(([, n]) => n.class_type === cls);
 
-// The re-shoot-only classes (the depth-warp chain — zero of these
-// may ever appear in a disarmed film graph).
+// The re-shoot-only classes (the official chain — zero of these may
+// ever appear in a disarmed film graph).
 const RESHOOT_CLASSES = [
+  'LoadVideo',
+  'CrossViewPrepareClip',
+  'LoadMoGeModel',
+  'MoGeInference',
+  'CrossViewWarp',
+  'LoraLoaderModelOnly',
+];
+
+// The FIRST CUT's classes (VDA depth + Fun ControlNet) — they died
+// with the 2026-11-13 official rework and must stay dead on BOTH
+// the disarmed and the armed doc (the retired-chain guard).
+const RETIRED_CLASSES = [
   'LoadVideoDepthAnythingModel',
   'VideoDepthAnythingProcess',
   'VideoDepthAnythingOutput',
-  'CrossViewWarp',
+  'ImageResizeKJ',
   'ColorToMask',
   'ModelPatchLoader',
   'MiniMaxH3FunControlNetApply',
@@ -64,7 +78,7 @@ const RESHOOT_ENTRY = (): Record<string, unknown> => ({
   dolly: 1.2,
   zoom: 60,
   pan: 0.14,
-  strength: 1.25,
+  strength: 0.9,
   depth_ratio: 7,
   smooth_depth: false,
   invert_depth: false,
@@ -74,26 +88,33 @@ const kind = () =>
   ((def as { mods?: Array<Record<string, unknown>> }).mods ?? [])
     .find((k) => k.kind === 'reshoot');
 
-describe("the reshoot kind (the fourth mod bag)", () => {
-  it("is served verbatim with the arm-gated packs and every camera dial", () => {
+describe("the reshoot kind (the fourth mod bag, official rework)", () => {
+  it("is served verbatim with the arm-gated pack and every camera dial", () => {
     const reshoot = kind();
     assert.ok(reshoot, "the h3-timeline card serves the reshoot kind on the modifiers channel");
     assert.equal(reshoot.param_key, 'reshoot', "the bag rides param_key 'reshoot'");
     assert.equal(reshoot.schema_key, 'reshoot', "the kind stamps its own catalog name (the mod-liveness ARM 3 attribution)");
     assert.equal(reshoot.max_stack, 1, "one re-shoot per doc (max_stack 1)");
     assert.deepEqual(reshoot.requires, [
-      'ComfyUI-VideoHelperSuite',
-      'ComfyUI-KJNodes',
-      'ComfyUI-MiniMaxH3Mod',
       'ComfyUI-CrossViewWarp',
-      'ComfyUI-Video-Depth-Anything',
-    ], "the arm names its five packs (the loader law's VHS, ColorToMask's KJNodes, the apply's H3Mod, the warp pack, and the depth chain's VDA — F13c 2026-11-12: the bag compose died unknown-node LoadVideoDepthAnythingModel until the pack was declared)");
+    ], "the arm names its ONE pack (the official chain's prepare + warp — every other node is engine core: LoadVideo, the MoGe pair, the MiniMaxH3 trio, LoraLoaderModelOnly; the retired VDA/KJNodes/H3Mod rows died with the 2026-11-13 rework)");
     const fields = (reshoot.fields as Array<Record<string, unknown>>) ?? [];
     const names = fields.map((f) => f.name);
     assert.deepEqual(names, [
       'source_clip', 'orbit', 'tilt', 'dolly', 'zoom', 'pan',
       'strength', 'depth_ratio', 'smooth_depth', 'invert_depth',
     ], "the entry carries the clip + the nine camera dials, exactly");
+  });
+
+  it("the strength dial serves the official LoRA band (0.5–1, default 0.8) on the card's own field row", () => {
+    const reshoot = kind();
+    assert.ok(reshoot);
+    const by = Object.fromEntries(
+      ((reshoot.fields as Array<Record<string, unknown>>) ?? []).map((f) => [f.name, f]),
+    );
+    assert.equal(by.strength.default, 0.8, "the default is the reference app's own 0.8");
+    assert.equal(by.strength.min, 0.5, "the band's floor");
+    assert.equal(by.strength.max, 1, "the band's ceiling — the old 0–10 Fun-ControlNet-era band died with the rework");
   });
 
   it("serves its media seat square-claiming, never freeform text (the picker law)", () => {
@@ -169,7 +190,7 @@ describe("the reshoot kind (the fourth mod bag)", () => {
     assert.deepEqual(ofClass(graphOf(g), "CrossViewWarp"), [], "the empty bag composes no warp");
   });
 
-  it("an armed bag augments the FILM on the shared loader law — VHS frames, the film's own SaveVideo terminal", () => {
+  it("an armed bag augments the FILM on the OFFICIAL loader posture — core LoadVideo → prepare, the film's own SaveVideo terminal", () => {
     const walked = def.schema({
       calls: [{ text: 'a slow push in', start_frame: 0, end_frame: 56 }], length: 56,
       reshoot: [RESHOOT_ENTRY()],
@@ -177,15 +198,24 @@ describe("the reshoot kind (the fourth mod bag)", () => {
     const g = new GraphBuilder();
     def.compose(walked, model, g, "run_rsmod_armed");
     const out = graphOf(g);
-    // THE SHARED LOADER LAW: force-rate-24 VHS, never a private pair
-    assert.deepEqual(ofClass(out, "LoadVideo"), [], "the private LoadVideo pair is dead");
-    const vhs = ofClass(out, "VHS_LoadVideo");
-    assert.ok(vhs.length >= 1, "the clip rides the shared VHS seat");
-    assert.equal(vhs[0]![1].inputs.video, 'clips/take3.mp4');
-    assert.equal(vhs[0]![1].inputs.force_rate, 24);
+    // THE OFFICIAL LOADER (2026-11-13): core LoadVideo — the one
+    // node that emits the VIDEO type CrossViewPrepareClip demands
+    // (the retired VHS-seat law died with the first cut; the
+    // prepare node owns the resample + grid + crop now)
+    const lv = ofClass(out, "LoadVideo");
+    assert.equal(lv.length, 1, "exactly one core LoadVideo (the whole video, by staged name)");
+    assert.equal(lv[0]![1].inputs.file, 'clips/take3.mp4');
+    const prep = ofClass(out, "CrossViewPrepareClip");
+    assert.equal(prep.length, 1, "the clip hands off to the prepare node");
+    assert.equal(String(prep[0]![1].inputs.video).includes("LoadVideo"), true, "the prepare node reads the loader's VIDEO output");
     // the chain classes mount (the augmentation)
     for (const cls of RESHOOT_CLASSES) {
       assert.ok(ofClass(out, cls).length >= 1, `${cls} mounts on the armed bag`);
+    }
+    // THE RETIRED-CHAIN GUARD: the first cut's classes stay dead on
+    // the ARMED doc too — the rework's own toggle-proof
+    for (const cls of RETIRED_CLASSES) {
+      assert.deepEqual(ofClass(out, cls), [], `${cls} died with the official rework — never again on an armed doc`);
     }
     // the terminal is the FILM's own SaveVideo — the reshoot is an
     // augmentation, never a ChainAssemble emission

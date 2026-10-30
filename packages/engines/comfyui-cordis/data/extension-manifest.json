@@ -225,28 +225,11 @@
   },
   {
     "name": "ComfyUI-CrossViewWarp",
-    "url": "https://github.com/cseti007/ComfyUI-CrossViewWarp",
-    "ref": "3266a83a84eaa6833a9ebc38ac7cdd8789e44f5b",
+    "url": "https://github.com/comfyrob/ComfyUI-CrossViewWarp",
+    "ref": "fbb1e93c7193329ff3ce7c17f95166b539687876",
     "required": true,
-    "desc": "CrossViewWarp (Apache-2.0, v0.11.0) — depth-warp conditioning node for the CrossView-Warp IC-LoRA. Declared on the video plane for camera-move compositions; addressed by the h3-timeline re-shoot chain (feature 024 — two CrossViewWarp passes per armed film: the depth-stack splat and the RGB reprojection). Pip: nothing beyond the ComfyUI base env.",
+    "desc": "CrossViewWarp (Apache-2.0, the comfyrob fork at the official comfy-reshoot revision) — CrossViewPrepareClip (24 fps resample, H3 17k+5 frame-grid snap, aspect/pixel-budget normalize) + CrossViewWarp (metric-geometry reprojection under a moved camera). Declared on the video plane for camera-move compositions; addressed by the h3-timeline re-shoot chain (feature 024, reworked 2026-11-13 onto Comfy-Org's comfy-reshoot reference chain: prepare -> MoGe metric geometry -> one warp; the retired VDA depth chain + Fun ControlNet apply seat died with the rework). Pip: nothing beyond the ComfyUI base env.",
     "pip": [],
-    "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/video/nodes.yaml"
-  },
-  {
-    "name": "ComfyUI-Video-Depth-Anything",
-    "url": "https://github.com/yuvraj108c/ComfyUI-Video-Depth-Anything",
-    "ref": "a0db08e63d1ea571601c45cde4aaee0acdd0544d",
-    "required": true,
-    "desc": "Video-Depth-Anything (MIT, yuvraj108c) — the three-node video depth chain LoadVideoDepthAnythingModel -> VideoDepthAnythingProcess -> VideoDepthAnythingOutput (+ SaveEXR, unused here) the h3-timeline reshoot arm's depth half rides (feature 024 / friction F13c, 2026-11-12: the bag compose died unknown-node until this row). Weights read from models/videodepthanything (video_depth_anything_ vits.pth already provisioned); the gray colormap output feeds CrossViewWarp's brightness-depth seat. Pip: opencv-python, matplotlib, pillow, imageio, imageio-ffmpeg, einops, easydict, tqdm, huggingface_hub, Imath, OpenEXR (SaveEXR-only; the estate chain never addresses it).",
-    "pip": [
-      "opencv-python",
-      "matplotlib",
-      "imageio",
-      "imageio-ffmpeg",
-      "easydict",
-      "Imath",
-      "OpenEXR"
-    ],
     "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/video/nodes.yaml"
   },
   {

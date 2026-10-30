@@ -511,6 +511,21 @@ export const DECL: ModelDecl = {
       "sha256": "de9663d974a884b477556748239c6f28239f7ca1825be270f98f023ff5dab6a7",
       "size_bytes": 181697688
     },
+    // THE CROSSVIEW LORA (the 2026-11-13 official reshoot rework):
+    // Cseti's CrossView-Warp v1 at step 3500 — the exact file
+    // Comfy-Org's comfy-reshoot reference app pins
+    // (build/model-files.md). Digest + size read verbatim from the
+    // HF tree API (xet lfs oid), verified against the landed file.
+    // Arm-functional, NOT a mods/loras.ts catalog row: it rides the
+    // reshoot arm's own model seat (LoraLoaderModelOnly, trigger
+    // `crossview`, band 0.8–1.0) and is meaningless stacked freely.
+    {
+      "name": "MiniMax-H3_Ref2VA-LoRA-CrossView-Warp_v1_3500.safetensors",
+      "url": "https://huggingface.co/Cseti/MiniMax-H3_Ref2VA-LoRA-CrossView-Warp_v1/resolve/main/MiniMax-H3_Ref2VA-LoRA-CrossView-Warp_v1_3500.safetensors",
+      "folder": "loras/h3",
+      "sha256": "aab492964261f6611ced672c70866ce9d64bab66fbd28fd39d26bcd09c852f91",
+      "size_bytes": 596452584
+    },
     {
       "name": "h3_silu_temb_grid.safetensors",
       "url": "https://huggingface.co/deAPI-ai/minimax-h3-33b-int8/resolve/main/loras/h3_silu_temb_grid.safetensors",

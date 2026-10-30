@@ -48,9 +48,11 @@ import {
   transitionOverlap,
 } from './timelineContract.js'
 import {
-  applyH3Reshoot,
+  applyH3ReshootCond,
+  applyH3ReshootModel,
   buildH3Reshoot,
   reshootArmed,
+  reshootPrompt,
   type ReshootChain,
 } from './reshoot.js'
 
@@ -1104,6 +1106,18 @@ function renderH3Window(
   // lawfully write p.prompt from call text because in the one-window
   // shape p.prompt IS the text owner — never a substitute.)
   const prompt = (p.prompt ?? '') as string
+  // THE RE-SHOOT CHAIN, HOISTED (the 2026-11-13 official rework):
+  // built ONCE per window render — the film loop stamps the shared
+  // handles (__reshoot, one build per film), the single-window
+  // shape builds its own here. Every re-shoot seat below reads this
+  // one const: the r2v prompt trigger, the ref_video_0 override,
+  // the guide pin, the model LoRA. THE PROMPT SEAT: the official
+  // chain's prompt is exactly `crossview.` — the LoRA's trigger
+  // word leads, the estate's own prose follows.
+  const reshootChain: ReshootChain | undefined =
+    (p.__reshoot as ReshootChain | undefined)
+    ?? (reshootArmed(p) ? buildH3Reshoot(p, g) : undefined)
+  const r2vPrompt = reshootChain !== undefined ? reshootPrompt(prompt) : prompt
   // card knob first (image), renderer alias second.
   const guideImage = (p.image ?? p.image_name ?? '') as string
 
@@ -1435,7 +1449,7 @@ function renderH3Window(
     const refSize = p.ref_image_size as string
 
     const r2vInputs: Record<string, OutputHandle | string | number> = {
-      prompt, width: headW, height: headH,
+      prompt: r2vPrompt, width: headW, height: headH,
       length: lengthNode, ref_image_size: refSize,
       clip, vae: vaeVideo, audio_vae: vaeAudio,
     }
@@ -1444,6 +1458,20 @@ function renderH3Window(
       r2vInputs[`ref_videos.ref_video_${i}`] = bout.out(9 + 2 * i)
       r2vInputs[`ref_video_audios.ref_video_audio_${i}`] = bout.out(10 + 2 * i)
       r2vInputs[`ref_audios.ref_audio_${i}`] = bout.out(15 + i)
+    }
+    // THE RE-SHOOT REF OVERRIDE (the official chain's appearance
+    // seat, 2026-11-13): ref_video_0 IS the prepared source clip —
+    // the identity/appearance reference the moved view re-renders
+    // from (the official graph wires exactly this lane, exactly
+    // here). Its audio lane is DELETED, not muted: the official
+    // chain wires NO ref video audio at all, and the bundle's
+    // slot-0 audio would pin sound from a DIFFERENT clip against
+    // the reshoot's own source — an absent lane, never a mismatched
+    // one. The bundle's video slots 1–2 and every ref_audio stay
+    // theirs: the reshoot overrides the APPEARANCE seat only.
+    if (reshootChain !== undefined) {
+      r2vInputs['ref_videos.ref_video_0'] = reshootChain.refFrames
+      delete r2vInputs['ref_video_audios.ref_video_audio_0']
     }
     // (THE BED IS GONE, 2026-09-22: the user's three ref_audios ride
     // their natural lanes above — no slice, no shift, no fourth
@@ -1643,18 +1671,39 @@ function renderH3Window(
   // film total; fresh: the walked default; the 90/56 family budgets
   // retired with the nulling that fed them)
   const length = p.length as number
-    const r2v = g.node('MiniMaxH3ReferenceToVideo', {
-      prompt, width: headW,
+    // THE RE-SHOOT REF SEATS, non-reference arm (2026-11-13): the
+    // trigger-led prompt + the prepared source clip as ref_video_0
+    // (the official chain wires the appearance lane even on the
+    // prompt-only arm — a reshoot without its source as reference
+    // is the old low-quality posture). No ref video audio, the
+    // official graph's own absence.
+    const r2vInputs2: Record<string, OutputHandle | string | number> = {
+      prompt: r2vPrompt, width: headW,
       height: headH, length: length as number,
       ref_image_size: p.ref_image_size as string,
       clip, vae: vaeVideo, audio_vae: vaeAudio,
-    })
+    }
+    if (reshootChain !== undefined) {
+      r2vInputs2['ref_videos.ref_video_0'] = reshootChain.refFrames
+    }
+    const r2v = g.node('MiniMaxH3ReferenceToVideo', r2vInputs2)
     cond = r2v.out(0)
     latent = r2v.out(1)
     // FPS IS LAYER A, this arm too: the non-reference arm's container
     // clock rides the doc's declared fps — same law as the t4r arm's
     // fpsNode, no arm may hardcode a clock the bar disagrees with.
     fpsInput = p.fps as number
+  }
+
+  // THE RE-SHOOT GUIDE PIN (the official chain's conditioning seat,
+  // 2026-11-13): the warp rides MiniMaxH3AddGuide into the window's
+  // own AV latent at row 0 — the H3-native image-guide lane (the
+  // same node the keyframe pins ride), pinned LAST so the camera
+  // geometry closes the guide chain (audio first, keyframes next,
+  // the moved view's spine on top). The official graph's node 21,
+  // verbatim shape; one pin per window, the shared warp handle.
+  if (reshootChain !== undefined) {
+    cond = applyH3ReshootCond(g, cond, latent, vaeVideo, reshootChain)
   }
 
   // THE REFMOD SEAM (audit 010/R1, 2026-10-18): reusable reference
@@ -1859,14 +1908,14 @@ function renderH3Window(
   // boarding gate — the rows are the operator's BENCH row, 002 H1)
   // and every row fact (schedule capability, strength ceiling, the
   // clip/mask channels) arrived stamped by the service resolution.
-  // THE RE-SHOOT SEAT (feature 024) mounts just ahead of it: the
-  // camera spine (the shared warp chain's union-2.0 patch), with any
-  // file-based picks refining on top. The film loop stamps the built
-  // once handles (__reshoot); the single-window shape builds its own
-  // here (one window = one build, the same subgraph).
-  const reshoot = (p.__reshoot as ReshootChain | undefined)
-    ?? (reshootArmed(p) ? buildH3Reshoot(p, g) : undefined)
-  if (reshoot !== undefined) sigmaModel = applyH3Reshoot(g, sigmaModel, vaeVideo, reshoot, p)
+  // THE RE-SHOOT MODEL SEAT (the 2026-11-13 official rework) mounts
+  // just ahead of it: the CrossView LoRA on the post-shift model —
+  // the official order (distill lora → shift → attention → the
+  // CrossView LoRA LAST) so the camera-trained adapters win, with
+  // any file-based picks refining on top. The hoisted reshootChain
+  // (the window head) is the one build — the film loop's stamped
+  // handles or the single-window's own.
+  if (reshootChain !== undefined) sigmaModel = applyH3ReshootModel(g, sigmaModel, p)
   sigmaModel = applyH3FunControlNets(g, sigmaModel, vaeVideo, fireControlNets(model, p))
   const schedName = p.sched_name as string
   const denoiseVal = p.denoise as number

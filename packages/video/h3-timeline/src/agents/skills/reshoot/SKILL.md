@@ -1,27 +1,34 @@
 ---
 name: reshoot
-description: "Camera re-shoot on the h3-timeline: seat a source clip plus one camera intent (orbit/tilt/dolly/zoom/pan) on the reshoot mod bag, the scene rebuilds from depth and renders from the moved camera. Mod-bag door — NOT a fresh regen and NOT the replace mod."
+description: "Camera re-shoot on the h3-timeline: seat a source clip plus one camera intent (orbit/tilt/dolly/zoom/pan) on the reshoot mod bag; the official comfy-reshoot chain reprojects the scene from MoGe metric depth and H3 re-renders it from the moved camera (warp guide + the CrossView LoRA, trigger `crossview`). Mod-bag door — NOT a fresh regen and NOT the replace mod."
 genre: video
 ---
 
 # Reshoot (camera re-shoot) — SPEC
 
-> STATUS: LANDED (feature 024; fourth-mod-bag law §8, 2026-11-12).
-> The chain composes per the family renderer (`models/h3`
-> reshoot.ts): depth estimation → reprojection under the new camera
-> → Fun ControlNet depth conditioning per window, disocclusions
-> inpainted. Prose never overrides the loaded bundle: the fields
-> below are quoted off the card's served reshoot kind.
+> STATUS: LANDED (feature 024; fourth-mod-bag law §8, 2026-11-12;
+> REWORKED 2026-11-13 onto the OFFICIAL chain — Comfy-Org's
+> comfy-reshoot reference app). The chain composes per the family
+> renderer (`models/h3` reshoot.ts): core LoadVideo →
+> CrossViewPrepareClip (24 fps + H3 grid snap) → MoGe metric
+> geometry → ONE CrossViewWarp; the prepared clip rides the r2v
+> reference seat, the warp pins through MiniMaxH3AddGuide, and the
+> CrossView LoRA (trigger `crossview`, 0.5–1) loads on every
+> window's model. Prose never overrides the loaded bundle: the
+> fields below are quoted off the card's served reshoot kind.
 >
 > VERIFIED LIVE 2026-11-12 against the served kind + the compose door and receipt `contracts/receipts/2026-11-12-cards-h3-reshoot-chain.md` (run run-e7a5182d153c-88fd3236 — the bag surface with orbit and dolly dials composed live through the depth chain into both warps; the grid broadcast that run exposed is answered by the F13d depth-grid match). NOT yet verified live: a rendered re-shoot on the GPU lane — treat the chain's visual output as unproven until the post-cure press lands.
 
 ## What it is (and is NOT)
 
 A camera re-shoot: the SAME scene, viewed from a MOVED camera. The
-source clip's frames rebuild the scene (video depth), the new camera
-pose reprojects it, and the regions the moved camera reveals are
-invented. The camera control IS this depth-warp chain — no native H3
-camera conditioning exists.
+official chain (Comfy-Org's comfy-reshoot reference app, the verified
+mainstream implementation) reprojects the scene: MoGe-2 estimates
+METRIC depth with intrinsics, CrossViewWarp reprojects it under the
+new camera pose, the warp guides H3 through its native
+reference+guide seats while the original clip anchors
+appearance/identity, and the CrossView LoRA makes the model follow
+the moved view.
 
 It is NOT:
 - **a fresh regen** — re-rolling the same shot is a new seed on an
@@ -69,13 +76,15 @@ as before, byte-identical.)
      clip is clearly wide-angle or telephoto.
    - `pan` (−1–1, 0) — framing shift without camera motion;
      rescues a clipped head.
-   - `strength` (0–10, 1.0) — raise toward 2 only when the
-     shot ignores the camera move.
+   - `strength` (0.5–1, 0.8) — the CrossView LoRA's strength, the
+     official tested band; push toward 1 when the shot ignores the
+     camera move.
    - `depth_ratio` (1.5–1000, 6) — scene depth: 2.5–4
      close-up faces, 4–8 mid shots, 8–16 deep/wide scenes.
    - `smooth_depth` / `invert_depth` (false) —
-     depth postures; invert only if the depth source's polarity
-     is flipped.
+     depth postures; smooth trades a little sharpness for cleaner
+     disocclusion holes, invert only if the render looks
+     inside-out.
    Out-of-band dials refuse LOUD at the compose door (ahead of the
    engine, never a widget 400). Untouched dials = the identity camera:
    an armed re-shoot with no move re-renders the scene from the SAME
@@ -94,6 +103,6 @@ as before, byte-identical.)
 
 - `cinemadir` composes camera-language films — its keyframe plates
   (e.g. an orbit mid-plate) pair with a reshoot's move.
-- Depth cost is paid ONCE per run (the chain builds one shared
-  warp + patch; every window consumes the same handles) — multi-
-  window films do not multiply the depth bill.
+- Geometry cost is paid ONCE per run (the chain builds one shared
+  prepare + MoGe + warp; every window consumes the same handles) —
+  multi-window films do not multiply the geometry bill.

@@ -219,6 +219,10 @@ const PROVISION_PINS: ReadonlyArray<
   ["H3-PK-Parasyte-Turbo.safetensors", "dbf74bfb490b9322bd455edff95ce222b3553bb3472e4743134755db1edfe044", "https://huggingface.co/Plaguekind/H3-Lora/resolve/main/H3-PK-Parasyte-Turbo.safetensors", 2115774558],
   ["dmad_minimax_h3_4step_lora_critic_comfyui.safetensors", "a4f54d9eb4eed9102be1adea8376e8e933cc2805f4017b95c14586290395b3a7", "https://huggingface.co/ZhengmingYu/DMAD/resolve/main/minimax_h3/dmad_minimax_h3_4step_lora_critic_comfyui.safetensors", 1956195960],
   ["minimax_h3_taomate_3step_lora_avg_rank_19_bf16.safetensors", "de9663d974a884b477556748239c6f28239f7ca1825be270f98f023ff5dab6a7", "https://huggingface.co/Kijai/MiniMax-H3_comfy/resolve/main/loras/minimax_h3_taomate_3step_lora_avg_rank_19_bf16.safetensors", 181697688],
+  // the CrossView LoRA (the 2026-11-13 official reshoot rework —
+  // Cseti's CrossView-Warp v1 @3500, the exact file comfy-reshoot's
+  // build/model-files.md pins; arm-functional, not a catalog row)
+  ["MiniMax-H3_Ref2VA-LoRA-CrossView-Warp_v1_3500.safetensors", "aab492964261f6611ced672c70866ce9d64bab66fbd28fd39d26bcd09c852f91", "https://huggingface.co/Cseti/MiniMax-H3_Ref2VA-LoRA-CrossView-Warp_v1/resolve/main/MiniMax-H3_Ref2VA-LoRA-CrossView-Warp_v1_3500.safetensors", 596452584],
   ["h3_silu_temb_grid.safetensors", "30eb3c2cc7fb6b470d9717ff840d359313ac27cd64b705e32da1baa10f72d6a8", "https://huggingface.co/deAPI-ai/minimax-h3-33b-int8/resolve/main/loras/h3_silu_temb_grid.safetensors", 5510600],
   ["minimax_h3_latent_upscaler_3d_bf16.safetensors", "4f57821f5837f32f7142b67d815606dbd7550f194e5c769f7d6c3f83b146a5e6", "https://huggingface.co/LBH-123-AI/Minimax_h3_latent_Upscaler/resolve/main/minimax_h3_latent_upscaler_3d_conv_v1/minimax_h3_latent_upscaler_3d_conv_v1_bf16.safetensors", 690592992],
   ["film_net_fp16.safetensors", "f226e51375dc839d4b40e5c3d63da560dd1ea1c962364ec78f5adf2d05db05c0", "https://huggingface.co/Comfy-Org/frame_interpolation/resolve/main/frame_interpolation/film_net_fp16.safetensors", 68882302],

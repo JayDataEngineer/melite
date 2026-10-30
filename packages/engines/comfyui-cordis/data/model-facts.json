@@ -351,11 +351,6 @@
     ],
     "ComfyUI-Fantastic-MiniMaxH3-PromptBuilder": [
       "MiniMaxH3FantasticVideoEditLatent"
-    ],
-    "ComfyUI-Video-Depth-Anything": [
-      "LoadVideoDepthAnythingModel",
-      "VideoDepthAnythingProcess",
-      "VideoDepthAnythingOutput"
     ]
   },
   "core_node_types": {
