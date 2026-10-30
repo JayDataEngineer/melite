@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { execFile, execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, basename } from "node:path";
 import { tmpdir } from "node:os";
 import { promisify } from "node:util";
@@ -322,4 +322,36 @@ describe.skipIf(DELEGATED)("THE TYPECHECK GATE — every package, every run", ()
         report.split("\n").filter((l) => l.startsWith("✗")).slice(0, 10).join("\n"));
     }
   }, 960_000);
+
+  it("the vendored timer prerequisite emits from a bare tree (the fresh-clone TS2307 class dies at the wall)", () => {
+    // 2026-10-30: the timer's types ride its BUILT lib face
+    // (gitignored per-host build — .gitignore "BUILT per-host, never
+    // committed"), and the test faces resolve the workspace link
+    // through node_modules. A fresh clone has no lib, so manage +
+    // the repo tier TS2307'd while every dev box greened (the seat
+    // never went green in 37 retained runs). The lane owns the
+    // prerequisite (it emits the timer when absent); this arm pins
+    // the three facts the cure stands on — and the third proves the
+    // recipe emits without touching the tree.
+    const timerLib = join("vendor", "cordis_plugins", "timer", "lib", "types", "index.d.ts");
+    const tracked = execFileSync("git", ["ls-files", "--", timerLib], { cwd: REPO, encoding: "utf8" }).trim();
+    // The timer lib must stay untracked (per-host build by design) —
+    // a tracked lib would make this arm's premise, and the lane's
+    // ensure, dead weight.
+    expect(tracked).toBe("");
+    const lane = readFileSync(join(REPO, "scripts", "typecheck-tests.mjs"), "utf8");
+    expect(lane).toMatch(/cordis_plugins\/timer\/lib\/types\/index\.d\.ts/);
+    expect(lane).toMatch(/cordis_plugins\/timer\/tsconfig\.json/);
+    const tsc = execFileSync(process.execPath, [join(REPO, "tools", "tsc-path.mjs")], { cwd: REPO, encoding: "utf8" }).trim();
+    const out = mkdtempSync(join(tmpdir(), "melite-timer-emit-"));
+    try {
+      execFileSync(process.execPath,
+        [tsc, "-p", join(REPO, "vendor", "cordis_plugins", "timer", "tsconfig.json"),
+          "--outDir", join(out, "lib"), "--declarationDir", join(out, "lib", "types")],
+        { cwd: REPO, encoding: "utf8", timeout: 180_000 });
+      expect(existsSync(join(out, "lib", "types", "index.d.ts"))).toBe(true);
+    } finally {
+      rmSync(out, { recursive: true, force: true });
+    }
+  }, 240_000);
 });

@@ -206,6 +206,13 @@ jobs:
       # relative links, deps materialized at boot) and runs in
       # REQUIRE mode: a missing prerequisite FAILS the seat, a
       # self-skip can never green it. Playwright browsers first.
+      # THE DSH RUNTIME (2026-10-30): the lane boots through the dsh
+      # binary (floor 0.2.0-rc.1, enforced in-lane) — a fresh runner
+      # has none, and REQUIRE mode loud-failed the seat on every run.
+      # The version rides the provisioner's own range (no literal to
+      # rot); pnpm/action-setup keeps the global bin on PATH.
+      - name: Install dsh (the studio lane's provisioned runtime)
+        run: pnpm add -g "@deepseek-ai/dsh@$(node -p "require('./packages/harness/provisioner/package.json').peerDependencies['@deepseek-ai/dsh']")"
       - name: Install Playwright browsers (the studio lane's own)
         run: pnpm --filter @melite-plugin/dsh-card-view exec playwright install --with-deps chromium
       - name: Studio browser wall (tracked seed, REQUIRE mode)

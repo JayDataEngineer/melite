@@ -34,6 +34,32 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 // compiler.
 const tsc = execFileSync(process.execPath, [join(root, "tools", "tsc-path.mjs")], { encoding: "utf8" }).trim();
 
+// THE TIMER LIB (typecheck fresh-clone red, 2026-10-30): the vendored
+// timer's types ride its BUILT lib face (lib/types/index.d.ts —
+// gitignored by design, ".gitignore: vendor/cordis_plugins/*/lib/ ...
+// BUILT per-host, never committed"), and the test faces resolve the
+// workspace link through node_modules. A fresh clone has no lib, so
+// every face importing @deepseek-ai/cordis-plugin-timer TS2307s while
+// the dev box greens — the seat never went green in 37 retained runs.
+// The seat owns its prerequisite: emit the timer when absent (seconds,
+// the package's own tsconfig); a present lib is never rebuilt, so
+// built hosts and the ship (build order law: plane before walls) pay
+// nothing. Fail LOUD when the emit fails — a missing prerequisite is
+// misconfiguration, never a silent skip.
+const timerLib = join(root, "vendor/cordis_plugins/timer/lib/types/index.d.ts");
+if (!existsSync(timerLib)) {
+  try {
+    execFileSync(process.execPath, [tsc, "-p", join(root, "vendor/cordis_plugins/timer/tsconfig.json")], {
+      cwd: root, encoding: "utf8", timeout: 180_000, stdio: ["ignore", "pipe", "pipe"],
+    });
+  } catch (err) {
+    throw new Error(`typecheck-tests: the vendored timer lib is absent and the prerequisite emit failed: ${err.stderr ?? err.message ?? err}`);
+  }
+  if (!existsSync(timerLib)) {
+    throw new Error("typecheck-tests: the vendored timer emit ran clean but lib/types/index.d.ts is still absent — refusing a red that is not the tree's");
+  }
+}
+
 // DISCOVERY — same shape as the wall's src tier: every dir under
 // packages/ (depth ≤ 2, node_modules never walked) holding a
 // tsconfig.json. A named list is exactly the list that rots.
