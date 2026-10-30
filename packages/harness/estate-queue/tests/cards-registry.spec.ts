@@ -501,6 +501,38 @@ describe("prepareCardParams, phase-1 voice (the run-start compose)", () => {
     expect(out.fam).toBe("h3");
   });
 
+  // THE B7 RESIDUE (the tts dossier's second-rebuild live refusal,
+  // 2026-11-12): the bench-save stanza shape ({model, params:{…}})
+  // carried the qvoice bag where the overlay's top-level look never
+  // saw it — 'ryan' stamped at the top level, the lift merged stamp +
+  // stanza, and card-mode qvoice compose refused verbatim with NO
+  // voice stated anywhere. THE REAL DOOR, REAL DEFS: the estate's one
+  // prepare must never emit a preset beside a stated persona, at
+  // EITHER seat (the flat agent body and the saved stanza).
+  it("B7 residue: a stanza-carried qvoice composes with NO preset stamped (card-mode, real defs)", () => {
+    const out = prepareCardParams(svc, {
+      model: "qwen3-tts",
+      params: {
+        variant: "customvoice",
+        text: "You dare enter my hall uninvited?",
+        qvoice: "/mnt/data/models/audio/voices/hecate-01.qvoice",
+        style_instruction: "FURIOUS.",
+      },
+    }, "qwen3-tts", "1");
+    expect(out.fam).toBe("qwen3-tts");
+    expect(out.params["voice"]).toBeUndefined();
+    expect(out.params["qvoice"]).toBe("/mnt/data/models/audio/voices/hecate-01.qvoice",
+      "the customvoice lane's 'ryan' stamp must not land beside a stated persona — the engine's clone branch carries no speaker");
+  });
+
+  it("B7 control: the same stanza naming NO qvoice still resolves the customvoice rest (the no-non-speaker ruling stands)", () => {
+    const out = prepareCardParams(svc, {
+      model: "qwen3-tts",
+      params: { variant: "customvoice", text: "line" },
+    }, "qwen3-tts", "1");
+    expect(out.params["voice"]).toBe("ryan");
+  });
+
   it("a catalog id that is not a family row does not enter the family-less arm", () => {
     const view = svc as unknown as {
       modelMids: () => Set<string>;

@@ -523,6 +523,38 @@ describe("stampCardOverlay — THE QVOICE-STATED PRESET SKIP (B7: a saved person
     expect(out["voice"]).toBeUndefined();
   });
 
+  // THE STANZA SEAT (the B7 residue, 2026-11-12 second rebuild): the
+  // bench-save shape carries the bag inside the params stanza — the
+  // top-level-only look missed it and the lift merged the 'ryan'
+  // stamp into a both-stated body the card refused verbatim.
+  it("a stanza-carried qvoice bag (the bench-save shape) suppresses the stamp — the residue's exact door", () => {
+    const out = stampCardOverlay(
+      { params: { text: "line", qvoice: [{ qvoice: "/v/ann.qvoice", voice_strength: 1 }] } },
+      ttsRow, ttsDecl, cvSel, "1", "qwen3-tts",
+    );
+    expect(out["voice"]).toBeUndefined();
+    expect(out["params"]).toEqual(
+      { text: "line", qvoice: [{ qvoice: "/v/ann.qvoice", voice_strength: 1 }] },
+      "a persona stated inside the stanza is as stated as a flat one — the stamp never lands and the stanza rides verbatim",
+    );
+  });
+
+  it("a stanza-carried bare-string qvoice suppresses the stamp too (both grammar forms, both seats)", () => {
+    const out = stampCardOverlay(
+      { params: { text: "line", qvoice: "hecate-01" } },
+      ttsRow, ttsDecl, cvSel, "1", "qwen3-tts",
+    );
+    expect(out["voice"]).toBeUndefined();
+  });
+
+  it("the stanza control: a stanza naming NO qvoice still takes the 'ryan' stamp (the ruling stands at both seats)", () => {
+    const out = stampCardOverlay(
+      { params: { text: "line" } },
+      ttsRow, ttsDecl, cvSel, "1", "qwen3-tts",
+    );
+    expect(out["voice"]).toBe("ryan");
+  });
+
   it("the control: with NO persona stated, the customvoice resolver's 'ryan' stamp rides (the no-non-speaker ruling stands)", () => {
     const out = stampCardOverlay({}, ttsRow, ttsDecl, cvSel, "1", "qwen3-tts");
     expect(out["voice"]).toBe("ryan");
