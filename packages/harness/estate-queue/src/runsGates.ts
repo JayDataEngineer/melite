@@ -64,7 +64,8 @@ import z from "@deepseek-ai/schemastery";
 // ./vocab.ts — re-exported here for the gates' callers.
 export { RETIRED_RUNNER_KNOBS, RETIRED_CARRY_KEYS, DOOR_KEYS } from "./vocab.ts";
 import { RETIRED_RUNNER_KNOBS, RETIRED_CARRY_KEYS, DOOR_KEYS } from "./vocab.ts";
-import { resolveTestFlag } from "./queueSubmit.ts";
+import { resolveTestFlag, executeCeilOf, type ExecuteCeilVerdict } from "./queueSubmit.ts";
+export { executeCeilOf, type ExecuteCeilVerdict };
 import { WIRE_STAGE_KEYS, STAGE_PATCH_KEYS } from "@melite/contracts/benchStage";
 export { STAGE_PATCH_KEYS };
 

@@ -417,6 +417,30 @@ describe("registerCompiledRun", () => {
     assert.ok(existsSync(join(run.dir, "_flow.json")));
   });
 
+  it("THE RUN'S OWN CEILING (F8) stamps onto the registered record (absent stays absent)", async () => {
+    TMP = mkdtempSync(join(tmpdir(), "run-ceil-"));
+    const root = join(TMP, "state");
+    const { run } = await mustRegister({
+      compiled: compiled([one]),
+      testFlag: false,
+      executeCeilMs: 0,
+      draftId: draftIdOf("d1"),
+      stateRoot: root,
+      enqueue: () => 0,
+      door: { runId: "run-ceil-0" as RunId, pipeline: "flow_inline", requestBody: {} },
+    });
+    assert.equal(run.executeCeilMs, 0, "the disabling lever rides the record");
+    const plain = await mustRegister({
+      compiled: compiled([one]),
+      testFlag: false,
+      draftId: draftIdOf("d1"),
+      stateRoot: root,
+      enqueue: () => 0,
+      door: { runId: "run-ceil-none" as RunId, pipeline: "flow_inline", requestBody: {} },
+    });
+    assert.equal(plain.run.executeCeilMs, undefined, "a body stating nothing leaves the config to decide");
+  });
+
   it("THE SNAPSHOT CONTRACT (the operator's order, 2026-09-26): the writer stamps a CONTRACTED stage list — junk rows drop with named warnings, the loadable row rides with provenance restored", async () => {
     // "the saving should 100% be a schemamaster contract, that way
     // we know 100% if it will load again": whatever the bench held,

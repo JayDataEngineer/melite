@@ -57,6 +57,7 @@ export { toRemoteError } from "./runsRefusalVoices.ts";
 import { readFileSync } from "node:fs";
 import {
   CardArmError,
+  liftCardParams,
   type Phase1Card,
 } from "./cardsRegistry.ts";
 import { FLOW_ID_RE } from "./runsGates.ts";
@@ -1709,6 +1710,7 @@ export class RunsRuntimeService extends Service {
       const reg = await registerCompiledRun({
         compiled: { stages: [cardStage] },
         testFlag: checked.testFlag,
+      executeCeilMs: checked.ceilMs,
         draftId: checked.draftId,
         stateRoot,
         enqueue: (row): number => this.core.enqueue(row as never),
@@ -1732,6 +1734,9 @@ export class RunsRuntimeService extends Service {
           // encoding — the raw body above still feeds phase-1/2,
           // which own their own coercion.
           requestBody: cardRequestBody,
+          // THE ADMITTED RECIPE (the F27 cure): the card doc the
+          // compose actually received — restore's paste source.
+          cardRecipe: { card: p1.card, params: liftCardParams(cardRequestBody) },
           // THE GRAPH-RECEIPT ROW (P1): the single stage's evidence
           // rides the same door the flow arms' ledger rides.
           graphReceipts: { [skeleton]: cardReceiptRow },
@@ -2163,6 +2168,7 @@ export class RunsRuntimeService extends Service {
     const reg = await registerCompiledRun({
       compiled,
       testFlag: checked.testFlag,
+      executeCeilMs: checked.ceilMs,
       draftId: checked.draftId,
       stateRoot,
       enqueue: (row): number => this.core.enqueue(row as never),
@@ -2406,6 +2412,13 @@ export class RunsRuntimeService extends Service {
       // fallback spreads the sidecar row, which carries it).
       // Absent on inline runs (no card composed).
       ...(run.graphReceipt !== undefined ? { graph_receipt: run.graphReceipt } : {}),
+      // THE CARD SNAPSHOT, SERVED (the F27 burn, 2026-10-30): the
+      // exact card + authoring body that ran rides the live row —
+      // restore rebuilds the recipe from THIS, never from the
+      // mutable draft (which a later edit rewrote). Same spelling
+      // as the sidecar; the disk fallback spreads the sidecar row.
+      ...(run.cardSnapshot !== undefined ? { card_snapshot: run.cardSnapshot } : {}),
+      ...(run.cardRecipe !== undefined ? { card_recipe: run.cardRecipe } : {}),
       // THE EXPORT NAME, SERVED (023's self-critique #4/#6: the
       // design lane's mint rides the live row too — additive,
       // same spelling as the sidecar; absent on non-export runs.

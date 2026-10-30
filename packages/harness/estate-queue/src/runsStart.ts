@@ -526,6 +526,9 @@ export function selectSubmitDoor(
 export async function registerCompiledRun(args: {
   compiled: { stages: CompiledStage[] };
   testFlag: boolean;
+  /** The start body's own execute ceiling (the F8 burn; absent = the
+   *  queue config decides). */
+  executeCeilMs?: number;
   draftId: DraftId;
   stateRoot: string;
   enqueue: (row: { runId: RunId; status: string; error: string; createdAt: number; draftId: DraftId; testFlag: boolean; stopFlag: boolean }) => number;
@@ -564,6 +567,11 @@ export async function registerCompiledRun(args: {
      *  stamped and pipeline still rides the door. */
     cardId?: string;
     requestBody: Record<string, unknown>;
+    /** THE ADMITTED RECIPE (the F27 cure): the card doc the door
+     *  admitted — envelope lifted, stanza unwrapped by the one lift —
+     *  stamped beside the raw request echo so restore pastes what
+     *  RAN, never a later draft edit. Absent on inline runs. */
+    cardRecipe?: { card: string; params: Record<string, unknown> };
     /** The flow arms' request initials (the start body's values for
      *  the flow's declared initial validators, extracted after the
      *  compile-time gate passed): threaded to the engine merge so
@@ -598,7 +606,7 @@ export async function registerCompiledRun(args: {
     graphReceipts?: Record<string, GraphReceiptStageRow>;
   };
 }): Promise<{ run: RunRecord; queuePosition: number } | StartRefusal> {
-  const { compiled, testFlag, draftId, stateRoot, enqueue, door } = args;
+  const { compiled, testFlag, executeCeilMs, draftId, stateRoot, enqueue, door } = args;
   // THE ONE RUN ID (see the type above): the caller's. There is no
   // second producer here, and there cannot be one without failing the
   // compiler.
@@ -659,6 +667,7 @@ export async function registerCompiledRun(args: {
     draftId,
     dir,
     testFlag,
+    executeCeilMs,
     stopFlag: false,
     params: compiled.stages.map((st: CompiledStage): Record<string, EngineJson> => ({ ...st.params })),
     createdAt,
@@ -713,6 +722,7 @@ export async function registerCompiledRun(args: {
       card: door.cardId,
       params: door.requestBody,
     };
+    if (door.cardRecipe !== undefined) run.cardRecipe = door.cardRecipe;
   }
   if (door.benchDoc !== undefined) {
     const benchStages = Array.isArray(door.benchDoc["stages"])

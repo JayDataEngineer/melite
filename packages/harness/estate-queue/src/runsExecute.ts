@@ -20,8 +20,10 @@ type EngineCtx = Parameters<typeof _ncu>[0];
  *  run strands behind it silently. The fuse races the executor
  *  against dsh-timeout's deadline; the rejection rides the SAME
  *  catch a throwing engine rides (stages failed, settle, release).
- *  The ceiling is the queue config's executeCeilMs (deployment
- *  tunable; `<= 0` arms no timer — the race never rejects; an
+ *  The ceiling is the run's own `execute_ceil_ms` (the F8 burn: a
+ *  whole-film window loop outlasts the deployment default) falling
+ *  back to the queue config's executeCeilMs (deployment tunable;
+ *  `<= 0` arms no timer — the race never rejects; an
  *  undefined read (a minimal test-seat fake) disables the same way).
  *  The abandoned engine promise keeps running; its rejection, if
  *  any, is suppressed here because the run already settled. */
@@ -41,7 +43,7 @@ async function raceExecuteFuse<T>(p: Promise<T>, ceilMs: number | undefined, wha
             reject(new Error(
               "runs/execute-hung: " + what + " exceeded the execute ceiling (" +
               shown +
-              ") — a hung engine call must never strand the serial queue; raise the queue config's executeCeilMs or set it <= 0 to disable",
+              ") — a hung engine call must never strand the serial queue; raise the queue config's executeCeilMs, set it <= 0 to disable, or state the run's own execute_ceil_ms",
             ));
           },
           { once: true },
@@ -427,7 +429,7 @@ export type SettleFn = (run: RunRecord) => void | Promise<void>;
             // `$spells` ignore the record.
             run.initials,
           ),
-          ctx.queue.executeCeilMs,
+          run.executeCeilMs ?? ctx.queue.executeCeilMs,
           "the seat executor",
         );
         result = {
@@ -464,7 +466,7 @@ export type SettleFn = (run: RunRecord) => void | Promise<void>;
             report,
             stateRoots: ctx.queue.stateRoots,
           }),
-          ctx.queue.executeCeilMs,
+          run.executeCeilMs ?? ctx.queue.executeCeilMs,
           "the engine submit",
         );
       }

@@ -111,6 +111,27 @@ describe("walkSubmitEnvelope (the one pre-registration walker, in order)", () =>
     assert.equal(off.kind === "ok" && off.testFlag, false);
     assert.equal(on.kind === "ok" && on.testFlag, true);
   });
+  it("THE PER-RUN CEILING (F8): a non-numeric execute_ceil_ms refuses at the walk, never past it", async () => {
+    for (const bad of ["30min", true, null, Number.NaN, Number.POSITIVE_INFINITY]) {
+      const w = await walkSubmitEnvelope({ draft_id: "d", model: "m", execute_ceil_ms: bad }, ok);
+      assert.equal(w.kind, "refusal");
+      if (w.kind !== "refusal") return;
+      assert.equal(w.refusal.payload["code"], "bad");
+      assert.equal(w.refusal.payload["loc"], "execute_ceil_ms");
+      assert.match(String(w.refusal.payload["error"]), /finite number of milliseconds/);
+    }
+    // absent, positive, and the disabling `<= 0` ride the ok face
+    for (const [doc, want] of [
+      [{ draft_id: "d", model: "m" }, undefined],
+      [{ draft_id: "d", model: "m", execute_ceil_ms: 3_600_000 }, 3_600_000],
+      [{ draft_id: "d", model: "m", execute_ceil_ms: 0 }, 0],
+    ] as const) {
+      const w = await walkSubmitEnvelope(doc, ok);
+      assert.equal(w.kind, "ok");
+      if (w.kind !== "ok") return;
+      assert.equal(w.ceilMs, want);
+    }
+  });
   it("missing or empty draft_id refuses draft_required (CARD BIRTH LAW)", async () => {
     for (const doc of [{ flow: "f" }, { draft_id: "", flow: "f" }, { draft_id: 7, flow: "f" }]) {
       const w = await walkSubmitEnvelope(doc, ok);

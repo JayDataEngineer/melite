@@ -670,6 +670,52 @@ describe("runOne's hung-run fuse (executeCeilMs)", () => {
     await runOne(run, ctx, () => undefined);
     assert.equal(run.status, "completed", "no ceiling, no fuse — the run settles on the executor's own term");
   });
+
+  // ── THE PER-RUN CEILING (the F8 burn, 2026-10-30): a whole-film
+  // window loop outlasts the deployment's 30-min default and the
+  // fuse killed a run whose engine was still finishing windows.
+  // The start body's own `execute_ceil_ms` overrides the config:
+  // a raised ceiling lets the long executor finish, `<= 0` disables
+  // the fuse for this run alone, and the config still governs runs
+  // that state nothing.
+  it("a raised per-run ceiling outlasts the config default (the long executor completes)", async () => {
+    const { ComfyUIWiringService } = await import("@melite/comfyui-cordis");
+    // the config says 25ms; the run states 250ms; the executor takes ~60ms
+    const ctx = await hungCtx(
+      () => new Promise((resolve) => setTimeout(() => {
+        resolve({ stages: [{ stageId: "s", outputs: {}, artifacts: [] }] });
+      }, 60)),
+      25,
+    );
+    new ComfyUIWiringService(ctx).arm(new Set(["X"]), new Map());
+    const run = { ...runWithCard("flow_inline"), executeCeilMs: 250 };
+    await runOne(run, ctx, () => undefined);
+    assert.equal(run.status, "completed", "the run's own ceiling wins over the config default");
+  });
+
+  it("`execute_ceil_ms: 0` disables the fuse for that run — the slow executor still completes", async () => {
+    const { ComfyUIWiringService } = await import("@melite/comfyui-cordis");
+    const ctx = await hungCtx(
+      () => new Promise((resolve) => setTimeout(() => {
+        resolve({ stages: [{ stageId: "s", outputs: {}, artifacts: [] }] });
+      }, 60)),
+      25,
+    );
+    new ComfyUIWiringService(ctx).arm(new Set(["X"]), new Map());
+    const run = { ...runWithCard("flow_inline"), executeCeilMs: 0 };
+    await runOne(run, ctx, () => undefined);
+    assert.equal(run.status, "completed", "the disabled lever arms no timer for this run");
+  });
+
+  it("the run's own ceiling can TIGHTEN a loose config (it is the ceiling, not a floor)", async () => {
+    const { ComfyUIWiringService } = await import("@melite/comfyui-cordis");
+    const ctx = await hungCtx((): Promise<{ stages: [] }> => new Promise(() => {}), 10_000);
+    new ComfyUIWiringService(ctx).arm(new Set(["X"]), new Map());
+    const run = { ...runWithCard("flow_inline"), executeCeilMs: 25 };
+    await runOne(run, ctx, () => undefined);
+    assert.equal(run.status, "failed");
+    assert.ok(String(run.error).includes("25ms"), "the voice renders the run's own ceiling: " + String(run.error));
+  });
 });
 
 // ── THE REPLAY STAMP (D11, 2026-10-11): the executor's seated tap

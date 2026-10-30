@@ -397,6 +397,21 @@ export function noDoorRefusal(): QueueRefusal {
   );
 }
 
+/** THE PER-RUN CEILING VERDICT (the F8 law): `execute_ceil_ms` is a
+ *  finite number (<= 0 disables the fuse) or absent; any other shape
+ *  refuses at the start door — a typo must never silently ride the
+ *  config default past a 30-min kill. */
+export type ExecuteCeilVerdict =
+  | { kind: "ok"; ceilMs: number | undefined }
+  | { kind: "bad"; value: unknown };
+
+export function executeCeilOf(doc: Record<string, unknown>): ExecuteCeilVerdict {
+  const raw: unknown = doc["execute_ceil_ms"];
+  if (raw === undefined) return { kind: "ok", ceilMs: undefined };
+  if (typeof raw !== "number" || !Number.isFinite(raw)) return { kind: "bad", value: raw };
+  return { kind: "ok", ceilMs: raw };
+}
+
 /** THE ONE ENVELOPE WALKER (the S3 twin cure): the structural
  *  faces, the draft probe ordering and the ok face live HERE and
  *  the runs registration delegates — there is no second sync face
@@ -415,6 +430,9 @@ export async function walkSubmitEnvelope(
       body: Record<string, unknown>;
       testFlag: boolean;
       draftId: DraftId;
+      /** The start body's own execute ceiling (absent = the queue
+       *  config decides; <= 0 disables the fuse). */
+      ceilMs: number | undefined;
     }
   | { kind: "refusal"; refusal: QueueRefusal }
 > {
@@ -428,8 +446,32 @@ export async function walkSubmitEnvelope(
   if (!(await draftExists(draftId))) {
     return { kind: "refusal", refusal: unknownDraftRefusal(draftId) };
   }
+  // THE PER-RUN CEILING REFUSAL (the F8 burn): the shape is judged at
+  // THE ONE WALKER every start crosses — a malformed lever never
+  // rides the queue config default into a long run's kill.
+  const ceil = executeCeilOf(body);
+  if (ceil.kind === "bad") {
+    return {
+      kind: "refusal",
+      refusal: refusal(
+        400,
+        "execute_ceil_ms must be a finite number of milliseconds (<= 0 disables the hung-run fuse) — got " +
+          JSON.stringify(ceil.value),
+        "bad",
+        "execute_ceil_ms",
+        "finite number | <= 0",
+        typeof ceil.value,
+      ),
+    };
+  }
   // (one-seat law §7 P7 F-1: the flag resolves ONLY through the
   // named seat — the structural face above already refused
   // non-bool, so the seat's unknown is boolean on this domain.)
-  return { kind: "ok", body, testFlag: resolveTestFlag(body) as boolean, draftId };
+  return {
+    kind: "ok",
+    body,
+    testFlag: resolveTestFlag(body) as boolean,
+    draftId,
+    ceilMs: ceil.ceilMs,
+  };
 }

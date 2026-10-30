@@ -202,6 +202,7 @@ function sidecarFacesOf(run) {
         // re-renders the document from the row — the snapshots stamped
         // at registration ride along, never wiped.
         cardSnapshot: run.cardSnapshot,
+        cardRecipe: run.cardRecipe,
         benchSnapshot: run.benchSnapshot,
         // F-6(b): the admission warnings ride every rewrite too (a disk
         // row keeps what the live row warned).

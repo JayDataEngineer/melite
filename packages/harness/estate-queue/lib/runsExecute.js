@@ -10,8 +10,10 @@ import { engineFilmName } from "./filmLead.js";
  *  run strands behind it silently. The fuse races the executor
  *  against dsh-timeout's deadline; the rejection rides the SAME
  *  catch a throwing engine rides (stages failed, settle, release).
- *  The ceiling is the queue config's executeCeilMs (deployment
- *  tunable; `<= 0` arms no timer — the race never rejects; an
+ *  The ceiling is the run's own `execute_ceil_ms` (the F8 burn: a
+ *  whole-film window loop outlasts the deployment default) falling
+ *  back to the queue config's executeCeilMs (deployment tunable;
+ *  `<= 0` arms no timer — the race never rejects; an
  *  undefined read (a minimal test-seat fake) disables the same way).
  *  The abandoned engine promise keeps running; its rejection, if
  *  any, is suppressed here because the run already settled. */
@@ -28,7 +30,7 @@ async function raceExecuteFuse(p, ceilMs, what) {
                         : Math.round(ceil / 60_000) + " min";
                     reject(new Error("runs/execute-hung: " + what + " exceeded the execute ceiling (" +
                         shown +
-                        ") — a hung engine call must never strand the serial queue; raise the queue config's executeCeilMs or set it <= 0 to disable"));
+                        ") — a hung engine call must never strand the serial queue; raise the queue config's executeCeilMs, set it <= 0 to disable, or state the run's own execute_ceil_ms"));
                 }, { once: true });
             }),
         ]);
@@ -375,7 +377,7 @@ export async function runOne(run, ctx, settle) {
             // flow's declared initials, so `$spell` params resolve at
             // the engine's merge. Engines whose param dialect has no
             // `$spells` ignore the record.
-            run.initials), ctx.queue.executeCeilMs, "the seat executor");
+            run.initials), run.executeCeilMs ?? ctx.queue.executeCeilMs, "the seat executor");
             result = {
                 stages: Object.fromEntries(outcome.stages.map((s) => [
                     s.stageId,
@@ -401,7 +403,7 @@ export async function runOne(run, ctx, settle) {
                 shouldStop,
                 report,
                 stateRoots: ctx.queue.stateRoots,
-            }), ctx.queue.executeCeilMs, "the engine submit");
+            }), run.executeCeilMs ?? ctx.queue.executeCeilMs, "the engine submit");
         }
         // THE PROMPT STAMP (P1): the executed prompt's id folds onto
         // the receipt here — the seat path carried it on the merged

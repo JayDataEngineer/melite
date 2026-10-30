@@ -91,6 +91,12 @@ export interface RunRecord {
    *  Empty for runs whose flow declares no initials and for a
    *  failed resurrect's floor row. */
   initials: Record<string, EngineJson>;
+  /** THE PER-RUN EXECUTE CEILING (the F8 burn): the start body's own
+   *  `execute_ceil_ms` overrides the queue config for THIS run —
+   *  `<= 0` disables the fuse (a whole-film window loop outlasts the
+   *  deployment default; a 30-min kill stranded finished windows
+   *  engine-side). Absent = the queue config's value. */
+  executeCeilMs?: number;
   /** The FILE-kind subset of initials' keys (photo | glb — the
    *  kinds whose values must exist on disk), stamped beside
    *  initials so the claim-time re-probe knows which entries to
@@ -122,6 +128,12 @@ export interface RunRecord {
    *  living bench. Stamped at registration, carried through settle
    *  (the settle rewrite must not wipe it). */
   cardSnapshot?: unknown;
+  /** THE RUN'S OWN RECIPE (the F27 cure, 2026-10-30): the card doc
+   *  the press ADMITTED — envelope lifted, the `params` stanza
+   *  unwrapped by the one lift (`liftCardParams`) — so restore can
+   *  paste exactly what ran. `cardSnapshot` keeps the raw request
+   *  echo (envelope + stanza in place); this is the loader shape. */
+  cardRecipe?: { card: string; params: Record<string, unknown> };
   /** THE BENCH SNAPSHOT (stroke 45d): the full workflow as it stood
    *  at Run press ({stages, intent}) — same carry law as the card
    *  snapshot. */
@@ -389,6 +401,7 @@ function sidecarFacesOf(run: RunRecord): {
   pipeline: string;
   graph: GraphRow[];
   cardSnapshot: unknown;
+  cardRecipe: { card: string; params: Record<string, unknown> } | undefined;
   benchSnapshot: unknown;
   warnings: string[] | undefined;
   composeEcho: { seam: string; calls: number; benchRev: number | null } | undefined;
@@ -417,6 +430,7 @@ function sidecarFacesOf(run: RunRecord): {
     // re-renders the document from the row — the snapshots stamped
     // at registration ride along, never wiped.
     cardSnapshot: run.cardSnapshot,
+    cardRecipe: run.cardRecipe,
     benchSnapshot: run.benchSnapshot,
     // F-6(b): the admission warnings ride every rewrite too (a disk
     // row keeps what the live row warned).

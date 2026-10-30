@@ -166,6 +166,7 @@ export declare function sidecarDoc(args: {
      *  card + bench that ran. Absent when unstamped (inline runs)
      *  the pinned prefix above never shifts. */
     cardSnapshot?: unknown;
+    cardRecipe?: unknown;
     benchSnapshot?: unknown;
     /** F-6(b) ADMISSION WARNINGS (the film lane's VRAM-pressure
      *  warn): the status row spells it `warnings` too — one spelling

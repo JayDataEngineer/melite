@@ -409,7 +409,7 @@ export function selectSubmitDoor(body, opts = {}) {
  *  (the remote) enqueues it on the queue core + kicks the pump.
  *  Returns the row and its queue position. */
 export async function registerCompiledRun(args) {
-    const { compiled, testFlag, draftId, stateRoot, enqueue, door } = args;
+    const { compiled, testFlag, executeCeilMs, draftId, stateRoot, enqueue, door } = args;
     // THE ONE RUN ID (see the type above): the caller's. There is no
     // second producer here, and there cannot be one without failing the
     // compiler.
@@ -466,6 +466,7 @@ export async function registerCompiledRun(args) {
         draftId,
         dir,
         testFlag,
+        executeCeilMs,
         stopFlag: false,
         params: compiled.stages.map((st) => ({ ...st.params })),
         createdAt,
@@ -520,6 +521,8 @@ export async function registerCompiledRun(args) {
             card: door.cardId,
             params: door.requestBody,
         };
+        if (door.cardRecipe !== undefined)
+            run.cardRecipe = door.cardRecipe;
     }
     if (door.benchDoc !== undefined) {
         const benchStages = Array.isArray(door.benchDoc["stages"])

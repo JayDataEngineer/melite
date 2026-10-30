@@ -357,6 +357,7 @@ export function sidecarDoc(args: {
    *  card + bench that ran. Absent when unstamped (inline runs)
    *  the pinned prefix above never shifts. */
   cardSnapshot?: unknown;
+  cardRecipe?: unknown;
   benchSnapshot?: unknown;
   /** F-6(b) ADMISSION WARNINGS (the film lane's VRAM-pressure
    *  warn): the status row spells it `warnings` too — one spelling
@@ -452,6 +453,9 @@ export function sidecarDoc(args: {
     artifacts: [...args.artifacts],
     graph: args.graph,
     ...(args.cardSnapshot !== undefined ? { card_snapshot: args.cardSnapshot } : {}),
+    // THE RECIPE (the F27 cure): the admitted card doc — envelope
+    // lifted, stanza unwrapped — rides beside the raw request echo.
+    ...(args.cardRecipe !== undefined ? { card_recipe: args.cardRecipe } : {}),
     ...(args.benchSnapshot !== undefined ? { bench_snapshot: args.benchSnapshot } : {}),
     ...(args.warnings !== undefined && args.warnings.length > 0 ? { warnings: [...args.warnings] } : {}),
     ...(args.composeEcho !== undefined ? { compose_echo: args.composeEcho } : {}),

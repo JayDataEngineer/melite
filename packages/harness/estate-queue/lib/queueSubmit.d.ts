@@ -109,6 +109,18 @@ export declare function submitDoorsOf(body: Record<string, unknown>): string[];
 export declare function ambiguousDoorsRefusal(doors: string[]): QueueRefusal;
 /** The no-door refusal (text is the wire contract). */
 export declare function noDoorRefusal(): QueueRefusal;
+/** THE PER-RUN CEILING VERDICT (the F8 law): `execute_ceil_ms` is a
+ *  finite number (<= 0 disables the fuse) or absent; any other shape
+ *  refuses at the start door — a typo must never silently ride the
+ *  config default past a 30-min kill. */
+export type ExecuteCeilVerdict = {
+    kind: "ok";
+    ceilMs: number | undefined;
+} | {
+    kind: "bad";
+    value: unknown;
+};
+export declare function executeCeilOf(doc: Record<string, unknown>): ExecuteCeilVerdict;
 /** THE ONE ENVELOPE WALKER (the S3 twin cure): the structural
  *  faces, the draft probe ordering and the ok face live HERE and
  *  the runs registration delegates — there is no second sync face
@@ -123,6 +135,9 @@ export declare function walkSubmitEnvelope(doc: unknown, draftExists: (draftId: 
     body: Record<string, unknown>;
     testFlag: boolean;
     draftId: DraftId;
+    /** The start body's own execute ceiling (absent = the queue
+     *  config decides; <= 0 disables the fuse). */
+    ceilMs: number | undefined;
 } | {
     kind: "refusal";
     refusal: QueueRefusal;

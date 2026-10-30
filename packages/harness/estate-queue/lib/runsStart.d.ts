@@ -87,6 +87,9 @@ export declare function registerCompiledRun(args: {
         stages: CompiledStage[];
     };
     testFlag: boolean;
+    /** The start body's own execute ceiling (the F8 burn; absent = the
+     *  queue config decides). */
+    executeCeilMs?: number;
     draftId: DraftId;
     stateRoot: string;
     enqueue: (row: {
@@ -133,6 +136,14 @@ export declare function registerCompiledRun(args: {
          *  stamped and pipeline still rides the door. */
         cardId?: string;
         requestBody: Record<string, unknown>;
+        /** THE ADMITTED RECIPE (the F27 cure): the card doc the door
+         *  admitted — envelope lifted, stanza unwrapped by the one lift —
+         *  stamped beside the raw request echo so restore pastes what
+         *  RAN, never a later draft edit. Absent on inline runs. */
+        cardRecipe?: {
+            card: string;
+            params: Record<string, unknown>;
+        };
         /** The flow arms' request initials (the start body's values for
          *  the flow's declared initial validators, extracted after the
          *  compile-time gate passed): threaded to the engine merge so
