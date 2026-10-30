@@ -265,4 +265,25 @@ describe("every served mod bag has a skill leaf an agent can read", () => {
     assert.match(md, /visible step at the join|step at the join/i,
       "the extend leaf states the verdict in words");
   });
+
+  it("ARM 9 — loras and upscale name their OPEN halves instead of promising them", () => {
+    // F34b (the default seat) and F34 (the invisible chip) are OPEN
+    // decisions, not settled law: the leaf must say so, and it must
+    // not tell an agent to invent a row it did not mean to use.
+    const loras = readSkill("loras");
+    assert.match(loras, /## Worked stacks/, "the loras leaf carries worked stacks");
+    assert.match(loras, /params\.loras = \[/, "the stacks bind through params.loras");
+    assert.match(loras, /F34b/, "the leaf names the default-seat decision as OPEN");
+    assert.match(loras, /do not "fix"\s+it by inventing a row/i,
+      "the leaf forbids inventing a row to make the chip appear");
+    // F23's open half: the upscale door refuses cleanly, and the leaf
+    // says nothing writes checkpoints today — never a promise.
+    const upscale = readSkill("upscale");
+    assert.match(upscale, /DEAD PAST THE DOOR/,
+      "the upscale leaf says the door dies past its validation");
+    assert.match(upscale, /nothing in the tree WRITES per-scene[\s>]+revisions/i,
+      "the upscale leaf names the missing writer");
+    assert.match(upscale, /Do not promise an upscale/,
+      "the upscale leaf forbids the promise");
+  });
 });

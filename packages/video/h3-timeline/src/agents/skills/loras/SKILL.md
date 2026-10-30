@@ -68,6 +68,44 @@ It is NOT:
 4. **Press.** The user presses Run. Browser/chat agents never execute;
    headless commissions ride `melite_flow` per the maker runbook.
 
+## Worked stacks (the shapes that ship)
+
+The speed row alone (the shape most film presses carry today — the
+composed seat is 0.6 in every measured good film):
+
+    params.loras = [
+      { id: 'h3_lightx2v_turbo', strength: 0.6, steps: 0 },
+    ]
+
+Speed + accuracy together (two rows, stack order is load order):
+
+    params.loras = [
+      { id: 'h3_lightx2v_turbo', strength: 0.6, steps: 0 },
+      { id: 'h3_acc8_fl2va', strength: 0.5, steps: 0 },
+    ]
+
+Steps 0 is the sane default: it marries each row to its designed step
+count. State a number only when the schedule must bend — a distill row
+told 4 steps behaves differently from the same row told 8.
+
+## The default seat — an OPEN decision (F34b)
+
+An EMPTY bag still applies a distill row. The code resolves
+'h3_lightx2v_turbo' as the absent-bag default, while its own comment
+and the 2026-11-12 operator law name the Larry+LightX2V merge row
+'h3_turbo8_v1' (strength 1, 8 steps, shift 12) as the default seat. The
+split is open as F34b. Until it is settled: state the row you actually
+want instead of relying on either default, and record in the run what
+the graph composed.
+
+## A card with no bag shows no chip (F34)
+
+An agent-authored card that never wrote a `loras` entry renders ZERO
+chips in the studio, so the row the render uses is invisible to the
+operator. That is a surface gap, not an authoring error — do not "fix"
+it by inventing a row you did not mean to use; if the operator needs
+to see the row, write the row explicitly.
+
 ## Where it lands
 
 `h3LoraStackOf(p)` serializes the bag into `LTX_lora_loader`'s

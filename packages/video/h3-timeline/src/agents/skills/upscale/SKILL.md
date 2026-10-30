@@ -26,6 +26,19 @@ genre: video
 > carries chain checkpoints yet (every film so far is single-pass), so
 > the loop's own output is unproven until a chain-route film is pressed
 > and this arm re-presses on top of it.
+>
+> DOOR STATUS 2026-11-13 — DEAD PAST THE DOOR, with the receipt: the
+> press that validated (run-10100e3da0e2-8c6108ab) then died INSIDE the
+> graph at `MiniMaxH3ChainCheckpointManager` with
+> `json.decoder.JSONDecodeError: Expecting value: line 1 column 1
+> (char 0)` — the node read a selection file the estate never wrote.
+> Round 8 made the door REFUSE cleanly instead of submitting into that
+> burn, which is right — but nothing in the tree WRITES per-scene
+> revisions yet, so no press can succeed today. The cure is the chain
+> store's write side (save a chain run with revisions and reachable
+> manifest), not this doc. Do not promise an upscale until a store
+> entry exists; check the run's own artifacts for a manifest before
+> binding.
 
 ## What it is (and is NOT)
 
