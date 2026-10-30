@@ -41,6 +41,7 @@
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import type { H3Facts } from './actions.js'
 import { loadVideo, renderMaskedEditChain } from './chainEdit.js'
+import { assertGridLength } from './timelineContract.js'
 
 /** The SAM3 checkpoint the mask family declares + hash-pins
  * (packages/models/mask/src/index.ts — auto-provisioned; the track
@@ -104,6 +105,13 @@ export function renderH3Repair(
   const windowLength = num(entry, 'window_length', 0)
   // No silent clamps (the no-silent-repair law): a negative window
   // is a caller bug — refuse loud, never round it into a render.
+  // F3 — THE GRID LAW ON THE WINDOW (2026-11-13): the plan's scene
+  // geometry is 22+17k frames, and the mask tracks the WINDOW the
+  // loader cuts. An off-grid window length makes the tracked mask
+  // stack disagree with the plan's own intervals — the operator's
+  // trial-and-error burn — so a STATED length refuses at the compose
+  // door naming the nearest legal grid point, never engine-side.
+  if (windowLength > 0) assertGridLength(Math.round(windowLength), 'h3-timeline repair window_length')
   if (windowStart < 0 || windowLength < 0) {
     throw new Error(
       `h3-timeline repair: window_start ${windowStart} / window_length ${windowLength} — a window seat never goes negative (frames at the film clock, 24 fps; 0/0 is the whole clip)`,

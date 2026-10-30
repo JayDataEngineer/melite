@@ -244,7 +244,7 @@ describe("the repair kind", () => {
 
   it("a stated denoise + grow + window stamp their seats (seats, not shadows)", () => {
     const walked = def.schema({
-      repair: [{ ...REPAIR_ENTRY(), denoise: 0.25, mask_grow: 0, window_start: 48, window_length: 120 }],
+      repair: [{ ...REPAIR_ENTRY(), denoise: 0.25, mask_grow: 0, window_start: 48, window_length: 124 }],
     }) as Record<string, unknown>;
     const g = new GraphBuilder();
     def.compose(walked, model, g, "run_repair_stated");
@@ -253,9 +253,19 @@ describe("the repair kind", () => {
     assert.equal(ofClass(out, 'GrowMaskWithBlur')[0]![1].inputs.expand, 0, "a stated grow 0 stamps the grow seat (the seam-ring test posture)");
     const vhs = ofClass(out, 'VHS_LoadVideo')[0]![1].inputs;
     assert.equal(vhs.skip_first_frames, 48, "VHS skips to the window head");
-    assert.equal(vhs.frame_load_cap, 120, "VHS caps at the window length");
+    assert.equal(vhs.frame_load_cap, 124, "VHS caps at the window length");
     assert.equal(ofClass(out, 'MiniMaxH3SourceTimeline')[0]![1].inputs.skip_first_frames, 48,
       "the timeline maps the same window (both loaders stamped identically)");
+  });
+
+  it("F3: the served window_length tooltip states the 22+17k grid the compose enforces", () => {
+    const kind = ((def as unknown as { mods: Array<Record<string, unknown>> }).mods)
+      .find((k) => k.kind === "repair")!
+    const fields = ((kind.fields ?? []) as Array<{ name: string; tooltip?: string }>)
+    const seat = fields.find((f) => f.name === "window_length")!
+    assert.ok(seat, "the repair kind serves the window_length seat")
+    assert.match(String(seat.tooltip), /22\+17k/, "the tooltip names the engine grid");
+    assert.match(String(seat.tooltip), /nearest legal/i, "the tooltip states the refusal, not just a range");
   });
 
   it("the entry scalars stamp the plan head verbatim (the reference operating point)", () => {

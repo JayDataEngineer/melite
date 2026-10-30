@@ -157,14 +157,23 @@ describe("renderH3Repair as a library (the bypass face)", () => {
     );
   });
 
+  it("F3: a stated window length must land on the 22+17k engine grid (nearest legal named, never trial-and-error)", () => {
+    assert.throws(
+      () => renderH3Repair({ ...ENTRY(), window_length: 120 }, {}, FACTS, new GraphBuilder(), "run_lib_grid"),
+      /window_length: length 120f is off-grid.*nearest legal: 124f/,
+    );
+    // 141 is ON the grid (22 + 17·7) — the burn-lived repair window
+    renderH3Repair({ ...ENTRY(), window_length: 141 }, {}, FACTS, new GraphBuilder(), "run_lib_grid_ok");
+  });
+
   it("stamps the window on both loaders identically (frames + audio + timeline stay in sync)", () => {
     const g = new GraphBuilder();
-    renderH3Repair({ ...ENTRY(), window_start: 48, window_length: 120 }, {}, FACTS, g, "run_lib_window");
+    renderH3Repair({ ...ENTRY(), window_start: 48, window_length: 124 }, {}, FACTS, g, "run_lib_window");
     const o = out(g);
     const vhs = ofClass(o, "VHS_LoadVideo");
     assert.equal(vhs.length, 1, "one windowed VHS loader");
     assert.equal(vhs[0]![1].inputs.skip_first_frames, 48, "VHS skips to the window head");
-    assert.equal(vhs[0]![1].inputs.frame_load_cap, 120, "VHS caps at the window length");
+    assert.equal(vhs[0]![1].inputs.frame_load_cap, 124, "VHS caps at the window length");
     const timeline = ofClass(o, "MiniMaxH3SourceTimeline");
     assert.equal(timeline[0]![1].inputs.skip_first_frames, 48,
       "the timeline maps the chain onto the SAME window (both loaders stamped identically)");
