@@ -84,11 +84,34 @@ export declare function h3RequeueRowOf(entry: Record<string, EngineJson>): H3Req
 /** Whether the entry is a chain's FINAL prompt (the pack emits
  * `h3_chain_top_level_complete` only when the last scene lands). */
 export declare function h3ChainCompleteOf(entry: Record<string, EngineJson>): boolean;
-/** Patch the stored graph's LoopStart to the owed scene: start_clip
- * is the scene the handoff names, scene_range the range it carries
- * (absent view fields leave the stored input untouched). Returns a
- * FRESH graph object — the staged original is never mutated (each
- * re-submission derives from it again). */
+/** A selection_json spelling that names a run instead of authoring a
+ * lineage — the estate's compose door emits the bare name and the
+ * execute door resolves it against the engine's chain store (the
+ * browser UI's serialized spellings pass through untouched). */
+export declare function isBareChainRunName(value: EngineJson): boolean;
+/** The selection the CheckpointManager's parser wants for a run's
+ * newest revision per scene (the parser demands contiguous scenes from
+ * 1 and the tip scene equal the lineage length — the listing's sorted
+ * enumeration is exactly that shape). */
+export declare function chainSelectionOf(runName: string, scenes: Array<{
+    scene: number;
+    latest: string;
+}>): string;
+/** Resolve every CheckpointManager's bare run-name selection_json into
+ * a full newest-per-scene lineage (the F19 deferred-upscale discovery
+ * seat): GET /melite/h3-chain-checkpoints on this engine, one call per
+ * DISTINCT name, rewrite in place on a fresh graph. A graph with no
+ * bare spellings makes zero traffic (the additive law); an unknown run
+ * refuses loud naming the live ones — the engine's own store is the
+ * only truth for what a hand-authored graph may resume. */
+export declare function resolveH3ChainSelections(client: Client, graph: Record<string, EngineJson>): Promise<Record<string, EngineJson>>;
+/** Patch the stored graph's loop start to the owed scene. Two families
+ * share this door: the scene chain's MiniMaxH3ChainLoopStart (start_clip
+ * + scene_range) and the deferred upscale loop's MiniMaxH3ChainUpscaleAdapter
+ * (start_clip only — the adapter validates as that family's chain start
+ * and carries no scene_range seat). Absent view fields leave the stored
+ * input untouched. Returns a FRESH graph object — the staged original is
+ * never mutated (each re-submission derives from it again). */
 export declare function patchChainLoopStart(graph: Record<string, EngineJson>, view: Record<string, EngineJson>): Record<string, EngineJson>;
 /** The driver loop — see executeSingleInner's call site. Each scene:
  * claim (exactly-once; a 409 means another coordinator holds the

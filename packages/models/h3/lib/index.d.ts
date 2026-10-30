@@ -7,6 +7,7 @@ export { renderH3Swap } from "./swap.js";
 export { renderH3Repair } from "./repair.js";
 export { renderH3Extend } from "./extend.js";
 export { refineArmed, renderH3Refine, REFINE_UPSCALE_MODEL } from "./refine.js";
+export { upscaleArmed, renderH3ChainUpscale } from "./chainUpscale.js";
 export { reshootArmed } from "./reshoot.js";
 export { RESOLUTION_SHORT_EDGE, planTierShape, admitCrossRegimeJoin, } from "./chainEdit.js";
 export { assertOverlayGated } from "./actions.js";

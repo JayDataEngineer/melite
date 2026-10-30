@@ -90,10 +90,14 @@ engine-side from the entry scalars.
   branch returns before the film action, so the reshoot would be
   silently dropped), Replace↔Refine / Repair↔Refine /
   Extend↔Refine / Reshoot↔Refine (the refine branch returns before
-  the film action, so the reshoot would be silently dropped), and
+  the film action, so the reshoot would be silently dropped),
+  Replace↔Upscale / Repair↔Upscale / Extend↔Upscale /
+  Refine↔Upscale / Reshoot↔Upscale (the upscale branch — the
+  whole-film deferred 2x loop over a prior chain run — also returns
+  before the film action), and
   Replace↔Repair / Replace↔Extend / Repair↔Extend (two edit arms
   would race for one emission). Empty the other arms; the refusals
-  are pinned by the replace-mod and extend-mod specs.
+  are pinned by the replace-mod, extend-mod, and upscale-mod specs.
 - State only parameters the loaded bundles declare. Entry field
   names above are quoted off `card.ts` (`REPLACE_MOD`); re-verify
   against the kind after any card edit.

@@ -49,25 +49,29 @@ describe("the h3-timeline compose gate", () => {
     // the estate refuse every swap with `expects * as SaveVideo,
     // got missing`.
     const bindings = [...(def.flowOutputBindings ?? [])];
-    // FOUR conditional doors (the extend arm's law, 2026-11-12; the
-    // refine arm, 2026-10-29): film (SaveVideo, the graph terminal)
-    // vs swap/repair (MiniMaxH3ChainAssemble) vs extend (the
-    // joined-film SaveVideo — no ChainAssemble: its `_final.mp4`
-    // name is not a prefix the concat can glob) vs refine (the
-    // second-pass SaveVideo).
-    assert.equal(bindings.length, 4, "four conditional doors: film vs swap/repair vs extend vs refine");
+    // FIVE conditional doors (the extend arm's law, 2026-11-12; the
+    // refine arm, 2026-10-29; the upscale arm, F19 2026-11-12): film
+    // (SaveVideo, the graph terminal) vs swap/repair
+    // (MiniMaxH3ChainAssemble) vs extend (the joined-film SaveVideo —
+    // no ChainAssemble: its `_final.mp4` name is not a prefix the
+    // concat can glob) vs refine (the second-pass SaveVideo) vs
+    // upscale (the deferred loop's ChainAssemble at <runId>/upscale).
+    assert.equal(bindings.length, 5, "five conditional doors: film vs swap/repair vs extend vs refine vs upscale");
     const film = bindings.find((b) => b.nodeClass === "SaveVideo" && b.when!({}));
-    const swap = bindings.find((b) => b.nodeClass === "MiniMaxH3ChainAssemble");
+    const swap = bindings.find((b) => b.nodeClass === "MiniMaxH3ChainAssemble" && b.when!({ replace: [{ source_clip: "c" }] }));
     const extend = bindings.find((b) => b.nodeClass === "SaveVideo" && b.when!({ extend: [{ source_clip: "c" }] }));
     const refine = bindings.find((b) => b.nodeClass === "SaveVideo" && b.when!({ refine: [{ source_clip: "c" }] }));
+    const upscale = bindings.find((b) => b.nodeClass === "MiniMaxH3ChainAssemble" && b.when!({ upscale: [{ chain_run: "r" }] }));
     assert.ok(film?.when, "the film door is conditional");
     assert.ok(swap?.when, "the swap door is conditional");
     assert.ok(extend?.when, "the extend door is conditional");
     assert.ok(refine?.when, "the refine door is conditional");
+    assert.ok(upscale?.when, "the upscale door is conditional");
     assert.equal(film.when!({}), true, "empty params ride the film door");
     assert.equal(film.when!({ replace: [{ source_clip: "c" }] }), false, "an armed bag leaves the film door");
     assert.equal(film.when!({ extend: [{ source_clip: "c" }] }), false, "an armed extend bag leaves the film door");
     assert.equal(film.when!({ refine: [{ source_clip: "c" }] }), false, "an armed refine bag leaves the film door");
+    assert.equal(film.when!({ upscale: [{ chain_run: "r" }] }), false, "an armed upscale bag leaves the film door");
     assert.equal(swap.when!({}), false, "empty params leave the swap door");
     assert.equal(swap.when!({ replace: [{ source_clip: "c" }] }), true, "an armed bag rides the swap door");
     assert.equal(swap.when!({ extend: [{ source_clip: "c" }] }), false, "an armed extend bag never rides the swap door");
@@ -80,6 +84,10 @@ describe("the h3-timeline compose gate", () => {
     assert.equal(refine.when!({ refine: [{ source_clip: "c" }] }), true, "an armed refine bag rides the refine door");
     assert.equal(refine.when!({ replace: [{ source_clip: "c" }] }), false, "an armed replace bag never rides the refine door");
     assert.equal(refine.when!({ extend: [{ source_clip: "c" }] }), false, "an armed extend bag never rides the refine door");
+    assert.equal(upscale.when!({}), false, "empty params leave the upscale door");
+    assert.equal(upscale.when!({ upscale: [{ chain_run: "r" }] }), true, "an armed upscale bag rides the upscale door");
+    assert.equal(upscale.when!({ replace: [{ source_clip: "c" }] }), false, "an armed replace bag never rides the upscale door (the two assemble doors are disjoint)");
+    assert.equal(swap.when!({ upscale: [{ chain_run: "r" }] }), false, "an armed upscale bag never rides the swap door (the two assemble doors are disjoint)");
     // SLICE 1: keyframes joined the JSON row contract (the any-frame
     // pin bus) — the census grows WITH the behavior, and the new
     // container refusal is judged in the same arm.

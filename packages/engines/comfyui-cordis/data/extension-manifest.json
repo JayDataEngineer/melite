@@ -161,7 +161,7 @@
   {
     "name": "melite-utility-nodes",
     "url": "https://github.com/JayDataEngineer/melite-utility-nodes",
-    "ref": "555f12ec70e8f3e7762b7554e1739c6e7875efce",
+    "ref": "7ba44fb6b59b18f6f16389656e676f2790c44ecb",
     "required": true,
     "desc": "MeliteUnload / MeliteConcatVideos — the film's window-save boundary and video join; ConcatVideos' optional append seats an exact wired saved-file as the join's last member (the multi-window extend compose face, 2026-11-12). The card already requires this pack; no manifest installed it (extension census, 2026-10-13).",
     "pip": [],

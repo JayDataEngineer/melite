@@ -911,6 +911,14 @@ export class ComfyUIService extends Service {
         // shape; the service still assembles nothing.
         if (!Array.isArray(merged.refine))
             delete merged.refine;
+        // THE SIXTH BAG (F19, the whole-film deferred upscale): the same
+        // one-owner law — the service assembles no `upscale` key; the
+        // card's own ARRAY bag passes through to the card door untouched
+        // (renderH3ChainUpscale validates the seats and owns the
+        // emission), and any non-array spelling is deleted, never
+        // honored.
+        if (!Array.isArray(merged.upscale))
+            delete merged.upscale;
         // CONTROLNET WIRE RESOLUTION (the z-image restoration — the
         // type/model split, the LoRA law above): the leaf emits
         // catalog-keyed rows ({type, strength, ...} — model + preprocessor

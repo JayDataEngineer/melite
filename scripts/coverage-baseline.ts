@@ -513,6 +513,13 @@ export const COVERAGE_BASELINE: Record<string, {
   // full surface incl. the RefineHandoff 2x emission), measured
   // 100x4: 28/28 statements, 10/10 branches, 3/3 functions.
   '**/packages/models/h3/src/refine.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  // h3 F19 deferred ChainUpscale loop (2026-11-12): first seat at the
+  // scoped json-summary face (models/h3 tests/chainUpscale.spec.ts
+  // drives renderH3ChainUpscale's own door — the full loop compose,
+  // the bare-name head, the recipe defaults, both refusals, and the
+  // upscaleArmed predicate), measured 100x4: 32/32 statements,
+  // 12/12 branches, 4/4 functions.
+  '**/packages/models/h3/src/chainUpscale.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/h3/src/schema.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/h3/src/timelineContract.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/input/src/actions.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },

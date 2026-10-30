@@ -614,10 +614,16 @@ export async function executeSingleInner(
   // before uploadReferenced so a refused run moves no bytes.
   await gateVramForStage(server, params, client);
   const staged = await uploadReferenced(client, wf, { runsRoot: dirname(String(runDir)), stateRoots: opts.stateRoots });
+  // THE CHAIN-SELECTION DOOR (F19): a CheckpointManager carrying a
+  // bare run name resolves its newest-per-scene lineage from the
+  // engine's own chain store before submit — headless graphs resume
+  // runs without a browser-authored selection_json. Zero bare
+  // spellings, zero traffic (the additive law).
+  const resolvedGraph = await resolveH3ChainSelections(client, staged.graph);
   const timeoutS: number = normalizeTimeoutS(params["timeout_s"]);
   let deadline: number = Date.now() + timeoutS * 1000;
   const { promptId: firstPromptId, clientId } = await withBound(
-    () => submitPrompt(client, staged.graph),
+    () => submitPrompt(client, resolvedGraph),
     SUBMIT_BOUND_MS,
     "POST /prompt",
   );
@@ -654,7 +660,7 @@ export async function executeSingleInner(
     // answers `h3_chain_top_level_complete`; outputs then harvest
     // from the FINAL entry (the film assembles only there). Every
     // non-chain graph carries no row and skips this loop untouched.
-    entry = await driveH3ChainRequeue(client, entry, staged.graph, {
+    entry = await driveH3ChainRequeue(client, entry, resolvedGraph, {
       report: opts.report,
       shouldStop: opts.shouldStop,
       deadline: (): number => {
@@ -772,19 +778,106 @@ export function h3ChainCompleteOf(entry: Record<string, EngineJson>): boolean {
   return outputRowsOf(entry, "h3_chain_top_level_complete").length > 0;
 }
 
-/** Patch the stored graph's LoopStart to the owed scene: start_clip
- * is the scene the handoff names, scene_range the range it carries
- * (absent view fields leave the stored input untouched). Returns a
- * FRESH graph object — the staged original is never mutated (each
- * re-submission derives from it again). */
+/** A selection_json spelling that names a run instead of authoring a
+ * lineage — the estate's compose door emits the bare name and the
+ * execute door resolves it against the engine's chain store (the
+ * browser UI's serialized spellings pass through untouched). */
+export function isBareChainRunName(value: EngineJson): boolean {
+  return typeof value === "string" && value !== "" && !value.startsWith("{");
+}
+
+/** The selection the CheckpointManager's parser wants for a run's
+ * newest revision per scene (the parser demands contiguous scenes from
+ * 1 and the tip scene equal the lineage length — the listing's sorted
+ * enumeration is exactly that shape). */
+export function chainSelectionOf(
+  runName: string,
+  scenes: Array<{ scene: number; latest: string }>,
+): string {
+  return JSON.stringify({
+    run_name: runName,
+    lineage: scenes.map((s): { scene: number; revision: string } =>
+      ({ scene: s.scene, revision: s.latest })),
+    output_scope: "project",
+  });
+}
+
+/** Resolve every CheckpointManager's bare run-name selection_json into
+ * a full newest-per-scene lineage (the F19 deferred-upscale discovery
+ * seat): GET /melite/h3-chain-checkpoints on this engine, one call per
+ * DISTINCT name, rewrite in place on a fresh graph. A graph with no
+ * bare spellings makes zero traffic (the additive law); an unknown run
+ * refuses loud naming the live ones — the engine's own store is the
+ * only truth for what a hand-authored graph may resume. */
+export async function resolveH3ChainSelections(
+  client: Client,
+  graph: Record<string, EngineJson>,
+): Promise<Record<string, EngineJson>> {
+  const seats: Array<[string, string]> = [];
+  for (const [id, node] of Object.entries(graph)) {
+    const row = node as Record<string, EngineJson> | null;
+    if (row?.["class_type"] !== "MiniMaxH3ChainCheckpointManager") continue;
+    const inputs = row["inputs"] as Record<string, EngineJson> | undefined;
+    const selection = inputs?.["selection_json"];
+    if (typeof selection === "string" && isBareChainRunName(selection)) seats.push([id, selection]);
+  }
+  if (seats.length === 0) return graph;
+  const fetched = new Map<string, string>();
+  for (const runName of [...new Set(seats.map(([, name]): string => name))]) {
+    const res = await withBound(
+      (): Promise<Response> =>
+        client.fetchApi(`/melite/h3-chain-checkpoints?run=${encodeURIComponent(runName)}`),
+      SUBMIT_BOUND_MS,
+      "GET /melite/h3-chain-checkpoints",
+    );
+    const parsed = (await res.json()) as Record<string, EngineJson>;
+    if (!res.ok) {
+      const runs = Array.isArray(parsed["runs"]) ? parsed["runs"] : [];
+      throw new ComfyError(
+        `H3 chain selection: run '${runName}' did not resolve — ${String(parsed["error"] ?? res.status)}` +
+          (runs.length > 0
+            ? ` (live runs: ${runs.map((r): string => String((r as Record<string, EngineJson>)["run_name"] ?? r)).join(", ")})`
+            : ""),
+      );
+    }
+    const scenes = parsed["scenes"];
+    if (!Array.isArray(scenes) || scenes.length === 0) {
+      throw new ComfyError(`H3 chain selection: run '${runName}' reported no scenes`);
+    }
+    fetched.set(runName, chainSelectionOf(runName, scenes as Array<{ scene: number; latest: string }>));
+  }
+  const next: Record<string, EngineJson> = { ...graph };
+  for (const [id, runName] of seats) {
+    const node = { ...(next[id] as Record<string, EngineJson>) };
+    const inputs = { ...(node["inputs"] as Record<string, EngineJson>) };
+    inputs["selection_json"] = fetched.get(runName) as string;
+    node["inputs"] = inputs;
+    next[id] = node;
+  }
+  return next;
+}
+
+/** Patch the stored graph's loop start to the owed scene. Two families
+ * share this door: the scene chain's MiniMaxH3ChainLoopStart (start_clip
+ * + scene_range) and the deferred upscale loop's MiniMaxH3ChainUpscaleAdapter
+ * (start_clip only — the adapter validates as that family's chain start
+ * and carries no scene_range seat). Absent view fields leave the stored
+ * input untouched. Returns a FRESH graph object — the staged original is
+ * never mutated (each re-submission derives from it again). */
 export function patchChainLoopStart(
   graph: Record<string, EngineJson>,
   view: Record<string, EngineJson>,
 ): Record<string, EngineJson> {
   const next: Record<string, EngineJson> = { ...graph };
   let loopStartId = "";
+  let isUpscaleAdapter = false;
   for (const [id, node] of Object.entries(graph)) {
     const classType = (node as Record<string, EngineJson> | null)?.["class_type"];
+    if (classType === "MiniMaxH3ChainUpscaleAdapter") {
+      loopStartId = id;
+      isUpscaleAdapter = true;
+      break;
+    }
     if (typeof classType === "string" && /ChainLoopStart$/.test(classType)) {
       loopStartId = id;
       break;
@@ -792,15 +885,17 @@ export function patchChainLoopStart(
   }
   if (loopStartId === "") {
     throw new ComfyError(
-      "H3 chain requeue: the graph carries no MiniMaxH3ChainLoopStart node to patch — the handoff row promised a chain graph",
+      "H3 chain requeue: the graph carries no MiniMaxH3ChainLoopStart or MiniMaxH3ChainUpscaleAdapter node to patch — the handoff row promised a chain graph",
     );
   }
   const node = { ...(next[loopStartId] as Record<string, EngineJson>) };
   const inputs = { ...(node["inputs"] as Record<string, EngineJson>) };
   const startClip = view["start_clip"];
   if (typeof startClip === "number") inputs["start_clip"] = startClip;
-  const sceneRange = view["scene_range"];
-  if (typeof sceneRange === "string") inputs["scene_range"] = sceneRange;
+  if (!isUpscaleAdapter) {
+    const sceneRange = view["scene_range"];
+    if (typeof sceneRange === "string") inputs["scene_range"] = sceneRange;
+  }
   node["inputs"] = inputs;
   next[loopStartId] = node;
   return next;

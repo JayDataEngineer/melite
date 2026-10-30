@@ -162,6 +162,26 @@ describe("h3 chain requeue — patching LoopStart", () => {
     expect(() => patchChainLoopStart({ x: { class_type: "Other", inputs: {} } }, { start_clip: 2 }))
       .toThrow(/no MiniMaxH3ChainLoopStart/i);
   });
+
+  it("the deferred upscale loop's Adapter is the patchable start (F19): start_clip lands, scene_range never does", () => {
+    const upscaleGraph: Record<string, Json> = {
+      "upscale::CheckpointManager.0": { class_type: "MiniMaxH3ChainCheckpointManager", inputs: {} },
+      "upscale::UpscaleAdapter.0": { class_type: "MiniMaxH3ChainUpscaleAdapter", inputs: { start_clip: 1, profile: "h3_2x" } },
+    };
+    const next = patchChainLoopStart(upscaleGraph, { start_clip: 3, scene_range: "3-4" });
+    const adapter = next["upscale::UpscaleAdapter.0"] as { inputs: Record<string, Json> };
+    expect(adapter.inputs["start_clip"]).toBe(3);
+    expect("scene_range" in adapter.inputs).toBe(false);
+    expect((upscaleGraph["upscale::UpscaleAdapter.0"] as { inputs: Record<string, Json> }).inputs["start_clip"]).toBe(1);
+  });
+
+  it("an adapter-only graph is no longer a refusal — the F19 driver lane the regex-only match used to crash", () => {
+    const graph: Record<string, Json> = {
+      only: { class_type: "MiniMaxH3ChainUpscaleAdapter", inputs: { start_clip: 0 } },
+    };
+    expect(() => patchChainLoopStart(graph, { start_clip: 4 })).not.toThrow();
+    expect((graph.only.inputs as Record<string, Json>)["start_clip"]).toBe(0);
+  });
 });
 
 // ── arm 3: the loop ─────────────────────────────────────────────────────────

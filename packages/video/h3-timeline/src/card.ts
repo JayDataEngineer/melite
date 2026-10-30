@@ -40,6 +40,7 @@ import { renderH3Swap } from '@melite/models-h3'
 import { renderH3Repair } from '@melite/models-h3'
 import { renderH3Extend } from '@melite/models-h3'
 import { renderH3Refine } from '@melite/models-h3'
+import { renderH3ChainUpscale } from '@melite/models-h3'
 import { reshootArmed } from '@melite/models-h3'
 import { parseH3Facts } from '@melite/models-h3/actions'
 import { assertOverlayGated } from '@melite/models-h3'
@@ -352,6 +353,43 @@ const RESHOOT_MOD: DeclaredModifierKind = {
   ],
 }
 
+/** THE UPSCALE KIND (the sixth mod bag — the F19 deferred loop,
+ * 2026-11-12): a whole-film 2x second pass over a PRIOR chain run.
+ *  The commission the refine arm could never state: the loop roots at
+ *  the run's checkpointed lineage (CheckpointManager-verified, scene
+ *  by scene through the upstream Upscale family), not a staged clip.
+ *  The bag names the run; the per-scene revisions resolve at the
+ *  execute door against the engine's own chain store (the vendored
+ *  listing route — a miss refuses loud naming the live runs). ONE
+ *  entry per doc (max_stack 1), the same admission plane and
+ *  one-door law as its five siblings. Emission ends in
+ *  ChainAssemble at <runId>/upscale (the estate's film law). */
+const UPSCALE_MOD: DeclaredModifierKind = {
+  kind: 'upscale',
+  label: 'Upscale',
+  param_key: 'upscale',
+  schema_key: 'upscale',
+  category: 'ordered',
+  cardinality: 'list',
+  max_stack: 1,
+  requires: [
+    'ComfyUI-MiniMaxH3-Context-Loop',
+    'Comfyui_Minimax_h3_latent_Upscaler-Plus',
+    'melite-utility-nodes',
+  ],
+  section: 'Upscale — a whole-film deferred 2x pass over a prior chain run (swap/repair/extend/refine runs leave their checkpointed scenes in the engine\'s chain store): each scene resumes its lineage, upscales through the learned 3D latent upscaler, and re-renders at low denoise; the pass assembles at <runId>/upscale. Name the run; a blank prompt reuses its own scene prompts. Film runs leave this arm empty.',
+  fields: [
+    // The seat TYPES (the picker law, the siblings' own): the run
+    // name is freeform text (an engine-side store directory, not a
+    // staged file); the prompt seat is text; the dials are numbers.
+    { name: 'chain_run', label: 'Chain run', type: 'text', default: '', tooltip: 'The prior chain run to resume (the engine-side h3_chains run name — a swap/repair/extend run\'s own name, as the film\'s run rows spell it). Each scene\'s newest checkpoint revision is resolved at the execute door; an unknown name refuses loud naming the live runs.' },
+    { name: 'prompt', label: 'Pass-2 prompt', type: 'text', default: '', tooltip: 'What the upscaled frames should hold (agent-composed, user-confirmed). Blank reuses the source run\'s own per-scene prompts — the documented posture for a pure resolution pass.' },
+    { name: 'denoise', label: 'Denoise', type: 'number', default: 0.24, min: 0.05, max: 0.5, step: 0.01, tooltip: 'The partial-denoise strength of the pass-2 re-render (the recipe\'s own window is 0.24; lower = subtler). 1 or more is refused — an upscale is never a re-render (that is a reshoot, and the reshoot door exists).' },
+    { name: 'steps', label: 'Pass-2 steps', type: 'number', default: 20, min: 1, max: 30, step: 1, tooltip: 'The pass-2 schedule steps (the recipe runs 20; the sampler stays res_multistep, the loop family\'s own spelling).' },
+    { name: 'segment_crf', label: 'Segment CRF', type: 'number', default: 18, min: 0, max: 51, step: 1, tooltip: 'The H.264 quality of the persisted HQ scene segments (the adapter\'s own seat; 18 is its default).' },
+  ],
+}
+
 /** THE FAMILY ACTION BINDING (the atom vocabulary's video stroke):
  *  the h3 family's declared film action composes the whole lane-true
  *  segment from the gated, lifted doc this card's plane produced —
@@ -390,11 +428,14 @@ export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model:
     const ref = p.refine as Array<Record<string, unknown>> | undefined
     // THE RESHOOT BAG (the fourth arm, §8) rides the same guard.
     const rsh = p.reshoot as Array<Record<string, unknown>> | undefined
+    // THE UPSCALE BAG (the sixth arm, F19) rides the same guard.
+    const ups = p.upscale as Array<Record<string, unknown>> | undefined
     oneEntryBag('replace', raw, 'swap')
     oneEntryBag('repair', rep, 'repair')
     oneEntryBag('extend', ext, 'extend')
     oneEntryBag('refine', ref, 'refine')
     oneEntryBag('reshoot', rsh, 'reshoot')
+    oneEntryBag('upscale', ups, 'upscale')
     const replaceArmed = Array.isArray(raw) && raw.length > 0
     const repairArmed = Array.isArray(rep) && rep.length > 0
     const extendArmed = Array.isArray(ext) && ext.length > 0
@@ -437,6 +478,24 @@ export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model:
     if (extendArmed && refineBagArmed) {
       throw new Error('h3-timeline: Extend and Refine are both armed — one door per doc (the refine branch never enters the film action; two armed bags would race for one emission). Empty the Extend arm for a refine, or the Refine arm for an extension.')
     }
+    const upscaleBagArmed = Array.isArray(ups) && ups.length > 0
+    // THE UPSCALE PAIRWISE REFUSALS (the one-door law's fifth edge —
+    // each pair its own firing arm, the split-brain lesson): the
+    // upscale branch also returns before the film action, so it races
+    // the three edit arms and refine the same way, and an armed
+    // reshoot under it would be silently dropped.
+    if (replaceArmed && upscaleBagArmed) {
+      throw new Error('h3-timeline: Replace and Upscale are both armed — one door per doc (the upscale branch never enters the film action; two armed bags would race for one emission). Empty the Replace arm for an upscale, or the Upscale arm for a swap.')
+    }
+    if (repairArmed && upscaleBagArmed) {
+      throw new Error('h3-timeline: Repair and Upscale are both armed — one door per doc (the upscale branch never enters the film action; two armed bags would race for one emission). Empty the Repair arm for an upscale, or the Upscale arm for a repair.')
+    }
+    if (extendArmed && upscaleBagArmed) {
+      throw new Error('h3-timeline: Extend and Upscale are both armed — one door per doc (the upscale branch never enters the film action; two armed bags would race for one emission). Empty the Extend arm for an upscale, or the Upscale arm for an extension.')
+    }
+    if (refineBagArmed && upscaleBagArmed) {
+      throw new Error('h3-timeline: Refine and Upscale are both armed — one door per doc (the upscale branch never enters the film action; two armed bags would race for one emission). Empty the Refine arm for an upscale, or the Upscale arm for a refine (an upscale needs a prior chain run; a refine needs a staged clip).')
+    }
     if (replaceArmed) {
       // THE MUTUAL REFUSAL (operator, live lane 2026-10-28: "IS
       // RESHOOT SUPPOSED TO BE IN THE CARD ITSELF OR JUST IN THE
@@ -475,6 +534,15 @@ export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model:
         throw new Error('h3-timeline: Refine and Reshoot are both armed — the refine branch never enters the film action, so an armed reshoot would be silently dropped. Pick one door: empty the Refine arm for a reshoot, or empty the Reshoot arm for a refine.')
       }
       renderH3Refine(ref[0] as Record<string, unknown>, p, parseH3Facts(model.lane_inputs), g, runId)
+      return
+    }
+    if (upscaleBagArmed) {
+      // The same reshoot refusal, fifth edge (the upscale branch also
+      // returns before the film action).
+      if (reshootArmed(p)) {
+        throw new Error('h3-timeline: Upscale and Reshoot are both armed — the upscale branch never enters the film action, so an armed reshoot would be silently dropped. Pick one door: empty the Upscale arm for a reshoot, or empty the Reshoot arm for an upscale.')
+      }
+      renderH3ChainUpscale(ups[0] as Record<string, unknown>, p, parseH3Facts(model.lane_inputs), g, runId)
       return
     }
     instantiateAction(declaredAction(h3Decl, 'film'), p, model, g, runId)
@@ -589,7 +657,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
       // the refine save to be the armed refine's, never a film
       // save, so the default edge yields when refine is armed and
       // the refine edge below names it.
-      when: (p) => !((Array.isArray(p.replace) && p.replace.length > 0) || (Array.isArray(p.repair) && p.repair.length > 0) || (Array.isArray(p.extend) && p.extend.length > 0) || (Array.isArray(p.refine) && p.refine.length > 0)),
+      when: (p) => !((Array.isArray(p.replace) && p.replace.length > 0) || (Array.isArray(p.repair) && p.repair.length > 0) || (Array.isArray(p.extend) && p.extend.length > 0) || (Array.isArray(p.refine) && p.refine.length > 0) || (Array.isArray(p.upscale) && p.upscale.length > 0)),
     },
     {
       channel: 'default',
@@ -619,6 +687,15 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
       nodeClass: 'SaveVideo',
       when: (p) => Array.isArray(p.refine) && p.refine.length > 0,
     },
+    {
+      // THE UPSCALE ARM (F19): the deferred 2x loop's terminal is
+      // its ChainAssemble (`<runId>/upscale`, copy_to_output) — the
+      // only assemble in the graph, so the '*' scan resolves it.
+      channel: 'default',
+      node: '*',
+      nodeClass: 'MiniMaxH3ChainAssemble',
+      when: (p) => Array.isArray(p.upscale) && p.upscale.length > 0,
+    },
   ],
     // ADMISSION EXTRAS (the class-attr half verbatim: the
     // retired row's admits minus the boarded families' studio
@@ -637,13 +714,13 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
     // produce. A doc carrying it now refuses LOUD at the door
     // ('unknown-param') instead of riding as an inert rider; seedUser
     // already deletes it on drill-open (the dead-layer law).
-    admits: ['ctx_*', 'extend', 'fps_seconds', 'image_name', 'k', 'noise_seed', 'quant', 'ref_image_size', 'refine', 'repair', 'replace', 'reshoot', 'sla_*', 'variant'],
+    admits: ['ctx_*', 'extend', 'fps_seconds', 'image_name', 'k', 'noise_seed', 'quant', 'ref_image_size', 'refine', 'repair', 'replace', 'reshoot', 'sla_*', 'upscale', 'variant'],
     // THE CARD-DECLARED KINDS (CONTRACT A — served VERBATIM on the
     // features.modifiers channel): the swap + repair + extend arms.
     // The mask card's sam3/sam2/draw precedent — one kind per arm,
     // entry fields as the popup's tiles, requires as the
     // presence-gated arm packs.
-    mods: [REPLACE_MOD, REPAIR_MOD, EXTEND_MOD, REFINE_MOD, RESHOOT_MOD],
+    mods: [REPLACE_MOD, REPAIR_MOD, EXTEND_MOD, REFINE_MOD, RESHOOT_MOD, UPSCALE_MOD],
     jsonArrayParams: JSON_ARRAY_PARAMS,
     // the packs the window graph rides (EXTENSION LAW) + the film
     // tail's file boundary (melite-utility-nodes: MeliteUnload +
@@ -753,7 +830,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
       // loud here, which is the dead-layer law working.
       p = gatedResolve('h3-timeline', schemaFn, [
         'calls', 'audio_clips', 'keyframes', 'fps', 'audio_stem', 'document', 'loras',
-        'refs', 'replace', 'repair', 'extend', 'reshoot', 'variant', 'quant', 'refine', 'model', '__steps_pinned', '__shift_pinned', 'ctx_*',
+        'refs', 'replace', 'repair', 'extend', 'reshoot', 'variant', 'quant', 'refine', 'upscale', 'model', '__steps_pinned', '__shift_pinned', 'ctx_*',
       ], gateInput)
       // THE SINGLE-CALL LIFT runs FIRST (the guard below reads the
       // lifted anchor): a one-call doc's row IS the window — its

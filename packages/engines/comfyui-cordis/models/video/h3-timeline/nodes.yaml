@@ -58,15 +58,15 @@ extensions:
   desc: RTXVideoSuperResolution (bypassed group; class must register).
 - name: melite-utility-nodes
   url: https://github.com/JayDataEngineer/melite-utility-nodes
-  # 2026-11-12 multi-window unification: re-pinned to 555f12e (the
-  # append member — MeliteConcatVideos' OPTIONAL append seats an exact
-  # wired saved-file as the join's last member; the multi-window
-  # extend compose face; 555f12e seats the input OPTIONAL, matching
-  # the docstring — required-with-default was functionally equivalent
-  # but UI-misleading; pack tests 7/7). Additive only: the boundary
-  # classes byte-untouched; the vendor gitlink rides the same parent
-  # commit.
-  ref: 555f12ec70e8f3e7762b7554e1739c6e7875efce
+  # 2026-11-12 F19 ChainUpscale loop: re-pinned to 7ba44fb (the h3
+  # chain store listing — GET /melite/h3-chain-runs and
+  # /melite/h3-chain-checkpoints?run= answer the run names and the
+  # mtime-ordered per-scene revisions off the engine's own h3_chains
+  # store, with the 400-missing-query / 404-unknown-run law; the
+  # execute door resolves the upscale card's bare run name through
+  # them; pack unit wall 4/4). Additive only: the boundary classes
+  # byte-untouched; the vendor gitlink rides the same parent commit.
+  ref: 7ba44fb6b59b18f6f16389656e676f2790c44ecb
   required: true
   desc: >-
     MeliteUnload / MeliteConcatVideos — the film's window-save boundary

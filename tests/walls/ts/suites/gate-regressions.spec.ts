@@ -635,7 +635,11 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // 629 -> 630 (2026-11-12): refine.js — the h3 second-pass
   // renderer seat (F19, renderH3Refine; the RefineHandoff 2x
   // emission on the fifth mod bag), repinned with its landing.
-  const LIB_CENSUS_PIN = 630;
+  // 630 -> 631 (2026-11-12): chainUpscale.js — the deferred
+  // ChainUpscale loop's renderer seat (renderH3ChainUpscale; the
+  // segment-wise 2x second pass on the sixth mod bag), repinned
+  // with its landing.
+  const LIB_CENSUS_PIN = 631;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {

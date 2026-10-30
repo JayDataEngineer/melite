@@ -10887,6 +10887,33 @@ window.__ModuleLoader__.load({
 			if (prefix === null || prefix === "/melite-media/runs") return value;
 			return RUN_MEDIA_PREFIX + value.slice(prefix.length);
 		}
+		/** THE HOST-PATH MIRROR (the agent-slot preview burn, 2026-11-12: the
+		*  operator put an image into a card's image input slot and the square
+		*  painted the browser's broken-image glyph): melite_view hands an
+		*  agent BOTH lanes — `url` (the browser's /melite-media/runs/… URL)
+		*  and `host` (the same artifact's path under the estate's output
+		*  tree on the host). An agent that patches the HOST spelling into a
+		*  slot holds a real, run-stageable value (resolveArtifactFile accepts
+		*  absolute paths inside the output root) that no <img> can fetch —
+		*  isImageUrl passes any root-relative path with an image tail, so the
+		*  glyph burned. The run dir's OWN name (the run-id grammar) is the
+		*  one coordinate both lanes share: a host path carrying a run-id
+		*  segment names the same bytes the media route serves, so the display
+		*  rewrites it to that URL. DISPLAY ONLY — the param keeps the host
+		*  path verbatim (the currency law); a path that addresses no run
+		*  media, an already-serving media URL (both spellings —
+		*  canonicalRunMediaUrl owns those), and every scheme-ful or
+		*  protocol-relative value ride untouched (null). */
+		function runHostMediaUrl(value) {
+			if (!value.startsWith("/") || value.startsWith("//")) return null;
+			if (runMediaPrefixOf(value) !== null) return null;
+			const segs = value.split("/");
+			for (let i = 0; i < segs.length - 1; i++) {
+				if (!RUN_ID_RE.test(segs[i])) continue;
+				return RUN_MEDIA_PREFIX + "/" + segs.slice(i).map(encodeURIComponent).join("/");
+			}
+			return null;
+		}
 		/** Rewrite every legacy run-media path inside a value (deep,
 		*  value-preserving, total). */
 		function healRunMediaPaths(value) {
@@ -11204,6 +11231,7 @@ window.__ModuleLoader__.load({
 			resolveCellRow: () => resolveCellRow,
 			resolveVariantRow: () => resolveVariantRow,
 			rootsManifest: () => rootsManifest,
+			runHostMediaUrl: () => runHostMediaUrl,
 			runMediaPrefixOf: () => runMediaPrefixOf,
 			runTailOf: () => runTailOf,
 			samplerEnvelopeCure: () => samplerEnvelopeCure,
