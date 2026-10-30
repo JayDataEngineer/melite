@@ -45,11 +45,30 @@ export interface WiringDoc {
  *  @returns the parsed value facts (enum present only when the
  *           tuple carries one in either spelling) */
 export declare function parseInputSpec(spec: unknown, required: boolean): WiringInputSpec;
+/** One dynamic-combo input's child input names, off its raw
+ *  declaration.
+ *  THE NESTED WIRE KEYS (the F23 burn, 2026-10-30): ComfyUI's
+ *  `_expand_schema_for_dynamic` reads `live_inputs[<combo key>]` as
+ *  the SELECTED OPTION KEY (a plain string) and registers that
+ *  option's children as TOP-LEVEL wire keys — the h3 upscale pack's
+ *  `mode` carries `scale`/`width`/`height`/`megapixels` that way, so
+ *  the engine accepts `mode: 'scale by multiplier'` beside a flat
+ *  `scale: 2.0`. `/object_info` declares them NESTED, so a
+ *  derivation that reads only the top level refuses exactly the
+ *  keys the engine accepts (the compose refusal the operator hit).
+ *  @param spec the raw input tuple from /object_info
+ *  @returns the child inputs of every option ([name, raw tuple]), or
+ *           undefined for a non-dynamic input */
+export declare function dynamicComboChildren(spec: unknown): ReadonlyArray<readonly [string, unknown]> | undefined;
 /** Derive the census from a raw /object_info body — ONE derivation
  *  shared by every doc-owner (the card-plane service and the
  *  estate registry's prime) so no seat judges a differently-shaped
  *  doc. A names-only snapshot keeps the node gate and skips the
- *  input gate — never a guessed refusal. */
+ *  input gate — never a guessed refusal.
+ *
+ *  A dynamic combo's option children ride the same map as OPTIONAL
+ *  seats: the engine expands them at submit, so their ABSENCE is
+ *  never the flat arm's finding. */
 export declare function deriveWiringDoc(objectInfo: Record<string, unknown>): {
     nodes: Set<string>;
     inputs: Map<string, Map<string, WiringInputSpec>>;

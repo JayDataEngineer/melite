@@ -776,6 +776,101 @@ describe("THE COMPLETENESS GRAMMAR (B7: the reverse arm + the either-or table)",
   });
 });
 
+/**
+ * THE DYNAMIC-COMBO WIRE (the F23 burn, 2026-10-30): the rebuilt
+ * MinimaxH3LatentUpscaler3D declares `mode` as a
+ * COMFY_DYNAMICCOMBO_V3 whose children (`scale`, `width`, `height`,
+ * `megapixels`) the engine expands into TOP-LEVEL wire keys for the
+ * selected option — the shape below is the production /object_info
+ * row (data/tmp/object_info_prod.json). The card's compose (the
+ * multiplier arm, flat `mode` + `scale`) is CORRECT; the derivation
+ * read only the top level and refused the key the engine accepts.
+ */
+const DYNAMIC_DOC = {
+  MinimaxH3LatentUpscaler3D: {
+    input: {
+      required: {
+        latent: ["*", { tooltip: "Input latent (image or video)." }],
+        model_name: ["COMBO", {
+          tooltip: "Minimax H3 upscale model.",
+          options: ["minimax_h3_latent_upscaler_3d_bf16.safetensors"],
+        }],
+        mode: ["COMFY_DYNAMICCOMBO_V3", {
+          tooltip: "How the target size is computed.",
+          options: [
+            { key: "scale by multiplier", inputs: { required: { scale: ["FLOAT", { tooltip: "Upscale factor.", default: 2, min: 1, max: 4, step: 0.05 }] } } },
+            { key: "target dimensions", inputs: { required: {
+              width: ["INT", { tooltip: "Target pixel width.", default: 1280, min: 64, max: 4096, step: 8 }],
+              height: ["INT", { tooltip: "Target pixel height.", default: 704, min: 64, max: 4096, step: 8 }],
+            } } },
+            { key: "megapixels", inputs: { required: { megapixels: ["FLOAT", { default: 1, min: 0.1, max: 8, step: 0.1 }] } } },
+          ],
+        }],
+        align: ["INT", { default: 32, min: 1, max: 512, step: 1 }],
+        keep_proportion: ["BOOLEAN", { default: true }],
+        device: ["COMBO", { default: "cuda", options: ["cuda", "cpu"] }],
+        precision: ["COMBO", { default: "fp16", options: ["fp32", "fp16", "bf16"] }],
+        offload_after_upscale: ["BOOLEAN", { default: false }],
+      },
+    },
+  },
+};
+
+/** The shipped multiplier arm — chainUpscale.ts's own inputs row. */
+const UPSCALE_MULTIPLIER_ROW = {
+  latent: ["1", 2],
+  model_name: "minimax_h3_latent_upscaler_3d_bf16.safetensors",
+  mode: "scale by multiplier", scale: 2.0,
+  align: 32, keep_proportion: true,
+  device: "cuda", precision: "bf16", offload_after_upscale: true,
+};
+
+describe("THE DYNAMIC-COMBO WIRE (the F23 burn: nested children ARE wire keys)", () => {
+  it("a dynamic combo's option children are declared seats, and the shipped multiplier row walks green", () => {
+    const { nodes, inputs } = deriveWiringDoc(DYNAMIC_DOC);
+    const decl = inputs.get("MinimaxH3LatentUpscaler3D")!;
+    assert.deepEqual(
+      decl.get("mode")!.enum,
+      ["scale by multiplier", "target dimensions", "megapixels"],
+      "the option keys ride the value gate (a mode outside them still refuses)",
+    );
+    for (const child of ["scale", "width", "height", "megapixels"]) {
+      const spec = decl.get(child);
+      assert.ok(spec, `'${child}' is a declared seat of the node`);
+      assert.equal(spec.required, false, `'${child}' is conditional — the flat required arm never owes it`);
+    }
+    assert.equal(decl.get("scale")!.min, 1, "a flattened child keeps the value facts its option declares");
+    assert.equal(decl.get("scale")!.max, 4, "the factor ceiling rides the child");
+    // THE BURN'S OWN ROW: red before this cure ('the node declares no
+    // such input … scale'), green after — the engine accepts it
+    // (`_expand_schema_for_dynamic`: live_inputs['mode'] names the
+    // option, its children register as top-level keys).
+    assertWiringAgainst(nodes, inputs, "h3-timeline", { "3": { class_type: "MinimaxH3LatentUpscaler3D", inputs: UPSCALE_MULTIPLIER_ROW } });
+  });
+
+  it("the value gate still judges the selection itself: a mode outside the declared options REFUSES", () => {
+    const { nodes, inputs } = deriveWiringDoc(DYNAMIC_DOC);
+    assert.throws(
+      () => assertWiringAgainst(nodes, inputs, "h3-timeline", {
+        "3": { class_type: "MinimaxH3LatentUpscaler3D", inputs: { ...UPSCALE_MULTIPLIER_ROW, mode: "scale by pixel count" } },
+      }),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "bad-value"
+        && /scale by pixel count/.test(e.message),
+    );
+  });
+
+  it("a flattened child is judged by its own declared bounds (the value facts ride the child, not the combo)", () => {
+    const { nodes, inputs } = deriveWiringDoc(DYNAMIC_DOC);
+    assert.throws(
+      () => assertWiringAgainst(nodes, inputs, "h3-timeline", {
+        "3": { class_type: "MinimaxH3LatentUpscaler3D", inputs: { ...UPSCALE_MULTIPLIER_ROW, scale: 8 } },
+      }),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "bad-value"
+        && /MinimaxH3LatentUpscaler3D\.scale/.test(e.message),
+    );
+  });
+});
+
 /** The graph id of the VAELoader the film lane pins to the family's
  *  video VAE — the edge the extract's vae input must carry. */
 function expectVaeEdge(

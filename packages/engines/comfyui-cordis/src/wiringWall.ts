@@ -168,11 +168,51 @@ export function parseInputSpec(spec: unknown, required: boolean): WiringInputSpe
   return { required }
 }
 
+/** One dynamic-combo input's child input names, off its raw
+ *  declaration.
+ *  THE NESTED WIRE KEYS (the F23 burn, 2026-10-30): ComfyUI's
+ *  `_expand_schema_for_dynamic` reads `live_inputs[<combo key>]` as
+ *  the SELECTED OPTION KEY (a plain string) and registers that
+ *  option's children as TOP-LEVEL wire keys — the h3 upscale pack's
+ *  `mode` carries `scale`/`width`/`height`/`megapixels` that way, so
+ *  the engine accepts `mode: 'scale by multiplier'` beside a flat
+ *  `scale: 2.0`. `/object_info` declares them NESTED, so a
+ *  derivation that reads only the top level refuses exactly the
+ *  keys the engine accepts (the compose refusal the operator hit).
+ *  @param spec the raw input tuple from /object_info
+ *  @returns the child inputs of every option ([name, raw tuple]), or
+ *           undefined for a non-dynamic input */
+export function dynamicComboChildren(spec: unknown): ReadonlyArray<readonly [string, unknown]> | undefined {
+  if (!Array.isArray(spec) || spec.length < 2) return undefined
+  if (spec[0] !== 'COMFY_DYNAMICCOMBO_V3') return undefined
+  const detail = spec[1]
+  if (typeof detail !== 'object' || detail === null || Array.isArray(detail)) return undefined
+  const options = (detail as Record<string, unknown>).options
+  if (!Array.isArray(options)) return undefined
+  const out: Array<readonly [string, unknown]> = []
+  for (const raw of options) {
+    if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) continue
+    const groups = ((raw as Record<string, unknown>).inputs ?? {}) as Record<string, unknown>
+    for (const group of ['required', 'optional'] as const) {
+      const children = groups[group]
+      if (typeof children !== 'object' || children === null || Array.isArray(children)) continue
+      for (const [child, childRaw] of Object.entries(children as Record<string, unknown>)) {
+        out.push([child, childRaw])
+      }
+    }
+  }
+  return out.length > 0 ? out : undefined
+}
+
 /** Derive the census from a raw /object_info body — ONE derivation
  *  shared by every doc-owner (the card-plane service and the
  *  estate registry's prime) so no seat judges a differently-shaped
  *  doc. A names-only snapshot keeps the node gate and skips the
- *  input gate — never a guessed refusal. */
+ *  input gate — never a guessed refusal.
+ *
+ *  A dynamic combo's option children ride the same map as OPTIONAL
+ *  seats: the engine expands them at submit, so their ABSENCE is
+ *  never the flat arm's finding. */
 export function deriveWiringDoc(
   objectInfo: Record<string, unknown>,
 ): { nodes: Set<string>; inputs: Map<string, Map<string, WiringInputSpec>> } {
@@ -183,8 +223,21 @@ export function deriveWiringDoc(
     for (const group of [['required', true], ['optional', false]] as const) {
       const rows = decl?.[group[0]]
       if (typeof rows !== 'object' || rows === null) continue
-      for (const key of Object.keys(rows)) {
-        perNode.set(key, parseInputSpec((rows as Record<string, unknown>)[key], group[1]))
+      for (const [key, raw] of Object.entries(rows as Record<string, unknown>)) {
+        perNode.set(key, parseInputSpec(raw, group[1]))
+        // THE NESTED WIRE KEYS: a dynamic combo's option children
+        // are OPTIONAL seats of the same node — the engine expands
+        // the selected option's children into top-level wire keys,
+        // so the doc must declare them or every legal child refuses
+        // unknown-input. A real input is never shadowed; the
+        // child keeps the value facts its option declares, and
+        // conditional presence (required under the SELECTED option)
+        // is the engine's own expansion — this flat arm never owes
+        // it.
+        for (const [child, childRaw] of dynamicComboChildren(raw) ?? []) {
+          if (perNode.has(child)) continue
+          perNode.set(child, { ...parseInputSpec(childRaw, false), required: false })
+        }
       }
     }
     inputs.set(name, perNode)
@@ -428,7 +481,7 @@ export function assertWiringAgainst(
     }
     // THE REVERSE ARM and THE EITHER-OR ARM run after the forward
     // pass — the wired keys judge first, so an undeclared key still
-    // refuses as unknown-input before the completeness grammar
+    // refuses unknown-input before the completeness grammar
     // speaks (the h3 door's bare-ref_image_1 red-proof order).
     assertRequiredEdges(cardId, id, ct, declared, wired)
     assertEitherOrRows(cardId, id, ct, wired)

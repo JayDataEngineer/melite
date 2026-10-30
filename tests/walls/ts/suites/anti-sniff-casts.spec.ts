@@ -159,7 +159,6 @@ const ALL_FORMS_BASELINE: Record<string, number> = {
   'packages/engines/comfyui-cordis/src/service.ts': 1,
   'packages/engines/comfyui-cordis/src/supervisor.ts': 1,
   'packages/engines/comfyui-cordis/src/userLoras.ts': 3,
-  'packages/engines/comfyui-cordis/src/wiringWall.ts': 1,
   'packages/engines/comfyui/src/action_cards/motion/ui/viewer3d/poseStageManipulators.ts': 4,
   'packages/engines/comfyui/src/action_cards/motion/ui/viewer3d/poseStageOverlays.ts': 5,
   'packages/engines/craft/src/craft-engine.ts': 2,
