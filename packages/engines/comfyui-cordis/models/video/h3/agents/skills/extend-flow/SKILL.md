@@ -49,6 +49,34 @@ own tail. The whole clip also rides the motion-identity reference
 seat, so the continuation keeps the clip's world texture, not just
 its final pose.
 
+## THE SEAM LAW — say this before the press (measured 2026-11-13)
+
+The anchor is an IMAGE REFERENCE, not a pixel lock. The continuation
+is a fresh window at full denoise, so its first frame is a NEW pose,
+not the frame it was handed. Measured on the operator's 430 f
+kunoichi clip extended by 3.75 s (run-26363645ae2b-8861f195, `x0`
+430 f + `x1` 90 f, 1312×736):
+
+    adjacent frames inside the source : Δ2.8–4.1   (0–255 scale)
+    source last frame → extension[0]  : Δ24.8
+
+Eight times the adjacent-frame noise — a visible step at the join.
+The flip side is real and should be said too: character, wardrobe,
+studio, lighting and style all hold across the seam; what moves is the
+moment.
+
+So: **extend continues the STORY, not the MOTION.** Tell the operator
+that in the confirmation, and judge the boundary frames before calling
+it done. If the ask is "the dance keeps going from exactly where it
+stopped", extend is the wrong door today — the cures are holding the
+anchor frame as the window's first frame (a mask/hold shape) or
+carrying the prior latent, and neither is wired on this arm.
+
+A prompt that names a NEW action ("she looks up and speaks") moves the
+subject at the seam far more than the anchor does — measured Δ≈35 vs
+Δ25 on the same fixture. Write `extend_prompt` as a continuation of
+the same action.
+
 ## What lands
 
 The extended film: prior seconds verbatim (their own soundtrack), then

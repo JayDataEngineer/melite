@@ -217,6 +217,23 @@ export function renderH3Refine(entry, p, facts, g, runId) {
  * @param runId the run tree's id (window + film prefixes ride it)
  * @param loop the window count and the carried overlap (frames)
  * @returns the assembled film's SaveVideo passthrough at `<runId>/refine`
+ *
+ *  WHY THERE IS NO `MiniMaxH3FiniteLatentContinuation` HERE (the
+ *  carry question, settled 2026-11-13 against the installed pack):
+ *  the film's own seam node carries a JOINT AV latent — its body
+ *  splits video AND audio out of ONE latent dict
+ *  (`_h3_streams(target_latent)`, experimental_latent_guide.py:98-190,
+ *  installed at data/runtime/comfyui/custom_nodes/
+ *  comfyui-minimax-h3-timeline-director/) — while the refine handoff
+ *  consumes SPLIT `latent` + `audio_latent` streams. The census holds
+ *  no joint-AV constructor (`model-facts.json`), so nothing can build
+ *  the dict the node expects from a refine window's encoders; wiring
+ *  it would be a graph that cannot run. The seam therefore stays the
+ *  honest fallback the skill labels (head-trim + in-graph join), and
+ *  the real carry is the separate-run chain path (upscale[]'s store)
+ *  or the Continuum pack's same-execution `refine_state`, never a
+ *  hand-wired continuation on this seat. The wall pins the absence so
+ *  a future agent does not re-wire it blind.
  */
 export function renderH3RefineWindows(entry, p, facts, g, runId, loop) {
     if (!Number.isInteger(loop.windows) || loop.windows < 1) {
