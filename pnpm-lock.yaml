@@ -1421,9 +1421,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/contracts':
-        specifier: workspace:*
-        version: link:../../web-kit/contracts
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.5
@@ -1756,9 +1753,6 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/contracts':
-        specifier: workspace:*
-        version: link:../../web-kit/contracts
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.5
