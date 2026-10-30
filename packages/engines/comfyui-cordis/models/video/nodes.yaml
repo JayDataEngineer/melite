@@ -20,10 +20,10 @@ extensions:
     required: true
     desc: H3PeopleMask + H3GreyMannequins + H3SourceSlice (the Source Slice commit is HEAD) + swap/montage plans — the mask + mannequin + slice seats. No extra pip deps (upstream: torch/numpy/Pillow ride ComfyUI).
   - name: ComfyUI-MiniMaxH3-Context-Loop
-    url: https://github.com/ethanfel/ComfyUI-MiniMaxH3-Context-Loop
-    ref: 43afeffcc570beb5f7382593e79e4b211c7e02f6
+    url: https://github.com/JayDataEngineer/ComfyUI-MiniMaxH3-Context-Loop
+    ref: e6d700d731a3803aa18a6c6036a24aa6d9fa5b3c
     required: true
-    desc: Clip chaining, checkpoints, masked targets (ContexMaskedTarget), MaskGridPreview, final assembly — the edit-target + loop seats. Upstream floor 0.7.3+ (no tags published; pinned at HEAD, re-pin on drift). No requirements file upstream.
+    desc: Clip chaining, checkpoints, masked targets (ContexMaskedTarget), MaskGridPreview, final assembly — the edit-target + loop seats. Estate-maintained fork (GPL-3.0, upstream history preserved): ethanfel force-pushed past the estate h3-chain gap cures (e6d700d7), orphaning the pinned line — the fork carries those bytes. Upstream floor 0.7.3+. No requirements file.
   - name: ComfyUI-Fantastic-MiniMaxH3-PromptBuilder
     url: https://github.com/Adudeguyman/ComfyUI-Fantastic-MiniMaxH3-PromptBuilder
     ref: 22e719fe89336c628383363182a4da3cb58d4f9b
