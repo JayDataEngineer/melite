@@ -88,8 +88,20 @@ export function renderH3Refine(entry, p, facts, g, runId) {
     }
     const windowFrames = Math.max(1, Math.round(clipSeconds * 24));
     const skipFrames = Math.round(startSeconds * 24);
-    if (upMode === 'scale by multiplier' && upScale >= 2 && windowFrames > REFINE_2X_OOM_FRAMES) {
-        throw new Error(`h3-timeline refine: a ${windowFrames} f window at ${upScale}x — the 2x pass was measured OOM at ${REFINE_2X_OOM_FRAMES} f and green at 90 f (2688×1536, 48 kHz; H3 memory grows with the window, so a wider window cannot fit). Cut clip_seconds to ${(REFINE_2X_OOM_FRAMES / 24).toFixed(2)} s or less and cover the rest window by window, or lower scale to 1 for a same-size pass`);
+    // THE CEILING IS THE WINDOW'S (refine-window audit C1, 2026-11-13):
+    // the measured OOM is a function of the WINDOW first and the upscale
+    // factor second — H3's memory grows with the frame count through the
+    // learned 3D upscaler and the sampler. The first cut guarded only
+    // `scale by multiplier` ≥ 2, so a target-dimensions or megapixels
+    // window walked past the same ceiling into the measured OOM with no
+    // refusal. Only a same-size multiplier pass (< 2, the capacity cure)
+    // is exempt: its upscaler is the identity, which is what made 144 f
+    // fit at 1x. The other two modes size from the source and cannot be
+    // judged ≤ 1x before the read, so they take the ceiling.
+    const sameSize = upMode === 'scale by multiplier' && upScale < 2;
+    if (!sameSize && windowFrames > REFINE_2X_OOM_FRAMES) {
+        const named = upMode === 'scale by multiplier' ? `${upScale}x` : upMode;
+        throw new Error(`h3-timeline refine: a ${windowFrames} f window at ${named} — the 2x pass was measured OOM at ${REFINE_2X_OOM_FRAMES} f and green at ${REFINE_DEFAULT_CLIP_SECONDS * 24} f (2688×1536, 48 kHz; H3 memory grows with the window, so a wider window cannot fit — the ceiling belongs to the WINDOW, whichever sizing mode upsizes). Cut clip_seconds to ${(REFINE_2X_OOM_FRAMES / 24).toFixed(2)} s or less and cover the rest window by window, or lower scale to 1 for a same-size pass`);
     }
     // ── the staged media (the shared loader law, force-rate-24 VHS —
     // never a private LoadVideo pair) + the family's own plane ──

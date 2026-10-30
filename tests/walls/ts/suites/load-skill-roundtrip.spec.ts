@@ -149,7 +149,10 @@ interface SkillLine { id?: string }
 // (the friction report's §14 coverage finding: 7 served mod kinds,
 // docs for 2). Every id round-tripped 200 with a body before this
 // repin (the census's own law).
-const EXPECTED_CARD_SKILLS = 53;
+// 53 -> 54 (2026-11-13, the second-pass skill): the post chain's
+// master + 19 gated knobs got their doc (report §14.2). The id
+// round-tripped 200 with a body in the arm above before this repin.
+const EXPECTED_CARD_SKILLS = 54;
 // 8 → 11 (2026-10-11): object-forge's skillRefs — image-gen +
 // img-to-mesh card lines and z-image's prompt-enhance ride the flow
 // bundle (card:quad-remesh resolves null — the card ships no agent
@@ -171,7 +174,12 @@ const EXPECTED_CARD_SKILLS = 53;
 // too. The id round-tripped 200 with a body in the arm above.
 // 20 -> 23 (2026-11-13, the skill-coverage batch): repair/upscale/
 // loras ride the h3-timeline flow bundle's card skill line too.
-const EXPECTED_FLOW_SKILLS = 23;
+// 23 -> 24 (2026-11-13, the second-pass skill): the friction report's
+// §14.2 doc — the `second_pass_enabled` master and its 19 gated knobs
+// had no skill at all, so an agent set a leaf and got a silent no-op.
+// The id round-tripped 200 with a body in the arm above before this
+// repin (the census's own law).
+const EXPECTED_FLOW_SKILLS = 24;
 
 describe("the id namespace law: load-advertised ids round-trip through the read door", () => {
   it("every CARD skill line it advertises, hSkillRead serves 200 with a body", async () => {

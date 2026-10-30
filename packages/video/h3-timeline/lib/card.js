@@ -1,4 +1,4 @@
-import { DECL as h3Decl } from '@melite/models-h3';
+import { DECL as h3Decl, REFINE_2X_OOM_FRAMES, REFINE_DEFAULT_CLIP_SECONDS } from '@melite/models-h3';
 import { H3_LORA_ROWS } from '@melite/models-h3/mods/loras';
 import { JSON_ARRAY_PARAMS, coerceWireBoolean, paramSchema, schema, } from '@melite/models-h3/schema';
 import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission';
@@ -274,7 +274,12 @@ const REFINE_MOD = {
         'Comfyui_Minimax_h3_latent_Upscaler-Plus',
         'melite-utility-nodes',
     ],
-    section: 'Refine — a standalone second pass over ONE WINDOW of a source clip: 2x learned latent upscale + the low-sigma H3 refinement pass in one node (the film handoff\'s own spelling), decoded and saved as one film. The window is what the 2x memory ceiling allows (90 f measured green, 141 f OOM) — a longer film is refined window by window, each run moving Start seconds forward. The soundtrack is the window\'s own, always. Film runs leave this arm empty.',
+    // THE MEASURED NUMBERS ARE DERIVED (refine-window audit D1): the
+    // window the ceiling allows is REFINE_DEFAULT_CLIP_SECONDS at the
+    // film clock, and the OOM point is REFINE_2X_OOM_FRAMES — both
+    // imported from the model package that owns the refusal, so a
+    // ceiling move can never leave the served card lying about it.
+    section: `Refine — a standalone second pass over ONE WINDOW of a source clip: 2x learned latent upscale + the low-sigma H3 refinement pass in one node (the film handoff's own spelling), decoded and saved as one film. The window is what the 2x memory ceiling allows (${String(REFINE_DEFAULT_CLIP_SECONDS * 24)} f measured green, ${String(REFINE_2X_OOM_FRAMES)} f OOM) — a longer film is refined window by window, each run moving Start seconds forward. The soundtrack is the window's own, always. Film runs leave this arm empty.`,
     fields: [
         // The seat TYPES (the picker law, the siblings' own): the video
         // seat is `file` + media 'video'; the prompt seat is text
@@ -284,8 +289,11 @@ const REFINE_MOD = {
         { name: 'denoise', label: 'Denoise', type: 'number', default: 0.32, min: 0.05, max: 0.5, step: 0.01, tooltip: 'The partial-denoise strength of the refinement pass (the refine window is 0.30–0.35; lower = subtler). 1 or more is refused — a refine is never a re-render (the handoff\'s sigmas law: 0 <= sigmas[0] < 1).' },
         { name: 'steps', label: 'Refine steps', type: 'number', default: 6, min: 1, max: 30, step: 1, tooltip: 'The refinement schedule steps (the low-sigma second pass; the sampler steps stay the doc marriage).' },
         { name: 'seed', label: 'Refine seed', type: 'number', default: 0, min: 0, max: 4294967295, step: 1, tooltip: 'The refinement noise seed (0 runs the reference posture).' },
-        { name: 'clip_seconds', label: 'Window seconds', type: 'number', default: 3.75, min: 0.5, max: 60, step: 0.25, tooltip: 'How much of the clip this pass refines, from the window start: 3.75 s = 90 f at 24 fps, the widest window measured green at 2x (2688×1536). The pass reads only this window, so a long film is covered by advancing Start seconds — and a 2x window past 5.87 s (141 f) is refused: that is where the measured OOM sits.' },
-        { name: 'start_seconds', label: 'Start seconds', type: 'number', default: 0, min: 0, max: 3600, step: 0.25, tooltip: 'Where this window starts in the source clip (0 = the first frame). Each run refines one window; step it by your window seconds (minus a second or two of overlap) to walk a longer film, re-running the same entry with only this seat moved.' },
+        // (the numbers are DERIVED from the model package's exported
+        // constants — refine-window audit D1: the served card must never
+        // carry a hand-typed copy of a measured ceiling)
+        { name: 'clip_seconds', label: 'Window seconds', type: 'number', default: REFINE_DEFAULT_CLIP_SECONDS, min: 0.5, max: 60, step: 0.25, tooltip: `How much of the clip this pass refines, from the window start: ${String(REFINE_DEFAULT_CLIP_SECONDS)} s = ${String(REFINE_DEFAULT_CLIP_SECONDS * 24)} f at 24 fps, the widest window measured green at 2x (2688×1536). The pass reads only this window, so a long film is covered by advancing Start seconds — and any upsizing window past ${(REFINE_2X_OOM_FRAMES / 24).toFixed(2)} s (${String(REFINE_2X_OOM_FRAMES)} f) is refused: that is where the measured OOM sits (the ceiling is the window's; only a same-size 1x pass reads wider). A window must also START inside the clip: a Start past the last frame yields no frames, and a window longer than what remains is quietly shortened.` },
+        { name: 'start_seconds', label: 'Start seconds', type: 'number', default: 0, min: 0, max: 3600, step: 0.25, tooltip: 'Where this window starts in the source clip (0 = the first frame). Each run refines one window; step it by your window seconds (minus a second or two of overlap) to walk a longer film, re-running the same entry with only this seat moved. The last window starts at (clip length − window length): a start past the final frame lands no frames and the engine refuses.' },
         // THE CAPACITY SEATS (the F24 burn, 2026-10-30): the 2x handoff
         // OOMs past the measured 141 f, and the node itself serves an
         // exact-size mode — a ≤1x pass fits. Both seats ride the node's

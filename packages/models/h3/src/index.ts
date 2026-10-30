@@ -588,7 +588,7 @@ export { finalizeH3, H3_T4_STRIP } from "./finalize.js"
 export { renderH3Swap } from "./swap.js"
 export { renderH3Repair } from "./repair.js"
 export { renderH3Extend } from "./extend.js"
-export { refineArmed, renderH3Refine, REFINE_UPSCALE_MODEL } from "./refine.js"
+export { refineArmed, renderH3Refine, REFINE_UPSCALE_MODEL, REFINE_2X_OOM_FRAMES, REFINE_DEFAULT_CLIP_SECONDS } from "./refine.js"
 // F19 — the whole-film deferred ChainUpscale loop over a prior run.
 export { upscaleArmed, renderH3ChainUpscale } from "./chainUpscale.js"
 export { reshootArmed } from "./reshoot.js"

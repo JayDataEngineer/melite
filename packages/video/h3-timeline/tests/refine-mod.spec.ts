@@ -24,7 +24,7 @@ import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
-import { refineArmed } from "../../../models/h3/src/refine.ts";
+import { REFINE_2X_OOM_FRAMES, REFINE_DEFAULT_CLIP_SECONDS, refineArmed } from "../../../models/h3/src/refine.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -259,6 +259,57 @@ describe("the refine kind (the fifth mod bag)", () => {
       'a ≤1x pass reads the stated window — the 2x ceiling is a 2x law, not a clip law');
   });
 
+  it("THE WINDOW'S SOUNDTRACK (refine-window audit C2): the loader's audio slot feeds VAEEncodeAudio, whose latent is the handoff's audio_latent — with select_every_nth pinned at 1", () => {
+    // THE BURN CLASS this arm closes: the soundtrack half of the window
+    // had no judge. VHS derives its audio window as
+    // `frame_load_cap × target_frame_time × select_every_nth`
+    // (load_video_nodes.py:400-403, utils.py:224-230) — so an nth move
+    // desyncs A/V while every wall stays green, and a re-wire that fed
+    // the handoff the FULL clip's soundtrack would refine windowed
+    // frames against unwindowed audio with no refusal anywhere.
+    const walked = def.schema({
+      calls: [{ text: 'a slow push in', start_frame: 0, end_frame: 56 }], length: 56,
+      refine: [{ ...REFINE_ENTRY(), clip_seconds: 2.33, start_seconds: 1.5 }],
+    }) as Record<string, unknown>;
+    const g = new GraphBuilder();
+    def.compose(walked, model, g, 'run_rfmod_audio_window');
+    const out = graphOf(g);
+    const loaders = ofClass(out, 'VHS_LoadVideo');
+    assert.equal(loaders.length, 1, 'one shared loader (the film\'s own law)');
+    const [loaderId, loader] = loaders[0]!;
+    assert.equal(loader.inputs['frame_load_cap'], Math.round(2.33 * 24), 'the window is the loader\'s cap (56 f)');
+    assert.equal(loader.inputs['skip_first_frames'], Math.round(1.5 * 24), 'the window start is the loader\'s skip (36 f)');
+    assert.equal(loader.inputs['select_every_nth'], 1, 'VHS audio duration = cap × tft × nth: nth 1 is the window law');
+    const enc = ofClass(out, 'VAEEncodeAudio');
+    assert.equal(enc.length, 1, 'the soundtrack encodes once');
+    const [encId, encNode] = enc[0]!;
+    assert.deepEqual(encNode.inputs['audio'], [loaderId, 2], 'the audio encode reads the loader\'s AUDIO slot, never its frames');
+    const hands = ofClass(out, 'MinimaxH3LatentUpscaler3DRefineHandoff');
+    assert.equal(hands.length, 1);
+    assert.deepEqual(hands[0]![1].inputs['audio_latent'], [encId, 0], 'the handoff\'s audio_latent is the WINDOWED soundtrack\'s encode');
+    const venc = ofClass(out, 'VAEEncode')[0]!;
+    assert.deepEqual(hands[0]![1].inputs['latent'], [venc[0], 0], 'and its video latent is the windowed frames\' encode — the split-stream law, both wires on one window');
+  });
+
+  it("THE CEILING IS THE WINDOW'S (refine-window audit C1): a target-dimensions or megapixels window past the measured frame ceiling refuses loud — only a same-size multiplier pass is exempt", () => {
+    const walk = (entry: Record<string, unknown>) =>
+      def.schema({
+        calls: [{ text: 'a slow push in', start_frame: 0, end_frame: 56 }], length: 56,
+        refine: [entry],
+      }) as Record<string, unknown>;
+    for (const mode of ['target dimensions', 'megapixels']) {
+      assert.throws(() => def.compose(walk({ ...REFINE_ENTRY(), clip_seconds: 6, mode }), model, new GraphBuilder(), 'run_rfmod_upsize_ceiling'),
+        /a 144 f window at target dimensions|a 144 f window at megapixels/,
+        `the ${mode} mode upsizes on its own budget — the window ceiling is not the multiplier's private law`);
+    }
+    // a same-size pass keeps the wider window (the capacity cure)
+    const flat = walk({ ...REFINE_ENTRY(), clip_seconds: 6, scale: 1 });
+    const g = new GraphBuilder();
+    def.compose(flat, model, g, 'run_rfmod_flat_ceiling');
+    assert.equal(ofClass(graphOf(g), 'VHS_LoadVideo')[0]![1].inputs['frame_load_cap'], 144,
+      'a 1x pass reads the wider window — its upscaler is the identity');
+  });
+
   it("THE CAPACITY SEATS (F24): a stated scale ≤ 1 rides the handoff verbatim — the same-size refine fits what the 2x pass OOMs", () => {
     const entry = { source_clip: 'swap_film_v1.mp4', refine_prompt: 'the same scene', denoise: 0.32, steps: 6, mode: 'scale by multiplier', scale: 1 };
     const walked = def.schema({
@@ -281,6 +332,27 @@ describe("the refine kind (the fifth mod bag)", () => {
     const g2 = new GraphBuilder();
     def.compose(exact, model, g2, 'run_rfmod_dims');
     assert.equal(ofClass(graphOf(g2), 'MinimaxH3LatentUpscaler3DRefineHandoff')[0]![1].inputs['mode'], 'target dimensions');
+  });
+
+  it("the card's measured window numbers are DERIVED from the model's constants (refine-window audit D1): a ceiling move re-words the served face", () => {
+    // The burn class: the served tooltip and section named "90 f" /
+    // "141 f" as hand-typed prose while the model package exported
+    // REFINE_DEFAULT_CLIP_SECONDS and REFINE_2X_OOM_FRAMES. Move the
+    // ceiling and the card lies about what the door enforces — and no
+    // arm would notice, because tooltips had no judge anywhere. The
+    // cure is derivation (card.ts interpolates the constants) and this
+    // arm judges it: the served numbers equal the exported ones.
+    const kind = (def.mods ?? []).find((m) => m.param_key === 'refine');
+    assert.ok(kind, 'the card declares the refine bag');
+    const green = String(REFINE_DEFAULT_CLIP_SECONDS * 24);
+    const ceiling = String(REFINE_2X_OOM_FRAMES);
+    const clip = (kind!.fields ?? []).find((f) => f.name === 'clip_seconds');
+    assert.ok(clip?.tooltip?.includes(`${green} f`), `the served tooltip names the green window derived from the constant (${green} f)`);
+    assert.ok(clip?.tooltip?.includes(`${ceiling} f`), `and the OOM ceiling derived from the constant (${ceiling} f)`);
+    assert.equal(typeof clip?.default, 'number');
+    assert.equal(clip!.default, REFINE_DEFAULT_CLIP_SECONDS, 'the served default IS the constant');
+    assert.ok(kind!.section?.includes(`${green} f`) && kind!.section?.includes(`${ceiling} f`),
+      'the section states the same measured pair');
   });
 
   it("an armed refine resolves its default output to the refine SaveVideo", () => {

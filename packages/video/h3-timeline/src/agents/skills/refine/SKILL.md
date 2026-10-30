@@ -69,6 +69,14 @@ before, byte-identical.)
    (`source_clip`) — normally a prior run's harvested film, or the
    source footage you are polishing. It is one file, not a run
    lineage: there is no chain store involved on this arm.
+   THE SOUNDTRACK REQUIREMENT: this arm encodes the window's audio
+   (`VAEEncodeAudio` → the handoff's `audio_latent`), so the source
+   MUST carry an audio track. A silent clip fails inside the loader
+   with the engine's own ffmpeg error ("failed to extract audio"),
+   not with a card refusal — the card cannot see a file's tracks.
+   Every film this estate renders carries 48 kHz sound, so a
+   harvested prior film is always a valid source; a hand-staged or
+   muted clip must be given a soundtrack first.
 2. **Arm and bind.** Seat ONE entry on the `refine` mod bag:
    `params.refine = [entry]` — never flat (a flat `refine_clip` or
    `refine_prompt_value` beside the doc refuses as unknown param(s)).
@@ -86,11 +94,25 @@ before, byte-identical.)
    - `start_seconds` (0–3600, 0) — where the window starts (the
      loader's `skip_first_frames`, seconds × 24). 0 is the clip head.
      Advance it window by window to walk a longer film.
-   A 2x multiplier window past 141 f (5.875 s) REFUSES at the compose
-   door before the engine runs: 141 f is the measured OOM (it missed
-   by 1.06 GiB with 20.13 GiB already resident, report §13.2), and
-   H3 memory grows with the window, so a wider one cannot fit. The
-   refusal names the numbers and the two cures below.
+   A window past 141 f (5.875 s) REFUSES at the compose door before
+   the engine runs: 141 f is the measured OOM (it missed by 1.06 GiB
+   with 20.13 GiB already resident, report §13.2), and H3 memory
+   grows with the window, so a wider one cannot fit. THE CEILING IS
+   THE WINDOW'S: it applies to EVERY upsizing mode — `scale by
+   multiplier` at ≥ 2, and both exact-size modes (`target
+   dimensions`, `megapixels`) ship the same learned 3D upscaler and
+   take the same ceiling. Only a same-size multiplier pass
+   (`scale` < 2) is exempt, because its upscaler is the identity —
+   that is what made a 144 f window fit at 1x. The refusal names the
+   numbers and the cures below.
+   THE WALK BOUND: the window must start INSIDE the clip. A
+   `start_seconds` past the last frame yields no frames and the
+   engine answers "No frames generated" — the walk's last step
+   starts at (clip length − window length), never past it. A
+   `clip_seconds` longer than what remains is quietly SHORTENED to
+   the frames that exist (VHS yields `min(cap, available)`), so the
+   produced window can be shorter than the number you stated: know
+   the clip's length and state both seats from it.
 4. **Set the pass dials.** The entry fields (the card's served ranges,
    tested guidance):
    - `denoise` (0.05–0.5, 0.32) — the partial-denoise strength of the
@@ -139,7 +161,10 @@ cures, in the order to try them:
    still sharpens; quality caps at source resolution.
 3. **The exact-size modes** (`target dimensions`, `megapixels`) —
    the node's own sizing routes when a specific output grid is
-   wanted instead of a multiplier.
+   wanted instead of a multiplier. They take the SAME window ceiling
+   as the 2x multiplier (both ship the learned 3D upscaler), so they
+   are a SIZING choice, never a capacity escape: narrow the window or
+   go same-size when VRAM is the wall.
 
 ## Companion surfaces
 
