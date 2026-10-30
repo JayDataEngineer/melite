@@ -65,6 +65,13 @@ The web UI boots with `dsh --profile <name> --no-open --port <port>`;
 the printed token URL is the entry point (the browser-trust fence
 rejects every other first request).
 
+**No other setup is required to boot.** A fresh install names no
+roots and carries no config: the estate row pins per-user defaults
+(`~/.local/share/melite`) before its rows mount, so the profile above
+boots a green estate — every seat active, the web UI serving — with
+zero configuration. Weights and the engine are separate, deliberate
+downloads (below) and are only needed to actually run media.
+
 ## Wiring the agent driver
 
 The estate's agent seats need one LLM driver. The driver is a DSH
