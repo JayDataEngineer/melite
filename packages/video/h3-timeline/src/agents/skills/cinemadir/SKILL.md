@@ -52,14 +52,19 @@ The estate's camera knobs, in the order you should reach for them:
    `start_time` + `duration`) slices the guide to the span that
    matters. This is the strongest native camera tool — a real rendered
    move beats an adjective.
-4. **The re-shoot chain — the parallel lane's stages.** When the brief
-   re-angles EXISTING footage, the re-shoot camera chain on
-   h3-timeline (camera intent → warp → depth → Fun ControlNet → H3 +
-   inpaint) exposes re-shoot camera stages `orbit` / `pan` / `dolly` /
-   `zoom`. The chain re-renders a plate along the move; the honest
-   ceiling is small-to-moderate re-angles and 2.5D parallax. Land the
-   plate as a window's anchor or reference, then direct the rest of
-   the film in call prose.
+4. **The re-shoot mod bag — the camera door.** When the brief
+   re-angles EXISTING footage, arm the h3-timeline **reshoot** mod bag
+   with ONE entry (`params.reshoot = [entry]`): the official
+   comfy-reshoot chain runs MoGe metric depth → ONE CrossViewWarp under
+   the moved camera, pins the raw warp as H3's guide, and re-renders
+   the clip from the new pose under the CrossView LoRA. The entry's
+   dials ARE the camera: `orbit`, `tilt`, `dolly`, `zoom`, `pan`
+   (plus `strength` and the depth postures) — see the `reshoot` skill
+   for the bands and the official defaults. The honest ceiling is
+   small-to-moderate re-angles and 2.5D parallax. There is NO
+   Fun-ControlNet stage and NO inpaint stage in this chain: the holes
+   the warp leaves are pinned raw, never painted (every fill cure
+   painted a second subject and was retired).
 5. **Seams — `transition`, the stitch grammar.** The seam system has
    exactly two states: a carried seam (omit `transition` — the
    generation head hands a 22-frame drift-control overlap to the next
@@ -123,9 +128,8 @@ on the intended framing.
 
 ### "Orbit halfway around the parked car, then hold low over the hood."
 
-The move is re-angling existing footage, so the re-shoot chain owns the
-orbit: walk the chain's `orbit` stage (camera intent → warp → depth →
-Fun ControlNet → H3 + inpaint) over the source clip at a half-turn —
+The move is re-angling existing footage, so the reshoot mod bag owns the
+orbit: bind ONE `reshoot` entry on the source clip at a half-turn —
 inside the honest ceiling (small-to-moderate arc, 2.5D parallax; a full
 orbit hallucinates fill). Then compose the delivered film:
 
@@ -146,16 +150,26 @@ orbit hallucinates fill). Then compose the delivered film:
         "end_frame": 124
       }
     ],
-    "keyframes": [
-      { "frame": 56, "image": "reshoot/orbit-mid-plate.png" }
+    "reshoot": [
+      {
+        "source_clip": "parked-car-source.mp4",
+        "orbit": -90,
+        "tilt": 0,
+        "dolly": 1,
+        "zoom": 50,
+        "pan": 0,
+        "strength": 0.8
+      }
     ]
   }
 }
 ```
 
-The re-shot plate anchors the orbit's midpoint (frame 56, inside the
-first window `[0, 90)`); the carry into window two (span 34, legal
-`17k`) continues the hold with no cut. When NO footage exists yet —
+The bag entry IS the orbit: `orbit` -90° walks the camera a half-turn
+around the source clip (inside the honest ceiling — past 90° the hidden
+side is invented), and the film's calls then direct the hold that
+follows. The carry into window two (span 34, legal `17k`) continues it
+with no cut. When NO footage exists yet —
 composing fresh — the same orbit is prose-only: say the move, keep the
 window long, and expect an impressionistic arc, not a tracked path.
 
@@ -201,8 +215,8 @@ Never promise what the graph cannot deliver:
 - **No native geometric camera conditioning on H3.** No Plücker-ray or
   CameraCtrl-style adapter exists for H3 on this estate; there is no
   camera parameter seat on the card. Every move is call prose, a
-  reference-video transfer, or the re-shoot chain — never a trajectory
-  parameter.
+  reference-video transfer, or the reshoot mod bag's dials — never a
+  trajectory parameter.
 - **Prompt-compiled is not geometry.** Prose moves are performed, not
   tracked: a written orbit is H3's impression of an orbit. Do not
   promise exact azimuths, lens math, fov, or that a described path is

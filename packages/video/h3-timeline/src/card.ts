@@ -160,7 +160,7 @@ const REPLACE_MOD: DeclaredModifierKind = {
     { name: 'still', label: 'Replacement still', type: 'image', default: '', tooltip: 'The replacement still (the R2V ref_images LoadImage + the plan picture_1).' },
     { name: 'mannequin', label: 'Mannequin video', type: 'file', media: 'video', default: '', tooltip: 'The mannequin video from the track-card run (the R2V ref_videos H3GreyMannequins output).' },
     { name: 'mask', label: 'Person mask', type: 'image', default: '', tooltip: 'ONE staged PNG (no per-frame mask sequence is wired): bind a single representative from the track-card run — the pixel-max UNION of its grown per-frame masks is recommended. Per-frame motion rides the mannequin video (reference GrowMaskWithBlur expand 40). A folder path never rides this seat — bind one file.' },
-    { name: 'swap_prompt', label: 'Swap prompt', type: 'text', default: '', tooltip: 'The swap action text — agent-composed, user-confirmed (the R2V prompt via H3FillShots).' },
+    { name: 'swap_prompt', label: 'Swap prompt', type: 'text', default: '', tooltip: 'The swap action text — agent-composed, user-confirmed. It feeds the reference-to-video prompt seat DIRECTLY: the swap composes no in-graph prompter (no LLM/describer node ever rewrites your words).' },
     { name: 'keep_audio', label: 'Keep source audio', type: 'boolean', default: true, tooltip: 'ON: the source clip\'s audio rides the swap unchanged (the reference posture — preserve source audio, assemble from source). OFF: the soundtrack is generated fresh with the swap (generate all audio, assemble generated).' },
     { name: 'roles', label: 'Roles', type: 'text', default: '', tooltip: 'Which person to replace (the plan roles seat; empty = the detected lead).' },
     { name: 'seed', label: 'Plan seed', type: 'number', default: 0, min: 0, max: 4294967295, step: 1, tooltip: 'The chain plan base_seed (the reference runs 0; the sampler seed stays the doc seed).' },
@@ -319,7 +319,7 @@ const REFINE_MOD: DeclaredModifierKind = {
     'Comfyui_Minimax_h3_latent_Upscaler-Plus',
     'melite-utility-nodes',
   ],
-  section: 'Refine — a standalone second pass over a source clip: 2x learned latent upscale + the low-sigma H3 refinement pass in one node (the film handoff\'s own spelling), decoded and saved as one film. The soundtrack is the source\'s own, always. Film runs leave this arm empty.',
+  section: 'Refine — a standalone second pass over ONE WINDOW of a source clip: 2x learned latent upscale + the low-sigma H3 refinement pass in one node (the film handoff\'s own spelling), decoded and saved as one film. The window is what the 2x memory ceiling allows (90 f measured green, 141 f OOM) — a longer film is refined window by window, each run moving Start seconds forward. The soundtrack is the window\'s own, always. Film runs leave this arm empty.',
   fields: [
     // The seat TYPES (the picker law, the siblings' own): the video
     // seat is `file` + media 'video'; the prompt seat is text
@@ -329,13 +329,13 @@ const REFINE_MOD: DeclaredModifierKind = {
     { name: 'denoise', label: 'Denoise', type: 'number', default: 0.32, min: 0.05, max: 0.5, step: 0.01, tooltip: 'The partial-denoise strength of the refinement pass (the refine window is 0.30–0.35; lower = subtler). 1 or more is refused — a refine is never a re-render (the handoff\'s sigmas law: 0 <= sigmas[0] < 1).' },
     { name: 'steps', label: 'Refine steps', type: 'number', default: 6, min: 1, max: 30, step: 1, tooltip: 'The refinement schedule steps (the low-sigma second pass; the sampler steps stay the doc marriage).' },
     { name: 'seed', label: 'Refine seed', type: 'number', default: 0, min: 0, max: 4294967295, step: 1, tooltip: 'The refinement noise seed (0 runs the reference posture).' },
-    { name: 'clip_seconds', label: 'Clip seconds', type: 'number', default: 6, min: 0.5, max: 60, step: 0.1, tooltip: 'The clip budget the preview override frames from (in-run-only — the pass refines the whole staged clip).' },
-    // THE CAPACITY SEATS (the F24 burn, 2026-10-30): the whole-clip
-    // handoff OOMs past ~100 f at the hardcoded 2x, and the node
-    // itself serves an exact-size mode — a ≤1x pass fits. Both seats
-    // ride the node's own declared domain (mode enum, scale
-    // [1, 4]); the default is the shipped 2x so every existing doc
-    // composes byte-identically.
+    { name: 'clip_seconds', label: 'Window seconds', type: 'number', default: 3.75, min: 0.5, max: 60, step: 0.25, tooltip: 'How much of the clip this pass refines, from the window start: 3.75 s = 90 f at 24 fps, the widest window measured green at 2x (2688×1536). The pass reads only this window, so a long film is covered by advancing Start seconds — and a 2x window past 5.87 s (141 f) is refused: that is where the measured OOM sits.' },
+    { name: 'start_seconds', label: 'Start seconds', type: 'number', default: 0, min: 0, max: 3600, step: 0.25, tooltip: 'Where this window starts in the source clip (0 = the first frame). Each run refines one window; step it by your window seconds (minus a second or two of overlap) to walk a longer film, re-running the same entry with only this seat moved.' },
+    // THE CAPACITY SEATS (the F24 burn, 2026-10-30): the 2x handoff
+    // OOMs past the measured 141 f, and the node itself serves an
+    // exact-size mode — a ≤1x pass fits. Both seats ride the node's
+    // own declared domain (mode enum, scale [1, 4]); the default is
+    // the shipped 2x so every existing doc composes byte-identically.
     { name: 'mode', label: 'Upscale mode', type: 'select', default: 'scale by multiplier', options: [
       { value: 'scale by multiplier', label: 'Scale by multiplier (the shipped 2x)' },
       { value: 'target dimensions', label: 'Target dimensions (1280x704)' },

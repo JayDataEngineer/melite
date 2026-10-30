@@ -83,7 +83,10 @@ describe("the refine kind (the fifth mod bag)", () => {
     ], "the arm-gated packs: the VHS loader, the plane, the handoff, the resample tail");
     const names = ((refine as { fields?: Array<{ name?: string }> }).fields ?? []).map((f) => f.name);
     assert.deepEqual(names, [
-      'source_clip', 'refine_prompt', 'denoise', 'steps', 'seed', 'clip_seconds',
+      'source_clip', 'refine_prompt', 'denoise', 'steps', 'seed',
+      // THE WINDOW (F24, round 6): the pass refines a window, not the
+      // whole clip — the length and where it starts
+      'clip_seconds', 'start_seconds',
       // THE CAPACITY SEATS (F24, 2026-10-30): the node's own sizing
       // mode + multiplier — a ≤1x pass fits clips the 2x OOMs
       'mode', 'scale',
@@ -202,6 +205,58 @@ describe("the refine kind (the fifth mod bag)", () => {
     assert.equal(saves.length, 1, 'a single terminal SaveVideo');
     assert.equal(String(saves[0]![1].inputs['filename_prefix']), 'run_rfmod_armed/refine', 'the refine prefix rides the run id');
     assert.equal(ofClass(out, 'MiniMaxH3ChainAssemble').length, 0, 'no ChainAssemble — a refine has no loop lineage to assemble');
+  });
+
+  it("THE WINDOW (F24, round 6): the loader reads ONE window — clip_seconds as frame_load_cap, start_seconds as skip_first_frames", () => {
+    // The burn: the arm loaded the WHOLE staged clip, so the 2x
+    // handoff died on anything past the measured ceiling (141 f OOM,
+    // §13.2). The cure is the loader's own two seats — nothing else
+    // in the graph may carry the film's full length.
+    const compose1 = (entry: Record<string, unknown>, runId: string) => {
+      const walked = def.schema({
+        calls: [{ text: 'a slow push in', start_frame: 0, end_frame: 56 }], length: 56,
+        refine: [entry],
+      }) as Record<string, unknown>;
+      const g = new GraphBuilder();
+      def.compose(walked, model, g, runId);
+      return graphOf(g);
+    };
+    // the shipped default: 3.75 s = 90 f, from the first frame
+    const dflt = compose1(REFINE_ENTRY(), 'run_rfmod_window_default');
+    const ld = ofClass(dflt, 'VHS_LoadVideo')[0]![1].inputs;
+    assert.equal(ld['frame_load_cap'], 90, 'the default window is 90 f (3.75 s at the film clock) — the widest measured-green 2x window, never 0 (the whole clip)');
+    assert.equal(ld['skip_first_frames'], 0, 'the default window starts at the clip head');
+    const prev = ofClass(dflt, 'ModelPreviewOverrideKJ');
+    assert.equal(prev.length, 1, 'the plane still carries its preview override');
+    assert.equal(prev[0]![1].inputs['preview_frames'], 90, 'the preview budget frames the same window the pass reads');
+    // a moved window: 2 s from 5 s
+    const moved = compose1({ ...REFINE_ENTRY(), clip_seconds: 2, start_seconds: 5 }, 'run_rfmod_window_moved');
+    const ld2 = ofClass(moved, 'VHS_LoadVideo')[0]![1].inputs;
+    assert.equal(ld2['frame_load_cap'], 48, '2 s at 24 fps = 48 f read');
+    assert.equal(ld2['skip_first_frames'], 120, '5 s at 24 fps = 120 f skipped (VHS offsets the soundtrack by the same skip)');
+  });
+
+  it("THE WINDOW refuses LOUD where the measured 2x OOM sits — and a same-size pass keeps its wider window", () => {
+    const walk = (entry: Record<string, unknown>) =>
+      def.schema({
+        calls: [{ text: 'a slow push in', start_frame: 0, end_frame: 56 }], length: 56,
+        refine: [entry],
+      }) as Record<string, unknown>;
+    for (const [entry, re] of [
+      [{ ...REFINE_ENTRY(), clip_seconds: 0 }, /clip_seconds 0 — a refine window needs frames/],
+      [{ ...REFINE_ENTRY(), start_seconds: -1 }, /start_seconds -1 — a window starts at or after the clip's first frame/],
+      [{ ...REFINE_ENTRY(), clip_seconds: 6 },
+        /a 144 f window at 2x — the 2x pass was measured OOM at 141 f and green at 90 f/],
+    ] as Array<[Record<string, unknown>, RegExp]>) {
+      assert.throws(() => def.compose(walk(entry), model, new GraphBuilder(), 'run_rfmod_window_guard'), re,
+        'the window guard names the measured ceiling, never a silent OOM');
+    }
+    // the same window at the same-size pass sizes its own: no refusal
+    const same = walk({ ...REFINE_ENTRY(), clip_seconds: 6, scale: 1 });
+    const g = new GraphBuilder();
+    def.compose(same, model, g, 'run_rfmod_window_flat');
+    assert.equal(ofClass(graphOf(g), 'VHS_LoadVideo')[0]![1].inputs['frame_load_cap'], 144,
+      'a ≤1x pass reads the stated window — the 2x ceiling is a 2x law, not a clip law');
   });
 
   it("THE CAPACITY SEATS (F24): a stated scale ≤ 1 rides the handoff verbatim — the same-size refine fits what the 2x pass OOMs", () => {

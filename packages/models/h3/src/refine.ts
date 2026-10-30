@@ -12,7 +12,7 @@
 // and the estate's requeue driver only drives h3_chain rows, so a
 // from-scratch clip cannot enter it without new estate surface.
 //
-// THE REFINE LAW (three clauses):
+// THE REFINE LAW (four clauses):
 //  1. ONE VARIANT PATH: scale 2.0 under mode 'scale by multiplier'
 //     (the film handoff's own spelling, actions.ts), lock_audio true
 //     (the repair's posture — the soundtrack is the source's own,
@@ -35,8 +35,18 @@
 //     shift, the operator's lora law), the sampler rides the plane's
 //     euler select, the schedule rides the doc's own sched_name. The
 //     entry carries only the refine seats (source_clip,
-//     refine_prompt, denoise, steps, seed, clip_seconds) — everything
-//     model-shaped stays family-owned.
+//     refine_prompt, denoise, steps, seed, clip_seconds,
+//     start_seconds, mode, scale) — everything model-shaped stays
+//     family-owned.
+//  4. A WINDOW, NEVER THE WHOLE CLIP (F24, 2026-10-30): the loader
+//     reads clip_seconds from start_seconds (frame_load_cap =
+//     round(clip_seconds × 24), skip_first_frames =
+//     round(start_seconds × 24)), and VHS trims the soundtrack by the
+//     same window. The measured 2x ceiling on the operator's box is
+//     90 f green / 141 f OOM, so a 2x multiplier window past the
+//     measured OOM point refuses at this door by name; a longer film
+//     is covered window by window, and a same-size (scale 1) pass
+//     sizes its own.
 //
 // The emission is a single graph (no loop, no requeue — one
 // top-level prompt): VHS source → VAE encode (video + audio split
@@ -52,6 +62,21 @@ import { h3MaskedEditPlane, loadVideo } from './chainEdit.js'
  *  seat carries this same single option — one file, one spelling, no
  *  hand-spelled alternatives). */
 export const REFINE_UPSCALE_MODEL = 'minimax_h3_latent_upscaler_3d_bf16.safetensors'
+
+/** The 2x pass's measured memory ceiling, in frames at the film clock
+ *  (24 fps). The friction report's §12.2/§13.2 sweep on the operator's
+ *  box: 56 f and 90 f pass at 2x (2688×1536, 48 kHz); 141 f OOMs,
+ *  needing 1.06 GiB more with 20.13 GiB already resident. H3's memory
+ *  grows monotonically with the window, so a window past the measured
+ *  OOM point cannot fit at this variant — the door refuses it by name
+ *  instead of burning a render to find out. */
+export const REFINE_2X_OOM_FRAMES = 141
+
+/** The refine window's default length in seconds — 90 f at 24 fps, the
+ *  widest window the sweep measured GREEN at 2x. A default that OOMs is
+ *  the F24 burn: the arm used to load the WHOLE staged clip, so any
+ *  film longer than ~4 s died at this variant. */
+export const REFINE_DEFAULT_CLIP_SECONDS = 3.75
 
 /** The refine entry's required seats (the reshoot idiom: an armed
  *  doc with an empty seat refuses loud naming the seat). */
@@ -110,7 +135,45 @@ export function renderH3Refine(
   }
   const seed = num(entry, 'seed', 0)
   const steps = num(entry, 'steps', 6)
-  const clipSeconds = num(entry, 'clip_seconds', 6)
+
+  // THE CAPACITY SEATS (the F24 burn, 2026-10-30): the node serves
+  // three sizing modes and a [1, 4] multiplier. A stated seat rides
+  // verbatim (the knob bounds are the card's own); absent keeps the
+  // shipped 2x so every existing doc composes byte-identically.
+  const upMode = (entry['mode'] as string | undefined) ?? 'scale by multiplier'
+  const upScale = (entry['scale'] as number | undefined) ?? 2.0
+
+  // ── THE WINDOW (F24's cure, round 6): a refine refines a WINDOW of
+  // the staged clip, never the whole film. The pass used to load every
+  // frame of the source and hand the full latent to the 2x handoff,
+  // so any clip past ~90 f died engine-side (141 f OOM, §13.2). The
+  // window is the loader's own two seats: frame_load_cap stops the
+  // read and skip_first_frames offsets it — VHS trims the soundtrack
+  // by the same window (load_video_nodes.py: `start_time =
+  // skip_first_frames * target_frame_time`, `lazy_get_audio(video,
+  // start_time, frame_load_cap * target_frame_time)`), so the encode
+  // seats read the WINDOW's frames and the WINDOW's audio, in sync.
+  // A long film is covered by advancing start_seconds window by
+  // window (the card's section states the stepping law).
+  const clipSeconds = num(entry, 'clip_seconds', REFINE_DEFAULT_CLIP_SECONDS)
+  const startSeconds = num(entry, 'start_seconds', 0)
+  if (!(clipSeconds > 0)) {
+    throw new Error(
+      `h3-timeline refine: clip_seconds ${clipSeconds} — a refine window needs frames (the seat is the loader's frame_load_cap: seconds × 24 at the film clock; the safe default is ${REFINE_DEFAULT_CLIP_SECONDS} s = 90 f)`,
+    )
+  }
+  if (!(startSeconds >= 0)) {
+    throw new Error(
+      `h3-timeline refine: start_seconds ${startSeconds} — a window starts at or after the clip's first frame (the seat is the loader's skip_first_frames); advance it window by window to cover a long film`,
+    )
+  }
+  const windowFrames = Math.max(1, Math.round(clipSeconds * 24))
+  const skipFrames = Math.round(startSeconds * 24)
+  if (upMode === 'scale by multiplier' && upScale >= 2 && windowFrames > REFINE_2X_OOM_FRAMES) {
+    throw new Error(
+      `h3-timeline refine: a ${windowFrames} f window at ${upScale}x — the 2x pass was measured OOM at ${REFINE_2X_OOM_FRAMES} f and green at 90 f (2688×1536, 48 kHz; H3 memory grows with the window, so a wider window cannot fit). Cut clip_seconds to ${(REFINE_2X_OOM_FRAMES / 24).toFixed(2)} s or less and cover the rest window by window, or lower scale to 1 for a same-size pass`,
+    )
+  }
 
   // ── the staged media (the shared loader law, force-rate-24 VHS —
   // never a private LoadVideo pair) + the family's own plane ──
@@ -118,7 +181,9 @@ export function renderH3Refine(
   // string — the cast restates the proven, never a fallback: there
   // is no default clip, and the sibling str() fallback would be a
   // dead branch here, uncovered by any honest door)
-  const [srcFrames, srcAudio] = loadVideo(g, entry['source_clip'] as string)
+  const [srcFrames, srcAudio] = loadVideo(
+    g, entry['source_clip'] as string, windowFrames, skipFrames,
+  )
   const { sigmaModel, samplerSel, clip, vaeVideo, vaeAudio } =
     h3MaskedEditPlane(g, p, facts, clipSeconds)
 
@@ -139,13 +204,8 @@ export function renderH3Refine(
   // ── THE HANDOFF (the report-named chain: learned 2x upscale +
   // the low-sigma refinement pass, one node — its output is final/
   // decode-ready, no external guider or second sampler) ──
-  // THE CAPACITY SEATS (the F24 burn, 2026-10-30): the node serves
-  // three sizing modes and a [1, 4] multiplier; the whole-clip pass
-  // OOMs at 2x past ~100 f, and a ≤1x pass fits. A stated seat rides
-  // verbatim (the knob bounds are the card's own); absent keeps the
-  // shipped 2x so every existing doc composes byte-identically.
-  const upMode = (entry['mode'] as string | undefined) ?? 'scale by multiplier'
-  const upScale = (entry['scale'] as number | undefined) ?? 2.0
+  // THE CAPACITY SEATS ride the handoff verbatim — the window above is
+  // what keeps a 2x pass inside memory; a ≤1x pass sizes its own.
   const upscaled = g.node('MinimaxH3LatentUpscaler3DRefineHandoff', {
     latent: videoLatent, audio_latent: audioLatent,
     noise, sampler: samplerSel, sigmas: sched,

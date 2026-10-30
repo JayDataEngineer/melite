@@ -112,6 +112,33 @@ as before, byte-identical.)
    execute; headless commissions ride `melite_flow` per the maker
    runbook.
 
+## What the run writes (the witnesses)
+
+The chain saves TWO supporting stills beside the film, under the run
+tree at `h3-film/`:
+
+- `<runId>/reshoot_warp` — ONE frame: the raw warp plate the guide
+  pins (`ImageFromBatch` batch_index 0, length 1 — the exact frame
+  `MiniMaxH3AddGuide` reads at 0). Earlier builds saved every warped
+  frame here and buried the run tree in 90 PNGs of one still; that is
+  fixed, and the wall pins the one-frame selector.
+- `<runId>/reshoot_orbit` — the camera gizmo (the orbit view), the
+  operator's visual check that the pose is what was authored.
+
+Both are WITNESSES, not deliverables: the film is the deliverable, and
+the run's poster/tile is taken from the video (a witness plate carries
+the raw magenta disocclusions the film itself resolves away).
+
+## How short a window can be
+
+The camera guide needs a floor: `crossviewGuideSeconds` derives the
+prepare clip's duration from the SHORTEST window at 24 fps and REFUSES
+at COMPOSE below **24 frames (1 s)** — a shorter window cannot carry the
+camera. In practice author a re-shoot call on a ≥ 39-frame window
+(clip_seconds ≥ 1.625 at 24 fps): the 22-frame minimum first-window
+span snaps below the floor and refuses, while a normal 90-frame window
+(3.75 s) is the measured shape.
+
 ## Companion surfaces
 
 - `cinemadir` composes camera-language films — its keyframe plates

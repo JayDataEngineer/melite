@@ -13,10 +13,14 @@ short guide.
 
 ## Current grid
 
-The carried path uses the shared generated-frame grid (`22 + 17k` values such
-as 56, 124, and 362 frames). The card has separate snapping/refusal paths
-for other spans; a single off-grid value is not a promise of uniform
-acceptance or refusal.
+Every window lands on the shared generated-frame grid — ONE uniform gate
+(`assertSpanGrid`, `models/h3/src/timelineContract.ts`): a FIRST or CUT
+window's authored span must be `22 + 17k` (e.g. 22, 39, 56, 73, … 124),
+and a CARRIED window's span must be `17k` (its 22-frame seam is the
+generation head the previous window carries). Both are the same engine
+grid, both refuse at the compose door with the nearest legal value named,
+and there is no snapping path that silently accepts an off-grid span —
+the old separate-path behavior was closed 2026-09-25.
 
 ## Intended call layout
 

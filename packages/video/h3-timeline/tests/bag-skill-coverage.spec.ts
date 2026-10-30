@@ -1,0 +1,177 @@
+// @contract cards-h3-bag-skills
+// bag-skill-coverage.spec.ts — THE DOC-COVERAGE WALL for the three
+// mod bags that shipped without a skill leaf (2026-11-13, the
+// friction report's §14 coverage finding: SEVEN served mod kinds,
+// TWO documented). A bag an agent cannot read the dials of is a bag
+// it guesses at, and every guess is a burn — repair guessed at the
+// denoise window, upscale guessed at the dotted `mode.scale` key,
+// loras guessed at whether the default row existed at all.
+//
+// THE LAW: every armed mod kind the card SERVES has exactly one
+// skill leaf (locally, or in the declared external seat the flow
+// bundle owns) — the roster is derived from the served kinds, never
+// hand-listed; every number-bounded dial in a covered leaf quotes
+// the card's OWN band and default; and each leaf carries the dated
+// VERIFIED stamp naming a receipt that exists plus what is still
+// unproven.
+import "../../../../tests/helpers/boot-models.ts";
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { beforeAll, describe, expect, it } from "vitest";
+import assert from "node:assert/strict";
+import { loadCardDefs } from "@melite/comfyui-cordis";
+import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+const SKILLS = join(HERE, "..", "src", "agents", "skills");
+const ROOT = join(HERE, "..", "..", "..", "..");
+const readSkill = (name: string): string =>
+  readFileSync(join(SKILLS, name, "SKILL.md"), "utf-8");
+
+/** The two armed bags whose leaf is not at `<param_key>/SKILL.md`:
+ *  `extend` rides the family's extend-flow bundle (served from the
+ *  engine's models plane), and `replace`'s seat is served under the
+ *  `swap` id — the leaf is `swap/SKILL.md` and it binds
+ *  `params.replace`, which ARM 1 asserts. Declared here (never
+ *  hand-listed as a pass) so the roster stays DERIVED from the card. */
+const LEAF_SEAT: Record<string, { path: string; binds: string }> = {
+  extend: {
+    path: "packages/engines/comfyui-cordis/models/video/h3/agents/skills/extend-flow/SKILL.md",
+    binds: "extend",
+  },
+  replace: { path: "packages/video/h3-timeline/src/agents/skills/swap/SKILL.md", binds: "replace" },
+};
+
+type FieldRow = {
+  name: string; type?: string; default: unknown;
+  min?: number; max?: number;
+};
+type Kind = Record<string, unknown> & { param_key?: string; fields?: FieldRow[] };
+
+let def: CardDefinition;
+let kinds: Kind[];
+
+beforeAll(async () => {
+  def = (await loadCardDefs()).get("h3-timeline")!;
+  assert.ok(def, "the composition root serves the h3-timeline card");
+  kinds = ((def as unknown as { mods?: Kind[] }).mods ?? []).filter(
+    (k) => typeof k.param_key === "string",
+  );
+});
+
+/** The skill's dial line: `- \`name\` (BAND, …, DEFAULT) — prose`. The
+ *  default is the LAST comma segment inside the parens, so a line that
+ *  states its step (`22–56, step 17, 39`) parses the same as a plain
+ *  `0.05–0.5, 0.32`. Returns null when the line is absent. */
+const dialLine = (md: string, name: string): { band: string; def: number } | null => {
+  const m = md.match(new RegExp(`^\\s*- \`${name}\` \\(([^)]+)\\)`, "m"));
+  if (m === null) return null;
+  const parts = m[1]!.split(",").map((s) => s.trim());
+  const bare = (s: string): number => Number(s.replace("−", "-"));
+  return { band: parts[0]!, def: bare(parts[parts.length - 1]!) };
+};
+
+const bandOf = (band: string): [number, number] => {
+  const num = (s: string): number => Number(s.replace("−", "-"));
+  const [lo, hi] = band.split("–");
+  return [num(lo!), num(hi!)];
+};
+
+const bounded = (kind: Kind): FieldRow[] =>
+  (kind.fields ?? []).filter(
+    (f) => typeof f.min === "number" && typeof f.max === "number",
+  );
+
+describe("every served mod bag has a skill leaf an agent can read", () => {
+  it("ARM 1 — the roster is DERIVED from the card, and each armed kind resolves to ONE leaf", () => {
+    const armed = kinds.filter((k) => k.max_stack === 1).map((k) => k.param_key!);
+    expect(armed.sort()).toEqual([
+      "extend", "refine", "repair", "replace", "reshoot", "upscale",
+    ]);
+    for (const key of armed) {
+      const seat = LEAF_SEAT[key];
+      const path = seat?.path ?? join("packages/video/h3-timeline/src/agents/skills", key, "SKILL.md");
+      assert.ok(existsSync(join(ROOT, path)),
+        `the card serves the ${key} bag, so its leaf exists: ${path}`);
+      const md = readFileSync(join(ROOT, path), "utf-8");
+      assert.ok(md.includes(`params.${seat?.binds ?? key}`),
+        `${path} binds the served bag it documents (params.${seat?.binds ?? key})`);
+    }
+    const loras = kinds.find((k) => k.param_key === "loras")!;
+    assert.equal(loras.max_stack, 4, "loras is the multi-entry bag, so it has its own leaf");
+    assert.ok(existsSync(join(SKILLS, "loras", "SKILL.md")),
+      "the loras bag carries its own leaf (the F29 'I can't see or change the LORA' cure)");
+  });
+
+  it("ARM 2 — repair's every bounded dial quotes the card's OWN band and default", () => {
+    const kind = kinds.find((k) => k.param_key === "repair")!;
+    const md = readSkill("repair");
+    const rows = bounded(kind);
+    expect(rows.length, "the repair kind serves bounded dials to judge").toBeGreaterThan(6);
+    for (const row of rows) {
+      const line = dialLine(md, row.name);
+      assert.ok(line !== null, `repair/SKILL.md states the ${row.name} band`);
+      assert.deepEqual(bandOf(line!.band), [row.min, row.max],
+        `repair/SKILL.md's ${row.name} band ${line!.band} == the served [${row.min}, ${row.max}]`);
+      assert.equal(line!.def, row.default,
+        `repair/SKILL.md's ${row.name} default ${line!.def} == the served ${String(row.default)}`);
+    }
+    assert.match(md, /One door per doc/,
+      "the doc states the one-door law it is subject to");
+  });
+
+  it("ARM 3 — upscale's every bounded dial quotes the card's OWN band and default, and names the bare run name law", () => {
+    const kind = kinds.find((k) => k.param_key === "upscale")!;
+    const md = readSkill("upscale");
+    for (const row of bounded(kind)) {
+      const line = dialLine(md, row.name);
+      assert.ok(line !== null, `upscale/SKILL.md states the ${row.name} band`);
+      assert.deepEqual(bandOf(line!.band), [row.min, row.max],
+        `upscale/SKILL.md's ${row.name} band ${line!.band} == the served [${row.min}, ${row.max}]`);
+      assert.equal(line!.def, row.default,
+        `upscale/SKILL.md's ${row.name} default ${line!.def} == the served ${String(row.default)}`);
+    }
+    assert.match(md, /bare run name/i,
+      "the doc states the execute door resolves the bare name (F6: never hand-author a scene suffix)");
+    assert.match(md, /mode\.scale/,
+      "the doc names the dotted child key the engine validates (round 5's burn)");
+  });
+
+  it("ARM 4 — loras documents its stack ceiling and both bounded dials from the card", () => {
+    const kind = kinds.find((k) => k.param_key === "loras")!;
+    const md = readSkill("loras");
+    assert.equal(kind.max_stack, 4);
+    assert.match(md, /max_stack 4/, "the doc states the served stack ceiling");
+    for (const row of bounded(kind)) {
+      const line = dialLine(md, row.name);
+      assert.ok(line !== null, `loras/SKILL.md states the ${row.name} band`);
+      assert.deepEqual(bandOf(line!.band), [row.min, row.max],
+        `loras/SKILL.md's ${row.name} band ${line!.band} == the served [${row.min}, ${row.max}]`);
+      assert.equal(line!.def, row.default,
+        `loras/SKILL.md's ${row.name} default ${line!.def} == the served ${String(row.default)}`);
+    }
+    const id = (kind.fields ?? []).find((f) => f.name === "id")!;
+    assert.equal(id.type, "select", "the id seat is a served catalog select");
+    assert.ok(md.includes(`'${String(id.default)}'`),
+      "the doc quotes the served default adapter id verbatim");
+  });
+
+  it("ARM 5 — THE STAMP LAW: each new leaf carries a dated VERIFIED line, a receipt that EXISTS, and its unproven half", () => {
+    for (const name of ["repair", "upscale", "loras"]) {
+      const md = readSkill(name);
+      assert.match(md, /VERIFIED LIVE \d{4}-\d{2}-\d{2} against/,
+        `${name}/SKILL.md carries the canonical VERIFIED LIVE stamp`);
+      const stamp = /VERIFIED (?:LIVE )?(\d{4}-\d{2}-\d{2}) against ([\s\S]*?)(?=\n\n)/.exec(md);
+      assert.ok(stamp, `${name}/SKILL.md carries a dated VERIFIED line`);
+      const receipt = /receipts\/[a-z0-9-]+\.md/.exec(stamp![2]!);
+      assert.ok(receipt, `${name}/SKILL.md's stamp names a receipt under dev_docs/contracts/receipts/`);
+      assert.ok(existsSync(join(ROOT, "dev_docs", "contracts", receipt![0]!)),
+        `the named receipt exists: ${receipt![0]}`);
+      assert.match(stamp![2]!, /NOT yet verified live/i,
+        `${name}/SKILL.md names what is STILL unproven — never a blanket claim`);
+      const runId = /run-[0-9a-f]{12}-[0-9a-f]{8}/.exec(md);
+      assert.ok(runId, `${name}/SKILL.md cites the live run id its stamp stands on`);
+    }
+  });
+});

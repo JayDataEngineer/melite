@@ -81,9 +81,9 @@ a display name or an invented placeholder.
 - There is no live seam-keyframe/context field. Do not send retired fields
   and do not claim a keyframe conflict check that the current card does not
   perform.
-- A source-less audio row can be skipped by the film-mix path. Verify the
-  returned manifest and final audio; do not treat the row as delivered merely
-  because it was present in the input.
+- A POSITIONED audio row with no `src` is refused at the compose door (the film
+  mix cannot place a source-less row) — bind the returned asset before you place
+  it, and verify the returned manifest and final audio.
 
 These gaps are recorded as owed work. The current card source and focused
 tests are authoritative over this prose.

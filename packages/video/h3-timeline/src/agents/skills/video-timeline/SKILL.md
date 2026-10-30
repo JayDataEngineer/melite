@@ -83,9 +83,11 @@ THE BED IS GONE: there is no film-wide bed parameter. Generate dialogue first,
 then place its returned asset reference in an `audio_clips` row and copy the
 exact spoken words into `text`. Use the declared `class` (`dialogue`, `sfx`, or
 `music`) when the loaded schema requires it. The card owns the lane stamps,
-mix, and ducking; do not add an out-of-band film assembly step. A source-less
-positioned row can be skipped by the current mix path, so verify the returned
-manifest and final audio.
+mix, and ducking; do not add an out-of-band film assembly step. A POSITIONED
+row with no `src` is REFUSED at the compose door (`filmMix.ts`: "a positioned
+clip row has no src — the film mix cannot place a source-less row"), so bind a
+staged or returned asset before you place it; an unpositioned row is a
+statement about the film's own audio, never a placeholder.
 
 Use only the declared reference fields (`ref_images`, `ref_videos`,
 `ref_audios`, or the first/last-frame lanes) when they serve the task. A

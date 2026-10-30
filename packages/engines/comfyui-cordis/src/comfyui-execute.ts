@@ -844,6 +844,29 @@ export async function resolveH3ChainSelections(
     if (!Array.isArray(scenes) || scenes.length === 0) {
       throw new ComfyError(`H3 chain selection: run '${runName}' reported no scenes`);
     }
+    // THE STORE'S OWN SHAPE (F23 residual, 2026-11-13): the manager
+    // parses selection_json against the store's sidecars and dies with
+    // a RAW `json.decoder.JSONDecodeError` when a named revision has no
+    // readable checkpoint file — the operator's burn read as "the
+    // upscale arm crashed three nodes in". Validate the listing HERE,
+    // where a refusal can still name the run, the scene, and the cure.
+    const rows = scenes as Array<Record<string, EngineJson>>;
+    const blank = rows.find((s) =>
+      typeof s["latest"] !== "string" || (s["latest"] as string).trim() === "");
+    if (blank !== undefined) {
+      throw new ComfyError(
+        `H3 chain selection: run '${runName}' scene ${String(blank["scene"] ?? "?")} carries no saved checkpoint revision — ` +
+          "the chain store lists the run but not its scene latents. The upscale arm resumes a run that used route=chain (each scene checkpoints); " +
+          "a single-pass film leaves none, so name a chain run or press a film with the chain route first",
+      );
+    }
+    const sceneNumbers = rows.map((s): number => Number(s["scene"])).sort((a, b): number => a - b);
+    if (sceneNumbers.some((n, i): boolean => n !== i + 1)) {
+      throw new ComfyError(
+        `H3 chain selection: run '${runName}' scene numbers are not contiguous from 1 (got ${sceneNumbers.join(", ")}) — ` +
+          "the checkpoint parser walks a contiguous lineage and would refuse (or misread) a gapped store; resume a run whose scenes are whole",
+      );
+    }
     fetched.set(runName, chainSelectionOf(runName, scenes as Array<{ scene: number; latest: string }>));
   }
   const next: Record<string, EngineJson> = { ...graph };

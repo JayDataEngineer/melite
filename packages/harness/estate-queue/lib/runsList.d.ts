@@ -18,7 +18,19 @@ export declare function mediaCandidates(runDir: string): MediaCand[];
 /** run_artifacts: image/video/audio/model rows (image capped at _MAX_IMGS — counted but unlisted past it), everything else skipped; the {truncated,listed,total} marker when entries went unlisted. */
 /** path keeps the "./output/<run>/" literal. */
 export declare function runArtifacts(runDir: string, outDirLiteral: string): Record<string, unknown>[];
-/** _run_thumbnail: cached poster wins, else the first image candidate (same one-level rule, so nested-only runs still get a poster), else — the previews cure (2026-11-12) — the film-lead VIDEO: video-only runs served '' and every window tile painted frame 0 of an intermediate segment with nothing naming it. The engine film (the in-graph assembly's product) leads wherever it sits; else the first video candidate keeps the face at all. */
+/** _run_thumbnail: cached poster wins; else — THE WITNESS LAW (F32 cure,
+ *  2026-11-13) — the run's VIDEO leads, then the first still.
+ *
+ *  Why the order flipped: a reshoot run writes WITNESS stills beside its
+ *  film (`SaveImage.0_reshoot_warp_*` — the raw warp plate the guide
+ *  pins, magenta disocclusions and all, plus `SaveImage.1_reshoot_orbit_*`),
+ *  and the old first-image rule painted the tile with a witness (the
+ *  operator's 8.8 % magenta preview) while the film itself measured
+ *  0.00 %. The artifact names carry their save node's class, so the class
+ *  is the role: a video-carrying run's face is its video (the film-named
+ *  one first — the in-graph assembly's product, `engineFilmName` — then
+ *  the first video candidate); a still is the face only where no video
+ *  exists, which is every image-only run's case, unchanged. */
 export declare function runThumbnail(runDir: string, runId: string): string;
 /** _run_dir_has_media: the media-FIRST sort key — top-level names, then one level down. */
 /** NOTE the absences: NO `_` skip (a lone `_poster.jpg` counts), NO inner isdir check (a nested DIR named x.mp4 counts) — probed live, mirrored exactly. */

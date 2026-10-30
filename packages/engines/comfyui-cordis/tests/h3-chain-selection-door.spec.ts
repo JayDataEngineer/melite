@@ -20,6 +20,12 @@
  *   3. REFUSAL — an unknown run refuses loud naming the live runs
  *      (the route's own 404 body is the voice); a non-JSON error
  *      body refuses loud too.
+ *   4. THE STORE'S SHAPE (F23 residual, 2026-11-13) — a run the store
+ *      LISTS but whose scenes carry no revision (or a gapped scene
+ *      numbering) refuses here, naming the run, the scene and the
+ *      cure; without this the manager parses a selection_json whose
+ *      sidecar does not exist and dies with a raw JSONDecodeError
+ *      three nodes into the engine.
  */
 import { describe, expect, it } from "vitest";
 import assert from "node:assert/strict";
@@ -158,6 +164,38 @@ describe("h3 chain selection door — the refusal", () => {
     await assert.rejects(
       resolveH3ChainSelections(client as never, managerGraph("run_ghost")),
       /run_ghost.*live runs: run_alpha/s,
+    );
+  });
+
+  it("a listed run whose scenes carry no revision refuses naming the scene and the route=chain cure (never a raw JSONDecodeError three nodes in)", async () => {
+    const { client } = fakeClient({
+      "/melite/h3-chain-checkpoints?run=run_singlepass": {
+        status: 200,
+        body: { run_name: "run_singlepass", scenes: [{ scene: 1, revisions: [], latest: "" }] },
+      },
+    });
+    await assert.rejects(
+      resolveH3ChainSelections(client as never, managerGraph("run_singlepass")),
+      /run 'run_singlepass' scene 1 carries no saved checkpoint revision[\s\S]*route=chain/s,
+    );
+  });
+
+  it("a gapped scene numbering refuses naming the numbers (the parser walks a contiguous lineage)", async () => {
+    const { client } = fakeClient({
+      "/melite/h3-chain-checkpoints?run=run_gap": {
+        status: 200,
+        body: {
+          run_name: "run_gap",
+          scenes: [
+            { scene: 1, revisions: [REV_A], latest: REV_A },
+            { scene: 3, revisions: [REV_B], latest: REV_B },
+          ],
+        },
+      },
+    });
+    await assert.rejects(
+      resolveH3ChainSelections(client as never, managerGraph("run_gap")),
+      /run 'run_gap' scene numbers are not contiguous from 1 \(got 1, 3\)/,
     );
   });
 

@@ -139,7 +139,17 @@ interface SkillLine { id?: string }
 // refusals, the address law) joins the tts card's load line — the
 // id round-tripped 200 with a body in the arm above before this
 // repin (the census's own law).
-const EXPECTED_CARD_SKILLS = 49;
+// 49 -> 50 (2026-11-13, the refine skill + F24 window cure): the
+// h3-timeline refine SKILL.md joins the card-skill plane (the fifth
+// mod bag had a doc gap while the arm burned twice). The id
+// round-tripped 200 with a body in the arm above before this repin
+// (the census's own law).
+// 50 -> 53 (2026-11-13, the skill-coverage batch): the h3-timeline
+// repair, upscale and loras SKILL.md leaves join the card-skill plane
+// (the friction report's §14 coverage finding: 7 served mod kinds,
+// docs for 2). Every id round-tripped 200 with a body before this
+// repin (the census's own law).
+const EXPECTED_CARD_SKILLS = 53;
 // 8 → 11 (2026-10-11): object-forge's skillRefs — image-gen +
 // img-to-mesh card lines and z-image's prompt-enhance ride the flow
 // bundle (card:quad-remesh resolves null — the card ships no agent
@@ -156,7 +166,12 @@ const EXPECTED_CARD_SKILLS = 49;
 // audio-native-tts flow stages the tts card — its bundle advertises
 // the card's skills, so the new skill rides this census too. The id
 // round-tripped 200 with a body in the arm above before this repin.
-const EXPECTED_FLOW_SKILLS = 19;
+// 19 -> 20 (2026-11-13, the refine skill): the h3-timeline flow
+// bundle advertises its card's skills, so refine rides this census
+// too. The id round-tripped 200 with a body in the arm above.
+// 20 -> 23 (2026-11-13, the skill-coverage batch): repair/upscale/
+// loras ride the h3-timeline flow bundle's card skill line too.
+const EXPECTED_FLOW_SKILLS = 23;
 
 describe("the id namespace law: load-advertised ids round-trip through the read door", () => {
   it("every CARD skill line it advertises, hSkillRead serves 200 with a body", async () => {

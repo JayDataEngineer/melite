@@ -334,12 +334,20 @@ describe("runArtifacts", () => {
 });
 
 describe("runThumbnail", () => {
-  it("the cached poster wins, else the first image, else nothing", () => {
+  it("the cached poster wins, else a video render leads, else the first still, else nothing", () => {
+    // THE WITNESS LAW (F32 cure, 2026-11-13): a video-carrying run's
+    // face is its video. The old law put the first image first, and a
+    // reshoot run's first image is a WITNESS plate (raw warp, magenta
+    // disocclusions) — the operator's pink preview beside a film that
+    // measured 0.00 % magenta. A still is the face only where no video
+    // exists (every image-only run).
     const root = tmp();
     assert.equal(runThumbnail(root, "run-x"), "");
     writeFileSync(join(root, "v.mp4"), "v");
     mkdirSync(join(root, "gen"));
     writeFileSync(join(root, "gen", "x.png"), "x");
+    assert.equal(runThumbnail(root, "run-x"), "run-x/v.mp4");
+    rmSync(join(root, "v.mp4"));
     assert.equal(runThumbnail(root, "run-x"), "run-x/gen/x.png");
     writeFileSync(join(root, "_poster.jpg"), "p");
     assert.equal(runThumbnail(root, "run-x"), "run-x/_poster.jpg");
@@ -364,6 +372,27 @@ describe("runThumbnail", () => {
     rmSync(join(root, "h3-final"), { recursive: true });
     // window-only: the first video candidate keeps the face at all
     assert.equal(runThumbnail(root, "run-x"), "run-x/h3-film/h3_t4_w1_00057_.mp4");
+  });
+
+  // THE F32 CURE (report round 7, operator-visible): a reshoot run
+  // saves WITNESS stills beside its film — the raw warp plate the
+  // guide pins carries magenta disocclusions, and the first-image
+  // rule painted the tile with it (8.8 % pink) while the FILM itself
+  // measured 0.00 %. The deliverable leads: a film-named video wins
+  // over any still; witnesses keep their face only when no film
+  // exists.
+  it("a run whose stills are witnesses serves its FILM, never the witness plate", () => {
+    const root = tmp();
+    mkdirSync(join(root, "h3-film"));
+    writeFileSync(join(root, "h3-film", "h3_t4_w1_00057_.mp4"), "v");
+    writeFileSync(join(root, "reshoot_warp_00001_.png"), "p");
+    writeFileSync(join(root, "reshoot_orbit_00001_.png"), "p");
+    assert.equal(runThumbnail(root, "run-x"), "run-x/h3-film/h3_t4_w1_00057_.mp4");
+    // no film (the run died before its terminal): the witness still is
+    // the only frame evidence, so it keeps the face
+    rmSync(join(root, "h3-film"), { recursive: true });
+    // (name order: orbit sorts before warp — either witness keeps the face)
+    assert.equal(runThumbnail(root, "run-x"), "run-x/reshoot_orbit_00001_.png");
   });
 });
 
