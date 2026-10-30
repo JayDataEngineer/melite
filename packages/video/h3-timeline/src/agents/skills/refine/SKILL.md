@@ -146,6 +146,33 @@ before, byte-identical.)
    texture discontinuity at the seams, never generative breaks).
    Judge each run's own output before pressing the next.
 
+## This door restyles pixels; it cannot carry a run (2026-11-13)
+
+A saved clip is DECODED PIXELS. The latent that made it — and every
+chunk's context — is gone the moment the film was encoded, so nothing
+in this pass can continue what produced the clip. That is why this
+arm is a RESTYLE, not a second pass:
+
+- There is no "second pass with context" over a file: the handoff
+  receives a fresh `VAEEncode` of the frames. The only metadata that
+  can cross from the source run is its prompt text, and only by being
+  restated (see the style law below).
+- The node that does carry a seam
+  (`MiniMaxH3FiniteLatentContinuation`) needs a JOINT AV latent and
+  only exists inside the execution that produced one; it is not
+  mountable on this seat (law: `refine-loop.spec.ts` ARM 7).
+- A genuine deferred second pass exists as the CHAIN door — the
+  `upscale[]` arm over a saved chain run's checkpoints + manifest,
+  where per-scene prompts and lineage come from the store instead of
+  the pixels. If the ask is "pass 2 with context", the source must be
+  a chain run whose revisions were saved; pick that door, not this
+  one.
+
+Press this door to restyle or sharpen a clip you already have; press
+the chain door for a context-carrying second pass. Never describe a
+press here as "the second pass" — it re-encodes pixels and nothing
+else survives.
+
 ## The prompt is the ONLY style lever (F36, 2026-11-13)
 
 Nothing else carries. The original prompt, seed, schedule and calls do

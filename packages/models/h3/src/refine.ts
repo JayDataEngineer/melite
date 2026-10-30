@@ -48,6 +48,17 @@
 //     is covered window by window, and a same-size (scale 1) pass
 //     sizes its own.
 //
+// WHAT THIS DOOR IS NOT (2026-11-13): a second pass with context.
+// A staged clip is decoded pixels; its latent and its chunks' lineage
+// are gone at encode time, so the only thing that can cross from the
+// source run is prompt text, restated by the caller (THE REFINE LAW
+// clause 3 / the skill's style law). A context-carrying deferred pass
+// is the CHAIN door (the upscale[] arm over a saved run's checkpoints
+// + manifest), never this arm — and the seam-carry node
+// (MiniMaxH3FiniteLatentContinuation) cannot be mounted here at all
+// (see the note on renderH3RefineWindows below). Never name a press
+// here "the second pass".
+//
 // The emission is a single graph (no loop, no requeue — one
 // top-level prompt): VHS source → VAE encode (video + audio split
 // streams — the node rebuilds native joint AV state itself) →

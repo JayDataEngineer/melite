@@ -176,6 +176,29 @@ describe("the refine skill's dial table agrees with the code's own homes", () =>
       "the served tooltip states the consequence, not just a label");
   });
 
+  it("ARM 6 — the door restyles pixels, it cannot carry a run: the no-lineage law is in the doc AND on the served seat", () => {
+    const md = readSkill("refine");
+    assert.match(md, /## This door restyles pixels; it cannot carry a run/i,
+      "refine/SKILL.md names the no-lineage law as its own section");
+    assert.match(md, /DECODED PIXELS/i,
+      "the doc states the reason (a saved clip is decoded pixels)");
+    // the two consequences an agent must not get wrong: no context over
+    // a file, and the context-carrying door is the chain arm
+    assert.match(md, /no "second pass with context" over a file/i,
+      "the doc refuses the file-sourced 'second pass with context'");
+    assert.match(md, /CHAIN door/i,
+      "the doc points at the chain door as the context-carrying pass");
+    assert.match(md, /ARM 7/i, "the doc names the wall that settles the carry seat");
+    assert.match(md, /Never describe a\s+press here as "the second pass"/i,
+      "the doc names the wrong label an agent must not use");
+    // THE SERVED SEAT carries the same fact, so a form user learns it
+    const tooltip = String(fields().get("refine_prompt")?.tooltip ?? "");
+    assert.match(tooltip, /RESTYLES decoded pixels and carries no lineage/i,
+      "the served refine_prompt tooltip states the no-lineage fact");
+    assert.match(tooltip, /chain 2-pass door/i,
+      "the served seat names the door that does carry context");
+  });
+
   it("THE STAMP LAW: the skill carries its verified-against line, names a receipt that EXISTS, and says what is still unproven", () => {
     const md = readSkill("refine");
     assert.match(md, /VERIFIED LIVE \d{4}-\d{2}-\d{2} against/,
