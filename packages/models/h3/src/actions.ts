@@ -70,10 +70,29 @@ import {
 // on, lora (filename), str (default_strength), plus the four fixed
 // mode flags. A missing catalog row refuses at load — the default
 // would have no source.
-const loraStackDefault = (): string => {
-  const row = H3_LORA_ROWS.find((r) => r.id === 'h3_lightx2v_turbo')
+/** The absent-bag default's catalog id (F34's chip half, 2026-11-13). */
+export const H3_DEFAULT_LORA_ID = 'h3_lightx2v_turbo'
+
+/** The absent-bag default as a RESOLVED ROW — the same catalog row the
+ *  compose default builds, exposed so the card can serve it as the
+ *  ghost chip: the face then shows the adapter the film will actually
+ *  run instead of an empty bag. One owner: the catalog. */
+export const h3DefaultLoraEntry = (): { id: string; strength: number; steps: number } => {
+  const row = H3_LORA_ROWS.find((r) => r.id === H3_DEFAULT_LORA_ID)
   if (row === undefined) {
-    throw new Error("h3 action: the lora catalog has no 'h3_lightx2v_turbo' row — the absent-bag default has no source; fix the catalog row id")
+    throw new Error(`h3 action: the lora catalog has no '${H3_DEFAULT_LORA_ID}' row — the absent-bag default has no source; fix the catalog row id`)
+  }
+  return {
+    id: row.id,
+    strength: row.default_strength ?? 1,
+    steps: row.steps ?? 8,
+  }
+}
+
+const loraStackDefault = (): string => {
+  const row = H3_LORA_ROWS.find((r) => r.id === H3_DEFAULT_LORA_ID)
+  if (row === undefined) {
+    throw new Error(`h3 action: the lora catalog has no '${H3_DEFAULT_LORA_ID}' row — the absent-bag default has no source; fix the catalog row id`)
   }
   return JSON.stringify([{ on: true, lora: row.filename, str: row.default_strength, v: 1, a: 1, t: 1 }])
 }

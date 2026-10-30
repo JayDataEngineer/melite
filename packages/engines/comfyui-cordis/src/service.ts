@@ -200,6 +200,11 @@ export interface DeclaredModifierKind {
    *  (the card-level `requires` above stays the always-on gate).
    *  Served verbatim; absent = no arm requirements. */
   requires?: readonly string[]
+  /** THE GHOST DEFAULT (F34's chip half, 2026-11-13): the family's
+   *  resolved absent-bag row — id + the strength/steps the compose
+   *  door really seeds. Served verbatim; absent = an absent bag
+   *  renders nothing (the honest-empty kinds: replace, repair). */
+  default_entry?: { id: string; strength: number; steps: number }
 }
 
 export function resolveCardFlowOutputs(

@@ -1,6 +1,17 @@
 import type { OutputHandle } from '@melite/comfyui-card-kit/graph';
 import { GraphBuilder } from '@melite/comfyui-card-kit/graph';
 import type { ComfyActionSpec } from '@melite/comfyui-card-kit';
+/** The absent-bag default's catalog id (F34's chip half, 2026-11-13). */
+export declare const H3_DEFAULT_LORA_ID = "h3_lightx2v_turbo";
+/** The absent-bag default as a RESOLVED ROW — the same catalog row the
+ *  compose default builds, exposed so the card can serve it as the
+ *  ghost chip: the face then shows the adapter the film will actually
+ *  run instead of an empty bag. One owner: the catalog. */
+export declare const h3DefaultLoraEntry: () => {
+    id: string;
+    strength: number;
+    steps: number;
+};
 /** THE LORA PLANE'S ONE OWNER (the swap build, 2026-10-28 — operator:
  * "KEEP OUR CURRENT LORA SETUP FOR NOW"): the stack_data string every
  * compose on this family reads — the doc's `loras` mod bag resolved

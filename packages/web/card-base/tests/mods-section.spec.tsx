@@ -437,3 +437,38 @@ test('a standalone tile ENDS the drag with no wake (the onDragEnd guard — neve
   expect(onEdit).not.toHaveBeenCalled()
   expect(document.querySelector(`[data-mod-tile="${tid(SAM3K, [{ name: 'a' }], 0)}"]`)).not.toBeNull()
 })
+
+// ── THE GHOST DEFAULT (F34's chip half, 2026-11-13) ────────────────
+// The operator: "When the agent makes a timeline Video card, the main
+// speed lora does not show up. When I make a timeline Video card, two
+// loras show up." The family resolves an absent bag to its own default
+// row at compose time, so an empty FACE hid the adapter the film ran.
+// A kind served with `default_entry` (the resolved row) renders ONE
+// chip while the bag is ABSENT; an explicit `[]` stays the operator's
+// off and renders nothing.
+const GHOST = {
+  kind: 'loras', label: 'LoRAs', param_key: 'loras', cardinality: 'list', max_stack: 4,
+  default_entry: { id: 'h3_lightx2v_turbo', strength: 0.6, steps: 8 },
+  options: [
+    { value: 'h3_lightx2v_turbo', label: 'LightX2V Turbo 4-8 step', defaults: { strength: 0.6, steps: 8 } },
+  ],
+} as unknown as ModifierKind
+
+test('THE GHOST DEFAULT: an ABSENT bag renders the family\'s resolved row as ONE chip', () => {
+  openSection({ kinds: [GHOST], values: {} })
+  const ids = modTileIds(GHOST, [{ id: 'h3_lightx2v_turbo', strength: 0.6, steps: 8 }])
+  const t = tile(ids[0]!)
+  expect(t, 'the absent bag still shows the adapter the film rides').not.toBeNull()
+  expect(t.textContent).toContain('LightX2V Turbo 4-8 step')
+  expect(t.textContent).toContain('0.6')
+})
+
+test('THE GHOST DEFAULT: an explicit EMPTY bag is the operator\'s off — no chip', () => {
+  openSection({ kinds: [GHOST], values: { loras: [] } })
+  expect(document.querySelector('[data-mod-tile]')).toBeNull()
+})
+
+test('THE GHOST DEFAULT: a stated bag wins over the ghost (never two chips for one row)', () => {
+  openSection({ kinds: [GHOST], values: { loras: [{ id: 'h3_lightx2v_turbo', strength: 0.6, steps: 8 }] } })
+  expect(document.querySelectorAll('[data-mod-tile]').length).toBe(1)
+})

@@ -225,7 +225,16 @@ export function ModifiersSection(props) {
             return stated ? [entry] : [];
         }
         const v = values[k.param_key];
-        return Array.isArray(v) ? v.filter((e) => typeof e === 'object' && e !== null) : [];
+        const bag = Array.isArray(v) ? v.filter((e) => typeof e === 'object' && e !== null) : [];
+        // THE GHOST DEFAULT (F34's chip half, 2026-11-13): a kind served
+        // with `default_entry` (the family's resolved absent-bag row) shows
+        // ONE chip while the bag is ABSENT — the compose door really rides
+        // that row, so an empty face would hide the adapter the film runs.
+        // An explicit empty bag (`[]`) is the operator's off: no ghost.
+        if (bag.length === 0 && v === undefined && k.default_entry !== undefined) {
+            return [{ ...k.default_entry }];
+        }
+        return bag;
     };
     const optionOf = (k, value) => (k.options ?? []).find((o) => o.value === value) ?? null;
     /** THE HYBRID ENTRY FIELDS (the bag element minus its two bound

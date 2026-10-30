@@ -18,6 +18,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import assert from "node:assert/strict";
 import { formSpecArm } from "../src/discovery.ts";
 import { meliteLoad } from "../src/tools/melite-load.ts";
+import { h3DefaultLoraEntry } from "../../../models/h3/src/actions.ts";
 import { fakeEstate } from "./fake-estate.ts";
 import { fakeExec } from "./fake-exec.ts";
 
@@ -135,5 +136,23 @@ describe("the served modifier list carries one row per bag", () => {
     for (const o of opts) {
       expect(typeof o.value === "string" && o.value !== "", "every mirrored option names a value").toBe(true)
     }
+  });
+
+  // THE GHOST DEFAULT'S SOURCE (F34's chip half, 2026-11-13): the card
+  // serves the family's own absent-bag resolution as a resolved row, so
+  // the UI can show the adapter the compose door will really ride. The
+  // served row must be the family's resolver output — never a hand-typed
+  // copy that could drift from the compose default.
+  it("ARM 6 — the served row carries the family's resolved default_entry (the ghost chip's source)", () => {
+    const row = mods.find((m) => m.param_key === "loras")
+    assert.ok(row !== undefined, "the loras row is served")
+    const served = (row as unknown as { default_entry?: Record<string, unknown> }).default_entry
+    assert.ok(served !== undefined, "the card serves a default_entry for the absent-bag chip")
+    const resolved = h3DefaultLoraEntry()
+    expect(served).toEqual(resolved)
+    expect(Object.keys(served!).sort()).toEqual(["id", "steps", "strength"])
+    expect(served!.id).toBe("h3_lightx2v_turbo")
+    expect(served!.strength).toBe(0.6)
+    expect(served!.steps).toBe(8)
   });
 });

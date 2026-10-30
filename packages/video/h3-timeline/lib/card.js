@@ -1,4 +1,4 @@
-import { DECL as h3Decl, REFINE_2X_OOM_FRAMES, REFINE_DEFAULT_CLIP_SECONDS } from '@melite/models-h3';
+import { DECL as h3Decl, h3DefaultLoraEntry, REFINE_2X_OOM_FRAMES, REFINE_DEFAULT_CLIP_SECONDS } from '@melite/models-h3';
 import { H3_LORA_ROWS } from '@melite/models-h3/mods/loras';
 import { JSON_ARRAY_PARAMS, coerceWireBoolean, paramSchema, schema, } from '@melite/models-h3/schema';
 import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission';
@@ -84,6 +84,12 @@ const LORAS_MOD = {
     category: 'ordered',
     cardinality: 'list',
     max_stack: 4,
+    // THE GHOST DEFAULT (F34's chip half, 2026-11-13): the family's own
+    // absent-bag resolution, served as a resolved row — the compose door
+    // rides exactly this row when the bag is absent, so the face shows
+    // ONE chip for it. An explicit empty bag ([]) is the operator's
+    // "off" and renders nothing.
+    default_entry: h3DefaultLoraEntry(),
     section: 'LoRAs — the family adapters this film stacks on its model seat (the acceleration/distill row and the CrossView camera row). Every entry states the catalog id and the strength; unstated steps and sigma shift marry from the catalog row. Film runs leave this arm empty (the card default row still applies).',
     fields: [
         { name: 'id', label: 'LoRA', type: 'select', default: 'h3_lightx2v_turbo', options: H3_LORA_ROWS.map((row) => ({ value: row.id, label: row.label })), tooltip: 'The adapter, by its catalog id — the family file the provisioner downloads; the render loads this id verbatim.' },

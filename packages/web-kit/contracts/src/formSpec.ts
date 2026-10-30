@@ -214,6 +214,15 @@ export interface ModifierKind {
    *  verbatim; the compose door enforces them only when the kind's
    *  bag is non-empty (an unused arm never blocks a run). */
   requires?: readonly string[]
+  /** THE GHOST DEFAULT (F34's chip half, 2026-11-13): the family's own
+   *  ABSENT-BAG resolution, as a resolved entry row (`{id, strength,
+   *  steps}` — the shape the bag takes). A card kind that carries this
+   *  renders ONE chip when the bag is ABSENT, because the compose door
+   *  will really ride that row; an explicit empty bag (`[]`) is the
+   *  operator's "off" and renders nothing. Served by the card, never
+   *  guessed client-side; only the family that resolves a default
+   *  declares it. */
+  default_entry?: Readonly<Record<string, unknown>>
   /** THE FLAT LAW (the qvoice_save burn, operator 2026-10-22:
    *  "THE WRITE DID NOT LAND — compose-door: unknown param(s) on
    *  the tts card: qvoice_save"): a kind whose fields are the

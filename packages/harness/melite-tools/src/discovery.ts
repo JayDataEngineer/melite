@@ -815,6 +815,10 @@ function specModifiers(
     // on the card's own declaration, so the served kind carries it
     // as declared (the re-audit, 2026-10-16).
     if (k.requires !== undefined) entry.requires = k.requires
+    // THE GHOST DEFAULT (F34's chip half): the family's resolved
+    // absent-bag row rides verbatim — the client renders ONE chip for it
+    // while the bag is absent, because the compose door really rides it.
+    if (k.default_entry !== undefined) entry.default_entry = k.default_entry
     // THE MENU ATTRIBUTION (the mod-liveness ARM 3 law, 2026-10-28,
     // the swap build): the card-declared kind stamps its own
     // schema_key (its kind name — the card IS the catalog). Served
@@ -867,7 +871,10 @@ function specModifiers(
       const keyedField = (entry.fields ?? []).find((f) => f.name === key)
       if (keyedField !== undefined && Array.isArray(keyedField.options) && keyedField.options.length > 0) {
         const catalogValues = new Set((packRow.options ?? []).map((o) => o.value))
-        const foreign = keyedField.options.filter((o) => !catalogValues.has(o.value))
+        const foreign = keyedField.options.filter((o) => {
+          const value = typeof o === 'string' ? o : o.value
+          return !catalogValues.has(value)
+        })
         if (foreign.length === keyedField.options.length) {
           throw new Error(`form-spec: card '${card}' declares params.${entry.param_key} whose '${key}' options name no catalog row of pack '${packRow.schema_key ?? entry.param_key}' — the bag's ids must come from the pack's own catalog`)
         }

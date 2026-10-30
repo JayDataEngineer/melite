@@ -15478,7 +15478,9 @@ window.__ModuleLoader__.load({
 					return stated ? [entry] : [];
 				}
 				const v = values[k.param_key];
-				return Array.isArray(v) ? v.filter((e) => typeof e === "object" && e !== null) : [];
+				const bag = Array.isArray(v) ? v.filter((e) => typeof e === "object" && e !== null) : [];
+				if (bag.length === 0 && v === void 0 && k.default_entry !== void 0) return [{ ...k.default_entry }];
+				return bag;
 			};
 			const optionOf = (k, value) => (k.options ?? []).find((o) => o.value === value) ?? null;
 			/** THE HYBRID ENTRY FIELDS (the bag element minus its two bound

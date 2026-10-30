@@ -561,6 +561,7 @@ export { renderH3Swap } from "./swap.js";
 export { renderH3Repair } from "./repair.js";
 export { renderH3Extend } from "./extend.js";
 export { refineArmed, renderH3Refine, REFINE_UPSCALE_MODEL, REFINE_2X_OOM_FRAMES, REFINE_DEFAULT_CLIP_SECONDS } from "./refine.js";
+export { H3_DEFAULT_LORA_ID, h3DefaultLoraEntry } from "./actions.js";
 // F19 — the whole-film deferred ChainUpscale loop over a prior run.
 export { upscaleArmed, renderH3ChainUpscale } from "./chainUpscale.js";
 export { reshootArmed } from "./reshoot.js";

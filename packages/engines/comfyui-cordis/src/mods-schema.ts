@@ -100,6 +100,13 @@ const ModKind = z.object({
   // the swap build): the card-declared kind's schema_key (its kind
   // name — the card IS the catalog). Bare like every optional row.
   schema_key: z.string(),
+  // THE GHOST DEFAULT (F34's chip half, 2026-11-13 — the operator:
+  // "the main speed lora does not show up"): the family's resolved
+  // absent-bag row. The compose door rides exactly this row when the
+  // operator states no list, so the face shows ONE chip for it while
+  // the bag is ABSENT. An explicit `[]` stays the operator's off.
+  // Resolved by the family, never hand-typed by the card.
+  default_entry: z.object({ id: z.string(), strength: z.number(), steps: z.number() }),
 });
 
 /** The field types the wire carries; each demands its own

@@ -91,6 +91,11 @@ export interface DeclaredModifierKind {
    *  (the card-level `requires` above stays the always-on gate).
    *  Served verbatim; absent = no arm requirements. */
   requires?: readonly string[]
+  /** THE GHOST DEFAULT (F34's chip half, 2026-11-13): the family's
+   *  resolved absent-bag row — the id + strength/steps the compose
+   *  door seeds when the operator states no list. The face shows ONE
+   *  chip for it while the bag is ABSENT; an explicit `[]` is off. */
+  default_entry?: { id: string; strength: number; steps: number }
   /** THE MENU ATTRIBUTION (the mod-liveness ARM 3 law, 2026-10-28,
    *  the swap build): the menu/compose flavor wall demands every
    *  served modifier carry a schema_key naming its catalog. Pack

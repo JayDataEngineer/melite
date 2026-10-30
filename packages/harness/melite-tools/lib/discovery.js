@@ -538,6 +538,12 @@ function specModifiers(svc, card, key, decl, def, enveloped, engineLoras) {
     // the leaf seeds its dials off `option.defaults`, so a fact-free
     // row would render an empty chip. Merged, never re-declared.
     const suppressed = new Map();
+    // TWO PACKS MAY NEVER MAP TO ONE BAG (F34 audit F5, 2026-11-13): the
+    // suppressed map is last-wins, so a second pack with the same
+    // param_key would silently replace the first one's facts. Refuse
+    // loud at serve — a double-mapped bag is an authoring error, never a
+    // preference.
+    const mappedKeys = new Set();
     for (const m of decl?.mods ?? []) {
         // THE MARRIAGE GRAMMAR (#36): entries are pack names or
         // {pack, marries} declarations — normalized once here, served
@@ -553,7 +559,12 @@ function specModifiers(svc, card, key, decl, def, enveloped, engineLoras) {
         // bag, so the pack's row is DROPPED at the push site below — after
         // it is built, because its catalog facts merge onto the card's own
         // kind (the suppressed map).
-        const collides = declaredKeys.has(meta.param_key ?? pack);
+        const bagKey = meta.param_key ?? pack;
+        if (mappedKeys.has(bagKey)) {
+            throw new Error(`form-spec: family '${key}' boards two packs onto params.${bagKey} — one bag has one serving pack (${pack})`);
+        }
+        mappedKeys.add(bagKey);
+        const collides = declaredKeys.has(bagKey);
         const cat = svc.modCatalog(pack, key);
         // THE PARAM FIELDS ARE THE ENVELOPE'S (the parameter audit): the
         // entry carries the pack's catalog facts; its param rows derive
@@ -714,6 +725,11 @@ function specModifiers(svc, card, key, decl, def, enveloped, engineLoras) {
         // as declared (the re-audit, 2026-10-16).
         if (k.requires !== undefined)
             entry.requires = k.requires;
+        // THE GHOST DEFAULT (F34's chip half): the family's resolved
+        // absent-bag row rides verbatim — the client renders ONE chip for it
+        // while the bag is absent, because the compose door really rides it.
+        if (k.default_entry !== undefined)
+            entry.default_entry = k.default_entry;
         // THE MENU ATTRIBUTION (the mod-liveness ARM 3 law, 2026-10-28,
         // the swap build): the card-declared kind stamps its own
         // schema_key (its kind name — the card IS the catalog). Served
@@ -739,40 +755,46 @@ function specModifiers(svc, card, key, decl, def, enveloped, engineLoras) {
                     entry.options = mirrored.options;
             }
         }
-        // THE FACT MERGE (the one-bag-one-row law's other half, F34): the
-        // card states the bag's FIELDS; the suppressed pack row owns the
-        // CATALOG facts — the knob marriage and each row's designed
-        // strength/steps/steps_min/steps_max/shift_video. The leaf seeds
-        // its dials off `option.defaults` (mods.tsx) and the client
-        // resolves the marriage off `kind.marries`, so dropping the row
-        // WITHOUT this merge renders an empty chip. Merged by option
-        // value, never re-declared; the card's own values win where both
-        // state one.
+        // THE SHAPE MERGE (the one-bag-one-row law's other half, F34; the
+        // F34 audit's F3/F4, 2026-11-13): the card states the bag's FIELDS
+        // and the pack row owns the CATALOG + the commit SHAPE. Dropping
+        // the row must not drop the shape: the knob marriage (marries),
+        // the leaf's entry mode (entry — a hybrid pack's commit branch),
+        // the option/scalar keys, and the stack ceiling all merge here,
+        // card-wins. The FACTS (each row's designed strength/steps/shift,
+        // the model filename) ride the CATALOG MIRROR above as top-level
+        // `kind.options` — that is the seat every client consumer reads
+        // (mods.tsx seeds off `optionOf(kind, …).defaults`, the marriage
+        // resolver off top-level options), so the merge never writes a
+        // parallel copy into `fields[].options` for no reader.
         const packRow = suppressed.get(entry.param_key);
         if (packRow !== undefined) {
             if (entry.marries === undefined && packRow.marries !== undefined)
                 entry.marries = packRow.marries;
+            if (entry.entry === undefined && packRow.entry !== undefined)
+                entry.entry = packRow.entry;
+            if (entry.option_key === undefined && packRow.option_key !== undefined)
+                entry.option_key = packRow.option_key;
+            if (entry.scalar_key === undefined && packRow.scalar_key !== undefined)
+                entry.scalar_key = packRow.scalar_key;
+            if (entry.max_stack === undefined && packRow.max_stack !== undefined)
+                entry.max_stack = packRow.max_stack;
+            // A CARD WHOSE KEYED FIELD NAMES NO CATALOG ROW IS AN AUTHORING
+            // ERROR (F34 audit F6): merging by value that matches nothing
+            // would leave every served chip fact-free while the suite stays
+            // green. Refuse loud — the card's ids must come from the pack's
+            // own catalog.
             const key = entry.option_key ?? packRow.option_key ?? 'id';
-            const fields = entry.fields;
-            if (Array.isArray(fields)) {
-                entry.fields = fields.map((f) => {
-                    if (f.name !== key || !Array.isArray(f.options))
-                        return f;
-                    const opts = (packRow.options ?? []);
-                    return {
-                        ...f,
-                        options: f.options.map((o) => {
-                            const p = opts.find((po) => po.value === o.value);
-                            if (p === undefined)
-                                return o;
-                            return {
-                                ...o,
-                                ...(o.model === undefined && p.model !== undefined ? { model: p.model } : {}),
-                                ...(p.defaults !== undefined && o.defaults === undefined ? { defaults: p.defaults } : {}),
-                            };
-                        }),
-                    };
+            const keyedField = (entry.fields ?? []).find((f) => f.name === key);
+            if (keyedField !== undefined && Array.isArray(keyedField.options) && keyedField.options.length > 0) {
+                const catalogValues = new Set((packRow.options ?? []).map((o) => o.value));
+                const foreign = keyedField.options.filter((o) => {
+                    const value = typeof o === 'string' ? o : o.value;
+                    return !catalogValues.has(value);
                 });
+                if (foreign.length === keyedField.options.length) {
+                    throw new Error(`form-spec: card '${card}' declares params.${entry.param_key} whose '${key}' options name no catalog row of pack '${packRow.schema_key ?? entry.param_key}' — the bag's ids must come from the pack's own catalog`);
+                }
             }
         }
         out.push(entry);
