@@ -37,8 +37,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  RELEASE_TAG: v0.1.5-pre-alpha
-  RELEASE_VERSION: 0.1.5-pre-alpha
+  RELEASE_TAG: v0.2.0-alpha
+  RELEASE_VERSION: 0.2.0-alpha
 
 jobs:
   watchdog:
@@ -97,15 +97,17 @@ jobs:
               } catch { missing.push(name); }
             }
             console.log(`live=${live}/${set.count} missing=[${missing.join(" ")}]`);
-            require("node:fs").appendFileSync(process.env.GITHUB_OUTPUT, `live=${live}\n`);
+            const fs = require("node:fs");
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `live=${live}\n`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `count=${set.count}\n`);
           '
 
       - name: Sequence complete — retire the watchdog
-        if: steps.alive.outputs.alive == '0' && steps.census.outputs.live == '98'
-        run: echo "census 98/98 — the release sequence is fully published; nothing left to arm"
+        if: steps.alive.outputs.alive == '0' && steps.census.outputs.live == steps.census.outputs.count
+        run: echo "census ${{ steps.census.outputs.live }}/${{ steps.census.outputs.count }} — the release sequence is fully published; nothing left to arm"
 
       - name: Arm one walk
-        if: steps.census.outcome == 'success' && steps.census.outputs.live != '98'
+        if: steps.census.outcome == 'success' && steps.census.outputs.live != steps.census.outputs.count
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
