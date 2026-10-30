@@ -101,13 +101,14 @@ export interface ReshootChain {
     /** The prepared source frames — the appearance/identity
      *  reference (the official chain's ref_videos.ref_video_0). */
     readonly refFrames: OutputHandle;
-    /** The warp — the geometric guide for the moved camera (the
-     *  official chain's MiniMaxH3AddGuide image seat). */
+    /** The warp — the geometric guide for the moved camera, HOLES
+     *  INCLUDED (the official chain's MiniMaxH3AddGuide image seat;
+     *  the magenta disocclusions are the LoRA's training signal). */
     readonly warp: OutputHandle;
-    /** The FILLED plate's saved frame (F30's own witness: the run
-     *  delivers the exact image the guide pins, so the operator sees
-     *  the holes — and their fill — without re-deriving them from the
-     *  film). Saved under `<runId>/reshoot_plate`. */
+    /** The warp clip's saved frames (the official app's own
+     *  `crossview/warp` witness): the run delivers the exact image the
+     *  guide pins, holes and all, without re-deriving it from the film.
+     *  Saved under `<runId>/reshoot_warp`. */
     readonly plateSave: OutputHandle;
     /** The pack's `orbit_view` gizmo (CrossViewWarp output 1: the
      *  camera dome with the az/el/dist overlay). Emitted by every

@@ -135,17 +135,18 @@ describe("the h3 camera re-shoot chain (the fourth mod bag, official rework)", (
     expect(w.inputs.smooth_depth).toBe(false);
     expect(w.inputs.invert_depth).toBe(false);
     // the first cut's seats stay dead: no VDA, no resize hack, no
-    // union patch, no Fun ControlNet apply. ColorToMask is NOT the dead
-    // first cut's filter — it now MASKS the warp's magenta holes for the
-    // F30 filler (judged in its own arm below)
+    // union patch, no Fun ControlNet apply. The F30 hole-fill family
+    // (ColorToMask / GrowMaskWithBlur / ImageCompositeMasked /
+    // ImageBlur) is dead too — the official app runs NO fill
+    // (judged in its own arm below)
     expect(ofClass(entries, "LoadVideoDepthAnythingModel")).toHaveLength(0);
     expect(ofClass(entries, "ImageResizeKJ")).toHaveLength(0);
-    expect(ofClass(entries, "ColorToMask")).toHaveLength(1);
+    expect(ofClass(entries, "ColorToMask")).toHaveLength(0);
     expect(ofClass(entries, "ModelPatchLoader")).toHaveLength(0);
     expect(ofClass(entries, "MiniMaxH3FunControlNetApply")).toHaveLength(0);
   });
 
-  it("the appearance + guide + LoRA seats: the FILLED plate IS ref_video_0 and pins at row 0 (one prior), the CrossView LoRA loads at 0.8", () => {
+  it("THE OFFICIAL PORT: ref_video_0 is the SOURCE clip, the guide is the RAW warp, and the CrossView LoRA loads at 0.8", () => {
     const g = new GraphBuilder();
     instantiateAction(film, bag(), H3, g, "run_rs_seats");
     const entries = nodes(g);
@@ -154,15 +155,21 @@ describe("the h3 camera re-shoot chain (the fourth mod bag, official rework)", (
     // official graph wires none — an absent lane, never mismatched)
     const r2v = entries.find(([, n]) => n.class_type === "MiniMaxH3ReferenceToVideo")!;
     expect(r2v[1].inputs.prompt).toBe("crossview. a slow push in");
-    // F30: BOTH priors are the filled plate — the unwarped clip no longer
-    // rides ref_video_0 beside a warped guide (that pair painted the
-    // subject twice)
-    expect(String(r2v[1].inputs["ref_videos.ref_video_0"])).toContain("ImageCompositeMasked");
+    // THE TWO SEATS, VERBATIM FROM Comfy-Org/comfy-reshoot's
+    // workflows/generate.api.json: node 20's ref_video_0 reads the
+    // PREPARED SOURCE CLIP (appearance + identity), node 21's image
+    // reads the RAW warp (geometry, magenta disocclusions and all —
+    // the LoRA's training signal). The F30 filler collapsed both onto
+    // one filled plate and round 5 measured the cost.
+    const prepId = ofClass(entries, "CrossViewPrepareClip")[0]![0];
+    const warpId = ofClass(entries, "CrossViewWarp")[0]![0];
+    expect(String(r2v[1].inputs["ref_videos.ref_video_0"])).toBe(`${prepId},0`);
     expect(r2v[1].inputs["ref_video_audios.ref_video_audio_0"]).toBeUndefined();
-    // the guide pin: the warp into the window's own latent at row 0
+    // the guide pin: the RAW warp into the window's own latent at row 0
     const guide = ofClass(entries, "MiniMaxH3AddGuide")
-      .filter(([, n]) => String(n.inputs.image).includes("ImageCompositeMasked"));
+      .filter(([, n]) => String(n.inputs.image).includes("CrossViewWarp"));
     expect(guide).toHaveLength(1);
+    expect(String(guide[0]![1].inputs.image)).toBe(`${warpId},0`);
     expect(guide[0]![1].inputs.frame_idx).toBe(0);
     expect(String(guide[0]![1].inputs.positive)).toContain("MiniMaxH3ReferenceToVideo");
     // the model seat: the CrossView LoRA, the official default 0.8
@@ -205,36 +212,33 @@ describe("the h3 camera re-shoot chain (the fourth mod bag, official rework)", (
     )).toThrow(/window too short for the camera guide — 22 frames is below the 24-frame floor/);
   });
 
-  it("F30 — the warp's magenta holes are FILLED before anything reads the plate (no subject-shaped void reaches H3)", () => {
+  it("F30 (SUPERSEDED, 2026-10-30) — the official app runs NO hole fill: no mask, no grow, no composite, no blur touches the warp", () => {
+    // Round 4 invented a fill (magenta mask -> grown -> composite) because
+    // a "two girls" render was blamed on subject-shaped holes. Round 5
+    // measured the fill itself pasting a second full-size subject, and the
+    // official reference app (Comfy-Org/comfy-reshoot, generate.api.json)
+    // settles the design question: node 21 wires CrossViewWarp.out(0)
+    // STRAIGHT into MiniMaxH3AddGuide.image — the magenta disocclusions are
+    // the conditioning the LoRA was trained on, and node 20's ref_video_0
+    // carries identity from the source clip. Three fill cures in a row
+    // (raw plate, source-space composite, warp-space blur) were all
+    // deviations from the reference graph; this arm pins the port.
     const g = new GraphBuilder();
-    instantiateAction(film, bag(), H3, g, "run_rs_holes");
+    instantiateAction(film, bag(), H3, g, "run_rs_nofill");
     const entries = nodes(g);
-    // the mask is the warp's own magenta (pure 255/0/255), never a
-    // hand-drawn shape
-    const mask = ofClass(entries, "ColorToMask");
-    expect(mask).toHaveLength(1);
-    expect(mask[0]![1].inputs.red).toBe(255);
-    expect(mask[0]![1].inputs.green).toBe(0);
-    expect(mask[0]![1].inputs.blue).toBe(255);
-    expect(String(mask[0]![1].inputs.images)).toContain("CrossViewWarp");
-    // grown + feathered so the fill has no hard seam
-    const grow = ofClass(entries, "GrowMaskWithBlur");
-    expect(grow).toHaveLength(1);
-    expect(grow[0]![1].inputs.expand).toBe(3);
-    expect(grow[0]![1].inputs.blur_radius).toBe(12);
-    expect(String(grow[0]![1].inputs.mask)).toContain("ColorToMask");
-    // the fill composites the PREPARED plate's pixels over the holes
-    const fill = ofClass(entries, "ImageCompositeMasked");
-    expect(fill).toHaveLength(1);
-    expect(String(fill[0]![1].inputs.destination)).toContain("CrossViewWarp");
-    expect(String(fill[0]![1].inputs.source)).toContain("CrossViewPrepareClip");
-    expect(String(fill[0]![1].inputs.mask)).toContain("GrowMaskWithBlur");
-    // ONE prior by construction: the guide image AND ref_video_0 both read
-    // the filled plate
+    for (const dead of ["ColorToMask", "GrowMaskWithBlur", "ImageCompositeMasked", "ImageBlur"]) {
+      expect(ofClass(entries, dead), `${dead} is not the official graph's seat`).toHaveLength(0);
+    }
+    // the guide reads the warp DIRECTLY, and the warp is the only image
+    // seat the two priors split on
     const guide = ofClass(entries, "MiniMaxH3AddGuide")[0]!;
-    expect(String(guide[1].inputs.image)).toContain("ImageCompositeMasked");
+    const warpId = ofClass(entries, "CrossViewWarp")[0]![0];
+    expect(String(guide[1].inputs.image)).toBe(`${warpId},0`);
     const r2v = ofClass(entries, "MiniMaxH3ReferenceToVideo")[0]!;
-    expect(String(r2v[1].inputs["ref_videos.ref_video_0"])).toContain("ImageCompositeMasked");
+    const prepId = ofClass(entries, "CrossViewPrepareClip")[0]![0];
+    expect(String(r2v[1].inputs["ref_videos.ref_video_0"])).toBe(`${prepId},0`);
+    // and the two seats are DIFFERENT nodes — the collapse is the burn
+    expect(String(guide[1].inputs.image)).not.toBe(String(r2v[1].inputs["ref_videos.ref_video_0"]));
   });
 
   it("§8.7 — the run DELIVERS both unspent warp views (the filled plate and the camera gizmo), run-scoped", () => {
@@ -246,14 +250,15 @@ describe("the h3 camera re-shoot chain (the fourth mod bag, official rework)", (
     // costs no extra work — and the operator's only feedback used to be
     // a multi-minute film that came back wrong.
     const saves = ofClass(entries, "SaveImage");
+    const warpIdPlate = ofClass(entries, "CrossViewWarp")[0]![0];
     expect(saves, "two witnesses, one per warp output").toHaveLength(2);
     const byPrefix = new Map(saves.map(([, n]) => [String(n.inputs.filename_prefix), n]));
-    const plate = byPrefix.get("run_rs_witness/reshoot_plate");
+    const plate = byPrefix.get("run_rs_witness/reshoot_warp");
     const orbit = byPrefix.get("run_rs_witness/reshoot_orbit");
-    expect(plate, "the FILLED plate saves under the run's own folder").toBeDefined();
+    expect(plate, "the warp clip saves under the run's own folder").toBeDefined();
     expect(orbit, "the gizmo saves under the run's own folder").toBeDefined();
-    // the plate save reads the composite (never the raw warp)…
-    expect(String(plate!.inputs.images)).toContain("ImageCompositeMasked");
+    // the warp save reads the warp's FIRST output, unfilled
+    expect(String(plate!.inputs.images)).toBe(`${warpIdPlate},0`);
     // …and the gizmo reads the warp's SECOND output (socket 1), which is
     // the whole point: output 1 was unspent before this cure
     const orbitSrc = String(orbit!.inputs.images);
@@ -361,7 +366,7 @@ describe("the h3 camera re-shoot chain (the fourth mod bag, official rework)", (
     const loras = ofClass(entries, "LoraLoaderModelOnly");
     expect(loras).toHaveLength(2);
     const guides = ofClass(entries, "MiniMaxH3AddGuide")
-      .filter(([, n]) => String(n.inputs.image).includes("ImageCompositeMasked"));
+      .filter(([, n]) => String(n.inputs.image).includes("CrossViewWarp"));
     expect(guides).toHaveLength(2);
     for (const [id, l] of loras) {
       expect(id.startsWith("window"), `${id} seats inside its window's scope`);

@@ -1,5 +1,5 @@
 {
- "derived_at": "2026-10-30T09:11:00.538Z",
+ "derived_at": "2026-10-30T09:27:32.653Z",
  "tool": "scripts/regen-node-vocab.mjs --boot",
  "source": {
   "path": "data/tmp/object_info_prod.json",
@@ -10,23 +10,26 @@
  },
  "bootstrap_seed": {
   "path": "tests/walls/fixtures/object_info.boot.bootstrap.json",
-  "sha256": "26392455f9efde95f3af650f208b6653cfb2ef6dbbebd7845d458594db89ce98",
-  "rows": 77
+  "sha256": "95cb9a84dbc8e502026df065bea91c6e28167db26b46c94125ef1ed054471f68",
+  "rows": 74
  },
  "derivation": {
   "facts_path": "packages/engines/comfyui-cordis/data/model-facts.json",
   "addressed_class_count": 96,
-  "bootstrap_class_count": 77,
-  "fixture_class_count": 173,
+  "bootstrap_class_count": 74,
+  "fixture_class_count": 170,
   "rows_probed": 31,
   "refused_rows": 0
  },
  "delta": {
-  "added": [
-   "LoraLoaderModelOnly"
+  "added": [],
+  "pruned": [
+   "ColorToMask",
+   "ImageBlur",
+   "ImageCompositeMasked",
+   "ImageResizeKJ"
   ],
-  "pruned": [],
   "updated": [],
-  "reordered_keys": 0
+  "reordered_keys": 157
  }
 }

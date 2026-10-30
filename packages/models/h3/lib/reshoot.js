@@ -226,53 +226,39 @@ export function buildH3Reshoot(p, g, windowFrames, runId) {
         preview_size: 384,
         frame_index: 1,
     });
+    // THE TWO SEATS ARE THE OFFICIAL APP'S OWN (Comfy-Org/comfy-reshoot,
+    // workflows/generate.api.json @ 2026-10-30 — read line for line):
+    //   ref_videos.ref_video_0 <- CrossViewPrepareClip.out(0)
+    //                             (node 20 inputs; the SOURCE clip —
+    //                              appearance + identity)
+    //   MiniMaxH3AddGuide.image <- CrossViewWarp.out(0)
+    //                             (node 21 inputs; the warp WITH its
+    //                              magenta disocclusions — the training
+    //                              signal, never a fill)
+    // This builder had collapsed both seats onto a filled warp (the
+    // F30 hole fill, which round 5 measured as a second full-size
+    // subject). The official app runs NO mask, NO grow, NO composite
+    // and NO blur: the CrossView LoRA was trained on the holed warp
+    // and reconstructs what the camera never saw, while the clean
+    // source clip carries identity. Those are the two priors, and the
+    // collapse is what starved the render.
     const warp = warpNode.out(0);
-    // F30 (2026-10-30) — THE HOLE FILL, the "two girls" cure. The warp
-    // paints disocclusions PURE MAGENTA in RGB, and the holes inherit
-    // the SUBJECT's shape (the region behind her the moved camera
-    // newly sees). Pinning that holed plate as the guide while the
-    // UNWARPED clip rode ref_video_0 gave H3 two contradictory priors
-    // — "she stands at A" and "a girl-shaped void at B" — and it
-    // satisfied both: her at A plus a second figure in the void
-    // (round-4 receipt §8.6, warp-only proof). ONE filler now runs
-    // before anything sees the warp: the magenta mask (ColorToMask)
-    // grown + feathered (GrowMaskWithBlur) composites the PREPARED
-    // plate's pixels over the holes (ImageCompositeMasked) — the void
-    // carries the source's own content, never a colour and never a
-    // subject silhouette. The filled plate then serves BOTH priors
-    // (refFrames and the guide pin) so the two rails agree by
-    // construction.
-    const holeMask = g.node('ColorToMask', {
-        images: warp, invert: false,
-        red: 255, green: 0, blue: 255, threshold: 10, per_batch: 16,
-    }).out(0);
-    const softHoles = g.node('GrowMaskWithBlur', {
-        mask: holeMask, expand: 3, incremental_expandrate: 0.0,
-        tapered_corners: true, flip_input: false, blur_radius: 12.0,
-        lerp_alpha: 1.0, decay_factor: 1.0, fill_holes: false,
-    }).out(0);
-    const plate = g.node('ImageCompositeMasked', {
-        destination: warp, source: prep.out(0), x: 0, y: 0,
-        resize_source: false, mask: softHoles,
-    }).out(0);
-    // THE TWO WITNESSES (§8.7, 2026-10-30): the pack returns `warp`
-    // (the holed plate) AND `orbit_view` (the 512×512 camera gizmo
-    // with its az/el/dist overlay); the estate read output 0 and threw
-    // output 1 away, so the operator's only feedback on the camera
-    // arm was a finished film that came back wrong. Both now save
-    // under the run's own folder — zero extra compute (the tensors
-    // already exist), and the harvest lists them beside the film, so
-    // the popup can show the exact plate the guide pins and the
-    // gizmo that explains the dials.
+    const source = prep.out(0);
+    // THE TWO WITNESSES (§8.7): the warp's own clip and the pack's
+    // `orbit_view` gizmo (output 1: the camera dome with its
+    // az/el/dist overlay). Both save under the run's folder — zero
+    // extra compute (the tensors already exist), and the harvest
+    // lists them beside the film, so the popup can show the exact
+    // plate the guide pinned and the gizmo that explains the dials.
     const plateSave = g.node('SaveImage', {
-        images: plate,
-        filename_prefix: `${runId}/reshoot_plate`,
+        images: warp,
+        filename_prefix: `${runId}/reshoot_warp`,
     }).out(0);
     const orbitSave = g.node('SaveImage', {
         images: warpNode.out(1),
         filename_prefix: `${runId}/reshoot_orbit`,
     }).out(0);
-    return { refFrames: plate, warp: plate, plateSave, orbitSave };
+    return { refFrames: source, warp, plateSave, orbitSave };
 }
 /**
  * The per-window MODEL seat: the CrossView LoRA on the window's

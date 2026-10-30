@@ -287,32 +287,27 @@ describe("the h3 camera re-shoot wall (the fourth mod bag, official rework)", ()
     expect(w.invert_depth).toBe(false);
     // the appearance + guide + LoRA seats: the prepared clip IS
     // ref_video_0 (no ref audio on the slot — the official graph
-    // wires none), the warp pins at row 0, the LoRA loads at 0.8
-    // THE FILLED PLATE (the F30 cure, 2026-10-30): the warp's own
-    // frame is the destination, the prepared clip the source, and a
-    // soft hole mask (the magenta fill keyed, grown, blurred) makes
-    // the two read as one clip — the reference the r2v binds is the
-    // COMPOSITE, never the bare warp (whose unpainted border would
-    // land as a magenta frame). Both rails stay the plate.
-    const comp = ofClass(out, "ImageCompositeMasked");
-    expect(comp).toHaveLength(1);
-    expect(String(comp[0]![1].inputs.destination)).toBe(`${ofClass(out, "CrossViewWarp")[0]![0]},0`);
-    expect(String(comp[0]![1].inputs.source)).toBe(`${prep[0]![0]},0`);
-    expect(String(comp[0]![1].inputs.mask)).toContain("GrowMaskWithBlur");
-    const keyed = ofClass(out, "ColorToMask");
-    expect(keyed).toHaveLength(1);
-    expect(keyed[0]![1].inputs).toMatchObject({ red: 255, green: 0, blue: 255, threshold: 10 });
-    const grown = ofClass(out, "GrowMaskWithBlur");
-    expect(grown).toHaveLength(1);
-    expect(grown[0]![1].inputs).toMatchObject({ expand: 3, blur_radius: 12 });
+    // wires none), the warp pins at row 0, the LoRA loads at 0.8.
+    // THE OFFICIAL PORT (2026-10-30, round 5): Comfy-Org/comfy-reshoot's
+    // workflows/generate.api.json wires the RAW warp (magenta
+    // disocclusions and all) into MiniMaxH3AddGuide.image and the
+    // PREPARED SOURCE CLIP into ref_videos.ref_video_0 — two priors,
+    // no fill. This wall pins that split: the seats are different
+    // nodes, and no mask/grow/composite/blur sits between them.
+    const warpId = ofClass(out, "CrossViewWarp")[0]![0];
+    const prepId = ofClass(out, "CrossViewPrepareClip")[0]![0];
+    for (const dead of ["ColorToMask", "GrowMaskWithBlur", "ImageCompositeMasked", "ImageBlur"]) {
+      expect(ofClass(out, dead), `${dead} is not the official graph's seat`).toHaveLength(0);
+    }
     const r2v = ofClass(out, "MiniMaxH3ReferenceToVideo");
     expect(r2v).toHaveLength(1);
     expect(r2v[0]![1].inputs.prompt).toBe("crossview. a slow push in");
-    expect(String(r2v[0]![1].inputs["ref_videos.ref_video_0"])).toBe(`${comp[0]![0]},0`);
+    expect(String(r2v[0]![1].inputs["ref_videos.ref_video_0"])).toBe(`${prepId},0`);
     expect(r2v[0]![1].inputs["ref_video_audios.ref_video_audio_0"]).toBeUndefined();
     const guide = ofClass(out, "MiniMaxH3AddGuide")
-      .filter(([, n]) => String(n.inputs.image).includes("ImageCompositeMasked"));
+      .filter(([, n]) => String(n.inputs.image).includes("CrossViewWarp"));
     expect(guide).toHaveLength(1);
+    expect(String(guide[0]![1].inputs.image)).toBe(`${warpId},0`);
     expect(guide[0]![1].inputs.frame_idx).toBe(0);
     expect(String(guide[0]![1].inputs.positive)).toContain("MiniMaxH3ReferenceToVideo");
     const lora = ofClass(out, "LoraLoaderModelOnly");
