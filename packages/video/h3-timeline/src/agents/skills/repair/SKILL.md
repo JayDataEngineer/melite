@@ -101,6 +101,79 @@ byte-identical.)
    execute; headless commissions ride `melite_flow` per the maker
    runbook.
 
+## The recipe's laws (read these before the two shapes below)
+
+A hand fix on a staged clip: track the hands, re-render only the mask,
+hold everything else.
+
+    params.repair = [{
+      source_clip:        'prior_film.mp4',   // staged leaf; MUST carry audio
+      repair_prompt:      'clean hands, natural fingers, the rest unchanged',
+      region_prompt:      'hands',            // what SAM3 tracks, per frame
+      denoise:            0.32,               // the 0.30–0.35 window
+      mask_grow:          0,                  // grow-0 first: sharpest seam
+      detection_threshold: 0.5,
+      window_start:       0,                  // frames at the 24 fps clock
+      window_length:      90,
+      clip_seconds:       6,
+      overlap_frames:     39,
+      resolution:         '736p',
+      seed:               0,
+      steps:              6,
+    }])
+
+THE HOLD LAW: everything outside the tracked mask is HELD — the frame
+around the region and the entire soundtrack. An output where the
+background moves, the lighting shifts or the audio changes is a
+failure, not a style choice. Start at `mask_grow` 0 and grow (16 is
+the served default, 96 the ceiling) only when the mask clips the
+feature.
+
+THE REGION IS THE PROMPT: `region_prompt` is what the detector tracks
+("hands", "the left forearm", "her face") — it is NOT the edit
+instruction. `repair_prompt` says what the region should become. A
+region the detector cannot find yields an empty mask and a pass that
+changes nothing; judge the mask before judging the pixels.
+
+## Worked recipe (two real shapes)
+
+**A. One region in a short clip — the default press.** Source
+`demo_clip.mp4` (6.0 s = 144 f, 24 fps). The hands are wrong from 3.2 s.
+Seat one repair entry and nothing else:
+
+```
+params.repair = [{
+  source_clip: "demo_clip.mp4",
+  repair_prompt: "natural hands, five fingers, no extra digits",
+  region_prompt: "hands",
+  denoise: 0.32, mask_grow: 16, detection_threshold: 0.5,
+  window_start: 77, window_length: 90, clip_seconds: 3.75,
+  overlap_frames: 22, resolution: "736p", seed: 0, steps: 6
+}]
+```
+
+`window_start` 77 = 3.21 s, so the window covers 3.21–6.96 s — the whole
+end of the clip, one press, no splice. Everything outside the tracked
+mask (and the audio) is held from the source. 90 f at 736p is the green
+window; do not widen it to "just get the start of the clip too" —
+`window_start: 0` with 144 f is two windows and two presses.
+
+**B. A region on a composed film — the splice-aware press.** The film
+was built from 90 f windows at step 68 f (`start_seconds` 0 / 2.833 /
+5.667 …), so seams sit at 3.75 s, 6.583 s, … To fix the hands in the
+window that starts at 2.833 s, use that window's own numbers:
+
+```
+window_start: 68, window_length: 90, clip_seconds: 3.75, overlap_frames: 22
+```
+
+The repaired run returns ONE 90 f clip; it replaces the same slot in the
+assembly. This door does not splice: re-join with the same 22 f overlap
+the film was built with (or trim the overlap in an editor) — never weld a
+repair window onto a different step, the seam drifts by the difference.
+A region that straddles a seam needs the window on both sides; press them
+in order and keep each window's own `window_start`.
+
 ## Companion surfaces
 
 - `refine` sharpens the whole window after a repair lands — the

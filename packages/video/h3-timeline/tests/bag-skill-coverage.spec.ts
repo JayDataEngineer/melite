@@ -204,4 +204,40 @@ describe("every served mod bag has a skill leaf an agent can read", () => {
       assert.ok(runId, `${name}/SKILL.md cites the live run id its stamp stands on`);
     }
   });
+
+  it("ARM 7 — the two dial docs whose numbers misled carry the MEASURED law, not a recipe-free promise", () => {
+    // The friction report's speed findings: refine taught "step = the
+    // window length" (zero overlap, a hard cut at every seam) and read
+    // scale 1.0 as a whole-clip capacity cure (430 f at 1.0 measured
+    // OOM); repair shipped every dial with NO worked press, so an
+    // agent had to invent its window numbers. Both are now law.
+    const refine = readSkill("refine");
+    assert.match(refine, /step is the window length MINUS the 22 f seam overlap/,
+      "refine/SKILL.md states the step is the window MINUS the 22 f overlap");
+    assert.match(refine, /never\s+the window length itself/,
+      "refine/SKILL.md REFUTES the step=window teaching that leaves a hard cut");
+    assert.match(refine, /90 − 22 = 68 f = 2\.833 s/,
+      "refine/SKILL.md shows the arithmetic on the reference window");
+    assert.match(refine, /0 \/ 2\.83 \/ 5\.67/,
+      "refine/SKILL.md walks start_seconds at the stepped clock");
+    assert.match(refine, /430 f window @1\.0 OOM/i,
+      "refine/SKILL.md carries the measured 430 f-at-1.0 OOM");
+    assert.match(refine, /NO trim verb/i,
+      "refine/SKILL.md names the missing trim seat instead of implying one");
+
+    const repair = readSkill("repair");
+    const recipe = /## Worked recipe/.exec(repair);
+    assert.ok(recipe, "repair/SKILL.md carries a worked recipe section");
+    const section = repair.slice(recipe!.index);
+    assert.match(section, /params\.repair = \[\{/,
+      "the recipe binds through params.repair (never a flat key)");
+    const starts = [...section.matchAll(/window_start:\s*(\d+)/g)].map((m) => Number(m[1]));
+    assert.ok(starts.length >= 2, "the recipe shows BOTH shapes (a whole-clip press and a splice-aware press)");
+    assert.ok(starts.includes(68) && starts.includes(77),
+      "the splice-aware recipe rides the SAME 68 f step the refine walk teaches (window 90, overlap 22)");
+    assert.match(section, /replaces the same slot|same slot in the\s+assembly/i,
+      "the recipe says the repaired window drops back into its slot");
+    assert.match(section, /never weld a\s+repair window onto a different step/i,
+      "the recipe forbids the seam drift");
+  });
 });

@@ -29,6 +29,18 @@ genre: video
 > wired and walled, never yet rendered on the GPU lane) — treat
 > multi-window film coverage as unproven until a windowed press
 > lands.
+>
+> VERIFIED LIVE 2026-11-13 against a WINDOWED press
+> (run-69bfa7fc98f6-8c7db41c — `frame_load_cap` 90 /
+> `skip_first_frames` 48, 2624×1472, 90 f, 48 kHz): the window really
+> reads only its slice — refined frame 0 matched the SOURCE's frame
+> 48 (Δ8.99 on 0–255) and not its frame 0 (Δ25.81). Also measured,
+> and what step 6 exists for: 90 f @2× is green, 141 f @2× OOM'd, and
+> a 430 f window @1.0 OOM'd too (20.08 GiB allocated, 830 MiB short,
+> node `MinimaxH3LatentUpscaler3DRefineHandoff`) — the WINDOW is the
+> memory unit at every scale. NOT yet proven: a multi-window walk
+> joined end to end; the seam tax in step 6 is measured, the join
+> itself is still the operator's judgement.
 
 ## What it is (and is NOT)
 
@@ -127,9 +139,13 @@ before, byte-identical.)
      the pass: a multiplier, exact target dimensions (1280×704), or a
      megapixel budget. The node's own three options, verbatim.
    - `scale` (1–4, 2) — the multiplier mode's scale. 1.0 is the
-     capacity cure: a same-size refine (no latent upscale) fits what
-     the 2x pass OOMs, and the refinement pass still runs — the
-     result is cleaner at source resolution, never 1472p.
+     CAPACITY CURE, not a capacity escape: a same-size refine (no
+     latent upscale) fits more than the 2x pass, but the handoff
+     materialises the WHOLE window's latents at any scale — 90 f @2×
+     is green, 141 f @2× OOM'd, and a 430 f window @1.0 OOM'd too
+     (20.08 GiB + 830 MiB short). Narrow the window first; go 1.0
+     when a specific grid matters, and accept source resolution
+     instead of 1472p.
 5. **Confirm.** Show the bound clip, the window in words ("from 5.0 s
    for 3.75 s"), the pass dials ("2x, denoise 0.32, 6 steps"), and
    that every other arm is empty.
@@ -139,12 +155,42 @@ before, byte-identical.)
    watcher who isn't there).
 6. **Press.** The user presses Run. Browser/chat agents never
    execute; headless commissions ride `melite_flow` per the maker
-   runbook. A windowed film pass is a LOOP THE OPERATOR DRIVES: one
-   run per window, `start_seconds` moved forward by the window
-   length each press (a second or two of overlap is normal — both
-   sides of a cut anchor to the same source pixels, so expect subtle
-   texture discontinuity at the seams, never generative breaks).
-   Judge each run's own output before pressing the next.
+   runbook. A windowed film pass is a LOOP THE OPERATOR DRIVES, and
+   the step is the window length MINUS the 22 f seam overlap — never
+   the window length itself:
+
+       overlap_frames = 22                    (the measured cure; 0 is a hard cut)
+       step_frames    = clip_seconds × 24 − overlap_frames
+       step_seconds   = step_frames / 24      e.g. 90 − 22 = 68 f = 2.833 s
+
+   The 3.75 s window (90 f) steps **2.83 s** forward each press. A
+   430 f clip at that window is six presses at `start_seconds`
+   0 / 2.83 / 5.67 / 8.50 / 11.33 / 14.17 (the last one starts at clip
+   length − window length, per THE WALK BOUND). A FULL-window step
+   (3.75 s) shares no frames: every seam is a jump cut, not a refine
+   seam. The 22 f carry exists so the next window refines frames the
+   last window already covered, and the two renders agree there to
+   Δ≈9 (measured on a shared 66 f offset; adjacent frames differ by
+   Δ≈4.3, so the seam is a soft step, not a pop).
+
+   SPLICE THE WINDOWS AFTERWARDS — it is part of the pass, not an
+   optional extra, and there is NO trim verb to lean on: the carry is
+   consumed by the crossfade, not cut out. Crossfade over the carry,
+   then mux the SOURCE's audio once:
+
+       # per join k (k = 1..n-1): duration ≈ overlap, offset ≈ k × step
+       ffmpeg -i w{k-1}.mp4 -i w{k}.mp4 \
+         -filter_complex "[0:v][1:v]xfade=transition=fade:duration=0.917:offset=<k*2.833>[v]" \
+         -map "[v]" -c:v libx264 -crf 16 -pix_fmt yuv420p joined.mp4
+       # then the soundtrack, once, from the source clip:
+       ffmpeg -i joined.mp4 -i source.mp4 -map 0:v -map 1:a -c:v copy \
+         -c:a aac -b:a 256k -ar 48000 -shortest final.mp4
+
+   THE SEAM TAX, honestly: a 0.92 s dissolve per join means a 430 f
+   film (six windows) spends ~26 % of its runtime in a blend. That is
+   the price of this door; a true carry is the CHAIN door's job (§ the
+   door cannot carry a run below). Judge each window before pressing
+   the next, and judge the splice before calling the film done.
 
 ## This door restyles pixels; it cannot carry a run (2026-11-13)
 
@@ -213,8 +259,12 @@ cures, in the order to try them:
 
 1. **Narrow the window** (default 3.75 s) — 90 f is measured green;
    walk the film window by window.
-2. **`scale` 1.0** — a same-size refine fits a VRAM-bound card and
-   still sharpens; quality caps at source resolution.
+2. **`scale` 1.0** — a same-size refine lifts the ceiling but does
+   NOT remove it: the handoff still materialises the whole window's
+   latents. Measured: 90 f at 2× green; 141 f at 2× OOM (1.06 GiB
+   short); a 430 f pass at 1.0 (scale 1.0) OOM'd too — 20.08 GiB
+   allocated, 830 MiB short. The window is the memory unit at every
+   scale — never lengthen it just because the multiplier is 1.
 3. **The exact-size modes** (`target dimensions`, `megapixels`) —
    the node's own sizing routes when a specific output grid is
    wanted instead of a multiplier. They take the SAME window ceiling
