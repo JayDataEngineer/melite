@@ -232,6 +232,27 @@ describe("uploadReferenced (the staging walk)", () => {
     expect(Object.keys(uploaded)).toHaveLength(1);
   });
 
+  it("a bank-path qvoice (the resolved bare name's own spelling) STAGES from the host filesystem", async () => {
+    // THE qvoice-ONLY RUN (operator 2026-11-13): a bare persona name
+    // resolves to the voice bank before compose (lanes-audio's
+    // resolveQvoicePath), so the run's graph carries an ABSOLUTE host
+    // path. The engine's load branch reads ComfyUI's input dir or a
+    // real host path — the walk must stage the file so the node sees
+    // an uploaded leaf, never the bank path it cannot open.
+    const bank = join(DIR, "voices");
+    mkdirSync(bank, { recursive: true });
+    writeFileSync(join(bank, "qvoice-01.qvoice"), "QVOICE");
+    const { graph } = await uploadReferenced(fakeClient(), {
+      n: {
+        class_type: "AudiocoreVoiceStudio",
+        inputs: { mode: "generate", qvoice_path: join(bank, "qvoice-01.qvoice") },
+      },
+    }, { runsRoot: ROOT });
+    const wired = (graph["n"] as { inputs: { qvoice_path: string } }).inputs.qvoice_path;
+    expect(wired).toMatch(/qvoice-01_[0-9a-f]{12}\.qvoice$/);
+    expect(wired).not.toContain(bank);
+  });
+
   it("stages every source in a film clips_json manifest and preserves row fields", async () => {
     const data = "data:audio/flac;base64," + Buffer.from("manifest-flac").toString("base64");
     const source = "/melite-media/runs/run-1/local.flac";
