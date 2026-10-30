@@ -144,9 +144,12 @@ export function reshootPrompt(prompt) {
  * @param windowFrames the SHORTEST window this run renders (the guide
  *   is pinned into every window, so its duration derives from this —
  *   F28)
+ * @param runId the run's own id — scopes the two preview saves under
+ *   the run's output folder so the artifact harvest lists them with
+ *   the film (§8.7)
  * @returns the shared handles for the per-window seats
  */
-export function buildH3Reshoot(p, g, windowFrames) {
+export function buildH3Reshoot(p, g, windowFrames, runId) {
     const entry = bagEntry(p);
     const clip = (entry?.source_clip ?? '').trim();
     if (clip === '') {
@@ -198,7 +201,7 @@ export function buildH3Reshoot(p, g, windowFrames) {
     }).out(0);
     // the warp — every literal below is the official graph's own
     // (pose dials from the bag, the rest the verified posture)
-    const warp = g.node(CROSSVIEW_WARP_NODE, {
+    const warpNode = g.node(CROSSVIEW_WARP_NODE, {
         frames: prep.out(0),
         moge_geometry: geometry,
         azimuth: knobs.orbit,
@@ -222,7 +225,8 @@ export function buildH3Reshoot(p, g, windowFrames) {
         keep_source_aim: true,
         preview_size: 384,
         frame_index: 1,
-    }).out(0);
+    });
+    const warp = warpNode.out(0);
     // F30 (2026-10-30) — THE HOLE FILL, the "two girls" cure. The warp
     // paints disocclusions PURE MAGENTA in RGB, and the holes inherit
     // the SUBJECT's shape (the region behind her the moved camera
@@ -251,7 +255,24 @@ export function buildH3Reshoot(p, g, windowFrames) {
         destination: warp, source: prep.out(0), x: 0, y: 0,
         resize_source: false, mask: softHoles,
     }).out(0);
-    return { refFrames: plate, warp: plate };
+    // THE TWO WITNESSES (§8.7, 2026-10-30): the pack returns `warp`
+    // (the holed plate) AND `orbit_view` (the 512×512 camera gizmo
+    // with its az/el/dist overlay); the estate read output 0 and threw
+    // output 1 away, so the operator's only feedback on the camera
+    // arm was a finished film that came back wrong. Both now save
+    // under the run's own folder — zero extra compute (the tensors
+    // already exist), and the harvest lists them beside the film, so
+    // the popup can show the exact plate the guide pins and the
+    // gizmo that explains the dials.
+    const plateSave = g.node('SaveImage', {
+        images: plate,
+        filename_prefix: `${runId}/reshoot_plate`,
+    }).out(0);
+    const orbitSave = g.node('SaveImage', {
+        images: warpNode.out(1),
+        filename_prefix: `${runId}/reshoot_orbit`,
+    }).out(0);
+    return { refFrames: plate, warp: plate, plateSave, orbitSave };
 }
 /**
  * The per-window MODEL seat: the CrossView LoRA on the window's

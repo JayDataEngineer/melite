@@ -502,7 +502,7 @@ function renderH3Film(
   // refused at the AddGuide seat, killing every film with a short
   // call.
   const reshootChain: ReshootChain | undefined = reshootArmed(p)
-    ? buildH3Reshoot(p, g, Math.min(...spans.map((s, i) => spanStanzaFrames(s, i > 0 ? spanOverlap(s) : 0))))
+    ? buildH3Reshoot(p, g, Math.min(...spans.map((s, i) => spanStanzaFrames(s, i > 0 ? spanOverlap(s) : 0))), runId)
     : undefined
   // (the clip text law lives where the text is consumed: THE
   // TRANSCRIPT — dialogue words ride the <d> prompt tag, sfx text
@@ -1131,7 +1131,7 @@ function renderH3Window(
   // word leads, the estate's own prose follows.
   const reshootChain: ReshootChain | undefined =
     (p.__reshoot as ReshootChain | undefined)
-    ?? (reshootArmed(p) ? buildH3Reshoot(p, g, Number(p.length)) : undefined)
+    ?? (reshootArmed(p) ? buildH3Reshoot(p, g, Number(p.length), runId) : undefined)
   const r2vPrompt = reshootChain !== undefined ? reshootPrompt(prompt) : prompt
   // card knob first (image), renderer alias second.
   const guideImage = (p.image ?? p.image_name ?? '') as string

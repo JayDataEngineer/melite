@@ -410,7 +410,7 @@ function renderH3Film(p, g, facts, model, runId) {
     // refused at the AddGuide seat, killing every film with a short
     // call.
     const reshootChain = reshootArmed(p)
-        ? buildH3Reshoot(p, g, Math.min(...spans.map((s, i) => spanStanzaFrames(s, i > 0 ? spanOverlap(s) : 0))))
+        ? buildH3Reshoot(p, g, Math.min(...spans.map((s, i) => spanStanzaFrames(s, i > 0 ? spanOverlap(s) : 0))), runId)
         : undefined;
     // (the clip text law lives where the text is consumed: THE
     // TRANSCRIPT — dialogue words ride the <d> prompt tag, sfx text
@@ -989,7 +989,7 @@ function renderH3Window(p, g, facts, model, runId) {
     // chain's prompt is exactly `crossview.` — the LoRA's trigger
     // word leads, the estate's own prose follows.
     const reshootChain = p.__reshoot
-        ?? (reshootArmed(p) ? buildH3Reshoot(p, g, Number(p.length)) : undefined);
+        ?? (reshootArmed(p) ? buildH3Reshoot(p, g, Number(p.length), runId) : undefined);
     const r2vPrompt = reshootChain !== undefined ? reshootPrompt(prompt) : prompt;
     // card knob first (image), renderer alias second.
     const guideImage = (p.image ?? p.image_name ?? '');

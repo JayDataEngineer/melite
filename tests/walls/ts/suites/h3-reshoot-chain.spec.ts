@@ -366,6 +366,38 @@ describe("the h3 camera re-shoot wall (the fourth mod bag, official rework)", ()
     assertWiringAgainst(boot.nodes, boot.inputs, "h3-timeline", out);
   });
 
+  // THE JOURNEY ARM (the 2026-10-30 journey audit's finding): the
+  // 90-frame burn was judged only at ACTION depth (the model package's
+  // own spec instantiates `film` with a hand-built doc). The operator's
+  // burn crossed the CARD: def.schema -> def.compose. This arm rides
+  // that door, so a change that only breaks the card-level walk (the
+  // schema defaults, the panel folding, the window spans the card
+  // solves) reds here instead of at the engine.
+  it("ARM 6 — a 124+90 two-call doc through the CARD door pins the 90-frame guide (the burn's own shape)", () => {
+    const doc = {
+      ...BASE,
+      width: 1344,
+      height: 768,
+      calls: [
+        { text: "a slow push in", start_frame: 0, end_frame: 124 },
+        { text: "turn", start_frame: 124, end_frame: 214, transition: "cut" },
+      ],
+      reshoot: [{ source_clip: "sources/take3.mp4", orbit: 25 }],
+    };
+    const out = compose(doc);
+    const prep = ofClass(out, "CrossViewPrepareClip");
+    expect(prep).toHaveLength(1);
+    // the SHORTEST window (90 f) owns the guide — 124/24 is the burn
+    expect(prep[0]![1].inputs.duration).toBe(90 / 24);
+    // and the below-floor case refuses AT THE CARD, naming the floor
+    expect(() => compose({
+      ...BASE,
+      length: 22,
+      calls: [{ text: "short", start_frame: 0, end_frame: 22 }],
+      reshoot: [{ source_clip: "sources/take3.mp4" }],
+    })).toThrow(/window too short for the camera guide — 22 frames is below the 24-frame floor/);
+  });
+
   // ARM 5b is census-INDEPENDENT (the auditor's 2026-10-30 finding):
   // it judges the DECL's own requires row, so it fires today — only
   // 5a's run-door gate rides the engine census.

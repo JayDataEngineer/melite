@@ -237,6 +237,30 @@ describe("the h3 camera re-shoot chain (the fourth mod bag, official rework)", (
     expect(String(r2v[1].inputs["ref_videos.ref_video_0"])).toContain("ImageCompositeMasked");
   });
 
+  it("§8.7 — the run DELIVERS both unspent warp views (the filled plate and the camera gizmo), run-scoped", () => {
+    const g = new GraphBuilder();
+    instantiateAction(film, bag(), H3, g, "run_rs_witness");
+    const entries = nodes(g);
+    // CrossViewWarp returns TWO images: 0 = the holed plate, 1 = the
+    // orbit gizmo. Both are computed on every re-shoot, so saving them
+    // costs no extra work — and the operator's only feedback used to be
+    // a multi-minute film that came back wrong.
+    const saves = ofClass(entries, "SaveImage");
+    expect(saves, "two witnesses, one per warp output").toHaveLength(2);
+    const byPrefix = new Map(saves.map(([, n]) => [String(n.inputs.filename_prefix), n]));
+    const plate = byPrefix.get("run_rs_witness/reshoot_plate");
+    const orbit = byPrefix.get("run_rs_witness/reshoot_orbit");
+    expect(plate, "the FILLED plate saves under the run's own folder").toBeDefined();
+    expect(orbit, "the gizmo saves under the run's own folder").toBeDefined();
+    // the plate save reads the composite (never the raw warp)…
+    expect(String(plate!.inputs.images)).toContain("ImageCompositeMasked");
+    // …and the gizmo reads the warp's SECOND output (socket 1), which is
+    // the whole point: output 1 was unspent before this cure
+    const orbitSrc = String(orbit!.inputs.images);
+    const warpId = ofClass(entries, "CrossViewWarp")[0]![0];
+    expect(orbitSrc).toBe(`${warpId},1`);
+  });
+
   it("the bag's camera dials plumb: pose onto the warp, strength onto the CrossView LoRA", () => {
     const g = new GraphBuilder();
     instantiateAction(

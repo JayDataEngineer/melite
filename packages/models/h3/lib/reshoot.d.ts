@@ -104,6 +104,17 @@ export interface ReshootChain {
     /** The warp — the geometric guide for the moved camera (the
      *  official chain's MiniMaxH3AddGuide image seat). */
     readonly warp: OutputHandle;
+    /** The FILLED plate's saved frame (F30's own witness: the run
+     *  delivers the exact image the guide pins, so the operator sees
+     *  the holes — and their fill — without re-deriving them from the
+     *  film). Saved under `<runId>/reshoot_plate`. */
+    readonly plateSave: OutputHandle;
+    /** The pack's `orbit_view` gizmo (CrossViewWarp output 1: the
+     *  camera dome with the az/el/dist overlay). Emitted by every
+     *  re-shoot and unspent until now — an arm whose only feedback
+     *  used to be a multi-minute render (§8.7). Saved under
+     *  `<runId>/reshoot_orbit`. */
+    readonly orbitSave: OutputHandle;
 }
 /**
  * Build the re-shoot chain on the run's graph (once per compose).
@@ -114,9 +125,12 @@ export interface ReshootChain {
  * @param windowFrames the SHORTEST window this run renders (the guide
  *   is pinned into every window, so its duration derives from this —
  *   F28)
+ * @param runId the run's own id — scopes the two preview saves under
+ *   the run's output folder so the artifact harvest lists them with
+ *   the film (§8.7)
  * @returns the shared handles for the per-window seats
  */
-export declare function buildH3Reshoot(p: Record<string, unknown>, g: GraphBuilder, windowFrames: number): ReshootChain;
+export declare function buildH3Reshoot(p: Record<string, unknown>, g: GraphBuilder, windowFrames: number, runId: string): ReshootChain;
 /**
  * The per-window MODEL seat: the CrossView LoRA on the window's
  * model, post sigma shift (the official order — the distill lora
