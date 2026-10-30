@@ -1,10 +1,9 @@
-# inference.cpp
+# Melite
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
-[![docs](https://img.shields.io/github/actions/workflow/status/OWNER/REPO/docs.yml?branch=main&label=docs)](https://github.com/OWNER/REPO/actions/workflows/docs.yml)
-[![tests](https://img.shields.io/github/actions/workflow/status/OWNER/REPO/tests.yml?branch=main&label=tests)](https://github.com/OWNER/REPO/actions/workflows/tests.yml)
-[![Release](https://img.shields.io/github/v/release/OWNER/REPO)](https://github.com/OWNER/REPO/releases)
-<!-- OWNER/REPO above is a placeholder: one find-replace when the public remote lands. -->
+[![docs](https://img.shields.io/github/actions/workflow/status/JayDataEngineer/melite/docs.yml?branch=main&label=docs)](https://github.com/JayDataEngineer/melite/actions/workflows/docs.yml)
+[![tests](https://img.shields.io/github/actions/workflow/status/JayDataEngineer/melite/tests.yml?branch=main&label=tests)](https://github.com/JayDataEngineer/melite/actions/workflows/tests.yml)
+[![Release](https://img.shields.io/github/v/release/JayDataEngineer/melite)](https://github.com/JayDataEngineer/melite/releases)
 
 Melite is an agent media-creation kit. Users and agents compose cards on a
 shared bench; the estate validates the card, queues one run, calls ComfyUI or
@@ -94,7 +93,7 @@ Requirements:
 Clone with submodules, or initialize them inside an existing checkout:
 
 ```sh
-git clone --recurse-submodules <repository-url>
+git clone --recurse-submodules https://github.com/JayDataEngineer/melite.git
 # or, inside a plain clone:
 git submodule update --init --recursive
 ```
