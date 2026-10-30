@@ -68,6 +68,9 @@ const REPLACE = { source_clip: "clips/take1.mp4", prompt: "the same person, now 
 const REPAIR = { source_clip: "clips/take2.mp4", mask: "clips/mask.png", denoise: 0.32 }
 const EXTEND = { source_clip: "clips/take3.mp4", extend_prompt: "she walks on", extend_seconds: 16.5 }
 const RESHOOT = { source_clip: "clips/take4.mp4", orbit: 30, dolly: 0.8 }
+// F29 (2026-10-30): the LoRA bag reaches the graph, so the rail owes it a
+// row — the operator could not see the adapters at all before this
+const LORAS = { id: "h3_lightx2v_turbo", strength: 0.8 }
 
 describe("§9 — the studio's mod projection (the commission derivation)", () => {
   it("ARM 1 — no bags and EMPTY bags derive NO commission (the unused arm is surface, never a placeholder row)", () => {
@@ -85,24 +88,28 @@ describe("§9 — the studio's mod projection (the commission derivation)", () =
 
   it("ARM 2 — each armed bag derives exactly one row, carrying its entry's seats", () => {
     for (const kind of COMMISSION_KINDS) {
-      const entry = { replace: REPLACE, repair: REPAIR, extend: EXTEND, reshoot: RESHOOT }[kind]
+      const entry = { replace: REPLACE, repair: REPAIR, extend: EXTEND, reshoot: RESHOOT, loras: LORAS }[kind]
       const rows = deriveCommissions({ [kind]: [entry] })
       expect(rows, `${kind}: one armed bag is one row`).toHaveLength(1)
       expect(rows[0]!.kind).toBe(kind)
       // the seats are the entry's OWN keys — nothing added, nothing dropped
       expect(rows[0]!.seats.map((s) => s.key).sort()).toEqual(Object.keys(entry).sort())
-      expect(rows[0]!.seats.find((s) => s.key === "source_clip")!.value).toBe(entry.source_clip)
+      // every entry seat rides verbatim; the LoRA bag's own keys are id +
+      // strength (no source_clip on that arm)
+      const anchor = kind === "loras" ? "id" : "source_clip"
+      const seats = new Map(rows[0]!.seats.map((s) => [s.key, s.value]))
+      expect(seats.get(anchor)).toBe(String((entry as Record<string, unknown>)[anchor]))
     }
   })
 
   it("ARM 3 — the row order follows the card's bag order (one deterministic rail)", () => {
     const rows = deriveCommissions({
-      reshoot: [RESHOOT], extend: [EXTEND], repair: [REPAIR], replace: [REPLACE],
+      reshoot: [RESHOOT], extend: [EXTEND], repair: [REPAIR], replace: [REPLACE], loras: [LORAS],
     })
     expect(rows.map((r) => r.kind)).toEqual([...COMMISSION_KINDS])
     // the kinds constant IS the card's declaration order (the rail's own
     // reading order is a contract, not an accident of object keys)
-    expect([...COMMISSION_KINDS]).toEqual(["replace", "repair", "extend", "reshoot"])
+    expect([...COMMISSION_KINDS]).toEqual(["replace", "repair", "extend", "reshoot", "loras"])
   })
 
   it("ARM 4 — the extend row draws the SAME composition the compose door builds (one solver, two consumers)", () => {
@@ -116,8 +123,8 @@ describe("§9 — the studio's mod projection (the commission derivation)", () =
     expect(geometry!.windowFrames).toBe(158)
     expect(geometry!.deliveredFrames).toBe(16.5 * 24)
     // the non-extend arms carry no geometry (they do not compose windows)
-    for (const kind of ["replace", "repair", "reshoot"] as const) {
-      const entry = { replace: REPLACE, repair: REPAIR, reshoot: RESHOOT }[kind]
+    for (const kind of ["replace", "repair", "reshoot", "loras"] as const) {
+      const entry = { replace: REPLACE, repair: REPAIR, reshoot: RESHOOT, loras: LORAS }[kind]
       expect(deriveCommissions({ [kind]: [entry] })[0]!.geometry).toBeUndefined()
     }
   })
@@ -242,7 +249,7 @@ describe("§9 — the studio's mod projection (the commission derivation)", () =
 
   it("ARM 8 — every kind is derivable from a real card-shaped entry (no kind is a stub)", () => {
     const entries: Record<CommissionKind, Record<string, unknown>> = {
-      replace: REPLACE, repair: REPAIR, extend: EXTEND, reshoot: RESHOOT,
+      replace: REPLACE, repair: REPAIR, extend: EXTEND, reshoot: RESHOOT, loras: LORAS,
     }
     for (const kind of COMMISSION_KINDS) {
       const rows = deriveCommissions({ [kind]: [entries[kind]] })

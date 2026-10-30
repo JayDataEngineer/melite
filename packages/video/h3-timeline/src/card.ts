@@ -23,6 +23,7 @@
 import type { Context } from '@melite/comfyui-card-kit/card-definition'
 import type { DeclaredModifierKind } from '@melite/comfyui-card-kit/params-emit'
 import { DECL as h3Decl } from '@melite/models-h3'
+import { H3_LORA_ROWS } from '@melite/models-h3/mods/loras'
 import type { Family } from '@melite/models-h3/schema'
 import {
   FAMILIES,
@@ -106,6 +107,32 @@ export const VARIANT_ADDRESSES: string[] = ['h3-timeline', 'h3-singularity']
  *  channel; the emission seat is the family's renderH3Swap (the
  *  card branches there on a non-empty bag — the film action is
  *  never entered with swap seats present). */
+/** THE LoRA KIND (F29, 2026-10-30): the family's acceleration /
+ *  camera adapters ARE a served mod — the bag reaches every graph
+ *  (proved live: a strength patch moved the distill seat 0.6 → 1),
+ *  but the card declared no kind for it, so the studio rendered NO
+ *  seat and the operator could not see or change the LoRAs at all.
+ *  The kind serves the family's own catalog rows (id + strength);
+ *  the render-side marriage (steps / shift_video / default
+ *  strength) still owns the values an entry leaves unstated. A
+ *  multi-row arm is the stacked lane (distill + camera), which is
+ *  what the official re-shoot chain rides. */
+const LORAS_MOD: DeclaredModifierKind = {
+  kind: 'loras',
+  label: 'LoRAs',
+  param_key: 'loras',
+  schema_key: 'loras',
+  category: 'ordered',
+  cardinality: 'list',
+  max_stack: 4,
+  section: 'LoRAs — the family adapters this film stacks on its model seat (the acceleration/distill row and the CrossView camera row). Every entry states the catalog id and the strength; unstated steps and sigma shift marry from the catalog row. Film runs leave this arm empty (the card default row still applies).',
+  fields: [
+    { name: 'id', label: 'LoRA', type: 'select', default: 'h3_lightx2v_turbo', options: H3_LORA_ROWS.map((row) => ({ value: row.id, label: row.label })), tooltip: 'The adapter, by its catalog id — the family file the provisioner downloads; the render loads this id verbatim.' },
+    { name: 'strength', label: 'Strength', type: 'number', default: 0.6, min: 0, max: 2, step: 0.05, tooltip: 'Adapter weight. Each row has a designed point (the distill rows run 0.6–1, the refiner 0.35); the render only reads the number you state.' },
+    { name: 'steps', label: 'Steps', type: 'number', default: 0, min: 0, max: 50, step: 1, tooltip: 'The step count to marry (0 = the catalog row\'s designed count — a distill adapter is married to its steps, never free).' },
+  ],
+}
+
 const REPLACE_MOD: DeclaredModifierKind = {
   kind: 'replace',
   label: 'Replace',
@@ -303,6 +330,18 @@ const REFINE_MOD: DeclaredModifierKind = {
     { name: 'steps', label: 'Refine steps', type: 'number', default: 6, min: 1, max: 30, step: 1, tooltip: 'The refinement schedule steps (the low-sigma second pass; the sampler steps stay the doc marriage).' },
     { name: 'seed', label: 'Refine seed', type: 'number', default: 0, min: 0, max: 4294967295, step: 1, tooltip: 'The refinement noise seed (0 runs the reference posture).' },
     { name: 'clip_seconds', label: 'Clip seconds', type: 'number', default: 6, min: 0.5, max: 60, step: 0.1, tooltip: 'The clip budget the preview override frames from (in-run-only — the pass refines the whole staged clip).' },
+    // THE CAPACITY SEATS (the F24 burn, 2026-10-30): the whole-clip
+    // handoff OOMs past ~100 f at the hardcoded 2x, and the node
+    // itself serves an exact-size mode — a ≤1x pass fits. Both seats
+    // ride the node's own declared domain (mode enum, scale
+    // [1, 4]); the default is the shipped 2x so every existing doc
+    // composes byte-identically.
+    { name: 'mode', label: 'Upscale mode', type: 'select', default: 'scale by multiplier', options: [
+      { value: 'scale by multiplier', label: 'Scale by multiplier (the shipped 2x)' },
+      { value: 'target dimensions', label: 'Target dimensions (1280x704)' },
+      { value: 'megapixels', label: 'Megapixels (the node\'s own budget)' },
+    ], tooltip: 'How the handoff sizes the pass: a multiplier (default 2x), exact target width/height (1280x704), or a megapixel budget. The node\'s own options, verbatim.' },
+    { name: 'scale', label: 'Upscale scale', type: 'number', default: 2, min: 1, max: 4, step: 0.05, tooltip: 'The multiplier mode\'s scale. 1.0 is the capacity cure — a same-size refine (no latent upscale) fits clips the 2x pass OOMs; the refinement pass still runs.' },
   ],
 }
 
@@ -720,7 +759,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
     // The mask card's sam3/sam2/draw precedent — one kind per arm,
     // entry fields as the popup's tiles, requires as the
     // presence-gated arm packs.
-    mods: [REPLACE_MOD, REPAIR_MOD, EXTEND_MOD, REFINE_MOD, RESHOOT_MOD, UPSCALE_MOD],
+    mods: [REPLACE_MOD, REPAIR_MOD, EXTEND_MOD, REFINE_MOD, RESHOOT_MOD, UPSCALE_MOD, LORAS_MOD],
     jsonArrayParams: JSON_ARRAY_PARAMS,
     // the packs the window graph rides (EXTENSION LAW) + the film
     // tail's file boundary (melite-utility-nodes: MeliteUnload +

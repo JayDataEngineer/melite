@@ -297,6 +297,7 @@ export const studioCopy = {
       case "repair": return "Repair"
       case "extend": return "Extend"
       case "reshoot": return "Reshoot"
+      case "loras": return "LoRAs"
       default: return kind
     }
   },

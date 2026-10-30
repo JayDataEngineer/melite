@@ -688,6 +688,7 @@ window.__ModuleLoader__.load({
 					case "repair": return "Repair";
 					case "extend": return "Extend";
 					case "reshoot": return "Reshoot";
+					case "loras": return "LoRAs";
 					default: return kind;
 				}
 			},
@@ -16722,12 +16723,16 @@ window.__ModuleLoader__.load({
 		* open→save by the bench's merge-patch — so the rail projects the
 		* durable row and holds no state of its own.
 		*/
-		/** The four mod bags, in the card's own declaration order. */
+		/** Every mod bag the rail projects, in the card's own declaration
+		*  order. The LoRAs joined on 2026-10-30 (F29): the bag reached the
+		*  graph but no rail row existed, so the operator could not see the
+		*  adapters at all — a bag the compose honors must have a row. */
 		const COMMISSION_KINDS = [
 			"replace",
 			"repair",
 			"extend",
-			"reshoot"
+			"reshoot",
+			"loras"
 		];
 		/** The frames-per-second the composition's seconds readout divides by
 		*  (the film clock — the solver's own divisor). */
@@ -16810,6 +16815,20 @@ window.__ModuleLoader__.load({
 					continue;
 				}
 				if (bag.length === 0) continue;
+				if (kind === "loras") {
+					for (const row of bag) {
+						const stacked = bagEntry([row]);
+						out.push(stacked === void 0 ? {
+							kind,
+							seats: [],
+							note: "bad-entry"
+						} : {
+							kind,
+							seats: seatsOf(stacked)
+						});
+					}
+					continue;
+				}
 				const entry = bagEntry(bag);
 				if (entry === void 0) {
 					out.push({

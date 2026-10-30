@@ -61,12 +61,15 @@ const RESHOOT_CLASSES = [
 // The FIRST CUT's classes (VDA depth + Fun ControlNet) — they died
 // with the 2026-11-13 official rework and must stay dead on BOTH
 // the disarmed and the armed doc (the retired-chain guard).
+// ColorToMask LEFT this list on 2026-10-30: it is no longer the dead
+// first cut's colour filter — the F30 hole filler masks the warp's
+// magenta disocclusion with it (its own arm in
+// packages/models/h3/tests/reshoot.spec.ts judges it).
 const RETIRED_CLASSES = [
   'LoadVideoDepthAnythingModel',
   'VideoDepthAnythingProcess',
   'VideoDepthAnythingOutput',
   'ImageResizeKJ',
-  'ColorToMask',
   'ModelPatchLoader',
   'MiniMaxH3FunControlNetApply',
 ];

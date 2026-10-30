@@ -84,6 +84,9 @@ describe("the refine kind (the fifth mod bag)", () => {
     const names = ((refine as { fields?: Array<{ name?: string }> }).fields ?? []).map((f) => f.name);
     assert.deepEqual(names, [
       'source_clip', 'refine_prompt', 'denoise', 'steps', 'seed', 'clip_seconds',
+      // THE CAPACITY SEATS (F24, 2026-10-30): the node's own sizing
+      // mode + multiplier — a ≤1x pass fits clips the 2x OOMs
+      'mode', 'scale',
     ], "exactly the refine seats — no mask seat (no masked edit), no keep_audio (the soundtrack is the source's own, fixed)");
   });
 
@@ -181,7 +184,7 @@ describe("the refine kind (the fifth mod bag)", () => {
     const h = hands[0]![1].inputs;
     assert.equal(h['model_name'], 'minimax_h3_latent_upscaler_3d_bf16.safetensors', 'the learned 3D-conv weights');
     assert.equal(h['mode'], 'scale by multiplier', 'the film handoff spelling');
-    assert.equal(h['scale'], 2.0, 'ONE variant path: 2x');
+    assert.equal(h['scale'], 2.0, 'the default variant: 2x');
     assert.equal(h['lock_audio'], true, 'the soundtrack is the source\'s own, fixed');
     assert.equal(h['precision'], 'bf16', 'the film handoff precision');
     assert.equal(h['device'], 'cuda', 'the film handoff device');
@@ -194,6 +197,29 @@ describe("the refine kind (the fifth mod bag)", () => {
     assert.equal(saves.length, 1, 'a single terminal SaveVideo');
     assert.equal(String(saves[0]![1].inputs['filename_prefix']), 'run_rfmod_armed/refine', 'the refine prefix rides the run id');
     assert.equal(ofClass(out, 'MiniMaxH3ChainAssemble').length, 0, 'no ChainAssemble — a refine has no loop lineage to assemble');
+  });
+
+  it("THE CAPACITY SEATS (F24): a stated scale ≤ 1 rides the handoff verbatim — the same-size refine fits what the 2x pass OOMs", () => {
+    const entry = { source_clip: 'swap_film_v1.mp4', refine_prompt: 'the same scene', denoise: 0.32, steps: 6, mode: 'scale by multiplier', scale: 1 };
+    const walked = def.schema({
+      calls: [{ text: 'a slow push in', start_frame: 0, end_frame: 56 }], length: 56,
+      refine: [entry],
+    }) as Record<string, unknown>;
+    const g = new GraphBuilder();
+    def.compose(walked, model, g, 'run_rfmod_scale1');
+    const hands = ofClass(graphOf(g), 'MinimaxH3LatentUpscaler3DRefineHandoff');
+    assert.equal(hands.length, 1);
+    const h = hands[0]![1].inputs;
+    assert.equal(h['scale'], 1, 'the stated capacity lever rides verbatim');
+    assert.equal(h['mode'], 'scale by multiplier', 'the stated mode rides verbatim');
+    // a target-dimensions pass is the other served capacity route
+    const exact = def.schema({
+      calls: [{ text: 'a slow push in', start_frame: 0, end_frame: 56 }], length: 56,
+      refine: [{ ...entry, mode: 'target dimensions' }],
+    }) as Record<string, unknown>;
+    const g2 = new GraphBuilder();
+    def.compose(exact, model, g2, 'run_rfmod_dims');
+    assert.equal(ofClass(graphOf(g2), 'MinimaxH3LatentUpscaler3DRefineHandoff')[0]![1].inputs['mode'], 'target dimensions');
   });
 
   it("an armed refine resolves its default output to the refine SaveVideo", () => {

@@ -31,8 +31,11 @@ import {
   assertGridLength, GRID_MAX_FRAMES, solveWindowComposition, type WindowComposition,
 } from '@melite/models-h3/timelineContract'
 
-/** The four mod bags, in the card's own declaration order. */
-export const COMMISSION_KINDS = ['replace', 'repair', 'extend', 'reshoot'] as const
+/** Every mod bag the rail projects, in the card's own declaration
+ *  order. The LoRAs joined on 2026-10-30 (F29): the bag reached the
+ *  graph but no rail row existed, so the operator could not see the
+ *  adapters at all — a bag the compose honors must have a row. */
+export const COMMISSION_KINDS = ['replace', 'repair', 'extend', 'reshoot', 'loras'] as const
 export type CommissionKind = (typeof COMMISSION_KINDS)[number]
 
 /** One entry seat as the rail names it: the key the compose reads and
@@ -162,6 +165,20 @@ export function deriveCommissions(params: Record<string, unknown> | undefined): 
       continue
     }
     if (bag.length === 0) continue
+    // THE STACKED BAG (F29, 2026-10-30): the LoRA arm stacks rows
+    // (max_stack 4 — the distill adapter + the camera adapter), so it
+    // projects ONE ROW PER ENTRY. Naming only bag[0] would hide the
+    // second adapter, which is exactly the invisibility the operator
+    // reported; every other bag is one-entry by its own max_stack.
+    if (kind === 'loras') {
+      for (const row of bag) {
+        const stacked = bagEntry([row])
+        out.push(stacked === undefined
+          ? { kind, seats: [], note: 'bad-entry' }
+          : { kind, seats: seatsOf(stacked) })
+      }
+      continue
+    }
     const entry = bagEntry(bag)
     if (entry === undefined) {
       out.push({ kind, seats: [], note: 'bad-entry' })
