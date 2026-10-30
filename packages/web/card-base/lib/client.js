@@ -13380,7 +13380,9 @@ window.__ModuleLoader__.load({
 				draftId: typeof doc["draft_id"] === "string" && doc["draft_id"] !== "" ? draftIdOf(doc["draft_id"]) : null,
 				stages,
 				...typeof doc["error"] === "string" && doc["error"] !== "" ? { error: doc["error"] } : {},
-				...receipt !== void 0 ? { graph_receipt: receipt } : {}
+				...receipt !== void 0 ? { graph_receipt: receipt } : {},
+				...doc["card_snapshot"] !== void 0 ? { card_snapshot: doc["card_snapshot"] } : {},
+				...doc["card_recipe"] !== void 0 ? { card_recipe: doc["card_recipe"] } : {}
 			};
 		}
 		/** The list row's served artifact url onto the media route. The
