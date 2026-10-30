@@ -244,10 +244,22 @@ export function meliteLoad(
             const fam = v.split(':')[0]
             if (fam !== '' && !seatFams.includes(fam)) seatFams.push(fam)
           }
-          const packSeats = familyPackSeats(
-            seatFams,
-            new Set(mods.map((m) => str(m?.kind))),
-          )
+          // THE SERVED SEAT IS THE PARAM KEY, NOT THE KIND NAME
+          // (friction report §14.7b, F34's agent face, 2026-11-13):
+          // the card's curated kind is `loras` (a bag at params.loras)
+          // while the pack's kind is `lora` (the same bag) — deduping
+          // by kind let the agent bundle print TWO LoRA sections and
+          // two carriers for one seat. The served set carries BOTH the
+          // card's kinds and their bag keys; the pack pass skips a
+          // pack whose kind OR param_key is already served.
+          const served = new Set<string>()
+          for (const m of mods) {
+            const kind = str(m?.kind)
+            if (kind !== '') served.add(kind)
+            const key = str(m?.param_key)
+            if (key !== '') served.add(key)
+          }
+          const packSeats = familyPackSeats(seatFams, served)
           const modLines = mods.map((m) => {
             const kind = str(m?.kind) || '?'
             const cat = str(m?.category) || 'ordered'
@@ -560,8 +572,11 @@ function familyPackSeats(
     }
     for (const pack of packs) {
       const meta = MODIFIER_PACKS[pack]
-      if (meta === undefined || seen.has(meta.kind)) continue
+      if (meta === undefined) continue
+      const key = meta.param_key ?? pack
+      if (seen.has(meta.kind) || seen.has(key)) continue
       seen.add(meta.kind)
+      seen.add(key)
       const fields = svc !== null ? svc.packFieldNames(pack) : []
       if (fields.length === 0) continue
       out.push({

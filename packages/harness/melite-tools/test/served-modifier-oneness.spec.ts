@@ -17,6 +17,9 @@ import "../../../../tests/helpers/boot-models.ts";
 import { beforeAll, describe, expect, it } from "vitest";
 import assert from "node:assert/strict";
 import { formSpecArm } from "../src/discovery.ts";
+import { meliteLoad } from "../src/tools/melite-load.ts";
+import { fakeEstate } from "./fake-estate.ts";
+import { fakeExec } from "./fake-exec.ts";
 
 type Mod = {
   kind?: string; label?: string; param_key?: string;
@@ -70,5 +73,40 @@ describe("the served modifier list carries one row per bag", () => {
       assert.ok((rows[0]!.fields ?? []).length > 0, `${key}'s curated fields survive the dedupe`);
     }
     expect(mods.length, "seven bags, seven rows").toBe(7);
+  });
+
+  // THE AGENT FACE (friction report §14.7b — F34's other half,
+  // 2026-11-13): the form face deduped, but `melite_load` still
+  // rendered `loras[]` from the card and `lora[]` from the pack,
+  // because its dedupe keyed on the KIND NAME. An agent reading the
+  // load line learned two LoRA seats for one bag. This arm rides the
+  // REAL tool render over the REAL pack table.
+  it("ARM 4 — the load line names ONE LoRA seat (the pack row dedupes by param_key, not kind)", async () => {
+    const bundle = {
+      kind: "card",
+      name: "h3-timeline",
+      signature: {
+        model: "h3:default:default",
+        params_schema: { properties: {}, required: [] },
+        modifiers: [{
+          kind: "loras",
+          param_key: "loras",
+          category: "bag",
+          fields: ["id", "strength", "steps"],
+        }],
+      },
+    }
+    const { estate } = fakeEstate({ loadCard: () => ({ bundle }) })
+    const tool = meliteLoad(estate)
+    const rendered = tool.output.render(
+      { name: "h3-timeline", inference_type: "card" } as never,
+      { bundle } as never,
+    ) as Array<{ text?: string }>
+    const text = rendered.map((r) => r.text ?? "").join("\n")
+    const modLine = text.split("\n").find((l) => l.startsWith("mods: ")) ?? ""
+    expect(modLine.length, "the load line carries a mods line").toBeGreaterThan(0)
+    const seats = [...modLine.matchAll(/\b(loras|lora)\[\]/g)].map((m) => m[1])
+    expect(seats, `one LoRA seat on the load line (got: ${modLine})`).toEqual(["loras"])
+    expect(text).toContain("bag: params.loras")
   });
 });

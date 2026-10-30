@@ -18,36 +18,72 @@ A flow has TWO homes — the compile truth and the agent face:
 
 ## 1. The registry row
 
-In `flowsData.ts`, add to `REGISTRY` (a hand-owned table — one
-row per flow, sorted keys):
+A flow row has TWO code homes in `packages/harness/estate-queue/src/`:
+
+1. **The row object** — `flowsRegistryRows.ts`, one `export const MY_FLOW:
+   RegistryFlow` per flow. This is where the stages are authored.
+2. **The pointer** — `flowsData.ts`'s `REGISTRY` table, one line
+   (`"my-flow": MY_FLOW,`). The table stays a readable index; it is NOT a
+   sorted list (new landings append; read it, do not re-sort it).
 
 ```ts
-const MY_FLOW: RegistryFlow = {
-  // stages: Record<string, RegistryStage> — each stage names its
-  //   card (a REGISTERED card — the amnesty is over; an empty or
-  //   unknown card ref refuses LOUD in the models-against-cards wall)
-  // inputs: Record<string, RegistryEdge> — initial edges or
-  //   fromFlow stage outputs
-  // expected/outputs/cardIo: Record<string, string>
-  //   THE DERIVATION LAW (roadmap §12): for card= stages, an input
-  //   the card's own flowKinds.inputs declares needs NO hand-written
-  //   expected — the kind derives from the card (the registry row
-  //   never hand-mirrors what the card already declares). A row that
-  //   hand-writes a kind the card contradicts refuses LOUD. Hand-
-  //   write expected only for initials/edges the card cannot know.
-  // params: Record<string, unknown>
-};
-const REGISTRY: Record<string, RegistryFlow> = {
-  ...,
-  "my-flow": MY_FLOW,
+// flowsRegistryRows.ts
+export const MY_FLOW: RegistryFlow = {
+  id: "my-flow",
+  description: "…",
+  stages: [
+    plainStage({
+      id: "s_0",
+      engine: CARD_PLANE_ENGINE,
+      card: "h3-timeline",           // the card plane
+      description: "…",
+      inputs: { clip: initial("video") },
+      params: {},
+    }),
+  ],
+  initialValidators: { clip: "video" },   // camelCase; the retired
+                                          // flows/*/flow.py spelling was
+                                          // initial_validators
+  requiredInitials: ["clip"],
+  tool: null,
+  skillRefs: [],
 };
 ```
 
-Stage shapes that exist (read the file, do not guess):
+Shapes (read `flowsData.ts` and `flowsRegistryRows.ts`, do not guess):
 
-- `photo` / `glb` / `bake_params` initial kinds
-- `card=` stages + FlowTool overlays + skill_refs (carried verbatim)
-- `fromFlow` rows resolve against other flows' stages LIVE
+- `RegistryFlow.stages` is a `readonly RegistryStage[]` built through the
+  builders — `plainStage(row)`, `linkedStage(flow, stage, id, inputs)`,
+  `initial(key)`, `fromStage(stage, output)`. A stage row is JSON-shaped
+  and every field is `readonly`.
+- `initialValidators` kinds: `photo` | `video` | `glb` | `bake_params` |
+  `text`. `requiredInitials` names the ones the flow cannot run without
+  (refused at the door, before a run registers).
+- `inputs: Record<string, RegistryEdge>` — initial edges or `fromFlow`
+  stage outputs; `expected/outputs/cardIo: Record<string, string>`.
+  THE DERIVATION LAW (roadmap §12): for `card=` stages, an input the
+  card's own `flowKinds.inputs` declares needs NO hand-written
+  `expected` — the kind derives from the card (the registry row never
+  hand-mirrors what the card already declares). A row that hand-writes a
+  kind the card contradicts refuses LOUD. Hand-write `expected` only for
+  initials/edges the card cannot know.
+- `params: Record<string, unknown>`.
+
+### The three stage planes (never a fourth)
+
+A stage is composed by EXACTLY ONE of (`flowsData.ts` `RegistryStage`):
+
+| plane | fields | who composes |
+|---|---|---|
+| **card** | `card: "<name>"`, `engine: CARD_PLANE_ENGINE` | the card plane's dispatch — the registered card's own graph |
+| **family action** | `family: "<family>"`, `action: "<verb>"` | the family's DECL (`flowsFamilyCompose` interprets it at expansion; e.g. `anny/estimate_photo`, `anny/bake`, `fit/seat`, `h3`'s extend action) |
+| **engine verb** | `engine: "<verb>"` (not `CARD_PLANE_ENGINE`) | the runs door drives the engine's own verb directly (craft/agent stages) |
+
+`family`/`action` default to `""` on the builders; a `card=` stage naming
+neither a card nor a family action is the retired raw-workflow shape and
+`expandRegistryFlow` refuses it, named. `fromFlow` rows resolve against
+another flow's stage LIVE at expansion (never a snapshot), which is how
+one flow reuses another's stage.
 
 Wire laws:
 

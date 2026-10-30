@@ -29,19 +29,21 @@ packages/<genre>/<card>/
                    # (step 4) + "typecheck": "tsc --noEmit" (the
                    # battery gates every package that owns the script,
                    # the day it declares it).
-  tsconfig.json    # copy from a sibling card package (mask is
-                   # the reference: types:["node"], per-program ambient)
+  tsconfig.json    # copy from a sibling card package (rig is the
+                   # reference: types:["node"], per-program ambient)
   tsdown.config.ts # ONLY when a studio ships: the shared clientBundle
                    # preset (step 4)
   src/index.ts     # the HOST marker: export name/inject/apply, apply
                    # is empty — the card rides ./card, the studio rides
-                   # the client face (copy from mask)
+                   # the client face (copy from input-prep)
   src/card.ts      # THE registration plugin (shape below)
   src/client/index.ts    # ONLY when a studio ships: the adapter (step 4)
   src/ui/studio/   # ONLY when a studio ships: the studio body files
   src/agents/      # OPTIONAL agent docs
-  src/env.d.ts     # per-program ambient (copy from a sibling)
-  src/css-modules.d.ts   # per-program ambient (copy from a sibling)
+  src/env.d.ts     # ONLY when a studio ships: per-program ambient
+                   # (copy from input-prep)
+  src/css-modules.d.ts   # ONLY when a studio ships: per-program ambient
+                   # (copy from input-prep)
   tests/           # card.spec.ts; + <card>-client.spec.tsx when a
                    # studio ships (dom lane)
 ```
@@ -49,7 +51,7 @@ packages/<genre>/<card>/
 `src/card.ts` — the shape (copy from `packages/3d/rig/src/card.ts`):
 
 ```ts
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@melite/comfyui-card-kit/card-definition'
 import z from '@deepseek-ai/schemastery'
 
 const schema = z.object({ /* fields; .extra('extra', {...}) for groups */ })
@@ -78,8 +80,9 @@ Laws the walls check (do not learn these by failing them):
   default owns the floor (RANGE RULE 2026-09-08).
 - **required params**: `compose` refuses LOUD (`throw new Error(...)`)
   on missing required params — never a silent default.
-- **identity**: the CardDefinition carries identity (the m1 wall:
-  no card without it, never a generated title).
+- **identity**: the CardDefinition carries identity (the registration
+  wall `tests/walls/ts/suites/cards-registration.spec.ts`: no card
+  without it, never a generated title).
 - **tool face** (when the card also ships `src/tool.ts`): `execute`
   returns the FLOW ENVELOPE inferred from its own `OUTPUT_SCHEMA`
   (`as const` + `type OutputEnvelope = InferValue<typeof
@@ -90,7 +93,7 @@ Laws the walls check (do not learn these by failing them):
 `packages/engines/comfyui-cordis/src/cardDefs.ts` → the
 `cardPackages` array. One row per card. Packages with a client face
 mount their registration via the `./card` subpath
-(`'@melite/image-mask/card'` — the host `.` is the marker);
+(`'@melite/3d-rig/card'` — the host `.` is the marker);
 packages whose card.ts IS the main ride the bare specifier
 (`'@melite/audio-music'`). This table is the ONLY card composition
 (loadCardDefs' cache-boot AND the compose door's fresh-Context boot
@@ -202,16 +205,14 @@ The standalone gateway is retired (2026-09-10) — never restart it and
 never invent a second process; the estate serves from the one DSH
 lane. Restart that lane service the way THIS deployment runs it (the
 unit/process name is per-installation — never assume a specific one),
-then prove the card's flow validates against the running lane's own
-base URL:
+then prove the card composes end to end through the sanctioned
+drive (never a raw curl at an estate route — `make-flow`'s rule, and
+`estate-drive.mjs` is the one proof that owns the lane):
 
 ```sh
-# restart the estate lane service for this installation, then:
-curl -s -X POST "$LANE/v1/flows/validate" \
-  -H 'content-type: application/json' \
-  -d '{"id":"<flow>","stages":[{"id":"s_0","engine":"comfyui","params":{}}]}'
-# $LANE = the base URL this deployment's estate answers on
-# expect {"ok":true,"flow":"<flow>",...}
+MELITE_STATE_ROOT=$(mktemp -d) node test/estate-drive.mjs   # the live lane
+# the drive boots a fresh estate on the built lib/, loads every card
+# (yours included), and prints its own flow-validation line
 # the studio proof is build-time + test-time (the client spec), and
 # live on the lane's GUI (the cards.stage.view seam serves it).
 ```

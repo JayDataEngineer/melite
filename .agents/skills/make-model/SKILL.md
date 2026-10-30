@@ -18,16 +18,26 @@ discharge stroke).
 packages/models/<family>/
   package.json     # name "@melite/models-<family>", private,
                    # deps: @melite/comfyui-card-kit (model-contract,
-                   # service-faces) + @melite/contracts +
-                   # @deepseek-ai/schemastery — NOT comfyui-cordis
-                   # (the family↔engine cycle died with the string
-                   # table; a family that imports the engine re-opens
-                   # it); devDeps: typescript ^5.9.3 + @types/node
-                   # ^22.20.0 + @deepseek-ai/cordis; scripts own
-                   # "typecheck": "tsc --noEmit" (the battery gates
-                   # the package the day the script exists)
+                   # service-faces) — the ONLY required dep (28 of the
+                   # 32 families declare nothing else). Add
+                   # @melite/contracts and/or @deepseek-ai/schemastery
+                   # ONLY when this family's code imports them (anny,
+                   # fit, h3, skin do; krea-2 does not). NOT
+                   # comfyui-cordis — the family↔engine cycle died with
+                   # the string table; a family that imports the engine
+                   # re-opens it. devDeps: typescript ^5.9.3 +
+                   # @types/node ^22.20.0 + @deepseek-ai/cordis;
+                   # scripts own "typecheck": "tsc --noEmit" (the
+                   # battery gates the package the day the script
+                   # exists)
   tsconfig.json    # copy from a sibling (packages/models/krea-2)
-  src/index.ts     # THE DECL plugin (shape below)
+  src/index.ts     # THE DECL plugin (shape below) + the re-export
+                   # face (actions, default)
+  src/actions.ts   # OPTIONAL: the family's offered ACTION ATOMS —
+                   # the handlers a card imports beside the DECL
+                   # (krea-2's t2i, h3's extend/refine/repair). The
+                   # card binds them; nothing else moves when one
+                   # lands (fibo2-edit, h3)
   mods/            # OPTIONAL capability packs (loras.ts, ...)
   tests/decl.spec.ts   # the family's own conformance spec
 ```
@@ -53,6 +63,20 @@ export const family: Plugin = {
   },
 };
 ```
+
+A family that offers ACTIONS re-exports them from `src/index.ts` beside
+the DECL (krea-2's tail, `packages/models/krea-2/src/index.ts`):
+
+```ts
+// The family's offered actions (the atom vocabulary) — the card
+// imports this beside the DECL: the family's whole offer, one face.
+export { t2i, parseT2IFacts, type T2IFacts, type T2IParams } from "./actions.ts";
+```
+
+The atoms live in their own `src/actions.ts` (one handler per verb the
+cards bind: krea-2 `t2i`, h3 `extend`/`refine`/`repair`/`reshoot`/`swap`);
+`src/index.ts` stays the DECL + the re-export face, never a second
+handler body.
 
 `ModelDecl` fields that matter (the law-hygiene wall checks them):
 
@@ -166,6 +190,14 @@ resolves each through dynamic `import()`:
 "@melite/models-<family>",
 ```
 
+AND the family owes its OWN manifest row in
+`packages/engines/comfyui-cordis/package.json` dependencies —
+`"@melite/models-<family>": "workspace:*"` (32 such rows today). The
+`FAMILY_PKGS` string is resolved by dynamic `import()` INSIDE the
+engine package, so the engine's manifest is what makes the specifier
+resolvable; a table row without the dep fails at boot. The same wall
+(W9) pins table↔manifests, so neither row can land alone.
+
 bootModels loads each through `ctx.plugin` — one fiber per family,
 transactional (the boot REFUSES if familyCount() ≠ the mounted
 family fibers: a family that registered nothing is a failed boot,
@@ -201,6 +233,31 @@ boot).
 
 Miss either face's row and the family never lands on that face —
 the gates below catch the absence.
+
+## 2b. The engine's facts row (model-facts.json)
+
+A family that serves a card face also lands a FACTS row — the engine's
+own data plane, `packages/engines/comfyui-cordis/data/model-facts.json`.
+Model-owned keys (defaults / lane_inputs / variants / variant_groups /
+mods / accepts / studio) DERIVE from the registry at load
+(`src/models/facts.ts`); the file keeps only what the registry cannot
+carry:
+
+- `cards.<card>.outputs` — the artifact kinds the card emits
+  (`label`, `many`, `patterns`).
+- `cards.<card>.requires_by_family.<family>` — the EXTENSION PACKS the
+  family's arm needs on that card (`["ComfyUI-MoGe"]`; `[]` = core
+  only).
+- `cards.<card>.card_knobs` — per-address knob overrides.
+- `extension_node_types` / `core_node_types` — the node classes the
+  pinned engine serves (never extension keys; the upstream gate proves
+  each class at `infra/comfyui/core.pin`).
+
+Variants stay the DECL's: if the facts row's variant list disagrees
+with the family's matrix, the models-flows wall refuses the two
+spellings. An absent `requires_by_family` row is not refused — the
+arm's packs simply are not advertised, and the operator learns at the
+first missing-node failure instead.
 
 ## 3. The gates
 
