@@ -54,7 +54,21 @@ for dir in packages/web/card-base packages/web/melite-card-view \
            packages/3d/img-to-mesh packages/web-kit/timeline; do
   [ -f "$dir/tsdown.config.ts" ] || continue
   echo "   tsdown $dir"
-  (cd "$dir" && ./node_modules/.bin/tsdown >/dev/null 2>&1)
+  # FAIL LOUD (the 2026-10-30 outage: this line discarded the voice and
+  # set -e killed the script after a bare "tsdown <dir>" echo — card-base
+  # had never DECLARED tsdown; its bin had only ever resolved through the
+  # long-dead tracked node_modules symlink, so the honest per-package
+  # install exited 127 into /dev/null and :3088 never came up). The
+  # output still rides the null device while the build is green; a red
+  # build prints its own tail, naming the package and the cure door.
+  TS_ERR="$(mktemp)"
+  if ! (cd "$dir" && ./node_modules/.bin/tsdown >"$TS_ERR" 2>&1); then
+    echo "TSDOWN FAILED: $dir (tail of its own output; a missing ./node_modules/.bin/tsdown means the package does not declare the tsdown devDep — every browser-served package must)"
+    tail -12 "$TS_ERR"
+    rm -f "$TS_ERR"
+    exit 1
+  fi
+  rm -f "$TS_ERR"
 done
 
 echo "── [2/6] building every profile-bundled melite package (build-plane rides tsc + the plane laws)"

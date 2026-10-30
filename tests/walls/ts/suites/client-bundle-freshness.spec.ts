@@ -159,4 +159,26 @@ describe("THE SERVED-BUNDLE FRESHNESS LAW", () => {
     }
     assert.deepEqual(offenders, [], `non-canonical src stamps (rebuild them with the LC_ALL=C recipe):\n${offenders.join("\n")}`);
   });
+
+  // THE BUILDER-DECLARATION LAW (the 2026-10-30 lane outage): every
+  // browser-served package (one carrying a tsdown.config.ts) must
+  // DECLARE the builder it is built with — card-base's tsdown bin had
+  // only ever resolved through a long-dead tracked node_modules
+  // symlink; once the honest per-package install materialized, the
+  // bin was gone, lane-rebuild step 1 exited 127 into /dev/null, and
+  // :3088 never came up. The declaration, not the bin, is the truth a
+  // fresh clone installs from; the bin is its shadow.
+  it("every package with a tsdown.config.ts declares tsdown in devDependencies (the builder is installed, never inherited)", () => {
+    const tracked = execSync("git ls-files '**/tsdown.config.ts'", { cwd: ROOT, encoding: "utf8", maxBuffer: 16 * 1024 * 1024 })
+      .split("\n")
+      .filter((f) => f.trim() !== "");
+    assert.ok(tracked.length >= 10, `the tsdown config roster collapsed (${tracked.length}) — the walk broke`);
+    const offenders: string[] = [];
+    for (const f of tracked) {
+      const pkgDir = join(ROOT, dirname(f));
+      const pkg = JSON.parse(readFileSync(join(pkgDir, "package.json"), "utf8")) as { devDependencies?: Record<string, string> };
+      if (pkg.devDependencies?.tsdown === undefined) offenders.push(`${f}: no tsdown devDep — a fresh clone has no builder for this bundle`);
+    }
+    assert.deepEqual(offenders, [], `browser-served packages missing their builder declaration:\n${offenders.join("\n")}`);
+  });
 });
