@@ -20,7 +20,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
-import estateDefault, { apply, name } from '../src/index.ts'
+import estateDefault, { apply, coldInstallRoots, name } from '../src/index.ts'
 
 const craftLane = vi.hoisted(() => ({
   mode: 'false' as 'false' | 'true' | 'reject' | 'pending',
@@ -274,9 +274,10 @@ describe('dispatch — mount order is load order', () => {
   it('pins the queue row with repoRoot and passes row configs through verbatim', async () => {
     const ctx = await mount({ repoRoot: '/tmp/pin' })
     const queue = ctx.plugins.find((p) => p.name === 'estate-queue')
-    // J12: the queue row carries the state-root fields verbatim
-    // (stateRoot raw — the queue resolves repoRoot fallback itself)
-    expect(queue?.cfg).toEqual({ repoRoot: '/tmp/pin', stateRoot: undefined, stateRoots: [] })
+    // J12 + the seamless-install cure (2026-10-30): the queue row
+    // carries the DERIVED pin — a named repoRoot resolves its own
+    // data/runs here, so the row never sees an unpinned boot
+    expect(queue?.cfg).toEqual({ repoRoot: '/tmp/pin', stateRoot: coldInstallRoots({ repoRoot: '/tmp/pin' }).stateRoot, stateRoots: [] })
     const blender = ctx.plugins.find((p) => p.name === 'mcp-client-blender')
     // No blender seat (operator ruling 2026-10-04, audit 008 M12):
     // melite mounts no MCP client of its own — the bench is a DSH
@@ -298,7 +299,10 @@ describe('dispatch — mount order is load order', () => {
     const agent = ctx.plugins.find((p) => p.name === 'melite-engine-agent-row')
     expect(agent?.cfg).toEqual({ agentRoute: undefined })
     const queue = ctx.plugins.find((p) => p.name === 'estate-queue')
-    expect(queue?.cfg).toEqual({ repoRoot: undefined, stateRoot: undefined, stateRoots: [] })
+    // THE COLD DEFAULT (2026-10-30): a bare mount is the fresh
+    // install's shape — the estate row pins the per-user runs tree
+    // itself, so the queue never refuses an unpinned boot
+    expect(queue?.cfg).toEqual({ repoRoot: undefined, stateRoot: coldInstallRoots({}).stateRoot, stateRoots: [] })
   })
 
   it('threads mcpEngines (string or list) to the mcp row as a resolved list', async () => {
@@ -318,10 +322,10 @@ describe('dispatch — mount order is load order', () => {
     // string form splits on ":" with blank segments dropped.
     const list = await mount({ stateRoots: ['/tmp/sr-a', '/tmp/sr-b'] })
     expect(list.plugins.find((p) => p.name === 'estate-queue')?.cfg)
-      .toEqual({ repoRoot: undefined, stateRoot: undefined, stateRoots: ['/tmp/sr-a', '/tmp/sr-b'] })
+      .toEqual({ repoRoot: undefined, stateRoot: coldInstallRoots({}).stateRoot, stateRoots: ['/tmp/sr-a', '/tmp/sr-b'] })
     const strung = await mount({ stateRoots: ' /tmp/sr-c : : /tmp/sr-d ' })
     expect(strung.plugins.find((p) => p.name === 'estate-queue')?.cfg)
-      .toEqual({ repoRoot: undefined, stateRoot: undefined, stateRoots: ['/tmp/sr-c', '/tmp/sr-d'] })
+      .toEqual({ repoRoot: undefined, stateRoot: coldInstallRoots({}).stateRoot, stateRoots: ['/tmp/sr-c', '/tmp/sr-d'] })
   })
 
   it('threads criticRoute and agentRoute to their rows verbatim', async () => {
