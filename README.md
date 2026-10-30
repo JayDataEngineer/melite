@@ -45,7 +45,7 @@ container).
 Consumers install through the `dsh` CLI:
 
 ```sh
-npm install -g @deepseek-ai/dsh@0.2.0-rc.2   # the profile CLI
+npm install -g @deepseek-ai/dsh@0.2.1-rc.2   # the profile CLI
 corepack enable && corepack prepare pnpm@10.33.2 --activate
 dsh plugin --profile <name> add @melite/harness-tools@<version>
 dsh plugin --profile <name> install
