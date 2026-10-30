@@ -281,6 +281,7 @@
         "@melite/card-base/spec": ["./../card-base/src/spec.ts"],
         "@melite-plugin/dsh-card-view": ["./../melite-card-view/src/index.ts"],
         "@melite-plugin/dsh-card-view/client": ["./../melite-card-view/src/client/index.ts"],
+        "@deepseek-ai/cordis-plugin-timer": ["./../../../vendor/cordis_plugins/timer/src/index.ts"],
         "@deepseek-ai/cordis-plugin-group": ["./../../../vendor/cordis_plugins/group/src/index.ts"],
         "@deepseek-ai/cordis-plugin-include": ["./../../../vendor/cordis_plugins/include/src/index.ts"],
         "@deepseek-ai/cordis-plugin-loader": ["./../../../vendor/cordis_plugins/loader/src/index.ts"],
