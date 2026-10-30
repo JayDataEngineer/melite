@@ -187,10 +187,26 @@ before, byte-identical.)
          -c:a aac -b:a 256k -ar 48000 -shortest final.mp4
 
    THE SEAM TAX, honestly: a 0.92 s dissolve per join means a 430 f
-   film (six windows) spends ~26 % of its runtime in a blend. That is
-   the price of this door; a true carry is the CHAIN door's job (§ the
-   door cannot carry a run below). Judge each window before pressing
-   the next, and judge the splice before calling the film done.
+   film (six windows) spends ~26 % of its runtime in a blend.
+
+   AND THE HARDER TRUTH (measured 2026-11-13, round 8): this splice is
+   NOT a cure for the pop. Two windows are two independent denoise
+   realisations of the shared frames — measured Δ8.86–9.80 across the
+   carry against Δ4.3 between adjacent frames inside one window — and
+   a crossfade cannot make the two renders equal. The operator's
+   verdict on the blended result was "POPS DO NOT WORK", and it is
+   correct. The two honest postures are:
+
+   - a film that must be seamless: press ONE 90 f window (3.75 s) —
+     a single window is seam-free by construction;
+   - a film longer than one window: the join pops today. The crossfade
+     is a demo of the carry law, never a delivery cure. A true carry
+     (shared latents across the join) is the CHAIN door's job (§ the
+     door cannot carry a run below), and that arm has no writer yet —
+     do not promise it.
+
+   Judge each window before pressing the next, and judge the splice
+   before calling the film done.
 
 ## This door restyles pixels; it cannot carry a run (2026-11-13)
 

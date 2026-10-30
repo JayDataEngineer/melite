@@ -224,6 +224,15 @@ describe("every served mod bag has a skill leaf an agent can read", () => {
       "refine/SKILL.md carries the measured 430 f-at-1.0 OOM");
     assert.match(refine, /NO trim verb/i,
       "refine/SKILL.md names the missing trim seat instead of implying one");
+    // round 8 measured the pop as STRUCTURAL: a crossfade cannot make
+    // two independent denoise realisations agree, so the doc must not
+    // sell the splice as a cure (the operator: "POPS DO NOT WORK").
+    assert.match(refine, /this splice is\s+NOT a cure for the pop/i,
+      "refine/SKILL.md refuses to sell the crossfade as a pop cure");
+    assert.match(refine, /Δ8\.86–9\.80[\s\S]{0,200}Δ4\.3/,
+      "refine/SKILL.md carries the measured seam delta against the adjacent-frame delta");
+    assert.match(refine, /ONE 90 f window \(3\.75 s\)[\s\S]{0,80}a single window is seam-free/,
+      "refine/SKILL.md names the seam-free posture (one window)");
 
     const repair = readSkill("repair");
     const recipe = /## Worked recipe/.exec(repair);
