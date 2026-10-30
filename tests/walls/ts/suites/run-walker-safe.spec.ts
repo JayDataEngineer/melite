@@ -12,7 +12,7 @@
 // (a real product break stays red), and never for foreign
 // absolute paths outside the tree.
 import { describe, expect, it } from 'vitest'
-import { runPreflight, tmpPreflight, walkerNamedPaths, walkerVerdict } from '../../../../scripts/run-walker-safe.mjs'
+import { pinVitestSeat, runPreflight, tmpPreflight, walkerNamedPaths, walkerVerdict } from '../../../../scripts/run-walker-safe.mjs'
 
 const ROOT = '/repo'
 const exists = (p: string) => p === '/repo/packages/models/krea-2/lib/index.js' ||
@@ -71,6 +71,31 @@ describe('walkerVerdict (run-walker-safe.mjs)', () => {
       '/repo/packages/image/image-gen/lib/index.js',
       '/repo/packages/models/krea-2/lib/index.js',
     ])
+  })
+})
+
+describe('pinVitestSeat (run-walker-safe.mjs — the binary seat, 2026-10-29)', () => {
+  it('pins a bare vitest to the repo install so a PATH-resolved global can never run coverage-less', () => {
+    const seat = pinVitestSeat(['vitest', 'run', '--coverage'], () => true)
+    expect(seat.pinned).toBe(true)
+    expect(seat.refused).toBe(false)
+    expect(seat.argv).toEqual(['node', 'node_modules/vitest/dist/cli.js', 'run', '--coverage'])
+  })
+
+  it('REFUSES a bare vitest when the repo install is missing — never falls through to the global', () => {
+    const seat = pinVitestSeat(['vitest', 'run', '--coverage'], () => false)
+    expect(seat.refused).toBe(true)
+    expect(seat.pinned).toBe(false)
+    expect(seat.argv).toEqual(['vitest', 'run', '--coverage'])
+  })
+
+  it('leaves an explicit binary path alone (the caller named their seat)', () => {
+    for (const named of ['./node_modules/.bin/vitest', 'node', '/usr/local/bin/vitest']) {
+      const seat = pinVitestSeat([named, 'run'], () => true)
+      expect(seat.pinned, named).toBe(false)
+      expect(seat.refused, named).toBe(false)
+      expect(seat.argv[0], named).toBe(named)
+    }
   })
 })
 

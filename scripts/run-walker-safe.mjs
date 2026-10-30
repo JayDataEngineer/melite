@@ -45,6 +45,29 @@ export function walkerNamedPaths(text) {
   return [...paths]
 }
 
+/** THE BINARY SEAT (2026-10-29): a bare `vitest` argv[0] resolves
+ *  through PATH and can land on a GLOBAL install that lacks
+ *  @vitest/coverage-v8 — the run then collects ZERO coverage rows,
+ *  prints an unhandled provider error, exits 1, and any summary the
+ *  caller copies afterward is STALE (three such runs rode this
+ *  wrapper on 2026-10-29 judging a nine-hour-old table; the lane
+ *  commands below were already pinned, the caller's command was
+ *  not). The wrapper owns verdict integrity, so a bare `vitest` is
+ *  pinned to THIS repo's install — the same
+ *  node node_modules/vitest/dist/cli.js spelling the lanes use —
+ *  and a repo without that install REFUSES loud rather than run
+ *  the global one.
+ *  @param argv    the caller's command.
+ *  @param exists  path probe (injected for the wall). */
+export function pinVitestSeat(argv, exists = existsSync) {
+  const REPO_VITEST = 'node_modules/vitest/dist/cli.js'
+  if (argv[0] !== 'vitest') return { refused: false, pinned: false, argv }
+  if (!exists(REPO_VITEST)) {
+    return { refused: true, pinned: false, argv }
+  }
+  return { refused: false, pinned: true, argv: ['node', REPO_VITEST, ...argv.slice(1)] }
+}
+
 /** The verdict: re-run only when the run named at least one walker
  *  token and EVERY named token now exists (the walker finished).
  *  @param text    the failed run's combined output.
@@ -217,10 +240,19 @@ async function runLane(argv) {
 }
 
 async function main() {
-  const argv = process.argv.slice(2)
+  let argv = process.argv.slice(2)
   if (argv.length === 0) {
     console.error('run-walker-safe: expected the command to wrap, e.g. node scripts/run-walker-safe.mjs vitest run --coverage')
     process.exit(2)
+  }
+  const seat = pinVitestSeat(argv)
+  if (seat.refused) {
+    console.error("run-walker-safe: REFUSING: bare 'vitest' would resolve through PATH (a global install lacks @vitest/coverage-v8 — zero coverage rows, exit 1, stale summaries) and this repo carries no node_modules/vitest/dist/cli.js to pin instead")
+    process.exit(2)
+  }
+  if (seat.pinned) {
+    argv = seat.argv
+    console.error('[run-walker-safe] pinned bare vitest to the repo install (node node_modules/vitest/dist/cli.js) — a PATH lookup can seat a coverage-less global\n')
   }
   const pre = runPreflight()
   if (pre.refused) process.exit(3)
@@ -230,7 +262,9 @@ async function main() {
   // the lane + the walls pool, all concurrent.
   const argvText = argv.join(' ')
   const isLaneItself = TYPECHECK_LANE_FILES.some((f) => argvText.includes(f))
-  const isVitestRun = /vitest/.test(argv[0] ?? '') && argvText.includes('run')
+  // vitest may be named at argv[0] (bare or .bin path) or at argv[1]
+  // (the pinned repo spelling) — the whole line is the witness.
+  const isVitestRun = /vitest/.test(argvText) && argvText.includes('run')
   if (isVitestRun && !isLaneItself) {
     const mainArgv = [...argv]
     mainArgv.push('--project', '!typecheck-lane')
