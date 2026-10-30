@@ -1,5 +1,17 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
+  // RENAMED knip.json -> knip.jsonc (2026-11-30, the knip-cure audit):
+  // knip parses comments only for the .jsonc/.json5 extensions (knip
+  // dist/util/fs.js -> strip-json-comments with trailingCommas:true),
+  // so the loader/seam arguments below live beside the entries they
+  // argue. All prose here is // line comments: knip ignores unknown
+  // keys, but line comments carry zero risk of becoming match patterns.
+  // The gate is tools/knip-budget.mjs; every rule here is an argued
+  // FALSE POSITIVE, never a hidden finding. Findings that remain real
+  // debt stay unignored and are budgeted in tools/knip-budget.mjs.
+  // knip self-polices: an ignore entry that matches nothing emits a
+  // configuration hint, so a stale argument cannot rot silently.
+  // Verified zero hints after landing (see the cure report).
   "exclude": [
     "duplicates"
   ],
@@ -20,6 +32,64 @@
     "python3",
     "comfy"
   ],
+  // ROOT-SCOPED entries. knip matches these by exact name and, for
+  // non-root workspaces, falls back to the root list -- the breadth is
+  // deliberate and argued per entry below.
+  //
+  // 1. ROOT TEST/SCRIPT/SNAPSHOT FILES import workspace packages the
+  //    root manifest does not declare. The root package.json is the
+  //    workspace AGGREGATOR, not a runtime package (AGENTS.md layout
+  //    law: static gates and tests resolve workspace imports through
+  //    tsconfig paths to src). Adding ~30 rows would reshape the
+  //    lockfile importer for no runtime effect. The @melite/* names are
+  //    declared at their owning packages; the @deepseek-ai/* names are
+  //    DSH platform packages carried by the installed graph (they
+  //    resolve from the root node_modules hoist).
+  // 2. react / @testing-library/react -- the ONE-REACT law: the snapshot
+  //    and battery lanes alias react, react-dom and @testing-library/react
+  //    to card-view's installed copy (vitest.snapshot.config.ts and
+  //    vitest.config.ts, "the root hoists no react" comments). The
+  //    snapshot replays import them for real but resolve through those
+  //    aliases, never through a root manifest row. The fallback also
+  //    covers package-owned test files riding the same aliased lanes
+  //    (viewer-base/tests).
+  // 3. tsdown -- the CLIENT-BUNDLE BUILD SEAM. packages/web/shared is not
+  //    a workspace; its shared preset (tsdown.client.ts) is attributed to
+  //    the root and its type-only `import type { UserConfig } from
+  //    'tsdown'` reads as an unlisted root import. The per-package rows
+  //    are the builder binary itself, spawned per package by the lane
+  //    scripts (scripts/lane-rebuild.sh, ship-lane.sh, lane-dev.sh --
+  //    `./node_modules/.bin/tsdown`), a seam knip cannot trace. The root
+  //    fallback covers every workspace's tsdown row the same way.
+  // 4. @deepseek-ai/cosmokit -- the vendored cordis plugins
+  //    (vendor/cordis_plugins/*) carry the upstream manifest's foundation
+  //    row; cordis re-exports cosmokit so no vendored src imports it
+  //    directly, and pnpm-workspace.yaml pins 1.8.5 estate-wide.
+  "ignoreDependencies": [
+    "@deepseek-ai/cordis-plugin-timer",
+    "@deepseek-ai/cosmokit",
+    "@deepseek-ai/dsh-storage",
+    "@deepseek-ai/dsh-storage-domain",
+    "@deepseek-ai/dsh-storage-json",
+    "@deepseek-ai/dsh-typert-protocol",
+    "@deepseek-ai/dsh-util-values",
+    "@melite/card-base",
+    "@melite/catalog",
+    "@melite/comfyui-card-kit",
+    "@melite/comfyui-cordis",
+    "@melite/contracts",
+    "@melite/estate-provisioning",
+    "@melite/models-anny",
+    "@melite/models-fibo2-edit",
+    "@melite/models-h3",
+    "@melite/models-krea-2",
+    "@melite/models-moss-sfx",
+    "@melite/models-music3",
+    "@melite/models-qwen-img-edit-21",
+    "@testing-library/react",
+    "react",
+    "tsdown"
+  ],
   "workspaces": {
     ".": {
       "entry": [
@@ -28,14 +98,192 @@
         "tests/walls/ts/suites/*.spec.ts",
         "scripts/session-snapshot-corpus.corpus.ts",
         "scripts/test-proxy-environment.ts",
-        "scripts/coverage-uncovered-locations.cjs"
+        "scripts/coverage-uncovered-locations.cjs",
+        // 2026-11-30: these two are consumed by the test:bench and
+        // test:coldstart scripts' --config argument, which knip does
+        // not trace; declared as entries so they stop reading as dead files.
+        "vitest.bench.config.ts",
+        "vitest.coldstart.config.ts"
+      ]
+    },
+    "packages/harness/provisioner": {
+      // ALL 9 rows are loader/resolver-consumed, none imported by src:
+      // - @melite-plugin/dsh-{card-deck,card-view,gallery,estate},
+      //   @melite/{3d-img-to-mesh,harness-tools,motion-motion,video-h3-timeline}:
+      //   the bundle's cordis.patch.yml mounts/needs them BY PACKAGE NAME and
+      //   bin/infer-provision.mjs renderProfile() iterates provPkg.dependencies
+      //   to emit every workspace:* row as a DIRECT link: dep of the rendered
+      //   profile (pnpm does not materialize a link: dep's own workspace deps --
+      //   the li-headless-profile-deps ledger row). The manifest IS the
+      //   resolver closure the loader resolves profile rows against.
+      // - @deepseek-ai/dsh-llm-pi-ai: the lane-brain adapter -- operator rows
+      //   load it by name (`- id: llm-pi-ai / name: @deepseek-ai/dsh-llm-pi-ai`);
+      //   the row is declared so the provisioner's install resolves it in the
+      //   repo workspace (the comment at infer-provision.mjs:308). The walls
+      //   (provisioner-boot/render) author exactly that row.
+      "ignoreDependencies": [
+        "@deepseek-ai/dsh-llm-pi-ai",
+        "@melite-plugin/dsh-card-deck",
+        "@melite-plugin/dsh-card-view",
+        "@melite-plugin/dsh-gallery",
+        "@melite-plugin/dsh-estate",
+        "@melite/3d-img-to-mesh",
+        "@melite/harness-tools",
+        "@melite/motion-motion",
+        "@melite/video-h3-timeline"
       ]
     },
     "packages/engines/comfyui-cordis": {
+      // ALL 47 rows are STRING-TABLE dynamic imports knip cannot trace:
+      // - src/models/families/index.ts FAMILY_PKGS (the models rows):
+      //   `await import(pkg)` per row -- the engine never statically imports
+      //   its plugins (the cycle law, stated in that file's header); the
+      //   manifest rows ARE the declared closure that makes the specifiers
+      //   resolvable, pinned by the W9 wall
+      //   (tests/walls/ts/suites/artifact-plane-law.spec.ts:529 "the engine
+      //   manifest declares the closure the table rides").
+      // - src/cardDefs.ts cardPackages (the 3d/audio/image/video/motion/card
+      //   rows): composeCards() imports each specifier; the cards wall
+      //   (tests/walls/ts/suites/cards-registration.spec.ts, the manifest
+      //   sweep arm) pins the table to the manifests.
+      // - src/cardDefs.ts packagedFlavors (mods subpaths) rides the same law.
+      "ignoreDependencies": [
+        "@melite/3d-anny",
+        "@melite/3d-img-to-mesh",
+        "@melite/3d-rig",
+        "@melite/audio-music",
+        "@melite/audio-sfx",
+        "@melite/audio-tts",
+        "@melite/image-image-edit",
+        "@melite/image-image-gen",
+        "@melite/image-input-prep",
+        "@melite/image-mask",
+        "@melite/image-tagger",
+        "@melite/image-upscale-tools",
+        "@melite/models-anima",
+        "@melite/models-anny",
+        "@melite/models-anycreature",
+        "@melite/models-concat",
+        "@melite/models-fibo2-edit",
+        "@melite/models-fit",
+        "@melite/models-florence2",
+        "@melite/models-flux-klein",
+        "@melite/models-gem-soma",
+        "@melite/models-input",
+        "@melite/models-joycaption",
+        "@melite/models-joytag",
+        "@melite/models-kimodo",
+        "@melite/models-mask",
+        "@melite/models-moss-image",
+        "@melite/models-moss-sfx",
+        "@melite/models-music3",
+        "@melite/models-pixal3d",
+        "@melite/models-qwen-img-21",
+        "@melite/models-qwen-img-edit-21",
+        "@melite/models-qwen-img-edit-2511",
+        "@melite/models-qwen3-tts",
+        "@melite/models-seedvr2-ema",
+        "@melite/models-skin",
+        "@melite/models-somax",
+        "@melite/models-transfer-rig",
+        "@melite/models-trellis2-native",
+        "@melite/models-wd14",
+        "@melite/models-yue2",
+        "@melite/models-z-image",
+        "@melite/motion-motion",
+        "@melite/video-h3-timeline",
+        "@melite/video-trim",
+        "@melite/video-frames",
+        "@melite/video-track"
+      ],
       "entry": [
         "src/index.ts",
         "src/dump-registry.ts",
         "scripts/boot-address-set-probe.ts"
+      ]
+    },
+    "packages/web/melite-estate": {
+      // ALL 31 rows are the estate bundle's cordis.patch.yml FAMILY ROWS
+      // (family-anny -> @melite/models-anny, ...): the DSH Loader owns each
+      // family's lifecycle and resolves the rows BY PACKAGE NAME against the
+      // manifest's declared closure (the patch yml header states the law;
+      // the composition wall's manifest-closure arm -- armed 2026-10-27 --
+      // pins patch rows to the manifest and caught models-anima riding
+      // undeclared once). knip sees no src import because the Loader
+      // imports at composition time.
+      "ignoreDependencies": [
+        "@melite/models-anima",
+        "@melite/models-anny",
+        "@melite/models-anycreature",
+        "@melite/models-concat",
+        "@melite/models-fibo2-edit",
+        "@melite/models-fit",
+        "@melite/models-florence2",
+        "@melite/models-flux-klein",
+        "@melite/models-gem-soma",
+        "@melite/models-h3",
+        "@melite/models-input",
+        "@melite/models-joycaption",
+        "@melite/models-joytag",
+        "@melite/models-kimodo",
+        "@melite/models-mask",
+        "@melite/models-moss-image",
+        "@melite/models-moss-sfx",
+        "@melite/models-music3",
+        "@melite/models-pixal3d",
+        "@melite/models-qwen-img-21",
+        "@melite/models-qwen-img-edit-21",
+        "@melite/models-qwen-img-edit-2511",
+        "@melite/models-qwen3-tts",
+        "@melite/models-seedvr2-ema",
+        "@melite/models-skin",
+        "@melite/models-somax",
+        "@melite/models-transfer-rig",
+        "@melite/models-trellis2-native",
+        "@melite/models-wd14",
+        "@melite/models-yue2",
+        "@melite/models-z-image"
+      ]
+    },
+    "packages/engines/comfyui/src/action_cards": {
+      // @melite/cards IS a resolution-scope facade by its own manifest
+      // description ("Cards are loaded by the editor registry by FILE glob;
+      // this package exists for module resolution, typecheck, and dependency
+      // hygiene"): tenant card files import the three kit rows below, but
+      // knip never traces glob-loaded tenants, so the rows read unused.
+      // The other four rows (timeline/contracts/clsx/react-dom) have ZERO
+      // tenant imports and stay as budgeted debt -- not ignored here.
+      "ignoreDependencies": [
+        "@melite/catalog",
+        "@melite/formats",
+        "@melite/three-client"
+      ]
+    },
+    "packages/web/melite-card-view": {
+      // Loader/build seams knip cannot trace:
+      // - @deepseek-ai/dsh-client-connection: listed in dsh.client.inject
+      //   (the loader's injected module table) AND as libExternal in
+      //   tsdown.config.ts -- the bundle externalizes it and the loader
+      //   resolves it at runtime.
+      // - @deepseek-ai/dsh-host-webserver: libExternal in tsdown.config.ts
+      //   (the node-face bundle externalizes it the same way). knip does
+      //   not parse custom option strings in build configs.
+      // - @melite/estate-provisioning: imported by real client src files
+      //   but the client bundle entries ride the shared preset's custom
+      //   clientBundle() wrapper, whose entry arrays knip's tsdown plugin
+      //   does not parse -- the files are knip-blind, the row is the
+      //   install-side closure.
+      "ignoreDependencies": [
+        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-host-webserver",
+        "@melite/estate-provisioning"
+      ]
+    },
+    "packages/web/infer-gallery": {
+      // @deepseek-ai/dsh-client-connection: dsh.client.inject row (the
+      // loader's injected module table) -- the same loader law as card-view.
+      "ignoreDependencies": [
+        "@deepseek-ai/dsh-client-connection"
       ]
     }
   }

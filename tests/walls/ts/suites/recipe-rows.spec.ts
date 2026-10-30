@@ -39,7 +39,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 // the variant rows ARE VariantRows (group + wire_defaults on the
 // seam) — the wall reads them as such, not as loose Records.
-import type { VariantRow } from "../../../../packages/engines/comfyui-cordis/src/models/families/contract.ts";
+// (2026-11-30: the old families/contract.ts home was deleted with the
+// FAMILY_PLUGINS static-table retirement; DeclVariantRow in the kit's
+// model-contract is the surviving declaration of the same shape.)
+import type { DeclVariantRow as VariantRow } from "../../../../packages/engines/comfyui-card-kit/src/model-contract.ts";
 
 /** The retired debt census (2026-09-18: all 17 exemptions
  *  resolved — ten families author truthful rows, seven were

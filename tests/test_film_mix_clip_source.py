@@ -21,6 +21,12 @@ from pathlib import Path
 
 import pytest
 
+# The CI pytest seat installs pytest alone — torch rides the engine
+# env (the view-sheet wall's own law). The resolver under test is
+# pure paths, but it ships inside film_mix.py which imports torch at
+# module top. Skip, never false-fail.
+torch = pytest.importorskip("torch", reason="film_mix.py imports torch at module top")
+
 PACKAGE_ROOT = Path(__file__).resolve().parents[1] / "vendor" / "comfyui_extensions" / "melite-audio-nodes"
 
 
