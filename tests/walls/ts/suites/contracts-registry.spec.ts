@@ -209,4 +209,68 @@ describe('THE REGISTRY WALL (every law accounted, every account true)', () => {
       .filter((id) => !sheet.includes(`**${id}**`))
     expect(missing, `INVARIANTS.md is stale — these ACTIVE ids are absent (run: pnpm contract regenerate): ${missing.join(', ')}`).toEqual([])
   })
+
+  it('every truth_home path resolves — a row whose home moved is a stale law (arm 7, make-skill audit M15 2026-11-13)', () => {
+    // THE BURN (M15): a package moved (estate-queue's discovery.ts →
+    // melite-tools) and five rows kept naming the old file. Nothing
+    // judged truth_home, so the registry described a tree that had
+    // not existed for weeks while every arm above stayed green.
+    // THE ENTRY GRAMMAR: a files[] entry is a repo path, optionally
+    // followed by prose naming the seam's symbols or a parenthetical
+    // ("packages/models/h3/src/actions.ts (renderH3Film + …)"). This
+    // arm judges every PATH-LIKE TOKEN in the entry — tokens starting
+    // with a repo root (packages|tests|flows|scripts|vendor|docs|
+    // licenses|dev_docs) or ending in a source extension — so prose
+    // may ride inline while a moved home still reds. A token carrying
+    // `*` is a class of homes and must match at least one; a `~`
+    // token names the operator's machine, never this repo.
+    const ROOTS = /^(?:packages|tests|flows|scripts|vendor|docs|licenses|dev_docs)\//
+    const EXT = /\.(?:ts|tsx|js|mjs|cjs|json|yaml|yml|md|py|css|sh|txt)$/
+    const tokensOf = (entry: string): string[] => {
+      const out: string[] = []
+      for (const raw of entry.split(/[\s,;]+/)) {
+        const token = raw.replace(/^[(\[]+/, '').replace(/[)\].,;:]+$/, '')
+        // a `~` or absolute token names the OPERATOR'S machine, not this
+        // repo (a DSH profile patch) — never a repo home
+        if (token === '' || token.startsWith('~') || token.startsWith('/')) continue
+        // repo-rooted only: a bare filename in prose names the seam,
+        // not a home — the registry's path grammar is rooted
+        if (token.includes('/') && (ROOTS.test(token) || EXT.test(token))) out.push(token)
+      }
+      return out
+    }
+    const globToRegExp = (pattern: string): RegExp => new RegExp('^' + pattern
+      .split('*')
+      .map((part) => part.replace(/[.+^${}()|[\]\\?]/g, '\\$&'))
+      .join('.*') + '$')
+    const matches = (pattern: string): boolean => {
+      const target = pattern.endsWith('/') ? pattern.slice(0, -1) : pattern
+      if (!target.includes('*')) return existsSync(join(ROOT, target))
+      const re = globToRegExp(target)
+      const walk = (dir: string): boolean => {
+        for (const e of readdirSync(dir, { withFileTypes: true })) {
+          if (e.name === 'node_modules' || e.name === '.git') continue
+          const rel = dir === ROOT ? e.name : join(dir, e.name).slice(ROOT.length + 1)
+          if (re.test(rel)) return true
+          if (e.isDirectory() && walk(join(ROOT, rel))) return true
+        }
+        return false
+      }
+      return walk(ROOT)
+    }
+    let judged = 0
+    for (const r of rows()) {
+      const files = (r.truth_home as { files?: unknown } | undefined)?.files
+      if (!Array.isArray(files)) continue
+      for (const raw of files) {
+        for (const token of tokensOf(String(raw))) {
+          judged += 1
+          expect(matches(token), `row ${String(r.id)}: truth_home path ${token} does not resolve — the home moved and the row kept the old name`).toBe(true)
+        }
+      }
+    }
+    // the grammar must actually find homes — an arm that judges zero
+    // tokens is the vacuous-green class (debt: a registry of prose)
+    expect(judged, 'truth_home paths judged').toBeGreaterThan(200)
+  })
 })

@@ -23,11 +23,13 @@ The stage lands live in the user's cards tab; run
 the run starts at the user's Run press.
 
 The RUN-DOOR drive (headless): `melite_flow {flow: "extend-video",
-source_clip, extend_prompt}` — the two initials ride the body; the
-numeric knobs ride the whole-bag params override
-`params: {extend: [{extend_seconds, seed}]}` (numbers never ride the
-flow body — a number has no initial kind, and a $spell would
-stringify it into a silent snap).
+params: {source_clip, extend_prompt, extend: [{extend_seconds,
+seed}]}}` — EVERY param of a flow rides `params`, never the call's
+top level (the door refuses a stray top-level key by name: only
+bench | card (+model) | flow | stages (+connects/id/description/test)
+ride there). The two initials and the whole-bag numeric override
+travel together inside `params`, which the door spreads into the
+run's start body.
 
 ## The seats
 

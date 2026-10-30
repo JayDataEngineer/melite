@@ -286,8 +286,11 @@ async function loadBench(estate, body, signal) {
  *  the bench row (runStatus + result {run_id, url}) through the
  *  bench patch door — the same attribution the tab's observer
  *  performs, so the user's tiles go live WHILE the agent drives.
- *  The pass law is Run All's law verbatim: bench order, skip done
- *  rows, one refusal or failed terminal STOPS the pass. */
+ *  The pass law is Run All's law verbatim: bench order, skip spent
+ *  rows with a reason, and — since F20's residual cure (2026-10-30) —
+ *  a settled FAILURE or a THROWN start is recorded and the pass
+ *  CONTINUES to the remaining stages; only a pre-run REFUSAL (a doc
+ *  the door will not accept) stops the pass. */
 async function runBench(estate, a, signal) {
     const empty = { mode: 'bench', target: benchDraftIdOf(a.bench), error: 'the bench is empty — construct stages first (melite_construct)' };
     let b;

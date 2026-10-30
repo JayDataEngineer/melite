@@ -8,11 +8,13 @@ image-upscale's shape).
 ## Call shape
 
 ```
-melite_construct add_stage  flow "object-forge" — validate, then the
-{flow:} door submits the merged run; the stages also drive
-individually (image-gen + img-to-mesh) through the {model:} door for
-surgical re-takes.
+melite_flow {flow: "object-forge", params: {prompt, image_model}}
 ```
+
+`add_stage` stages CARDS (`card <id>`), never a flow — a flow is
+driven by `melite_flow`. To drive the stages individually for a
+surgical re-take, stage the two cards instead (`card "image-gen"`,
+then `card "img-to-mesh"`) and press them from the bench.
 
 The compile gate rides the flow's own validate (`melite_construct`
 `validate` — verbatim refusals, zero GPU) before any submit.

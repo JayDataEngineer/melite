@@ -101,43 +101,73 @@ both ride it). A card lands by adding its package + one row.
 No studio → the card renders as a schema form (lawful; most cards do).
 
 A studio ships as TWO faces of the same package (the dual-face law,
-2026-09-12; mask is the reference):
+2026-09-12; `input-prep` and `h3-timeline` are the live references):
 
 - **`src/ui/studio/component.tsx`** (+ per-seam body files) — the
   studio body. Consumed RELATIVELY by the client face.
 - **`src/client/index.ts`** — the ADAPTER (never a second definition
-  site): exports `name`/`inject = ['slots']`/`apply`, registers the
-  tenant on the keyed seam:
-  `ctx.slots.register({ name: 'cards.stage.view', key: '<card>' }, Studio)`.
+  site), via the COMPOSITION-ROOT law (2026-11): exports
+  `name` / `inject = ['slots']` / `apply`, where the registration is
+  the exported factory, never a hand-rolled slot call:
+
+```ts
+import { defineStageViewRegistration } from '@melite/card-base/client'
+import { MyCardStudio } from '../ui/studio/component.tsx'
+export const name = 'myCardStudio'
+export const inject = ['slots']
+export const apply = defineStageViewRegistration('<card>', MyCardStudio)
+```
+
   Props translate onto the tenant contract `{stage, onSave,
   upstreams?, onRun?}`; writes ride `onSave → props.onPatch`; the run
-  rides `props.onRun` (the host drill). `Context as ClientContext`
-  from cordis + `import type {} from
-  '@deepseek-ai/dsh-client-ui-renderer/client'` (the renderer owns
-  `ctx.slots`) + `import type {} from '@melite/card-base/slots'`
-  (erased, bundle-pure).
+  rides `props.onRun` (the host drill). NOTE the import truths: the
+  seam helper is `@melite/card-base/client` (there is NO
+  `@melite/card-base/slots` export row), and a static DSH estate
+  inject is FORBIDDEN (it parks the plugin waiting on card-view — the
+  2026-09-29 receipt); `ctx.slots.register(...)` hand-rolls are the
+  retired pre-composition-root spelling.
 - **`tsdown.config.ts`** — `clientBundle('@melite/<genre>-<card>',
   ['src/card.ts'], {})` from `packages/web/shared/tsdown.client.ts`;
   the build output `lib/client.js` is TRACKED (committed).
-- **package.json** needs the `dsh` client declaration + the client
-  export row:
+- **package.json** needs the `dsh` client declaration + the BUILT
+  export rows — every card in the tree ships `lib/*`, the `./src/*`
+  rows were retired (an exports row is an artifact path, never a
+  source path):
 
 ```json
 "exports": {
-  ".": "./src/index.ts",
-  "./card": "./src/card.ts",
+  ".": { "types": "./lib/index.d.ts", "default": "./lib/index.js" },
+  "./card": { "types": "./lib/card.d.ts", "default": "./lib/card.js" },
+  "./tool": { "types": "./lib/tool.d.ts", "default": "./lib/tool.js" },
   "./client": "./lib/client.js",
-  "./ui/studio/component": "./src/ui/studio/component.tsx"
+  "./package.json": "./package.json"
 },
-"dsh": { "client": { "platform": "web" } }
+"dsh": { "client": { "platform": "web", "external": ["@melite/card-base/client"] } }
 ```
 
 LITERAL rows only, one per file that external consumers import (TS
 bundler resolution treats pattern exports literally — no extension
-probing, NO `./ui/*` wildcards). Add per-seam rows (`./tool`,
-`./ui/studio/IdeoPanels`, ...) exactly when those files exist.
+probing, NO `./ui/*` wildcards). A studio file is consumed RELATIVELY
+by `src/client/index.ts` (and bundled into `lib/client.js`), so it
+needs no row of its own.
 
-## 5. The gates (run all, in this order)
+## 5. Build + the built plane
+
+After ANY `src/` edit: `./node_modules/.bin/tsdown` FIRST (the client
+bundle), then `npm run build` (tsc), then re-stamp —
+
+```sh
+find src \( -name '*.ts' -o -name '*.tsx' \) | sort | xargs sha256sum | sha256sum | cut -c1-16 > lib/.src-stamp
+node scripts/canonicalize-sourcemaps.mjs
+node scripts/rewrite-dts-specifiers.mjs packages/<genre>/<card>
+```
+
+`lib/` is TRACKED and committed with the source; the
+client-bundle-freshness wall reds `lib/client.js` older than `src/`,
+and the battery's lib-sync pass reds a stale `lib/`. Trusting `tsc`
+alone is the order bug (tsdown rewrites `lib/client.js` after it).
+
+## 6. The gates (run all, in this order)
 
 ```sh
 pnpm install                                    # re-materialize the link

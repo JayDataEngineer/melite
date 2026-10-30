@@ -5,8 +5,9 @@
  * agent actually used is auditable after the fact.
  *
  * Ids come from melite_load (its skill section prints every boarded skill id): global lane docs are bare stems
- * ("run-recovery"), model card docs are "model:<id>", and per-model
- * skills are "model:<id>:<stem>".
+ * ("swap", "directing"), model card docs are "model:<id>", and
+ * per-model skills are "model:<id>:<stem>". An id no door serves
+ * answers "no such skill" — never invent one.
  */
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'

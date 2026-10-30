@@ -631,6 +631,27 @@ function specModifiers(
   engineLoras?: readonly string[],
 ): ModifierKind[] {
   const out: ModifierKind[] = []
+  // THE ONE-BAG-ONE-ROW LAW (F34, report round 7: the operator's
+  // card showed TWO "LoRAs" rows in the add-modifier menu and two
+  // identical chips — the DECL's pack row and the card's own
+  // declaration both landed on `params.loras`). The card's own kind
+  // is the richer, CURATED face (served fields, bands, defaults), so
+  // when a card declares a kind for a pack's own param_key the pack
+  // row is DROPPED, never served beside it: one bag, one row, one
+  // label. Every other pack (no colliding declaration) serves as
+  // before — this judges the parcel of truth, not a list of names.
+  const declaredKeys = new Set(
+    (def?.mods ?? [])
+      .map((k) => (k as { param_key?: unknown }).param_key)
+      .filter((k): k is string => typeof k === 'string'),
+  )
+  // The suppressed pack rows, kept for THE FACT MERGE below: a card's
+  // own kind states the bag's FIELDS, while the pack serves the
+  // catalog's per-row facts (each row's designed strength/steps/shift
+  // and the knob marriage). Dropping the row must not drop them —
+  // the leaf seeds its dials off `option.defaults`, so a fact-free
+  // row would render an empty chip. Merged, never re-declared.
+  const suppressed = new Map<string, ModifierKind>()
   for (const m of decl?.mods ?? []) {
     // THE MARRIAGE GRAMMAR (#36): entries are pack names or
     // {pack, marries} declarations — normalized once here, served
@@ -640,6 +661,11 @@ function specModifiers(
     const meta = MODIFIER_PACKS[pack]
     if (meta === undefined) continue
     if (!enveloped.has(pack)) continue
+    // the one-bag-one-row law (F34): the card already declares this
+    // bag, so the pack's row is DROPPED at the push site below — after
+    // it is built, because its catalog facts merge onto the card's own
+    // kind (the suppressed map).
+    const collides = declaredKeys.has(meta.param_key ?? pack)
     const cat = svc.modCatalog(pack, key)
     // THE PARAM FIELDS ARE THE ENVELOPE'S (the parameter audit): the
     // entry carries the pack's catalog facts; its param rows derive
@@ -724,6 +750,11 @@ function specModifiers(
       }
       if (engineRows.length > 0) entry.options = [...entry.options, ...engineRows]
     }
+    // THE ONE-BAG-ONE-ROW LAW (F34): a pack the card itself declares is
+    // DROPPED here — its full row is kept only to merge its catalog
+    // facts onto the card's kind below (the leaf seeds its dials off
+    // `option.defaults`, so a fact-free row would render an empty chip).
+    if (collides) { suppressed.set(entry.param_key, entry); continue }
     out.push(entry)
   }
   // CARD-DECLARED KINDS (CONTRACT A): the card's own action kinds
@@ -793,7 +824,41 @@ function specModifiers(
       // against the empty compose face — the honest-empty pair.
       if (servedOptionsRow === undefined) {
         const mirrored = out.find((m) => m.schema_key === k.schema_key && m.options !== undefined)
+          ?? suppressed.get(entry.param_key)
         if (mirrored?.options !== undefined) entry.options = mirrored.options
+      }
+    }
+    // THE FACT MERGE (the one-bag-one-row law's other half, F34): the
+    // card states the bag's FIELDS; the suppressed pack row owns the
+    // CATALOG facts — the knob marriage and each row's designed
+    // strength/steps/steps_min/steps_max/shift_video. The leaf seeds
+    // its dials off `option.defaults` (mods.tsx) and the client
+    // resolves the marriage off `kind.marries`, so dropping the row
+    // WITHOUT this merge renders an empty chip. Merged by option
+    // value, never re-declared; the card's own values win where both
+    // state one.
+    const packRow = suppressed.get(entry.param_key)
+    if (packRow !== undefined) {
+      if (entry.marries === undefined && packRow.marries !== undefined) entry.marries = packRow.marries
+      const key = entry.option_key ?? packRow.option_key ?? 'id'
+      const fields = entry.fields
+      if (Array.isArray(fields)) {
+        entry.fields = fields.map((f) => {
+          if (f.name !== key || !Array.isArray(f.options)) return f
+          const opts = (packRow.options ?? []) as ModifierOption[]
+          return {
+            ...f,
+            options: (f.options as ModifierOption[]).map((o) => {
+              const p = opts.find((po) => po.value === o.value)
+              if (p === undefined) return o
+              return {
+                ...o,
+                ...(o.model === undefined && p.model !== undefined ? { model: p.model } : {}),
+                ...(p.defaults !== undefined && o.defaults === undefined ? { defaults: p.defaults } : {}),
+              }
+            }),
+          }
+        })
       }
     }
     out.push(entry)

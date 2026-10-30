@@ -64,7 +64,12 @@ const ABSENT: unique symbol = Symbol("no published default");
 //    42)" and "The `seed` default (42) stamps …").
 const DEFAULT_NUM = /default (-?\d+(?:\.\d+)?)/g;
 const KNOB_CLAIM = /([\w-]+)\s*\((?:required|optional)[^)]*?default (-?\d+(?:\.\d+)?)/g;
-const BULLET_CLAIM = /`([\w-]+)`[^`\n]{0,80}?default \((-?\d+(?:\.\d+)?)\)/g;
+// THE BROADER BULLET FORM (H7, 2026-11-13): the leaves write BOTH
+// "`seed` default (42)" and "`extend_seconds` (default 2.33, on the
+// engine grid)" — the old pattern only matched the first spelling, so
+// it read 0 claims across 7 leaf/row pairs and passed vacuously. Both
+// spellings now judge; the optional parens cover "default 42" too.
+const BULLET_CLAIM = /`([\w-]+)`[^`\n]{0,120}?default\s*\(?\s*(-?\d+(?:\.\d+)?)\s*\)?/g;
 
 /** The card's declared defaults, read off its own schemastery walk:
  *  `def.schema({})` is exactly the resolve compose runs for absent
@@ -92,6 +97,29 @@ function defaultsOf(defs: ReadonlyMap<string, CardDefinition>, cardId: string): 
     declared: (key: string): boolean => walk[key] !== undefined,
     of: (key: string): unknown => walk[key],
   };
+}
+
+// THE BAG-FIELD DEFAULTS (H7): every declared mod kind's field rows are
+// the card's own bag declaration — `extend_seconds` 2.33 and the
+// extend bag's `seed` 0 live there, never on the root walk.
+function bagFieldsOf(
+  defs: ReadonlyMap<string, CardDefinition>,
+  cardId: string,
+): Array<Record<string, unknown>> {
+  const def = defs.get(cardId);
+  assert.ok(def, `card '${cardId}' named by a flow stage is not registered`);
+  const kinds = (def as unknown as {
+    mods?: Array<{ fields?: Array<Record<string, unknown>> }>;
+  }).mods ?? [];
+  const out: Array<Record<string, unknown>> = [];
+  for (const k of kinds) {
+    for (const f of k.fields ?? []) {
+      const name = f["name"];
+      if (typeof name !== "string" || f["default"] === undefined) continue;
+      out.push({ [name]: f["default"] });
+    }
+  }
+  return out;
 }
 
 let defs: ReadonlyMap<string, CardDefinition>;
@@ -203,17 +231,62 @@ describe("THE ONE-HOME-FOR-FLOW-DEFAULTS WALL (audit 015 C2 — the registry der
       const leafPath = join(dir, "tool.json");
       if (!existsSync(leafPath)) continue;
       scanned.push(name);
+      // THE BAG-OVERRIDE ARM (H7, 2026-11-13): a flow whose numbers ride
+      // the whole-bag override (extend-video: `params.extend[{...}]`)
+      // publishes no top-level property for them, yet the leaf rightly
+      // states their CARD defaults. Those claims judge against the
+      // card's own declared default — the card is the one home either
+      // way. A param the row does not publish AND the card does not
+      // declare is still a failure: the leaf would be teaching a
+      // number that exists nowhere.
+      // A flow's numbers ride the CARD's mod BAG (extend-video:
+      // `params.extend[{extend_seconds, seed}]`), and a bag field's
+      // served default is the card's own declaration — so the bag
+      // reads BEFORE the root walk (the root `seed` 42 is the film's,
+      // the extend bag's own seed is 0).
+      const bagDefaults = row.stages
+        .map((st) => st.card)
+        .filter((c) => c !== "")
+        .flatMap((c) => bagFieldsOf(defs, c));
+      const cardDefaults = row.stages
+        .map((st) => st.card)
+        .filter((c) => c !== "")
+        .map((c) => defaultsOf(defs, c));
       const judge = (param: string, claim: number, where: string): void => {
         claims++;
         const prop = row.tool?.properties[param];
         const published: unknown =
           prop !== undefined && prop.hasDefault ? prop.default : ABSENT;
-        if (published === ABSENT || !Object.is(claim, published)) {
+        if (published !== ABSENT) {
+          if (!Object.is(claim, published)) {
+            failures.push(
+              `${name}: ${where} teaches '${param}' default ${claim} but the row publishes default ${String(published)}`,
+            );
+          }
+          return;
+        }
+        const bag = bagDefaults.find((d) => Object.hasOwn(d, param));
+        if (bag !== undefined) {
+          if (!Object.is(claim, bag[param])) {
+            failures.push(
+              `${name}: ${where} teaches '${param}' default ${claim} but the card's served bag field is ` +
+                `default ${String(bag[param])} — the card is the ONE home (audit 015 C2)`,
+            );
+          }
+          return;
+        }
+        const card = cardDefaults.find((d) => d.declared(param));
+        if (card === undefined) {
           failures.push(
-            `${name}: ${where} teaches '${param}' default ${claim} but the row publishes ` +
-              (published === ABSENT
-                ? "no default (the card's own default rules — audit 015 C2)"
-                : `default ${String(published)}`),
+            `${name}: ${where} teaches '${param}' default ${claim} but neither the row nor the card declares one ` +
+              "(the card's own default rules — audit 015 C2)",
+          );
+          return;
+        }
+        if (!Object.is(claim, card.of(param))) {
+          failures.push(
+            `${name}: ${where} teaches '${param}' default ${claim} but the card's declared default is ` +
+              `${String(card.of(param))} — the card is the ONE home (audit 015 C2)`,
           );
         }
       };

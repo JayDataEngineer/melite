@@ -7,10 +7,13 @@ through the queue door and the user runs each press.
 ## Call shape
 
 ```
-melite_construct add_stage  flow "character-factory" (or the three
-cards: img-to-mesh + rig + motion) — the stages are live in the
-user's cards tab; each run starts at the user's Run press.
+melite_flow {flow: "character-factory", params: {...}}
 ```
+
+`add_stage` stages CARDS (`card <id>`), never a flow. To hand the user
+an editable bench instead of the one-call door, stage the three cards
+the flow composes (`card "img-to-mesh"`, `card "rig"`, `card
+"motion"`); each press then runs at the user's Run press.
 
 The compile gate rides the flow's own validate (`melite_construct`
 `validate` — verbatim refusals, zero GPU) before any Run press.

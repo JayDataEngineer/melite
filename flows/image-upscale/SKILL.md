@@ -6,10 +6,14 @@ no card to compose — stage the flow and the user runs it.
 ## Call shape
 
 ```
-melite_construct add_stage  flow "image-upscale" (or the two cards:
-image-gen + upscale-tools) — the stage is live in the user's cards
-tab; the run starts at the user's Run press.
+melite_flow {flow: "image-upscale", params: {image_model, prompt, seed}}
 ```
+
+`add_stage` has NO flow seat (it stages CARDS by id) — a flow is its
+own door. To hand the user an editable bench instead, stage the two
+cards the flow composes (`melite_construct add_stage card
+"image-gen"`, then `card "upscale-tools"`); that path is manual and
+the flow door above is the one call.
 
 The compile gate rides the stage's own validate (`melite_construct`
 `validate` — verbatim refusals, zero GPU) before the user presses

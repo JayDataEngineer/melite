@@ -23,7 +23,7 @@ The tool vocabulary and interface split are declared in
 `packages/harness/melite-tools/src/index.ts`:
 
 - base: `melite_discover`, `melite_load`, `melite_construct`;
-- deferred: `melite_view`, `comfy_manage`, `melite_skill_index`,
+- deferred: `melite_view`, `melite_read`, `comfy_manage`,
   `melite_skill_read`, `ledger_tail`;
 - headless: `melite_flow`, `run_status`.
 

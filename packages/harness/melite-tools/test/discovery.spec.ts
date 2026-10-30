@@ -939,11 +939,19 @@ describe('live door arms', () => {
   // distill row's married step count serves in the option defaults —
   // boarding stamps {strength, steps} onto the entry. ──
   test('the h3 loras options serve their distill step counts (strength + steps in the defaults)', async () => {
+    // THE ONE-BAG-ONE-ROW LAW (F34, 2026-11-13): the h3 card declares
+    // its own `loras` bag, so the pack's duplicate row is suppressed —
+    // the card's row carries the catalog. Its marriage rides
+    // `kind.marries`; its catalog facts ride the `id` field's per-row
+    // `defaults`/`model` (the fact merge in discovery.ts), which is
+    // what the leaf reads to seed a boarded chip. Reading the retired
+    // pack row here would judge a menu the operator can no longer see.
     const spec = await formSpecSweep('h3')
     assert.ok(spec !== null)
     const modifiers = spec.features?.modifiers ?? []
-    const lora = modifiers.find((m) => m['kind'] === 'lora')
-    assert.ok(lora !== undefined, 'the loras pack serves on the h3 family')
+    const lora = modifiers.find((m) => m['param_key'] === 'loras')
+    assert.ok(lora !== undefined, 'the h3 card declares the loras bag')
+    assert.equal(modifiers.filter((m) => m['param_key'] === 'loras').length, 1, 'one bag, one row, one label — the pack twin is suppressed')
     // THE MARRIAGE DECLARATION (#36, the recipes rework): the kind
     // serves the knob marriage VERBATIM from the family DECL — the
     // client resolver mirrors compose (lora steps > steps row,
@@ -951,7 +959,8 @@ describe('live door arms', () => {
     // SHIFT (SOTA limb 2): shift_video joins — the distill's own
     // sigma grid (8-step 12, 4-step 6; larryvrh declares none).
     assert.deepEqual(lora!['marries'], { steps: 'max', shift_video: 'max' }, 'the loras kind declares the steps + shift marriage (max aggregation)')
-    const opts = lora!.options ?? []
+    const opts = ((lora!.fields ?? []).find((f) => f['name'] === 'id')?.['options'] ?? []) as Array<Record<string, unknown> & { value?: string }>
+    assert.equal(opts.length, 11, 'the merged catalog serves every DECL row on the id field')
     const dareties = opts.find((o) => o.value === 'h3_lightx2v_dareties')
     const turbo = opts.find((o) => o.value === 'h3_lightx2v_turbo')
     assert.ok(dareties !== undefined && turbo !== undefined, 'both distill rows serve')
@@ -985,10 +994,10 @@ describe('live door arms', () => {
     const spec = await formSpecSweep('h3-timeline')
     assert.ok(spec !== null)
     const modifiers = spec.features?.modifiers ?? []
-    const lora = modifiers.find((m) => m['kind'] === 'lora')
+    const lora = modifiers.find((m) => m['param_key'] === 'loras')
     assert.ok(lora !== undefined)
-    const options = lora!.options ?? []
-    assert.ok(options.some((option) => option.value === 'h3_lightx2v_turbo'))
+    const options = ((lora!.fields ?? []).find((f) => f['name'] === 'id')?.['options'] ?? []) as Array<Record<string, unknown>>
+    assert.ok(options.some((option) => option['value'] === 'h3_lightx2v_turbo'))
     assert.deepEqual(
       options.find((option) => option['value'] === 'h3_lightx2v_turbo')!['defaults'],
       { strength: 0.6, steps: 8, steps_min: 4, steps_max: 8, shift_video: 12 },

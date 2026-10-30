@@ -64,13 +64,38 @@ export const family: Plugin = {
   refuse; the models-flows wall).
 - `resolve()` — returns the DOWNLOAD ARTIFACT (url + sha256 + size),
   never a bare boolean.
-- enhance recipes — the model package may provide
-  `agents/skills/prompt-enhance/SKILL.md`; the current loader
-  `packages/engines/comfyui-cordis/src/models/enhanceRecipes.ts`
-  composes it into the form-spec recipe seat. A recipe-less model falls back
-  to the generic enhance path; do not invent a DECL field for recipes. (A
-  different "recipe": the RECIPE LAW variant rows below — never conflate
-  the two.)
+- enhance recipes — the family's lead prompt-enhance skill lives in the
+  ENGINE's models tree, NOT in `packages/models/<genre>/<family>/`:
+  `packages/engines/comfyui-cordis/models/<genre>/<family>/agents/skills/
+  prompt-enhance/SKILL.md`. The loader
+  (`src/models/enhanceRecipes.ts`, `declarationModelsRoot()`) resolves
+  against the engine package's own `models/` dir, so a recipe written
+  into the model package is read by NOBODY and the family silently
+  falls back to the generic enhance path. A recipe-less model keeps
+  that fallback; do not invent a DECL field for recipes. (A different
+  "recipe": the RECIPE LAW variant rows below — never conflate the
+  two.)
+
+- the ACTIONS face (`src/actions.ts`) — the compose/render wiring a
+  boardable family must expose (the h3 and krea-2 references): the
+  families that board a card ride it, the rest are DECL-only. If your
+  family boards, the card's compose reads actions; a missing face
+  fails at the door, never silently.
+
+- `model-facts.json` — the family's measured facts (variant matrix,
+  VRAM notes) are authored there and the models-flows wall refuses a
+  DECL that disagrees; and the engine package's own `package.json`
+  must list the family dep row (W9).
+
+## 1a. Build + the built plane
+
+Every package carries a tracked `lib/` (the tsc output). After ANY
+`src/` edit in the package you touched: `npm run build`, then
+`find src \( -name '*.ts' -o -name '*.tsx' \) | sort | xargs sha256sum |
+sha256sum | cut -c1-16 > lib/.src-stamp`, then
+`node scripts/canonicalize-sourcemaps.mjs` and
+`node scripts/rewrite-dts-specifiers.mjs packages/<genre>/<pkg>`. The
+battery's lib-sync pass reds a stale `lib/` — it is the build law.
 
 ## 1b. RULE A — THE RECIPE LAW (2026-09-18)
 

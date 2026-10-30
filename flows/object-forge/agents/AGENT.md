@@ -8,8 +8,12 @@ job:
    `flow:object-forge` stage — verbatim refusals, zero GPU. A refusal
    here is the contract, not a setback; read it, fix the params,
    revalidate.
-2. **Submit**: `{flow: object-forge, prompt: "<one clear subject>"}`.
-   Optional knob: `image_model` (`z-image` default, `krea-2` when the
+2. **Submit**: `melite_flow {flow: "object-forge", params: {prompt:
+   "<one clear subject>"}}`. EVERY flow param rides `params` — a
+   top-level `prompt` is accepted by the door's arg list but the
+   template arm never reads it, so it is dropped SILENTLY (the
+   $prompt spell then refuses mid-run). Optional knob inside the same
+   `params`: `image_model` (`z-image` default, `krea-2` when the
    concept needs its palette strength).
 3. **Judge with eyes**: after the run settles, view the artifacts
    (melite_view on the run id). Check both stages of quality:
