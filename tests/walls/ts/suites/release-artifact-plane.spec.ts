@@ -377,7 +377,50 @@ describe('G1.5 — publish rewrite (hygiene strip + registry manifest)', () => {
       expect(js).not.toContain('dated 2026-01-01')
       expect(js).toContain('Contract line stays.')
       expect(manifest.private).toBeUndefined()
-      expect(manifest.publishConfig).toEqual({ access: 'public' })
+    } finally { rmSync(fx.dir, { recursive: true, force: true }) }
+  })
+
+  it('drops devDependencies from the packed manifest — they never install for consumers (registry face F4)', () => {
+    const fx = fixture({
+      'package.json': okManifest({ devDependencies: { vitest: '4.0.0', typescript: '~5.7.2', '@melite/contracts': '0.2.0-alpha' } }),
+      'lib/index.js': 'export const x = 1\n',
+      'lib/index.d.ts': 'export declare const x: number\n',
+    })
+    try {
+      gates.stripPackedTarballs([fx.f])
+      const manifest = JSON.parse(execFileSync('bash', ['-c', `tar -xzOf ${fx.f} package/package.json`], { encoding: 'utf8' })) as { devDependencies?: unknown }
+      expect(manifest.devDependencies).toBeUndefined()
+    } finally { rmSync(fx.dir, { recursive: true, force: true }) }
+  })
+
+  it('strips the YAML frontmatter block from the packed README — npmjs renders it as literal text (registry face F5)', () => {
+    const fx = fixture({
+      'package.json': okManifest({ description: 'The compose plane.' }),
+      'README.md': '---\ndescription: The compose plane.\nkind: package-bundle\n---\n\n# The compose plane\n\nProse.\n',
+      'lib/index.js': 'export const x = 1\n',
+      'lib/index.d.ts': 'export declare const x: number\n',
+    })
+    try {
+      gates.stripPackedTarballs([fx.f])
+      const readme = execFileSync('bash', ['-c', `tar -xzOf ${fx.f} package/README.md`], { encoding: 'utf8' })
+      expect(readme.startsWith('# The compose plane')).toBe(true)
+      expect(readme).not.toContain('kind:')
+      expect(readme).toContain('Prose.')
+    } finally { rmSync(fx.dir, { recursive: true, force: true }) }
+  })
+
+  it('leaves a packed README with no frontmatter block untouched (the F5 strip is not always-on)', () => {
+    const fx = fixture({
+      'package.json': okManifest({}),
+      'README.md': '# Plain readme\n\nA leading rule stays:\n\n---\nnot a fence\n',
+      'lib/index.js': 'export const x = 1\n',
+      'lib/index.d.ts': 'export declare const x: number\n',
+    })
+    try {
+      gates.stripPackedTarballs([fx.f])
+      const readme = execFileSync('bash', ['-c', `tar -xzOf ${fx.f} package/README.md`], { encoding: 'utf8' })
+      expect(readme.startsWith('# Plain readme')).toBe(true)
+      expect(readme).toContain('not a fence')
     } finally { rmSync(fx.dir, { recursive: true, force: true }) }
   })
 

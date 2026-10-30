@@ -373,6 +373,22 @@ function builtEntryText (f, inner) {
   return run('bash', ['-c', `tar -xzOf ${f} package/${target.replace(/^\.\//, '')}`])
 }
 
+/** Strip a leading YAML frontmatter block from a packed README: the
+ *  block opens with a line exactly `---` and closes at the next line
+ *  exactly `---`; one blank line left by the removal goes with it. A
+ *  README that opens otherwise (a leading `---` horizontal rule with
+ *  no closing fence, prose) is returned unchanged. Exported for the
+ *  wall suite. */
+export function stripReadmeFrontmatter (text) {
+  const lines = text.split('\n')
+  if (lines[0] !== '---') return text
+  const close = lines.findIndex((line, i) => i > 0 && line === '---')
+  if (close < 0) return text
+  const rest = lines.slice(close + 1)
+  if (rest[0] === '') rest.shift()
+  return rest.join('\n')
+}
+
 /** G1.5: rewrite every packed tarball for publication. Two rewrites in
  *  one repack, so the gates below and the manifest sha256s describe the
  *  exact published bytes:
@@ -434,6 +450,12 @@ export function stripPackedTarballs (files) {
         copyFileSync(canonicalPath, licensePath)
       }
       delete manifest.private
+      // devDependencies never install for consumers (npm skips them) —
+      // on the public face they are pure noise: the two @melite
+      // workspace rows and the dev toolchain (playwright, vitest,
+      // typescript) render as if they were dependency facts (the
+      // npm-consumer audit F4).
+      delete manifest.devDependencies
       manifest.publishConfig = { ...manifest.publishConfig, access: 'public' }
       // THE REGISTRY FACE (2026-11-30, the public-face audit): npmjs
       // renders the manifest description verbatim and DERIVES a
@@ -450,6 +472,19 @@ export function stripPackedTarballs (files) {
         if (typeof repo !== 'object' || repo === null || typeof repo.url !== 'string' || !repo.url.includes('JayDataEngineer/melite') || typeof repo.directory !== 'string') {
           throw new Error(`registry face: ${f.split('/').pop()} ships no repository link to its own directory — the npm page must link the source`)
         }
+      }
+      // PACKED README FACE (the npm-consumer audit F5): the in-tree
+      // README opens with YAML frontmatter (description/kind — the
+      // docs-gate truth check-package-readmes reads); npmjs renders
+      // the block as literal text on the package page. The registry
+      // face now carries `description` in the manifest, so the
+      // packed copy drops the block — the source keeps it (the gate
+      // reads source, the registry reads the artifact).
+      const readmePath = join(dir, 'package', 'README.md')
+      if (existsSync(readmePath)) {
+        const readme = readFileSync(readmePath, 'utf8')
+        const stripped = stripReadmeFrontmatter(readme)
+        if (stripped !== readme) writeFileSync(readmePath, stripped)
       }
       writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n')
       run('bash', ['-c', `tar -czf ${f}.new -C ${dir} package && mv ${f}.new ${f}`])
