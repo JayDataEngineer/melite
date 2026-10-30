@@ -1001,8 +1001,8 @@ export const unknownCardVoice = (card: string): string =>
  *  consuming input and the operator never learns a missing runtime
  *  at run press. The probe is the press gate's own (one spelling:
  *  cardsLanes walks the same helpers). */
-function runtimeRowsOf(boarded: readonly string[]): Array<Record<string, unknown>> {
-  const rows: Array<Record<string, unknown>> = []
+function runtimeRowsOf(boarded: readonly string[]): NonNullable<FormSpecDoc['runtimes']> {
+  const rows: NonNullable<FormSpecDoc['runtimes']> = []
   for (const family of boarded) {
     let decl: ModelDecl | null = null
     try {

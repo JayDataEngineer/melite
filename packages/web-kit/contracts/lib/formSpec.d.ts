@@ -441,6 +441,19 @@ export interface FormSpecDoc {
             default?: string;
         }>;
     };
+    /** THE BOARDED RUNTIME ROWS (the walk-up provision face): one row
+     *  per boarded family whose DECL declares a runtime — present
+     *  flips on the sentinel walk (or its env override), command/env/
+     *  consuming_param name the provision seat. Served only when at
+     *  least one row exists (discovery's runtimeRowsOf). */
+    runtimes?: Array<{
+        family: string;
+        name: string;
+        present: boolean;
+        command: string;
+        env: string;
+        consuming_param: string;
+    }>;
     /** The estate's surface envelope (served TOP-LEVEL by the door —
      *  2026-09-12 lane read): layout='studio' means a registered view
      *  exists (the client's business is the keyed slot, not this flag);

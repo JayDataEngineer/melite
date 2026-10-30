@@ -41,7 +41,7 @@ vi.mock('@melite/comfyui-cordis', async (importOriginal) => {
 import type { ComfyUIService } from '@melite/comfyui-cordis'
 import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition'
 import type { DeclaredModifierKind } from '../src/discovery.ts'
-import type { FormSpecDoc } from '@melite/contracts/formSpec'
+import type { FormSpecDoc, ModifierKind } from '@melite/contracts/formSpec'
 import { bootFactsArm, specBody as specBodyRaw } from '../src/discovery.ts'
 
 /** THE TRANSIENT-GENRE RACE (stroke 83, the discovery.spec twin):
@@ -108,8 +108,8 @@ function serve(def: Record<string, unknown>): FormSpecDoc {
   return specBody(mockState.svc!, defs, { card: 'syn-card', service: 'syn-fam', model: 'syn-fam' })
 }
 
-const modifiersOf = (doc: FormSpecDoc): Array<Record<string, unknown>> =>
-  (doc.features?.modifiers ?? []) as Array<Record<string, unknown>>
+const modifiersOf = (doc: FormSpecDoc): ModifierKind[] =>
+  doc.features?.modifiers ?? []
 
 /** Two catalog rows: one carrying the designed strength (the fact
  * merge's defaults face), one bare (the honest-empty defaults arm). */
@@ -162,11 +162,11 @@ describe('specBody — the one-bag-one-row serve (F34 synthetic arms)', () => {
     const doc = serve({ identity: { label: 'Syn', genre: 'image' }, mods: [kind] })
     const served = modifiersOf(doc).find((m) => m['param_key'] === 'my_loras')
     assert.ok(served !== undefined, 'the attributed kind serves')
-    const options = served['options'] as Array<Record<string, unknown>>
-    assert.deepEqual(options.map((o) => o['value']), ['row-a', 'row-b'], 'the catalog rows serve on the kind')
-    assert.deepEqual(options[0]!['defaults'], { strength: 0.7 }, 'the row\'s designed strength rides the defaults')
-    assert.equal(options[1]!['defaults'] && Object.keys(options[1]!['defaults'] as object).length, 0, 'a bare row serves an empty defaults face')
-    assert.equal(options[0]!['model'], 'loras/syn/row-a.safetensors', 'the resolved model filename rides')
+    const options = served['options']
+    assert.deepEqual(options?.map((o) => o.value), ['row-a', 'row-b'], 'the catalog rows serve on the kind')
+    assert.deepEqual(options?.[0]?.defaults, { strength: 0.7 }, 'the row\'s designed strength rides the defaults')
+    assert.equal(options?.[1]?.defaults && Object.keys(options[1].defaults).length, 0, 'a bare row serves an empty defaults face')
+    assert.equal(options?.[0]?.model, 'loras/syn/row-a.safetensors', 'the resolved model filename rides')
   })
 
   test('a kind with its own options serves them verbatim — the catalog mirror never overrides the card', () => {
@@ -278,14 +278,14 @@ describe('specBody — the runtimes block and the boot facts arm', () => {
     process.env[envKey] = root
     try {
       const presentDoc = serve({ identity: { label: 'Syn', genre: 'image' }, boarded: ['syn-rt'] })
-      assert.deepEqual(presentDoc['runtimes'], [{
+      assert.deepEqual(presentDoc.runtimes, [{
         family: 'syn-rt', name: 'external', present: true,
         command: 'run external', env: envKey, consuming_param: 'seed',
       }], 'a walk-up hit marks the runtime present')
       rmSync(sentinelPath, { recursive: true })
       const absentDoc = serve({ identity: { label: 'Syn', genre: 'image' }, boarded: ['syn-rt'] })
-      const rows = absentDoc['runtimes'] as Array<Record<string, unknown>>
-      assert.equal(rows[0]!['present'], false, 'a missing sentinel marks the runtime absent — the face prompts the provision command')
+      const rows = absentDoc.runtimes
+      assert.equal(rows?.[0]?.present, false, 'a missing sentinel marks the runtime absent — the face prompts the provision command')
     } finally {
       if (prev === undefined) delete process.env[envKey]
       else process.env[envKey] = prev

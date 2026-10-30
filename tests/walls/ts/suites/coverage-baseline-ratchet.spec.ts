@@ -1967,7 +1967,10 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     '**/packages/harness/estate-queue/src/skillRows.ts',
     '**/packages/harness/estate-queue/src/toolProjection.ts',
     '**/packages/harness/estate-queue/src/vocab.ts',
-    '**/packages/harness/melite-tools/src/discovery.ts',
+    // discovery.ts left this list 2026-11-30 (the melite-tools
+    // cluster burn): the synthetic-mods serve walls lifted the row to
+    // 99.75/99.33/100/99.7 — back above this entry's from face, so
+    // the cleanup arm demanded its removal in the same landing.
     '**/packages/harness/melite-tools/src/doors.ts',
     '**/packages/harness/melite-tools/src/enhance-agent.ts',
     '**/packages/harness/melite-tools/src/estate.ts',
