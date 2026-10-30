@@ -72,12 +72,19 @@ export function renderH3Refine(entry, p, facts, g, runId) {
     // ── THE HANDOFF (the report-named chain: learned 2x upscale +
     // the low-sigma refinement pass, one node — its output is final/
     // decode-ready, no external guider or second sampler) ──
+    // THE CAPACITY SEATS (the F24 burn, 2026-10-30): the node serves
+    // three sizing modes and a [1, 4] multiplier; the whole-clip pass
+    // OOMs at 2x past ~100 f, and a ≤1x pass fits. A stated seat rides
+    // verbatim (the knob bounds are the card's own); absent keeps the
+    // shipped 2x so every existing doc composes byte-identically.
+    const upMode = entry['mode'] ?? 'scale by multiplier';
+    const upScale = entry['scale'] ?? 2.0;
     const upscaled = g.node('MinimaxH3LatentUpscaler3DRefineHandoff', {
         latent: videoLatent, audio_latent: audioLatent,
         noise, sampler: samplerSel, sigmas: sched,
         model: sigmaModel, positive,
         model_name: REFINE_UPSCALE_MODEL,
-        mode: 'scale by multiplier', scale: 2.0,
+        mode: upMode, scale: upScale,
         // Multiplier mode ignores these (the film's own note at its
         // handoff mount) — they ride the upscaler's own defaults.
         width: 1280, height: 704, megapixels: 1,

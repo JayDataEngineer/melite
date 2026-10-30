@@ -4,7 +4,7 @@
 // instantiate — never a silent route to a stock lane.
 import { describe, it, expect, vi } from "vitest";
 import { readFileSync } from "node:fs";
-import { film, parseH3Facts } from "../src/actions.ts";
+import { FILM_AUDIO_RATE, film, parseH3Facts } from "../src/actions.ts";
 import { schema as h3schema } from "../src/schema.ts";
 import { DOC_FPS_DEFAULT } from "../src/timelineContract.ts";
 import { stanzaSecs } from "../src/filmMix.ts";
@@ -275,6 +275,31 @@ describe("ONE CLOCK, BOTH ARMS (2026-10-16 — the single-call burn: 'it works w
     );
     expect(gens.length).toBe(1);
     expect(gens[0]!.inputs.length).toBe(90);
+  });
+
+  it("F25 — EVERY window mux rides the join-rate door: the sound VAE's own rate never muxes raw", () => {
+    // The 2026-10-30 round-3 burn: films emitted 32 kHz while the
+    // extend receipt era ran 48 kHz — the window muxes wired the
+    // decoded audio straight in, so the SOUND VAE's rate leaked into
+    // the container and the film standard drifted silently. The law:
+    // a window's CreateVideo.audio is a MeliteAudioResample leg at
+    // FILM_AUDIO_RATE, for BOTH window arms (t4r with an anchor,
+    // t4_open without). Judged per seat — one guarded arm would pass
+    // while the other arm burned.
+    for (const [arm, extra] of [["t4r", { image: "anchor.png" }], ["t4_open", {}]] as const) {
+      const doc = composeSingle({ ...extra });
+      const muxes = Object.values(doc).filter((n) => n.class_type === "CreateVideo");
+      expect(muxes.length, arm + ": the window emits its mux").toBeGreaterThan(0);
+      for (const mux of muxes) {
+        const audio = mux.inputs.audio as [string, number] | undefined;
+        expect(Array.isArray(audio), arm + ": the mux audio is a WIRED leg, never a bare literal").toBe(true);
+        const leg = doc[String(audio![0])]!;
+        expect(leg.class_type, arm + ": the leg is the join-rate door").toBe("MeliteAudioResample");
+        expect(leg.inputs.sample_rate, arm + ": the leg states the film standard").toBe(FILM_AUDIO_RATE);
+        expect(leg.inputs.sample_rate).toBe(48000);
+        expect(Array.isArray(leg.inputs.audio), arm + ": the leg carries the decoded audio forward").toBe(true);
+      }
+    }
   });
 
   it("FPS IS LAYER A: the doc's stated fps rides every output container — and the declared default fills unstated docs", () => {

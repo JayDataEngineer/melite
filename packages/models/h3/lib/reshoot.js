@@ -12,6 +12,39 @@ export const CROSSVIEW_WARP_NODE = 'CrossViewWarp';
  *  no pack provision rides them). */
 export const MOGE_LOAD_NODE = 'LoadMoGeModel';
 export const MOGE_INFER_NODE = 'MoGeInference';
+/** The prepare node's own clock (it resamples every clip to 24 fps
+ *  before the warp sees it) — the unit the guide duration is stated
+ *  in. */
+export const CROSSVIEW_PREP_FPS = 24;
+/** The shortest window a re-shoot will guide: one second of prepared
+ *  motion. Below this the warp carries no usable parallax and the
+ *  guide outlives the window it is pinned into. */
+export const CROSSVIEW_MIN_GUIDE_FRAMES = CROSSVIEW_PREP_FPS;
+/**
+ * The guide's duration for the windows this run will render (F28,
+ * 2026-10-30). The prepare node emits ONE clip pinned at frame 0
+ * into EVERY window, so the guide must be no longer than the
+ * SHORTEST window — the round-4 burn pinned a 124-frame guide into a
+ * 90-frame window and the engine refused at the AddGuide seat
+ * (`a 124 frame guide clip at frame_idx 0 does not fit in the
+ * video's 90 frames`), killing the whole arm below 124-frame windows.
+ * The compose now derives the duration from the window's own frames
+ * and refuses a window too short to carry the camera at COMPOSE,
+ * naming the law — never at the engine.
+ *
+ * @param windowFrames the shortest window this run will render, doc
+ *   frames (the render's own stanza snap)
+ * @returns the duration in seconds for CrossViewPrepareClip
+ */
+export function crossviewGuideSeconds(windowFrames) {
+    if (!Number.isFinite(windowFrames) || windowFrames <= 0) {
+        throw new Error('h3 re-shoot: the guide needs the window length in frames — a re-shoot window of ' + String(windowFrames) + ' frames cannot carry the camera guide');
+    }
+    if (windowFrames < CROSSVIEW_MIN_GUIDE_FRAMES) {
+        throw new Error('h3 re-shoot: window too short for the camera guide — ' + String(Math.round(windowFrames)) + ' frames is below the ' + String(CROSSVIEW_MIN_GUIDE_FRAMES) + '-frame floor (one second at ' + String(CROSSVIEW_PREP_FPS) + ' fps); author the re-shoot call on a longer span');
+    }
+    return windowFrames / CROSSVIEW_PREP_FPS;
+}
 /** MoGe-2 ViTL normal fp16 — the official workflow's one geometry
  *  checkpoint (Comfy-Org/MoGe on HF), already on the engine's
  *  geometry_estimation shelf. */
@@ -108,9 +141,12 @@ export function reshootPrompt(prompt) {
  * @param p the gated compose doc (the reshoot bag's entry carries
  *   source_clip + the camera knobs; reshootArmed gates the build)
  * @param g the run's graph builder
+ * @param windowFrames the SHORTEST window this run renders (the guide
+ *   is pinned into every window, so its duration derives from this —
+ *   F28)
  * @returns the shared handles for the per-window seats
  */
-export function buildH3Reshoot(p, g) {
+export function buildH3Reshoot(p, g, windowFrames) {
     const entry = bagEntry(p);
     const clip = (entry?.source_clip ?? '').trim();
     if (clip === '') {
@@ -127,11 +163,24 @@ export function buildH3Reshoot(p, g) {
     const video = g.node('LoadVideo', { file: clip }).out(0);
     // stage 1 — normalize: every downstream grid fact (width, height,
     // length) comes from THIS node's outputs, never the raw clip
+    // F31 (2026-10-30): the prepare node's pixel budget is the RENDER
+    // TARGET's, never the pack's 0.5 MP default. The round-4 researh
+    // measured the cost of the default: a 0.97 MP plate squeezed to
+    // ~942×530 fed BOTH ref_video_0 and the guide for a 1344×768
+    // render — 48 % of the plate discarded, then reconstructed at
+    // 2.06×, which is the soft render the operator saw. The budget
+    // therefore tracks the window shape the doc states.
+    const targetW = p.width;
+    const targetH = p.height;
+    if (!Number.isFinite(targetW) || !Number.isFinite(targetH)) {
+        throw new Error('h3 re-shoot: the plate budget reads the render target — the doc carries no finite width/height (' + String(targetW) + '×' + String(targetH) + '); re-shoot documents walk the schema first (1344×768 are the declared defaults)');
+    }
+    const targetMp = (targetW * targetH) / 1_000_000;
     const prep = g.node(CROSSVIEW_PREPARE_NODE, {
         video,
-        duration: 5.0,
+        duration: crossviewGuideSeconds(windowFrames),
         aspect_ratio: 'source',
-        megapixels: 0.5,
+        megapixels: Number(targetMp.toFixed(3)),
         multiple: 32,
     });
     // metric geometry — MoGe-2 with forced projection and mask refine
@@ -174,7 +223,35 @@ export function buildH3Reshoot(p, g) {
         preview_size: 384,
         frame_index: 1,
     }).out(0);
-    return { refFrames: prep.out(0), warp };
+    // F30 (2026-10-30) — THE HOLE FILL, the "two girls" cure. The warp
+    // paints disocclusions PURE MAGENTA in RGB, and the holes inherit
+    // the SUBJECT's shape (the region behind her the moved camera
+    // newly sees). Pinning that holed plate as the guide while the
+    // UNWARPED clip rode ref_video_0 gave H3 two contradictory priors
+    // — "she stands at A" and "a girl-shaped void at B" — and it
+    // satisfied both: her at A plus a second figure in the void
+    // (round-4 receipt §8.6, warp-only proof). ONE filler now runs
+    // before anything sees the warp: the magenta mask (ColorToMask)
+    // grown + feathered (GrowMaskWithBlur) composites the PREPARED
+    // plate's pixels over the holes (ImageCompositeMasked) — the void
+    // carries the source's own content, never a colour and never a
+    // subject silhouette. The filled plate then serves BOTH priors
+    // (refFrames and the guide pin) so the two rails agree by
+    // construction.
+    const holeMask = g.node('ColorToMask', {
+        images: warp, invert: false,
+        red: 255, green: 0, blue: 255, threshold: 10, per_batch: 16,
+    }).out(0);
+    const softHoles = g.node('GrowMaskWithBlur', {
+        mask: holeMask, expand: 3, incremental_expandrate: 0.0,
+        tapered_corners: true, flip_input: false, blur_radius: 12.0,
+        lerp_alpha: 1.0, decay_factor: 1.0, fill_holes: false,
+    }).out(0);
+    const plate = g.node('ImageCompositeMasked', {
+        destination: warp, source: prep.out(0), x: 0, y: 0,
+        resize_source: false, mask: softHoles,
+    }).out(0);
+    return { refFrames: plate, warp: plate };
 }
 /**
  * The per-window MODEL seat: the CrossView LoRA on the window's

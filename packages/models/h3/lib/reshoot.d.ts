@@ -14,6 +14,31 @@ export declare const CROSSVIEW_WARP_NODE = "CrossViewWarp";
  *  no pack provision rides them). */
 export declare const MOGE_LOAD_NODE = "LoadMoGeModel";
 export declare const MOGE_INFER_NODE = "MoGeInference";
+/** The prepare node's own clock (it resamples every clip to 24 fps
+ *  before the warp sees it) — the unit the guide duration is stated
+ *  in. */
+export declare const CROSSVIEW_PREP_FPS = 24;
+/** The shortest window a re-shoot will guide: one second of prepared
+ *  motion. Below this the warp carries no usable parallax and the
+ *  guide outlives the window it is pinned into. */
+export declare const CROSSVIEW_MIN_GUIDE_FRAMES = 24;
+/**
+ * The guide's duration for the windows this run will render (F28,
+ * 2026-10-30). The prepare node emits ONE clip pinned at frame 0
+ * into EVERY window, so the guide must be no longer than the
+ * SHORTEST window — the round-4 burn pinned a 124-frame guide into a
+ * 90-frame window and the engine refused at the AddGuide seat
+ * (`a 124 frame guide clip at frame_idx 0 does not fit in the
+ * video's 90 frames`), killing the whole arm below 124-frame windows.
+ * The compose now derives the duration from the window's own frames
+ * and refuses a window too short to carry the camera at COMPOSE,
+ * naming the law — never at the engine.
+ *
+ * @param windowFrames the shortest window this run will render, doc
+ *   frames (the render's own stanza snap)
+ * @returns the duration in seconds for CrossViewPrepareClip
+ */
+export declare function crossviewGuideSeconds(windowFrames: number): number;
 /** MoGe-2 ViTL normal fp16 — the official workflow's one geometry
  *  checkpoint (Comfy-Org/MoGe on HF), already on the engine's
  *  geometry_estimation shelf. */
@@ -86,9 +111,12 @@ export interface ReshootChain {
  * @param p the gated compose doc (the reshoot bag's entry carries
  *   source_clip + the camera knobs; reshootArmed gates the build)
  * @param g the run's graph builder
+ * @param windowFrames the SHORTEST window this run renders (the guide
+ *   is pinned into every window, so its duration derives from this —
+ *   F28)
  * @returns the shared handles for the per-window seats
  */
-export declare function buildH3Reshoot(p: Record<string, unknown>, g: GraphBuilder): ReshootChain;
+export declare function buildH3Reshoot(p: Record<string, unknown>, g: GraphBuilder, windowFrames: number): ReshootChain;
 /**
  * The per-window MODEL seat: the CrossView LoRA on the window's
  * model, post sigma shift (the official order — the distill lora

@@ -32,7 +32,7 @@ import { assertKeyframeRowShape, FAMILIES, paramSchema, wireList, H3_RECOMMENDED
 import { H3_LORA_ROWS } from '@melite/models-h3/mods/loras'
 import type { Family } from './schema.js'
 import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from '@melite/comfyui-card-kit/vocab'
-import { computeFilmMix, parseFilmMixClips, stanzaSecs } from './filmMix.js'
+import { computeFilmMix, parseFilmMixClips, spanOverlap, stanzaSecs } from './filmMix.js'
 import type { FilmMixClip, FilmMixSpan } from './filmMix.js'
 import {
   GRID_REMAINDER,
@@ -473,7 +473,6 @@ function renderH3Film(
   // onto every stanza (the __prev precedent — the __-prefix internal
   // channel). Every window's sampler then renders from the moved
   // camera through its own apply seat.
-  const reshootChain: ReshootChain | undefined = reshootArmed(p) ? buildH3Reshoot(p, g) : undefined
   // THE FILM DOC'S SPANS — the clock's own rows, one per call, doc
   // frames with the seam word (filmMix.ts owns the law). The stanza
   // snap rides these (spanStanzaFrames): the render loop below and
@@ -489,6 +488,22 @@ function renderH3Film(
     // including absent IS extend); no card-side re-encoding
     transition: str(c.transition),
   }))
+  // THE RE-SHOOT CHAIN, BUILT ONCE (feature 024): an armed re-shoot
+  // builds its depth → warp → mask subgraph ONCE on the run's graph
+  // (never per window — a multi-window film pays for the depth model
+  // and the reprojection exactly once) and stamps the shared handles
+  // onto every stanza (the __prev precedent — the __-prefix internal
+  // channel). Every window's sampler then renders from the moved
+  // camera through its own apply seat.
+  // F28 (2026-10-30): the guide is pinned into EVERY window, so its
+  // length derives from the SHORTEST one this run renders (the stanza
+  // snap the render loop and the clock share) — the round-4 burn
+  // pinned a 124-frame guide into a 90-frame window and the engine
+  // refused at the AddGuide seat, killing every film with a short
+  // call.
+  const reshootChain: ReshootChain | undefined = reshootArmed(p)
+    ? buildH3Reshoot(p, g, Math.min(...spans.map((s, i) => spanStanzaFrames(s, i > 0 ? spanOverlap(s) : 0))))
+    : undefined
   // (the clip text law lives where the text is consumed: THE
   // TRANSCRIPT — dialogue words ride the <d> prompt tag, sfx text
   // the soundscape field, music text non_diegetic_music. In every
@@ -1116,7 +1131,7 @@ function renderH3Window(
   // word leads, the estate's own prose follows.
   const reshootChain: ReshootChain | undefined =
     (p.__reshoot as ReshootChain | undefined)
-    ?? (reshootArmed(p) ? buildH3Reshoot(p, g) : undefined)
+    ?? (reshootArmed(p) ? buildH3Reshoot(p, g, Number(p.length)) : undefined)
   const r2vPrompt = reshootChain !== undefined ? reshootPrompt(prompt) : prompt
   // card knob first (image), renderer alias second.
   const guideImage = (p.image ?? p.image_name ?? '') as string
@@ -2120,7 +2135,11 @@ function renderH3Window(
   }
   if (isT4r) {
     const created = g.node('CreateVideo', {
-      images: vdec, audio: vadec, fps: fpsInput, bit_depth: FILM_BIT_DEPTH,
+      // F25 (2026-10-30): the window mux rides the SAME join-rate door
+      // as every join leg — the sound VAE's 32 kHz never muxes raw, so
+      // one press and one join emit one standard (48 kHz), equal-rate
+      // legs paying only the stated law.
+      images: vdec, audio: filmJoinAudio(g, vadec), fps: fpsInput, bit_depth: FILM_BIT_DEPTH,
       // color_space: pin autofill "sRGB"
     })
     // ONE WINDOW-NAMING LAW (2026-09-22, the file-tail amendment;
@@ -2216,7 +2235,9 @@ function renderH3Window(
     // the fpsInput "cure" above sat dead — the exact dead-store
     // class: a line that looks like a fix and never fires).
     const created = g.node('CreateVideo', {
-      images: postImage, audio: vadec, fps: interpOn ? (fpsInput as number) * (p.interp_multiplier as number) : fpsInput, bit_depth: FILM_BIT_DEPTH,
+      // F25: the same join-rate door — the film standard is ONE rate
+      // on every mux seat (t4r above, this window arm, every join).
+      images: postImage, audio: filmJoinAudio(g, vadec), fps: interpOn ? (fpsInput as number) * (p.interp_multiplier as number) : fpsInput, bit_depth: FILM_BIT_DEPTH,
       // color_space: pin autofill "sRGB"
     })
     const saved = g.node('SaveVideo', {

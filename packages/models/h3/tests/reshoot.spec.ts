@@ -37,6 +37,7 @@ const H3: ModelFacts = {
 
 const bag = () => ({
   variant: "t4_open", length: 124, prompt: "a slow push in", seed: 42,
+  width: 1344, height: 768,
   reshoot: [{ source_clip: "sources/take3.mp4" }],
 });
 
@@ -91,9 +92,13 @@ describe("the h3 camera re-shoot chain (the fourth mod bag, official rework)", (
     expect(load[1].inputs.file).toBe("sources/take3.mp4");
     // stage 1 — the clip normalization, the official literals
     const prep = entries.find(([, n]) => n.class_type === "CrossViewPrepareClip")!;
-    expect(prep[1].inputs.duration).toBe(5.0);
+    // F28: the guide length derives from the WINDOW (the bag's 124-frame
+    // call at the prepare node's 24 fps), never the pack's 5 s default
+    expect(prep[1].inputs.duration).toBe(124 / 24);
     expect(prep[1].inputs.aspect_ratio).toBe("source");
-    expect(prep[1].inputs.megapixels).toBe(0.5);
+    // F31: the pixel budget IS the render target's (1344×768), never the
+    // 0.5 MP pack default that discarded 48 % of the plate
+    expect(prep[1].inputs.megapixels).toBe(1.032);
     expect(prep[1].inputs.multiple).toBe(32);
     expect(String(prep[1].inputs.video)).toContain("LoadVideo");
     // stage 2 — MoGe-2 metric geometry (the official checkpoint +
@@ -130,15 +135,17 @@ describe("the h3 camera re-shoot chain (the fourth mod bag, official rework)", (
     expect(w.inputs.smooth_depth).toBe(false);
     expect(w.inputs.invert_depth).toBe(false);
     // the first cut's seats stay dead: no VDA, no resize hack, no
-    // magenta mask, no union patch, no Fun ControlNet apply
+    // union patch, no Fun ControlNet apply. ColorToMask is NOT the dead
+    // first cut's filter — it now MASKS the warp's magenta holes for the
+    // F30 filler (judged in its own arm below)
     expect(ofClass(entries, "LoadVideoDepthAnythingModel")).toHaveLength(0);
     expect(ofClass(entries, "ImageResizeKJ")).toHaveLength(0);
-    expect(ofClass(entries, "ColorToMask")).toHaveLength(0);
+    expect(ofClass(entries, "ColorToMask")).toHaveLength(1);
     expect(ofClass(entries, "ModelPatchLoader")).toHaveLength(0);
     expect(ofClass(entries, "MiniMaxH3FunControlNetApply")).toHaveLength(0);
   });
 
-  it("the appearance + guide + LoRA seats: the prepared clip IS ref_video_0, the warp pins at row 0, the CrossView LoRA loads at 0.8", () => {
+  it("the appearance + guide + LoRA seats: the FILLED plate IS ref_video_0 and pins at row 0 (one prior), the CrossView LoRA loads at 0.8", () => {
     const g = new GraphBuilder();
     instantiateAction(film, bag(), H3, g, "run_rs_seats");
     const entries = nodes(g);
@@ -147,11 +154,14 @@ describe("the h3 camera re-shoot chain (the fourth mod bag, official rework)", (
     // official graph wires none — an absent lane, never mismatched)
     const r2v = entries.find(([, n]) => n.class_type === "MiniMaxH3ReferenceToVideo")!;
     expect(r2v[1].inputs.prompt).toBe("crossview. a slow push in");
-    expect(String(r2v[1].inputs["ref_videos.ref_video_0"])).toContain("CrossViewPrepareClip");
+    // F30: BOTH priors are the filled plate — the unwarped clip no longer
+    // rides ref_video_0 beside a warped guide (that pair painted the
+    // subject twice)
+    expect(String(r2v[1].inputs["ref_videos.ref_video_0"])).toContain("ImageCompositeMasked");
     expect(r2v[1].inputs["ref_video_audios.ref_video_audio_0"]).toBeUndefined();
     // the guide pin: the warp into the window's own latent at row 0
     const guide = ofClass(entries, "MiniMaxH3AddGuide")
-      .filter(([, n]) => String(n.inputs.image).includes("CrossViewWarp"));
+      .filter(([, n]) => String(n.inputs.image).includes("ImageCompositeMasked"));
     expect(guide).toHaveLength(1);
     expect(guide[0]![1].inputs.frame_idx).toBe(0);
     expect(String(guide[0]![1].inputs.positive)).toContain("MiniMaxH3ReferenceToVideo");
@@ -165,6 +175,66 @@ describe("the h3 camera re-shoot chain (the fourth mod bag, official rework)", (
     const guider = entries.find(([, n]) => n.class_type === "BasicGuider")!;
     expect(String(guider[1].inputs.model)).toContain("LoraLoaderModelOnly");
     expect(String(guider[1].inputs.conditioning)).toContain("MiniMaxH3AddGuide");
+  });
+
+  it("F28 — the guide length derives from the SHORTEST window, and a window too short to carry the camera refuses at COMPOSE", () => {
+    // The round-4 burn: a 124-frame guide pinned into a 90-frame window
+    // died at the engine's AddGuide seat, killing the whole arm. The
+    // guide is ONE clip pinned into EVERY window, so its duration is the
+    // shortest window's, and a below-floor window is refused at compose
+    // with the law named — never at the engine.
+    const two = {
+      variant: "t4_open", fps: 24, seed: 42, prompt: "crossing the yard", width: 1344, height: 768,
+      calls: [
+        { text: "step in", start_frame: 0, end_frame: 124 },
+        { text: "turn", start_frame: 124, end_frame: 214, transition: "cut" },
+      ],
+      reshoot: [{ source_clip: "sources/take3.mp4" }],
+    };
+    const g = new GraphBuilder();
+    instantiateAction(film, two, H3, g, "run_rs_short");
+    const prep = nodes(g).find(([, n]) => n.class_type === "CrossViewPrepareClip")!;
+    // the 90-frame call owns the guide; 124/24 would have been the round-4
+    // burn's guide and the engine's refusal
+    expect(prep[1].inputs.duration).toBe(90 / 24);
+    // below the ONE-SECOND floor the compose itself refuses, naming the law
+    expect(() => instantiateAction(
+      film,
+      { variant: "t4_open", fps: 24, seed: 42, prompt: "x", length: 22, width: 1344, height: 768, calls: [{ text: "short", start_frame: 0, end_frame: 22 }], reshoot: [{ source_clip: "sources/take3.mp4" }] },
+      H3, new GraphBuilder(), "run_rs_floor",
+    )).toThrow(/window too short for the camera guide — 22 frames is below the 24-frame floor/);
+  });
+
+  it("F30 — the warp's magenta holes are FILLED before anything reads the plate (no subject-shaped void reaches H3)", () => {
+    const g = new GraphBuilder();
+    instantiateAction(film, bag(), H3, g, "run_rs_holes");
+    const entries = nodes(g);
+    // the mask is the warp's own magenta (pure 255/0/255), never a
+    // hand-drawn shape
+    const mask = ofClass(entries, "ColorToMask");
+    expect(mask).toHaveLength(1);
+    expect(mask[0]![1].inputs.red).toBe(255);
+    expect(mask[0]![1].inputs.green).toBe(0);
+    expect(mask[0]![1].inputs.blue).toBe(255);
+    expect(String(mask[0]![1].inputs.images)).toContain("CrossViewWarp");
+    // grown + feathered so the fill has no hard seam
+    const grow = ofClass(entries, "GrowMaskWithBlur");
+    expect(grow).toHaveLength(1);
+    expect(grow[0]![1].inputs.expand).toBe(3);
+    expect(grow[0]![1].inputs.blur_radius).toBe(12);
+    expect(String(grow[0]![1].inputs.mask)).toContain("ColorToMask");
+    // the fill composites the PREPARED plate's pixels over the holes
+    const fill = ofClass(entries, "ImageCompositeMasked");
+    expect(fill).toHaveLength(1);
+    expect(String(fill[0]![1].inputs.destination)).toContain("CrossViewWarp");
+    expect(String(fill[0]![1].inputs.source)).toContain("CrossViewPrepareClip");
+    expect(String(fill[0]![1].inputs.mask)).toContain("GrowMaskWithBlur");
+    // ONE prior by construction: the guide image AND ref_video_0 both read
+    // the filled plate
+    const guide = ofClass(entries, "MiniMaxH3AddGuide")[0]!;
+    expect(String(guide[1].inputs.image)).toContain("ImageCompositeMasked");
+    const r2v = ofClass(entries, "MiniMaxH3ReferenceToVideo")[0]!;
+    expect(String(r2v[1].inputs["ref_videos.ref_video_0"])).toContain("ImageCompositeMasked");
   });
 
   it("the bag's camera dials plumb: pose onto the warp, strength onto the CrossView LoRA", () => {
@@ -267,7 +337,7 @@ describe("the h3 camera re-shoot chain (the fourth mod bag, official rework)", (
     const loras = ofClass(entries, "LoraLoaderModelOnly");
     expect(loras).toHaveLength(2);
     const guides = ofClass(entries, "MiniMaxH3AddGuide")
-      .filter(([, n]) => String(n.inputs.image).includes("CrossViewWarp"));
+      .filter(([, n]) => String(n.inputs.image).includes("ImageCompositeMasked"));
     expect(guides).toHaveLength(2);
     for (const [id, l] of loras) {
       expect(id.startsWith("window"), `${id} seats inside its window's scope`);
