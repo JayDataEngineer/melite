@@ -52,7 +52,7 @@ function mintTree(base: string): string {
   writeFileSync(join(pkg, 'src', 'index.ts'), 'export const x = 1\n')
   const stamp = execFileSync(
     '/bin/bash',
-    ['-c', `cd ${JSON.stringify(pkg)} && find src \\( -name '*.ts' -o -name '*.tsx' \\) | sort | xargs sha256sum 2>/dev/null | sha256sum | cut -c1-16`],
+    ['-c', `cd ${JSON.stringify(pkg)} && find src \\( -name '*.ts' -o -name '*.tsx' \\) | LC_ALL=C sort | xargs sha256sum 2>/dev/null | sha256sum | cut -c1-16`],
     { encoding: 'utf8' },
   ).trim()
   writeFileSync(join(pkg, 'lib', '.src-stamp'), `${stamp}\n`)
@@ -106,11 +106,14 @@ describe('the F1 lane-freshness gate', () => {
     // recipe; the gate must not drift from it. A real package's
     // seated stamp is the builder's output — recomputing through
     // the gate's expression must reproduce it byte-for-byte.
+    // LC_ALL=C (2026-10-30): the sort order is hash input; a
+    // locale-collated sort made the recompute host-dependent (the
+    // stamp canonicality law, client-bundle-freshness).
     const pkg = join(ROOT, 'packages', 'web', 'card-base')
     const seated = readFileSync(join(pkg, 'lib', '.src-stamp'), 'utf8').trim()
     const recomputed = execFileSync(
       '/bin/bash',
-      ['-c', `cd ${JSON.stringify(pkg)} && find src \\( -name '*.ts' -o -name '*.tsx' \\) | sort | xargs sha256sum 2>/dev/null | sha256sum | cut -c1-16`],
+      ['-c', `cd ${JSON.stringify(pkg)} && find src \\( -name '*.ts' -o -name '*.tsx' \\) | LC_ALL=C sort | xargs sha256sum 2>/dev/null | sha256sum | cut -c1-16`],
       { encoding: 'utf8' },
     ).trim()
     expect(recomputed, 'the gate hashes exactly what the builder hashes').toBe(seated)

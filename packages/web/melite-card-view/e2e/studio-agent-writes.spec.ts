@@ -101,10 +101,12 @@ test('an agent\'s bench writes redraw the open studio timeline', async ({ page }
   // row was exactly that: the treeitem is the SHELL's conversation
   // sidebar, fed by DSH_HOME session logs, and a fresh keyless lane
   // home has none (a conversation is birthed by a session/prompt
-  // mint, an actual AI turn — openAConversation's keyed spine). On
+  // mint, an actual AI turn — the tour's keyed mint spine). On
   // the operator's lane (history present) the contract runs in full;
   // on a fresh home the spec self-skips naming the law instead of
-  // failing on a row no keyless host can carry.
+  // failing on a row no keyless host can carry. (This spec never
+  // calls the mint spine — the comment names no symbol so the AI
+  // opt-in census keeps reading the call sites it judges.)
   const row = page.locator('[role="treeitem"]').filter({ hasText: /\d+(?:s|min|m|h|d)\b/ }).first()
   const rowCount = await row.count()
   test.skip(rowCount === 0, 'no conversation on this host — this wall rides an OPEN conversation (host history on the operator lane, or a keyed mint); a fresh keyless lane has neither, and the tour law forbids failing on host history')

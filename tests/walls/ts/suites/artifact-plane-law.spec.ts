@@ -571,8 +571,20 @@ describe('W9 — the family table is a table of real manifests (the cycle cure p
     // number would re-split types from runtime (the mirror of the
     // 2026-10 split this arm was born guarding). The pin is the
     // workspace link on EVERY timer consumer (estate-queue and
-    // estate/manage), no face table re-homes it, and the facade
-    // carries no timer row (resolution rides the pnpm link).
+    // estate/manage).
+    //
+    // THE ALIAS LAW (2026-11-30, superseding this arm's own first
+    // shape): the vendored twin's types ride its BUILT lib face —
+    // gitignored per-host output — so a fresh clone cannot resolve
+    // the pnpm link's types at all. The cure seats the SOURCE twin in
+    // the RUNTIME_LIB_ALIAS rows: tsconfig.base.json, vitest.shared.ts,
+    // and every tsconfig face the build-plane generator owns resolve
+    // @deepseek-ai/cordis-plugin-timer at vendor src. This arm now
+    // judges THAT law (its first shape — "no face re-homes it" —
+    // fought the cure and red the whole walls tier): the SSOT rows
+    // must EXIST, any face alias must point at the vendor src (a
+    // stray registry/node_modules alias re-splits types), and the
+    // facade carries no timer row (build-plane resolves nothing).
     const offenders: string[] = []
     for (const consumer of ['packages/harness/estate-queue', 'packages/estate/manage']) {
       const manifest = JSON.parse(readFileSync(join(ROOT, consumer, 'package.json'), 'utf8')) as {
@@ -596,19 +608,33 @@ describe('W9 — the family table is a table of real manifests (the cycle cure p
       }
     }
     walkFaces(join(ROOT, 'packages'))
+    // ANY face alias must point at the vendored src — a face that
+    // re-homes the timer anywhere else (a registry path, a
+    // node_modules link) re-splits types from the runtime twin.
     for (const f of faces) {
       const body = readFileSync(f, 'utf8')
-      if (body.includes('cordis_plugins/timer')) {
-        offenders.push(`${f.replace(ROOT + '/', '')} carries a vendor-timer row`)
+      if (/"@deepseek-ai\/cordis-plugin-timer"\s*:/.test(body) && !body.includes('cordis_plugins/timer')) {
+        offenders.push(`${f.replace(ROOT + '/', '')} aliases the timer off the vendored src (the 2026-11-30 alias law)`)
       }
     }
+    // THE SSOT ROWS: the base config and the vitest facade both seat
+    // the source twin (absence = the fresh-clone type hole is back).
     const base = readFileSync(join(ROOT, 'tsconfig.base.json'), 'utf8')
-    if (base.includes('cordis_plugins/timer')) offenders.push('tsconfig.base.json carries a vendor-timer row')
+    if (!/"@deepseek-ai\/cordis-plugin-timer"\s*:\s*\[\s*"\.\/vendor\/cordis_plugins\/timer\/src\/index\.ts"\s*\]/.test(base)) {
+      offenders.push('tsconfig.base.json lost the vendored-timer RUNTIME_LIB_ALIAS row (fresh clones cannot resolve the twin\'s types)')
+    }
+    const vitestShared = readFileSync(join(ROOT, 'vitest.shared.ts'), 'utf8')
+    if (!vitestShared.includes('cordis_plugins/timer/src/index.ts')) {
+      offenders.push('vitest.shared.ts lost the vendored-timer alias row (the test plane would resolve the built-lib face)')
+    }
     const facade = JSON.parse(readFileSync(join(ROOT, 'tools/facade-rows.json'), 'utf8')) as Record<string, string[]>
-    for (const [k, v] of Object.entries(facade)) {
-      if (k.includes('cordis-plugin-timer') || v.some((t) => t.includes('cordis_plugins/timer'))) {
-        offenders.push(`facade row ${k} resolves the timer to vendor src`)
-      }
+    // the facade row is PART of the alias law (2026-11-30): the test
+    // plane resolves the timer through the vitest facade, and the row
+    // must point at the vendor src (absence re-opens the built-lib
+    // hole on fresh clones; a different target re-splits the twin).
+    const facadeTimer = facade['@deepseek-ai/cordis-plugin-timer']
+    if (!Array.isArray(facadeTimer) || facadeTimer[0] !== './vendor/cordis_plugins/timer/src/index.ts') {
+      offenders.push(`facade timer row is ${JSON.stringify(facadeTimer)} — the vitest plane must resolve the vendored src twin`)
     }
     expect(offenders, offenders.join('\n')).toEqual([])
   })

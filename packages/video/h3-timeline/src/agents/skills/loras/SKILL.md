@@ -17,10 +17,14 @@ genre: video
 > VERIFIED LIVE 2026-11-13 against the graph door (run
 > run-d84acf548c10-8bc37e11 — patching `loras:[{id:'h3_lightx2v_turbo',
 > strength:1}]` moved the composed distill seat 0.6 → 1 in the
-> `LTX_lora_loader` stack) and against the tree's skill-coverage batch
-> (receipt `contracts/receipts/2026-11-13-cards-bag-skills-coverage.md`).
-> NOT yet verified live: a rendered film under a NON-default stack —
-> the composed seat is proven, the render under it is owed.
+> `LTX_lora_loader` stack), against the RENDER door (run
+> run-22a28feb87b2-8ec66e55 — a film rendered under strength 1.0, the
+> composed seat `"str": 1` verbatim; run run-0366561964fc-8ecbe3ab —
+> `steps` OMITTED rides the row's count 8) and against the tree's
+> skill-coverage batch (receipt
+> `contracts/receipts/2026-11-13-cards-bag-skills-coverage.md`).
+> NOT yet verified live: a MULTI-ROW stack (2–4 rows) rendered under
+> one film — single-row renders are proven, the deeper stack is owed.
 
 ## What it is (and is NOT)
 
@@ -56,9 +60,10 @@ It is NOT:
      id; the options ARE the family catalog (`H3_LORA_ROWS`), and the
      render loads the id verbatim (the provisioner downloads that file).
    - `strength` (0–2, 0.6) — the adapter weight.
-   - `steps` (0–50, 0) — the step count to marry; 0 takes the catalog
-     row's designed count (a distill adapter is married to its steps,
-     never free).
+   - `steps` (0–50, 0) — the step count to marry; the SERVED band
+     prints default 0, but THE DOOR REFUSES 0 ("outside the row's
+     declared domain [4, 8]"): OMIT the key and the row's own count
+     rides — see THE STEPS LAW below before stating any number.
 3. **Confirm.** Show each stacked row in words ("turbo at 0.6, 6 steps"
    / "CrossView warp at 0.8") and whether the default row is in play.
    THE LANE CLAUSE: that wait is chat-lane law — on a headless
@@ -74,19 +79,24 @@ The speed row alone (the shape most film presses carry today — the
 composed seat is 0.6 in every measured good film):
 
     params.loras = [
-      { id: 'h3_lightx2v_turbo', strength: 0.6, steps: 0 },
+      { id: 'h3_lightx2v_turbo', strength: 0.6 },
     ]
 
 Speed + accuracy together (two rows, stack order is load order):
 
     params.loras = [
-      { id: 'h3_lightx2v_turbo', strength: 0.6, steps: 0 },
-      { id: 'h3_acc8_fl2va', strength: 0.5, steps: 0 },
+      { id: 'h3_lightx2v_turbo', strength: 0.6 },
+      { id: 'h3_acc8_fl2va', strength: 0.5 },
     ]
 
-Steps 0 is the sane default: it marries each row to its designed step
-count. State a number only when the schedule must bend — a distill row
-told 4 steps behaves differently from the same row told 8.
+THE STEPS LAW (measured live 2026-11-13, run-22a28feb87b2 and
+run-0366561964fc): OMIT `steps` — the entry then rides the catalog
+row's own step count (the turbo row composes 8). STATING 0 REFUSES at
+the compose door ("outside the row's declared domain [4, 8] — the row's
+own dial") even though the served field band reads 0–50 with default 0:
+the band is the widget's, the row domain is the door's, and the door
+wins. State a number only inside the row's domain, when the schedule
+must bend.
 
 ## The default seat — an OPEN decision (F34b)
 

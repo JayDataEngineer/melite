@@ -47,11 +47,14 @@ import { fileURLToPath } from "node:url";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../../..");
 
 /** ship-lane's own recipe (scripts/ship-lane.sh stamp_src): the
- * sorted src/*.ts(x) sha256 chain, first 16 hex chars. */
+ * LC_ALL=C-sorted src/*.ts(x) sha256 chain, first 16 hex chars.
+ * LC_ALL=C (2026-10-30): sort order is hash input — the canonical
+ * stamp law shared with client-bundle-freshness; an ambient locale
+ * made the recompute host-dependent. */
 function stampSrc(pkgDir: string): string {
   const out = execFileSync(
     "bash",
-    ["-c", `cd ${JSON.stringify(join(ROOT, pkgDir))} && find src \\( -name '*.ts' -o -name '*.tsx' \\) | sort | xargs sha256sum 2>/dev/null | sha256sum | cut -c1-16`],
+    ["-c", `cd ${JSON.stringify(join(ROOT, pkgDir))} && find src \\( -name '*.ts' -o -name '*.tsx' \\) | LC_ALL=C sort | xargs sha256sum 2>/dev/null | sha256sum | cut -c1-16`],
     { encoding: "utf8" },
   ).trim();
   return out;

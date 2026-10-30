@@ -34,3 +34,6 @@
 [submodule "vendor/comfyui_extensions/ComfyUI-CameraReference3D"]
 	path = vendor/comfyui_extensions/ComfyUI-CameraReference3D
 	url = https://github.com/lovemachine100/ComfyUI-CameraReference3D
+[submodule "vendor/comfyui_extensions/ComfyUI-MiniMaxH3-Context-Loop"]
+	path = vendor/comfyui_extensions/ComfyUI-MiniMaxH3-Context-Loop
+	url = https://github.com/JayDataEngineer/ComfyUI-MiniMaxH3-Context-Loop
