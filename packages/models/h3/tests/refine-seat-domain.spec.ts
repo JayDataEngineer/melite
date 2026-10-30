@@ -19,7 +19,12 @@
 // THE CATALOG SWAP (the door.spec idiom): this file's vi.mock keeps
 // every served row and APPENDS three synthetic rows whose ids are
 // unmistakably test-owned. Every served row keeps its real shape.
-// @contract models-h3-refine-seat-domain
+// No @contract marker: package-local law, prose header — the law is
+// already seated as models-h3-refine-value-law (its invariant names
+// "out-of-domain counts refuse LOUD at the compose door … resolveRefineSeat
+// owns the family plane"); these arms extend that row's wall coverage to
+// the optional-bound faces (no declared bounds / one-sided rows), they do
+// not declare a new law.
 import { describe, it, expect, vi } from "vitest";
 import { film } from "../src/actions.ts";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";

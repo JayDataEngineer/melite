@@ -834,6 +834,51 @@ describe("phase1Card + phase2Card (the two phases, one compose seat)", () => {
       expect(String((e as Error).message)).not.toMatch(/has no audio track/);
     }
   });
+  it("THE BAG GUARD'S TAIL ARMS (the silent-source belt skips what it cannot judge): junk entries, clip-less entries, dead leaves, directory leaves, and unnamed containers ride to the run door's own voice — never this probe's", async () => {
+    // The belt judges only what it can name: an entry that is not an
+    // object, an entry without a source_clip, a leaf that resolves
+    // nowhere, a leaf that stats to a directory, and a readable file
+    // the container parser refuses are ALL skipped — the refusal
+    // (F26) fires only for a named, readable, probed source that
+    // answers with no audio. Each arm asserts the door never speaks
+    // the silent-source sentence for its shape.
+    const dir = mkdtempSync(join(tmpdir(), "bag-guards-"));
+    const junk = join(dir, "junk.bin");
+    writeFileSync(junk, "this is not a media container");
+    const noSilentVoice = async (bagBody: Record<string, unknown>): Promise<void> => {
+      try {
+        await svc.phase1Card(bagBody, "h3-timeline");
+      } catch (e: unknown) {
+        expect(String((e as Error).message)).not.toMatch(/has no audio track/);
+      }
+    };
+    const body = (refine: unknown[]): Record<string, unknown> => ({
+      prompt: "a yard at dusk",
+      refine,
+    });
+    try {
+      // an entry that is not an object: not judged, not probed
+      await noSilentVoice(body(["not-an-object"]));
+      // an entry with no source_clip: nothing to name
+      await noSilentVoice(body([{ refine_prompt: "sharpen the leaves" }]));
+      // a relative leaf that resolves nowhere (repo root, then the
+      // input index) plus a leaf ending in "/" (no basename): the
+      // candidates all miss -> the belt skips
+      await noSilentVoice(
+        body([
+          { source_clip: "no-such-bag-source.mp4" },
+          { source_clip: "no-such-dir/" },
+        ]),
+      );
+      // a leaf that stats to a directory: the file check skips it
+      await noSilentVoice(body([{ source_clip: dir }]));
+      // a readable file the probe cannot name: the probe refuses and
+      // the belt skips (the engine's belt, the stamp's own posture)
+      await noSilentVoice(body([{ source_clip: junk }]));
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
   it("THE STAMP IS CARD-SCOPED (fix 7, 2026-10-28 — the track-card admission burn): a card that declares no size knobs gets NO stamped keys; the stamp may not invent params admission refuses", async () => {
     // The burn: the track card's ONE media seat is `clip`, its
     // schema declares no width/height knobs, and the h3 swap press
@@ -1318,7 +1363,9 @@ function craftMinimalMp4(width: number, height: number, audio = false): Buffer {
 
 /** A minimal probe-able PCM WAV (RIFF/WAVE + fmt + data): the probe
  *  answers with ONE audio stream that carries no display size — the
- *  clip-geometry stamp's no-video-stream arm. Pure bytes, hermetic. */
+ *  clip-geometry stamp's no-video-stream arm. Pure bytes, hermetic.
+ *  RIFF chunk order is fourcc-first, size-second (LE) — the opposite
+ *  of ISO-BMFF's box header. */
 function craftMinimalWav(): Buffer {
   const fmt = Buffer.alloc(16);
   fmt.writeUInt16LE(1, 0); // PCM tag
@@ -1329,8 +1376,8 @@ function craftMinimalWav(): Buffer {
   fmt.writeUInt16LE(16, 14); // bits
   const chunk = (id: string, body: Buffer): Buffer => {
     const h = Buffer.alloc(8);
-    h.writeUInt32LE(body.length, 0);
-    h.write(id, 4, "ascii");
+    h.write(id, 0, "ascii");
+    h.writeUInt32LE(body.length, 4);
     return Buffer.concat([h, body]);
   };
   const riff = Buffer.alloc(12);

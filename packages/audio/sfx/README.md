@@ -5,11 +5,12 @@ kind: package-library
 
 # @melite/audio-sfx
 
-`@melite/audio-sfx` is the sfx card: one family (`moss-sfx`, MOSS-SFX-v2) on the `sfx` action, served by the `melite-audio-nodes` extension pack that the card declares under `requires`. The package has a single source module — `src/card.ts` IS the root face the cardPackages SSOT composes (`@melite/audio-sfx`), so there is no separate card subpath and no tool or client face.
+`@melite/audio-sfx` is the sfx card: one family (`moss-sfx`, MOSS-SFX-v2) on the `sfx` action, served by the `melite-audio-nodes` extension pack that the card declares under `requires`. The package has a single source module — `src/card.ts` IS the root face the cardPackages SSOT composes (`@melite/audio-sfx`), which the manifest spells again as the explicit `./card` door; there is no separate tool or client face.
 
 ## Contract
 
 - `.` — the card definition and registration (`id` per sidebar key `audio`): the root module carries `inject = ['comfyui']` and registers the card. Schema: `prompt` (required — describe the SOUND, not the scene), `guidance_scale` (0..20, default 4), `n_diffusion_steps` (1..500, default 100 — declared 1:1 with the upstream node; the pipeline's declared 100/4.0 defaults are the 2026-09-23 alignment), `duration` (0.5..300 s, default 10), and `seed` (−1).
+- `./card` — the same card module as the root face, re-exported as the explicit named door (one file, two specifiers).
 - `./package.json` — the manifest.
 
 ## Model Experience

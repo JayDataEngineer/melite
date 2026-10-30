@@ -56,9 +56,33 @@ describe("the lock plane's tail arms", () => {
       chmodSync(root, 0o555);
       const r = acquireLock(root, 333333);
       assert.equal(r.ok, false);
-      assert.match(r.note, /lock steal failed/);
+      // the stale lock file still exists: the steal's re-open trips
+      // EEXIST (the file survived), not EACCES (the root refuses the
+      // unlink) — the note carries the bare errno
+      assert.match(r.note, /open EEXIST\)$/);
     } finally {
       chmodSync(root, 0o755);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+  it("an unwritable runs root with no stale lock steals into EACCES and the note names the root's mode", () => {
+    const root = mkdtempSync(join(tmpdir(), "melite-locke-"));
+    try {
+      const runs = join(root, "runs");
+      mkdirSync(runs);
+      chmodSync(runs, 0o555);
+      const r = acquireLock(runs, 424242);
+      // no holder file exists: the first open fails EACCES, the
+      // holder read comes back empty (garbage), the unlink no-ops,
+      // and the steal's second open fails EACCES again — the note
+      // names the errno AND the runs-root remedy (F5's whole point)
+      assert.equal(r.ok, false);
+      assert.match(
+        r.note,
+        /lock steal failed: .*gateway\.lock \(open EACCES — the runs root is not writable by this user\)$/,
+      );
+    } finally {
+      chmodSync(join(root, "runs"), 0o755);
       rmSync(root, { recursive: true, force: true });
     }
   });

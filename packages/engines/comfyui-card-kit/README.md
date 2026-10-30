@@ -36,6 +36,37 @@ is node-id order, so touching a recipe turns the compose wall red on purpose.
   door.
 - `./guard` — the consumption gate: a modifier fires only on an atom that
   boarded its pack; otherwise the run refuses loud.
+- `./card-definition` — the card plugin contract: `CardDefinition`, its flow
+  bindings and compose estate, the plugin-facing `Context` re-export — cards
+  declare, the engine composes.
+- `./model-contract` — the model family DECL contract: the row schemas
+  (source, cell artifact, variant, cell) and their validation —
+  `registerFamily` resolves every DECL strictly, refusing stripped keys as
+  drift.
+- `./service-faces` — the plugin-side service faces: `registerCard`/
+  `registerFlavor`/`registerVerb` and `registerFamily`, plus the context
+  augmentations; host classes satisfy them structurally.
+- `./admission` — the card-side strict resolve (`callableSchema`,
+  `gatedResolve`): unknown keys refuse loud (schemastery's strict flag
+  silently drops them); schema knobs and declared riders are the only
+  admissions.
+- `./errors` — `ComposeRefusal`, the compose door's refusal type with its
+  `code` — its own module so the wiring wall throws it without importing the
+  service.
+- `./params-emit` — the params_schema emitter: the Schemastery schema is the
+  single knob declaration, projected to the served JSON-Schema dialect
+  (`emitKnob`, `emitParamsSpec`, `emitParamsSchema`, `emitModifierKinds`).
+- `./semanticModelKnob` — the served model knob as semantic style entries
+  derived from the boarded families' DECL rows
+  (`semanticModelEntries`, `resolveSemanticModel`), never a bare id list.
+- `./linked` — the linked-input spelling: root-relative asset URLs rewrite to
+  the runs-root mount path, absolutes ride verbatim; `resolveLinkedInput`
+  confines under the runs root.
+- `./pack-fields` — the mod packs' field vocabulary (`LorasFields`,
+  `ControlNetFields`, `IPAdapterFields`, `MaskFields`, `QvoiceFields`) plus
+  the rider tables admission reads.
+- `./bare-flavor` — the bare-flavor primitive: parameterized by pack +
+  families, it mints the flavor plugin a family's `mods/mask.ts` re-exports.
 - `./package.json`.
 
 ## Model Experience

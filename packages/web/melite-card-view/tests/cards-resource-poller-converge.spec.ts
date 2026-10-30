@@ -270,10 +270,11 @@ describe("reconcileBenchRuns — the poller converges on the settled verdict", (
     // the run is alive per the list, so the reconcile must NOT heal the
     // row; it arms a real watcher (the heal's own law) and the watcher
     // owns the row from there. The watch's death face here is the
-    // REJECTION face: an abort mid-backoff-sleep kills the poll promise
-    // itself (abortableSleep rejects), and the armed claim still
-    // releases — "a dead watch never holds the claim" rides the
-    // rejection arm too, not just the null exit.
+    // NULL exit: the abort resolves the poll sleep ('slept' | 'abort'
+    // — abortable never rejects), the loop reads the aborted signal at
+    // its gate and settles null, and the armed claim still releases —
+    // "a dead watch never holds the claim" rides the null arm, with
+    // no verdict patch ever landing.
     const fakes = stubEstate({
       refusals: [{ method: "runs/status", message: "unknown run_id" }],
       listRows: [{ run_id: "r_1", status: "running" }],
@@ -288,7 +289,8 @@ describe("reconcileBenchRuns — the poller converges on the settled verdict", (
       const stamps = patchesOf(fakes).map((p) => (p["patch"] as Record<string, unknown>)["runStatus"]);
       expect(stamps).toEqual(["queued", "queued"]);
       // the watch is asleep on its poll cadence — abort it mid-sleep:
-      // the watch promise rejects, and the rejection releases the claim
+      // the sleep resolves 'abort', the loop exits at its gate, and
+      // the null settle releases the claim
       ctrl.abort();
       await vi.waitFor(() => { expect(armed.has("s_0:r_1"), "the mid-poll dead watch still holds the armed claim").toBe(false); });
     } finally {
@@ -342,6 +344,42 @@ describe("reconcileBenchRuns — the poller converges on the settled verdict", (
       });
       // the delivered verdict keeps the claim spent
       expect(armed.has("s_0:r_1")).toBe(true);
+    } finally {
+      fakes.unmount();
+    }
+  });
+
+  test("PC-9: the probe loses the wire mid-verdict — the watch dies loud and the claim releases with nothing landed", async () => {
+    // the REJECTION face of "a dead watch never holds the claim"
+    // (2026-11-30): the watch's poll read is refused (the estate
+    // answers unknown run_id), so it probes the file-era list — but
+    // the probe's own re-read loses the wire (a transport throw, not
+    // an answer). probeRunGone rethrows that (a transport error is
+    // not a verdict): the watch promise rejects, and the armed claim
+    // must still release. No verdict was ever read — nothing honest
+    // to write — so the tile keeps its start stamp and no terminal
+    // patch ever lands. The scripted door: status call 1 is the
+    // reconcile's claim probe (answered running — the watch arms),
+    // call 2 the watch's start stamp read, call 3 the refused poll
+    // read, call 4 the probe's re-read on the dead wire.
+    const fakes = stubEstate({
+      runDocs: [RUNNING],
+      refusals: [{ method: "runs/status", message: "unknown run_id", onCall: 3 }],
+      throws: [{ method: "runs/status", message: "wire died between reads", onCall: 4 }],
+    });
+    try {
+      const armed = new Set<string>();
+      await reconcileBenchRuns(bench(), { armed });
+      // the claim was taken synchronously by the reconcile's own arm
+      expect(armed.has("s_0:r_1"), "the live row never took its claim").toBe(true);
+      await vi.waitFor(() => { expect(statusCalls(fakes)).toBe(4); });
+      const patches = patchesOf(fakes);
+      expect(patches, "a verdict landed on a run nobody could read").toHaveLength(1);
+      expect(patches[0]).toMatchObject({
+        draftId: "d_1", stageId: "s_0",
+        patch: { runStatus: "running", result: { run_id: "r_1" } },
+      });
+      await vi.waitFor(() => { expect(armed.has("s_0:r_1"), "the loud-dead watch still holds the armed claim").toBe(false); });
     } finally {
       fakes.unmount();
     }

@@ -410,7 +410,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/harness/provisioner/src/index.ts': { statements: 0, branches: null, functions: null, lines: 0 },
   // 2026-11-06 follow-up regen: the deletion cure (28edf55c9) retired the
   // one dead statement/branch pair; the full gate re-measured 100x4.
-  '**/packages/harness/melite-tools/src/discovery.ts': { statements: 98.39, branches: 98.98, functions: 96.36, lines: 98.03 },
+  '**/packages/harness/melite-tools/src/discovery.ts': { statements: 99.75, branches: 99.33, functions: 100, lines: 99.7 },
   '**/packages/harness/melite-tools/src/doors.ts': { statements: 99.04, branches: 97.36, functions: 97.83, lines: 99.18 },
   '**/packages/harness/melite-tools/src/enhance-agent.ts': { statements: 96.3, branches: 96.3, functions: 75, lines: 96 },
   // F-1 (2026-11-05): the typed-lane rewrite re-measured this row.
@@ -438,7 +438,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/harness/melite-tools/src/tools/ledger-tail.ts': { statements: 97.67, branches: 96.55, functions: 75, lines: 97.62 },
   '**/packages/harness/melite-tools/src/tools/melite-construct.ts': { statements: 89.84, branches: 84.83, functions: 98.39, lines: 93.35 },
   '**/packages/harness/melite-tools/src/tools/melite-discover.ts': { statements: 97.83, branches: 96.18, functions: 81.82, lines: 98.63 },
-  '**/packages/harness/melite-tools/src/tools/melite-flow.ts': { statements: 96.84, branches: 94.06, functions: 97.5, lines: 98.07 },
+  '**/packages/harness/melite-tools/src/tools/melite-flow.ts': { statements: 98.36, branches: 96.47, functions: 100, lines: 98.41 },
   // 2026-10-21: same driver-seat correction; the landing deleted the
   // `?? ''` on split(':')[0] (ECMA-262 always returns at least one
   // element). The remaining gap is the fam === '' guard in
@@ -499,7 +499,13 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/models/moss-image/src/index.ts': { statements: 75, branches: null, functions: 50, lines: 66.67 },
   '**/packages/models/gem-soma/src/actions.ts': { statements: 83.33, branches: 50, functions: 50, lines: 83.33 },
   '**/packages/models/gem-soma/src/index.ts': { statements: 75, branches: null, functions: 50, lines: 66.67 },
-  '**/packages/models/h3/src/actions.ts': { statements: 97.94, branches: 94.92, functions: 98.21, lines: 99.5 },
+  // h3 coverage burn (2026-11-30): raised at the K=1 margin mint MIN'd
+  // across two full-gate faces (both print 98.26/95.85/100/99.67;
+  // counts 680/692 stmts, 693/723 branches, 609/611 lines) — the burn's
+  // new arms (door ghost-chip + raw-clock, lora-marriage,
+  // refine-seat-domain) cleared the minted residue (86/87, 156, 199,
+  // 200, 202, 238, 652).
+  '**/packages/models/h3/src/actions.ts': { statements: 98.12, branches: 95.71, functions: 98.31, lines: 99.51 },
   '**/packages/models/h3/src/filmMix.ts': { statements: 98.89, branches: 98.82, functions: 91.67, lines: 98.67 },
   '**/packages/models/h3/src/finalize.ts': { statements: 75, branches: 50, functions: 0, lines: 66.67 },
   '**/packages/models/h3/src/index.ts': { statements: 75, branches: null, functions: 50, lines: 66.67 },
@@ -507,12 +513,24 @@ export const COVERAGE_BASELINE: Record<string, {
   // json-summary faces (h3/tests/reshoot.spec.ts + the walls seated
   // spec), K=1 margin mint — the file is feature-024's in-flight
   // reshoot module; its own spec carries the 100 face.
-  '**/packages/models/h3/src/reshoot.ts': { statements: 97.56, branches: 96, functions: 88.89, lines: 97.5 },
+  // h3 coverage burn (2026-11-30): raised at the K=1 margin mint across
+  // two full-gate faces (both print 100x4; 62/62 stmts, 39/39
+  // branches, 10/10 funcs, 61/61 lines) — the compose-door refusal arms
+  // (crossviewGuideSeconds 0/−48/NaN; the width/height plate budget)
+  // cleared the minted residue (89/90, 339/340).
+  '**/packages/models/h3/src/reshoot.ts': { statements: 98.39, branches: 97.44, functions: 90, lines: 98.36 },
   // h3 F19 (2026-11-12): first seat at the scoped json-summary face
   // (models/h3 tests/ alone — refine.spec.ts drives renderH3Refine's
   // full surface incl. the RefineHandoff 2x emission), measured
   // 100x4: 28/28 statements, 10/10 branches, 3/3 functions.
-  '**/packages/models/h3/src/refine.ts': { statements: 96.43, branches: 90, functions: 66.67, lines: 96.43 },
+  // h3 coverage burn (2026-11-30): raised at the K=1 margin mint across
+  // two full-gate faces (both print 100x4; 85/85 stmts, 57/57
+  // branches, 8/8 funcs, 83/83 lines) — the renderH3Refine face on the
+  // FULL gate rides the card package's refine-mod.spec.ts compose arms
+  // (the node-only face underruns it); the h3-local loop arms
+  // (refine-loop.spec.ts whole-frame seat refusals) cleared 188/189,
+  // 193/194, 384/385, 390/391.
+  '**/packages/models/h3/src/refine.ts': { statements: 98.82, branches: 98.25, functions: 87.5, lines: 98.8 },
   // h3 F19 deferred ChainUpscale loop (2026-11-12): first seat at the
   // scoped json-summary face (models/h3 tests/chainUpscale.spec.ts
   // drives renderH3ChainUpscale's own door — the full loop compose,
@@ -520,7 +538,16 @@ export const COVERAGE_BASELINE: Record<string, {
   // upscaleArmed predicate), measured 100x4: 32/32 statements,
   // 12/12 branches, 4/4 functions.
   '**/packages/models/h3/src/chainUpscale.ts': { statements: 96.88, branches: 91.67, functions: 75, lines: 96.88 },
-  '**/packages/models/h3/src/schema.ts': { statements: 98.17, branches: 96.91, functions: 88.89, lines: 98.02 },
+  // h3 coverage burn (2026-11-30): functions raised 88.89 → 90 at the
+  // K=1 margin mint across two full-gate faces (both print
+  // 98.26/97.02/100/98.13; 113/115 stmts, 98/101 branches, 10/10 funcs,
+  // 105/107 lines); statements/branches/lines keep their seated floors —
+  // the mint over the current counts (97.39/96.04/97.2) sits BELOW them
+  // (the file's path counts grew since the seat) and the ratchet never
+  // lowers. The anchor-guide null/sparse-row arm cleared 495:29;
+  // 465:59/466:5/467:7 are the dead load-time defenses (see the burn
+  // audit).
+  '**/packages/models/h3/src/schema.ts': { statements: 98.17, branches: 96.91, functions: 90, lines: 98.02 },
   '**/packages/models/h3/src/timelineContract.ts': { statements: 99.27, branches: 99.02, functions: 96, lines: 99.15 },
   '**/packages/models/input/src/actions.ts': { statements: 97.62, branches: 97.56, functions: 50, lines: 97.62 },
   '**/packages/models/input/src/index.ts': { statements: 75, branches: null, functions: 50, lines: 66.67 },

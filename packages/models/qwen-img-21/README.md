@@ -17,7 +17,7 @@ Defaults: 1024×1024, 25 steps, `euler` / `simple`, cfg 1. Variants: `int8` (INT
 
 ## Mod surface
 
-The DECL declares no mods (absent means nothing is boarded). `./mods/loras` exists as the flavor seam but registers an empty row set — no first-party 2.1 adapters yet, and nothing is fetched from it.
+The DECL boards `mask` and `loras`. `./mods/loras` is the flavor seam with an empty row set — no first-party 2.1 adapters yet, nothing is fetched from it, and user-provided files ride the pack's bag. `./mods/mask` is the bare-flavor mask boarding: the pack contract owns the region fields, no gen lane builds a region arm, and a stated region refuses loud at admission.
 
 ## Model Experience
 
@@ -44,4 +44,4 @@ Independent: each run is self-contained.
 - **Edit lives next door** — this family offers t2i only; reference editing is qwen-img-edit-21's lane over the same weights.
 - **Live behavior unobserved** — not verified against the running model.
 
-Exports: the plugin root, `./package.json`, `./mods/loras`.
+Exports: the plugin root, `./package.json`, `./mods/loras`, `./mods/mask`.

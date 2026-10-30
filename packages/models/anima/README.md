@@ -9,7 +9,7 @@ The Anima family — anime and illustration text-to-image on the comfyui engine,
 
 The lane pins its weights in lane_inputs: unet `anima-base-v1.0.safetensors`, text encoder `qwen_3_06b_base.safetensors`, VAE `qwen_image_vae.safetensors`, clip type `stable_diffusion`, stock `EmptyLatentImage` latent. Three provisions rows download them (circlestone-labs/Anima, Qwen/Qwen3-0.6B-Base, Comfy-Org/Qwen-Image_ComfyUI). Defaults are 1024×1024, 30 steps, er_sde over simple, cfg 4; the recipes are draft (8 steps) and detailed (30 steps); the single F32 cell peaks at 20 GB. The prompt field is required — a draft without one refuses, because every image lane states what the picture is.
 
-The family's action is t2i: the stock diffuse topology — CLIPTextEncode pair, EmptyLatentImage at card resolution, KSampler, decode and save under `<run>/gen`. The facts door reads the resolved lane_inputs into the closed T2IFacts shape; a drifted latent class refuses rather than silently rerouting. Anima boards no mods: loras, controlnets, and ip-adapter bags refuse loud, never silently drop.
+The family's action is t2i: the stock diffuse topology — CLIPTextEncode pair, EmptyLatentImage at card resolution, KSampler, decode and save under `<run>/gen`. The facts door reads the resolved lane_inputs into the closed T2IFacts shape; a drifted latent class refuses rather than silently rerouting. The DECL boards two mods: `./mods/mask` is the bare-flavor mask boarding — the pack contract owns the region fields, no gen lane builds a region arm, and a stated region refuses loud at the firing gate — and `./mods/loras` is the flavor seed with no first-party rows, user-provided files riding the pack's bag. Controlnet and ip-adapter bags still refuse loud, never silently drop.
 
 ## Declaration
 
@@ -33,4 +33,6 @@ Independent — the package contributes no persistent prompt prefix, so register
 
 - **Required prompt** — the relations row makes prompt mandatory; a textless draft refuses at the family door instead of composing an undefined image.
 - **F32 only** — one cell, 20 GB peak; no quantized variants ride the DECL.
-- **No adapter flavor** — no loras or controlnets packs board the family; a stated adapter bag refuses loud, so adapter-driven styling is out of scope here.
+- **No adapter rows** — the boarded `./mods/loras` flavor carries no first-party rows (user files ride the pack's bag), and no controlnet or ip-adapter pack boards; a stated adapter bag refuses loud, so adapter-driven styling is out of scope here.
+
+Exports: the plugin root, `./package.json`, `./mods/loras`, `./mods/mask`.

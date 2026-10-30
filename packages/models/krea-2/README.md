@@ -17,7 +17,7 @@ Params: `prompt` (required — the one relation word) plus the sampling block (s
 
 ## The LoRA board
 
-Exports include `./mods/loras`, which carries twelve operator-supplied flavor rows (among them `krea2_realism_lora`, `krea2_turbo_lora_rank_64_bf16`, `krea2_darkbrush`, `krea2_dotmatrix`, `krea2_kidsdrawing`, `krea2_neondrip`, `krea2_rainywindow`, `krea2_retroanime`, `krea2_softwatercolor`, `krea2_sunsetblur`, `krea2_vintagetarot`, `krea2filterbypass3`). They are picker vocabulary, never downloads: the DECL's `mods` list boards the flavor, and no provision fetches any row.
+Exports include `./mods/loras`, which carries twelve operator-supplied flavor rows (among them `krea2_realism_lora`, `krea2_turbo_lora_rank_64_bf16`, `krea2_darkbrush`, `krea2_dotmatrix`, `krea2_kidsdrawing`, `krea2_neondrip`, `krea2_rainywindow`, `krea2_retroanime`, `krea2_softwatercolor`, `krea2_sunsetblur`, `krea2_vintagetarot`, `krea2filterbypass3`). They are picker vocabulary, never downloads: the DECL's `mods` list boards the flavor, and no provision fetches any row. The DECL also boards `./mods/mask`, the bare-flavor mask mod: the pack contract owns the region fields, no gen lane builds a region arm, and a stated region refuses loud at admission.
 
 ## Model Experience
 
@@ -43,4 +43,4 @@ Independent: each run is self-contained.
 - **Operator-supplied LoRAs** — the twelve rows are never fetched; a missing file fails at engine validation, loudly but late.
 - **Live behavior unobserved** — envelopes, recipes, and refusal voices are documented from the DECL and action build, not verified against the running model.
 
-Exports: the plugin root, `./package.json`, `./mods/loras`.
+Exports: the plugin root, `./package.json`, `./mods/loras`, `./mods/mask`.

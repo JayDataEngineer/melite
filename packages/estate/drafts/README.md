@@ -25,11 +25,12 @@ draft-id law.
 - Bench: `ensure`, `get`, `patch`, `add-stage`, `remove-stage`, `reorder`,
   `group`, `rewire`, `undo`, `clear`, keyed by the caller's session key,
   with change notification through the bench change seam.
+- Trail: the output-trail laws' shared seam — `canonicalOutputUrl` folds the media-route and gallery-proxy spellings of one file into the run-relative path, `resultOutputUrls` harvests a result's outputs (artifacts map, then `assetUrls`, then the lone url), and `trailDedupe` keeps one row per run (run_id identity, canonical-url-set fallback). `applyOutcomePatch` is the outcome apply both writers share — the patch door and the bench carry: history archived newest-first (cap 12, deduped by url set), a terminal row never un-settles, and a url-less terminal face never downgrades a settled one.
 - Failures are the protocol's ONE RemoteError with `draft/*` and `bench/*`
   codes declared next to their throws.
 - Declared exports: `.` (plugin + services), `./types` (shared row types),
   `./typert` (generated host-face declaration), `./remote` (generated
-  browser client), `./package.json`.
+  browser client), `./trail` (the trail laws' shared seam), `./package.json`.
 
 ## Model Experience
 

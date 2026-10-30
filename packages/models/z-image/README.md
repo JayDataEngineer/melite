@@ -13,11 +13,12 @@ Variants: `turbo` (the 8-step distilled default) and `base` (undistilled, more s
 
 ## Mods
 
-The mods are family-owned picker rows, never auto-provisioned — a `source_url` is provenance documentation, not a download declaration. `./mods/loras` carries the seven Turbo style/utility adapters found on disk (Realism, DeJPEG, Pixel Art, 3D MMORPG, Classic Painting, Coloring Book, Sunbleached). `./mods/controlnet` carries the seven Fun-Controlnet-Union conditioning types over the ONE union weight file; `preprocessor` records the upstream map, which the lane consumes as given — no preprocessor executes here. `./mods/ip_adapter` carries the four reference modes with fate `refused`: the receipt documents that the retired ray lane never executed a reference image, the files are SD1.5 adapters that cannot patch Z-Image's S3-DiT, and no upstream Z-Image IP-Adapter exists — `refuseIPAdapterFiring` refuses every stated entry loudly.
+The mods are family-owned picker rows, never auto-provisioned — a `source_url` is provenance documentation, not a download declaration. `./mods/mask` is the bare-flavor mask boarding: the pack contract owns the region fields, no gen lane builds a region arm, and a stated region refuses loud at admission. `./mods/loras` carries the seven Turbo style/utility adapters found on disk (Realism, DeJPEG, Pixel Art, 3D MMORPG, Classic Painting, Coloring Book, Sunbleached). `./mods/controlnet` carries the seven Fun-Controlnet-Union conditioning types over the ONE union weight file; `preprocessor` records the upstream map, which the lane consumes as given — no preprocessor executes here. `./mods/ip_adapter` carries the four reference modes with fate `refused`: the receipt documents that the retired ray lane never executed a reference image, the files are SD1.5 adapters that cannot patch Z-Image's S3-DiT, and no upstream Z-Image IP-Adapter exists — `refuseIPAdapterFiring` refuses every stated entry loudly.
 
 ```
 .
 ./package.json
+./mods/mask
 ./mods/loras
 ./mods/controlnet
 ./mods/ip_adapter

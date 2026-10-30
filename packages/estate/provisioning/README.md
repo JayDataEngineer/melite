@@ -33,8 +33,17 @@ The service exposes:
 Partial multi-item work preserves per-item results and is never reported as
 unqualified success.
 
+`./contracts` is the shared vocabulary the adapters and readers import:
+`ResourceRef` (model rows keyed by owner/variant/quant, extension rows by id),
+the nine `PROVISION_STATES`, the `PROVISION_OUTCOMES`, the live-acquire set
+(`acquiring`/`verifying`), the `ACQUIRE_PHASES` liveness words (`stream`,
+`queue`, `verify`, `recheck`), and the durable-queue seat facts — the
+`SeatHeartbeat` stamp and the ten-second `DURABLE_CLAIMER_FRESH_MS` window
+that keeps a wanted download from queuing into a store no one will claim.
+
 Declared exports: `.` (service + provider) and `./types` (the definition and
-row types), `./package.json`.
+row types), `./contracts` (the shared ref/state/phase vocabulary),
+`./package.json`.
 
 ## Resource boundaries
 

@@ -11,6 +11,7 @@ Vendored verbatim from `references/deepseek-harness` (packages/typert/protocol/s
 
 - `.` — the decorator and runtime-contract face: `@Remote` decorators backed by versioned, frozen descriptors (`RemoteMethodDescriptorV1`), `isTypertRemoteSegment` (the RPC endpoint segment grammar), `RemoteError`/`remoteErrorOf`, the `TYPERT_OWNED_VALUE` marker trio, `isRemoteJsonValue`/`isRemoteUplinkItem` guards, and the Gateway binding types.
 - `./types` — compiler-independent protocol types shared by business packages, generated Remote artifacts, the Host Gateway, and the Client API: `TypertLookup`, `TypertContext`, `TypertRemoteMap`, and the `RemoteErrorDetailsMap` codes (`gateway/bad-request`, `gateway/cancelled`, `gateway/internal`).
+- `./remote-info` — the lazy assembly of generated Remote definitions: `createTypertRemoteInfo(spec, zod)` wraps compiler-produced method facts with caller-supplied Zod, building its descriptor/method index on first access and caching named-input parsers and JSON Schema projections only when requested — no runtime imports, no registration or transport effects.
 - `./src/*` — the vendored sources, exported verbatim for the generator's module resolution.
 - `./package.json` — the manifest.
 
