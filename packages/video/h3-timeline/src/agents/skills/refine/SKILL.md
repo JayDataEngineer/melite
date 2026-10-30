@@ -146,6 +146,35 @@ before, byte-identical.)
    texture discontinuity at the seams, never generative breaks).
    Judge each run's own output before pressing the next.
 
+## The prompt is the ONLY style lever (F36, 2026-11-13)
+
+Nothing else carries. The original prompt, seed, schedule and calls do
+NOT re-enter the pass — so `refine_prompt` alone decides what the
+window looks like. A prompt that describes only quality ("sharper
+detail, clean skin") leaves the medium and the identity unanchored,
+and the low-denoise pass drifts the shot: the operator's own
+two-window test restyled a 3D-anime dancer into a photoreal human from
+the prompt alone.
+
+THE LAW: `refine_prompt` MUST restate the source's own look — the
+medium (e.g. "glossy 3D anime render style") and the identity anchors
+(who/what, wardrobe, palette) — beside the quality asks. Never
+introduce a new style or a new subject; never let a quality word
+("clean skin", "photoreal", "realistic") stand where the source's
+medium belongs.
+
+Worked example (the operator's good run, `run-2d2a9db536a1`,
+denoise 0.30):
+
+    the same dancing kunoichi, sharper detail, clean hands and
+    fingers, glossy 3D anime render style, unchanged pose, motion
+    and background
+
+The failure shape, for contrast (`run-3f0c…`, denoise 0.32): "sharper
+detail, clean skin, unchanged motion" — no medium, no identity, and
+"clean skin" pulled the render photoreal. The window stayed the same
+shot; the STYLE moved. Restate the look, then ask for detail.
+
 ## Capacity, honestly
 
 The 2x pass pays nearly the full first-pass resource bill on every

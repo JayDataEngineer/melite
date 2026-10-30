@@ -1,5 +1,6 @@
 import { chainSaveBoundaries, concatSavedFilms, filmJoinAudio } from './actions.js';
 import { h3MaskedEditPlane, loadVideo } from './chainEdit.js';
+import { MAX_COMPOSED_WINDOWS } from './timelineContract.js';
 /** The learned 3D-conv upscale weights (the schema's upscale_model
  *  seat carries this same single option — one file, one spelling, no
  *  hand-spelled alternatives). */
@@ -220,6 +221,9 @@ export function renderH3Refine(entry, p, facts, g, runId) {
 export function renderH3RefineWindows(entry, p, facts, g, runId, loop) {
     if (!Number.isInteger(loop.windows) || loop.windows < 1) {
         throw new Error(`h3-timeline refine: ${loop.windows} windows — a refine loop renders at least one window (the count derives from total_seconds and the window step)`);
+    }
+    if (loop.windows > MAX_COMPOSED_WINDOWS) {
+        throw new Error(`h3-timeline refine: ${loop.windows} windows — the film's composed-window ceiling is ${MAX_COMPOSED_WINDOWS} (${(MAX_COMPOSED_WINDOWS * (REFINE_DEFAULT_CLIP_SECONDS - 22 / 24)).toFixed(2)} s at the default window); refine a shorter film or raise clip_seconds inside the measured ${REFINE_2X_OOM_FRAMES} f ceiling`);
     }
     if (!Number.isInteger(loop.overlapFrames) || loop.overlapFrames < 0) {
         throw new Error(`h3-timeline refine: overlap ${loop.overlapFrames} f — the carried overlap is a whole frame count at or above zero (the film's own seam is 22 f)`);

@@ -176,5 +176,12 @@ describe("the refine loop (F24: one press walks the film)", () => {
       }),
       /a carried overlap shorter than the window is the only walk that advances/,
     );
+    // the film's composed-window ceiling is the loop's own cap
+    assert.throws(
+      () => renderH3RefineWindows(entry, {}, facts, new GraphBuilder(), "run", {
+        windows: 33, overlapFrames: 22,
+      }),
+      /the film's composed-window ceiling is 32/,
+    );
   });
 });

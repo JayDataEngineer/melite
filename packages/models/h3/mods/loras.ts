@@ -7,12 +7,14 @@
 // the studio's Modifiers section serves these rows as options, the
 // bag takes multiple entries. THE DEFAULT (operator 2026-10-11, "the
 // one from bytedance" → 2026-11-07, "the card's default lora → the
-// 8-step light tricks"): the h3_turbo8_v1 row (Comfy-Org's Turbo
-// 8-Step v1.0 — the 8-step series tops out at v1.0 upstream; the
-// v1.1/v1.2 tags exist only on the 4-step line) is the one stamp —
-// the DECL's birth recipe (standard, the first Recipe row) puts it
-// on every fresh card and the absent-bag compose default resolves
-// it; every other row (the DMAD 4-step included) stays pick-only.
+// 8-step light tricks" → 2026-11-12, the merge takes the default
+// seat): the h3_lightx2v_turbo row — the LightX2V turbo 4-to-8-step
+// × dareties v4 step600 merge (strength 0.6, designed 4–8 steps) —
+// is the one stamp: the absent-bag compose default resolves it and
+// the card's ghost chip shows it. NO catalog row is labelled "Larry
+// + LightX2V" (F34b: that prose claimed a merge row the catalog
+// never held); every other row (the DMAD 4-step, the two standalone
+// LightX2V turbos, the Larryvrh EMA included) stays pick-only.
 // STRENGTH EVIDENCE: the three Comfy-Org lightx2v turbos load at
 // 1.0 in Comfy-Org's own t2v/i2v/r2v templates (LoraLoaderModelOnly
 // strength 1); the two Kijai Acc rows follow the estate's

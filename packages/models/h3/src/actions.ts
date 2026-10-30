@@ -59,10 +59,14 @@ import {
 
 // THE ABSENT-BAG DEFAULT (h3-a, 2026-10-12; bytedance DMAD row
 // 2026-10-11 → the LightX2V Turbo 8-Step v1.0 row 2026-11-07 → the
-// Larry + LightX2V dareties merge row 2026-11-12 — operator: the
-// merge takes the default seat, preferred for detail at 8 steps;
-// the standalone LightX2V turbos stay in the catalog for the
-// audio/dialogue routes): the h3_lightx2v_turbo row, built from the
+// merged dareties row 2026-11-12 — operator: the merge takes the
+// default seat, preferred for detail at 8 steps; the standalone
+// LightX2V turbos stay in the catalog for the audio/dialogue
+// routes). THE ROW IS `h3_lightx2v_turbo` — the LightX2V turbo
+// 4-to-8-step × dareties v4 step600 merge (label "LightX2V Turbo
+// 4-8 step", strength 0.6, designed 4–8 steps); there is NO separate
+// catalog row labelled "Larry + LightX2V" — F34b's finding was this
+// prose naming a row the catalog never held. The row is resolved from the
 // family lora CATALOG (mods/loras.ts — the one owner of every lora
 // filename and default strength; the value was restated as a
 // literal here, which is how a catalog edit would have silently
@@ -2071,8 +2075,9 @@ function renderH3Window(
   // 1.0 the rider keeps the primary stack (the TaoMate full mechanic
   // — pass A full, pass B closes — unchanged); with no counting row
   // the primary stack already IS the un-distilled base.
-  // the bag's own truth: absent p.loras = the default h3_turbo8_v1
-  // row rides (loraStackDefault — a counting distill); a stated bag
+  // the bag's own truth: absent p.loras = the default
+  // H3_DEFAULT_LORA_ID row (h3_lightx2v_turbo) rides via
+  // loraStackDefault — a counting distill; a stated bag
   // rides a counting row iff the marriage sees one.
   const distillRides = Array.isArray(p.loras) ? marriedBagKnob(p, 'steps') !== null : true
   const riderSubOne = refine !== undefined && refine.denoise < 1

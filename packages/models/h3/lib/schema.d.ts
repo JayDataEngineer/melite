@@ -153,6 +153,18 @@ export declare const paramSchema: z<Schemastery.ObjectS<NoInfer<{
  *  declared knobs — old drafts keep working because the schema admits
  *  them and the compose door overlays explicit params last (the
  *  img-to-mesh filename_prefix precedent). */
+/** THE REFINE CARD'S PLANE SURFACE (2026-11-13): the knobs the
+ *  masked-edit plane reads for a standalone refine. PICKED off the
+ *  film carrier — never re-declared — so the refine card's defaults
+ *  are the family's own (one owner; a family dial retune reaches
+ *  every surface that composes the plane). Known knobs only: a typo
+ *  refuses here, at load. */
+export declare const REFINE_PLANE_KEYS: readonly ["sched_name", "shift_video", "shift_audio", "sla_enabled", "sla_sparsity", "sla_block_size", "sla_min_seq_len", "sla_dense_last_steps", "sla_protect_audio", "sla_dense_steps", "sla_dense_backend", "sla_disable_fp16_accum", "sla_stabilize_motion", "sla_reference_protection"];
+export declare const refinePlaneSchema: z<Schemastery.ObjectS<NoInfer<{
+    [k: string]: z;
+}>>, Schemastery.ObjectT<NoInfer<{
+    [k: string]: z;
+}>>, "plain">;
 export declare const coerceWireBoolean: (raw: Record<string, unknown>) => Record<string, unknown>;
 /** THE PIN ROW SHAPE (one law, two seats): the doc walk and the compose
  *  gate both run this BEFORE any placement math — a row must carry a

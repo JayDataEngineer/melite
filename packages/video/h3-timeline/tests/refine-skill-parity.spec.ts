@@ -150,6 +150,32 @@ describe("the refine skill's dial table agrees with the code's own homes", () =>
     assert.match(md, /one door per doc/i, "refine/SKILL.md states the law");
   });
 
+  it("ARM 5 — F36: the prompt is the only style lever, stated in the doc AND on the served seat", () => {
+    const md = readSkill("refine");
+    // the law: nothing carries, so the prompt must restate the look
+    assert.match(md, /## The prompt is the ONLY style lever/i,
+      "refine/SKILL.md names the style-lever law as its own section");
+    assert.match(md, /MUST restate the source's own look/i,
+      "the doc states the requirement in the imperative, never a hint");
+    assert.match(md, /the medium/i, "the doc names the medium as an anchor");
+    assert.match(md, /identity anchors/i, "the doc names the identity anchors");
+    // the worked example is prose an agent can copy — it must contain
+    // the medium clause AND the unchanged clause (the operator's own
+    // good prompt), never a quality-only shape
+    assert.match(md, /glossy 3D anime render style/, "the worked example carries the medium clause");
+    assert.match(md, /unchanged pose, motion\s+and background/, "the worked example carries the unchanged clause");
+    // and the drift evidence: a named failure shape, so the rule is
+    // never read as taste
+    assert.match(md, /photoreal/i, "the doc names the failure mode (the photoreal drift)");
+    // THE SERVED SEAT CARRIES THE SAME LAW — a user editing the form
+    // never learns it from the doc alone
+    const tooltip = String(fields().get("refine_prompt")?.tooltip ?? "");
+    assert.match(tooltip, /ONLY STYLE LEVER/,
+      "the served refine_prompt tooltip names the same law");
+    assert.match(tooltip, /restyles the shot|restate the source/i,
+      "the served tooltip states the consequence, not just a label");
+  });
+
   it("THE STAMP LAW: the skill carries its verified-against line, names a receipt that EXISTS, and says what is still unproven", () => {
     const md = readSkill("refine");
     assert.match(md, /VERIFIED LIVE \d{4}-\d{2}-\d{2} against/,

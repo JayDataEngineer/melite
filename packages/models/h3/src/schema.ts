@@ -4,6 +4,7 @@
 // carrier; the card's wrap + compose gate import the same object —
 // ONE spelling, never a second copy).
 import z from '@deepseek-ai/schemastery'
+import type Schema from '@deepseek-ai/schemastery'
 import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from '@melite/comfyui-card-kit/vocab'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { samplingExtra } from '@melite/comfyui-card-kit/fields'
@@ -445,6 +446,30 @@ export const paramSchema = z.object({
 // fills natively. (A schemastery field transform would classify the
 // served knob as type 'json' — the honest 'boolean' taxonomy wins,
 // so the law lives here, shared by schema() and the compose gate.)
+/** THE REFINE CARD'S PLANE SURFACE (2026-11-13): the knobs the
+ *  masked-edit plane reads for a standalone refine. PICKED off the
+ *  film carrier — never re-declared — so the refine card's defaults
+ *  are the family's own (one owner; a family dial retune reaches
+ *  every surface that composes the plane). Known knobs only: a typo
+ *  refuses here, at load. */
+export const REFINE_PLANE_KEYS = [
+  'sched_name', 'shift_video', 'shift_audio',
+  'sla_enabled', 'sla_sparsity', 'sla_block_size', 'sla_min_seq_len',
+  'sla_dense_last_steps', 'sla_protect_audio', 'sla_dense_steps',
+  'sla_dense_backend', 'sla_disable_fp16_accum', 'sla_stabilize_motion',
+  'sla_reference_protection',
+] as const
+
+export const refinePlaneSchema = z.object(Object.fromEntries(
+  REFINE_PLANE_KEYS.map((k) => {
+    const knob: Schema | undefined = (paramSchema.dict ?? {})[k]
+    if (knob === undefined) {
+      throw new Error(`h3 family: refinePlaneSchema names '${k}' — not a declared knob of the film carrier (the refine card inherits the plane, never invents a dial)`)
+    }
+    return [k, knob]
+  }),
+))
+
 export const coerceWireBoolean = (raw: Record<string, unknown>): Record<string, unknown> => {
   if (typeof raw.interpolate_enabled === 'string') {
     // ENFORCEMENT (the wall's catch, 2026-09-19): the coercion admits

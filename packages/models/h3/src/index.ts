@@ -589,6 +589,8 @@ export { renderH3Swap } from "./swap.js"
 export { renderH3Repair } from "./repair.js"
 export { renderH3Extend } from "./extend.js"
 export { refineArmed, renderH3Refine, renderH3RefineWindow, renderH3RefineWindows, refineWindowCount, refineWindowStarts, REFINE_UPSCALE_MODEL, REFINE_2X_OOM_FRAMES, REFINE_DEFAULT_CLIP_SECONDS } from "./refine.js"
+export { refinePlaneSchema, REFINE_PLANE_KEYS } from "./schema.js"
+export { MAX_COMPOSED_WINDOWS, SEAM_OVERLAP_FRAMES } from "./timelineContract.js"
 export type { RefineWindowSeat } from "./refine.js"
 export { H3_DEFAULT_LORA_ID, h3DefaultLoraEntry } from "./actions.js"
 // F19 — the whole-film deferred ChainUpscale loop over a prior run.
