@@ -1,4 +1,4 @@
-import { filmJoinAudio } from './actions.js';
+import { chainSaveBoundaries, concatSavedFilms, filmJoinAudio } from './actions.js';
 import { h3MaskedEditPlane, loadVideo } from './chainEdit.js';
 /** The learned 3D-conv upscale weights (the schema's upscale_model
  *  seat carries this same single option — one file, one spelling, no
@@ -34,20 +34,22 @@ export function refineArmed(p) {
     const bag = p.refine;
     return Array.isArray(bag) && bag.length > 0;
 }
-/** The refine renderer: validates the bound entry, then composes
- *  the standalone second pass. Like the swap, the film path never
- *  reaches here (the card branches on a non-empty refine bag, and a
- *  bag under an armed reshoot — or beside any edit arm — refuses
- *  loud: one door per doc), and the emission ends in SaveVideo (the
- *  extend terminal's own file law — no ChainAssemble: a refine has
- *  no loop lineage to assemble).
- * @param entry the refine mod's single bound entry
- * @param p the walked doc params (the lora mod bag + scheduler knobs
- * — the family plane this refine renders under)
- * @param facts the family's lane facts (unet off the DECL row)
+/** THE WINDOW RENDERER (F24's loop seat, 2026-11-13): one refine
+ *  window — the arm's exact 26-node body, with the loader's two
+ *  seats and the save prefix lifted out so a loop can walk a film
+ *  without a second composer. A k≥2 window trims its carried head
+ *  IN-GRAPH with the film's own finalize node (the same
+ *  MiniMaxH3FiniteSegmentFinalize the film's windows ride):
+ *  picture and sound leave by the same overlap, so the assembled
+ *  film never replays the seam it grew from.
+ * @param entry the refine entry (seats + dials, unchanged)
+ * @param p the walked doc params (the family plane this window rides)
+ * @param facts the family's lane facts
  * @param g the run's graph builder
- * @param runId the run tree's id (the refine filename rides it) */
-export function renderH3Refine(entry, p, facts, g, runId) {
+ * @param seat the window's loader seats, overlap, and save prefix
+ * @returns the window's SaveVideo passthrough (the loop's ordering wire)
+ */
+export function renderH3RefineWindow(entry, p, facts, g, seat) {
     for (const [seat, what] of REQUIRED_SEATS) {
         const v = entry[seat];
         if (typeof v !== 'string' || v.trim() === '') {
@@ -78,16 +80,15 @@ export function renderH3Refine(entry, p, facts, g, runId) {
     // seats read the WINDOW's frames and the WINDOW's audio, in sync.
     // A long film is covered by advancing start_seconds window by
     // window (the card's section states the stepping law).
-    const clipSeconds = num(entry, 'clip_seconds', REFINE_DEFAULT_CLIP_SECONDS);
-    const startSeconds = num(entry, 'start_seconds', 0);
-    if (!(clipSeconds > 0)) {
-        throw new Error(`h3-timeline refine: clip_seconds ${clipSeconds} — a refine window needs frames (the seat is the loader's frame_load_cap: seconds × 24 at the film clock; the safe default is ${REFINE_DEFAULT_CLIP_SECONDS} s = 90 f)`);
+    const clipSeconds = seat.cap / 24;
+    if (!Number.isInteger(seat.cap) || seat.cap < 1) {
+        throw new Error(`h3-timeline refine: a ${seat.cap} f window — a refine window needs frames (the loop's cap is the loader's frame_load_cap at 24 fps; the safe default is ${REFINE_DEFAULT_CLIP_SECONDS} s = 90 f)`);
     }
-    if (!(startSeconds >= 0)) {
-        throw new Error(`h3-timeline refine: start_seconds ${startSeconds} — a window starts at or after the clip's first frame (the seat is the loader's skip_first_frames); advance it window by window to cover a long film`);
+    if (!Number.isInteger(seat.skip) || seat.skip < 0) {
+        throw new Error(`h3-timeline refine: a window starting at frame ${seat.skip} — a window starts at or after the clip's first frame (the loop's skip is the loader's skip_first_frames)`);
     }
-    const windowFrames = Math.max(1, Math.round(clipSeconds * 24));
-    const skipFrames = Math.round(startSeconds * 24);
+    const windowFrames = seat.cap;
+    const skipFrames = seat.skip;
     // THE CEILING IS THE WINDOW'S (refine-window audit C1, 2026-11-13):
     // the measured OOM is a function of the WINDOW first and the upscale
     // factor second — H3's memory grows with the frame count through the
@@ -151,14 +152,129 @@ export function renderH3Refine(entry, p, facts, g, runId) {
         offload_after_upscale: false,
     }).out(0);
     // ── decode + the film tail's file law ──
-    const vdec = g.node('VAEDecode', { samples: upscaled, vae: vaeVideo }).out(0);
-    const adec = g.node('VAEDecodeAudio', { samples: upscaled, vae: vaeAudio }).out(0);
+    let vdec = g.node('VAEDecode', { samples: upscaled, vae: vaeVideo }).out(0);
+    let adec = g.node('VAEDecodeAudio', { samples: upscaled, vae: vaeAudio }).out(0);
+    if (seat.overlapFrames > 0) {
+        // THE CARRIED HEAD (the loop's seam law): a k≥2 window's opening
+        // overlap is the previous window's tail re-rendered, so this
+        // window's OWN clip never replays it — the film's finalize node,
+        // hard audio trim (the carried seam leaves picture AND sound).
+        const fin = g.node('MiniMaxH3FiniteSegmentFinalize', {
+            sampled_latent: upscaled, images: vdec, audio: adec,
+            iteration: 1, overlap_frames: seat.overlapFrames, trim_audio_head: true,
+        });
+        vdec = fin.out(1);
+        adec = fin.out(2);
+    }
     const created = g.node('CreateVideo', {
         images: vdec, audio: filmJoinAudio(g, adec), fps: 24, bit_depth: 8,
     });
-    g.node('SaveVideo', {
-        video: created.out(), filename_prefix: `${runId}/refine`,
+    return g.node('SaveVideo', {
+        video: created.out(), filename_prefix: seat.prefix,
         format: 'mp4', codec: 'h264',
+    }).out(0);
+}
+/** The refine renderer: validates the bound entry, then composes
+ *  the standalone single-window second pass. Like the swap, the film
+ *  path never reaches here (the card branches on a non-empty refine
+ *  bag, and a bag under an armed reshoot — or beside any edit arm —
+ *  refuses loud: one door per doc), and the emission ends in
+ *  SaveVideo (the extend terminal's own file law — no
+ *  ChainAssemble: a refine has no loop lineage to assemble).
+ * @param entry the refine mod's single bound entry
+ * @param p the walked doc params (the lora mod bag + scheduler knobs
+ * — the family plane this refine renders under)
+ * @param facts the family's lane facts (unet off the DECL row)
+ * @param g the run's graph builder
+ * @param runId the run tree's id (the refine filename rides it) */
+export function renderH3Refine(entry, p, facts, g, runId) {
+    const clipSeconds = num(entry, 'clip_seconds', REFINE_DEFAULT_CLIP_SECONDS);
+    const startSeconds = num(entry, 'start_seconds', 0);
+    if (!(clipSeconds > 0)) {
+        throw new Error(`h3-timeline refine: clip_seconds ${clipSeconds} — a refine window needs frames (the seat is the loader's frame_load_cap: seconds × 24 at the film clock; the safe default is ${REFINE_DEFAULT_CLIP_SECONDS} s = 90 f)`);
+    }
+    if (!(startSeconds >= 0)) {
+        throw new Error(`h3-timeline refine: start_seconds ${startSeconds} — a window starts at or after the clip's first frame (the seat is the loader's skip_first_frames); advance it window by window to cover a long film`);
+    }
+    renderH3RefineWindow(entry, p, facts, g, {
+        cap: Math.max(1, Math.round(clipSeconds * 24)),
+        skip: Math.round(startSeconds * 24),
+        overlapFrames: 0,
+        prefix: `${runId}/refine`,
     });
+}
+/** THE LOOP (F24's one-press cure, 2026-11-13): N windows over ONE
+ *  source clip, each saved `<runId>/refine_w<k>`, ordered by the
+ *  film's unload boundary chain and assembled IN-GRAPH by the file
+ *  join — no harness media, no ffmpeg. Window k starts at
+ *  `start + k × (cap − overlap)` frames, and every k≥2 window's own
+ *  clip is head-trimmed by `overlapFrames` (the seam never replays).
+ * @param entry the refine entry (dials; source_clip/refine_prompt)
+ * @param p the walked doc params
+ * @param facts the family's lane facts
+ * @param g the run's graph builder
+ * @param runId the run tree's id (window + film prefixes ride it)
+ * @param loop the window count and the carried overlap (frames)
+ * @returns the assembled film's SaveVideo passthrough at `<runId>/refine`
+ */
+export function renderH3RefineWindows(entry, p, facts, g, runId, loop) {
+    if (!Number.isInteger(loop.windows) || loop.windows < 1) {
+        throw new Error(`h3-timeline refine: ${loop.windows} windows — a refine loop renders at least one window (the count derives from total_seconds and the window step)`);
+    }
+    if (!Number.isInteger(loop.overlapFrames) || loop.overlapFrames < 0) {
+        throw new Error(`h3-timeline refine: overlap ${loop.overlapFrames} f — the carried overlap is a whole frame count at or above zero (the film's own seam is 22 f)`);
+    }
+    const clipSeconds = num(entry, 'clip_seconds', REFINE_DEFAULT_CLIP_SECONDS);
+    if (!(clipSeconds > 0)) {
+        throw new Error(`h3-timeline refine: clip_seconds ${clipSeconds} — a refine window needs frames (the seat is the loader's frame_load_cap: seconds × 24 at the film clock; the safe default is ${REFINE_DEFAULT_CLIP_SECONDS} s = 90 f)`);
+    }
+    const startFrames = Math.round(num(entry, 'start_seconds', 0) * 24);
+    const cap = Math.max(1, Math.round(clipSeconds * 24));
+    const step = cap - loop.overlapFrames;
+    if (step <= 0) {
+        throw new Error(`h3-timeline refine: overlap ${loop.overlapFrames} f against a ${cap} f window — a carried overlap shorter than the window is the only walk that advances (step ${step} f)`);
+    }
+    const prefixes = [];
+    const saves = [];
+    for (let k = 0; k < loop.windows; k += 1) {
+        const prefix = `${runId}/refine_w${k}`;
+        saves.push(renderH3RefineWindow(entry, p, facts, g, {
+            cap, skip: startFrames + k * step,
+            overlapFrames: k === 0 ? 0 : loop.overlapFrames,
+            prefix,
+        }));
+        prefixes.push(prefix);
+    }
+    const boundary = chainSaveBoundaries(g, saves);
+    return concatSavedFilms(g, prefixes, boundary, `${runId}/refine`);
+}
+/** The loop's ARITHMETIC (one owner, the card and the wall both read
+ *  it): how many windows cover `totalSeconds`, and where each starts.
+ *  `count = ceil((total − overlap) / (clip − overlap))`, clamped to at
+ *  least one; the last window may overrun the source (the loader
+ *  stops at the file's own end).
+ * @param totalSeconds the stated length of the source film
+ * @param clipSeconds the single window's length
+ * @param overlapSeconds the carried overlap
+ * @returns the window count (≥ 1) */
+export function refineWindowCount(totalSeconds, clipSeconds, overlapSeconds) {
+    const step = clipSeconds - overlapSeconds;
+    if (!(step > 0)) {
+        throw new Error(`h3-timeline refine: overlap ${overlapSeconds} s against a ${clipSeconds} s window — a carried overlap shorter than the window is the only walk that advances (step ${step} s)`);
+    }
+    if (!(totalSeconds > 0)) {
+        throw new Error(`h3-timeline refine: total_seconds ${totalSeconds} — an auto walk states the source film's length (the compose door cannot stat the staged clip: the window count needs a number, never a guess)`);
+    }
+    return Math.max(1, Math.ceil((totalSeconds - overlapSeconds) / step));
+}
+/** Where each window starts (seconds), in film order.
+ * @param count the window count from {@link refineWindowCount}
+ * @param clipSeconds the single window's length
+ * @param overlapSeconds the carried overlap
+ * @param startSeconds the first window's offset
+ * @returns the window start offsets, film order */
+export function refineWindowStarts(count, clipSeconds, overlapSeconds, startSeconds = 0) {
+    const step = clipSeconds - overlapSeconds;
+    return Array.from({ length: count }, (_, k) => startSeconds + k * step);
 }
 //# sourceMappingURL=refine.js.map
