@@ -69,7 +69,7 @@ const bagEntry = (p) => {
  *  re-shoot with untouched knobs re-renders the scene from the same
  *  viewpoint rather than inventing a move nobody asked for. The
  *  strength default is the official 0.8 (the LoRA's own tested
- *  band is 0.8–1.0). */
+ *  band is 0.5–1, served default 0.8). */
 export function readReshootKnobs(p) {
     const e = bagEntry(p) ?? {};
     return {

@@ -55,7 +55,7 @@ export declare const RESHOOT_DIAL_BOUNDS: Readonly<Record<string, readonly [numb
  *  re-shoot with untouched knobs re-renders the scene from the same
  *  viewpoint rather than inventing a move nobody asked for. The
  *  strength default is the official 0.8 (the LoRA's own tested
- *  band is 0.8–1.0). */
+ *  band is 0.5–1, served default 0.8). */
 export declare function readReshootKnobs(p: Record<string, unknown>): ReshootKnobs;
 /** The arm predicate: BAG PRESENCE — the same law as the replace/
  *  repair/extend arms (the fourth-mod-bag unification: a commission

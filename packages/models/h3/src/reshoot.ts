@@ -22,7 +22,7 @@
 //     — the H3-native guide pin, the same lane as the estate's
 //     keyframe pins
 //   the CrossView LoRA (Cseti v1 @3500, trigger `crossview`,
-//     strength 0.8–1.0) rides the model chain LAST (after the
+//     strength band 0.5–1, default the official 0.8) rides the model chain LAST (after the
 //     distill lora + sigma shift), LoraLoaderModelOnly.
 //
 // The engine's ComfyUI core serves LoadVideo (nodes_video.py),
@@ -140,7 +140,7 @@ const bagEntry = (p: Record<string, unknown>): Record<string, unknown> | undefin
  *  re-shoot with untouched knobs re-renders the scene from the same
  *  viewpoint rather than inventing a move nobody asked for. The
  *  strength default is the official 0.8 (the LoRA's own tested
- *  band is 0.8–1.0). */
+ *  band is 0.5–1, served default 0.8). */
 export function readReshootKnobs(p: Record<string, unknown>): ReshootKnobs {
   const e = bagEntry(p) ?? {}
   return {

@@ -492,7 +492,7 @@ export const DECL = {
         // HF tree API (xet lfs oid), verified against the landed file.
         // Arm-functional, NOT a mods/loras.ts catalog row: it rides the
         // reshoot arm's own model seat (LoraLoaderModelOnly, trigger
-        // `crossview`, band 0.8–1.0) and is meaningless stacked freely.
+        // `crossview`, band 0.5–1, default 0.8) and is meaningless stacked freely.
         {
             "name": "MiniMax-H3_Ref2VA-LoRA-CrossView-Warp_v1_3500.safetensors",
             "url": "https://huggingface.co/Cseti/MiniMax-H3_Ref2VA-LoRA-CrossView-Warp_v1/resolve/main/MiniMax-H3_Ref2VA-LoRA-CrossView-Warp_v1_3500.safetensors",

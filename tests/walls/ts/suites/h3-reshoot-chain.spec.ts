@@ -265,7 +265,14 @@ describe("the h3 camera re-shoot wall (the fourth mod bag, official rework)", ()
     expect(w.roll_lock).toBe(false);
     expect(w.use_keyframes).toBe(false);
     expect(w.interpolation).toBe("linear");
+    // the pack default for pivot_override is true (fbb1e93) — the
+    // official posture forces it OFF so px/py/pz never go live
+    expect(w.pivot_override).toBe(false);
     expect(w.pivot_z).toBe(1.05);
+    // the metric seat's two behavior flags ride the official
+    // posture: no smoothing, no inversion of the MoGe depth
+    expect(w.smooth_depth).toBe(false);
+    expect(w.invert_depth).toBe(false);
     // the appearance + guide + LoRA seats: the prepared clip IS
     // ref_video_0 (no ref audio on the slot — the official graph
     // wires none), the warp pins at row 0, the LoRA loads at 0.8
@@ -330,7 +337,10 @@ describe("the h3 camera re-shoot wall (the fourth mod bag, official rework)", ()
     assertWiringAgainst(boot.nodes, boot.inputs, "h3-timeline", out);
   });
 
-  it.skipIf(!warpLanded || !prepareLanded || !loraLanded)("ARM 5b — with the pack live, the arm's requires row names it (the pack gate lands with the provision)", () => {
+  // ARM 5b is census-INDEPENDENT (the auditor's 2026-10-30 finding):
+  // it judges the DECL's own requires row, so it fires today — only
+  // 5a's run-door gate rides the engine census.
+  it("ARM 5b — the arm's requires row names the pack (census-independent: the DECL's own row, not the engine's)", () => {
     const kind = reshootKind();
     assert.ok(kind);
     const requires = (kind.requires as string[]) ?? [];

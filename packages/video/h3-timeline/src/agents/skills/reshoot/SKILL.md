@@ -17,7 +17,7 @@ genre: video
 > window's model. Prose never overrides the loaded bundle: the
 > fields below are quoted off the card's served reshoot kind.
 >
-> VERIFIED LIVE 2026-11-12 against the served kind + the compose door and receipt `contracts/receipts/2026-11-12-cards-h3-reshoot-chain.md` (run run-e7a5182d153c-88fd3236 — the bag surface with orbit and dolly dials composed live through the depth chain into both warps; the grid broadcast that run exposed is answered by the F13d depth-grid match). NOT yet verified live: a rendered re-shoot on the GPU lane — treat the chain's visual output as unproven until the post-cure press lands.
+> VERIFIED LIVE 2026-11-12 against the compose door + the bag surface (run run-e7a5182d153c-88fd3236 — orbit and dolly dials composed live; that run rode the predecessor depth chain, since superseded by the official rework) and 2026-10-30 against the Comfy-Org reference graph, receipt `contracts/receipts/2026-11-13-cards-h3-reshoot-official.md` — the current authority. NOT yet verified live: a rendered re-shoot on the GPU lane — treat the chain's visual output as unproven until the post-cure press lands.
 
 ## What it is (and is NOT)
 

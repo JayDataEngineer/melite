@@ -18,6 +18,7 @@
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { DECL, family } from "../src/index.ts";
+import { CROSSVIEW_LORA } from "../src/reshoot.ts";
 import { film } from "../src/actions.ts";
 import { paramSchema } from "../src/schema.ts";
 
@@ -135,6 +136,18 @@ describe("the h3 model plugin (the ONE H3 family — timeline + single-shot + ke
     assert.ok(names.has("minimax_h3_fl2va_pruned_int8_convrot.safetensors"), "the pruned ConvRot tier's served file rides");
     assert.ok(names.has("minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors"), "the timeline hybrid UNET stays");
     assert.ok(names.has("Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors"), "the singularity checkpoint rides");
+  });
+
+  it("the CrossView LoRA's two homes agree — the arm's seat names the provisioned file (the 2026-10-30 audit's missing tie)", () => {
+    // CROSSVIEW_LORA (the reshoot arm's LoraLoaderModelOnly seat) and
+    // the provisions row were each pinned on their own plane; nothing
+    // tied them, so a renamed row would strand the arm's seat on a
+    // file the family never provisions (the engine would fail loud at
+    // load — this judges it before the engine ever sees it).
+    const row = (DECL.provisions ?? []).find((p) => p.name === CROSSVIEW_LORA.split("/").pop());
+    assert.ok(row, "the provisions carry the CrossView LoRA row");
+    assert.equal(`loras/${CROSSVIEW_LORA}`, `${row!.folder}/${row!.name}`,
+      "the arm's seat path IS the provisioned folder + file, verbatim");
   });
 
   it("the loras mod stays family-level — the bag serves every lane", () => {

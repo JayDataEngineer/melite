@@ -121,7 +121,14 @@ describe("the h3 camera re-shoot chain (the fourth mod bag, official rework)", (
     expect(w.inputs.roll_lock).toBe(false);
     expect(w.inputs.use_keyframes).toBe(false);
     expect(w.inputs.interpolation).toBe("linear");
+    // the pack default for pivot_override is true (fbb1e93) — the
+    // official posture forces it OFF so px/py/pz never go live
+    expect(w.inputs.pivot_override).toBe(false);
     expect(w.inputs.pivot_z).toBe(1.05);
+    // the metric seat's two behavior flags ride the official
+    // posture: no smoothing, no inversion of the MoGe depth
+    expect(w.inputs.smooth_depth).toBe(false);
+    expect(w.inputs.invert_depth).toBe(false);
     // the first cut's seats stay dead: no VDA, no resize hack, no
     // magenta mask, no union patch, no Fun ControlNet apply
     expect(ofClass(entries, "LoadVideoDepthAnythingModel")).toHaveLength(0);
