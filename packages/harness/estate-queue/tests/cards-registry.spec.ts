@@ -521,8 +521,8 @@ describe("prepareCardParams, phase-1 voice (the run-start compose)", () => {
     }, "qwen3-tts", "1");
     expect(out.fam).toBe("qwen3-tts");
     expect(out.params["voice"]).toBeUndefined();
-    expect(out.params["qvoice"]).toBe("/mnt/data/models/audio/voices/hecate-01.qvoice",
-      "the customvoice lane's 'ryan' stamp must not land beside a stated persona — the engine's clone branch carries no speaker");
+    expect(out.params["qvoice"], "the customvoice lane's 'ryan' stamp must not land beside a stated persona — the engine's clone branch carries no speaker")
+      .toBe("/mnt/data/models/audio/voices/hecate-01.qvoice");
   });
 
   it("B7 control: the same stanza naming NO qvoice still resolves the customvoice rest (the no-non-speaker ruling stands)", () => {

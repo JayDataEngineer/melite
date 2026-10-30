@@ -533,10 +533,10 @@ describe("stampCardOverlay — THE QVOICE-STATED PRESET SKIP (B7: a saved person
       ttsRow, ttsDecl, cvSel, "1", "qwen3-tts",
     );
     expect(out["voice"]).toBeUndefined();
-    expect(out["params"]).toEqual(
-      { text: "line", qvoice: [{ qvoice: "/v/ann.qvoice", voice_strength: 1 }] },
-      "a persona stated inside the stanza is as stated as a flat one — the stamp never lands and the stanza rides verbatim",
-    );
+    expect(out["params"], "a persona stated inside the stanza is as stated as a flat one — the stamp never lands and the stanza rides verbatim")
+      .toEqual(
+        { text: "line", qvoice: [{ qvoice: "/v/ann.qvoice", voice_strength: 1 }] },
+      );
   });
 
   it("a stanza-carried bare-string qvoice suppresses the stamp too (both grammar forms, both seats)", () => {

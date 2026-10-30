@@ -95,20 +95,20 @@ describe("unloadModels (server resolution + the /free door)", () => {
   });
   it("NEW-3: the warmed-seat chain fires AFTER native /free, in order", async () => {
     await unloadModelsInner("http://e:8188");
-    expect(calls).toEqual(["free", "release_warmed"],
-      "one free door drops both seat classes: core-tracked first, the qwen3 warmed seats second");
+    expect(calls, "one free door drops both seat classes: core-tracked first, the qwen3 warmed seats second")
+      .toEqual(["free", "release_warmed"]);
   });
   it("NEW-3: a pack-less engine (route 404) never fails the unload", async () => {
     releaseWill.mode = "no-pack";
     await expect(unloadModelsInner("http://e:8188")).resolves.toBeUndefined();
-    expect(calls).toEqual(["free"],
-      "the native /free succeeded — the tolerant chain must not convert it into a refusal");
+    expect(calls, "the native /free succeeded — the tolerant chain must not convert it into a refusal")
+      .toEqual(["free"]);
   });
   it("NEW-3: a refused /free stays loud AND never chains the release", async () => {
     freeWill.mode = "refuse-error";
     await expect(unloadModelsInner("http://e:8188")).rejects.toThrow(ComfyError);
-    expect(calls).toEqual([],
-      "nothing released when the engine refused the unload itself");
+    expect(calls, "nothing released when the engine refused the unload itself")
+      .toEqual([]);
   });
   it("inner: a refusing engine folds into ComfyError (Error cause)", async () => {
     freeWill.mode = "refuse-error";

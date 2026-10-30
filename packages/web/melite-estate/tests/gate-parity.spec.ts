@@ -248,9 +248,26 @@ describe("THE CLIENT↔GATE PARITY WALL: the walk IS the gate's truth, every car
       }
       const m = text.match(/"provisions":\s*\[/);
       if (m === null) continue;
-      const seg = text.slice(m.index! + m[0].length, m.index! + m[0].length + 8000);
-      const end = seg.indexOf("]");
-      for (const name of seg.slice(0, end === -1 ? seg.length : end).matchAll(/"name":\s*"([^"]+)"/g)) {
+      // the WHOLE array, not a fixed window: h3's roster grew past a
+      // frozen 8000-char slice (the CrossView LoRA row, 2026-11-13)
+      // and film_net — provisioned since B1 — scanned as a ghost.
+      // Walk to the array's matching close, skipping strings.
+      const open = m.index! + m[0].length;
+      let depth = 1;
+      let close = -1;
+      for (let i = open; i < text.length && close === -1; i++) {
+        const c = text[i]!;
+        if (c === "\"") {
+          i++;
+          while (i < text.length && text[i] !== "\"") i += text[i] === "\\" ? 2 : 1;
+        } else if (c === "[" || c === "{") depth++;
+        else if (c === "]" || c === "}") {
+          depth--;
+          if (depth === 0) close = i;
+        }
+      }
+      const seg = text.slice(open, close === -1 ? open + 8000 : close);
+      for (const name of seg.matchAll(/"name":\s*"([^"]+)"/g)) {
         provisioned.add(name[1]);
       }
     }
