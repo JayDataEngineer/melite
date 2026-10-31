@@ -29,6 +29,8 @@
       '''packages/engines/comfyui-cordis/models/(.*/)?nodes\.yaml$''',
       '''packages/engines/comfyui-cordis/data/extension-manifest\.json$''',
       '''tests/walls/ts/fixtures/models-lib-sync-manifest\.json$''',
+      '''tests/walls/ts/suites/timeline-agent-run-projection\.spec\.ts$''',
+      '''\.js\.map$''',
     ]
 
 [[rules]]
