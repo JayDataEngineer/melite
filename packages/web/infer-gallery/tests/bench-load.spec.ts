@@ -499,7 +499,7 @@ describe('loadRunOntoBench — the run record wins', () => {
     })
   })
 
-  it('THE PER-STAGE PREVIEW LAW, skeleton join: a card-skeleton id joins its bench row through bench_stage_id, and a stage the sidecar leaves preview-less falls to the run-level hero (the D6 floor)', async () => {
+  it('THE PER-STAGE PREVIEW LAW, skeleton join: a card-skeleton id joins its bench row through bench_stage_id; a stage the sidecar ROWS leave unmatched restores preview-less (the floor is the legacy arm, operator 2026-10-31)', async () => {
     const route = (tail: string): string => '/infer-gallery/artifact?path=' + encodeURIComponent(tail)
     const side = {
       run_id: 'run-0f1e2d-r1',
@@ -524,9 +524,85 @@ describe('loadRunOntoBench — the run record wins', () => {
     const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
     // the skeleton id names no bench row; its bench_stage_id does
     expect(stages[1]).toMatchObject({ id: 's_1', result: { url: route('run-0f1e2d-r1/s_1/b.png') } })
-    // no sidecar row names s_0 at all — the run-level hero is its
-    // honest floor (the D6 law survives as the legacy arm)
-    expect(stages[0]).toMatchObject({ id: 's_0', result: { url: route('run-0f1e2d-r1/out.png') } })
+    // (re-pin, operator 2026-10-31 — the fifteenth report: "all the
+    // preview images get set to a single one") this arm pinned the
+    // DEFECT as law: s_0 unmatched → the run-level hero (out.png —
+    // ANOTHER stage's product). A sidecar that carries stage rows
+    // names exactly what the run produced; a bench stage not among
+    // them was not part of the run and restores preview-less, like
+    // the skipped set. The run-level floor survives only for
+    // sidecars with NO stage rows (the legacy arm below).
+    expect(stages[0]).toMatchObject({ id: 's_0', provenance: 'restored' })
+    expect('result' in stages[0]!).toBe(false)
+  })
+
+  it('THE FIFTEENTH REPORT (operator 2026-10-31: "when I reload from history, all the preview images get set to a single one") — a single-card press over a multi-stage bench paints ONE stage\'s product, never every tile', async () => {
+    // The operator's bench, reproduced: run-d618b3323465's sidecar
+    // carries ONE stage row (bench_stage_id s_17, the pressed h3
+    // card, gallery = film + windows) while bench_snapshot carries
+    // the whole multi-stage bench. The D6 floor stamped the film on
+    // every unmatched stage — the bench doc on disk held the same
+    // url on 22 stages' results (read from the live draft
+    // bench-session-6b561044, 2026-10-30).
+    const route = (tail: string): string => '/infer-gallery/artifact?path=' + encodeURIComponent(tail)
+    const side = {
+      run_id: 'run-d618b3323465-8f0f5d31',
+      flow: {
+        artifacts: ['/data/run-d618b3323465-8f0f5d31/h3-film/SaveVideo.2_h3_t4_film_00001_.mp4'],
+        bench_snapshot: {
+          stages: [
+            { id: 's_1', card: 'h3-timeline' },
+            { id: 's_6', card: 'tagger' },
+            { id: 's_17', card: 'h3-timeline' },
+          ],
+          intent: 'the ninja film bench',
+        },
+        stages: [
+          { id: 'h3-film', bench_stage_id: 's_17', name: 'h3-film', index: 0, status: 'completed', url: 'h3-film/SaveVideo.2_h3_t4_film_00001_.mp4', gallery: [{ name: 'h3-film/SaveVideo.2_h3_t4_film_00001_.mp4' }, { name: 'h3-film/window1_SaveVideo.0_h3_t4_w1_00001_.mp4' }], outputs: {}, expected: {} },
+        ],
+      },
+    }
+    const { calls } = stubFetch(runWith(side))
+    const d = deps('s1')
+    await loadRunOntoBench('run-d618b3323465-8f0f5d31', d)
+    expect(d.errors).toEqual([])
+    const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
+    // ONLY the pressed stage wears the run's product (hero-first)
+    expect(stages[2]).toMatchObject({
+      id: 's_17',
+      result: { url: route('run-d618b3323465-8f0f5d31/h3-film/SaveVideo.2_h3_t4_film_00001_.mp4') },
+    })
+    // the tagger and the other h3 stage never wear another stage's
+    // film — preview-less, never a single shared image
+    for (const st of [stages[0]!, stages[1]!]) {
+      expect(st['provenance']).toBe('restored')
+      expect('result' in st).toBe(false)
+    }
+  })
+
+  it('THE LEGACY FLOOR (the D6 law\'s surviving arm): a sidecar with NO stage rows shares the run-level hero — no per-stage truth exists to honor', async () => {
+    const side = {
+      run_id: 'r1',
+      flow: {
+        artifacts: ['/data/run-0f1e2d-r1/out.png'],
+        bench_snapshot: {
+          stages: [
+            { id: 's_0', card: 'image-gen' },
+            { id: 's_1', card: 'other' },
+          ],
+          intent: 'x',
+        },
+        // no `stages` — a pre-sidecar-stage run
+      },
+    }
+    const { calls } = stubFetch(runWith(side))
+    const d = deps('s1')
+    await loadRunOntoBench('r1', d)
+    expect(d.errors).toEqual([])
+    const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
+    const shared = { run_id: 'r1', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/out.png') }
+    expect(stages[0]).toMatchObject({ id: 's_0', result: shared })
+    expect(stages[1]).toMatchObject({ id: 's_1', result: shared })
   })
 
   it('THE PER-STAGE PREVIEW LAW, absolute fold: an absolute sidecar url folds through runTailOf onto the gallery route (one tail grammar, both spellings)', async () => {

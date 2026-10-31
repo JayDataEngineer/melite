@@ -2035,7 +2035,7 @@ window.__ModuleLoader__.load({
 							if (!(Array.isArray(skippedRaw) ? skippedRaw : []).some((k) => k === st["id"])) {
 								const own = resultOfStage(sideRowFor(st["id"], i), String(side["run_id"] ?? ""));
 								if (own !== void 0) st["result"] = own;
-								else if (result !== void 0) st["result"] = result;
+								else if (sideStages.length === 0 && result !== void 0) st["result"] = result;
 							}
 							st["provenance"] = RESTORED_PROVENANCE_SPELLING$1;
 						}

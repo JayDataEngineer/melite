@@ -266,16 +266,23 @@ describe("every served mod bag has a skill leaf an agent can read", () => {
       "the extend leaf states the verdict in words");
   });
 
-  it("ARM 9 — loras and upscale name their OPEN halves instead of promising them", () => {
-    // F34b (the default seat) and F34 (the invisible chip) are OPEN
-    // decisions, not settled law: the leaf must say so, and it must
-    // not tell an agent to invent a row it did not mean to use.
+  it("ARM 9 — loras names its SETTLED default seat and the ghost chip; upscale names its OPEN half instead of promising it", () => {
+    // F34b CLOSED 2026-11-13 + operator re-confirmed 2026-10-31: the
+    // default seat IS the merged DARE-TIES row, and F34's invisible
+    // chip is CURED (the card serves the default as a ghost chip).
+    // The leaf must teach the settled law — an agent reading it may
+    // RELY on the default, never hedge around it. The upscale half
+    // stays OPEN (F23) and must stay unpromised.
     const loras = readSkill("loras");
     assert.match(loras, /## Worked stacks/, "the loras leaf carries worked stacks");
     assert.match(loras, /params\.loras = \[/, "the stacks bind through params.loras");
-    assert.match(loras, /F34b/, "the leaf names the default-seat decision as OPEN");
-    assert.match(loras, /do not "fix"\s+it by inventing a row/i,
-      "the leaf forbids inventing a row to make the chip appear");
+    assert.match(loras, /SETTLED/, "the leaf names the default-seat decision as SETTLED");
+    assert.match(loras, /h3_lightx2v_turbo/, "the leaf names the default row id");
+    assert.match(loras, /DARE-TIES/, "the leaf names the merge the row is");
+    assert.match(loras, /ghost chip/i,
+      "the leaf teaches the no-bag face: the default renders as ONE ghost chip");
+    assert.match(loras, /Relying on the default is safe/i,
+      "the leaf lets an agent rely on the default instead of hedging");
     // F23's open half: the upscale door refuses cleanly, and the leaf
     // says nothing writes checkpoints today — never a promise.
     const upscale = readSkill("upscale");

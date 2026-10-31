@@ -61,12 +61,28 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
    *  never re-shows a refusal the operator already closed. */
   onDrillClose?: () => void
 }): ReturnType<typeof h> {
-  // The LIVE bench: the resource provider streams a fresh value on
-  // every write (bench/subscribe), the view re-seats its copy on rev
-  // drift, and the open drill's row follows by id below — the agent's
-  // writes are the OTHER author of this one flow.
+  // THE LIVE BENCH: the resource provider streams a fresh value on
+  // every write (bench/subscribe), the view re-seats its copy on
+  // doc drift, and the open drill's row follows by id below — the
+  // agent's writes are the OTHER author of this one flow.
+  // THE REV-SILENT TELEMETRY SEAT (2026-10-31, the operator's
+  // frozen-timeline burn, journey audit §2): run outcomes ride
+  // writes that never bump the rev (the telemetry law — result/
+  // runStatus/health bodies land without touching bench.rev,
+  // drafts/remote.ts:1306-1339), and the bench tail yields those
+  // frames by the doc-change gate's own key: rev + the stages' own
+  // bytes (cards-resource.ts:1814-1830). A re-seat keyed on
+  // [draftId, rev] alone is blind to them — the tiles kept the
+  // pre-run face and the open drill kept the pre-run stage object
+  // while the agent's film sat landed on the doc. The re-seat key
+  // mirrors the tail's gate ONE-TO-ONE: author moves always drift
+  // the rev, run-face moves always drift the bytes, and an
+  // identical re-served doc (a reconnect) stays quiet. The string
+  // is computed per stream frame, never per paint — the same price
+  // the gate itself pays.
+  const faces = JSON.stringify(bench.stages)
   const [live, setLive] = useState<CardsBenchValue>(bench)
-  useEffect(() => { setLive(bench) }, [bench.draftId, bench.rev])
+  useEffect(() => { setLive(bench) }, [bench.draftId, bench.rev, faces])
   // TILE-POP (the old tree's animate-tile-pop): a tile whose id was not
   // in the previous render's set lands with the soft pop — fresh adds,
   // not reloads of the same bench.
@@ -88,9 +104,14 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
   // after open never reached the studio's params. The stream's new
   // value re-maps the open stage by id — the same keepOpen law the
   // reload path already held, now pushed instead of polled.
+  // 2026-10-31, same burn as the live seat above: the re-map keys
+  // the faces delta TOO — the run's terminal frame is rev-silent,
+  // so a rev-only key left the OPEN studio (the operator's drilled
+  // view) holding the pre-run row while the film sat landed on the
+  // doc behind it.
   useEffect(() => {
     setOpen((cur) => cur === null ? null : (bench.stages.find((s) => s.id === cur.id) ?? null))
-  }, [bench.draftId, bench.rev])
+  }, [bench.draftId, bench.rev, faces])
   const [adding, setAdding] = useState(false)
   // THE PROFESSIONAL NAMES (operator 2026-11-06): the tile faces
   // and the zoom drill face the catalog's labels, never the card

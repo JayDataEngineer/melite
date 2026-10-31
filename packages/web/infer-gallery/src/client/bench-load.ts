@@ -430,7 +430,21 @@ export async function loadRunOntoBench(runId: string, deps: BenchLoadDeps): Prom
           if (!isSkipped) {
             const own = resultOfStage(sideRowFor(st['id'], i), String((side as Record<string, unknown>)['run_id'] ?? ''))
             if (own !== undefined) st['result'] = own
-            else if (result !== undefined) st['result'] = result
+            // THE FLOOR IS THE LEGACY ARM ONLY (operator 2026-10-31,
+            // the fifteenth report: "when I reload from history, all
+            // the preview images get set to a single one" — the
+            // operator's bench doc carried ONE run's film on 22
+            // stages' results). The D6 floor fired for ANY stage the
+            // join left unmatched, but a sidecar that CARRIES stage
+            // rows names exactly what this run produced: a bench
+            // stage not among them was not part of the run (the
+            // single-card press over a multi-stage bench is the
+            // common shape), and the run's hero is ANOTHER stage's
+            // product. Such a stage restores preview-less — honest —
+            // exactly like the skipped set. The floor survives only
+            // for sidecars with NO stage rows at all (pre-sidecar-
+            // stage runs), where no per-stage truth exists to honor.
+            else if (sideStages.length === 0 && result !== undefined) st['result'] = result
           }
           st['provenance'] = RESTORED_PROVENANCE_SPELLING
         }

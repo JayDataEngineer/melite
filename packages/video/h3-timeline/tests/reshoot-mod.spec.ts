@@ -111,14 +111,18 @@ describe("the reshoot kind (the fourth mod bag, official rework)", () => {
     ], "the entry carries the clip + the nine camera dials, exactly");
   });
 
-  it("the strength dial serves the official LoRA band (0.5–1, default 0.8) on the card's own field row", () => {
+  it("the strength dial serves the official LoRA band and admits NOTHING under it (0.8–1, default 0.8) on the card's own field row", () => {
     const reshoot = kind();
     assert.ok(reshoot);
     const by = Object.fromEntries(
       ((reshoot.fields as Array<Record<string, unknown>>) ?? []).map((f) => [f.name, f]),
     );
     assert.equal(by.strength.default, 0.8, "the default is the reference app's own 0.8");
-    assert.equal(by.strength.min, 0.5, "the band's floor");
+    // (re-pin, qa8 F33/GAPS-18 2026-10-31: the chain was vindicated — the
+    // style drift was a 0.7 press. The old 0.5 floor sat BELOW the tested
+    // band, so the exact drift the operator saw stayed reachable by any
+    // value in [0.5, 0.8). The floor is the band's own floor now.)
+    assert.equal(by.strength.min, 0.8, "the band's floor — under 0.8 the warp is followed less and the model's prior rebuilds the frame (the F33 anime drift)");
     assert.equal(by.strength.max, 1, "the band's ceiling — the old 0–10 Fun-ControlNet-era band died with the rework");
   });
 

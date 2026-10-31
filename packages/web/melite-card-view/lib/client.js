@@ -20812,10 +20812,15 @@ window.__ModuleLoader__.load({
 		*  save spinner forever. */
 		const SAVE_DIAL_MS = 2e4;
 		function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, onRemoveStage, stageRuns, running, onPatchParams, renderStageView, renderPreview, runId, refreshTick, startError, onDrillClose }) {
+			const faces = JSON.stringify(bench.stages);
 			const [live, setLive] = (0, react.useState)(bench);
 			(0, react.useEffect)(() => {
 				setLive(bench);
-			}, [bench.draftId, bench.rev]);
+			}, [
+				bench.draftId,
+				bench.rev,
+				faces
+			]);
 			const knownIds = (0, react.useRef)(new Set(bench.stages.map((s) => s.id)));
 			const [entered, setEntered] = (0, react.useState)(/* @__PURE__ */ new Set());
 			(0, react.useEffect)(() => {
@@ -20833,7 +20838,11 @@ window.__ModuleLoader__.load({
 			const [open, setOpen] = (0, react.useState)(null);
 			(0, react.useEffect)(() => {
 				setOpen((cur) => cur === null ? null : bench.stages.find((s) => s.id === cur.id) ?? null);
-			}, [bench.draftId, bench.rev]);
+			}, [
+				bench.draftId,
+				bench.rev,
+				faces
+			]);
 			const [adding, setAdding] = (0, react.useState)(false);
 			const labelOf = useCardLabels();
 			const [reloadError, setReloadError] = (0, react.useState)(null);

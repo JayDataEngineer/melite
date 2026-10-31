@@ -223,3 +223,111 @@ test('an agent\'s bench writes redraw the open studio timeline', async ({ page }
   // outside this wall's scope.
   await expectNoPageErrors(page, errors.filter((e) => !e.includes('/api/changes.summary')))
 })
+
+test("the agent's settled run lands on the open timeline — no conversation, no host history", async ({ page }) => {
+  // THE LIVE HALF of the 2026-10-31 freeze (operator: "when the AI
+  // uses a mod to make a video in the video timeline, the timeline
+  // card isn't updated visually"). The doc half is walled keyless at
+  // tests/walls/ts/suites/timeline-agent-run-projection.spec.ts
+  // (every carrier's body → the real drafts door → the strip's one
+  // harvest owner). THIS arm owns the half the pure wall cannot: an
+  // OPEN studio view following the settle carrier WITHOUT a reload.
+  //
+  // STROKE-83 LAW: no conversation, no host history — the wall keys
+  // its own bench (the tab's own bench/get frame names the session;
+  // the stage carries the WALL_SEED fingerprint for cleanup), drives
+  // the drafts stage door EXACTLY as melite-flow's attribution does
+  // (observeAndAttribute's live stamp, then the terminal rich body;
+  // the seat's own PATCH /v1/flows/drafts/:id/stages/:stage arm,
+  // expectRev null — telemetry never fences), and judges the
+  // rendered strip ([data-testid="tl-run-history"], chips from
+  // stageHistoryRows) plus the mid-run non-chip (W1 at the view).
+  const errors = collectPageErrors(page)
+  await settle(page)
+
+  // capture the tab's own bench key (the openCardsWithBench capture
+  // arm, inlined so the seeding below can fingerprint its own stage)
+  let sessionKey = ''
+  page.on('request', (r) => {
+    if (!r.url().includes('/api/bench/get')) return
+    try {
+      const body = r.postDataJSON() as { payload?: { args?: { sessionKey?: unknown } } }
+      if (typeof body.payload?.args?.sessionKey === 'string' && sessionKey === '') sessionKey = body.payload.args.sessionKey
+    } catch { /* a stranger's frame is ignored */ }
+  })
+  await page.locator('[data-sidebar-right-expand]').first().click({ timeout: 15_000 }).catch(() => {})
+  await page.waitForTimeout(2_000)
+  await page.getByRole('button', { name: /Melite Bench/ }).first().click({ timeout: 10_000 }).catch(() => {})
+  await page.waitForTimeout(5_000)
+  // no conversation on a fresh home → the tab may carry no key; the
+  // wall then births its own bench (the ensure door, never a disk write)
+  if (sessionKey === '') {
+    sessionKey = 'session-wall-agent-run'
+    await callBench(page, 'bench/ensure', { doc: { session: sessionKey } }).catch(() => {})
+  }
+  expect(sessionKey, 'a bench key to seed').not.toBe('')
+
+  await removeWallStages(page, sessionKey)
+  const bench0 = await benchOf(page, sessionKey)
+  await callBench(page, 'bench/add-stage', {
+    sessionKey,
+    doc: {
+      card: 'h3-timeline',
+      engine: 'comfyui',
+      params: {
+        variant: 'h3', quant: 'int8', model: 'h3',
+        seed: WALL_SEED,
+        calls: [{ text: WALL_TEXT, start_frame: 0, end_frame: 175 }],
+      },
+      inputs: {},
+      outputs: { default: 'image' },
+      expect_rev: bench0.rev,
+      author: 'user',
+    },
+  })
+  const bench1raw = await callBench(page, 'bench/get', { sessionKey }) as { rev?: number; stages?: BenchStage[]; draft_id?: string }
+  const stageId = (Array.isArray(bench1raw.stages) ? bench1raw.stages : []).find((s) => s.params?.seed === WALL_SEED)?.id ?? ''
+  expect(stageId, 'the wall stage id').not.toBe('')
+  // the bench/get wire carries draft_id at the TOP level (the ensure
+  // row's own shape — {draft_id, session, rev, intent, stages, log})
+  const draftId = typeof bench1raw.draft_id === 'string' ? bench1raw.draft_id : ''
+  expect(draftId, 'the bench doc names its draft — the run carrier addresses it').not.toBe('')
+
+  // open the studio zoom on the wall stage (the fresh stage appends last)
+  const tiles = page.locator('[class*="tileInner"][role="button"]').filter({ hasText: 'Generate Video' })
+  await expect(tiles.last(), 'the wall h3-timeline tile').toBeVisible({ timeout: 30_000 })
+  await tiles.last().click({ timeout: 15_000 })
+  await expect(page.locator('[data-testid="h3-studio-tenant"]'), 'the studio mounted').toBeVisible({ timeout: 30_000 })
+  await expect(page.getByText(WALL_TEXT).first(), 'the zoom shows the wall stage').toBeVisible({ timeout: 10_000 })
+
+  const RID = 'run-e2e-agent0x42'
+  const FILM = 'h3_t4_w0_1_0_.mp4'
+  const MEDIA_URL = `/melite-media/runs/${RID}/${FILM}`
+  const stageDoor = async (patch: Record<string, unknown>): Promise<void> => {
+    const r = await page.evaluate(async ({ draftId, stageId, patch }) => {
+      const res = await fetch(`/v1/flows/drafts/${encodeURIComponent(draftId)}/stages/${encodeURIComponent(stageId)}`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(patch),
+        signal: AbortSignal.timeout(90_000),
+      })
+      return { status: res.status, body: await res.text().catch(() => '') }
+    }, { draftId, stageId, patch })
+    if (r.status !== 200) throw new Error(`drafts stage patch refused: ${r.status} ${r.body.slice(0, 200)}`)
+  }
+  // the LIVE stamp — no chip mid-run (W1 at the view)
+  await stageDoor({ runStatus: 'running', result: { run_id: RID } })
+  await expect(page.locator('[data-testid="tl-run-history"]'),
+    'a live run never archives — no chip mid-run').toHaveCount(0, { timeout: 10_000 })
+  // the TERMINAL rich stamp — the chip appears on the OPEN studio
+  await stageDoor({
+    runStatus: 'done',
+    result: { run_id: RID, url: MEDIA_URL, artifacts: { [FILM]: MEDIA_URL }, assetUrls: [MEDIA_URL] },
+  })
+  const hist = page.locator('[data-testid="tl-run-history"]')
+  await expect(hist, 'the settled agent run draws the strip — no reload').toBeVisible({ timeout: 20_000 })
+  await expect(hist, 'the chip names the agent run').toContainText(RID, { timeout: 10_000 })
+
+  await removeWallStages(page, sessionKey)
+  await expectNoPageErrors(page, errors.filter((e) => !e.includes('/api/changes.summary')))
+})

@@ -98,23 +98,24 @@ the band is the widget's, the row domain is the door's, and the door
 wins. State a number only inside the row's domain, when the schedule
 must bend.
 
-## The default seat — an OPEN decision (F34b)
+## The default seat — SETTLED (F34b closed 2026-11-13; operator re-confirmed 2026-10-31)
 
-An EMPTY bag still applies a distill row. The code resolves
-'h3_lightx2v_turbo' as the absent-bag default, while its own comment
-and the 2026-11-12 operator law name the Larry+LightX2V merge row
-'h3_turbo8_v1' (strength 1, 8 steps, shift 12) as the default seat. The
-split is open as F34b. Until it is settled: state the row you actually
-want instead of relying on either default, and record in the run what
-the graph composed.
+An EMPTY bag applies the merged DARE-TIES row: `h3_lightx2v_turbo` —
+silveroxides' LightX2V turbo 4-to-8-step × DARE-TIES v4 step600 merge
+(768p), catalog strength 0.6, married 8 steps. That row IS the
+absent-bag default (`H3_DEFAULT_LORA_ID`), the file the engine serves
+(`h3/minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors`),
+and every fresh card is born with it (the recipe trio stamps it,
+selection only). Relying on the default is safe: state a row only to
+deviate, and record in the run what the graph composed when you deviate.
 
-## A card with no bag shows no chip (F34)
+## A card with no bag shows the DEFAULT chip (F34 cured)
 
-An agent-authored card that never wrote a `loras` entry renders ZERO
-chips in the studio, so the row the render uses is invisible to the
-operator. That is a surface gap, not an authoring error — do not "fix"
-it by inventing a row you did not mean to use; if the operator needs
-to see the row, write the row explicitly.
+An agent-authored card that never wrote a `loras` entry renders the
+family default as ONE ghost chip — the card serves the resolved
+default row, so the face shows the adapter the film will actually
+run. An explicit empty bag (`[]`) is the operator's "off" and renders
+nothing by design; do not confuse the two.
 
 ## Where it lands
 
