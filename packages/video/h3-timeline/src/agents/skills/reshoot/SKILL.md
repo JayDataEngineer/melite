@@ -13,7 +13,7 @@ genre: video
 > CrossViewPrepareClip (24 fps + H3 grid snap) → MoGe metric
 > geometry → ONE CrossViewWarp; the prepared clip rides the r2v
 > reference seat, the warp pins through MiniMaxH3AddGuide, and the
-> CrossView LoRA (trigger `crossview`, 0.5–1) loads on every
+> CrossView LoRA (trigger `crossview`, 0.8–1) loads on every
 > window's model. Prose never overrides the loaded bundle: the
 > fields below are quoted off the card's served reshoot kind.
 >
@@ -78,9 +78,11 @@ as before, byte-identical.)
      clip is clearly wide-angle or telephoto.
    - `pan` (−1–1, 0) — framing shift without camera motion;
      rescues a clipped head.
-   - `strength` (0.5–1, 0.8) — the CrossView LoRA's strength, the
-     official tested band; push toward 1 when the shot ignores the
-     camera move.
+   - `strength` (0.8–1, 0.8) — the CrossView LoRA's strength, the
+     official tested band; the field admits NOTHING below 0.8
+     (under-band the warp is followed less and the model's own prior
+     rebuilds the frame — the F33 anime drift, qa8 GAPS-18); push
+     toward 1 when the shot ignores the camera move.
    - `depth_ratio` (1.5–1000, 6) — scene depth: 2.5–4
      close-up faces, 4–8 mid shots, 8–16 deep/wide scenes.
    - `smooth_depth` / `invert_depth` (false) —

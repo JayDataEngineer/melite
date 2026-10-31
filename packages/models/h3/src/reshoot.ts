@@ -163,7 +163,11 @@ export const RESHOOT_DIAL_BOUNDS: Readonly<Record<string, readonly [number, numb
   dolly: [0.1, 3],
   zoom: [20, 120],
   pan: [-1, 1],
-  strength: [0.5, 1],
+  // (GAPS-18, qa8 2026-10-31: the floor is the official tested band's own
+  //  floor — under 0.8 the warp is followed less and the model's prior
+  //  rebuilds the frame (the F33 anime drift); the old 0.5 floor left the
+  //  drift reachable from [0.5, 0.8).)
+  strength: [0.8, 1],
   depth_ratio: [1.5, 1000],
 }
 

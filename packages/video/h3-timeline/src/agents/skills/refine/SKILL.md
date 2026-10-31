@@ -1,6 +1,6 @@
 ---
 name: refine
-description: "Second-pass refine on the h3-timeline: seat a source clip plus one window (start + length) and a refine prompt on the refine mod bag; the RefineHandoff applies a 2x learned latent upscale and a low-denoise H3 pass to THAT WINDOW, decoding to <run>/refine. A long film is refined window by window. Mod-bag door — NOT a re-render and NOT the upscale arm."
+description: "Second-pass refine on the h3-timeline: seat a source clip plus one window (start + length) and a refine prompt on the refine mod bag; the RefineHandoff applies a 2x learned latent upscale and a low-denoise H3 pass to THAT WINDOW, decoding to <run>/refine. A long film is refined window by window (ARCHITECTURE GAP, GAPS-19: the bag is max_stack 1 while the film path composes multi-window in-graph — the walk is a DECLARED STOPGAP, not the design; the splice must be agent-side until the bag takes multiple window entries). Mod-bag door — NOT a re-render and NOT the upscale arm."
 genre: video
 ---
 

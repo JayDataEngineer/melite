@@ -164,12 +164,13 @@ describe("the h3 camera re-shoot wall (the fourth mod bag, official rework)", ()
     // every dial at BOTH band edges walks green (and arms): the low
     // doc and the high doc each compose the official chain's one
     // warp; the two booleans walk on the high side (their own model
-    // + card legs).
+    // + card legs). (strength's low edge re-pinned 0.5 -> 0.8 with
+    // the GAPS-18 clamp — the official tested band's own floor.)
     const low = compose({
       ...BASE,
       reshoot: [{
         source_clip: "sources/take3.mp4", orbit: -180, tilt: -90, dolly: 0.1,
-        zoom: 20, pan: -1, strength: 0.5, depth_ratio: 1.5,
+        zoom: 20, pan: -1, strength: 0.8, depth_ratio: 1.5,
       }],
     });
     expect(ofClass(low, "CrossViewWarp")).toHaveLength(1);
