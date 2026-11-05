@@ -1298,6 +1298,80 @@ describe('melite_construct read — last_run (the lookup the agent cannot do its
   })
 })
 
+// THE JOURNEY HOP (W-12, 2026-11-05): the burn was felt one hop
+// downstream of the runs row — a read ~1 s after a [queued] press
+// rendered `a0 — last_run run-… (failed)` on the BENCH FACE
+// (withLastRun → summaryOf :703 carries the row's own word into the
+// render suffix). The estate-side family (runs-list.spec.ts) judges
+// the row face; this family judges the hop itself: whatever word the
+// cured row serves, the bench face voices — a non-terminal word stays
+// non-terminal through construct, and the settle flip crosses the hop.
+describe('W-12 — the queued window never reads failed on the bench face', () => {
+  // The burn's own bench shape: stage `a0` on the conversation's bench,
+  // and the run id the W-12 receipt quotes verbatim.
+  const BENCH = {
+    session: 'session-chat7', rev: 9, intent: 'bench', draft_id: 'bench-main',
+    stages: [{ id: 'a0', card: 'image-gen', engine: 'comfyui' }],
+    log: [],
+  }
+  const RUN_ID = 'run-936922a1d3fd-abdf75fd'
+  // The runs-list row as the CURED read (667630ed0) serves it: the
+  // sidecar's word verbatim — the settle rewrites it later.
+  const row = (status: string): Record<string, unknown> => ({
+    run_id: RUN_ID, draft_id: 'bench-main', status, created_at: 1000,
+    thumbnail: '', artifacts: [], stage_ids: ['a0'],
+  })
+  const faceOf = async (status: string): Promise<string> => {
+    const { estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet' && args[0] === 'session-chat7') return BENCH
+      if (lane === 'runsList' && args[0] === '100') return { count: 1, runs: [row(status)] }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const tool = meliteConstruct(estate)
+    const out = await tool.execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    const parts = tool.output.render({ verb: 'read' }, out as never) as Array<{ text?: string }>
+    return parts.map((p) => p?.text ?? '').join('\n')
+  }
+
+  test('a QUEUED row voices the queued word on the bench face — the terminal word never renders in the queue window', async () => {
+    const face = await faceOf('queued')
+    assert.ok(
+      face.includes(`a0 — image-gen [comfyui] — last_run ${RUN_ID} (queued)`),
+      face,
+    )
+    assert.ok(!face.includes('failed'), 'a non-terminal window never voices the terminal word — ' + face)
+  })
+
+  test('a RUNNING row voices the running word — the burn shape rides the hop too', async () => {
+    const face = await faceOf('running')
+    assert.ok(
+      face.includes(`a0 — image-gen [comfyui] — last_run ${RUN_ID} (running)`),
+      face,
+    )
+    assert.ok(!face.includes('failed'), 'the old override folded running to failed — it must not re-fold here — ' + face)
+  })
+
+  test('the same id, later settled-completed, re-reads completed on the bench face — the settle flip crosses the hop', async () => {
+    let status = 'queued'
+    const { estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet' && args[0] === 'session-chat7') return BENCH
+      if (lane === 'runsList' && args[0] === '100') return { count: 1, runs: [row(status)] }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const tool = meliteConstruct(estate)
+    const read = async (): Promise<string> => {
+      const out = await tool.execute({ verb: 'read' }, exec()) as Record<string, unknown>
+      const parts = tool.output.render({ verb: 'read' }, out as never) as Array<{ text?: string }>
+      return parts.map((p) => p?.text ?? '').join('\n')
+    }
+    assert.ok((await read()).includes(`last_run ${RUN_ID} (queued)`), 'the queue window voices queued first')
+    status = 'completed' // the settle rewrote the sidecar — same id, later read
+    const settled = await read()
+    assert.ok(settled.includes(`a0 — image-gen [comfyui] — last_run ${RUN_ID} (completed)`), settled)
+    assert.ok(!settled.includes('failed'), 'a settled run voices its own word — ' + settled)
+  })
+})
+
 describe('melite_construct projectStages — card rides (the phantom-refusal cure)', () => {
   // The kinds pass derives wired-input kinds from the card's own
   // flowKinds — a projection that stripped `card` manufactured
