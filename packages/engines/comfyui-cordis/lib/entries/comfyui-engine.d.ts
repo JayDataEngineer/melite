@@ -1,6 +1,6 @@
 import type { Context, Plugin } from "@deepseek-ai/cordis";
 import type { EngineExecutor } from "@melite/engine-contract";
-import type { ComfyUIHostService } from "../comfyui.ts";
+import type { ComfyUIHostService } from "../comfyui.js";
 /** The executor: merged submit through the host service. The ctx
  * rides in for ONE reason: the wiring walk below resolves the
  * wiring service AT WALK TIME (a doc that lands after this plugin

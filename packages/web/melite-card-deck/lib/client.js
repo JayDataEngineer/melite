@@ -201,6 +201,7 @@ window.__ModuleLoader__.load({
 		*  copy-in row) consume this instead of spelling the list a second
 		*  time. */
 		const LORA_ACCEPT = LORA_EXTENSIONS.join(",");
+		new RegExp("\\.(?:" + LORA_EXTENSIONS.map((e) => e.slice(1).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")$");
 		//#endregion
 		//#region src/assetsCopy.ts
 		/**
