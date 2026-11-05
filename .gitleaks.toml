@@ -74,6 +74,24 @@
       '''vendor/comfyui_extensions/''',
     ]
 
+  [[rules.allowlists]]
+    description = "the ship-series class (2026-11-15): cold-start provision checksums, provision-script identifiers, knip budget path literals — reference data the entropy heuristic cannot tell from keys"
+    # Seated from the v0.2.1-alpha push census (9 hits, 5 files, all
+    # inspected): the cold-start proof PINS the downloaded models'
+    # sha256 checksums (a provision proof that does not pin its
+    # artifacts verifies nothing), the provision script and its lib
+    # emit carry CamelCase manager identifiers (ensureManagerSecurity
+    # NormalMinus) and pinned upstream checksums, and the knip budget
+    # table names source paths in comments. Never symmetric key
+    # material; scoped to THIS rule only — the keyword rules below
+    # stay armed on every one of these files.
+    paths = [
+      '''tests/coldstart/''',
+      '''packages/engines/comfyui-cordis/scripts/provision-models\.ts$''',
+      '''packages/engines/comfyui-cordis/lib/scripts/provision-models\.(js|d\.ts)$''',
+      '''tools/knip-budget\.mjs$''',
+    ]
+
 [[rules]]
   id = "api-key-generic"
   description = "Generic API key"
