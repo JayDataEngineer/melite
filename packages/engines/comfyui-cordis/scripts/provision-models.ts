@@ -66,25 +66,28 @@ export function writeManagerLocalModelList(listPath: string,
 }
 
 /**
- * Pins Manager's security_level to 'weak' — the tier whose install
- * gates accept the declared-row channel (non-.safetensors installs
- * are otherwise refused unless their url sits in the public catalog).
+ * Pins Manager's security_level to 'normal-' — the tier that admits
+ * every declared-row download on the estate's loopback engine
+ * (manager_server.py: non-.safetensors installs pass the 'high'
+ * class at 'normal-' when ComfyUI listens on a loopback address —
+ * is_local_mode — and the estate launches the managed engine with
+ * --listen 127.0.0.1; .safetensors rows pass at any tier but
+ * 'strong'; git-url extension installs are flag-gated, tier-free).
  * The estate's per-row sha256 gate is the actual download boundary:
- * every queued file is digest-verified after Manager lands it, so
- * 'weak' plus verification is tighter than the default level without
- * it. Idempotent: replaces only the security_level line; reports
+ * every queued file is digest-verified after Manager lands it.
+ * Idempotent: replaces only the security_level line; reports
  * whether a RUNNING engine would need a restart (Manager caches its
  * config at read).
  *
  * @param configPath absolute path of user/__manager/config.ini
- * @returns true when the on-disk line was already 'weak'
+ * @returns true when the on-disk line was already 'normal-'
  */
-export function ensureManagerSecurityWeak(configPath: string): boolean {
-  const wanted = "security_level = weak";
+export function ensureManagerSecurityNormalMinus(configPath: string): boolean {
+  const wanted = "security_level = normal-";
   if (!existsSync(configPath)) {
     mkdirSync(dirname(configPath), { recursive: true });
     writeFileSync(configPath, "[default]\n" + wanted + "\n");
-    info("  [model] manager config: security_level=weak (digest gate " +
+    info("  [model] manager config: security_level=normal- (digest gate " +
       "owns the boundary; engine restart applies it)");
     return false;
   }
@@ -97,14 +100,14 @@ export function ensureManagerSecurityWeak(configPath: string): boolean {
       if (!seen) {
         lines[i] = wanted;
         writeFileSync(configPath, lines.join("\n"));
-        info("  [model] manager config: security_level=weak (digest " +
+        info("  [model] manager config: security_level=normal- (digest " +
           "gate owns the boundary; engine restart applies it)");
       }
       return seen;
     }
   }
   writeFileSync(configPath, text.replace(/\n*$/u, "\n") + wanted + "\n");
-  info("  [model] manager config: security_level=weak appended " +
+  info("  [model] manager config: security_level=normal- appended " +
     "(digest gate owns the boundary; engine restart applies it)");
   return false;
 }
@@ -514,12 +517,14 @@ export async function stepModels(): Promise<boolean> {
       // estate rows (pinned HF artifacts) exist in NO public
       // catalog. get_data_by_mode('local') reads
       // <manager-install>/model-list.json — the sanctioned file for
-      // exactly this. Non-.safetensors files additionally require
-      // security_level 'weak' (the url-whitelist tier); the estate's
-      // per-row sha256 gate is the actual boundary, so 'weak' plus
-      // digest verification is tighter than the default level
-      // without it. Both writes are idempotent; a running engine
-      // reads the local list per request but caches its config —
+      // exactly this. Non-.safetensors files additionally pass the
+      // 'high' security class — 'normal-' on the estate's loopback
+      // engine (manager_server.py is_local_mode), no 'weak' needed;
+      // the estate's per-row sha256 gate is the actual boundary, so
+      // 'normal-' plus digest verification is tighter than the
+      // default level without it. Both writes are idempotent; a
+      // running engine reads the local list per request but caches
+      // its config —
       // restart the engine when the security line changes.
       const rows = await catalogProvisions();
       const listPath = join(runtime(), "custom_nodes", "comfyui-manager",
@@ -550,7 +555,7 @@ export async function stepModels(): Promise<boolean> {
             engineListPath);
         }
       }
-      ensureManagerSecurityWeak(join(runtime(), "user", "__manager", "config.ini"));
+      ensureManagerSecurityNormalMinus(join(runtime(), "user", "__manager", "config.ini"));
     }
     let ok = 0, bad = 0, skipped = 0, planned = 0;
     for (const { family, row } of await catalogProvisions()) {

@@ -181,6 +181,38 @@ services:
     });
   });
 
+  it("CRLF bytes parse identically to LF (the windows-checkout law — CI red 2026-10-31, 'unexpected line ---')", () => {
+    // THE BURN (unit windows-latest, 2026-10-31): a CRLF checkout left
+    // the frontmatter delimiter as '---\r' — startsWith('---\n') missed
+    // it, the unstripped dashes hit the top-key regex, and every suite
+    // riding specBody → enhanceRecipeFor died at prime (16 tests incl.
+    // PARAM-SEAT-PARITY + its census cascade). The parser owns the
+    // normalization at its read boundary: checkout line endings are
+    // never the file's grammar.
+    const lf = `---
+name: zz
+---
+shared:
+  zz_crlf_base: |
+    Line one.
+
+    Line two.
+zz-lf-key:
+  role: "Uses \\"quotes\\" and a tab-free body."
+  notes:
+    - "Note one."
+  base: zz_crlf_base
+`;
+    const crlf = lf.replace(/zz-lf-key:/, "zz-crlf-key:").replace(/\n/g, "\r\n");
+    withSkills([["zz-fam-lf", lf], ["zz-fam-crlf", crlf]], (root) => {
+      const table = enhanceRecipes(root);
+      assert.ok(table["zz-lf-key"], "the LF twin serves");
+      assert.ok(table["zz-crlf-key"], "the CRLF twin serves");
+      assert.equal(table["zz-crlf-key"], table["zz-lf-key"], "the CRLF twin parses byte-identically to the LF twin");
+      assert.ok(!table["zz-crlf-key"].includes("\r"), "no carriage return rides any served byte");
+    });
+  });
+
   it("a family dir without the skill is skipped (the ENOENT law)", () => {
     const root = fixtureRoot();
     onTestFinished(() => rmSync(root, { recursive: true, force: true }));

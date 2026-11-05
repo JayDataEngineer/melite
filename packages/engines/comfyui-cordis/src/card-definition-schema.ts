@@ -55,11 +55,13 @@ const CardDefinitionSchema = z.object({
   flowOutputBindings: z.any(),
   primaryFile: z.string(),
   // THE FAMILY ADMISSION (journey-closure B5, 2026-10-17 — the
-  // CardDefinition.admitFamily face, hop 3's first judge): the
-  // card's own family clause (h3-timeline's t4r inject-keys walk)
-  // the bench write doors judge the merged view with. z.any() like
-  // its sibling function arms: the value is the typed judge, its
-  // verdict walled family-side (h3 card.spec vs def.schema) and
+  // CardDefinition.admitFamily face, hop 3's first judge): an
+  // OPTIONAL family clause the bench write doors judge the merged
+  // view with. No live card declares one after the 2026-11-15
+  // lane-dead-letter retirement (h3-timeline's t4r inject-keys face
+  // died with the post-chain hoist; the family-law declaration judge
+  // bans a non-empty deadKeys at boot). z.any() like its sibling
+  // function arms: the value is the typed judge, its verdict walled
   // door-side (the drafts family-admission suite) — the envelope
   // only admits the key's existence.
   admitFamily: z.any(),

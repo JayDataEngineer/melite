@@ -192,8 +192,9 @@ describe("the qwen-img-edit-21 family doc wall", () => {
   it("the worked example composes legally (P2, the 2026-11-12 audit)", () => {
     const md = readFileSync(join(FAMILY_DIR, "agents", "skills", "design-sheet", "SKILL.md"), "utf8");
     const ex = md.slice(md.indexOf("## Worked example"));
-    // the example must be introduced by its provenance — a real run id
-    expect(ex).toMatch(/run-a3368f43ccea/);
+    // the example is introduced by its own shape law — the exemplar's
+    // density stated up front (served docs carry no run provenance)
+    expect(ex.slice(0, ex.indexOf("\n\n1. "))).toMatch(/1,708 words, ten sections/);
     // and no machine token may ride it (the genericity law arm above
     // already bans /home\/user — this arm pins the section directly)
     expect(ex).not.toMatch(/\/home\/|127\.0\.0\.1|localhost/);

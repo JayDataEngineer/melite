@@ -89,7 +89,7 @@ export { DATA_URL_IMAGE_EXT, UPLOAD_EXTS, spliceWorkflow, uploadReferenced, } fr
 export { interrupt, stopForRunDir, unloadModels } from "./comfyui-control.js";
 export { fetchOutputs, mapHistoryEntry, publishOutputChannels, viewTimeoutMs, } from "./comfyui-outputs.js";
 export { executeSingle } from "./comfyui-execute.js";
-export { executeFlow, planMerge } from "./comfyui-merge.js";
+export { executeFlow, planMerge, STAGE_RESERVED_PARAMS } from "./comfyui-merge.js";
 export { assertWiringAgainst, comfyuiWiringProvider, ComfyUIWiringService, deriveWiringDoc, } from "./wiringWall.js";
 export { comfyuiHostProvider, ComfyUIHostService, Config, needComfyUI, parseComfyUIHostConfig, } from "./comfyui-host.js";
 //# sourceMappingURL=comfyui.js.map

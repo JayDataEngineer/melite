@@ -28,20 +28,23 @@ export declare function writeManagerLocalModelList(listPath: string, rows: Reado
     row: Pick<CATALOG.ProvisionRow, "name" | "folder" | "url">;
 }>): void;
 /**
- * Pins Manager's security_level to 'weak' — the tier whose install
- * gates accept the declared-row channel (non-.safetensors installs
- * are otherwise refused unless their url sits in the public catalog).
+ * Pins Manager's security_level to 'normal-' — the tier that admits
+ * every declared-row download on the estate's loopback engine
+ * (manager_server.py: non-.safetensors installs pass the 'high'
+ * class at 'normal-' when ComfyUI listens on a loopback address —
+ * is_local_mode — and the estate launches the managed engine with
+ * --listen 127.0.0.1; .safetensors rows pass at any tier but
+ * 'strong'; git-url extension installs are flag-gated, tier-free).
  * The estate's per-row sha256 gate is the actual download boundary:
- * every queued file is digest-verified after Manager lands it, so
- * 'weak' plus verification is tighter than the default level without
- * it. Idempotent: replaces only the security_level line; reports
+ * every queued file is digest-verified after Manager lands it.
+ * Idempotent: replaces only the security_level line; reports
  * whether a RUNNING engine would need a restart (Manager caches its
  * config at read).
  *
  * @param configPath absolute path of user/__manager/config.ini
- * @returns true when the on-disk line was already 'weak'
+ * @returns true when the on-disk line was already 'normal-'
  */
-export declare function ensureManagerSecurityWeak(configPath: string): boolean;
+export declare function ensureManagerSecurityNormalMinus(configPath: string): boolean;
 export declare function sha256Of(path: string): string;
 export declare function catalogProvisions(): Promise<Array<{
     family: string;

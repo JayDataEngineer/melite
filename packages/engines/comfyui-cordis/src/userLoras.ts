@@ -38,6 +38,7 @@
 import { randomBytes } from 'node:crypto'
 import { closeSync, copyFileSync, existsSync, fsyncSync, mkdirSync, openSync, readdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
 import { basename, dirname, extname, join } from 'node:path'
+import { runtimeModelsRoot } from './catalog.ts'
 
 /** What a user row must carry to be served as a picker row. */
 export interface UserLoraRow {
@@ -78,7 +79,7 @@ const LORA_EXTENSIONS = ['.safetensors', '.ckpt', '.pt', '.bin', '.gguf']
 
 /** The rows file's default home (the shipped state is ABSENT — the
  *  door is opt-in; `lora_list` reports the path it would read). */
-export const DEFAULT_USER_LORAS_PATH = './data/loras/user-loras.json'
+const DEFAULT_USER_LORAS_PATH = './data/loras/user-loras.json'
 
 /** ONE spelling of the rows-file location: the declared
  *  MELITE_USER_LORAS override wins, the repo default otherwise.
@@ -91,7 +92,10 @@ export function userLorasPath(): string {
 }
 
 /** ONE row's validation — the refusals name the field, never the file. */
-export function validateUserLoraRow(raw: unknown, at: number): { row?: UserLoraRow; problem?: string } {
+export function validateUserLoraRow(
+  raw: unknown,
+  at: number,
+): { row: UserLoraRow; problem?: undefined } | { row?: undefined; problem: string } {
   if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
     return { problem: `row ${at}: not an object` }
   }
@@ -191,6 +195,77 @@ export function readUserLoraRows(path: string): UserLoraFile {
     if (problem !== undefined) problems.push(problem)
   }
   return { path, rows, problems, absent: false }
+}
+
+/**
+ * THE BOARDING GUARD (the poison cure, 2026-11-15): a user row may
+ * name ANY family id shape-wise, but a flavor registering a family
+ * that does not board the loras pack is DRIFT the boot interlock
+ * refuses — a junk row in the rows file (test debris, a typo'd
+ * family) took EVERY boot down ("no registered model 'qwen'").
+ * The tray carries its own guard; the user rows carry the same law
+ * here: a row whose families do not ALL board the pack DROPS (with
+ * its name in the report), never registers — the boot survives
+ * operator junk, the row's problem is named, the good rows serve.
+ * @param rows the rows file's rows
+ * @param boarding the families carrying a loras flavor (the service's own read)
+ */
+export function boardUserLoraRows(
+  rows: readonly UserLoraRow[],
+  boarding: ReadonlySet<string>,
+): { rows: UserLoraRow[], dropped: string[] } {
+  const kept: UserLoraRow[] = []
+  const dropped: string[] = []
+  for (const r of rows) {
+    if (r.families.length > 0 && r.families.every((f) => boarding.has(f))) kept.push(r)
+    else dropped.push(`${r.id} (families [${r.families.join(', ')}] do not board the loras pack)`)
+  }
+  return { rows: kept, dropped }
+}
+
+/**
+ * SEAT ONE ROW (the pixel-anim cure, 2026-11-15): every acquisition
+ * door used to land the BYTES and hand the operator a
+ * `row_suggestion` "ready to paste" — a paste no chat agent can
+ * make (no bash under the lane sandbox) and no operator should have
+ * to. THE LAW IS NOW LAND = SEATED: the install verbs call this
+ * with the row they just made real, and the rows file itself is
+ * written — validated by the same `validateUserLoraRow` every
+ * reader serves, atomic (part + rename), one row per filename (a
+ * re-install replaces, never duplicates). The file stays the one
+ * truth; this is its one writer.
+ *
+ * @param row the row to seat (validated here — a bad row refuses by name)
+ * @param path the rows file (default: the one spelling, `userLorasPath()`)
+ * @returns ok with the path and whether an existing row was replaced,
+ *  or the refusal naming the row or the file
+ */
+export function seatUserLoraRow(
+  row: UserLoraRow,
+  path: string = userLorasPath(),
+): { ok: true; path: string; replaced: boolean } | { ok: false; reason: string } {
+  const check = validateUserLoraRow(row, 0)
+  if (check.row === undefined) return { ok: false, reason: check.problem }
+  const seated = check.row
+  const file = readUserLoraRows(path)
+  if (file.problems.length > 0) {
+    return { ok: false, reason: `the rows file refuses the write: ${file.problems[0]}` }
+  }
+  const rows = file.rows.filter((r) => r.filename !== seated.filename)
+  const replaced = rows.length !== file.rows.length
+  rows.push(seated)
+  try {
+    mkdirSync(dirname(path), { recursive: true })
+    const part = path + '.part'
+    writeFileSync(part, JSON.stringify({ rows }, null, 2) + '\n')
+    // one atomic landing — a torn write leaves nothing the reader serves
+    renameSync(part, path)
+  } catch (e) {
+    // writeFileSync/renameSync throw Error subclasses only (the
+    // audit law this file already carries)
+    return { ok: false, reason: `the rows file could not be written: ${(e as Error).message}` }
+  }
+  return { ok: true, path, replaced }
 }
 
 /**
@@ -297,7 +372,7 @@ function sweepOrphanParts(engineLorasDir: string): void {
   for (const n of names) {
     if (!n.startsWith('.') || !n.includes('.part-')) continue
     const seg = n.slice(n.indexOf('.part-') + '.part-'.length)
-    const pid = Number.parseInt(seg.split('-')[0] ?? '', 10)
+    const pid = Number.parseInt(seg.split('-')[0], 10)
     if (!Number.isInteger(pid) || pid === process.pid) continue
     try {
       unlinkSync(join(engineLorasDir, n))
@@ -414,10 +489,17 @@ export function installUserLora(
 export const LORA_BYTES_CAP = 512 * 1024 * 1024
 
 /** THE DIR, one spelling: the env override wins, else the endpoint
- *  machine statement's model base + /loras; null means UNDECLARED and
+ *  machine statement's model base + /loras, else the runtime tree's
+ *  own loras dir when it exists on disk; null means UNDECLARED and
  *  every caller refuses loud (never a guessed path — the portability
  *  law, 2026-10-12). Shared by the manage plane's two lora arms and
  *  the uploads door's binary arm so they can never disagree.
+ *  THE THIRD LEG (operator 2026-11-03, "we have to deal with
+ *  environment variables? That seems bad, comfyui pathing should be
+ *  default" — the design debt paid): the engine's own pathing is
+ *  the default. The existence check is the guess-guard — a box with
+ *  no runtime tree answers null exactly as before, and the resolved
+ *  dir is one the engine itself serves through its loras mount.
  *  @param cfg the endpoint config record (readEndpointConfig's value)
  *  @returns the declared loras dir, or null when undeclared */
 export function resolveEngineLorasDir(cfg: Record<string, unknown>): string | null {
@@ -425,7 +507,8 @@ export function resolveEngineLorasDir(cfg: Record<string, unknown>): string | nu
   if (declared !== undefined && declared !== '') return declared
   const root = typeof cfg['model_base_path'] === 'string' ? (cfg['model_base_path'] as string) : ''
   if (root !== '') return join(root, 'loras')
-  return null
+  const runtime = join(runtimeModelsRoot(), 'loras')
+  return existsSync(runtime) ? runtime : null
 }
 
 /** THE BINARY ARM (the transport cure, 2026-10-17): the uploads door

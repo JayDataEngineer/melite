@@ -35,7 +35,14 @@ describe("the families provider (the lanes' models seat)", () => {
     // step1x_texture, stretchy-rig, trellis_native) with the three
     // census-verb families named — the flows the commission chain
     // composes.
-    expect(ids.length).toBe(32); // 33 -> 32 (2026-11-12): the openjutsu lane deleted by operator order — viggle-animate dies; earlier 32 -> 33 (2026-10-27, the swap family, audit 023)
+    // 32 -> 31 (2026-11-01, the battery residual cures): the
+    // anyCreature model family was deleted whole by the blender-lane
+    // estate cut (f0feefd46, operator 2026-11-01: "we want to remove
+    // blender") — the booted table is the truth this literal pins.
+    // Earlier: 33 -> 32 (2026-11-12, the openjutsu lane deleted by
+    // operator order — viggle-animate dies); 32 -> 33 (2026-10-27,
+    // the swap family, audit 023).
+    expect(ids.length).toBe(31);
     for (const family of ["anny", "skin", "fit"]) {
       expect(ids, `family ${family} boards the lane seat`).toContain(family);
     }
@@ -57,7 +64,9 @@ describe("the families provider (the lanes' models seat)", () => {
     await ctx.plugin(modelsFamiliesProvider);
     const seat = ctx.get("models") as unknown as { familyCount(): number };
     // THE KILL SWEEP (12 fossils deleted 2026-10-12): 35, not 47.
-    expect(seat.familyCount()).toBe(32); // 33 -> 32 (2026-11-12): the openjutsu lane deleted; earlier 32 -> 33 (2026-10-27, audit 023)
+    // 32 -> 31 (2026-11-01): the anyCreature deletion (f0feefd46,
+    // the blender-lane estate cut) — same census as the arm above.
+    expect(seat.familyCount()).toBe(31);
     await ctx.fiber.dispose();
     // ctx.plugin children are parent-owned: the provider's fiber
     // disposes recursively — the ModelsService registration and

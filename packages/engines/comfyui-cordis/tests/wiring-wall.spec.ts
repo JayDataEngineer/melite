@@ -890,6 +890,11 @@ const FLAT_HANDOFF_DOC = {
         model: ["MODEL"],
         positive: ["CONDITIONING"],
         negative: ["CONDITIONING"],
+        // F62 (2026-11-14): the carry-prefix CSV — one whole frame
+        // count per chunk, film order, the first chunk's 0 (e.g.
+        // "0,22,22"). The optional face the latent-handoff compose
+        // rides; the wiring doc follows the installed class.
+        carry_prefix_frames: ["STRING", { default: "" }],
       },
     },
   },

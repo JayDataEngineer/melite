@@ -8,7 +8,7 @@ export { fetchOutputs, mapHistoryEntry, publishOutputChannels, viewTimeoutMs, } 
 export type { HistoryVerdict } from "./comfyui-outputs.js";
 export { executeSingle } from "./comfyui-execute.js";
 export type { ExecuteOpts, ExecuteResult, } from "./comfyui-execute.js";
-export { executeFlow, planMerge } from "./comfyui-merge.js";
+export { executeFlow, planMerge, STAGE_RESERVED_PARAMS } from "./comfyui-merge.js";
 export { assertWiringAgainst, comfyuiWiringProvider, ComfyUIWiringService, deriveWiringDoc, } from "./wiringWall.js";
 export type { WiringDoc } from "./wiringWall.js";
 export type { FlowResult, MergeRow, MergeStageResult } from "./comfyui-merge.js";

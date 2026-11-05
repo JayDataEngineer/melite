@@ -68,6 +68,23 @@ describe("rewriteSpells (the $substitution law)", () => {
     expect(rewriteSpells("plain", links, initials as never, "at")).toBe("plain");
     expect(rewriteSpells(9, links, initials as never, "at")).toBe(9);
   });
+  it("a serialized clips_json value rides untouched — the merge never parses JSON strings (the Option A guard)", () => {
+    // THE GUARD (the soundtrack merged-form wire, 2026-11-01): a
+    // serialized JSON string containing a $spell is TEXT, not a graph
+    // edge — a link tuple substituted inside it could never become
+    // wire again (the producer's artifact does not exist at plan
+    // time). rewriteSpells stays whole-string: a value that STARTS
+    // with '$' resolves, everything embedded in a string rides. If
+    // anyone teaches this walker per-key JSON knowledge, THIS arm
+    // reds — the spelled soundtrack seats on wired_audio_k instead.
+    const embedded = JSON.stringify([
+      { wired: 1, start_sec: 0, dur_sec: 0, class: "music" },
+      { src: "$bed" },
+    ]);
+    expect(rewriteSpells(embedded, links, initials as never, "at")).toBe(embedded);
+    expect(rewriteSpells({ clips_json: embedded }, links, initials as never, "at"))
+      .toEqual({ clips_json: embedded });
+  });
 });
 
 describe("isWire (the link shape)", () => {
@@ -139,7 +156,13 @@ describe("planMerge (the planner)", () => {
     const names = { upscale: { source: "gen.image" } };
     const plan = planMerge(rows, {}, names);
     const up = plan.workflow["upscale::up"] as Record<string, unknown>;
-    expect(up["inputs"]).toEqual({ image: ["gen::save", 0] });
+    // F41 pass 2.5: the slot resolves THROUGH the seam's boundary —
+    // the boundary's own through carries the producer link.
+    expect(up["inputs"]).toEqual({ image: ["__unload$0", 0] });
+    expect(plan.workflow["__unload$0"]).toEqual({
+      class_type: "MeliteBoundary",
+      inputs: { through: ["gen::save", 0], unload_models: false },
+    });
   });
 
   it("an empty workflow refuses (bridge first)", () => {
@@ -166,10 +189,63 @@ describe("planMerge (the planner)", () => {
     ];
     const plan = planMerge(rows, {}, { next: { p: "gen.image" } });
     const n = plan.workflow["next::n"] as Record<string, unknown>;
-    expect(n["inputs"]).toEqual({ v: ["gen::a", 0] });
+    expect(n["inputs"]).toEqual({ v: ["__unload$0", 0] });
+    expect((plan.workflow["__unload$0"] as Record<string, unknown>)["inputs"])
+      .toEqual({ through: ["gen::a", 0], unload_models: false });
   });
 
-  it("two Saves with outputs refuse ambiguous (declare output_nodes)", () => {
+  it("TWO inputs from ONE producer mint ONE boundary (the dedupe law)", () => {
+    const rows: MergeRow[] = [
+      row({
+        stageId: "gen",
+        workflow: { save: { class_type: "SaveImage", inputs: {} } },
+        outputs: { image: "png" },
+      }),
+      row({
+        stageId: "b",
+        workflow: {
+          n: { class_type: "X", inputs: { a: "$p", b: "$q" } },
+        },
+      }),
+    ];
+    const plan = planMerge(rows, {}, { b: { p: "gen.image", q: "gen.image" } });
+    const n = plan.workflow["b::n"] as Record<string, unknown>;
+    // both slots ride the SAME boundary — one producer, one seam
+    expect(n["inputs"]).toEqual({ a: ["__unload$0", 0], b: ["__unload$0", 0] });
+    expect(Object.keys(plan.workflow).filter((k) => k.startsWith("__unload$")))
+      .toEqual(["__unload$0"]);
+    expect((plan.workflow["__unload$0"] as Record<string, unknown>)["inputs"])
+      .toEqual({ through: ["gen::save", 0], unload_models: false });
+  });
+
+  it("initial-wired refs mint NO boundary (only FromStage seams do)", () => {
+    const rows: MergeRow[] = [
+      row({
+        stageId: "b",
+        workflow: { n: { class_type: "X", inputs: { i: "$seed" } } },
+      }),
+    ];
+    const plan = planMerge(rows, { seed: 7 }, { b: { seed: "__initial__.seed" } });
+    expect(Object.keys(plan.workflow).filter((k) => k.startsWith("__unload$")))
+      .toEqual([]);
+    expect(Object.keys(plan.workflow)).toEqual(["b::n"]);
+  });
+
+  it("a stage id in the reserved __unload$ namespace refuses LOUD (the collision guard)", () => {
+    const e = refuse(() =>
+      planMerge([row({ stageId: "__unload$0" })], {}, {}),
+    );
+    expect(e.message).match(/reserved "__unload\$" prefix/);
+    expect(e.message).match(/rename the stage/);
+  });
+
+  it("an UNWIRED stage pair mints NO boundary (the DAG states the seam, not the stage list)", () => {
+    const plan = planMerge([row({ stageId: "a" }), row({ stageId: "b" })], {}, {});
+    expect(Object.keys(plan.workflow).filter((k) => k.startsWith("__unload$")))
+      .toEqual([]);
+  });
+
+  it("two Saves with outputs refuse ambiguous (name the card's flowOutputBindings row)", () => {
     const e = refuse(() =>
       planMerge([
         row({
@@ -182,6 +258,12 @@ describe("planMerge (the planner)", () => {
       ], {}, {}),
     );
     expect(e.message).match(/ambiguous producers/);
+    // THE REAL-DOOR LAW (GAPS-16/F3): the refusal names the door an
+    // agent can walk — the card's flowOutputBindings row (the
+    // declaration that feeds the merge at compose) — never the bare
+    // output_nodes params key no agent tool exposes.
+    expect(e.message).match(/flowOutputBindings/);
+    expect(e.message).not.match(/declare output_nodes/);
   });
 
   it("a namespaced collision refuses (stage ids + node ids)", () => {

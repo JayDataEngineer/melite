@@ -65,11 +65,16 @@ interface ParsedFile {
 
 /** Parse ONE SKILL.md (frontmatter stripped; comments skipped). */
 function parseSkillFile(text: string, file: string): ParsedFile {
+  // The read boundary owns line-ending normalization: a checkout may
+  // carry CRLF bytes (windows CI red 2026-10-31 — the frontmatter
+  // '---\r' never matched and the unstripped dashes refused at line 1),
+  // but checkout line endings are never the file's grammar.
+  const normalized = text.replace(/\r\n/g, "\n");
   const routes = new Map<string, RecipeRow>();
   const shared = new Map<string, string>();
   const anchors = new Map<string, RecipeRow>();
   // strip frontmatter
-  let body = text;
+  let body = normalized;
   if (body.startsWith("---\n")) {
     const end = body.indexOf("\n---\n", 4);
     if (end !== -1) body = body.slice(end + 5);

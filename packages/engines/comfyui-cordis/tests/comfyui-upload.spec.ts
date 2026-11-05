@@ -277,6 +277,50 @@ describe("uploadReferenced (the staging walk)", () => {
     expect(input.clips_json).toBe(JSON.stringify(rows));
     expect(Object.keys(uploaded)).toHaveLength(2);
   });
+  it("a wired soundtrack row (no src) rides verbatim and stages nothing — the seat carries the spell", async () => {
+    // THE MERGED-FORM WIRE (2026-11-01): the manifest row carries
+    // wired: k and NO src — the spelled src rides the wired_audio_k
+    // input (no stageable extension → the ext gate rides it
+    // verbatim), and the walk has nothing to stage for the row.
+    const before = uploads.length;
+    const { graph, uploaded } = await uploadReferenced(fakeClient(), {
+      n: {
+        class_type: "MeliteFilmAudioMix",
+        inputs: {
+          clips_json: JSON.stringify([{ wired: 1, start_sec: 0, dur_sec: 0, class: "music" }]),
+          wired_audio_1: "$bed",
+          film_seconds: 10,
+        },
+      },
+    }, { runsRoot: ROOT });
+    const inputs = (graph["n"] as { inputs: Record<string, unknown> }).inputs;
+    const rows = JSON.parse(inputs.clips_json as string) as Array<Record<string, unknown>>;
+    expect(rows[0]).toEqual({ wired: 1, start_sec: 0, dur_sec: 0, class: "music" });
+    expect("src" in rows[0]!).toBe(false);
+    expect(inputs.wired_audio_1).toBe("$bed");
+    expect(Object.keys(uploaded)).toHaveLength(0);
+    expect(uploads.length).toBe(before);
+  });
+  it("a spelled conditioning stamp rides the tensor seat verbatim and stages nothing — the path stamp still stages (2026-11-01 session 2)", async () => {
+    // THE CONDITIONING TENSOR SEAT: the spelled stamp rides
+    // MeliteAudioTensorSlice.audio_tensor (no stageable extension →
+    // the ext gate rides it verbatim); the file-slice path stamp keeps
+    // its staged-file handoff and stages exactly as before.
+    const data = "data:audio/flac;base64," + Buffer.from("path-stamp").toString("base64");
+    const before = uploads.length;
+    const { graph, uploaded } = await uploadReferenced(fakeClient(), {
+      w: { class_type: "MeliteAudioTensorSlice", inputs: { audio_tensor: "$line1", start_seconds: 0, duration_seconds: 1 } },
+      p: { class_type: "MeliteAudioSlice", inputs: { audio: data, start_seconds: 0, duration_seconds: 1 } },
+    }, { runsRoot: ROOT });
+    // vitest's toBe takes the expected value only — the assertion
+    // message rides expect's own second seat.
+    expect((graph["w"] as { inputs: Record<string, unknown> }).inputs.audio_tensor,
+      "the spelled stamp must ride the tensor seat verbatim — the ext gate never rewrites a spell").toBe("$line1");
+    expect(Object.keys(uploaded)).toHaveLength(1);
+    expect(uploads.length).toBe(before + 1);
+    const pathSeat = (graph["p"] as { inputs: Record<string, unknown> }).inputs.audio as string;
+    expect(pathSeat, "the path stamp's staged handoff must keep staging").toMatch(/\.flac$/);
+  });
   it("leaves malformed and non-array film manifests for the node validator", async () => {
     const values = [
       "not-json",

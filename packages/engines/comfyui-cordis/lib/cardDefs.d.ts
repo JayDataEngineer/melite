@@ -91,6 +91,11 @@ export declare const cardDefsStaleness: () => {
  *  loadCardDefs() call is exactly what it was; only a process that
  *  ALREADY booted can refresh. */
 export declare const refreshCardDefs: () => Map<string, CardDefinition>;
+export declare const rearmLoraFlavors: () => {
+    user_rows: number;
+    tray_rows: number;
+    problems: string[];
+};
 /** Every family's declaration provision rows (DECL provisions for
  *  every model ATOM, then card-owned provisions), keyed by the
  *  family's registry id — the download + serve surface (provision.ts

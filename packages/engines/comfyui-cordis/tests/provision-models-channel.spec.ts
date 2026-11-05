@@ -10,7 +10,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import {
   MELITE_MODEL_BASE,
-  ensureManagerSecurityWeak,
+  ensureManagerSecurityNormalMinus,
   fetchSnapshotVerified,
   fetchVerified,
   hfRepoFiles,
@@ -105,36 +105,36 @@ describe("writeManagerLocalModelList", () => {
   });
 });
 
-describe("ensureManagerSecurityWeak", () => {
+describe("ensureManagerSecurityNormalMinus", () => {
   const dir = mkdtempSync(join(tmpdir(), "melite-sec-"));
 
   it("creates the config when absent and reports a restart is needed", () => {
     const p = join(dir, "a", "config.ini");
-    assert.equal(ensureManagerSecurityWeak(p), false);
-    assert.match(readFileSync(p, "utf8"), /^\[default\]\nsecurity_level = weak\n$/u);
+    assert.equal(ensureManagerSecurityNormalMinus(p), false);
+    assert.match(readFileSync(p, "utf8"), /^\[default\]\nsecurity_level = normal-\n$/u);
   });
 
-  it("replaces only the security_level line of an existing config", () => {
+  it("replaces only the security_level line of an existing config (a weak line tightens to the loopback tier)", () => {
     const p = join(dir, "b", "config.ini");
     mkdirSync(dirname(p), { recursive: true });
     writeFileSync(p,
-      "[default]\nchannel_url = https://comfy.org\nsecurity_level = normal-\nui_mode = dark\n");
-    assert.equal(ensureManagerSecurityWeak(p), false);
+      "[default]\nchannel_url = https://comfy.org\nsecurity_level = weak\nui_mode = dark\n");
+    assert.equal(ensureManagerSecurityNormalMinus(p), false);
     const text = readFileSync(p, "utf8");
     assert.match(text, /channel_url = https:\/\/comfy\.org\n/u);
-    assert.match(text, /security_level = weak\n/u);
+    assert.match(text, /security_level = normal-\n/u);
     assert.match(text, /ui_mode = dark\n/u);
 
-    // already weak: untouched, no restart needed
-    assert.equal(ensureManagerSecurityWeak(p), true);
+    // already normal-: untouched, no restart needed
+    assert.equal(ensureManagerSecurityNormalMinus(p), true);
   });
 
   it("appends the pin when a config carries no security_level line", () => {
     const p = join(dir, "c", "config.ini");
     mkdirSync(dirname(p), { recursive: true });
     writeFileSync(p, "[default]\nui_mode = dark\n");
-    assert.equal(ensureManagerSecurityWeak(p), false);
-    assert.match(readFileSync(p, "utf8"), /ui_mode = dark\nsecurity_level = weak\n$/u);
+    assert.equal(ensureManagerSecurityNormalMinus(p), false);
+    assert.match(readFileSync(p, "utf8"), /ui_mode = dark\nsecurity_level = normal-\n$/u);
 
     rmSync(dir, { recursive: true, force: true });
   });

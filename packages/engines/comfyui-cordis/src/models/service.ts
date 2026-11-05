@@ -41,6 +41,7 @@ import {
   EngineFacts,
   ModelDecl as ModelDeclSchema,
   DeclVariantRow as VariantRowSchema,
+  CellRow as CellRowSchema,
   ParamRequiresRow as ParamRequiresRowSchema,
   ParamConflictsRow as ParamConflictsRowSchema,
   ParamTogetherRow as ParamTogetherRowSchema,
@@ -409,6 +410,26 @@ function validateDecl(decl: ModelDecl): void {
         `model row ${String(decl.id)} variant ${String(v.id)}: unknown key(s) refused (extra: forbid — the law): ${k}`,
       );
     });
+    // THE CELL-KEY DRIFT GATE (the cell-fold cure's owed half,
+    // auditor follow-up 2026-10-21): the loop above judges the
+    // VARIANT's own keys, but schemastery drops `strict` inside the
+    // nested cells resolve too — a typo'd cell member
+    // (`lane_input:` for `lane_inputs:`, `sorce:` for `source:`)
+    // booted clean, STRIPPED, and the cell served without the lane
+    // or the source its author believed they had spelled. The same
+    // subset test the variant row just got, one level further down,
+    // where the cell row is declared.
+    for (const [j, c] of v.cells.entries()) {
+      // spread into a typed local — no inline structural cast (the
+      // anti-sniff law): the fresh object literal carries the
+      // implicit index signature the CellRow interface lacks.
+      const cellRow: Record<string, unknown> = { ...c };
+      strippedKeys(cellRow, CellRowSchema, `${String(decl.id)}/variants[${String(i)}]/cells[${String(j)}]`).forEach((k) => {
+        throw new ModelError(
+          `model row ${String(decl.id)} variant ${String(v.id)} cell ${String(c.quant)}: unknown key(s) refused (extra: forbid — the law): ${k}`,
+        );
+      });
+    }
   }
   if (decl.relations !== undefined) {
     relationDrift(decl.relations as unknown as Record<string, unknown>, `${String(decl.id)}/relations`).forEach((k) => {

@@ -2,16 +2,16 @@
   {
     "name": "melite-poser-nodes",
     "url": "https://github.com/JayDataEngineer/melite-poser-nodes",
-    "ref": "1b700240319185f096ca0bebb9801e56719610f7",
+    "ref": "c4a9c6236056681d1b00afba8134bfb1a5d2b9f2",
     "required": true,
-    "desc": "The character-assembly engine room (the ANNY stopgap pack) — CompositeCharacter (body+hair+outfit), RayRenderGLBViews (8-view turnaround), RaySAMSegmentHairClothing (SAM vit_b part sprites).",
+    "desc": "The character-assembly engine room (the ANNY stopgap pack) — CompositeCharacter (body+hair+outfit), RaySAMSegmentHairClothing (SAM vit_b part sprites). The 8-view turnaround renderer (RayRenderGLBViews) was deleted with the blender lane (2026-11-01).",
     "pip": [],
     "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/3d/anny/nodes.yaml"
   },
   {
     "name": "melite-kimodo-nodes",
     "url": "https://github.com/JayDataEngineer/melite-kimodo-nodes",
-    "ref": "6685fa7f07706bf637d37b3e50ff1529f2408bfb",
+    "ref": "1e7848f473f8aea7ec63547d9627d8b26ac21076",
     "required": false,
     "desc": "Image -> Anny (all-age parametric human model), both engines: MultiHMR2ImageToAnny wraps naver/multi-hmr2 (regression, in-process, VRAM-tracked via melite_model_base) — multi-person Anny params (.pkl world param) + meshes (.glb) + optional render. AnnyFitOptimize wraps naver/anny-fit (camera-space optimization, out-of-process over ANNYFIT_SRC) — preprocess (detect+ViTPose+ camera+densekp+VLM+MultiHMR init) -> optimize -> refined params (.npz) + before/after renders. NAVER non-commercial licenses on both upstreams; Anny itself Apache 2.0.",
     "pip": [
@@ -31,16 +31,16 @@
   {
     "name": "melite-autorig-nodes",
     "url": "https://github.com/JayDataEngineer/melite-autorig-nodes",
-    "ref": "add7154fec4d31c051b881cf5dae5be34fe1560e",
+    "ref": "11440daf6b3727176b42506188b76eaedc6d6560",
     "required": true,
-    "desc": "KimodoTransferWeights (GPU KNN weight transfer) + SaveRiggedModel (persist). Requires Blender binary on PATH (FBX export).",
+    "desc": "KimodoTransferWeights (GPU KNN weight transfer) + SaveRiggedModel (persist) + KimodoExportFBX (SOMA-77 weight transfer, GLB out — the blender arms deleted 2026-11-01).",
     "pip": [],
     "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/3d/transfer-rig/nodes.yaml"
   },
   {
     "name": "melite-audio-nodes",
     "url": "https://github.com/JayDataEngineer/melite-audio-nodes",
-    "ref": "58c8afd47d863c9c7fb7f58ddb70068fe7876897",
+    "ref": "ff7568a67fa6343d52a84f7c7d6130c649164954",
     "required": true,
     "desc": "The ONE audio pack: Qwen3-TTS synthesis (qwen3_tts — card lane AND studio riding faster-qwen3-tts/torch since THE FLIP fcd25d0, 2026-10-22; native stays for moss_tts/ace_step only), Voice Studio (.qvoice), MOSS-SFX v2 diffusion, voice embeddings, MeliteQVoiceCopy, film/loudness utilities. Every Audiocore* class lives here. 2026-10-21 re-pin: the faster-backend cure (all synthesis through FasterQwen3TTS, silent default dead, 5.20 RoPE shim) with 3/3 lane renders + the served-lane proof render. 2026-10-22 re-pin: the studio VRAM law (warm-handle cache, capture-at-load, compat pre-init, seq-len 2048 / decode 1792 clamps, pre-load headroom gate, release-on-unload) — the Triton capture burn cured; receipt infra-qwen3-studio-vram-law. 2026-11-12 re-pin (F12): 0b75904 pushed (sfx burn cures) + MeliteAudioResample, the join-rate door (engine-core sinc, equal-rate passthrough).",
     "pip": [],
@@ -161,9 +161,9 @@
   {
     "name": "melite-utility-nodes",
     "url": "https://github.com/JayDataEngineer/melite-utility-nodes",
-    "ref": "7ba44fb6b59b18f6f16389656e676f2790c44ecb",
+    "ref": "3ad969241a261bb90fcaaa227ea36bee4d3005b8",
     "required": true,
-    "desc": "MeliteUnload / MeliteConcatVideos — the film's window-save boundary and video join; ConcatVideos' optional append seats an exact wired saved-file as the join's last member (the multi-window extend compose face, 2026-11-12). The card already requires this pack; no manifest installed it (extension census, 2026-10-13).",
+    "desc": "MeliteUnload / MeliteBoundary / MeliteConcatVideos / MeliteOverlapJoinVideos — the film's window-save boundary, the pass seam's in-graph eviction seat (F41: the merged plan's stage-A → stage-B tensor wire rides it), the video join, and the refine seam's blend join (F61: the overlap crossfade that resolves a carried window's duplicated span — frames + soundtrack, C1 at both span boundaries); ConcatVideos' optional append seats an exact wired saved-file as the join's last member (the multi-window extend compose face, 2026-11-12). The card already requires this pack; no manifest installed it (extension census, 2026-10-13).",
     "pip": [],
     "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/video/h3-timeline/nodes.yaml"
   },
@@ -188,7 +188,7 @@
   {
     "name": "comfyui-minimax-h3-timeline-director",
     "url": "https://github.com/JayDataEngineer/comfyui-minimax-h3-timeline-director",
-    "ref": "b80ea45a2fbec1105a7de6868fb1747308bf470c",
+    "ref": "5214645619109c95e1eef600b3a220e4ee782c54",
     "required": true,
     "desc": "MiniMaxH3FiniteLatentContinuation / MiniMaxH3FiniteSegmentFinalize — the h3 film graph's TimelineDirector drift-control continuation (schedule-matched prefix noise for windows k≥2 + segment finalize). Pip beyond the base env: av, imageio-ffmpeg, psutil (aiohttp ships with ComfyUI; playwright deliberately NOT declared — test-only, the 2026-10-13 audit).",
     "pip": [],
@@ -206,7 +206,7 @@
   {
     "name": "ComfyUI-MiniMaxH3-Context-Loop",
     "url": "https://github.com/JayDataEngineer/ComfyUI-MiniMaxH3-Context-Loop",
-    "ref": "e6d700d731a3803aa18a6c6036a24aa6d9fa5b3c",
+    "ref": "c4d3371e5fe7106bdfc07dc47c02e61c1394573c",
     "required": true,
     "desc": "Clip chaining, checkpoints, masked targets (ContexMaskedTarget), MaskGridPreview, final assembly — the edit-target + loop seats. Estate-maintained fork (GPL-3.0, upstream history preserved): ethanfel force-pushed past the estate h3-chain gap cures (e6d700d7), orphaning the pinned line — the fork carries those bytes. Upstream floor 0.7.3+. No requirements file.",
     "pip": [],

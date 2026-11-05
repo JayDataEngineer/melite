@@ -12,7 +12,7 @@ export { ComposeRefusal } from '@melite/comfyui-card-kit/errors';
 import { Context, Service } from '@deepseek-ai/cordis'
 import { GraphBuilder, deriveDefaults, type ObjectInfoInput } from '@melite/comfyui-card-kit/graph'
 import type { PromptGraph, JsonValue } from '@melite/comfyui-card-kit/graph'
-import { modelsService } from './models/service.ts'
+import { modelsBooted, modelsService } from './models/service.ts'
 import { assertControlNetSchedule } from '@melite/comfyui-card-kit/guard'
 import { coerceWireArrays, coerceWireNumbers, unwrapItemArrays, wireTypeLedger } from '@melite/comfyui-card-kit'
 import type { FactsFile, ModelFacts } from '@melite/comfyui-card-kit/facts'
@@ -182,8 +182,11 @@ export interface DeclaredModifierKind {
    *  way). 'bbox-canvas' (stroke 78) = the entry's bbox_x/y/w/h
    *  fields offer the rectangle verb — an image preview the user
    *  drags a selection on (absent host degrades to the four number
-   *  inputs). Served verbatim like every declared row. */
-  leaf_face?: 'paint-canvas' | 'bbox-canvas'
+   *  inputs). 'orbit-canvas' (the reshoot orb, 2026-11-15) = the
+   *  camera-pose orb for orbit-canvas kinds, delivered by the client
+   *  plane's orbitFace host (absent host = the number dials hold).
+   *  Served verbatim like every declared row. */
+  leaf_face?: 'paint-canvas' | 'bbox-canvas' | 'orbit-canvas'
   /** THE SECTION CAPTION (2026-10-08, the operator's filter demand —
    *  "SAM2 AND SAM3 DON'T HAVE BBOX FILTER"): a one-line caption
    *  the leaf seats ABOVE the field stack, naming what the stack
@@ -472,6 +475,30 @@ export class ComfyUIService extends Service {
     return this.flavors
   }
 
+  /** The loras filenames registered flavors already name (the
+   * tray's dedup read — derived from the live registrations, never
+   * a hand list). */
+  lorasKnownFilenames(): ReadonlySet<string> {
+    const known = new Set<string>()
+    for (const m of this.flavors) {
+      if (m.pack !== "loras") continue
+      for (const row of m.rows ?? []) known.add(row.filename)
+    }
+    return known
+  }
+
+  /** The families carrying a loras flavor (the tray's boarding
+   * read — the interlock law: the tray registers no family that
+   * does not already board the pack). */
+  lorasBoardingFamilies(): readonly string[] {
+    const fams = new Set<string>()
+    for (const m of this.flavors) {
+      if (m.pack !== "loras") continue
+      for (const f of m.families) fams.add(f)
+    }
+    return [...fams].sort()
+  }
+
   /** The registered verb ids (SubActionMods — the anny plane; the
    *  boot gate reads this to satisfy DECL.mods verb entries). */
   verbIds(): string[] {
@@ -571,13 +598,21 @@ export class ComfyUIService extends Service {
    *  compose under their own address (the BROKEN-C resolved
    *  address), but flavors key by FAMILY — a routed compose matches
    *  no flavor and every mod id refuses unknown-*. When the route
-   *  address serves no rows, resolve against the card's boarded
-   *  families (board order, first match wins — the cardVerbs
-   *  precedent). Non-routed composes match directly and never reach
-   *  the fallback, so no settled card changes voice. */
-  modCatalogForCompose(pack: string, modelId: string, boarded: readonly string[]): { rows: readonly LoraRowDecl[], shared: boolean } {
+   *  address serves no rows, resolve against the RUN FAMILY first
+   *  (the z-image-int8 gap, 2026-11-03: the run family owns rows the
+   *  route address never names, and the boarded fallback served
+   *  another family's catalog — krea-2 first on image-gen — before
+   *  the run family's own), then the card's boarded families (board
+   *  order, first match wins — the cardVerbs precedent).
+   *  Non-routed composes match directly and never reach either
+   *  fallback, so no settled card changes voice. */
+  modCatalogForCompose(pack: string, modelId: string, runFamily: string, boarded: readonly string[]): { rows: readonly LoraRowDecl[], shared: boolean } {
     const direct = this.modCatalog(pack, modelId)
     if (direct.rows.length > 0) return direct
+    if (runFamily !== modelId) {
+      const own = this.modCatalog(pack, runFamily)
+      if (own.rows.length > 0) return own
+    }
     for (const fam of boarded) {
       const fb = this.modCatalog(pack, fam)
       if (fb.rows.length > 0) return fb
@@ -854,7 +889,31 @@ export class ComfyUIService extends Service {
         }
       }
       const g = new GraphBuilder(this.pinDefaults)
-      def.compose(merged, { id: '', family, card: cardId, defaults: {}, lane_inputs: {}, variants: [], variant_groups: [], outputs: [], mods: [] }, g, runId, estate)
+      // THE SINGLE-FAMILY FACTS RESOLVE (the silent-pass burn,
+      // 2026-11-03 — the operator's lost sfx run): this arm already
+      // infers the ONE boarded family (the declared single-family
+      // arm above); the family's own DECL lane_inputs ride the SAME
+      // splice the model-ful arm's facts row carries (deriveRow,
+      // facts.ts — a single-family card's model row IS the family
+      // row). Handing lane_inputs {} while KNOWING the family
+      // starved every family-bound action's facts parse at the
+      // deepest door (sfx's model_path refusal — the press that
+      // generated nothing and kept no snapshot; h3's unet one
+      // press behind it): a card-unit press (fam '' is the
+      // model-less marker, cardsCompose.ts) either composes on the
+      // family's own declared facts or refuses at a NAMED gate —
+      // never the deep lane_inputs voice. Pure-tool cards (no
+      // families → family undefined) and multi-family boards (the
+      // caller's picker is the choice) keep {}.
+      // booted table: the family's own DECL row rides (a ghost
+      // board's getModel throw rides loud here — the compose door
+      // names it); an unbooted table (the unit carve, no DECLs
+      // exist in the process) keeps {} — modelsBooted() is asked
+      // FIRST, the models service's own law for swallowed throws
+      const singleFamilyInputs = family !== undefined && modelsBooted()
+        ? ((modelsService().getModel(family).lane_inputs ?? {}) as Record<string, unknown>)
+        : {}
+      def.compose(merged, { id: '', family, card: cardId, defaults: {}, lane_inputs: singleFamilyInputs, variants: [], variant_groups: [], outputs: [], mods: [] }, g, runId, estate)
       const graph = g.toJSON()
       const finalized = def.finalize ? def.finalize(graph) : graph
       this.assertWiring(cardId, finalized)
@@ -929,7 +988,7 @@ export class ComfyUIService extends Service {
     // rows. Compose stays offline (no live combo fetch); the name
     // the engine lacks dies at /prompt with core's own 400.
     if (Array.isArray(merged.loras)) {
-      const cat = this.modCatalogForCompose('loras', modelId, def.boarded)
+      const cat = this.modCatalogForCompose('loras', modelId, runFamily, def.boarded)
       merged.loras = (merged.loras as Array<Record<string, unknown>>).map((e) => {
         // strength first (the UI bag's wire shape); hand-authored
         // JSON rows may carry `weight` — honor it, never stack a
@@ -1039,7 +1098,7 @@ export class ComfyUIService extends Service {
     // precedence); unknown types refuse LOUD, never a silent plain
     // run.
     if (Array.isArray(merged.controlnets)) {
-      const cat = this.modCatalogForCompose('controlnet', modelId, def.boarded)
+      const cat = this.modCatalogForCompose('controlnet', modelId, runFamily, def.boarded)
       merged.controlnets = (merged.controlnets as Array<Record<string, unknown>>).map((e) => {
         const resolved = resolveControlNetEntry(e, cat.rows, cardId, modelId)
         // THE VALUE PLANE (D5), the controlnet half: the resolved

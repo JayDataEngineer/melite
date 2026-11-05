@@ -1,12 +1,34 @@
 // comfyui-outputs.ts — history verdicts + artifact harvest + channel publish (native 438-522).
 // (split from comfyui.ts 2026-09-18: pure move, zero logic changes).
 
+import { createHash } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import type { Client } from "@stable-canvas/comfyui-client";
 import type { EngineJson } from "./comfyui-types.ts";
 
 // ── harvest (native 459-522) ──
+
+/** THE FILESYSTEM NAME CAP (F-D, 2026-11-13): the artifact filename
+ *  joins the node id with the pack's own name, and a recursive graph's
+ *  node id nests per recursion (the advance recurse's
+ *  "LoopEnd.0.0.0.Advance.0.0.Recurse…" spelling) — past the cap the
+ *  write dies ENAMETOOLONG (the 2026-11-13 4-scene payoff burn: the
+ *  LAST clip upscaled, then the estate's copy of it failed). Only the
+ *  FILENAME flattens — last dot-segment plus a 12-hex digest of the
+ *  full id, so distinct nested ids stay collision-proof; the artifact
+ *  record keeps the full nodeId verbatim (the row's truth is the id,
+ *  the file's name is just a name) and nothing parses the filename
+ *  back into an id. 240 bytes sits under ext4's 255 with margin. */
+const FILE_NAME_CAP = 240;
+
+export function artifactFileStem(nodeId: string, name: string): string {
+  const joined = nodeId + "_" + name;
+  if (Buffer.byteLength(joined, "utf8") <= FILE_NAME_CAP) return joined;
+  const tail = nodeId.slice(nodeId.lastIndexOf(".") + 1);
+  const digest = createHash("sha1").update(nodeId).digest("hex").slice(0, 12);
+  return tail + "-" + digest + "_" + name;
+}
 
 /** The /view artifact-fetch budget (stroke 83): the run's own
  *  timeout when it EXCEEDS the 180s floor, else the
@@ -89,8 +111,28 @@ export async function fetchOutputArtifacts(
         } else {
           continue;
         }
+        // THE PRODUCT LAW (the 2026-11-15 re-shoot burn: the preview
+        // showed the ORIGINAL clip). The engine's history publishes UI
+        // rows for what a run CONSUMED as well as what it produced: a
+        // LoadVideo row carries its input preview —
+        // comfy_extras/nodes_video.py:386 preview_input_video returns
+        // SavedResult(name, subfolder, FolderType.input) — and
+        // LoadImage does the same. FolderType is input | output | temp
+        // (comfy_api/latest/_io.py:34). An `input` row names a file
+        // that already existed in the engine's inputs directory: a run
+        // can never PRODUCE one, so harvesting it published the run's
+        // own source file as its product (every re-shoot listed its
+        // source clip among its videos, under the upload plane's
+        // `__<12hex>` name — a shape no engine save produces — and the
+        // filmstrip crowned it the final cut). `output` rows are the
+        // products; `temp` rows stay harvestable because a pack may
+        // publish a deliberate intermediate there (the trim/crop
+        // previews). The consumed file stays provable from the run's
+        // source echo (runsSourceEcho), which is where provenance
+        // belongs.
+        if (ftype === "input") continue;
         const name: string = basename(filename);
-        const dest: string = join(runDir, sub !== "" ? nodeId + "_" + name : name);
+        const dest: string = join(runDir, sub !== "" ? artifactFileStem(nodeId, name) : name);
         // THE SPLIT CATCH (audit M-S9): only the REMOTE half folds —
         // one unreachable artifact never kills the harvest. The
         // local write below throws loud: disk-full, permission, and

@@ -45,7 +45,26 @@ export declare function assertWiresResolve(merged: Record<string, EngineJson>, l
  *  door admits and the draft store persists verbatim — died HERE,
  *  with a message blaming the upstream stage for "declaring no
  *  mergeable producer" when it declared one perfectly well. A
- *  position in an array is not a semantic law; the wires are. */
+ *  position in an array is not a semantic law; the wires are.
+ *
+ *  PASS 2.5 (F41, 2026-11-01): between 2 and 3, every resolved
+ *  FromStage link is re-mediated through a minted MeliteBoundary
+ *  (one per distinct producer; the downstream slot consumes the
+ *  boundary's wildcard `through`), so the seam's in-graph eviction
+ *  is output-reachable and DAG-provably between the pair — the
+ *  merged single prompt otherwise prunes an unwired boundary, never
+ *  executing it. Walls: tests/walls/ts/suites/
+ *  merge-unload-boundary.spec.ts. */
+/** THE STAGE-RESERVED PARAM KEYS (F-C, 2026-11-13): the merge plane's
+ * own stage-policy contract — keys a STAGE row carries for the MERGE,
+ * never the card surface. `boundary_unload_models` arms the pass-seam
+ * boundary (the knob read inside planMerge); `vram_budget_mb` states
+ * the merged run's headroom budget (the fold under executeFlowInner).
+ * Admission is the declared CARD surface (cardAdmits stays the law for
+ * card knobs), so the compose door lifts these out of the card walk
+ * and carries them onto the COMPOSED row's params — planMerge's
+ * paramsByStage reads exactly the bag the bench stored. */
+export declare const STAGE_RESERVED_PARAMS: readonly ["boundary_unload_models", "vram_budget_mb"];
 export declare function planMerge(rows: MergeRow[], initials: Record<string, EngineJson>, inputNames: Record<string, Record<string, string>>): {
     workflow: Record<string, EngineJson>;
 };

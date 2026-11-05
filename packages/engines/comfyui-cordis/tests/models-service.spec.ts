@@ -1329,6 +1329,20 @@ describe("the nested drift gates (each level names its own coordinates)", () => 
     );
   });
 
+  it("a CELL row's unknown key refuses with the cell's coordinates (the cell-fold cure's owed half)", () => {
+    // the auditor follow-up 2026-10-21: the variant gate judged the
+    // variant's own keys while a typo'd CELL member (`lane_input:`
+    // for `lane_inputs:`) stripped silently — the cell booted green
+    // without the lane its author believed they had spelled. The
+    // same law, one level further down.
+    assert.throws(
+      () => fresh().registerFamily(clone({
+        variants: [variant({ cells: [cell({ lane_input: { unet: "b.safetensors" } })] })],
+      })),
+      /model row krea-2 variant v1 cell int8: unknown key\(s\) refused.*lane_input/,
+    );
+  });
+
   it("a variant's own relations refuse an unknown word, naming the variant", () => {
     assert.throws(
       () => fresh().registerFamily(clone({

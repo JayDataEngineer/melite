@@ -80,7 +80,11 @@ const ModKind = z.object({
     kindFields: z.array(FieldRow),
     options: z.array(OptionRow),
     category: z.union([z.const("standalone"), z.const("ordered")]),
-    leaf_face: z.union([z.const("paint-canvas"), z.const("bbox-canvas")]),
+    // THE ORBIT FACE (the reshoot orb, 2026-11-15): the camera-pose orb
+    // for orbit-canvas kinds — declared by the reshoot kind, delivered
+    // by the client plane's orbitFace host (same degrade law as the
+    // paint/bbox faces: absent host = the number dials hold).
+    leaf_face: z.union([z.const("paint-canvas"), z.const("bbox-canvas"), z.const("orbit-canvas")]),
     // THE SECTION CAPTION (2026-10-08, the operator's filter demand —
     // "SAM2 AND SAM3 DON'T HAVE BBOX FILTER"): a one-line caption the
     // leaf seats ABOVE the field stack, naming what the stack IS (the
@@ -119,6 +123,10 @@ const FIELD_TYPES = {
     text: "string",
     image: "string",
     file: "string",
+    // THE CHAIN-RUN SEAT (2026-11-01): the h3 upscale's live picker —
+    // the leaf renders the estate's chain-store runs; the bound value
+    // is the run id string (the execute door resolves it to the store).
+    "chain-run": "string",
 };
 const typeofDefault = (v) => (v === null ? "null" : Array.isArray(v) ? "array" : typeof v);
 /** Type-truth for one field row: the declared type demands the

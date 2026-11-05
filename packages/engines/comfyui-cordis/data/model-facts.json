@@ -3,10 +3,10 @@
     "anny": {
       "outputs": [
         {
-          "label": "Turnaround views",
-          "many": true,
+          "label": "Body GLB",
+          "many": false,
           "patterns": [
-            ".png"
+            ".glb"
           ]
         }
       ]
@@ -295,8 +295,6 @@
       "CompositeCharacter",
       "FitProp",
       "FitRow",
-      "RayCreatureRigBridge",
-      "RayRenderGLBViews",
       "RaySomaxBake",
       "SkinApply",
       "SkinPack",
@@ -1730,8 +1728,6 @@
     "RandomImageFromBatch",
     "RandomNoise",
     "RayCleanWeights",
-    "RayCreatureRigBridge",
-    "RayRenderGLBViews",
     "RaySAMSegmentHairClothing",
     "RaySomaxBake",
     "RaySwapBaseColorTexture",

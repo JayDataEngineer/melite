@@ -84,6 +84,26 @@ export declare function h3RequeueRowOf(entry: Record<string, EngineJson>): H3Req
 /** Whether the entry is a chain's FINAL prompt (the pack emits
  * `h3_chain_top_level_complete` only when the last scene lands). */
 export declare function h3ChainCompleteOf(entry: Record<string, EngineJson>): boolean;
+/** The chain-store provenance the completion row carries (the F35
+ * write side): three scalars, the estate's machine-readable answer to
+ * "which store did I leave". THE ENGINE WRITES THE CHECKPOINT BYTES
+ * (the pack's own SegmentSave/LoopEnd) — this stamp never manufactures
+ * store bytes, it makes the run's store DISCOVERABLE: the stamp rides
+ * the stage result onto result_outputs (runsExecute spreads the stage
+ * outputs verbatim) and the start door's upscale run-id resolution
+ * reads it back. Takes the OUTPUTS record (the single seat passes the
+ * terminal entry's, the merged seat each stage's prefix-stripped
+ * subOutputs); an ABSENT record (undefined) walks to no rows and
+ * stamps nothing, the same face as a record without the row. Null
+ * unless the row is present — a chain stopped between scenes
+ * completes no row and earns no stamp. */
+export interface H3ChainStoreStamp {
+    readonly run_name: string;
+    readonly scenes: number;
+    readonly end_clip: number;
+    readonly [key: string]: EngineJson;
+}
+export declare function h3ChainStoreOf(outputs: EngineJson | undefined): H3ChainStoreStamp | null;
 /** A selection_json spelling that names a run instead of authoring a
  * lineage — the estate's compose door emits the bare name and the
  * execute door resolves it against the engine's chain store (the

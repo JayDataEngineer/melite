@@ -18,6 +18,11 @@
     "text_encoders": "text_encoders",
     "ultralytics": "ultralytics",
     "latent_upscale_models": "latent_upscale_models",
-    "text_cond": "text_cond"
+    "text_cond": "text_cond",
+    "hymotion": "../../motion",
+    "llm2vec": "../../llm2vec",
+    "qvoice": "../../audio/voices",
+    "seethrough": "../../image/see-through",
+    "hfcache": "../../cache/huggingface"
   }
 }

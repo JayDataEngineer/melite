@@ -1,5 +1,6 @@
 import type { Client } from "@stable-canvas/comfyui-client";
 import type { EngineJson } from "./comfyui-types.js";
+export declare function artifactFileStem(nodeId: string, name: string): string;
 /** The /view artifact-fetch budget (stroke 83): the run's own
  *  timeout when it EXCEEDS the 180s floor, else the
  *  floor. The harvest rides the run's budget — a long run may

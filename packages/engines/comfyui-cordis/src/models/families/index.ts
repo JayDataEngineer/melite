@@ -26,7 +26,6 @@ interface FamilyModule {
  *  without mounting a single plugin (loading is loadFamilies). */
 export const FAMILY_PKGS: readonly string[] = [
   "@melite/models-anny",
-  "@melite/models-anycreature",
   "@melite/models-fit",
   "@melite/models-pixal3d",
   "@melite/models-skin",

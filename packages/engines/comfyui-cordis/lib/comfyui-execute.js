@@ -545,6 +545,16 @@ export async function executeSingleInner(runDir, nodeParams, nodeOutputs, opts, 
         const fresh = qvoiceFreshnessOf(entry["outputs"]);
         if (fresh !== null)
             outputs["voice_freshness"] = fresh;
+        // THE CHAIN STORE HARVEST (the F35 write side): a chain's final
+        // prompt stamps WHERE the film's per-scene revisions live — three
+        // scalars off the completion row, provenance only (the engine
+        // wrote the checkpoints; the run row merely answers "which
+        // store"). Same stamp-the-stage-result posture as the qvoice and
+        // loudness receipts above; the merged seat carries the parity
+        // stamp per stage.
+        const chainStore = h3ChainStoreOf(entry["outputs"]);
+        if (chainStore !== null)
+            outputs["chain_store"] = chainStore;
         // THE REPLAY VERDICT (D11, 2026-10-11): a seated tap that folded
         // no engine events while the run completed means the engine
         // served memo'd outputs without executing — the harvest is the
@@ -567,8 +577,12 @@ export async function executeSingleInner(runDir, nodeParams, nodeOutputs, opts, 
  * mis-authored plan, not a run — refuse loud rather than spin the
  * requeue loop on a hostile graph. */
 const H3_CHAIN_SCENE_CAP = 32;
-function outputRowsOf(entry, key) {
-    const outputs = entry["outputs"];
+/** The ui-row walk over a history OUTPUTS record (the merge seat's
+ * per-stage subOutputs are the same shape after its prefix strip).
+ * The walker's own guard is the truth it types: an absent record
+ * (undefined — a history entry with no outputs at all) walks to no
+ * rows, so the declared face admits it. */
+function rowsOfOutputs(outputs, key) {
     if (outputs === null || typeof outputs !== "object" || Array.isArray(outputs))
         return [];
     const rows = [];
@@ -585,6 +599,10 @@ function outputRowsOf(entry, key) {
         }
     }
     return rows;
+}
+/** The owed-scene walk over a whole terminal history entry. */
+function outputRowsOf(entry, key) {
+    return rowsOfOutputs(entry["outputs"], key);
 }
 /** The owed-scene row of a terminal history entry, or null when the
  * entry is chain-complete (or not a chain prompt at all). */
@@ -606,6 +624,16 @@ export function h3RequeueRowOf(entry) {
  * `h3_chain_top_level_complete` only when the last scene lands). */
 export function h3ChainCompleteOf(entry) {
     return outputRowsOf(entry, "h3_chain_top_level_complete").length > 0;
+}
+export function h3ChainStoreOf(outputs) {
+    for (const row of rowsOfOutputs(outputs, "h3_chain_top_level_complete")) {
+        const runName = row["run_name"];
+        const endClip = row["end_clip"];
+        if (typeof runName === "string" && runName !== "" && typeof endClip === "number") {
+            return { run_name: runName, scenes: endClip, end_clip: endClip };
+        }
+    }
+    return null;
 }
 /** A selection_json spelling that names a run instead of authoring a
  * lineage — the estate's compose door emits the bare name and the

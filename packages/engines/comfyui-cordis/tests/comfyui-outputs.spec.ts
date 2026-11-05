@@ -80,6 +80,48 @@ describe("fetchOutputs (the harvest matrix)", () => {
     expect(fileOf(arts[1] ?? "")).toBe("b.json");
     expect(readFileSync(join(runDir, "n1_a.png"), "utf8")).toBe("b:a.png");
   });
+  it("A CONSUMABLE IS NEVER A PRODUCT — the LoadVideo input row does not harvest (the 2026-11-15 re-shoot burn)", async () => {
+    // The engine publishes a UI row for what a run CONSUMED: LoadVideo
+    // returns preview_input_video() (comfy_extras/nodes_video.py:386),
+    // a SavedResult typed `input` carrying the staged source file's own
+    // name (the upload plane's `<basename>_<sha1[0,12]>`). The harvest
+    // used to copy it into the run's folder as an artifact, so every
+    // re-shoot listed its SOURCE CLIP among the run's videos and the
+    // studio's filmstrip crowned it the final cut — the operator's burn
+    // ("the video preview seems to show the original video"). Products
+    // (`output`) and the deliberate temp intermediates still harvest;
+    // the consumed file is provenance (runsSourceEcho), never a product.
+    const runDir = join(DIR, "consumable");
+    const client = clientWith((f) => ({ body: "b:" + f, ct: "application/octet-stream" }));
+    const records = await fetchOutputArtifacts(client, runDir, {
+      outputs: {
+        "LoadVideo.0": {
+          images: [{
+            filename: "SaveVideo.2_h3_t4_film_00001__8d4dbd6e2b22.mp4",
+            subfolder: "",
+            type: "input",
+          }],
+        },
+        "SaveVideo.0": {
+          images: [{
+            filename: "h3_t4_w1_00001_.mp4",
+            subfolder: "run-3fe3c8c968c7-a37034e6",
+            type: "output",
+          }],
+        },
+        "SaveAudio.0": {
+          audio: [{ filename: "side.flac", subfolder: "", type: "temp" }],
+        },
+      },
+    }, 10);
+    // the product and the temp row land; the consumable does not
+    expect(records.map((r) => fileOf(r.path))).toEqual([
+      "SaveVideo.0_h3_t4_w1_00001_.mp4",
+      "side.flac",
+    ]);
+    // nothing wrote a file under the consumable's staged name
+    expect(() => readFileSync(join(runDir, "SaveVideo.2_h3_t4_film_00001__8d4dbd6e2b22.mp4"))).toThrow();
+  });
   it("BINARY BYTES READ BACK BYTE-FOR-BYTE (the media contract, 2026-10-15)", async () => {
     // Every other wall in this file compares UTF-8 STRINGS, which a
     // mangling writer survives: a byte dropped from a .glb, a PNG's
@@ -159,6 +201,36 @@ describe("fetchOutputs (the harvest matrix)", () => {
       { nodeId: "pose", path: join(runDir, "pose_motion.npz"), kind: "three_model" },
       { nodeId: "glb", path: join(runDir, "glb_rigged.glb"), kind: "3d" },
     ]);
+  });
+
+  it("the F-D name cap: a recursive node id flattens in the FILENAME only (the record keeps the full id)", async () => {
+    const runDir = join(DIR, "fd-cap");
+    const client = clientWith(() => ({ body: "x", ct: "application/octet-stream" }));
+    // THE PAYOFF SHAPE (2026-11-13): the 3-deep advance recurse nests
+    // the node id past the filesystem name cap — the raw join would
+    // exceed it and the write would die ENAMETOOLONG.
+    const deep = "MiniMaxH3ChainUpscaleLoopEnd" + ".0.0.Advance".repeat(12) +
+      ".0.0.Recurse.h3-film::MiniMaxH3ChainUpscaleSegmentSave.0";
+    const packName = "clip_0004.c2cfe4d6d1274873a455a2cb5e0e5a8c.mp4";
+    expect(Buffer.byteLength(deep + "_" + packName, "utf8")).toBeGreaterThan(240);
+    const records = await fetchOutputArtifacts(client, runDir, {
+      outputs: {
+        [deep]: { images: [{ filename: packName, subfolder: "h3_2x/clips", type: "output" }] },
+      },
+    });
+    const base = fileOf(records[0]!.path);
+    // the FILENAME flattened under the cap; last dot-segment + a
+    // 12-hex digest of the full id (distinct nested ids never collide)
+    expect(Buffer.byteLength(base, "utf8")).toBeLessThanOrEqual(240);
+    expect(base).toMatch(/^0-[0-9a-f]{12}_clip_0004\.c2cfe4d6/);
+    // THE RECORD KEEPS THE FULL ID VERBATIM (the row's truth is the
+    // id; the file's name is just a name — nothing parses it back)
+    expect(records[0]!.nodeId).toBe(deep);
+    // a SHORT id keeps its exact legacy spelling byte-for-byte
+    const short = await fetchOutputArtifacts(client, join(DIR, "fd-short"), {
+      outputs: { pose: { three_model: [{ filename: "m.npz", subfolder: "run", type: "output" }] } },
+    });
+    expect(fileOf(short[0]!.path)).toBe("pose_m.npz");
   });
   it("tuple rows harvest (filename, subfolder, type) with tolls", async () => {
     const runDir = join(DIR, "tuple");
@@ -298,7 +370,7 @@ describe("publishOutputChannels (the declared-channel law)", () => {  it("first 
     // the RECORDS list, the unbound arm the paths.
     const artifacts = ["/r/proof_0001_.png", "/r/skin_body_0001_.glb"];
     const records = [
-      { nodeId: "RayRenderGLBViews.0", path: "/r/proof_0001_.png" },
+      { nodeId: "RenderViews.0", path: "/r/proof_0001_.png" },
       { nodeId: "SkinApply.0", path: "/r/skin_body_0001_.glb" },
     ];
     // the renderer bound to a mesh channel: refused, and the mesh
@@ -307,7 +379,7 @@ describe("publishOutputChannels (the declared-channel law)", () => {  it("first 
       publishOutputChannels(
         { skin: "mesh" },
         artifacts,
-        { skin: "RayRenderGLBViews.0" },
+        { skin: "RenderViews.0" },
         records as never,
       ),
     ).toEqual({});
@@ -325,7 +397,7 @@ describe("publishOutputChannels (the declared-channel law)", () => {  it("first 
       publishOutputChannels(
         { proof: "image" },
         artifacts,
-        { proof: "RayRenderGLBViews.0" },
+        { proof: "RenderViews.0" },
         records as never,
       ),
     ).toEqual({ proof: "/r/proof_0001_.png" });

@@ -5,7 +5,7 @@ import { ACTIVE, ComfyError } from "./comfyui-types.js";
 import { resolveEngineBaseUrl } from "./comfyui-config.js";
 import { uploadReferenced } from "./comfyui-upload.js";
 import { assertPublishedOutputChannels, fetchOutputArtifacts, loudnessOf, normalizeTimeoutS, publishOutputChannels, qvoiceFreshnessOf, qvoicePathsOf } from "./comfyui-outputs.js";
-import { driveH3ChainRequeue, hookProgress, submitPrompt, waitTerminal } from "./comfyui-execute.js";
+import { driveH3ChainRequeue, h3ChainStoreOf, hookProgress, resolveH3ChainSelections, submitPrompt, waitTerminal } from "./comfyui-execute.js";
 import { ensureVramHeadroom, normalizeVramBudgetMb } from "./comfyui-vram.js";
 import { sdkClient, withBound } from "./comfyui-transport.js";
 /** In-stage wire namespacing (mergegraph._namespace_wires): every
@@ -106,10 +106,13 @@ export function assertWiresResolve(merged, links) {
         }
     }
 }
-/** One stage's producer table: declared output_nodes win; else the
- *  single-Save binding; anything else refuses LOUD. Depends ONLY on
- *  the row's own workflow, which is what lets the planner read every
- *  table before it reads a single wire (see planMerge's pass 1). */
+/** One stage's producer table: declared output_nodes win (seated by
+ *  the card's flowOutputBindings row at compose — the declaration is
+ *  the door, output_nodes is only what the declaration resolves to);
+ *  else the single-Save binding; anything else refuses LOUD. Depends
+ *  ONLY on the row's own workflow, which is what lets the planner
+ *  read every table before it reads a single wire (see planMerge's
+ *  pass 1). */
 function inferProducers(sid, wf, row) {
     const declared = row.outputNodes ?? {};
     const stageProd = {};
@@ -144,7 +147,9 @@ function inferProducers(sid, wf, row) {
             JSON.stringify(sid) +
             ": ambiguous producers " +
             JSON.stringify(saves) +
-            " — declare output_nodes {channel: node_id}");
+            " — bind each output channel on the card's flowOutputBindings row " +
+            "(one node per channel; the declaration feeds the merge at compose, " +
+            "never output_nodes)");
     }
     return stageProd;
 }
@@ -191,14 +196,41 @@ function assertAcyclic(edges, ids) {
  *  door admits and the draft store persists verbatim — died HERE,
  *  with a message blaming the upstream stage for "declaring no
  *  mergeable producer" when it declared one perfectly well. A
- *  position in an array is not a semantic law; the wires are. */
+ *  position in an array is not a semantic law; the wires are.
+ *
+ *  PASS 2.5 (F41, 2026-11-01): between 2 and 3, every resolved
+ *  FromStage link is re-mediated through a minted MeliteBoundary
+ *  (one per distinct producer; the downstream slot consumes the
+ *  boundary's wildcard `through`), so the seam's in-graph eviction
+ *  is output-reachable and DAG-provably between the pair — the
+ *  merged single prompt otherwise prunes an unwired boundary, never
+ *  executing it. Walls: tests/walls/ts/suites/
+ *  merge-unload-boundary.spec.ts. */
+/** THE STAGE-RESERVED PARAM KEYS (F-C, 2026-11-13): the merge plane's
+ * own stage-policy contract — keys a STAGE row carries for the MERGE,
+ * never the card surface. `boundary_unload_models` arms the pass-seam
+ * boundary (the knob read inside planMerge); `vram_budget_mb` states
+ * the merged run's headroom budget (the fold under executeFlowInner).
+ * Admission is the declared CARD surface (cardAdmits stays the law for
+ * card knobs), so the compose door lifts these out of the card walk
+ * and carries them onto the COMPOSED row's params — planMerge's
+ * paramsByStage reads exactly the bag the bench stored. */
+export const STAGE_RESERVED_PARAMS = ["boundary_unload_models", "vram_budget_mb"];
 export function planMerge(rows, initials, inputNames) {
     const merged = {};
     const producers = {};
     const wfs = {};
+    const paramsByStage = {};
     const ids = [];
     for (const row of rows) {
         const sid = row.stageId;
+        if (sid.startsWith("__unload$")) {
+            throw new ComfyError("stage " +
+                JSON.stringify(sid) +
+                ": the stage id starts with the reserved \"__unload$\" prefix" +
+                " — the merge mints its pass-seam boundary ids from that" +
+                " namespace (F41); rename the stage");
+        }
         const wf = row.workflow;
         if (typeof wf !== "object" || wf === null || Object.keys(wf).length === 0) {
             throw new ComfyError("stage " +
@@ -207,6 +239,7 @@ export function planMerge(rows, initials, inputNames) {
                 "bridge first; engine-only stages need params.workflow)");
         }
         wfs[sid] = wf;
+        paramsByStage[sid] = row.params ?? {};
         producers[sid] = inferProducers(sid, wf, row);
         ids.push(sid);
     }
@@ -270,6 +303,34 @@ export function planMerge(rows, initials, inputNames) {
         }
         linksByStage[sid] = links;
     }
+    // ── PASS 2.5: THE UNLOAD SPLICE (F41) — one boundary per distinct
+    // producer over the FromStage links; the downstream slot consumes
+    // the boundary's through output, so the seam's eviction is
+    // output-reachable and DAG-provably between the pair. An unwired
+    // stage pair has NO provable seam and gets NO boundary — the DAG,
+    // not the stage list, states the seam (walled, ARM 4). The knob is
+    // the DOWNSTREAM stage's row params (the stage that starves
+    // declares its entry gate — the vram_budget_mb symmetry); absent
+    // = false = soft cache only, the film path's own default. ────────
+    const boundaries = {};
+    const bidOfProducer = new Map();
+    for (const sid of ids) {
+        const links = linksByStage[sid];
+        const unload = (paramsByStage[sid] ?? {})["boundary_unload_models"] === true;
+        for (const [name, link] of Object.entries(links)) {
+            const producer = link[0]; // already namespaced "sidA::nid"
+            let bid = bidOfProducer.get(producer);
+            if (bid === undefined) {
+                bid = "__unload$" + bidOfProducer.size;
+                bidOfProducer.set(producer, bid);
+                boundaries[bid] = {
+                    class_type: "MeliteBoundary",
+                    inputs: { through: [producer, 0], unload_models: unload },
+                };
+            }
+            links[name] = [bid, 0]; // B's spell resolves THROUGH the boundary
+        }
+    }
     // ── PASS 3: namespace, gate, substitute. ─────────────────────
     const allLinks = {};
     for (const sid of ids) {
@@ -322,6 +383,15 @@ export function planMerge(rows, initials, inputNames) {
             merged[key] = rewriteSpells(node, links, initials, "stage " + JSON.stringify(sid) + " node " + JSON.stringify(key.split("::", 2)[1]));
         }
     }
+    // THE BOUNDARIES JOIN THE MERGED GRAPH HERE — after the pass-3
+    // loop, before the dangling gate, so assertWiresResolve proves BOTH
+    // new link shapes resolve (boundary.through → producer ∈ merged;
+    // B's slot → boundary ∈ merged). The ids cannot collide with the
+    // `sid::nid` namespace (the joiner is `::`; pass 1 refused the
+    // reserved `__unload$` prefix), and the harvest prefix walk
+    // (`startsWith(sid + "::")`) never matches `__unload$*`, so no
+    // stage's outputs/artifacts gain rows.
+    Object.assign(merged, boundaries);
     // THE DANGLING GATE, ONCE, OVER THE WHOLE GRAPH (it always walked
     // the entire `merged` dict; calling it per stage could only ever
     // see a prefix, and the wires it judges now come from every stage).
@@ -354,6 +424,16 @@ export async function executeFlowInner(rows, runDir, inputNames, initials, opts,
     // key in namespaceWires or rewriteSpells red it by name. The day
     // the merge learns to ADD a name legitimately, that wall is where
     // the law gets restated — and this comment moves with it.
+    // THE DAY CAME (F41, 2026-11-01): the merge adds exactly the
+    // `__unload$N` MeliteBoundary pass-seam boundaries, one per
+    // distinct FromStage producer. The law restated where the comment
+    // said it must be: wire-order.spec's block carries boundary-key
+    // accounting (STAGE keys stay exactly the namespaced union; the
+    // boundary keys are exactly the `__unload$` set, class
+    // MeliteBoundary, inputs through+unload_models only), and
+    // tests/walls/ts/suites/merge-unload-boundary.spec.ts walls the
+    // splice itself — presence, position/reachability, shape purity,
+    // no-vibe boundaries, the knob.
     // THE VRAM HEADROOM GATE (the merge arm of the "ComfyUI should
     // prevent oom" law, 2026-10-23 — the estate never evicts, ComfyUI
     // manages VRAM auto): the merged run's budget is the MAX of its
@@ -371,9 +451,18 @@ export async function executeFlowInner(rows, runDir, inputNames, initials, opts,
         await ensureVramHeadroom(server, vramBudget, client);
     }
     const staged = await uploadReferenced(client, plan.workflow, { runsRoot: dirname(String(runDir)), stateRoots: opts.stateRoots });
+    // THE CHAIN-SELECTION DOOR, THE MERGE ARM (F19 residual, 2026-11-13):
+    // the card door composes the upscale arm through THIS path, and the
+    // resolver rode only executeSingleInner — a held store spelling
+    // submitted the CheckpointManager's bare run name and the engine died
+    // at branch_scope's json.loads (the F35 skill's "dead past the door"
+    // burn, live on the flow path). Same additive door: a graph with no
+    // bare spellings makes zero traffic; an unknown run refuses loud
+    // before the merged submit.
+    const resolvedWorkflow = await resolveH3ChainSelections(client, staged.graph);
     // the submit bound (audit P-E5): POST /prompt rides the same
     // 180s fuse the upload plane already answers to
-    const { promptId, clientId } = await withBound(() => submitPrompt(client, staged.graph), 180_000, "POST /prompt");
+    const { promptId, clientId } = await withBound(() => submitPrompt(client, resolvedWorkflow), 180_000, "POST /prompt");
     active.set(String(runDir), { promptId, clientId, server });
     // THE PROGRESS TAP: the merged submit mints ONE client — every
     // stage's row shares the same live fold (the report consumer
@@ -455,6 +544,15 @@ export async function executeFlowInner(rows, runDir, inputNames, initials, opts,
             const fresh = qvoiceFreshnessOf(subOutputs);
             if (fresh !== null)
                 outputs["voice_freshness"] = fresh;
+            // THE CHAIN STORE HARVEST (the F35 write side, the merged seat's
+            // parity law): the completion row rides exactly ONE stage's
+            // subOutputs (the final scene's) — that stage's result stamps
+            // the store the run left, the single seat's stamp-the-stage law;
+            // runsExecute spreads the stage outputs onto result_outputs
+            // verbatim, so the run row answers "which store did I leave".
+            const chainStore = h3ChainStoreOf(subOutputs);
+            if (chainStore !== null)
+                outputs["chain_store"] = chainStore;
             results[r.stageId] = {
                 outputs,
                 artifacts: arts,

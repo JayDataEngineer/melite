@@ -20,6 +20,7 @@
 import { describe, it } from 'vitest'
 import assert from 'node:assert/strict'
 import { readdirSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { Context } from '@deepseek-ai/cordis'
 import type { Plugin } from '@deepseek-ai/cordis'
 import { ModelsService } from '../src/models/service.ts'
@@ -27,7 +28,6 @@ import { FAMILY_PKGS, loadFamilies } from '../src/models/families/index.ts'
 
 import { DECL as declAnima, family as familyAnima } from '../../../models/anima/src/index.ts'
 import { DECL as declAnny, family as familyAnny } from '../../../models/anny/src/index.ts'
-import { DECL as declAnycreature, family as familyAnycreature } from '../../../models/anycreature/src/index.ts'
 import { DECL as declConcat, family as familyConcat } from '../../../models/concat/src/index.ts'
 import { DECL as declFlorence2, family as familyFlorence2 } from '../../../models/florence2/src/index.ts'
 import { DECL as declGemSoma, family as familyGemSoma } from '../../../models/gem-soma/src/index.ts'
@@ -52,7 +52,6 @@ import { DECL as declZImage, family as familyZImage } from '../../../models/z-im
 const FAMILIES: Array<{ id: string; decl: { id: string }; family: { name: string; inject: unknown; apply: unknown } }> = [
   { id: 'anima', decl: declAnima as never, family: familyAnima as never },
   { id: 'anny', decl: declAnny as never, family: familyAnny as never },
-  { id: 'anycreature', decl: declAnycreature as never, family: familyAnycreature as never },
   { id: 'concat', decl: declConcat as never, family: familyConcat as never },
   { id: 'florence2', decl: declFlorence2 as never, family: familyFlorence2 as never },
   { id: 'gem-soma', decl: declGemSoma as never, family: familyGemSoma as never },
@@ -93,8 +92,9 @@ describe('models registry HMR safety (every family)', () => {
       mounted,
       'the frozen table and the mounted plugins disagree — a family package exports a plugin whose name is not its package name',
     )
+    // fileURLToPath, never URL.pathname (the windows CI doubled-drive class, 2026-10-31)
     const dirs = readdirSync(
-      new URL('../../../../packages/models', import.meta.url).pathname,
+      fileURLToPath(new URL('../../../../packages/models', import.meta.url)),
       { withFileTypes: true },
     )
       .filter((d) => d.isDirectory())

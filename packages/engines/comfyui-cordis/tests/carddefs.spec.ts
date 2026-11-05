@@ -10,9 +10,12 @@ import { describe, it, vi } from "vitest";
 import assert from "node:assert/strict";
 import { Context } from "@deepseek-ai/cordis";
 import {
-  assertCardIdentity, loadCardDefs, pluginPackage, refreshCardDefs,
-  provisionsByFamily, theService,
+  assertCardIdentity, cardDefsStaleness, loadCardDefs, pluginPackage, refreshCardDefs,
+  provisionsByFamily, resetCardDefsForTests, theService,
 } from "../src/cardDefs.ts";
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { ComfyUIService } from "../src/service.ts";
 import { modelsService } from "../src/models/models.ts";
 import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition';
@@ -309,5 +312,64 @@ describe("theService (the boot gate)", () => {
       () => fresh.theService(),
       /card defs not booted — await loadCardDefs\(\) first/,
     );
+  });
+});
+
+describe("cardDefsStaleness (the HMR signal — the unprimed + missing-source arms)", () => {
+  const withRepoRoot = (dir: string, run: () => void): void => {
+    const prev = process.env["MELITE_REPO_ROOT"];
+    process.env["MELITE_REPO_ROOT"] = dir;
+    try {
+      run();
+    } finally {
+      if (prev === undefined) delete process.env["MELITE_REPO_ROOT"];
+      else process.env["MELITE_REPO_ROOT"] = prev;
+    }
+  };
+
+  it("unprimed with a lib-less family reports nulls and stale:false (a missing lib is skipped, never a throw)", () => {
+    // the report answers from an EMPTY fixture models tree — one
+    // family with no lib at all — so no walk runs, newest stays 0,
+    // primed_at stays null, and stale stays false (the report itself
+    // never throws).
+    const fake = mkdtempSync(join(tmpdir(), "melite-staleness-"));
+    try {
+      mkdirSync(join(fake, "packages", "models", "fam-nolib"), { recursive: true });
+      resetCardDefsForTests();
+      withRepoRoot(fake, () => {
+        const report = cardDefsStaleness();
+        assert.equal(report.primed_at, null);
+        assert.equal(report.source_mtime, null);
+        assert.equal(report.stale, false);
+        assert.equal(report.source_root, join(fake, "packages", "models"));
+      });
+    } finally {
+      rmSync(fake, { recursive: true, force: true });
+    }
+  });
+
+  it("walks a live lib: dirs recurse, files prime newest, a neither-dir-nor-file entry skips", () => {
+    // every entry the walk meets in the real tree is a dir or a file,
+    // so the skip arm never fires there — a symlink (neither, by
+    // Dirent law) takes it here, and the walked files still prime
+    // newest (unprimed never reads stale, primed_at still null).
+    const fake = mkdtempSync(join(tmpdir(), "melite-staleness-"));
+    try {
+      const lib = join(fake, "packages", "models", "fam-lib", "lib");
+      mkdirSync(join(lib, "sub"), { recursive: true });
+      writeFileSync(join(lib, "weights.safetensors"), "x");
+      writeFileSync(join(lib, "sub", "inner.safetensors"), "y");
+      symlinkSync(join(lib, "weights.safetensors"), join(lib, "link.safetensors"));
+      resetCardDefsForTests();
+      withRepoRoot(fake, () => {
+        const report = cardDefsStaleness();
+        assert.equal(report.primed_at, null);
+        assert.ok(report.source_mtime !== null, "the walked lib files prime newest");
+        assert.equal(report.stale, false);
+        assert.equal(report.source_root, join(fake, "packages", "models"));
+      });
+    } finally {
+      rmSync(fake, { recursive: true, force: true });
+    }
   });
 });

@@ -11,7 +11,6 @@ var __rewriteRelativeImportExtension = (this && this.__rewriteRelativeImportExte
  *  without mounting a single plugin (loading is loadFamilies). */
 export const FAMILY_PKGS = [
     "@melite/models-anny",
-    "@melite/models-anycreature",
     "@melite/models-fit",
     "@melite/models-pixal3d",
     "@melite/models-skin",

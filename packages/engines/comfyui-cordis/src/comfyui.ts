@@ -116,7 +116,7 @@ export type {
   ExecuteOpts,
   ExecuteResult,
 } from "./comfyui-execute.ts";
-export { executeFlow, planMerge } from "./comfyui-merge.ts";
+export { executeFlow, planMerge, STAGE_RESERVED_PARAMS } from "./comfyui-merge.ts";
 export {
   assertWiringAgainst,
   comfyuiWiringProvider,

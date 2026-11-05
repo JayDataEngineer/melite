@@ -19,6 +19,7 @@ import {
   loraNamesFromObjectInfo,
   refmodNamesFromObjectInfo,
   readUserLoraRows,
+  seatUserLoraRow,
   unboardedRows,
   userLoraFlavor,
   userLorasPath,
@@ -378,6 +379,34 @@ describe("installUserLora — a COPY of the operator's own file, never a fetch",
     const out = installUserLora(src, join(blocker, "loras"));
     expect(out).toMatchObject({ ok: false, reason: expect.stringMatching(/copy into .* failed/u) });
   });
+
+  // THE WX-ONLY LANDING: a directory this process may write but not
+  // read defeats BOTH best-effort halves at once — the orphan sweep's
+  // readdir (nothing to reap that cannot be listed) and the rename's
+  // directory fsync (the log says so; the rename already held). The
+  // landing itself still holds: the receipt is ok:true with the byte
+  // count, and no part file is left behind.
+  it("a write-only engine dir still lands while both best-effort halves stand down", () => {
+    const dir = join(root, "wx-loras");
+    mkdirSync(dir);
+    chmodSync(dir, 0o333);
+    const logs: string[] = [];
+    const origLog = console.log;
+    console.log = (...args: unknown[]): void => {
+      logs.push(args.map(String).join(" "));
+    };
+    try {
+      const bytes = new TextEncoder().encode("weights");
+      const out = installUserLoraBuffer("wx.safetensors", bytes, dir);
+      expect(out).toMatchObject({ ok: true, filename: "wx.safetensors", bytes: 7 });
+    } finally {
+      console.log = origLog;
+      chmodSync(dir, 0o755);
+    }
+    expect(readFileSync(join(dir, "wx.safetensors"), "utf8")).toBe("weights");
+    expect(readdirSync(dir).filter((f) => f.includes(".part-"))).toEqual([]);
+    expect(logs.some((l) => /directory fsync after rename skipped/u.test(l))).toBe(true);
+  });
 });
 
 describe("installUserLoraBytes — the uploads rail's data-URL spelling", () => {
@@ -487,7 +516,10 @@ describe("userLoraFlavor — the runtime catalog projection", () => {
 // problems and the good ones still serve.
 describe("userLorasFlavor (the composed registration — no patch file)", () => {
   type Registered = { pack: string; families: string[]; rows: unknown[] };
-  const mount = (): { registered: Registered[]; logs: string[] } => {
+  // THE BOARDING SET the guard reads (the poison cure's fake): the
+  // families that board the loras pack on this estate — z-image,
+  // h3, anima, krea-2 board; qwen does not
+  const mount = (boarding: string[] = ["z-image", "h3", "anima", "krea-2"]): { registered: Registered[]; logs: string[] } => {
     const registered: Registered[] = [];
     const logs: string[] = [];
     const ctx = {
@@ -497,6 +529,7 @@ describe("userLorasFlavor (the composed registration — no patch file)", () => 
           registered.push(flavor);
           return () => { registered.splice(registered.indexOf(flavor), 1); };
         },
+        lorasBoardingFamilies: (): string[] => boarding,
       },
       logger: (): { warn: (m: string) => void; info: (m: string) => void } => ({
         warn: (m: string): void => { logs.push("warn: " + m); },
@@ -547,6 +580,39 @@ describe("userLorasFlavor (the composed registration — no patch file)", () => 
       expect(logs.some((l) => /warn: row refused/.test(l))).toBe(true);
       expect(registered).toHaveLength(1);
       expect(registered[0]?.rows.map((r) => (r as { id: string }).id)).toEqual(["good"]);
+    });
+  });
+
+  it("THE POISON CURE (2026-11-15): a row naming an unboarded family DROPS; the good row serves; boot survives", () => {
+    // the battery's 174-file red cascade: a spec without rows-file
+    // isolation seated a junk ['z-image','qwen'] row — qwen boards no
+    // loras pack, and the unguarded registration threw at the boot's
+    // mod interlock ("no registered model 'qwen'"), killing every
+    // boot that read the file. The guard DROPS the row here instead.
+    withPath(join(root, "poisoned.json"), JSON.stringify([
+      { id: "real", filename: "anima/(@PXCN0,Pixel art)Pixel Anim_V5400.safetensors", families: ["anima"], label: "Pixel Anim" },
+      { id: "doors-debris.safetensors", filename: "doors-debris.safetensors", families: ["z-image", "qwen"], label: "doors-debris" },
+    ]), () => {
+      const { registered, logs } = mount();
+      // the junk row is GONE, named — never a silent skip
+      expect(logs.some((l) => /warn: row dropped .*doors-debris/.test(l))).toBe(true);
+      // the good row serves — one row, one family, the real label
+      expect(registered).toHaveLength(1);
+      expect(registered[0]?.rows.map((r) => (r as { id: string }).id)).toEqual(["real"]);
+      expect(registered[0]?.families).toEqual(["anima"]);
+    });
+  });
+
+  it("a row with SOME boarding and SOME junk families drops WHOLE (no silent family rewrite)", () => {
+    // the honest voice: keeping the row with just its valid family
+    // would serve a row the operator never wrote
+    withPath(join(root, "halfjunk.json"), JSON.stringify([
+      { id: "half", filename: "half.safetensors", families: ["anima", "qwen"], label: "half" },
+    ]), () => {
+      const { registered, logs } = mount();
+      expect(registered).toHaveLength(0);
+      expect(logs.some((l) => /warn: row dropped .*half/.test(l))).toBe(true);
+      expect(logs.some((l) => /served no rows/.test(l))).toBe(true);
     });
   });
 
@@ -640,12 +706,194 @@ describe("resolveEngineLorasDir — the ONE dir spelling every lora door reads",
     try {
       delete process.env["MELITE_COMFYUI_LORAS_DIR"];
       expect(resolveEngineLorasDir({ model_base_path: "/srv/models" })).toBe(join("/srv/models", "loras"));
-      // nothing declared answers null — never a guessed path
-      expect(resolveEngineLorasDir({})).toBe(null);
-      expect(resolveEngineLorasDir({ model_base_path: 7 })).toBe(null);
     } finally {
       if (prev === undefined) delete process.env["MELITE_COMFYUI_LORAS_DIR"];
       else process.env["MELITE_COMFYUI_LORAS_DIR"] = prev;
+    }
+  });
+
+  // THE MECHANIC (operator 2026-11-04: a lora found online, handed to
+  // the agent, must just appear): the estate's own runtime models tree
+  // is the UNDECLARED home — every download lands there, so a dropped
+  // .safetensors is found with zero configuration. The fallback stays
+  // existence-guarded: an absent tree answers null rather than a path
+  // no door could read (a guessed path is the lie, not the default).
+  it("undeclared answers the runtime models tree when it exists, and null when it does not", () => {
+    const prevEnv = process.env["MELITE_COMFYUI_LORAS_DIR"];
+    const prevRoot = process.env["MELITE_REPO_ROOT"];
+    const root = mkdtempSync(join(tmpdir(), "melite-loras-home-"));
+    try {
+      delete process.env["MELITE_COMFYUI_LORAS_DIR"];
+      process.env["MELITE_REPO_ROOT"] = root;
+      expect(resolveEngineLorasDir({})).toBe(null);
+      expect(resolveEngineLorasDir({ model_base_path: 7 })).toBe(null);
+      const runtime = join(root, "data", "runtime", "comfyui", "models", "loras");
+      mkdirSync(runtime, { recursive: true });
+      expect(resolveEngineLorasDir({})).toBe(runtime);
+      // a non-string base is not a path: it falls through to the same home
+      expect(resolveEngineLorasDir({ model_base_path: 7 })).toBe(runtime);
+    } finally {
+      if (prevEnv === undefined) delete process.env["MELITE_COMFYUI_LORAS_DIR"];
+      else process.env["MELITE_COMFYUI_LORAS_DIR"] = prevEnv;
+      if (prevRoot === undefined) delete process.env["MELITE_REPO_ROOT"];
+      else process.env["MELITE_REPO_ROOT"] = prevRoot;
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
+// ── LAND = SEATED (the pixel-anim cure, 2026-11-15) ────────────────
+//
+// THE INCIDENT (dev_docs/audits + the operator's burn): a LoRA
+// landed after boot, the manage plane read the rows file
+// (user_rows: 1), and card_compose phase 1 STILL refused the bag
+// ("the family serves no rows") — the user-rows flavor registers
+// ONCE at boot compose, so a file written later never entered the
+// catalog the compose gate reads. This is the journey wall: boot
+// absent → land + seat (the door's own order) → re-arm → the
+// compose gate's OWN read (theService().modCatalog — exactly what
+// cardsVariant phase 1 reads) serves the row id. The embedded
+// toggle arm: seat WITHOUT re-arm still serves NOTHING — the
+// re-arm is the load-bearing half; deleting its call from the
+// doors reds this test.
+describe("LAND = SEATED (the pixel-anim cure)", () => {
+  it("a LoRA landed after boot serves the compose gate's own catalog on re-arm", async () => {
+    const { loadCardDefs, rearmLoraFlavors, resetCardDefsForTests, theService } = await import("../src/cardDefs.ts");
+    const rowsPath = join(root, "user-loras.json");
+    const lorasDir = join(root, "loras");
+    const prevRows = process.env["MELITE_USER_LORAS"];
+    const prevDir = process.env["MELITE_COMFYUI_LORAS_DIR"];
+    process.env["MELITE_USER_LORAS"] = rowsPath;
+    process.env["MELITE_COMFYUI_LORAS_DIR"] = lorasDir;
+    try {
+      resetCardDefsForTests();
+      // THE INCIDENT'S PREMISE: boot compose with the rows file
+      // absent — anima boards the loras pack with zero first-party
+      // rows, so the catalog is empty and every bag id refused
+      await loadCardDefs();
+      const svc = theService();
+      expect(svc.modRows("loras", "anima")).toEqual([]);
+      // THE DOOR'S OWN TWO HALVES: land the file under the family
+      // shelf, seat the row (what loraInstalled now does itself)
+      mkdirSync(join(lorasDir, "anima"), { recursive: true });
+      writeFileSync(join(lorasDir, "anima", "pixel.safetensors"), Buffer.alloc(16, 1));
+      const seated = seatUserLoraRow(
+        { id: "anima/pixel.safetensors", filename: "anima/pixel.safetensors", families: ["anima"], label: "pixel", default_strength: 1 },
+        rowsPath,
+      );
+      expect(seated.ok).toBe(true);
+      // THE TOGGLE ARM: the seat alone serves NOTHING — boot flavors
+      // are frozen; without the re-arm this is still the incident
+      expect(svc.modRows("loras", "anima")).toEqual([]);
+      // THE CURE'S SECOND HALF: re-arm — rows file re-read, tray
+      // re-walked, registered on the LIVE service
+      const rearm = rearmLoraFlavors();
+      expect(rearm.user_rows).toBe(1);
+      expect(rearm.tray_rows).toBe(0); // the seated filename wins — the tray adds only the undeclared
+      // THE COMPOSE GATE'S OWN READ serves the seated row id NOW
+      const ids = svc.modRows("loras", "anima").map((r) => r.id);
+      expect(ids).toContain("anima/pixel.safetensors");
+      // and a SECOND drop (the cp path, no seat) serves through the
+      // tray on the same re-arm — presence is a row
+      writeFileSync(join(lorasDir, "anima", "dropped.safetensors"), Buffer.alloc(16, 2));
+      const rearm2 = rearmLoraFlavors();
+      expect(rearm2.tray_rows).toBe(1);
+      // the tray row's id is the bare STEM (its 2026-11-04 law);
+      // the seated row's id is the combo name — both serve
+      const rows2 = svc.modRows("loras", "anima");
+      expect(rows2.map((r) => r.id)).toContain("dropped");
+      expect(rows2.map((r) => r.id)).toContain("anima/pixel.safetensors");
+    } finally {
+      resetCardDefsForTests();
+      if (prevRows === undefined) delete process.env["MELITE_USER_LORAS"];
+      else process.env["MELITE_USER_LORAS"] = prevRows;
+      if (prevDir === undefined) delete process.env["MELITE_COMFYUI_LORAS_DIR"];
+      else process.env["MELITE_COMFYUI_LORAS_DIR"] = prevDir;
+    }
+  });
+
+  it("seatUserLoraRow writes, replaces by filename, and refuses a bad row by name", () => {
+    const rowsPath = join(root, "user-loras.json");
+    const good = { id: "anima/one.safetensors", filename: "anima/one.safetensors", families: ["anima"] };
+    const first = seatUserLoraRow(good, rowsPath);
+    expect(first.ok).toBe(true);
+    if (first.ok) expect(first.replaced).toBe(false);
+    // a re-install with a different id REPLACES by filename — one
+    // file, one row, never a duplicate
+    const again = seatUserLoraRow({ ...good, id: "renamed" }, rowsPath);
+    expect(again.ok).toBe(true);
+    if (again.ok) expect(again.replaced).toBe(true);
+    const read = readUserLoraRows(rowsPath);
+    expect(read.rows).toHaveLength(1);
+    expect(read.rows[0]?.id).toBe("renamed");
+    // a row without families refuses by name, file untouched
+    const bad = seatUserLoraRow({ id: "x", filename: "anima/x.safetensors", families: [] }, rowsPath);
+    expect(bad.ok).toBe(false);
+    if (!bad.ok) expect(bad.reason).toMatch(/families is required/);
+    expect(readUserLoraRows(rowsPath).rows).toHaveLength(1);
+  });
+
+  it("seatUserLoraRow refuses the write when the rows file itself has problems (a broken file is named, never paved over)", () => {
+    // the seat reads the file before it writes — a present-but-
+    // unparseable file refuses the write with the file's own problem,
+    // and the broken bytes stay put (no half-seated row, no clobber).
+    const rowsPath = write("broken.json", "{not json");
+    const out = seatUserLoraRow({ id: "a", filename: "a.safetensors", families: ["h3"] }, rowsPath);
+    expect(out.ok).toBe(false);
+    if (!out.ok) expect(out.reason).toMatch(/the rows file refuses the write: .*is not JSON/u);
+    expect(readFileSync(rowsPath, "utf8")).toBe("{not json");
+  });
+
+  it("seatUserLoraRow refuses loudly when the rows file cannot be written, naming the write", () => {
+    // the atomic landing's own failure — the rows path lives under a
+    // plain FILE, so mkdirSync cannot run there; the door answers
+    // ok:false naming the write, never a throw.
+    const blocker = write("blocker.txt", "x");
+    const out = seatUserLoraRow({ id: "a", filename: "a.safetensors", families: ["h3"] }, join(blocker, "rows.json"));
+    expect(out.ok).toBe(false);
+    if (!out.ok) expect(out.reason).toMatch(/the rows file could not be written/u);
+  });
+});
+
+// ── THE TRAY STAND-DOWN (rearmLoraFlavors' own catch + null-dir arms) ──
+//
+// rearmLoraFlavors reads the endpoint file for the tray walk: a
+// present-but-unparseable endpoint file must not take the re-arm down
+// (the read degrades to {} inside the re-arm's own catch), and with no
+// dir declared anywhere the tray stands down to zero rows while the
+// user rows file still serves. Both halves assert real values.
+describe("rearmLoraFlavors — the tray stand-down (bad endpoint file, undeclared dir)", () => {
+  it("a present-but-unparseable endpoint file stands the tray down while the user rows still serve", async () => {
+    const { loadCardDefs, rearmLoraFlavors, resetCardDefsForTests } = await import("../src/cardDefs.ts");
+    const rowsPath = join(root, "user-loras.json");
+    writeFileSync(rowsPath, JSON.stringify([{ id: "anima/one.safetensors", filename: "anima/one.safetensors", families: ["anima"] }]));
+    const badEndpoint = join(root, "comfyui_endpoint.json");
+    writeFileSync(badEndpoint, "{not json");
+    const prevRows = process.env["MELITE_USER_LORAS"];
+    const prevEndpoint = process.env["COMFYUI_ENDPOINT_CONFIG"];
+    const prevDir = process.env["MELITE_COMFYUI_LORAS_DIR"];
+    const prevRoot = process.env["MELITE_REPO_ROOT"];
+    process.env["MELITE_USER_LORAS"] = rowsPath;
+    process.env["COMFYUI_ENDPOINT_CONFIG"] = badEndpoint;
+    delete process.env["MELITE_COMFYUI_LORAS_DIR"];
+    process.env["MELITE_REPO_ROOT"] = root;
+    try {
+      resetCardDefsForTests();
+      await loadCardDefs();
+      const rearm = rearmLoraFlavors();
+      expect(rearm.user_rows).toBe(1);
+      expect(rearm.tray_rows).toBe(0);
+      expect(rearm.problems).toEqual([]);
+    } finally {
+      resetCardDefsForTests();
+      if (prevRows === undefined) delete process.env["MELITE_USER_LORAS"];
+      else process.env["MELITE_USER_LORAS"] = prevRows;
+      if (prevEndpoint === undefined) delete process.env["COMFYUI_ENDPOINT_CONFIG"];
+      else process.env["COMFYUI_ENDPOINT_CONFIG"] = prevEndpoint;
+      if (prevDir === undefined) delete process.env["MELITE_COMFYUI_LORAS_DIR"];
+      else process.env["MELITE_COMFYUI_LORAS_DIR"] = prevDir;
+      if (prevRoot === undefined) delete process.env["MELITE_REPO_ROOT"];
+      else process.env["MELITE_REPO_ROOT"] = prevRoot;
     }
   });
 });

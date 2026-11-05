@@ -61,6 +61,15 @@ const factsFor = (
   extension_node_types: ext,
 });
 
+/** Routed-compose facts: the route address boards through its
+ *  owning family (the board's route-owner law), so the facts
+ *  carry owners alongside the route row. */
+const routedFactsFor = (route: string, family: string): FactsFile => {
+  const facts = factsFor({ [route]: { family } });
+  (facts as { owners?: Record<string, string> }).owners = { [route]: family };
+  return facts;
+};
+
 describe("cardWireName (the one spelling)", () => {
   it("hyphens become underscores plus the card suffix", () => {
     assert.equal(cardWireName("image-gen"), "image_gen_card");
@@ -911,6 +920,81 @@ describe("compose (the model path)", () => {
     );
     svc.compose("card1", "fam1", { loras: "not-a-list" }, "r4", );
     assert.equal(seen[2]!["loras"], "not-a-list", "non-list loras pass through");
+  });
+
+  // ── THE ROUTED-COMPOSE GAP (2026-11-03, the z-image realism
+  // e2e red): a routed compose (model address = a variant/quant
+  // cell route, not the family id) must keep resolving its own
+  // family's rows — the service comment at the runFamily seat
+  // states exactly this law, but modCatalogForCompose consulted
+  // the route, then the card's boarded families (krea-2 first on
+  // image-gen), never the run family. A z-image run (route
+  // z-image-int8) naming its own family's zimage_realism row died
+  // unknown-lora against krea-2's rows. The family tier sits
+  // between the route and the boarded fallback; D5's burn cell
+  // (row-less family + foreign value → foreign-family-value) is
+  // re-pinned beside the cure.
+  it("a routed compose resolves its own family's lora rows (route misses, family hits)", async () => {
+    const seen: Record<string, unknown>[] = [];
+    const svc = await boot();
+    // the image-gen shape: ANOTHER family boards first with its
+    // own rows, so the boarded fallback serves the wrong catalog
+    // before the run family's — the family tier must win.
+    svc.registerCard(card({ boarded: ["fam2", "fam1"], compose: (params) => { seen.push({ ...params }); } }));
+    svc.registerPack({ pack: "loras", fields: fields({}) });
+    svc.registerFlavor({
+      pack: "loras",
+      families: ["fam2"],
+      rows: [{ id: "decoy", filename: "fam2/decoy.safetensors", source_url: "https://h/decoy" }],
+    });
+    svc.registerFlavor({
+      pack: "loras",
+      families: ["fam1"],
+      rows: [{ id: "home", filename: "fam1/home.safetensors", source_url: "https://h/home" }],
+    });
+    svc.setFacts(routedFactsFor("route1", "fam1"));
+    svc.compose("card1", "route1", { loras: [{ id: "home", strength: 0.5 }] }, "routed-home");
+    assert.deepEqual(seen[0]!["loras"], [{ name: "fam1/home.safetensors", strength: 0.5 }],
+      "the routed compose resolves the run family's own row — the route address is not a catalog miss");
+  });
+
+  it("the family tier sits before the boarded fallback (D5's burn keeps its voice)", async () => {
+    const svc = await boot();
+    svc.registerCard(card({ boarded: ["fam1", "fam2"] }));
+    svc.registerPack({ pack: "loras", fields: fields({}) });
+    svc.registerFlavor({
+      pack: "loras",
+      families: ["fam2"],
+      rows: [{ id: "away", filename: "fam2/away.safetensors", source_url: "https://h/away" }],
+    });
+    svc.setFacts(routedFactsFor("route1", "fam1"));
+    assert.throws(
+      () => svc.compose("card1", "route1", { loras: [{ id: "away", strength: 0.7 }] }, "routed-away"),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "foreign-family-value" &&
+        /'away'/.test((e as Error).message) && /'fam2'/.test((e as Error).message) && /'fam1'/.test((e as Error).message),
+      "the run family's row-less catalog falls through to boarded rows, and the foreign value still refuses named — the family tier never absorbs another family's pick",
+    );
+  });
+
+  it("a routed compose resolves its own family's controlnet rows (the shared function)", async () => {
+    const seen: Record<string, unknown>[] = [];
+    const svc = await boot();
+    svc.registerCard(card({ boarded: ["fam2", "fam1"], compose: (params) => { seen.push({ ...params }); } }));
+    svc.registerPack({ pack: "controlnet", fields: fields({}) });
+    svc.registerFlavor({
+      pack: "controlnet",
+      families: ["fam2"],
+      rows: [{ id: "decoy", filename: "fam2/decoy.safetensors", source_url: "https://h/decoy" }],
+    });
+    svc.registerFlavor({
+      pack: "controlnet",
+      families: ["fam1"],
+      rows: [{ id: "depth", filename: "fam1/depth.safetensors", source_url: "https://h/depth" }],
+    });
+    svc.setFacts(routedFactsFor("route1", "fam1"));
+    svc.compose("card1", "route1", { controlnets: [{ type: "depth", strength: 0.8, image_b64: "e30=" }] }, "routed-cn");
+    assert.equal((seen[0]!["controlnets"] as Array<Record<string, unknown>>)[0]!["model"], "fam1/depth.safetensors",
+      "the routed compose resolves the run family's own controlnet row");
   });
 
   // ── STEPS APPLIED (2026-09-18, the operator's plaguekind law):

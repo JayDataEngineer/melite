@@ -80,7 +80,11 @@ describe("a wire resolves from ANY stage, not only an earlier one", () => {
       { s_0: { w: "s_1.image" } },
     );
     const n = plan.workflow["s_0::n"] as Record<string, unknown>;
-    expect(n["inputs"]).toEqual({ i: ["s_1::save", 0] });
+    // F41 pass 2.5: the slot resolves THROUGH the seam's boundary —
+    // the boundary's own `through` carries the producer link.
+    expect(n["inputs"]).toEqual({ i: ["__unload$0", 0] });
+    expect((plan.workflow["__unload$0"] as Record<string, unknown>)["inputs"])
+      .toEqual({ through: ["s_1::save", 0], unload_models: false });
   });
 
   it("forward: the upstream stage is FIRST in the array (no regression)", () => {
@@ -90,7 +94,9 @@ describe("a wire resolves from ANY stage, not only an earlier one", () => {
       { s_1: { w: "s_0.image" } },
     );
     const n = plan.workflow["s_1::n"] as Record<string, unknown>;
-    expect(n["inputs"]).toEqual({ i: ["s_0::save", 0] });
+    expect(n["inputs"]).toEqual({ i: ["__unload$0", 0] });
+    expect((plan.workflow["__unload$0"] as Record<string, unknown>)["inputs"])
+      .toEqual({ through: ["s_0::save", 0], unload_models: false });
   });
 
   it("MIRRORED: both orders produce the SAME graph for the same wires", () => {
@@ -115,10 +121,10 @@ describe("a wire resolves from ANY stage, not only an earlier one", () => {
       { s_1: { w: "s_0.image" }, s_2: { w: "s_1.image" } },
     );
     expect((plan.workflow["s_1::n"] as Record<string, unknown>)["inputs"]).toEqual({
-      i: ["s_0::save", 0],
+      i: ["__unload$0", 0], // s_0's producer → the first-minted boundary
     });
     expect((plan.workflow["s_2::n"] as Record<string, unknown>)["inputs"]).toEqual({
-      i: ["s_1::save", 0],
+      i: ["__unload$1", 0], // s_1's producer → the second boundary
     });
   });
 });
@@ -250,6 +256,14 @@ describe("the refusals the order-independence must NOT have cost", () => {
 // claim at the seam: the merged graph's names ARE the sources'
 // names, exactly, and every node's shape is its source's shape plus
 // nothing.
+//
+// THE DAY CAME (F41, 2026-11-01): the merge ADDS the `__unload$N`
+// MeliteBoundary pass-seam boundaries — and the law is RESTATED here
+// exactly as the seam comment pre-authorized: the boundary keys are
+// accounted for as their own set, every STAGE node keeps its
+// source's shape verbatim, and a boundary keyed inside a stage
+// namespace reds. The splice's own five arms live in
+// tests/walls/ts/suites/merge-unload-boundary.spec.ts.
 describe("the merge adds no names (the seam's own claim, walled)", () => {
   /** A stage whose node carries the shapes a merge might be tempted
    *  to annotate: several inputs (a spell, a literal, a nested
@@ -272,20 +286,28 @@ describe("the merge adds no names (the seam's own claim, walled)", () => {
       },
     } as Partial<MergeRow>);
 
-  it("the merged key set IS the namespaced union — no extra node, none dropped", () => {
-    const plan = planMerge([rich("s_0", false), rich("s_1", true)], {}, { s_1: { w: "s_0.image" } });
-    expect([...Object.keys(plan.workflow)].sort()).toEqual(
+  /** The wired two-stage plan the arms below share: s_0 → s_1. */
+  const wiredPlan = (): Record<string, unknown> =>
+    planMerge([rich("s_0", false), rich("s_1", true)], {}, { s_1: { w: "s_0.image" } }).workflow;
+
+  it("the merged key set IS the namespaced union PLUS the boundary set — stage keys exact, boundary keys exact", () => {
+    const plan = wiredPlan();
+    const keys = Object.keys(plan).sort();
+    // the STAGE keys: exactly the namespaced union, none dropped
+    expect(keys.filter((k) => !k.startsWith("__unload$"))).toEqual(
       ["s_0::n", "s_0::save", "s_1::n", "s_1::save"].sort(),
     );
-    expect(Object.keys(plan.workflow).length).toBe(4);
+    // the BOUNDARY keys: exactly one per distinct FromStage producer
+    expect(keys.filter((k) => k.startsWith("__unload$"))).toEqual(["__unload$0"]);
+    expect(keys.length).toBe(5);
   });
 
-  it("every node's TOP-LEVEL keys are its source's keys, exactly (no marker, no computed sibling)", () => {
-    const plan = planMerge([rich("s_0", false), rich("s_1", true)], {}, { s_1: { w: "s_0.image" } });
+  it("every STAGE node's TOP-LEVEL keys are its source's keys, exactly (no marker, no computed sibling)", () => {
+    const plan = wiredPlan();
     for (const sid of ["s_0", "s_1"]) {
       const spell = sid === "s_1";
       for (const nid of ["save", "n"]) {
-        const mergedNode = plan.workflow[`${sid}::${nid}`] as Record<string, unknown>;
+        const mergedNode = plan[`${sid}::${nid}`] as Record<string, unknown>;
         const srcNode = (rich(sid, spell).workflow as Record<string, Record<string, unknown>>)[nid]!;
         expect(Object.keys(mergedNode).sort(), `${sid}::${nid} carries exactly its source's keys`)
           .toEqual(Object.keys(srcNode).sort());
@@ -297,11 +319,28 @@ describe("the merge adds no names (the seam's own claim, walled)", () => {
     }
   });
 
+  it("the splice ADDED nodes, never edited one — and no boundary sits inside a stage namespace", () => {
+    const plan = wiredPlan();
+    // every boundary key is a bare reserved-prefix id with the exact
+    // minted shape — one keyed "s_1::x" (or any stage-scoped key)
+    // would be the splice editing a stage's namespace
+    for (const [key, node] of Object.entries(plan)) {
+      if (!key.startsWith("__unload$")) continue;
+      expect(key).toMatch(/^__unload\$\d+$/);
+      expect((node as Record<string, unknown>)["class_type"]).toBe("MeliteBoundary");
+      expect(Object.keys(((node as Record<string, unknown>)["inputs"] ?? {}) as object).sort())
+        .toEqual(["through", "unload_models"]);
+    }
+    // and the stage nodes keep the byte-shapes their sources spelled
+    const n1 = plan["s_1::n"] as Record<string, unknown>;
+    expect(Object.keys(n1).sort()).toEqual(["_meta", "class_type", "inputs"]);
+  });
+
   it("every node's INPUT KEYS are its source's input keys — the $spell resolves as a VALUE, never a new key", () => {
-    const plan = planMerge([rich("s_0", false), rich("s_1", true)], {}, { s_1: { w: "s_0.image" } });
+    const plan = wiredPlan();
     for (const sid of ["s_0", "s_1"]) {
       const spell = sid === "s_1";
-      const mergedInputs = (plan.workflow[`${sid}::n`] as Record<string, unknown>)["inputs"] as Record<string, unknown>;
+      const mergedInputs = (plan[`${sid}::n`] as Record<string, unknown>)["inputs"] as Record<string, unknown>;
       const srcInputs = ((rich(sid, spell).workflow as Record<string, Record<string, unknown>>)["n"]!)["inputs"] as Record<string, unknown>;
       expect(Object.keys(mergedInputs).sort(), `${sid}::n inputs carry exactly their source's keys`)
         .toEqual(Object.keys(srcInputs).sort());
@@ -312,8 +351,12 @@ describe("the merge adds no names (the seam's own claim, walled)", () => {
       expect(mergedInputs["nested"]).toEqual(srcInputs["nested"]);
     }
     // and the spell DID resolve (the wall is not vacuous: the merge
-    // ran its substitution, and still added no name)
-    const resolved = (plan.workflow["s_1::n"] as Record<string, unknown>)["inputs"] as Record<string, unknown>;
-    expect(resolved["i"]).toEqual(["s_0::save", 0]);
+    // ran its substitution, and still added no name) — THROUGH the
+    // F41 boundary: the slot's link source IS the seam's boundary,
+    // whose own through carries the producer
+    const resolved = (plan["s_1::n"] as Record<string, unknown>)["inputs"] as Record<string, unknown>;
+    expect(resolved["i"]).toEqual(["__unload$0", 0]);
+    expect((plan["__unload$0"] as Record<string, unknown>)["inputs"])
+      .toEqual({ through: ["s_0::save", 0], unload_models: false });
   });
 });

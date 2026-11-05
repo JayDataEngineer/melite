@@ -8,6 +8,10 @@
 // it. The result is the same.") — this wall burns on that class,
 // graph-wide.
 import { describe, it, beforeAll } from "vitest";
+// THE OPERATOR-STATE FIREWALL (2026-11-15): this suite composes the mod
+// plane directly — judge fixtures, never the operator's rows file
+import { isolateOperatorModState } from "../../../../tests/helpers/operator-modstate-isolation.ts";
+isolateOperatorModState();
 import assert from "node:assert/strict";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -51,11 +55,12 @@ const stackRows = (graph: Graph): Array<Array<Record<string, unknown>>> =>
 // while the truth burns). Import the served rows; never retype them.
 import { H3_LORA_ROWS } from "@melite/models-h3/mods/loras";
 const turbo = H3_LORA_ROWS.find((r) => r.id === "h3_lightx2v_turbo")!;
-// the DECL's birth row (2026-11-12, the merge-default order: the
-// Larry + LightX2V dareties merge took the default seat —
-// loraStackDefault in actions.ts resolves THIS row id; the arm
-// derives from the same catalog so the two can never drift)
-const birth = H3_LORA_ROWS.find((r) => r.id === "h3_lightx2v_turbo")!
+// the DECL's birth row (2026-11-01, the silver-dareties default
+// order: silveroxides' OFFICIAL silver_official_releases DARE-TIES
+// merge took the default seat — loraStackDefault in actions.ts
+// resolves THIS row id; the arm derives from the same catalog so the
+// two can never drift)
+const birth = H3_LORA_ROWS.find((r) => r.id === "h3_silver_dareties")!
 
 describe("THE MOD-BAG PIPELINE (studio bag → service door → loader stack)", () => {
   let svc: ComfyUIService;

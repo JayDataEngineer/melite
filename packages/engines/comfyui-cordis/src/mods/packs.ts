@@ -11,6 +11,14 @@ import type { Context } from '@deepseek-ai/cordis'
 import { theService } from '../cardDefs.ts'
 import z from '@deepseek-ai/schemastery'
 import { bag } from '@melite/contracts/extraKeys'
+// THE ONE HOME (the kit header's own law — "packs.ts keeps apply()
+// and imports these back"): the mask pack's field schema lives in
+// the kit's pack-fields.ts (the leaf tier, beside MASK_RIDERS and
+// the admission gate). The parallel copy that lived HERE drifted
+// from that law — the F7 cure (the inpaint denoise default, qa8
+// 2026-11-01) moved the default in the kit and this file kept
+// serving 0.5. The import retires the second writer.
+import { MaskFields } from '@melite/comfyui-card-kit/pack-fields'
 
 export const inject = ['comfyui']
 
@@ -116,55 +124,8 @@ const IPAdapterFields = z.object({
     .extra('extra', bag({ wtype: 'ip_adapters', group: 'ip_adapter', zone: 'mods', default: null, order: 3 })),
 })
 
-// ── MASK (the MaskMod): the region-modality contract ──
-const MaskFields = z.object({
-  mask: z.any().description('Region Mask')
-    .extra('extra', bag({
-      wtype: 'mask', group: 'mask', zone: 'mods', order: -1,
-      tooltip: 'Add the mask mod, then drop an RGBA PNG whose alpha channel marks the region.',
-    })),
-  input_mask: z.string().role('path').description('Region Mask')
-    .extra('extra', bag({
-      // THE MOD-MODAL LAW (operator, 2026-10-10, final form): the
-      // image mask IS a mod — its row renders INSIDE the mask mod's
-      // own modal: a mod field styled as the mod's input seat —
-      // wtype image, group input, zone inputs, order -1, width 1,
-      // columns 3. NEVER a card-face inputs-section row of its own. The li stroke that pulled it
-      // onto the card face was the deviation — erased to the
-      // template, letter for letter.
-      wtype: 'image', group: 'input', zone: 'inputs', order: -1, width: 1, columns: 3,
-      tooltip: 'RGBA PNG whose alpha channel marks the region. On its own: the mask selects this entry\'s region. With crop_stitch: the detailer crops, edits, and composites the region back.',
-    })),
-  mask_mode: z.union([z.const('auto'), z.const('crop_stitch'), z.const('full_frame')]).default('crop_stitch').description('Edit Scope')
-    .extra('extra', bag({
-      wtype: 'select', group: 'mask', zone: 'mods', order: 1, width: 1,
-      options: [
-        { value: 'auto', label: 'Whole image (default)' },
-        { value: 'crop_stitch', label: 'Masked region (crop + stitch)' },
-      ],
-      tooltip: 'No mask modifier = whole-image editing by default. Add a mask modifier to choose Masked region (crop + stitch): crop the region, edit it, and composite it back.',
-    })),
-  mask_detector: z.union([z.const('off'), z.const('person'), z.const('face'), z.const('hand')]).default('off').description('Region Detector')
-    .extra('extra', bag({
-      wtype: 'select', group: 'mask', zone: 'mods', order: 2, width: 1,
-      options: ['off', 'person', 'face', 'hand'],
-      tooltip: 'Automated region source for crop_stitch (the Impact detectors): person = segmentation silhouette, face/hand = boxes. off = use the Region Mask.',
-    })),
-  mask_context_pad: z.number().min(0).max(256).step(8).default(64).description('Context Padding')
-    .extra('extra', bag({ wtype: 'slider', group: 'mask', zone: 'mods', order: 3, width: 1, tooltip: 'Pixels of surrounding context kept in the crop (crop_stitch mode). More context = more coherence; 64 is the sweet spot.' })),
-  mask_grow: z.number().min(-32).max(32).step(1).default(8).description('Grow / Shrink')
-    .extra('extra', bag({ wtype: 'slider', group: 'mask', zone: 'mods', order: 4, width: 1, tooltip: 'Expand (+) or shrink (−) the region by an exact pixel disk before the run. Applied host-side.' })),
-  mask_feather: z.number().min(0).max(32).step(1).default(8).description('Feather')
-    .extra('extra', bag({ wtype: 'slider', group: 'mask', zone: 'mods', order: 5, width: 1, tooltip: 'Gaussian falloff the composite blends through — kills the pasted-on rectangle edge.' })),
-  mask_threshold: z.number().min(0).max(1).step(0.05).default(0).description('Re-threshold')
-    .extra('extra', bag({ wtype: 'slider', group: 'mask', zone: 'mods', order: 6, width: 1, tooltip: 'Re-binarize the feathered mask at this level. 0 = keep the soft falloff.' })),
-  mask_invert: z.boolean().default(false).description('Invert')
-    .extra('extra', bag({ wtype: 'boolean', group: 'mask', zone: 'mods', order: 7, width: 1, tooltip: 'Work OUTSIDE the painted region instead.' })),
-  mask_detail_size: z.number().min(64).max(16384).step(8).default(512).description('Region Detail Size')
-    .extra('extra', bag({ wtype: 'number', group: 'mask', zone: 'mods', order: 8, width: 1, tooltip: 'Working size the region detailer scales each region toward (DetailerForEach guide_size with bbox sizing, capped by the canonical max 1024).' })),
-  mask_denoise: z.number().min(0.05).max(1).step(0.05).default(0.5).description('Region Denoise')
-    .extra('extra', bag({ wtype: 'number', group: 'mask', zone: 'mods', order: 9, width: 1, tooltip: 'How strongly the region is reworked (DetailerForEach denoise): 0.5 keeps structure, 1 fully rewrites the crop.' })),
-})
+// ── MASK (the MaskMod): the region-modality contract — the schema
+// is imported above from the kit's pack-fields.ts (the one home).
 
 // ── QVOICE (the qvoice pack): a saved persona artifact — the
 // .qvoice file (the qvoice_save mod exports them) + the clone
@@ -182,7 +143,7 @@ const QvoiceFields = z.object({
   voice_strength: z.number().description('Voice Strength').min(0).max(2).step(0.05).default(1)
     .extra('extra', bag({
       wtype: 'number', group: 'qvoice', zone: 'mods', order: 1,
-      tooltip: 'Identity intensity of the loaded persona — below 1 pulls toward neutral, above 1 exaggerates it (the clone pipeline scales the embedding).',
+      tooltip: 'Identity intensity of the loaded persona — the embedding steers along its deviation from the voices-bank neutral (steered = neutral + (emb − neutral) × strength): below 1 pulls toward neutral, above 1 pushes further out. 1 is the saved voice bit-identical; a different strength re-samples the delivery (pacing and phrasing), so state a take deliberately.',
     })),
 })
 

@@ -18,7 +18,9 @@ import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
 import type { Plugin } from '@deepseek-ai/cordis'
 import { ComfyUIService } from './service.ts'
-import { resolveRepoRoot } from './comfyui-config.ts'
+import { resolveRepoRoot, loadEndpointConfig } from './comfyui-config.ts'
+import { boardUserLoraRows, readUserLoraRows, userLoraFlavor, userLorasPath, resolveEngineLorasDir } from './userLoras.ts'
+import { trayLoraRows } from './mods/trayLoras.ts'
 import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition'
 import type { ProvisionRow } from '@melite/comfyui-card-kit/model-contract'
 // COMPOSITION LIST (M2′ stroke 1, 2026-09-09, P48.1 — completed by
@@ -136,10 +138,6 @@ export const cardPackages: string[] = [
     '@melite/image-image-edit',
     '@melite/motion-motion/card',
     '@melite/video-h3-timeline/card',
-    // THE OPENJUTSU DOOR (2026-10-27, the Openjutsu lane): the
-    // character-swap video card — Viggle-Animate (the Ref2VA
-    // fine-tune) boards here; the schema-form twin beside the
-    // timeline studio, not a second timeline.
     // THE SWAP-PARITY R0 DOORS (2026-10-28, the swap build): trim +
     // frames + mask stage the swap inputs for the timeline's
     // replace mod — pure VHS/SAM preprocessing, no film path touched.
@@ -245,9 +243,6 @@ export const composeModPlane = async (ctx: Context): Promise<void> => {
     // the mask bare flavor (the crop_stitch detailer arm).
     ['@melite/models-fibo2-edit/mods/loras', 'fibo2-edit loras'],
     ['@melite/models-fibo2-edit/mods/mask', 'fibo2-edit mask'],
-    // THE VIGGLE BAG (the Openjutsu lane): the DMD accelerator +
-    // the character-swap adapter — the h3 loras catalog's sibling
-    // catalog for the swap lane's own default and drift cure.
     // THE 2.1 MASK BOARDING (2026-09-22, the operator's lane call):
     // the region contract absorbs onto the CURRENT edit lane — the
     // GPU receipt caught the gap (the compose door's admission
@@ -280,6 +275,13 @@ export const composeModPlane = async (ctx: Context): Promise<void> => {
   // no-op inside its apply; the hot drop-in remains the door for a
   // SECOND file, never the only door).
   await ctx.plugin(await import('./mods/userLorasFlavor.ts'))
+  // THE TRAY (operator 2026-11-04: "adding random loras I found
+  // online… then having it appear under loras mod with the right
+  // name, to just work"): the engine's own loras dir serves as
+  // picker rows — LAST in the compose so the declared rows (family
+  // flavors, the user rows file) win every filename they name and
+  // the tray only adds what nothing declared.
+  await ctx.plugin(await import('./mods/trayLoras.ts'))
 }
 
 /** THE IDENTITY RUNG (native since 2026-09-10): every card
@@ -409,6 +411,76 @@ export const refreshCardDefs = (): Map<string, CardDefinition> => {
     return [id, def]
   }))
   return cell.cache
+}
+
+/** REARM THE LORA FLAVORS (the pixel-anim cure, 2026-11-15): the
+ *  user rows file and the tray register ONCE at boot compose — a
+ *  LoRA landed later (lora_install, the upload door, a plain cp)
+ *  never entered the flavors, so the compose gate read zero rows
+ *  and refused every bag id ("the family serves no rows") while
+ *  the ENGINE listed the file. THE LIVE SEAM the service was built
+ *  for (#39, registerFlavor at any time) closes it: this
+ *  disposes the previous runtime registrations, re-reads the rows
+ *  file, re-walks the tray dir, and registers both fresh against
+ *  theService() — the SAME instance the compose gate's modCatalog
+ *  reads, so the next compose serves the row. ZERO restarts: the
+ *  manage plane calls it on every lora verb (list/install/fetch)
+ *  and the upload door on every landing; `rearmWeights` is the
+ *  precedent (drop the cached read, never fork the truth).
+ *  DECLARED ROWS STILL WIN: the rows flavor registers before the
+ *  tray walk reads lorasKnownFilenames(), so a seated row keeps
+ *  its label/strength over the tray's presence row. */
+let loraRearmHandles: (() => void)[] = []
+export const rearmLoraFlavors = (): { user_rows: number; tray_rows: number; problems: string[] } => {
+  // COLD SERVICE (manage verbs can arrive before the boot compose
+  // settles): the seated row is already on disk — the boot compose
+  // itself registers it (userLorasFlavor reads the file at apply).
+  // Deferring is honest; throwing would take a landed install down.
+  let service: ComfyUIService
+  try {
+    service = theService()
+  } catch {
+    const file = readUserLoraRows(userLorasPath())
+    return { user_rows: file.rows.length, tray_rows: 0, problems: ['card defs not booted — rows serve at the boot compose'] }
+  }
+  for (const dispose of loraRearmHandles) dispose()
+  loraRearmHandles = []
+  const problems: string[] = []
+  // THE USER ROWS, re-read: absent stays absent (opt-in), problems
+  // ride the report (never a silent skip). THE BOARDING GUARD (the
+  // poison cure, 2026-11-15): a row naming a family that does not
+  // board the pack DROPS with its name in the report — never a
+  // boot-taking drift registration
+  const file = readUserLoraRows(userLorasPath())
+  problems.push(...file.problems)
+  const boarded = boardUserLoraRows(file.rows, new Set(service.lorasBoardingFamilies()))
+  for (const drop of boarded.dropped) problems.push('row dropped — ' + drop)
+  const flavor = userLoraFlavor({ ...file, rows: boarded.rows })
+  if (flavor !== null) loraRearmHandles.push(service.registerFlavor(flavor))
+  const userRowsServing = boarded.rows.length
+  // THE TRAY, re-walked: the boot apply's own law — boarding
+  // families only, declared (and just-seated) filenames win
+  let tray_rows = 0
+  let cfg: Record<string, unknown> = {}
+  try {
+    cfg = loadEndpointConfig()
+  } catch {
+    cfg = {}
+  }
+  const dir = resolveEngineLorasDir(cfg)
+  if (dir !== null) {
+    const boarding = new Set(service.lorasBoardingFamilies())
+    const known = service.lorasKnownFilenames()
+    const rows = trayLoraRows(dir).filter(
+      (r) => boarding.has(r.families[0] ?? '') && !known.has(r.filename),
+    )
+    if (rows.length > 0) {
+      const families = [...new Set(rows.map((r) => r.families[0] ?? ''))].sort()
+      loraRearmHandles.push(service.registerFlavor({ pack: 'loras', families, rows }))
+      tray_rows = rows.length
+    }
+  }
+  return { user_rows: userRowsServing, tray_rows, problems }
 }
 
 /** Every family's declaration provision rows (DECL provisions for

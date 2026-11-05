@@ -59,6 +59,23 @@ vi.mock("../src/comfyui-config.ts", () => ({
 }));
 vi.mock("../src/comfyui-execute.ts", () => ({
   submitPrompt: async () => ({ promptId: "p-9", clientId: "client-1" }),
+  // THE CHAIN-SELECTION DOOR, MERGE ARM, PASSED THROUGH (F19 residual,
+  // 2026-11-13): the merged submit resolves bare store spellings
+  // before POST /prompt — this spec's fixtures carry no
+  // CheckpointManager, so the real resolver would make zero traffic;
+  // the passthrough pins that additive law here while the door's own
+  // arms (h3-chain-store-write arm 4 + h3-chain-selection-door.spec)
+  // ride the real rewrite.
+  resolveH3ChainSelections: async (
+    _client: unknown,
+    graph: Record<string, unknown>,
+  ): Promise<Record<string, unknown>> => graph,
+  // THE CHAIN-STORE HARVEST, NEUTRAL HERE (the F35 write side): the
+  // merge seat stamps chain_store off each stage's subOutputs — this
+  // spec's fixtures carry no h3_chain_top_level_complete row, and the
+  // real collector returns null on exactly that (the additive law the
+  // harvest wall's own spec pins).
+  h3ChainStoreOf: (): null => null,
   // THE REQUEUE DRIVER, PASSED THROUGH (2026-10-28 retest gap 3): the
   // merge seat drives the chain loop after waitTerminal — this spec's
   // fixtures carry no h3_chain_top_level_requeue row, so the REAL

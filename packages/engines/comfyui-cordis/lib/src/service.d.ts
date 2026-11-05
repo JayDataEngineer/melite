@@ -46,8 +46,11 @@ export interface DeclaredModifierKind {
      *  way). 'bbox-canvas' (stroke 78) = the entry's bbox_x/y/w/h
      *  fields offer the rectangle verb — an image preview the user
      *  drags a selection on (absent host degrades to the four number
-     *  inputs). Served verbatim like every declared row. */
-    leaf_face?: 'paint-canvas' | 'bbox-canvas';
+     *  inputs). 'orbit-canvas' (the reshoot orb, 2026-11-15) = the
+     *  camera-pose orb for orbit-canvas kinds, delivered by the client
+     *  plane's orbitFace host (absent host = the number dials hold).
+     *  Served verbatim like every declared row. */
+    leaf_face?: 'paint-canvas' | 'bbox-canvas' | 'orbit-canvas';
     /** THE SECTION CAPTION (2026-10-08, the operator's filter demand —
      *  "SAM2 AND SAM3 DON'T HAVE BBOX FILTER"): a one-line caption
      *  the leaf seats ABOVE the field stack, naming what the stack
@@ -137,6 +140,14 @@ export declare class ComfyUIService extends Service {
     /** The flavor registrations (the boot gate's side of the
      *  flavor↔boarding interlock). */
     flavorRegistrations(): readonly FlavorRegistration[];
+    /** The loras filenames registered flavors already name (the
+     * tray's dedup read — derived from the live registrations, never
+     * a hand list). */
+    lorasKnownFilenames(): ReadonlySet<string>;
+    /** The families carrying a loras flavor (the tray's boarding
+     * read — the interlock law: the tray registers no family that
+     * does not already board the pack). */
+    lorasBoardingFamilies(): readonly string[];
     /** The registered verb ids (SubActionMods — the anny plane; the
      *  boot gate reads this to satisfy DECL.mods verb entries). */
     verbIds(): string[];
@@ -172,11 +183,15 @@ export declare class ComfyUIService extends Service {
      *  compose under their own address (the BROKEN-C resolved
      *  address), but flavors key by FAMILY — a routed compose matches
      *  no flavor and every mod id refuses unknown-*. When the route
-     *  address serves no rows, resolve against the card's boarded
-     *  families (board order, first match wins — the cardVerbs
-     *  precedent). Non-routed composes match directly and never reach
-     *  the fallback, so no settled card changes voice. */
-    modCatalogForCompose(pack: string, modelId: string, boarded: readonly string[]): {
+     *  address serves no rows, resolve against the RUN FAMILY first
+     *  (the z-image-int8 gap, 2026-11-03: the run family owns rows the
+     *  route address never names, and the boarded fallback served
+     *  another family's catalog — krea-2 first on image-gen — before
+     *  the run family's own), then the card's boarded families (board
+     *  order, first match wins — the cardVerbs precedent).
+     *  Non-routed composes match directly and never reach either
+     *  fallback, so no settled card changes voice. */
+    modCatalogForCompose(pack: string, modelId: string, runFamily: string, boarded: readonly string[]): {
         rows: readonly LoraRowDecl[];
         shared: boolean;
     };

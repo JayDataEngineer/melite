@@ -691,6 +691,15 @@ export async function executeSingleInner(
     // voice-name law's only signal, stamped not thrown away.
     const fresh = qvoiceFreshnessOf(entry["outputs"]);
     if (fresh !== null) outputs["voice_freshness"] = fresh;
+    // THE CHAIN STORE HARVEST (the F35 write side): a chain's final
+    // prompt stamps WHERE the film's per-scene revisions live — three
+    // scalars off the completion row, provenance only (the engine
+    // wrote the checkpoints; the run row merely answers "which
+    // store"). Same stamp-the-stage-result posture as the qvoice and
+    // loudness receipts above; the merged seat carries the parity
+    // stamp per stage.
+    const chainStore = h3ChainStoreOf(entry["outputs"]);
+    if (chainStore !== null) outputs["chain_store"] = chainStore;
     // THE REPLAY VERDICT (D11, 2026-10-11): a seated tap that folded
     // no engine events while the run completed means the engine
     // served memo'd outputs without executing — the harvest is the
@@ -734,11 +743,15 @@ export interface H3RequeueRow {
  * requeue loop on a hostile graph. */
 const H3_CHAIN_SCENE_CAP = 32;
 
-function outputRowsOf(
-  entry: Record<string, EngineJson>,
+/** The ui-row walk over a history OUTPUTS record (the merge seat's
+ * per-stage subOutputs are the same shape after its prefix strip).
+ * The walker's own guard is the truth it types: an absent record
+ * (undefined — a history entry with no outputs at all) walks to no
+ * rows, so the declared face admits it. */
+function rowsOfOutputs(
+  outputs: EngineJson | undefined,
   key: string,
 ): Record<string, EngineJson>[] {
-  const outputs = entry["outputs"];
   if (outputs === null || typeof outputs !== "object" || Array.isArray(outputs)) return [];
   const rows: Record<string, EngineJson>[] = [];
   for (const node of Object.values(outputs as Record<string, Record<string, EngineJson>>)) {
@@ -753,6 +766,14 @@ function outputRowsOf(
     }
   }
   return rows;
+}
+
+/** The owed-scene walk over a whole terminal history entry. */
+function outputRowsOf(
+  entry: Record<string, EngineJson>,
+  key: string,
+): Record<string, EngineJson>[] {
+  return rowsOfOutputs(entry["outputs"], key);
 }
 
 /** The owed-scene row of a terminal history entry, or null when the
@@ -776,6 +797,39 @@ export function h3RequeueRowOf(entry: Record<string, EngineJson>): H3RequeueRow 
  * `h3_chain_top_level_complete` only when the last scene lands). */
 export function h3ChainCompleteOf(entry: Record<string, EngineJson>): boolean {
   return outputRowsOf(entry, "h3_chain_top_level_complete").length > 0;
+}
+
+/** The chain-store provenance the completion row carries (the F35
+ * write side): three scalars, the estate's machine-readable answer to
+ * "which store did I leave". THE ENGINE WRITES THE CHECKPOINT BYTES
+ * (the pack's own SegmentSave/LoopEnd) — this stamp never manufactures
+ * store bytes, it makes the run's store DISCOVERABLE: the stamp rides
+ * the stage result onto result_outputs (runsExecute spreads the stage
+ * outputs verbatim) and the start door's upscale run-id resolution
+ * reads it back. Takes the OUTPUTS record (the single seat passes the
+ * terminal entry's, the merged seat each stage's prefix-stripped
+ * subOutputs); an ABSENT record (undefined) walks to no rows and
+ * stamps nothing, the same face as a record without the row. Null
+ * unless the row is present — a chain stopped between scenes
+ * completes no row and earns no stamp. */
+export interface H3ChainStoreStamp {
+  readonly run_name: string;
+  readonly scenes: number;
+  readonly end_clip: number;
+  readonly [key: string]: EngineJson;
+}
+
+export function h3ChainStoreOf(
+  outputs: EngineJson | undefined,
+): H3ChainStoreStamp | null {
+  for (const row of rowsOfOutputs(outputs, "h3_chain_top_level_complete")) {
+    const runName = row["run_name"];
+    const endClip = row["end_clip"];
+    if (typeof runName === "string" && runName !== "" && typeof endClip === "number") {
+      return { run_name: runName, scenes: endClip, end_clip: endClip };
+    }
+  }
+  return null;
 }
 
 /** A selection_json spelling that names a run instead of authoring a

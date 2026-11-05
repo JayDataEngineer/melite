@@ -8,6 +8,10 @@
 // (composeCards + composeModPlane) before composing; the happy paths
 // pin that boot.
 import { describe, it } from "vitest";
+// THE OPERATOR-STATE FIREWALL (2026-11-15): the spawned CLI boots the
+// plane — its rows read must be isolated from operator machine state
+import { isolateOperatorModState } from "../../../../tests/helpers/operator-modstate-isolation.ts";
+isolateOperatorModState();
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 
@@ -109,9 +113,13 @@ describe("the compose door (process boundary)", () => {
   }, 240000);
 
   it("a model-less card rides without --model (the requiresModel:false arm)", () => {
+    // THE DECLARED SURFACE (admission is the card's own truth): the
+    // anny card carries body_glb + body_image since the blender-lane
+    // estate cut (f0feefd46) retired the rig-render knobs (resolution/
+    // framing/focal_length/samples/transparent died with the lane) —
+    // the bag below rides exactly what the card declares.
     const params = JSON.stringify({
-      body_glb: "/m/b.glb", resolution: 512, framing: 2,
-      focal_length: 35, samples: 16, transparent: "true",
+      body_glb: "/m/b.glb", body_image: "/m/b.png",
     });
     const r = run([...base, "--card", "anny", "--params", params]);
     assert.equal(r.status, 0, `stderr was: ${r.err.slice(0, 400)}`);
