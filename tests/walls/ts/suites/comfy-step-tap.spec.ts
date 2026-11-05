@@ -124,8 +124,13 @@ const startFakeEngine = (opts: FakeEngineOpts = {}): Promise<FakeEngine> =>
       });
     } else {
       server.on("upgrade", (_req: IncomingMessage, socket: Socket): void => {
-        socket.write("HTTP/1.1 404 Not Found\r\n\r\n");
-        socket.destroy();
+        // Graceful FIN, never destroy(): a destroy() mid-response races
+        // undici's ws parse on Node 22 and the client's error handler
+        // recurses into itself (RangeError: Maximum call stack size
+        // exceeded — an unhandled error that reds the whole fleet run
+        // after every test already passed). A complete 404 response
+        // over a ended socket fires the refusal exactly once.
+        socket.end("HTTP/1.1 404 Not Found\r\n\r\n");
       });
     }
     server.listen(0, "127.0.0.1", (): void => {
