@@ -187,6 +187,22 @@ describe("the qwen3-tts speak + export actions — byte-stability (the compatibi
     assert.notEqual(nodeOf(action, "MeliteQVoiceCopy"), undefined, "the boolean on speak fires the persist");
   });
 
+  it("THE STATED NAME RIDES THE PREVIEW TOO (qa8 F30 — the name law's one source): a stated voice_name names the design preview's studio, never the bare mint", () => {
+    const action = new GraphBuilder({});
+    instantiateAction(speak, { text: "hi", design_prompt: "warm", seed: 1, voice_name: "kunoichi_v2" }, DESIGN_FACTS, action, "probe-prev-named");
+    const studio = nodeOf(action, "AudiocoreVoiceStudio")!;
+    assert.equal(studio.inputs.name, "kunoichi_v2", "the stated name IS the save name — the mint basename is the consumer address (the export copy + the qvoice: grammar both resolve it)");
+    assert.equal(nodeOf(action, "MeliteQVoiceCopy"), undefined, "still NO copy node — the boolean owns the persist, the name law owns the name");
+  });
+
+  it("THE STATED NAME RIDES THE EXPORT PAIR (qa8 F30): the export's studio + copy share the stated name (the pair law holds stated, not only minted)", () => {
+    const action = new GraphBuilder({});
+    instantiateAction(exportAction, { ...EXPORT_PARAMS, voice_name: "kunoichi_v2" }, DESIGN_FACTS, action, "probe-export-named");
+    const studio = nodeOf(action, "AudiocoreVoiceStudio")!;
+    assert.equal(studio.inputs.name, "kunoichi_v2", "the stated name wins over the mint on the studio's write");
+    assert.equal(nodeOf(action, "MeliteQVoiceCopy")!.inputs.voice_name, "kunoichi_v2", "the copy searches the SAME stated name (one name, both nodes)");
+  });
+
 
   it("the golden holds on the MINIMAL doc (bare words + seed — every optional spread arm absent)", () => {
     const minimalFacts: ModelFacts = { ...FACTS, defaults: { variant: "customvoice" } };

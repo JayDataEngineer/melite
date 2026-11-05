@@ -27,7 +27,7 @@ import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 
 vi.mock("@melite/models-h3/mods/loras", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@melite/models-h3/mods/loras")>();
-  return { ...actual, H3_LORA_ROWS: actual.H3_LORA_ROWS.filter((r) => r.id !== "h3_lightx2v_turbo") };
+  return { ...actual, H3_LORA_ROWS: actual.H3_LORA_ROWS.filter((r) => r.id !== "h3_silver_dareties") };
 });
 
 const WINDOW_MODEL: ModelFacts = {
@@ -536,6 +536,81 @@ describe("the keyframe lane (placement refuses; endpoints ride the seats, interi
     const json = JSON.stringify(g.toJSON())
     expect(json).toContain("MiniMaxH3ReferenceToVideo")
     expect(json).toContain("MiniMaxH3AddGuide")
+  })
+
+  it("a boundary pin on a STATED seat rides the interior arm — the pin never evicts the row's own anchor (the no-drop law)", () => {
+    // THE SEAT-CLAIM LAW (applyKeyframeCompose/isSeatStated): a window
+    // that states its own anchor (image) or end anchor (last_frame)
+    // keeps it — a pin landing exactly on that boundary composes the
+    // interior AddGuide arm at the generation-local row instead, so
+    // BOTH images reach the graph (a pin never vanishes, a seat never
+    // loses its stated image).
+    const graph = buildGraph({
+      loras: LORA, seed: 7,
+      calls: [{ text: "first", start_frame: 0, end_frame: 90, image: "stated.png" }],
+      keyframes: [{ image: "pin.png", frame: 0 }],
+    })
+    const loads = Object.values(graph).filter((n) => n.class_type === "LoadImage").map((n) => String(n.inputs.image))
+    expect(loads).toContain("stated.png")
+    expect(loads).toContain("pin.png")
+    const guides = Object.values(graph).filter((n) => n.class_type === "MiniMaxH3AddGuide" && n.inputs.image !== undefined)
+    expect(guides, "the claimed-seat pin rides the interior arm").toHaveLength(1)
+    expect(guides[0]!.inputs.frame_idx).toBe(0)
+    // the end seat: a pin on the last generated row with a stated
+    // last_frame rides interior at that row, the stated end stays
+    const endGraph = buildGraph({
+      loras: LORA, seed: 7,
+      calls: [{ text: "first", start_frame: 0, end_frame: 90, last_frame: "end.png" }],
+      keyframes: [{ image: "pin_end.png", frame: 89 }],
+    })
+    const endLoads = Object.values(endGraph).filter((n) => n.class_type === "LoadImage").map((n) => String(n.inputs.image))
+    expect(endLoads).toContain("end.png")
+    expect(endLoads).toContain("pin_end.png")
+    const endGuides = Object.values(endGraph).filter((n) => n.class_type === "MiniMaxH3AddGuide" && n.inputs.image !== undefined)
+    expect(endGuides, "the claimed end-seat pin rides the interior arm").toHaveLength(1)
+    expect(endGuides[0]!.inputs.frame_idx).toBe(89)
+  })
+
+  it("on the single-window shape the DOC-level seats are the same seats — a stated doc image/last_frame pushes a boundary pin interior", () => {
+    // isSeatStated's second half: with one call the DOC-level image /
+    // last_frame IS the window's seat (the sole-call unpack lifts the
+    // same seats later; the mapping reads the doc spelling now), so a
+    // boundary pin still rides interior and nothing drops.
+    const anchorGraph = buildGraph({
+      loras: LORA, seed: 7, image: "doc_anchor.png",
+      calls: [{ text: "solo", start_frame: 0, end_frame: 90 }],
+      keyframes: [{ image: "pin.png", frame: 0 }],
+    })
+    const anchorLoads = Object.values(anchorGraph).filter((n) => n.class_type === "LoadImage").map((n) => String(n.inputs.image))
+    expect(anchorLoads).toContain("doc_anchor.png")
+    expect(anchorLoads).toContain("pin.png")
+    const endGraph = buildGraph({
+      loras: LORA, seed: 7, last_frame: "doc_end.png",
+      calls: [{ text: "solo", start_frame: 0, end_frame: 90 }],
+      keyframes: [{ image: "pin_end.png", frame: 89 }],
+    })
+    const endLoads = Object.values(endGraph).filter((n) => n.class_type === "LoadImage").map((n) => String(n.inputs.image))
+    expect(endLoads).toContain("doc_end.png")
+    expect(endLoads).toContain("pin_end.png")
+  })
+
+  it("a null-windowed pin mapping skips, then the render refuses the reversed span LOUD — the gate covers, the compose judges", () => {
+    // THE NULL-WIN SKIP (applyKeyframeCompose's second continue): a raw
+    // doc whose second call tiles backwards maps no window for it —
+    // the covered pin still lands on window 1 — and the film loop then
+    // refuses the reversed span with the walk's own law, never a
+    // silent mis-tile. (The schema walk refuses this shape upstream;
+    // the raw dispatch face owns the same voice.)
+    const g = new GraphBuilder()
+    expect(() => instantiateAction(film, {
+      loras: LORA, seed: 7,
+      calls: [
+        { text: "first", start_frame: 0, end_frame: 90 },
+        { text: "second", start_frame: 90, end_frame: 90 },
+      ],
+      keyframes: [{ image: "mid.png", frame: 45 }],
+    }, WINDOW_MODEL, g, "run_kf_null_win"))
+      .toThrow(/reversed span \(end_frame 90 <= start_frame 90\)/)
   })
 })
 

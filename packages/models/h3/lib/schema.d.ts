@@ -5,6 +5,16 @@ export type Family = (typeof FAMILIES)[number];
 export declare const wireList: typeof normalizeDeclaredRefs;
 export declare const H3_RECOMMENDED_SAMPLERS: readonly ["euler", "euler_cfg_pp", "euler_ancestral", "dpmpp_2m", "dpmpp_2m_sde", "heun", "res_multistep", "res_multistep_cfg_pp", "er_sde", "seeds_2", "seeds_3"];
 export declare const JSON_ARRAY_PARAMS: readonly ["calls", "audio_clips", "keyframes"];
+/** The fps rail's own bounds, one home: the row declares them and the
+ *  internal seconds rail derives its own bounds from them (see
+ *  fps_seconds) — a second rail must never invent a rival bound. */
+export declare const FPS_RAIL_MIN = 1;
+export declare const FPS_RAIL_MAX = 120;
+/** The refinement window's DECLARED default — one home for the seat,
+ *  the schema walk, and every wall/receipt that judges the unstated
+ *  rider (the SOTA plan's researched 0.30–0.35 band; 1.0 is the
+ *  taomate full-denoise mechanic, opt-in). */
+export declare const REFINE_DENOISE_DEFAULT = 0.35;
 export declare const paramSchema: z<Schemastery.ObjectS<NoInfer<{
     image: z<string, string, "plain">;
     last_frame: z<string, string, "plain">;

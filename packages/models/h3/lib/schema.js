@@ -9,7 +9,7 @@ import { vocabulary } from '@melite/comfyui-card-kit/vocab';
 import { samplingExtra } from '@melite/comfyui-card-kit/fields';
 import { bag } from '@melite/contracts/extraKeys';
 import { coerceWireArrays } from '@melite/comfyui-card-kit';
-import { CALL_KEYS, DOC_FPS_DEFAULT, FILM_ONLY_KEYS, GRID_BASE_FRAMES, GRID_MAX_FRAMES, GRID_STEP_FRAMES, REF_CAPS, T4_ONLY_KEYS, assertGridLength, assertSpanGrid, deriveWindowFamily, isMediaRef, normalizeDeclaredRefs, transitionOverlap } from './timelineContract.js';
+import { CALL_KEYS, DOC_FPS_DEFAULT, FILM_ONLY_KEYS, GRID_BASE_FRAMES, GRID_MAX_FRAMES, GRID_STEP_FRAMES, REF_CAPS, bookSeconds, assertGridLength, assertSpanGrid, deriveWindowFamily, isMediaRef, normalizeDeclaredRefs, transitionOverlap } from './timelineContract.js';
 // the window families this renderer builds (three shapes:
 // t4r opener / t4_open window / t4_chain window).
 export const FAMILIES = ['t4r', 't4_open', 't4_chain'];
@@ -26,6 +26,16 @@ export const H3_RECOMMENDED_SAMPLERS = [
     "res_multistep", "res_multistep_cfg_pp", "er_sde", "seeds_2", "seeds_3",
 ];
 export const JSON_ARRAY_PARAMS = ['calls', 'audio_clips', 'keyframes'];
+/** The fps rail's own bounds, one home: the row declares them and the
+ *  internal seconds rail derives its own bounds from them (see
+ *  fps_seconds) — a second rail must never invent a rival bound. */
+export const FPS_RAIL_MIN = 1;
+export const FPS_RAIL_MAX = 120;
+/** The refinement window's DECLARED default — one home for the seat,
+ *  the schema walk, and every wall/receipt that judges the unstated
+ *  rider (the SOTA plan's researched 0.30–0.35 band; 1.0 is the
+ *  taomate full-denoise mechanic, opt-in). */
+export const REFINE_DENOISE_DEFAULT = 0.35;
 // ── the params schema — H3TimelineCard mirrored 1:1 ─────────────────────────
 // the declared field order and defaults. Bare (defaultless) keys are the
 // ABSENT / required surface (prompt required=True; image
@@ -178,7 +188,7 @@ export const paramSchema = z.object({
     // the walk fills it, the lawful declared kind, never a silent ??
     // in the compose). The old hardcoded 24 in both render arms played
     // a 90-frame window at 3.75s under a 5.6s bar.
-    fps: z.number().description("Playback fps").min(1).max(120).default(DOC_FPS_DEFAULT).extra('extra', bag({ hidden: true })),
+    fps: z.number().description("Playback fps").min(FPS_RAIL_MIN).max(FPS_RAIL_MAX).default(DOC_FPS_DEFAULT).extra('extra', bag({ hidden: true })),
     steps: z.number().description("Steps").min(4).max(30).default(6).extra('extra', samplingExtra('steps', { tooltip: "6 for draft — the engine kernel's own calibrated count (its H3SLAAttention tooltip: use 6 steps rather than lowering sparsity; PARITY-pinned with plaguekind v7 — the 12 carried no receipt and matched neither his v7=6 nor v9=8; regolded by the 2026-10-16 upstream-parity audit); 30 standard; a boarded distill lora applies its own steps (edit them on the lora entry)" })),
     // THE SECOND-PASS MASTER (2026-09-22, operator: "Second Pass also
     // needs an on/off switch, it is very unclear if it is on or off"):
@@ -260,18 +270,19 @@ export const paramSchema = z.object({
     // full-denoise mechanic). 1.0 stays STATEABLE for that mechanic;
     // the ARM 36 band arm outlaws an out-of-window default.
     // (0.05, 1]; 0 is a dead pass and refuses.
-    refine_denoise: z.number().description("Refine denoise").min(0.05).max(1).step(0.05).default(0.35).extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", wtype: 'number', tooltip: "The refinement window (the researched 0.30–0.35 band): pass 1's structure stays, the second pass polishes texture. Default 0.35. 1.0 = full re-denoise (the taomate full pass, opt-in). Rides on the refine rider when refine_lora is set — and as the handoff's own window when the latent-upscale route is on." })),
+    refine_denoise: z.number().description("Refine denoise").min(0.05).max(1).step(0.05).default(REFINE_DENOISE_DEFAULT).extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", wtype: 'number', tooltip: "The refinement window (the researched 0.30–0.35 band): pass 1's structure stays, the second pass polishes texture. Default 0.35. 1.0 = full re-denoise (the taomate full pass, opt-in). Rides on the refine rider when refine_lora is set — and as the handoff's own window when the latent-upscale route is on." })),
     // ── THE LATENT-UPSCALE ROUTE (SOTA plan Phase P2, 2026-11-10) —
     // the learned-latent alternative to the SeedVR2 pixel route: the
     // vendored xmarre pack's MinimaxH3LatentUpscaler3DRefineHandoff
     // rides IN-BAND on the pass-1 joint AV latent (upscale + the
     // low-sigma refinement inside the 3D-conv kernel, audio preserved
-    // under lock_audio). The sub-gate: route latents halve the r2v head
-    // (1344×768 → 672×384) so pass 1 composes the quarter the kernel
-    // was distilled on; the rider (when set) mounts in-band on the
-    // upscaled latent. Route off (default) = the graph is byte-stable
-    // with the pre-route estate (ARM 41).
-    upscale_route: vocabulary(["off", "latent_2x"]).description("Latent upscale route").default("off").extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", wtype: 'select', tooltip: "Upscale between the passes: off (default — the second pass works at full size) or latent_2x (pass 1 renders at half size, the learned upscaler doubles the latent in-band before the second pass)." })),
+    // under lock_audio). Pass 1 composes the STATED geometry and the
+    // handoff doubles ON TOP of it — armed, the render lands at 2× the
+    // stated grid (the half-grid stamp that rendered base tier died
+    // with burn run-eb098020a6d0's A/B, 2026-11-01); the rider (when
+    // set) mounts in-band on the upscaled latent. Route off (default)
+    // = the graph is byte-stable with the pre-route estate (ARM 41).
+    upscale_route: vocabulary(["off", "latent_2x"]).description("Latent upscale route").default("off").extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", wtype: 'select', tooltip: "Upscale between the passes: off (default — the render stays at the stated size) or latent_2x (pass 1 renders the stated size and the learned upscaler doubles the latent in-band — the render lands at 2× the stated size)." })),
     // CLOSED FILE SURFACE (the operator's dropdown law — the sr_model
     // precedent above): the ONE file the estate runs — the on-disk LBH
     // v1 3D-conv bf16 checkpoint (the h3 latent weight, verified
@@ -290,7 +301,16 @@ export const paramSchema = z.object({
     interp_model: vocabulary(["film_net_fp16.safetensors", "rife47.pth"]).description("Interp model").default("film_net_fp16.safetensors").extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&interpolate_enabled=true", wtype: 'select', tooltip: "FILM or RIFE frame-interpolation weights." })),
     interp_multiplier: z.number().description("Interp multiplier").min(2).max(4).step(1).default(2).extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&interpolate_enabled=true", wtype: 'number', tooltip: "Frame multiple (2 = double the frame rate)." })),
     sr_switch: z.boolean().description("Super-Res (SeedVR2)").default(false).extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true", tooltip: "Upscale the final film through SeedVR2 before saving." })),
-    sr_resolution: z.number().description("Super-Res target").min(720).max(2160).step(360).default(1080).extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&sr_switch=true", wtype: 'number', tooltip: "The SeedVR2 output height in px." })),
+    // THE SR FLOOR (GAPS-6/F16, 2026-11-01): the old 720 floor sat
+    // BELOW the film's own 768 native canvas (the F34 plan geometry,
+    // 1344×768) — a super-res target below the rendered height is a
+    // downscale wearing the upscale seat. The floor IS the native
+    // height (768); the step is 24, the coarsest step that keeps
+    // every previously-served rung (1080/1440/1800/2160) on the
+    // grid from the new floor, so the served ladder survives the
+    // floor move byte-stable — the walk's step is the served
+    // quantization, never the instrument's law.
+    sr_resolution: z.number().description("Super-Res target").min(768).max(2160).step(24).default(1080).extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&sr_switch=true", wtype: 'number', tooltip: "The SeedVR2 output height in px (never below the film's own 768 native canvas)." })),
     // CLOSED FILE SURFACE (the operator's dropdown law — a free-text
     // weights row is a guess box): the two SeedVR2 DiT files the estate
     // actually runs (both proven in shipped _flow.json receipts: the fp16
@@ -298,7 +318,7 @@ export const paramSchema = z.object({
     // dropdown AND the membership refusal (an off-set value fails at the
     // schema door, never as a ComfyUI 400). Gated behind sr_switch like
     // every other post leaf.
-    sr_model: vocabulary(["seedvr2_ema_3b_fp16.safetensors", "seedvr2_ema_3b_fp8_e4m3fn.safetensors"]).description("Super-Res model").default("seedvr2_ema_3b_fp16.safetensors").extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&sr_switch=true", wtype: 'select', tooltip: "SeedVR2 weights (models/upscale_models/): fp16 3B default, fp8_e4m3fn 3B leaner." })),
+    sr_model: vocabulary(["seedvr2_ema_3b_fp16.safetensors", "seedvr2_ema_3b_fp8_e4m3fn.safetensors"]).description("Super-Res model").default("seedvr2_ema_3b_fp8_e4m3fn.safetensors").extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&sr_switch=true", wtype: 'select', tooltip: "SeedVR2 weights (models/upscale_models/): fp8_e4m3fn 3B default (the leaner row — a 24GB card cannot hold the fp16 3B model beside a 90-frame 1080p decode), fp16 for cards with more headroom." })),
     // the R2V COMBO size mode — the engine's own vocabulary is the
     // truth (F-10 live probe, 2026-10-27: POST /prompt with
     // ref_image_size "704x1280" against comfy_extras.nodes_minimax_h3
@@ -374,8 +394,10 @@ export const paramSchema = z.object({
     sla_stabilize_motion: z.boolean().description("SLA stabilize motion").extra('extra', bag({ order: null, group: "sla", visible_when: "sla_enabled=true", tooltip: "Untouched, this turns on for every model except the t4r openers — those run with it off." })),
     sla_disable_fp16_accum: z.boolean().description("SLA full-precision accum").default(true).extra('extra', bag({ order: null, group: "sla", visible_when: "sla_enabled=true", tooltip: "Full-precision accumulation inside the sparse kernel." })),
     // ── the sharpen leaves (compose: only EXPLICITLY-set leaves patch
-    // ImageSharpenKJ's grouped dict — bare emission defaults do NOT
-    // change a run that never sets them). VISIBILITY rides the
+    // the installed node's V3 combo wires (GAPS-1/F9 cure — the old
+    // flat grouped dict matched no option key, so the finalize dropped
+    // `method` outright); bare emission defaults do NOT change a run
+    // that never sets them). VISIBILITY rides the
     // declaration's own visible_when grammar (&-ANDed guards, |-SET
     // values) — no hand-rolled predicates anywhere.
     sharpen_method: vocabulary(["rcas", "adaptive_usm", "high_pass", "deconvolution"]).default("rcas").description("Sharpen Method").extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&sharpen_enabled=true", wtype: 'select' })),
@@ -410,7 +432,18 @@ export const paramSchema = z.object({
     // 10 seconds of mush. No default, no user face: hidden; the
     // compose owns the derivation (render loop restates it
     // unconditionally from the actual window length).
-    fps_seconds: z.number().description("Clip seconds (fps rail — internal, derived from the window length at compose)").min(1).max(60).extra('extra', bag({ hidden: true })),
+    // THE RAIL NEVER RIVALS ITS OWN LAW (2026-11-14, the live void-receipt
+    // burn: `$.fps_seconds expected number >= 1 but got 0.917`). The old
+    // .min(1).max(60) was a hand-picked second-count laid over two laws
+    // that already bound this quotient: the grid's 22..362 frames and the
+    // fps rail's 1..120. The grid's own SHORTEST window is 22f = 0.917s at
+    // the doc default 24fps, so the floor refused every grid-legal opener;
+    // the ceiling refused a grid-legal 362f window on a 1fps doc (362s).
+    // The bounds below are DERIVED from those two laws (never authored
+    // numbers): they refuse only what the laws already make impossible —
+    // the 400-class guard against a zero/negative clock on the wire —
+    // while every grid-legal window at every legal fps passes.
+    fps_seconds: z.number().description("Clip seconds (fps rail — internal, derived from the window length at compose)").min(bookSeconds(GRID_BASE_FRAMES, FPS_RAIL_MAX)).max(bookSeconds(GRID_MAX_FRAMES, FPS_RAIL_MIN)).extra('extra', bag({ hidden: true })),
     // THE LEGACY ALIASES (renderer-era spellings of the mod switches)
     // — gate-admitted for old drafts, never user surface: the MODS
     // own the switches (the operator's law), one face each.
@@ -731,33 +764,18 @@ export function schema(v) {
         // inert for multi-call chains — spans own the film)
     }
     const bad = (keys) => keys.filter((kk) => explicit.has(kk)).sort();
-    if (variant === 't4r') {
-        const b = bad(T4_ONLY_KEYS);
-        if (b.length) {
-            // (B8, journey-closure 2026-10-17 — h3-inject-keys-burn
-            // §CURES-OWED 6 / timeline-calls-burn §CURES-OWED 7) THE
-            // HONEST-VOICE RIDER, per the cured unknownQuantVoice precedent
-            // (web-kit/contracts laneRelations: a refusal names the SEAM
-            // and the repair, not just the fact). The spine
-            // `h3_window(t4r): unsanctioned inject keys: <keys>` stays
-            // byte-identical — the B5 admission clause and the pick verdict
-            // quote it verbatim, the walls grep it — the tail only extends
-            // it. The writer: the keys were staged lawfully on the doc's
-            // Layer-A plane (the serializer's emit dialects or a recipe
-            // stamp) and the guide seats re-derived t4r under them. The
-            // repair is one gesture: a stating commit through the studio
-            // re-derives the family and unstamps the residue in the same
-            // save (the B2 flip writer), or the named keys null-delete at
-            // the bench patch door. The film-only sibling below keeps its
-            // own voice — its writer is a stale duck row, not this emit
-            // (follow-up, not this scope).
-            throw new Error(`h3_window(t4r): unsanctioned inject keys: ${b.join(', ')}`
-                + ` — the studio's Layer-A emit carries lane-dead post keys (the family re-derived t4r under a legal stamp);`
-                + ` the repair is one gesture: restate the doc through the studio`
-                + ` (the commit re-derives the family and unstamps the residue)`
-                + ` or null the named keys at the patch door`);
-        }
-    }
+    // THE T4R DEAD-KEY GATE IS RETIRED (2026-11-15, the operator's
+    // gate-11 burn: the compose gate refused a lawful Final-Cut doc
+    // with four unactionable lines, because the t4r render arm wired
+    // no pixel post chain). The arm now mounts the chain
+    // (actions.ts renderH3Window hoists it above the family branch),
+    // so every finish key fires on every lane and the walk has no
+    // lane-conditional refusal to speak. The old T4_ONLY_KEYS set and
+    // its t4rInjectRefusal spine are deleted from timelineContract.ts
+    // — do not reintroduce a lane dead-letter gate here; cure the
+    // renderer instead, and let THIS walk's own gates judge what a
+    // doc shape can honor (the film-only gate below, the route-master
+    // gate, the guide seats).
     // (B6, timeline-calls-burn §CURES-OWED 5 / ui-truth-gap #4's walk
     // leg) THE FILM-ONLY GATE, the t4r gate's sibling: FILM_ONLY_KEYS
     // are read in exactly one seat — computeFilmMix's manifest, inside
@@ -771,6 +789,28 @@ export function schema(v) {
         const b = bad(FILM_ONLY_KEYS);
         if (b.length)
             throw new Error(`h3_window(${variant}): film-only inject keys: ${b.join(', ')}`);
+    }
+    // THE ROUTE-MASTER GATE (F44, 2026-10-31 — the dead-route burn
+    // run-d96317409da9: the doc stated the sub-gate alone, the ledger's
+    // own graph_receipt dropped `upscale_route`, the handoff never
+    // composed, and the film rendered the plain 1344×768 pass). The
+    // latent-upscale route is a SUB-GATE: its one consumer (the
+    // MinimaxH3LatentUpscaler3DRefineHandoff mount, actions.ts
+    // upscaleOn) reads it only behind the second-pass master, so a
+    // stated latent_2x beside an absent or false master composes into
+    // NO node — the inert-knob admission the misconfiguration law
+    // bans. Self-contained judge (two walked keys, zero engine truth),
+    // so it rides the walk beside the t4r and film-only gates; the
+    // upscale BAG's engine-side referent (the chain store) stays at the
+    // execute door. Since the lane-law retirement (2026-11-15) this
+    // gate is the SAME shape on every lane — a t4r doc that states the
+    // route without its master is refused here exactly like an open
+    // or film doc, because the t4r arm mounts the same handoff.
+    if (explicit.has('upscale_route') && out.upscale_route === 'latent_2x' && out.second_pass_enabled !== true) {
+        throw new Error(`h3_window(${variant}): upscale_route 'latent_2x' fires nothing without its master — the latent handoff `
+            + `(MinimaxH3LatentUpscaler3DRefineHandoff) composes only behind second_pass_enabled=true; the sub-gate alone `
+            + `rode the doc, armed no node, and rendered the plain pass (run-d96317409da9's burn). `
+            + `Arm the master beside the route, or turn the route off`);
     }
     // THE STEPS-PIN STAMP (007-H3-LoRA-PLANE L3): whether the caller
     // pinned steps is a fact only this walk owns (the raw keys —

@@ -41,8 +41,8 @@ describe("the fit model plugin (the whole model, one package)", () => {
 
   // THE BONE IS THE CALLER'S, and it rides the graph: a named bone
   // reaches FitRow verbatim, the rest of the row is the node's own
-  // declared defaults, and the proof sheet is rendered but NOT
-  // returned (the declared output is the seated mesh).
+  // declared defaults, and the seated mesh is the declared output
+  // (the proof sheet died with the blender lane, 2026-11-01).
   it("the seat composes the meld graph with the caller's bone", () => {
     const g = new GraphBuilder();
     const out = seat.build({
@@ -68,7 +68,7 @@ describe("the fit model plugin (the whole model, one package)", () => {
     const graph = g.toJSON() as Record<string, { inputs: Record<string, unknown> }>;
     assert.equal(graph["FitRow.0"]?.inputs["bone"], "hand_r", "the caller's bone rides verbatim");
     assert.equal(graph["FitRow.0"]?.inputs["align"], "socket", "the rest is the node's default row");
-    assert.ok("RayRenderGLBViews.0" in graph, "the proof sheet is rendered in-graph");
+    assert.ok(!("RayRenderGLBViews.0" in graph), "no proof renderer rides (the blender lane died 2026-11-01)");
     assert.deepEqual(graph["FitProp.0"]?.inputs["prop_glb_path"], "$prop");
   });
 
@@ -77,7 +77,8 @@ describe("the fit model plugin (the whole model, one package)", () => {
   // misvalued FIT_ROW key composed silently under every suite. This
   // golden pins the composed FitRow inputs as LITERALS (never the
   // FIT_ROW import — a constant cannot witness itself), the
-  // FitProp pair, and the proof sheet's own four numbers.
+  // FitProp pair. (The proof sheet's four numbers left with the
+  // blender lane — the renderer node is gone.)
   it("THE FIT ROW GOLDEN: the composed FitRow carries the twelve declared fields verbatim (the H3SLAAttention class closed at fit)", () => {
     const g = new GraphBuilder();
     seat.build({
@@ -100,15 +101,7 @@ describe("the fit model plugin (the whole model, one package)", () => {
       { body: graph["FitProp.0"]?.inputs["body_glb_path"], prop: graph["FitProp.0"]?.inputs["prop_glb_path"] },
       { body: "$body", prop: "$prop" },
     );
-    assert.deepEqual(
-      {
-        resolution: graph["RayRenderGLBViews.0"]?.inputs["resolution"],
-        framing: graph["RayRenderGLBViews.0"]?.inputs["framing"],
-        focal_length: graph["RayRenderGLBViews.0"]?.inputs["focal_length"],
-        samples: graph["RayRenderGLBViews.0"]?.inputs["samples"],
-      },
-      { resolution: 768, framing: 1.2, focal_length: 50, samples: 64 },
-    );
+    assert.ok(!("RayRenderGLBViews.0" in graph), "the proof renderer is gone from the lane");
   });
 
   // An empty or absent bone refuses at COMPOSE, by name — the

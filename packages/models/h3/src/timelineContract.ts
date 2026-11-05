@@ -65,31 +65,27 @@ export function transitionOverlap(transition?: string): number {
  *  drift beside it. */
 export const DOC_FPS_DEFAULT = 24 as const
 
-/** (2026-11-06, the family-reseat cure) the post-pass knobs the t4r
- *  lane cannot honor — its renderer wires NO post chain (the graph
- *  goes straight to CreateVideo), so the schema walk REFUSES these
- *  keys on a derived-t4r doc rather than silently dropping them (the
- *  no-silent-resolution law). Shared with the studio so its rail and
- *  its heal judge the SAME set the walk refuses.
- *
- *  THE DEAD-LETTER MASTERS (2026-10-16, audit 3f0b7c1a layera-globals
- *  #3): the twelve leaves above are gated, but the three MASTERS that
- *  own them — second_pass_enabled, sharpen_enabled, interpolate_enabled
- *  — and attention_backend were not, and each is read ONLY inside the
- *  non-t4r branch of the compose (actions.ts: second_pass_enabled at
- *  the post gate, the two leaves in the post chain, attention_backend
- *  at the chunked ModelAttentionBackend). On a t4r doc they rendered,
- *  persisted, composed LEGAL, and landed in NO node: a switch the user
- *  sees ON while the run ignores it — the exact silent-drop the twelve
- *  leaves are gated against, one level up. Joined here so the field
- *  gate, the row gate and the reseat heal judge them together. */
-export const T4_ONLY_KEYS = [
-  'sharpen_switch', 'sharpen_method', 'sharpen_strength', 'sharpen_radius',
-  'sharpen_threshold', 'sharpen_iterations', 'interp_switch',
-  'interp_multiplier', 'interp_model', 'sr_switch', 'sr_model', 'sr_resolution',
-  'second_pass_enabled', 'sharpen_enabled', 'interpolate_enabled',
-  'attention_backend',
-] as const
+/** THE LANE-LAW RETIREMENT (2026-11-15, the operator's gate-11 burn:
+ *  "WHY DO I SEE THIS BUG … I. NEVER. WANT. TO SEE. THE TESTS GO ALL
+ *  GREEN. AND THIS ERROR TO EVER APPEAR AGAIN") — THE DEAD-KEY LAW IS
+ *  GONE. This module used to export `T4_ONLY_KEYS` (the 26 post-pass
+ *  keys a derived-t4r doc was REFUSED for stating) and
+ *  `t4rInjectRefusal` (the voiced spine every door spoke), because
+ *  the t4r render arm wired NO post chain: it went straight from the
+ *  decode to CreateVideo, so a doc that stated a finish knob composed
+ *  it into no node. Keeping the operator's lawful state had required
+ *  the studio to strip the keys, the rail to hide the fields, the
+ *  recipe rows to withhold Final Cut, and every write door to refuse
+ *  the stranded residue — four courts enforcing an engine omission.
+ *  The engine now mounts the chain on every arm (actions.ts
+ *  renderH3Window: the post block sits ABOVE the family branch; the
+ *  t4r mux consumes its output), so EVERY one of those keys fires on
+ *  EVERY lane and NO lane refuses any key: FAMILY_LAW.deadKeys is
+ *  empty, and the second-pass group renders wherever the doc derives.
+ *  A future key that genuinely cannot fire on a lane must be cured by
+ *  making it fire (or by the FILM_ONLY gate's precedent: a walk gate
+ *  whose repair is a different doc shape, never a lane's dead letter).
+ */
 
 /** The knobs only the FILM shape can honor (2026-10-16, audit
  *  3f0b7c1a ui-truth-gap #4; the walk leg closed B6,
@@ -118,8 +114,9 @@ export const FILM_ONLY_KEYS = ['duck_depth_db'] as const
  *  the walk read seats the data did not name). The lanes spell
  *  deriveWindowFamily's own derivation as data (minCalls →
  *  t4_chain, guideKeys → t4r, the trailing lane is the
- *  fallthrough); deadKeys names the keys whose PRESENCE each lane
- *  refuses. `guideKeys` reads the doc level (the keyframe pin
+ *  fallthrough); deadKeys would name keys a lane's renderer could
+ *  not honor (empty for h3 since the 2026-11-15 retirement — the
+ *  post chain mounts on every arm). `guideKeys` reads the doc level (the keyframe pin
  *  channel, the last_frame string, the ref surface, the doc-level
  *  guide aliases — presence, never count: a non-empty-after-trim
  *  string or a non-empty array), `callGuideKeys` reads inside each
@@ -138,7 +135,13 @@ export const FAMILY_LAW = {
     },
     { lane: 't4_open' },
   ],
-  deadKeys: { t4r: T4_ONLY_KEYS },
+  // THE LANE-LAW RETIREMENT (2026-11-15): no lane refuses any key.
+  // The post chain mounts on every arm (actions.ts), so a finish
+  // knob stated on a t4r doc fires there like it does on the open
+  // and chain lanes. The empty map keeps the served shape
+  // FormSpecDoc.familyLaw declares; the generic dead-key clause in
+  // card-base's composeValidate stays for other families' laws.
+  deadKeys: {},
 } as const
 
 /** THE FAMILY-RESEAT MATH — DEAD SPINE, one spelling (the one-seat
@@ -225,6 +228,15 @@ export function assertCarriedSpanGrid(span: TimelineSpan, where: string, carry =
     )
   }
   return grid.length
+}
+
+/** The booked render clock, one home: the seconds seat rounds its
+ *  quotient to milliseconds before it rides the wire, so every
+ *  consumer that needs the value the graph will actually carry (the
+ *  schema's own rail bounds, the mix ledger) books through here —
+ *  never a second copy of the rounding. */
+export function bookSeconds(lengthFrames: number, fps: number): number {
+  return Math.round((lengthFrames / fps) * 1000) / 1000
 }
 
 export function gridSnap(length: number): number {

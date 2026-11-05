@@ -4,7 +4,10 @@
 // the two byte-for-byte. That arm is deleted (the families own their
 // lanes now), so the golden carries the compatibility law. The door is
 // the weightless vacuous parse (the bake is parametric — no checkpoint
-// loads). No sampler rides the turnaround, so no seed-sentinel.
+// loads). The turnaround render tail died with the blender lane
+// (2026-11-01): the goldens were re-recorded at the cut — the
+// CompositeCharacter bake is the lane's terminal, no SaveImage rides,
+// and the render knobs left the params doc.
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
@@ -31,21 +34,14 @@ const FACTS: ModelFacts = {
 
 const PARAMS = {
   body_glb: "/models/bodies/hero.glb",
-  resolution: 768,
-  framing: 1.2,
-  focal_length: 50,
-  samples: 64,
-  transparent: "true",
   gender: 0.7,
   height: 0.6,
 };
 
 const golden = (name: string): string => join(import.meta.dirname, "golden", `${name}.json`);
 
-const viewsOf = (g: GraphBuilder): Array<Record<string, unknown>> =>
-  Object.values(g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>).filter(
-    (n) => n.class_type === "SaveImage",
-  );
+const classes = (g: GraphBuilder): string[] =>
+  Object.values(g.toJSON() as Record<string, { class_type: string }>).map((n) => n.class_type);
 
 describe("the estimator chain — estimate_photo (models-hop56 wave-2 item 5: the flow e2e becomes a receipt, not the only judge)", () => {
   it("the photo→body compose pins the estimator chain at its named nodes: LoadImage the stated photo, Sam3dBodyImageToAnny the fixed person index", () => {
@@ -67,12 +63,8 @@ describe("the anny compose action — byte-stability (the compatibility law)", (
     const action = new GraphBuilder({});
     instantiateAction(compose, { ...PARAMS }, FACTS, action, "probe");
     assertGraphGolden(golden("compose-attached-glb"), action.toJSON(), "the attached GLB renders as-is");
-    assert.equal(viewsOf(action).length, 8, "the 8-view turnaround sheet rides");
-    assert.deepEqual(
-      viewsOf(action).map((n) => (n.inputs as { filename_prefix: string }).filename_prefix),
-      ["anny_front", "anny_front_right", "anny_right", "anny_back_right", "anny_back", "anny_back_left", "anny_left", "anny_front_left"],
-      "the view names ride the family convention, unstamped by run (stable)",
-    );
+    assert.ok(!classes(action).includes("SaveImage"), "the SaveImage turnaround tail is gone with the blender lane");
+    assert.ok(classes(action).includes("CompositeCharacter"), "the composite bake is the terminal");
   });
 
   it("the identity bake holds its golden (an empty body_glb — the sliders bake the body)", () => {
@@ -88,12 +80,13 @@ describe("the anny compose action — byte-stability (the compatibility law)", (
     assert.deepEqual(json.local_changes, { "l-upperarm-fat-incr": 1.5 }, "only non-zero MORPH labels ship (sparse local_changes)");
   });
 
-  it("a non-positive render amount refuses by name (the row guard, ported verbatim)", () => {
-    const p = { ...PARAMS, samples: 0 };
-    assert.throws(
-      () => instantiateAction(compose, { ...p }, FACTS, new GraphBuilder({}), "probe-bad"),
-      /samples = 0: a positive number is required/,
-    );
+  it("the retired render knobs ride no row (the blender lane died 2026-11-01)", () => {
+    for (const knob of ["resolution", "framing", "focal_length", "samples", "transparent"]) {
+      assert.equal(
+        compose.params?.some((row) => row.name === knob), false,
+        `the ${knob} row left the declared surface`,
+      );
+    }
   });
 
   it("the door is the vacuous parse (the bake loads no checkpoint)", () => {

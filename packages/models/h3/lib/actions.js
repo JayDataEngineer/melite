@@ -1,22 +1,24 @@
 import { fireControlNets } from '@melite/comfyui-card-kit/guard';
 import { saveAudio } from '@melite/comfyui-card-kit';
 import { mediaKindOf } from '@melite/contracts/mediaKinds';
-import { assertKeyframeRowShape, FAMILIES, paramSchema, wireList, H3_RECOMMENDED_SAMPLERS } from './schema.js';
+import { assertKeyframeRowShape, FAMILIES, paramSchema, wireList, H3_RECOMMENDED_SAMPLERS, REFINE_DENOISE_DEFAULT } from './schema.js';
 import { H3_LORA_ROWS } from '@melite/models-h3/mods/loras';
 import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from '@melite/comfyui-card-kit/vocab';
 import { computeFilmMix, parseFilmMixClips, spanOverlap, stanzaSecs } from './filmMix.js';
-import { GRID_REMAINDER, GRID_STEP_FRAMES, IMAGE_BUS_SLOTS, REF_CAPS, assertGridLength, assertSpanGrid, imageReferenceCap, isGridLength, isMediaRef, DOC_FPS_DEFAULT, spanStanzaFrames, transitionOverlap, } from './timelineContract.js';
+import { DOC_FPS_DEFAULT, GRID_REMAINDER, GRID_STEP_FRAMES, IMAGE_BUS_SLOTS, REF_CAPS, assertGridLength, assertSpanGrid, bookSeconds, imageReferenceCap, isGridLength, isMediaRef, spanStanzaFrames, transitionOverlap } from './timelineContract.js';
 import { applyH3ReshootCond, applyH3ReshootModel, buildH3Reshoot, reshootArmed, reshootPrompt, } from './reshoot.js';
 // THE ABSENT-BAG DEFAULT (h3-a, 2026-10-12; bytedance DMAD row
 // 2026-10-11 → the LightX2V Turbo 8-Step v1.0 row 2026-11-07 → the
-// merged dareties row 2026-11-12 — operator: the merge takes the
-// default seat, preferred for detail at 8 steps; the standalone
-// LightX2V turbos stay in the catalog for the audio/dialogue
-// routes). THE ROW IS `h3_lightx2v_turbo` — the LightX2V turbo
-// 4-to-8-step × dareties v4 step600 merge (label "LightX2V Turbo
-// 4-8 step", strength 0.6, designed 4–8 steps); there is NO separate
-// catalog row labelled "Larry + LightX2V" — F34b's finding was this
-// prose naming a row the catalog never held. The row is resolved from the
+// SILVER MERGE row 2026-11-01 — operator, verbatim: "switch the
+// default lora to the silveroxides merge"; SILVEROXIDES IS THE
+// MERGE, LIGHTX2V IS NOT). THE ROW IS `h3_silver_dareties` —
+// silveroxides' OFFICIAL silver_official_releases DARE-TIES merge
+// (label "Silveroxides DARE-TIES Merge", strength 0.8, designed
+// 6–8 steps, usable to 4). The earlier 2026-11-12 prose seated the
+// experimental/ LightX2V-turbo × dareties file (h3_lightx2v_turbo)
+// as "the merge" — the F34b class: a merge row the catalog never
+// held; that row stays pick-only under its honest experimental
+// label. The row is resolved from the
 // family lora CATALOG (mods/loras.ts — the one owner of every lora
 // filename and default strength; the value was restated as a
 // literal here, which is how a catalog edit would have silently
@@ -24,8 +26,9 @@ import { applyH3ReshootCond, applyH3ReshootModel, buildH3Reshoot, reshootArmed, 
 // on, lora (filename), str (default_strength), plus the four fixed
 // mode flags. A missing catalog row refuses at load — the default
 // would have no source.
-/** The absent-bag default's catalog id (F34's chip half, 2026-11-13). */
-export const H3_DEFAULT_LORA_ID = 'h3_lightx2v_turbo';
+/** The absent-bag default's catalog id (F34's chip half, 2026-11-13;
+ *  the silveroxides merge takes the seat 2026-11-01). */
+export const H3_DEFAULT_LORA_ID = 'h3_silver_dareties';
 /** The absent-bag default as a RESOLVED ROW — the same catalog row the
  *  compose default builds, exposed so the card can serve it as the
  *  ghost chip: the face then shows the adapter the film will actually
@@ -182,7 +185,7 @@ function resolveRefineSeat(p) {
 // the voice is the rider's (ARM 4f judges it at the family plane),
 // borrowed verbatim by the arm.
 function resolveStage2Denoise(p) {
-    const denoise = p.refine_denoise ?? 0.35;
+    const denoise = p.refine_denoise ?? REFINE_DENOISE_DEFAULT;
     if (!(denoise >= 0.05 && denoise <= 1)) {
         throw new Error(`h3 action: refine_denoise ${String(p.refine_denoise)} falls outside the refinement window [0.05, 1] — 1 is the full-denoise taomate mechanic, 0.30–0.35 the SOTA refinement window; a dead or over-terminal second pass never composes`);
     }
@@ -204,10 +207,25 @@ const mathStepsGold = (fps) => `max(${GRID_REMAINDER}, round(a * ${fps})) + (${G
 // switch flipped. Orphan + stub prompt = the marker law kept, the
 // hazard structurally dead.
 const I2V_MARKER_PROMPT = 'i2v marker branch — orphaned, never executed (r2v is the only lane)';
-// ImageSharpenKJ's grouped-widget defaults (the rcas block the python
-// builds when no sharpen leaf is injected; the card exposes only the
-// strength leaf — sharpen_strength).
+// ImageSharpenKJ's tuned defaults (the rcas operating point the
+// operator's V9 notes bless — strength 0.3 "looks natural" after the
+// upscaler; radius/threshold/iterations ride for the non-rcas
+// methods. These are OURS, not the pack's served defaults).
 const SHARPEN_DEFAULTS = { method: 'rcas', strength: 0.3, radius: 1.0, threshold: 0.05, iterations: 10 };
+// The served V3 DynamicCombo's per-option child seats, off the pack's
+// own declaration (ComfyUI-KJNodes nodes/sharpen_nodes.py
+// define_schema: io.DynamicCombo.Option(key=...) inputs). The
+// composer emits ONLY the selected option's children on dotted wires;
+// the engine folds unexpanded seats silently (never an error), so a
+// non-selected seat would ride dead bytes. The U2 wall diffs this map
+// against the pack declaration — a pack-side child change reds there,
+// never here first.
+const SHARPEN_OPTION_CHILDREN = {
+    rcas: ['strength'],
+    adaptive_usm: ['strength', 'radius', 'threshold'],
+    high_pass: ['strength', 'radius'],
+    deconvolution: ['strength', 'radius', 'iterations'],
+};
 /** The family's lane files that are NOT engine-general members
  * (the complexity floor's stroke 1): the encoder and the two VAEs
  * are invariants of THIS package's lane — no variant varies them,
@@ -344,6 +362,22 @@ export function concatSavedFilms(g, prefixes, after, out, opts = {}) {
  *  (the node's context_frames arm). prev_sec scales the carry:
  *  picture snapped to the node's legal context lengths (5/22/39/56
  *  frames — only whole latent steps), audio at 24 frames/second. */
+/** THE SPELL TEST (the naming law, one owner): a '$name' value names
+ *  a WIRED STAGE INPUT, never a file on disk — the merge
+ *  (rewriteSpells) lands the upstream producer's tensor link wherever
+ *  the spell rides. Serves the reference/anchor/keyframes seats (the
+ *  SPELL ARM in renderH3Window) and the film tail's wired soundtrack
+ *  seats (the soundtrack merged-form wire, 2026-11-01). ROW-4 refuses
+ *  producer links in Load* file slots, so a spelled value must always
+ *  reach a tensor/wired seat, never a loader. */
+const isSpell = (s) => s.startsWith('$');
+/** THE WIRED SOUNDTRACK SEAT COUNT — mirrors the pack's own
+ *  WIRED_CLIP_SEATS (vendor melite-audio-nodes film_mix.py): the mix
+ *  node declares wired_audio_1..4 optional AUDIO seats, and the
+ *  compose refuses a spelled clip beyond them loud. Raise BOTH
+ *  together (the refusal names the pack constant as the second
+ *  cure). */
+const WIRED_CLIP_SEATS = 4;
 function renderH3Film(p, g, facts, model, runId) {
     // (the compose dispatch guarantees calls is a non-empty array here)
     const calls = p.calls;
@@ -465,6 +499,58 @@ function renderH3Film(p, g, facts, model, runId) {
     // fallback (a row's unstated count read from the family table by
     // filename) is the same math on every face.
     const loraStepsApplied = marriedBagKnob(p, 'steps');
+    // THE ONE-CLOCK LAW (F55, 2026-11-02 — the join shares ONE clock):
+    // MeliteConcatVideos refuses members at mixed fps LOUD at execute
+    // — AFTER every window's GPU is paid and every member file is
+    // saved (a split doc composes validate-green and dies with the
+    // film rendered: window1_CreateVideo fps 48 against window2's 24,
+    // the concat naming both rates). The interp decision is the DOC's
+    // voice: the stanza merge ({...p, ...knobs} below) folds per-call
+    // pins into the params renderH3Window reads, so a call pinning
+    // interpolate_enabled or interp_multiplier against the film — or
+    // smuggling second_pass_enabled past the knob vocabulary — renders
+    // its member at a foreign clock and the join dies there. This
+    // sweep judges the RESULT (each window's computed clock against
+    // the film's, with the composer's own reads: strict master,
+    // truthy switch, raw multiplier), never the key list — zero nodes
+    // built, the first split window refusing with its pin state, the
+    // film's clock, and the cure (move the pin to the film level;
+    // per-shot interp is unstatable because the join cannot restamp
+    // one member silently). Agreement — or silence — rides the film's
+    // clock untouched; interp_model stays a per-shot choice (the
+    // model never touches the clock). The single-window face needs no
+    // seat (no join, no clock to split); an extend-time append file at
+    // a foreign rate stays the vendor's own loud refusal (both rates
+    // named — the correct seat for a file the film never rendered).
+    const filmInterpOn = p.second_pass_enabled === true && Boolean(p.interpolate_enabled);
+    const filmInterpMult = p.interp_multiplier;
+    for (let i = 0; i < calls.length; i += 1) {
+        const call = calls[i];
+        const knobs = (call.knobs ?? {});
+        const merged = { ...p, ...knobs };
+        const winOn = merged.second_pass_enabled === true && Boolean(merged.interpolate_enabled);
+        if (winOn !== filmInterpOn) {
+            // (the pin voice reads key PRESENCE, never undefined-
+            // comparison: an explicit null/undefined pin still overrides
+            // the merge — {...p, ...{k: undefined}}.k is undefined — so
+            // the composer renders it falsy while a !== undefined filter
+            // would report "no pin stated". The no-silent-repair law
+            // refuses explicit nulls, never fills them.)
+            const isObj = typeof knobs === 'object' && knobs !== null;
+            const named = ['interpolate_enabled', 'second_pass_enabled']
+                .filter((key) => isObj && key in knobs)
+                .map((key) => `knobs.${key} = ${typeof knobs[key] === 'undefined' ? 'undefined' : JSON.stringify(knobs[key])}`)
+                .join(', ');
+            const stated = named !== '' ? named : `knobs = ${JSON.stringify(knobs).slice(0, 80)}`;
+            throw new Error(`h3-timeline window ${i + 1}: ${stated} states a ${winOn ? 'doubled' : 'base-rate'} member against the film's ${filmInterpOn ? 'interpolated' : 'base-rate'} clock — the join shares one clock (MeliteConcatVideos refuses mixed-fps members at execute, after every window renders); move the pin to the film level (interpolate_enabled), per-window interp is unstatable`);
+        }
+        if (filmInterpOn && winOn) {
+            const winMult = merged.interp_multiplier;
+            if (winMult !== filmInterpMult) {
+                throw new Error(`h3-timeline window ${i + 1}: knobs.interp_multiplier = ${JSON.stringify(knobs.interp_multiplier)} states a ×${String(winMult)} member against the film's ×${String(filmInterpMult)} clock — the join shares one clock (MeliteConcatVideos refuses mixed-fps members at execute, after every window renders); move the pin to the film level (interp_multiplier), per-window interp is unstatable`);
+            }
+        }
+    }
     calls.forEach((call, i) => {
         const k = i + 1;
         // THE OPENER ANCHOR (cure 8's film arm — session 384a13cd's bread
@@ -863,16 +949,52 @@ function renderH3Film(p, g, facts, model, runId) {
         // the MIXED audio wired into CreateVideo — the film mp4 carries
         // the mix, not the raw concat audio. Early return: the
         // clips-free arm below stays byte-frozen.
+        // THE SOUNDTRACK WIRE SEATS (GAPS-20 one-way law, face #14's
+        // film tail — plan 2026-11-01-soundtrack-merged-wire §2/T1): a
+        // spelled clip src names a WIRED STAGE INPUT, never a file. The
+        // manifest row carries `wired: k` and NO src key (src embedded
+        // in the JSON string is dead text to the merge), and the compose
+        // seats the spell on a DECLARED MeliteAudioResample at the film's
+        // own clock (FILM_AUDIO_RATE) and carries the HOP'S LINK into the
+        // pack's optional AUDIO seat wired_audio_k — rewriteSpells lands
+        // the producer's link on the hop's audio input, so the seat
+        // receives film-rate audio. THE FILM-CLOCK HOP (F-B cure,
+        // 2026-11-13 — the wired tts→film press): the mix's own law
+        // refuses a wired seat at a foreign rate LOUD (film_mix.py
+        // seat_source — "a wired producer rides the film's own clock …
+        // never silently resampled") and a 24 kHz producer arrives
+        // exactly foreign; the resample is a visible node the merged
+        // graph carries — the declared hop is the opposite of the silent
+        // coercion the law bans. A path row keeps the staged-file
+        // handoff byte-identical (the estate boundary — lawful, S3
+        // freezes it). Seat overflow refuses loud, naming the row and
+        // both cures — never a silent drop.
+        const wiredSeats = {};
+        let nextSeat = 0;
+        const mixRows = manifest.placements.map((pl) => {
+            const clip = clips[pl.clip];
+            if (!isSpell(clip.src)) {
+                return { src: clip.src, start_sec: pl.filmSec, dur_sec: pl.durSec, class: pl.cls };
+            }
+            nextSeat += 1;
+            if (nextSeat > WIRED_CLIP_SEATS) {
+                throw new Error(`[h3-timeline] audio_clips[${pl.clip}] (${clip.cls}, src ${clip.src}) needs wired soundtrack seat ${nextSeat} but the film mix declares only ${WIRED_CLIP_SEATS} (wired_audio_1..${WIRED_CLIP_SEATS}) — wire fewer soundtrack producers, or raise WIRED_CLIP_SEATS in the melite-audio-nodes pack`);
+            }
+            wiredSeats[`wired_audio_${nextSeat}`] = g.node('MeliteAudioResample', {
+                audio: clip.src,
+                sample_rate: FILM_AUDIO_RATE,
+            }).out(0);
+            return { wired: nextSeat, start_sec: pl.filmSec, dur_sec: pl.durSec, class: pl.cls };
+        });
         const mix = g.node('MeliteFilmAudioMix', {
             videos: windowPrefixes.join(','),
             after,
             // the manifest rendered verbatim: every placement's source,
             // film seat, duration, and class — doc order kept (the node's
-            // two loops read the same order the retired tail did)
-            clips_json: JSON.stringify(manifest.placements.map((pl) => {
-                const clip = clips[pl.clip];
-                return { src: clip.src, start_sec: pl.filmSec, dur_sec: pl.durSec, class: pl.cls };
-            })),
+            // two loops read the same order the retired tail did); spelled
+            // rows ride wired: k + the wired_audio_k seats above
+            clips_json: JSON.stringify(mixRows),
+            ...wiredSeats,
             duck_spans: manifest.duckSpanString,
             music_duck_spans: manifest.musicDuckSpanString,
             duck_db: manifest.duckDb,
@@ -987,7 +1109,7 @@ function renderH3Window(p, g, facts, model, runId) {
     // walk-bypass callers get the declared default, never an invented
     // one).
     const fpsClock = typeof p.fps === 'number' && p.fps > 0 ? p.fps : DOC_FPS_DEFAULT;
-    p.fps_seconds = Math.round((p.length / fpsClock) * 1000) / 1000;
+    p.fps_seconds = bookSeconds(p.length, fpsClock);
     const isT4r = family === 't4r';
     const isChain = family === 't4_chain';
     // THE LATENT-UPSCALE ARM (SOTA plan Phase P2, 2026-11-10): behind
@@ -997,14 +1119,20 @@ function renderH3Window(p, g, facts, model, runId) {
     // refinement inside the 3D-conv kernel, lock_audio true — z_v
     // through the LBH kernel, z_a preserved).
     const upscaleOn = p.second_pass_enabled === true && p.upscale_route === "latent_2x";
-    // THE HEAD HALVES UNDER THE ARM (both r2v seats below): pass 1
-    // composes the quarter grid the kernel was distilled on
-    // (1344×768 → 672×384); the handoff doubles the latent in-band
-    // before the second pass. Route off = stated geometry (ARM 41's
-    // byte-stable plain pass — the halving never touches the legacy
-    // graph).
-    const headW = upscaleOn ? p.width / 2 : p.width;
-    const headH = upscaleOn ? p.height / 2 : p.height;
+    // THE HEAD STAYS STATED UNDER THE ARM (both r2v seats below): the
+    // burn A/B (run-eb098020a6d0's log, 2026-11-01: `Latent 42x24 ->
+    // 84x48 | Pixels 1344x768`) convicted the old half-grid stamp —
+    // pass 1 composed 1344×768 → 672×384 and the handoff's 2.0×
+    // restored base tier, so `latent_2x` rendered the plain pass. The
+    // kernel carries full-base grids (run-e49908ddf224: the same
+    // handoff at 2.0× landed 2688×1536; the chain's h3_2x clips feed
+    // it 82×46 latents daily), so the route now rides the STATED
+    // geometry and doubles ON TOP of it — armed, the render lands at
+    // 2× the stated grid. Route off = the same stated geometry (ARM
+    // 41's byte-stable plain pass — the arm touches nothing but the
+    // handoff's mount).
+    const headW = p.width;
+    const headH = p.height;
     // (M5, the fallback audit — judged LAWFUL and now documented: this
     // is the fresh-card admission, not a fallback crime. The window
     // shape's text face is p.prompt (declared required=True, "optional
@@ -1260,8 +1388,9 @@ function renderH3Window(p, g, facts, model, runId) {
         // and NEVER builds a loader; files/URLs/estate paths keep the
         // Load* disk handoff (the per-stage path owns those). Before
         // this arm the ports validated green at the lattice and died
-        // at the merge — the validate-said-nothing disease.
-        const isSpell = (s) => s.startsWith('$');
+        // at the merge — the validate-said-nothing disease. (isSpell is
+        // the module-level test — one owner, shared with the film tail's
+        // wired soundtrack seats.)
         const imageRef = (src) => isSpell(src) ? src : g.node('LoadImage', { image: src }).out();
         let anchorRaw;
         if (guideImage !== '') {
@@ -1415,31 +1544,40 @@ function renderH3Window(p, g, facts, model, runId) {
             // hears).
             const pinFps = typeof p.fps === 'number' && p.fps > 0 ? p.fps : DOC_FPS_DEFAULT;
             const read = (key) => (p[key] ?? null);
+            // THE CONDITIONING TENSOR SEAT (the soundtrack merged-form wire,
+            // session 2 — the interim conditioning door deleted): a spelled
+            // stamp names a WIRED STAGE INPUT — it slices through
+            // MeliteAudioTensorSlice.audio_tensor, a typed AUDIO socket the
+            // merge rewrites (rewriteSpells lands the producer's link
+            // there), never MeliteAudioSlice.audio — a Combo FILE seat
+            // validated against the live input-dir listing, where a link
+            // would die at submit (the F17 class). A path stamp keeps the
+            // file node byte-identical (the estate boundary, the S7 arm
+            // freezes it).
+            const sliceSeat = (src, startSeconds, durationSeconds) => isSpell(src)
+                ? g.node('MeliteAudioTensorSlice', {
+                    audio_tensor: src,
+                    start_seconds: startSeconds,
+                    duration_seconds: durationSeconds,
+                }).out(0)
+                : g.node('MeliteAudioSlice', {
+                    audio: src,
+                    start_seconds: startSeconds,
+                    duration_seconds: durationSeconds,
+                }).out(0);
             const stamp = read('dialogue_slice');
             if (stamp !== null) {
-                dialogueAudio = g.node('MeliteAudioSlice', {
-                    audio: stamp.src,
-                    start_seconds: stamp.slice_start_seconds,
-                    duration_seconds: stamp.slice_duration_seconds,
-                }).out(0);
+                dialogueAudio = sliceSeat(stamp.src, stamp.slice_start_seconds, stamp.slice_duration_seconds);
                 dialogueFrameIdx = Math.round(stamp.delay_seconds * pinFps);
             }
             const sfxStamp = read('sfx_slice');
             if (sfxStamp !== null) {
-                sfxAudio = g.node('MeliteAudioSlice', {
-                    audio: sfxStamp.src,
-                    start_seconds: sfxStamp.slice_start_seconds,
-                    duration_seconds: sfxStamp.slice_duration_seconds,
-                }).out(0);
+                sfxAudio = sliceSeat(sfxStamp.src, sfxStamp.slice_start_seconds, sfxStamp.slice_duration_seconds);
                 sfxFrameIdx = Math.round(sfxStamp.delay_seconds * pinFps);
             }
             const musicStamp = read('music_slice');
             if (musicStamp !== null) {
-                musicAudio = g.node('MeliteAudioSlice', {
-                    audio: musicStamp.src,
-                    start_seconds: musicStamp.slice_start_seconds,
-                    duration_seconds: musicStamp.slice_duration_seconds,
-                }).out(0);
+                musicAudio = sliceSeat(musicStamp.src, musicStamp.slice_start_seconds, musicStamp.slice_duration_seconds);
                 musicFrameIdx = Math.round(musicStamp.delay_seconds * pinFps);
             }
         }
@@ -1880,7 +2018,7 @@ function renderH3Window(p, g, facts, model, runId) {
                 iteration, overlap_frames: overlap,
                 continue_audio_latent: true,
                 model: sigmaModel, sigmas: sched,
-                previous_latent: prev.latOut,
+                previous_latent: prev.seamLatent,
             });
             cond = cont.out(0);
             targetLatent = cont.out(1);
@@ -1931,7 +2069,7 @@ function renderH3Window(p, g, facts, model, runId) {
     // — pass A full, pass B closes — unchanged); with no counting row
     // the primary stack already IS the un-distilled base.
     // the bag's own truth: absent p.loras = the default
-    // H3_DEFAULT_LORA_ID row (h3_lightx2v_turbo) rides via
+    // H3_DEFAULT_LORA_ID row (h3_silver_dareties) rides via
     // loraStackDefault — a counting distill; a stated bag
     // rides a counting row iff the marriage sees one.
     const distillRides = Array.isArray(p.loras) ? marriedBagKnob(p, 'steps') !== null : true;
@@ -2018,7 +2156,18 @@ function renderH3Window(p, g, facts, model, runId) {
     let vadecRaw;
     // `delivered` fills at the save branches (both families save)
     let delivered = null;
-    const rawHandles = { latOut, vdec, vadec, filmImages: latOut, filmAudio: latOut };
+    // ── THE SEAM CURRENCY (F44, 2026-11-14 — operator: "no per-window
+    // rate fix, no downsample at the seam. The window-2 crash is
+    // structurally certain") ── the continuation above consumes the
+    // previous window's latent at the BASE rate. When the latent-upscale
+    // handoff mounts, latOut is its 2× spatial output — handing that to
+    // window k+1's MiniMaxH3FiniteLatentContinuation composes a
+    // shape-refused graph before any engine run. The seam handle names
+    // pass 1's own sampled latent on the upscale arm; everywhere else it
+    // stays latOut, so the refine rider's chained texture still crosses
+    // the seam at the same rate (the chained-texture law, intact).
+    const seamLatent = upscaleOn ? sampled.out(0) : latOut;
+    const rawHandles = { seamLatent, latOut, vdec, vadec, filmImages: latOut, filmAudio: latOut };
     if (isChain || isT4r) {
         const prev = p.__prev;
         /* v8 ignore next 1 -- the film loop stamps __overlap on every window k≥2 before the render (the block mounts only when it did) */
@@ -2036,13 +2185,153 @@ function renderH3Window(p, g, facts, model, runId) {
             vadec = fin.out(2);
         }
     }
+    // ── THE POST CHAIN, HOISTED ABOVE THE FAMILY BRANCH (2026-11-15,
+    // the operator's gate-11 burn: "THE COMPOSE GATE REFUSED THIS DOC …
+    // the lane refuses it (unsanctioned inject keys)") ── the
+    // image-space finish (sharpen → interp → SeedVR2 → sharpen) used
+    // to live INSIDE the non-reference arm's else block, so a t4r
+    // window (any guide/reference seat) silently composed NO post node
+    // while the doc's keys rode the panel: every door then REFUSED the
+    // doc to hide the omission. The chain is family-agnostic pixel
+    // work on the decoded window — it mounts here for every arm; the
+    // gates are the DOC's own (second_pass_enabled + each limb's
+    // switch), never the lane's. With every gate off this block builds
+    // ZERO nodes and postImage === vdec, so the frozen t4r graphs stay
+    // byte-identical.
+    // sharpen leaves: only the EXPLICITLY-set ones patch the tuned
+    // bag (absent leaves keep SHARPEN_DEFAULTS above). The old
+    // card knob (sharpen_strength) rides the leaf loop like
+    // the renderer alias does.
+    const methodBag = { ...SHARPEN_DEFAULTS };
+    const sharpenLeaves = [
+        ['sharpen_method', 'method'], ['sharpen_strength', 'strength'],
+        ['sharpen_radius', 'radius'], ['sharpen_threshold', 'threshold'],
+        ['sharpen_iterations', 'iterations'],
+    ];
+    for (const [src, dst] of sharpenLeaves) {
+        const val = p[src];
+        if (val !== null && val !== undefined)
+            methodBag[dst] = val;
+    }
+    // ── V9 tail order (re-cut 2026-09-15, the operator's cause) ──
+    // upstream moved sharpen LAST: interp → VSR → sharpen → CreateVideo
+    // (V7/ours sharpened FIRST — before the upscaler could soften the
+    // detail away). Sharpen rcas 0.3 after upscale "looks natural"
+    // (his V9 notes). The switches stay ours; the ORDER is his.
+    //
+    // ── THE GRAPH-MIRROR BUILD (burn b, 2026-10-26 — operator: "H3
+    // VIDEO UI LIE… IT WILL ALWAYS UPSCALE") ── each limb mounts
+    // IFF its own doc gate is on; an off limb composes NO node at
+    // all. The pre-burn shape built every limb unconditionally and
+    // routed a lazy ComfySwitchNode around each — the serialized
+    // graph (a face the operator and the engine queue both read)
+    // carried SeedVR2 + interp + sharpen on EVERY doc, switches or
+    // not: the graph itself said "always upscale". The TS build now
+    // picks the wire at compose time — the same mount-behind-the-
+    // gate law the latent-upscale handoff and the refine rider
+    // already ride — and the V9 ORDER is preserved by threading one
+    // `postImage` handle down the chain.
+    let postImage = vdec;
+    const interpOn = secondPassOn && p.interpolate_enabled;
+    if (interpOn) {
+        const film = g.node('FrameInterpolationModelLoader', {
+            model_name: p.interp_model,
+        }).out();
+        const interpMultVal = p.interp_multiplier;
+        const interp = g.node('FrameInterpolate', {
+            interp_model: film, images: postImage, multiplier: interpMultVal,
+        }).out();
+        postImage = interp;
+    }
+    const srSwOn = secondPassOn && p.sr_switch;
+    if (srSwOn) {
+        const srRes = p.sr_resolution;
+        // THE FINISHING RAIL'S MEMORY SEAM (2026-11-14, the live
+        // "h3 final" press that OOM'd on the operator's 24GB card:
+        // "torch.OutOfMemoryError: CUDA out of memory. Tried to
+        // allocate 258.00 MiB ... this process has 23.36 GiB in use"
+        // — the h3 stack was STILL RESIDENT when SeedVR2 loaded its
+        // DiT). The upscaler is the one seat that needs the h3
+        // weights GONE: nothing downstream of this image reads them.
+        // A MeliteBoundary (Layer C, the F41 pass-seam primitive)
+        // carries the decoded frame through while evicting the
+        // models, so the eviction is output-reachable (the DAG proves
+        // it waits for the h3 pass) and SeedVR2 loads into free VRAM.
+        // `through` is the wildcard passthrough: the tensor rides
+        // untouched, only the cache is flushed.
+        const srIn = g.node('MeliteBoundary', {
+            through: postImage, unload_models: true,
+        }).out();
+        const sr = g.node('SeedVR2VideoUpscaler', {
+            image: srIn,
+            dit: g.node('SeedVR2LoadDiTModel', {
+                model: p.sr_model, device: 'cuda:0',
+            }).out(),
+            // THE DECODE'S MEMORY LAW: a 90-frame 1080p decode allocates
+            // ~21.9 GiB of activations in one pass and dies on the 23.52
+            // GiB estate card ("Phase 3: VAE decoding" OOM, 2026-11-14)
+            // even after the seam boundary freed the h3 stack. Tiled
+            // decode is the loader's own declared lever for exactly this.
+            vae: g.node('SeedVR2LoadVAEModel', {
+                model: LANE_FILES.sr_vae, device: 'cuda:0', decode_tiled: true,
+            }).out(),
+            seed: 42, resolution: srRes,
+            max_resolution: 0, batch_size: 5, uniform_batch_size: false,
+            color_correction: 'lab',
+        }).out();
+        postImage = sr;
+    }
+    // sharpen LAST (V9): the upscaler softens; rcas after it restores.
+    // Renderer alias second (sharpen_* leaves above build the method).
+    if (secondPassOn && p.sharpen_enabled) {
+        // THE V3 COMBO PROJECTION (GAPS-1/F9 cure): the installed
+        // KJNodes serves ImageSharpenKJ.method as a V3 DynamicCombo —
+        // the engine's expansion matches the base wire against the
+        // option keys and folds ONLY the selected option's dotted
+        // children into the execute dict (comfy_api _expand_schema_for_
+        // dynamic + build_nested_inputs; proven against the real _io.py
+        // in the GAPS-1 report). The old flat grouped dict matched no
+        // option key, so the finalized schema dropped `method` outright
+        // and validation failed required_input_missing — every sharpen
+        // compose died there. The option key rides `method`; the
+        // SELECTED option's children ride dotted wires (the F23
+        // mode.scale spelling chainUpscale already rides). Values are
+        // the same bag as before; only the SHAPE changed.
+        const selected = methodBag.method;
+        const sharpenInputs = { image: postImage, method: selected };
+        for (const child of SHARPEN_OPTION_CHILDREN[selected] ?? []) {
+            sharpenInputs[`method.${child}`] = methodBag[child];
+        }
+        const sharpened = g.node('ImageSharpenKJ', sharpenInputs).out();
+        postImage = sharpened;
+    }
+    // THE MUX CLOCK — one owner, both arms (the V9 compensation's one
+    // spelling): an interpolated window plays at base × multiplier. The
+    // t4r arm's clock is the walk-first PrimitiveFloat NODE, the
+    // open/chain arms' is the doc's number; the helper multiplies the
+    // one it was handed. `out(0)` is the expression's FLOAT face.
+    const muxFps = () => {
+        if (!interpOn)
+            return fpsInput;
+        if (typeof fpsInput === 'number')
+            return fpsInput * p.interp_multiplier;
+        return g.node('ComfyMathExpression', {
+            expression: `a * ${String(p.interp_multiplier)}`, 'values.a': fpsInput,
+        }).out(0);
+    };
     if (isT4r) {
         const created = g.node('CreateVideo', {
             // F25 (2026-10-30): the window mux rides the SAME join-rate door
             // as every join leg — the sound VAE's 32 kHz never muxes raw, so
             // one press and one join emit one standard (48 kHz), equal-rate
             // legs paying only the stated law.
-            images: vdec, audio: filmJoinAudio(g, vadec), fps: fpsInput, bit_depth: FILM_BIT_DEPTH,
+            // THE POST CHAIN REACHES THIS ARM TOO (2026-11-15, the
+            // operator's gate-11 burn): the t4r save used to bypass the
+            // post limbs by branch omission — the doc's second-pass keys
+            // composed NO node while every gate refused the doc that
+            // stated them. The mux takes the chain's own output and its
+            // compensated clock.
+            images: postImage, audio: filmJoinAudio(g, vadec), fps: muxFps(), bit_depth: FILM_BIT_DEPTH,
             // color_space: pin autofill "sRGB"
         });
         // ONE WINDOW-NAMING LAW (2026-09-22, the file-tail amendment;
@@ -2060,77 +2349,9 @@ function renderH3Window(p, g, facts, model, runId) {
             'codec.encoding': 're-encode', 'codec.encoding.crf': 10.0,
         });
         rawHandles.savePassthrough = saved.out(0);
-        delivered = { images: vdec, audio: vadec };
+        delivered = { images: postImage, audio: vadec };
     }
     else {
-        // sharpen leaves: only the EXPLICITLY-set ones patch the grouped
-        // dict (absent leaves keep ImageSharpenKJ's own defaults). The old
-        // card knob (sharpen_strength) rides the leaf loop like
-        // the renderer alias does.
-        const method = { ...SHARPEN_DEFAULTS };
-        const sharpenLeaves = [
-            ['sharpen_method', 'method'], ['sharpen_strength', 'strength'],
-            ['sharpen_radius', 'radius'], ['sharpen_threshold', 'threshold'],
-            ['sharpen_iterations', 'iterations'],
-        ];
-        for (const [src, dst] of sharpenLeaves) {
-            const val = p[src];
-            if (val !== null && val !== undefined)
-                method[dst] = val;
-        }
-        // ── V9 tail order (re-cut 2026-09-15, the operator's cause) ──
-        // upstream moved sharpen LAST: interp → VSR → sharpen → CreateVideo
-        // (V7/ours sharpened FIRST — before the upscaler could soften the
-        // detail away). Sharpen rcas 0.3 after upscale "looks natural"
-        // (his V9 notes). The switches stay ours; the ORDER is his.
-        //
-        // ── THE GRAPH-MIRROR BUILD (burn b, 2026-10-26 — operator: "H3
-        // VIDEO UI LIE… IT WILL ALWAYS UPSCALE") ── each limb mounts
-        // IFF its own doc gate is on; an off limb composes NO node at
-        // all. The pre-burn shape built every limb unconditionally and
-        // routed a lazy ComfySwitchNode around each — the serialized
-        // graph (a face the operator and the engine queue both read)
-        // carried SeedVR2 + interp + sharpen on EVERY doc, switches or
-        // not: the graph itself said "always upscale". The TS build now
-        // picks the wire at compose time — the same mount-behind-the-
-        // gate law the latent-upscale handoff and the refine rider
-        // already ride — and the V9 ORDER is preserved by threading one
-        // `postImage` handle down the chain.
-        let postImage = vdec;
-        const interpOn = secondPassOn && p.interpolate_enabled;
-        if (interpOn) {
-            const film = g.node('FrameInterpolationModelLoader', {
-                model_name: p.interp_model,
-            }).out();
-            const interpMultVal = p.interp_multiplier;
-            const interp = g.node('FrameInterpolate', {
-                interp_model: film, images: postImage, multiplier: interpMultVal,
-            }).out();
-            postImage = interp;
-        }
-        const srSwOn = secondPassOn && p.sr_switch;
-        if (srSwOn) {
-            const srRes = p.sr_resolution;
-            const sr = g.node('SeedVR2VideoUpscaler', {
-                image: postImage,
-                dit: g.node('SeedVR2LoadDiTModel', {
-                    model: p.sr_model, device: 'cuda:0',
-                }).out(),
-                vae: g.node('SeedVR2LoadVAEModel', {
-                    model: LANE_FILES.sr_vae, device: 'cuda:0',
-                }).out(),
-                seed: 42, resolution: srRes,
-                max_resolution: 0, batch_size: 5, uniform_batch_size: false,
-                color_correction: 'lab',
-            }).out();
-            postImage = sr;
-        }
-        // sharpen LAST (V9): the upscaler softens; rcas after it restores.
-        // Renderer alias second (sharpen_* leaves above build the method).
-        if (secondPassOn && p.sharpen_enabled) {
-            const sharpened = g.node('ImageSharpenKJ', { image: postImage, method }).out();
-            postImage = sharpened;
-        }
         // fps compensation (V9, 2026-09-15): upstream wires
         // CreateVideo.fps = base × interp multiplier (his Enhancements:
         // PrimitiveFloat 24 → ComfyMathExpression "a * 2" → fps). Without
@@ -2142,7 +2363,7 @@ function renderH3Window(p, g, facts, model, runId) {
         const created = g.node('CreateVideo', {
             // F25: the same join-rate door — the film standard is ONE rate
             // on every mux seat (t4r above, this window arm, every join).
-            images: postImage, audio: filmJoinAudio(g, vadec), fps: interpOn ? fpsInput * p.interp_multiplier : fpsInput, bit_depth: FILM_BIT_DEPTH,
+            images: postImage, audio: filmJoinAudio(g, vadec), fps: muxFps(), bit_depth: FILM_BIT_DEPTH,
             // color_space: pin autofill "sRGB"
         });
         const saved = g.node('SaveVideo', {
@@ -2195,6 +2416,7 @@ const H3_SAMPLER_OPTIONS = SAMPLER_OPTIONS.filter((n) => H3_RECOMMENDED_SAMPLERS
  *  precedent: __iteration/__overlap). */
 function applyKeyframeCompose(p) {
     const kfRows = Array.isArray(p.keyframes) ? p.keyframes : [];
+    /* v8 ignore next 1 -- the sole caller (the keyframe placement gate) runs only when kfRows.length > 0, so the empty re-entry never fires; the guard stays as the function's own contract */
     if (kfRows.length === 0)
         return;
     const calls = Array.isArray(p.calls) ? p.calls : [];
@@ -2221,6 +2443,7 @@ function applyKeyframeCompose(p) {
         const f = kf.frame;
         const image = str(kf.image);
         const w = wins.find((win) => win !== null && f >= win.sf && f <= win.ef - 1);
+        /* v8 ignore next 1 -- unreachable post-gate: the placement gate above refuses any frame without a covering finite window, so the find always lands; the guard stays as the loop's own contract */
         if (w === undefined)
             continue; // unreachable post-gate; the gate owns the refusal
         if (f === w.sf && w.rides.anchor === undefined && !isSeatStated(w, 'anchor')) {
@@ -2356,7 +2579,7 @@ export const film = {
         // bag's own field rows are the served truth.
         { name: "attention_backend", type: "enum", options: ["comfy kitchen attention", "pytorch attention"] },
         { name: "sr_switch", type: "boolean" },
-        { name: "sr_resolution", type: "number", bounds: [720, 2160] },
+        { name: "sr_resolution", type: "number", bounds: [768, 2160] },
         { name: "sr_model", type: "enum", options: ["seedvr2_ema_3b_fp16.safetensors", "seedvr2_ema_3b_fp8_e4m3fn.safetensors"] },
         { name: "ref_image_size", type: "string" },
         { name: "shift_video", type: "number", bounds: [1, 20] },

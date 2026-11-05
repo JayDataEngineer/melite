@@ -6,7 +6,8 @@ import { describe, it, expect, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { FILM_AUDIO_RATE, film, h3DefaultLoraEntry, parseH3Facts } from "../src/actions.ts";
 import { schema as h3schema } from "../src/schema.ts";
-import { DOC_FPS_DEFAULT } from "../src/timelineContract.ts";
+import { DOC_FPS_DEFAULT, deriveWindowFamily } from "../src/timelineContract.ts";
+import { RESOLUTION_SHORT_EDGE, planTierShape } from "../src/chainEdit.ts";
 import { stanzaSecs } from "../src/filmMix.ts";
 import { GraphBuilder, deriveDefaults, type ObjectInfoInput } from "@melite/comfyui-card-kit/graph";
 import { assertWiringAgainst, deriveWiringDoc } from "@melite/comfyui-cordis/comfyui-wiring";
@@ -18,7 +19,7 @@ import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 // keeps every other row — only the default's source is gone.
 vi.mock("@melite/models-h3/mods/loras", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@melite/models-h3/mods/loras")>();
-  return { ...actual, H3_LORA_ROWS: actual.H3_LORA_ROWS.filter((r) => r.id !== "h3_lightx2v_turbo") };
+  return { ...actual, H3_LORA_ROWS: actual.H3_LORA_ROWS.filter((r) => r.id !== "h3_silver_dareties") };
 });
 
 // The window driver's model row — the interpreter's own contract
@@ -111,7 +112,7 @@ describe("the film build's single-window arms (no calls wrapper)", () => {
       film,
       { variant: "t4_open", length: 124, prompt: "a slow push in", seed: 42 },
       WINDOW_MODEL, g, "run_no_turbo",
-    )).toThrow(/the lora catalog has no 'h3_lightx2v_turbo' row/);
+    )).toThrow(/the lora catalog has no 'h3_silver_dareties' row/);
   });
 
   it("THE GHOST CHIP'S SOURCE (F34's chip half): the resolved ENTRY reads the same catalog row — a catalog that lost it refuses the entry face too, same voice", () => {
@@ -120,7 +121,7 @@ describe("the film build's single-window arms (no calls wrapper)", () => {
     // One catalog, one refusal voice, BOTH faces — this file's
     // stripped catalog is the loss, so the entry has no source either.
     expect(() => h3DefaultLoraEntry())
-      .toThrow(/the lora catalog has no 'h3_lightx2v_turbo' row — the absent-bag default has no source; fix the catalog row id/);
+      .toThrow(/the lora catalog has no 'h3_silver_dareties' row — the absent-bag default has no source; fix the catalog row id/);
   });
 
   it("a calls-less window marries the bag's steps (no call knobs to consult, the doc face reads the bag)", () => {
@@ -260,6 +261,64 @@ describe("ONE CLOCK, BOTH ARMS (2026-10-16 — the single-call burn: 'it works w
       (n) => n.class_type === "PrimitiveFloat" && typeof n.inputs.value !== "number",
     );
     expect(undef).toEqual([]);
+  });
+
+  it("THE SHORTEST LEGAL WINDOW composes — the internal seconds rail never rivals the grid law (2026-11-14, the live void-receipt burn)", () => {
+    // The live press: a 22-frame opener (the grid's own minimum,
+    // GRID_BASE_FRAMES) refused at pool compose phase 1 with
+    // "$.fps_seconds expected number >= 1 but got 0.917" — the
+    // schema's hand-picked second-count was STRICTER than the grid
+    // law it sits under. 22f/24fps = 0.917s IS the shortest legal
+    // clock, so the rail must admit it and the derived value must be
+    // that quotient (never a clamped 1).
+    const g = new GraphBuilder();
+    instantiateAction(
+      film,
+      h3schema({
+        variant: undefined,
+        calls: [{ text: "the shortest opener", start_frame: 0, end_frame: 22, image: "anchor.png" }],
+        loras: BAG, seed: 42,
+      }),
+      WINDOW_MODEL, g, "run_shortest",
+    );
+    const doc = g.toJSON() as Doc;
+    const feeds = Object.values(doc)
+      .filter((n) => n.class_type === "PrimitiveFloat")
+      .map((n) => n.inputs.value);
+    expect(feeds, "the shortest legal window's clock rides the wire").toContain(0.917);
+    expect(feeds.filter((v) => typeof v !== "number"), "no undefined clock (the 400 class)").toEqual([]);
+  });
+
+  it("THE SECONDS RAIL'S BOUNDS ARE DERIVED, not authored: every grid-legal window at every legal clock composes", () => {
+    // The two laws that bound the quotient, walked at the corners
+    // that a HAND-PICKED bound refuses: the grid's shortest window on
+    // the fps rail's fastest clock (0.183s — below the old 1s floor)
+    // and the grid's longest on its slowest (362s — above the old
+    // 60s ceiling). The derived bounds admit both; a re-authored
+    // second-count reds here.
+    const composeCorner = (endFrame: number, fps: number): number[] => {
+      const g = new GraphBuilder();
+      instantiateAction(
+        film,
+        h3schema({
+          variant: undefined,
+          calls: [{ text: "a corner of the clock", start_frame: 0, end_frame: endFrame, image: "anchor.png" }],
+          fps, loras: BAG, seed: 42,
+        }),
+        WINDOW_MODEL, g, "run_corner",
+      );
+      const doc = g.toJSON() as Doc;
+      return Object.values(doc)
+        .filter((n) => n.class_type === "PrimitiveFloat")
+        .map((n) => n.inputs.value as number);
+    };
+    const fast = composeCorner(22, 120);
+    expect(fast, "the shortest window on the fastest legal clock rides the wire").toContain(0.183);
+    const slow = composeCorner(362, 1);
+    expect(slow, "the longest window on the slowest legal clock rides the wire").toContain(362);
+    for (const v of [...fast, ...slow]) {
+      expect(typeof v === "number" && v > 0, "every corner clock is a positive number: " + String(v)).toBe(true);
+    }
   });
 
   it("FRAMES ARE LAYER B: a stale doc-level length never outrides the single call's span (t4r seat)", () => {
@@ -607,8 +666,9 @@ describe("the refmod seat (audit 010/R1, 2026-10-18)", () => {
     const r2v = Object.values(docA).find((n) => n.class_type === "MiniMaxH3ReferenceToVideo");
     expect(r2v, "the r2v node composes on the t4r arm").toBeDefined();
     expect(r2v!.inputs.ref_image_size).toBe("match");
-    // ROW B (non-t4r, master on): the four sharpen leaves ride the
-    // ImageSharpenKJ method dict; the interp pair rides its own seats
+    // ROW B (non-t4r, master on): the stated sharpen leaves ride
+    // the ImageSharpenKJ V3 combo wires (option key + the selected
+    // option's dotted children); the interp pair rides its own seats
     const gb = new GraphBuilder();
     instantiateAction(
       film,
@@ -624,12 +684,11 @@ describe("the refmod seat (audit 010/R1, 2026-10-18)", () => {
     const docB = gb.toJSON() as Doc;
     const sharp = Object.values(docB).find((n) => n.class_type === "ImageSharpenKJ");
     expect(sharp, "the sharpen leaf composes under the master").toBeDefined();
-    const method = sharp!.inputs.method as Record<string, unknown>;
-    expect(method.method).toBe("adaptive_usm");
-    expect(method.strength).toBe(0.4);
-    expect(method.radius).toBe(2.5);
-    expect(method.threshold).toBe(0.9);
-    expect(method.iterations).toBe(2);
+    expect(sharp!.inputs.method).toBe("adaptive_usm");
+    expect(sharp!.inputs["method.strength"]).toBe(0.4);
+    expect(sharp!.inputs["method.radius"]).toBe(2.5);
+    expect(sharp!.inputs["method.threshold"]).toBe(0.9);
+    expect(sharp!.inputs["method.iterations"]).toBeUndefined();
     const interpLoader = Object.values(docB).find((n) => n.class_type === "FrameInterpolationModelLoader");
     expect(interpLoader!.inputs.model_name).toBe("rife47.pth");
     const interp = Object.values(docB).find((n) => n.class_type === "FrameInterpolate");
@@ -754,6 +813,85 @@ describe("the refmod seat (audit 010/R1, 2026-10-18)", () => {
     const guide = Object.values(doc).find((n) => n.class_type === "MiniMaxH3AddGuide");
     expect(guide, "the dialogue audio pin composes on the stamped (t4r) window").toBeDefined();
     expect(guide!.inputs.frame_idx).toBe(24);
+  });
+
+  it("THE ONE-CLOCK SWEEP (knobs voice): a per-call interp pin against a differently-clocked film refuses LOUD, naming the pin", () => {
+    // THE SWEEP'S FIRST VOICE (actions.ts renderH3Film head): the join
+    // shares one clock, so a call stating a base-rate member against
+    // an interpolated film (or the reverse) refuses at compose — zero
+    // GPU — naming knobs.interpolate_enabled and the repair (move the
+    // pin to the film level; per-window interp is unstatable).
+    const g = new GraphBuilder();
+    expect(() => instantiateAction(
+      film,
+      h3schema({
+        loras: [{ name: "distill-8.safetensors", strength: 0.6 }], seed: 7,
+        second_pass_enabled: true, interpolate_enabled: true,
+        interp_model: "rife47.pth", interp_multiplier: 2,
+        calls: [
+          { text: "first", start_frame: 0, end_frame: 90 },
+          { text: "second", start_frame: 90, end_frame: 175, knobs: { interpolate_enabled: false } },
+        ],
+      }),
+      WINDOW_MODEL, g, "run_one_clock_knob",
+    )).toThrow(/h3-timeline window 2: knobs\.interpolate_enabled = false states a base-rate member against the film's interpolated clock.*move the pin to the film level \(interpolate_enabled\)/s);
+    // THE PRESENCE VOICE (the pin-voice comment's own law): the sweep
+    // reads key PRESENCE, never undefined-comparison — an explicit
+    // undefined pin still overrides the merge (falsy) while a
+    // presence-blind check would report "no pin stated". The voice
+    // spells the undefined value verbatim.
+    const gu = new GraphBuilder();
+    expect(() => instantiateAction(
+      film,
+      h3schema({
+        loras: [{ name: "distill-8.safetensors", strength: 0.6 }], seed: 7,
+        second_pass_enabled: true, interpolate_enabled: true,
+        interp_model: "rife47.pth", interp_multiplier: 2,
+        calls: [
+          { text: "first", start_frame: 0, end_frame: 90 },
+          { text: "second", start_frame: 90, end_frame: 175, knobs: { interpolate_enabled: undefined } },
+        ],
+      }),
+      WINDOW_MODEL, gu, "run_one_clock_knob_undef",
+    )).toThrow(/h3-timeline window 2: knobs\.interpolate_enabled = undefined states a base-rate member against the film's interpolated clock/s);
+  });
+
+  it("THE ONE-CLOCK SWEEP (multiplier voice): a per-call interp_multiplier against a differently-rated film refuses LOUD, naming the pin", () => {
+    // THE SWEEP'S SECOND VOICE: both clocks on but rated differently
+    // (x3 member, x2 film) — the same one-clock law, the multiplier
+    // seat. The refusal names knobs.interp_multiplier and both rates.
+    const g = new GraphBuilder();
+    expect(() => instantiateAction(
+      film,
+      h3schema({
+        loras: [{ name: "distill-8.safetensors", strength: 0.6 }], seed: 7,
+        second_pass_enabled: true, interpolate_enabled: true,
+        interp_model: "rife47.pth", interp_multiplier: 2,
+        calls: [
+          { text: "first", start_frame: 0, end_frame: 90 },
+          { text: "second", start_frame: 90, end_frame: 175, knobs: { interp_multiplier: 3 } },
+        ],
+      }),
+      WINDOW_MODEL, g, "run_one_clock_mult",
+    )).toThrow(/h3-timeline window 2: knobs\.interp_multiplier = 3 states a ×3 member against the film's ×2 clock.*move the pin to the film level \(interp_multiplier\)/s);
+  });
+
+  it("THE CLIPS-STITCH LAW (single-window face): audio clips ride the FILM path — a clips-carrying single-window doc refuses LOUD", () => {
+    // A single-window doc has no film to mix over: the clips would
+    // stitch nothing, so the build refuses at the door — naming the
+    // repair (a second call unlocks the film path, or clear Music).
+    // Blank-src rows (a cleared Music row's residue) pass the door:
+    // the law judges only rows that name a source.
+    const g = new GraphBuilder();
+    expect(() => instantiateAction(
+      film,
+      {
+        variant: "t4_open", length: 124, prompt: "a slow push in", seed: 42,
+        loras: BAG,
+        audio_clips: [{ src: "/a/line.flac", start_frame: 0, dur_frames: 64, text: "Run." }],
+      },
+      WINDOW_MODEL, g, "run_clips_stitch_single",
+    )).toThrow(/audio clips ride the FILM path.*add a second call to author a film/s);
   });
 
   it("ref_mods compose the loader→apply chain, stems out, wired into the guider's conditioning", () => {
@@ -1398,63 +1536,255 @@ describe("the walk's film-only gate (duck_depth_db)", () => {  it("a single-wind
   });
 });
 
-// (B8, journey-closure 2026-10-17 — h3-inject-keys-burn §CURES-OWED 6
-// / timeline-calls-burn §CURES-OWED 7) THE HONEST-VOICE RIDER'S DOOR:
-// the t4r refusal names the writer and the one-gesture repair, in the
-// axis-unification voice (unknownQuantVoice — the refusal names the
-// SEAM, not just the fact). The machine spine
-// `h3_window(t4r): unsanctioned inject keys: <keys>` survives
-// byte-identical as the PREFIX — the write doors quote it verbatim —
-// the tail only extends it. Derived family throughout: the guide seat
-// flips the lane, the stamps rode lawfully (the burn's own shape).
-describe("the t4r gate's honest voice (B8)", () => {
+// THE LANE-LAW RETIREMENT (2026-11-15 — the operator's gate-11 burn:
+// the compose gate refused a lawful Final-Cut doc with four
+// unactionable lines, because the t4r render arm wired NO post chain
+// and every court in the estate refused the doc instead). The walk no
+// longer refuses a finish key on a derived-t4r doc, and the contract
+// module no longer exports the dead-key set or its refusal voice.
+// These arms pin the retirement BOTH ways: the burn shape ADMITS and
+// the chain FIRES, and the deleted machinery stays deleted — a
+// reintroduced refusal face reds the contract arm.
+describe("THE T4R FINISH DOC — the lane-law retirement (2026-11-15)", () => {
   const STAMPED_GUIDE = {
-    prompt: "a slow push in",
-    ref_images: ["ref1.png"],
+    image: "anchor.png",
+    seed: 4242,
+    loras: [],
     second_pass_enabled: true,
     sr_switch: true,
-  };
-  // The honest matcher: spine + writer + repair, one predicate —
-  // both arms judge through it, so a voice regression cannot pass
-  // one arm while the other stays green.
-  const honest = (voice: string): boolean =>
-    voice.startsWith("h3_window(t4r): unsanctioned inject keys: second_pass_enabled, sr_switch")
-    && voice.includes("the studio's Layer-A emit carries lane-dead post keys")
-    && voice.includes("the family re-derived t4r under a legal stamp")
-    && voice.includes("restate the doc through the studio")
-    && voice.includes("null the named keys at the patch door");
-  const refusedVoice = (): string => {
-    try {
-      h3schema({ ...STAMPED_GUIDE });
-    } catch (e) {
-      return (e as Error).message;
-    }
-    throw new Error("the stamped guide doc must refuse");
+    sharpen_enabled: true,
+    interpolate_enabled: true,
+    calls: [{ text: "a slow push in", start_frame: 0, end_frame: 90 }],
   };
 
-  it("a stamped guide doc refuses with the full honest voice — spine, writer, repair", () => {
-    const voice = refusedVoice();
-    // the byte pin: the walk's exact voice (the spine survives as the
-    // verbatim prefix; the tail names the writer and the repair):
-    expect(voice).toBe(
-      "h3_window(t4r): unsanctioned inject keys: second_pass_enabled, sr_switch"
-      + " — the studio's Layer-A emit carries lane-dead post keys (the family re-derived t4r under a legal stamp);"
-      + " the repair is one gesture: restate the doc through the studio"
-      + " (the commit re-derives the family and unstamps the residue)"
-      + " or null the named keys at the patch door",
-    );
-    expect(honest(voice)).toBe(true);
+  it("the four-key burn shape admits through the walk and composes the whole post chain on the t4r arm", () => {
+    const walked = h3schema({ ...STAMPED_GUIDE });
+    expect(deriveWindowFamily(walked as Record<string, unknown>), "the guide seat derives t4r").toBe("t4r");
+    const g = new GraphBuilder();
+    instantiateAction(film, walked, WINDOW_MODEL, g, "run_t4r_finish_chain");
+    const classes = new Set(Object.values(g.toJSON() as Doc).map((n) => n.class_type));
+    for (const c of ["SeedVR2VideoUpscaler", "ImageSharpenKJ", "FrameInterpolate"]) {
+      expect(classes.has(c), `${c} fires on the t4r arm — the 2026-11-15 chain hoist is the cure`).toBe(true);
+    }
   });
 
-  it("the bare key list (the pre-fix voice) fails the honest matcher — the voice regression reds", () => {
-    const voice = refusedVoice();
-    // the pre-B8 spelling, sliced off the live voice: the spine alone
-    // (the bare list the walk threw before the rider):
-    const bare = voice.slice(0, voice.indexOf(" — the studio's"));
-    expect(bare).toBe("h3_window(t4r): unsanctioned inject keys: second_pass_enabled, sr_switch");
-    // the matcher rejects it — the bare spelling names no seam and no
-    // repair. A voice reverted to this spelling loses the seam phrase
-    // the live message carries, and both arms red (the toggle's red).
-    expect(honest(bare)).toBe(false);
+  it("the doc's own gates still own the chain — a bare guided doc composes no post node", () => {
+    const walked = h3schema({
+      image: "anchor.png",
+      seed: 4242,
+      loras: [],
+      calls: [{ text: "a slow push in", start_frame: 0, end_frame: 90 }],
+    });
+    const g = new GraphBuilder();
+    instantiateAction(film, walked, WINDOW_MODEL, g, "run_t4r_plain");
+    const classes = new Set(Object.values(g.toJSON() as Doc).map((n) => n.class_type));
+    for (const c of ["SeedVR2VideoUpscaler", "ImageSharpenKJ", "FrameInterpolate"]) {
+      expect(classes.has(c), `${c} stays absent with the doc's own gates off`).toBe(false);
+    }
+  });
+
+  it("the dead-key machinery is deleted, not bypassed — no t4r dead set, no refusal voice, empty law", async () => {
+    const contract = await import("../src/timelineContract.ts");
+    expect(Object.keys(contract), "the T4_ONLY_KEYS export is gone").not.toContain("T4_ONLY_KEYS");
+    expect(Object.keys(contract), "the refusal voice is gone").not.toContain("t4rInjectRefusal");
+    expect(contract.FAMILY_LAW.deadKeys, "no lane refuses any key").toEqual({});
   });
 });
+
+describe("the walk's route-master gate (F44 — the dead-route burn run-d96317409da9: `upscale_route: latent_2x` alone admitted, armed no node, and the ledger's graph_receipt dropped the key)", () => {
+  // THE WALK-GATE FAMILY IDIOM (the film-only gate above): the wall
+  // rides the same sequence the run takes — the schema() walk BEFORE
+  // the action — never the raw unwalked doc.
+  //
+  // THE INVARIANT (canon axis 1): a stated `upscale_route:
+  // "latent_2x"` composes the MinimaxH3LatentUpscaler3DRefineHandoff
+  // ONLY behind its master (`second_pass_enabled: true` — actions.ts
+  // upscaleOn is the key's one consumer); the sub-gate stated beside
+  // an absent, false, or nulled master fires nothing, so the walk
+  // refuses it loud instead of admitting an inert knob (the
+  // misconfiguration law: fail loud, never silently serve the base
+  // tier while the doc says latent_2x). Since the lane-law retirement
+  // (2026-11-15) the gate speaks the SAME voice on every lane —
+  // the t4r arm mounts the same handoff.
+
+  it("THE BURN SHAPE: the F44 doc (guided single call + route, no master) refuses with the route-master voice on the derived-t4r lane too", () => {
+    // the exact run-d96317409da9 shape: image guide (derived t4r),
+    // `upscale_route: latent_2x`, no `second_pass_enabled`.
+    expect(() => h3schema({
+      image: "ninja_single.png",
+      seed: 4242,
+      upscale_route: "latent_2x",
+      calls: [{ text: "a ninja girl leaps across rooftops at dusk", start_frame: 0, end_frame: 39 }],
+    })).toThrow(/h3_window\(t4r\): upscale_route 'latent_2x' fires nothing without its master/);
+  });
+
+  it("THE BURN SHAPE, OPEN LANE: the same route-alone doc on t4_open refuses with the route-master voice", () => {
+    expect(() => h3schema({
+      seed: 4242,
+      upscale_route: "latent_2x",
+      calls: [{ text: "a ninja girl leaps across rooftops at dusk", start_frame: 0, end_frame: 39 }],
+    })).toThrow(
+      /h3_window\(t4_open\): upscale_route 'latent_2x' fires nothing without its master — the latent handoff \(MinimaxH3LatentUpscaler3DRefineHandoff\) composes only behind second_pass_enabled=true/,
+    );
+  });
+
+  it("an explicitly FALSE master refuses with the same voice — off is off, on every lane spelling", () => {
+    expect(() => h3schema({
+      seed: 42,
+      second_pass_enabled: false,
+      upscale_route: "latent_2x",
+      calls: [{ text: "a text window", start_frame: 0, end_frame: 90 }],
+    })).toThrow(/h3_window\(t4_open\): upscale_route 'latent_2x' fires nothing without its master/);
+  });
+
+  it("a NULLED master refuses on the open lane (the ONE NULL LAW: null is unstated — the F25 patch shape cannot smuggle the route through)", () => {
+    expect(() => h3schema({
+      seed: 42,
+      second_pass_enabled: null,
+      upscale_route: "latent_2x",
+      calls: [{ text: "a text window", start_frame: 0, end_frame: 90 }],
+    })).toThrow(/upscale_route 'latent_2x' fires nothing without its master/);
+  });
+
+  it("a NULLED master on the guided lane refuses with the route-master voice (same gate, every lane)", () => {
+    expect(() => h3schema({
+      image: "anchor.png",
+      seed: 42,
+      second_pass_enabled: null,
+      upscale_route: "latent_2x",
+      calls: [{ text: "a guided window", start_frame: 0, end_frame: 90 }],
+    })).toThrow(/h3_window\(t4r\): upscale_route 'latent_2x' fires nothing without its master/);
+  });
+
+  it("THE WIRED PAIR ADMITS: master true + route latent_2x composes the handoff (the route stays alive — the over-refusal guard)", () => {
+    const g = new GraphBuilder();
+    const walked = h3schema({
+      seed: 42, loras: [],
+      second_pass_enabled: true,
+      upscale_route: "latent_2x",
+      upscale_model: "minimax_h3_latent_upscaler_3d_bf16.safetensors",
+      calls: [{ text: "a text window", start_frame: 0, end_frame: 90 }],
+    });
+    instantiateAction(film, walked, WINDOW_MODEL, g, "run_f44_wired_pair");
+    const handoff = Object.values(g.toJSON() as Doc).find(
+      (n) => n.class_type === "MinimaxH3LatentUpscaler3DRefineHandoff",
+    );
+    expect(handoff, "the armed pair composes the handoff node").toBeDefined();
+    expect(handoff!.inputs.model_name).toBe("minimax_h3_latent_upscaler_3d_bf16.safetensors");
+    expect(handoff!.inputs.lock_audio).toBe(true);
+  });
+
+  it("the route OFF or unstated admits byte-stable — the default law never crosses this gate", () => {
+    for (const route of [undefined, "off"] as const) {
+      const g = new GraphBuilder();
+      const walked = h3schema({
+        seed: 42, loras: [],
+        ...(route !== undefined ? { upscale_route: route } : {}),
+        calls: [{ text: "a text window", start_frame: 0, end_frame: 90 }],
+      });
+      instantiateAction(film, walked, WINDOW_MODEL, g, `run_f44_off_${String(route)}`);
+      const handoff = Object.values(g.toJSON() as Doc).find(
+        (n) => n.class_type === "MinimaxH3LatentUpscaler3DRefineHandoff",
+      );
+      expect(handoff, `route ${String(route)}: the plain pass composes, no handoff`).toBeUndefined();
+    }
+  });
+
+  it("THE GUIDED WIRED PAIR ADMITS AND FIRES: master + route on a t4r doc composes the handoff (the lane no longer preempts)", () => {
+    const g = new GraphBuilder();
+    const walked = h3schema({
+      image: "anchor.png",
+      seed: 42,
+      loras: [],
+      second_pass_enabled: true,
+      upscale_route: "latent_2x",
+      calls: [{ text: "a guided window", start_frame: 0, end_frame: 90 }],
+    });
+    expect(deriveWindowFamily(walked as Record<string, unknown>)).toBe("t4r");
+    instantiateAction(film, walked, WINDOW_MODEL, g, "run_f44_guided_pair");
+    const handoff = Object.values(g.toJSON() as Doc).find(
+      (n) => n.class_type === "MinimaxH3LatentUpscaler3DRefineHandoff",
+    );
+    expect(handoff, "the guided lane composes the same handoff").toBeDefined();
+  });
+});
+
+// THE LANE-LAW RETIREMENT reaches the refine quartet (2026-11-15):
+// the rider's four seats were the last "lane-dead by derivation"
+// family — refused on a derived-t4r doc because the master itself was
+// lane-dead. With the chain mounted on every arm, the quartet states
+// lawfully on t4r like it does on the open lane; each member alone
+// admits (a modifier of an absent pick composes nothing — the same
+// law the open lane already had), and the wired pick fires the rider.
+describe("the t4r lane honors the refine quartet (lane-law retirement, 2026-11-15)", () => {
+  const GUIDED = {
+    image: "anchor.png",
+    seed: 42,
+    loras: [],
+    calls: [{ text: "a guided window", start_frame: 0, end_frame: 90 }],
+  };
+  for (const key of ['refine_lora', 'refine_strength', 'refine_steps', 'refine_denoise'] as const) {
+    it(`a guided doc stating ${key} alone admits — no lane dead-letter remains`, () => {
+      const walked = h3schema({
+        ...GUIDED,
+        [key]: key === 'refine_lora' ? 'h3_taomate_3step' : key === 'refine_denoise' ? 0.35 : 1,
+      });
+      expect(deriveWindowFamily(walked as Record<string, unknown>)).toBe("t4r");
+    });
+  }
+
+  it("the wired quartet fires the T3 rider on the t4r arm (master + refiner, two schedulers)", () => {
+    const g = new GraphBuilder();
+    const walked = h3schema({
+      ...GUIDED,
+      second_pass_enabled: true,
+      refine_lora: "h3_taomate_3step",
+    });
+    instantiateAction(film, walked, WINDOW_MODEL, g, "run_refine_t4r_wired");
+    const riders = Object.values(g.toJSON() as Doc).filter(
+      (n) => n.class_type === "SamplerCustomAdvanced",
+    );
+    expect(riders, "the armed pair composes the rider beside the main sampler").toHaveLength(2);
+  });
+});
+
+describe("the sr floor is the native canvas (GAPS-6/F16 — the 720p rung sat below the film's own height)", () => {
+  // THE DERIVED FLOOR (canon axis 4): the bound is read off plan
+  // geometry — the 768p tier resolves the film's own shape
+  // (1344×768, the F34 plan canvas), and the walk's floor IS that
+  // shape's height. No literal 768 anywhere in these arms: a plan
+  // move of the canvas moves the floor or reds here first.
+  const NATIVE = planTierShape(1344, 768, RESOLUTION_SHORT_EDGE['768p']);
+  it("the 768p tier resolves the film's own canvas", () => {
+    expect(NATIVE).toEqual({ width: 1344, height: 768 });
+  });
+  it("a sub-native target refuses naming the derived floor — 720 is a downscale in the upscale seat", () => {
+    expect(() => h3schema({ prompt: "x", sr_resolution: 720 }))
+      .toThrow(`$.sr_resolution expected number >= ${NATIVE.height} but got 720`);
+  });
+  it("the floor itself admits, and every previously-served rung stays on the grid (the ladder survives the floor move)", () => {
+    for (const rung of [NATIVE.height, 1080, 1440, 1800, 2160]) {
+      expect(() => h3schema({ prompt: "x", sr_resolution: rung })).not.toThrow();
+    }
+  });
+  it("the family door's film row floors at the same derived height — one floor, two spellings", () => {
+    const row = (film.params as ReadonlyArray<{ name: string; bounds?: [number, number] }>)
+      .find((p) => p.name === "sr_resolution");
+    expect(row?.bounds?.[0]).toBe(NATIVE.height);
+  });
+});
+
+  it("the wired quartet admits on the open lane — master + refiner compose the T3 rider (the over-refusal guard)", () => {
+    const g = new GraphBuilder();
+    const walked = h3schema({
+      seed: 42, loras: [],
+      second_pass_enabled: true,
+      refine_lora: "h3_taomate_3step",
+      calls: [{ text: "a text window", start_frame: 0, end_frame: 90 }],
+    });
+    instantiateAction(film, walked, WINDOW_MODEL, g, "run_refine_t4_open_wired");
+    const riders = Object.values(g.toJSON() as Doc).filter(
+      (n) => n.class_type === "SamplerCustomAdvanced",
+    );
+    expect(riders, "the armed pair composes the T3 rider's two schedulers").toHaveLength(2);
+  });

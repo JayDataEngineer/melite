@@ -165,12 +165,15 @@ export const DECL: ModelDecl = {
     "seed"
   ],
   "relations": {
-    // THE REQUIRED WORD, USED: a tts lane with no text composes
-    // nothing — the node's text input IS the generation. Stated as
-    // a law it refuses at bench-write in the field's voice, on
-    // every seat; the blank law's tolerance (a state still being
-    // typed is not a refusal) is exactly the case this row
-    // overrides, deliberately and by name.
+    // THE REQUIRED WORD, RUN-VOICED: a tts lane with no text composes
+    // nothing — the node's text input IS the generation. The word
+    // refuses at the RUN seat in the field's voice, on every run
+    // door; the WRITE seats drop the class (the frictionless-
+    // authoring ruling, operator 2026-11-11, seated at the pre-mint
+    // gate 2026-11-01 after the GUI-add burn): an add-stage that
+    // seeds a card's axes without its words is bench state under
+    // construction — the words are typed in the form the landed
+    // stage opens, and the run press owns the refusal.
     "required": [
       {
         "fields": ["text"],

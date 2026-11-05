@@ -12,8 +12,11 @@ export declare function parseAnnyFacts(_raw: LaneInputsFacts): Record<string, ne
  * schema walk validated types and bounds — a same-process typed
  * boundary). */
 export type AnnyParams = Record<string, unknown>;
-/** The compose action: the body's three arms + the 8-view
- * turnaround sheet (the anny_t1 segment, family-owned). */
+/** The compose action: the body's three arms (the anny_t1 segment,
+ * family-owned). The declared output is the assembled GLB — the
+ * 8-view turnaround sheet (RayRenderGLBViews + the per-view
+ * SaveImages) died with the blender lane, and with it the sheet's
+ * render knobs (resolution/framing/focal_length/samples/transparent). */
 export declare const compose: ComfyActionSpec<AnnyParams, Record<string, never>>;
 /** The estimator facts door: the estimation chain reads NOTHING off
  *  a lane (no checkpoint, no encoder — the MHR regression and the

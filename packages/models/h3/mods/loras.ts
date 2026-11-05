@@ -3,26 +3,46 @@
 // IS CORE. NEVER HARDCODED. The LORAS should not be on cards, the
 // MOD SYSTEM SHOULD"). THE CATALOG (operator, 2026-09-20: "LORAs
 // should be more up to the users end — add multiple loras and let
-// the user choose"): eleven distill/accel adapters, USER-PICKED —
+// the user choose"): twelve distill/accel adapters, USER-PICKED —
 // the studio's Modifiers section serves these rows as options, the
-// bag takes multiple entries. THE DEFAULT (operator 2026-10-11, "the
-// one from bytedance" → 2026-11-07, "the card's default lora → the
-// 8-step light tricks" → 2026-11-12, the merge takes the default
-// seat): the h3_lightx2v_turbo row — the LightX2V turbo 4-to-8-step
-// × dareties v4 step600 merge (strength 0.6, designed 4–8 steps) —
-// is the one stamp: the absent-bag compose default resolves it and
-// the card's ghost chip shows it. NO catalog row is labelled "Larry
-// + LightX2V" (F34b: that prose claimed a merge row the catalog
-// never held); every other row (the DMAD 4-step, the two standalone
-// LightX2V turbos, the Larryvrh EMA included) stays pick-only.
-// STRENGTH EVIDENCE: the three Comfy-Org lightx2v turbos load at
+// bag takes multiple entries. THE DEFAULT (operator 2026-11-01:
+// "switch the default lora to the silveroxides merge" — their words
+// naming the file: the pruned v2, "That one is the same and less
+// file size"): the `h3_silver_dareties` row — SILVEROXIDES IS THE
+// MERGE, LIGHTX2V IS NOT. The default seat holds silveroxides'
+// OFFICIAL release `minimax_h3_fl2v_turbo_silver_dareties_comfy_
+// pruned_v2.safetensors` (silver_official_releases/, the v2
+// attention-config build his README: "No need to use any attention
+// backend patcher with those"), labelled "Silveroxides DARE-TIES
+// Merge" — the default chip carries the author and the merge
+// identity, never a LightX2V label. The `h3_lightx2v_turbo` row is
+// a DIFFERENT artifact: silveroxides' EXPERIMENTAL/ LightX2V-turbo
+// × dareties file (label says so) — it stays PICK-ONLY; the earlier
+// prose seating it as "the merge" default (2026-11-12) was the F34b
+// class again: a claim the catalog never held — the operator's
+// order named the silveroxides merge and the merge now IS the seat.
+// NO catalog row is labelled "Larry + LightX2V" (F34b). STRENGTH
+// EVIDENCE: the silver merge runs 0.8 — the midpoint of the
+// operator's briefed band (0.7–0.85) and the dareties author's own
+// rec (Plaguekind, the merge's home-repo settings thread:
+// "0.8 strength, shift 8/3, 6-8 steps"); silveroxides concurs
+// ("the 768 dareties at like 0.6-0.7 strength with 8 steps and 8/3
+// shift works good"). The three Comfy-Org lightx2v turbos load at
 // 1.0 in Comfy-Org's own t2v/i2v/r2v templates (LoraLoaderModelOnly
 // strength 1); the two Kijai Acc rows follow the estate's
 // designed-at-full-strength convention (krea-2 turbo, z-image
 // dejpeg). STEPS MARRIAGE: each row carries its designed step
 // count — the service resolves a bag row's unstated steps from
 // here and the windows honor it (a stacked pair runs at the higher
-// count). FAMILY-OWNED DATA: the rows live with the family; the
+// count). The silver merge: designed 6–8 steps (the dareties rec),
+// usable to 4 (the operator's briefing; the turbo line's 4-step
+// floor), default 8 (silveroxides' stated good point); shift_video
+// 8 — the dareties settings thread's 8/3 (video 8, audio 3; audio
+// 3.0 is the schema default, no column). The 8-step LightX2V
+// variants run shift 12, but THIS row's identity is the dareties
+// line: its author and its publisher both spell 8/3 (one later
+// voice runs dareties full v1 at 12/3 strength 1.0 — recorded, not
+// adopted). FAMILY-OWNED DATA: the rows live with the family; the
 // pack contract (engines/comfyui-cordis/src/mods/packs.ts) supplies
 // the inherited fields; DECL.mods = ['loras'] boards the pack
 // (boot-gated ≡ this file, the satisfaction law). Registered as an
@@ -55,6 +75,16 @@ export interface H3LoraRow {
 }
 
 export const H3_LORA_ROWS: readonly H3LoraRow[] = [
+  // ── THE DEFAULT ROW (operator 2026-11-01, verbatim: "the
+  // silveroxides merge"; file named by the operator: the pruned v2,
+  // "That one is the same and less file size"): silveroxides'
+  // OFFICIAL silver_official_releases DARE-TIES merge — the v2
+  // attention-config build (his README: the v2 layers are optimized
+  // for inference, no attention backend patcher needed). 766 MB
+  // class (765,591,085 bytes), sha256 pinned in the provisions
+  // table (src/index.ts) — the two trees' bytes verified against
+  // the HF xet lfs oid. ──
+  { id: 'h3_silver_dareties', filename: 'h3/minimax_h3_fl2v_turbo_silver_dareties_comfy_pruned_v2.safetensors', source_url: 'https://huggingface.co/silveroxides/MiniMax-H3_tests/resolve/main/silver_official_releases/minimax_h3_fl2v_turbo_silver_dareties_comfy_pruned_v2.safetensors', label: 'Silveroxides DARE-TIES Merge', category: 'distill', default_strength: 0.8, steps: 8, steps_min: 4, steps_max: 8, shift_video: 8 },
   // ── THE MARRIED SHIFT COLUMN (SOTA limb 2, H3_TIMELINE_RESERACH
   // 2026-10-20): a distill's sigma-shift grid is part of its
   // training contract — the 8-step LightX2V variants and every
@@ -67,7 +97,11 @@ export const H3_LORA_ROWS: readonly H3LoraRow[] = [
   // native/default. shift_audio is 3.0 across every source — the
   // schema's own declared default already speaks it (no column). ──
   { id: 'h3_lightx2v_dareties', filename: 'h3/minimax_h3_fl2v_lightx2v_v0.1_dareties_v4_step600_comfy_fro.safetensors', source_url: 'https://huggingface.co/silveroxides/MiniMax-H3_tests/resolve/main/minimax_h3_fl2v_lightx2v_v0.1_dareties_v4_step600_comfy_fro.safetensors', label: 'LightX2V dareties v4', category: 'distill', default_strength: 0.8, steps: 4, steps_min: 4, steps_max: 4, shift_video: 6 },
-  { id: 'h3_lightx2v_turbo', filename: 'h3/minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors', source_url: 'https://huggingface.co/silveroxides/MiniMax-H3_tests/resolve/main/experimental/minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors', label: 'LightX2V Turbo 4-8 step', category: 'distill', default_strength: 0.6, steps: 8, steps_min: 4, steps_max: 8, shift_video: 12 },
+  // PICK-ONLY (the default moved to h3_silver_dareties 2026-11-01):
+  // this is silveroxides' EXPERIMENTAL/ LightX2V-turbo × dareties
+  // file — the label names it honestly; it is NOT the official
+  // silver_dareties merge the default seat holds.
+  { id: 'h3_lightx2v_turbo', filename: 'h3/minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors', source_url: 'https://huggingface.co/silveroxides/MiniMax-H3_tests/resolve/main/experimental/minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors', label: 'LightX2V Turbo × Dareties (silveroxides experimental)', category: 'distill', default_strength: 0.6, steps: 8, steps_min: 4, steps_max: 8, shift_video: 12 },
   { id: 'h3_turbo4_v1', filename: 'h3/minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16.safetensors', source_url: 'https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/loras/minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16.safetensors', label: 'LightX2V Turbo 4-Step v1.0 (768p)', category: 'distill', default_strength: 1, steps: 4, steps_min: 4, steps_max: 4, shift_video: 6 },
   { id: 'h3_turbo8_v1', filename: 'h3/minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors', source_url: 'https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/loras/minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors', label: 'LightX2V Turbo 8-Step v1.0', category: 'distill', default_strength: 1, steps: 8, steps_min: 8, steps_max: 8, shift_video: 12 },
   { id: 'h3_ref2v_turbo4', filename: 'h3/minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors', source_url: 'https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/loras/minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors', label: 'LightX2V Ref Turbo 4-Step v0.1', category: 'distill', default_strength: 1, steps: 4, steps_min: 4, steps_max: 4, shift_video: 12 },

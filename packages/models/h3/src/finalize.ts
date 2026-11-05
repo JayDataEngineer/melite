@@ -18,9 +18,14 @@ export const H3_T4_STRIP: StripTable = {
   SeedVR2LoadDiTModel: [
     'attention_mode', 'blocks_to_swap', 'cache_model', 'offload_device',
     'swap_io_components'],
+  // decode_tiled is NOT stripped: the SR decode's memory law states
+  // it (a 90-frame 1080p decode OOM'd the estate card in one pass),
+  // and a strip entry would delete the law on the t4 lane — the very
+  // lane the final press derives. The sizes/overlap stay stripped:
+  // the node's own declared defaults own them.
   SeedVR2LoadVAEModel: [
     'cache_model', 'decode_tile_overlap', 'decode_tile_size',
-    'decode_tiled', 'encode_tile_overlap', 'encode_tile_size',
+    'encode_tile_overlap', 'encode_tile_size',
     'encode_tiled', 'offload_device', 'tile_debug'],
   SeedVR2VideoUpscaler: [
     'enable_debug', 'input_noise_scale', 'latent_noise_scale',

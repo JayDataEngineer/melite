@@ -95,10 +95,18 @@ describe("the kimodo compose action — byte-stability (the compatibility law)",
   });
 
   it("the facts door refuses a missing model_path field-named (never loads an empty directory)", () => {
+    // GAPS-14: the refusal NAMES the seat — the live lane home and
+    // the live snapshot-provision row from the DECL, never a bare
+    // `model_path = undefined`.
+    const home = String((DECL as { lane_homes: Record<string, string> }).lane_homes.model_path);
+    const provision = String(
+      ((DECL as { snapshot_provisions: Array<{ name: string }> }).snapshot_provisions[0] ?? {}).name
+    );
+    const esc = (v: string): string => v.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const broken = { ...FACTS, lane_inputs: { ...FACTS.lane_inputs, model_path: "" } };
     assert.throws(
       () => instantiateAction(compose, { ...PARAMS }, broken, new GraphBuilder({}), "probe-door"),
-      /^Error: kimodo compose: lane_inputs\.model_path = "" — a non-empty string is required$/
+      new RegExp(`^Error: kimodo compose: lane_inputs\\.model_path = "" — a non-empty string is required — seat the model at lane home "${esc(home)}" \\(snapshot provision "${esc(provision)}"`)
     );
     assert.equal(parseKimodoFacts(FACTS.lane_inputs as never).model_path, "Kimodo-SOMA-RP-v1.1", "the DECL's own row parses clean");
   });

@@ -146,9 +146,11 @@ export interface MaskedChainSeat {
     readonly assemble: ChainAssembleSeat | null;
 }
 /** The spine's returned handles: the loop-trimmed window (the seat's
- * file join consumes its streams) and, when assembled, the
- * ChainAssemble node's video_path (the assembled film's absolute
- * path — the compose join's append member). */
+ * file join consumes its streams), the ChainAssemble node's video_path
+ * when the seat assembles, and the plan node's own width/height — the
+ * shot geometry every window renders at, engine-derived from the
+ * source frames (the seat-side consumer is the extend seat's raw
+ * prior join, the F34 shape-true cure). */
 export interface ChainRender {
     /** MiniMaxH3LoopTrim — out(0) frames, out(1) audio, out(2) the
      * with-overlap images. */
@@ -157,6 +159,13 @@ export interface ChainRender {
     };
     /** ChainAssemble's video_path when the seat assembles; else null. */
     readonly assemblePath: OutputHandle | null;
+    /** THE CHAIN PLAN'S SHOT GEOMETRY (the F34 cure): the plan node's
+     * width/height outputs — the canvas the chain renders, derived by
+     * the engine from the source's own frames under the stated tier. */
+    readonly planShape: {
+        width: OutputHandle;
+        height: OutputHandle;
+    };
 }
 /** The plan node's own widget band for clip_seconds (live
  * object_info: FLOAT min 2.5 max 15.0). The estate's grid rungs run

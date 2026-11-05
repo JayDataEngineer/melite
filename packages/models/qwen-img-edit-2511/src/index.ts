@@ -15,7 +15,7 @@ export const DECL: ModelDecl = {
   "id": "qwen-img-edit-2511",
   "form": "form_edit",
   "label": "Qwen Image Edit 2511",
-  "description": "Instruction-driven image editing and manipulation — the Qwen-Image-Edit 2511 lane (the image-edit card arms this family; the pre-flip img-edit head is retired, same physical lane, its assets merged here 2026-09-05).",
+  "description": "RETIRED LANE — hidden from every picker and refused at the compose door (qwen-img-edit-21 is the edit lane; fibo2-edit the alternate). Legacy drafts carrying this family tolerate at the write seat so a switch away lands; no new compose can address it.",
   "engine": "comfyui",
   // THE RECIPE↔WEIGHTS LAW (2026-09-22, operator catch e): the
   // family defaults must sample THE UNET THE LANE PINS. lane_inputs

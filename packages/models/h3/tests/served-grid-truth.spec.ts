@@ -25,11 +25,10 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..
 
 /** The served corpus: every surface an agent or operator reads that
  * states grid arithmetic. One fact, these homes — the wall keeps
- * them all honest against the one code home. */
+ * them all honest against the one code home. (The extend-video
+ * wrapper flow's leaf + registry row died 2026-11-14,
+ * flows-are-compositions — the card faces are the corpus now.) */
 const SERVED: readonly [string, string][] = [
-  ["flow skill", join(ROOT, "flows", "extend-video", "SKILL.md")],
-  ["flow tool", join(ROOT, "flows", "extend-video", "tool.json")],
-  ["registry row", join(ROOT, "packages", "harness", "estate-queue", "src", "flowsRegistryRows.ts")],
   ["card tooltip", join(ROOT, "packages", "video", "h3-timeline", "src", "card.ts")],
   ["family skill", join(ROOT, "packages", "engines", "comfyui-cordis", "models", "video", "h3", "agents", "skills", "extend-flow", "SKILL.md")],
 ];
@@ -65,7 +64,12 @@ const throwsFor = (frames: number): boolean => {
 
 describe("the served grid literals (every surface vs the code's own law)", () => {
   it("every seconds↔frames pairing on every served surface satisfies the grid or the solver", () => {
-    assert.ok(SERVED.length >= 5, "the served corpus rides (a collapsed roster must not green silently)")
+    // (repinned 2026-11-14, flows-are-compositions: three of the
+    // five homes — the wrapper flow's leaf skill, its tool
+    // description, its registry row — died with the extend-video
+    // row; the two CARD faces are the whole served corpus now, and
+    // the guard stays armed at that truth: any further collapse reds)
+    assert.ok(SERVED.length >= 2, "the served corpus rides (a collapsed roster must not green silently)")
     let judged = 0
     for (const [home, path] of SERVED) {
       const text = readFileSync(path, "utf8")
@@ -92,7 +96,11 @@ describe("the served grid literals (every surface vs the code's own law)", () =>
         }
       }
     }
-    assert.ok(judged >= 8, `the pairing census rides (judged ${judged}; a regex collapse must not green silently)`)
+    // (repinned 2026-11-14 with the corpus itself: the wrapper
+    // flow's three homes took their pairings with them — five
+    // pairings ride the two card faces; the guard stays armed at
+    // that truth)
+    assert.ok(judged >= 5, `the pairing census rides (judged ${judged}; a regex collapse must not green silently)`)
   })
 
   it("the two burned lie classes appear NOWHERE in the served corpus", () => {

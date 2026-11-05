@@ -40,7 +40,7 @@ export declare const FIT_ROW: {
 };
 /** The seat action (the flow 'fit-seat' the meld chips drive):
  *  FitRow (the analytic fit row) → FitProp (body ∪ prop under the
- *  row) → the 4-view proof sheet. */
+ *  row) — the seated GLB is the verb's output. */
 export declare const seat: ComfyActionSpec<SeatParams, Record<string, never>>;
 export {};
 //# sourceMappingURL=actions.d.ts.map

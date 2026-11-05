@@ -14,7 +14,7 @@ export const DECL: ModelDecl = {
   "id": "somax",
   "form": "form_3d_somax",
   "label": "SOMAX",
-  "description": "SOMA-77 weight-transfer family record (unoffered — it declares no actions; the live door is the rig card's auto mode / the body-to-somax flow).",
+  "description": "SOMA-77 weight-transfer family record (unoffered — it declares no actions; the live door is the rig card's auto mode (gem-soma's rig action)).",
   "unoffered": true,
   // No defaults: the declared-plane door's catch (2026-10-12) — the
   // family declares no actions, so it declares no write plane, and

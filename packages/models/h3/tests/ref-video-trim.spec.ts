@@ -111,6 +111,30 @@ describe("the h3 ref-video trim seat (003 V4)", () => {
     }).toThrow(/expected at most 3 entries/);
   });
 
+  it("a mistyped start_time or duration refuses LOUD, naming the entry and the seat", () => {
+    // THE TRIM TYPING LAW: schema resolve fills each entry's defaults
+    // before the slice, so a value reaching the reader is a number or
+    // absent — a string that slipped the walk (raw callers, hand-built
+    // docs) refuses here, naming the entry index and the seat, never
+    // slicing at NaN.
+    expect(() => {
+      const g = new GraphBuilder();
+      instantiateAction(
+        film,
+        { ...bag(), ref_videos: ["/guides/spin.mp4"], ref_video_trims: [{ start_time: "2", duration: 4 }] },
+        H3, g, "run_trim_start_mistype",
+      );
+    }).toThrow(/ref_video_trims: entry 0 start_time must be a number/);
+    expect(() => {
+      const g = new GraphBuilder();
+      instantiateAction(
+        film,
+        { ...bag(), ref_videos: ["/guides/spin.mp4"], ref_video_trims: [{ start_time: 1, duration: "4" }] },
+        H3, g, "run_trim_dur_mistype",
+      );
+    }).toThrow(/ref_video_trims: entry 0 duration must be a number/);
+  });
+
   // THE MIS-SLICE REFUSAL (J3, refs-mods journey audit 2026-10-16):
   // trims index-pair with the EFFECTIVE video lane. A doc authored
   // against a longer declared list plus a call replacing the lane

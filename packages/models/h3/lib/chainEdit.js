@@ -314,8 +314,9 @@ export function renderMaskedEditChain(g, seat) {
     // ── the terminal: ChainAssemble when the seat assembles in-chain
     // (the latent-seam machinery — blend_schedule 'plan' rides the
     // policy's own overlaps); null when the seat joins by file. ──
-    if (seat.assemble === null)
-        return { trimmed, assemblePath: null };
+    if (seat.assemble === null) {
+        return { trimmed, assemblePath: null, planShape: { width: plan.out(1), height: plan.out(2) } };
+    }
     const assemble = g.node('MiniMaxH3ChainAssemble', {
         audio_source: seat.assemble.audioSource,
         filename: seat.assemble.filename,
@@ -325,6 +326,9 @@ export function renderMaskedEditChain(g, seat) {
         generated_audio_join: 'av_overlap',
         manifest: loopEnd.out(0),
     });
-    return { trimmed, assemblePath: assemble.out(0) };
+    return {
+        trimmed, assemblePath: assemble.out(0),
+        planShape: { width: plan.out(1), height: plan.out(2) },
+    };
 }
 //# sourceMappingURL=chainEdit.js.map

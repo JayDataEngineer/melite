@@ -28,26 +28,13 @@ import { fireControlNets } from '@melite/comfyui-card-kit/guard'
 import type { ModBoarding } from '@melite/comfyui-card-kit/guard'
 import { saveAudio } from '@melite/comfyui-card-kit'
 import { mediaKindOf } from '@melite/contracts/mediaKinds'
-import { assertKeyframeRowShape, FAMILIES, paramSchema, wireList, H3_RECOMMENDED_SAMPLERS } from './schema.js'
+import { assertKeyframeRowShape, FAMILIES, paramSchema, wireList, H3_RECOMMENDED_SAMPLERS, REFINE_DENOISE_DEFAULT } from './schema.js'
 import { H3_LORA_ROWS } from '@melite/models-h3/mods/loras'
 import type { Family } from './schema.js'
 import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from '@melite/comfyui-card-kit/vocab'
 import { computeFilmMix, parseFilmMixClips, spanOverlap, stanzaSecs } from './filmMix.js'
 import type { FilmMixClip, FilmMixSpan } from './filmMix.js'
-import {
-  GRID_REMAINDER,
-  GRID_STEP_FRAMES,
-  IMAGE_BUS_SLOTS,
-  REF_CAPS,
-  assertGridLength,
-  assertSpanGrid,
-  imageReferenceCap,
-  isGridLength,
-  isMediaRef,
-  DOC_FPS_DEFAULT,
-  spanStanzaFrames,
-  transitionOverlap,
-} from './timelineContract.js'
+import { DOC_FPS_DEFAULT, GRID_REMAINDER, GRID_STEP_FRAMES, IMAGE_BUS_SLOTS, REF_CAPS, assertGridLength, assertSpanGrid, bookSeconds, imageReferenceCap, isGridLength, isMediaRef, spanStanzaFrames, transitionOverlap } from './timelineContract.js'
 import {
   applyH3ReshootCond,
   applyH3ReshootModel,
@@ -59,14 +46,16 @@ import {
 
 // THE ABSENT-BAG DEFAULT (h3-a, 2026-10-12; bytedance DMAD row
 // 2026-10-11 → the LightX2V Turbo 8-Step v1.0 row 2026-11-07 → the
-// merged dareties row 2026-11-12 — operator: the merge takes the
-// default seat, preferred for detail at 8 steps; the standalone
-// LightX2V turbos stay in the catalog for the audio/dialogue
-// routes). THE ROW IS `h3_lightx2v_turbo` — the LightX2V turbo
-// 4-to-8-step × dareties v4 step600 merge (label "LightX2V Turbo
-// 4-8 step", strength 0.6, designed 4–8 steps); there is NO separate
-// catalog row labelled "Larry + LightX2V" — F34b's finding was this
-// prose naming a row the catalog never held. The row is resolved from the
+// SILVER MERGE row 2026-11-01 — operator, verbatim: "switch the
+// default lora to the silveroxides merge"; SILVEROXIDES IS THE
+// MERGE, LIGHTX2V IS NOT). THE ROW IS `h3_silver_dareties` —
+// silveroxides' OFFICIAL silver_official_releases DARE-TIES merge
+// (label "Silveroxides DARE-TIES Merge", strength 0.8, designed
+// 6–8 steps, usable to 4). The earlier 2026-11-12 prose seated the
+// experimental/ LightX2V-turbo × dareties file (h3_lightx2v_turbo)
+// as "the merge" — the F34b class: a merge row the catalog never
+// held; that row stays pick-only under its honest experimental
+// label. The row is resolved from the
 // family lora CATALOG (mods/loras.ts — the one owner of every lora
 // filename and default strength; the value was restated as a
 // literal here, which is how a catalog edit would have silently
@@ -74,8 +63,9 @@ import {
 // on, lora (filename), str (default_strength), plus the four fixed
 // mode flags. A missing catalog row refuses at load — the default
 // would have no source.
-/** The absent-bag default's catalog id (F34's chip half, 2026-11-13). */
-export const H3_DEFAULT_LORA_ID = 'h3_lightx2v_turbo'
+/** The absent-bag default's catalog id (F34's chip half, 2026-11-13;
+ *  the silveroxides merge takes the seat 2026-11-01). */
+export const H3_DEFAULT_LORA_ID = 'h3_silver_dareties'
 
 /** The absent-bag default as a RESOLVED ROW — the same catalog row the
  *  compose default builds, exposed so the card can serve it as the
@@ -235,7 +225,7 @@ function resolveRefineSeat(p: Record<string, unknown>): { name: string; strength
 // the voice is the rider's (ARM 4f judges it at the family plane),
 // borrowed verbatim by the arm.
 function resolveStage2Denoise(p: Record<string, unknown>): number {
-  const denoise = (p.refine_denoise as number | undefined) ?? 0.35
+  const denoise = (p.refine_denoise as number | undefined) ?? REFINE_DENOISE_DEFAULT
   if (!(denoise >= 0.05 && denoise <= 1)) {
     throw new Error(`h3 action: refine_denoise ${String(p.refine_denoise)} falls outside the refinement window [0.05, 1] — 1 is the full-denoise taomate mechanic, 0.30–0.35 the SOTA refinement window; a dead or over-terminal second pass never composes`)
   }
@@ -258,10 +248,25 @@ const mathStepsGold = (fps: number): string =>
 // switch flipped. Orphan + stub prompt = the marker law kept, the
 // hazard structurally dead.
 const I2V_MARKER_PROMPT = 'i2v marker branch — orphaned, never executed (r2v is the only lane)'
-// ImageSharpenKJ's grouped-widget defaults (the rcas block the python
-// builds when no sharpen leaf is injected; the card exposes only the
-// strength leaf — sharpen_strength).
+// ImageSharpenKJ's tuned defaults (the rcas operating point the
+// operator's V9 notes bless — strength 0.3 "looks natural" after the
+// upscaler; radius/threshold/iterations ride for the non-rcas
+// methods. These are OURS, not the pack's served defaults).
 const SHARPEN_DEFAULTS = { method: 'rcas', strength: 0.3, radius: 1.0, threshold: 0.05, iterations: 10 }
+// The served V3 DynamicCombo's per-option child seats, off the pack's
+// own declaration (ComfyUI-KJNodes nodes/sharpen_nodes.py
+// define_schema: io.DynamicCombo.Option(key=...) inputs). The
+// composer emits ONLY the selected option's children on dotted wires;
+// the engine folds unexpanded seats silently (never an error), so a
+// non-selected seat would ride dead bytes. The U2 wall diffs this map
+// against the pack declaration — a pack-side child change reds there,
+// never here first.
+const SHARPEN_OPTION_CHILDREN: Record<string, readonly string[]> = {
+  rcas: ['strength'],
+  adaptive_usm: ['strength', 'radius', 'threshold'],
+  high_pass: ['strength', 'radius'],
+  deconvolution: ['strength', 'radius', 'iterations'],
+}
 
 /** The family's lane files that are NOT engine-general members
  * (the complexity floor's stroke 1): the encoder and the two VAEs
@@ -430,6 +435,24 @@ export function concatSavedFilms(
  *  (the node's context_frames arm). prev_sec scales the carry:
  *  picture snapped to the node's legal context lengths (5/22/39/56
  *  frames — only whole latent steps), audio at 24 frames/second. */
+/** THE SPELL TEST (the naming law, one owner): a '$name' value names
+ *  a WIRED STAGE INPUT, never a file on disk — the merge
+ *  (rewriteSpells) lands the upstream producer's tensor link wherever
+ *  the spell rides. Serves the reference/anchor/keyframes seats (the
+ *  SPELL ARM in renderH3Window) and the film tail's wired soundtrack
+ *  seats (the soundtrack merged-form wire, 2026-11-01). ROW-4 refuses
+ *  producer links in Load* file slots, so a spelled value must always
+ *  reach a tensor/wired seat, never a loader. */
+const isSpell = (s: string): boolean => s.startsWith('$')
+
+/** THE WIRED SOUNDTRACK SEAT COUNT — mirrors the pack's own
+ *  WIRED_CLIP_SEATS (vendor melite-audio-nodes film_mix.py): the mix
+ *  node declares wired_audio_1..4 optional AUDIO seats, and the
+ *  compose refuses a spelled clip beyond them loud. Raise BOTH
+ *  together (the refusal names the pack constant as the second
+ *  cure). */
+const WIRED_CLIP_SEATS = 4
+
 function renderH3Film(
   p: Record<string, unknown>,
   g: GraphBuilder,
@@ -559,6 +582,62 @@ function renderH3Film(
   // fallback (a row's unstated count read from the family table by
   // filename) is the same math on every face.
   const loraStepsApplied = marriedBagKnob(p, 'steps')
+  // THE ONE-CLOCK LAW (F55, 2026-11-02 — the join shares ONE clock):
+  // MeliteConcatVideos refuses members at mixed fps LOUD at execute
+  // — AFTER every window's GPU is paid and every member file is
+  // saved (a split doc composes validate-green and dies with the
+  // film rendered: window1_CreateVideo fps 48 against window2's 24,
+  // the concat naming both rates). The interp decision is the DOC's
+  // voice: the stanza merge ({...p, ...knobs} below) folds per-call
+  // pins into the params renderH3Window reads, so a call pinning
+  // interpolate_enabled or interp_multiplier against the film — or
+  // smuggling second_pass_enabled past the knob vocabulary — renders
+  // its member at a foreign clock and the join dies there. This
+  // sweep judges the RESULT (each window's computed clock against
+  // the film's, with the composer's own reads: strict master,
+  // truthy switch, raw multiplier), never the key list — zero nodes
+  // built, the first split window refusing with its pin state, the
+  // film's clock, and the cure (move the pin to the film level;
+  // per-shot interp is unstatable because the join cannot restamp
+  // one member silently). Agreement — or silence — rides the film's
+  // clock untouched; interp_model stays a per-shot choice (the
+  // model never touches the clock). The single-window face needs no
+  // seat (no join, no clock to split); an extend-time append file at
+  // a foreign rate stays the vendor's own loud refusal (both rates
+  // named — the correct seat for a file the film never rendered).
+  const filmInterpOn = p.second_pass_enabled === true && Boolean(p.interpolate_enabled)
+  const filmInterpMult = p.interp_multiplier as number | undefined
+  for (let i = 0; i < calls.length; i += 1) {
+    const call = calls[i] as Record<string, unknown>
+    const knobs = (call.knobs ?? {}) as Record<string, unknown>
+    const merged = { ...p, ...knobs }
+    const winOn = merged.second_pass_enabled === true && Boolean(merged.interpolate_enabled)
+    if (winOn !== filmInterpOn) {
+      // (the pin voice reads key PRESENCE, never undefined-
+      // comparison: an explicit null/undefined pin still overrides
+      // the merge — {...p, ...{k: undefined}}.k is undefined — so
+      // the composer renders it falsy while a !== undefined filter
+      // would report "no pin stated". The no-silent-repair law
+      // refuses explicit nulls, never fills them.)
+      const isObj = typeof knobs === 'object' && knobs !== null
+      const named = ['interpolate_enabled', 'second_pass_enabled']
+        .filter((key) => isObj && key in knobs)
+        .map((key) => `knobs.${key} = ${typeof knobs[key] === 'undefined' ? 'undefined' : JSON.stringify(knobs[key])}`)
+        .join(', ')
+      const stated = named !== '' ? named : `knobs = ${JSON.stringify(knobs).slice(0, 80)}`
+      throw new Error(
+        `h3-timeline window ${i + 1}: ${stated} states a ${winOn ? 'doubled' : 'base-rate'} member against the film's ${filmInterpOn ? 'interpolated' : 'base-rate'} clock — the join shares one clock (MeliteConcatVideos refuses mixed-fps members at execute, after every window renders); move the pin to the film level (interpolate_enabled), per-window interp is unstatable`,
+      )
+    }
+    if (filmInterpOn && winOn) {
+      const winMult = merged.interp_multiplier as number | undefined
+      if (winMult !== filmInterpMult) {
+        throw new Error(
+          `h3-timeline window ${i + 1}: knobs.interp_multiplier = ${JSON.stringify(knobs.interp_multiplier)} states a ×${String(winMult)} member against the film's ×${String(filmInterpMult)} clock — the join shares one clock (MeliteConcatVideos refuses mixed-fps members at execute, after every window renders); move the pin to the film level (interp_multiplier), per-window interp is unstatable`,
+        )
+      }
+    }
+  }
   calls.forEach((call, i) => {
     const k = i + 1
     // THE OPENER ANCHOR (cure 8's film arm — session 384a13cd's bread
@@ -973,16 +1052,54 @@ function renderH3Film(
     // the MIXED audio wired into CreateVideo — the film mp4 carries
     // the mix, not the raw concat audio. Early return: the
     // clips-free arm below stays byte-frozen.
+    // THE SOUNDTRACK WIRE SEATS (GAPS-20 one-way law, face #14's
+    // film tail — plan 2026-11-01-soundtrack-merged-wire §2/T1): a
+    // spelled clip src names a WIRED STAGE INPUT, never a file. The
+    // manifest row carries `wired: k` and NO src key (src embedded
+    // in the JSON string is dead text to the merge), and the compose
+    // seats the spell on a DECLARED MeliteAudioResample at the film's
+    // own clock (FILM_AUDIO_RATE) and carries the HOP'S LINK into the
+    // pack's optional AUDIO seat wired_audio_k — rewriteSpells lands
+    // the producer's link on the hop's audio input, so the seat
+    // receives film-rate audio. THE FILM-CLOCK HOP (F-B cure,
+    // 2026-11-13 — the wired tts→film press): the mix's own law
+    // refuses a wired seat at a foreign rate LOUD (film_mix.py
+    // seat_source — "a wired producer rides the film's own clock …
+    // never silently resampled") and a 24 kHz producer arrives
+    // exactly foreign; the resample is a visible node the merged
+    // graph carries — the declared hop is the opposite of the silent
+    // coercion the law bans. A path row keeps the staged-file
+    // handoff byte-identical (the estate boundary — lawful, S3
+    // freezes it). Seat overflow refuses loud, naming the row and
+    // both cures — never a silent drop.
+    const wiredSeats: Record<string, OutputHandle> = {}
+    let nextSeat = 0
+    const mixRows = manifest.placements.map((pl) => {
+      const clip = clips[pl.clip]!
+      if (!isSpell(clip.src)) {
+        return { src: clip.src, start_sec: pl.filmSec, dur_sec: pl.durSec, class: pl.cls }
+      }
+      nextSeat += 1
+      if (nextSeat > WIRED_CLIP_SEATS) {
+        throw new Error(
+          `[h3-timeline] audio_clips[${pl.clip}] (${clip.cls}, src ${clip.src}) needs wired soundtrack seat ${nextSeat} but the film mix declares only ${WIRED_CLIP_SEATS} (wired_audio_1..${WIRED_CLIP_SEATS}) — wire fewer soundtrack producers, or raise WIRED_CLIP_SEATS in the melite-audio-nodes pack`,
+        )
+      }
+      wiredSeats[`wired_audio_${nextSeat}`] = g.node('MeliteAudioResample', {
+        audio: clip.src,
+        sample_rate: FILM_AUDIO_RATE,
+      }).out(0)
+      return { wired: nextSeat, start_sec: pl.filmSec, dur_sec: pl.durSec, class: pl.cls }
+    })
     const mix = g.node('MeliteFilmAudioMix', {
       videos: windowPrefixes.join(','),
       after,
       // the manifest rendered verbatim: every placement's source,
       // film seat, duration, and class — doc order kept (the node's
-      // two loops read the same order the retired tail did)
-      clips_json: JSON.stringify(manifest.placements.map((pl) => {
-        const clip = clips[pl.clip]!
-        return { src: clip.src, start_sec: pl.filmSec, dur_sec: pl.durSec, class: pl.cls }
-      })),
+      // two loops read the same order the retired tail did); spelled
+      // rows ride wired: k + the wired_audio_k seats above
+      clips_json: JSON.stringify(mixRows),
+      ...wiredSeats,
       duck_spans: manifest.duckSpanString,
       music_duck_spans: manifest.musicDuckSpanString,
       duck_db: manifest.duckDb,
@@ -1013,6 +1130,14 @@ function renderH3Film(
  *  of one rendered window (pre-trim, pre-sharpen — the true tail). */
 export interface WindowHandles {
   latOut: OutputHandle
+  /** the drift-control anchor's currency — the SAME-RATE latent the
+   *  next window's continuation consumes as previous_latent: pass 1's
+   *  sampled latent (or the refine rider's in-band polish when it
+   *  mounts without the upscale handoff — the chained-texture law);
+   *  NEVER the latent-upscale handoff's 2× output (F44-execute: a 2×
+   *  anchor against window k+1's base-rate continuation target is a
+   *  shape-refused graph). latOut stays the DELIVERED half's latent. */
+  seamLatent: OutputHandle
   vdec: OutputHandle
   vadec: OutputHandle
   /** the DELIVERED clip — post-trim, post-sharpen: exactly the
@@ -1130,7 +1255,7 @@ function renderH3Window(
   // walk-bypass callers get the declared default, never an invented
   // one).
   const fpsClock = typeof p.fps === 'number' && p.fps > 0 ? p.fps : DOC_FPS_DEFAULT
-  p.fps_seconds = Math.round(((p.length as number) / fpsClock) * 1000) / 1000
+  p.fps_seconds = bookSeconds(p.length as number, fpsClock)
   const isT4r = family === 't4r'
   const isChain = family === 't4_chain'
   // THE LATENT-UPSCALE ARM (SOTA plan Phase P2, 2026-11-10): behind
@@ -1140,14 +1265,20 @@ function renderH3Window(
   // refinement inside the 3D-conv kernel, lock_audio true — z_v
   // through the LBH kernel, z_a preserved).
   const upscaleOn = p.second_pass_enabled === true && p.upscale_route === "latent_2x"
-  // THE HEAD HALVES UNDER THE ARM (both r2v seats below): pass 1
-  // composes the quarter grid the kernel was distilled on
-  // (1344×768 → 672×384); the handoff doubles the latent in-band
-  // before the second pass. Route off = stated geometry (ARM 41's
-  // byte-stable plain pass — the halving never touches the legacy
-  // graph).
-  const headW = upscaleOn ? (p.width as number) / 2 : (p.width as number)
-  const headH = upscaleOn ? (p.height as number) / 2 : (p.height as number)
+  // THE HEAD STAYS STATED UNDER THE ARM (both r2v seats below): the
+  // burn A/B (run-eb098020a6d0's log, 2026-11-01: `Latent 42x24 ->
+  // 84x48 | Pixels 1344x768`) convicted the old half-grid stamp —
+  // pass 1 composed 1344×768 → 672×384 and the handoff's 2.0×
+  // restored base tier, so `latent_2x` rendered the plain pass. The
+  // kernel carries full-base grids (run-e49908ddf224: the same
+  // handoff at 2.0× landed 2688×1536; the chain's h3_2x clips feed
+  // it 82×46 latents daily), so the route now rides the STATED
+  // geometry and doubles ON TOP of it — armed, the render lands at
+  // 2× the stated grid. Route off = the same stated geometry (ARM
+  // 41's byte-stable plain pass — the arm touches nothing but the
+  // handoff's mount).
+  const headW = p.width as number
+  const headH = p.height as number
   // (M5, the fallback audit — judged LAWFUL and now documented: this
   // is the fresh-card admission, not a fallback crime. The window
   // shape's text face is p.prompt (declared required=True, "optional
@@ -1409,8 +1540,9 @@ function renderH3Window(
     // and NEVER builds a loader; files/URLs/estate paths keep the
     // Load* disk handoff (the per-stage path owns those). Before
     // this arm the ports validated green at the lattice and died
-    // at the merge — the validate-said-nothing disease.
-    const isSpell = (s: string): boolean => s.startsWith('$')
+    // at the merge — the validate-said-nothing disease. (isSpell is
+    // the module-level test — one owner, shared with the film tail's
+    // wired soundtrack seats.)
     const imageRef = (src: string): TensorRef =>
       isSpell(src) ? src : g.node('LoadImage', { image: src }).out()
     let anchorRaw: TensorRef | undefined
@@ -1564,31 +1696,41 @@ function renderH3Window(
       const pinFps = typeof p.fps === 'number' && p.fps > 0 ? p.fps : DOC_FPS_DEFAULT
       type StampShape = { src: string, slice_start_seconds: number, slice_duration_seconds: number, delay_seconds: number, text?: string }
       const read = (key: string): StampShape | null => (p[key] ?? null) as StampShape | null
+      // THE CONDITIONING TENSOR SEAT (the soundtrack merged-form wire,
+      // session 2 — the interim conditioning door deleted): a spelled
+      // stamp names a WIRED STAGE INPUT — it slices through
+      // MeliteAudioTensorSlice.audio_tensor, a typed AUDIO socket the
+      // merge rewrites (rewriteSpells lands the producer's link
+      // there), never MeliteAudioSlice.audio — a Combo FILE seat
+      // validated against the live input-dir listing, where a link
+      // would die at submit (the F17 class). A path stamp keeps the
+      // file node byte-identical (the estate boundary, the S7 arm
+      // freezes it).
+      const sliceSeat = (src: string, startSeconds: number, durationSeconds: number): OutputHandle =>
+        isSpell(src)
+          ? g.node('MeliteAudioTensorSlice', {
+            audio_tensor: src,
+            start_seconds: startSeconds,
+            duration_seconds: durationSeconds,
+          }).out(0)
+          : g.node('MeliteAudioSlice', {
+            audio: src,
+            start_seconds: startSeconds,
+            duration_seconds: durationSeconds,
+          }).out(0)
       const stamp = read('dialogue_slice')
       if (stamp !== null) {
-        dialogueAudio = g.node('MeliteAudioSlice', {
-          audio: stamp.src,
-          start_seconds: stamp.slice_start_seconds,
-          duration_seconds: stamp.slice_duration_seconds,
-        }).out(0)
+        dialogueAudio = sliceSeat(stamp.src, stamp.slice_start_seconds, stamp.slice_duration_seconds)
         dialogueFrameIdx = Math.round(stamp.delay_seconds * pinFps)
       }
       const sfxStamp = read('sfx_slice')
       if (sfxStamp !== null) {
-        sfxAudio = g.node('MeliteAudioSlice', {
-          audio: sfxStamp.src,
-          start_seconds: sfxStamp.slice_start_seconds,
-          duration_seconds: sfxStamp.slice_duration_seconds,
-        }).out(0)
+        sfxAudio = sliceSeat(sfxStamp.src, sfxStamp.slice_start_seconds, sfxStamp.slice_duration_seconds)
         sfxFrameIdx = Math.round(sfxStamp.delay_seconds * pinFps)
       }
       const musicStamp = read('music_slice')
       if (musicStamp !== null) {
-        musicAudio = g.node('MeliteAudioSlice', {
-          audio: musicStamp.src,
-          start_seconds: musicStamp.slice_start_seconds,
-          duration_seconds: musicStamp.slice_duration_seconds,
-        }).out(0)
+        musicAudio = sliceSeat(musicStamp.src, musicStamp.slice_start_seconds, musicStamp.slice_duration_seconds)
         musicFrameIdx = Math.round(musicStamp.delay_seconds * pinFps)
       }
     }
@@ -1665,554 +1807,553 @@ function renderH3Window(
       }).out(0)
     }
   } else {
-    // t4 families: the SLA/attention switch rides ABOVE the LoRA
-    // loader (the t4r mirror — L1: the old order stacked the loader
-    // under the chunked branch only, so sla_enabled=true (the
-    // default) picked the bare SLA model and every bagged LoRA
-    // silently did nothing while the steps marriage still fired).
-    // The switch picks the attention strategy — SLA-direct vs the
-    // backend-pinned chunked chain — and ONE loader applies the bag
-    // over the pick; the fix-up + shift ride the loaded model on
-    // both arms, so no arm bypasses the loader. The backend node
-    // stays on the dense branch (pre-switch): it configures that
-    // branch's attention implementation, and routing the
-    // SLA-patched model through it would risk clobbering the sparse
-    // kernels — the switch selects the strategy, the loader samples
-    // whichever won. The pin autofills the builder adds (lora_ui,
-    // the SeedVR2 tile/offload inputs) are stripped by the finalize
-    // pass — the python's _T4_AUTOFILL_STRIP mirror.
-    const mab = g.node('ModelAttentionBackend', {
-      model: chunked,
-      // schema-defaulted knob (the vocabulary door guarantees the
-      // field — 'comfy kitchen attention' when the caller stays
-      // silent; no compose-side fallback arm to keep alive)
-      attention: p.attention_backend as string,
-    }).out()
-    const picked = g.node('ComfySwitchNode', {
-      // THE SLA MASTER SWITCH (2026-09-21): sla_enabled=false takes
-      // the dense arm; absent = on (every existing doc). The legacy
-      // `?? sla_switch ?? true` arms died 2026-09-22 by the
-      // no-silent-resolution law: sla_enabled is DECLARED with
-      // .default(true), so the walk always delivers a boolean and
-      // the fallback arms were unreachable lies.
-      switch: p.sla_enabled as boolean, on_true: sla, on_false: mab,
-    }).out()
-    preLoraModel = picked
-    const loraModel = g.node('LTX_lora_loader', {
-      model: picked, mode: 'minimax', stack_data: loraStack,
-    }).out()
-    const adaln = g.node('H3AdaLNLoRAFix', { model: loraModel, mode: 'port' }).out()
-    sigmaModel = g.node('MiniMaxH3SigmaShift', {
-      model: adaln, shift_video: shiftVideo, shift_audio: p.shift_audio as number,
-    }).out()
-    // THE SPAN IS THE FILM (the operator's 2026-09-17 catch: the
-    // readout said 7s — the doc's totalFrames, last end_frame @24 —
-    // and the render came back 3, this hardcoded 90 budget). The
-    // window's render length derives from the TIMELINE the calls
-    // author: last end_frame − first start_frame, SNAPPED TO THE
-    // 17k+5 GRID the engine's latent math lawfully renders (22+17k,
-    // clamped [22,362] — the same set the length param's own
-    // min/step admits; the first 168-span probe died inside
-    // SamplerCustomAdvanced off-grid, live receipt 2026-09-17). The
-    // retired 90/56 budgets remain the fallback ONLY for docs that
-    // (the length source of truth is UPSTREAM of this renderer: the
-    // schema's span rider serializes single-call spans as EXPLICIT
-    // length, and the merged film computes per-window lengths — this
-    // arm only falls back to the family budgets)
-  // NO SILENT RESOLUTION LAW: the walked/stanza length IS the value
-  // (single-call: the span rider's explicit span; multi-call: the
-  // film total; fresh: the walked default; the 90/56 family budgets
-  // retired with the nulling that fed them)
-  const length = p.length as number
-    // THE RE-SHOOT REF SEATS, non-reference arm (2026-11-13): the
-    // trigger-led prompt + the prepared source clip as ref_video_0
-    // (the official chain wires the appearance lane even on the
-    // prompt-only arm — a reshoot without its source as reference
-    // is the old low-quality posture). No ref video audio, the
-    // official graph's own absence.
-    const r2vInputs2: Record<string, OutputHandle | string | number> = {
-      prompt: r2vPrompt, width: headW,
-      height: headH, length: length as number,
-      ref_image_size: p.ref_image_size as string,
-      clip, vae: vaeVideo, audio_vae: vaeAudio,
+      // t4 families: the SLA/attention switch rides ABOVE the LoRA
+      // loader (the t4r mirror — L1: the old order stacked the loader
+      // under the chunked branch only, so sla_enabled=true (the
+      // default) picked the bare SLA model and every bagged LoRA
+      // silently did nothing while the steps marriage still fired).
+      // The switch picks the attention strategy — SLA-direct vs the
+      // backend-pinned chunked chain — and ONE loader applies the bag
+      // over the pick; the fix-up + shift ride the loaded model on
+      // both arms, so no arm bypasses the loader. The backend node
+      // stays on the dense branch (pre-switch): it configures that
+      // branch's attention implementation, and routing the
+      // SLA-patched model through it would risk clobbering the sparse
+      // kernels — the switch selects the strategy, the loader samples
+      // whichever won. The pin autofills the builder adds (lora_ui,
+      // the SeedVR2 tile/offload inputs) are stripped by the finalize
+      // pass — the python's _T4_AUTOFILL_STRIP mirror.
+      const mab = g.node('ModelAttentionBackend', {
+        model: chunked,
+        // schema-defaulted knob (the vocabulary door guarantees the
+        // field — 'comfy kitchen attention' when the caller stays
+        // silent; no compose-side fallback arm to keep alive)
+        attention: p.attention_backend as string,
+      }).out()
+      const picked = g.node('ComfySwitchNode', {
+        // THE SLA MASTER SWITCH (2026-09-21): sla_enabled=false takes
+        // the dense arm; absent = on (every existing doc). The legacy
+        // `?? sla_switch ?? true` arms died 2026-09-22 by the
+        // no-silent-resolution law: sla_enabled is DECLARED with
+        // .default(true), so the walk always delivers a boolean and
+        // the fallback arms were unreachable lies.
+        switch: p.sla_enabled as boolean, on_true: sla, on_false: mab,
+      }).out()
+      preLoraModel = picked
+      const loraModel = g.node('LTX_lora_loader', {
+        model: picked, mode: 'minimax', stack_data: loraStack,
+      }).out()
+      const adaln = g.node('H3AdaLNLoRAFix', { model: loraModel, mode: 'port' }).out()
+      sigmaModel = g.node('MiniMaxH3SigmaShift', {
+        model: adaln, shift_video: shiftVideo, shift_audio: p.shift_audio as number,
+      }).out()
+      // THE SPAN IS THE FILM (the operator's 2026-09-17 catch: the
+      // readout said 7s — the doc's totalFrames, last end_frame @24 —
+      // and the render came back 3, this hardcoded 90 budget). The
+      // window's render length derives from the TIMELINE the calls
+      // author: last end_frame − first start_frame, SNAPPED TO THE
+      // 17k+5 GRID the engine's latent math lawfully renders (22+17k,
+      // clamped [22,362] — the same set the length param's own
+      // min/step admits; the first 168-span probe died inside
+      // SamplerCustomAdvanced off-grid, live receipt 2026-09-17). The
+      // retired 90/56 budgets remain the fallback ONLY for docs that
+      // (the length source of truth is UPSTREAM of this renderer: the
+      // schema's span rider serializes single-call spans as EXPLICIT
+      // length, and the merged film computes per-window lengths — this
+      // arm only falls back to the family budgets)
+    // NO SILENT RESOLUTION LAW: the walked/stanza length IS the value
+    // (single-call: the span rider's explicit span; multi-call: the
+    // film total; fresh: the walked default; the 90/56 family budgets
+    // retired with the nulling that fed them)
+    const length = p.length as number
+      // THE RE-SHOOT REF SEATS, non-reference arm (2026-11-13): the
+      // trigger-led prompt + the prepared source clip as ref_video_0
+      // (the official chain wires the appearance lane even on the
+      // prompt-only arm — a reshoot without its source as reference
+      // is the old low-quality posture). No ref video audio, the
+      // official graph's own absence.
+      const r2vInputs2: Record<string, OutputHandle | string | number> = {
+        prompt: r2vPrompt, width: headW,
+        height: headH, length: length as number,
+        ref_image_size: p.ref_image_size as string,
+        clip, vae: vaeVideo, audio_vae: vaeAudio,
+      }
+      if (reshootChain !== undefined) {
+        r2vInputs2['ref_videos.ref_video_0'] = reshootChain.refFrames
+        // F5 (round-6 audit): node 20 takes its width/height from the
+        // PREPARE node's own outputs — the prepared clip's shape is the
+        // render shape, so a source aspect that differs from the doc's
+        // literals cannot feed aspect-faithful refs into a differently
+        // shaped latent. `length` deliberately stays the window's own
+        // (one guide is shared across windows of different lengths:
+        // prep.out(3) would shorten the longer ones — documented
+        // divergence beside duration, F28).
+        r2vInputs2['width'] = reshootChain.prepWidth
+        r2vInputs2['height'] = reshootChain.prepHeight
+      }
+      const r2v = g.node('MiniMaxH3ReferenceToVideo', r2vInputs2)
+      cond = r2v.out(0)
+      latent = r2v.out(1)
+      // FPS IS LAYER A, this arm too: the non-reference arm's container
+      // clock rides the doc's declared fps — same law as the t4r arm's
+      // fpsNode, no arm may hardcode a clock the bar disagrees with.
+      fpsInput = p.fps as number
     }
+
+    // THE RE-SHOOT GUIDE PIN (the official chain's conditioning seat,
+    // 2026-11-13): the warp rides MiniMaxH3AddGuide into the window's
+    // own AV latent at row 0 — the H3-native image-guide lane (the
+    // same node the keyframe pins ride), pinned LAST so the camera
+    // geometry closes the guide chain (audio first, keyframes next,
+    // the moved view's spine on top). The official graph's node 21,
+    // verbatim shape; one pin per window, the shared warp handle.
     if (reshootChain !== undefined) {
-      r2vInputs2['ref_videos.ref_video_0'] = reshootChain.refFrames
-      // F5 (round-6 audit): node 20 takes its width/height from the
-      // PREPARE node's own outputs — the prepared clip's shape is the
-      // render shape, so a source aspect that differs from the doc's
-      // literals cannot feed aspect-faithful refs into a differently
-      // shaped latent. `length` deliberately stays the window's own
-      // (one guide is shared across windows of different lengths:
-      // prep.out(3) would shorten the longer ones — documented
-      // divergence beside duration, F28).
-      r2vInputs2['width'] = reshootChain.prepWidth
-      r2vInputs2['height'] = reshootChain.prepHeight
+      cond = applyH3ReshootCond(g, cond, latent, vaeVideo, reshootChain)
     }
-    const r2v = g.node('MiniMaxH3ReferenceToVideo', r2vInputs2)
-    cond = r2v.out(0)
-    latent = r2v.out(1)
-    // FPS IS LAYER A, this arm too: the non-reference arm's container
-    // clock rides the doc's declared fps — same law as the t4r arm's
-    // fpsNode, no arm may hardcode a clock the bar disagrees with.
-    fpsInput = p.fps as number
-  }
 
-  // THE RE-SHOOT GUIDE PIN (the official chain's conditioning seat,
-  // 2026-11-13): the warp rides MiniMaxH3AddGuide into the window's
-  // own AV latent at row 0 — the H3-native image-guide lane (the
-  // same node the keyframe pins ride), pinned LAST so the camera
-  // geometry closes the guide chain (audio first, keyframes next,
-  // the moved view's spine on top). The official graph's node 21,
-  // verbatim shape; one pin per window, the shared warp handle.
-  if (reshootChain !== undefined) {
-    cond = applyH3ReshootCond(g, cond, latent, vaeVideo, reshootChain)
-  }
-
-  // THE REFMOD SEAM (audit 010/R1, 2026-10-18): reusable reference
-  // mods appended to the conditioning's reference tokens through ALL
-  // DiT blocks (the pack rides the model's native ref2va path; it
-  // spends conditioning-side tokens, never a bundle-bus slot, so the
-  // refs-imply-r2v law does not fire on a mod and BOTH arms share
-  // this one seam — Apply accepts the core CONDITIONING either r2v
-  // arm emits and returns the same type).
-  // THE ANY-MEDIA LAW (operator, 2026-11-06): the mod seat takes ANY
-  // media kind — stills, videos, audio — and THE SYSTEM HANDLES THE
-  // CONVERSION: the pack's own creator node (Create H3 RefMod /
-  // MiniMaxH3RefModExtract) bakes the media into a mod at run time
-  // (refs_image.ref_image_N stills ≤16, refs_video.ref_video_N frame
-  // batches ≤8 — dotted autogrow addressing; audio
-  // rides MiniMaxH3RefModAudioExtract). Forcing operators to
-  // hand-place .safetensors packs was the regression (4f2342f46 →
-  // ce79f052a), not the law. Pre-baked .safetensors stems under
-  // models/refmods/ stay legal currency through the loader (the
-  // listing door's rows) — a REUSE arm, never the only door.
-  // REFMOD IS NOT REFERENCE (operator, 2026-11-06): the mod seat is
-  // its own concept — identity/style/voice packs riding the ref2va
-  // conditioning of every DiT block — never a fourth reference lane.
-  // THE PER-CALL MODS SEAT — THE MERGE LAW (2026-11-08, study §2b /
-  // G7: the old either/or REPLACED the declared list whenever a
-  // window stated its own — a stated seat silently dropped, the
-  // purge's kill class): the two spellings of the seat — the
-  // run-level `ref_mods` (declared, rides EVERY window) and the
-  // window's `refs.mods` (the per-call bag) — MERGE: declared
-  // entries first, then the window's own not already present
-  // (deduped by trimmed value), so a stated pack never drops and a
-  // double-stated pack never double-spends a loader slot. Comma
-  // strings (the UI wire form) and arrays (the agent form) both
-  // resolve through wireList; the cap check below guards the UNION.
-  // (The refs-lane REPLACE canon governs the image/video/audio BUS
-  // lanes only — REFMOD IS NOT REFERENCE.)
-  const bagMods = wireList(rb0.mods)
-  const declaredMods = wireList(p.ref_mods)
-  const seenMods = new Set(declaredMods.map((m) => m.trim()))
-  const refModsAll = [...declaredMods, ...bagMods.filter((m) => !seenMods.has(m.trim()))]
-  if (refModsAll.length > 0) {
-    if (refModsAll.length > REF_CAPS.refmods) {
-      throw new Error(`[h3-timeline] ref_mods exceeds the loader's ${String(REF_CAPS.refmods)} slots (saw ${String(refModsAll.length)})`)
-    }
-    const modStems: string[] = []
-    const modImages: string[] = []
-    const modVideos: string[] = []
-    const modAudios: string[] = []
-    for (const src of refModsAll) {
-      // Trim, then query-strip (the estate precedent:
-      // timelineContract's _kindOfFile splits '?' first), then split
-      // on BOTH separators — a backslash-prefixed or padded entry
-      // would otherwise pass the suffix check with junk baked into
-      // the stem and die server-side as a combo miss. The two `as`
-      // casts are total (split always yields a non-empty array), so
-      // this adds no defensive branches to the coverage face.
-      // A data: URL rides VERBATIM past the split (the studio's
-      // upload chips commit data URLs; the run's staging walk
-      // uploads them into the engine's input tree and rewrites the
-      // load nodes' slots — the family reads off the MIME here).
-      const raw = src.trim()
-      const query = raw.split('?')[0] as string
-      const base = query.split(/[\\/]/).pop() as string
-      if (raw.startsWith('data:')) {
-        const mime = /^data:([^;,]+)[;,]/.exec(raw)?.[1] ?? ''
-        if (mime.startsWith('image/')) modImages.push(raw)
-        else if (mime.startsWith('video/')) modVideos.push(raw)
-        else if (mime.startsWith('audio/')) modAudios.push(raw)
-        else {
-          throw new Error(`[h3-timeline] ref_mods entries are ANY media (image/video/audio — the system bakes the pack) or pre-baked .safetensors stems under models/refmods/ (saw '${src.slice(0, 60)}')`)
+    // THE REFMOD SEAM (audit 010/R1, 2026-10-18): reusable reference
+    // mods appended to the conditioning's reference tokens through ALL
+    // DiT blocks (the pack rides the model's native ref2va path; it
+    // spends conditioning-side tokens, never a bundle-bus slot, so the
+    // refs-imply-r2v law does not fire on a mod and BOTH arms share
+    // this one seam — Apply accepts the core CONDITIONING either r2v
+    // arm emits and returns the same type).
+    // THE ANY-MEDIA LAW (operator, 2026-11-06): the mod seat takes ANY
+    // media kind — stills, videos, audio — and THE SYSTEM HANDLES THE
+    // CONVERSION: the pack's own creator node (Create H3 RefMod /
+    // MiniMaxH3RefModExtract) bakes the media into a mod at run time
+    // (refs_image.ref_image_N stills ≤16, refs_video.ref_video_N frame
+    // batches ≤8 — dotted autogrow addressing; audio
+    // rides MiniMaxH3RefModAudioExtract). Forcing operators to
+    // hand-place .safetensors packs was the regression (4f2342f46 →
+    // ce79f052a), not the law. Pre-baked .safetensors stems under
+    // models/refmods/ stay legal currency through the loader (the
+    // listing door's rows) — a REUSE arm, never the only door.
+    // REFMOD IS NOT REFERENCE (operator, 2026-11-06): the mod seat is
+    // its own concept — identity/style/voice packs riding the ref2va
+    // conditioning of every DiT block — never a fourth reference lane.
+    // THE PER-CALL MODS SEAT — THE MERGE LAW (2026-11-08, study §2b /
+    // G7: the old either/or REPLACED the declared list whenever a
+    // window stated its own — a stated seat silently dropped, the
+    // purge's kill class): the two spellings of the seat — the
+    // run-level `ref_mods` (declared, rides EVERY window) and the
+    // window's `refs.mods` (the per-call bag) — MERGE: declared
+    // entries first, then the window's own not already present
+    // (deduped by trimmed value), so a stated pack never drops and a
+    // double-stated pack never double-spends a loader slot. Comma
+    // strings (the UI wire form) and arrays (the agent form) both
+    // resolve through wireList; the cap check below guards the UNION.
+    // (The refs-lane REPLACE canon governs the image/video/audio BUS
+    // lanes only — REFMOD IS NOT REFERENCE.)
+    const bagMods = wireList(rb0.mods)
+    const declaredMods = wireList(p.ref_mods)
+    const seenMods = new Set(declaredMods.map((m) => m.trim()))
+    const refModsAll = [...declaredMods, ...bagMods.filter((m) => !seenMods.has(m.trim()))]
+    if (refModsAll.length > 0) {
+      if (refModsAll.length > REF_CAPS.refmods) {
+        throw new Error(`[h3-timeline] ref_mods exceeds the loader's ${String(REF_CAPS.refmods)} slots (saw ${String(refModsAll.length)})`)
+      }
+      const modStems: string[] = []
+      const modImages: string[] = []
+      const modVideos: string[] = []
+      const modAudios: string[] = []
+      for (const src of refModsAll) {
+        // Trim, then query-strip (the estate precedent:
+        // timelineContract's _kindOfFile splits '?' first), then split
+        // on BOTH separators — a backslash-prefixed or padded entry
+        // would otherwise pass the suffix check with junk baked into
+        // the stem and die server-side as a combo miss. The two `as`
+        // casts are total (split always yields a non-empty array), so
+        // this adds no defensive branches to the coverage face.
+        // A data: URL rides VERBATIM past the split (the studio's
+        // upload chips commit data URLs; the run's staging walk
+        // uploads them into the engine's input tree and rewrites the
+        // load nodes' slots — the family reads off the MIME here).
+        const raw = src.trim()
+        const query = raw.split('?')[0] as string
+        const base = query.split(/[\\/]/).pop() as string
+        if (raw.startsWith('data:')) {
+          const mime = /^data:([^;,]+)[;,]/.exec(raw)?.[1] ?? ''
+          if (mime.startsWith('image/')) modImages.push(raw)
+          else if (mime.startsWith('video/')) modVideos.push(raw)
+          else if (mime.startsWith('audio/')) modAudios.push(raw)
+          else {
+            throw new Error(`[h3-timeline] ref_mods entries are ANY media (image/video/audio — the system bakes the pack) or pre-baked .safetensors stems under models/refmods/ (saw '${src.slice(0, 60)}')`)
+          }
+          continue
         }
-        continue
+        if (base.endsWith('.safetensors')) {
+          modStems.push(base.slice(0, -'.safetensors'.length))
+          continue
+        }
+        // ANY media kind boards (mediaKindOf — the contracts SSOT):
+        // image → the creator's refs_image.ref_image_N, video →
+        // refs_video.ref_video_N via the component split, audio → the
+        // audio extractor. Anything
+        // the estate does not recognize as media refuses HERE, loud,
+        // instead of dying server-side (the I2V census-alignment law).
+        const kind = mediaKindOf(base)
+        if (kind === 'image') modImages.push(query)
+        else if (kind === 'video') modVideos.push(query)
+        else if (kind === 'audio') modAudios.push(query)
+        else {
+          throw new Error(`[h3-timeline] ref_mods entries are ANY media (image/video/audio — the system bakes the pack) or pre-baked .safetensors stems under models/refmods/ (saw '${src}')`)
+        }
       }
-      if (base.endsWith('.safetensors')) {
-        modStems.push(base.slice(0, -'.safetensors'.length))
-        continue
-      }
-      // ANY media kind boards (mediaKindOf — the contracts SSOT):
-      // image → the creator's refs_image.ref_image_N, video →
-      // refs_video.ref_video_N via the component split, audio → the
-      // audio extractor. Anything
-      // the estate does not recognize as media refuses HERE, loud,
-      // instead of dying server-side (the I2V census-alignment law).
-      const kind = mediaKindOf(base)
-      if (kind === 'image') modImages.push(query)
-      else if (kind === 'video') modVideos.push(query)
-      else if (kind === 'audio') modAudios.push(query)
-      else {
-        throw new Error(`[h3-timeline] ref_mods entries are ANY media (image/video/audio — the system bakes the pack) or pre-baked .safetensors stems under models/refmods/ (saw '${src}')`)
-      }
-    }
-    // The chain's law: each mods source appends through its own
-    // Apply (Apply passes conditioning through, one mods input), in
-    // fixed order — pre-baked stems, the baked visual pack, then
-    // each baked audio pack.
-    const applyMods = (mods: OutputHandle): void => {
-      cond = g.node('MiniMaxH3RefModApply', {
-        conditioning: cond, mods, override: false, retention: 1,
-        curve_direction: 'constant', scramble_seed: -1,
-        curve_shape: 'linear', curve_value: 1,
-      }).out(0)
-    }
-    if (modStems.length > 0) {
-      const loaderInputs: Record<string, string | number | boolean> = { show_info: false }
-      for (let i = 0; i < REF_CAPS.refmods; i++) {
-        const stem = modStems[i]
-        loaderInputs[`mod_${i + 1}`] = stem === undefined ? '(none)' : stem
-        loaderInputs[`strength_${i + 1}`] = 1
-        loaderInputs[`copies_${i + 1}`] = 1
-      }
-      applyMods(g.node('MiniMaxH3RefModsLoader', loaderInputs).out(0))
-    }
-    if (modImages.length > 0 || modVideos.length > 0) {
-      // One creator node stacks every visual ref of the seat into a
-      // single video-kind mod (the node's own grammar: stills into
-      // the refs_image autogrow container's grown slots, frame
-      // batches into refs_video's — DOTTED container.slot addressing,
-      // the r2v ref_images.ref_image_0 receipt; a BARE ref_image_1
-      // key is an undeclared input and phase 1 refuses it, the
-      // 2026-10-16 boot-death live burn). name = the first PATH
-      // ref's basename, sanitized node-side — a data: upload chip
-      // has no basename, so a data-only seat names the generic
-      // 'mod'. save rides the node default (true) so the baked pack
-      // lands in the loader's dropdown for later reuse.
-      const firstVisual = (modImages[0] ?? modVideos[0]) as string
-      const nameBase = firstVisual.startsWith('data:') ? 'mod' : firstVisual.split(/[\\/]/).pop()?.replace(/\.[^.]+$/, '') ?? 'mod'
-      // THE STATED BAKE (study §5/§7.2; value-arms ARMs 13/14): the
-      // fidelity dials are DECLARED params (schema.ts, the refmod
-      // group) and ride the node verbatim. Before this, pool and
-      // identity were SILENT engine defaults (nothing named them)
-      // and mode/save were pinned constants — the dials did not
-      // exist on this lane. The fallbacks are the declared defaults
-      // verbatim — one owner, the schema.
-      const bakeMode = typeof p.refmod_mode === 'string' ? p.refmod_mode : 'Compressed Reference'
-      const bakePool = typeof p.refmod_pool === 'number' && Number.isFinite(p.refmod_pool) ? p.refmod_pool : 16
-      const bakeIdentity = typeof p.refmod_identity === 'number' && Number.isFinite(p.refmod_identity) ? p.refmod_identity : 500
-      const extractInputs: Record<string, string | number | boolean | OutputHandle> = {
-        name: nameBase,
-        mode: bakeMode, concept_type: 'generic',
-        save: p.refmod_save !== false,
-        pool_h: bakePool, pool_w: bakePool, identity: bakeIdentity,
-        // THE VAE EDGE (2026-11-06 live burn: 'connect an av_encoder
-        // (MiniMax-H3 VAE loader) or a standard VAE' — the engine
-        // refuses the extract at run time without one; both inputs
-        // are schema-optional, so no phase-1 judge can catch it).
-        // The family's own optimized H3 VAE rides (the int8-convrot
-        // video VAE, the same handle the film lane loads); no
-        // MINIMAX_H3_AV_ENCODER loader node exists in this engine's
-        // /object_info, so the standard-VAE input is THE wire.
-        vae: vaeVideo,
-      }
-      modImages.forEach((img, i) => {
-        extractInputs[`refs_image.ref_image_${i}`] = g.node('LoadImage', { image: img, upload: 'image' }).out(0)
-      })
-      modVideos.forEach((vid, i) => {
-        extractInputs[`refs_video.ref_video_${i}`] = g.node('GetVideoComponents', {
-          video: g.node('LoadVideo', { file: vid }).out(),
+      // The chain's law: each mods source appends through its own
+      // Apply (Apply passes conditioning through, one mods input), in
+      // fixed order — pre-baked stems, the baked visual pack, then
+      // each baked audio pack.
+      const applyMods = (mods: OutputHandle): void => {
+        cond = g.node('MiniMaxH3RefModApply', {
+          conditioning: cond, mods, override: false, retention: 1,
+          curve_direction: 'constant', scramble_seed: -1,
+          curve_shape: 'linear', curve_value: 1,
         }).out(0)
+      }
+      if (modStems.length > 0) {
+        const loaderInputs: Record<string, string | number | boolean> = { show_info: false }
+        for (let i = 0; i < REF_CAPS.refmods; i++) {
+          const stem = modStems[i]
+          loaderInputs[`mod_${i + 1}`] = stem === undefined ? '(none)' : stem
+          loaderInputs[`strength_${i + 1}`] = 1
+          loaderInputs[`copies_${i + 1}`] = 1
+        }
+        applyMods(g.node('MiniMaxH3RefModsLoader', loaderInputs).out(0))
+      }
+      if (modImages.length > 0 || modVideos.length > 0) {
+        // One creator node stacks every visual ref of the seat into a
+        // single video-kind mod (the node's own grammar: stills into
+        // the refs_image autogrow container's grown slots, frame
+        // batches into refs_video's — DOTTED container.slot addressing,
+        // the r2v ref_images.ref_image_0 receipt; a BARE ref_image_1
+        // key is an undeclared input and phase 1 refuses it, the
+        // 2026-10-16 boot-death live burn). name = the first PATH
+        // ref's basename, sanitized node-side — a data: upload chip
+        // has no basename, so a data-only seat names the generic
+        // 'mod'. save rides the node default (true) so the baked pack
+        // lands in the loader's dropdown for later reuse.
+        const firstVisual = (modImages[0] ?? modVideos[0]) as string
+        const nameBase = firstVisual.startsWith('data:') ? 'mod' : firstVisual.split(/[\\/]/).pop()?.replace(/\.[^.]+$/, '') ?? 'mod'
+        // THE STATED BAKE (study §5/§7.2; value-arms ARMs 13/14): the
+        // fidelity dials are DECLARED params (schema.ts, the refmod
+        // group) and ride the node verbatim. Before this, pool and
+        // identity were SILENT engine defaults (nothing named them)
+        // and mode/save were pinned constants — the dials did not
+        // exist on this lane. The fallbacks are the declared defaults
+        // verbatim — one owner, the schema.
+        const bakeMode = typeof p.refmod_mode === 'string' ? p.refmod_mode : 'Compressed Reference'
+        const bakePool = typeof p.refmod_pool === 'number' && Number.isFinite(p.refmod_pool) ? p.refmod_pool : 16
+        const bakeIdentity = typeof p.refmod_identity === 'number' && Number.isFinite(p.refmod_identity) ? p.refmod_identity : 500
+        const extractInputs: Record<string, string | number | boolean | OutputHandle> = {
+          name: nameBase,
+          mode: bakeMode, concept_type: 'generic',
+          save: p.refmod_save !== false,
+          pool_h: bakePool, pool_w: bakePool, identity: bakeIdentity,
+          // THE VAE EDGE (2026-11-06 live burn: 'connect an av_encoder
+          // (MiniMax-H3 VAE loader) or a standard VAE' — the engine
+          // refuses the extract at run time without one; both inputs
+          // are schema-optional, so no phase-1 judge can catch it).
+          // The family's own optimized H3 VAE rides (the int8-convrot
+          // video VAE, the same handle the film lane loads); no
+          // MINIMAX_H3_AV_ENCODER loader node exists in this engine's
+          // /object_info, so the standard-VAE input is THE wire.
+          vae: vaeVideo,
+        }
+        modImages.forEach((img, i) => {
+          extractInputs[`refs_image.ref_image_${i}`] = g.node('LoadImage', { image: img, upload: 'image' }).out(0)
+        })
+        modVideos.forEach((vid, i) => {
+          extractInputs[`refs_video.ref_video_${i}`] = g.node('GetVideoComponents', {
+            video: g.node('LoadVideo', { file: vid }).out(),
+          }).out(0)
+        })
+        applyMods(g.node('MiniMaxH3RefModExtract', extractInputs).out(0))
+      }
+      for (const src of modAudios) {
+        // Audio mods are their own extractor (AUDIO in, one mod out);
+        // one node per entry, voice-grade defaults, saved for reuse
+        // (a data: upload chip names the generic 'audio_mod').
+        // budget_policy + concept_type are REQUIRED bare combos in the
+        // engine's /object_info — no declared default, so no primed
+        // builder autofills them (the B7 wall refuses at compose) — the
+        // graph states the pack's own signature defaults
+        // (vendor/ComfyUI-MiniMaxH3Mod/nodes.py:2143: budget_policy
+        // 'error', concept_type 'voice').
+        applyMods(g.node('MiniMaxH3RefModAudioExtract', {
+          audio: g.node('LoadAudio', { audio: src }).out(),
+          audio_vae: vaeAudio,
+          name: src.startsWith('data:') ? 'audio_mod' : src.split(/[\\/]/).pop()?.replace(/\.[^.]+$/, '') ?? 'audio_mod',
+          budget_policy: 'error', concept_type: 'voice',
+          save: true,
+        }).out(0))
+      }
+    }
+
+    // ── sampler stack ──────────────────────────────────────────────────
+    // card knob first (seed), renderer alias second.
+    const noise = g.node('RandomNoise', { noise_seed: (p.noise_seed ?? p.seed) as number }).out()
+    const samplerSel = g.node('KSamplerSelect', { sampler_name: p.sampler_name as string }).out()
+    let sampler: OutputHandle
+    if (isT4r) {
+      sampler = samplerSel
+    } else {
+      const ersde = g.node('SamplerER_SDE', {
+        solver_type: 'ODE', max_stage: 3, eta: 0.0, s_noise: 1.0,
+      }).out()
+      // template carries switch=false as a LITERAL, not a bool node
+      sampler = g.node('ComfySwitchNode', { switch: false, on_true: ersde, on_false: samplerSel }).out()
+    }
+    // THE FUN-CONTROLNET SEAT (007 L7): one insertion past the sigma
+    // shift, BOTH t4 arms by construction (each arm assigns sigmaModel
+    // above; every downstream consumer — BasicScheduler, BasicGuider,
+    // the continuation seam, the soft-AV release — rides the chain's
+    // tail). Empty picks → sigmaModel verbatim (byte-stable); entries
+    // fire only when the family boards the controlnet pack (the kit's
+    // boarding gate — the rows are the operator's BENCH row, 002 H1)
+    // and every row fact (schedule capability, strength ceiling, the
+    // clip/mask channels) arrived stamped by the service resolution.
+    // THE RE-SHOOT MODEL SEAT (the 2026-11-13 official rework) mounts
+    // just ahead of it: the CrossView LoRA on the post-shift model —
+    // the official order (distill lora → shift → attention → the
+    // CrossView LoRA LAST) so the camera-trained adapters win, with
+    // any file-based picks refining on top. The hoisted reshootChain
+    // (the window head) is the one build — the film loop's stamped
+    // handles or the single-window's own.
+    if (reshootChain !== undefined) sigmaModel = applyH3ReshootModel(g, sigmaModel, p)
+    sigmaModel = applyH3FunControlNets(g, sigmaModel, vaeVideo, fireControlNets(model, p))
+    const schedName = p.sched_name as string
+    const denoiseVal = p.denoise as number
+    const sched = g.node('BasicScheduler', {
+      model: sigmaModel, scheduler: schedName,
+      steps: p.steps as number, denoise: denoiseVal,
+    }).out()
+    let guider = g.node('BasicGuider', { model: sigmaModel, conditioning: cond }).out()
+    let targetLatent = latent
+
+    // THE SEAM (2026-09-20, the operator's order: the MotionContext
+    // seam is FORGOTTEN — the TimelineDirector drift-control
+    // continuation is the one way, automatic): window k≥2 with a
+    // carried seam rides MiniMaxH3FiniteLatentContinuation — the
+    // previous window's RAW sampled latent becomes this window's
+    // drift-controlled opening (schedule-matched prefix noise: the
+    // carried tail's noise level walks down the sampler's own sigma
+    // schedule, so the model never fights the anchor — the anti-drift
+    // core for unbounded chains), the audio latent rides the Soft AV
+    // half-cosine release (no seam pops), and the MODEL comes back
+    // PATCHED — the guider rebinds to it and the sampler's target is
+    // the MASKED latent. A 'cut' call (overlap 0) and every opener
+    // never mount this block: a true fresh window.
+    // THE FAMILY-AGNOSTIC SEAM (fixed 2026-09-22): the gate was
+    // t4_chain-only, and the dialogue stamp routes stamped windows to
+    // t4r — a stamped film silently lost the continuation AND the
+    // carried-head trim (two independent windows hard-concatenated:
+    // the broken seam the operator caught on the proof film). The
+    // continuation is latent-level (wraps the sampler's model and
+    // conditioning — family-agnostic); the trim is decode-level.
+    // Every film window k>=2 chains, t4r included. THE WALL: a
+    // stamped window with no Continuation node is a broken seam —
+    // card-gap pins it ("the stamped seam wall").
+    if (isChain || isT4r) {
+      const prev = p.__prev as WindowHandles | undefined
+      /* v8 ignore next 1 -- the film loop stamps __iteration on every window k≥2 before the render (the seam block mounts only when it did) */
+      const iteration = (p.__iteration as number) ?? 0
+      /* v8 ignore next 1 -- the film loop stamps __overlap on every window k≥2 before the render (the seam block mounts only when it did) */
+      const overlap = (p.__overlap as number) ?? 0
+      if (prev !== undefined && overlap > 0) {
+        const cont = g.node('MiniMaxH3FiniteLatentContinuation', {
+          positive: cond, target_latent: targetLatent,
+          iteration, overlap_frames: overlap,
+          continue_audio_latent: true,
+          model: sigmaModel, sigmas: sched,
+          previous_latent: prev.seamLatent,
+        })
+        cond = cont.out(0)
+        targetLatent = cont.out(1)
+        guider = g.node('BasicGuider', { model: cont.out(3), conditioning: cont.out(0) }).out()
+      }
+    }
+    const sampled = g.node('SamplerCustomAdvanced', {
+      noise, guider, sampler, sigmas: sched, latent_image: targetLatent,
+    })
+    let latOut = sampled.out(0)
+
+    // ── THE T3 REFINE RIDER (roadmap item 2 — the crowd's third
+    // tier, formalized): a short CLOSING pass over the window's
+    // output latent — the refiner lora on its OWN loader (the
+    // primary stack above NEVER changes), full-denoise short
+    // schedule from the same noise seed, riding the doc's own
+    // sampler/scheduler (the rider owns NO solver of its own — one
+    // owner per knob). Mounted ONLY when resolveRefineSeat above
+    // assembles the rider (the door's single owner — the engine
+    // service carries no refine assembly of its own); absent = the
+    // graph renders exactly as before.
+    // The TaoMate refiner thread's mechanics: pass A full, pass B
+    // closes. The rider sits UPSTREAM of decode AND of the film's
+    // seam handles — the chained texture is the refined one.
+    // THE MASTER GATE (2026-09-22): second_pass_enabled === true is
+    // the only door to the whole post chain — sharpen, interp, VSR,
+    // refine each AND it with their own switch (legacy docs with
+    // leaves set but no master render the plain pass, byte-stable).
+    const secondPassOn = p.second_pass_enabled === true
+    const refine = resolveRefineSeat(p)
+    // ── THE P2 LATENT-UPSCALE HANDOFF (SOTA plan Phase P2 — mounts
+    // BEFORE the rider: the rider goes in-band on the UPSCALED
+    // latent, ARM 43): the handoff's latent edge names the pass-1
+    // sampler's output (the sampled joint AV — 24 video ch, ARM 38),
+    // lock_audio true preserves pass-1 audio exactly, and the decode
+    // below rides latOut so it decodes the upscaled latent (ARM 39).
+    // THE STAGE-3 MODEL LAW (spec-match cure 1, audit 2026-10-27): the
+    // spec's diagnostic matrix names the mechanism — "Distilled LoRAs
+    // at low denoise predict invalid noise fields" (the plastic/waxy
+    // skin face); its cure row seats "Un-distilled b30-49 Base
+    // Checkpoint" for pass 2. So whenever the primary bag carries a
+    // counting distill AND the pass-2 window is sub-1 (the handoff's
+    // window is ALWAYS sub-1 — its sigmas law below refuses 1.0), the
+    // refine rider and the latent handoff mount on the PRE-LORA chain
+    // instead of sigmaModel: the picked UNET+switch edge + the AdaLN
+    // fix + the doc's own shift grid + the same fun-controlnet wrap —
+    // every conditioning a pass needs, minus the distill. At denoise
+    // 1.0 the rider keeps the primary stack (the TaoMate full mechanic
+    // — pass A full, pass B closes — unchanged); with no counting row
+    // the primary stack already IS the un-distilled base.
+    // the bag's own truth: absent p.loras = the default
+    // H3_DEFAULT_LORA_ID row (h3_silver_dareties) rides via
+    // loraStackDefault — a counting distill; a stated bag
+    // rides a counting row iff the marriage sees one.
+    const distillRides = Array.isArray(p.loras) ? marriedBagKnob(p, 'steps') !== null : true
+    const riderSubOne = refine !== undefined && refine.denoise < 1
+    let pass2Model = sigmaModel
+    if (distillRides && (upscaleOn || riderSubOne)) {
+      const pass2Adaln = g.node('H3AdaLNLoRAFix', { model: preLoraModel, mode: 'port' }).out()
+      const pass2Shift = g.node('MiniMaxH3SigmaShift', {
+        model: pass2Adaln, shift_video: shiftVideo, shift_audio: p.shift_audio as number,
+      }).out()
+      pass2Model = applyH3FunControlNets(g, pass2Shift, vaeVideo, fireControlNets(model, p))
+    }
+    if (upscaleOn) {
+      // THE STAGE-2 SCHEDULE: the married steps AT THIS SEAT — the
+      // rider's own count when it mounts (the in-band marriage), else
+      // the doc steps (a riderless stated refine_steps is a cross-gate
+      // leaf, ARM 45's ARM-5 heir — it never reaches this schedule);
+      // the denoise is the shared Stage-2 seat (resolveStage2Denoise
+      // above — rides with or without the rider, the P2 verdict's
+      // core). THE PARTIAL-DENOISE LAW (the vendored sequence node's
+      // own contract — nodes/minimax_h3_refine.py run_h3_refinement:
+      // sigmas must be 1-dim, ≥2 finite entries, and
+      // 0 <= sigmas[0] < 1 STRICT; a full-noise sigma discards the
+      // learned upscaled latent and the node throws at the engine).
+      // A BasicScheduler full schedule (denoise 1.0) opens AT sigma_max
+      // — so denoise 1.0 is ILLEGAL on this arm and refuses HERE, in
+      // the handoff's own voice naming the sigmas law (ARM 46 fires
+      // it). Off-arm 1.0 stays legal (the rider's taomate full-denoise
+      // mechanic never crosses this node).
+      const stage2Denoise = resolveStage2Denoise(p)
+      if (stage2Denoise >= 1) {
+        throw new Error(`h3 action: refine_denoise 1 composes no partial-denoise window — the latent-upscale handoff requires 0 <= sigmas[0] < 1 (vendored MinimaxH3LatentUpscaler3DRefineHandoff, run_h3_refinement: a full-noise sigma discards the upscaled latent); state a window below 1 (the researched 0.30–0.35) or turn upscale_route off for the taomate full-denoise mechanic`)
+      }
+      const stage2Sched = g.node('BasicScheduler', {
+        model: pass2Model, scheduler: schedName,
+        steps: refine !== undefined ? refine.steps : (p.steps as number),
+        denoise: stage2Denoise,
+      }).out()
+      const upscaled = g.node('MinimaxH3LatentUpscaler3DRefineHandoff', {
+        model: pass2Model, noise, sampler: samplerSel, positive: cond,
+        sigmas: stage2Sched, latent: latOut,
+        model_name: p.upscale_model as string,
+        mode: "scale by multiplier", scale: 2.0,
+        lock_audio: true, precision: "bf16", device: "cuda", cfg: 1.0,
+        // THE MISSING REQUIRED SIX (timeline audit follow-up, 2026-10-27:
+        // the corpus stage-2+3 member's wiring pass reds — the node
+        // composed estate-side without the engine's declared-required
+        // inputs, and the engine refuses the prompt on any of them).
+        // Multiplier mode ignores width/height/megapixels/keep_proportion
+        // — they ride the pass-2 target (full size, aspect kept) and the
+        // engine's own defaults; align is the kernel's latent-alignment
+        // grain (32 = its default, every 3D-conv frame boundary).
+        width: p.width as number, height: p.height as number,
+        keep_proportion: true, megapixels: 1,
+        align: 32, offload_after_upscale: false,
       })
-      applyMods(g.node('MiniMaxH3RefModExtract', extractInputs).out(0))
+      latOut = upscaled.out(0)
     }
-    for (const src of modAudios) {
-      // Audio mods are their own extractor (AUDIO in, one mod out);
-      // one node per entry, voice-grade defaults, saved for reuse
-      // (a data: upload chip names the generic 'audio_mod').
-      // budget_policy + concept_type are REQUIRED bare combos in the
-      // engine's /object_info — no declared default, so no primed
-      // builder autofills them (the B7 wall refuses at compose) — the
-      // graph states the pack's own signature defaults
-      // (vendor/ComfyUI-MiniMaxH3Mod/nodes.py:2143: budget_policy
-      // 'error', concept_type 'voice').
-      applyMods(g.node('MiniMaxH3RefModAudioExtract', {
-        audio: g.node('LoadAudio', { audio: src }).out(),
-        audio_vae: vaeAudio,
-        name: src.startsWith('data:') ? 'audio_mod' : src.split(/[\\/]/).pop()?.replace(/\.[^.]+$/, '') ?? 'audio_mod',
-        budget_policy: 'error', concept_type: 'voice',
-        save: true,
-      }).out(0))
-    }
-  }
-
-  // ── sampler stack ──────────────────────────────────────────────────
-  // card knob first (seed), renderer alias second.
-  const noise = g.node('RandomNoise', { noise_seed: (p.noise_seed ?? p.seed) as number }).out()
-  const samplerSel = g.node('KSamplerSelect', { sampler_name: p.sampler_name as string }).out()
-  let sampler: OutputHandle
-  if (isT4r) {
-    sampler = samplerSel
-  } else {
-    const ersde = g.node('SamplerER_SDE', {
-      solver_type: 'ODE', max_stage: 3, eta: 0.0, s_noise: 1.0,
-    }).out()
-    // template carries switch=false as a LITERAL, not a bool node
-    sampler = g.node('ComfySwitchNode', { switch: false, on_true: ersde, on_false: samplerSel }).out()
-  }
-  // THE FUN-CONTROLNET SEAT (007 L7): one insertion past the sigma
-  // shift, BOTH t4 arms by construction (each arm assigns sigmaModel
-  // above; every downstream consumer — BasicScheduler, BasicGuider,
-  // the continuation seam, the soft-AV release — rides the chain's
-  // tail). Empty picks → sigmaModel verbatim (byte-stable); entries
-  // fire only when the family boards the controlnet pack (the kit's
-  // boarding gate — the rows are the operator's BENCH row, 002 H1)
-  // and every row fact (schedule capability, strength ceiling, the
-  // clip/mask channels) arrived stamped by the service resolution.
-  // THE RE-SHOOT MODEL SEAT (the 2026-11-13 official rework) mounts
-  // just ahead of it: the CrossView LoRA on the post-shift model —
-  // the official order (distill lora → shift → attention → the
-  // CrossView LoRA LAST) so the camera-trained adapters win, with
-  // any file-based picks refining on top. The hoisted reshootChain
-  // (the window head) is the one build — the film loop's stamped
-  // handles or the single-window's own.
-  if (reshootChain !== undefined) sigmaModel = applyH3ReshootModel(g, sigmaModel, p)
-  sigmaModel = applyH3FunControlNets(g, sigmaModel, vaeVideo, fireControlNets(model, p))
-  const schedName = p.sched_name as string
-  const denoiseVal = p.denoise as number
-  const sched = g.node('BasicScheduler', {
-    model: sigmaModel, scheduler: schedName,
-    steps: p.steps as number, denoise: denoiseVal,
-  }).out()
-  let guider = g.node('BasicGuider', { model: sigmaModel, conditioning: cond }).out()
-  let targetLatent = latent
-
-  // THE SEAM (2026-09-20, the operator's order: the MotionContext
-  // seam is FORGOTTEN — the TimelineDirector drift-control
-  // continuation is the one way, automatic): window k≥2 with a
-  // carried seam rides MiniMaxH3FiniteLatentContinuation — the
-  // previous window's RAW sampled latent becomes this window's
-  // drift-controlled opening (schedule-matched prefix noise: the
-  // carried tail's noise level walks down the sampler's own sigma
-  // schedule, so the model never fights the anchor — the anti-drift
-  // core for unbounded chains), the audio latent rides the Soft AV
-  // half-cosine release (no seam pops), and the MODEL comes back
-  // PATCHED — the guider rebinds to it and the sampler's target is
-  // the MASKED latent. A 'cut' call (overlap 0) and every opener
-  // never mount this block: a true fresh window.
-  // THE FAMILY-AGNOSTIC SEAM (fixed 2026-09-22): the gate was
-  // t4_chain-only, and the dialogue stamp routes stamped windows to
-  // t4r — a stamped film silently lost the continuation AND the
-  // carried-head trim (two independent windows hard-concatenated:
-  // the broken seam the operator caught on the proof film). The
-  // continuation is latent-level (wraps the sampler's model and
-  // conditioning — family-agnostic); the trim is decode-level.
-  // Every film window k>=2 chains, t4r included. THE WALL: a
-  // stamped window with no Continuation node is a broken seam —
-  // card-gap pins it ("the stamped seam wall").
-  if (isChain || isT4r) {
-    const prev = p.__prev as WindowHandles | undefined
-    /* v8 ignore next 1 -- the film loop stamps __iteration on every window k≥2 before the render (the seam block mounts only when it did) */
-    const iteration = (p.__iteration as number) ?? 0
-    /* v8 ignore next 1 -- the film loop stamps __overlap on every window k≥2 before the render (the seam block mounts only when it did) */
-    const overlap = (p.__overlap as number) ?? 0
-    if (prev !== undefined && overlap > 0) {
-      const cont = g.node('MiniMaxH3FiniteLatentContinuation', {
-        positive: cond, target_latent: targetLatent,
-        iteration, overlap_frames: overlap,
-        continue_audio_latent: true,
-        model: sigmaModel, sigmas: sched,
-        previous_latent: prev.latOut,
+    if (refine !== undefined) {
+      const refineModel = g.node('LTX_lora_loader', {
+        model: pass2Model, mode: 'minimax',
+        stack_data: JSON.stringify([{ on: true, lora: refine.name, str: refine.strength, v: 1, a: 1, t: 1 }]),
+        lora_ui: '',
+      }).out()
+      const refineSched = g.node('BasicScheduler', {
+        model: refineModel, scheduler: schedName,
+        // THE REFINE WINDOW (SOTA limb 1): 1.0 = the full-denoise
+        // TaoMate mechanic (unstated, byte-stable); a stated window
+        // (0.30–0.35) keeps pass 1's structure and polishes texture.
+        steps: refine.steps, denoise: refine.denoise,
+      }).out()
+      const refineGuider = g.node('BasicGuider', { model: refineModel, conditioning: cond }).out()
+      const refined = g.node('SamplerCustomAdvanced', {
+        noise, guider: refineGuider, sampler: samplerSel, sigmas: refineSched, latent_image: latOut,
       })
-      cond = cont.out(0)
-      targetLatent = cont.out(1)
-      guider = g.node('BasicGuider', { model: cont.out(3), conditioning: cont.out(0) }).out()
+      latOut = refined.out(0)
     }
-  }
-  const sampled = g.node('SamplerCustomAdvanced', {
-    noise, guider, sampler, sigmas: sched, latent_image: targetLatent,
-  })
-  let latOut = sampled.out(0)
 
-  // ── THE T3 REFINE RIDER (roadmap item 2 — the crowd's third
-  // tier, formalized): a short CLOSING pass over the window's
-  // output latent — the refiner lora on its OWN loader (the
-  // primary stack above NEVER changes), full-denoise short
-  // schedule from the same noise seed, riding the doc's own
-  // sampler/scheduler (the rider owns NO solver of its own — one
-  // owner per knob). Mounted ONLY when resolveRefineSeat above
-  // assembles the rider (the door's single owner — the engine
-  // service carries no refine assembly of its own); absent = the
-  // graph renders exactly as before.
-  // The TaoMate refiner thread's mechanics: pass A full, pass B
-  // closes. The rider sits UPSTREAM of decode AND of the film's
-  // seam handles — the chained texture is the refined one.
-  // THE MASTER GATE (2026-09-22): second_pass_enabled === true is
-  // the only door to the whole post chain — sharpen, interp, VSR,
-  // refine each AND it with their own switch (legacy docs with
-  // leaves set but no master render the plain pass, byte-stable).
-  const secondPassOn = p.second_pass_enabled === true
-  const refine = resolveRefineSeat(p)
-  // ── THE P2 LATENT-UPSCALE HANDOFF (SOTA plan Phase P2 — mounts
-  // BEFORE the rider: the rider goes in-band on the UPSCALED
-  // latent, ARM 43): the handoff's latent edge names the pass-1
-  // sampler's output (the sampled joint AV — 24 video ch, ARM 38),
-  // lock_audio true preserves pass-1 audio exactly, and the decode
-  // below rides latOut so it decodes the upscaled latent (ARM 39).
-  // THE STAGE-3 MODEL LAW (spec-match cure 1, audit 2026-10-27): the
-  // spec's diagnostic matrix names the mechanism — "Distilled LoRAs
-  // at low denoise predict invalid noise fields" (the plastic/waxy
-  // skin face); its cure row seats "Un-distilled b30-49 Base
-  // Checkpoint" for pass 2. So whenever the primary bag carries a
-  // counting distill AND the pass-2 window is sub-1 (the handoff's
-  // window is ALWAYS sub-1 — its sigmas law below refuses 1.0), the
-  // refine rider and the latent handoff mount on the PRE-LORA chain
-  // instead of sigmaModel: the picked UNET+switch edge + the AdaLN
-  // fix + the doc's own shift grid + the same fun-controlnet wrap —
-  // every conditioning a pass needs, minus the distill. At denoise
-  // 1.0 the rider keeps the primary stack (the TaoMate full mechanic
-  // — pass A full, pass B closes — unchanged); with no counting row
-  // the primary stack already IS the un-distilled base.
-  // the bag's own truth: absent p.loras = the default
-  // H3_DEFAULT_LORA_ID row (h3_lightx2v_turbo) rides via
-  // loraStackDefault — a counting distill; a stated bag
-  // rides a counting row iff the marriage sees one.
-  const distillRides = Array.isArray(p.loras) ? marriedBagKnob(p, 'steps') !== null : true
-  const riderSubOne = refine !== undefined && refine.denoise < 1
-  let pass2Model = sigmaModel
-  if (distillRides && (upscaleOn || riderSubOne)) {
-    const pass2Adaln = g.node('H3AdaLNLoRAFix', { model: preLoraModel, mode: 'port' }).out()
-    const pass2Shift = g.node('MiniMaxH3SigmaShift', {
-      model: pass2Adaln, shift_video: shiftVideo, shift_audio: p.shift_audio as number,
-    }).out()
-    pass2Model = applyH3FunControlNets(g, pass2Shift, vaeVideo, fireControlNets(model, p))
-  }
-  if (upscaleOn) {
-    // THE STAGE-2 SCHEDULE: the married steps AT THIS SEAT — the
-    // rider's own count when it mounts (the in-band marriage), else
-    // the doc steps (a riderless stated refine_steps is a cross-gate
-    // leaf, ARM 45's ARM-5 heir — it never reaches this schedule);
-    // the denoise is the shared Stage-2 seat (resolveStage2Denoise
-    // above — rides with or without the rider, the P2 verdict's
-    // core). THE PARTIAL-DENOISE LAW (the vendored sequence node's
-    // own contract — nodes/minimax_h3_refine.py run_h3_refinement:
-    // sigmas must be 1-dim, ≥2 finite entries, and
-    // 0 <= sigmas[0] < 1 STRICT; a full-noise sigma discards the
-    // learned upscaled latent and the node throws at the engine).
-    // A BasicScheduler full schedule (denoise 1.0) opens AT sigma_max
-    // — so denoise 1.0 is ILLEGAL on this arm and refuses HERE, in
-    // the handoff's own voice naming the sigmas law (ARM 46 fires
-    // it). Off-arm 1.0 stays legal (the rider's taomate full-denoise
-    // mechanic never crosses this node).
-    const stage2Denoise = resolveStage2Denoise(p)
-    if (stage2Denoise >= 1) {
-      throw new Error(`h3 action: refine_denoise 1 composes no partial-denoise window — the latent-upscale handoff requires 0 <= sigmas[0] < 1 (vendored MinimaxH3LatentUpscaler3DRefineHandoff, run_h3_refinement: a full-noise sigma discards the upscaled latent); state a window below 1 (the researched 0.30–0.35) or turn upscale_route off for the taomate full-denoise mechanic`)
+    // ── decode + save ──────────────────────────────────────────────────
+    let vdec = g.node('VAEDecode', { samples: latOut, vae: vaeVideo }).out()
+    let vadec = g.node('VAEDecodeAudio', { samples: latOut, vae: vaeAudio }).out()
+    // the RAW audio head is the soft seam's currency — the film's join
+    // takes the incoming window's UNTRIMMED opening (it owns the seam);
+    // captured BEFORE the clip finalize trims the overlap off
+    let vadecRaw: OutputHandle | undefined
+    // `delivered` fills at the save branches (both families save)
+    let delivered: { images: OutputHandle, audio: OutputHandle } | null = null
+    // ── THE SEAM CURRENCY (F44, 2026-11-14 — operator: "no per-window
+    // rate fix, no downsample at the seam. The window-2 crash is
+    // structurally certain") ── the continuation above consumes the
+    // previous window's latent at the BASE rate. When the latent-upscale
+    // handoff mounts, latOut is its 2× spatial output — handing that to
+    // window k+1's MiniMaxH3FiniteLatentContinuation composes a
+    // shape-refused graph before any engine run. The seam handle names
+    // pass 1's own sampled latent on the upscale arm; everywhere else it
+    // stays latOut, so the refine rider's chained texture still crosses
+    // the seam at the same rate (the chained-texture law, intact).
+    const seamLatent = upscaleOn ? sampled.out(0) : latOut
+    const rawHandles: WindowHandles = { seamLatent, latOut, vdec, vadec, filmImages: latOut, filmAudio: latOut }
+    if (isChain || isT4r) {
+      const prev = p.__prev as WindowHandles | undefined
+      /* v8 ignore next 1 -- the film loop stamps __overlap on every window k≥2 before the render (the block mounts only when it did) */
+      const overlap = (p.__overlap as number) ?? 0
+      if (prev !== undefined && overlap > 0) {
+        vadecRaw = vadec
+        // the window's OWN clip: the carried overlap leaves picture AND
+        // sound by the same duration (their finalize, hard audio trim —
+        // a clip never replays the seam it grew from)
+        const fin = g.node('MiniMaxH3FiniteSegmentFinalize', {
+          sampled_latent: latOut, images: vdec, audio: vadec,
+          iteration: 1, overlap_frames: overlap, trim_audio_head: true,
+        })
+        vdec = fin.out(1)
+        vadec = fin.out(2)
+      }
     }
-    const stage2Sched = g.node('BasicScheduler', {
-      model: pass2Model, scheduler: schedName,
-      steps: refine !== undefined ? refine.steps : (p.steps as number),
-      denoise: stage2Denoise,
-    }).out()
-    const upscaled = g.node('MinimaxH3LatentUpscaler3DRefineHandoff', {
-      model: pass2Model, noise, sampler: samplerSel, positive: cond,
-      sigmas: stage2Sched, latent: latOut,
-      model_name: p.upscale_model as string,
-      mode: "scale by multiplier", scale: 2.0,
-      lock_audio: true, precision: "bf16", device: "cuda", cfg: 1.0,
-      // THE MISSING REQUIRED SIX (timeline audit follow-up, 2026-10-27:
-      // the corpus stage-2+3 member's wiring pass reds — the node
-      // composed estate-side without the engine's declared-required
-      // inputs, and the engine refuses the prompt on any of them).
-      // Multiplier mode ignores width/height/megapixels/keep_proportion
-      // — they ride the pass-2 target (full size, aspect kept) and the
-      // engine's own defaults; align is the kernel's latent-alignment
-      // grain (32 = its default, every 3D-conv frame boundary).
-      width: p.width as number, height: p.height as number,
-      keep_proportion: true, megapixels: 1,
-      align: 32, offload_after_upscale: false,
-    })
-    latOut = upscaled.out(0)
-  }
-  if (refine !== undefined) {
-    const refineModel = g.node('LTX_lora_loader', {
-      model: pass2Model, mode: 'minimax',
-      stack_data: JSON.stringify([{ on: true, lora: refine.name, str: refine.strength, v: 1, a: 1, t: 1 }]),
-      lora_ui: '',
-    }).out()
-    const refineSched = g.node('BasicScheduler', {
-      model: refineModel, scheduler: schedName,
-      // THE REFINE WINDOW (SOTA limb 1): 1.0 = the full-denoise
-      // TaoMate mechanic (unstated, byte-stable); a stated window
-      // (0.30–0.35) keeps pass 1's structure and polishes texture.
-      steps: refine.steps, denoise: refine.denoise,
-    }).out()
-    const refineGuider = g.node('BasicGuider', { model: refineModel, conditioning: cond }).out()
-    const refined = g.node('SamplerCustomAdvanced', {
-      noise, guider: refineGuider, sampler: samplerSel, sigmas: refineSched, latent_image: latOut,
-    })
-    latOut = refined.out(0)
-  }
+    // ── THE POST CHAIN, HOISTED ABOVE THE FAMILY BRANCH (2026-11-15,
+    // the operator's gate-11 burn: "THE COMPOSE GATE REFUSED THIS DOC …
+    // the lane refuses it (unsanctioned inject keys)") ── the
+    // image-space finish (sharpen → interp → SeedVR2 → sharpen) used
+    // to live INSIDE the non-reference arm's else block, so a t4r
+    // window (any guide/reference seat) silently composed NO post node
+    // while the doc's keys rode the panel: every door then REFUSED the
+    // doc to hide the omission. The chain is family-agnostic pixel
+    // work on the decoded window — it mounts here for every arm; the
+    // gates are the DOC's own (second_pass_enabled + each limb's
+    // switch), never the lane's. With every gate off this block builds
+    // ZERO nodes and postImage === vdec, so the frozen t4r graphs stay
+    // byte-identical.
 
-  // ── decode + save ──────────────────────────────────────────────────
-  let vdec = g.node('VAEDecode', { samples: latOut, vae: vaeVideo }).out()
-  let vadec = g.node('VAEDecodeAudio', { samples: latOut, vae: vaeAudio }).out()
-  // the RAW audio head is the soft seam's currency — the film's join
-  // takes the incoming window's UNTRIMMED opening (it owns the seam);
-  // captured BEFORE the clip finalize trims the overlap off
-  let vadecRaw: OutputHandle | undefined
-  // `delivered` fills at the save branches (both families save)
-  let delivered: { images: OutputHandle, audio: OutputHandle } | null = null
-  const rawHandles: WindowHandles = { latOut, vdec, vadec, filmImages: latOut, filmAudio: latOut }
-  if (isChain || isT4r) {
-    const prev = p.__prev as WindowHandles | undefined
-    /* v8 ignore next 1 -- the film loop stamps __overlap on every window k≥2 before the render (the block mounts only when it did) */
-    const overlap = (p.__overlap as number) ?? 0
-    if (prev !== undefined && overlap > 0) {
-      vadecRaw = vadec
-      // the window's OWN clip: the carried overlap leaves picture AND
-      // sound by the same duration (their finalize, hard audio trim —
-      // a clip never replays the seam it grew from)
-      const fin = g.node('MiniMaxH3FiniteSegmentFinalize', {
-        sampled_latent: latOut, images: vdec, audio: vadec,
-        iteration: 1, overlap_frames: overlap, trim_audio_head: true,
-      })
-      vdec = fin.out(1)
-      vadec = fin.out(2)
-    }
-  }
-  if (isT4r) {
-    const created = g.node('CreateVideo', {
-      // F25 (2026-10-30): the window mux rides the SAME join-rate door
-      // as every join leg — the sound VAE's 32 kHz never muxes raw, so
-      // one press and one join emit one standard (48 kHz), equal-rate
-      // legs paying only the stated law.
-      images: vdec, audio: filmJoinAudio(g, vadec), fps: fpsInput, bit_depth: FILM_BIT_DEPTH,
-      // color_space: pin autofill "sRGB"
-    })
-    // ONE WINDOW-NAMING LAW (2026-09-22, the file-tail amendment;
-    // F14 2026-11-12 — the run-scope seat): every window saves
-    // under `<runId>/h3_t4_w<k>` — the t4r arm's legacy
-    // 'video/ComfyUI' prefix died (multi-window anchored films were
-    // unaddressable), then the flat `h3_t4_w<k>` died too (the
-    // harvest outlier: the swap chain's `${runId}/…` prefixes
-    // harvest run-scoped, the film's flat prefixes stranded at the
-    // engine output root). The subfolder is the same run-scope
-    // spelling every chain save rides.
-    const saved = g.node('SaveVideo', {
-      video: created.out(), filename_prefix: `${runId}/h3_t4_w${k}`,
-      format: 'auto', codec: 'h264',
-      'codec.encoding': 're-encode', 'codec.encoding.crf': 10.0,
-    })
-    rawHandles.savePassthrough = saved.out(0)
-    delivered = { images: vdec, audio: vadec }
-  } else {
-    // sharpen leaves: only the EXPLICITLY-set ones patch the grouped
-    // dict (absent leaves keep ImageSharpenKJ's own defaults). The old
+    // sharpen leaves: only the EXPLICITLY-set ones patch the tuned
+    // bag (absent leaves keep SHARPEN_DEFAULTS above). The old
     // card knob (sharpen_strength) rides the leaf loop like
     // the renderer alias does.
-    const method: Record<string, string | number> = { ...SHARPEN_DEFAULTS }
+    const methodBag: Record<string, string | number> = { ...SHARPEN_DEFAULTS }
     const sharpenLeaves: ReadonlyArray<readonly [string, string]> = [
       ['sharpen_method', 'method'], ['sharpen_strength', 'strength'],
       ['sharpen_radius', 'radius'], ['sharpen_threshold', 'threshold'],
@@ -2220,7 +2361,7 @@ function renderH3Window(
     ]
     for (const [src, dst] of sharpenLeaves) {
       const val = p[src]
-      if (val !== null && val !== undefined) method[dst] = val as string | number
+      if (val !== null && val !== undefined) methodBag[dst] = val as string | number
     }
     // ── V9 tail order (re-cut 2026-09-15, the operator's cause) ──
     // upstream moved sharpen LAST: interp → VSR → sharpen → CreateVideo
@@ -2255,13 +2396,34 @@ function renderH3Window(
     const srSwOn = secondPassOn && (p.sr_switch as boolean)
     if (srSwOn) {
       const srRes = p.sr_resolution as number
+      // THE FINISHING RAIL'S MEMORY SEAM (2026-11-14, the live
+      // "h3 final" press that OOM'd on the operator's 24GB card:
+      // "torch.OutOfMemoryError: CUDA out of memory. Tried to
+      // allocate 258.00 MiB ... this process has 23.36 GiB in use"
+      // — the h3 stack was STILL RESIDENT when SeedVR2 loaded its
+      // DiT). The upscaler is the one seat that needs the h3
+      // weights GONE: nothing downstream of this image reads them.
+      // A MeliteBoundary (Layer C, the F41 pass-seam primitive)
+      // carries the decoded frame through while evicting the
+      // models, so the eviction is output-reachable (the DAG proves
+      // it waits for the h3 pass) and SeedVR2 loads into free VRAM.
+      // `through` is the wildcard passthrough: the tensor rides
+      // untouched, only the cache is flushed.
+      const srIn = g.node('MeliteBoundary', {
+        through: postImage, unload_models: true,
+      }).out()
       const sr = g.node('SeedVR2VideoUpscaler', {
-        image: postImage,
+        image: srIn,
         dit: g.node('SeedVR2LoadDiTModel', {
           model: p.sr_model as string, device: 'cuda:0',
         }).out(),
+        // THE DECODE'S MEMORY LAW: a 90-frame 1080p decode allocates
+        // ~21.9 GiB of activations in one pass and dies on the 23.52
+        // GiB estate card ("Phase 3: VAE decoding" OOM, 2026-11-14)
+        // even after the seam boundary freed the h3 stack. Tiled
+        // decode is the loader's own declared lever for exactly this.
         vae: g.node('SeedVR2LoadVAEModel', {
-          model: LANE_FILES.sr_vae, device: 'cuda:0',
+          model: LANE_FILES.sr_vae, device: 'cuda:0', decode_tiled: true,
         }).out(),
         seed: 42, resolution: srRes,
         max_resolution: 0, batch_size: 5, uniform_batch_size: false,
@@ -2272,9 +2434,73 @@ function renderH3Window(
     // sharpen LAST (V9): the upscaler softens; rcas after it restores.
     // Renderer alias second (sharpen_* leaves above build the method).
     if (secondPassOn && (p.sharpen_enabled as boolean)) {
-      const sharpened = g.node('ImageSharpenKJ', { image: postImage, method }).out()
+      // THE V3 COMBO PROJECTION (GAPS-1/F9 cure): the installed
+      // KJNodes serves ImageSharpenKJ.method as a V3 DynamicCombo —
+      // the engine's expansion matches the base wire against the
+      // option keys and folds ONLY the selected option's dotted
+      // children into the execute dict (comfy_api _expand_schema_for_
+      // dynamic + build_nested_inputs; proven against the real _io.py
+      // in the GAPS-1 report). The old flat grouped dict matched no
+      // option key, so the finalized schema dropped `method` outright
+      // and validation failed required_input_missing — every sharpen
+      // compose died there. The option key rides `method`; the
+      // SELECTED option's children ride dotted wires (the F23
+      // mode.scale spelling chainUpscale already rides). Values are
+      // the same bag as before; only the SHAPE changed.
+      const selected = methodBag.method as string
+      const sharpenInputs: Record<string, unknown> = { image: postImage, method: selected }
+      for (const child of SHARPEN_OPTION_CHILDREN[selected] ?? []) {
+        sharpenInputs[`method.${child}`] = methodBag[child]
+      }
+      const sharpened = g.node('ImageSharpenKJ', sharpenInputs).out()
       postImage = sharpened
     }
+
+    // THE MUX CLOCK — one owner, both arms (the V9 compensation's one
+    // spelling): an interpolated window plays at base × multiplier. The
+    // t4r arm's clock is the walk-first PrimitiveFloat NODE, the
+    // open/chain arms' is the doc's number; the helper multiplies the
+    // one it was handed. `out(0)` is the expression's FLOAT face.
+    const muxFps = (): OutputHandle | number => {
+      if (!interpOn) return fpsInput
+      if (typeof fpsInput === 'number') return fpsInput * (p.interp_multiplier as number)
+      return g.node('ComfyMathExpression', {
+        expression: `a * ${String(p.interp_multiplier as number)}`, 'values.a': fpsInput,
+      }).out(0)
+    }
+
+    if (isT4r) {
+      const created = g.node('CreateVideo', {
+        // F25 (2026-10-30): the window mux rides the SAME join-rate door
+        // as every join leg — the sound VAE's 32 kHz never muxes raw, so
+        // one press and one join emit one standard (48 kHz), equal-rate
+        // legs paying only the stated law.
+        // THE POST CHAIN REACHES THIS ARM TOO (2026-11-15, the
+        // operator's gate-11 burn): the t4r save used to bypass the
+        // post limbs by branch omission — the doc's second-pass keys
+        // composed NO node while every gate refused the doc that
+        // stated them. The mux takes the chain's own output and its
+        // compensated clock.
+        images: postImage, audio: filmJoinAudio(g, vadec), fps: muxFps(), bit_depth: FILM_BIT_DEPTH,
+        // color_space: pin autofill "sRGB"
+      })
+      // ONE WINDOW-NAMING LAW (2026-09-22, the file-tail amendment;
+      // F14 2026-11-12 — the run-scope seat): every window saves
+      // under `<runId>/h3_t4_w<k>` — the t4r arm's legacy
+      // 'video/ComfyUI' prefix died (multi-window anchored films were
+      // unaddressable), then the flat `h3_t4_w<k>` died too (the
+      // harvest outlier: the swap chain's `${runId}/…` prefixes
+      // harvest run-scoped, the film's flat prefixes stranded at the
+      // engine output root). The subfolder is the same run-scope
+      // spelling every chain save rides.
+      const saved = g.node('SaveVideo', {
+        video: created.out(), filename_prefix: `${runId}/h3_t4_w${k}`,
+        format: 'auto', codec: 'h264',
+        'codec.encoding': 're-encode', 'codec.encoding.crf': 10.0,
+      })
+      rawHandles.savePassthrough = saved.out(0)
+      delivered = { images: postImage, audio: vadec }
+    } else {
     // fps compensation (V9, 2026-09-15): upstream wires
     // CreateVideo.fps = base × interp multiplier (his Enhancements:
     // PrimitiveFloat 24 → ComfyMathExpression "a * 2" → fps). Without
@@ -2286,7 +2512,7 @@ function renderH3Window(
     const created = g.node('CreateVideo', {
       // F25: the same join-rate door — the film standard is ONE rate
       // on every mux seat (t4r above, this window arm, every join).
-      images: postImage, audio: filmJoinAudio(g, vadec), fps: interpOn ? (fpsInput as number) * (p.interp_multiplier as number) : fpsInput, bit_depth: FILM_BIT_DEPTH,
+      images: postImage, audio: filmJoinAudio(g, vadec), fps: muxFps(), bit_depth: FILM_BIT_DEPTH,
       // color_space: pin autofill "sRGB"
     })
     const saved = g.node('SaveVideo', {
@@ -2357,6 +2583,7 @@ interface KeyframeRides {
  *  precedent: __iteration/__overlap). */
 function applyKeyframeCompose(p: Record<string, unknown>): void {
   const kfRows = Array.isArray(p.keyframes) ? (p.keyframes as Array<Record<string, unknown>>) : []
+  /* v8 ignore next 1 -- the sole caller (the keyframe placement gate) runs only when kfRows.length > 0, so the empty re-entry never fires; the guard stays as the function's own contract */
   if (kfRows.length === 0) return
   const calls = Array.isArray(p.calls) ? (p.calls as Array<Record<string, unknown>>) : []
   const str = (v: unknown): string => (typeof v === 'string' ? v.trim() : '')
@@ -2386,6 +2613,7 @@ function applyKeyframeCompose(p: Record<string, unknown>): void {
     const f = kf.frame as number
     const image = str(kf.image)
     const w = wins.find((win) => win !== null && f >= win.sf && f <= win.ef - 1) as Win | undefined
+    /* v8 ignore next 1 -- unreachable post-gate: the placement gate above refuses any frame without a covering finite window, so the find always lands; the guard stays as the loop's own contract */
     if (w === undefined) continue // unreachable post-gate; the gate owns the refusal
     if (f === w.sf && w.rides.anchor === undefined && !isSeatStated(w, 'anchor')) {
       fork(w).image = image
@@ -2515,7 +2743,7 @@ export const film: ComfyActionSpec<Record<string, unknown>, H3Facts> = {
     // bag's own field rows are the served truth.
     { name: "attention_backend", type: "enum", options: ["comfy kitchen attention", "pytorch attention"] },
     { name: "sr_switch", type: "boolean" },
-    { name: "sr_resolution", type: "number", bounds: [720, 2160] },
+    { name: "sr_resolution", type: "number", bounds: [768, 2160] },
     { name: "sr_model", type: "enum", options: ["seedvr2_ema_3b_fp16.safetensors", "seedvr2_ema_3b_fp8_e4m3fn.safetensors"] },
     { name: "ref_image_size", type: "string" },
     { name: "shift_video", type: "number", bounds: [1, 20] },

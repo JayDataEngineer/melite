@@ -171,15 +171,59 @@ export const RESHOOT_DIAL_BOUNDS: Readonly<Record<string, readonly [number, numb
   depth_ratio: [1.5, 1000],
 }
 
-const banded = (e: Record<string, unknown>, key: string, fallback: number): number => {
-  const v = num(e, key, fallback)
-  const [lo, hi] = RESHOOT_DIAL_BOUNDS[key]!
-  if (v < lo || v > hi) {
+/** The dial defaults (the OFFICIAL app's own slider posture — the
+ *  identity camera is not a re-shoot, so absent dials never fall to
+ *  zero). */
+const DIAL_DEFAULTS: Readonly<Record<string, number>> = {
+  orbit: RESHOOT_DEFAULT_POSE.orbit,
+  tilt: RESHOOT_DEFAULT_POSE.tilt,
+  dolly: 1.0,
+  zoom: 50,
+  pan: 0,
+  strength: 0.8,
+  depth_ratio: 6,
+}
+
+/** The dial units (the F13 friction cure, 2026-11-19: five round
+ *  trips to compose one bag entry because each refusal named exactly
+ *  ONE dial and restated the type instead of the unit — the operator
+ *  shot a modest orbit and learned the bands one 400 at a time).
+ *  The vocabulary is the engine census tooltips' own. */
+const DIAL_UNITS: Readonly<Record<string, string>> = {
+  orbit: 'degrees of orbit (negative orbits left, positive right; ±45 tested)',
+  tilt: 'degrees of elevation (positive looks down; below −20 is the weak direction)',
+  dolly: 'camera distance where 1.0 keeps the source distance (below 1 dollies in)',
+  zoom: 'lens field of view in degrees (50 = a normal lens; NOT a multiplier)',
+  pan: 'vertical framing shift as a fraction of frame height (the camera does not move)',
+  strength: 'CrossView LoRA strength (the official tested band; under 0.8 the prior rebuilds the frame)',
+  depth_ratio: 'scene depth as a far/near ratio (2.5–4 close-ups, 4–8 mid, 8–16 wide)',
+}
+
+/** THE ALL-DIALS REFUSAL (the F13 cure): the compose iterates every
+ *  dial anyway — the refusal reports them the same way, each with its
+ *  band AND its unit, so ONE round trip states the whole camera. The
+ *  old per-dial throw burned five presses on one bag entry (zoom,
+ *  dolly, pan, strength, depth_ratio — each refusal naming exactly
+ *  one dial and nothing else).
+ * @param e the bag's entry (the dial seat values, loose)
+ * @returns every dial's in-band value, keyed by wire name */
+const bandedAll = (e: Record<string, unknown>): Record<string, number> => {
+  const bad: string[] = []
+  const dials: Record<string, number> = {}
+  for (const key of Object.keys(RESHOOT_DIAL_BOUNDS)) {
+    const v = num(e, key, DIAL_DEFAULTS[key]!)
+    dials[key] = v
+    const [lo, hi] = RESHOOT_DIAL_BOUNDS[key]!
+    if (v < lo || v > hi) {
+      bad.push(`${key} ${v} is outside the camera band [${lo}, ${hi}] — ${DIAL_UNITS[key]}`)
+    }
+  }
+  if (bad.length > 0) {
     throw new Error(
-      `h3 re-shoot: the bag's ${key} dial is ${v} — outside the camera band [${lo}, ${hi}] (the card's Reshoot rows state the same bounds); refuse ahead of the engine, never a widget 400`,
+      `h3 re-shoot: the bag's camera dials are out of band — ${bad.join('; ')} (the card's Reshoot rows state the same bounds; refused ahead of the engine, never a widget 400 — every offender named in one pass)`,
     )
   }
-  return v
+  return dials
 }
 
 /** The bag's first (and only — max_stack 1) entry, typed loose. */
@@ -207,14 +251,15 @@ const bagEntry = (p: Record<string, unknown>): Record<string, unknown> | undefin
  *  band is 0.5–1, served default 0.8). */
 export function readReshootKnobs(p: Record<string, unknown>): ReshootKnobs {
   const e = bagEntry(p) ?? {}
+  const dials = bandedAll(e)
   return {
-    orbit: banded(e, 'orbit', RESHOOT_DEFAULT_POSE.orbit),
-    tilt: banded(e, 'tilt', RESHOOT_DEFAULT_POSE.tilt),
-    dolly: banded(e, 'dolly', 1.0),
-    zoom: banded(e, 'zoom', 50),
-    pan: banded(e, 'pan', 0),
-    strength: banded(e, 'strength', 0.8),
-    depthRatio: banded(e, 'depth_ratio', 6),
+    orbit: dials.orbit!,
+    tilt: dials.tilt!,
+    dolly: dials.dolly!,
+    zoom: dials.zoom!,
+    pan: dials.pan!,
+    strength: dials.strength!,
+    depthRatio: dials.depth_ratio!,
     smoothDepth: e.smooth_depth === true,
     invertDepth: e.invert_depth === true,
   }

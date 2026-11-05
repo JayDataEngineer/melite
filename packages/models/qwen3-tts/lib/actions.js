@@ -20,6 +20,7 @@
 // single mint has no lock to preserve, so the ported mint is a
 // pass-through.
 import { qvoiceUse } from "@melite/comfyui-card-kit";
+import { voicePresetStated } from "@melite/comfyui-card-kit/facts";
 /**
  * THE PRESET SPEAKER SET (2026-10-10, the card audit's M2).
  *
@@ -97,9 +98,12 @@ export const speak = {
         // while the receipt claims a speaker. ONE voice performs: refuse
         // loud, naming both seats and the cure. The card judges the same
         // pair at its own door; this is the family's own firing arm, so
-        // a direct action caller gets the law without the card.
-        if (qvoiceUse(p) !== undefined
-            && typeof p.voice === 'string' && p.voice !== '' && p.voice !== 'none') {
+        // a direct action caller gets the law without the card. THE
+        // STATED-PRESET TEST (F31): the service's defaults merge fills
+        // the lane's rest before this judge runs — the fill is not a
+        // stated preset (voicePresetStated, one implementation across
+        // all three tts judge seats).
+        if (qvoiceUse(p) !== undefined && voicePresetStated(p, model)) {
             throw new Error("params 'voice' and 'qvoice' fire together on the qwen3-tts speak action (ONE voice performs — the saved persona rides the qvoice mod bag and the engine's clone branch carries no speaker; drop the preset or the .qvoice)");
         }
         // three lanes under ONE family (the size-at-quant fold): the

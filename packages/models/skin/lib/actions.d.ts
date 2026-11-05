@@ -9,7 +9,8 @@ import type { LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
 export declare function parseSkinFacts(_raw: LaneInputsFacts): Record<string, never>;
 /** The coat action (the meld chips drive it through the family's
  *  SkinPack (maps) → SkinSidecar (kind sidecar) → SkinApply (graft)
- *  → the 4-view proof sheet. Every param rides VERBATIM — a $-ref
+ *  — the grafted body is the verb's output. Every param rides
+ *  VERBATIM — a $-ref
  *  passes through untyped-by-design (the inline compile and the
  *  merged worker own resolution, exactly as the retired hand
  *  literal's refs rode).

@@ -6,8 +6,10 @@
 // graphs node by node. That arm is deleted; the golden carries the
 // compatibility law. The lane is weightless (the template's weights
 // ship in the autorig pack, nothing is downloaded), so the facts door
-// is the vacuous parse. The interpreter's own contract walls live in
-// card-kit's tests/action.spec.ts.
+// is the vacuous parse. The fbx and decimate arms died with the
+// blender lane (2026-11-01 — KimodoExportFBX writes GLB only); their
+// goldens are deleted, not refreshed. The interpreter's own contract
+// walls live in card-kit's tests/action.spec.ts.
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { join } from "node:path";
@@ -32,7 +34,6 @@ const FACTS: ModelFacts = {
 const PARAMS = {
   mesh_glb: "/m/mesh.glb",
   preserve_texture: true,
-  decimate_ratio: 0.5,
 };
 
 const golden = (name: string): string => join(import.meta.dirname, "golden", `${name}.json`);
@@ -48,30 +49,19 @@ describe("the soma rig action — byte-stability (the compatibility law)", () =>
     assertGraphGolden(golden("soma-rig-apply-weights"), graph, "the SOMA-77 weight transfer");
     const exportNode = graph["KimodoExportFBX.0"]!;
     assert.deepEqual(exportNode.inputs.source_glb, ["PrimitiveString.0", 0], "the mesh rides the export");
-    assert.deepEqual(exportNode.inputs.rigged_path, ["PrimitiveString.1", 0], "rigged_path rides EMPTY (no npz)");
-    assert.equal(exportNode.inputs.file_format, "glb", "glb out");
     assert.equal(exportNode.inputs.preserve_texture, true, "the texture flag rides verbatim");
-    assert.equal(exportNode.inputs.decimate_ratio, 0.5, "the decimate ratio rides");
+    assert.ok(!("rigged_path" in exportNode.inputs), "the node writes its own output — no rigged_path slot");
+    assert.ok(!("file_format" in exportNode.inputs), "the fbx knob died with the blender lane");
+    assert.ok(!("decimate_ratio" in exportNode.inputs), "the decimate knob died with the blender lane");
+    assert.ok(!("fps" in exportNode.inputs), "the fps slot died with the blender lane");
   });
 
-  it("the texture-off and decimate-off arms hold the golden (the boolean and the 0 mean what they say)", () => {
+  it("the texture-off arm holds the golden (the boolean means what it says)", () => {
     assertGraphGolden(
       golden("soma-rig-stripped-textures"),
       compose({ ...PARAMS, preserve_texture: false }),
       "the stripped-texture arm",
     );
-    assertGraphGolden(
-      golden("soma-rig-decimate-off"),
-      compose({ ...PARAMS, decimate_ratio: 0 }),
-      "the decimate-off arm",
-    );
-  });
-
-  it("the fbx arm holds the golden (the Unity import door)", () => {
-    const graph = compose({ ...PARAMS, file_format: "fbx" });
-    assertGraphGolden(golden("soma-rig-fbx"), graph, "the fbx arm");
-    const exportNode = graph["KimodoExportFBX.0"]!;
-    assert.equal(exportNode.inputs.file_format, "fbx", "fbx out — the node converts through headless Blender");
   });
 
   it("the weightless door parses anything (absent ≡ {} — nothing can drift)", () => {

@@ -125,6 +125,40 @@ describe("the t2i action — byte-stability (the compatibility law)", () => {
     assert.strictEqual(saved?.inputs?.filename_prefix, "probe-region/gen", "the detailed image saves under the gen prefix");
   });
 
+  // THE PHOTO ARM (operator 2026-11-15, the Impact Pack pair: the
+  // detailer takes image + segs — the mod's missing base seat was
+  // the D11 gap). input_image stated = the photograph IS the base:
+  // the graph is Impact Pack detailing over the photo, and the
+  // generation arm (latent + KSampler — the burn's fresh
+  // generation under a stated photo) is structurally ABSENT.
+  it("THE PHOTO ARM: input_image + input_mask composes LoadImage→DetailerForEach and NO generation node exists", () => {
+    const action = new GraphBuilder({});
+    instantiateAction(
+      t2i,
+      { ...PARAMS, mask: [{ input_image: "/v1/assets/photo.png", input_mask: "/v1/assets/region.png" }], mask_mode: "crop_stitch" },
+      FACTS,
+      action,
+      "probe-photo",
+    );
+    const json = graphOf(action);
+    const nodes = Object.values(json);
+    const classes = nodes.map((n) => String(n.class_type));
+    const load = nodes.find((n) => n.class_type === "LoadImage");
+    assert.ok(load, "the stated base photograph loads (the pair's image half)");
+    assert.strictEqual(load!.inputs.image, "/v1/assets/photo.png", "the base seat rides input_image");
+    const detailer = nodes.find((n) => n.class_type === "DetailerForEach");
+    assert.ok(detailer, "the pair mints the region detailer");
+    // the detailer's IMAGE input is the loaded photograph itself —
+    // the base to inpaint on, Impact Pack's law
+    assert.match(String(detailer!.inputs.image), /^LoadImage/, "DetailerForEach's image input is the LoadImage output (the photo is the base)");
+    assert.ok(nodes.some((n) => n.class_type === "MaskToSEGS"), "the painted mask converts through MaskToSEGS");
+    // THE BURN'S OPPOSITE: no latent, no sampler — nothing generates
+    assert.ok(!classes.includes("KSampler"), "no KSampler node exists in the photo arm (the D11 burn composed a fresh generation)");
+    assert.ok(!classes.some((c) => c.includes("Latent")), "no latent node exists in the photo arm");
+    const saved = nodes.find((n) => n.class_type === "SaveImage");
+    assert.strictEqual(saved!.inputs.filename_prefix, "probe-photo/gen", "the detailed photo saves under the gen prefix");
+  });
+
   it("GATE S rides the declared rule: the sentinel -1 mints a concrete seed, two runs differ", () => {
     const g1 = new GraphBuilder({});
     instantiateAction(t2i, { ...PARAMS, seed: -1 }, FACTS, g1, "r-a");

@@ -92,10 +92,8 @@ describe("the skin model plugin (the whole model, one package)", () => {
     // THE HANDLE IS THE ARTIFACT: the declared output is a mesh (the
     // grafted body), so the returned node must be the one that
     // produces it — SkinApply, whose RETURN_TYPES carry the GLB path.
-    // Returning the proof renderer published a PNG as the mesh
-    // channel and wired an IMAGE into the next stage's body slot. The
-    // renderer is still in the graph below, as a terminal the harvest
-    // finds.
+    // (The proof renderer died with the blender lane, 2026-11-01 —
+    // returning it had published a PNG as the mesh channel.)
     assert.equal(out.nodeId, "SkinApply.0");
     assert.deepEqual(g.toJSON(), {
       // THE COAT'S KNOBS ARE THE VERB'S OWN VOCABULARY (stroke-89):
@@ -129,17 +127,8 @@ describe("the skin model plugin (the whole model, one package)", () => {
           normal: ["SkinPack.0", 1],
         },
       },
-      "RayRenderGLBViews.0": {
-        class_type: "RayRenderGLBViews",
-        inputs: {
-          glb_path: ["SkinApply.0", 0],
-          resolution: 768,
-          framing: 1.2,
-          focal_length: 50,
-          samples: 64,
-          transparent: true,
-        },
-      },
+      // no RayRenderGLBViews terminal — the grafted body is the lane's
+      // output since the blender lane died (2026-11-01).
     });
   });
 });

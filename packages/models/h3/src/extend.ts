@@ -1,5 +1,6 @@
-// The h3 family's EXTEND renderer seat (the extend-video flow's
-// emission, report dev_docs/audits/features/
+// The h3 family's EXTEND renderer seat (the h3-timeline card's
+// extend arm — the retired extend-video wrapper flow's emission,
+// report dev_docs/audits/features/
 // extend-video-flow-2026-11-12.md §3; the multi-window unification
 // + N-window assembly, dev_docs/audits/features/
 // multiwindow-unification-2026-11-12.md): MORE SECONDS of coherent
@@ -8,14 +9,26 @@
 //
 // THE EXTEND LAW (four clauses):
 //  1. THE ANCHOR IS THE PRIOR CLIP'S LAST FRAME, TAKEN IN-GRAPH:
-//     ImageFromBatch(priorFrames, batch_index: -1) — the engine's
-//     own negative-index support (comfy_extras/nodes_images.py:
-//     "if batch_index < 0: batch_index += s_in.shape[0]", clamped).
-//     No frame-count probe, no out-of-graph extraction: the prior
-//     clip is read ONCE by the VHS loader (force_rate 24 — the film
-//     clock), and its tail frame rides BOTH the plan's picture_1
-//     seat and the r2v ref_images.ref_image_0 seat (the pixel
-//     anchor law, actions.ts: cross-run continuity is the anchor).
+//     ImageFromBatch(priorFrames, batch_index:
+//     LAST_FRAME_BATCH_INDEX) — a POSITIVE out-of-band index the
+//     engine clamps onto the final row (min(shape−1, index), core
+//     comfy_extras/nodes_images.py), landing on the last frame
+//     under every engine build. The 2026-11-19 burn (operator:
+//     "Extend is completely broken, it never starts with the last
+//     frame of the last video") killed the FIRST cut's
+//     batch_index −1: on the live estate the node slices
+//     t[batch_index : batch_index+length] with no negative
+//     normalization, so −1 yields t[−1:0] — an EMPTY batch — and
+//     the AddGuide census law ("batches shorter than 5 frames use
+//     only the first image") anchors NOTHING: the forced seam and
+//     the r2v pixel anchor both rode a hollow image, and every
+//     extension opened free-composed (the poncho-burn class, back
+//     from the dead). No frame-count probe, no out-of-graph
+//     extraction: the prior clip is read ONCE by the VHS loader
+//     (force_rate 24 — the film clock), and its tail frame rides
+//     BOTH the plan's picture_1 seat and the r2v
+//     ref_images.ref_image_0 seat (the pixel anchor law,
+//     actions.ts: cross-run continuity is the anchor).
 //     The whole clip also rides ref_videos.ref_video_0 — the
 //     repair's own identity-anchor precedent.
 //  2. FRESH GENERATION, NOT A REFINE: every window generates at FULL
@@ -66,6 +79,15 @@ import {
 } from './timelineContract.js'
 export { solveWindowComposition, type WindowComposition } from './timelineContract.js'
 import { loadVideo, renderMaskedEditChain } from './chainEdit.js'
+
+/** The tail-frame picker's index: the boot census's OWN max for
+ * ImageFromBatch.batch_index (16384 today — the wall derives it from
+ * tests/walls/fixtures/object_info.boot.json, never a frozen literal).
+ * A positive out-of-band index rides the engine's upper clamp
+ * (min(shape−1, index)) onto the clip's FINAL row under every build;
+ * the negative spelling slices empty on the live estate (the
+ * 2026-11-19 burn — clause 1 above) and is banned family-wide. */
+export const LAST_FRAME_BATCH_INDEX = 16384
 
 /** The extend entry's required seats (the reshoot/repair idiom: an
  * armed doc with an empty seat refuses loud naming the seat). */
@@ -134,10 +156,11 @@ export function renderH3Extend(
 
   // ── the staged media: the WHOLE prior clip on the VHS seat
   // (force_rate 24 — the one clock) and its LAST FRAME as the
-  // in-graph anchor (negative batch index, engine core) ──
+  // in-graph anchor (a positive out-of-band index the engine clamps
+  // to the final row — see LAST_FRAME_BATCH_INDEX) ──
   const [priorFrames, priorAudio] = loadVideo(g, str(entry, 'source_clip'))
   const lastFrame = g.node('ImageFromBatch', {
-    image: priorFrames, batch_index: -1, length: 1,
+    image: priorFrames, batch_index: LAST_FRAME_BATCH_INDEX, length: 1,
   }).out(0)
 
   // ── THE SEAT'S OWN PLAN (clause 3): N continuation shots — the
@@ -149,7 +172,7 @@ export function renderH3Extend(
   }))
   const planJson = JSON.stringify({ shots })
 
-  const { trimmed, assemblePath } = renderMaskedEditChain(g, {
+  const { trimmed, assemblePath, planShape } = renderMaskedEditChain(g, {
     p, facts,
     clipSeconds,
     overlapFrames,
@@ -209,9 +232,48 @@ export function renderH3Extend(
         mask_conversion: 'H3 exact (causal/token max)',
         target_latent: edit, mask: whiteMask,
       }).out(0)
-      return { conditioning: r2v.out(0), targetLatent: target }
+      // ── THE FORCED SEAM (operator's cure, 2026-11-19): the r2v
+      // ref_image ride above is a SOFT prior — the model is free to
+      // introduce new content in the appended clip's FIRST frame, and
+      // the poncho burn did exactly that (a second figure at full
+      // size on the first extended frame: a hard pop, no entry). Pin
+      // the source's LAST frame at frame_idx 0 through the same
+      // H3-native guide lane the reshoot pins its warp with
+      // (MiniMaxH3AddGuide, one frame → guide_frames 1): the first
+      // appended frame is then FORCED to be the clip's last frame,
+      // so anything new must develop from it frame by frame instead
+      // of appearing whole.
+      const guided = g.node('MiniMaxH3AddGuide', {
+        positive: r2v.out(0),
+        vae: vaeVideo,
+        latent: target,
+        image: lastFrame,
+        frame_idx: 0,
+      }).out(0)
+      return { conditioning: guided, targetLatent: target }
     },
   })
+
+  // ── THE SHAPE-TRUE JOIN (the F34 cure, 2026-11-13; qa8
+  // run-89976b95026b-8f22c399): the raw prior joins the chain's
+  // output at the CHAIN PLAN'S OWN SHOT GEOMETRY — the plan node
+  // derives the canvas from the SOURCE'S OWN FRAMES (its aspect)
+  // under the stated tier, so an extension whose tier short edge
+  // differs from the prior's own (the burn: a 1344×768 source under
+  // the default 736p tier rendered the extension at 1280×736 and the
+  // engine's concat refused `Expected size 768 but got size 736`)
+  // aligns HERE instead of crashing mid-render. The canvas is read
+  // off the plan's own width/height outputs — never assumed from a
+  // declared width/height row — and nearest-exact keeps the align
+  // pixel-verbatim when the plan canvas already equals the source's
+  // own (the extension never rewrites history). ──
+  const alignedPrior = g.node('ImageScale', {
+    image: priorFrames,
+    width: planShape.width,
+    height: planShape.height,
+    upscale_method: 'nearest-exact',
+    crop: 'disabled',
+  }).out(0)
 
   // ── THE JOIN (the file-join primitive; the initial raw boundary
   // is the exception the latent carry cannot cross — clause 4) ──
@@ -223,7 +285,7 @@ export function renderH3Extend(
     // saved-file path (ChainAssemble's video_path output, wired:
     // the DAG itself proves the assembly completed before the join).
     const priorCreated = g.node('CreateVideo', {
-      images: priorFrames, audio: filmJoinAudio(g, priorAudio), fps: 24, bit_depth: 8,
+      images: alignedPrior, audio: filmJoinAudio(g, priorAudio), fps: 24, bit_depth: 8,
     })
     const priorSaved = g.node('SaveVideo', {
       video: priorCreated.out(), filename_prefix: `${runId}/x0`,
@@ -246,7 +308,7 @@ export function renderH3Extend(
     format: 'mp4', codec: 'h264',
   }).out()
   const priorCreated = g.node('CreateVideo', {
-    images: priorFrames, audio: filmJoinAudio(g, priorAudio), fps: 24, bit_depth: 8,
+    images: alignedPrior, audio: filmJoinAudio(g, priorAudio), fps: 24, bit_depth: 8,
   })
   const priorSaved = g.node('SaveVideo', {
     video: priorCreated.out(), filename_prefix: `${runId}/x0`,

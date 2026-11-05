@@ -1,4 +1,3 @@
-import { positive, renderGLBViews } from "@melite/comfyui-card-kit";
 import { ANNY_MORPH_LABELS, ANNY_MORPH_RANGE, ANNY_MORPH_DEFAULT } from "@melite/comfyui-card-kit/morphs";
 /** The served identity space's 11 dims, in its label order (the
  * bake validator names the same eleven — moved verbatim from the
@@ -22,17 +21,21 @@ const MORPH_PARAMS = ANNY_MORPH_LABELS.map((label) => ({ name: label, type: "num
 export function parseAnnyFacts(_raw) {
     return {};
 }
-/** The compose action: the body's three arms + the 8-view
- * turnaround sheet (the anny_t1 segment, family-owned). */
+/** The compose action: the body's three arms (the anny_t1 segment,
+ * family-owned). The declared output is the assembled GLB — the
+ * 8-view turnaround sheet (RayRenderGLBViews + the per-view
+ * SaveImages) died with the blender lane, and with it the sheet's
+ * render knobs (resolution/framing/focal_length/samples/transparent). */
 export const compose = {
     id: "compose",
     inputs: [],
-    outputs: [{ name: "sheet", kind: "IMAGE" }],
+    outputs: [{ name: "body", kind: "MESH" }],
     // THE DECLARED SURFACE (the write plane, phase 2): the anny
     // card schema's own types and bounds — the family door judges
     // defaults and variant presets against this row. The 254 morph
-    // rows are the served labels at the served range (MORPH_PARAMS);
-    // the transparent enum is the card's background vocabulary.
+    // rows are the served labels at the served range (MORPH_PARAMS).
+    // The render knobs (resolution/framing/focal_length/samples/
+    // transparent) died with the blender lane's turnaround renderer.
     params: [
         { name: "body_glb", type: "string" },
         // (l) THE IMAGE FACE (operator 2026-11-08, ERRORS.md:100): the
@@ -53,11 +56,6 @@ export const compose = {
         { name: "asian", type: "number", bounds: [0, 1] },
         { name: "caucasian", type: "number", bounds: [0, 1] },
         ...MORPH_PARAMS,
-        { name: "resolution", type: "number", bounds: [256, 2048] },
-        { name: "framing", type: "number", bounds: [1, 3] },
-        { name: "focal_length", type: "number", bounds: [10, 400] },
-        { name: "samples", type: "number", bounds: [1, 4096] },
-        { name: "transparent", type: "enum", options: ["true", "false"] },
     ],
     facts: parseAnnyFacts,
     build({ p, g }) {
@@ -96,14 +94,7 @@ export const compose = {
                         local_changes: localChanges,
                     }),
                 }).out();
-        const glbPath = g.node('CompositeCharacter', { body_glb_path: bodyPath }).out();
-        return renderGLBViews(g, glbPath, {
-            resolution: positive('resolution', p.resolution),
-            framing: positive('framing', p.framing),
-            focal_length: positive('focal_length', p.focal_length),
-            samples: positive('samples', p.samples),
-            transparent: String(p.transparent).toLowerCase() !== 'false',
-        }, 'anny');
+        return g.node('CompositeCharacter', { body_glb_path: bodyPath }).out();
     },
 };
 /** The estimator facts door: the estimation chain reads NOTHING off

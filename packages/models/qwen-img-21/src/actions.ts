@@ -127,6 +127,28 @@ export const t2i: ComfyActionSpec<T2IParams, T2IFacts> = {
     // [CONDITIONING, CONDITIONING, LATENT] — the negative rides out
     // index 1).
     const enc = g.node("TextEncodeQwenImage21", encInputs);
+    // THE GEN DETAILER (the gen detailer serve, operator 2026-11-07,
+    // the mod SERVES): a stated region rides the crop_stitch arm —
+    // the SAME generic DetailerForEach tail as the edit lanes, over
+    // this lane's own conditioning — instead of the plain decode.
+    // The card's gate already taught mode-without-region and
+    // region-without-crop_stitch; the build branches on the kit's
+    // ONE stated-region read, so gate and arm never disagree.
+    const region = statedRegion(p as Record<string, unknown>);
+    // THE PHOTO ARM (the Impact Pack pair, operator 2026-11-15:
+    // DetailerForEach takes image + segs): input_image stated = the
+    // base to inpaint on is THAT photograph — the detailer reworks
+    // its region and NOTHING generates (no EmptyLatentImage, no
+    // KSampler node exists in the graph: the D11 burn's fresh
+    // generation under a stated photo was this branch's opposite).
+    if (region !== null && region.basePath !== '') {
+      const photo = g.node("LoadImage", { image: region.basePath }).out();
+      const segs = regionSegs(g, region.merged, photo, region.maskPath);
+      return genDetailerSave(g, p as Record<string, unknown>, region.merged, {
+        image: photo, segs, model: unet, clip, vae,
+        positive: enc.out(0), negative: enc.out(1), seed: p.seed,
+      }, runId).out();
+    }
     const latent = g.node("EmptyLatentImage", { batch_size: 1, width: p.width, height: p.height });
     const sampled = g.node("KSampler", {
       seed: p.seed,
@@ -140,18 +162,10 @@ export const t2i: ComfyActionSpec<T2IParams, T2IFacts> = {
       positive: enc.out(0),
       negative: enc.out(1),
     });
-    // THE GEN DETAILER (the gen detailer serve, operator 2026-11-07,
-    // the mod SERVES): a stated region rides the crop_stitch arm —
-    // the SAME generic DetailerForEach tail as the edit lanes, over
-    // this lane's own conditioning — instead of the plain decode.
-    // The card's gate already taught mode-without-region and
-    // region-without-crop_stitch; the build branches on the kit's
-    // ONE stated-region read, so gate and arm never disagree.
-    const region = statedRegion(p as unknown as Record<string, unknown>);
     if (region !== null) {
       const decoded = g.node("VAEDecode", { samples: sampled.out(), vae }).out();
       const segs = regionSegs(g, region.merged, decoded, region.maskPath);
-      return genDetailerSave(g, p as unknown as Record<string, unknown>, region.merged, {
+      return genDetailerSave(g, p as Record<string, unknown>, region.merged, {
         image: decoded, segs, model: unet, clip, vae,
         positive: enc.out(0), negative: enc.out(1), seed: p.seed,
       }, runId).out();

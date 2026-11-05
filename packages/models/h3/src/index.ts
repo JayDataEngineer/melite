@@ -207,12 +207,17 @@ export const DECL: ModelDecl = {
         }
       ]
     },
-    // THE MERGE DEFAULT (operator, 2026-11-12: the default lora → the
-    // Larry + LightX2V dareties merge — preferred for detail at 8
-    // steps; the standalone LightX2V turbos stay in the catalog for
-    // the audio/dialogue routes). The artifact is silveroxides'
-    // `minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors`
-    // (catalog row h3_lightx2v_turbo, provisioned below with its sha).
+    // THE MERGE DEFAULT (operator, 2026-11-01: "switch the default
+    // lora to the silveroxides merge" — SILVEROXIDES IS THE MERGE,
+    // LIGHTX2V IS NOT). The artifact is silveroxides' OFFICIAL
+    // `minimax_h3_fl2v_turbo_silver_dareties_comfy_pruned_v2.safetensors`
+    // (silver_official_releases/; catalog row h3_silver_dareties,
+    // labelled "Silveroxides DARE-TIES Merge", provisioned below
+    // with its sha). The earlier 2026-11-12 prose seated the
+    // experimental/ LightX2V-turbo × dareties file (row
+    // h3_lightx2v_turbo) as "the merge" — the F34b class again: a
+    // merge the catalog never held; that row stays PICK-ONLY under
+    // its honest experimental label.
     // History: the bytedance DMAD 4-step order (2026-10-11), the
     // LightX2V Turbo 8-Step v1.0 order (2026-11-07), and the
     // recipe-trio rework (2026-11-02, "1 model, 1 variant, 1 quant,
@@ -228,33 +233,34 @@ export const DECL: ModelDecl = {
     // payload mirrors a hand pick exactly (declared keys only):
     // SELECTION ONLY (#36). STEPS IS UNSTATED BY DESIGN — the row
     // owns its married 8 (the marriage law: the bag resolves unstated
-    // steps, so the default run takes the turbo's full count, not a
-    // departed lora's 4); stamping steps would hard-pin what the bag
-    // resolves. The file's door is the lane gate (lane_inputs loras +
+    // steps, so the default run takes the merge's full 8-step count,
+    // the designed 6–8 band's top — the dareties settings thread);
+    // stamping steps would hard-pin what the bag resolves. The
+    // file's door is the lane gate (lane_inputs loras +
     // the provision row below): absent on disk, the run refuses with
     // the fetch hint — the web popup's install button and the agent
     // seat both ride that one refusal.
     {
       "id": "standard",
       "label": "Standard",
-      "hint": "The default — the Larry + LightX2V merge (dareties, 768p) at the calibrated 1344×768. Steps derive from the lora marriage (8).",
+      "hint": "The default — the Silveroxides DARE-TIES Merge at the calibrated 1344×768. Steps derive from the lora marriage (8).",
       "group": "Recipe",
       "wire_defaults": {
-        "loras": [{ "id": "h3_lightx2v_turbo" }],
+        "loras": [{ "id": "h3_silver_dareties" }],
       },
       "cells": [],
     },
     // DRAFT (operator, this session: "for low resolution, that is
     // good for the draft recipe"): the fast iteration tier — the
-    // same turbo bag at draft geometry 768×448. Steps stay
+    // same merge bag at draft geometry 768×448. Steps stay
     // unstated (the marriage law).
     {
       "id": "draft",
       "label": "Draft",
-      "hint": "Fast iteration — the same merge bag at draft geometry (768×448). Steps derive from the lora marriage (8).",
+      "hint": "Fast iteration — the same Silveroxides merge bag at draft geometry (768×448). Steps derive from the lora marriage (8).",
       "group": "Recipe",
       "wire_defaults": {
-        "loras": [{ "id": "h3_lightx2v_turbo" }],
+        "loras": [{ "id": "h3_silver_dareties" }],
         "width": 768,
         "height": 448,
       },
@@ -273,10 +279,10 @@ export const DECL: ModelDecl = {
     {
       "id": "final",
       "label": "Final Cut",
-      "hint": "The finishing pass — the merge bag plus the spec's latent handoff: 2.0× 3D latent upscale with a 0.35 refine window on the un-distilled base. Pixel super-res and interpolation stay explicit picks.",
+      "hint": "The finishing pass — the Silveroxides merge bag plus the spec's latent handoff: 2.0× 3D latent upscale with a 0.35 refine window on the un-distilled base. Pixel super-res and interpolation stay explicit picks.",
       "group": "Recipe",
       "wire_defaults": {
-        "loras": [{ "id": "h3_lightx2v_turbo" }],
+        "loras": [{ "id": "h3_silver_dareties" }],
         "second_pass_enabled": true,
         "upscale_route": "latent_2x",
       },
@@ -311,13 +317,17 @@ export const DECL: ModelDecl = {
     "unet": "minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors",
     // THE DEFAULT BAG'S FILE (operator, 2026-10-11 the bytedance
     // order → 2026-11-07 the LightX2V turbo 8-step default →
-    // 2026-11-12 the Larry + LightX2V merge default: a run
-    // without the file refuses through the lane gate — the web
-    // popup's install button and the agent seat both key on that one
-    // refusal; "that is how it works").
+    // 2026-11-12 the merge default (prose claimed a row the catalog
+    // never held, the F34b class) → 2026-11-01 THE SILVER MERGE
+    // DEFAULT: the operator's order "switch the default lora to the
+    // silveroxides merge" — the official silver_official_releases
+    // DARE-TIES merge, not the experimental/ LightX2V file that row
+    // named): a run without the file refuses through the lane gate
+    // — the web popup's install button and the agent seat both key
+    // on that one refusal; "that is how it works".
     // BARE NAME: the gate probes the provision row's own folder
     // (loras/h3) as its last leg; the row below is the fetch truth.
-    "loras": "minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors",
+    "loras": "minimax_h3_fl2v_turbo_silver_dareties_comfy_pruned_v2.safetensors",
   },
   // THE LANE SURFACE (the z-image precedent): exactly the knobs the
   // h3-timeline card serves — the window inputs, the shared render
@@ -326,14 +336,15 @@ export const DECL: ModelDecl = {
   // is gone — calls own their text; the schema dropped it in
   // schema.ts and this surface drops it with it, else the claim law
   // names a dead declaration the card cannot carry).
-  // THE FAMILY LAW (the ERROR g/h cure, 2026-11-08): the
-  // window-family key law in the served spelling, verbatim off the
-  // contract module (one owner — FAMILY_LAW IS the law the walk
-  // enforces; the served copy cannot drift, the contract wall pins
-  // the agreement). The generic seats (composeValidate's family
-  // clause, the studio rail's group omit) judge the t4r refusals
-  // from this data at the gesture and at the render, one hop before
-  // the door.
+  // THE FAMILY LAW (the ERROR g/h cure, 2026-11-08; retired lane
+  // law 2026-11-15): the window-family DERIVATION in the served
+  // spelling, verbatim off the contract module (one owner —
+  // FAMILY_LAW IS the data deriveWindowFamily walks; the served
+  // copy cannot drift, the contract wall pins the agreement). The
+  // lanes still label the studio's family readouts; deadKeys is
+  // EMPTY since the t4r arm gained the post chain — no finish key
+  // is lane-dead, so the generic composeValidate clause admits
+  // every key on every lane.
   "familyLaw": FAMILY_LAW,
   // THE KNOB→SEAT MAP (2026-11-09, the 55-knob block's close-out over
   // the round-48 sampler five): every row below either rides a graph
@@ -347,7 +358,7 @@ export const DECL: ModelDecl = {
   // sla_switch is NOT retired — the t4r arm reads it at the pick (31).
   // attention_backend → ModelAttentionBackend (16). interp/sr → the
   // FILM + SeedVR2 pairs behind the second-pass master (17);
-  // sharpen_* → the ImageSharpenKJ grouped dict (18). refine_* → the
+  // sharpen_* → the ImageSharpenKJ V3 combo wires (18 + U2 ARMs 48-50). refine_* → the
   // rider loader/scheduler (4/4b/7). Media/refmod/duck/image_name →
   // 19/20/22. k → the window save name (21); noise_seed → RandomNoise
   // per stanza (2/34). STAND-DOWNS, named: fps_seconds is INTERNAL —
@@ -433,6 +444,20 @@ export const DECL: ModelDecl = {
       "folder": "vae",
       "sha256": "7c1f131492e7eddacaac9069a61b81bdd39de5cc96561e677c5eab1cdce5e522",
       "size_bytes": 5207808496
+    },
+    // THE DEFAULT LORA (operator 2026-11-01: "switch the default
+    // lora to the silveroxides merge" — the OFFICIAL
+    // silver_official_releases DARE-TIES merge, pruned v2; the
+    // operator named this exact file: "pruned. That one is the same
+    // and less file size"). Digest + size: downloaded and
+    // sha256-verified against the HF tree API's xet lfs oid
+    // (d90eed1d…) — the landed bytes in both trees ARE this pin.
+    {
+      "name": "minimax_h3_fl2v_turbo_silver_dareties_comfy_pruned_v2.safetensors",
+      "url": "https://huggingface.co/silveroxides/MiniMax-H3_tests/resolve/main/silver_official_releases/minimax_h3_fl2v_turbo_silver_dareties_comfy_pruned_v2.safetensors",
+      "folder": "loras/h3",
+      "sha256": "d90eed1d6b29c78851a8a9332c2581fa90cd2b10b46972a2a20e817f4180dbe9",
+      "size_bytes": 765591085
     },
     {
       "name": "minimax_h3_fl2v_lightx2v_v0.1_dareties_v4_step600_comfy_fro.safetensors",
@@ -587,8 +612,8 @@ export const family: Plugin = {
 export { finalizeH3, H3_T4_STRIP } from "./finalize.js"
 export { renderH3Swap } from "./swap.js"
 export { renderH3Repair } from "./repair.js"
-export { renderH3Extend } from "./extend.js"
-export { refineArmed, renderH3Refine, renderH3RefineWindow, renderH3RefineWindows, refineWindowCount, refineWindowStarts, REFINE_UPSCALE_MODEL, REFINE_2X_OOM_FRAMES, REFINE_DEFAULT_CLIP_SECONDS } from "./refine.js"
+export { renderH3Extend, LAST_FRAME_BATCH_INDEX } from "./extend.js"
+export { refineArmed, renderH3Refine, renderH3RefineBag, renderH3RefineCarry, renderH3RefineWindow, renderH3RefineWindows, refineWindowCount, refineWindowStarts, tokenExactCarry, nextTokenExact, lawfulCarryStart, REFINE_UPSCALE_MODEL, REFINE_2X_OOM_FRAMES, REFINE_DEFAULT_CLIP_SECONDS, REFINE_DEFAULT_OVERLAP_FRAMES } from "./refine.js"
 export { refinePlaneSchema, REFINE_PLANE_KEYS } from "./schema.js"
 export { MAX_COMPOSED_WINDOWS, SEAM_OVERLAP_FRAMES } from "./timelineContract.js"
 export type { RefineWindowSeat } from "./refine.js"

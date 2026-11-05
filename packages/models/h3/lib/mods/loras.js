@@ -1,5 +1,15 @@
 export const inject = ['comfyui'];
 export const H3_LORA_ROWS = [
+    // ── THE DEFAULT ROW (operator 2026-11-01, verbatim: "the
+    // silveroxides merge"; file named by the operator: the pruned v2,
+    // "That one is the same and less file size"): silveroxides'
+    // OFFICIAL silver_official_releases DARE-TIES merge — the v2
+    // attention-config build (his README: the v2 layers are optimized
+    // for inference, no attention backend patcher needed). 766 MB
+    // class (765,591,085 bytes), sha256 pinned in the provisions
+    // table (src/index.ts) — the two trees' bytes verified against
+    // the HF xet lfs oid. ──
+    { id: 'h3_silver_dareties', filename: 'h3/minimax_h3_fl2v_turbo_silver_dareties_comfy_pruned_v2.safetensors', source_url: 'https://huggingface.co/silveroxides/MiniMax-H3_tests/resolve/main/silver_official_releases/minimax_h3_fl2v_turbo_silver_dareties_comfy_pruned_v2.safetensors', label: 'Silveroxides DARE-TIES Merge', category: 'distill', default_strength: 0.8, steps: 8, steps_min: 4, steps_max: 8, shift_video: 8 },
     // ── THE MARRIED SHIFT COLUMN (SOTA limb 2, H3_TIMELINE_RESERACH
     // 2026-10-20): a distill's sigma-shift grid is part of its
     // training contract — the 8-step LightX2V variants and every
@@ -12,7 +22,11 @@ export const H3_LORA_ROWS = [
     // native/default. shift_audio is 3.0 across every source — the
     // schema's own declared default already speaks it (no column). ──
     { id: 'h3_lightx2v_dareties', filename: 'h3/minimax_h3_fl2v_lightx2v_v0.1_dareties_v4_step600_comfy_fro.safetensors', source_url: 'https://huggingface.co/silveroxides/MiniMax-H3_tests/resolve/main/minimax_h3_fl2v_lightx2v_v0.1_dareties_v4_step600_comfy_fro.safetensors', label: 'LightX2V dareties v4', category: 'distill', default_strength: 0.8, steps: 4, steps_min: 4, steps_max: 4, shift_video: 6 },
-    { id: 'h3_lightx2v_turbo', filename: 'h3/minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors', source_url: 'https://huggingface.co/silveroxides/MiniMax-H3_tests/resolve/main/experimental/minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors', label: 'LightX2V Turbo 4-8 step', category: 'distill', default_strength: 0.6, steps: 8, steps_min: 4, steps_max: 8, shift_video: 12 },
+    // PICK-ONLY (the default moved to h3_silver_dareties 2026-11-01):
+    // this is silveroxides' EXPERIMENTAL/ LightX2V-turbo × dareties
+    // file — the label names it honestly; it is NOT the official
+    // silver_dareties merge the default seat holds.
+    { id: 'h3_lightx2v_turbo', filename: 'h3/minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors', source_url: 'https://huggingface.co/silveroxides/MiniMax-H3_tests/resolve/main/experimental/minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors', label: 'LightX2V Turbo × Dareties (silveroxides experimental)', category: 'distill', default_strength: 0.6, steps: 8, steps_min: 4, steps_max: 8, shift_video: 12 },
     { id: 'h3_turbo4_v1', filename: 'h3/minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16.safetensors', source_url: 'https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/loras/minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16.safetensors', label: 'LightX2V Turbo 4-Step v1.0 (768p)', category: 'distill', default_strength: 1, steps: 4, steps_min: 4, steps_max: 4, shift_video: 6 },
     { id: 'h3_turbo8_v1', filename: 'h3/minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors', source_url: 'https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/loras/minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors', label: 'LightX2V Turbo 8-Step v1.0', category: 'distill', default_strength: 1, steps: 8, steps_min: 8, steps_max: 8, shift_video: 12 },
     { id: 'h3_ref2v_turbo4', filename: 'h3/minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors', source_url: 'https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/loras/minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors', label: 'LightX2V Ref Turbo 4-Step v0.1', category: 'distill', default_strength: 1, steps: 4, steps_min: 4, steps_max: 4, shift_video: 12 },

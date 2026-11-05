@@ -4,6 +4,12 @@
 // seat renders N windows over ONE source clip, every window saved
 // `<runId>/refine_w<k>`, ordered by the film's unload boundary chain and
 // assembled IN-GRAPH by the file join — no harness media, no ffmpeg.
+// THE CONTEXT CARRY IS THE FILM'S OWN (round 27, operator order: "ZERO
+// DIFFERENCE BETWEEN THE CONTEXT CARRY FROM THE NORMAL GENS AND THE
+// REFINE GENS"): every carried join mounts
+// MiniMaxH3FiniteLatentContinuation with the film's seats, the carried
+// head is trimmed by the film's finalize, and the tail is the plain
+// file concat — no crossfade, no list execution.
 // Every assertion is DERIVED from the exports (the arithmetic from its
 // own function, the caps from the constants), never a frozen literal.
 import { describe, it } from "vitest";
@@ -16,6 +22,7 @@ import {
   refineWindowStarts,
   renderH3RefineWindow,
   renderH3RefineWindows,
+  tokenExactCarry,
 } from "../src/index.ts";
 import type { RefineWindowSeat } from "../src/index.ts";
 
@@ -97,7 +104,14 @@ describe("the refine loop (F24: one press walks the film)", () => {
     assert.ok(refOf(concat[0]![1].inputs.after) !== "", "the concat waits on the boundary token");
   });
 
-  it("ARM 3 — the carried head: k≥2 windows start at the step and TRIM their own overlap", () => {
+  // ARM 3 (re-pinned round 27, operator order): the carried join is the
+  // FILM'S OWN — window k≥2 mounts MiniMaxH3FiniteLatentContinuation
+  // with the film's seats (iteration, overlap_frames,
+  // continue_audio_latent, the model + sigmas the handoff samples with,
+  // previous_latent = window k−1's joint latent), the film's finalize
+  // trims the carried head, and the tail is the plain file concat. No
+  // crossfade, no list execution.
+  it("ARM 3 — the carried join is the FILM'S OWN: a continuation per join, a head-trim per carried window, the plain concat", () => {
     const g = new GraphBuilder();
     const cap = Math.round(REFINE_DEFAULT_CLIP_SECONDS * FPS);
     const step = cap - 22;
@@ -109,22 +123,61 @@ describe("the refine loop (F24: one press walks the film)", () => {
       { cap, skip: 0 },
       { cap, skip: step },
     ], "window 0 opens the clip; window 1 starts one step in (cap − overlap)");
-    // exactly the SECOND window carries the finalize, with the film's
-    // own trim law (picture + sound leave by the same overlap)
+    // ONE handoff per window (each window's own refine sample) and ONE
+    // continuation at the one join, with the film's own seats.
+    const hands = ofClass(nodes, "MinimaxH3LatentUpscaler3DRefineHandoff");
+    assert.equal(hands.length, 2, "one handoff per window — a carried film re-samples each window, never a list execution");
+    const conts = ofClass(nodes, "MiniMaxH3FiniteLatentContinuation");
+    assert.equal(conts.length, 1, "one continuation at the one join");
+    const [contId, cont] = conts[0]!;
+    assert.equal(cont.inputs.iteration, 1, "the join is window 1's continuation");
+    assert.equal(cont.inputs.overlap_frames, 22, "the film's own seam");
+    assert.equal(cont.inputs.continue_audio_latent, true, "the sound takes the film's soft release");
+    assert.equal(nodeOf(nodes, cont.inputs.previous_latent).class_type,
+      "MiniMaxH3ContexMaskedTarget", "previous_latent is window 0's JOINT target — the base grid its handoff refined");
+    assert.equal(nodeOf(nodes, cont.inputs.target_latent).class_type,
+      "MiniMaxH3ContexMaskedTarget", "window 1's own joint target is the carried target");
+    assert.equal(nodeOf(nodes, cont.inputs.sigmas).class_type, "BasicScheduler",
+      "the schedule the sampler walks is the continuation's own");
+    // the continued window's handoff re-samples the continuation's
+    // patched model + masked target — the drift-control carry binds
+    // the sampler, exactly as it binds the film's guider.
+    const continued = hands.find(([, n]) => refOf(n.inputs.latent) === contId)!;
+    assert.deepEqual(continued[1].inputs.latent, [contId, 1],
+      "the continued handoff samples the masked target the continuation returned");
+    assert.deepEqual(continued[1].inputs.positive, [contId, 0],
+      "…under the continuation's positive");
+    assert.deepEqual(continued[1].inputs.model, [contId, 3],
+      "…and the drift-controlled model it patched (out 3)");
+    // the head-trim: only the carried window trims; the seam never replays
     const fins = ofClass(nodes, "MiniMaxH3FiniteSegmentFinalize");
-    assert.equal(fins.length, 1, "only a carried window trims a head");
-    assert.equal(fins[0]![1].inputs.overlap_frames, 22);
-    assert.equal(fins[0]![1].inputs.trim_audio_head, true);
-    // the window's own save reads the TRIMMED decode, never the raw one
-    const w1 = ofClass(nodes, "SaveVideo").find(([, n]) => n.inputs.filename_prefix === "run-two/refine_w1")!;
-    const created = nodeOf(nodes, w1[1].inputs.video);
-    const finId = refOf(created.inputs.images);
-    assert.equal(nodes[finId]!.class_type, "MiniMaxH3FiniteSegmentFinalize");
-    // the concat's members are the window prefixes, FILM ORDER
+    assert.equal(fins.length, 1, "window 0 carries nothing — only window 1 trims a head");
+    const [finId, fin] = fins[0]!;
+    assert.equal(fin.inputs.iteration, 1, "the film's finalize seat");
+    assert.equal(fin.inputs.overlap_frames, 22, "the trim states the carried span");
+    assert.equal(fin.inputs.trim_audio_head, true, "the seam leaves picture AND sound");
+    assert.equal(refOf(fin.inputs.sampled_latent), continued[0],
+      "the trim consumes the continued window's own refined latent");
+    // the window saves: window 0 muxes its own decode, window 1 muxes
+    // the trimmed picture (the finalize's out 1)
+    const windows = ofClass(nodes, "SaveVideo")
+      .filter(([, n]) => String(n.inputs.filename_prefix).includes("refine_w"));
+    assert.equal(windows.length, 2, "one member save per window");
+    const rawMux = nodeOf(nodes, windows.find(([, n]) => String(n.inputs.filename_prefix).endsWith("refine_w0"))![1].inputs.video);
+    assert.equal(nodeOf(nodes, rawMux.inputs.images).class_type, "VAEDecode",
+      "window 0 saves its own untrimmed decode");
+    const trimMux = nodeOf(nodes, windows.find(([, n]) => String(n.inputs.filename_prefix).endsWith("refine_w1"))![1].inputs.video);
+    assert.deepEqual(trimMux.inputs.images, [finId, 1],
+      "window 1 saves the trimmed picture — the carried span never replays");
+    // the tail is the FILM'S OWN join: the plain file concat
     const concat = ofClass(nodes, "MeliteConcatVideos")[0]!;
-    assert.equal(concat[1].inputs.videos, "run-two/refine_w0,run-two/refine_w1");
-    // one boundary token per window save (the ordering proof)
-    assert.equal(ofClass(nodes, "MeliteUnload").length, 2);
+    assert.equal(concat[1].inputs.videos, "run-two/refine_w0,run-two/refine_w1",
+      "the concat consumes the member prefixes in film order");
+    assert.equal(ofClass(nodes, "MeliteOverlapJoinVideos").length, 0,
+      "no crossfade anywhere — the carry is the latent, not a blend");
+    assert.equal(ofClass(nodes, "MeliteCollectLatents").length, 0,
+      "no list door — one body per window");
+    assert.equal(ofClass(nodes, "MeliteUnload").length, 2, "one boundary token per window save");
   });
 
   it("ARM 4 — every window muxes through the join-rate door (one audio law: 48 kHz)", () => {
@@ -144,7 +197,7 @@ describe("the refine loop (F24: one press walks the film)", () => {
       const audio = nodeOf(nodes, n.inputs.audio);
       assert.equal(audio.inputs.sample_rate, 48000, `CreateVideo ${id} rides the film rate, never the sound VAE's 32 kHz`);
     }
-    assert.equal(filmMuxes.length, 1, "the assembled container rides the join's own 48 kHz leg — no second resample");
+    assert.equal(filmMuxes.length, 1, "the assembled container rides the concat's own 48 kHz leg — no second resample");
   });
 
   it("ARM 5 — the ceiling belongs to the WINDOW: a past-OOM window refuses, the loop does not multiply it", () => {
@@ -165,23 +218,81 @@ describe("the refine loop (F24: one press walks the film)", () => {
     );
   });
 
-  it("ARM 7 — the loop mounts NO continuation node: the carry node needs a JOINT AV latent the split-latent handoff cannot build", () => {
-    const g = new GraphBuilder()
-    renderH3RefineWindows(entry, {}, facts, g, "run-carry", { windows: 2, overlapFrames: 22 })
-    const o = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>
-    const cont = Object.entries(o).filter(([, n]) => n.class_type === "MiniMaxH3FiniteLatentContinuation")
-    assert.equal(cont.length, 0,
-      "no MiniMaxH3FiniteLatentContinuation on the refine path — it splits a JOINT AV latent (_h3_streams) and the handoff consumes SPLIT streams; the census has no joint-AV constructor, so the wiring cannot run")
-    // the handoff itself is what CANNOT carry: it samples internally
-    // with split `latent`/`audio_latent`, so a carry needs the
-    // chain store (upscale[]'s) or the Continuum pack, never a
-    // hand-wired continuation on this seat
-    const hand = Object.entries(o).filter(([, n]) => n.class_type === "MinimaxH3LatentUpscaler3DRefineHandoff")
-    assert.equal(hand.length, 2, "two windows, two handoffs")
-    for (const [, n] of hand) {
-      assert.ok(n.inputs["latent"] !== undefined && n.inputs["audio_latent"] !== undefined,
-        "each handoff takes split streams — the shape the continuation node cannot accept")
+  it("ARM 7 — the carry IS the film's own node: one continuation per join, the film's seats, window k−1's joint target", () => {
+    // ROUND 27 (operator order: "ZERO DIFFERENCE BETWEEN THE CONTEXT
+    // CARRY FROM THE NORMAL GENS AND THE REFINE GENS"): the refine
+    // mounts the SAME MiniMaxH3FiniteLatentContinuation the film
+    // mounts — iteration, overlap_frames, continue_audio_latent true,
+    // the model + sigmas the sampler samples with, previous_latent =
+    // the predecessor's joint AV latent. F62's list-seat copy
+    // (carry_prefix_frames + MeliteCollectLatents) was a refine-only
+    // divergence and is retired with this arm.
+    const g = new GraphBuilder();
+    renderH3RefineWindows(entry, {}, facts, g, "run-carry", { windows: 3, overlapFrames: 22 });
+    const nodes = walk(g);
+    const conts = ofClass(nodes, "MiniMaxH3FiniteLatentContinuation");
+    assert.equal(conts.length, 2, "one continuation per join — windows 1 and 2 carry");
+    assert.deepEqual(conts.map(([, n]) => n.inputs.iteration), [1, 2],
+      "iteration is the join's own index in film order");
+    for (const [, c] of conts) {
+      assert.equal(c.inputs.overlap_frames, 22, "every join carries the film's own 22 f seam");
+      assert.equal(c.inputs.continue_audio_latent, true, "the sound takes the same soft release");
+      assert.equal(nodeOf(nodes, c.inputs.model).class_type, "MiniMaxH3SigmaShift",
+        "the continuation is handed the film's own model stack (the one the handoff would sample)");
+      assert.equal(nodeOf(nodes, c.inputs.sigmas).class_type, "BasicScheduler",
+        "…and the schedule the handoff samples with — the drift-control patch reads it");
+      assert.equal(nodeOf(nodes, c.inputs.target_latent).class_type, "MiniMaxH3ContexMaskedTarget",
+        "each window's own joint AV target is the carried target");
+      const prev = nodeOf(nodes, c.inputs.previous_latent);
+      assert.equal(prev.class_type, "MiniMaxH3ContexMaskedTarget",
+        "previous_latent is the predecessor's joint target — the SAME constructor's output, so the spatial grid matches");
+      assert.equal(nodeOf(nodes, prev.inputs.target_latent).class_type, "MiniMaxH3FantasticVideoEditLatent",
+        "…which the estate's one source→nested-AV constructor built");
     }
+    // the film's own joint-AV constructor is present per window: the
+    // size probe, the white mask, the edit latent, the masked target.
+    assert.equal(ofClass(nodes, "GetImageSizeAndCount").length, 3, "one size probe per window");
+    assert.equal(ofClass(nodes, "SolidMask").length, 3, "one everywhere-generate mask per window");
+    assert.equal(ofClass(nodes, "MiniMaxH3FantasticVideoEditLatent").length, 3, "one joint edit latent per window");
+    assert.equal(ofClass(nodes, "MiniMaxH3ContexMaskedTarget").length, 3, "one masked target per window");
+    // NO refine-only carry seats survive
+    assert.equal(ofClass(nodes, "MeliteCollectLatents").length, 0, "no list collector — the carry is a latent wire, not a list");
+    assert.equal(ofClass(nodes, "MeliteListAt").length, 0, "no list split");
+    for (const [, n] of ofClass(nodes, "MinimaxH3LatentUpscaler3DRefineHandoff")) {
+      assert.equal(n.inputs["carry_prefix_frames"], undefined,
+        "the handoff's F62 carry seat is not used — the continuation owns the carry");
+    }
+    // one handoff per window, every carried one sampling its continuation
+    const hands = ofClass(nodes, "MinimaxH3LatentUpscaler3DRefineHandoff");
+    assert.equal(hands.length, 3, "one handoff per window");
+    assert.equal(hands.filter(([, n]) => nodeOf(nodes, n.inputs.model).class_type === "MiniMaxH3FiniteLatentContinuation").length, 2,
+      "windows 1 and 2 sample the continuation's patched model; window 0 samples the plane's own");
+  });
+
+  it("ARM 8 — a NON-token-exact overlap REFUSES (the crossfade of two independent renders is the ghost)", () => {
+    // 21 f is not token-exact ((21-5) % 17 !== 0): it cannot continue
+    // the stream, and the face that used to catch it — the F61
+    // crossfade of two independent renders — is a double exposure
+    // (FRICTION F26). The door refuses, names the grid, the next rung,
+    // and the lawful alternative (0 = the abutting hard cut).
+    const g = new GraphBuilder()
+    assert.throws(
+      () => renderH3RefineWindows(entry, {}, facts, g, "run-blend", { windows: 2, overlapFrames: 21 }),
+      /the loop carries a 21 f overlap — not token-exact/,
+      "the refusal names the measured overlap",
+    )
+    assert.throws(
+      () => renderH3RefineWindows(entry, {}, facts, g, "run-blend-rung", { windows: 2, overlapFrames: 21 }),
+      /the nearest rung above 21 f is 22 f/,
+      "the next lawful rung is a stated number",
+    )
+    assert.deepEqual(g.toJSON(), {}, "nothing lands on the builder — the refusal precedes composition")
+    // the face chooser itself: the law in one line, judged directly
+    assert.equal(tokenExactCarry(22), true, "22 f is the film's own token-exact seam")
+    assert.equal(tokenExactCarry(21), false, "21 f is not — it refuses")
+    assert.equal(tokenExactCarry(5), true, "5 f is the smallest token-exact carry")
+    assert.equal(tokenExactCarry(39), true, "39 f rides the next token step")
+    assert.equal(tokenExactCarry(4), false, "below the first token pair there is no carry")
   })
 
   it("ARM 6 — the loop refuses a zero-window walk and a short overlap LOUD", () => {
@@ -202,6 +313,63 @@ describe("the refine loop (F24: one press walks the film)", () => {
       }),
       /the film's composed-window ceiling is 32/,
     );
+  });
+
+  it("ARM 9 — THE ZERO-OVERLAP LOOP: abutting windows tile through the plain concat (nothing to blend)", () => {
+    // windows ≥ 2 with overlap 0: the join face is the concat, and
+    // every k≥2 member walks the head-trim seat with a 0 (nothing
+    // carried, nothing trimmed).
+    const g = new GraphBuilder();
+    const cap = Math.round(REFINE_DEFAULT_CLIP_SECONDS * FPS);
+    renderH3RefineWindows(entry, {}, facts, g, "run-zero", { windows: 2, overlapFrames: 0 });
+    const nodes = walk(g);
+    const loads = ofClass(nodes, "VHS_LoadVideo")
+      .map(([, n]) => ({ cap: n.inputs.frame_load_cap, skip: n.inputs.skip_first_frames }));
+    assert.deepEqual(loads, [
+      { cap, skip: 0 },
+      { cap, skip: cap },
+    ], "the step is the whole window — window 1 starts where window 0 ends");
+    assert.equal(ofClass(nodes, "MiniMaxH3FiniteSegmentFinalize").length, 0,
+      "no carried head — abutting windows duplicate nothing");
+    assert.equal(ofClass(nodes, "MeliteOverlapJoinVideos").length, 0,
+      "no blend — a zero carry is the concat's own seat");
+    const concat = ofClass(nodes, "MeliteConcatVideos")[0]!;
+    assert.equal(concat[1].inputs.videos, "run-zero/refine_w0,run-zero/refine_w1",
+      "the abutting loop joins through the plain file concat");
+    assert.equal(ofClass(nodes, "SaveVideo").length, 3, "two window saves + the one terminal film save");
+  });
+
+  it("ARM 10 — THE CARRIED HEAD: a k≥2 window trims its carried overlap IN-GRAPH (picture and sound leave by the same seam)", () => {
+    // the direct window door with a carried overlap: the film's own
+    // finalize node hard-trims the head, and the mux reads the trimmed
+    // picture (out 1) and the trimmed sound (out 2).
+    const g = new GraphBuilder();
+    renderH3RefineWindow(entry, {}, facts, g, {
+      cap: Math.round(2 * FPS), skip: Math.round(1.5 * FPS), overlapFrames: 12, prefix: "run-trim/refine",
+    });
+    const nodes = walk(g);
+    const fins = ofClass(nodes, "MiniMaxH3FiniteSegmentFinalize");
+    assert.equal(fins.length, 1, "the carried head mounts the film's own finalize");
+    const [finId, fin] = fins[0]!;
+    assert.equal(fin.inputs.overlap_frames, 12, "the trim states the carried overlap");
+    assert.equal(fin.inputs.trim_audio_head, true, "the carried seam leaves picture AND sound");
+    // the trim consumes the window's OWN decodes, off its OWN handoff
+    assert.equal(nodeOf(nodes, fin.inputs.sampled_latent).class_type,
+      "MinimaxH3LatentUpscaler3DRefineHandoff", "the trim rides the window's own handoff");
+    assert.equal(nodeOf(nodes, fin.inputs.images).class_type,
+      "VAEDecode", "the trim consumes the window's own picture decode");
+    assert.equal(nodeOf(nodes, fin.inputs.audio).class_type,
+      "VAEDecodeAudio", "the trim consumes the window's own sound decode");
+    // and the mux reads the TRIMMED pair: the finalize's out(1) picture
+    // and out(2) sound (the seam never replays).
+    const created = ofClass(nodes, "CreateVideo")[0]!;
+    assert.deepEqual(created[1].inputs.images, [finId, 1],
+      "the mux reads the trimmed picture — the finalize's out(1)");
+    const resample = ofClass(nodes, "MeliteAudioResample")[0]!;
+    assert.deepEqual(resample[1].inputs.audio, [finId, 2],
+      "the soundtrack rides the same trim — the finalize's out(2)");
+    assert.deepEqual(ofClass(nodes, "SaveVideo").map(([, n]) => n.inputs.filename_prefix), ["run-trim/refine"],
+      "the trimmed window still saves at its own prefix");
   });
 });
 

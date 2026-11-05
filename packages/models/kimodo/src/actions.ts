@@ -28,13 +28,28 @@ export type KimodoFacts = {
  * pass-through). */
 export type KimodoParams = Record<string, unknown>;
 
+/** The seat clause (GAPS-14 melite half, 2026-11-01): a missing
+ *  model_path must NAME where the model seats — the DECL's lane
+ *  home (index.ts lane_homes.model_path) plus the snapshot
+ *  provision row that FETCHES the rig tree — never a bare
+ *  `model_path = undefined`. The voice literal echoes the DECL;
+ *  the wall pins the echo against the live DECL values, so a moved
+ *  home or renamed provision reds until the voice follows. */
+const SEAT_CLAUSE =
+  ' — seat the model at lane home "avatar/kimodo" (snapshot provision "Kimodo-SOMA-RP-v1.1" fetches the rig tree)';
+
 /** The compose facts door: the resolved lane_inputs parsed into
  * the closed shape — a missing model_path refuses field-named
  * here, never composes a KimodoLoader on an empty directory.
  *  @param raw the resolved lane_inputs (family ⊕ variant)
  *  @returns the typed facts the segment factory reads */
 export function parseKimodoFacts(raw: LaneInputsFacts): KimodoFacts {
-  return { model_path: requireText(raw, "model_path", "kimodo compose") };
+  try {
+    return { model_path: requireText(raw, "model_path", "kimodo compose") };
+  } catch (e) {
+    if (e instanceof Error) throw new Error(e.message + SEAT_CLAUSE);
+    throw e;
+  }
 }
 
 /** The compose action: the motion_t1 block — Kimodo checkpoint

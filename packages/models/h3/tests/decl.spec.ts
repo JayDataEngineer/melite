@@ -155,14 +155,14 @@ describe("the h3 model plugin (the ONE H3 family — timeline + single-shot + ke
     assert.deepEqual(packs, ["loras"], "the distill adapters ride all variants (the turbo lanes ARE single-shot lanes)");
   });
 
-  it("THE RECIPE TRIO (operator 2026-11-02: draft / standard / final, all riding one distill lora; 2026-11-07: the bag is the LightX2V Turbo 8-Step v1.0; default = standard)", () => {
+  it("THE RECIPE TRIO (operator 2026-11-02: draft / standard / final, all riding one distill lora; 2026-11-07: the bag is the LightX2V Turbo 8-Step v1.0; 2026-11-01: the bag is the SILVEROXIDES DARE-TIES MERGE — 'switch the default lora to the silveroxides merge'; default = standard)", () => {
     const recipes = DECL.variants.filter((v) => v.group === "Recipe");
     assert.equal(recipes.length, 3, "exactly three recipe rows — 1 model, 1 variant, 1 quant, 3 recipes");
     assert.equal(recipes[0]?.id, "standard", "first-declared law: the birth stamp takes the first composing recipe row (the standard IS the default)");
     const wire = recipes[0]?.wire_defaults as Record<string, unknown>;
-    // SELECTION ONLY: the id — strength 1 and the married 8-step
-    // count ride from the flavor catalog row at compose.
-    assert.deepEqual(wire?.["loras"], [{ id: "h3_lightx2v_turbo" }], "the Larry + LightX2V merge bag row (operator 2026-11-12)");
+    // SELECTION ONLY: the id — the merge row's own 0.8 strength and
+    // married 8-step count ride from the flavor catalog row at compose.
+    assert.deepEqual(wire?.["loras"], [{ id: "h3_silver_dareties" }], "the Silveroxides DARE-TIES Merge bag row (operator 2026-11-01: 'the silveroxides merge')");
     // DRY (one value, one owner): standard stamps NO geometry — the
     // carrier schema's own 1344×768 floor IS the calibrated point.
     assert.ok(!("width" in (wire ?? {})), "standard stamps no width — the carrier floor 1344 owns it");
@@ -177,7 +177,7 @@ describe("the h3 model plugin (the ONE H3 family — timeline + single-shot + ke
     // good for the draft recipe) — the same bag, draft geometry.
     const draft = recipes.find((r) => r.id === "draft")!;
     assert.ok(draft, "the draft row serves");
-    assert.deepEqual((draft.wire_defaults as Record<string, unknown>)?.["loras"], [{ id: "h3_lightx2v_turbo" }], "draft rides the same merge bag");
+    assert.deepEqual((draft.wire_defaults as Record<string, unknown>)?.["loras"], [{ id: "h3_silver_dareties" }], "draft rides the same Silveroxides merge bag");
     assert.equal((draft.wire_defaults as Record<string, unknown>)?.["width"], 768, "draft geometry: low-res");
     assert.equal((draft.wire_defaults as Record<string, unknown>)?.["height"], 448, "draft geometry: low-res");
     assert.ok(!("steps" in (draft.wire_defaults ?? {})), "draft steps UNSTATED — the marriage law");
@@ -189,7 +189,7 @@ describe("the h3 model plugin (the ONE H3 family — timeline + single-shot + ke
     const final = recipes.find((r) => r.id === "final")!;
     assert.ok(final, "the final row serves");
     const fw = final.wire_defaults as Record<string, unknown>;
-    assert.deepEqual(fw?.["loras"], [{ id: "h3_lightx2v_turbo" }], "final rides the same merge bag");
+    assert.deepEqual(fw?.["loras"], [{ id: "h3_silver_dareties" }], "final rides the same Silveroxides merge bag");
     assert.equal(fw?.["second_pass_enabled"], true, "the second-pass master switch rides");
     assert.equal(fw?.["upscale_route"], "latent_2x", "the spec's latent handoff rides (2.0× in-band, the 0.35 window, pass 2 on the un-distilled base)");
     assert.ok(!("sr_switch" in fw), "sr_switch UNSTATED — pixel super-res is an explicit pick, never a recipe default (the spec ranks it below the latent route)");
@@ -200,8 +200,8 @@ describe("the h3 model plugin (the ONE H3 family — timeline + single-shot + ke
     const li = (DECL.lane_inputs ?? {}) as Record<string, string>;
     assert.equal(
       li["loras"],
-      "minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors",
-      "the Larry + LightX2V merge default is the family's declared loras lane file (operator 2026-11-12)",
+      "minimax_h3_fl2v_turbo_silver_dareties_comfy_pruned_v2.safetensors",
+      "the Silveroxides DARE-TIES Merge default is the family's declared loras lane file (operator 2026-11-01: 'the silveroxides merge')",
     );
     const prov = (DECL.provisions ?? []).find((p) => p.name === li["loras"]);
     assert.ok(prov, "the lane file has a provision row — the gate's fetch hint resolves");
@@ -221,6 +221,11 @@ const PROVISION_PINS: ReadonlyArray<
   ["minimax_h3_fl2va_pruned_int8_convrot.safetensors", "e889202c41dafb67b10d67b97f0d8541508036a6090af23425a5c2615d03c47a", "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors", 20970379616],
   ["qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors", "35a88d51044231fe332301d7a62aa81e3f2cba62febeb446e2c1e3e0ef76f2c6", "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors", 15687142551],
   ["minimax_h3_video_vae_fp16.safetensors", "7c1f131492e7eddacaac9069a61b81bdd39de5cc96561e677c5eab1cdce5e522", "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_fp16.safetensors", 5207808496],
+  // THE DEFAULT LORA (operator 2026-11-01, "the silveroxides merge"):
+  // the official silver_official_releases DARE-TIES merge, pruned v2
+  // — digest + size verified against the HF xet lfs oid and against
+  // the landed bytes in both trees.
+  ["minimax_h3_fl2v_turbo_silver_dareties_comfy_pruned_v2.safetensors", "d90eed1d6b29c78851a8a9332c2581fa90cd2b10b46972a2a20e817f4180dbe9", "https://huggingface.co/silveroxides/MiniMax-H3_tests/resolve/main/silver_official_releases/minimax_h3_fl2v_turbo_silver_dareties_comfy_pruned_v2.safetensors", 765591085],
   ["minimax_h3_fl2v_lightx2v_v0.1_dareties_v4_step600_comfy_fro.safetensors", "ffc5386a1b97aa1bc112b56378f37ef3c1cc69d55d5282281e8c6c728811e710", "https://huggingface.co/silveroxides/MiniMax-H3_tests/resolve/main/minimax_h3_fl2v_lightx2v_v0.1_dareties_v4_step600_comfy_fro.safetensors", 867067150],
   ["minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors", "e14c9e78834f5fac9195cb022baf2bc83372140da5142a8c999a1f568cb4915d", "https://huggingface.co/silveroxides/MiniMax-H3_tests/resolve/main/experimental/minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors", 2116726792],
   ["minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16.safetensors", "c396a9a06f58399e9df9754b18299818d84a2ddd371724ba48fe4a41221437dc", "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/loras/minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16.safetensors", 1956192992],

@@ -2,13 +2,12 @@
 // vocabulary, stroke 4): the fit-seat verb's backend. The meld fit
 // laws own the nodes (FitRow/FitProp carry no checkpoint, so the
 // family is weightless); the flow row routes, this declaration owns
-// the graph. The proof's framing (768/1.2/50/64/transparent) is
-// FIXED here — a verb's framing is not a bench surface (SubActionMod
-// law: knobs never join a card schema; the 2026-09-16 retirement
-// order keeps the fit CARD dead — the family is the sanctioned
-// seam, not a card revival).
+// the graph. (The proof sheet died with the blender lane,
+// 2026-11-01 — the renderer required a Blender binary; SubActionMod
+// law still holds: knobs never join a card schema; the 2026-09-16
+// retirement order keeps the fit CARD dead — the family is the
+// sanctioned seam, not a card revival.)
 import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
-import { renderGLBViewsNode } from "@melite/comfyui-card-kit";
 import type { OutputHandle } from "@melite/comfyui-card-kit/graph";
 import type { LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
 
@@ -57,7 +56,7 @@ export const FIT_ROW = {
 
 /** The seat action (the flow 'fit-seat' the meld chips drive):
  *  FitRow (the analytic fit row) → FitProp (body ∪ prop under the
- *  row) → the 4-view proof sheet. */
+ *  row) — the seated GLB is the verb's output. */
 export const seat: ComfyActionSpec<SeatParams, Record<string, never>> = {
   id: "seat",
   inputs: [],
@@ -100,22 +99,10 @@ export const seat: ComfyActionSpec<SeatParams, Record<string, never>> = {
       );
     }
     const row = g.node("FitRow", { ...FIT_ROW, bone: (bone as string).trim() });
-    const seatNode = g.node("FitProp", {
+    return g.node("FitProp", {
       body_glb_path: p.body,
       prop_glb_path: p.prop,
       row_json: row.out(0),
-    });
-    // THE PROOF SHEET IS RENDERED, NOT RETURNED (the skin verb's
-    // shape): the declared output is the seated mesh, so the handle
-    // is the node that produces it; the renderer stays a terminal and
-    // the harvest finds its PNG there.
-    renderGLBViewsNode(g, seatNode.out(0), {
-      resolution: 768,
-      framing: 1.2,
-      focal_length: 50,
-      samples: 64,
-      transparent: true,
-    });
-    return seatNode.out(0);
+    }).out(0);
   },
 };

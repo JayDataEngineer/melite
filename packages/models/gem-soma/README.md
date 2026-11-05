@@ -7,7 +7,7 @@ kind: package-library
 
 The SOMA family — GEM-X SOMA pose estimation and retargeting, form_edit, genre other, declared unoffered on the comfyui engine (no served catalog row). Source points at `nvidia/soma-x`. The DECL declares no defaults: the declared-plane door's catch (2026-10-12) — the t2i transcription block (scheduler, width, height, steps, sampler, cfg) composed nothing on this mesh family, and the SOMA lane owns its own sampler truth.
 
-The rig card binds the rig action for its `auto` mode: the SOMA-77 weight transfer. The lane is weightless — the template's hand-painted weights ship in the vendored autorig pack `melite-autorig-nodes`, so nothing downloads on the family's account. The build composes `KimodoExportFBX`: `mesh_glb` in, `file_format` glb or fbx (anything else rides glb; the card's vocabulary gates it), `preserve_texture`, `decimate_ratio` (0–1). The fbx arm converts through headless Blender — the Unity import door.
+The rig card binds the rig action for its `auto` mode: the SOMA-77 weight transfer. The lane is weightless — the template's hand-painted weights ship in the vendored autorig pack `melite-autorig-nodes`, so nothing downloads on the family's account. The build composes `KimodoExportFBX`: `mesh_glb` in, `preserve_texture` — the node writes the rigged GLB itself (the file_format glb|fbx knob and decimate_ratio died with the blender lane, 2026-11-01; GLB is the node's only output format).
 
 ## Declaration
 
@@ -31,4 +31,4 @@ Independent — the package contributes no persistent prompt prefix, so register
 
 - **Unoffered** — the family serves no catalog row; it is the rig card's `auto` binding, resolved by route.
 - **No defaults** — the transcription block composed nothing here, so callers state what they need instead of inheriting a landing.
-- **The fbx arm converts through headless Blender** — the Unity import door; the conversion is the node's dependency, not this package's.
+- **GLB is the only export format** — the fbx arm (headless Blender, the Unity import door) died with the blender lane (operator 2026-11-01: melite carries no blender).

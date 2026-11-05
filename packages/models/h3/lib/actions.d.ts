@@ -1,8 +1,9 @@
 import type { OutputHandle } from '@melite/comfyui-card-kit/graph';
 import { GraphBuilder } from '@melite/comfyui-card-kit/graph';
 import type { ComfyActionSpec } from '@melite/comfyui-card-kit';
-/** The absent-bag default's catalog id (F34's chip half, 2026-11-13). */
-export declare const H3_DEFAULT_LORA_ID = "h3_lightx2v_turbo";
+/** The absent-bag default's catalog id (F34's chip half, 2026-11-13;
+ *  the silveroxides merge takes the seat 2026-11-01). */
+export declare const H3_DEFAULT_LORA_ID = "h3_silver_dareties";
 /** The absent-bag default as a RESOLVED ROW — the same catalog row the
  *  compose default builds, exposed so the card can serve it as the
  *  ghost chip: the face then shows the adapter the film will actually
@@ -112,6 +113,14 @@ export declare function concatSavedFilms(g: GraphBuilder, prefixes: readonly str
  *  of one rendered window (pre-trim, pre-sharpen — the true tail). */
 export interface WindowHandles {
     latOut: OutputHandle;
+    /** the drift-control anchor's currency — the SAME-RATE latent the
+     *  next window's continuation consumes as previous_latent: pass 1's
+     *  sampled latent (or the refine rider's in-band polish when it
+     *  mounts without the upscale handoff — the chained-texture law);
+     *  NEVER the latent-upscale handoff's 2× output (F44-execute: a 2×
+     *  anchor against window k+1's base-rate continuation target is a
+     *  shape-refused graph). latOut stays the DELIVERED half's latent. */
+    seamLatent: OutputHandle;
     vdec: OutputHandle;
     vadec: OutputHandle;
     /** the DELIVERED clip — post-trim, post-sharpen: exactly the

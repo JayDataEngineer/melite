@@ -19,7 +19,7 @@ import { describe, it, expect } from "vitest";
 import { film } from "../src/actions.ts";
 import { instantiateAction } from "@melite/comfyui-card-kit";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
-import { RESHOOT_DEFAULT_POSE, crossviewGuideSeconds, readReshootKnobs, reshootArmed } from "../src/reshoot.ts";
+import { RESHOOT_DIAL_BOUNDS, RESHOOT_DEFAULT_POSE, crossviewGuideSeconds, readReshootKnobs, reshootArmed } from "../src/reshoot.ts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 
 const H3: ModelFacts = {
@@ -184,6 +184,33 @@ describe("the h3 camera re-shoot chain (the fourth mod bag, official rework)", (
     expect(String(guider[1].inputs.conditioning)).toContain("MiniMaxH3AddGuide");
   });
 
+  it("THE T4R OVERRIDE: an armed re-shoot on a guided (t4r) window still seats the source clip as appearance and drops the slot audio", () => {
+    // THE APPEARANCE SEAT, REFERENCE LANE (actions.ts reshootChain
+    // override): the t4r arm's r2v reads the PREPARED source clip as
+    // ref_video_0 — the identity/appearance reference the moved view
+    // re-renders from — and the slot-0 ref video audio is DELETED
+    // (the official chain wires no ref video audio at all), an absent
+    // lane, never a mismatched one. A guided window without the bag
+    // never takes this path (the disarmed control above).
+    const g = new GraphBuilder();
+    instantiateAction(
+      film,
+      {
+        length: 124, prompt: "a slow push in", seed: 42, width: 1344, height: 768,
+        image: "refs/anchor.png", reshoot: [{ source_clip: "sources/take3.mp4" }],
+      },
+      H3, g, "run_rs_t4r",
+    );
+    const entries = nodes(g);
+    const r2v = entries.find(([, n]) => n.class_type === "MiniMaxH3ReferenceToVideo")!;
+    const prepId = ofClass(entries, "CrossViewPrepareClip")[0]![0];
+    expect(String(r2v[1].inputs["ref_videos.ref_video_0"])).toBe(`${prepId},0`);
+    expect(r2v[1].inputs["ref_video_audios.ref_video_audio_0"]).toBeUndefined();
+    expect(r2v[1].inputs.prompt).toBe("crossview. a slow push in");
+    const warps = ofClass(entries, "CrossViewWarp");
+    expect(warps).toHaveLength(1);
+  });
+
   it("F28 — the guide length derives from the SHORTEST window, and a window too short to carry the camera refuses at COMPOSE", () => {
     // The round-4 burn: a 124-frame guide pinned into a 90-frame window
     // died at the engine's AddGuide seat, killing the whole arm. The
@@ -315,15 +342,92 @@ describe("the h3 camera re-shoot chain (the fourth mod bag, official rework)", (
     expect(ofClass(entries, "LoraLoaderModelOnly")[0]![1].inputs.strength_model).toBe(1);
   });
 
-  it("the strength dial is the LoRA band 0.5–1 — the old Fun-ControlNet-era 2.5 refuses loud ahead of the engine", () => {
+  it("an out-of-band strength dial refuses loud ahead of the engine — the band DERIVED from the door's own bounds (never a frozen literal)", () => {
+    // GAPS-18 (qa8 2026-10-31) moved the strength floor 0.5 → 0.8
+    // (under 0.8 the warp is followed less and the model's prior
+    // rebuilds the frame — the F33 anime drift); this arm had pinned
+    // the retired 0.5 literal, so the cure's own wall redde in the
+    // battery while the mirror wall (reshoot.ts bounds ↔ the card's
+    // RESHOOT_MOD rows) stayed green. The arm now derives the
+    // expected band from RESHOOT_DIAL_BOUNDS itself (the DEPTH law:
+    // judge the door's live truth, never a copy of it).
     const g = new GraphBuilder();
+    const [lo, hi] = RESHOOT_DIAL_BOUNDS.strength!;
     expect(() =>
       instantiateAction(
         film,
         { ...bag(), reshoot: [{ source_clip: "sources/take3.mp4", strength: 2.5 }] },
         H3, g, "run_rs_band",
       )
-    ).toThrow(/strength dial is 2.5 — outside the camera band \[0.5, 1\]/);
+    ).toThrow(
+      new RegExp(
+        "strength 2\\.5 is outside the camera band \\[" + lo + ", " + hi + "\\]",
+      ),
+    );
+  });
+
+  it("F13 — THE ALL-DIALS REFUSAL: the operator's own five-dial burn refuses ONCE naming EVERY offender with its band AND its unit (never five round trips)", () => {
+    // The friction log's F13 table, verbatim: a modest orbit around
+    // the kick took six attempts to compose because each refusal
+    // named exactly ONE bad dial (zoom 1.05, dolly 15, pan 8,
+    // strength 0.65, depth_ratio 1 — the operator speaks multipliers
+    // and pixels; the dials speak degrees and fractions, and the old
+    // message stated neither). The cure: the compose already
+    // iterates every dial — the refusal reports them all in one
+    // pass, each with its band and its UNIT.
+    const g = new GraphBuilder();
+    let message = "";
+    try {
+      instantiateAction(
+        film,
+        {
+          ...bag(),
+          reshoot: [{
+            source_clip: "sources/take3.mp4",
+            orbit: 25, tilt: -6,
+            zoom: 1.05, dolly: 15, pan: 8, strength: 0.65, depth_ratio: 1,
+          }],
+        },
+        H3, g, "run_rs_f13",
+      );
+    } catch (err) {
+      message = String((err as Error).message);
+    }
+    expect(message).not.toBe("");
+    // every offender named, in ONE refusal
+    for (const name of ["zoom 1.05", "dolly 15", "pan 8", "strength 0.65", "depth_ratio 1"]) {
+      expect(message).toContain(name);
+    }
+    // every offender's band rides (derived homes, never literals —
+    // the same RESHOOT_DIAL_BOUNDS the door reads)
+    for (const key of ["zoom", "dolly", "pan", "strength", "depth_ratio"] as const) {
+      const [lo, hi] = RESHOOT_DIAL_BOUNDS[key]!;
+      expect(message).toContain(`[${lo}, ${hi}]`);
+    }
+    // the in-band dials (orbit 25, tilt -6) are NOT refused
+    expect(message).not.toContain("orbit");
+    expect(message).not.toContain("tilt");
+    // THE UNITS (F13's second half: the bands refused without their
+    // units — zoom read as a multiplier, dolly as a fraction)
+    expect(message).toContain("field of view in degrees");
+    expect(message).toContain("1.0 keeps the source distance");
+    expect(message).toContain("fraction of frame height");
+    expect(message).toContain("LoRA strength");
+    expect(message).toContain("far/near ratio");
+    // ONE pass: the refusal is thrown once, naming the count
+    expect(message).toContain("every offender named in one pass");
+  });
+
+  it("F13 — a single out-of-band dial still refuses in the same one-pass voice (the collector never gates on plurality)", () => {
+    const g = new GraphBuilder();
+    const [lo, hi] = RESHOOT_DIAL_BOUNDS.depth_ratio!;
+    expect(() =>
+      instantiateAction(
+        film,
+        { ...bag(), reshoot: [{ source_clip: "sources/take3.mp4", orbit: 30, depth_ratio: 1 }] },
+        H3, g, "run_rs_f13_one",
+      )
+    ).toThrow(new RegExp(`depth_ratio 1 is outside the camera band \\[${lo}, ${hi}\\]`));
   });
 
   it("an armed bag whose entry names no source clip refuses loud (never a silent half-chain)", () => {

@@ -1,13 +1,13 @@
 ---
-description: Anny 3D character-assembly family, identity-slider body baking with turnaround sheets and sub-action verbs.
+description: Anny 3D character-assembly family, identity-slider body baking and sub-action verbs.
 kind: package-library
 ---
 
 # @melite/models-anny
 
-The Anny family — a parametric 3D character body: eleven identity sliders (gender, age, muscle, weight, height, proportions, cupsize, firmness, african, asian, caucasian, defaulting at 0.5), an attached GLB, or a loaded preset, rendered to an 8-view turnaround sheet. The bake is parametric — no checkpoint loads — and the defaults pin the proof framing (resolution 768, framing 1.2, focal length 50, samples 64, transparent background). Provisions land the base body GLB (ProtoPomp/anny) and the SAM checkpoint `sam_vit_b_01ec64.pth`; the lane rides our own vendored pack `melite-poser-nodes`.
+The Anny family — a parametric 3D character body: eleven identity sliders (gender, age, muscle, weight, height, proportions, cupsize, firmness, african, asian, caucasian, defaulting at 0.5), an attached GLB, or a loaded preset, baked to the body GLB. The bake is parametric — no checkpoint loads. (The 8-view turnaround sheet and its render knobs died with the blender lane, 2026-11-01 — the renderer required a Blender binary.) Provisions land the base body GLB (ProtoPomp/anny) and the SAM checkpoint `sam_vit_b_01ec64.pth`; the lane rides our own vendored pack `melite-poser-nodes`.
 
-The anny card binds the family's actions: compose (the body's three arms — attach, bake, sheet), estimate_photo (photo to body through the estimator MHR chain), and bake (a params json through `AnnyParamsToGlb`). Beyond the package entry, the manifest exports `./mods/verbs` — five family-owned verbs mounted by verb id on the anny card: hmr-estimate (photo to body), preset-save, preset-load, dress, and prop (outfit and prop seating through the fit-seat flow). Verb knobs never join the card surface; each verb's invocation doc owns them (the SubActionMod law).
+The anny card binds the family's actions: compose (the body's three arms — attach, bake), estimate_photo (photo to body through the estimator MHR chain), and bake (a params json through `AnnyParamsToGlb`). Beyond the package entry, the manifest exports `./mods/verbs` — five family-owned verbs mounted by verb id on the anny card: hmr-estimate (photo to body), preset-save, preset-load, dress, and prop (outfit and prop seating through the fit-seat flow). Verb knobs never join the card surface; each verb's invocation doc owns them (the SubActionMod law).
 
 ## Declaration
 

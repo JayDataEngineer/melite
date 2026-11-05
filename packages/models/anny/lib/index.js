@@ -4,14 +4,9 @@ export const DECL = {
     "id": "anny",
     "form": "form_3d_anny",
     "label": "Anny (character assembly)",
-    "description": "Author a character body — 11 identity sliders (or attach a GLB, or load a preset), then render the 8-view turnaround sheet. Photo→body estimation rides the hmr-estimate verb (the MHR chain).",
+    "description": "Author a character body — 11 identity sliders (or attach a GLB, or load a preset), then bake the body GLB. Photo→body estimation rides the hmr-estimate verb (the MHR chain).",
     "engine": "comfyui",
     "defaults": {
-        "resolution": 768,
-        "framing": 1.2,
-        "focal_length": 50,
-        "samples": 64,
-        "transparent": "true",
         "gender": 0.5,
         "age": 0.5,
         "muscle": 0.5,
@@ -101,17 +96,18 @@ export const DECL = {
     // 2026-11-08, ERRORS.md:100: the image slot beside the GLB —
     // compose's estimator arm reads it), the 11 identity sliders, the
     // 254 poser morphs (the shared vocabulary owner; the vocab wall
-    // pins set-equality with the door pin), and the render tail.
+    // pins set-equality with the door pin). The render tail
+    // (resolution/framing/focal_length/samples/transparent) died with
+    // the blender lane's turnaround renderer (2026-11-01).
     "params": [
         "body_glb",
         "body_image",
         "gender", "age", "muscle", "weight", "height", "proportions",
         "cupsize", "firmness", "african", "asian", "caucasian",
         ...ANNY_MORPH_LABELS,
-        "resolution", "framing", "focal_length", "samples", "transparent",
     ],
     // the family's declared actions: the compose action the anny card
-    // binds (the turnaround lane tree), plus the estimator/bake
+    // binds (the assembly lane tree), plus the estimator/bake
     // backends the hmr-estimate and preset-load verbs drive through
     // the queue (family-owned nodes — the flow rows route, never
     // re-author, the graphs; SubActionMod law, stroke 89).

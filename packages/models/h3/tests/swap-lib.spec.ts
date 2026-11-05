@@ -62,3 +62,51 @@ describe("renderH3Swap as a library (the bypass face)", () => {
     );
   });
 });
+
+describe("THE TILING LAW (operator 2026-11-14: \"EVERY MOD MUST BE ABLE TO BE BROKEN UP\")", () => {
+  // The engine's own census word for the plan node's clip_seconds:
+  // "Longest clip per H3 generation" — the per-window budget, never
+  // the total; overlap_frames: "Frames each clip repeats from the
+  // previous clip" — the seam carry. THE BURN: the emission always
+  // composed multi-window (one press, N engine-sided clips, joined
+  // by the chain's own assemble) but the card's law said "one
+  // render" and the skill said "Single-clip (R1)" — the served
+  // declaration FORBADE the capability the engine ships. These arms
+  // pin the three facts that MAKE the tiling, on the real emission.
+  const graph = (): Record<string, { class_type: string; inputs: Record<string, unknown> }> => {
+    const g = new GraphBuilder();
+    renderH3Swap(ENTRY(), {}, FACTS, g, "run_lib_tile");
+    return g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+  };
+
+  it("A. wires plan_json_input off the plan node — the source-slicing law (the plan's derived shots rule, N clips for a long source)", () => {
+    const out = graph();
+    const plans = Object.entries(out).filter(([, n]) => n.class_type === "H3OneClickSwapPlan");
+    assert.equal(plans.length, 1, "one plan head");
+    const chainPlans = Object.entries(out).filter(([, n]) => n.class_type === "MiniMaxH3ChainPlanModern");
+    assert.equal(chainPlans.length, 1, "one chain plan");
+    assert.deepEqual(
+      chainPlans[0]![1].inputs.plan_json_input, [plans[0]![0], 0],
+      "plan_json_input rides the plan node's derived shots — the SOURCE-SLICING semantics; unwired, the literal one-shot plan would rule and a long source would render one window",
+    );
+  });
+
+  it("B. loads the WHOLE source — the plan slices, never the loader (frame_load_cap 0 / skip 0, the swap's posture)", () => {
+    const out = graph();
+    // the mannequin rides its own VHS loader — judge the SOURCE
+    // loader by its video leaf.
+    const vhs = Object.entries(out).filter(([, n]) =>
+      n.class_type === "VHS_LoadVideo" && n.inputs.video === "clips/source.mp4");
+    assert.equal(vhs.length, 1, "one VHS loader for the source clip");
+    assert.equal(vhs[0]![1].inputs.frame_load_cap, 0,
+      "cap 0 loads the whole clip — the window budget belongs to the plan node, and a loader cap here would silently truncate a long source to one window");
+    assert.equal(vhs[0]![1].inputs.skip_first_frames, 0, "no skip — the swap starts at the source head");
+  });
+
+  it("C. the chain's own assemble joins the windows (one terminal at <runId>/swap)", () => {
+    const out = graph();
+    const assemble = Object.entries(out).filter(([, n]) => n.class_type === "MiniMaxH3ChainAssemble");
+    assert.equal(assemble.length, 1, "the join terminal exists — N windows land as one film");
+    assert.equal(assemble[0]![1].inputs.filename, "run_lib_tile/swap", "the assembled swap rides the run tree");
+  });
+});

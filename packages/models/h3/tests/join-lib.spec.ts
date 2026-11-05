@@ -5,7 +5,11 @@
 // depth — this spec owns the empty-input refusals, which no card
 // doc can state). Guards: both refusals fire LOUD; the concat
 // seats the optional append member and derives audio from the
-// join's own wire when none is given.
+// join's own wire when none is given. The blend-faced sibling
+// (overlapJoinSavedFilms) is RETIRED with round 27's F26 cure —
+// the film's own continuation + finalize head-trim + plain concat
+// own every join; the negative walls in refine-bag.spec.ts guard
+// that no doc ever mounts MeliteOverlapJoinVideos again.
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";

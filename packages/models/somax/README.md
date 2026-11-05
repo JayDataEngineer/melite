@@ -5,7 +5,7 @@ kind: package-library
 
 # @melite/models-somax
 
-`@melite/models-somax` is the model family package for SOMAX (`form_3d_somax`, genre 3d): the SOMA-77 weight-transfer family record, sourced from `nvidia/soma-x`. The estate boot mounts it as a Cordis plugin through `ctx.models.registerFamily` inside `ctx.effect`. The family is `unoffered` — it declares no actions, so the live doors are the rig card's auto mode and the body-to-somax flow, not this package. What the package owns is the identity: the source receipt, the `3d/body` studio tenant, and the variant face.
+`@melite/models-somax` is the model family package for SOMAX (`form_3d_somax`, genre 3d): the SOMA-77 weight-transfer family record, sourced from `nvidia/soma-x`. The estate boot mounts it as a Cordis plugin through `ctx.models.registerFamily` inside `ctx.effect`. The family is `unoffered` — it declares no actions, so the live door is the rig card's auto mode (the body-to-somax wrapper flow retired 2026-11-14, flows-are-compositions), not this package. What the package owns is the identity: the source receipt, the `3d/body` studio tenant, and the variant face.
 
 ## Declaration
 
@@ -34,6 +34,6 @@ Independent — the family issues no request and contributes no cache prefix.
 
 ## Known Limitations and Deferred Work
 
-- **No executable door here** — the record composes nothing; a caller must reach SOMAX through the rig card's auto mode or the body-to-somax flow.
+- **No executable door here** — the record composes nothing; a caller must reach SOMAX through the rig card's auto mode (gem-soma's rig action).
 - **No weights declared** — the package carries no provisions, so weight custody lives wherever those doors load from.
 - **Upstream sync** — the `nvidia/soma-x` receipt is a source note; currency with upstream releases is not verified here.

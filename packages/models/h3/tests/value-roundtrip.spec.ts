@@ -46,6 +46,7 @@
 import "../../../../tests/helpers/boot-models.ts";
 import { describe, it, beforeAll } from "vitest";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
@@ -277,6 +278,35 @@ describe("the h3 sampler knobs ride VERBATIM to their consumers (purge P2 value 
     const riderSched = Object.entries(graph).filter(([, n]) =>
       n.class_type === "BasicScheduler" && n.inputs.steps === 3 && n.inputs.denoise === 0.35);
     assert.ok(riderSched.length >= 1, "the rider scheduler carries the STATED steps (the row's own count) at the declared 0.35 refinement window");
+  });
+
+  it("ARM 47 (the row is the truth) — an UNSTATED rider strength/steps books the CATALOG ROW's own default_strength/steps, never a copied literal", async () => {
+    // THE LIVE PRESS'S GAP (2026-11-14): the GPU rider row had carried
+    // a hand-typed 0.7 while the catalog row has declared 0.35 since
+    // a527bf0e8 — an arm that could never pass, silently, because no
+    // suite judged the UNSTATED path. Keyless here: the doc states the
+    // rider by id and NO strength/steps; the graph must carry the
+    // served row's own numbers, read (never copied) from the catalog.
+    const catalog = H3_LORA_ROWS.find((r) => r.id === "h3_taomate_3step");
+    assert.ok(catalog !== undefined, "the catalog serves the taomate row");
+    const graph = await composeH3({
+      length: 56,
+      calls: [SHOT()],
+      seed: SEED,
+      second_pass_enabled: true,
+      refine_lora: "h3_taomate_3step",
+    }, "h3_value_arm47");
+    const ltx = Object.entries(graph).filter(([, n]) => n.class_type === "LTX_lora_loader");
+    const rider = ltx.find(([, n]) =>
+      typeof n.inputs.stack_data === "string" && (n.inputs.stack_data as string).includes("taomate"));
+    assert.ok(rider, "the unstated rider still mounts its OWN loader");
+    const stack = JSON.parse(rider![1].inputs.stack_data as string) as Array<{ lora: string; str: number }>;
+    assert.equal(stack[0]!.str, catalog.default_strength,
+      "the rider stack carries the CATALOG's default_strength (a copied literal is the drift this arm forbids)");
+    const riderSched = Object.entries(graph).filter(([, n]) =>
+      n.class_type === "BasicScheduler" && n.inputs.steps === catalog.steps);
+    assert.ok(riderSched.length >= 1,
+      `the rider scheduler carries the CATALOG's own steps (expected ${catalog.steps})`);
   });
 
   it("ARM 5 (master-off guard) — refine seats WITHOUT second_pass_enabled compose the plain pass (exactly ONE SamplerCustomAdvanced)", async () => {
@@ -521,22 +551,24 @@ describe("the h3 sampler knobs ride VERBATIM to their consumers (purge P2 value 
   // ── SD-2 master/leaf either-or (the purge audit's stated-seat class,
   // UI purge 2026-11-08): the sharpen leaves state per-leaf, the
   // master gate owns the verdict. The witness pins the drop AS
-  // DESIGNED: the stated value always rides the graph's grouped dict
-  // with its named switch beside it — never a silent value-vanish. ──
+  // DESIGNED: the stated value always rides the graph's V3 combo
+  // wires (GAPS-1: the option key on `method`, the children on
+  // dotted wires) with its named switch beside it — never a silent
+  // value-vanish. ──
   // THE GRAPH-MIRROR RE-PIN (burn b, 2026-10-26): the sharpen limb
   // mounts IFF its gate composes on — no always-built node, no
   // routing switch. The limb's PRESENCE is the gate's verdict home
   // (the serialized graph names the drop by the node's absence);
-  // the grouped dict is judged only when the limb rides.
+  // the combo wires are judged only when the limb rides.
   const sharpenParts = (graph: Record<string, { class_type: string; inputs: Record<string, unknown> }>) => {
     const sharpenEntry = Object.entries(graph).find(([, n]) => n.class_type === "ImageSharpenKJ");
     return {
       present: sharpenEntry !== undefined,
-      dict: sharpenEntry?.[1].inputs.method,
+      strength: sharpenEntry?.[1].inputs["method.strength"],
     };
   };
 
-  it("ARM 10 (SD-2 master/leaf, gate ON) — a stated sharpen leaf reaches the grouped dict and the sharpen limb rides the graph", async () => {
+  it("ARM 10 (SD-2 master/leaf, gate ON) — a stated sharpen leaf reaches the V3 dotted wire and the sharpen limb rides the graph", async () => {
     const graph = await composeH3({
       length: 56,
       calls: [SHOT()],
@@ -545,10 +577,10 @@ describe("the h3 sampler knobs ride VERBATIM to their consumers (purge P2 value 
       sharpen_enabled: true,
       sharpen_strength: 0.65,
     }, "h3_value_arm10");
-    const { present, dict } = sharpenParts(graph);
+    const { present, strength } = sharpenParts(graph);
     assert.ok(present, "the master + sharpen gates mount the ImageSharpenKJ limb");
-    assert.ok(JSON.stringify(dict).includes("0.65"),
-      `the stated leaf rides the grouped dict (saw ${JSON.stringify(dict)})`);
+    assert.equal(strength, 0.65,
+      `the stated leaf rides the method.strength dotted wire (saw ${JSON.stringify(strength)})`);
   });
 
   it("ARM 11 (SD-2 master/leaf, gate OFF) — a stated leaf WITHOUT the gate composes NO sharpen limb (the drop is the DESIGNED gate, named by the node's absence — never a value riding a dead limb)", async () => {
@@ -709,6 +741,30 @@ describe("the h3 class knobs ride VERBATIM to their consumers (P0 witness extens
       "the 4-step distill's married count");
   });
 
+  it("ARM 14f — a stacked pair marries the HIGHER count (steps max across the bag, qa8 L2#1)", async () => {
+    // qa8 L2#1: "stacked pair runs at the higher count" never
+    // observed. The single-row marriage is walled above (14b/14d/14e:
+    // one entry marries its row's count) and the shift half's max is
+    // walled in lora-marriage.spec — but no arm ever composed TWO
+    // entries, so a first-wins or averaging fold in marriedBagKnob
+    // stayed green. Two catalog rows, unstated steps, either order:
+    // the scheduler rides the higher count, and the shift grid
+    // follows the same highest-count-wins law.
+    const turbo4 = H3_LORA_ROWS.find((r) => r.id === "h3_turbo4_v1")!;
+    const turbo8 = H3_LORA_ROWS.find((r) => r.id === "h3_turbo8_v1")!;
+    for (const [first, second] of [[turbo4, turbo8], [turbo8, turbo4]] as const) {
+      const graph = await composeH3({
+        length: 56,
+        loras: [{ name: first.filename, strength: 1 }, { name: second.filename, strength: 1 }],
+        calls: [SHOT()],
+      }, "h3_value_arm14f");
+      assertValueAtConsumer(graph, "BasicScheduler", "steps", 8,
+        "the stacked pair's higher count (8 over 4, either order — never first-wins, never the walk default)");
+      assertValueAtConsumer(graph, "MiniMaxH3SigmaShift", "shift_video", 12,
+        "the higher-count row owns the grid too (the shift half of the same max)");
+    }
+  });
+
   it("ARM 15 — every stated sla_* rides H3SLAAttention verbatim + sla_enabled owns the attention switch", async () => {
     // (P0 audit 2026-11-10: the stated values stay NON-defaults.
     // The retuned default is sla_sparsity 0.85 — the research band
@@ -773,7 +829,68 @@ describe("the h3 class knobs ride VERBATIM to their consumers (P0 witness extens
     assert.ok(Object.values(graph).some((n) => n.class_type === "SeedVR2VideoUpscaler"), "sr_switch mounts the super-res limb");
   });
 
-  it("ARM 18 — the five sharpen leaves verbatim in the ImageSharpenKJ method dict + sharpen_enabled owns the sharpen switch", async () => {
+  it("ARM 48 (the finishing rail's memory seam) — sr_switch mounts the SeedVR2 upscaler ONLY through a MeliteBoundary whose unload_models is true (the live final-press OOM: the h3 stack was still resident when SeedVR2 loaded its DiT)", async () => {
+    // THE LIVE BURN (2026-11-14): `h3-timeline final` on the operator's
+    // 24GB card died "torch.OutOfMemoryError: CUDA out of memory.
+    // Tried to allocate 258.00 MiB ... this process has 23.36 GiB in
+    // use" — the h3 weights were never evicted, so the upscaler's DiT
+    // had nowhere to land. The cure is output-reachable in the DAG:
+    // the decoded frame passes THROUGH a boundary that flushes the
+    // cache, and the upscaler reads the boundary, never the decode.
+    const graph = await composeH3({
+      length: 56, second_pass_enabled: true, sr_switch: true,
+      calls: [SHOT()],
+    }, "h3_value_arm48");
+    const up = Object.values(graph).find((n) => n.class_type === "SeedVR2VideoUpscaler");
+    assert.ok(up, "sr_switch mounts the super-res limb");
+    const boundaryId = (up!.inputs.image as [string, number])[0];
+    const boundary = graph[boundaryId];
+    assert.ok(boundary !== undefined && boundary.class_type === "MeliteBoundary",
+      "the upscaler's image rides a MeliteBoundary (the memory seam), never the decoder directly");
+    assert.equal(boundary.inputs.unload_models, true,
+      "the seam EVICTS (unload_models true) — a false boundary is a no-op the OOM walks straight through");
+    // the boundary's own through is the decode chain, and the boundary
+    // is the ONLY one the upscaler reads (no second image wire).
+    assert.ok(Array.isArray(boundary.inputs.through), "the boundary passes the frame through");
+    const others = Object.entries(graph).filter(([, n]) =>
+      n.class_type === "SeedVR2VideoUpscaler" && n.inputs.image !== up!.inputs.image);
+    assert.equal(others.length, 0, "exactly one image wire reaches the upscaler");
+  });
+
+  it("ARM 49 (the estate card's own default) — an unstated sr_model books the LEAN fp8 SeedVR2 weights at the DiT loader, and a stated fp16 rides verbatim", async () => {
+    // THE LIVE BURN (2026-11-14): the final press OOM'd in SeedVR2's
+    // phase-3 VAE decode — "Tried to allocate 4.94 GiB ... 17.30 GiB
+    // is allocated by PyTorch" on a 23.52 GiB card — because the
+    // declared default was the fp16 3B DiT (6.8 GB of weights) beside
+    // a 90-frame 1080p decode. A default the estate's own card cannot
+    // run is a dead door: the row defaults to the lean fp8 row.
+    const lean = await composeH3({
+      length: 56, second_pass_enabled: true, sr_switch: true,
+      calls: [SHOT()],
+    }, "h3_value_arm49");
+    assertValueAtConsumer(lean, "SeedVR2LoadDiTModel", "model",
+      "seedvr2_ema_3b_fp8_e4m3fn.safetensors", "the default sr_model is the lean row");
+    const heavy = await composeH3({
+      length: 56, second_pass_enabled: true, sr_switch: true,
+      sr_model: "seedvr2_ema_3b_fp16.safetensors",
+      calls: [SHOT()],
+    }, "h3_value_arm49b");
+    assertValueAtConsumer(heavy, "SeedVR2LoadDiTModel", "model",
+      "seedvr2_ema_3b_fp16.safetensors", "a stated sr_model rides verbatim");
+  });
+
+  it("ARM 50 (tiled decode) — the SR rail's VAE loader mounts decode_tiled true in every lane, stated or not (the 90-frame 1080p decode's single-pass allocation OOM'd the estate card)", async () => {
+    const graph = await composeH3({
+      length: 56, second_pass_enabled: true, sr_switch: true,
+      calls: [SHOT()],
+    }, "h3_value_arm50");
+    const vae = Object.values(graph).find((n) => n.class_type === "SeedVR2LoadVAEModel");
+    assert.ok(vae, "sr_switch mounts the SeedVR2 VAE loader");
+    assert.equal(vae!.inputs.decode_tiled, true,
+      "the decode tiles (a one-pass 90-frame 1080p decode needs ~21.9 GiB of activations on a 23.52 GiB card)");
+  });
+
+  it("ARM 18 — the stated sharpen leaves verbatim on the V3 combo wires (selected option's children only) + sharpen_enabled owns the sharpen switch", async () => {
     const graph = await composeH3({
       length: 56,
       second_pass_enabled: true, sharpen_enabled: true,
@@ -783,12 +900,22 @@ describe("the h3 class knobs ride VERBATIM to their consumers (P0 witness extens
     }, "h3_value_arm18");
     const sharpen = Object.values(graph).find((n) => n.class_type === "ImageSharpenKJ");
     assert.ok(sharpen, "the sharpen node composed (hop [5])");
-    const method = sharpen.inputs.method as Record<string, unknown>;
+    // GAPS-1: the option key rides the base wire; the SELECTED
+    // option's children ride dotted wires. iterations belongs to
+    // deconvolution alone — adaptive_usm wires nothing for it (the
+    // engine reads unselected seats off its own defaults).
     assert.deepEqual(
-      { method: method.method, strength: method.strength, radius: method.radius, threshold: method.threshold, iterations: method.iterations },
-      { method: "adaptive_usm", strength: 0.55, radius: 2.5, threshold: 0.15, iterations: 7 },
-      "the stated sharpen leaves ride the grouped dict verbatim",
+      {
+        method: sharpen.inputs.method,
+        strength: sharpen.inputs["method.strength"],
+        radius: sharpen.inputs["method.radius"],
+        threshold: sharpen.inputs["method.threshold"],
+      },
+      { method: "adaptive_usm", strength: 0.55, radius: 2.5, threshold: 0.15 },
+      "the stated sharpen leaves ride the served combo wires verbatim",
     );
+    assert.ok(!("method.iterations" in sharpen.inputs),
+      "method.iterations must not wire under adaptive_usm (a non-selected seat rides dead bytes the engine drops)");
     assert.ok(Object.values(graph).some((n) => n.class_type === "ImageSharpenKJ"), "sharpen_enabled mounts the sharpen limb (the mirror law: presence is the verdict)");
   });
 
@@ -904,17 +1031,17 @@ describe("the h3 class knobs ride VERBATIM to their consumers (P0 witness extens
 //     survives the render seat (ARM 33), and the per-window
 //     noise_seed row rides the film stanza per key (ARM 34).
 describe("the h3 knob-block remainder: per-class liveness + the mis-narrated and unpinned seats (2026-11-09, hop [4]→[5])", () => {
-  /** The dict-probe with the VALUE voice for the grouped
-   *  ImageSharpenKJ method (assertValueAtConsumer reads flat node
-   *  inputs; the sharpen leaves ride a nested dict). */
+  /** The dotted-wire probe with the VALUE voice for the V3
+   *  ImageSharpenKJ combo (assertValueAtConsumer reads flat node
+   *  inputs; the sharpen strength rides the method.strength wire). */
   const sharpenStrengthArm = (graph: Graph, stated: number): void => {
     const sharpen = Object.values(graph).find((n) => n.class_type === "ImageSharpenKJ");
     assert.ok(sharpen, "the sharpen node composed (hop [5])");
-    const method = sharpen.inputs.method as Record<string, unknown>;
-    if (method.strength === stated) return;
+    const saw = sharpen.inputs["method.strength"];
+    if (saw === stated) return;
     assert.fail(
-      `SHARPEN VALUE ARM (hop [5], the consumer's dict): ImageSharpenKJ method.strength did not carry ` +
-      `the stated value verbatim — expected ${JSON.stringify(stated)}, saw ${JSON.stringify(method.strength)} ` +
+      `SHARPEN VALUE ARM (hop [5], the consumer's wire): ImageSharpenKJ method.strength did not carry ` +
+      `the stated value verbatim — expected ${JSON.stringify(stated)}, saw ${JSON.stringify(saw)} ` +
       `— the stated value never reached the engine's consumer (THE SILENT UI DROP, ERRORS.md bottom)`,
     );
   };
@@ -1290,7 +1417,7 @@ describe("the h3 latent-upscale route: the handoff arm mounts behind second_pass
     // still rides the pass-1 stack's conditioning (one prompt
     // voice), but its MODEL edge is FORKED off the pre-LoRA chain
     // whenever the primary bag carries a counting distill (the
-    // default bag does — h3_lightx2v_turbo). Walking the handoff's model
+    // default bag does — h3_silver_dareties). Walking the handoff's model
     // edge upstream, the chain must NEVER cross an LTX_lora_loader
     // (the spec's diagnostic matrix: "Distilled LoRAs at low
     // denoise predict invalid noise fields" — the waxy-skin face),
@@ -1377,7 +1504,7 @@ describe("the h3 latent-upscale route: the handoff arm mounts behind second_pass
     assertValueAtConsumer(graph, HANDOFF, "lock_audio", true, "handoff lock_audio (the audio-preservation pin)");
   });
 
-  it("ARM 39 (grid-legality) — scale 2.0 halves the r2v head (1280×768 → 640×384) and the VAE decode rides the handoff's upscaled latent (no temporal op between)", async () => {
+  it("ARM 39 (grid-legality) — scale 2.0 keeps the r2v head STATED (1280×768; the half-grid stamp that rendered base tier died with burn run-eb098020a6d0) and the VAE decode rides the handoff's upscaled latent (no temporal op between)", async () => {
     const graph = await composeH3({
       length: 56, width: 1280, height: 768,
       second_pass_enabled: true, upscale_route: "latent_2x",
@@ -1385,8 +1512,13 @@ describe("the h3 latent-upscale route: the handoff arm mounts behind second_pass
     }, "h3_upscale_arm39");
     const { id, node } = handoff(graph);
     assert.equal(node.inputs.scale, 2.0, "the handoff scale is the 2.0 leg (the grid law's only legal factor)");
-    assertValueAtConsumer(graph, "MiniMaxH3ReferenceToVideo", "width", 640, "halved r2v width");
-    assertValueAtConsumer(graph, "MiniMaxH3ReferenceToVideo", "height", 384, "halved r2v height");
+    // THE STATED-GEOMETRY leg: pass 1 composes the stated grid and the
+    // handoff's 2.0× doubles ON TOP of it — armed, the render lands at
+    // 2× the stated size. The burn's own engine log convicted the
+    // inverse stamp: `Latent 42x24 -> 84x48 | Pixels 1344x768` was
+    // base tier out of a halved head (run-eb098020a6d0, 2026-11-01).
+    assertValueAtConsumer(graph, "MiniMaxH3ReferenceToVideo", "width", 1280, "stated r2v width (route armed)");
+    assertValueAtConsumer(graph, "MiniMaxH3ReferenceToVideo", "height", 768, "stated r2v height (route armed)");
     // THE TEMPORAL leg: the handoff's latent edge names the sampler
     // DIRECTLY (no frame op between — the edge identity IS the proof).
     const latent = node.inputs.latent as unknown[];
@@ -1403,15 +1535,15 @@ describe("the h3 latent-upscale route: the handoff arm mounts behind second_pass
     }), `UPSCALE GRID ARM: no VAE decode's samples edge names the handoff '${id}' — the decode still rides the pass-1 latent`);
   });
 
-  it("ARM 40 (switch parity, ON) — route latent_2x: the handoff mounts AND the head halves (the verdict's home)", async () => {
+  it("ARM 40 (switch parity, ON) — route latent_2x: the handoff mounts AND the head stays stated (the 2× rides the handoff, never the head)", async () => {
     const graph = await composeH3({
       length: 56, width: 1280, height: 768,
       second_pass_enabled: true, upscale_route: "latent_2x",
       calls: [SHOT()],
     }, "h3_upscale_arm40");
     handoff(graph);
-    assertValueAtConsumer(graph, "MiniMaxH3ReferenceToVideo", "width", 640, "halved r2v width (switch ON)");
-    assertValueAtConsumer(graph, "MiniMaxH3ReferenceToVideo", "height", 384, "halved r2v height (switch ON)");
+    assertValueAtConsumer(graph, "MiniMaxH3ReferenceToVideo", "width", 1280, "stated r2v width (switch ON)");
+    assertValueAtConsumer(graph, "MiniMaxH3ReferenceToVideo", "height", 768, "stated r2v height (switch ON)");
   });
 
   it("ARM 41 (switch parity, OFF) — the default route: no handoff anywhere, the head stays stated, the refine rider still mounts (the master is alive)", async () => {
@@ -1686,7 +1818,7 @@ const CENSUS_SECOND: CensusDoc = {
   second_pass_enabled: true,
   interpolate_enabled: true, interp_model: "rife47.pth", interp_multiplier: 4,
   sr_switch: true, sr_model: "seedvr2_ema_3b_fp8_e4m3fn.safetensors", sr_resolution: 1440,
-  sharpen_enabled: true, sharpen_method: "rcas", sharpen_radius: 2.5,
+  sharpen_enabled: true, sharpen_method: "adaptive_usm", sharpen_radius: 2.5,
   sharpen_strength: 0.55, sharpen_threshold: 0.15, sharpen_iterations: 7,
   refine_lora: "h3_taomate_3step", refine_strength: 0.9, refine_steps: 3, refine_denoise: 0.3,
   calls: [SHOT()],
@@ -1796,11 +1928,22 @@ const CENSUS_ROWS: readonly CensusRow[] = [
     classes: ["FrameInterpolate", "SeedVR2VideoUpscaler", "ImageSharpenKJ"],
   },
   { kind: "gate", param: "sharpen_enabled", on: "second", off: "no_sharpen", classes: ["ImageSharpenKJ"] },
-  { kind: "at", param: "sharpen_method", doc: "second", cls: "ImageSharpenKJ", input: "method.method", value: "rcas" },
+  { kind: "at", param: "sharpen_method", doc: "second", cls: "ImageSharpenKJ", input: "method", value: "adaptive_usm" },
   { kind: "at", param: "sharpen_radius", doc: "second", cls: "ImageSharpenKJ", input: "method.radius", value: 2.5 },
   { kind: "at", param: "sharpen_strength", doc: "second", cls: "ImageSharpenKJ", input: "method.strength", value: 0.55 },
   { kind: "at", param: "sharpen_threshold", doc: "second", cls: "ImageSharpenKJ", input: "method.threshold", value: 0.15 },
-  { kind: "at", param: "sharpen_iterations", doc: "second", cls: "ImageSharpenKJ", input: "method.iterations", value: 7 },
+  {
+    kind: "judge", param: "sharpen_iterations", doc: "second",
+    why: "stated under a non-selecting method (adaptive_usm) wires nothing — only the served option's children ride dotted wires (GAPS-1 V3); the deconvolution verbatim pin is U2 ARM 48",
+    judge: (g) => {
+      const nodes = Object.values(g).filter((n) => n.class_type === "ImageSharpenKJ");
+      assert.ok(nodes.length >= 1, "CENSUS sharpen_iterations: no ImageSharpenKJ on 'second'");
+      for (const n of nodes) {
+        assert.ok(!("method.iterations" in n.inputs),
+          "CENSUS sharpen_iterations: method.iterations wired under adaptive_usm — a non-selected seat must ride nothing");
+      }
+    },
+  },
   { kind: "gate", param: "interpolate_enabled", on: "second", off: "no_interp", classes: ["FrameInterpolate"] },
   { kind: "at", param: "interp_model", doc: "second", cls: "FrameInterpolationModelLoader", input: "model_name", value: "rife47.pth" },
   { kind: "at", param: "interp_multiplier", doc: "second", cls: "FrameInterpolate", input: "multiplier", value: 4 },
@@ -1903,8 +2046,11 @@ const CENSUS_ROWS: readonly CensusRow[] = [
   },
 ];
 
-/** Read a dotted input path (the sharpen method is a grouped dict). */
+/** Read an input path: a V3 dotted wire is a LITERAL key
+ *  ("method.strength"), never a nested dict — the literal wins, then
+ *  the legacy grouped-dict walk (GAPS-1). */
 function readInputPath(inputs: Record<string, unknown>, path: string): unknown {
+  if (path in inputs) return inputs[path];
   let v: unknown = inputs;
   for (const key of path.split(".")) {
     if (v === null || typeof v !== "object") return undefined;
@@ -1990,6 +2136,228 @@ describe("THE H3 CONSUMER-MAP CENSUS (item #10) — every DECL param is witnesse
         for (const n of Object.values(g)) {
           assert.ok(!(row.param in n.inputs),
             `CENSUS ${row.param}: the name became an input key on '${key}' (${n.class_type}) — ${row.why}`);
+        }
+      }
+    }
+  });
+});
+
+// ── U2 · models-sharpen-served-truth (coverage-gaps-mapping §1,
+// GAPS-1/F9): the sharpen emission equals the INSTALLED pack's
+// declared /object_info shape. The burn: the composer emitted a flat
+// grouped dict for ImageSharpenKJ.method while the installed KJNodes
+// serves a V3 DynamicCombo — the engine's expansion matches the base
+// wire against the option keys (comfy_api _expand_schema_for_dynamic),
+// a dict matches no key, the finalized schema drops `method`
+// outright, and validation fails required_input_missing: every
+// sharpen compose died at the engine with no wall seeing it.
+// THE SERVED TRUTH, DERIVED (LAW 4): the option keys + per-option
+// child seats are parsed off the pack's OWN declaration —
+// ComfyUI-KJNodes nodes/sharpen_nodes.py define_schema — at wall
+// time, never a frozen literal. A pack-side child change reds here
+// (naming the drift), never greens on a stale copy. Toggle: restore
+// the flat grouped dict at actions.ts (≈2275 pre-cure) → ARM 49 reds
+// naming the node.
+const PACK_SHARPEN_NODES_PY = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "..", "..", "..", "..",
+  "data", "runtime", "comfyui", "custom_nodes", "ComfyUI-KJNodes",
+  "nodes", "sharpen_nodes.py",
+);
+
+/** The served V3 combo: base input id + one child-name set per
+ *  option key, parsed off the pack's define_schema source. */
+function servedSharpenCombo(): { base: string; options: Map<string, readonly string[]> } {
+  const src = readFileSync(PACK_SHARPEN_NODES_PY, "utf8");
+  assert.ok(src.includes("class ImageSharpenKJ"),
+    `U2: ${PACK_SHARPEN_NODES_PY} no longer declares class ImageSharpenKJ — the wall's served-truth home moved (re-point, never freeze)`);
+  const base = src.match(/io\.DynamicCombo\.Input\(\s*"([^"]+)"/);
+  assert.ok(base, "U2: no io.DynamicCombo.Input(\"…\") in the pack's sharpen_nodes.py — the served shape left V3 (re-derive, never freeze)");
+  const optionRe = /io\.DynamicCombo\.Option\(\s*key="([^"]+)"/g;
+  const starts: Array<{ key: string; at: number }> = [];
+  for (const m of src.matchAll(optionRe)) starts.push({ key: m[1]!, at: m.index ?? 0 });
+  assert.ok(starts.length >= 1,
+    "U2: the pack's method combo declares zero options — the parse found no served truth (a restructure must red here, never green silently)");
+  const options = new Map<string, readonly string[]>();
+  for (let i = 0; i < starts.length; i++) {
+    const span = src.slice(starts[i]!.at, i + 1 < starts.length ? starts[i + 1]!.at : undefined);
+    const children = [...span.matchAll(/io\.(?:Float|Int|Boolean|String|Combo)\.Input\(\s*"([^"]+)"/g)]
+      .map((m) => m[1]!);
+    assert.ok(children.length >= 1,
+      `U2: served option '${starts[i]!.key}' parses with zero child inputs — the pack restructured the option (re-derive, never freeze)`);
+    options.set(starts[i]!.key, children);
+  }
+  return { base: base[1]!, options };
+}
+
+// THE SERVED-GRID-TRUTH HOME (the boot-census fixture): what the
+// INSTALLED node declares on /object_info AS THE ENGINE SERVES IT.
+// tests/walls/fixtures/object_info.boot.json is DERIVED from the live
+// :8188 census (data/tmp/object_info_prod.json) by
+// scripts/regen-node-vocab.mjs --boot — never a hand literal — and its
+// freshness/provenance is judged by boot-fixture-derivation.spec.ts
+// (FORMAT/FRESHNESS/PROVENANCE/COVERAGE arms). ARMs 48-50 above parse
+// the VENDORED pack source; this home parses what the engine SERVES.
+// The two homes agree today (installed == vendored 1.5.0/e8e88f7); the
+// day the operator's engine moves past the vendored pin — the NEXT
+// upstream widget migration — they diverge, and the ARM 51 twin below
+// is the one that reds (a source-parsing wall would stay green on the
+// stale pin).
+const BOOT_OBJECT_INFO_JSON = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "..", "..", "..", "..",
+  "tests", "walls", "fixtures", "object_info.boot.json",
+);
+
+/** The served V3 combo: base input id + one child-name set per option
+ *  key, parsed off the BOOT fixture's installed ImageSharpenKJ row.
+ *  Judges NAMES only (never numeric defaults — the harvest path spells
+ *  whole floats where the live engine spells ints; shape, not values,
+ *  is the served law). */
+function servedSharpenComboFromBoot(): { base: string; options: Map<string, readonly string[]> } {
+  const fixture = JSON.parse(readFileSync(BOOT_OBJECT_INFO_JSON, "utf8")) as Record<string, unknown>;
+  const row = fixture["ImageSharpenKJ"] as { input?: { required?: Record<string, unknown> } } | undefined;
+  assert.ok(row?.input?.required,
+    `U2 served-grid-truth: the boot fixture carries no ImageSharpenKJ input.required row — the installed node is gone from the served census (regen with scripts/regen-node-vocab.mjs --boot --live, never freeze)`);
+  const required = row!.input!.required!;
+  const comboEntry = Object.entries(required).find(([, spec]) =>
+    Array.isArray(spec) && (spec as unknown[])[0] === "COMFY_DYNAMICCOMBO_V3");
+  assert.ok(comboEntry,
+    `U2 served-grid-truth: ImageSharpenKJ serves no COMFY_DYNAMICCOMBO_V3 input in the boot fixture — the installed widget left V3 (re-derive, never freeze)`);
+  const base = comboEntry[0];
+  const specBody = (comboEntry[1] as unknown[])[1] as {
+    options: Array<{ key: string; inputs?: { required?: Record<string, unknown> } }>;
+  };
+  const options = specBody.options;
+  assert.ok(Array.isArray(options) && options.length >= 1,
+    `U2 served-grid-truth: ImageSharpenKJ '${base}' serves zero combo options in the boot fixture — the installed declaration restructured (re-derive, never freeze)`);
+  const out = new Map<string, readonly string[]>();
+  for (const opt of options) {
+    const children = Object.keys(opt.inputs?.required ?? {});
+    assert.ok(children.length >= 1,
+      `U2 served-grid-truth: served option '${opt.key}' parses with zero child inputs — the installed option restructured (re-derive, never freeze)`);
+    out.set(opt.key, children);
+  }
+  return { base, options: out };
+}
+
+/** Distinctive non-default stated values per served child seat (a
+ *  default-echoing wall proves nothing — ARM 3's law). */
+const SHARPEN_STATED: Record<string, number> = {
+  strength: 0.55, radius: 2.5, threshold: 0.15, iterations: 7,
+};
+const SHARPEN_LEAF_OF: Record<string, string> = {
+  strength: "sharpen_strength", radius: "sharpen_radius",
+  threshold: "sharpen_threshold", iterations: "sharpen_iterations",
+};
+
+describe("U2 · the sharpen emission is the served V3 DynamicCombo shape (GAPS-1/F9)", () => {
+  it("ARM 48 — every served option composes its option key on the base wire + exactly its served children on dotted wires, stated values verbatim", async () => {
+    const served = servedSharpenCombo();
+    assert.equal(served.base, "method", "U2: the served combo's base input is not 'method' — the composer wires a renamed seat");
+    for (const [key, children] of served.options) {
+      const doc: Record<string, unknown> = {
+        length: 56, calls: [SHOT()], seed: SEED,
+        second_pass_enabled: true, sharpen_enabled: true,
+        sharpen_method: key,
+      };
+      for (const child of children) doc[SHARPEN_LEAF_OF[child]!] = SHARPEN_STATED[child];
+      const graph = await composeH3(doc, `h3_value_u2_${key}`);
+      const nodes = Object.values(graph).filter((n) => n.class_type === "ImageSharpenKJ");
+      assert.ok(nodes.length >= 1,
+        `U2 '${key}': no ImageSharpenKJ composed — the limb never mounted`);
+      for (const node of nodes) {
+        assert.equal(node.inputs[served.base], key,
+          `U2 '${key}': the base wire must carry the option key string (saw ${JSON.stringify(node.inputs[served.base])}) — a grouped dict matches no served option and dies at the engine`);
+        const dotted = Object.keys(node.inputs).filter((k) => k.startsWith(`${served.base}.`));
+        assert.deepEqual(dotted.sort(), children.map((c) => `${served.base}.${c}`).sort(),
+          `U2 '${key}': the dotted wires must be exactly the served option's children ([${children.join(", ")}]) — a missing child starves execute, a foreign seat rides dead bytes`);
+        for (const child of children) {
+          assert.equal(node.inputs[`${served.base}.${child}`], SHARPEN_STATED[child],
+            `U2 '${key}': the stated leaf must ride 'method.${child}' verbatim`);
+        }
+      }
+    }
+  });
+
+  it("ARM 49 — the flat grouped dict is dead: no ImageSharpenKJ node carries an object on the base wire", async () => {
+    const served = servedSharpenCombo();
+    const graph = await composeH3({
+      length: 56, calls: [SHOT()], seed: SEED,
+      second_pass_enabled: true, sharpen_enabled: true,
+      sharpen_method: "adaptive_usm", sharpen_strength: 0.55,
+      sharpen_radius: 2.5, sharpen_threshold: 0.15, sharpen_iterations: 7,
+    }, "h3_value_u2_flatdead");
+    const nodes = Object.values(graph).filter((n) => n.class_type === "ImageSharpenKJ");
+    assert.ok(nodes.length >= 1, "U2: no ImageSharpenKJ composed — the limb never mounted");
+    for (const node of nodes) {
+      const base = node.inputs[served.base];
+      assert.ok(typeof base === "string",
+        `U2: ImageSharpenKJ '${served.base}' carries ${JSON.stringify(base)} — the flat grouped dict is back (restore the V3 projection: option key on the base wire, children on dotted wires)`);
+      assert.ok(served.options.has(base as string),
+        `U2: ImageSharpenKJ '${served.base}' carries ${JSON.stringify(base)} — no served option owns that key`);
+    }
+  });
+
+  it("ARM 50 — unstated leaves keep the tuned operating point through the projection (shape changed, values did not)", async () => {
+    const served = servedSharpenCombo();
+    const graph = await composeH3({
+      length: 56, calls: [SHOT()], seed: SEED,
+      second_pass_enabled: true, sharpen_enabled: true,
+    }, "h3_value_u2_defaults");
+    const nodes = Object.values(graph).filter((n) => n.class_type === "ImageSharpenKJ");
+    assert.ok(nodes.length >= 1, "U2: no ImageSharpenKJ composed — the limb never mounted");
+    for (const node of nodes) {
+      assert.equal(node.inputs[served.base], "rcas",
+        "U2: the default method is the tuned rcas operating point");
+      assert.equal(node.inputs[`${served.base}.strength`], 0.3,
+        "U2: the default strength is the tuned 0.3 (the pack's served 0.8 never leaks in — the projection preserves the bag)");
+      assert.deepEqual(
+        Object.keys(node.inputs).filter((k) => k.startsWith(`${served.base}.`)),
+        [`${served.base}.strength`],
+        "U2: the default rcas option wires exactly its served child — non-selected seats ride nothing",
+      );
+    }
+  });
+
+  it("ARM 51 (served-grid-truth) — the emission diffs against the INSTALLED /object_info row (boot fixture), never the vendored source: every served option's key on the base wire, exactly its served children on dotted wires", async () => {
+    // THE NEXT-MIGRATION ARM: ARMs 48-50 parse the vendored pack
+    // SOURCE (in-tree 1.5.0) — a widget migration that lands on the
+    // ENGINE while the vendored pin lags keeps them green on the stale
+    // copy. This arm parses the SERVED row (the boot fixture, derived
+    // from the live :8188 census) — the wall guards what SERVES, not
+    // what the pin publishes. A served child the composer never states
+    // reds here naming the seat (wire it, never freeze); the retired
+    // flat dict puts an object on the base wire and reds naming the
+    // node (the toggle below).
+    const served = servedSharpenComboFromBoot();
+    assert.equal(served.base, "method",
+      "U2 served-grid-truth: the served combo's base input is not 'method' — the composer wires a renamed seat");
+    for (const [key, children] of served.options) {
+      const doc: Record<string, unknown> = {
+        length: 56, calls: [SHOT()], seed: SEED,
+        second_pass_enabled: true, sharpen_enabled: true,
+        sharpen_method: key,
+      };
+      for (const child of children) {
+        const leaf = SHARPEN_LEAF_OF[child];
+        assert.ok(leaf,
+          `U2 served-grid-truth '${key}': served child '${child}' has no composer leaf — the installed widget grew a seat the composer never states (wire it, never freeze)`);
+        doc[leaf] = SHARPEN_STATED[child];
+      }
+      const graph = await composeH3(doc, `h3_value_u2_served_${key}`);
+      const nodes = Object.values(graph).filter((n) => n.class_type === "ImageSharpenKJ");
+      assert.ok(nodes.length >= 1,
+        `U2 served-grid-truth '${key}': no ImageSharpenKJ composed — the limb never mounted`);
+      for (const node of nodes) {
+        assert.equal(node.inputs[served.base], key,
+          `U2 served-grid-truth '${key}': ImageSharpenKJ '${served.base}' must carry the served option key string (saw ${JSON.stringify(node.inputs[served.base])}) — a grouped dict matches no served option and dies at the engine`);
+        const dotted = Object.keys(node.inputs).filter((k) => k.startsWith(`${served.base}.`));
+        assert.deepEqual(dotted.sort(), children.map((c) => `${served.base}.${c}`).sort(),
+          `U2 served-grid-truth '${key}': ImageSharpenKJ's dotted wires must be exactly the SERVED option's children ([${children.join(", ")}]) — a missing child starves execute, a foreign seat rides dead bytes the engine drops`);
+        for (const child of children) {
+          assert.equal(node.inputs[`${served.base}.${child}`], SHARPEN_STATED[child],
+            `U2 served-grid-truth '${key}': ImageSharpenKJ 'method.${child}' must ride the stated value verbatim`);
         }
       }
     }
