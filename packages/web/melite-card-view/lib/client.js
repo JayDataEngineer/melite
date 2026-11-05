@@ -536,7 +536,8 @@ window.__ModuleLoader__.load({
 				zod.z.literal(true),
 				zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema$1())),
 				zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema$1())).readonly()
-			])).readonly()).readonly()
+			])).readonly()).readonly(),
+			"epoch": zod.z.union([zod.z.undefined(), zod.z.string()]).readonly().optional().describe("THE INCARNATION (W-3 / F3-11, 2026-11-05): the doc's epoch, served so the bench read's join can require the run side's matching stamp (queueSidecar `bench_epoch` alongside draft_id). Absent on a bench that never cleared since the cure — the key is never guessed.")
 		});
 		let _melite_estate_drafts_bench_group_parameter_0$schema$value;
 		const _melite_estate_drafts_bench_group_parameter_0$schema = () => _melite_estate_drafts_bench_group_parameter_0$schema$value ??= zod.z.string();
@@ -673,7 +674,8 @@ window.__ModuleLoader__.load({
 				zod.z.literal(true),
 				zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema2$1())),
 				zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema2$1())).readonly()
-			])).readonly()).readonly()
+			])).readonly()).readonly(),
+			"epoch": zod.z.union([zod.z.undefined(), zod.z.string()]).readonly().optional().describe("THE INCARNATION (W-3 / F3-11, 2026-11-05): the doc's epoch, served so the bench read's join can require the run side's matching stamp (queueSidecar `bench_epoch` alongside draft_id). Absent on a bench that never cleared since the cure — the key is never guessed.")
 		});
 		let _melite_estate_drafts_bench_undo_parameter_0$schema$value;
 		const _melite_estate_drafts_bench_undo_parameter_0$schema = () => _melite_estate_drafts_bench_undo_parameter_0$schema$value ??= zod.z.string();
