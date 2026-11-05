@@ -568,16 +568,22 @@ describe("THE LIVE TAIL — the run press seeds it, the run frames ride it (1.8'
       expect(seen.filter((c) => c.method === "runs/subscribe")).toHaveLength(1);
     }, { timeout: 4000 });
     expect(seen.filter((c) => c.method === "runs/subscribe")[0]?.args).toEqual({ runId: "r_1" });
-    // movement: a stage frame with a url folds onto row s_0 — the
-    // thumb the old poll never could serve (its live was never set)
+    // movement: a stage frame folds onto row s_0's face — the status
+    // the old poll never could serve (its live was never set). The
+    // NO-MEDIA law (operator 2026-11-05) keeps the thread text-only:
+    // the fold is judged on the row's own data-status, never a thumb.
     fake.push("r_1", { run_id: "r_1", status: "running", stages: [{ id: "st-0", status: "done", url: "a.png" }] });
-    const thumb = await screen.findByAltText("gen", {}, { timeout: 4000 });
-    expect((thumb as HTMLImageElement).src).toContain("r_1");
+    await waitFor(() => {
+      const row = container.querySelector('[data-stage="s_0"]');
+      if (row === null || row.getAttribute("data-status") !== "done") throw new Error("frame never folded onto row s_0");
+    }, { timeout: 4000 });
+    expect(container.querySelectorAll("img, video, audio"),
+      "the fold mounts no media face in the thread").toHaveLength(0);
     // carrier loss: one failure frame — voiceless here (the last live
     // stays), and the supervisor's own reconnect reopens the channel
     fake.drop();
     await new Promise((r) => setTimeout(r, 60));
-    expect(screen.queryByAltText("gen")).not.toBeNull();
+    expect(container.querySelector('[data-stage="s_0"]')?.getAttribute("data-status")).toBe("done");
     // recovered channel: the terminal frame ends the tail with ONE
     // more draft refetch (mount + the press's own refresh + this)
     fake.push("r_1", { run_id: "r_1", status: "completed", stages: [{ id: "st-0", status: "done", url: "a.png" }] });

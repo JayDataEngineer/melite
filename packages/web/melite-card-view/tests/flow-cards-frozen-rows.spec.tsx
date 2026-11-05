@@ -154,16 +154,15 @@ describe("THE FROZEN-ROWS JOURNEY — the projector's real meta through parseCar
     ]);
     expect(container.textContent).not.toContain("foreign one");
 
-    // the heroes: the meta previews' own urls — the film leads its set,
-    // the image previews image (the kinds ride the url spellings)
-    const film = await screen.findByTestId("stage-preview-video-hero", {}, { timeout: 4000 });
-    expect(film.getAttribute("src")).toBe(FILM_SET[0]);
-    const strip = container.querySelector('[data-testid="stage-preview-video-strip"]');
-    expect(strip).not.toBeNull();
-    expect(strip!.querySelectorAll("button")).toHaveLength(4);
-    const image = await screen.findByTestId("stage-preview-image-hero", {}, { timeout: 4000 });
-    expect(image.getAttribute("src")).toBe(IMAGE_URL);
-    expect(container.querySelectorAll("[data-chat-preview]")).toHaveLength(2);
+    // NO MEDIA IN THE MAIN CHAT (operator 2026-11-05, superseding the
+    // inline-hero law): the meta carries previews + full artifact sets,
+    // and the thread mounts NONE of them — zero img/video/audio faces,
+    // zero chat-preview mounts. The rows are the card's whole visible
+    // face; the outputs live on the bench, the Media page, and the
+    // click-opened drill.
+    expect(container.querySelectorAll("img, video, audio"),
+      "the thread never mounts media faces, however rich the meta").toHaveLength(0);
+    expect(container.querySelectorAll("[data-chat-preview]")).toHaveLength(0);
 
     // THE AUTO-RENDER HALF: no drafts/get crossed the render — the
     // 193-GETs-per-paint storm is dead for this card.

@@ -52,13 +52,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import css from './card.module.css'
 import { Button, IconCloseOutlineRegular, Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
-import { AudioStagePreview, ImageStagePreview, VideoStagePreview } from '@melite/card-base/client'
 import { CardDrill } from './card-drill.tsx'
 import { CardsSkeleton } from './skeleton.tsx'
 import { cardsDraftStageAddress, subscribeRunFrames, tileStatusFromVerdict } from './cards-resource.ts'
 import type { CardsRunValue } from './cards-resource.ts'
 import { STATUS_DOT } from './bench-row.ts'
-import { chatPreviewsFor } from './chat-preview.ts'
 import type { ToolCallBlockView } from './types.ts'
 import {
   cardRows, fetchDraft, paramFields, patchStageParamsChained, refuseForUnlandedWrite, runFinished, startDraft,
@@ -116,7 +114,6 @@ export function parseCardsBlock(block: ToolCallBlockView): {
   malformedArgs: boolean
   settled: boolean
   isError: boolean
-  previews: Array<{ stage: string, url: string, status: string, artifacts: string[] }>
   /** THE FROZEN FACE (cure 1): the settle-time pass rows + intent,
    *  lifted from the projector's persisted keys. Non-empty rows mean
    *  the block renders its OWN press and never re-fetches the bench. */
@@ -143,15 +140,6 @@ export function parseCardsBlock(block: ToolCallBlockView): {
   }
   let draftId: DraftId | null = null
   let runId: string | null = null
-  // THE PRESS'S OWN HEROES (the refresh-flood cure, 2026-11-19): the
-  // previews the tool's presentationMeta persisted at settle time —
-  // the pass rows that minted a url. Frozen by construction (the
-  // projector ran once, on the settled value), so a replayed card
-  // shows exactly what THAT call produced. Cards without the key
-  // (patch calls, legacy logs) carry an empty list and render no
-  // strip — never the present-time bench's heroes under a
-  // historical card.
-  let previews: Array<{ stage: string, url: string, status: string, artifacts: string[] }> = []
   let frozenRows: FrozenRow[] = []
   let frozenIntent: string | null = null
   if (settled && block.isError !== true) {
@@ -162,24 +150,6 @@ export function parseCardsBlock(block: ToolCallBlockView): {
       if (typeof id === 'string' && id !== '') draftId = draftIdOf(id)
       const rid = (meta as Record<string, unknown>)['run_id']
       if (typeof rid === 'string' && rid !== '') runId = rid
-      const rows = (meta as Record<string, unknown>)['previews']
-      if (Array.isArray(rows)) {
-        previews = rows.flatMap((row): Array<{ stage: string, url: string, status: string, artifacts: string[] }> => {
-          if (row === null || typeof row !== 'object' || Array.isArray(row)) return []
-          const r = row as Record<string, unknown>
-          if (typeof r['stage'] !== 'string' || r['stage'] === '') return []
-          if (typeof r['url'] !== 'string' || r['url'] === '') return []
-          return [{
-            stage: r['stage'],
-            url: r['url'],
-            status: typeof r['status'] === 'string' ? r['status'] : '',
-            // THE FOUR-TAKE FACE (cure 2, 2026-11-15): the row's own
-            // artifact set rides to the strip (absent on pre-cure
-            // rows — the lead alone renders, the old shape).
-            artifacts: stringSetOf(r, 'artifacts'),
-          }]
-        })
-      }
       // THE FROZEN FACE (the stale-two-run audit, cure 1, 2026-11-15):
       // the persisted pass rows — the press's OWN stage list, frozen at
       // settle. Present and non-empty ⇒ the block renders THIS face and
@@ -222,7 +192,7 @@ export function parseCardsBlock(block: ToolCallBlockView): {
       }
     }
   }
-  return { draftId, runId, flowName, model, malformedArgs, settled, isError: block.isError === true, previews, frozenRows, frozenIntent }
+  return { draftId, runId, flowName, model, malformedArgs, settled, isError: block.isError === true, frozenRows, frozenIntent }
 }
 
 /**
@@ -441,9 +411,7 @@ function CardRowLine({ row, error, onOpen, onDismissError }: {
   return (
     <div className={css.rowWrap}>
       <button type="button" className={css.row} onClick={onOpen} data-stage={row.stageId} data-status={row.status}>
-        {row.thumbUrl !== null
-          ? <img className={css.thumb} src={row.thumbUrl} alt={row.title} loading="lazy" />
-          : <Pill>{row.kind}</Pill>}
+        <Pill>{row.kind}</Pill>
         <span className={css.rowTitle}>{row.title}</span>
         {row.service !== null && <Pill>{row.service}</Pill>}
         {dot !== null && <StateDot state={dot} />}
@@ -536,16 +504,15 @@ export function FlowCards({ block, openSurface, openMedia }: FlowCardsProps) {
   const rows: CardRow[] = frozen
     ? frozenRowsOf(parsed.frozenRows)
     : doc !== null ? cardRows(doc, live) : []
-  // Q3 (operator 2026-11-09), refrozen 2026-11-19 — THE PRESS'S OWN
-  // HEROES: the call's persisted preview rows render INLINE in the
-  // thread (not only the bench link), one hero per pressed stage
-  // that minted a url, through the shared card-base faces. THE
-  // REFREEZE (the refresh-flood burn): deriving from the re-fetched
-  // draft doc stamped the WHOLE bench's current heroes under EVERY
-  // historical card on replay — the same stale artifacts N times.
-  // The meta rows are frozen at settle time (replay-safe by
-  // construction); a card that pressed nothing renders no strip.
-  const previews = chatPreviewsFor(parsed.previews)
+  // NO MEDIA IN THE MAIN CHAT (operator 2026-11-05, superseding the
+  // Q3 2026-11-09 inline-hero law): the thread NEVER mounts
+  // image/video/audio faces — the run's outputs live on the bench,
+  // the Media page, and the click-opened drill. An agent that wants
+  // to share an output in-thread must make that an explicit
+  // toolcall of its own (the share verb, owed) — a run's own tool
+  // presentation is never a media feed. The projector still
+  // persists previews into presentationMeta (the meta channel the
+  // share verb will ride); the chat card simply never mounts them.
   const openRow = rows.find((r) => r.stageId === openStage) ?? null
   const openParams = doc?.stages.find((s) => s.id === openStage)?.params ?? {}
   // THE ROW-ERROR SILENCE (the dismissal law's chat-card half):
@@ -621,29 +588,6 @@ export function FlowCards({ block, openSurface, openMedia }: FlowCardsProps) {
               setOpenStage(row.stageId)
             }
           }} />
-        )
-      })}
-      {previews.map((preview) => {
-        // THE FROZEN OWNER: the settled stage's own artifact through
-        // the shared hero — history strip off (the thread shows the
-        // settled output, not the bench's output history), runId
-        // empty (no live run is bound in the chat card).
-        const owner = {
-          kind: preview.kind,
-          artifacts: preview.artifacts,
-          runStatus: preview.runStatus,
-          stageId: preview.stageId,
-          runId: '',
-          historyStrip: false,
-        }
-        return (
-          <div key={preview.stageId} className={css.chatPreview} data-chat-preview={preview.kind}>
-            {preview.kind === 'video'
-              ? <VideoStagePreview {...owner} />
-              : preview.kind === 'audio'
-                ? <AudioStagePreview {...owner} />
-                : <ImageStagePreview {...owner} />}
-          </div>
         )
       })}
       {openRow !== null && (

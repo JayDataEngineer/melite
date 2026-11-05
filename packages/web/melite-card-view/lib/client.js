@@ -7796,48 +7796,6 @@ window.__ModuleLoader__.load({
 			};
 		}
 		//#endregion
-		//#region src/client/chat-preview.ts
-		/** THE ROW'S ARTIFACT SET (cure 2, 2026-11-15): the persisted urls as
-		*  {name, url} rows — the whole set renders (the all-visible law,
-		*  card-base preview.tsx). The lead is ALWAYS first: the projector
-		*  unshifts it, and a hand-built row without it gets it here — the
-		*  hero seat never loses the url the meta names. A row with no set
-		*  renders the lead alone (the pre-cure shape). */
-		function artifactSetOf(raw, lead) {
-			const urls = Array.isArray(raw) ? raw.filter((u) => typeof u === "string" && u !== "") : [];
-			if (!urls.includes(lead)) urls.unshift(lead);
-			return urls.map((u) => {
-				const name = u.split("/").pop() ?? u;
-				return {
-					name: name === "" ? u : name,
-					url: u
-				};
-			});
-		}
-		/** Derive the frozen chat heroes from the call's OWN persisted rows.
-		* @param rows The presentationMeta `previews` array, served verbatim
-		*        (an absent key is an empty list — a card that pressed
-		*        nothing renders no strip, the flood class dies at the root).
-		* @returns One hero per row with a renderable artifact; mesh/text
-		*          rows and rows with no url stay out (never a dead hero). */
-		function chatPreviewsFor(rows) {
-			const out = [];
-			for (const row of rows) {
-				const stageId = typeof row.stage === "string" && row.stage !== "" ? row.stage : null;
-				const url = typeof row.url === "string" && row.url !== "" ? row.url : null;
-				if (stageId === null || url === null) continue;
-				const kind = previewKindFor(url);
-				if (kind !== "video" && kind !== "image" && kind !== "audio") continue;
-				out.push({
-					stageId,
-					kind,
-					artifacts: artifactSetOf(row.artifacts, url),
-					runStatus: typeof row.status === "string" ? row.status : ""
-				});
-			}
-			return out;
-		}
-		//#endregion
 		//#region src/client/FlowCards.tsx
 		/**
 		* The melite_flow toolview — THE ACTION CARDS, rendered NATIVE in the
@@ -7916,7 +7874,6 @@ window.__ModuleLoader__.load({
 			}
 			let draftId = null;
 			let runId = null;
-			let previews = [];
 			let frozenRows = [];
 			let frozenIntent = null;
 			if (settled && block.isError !== true) {
@@ -7926,19 +7883,6 @@ window.__ModuleLoader__.load({
 					if (typeof id === "string" && id !== "") draftId = draftIdOf(id);
 					const rid = meta["run_id"];
 					if (typeof rid === "string" && rid !== "") runId = rid;
-					const rows = meta["previews"];
-					if (Array.isArray(rows)) previews = rows.flatMap((row) => {
-						if (row === null || typeof row !== "object" || Array.isArray(row)) return [];
-						const r = row;
-						if (typeof r["stage"] !== "string" || r["stage"] === "") return [];
-						if (typeof r["url"] !== "string" || r["url"] === "") return [];
-						return [{
-							stage: r["stage"],
-							url: r["url"],
-							status: typeof r["status"] === "string" ? r["status"] : "",
-							artifacts: stringSetOf(r, "artifacts")
-						}];
-					});
 					const metaRows = meta["rows"];
 					if (Array.isArray(metaRows) && metaRows.length > 0) frozenRows = metaRows.flatMap((row) => {
 						if (row === null || typeof row !== "object" || Array.isArray(row)) return [];
@@ -7980,7 +7924,6 @@ window.__ModuleLoader__.load({
 				malformedArgs,
 				settled,
 				isError: block.isError === true,
-				previews,
 				frozenRows,
 				frozenIntent
 			};
@@ -8220,12 +8163,7 @@ window.__ModuleLoader__.load({
 					"data-stage": row.stageId,
 					"data-status": row.status,
 					children: [
-						row.thumbUrl !== null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
-							className: card_module_css_default.thumb,
-							src: row.thumbUrl,
-							alt: row.title,
-							loading: "lazy"
-						}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, { children: row.kind }),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, { children: row.kind }),
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 							className: card_module_css_default.rowTitle,
 							children: row.title
@@ -8304,7 +8242,6 @@ window.__ModuleLoader__.load({
 				})
 			});
 			const rows = frozen ? frozenRowsOf(parsed.frozenRows) : doc !== null ? cardRows(doc, live) : [];
-			const previews = chatPreviewsFor(parsed.previews);
 			const openRow = rows.find((r) => r.stageId === openStage) ?? null;
 			const openParams = doc?.stages.find((s) => s.id === openStage)?.params ?? {};
 			const [silencedRowErrors, setSilencedRowErrors] = (0, react.useState)({});
@@ -8381,21 +8318,6 @@ window.__ModuleLoader__.load({
 								if (address === null || openSurface?.(address) !== true) setOpenStage(row.stageId);
 							}
 						}, row.stageId);
-					}),
-					previews.map((preview) => {
-						const owner = {
-							kind: preview.kind,
-							artifacts: preview.artifacts,
-							runStatus: preview.runStatus,
-							stageId: preview.stageId,
-							runId: "",
-							historyStrip: false
-						};
-						return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-							className: card_module_css_default.chatPreview,
-							"data-chat-preview": preview.kind,
-							children: preview.kind === "video" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.VideoStagePreview, { ...owner }) : preview.kind === "audio" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.AudioStagePreview, { ...owner }) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.ImageStagePreview, { ...owner })
-						}, preview.stageId);
 					}),
 					openRow !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(CardDrill, {
 						title: chromeCopy.cardTitle({ name: openRow.title }),
