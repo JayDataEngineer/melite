@@ -253,3 +253,57 @@ test('THE ROW DEFAULT IS ONE: a defaults-less row + a blank dial commits strengt
   expect(onEdit).toHaveBeenCalledWith('loras', [{ id: 'plain', strength: 1 }])
 })
 
+// ── THE PICKER LAW (lora audit F6) — the id seat is the served MENU
+// at every roster size; freeform text never returns (the Fibo burn).
+const TEXT_SEATS = (): HTMLInputElement[] =>
+  Array.from(document.querySelectorAll('input')).filter((i) => i.getAttribute('type') !== 'number') as HTMLInputElement[]
+
+test('THE SEAT IS A MENU: the id binds a picker button opening the served menu — the pick face owns no freeform text seat (F6)', () => {
+  openLeaf({})
+  openCreate()
+  const picker = screen.getByLabelText('LoRA') as HTMLElement
+  expect(picker.tagName).toBe('BUTTON')
+  fireEvent.click(picker)
+  // the roster rows are menu items of the picker, not a text box's cargo
+  expect(screen.getByRole('menuitem', { name: 'Detail' })).not.toBeNull()
+  expect(screen.getByRole('menuitem', { name: 'Plain' })).not.toBeNull()
+  // every input on the face is a number dial — the rename field rides
+  // the upload menu only, never the pick face
+  expect(TEXT_SEATS()).toEqual([])
+})
+
+test('ZERO ROSTER IS STILL THE PICKER: the empty face renders, no text seat returns, and Add refuses loud (F6)', () => {
+  const LORA_EMPTY = { ...LORA, entry: 'option', options: [] } as unknown as ModifierKind
+  const onEdit = vi.fn()
+  render(h(ModifiersSection, { kinds: [LORA_EMPTY], values: {}, onEdit, onPatch: vi.fn() }))
+  openCreate()
+  expect((screen.getByLabelText('LoRA') as HTMLElement).tagName).toBe('BUTTON')
+  expect(screen.getByText(chromeCopy.optionRosterEmptyFace)).not.toBeNull()
+  expect(TEXT_SEATS()).toEqual([])
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+  expect(screen.getByText('Pick one from the served rows.')).not.toBeNull()
+  expect(onEdit).not.toHaveBeenCalled()
+})
+
+// THE HAND-SPELL REFUSAL (mods.tsx saveLeaf's hybrid arm): a bag entry
+// carrying an id the serve no longer presents (an agent's hand-pasted
+// row) tiles visibly, then its edit save REFUSES — never a silent
+// drifted commit.
+const CONTROLNET = {
+  kind: 'controlnet', label: 'ControlNet', param_key: 'controlnets', cardinality: 'list',
+  entry: 'hybrid', option_key: 'type',
+  options: [{ value: 'depth', label: 'Depth', model: 'd.pt', preprocessor: 'dp' }],
+} as unknown as ModifierKind
+
+test('SAVE REFUSES THE HAND-SPELL: a drifted id edits loud — the refusal renders, nothing commits (F6)', () => {
+  const onEdit = vi.fn()
+  render(h(ModifiersSection, {
+    kinds: [CONTROLNET],
+    values: { controlnets: [{ type: 'ghost-type', strength: 0.7 }] },
+    onEdit, onPatch: vi.fn(),
+  }))
+  fireEvent.click(document.querySelector('[data-mod-tile]') as HTMLElement)
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+  expect(screen.getByText('‘ghost-type’ is not a served ControlNet row — pick from the catalog, never hand-spell.')).not.toBeNull()
+  expect(onEdit).not.toHaveBeenCalled()
+})
