@@ -20,14 +20,19 @@ the bench never sees it):
 ```
 melite_flow {flow: "craft-loop", params: {
   agent_prompt: "a red cube on white, product-shot lighting",
-  inputs: { command: { engine: "comfyui", params: { workflow: { ... } } } },
+  command: { engine: "comfyui", params: { workflow: { ... } } },
   max_iterations: 4
 }}
 ```
 
-Every param rides `params` (the door spreads them into the run's
-start body): `agent_prompt` (the brief the critic judges against),
-`inputs.command` (the first act — an `{engine, params}` object),
-`max_iterations` (the hard cap 1000 lands LOUD).
+The three dials ride inside the tool's `params` — the tool SPREADS
+them onto the start body's top level (melite-flow.ts runTemplate:
+`{...overrides, flow, …}`), where the flow's declared INITIALS gate
+judges them. `agent_prompt` (the brief the critic judges against)
+and `command` (the first act — an `{engine, params}` object, NEVER
+`inputs:`-nested) are required; `max_iterations` is optional (a
+JSON NUMBER — digit-strings refuse; the hard cap 1000 lands LOUD).
+`model` is not a dial this wave — the lane resolves the critic's
+route (first image-capable route, round-robin).
 
 Agent brief: `agents/AGENT.md`.

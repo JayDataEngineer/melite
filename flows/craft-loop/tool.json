@@ -4,26 +4,23 @@
   "kind": "flow",
   "model": "craft-loop",
   "stage_title": "Craft Loop",
-  "description": "The agentic craft loop: act (any registered engine command \u2014 a comfyui graph or an mcp:blender tool call) -> capture (artifacts land in the run dir) -> critique (a named image-capable model route sees the capture itself) -> decide (done, or refine with the next act command). Bounded by max_iterations (default unlimited, hard cap 1000). Drive it by starting a run with an engine 'craft' stage: params carry agent_prompt (the brief), inputs.command (the first act: {engine, params}), optional model (the critic route id, when the loop card names one) and max_iterations.",
+  "description": "The agentic craft loop: act (any registered engine command \u2014 a comfyui graph or an mcp:blender tool call) -> capture (artifacts land in the run dir) -> critique (a named image-capable model route sees the capture itself) -> decide (done, or refine with the next act command). Bounded by max_iterations (default unlimited, hard cap 1000). The three dials are the flow's declared INITIALS: through melite_flow they ride inside the tool's params (the tool spreads them onto the start body's top level, where the initial gate judges them) \u2014 agent_prompt is the brief, command is the first act (an {engine, params} object, never inputs-nested), max_iterations a JSON number.",
   "params_schema": {
     "type": "object",
     "properties": {
       "agent_prompt": {
         "type": "string",
-        "description": "The brief the critic holds the captures against."
+        "description": "REQUIRED. The brief the critic holds every capture against \u2014 concrete, checkable prose (no path law: 'a 3/4 view, ../styled' is honest prose)."
       },
-      "inputs": {
+      "command": {
         "type": "object",
-        "description": "Generic input map; must carry command: {engine, params} \u2014 the first act."
-      },
-      "model": {
-        "type": "string",
-        "description": "Optional critic route id (image-capable; the boot-resolved route serves otherwise)."
+        "description": "REQUIRED. The first act: an {engine, params} object (e.g. {\"engine\":\"comfyui\",\"params\":{\"workflow\":{\u2026}}}); NOT the {engine, comfyui, workflow} spelling \u2014 the craft gate owns this shape and refuses strangers loudly."
       },
       "max_iterations": {
         "type": "integer",
-        "description": "Optional iteration bound (default unlimited; hard cap 1000)."
+        "description": "Optional iteration bound (default unlimited; hard cap 1000 lands LOUD). Send a JSON NUMBER \u2014 a digit-string refuses at the door."
       }
-    }
+    },
+    "required": ["agent_prompt", "command"]
   }
 }
