@@ -2498,6 +2498,20 @@ window.__ModuleLoader__.load({
 		//#region ../../web-kit/contracts/lib/loraTypes.js
 		var init_loraTypes = __esmMin((() => {}));
 		//#endregion
+		//#region ../../web-kit/contracts/lib/loraExtensions.js
+		var LORA_EXTENSIONS$1, LORA_ACCEPT$1, LORA_EXTENSION_SUFFIX_RE$1;
+		var init_loraExtensions = __esmMin((() => {
+			LORA_EXTENSIONS$1 = [
+				".safetensors",
+				".ckpt",
+				".pt",
+				".bin",
+				".gguf"
+			];
+			LORA_ACCEPT$1 = LORA_EXTENSIONS$1.join(",");
+			LORA_EXTENSION_SUFFIX_RE$1 = new RegExp("\\.(?:" + LORA_EXTENSIONS$1.map((e) => e.slice(1).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")$");
+		}));
+		//#endregion
 		//#region ../../web-kit/contracts/lib/mediaTypes.js
 		var init_mediaTypes = __esmMin((() => {}));
 		//#endregion
@@ -3212,7 +3226,7 @@ window.__ModuleLoader__.load({
 		}
 		/** Human label for a LoRA entry (file base name, extension stripped). */
 		function loraLabel(name) {
-			return name.split("/").pop().replace(/\.(safetensors|pt|ckpt)$/, "");
+			return name.split("/").pop().replace(LORA_EXTENSION_SUFFIX_RE$1, "");
 		}
 		/** Total subcard count on a card — the collapsed-tile "+N" hint. */
 		function subcardCount(params) {
@@ -3396,6 +3410,7 @@ window.__ModuleLoader__.load({
 		var NO_CN_SCHEMA, _cnIdCounter;
 		var init_modifierSubcards = __esmMin((() => {
 			init_lib$2();
+			init_loraExtensions();
 			NO_CN_SCHEMA = {
 				type: "",
 				label: ""
@@ -4202,6 +4217,9 @@ window.__ModuleLoader__.load({
 			FLOW_ID_RE: () => FLOW_ID_RE,
 			LEGACY_RUN_MEDIA_PREFIX: () => LEGACY_RUN_MEDIA_PREFIX$1,
 			LOAD_CARRY_KEYS: () => LOAD_CARRY_KEYS,
+			LORA_ACCEPT: () => LORA_ACCEPT$1,
+			LORA_EXTENSIONS: () => LORA_EXTENSIONS$1,
+			LORA_EXTENSION_SUFFIX_RE: () => LORA_EXTENSION_SUFFIX_RE$1,
 			MEDIA_SET: () => MEDIA_SET,
 			NO_CN_SCHEMA: () => NO_CN_SCHEMA,
 			PROVENANCE_VALUES: () => PROVENANCE_VALUES,
@@ -4314,6 +4332,7 @@ window.__ModuleLoader__.load({
 			init_card();
 			init_character();
 			init_loraTypes();
+			init_loraExtensions();
 			init_mediaTypes();
 			init_modifierFaces();
 			init_modifierSubcards();
@@ -15647,6 +15666,33 @@ window.__ModuleLoader__.load({
 			return kind.flat === true ? { ...entry } : { [kind.param_key]: [entry] };
 		}
 		//#endregion
+		//#region ../../web-kit/contracts/src/loraExtensions.ts
+		/** THE LORA EXTENSION SSOT — the one allowlist's tier-agnostic home.
+		*
+		*  History: the list lived in @melite/comfyui-cordis/user-loras and the
+		*  engine seats consumed it from there (lora audit F1, commit
+		*  038fd6a40). The browser seats could not: that module reads node:fs,
+		*  and a client bundle may not inline it. @melite/contracts is a
+		*  declared dependency of card-base, melite-card-deck AND
+		*  comfyui-cordis, so the literal moved here — one initializer on the
+		*  tree — and the engine seam re-exports it verbatim (userLoras.ts),
+		*  keeping the F1 law: the rows-file validator, the tray scan, the OS
+		*  file dialogs and the field copy all judge the same file universe
+		*  (lora audit F2, 2026-11-15). */
+		const LORA_EXTENSIONS = [
+			".safetensors",
+			".ckpt",
+			".pt",
+			".bin",
+			".gguf"
+		];
+		/** The OS file-dialog accept value, DERIVED from the list — the two
+		*  upload seats (card-base's upload square, the Manager sidebar's
+		*  copy-in row) consume this instead of spelling the list a second
+		*  time. */
+		const LORA_ACCEPT = LORA_EXTENSIONS.join(",");
+		new RegExp("\\.(?:" + LORA_EXTENSIONS.map((e) => e.slice(1).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")$");
+		//#endregion
 		//#region src/mods.tsx
 		/**
 		* mods.tsx — THE MOD SYSTEM, CORE (the old SubcardGrid, ported 1:1 —
@@ -15948,8 +15994,12 @@ window.__ModuleLoader__.load({
 				const scalar = scalarKeyOf(k);
 				return (k.fields ?? []).filter((f) => f.name !== key && f.name !== scalar && !(hidden?.has(f.name) ?? false));
 			};
-			/** The scalar seed (the row's own default wins; the contract
-			*  field default is the backstop — 0.7, the retired leaf). */
+			/** The scalar seed of the HYBRID leaf (controlnet — the only kind
+			*  that rides this helper): the row's own default wins; the contract
+			*  field default is the backstop — 0.7 is the CONTROLNET seed, never
+			*  the lora row-default law (a lora entry's blank dial seeds 1 at the
+			*  saveLeaf option arms — mods.tsx:690 create, :723 edit — and the
+			*  door/compose seats carry the same 1: service.ts:1017, doors.ts:854). */
 			const strengthSeedOf = (k, option) => {
 				const scalar = scalarKeyOf(k);
 				const rowDefault = option?.defaults?.[scalar];
@@ -16598,7 +16648,7 @@ window.__ModuleLoader__.load({
 				}, (0, react.createElement)(InputSquare, {
 					label: chromeCopy.loraUploadVerb,
 					onFile: pickUpload,
-					accept: ".safetensors,.ckpt,.pt,.bin,.gguf",
+					accept: LORA_ACCEPT,
 					disabled: uploadBusy
 				}), pendingFile !== null ? (0, react.createElement)("span", {
 					className: card_module_css_default.modLeafHint,

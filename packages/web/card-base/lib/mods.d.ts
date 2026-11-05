@@ -39,8 +39,8 @@
  */
 import { createElement as h } from 'react';
 import type { ReactElement } from 'react';
-import { type ModifierKind, type SpecField, type SpecValues } from './spec.js';
-import type { ChainRunCandidate } from './runs-policy.js';
+import { type ModifierKind, type SpecField, type SpecValues } from './spec.ts';
+import type { ChainRunCandidate } from './runs-policy.ts';
 export type { PaintCanvasFaceProps, BboxCanvasFaceProps, OrbitCanvasFaceProps } from '@melite/contracts';
 import type { BboxCanvasFaceProps, OrbitCanvasFaceProps, PaintCanvasFaceProps } from '@melite/contracts';
 export type BboxFaceComponent = (props: BboxCanvasFaceProps) => ReactElement;

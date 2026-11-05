@@ -45,6 +45,7 @@ import { SpecAtom } from './form.tsx'
 import { useSquareProvider } from './form.tsx'
 import { coerceFieldEdit, fieldRequired, isHybridKind, isOptionKind, optionKeyOf, scalarKeyOf, titleCaseId, type ModifierKind, type ModifierOption, type SpecField, type SpecValues } from './spec.ts'
 import { modCommitWrite } from '@melite/contracts/formSpec'
+import { LORA_ACCEPT } from '@melite/contracts/loraExtensions'
 import { SpecMenuSelect } from './atoms.tsx'
 import { InputSquare } from './square.tsx'
 import { Tip } from './layout.tsx'
@@ -452,8 +453,12 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
     const scalar = scalarKeyOf(k)
     return (k.fields ?? []).filter((f) => f.name !== key && f.name !== scalar && !(hidden?.has(f.name) ?? false))
   }
-  /** The scalar seed (the row's own default wins; the contract
-   *  field default is the backstop — 0.7, the retired leaf). */
+  /** The scalar seed of the HYBRID leaf (controlnet — the only kind
+   *  that rides this helper): the row's own default wins; the contract
+   *  field default is the backstop — 0.7 is the CONTROLNET seed, never
+   *  the lora row-default law (a lora entry's blank dial seeds 1 at the
+   *  saveLeaf option arms — mods.tsx:690 create, :723 edit — and the
+   *  door/compose seats carry the same 1: service.ts:1017, doors.ts:854). */
   const strengthSeedOf = (k: ModifierKind, option: ModifierOption | null): number => {
     const scalar = scalarKeyOf(k)
     const rowDefault = option?.defaults?.[scalar]
@@ -1388,7 +1393,7 @@ function ModLeaf(props: {
                 h(InputSquare, {
                   label: chromeCopy.loraUploadVerb,
                   onFile: pickUpload,
-                  accept: '.safetensors,.ckpt,.pt,.bin,.gguf',
+                  accept: LORA_ACCEPT, // the SSOT list, never a hand-spelled copy (lora audit F2)
                   disabled: uploadBusy,
                 }),
                 pendingFile !== null

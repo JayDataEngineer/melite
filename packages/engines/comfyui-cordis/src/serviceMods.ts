@@ -138,12 +138,14 @@ export function resolveControlNetEntry(
     throw new ComposeRefusal('controlnet-drift',
       `card '${cardId}' controlnet '${type}' notes preprocessor '${noted}' but the catalog row notes '${row.preprocessor}' — the upstream-map note is the row's`)
   }
-  // strength: the row's own default seeds an unstated entry (the
-  // retired leaf's seed law); a stated off-bounds strength refuses
-  // against the ROW'S declared ceiling (002 H5 — H3's dial runs
-  // to 10; rows that declare none keep the pack default 2), never
-  // a silent clamp — the floor below is the only clamp, and it
-  // logs.
+  // strength: the row's own default seeds an unstated CONTROLNET entry
+  // (this file is the controlnet resolver only); its 0.7 backstop is
+  // the 002 H5 controlnet seed, never the lora row-default law — lora
+  // entries seed 1 everywhere (service.ts:1017,:1048, doors.ts:854).
+  // A stated off-bounds strength refuses against the ROW'S declared
+  // ceiling (002 H5 — H3's dial runs to 10; rows that declare none
+  // keep the pack default 2), never a silent clamp — the floor below
+  // is the only clamp, and it logs.
   const ceiling = row.strength_max ?? 2
   const seed = row.default_strength ?? 0.7
   const strength = e.strength === undefined ? seed : e.strength

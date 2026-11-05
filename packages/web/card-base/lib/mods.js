@@ -44,6 +44,7 @@ import { SpecAtom } from "./form.js";
 import { useSquareProvider } from "./form.js";
 import { coerceFieldEdit, fieldRequired, isHybridKind, isOptionKind, optionKeyOf, scalarKeyOf, titleCaseId } from "./spec.js";
 import { modCommitWrite } from '@melite/contracts/formSpec';
+import { LORA_ACCEPT } from '@melite/contracts/loraExtensions';
 import { SpecMenuSelect } from "./atoms.js";
 import { InputSquare } from "./square.js";
 import { Tip } from "./layout.js";
@@ -326,8 +327,12 @@ export function ModifiersSection(props) {
         const scalar = scalarKeyOf(k);
         return (k.fields ?? []).filter((f) => f.name !== key && f.name !== scalar && !(hidden?.has(f.name) ?? false));
     };
-    /** The scalar seed (the row's own default wins; the contract
-     *  field default is the backstop — 0.7, the retired leaf). */
+    /** The scalar seed of the HYBRID leaf (controlnet — the only kind
+     *  that rides this helper): the row's own default wins; the contract
+     *  field default is the backstop — 0.7 is the CONTROLNET seed, never
+     *  the lora row-default law (a lora entry's blank dial seeds 1 at the
+     *  saveLeaf option arms — mods.tsx:690 create, :723 edit — and the
+     *  door/compose seats carry the same 1: service.ts:1017, doors.ts:854). */
     const strengthSeedOf = (k, option) => {
         const scalar = scalarKeyOf(k);
         const rowDefault = option?.defaults?.[scalar];
@@ -1225,7 +1230,7 @@ function ModLeaf(props) {
                     }, h(InputSquare, {
                         label: chromeCopy.loraUploadVerb,
                         onFile: pickUpload,
-                        accept: '.safetensors,.ckpt,.pt,.bin,.gguf',
+                        accept: LORA_ACCEPT, // the SSOT list, never a hand-spelled copy (lora audit F2)
                         disabled: uploadBusy,
                     }), pendingFile !== null
                         ? h('span', { className: css.modLeafHint, 'data-upload-picked': pendingFile.name }, pendingFile.name)

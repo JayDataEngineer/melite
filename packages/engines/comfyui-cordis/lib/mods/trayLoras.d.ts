@@ -1,5 +1,5 @@
 import type { Context } from '@deepseek-ai/cordis';
-import { type UserLoraRow } from '../userLoras.js';
+import { type UserLoraRow } from '../userLoras.ts';
 export declare const inject: string[];
 /** The tray's own rows for a loras dir: one row per weights file
  * under a FAMILY dir. A root-level weights file names no family and

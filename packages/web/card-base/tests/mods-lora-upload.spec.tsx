@@ -240,3 +240,16 @@ test('DEGRADE LAW: absent wire renders NO add-lora door — the leaf arms stay b
   fireEvent.click(screen.getByRole('button', { name: 'Add' }))
   expect(onEdit).toHaveBeenCalledWith('loras', [{ id: 'detail', strength: 0.8 }])
 })
+
+// ── THE ROW-DEFAULT LAW (lora audit F5) — the lora entry's blank dial
+// seeds ONE, everywhere; the 0.7 backstops (mods.tsx strengthSeedOf,
+// serviceMods.ts) are the CONTROLNET seed, never the lora row default.
+test('THE ROW DEFAULT IS ONE: a defaults-less row + a blank dial commits strength 1 — the controlnet 0.7 backstop is never the lora law (F5)', () => {
+  const { onEdit } = openLeaf({})
+  openCreate()
+  fireEvent.click(screen.getByLabelText('LoRA'))
+  fireEvent.click(screen.getByRole('menuitem', { name: 'Plain' })) // the served row carries NO defaults
+  fireEvent.click(screen.getByRole('button', { name: 'Add' })) // the dial stays blank
+  expect(onEdit).toHaveBeenCalledWith('loras', [{ id: 'plain', strength: 1 }])
+})
+

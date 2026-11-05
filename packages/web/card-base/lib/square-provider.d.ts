@@ -1,9 +1,9 @@
 /** square-provider.tsx — extracted from form.tsx (hour 15, the godfile split; the
  * operator's DRY audit law: one seam, one small file, one wall). */
 import { createElement as h } from 'react';
-import { type InputSquareVerbs } from './square.js';
-import { type SpecField } from './spec.js';
-import type { ChainRunCandidate } from './runs-policy.js';
+import { type InputSquareVerbs } from './square.tsx';
+import { type SpecField } from './spec.ts';
+import type { ChainRunCandidate } from './runs-policy.ts';
 /** THE OS-DIALOG ACCEPT, derived per field (primitive ③): mesh rows
  *  offer the GLB pair; video-hinted rows offer the video formats
  *  (the same media hint the picker rides); everything else keeps
