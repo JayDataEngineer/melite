@@ -1372,6 +1372,149 @@ describe('W-12 — the queued window never reads failed on the bench face', () =
   })
 })
 
+// THE INCARNATION JOIN (W-3 / F3-11, 2026-11-05): the burn
+// (FRICTION_3 :462, reproduced :485, verbatim): after `clear` + fresh
+// add_stage, a brand-new s_1 (image-gen, never run) read back
+// `last_run run-9d6796fd6fc8-ab11837c` — an OLD upscale-tools run
+// from a previous bench incarnation. Stage ids are positional and
+// rebind by name, and the pre-clear sidecars still name them.
+// THE CURE: clearBench stamps the doc's `epoch` (the incarnation —
+// bumped only at clear, never restored by undo), the run start
+// stamps it into the sidecar identity keys (`bench_epoch`,
+// projected onto the list row beside the digest), and withLastRun
+// requires equality alongside draft_id. THE WALL (registry
+// flows-bench-epoch-binding): "a post-clear bench read binds only
+// post-clear runs; a run never binds a non-identical stage row."
+// Every arm rides the REAL construct read verb → the REAL join (the
+// W-12 journey pattern), never the pure helper alone; arm 1 renders
+// the bench face the burn was felt on.
+describe('W-3 — the post-clear bench read binds only post-clear runs (the epoch join)', () => {
+  // THE POST-CLEAR BENCH: fresh rows (never run), epoch '2' — one
+  // clear happened since the doc was born.
+  const BENCH = {
+    session: 'session-chat7', rev: 12, intent: 'bench', draft_id: 'bench-main', epoch: '2',
+    stages: [{ id: 's_0', card: 'image-gen' }, { id: 's_1', card: 'image-edit' }],
+    log: [],
+  }
+  // THE BURN'S RUN, as its sidecar row projects: the OLD incarnation
+  // (epoch '1'), newest in the window, its digest naming s_1.
+  const PRECLEAR = {
+    run_id: 'run-9d6796fd6fc8-ab11837c', draft_id: 'bench-main', status: 'done',
+    created_at: 300, thumbnail: 't-old', artifacts: [{ name: 'old.png' }],
+    pipeline: 'upscale-tools', stage_ids: ['s_1'], bench_epoch: '1',
+  }
+  const faceOf = async (runsRows: unknown[]): Promise<string> => {
+    const { estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet' && args[0] === 'session-chat7') return BENCH
+      if (lane === 'runsList' && args[0] === '100') return { count: runsRows.length, runs: runsRows }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const tool = meliteConstruct(estate)
+    const out = await tool.execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    const parts = tool.output.render({ verb: 'read' }, out as never) as Array<{ text?: string }>
+    return parts.map((p) => p?.text ?? '').join('\n')
+  }
+
+  test('ARM 1 — the burn verbatim: a pre-clear run binds nothing on a post-clear bench (the fresh s_1 never inherits the stranger)', async () => {
+    const face = await faceOf([PRECLEAR])
+    assert.ok(
+      !face.includes('run-9d6796fd6fc8-ab11837c'),
+      'the OLD incarnation\'s run id must never ride a post-clear read — ' + face,
+    )
+    assert.ok(face.includes('last_run null'), 'the never-run fresh rows read null — ' + face)
+    // the facts still show the draft ran (the evidence keeps its
+    // ledger; the join filters, it never deletes)
+    const { estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet' && args[0] === 'session-chat7') return BENCH
+      if (lane === 'runsList' && args[0] === '100') return { count: 1, runs: [PRECLEAR] }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const out = await meliteConstruct(estate).execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    assert.deepEqual(out.runs, { checked: 1, total: 1, matched: 0 })
+    const stages = out.stages as Array<Record<string, unknown>>
+    assert.equal(stages[1].last_run, null)
+  })
+
+  test('ARM 1b — positive control: a post-clear run binds (the cure is a filter, not a wall)', async () => {
+    const face = await faceOf([{
+      run_id: 'run-post-clear-01', draft_id: 'bench-main', status: 'done',
+      created_at: 100, thumbnail: 't-new', artifacts: [{ name: 'new.png' }],
+      pipeline: 'flow_inline', stage_ids: ['s_0', 's_1'], bench_epoch: '2',
+    }])
+    assert.ok(face.includes('last_run run-post-clear-01 (done'), face)
+    assert.ok(!face.includes('last_run null'), 'the stamped incarnation binds — ' + face)
+  })
+
+  test('ARM 2 — membership judged, never newest-name-only: within one incarnation each row binds only the run its digest names', async () => {
+    const { estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet' && args[0] === 'session-chat7') return BENCH
+      if (lane === 'runsList' && args[0] === '100') return {
+        count: 2,
+        runs: [
+          // R1: the per-stage press — composed s_0 ONLY.
+          { run_id: 'run-per-stage-s0', draft_id: 'bench-main', status: 'done', created_at: 100, thumbnail: '', artifacts: [], stage_ids: ['s_0'], bench_epoch: '2' },
+          // R2: the NEWEST run — composed s_1 ONLY.
+          { run_id: 'run-per-stage-s1', draft_id: 'bench-main', status: 'done', created_at: 200, thumbnail: '', artifacts: [], stage_ids: ['s_1'], bench_epoch: '2' },
+        ],
+      }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const out = await meliteConstruct(estate).execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    const stages = out.stages as Array<Record<string, unknown>>
+    assert.equal(
+      (stages[0].last_run as Record<string, unknown>).run_id, 'run-per-stage-s0',
+      's_0 binds ITS OWN run, never the newest run that never named it — reverting :725 to newest-name-only reds HERE',
+    )
+    assert.equal((stages[1].last_run as Record<string, unknown>).run_id, 'run-per-stage-s1')
+  })
+
+  test('ARM 2b — a digest naming a foreign namespace binds nothing (the card-skeleton press, the edit-on-gen class shape)', async () => {
+    const face = await faceOf([{
+      run_id: 'run-skeleton-press', draft_id: 'bench-main', status: 'done',
+      created_at: 400, thumbnail: '', artifacts: [], stage_ids: ['generate'], bench_epoch: '2',
+    }])
+    assert.ok(face.includes('last_run null'), 'a run that names no row of this bench stamps no row — ' + face)
+    assert.ok(!face.includes('run-skeleton-press'), face)
+  })
+
+  test('ARM 3 — mixed windows: the NEWEST run loses when it is from the old incarnation (undo-of-clear rides the same join)', async () => {
+    // undo restores clear's stages_before rows but never the old
+    // epoch — the bench stays in incarnation '2', so the restored
+    // rows still refuse the pre-clear run even when it tops the
+    // window (RG-P4-5's trap: undo must not re-arm the burn).
+    const face = await faceOf([
+      PRECLEAR,
+      { run_id: 'run-post-clear-02', draft_id: 'bench-main', status: 'done', created_at: 100, thumbnail: '', artifacts: [], stage_ids: ['s_0', 's_1'], bench_epoch: '2' },
+    ])
+    assert.ok(face.includes('last_run run-post-clear-02 (done'), face)
+    assert.ok(
+      !face.includes('run-9d6796fd6fc8-ab11837c'),
+      'the newer pre-clear run still binds nothing — ' + face,
+    )
+  })
+
+  test('COMPAT — an epoch-less bench (never cleared since the cure) keeps the draft_id + digest join', async () => {
+    const { estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet' && args[0] === 'session-chat7') {
+        const { epoch: _drop, ...rest } = BENCH
+        return rest
+      }
+      if (lane === 'runsList' && args[0] === '100') return {
+        count: 2,
+        runs: [
+          { run_id: 'run-legacy-s0', draft_id: 'bench-main', status: 'done', created_at: 100, thumbnail: '', artifacts: [], stage_ids: ['s_0'] },
+          { run_id: 'run-legacy-s1', draft_id: 'bench-main', status: 'done', created_at: 200, thumbnail: '', artifacts: [], stage_ids: ['s_1'] },
+        ],
+      }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const out = await meliteConstruct(estate).execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    const stages = out.stages as Array<Record<string, unknown>>
+    assert.equal((stages[0].last_run as Record<string, unknown>).run_id, 'run-legacy-s0')
+    assert.equal((stages[1].last_run as Record<string, unknown>).run_id, 'run-legacy-s1')
+  })
+})
+
 describe('melite_construct projectStages — card rides (the phantom-refusal cure)', () => {
   // The kinds pass derives wired-input kinds from the card's own
   // flowKinds — a projection that stripped `card` manufactured

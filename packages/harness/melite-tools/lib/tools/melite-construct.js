@@ -580,7 +580,12 @@ opts) {
  *  names it — never another stage's run. Runs from before the
  *  digest cannot name their stages, so they stamp nothing (the
  *  runs facts still show the draft ran; the stage row keeps its
- *  own memory).
+ *  own memory). The join is also INCARNATION-BOUNDED (W-3 /
+ *  F3-11, 2026-11-05): when the bench doc carries an `epoch`
+ *  (drafts clearBench stamps it, the run start carries it into the
+ *  sidecar identity prefix), only runs stamped with the SAME epoch
+ *  join — positional stage ids restart at add_stage, so a pre-clear
+ *  sidecar naming `s_1` would otherwise adopt the fresh row.
  *  No match carries last_run: null PLUS the window facts
  *  (runs {checked, total, matched}) — never-ran reads off small
  *  totals, window-miss off total >> checked. Enrichment DEGRADES,
@@ -599,6 +604,19 @@ async function withLastRun(estate, bench, signal) {
     const draftId = bench['draft_id'];
     if (typeof draftId !== 'string' || draftId === '')
         return none;
+    // THE INCARNATION JOIN (W-3 / F3-11, 2026-11-05): the bench doc's
+    // `epoch` (drafts clearBench is its only writer) bounds what this
+    // read may bind. Stage ids are positional — s_0/s_1 restart at
+    // add_stage — so after a clear a fresh row rebinds BY NAME to
+    // pre-clear sidecars still naming that id; the burn read a
+    // brand-new never-run image-gen s_1 as an OLD upscale run. When
+    // the bench carries an epoch, a run row binds only with the SAME
+    // stamp (the sidecar identity prefix `bench_epoch`, projected by
+    // runsList beside the digest): a post-clear read can only bind
+    // post-clear runs, and runs from before the stamp bind nothing.
+    // An epoch-less bench (never cleared since the cure) keeps the
+    // draft_id + digest join unchanged.
+    const benchEpoch = bench['epoch'];
     let env;
     try {
         env = await estate.runsList('100', signal, 15000);
@@ -621,6 +639,11 @@ async function withLastRun(estate, bench, signal) {
             continue;
         const rec = r;
         if (rec['draft_id'] !== draftId)
+            continue;
+        // the incarnation bound (above): a stamped bench reads only its
+        // own incarnation's runs; unstamped runs predate the cure and
+        // bind nothing on a stamped bench
+        if (typeof benchEpoch === 'string' && benchEpoch !== '' && rec['bench_epoch'] !== benchEpoch)
             continue;
         const created = rec['created_at'];
         mine.push({ created: typeof created === 'number' ? created : 0, row: rec });

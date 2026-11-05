@@ -364,6 +364,11 @@ export function sidecarDoc(args: {
   testFlag: boolean;
   draftId: DraftId;
   pipeline: string;
+  /** THE BENCH INCARNATION (W-3 / F3-11): the draft doc's `epoch`
+   *  at press — the identity-prefix `bench_epoch` key, the join
+   *  half of the stage-id-reuse cure. Optional: pre-cure runs and
+   *  epoch-less benches stamp nothing (never guessed). */
+  benchEpoch?: string;
   graph: GraphRow[];
   /** THE SNAPSHOT KEYS (strokes 45/45d, carried stroke 48): the exact
    *  card + bench that ran. Absent when unstamped (inline runs)
@@ -452,6 +457,16 @@ export function sidecarDoc(args: {
       .map((s) => (s.bench_stage_id !== undefined && s.bench_stage_id !== "" ? s.bench_stage_id : s.id))
       .filter((id) => id !== "")
       .join(","),
+    // THE BENCH INCARNATION (W-3 / F3-11, 2026-11-05): the draft
+    // doc's `epoch` at press (drafts clearBench is its only writer),
+    // stamped into the identity prefix so the list row carries it
+    // and melite-construct's withLastRun can require equality
+    // alongside draft_id — a post-clear read binds only post-clear
+    // runs. Absent on pre-cure runs (the optional-key law: never
+    // guessed); runsList projects it verbatim beside the digest.
+    ...(args.benchEpoch !== undefined && args.benchEpoch !== ""
+      ? { bench_epoch: args.benchEpoch }
+      : {}),
     ...(args.exportName !== undefined && args.exportName !== "" ? { export_name: args.exportName } : {}),
     ...(args.exportPath !== undefined && args.exportPath !== "" ? { export_path: args.exportPath } : {}),
     ...(args.variant !== undefined && args.variant !== "" ? { variant: args.variant } : {}),

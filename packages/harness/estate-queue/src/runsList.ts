@@ -493,6 +493,12 @@ export function runRowOrNull(
      *  engine-reported minted .qvoice absolute path; older sidecars
      *  predate it, load lanes stamp nothing. */
     export_path?: string;
+    /** THE BENCH INCARNATION (W-3 / F3-11, 2026-11-05): the draft
+     *  doc's `epoch` at press, read from the identity prefix — the
+     *  bench read's join requires equality alongside draft_id, so a
+     *  post-clear read binds only post-clear runs. Optional —
+     *  pre-cure sidecars predate the key and stamp nothing. */
+    bench_epoch?: string;
     /** THE CAPPED FACE (previews 2b, 2026-11-12): the artifact list's
      *  trailing marker lifted onto the row — the panel's capped
      *  counter reads THIS, so a partial listing never reads as
@@ -539,6 +545,9 @@ export function runRowOrNull(
     params: row.params,
     draft_id: row.draft_id,
     ...(row.stage_ids !== undefined && row.stage_ids.length > 0 ? { stage_ids: [...row.stage_ids] } : {}),
+    // THE BENCH INCARNATION rides beside the digest it joins with
+    // (W-3 / F3-11); absent stamps stay absent.
+    ...(typeof row.bench_epoch === "string" && row.bench_epoch !== "" ? { bench_epoch: row.bench_epoch } : {}),
     ...(typeof row.export_name === "string" && row.export_name !== "" ? { export_name: row.export_name } : {}),
     ...(typeof row.export_path === "string" && row.export_path !== "" ? { export_path: row.export_path } : {}),
     ...(row.truncated !== undefined && isIntGe0(row.truncated.listed) && isIntGe0(row.truncated.total)
@@ -780,6 +789,9 @@ async function buildRunCard(
   let prompt = "";
   let draft = "";
   let stageIdsRaw = "";
+  // THE BENCH INCARNATION (W-3 / F3-11): "" = the sidecar named no
+  // epoch (pre-cure run) — the row key stays absent, never guessed.
+  let benchEpoch = "";
   let exported = "";
   let exportedPath = "";
   let seed = -1;
@@ -819,6 +831,18 @@ async function buildRunCard(
     // absent on pre-digest sidecars (the export_name precedent:
     // optional key, never guessed).
     stageIdsRaw = sidecarStr(rawBytes, "stage_ids", 512);
+    // THE BENCH INCARNATION, LISTED (W-3 / F3-11, 2026-11-05): the
+    // draft doc's `epoch` at press rides the identity prefix — the
+    // bench read's join requires equality alongside draft_id, so a
+    // post-clear read binds only post-clear runs. Additive optional
+    // key (the export_path law): absent on pre-cure sidecars, never
+    // guessed.
+    const [foundEpoch, rawEpoch]: [boolean, string] = sidecarStrFound(
+      rawBytes,
+      "bench_epoch",
+      96,
+    );
+    benchEpoch = foundEpoch ? rawEpoch : "";
     // THE EXPORT NAME, LISTED (023's self-critique #4/#6): the
     // design lane's mint rides the list row too — additive, same
     // spelling as the sidecar; absent on non-export runs.
@@ -863,6 +887,10 @@ async function buildRunCard(
     params: { seed },
     draft_id: draft,
     ...(stageIdsRaw !== "" ? { stage_ids: stageIdsRaw.split(",") } : {}),
+    // THE BENCH INCARNATION, LISTED (W-3 / F3-11): beside the digest
+    // it stamps — the bench read's join half. Absent stamps stay
+    // absent (the export_name law).
+    ...(benchEpoch !== "" ? { bench_epoch: benchEpoch } : {}),
     ...(exported !== "" ? { export_name: exported } : {}),
     ...(exportedPath !== "" ? { export_path: exportedPath } : {}),
     test: testFlag,

@@ -12,6 +12,7 @@ import {
   groupBench,
   ungroupBench,
   undoBench,
+  clearBench,
 } from "../src/bench.ts";
 import { boot, seed, codeOf } from "./bench-helpers.ts";
 
@@ -700,4 +701,69 @@ test("archive refuses unknown keys, a missing stage, and a ghost id loud", async
     (await codeOf(archiveBench(drafts, "arc3", { stage: "a", expect_rev: 99 })))
       .startsWith("bench/cas-conflict|"),
   );
+});
+
+// ── THE INCARNATION STAMP (W-3 / F3-11, 2026-11-05) ──────────────
+// THE BURN (FRICTION_3 :462/:485): after clear + fresh add_stage, a
+// brand-new s_1 (image-gen, never run) read back an OLD upscale run
+// from a previous bench incarnation — positional stage ids rebind by
+// name to pre-clear sidecars. THE CURE'S DOOR HALF: clearBench is
+// the epoch's ONLY writer (bumped at every clear), the run start
+// stamps it into the sidecar identity keys and the bench read's join
+// requires equality — a post-clear read binds only post-clear runs.
+// UNDO-IMMUNITY: the clear inverse carries stages_before only, so
+// undo restores rows/params and NEVER the old epoch (RG-P4-5's trap:
+// an undo that resurrected the old incarnation would re-arm the
+// burn). Registry flows-bench-epoch-binding.
+describe("THE INCARNATION STAMP — clear is the bench doc's epoch writer (W-3 / F3-11)", () => {
+  // The doc-level key: read off the store record (getBench projects
+  // the typed row; the epoch rides the SERVED doc verbatim — the
+  // walls suite asserts that face, this family asserts the doc).
+  const epochOf = (drafts: Awaited<ReturnType<typeof boot>>, session: string): unknown =>
+    ((drafts.table("docs").get("bench-" + session)?.doc ?? {}) as Record<string, unknown>)["epoch"];
+  test("a clear stamps the epoch (1 on a bench that predates the cure); a bench that never cleared carries none", async () => {
+    const drafts = await boot();
+    await seed(drafts, "e", { stages: [{ id: "s_0", card: "image-gen", params: {} }] });
+    assert.equal(epochOf(drafts, "e"), undefined, "no clear, no epoch — the key is never guessed");
+    await clearBench(drafts, "e", { expect_rev: 0 });
+    assert.equal(epochOf(drafts, "e"), "1");
+  });
+
+  test("every clear bumps; add_stage and patch never do (only-at-clear)", async () => {
+    const drafts = await boot();
+    await seed(drafts, "e", { stages: [{ id: "s_0", card: "image-gen", params: { seed: 1 } }] });
+    await clearBench(drafts, "e", { expect_rev: 0 });
+    const added = await addStageBench(drafts, "e", {
+      card: "image-gen", params: { seed: 2 }, expect_rev: 1,
+    });
+    assert.equal(epochOf(drafts, "e"), "1", "a stage birth is the same incarnation");
+    const patched = await patchBench(drafts, "e", { stage: added.stage, params: { seed: 3 }, expect_rev: added.rev });
+    assert.equal(epochOf(drafts, "e"), "1",
+      "a patch is the same incarnation — the done-mark cure owns staleness inside one");
+    await clearBench(drafts, "e", { expect_rev: patched.rev });
+    assert.equal(epochOf(drafts, "e"), "2", "the next clear is the next incarnation");
+  });
+
+  test("UNDO-IMMUNITY: undoing the clear restores the rows but NEVER the old epoch", async () => {
+    const drafts = await boot();
+    await seed(drafts, "e", { stages: [{ id: "s_0", card: "image-gen", params: {} }] });
+    const cleared = await clearBench(drafts, "e", { expect_rev: 0 });
+    const undone = await undoBench(drafts, "e", { n: 1, expect_rev: cleared.rev });
+    assert.deepEqual(undone.undone, [cleared.rev]);
+    const after = getBench(drafts, "e");
+    assert.deepEqual((after.stages as Array<{ id: string }>).map((r) => r.id), ["s_0"],
+      "the inverse keeps its promise — the rows come back");
+    assert.equal(epochOf(drafts, "e"), "1",
+      "the old incarnation is gone with the clear — the restored rows still bind only post-clear runs");
+    await clearBench(drafts, "e", { expect_rev: undone.rev });
+    assert.equal(epochOf(drafts, "e"), "2",
+      "a clear after the undo is still a NEW incarnation (never a rewind to the undone stamp)");
+  });
+
+  test("a crafted junk epoch degrades to a fresh first stamp (the log is data)", async () => {
+    const drafts = await boot();
+    await seed(drafts, "e", { stages: [], epoch: "not-a-counter" });
+    await clearBench(drafts, "e", { expect_rev: 0 });
+    assert.equal(epochOf(drafts, "e"), "1");
+  });
 });

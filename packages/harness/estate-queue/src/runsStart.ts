@@ -643,6 +643,15 @@ export async function registerCompiledRun(args: {
     outputs: { ...st.outputs },
     params: { ...st.params },
   }));
+  // THE BENCH INCARNATION (W-3 / F3-11, 2026-11-05): the start
+  // door's bench doc read is the run's incarnation — both register
+  // arms carry the same doc they judged (benchStageIdOf), so the
+  // stamp rides the door, never a re-read. Stamped once here; every
+  // sidecar rewrite carries it (sidecarFacesOf). Absent on pre-cure
+  // benches (no epoch, no key — never guessed).
+  const benchEpochRaw: unknown = door.benchDoc?.["epoch"];
+  const benchEpoch: string | undefined =
+    typeof benchEpochRaw === "string" && benchEpochRaw !== "" ? benchEpochRaw : undefined;
   const run: RunRecord = {
     runId,
     status: "queued",
@@ -673,6 +682,9 @@ export async function registerCompiledRun(args: {
     ...(door.initialFileKeys !== undefined && door.initialFileKeys.length > 0
       ? { initialFileKeys: [...door.initialFileKeys] }
       : {}),
+    // THE BENCH INCARNATION rides the row (W-3 / F3-11) — the queued
+    // sidecar stamps it, the claim/settle rewrites carry it verbatim.
+    ...(benchEpoch !== undefined ? { benchEpoch } : {}),
   };
   run.inputNames = Object.fromEntries(
     compiled.stages.map((st: CompiledStage): [string, Record<string, string>] => [st.id, { ...st.inputNames }]),
@@ -958,6 +970,9 @@ function sidecarDocFor(run: RunRecord): Record<string, unknown> {
     testFlag: run.testFlag,
     draftId: run.draftId,
     pipeline: run.pipeline,
+    // THE BENCH INCARNATION rides the queued sidecar too (W-3 /
+    // F3-11 — the wand/restore and the list read disk, not memory).
+    benchEpoch: run.benchEpoch,
     graph: run.graphRows,
     cardSnapshot: run.cardSnapshot,
     benchSnapshot: run.benchSnapshot,

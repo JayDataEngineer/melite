@@ -504,6 +504,12 @@ export interface BenchGetRow {
   readonly intent: JsonValue;
   readonly stages: JsonValue;
   readonly log: readonly { readonly [key: string]: JsonValue }[];
+  /** THE INCARNATION (W-3 / F3-11, 2026-11-05): the doc's epoch,
+   *  served so the bench read's join can require the run side's
+   *  matching stamp (queueSidecar `bench_epoch` alongside draft_id).
+   *  Absent on a bench that never cleared since the cure — the key
+   *  is never guessed. */
+  readonly epoch?: string;
 }
 
 const ENSURE_KEYS = ["session", "stages", "intent", "author", "expect_rev", "overwrite"];
@@ -905,6 +911,9 @@ export function getBench(
     rev: block.rev,
     intent: doc["intent"] as JsonValue,
     stages: doc["stages"] as JsonValue,
+    // THE INCARNATION rides the served row (W-3 / F3-11) — the
+    // construct join reads it off this face; absent stays absent.
+    ...(typeof doc["epoch"] === "string" && doc["epoch"] !== "" ? { epoch: doc["epoch"] } : {}),
     log: block.log.map(
       (e: BenchEntry): { readonly [key: string]: JsonValue } => ({
         rev: e.rev,
@@ -2764,13 +2773,35 @@ export interface BenchClearRow {
   readonly cleared: number;
 }
 
+/** The next INCARNATION STAMP (W-3 / F3-11, 2026-11-05): the bench
+ *  doc's epoch, bumped ONLY by clearBench. Stage ids are positional
+ *  (s_0, s_1 restart at add_stage), so after a clear a fresh row
+ *  rebinds BY NAME to pre-clear sidecars — the burn: a brand-new
+ *  image-gen s_1 read back an old upscale run. The epoch names the
+ *  incarnation: the run start stamps it into the sidecar identity
+ *  keys (queueSidecar's `bench_epoch`) and the bench read's join
+ *  (melite-construct withLastRun) requires equality alongside
+ *  draft_id, so a post-clear read can only bind post-clear runs.
+ *  UNDO-IMMUNITY: the clear inverse carries `stages_before` only —
+ *  applyInverse restores rows/params and NEVER this key, so undoing
+ *  a clear cannot resurrect the old incarnation. A decimal string
+ *  rides the list row verbatim (the sidecar byte-scan reads quoted
+ *  strings); a doc that predates the cure has no key and joins as
+ *  before. Junk degrades to a fresh first stamp. */
+function nextBenchEpochOf(prev: unknown): string {
+  return typeof prev === "string" && /^\d+$/.test(prev)
+    ? String(Number(prev) + 1)
+    : "1";
+}
+
 /** clear — THE OPERATOR'S DEMANDED DOOR (2026-10-10, "there is no
  *  clear all"): remove EVERY stage in one verb. No survivor can
  *  dangle (there are no survivors), so the door admits on ANY bench
  *  — including a wedged one no other verb can repair — and the ONE
  *  log entry carries the full stages_before inverse (undo restores
  *  everything). The nuclear seat: use it when the bench itself is
- *  the wound. */
+ *  the wound. clearBench also stamps the doc's next incarnation
+ *  epoch (nextBenchEpochOf) — the one writer of that key. */
 export async function clearBench(
   drafts: Domain<DraftsDomainSpec>,
   session: string,
@@ -2788,6 +2819,10 @@ export async function clearBench(
   stages.length = 0;
   loaded.doc["stages"] = stages;
   syncIntent(loaded.doc, before, stages);
+  // THE INCARNATION STAMP (W-3 / F3-11): the ONLY writer of the
+  // doc's epoch — undo's stages_before inverse never carries it, so
+  // the restored rows still bind only this incarnation's runs.
+  loaded.doc["epoch"] = nextBenchEpochOf(loaded.doc["epoch"]);
   const newRev: number = await appendAndSave(drafts, loaded, {
     author,
     kind: "clear",

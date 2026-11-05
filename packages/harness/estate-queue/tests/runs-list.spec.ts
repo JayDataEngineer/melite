@@ -939,6 +939,55 @@ describe("THE VERBATIM READ (W-12, 2026-11-05): a non-terminal sidecar word neve
   });
 });
 
+describe("THE BENCH INCARNATION, LISTED (W-3 / F3-11, 2026-11-05): the epoch rides the row beside the digest it joins with", () => {
+  // THE JOIN CHAIN: the sidecar's identity prefix carries the bench
+  // doc's `epoch` at press (queueSidecar's `bench_epoch`, stamped by
+  // the run start from the door's bench doc); the row projects it
+  // verbatim so melite-construct's withLastRun can require equality
+  // alongside draft_id — a post-clear read binds only post-clear
+  // runs. THE PROJECTION GAP: the identity keys do NOT ride the row
+  // wholesale (buildRunCard projects explicitly), so this describe
+  // is the depth judge for exactly that seat — unwiring the
+  // projection reds HERE, and the W-12 arms above stay untouched.
+  const plant = (state: string, run: string, withEpoch: boolean): void => {
+    const dir = join(state, "output", run);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, "_flow.json"),
+      JSON.stringify({
+        run_id: run,
+        status: "completed",
+        created_at: 100,
+        test: false,
+        draft_id: "d1",
+        pipeline: "flow_inline",
+        stage_ids: "s_1",
+        ...(withEpoch ? { bench_epoch: "2" } : {}),
+      }),
+    );
+  };
+  const rowOf = async (state: string, run: string): Promise<Record<string, unknown>> => {
+    const { runs } = await listRuns(state, 10, async () => true);
+    const row = runs.find((r) => r["run_id"] === run) as Record<string, unknown> | undefined;
+    assert.ok(row, `the ${run} row is served`);
+    return row;
+  };
+
+  it("a stamped sidecar projects bench_epoch onto the row verbatim — the join's run half", async () => {
+    const state = tmp();
+    plant(state, "run-epoch-stamped", true);
+    assert.equal((await rowOf(state, "run-epoch-stamped"))["bench_epoch"], "2",
+      "the incarnation rides the row verbatim — reverting the projection reds the construct join's wall family");
+  });
+
+  it("an unstamped sidecar (pre-cure run) stamps nothing — the optional-key law", async () => {
+    const state = tmp();
+    plant(state, "run-epoch-absent", false);
+    const row = await rowOf(state, "run-epoch-absent");
+    assert.ok(!("bench_epoch" in row), "absent stays absent — never guessed");
+  });
+});
+
 describe("THE RUNS-PER-DRAFT DOOR (the stale-two-run chat audit's cure 3)", () => {
   // THE FIXTURE LAW (audit §walls c): two runs, distinct `draft_id`s
   // in sidecar rows — the sidecar scalars the real writer seats

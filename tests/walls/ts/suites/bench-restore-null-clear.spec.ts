@@ -287,3 +287,50 @@ describe("the restore-memory null-clear (D1, the reservoir audit F1)", () => {
     expect(calls.filter((c) => c.url.startsWith("/v1/bench/ensure"))).toHaveLength(2);
   });
 });
+
+// THE CLEAR PLANE'S INCARNATION STAMP (W-3 / F3-11, registry
+// flows-bench-epoch-binding). THE COVERAGE EDGE this describe closes:
+// the wall above owns the ensure/RESTORE plane of the cross-stamp
+// fossil; the CLEAR plane was its uncovered edge — and the F3-11
+// burn (FRICTION_3 :462/:485) rode a clear: after `clear` + fresh
+// add_stage, a brand-new s_1 rebind BY NAME to pre-clear sidecars
+// (positional stage ids) and read back an OLD run as its last_run.
+// THE LAW: clearBench stamps the doc's next `epoch` (its ONLY
+// writer); the run start carries the stamp into the sidecar identity
+// keys (queueSidecar `bench_epoch`) and the bench read's join
+// (melite-construct withLastRun) requires equality alongside
+// draft_id — a post-clear read binds only post-clear runs. The clear
+// inverse carries `stages_before` ONLY: undo restores rows/params
+// and never the stamp, or the burn re-armed after every undo
+// (RG-P4-5's trap). The join arms live beside the join
+// (melite-construct.spec.ts's W-3 family); this wall judges the
+// door's own half on the SERVED doc.
+describe("the clear plane's incarnation stamp (W-3 / F3-11) — clear is the epoch's only writer, undo never restores it", () => {
+  it("the served doc carries a fresh epoch after a clear, keeps it through add_stage, and an undo of that clear restores the rows but never the old stamp", async () => {
+    const { bench, revOf } = await crossStampedDoc();
+    // the epoch is never guessed: no clear, no stamp
+    expect((await bench.get(SESSION, sig))["epoch"], "no clear, no epoch").toBeUndefined();
+    // THE CLEAR (the burn's door): the doc's next incarnation
+    const cleared = await bench.clear(SESSION, { expect_rev: await revOf() }, sig);
+    expect((await bench.get(SESSION, sig))["epoch"]).toBe("1");
+    // a stage birth is the same incarnation — the join cannot be
+    // dodged by growing the bench
+    await bench.addStage(SESSION, { card: "tagger", expect_rev: cleared.rev }, sig);
+    expect((await bench.get(SESSION, sig))["epoch"]).toBe("1");
+    // UNDO-IMMUNITY: the inverse restores the fossil rows whole and
+    // the stamp STAYS — the restored rows still read as this
+    // incarnation, so they can only bind post-clear runs. The walk
+    // takes the add AND the clear (newest-first), so the CLEAR's own
+    // inverse is crossed here.
+    const undone = await bench.undo(SESSION, { n: 2, expect_rev: await revOf() }, sig);
+    const restored = await bench.get(SESSION, sig);
+    expect(undone.undone).toEqual([cleared.rev, cleared.rev + 1]);
+    for (const id of ["s_1", "s_6", "s_9", "s_17"]) {
+      expect(rowOf(restored, id), "undo restores every cleared row").toBeDefined();
+    }
+    expect(restored["epoch"], "the old incarnation is gone with the clear — never restored").toBe("1");
+    // the next clear is the next incarnation (a bump, never a rewind)
+    await bench.clear(SESSION, { expect_rev: await revOf() }, sig);
+    expect((await bench.get(SESSION, sig))["epoch"]).toBe("2");
+  });
+});

@@ -168,6 +168,11 @@ export declare function sidecarDoc(args: {
     testFlag: boolean;
     draftId: DraftId;
     pipeline: string;
+    /** THE BENCH INCARNATION (W-3 / F3-11): the draft doc's `epoch`
+     *  at press — the identity-prefix `bench_epoch` key, the join
+     *  half of the stage-id-reuse cure. Optional: pre-cure runs and
+     *  epoch-less benches stamp nothing (never guessed). */
+    benchEpoch?: string;
     graph: GraphRow[];
     /** THE SNAPSHOT KEYS (strokes 45/45d, carried stroke 48): the exact
      *  card + bench that ran. Absent when unstamped (inline runs)

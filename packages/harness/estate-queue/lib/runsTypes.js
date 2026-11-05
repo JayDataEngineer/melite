@@ -237,6 +237,10 @@ function sidecarFacesOf(run) {
         cardSnapshot: run.cardSnapshot,
         cardRecipe: run.cardRecipe,
         benchSnapshot: run.benchSnapshot,
+        // THE BENCH INCARNATION rides every rewrite too (W-3 / F3-11 —
+        // a disk row keeps the incarnation it was pressed in; the claim
+        // and settle rewrites carry the queued stamp verbatim).
+        benchEpoch: run.benchEpoch,
         // F-6(b): the admission warnings ride every rewrite too (a disk
         // row keeps what the live row warned).
         warnings: run.warnings,

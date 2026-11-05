@@ -104,6 +104,7 @@ const _melite_estate_drafts_bench_get_result$schema = () => (_melite_estate_draf
   'intent': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema())).readonly()]).readonly(),
   'stages': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema())).readonly()]).readonly(),
   'log': z.array(z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema())).readonly()])).readonly()).readonly(),
+  'epoch': z.union([z.undefined(), z.string()]).readonly().optional().describe('THE INCARNATION (W-3 / F3-11, 2026-11-05): the doc\'s epoch, served so the bench read\'s join can require the run side\'s matching stamp (queueSidecar `bench_epoch` alongside draft_id). Absent on a bench that never cleared since the cure — the key is never guessed.'),
 }))
 let _melite_estate_drafts_bench_group_parameter_0$schema$value
 const _melite_estate_drafts_bench_group_parameter_0$schema = () => (_melite_estate_drafts_bench_group_parameter_0$schema$value ??= z.string())
@@ -177,6 +178,7 @@ const _melite_estate_drafts_bench_subscribe_result$schema = () => (_melite_estat
   'intent': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema2())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema2())).readonly()]).readonly(),
   'stages': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema2())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema2())).readonly()]).readonly(),
   'log': z.array(z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema2())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema2())).readonly()])).readonly()).readonly(),
+  'epoch': z.union([z.undefined(), z.string()]).readonly().optional().describe('THE INCARNATION (W-3 / F3-11, 2026-11-05): the doc\'s epoch, served so the bench read\'s join can require the run side\'s matching stamp (queueSidecar `bench_epoch` alongside draft_id). Absent on a bench that never cleared since the cure — the key is never guessed.'),
 }))
 let _melite_estate_drafts_bench_undo_parameter_0$schema$value
 const _melite_estate_drafts_bench_undo_parameter_0$schema = () => (_melite_estate_drafts_bench_undo_parameter_0$schema$value ??= z.string())
@@ -1318,7 +1320,7 @@ export const TYPERT = {
           },
           {
             "name": "BenchGetRow",
-            "declaration": "export interface BenchGetRow {\n    readonly draft_id: DraftId;\n    readonly session: string;\n    readonly rev: number;\n    readonly intent: JsonValue;\n    readonly stages: JsonValue;\n    readonly log: readonly { readonly [key: string]: JsonValue; }[];\n}"
+            "declaration": "export interface BenchGetRow {\n    readonly draft_id: DraftId;\n    readonly session: string;\n    readonly rev: number;\n    readonly intent: JsonValue;\n    readonly stages: JsonValue;\n    readonly log: readonly { readonly [key: string]: JsonValue; }[];\n    readonly epoch?: string;\n}"
           },
           {
             "name": "BenchPatchRow",

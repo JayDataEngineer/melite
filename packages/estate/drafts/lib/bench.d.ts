@@ -205,6 +205,12 @@ export interface BenchGetRow {
     readonly log: readonly {
         readonly [key: string]: JsonValue;
     }[];
+    /** THE INCARNATION (W-3 / F3-11, 2026-11-05): the doc's epoch,
+     *  served so the bench read's join can require the run side's
+     *  matching stamp (queueSidecar `bench_epoch` alongside draft_id).
+     *  Absent on a bench that never cleared since the cure — the key
+     *  is never guessed. */
+    readonly epoch?: string;
 }
 export declare function ensureBench(drafts: Domain<DraftsDomainSpec>, body: Record<string, unknown>, admit?: StageAdmission, lineage?: readonly string[]): Promise<BenchEnsureRow>;
 /** get — one session's bench block as the served row. */
@@ -435,7 +441,8 @@ export interface BenchClearRow {
  *  — including a wedged one no other verb can repair — and the ONE
  *  log entry carries the full stages_before inverse (undo restores
  *  everything). The nuclear seat: use it when the bench itself is
- *  the wound. */
+ *  the wound. clearBench also stamps the doc's next incarnation
+ *  epoch (nextBenchEpochOf) — the one writer of that key. */
 export declare function clearBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>, lineage?: readonly string[]): Promise<BenchClearRow>;
 /** The rewire row. */
 export interface BenchRewireRow {

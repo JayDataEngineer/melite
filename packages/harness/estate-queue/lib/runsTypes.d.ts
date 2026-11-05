@@ -104,6 +104,14 @@ export interface RunRecord {
      *  at Run press ({stages, intent}) — same carry law as the card
      *  snapshot. */
     benchSnapshot?: unknown;
+    /** THE BENCH INCARNATION (W-3 / F3-11, 2026-11-05): the draft
+     *  doc's `epoch` the start door read (drafts clearBench is its
+     *  only writer). Stamped at registration from door.benchDoc, rides
+     *  EVERY sidecar rewrite (sidecarFacesOf) as the identity-prefix
+     *  `bench_epoch` key, so a post-clear read binds only post-clear
+     *  runs. Absent on pre-cure runs and epoch-less benches — never
+     *  guessed. */
+    benchEpoch?: string;
     /** F-6(b) ADMISSION WARNINGS (stamped post-registration by the
      *  start door — the film lane's VRAM-pressure warn): served on
      *  run_status rows, never a refusal. Absent means none. */

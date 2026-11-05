@@ -138,6 +138,14 @@ export interface RunRecord {
    *  at Run press ({stages, intent}) — same carry law as the card
    *  snapshot. */
   benchSnapshot?: unknown;
+  /** THE BENCH INCARNATION (W-3 / F3-11, 2026-11-05): the draft
+   *  doc's `epoch` the start door read (drafts clearBench is its
+   *  only writer). Stamped at registration from door.benchDoc, rides
+   *  EVERY sidecar rewrite (sidecarFacesOf) as the identity-prefix
+   *  `bench_epoch` key, so a post-clear read binds only post-clear
+   *  runs. Absent on pre-cure runs and epoch-less benches — never
+   *  guessed. */
+  benchEpoch?: string;
   /** F-6(b) ADMISSION WARNINGS (stamped post-registration by the
    *  start door — the film lane's VRAM-pressure warn): served on
    *  run_status rows, never a refusal. Absent means none. */
@@ -432,6 +440,10 @@ function sidecarFacesOf(run: RunRecord): {
   cardSnapshot: unknown;
   cardRecipe: { card: string; params: Record<string, unknown> } | undefined;
   benchSnapshot: unknown;
+  /** THE BENCH INCARNATION (W-3 / F3-11): rides every rewrite — a
+   *  disk row keeps the incarnation it was pressed in. Undefined on
+   *  pre-cure rows (the key stays absent, never guessed). */
+  benchEpoch: string | undefined;
   warnings: string[] | undefined;
   composeEcho: { seam: string; calls: number; benchRev: number | null } | undefined;
   /** THE SERVED-GRAPH RECEIPT (P1): rides every rewrite — a disk
@@ -461,6 +473,10 @@ function sidecarFacesOf(run: RunRecord): {
     cardSnapshot: run.cardSnapshot,
     cardRecipe: run.cardRecipe,
     benchSnapshot: run.benchSnapshot,
+    // THE BENCH INCARNATION rides every rewrite too (W-3 / F3-11 —
+    // a disk row keeps the incarnation it was pressed in; the claim
+    // and settle rewrites carry the queued stamp verbatim).
+    benchEpoch: run.benchEpoch,
     // F-6(b): the admission warnings ride every rewrite too (a disk
     // row keeps what the live row warned).
     warnings: run.warnings,

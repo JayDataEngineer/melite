@@ -78,6 +78,12 @@ export declare function runRowOrNull(row: {
      *  engine-reported minted .qvoice absolute path; older sidecars
      *  predate it, load lanes stamp nothing. */
     export_path?: string;
+    /** THE BENCH INCARNATION (W-3 / F3-11, 2026-11-05): the draft
+     *  doc's `epoch` at press, read from the identity prefix — the
+     *  bench read's join requires equality alongside draft_id, so a
+     *  post-clear read binds only post-clear runs. Optional —
+     *  pre-cure sidecars predate the key and stamp nothing. */
+    bench_epoch?: string;
     /** THE CAPPED FACE (previews 2b, 2026-11-12): the artifact list's
      *  trailing marker lifted onto the row — the panel's capped
      *  counter reads THIS, so a partial listing never reads as
