@@ -412,6 +412,21 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
         if ((blank(doc.ref_audio) !== blank(doc.ref_text)) && !qvoiceStated(doc)) {
           throw new Error("params 'ref_audio' + 'ref_text' are ONE source on the tts card — state the COMPLETE pair (the 3-second reference + its transcript) or neither (a run with no reference performs prompt-only speech; the clone is optional, never required)")
         }
+        // THE FOURTH PAIR EDGE (F3-05, R-P3-14 — the clone lane's own
+        // both-sources judge; the customvoice/design lane arms and the
+        // save-branch refusals own the other seats, this one fell
+        // through): the COMPLETE pair beside a stated .qvoice
+        // completes BOTH sides of the DECL's either_or at once. The
+        // engine's clone dispatch reads the qvoice bag first
+        // (tts-segments.ts:169-170), so the persona performs and the
+        // reference pair rides nothing while the receipt claims a
+        // clone reference it never used. ONE voice source performs —
+        // refuse loud. (The HALF pair beside a .qvoice stays the
+        // lawful exemption above: the persona IS the complete
+        // source, so a DECL `conflicts` row is wrong here too.)
+        if (!blank(doc.ref_audio) && !blank(doc.ref_text) && qvoiceStated(doc)) {
+          throw new Error("params 'ref_audio' + 'ref_text' + 'qvoice' fire together on the tts card's clone lane (ONE voice source performs — the DECL's own either_or names the two alternatives, and this state completes BOTH; the persona performs and the reference pair rides nothing) — drop the pair or the .qvoice")
+        }
         if (!blank(doc.style_instruction) || !blank(doc.design_prompt)) {
           throw new Error("params 'style_instruction'/'design_prompt' fire nothing on the tts card's Base variant (style control styles the CustomVoice persona; the persona description designs on the VoiceDesign variant — switch variants or drop them)")
         }

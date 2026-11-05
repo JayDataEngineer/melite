@@ -614,6 +614,32 @@ describe("the base clone lane (reference in, the speaker's voice out — no pers
     assert.ok(graph["AudiocoreVoiceStudio.0"], "the studio's generate node rides (the persona performs)");
     assert.equal(graph["AudiocoreTTS.0"], undefined, "no bare cloner beside it");
   });
+  it("THE FOURTH PAIR EDGE (F3-05): the COMPLETE pair beside a stated .qvoice refuses — one voice source performs, never both (the persona performs and the reference pair would ride nothing)", () => {
+    const baseModel = facts.models["qwen3-tts-base"]!;
+    assert.throws(
+      () => def.compose(def.schema({ text: "the words", ref_audio: "ref.wav", ref_text: "the transcript", qvoice: [{ qvoice: "Cherry.qvoice" }] }), baseModel, new GraphBuilder(), "r_pairqvoice"),
+      /fire together on the tts card's clone lane/,
+    );
+  });
+  it("the pair alone composes (the optional-clone law guard — the reference without any persona)", () => {
+    const baseModel = facts.models["qwen3-tts-base"]!;
+    const g = new GraphBuilder();
+    def.compose(def.schema({ text: "the words", ref_audio: "ref.wav", ref_text: "the transcript" }), baseModel, g, "r_pairalone");
+    const graph = g.toJSON();
+    assert.ok(graph["AudiocoreTTS.0"], "the bare cloner rides (the pair is the voice source)");
+    assert.equal(
+      Object.values(graph).some((n) => n.class_type === "AudiocoreVoiceStudio"),
+      false,
+      "no studio generate beside it (no .qvoice stated)",
+    );
+  });
+  it("the persona alone composes through the studio (the use-segment guard — the .qvoice without any reference)", () => {
+    const baseModel = facts.models["qwen3-tts-base"]!;
+    const g = new GraphBuilder();
+    def.compose(def.schema({ text: "the words", qvoice: [{ qvoice: "Cherry.qvoice" }] }), baseModel, g, "r_qvoicealone");
+    const graph = g.toJSON();
+    assert.ok(Object.values(graph).some((n) => n.class_type === "AudiocoreVoiceStudio"), "the studio performs (the persona is the source)");
+  });
   it("clone inputs on the speak lane refuse loud (reference audio only fires on the Base variant)", () => {
     assert.throws(
       () => def.compose(def.schema({ text: "the words", ref_audio: "ref.wav", ref_text: "the transcript" }), ttsModel, new GraphBuilder(), "r_refspeak"),
