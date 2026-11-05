@@ -595,6 +595,100 @@ describe('loadRunOntoBench — the run record wins', () => {
     }
   })
 
+  it('THE SETTLED META RIDES (the h3 history-load audit cure 3) — the pressed stage carries the sidecar row\'s result_metadata verbatim; the cleared rows borrow nothing', async () => {
+    // The wand's rebuilt result used to be a 4-key orphan (run_id,
+    // url, artifacts, assetUrls) — the gateway's film probe + history
+    // stamps never reached the loaded-history face, so filmMap nulled
+    // (the bar ran identity doc-space) and the run-history chips
+    // vanished. The sidecar stage row now serves the settled
+    // result_metadata (queueSidecar.ts) and resultOfStage passes it
+    // through verbatim.
+    const filmMap = { fps: 24, totalFrames: 231, windows: [{ start: 0, len: 90, trim: 0, docStart: 0, docSpan: 90 }] }
+    const history = [{ runId: 'run-aaaabbbbcccc', status: 'completed', video: '/x.mp4' }]
+    const side = {
+      run_id: 'run-0f1e2d-meta1',
+      flow: {
+        artifacts: ['/data/run-0f1e2d-meta1/h3-film/SaveVideo.2_h3_t4_film_00001_.mp4'],
+        bench_snapshot: {
+          stages: [
+            { id: 's_1', card: 'h3-timeline' },
+            { id: 's_6', card: 'tagger' },
+            { id: 's_17', card: 'h3-timeline' },
+          ],
+          intent: 'the meta bench',
+        },
+        stages: [
+          {
+            id: 'h3-film', bench_stage_id: 's_17', name: 'h3-film', index: 0, status: 'completed',
+            url: 'h3-film/SaveVideo.2_h3_t4_film_00001_.mp4',
+            gallery: [{ name: 'h3-film/SaveVideo.2_h3_t4_film_00001_.mp4' }],
+            result_metadata: { film: filmMap, history, runId: 'run-0f1e2d-meta1' },
+            outputs: {}, expected: {},
+          },
+        ],
+      },
+    }
+    const { calls } = stubFetch(runWith(side))
+    const d = deps('s1')
+    await loadRunOntoBench('run-0f1e2d-meta1', d)
+    expect(d.errors).toEqual([])
+    const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
+    // the pressed stage's result carries the settled metadata VERBATIM
+    expect(stages[2]).toMatchObject({
+      id: 's_17',
+      result: {
+        url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-meta1/h3-film/SaveVideo.2_h3_t4_film_00001_.mp4'),
+        metadata: { film: filmMap, history, runId: 'run-0f1e2d-meta1' },
+      },
+    })
+    // the cleared rows borrow nothing: no result, no borrowed film map
+    for (const st of [stages[0]!, stages[1]!]) {
+      expect(st['result']).toBeNull()
+    }
+  })
+
+  it('THE SETTLED META, run-level floor — a card_snapshot restore adopts the ONE settled metadata; under ambiguity it borrows none', async () => {
+    const meta = { film: { fps: 24, totalFrames: 96, windows: [{ start: 0, len: 96, trim: 0, docStart: 0, docSpan: 96 }] } }
+    const base = {
+      run_id: 'run-0f1e2d-meta2',
+      flow: {
+        artifacts: ['/data/run-0f1e2d-meta2/h3-film/h3_t4_film_00001_.mp4'],
+        card_snapshot: { card: 'h3-timeline', params: { prompt: 'the storm' } },
+      },
+    }
+    // exactly one sidecar stage row carries a result_metadata: the
+    // ran card's own stamps adopt onto the restored row
+    const single = stubFetch(runWith({
+      ...base,
+      flow: { ...base.flow, stages: [{
+        id: 'h3-film', name: 'h3-film', index: 0, status: 'completed',
+        url: 'h3-film/h3_t4_film_00001_.mp4', gallery: [{ name: 'h3-film/h3_t4_film_00001_.mp4' }],
+        result_metadata: meta, outputs: {}, expected: {},
+      }] },
+    }))
+    const d1 = deps('s1')
+    await loadRunOntoBench('run-0f1e2d-meta2', d1)
+    expect(d1.errors).toEqual([])
+    const row = (ensuredBody(single.calls).stages as Array<Record<string, unknown>>)[0]!
+    expect((row['result'] as Record<string, unknown>)['metadata']).toEqual(meta)
+    // two rows carry DIFFERENT settled metadata: the run-level floor
+    // cannot name the owner — it borrows NONE (one stage's film map is
+    // never another stage's truth; the per-stage rows serve their own)
+    const ambiguous = stubFetch(runWith({
+      ...base,
+      run_id: 'run-0f1e2d-meta3',
+      flow: { ...base.flow, stages: [
+        { id: 'a', name: 'a', index: 0, status: 'completed', url: 'h3-film/h3_t4_film_00001_.mp4', gallery: [{ name: 'h3-film/h3_t4_film_00001_.mp4' }], result_metadata: meta, outputs: {}, expected: {} },
+        { id: 'b', name: 'b', index: 1, status: 'completed', url: 'h3-film/h3_t4_w1_00001_.mp4', gallery: [{ name: 'h3-film/h3_t4_w1_00001_.mp4' }], result_metadata: { film: { fps: 12, totalFrames: 1, windows: [] } }, outputs: {}, expected: {} },
+      ] },
+    }))
+    const d2 = deps('s1')
+    await loadRunOntoBench('run-0f1e2d-meta3', d2)
+    expect(d2.errors).toEqual([])
+    const row2 = (ensuredBody(ambiguous.calls).stages as Array<Record<string, unknown>>)[0]!
+    expect((row2['result'] as Record<string, unknown>)['metadata']).toBeUndefined()
+  })
+
   it('THE LEGACY FLOOR (the D6 law\'s surviving arm): a sidecar with NO stage rows shares the run-level hero — no per-stage truth exists to honor', async () => {
     const side = {
       run_id: 'r1',

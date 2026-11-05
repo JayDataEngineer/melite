@@ -34,6 +34,13 @@ export interface SidecarStage {
   readonly url?: string;
   readonly gallery?: Array<{ name: string }>;
   readonly result_outputs?: Record<string, unknown>;
+  /** THE SETTLED RESULT'S METADATA (the h3 history-load audit's cure
+   *  3, dev_docs/audits/journey/h3-history-load-video-2026-11-05.md):
+   *  the run stage row's own `metadata` record — the gateway's film
+   *  probe + history stamps — served beside result_outputs so the
+   *  sidecar carries the settled face, not just the engine outputs.
+   *  Absent when the row stamps none (the doc never fabricates). */
+  readonly result_metadata?: Record<string, unknown>;
   readonly error?: string;
   readonly merged?: boolean;
   readonly outputs: Record<string, unknown>;
@@ -60,6 +67,7 @@ export function sidecarStageOf(stage: {
     url?: string;
     gallery?: Array<{ name: string }>;
     result_outputs?: Record<string, unknown>;
+    result_metadata?: Record<string, unknown>;
     error?: string;
     merged?: boolean;
     outputs: Record<string, unknown>;
@@ -85,6 +93,10 @@ export function sidecarStageOf(stage: {
   }
   if (typeof stage.result_outputs === 'object' && stage.result_outputs !== null && !Array.isArray(stage.result_outputs)) {
     out.result_outputs = stage.result_outputs as Record<string, unknown>;
+  }
+  if (typeof stage.metadata === 'object' && stage.metadata !== null && !Array.isArray(stage.metadata)) {
+    const meta = stage.metadata as Record<string, unknown>;
+    if (Object.keys(meta).length > 0) out.result_metadata = meta;
   }
   if (typeof stage.error === 'string') out.error = stage.error;
   if (stage.merged === true) out.merged = true;

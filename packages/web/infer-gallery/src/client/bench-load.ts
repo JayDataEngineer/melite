@@ -46,6 +46,15 @@ import { fetchUntilSeated } from './waitState.ts'
  *  every seat (this client, the cards tab, the agent tool) imports
  *  the same function. */
 
+/** The record guard the metadata carries ride (the h3 history-load
+ *  audit's cure 3): a settled metadata is an OBJECT record — a list,
+ *  a null, a scalar is absence, never a metadata bag. */
+function metaRecordOf(value: unknown): Record<string, unknown> | undefined {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return undefined
+  const record = value as Record<string, unknown>
+  return Object.keys(record).length > 0 ? record : undefined
+}
+
 /** The bench tab's address for one session (cross-plugin contract,
  * the estate-artifact pattern: client bundles cannot import across
  * plugins, so the form is restated with its definition site named —
@@ -139,6 +148,23 @@ function resultOfRun(
   const tailOf = runTailOf
   const heroTail = tailOf(hero)
   if (heroTail === undefined) return undefined
+  // THE SETTLED META RIDES (the h3 history-load audit's cure 3): the
+  // rebuilt result must not be a 4-key orphan. When the sidecar's
+  // stage rows name EXACTLY ONE settled metadata (the ran card's own
+  // film probe / history stamps), the run-level floor adopts it —
+  // the same unambiguous-owner law the estate's own benchStageIdOf
+  // uses for single-row benches. Under ambiguity (0 or many owners)
+  // nothing is borrowed: one stage's film map is never another
+  // stage's truth.
+  const rawSideRows: unknown = flow?.['stages']
+  const sideRows: Array<Record<string, unknown>> = Array.isArray(rawSideRows)
+    ? rawSideRows.filter((s): s is Record<string, unknown> =>
+        typeof s === 'object' && s !== null && !Array.isArray(s))
+    : []
+  const metas = sideRows
+    .map((row: Record<string, unknown>): Record<string, unknown> | undefined => metaRecordOf(row['result_metadata']))
+    .filter((m: Record<string, unknown> | undefined): m is Record<string, unknown> => m !== undefined)
+  const metadata = metas.length === 1 ? metas[0] : undefined
   const route = (tail: string): string => '/infer-gallery/artifact?path=' + encodeURIComponent(tail)
   const artifacts: Record<string, string> = {}
   const assetUrls: string[] = []
@@ -148,7 +174,13 @@ function resultOfRun(
     artifacts[tail] = route(tail)
     assetUrls.push(route(tail))
   }
-  return { run_id: runId, url: route(heroTail), artifacts, assetUrls }
+  return {
+    run_id: runId,
+    url: route(heroTail),
+    artifacts,
+    assetUrls,
+    ...(metadata !== undefined ? { metadata } : {}),
+  }
 }
 
 /** One stage's OWN preview, from its sidecar row (the per-stage
@@ -209,6 +241,14 @@ function resultOfStage(
   // gallery listed another file first.
   const hero = prefixRun(url ?? names[0]!)
   const ordered = names.map(prefixRun)
+  // THE SETTLED META RIDES (the h3 history-load audit's cure 3): the
+  // sidecar stage row's result_metadata (queueSidecar.ts serves the
+  // run row's own metadata beside result_outputs) passes VERBATIM —
+  // the gateway's film probe + history stamps — so the restored face
+  // renders the persisted face 1:1 (filmMap reads
+  // result.metadata.film, stageHistoryRows reads metadata.history).
+  // Absent when the row stamps none; never synthesized client-side.
+  const metadata = metaRecordOf(stage['result_metadata'])
   const route = (tail: string): string => '/infer-gallery/artifact?path=' + encodeURIComponent(tail)
   const artifacts: Record<string, string> = {}
   const assetUrls: string[] = []
@@ -217,7 +257,13 @@ function resultOfStage(
     artifacts[n] = route(n)
     assetUrls.push(route(n))
   }
-  return { run_id: runId, url: route(hero), artifacts, assetUrls }
+  return {
+    run_id: runId,
+    url: route(hero),
+    artifacts,
+    assetUrls,
+    ...(metadata !== undefined ? { metadata } : {}),
+  }
 }
 
 /** The error message an !ok JSON response carries, else HTTP n. */

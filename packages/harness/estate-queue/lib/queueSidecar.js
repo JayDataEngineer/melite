@@ -23,6 +23,11 @@ export function sidecarStageOf(stage) {
     if (typeof stage.result_outputs === 'object' && stage.result_outputs !== null && !Array.isArray(stage.result_outputs)) {
         out.result_outputs = stage.result_outputs;
     }
+    if (typeof stage.metadata === 'object' && stage.metadata !== null && !Array.isArray(stage.metadata)) {
+        const meta = stage.metadata;
+        if (Object.keys(meta).length > 0)
+            out.result_metadata = meta;
+    }
     if (typeof stage.error === 'string')
         out.error = stage.error;
     if (stage.merged === true)

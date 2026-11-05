@@ -13,7 +13,7 @@ import { describe, it } from "vitest"
 import assert from "node:assert/strict"
 import { render, screen } from "@testing-library/react"
 import { StudioPreview } from "../src/ui/studio/StudioPreview.tsx"
-import { projectH3StageViewProps } from "../src/ui/studio/projection.ts"
+import { projectH3StageViewProps, stageHistoryRows } from "../src/ui/studio/projection.ts"
 import { filmstripOf } from "../src/ui/studio/useDerivedView.ts"
 
 function preview(over?: Record<string, unknown>) {
@@ -269,5 +269,48 @@ describe("the loaded-history face (the wand-restored result renders the persiste
     })
     assert.equal(filmstrip.final, route(film), "the engine-film name outranks the pointer (tier 1)")
     assert.equal(filmstrip.windows.length, 1, "the window still tiles as evidence beneath the final")
+  })
+
+  it("the settled meta rides the restore: the persisted film map + history chips reach the projected face (the audit cure 3)", () => {
+    // The wand's rebuilt result used to be a 4-key orphan — no
+    // metadata — so filmMap nulled (the bar ran identity doc-space)
+    // and the run-history chips vanished on every loaded-history
+    // face. The restore now carries the settled result_metadata
+    // (bench-load.ts resultOfStage; queueSidecar.ts serves it beside
+    // result_outputs); the projection merges it into CardResult
+    // metadata (harvestResult) and the consumers read it unchanged:
+    // filmMap = metadata.film, stageHistoryRows = metadata.history.
+    // This arm rides the REAL projection on the REAL restored shape;
+    // its toggle is the wand's carry line (bench-load.ts
+    // resultOfStage's `metadata` key) — the restored shape loses the
+    // key and both assertions red.
+    const film = { fps: 24, totalFrames: 231, windows: [{ start: 0, len: 90, trim: 0, docStart: 0, docSpan: 90 }] }
+    const history = [{ runId: "run-87986cb0fc0d", status: "completed", video: route("run-87986cb0fc0d/x.mp4") }]
+    const tail = "run-87986cb0fc0d-a2fa54c3/h3-film/SaveVideo.2_h3_t4_film_00001_.mp4"
+    const { stage } = projectH3StageViewProps({
+      stageId: "s_17",
+      cardName: "h3-timeline",
+      row: {
+        params: {},
+        result: {
+          run_id: "run-87986cb0fc0d-a2fa54c3",
+          url: route(tail),
+          artifacts: { [tail]: route(tail) },
+          assetUrls: [route(tail)],
+          metadata: { film, history, runId: "run-87986cb0fc0d-a2fa54c3" },
+        },
+      },
+      runStatus: "completed",
+      onPatch: () => {},
+      onRun: () => {},
+      upstream: [],
+    } as never)
+    // the film map arrives 1:1 — filmMap's exact input
+    assert.deepEqual(stage.result?.metadata?.film, film)
+    // the history chips return — stageHistoryRows' metadata source
+    const rows = stageHistoryRows(stage)
+    assert.equal(rows.length, 1, "the run's own history chip rides the restored face")
+    assert.equal(rows[0]!.runId, "run-87986cb0fc0d")
+    assert.equal(rows[0]!.video, history[0]!.video)
   })
 })

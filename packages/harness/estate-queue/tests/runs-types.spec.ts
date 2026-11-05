@@ -104,6 +104,30 @@ describe("sidecarStageOf", () => {
     assert.equal("error" in empty, false)
     assert.equal("merged" in empty, false)
   })
+
+  it("serves the settled result's metadata beside result_outputs (the history-load audit cure 3)", () => {
+    // THE SERVE DOOR (queueSidecar.ts): a run stage row's own
+    // `metadata` record — the gateway's film probe + history stamps —
+    // rides the sidecar stage row as result_metadata, so the wand's
+    // restore can carry the settled face 1:1. Absent/junk shapes
+    // stamp none (the doc never fabricates a metadata bag).
+    const film = { fps: 24, totalFrames: 231, windows: [{ start: 0, len: 90, trim: 0, docStart: 0, docSpan: 90 }] };
+    const served = sidecarStageOf({
+      id: "s",
+      name: "n",
+      index: 0,
+      status: "completed",
+      metadata: { film, history: [{ runId: "run-1" }] },
+    });
+    assert.deepEqual(served.result_metadata, { film, history: [{ runId: "run-1" }] });
+    for (const junk of [undefined, null, "film", 4, []]) {
+      const row = sidecarStageOf({ id: "s", name: "n", index: 0, status: "queued", metadata: junk } as never);
+      assert.equal("result_metadata" in row, false, String(JSON.stringify(junk)));
+    }
+    // an EMPTY record is absence, not a metadata bag
+    const emptyMeta = sidecarStageOf({ id: "s", name: "n", index: 0, status: "queued", metadata: {} });
+    assert.equal("result_metadata" in emptyMeta, false);
+  })
 });
 
 describe("runRel", () => {

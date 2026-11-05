@@ -26,6 +26,13 @@ export interface SidecarStage {
         name: string;
     }>;
     readonly result_outputs?: Record<string, unknown>;
+    /** THE SETTLED RESULT'S METADATA (the h3 history-load audit's cure
+     *  3, dev_docs/audits/journey/h3-history-load-video-2026-11-05.md):
+     *  the run stage row's own `metadata` record — the gateway's film
+     *  probe + history stamps — served beside result_outputs so the
+     *  sidecar carries the settled face, not just the engine outputs.
+     *  Absent when the row stamps none (the doc never fabricates). */
+    readonly result_metadata?: Record<string, unknown>;
     readonly error?: string;
     readonly merged?: boolean;
     readonly outputs: Record<string, unknown>;
