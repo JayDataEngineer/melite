@@ -238,6 +238,7 @@ const CTX = (over: Record<string, unknown> = {}): ManageCtx =>
     // rides the ctx (config-named roots, never an env seam) — own
     // root first, then whatever extras the test arms below pin.
     stateRoots: rootsManifest(resolveStateRoot({ repoRoot: ROOT }), EXTRAS),
+    comfyUnit: "estate-comfyui.service",
     endpoint: () => ({ provision: "managed", url: "http://engine:8188" }),
     autoProvision: false,
      models: { allDecls: () => [] } as unknown as ManageCtx["models"],
@@ -769,14 +770,17 @@ describe("hLifecycle cancellation", () => {
 });
 
 describe("hLogs", () => {
-  it("tails the journal (clamped) and degrades without it", async () => {
+  it("tails the journal (clamped), stamps the source, and degrades without it", async () => {
     mkRoot();
     try {
       fakeBin({ journalctl: { out: "l1\n\nl2\n", code: 0 } });
       const [code, env] = await manage({ action: "logs", tail: 9999 });
       assert.equal(code, 200);
-      assert.match(env.detail, /2 log line\(s\)/);
-      assert.deepEqual(env.data, ["l1", "l2"]);
+      assert.match(env.detail, /2 journal line\(s\)/);
+      assert.match(env.detail, /source: systemd unit estate-comfyui\.service/);
+      const data = env.data as { source: { kind: string; unit: string }; app_log: Record<string, unknown>; lines: string[] };
+      assert.equal(data.source.kind, "journal");
+      assert.deepEqual(data.lines, ["l1", "l2"]);
       process.env.PATH = mkdtempSync(join(tmpdir(), "emptybin-"));
       const [c2, e2] = await manage({ action: "logs" });
       assert.equal(c2, 503);

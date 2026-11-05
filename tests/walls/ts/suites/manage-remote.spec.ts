@@ -1,8 +1,11 @@
 // manage-remote.spec.ts — the manage Typert remote wall (STROKE K,
 // 2026-09-10): the thin adapter over the manage seat, following the
-// runs-remote recipe. Hermetic by construction: COMFYUI_ENDPOINT_CONFIG
-// points at a tmp file whose engine url is a dead port — no wall ever
-// depends on a live engine. Pins three facts:
+// runs-remote recipe. Hermetic about the ENGINE by construction:
+// COMFYUI_ENDPOINT_CONFIG points at a tmp file whose engine url is a
+// dead port — no wall ever depends on a live engine. (The status arm's
+// unit census does consult the host's keyless systemd — D3-02 / R-2 —
+// so its pins assert the voice LAW, not the box's health.) Pins three
+// facts:
 //   1. the namespace + delegation — the adapter's act answers the
 //      seat's envelope (the local disk-math action, engine-agnostic);
 //   2. the refusal — a dead engine endpoint surfaces as the ONE
@@ -136,16 +139,32 @@ test("status never lies about downness: a dead endpoint ANSWERS ok with reachabl
   const { adapter, fiber } = await boot();
   const sig = new AbortController().signal;
   // hStatus's truth (managePlane SSOT): an unreachable engine is
-  // DATA, not an error — the envelope resolves ok with detail
-  // "server not reachable" and the probe riding the data. The wall
-  // pins this against the boot's dead port (never a live-engine
-  // accident).
+  // DATA, not an error — the envelope resolves ok with the down
+  // voice and the probe riding the data. The voice is the
+  // truth-law (D3-02 / R-2), not a fixed string: bare when the
+  // unit census is settled or unknown, the dying-suffix when the
+  // census saw a restart/OOM loop. The wall pins the LAW's two
+  // shapes — never the box's own health (this dev box burns:
+  // its real unit answers restarts 3, oom 4).
   const envelope = await adapter.remoteExportAct({ action: "status" }, sig);
   assert.equal(envelope.action, "status");
   assert.equal(envelope.ok, true);
-  assert.equal(envelope.detail, "server not reachable");
-  const data = envelope.data as { manager: { reachable?: boolean } };
+  assert.match(
+    envelope.detail,
+    /^server not reachable( — the unit keeps dying \(.+\))?$/,
+    envelope.detail,
+  );
+  const data = envelope.data as {
+    manager: { reachable?: boolean };
+    engine_unit?: { known: boolean; verdict: string; note?: string };
+  };
   assert.equal(data.manager.reachable, false);
+  // The census rides the data beside the probe: either an honest
+  // unknown (why named) or a real verdict — never an invented row.
+  const unit = data.engine_unit;
+  assert.ok(unit, "engine_unit must ride the status data");
+  if (!unit.known) assert.ok(unit.note, unit.note ?? "");
+  else assert.ok(["degraded", "settled"].includes(unit.verdict), unit.verdict);
   await fiber.dispose();
 });
 

@@ -119,7 +119,13 @@ describe("ManageGatewayService", () => {
     const env = await svc.act({ action: "status" }, new AbortController().signal);
     assert.equal(env.ok, true);
     assert.equal(env.action, "status");
-    assert.equal(env.detail, "server up");
+    // THE ROUTED-RAIL LAW (this arm's subject): the gateway seat
+    // returns the plane's ok envelope. The engine-truth census
+    // (D3-02/R-2) made the detail answer what the deployment's OWN
+    // unit says — this box's real engine unit carries restarts +
+    // oom evidence in systemd, so pinning one word would pin the
+    // box's health, not the rail. The honest words are one of three.
+    assert.match(env.detail, /^server (up|degraded|not reachable)/);
   });
 
   // THE TIMER SEAT'S STRUCTURAL BRIDGE (the coverage queue's

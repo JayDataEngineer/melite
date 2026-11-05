@@ -12,7 +12,7 @@
 // Erasable-syntax TS only (node --experimental-strip-types).
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { readFileSync } from "node:fs";
+import { closeSync, fstatSync, openSync, readFileSync, readSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { resolveRuntimeProvision, nodeRuntimeFs, runtimeEnvView, engineOutputDir, engineRootOf, sentinelHit } from "./runtimeProvision.ts";
 import { loadShippedExtensionManifest } from "@melite/comfyui-cordis/provisioning-manifest";
@@ -49,7 +49,8 @@ import type {
 } from "@melite/estate-provisioning";
 import { AcquireBusyError, LIVE_ACQUIRE_STATES } from "@melite/estate-provisioning";
 import { ManagerApiError, managerGet, managerPost, planeUnavailable } from "./managerRail.ts";
-import { probeEndpoint, activeRuns, managerSecurity, engineQueueView, settleStaleClaims } from "./manageProbe.ts";
+import { probeEndpoint, activeRuns, managerSecurity, engineQueueView, settleStaleClaims, engineUnitCensus, countOomLines } from "./manageProbe.ts";
+import type { EngineUnitCensus } from "./manageProbe.ts";
 import { runPreflight, preflightLine } from "./managePreflight.ts";
 import { base, mapManagerRefused, mapRail, railMs, estateOnly, awaitQueueDrained, systemctl, guardLifecycle } from "./manageOps.ts";
 import { holdLifecycle } from "./lifecycleLatch.ts";
@@ -497,6 +498,28 @@ function engineBootReceiptPath(ctx: ManageCtx): string {
   return join(ctx.repoRoot, "data", "runtime", "comfyui", ".estate-engine-boot.json");
 }
 
+// THE CENSUS VOICE (D3-02 / R-2): the map's own spelling —
+// `degraded (restarts 3, last exit 9/KILL, oom 4)` — composed from
+// the census row's carried fields, never from invented zeros.
+const SIGNAL_NAMES: Record<number, string> = {
+  1: "HUP", 2: "INT", 3: "QUIT", 4: "ILL", 6: "ABRT", 8: "FPE",
+  9: "KILL", 10: "USR1", 11: "SEGV", 12: "USR2", 13: "PIPE", 14: "ALRM", 15: "TERM",
+};
+
+function censusWords(census: EngineUnitCensus): string {
+  const parts: string[] = [];
+  if (census.restarts !== undefined) parts.push("restarts " + census.restarts);
+  if (census.last_exit_status !== undefined) {
+    if (census.last_exit_code === "killed") {
+      parts.push("last exit " + census.last_exit_status + "/" + (SIGNAL_NAMES[census.last_exit_status] ?? ("SIG" + census.last_exit_status)));
+    } else if (census.last_exit_code !== undefined) {
+      parts.push("last exit " + census.last_exit_status + "/" + census.last_exit_code);
+    }
+  }
+  if (census.oom_kills !== undefined && census.oom_kills > 0) parts.push("oom " + census.oom_kills);
+  return parts.join(", ");
+}
+
 async function recordEngineBoot(ctx: ManageCtx, source: string): Promise<void> {
   try {
     // J6: the receipt rides the package's atomic writer — a bare
@@ -726,6 +749,14 @@ function versionOptions(doc: unknown): VersionOption[] {
 async function hStatus(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
   const cfg = ctx.endpoint();
   const endpoint = await probeEndpoint(ctx);
+  // THE ENGINE-UNIT CENSUS (D3-02 / R-2, 2026-11-05 — the F3-09 green
+  // lie): launched beside the probe, not after it — the status face
+  // answers inside the plane's 5s wall, and the census's own execs
+  // carry their 1.5s fuses (manageProbe). Reachability is what the
+  // HTTP door answers; the unit census is what systemd knows — a
+  // monotonic self-kill loop (restart counter 270, exit 9/KILL) is
+  // exactly the shape a reachable mid-boot window reports as "up".
+  const unitCensus: Promise<EngineUnitCensus> = engineUnitCensus(ctx);
   const active = activeRuns(ctx.stateRoots);
   // THE FINDING-10 SPLIT (2026-10-13): the census is fail-closed by
   // law (unreadable ⇒ active — guardLifecycle refuses restarts on
@@ -812,7 +843,22 @@ async function hStatus(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelop
   // levels: row OR item unknown.
   const censusPartial = resourceRows.some((row) => row.state === "unknown")
     || resourceRows.some((row) => (row.items ?? []).some((item) => item.state === "unknown"));
-  const state = endpoint.reachable ? "up" : "down";
+  const census = await unitCensus;
+  if (signalIsAborted(ctx.signal)) throw abortReason(ctx.signal);
+  // THE STATE TRUTH (D3-02 / R-2): reachability alone stamped the
+  // lie; the state consults the census — a reachable engine inside a
+  // restart/oom loop reads `degraded`, never `up`. An unanswerable
+  // census changes nothing (known:false is honest absence, the
+  // provisioning-absence posture — no invented degradation).
+  const degraded = endpoint.reachable && census.verdict === "degraded";
+  const state = endpoint.reachable ? (degraded ? "degraded" : "up") : "down";
+  const detail = degraded
+    ? "server degraded (" + censusWords(census) + ")"
+    : endpoint.reachable
+      ? "server up"
+      : census.verdict === "degraded"
+        ? "server not reachable — the unit keeps dying (" + censusWords(census) + ")"
+        : "server not reachable";
   const nextAction = nextActionFor(endpoint.reachable, normalized, routing.mode === "managed");
   const catalog = modelOptions(ctx.models);
   const data = {
@@ -836,6 +882,7 @@ async function hStatus(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelop
       ? { active_runs_note: active.length + " claims; the one-run law bounds machine-wide actives at 1 — the surplus is unsettled sidecars (historical); the engine queue corroborates only when empty" }
       : {}),
     engine_boot: engineBootRow(ctx),
+    engine_unit: census,
     routing,
     auto_provision: ctx.autoProvision,
     resources: resourceRows,
@@ -843,7 +890,151 @@ async function hStatus(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelop
     operations,
     ...(resourcesDetail === undefined ? {} : { resources_detail: resourcesDetail }),
   };
-  return ok(req.action, endpoint.reachable ? "server up" : "server not reachable", data);
+  return ok(req.action, detail, data);
+}
+
+// ── the logs door's truth stamp (D3-02 / R-2, 2026-11-05) ───────────
+// THE BURN (FRICTION_3.md:14 / the cure map §1): the logs door
+// surfaced systemd unit lines ONLY — kernel OOM kills, restart
+// counters — and titled them "log lines", while the engine's
+// application log (`user/comfyui_<port>.log`, the engine's own file
+// inside the runtime tree) sat stale since 10-23 and nothing in the
+// repo reads or writes it. The door's honest duty on every build:
+// never present wrapper lines AS application output — name the
+// source and the staleness. The engine unit WRITING the app log is
+// the operator's bench half; this door names what it reads, never
+// what it wishes were there.
+
+/** Systemd's own harness lines: the unit-prefixed wrapper rows
+ *  (`<unit>: Main process exited, ...`) and the manager's phrasing.
+ *  Application output (the engine's own stdout) never carries these;
+ *  the oom markers are counted separately (countOomLines — the census
+ *  probe's one truth, two readers). */
+function wrapperLineCount(lines: readonly string[], unit: string): number {
+  const unitPrefix = unit.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ":";
+  const re = new RegExp("(?:^|\\s)(" + unitPrefix + "|systemd\\[\\d+\\]:|Main process exited|Failed with result|Scheduled restart job|Consumed )");
+  return lines.filter((ln) => re.test(ln)).length;
+}
+
+/** The managed app-log path derives from the endpoint's own engine
+ *  port (`--port <port> ... --user-directory user`, no --log-file —
+ *  provision-instance-managed's boot line): the engine's own file
+ *  inside the runtime tree. BYO keeps journal-only (the map's split:
+ *  the derivation is managed-mode; a user-owned tree is never
+ *  pathed). @returns the port string, or null when the endpoint
+ *  config carries no port to derive from. */
+function appLogPort(ctx: ManageCtx): string | null {
+  const cfg = ctx.endpoint();
+  if (cfg["provision"] !== "managed") return null;
+  const url = typeof cfg["url"] === "string" ? (cfg["url"] as string) : "";
+  const m = /:(\d+)(?:\/|$)/.exec(url);
+  return m === null ? null : m[1]!;
+}
+
+function appLogPath(ctx: ManageCtx, port: string): string {
+  return join(ctx.repoRoot, "data", "runtime", "comfyui", "user", "comfyui_" + port + ".log");
+}
+
+/** THE FRESH BOUND: an app log within the hour, or written since the
+ *  last known engine boot (the estate's restart receipt), may be the
+ *  live application log. Anything older predates the current engine —
+ *  the burn's stale-since-10-23 file — and is named STALE, never
+ *  served as live output. */
+const APP_LOG_FRESH_MS = 3_600_000;
+/** Bounded read: the tail served from a fresh app log never walks
+ *  past this window of the file. */
+const APP_LOG_TAIL_BYTES = 65_536;
+
+/** Last `max` non-empty lines of a file, read from a bounded window
+ *  at the end — the app log can be megabytes; the door never reads
+ *  it whole. */
+function tailLines(path: string, max: number): string[] {
+  const fd = openSync(path, "r");
+  try {
+    const size = fstatSync(fd).size;
+    const len = Math.min(size, APP_LOG_TAIL_BYTES);
+    const buf = Buffer.alloc(len);
+    readSync(fd, buf, 0, len, size - len);
+    const lines = buf.toString("utf8").split("\n");
+    if (len < size) lines.shift(); // a partial first line (window cut)
+    return lines.filter((ln) => ln !== "").slice(-max);
+  } finally {
+    closeSync(fd);
+  }
+}
+
+/** The app-log liveness stamp: stat the derivable path, judge fresh
+ *  against the boot receipt, and when fresh serve its tail. Absent,
+ *  stale, and underivable are HONEST WORDS — never invented lines. */
+function appLogRow(ctx: ManageCtx, port: string | null, tail: number): Record<string, unknown> {
+  if (port === null) {
+    return {
+      known: false,
+      verdict: "unknown",
+      note: "no app log known — " + (ctx.endpoint()["provision"] === "managed"
+        ? "the endpoint config carries no engine port to derive the path from"
+        : "a byo endpoint's engine tree is user-owned; the estate paths only its managed deployment"),
+    };
+  }
+  const path = appLogPath(ctx, port);
+  let mtimeMs: number;
+  try {
+    mtimeMs = statSync(path).mtimeMs;
+  } catch {
+    return {
+      known: false,
+      verdict: "absent",
+      path,
+      note: "no engine application log on disk — the unit's stdout capture never wrote one at this path; the journal tail is systemd's harness capture (restarts/exits/oom), never application output",
+    };
+  }
+  const ageSeconds = Math.max(0, Math.round((Date.now() - mtimeMs) / 1000));
+  const boot = engineBootRow(ctx);
+  const bootMs = boot.known === true && typeof boot.boot_at === "string" ? Date.parse(boot.boot_at) : NaN;
+  const fresh = ageSeconds * 1000 <= APP_LOG_FRESH_MS || (Number.isFinite(bootMs) && mtimeMs >= bootMs);
+  if (!fresh) {
+    return {
+      known: true,
+      verdict: "stale",
+      path,
+      last_write: new Date(mtimeMs).toISOString(),
+      age_seconds: ageSeconds,
+      note: "STALE — the engine's application log predates the current engine (last write " +
+        new Date(mtimeMs).toISOString() + ", " + ageSeconds + "s ago); no live application output is reachable through this door",
+    };
+  }
+  return {
+    known: true,
+    verdict: "fresh",
+    path,
+    last_write: new Date(mtimeMs).toISOString(),
+    age_seconds: ageSeconds,
+    lines: tailLines(path, tail),
+  };
+}
+
+/** The detail line: the whole stamp in one honest sentence — count,
+ *  source (journal unit + why), wrapper/oom census of what the tail
+ *  actually carries, and the application-log verdict. */
+function logsDetail(
+  lineCount: number,
+  unit: string,
+  wrapper: number,
+  oom: number,
+  appLog: Record<string, unknown>,
+): string {
+  const censusText = wrapper + " systemd wrapper line(s)" + (oom > 0 ? ", " + oom + " oom-kill line(s)" : "");
+  let appLogWords: string;
+  if (appLog.verdict === "fresh") {
+    appLogWords = "fresh — last write " + String(appLog.last_write) + " (" + String(appLog.age_seconds) + "s ago); its tail is attached below";
+  } else if (appLog.verdict === "stale") {
+    appLogWords = "STALE — last write " + String(appLog.last_write) + " (" + String(appLog.age_seconds) + "s ago); no live application output is reachable through this door";
+  } else {
+    appLogWords = String(appLog.note);
+  }
+  return lineCount + " journal line(s) — source: systemd unit " + unit +
+    " (the unit's stdout capture: " + censusText + "; NOT the engine's application log)" +
+    " — engine application log: " + appLogWords;
 }
 
 async function hLogs(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
@@ -866,7 +1057,19 @@ async function hLogs(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]
   }
   throwIfAborted(ctx.signal);
   const lines = stdout.split("\n").filter((ln) => ln !== "");
-  return ok(req.action, lines.length + " log line(s) from " + ctx.comfyUnit, lines);
+  const wrapper = wrapperLineCount(lines, ctx.comfyUnit);
+  const oom = countOomLines(lines);
+  const appLog = appLogRow(ctx, appLogPort(ctx), tail);
+  const data = {
+    source: {
+      kind: "journal",
+      unit: ctx.comfyUnit,
+      why: "systemd's capture of the unit's stdout — restarts, exits, oom kills live here; the engine's application log answers under app_log, never inside these lines",
+    },
+    app_log: appLog,
+    lines,
+  };
+  return ok(req.action, logsDetail(lines.length, ctx.comfyUnit, wrapper, oom, appLog), data);
 }
 
 async function hSearch(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {

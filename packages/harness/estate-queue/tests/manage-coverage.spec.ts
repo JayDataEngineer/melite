@@ -602,7 +602,11 @@ describe("manage queue and child seats", () => {
     };
     const [logsCode, logsEnvelope] = await run({ action: "logs", tail: 0 });
     assert.equal(logsCode, 200);
-    assert.deepEqual(logsEnvelope.data, ["first", "second"]);
+    const logsData = logsEnvelope.data as { source: { kind: string; unit: string }; app_log: { known: boolean }; lines: string[] };
+    assert.deepEqual(logsData.lines, ["first", "second"]);
+    assert.equal(logsData.source.kind, "journal");
+    assert.equal(logsData.source.unit, "melite-comfyui.service");
+    assert.equal(logsData.app_log.known, false);
     assert.deepEqual(calls[0]?.args.slice(0, 4), ["--user", "-u", "melite-comfyui.service", "-n"]);
     assert.equal(calls[0]?.args[4], "1");
 

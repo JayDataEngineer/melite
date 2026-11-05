@@ -61,5 +61,40 @@ interface EndpointView {
  *  the timer fuse into one signal with dispose-once cleanup (the
  *  disposal guarantee the timer service seat used to carry). */
 export declare function probeEndpoint(mctx: ManageCtx): Promise<EndpointView>;
+/** @param lines - journal output lines (already split, non-empty).
+ *  @returns how many lines carry an oom-kill marker. */
+export declare function countOomLines(lines: readonly string[]): number;
+/** The systemd census of the estate's engine unit (the probe seat
+ *  beside probeEndpoint — the reachability probe knows the HTTP door,
+ *  this knows the unit the engine dies inside). */
+export interface EngineUnitCensus {
+    /** false names WHY in {@link note} — the read arms answer, they
+     *  never invent a verdict over an unanswerable lane (the
+     *  provisioning-absence posture, 2026-09-26). */
+    known: boolean;
+    unit: string;
+    /** systemctl show NRestarts — the restart counter the burn watched
+     *  climb 1→3→270. */
+    restarts?: number;
+    /** systemctl show ExecMainStatus — the raw exit status (9 for the
+     *  burn's `status=9/KILL`). */
+    last_exit_status?: number;
+    /** systemctl show ExecMainCode — "killed" | "exited" | ... verbatim. */
+    last_exit_code?: string;
+    /** systemctl show ExecMainExitTimestamp, verbatim (systemd's own
+     *  spelling — never reformatted into a claim). */
+    last_exit_at?: string;
+    /** oom-kill lines in the recent journal tail (countOomLines). */
+    oom_kills?: number;
+    /** "degraded" (restart loop / signal death / oom evidence),
+     *  "settled" (answered, no anomaly), "unknown" (could not answer). */
+    verdict: "degraded" | "settled" | "unknown";
+    note?: string;
+}
+/** @param mctx - the manage context (unit + signal).
+ *  @returns the unit census; `known:false` + note when systemd or the
+ *  journal cannot answer (BYO lane, bus-less box) — never invented
+ *  zeros dressed as data. @throws the caller's own abort (N-S2). */
+export declare function engineUnitCensus(mctx: ManageCtx): Promise<EngineUnitCensus>;
 export {};
 //# sourceMappingURL=manageProbe.d.ts.map

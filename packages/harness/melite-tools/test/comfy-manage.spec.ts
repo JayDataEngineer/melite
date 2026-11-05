@@ -10,6 +10,13 @@
 //      is a crash.
 //   4. PRESENTATION: ComfyUI <action> card; the render names
 //      action + detail, never throwing on junk.
+//   5. ENGINE TRUTH (@contract infra-manage-plane-status-truth):
+//      engine_boot and the engine_unit census render at the status
+//      face — a payload key nobody prints is a voice nobody heard —
+//      and the logs render carries the source stamp above the nested
+//      lines it unwraps.
+
+// @contract infra-manage-plane-status-truth
 
 import { describe, test } from 'vitest'
 import assert from 'node:assert/strict'
@@ -959,5 +966,71 @@ describe('comfy_manage settle_stale + provision_runtime — the cure verbs ride 
     } finally {
       globalThis.fetch = realFetch
     }
+  })
+})
+
+describe('comfy_manage render — the engine truth rows (D3-02 / R-2)', () => {
+  const text = (tool: ReturnType<typeof comfyManage>, value: unknown): string =>
+    (tool.output.render({}, asJson(value)) as Array<{ text?: string }>).map((part) => part.text ?? '').join('\n')
+
+  test('engine_boot renders — known and unknown — and the engine_unit census renders beside the state line', () => {
+    const tool = comfyManage(stubEstate())
+    const truth = text(tool, {
+      ok: true,
+      action: 'status',
+      detail: 'server degraded (restarts 3, last exit 9/KILL, oom 2)',
+      data: {
+        state: 'degraded',
+        endpoint: { reachable: true, url: 'http://engine:8289' },
+        engine_boot: { known: true, boot_at: '2026-11-04T17:35:12.000Z', age_seconds: 42, source: 'estate' },
+        engine_unit: {
+          known: true,
+          unit: 'estate-comfyui.service',
+          restarts: 3,
+          last_exit_status: 9,
+          last_exit_code: 'killed',
+          last_exit_at: 'Tue 2026-11-04 17:35:12 UTC',
+          oom_kills: 2,
+          verdict: 'degraded',
+        },
+      },
+    })
+    assert.match(truth, /state: degraded/)
+    assert.match(truth, /engine boot: 2026-11-04T17:35:12\.000Z · age 42s · source estate/)
+    assert.match(truth, /engine unit estate-comfyui\.service: degraded — restarts 3 · last exit 9\/killed · at Tue 2026-11-04 17:35:12 UTC · oom-kill lines 2/)
+
+    const unknown = text(tool, {
+      ok: true,
+      action: 'status',
+      detail: 'server up',
+      data: {
+        state: 'up',
+        engine_boot: { known: false, note: 'engine booted outside the estate restart door — age unknown' },
+        engine_unit: { known: false, unit: 'estate-comfyui.service', verdict: 'unknown', note: 'the unit census cannot answer on this lane: no systemd bus' },
+      },
+    })
+    assert.match(unknown, /engine boot: unknown — engine booted outside the estate restart door/)
+    assert.match(unknown, /engine unit: unknown — the unit census cannot answer on this lane/)
+  })
+
+  test('the logs render keeps the source stamp above the nested lines it unwraps', () => {
+    const tool = comfyManage(stubEstate())
+    const out = text(tool, {
+      ok: true,
+      action: 'logs',
+      detail: "4 journal line(s) — source: systemd unit estate-comfyui.service (the unit's stdout capture: 3 systemd wrapper line(s), 2 oom-kill line(s); NOT the engine's application log) — engine application log: STALE — last write 2026-10-23T00:00:00.000Z (7200s ago); no live application output is reachable through this door",
+      data: {
+        source: { kind: 'journal', unit: 'estate-comfyui.service', why: "systemd's capture of the unit's stdout" },
+        app_log: { known: true, verdict: 'stale', path: '/repo/data/runtime/comfyui/user/comfyui_8289.log', last_write: '2026-10-23T00:00:00.000Z', age_seconds: 7200 },
+        lines: [
+          'estate-comfyui.service: Main process exited, code=killed, status=9/KILL',
+          "estate-comfyui.service: Failed with result 'oom-kill'.",
+        ],
+      },
+    })
+    assert.match(out, /comfy_manage logs: 4 journal line\(s\) — source: systemd unit estate-comfyui\.service/)
+    assert.match(out, /NOT the engine's application log/)
+    assert.match(out, /Main process exited, code=killed, status=9\/KILL/)
+    assert.match(out, /Failed with result 'oom-kill'\./)
   })
 })

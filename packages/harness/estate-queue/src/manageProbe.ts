@@ -1,11 +1,15 @@
 // manageProbe.ts — the manage plane's estate probes (extracted
 // from managePlane.ts, the god-file cut): the TS-native status
 // walk, the active-runs census, and the manager security probe.
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { ManageCtx } from "./managePlane.ts";
 import { sweepOutputRoots } from "./cardsDangling.ts";
 import { deadline } from "@deepseek-ai/dsh-timeout";
+
+const execFileAsync = promisify(execFile);
 
 // ── runs / security / probe (TS-native) ────────────────────────────
 const STATUS_RE = /"status"\s*:\s*"([a-z]+)"/;
@@ -233,4 +237,136 @@ export async function probeEndpoint(mctx: ManageCtx): Promise<EndpointView> {
   } finally {
     dl[Symbol.dispose]();
   }
+}
+
+// ── the engine-unit census (D3-02 / R-2, 2026-11-05) ────────────────
+// THE BURN (FRICTION_3 W-P2-3a / F3-09): the audio pack's env assert
+// self-killed the engine at boot in a systemd restart loop (restart
+// counter 270) while `comfy_manage status` read `state: up / endpoint:
+// reachable` — reachability is the WHOLE truth the status stamp knew,
+// and a monotonic self-kill loop answers it green. The census reads
+// the truth the deployment already keeps: `systemctl --user show`
+// (restart count, last exit code) plus the same journal the logs door
+// reads (oom-kill lines). Keyless execs, the manageOps class.
+
+/** One line of journal output counted as an oom kill. systemd's own
+ *  result word (`oom-kill`), the cgroup event (`oom_kill`), and the
+ *  kernel's killer line (`Out of memory:`) — the burn's evidence all
+ *  reached the tool face through this exact read, uninterpreted. */
+const OOM_LINE_RE = /oom-kill|oom_kill|Out of memory:/i;
+
+/** @param lines - journal output lines (already split, non-empty).
+ *  @returns how many lines carry an oom-kill marker. */
+export function countOomLines(lines: readonly string[]): number {
+  return lines.filter((ln) => OOM_LINE_RE.test(ln)).length;
+}
+
+/** The systemd census of the estate's engine unit (the probe seat
+ *  beside probeEndpoint — the reachability probe knows the HTTP door,
+ *  this knows the unit the engine dies inside). */
+export interface EngineUnitCensus {
+  /** false names WHY in {@link note} — the read arms answer, they
+   *  never invent a verdict over an unanswerable lane (the
+   *  provisioning-absence posture, 2026-09-26). */
+  known: boolean;
+  unit: string;
+  /** systemctl show NRestarts — the restart counter the burn watched
+   *  climb 1→3→270. */
+  restarts?: number;
+  /** systemctl show ExecMainStatus — the raw exit status (9 for the
+   *  burn's `status=9/KILL`). */
+  last_exit_status?: number;
+  /** systemctl show ExecMainCode — "killed" | "exited" | ... verbatim. */
+  last_exit_code?: string;
+  /** systemctl show ExecMainExitTimestamp, verbatim (systemd's own
+   *  spelling — never reformatted into a claim). */
+  last_exit_at?: string;
+  /** oom-kill lines in the recent journal tail (countOomLines). */
+  oom_kills?: number;
+  /** "degraded" (restart loop / signal death / oom evidence),
+   *  "settled" (answered, no anomaly), "unknown" (could not answer). */
+  verdict: "degraded" | "settled" | "unknown";
+  note?: string;
+}
+
+/** The census bound: the status face answers inside the plane's 5s
+ *  wall (STATUS_RECONCILE_MS's own comment) — both execs ride 1.5s
+ *  fuses so a hung bus can never eat the status answer; a census that
+ *  cannot answer in time is an honest `unknown`, never a lie. */
+const CENSUS_EXEC_MS = 1_500;
+
+/** THE DEGRADED LAW: two unplanned restarts, a SIGKILL last exit (the
+ *  burn's `status=9/KILL` — signal 9 never arrives from a clean
+ *  stop), or oom evidence in the recent journal. One of these alone
+ *  degrades; a reachable /system_stats cannot clear them. */
+const DEGRADE_RESTART_FLOOR = 2;
+const KILL_SIGNAL = 9;
+
+/** @param mctx - the manage context (unit + signal).
+ *  @returns the unit census; `known:false` + note when systemd or the
+ *  journal cannot answer (BYO lane, bus-less box) — never invented
+ *  zeros dressed as data. @throws the caller's own abort (N-S2). */
+export async function engineUnitCensus(mctx: ManageCtx): Promise<EngineUnitCensus> {
+  const unit = mctx.comfyUnit;
+  const execOpts = { timeout: CENSUS_EXEC_MS, encoding: "utf8" as const, signal: mctx.signal };
+  const [propsResult, journalResult] = await Promise.allSettled([
+    execFileAsync("systemctl", [
+      "--user", "show", unit,
+      "--property=NRestarts",
+      "--property=ExecMainStatus",
+      "--property=ExecMainCode",
+      "--property=ExecMainExitTimestamp",
+    ], execOpts),
+    execFileAsync("journalctl", ["--user", "-u", unit, "-n", "200", "--no-pager", "-o", "cat"], execOpts),
+  ]);
+  rethrowIfCallerAborted(mctx.signal);
+  const props: Record<string, string> = {};
+  if (propsResult.status === "fulfilled") {
+    for (const line of (propsResult.value as { stdout: string }).stdout.split("\n")) {
+      const m = /^([A-Za-z]+)=(.*)$/.exec(line);
+      if (m) props[m[1]!] = m[2]!;
+    }
+  }
+  if (props["NRestarts"] === undefined && props["ExecMainCode"] === undefined) {
+    const why = propsResult.status === "rejected"
+      ? String((propsResult.reason as { message?: string; stderr?: string }).stderr ?? (propsResult.reason as Error).message).trim().slice(0, 120)
+      : "systemd answered nothing parseable";
+    return { known: false, unit, verdict: "unknown", note: "the unit census cannot answer on this lane: " + why };
+  }
+  let oomKills: number | undefined;
+  let journalNote: string | undefined;
+  if (journalResult.status === "fulfilled") {
+    const lines = (journalResult.value as { stdout: string }).stdout.split("\n").filter((ln) => ln !== "");
+    oomKills = countOomLines(lines);
+  } else {
+    journalNote = "the journal tail could not be read for oom lines (" +
+      String((journalResult.reason as Error).message).trim().slice(0, 80) + ")";
+  }
+  const restarts = Number.parseInt(props["NRestarts"] ?? "", 10);
+  // THE UNSET-ENUM LAW: systemd prints an unset enum as its numeric
+  // encoding (`ExecMainCode=0`, `ExecMainStatus=0` — the live-box
+  // census answered exactly that, restarts 3 + oom kills on the
+  // journal). A bare number is "nothing recorded", not an exit code —
+  // carrying `last exit 0/0` would be noise dressed as data. Only a
+  // word-form code (killed / exited) carries its status with it.
+  const codeWord = props["ExecMainCode"] ?? "";
+  const exitCode = /^[A-Za-z]+$/.test(codeWord) ? codeWord : undefined;
+  const exitStatus = exitCode === undefined ? Number.NaN : Number.parseInt(props["ExecMainStatus"] ?? "", 10);
+  const row: EngineUnitCensus = {
+    known: true,
+    unit,
+    verdict: "settled",
+  };
+  if (Number.isFinite(restarts)) row.restarts = restarts;
+  if (exitCode !== undefined) row.last_exit_code = exitCode;
+  if (Number.isFinite(exitStatus)) row.last_exit_status = exitStatus;
+  const exitAt = props["ExecMainExitTimestamp"];
+  if (exitAt !== undefined && exitAt !== "" && exitAt !== "n/a") row.last_exit_at = exitAt;
+  if (oomKills !== undefined) row.oom_kills = oomKills;
+  const degraded = (Number.isFinite(restarts) && restarts >= DEGRADE_RESTART_FLOOR)
+    || (Number.isFinite(exitStatus) && exitStatus === KILL_SIGNAL)
+    || (oomKills !== undefined && oomKills > 0);
+  if (degraded) row.verdict = "degraded";
+  if (journalNote !== undefined) row.note = journalNote;
+  return row;
 }

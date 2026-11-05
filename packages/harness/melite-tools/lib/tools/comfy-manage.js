@@ -157,6 +157,26 @@ function operationText(value) {
     const path = typeof row.path === 'string' ? row.path : undefined;
     return 'operation ' + id + (name === undefined ? '' : ' · ' + name) + ' · ' + state + outcome + (path === undefined ? '' : ' · ' + path);
 }
+/** The engine_unit census row's carried truth (restarts / last exit /
+ *  oom — the map's `degraded (restarts 3, last exit 9/KILL, oom 4)`
+ *  words), composed only from present fields; an oom count of zero
+ *  reads as silence, never as a claim. */
+function unitTruthText(row) {
+    const parts = [];
+    if (typeof row.restarts === 'number')
+        parts.push('restarts ' + String(row.restarts));
+    if (typeof row.last_exit_status === 'number') {
+        const code = typeof row.last_exit_code === 'string' ? row.last_exit_code : 'status';
+        parts.push('last exit ' + String(row.last_exit_status) + '/' + code);
+    }
+    if (typeof row.last_exit_at === 'string')
+        parts.push('at ' + row.last_exit_at);
+    if (typeof row.oom_kills === 'number' && row.oom_kills > 0)
+        parts.push('oom-kill lines ' + String(row.oom_kills));
+    if (typeof row.note === 'string')
+        parts.push(row.note);
+    return parts.length === 0 ? '' : ' — ' + parts.join(' · ');
+}
 function statusText(data, verbose) {
     const value = recordValue(data);
     if (value === null)
@@ -189,6 +209,24 @@ function statusText(data, verbose) {
     const engineQueue = recordValue(value.engine_queue);
     if (engineQueue !== null)
         out.push('engine queue: running ' + asText(engineQueue.running) + ' · pending ' + asText(engineQueue.pending));
+    // THE ENGINE-TRUTH ROWS (D3-02 / R-2, 2026-11-05): engine_boot rode
+    // the status payload since the restart receipt landed but was never
+    // rendered — a payload key nobody prints is a voice nobody heard.
+    // The engine_unit census beside it answers what reachability hides:
+    // a restart loop reads its restarts/exit/oom words here, and the
+    // state line above reads `degraded` from the same census.
+    const boot = recordValue(value.engine_boot);
+    if (boot !== null) {
+        out.push(boot.known === true
+            ? 'engine boot: ' + asText(boot.boot_at) + ' · age ' + asText(boot.age_seconds) + 's · source ' + asText(boot.source)
+            : 'engine boot: unknown — ' + asText(boot.note));
+    }
+    const engineUnit = recordValue(value.engine_unit);
+    if (engineUnit !== null) {
+        out.push(engineUnit.known === true
+            ? 'engine unit ' + asText(engineUnit.unit) + ': ' + asText(engineUnit.verdict) + unitTruthText(engineUnit)
+            : 'engine unit: unknown — ' + asText(engineUnit.note));
+    }
     // THE STALE-COUNT LAW (friction-report #10, 2026-10-28): a long
     // unsettled-sidecar roster dumps a wall of historical parentheticals
     // on every status read. The default names only the COUNT; verbose=true
