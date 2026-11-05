@@ -11,11 +11,16 @@ npm install -g @deepseek-ai/dsh
 ## Seat
 
 ```sh
-dsh plugin --profile melite add "github:JayDataEngineer/melite#v0.2.0-alpha"
+dsh plugin --profile melite add "github:JayDataEngineer/melite#v0.2.1-alpha"
 ```
 
 The command seats the repository into the profile as a prebuilt
 bundle — committed build output, no compile step, no npm registry.
+It pins a tag, never a branch. The pin names the newest tag whose root
+manifest carries a package name: pnpm refuses a `github:` ref whose
+manifest has none (`ERR_PNPM_MISSING_PACKAGE_NAME`), and the
+`v0.2.0-alpha` tag predates that field (CI run 42016860068). Tags are
+immutable; moving forward means cutting a new one.
 Restart an already-running runner after seating; a fresh boot needs
 nothing extra. The estate job server exists as its own profile
 (`estate`); one-shot headless agents are DSH's own surface

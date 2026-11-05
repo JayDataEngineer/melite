@@ -55,13 +55,17 @@ verbatim.
 Seat Melite into a DSH profile — the official DSH way, one command:
 
 ```sh
-dsh plugin --profile melite add "github:JayDataEngineer/melite#v0.2.0-alpha"
+dsh plugin --profile melite add "github:JayDataEngineer/melite#v0.2.1-alpha"
 ```
 
 Installs are pinned to the release tag — they never move on their own.
 To upgrade, run the same command with the newer tag, then restart the
 runner. (Releases are cut as `v*` tags with minted asset bundles;
-`#main` tracks the unreviewed tip and is not the install door.)
+`#main` tracks the unreviewed tip and is not the install door.) The pin
+names the newest tag whose root manifest carries a package name: pnpm
+refuses a `github:` ref whose manifest has none
+(`ERR_PNPM_MISSING_PACKAGE_NAME`), which is why `v0.2.0-alpha` — cut
+before that field existed — is not the seat ref.
 
 An estate job server exists as a separate profile (`estate`); one-shot headless agents
 are DSH's own surface (`dsh headless "task brief"`), not a melite profile.
@@ -71,7 +75,7 @@ are DSH's own surface (`dsh headless "task brief"`), not a melite profile.
 1. Seat — the official DSH way, one command:
 
 ```sh
-dsh plugin --profile melite add "github:JayDataEngineer/melite#v0.2.0-alpha"
+dsh plugin --profile melite add "github:JayDataEngineer/melite#v0.2.1-alpha"
 ```
 
 2. Boot:

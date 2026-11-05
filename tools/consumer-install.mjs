@@ -48,7 +48,7 @@ const dshHome = resolve(argValue('--dsh-home') ?? join(homedir(), '.dsh'))
 const fromDir = argValue('--from') ? resolve(argValue('--from')) : undefined
 const noInstall = process.argv.includes('--no-install')
 const forceRender = process.argv.includes('--force-render')
-if (!tag) fail('--tag is required — pin the release you install (example: --tag v0.2.0-alpha.1)')
+if (!tag) fail('--tag is required — pin the release you install (example: --tag v0.2.1-alpha.1)')
 
 /** The profiles this installer can seat. Mirrors the in-repo renderer's
  *  mounts: the studio (cards, bench, web UI) and the estate job server.

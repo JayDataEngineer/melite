@@ -280,7 +280,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Container seat proof
-        run: 'node tools/cold-start-proof.mjs --container-only --remote "github:JayDataEngineer/melite#v0.2.0-alpha"'
+        run: 'node tools/cold-start-proof.mjs --container-only --remote "github:JayDataEngineer/melite#v0.2.1-alpha"'
 
   # No walls job: the wall suites run inside `unit` (root vitest
   # node project). Live GPU inference stays opt-in locally — it needs
