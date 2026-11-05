@@ -637,7 +637,8 @@ window.__ModuleLoader__.load({
 			"session": zod.z.string().readonly(),
 			"rev": zod.z.number().readonly(),
 			"stage": zod.z.string().readonly(),
-			"input": zod.z.string().readonly()
+			"input": zod.z.string().readonly(),
+			"stale": zod.z.union([zod.z.undefined(), zod.z.literal(true)]).readonly().optional().describe("Present-and-true when the rewire changed what the next run composes (the done mark cleared — the skip law cannot fold it). Absent when the rewire was idempotent. The patch door's own stale voice, same coherence.")
 		});
 		let _melite_estate_drafts_bench_subscribe_parameter_0$schema$value;
 		const _melite_estate_drafts_bench_subscribe_parameter_0$schema = () => _melite_estate_drafts_bench_subscribe_parameter_0$schema$value ??= zod.z.string();
@@ -1332,7 +1333,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1558,
+						"line": 1749,
 						"column": 9
 					}
 				},
@@ -1399,7 +1400,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1570,
+						"line": 1761,
 						"column": 9
 					}
 				},
@@ -1463,7 +1464,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1601,
+						"line": 1794,
 						"column": 9
 					}
 				},
@@ -1527,7 +1528,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1624,
+						"line": 1817,
 						"column": 9
 					}
 				},
@@ -1561,7 +1562,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1489,
+						"line": 1569,
 						"column": 9
 					}
 				},
@@ -1595,7 +1596,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1384,
+						"line": 1459,
 						"column": 9
 					}
 				},
@@ -1659,7 +1660,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1662,
+						"line": 1857,
 						"column": 9
 					}
 				},
@@ -1738,7 +1739,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1548,
+						"line": 1739,
 						"column": 9
 					}
 				},
@@ -1802,7 +1803,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1611,
+						"line": 1804,
 						"column": 9
 					}
 				},
@@ -1870,7 +1871,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1645,
+						"line": 1838,
 						"column": 9
 					}
 				},
@@ -1922,7 +1923,12 @@ window.__ModuleLoader__.load({
 								"session": { "type": "string" },
 								"rev": { "type": "number" },
 								"stage": { "type": "string" },
-								"input": { "type": "string" }
+								"input": { "type": "string" },
+								"stale": {
+									"type": "boolean",
+									"const": true,
+									"description": "Present-and-true when the rewire changed what the next run composes (the done mark cleared — the skip law cannot fold it). Absent when the rewire was idempotent. The patch door's own stale voice, same coherence."
+								}
 							},
 							"required": [
 								"draft_id",
@@ -1936,7 +1942,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1634,
+						"line": 1827,
 						"column": 9
 					}
 				},
@@ -1970,7 +1976,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1402,
+						"line": 1477,
 						"column": 10
 					}
 				},
@@ -2019,7 +2025,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1694,
+						"line": 1893,
 						"column": 9
 					}
 				},
@@ -2083,7 +2089,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1678,
+						"line": 1875,
 						"column": 9
 					}
 				},
@@ -2125,7 +2131,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 788,
+						"line": 863,
 						"column": 9
 					}
 				},
@@ -2159,7 +2165,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 773,
+						"line": 848,
 						"column": 9
 					}
 				},
@@ -2202,7 +2208,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 765,
+						"line": 840,
 						"column": 9
 					}
 				},
@@ -2311,7 +2317,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 911,
+						"line": 986,
 						"column": 9
 					}
 				}
@@ -2832,7 +2838,7 @@ window.__ModuleLoader__.load({
 				},
 				sourceLocation: {
 					"file": "packages/estate/media/src/index.ts",
-					"line": 543,
+					"line": 553,
 					"column": 9
 				}
 			} }
@@ -3261,6 +3267,51 @@ window.__ModuleLoader__.load({
 			}
 			return out;
 		}
+		/**
+		* THE LIVE-ROWS FILTER (GAPS-9, the archived-compile burn: an
+		* archived stale draft's params blocked every future bench-wide
+		* compile). F11 rests archived rows on the RUN faces — the COMPILE
+		* faces rest them too. projectStages strips the archived FLAG (it
+		* is not a wire key) but keeps the ROW, so a spent row's stale
+		* params judged bench-wide. Compile callers filter here FIRST:
+		* only LIVE rows judge. (Read/spell/floor/rewire keep the full
+		* view — they report or touch addressed rows, never judge.)
+		*
+		* Moved to the contract (2026-10-31, F14's estate half): the
+		* projection had ONE writer while only the agent tool composed —
+		* the estate's add-stage gate composes the same view, so the
+		* projection is the contract's now (the audit's Rule 1 law: a
+		* second writer means the same bench reads as a different
+		* document depending on which door projected it).
+		*/
+		function liveBenchRows(stages) {
+			if (!Array.isArray(stages)) return stages;
+			return stages.filter((s) => !(typeof s === "object" && s !== null && !Array.isArray(s) && s["archived"] === true));
+		}
+		/**
+		* Project bench stage rows onto the flow_inline wire contract
+		* (the doors forbid provenance/runStatus/result/title as extras —
+		* they strip; `card` RIDES (STAGE_KEYS admit it) because the
+		* kinds pass derives input kinds from the card's own flowKinds —
+		* stripping it manufactured phantom "wired but untyped" refusals
+		* on correctly-wired card stages; engine defaults comfyui).
+		*/
+		function projectStages(stages) {
+			if (!Array.isArray(stages)) return [];
+			const source = stages.filter((s) => typeof s === "object" && s !== null && !Array.isArray(s));
+			return normalizeBenchStages(source).map((row, i) => {
+				const from = source[i];
+				row["id"] = String(from["id"] ?? "");
+				if (typeof from["id"] === "string" && from["id"] !== "") row["id"] = from["id"];
+				for (const key of Object.keys(row)) {
+					if (key === "expected" || WIRE_STAGE_KEYS.includes(key)) continue;
+					delete row[key];
+				}
+				if (typeof from["expected"] === "object" && from["expected"] !== null && !Array.isArray(from["expected"])) row["expected"] = from["expected"];
+				else delete row["expected"];
+				return row;
+			});
+		}
 		/** Sanitize one candidate id onto a legal bench session key —
 		* 'main' for anything the grammar refuses. THE ONE SPELLING of the
 		* routing decision (the li-ay stroke, 2026-10-11): the decision
@@ -3275,6 +3326,30 @@ window.__ModuleLoader__.load({
 		* sanitize — not four. */
 		function benchSessionOf$1(id) {
 			return typeof id === "string" && SESSION_RE$1.test(id) ? id : "main";
+		}
+		/** Carry one candidate key onto the key the bench doors take — the
+		*  delegated-seat spelling rides VERBATIM, everything else sanitizes
+		*  (benchSessionOf). THE ONE SPELLING of the carry decision (the
+		*  one-seat law's client half, 2026-10-31): the construct tool
+		*  forwards a delegated lane's bench key as `delegate:<key>` (the
+		*  benchKeyOfExec mint), and the estate door re-seats it (drafts
+		*  seatOf) — but the ':' is outside SESSION_RE, so a seat that
+		*  sanitized first silently routed a delegated card to 'main', the
+		*  delegation split alive on the link channel (found by the
+		*  construct-flow-link snapshot replay). The carry lives HERE, beside
+		*  the sanitize it wraps: a seat that re-spelled `SESSION_RE.test`
+		*  over the slice would be a second decision body over the same
+		*  grammar — the exact drift the li-ay stroke killed. Narrow by
+		*  construction: only `delegate:` + a grammar-legal inner key
+		*  carries; junk (`delegate:`, `delegate:not@a/key`, the
+		*  near-miss `delegated:…`) falls to the sanitize like every
+		*  other non-key. */
+		function carriedBenchKey$1(key) {
+			if (typeof key === "string" && key.startsWith("delegate:")) {
+				const inner = key.slice(9);
+				if (SESSION_RE$1.test(inner)) return key;
+			}
+			return benchSessionOf$1(key);
 		}
 		/** THE PARSE-EDGE / TEST MINT: brand a draft id read off the wire or
 		*  disk (route the typeof-guarded value through here at the door
@@ -4498,6 +4573,34 @@ window.__ModuleLoader__.load({
 			row.inflight.add(attempt);
 			return attempt;
 		}
+		/** THE CHAINED DISCRETE WRITE (the 2026-11-03 rapid-pick burn):
+		*  an atomic pick's whole-frame patch through the stage's serialized
+		*  send chain, riding confirmedRev at SEND time — never the
+		*  render-time rev the drill held when the gesture fired. THE BURN:
+		*  the sweep's Variant axis picked turbo → raw → kroma → kroma-base
+		*  with no await between the gestures (the face updates
+		*  optimistically per click); the four direct writes shared one
+		*  render-time rev, every writer collided, and a rebase retry of an
+		*  EARLIER pick landed AFTER the last pick — the face showed Kroma
+		*  Base while the bench held raw, with no error anywhere (the retry
+		*  SUCCEEDED, just late with a stale value). The press would have
+		*  composed raw under a Kroma Base face, and the run gate's
+		*  failedKeys were empty — nothing left to voice it. Through this
+		*  chain the writes land in CLICK order (the link order IS the call
+		*  order), each riding the rev the previous landing answered — the
+		*  same serialization + rev-currency law the trailing seats already
+		*  ride (enqueueSend / scheduleStagePatch's send). The whole-frame
+		*  atomicity the direct door was chosen for is kept: one patch, one
+		*  CAS write, every key ledgered — only the CONCURRENCY is gone.
+		*  UI-authored discrete writes ride here; the flush/force/schedule
+		*  seats keep calling patchStageParams directly (they already ride
+		*  the chain — nesting a chain inside its own link deadlocks). */
+		function patchStageParamsChained(draftId, stageId, patch) {
+			return enqueueSend(draftId, stageId, () => {
+				const confirmed = writeRow(draftId, stageId).confirmedRev;
+				return patchStageParams(draftId, stageId, patch, confirmed ?? void 0);
+			});
+		}
 		/** Report a stage's RUN OUTCOME onto the bench row — the same
 		*  shared-state door (runStatus + result keys of the fixed patch
 		*  set). This is the chain's attribution half: the estate names
@@ -4715,6 +4818,14 @@ window.__ModuleLoader__.load({
 			draftFailed: "draft failed",
 			/** Loading face while the draft id is still composing. */
 			composing: "composing…",
+			/** Run-rooted face (flows-are-compositions law): the terminal note a
+			*  finished flow press names — outputs live in the shell's Media
+			*  page; the card carries no draft to preview against. */
+			runFaceDone: "run finished — outputs in the media bar",
+			/** Run-rooted face: the run stream died before any frame arrived
+			*  (the last-frame-keeps law covers every later death — this is
+			*  the no-frame-ever voice). */
+			runFaceUnreachable: "run stream unreachable",
 			/** Header badge when the call's args body is corrupt (never header-less). */
 			argsUnparseable: "args unparseable — corrupted call record",
 			/** Retry affordance suffix after a load error. */
@@ -6171,6 +6282,30 @@ window.__ModuleLoader__.load({
 		function benchSessionOf(id) {
 			return typeof id === "string" && SESSION_RE.test(id) ? id : "main";
 		}
+		/** Carry one candidate key onto the key the bench doors take — the
+		*  delegated-seat spelling rides VERBATIM, everything else sanitizes
+		*  (benchSessionOf). THE ONE SPELLING of the carry decision (the
+		*  one-seat law's client half, 2026-10-31): the construct tool
+		*  forwards a delegated lane's bench key as `delegate:<key>` (the
+		*  benchKeyOfExec mint), and the estate door re-seats it (drafts
+		*  seatOf) — but the ':' is outside SESSION_RE, so a seat that
+		*  sanitized first silently routed a delegated card to 'main', the
+		*  delegation split alive on the link channel (found by the
+		*  construct-flow-link snapshot replay). The carry lives HERE, beside
+		*  the sanitize it wraps: a seat that re-spelled `SESSION_RE.test`
+		*  over the slice would be a second decision body over the same
+		*  grammar — the exact drift the li-ay stroke killed. Narrow by
+		*  construction: only `delegate:` + a grammar-legal inner key
+		*  carries; junk (`delegate:`, `delegate:not@a/key`, the
+		*  near-miss `delegated:…`) falls to the sanitize like every
+		*  other non-key. */
+		function carriedBenchKey(key) {
+			if (typeof key === "string" && key.startsWith("delegate:")) {
+				const inner = key.slice(9);
+				if (SESSION_RE.test(inner)) return key;
+			}
+			return benchSessionOf(key);
+		}
 		/** THE PARSE-EDGE / TEST MINT: brand a draft id read off the wire or
 		*  disk (route the typeof-guarded value through here at the door
 		*  that pulled it), or mint a test literal. One line, no runtime
@@ -6217,13 +6352,14 @@ window.__ModuleLoader__.load({
 		const CARDS_BENCH_ADDRESS = "dsh-resource://cards/bench";
 		/** The bench address for one session key. */
 		function benchAddressOf(sessionKey) {
-			return CARDS_BENCH_ADDRESS + "/" + benchSessionOf(sessionKey);
+			return CARDS_BENCH_ADDRESS + "/" + carriedBenchKey(sessionKey);
 		}
 		/** The session key a bench address carries (the bare legacy address
-		*  and every non-bench address resolve to 'main'). */
+		*  and every non-bench address resolve to 'main'; a `delegate:`
+		*  tail carries verbatim — the estate door re-seats it). */
 		function benchSessionOfAddress(address) {
 			if (!address.startsWith("dsh-resource://cards/bench/")) return "main";
-			return benchSessionOf(address.slice(27));
+			return carriedBenchKey(address.slice(27));
 		}
 		/** The draft-stage address — the conversation card's studio target
 		*  (the old embed's law; both segments encode, either may carry the
@@ -6277,6 +6413,7 @@ window.__ModuleLoader__.load({
 			if (intent === "" || stages.length !== 1) return stages;
 			const only = stages[0];
 			if (only["card"] !== void 0 && only["card"] !== "") return stages;
+			if (typeof only["ref_flow"] === "string" && only["ref_flow"] !== "") return stages;
 			return [{
 				...only,
 				card: intent
@@ -6309,7 +6446,7 @@ window.__ModuleLoader__.load({
 				rev: typeof doc["rev"] === "number" ? doc["rev"] : 0,
 				stages,
 				log,
-				sessionKey: benchSessionOf(sessionKey)
+				sessionKey: carriedBenchKey(sessionKey)
 			};
 		}
 		/** A missing bench is a FRESH conversation's honest zero state, not a
@@ -6318,7 +6455,7 @@ window.__ModuleLoader__.load({
 		*  birth (rev 1) lands as a FRESH frame and the spotlight reveals
 		*  the very first card. */
 		function emptyBench(sessionKey) {
-			const key = benchSessionOf(sessionKey);
+			const key = carriedBenchKey(sessionKey);
 			return readBench({
 				draft_id: "bench-" + key,
 				rev: 0,
@@ -6333,7 +6470,7 @@ window.__ModuleLoader__.load({
 		*  after its own edits (the provider's bench stream is a single
 		*  snapshot; same-address navigation does not re-run it). */
 		async function fetchBench(sessionKey, signal) {
-			const key = benchSessionOf(sessionKey);
+			const key = carriedBenchKey(sessionKey);
 			try {
 				return readBench(await (0, _melite_card_base_client.unwrapRemote)((0, _melite_card_base_client.estateRemote)().bench.get(key, signal), "bench/get"), key);
 			} catch (e) {
@@ -6425,13 +6562,13 @@ window.__ModuleLoader__.load({
 				return halt;
 			}
 			const lastRevs = /* @__PURE__ */ new Map();
-			let activeKey = benchSessionOf(getSession());
+			let activeKey = carriedBenchKey(getSession());
 			let wakeRekey;
 			let rekeyLatch = new Promise((resolve) => {
 				wakeRekey = () => resolve("rekey");
 			});
 			const offSubscribe = subscribeSession?.(() => {
-				if (benchSessionOf(getSession()) !== activeKey && !stopped) wakeRekey?.();
+				if (carriedBenchKey(getSession()) !== activeKey && !stopped) wakeRekey?.();
 			});
 			const openStream = (key) => remote.$stream({
 				name: "cards bench spotlight",
@@ -6459,7 +6596,7 @@ window.__ModuleLoader__.load({
 							rekeyLatch = new Promise((resolve) => {
 								wakeRekey = () => resolve("rekey");
 							});
-							const wanted = benchSessionOf(getSession());
+							const wanted = carriedBenchKey(getSession());
 							if (wanted !== activeKey) {
 								activeKey = wanted;
 								stream.dispose().catch((error) => {
@@ -6847,7 +6984,10 @@ window.__ModuleLoader__.load({
 		*  the draft never heard of, and an id-only join carried nothing,
 		*  silently. A draft row no run stage names is voiced; a draft
 		*  edited since keeps its surviving rows' outcomes and simply has
-		*  none for new rows. */
+		*  none for new rows. A DETECTED order drift — the position tier's
+		*  stage carries identity naming another draft row — voices and
+		*  SKIPS the carry: a drifted row takes no positional paint (the
+		*  D3 cure). */
 		async function restoreRunToBench(run, sessionKey, signal) {
 			if (run.draftId === null || run.draftId === "") throw new Error("this run names no draft — nothing to restore");
 			if (signal?.aborted === true) return {
@@ -6856,7 +6996,7 @@ window.__ModuleLoader__.load({
 				carried: 0,
 				notes: ["restore aborted before any write"]
 			};
-			const key = benchSessionOf(sessionKey);
+			const key = carriedBenchKey(sessionKey);
 			let draft;
 			try {
 				draft = await (0, _melite_card_base_client.unwrapRemote)((0, _melite_card_base_client.estateRemote)().drafts.get(run.draftId, signal), "drafts/get");
@@ -6916,7 +7056,10 @@ window.__ModuleLoader__.load({
 					const claims = positional.id === draftId ? void 0 : positional.id;
 					const stampClaims = positional.benchStageId === void 0 || positional.benchStageId === draftId ? void 0 : positional.benchStageId;
 					const other = draftIds.find((d) => d !== null && (d === claims || d === stampClaims)) ?? null;
-					if (other !== null) report.notes.push("positional carry for " + draftId + ": run stage " + String(claims ?? stampClaims) + " names another draft row (" + other + ") — the run order drifted from the draft order; the tile paints by position (the LEGACY tier)");
+					if (other !== null) {
+						report.notes.push("positional carry for " + draftId + ": run stage " + String(claims ?? stampClaims) + " names another draft row (" + other + ") — the run order drifted from the draft order; the outcome carry is skipped (no positional paint)");
+						continue;
+					}
 				}
 				if (draftId === null) continue;
 				const runStage = run.stages.find((s) => s.id === draftId) ?? run.stages.find((s) => s.benchStageId === draftId) ?? positional;
@@ -7582,26 +7725,29 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region src/client/chat-preview.ts
-		/** Derive the frozen chat heroes for settled stages.
-		* @param stages The draft doc's stage rows, served verbatim.
-		* @returns One hero per stage with a renderable artifact; mesh/text
-		* stages and stages with no artifacts stay out (never a dead hero). */
-		function chatPreviewsFor(stages) {
+		/** Derive the frozen chat heroes from the call's OWN persisted rows.
+		* @param rows The presentationMeta `previews` array, served verbatim
+		*        (an absent key is an empty list — a card that pressed
+		*        nothing renders no strip, the flood class dies at the root).
+		* @returns One hero per row with a renderable artifact; mesh/text
+		*          rows and rows with no url stay out (never a dead hero). */
+		function chatPreviewsFor(rows) {
 			const out = [];
-			for (const stage of stages) {
-				const stageId = typeof stage.id === "string" && stage.id !== "" ? stage.id : null;
-				if (stageId === null) continue;
-				const runStatus = typeof stage.status === "string" ? stage.status : "";
-				const first = previewArtifactsFor({ result: stage.result }).find((artifact) => {
-					const kind = previewKindFor(artifact.url);
-					return kind === "video" || kind === "image" || kind === "audio";
-				});
-				if (first === void 0) continue;
+			for (const row of rows) {
+				const stageId = typeof row.stage === "string" && row.stage !== "" ? row.stage : null;
+				const url = typeof row.url === "string" && row.url !== "" ? row.url : null;
+				if (stageId === null || url === null) continue;
+				const kind = previewKindFor(url);
+				if (kind !== "video" && kind !== "image" && kind !== "audio") continue;
+				const name = url.split("/").pop() ?? url;
 				out.push({
 					stageId,
-					kind: previewKindFor(first.url),
-					artifacts: [first],
-					runStatus
+					kind,
+					artifacts: [{
+						name: name === "" ? url : name,
+						url
+					}],
+					runStatus: typeof row.status === "string" ? row.status : ""
 				});
 			}
 			return out;
@@ -7659,30 +7805,52 @@ window.__ModuleLoader__.load({
 		*         thin wire caller (client-request frame, api-gateway.md) is
 		*         the sanctioned shape for plugins outside the web kernel.
 		*/
-		/** Parse the melite_flow / card-tool call: the draft id + the model
-		*  header. NATIVE CHANNEL FIRST: a settled result carries the tool's
-		*  persisted presentationMeta (ToolResultNode.meta) with {draft_id} —
-		*  every card tool emits it; the handle is read from meta, never
-		*  parsed out of prose. The render-text token ('card <draftId>') is
-		*  the LEGACY fallback: sessions logged before a tool grew its
-		*  projector still hydrate through the parse rule. */
+		/** Parse the melite_flow / card-tool call: the draft id, the run id
+		*  and the model header. NATIVE CHANNEL FIRST: a settled result
+		*  carries the tool's persisted presentationMeta (ToolResultNode.meta)
+		*  with {draft_id, run_id} — every card tool emits it; the handles
+		*  are read from meta, never parsed out of prose. The render-text
+		*  token ('card <draftId>') is the LEGACY fallback: sessions logged
+		*  before a tool grew its projector still hydrate through the parse
+		*  rule. A run_id WITHOUT a draft_id is the flow press's landing
+		*  (flows-are-compositions law, 2026-11-14: the {flow} start mints
+		*  no draft — the run row IS the press's visible face; no legacy
+		*  arm is owed, every pre-law flow press carried a draft). */
 		function parseCardsBlock(block) {
 			const settled = block.kind === "tool-result";
 			const argsRaw = settled ? block.call?.argsRaw ?? "" : block.argsRaw ?? "";
 			let model = null;
+			let flowName = null;
 			let malformedArgs = false;
 			if (argsRaw !== "") try {
 				const args = JSON.parse(argsRaw);
 				if (typeof args["model"] === "string" && args["model"] !== "") model = args["model"];
+				if (typeof args["flow"] === "string" && args["flow"] !== "") flowName = args["flow"];
 			} catch {
 				malformedArgs = true;
 			}
 			let draftId = null;
+			let runId = null;
+			let previews = [];
 			if (settled && block.isError !== true) {
 				const meta = block.meta;
 				if (meta !== null && typeof meta === "object" && !Array.isArray(meta)) {
 					const id = meta["draft_id"];
 					if (typeof id === "string" && id !== "") draftId = draftIdOf(id);
+					const rid = meta["run_id"];
+					if (typeof rid === "string" && rid !== "") runId = rid;
+					const rows = meta["previews"];
+					if (Array.isArray(rows)) previews = rows.flatMap((row) => {
+						if (row === null || typeof row !== "object" || Array.isArray(row)) return [];
+						const r = row;
+						if (typeof r["stage"] !== "string" || r["stage"] === "") return [];
+						if (typeof r["url"] !== "string" || r["url"] === "") return [];
+						return [{
+							stage: r["stage"],
+							url: r["url"],
+							status: typeof r["status"] === "string" ? r["status"] : ""
+						}];
+					});
 				}
 				if (draftId === null && Array.isArray(block.content)) for (const part of block.content) {
 					if (part === null || typeof part !== "object") continue;
@@ -7702,10 +7870,13 @@ window.__ModuleLoader__.load({
 			}
 			return {
 				draftId,
+				runId,
+				flowName,
 				model,
 				malformedArgs,
 				settled,
-				isError: block.isError === true
+				isError: block.isError === true,
+				previews
 			};
 		}
 		/** Draft doc + live run status (all doors in draft.ts; the live tail
@@ -7781,6 +7952,121 @@ window.__ModuleLoader__.load({
 				startedRun
 			};
 		}
+		/** THE RUN-ROOTED FACE (flows-are-compositions law, 2026-11-14): a
+		*  {flow} press mints no draft — the run row is the press's landing,
+		*  and the chat tile mounts THAT. One subscription to the run
+		*  resource's frames (the same carrier the draft card's live tail
+		*  rides); the doc-fetch machinery stays draft-owned and untouched.
+		*  Absent runId never mounts this face. */
+		function useRunFace(runId) {
+			const [run, setRun] = (0, react.useState)(null);
+			const [error, setError] = (0, react.useState)(null);
+			(0, react.useEffect)(() => {
+				if (runId === null) return;
+				let alive = true;
+				const controller = new AbortController();
+				(async () => {
+					let arrived = false;
+					try {
+						for await (const frame of subscribeRunFrames(runId, controller.signal)) {
+							if (!alive) return;
+							if (!frame.ok) continue;
+							arrived = true;
+							setRun(frame.value);
+							if (runFinished(frame.value.status)) return;
+						}
+					} catch {
+						if (alive && !arrived) setError(chromeCopy.runFaceUnreachable);
+					}
+				})();
+				return () => {
+					alive = false;
+					controller.abort();
+				};
+			}, [runId]);
+			return {
+				run,
+				error
+			};
+		}
+		/** The flow press's chat face: header (flow name + live status), one
+		*  line per run stage (status word, activity, error), the done note
+		*  when terminal. Markup mirrors the draft card's head — the face is
+		*  the same card family, run-rooted instead of draft-rooted. */
+		function RunFaceCard({ flowName, run, error, openMedia }) {
+			const state = run === null ? null : tileStatusFromVerdict(run.status);
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: card_module_css_default.card,
+				"data-dsh-part": "melite-flow-card",
+				"data-run-id": run?.runId ?? "",
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: card_module_css_default.head,
+						children: [
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: card_module_css_default.badge,
+								children: chromeCopy.brand
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: card_module_css_default.model,
+								children: flowName ?? chromeCopy.flowFallback
+							}),
+							error !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: card_module_css_default.state,
+								"data-state": "error",
+								children: error
+							}),
+							run !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: card_module_css_default.state,
+								"data-state": state ?? "queued",
+								children: run.status
+							}),
+							openMedia !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+								type: "button",
+								className: card_module_css_default.media,
+								onClick: () => {
+									openMedia();
+								},
+								children: chromeCopy.openMedia
+							})
+						]
+					}),
+					run === null && error === null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						className: card_module_css_default.load,
+						children: chromeCopy.composing
+					}),
+					(run?.stages ?? []).map((stage) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: card_module_css_default.row,
+						"data-run-stage": stage.id,
+						"data-status": stage.status,
+						children: [
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: card_module_css_default.rowTitle,
+								children: stage.id
+							}),
+							stage.activity !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: card_module_css_default.prompt,
+								children: stage.activity
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: card_module_css_default.state,
+								"data-state": tileStatusFromVerdict(stage.status),
+								children: stage.status
+							}),
+							stage.error !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: card_module_css_default.rowError,
+								role: "alert",
+								children: stage.error
+							})
+						]
+					}, stage.id)),
+					run !== null && runFinished(run.status) && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						className: card_module_css_default.load,
+						children: run.error !== void 0 ? run.error : chromeCopy.runFaceDone
+					})
+				]
+			});
+		}
 		/** The chat-listed card row: kind tag, title, service, status dot, prompt.
 		*  THE CLICK opens the AUTHORING SURFACE in the Cards tab (the old
 		*  embed's law — timeline, video preview, per-gen splits, global
@@ -7845,7 +8131,7 @@ window.__ModuleLoader__.load({
 			const parsed = (0, react.useMemo)(() => parseCardsBlock(block), [block]);
 			const { doc, live, error, refresh, startedRun } = useDraft(parsed.draftId);
 			const [openStage, setOpenStage] = (0, react.useState)(null);
-			if (parsed.settled && !parsed.isError && parsed.draftId === null) return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+			if (parsed.settled && !parsed.isError && parsed.draftId === null && parsed.runId === null) return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 				className: card_module_css_default.card,
 				"data-dsh-part": "melite-flow-card",
 				"data-legacy": "1",
@@ -7865,6 +8151,13 @@ window.__ModuleLoader__.load({
 					]
 				})
 			});
+			const runFace = useRunFace(parsed.draftId === null ? parsed.runId : null);
+			if (parsed.draftId === null && parsed.runId !== null) return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(RunFaceCard, {
+				flowName: parsed.flowName,
+				run: runFace.run,
+				error: runFace.error,
+				...openMedia !== void 0 ? { openMedia } : {}
+			});
 			if (parsed.draftId === null) return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 				className: card_module_css_default.card,
 				"data-dsh-part": "melite-flow-card",
@@ -7874,7 +8167,7 @@ window.__ModuleLoader__.load({
 				})
 			});
 			const rows = doc !== null ? cardRows(doc, live) : [];
-			const previews = doc !== null ? chatPreviewsFor(doc.stages) : [];
+			const previews = chatPreviewsFor(parsed.previews);
 			const openRow = rows.find((r) => r.stageId === openStage) ?? null;
 			const openParams = doc?.stages.find((s) => s.id === openStage)?.params ?? {};
 			const [silencedRowErrors, setSilencedRowErrors] = (0, react.useState)({});
@@ -7979,7 +8272,7 @@ window.__ModuleLoader__.load({
 						onRun: async (patch) => {
 							const draftId = parsed.draftId;
 							if (draftId === null) throw new Error("draft id gone");
-							if (patch !== null) await patchStageParams(draftId, openRow.stageId, patch);
+							if (patch !== null) await patchStageParamsChained(draftId, openRow.stageId, patch);
 							const gate = await refuseForUnlandedWrite(draftId, openRow.stageId);
 							if (gate !== null) throw new Error(gate);
 							startedRun(await startDraft(draftId, openRow.stageId));
@@ -10992,7 +11285,10 @@ window.__ModuleLoader__.load({
 		var init_familyLane = __esmMin((() => {}));
 		//#endregion
 		//#region ../../web-kit/contracts/lib/FlowTypes.js
-		var init_FlowTypes = __esmMin((() => {}));
+		var FLOW_ID_RE;
+		var init_FlowTypes = __esmMin((() => {
+			FLOW_ID_RE = /^[a-z_][a-z0-9_-]*$/;
+		}));
 		//#endregion
 		//#region ../../web-kit/contracts/lib/benchResult.js
 		/** benchResult.ts — THE BENCH STAGE RESULT CONTRACT (the operator's
@@ -12210,6 +12506,7 @@ window.__ModuleLoader__.load({
 			EXTRA_KEYS: () => EXTRA_KEYS,
 			EXTRA_KEY_SET: () => EXTRA_KEY_SET,
 			FLF_MODES: () => FLF_MODES,
+			FLOW_ID_RE: () => FLOW_ID_RE,
 			LEGACY_RUN_MEDIA_PREFIX: () => LEGACY_RUN_MEDIA_PREFIX,
 			LOAD_CARRY_KEYS: () => LOAD_CARRY_KEYS,
 			MEDIA_SET: () => MEDIA_SET,
@@ -12241,6 +12538,7 @@ window.__ModuleLoader__.load({
 			benchSessionOf: () => benchSessionOf$1,
 			canonicalRunMediaUrl: () => canonicalRunMediaUrl,
 			cardResultFromRecord: () => cardResultFromRecord,
+			carriedBenchKey: () => carriedBenchKey$1,
 			cellArtifactCoordinates: () => cellArtifactCoordinates,
 			cnEntriesOf: () => cnEntriesOf,
 			crossRootOrder: () => crossRootOrder,
@@ -12273,6 +12571,7 @@ window.__ModuleLoader__.load({
 			laneStaleCarry: () => laneStaleCarry,
 			laneSurfaceOf: () => laneSurfaceOf,
 			laneTogetherClosure: () => laneTogetherClosure,
+			liveBenchRows: () => liveBenchRows,
 			loraAdaptersOf: () => loraAdaptersOf,
 			loraIdOf: () => loraIdOf,
 			loraLabel: () => loraLabel,
@@ -12289,6 +12588,7 @@ window.__ModuleLoader__.load({
 			normalizeSegmentStatus: () => normalizeSegmentStatus,
 			offeredPool: () => offeredPool,
 			projectStageView: () => projectStageView,
+			projectStages: () => projectStages,
 			projectUpstreamStages: () => projectUpstreamStages,
 			reseatDeadKeys: () => reseatDeadKeys,
 			resolveCellRow: () => resolveCellRow,
@@ -17028,6 +17328,7 @@ window.__ModuleLoader__.load({
 				onStop: rest.onStop,
 				onClose,
 				onRemoved: rest.onRemoved,
+				onResync: rest.onResync,
 				onPatchParams: rest.onPatchParams,
 				renderStageView: rest.renderStageView,
 				renderPreview: rest.renderPreview,
@@ -17572,6 +17873,20 @@ window.__ModuleLoader__.load({
 			confirmDelete: (p) => `Confirm delete ${p.count}?`,
 			/** The un-armed destructive pill. */
 			deleteSelected: "Delete selected",
+			/** The armed archive pill (names the count — tucking is
+			*  reversible, but the mass gesture still arms first, the
+			*  delete twin's law: one gesture tucks N losers at once). */
+			confirmArchive: (p) => `Confirm archive ${p.count}?`,
+			/** The un-armed archive pill. */
+			archiveSelected: "Archive selected",
+			/** The armed restore pill (names the count). */
+			confirmRestore: (p) => `Confirm restore ${p.count}?`,
+			/** The un-armed restore pill. */
+			restoreSelected: "Restore selected",
+			/** The archived-face toggle pill (names the tucked count). */
+			showArchived: (p) => `Archived (${p.count})`,
+			/** The archived tile's badge (the tucked face is dimmed + named). */
+			archivedBadge: "archived",
 			/** The search box placeholder. */
 			searchPlaceholder: "search prompt, file…",
 			/** The all-kinds chip face. */
@@ -17659,6 +17974,14 @@ window.__ModuleLoader__.load({
 			nextMediaAria: "Next media",
 			/** The rename verb's face. */
 			renameAction: "Rename",
+			/** The archive verb's face (the tucked-away half of deletion UX). */
+			archiveAction: "Archive",
+			/** The archive verb's accessible name. */
+			archiveAria: "Archive media file",
+			/** The restore verb's face (brings a tucked file back). */
+			restoreArtifactAction: "Restore",
+			/** The restore verb's accessible name. */
+			restoreArtifactAria: "Restore archived media file",
 			/** The rename verb's accessible name. */
 			renameAria: "Rename media file",
 			/** The delete verb's face. */
@@ -18077,7 +18400,7 @@ window.__ModuleLoader__.load({
 		* self-painted surface), walk WRAP-AROUND, and the keyboard
 		* ArrowLeft/ArrowRight ride the same verbs. No siblings = exactly
 		* the old face (both call sites unchanged until wired). */
-		function MediaDrilldown({ item, onClose, openArtifact, siblings, onNavigate, onDelete, onRename }) {
+		function MediaDrilldown({ item, onClose, openArtifact, siblings, onNavigate, onDelete, onRename, onArchive, onRestore }) {
 			const walkable = siblings ?? [];
 			const at = walkable.findIndex((s) => s.url === item.url);
 			const seat = react.useRef(null);
@@ -18130,9 +18453,26 @@ window.__ModuleLoader__.load({
 				setOpError("");
 				inflight.current = false;
 			}, [item.url]);
-			const canDelete = onDelete !== void 0;
-			const canRename = onRename !== void 0;
-			const showActions = canDelete || canRename;
+			const canDelete = onDelete !== void 0 && item.archived !== true;
+			const canRename = onRename !== void 0 && item.archived !== true;
+			const canArchive = onArchive !== void 0 && item.archived !== true;
+			const canRestore = onRestore !== void 0 && item.archived === true;
+			const showActions = canDelete || canRename || canArchive || canRestore;
+			const fireReversible = (verb) => {
+				if (verb === void 0 || inflight.current) return;
+				const seat = item.url;
+				inflight.current = true;
+				setBusy(true);
+				setOpError("");
+				verb(item).catch((e) => {
+					if (!mountedRef.current || seatUrlRef.current !== seat) return;
+					setOpError(e instanceof Error ? e.message : String(e));
+				}).finally(() => {
+					inflight.current = false;
+					if (!mountedRef.current || seatUrlRef.current !== seat) return;
+					setBusy(false);
+				});
+			};
 			const startDelete = () => {
 				setOpError("");
 				setMode("confirmDelete");
@@ -18295,14 +18635,29 @@ window.__ModuleLoader__.load({
 							onClick: (e) => {
 								e.stopPropagation();
 							},
-							children: mode === "idle" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [canRename ? actionBtn(galleryCopy.renameAction, startRename, {
-								testid: "drill-rename",
-								aria: galleryCopy.renameAria
-							}) : null, canDelete ? actionBtn(galleryCopy.deleteAction, startDelete, {
-								danger: true,
-								testid: "drill-delete",
-								aria: galleryCopy.deleteAria
-							}) : null] }) : mode === "confirmDelete" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
+							children: mode === "idle" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
+								canRename ? actionBtn(galleryCopy.renameAction, startRename, {
+									testid: "drill-rename",
+									aria: galleryCopy.renameAria
+								}) : null,
+								canArchive ? actionBtn(galleryCopy.archiveAction, () => {
+									fireReversible(onArchive);
+								}, {
+									testid: "drill-archive",
+									aria: galleryCopy.archiveAria
+								}) : null,
+								canRestore ? actionBtn(galleryCopy.restoreArtifactAction, () => {
+									fireReversible(onRestore);
+								}, {
+									testid: "drill-restore",
+									aria: galleryCopy.restoreArtifactAria
+								}) : null,
+								canDelete ? actionBtn(galleryCopy.deleteAction, startDelete, {
+									danger: true,
+									testid: "drill-delete",
+									aria: galleryCopy.deleteAria
+								}) : null
+							] }) : mode === "confirmDelete" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 									style: {
 										color: labelPrimary2,
@@ -18452,8 +18807,8 @@ window.__ModuleLoader__.load({
 		*/
 		//#endregion
 		//#region \0dsh-css:packages/web-kit/timeline/src/timeline/timeline.module.css.mjs
-		const css$1 = ".t2WLSa_root{user-select:none;display:flex}.t2WLSa_gutter{border-right:1px solid var(--dsw-alias-border-l2);flex-direction:column;flex:none;display:flex}.t2WLSa_zoomRow{border-bottom:1px solid var(--dsw-alias-border-l2);justify-content:center;align-items:center;gap:2px;display:flex}.t2WLSa_zoomBtn{width:20px;height:20px;color:var(--dsw-alias-label-secondary);font-size:inherit;cursor:pointer;background:0 0;border:none;border-radius:4px;justify-content:center;align-items:center;padding:0;line-height:1;display:inline-flex}.t2WLSa_zoomBtn:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-brand-primary)}.t2WLSa_zoomBtn svg{width:14px;height:14px}.t2WLSa_zoomPct{min-width:32px;height:auto;color:var(--dsw-alias-label-secondary);text-align:center;font-variant-numeric:tabular-nums;cursor:pointer;background:0 0;border:none;border-radius:4px;padding:0 2px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px}.t2WLSa_zoomPct:hover{color:var(--dsw-alias-brand-primary)}.t2WLSa_laneHeadShell{border-bottom:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);align-items:center;gap:6px;padding:0 8px;display:flex}.t2WLSa_laneHeadShell:last-child{border-bottom:0}.t2WLSa_laneHeadShell>svg{width:14px;height:14px;color:var(--dsw-alias-brand-primary);flex:none}.t2WLSa_laneHeadShell[data-lane-head=audio]>svg{width:12px;height:12px;color:var(--dsw-alias-state-business-primary)}.t2WLSa_gutterLabel{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:10px;font-weight:500;overflow:hidden}.t2WLSa_detachBtn{width:16px;height:16px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:4px;flex:none;justify-content:center;align-items:center;margin-left:auto;padding:0;display:inline-flex}.t2WLSa_detachBtn:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.t2WLSa_detachBtn svg{width:10px;height:10px}.t2WLSa_uploadBtn{width:16px;height:16px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:4px;flex:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.t2WLSa_uploadBtn:hover{background:color-mix(in srgb, var(--dsw-alias-label-tertiary) 14%, transparent);color:var(--dsw-alias-label-primary)}.t2WLSa_uploadBtn svg{width:10px;height:10px}.t2WLSa_laneDot{border-radius:9999px;flex:none;width:6px;height:6px}.t2WLSa_contentWrap{flex:1;min-width:0;position:relative}.t2WLSa_scroller{scrollbar-width:thin;scrollbar-color:var(--dsw-alias-border-l3) transparent;height:100%;overflow:auto hidden}.t2WLSa_scroller::-webkit-scrollbar{height:8px}.t2WLSa_scroller::-webkit-scrollbar-track{background:0 0}.t2WLSa_scroller::-webkit-scrollbar-thumb{background:var(--dsw-alias-border-l2);border-radius:4px}.t2WLSa_content{position:relative}.t2WLSa_ruler{border-bottom:1px solid var(--dsw-alias-border-l2);position:relative}.t2WLSa_tick{position:absolute;top:0;bottom:0}.t2WLSa_tickLine{background:var(--dsw-alias-border-l2);width:1px;height:100%}.t2WLSa_tickLabel{color:var(--dsw-alias-label-tertiary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1;position:absolute;top:2px;left:4px}.t2WLSa_timecode{z-index:10;font-variant-numeric:tabular-nums;height:100%;color:var(--dsw-alias-brand-primary);align-items:center;padding-left:6px;padding-right:8px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1;display:flex;position:sticky;left:0}.t2WLSa_promptsLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_canAdd{cursor:copy}.t2WLSa_emptyCenter{justify-content:center;align-items:center;display:flex;position:absolute;inset:0}.t2WLSa_emptyHint{color:var(--dsw-alias-label-tertiary);font-size:10px}.t2WLSa_promptClip{touch-action:none;cursor:grab;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;position:absolute;top:4px;bottom:4px;overflow:hidden}.t2WLSa_promptClip:hover{border-color:var(--dsw-alias-border-l4)}.t2WLSa_clipSelected{z-index:30;border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);border-width:0}.t2WLSa_clipSelected:hover{border-color:var(--dsw-alias-brand-primary)}.t2WLSa_clipMoving{z-index:30;cursor:grabbing;border:1px solid var(--dsw-alias-brand-primary);box-shadow:0 20px 25px -5px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent), 0 8px 10px -6px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent), 0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 70%, transparent)}.t2WLSa_edgeL{z-index:30;touch-action:none;cursor:ew-resize;justify-content:center;align-items:center;width:12px;display:flex;position:absolute;top:0;bottom:0;left:0}.t2WLSa_edgeL:hover{background:var(--dsw-alias-interactive-bg-hover)}.t2WLSa_edgeDead{cursor:default;opacity:.35}.t2WLSa_edgeDead:hover{background:0 0}.t2WLSa_gripPill{background:color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);border-radius:9999px;width:3px;height:20px}.t2WLSa_promptClip:hover .t2WLSa_gripPill{background:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent)}.t2WLSa_seamDot{z-index:35;border-radius:9999px;width:8px;height:8px;position:absolute;top:0;left:0;transform:translate(-50%,-50%)}.t2WLSa_edgeR{z-index:30;touch-action:none;cursor:ew-resize;justify-content:center;align-items:center;width:12px;display:flex;position:absolute;top:16px;bottom:0;right:0}.t2WLSa_edgeR:hover{background:var(--dsw-alias-interactive-bg-hover)}.t2WLSa_edgeWide{width:16px}.t2WLSa_gripPillR{background:color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);border-radius:9999px;width:3px;height:20px}.t2WLSa_gripPillBright{background:color-mix(in srgb, var(--dsw-alias-label-primary) 45%, transparent)}.t2WLSa_promptClip:hover .t2WLSa_gripPillR{background:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent)}.t2WLSa_promptClip:hover .t2WLSa_gripPillBright{background:color-mix(in srgb, var(--dsw-alias-label-primary) 80%, transparent)}.t2WLSa_clipEditor{background:color-mix(in srgb, var(--dsw-alias-bg-base) 60%, transparent);height:24px;box-shadow:0 0 0 1px color-mix(in srgb, var(--dsw-alias-brand-primary) 50%, transparent);pointer-events:auto;border:none;border-radius:4px;align-items:center;padding:0 6px;display:inline-flex;position:absolute;top:50%;left:8px;right:8px;transform:translateY(-50%)}.t2WLSa_clipEditor input{width:100%;min-width:0;height:100%;color:var(--dsw-alias-label-primary);background:0 0;border:none;outline:none;flex:1;padding:0;font-size:11px;line-height:1.5}.t2WLSa_clipEditor input::placeholder{color:var(--dsw-alias-label-tertiary)}.t2WLSa_previewWrap{z-index:10;pointer-events:none;position:absolute;inset:0;overflow:hidden}.t2WLSa_previewVideo{object-fit:cover;opacity:.6;width:100%;height:100%;position:absolute;inset:0}.t2WLSa_scrim{background:linear-gradient(to top, color-mix(in srgb, var(--dsw-alias-bg-base) 85%, transparent), color-mix(in srgb, var(--dsw-alias-bg-base) 45%, transparent) 50%, color-mix(in srgb, var(--dsw-alias-bg-base) 10%, transparent));position:absolute;inset:0}.t2WLSa_clipTextCol{z-index:20;flex-direction:column;gap:2px;padding:0 12px 6px;display:flex;position:absolute;bottom:0;left:0;right:0}.t2WLSa_clipTextStack{z-index:10;pointer-events:none;flex-direction:column;justify-content:center;gap:2px;padding:0 12px;display:flex;position:absolute;inset:0}.t2WLSa_clipTitle{text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:500;overflow:hidden}.t2WLSa_clipEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.t2WLSa_clipDur{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:10px}.t2WLSa_knobDot{z-index:20;background:var(--dsw-alias-brand-primary);width:6px;height:6px;box-shadow:0 0 6px color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);pointer-events:none;border-radius:9999px;position:absolute;top:4px;right:6px}.t2WLSa_refAudioBadge{z-index:20;width:10px;height:10px;color:var(--dsw-alias-state-business-primary);pointer-events:none;position:absolute;top:12px;right:4px}.t2WLSa_refBadge{z-index:20;pointer-events:none;align-items:center;gap:1px;display:flex;position:absolute;top:22px;right:2px}.t2WLSa_refBadge svg{width:8px;height:8px;color:var(--dsw-alias-state-success-primary)}.t2WLSa_refCount{color:var(--dsw-alias-state-success-primary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:8px;line-height:1}.t2WLSa_promptDelete{z-index:40;background:var(--dsw-alias-state-error-primary);opacity:0;cursor:pointer;border:none;border-radius:9999px;justify-content:center;align-items:center;width:16px;height:16px;padding:0;display:inline-flex;position:absolute;top:4px;right:4px}.t2WLSa_promptDelete:hover{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary))}.t2WLSa_promptClip:hover .t2WLSa_promptDelete{opacity:1}.t2WLSa_promptDelete svg{width:8px;height:8px;color:var(--dsw-alias-label-primary)}.t2WLSa_beatsLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_beatsAdd{cursor:crosshair}.t2WLSa_beatsEmpty{align-items:center;padding-left:12px;display:flex;position:absolute;inset:0}.t2WLSa_hintLine{color:var(--dsw-alias-label-tertiary);font-size:10px}.t2WLSa_beatClip{border:1px solid var(--dsw-alias-border-l2);cursor:pointer;border-radius:6px;position:absolute;top:4px;bottom:4px;overflow:hidden}.t2WLSa_beatClip:hover{border-color:var(--dsw-alias-border-l4)}.t2WLSa_beatSelected{z-index:30;border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent)}.t2WLSa_beatSelected:hover{border-color:var(--dsw-alias-brand-primary)}.t2WLSa_beatLabel{color:var(--dsw-alias-label-secondary);pointer-events:none;align-items:center;padding:0 6px;font-size:10px;line-height:1.25;display:flex;position:absolute;inset:0}.t2WLSa_truncate{text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.t2WLSa_beatEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.t2WLSa_audioLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_audioClip{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);cursor:grab;touch-action:none;border-radius:2px;position:absolute;top:2px;bottom:2px;overflow:hidden}.t2WLSa_audioClip:active{cursor:grabbing}.t2WLSa_audioCard{border-radius:6px;top:3px;bottom:3px}.t2WLSa_audioCardIcon{pointer-events:none;display:flex;position:absolute;top:50%;left:5px;transform:translateY(-50%)}.t2WLSa_audioCardIcon svg{width:13px;height:13px}.t2WLSa_audioCard .t2WLSa_audioClipLabel{flex-direction:column;justify-content:center;align-items:flex-start;gap:1px;font-size:10px;display:flex;left:23px;right:4px}.t2WLSa_audioCard .t2WLSa_audioTime{margin-left:0}.t2WLSa_gainFill{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);pointer-events:none;position:absolute;bottom:0;left:0;right:0}.t2WLSa_audioClipLabel{text-overflow:ellipsis;white-space:nowrap;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-primary));pointer-events:none;align-items:center;padding:0 4px;font-size:9px;line-height:1;display:flex;position:absolute;inset:0;overflow:hidden}.t2WLSa_audioName{text-overflow:ellipsis;white-space:nowrap;font-weight:500;overflow:hidden}.t2WLSa_audioTime{font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 50%, var(--dsw-alias-label-tertiary));flex:none;margin-left:4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.t2WLSa_audioClipDelete{background:color-mix(in srgb, var(--dsw-alias-bg-base) 40%, transparent);width:14px;height:14px;color:var(--dsw-alias-label-tertiary);cursor:pointer;border:none;border-radius:0 0 0 4px;justify-content:center;align-items:center;padding:0;display:none;position:absolute;top:0;right:0}.t2WLSa_audioClipDelete:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.t2WLSa_audioClip:hover .t2WLSa_audioClipDelete{display:flex}.t2WLSa_audioClipDelete svg{width:8px;height:8px}.t2WLSa_audioSlice{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 15%, transparent);border-radius:2px;position:absolute;top:2px;bottom:2px;overflow:hidden}.t2WLSa_sliceLabel{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-secondary));pointer-events:none;justify-content:center;align-items:center;padding:0 4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:9px;display:flex;position:absolute;inset:0;overflow:hidden}.t2WLSa_audioDrop{border:1px dashed color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);pointer-events:none;border-radius:4px;justify-content:center;align-items:center;display:flex;position:absolute;inset:2px 4px}.t2WLSa_dropHint{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);padding:0 8px;font-size:9px;overflow:hidden}.t2WLSa_kfLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_kfLane:last-child{border-bottom:0}.t2WLSa_kfLane[data-kf-cards=true]{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 3%, transparent)}.t2WLSa_kfDropWell{border:1px dashed color-mix(in srgb, var(--dsw-alias-label-tertiary) 25%, transparent);pointer-events:none;border-radius:4px;justify-content:center;align-items:center;display:flex;position:absolute;inset:2px 4px}.t2WLSa_kfWrap{position:absolute;top:0;bottom:0}.t2WLSa_kfBtn{cursor:grab;background:0 0;border:none;justify-content:center;align-items:center;width:16px;height:16px;padding:0;display:flex;position:absolute;top:50%;left:0;transform:translate(-50%,-50%)}.t2WLSa_kfBtn:active{cursor:grabbing;transform:translate(-50%)}.t2WLSa_kfDiamond{width:10px;height:10px;box-shadow:0 0 0 1px var(--dsw-alias-border-l4);border:1px solid;display:block;transform:rotate(45deg)}.t2WLSa_kfMoving{transform:rotate(45deg)scale(1.25)}.t2WLSa_kfDelete{z-index:10;background:var(--dsw-alias-state-error-primary);opacity:0;cursor:pointer;border:none;border-radius:9999px;justify-content:center;align-items:center;width:14px;height:14px;padding:0;display:inline-flex;position:absolute;top:0;left:6px}.t2WLSa_kfDelete:hover{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary))}.t2WLSa_kfWrap:hover .t2WLSa_kfDelete{opacity:1}.t2WLSa_kfDelete svg{width:8px;height:8px;color:var(--dsw-alias-label-primary)}.t2WLSa_playhead{z-index:40;pointer-events:auto;position:absolute;top:0;bottom:0}.t2WLSa_playheadCap{border:1px solid var(--dsw-alias-border-l4);pointer-events:auto;cursor:grab;touch-action:none;border-radius:9999px;width:8px;height:8px;position:absolute;top:0;left:50%;transform:translate(-50%)}.t2WLSa_playheadCap:active{cursor:grabbing}.t2WLSa_playheadCap:before{content:\"\";border-radius:9999px;position:absolute;inset:-5px}.t2WLSa_miniBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);width:20px;height:20px;color:var(--dsw-alias-brand-primary);cursor:pointer;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0;font-size:13px;line-height:1;display:inline-flex}.t2WLSa_miniBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent)}.t2WLSa_miniFitBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);height:20px;color:var(--dsw-alias-brand-primary);cursor:pointer;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0 6px;font-size:10px;font-weight:600;display:inline-flex}.t2WLSa_miniFitBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent)}.t2WLSa_scrubBar{align-items:center;gap:8px;width:100%;display:flex}.t2WLSa_scrubToggle{cursor:pointer;background:0 0;border:none;flex:none;padding:4px 2px;font-size:11px;line-height:1}.t2WLSa_scrubTrack{cursor:pointer;touch-action:none;flex:1;min-width:0;height:18px;position:relative}.t2WLSa_scrubFill{background:var(--dsw-alias-interactive-bg-active);border-radius:2px;height:4px;position:absolute;top:7px;left:0}.t2WLSa_scrubHead{background:var(--dsw-alias-label-primary);border-radius:1px;width:2px;height:10px;margin-left:-1px;position:absolute;top:4px}.t2WLSa_scrubReadout{color:var(--dsw-alias-label-secondary);white-space:nowrap;flex:none;font-size:11px}.t2WLSa_commissionHead{align-items:center;gap:6px;padding:0 8px;display:flex;overflow:hidden}.t2WLSa_commissionKind{letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;text-overflow:ellipsis;font-size:10px;font-weight:600;overflow:hidden}.t2WLSa_commissionLane{width:100%;position:relative}.t2WLSa_commissionSpan{border-left:3px solid var(--dsw-alias-brand-primary);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 12%, transparent);border-radius:4px;align-items:center;gap:4px;padding:0 6px;display:flex;position:absolute;top:3px;bottom:3px;left:0;overflow:hidden}.t2WLSa_commissionWindows .t2WLSa_commissionSegment{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 14%, transparent);border-radius:3px;flex:1 1 0;min-width:0;padding:1px 4px}.t2WLSa_commissionSegment{color:var(--dsw-alias-label-secondary);white-space:nowrap;text-overflow:ellipsis;font-variant-numeric:tabular-nums;font-size:10px;line-height:1.5;overflow:hidden}";
-		const tagId$1 = "@melite-plugin/dsh-card-view/timeline.module.css@4f42746b";
+		const css$1 = ".t2WLSa_root{user-select:none;display:flex}.t2WLSa_gutter{border-right:1px solid var(--dsw-alias-border-l2);flex-direction:column;flex:none;display:flex}.t2WLSa_zoomRow{border-bottom:1px solid var(--dsw-alias-border-l2);justify-content:center;align-items:center;gap:2px;display:flex}.t2WLSa_zoomBtn{width:20px;height:20px;color:var(--dsw-alias-label-secondary);font-size:inherit;cursor:pointer;background:0 0;border:none;border-radius:4px;justify-content:center;align-items:center;padding:0;line-height:1;display:inline-flex}.t2WLSa_zoomBtn:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-brand-primary)}.t2WLSa_zoomBtn svg{width:14px;height:14px}.t2WLSa_zoomPct{min-width:32px;height:auto;color:var(--dsw-alias-label-secondary);text-align:center;font-variant-numeric:tabular-nums;cursor:pointer;background:0 0;border:none;border-radius:4px;padding:0 2px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px}.t2WLSa_zoomPct:hover{color:var(--dsw-alias-brand-primary)}.t2WLSa_laneHeadShell{border-bottom:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);align-items:center;gap:6px;padding:0 8px;display:flex}.t2WLSa_laneHeadShell:last-child{border-bottom:0}.t2WLSa_laneHeadShell>svg{width:14px;height:14px;color:var(--dsw-alias-brand-primary);flex:none}.t2WLSa_laneHeadShell[data-lane-head=audio]>svg{width:12px;height:12px;color:var(--dsw-alias-state-business-primary)}.t2WLSa_gutterLabel{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:10px;font-weight:500;overflow:hidden}.t2WLSa_detachBtn{width:16px;height:16px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:4px;flex:none;justify-content:center;align-items:center;margin-left:auto;padding:0;display:inline-flex}.t2WLSa_detachBtn:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.t2WLSa_detachBtn svg{width:10px;height:10px}.t2WLSa_uploadBtn{width:16px;height:16px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:4px;flex:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.t2WLSa_uploadBtn:hover{background:color-mix(in srgb, var(--dsw-alias-label-tertiary) 14%, transparent);color:var(--dsw-alias-label-primary)}.t2WLSa_uploadBtn svg{width:10px;height:10px}.t2WLSa_laneDot{border-radius:9999px;flex:none;width:6px;height:6px}.t2WLSa_contentWrap{flex:1;min-width:0;position:relative}.t2WLSa_scroller{scrollbar-width:thin;scrollbar-color:var(--dsw-alias-border-l3) transparent;height:100%;overflow:auto hidden}.t2WLSa_scroller::-webkit-scrollbar{height:8px}.t2WLSa_scroller::-webkit-scrollbar-track{background:0 0}.t2WLSa_scroller::-webkit-scrollbar-thumb{background:var(--dsw-alias-border-l2);border-radius:4px}.t2WLSa_content{position:relative}.t2WLSa_plannedBand{pointer-events:none;background:repeating-linear-gradient(45deg, transparent, transparent 6px, color-mix(in srgb, var(--dsw-alias-label-secondary) 10%, transparent) 6px, color-mix(in srgb, var(--dsw-alias-label-secondary) 10%, transparent) 8px);border-left:1px dashed var(--dsw-alias-border-l2);position:absolute;top:0;bottom:0}.t2WLSa_ruler{border-bottom:1px solid var(--dsw-alias-border-l2);position:relative}.t2WLSa_tick{position:absolute;top:0;bottom:0}.t2WLSa_tickLine{background:var(--dsw-alias-border-l2);width:1px;height:100%}.t2WLSa_tickLabel{color:var(--dsw-alias-label-tertiary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1;position:absolute;top:2px;left:4px}.t2WLSa_timecode{z-index:10;font-variant-numeric:tabular-nums;height:100%;color:var(--dsw-alias-brand-primary);align-items:center;padding-left:6px;padding-right:8px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1;display:flex;position:sticky;left:0}.t2WLSa_promptsLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_canAdd{cursor:copy}.t2WLSa_emptyCenter{justify-content:center;align-items:center;display:flex;position:absolute;inset:0}.t2WLSa_emptyHint{color:var(--dsw-alias-label-tertiary);font-size:10px}.t2WLSa_promptClip{touch-action:none;cursor:grab;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;position:absolute;top:4px;bottom:4px;overflow:hidden}.t2WLSa_promptClip:hover{border-color:var(--dsw-alias-border-l4)}.t2WLSa_clipSelected{z-index:30;border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);border-width:0}.t2WLSa_clipSelected:hover{border-color:var(--dsw-alias-brand-primary)}.t2WLSa_clipMoving{z-index:30;cursor:grabbing;border:1px solid var(--dsw-alias-brand-primary);box-shadow:0 20px 25px -5px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent), 0 8px 10px -6px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent), 0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 70%, transparent)}.t2WLSa_edgeL{z-index:30;touch-action:none;cursor:ew-resize;justify-content:center;align-items:center;width:12px;display:flex;position:absolute;top:0;bottom:0;left:0}.t2WLSa_edgeL:hover{background:var(--dsw-alias-interactive-bg-hover)}.t2WLSa_edgeDead{cursor:default;opacity:.35}.t2WLSa_edgeDead:hover{background:0 0}.t2WLSa_gripPill{background:color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);border-radius:9999px;width:3px;height:20px}.t2WLSa_promptClip:hover .t2WLSa_gripPill{background:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent)}.t2WLSa_seamDot{z-index:35;border-radius:9999px;width:8px;height:8px;position:absolute;top:0;left:0;transform:translate(-50%,-50%)}.t2WLSa_edgeR{z-index:30;touch-action:none;cursor:ew-resize;justify-content:center;align-items:center;width:12px;display:flex;position:absolute;top:16px;bottom:0;right:0}.t2WLSa_edgeR:hover{background:var(--dsw-alias-interactive-bg-hover)}.t2WLSa_edgeWide{width:16px}.t2WLSa_gripPillR{background:color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);border-radius:9999px;width:3px;height:20px}.t2WLSa_gripPillBright{background:color-mix(in srgb, var(--dsw-alias-label-primary) 45%, transparent)}.t2WLSa_promptClip:hover .t2WLSa_gripPillR{background:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent)}.t2WLSa_promptClip:hover .t2WLSa_gripPillBright{background:color-mix(in srgb, var(--dsw-alias-label-primary) 80%, transparent)}.t2WLSa_clipEditor{background:color-mix(in srgb, var(--dsw-alias-bg-base) 60%, transparent);height:24px;box-shadow:0 0 0 1px color-mix(in srgb, var(--dsw-alias-brand-primary) 50%, transparent);pointer-events:auto;border:none;border-radius:4px;align-items:center;padding:0 6px;display:inline-flex;position:absolute;top:50%;left:8px;right:8px;transform:translateY(-50%)}.t2WLSa_clipEditor input{width:100%;min-width:0;height:100%;color:var(--dsw-alias-label-primary);background:0 0;border:none;outline:none;flex:1;padding:0;font-size:11px;line-height:1.5}.t2WLSa_clipEditor input::placeholder{color:var(--dsw-alias-label-tertiary)}.t2WLSa_previewWrap{z-index:10;pointer-events:none;position:absolute;inset:0;overflow:hidden}.t2WLSa_previewVideo{object-fit:cover;opacity:.6;width:100%;height:100%;position:absolute;inset:0}.t2WLSa_scrim{background:linear-gradient(to top, color-mix(in srgb, var(--dsw-alias-bg-base) 85%, transparent), color-mix(in srgb, var(--dsw-alias-bg-base) 45%, transparent) 50%, color-mix(in srgb, var(--dsw-alias-bg-base) 10%, transparent));position:absolute;inset:0}.t2WLSa_clipTextCol{z-index:20;flex-direction:column;gap:2px;padding:0 12px 6px;display:flex;position:absolute;bottom:0;left:0;right:0}.t2WLSa_clipTextStack{z-index:10;pointer-events:none;flex-direction:column;justify-content:center;gap:2px;padding:0 12px;display:flex;position:absolute;inset:0}.t2WLSa_clipTitle{text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:500;overflow:hidden}.t2WLSa_clipEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.t2WLSa_clipDur{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:10px}.t2WLSa_knobDot{z-index:20;background:var(--dsw-alias-brand-primary);width:6px;height:6px;box-shadow:0 0 6px color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);pointer-events:none;border-radius:9999px;position:absolute;top:4px;right:6px}.t2WLSa_refAudioBadge{z-index:20;width:10px;height:10px;color:var(--dsw-alias-state-business-primary);pointer-events:none;position:absolute;top:12px;right:4px}.t2WLSa_refBadge{z-index:20;pointer-events:none;align-items:center;gap:1px;display:flex;position:absolute;top:22px;right:2px}.t2WLSa_refBadge svg{width:8px;height:8px;color:var(--dsw-alias-state-success-primary)}.t2WLSa_refCount{color:var(--dsw-alias-state-success-primary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:8px;line-height:1}.t2WLSa_promptDelete{z-index:40;background:var(--dsw-alias-state-error-primary);opacity:0;cursor:pointer;border:none;border-radius:9999px;justify-content:center;align-items:center;width:16px;height:16px;padding:0;display:inline-flex;position:absolute;top:4px;right:4px}.t2WLSa_promptDelete:hover{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary))}.t2WLSa_promptClip:hover .t2WLSa_promptDelete{opacity:1}.t2WLSa_promptDelete svg{width:8px;height:8px;color:var(--dsw-alias-label-primary)}.t2WLSa_beatsLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_beatsAdd{cursor:crosshair}.t2WLSa_beatsEmpty{align-items:center;padding-left:12px;display:flex;position:absolute;inset:0}.t2WLSa_hintLine{color:var(--dsw-alias-label-tertiary);font-size:10px}.t2WLSa_beatClip{border:1px solid var(--dsw-alias-border-l2);cursor:pointer;border-radius:6px;position:absolute;top:4px;bottom:4px;overflow:hidden}.t2WLSa_beatClip:hover{border-color:var(--dsw-alias-border-l4)}.t2WLSa_beatSelected{z-index:30;border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent)}.t2WLSa_beatSelected:hover{border-color:var(--dsw-alias-brand-primary)}.t2WLSa_beatLabel{color:var(--dsw-alias-label-secondary);pointer-events:none;align-items:center;padding:0 6px;font-size:10px;line-height:1.25;display:flex;position:absolute;inset:0}.t2WLSa_truncate{text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.t2WLSa_beatEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.t2WLSa_audioLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_audioClip{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);cursor:grab;touch-action:none;border-radius:2px;position:absolute;top:2px;bottom:2px;overflow:hidden}.t2WLSa_audioClip:active{cursor:grabbing}.t2WLSa_audioCard{border-radius:6px;top:3px;bottom:3px}.t2WLSa_audioCardIcon{pointer-events:none;display:flex;position:absolute;top:50%;left:5px;transform:translateY(-50%)}.t2WLSa_audioCardIcon svg{width:13px;height:13px}.t2WLSa_audioCard .t2WLSa_audioClipLabel{flex-direction:column;justify-content:center;align-items:flex-start;gap:1px;font-size:10px;display:flex;left:23px;right:4px}.t2WLSa_audioCard .t2WLSa_audioTime{margin-left:0}.t2WLSa_gainFill{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);pointer-events:none;position:absolute;bottom:0;left:0;right:0}.t2WLSa_audioClipLabel{text-overflow:ellipsis;white-space:nowrap;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-primary));pointer-events:none;align-items:center;padding:0 4px;font-size:9px;line-height:1;display:flex;position:absolute;inset:0;overflow:hidden}.t2WLSa_audioName{text-overflow:ellipsis;white-space:nowrap;font-weight:500;overflow:hidden}.t2WLSa_audioTime{font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 50%, var(--dsw-alias-label-tertiary));flex:none;margin-left:4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.t2WLSa_audioClipDelete{background:color-mix(in srgb, var(--dsw-alias-bg-base) 40%, transparent);width:14px;height:14px;color:var(--dsw-alias-label-tertiary);cursor:pointer;border:none;border-radius:0 0 0 4px;justify-content:center;align-items:center;padding:0;display:none;position:absolute;top:0;right:0}.t2WLSa_audioClipDelete:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.t2WLSa_audioClip:hover .t2WLSa_audioClipDelete{display:flex}.t2WLSa_audioClipDelete svg{width:8px;height:8px}.t2WLSa_audioSlice{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 15%, transparent);border-radius:2px;position:absolute;top:2px;bottom:2px;overflow:hidden}.t2WLSa_sliceLabel{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-secondary));pointer-events:none;justify-content:center;align-items:center;padding:0 4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:9px;display:flex;position:absolute;inset:0;overflow:hidden}.t2WLSa_audioDrop{border:1px dashed color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);pointer-events:none;border-radius:4px;justify-content:center;align-items:center;display:flex;position:absolute;inset:2px 4px}.t2WLSa_dropHint{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);padding:0 8px;font-size:9px;overflow:hidden}.t2WLSa_kfLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_kfLane:last-child{border-bottom:0}.t2WLSa_kfLane[data-kf-cards=true]{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 3%, transparent)}.t2WLSa_kfDropWell{border:1px dashed color-mix(in srgb, var(--dsw-alias-label-tertiary) 25%, transparent);pointer-events:none;border-radius:4px;justify-content:center;align-items:center;display:flex;position:absolute;inset:2px 4px}.t2WLSa_kfWrap{position:absolute;top:0;bottom:0}.t2WLSa_kfBtn{cursor:grab;background:0 0;border:none;justify-content:center;align-items:center;width:16px;height:16px;padding:0;display:flex;position:absolute;top:50%;left:0;transform:translate(-50%,-50%)}.t2WLSa_kfBtn:active{cursor:grabbing;transform:translate(-50%)}.t2WLSa_kfDiamond{width:10px;height:10px;box-shadow:0 0 0 1px var(--dsw-alias-border-l4);border:1px solid;display:block;transform:rotate(45deg)}.t2WLSa_kfMoving{transform:rotate(45deg)scale(1.25)}.t2WLSa_kfDelete{z-index:10;background:var(--dsw-alias-state-error-primary);opacity:0;cursor:pointer;border:none;border-radius:9999px;justify-content:center;align-items:center;width:14px;height:14px;padding:0;display:inline-flex;position:absolute;top:0;left:6px}.t2WLSa_kfDelete:hover{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary))}.t2WLSa_kfWrap:hover .t2WLSa_kfDelete{opacity:1}.t2WLSa_kfDelete svg{width:8px;height:8px;color:var(--dsw-alias-label-primary)}.t2WLSa_playhead{z-index:40;pointer-events:auto;position:absolute;top:0;bottom:0}.t2WLSa_playheadCap{border:1px solid var(--dsw-alias-border-l4);pointer-events:auto;cursor:grab;touch-action:none;border-radius:9999px;width:8px;height:8px;position:absolute;top:0;left:50%;transform:translate(-50%)}.t2WLSa_playheadCap:active{cursor:grabbing}.t2WLSa_playheadCap:before{content:\"\";border-radius:9999px;position:absolute;inset:-5px}.t2WLSa_miniBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);width:20px;height:20px;color:var(--dsw-alias-brand-primary);cursor:pointer;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0;font-size:13px;line-height:1;display:inline-flex}.t2WLSa_miniBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent)}.t2WLSa_miniFitBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);height:20px;color:var(--dsw-alias-brand-primary);cursor:pointer;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0 6px;font-size:10px;font-weight:600;display:inline-flex}.t2WLSa_miniFitBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent)}.t2WLSa_scrubBar{align-items:center;gap:8px;width:100%;display:flex}.t2WLSa_scrubToggle{cursor:pointer;background:0 0;border:none;flex:none;padding:4px 2px;font-size:11px;line-height:1}.t2WLSa_scrubTrack{cursor:pointer;touch-action:none;flex:1;min-width:0;height:18px;position:relative}.t2WLSa_scrubFill{background:var(--dsw-alias-interactive-bg-active);border-radius:2px;height:4px;position:absolute;top:7px;left:0}.t2WLSa_scrubHead{background:var(--dsw-alias-label-primary);border-radius:1px;width:2px;height:10px;margin-left:-1px;position:absolute;top:4px}.t2WLSa_scrubReadout{color:var(--dsw-alias-label-secondary);white-space:nowrap;flex:none;font-size:11px}.t2WLSa_commissionHead{align-items:center;gap:6px;padding:0 8px;display:flex;overflow:hidden}.t2WLSa_commissionKind{letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;text-overflow:ellipsis;font-size:10px;font-weight:600;overflow:hidden}.t2WLSa_commissionLane{width:100%;position:relative}.t2WLSa_commissionSpan{border-left:3px solid var(--dsw-alias-brand-primary);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 12%, transparent);border-radius:4px;align-items:center;gap:4px;padding:0 6px;display:flex;position:absolute;top:3px;bottom:3px;left:0;overflow:hidden}.t2WLSa_commissionWindows .t2WLSa_commissionSegment{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 14%, transparent);border-radius:3px;flex:1 1 0;min-width:0;padding:1px 4px}.t2WLSa_commissionSpanBody{padding:0;display:block}.t2WLSa_commissionSegmentPos{border-left:2px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 55%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 14%, transparent);z-index:1;border-radius:3px;align-items:center;padding:1px 4px;display:flex;position:absolute;top:3px;bottom:3px}.t2WLSa_commissionSegmentPos[data-commission-planned=true]{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 7%, transparent);border-left-style:dashed}.t2WLSa_commissionSegment{color:var(--dsw-alias-label-secondary);white-space:nowrap;text-overflow:ellipsis;font-variant-numeric:tabular-nums;font-size:10px;line-height:1.5;overflow:hidden}";
+		const tagId$1 = "@melite-plugin/dsh-card-view/timeline.module.css@3883872";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite-plugin/dsh-card-view";
@@ -18492,7 +18847,9 @@ window.__ModuleLoader__.load({
 			"commissionKind": "t2WLSa_commissionKind",
 			"commissionLane": "t2WLSa_commissionLane",
 			"commissionSegment": "t2WLSa_commissionSegment",
+			"commissionSegmentPos": "t2WLSa_commissionSegmentPos",
 			"commissionSpan": "t2WLSa_commissionSpan",
+			"commissionSpanBody": "t2WLSa_commissionSpanBody",
 			"commissionWindows": "t2WLSa_commissionWindows",
 			"content": "t2WLSa_content",
 			"contentWrap": "t2WLSa_contentWrap",
@@ -18523,6 +18880,7 @@ window.__ModuleLoader__.load({
 			"laneHeadShell": "t2WLSa_laneHeadShell",
 			"miniBtn": "t2WLSa_miniBtn",
 			"miniFitBtn": "t2WLSa_miniFitBtn",
+			"plannedBand": "t2WLSa_plannedBand",
 			"playhead": "t2WLSa_playhead",
 			"playheadCap": "t2WLSa_playheadCap",
 			"previewVideo": "t2WLSa_previewVideo",
@@ -19543,6 +19901,442 @@ window.__ModuleLoader__.load({
 			});
 		}
 		//#endregion
+		//#region ../../image/mask-studio/src/ui/orbCopy.ts
+		/**
+		* orbCopy.ts — THE ORBIT COPY DICTIONARY. Client UI copy is locale-owned —
+		* presentation code owns no copy literals; it consumes them here through the
+		* typed seat. A second locale plugs into this dictionary without touching the
+		* orb component.
+		*
+		* THE BOUND: static user-visible FACES of the orbit orb canvas live here
+		* (the accessible pose name, the gesture hint). Canvas DATA — the trained-band
+		* ink, data-testid hooks, classNames, and the numeric control seats — rides
+		* the component, never this dictionary.
+		*/
+		/** The typed dictionary. Keys are stable copy ids. */
+		// v8 ignore next -- exercised key-by-key by the copy wall's census arm
+		const orbCopy = {
+			/** The orb canvas's accessible name: the live pose in words (ONE TRUTH —
+			*  the orb and the orbit/tilt/dolly number dials write the same seats). */
+			aria: (p) => `Camera pose orb: orbit ${p.orbit} degrees, tilt ${p.tilt} degrees, dolly ${p.dolly}`,
+			/** The gesture hint under the orb: the handle snaps, empty space turns
+			*  the view, the wheel dollies, double-click resets the view. */
+			hint: (p) => `Drag the blue handle to set orbit/tilt (${p.snap}\u00B0 snap) \u00B7 drag empty space to rotate the view \u00B7 wheel = dolly \u00B7 double-click resets the view. The dials below ride the same seats.`
+		};
+		//#endregion
+		//#region ../../image/mask-studio/src/ui/OrbitLeafCanvas.tsx
+		const d2r = (x) => x * Math.PI / 180;
+		const r2d = (x) => x * 180 / Math.PI;
+		const SNAP_DEG = 5;
+		const ZONE_GREEN = [
+			45,
+			30,
+			20
+		];
+		const ZONE_YELLOW = [
+			90,
+			45,
+			35
+		];
+		const C_GREEN = [
+			80,
+			200,
+			120
+		];
+		const C_YELLOW = [
+			230,
+			200,
+			90
+		];
+		const C_RED = [
+			225,
+			95,
+			95
+		];
+		const distScale = (dist) => {
+			const d = Number(dist);
+			if (d <= 1) return .45 + .55 * d;
+			return 1 + .25 * (d - 1);
+		};
+		const inEllipse = (az, el, [A, Eup, Edn]) => {
+			const an = az / A;
+			const en = el >= 0 ? el / Eup : el / Edn;
+			return an * an + en * en <= 1;
+		};
+		const zoneColor = (az, el) => {
+			if (inEllipse(az, el, ZONE_GREEN)) return C_GREEN;
+			if (inEllipse(az, el, ZONE_YELLOW)) return C_YELLOW;
+			return C_RED;
+		};
+		const spherePt = (azDeg, elDeg) => {
+			const a = d2r(azDeg);
+			const e = d2r(elDeg);
+			return [
+				Math.cos(e) * Math.sin(a),
+				-Math.cos(e) * Math.cos(a),
+				Math.sin(e)
+			];
+		};
+		const snap5 = (v) => Math.round(v / SNAP_DEG) * SNAP_DEG;
+		const clampAz = (v) => Math.max(-180, Math.min(180, v));
+		const clampEl = (v) => Math.max(-90, Math.min(90, v));
+		const clampDist = (v) => Math.max(.1, Math.min(3, Math.round(v * 100) / 100));
+		const SNAPS = [
+			[
+				0,
+				0,
+				"F"
+			],
+			[
+				-45,
+				0,
+				"L"
+			],
+			[
+				45,
+				0,
+				"R"
+			],
+			[
+				-90,
+				0,
+				""
+			],
+			[
+				90,
+				0,
+				""
+			],
+			[
+				0,
+				30,
+				"H"
+			],
+			[
+				0,
+				-15,
+				"Lo"
+			]
+		];
+		function OrbitLeafCanvas(props) {
+			const { value, onChange } = props;
+			const canvasRef = (0, react.useRef)(null);
+			const [view, setView] = (0, react.useState)({
+				yaw: .24,
+				tilt: .2
+			});
+			const dragRef = (0, react.useRef)(null);
+			const handleRef = (0, react.useRef)(null);
+			const viewRef = (0, react.useRef)(view);
+			viewRef.current = view;
+			const valueRef = (0, react.useRef)(value);
+			valueRef.current = value;
+			const rot = (p, yaw, tilt) => {
+				const [x, y, z] = p;
+				const cyw = Math.cos(yaw);
+				const syw = Math.sin(yaw);
+				const ct = Math.cos(tilt);
+				const st = Math.sin(tilt);
+				const xr = x * cyw + y * syw;
+				const yr = -x * syw + y * cyw;
+				return [
+					xr,
+					yr * ct - z * st,
+					yr * st + z * ct
+				];
+			};
+			const unproject = (px, py, R, yaw, tilt) => {
+				const xr = px / R;
+				const zv = -py / R;
+				const rr = xr * xr + zv * zv;
+				if (rr > 1) return null;
+				const yv = -Math.sqrt(1 - rr);
+				const ct = Math.cos(tilt);
+				const st = Math.sin(tilt);
+				const yr = yv * ct + zv * st;
+				const z = -yv * st + zv * ct;
+				const cyw = Math.cos(yaw);
+				const syw = Math.sin(yaw);
+				const x = xr * cyw - yr * syw;
+				const y = xr * syw + yr * cyw;
+				const el = r2d(Math.asin(Math.max(-1, Math.min(1, z))));
+				return [r2d(Math.atan2(x, -y)), el];
+			};
+			(0, react.useEffect)(() => {
+				const canvas = canvasRef.current;
+				if (canvas === null) return;
+				const ctx = canvas.getContext("2d");
+				if (ctx === null) return;
+				const W = canvas.width;
+				const H = canvas.height;
+				const { yaw, tilt } = viewRef.current;
+				const { orbit: az, tilt: el, dolly: dist } = valueRef.current;
+				const R = Math.min(W, H) / 2 - 14;
+				const cx = W / 2;
+				const cy = H / 2;
+				ctx.clearRect(0, 0, W, H);
+				ctx.fillStyle = "#1b1b1f";
+				ctx.fillRect(0, 0, W, H);
+				const P = (a, e) => {
+					const [xr, yv, zv] = rot(spherePt(a, e), yaw, tilt);
+					return [
+						cx + R * xr,
+						cy - R * zv,
+						yv
+					];
+				};
+				const STEP = 15;
+				for (let a0 = -90; a0 < 90; a0 += STEP) for (let e0 = -45; e0 < 45; e0 += STEP) {
+					const col = zoneColor(a0 + STEP / 2, e0 + STEP / 2);
+					if (col === C_RED) continue;
+					const quad = [];
+					let dep = 0;
+					for (const [aa, ee] of [
+						[a0, e0],
+						[a0 + STEP, e0],
+						[a0 + STEP, e0 + STEP],
+						[a0, e0 + STEP]
+					]) {
+						const [qx, qy, yv] = P(aa, ee);
+						quad.push([qx, qy]);
+						dep = yv;
+					}
+					if (dep >= 0) continue;
+					ctx.beginPath();
+					ctx.moveTo(quad[0][0], quad[0][1]);
+					for (let i = 1; i < 4; i++) ctx.lineTo(quad[i][0], quad[i][1]);
+					ctx.closePath();
+					ctx.fillStyle = `rgba(${col[0]},${col[1]},${col[2]},0.13)`;
+					ctx.fill();
+				}
+				ctx.lineWidth = 1.5;
+				const ring = (pts) => {
+					for (let i = 0; i < pts.length - 1; i++) {
+						const [x1, y1, f1] = pts[i];
+						const [x2, y2, f2] = pts[i + 1];
+						ctx.strokeStyle = f1 < 0 && f2 < 0 ? "rgba(200,204,216,0.5)" : "rgba(120,124,138,0.15)";
+						ctx.beginPath();
+						ctx.moveTo(x1, y1);
+						ctx.lineTo(x2, y2);
+						ctx.stroke();
+					}
+				};
+				const eq = [];
+				for (let a = -180; a <= 180; a += 8) eq.push(P(a, 0));
+				ring(eq);
+				const mer = [];
+				for (let e = -90; e <= 90; e += 8) mer.push(P(0, e));
+				ring(mer);
+				ctx.strokeStyle = "rgba(190,190,205,0.55)";
+				ctx.beginPath();
+				ctx.arc(cx, cy, R, 0, Math.PI * 2);
+				ctx.stroke();
+				ctx.strokeStyle = "#d8d8e0";
+				ctx.lineWidth = 4;
+				ctx.beginPath();
+				ctx.moveTo(cx, cy + 12);
+				ctx.lineTo(cx, cy - 2);
+				ctx.stroke();
+				ctx.fillStyle = "#d8d8e0";
+				ctx.beginPath();
+				ctx.arc(cx, cy - 8, 5, 0, Math.PI * 2);
+				ctx.fill();
+				for (const [a, e, lab] of SNAPS) {
+					const [sxp, syp, f] = P(a, e);
+					const rr = lab !== "" ? 9 : 6;
+					ctx.globalAlpha = f < 0 ? 1 : .35;
+					ctx.fillStyle = a === 0 && e === 0 ? "#ffffff" : "#3a4150";
+					ctx.strokeStyle = "#9aa2b5";
+					ctx.lineWidth = 1.5;
+					ctx.beginPath();
+					ctx.arc(sxp, syp, rr, 0, Math.PI * 2);
+					ctx.fill();
+					ctx.stroke();
+					if (lab !== "") {
+						ctx.fillStyle = a === 0 && e === 0 ? "#14161b" : "#d9dce3";
+						ctx.font = "bold 9px monospace";
+						const lw = ctx.measureText(lab).width;
+						ctx.fillText(lab, sxp - lw / 2, syp + 3);
+					}
+					ctx.globalAlpha = 1;
+				}
+				ctx.strokeStyle = "#78beff";
+				ctx.lineWidth = 2.5;
+				ctx.beginPath();
+				for (let i = 0; i <= 14; i++) {
+					const [ax, ay] = P(az * i / 14, el * i / 14);
+					if (i > 0) ctx.lineTo(ax, ay);
+					else ctx.moveTo(ax, ay);
+				}
+				ctx.stroke();
+				const distF = distScale(dist);
+				const [sx, sy, pf] = P(az, el);
+				const px = cx + (sx - cx) * distF;
+				const py = cy + (sy - cy) * distF;
+				ctx.strokeStyle = "rgba(120,190,255,0.35)";
+				ctx.lineWidth = 1;
+				ctx.setLineDash([4, 4]);
+				ctx.beginPath();
+				ctx.moveTo(cx, cy);
+				ctx.lineTo(cx + (sx - cx) * 1.32, cy + (sy - cy) * 1.32);
+				ctx.stroke();
+				ctx.setLineDash([]);
+				ctx.strokeStyle = "rgba(255,255,255,0.6)";
+				ctx.beginPath();
+				ctx.arc(sx, sy, 3, 0, Math.PI * 2);
+				ctx.stroke();
+				handleRef.current = [px, py];
+				ctx.globalAlpha = pf < 0 ? 1 : .45;
+				ctx.strokeStyle = "#78beff";
+				ctx.lineWidth = 1;
+				for (const [dx, dy] of [
+					[-8, -6],
+					[8, -6],
+					[-8, 6],
+					[8, 6]
+				]) {
+					ctx.beginPath();
+					ctx.moveTo(px, py);
+					ctx.lineTo(cx + dx, cy + dy - 6);
+					ctx.stroke();
+				}
+				ctx.fillStyle = "#78beff";
+				ctx.strokeStyle = "#fff";
+				ctx.lineWidth = 2;
+				ctx.beginPath();
+				if (typeof ctx.roundRect === "function") ctx.roundRect(px - 13, py - 9, 26, 18, 4);
+				else ctx.rect(px - 13, py - 9, 26, 18);
+				ctx.fill();
+				ctx.stroke();
+				ctx.fillStyle = "#20242c";
+				ctx.beginPath();
+				ctx.arc(px + 5, py, 3.5, 0, Math.PI * 2);
+				ctx.fill();
+				ctx.globalAlpha = 1;
+			});
+			const canvasPos = (e) => {
+				const canvas = canvasRef.current;
+				if (canvas === null) return [0, 0];
+				const r = canvas.getBoundingClientRect();
+				return [e.clientX - r.left - r.width / 2, e.clientY - r.top - r.height / 2];
+			};
+			const onDown = (e) => {
+				e.target.setPointerCapture?.(e.pointerId);
+				const [x, y] = canvasPos(e);
+				const h = handleRef.current;
+				if (h !== null) {
+					const canvas = canvasRef.current;
+					const scale = canvas !== null ? canvas.width / Math.max(1, canvas.getBoundingClientRect().width) : 1;
+					const dx = x * scale - (h[0] - canvas.width / 2);
+					const dy = y * scale - (h[1] - canvas.height / 2);
+					if (Math.hypot(dx, dy) <= 18) {
+						dragRef.current = {
+							mode: "cam",
+							lastX: x,
+							lastY: y,
+							az: valueRef.current.orbit,
+							el: valueRef.current.tilt
+						};
+						return;
+					}
+				}
+				dragRef.current = {
+					mode: "view",
+					lastX: x,
+					lastY: y,
+					az: 0,
+					el: 0
+				};
+			};
+			const onMove = (e) => {
+				const d = dragRef.current;
+				if (d === null) return;
+				const canvas = canvasRef.current;
+				if (canvas === null) return;
+				const [x, y] = canvasPos(e);
+				const R = Math.min(canvas.width, canvas.height) / 2 - 14;
+				const scale = canvas.width / Math.max(1, canvas.getBoundingClientRect().width);
+				if (d.mode === "view") {
+					const dx = (x - d.lastX) * scale;
+					const dy = (y - d.lastY) * scale;
+					setView((v) => ({
+						yaw: v.yaw + dx / R,
+						tilt: Math.max(-1.2, Math.min(1.2, v.tilt + dy / R))
+					}));
+					d.lastX = x;
+					d.lastY = y;
+					return;
+				}
+				const px = x * scale;
+				const py = y * scale;
+				const hit = unproject(px, py, R, viewRef.current.yaw, viewRef.current.tilt);
+				if (hit === null) return;
+				d.az = clampAz(snap5(hit[0]));
+				d.el = clampEl(snap5(hit[1]));
+			};
+			const onUp = () => {
+				const d = dragRef.current;
+				dragRef.current = null;
+				if (d === null || d.mode !== "cam") return;
+				const cur = valueRef.current;
+				if (d.az !== cur.orbit || d.el !== cur.tilt) onChange({
+					orbit: d.az,
+					tilt: d.el,
+					dolly: cur.dolly
+				});
+			};
+			const onWheel = (e) => {
+				e.preventDefault();
+				const cur = valueRef.current;
+				const next = clampDist(cur.dolly + (e.deltaY > 0 ? .05 : -.05));
+				if (next !== cur.dolly) onChange({
+					orbit: cur.orbit,
+					tilt: cur.tilt,
+					dolly: next
+				});
+			};
+			const onDoubleClick = () => {
+				setView({
+					yaw: .24,
+					tilt: .2
+				});
+			};
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				"data-orbit-leaf-canvas": "embedded",
+				style: {
+					display: "flex",
+					flexDirection: "column",
+					gap: 8
+				},
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("canvas", {
+					ref: canvasRef,
+					width: 520,
+					height: 300,
+					style: {
+						width: "100%",
+						cursor: "grab",
+						touchAction: "none",
+						borderRadius: 4,
+						display: "block"
+					},
+					onPointerDown: onDown,
+					onPointerMove: onMove,
+					onPointerUp: onUp,
+					onPointerCancel: onUp,
+					onWheel,
+					onDoubleClick,
+					role: "application",
+					"aria-label": orbCopy.aria(value)
+				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+					style: {
+						opacity: .7,
+						fontSize: 12
+					},
+					children: orbCopy.hint({ snap: SNAP_DEG })
+				})]
+			});
+		}
+		//#endregion
 		//#region src/client/forms-edge-meta.ts
 		/** forms-edge-meta.ts — the /v1/forms edge-meta session cache
 		* (extracted from CardsTab.tsx hour 15: one seam, one file). */
@@ -19565,6 +20359,17 @@ window.__ModuleLoader__.load({
 			});
 			return formsEdgeMetaPromise;
 		}
+		//#endregion
+		//#region ../../web-kit/contracts/src/planes.ts
+		/** The canonical row categories (the group coordinate). 'Quant' is
+		*  derived-only — a DECL row never carries it (cells are the quant
+		*  plane's only seat); the serving door mints Quant rows from cells.
+		*  The empty string is the SOLO category (see SOLO_GROUP). */
+		const CATEGORIES = {
+			variant: "Variant",
+			quant: "Quant",
+			recipe: "Recipe"
+		};
 		//#endregion
 		//#region src/client/lane-strike.ts
 		/**
@@ -19635,6 +20440,19 @@ window.__ModuleLoader__.load({
 					}
 				}
 			}
+			if ((0, _melite_card_base_client.activeRecipeId)(spec, (0, _melite_card_base_client.composeCandidateDoc)(out, user, {})) === void 0) {
+				const recipeKeys = /* @__PURE__ */ new Set();
+				for (const row of (0, _melite_card_base_client.rowsFor)(spec, CATEGORIES.recipe)) for (const k of Object.keys(row.defaults)) recipeKeys.add(k);
+				const ghosts = Object.keys(out).filter((k) => recipeKeys.has(k) && !(k in user));
+				if (ghosts.length > 0) {
+					const struck = { ...out };
+					for (const k of ghosts) delete struck[k];
+					if ((0, _melite_card_base_client.activeRecipeId)(spec, (0, _melite_card_base_client.composeCandidateDoc)(struck, user, {})) !== void 0) for (const k of ghosts) {
+						delete out[k];
+						strikes.push(k);
+					}
+				}
+			}
 			return {
 				base: out,
 				strikes
@@ -19667,6 +20485,23 @@ window.__ModuleLoader__.load({
 			else delete out[k];
 			return out;
 		}
+		/** THE SETTLE-COMMIT (2026-11-15, the roaming-dom-flake cure): every
+		*  async refusal's voice commit rides this wrapper. The class
+		*  (evidence: dev_docs/audits/journey/roaming-dom-flake-2026-11-15.md
+		*  — thrice-captured verbatim): a promise-settled setState with no
+		*  event-replay protection can lose its commit when the mount
+		*  cascade still has pending work (a passive effect commits between
+		*  the verb's start and its reply, and the reply's update is
+		*  dropped with the interrupted render it scheduled into). The
+		*  wrapper commits NOW and re-commits ONE macrotask later — the
+		*  second commit lands on a settled lane even when the first rode
+		*  an interrupted one. Idempotent by construction (same values,
+		*  same voice — a re-commit of identical state is a no-op), so the
+		*  live estate pays nothing but one redundant scheduling. */
+		const settleCommit = (commit) => {
+			commit();
+			setTimeout(commit, 0);
+		};
 		/** THE SHARED DRILLDOWN — spec-formatted (the old system's law): the
 		*  stage's card carries a DECLARED form (/v1/form-spec — typed atoms,
 		*  groups, defaults); the drill renders THAT, never a raw key/value
@@ -19848,6 +20683,7 @@ window.__ModuleLoader__.load({
 			const userModel = typeof userModelRaw === "string" && userModelRaw !== "" ? userModelRaw : "";
 			const modelKey = userModel !== "" ? userModel : benchModel;
 			const lastStageRef = (0, react.useRef)("");
+			const guardStage = (settleStageId) => lastStageRef.current === "" || lastStageRef.current === settleStageId;
 			const touchedRef = (0, react.useRef)(/* @__PURE__ */ new Set());
 			const droppedRef = (0, react.useRef)(/* @__PURE__ */ new Set());
 			(0, react.useEffect)(() => {
@@ -19928,7 +20764,7 @@ window.__ModuleLoader__.load({
 						reconcileStageWriteFailures(bench.draftId, stage.id, held, seeded, new Set((0, _melite_card_base_client.fieldsOf)(doc).map((f) => f.name)));
 						const reopenDrop = (0, _melite_card_base_client.dropStaleReopenCarry)(doc, held);
 						for (const k of Object.keys(reopenDrop)) droppedRef.current.add(k);
-						if (Object.keys(reopenDrop).length > 0) patchStageParams(bench.draftId, stage.id, reopenDrop, bench.rev).then(void 0, (e) => {
+						if (Object.keys(reopenDrop).length > 0) patchStageParamsChained(bench.draftId, stage.id, reopenDrop).then(void 0, (e) => {
 							if (alive) console.warn("[stage-drill] reopen carry drop refused:", e);
 						});
 					}
@@ -19937,8 +20773,10 @@ window.__ModuleLoader__.load({
 				}).catch((e) => {
 					if (!alive) return;
 					if (pendingSpecRef.current?.seq === fetchSeq) pendingSpecRef.current = null;
-					setGateSet([]);
-					setError((0, _melite_card_base_client.rejectionVoice)(e));
+					settleCommit(() => {
+						setGateSet([]);
+						setError((0, _melite_card_base_client.rejectionVoice)(e));
+					});
 					setLoaded(true);
 				});
 				return () => {
@@ -19990,21 +20828,14 @@ window.__ModuleLoader__.load({
 					const nullsM = {};
 					for (const [k, kv] of Object.entries(rescoped)) if ((0, _melite_card_base_client.axisUnset)(k, kv, spec) || kv === null) nullsM[k] = null;
 					else landedM[k] = kv;
-					for (const k of Object.keys(landedM)) touchedRef.current.add(k);
-					for (const k of Object.keys(nullsM)) touchedRef.current.add(k);
-					setUser((m) => {
-						const next = { ...m };
-						for (const k of Object.keys(nullsM)) delete next[k];
-						return {
-							...next,
-							...landedM
-						};
-					});
 					const frameM = {
 						...landedM,
 						...nullsM
 					};
-					const refusedM = composeGateRefusal(spec, stage.params, user, frameM);
+					const nextUserM = { ...user };
+					for (const k of Object.keys(nullsM)) delete nextUserM[k];
+					Object.assign(nextUserM, landedM);
+					const refusedM = composeGateRefusal(spec, stage.params, nextUserM, frameM);
 					/* istanbul ignore if -- defense arm, provably unfireable
 					(coverage disposition 2026-11-06): composeGateRefusal
 					refuses a model re-point only when the departing spec's
@@ -20021,14 +20852,28 @@ window.__ModuleLoader__.load({
 						setWriteFace(refusedM);
 						return;
 					}
+					setUser((m) => {
+						const next = { ...m };
+						for (const k of Object.keys(nullsM)) delete next[k];
+						return {
+							...next,
+							...landedM
+						};
+					});
+					for (const k of Object.keys(landedM)) touchedRef.current.add(k);
+					for (const k of Object.keys(nullsM)) touchedRef.current.add(k);
 					const settleDraftId = bench.draftId;
 					const settleStageId = stage.id;
-					patchStageParams(settleDraftId, settleStageId, frameM, bench.rev).then(() => {
-						if (lastStageRef.current !== settleStageId) return;
-						setWriteFace(stageWriteState(settleDraftId, settleStageId).failedKeys.length > 0 ? unlandedWriteVoice(settleDraftId, settleStageId) : null);
+					patchStageParamsChained(settleDraftId, settleStageId, frameM).then(() => {
+						if (!guardStage(settleStageId)) return;
+						settleCommit(() => {
+							setWriteFace(stageWriteState(settleDraftId, settleStageId).failedKeys.length > 0 ? unlandedWriteVoice(settleDraftId, settleStageId) : null);
+						});
 					}, () => {
-						if (lastStageRef.current !== settleStageId) return;
-						setWriteFace(unlandedWriteVoice(settleDraftId, settleStageId));
+						if (!guardStage(settleStageId)) return;
+						settleCommit(() => {
+							setWriteFace(unlandedWriteVoice(settleDraftId, settleStageId));
+						});
 					});
 					return;
 				}
@@ -20044,8 +20889,10 @@ window.__ModuleLoader__.load({
 					const settleDraftId = bench.draftId;
 					const settleStageId = stage.id;
 					scheduleStageParam(settleDraftId, settleStageId, name, null, bench.rev).then(() => {
-						if (lastStageRef.current !== settleStageId) return;
-						setWriteFace(stageWriteState(settleDraftId, settleStageId).failedKeys.length > 0 ? unlandedWriteVoice(settleDraftId, settleStageId) : pendingUnset);
+						if (!guardStage(settleStageId)) return;
+						settleCommit(() => {
+							setWriteFace(stageWriteState(settleDraftId, settleStageId).failedKeys.length > 0 ? unlandedWriteVoice(settleDraftId, settleStageId) : pendingUnset);
+						});
 					});
 					return;
 				}
@@ -20063,8 +20910,10 @@ window.__ModuleLoader__.load({
 					const settleDraftId = bench.draftId;
 					const settleStageId = stage.id;
 					scheduleStageParam(settleDraftId, settleStageId, name, v, bench.rev).then(() => {
-						if (lastStageRef.current !== settleStageId) return;
-						setWriteFace(stageWriteState(settleDraftId, settleStageId).failedKeys.length > 0 ? unlandedWriteVoice(settleDraftId, settleStageId) : pendingTyped);
+						if (!guardStage(settleStageId)) return;
+						settleCommit(() => {
+							setWriteFace(stageWriteState(settleDraftId, settleStageId).failedKeys.length > 0 ? unlandedWriteVoice(settleDraftId, settleStageId) : pendingTyped);
+						});
 					});
 				}
 				/* v8 ignore next 1 -- single-render law: CardForm renders only when spec is non-null (probe 2026-09-19) */
@@ -20077,9 +20926,11 @@ window.__ModuleLoader__.load({
 					if (pendingSlot !== null) setWriteFace(pendingSlot);
 					const settleDraftId = bench.draftId;
 					const settleStageId = stage.id;
-					patchStageParams(settleDraftId, settleStageId, slotEmpty ? { [name]: null } : { [name]: v }, bench.rev).catch((e) => {
-						if (lastStageRef.current !== settleStageId) return;
-						setWriteFace(unlandedWriteVoice(settleDraftId, settleStageId));
+					patchStageParamsChained(settleDraftId, settleStageId, slotEmpty ? { [name]: null } : { [name]: v }).catch((e) => {
+						if (!guardStage(settleStageId)) return;
+						settleCommit(() => {
+							setWriteFace(unlandedWriteVoice(settleDraftId, settleStageId));
+						});
 					});
 				}
 			}, [
@@ -20095,6 +20946,18 @@ window.__ModuleLoader__.load({
 				const nulls = {};
 				for (const [k, v] of Object.entries(rescoped)) if ((0, _melite_card_base_client.axisUnset)(k, v, spec) || v === null) nulls[k] = null;
 				else landed[k] = v;
+				const frame = {
+					...landed,
+					...nulls
+				};
+				const nextUser = { ...user };
+				for (const k of Object.keys(nulls)) delete nextUser[k];
+				Object.assign(nextUser, landed);
+				const refused = composeGateRefusal(spec, stage.params, nextUser, frame);
+				if (refused !== null) {
+					setWriteFace(refused);
+					return;
+				}
 				setUser((m) => {
 					const next = { ...m };
 					for (const k of Object.keys(nulls)) delete next[k];
@@ -20105,30 +20968,25 @@ window.__ModuleLoader__.load({
 				});
 				for (const k of Object.keys(landed)) touchedRef.current.add(k);
 				for (const k of Object.keys(nulls)) touchedRef.current.add(k);
-				const frame = {
-					...landed,
-					...nulls
-				};
-				const refused = composeGateRefusal(spec, stage.params, user, frame);
-				if (refused !== null) {
-					setWriteFace(refused);
-					return;
-				}
 				const settleDraftId = bench.draftId;
 				const settleStageId = stage.id;
-				patchStageParams(settleDraftId, settleStageId, frame, bench.rev).then(() => {
-					if (lastStageRef.current !== settleStageId) return;
+				patchStageParamsChained(settleDraftId, settleStageId, frame).then(() => {
+					onResync?.();
+					if (!guardStage(settleStageId)) return;
 					setWriteFace(stageWriteState(settleDraftId, settleStageId).failedKeys.length > 0 ? unlandedWriteVoice(settleDraftId, settleStageId) : null);
 				}, () => {
-					if (lastStageRef.current !== settleStageId) return;
-					setWriteFace(unlandedWriteVoice(settleDraftId, settleStageId));
+					if (!guardStage(settleStageId)) return;
+					settleCommit(() => {
+						setWriteFace(unlandedWriteVoice(settleDraftId, settleStageId));
+					});
 				});
 			}, [
 				spec,
 				user,
 				bench.draftId,
 				bench.rev,
-				stage.id
+				stage.id,
+				onResync
 			]);
 			const onUnset = (0, react.useCallback)((name) => {
 				touchedRef.current.add(name);
@@ -20149,9 +21007,11 @@ window.__ModuleLoader__.load({
 					}
 					const settleDraftId = bench.draftId;
 					const settleStageId = stage.id;
-					patchStageParams(settleDraftId, settleStageId, { [name]: null }, bench.rev).catch((e) => {
-						if (lastStageRef.current !== settleStageId) return;
-						setWriteFace(unlandedWriteVoice(settleDraftId, settleStageId));
+					patchStageParamsChained(settleDraftId, settleStageId, { [name]: null }).catch((e) => {
+						if (!guardStage(settleStageId)) return;
+						settleCommit(() => {
+							setWriteFace(unlandedWriteVoice(settleDraftId, settleStageId));
+						});
 					});
 				}
 			}, [
@@ -20174,9 +21034,11 @@ window.__ModuleLoader__.load({
 				setWriteFace((cur) => cur !== null && cur.includes("'" + name + "'") ? null : cur);
 				const settleDraftId = bench.draftId;
 				const settleStageId = stage.id;
-				patchStageParams(settleDraftId, settleStageId, { [name]: null }, bench.rev).catch(() => {
-					if (lastStageRef.current !== settleStageId) return;
-					setWriteFace(unlandedWriteVoice(settleDraftId, settleStageId));
+				patchStageParamsChained(settleDraftId, settleStageId, { [name]: null }).catch(() => {
+					if (!guardStage(settleStageId)) return;
+					settleCommit(() => {
+						setWriteFace(unlandedWriteVoice(settleDraftId, settleStageId));
+					});
 				});
 			}, [
 				bench.draftId,
@@ -20281,12 +21143,14 @@ window.__ModuleLoader__.load({
 						if (pendingSwept !== null) setWriteFace(pendingSwept);
 						const settleDraftId = bench.draftId;
 						const settleStageId = stage.id;
-						patchStageParams(settleDraftId, settleStageId, sweptPatch, bench.rev).then(() => {
-							if (lastStageRef.current !== settleStageId) return;
+						patchStageParamsChained(settleDraftId, settleStageId, sweptPatch).then(() => {
+							if (!guardStage(settleStageId)) return;
 							setWriteFace(stageWriteState(settleDraftId, settleStageId).failedKeys.length > 0 ? unlandedWriteVoice(settleDraftId, settleStageId) : pendingSwept);
 						}).catch((e) => {
-							if (lastStageRef.current !== settleStageId) return;
-							setWriteFace(unlandedWriteVoice(settleDraftId, settleStageId));
+							if (!guardStage(settleStageId)) return;
+							settleCommit(() => {
+								setWriteFace(unlandedWriteVoice(settleDraftId, settleStageId));
+							});
 						});
 					}
 					const swept = Object.keys(sweptPatch).length;
@@ -20305,9 +21169,11 @@ window.__ModuleLoader__.load({
 						});
 					}
 				} catch (e) {
-					setEnhanceNote({
-						err: true,
-						text: (0, _melite_card_base_client.rejectionVoice)(e)
+					settleCommit(() => {
+						setEnhanceNote({
+							err: true,
+							text: (0, _melite_card_base_client.rejectionVoice)(e)
+						});
 					});
 				} finally {
 					setEnhancing(false);
@@ -20316,7 +21182,8 @@ window.__ModuleLoader__.load({
 			const wire = {
 				candidates,
 				candidatesFor,
-				loadMedia: _melite_card_base_client.fetchMediaLibrary
+				loadMedia: _melite_card_base_client.fetchMediaLibrary,
+				loadChainRuns: _melite_card_base_client.fetchChainRunCandidates
 			};
 			const run = async () => {
 				setError(null);
@@ -20344,7 +21211,7 @@ window.__ModuleLoader__.load({
 							return;
 						}
 						try {
-							await patchStageParams(bench.draftId, stage.id, patch, bench.rev);
+							await patchStageParamsChained(bench.draftId, stage.id, patch);
 						} catch {
 							setGateSet([]);
 							setError(unlandedWriteVoice(bench.draftId, stage.id));
@@ -20360,8 +21227,10 @@ window.__ModuleLoader__.load({
 					}
 					onRun();
 				} catch (e) {
-					setGateSet([]);
-					setError((0, _melite_card_base_client.rejectionVoice)(e));
+					settleCommit(() => {
+						setGateSet([]);
+						setError((0, _melite_card_base_client.rejectionVoice)(e));
+					});
 					onResync?.();
 				}
 			};
@@ -20388,8 +21257,10 @@ window.__ModuleLoader__.load({
 					forgetStageWrites(bench.draftId, [stage.id]);
 					onRemoved();
 				} catch (e) {
-					setGateSet([]);
-					setError((0, _melite_card_base_client.rejectionVoice)(e));
+					settleCommit(() => {
+						setGateSet([]);
+						setError((0, _melite_card_base_client.rejectionVoice)(e));
+					});
 					setRemoving(false);
 					onResync?.();
 				}
@@ -20406,8 +21277,10 @@ window.__ModuleLoader__.load({
 						}, bench.sessionKey);
 						onRemoved();
 					} catch (e) {
-						setGateSet([]);
-						setError((0, _melite_card_base_client.rejectionVoice)(e));
+						settleCommit(() => {
+							setGateSet([]);
+							setError((0, _melite_card_base_client.rejectionVoice)(e));
+						});
 						setRemoving(false);
 						onResync?.();
 					}
@@ -20512,7 +21385,9 @@ window.__ModuleLoader__.load({
 					className: card_module_css_default.errorDismiss,
 					"aria-label": chromeCopy.dismissError,
 					onClick: () => {
-						setEnhanceNote(null);
+						settleCommit(() => {
+							setEnhanceNote(null);
+						});
 					}
 				}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, { size: 12 })))) : null, servedBaseRaw !== void 0 && laneStrike.strikes.length > 0 && !strikeDismissed ? (0, react.createElement)("div", {
 					className: card_module_css_default.enhanceRow,
@@ -20523,7 +21398,9 @@ window.__ModuleLoader__.load({
 					className: card_module_css_default.errorDismiss,
 					"aria-label": chromeCopy.dismissError,
 					onClick: () => {
-						setStrikeDismissed(true);
+						settleCommit(() => {
+							setStrikeDismissed(true);
+						});
 					}
 				}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, { size: 12 })))) : null, (0, react.createElement)("div", { className: card_module_css_default.params }, !loaded ? (0, react.createElement)("div", { className: card_module_css_default.load }, "form…") : spec !== null ? (0, react.createElement)(_melite_card_base_client.CardForm, {
 					spec,
@@ -20543,6 +21420,7 @@ window.__ModuleLoader__.load({
 					onInstallPack: (id) => (0, _melite_card_base_client.postManageAction)("install_extension", { nodes: [id] }).then((r) => r.ok),
 					paintFace: PaintLeafCanvas,
 					bboxFace: BboxLeafCanvas,
+					orbitFace: OrbitLeafCanvas,
 					paintReference: "input_image"
 				}) : (0, react.createElement)("pre", { className: card_module_css_default.mono }, JSON.stringify(held, null, 2))), error !== null ? (0, react.createElement)("div", { className: card_module_css_default.drillRunRow }, (0, react.createElement)("span", {
 					className: card_module_css_default.runError,
@@ -20561,8 +21439,10 @@ window.__ModuleLoader__.load({
 					className: card_module_css_default.errorDismiss,
 					"aria-label": chromeCopy.dismissError,
 					onClick: () => {
-						setGateSet([]);
-						setError(null);
+						settleCommit(() => {
+							setGateSet([]);
+							setError(null);
+						});
 					}
 				}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, { size: 12 })))) : null, writeFace !== null && !(writeFace === error && gateRefusalMessage(error) !== null) && !(gateRefusalMessage(writeFace) !== null && gateSet.some((v) => v.message === gateRefusalMessage(writeFace))) ? (0, react.createElement)("div", { className: card_module_css_default.drillRunRow }, (0, react.createElement)("span", {
 					className: card_module_css_default.runError,
@@ -20632,7 +21512,8 @@ window.__ModuleLoader__.load({
 			const currentStageIndex = bench.stages.findIndex((candidate) => candidate.id === stage.id);
 			const priorStageIds = currentStageIndex < 0 ? [] : bench.stages.slice(0, currentStageIndex).map((candidate) => candidate.id);
 			const declaredStudio = declaredStudioEarly;
-			const missFace = declaredStudio === null ? genericDetail() : missDismissed ? null : (0, react.createElement)("div", {
+			const studioClaims = spec !== null && (0, _melite_card_base_client.studioClaimsRow)(spec, stage.params);
+			const missFace = declaredStudio === null ? genericDetail() : !studioClaims ? genericDetail() : missDismissed ? null : (0, react.createElement)("div", {
 				className: card_module_css_default.drillRunRow,
 				"data-testid": "stage-view-load-refusal"
 			}, (0, react.createElement)("div", { className: card_module_css_default.runError }, chromeCopy.stageViewRefusal({
@@ -20644,7 +21525,9 @@ window.__ModuleLoader__.load({
 				className: card_module_css_default.errorDismiss,
 				"aria-label": chromeCopy.dismissError,
 				onClick: () => {
-					setMissDismissed(true);
+					settleCommit(() => {
+						setMissDismissed(true);
+					});
 				}
 			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, { size: 12 }))));
 			const effectiveParams = liveEffectiveParams(held, user, touchedRef.current);
@@ -20666,9 +21549,11 @@ window.__ModuleLoader__.load({
 					}
 					const settleDraftId = bench.draftId;
 					const settleStageId = stage.id;
-					patchStageParams(settleDraftId, settleStageId, { [slotKey]: candidate !== void 0 ? candidate.url : null }, bench.rev).catch((wireError) => {
-						if (lastStageRef.current !== settleStageId) return;
-						setWriteFace(unlandedWriteVoice(settleDraftId, settleStageId));
+					patchStageParamsChained(settleDraftId, settleStageId, { [slotKey]: candidate !== void 0 ? candidate.url : null }).catch((wireError) => {
+						if (!guardStage(settleStageId)) return;
+						settleCommit(() => {
+							setWriteFace(unlandedWriteVoice(settleDraftId, settleStageId));
+						});
 					});
 				},
 				onRun,
@@ -21128,7 +22013,7 @@ window.__ModuleLoader__.load({
 				}).then((field) => typeof source === "string" ? Promise.resolve([field, source]) : (0, _melite_card_base_client.uploadInputFile)(source, mountAbort.current?.signal).then(({ name }) => [field, name])).then(async ([field, src]) => {
 					const fresh = await fetchBench(sessionKey, mountAbort.current?.signal);
 					if (!fresh.stages.some((s) => s.id === target)) throw new Error("the stage the file was dropped on is gone — attach again");
-					return patchStageParams(fresh.draftId, target, { [field]: src });
+					return patchStageParamsChained(fresh.draftId, target, { [field]: src });
 				}).then(() => {
 					attachingRef.current = false;
 					reload({ keepOpen: true });
@@ -21321,6 +22206,9 @@ window.__ModuleLoader__.load({
 				onRemoved: () => {
 					closeDrill();
 					reload();
+				},
+				onResync: () => {
+					reload({ keepOpen: true });
 				},
 				onPatchParams: (patch) => onPatchParams(open, patch),
 				renderStageView,
@@ -21593,7 +22481,7 @@ window.__ModuleLoader__.load({
 			};
 			const info = typeof props.useTabInfo === "function" ? props.useTabInfo() : void 0;
 			const rawAddress = info?.tab.navigation.address ?? info?.tab.contentId ?? "dsh-resource://cards/bench";
-			const benchKey = benchSessionOf(props.sessionId ?? benchSessionOfAddress(resolveCardsAddress(rawAddress)));
+			const benchKey = carriedBenchKey(props.sessionId ?? benchSessionOfAddress(resolveCardsAddress(rawAddress)));
 			const benchAddress = benchAddressOf(benchKey);
 			(0, react.useEffect)(() => {
 				markCardsSurface(true, benchKey);
@@ -22216,7 +23104,7 @@ window.__ModuleLoader__.load({
 				console.error("[melite-card-view] cards resource provider registration failed:", error);
 			}
 			try {
-				const activeBenchSession = () => benchSessionOf(markedBenchKeyOf());
+				const activeBenchSession = () => carriedBenchKey(markedBenchKeyOf());
 				const subscribeBenchSession = (fn) => subscribeMarkedBench(fn);
 				ctx.effect(() => watchBenchLands(activeBenchSession, (sessionKey) => {
 					try {

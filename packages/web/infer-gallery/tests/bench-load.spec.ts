@@ -441,7 +441,12 @@ describe('loadRunOntoBench — the run record wins', () => {
     // is shared truth; each card's own preview law picks its hero.
     expect(stages[1]).toMatchObject({ id: 's_1', card: 'other', provenance: 'restored', result: shared })
     // THE SKIPPED SET never carries another stage's product.
-    expect(stages[2]).toEqual({ id: 's_2', card: 'skipped-card', provenance: 'restored' })
+    // (re-pin 2026-10-31, the D1 cure — the restore-preview
+    // recurrence audit F1: a truthless row posts an EXPLICIT
+    // result: null, the estate carry's clear key, never a stripped
+    // absence — absence reads "fill me" and the doc's own memory
+    // re-attaches, the reservoir.)
+    expect(stages[2]).toEqual({ id: 's_2', card: 'skipped-card', provenance: 'restored', result: null })
     expect(String(ensuredBody(calls).intent).length).toBeLessThanOrEqual(77)
   })
 
@@ -533,7 +538,13 @@ describe('loadRunOntoBench — the run record wins', () => {
     // the skipped set. The run-level floor survives only for
     // sidecars with NO stage rows (the legacy arm below).
     expect(stages[0]).toMatchObject({ id: 's_0', provenance: 'restored' })
-    expect('result' in stages[0]!).toBe(false)
+    // (re-pin 2026-10-31, the D1 cure — the restore-preview
+    // recurrence audit F1): the truthless row posts the EXPLICIT
+    // result: null clear key, never a stripped absence — the
+    // fill-never-clobber carry reads absence as "fill me" and
+    // re-attaches the doc's own memory (the reservoir, proven live
+    // through the real doors in the audit's R1).
+    expect(stages[0]!['result']).toBeNull()
   })
 
   it('THE FIFTEENTH REPORT (operator 2026-10-31: "when I reload from history, all the preview images get set to a single one") — a single-card press over a multi-stage bench paints ONE stage\'s product, never every tile', async () => {
@@ -576,7 +587,11 @@ describe('loadRunOntoBench — the run record wins', () => {
     // film — preview-less, never a single shared image
     for (const st of [stages[0]!, stages[1]!]) {
       expect(st['provenance']).toBe('restored')
-      expect('result' in st).toBe(false)
+      // (re-pin 2026-10-31, the D1 cure — the restore-preview
+      // recurrence audit F1): the truthless rows post the EXPLICIT
+      // result: null clear key — never a stripped absence, which the
+      // estate carry fills from the doc's own fossil on every reload.
+      expect(st['result']).toBeNull()
     }
   })
 
@@ -1092,7 +1107,12 @@ describe('loadRunOntoBench — the run record wins', () => {
     await loadRunOntoBench('r6b', d2)
     expect(d2.errors).toEqual([])
     const bareStages = ensuredBody(bare.calls).stages as Array<Record<string, unknown>>
-    expect(bareStages.every((st) => !('result' in st))).toBe(true)
+    // (re-pin 2026-10-31, the D1 cure — the restore-preview
+    // recurrence audit F1): the honest NOTHING is now the explicit
+    // result: null clear key on every truthless row — a stripped
+    // absence would let the estate carry re-fill the doc's own
+    // memory on the next reload (the reservoir).
+    expect(bareStages.every((st) => st['result'] === null)).toBe(true)
   })
 
   it('the verbatim request restores older runs (draft/test keys stripped)', async () => {

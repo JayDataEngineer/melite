@@ -11,8 +11,8 @@
 // still activating — presence, never fiber phase, is the signal.
 //
 // SCOPE: the core surface only (@melite/harness-tools: the agent tools
-// plus the /v1 doors). Card studios stay optional by design — a
-// headless commission estate composes without them — and the
+// plus the /v1 doors). Card studios stay optional by design — the
+// agent-server commission estate composes without them — and the
 // every-bundle sweep is dsh-app-boot's surface upstream, out of this
 // tree's reach. DSH-owned bundles (dsh-base, dsh-web-app and the
 // agent-team profile) are upstream's to judge, never the estate's.
@@ -34,7 +34,7 @@ export const LANE_HEALTH_SERVICE = "meliteLaneHealth";
  * tool surface — @melite/harness-tools contributes the melite-tools
  * row (agent tools) and the melite-tools-doors row (the /v1 doors);
  * either entry proves the bundle composed (server profiles disable
- * the doors row by id, headless lanes never mount it). A bundle is
+ * the doors row by id; agent-server lanes never mount it). A bundle is
  * missing only when NONE of its modules has a loader entry.
  * @returns the required bundle table.
  */

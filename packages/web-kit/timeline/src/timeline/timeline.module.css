@@ -195,6 +195,26 @@
   position: relative;
 }
 
+/* ── Planned tail (the armed-but-unrendered band, 2026-11-03) ────── */
+/* The hatched reservation beyond the real film's end: the axis
+   extends (the tenant's plannedFrames) so positioned window segments
+   land where the frames WILL sit; the band says "not rendered yet"
+   and eats no pointer (scrub clamps at the film's end). */
+.plannedBand {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 6px,
+    color-mix(in srgb, var(--dsw-alias-label-secondary) 10%, transparent) 6px,
+    color-mix(in srgb, var(--dsw-alias-label-secondary) 10%, transparent) 8px
+  );
+  border-left: 1px dashed var(--dsw-alias-border-l2);
+}
+
 /* ── Ruler ─────────────────────────────────────────────────────────── */
 /* NOT a scrub surface (operator 2026-11): the ruler body carries
    ticks + the double-click add only — the ew-resize cursor and the
@@ -1043,6 +1063,30 @@
   padding: 1px 4px;
   border-radius: 3px;
   background: color-mix(in srgb, var(--dsw-alias-brand-primary) 14%, transparent);
+}
+/* THE POSITIONED FACE (the frame-offset segments, 2026-11-03): the
+ * span degrades to a lane BODY (the tint band stays, the chips are
+ * gone) and each segment absolutes against the lane at its own
+ * frameToPx offset — the windows sit where the film's frames sit. */
+.commissionSpanBody {
+  display: block;
+  padding: 0;
+}
+.commissionSegmentPos {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  display: flex;
+  align-items: center;
+  padding: 1px 4px;
+  border-radius: 3px;
+  border-left: 2px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 55%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 14%, transparent);
+  z-index: 1;
+}
+.commissionSegmentPos[data-commission-planned='true'] {
+  border-left-style: dashed;
+  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 7%, transparent);
 }
 .commissionSegment {
   font-size: 10px;

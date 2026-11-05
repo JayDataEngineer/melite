@@ -38,6 +38,14 @@ export interface CommissionRow {
   /** The window segments to draw across the bar (the extend's N
    *  windows). Absent/one entry → ONE span covering the bar. */
   segments?: string[]
+  /** Each segment's frame placement (bar space), present when the
+   *  tenant positions its windows at its frame offset (the extend's
+   *  auto-tile geometry — window k at its start, its own frames, the
+   *  carry overlap visible as the seam). Length must match `segments`;
+   *  absent → the chip flow, byte-identical. A segment starting at or
+   *  past `totalFrames` carries data-commission-planned (it draws in
+   *  the armed-but-unrendered tail the tenant's plannedFrames seats). */
+  segmentSpans?: CommissionSegmentSpan[]
   /** An accent color — any CSS color; tints the glyph and the span's
    *  left edge. Absent → the neutral look, byte-identical. */
   accent?: string
@@ -47,11 +55,20 @@ export interface CommissionRow {
   title?: string
 }
 
+/** One window segment's frame placement in bar space. */
+export interface CommissionSegmentSpan {
+  /** The segment's first frame. */
+  start: number
+  /** The segment's length in frames. */
+  frames: number
+}
+
 /** One commission row's BODY: the span (or the N window segments) the
  *  commission covers, drawn in bar space.
  *  @param props.row the commission
  *  @param props.frameToPx the bar's own frame→pixel scale
- *  @param props.totalFrames the doc's length (the single-span width)
+ *  @param props.totalFrames the doc's length (the single-span width,
+ *  and the planned-tail boundary for positioned segments)
  */
 export function CommissionLane(props: {
   row: CommissionRow
@@ -63,6 +80,8 @@ export function CommissionLane(props: {
     ? row.segments
     : [row.detail ?? row.label]
   const width = Math.max(2, frameToPx(totalFrames) - frameToPx(0))
+  const spans = row.segmentSpans
+  const positioned = spans !== undefined && spans.length === segments.length
   return (
     <div
       className={css.commissionLane}
@@ -70,10 +89,10 @@ export function CommissionLane(props: {
       style={{ height: COMMISSION_H }}
     >
       <div
-        className={cn(css.commissionSpan, segments.length > 1 && css.commissionWindows)}
+        className={cn(css.commissionSpan, segments.length > 1 && css.commissionWindows, positioned && css.commissionSpanBody)}
         style={{ width, ...(row.accent ? { borderLeftColor: row.accent } : {}) }}
       >
-        {segments.map((segment, i) => (
+        {positioned ? null : segments.map((segment, i) => (
           <span
             key={`${row.id}-${String(i)}`}
             className={css.commissionSegment}
@@ -83,6 +102,20 @@ export function CommissionLane(props: {
           </span>
         ))}
       </div>
+      {positioned ? spans.map((sp, i) => (
+        <span
+          key={`${row.id}-pos-${String(i)}`}
+          className={cn(css.commissionSegment, css.commissionSegmentPos)}
+          data-commission-segment={`${row.id}-${String(i)}`}
+          data-commission-planned={sp.start >= totalFrames ? "true" : undefined}
+          style={{
+            left: frameToPx(sp.start),
+            width: Math.max(2, frameToPx(sp.start + sp.frames) - frameToPx(sp.start)),
+          }}
+        >
+          {segments[i]}
+        </span>
+      )) : null}
     </div>
   )
 }

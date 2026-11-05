@@ -344,6 +344,84 @@ export const WIRE_STAGE_KEYS: readonly string[] = [
 ];
 
 /**
+ * THE LIVE-ROWS FILTER (GAPS-9, the archived-compile burn: an
+ * archived stale draft's params blocked every future bench-wide
+ * compile). F11 rests archived rows on the RUN faces — the COMPILE
+ * faces rest them too. projectStages strips the archived FLAG (it
+ * is not a wire key) but keeps the ROW, so a spent row's stale
+ * params judged bench-wide. Compile callers filter here FIRST:
+ * only LIVE rows judge. (Read/spell/floor/rewire keep the full
+ * view — they report or touch addressed rows, never judge.)
+ *
+ * Moved to the contract (2026-10-31, F14's estate half): the
+ * projection had ONE writer while only the agent tool composed —
+ * the estate's add-stage gate composes the same view, so the
+ * projection is the contract's now (the audit's Rule 1 law: a
+ * second writer means the same bench reads as a different
+ * document depending on which door projected it).
+ */
+export function liveBenchRows(stages: unknown): unknown {
+  if (!Array.isArray(stages)) return stages;
+  return stages.filter((s) =>
+    !(typeof s === "object" && s !== null && !Array.isArray(s) &&
+      (s as Record<string, unknown>)["archived"] === true));
+}
+
+/**
+ * Project bench stage rows onto the flow_inline wire contract
+ * (the doors forbid provenance/runStatus/result/title as extras —
+ * they strip; `card` RIDES (STAGE_KEYS admit it) because the
+ * kinds pass derives input kinds from the card's own flowKinds —
+ * stripping it manufactured phantom "wired but untyped" refusals
+ * on correctly-wired card stages; engine defaults comfyui).
+ */
+export function projectStages(stages: unknown): Array<Record<string, unknown>> {
+  if (!Array.isArray(stages)) return [];
+  // THE CONTRACT SHAPES EVERY ROW (2026-10-10, the audit's Rule 1 —
+  // this was a second writer, so the same bench read as a different
+  // document depending on which door projected it; and the audit's
+  // Rule 3, which forbade it from DEMANDING the engine the contract
+  // derives). The contract carries the card-ports law, the media-path
+  // heal, the self-naming strip and the engine derivation — the
+  // projection only preserves the view's identity and the fields the
+  // compile needs (`expected`).
+  const source = stages
+    .filter((s): s is Record<string, unknown> => typeof s === "object" && s !== null && !Array.isArray(s));
+  return normalizeBenchStages(source).map((row, i) => {
+    // normalizeBenchStages is 1:1 over its input — one normalized row
+    // pushed per source row, never a skip (benchStage.ts:243-263) — so
+    // index i of the projection always has a source row behind it (the
+    // re-audit, 2026-10-16).
+    const from = source[i] as Record<string, unknown>;
+    // the view's id is the SOURCE's id, stringified (an absent id
+    // reports as ''), never the contract's birth mint — the view
+    // reports what the bench holds, it does not mint
+    row["id"] = String(from["id"] ?? "");
+    // the caller's own id rides (the projection is a VIEW, not a
+    // mint): a row with NO id stays id-less rather than gaining the
+    // contract's birth mint — the view reports what the bench holds
+    if (typeof from["id"] === "string" && from["id"] !== "") row["id"] = from["id"];
+    // THE VIEW ADMITS THE WIRE'S OWN KEYS (STAGE_KEYS, the flow
+    // gate's own list): the bench's bookkeeping (title, result,
+    // runStatus, provenance) is not a wire field and never compiled
+    for (const key of Object.keys(row)) {
+      if (key === "expected" || WIRE_STAGE_KEYS.includes(key)) continue;
+      delete row[key];
+    }
+    // `expected` is a compile-only field and must be a record: the
+    // contract carries whatever the source held, so a junk value
+    // ('nope', an array) is DROPPED here rather than compiled
+    if (typeof from["expected"] === "object" && from["expected"] !== null && !Array.isArray(from["expected"])) {
+      row["expected"] = from["expected"];
+    } else {
+      delete row["expected"];
+    }
+    return row;
+  });
+}
+
+
+/**
  * THE RUN ID GRAMMAR (2026-10-10, the bypass audit's MEDIUM-2: it was
  * spelled in five modules — the media route, the source echo, the
  * gallery, and two agent tools — with no pin, so a change to the mint
@@ -399,6 +477,31 @@ export const RUN_ID_RE: RegExp = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;
  * sanitize — not four. */
 export function benchSessionOf(id: string | undefined): string {
   return typeof id === "string" && SESSION_RE.test(id) ? id : "main";
+}
+
+/** Carry one candidate key onto the key the bench doors take — the
+ *  delegated-seat spelling rides VERBATIM, everything else sanitizes
+ *  (benchSessionOf). THE ONE SPELLING of the carry decision (the
+ *  one-seat law's client half, 2026-10-31): the construct tool
+ *  forwards a delegated lane's bench key as `delegate:<key>` (the
+ *  benchKeyOfExec mint), and the estate door re-seats it (drafts
+ *  seatOf) — but the ':' is outside SESSION_RE, so a seat that
+ *  sanitized first silently routed a delegated card to 'main', the
+ *  delegation split alive on the link channel (found by the
+ *  construct-flow-link snapshot replay). The carry lives HERE, beside
+ *  the sanitize it wraps: a seat that re-spelled `SESSION_RE.test`
+ *  over the slice would be a second decision body over the same
+ *  grammar — the exact drift the li-ay stroke killed. Narrow by
+ *  construction: only `delegate:` + a grammar-legal inner key
+ *  carries; junk (`delegate:`, `delegate:not@a/key`, the
+ *  near-miss `delegated:…`) falls to the sanitize like every
+ *  other non-key. */
+export function carriedBenchKey(key: string | undefined): string {
+  if (typeof key === "string" && key.startsWith("delegate:")) {
+    const inner = key.slice("delegate:".length);
+    if (SESSION_RE.test(inner)) return key;
+  }
+  return benchSessionOf(key);
 }
 
 // ── the DraftId brand (the RunId seating's own brand class:

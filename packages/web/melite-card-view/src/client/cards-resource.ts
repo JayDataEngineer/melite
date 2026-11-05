@@ -234,21 +234,37 @@ export const CARDS_BENCH_ADDRESS = 'dsh-resource://cards/bench'
 // tool). The contract floor owns the decision now; the local name
 // stays for this module's callers, but there is no second producer
 // to drift.
-import { benchSessionOf, draftIdOf, type DraftId } from '@melite/contracts/benchStage'
+import { benchSessionOf, carriedBenchKey, draftIdOf, type DraftId } from '@melite/contracts/benchStage'
 import { parseCardSnapshot, type CardSnapshotContract } from '@melite/contracts/benchSnapshot'
 import { isTerminalStatus, isLiveRunStatus, statusOf, RUN_STATUS_WORDS } from '@melite/contracts/stageView'
 export { benchSessionOf as benchSessionKey }
+// THE DELEGATED SEAT CARRIES (the one-seat law's client half,
+// 2026-10-31 — the construct-flow-link replay's find): the agent
+// tool forwards a delegated lane's bench key as
+// `delegate:<session-key>` (benchKeyOfExec — the prefix IS the
+// delegation signal), and the ESTATE door re-seats it to the parent
+// conversation's bench (drafts remote seatOf). The sanitize
+// (benchSessionOf) refuses the ':' and falls the key to 'main' —
+// the exact delegation split the one-seat audit killed server-side,
+// alive on the client's link channel: a delegated lane's construct
+// card linked to MAIN, a bench no face was watching. The carry is
+// the CONTRACT's decision (benchStage.carriedBenchKey, wrapped
+// around the same one sanitize — no seat spells a second grammar
+// body over it); this module routes every bench door call and the
+// view's session key echo through it.
+export { carriedBenchKey }
 
 /** The bench address for one session key. */
 export function benchAddressOf(sessionKey: string): string {
-  return CARDS_BENCH_ADDRESS + '/' + benchSessionOf(sessionKey)
+  return CARDS_BENCH_ADDRESS + '/' + carriedBenchKey(sessionKey)
 }
 
 /** The session key a bench address carries (the bare legacy address
- *  and every non-bench address resolve to 'main'). */
+ *  and every non-bench address resolve to 'main'; a `delegate:`
+ *  tail carries verbatim — the estate door re-seats it). */
 export function benchSessionOfAddress(address: string): string {
   if (!address.startsWith(CARDS_BENCH_ADDRESS + '/')) return 'main'
-  return benchSessionOf(address.slice(CARDS_BENCH_ADDRESS.length + 1))
+  return carriedBenchKey(address.slice(CARDS_BENCH_ADDRESS.length + 1))
 }
 
 export { cardsRunAddress } // the ONE mint: card-base cards-address.ts (DRY sweep C3, 2026-10-18)
@@ -311,6 +327,13 @@ export function deriveCardForRow(
   if (intent === '' || stages.length !== 1) return stages
   const only = stages[0]!
   if (only['card'] !== undefined && only['card'] !== '') return stages
+  // THE FLOW MARKER IS NOT A CARD (the flows-are-compositions law,
+  // 2026-11-14): a card-less row carrying ref_flow names a FLOW a
+  // retired press landed — the stamp below minted card: 'craft-loop'
+  // and the form-spec door answered 404 for a card that does not
+  // exist (F60). The row stays card-less: the honest '?' face, never
+  // an id the card plane refuses.
+  if (typeof only['ref_flow'] === 'string' && only['ref_flow'] !== '') return stages
   return [{ ...only, card: intent }]
 }
 
@@ -377,7 +400,10 @@ export function readBench(doc: Record<string, unknown>, sessionKey: string): Car
     rev: typeof doc['rev'] === 'number' ? (doc['rev'] as number) : 0,
     stages,
     log,
-    sessionKey: benchSessionOf(sessionKey),
+    // carried (not grammar-gated): a delegate: key's view keeps the
+    // spelling the address and the door both carried — gating here
+    // would split the view's key from its own address (main).
+    sessionKey: carriedBenchKey(sessionKey),
   }
 }
 
@@ -387,7 +413,7 @@ export function readBench(doc: Record<string, unknown>, sessionKey: string): Car
  *  birth (rev 1) lands as a FRESH frame and the spotlight reveals
  *  the very first card. */
 export function emptyBench(sessionKey: string): CardsBenchValue {
-  const key = benchSessionOf(sessionKey)
+  const key = carriedBenchKey(sessionKey)
   return readBench({ draft_id: 'bench-' + key, rev: 0, intent: '', stages: [] }, key)
 }
 
@@ -400,7 +426,7 @@ function isMissingBench(e: unknown): boolean {
  *  after its own edits (the provider's bench stream is a single
  *  snapshot; same-address navigation does not re-run it). */
 export async function fetchBench(sessionKey: string, signal?: AbortSignal): Promise<CardsBenchValue> {
-  const key = benchSessionOf(sessionKey)
+  const key = carriedBenchKey(sessionKey)
   try {
     return readBench(await unwrapRemote(estateRemote().bench.get(key, signal), 'bench/get') as unknown as Record<string, unknown>, key)
   } catch (e) {
@@ -413,6 +439,10 @@ export async function fetchBench(sessionKey: string, signal?: AbortSignal): Prom
  *  rides: @melite/card-base/client — re-exported here so the
  *  tab's existing import keeps working). */
 export { fetchMediaLibrary } from '@melite/card-base/client'
+
+/** The chain-run picker's source (the upscale leaf's live rows —
+ *  the same face; the tab's wire hands it to the form). */
+export { fetchChainRunCandidates } from '@melite/card-base/client'
 
 // ── THE BENCH SPOTLIGHT (stroke 42, the operator's law 2026-09-14:
 // "AI CONVERSATION AND HUMAN SHARE 1 FLOW — there is no other flow
@@ -519,11 +549,11 @@ export function watchBenchLands(
     return halt
   }
   const lastRevs = new Map<string, number>()
-  let activeKey = benchSessionOf(getSession())
+  let activeKey = carriedBenchKey(getSession())
   let wakeRekey: (() => void) | undefined
   let rekeyLatch: Promise<'rekey'> = new Promise(resolve => { wakeRekey = () => resolve('rekey') })
   const offSubscribe = subscribeSession?.(() => {
-    const wanted = benchSessionOf(getSession())
+    const wanted = carriedBenchKey(getSession())
     if (wanted !== activeKey && !stopped) wakeRekey?.()
   })
   const openStream = (key: string) => remote!.$stream<Record<string, unknown>>({
@@ -554,7 +584,7 @@ const run = async (): Promise<void> => {
           ])
         if (raced === 'rekey') {
           rekeyLatch = new Promise(resolve => { wakeRekey = () => resolve('rekey') })
-          const wanted = benchSessionOf(getSession())
+          const wanted = carriedBenchKey(getSession())
           if (wanted !== activeKey) {
             activeKey = wanted
             stream.dispose().catch((error: unknown) => {
@@ -1232,7 +1262,10 @@ export interface RestoreReport {
  *  the draft never heard of, and an id-only join carried nothing,
  *  silently. A draft row no run stage names is voiced; a draft
  *  edited since keeps its surviving rows' outcomes and simply has
- *  none for new rows. */
+ *  none for new rows. A DETECTED order drift — the position tier's
+ *  stage carries identity naming another draft row — voices and
+ *  SKIPS the carry: a drifted row takes no positional paint (the
+ *  D3 cure). */
 export async function restoreRunToBench(
   run: CardsRunValue,
   sessionKey: string,
@@ -1246,7 +1279,7 @@ export async function restoreRunToBench(
   if (signal?.aborted === true) {
     return { added: 0, skipped: 0, carried: 0, notes: ['restore aborted before any write'] }
   }
-  const key = benchSessionOf(sessionKey)
+  const key = carriedBenchKey(sessionKey)
   let draft: Record<string, unknown>
   try {
     draft = await unwrapRemote(estateRemote().drafts.get(run.draftId, signal), 'drafts/get') as unknown as Record<string, unknown>
@@ -1349,12 +1382,16 @@ export async function restoreRunToBench(
   for (let i = 0; i < rows.length; i += 1) {
     const draftId = draftIds[i] ?? null
     const positional = positionalJoin !== null ? positionalJoin[i] : undefined
-    // THE REORDER VOICE (previews fold F4, 2026-11-12): the position
-    // tier paints row i with run stage i silently — but when that
-    // stage carries identity naming a DIFFERENT draft row (and this
-    // row joined by neither id nor stamp), the drift is DETECTABLE:
-    // the stage's own id says it belongs elsewhere. Voice the drift;
-    // the carry still lands (LEGACY tier), never silently.
+    // THE REORDER VOICE + THE DRIFT SKIP (previews fold F4,
+    // 2026-11-12; the D3 cure): the position tier paints row i with
+    // run stage i — but when that stage carries identity naming a
+    // DIFFERENT draft row (and this row joined by neither id nor
+    // stamp), the drift is DETECTABLE: the stage's own id says it
+    // belongs elsewhere. Voice the drift and SKIP the carry — a
+    // detected drift never paints the position's media onto a row
+    // the identity disowns (voiced-and-landed was still a lie on
+    // the tile). The identity-silent history heal (skeleton ids
+    // naming no row) still carries by position, unchanged.
     if (positional !== undefined && draftId !== null
       && !run.stages.some((s) => s.id === draftId || s.benchStageId === draftId)) {
       const claims: string | undefined = positional.id === draftId ? undefined : positional.id
@@ -1364,7 +1401,8 @@ export async function restoreRunToBench(
       if (other !== null) {
         report.notes.push('positional carry for ' + draftId + ': run stage '
           + String(claims ?? stampClaims) + ' names another draft row (' + other
-          + ') — the run order drifted from the draft order; the tile paints by position (the LEGACY tier)')
+          + ') — the run order drifted from the draft order; the outcome carry is skipped (no positional paint)')
+        continue
       }
     }
     if (draftId === null) continue

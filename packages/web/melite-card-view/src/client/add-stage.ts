@@ -100,7 +100,8 @@ async function withRebase(
   let last: unknown
   for (let i = 0; i < BENCH_ATTEMPTS; i++) {
     try {
-      return await attempt(rev)
+      const row = await attempt(rev)
+      return row
     } catch (e: unknown) {
       if (!isCasConflict(e)) throw e
       last = e

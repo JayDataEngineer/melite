@@ -167,6 +167,68 @@ describe('PoserFigureStage (DOM states + LIVE reshaping)', () => {
     expect(screen.getByTestId('figure-failed').textContent).toContain('shaped mesh HTTP 503')
   })
 
+  test('AN UNMOUNT MID-FLIGHT DROPS THE LANDING: a resolve after departure commits nothing (the settle-commit guard — coverage cure, 2026-11-03)', async () => {
+    // The roaming-flake cure's alive guard (73fdb8dc): the departure
+    // kills the effect's alive flag, so the late arrival must die
+    // with it — no canvas mounts for a departed figure.
+    let resolveFlight!: (d: PoserMeshDoc) => void
+    bindState.spy.mockReturnValue(new Promise<PoserMeshDoc>((resolve) => { resolveFlight = resolve }))
+    const { unmount } = render(h(PoserFigureStage, { identityModel: 'anny' }))
+    await settle() // past the 120ms drag debounce — the flight is in the air
+    expect(bindState.spy).toHaveBeenCalledTimes(1)
+    unmount() // the departure
+    resolveFlight(DOC)
+    await settle() // past the follow-up flush too
+    expect(screen.queryByTestId('stage-preview-figure')).toBeNull()
+  })
+
+  test('AN UNMOUNT BETWEEN COMMIT AND FLUSH DROPS THE RE-COMMIT: the follow-up flush reads alive false (the first-flush guard — coverage cure, 2026-11-03)', async () => {
+    // The flush guard's false side is a microtask/macrotask split:
+    // the outer commit runs on the resolve microtask and schedules
+    // the 0ms re-commit flush (a macrotask). Draining microtasks
+    // lets the outer commit land, then the synchronous unmount kills
+    // alive BEFORE the flush macrotask runs — any polling waitFor
+    // would hand the race to the flush, so no polling here.
+    let resolveFlight!: (d: PoserMeshDoc) => void
+    bindState.spy.mockReturnValue(new Promise<PoserMeshDoc>((resolve) => { resolveFlight = resolve }))
+    const { unmount } = render(h(PoserFigureStage, { identityModel: 'anny' }))
+    await settle()
+    resolveFlight(DOC)
+    await Promise.resolve()
+    await Promise.resolve() // the outer commit lands; the flush is scheduled but unrun
+    unmount() // the departure inside the commit→flush window
+    await settle() // the flush runs with alive false — the re-commit dies
+    expect(screen.queryByTestId('stage-preview-figure')).toBeNull()
+  })
+
+  test('AN UNMOUNT MID-REJECT DROPS THE FAILURE VOICE: a reject after departure never commits failed (the !alive return)', async () => {
+    let rejectFlight!: (reason: unknown) => void
+    bindState.spy.mockReturnValue(new Promise<PoserMeshDoc>((_, reject) => { rejectFlight = reject }))
+    const { unmount } = render(h(PoserFigureStage, { identityModel: 'anny' }))
+    await settle()
+    expect(bindState.spy).toHaveBeenCalledTimes(1)
+    unmount()
+    rejectFlight(new Error('late refusal'))
+    await settle()
+    expect(screen.queryByTestId('figure-failed')).toBeNull()
+  })
+
+  test('AN UNMOUNT BETWEEN FAILURE AND FLUSH DROPS THE RE-VOICE: the failure flush reads alive false', async () => {
+    // Same commit→flush window as the landing side: the outer
+    // catch voices the failure and schedules the 0ms re-voice
+    // flush; the synchronous unmount lands between the two.
+    let rejectFlight!: (reason: unknown) => void
+    bindState.spy.mockReturnValue(new Promise<PoserMeshDoc>((_, reject) => { rejectFlight = reject }))
+    const { unmount } = render(h(PoserFigureStage, { identityModel: 'anny' }))
+    await settle()
+    rejectFlight(new Error('late refusal'))
+    await Promise.resolve()
+    await Promise.resolve() // the outer voice lands; the flush is scheduled but unrun
+    unmount()
+    await settle()
+    expect(screen.queryByTestId('figure-failed')).toBeNull()
+  })
+
   test('a landed doc builds the figure scene and disposes clean (the 3js preview is BACK)', async () => {
     const disposed = vi.fn()
     mountState.spy.mockImplementationOnce((): StubStage => { // the real Scene seats the stub — inference carries it, no widening
@@ -176,7 +238,11 @@ describe('PoserFigureStage (DOM states + LIVE reshaping)', () => {
     bindState.spy.mockResolvedValue(DOC)
     const { unmount } = render(h(PoserFigureStage, { identityModel: 'anny' }))
     await waitFor(() => screen.getByTestId('stage-preview-figure'))
-    expect(mountState.spy).toHaveBeenCalled()
+    // (the 2026-11-15 roaming-flake hunt) the scene-mount effect that
+    // seats the spy is passive work — under a loaded pool it can land
+    // AFTER the preview shell's testid: poll the mount, never a sync
+    // read at the shell's edge (the run-25 trail).
+    await waitFor(() => expect(mountState.spy).toHaveBeenCalled())
     const scene = (mountState.spy.mock.results.at(-1)?.value as { scene: THREE.Scene }).scene
     // the rig: hemisphere + key + fill + grid + THE FIGURE MESH
     expect(scene.children.length).toBeGreaterThanOrEqual(5)

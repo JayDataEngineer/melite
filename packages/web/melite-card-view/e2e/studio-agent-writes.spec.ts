@@ -37,7 +37,7 @@
  * runs.
  */
 import { expect, test, type Page } from '@playwright/test'
-import { callBench, collectPageErrors, expectNoPageErrors, settle, STUDIO_URL } from './tour.ts'
+import { callBench, collectPageErrors, dismissMaskingDialogs, ensureRightSidebarOpen, expectNoPageErrors, settle, STUDIO_URL } from './tour.ts'
 
 test.skip(!STUDIO_URL, 'E2E_STUDIO_URL (token-authenticated shell URL) is not set — the browser-plane wall needs a live host')
 
@@ -127,12 +127,12 @@ test('an agent\'s bench writes redraw the open studio timeline', async ({ page }
       card: 'h3-timeline',
       engine: 'comfyui',
       params: {
-        variant: 'h3', quant: 'int8', model: 'h3',
+        variant: 'timeline', quant: 'int8', model: 'h3',
         seed: WALL_SEED,
         calls: [{ text: WALL_TEXT, start_frame: 0, end_frame: 175 }],
       },
       inputs: {},
-      outputs: { default: 'image' },
+      outputs: { default: 'video' },
       expect_rev: bench0.rev,
       author: 'user',
     },
@@ -141,10 +141,12 @@ test('an agent\'s bench writes redraw the open studio timeline', async ({ page }
   const stageId = bench1.stages.find((s) => s.params?.seed === WALL_SEED)?.id ?? ''
   expect(stageId, 'the wall stage id').not.toBe('')
 
-  await page.locator('[data-sidebar-right-expand]').first().click({ timeout: 15_000 }).catch(() => {})
-  await page.waitForTimeout(2_000)
-  await page.getByRole('button', { name: /Melite Bench/ }).first().click({ timeout: 10_000 }).catch(() => {})
-  await page.waitForTimeout(5_000)
+  // THE MASKED-CLICK LAW (2026-11-01, the settled-run 3/3 red at
+  // :298): the old `.catch(()=>{})` clicks turned a dialog-masked
+  // expand into a silently unopened panel (zero tiles). The helper
+  // re-dismisses, re-clicks, and PROVES the tab rendered — a panel
+  // that never opens fails here, never downstream.
+  await ensureRightSidebarOpen(page)
   // the fresh stage appends LAST; the zoom must be ON it (an older h3
   // row would be a different doc — the wall's own burn, never evidence).
   const tiles = page.locator('[class*="tileInner"][role="button"]').filter({ hasText: 'Generate Video' })
@@ -246,25 +248,50 @@ test("the agent's settled run lands on the open timeline — no conversation, no
   await settle(page)
 
   // capture the tab's own bench key (the openCardsWithBench capture
-  // arm, inlined so the seeding below can fingerprint its own stage)
+  // arm, inlined so the seeding below can fingerprint its own stage).
+  // The tab itself subscribes over the mux WebSocket (never a bench/get
+  // POST), so on a fresh home only the shell's own envelope traffic can
+  // name a key — every bench-namespace POST is recorded for the key
+  // choice below (and for the lane log, so the next red names its keys).
   let sessionKey = ''
+  const seenBench: string[] = []
   page.on('request', (r) => {
-    if (!r.url().includes('/api/bench/get')) return
+    if (!r.url().includes('/api/bench/')) return
     try {
-      const body = r.postDataJSON() as { payload?: { args?: { sessionKey?: unknown } } }
-      if (typeof body.payload?.args?.sessionKey === 'string' && sessionKey === '') sessionKey = body.payload.args.sessionKey
+      const body = r.postDataJSON() as { method?: unknown; payload?: { args?: { sessionKey?: unknown } } }
+      const key = body?.payload?.args?.sessionKey
+      seenBench.push(String(body?.method ?? '?') + ':' + (typeof key === 'string' ? key : '?'))
+      if (r.url().includes('/api/bench/get') && typeof key === 'string' && sessionKey === '') sessionKey = key
     } catch { /* a stranger's frame is ignored */ }
   })
-  await page.locator('[data-sidebar-right-expand]').first().click({ timeout: 15_000 }).catch(() => {})
-  await page.waitForTimeout(2_000)
-  await page.getByRole('button', { name: /Melite Bench/ }).first().click({ timeout: 10_000 }).catch(() => {})
-  await page.waitForTimeout(5_000)
-  // no conversation on a fresh home → the tab may carry no key; the
-  // wall then births its own bench (the ensure door, never a disk write)
-  if (sessionKey === '') {
-    sessionKey = 'session-wall-agent-run'
-    await callBench(page, 'bench/ensure', { doc: { session: sessionKey } }).catch(() => {})
-  }
+  // THE MASKED-CLICK LAW (2026-11-01, the settled-run 3/3 red at
+  // :298): the old `.catch(()=>{})` clicks turned a dialog-masked
+  // expand into a silently unopened panel (zero tiles). The helper
+  // re-dismisses, re-clicks, and PROVES the tab rendered — a panel
+  // that never opens fails here, never downstream.
+  await ensureRightSidebarOpen(page)
+  // THE SHELL'S OWN CURRENT SESSION (2026-11-01, attempt-2 red): the
+  // open tab sat at rev 0 while the spec seeded 'main' to rev ≥1 — the
+  // tab was never watching main. On a fresh home the shell stages a
+  // "New Session" row (selected in the tree) and the tab slot's
+  // sessionId follows it; the shell persists that id in
+  // dsh.sessions.current (the same seat the first test trusts). Seed
+  // THAT bench — the one face actually watching — never an invented
+  // key, and 'main' only when nothing names a session at all.
+  let lsKey = ''
+  try {
+    lsKey = await page.evaluate(() => {
+      try {
+        const raw = localStorage.getItem('dsh.sessions.current') ?? ''
+        return String((JSON.parse(raw) as { sessionId?: unknown }).sessionId ?? '')
+      } catch { return '' }
+    })
+  } catch { /* storage unreadable — the fallbacks below decide */ }
+  const capturedKey = sessionKey
+  if (sessionKey === '') sessionKey = lsKey
+  if (sessionKey === '') sessionKey = 'main'
+  console.log(`[settled-wall] key choice: captured=${capturedKey || '(none)'} ls=${lsKey || '(none)'} using=${sessionKey} seen=[${seenBench.join(', ') || 'none'}]`)
+  await callBench(page, 'bench/ensure', { doc: { session: sessionKey } }).catch(() => {})
   expect(sessionKey, 'a bench key to seed').not.toBe('')
 
   await removeWallStages(page, sessionKey)
@@ -275,12 +302,12 @@ test("the agent's settled run lands on the open timeline — no conversation, no
       card: 'h3-timeline',
       engine: 'comfyui',
       params: {
-        variant: 'h3', quant: 'int8', model: 'h3',
+        variant: 'timeline', quant: 'int8', model: 'h3',
         seed: WALL_SEED,
         calls: [{ text: WALL_TEXT, start_frame: 0, end_frame: 175 }],
       },
       inputs: {},
-      outputs: { default: 'image' },
+      outputs: { default: 'video' },
       expect_rev: bench0.rev,
       author: 'user',
     },
@@ -294,6 +321,11 @@ test("the agent's settled run lands on the open timeline — no conversation, no
   expect(draftId, 'the bench doc names its draft — the run carrier addresses it').not.toBe('')
 
   // open the studio zoom on the wall stage (the fresh stage appends last)
+  // THE LATE RE-MOUNT GUARD (2026-11-01): the Get started dialog
+  // re-mounts minutes after settle — a mask here hides nothing from
+  // toBeVisible but would eat the tile CLICK below. One probe-less
+  // pass (no composer focus theft) before touching the grid.
+  await dismissMaskingDialogs(page, 2_000)
   const tiles = page.locator('[class*="tileInner"][role="button"]').filter({ hasText: 'Generate Video' })
   await expect(tiles.last(), 'the wall h3-timeline tile').toBeVisible({ timeout: 30_000 })
   await tiles.last().click({ timeout: 15_000 })
@@ -326,8 +358,19 @@ test("the agent's settled run lands on the open timeline — no conversation, no
   })
   const hist = page.locator('[data-testid="tl-run-history"]')
   await expect(hist, 'the settled agent run draws the strip — no reload').toBeVisible({ timeout: 20_000 })
-  await expect(hist, 'the chip names the agent run').toContainText(RID, { timeout: 10_000 })
+  // THE CHIP'S OWN CONTRACT (2026-11-01, attempt-4 red): the chip LABEL
+  // is abbreviated (`runId` minus `run-`, 8 chars — 'e2e-agen · ?s'),
+  // while the FULL run id rides the chip's `title` hover (StudioPreview
+  // historyTitleLine: id · status · wall time). The wall asserts the
+  // seat the product documents, never the abbreviated face.
+  const chip = hist.locator('a[title]').first()
+  await expect(chip, 'the chip names the agent run').toHaveAttribute('title', new RegExp(RID))
 
   await removeWallStages(page, sessionKey)
-  await expectNoPageErrors(page, errors.filter((e) => !e.includes('/api/changes.summary')))
+  // THE WALL'S OWN FICTION (2026-11-01, attempt-5 red): MEDIA_URL is a
+  // stand-in film path the lane never serves — the player faithfully
+  // 404s probing it, twice. Filter the wall's own fake URL only (a
+  // REAL artifact 404 still fires); the changes.summary seat stays
+  // exempt as before (its plugin is not mounted on this host).
+  await expectNoPageErrors(page, errors.filter((e) => !e.includes('/api/changes.summary') && !e.includes(MEDIA_URL)))
 })

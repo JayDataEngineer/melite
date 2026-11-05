@@ -36,7 +36,7 @@ const IMAGE: MediaDrilldownItem = {
   time: '12:00',
 }
 
-function renderDrilldown(item: MediaDrilldownItem, props?: { openArtifact?: (item: MediaDrilldownItem) => void; onDelete?: (item: MediaDrilldownItem) => Promise<void>; onRename?: (item: MediaDrilldownItem, name: string) => Promise<void> }): { closed: string[] } {
+function renderDrilldown(item: MediaDrilldownItem, props?: { openArtifact?: (item: MediaDrilldownItem) => void; onDelete?: (item: MediaDrilldownItem) => Promise<void>; onRename?: (item: MediaDrilldownItem, name: string) => Promise<void>; onArchive?: (item: MediaDrilldownItem) => Promise<void>; onRestore?: (item: MediaDrilldownItem) => Promise<void> }): { closed: string[] } {
   const closed: string[] = []
   render(<MediaDrilldown item={item} onClose={() => { closed.push('closed') }} {...props} />)
   return { closed }
@@ -180,6 +180,148 @@ describe('MediaDrilldown — the text door (the tagger stroke, 2026-10-24)', () 
     const download = screen.getByText('download SaveText.0_tags_00001.txt') as HTMLAnchorElement
     expect(download.getAttribute('href')).toBe('https://example.com/SaveText.0_tags_00001.txt')
     expect(download.getAttribute('download')).toBe('SaveText.0_tags_00001.txt')
+  })
+
+  it('clicking the text download never dismisses the drilldown (the stopPropagation arm)', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (): Promise<Response> =>
+      new Response('cat, sunset, film grain', { status: 200 })))
+    const { closed } = renderDrilldown(TEXT)
+    await screen.findByTestId('drill-text-body')
+    const download = screen.getByText('download SaveText.0_tags_00001.txt') as HTMLAnchorElement
+    expect(download.getAttribute('href')).toBe('https://example.com/SaveText.0_tags_00001.txt')
+    expect(download.getAttribute('download')).toBe('SaveText.0_tags_00001.txt')
+    fireEvent.click(download)
+    expect(closed).toEqual([])
+    expect(screen.getByTestId('drill-text-body').textContent).toBe('cat, sunset, film grain')
+  })
+
+  it('a text fetch landing AFTER UNMOUNT paints nothing and warns nothing (the race)', async () => {
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    let resolveFetch!: (r: Response) => void
+    vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>((resolve) => { resolveFetch = resolve })))
+    const view = render(<MediaDrilldown item={TEXT} onClose={() => {}} />)
+    expect(screen.getByTestId('drill-text-loading')).toBeTruthy()
+    view.unmount()
+    await act(async () => { resolveFetch(new Response('late words', { status: 200 })) })
+    expect(errSpy).not.toHaveBeenCalled()
+    errSpy.mockRestore()
+  })
+
+  it('a text refusal landing AFTER UNMOUNT warns nothing either (the catch twin)', async () => {
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    let rejectFetch!: (e: unknown) => void
+    vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>((_, reject) => { rejectFetch = reject })))
+    const view = render(<MediaDrilldown item={TEXT} onClose={() => {}} />)
+    expect(screen.getByTestId('drill-text-loading')).toBeTruthy()
+    view.unmount()
+    await act(async () => { rejectFetch(new Error('socket reset')) })
+    expect(errSpy).not.toHaveBeenCalled()
+    errSpy.mockRestore()
+  })
+})
+
+// ── THE REVERSIBLE VERBS (archive/restore ride fireReversible: immediate,
+// no confirm — both reverse) ──────────────────────────────────────────
+describe('MediaDrilldown — the reversible verbs (archive + restore)', () => {
+  const TUCKED: MediaDrilldownItem = { ...IMAGE, archived: true, file: 'old.png', url: 'https://example.com/old.png' }
+
+  it('archive fires immediate (no confirm) and stays open on success', async () => {
+    const user = userEvent.setup()
+    const archived: MediaDrilldownItem[] = []
+    renderDrilldown(IMAGE, { onArchive: async (item) => { archived.push(item) } })
+    expect(screen.queryByText(/Delete /)).toBeNull()
+    await user.click(screen.getByTestId('drill-archive'))
+    expect(archived).toEqual([IMAGE])
+    expect(screen.queryByTestId('drill-op-error')).toBeNull()
+  })
+
+  it('a refusing archive voices the door error (never closes)', async () => {
+    const user = userEvent.setup()
+    renderDrilldown(IMAGE, { onArchive: async () => { throw new Error('archive failed (protected_sidecar)') } })
+    await user.click(screen.getByTestId('drill-archive'))
+    expect(await screen.findByTestId('drill-op-error')).toBeTruthy()
+    expect(screen.getByText('archive failed (protected_sidecar)')).toBeTruthy()
+  })
+
+  it('a foreign archive refusal voices the raw word', async () => {
+    const user = userEvent.setup()
+    renderDrilldown(IMAGE, { onArchive: async () => { throw 'archive foreign' } })
+    await user.click(screen.getByTestId('drill-archive'))
+    expect((await screen.findByTestId('drill-op-error')).textContent).toBe('archive foreign')
+  })
+
+  it('restore fires immediate on the tucked face and voices its refusal', async () => {
+    const user = userEvent.setup()
+    const restored: MediaDrilldownItem[] = []
+    renderDrilldown(TUCKED, { onRestore: async (item) => { restored.push(item) } })
+    expect(screen.queryByTestId('drill-archive')).toBeNull()
+    expect(screen.queryByTestId('drill-delete')).toBeNull()
+    await user.click(screen.getByTestId('drill-restore'))
+    expect(restored).toEqual([TUCKED])
+    cleanup()
+    renderDrilldown(TUCKED, { onRestore: async () => { throw new Error('restore failed (disk full)') } })
+    await user.click(screen.getByTestId('drill-restore'))
+    expect(await screen.findByText('restore failed (disk full)')).toBeTruthy()
+  })
+
+  it('a same-turn double archive fires the verb once (the in-flight guard)', async () => {
+    let calls = 0
+    let release!: () => void
+    const gate = new Promise<void>((resolve) => { release = resolve })
+    renderDrilldown(IMAGE, { onArchive: async () => { calls += 1; await gate } })
+    const archive = screen.getByTestId('drill-archive')
+    act(() => {
+      archive.click()
+      archive.click()
+    })
+    expect(calls).toBe(1)
+    expect((screen.getByTestId('drill-archive') as HTMLButtonElement).disabled).toBe(true)
+    release()
+    await screen.findByTestId('drill-archive')
+    expect((screen.getByTestId('drill-archive') as HTMLButtonElement).disabled).toBe(false)
+  })
+
+  it('an ARCHIVE failing after a walk step never paints the new seat (the seat-guard twin)', async () => {
+    const user = userEvent.setup()
+    const B = { ...IMAGE, url: 'https://example.com/b.png', file: 'b.png' }
+    let reject!: (e: unknown) => void
+    function Walk() {
+      const [cur, setCur] = useState<MediaDrilldownItem>(IMAGE)
+      return (
+        <MediaDrilldown
+          item={cur}
+          onClose={() => {}}
+          siblings={[IMAGE, B]}
+          onNavigate={setCur}
+          onArchive={() => new Promise<void>((_, rej) => { reject = rej })}
+        />
+      )
+    }
+    render(<Walk />)
+    await user.click(screen.getByTestId('drill-archive'))
+    await user.click(screen.getByTestId('drill-next'))
+    expect(document.querySelector('img')?.getAttribute('src')).toBe('https://example.com/b.png')
+    await act(async () => { reject(new Error('archive failed (protected_sidecar)')) })
+    expect(screen.queryByTestId('drill-op-error')).toBeNull()
+    expect(screen.getByText('12:00 · b.png')).toBeTruthy()
+  })
+
+  it('an archive settling after UNMOUNT paints nothing (no update-on-unmount)', async () => {
+    const user = userEvent.setup()
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    let rejectArchive!: (e: unknown) => void
+    const view = render(
+      <MediaDrilldown
+        item={IMAGE}
+        onClose={() => {}}
+        onArchive={() => new Promise<void>((_, rej) => { rejectArchive = rej })}
+      />,
+    )
+    await user.click(screen.getByTestId('drill-archive'))
+    view.unmount()
+    await act(async () => { rejectArchive(new Error('archive failed (disk full)')) })
+    expect(errSpy).not.toHaveBeenCalled()
+    errSpy.mockRestore()
   })
 })
 

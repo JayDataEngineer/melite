@@ -79,3 +79,35 @@ describe("parseCardsBlock — native channel first", () => {
     //  never spoke the token — the view renders the legacy note)
   });
 });
+
+describe("parseCardsBlock — the run handle (flows-are-compositions, 2026-11-14)", () => {
+  // The {flow} press mints no draft: its meta carries the RUN id and
+  // the args name the flow. The parser extracts both — the run-rooted
+  // face's seeds.
+  test("a draft-less meta yields runId + flowName, draftId null", () => {
+    const p = parseCardsBlock(settledBlock({
+      call: { name: "melite_flow", argsRaw: '{"flow":"craft-loop"}' },
+      meta: { mode: "flow", target: "craft-loop", run_id: "r_flow", status: "queued" },
+      content: [{ text: "flow craft-loop → r_flow [queued]" }],
+    }));
+    expect(p.draftId).toBe(null);
+    expect(p.runId).toBe("r_flow");
+    expect(p.flowName).toBe("craft-loop");
+  });
+
+  test("a draft-bearing meta keeps runId too (both handles extract — the draft still wins the mount)", () => {
+    const p = parseCardsBlock(settledBlock({
+      call: { name: "melite_flow", argsRaw: '{"flow":"x"}' },
+      meta: { mode: "flow", target: "x", draft_id: "draft-1", run_id: "r1", status: "queued" },
+    }));
+    expect(p.draftId).toBe("draft-1");
+    expect(p.runId).toBe("r1");
+  });
+
+  test("junk run ids never fake a handle", () => {
+    for (const junk of [{ run_id: 7 }, { run_id: "" }, 42]) {
+      const p = parseCardsBlock(settledBlock({ meta: junk as never, content: [{ text: "no tokens" }] }));
+      expect(p.runId).toBe(null);
+    }
+  });
+});

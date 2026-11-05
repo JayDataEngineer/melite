@@ -630,7 +630,7 @@ test('a MODEL switch rides onPick ONCE with the whole re-seed patch', () => {
   expect(onPick, 'ONE write, not one-per-key').toHaveBeenCalledTimes(1)
   const patch = onPick.mock.calls[0]![0] as Record<string, unknown>
   expect(patch['model'], 'the re-point rides in the same frame').toBe('anima-x')
-  expect(patch['variant'], 'the cleared axis rides in the same frame').toBe('')
+  expect(patch['variant'], 'the departed axis rides in the same frame as a null (the gate-11 cure — a stated empty selection is not a choice)').toBeNull()
   expect(onSet, 'a switch NEVER rides the per-key edit path').not.toHaveBeenCalled()
 })
 

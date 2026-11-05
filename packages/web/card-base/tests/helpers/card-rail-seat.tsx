@@ -84,6 +84,25 @@ export function serveFormSpec(served: FormSpecDoc): void {
   })
 }
 
+/** The per-coordinate spec server (the departed-hold wall's need): a
+ * cross-family pick refetches form-spec?model=<family> — the arrival
+ * family's own envelope — and the wall must serve THAT family's rows
+ * (a variant vocabulary the departed family does not share), never
+ * one blanket doc for every query (the blanket hides the refused
+ * hold the burn is about). */
+export function serveFormSpecByModel(map: Record<string, FormSpecDoc>, fallback: FormSpecDoc): void {
+  vi.stubGlobal("fetch", (input: unknown) => {
+    const url = String(input)
+    if (url.includes("/v1/form-spec")) {
+      const m = /model=([^&]+)/.exec(url)
+      const key = m === null ? "" : decodeURIComponent(m[1] ?? "")
+      const doc = map[key] ?? fallback
+      return Promise.resolve(new Response(JSON.stringify(doc), { headers: { "content-type": "application/json" } }))
+    }
+    return Promise.reject(new Error("this wall fetches only the form-spec: " + url))
+  })
+}
+
 /** PRIMITIVE 2b — the estate remote bound to dead namespaces: the
  *  rail under test must need no bench/run door for a face verdict;
  *  a call reaching these means the seat under test is wider than the

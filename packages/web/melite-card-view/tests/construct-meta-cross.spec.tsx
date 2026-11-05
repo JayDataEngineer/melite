@@ -19,22 +19,23 @@ import type { ToolCallBlockView } from "../src/client/types.ts";
 describe("construct meta cross-judge (the projector's real output through the client's reader)", () => {
   test("a real read's meta parses to the same bench the value carries", async () => {
     const estate = {
-      benchGet: async () => ({ session: "s_chat7", rev: 5, intent: "x", stages: [{ id: "s1" }], log: [] }),
+      benchGet: async () => ({ session: "session-chat7", rev: 5, intent: "x", stages: [{ id: "s1" }], log: [] }),
     } as never;
     const tool = meliteConstruct(estate);
     // the session rides the exec context's agent id (the read's own
-    // law — the tool targets the calling conversation's bench)
+    // law — the tool targets the calling conversation's bench; the
+    // ONE-SEAT refusal demands the session- grammar, 2026-10-31)
     const out = (await tool.execute({ verb: "read" }, {
       signal: AbortSignal.timeout(5000),
-      agent: { id: "s_chat7" },
+      agent: { id: "session-chat7" },
     } as never)) as Record<string, unknown>;
     const meta = tool.output.presentationMeta!({} as never, out as never) as Record<string, unknown>;
-    assert.deepEqual(meta, { bench: "s_chat7" });
+    assert.deepEqual(meta, { bench: "session-chat7" });
     const parsed = parseConstructBlock({
       kind: "tool-result", meta,
       call: { argsRaw: JSON.stringify({ verb: "read" }) },
     } as unknown as ToolCallBlockView);
-    assert.equal(parsed.bench, "s_chat7", "the client reads the bench the projector wrote");
+    assert.equal(parsed.bench, "session-chat7", "the client reads the bench the projector wrote");
     assert.equal(parsed.settled, true);
   });
 
@@ -86,18 +87,19 @@ describe("construct meta cross-judge (the projector's real output through the cl
     const tool = meliteConstruct(estate);
     const out = (await tool.execute({ verb: "read" }, {
       signal: AbortSignal.timeout(5000),
+      agent: { id: "session-cas" },
     } as never)) as Record<string, unknown>;
     assert.equal(out.ok, false);
     assert.equal(out.error_kind, "bench/cas-conflict");
     assert.equal(out.current_rev, 7);
     const meta = tool.output.presentationMeta!({} as never, out as never) as Record<string, unknown>;
-    assert.deepEqual(meta, { bench: "main", error: "bench moved: rev is 7, caller held 6" });
+    assert.deepEqual(meta, { bench: "session-cas", error: "bench moved: rev is 7, caller held 6" });
     const parsed = parseConstructBlock({
       kind: "tool-result", meta, isError: true,
       call: { argsRaw: JSON.stringify({ verb: "read" }) },
       content: [{ text: "bench moved: rev is 7, caller held 6" }],
     } as unknown as ToolCallBlockView);
-    assert.equal(parsed.bench, "main", "the refusal still links the bench");
+    assert.equal(parsed.bench, "session-cas", "the refusal still links the bench");
     assert.equal(parsed.errorLine, "bench moved: rev is 7, caller held 6");
   });
 });

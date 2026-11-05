@@ -36,7 +36,6 @@
     "@melite/estate-runs": "workspace:*",
     "@melite/models-anima": "workspace:*",
     "@melite/models-anny": "workspace:*",
-    "@melite/models-anycreature": "workspace:*",
     "@melite/models-concat": "workspace:*",
     "@melite/models-fibo2-edit": "workspace:*",
     "@melite/models-fit": "workspace:*",

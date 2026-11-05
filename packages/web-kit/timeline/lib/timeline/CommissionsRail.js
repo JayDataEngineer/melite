@@ -1,4 +1,4 @@
-import { jsx as _jsx } from "react/jsx-runtime";
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 /**
  * CommissionsRail — THE COMMISSION ROW (the studio's mod projection,
  * §9 of the multiwindow unification audit 2026-11-12).
@@ -29,7 +29,8 @@ export const COMMISSION_H = 30;
  *  commission covers, drawn in bar space.
  *  @param props.row the commission
  *  @param props.frameToPx the bar's own frame→pixel scale
- *  @param props.totalFrames the doc's length (the single-span width)
+ *  @param props.totalFrames the doc's length (the single-span width,
+ *  and the planned-tail boundary for positioned segments)
  */
 export function CommissionLane(props) {
     const { row, frameToPx, totalFrames } = props;
@@ -37,6 +38,11 @@ export function CommissionLane(props) {
         ? row.segments
         : [row.detail ?? row.label];
     const width = Math.max(2, frameToPx(totalFrames) - frameToPx(0));
-    return (_jsx("div", { className: css.commissionLane, "data-commission-lane": row.id, style: { height: COMMISSION_H }, children: _jsx("div", { className: cn(css.commissionSpan, segments.length > 1 && css.commissionWindows), style: { width, ...(row.accent ? { borderLeftColor: row.accent } : {}) }, children: segments.map((segment, i) => (_jsx("span", { className: css.commissionSegment, "data-commission-segment": `${row.id}-${String(i)}`, children: segment }, `${row.id}-${String(i)}`))) }) }));
+    const spans = row.segmentSpans;
+    const positioned = spans !== undefined && spans.length === segments.length;
+    return (_jsxs("div", { className: css.commissionLane, "data-commission-lane": row.id, style: { height: COMMISSION_H }, children: [_jsx("div", { className: cn(css.commissionSpan, segments.length > 1 && css.commissionWindows, positioned && css.commissionSpanBody), style: { width, ...(row.accent ? { borderLeftColor: row.accent } : {}) }, children: positioned ? null : segments.map((segment, i) => (_jsx("span", { className: css.commissionSegment, "data-commission-segment": `${row.id}-${String(i)}`, children: segment }, `${row.id}-${String(i)}`))) }), positioned ? spans.map((sp, i) => (_jsx("span", { className: cn(css.commissionSegment, css.commissionSegmentPos), "data-commission-segment": `${row.id}-${String(i)}`, "data-commission-planned": sp.start >= totalFrames ? "true" : undefined, style: {
+                    left: frameToPx(sp.start),
+                    width: Math.max(2, frameToPx(sp.start + sp.frames) - frameToPx(sp.start)),
+                }, children: segments[i] }, `${row.id}-pos-${String(i)}`))) : null] }));
 }
 //# sourceMappingURL=CommissionsRail.js.map

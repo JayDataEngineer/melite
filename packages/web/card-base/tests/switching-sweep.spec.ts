@@ -43,7 +43,6 @@ import type { ModelDecl } from '@melite/comfyui-card-kit/model-contract'
 import { specVariants } from '../../../../packages/harness/melite-tools/src/discovery.ts'
 import { DECL as anima } from '../../../models/anima/src/index.ts'
 import { DECL as anny } from '../../../models/anny/src/index.ts'
-import { DECL as anycreature } from '../../../models/anycreature/src/index.ts'
 import { DECL as concat } from '../../../models/concat/src/index.ts'
 import { DECL as fit } from '../../../models/fit/src/index.ts'
 import { DECL as florence2 } from '../../../models/florence2/src/index.ts'
@@ -79,7 +78,7 @@ import { DECL as zImage } from '../../../models/z-image/src/index.ts'
  * the serializer this wall drives is the served one — no structural
  * re-spelling of the DECL lives here anymore. */
 const FAMILIES: readonly ModelDecl[] = [
-  anima, anny, anycreature, concat, fit, florence2, fluxKlein, gemSoma, h3,
+  anima, anny, concat, fit, florence2, fluxKlein, gemSoma, h3,
   input, joycaption, joytag, kimodo, krea2, mask, mossSfx, music3, pixal3d,
   qwenImg21, qwenImgEdit21, qwenImgEdit2511, qwen3Tts, seedvr2, skin, somax,
   transferRig, trellis2, wd14, yue2, zImage,
@@ -279,12 +278,14 @@ describe('THE SWITCHING SWEEP — every real family × every switch (the core-fe
       ...numericStamps(turbo ?? variants[0]),
     }
     // THE PICK LAW (the write seat): the switch's own derivation
-    // clears the axes to the arrival's rows and nulls the departing
-    // envelope vocabulary in the SAME frame — the foreign int8 is an
-    // axis write, and axis writes die with the family
+    // departs the axes as NULLS and nulls the departing envelope
+    // vocabulary in the SAME frame — the foreign int8 is an axis
+    // write, and axis writes die with the family (the gate-11 cure:
+    // '' is a stated empty selection the door refuses whole-frame;
+    // null deletes and the arrival's seed re-derives)
     const patch = modelSwitchPatch(specFrom, 'anima', held)
-    expect(patch['variant']).toBe('')
-    expect(patch['quant']).toBe('')
+    expect(patch['variant']).toBeNull()
+    expect(patch['quant']).toBeNull()
     const envelope = (turbo ?? variants[0]).sampler_envelope ?? {}
     for (const k of Object.keys(envelope)) {
       expect(patch[k], `${k}: the departing envelope numeric rides as a null write`).toBeNull()

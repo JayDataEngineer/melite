@@ -16,6 +16,7 @@ import type {
 } from "@deepseek-ai/dsh-subprocess";
 import { ComfyUiManagerHttpClient, type ProvisionPlanItem } from "@melite/estate-provisioning";
 import { loadExtensionsYaml } from "@melite/comfyui-cordis/provisioning-manifest";
+import type { ModelDecl } from "@melite/comfyui-card-kit/model-contract";
 
 const sdkClientMock = vi.hoisted(() => vi.fn());
 
@@ -356,6 +357,69 @@ describe.sequential("estate provisioning composition paths", () => {
     });
     const family = await ctx.provisioning.plan({ kind: "model", owner: "family", id: "h3" });
     assert.equal(family.items.length > 0, true);
+    // THE FLAT-LANE FOLD (2026-11-14): the snapshot fold reads the
+    // folded lane record (family + variant + cell) through the FLAT
+    // EngineFacts contract — registration refuses nested keys, so
+    // the plan's walk is a flat model_path read with basename
+    // matching. This arm registers a REAL family through the
+    // service's own registerFamily door whose DEFAULT variant's
+    // model_path REPLACES the family's per-key (the fold law) and
+    // carries a folder slash: the plan must name exactly the
+    // fold-resolved tree by its BASENAME — the family's replaced
+    // tree and an unmatched row never ride.
+    const { modelsService } = await import("@melite/comfyui-cordis");
+    const dispose = modelsService().registerFamily({
+      id: "fold-lanes",
+      label: "Fold Lanes",
+      genre: "audio",
+      lane_inputs: { model_path: "tree-a" },
+      variant_groups: [{ id: "Variant", label: "Variant" }],
+      variants: [
+        {
+          id: "standard",
+          label: "Standard",
+          group: "Variant",
+          route: "fold-lanes",
+          lane_inputs: { model_path: "audio/deep/tree-b" },
+          cells: [{ quant: "f32", label: "F32" }],
+        },
+      ],
+      snapshot_provisions: [
+        {
+          name: "tree-a",
+          folder: "audio/fold",
+          repo_id: "example/fold-a",
+          revision: "0a1b2c3d4e5f60718293a4b5c6d7e8f901234567",
+          allow_patterns: ["config.json"],
+        },
+        {
+          name: "tree-b",
+          folder: "audio/fold",
+          repo_id: "example/fold-b",
+          revision: "0a1b2c3d4e5f60718293a4b5c6d7e8f901234567",
+          allow_patterns: ["config.json"],
+        },
+        {
+          name: "tree-c",
+          folder: "audio/fold",
+          repo_id: "example/fold-c",
+          revision: "0a1b2c3d4e5f60718293a4b5c6d7e8f901234567",
+          allow_patterns: ["config.json"],
+        },
+      ],
+    } as ModelDecl);
+    try {
+      const folded = await ctx.provisioning.plan({ kind: "model", owner: "family", id: "fold-lanes" });
+      const trees = folded.items
+        .filter((i): i is Extract<ProvisionPlanItem, { kind: "snapshot" }> => i.kind === "snapshot")
+        .map((i) => i.name)
+        .sort();
+      assert.deepEqual(trees, ["tree-b"],
+        "the fold names the default variant's replacing tree by basename; the replaced family tree and the unmatched tree never ride");
+    } finally {
+      dispose();
+    }
+
     // 2026-10-12 union: the plan carries BOTH channels — the
     // family's provisions rows ride coordinateless, the variant-cell
     // artifact keeps its (variant, quant) coordinates
@@ -933,5 +997,26 @@ describe("the direct arm's range resume on the wire (audit download-stack-audit-
     assert.equal(response.status, 206);
     assert.equal(response.resumedFrom, 39);
     assert.equal(response.totalBytes, undefined, "a star total falls back to the plan's declared size");
+  });
+
+  test("a ranged ask WITH a caller signal rides the header; a header-less 206 answers the asked offset", async () => {
+    const server = createServer((_req, res) => {
+      // a 206 that names no Content-Range: the asked offset is the only
+      // resume fact (the plan's declared size owns the denominator)
+      res.writeHead(206, { "content-type": "application/octet-stream" });
+      res.end(Uint8Array.of(4, 5, 6));
+    });
+    servers.push(server);
+    const reqRange = new Promise<string | undefined>((resolve) => {
+      server.on("request", (req) => { resolve(req.headers.range); });
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const url = `http://127.0.0.1:${String((server.address() as { port: number }).port)}/bare-206.bin`;
+    const ctl = new AbortController();
+    const response = await idleDialFetch(5_000)(url, ctl.signal, { rangeFrom: 12 });
+    assert.equal(await reqRange, "bytes=12-");
+    assert.equal(response.status, 206);
+    assert.equal(response.resumedFrom, 12);
+    assert.equal(response.totalBytes, undefined);
   });
 });

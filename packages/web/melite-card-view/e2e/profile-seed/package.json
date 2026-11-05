@@ -40,7 +40,6 @@
     "@melite/image-upscale-tools": "link:../../../../image/upscale-tools",
     "@melite/models-anima": "link:../../../../models/anima",
     "@melite/models-anny": "link:../../../../models/anny",
-    "@melite/models-anycreature": "link:../../../../models/anycreature",
     "@melite/models-concat": "link:../../../../models/concat",
     "@melite/models-florence2": "link:../../../../models/florence2",
     "@melite/models-gem-soma": "link:../../../../models/gem-soma",

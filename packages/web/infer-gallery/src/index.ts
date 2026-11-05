@@ -34,6 +34,13 @@
  *   one artifact inside its own directory (the modal's rename
  *   button — `name` is a bare segment, never a path; existing
  *   targets refuse 409).
+ * - `POST /infer-gallery/artifact-archive {path}` → tucks one
+ *   artifact into the run's `_archived/` dir (the mass-archive
+ *   verb — the file leaves every listing while its bytes survive;
+ *   restore brings it back).
+ * - `POST /infer-gallery/artifact-restore {path}` → moves an
+ *   archived artifact back beside its siblings (the `_archived/`
+ *   segment is stripped; existing targets refuse 409).
  *
  * Failure policy: route handlers own their full response
  * lifecycle; the routes never throw.
@@ -41,6 +48,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { join } from 'node:path'
 import { LEGACY_RUN_MEDIA_PREFIX, RUN_MEDIA_PREFIX , RUN_ID_RE} from "@melite/contracts/benchStage";
+import { ARCHIVED_DIR_NAME } from "@melite/contracts/mediaKinds";
 
 /** The upstream's artifact prefix: the gateway route that has served
  *  run artifacts since the app's own mount — a LEGACY spelling the
@@ -109,13 +117,25 @@ function isRunRelative(target: string): boolean {
   return rest.split('/').every(segmentConfined)
 }
 
-/** Sidecar/shadow guard for the MUTATING doors (delete + rename):
- *  any `_`-prefixed segment names provenance, never media — the
- *  runs tree's own convention (`_flow.json`, `_request.json`,
- *  `_thumb/…`). A mutating door that unlinks/renames one would eat
- *  the run's own record; refuse LOUD before touching disk. */
+/** Sidecar/shadow guard for the MUTATING doors (delete + rename +
+ *  archive + restore): any `_`-prefixed segment names provenance,
+ *  never media — the runs tree's own convention (`_flow.json`,
+ *  `_request.json`, `_thumb/…`). A mutating door that unlinks/renames/
+ *  archives one would eat the run's own record; refuse LOUD before
+ *  touching disk. */
 function isProtectedSidecar(target: string): boolean {
   return target.split('/').slice(1).some((seg) => seg.startsWith('_'))
+}
+
+/** The tucked-away dir's local alias (ONE spelling: the contract
+ *  owns the literal — the gallery doors, the media list walk, and
+ *  the runs-list archived face all read ARCHIVED_DIR_NAME). */
+const ARCHIVED_SEG = ARCHIVED_DIR_NAME
+
+/** The run-relative segments behind the run id (the grammar was
+ *  already proven by isRunRelative — this only reads positions). */
+function tailSegs(target: string): string[] {
+  return target.split('/').slice(1)
 }
 
 /** A bare rename target: one segment, never a path — the door joins
@@ -547,11 +567,7 @@ export function apply(ctx: Context, config: Config = {}): void {
         return
       }
       try {
-        const body = await readJsonBody(req as unknown as {
-          on(event: 'data', fn: (d?: Uint8Array) => void): void
-          on(event: 'end', fn: () => void): void
-          on(event: 'error', fn: (e: unknown) => void): void
-        }) as { path?: unknown } | null | undefined
+        const body = await readJsonBody(req) as { path?: unknown } | null | undefined
         const target = typeof body?.path === 'string' ? body.path : ''
         if (!isRunRelative(target)) {
           fail(res, 400, 'forbidden_path', { message: 'artifact route only serves run-relative names (run-<id>/<file>)', path: target })
@@ -616,11 +632,7 @@ export function apply(ctx: Context, config: Config = {}): void {
         return
       }
       try {
-        const body = await readJsonBody(req as unknown as {
-          on(event: 'data', fn: (d?: Uint8Array) => void): void
-          on(event: 'end', fn: () => void): void
-          on(event: 'error', fn: (e: unknown) => void): void
-        }) as { path?: unknown; name?: unknown } | null | undefined
+        const body = await readJsonBody(req) as { path?: unknown; name?: unknown } | null | undefined
         const target = typeof body?.path === 'string' ? body.path : ''
         const name = typeof body?.name === 'string' ? body.name : ''
         if (!isRunRelative(target)) {
@@ -724,6 +736,198 @@ export function apply(ctx: Context, config: Config = {}): void {
       }
     },
   }), 'infer-gallery: /infer-gallery/artifact-rename route')
+
+  /* THE MASS-ARCHIVE DOORS (operator ruling 2026-11-14, item (a)):
+   * archive tucks a live artifact into the run's `_archived/` dir;
+   * restore moves it back. Both doors mirror the delete/rename
+   * discipline (method, confinement, sidecar guard, cross-host
+   * verbatim relay, first-tree-wins §23 walk, the row-cache notice)
+   * plus their POSITION laws: archive refuses an already-archived
+   * path (already_archived) and any sidecar; restore REQUIRES the
+   * `_archived/` segment directly behind the run id (not_archived
+   * otherwise) and strips exactly it, so the round-trip is the
+   * identity. Collisions refuse 409 on both — a tuck never
+   * overwrites, in either direction. The serve door is untouched:
+   * archived bytes stay addressable by direct URL (restore preview,
+   * undo-by-hand) — archive hides from LISTINGS, never from disk. */
+  const readArchiveBody = async (req: {
+    method?: string
+    on(event: 'data', fn: (d?: Uint8Array) => void): void
+    on(event: 'end', fn: () => void): void
+    on(event: 'error', fn: (e: unknown) => void): void
+  }): Promise<{ target: string } | { status: number; code: string; payload: Record<string, unknown> }> => {
+    if (req.method !== 'POST') {
+      return { status: 405, code: 'method_not_allowed', payload: { message: 'POST {path} only' } }
+    }
+    const body = await readJsonBody(req) as { path?: unknown } | null | undefined
+    const target = typeof body?.path === 'string' ? body.path : ''
+    if (!isRunRelative(target)) {
+      return { status: 400, code: 'forbidden_path', payload: { message: 'artifact route only serves run-relative names (run-<id>/<file>)', path: target } }
+    }
+    return { target }
+  }
+  ctx.effect(() => ctx.webServer.register({
+    kind: 'exact',
+    path: '/infer-gallery/artifact-archive',
+    handler: async (req, res) => {
+      try {
+        const parsed = await readArchiveBody(req)
+        if (!('target' in parsed)) {
+          fail(res, parsed.status, parsed.code, parsed.payload)
+          return
+        }
+        const target = parsed.target
+        // POSITION FIRST (the voice law): an archived path carries
+        // the `_archived` segment, which the sidecar guard below
+        // would misname as provenance — the tuck's own shape answers
+        // first. Exact-segment match (a mid-name `…_archived…` is
+        // not the tuck and falls through to the guard).
+        if (tailSegs(target).some((s) => s === ARCHIVED_SEG)) {
+          fail(res, 400, 'already_archived', { message: 'that artifact is already archived — restore brings it back', path: target })
+          return
+        }
+        if (isProtectedSidecar(target)) {
+          fail(res, 400, 'protected_sidecar', { message: 'sidecar files are provenance, never media — refusing', path: target })
+          return
+        }
+        if (gatewayUrl !== '') {
+          const response = await fetch(`${gatewayUrl}/infer-gallery/artifact-archive`, {
+            method: 'POST',
+            signal: AbortSignal.timeout(timeoutMs),
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ path: target }),
+          })
+          const text = await response.text()
+          res.writeHead(response.status, { ...JSON_HEADERS, 'content-length': String(Buffer.byteLength(text)) })
+          res.end(text)
+          return
+        }
+        const fs = await import('node:fs/promises')
+        const path = await import('node:path')
+        const full = await resolveRunTarget(fs, path, target)
+        if (full === null) {
+          fail(res, 404, 'no_artifact', { message: 'no such artifact', path: target })
+          return
+        }
+        // the tuck inserts `_archived/` directly behind the run id —
+        // the relative tail (subdir groupings included) is preserved
+        // verbatim, so restore strips exactly this segment back. The
+        // run dir resolves explicitly (never `..`-counting — the
+        // depth of the tail must not matter); the join stays under
+        // the proven tree by construction.
+        const segs = target.split('/')
+        const runFull = await resolveRunTarget(fs, path, segs[0]!)
+        /* v8 ignore next 3 -- the file resolved above, so its run dir
+         * resolves too; the check stays as defense against a tree
+         * that changes between the two stats. */
+        if (runFull === null) {
+          fail(res, 404, 'no_artifact', { message: 'no such artifact', path: target })
+          return
+        }
+        const next = [segs[0], ARCHIVED_SEG, ...segs.slice(1)].join('/')
+        const fullNext = path.join(runFull, ARCHIVED_SEG, ...segs.slice(1))
+        try {
+          await fs.stat(fullNext)
+          fail(res, 409, 'already_exists', { message: 'an archived file already carries that name', path: next })
+          return
+        } catch {
+          // absent — the tuck may proceed.
+        }
+        await fs.mkdir(path.dirname(fullNext), { recursive: true })
+        await fs.rename(full, fullNext)
+        // THE ROW CACHE NOTICE (the delete/rename twin law): a subdir
+        // move bumps neither cached mtime — the feed would keep
+        // listing the live name after a 200 tuck.
+        noteRunTreeChanged(full)
+        const ok = JSON.stringify({ ok: true, path: next, url: proxyAssetUrl(next) })
+        res.writeHead(200, { ...JSON_HEADERS, 'content-length': String(Buffer.byteLength(ok)) })
+        res.end(Buffer.from(ok))
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        ctx.logger.warn('infer-gallery: artifact-archive failed: %s', message)
+        fail(res, 502, 'artifact_unreadable', { message })
+      }
+    },
+  }), 'infer-gallery: /infer-gallery/artifact-archive route')
+
+  ctx.effect(() => ctx.webServer.register({
+    kind: 'exact',
+    path: '/infer-gallery/artifact-restore',
+    handler: async (req, res) => {
+      try {
+        const parsed = await readArchiveBody(req)
+        if (!('target' in parsed)) {
+          fail(res, parsed.status, parsed.code, parsed.payload)
+          return
+        }
+        const target = parsed.target
+        // the tuck's own shape, and ONLY it: `_archived/` directly
+        // behind the run id. A deeper `_archived` segment (a live
+        // subdir literally named so) is not ours to strip — and the
+        // sidecar guard above already refuses every `_` segment, so
+        // reaching here with a foreign `_archived` is impossible;
+        // the position check stays as the door's own voice.
+        const segs = target.split('/')
+        if (segs[1] !== ARCHIVED_SEG) {
+          fail(res, 400, 'not_archived', { message: 'that artifact is not archived — only _archived/ paths restore', path: target })
+          return
+        }
+        if (gatewayUrl !== '') {
+          const response = await fetch(`${gatewayUrl}/infer-gallery/artifact-restore`, {
+            method: 'POST',
+            signal: AbortSignal.timeout(timeoutMs),
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ path: target }),
+          })
+          const text = await response.text()
+          res.writeHead(response.status, { ...JSON_HEADERS, 'content-length': String(Buffer.byteLength(text)) })
+          res.end(text)
+          return
+        }
+        const fs = await import('node:fs/promises')
+        const path = await import('node:path')
+        const full = await resolveRunTarget(fs, path, target)
+        if (full === null) {
+          fail(res, 404, 'no_artifact', { message: 'no such archived artifact', path: target })
+          return
+        }
+        const tail = segs.slice(2)
+        if (tail.length === 0) {
+          fail(res, 400, 'not_archived', { message: 'that path names the archive dir itself, never an artifact', path: target })
+          return
+        }
+        const runFull = await resolveRunTarget(fs, path, segs[0]!)
+        /* v8 ignore next 3 -- the archived file resolved above, so
+         * its run dir resolves too; defense against a tree changing
+         * between the two stats. */
+        if (runFull === null) {
+          fail(res, 404, 'no_artifact', { message: 'no such archived artifact', path: target })
+          return
+        }
+        const next = [segs[0], ...tail].join('/')
+        const fullNext = path.join(runFull, ...tail)
+        try {
+          await fs.stat(fullNext)
+          fail(res, 409, 'already_exists', { message: 'a live file already carries that name', path: next })
+          return
+        } catch {
+          // absent — the restore may proceed.
+        }
+        await fs.mkdir(path.dirname(fullNext), { recursive: true })
+        await fs.rename(full, fullNext)
+        // THE ROW CACHE NOTICE (the archive twin): the feed must
+        // re-list the restored name on the next read.
+        noteRunTreeChanged(full)
+        const ok = JSON.stringify({ ok: true, path: next, url: proxyAssetUrl(next) })
+        res.writeHead(200, { ...JSON_HEADERS, 'content-length': String(Buffer.byteLength(ok)) })
+        res.end(Buffer.from(ok))
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        ctx.logger.warn('infer-gallery: artifact-restore failed: %s', message)
+        fail(res, 502, 'artifact_unreadable', { message })
+      }
+    },
+  }), 'infer-gallery: /infer-gallery/artifact-restore route')
 }
 
 /** Cross-host upstream answered an error status (its body rides). */

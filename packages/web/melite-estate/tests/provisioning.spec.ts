@@ -1,5 +1,8 @@
 import "../../../../tests/helpers/boot-models.ts";
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { Context, type Plugin } from '@deepseek-ai/cordis'
 import { ACQUIRE_STALL_TIMEOUT_MS } from "@melite/estate-provisioning";
 import { PROVISION_FETCH_DIAL_MS } from "../src/provisioning.ts";
@@ -169,3 +172,28 @@ describe("the acquire stall budget's deployment face (P5 F1)", () => {
     expect(text).toMatch(/acquireStallTimeoutMs:\s*10000\b/)
   });
 });
+
+  // THE DURABLE DOWNLOAD SEAT (2026-10-21): the durability word + claim
+  // cadence ride the SAME composition face as the stall budget — the
+  // schema twin carries both, the builder forwards both, and the
+  // mounted service answers the word on its read face. The claim
+  // ticker sweeps the OPERATION STORE at the repo root, so the arm
+  // pins MELITE_REPO_ROOT at an empty temp tree: the immediate tick
+  // sweeps an empty store, never the checkout's own runtime rows.
+  test("the durable seat's word and claim cadence ride the same deployment face", async () => {
+    const parsed = ProvisioningCompositionConfig({ durableDownloads: true, downloadClaimIntervalMs: 4_000 });
+    expect(parsed.durableDownloads).toBe(true);
+    expect(parsed.downloadClaimIntervalMs).toBe(4_000);
+    const root = mkdtempSync(join(tmpdir(), "estate-durable-"));
+    vi.stubEnv("MELITE_REPO_ROOT", root);
+    const ctx = contextWithCards();
+    try {
+      const plugin: Plugin.Object = composition;
+      plugin.apply(ctx, parsed);
+      expect(ctx.provisioning.durableDownloads()).toBe(true);
+    } finally {
+      await ctx.fiber.dispose();
+      rmSync(root, { recursive: true, force: true });
+      vi.unstubAllEnvs();
+    }
+  });

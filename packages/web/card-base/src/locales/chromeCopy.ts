@@ -96,6 +96,13 @@ export const chromeCopy = {
   addModifierAria: 'Add modifier',
   /** Add-modifier square's hover title. */
   addModifierTitle: 'Add a modifier',
+  /** Chain-run picker row label: the estate run id, the lane it rode, and the scene count its chain stamp reports. */
+  chainRunOptionLabel: (p: { run: string; kind: string; scenes: number }): string =>
+    `${p.run} — ${p.kind}, ${p.scenes} ${p.scenes === 1 ? 'scene' : 'scenes'}`,
+  /** Chain-run picker's free-text affordance (the advanced fallback — a placeholder AND accessible name). */
+  chainRunAdvancedLabel: 'Advanced — paste a run id',
+  /** Chain-run picker's honest empty (the store check found no checkpointed run). */
+  chainRunEmptyNote: 'No chain runs yet — a swap, repair, extend or refine press leaves its scenes here.',
   /** Named-presence popup title: "Name the <kind label>" (the add gesture opens one field, never a knob wall). */
   namedPresenceTitle: (p: { kindLabel: string }): string => `Name the ${p.kindLabel}`,
   /** Named-presence popup's single input label + accessible name. */

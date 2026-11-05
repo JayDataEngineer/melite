@@ -20,6 +20,10 @@
 //      renders, no refusal (the happy path keeps its seat).
 //   D  the refusal's words are dictionary-owned (chromeCopy), not
 //      literals at the dispatch.
+//   E  a spec declaring a studio whose writes roster the row does
+//      NOT carry → the row is UNCLAIMED: the generic form serves
+//      (the row's whole authored truth), no refusal (the 15th
+//      report's symptom 2 — the mod-only row's starter lie).
 import { cleanup, render, waitFor } from "@testing-library/react";
 import assert from "node:assert/strict";
 import { afterEach, describe, test, vi } from "vitest";
@@ -42,7 +46,7 @@ const BENCH: CardsBenchValue = {
   kind: "bench", draftId: draftIdOf("bench-p"), sessionKey: "p", rev: 1, log: [], stages: [STAGE],
 };
 
-function stubFetch(stageView: string | null): void {
+function stubFetch(stageView: string | null, studioWrites?: string[]): void {
   vi.stubGlobal("fetch", async (url: unknown): Promise<Response> => {
     const path = String(url);
     if (path.includes("/v1/form-spec")) {
@@ -51,8 +55,13 @@ function stubFetch(stageView: string | null): void {
         // THE DECLARATION: the estate derives this from the card
         // package's tree; null = the card has no studio.
         stage_view: stageView,
+        // THE OWNERSHIP ROSTER (the row-claim law, 2026-10-31):
+        // the keys the studio tenant authors. Absent = the studio
+        // owns everything (the card's only author).
+        ...(studioWrites !== undefined ? { studio_writes: studioWrites } : {}),
         schema: schemaEnvelope({
           prompt: { type: "string", meta: { description: "Prompt", extra: { wtype: "textarea" } } },
+          refine: { type: "string", meta: { description: "Refine", extra: { wtype: "textarea" } } },
         }),
       }), { status: 200, headers: { "content-type": "application/json" } });
     }
@@ -71,16 +80,22 @@ function mountDrill(opts: {
   /** The slot consult: "miss" renders whatever the dispatch falls
    *  back to; "claim" renders the studio sentinel. */
   consult: "miss" | "claim";
+  /** The row-claim roster (the studio's owned keys); undefined = the
+   *  studio owns everything. */
+  studioWrites?: string[];
+  /** The frozen bench row to judge (defaults to the STAGE constant). */
+  stage?: BenchStageView;
 }): { container: HTMLElement } {
-  stubFetch(opts.stageView);
+  stubFetch(opts.stageView, opts.studioWrites);
+  const stage = opts.stage ?? STAGE;
   mountEstateFakes({
-    benchDoc: { draft_id: "bench-p", rev: 1, log: [], stages: [STAGE as unknown as Record<string, unknown>] },
-    draftStages: [STAGE as unknown as Record<string, unknown>],
+    benchDoc: { draft_id: "bench-p", rev: 1, log: [], stages: [stage as unknown as Record<string, unknown>] },
+    draftStages: [stage as unknown as Record<string, unknown>],
     draftBenchRev: 1,
   });
   return render(h(StageDrill, {
-    stage: STAGE,
-    bench: BENCH,
+    stage,
+    bench: { ...BENCH, stages: [stage] },
     running: false,
     onRun: () => {},
     onStop: () => {},
@@ -142,5 +157,29 @@ describe("the dispatch's stage-view refusal (a declared studio never wears the g
     assert.ok(words.includes(chromeCopy.stageViewRefusal({ card: "input-prep", plugin: "@melite/image-input-prep" })),
       "the card line rides chromeCopy");
     assert.ok(words.includes(chromeCopy.stageViewRefusalFix), "the fix line rides chromeCopy");
+  });
+
+  test("E: a declared studio does NOT claim an unowned row — the generic form serves its whole truth", async () => {
+    // THE 15TH REPORT, SYMPTOM 2 (audit 2026-10-31-modpress-row-face):
+    // an agent-pressed mod-only row ({refine: […]} — no key the studio
+    // owns) is not the studio's document; hydrating it seats the
+    // one-window starter and buries the bag. The row-claim law sends
+    // it to the generic form, whose CardForm renders every declared
+    // mod field group.
+    const { container } = mountDrill({
+      stageView: "@melite/image-input-prep",
+      consult: "miss",
+      studioWrites: ["prompt"],
+      stage: {
+        id: "s_mod", card: "input-prep", engine: "comfyui",
+        params: { refine: [{ source_clip: "clips/take5.mp4", denoise: 0.32 }] }, runStatus: "",
+      } as never as BenchStageView,
+    });
+    await waitFor(() => {
+      assert.ok(container.querySelector("textarea") !== null,
+        "the unclaimed row's face is the generic form — the bag's whole truth, never a starter");
+    });
+    assert.equal(container.querySelector('[data-testid="stage-view-load-refusal"]'), null,
+      "an unclaimed row is not a load miss — the refusal would bury the bag a second way");
   });
 });

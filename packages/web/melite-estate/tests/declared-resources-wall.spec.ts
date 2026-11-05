@@ -22,7 +22,7 @@ import { describe, test } from "vitest";
 import assert from "node:assert/strict";
 import { Context } from "@deepseek-ai/cordis";
 import { loadCardDefs, modelsService } from "@melite/comfyui-cordis";
-import { declarationPort } from "../src/provisioning.ts";
+import { declarationPort, routeCoordinates } from "../src/provisioning.ts";
 import type { ResourceRef } from "@melite/estate-provisioning";
 
 // The wall runs against the REAL checkout's declarations (the
@@ -282,6 +282,109 @@ describe("the declared resources resolve before the app ships", () => {
       [],
       "register rows naming no declared ref (renamed or deleted " +
         "families leave their debt row behind)",
+    );
+  });
+
+  // THE COORDINATE-SCOPED SUBSET ARM (the F45 7.5× burn, 2026-11-01):
+  // a snapshot row is ONE selectable checkpoint's backing tree, so a
+  // family plan carries exactly the rows the RESOLVED coordinates'
+  // lane inputs name — never every upstream variant. The burn: one
+  // acquire_weight on florence2 planned all fourteen rows and
+  // streamed 24.97GB (7.5× the asked default's ~3.33GB declared
+  // subset) before the store refused the first row. The expected
+  // subset is derived here from the DECL's own rows (family →
+  // resolved variant → resolved cell lane fold, basename match — the
+  // linkability spelling) against the SAME port the seat consumes;
+  // the derivation living beside the plan's own is the invariant,
+  // not drift: two walkers agreeing is what the arm guards.
+  test("every snapshot plan carries exactly the resolved coordinates' lane-named trees (the 7.5× subset law)", async () => {
+    const { refs, resolve: resolveRef } = await freshPort();
+    const offenders: string[] = [];
+    const modelWalker = (value: unknown, into: Set<string>): void => {
+      if (Array.isArray(value)) {
+        for (const v of value) modelWalker(v, into);
+      } else if (value !== null && typeof value === "object") {
+        for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+          if (k === "model_path" && typeof v === "string" && v.trim() !== "") {
+            into.add(v.trim().split("/").pop() ?? v.trim());
+          } else {
+            modelWalker(v, into);
+          }
+        }
+      }
+    };
+    for (const ref of refs) {
+      if (ref.kind !== "model" || ref.owner !== "family") continue;
+      const decl = modelsService().getModel(ref.id) as {
+        lane_inputs?: unknown;
+        snapshot_provisions?: readonly { name: string }[];
+        variants?: readonly { lane_inputs?: unknown }[];
+      };
+      const rows = decl.snapshot_provisions ?? [];
+      if (rows.length === 0) continue;
+      const coordinates = routeCoordinates(ref, decl as never);
+      const resolved = modelsService().resolve(ref.id, coordinates.variant, coordinates.quant) as {
+        variant?: { lane_inputs?: unknown };
+        cell?: { lane_inputs?: unknown } | null;
+      };
+      const laneNames = new Set<string>();
+      // per-KEY override (the cardsLanes merge order): the stated
+      // variant's model_path replaces the family's — the expected
+      // subset is the tree the fold resolves to
+      const foldedLane: Record<string, unknown> = {
+        ...((decl.lane_inputs ?? {}) as Record<string, unknown>),
+        ...((resolved.variant?.lane_inputs ?? {}) as Record<string, unknown>),
+        ...((resolved.cell?.lane_inputs ?? {}) as Record<string, unknown>),
+      };
+      modelWalker(foldedLane, laneNames);
+      const expected = rows
+        .filter((row) => laneNames.has(row.name.split("/").pop() ?? row.name))
+        .map((row) => row.name);
+      const planned = ((await resolveRef(ref)) as {
+        items: { kind: string; name?: string }[];
+      }).items
+        .filter((item) => item.kind === "snapshot")
+        .map((item) => item.name ?? "");
+      const want = expected.length > 0 ? expected.sort() : rows.map((row) => row.name).sort();
+      if (JSON.stringify(planned.slice().sort()) !== JSON.stringify(want)) {
+        offenders.push(
+          `${ref.id}: plan carries [${planned.join(", ")}] where the ` +
+            `resolved coordinates' lane inputs name [${want.join(", ")}] ` +
+            `of ${String(rows.length)} declared rows — the plan fetches ` +
+            `trees the ask never declared (the 7.5× class)`,
+        );
+      }
+    }
+    // THE BURNED FAMILY'S OWN PIN: the florence2 default acquire is
+    // one tree — MiaoshouAI/Florence-2-large-PromptGen-v2.0 — never
+    // the fourteen-row upstream sweep.
+    const florence = (await resolveRef({ kind: "model", owner: "family", id: "florence2" })) as {
+      items: { kind: string; name?: string }[];
+    };
+    assert.deepEqual(
+      florence.items.filter((item) => item.kind === "snapshot").map((item) => item.name),
+      ["Florence-2-large-PromptGen-v2.0"],
+      "the florence2 family plan carries exactly the default variant's tree — " +
+        "a fourteen-row plan is the 24.97GB sweep the F45 burn streamed",
+    );
+    // THE VARIANT-SCOPED ASK: a stated variant plans THAT variant's
+    // tree alone (the CogFlorence-2.1 lane's own checkpoint), never
+    // the default's tree beside it.
+    const cogflorence = (await resolveRef({
+      kind: "model",
+      owner: "family",
+      id: "florence2",
+      variant: "thwri-cogflorence-2-1-large",
+    })) as { items: { kind: string; name?: string }[] };
+    assert.deepEqual(
+      cogflorence.items.filter((item) => item.kind === "snapshot").map((item) => item.name),
+      ["CogFlorence-2.1-Large"],
+      "a stated variant plans its own tree — the declared subset the ask names",
+    );
+    assert.deepEqual(
+      offenders,
+      [],
+      "SNAPSHOT PLANS WIDER THAN THEIR ASK:\n" + offenders.join("\n"),
     );
   });
 

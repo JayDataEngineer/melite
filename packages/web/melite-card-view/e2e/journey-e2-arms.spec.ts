@@ -206,7 +206,7 @@ test.describe('journey-closure E2 — the browser-tier arms (the live lane)', ()
     const errors = collectPageErrors(page)
     const sessionKey = await mintAndOpenCards(page)
     const stageId = await addOwnStage(page, sessionKey, 'h3-timeline', {
-      variant: 'h3', quant: 'int8', model: 'h3',
+      variant: 'timeline', quant: 'int8', model: 'h3',
       calls: [{ text: 'A single shot — describe the action, camera, and mood.', start_frame: 0, end_frame: 175 }],
     })
     await openDrill(page, stageId, 'the arm stage')
@@ -258,7 +258,7 @@ test.describe('journey-closure E2 — the browser-tier arms (the live lane)', ()
     const errors = collectPageErrors(page)
     const sessionKey = await mintAndOpenCards(page)
     const stageId = await addOwnStage(page, sessionKey, 'h3-timeline', {
-      variant: 'h3', quant: 'int8', model: 'h3',
+      variant: 'timeline', quant: 'int8', model: 'h3',
       calls: [{ text: 'A single shot — describe the action, camera, and mood.', start_frame: 0, end_frame: 175 }],
     })
     await openDrill(page, stageId, 'the arm stage')

@@ -630,9 +630,19 @@ export function resolveValue(spec: FormSpecDoc, user: SpecValues, base?: SpecVal
     if (v === null || Array.isArray(v)) continue
     out[k] = v
   }
+  // THE GHOST-PARAMETER LAW (F54, operator 2026-11-01: "there should
+  // NEVER be ghost input parameters. EVER."): a base-layer ARRAY at
+  // a served modifier bag key RIDES — the bench's composed stage
+  // params ARE the base layer, and an agent- or user-composed bag
+  // (qvoice, loras) that the door admits and the run composes must
+  // render its chip; dropping it hid every staged mod from the face
+  // while the film ran it. Arrays at OTHER keys keep the old skip:
+  // those owners are the DECL, never the bench.
+  const bagKeys = new Set((spec.features?.modifiers ?? []).map((k) => k.param_key))
   if (base !== undefined) {
     for (const [k, v] of Object.entries(base)) {
-      if (v === null || v === undefined || Array.isArray(v)) continue
+      if (v === null || v === undefined) continue
+      if (Array.isArray(v) && !bagKeys.has(k)) continue
       out[k] = v
     }
   }
@@ -794,6 +804,35 @@ export function laneRelationsFor(
   if (v !== undefined) out.push(v)
   return out
 }
+
+/** THE PICK'S SANCTIONED STAMPS (the tagger burn, gate-11 probe p,
+ *  2026-11-16): a variant row's defaults may name the lane's
+ *  INTERNAL coordinates (a checkpoint path the engine resolves from
+ *  the variant stamp itself) — keys the row's own resolved lane does
+ *  not serve. The compose mirror field-names such a key and the door
+ *  refuses the WHOLE frame ("field 'checkpoint' fires nothing on
+ *  this lane — the served surface does not declare it"), so a pick
+ *  that stamped it never left the studio while the face followed the
+ *  user map — the doc stranded on the birth row through every later
+ *  pick. The stamp filter rides the mirror's own truth, one
+ *  spelling: the PICKED row's lane surface (family base ∪ variant
+ *  additions) plus the transport's own words. A family that serves
+ *  no lane truth keeps its legacy pick — the defaults ride verbatim,
+ *  never a guess.
+ * @param spec the served form-spec the pick derives over.
+ * @param row the row being picked (its lane is the arrival lane).
+ * @returns the sanctioned key set, or null when no lane truth exists. */
+function sanctionedStampKeys(spec: FormSpecDoc, row: FormVariantRow): Set<string> | null {
+  const surface = laneSurfaceFor(spec, row.id, null)
+  if (surface === null) return null
+  const declared = new Set<string>(surface)
+  for (const g of axisGroups(spec)) declared.add(axisKey(g))
+  declared.add('model')
+  for (const k of spec.studio_writes ?? []) declared.add(k)
+  for (const k of modOwnedFields(spec)) declared.add(k)
+  return declared
+}
+
 
 /** The numeric bounds that judge the resolved lane: family rows,
  *  per-field replaced by the variant's own (the DECL cascade's
@@ -1003,6 +1042,33 @@ export function variantGroupsContract(spec: FormSpecDoc): string[] {
  *  (address resolution, walls) still see it. */
 export function rowsFor(spec: FormSpecDoc, group: string): FormVariantRow[] {
   return (spec.variants ?? []).filter((v) => v.group === group && v.alias !== true)
+}
+
+/** THE ROW-CLAIM LAW (the 15th report, symptom 2 — audit
+ *  2026-10-31-modpress-row-face): a card's declared studio renders a
+ *  bench row ONLY when the row's params carry at least one key the
+ *  studio owns (studio_writes). An agent-pressed mod-only row —
+ *  {refine: […]} with no calls, no keyframes — is NOT the studio's
+ *  document; hydrating it seats the one-window starter and buries
+ *  the bag, so the GENERIC form is its designed face (CardForm
+ *  renders every declared mod field group — the row's whole truth).
+ *  A DECL that names no writes list owns everything: the studio is
+ *  the card's only author, and the fallback-extermination wall's
+ *  force (arm A of stage-view-refusal) stands. PURE.
+ *  @param spec the doc's served form-spec.
+ *  @param params the frozen bench row's params.
+ *  @returns true when the studio tenant claims the row. */
+export function studioClaimsRow(
+  spec: FormSpecDoc,
+  params: Record<string, unknown> | undefined,
+): boolean {
+  const writes = spec.studio_writes
+  if (writes === undefined || writes.length === 0) return true
+  if (params === undefined) return false
+  for (const key of writes) {
+    if (params[key] !== undefined) return true
+  }
+  return false
 }
 
 /** THE CHAIN (one direction: an axis filters the axes BELOW it): a
@@ -1227,8 +1293,14 @@ export function axisPickPatch(spec: FormSpecDoc, row: FormVariantRow, held?: Spe
   // params. The row's other defaults (steps, cfg) ride as the pick's
   // visible stamps.
   const patch: SpecValues = {}
+  // THE STAMP FILTER (the tagger burn): only lane-sanctioned
+  // defaults ride — an internal coordinate (checkpoint) the row's
+  // own lane does not serve would field-name at the mirror and the
+  // door would refuse the whole frame while the face followed.
+  const sanctioned = sanctionedStampKeys(spec, row)
   for (const [k, v] of Object.entries(row.defaults)) {
     if (k === 'model') continue
+    if (sanctioned !== null && !sanctioned.has(k)) continue
     patch[k] = v
   }
   const groups = axisGroups(spec)
@@ -1448,10 +1520,18 @@ export function modelSwitchPatch(spec: FormSpecDoc, model: string, held?: SpecVa
     // to turbo; seating it under raw is turbo-for-anima again).
     const composing = composingRows(spec, g, active)
     if (composing.length === 0 || crossSpec) {
-      // cross-spec: EVERY axis clears (variant and quant filter to
-      // the NEW family's rows once its spec lands — never this
-      // spec's rows carried over)
-      patch[axisKey(g)] = ''
+      // cross-spec: EVERY axis departs as a NULL (the gate-11 cure,
+      // 2026-11-16, probe (m)'s verbatim burn: the door answered
+      // "unknown variant \"\" for model \"trellis2-native\" — a
+      // stated empty selection is not a choice (pick one, or remove
+      // the key and let compose default it)" and refused the whole
+      // frame — the doc never took the arrival while the face showed
+      // it. '' is a STATED empty choice; null DELETES the key and
+      // the arrival family's spec-land seed re-derives it (the
+      // door's own spelling). variant and quant filter to the NEW
+      // family's rows once its spec lands — never this spec's rows
+      // carried over.
+      patch[axisKey(g)] = null
       active[g] = ''
       continue
     }
@@ -1473,9 +1553,14 @@ export function modelSwitchPatch(spec: FormSpecDoc, model: string, held?: SpecVa
     // resolves it into the run's params. It NEVER lands in the user
     // layer, so the Model rail never shows routes and a reopened
     // stage never holds one. The row's OTHER defaults (steps, cfg)
-    // still ride — they are the pick's visible stamps.
+    // still ride — they are the pick's visible stamps — filtered to
+    // the row's own lane surface (the tagger burn: an internal
+    // coordinate the lane does not serve field-names at the mirror
+    // and the door refuses the whole frame).
+    const sanctioned = sanctionedStampKeys(spec, row)
     for (const [k, v] of Object.entries(row.defaults)) {
       if (k === 'model') continue
+      if (sanctioned !== null && !sanctioned.has(k)) continue
       patch[k] = v
     }
     patch[axisKey(g)] = axisStampOf(row)
@@ -1576,6 +1661,22 @@ export function axisUnset(name: string, v: unknown, spec: FormSpecDoc | null): b
 export function seedAxisValues(spec: FormSpecDoc, held: SpecValues): SpecValues {
   const out: SpecValues = {}
   const groups = axisGroups(spec)
+  // THE MODEL ARM IS THE FAMILY (stroke 21) and rides ABOVE the
+  // groups guard (the gate-11 anny burn, 2026-11-16: a family spec
+  // with NO axis vocabulary — anny's single group-less variant row —
+  // early-returned here and the stage was born FAMILY-LESS, the
+  // sweep's seed-law red 'the bench doc carries a model coordinate
+  // (doc null)'. The family names itself at birth for every spec
+  // that carries one, independent of the axis walk). The seeded
+  // row's re-point (qwen-img-edit-2511-lightning4) is the server's
+  // compose stamp — the user plane never holds a route.
+  {
+    const heldModel = held['model']
+    if (typeof heldModel !== 'string' || heldModel === '') {
+      const model = typeof spec.model === 'string' && spec.model !== '' ? spec.model : ''
+      if (model !== '') out['model'] = model
+    }
+  }
   if (groups.length === 0) return out
   const address = addressClaimOf(spec)
   const active: Record<string, string | undefined> = {}
@@ -1652,14 +1753,6 @@ export function seedAxisValues(spec: FormSpecDoc, held: SpecValues): SpecValues 
     // the form rendering never changes (an axisKey the values lack
     // reads as '' on the form side; the seed is params).
     if (write !== "") out[axisKey(g)] = write
-  }
-  const heldModel = held['model']
-  if (typeof heldModel !== 'string' || heldModel === '') {
-    // THE MODEL ARM IS THE FAMILY (stroke 21): the seeded row's
-    // re-point (qwen-img-edit-2511-lightning4) is the server's
-    // compose stamp — the user plane never holds a route
-    const model = typeof spec.model === 'string' && spec.model !== '' ? spec.model : ''
-    if (model !== '') out['model'] = model
   }
   return out
 }
@@ -1828,12 +1921,27 @@ export function seedRecipeStamp(spec: FormSpecDoc, seeds: SpecValues): SpecValue
  *  stamp is the user's word and stands (deepEqualJson, the F3 fix —
  *  `===` never matched an array bag). NEVER a persisted `recipe`
  *  key (the dead card-recipe layer; the compose door refuses the
- *  undeclared param). PURE — the caller owns the write. */
-export function recipeDeparturePatch(row: FormVariantRow, held?: SpecValues): SpecValues {
+ *  undeclared param). PURE — the caller owns the write.
+ *
+ *  THE CLAMPED-STAMP LAW (2026-11-03, the flux-klein blank burn): a
+ *  recipe picked under a clamping envelope writes the RECONCILED
+ *  stamp (a recipe's 50 composes to 8 under a 4-step distill — the
+ *  override reconcile's own law), so the departure compares held
+ *  against the stamp the pick WROTE — the same derivation the pill
+ *  lights by (activeRecipeId: "the stamp the pill DERIVES must be
+ *  the stamp the pick WRITES") — never the row's RAW defaults. The
+ *  raw comparison made a clamped pick UNDEPARTABLE: held carried
+ *  the clamp (8/2), the raw stamps (50/4) never matched, the blank
+ *  wrote an empty frame, and the clamped values stayed stated
+ *  forever with no error anywhere. A key whose derived stamp the
+ *  reconcile dropped (nothing was written) has nothing to depart. */
+export function recipeDeparturePatch(spec: FormSpecDoc, row: FormVariantRow, held?: SpecValues): SpecValues {
+  const written = axisPickPatch(spec, row, held)
   const patch: SpecValues = {}
-  for (const [k, v] of Object.entries(row.defaults)) {
+  for (const k of Object.keys(row.defaults)) {
     if (k === 'model') continue
-    if (held !== undefined && deepEqualJson(held[k], v)) patch[k] = null
+    if (!(k in written)) continue
+    if (held !== undefined && deepEqualJson(held[k], written[k])) patch[k] = null
   }
   return patch
 }
@@ -2006,7 +2114,7 @@ export function resolvedLaneCoordinate(
 /** THE MIRROR'S RESOLVED SURFACE (the tts lockout cure, 2026-11-10):
  *  the doc's lane surface — family base ∪ variant additions ∪ cell
  *  additions — the SAME merged surface the estate write door judges
- *  (cardsRegistry admitFamily's laneSurfaceOf call) and the form's
+ *  (cardsRegistry admitStageRelations' laneSurfaceOf call) and the form's
  *  own visibility read (fieldOnLane). The mirror judged the FAMILY
  *  BASE projection alone (the served `params`) and refused the
  *  variant's own persona picker ('voice') on the 0.6B customvoice
@@ -2186,16 +2294,16 @@ export function composeValidate(
       }
     }
   }
-  // THE FAMILY CLAUSE (the ERROR g/h cure, 2026-11-08): a family-
-  // conditional card (familyLaw served off the DECL) derives the
-  // doc's lane from the doc's OWN shape and refuses the keys that
-  // lane refuses — the gesture gate speaks the walk's refusal BEFORE
-  // the wire (the estate's admitFamily/walk judge the same explicit
-  // presence at the write/run doors; where the mirror clause above
-  // names keys NO surface owns, this one names keys the DERIVED
-  // lane refuses). Presence grammar mirrors the walk: a stated key
-  // counts, null/absent never does, strings when non-empty after
-  // trim, arrays when non-empty (the ref surface's wire spelling).
+  // THE FAMILY CLAUSE (the ERROR g/h cure, 2026-11-08; INERT for
+  // h3 since 2026-11-15): a family whose DECL declares deadKeys
+  // derives the doc's lane from the doc's OWN shape and refuses the
+  // keys that lane refuses. The lane-dead-letter retirement emptied
+  // h3's deadKeys — the t4r arm mounts the post chain, so every
+  // finish key fires — and the estate's family-law judge now BANS a
+  // non-empty deadKeys at boot (cure the renderer, or gate the shape
+  // with a repair-teaching law: the FILM_ONLY precedent, whose row
+  // gate withholds the pill and whose walk refuses the key). The
+  // clause stays as the generic mirror for a lawful future family.
   if (spec.familyLaw !== undefined) {
     const lane = deriveFamilyLane(spec.familyLaw, doc)
     const dead = spec.familyLaw.deadKeys[lane]

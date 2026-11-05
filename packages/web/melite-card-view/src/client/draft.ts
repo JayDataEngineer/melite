@@ -857,6 +857,37 @@ export async function patchStageParams(
   return attempt
 }
 
+/** THE CHAINED DISCRETE WRITE (the 2026-11-03 rapid-pick burn):
+ *  an atomic pick's whole-frame patch through the stage's serialized
+ *  send chain, riding confirmedRev at SEND time — never the
+ *  render-time rev the drill held when the gesture fired. THE BURN:
+ *  the sweep's Variant axis picked turbo → raw → kroma → kroma-base
+ *  with no await between the gestures (the face updates
+ *  optimistically per click); the four direct writes shared one
+ *  render-time rev, every writer collided, and a rebase retry of an
+ *  EARLIER pick landed AFTER the last pick — the face showed Kroma
+ *  Base while the bench held raw, with no error anywhere (the retry
+ *  SUCCEEDED, just late with a stale value). The press would have
+ *  composed raw under a Kroma Base face, and the run gate's
+ *  failedKeys were empty — nothing left to voice it. Through this
+ *  chain the writes land in CLICK order (the link order IS the call
+ *  order), each riding the rev the previous landing answered — the
+ *  same serialization + rev-currency law the trailing seats already
+ *  ride (enqueueSend / scheduleStagePatch's send). The whole-frame
+ *  atomicity the direct door was chosen for is kept: one patch, one
+ *  CAS write, every key ledgered — only the CONCURRENCY is gone.
+ *  UI-authored discrete writes ride here; the flush/force/schedule
+ *  seats keep calling patchStageParams directly (they already ride
+ *  the chain — nesting a chain inside its own link deadlocks). */
+export function patchStageParamsChained(
+  draftId: DraftId, stageId: string, patch: Record<string, unknown>,
+): Promise<void> {
+  return enqueueSend(draftId, stageId, () => {
+    const confirmed = writeRow(draftId, stageId).confirmedRev
+    return patchStageParams(draftId, stageId, patch, confirmed ?? undefined)
+  })
+}
+
 /** Report a stage's RUN OUTCOME onto the bench row — the same
  *  shared-state door (runStatus + result keys of the fixed patch
  *  set). This is the chain's attribution half: the estate names

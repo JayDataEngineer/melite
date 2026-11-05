@@ -13,7 +13,7 @@
 // ghost. One truth, every seat: a key the DECL declares studio-owned
 // never drops at reopen.
 import { describe, expect, test } from 'vitest'
-import { composeValidate, dropStaleReopenCarry, type FormSpecDoc, type SpecValues } from '../src/spec.ts'
+import { composeValidate, dropStaleReopenCarry, studioClaimsRow, type FormSpecDoc, type SpecValues } from '../src/spec.ts'
 import type { LaneContractRow } from '@melite/contracts/laneRelations'
 
 /** The burn's shape: an h3-like card — lanes family base [prompt],
@@ -96,5 +96,21 @@ describe('the reopen carry drop sanctions the studio-owned document plane (the D
     ).toEqual([])
     // and the drop nulls NOTHING the mirror sanctions
     expect(dropStaleReopenCarry(spec, held)).toEqual({})
+  })
+
+  test('the row-claim law: a studio claims only rows carrying its owned keys (the 15th report, symptom 2)', () => {
+    // audit 2026-10-31-modpress-row-face — the h3 DECL's studio.writes
+    // roster (calls, keyframes, fps, …) vs the agent-pressed mod bags
+    // (refine, upscale, extend, reshoot — never studio-owned)
+    const spec = studioSpec()
+    expect(studioClaimsRow(spec, { calls: [], refine: [{ source_clip: 'c' }] }), 'a mixed row is the studio\'s document').toBe(true)
+    expect(studioClaimsRow(spec, { refine: [{ source_clip: 'c', denoise: 0.32 }] }), 'a mod-only row is NOT the studio\'s document — the generic form serves').toBe(false)
+    expect(studioClaimsRow(spec, {}), 'an empty row is unclaimed (nothing owned is stated)').toBe(false)
+    expect(studioClaimsRow(spec, undefined), 'an absent-params row is unclaimed').toBe(false)
+    // the claim-everything default: a studio DECL with no writes list
+    // owns everything — the card's only author, and the fallback
+    // extermination wall's force (arm A) stands
+    const writesless = { ...spec, studio_writes: undefined } as FormSpecDoc
+    expect(studioClaimsRow(writesless, { refine: [] })).toBe(true)
   })
 })

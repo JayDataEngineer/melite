@@ -37,6 +37,14 @@ export const chromeCopy = {
     draftFailed: 'draft failed',
     /** Loading face while the draft id is still composing. */
     composing: 'composing…',
+    /** Run-rooted face (flows-are-compositions law): the terminal note a
+     *  finished flow press names — outputs live in the shell's Media
+     *  page; the card carries no draft to preview against. */
+    runFaceDone: 'run finished — outputs in the media bar',
+    /** Run-rooted face: the run stream died before any frame arrived
+     *  (the last-frame-keeps law covers every later death — this is
+     *  the no-frame-ever voice). */
+    runFaceUnreachable: 'run stream unreachable',
     /** Header badge when the call's args body is corrupt (never header-less). */
     argsUnparseable: 'args unparseable — corrupted call record',
     /** Retry affordance suffix after a load error. */

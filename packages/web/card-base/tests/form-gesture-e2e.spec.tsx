@@ -93,7 +93,7 @@ beforeAll(async () => {
   await ctx.plugin(Storage as never, undefined as never)
   await ctx.plugin({ name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as never, { root: join(root, 'storage') } as never)
   await ctx.plugin({ name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as never, { backend: 'json' } as never)
-  new DraftsDomainSeatService(ctx, { storageRoot: join(root, 'storage') })
+  new DraftsDomainSeatService(ctx)
   installBenchChangeSeam(ctx)
   new FlowsSeatService(ctx)
   ;(ctx as unknown as { queue: unknown }).queue = { stateRoot: mkdtempSync(join(tmpdir(), 'form-gesture-q-')), stateRoots: [] }

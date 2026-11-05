@@ -10,7 +10,7 @@ import { createElement as h } from 'react'
 import { afterEach, expect, test, vi } from 'vitest'
 import type { ModifierKind } from '../src/spec.ts'
 
-import { ModifiersSection, modTileIds } from '../src/mods.tsx'
+import { ModifiersSection, modTileIds, modTileSeat, resolveSeatEntry } from '../src/mods.tsx'
 
 const MOD_DRAG_MIME = 'application/x-melite-mod'
 
@@ -246,6 +246,28 @@ test('THE TILES: junk bags never tile (a string bag, a mixed bag with strays)', 
   expect(document.querySelectorAll('[data-mod-tile]').length).toBe(1)
 })
 
+const PERSONAK = {
+  kind: 'persona', label: 'Voice', param_key: 'personas', cardinality: 'multi',
+  fields: [
+    { name: 'persona', type: 'file', label: 'Persona', options: [{ value: 'kuno', label: 'Kunoichi v3' }] },
+    { name: 'bare', type: 'file', label: 'Bare' },
+  ],
+} as unknown as ModifierKind
+
+test('THE TILES: a file pick names its selection — the served row, else its own staged value (F54)', () => {
+  openSection({
+    kinds: [PERSONAK],
+    values: { personas: [{ persona: 'kuno' }, { bare: 'kunoichi_v3' }, { bare: '' }] },
+  })
+  const ids = modTileIds(PERSONAK, [{ persona: 'kuno' }, { bare: 'kunoichi_v3' }, { bare: '' }])
+  // a file field WITH served rows names through the row (never the raw id)
+  expect(within(tile(ids[0]!)).getByText('Kunoichi v3')).not.toBeNull()
+  // an option-less file pick names its OWN value — the staged persona is the tile's identity
+  expect(within(tile(ids[1]!)).getByText('kunoichi_v3')).not.toBeNull()
+  // an empty pick falls to the kind label (nothing staged, nothing named)
+  expect(within(tile(ids[2]!)).getByText('Voice')).not.toBeNull()
+})
+
 test('THE STACK LIMIT: a full stack refuses LOUD at the section (never a silent over-add)', () => {
   const capped = { ...LORA, max_stack: 1 } as unknown as ModifierKind
   openSection({ kinds: [capped], values: { loras: [{ id: 'detail' }] } })
@@ -472,3 +494,57 @@ test('THE GHOST DEFAULT: a stated bag wins over the ghost (never two chips for o
   openSection({ kinds: [GHOST], values: { loras: [{ id: 'h3_lightx2v_turbo', strength: 0.6, steps: 8 }] } })
   expect(document.querySelectorAll('[data-mod-tile]').length).toBe(1)
 })
+
+// ── THE COVERAGE ARMS (2026-11-14 debt battery): the read-side
+// guards get their own firing arms — each states the face the guard
+// owns, never a synthetic poke at private state. ──
+
+const FLAT_BARE = {
+  kind: 'bare', label: 'Bare', param_key: 'bare', cardinality: 'multi', flat: true,
+} as unknown as ModifierKind
+
+test('THE FLAT READ: a flat kind with no declared fields seats no entry — nothing stated, nothing rendered', () => {
+  openSection({ kinds: [FLAT_BARE], values: {} })
+  expect(document.querySelector('[data-mod-tile]')).toBeNull()
+  expect(document.querySelector('[data-subcard-add="mod"]')).not.toBeNull()
+})
+
+const SCALAR_BARE = {
+  kind: 'bare', label: 'Bare', param_key: 'bare', cardinality: 'scalar',
+} as unknown as ModifierKind
+
+test('THE SCALAR ROW FILTER: a scalar kind without kindFields seats no rows beside one that has them', () => {
+  openSection({ kinds: [SCALAR_BARE, FLOOR], values: {} })
+  expect(screen.getByLabelText('Floor')).not.toBeNull()
+  expect(screen.queryByLabelText('Bare')).toBeNull()
+  expect(document.querySelector('[data-mod-tile]')).toBeNull()
+})
+
+test('THE SEAT READ: the ordinal walks past its twins to its own row; a foreign id and an exhausted ordinal refuse', () => {
+  const entries = [{ strength: 0.5 }, { strength: 0.5 }]
+  const ids = modTileIds(CONTROL, entries)
+  expect(modTileSeat(entries, ids[1]!)).toBe(1)
+  expect(modTileSeat(entries, 'controlnets')).toBe(-1)
+  expect(modTileSeat(entries, ids[0]!.replace(/\.0$/, '.9'))).toBe(-1)
+})
+
+test('THE SEAT RESOLVER: an edit seat with only a reference the bag no longer holds resolves null — the caller refuses', () => {
+  const foreign = { strength: 0.9 }
+  expect(resolveSeatEntry([{ strength: 0.5 }], { mode: 'edit', kind: CONTROL, index: 0, ref: foreign })).toBeNull()
+})
+
+test('THE LEAF KIND ROWS: a leaf-bearing kind\'s own scalars ride its leaf — an unnamed field shows its name', () => {
+  const { onEdit } = openSection({ kinds: [KIND_SCALARS], values: {} })
+  fireEvent.click(document.querySelector('[data-subcard-add="mod"]') as HTMLElement)
+  fireEvent.click(screen.getByRole('menuitem', { name: 'Groom' }))
+  expect(document.querySelector('[data-leaf-kind-scalars="groom"]')).not.toBeNull()
+  expect(screen.getByText('groom_floor')).not.toBeNull()
+  fireEvent.change(screen.getByLabelText('groom_floor'), { target: { value: '0.3' } })
+  expect(onEdit).toHaveBeenCalledWith('groom_floor', 0.3)
+})
+
+const KIND_SCALARS = {
+  kind: 'groom', label: 'Groom', param_key: 'grooms', cardinality: 'multi',
+  kindFields: [{ name: 'groom_floor', type: 'number', default: 0.5 }],
+  fields: [{ name: 'strength', type: 'number', label: 'Strength', default: 0.8 }],
+} as unknown as ModifierKind

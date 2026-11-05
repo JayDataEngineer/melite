@@ -10,6 +10,7 @@ import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import { draftIdOf } from '@melite/contracts/benchStage'
 
 import {
+  fetchChainRunCandidates,
   fetchLatestRunForDraft,
   fetchListRow,
   fetchRunStageUrl,
@@ -552,4 +553,124 @@ test('THE MID-POLL ABORT: a live-but-url-less run settles on abort', async () =>
   await pollRunStageUrl('r1', 's_0', { onUrl: (u) => { fired.push(u) }, intervalMs: 5 }, ctl.signal)
   expect(fired).toEqual([])
   expect(rec.statusCalls.length >= 1).toBe(true)
+})
+
+// ── fetchChainRunCandidates ────────────────────────────────
+
+/** A chain-stamped status doc (the candidate's whole truth: a
+ *  completed stage whose outputs carry the chain_store seat). */
+const stamped = (store: Record<string, unknown>, over: Record<string, unknown> = {}): Record<string, unknown> =>
+  statusDoc({
+    stages: [stage({ result_outputs: { url: 'est://x/o.mp4', chain_store: store } })],
+    ...over,
+  })
+
+const goodStore = (over: Record<string, unknown> = {}): Record<string, unknown> => ({
+  store_id: 'est://bench/chain/s.json',
+  run_name: 'swap_9',
+  scenes: 3,
+  ...over,
+})
+
+test('THE CHAIN STAMP: malformed rows skip, the coherent stamp wins — newest first, variants resolved', async () => {
+  bindRuns({
+    list: async () => listValue([
+      { run_id: 'r_nostages', created_at: 3 },
+      { run_id: 'r_badstage', created_at: 4 },
+      { run_id: 'r_noro', created_at: 5 },
+      { run_id: 'r_nocs', created_at: 6 },
+      { run_id: 'r_badname', created_at: 7 },
+      { run_id: 'r_emptyname', created_at: 8 },
+      { run_id: 'r_badscenes', created_at: 30 },
+      { run_id: 'r_flow', created_at: 20 },
+      { run_id: 'r_run', created_at: 10 },
+      { run_id: 'r_var', created_at: 40 },
+      { run_id: 'r_nocreated' },
+    ]),
+    status: async (runId: string) => {
+      if (runId === 'r_nostages') return ok(statusDoc({ stages: undefined }))
+      if (runId === 'r_badstage') return ok(statusDoc({ stages: ['oops'] }))
+      if (runId === 'r_noro') return ok(statusDoc({ stages: [stage({})] }))
+      if (runId === 'r_nocs') return ok(statusDoc({ stages: [stage({ result_outputs: { url: 'x' } })] }))
+      if (runId === 'r_badname') return ok(stamped({ store_id: 's', run_name: 7 }))
+      if (runId === 'r_emptyname') return ok(stamped({ store_id: 's', run_name: '' }))
+      if (runId === 'r_badscenes') return ok(stamped(goodStore({ scenes: Number.NaN })))
+      if (runId === 'r_flow') return ok(stamped(goodStore(), { flow: 'swap' }))
+      if (runId === 'r_run') return ok(stamped(goodStore()))
+      if (runId === 'r_var') return ok(stamped(goodStore(), { variant: 'chain' }))
+      return ok(stamped(goodStore()))
+    },
+  })
+  const out = await fetchChainRunCandidates()
+  // the skips (no stages / non-record stage / no outputs / no
+  // store / non-string name / empty name) never surface —
+  // the non-finite scenes count rides 0, never NaN
+  expect(out.map((c) => c.runId)).toEqual(['r_var', 'r_badscenes', 'r_flow', 'r_run', 'r_nocreated'])
+  expect(out).toEqual([
+    { runId: 'r_var', store: 'swap_9', variant: 'chain', scenes: 3, created: 40 },
+    { runId: 'r_badscenes', store: 'swap_9', variant: 'run', scenes: 0, created: 30 },
+    { runId: 'r_flow', store: 'swap_9', variant: 'swap', scenes: 3, created: 20 },
+    { runId: 'r_run', store: 'swap_9', variant: 'run', scenes: 3, created: 10 },
+    { runId: 'r_nocreated', store: 'swap_9', variant: 'run', scenes: 3, created: 0 },
+  ])
+})
+
+test('THE CHAIN IDS: legacy rows ride `id`, id-less rows skip before any read', async () => {
+  const rec = bindRuns({
+    list: async () => listValue([
+      { id: 'legacy-1', created_at: 5 },
+      { run_id: '', created_at: 6 },
+      { run_id: 9, created_at: 7 },
+      { run_id: 'good', created_at: 8 },
+    ]),
+    status: async (runId: string) => ok(stamped(goodStore())),
+  })
+  const out = await fetchChainRunCandidates()
+  expect(out.map((c) => c.runId)).toEqual(['good', 'legacy-1'])
+  // the skipped rows never cost a status read
+  expect(rec.statusCalls.map((c) => c.runId).sort()).toEqual(['good', 'legacy-1'])
+})
+
+test('THE CHAIN REFUSAL: a refused row skips, the gateway and the wire rethrow', async () => {
+  bindRuns({
+    list: async () => listValue([{ run_id: 'r_gone', created_at: 1 }, { run_id: 'r_good', created_at: 2 }]),
+    status: async (runId: string) => {
+      if (runId === 'r_gone') return codedRefusal('unknown run', 'runs/unknown-run')
+      return ok(stamped(goodStore()))
+    },
+  })
+  const out = await fetchChainRunCandidates()
+  expect(out.map((c) => c.runId)).toEqual(['r_good'])
+
+  bindRuns({
+    list: async () => listValue([{ run_id: 'r_x' }]),
+    status: async () => codedRefusal('busy', 'gateway/internal'),
+  })
+  await expect(fetchChainRunCandidates()).rejects.toThrow()
+  bindRuns({
+    list: async () => listValue([{ run_id: 'r_x' }]),
+    status: async () => codedRefusal('gone', 'gateway/cancelled'),
+  })
+  await expect(fetchChainRunCandidates()).rejects.toThrow()
+  bindRuns({ list: async () => listValue([{ run_id: 'r_x' }]), status: transportDown })
+  await expect(fetchChainRunCandidates()).rejects.toThrow('wire down')
+})
+
+test('THE CHAIN NULL DOC: a null status value skips (never a candidate)', async () => {
+  bindRuns({
+    list: async () => listValue([{ run_id: 'r_null', created_at: 1 }, { run_id: 'r_good', created_at: 2 }]),
+    status: async (runId: string) => (runId === 'r_null' ? ok(null) : ok(stamped(goodStore()))),
+  })
+  const out = await fetchChainRunCandidates()
+  expect(out.map((c) => c.runId)).toEqual(['r_good'])
+})
+
+test('THE STAGE STAMP: a named stage threads bench_stage_id; unnamed presses stamp none', async () => {
+  const rec = bindRuns({})
+  await startCardRun({ model: 'm', params: {}, draftId: draftIdOf('d'), stageId: 's_1' })
+  expect(rec.startDocs[0]).toMatchObject({ bench_stage_id: 's_1' })
+  await startCardRun({ model: 'm', params: {}, draftId: draftIdOf('d') })
+  expect(rec.startDocs[1]).not.toHaveProperty('bench_stage_id')
+  await startCardRun({ model: 'm', params: {}, draftId: draftIdOf('d'), stageId: '' })
+  expect(rec.startDocs[2]).not.toHaveProperty('bench_stage_id')
 })

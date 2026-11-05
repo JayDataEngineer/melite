@@ -109,4 +109,65 @@ describe("THE EDIT LANE'S RECIPE PILL (SD-8/G4): the anonymous post-pick doc is 
       "G4 (pick, face): the pick WROTE the stamp the derivation reads yet the face journals the placeholder — the pill state is unshowable after a landed pick")
       .toContain("Remove Background")
   })
+
+  // THE ROW-TO-ROW SWITCH (2026-11-15, the sweep's live catch on
+  // this exact lane: the card landed holding Upstream Solvers'
+  // solver pair — the D12-seeded doc honestly equals the row's
+  // stamp — and picking Remove Background wrote only the arrival's
+  // prompt: the solver pair stayed stated, upstream still matched
+  // its stamp, and the trigger's face carried the OLD row for
+  // every poll — "a pick that does not land is a silent drop".
+  // The switch is ONE atomic write: the active row's departure +
+  // the arrival's stamp (the same clamped-stamp departure the
+  // blank rides).
+  it("THE SWITCH: from a held Upstream Solvers doc, picking Remove Background departs the solver pair and the face carries the ARRIVAL row", async () => {
+    serveFormSpec(served); bindDeadEstateRemote()
+    const seat = mountLiveLayer<Record<string, unknown>>({
+      base: {},
+      // THE LANDED DOC (the burn's pre-state): upstream-solvers'
+      // full reconciled stamp — the wire_defaults solver pair PLUS
+      // the married lane numbers the pick derivation writes beside
+      // them (the G4 postPick shape: prompt+steps+cfg), so the
+      // derivation journals the row exactly as the lane's D12-seeded
+      // card did
+      seed: { sampler: "euler", scheduler: "simple", steps: 8, cfg: 1 },
+      renderRail: (s) => (
+        <CardForm
+          spec={served}
+          user={s.layerA as never as SpecValues}
+          onSet={(name, v) => s.setLayerA((d: Record<string, unknown>) => ({ ...d, [name]: v }))}
+          onPick={(patch) => s.setLayerA((d: Record<string, unknown>) => {
+            const next = { ...d }
+            for (const [k, v] of Object.entries(patch)) {
+              if (v === null) { delete next[k]; continue }
+              next[k] = v
+            }
+            return next
+          })}
+          onUnset={(name) => s.setLayerA((d: Record<string, unknown>) => {
+            const { [name]: _drop, ...rest } = d
+            return rest
+          })}
+        />
+      ),
+    })
+    // THE HONEST PRE-STATE: the seeded doc equals upstream's stamp —
+    // the face journals the row the doc holds.
+    expect(await recipeFace(), "SWITCH (pre): the seeded solver-pair doc does not journal Upstream Solvers — the pre-state drifted")
+      .toContain("Upstream Solvers")
+    // THE REAL GESTURE, the exact sweep click: menu row 1.
+    await pickRecipe(/Remove Background/i)
+    const doc = seat.layer()
+    expect(doc["prompt"],
+      "SWITCH (arrival): the arrival's stamp never landed beside the departure")
+      .toBe(REMOVE_BG_PROMPT)
+    expect(doc["sampler"] ?? doc["scheduler"],
+      "SWITCH (departure): the active row's solver pair stayed stated after the switch — the pill derives the OLD row and the pick is a silent drop")
+      .toBeUndefined()
+    const face = await recipeFace()
+    releaseRailSeat()
+    expect(face,
+      "SWITCH (face): the face carries the departed row after a landed pick — the sweep's exact burn")
+      .toContain("Remove Background")
+  })
 })

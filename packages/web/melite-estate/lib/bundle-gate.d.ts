@@ -16,7 +16,7 @@ export interface RequiredBundle {
  * tool surface — @melite/harness-tools contributes the melite-tools
  * row (agent tools) and the melite-tools-doors row (the /v1 doors);
  * either entry proves the bundle composed (server profiles disable
- * the doors row by id, headless lanes never mount it). A bundle is
+ * the doors row by id; agent-server lanes never mount it). A bundle is
  * missing only when NONE of its modules has a loader entry.
  * @returns the required bundle table.
  */

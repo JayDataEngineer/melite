@@ -29,7 +29,7 @@
  */
 import { createElement as h, useId, useState } from 'react'
 import { SegmentedTabs, type SegmentedTab as segTab } from '@deepseek-ai/dsh-client-ui-primitives'
-import { type BboxFaceComponent, ModifiersSection, type PaintFaceComponent } from './mods.tsx'
+import { type BboxFaceComponent, ModifiersSection, type OrbitFaceComponent, type PaintFaceComponent } from './mods.tsx'
 import { type FormSpecDoc, type FormVariantRow, type SpecField, type SpecValues, coerceFieldEdit, composeCandidateDoc, entryFieldsOfEnvelope, fieldOnLane, fieldVisible, fieldsOf, fieldsOfEnvelope, groupFields, kindScalarFieldsOfEnvelope, composeValidate, laneViolations, modOwnedFields, offeredVariantOf, resolveFamilyKey, resolveValue, titleCaseId } from './spec.ts'
 import { isUnstatedRequiredVoice } from '@melite/contracts/laneRelations'
 import css from './card.module.css'
@@ -58,7 +58,7 @@ export { PackPrompt, ModelAxes, RecipePills } from './axes.tsx'
  *  over the USER layer (the settings law: presence IS the override
  *  mark, the reset chip removes it). The constructor OWNS the square
  *  provider (no call site wires it, no call site can forget it). */
-export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference, omitInputRail, omitFields, omitRecipeRow, mutedViolations }: {
+export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, orbitFace, paintReference, omitInputRail, omitFields, omitRecipeRow, mutedViolations }: {
   /** the WHOLE emission (the schema envelope + model/variants) —
    *  REQUIRED now: the fields, the axes, and the mod param rows all
    *  derive from THIS (useFormSpec fetches it). */
@@ -130,6 +130,11 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
   /** THE BBOX FACE (stroke 78): the host's selection modal for
    *  bbox-canvas kinds. Absent host = the four inputs hold. */
   bboxFace?: BboxFaceComponent
+  /** THE ORBIT FACE (the reshoot orb, 2026-11-15): the host's
+   *  camera-pose orb for orbit-canvas kinds. Absent host = the
+   *  three number dials hold. Threaded verbatim into the mod
+   *  section. */
+  orbitFace?: OrbitFaceComponent
   /** the card-level image field feeding the brush reference
    *  (mask: 'input_image'). Absent = no verb. */
   paintReference?: string
@@ -666,8 +671,13 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
           ...(onPatch !== undefined ? { onPatch } : {}),
           ...(paintFace !== undefined ? { paintFace } : {}),
           ...(bboxFace !== undefined ? { bboxFace } : {}),
+          ...(orbitFace !== undefined ? { orbitFace } : {}),
           ...(paintReference !== undefined ? { paintReference } : {}),
           ...(wire?.loadMedia !== undefined ? { loadMedia: wire.loadMedia } : {}),
+          // THE CHAIN-RUN PICKER LAW (the upscale leaf): the live
+          // chain-store runs ride the SAME wire — one injection, every
+          // seat (a leaf without the lane degrades to the text input).
+          ...(wire?.loadChainRuns !== undefined ? { loadChainRuns: wire.loadChainRuns } : {}),
           // THE REGION-MASK PICKER LAW (E2-11a): the mod leaf's
           // From-flow picker rides the SAME rows the card face's
           // squares ride — one wire, every seat (a leaf that forgot

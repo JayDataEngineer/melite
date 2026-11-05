@@ -448,16 +448,29 @@ describe("the group compound — members, ungroup, and its honesty", () => {
     );
     const user = userEvent.setup();
     await user.click(firstTile());
-    fireEvent.click(await screen.findByText("Ungroup", {}, { timeout: 4000 }));
+    // SETTLE BARRIER (the roaming-dom-flake cure trial, 2026-11-15):
+    // the class's captured signature — click dispatched, verb fired, a
+    // cascade passive effect interleaved, refusal rethrown, and the
+    // catch's setState never committed (twice captured verbatim:
+    // dev_docs/audits/journey/roaming-dom-flake-2026-11-15.md). The
+    // barrier drains the mount cascade's pending scheduler work BEFORE
+    // the gesture so the reply's update schedules against a quiet
+    // root. A/B trial: this arm struck twice unpatched.
+    await new Promise((r) => setTimeout(r, 50));
+    fireEvent.click(await screen.findByText("Ungroup", {}, { timeout: LOADED_WAIT() * 2 / 15 }));
     // The refusal rides the client's async failure path and renders on a
     // macrotask; the budget must exceed a LOADED event loop (the sibling
     // drill2 case failed once in a full-suite run with a 4s wait inside
     // a 5s test; this arm then measured 15.5s in a full pre-push run —
     // fixed budgets sized for an idle box starve under the whole dom
-    // suite's workers). 25s stays inside the 30s test budget.
+    // suite's workers). The find sits at LOADED_WAIT()*5/6 (25s scoped /
+    // 50s loaded) and the TEST budget rides LOADED_WAIT() itself (30s
+    // scoped / 60s loaded): a fixed 30_000 test budget once sat UNDER
+    // the loaded 50s find and the test timeout killed the arm mid-wait
+    // (the 2026-11-02 gate, 'Test timed out in 30000ms').
     expect(await screen.findByText("stale rev", {}, { timeout: LOADED_WAIT() * 5 / 6 })).toBeTruthy();
     expect(screen.getByText("Ungroup")).toBeTruthy();
-  }, 30_000);
+  }, LOADED_WAIT());
 });
 
 describe("the slot-claimed drill — remove and bindRun ride the owner", () => {
@@ -499,8 +512,12 @@ describe("the slot-claimed drill — remove and bindRun ride the owner", () => {
     );
     const user = userEvent.setup();
     await user.click(firstTile());
-    fireEvent.click(await screen.findByTestId("slot-remove", {}, { timeout: 4000 }));
-    expect(await screen.findByText("ghost rev", {}, { timeout: 4000 })).toBeTruthy();
+    // LOADED_WAIT-keyed (2026-11-02): the fixed 4s finds starved under
+    // the loaded coverage pool (the refusal toast paints after the
+    // mock estate door resolves — scheduler starvation, never a
+    // slower claim; the arm stayed green on every scoped run).
+    fireEvent.click(await screen.findByTestId("slot-remove", {}, { timeout: LOADED_WAIT() * 2 / 15 }));
+    expect(await screen.findByText("ghost rev", {}, { timeout: LOADED_WAIT() * 2 / 15 })).toBeTruthy();
     expect(document.querySelector('[data-testid="stage-preview-seat"]')).not.toBeNull();
   });
 

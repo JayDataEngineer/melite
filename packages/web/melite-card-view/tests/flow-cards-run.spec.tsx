@@ -119,6 +119,45 @@ describe("the waiting faces — composing, failed, legacy", () => {
   });
 });
 
+describe("the run-rooted face (flows-are-compositions, 2026-11-14) — a draft-less flow press mounts its run", () => {
+  // THE ANTI-GHOST LAW: the {flow} press mints no draft — the run row
+  // is the landing, and the chat tile mounts THAT (never the legacy
+  // "earlier draft" note, which would lie about a live press).
+  test("a settled meta with run_id and NO draft renders the run face: flow header, stage rows, terminal note", async () => {
+    const fake = fakeRunStream();
+    stubDraftDoc({ openRunStream: fake.open });
+    bindRunFramesRemote(fake.remote);
+    const { container } = render(h(FlowCards, {
+      block: settled({
+        call: { name: "melite_flow", argsRaw: JSON.stringify({ flow: "craft-loop" }) },
+        meta: { mode: "flow", target: "craft-loop", run_id: "r_flow", status: "queued" },
+      }),
+    }));
+    // the header names the flow (the args' own name, not the fallback)
+    expect(await screen.findByText("craft-loop", {}, { timeout: 4000 })).toBeTruthy();
+    const card = container.querySelector('[data-run-id="r_flow"]');
+    expect(card).toBeTruthy();
+    expect(container.querySelector('[data-legacy="1"]')).toBeNull();
+    // movement: the frame's stage rows land on the face
+    fake.push("r_flow", { run_id: "r_flow", status: "running", stages: [{ id: "st-0", status: "running" }] });
+    await waitFor(() => {
+      expect(container.querySelector('[data-run-stage="st-0"]')).toBeTruthy();
+    }, { timeout: 4000 });
+    // terminal: the done note names where the outputs live
+    fake.push("r_flow", { run_id: "r_flow", status: "completed", stages: [{ id: "st-0", status: "done", url: "a.png" }] });
+    expect(await screen.findByText("run finished — outputs in the media bar", {}, { timeout: 4000 })).toBeTruthy();
+  });
+
+  test("a settled meta with NEITHER handle keeps the legacy note (the exempt arm is run-only)", async () => {
+    stubDraftDoc();
+    const { container } = render(h(FlowCards, {
+      block: settled({ meta: null, content: [{ text: "old session" }] }),
+    }));
+    expect(await screen.findByText("cards · earlier draft", {}, { timeout: 4000 })).toBeTruthy();
+    expect(container.querySelector('[data-run-id]')).toBeNull();
+  });
+});
+
 describe("the row faces — status precedence, service, prompt", () => {
   test("every status distills onto the row (the dot map's domain)", async () => {
     stubDraftDoc();

@@ -249,14 +249,15 @@ describe('THE S7 CLASS-4 WALL · card-base · TIP GRAMMAR', () => {
     // THE REST-CHANNEL CLASS (component seats — the title lands native
     // through a catalog atom's rest spread, the S6a channel; receipts
     // as above: labeled verb hints + embedded field faces):
-    //  - atoms.tsx: the SpecMenuSelect trigger passthrough (:114, the
-    //    landed S7h "tooltip on the trigger" law) + the two Input
-    //    faces (:510,:519).
-    //  - mods.tsx:865 the leaf's range Input.
+    //  - mods.tsx:865 the leaf's range Input + the chain-run picker's
+    //    degrade Input (the embedded field face — the field's own
+    //    one-line tooltip is the hover, 2026-11-01; the picker's menu
+    //    trigger rides the S7h spread channel, uncounted here like
+    //    atoms.tsx:114's own spread).
     //  - preview.tsx:170 the StaleBadge capsule (the S7j Pill
     //    conversion kept the hover hint — TrajectoryToolbar class).
     expect(seatsIn(seats, 'atoms.tsx', 'component'), 'atoms.tsx rest channel').toBe(3)
-    expect(seatsIn(seats, 'mods.tsx', 'component'), 'mods.tsx rest channel').toBe(1)
+    expect(seatsIn(seats, 'mods.tsx', 'component'), 'mods.tsx rest channel').toBe(2)
     expect(seatsIn(seats, 'preview.tsx', 'component'), 'preview.tsx rest channel').toBe(1)
     expect(seats.filter((s) => s.kind === 'component' && !['atoms.tsx', 'mods.tsx', 'preview.tsx'].includes(s.rel)),
       'no rest-channel title seat outside the argued files').toEqual([])

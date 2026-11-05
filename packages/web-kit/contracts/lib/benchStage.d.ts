@@ -122,6 +122,33 @@ export declare const STAGE_PATCH_KEYS: readonly ["params", "result", "runStatus"
 export type StagePatchKey = (typeof STAGE_PATCH_KEYS)[number];
 export declare const WIRE_STAGE_KEYS: readonly string[];
 /**
+ * THE LIVE-ROWS FILTER (GAPS-9, the archived-compile burn: an
+ * archived stale draft's params blocked every future bench-wide
+ * compile). F11 rests archived rows on the RUN faces — the COMPILE
+ * faces rest them too. projectStages strips the archived FLAG (it
+ * is not a wire key) but keeps the ROW, so a spent row's stale
+ * params judged bench-wide. Compile callers filter here FIRST:
+ * only LIVE rows judge. (Read/spell/floor/rewire keep the full
+ * view — they report or touch addressed rows, never judge.)
+ *
+ * Moved to the contract (2026-10-31, F14's estate half): the
+ * projection had ONE writer while only the agent tool composed —
+ * the estate's add-stage gate composes the same view, so the
+ * projection is the contract's now (the audit's Rule 1 law: a
+ * second writer means the same bench reads as a different
+ * document depending on which door projected it).
+ */
+export declare function liveBenchRows(stages: unknown): unknown;
+/**
+ * Project bench stage rows onto the flow_inline wire contract
+ * (the doors forbid provenance/runStatus/result/title as extras —
+ * they strip; `card` RIDES (STAGE_KEYS admit it) because the
+ * kinds pass derives input kinds from the card's own flowKinds —
+ * stripping it manufactured phantom "wired but untyped" refusals
+ * on correctly-wired card stages; engine defaults comfyui).
+ */
+export declare function projectStages(stages: unknown): Array<Record<string, unknown>>;
+/**
  * THE RUN ID GRAMMAR (2026-10-10, the bypass audit's MEDIUM-2: it was
  * spelled in five modules — the media route, the source echo, the
  * gallery, and two agent tools — with no pin, so a change to the mint
@@ -172,6 +199,24 @@ export declare const RUN_ID_RE: RegExp;
  * imports the same function. An address has one grammar and one
  * sanitize — not four. */
 export declare function benchSessionOf(id: string | undefined): string;
+/** Carry one candidate key onto the key the bench doors take — the
+ *  delegated-seat spelling rides VERBATIM, everything else sanitizes
+ *  (benchSessionOf). THE ONE SPELLING of the carry decision (the
+ *  one-seat law's client half, 2026-10-31): the construct tool
+ *  forwards a delegated lane's bench key as `delegate:<key>` (the
+ *  benchKeyOfExec mint), and the estate door re-seats it (drafts
+ *  seatOf) — but the ':' is outside SESSION_RE, so a seat that
+ *  sanitized first silently routed a delegated card to 'main', the
+ *  delegation split alive on the link channel (found by the
+ *  construct-flow-link snapshot replay). The carry lives HERE, beside
+ *  the sanitize it wraps: a seat that re-spelled `SESSION_RE.test`
+ *  over the slice would be a second decision body over the same
+ *  grammar — the exact drift the li-ay stroke killed. Narrow by
+ *  construction: only `delegate:` + a grammar-legal inner key
+ *  carries; junk (`delegate:`, `delegate:not@a/key`, the
+ *  near-miss `delegated:…`) falls to the sanitize like every
+ *  other non-key. */
+export declare function carriedBenchKey(key: string | undefined): string;
 declare const BRAND: unique symbol;
 /** A string carrying a compile-time-only brand B (the
  *  @deepseek-ai/dsh-brand mechanics, declared local — see the block

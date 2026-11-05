@@ -1,7 +1,8 @@
 /**
  * The gallery host contract — the SAME-ORIGIN doors the media panel
  * rides (/infer-gallery/runs + /drafts + /flow + /artifact +
- * /artifact-delete + /artifact-rename), pinned WITHOUT the estate
+ * /artifact-delete + /artifact-rename + /artifact-archive +
+ * /artifact-restore), pinned WITHOUT the estate
  * (fake cordis ctx, stubbed fetch, a tmp runs tree on disk):
  *
  *   posture — cross-host fetches the owning DSH verbatim; in-tree
@@ -121,12 +122,14 @@ function writeSidecar(runId: string, flow: string, request?: string): void {
 }
 
 describe('registration + posture log', () => {
-  it('registers the six exact doors and logs the in-tree posture by default', () => {
+  it('registers the eight exact doors and logs the in-tree posture by default', () => {
     const ctx = mount()
     expect(ctx.routes.map((r) => r.path).sort()).toEqual([
       '/infer-gallery/artifact',
+      '/infer-gallery/artifact-archive',
       '/infer-gallery/artifact-delete',
       '/infer-gallery/artifact-rename',
+      '/infer-gallery/artifact-restore',
       '/infer-gallery/drafts',
       '/infer-gallery/flow',
       '/infer-gallery/runs',
@@ -604,6 +607,185 @@ describe('POST /infer-gallery/artifact-delete', () => {
     expect(json(saw)).toEqual({ ok: true, path: `${RUN}/a.png` })
     expect(seen[0]?.url).toBe('https://owner.example/infer-gallery/artifact-delete')
     expect((seen[0]?.init as { body?: string }).body).toBe(JSON.stringify({ path: `${RUN}/a.png` }))
+  })
+})
+
+/* THE MASS-ARCHIVE DOORS (operator ruling 2026-11-14, item (a)):
+ * archive tucks a live artifact into the run's `_archived/` dir;
+ * restore moves it back. The arms below mirror the delete/rename
+ * discipline (method, confinement, sidecar guard, cross-host relay,
+ * §23 first-tree-wins) plus the POSITION laws: archive refuses an
+ * already-archived path, restore requires the `_archived/` segment
+ * directly behind the run id, collisions refuse 409 in both
+ * directions, and the round-trip is the identity. */
+describe('POST /infer-gallery/artifact-archive', () => {
+  it('tucks one run-relative file into _archived/ (200 {ok, path, url})', async () => {
+    writeTreeArtifact(`${RUN}/gen/a.png`, new Uint8Array([1, 2, 3]))
+    const ctx = mount({ flowDir })
+    const saw = await post(ctx, '/infer-gallery/artifact-archive', { path: `${RUN}/gen/a.png` })
+    expect(saw.status).toBe(200)
+    expect(json(saw)).toEqual({
+      ok: true,
+      path: `${RUN}/_archived/gen/a.png`,
+      url: `/infer-gallery/artifact?path=${encodeURIComponent(`${RUN}/_archived/gen/a.png`)}`,
+    })
+    // the live name is gone — the read door now answers 502.
+    const gone = await hit(ctx, '/infer-gallery/artifact', `/infer-gallery/artifact?path=${encodeURIComponent(`${RUN}/gen/a.png`)}`)
+    expect(gone.status).toBe(502)
+    // the bytes sit tucked, still addressable by direct URL.
+    expect(existsSync(join(flowDir, `${RUN}/_archived/gen/a.png`))).toBe(true)
+    const tucked = await hit(ctx, '/infer-gallery/artifact', `/infer-gallery/artifact?path=${encodeURIComponent(`${RUN}/_archived/gen/a.png`)}`)
+    expect(tucked.status).toBe(200)
+    expect(tucked.body.toString()).toBe(String.fromCharCode(1, 2, 3))
+  })
+
+  it('refuses non-POST with a 405', async () => {
+    const ctx = mount({ flowDir })
+    const saw = await post(ctx, '/infer-gallery/artifact-archive', { path: `${RUN}/a.png` }, 'GET')
+    expect(saw.status).toBe(405)
+    expect((json(saw) as { error: string }).error).toBe('method_not_allowed')
+  })
+
+  it('refuses already-archived paths, sidecars, hostile paths and missing files loudly', async () => {
+    writeTreeArtifact(`${RUN}/_archived/old.png`, new Uint8Array([9]))
+    const ctx = mount({ flowDir })
+    // POSITION FIRST: an archived path answers already_archived —
+    // never the sidecar guard's voice (the tuck's own shape).
+    for (const target of [`${RUN}/_archived/old.png`, `${RUN}/_archived/gen/deep.png`]) {
+      const saw = await post(ctx, '/infer-gallery/artifact-archive', { path: target })
+      expect(saw.status, target).toBe(400)
+      expect((json(saw) as { error: string }).error, target).toBe('already_archived')
+    }
+    for (const target of [`${RUN}/_flow.json`, `${RUN}/_request.json`, `${RUN}/gen/_thumb.png`]) {
+      const saw = await post(ctx, '/infer-gallery/artifact-archive', { path: target })
+      expect(saw.status, target).toBe(400)
+      expect((json(saw) as { error: string }).error, target).toBe('protected_sidecar')
+    }
+    for (const target of ['', 'noseparator', 'run-xyz/bad.png', `${RUN}/../flow`]) {
+      const saw = await post(ctx, '/infer-gallery/artifact-archive', { path: target })
+      expect(saw.status, target).toBe(400)
+      expect((json(saw) as { error: string }).error, target).toBe('forbidden_path')
+    }
+    const missing = await post(ctx, '/infer-gallery/artifact-archive', { path: `${RUN}/gone.png` })
+    expect(missing.status).toBe(404)
+    expect((json(missing) as { error: string }).error).toBe('no_artifact')
+  })
+
+  it('a tuck collision refuses 409 and the live file stays put', async () => {
+    writeTreeArtifact(`${RUN}/gen/a.png`, new Uint8Array([1]))
+    writeTreeArtifact(`${RUN}/_archived/gen/a.png`, new Uint8Array([2]))
+    const ctx = mount({ flowDir })
+    const saw = await post(ctx, '/infer-gallery/artifact-archive', { path: `${RUN}/gen/a.png` })
+    expect(saw.status).toBe(409)
+    expect((json(saw) as { error: string }).error).toBe('already_exists')
+    // a tuck never overwrites, in either direction.
+    expect(existsSync(join(flowDir, `${RUN}/gen/a.png`))).toBe(true)
+  })
+
+  it('a transport failure answers artifact_unreadable (never throws)', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('socket reset') }))
+    const ctx = mount({ gatewayUrl: 'https://owner.example', flowDir })
+    const saw = await post(ctx, '/infer-gallery/artifact-archive', { path: `${RUN}/a.png` })
+    expect(saw.status).toBe(502)
+    expect((json(saw) as { error: string }).error).toBe('artifact_unreadable')
+  })
+
+  it('cross-host relays the JSON verbatim (status + body ride through)', async () => {
+    const seen: Array<{ url: string; init: unknown }> = []
+    vi.stubGlobal('fetch', vi.fn(async (input: unknown, init: unknown): Promise<Response> => {
+      seen.push({ url: String(input), init })
+      return new Response(JSON.stringify({ ok: true, path: `${RUN}/_archived/a.png` }), { status: 200 })
+    }))
+    const ctx = mount({ gatewayUrl: 'https://owner.example', flowDir })
+    const saw = await post(ctx, '/infer-gallery/artifact-archive', { path: `${RUN}/a.png` })
+    expect(saw.status).toBe(200)
+    expect(json(saw)).toEqual({ ok: true, path: `${RUN}/_archived/a.png` })
+    expect(seen[0]?.url).toBe('https://owner.example/infer-gallery/artifact-archive')
+    expect((seen[0]?.init as { body?: string }).body).toBe(JSON.stringify({ path: `${RUN}/a.png` }))
+  })
+})
+
+describe('POST /infer-gallery/artifact-restore', () => {
+  it('round-trips the tuck: restore strips exactly _archived/ (200 {ok, path, url})', async () => {
+    writeTreeArtifact(`${RUN}/gen/a.png`, new Uint8Array([1, 2, 3]))
+    const ctx = mount({ flowDir })
+    const tucked = await post(ctx, '/infer-gallery/artifact-archive', { path: `${RUN}/gen/a.png` })
+    expect(tucked.status).toBe(200)
+    const restored = await post(ctx, '/infer-gallery/artifact-restore', { path: `${RUN}/_archived/gen/a.png` })
+    expect(restored.status).toBe(200)
+    expect(json(restored)).toEqual({
+      ok: true,
+      path: `${RUN}/gen/a.png`,
+      url: `/infer-gallery/artifact?path=${encodeURIComponent(`${RUN}/gen/a.png`)}`,
+    })
+    // the live name serves again; no _archived remnant stays.
+    const live = await hit(ctx, '/infer-gallery/artifact', `/infer-gallery/artifact?path=${encodeURIComponent(`${RUN}/gen/a.png`)}`)
+    expect(live.status).toBe(200)
+    expect(existsSync(join(flowDir, `${RUN}/_archived/gen/a.png`))).toBe(false)
+  })
+
+  it('refuses non-POST with a 405', async () => {
+    const ctx = mount({ flowDir })
+    const saw = await post(ctx, '/infer-gallery/artifact-restore', { path: `${RUN}/_archived/a.png` }, 'GET')
+    expect(saw.status).toBe(405)
+    expect((json(saw) as { error: string }).error).toBe('method_not_allowed')
+  })
+
+  it('refuses live paths, the archive dir itself, hostile paths and missing tucked files loudly', async () => {
+    writeTreeArtifact(`${RUN}/gen/a.png`, new Uint8Array([1]))
+    writeTreeArtifact(`${RUN}/_archived/old.png`, new Uint8Array([9]))
+    const ctx = mount({ flowDir })
+    // only `_archived/` DIRECTLY behind the run id restores — a
+    // live path (or a deeper `_archived` segment) is not archived.
+    for (const target of [`${RUN}/gen/a.png`, `${RUN}/gen/_archived/a.png`]) {
+      const saw = await post(ctx, '/infer-gallery/artifact-restore', { path: target })
+      expect(saw.status, target).toBe(400)
+      expect((json(saw) as { error: string }).error, target).toBe('not_archived')
+    }
+    // the archive dir itself is never an artifact.
+    const dir = await post(ctx, '/infer-gallery/artifact-restore', { path: `${RUN}/_archived` })
+    expect(dir.status).toBe(400)
+    expect((json(dir) as { error: string }).error).toBe('not_archived')
+    for (const target of ['', 'noseparator', 'run-xyz/bad.png', `${RUN}/../flow`]) {
+      const saw = await post(ctx, '/infer-gallery/artifact-restore', { path: target })
+      expect(saw.status, target).toBe(400)
+      expect((json(saw) as { error: string }).error, target).toBe('forbidden_path')
+    }
+    const missing = await post(ctx, '/infer-gallery/artifact-restore', { path: `${RUN}/_archived/gone.png` })
+    expect(missing.status).toBe(404)
+    expect((json(missing) as { error: string }).error).toBe('no_artifact')
+  })
+
+  it('a restore collision refuses 409 and the tucked file stays put', async () => {
+    writeTreeArtifact(`${RUN}/gen/a.png`, new Uint8Array([1]))
+    writeTreeArtifact(`${RUN}/_archived/gen/a.png`, new Uint8Array([2]))
+    const ctx = mount({ flowDir })
+    const saw = await post(ctx, '/infer-gallery/artifact-restore', { path: `${RUN}/_archived/gen/a.png` })
+    expect(saw.status).toBe(409)
+    expect((json(saw) as { error: string }).error).toBe('already_exists')
+    expect(existsSync(join(flowDir, `${RUN}/_archived/gen/a.png`))).toBe(true)
+  })
+
+  it('a transport failure answers artifact_unreadable (never throws)', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('socket reset') }))
+    const ctx = mount({ gatewayUrl: 'https://owner.example', flowDir })
+    const saw = await post(ctx, '/infer-gallery/artifact-restore', { path: `${RUN}/_archived/a.png` })
+    expect(saw.status).toBe(502)
+    expect((json(saw) as { error: string }).error).toBe('artifact_unreadable')
+  })
+
+  it('cross-host relays the JSON verbatim (status + body ride through)', async () => {
+    const seen: Array<{ url: string; init: unknown }> = []
+    vi.stubGlobal('fetch', vi.fn(async (input: unknown, init: unknown): Promise<Response> => {
+      seen.push({ url: String(input), init })
+      return new Response(JSON.stringify({ ok: true, path: `${RUN}/a.png` }), { status: 200 })
+    }))
+    const ctx = mount({ gatewayUrl: 'https://owner.example', flowDir })
+    const saw = await post(ctx, '/infer-gallery/artifact-restore', { path: `${RUN}/_archived/a.png` })
+    expect(saw.status).toBe(200)
+    expect(json(saw)).toEqual({ ok: true, path: `${RUN}/a.png` })
+    expect(seen[0]?.url).toBe('https://owner.example/infer-gallery/artifact-restore')
+    expect((seen[0]?.init as { body?: string }).body).toBe(JSON.stringify({ path: `${RUN}/_archived/a.png` }))
   })
 })
 

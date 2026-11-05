@@ -5,7 +5,7 @@
 // FIELD (the kind's own atoms). Refusals stay LOUD; stale leaves
 // close without writing; the declared leaf faces EMBED at the top
 // of the leaf (stroke 95 — the popup carries the visual preview).
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { createElement as h } from 'react'
 import { afterEach, expect, test, vi } from 'vitest'
 import type { ModifierKind } from '../src/spec.ts'
@@ -1228,4 +1228,226 @@ test('NAMED REMOVE: the chip click IS the remove — both keys null-delete (the 
   expect(onEdit).toHaveBeenCalledWith('save_qvoice', undefined)
   expect(onEdit).toHaveBeenCalledWith('voice_name', undefined)
   expect(onPatch).toHaveBeenCalledWith({ save_qvoice: null, voice_name: null })
+})
+
+// ── THE COVERAGE ARMS (2026-11-14 debt battery): the leaf's own
+// seams get their firing arms — each rides the real render, never a
+// synthetic poke. ──
+
+test('NAMED X-CLOSE: the modal\'s own close commits nothing — the same silence as Cancel', () => {
+  const { onEdit, onPatch } = openLeaf({ kinds: [NAMED_PRESENCE_SAVE], values: {} })
+  openCreate('Design')
+  fireEvent.change(screen.getByLabelText('Save-file name'), { target: { value: 'never lands' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+  expect(onEdit).not.toHaveBeenCalled()
+  expect(onPatch).not.toHaveBeenCalled()
+  expect(screen.queryByLabelText('Save-file name')).toBeNull()
+})
+
+test('THE LEAF EDGE: candidatesFor narrows the From-flow rows (the host\'s edge law rides the leaf\'s own provider)', () => {
+  const { onEdit } = openLeaf({
+    kinds: [MASK], values: {},
+    candidatesFor: (f) => f.name === 'image'
+      ? [{ id: 'st2', label: 'the stage two mask', url: 'https://host/st2.png' }]
+      : [],
+  })
+  openCreate('Mask')
+  fireEvent.click(screen.getByRole('button', { name: 'Image source' }))
+  fireEvent.click(screen.getByRole('menuitem', { name: 'From flow' }))
+  const pick = screen.getByTestId('source-pick-row')
+  expect(pick.textContent).toContain('the stage two mask')
+  fireEvent.click(pick)
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+  expect(onEdit).toHaveBeenCalledWith('masks', [expect.objectContaining({ image: 'https://host/st2.png' })])
+})
+
+const MASK_STAR = {
+  kind: 'mask', label: 'Mask', param_key: 'masks', cardinality: 'multi',
+  fields: [
+    { name: 'image', type: 'image', required: true },
+    { name: 'note', type: 'text', label: 'Note', required: true },
+  ],
+} as unknown as ModifierKind
+
+test('THE REQUIRED STAR: a required field paints the star in both row shapes — the slot caption and the label', () => {
+  openLeaf({ kinds: [MASK_STAR], values: {} })
+  openCreate('Mask')
+  // the caption-less slot: the name IS the face, the title falls back with it,
+  // and the star rides INSIDE the caption span
+  const caption = screen.getByText('image')
+  expect(caption.getAttribute('title')).toBe('image')
+  expect(caption.querySelector('span')).not.toBeNull()
+  // the labeled scalar: the star rides the label row
+  const label = screen.getByText('Note')
+  expect(label.querySelector('span')).not.toBeNull()
+})
+
+const CHAIN_KIND = {
+  kind: 'upscale', label: 'Upscale', param_key: 'upscale', cardinality: 'multi',
+  fields: [
+    { name: 'chain_run', label: 'Chain run', type: 'chain-run' },
+    { name: 'denoise', label: 'Denoise', type: 'number', default: 0.24 },
+  ],
+} as unknown as ModifierKind
+
+test('THE LEAF PICKER: the chain-run field renders the LIVE picker — a drifted id rides the unregistered row, a pick binds the run id', async () => {
+  const { onEdit } = openLeaf({
+    kinds: [CHAIN_KIND], values: {},
+    loadChainRuns: async () => [{ runId: 'run-abc', store: 'swap_1', variant: 'swap', scenes: 2, created: 9 }],
+  })
+  openCreate('Upscale')
+  await waitFor(() => {
+    expect(document.querySelector('[data-chain-run-picker="chain_run"]')?.getAttribute('data-chain-runs-loaded')).toBe('true')
+  })
+  // a value not yet a string answers the empty current (the null-seeded field)
+  const advanced = screen.getByLabelText('Advanced — paste a run id') as HTMLInputElement
+  expect(advanced.value).toBe('')
+  // THE DRIFT: a value the served list does not hold still shows — named unregistered, never silent
+  fireEvent.change(advanced, { target: { value: 'run-zzz' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Chain run' }))
+  expect(screen.getByRole('menuitem', { name: 'run-abc — swap, 2 scenes' })).not.toBeNull()
+  expect(screen.getByRole('menuitem', { name: 'run-zzz (unregistered)' })).not.toBeNull()
+  fireEvent.click(screen.getByRole('menuitem', { name: 'run-abc — swap, 2 scenes' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+  expect(onEdit).toHaveBeenCalledWith('upscale', [expect.objectContaining({ chain_run: 'run-abc' })])
+})
+
+test('THE LEAF PICKER DEGRADES: no runs lane — the plain input holds inside the leaf too', () => {
+  const { onEdit } = openLeaf({ kinds: [CHAIN_KIND], values: {} })
+  openCreate('Upscale')
+  const input = screen.getByLabelText('Chain run') as HTMLInputElement
+  expect(input.tagName).toBe('INPUT')
+  fireEvent.change(input, { target: { value: 'swap_3333' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+  expect(onEdit).toHaveBeenCalledWith('upscale', [expect.objectContaining({ chain_run: 'swap_3333' })])
+})
+
+test('THE LEAF PICKER EMPTY: a served-empty lane states the honest note (never a dead list)', async () => {
+  const { onEdit } = openLeaf({ kinds: [CHAIN_KIND], values: {}, loadChainRuns: async () => [] })
+  openCreate('Upscale')
+  expect(await screen.findByText('No chain runs yet — a swap, repair, extend or refine press leaves its scenes here.')).not.toBeNull()
+  expect(onEdit).not.toHaveBeenCalled()
+})
+
+// ── THE ORBIT ORB (the reshoot orb, 2026-11-15 — the operator: "it
+// already existed as the output, build it for the input"): the
+// camera-pose orb EMBEDS above the field stack and writes the SAME
+// orbit/tilt/dolly draft seats the number dials write (ONE TRUTH) ──
+
+const RESHOOT_ORB = {
+  kind: 'reshoot', label: 'Reshoot', param_key: 'reshoot', cardinality: 'list',
+  category: 'ordered', leaf_face: 'orbit-canvas',
+  fields: [
+    { name: 'source_clip', type: 'file', label: 'Source clip', default: '' },
+    { name: 'orbit', type: 'number', label: 'Orbit', default: -30 },
+    { name: 'tilt', type: 'number', label: 'Tilt', default: 20 },
+    { name: 'dolly', type: 'number', label: 'Dolly', default: 1 },
+  ],
+} as unknown as ModifierKind
+
+function FakeOrbitFace(props: { value: { orbit: number; tilt: number; dolly: number }; onChange: (p: { orbit: number; tilt: number; dolly: number }) => void }) {
+  return h('div', { 'data-testid': 'orbit-face' },
+    h('span', { 'data-testid': 'orbit-seed' }, `${props.value.orbit},${props.value.tilt},${props.value.dolly}`),
+    h('button', { type: 'button', onClick: () => { props.onChange({ orbit: 45, tilt: -10, dolly: 1.5 }) } }, 'Orb commit'),
+  )
+}
+
+test('THE ORBIT ORB: the face embeds above the stack; its commit writes the SAME orbit/tilt/dolly seats the dials own (one truth — the dials stay)', () => {
+  const { onEdit } = openLeaf({ kinds: [RESHOOT_ORB], values: {}, orbitFace: FakeOrbitFace as never })
+  openCreate('Reshoot')
+  // ONE orb, embedded in its own stage mark
+  expect(screen.getAllByTestId('orbit-face').length).toBe(1)
+  expect(document.querySelector('[data-leaf-stage="orbit"]')).not.toBeNull()
+  expect(document.querySelector('[data-leaf-canvas="orbit"]')).not.toBeNull()
+  // the orb seeds from the kind defaults (the draft's own seats)
+  expect(screen.getByTestId('orbit-seed').textContent).toBe('-30,20,1')
+  // ADDITIVE, never faceOwned: the three number dials STAY beside the orb
+  expect(screen.getByLabelText('Orbit')).not.toBeNull()
+  expect(screen.getByLabelText('Tilt')).not.toBeNull()
+  expect(screen.getByLabelText('Dolly')).not.toBeNull()
+  // the orb's commit rides the same seats — the envelope carries them
+  fireEvent.click(screen.getByRole('button', { name: 'Orb commit' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+  expect(onEdit).toHaveBeenCalledWith('reshoot', [expect.objectContaining({ orbit: 45, tilt: -10, dolly: 1.5 })])
+})
+
+test('THE ORBIT ORB: editing a posed entry seeds the face with the current pose', () => {
+  const bag = [{ name: 'a', source_clip: '', orbit: 10, tilt: 5, dolly: 2 }]
+  openLeaf({ kinds: [RESHOOT_ORB], values: { reshoot: bag }, orbitFace: FakeOrbitFace as never })
+  openEditTile(tid(RESHOOT_ORB, bag, 0))
+  expect(screen.getByTestId('orbit-seed').textContent).toBe('10,5,2')
+})
+
+test('THE ORBIT ORB: host-less degrades — no orb, the three number dials hold', () => {
+  openLeaf({ kinds: [RESHOOT_ORB], values: {} })
+  openCreate('Reshoot')
+  expect(screen.queryByTestId('orbit-face')).toBeNull()
+  expect(screen.getByLabelText('Orbit')).not.toBeNull()
+  expect(screen.getByLabelText('Tilt')).not.toBeNull()
+  expect(screen.getByLabelText('Dolly')).not.toBeNull()
+})
+
+test('THE ORBIT ORB: a non-numeric draft pose falls back to the kind defaults — never NaN into the face (the coverage cure, 2026-11-03)', () => {
+  const bag = [{ name: 'a', source_clip: '', orbit: 'sideways', tilt: 5, dolly: 2 }]
+  openLeaf({ kinds: [RESHOOT_ORB], values: { reshoot: bag }, orbitFace: FakeOrbitFace as never })
+  openEditTile(tid(RESHOOT_ORB, bag, 0))
+  // the garbage orbit reads the kind default; the good seats survive
+  expect(screen.getByTestId('orbit-seed').textContent).toBe('-30,5,2')
+})
+
+// a field-less orbit-canvas kind — the pose read degrades to the
+// dial zeros through the same fallbacks (the coverage cure)
+const RESHOOT_NOFIELDS = {
+  kind: 'reshoot-bare', label: 'Reshoot', param_key: 'reshoot', cardinality: 'list',
+  category: 'ordered', leaf_face: 'orbit-canvas',
+} as unknown as ModifierKind
+
+test('THE ORBIT ORB: a field-less kind still poses — absent fields fall back to the dial zeros (graceful)', () => {
+  openLeaf({ kinds: [RESHOOT_NOFIELDS], values: {}, orbitFace: FakeOrbitFace as never })
+  openCreate('Reshoot')
+  expect(screen.getByTestId('orbit-seed').textContent).toBe('0,0,1')
+})
+
+// a face-bearing kind carrying the chain-run seat — the split
+// stack's own picker site (the coverage cure, 2026-11-03: the
+// create/edit face covers site 1, the faceless leaf only site 2)
+const MASK_PAINT_CHAIN = {
+  kind: 'mask', label: 'Mask', param_key: 'masks', cardinality: 'multi',
+  leaf_face: 'paint-canvas',
+  fields: [
+    { name: 'image', type: 'image', label: 'Image' },
+    { name: 'chain_run', type: 'chain-run', label: 'Chain run' },
+  ],
+} as unknown as ModifierKind
+
+test('THE PAINT FACE + CHAIN RUN: the split stack binds the chain-run seat — no-lane degrades to the plain input', () => {
+  const { onEdit } = openLeaf({
+    kinds: [MASK_PAINT_CHAIN],
+    values: { masks: [{ image: 'data:image/png;base64,OLD', chain_run: 'run-old' }] },
+    paintFace: FakeFace, paintReference: 'input_image',
+  })
+  openEditTile(tid(MASK_PAINT_CHAIN, [{ image: 'data:image/png;base64,OLD', chain_run: 'run-old' }], 0))
+  const input = screen.getByLabelText('Chain run') as HTMLInputElement
+  expect(input.tagName).toBe('INPUT')
+  expect(input.value).toBe('run-old')
+  fireEvent.change(input, { target: { value: 'swap_4444' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+  expect(onEdit).toHaveBeenCalledWith('masks', [expect.objectContaining({ chain_run: 'swap_4444' })])
+})
+
+test('THE PAINT FACE + CHAIN RUN: with the lane the split-stack picker binds the served run', async () => {
+  const { onEdit } = openLeaf({
+    kinds: [MASK_PAINT_CHAIN],
+    values: { masks: [{ image: 'data:image/png;base64,OLD' }] },
+    paintFace: FakeFace, paintReference: 'input_image',
+    loadChainRuns: async () => [{ runId: 'run-abc', store: 'swap_1', variant: 'swap', scenes: 2, created: 9 }],
+  })
+  openEditTile(tid(MASK_PAINT_CHAIN, [{ image: 'data:image/png;base64,OLD' }], 0))
+  await waitFor(() => {
+    expect(document.querySelector('[data-chain-run-picker="chain_run"]')?.getAttribute('data-chain-runs-loaded')).toBe('true')
+  })
+  fireEvent.click(screen.getByRole('button', { name: 'Chain run' }))
+  fireEvent.click(screen.getByRole('menuitem', { name: 'run-abc — swap, 2 scenes' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+  expect(onEdit).toHaveBeenCalledWith('masks', [expect.objectContaining({ chain_run: 'run-abc' })])
 })

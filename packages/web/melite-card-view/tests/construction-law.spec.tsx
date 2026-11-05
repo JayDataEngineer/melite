@@ -116,7 +116,13 @@ describe('the construction law (add-a-card drill)', () => {
       const path = String(url)
       if (path.includes('/v1/form-spec')) {
         const model = path.split('model=')[1] ?? ''
-        const doc: Record<string, unknown> = model.includes('image-edit')
+        // THE FAMILY COORDINATE (the gate-11 seed cure): a stage born
+        // with its model stated keys the drill's spec fetch on the
+        // FAMILY id ('qwen-img-edit-2511-lightning4'), never the card
+        // id — the router matches both spellings (img-edit) or the
+        // drill would fetch the image-gen envelope and drop the
+        // image square
+        const doc: Record<string, unknown> = /image-edit|img-edit/.test(model)
           ? { form: 'image-edit', model: 'qwen-img-edit-2511-lightning4',
               schema: IMAGE_SPEC.schema, variants: [] }
           : { form: 'image-gen', model: 'krea-2', schema: schemaEnvelope({

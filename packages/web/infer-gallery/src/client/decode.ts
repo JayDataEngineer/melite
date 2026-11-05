@@ -26,10 +26,19 @@ export interface GalleryRunRow {
   prompt?: string
   thumbnail?: string
   artifacts?: RunArtifact[]
+  /** THE ARCHIVED FACE (mass-archive law, operator ruling 2026-11-14,
+   *  item (a)): the run's tucked-away rows ride ALONGSIDE the live
+   *  list — the panel hides them unless the operator toggles them
+   *  visible. Same row shape as artifacts, never merged into it. */
+  archived?: RunArtifact[]
   source?: string
   /** Card linkage served by the runs list (the action card this run
    * belongs to, for wand replay). */
   draft_id?: string
+  /** THE TEST SEAT (visible-bench law, operator ruling 2026-11-14,
+   *  item (b)): the list serves test:true runs from the test-output/
+   *  seat with this stamp — the feed no longer hides them. */
+  test?: boolean
   /** Composed params doc (yaml-era params.calls[0].text feeds tile labels). */
   params?: unknown
   /** Served by the runs seat's trailing marker row when the run's

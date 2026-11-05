@@ -54,12 +54,13 @@ import css from './card.module.css'
 import { Button, IconCloseOutlineRegular, Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
 import { AudioStagePreview, ImageStagePreview, VideoStagePreview } from '@melite/card-base/client'
 import { CardDrill } from './card-drill.tsx'
-import { cardsDraftStageAddress, subscribeRunFrames } from './cards-resource.ts'
+import { cardsDraftStageAddress, subscribeRunFrames, tileStatusFromVerdict } from './cards-resource.ts'
+import type { CardsRunValue } from './cards-resource.ts'
 import { STATUS_DOT } from './bench-row.ts'
 import { chatPreviewsFor } from './chat-preview.ts'
 import type { ToolCallBlockView } from './types.ts'
 import {
-  cardRows, fetchDraft, paramFields, patchStageParams, refuseForUnlandedWrite, runFinished, startDraft,
+  cardRows, fetchDraft, paramFields, patchStageParamsChained, refuseForUnlandedWrite, runFinished, startDraft,
 } from './draft.ts'
 import type { CardRow, DraftDoc, RunStatusDoc } from './draft.ts'
 import { draftIdOf, type DraftId } from '@melite/contracts/benchStage'
@@ -80,28 +81,37 @@ export interface FlowCardsProps {
   openMedia?: () => boolean
 }
 
-/** Parse the melite_flow / card-tool call: the draft id + the model
- *  header. NATIVE CHANNEL FIRST: a settled result carries the tool's
- *  persisted presentationMeta (ToolResultNode.meta) with {draft_id} —
- *  every card tool emits it; the handle is read from meta, never
- *  parsed out of prose. The render-text token ('card <draftId>') is
- *  the LEGACY fallback: sessions logged before a tool grew its
- *  projector still hydrate through the parse rule. */
+/** Parse the melite_flow / card-tool call: the draft id, the run id
+ *  and the model header. NATIVE CHANNEL FIRST: a settled result
+ *  carries the tool's persisted presentationMeta (ToolResultNode.meta)
+ *  with {draft_id, run_id} — every card tool emits it; the handles
+ *  are read from meta, never parsed out of prose. The render-text
+ *  token ('card <draftId>') is the LEGACY fallback: sessions logged
+ *  before a tool grew its projector still hydrate through the parse
+ *  rule. A run_id WITHOUT a draft_id is the flow press's landing
+ *  (flows-are-compositions law, 2026-11-14: the {flow} start mints
+ *  no draft — the run row IS the press's visible face; no legacy
+ *  arm is owed, every pre-law flow press carried a draft). */
 export function parseCardsBlock(block: ToolCallBlockView): {
   draftId: DraftId | null
+  runId: string | null
+  flowName: string | null
   model: string | null
   malformedArgs: boolean
   settled: boolean
   isError: boolean
+  previews: Array<{ stage: string, url: string, status: string }>
 } {
   const settled = block.kind === 'tool-result'
   const argsRaw = settled ? (block.call?.argsRaw ?? '') : (block.argsRaw ?? '')
   let model: string | null = null
+  let flowName: string | null = null
   let malformedArgs = false
   if (argsRaw !== '') {
     try {
       const args = JSON.parse(argsRaw) as Record<string, unknown>
       if (typeof args['model'] === 'string' && args['model'] !== '') model = args['model']
+      if (typeof args['flow'] === 'string' && args['flow'] !== '') flowName = args['flow']
     } catch {
       // L10 (the fallback audit): malformed args used to render
       // header-less — indistinguishable from a model-less call. The
@@ -111,12 +121,38 @@ export function parseCardsBlock(block: ToolCallBlockView): {
     }
   }
   let draftId: DraftId | null = null
+  let runId: string | null = null
+  // THE PRESS'S OWN HEROES (the refresh-flood cure, 2026-11-19): the
+  // previews the tool's presentationMeta persisted at settle time —
+  // the pass rows that minted a url. Frozen by construction (the
+  // projector ran once, on the settled value), so a replayed card
+  // shows exactly what THAT call produced. Cards without the key
+  // (patch calls, legacy logs) carry an empty list and render no
+  // strip — never the present-time bench's heroes under a
+  // historical card.
+  let previews: Array<{ stage: string, url: string, status: string }> = []
   if (settled && block.isError !== true) {
     // 1. NATIVE: the persisted presentationMeta payload.
     const meta = block.meta
     if (meta !== null && typeof meta === 'object' && !Array.isArray(meta)) {
       const id = (meta as Record<string, unknown>)['draft_id']
       if (typeof id === 'string' && id !== '') draftId = draftIdOf(id)
+      const rid = (meta as Record<string, unknown>)['run_id']
+      if (typeof rid === 'string' && rid !== '') runId = rid
+      const rows = (meta as Record<string, unknown>)['previews']
+      if (Array.isArray(rows)) {
+        previews = rows.flatMap((row): Array<{ stage: string, url: string, status: string }> => {
+          if (row === null || typeof row !== 'object' || Array.isArray(row)) return []
+          const r = row as Record<string, unknown>
+          if (typeof r['stage'] !== 'string' || r['stage'] === '') return []
+          if (typeof r['url'] !== 'string' || r['url'] === '') return []
+          return [{
+            stage: r['stage'],
+            url: r['url'],
+            status: typeof r['status'] === 'string' ? r['status'] : '',
+          }]
+        })
+      }
     }
     // 2. LEGACY: the render token (pre-projector logs; the rule this
     //    view parsed for years — the token after 'card ' or 'draft ').
@@ -135,7 +171,7 @@ export function parseCardsBlock(block: ToolCallBlockView): {
       }
     }
   }
-  return { draftId, model, malformedArgs, settled, isError: block.isError === true }
+  return { draftId, runId, flowName, model, malformedArgs, settled, isError: block.isError === true, previews }
 }
 
 /** Draft doc + live run status (all doors in draft.ts; the live tail
@@ -222,6 +258,78 @@ function useDraft(draftId: DraftId | null): {
   return { doc, live, error, refresh, startedRun }
 }
 
+/** THE RUN-ROOTED FACE (flows-are-compositions law, 2026-11-14): a
+ *  {flow} press mints no draft — the run row is the press's landing,
+ *  and the chat tile mounts THAT. One subscription to the run
+ *  resource's frames (the same carrier the draft card's live tail
+ *  rides); the doc-fetch machinery stays draft-owned and untouched.
+ *  Absent runId never mounts this face. */
+function useRunFace(runId: string | null): { run: CardsRunValue | null; error: string | null } {
+  const [run, setRun] = useState<CardsRunValue | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  useEffect(() => {
+    if (runId === null) return
+    let alive = true
+    const controller = new AbortController()
+    void (async () => {
+      let arrived = false
+      try {
+        for await (const frame of subscribeRunFrames(runId, controller.signal)) {
+          if (!alive) return
+          if (!frame.ok) continue
+          arrived = true
+          setRun(frame.value)
+          if (runFinished(frame.value.status)) return
+        }
+      } catch {
+        // an aborted tail is the unmount; a dead stream keeps the
+        // last run doc — the face never freezes pretending (the
+        // live-tail law this file's useDraft states). The
+        // unreachable note rides only when NO frame ever arrived.
+        if (alive && !arrived) setError(chromeCopy.runFaceUnreachable)
+      }
+    })()
+    return () => { alive = false; controller.abort() }
+  }, [runId])
+  return { run, error }
+}
+
+/** The flow press's chat face: header (flow name + live status), one
+ *  line per run stage (status word, activity, error), the done note
+ *  when terminal. Markup mirrors the draft card's head — the face is
+ *  the same card family, run-rooted instead of draft-rooted. */
+function RunFaceCard({ flowName, run, error, openMedia }: {
+  flowName: string | null
+  run: CardsRunValue | null
+  error: string | null
+  openMedia?: () => boolean
+}) {
+  const state = run === null ? null : tileStatusFromVerdict(run.status)
+  return (
+    <div className={css.card} data-dsh-part="melite-flow-card" data-run-id={run?.runId ?? ''}>
+      <div className={css.head}>
+        <span className={css.badge}>{chromeCopy.brand}</span>
+        <span className={css.model}>{flowName ?? chromeCopy.flowFallback}</span>
+        {error !== null && <span className={css.state} data-state="error">{error}</span>}
+        {run !== null && <span className={css.state} data-state={state ?? 'queued'}>{run.status}</span>}
+        {openMedia !== undefined && <button type="button" className={css.media} onClick={() => { openMedia() }}>{chromeCopy.openMedia}</button>}
+      </div>
+      {run === null && error === null && <div className={css.load}>{chromeCopy.composing}</div>}
+      {(run?.stages ?? []).map((stage) => (
+        <div key={stage.id} className={css.row} data-run-stage={stage.id} data-status={stage.status}>
+          <span className={css.rowTitle}>{stage.id}</span>
+          {stage.activity !== undefined && <span className={css.prompt}>{stage.activity}</span>}
+          <span className={css.state} data-state={tileStatusFromVerdict(stage.status)}>{stage.status}</span>
+          {stage.error !== undefined && <span className={css.rowError} role="alert">{stage.error}</span>}
+        </div>
+      ))}
+      {run !== null && runFinished(run.status) && (
+        <div className={css.load}>{run.error !== undefined ? run.error : chromeCopy.runFaceDone}</div>
+      )}
+    </div>
+  )
+}
+
 /** The chat-listed card row: kind tag, title, service, status dot, prompt.
  *  THE CLICK opens the AUTHORING SURFACE in the Cards tab (the old
  *  embed's law — timeline, video preview, per-gen splits, global
@@ -292,7 +400,10 @@ export function FlowCards({ block, openSurface, openMedia }: FlowCardsProps) {
   // (render text without a draft token) is a LEGACY block — it can never
   // mount cards. Never show it an eternal "composing…" (2026-08-22
   // "GETS STUCK: composing" verdict); render the inert superseded note.
-  const legacy = parsed.settled && !parsed.isError && parsed.draftId === null
+  // THE RUN HANDLE EXEMPTS (flows-are-compositions, 2026-11-14): a
+  // draft-less result that names a run is the flow press's OWN landing —
+  // the run-rooted face below mounts, never the legacy note.
+  const legacy = parsed.settled && !parsed.isError && parsed.draftId === null && parsed.runId === null
   if (legacy) {
     return (
       <div className={css.card} data-dsh-part="melite-flow-card" data-legacy="1">
@@ -305,6 +416,23 @@ export function FlowCards({ block, openSurface, openMedia }: FlowCardsProps) {
     )
   }
 
+  // THE RUN-ROOTED FACE: a draft-less press with a live run handle —
+  // the {flow} start's chat tile (the anti-ghost law: the press is
+  // visible here, not only in the runs list). The hook is called
+  // unconditionally (hooks before returns — the runId null arm is a
+  // no-op subscription).
+  const runFace = useRunFace(parsed.draftId === null ? parsed.runId : null)
+  if (parsed.draftId === null && parsed.runId !== null) {
+    return (
+      <RunFaceCard
+        flowName={parsed.flowName}
+        run={runFace.run}
+        error={runFace.error}
+        {...openMedia !== undefined ? { openMedia } : {}}
+      />
+    )
+  }
+
   if (parsed.draftId === null) {
     return (
       <div className={css.card} data-dsh-part="melite-flow-card">
@@ -314,13 +442,16 @@ export function FlowCards({ block, openSurface, openMedia }: FlowCardsProps) {
   }
 
   const rows = doc !== null ? cardRows(doc, live) : []
-  // Q3 (operator 2026-11-09) — THE FROZEN CHAT PREVIEWS: the settled
-  // stages' own artifacts render INLINE in the thread (not only the
-  // bench link). One hero per stage through the shared card-base
-  // faces, derived off the already-fetched doc — the card opens no
-  // live tail here (no hydrate, no subscribe), so the thread keeps a
-  // replay-safe snapshot while the bench owns live progress.
-  const previews = doc !== null ? chatPreviewsFor(doc.stages) : []
+  // Q3 (operator 2026-11-09), refrozen 2026-11-19 — THE PRESS'S OWN
+  // HEROES: the call's persisted preview rows render INLINE in the
+  // thread (not only the bench link), one hero per pressed stage
+  // that minted a url, through the shared card-base faces. THE
+  // REFREEZE (the refresh-flood burn): deriving from the re-fetched
+  // draft doc stamped the WHOLE bench's current heroes under EVERY
+  // historical card on replay — the same stale artifacts N times.
+  // The meta rows are frozen at settle time (replay-safe by
+  // construction); a card that pressed nothing renders no strip.
+  const previews = chatPreviewsFor(parsed.previews)
   const openRow = rows.find((r) => r.stageId === openStage) ?? null
   const openParams = doc?.stages.find((s) => s.id === openStage)?.params ?? {}
   // THE ROW-ERROR SILENCE (the dismissal law's chat-card half):
@@ -433,7 +564,7 @@ export function FlowCards({ block, openSurface, openMedia }: FlowCardsProps) {
             // failure — never silent, never a run.
             const draftId = parsed.draftId
             if (draftId === null) throw new Error('draft id gone')
-            if (patch !== null) await patchStageParams(draftId, openRow.stageId, patch)
+            if (patch !== null) await patchStageParamsChained(draftId, openRow.stageId, patch)
             const gate = await refuseForUnlandedWrite(draftId, openRow.stageId)
             if (gate !== null) throw new Error(gate)
             startedRun(await startDraft(draftId, openRow.stageId))

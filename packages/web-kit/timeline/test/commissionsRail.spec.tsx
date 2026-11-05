@@ -120,4 +120,67 @@ describe("§9 rail — the kit's commission lane", () => {
     const lane = container.querySelector('[data-commission-lane="extend"]') as HTMLElement
     expect(lane.getAttribute("title")).toBeNull()
   })
+
+  it("ARM 8 — POSITIONED segments: segmentSpans draw each window at its frame offset (equal stride, equal width, the carry seam visible), and the chip flow is gone", () => {
+    const { container } = render(bar({
+      totalFrames: 96,
+      commissions: [{
+        id: "extend", label: "Extend", segments: ["w1 · 158f", "w2 · 158f", "w3 · 158f"],
+        segmentSpans: [
+          { start: 96, frames: 158 },
+          { start: 96 + 119, frames: 158 },
+          { start: 96 + 238, frames: 158 },
+        ],
+      }],
+    }))
+    const segs = [...container.querySelectorAll('[data-commission-segment^="extend-"]')] as HTMLElement[]
+    expect(segs).toHaveLength(3)
+    // the span body degrades to a band (no chips inside it)
+    const body = container.querySelector('[data-commission-lane="extend"] > div') as HTMLElement
+    expect(body.querySelectorAll('[data-commission-segment]')).toHaveLength(0)
+    // every window sits at its own offset: equal stride between
+    // consecutive lefts (the carry overlap is the same seam every
+    // time — 158f windows, 119f stride), equal widths
+    const lefts = segs.map((s) => parseFloat(s.style.left))
+    const widths = segs.map((s) => parseFloat(s.style.width))
+    expect(lefts[1]! - lefts[0]!).toBeCloseTo(lefts[2]! - lefts[1]!, 5)
+    expect(widths[0]).toBeCloseTo(widths[1]!, 5)
+    expect(widths[0]).toBeCloseTo(widths[2]!, 5)
+    // every positioned window of this armed extension starts at or
+    // past the real film's end → every segment is marked planned
+    for (const s of segs) expect(s.getAttribute("data-commission-planned")).toBe("true")
+  })
+
+  it("ARM 9 — a MISMATCHED segmentSpans length falls back to the chip flow (the guard is length equality, never a crash)", () => {
+    const { container } = render(bar({
+      totalFrames: 96,
+      commissions: [{
+        id: "extend", label: "Extend", segments: ["w1 · 158f", "w2 · 158f", "w3 · 158f"],
+        segmentSpans: [{ start: 96, frames: 158 }],
+      }],
+    }))
+    const body = container.querySelector('[data-commission-lane="extend"] > div') as HTMLElement
+    expect(body.querySelectorAll('[data-commission-segment]')).toHaveLength(3)
+    expect(container.querySelectorAll("[data-commission-planned]")).toHaveLength(0)
+  })
+
+  it("ARM 10 — THE PLANNED TAIL: plannedFrames extends the axis and seats the hatched band at the film's end; absent → no band (byte-identical)", () => {
+    const { container: plain } = render(bar({ totalFrames: 96 }))
+    expect(plain.querySelectorAll("[data-planned-band]")).toHaveLength(0)
+    cleanup()
+    const { container } = render(bar({ totalFrames: 96, plannedFrames: 396 }))
+    const band = container.querySelector("[data-planned-band]") as HTMLElement
+    expect(band, "the armed tail seats its reservation").not.toBeNull()
+    expect(parseFloat(band.style.width)).toBeGreaterThan(0)
+    // the band starts where the film ends: its left equals a
+    // positioned segment placed at frame 96 (the extend's first
+    // window) — one axis, two faces of the same tail
+    const { container: withSeg } = render(bar({
+      totalFrames: 96, plannedFrames: 396,
+      commissions: [{ id: "extend", label: "Extend", segments: ["w1"], segmentSpans: [{ start: 96, frames: 158 }] }],
+    }))
+    const seg0 = withSeg.querySelector('[data-commission-segment="extend-0"]') as HTMLElement
+    expect(parseFloat((withSeg.querySelector("[data-planned-band]") as HTMLElement).style.left))
+      .toBeCloseTo(parseFloat(seg0.style.left), 5)
+  })
 })

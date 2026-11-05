@@ -17,7 +17,7 @@ import { DisclosureRow, IconBranchOutlineRegular, IconSlidersTwoOutlineRegular }
 import type { StageViewOwnerProps } from '@melite/contracts'
 import { SpecFieldRow } from './rows.tsx'
 import {
-  coerceFieldEdit, fieldsOf, resolveValue,
+  coerceFieldEdit, fieldsOf, resolveValue, composeCandidateDoc,
   type FormSpecDoc, type SpecField, type SpecValues,
 } from './spec.ts'
 import { useFormSpec } from './use-form-spec.ts'
@@ -101,6 +101,18 @@ export function DeclarativeStudio(props: StageViewOwnerProps & {
   const [error, setError] = useState<string | null>(null)
   const [user, setUser] = useState<SpecValues>(params)
   const [open, setOpen] = useState<Record<string, boolean>>({})
+  // THE DEPARTED-KEY SHADOW (the gate-11 transfer-rig burn, the
+  // frame's third consumer): a pick's NULL verdicts delete from the
+  // estate doc, but the studio re-states them from its own frozen
+  // snapshots — the spec-land re-seed ({...params}) and the served
+  // base (row.resolved) both hold the DEPARTED family's words, so
+  // the composed face voices a refused hold ('1024 — invalid
+  // variant for Transfer Rig') over a doc that took the arrival.
+  // The shadow holds the pick's null marks; every local layer
+  // consumes them. A re-pick clears its mark (a non-null verdict
+  // re-states the key). A ref, never state: the marks ride the
+  // write's own frame — no render of their own.
+  const departedRef = useRef<Set<string>>(new Set())
   // THE OUTPUT HALF — the ROW is the truth (runs are named by draft
   //  only, so a tab-wide run id binds WRONG studios to other cards'
   //  runs): this row's result carries its own run_id + artifact url
@@ -145,7 +157,17 @@ export function DeclarativeStudio(props: StageViewOwnerProps & {
     // re-seeds from the frozen row, the atomic-pick law's clear).
     setUser((prev) => {
       const held = typeof prev['model'] === 'string' && prev['model'] !== '' ? prev['model'] : undefined
-      return held !== undefined ? { ...params, model: held } : { ...params }
+      // THE DEPARTURE OUTLIVES THE RE-SEED (the shadow's re-seed
+      // half): seeding from the frozen row verbatim resurrects the
+      // departed family's axis words the pick just nulled — the
+      // re-seed strips the shadow marks so the arrival seeds its
+      // OWN rows (or rests empty), never the departed hold.
+      const seed: SpecValues = {}
+      for (const [k, v] of Object.entries(params)) {
+        if (departedRef.current.has(k)) continue
+        seed[k] = v
+      }
+      return held !== undefined ? { ...seed, model: held } : { ...seed }
     })
     // the envelope lift: report the estate's declared size class
     props.onSurface(liveSpec.size === 'huge' ? 'huge' : '')
@@ -199,9 +221,18 @@ export function DeclarativeStudio(props: StageViewOwnerProps & {
   // THE SERVED BASE (hour-26 stroke 15, the 1:1 run law): the row's
   // `resolved` map layers under the user (same law as the generic
   // drill — one resolver, served to the visual).
-  const servedBase: SpecValues | undefined =
+  const servedBaseRaw: SpecValues | undefined =
     typeof row['resolved'] === 'object' && row['resolved'] !== null && !Array.isArray(row['resolved'])
       ? row['resolved'] as SpecValues : undefined
+  // THE SHADOWED BASE (the shadow's view half): the served base is
+  // a mount-time snapshot — after a cross-family switch it still
+  // states the departed family's coordinates, and the composed
+  // value (resolveValue / composeCandidateDoc) would re-voice the
+  // refused hold over the doc the estate already healed. The
+  // effective base strips the shadow marks; the marks die with the
+  // pick that clears them or the remount that re-serves the truth.
+  const servedBase: SpecValues | undefined = servedBaseRaw === undefined ? undefined
+    : Object.fromEntries(Object.entries(servedBaseRaw).filter(([k]) => !departedRef.current.has(k)))
   const value: SpecValues = resolveValue(spec ?? { form: '' }, user, servedBase)
   const specRows: SpecField[] = spec !== null ? fieldsOf(spec) : []
   // the SAME shared square provider the generic drill rides — one
@@ -251,14 +282,58 @@ export function DeclarativeStudio(props: StageViewOwnerProps & {
         // rides (one definition, every face). A studio without it
         // served a multi-family card with no way to switch family
         // in the drill: the contract held on the wire and died at
-        // the face. A pick lands as ONE multi-key write (the atomic
-        // pick law) merged onto the user layer; cleared axes stamp
-        // '' and ride the patch-first run's merge-patch semantics.
+        // the face.
+        // THE PICK IS A DISCRETE DOOR WRITE (the settings-eater law,
+        // 2026-11-16, the sweep's img-to-mesh burn): the atomic pick
+        // once merged onto the USER STATE alone — no seat, no wire —
+        // so a recipe/family pick lived only in the view and died
+        // with it (the 2026-09-23 burn's exact shape, probe k: zero
+        // drafts writes, zero voices, the doc stranded on the landed
+        // row while the face moved). The pick rides the seat's NOW —
+        // ONE whole-frame CAS write, never the trailing window (the
+        // atomic-pick law: per-key coalescing is the half-switch).
+        // The frame's null verdicts DELETE from the user layer (the
+        // departure law): a null riding the map poisons the resolve
+        // (only FRAME nulls consume), and the patch-first run derives
+        // the departed keys' nulls from their absence.
+        // THE PICK JUDGES THE SHOWN DOC (the composability cure's
+        // studio half, 2026-11-16, the gate-11 trellis2-native red:
+        // the mount once plumbed NEITHER layer — pickHeld undefined —
+        // so a CROSS-FAMILY pick's departure judged an empty held and
+        // left the departing family's coordinates stated (pixal3d's
+        // variant/quant under trellis2-native), the door refused the
+        // frame, and the doc never took the arrival). The picks
+        // derive over base under user — the exact shape
+        // composeCandidateDoc gives the door — and the user layer
+        // rides along for the pick-reconcile law (out-of-envelope
+        // knobs clamp against the layer that holds them).
         h(ModelAxes, {
           spec,
           value,
+          user,
+          pickHeld: composeCandidateDoc(servedBase ?? {}, user, {}),
           onSet: onEdit,
-          onPick: (patch) => { setUser((prev) => ({ ...prev, ...patch })) },
+          onPick: (patch) => {
+            // THE SHADOW MARKS (the frame's null ledger): a null
+            // verdict DEPARTS the key at every local layer — the
+            // user layer (below), the re-seed, and the served base
+            // view — and a non-null verdict re-states it (its mark
+            // clears). Written before the state merges so both
+            // consumers read the same frame's marks.
+            for (const [k, v] of Object.entries(patch)) {
+              if (v === null) departedRef.current.add(k)
+              else departedRef.current.delete(k)
+            }
+            setUser((prev) => {
+              const next: SpecValues = { ...prev }
+              for (const [k, v] of Object.entries(patch)) {
+                if (v === null) delete next[k]
+                else next[k] = v
+              }
+              return next
+            })
+            seat.now(patch)
+          },
         }),
         // CardForm renders each group's title itself — no duplicate.
         declaration.expose.map((g) => h('section', { key: g, className: css.studioGroup },

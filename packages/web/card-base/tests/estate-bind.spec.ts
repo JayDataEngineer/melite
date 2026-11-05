@@ -131,6 +131,15 @@ test('THE HONEST-HOST LAW: no lazy source armed, no bind — the refusal names t
   expect(() => estateRemote()).toThrow('TYPERT_REMOTE contributions must mount')
 })
 
+test('THE THROWING SOURCE: a getter that dies mid-read reads as absent — the loud refusal, never a crash', () => {
+  // pullLiveNamespaces' catch: the reflect seam itself throwing (a
+  // store torn down under a late verb) is ABSENCE at verb time, not
+  // a new generation and not a propagated crash — the caller meets
+  // the same loud wiring refusal as an unarmed host.
+  armEstateRemoteLazyBind(() => { throw new Error('store torn down') })
+  expect(() => estateRemote()).toThrow('estate remote not mounted')
+})
+
 test('SOURCE LAW: the runtime child-fiber binder stays dead — no ctx.plugin escape hatch regrows', () => {
   // THE FIVE RECEIPTS (2026-09-29): every runtime-fiber spelling
   // died on cordis' own machinery. The wall pins the inject-free
@@ -157,4 +166,28 @@ test('SOURCE LAW: slots.ts arms the lazy getter over ctx.get, never a fiber or a
   expect(source.includes('armEstateRemoteLazyBind'), 'the factory must arm the lazy bind').toBe(true)
   expect(source.includes("ctx.get('remote.bench')"), 'the getter reads the inject-free reflect seam').toBe(true)
   expect(source.includes('bindEstateRemoteFor'), 'no runtime fiber binder may fire from registration').toBe(false)
+})
+
+test('THE THROWN PULL: a source that snaps keeps the last-good bind — the verb never regresses', () => {
+  const lastGood = namespaces()
+  bindEstateRemoteFromRemote(lastGood)
+  // A studio re-arms its getter and the store read throws (a torn
+  // ctx): the pull reads "absent at verb time — not a new
+  // generation" and the last-good bind keeps answering.
+  armEstateRemoteLazyBind(() => {
+    throw new Error('wire snapped')
+  })
+  expect(estateRemote().bench).toBe(lastGood.bench)
+  expect(estateRemote().runs).toBe(lastGood.runs)
+})
+
+test('THE MANAGE-PRESENT PULL: a generation that manages binds the manage lane through the lazy seam', () => {
+  const four = namespaces()
+  const manage = { act: (): null => null } as unknown as EstateNamespaces['manage']
+  armEstateRemoteLazyBind(() => ({ ...four, manage }))
+  // The first verb pulls, binds THIS bundle's copy, and carries the
+  // optional manage namespace — manageRemote answers on it.
+  expect(estateRemote().bench).toBe(four.bench)
+  expect(estateRemote().manage).toBe(manage)
+  expect(manageRemote()).toBe(manage)
 })

@@ -59,7 +59,7 @@ import { decorateAutoMode } from './auto-mode-decoration.ts'
 import { CARD_TOOLS, FLOW_TOOLS } from './card-tools.ts'
 import { buildChatFileMentions, meliteCardsTurnDefinition } from './card-mentions.ts'
 import { CardsTab } from './CardsTab.tsx'
-import { CARDS_BENCH_ADDRESS, benchAddressOf, benchSessionKey, bindRunFramesRemote, markedBenchKeyOf, openCardsResource, shouldSpotlight, subscribeMarkedBench, watchBenchLands, type BenchNamespace } from './cards-resource.ts'
+import { CARDS_BENCH_ADDRESS, benchAddressOf, carriedBenchKey, bindRunFramesRemote, markedBenchKeyOf, openCardsResource, shouldSpotlight, subscribeMarkedBench, watchBenchLands, type BenchNamespace } from './cards-resource.ts'
 import { bindEstateRemoteFromRemote, wireContractToastToRowStore, isDuplicateServiceSeat, type EstateNamespaces } from '@melite/card-base/client'
 import { chromeCopy } from '../chromeCopy.ts'
 import { resolveCardsAddress } from './CardsTab.tsx'
@@ -432,7 +432,7 @@ export async function apply(ctx: ClientContext): Promise<void> {
     // mounts, the lawful unattributed 'main' owns the boot window
     // (benchSessionKey(undefined) — the sessionkey law, never a
     // local literal, never a dead watcher).
-    const activeBenchSession = (): string => benchSessionKey(markedBenchKeyOf())
+    const activeBenchSession = (): string => carriedBenchKey(markedBenchKeyOf())
     const subscribeBenchSession = (fn: () => void): (() => void) => subscribeMarkedBench(fn)
     ctx.effect(() => watchBenchLands(activeBenchSession, (sessionKey) => {
       try {

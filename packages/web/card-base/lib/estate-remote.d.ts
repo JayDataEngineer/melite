@@ -89,11 +89,15 @@ export declare function unbindEstateRemote(): void;
  *  namespaces still do not exist the loud refusal below speaks. */
 export declare function armEstateRemoteLazyBind(source: () => Partial<EstateNamespaces>): void;
 /** The bound namespaces — LOUD when unbound, and the LAZY BIND'S
- *  MOUTH: the first verb after the mounts land pulls the armed
- *  getter once (order-proof — by first use, the mounter has long
- *  booted); a verb before the mounts (or on a host without the
- *  estate plugin) meets the loud wiring refusal, never a hang and
- *  never a silent fallback. */
+ *  MOUTH: every verb pulls the armed getter once (order-proof — by
+ *  first use, the mounter has long booted) and REBINDS when the live
+ *  namespaces are a different mount generation (the 2026-11-01
+ *  from-media burn: the bind cached the namespace OBJECTS once, and a
+ *  re-applied mounter deletes the old generation's method installs on
+ *  dispose — the cached facade kept answering `media.list is not a
+ *  function` while the live mount served fine). A verb before the
+ *  mounts (or on a host without the estate plugin) meets the loud
+ *  wiring refusal, never a hang and never a silent fallback. */
 export declare function estateRemote(): EstateNamespaces;
 /** THE BIND SEAM, HARNESS-SHAPED (2026-09-29, the fourth lane
  *  receipt): the client-bundle preset inlines card-base into every

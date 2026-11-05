@@ -96,9 +96,9 @@ test('the agent-authored bench stage, opened in the cards tab, IS the studio doc
     doc: {
       card: 'h3-timeline',
       engine: 'comfyui',
-      params: { variant: 'h3', quant: 'int8', model: 'h3', calls: AGENT_CALLS },
+      params: { variant: 'timeline', quant: 'int8', model: 'h3', calls: AGENT_CALLS },
       inputs: {},
-      outputs: { default: 'image' },
+      outputs: { default: 'video' },
       expect_rev: rev,
       author: 'agent',
     },

@@ -292,6 +292,21 @@ export declare function variantGroupsContract(spec: FormSpecDoc): string[];
  *  so an offered alias is a trap row. Direct spec.variants reads
  *  (address resolution, walls) still see it. */
 export declare function rowsFor(spec: FormSpecDoc, group: string): FormVariantRow[];
+/** THE ROW-CLAIM LAW (the 15th report, symptom 2 — audit
+ *  2026-10-31-modpress-row-face): a card's declared studio renders a
+ *  bench row ONLY when the row's params carry at least one key the
+ *  studio owns (studio_writes). An agent-pressed mod-only row —
+ *  {refine: […]} with no calls, no keyframes — is NOT the studio's
+ *  document; hydrating it seats the one-window starter and buries
+ *  the bag, so the GENERIC form is its designed face (CardForm
+ *  renders every declared mod field group — the row's whole truth).
+ *  A DECL that names no writes list owns everything: the studio is
+ *  the card's only author, and the fallback-extermination wall's
+ *  force (arm A of stage-view-refusal) stands. PURE.
+ *  @param spec the doc's served form-spec.
+ *  @param params the frozen bench row's params.
+ *  @returns true when the studio tenant claims the row. */
+export declare function studioClaimsRow(spec: FormSpecDoc, params: Record<string, unknown> | undefined): boolean;
 export declare function composingRows(spec: FormSpecDoc, group: string, active: Record<string, string | undefined>): FormVariantRow[];
 /** The Variant axis' rows (group CATEGORIES.variant, served order). */
 export declare function variantRows(spec: FormSpecDoc): FormVariantRow[];
@@ -458,8 +473,21 @@ export declare function seedRecipeStamp(spec: FormSpecDoc, seeds: SpecValues): S
  *  stamp is the user's word and stands (deepEqualJson, the F3 fix —
  *  `===` never matched an array bag). NEVER a persisted `recipe`
  *  key (the dead card-recipe layer; the compose door refuses the
- *  undeclared param). PURE — the caller owns the write. */
-export declare function recipeDeparturePatch(row: FormVariantRow, held?: SpecValues): SpecValues;
+ *  undeclared param). PURE — the caller owns the write.
+ *
+ *  THE CLAMPED-STAMP LAW (2026-11-03, the flux-klein blank burn): a
+ *  recipe picked under a clamping envelope writes the RECONCILED
+ *  stamp (a recipe's 50 composes to 8 under a 4-step distill — the
+ *  override reconcile's own law), so the departure compares held
+ *  against the stamp the pick WROTE — the same derivation the pill
+ *  lights by (activeRecipeId: "the stamp the pill DERIVES must be
+ *  the stamp the pick WRITES") — never the row's RAW defaults. The
+ *  raw comparison made a clamped pick UNDEPARTABLE: held carried
+ *  the clamp (8/2), the raw stamps (50/4) never matched, the blank
+ *  wrote an empty frame, and the clamped values stayed stated
+ *  forever with no error anywhere. A key whose derived stamp the
+ *  reconcile dropped (nothing was written) has nothing to depart. */
+export declare function recipeDeparturePatch(spec: FormSpecDoc, row: FormVariantRow, held?: SpecValues): SpecValues;
 /** THE DOOR'S ADDRESS LAW, MIRROR-SIDE (audit 015 C1, the route-claim
  *  cure): the run door narrows the compose address to '' when the
  *  run's mid IS the family head (cardsVariant.ts: the head spelling

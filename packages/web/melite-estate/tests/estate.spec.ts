@@ -138,7 +138,7 @@ afterEach(() => {
 // present by default (the healthy lane); the settle-gate arms below
 // delete one to replay the 2026-10-23 silent-green wedge.
 async function mount(
-  config?: { repoRoot?: string; blenderPath?: string; allowGuttedLane?: boolean; mcpEngines?: string | string[]; criticRoute?: string; agentRoute?: string; stateRoots?: string[] | string; seatSettleBudgetMs?: number; stateRoot?: string; storeRoot?: string },
+  config?: { repoRoot?: string; blenderPath?: string; allowGuttedLane?: boolean; mcpEngines?: string | string[]; criticRoute?: string; agentRoute?: string; stateRoots?: string[] | string; seatSettleBudgetMs?: number; stateRoot?: string; storeRoot?: string; acquireStallTimeoutMs?: number; durableDownloads?: boolean; downloadClaimIntervalMs?: number },
   loaderNames?: string[],
   seatsOverride?: Record<string, unknown>,
 ): Promise<Ctx> {
@@ -847,5 +847,120 @@ describe('melite-preflight-note — the boot note rides the manage seat', () => 
     } finally {
       vi.restoreAllMocks()
     }
+  })
+
+  // THE COVERAGE ARMS (2026-11-14 debt battery): the note's shaped
+  // answers get their firing arms — a non-list misses roster and a
+  // detail-less green both state their honest line, and a non-Error
+  // rejection names itself through the String voice.
+  it('a non-list misses roster answers the green line; a detail-less green names the default', async () => {
+    const lines = silence()
+    try {
+      const noteApply = (await rowApply('melite-preflight-note')).fn
+      const shapeless = {
+        get: (n: string): unknown =>
+          n === 'manage' ? { act: () => Promise.resolve({ misses: 'engine unreachable' }) } : undefined,
+        effect: (fn: () => unknown): unknown => fn(),
+        timeout: (cb: () => void): (() => void) => { cb(); return () => {} },
+      }
+      noteApply(shapeless as never, undefined)
+      await new Promise((r) => setTimeout(r, 0))
+      expect(lines.some((l) => l.includes('preflight: all axes green'))).toBe(true)
+
+      lines.length = 0
+      const bare = {
+        get: (n: string): unknown =>
+          n === 'manage' ? { act: () => Promise.resolve({ misses: [] }) } : undefined,
+        effect: (fn: () => unknown): unknown => fn(),
+        timeout: (cb: () => void): (() => void) => { cb(); return () => {} },
+      }
+      noteApply(bare as never, undefined)
+      await new Promise((r) => setTimeout(r, 0))
+      expect(lines.some((l) => l.includes('preflight: all axes green'))).toBe(true)
+      expect(lines.some((l) => l.includes('MISS'))).toBe(false)
+    } finally {
+      vi.restoreAllMocks()
+    }
+  })
+
+  it('a non-Error rejection still names itself (the String voice, never [object Object])', async () => {
+    const lines = silence()
+    try {
+      const noteApply = (await rowApply('melite-preflight-note')).fn
+      const primitive = {
+        get: (n: string): unknown =>
+          n === 'manage' ? { act: () => Promise.reject('wire snapped') } : undefined,
+        effect: (fn: () => unknown): unknown => fn(),
+        timeout: (cb: () => void): (() => void) => { cb(); return () => {} },
+      }
+      noteApply(primitive as never, undefined)
+      await new Promise((r) => setTimeout(r, 0))
+      expect(lines.some((l) => l.includes('preflight note failed') && l.includes('wire snapped'))).toBe(true)
+    } finally {
+      vi.restoreAllMocks()
+    }
+  })
+})
+
+// ── THE COVERAGE ARMS (2026-11-14 debt battery): the composition's
+// own faces get their firing arms — the deployment forward and the
+// settle refusal's lock facts. ──
+
+describe('the deployment face forward — the provisioning fields ride one declaration', () => {
+  it('threads the stall window, durability word, and claim cadence into the provisioning row (the 2026-10-21/2026-11-01 seats)', async () => {
+    const ctx = await mount({
+      repoRoot: '/tmp/pin',
+      storeRoot: '/mnt/models',
+      acquireStallTimeoutMs: 45_000,
+      durableDownloads: true,
+      downloadClaimIntervalMs: 5_000,
+    })
+    const provisioning = ctx.plugins.find((p) => p.name === 'estate-provisioning-composition')
+    expect(provisioning?.cfg).toEqual({
+      storeRoot: '/mnt/models',
+      acquireStallTimeoutMs: 45_000,
+      durableDownloads: true,
+      downloadClaimIntervalMs: 5_000,
+    })
+  })
+})
+
+describe('the settle refusal\u2019s lock facts (the cold-boot audit F4)', () => {
+  /** A settle-refusal mount with the queue seat dead and a gateway
+   *  lock pre-written at the pinned state root. */
+  async function refusedWithLock(content: string): Promise<Error> {
+    const stateRoot = mkdtempSync(join(tmpdir(), 'estate-lock-'))
+    writeFileSync(join(stateRoot, 'gateway.lock'), content)
+    try {
+      const outcome: unknown = await mount(
+        { repoRoot: '/tmp/pin', stateRoot, seatSettleBudgetMs: 50 },
+        undefined,
+        { queue: undefined },
+      ).catch((e: unknown) => e)
+      return outcome as Error
+    } finally {
+      rmSync(stateRoot, { recursive: true, force: true })
+    }
+  }
+
+  it('a lock held by a LIVE pid names the holder and the one-writer law', async () => {
+    const outcome = await refusedWithLock(String(process.pid))
+    expect(outcome).toBeInstanceOf(Error)
+    expect((outcome as Error).message).toMatch(new RegExp('held by pid ' + String(process.pid)))
+    expect((outcome as Error).message).toMatch(/ALIVE — another estate owns this root \(one writer per root\)/)
+  })
+
+  it('a lock held by a DEAD pid names the stale lock and its steal', async () => {
+    const outcome = await refusedWithLock('2147483646')
+    expect(outcome).toBeInstanceOf(Error)
+    expect((outcome as Error).message).toMatch(/held by pid 2147483646/)
+    expect((outcome as Error).message).toMatch(/dead — a stale lock the next acquire steals; the queue died for another reason/)
+  })
+
+  it('an unreadable lock names the bytes it found (never a silent guess)', async () => {
+    const outcome = await refusedWithLock('estate daemon')
+    expect(outcome).toBeInstanceOf(Error)
+    expect((outcome as Error).message).toMatch(/present but unreadable/)
+    expect((outcome as Error).message).toMatch(/"estate daemon"/)
   })
 })

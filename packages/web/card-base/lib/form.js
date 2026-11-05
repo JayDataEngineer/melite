@@ -55,7 +55,7 @@ export { PackPrompt, ModelAxes, RecipePills } from "./axes.js";
  *  over the USER layer (the settings law: presence IS the override
  *  mark, the reset chip removes it). The constructor OWNS the square
  *  provider (no call site wires it, no call site can forget it). */
-export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference, omitInputRail, omitFields, omitRecipeRow, mutedViolations }) {
+export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, orbitFace, paintReference, omitInputRail, omitFields, omitRecipeRow, mutedViolations }) {
     // DERIVED, ALWAYS FRESH (the layered law): fields walk the schema
     // envelope (families-scoped); the resolved value layers defaults
     // <- model defaults <- recipe <- user — exactly what a run
@@ -540,8 +540,13 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
             ...(onPatch !== undefined ? { onPatch } : {}),
             ...(paintFace !== undefined ? { paintFace } : {}),
             ...(bboxFace !== undefined ? { bboxFace } : {}),
+            ...(orbitFace !== undefined ? { orbitFace } : {}),
             ...(paintReference !== undefined ? { paintReference } : {}),
             ...(wire?.loadMedia !== undefined ? { loadMedia: wire.loadMedia } : {}),
+            // THE CHAIN-RUN PICKER LAW (the upscale leaf): the live
+            // chain-store runs ride the SAME wire — one injection, every
+            // seat (a leaf without the lane degrades to the text input).
+            ...(wire?.loadChainRuns !== undefined ? { loadChainRuns: wire.loadChainRuns } : {}),
             // THE REGION-MASK PICKER LAW (E2-11a): the mod leaf's
             // From-flow picker rides the SAME rows the card face's
             // squares ride — one wire, every seat (a leaf that forgot

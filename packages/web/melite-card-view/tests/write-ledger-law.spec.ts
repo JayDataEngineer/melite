@@ -55,6 +55,14 @@
 //       nobody held (the cure invisible, the refusal a lie).
 //       reconcileStageWriteFailures drops what nobody carries —
 //       pinned both ways (the ghost drops; the LIVE failure stays).
+//  THE RAPID-PICK BURN (2026-11-03, the sweep's Variant axis) —
+//  THE UNSERIALIZED DISCRETE WRITE: atomic picks rode the direct
+//  door with the render-time rev and no await between the gestures;
+//  rapid same-key picks collided and a rebase retry of an EARLIER
+//  pick landed after the last — face Kroma Base, bench raw, silent.
+//  UI-authored discrete writes ride patchStageParamsChained (the
+//  stage's send chain, confirmedRev at send time) — pinned as the
+//  rev SEQUENCE (each riding the previous landing's answer).
 //  F1-A/F1-C (2026-10-22, the write-ledger race audit) — THE STALE
 //       SNAPSHOT: the force's sweep yields at every send, so an entry it
 //       snapshotted can be SUPERSEDED by a keystroke (a fresh entry with
@@ -73,7 +81,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { until } from "../../../../tests/helpers/until.ts";
 import {
   flushStageWrites, forgetDraftWrites, forgetStageWrites, patchStageParams,
-  reconcileStageWriteFailures, resetStageWrites, scheduleStageParam,
+  patchStageParamsChained, reconcileStageWriteFailures, resetStageWrites, scheduleStageParam,
   stageWriteState,
 } from "../src/client/draft.ts";
 import { mountEstateFakes, type EstateFakesOptions } from "./estate-harness.ts";
@@ -517,5 +525,40 @@ describe('A TIMER FIRING MID-FORCE IS NOT OVERTAKEN BY THE SNAPSHOT (the race au
     // behind it would leave the older value persisted and the gate
     // vouching for a doc the studio no longer shows
     expect(stepsWrites).toEqual([16]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// THE RAPID-PICK BURN (2026-11-03) — three discrete same-key writes,
+// no await between them, through the chained door
+// ---------------------------------------------------------------------------
+describe('RAPID DISCRETE WRITES LAND IN CLICK ORDER (the 2026-11-03 rapid-pick burn)', () => {
+  test('three same-key chained writes ride distinct revs, each the rev the previous landing answered', async () => {
+    // the sweep's Variant axis: turbo → raw → kroma-base picked with
+    // no await between the gestures (the face updates optimistically
+    // per click). The direct door sent all three at one render-time
+    // rev; every writer collided, and a rebase retry of an EARLIER
+    // pick landed after the last — the face showed Kroma Base while
+    // the bench held raw, with no error anywhere (the retry
+    // SUCCEEDED, just late with a stale value). The chained door
+    // serializes them in call order, each riding the answered rev.
+    const fakes = wire({ patchAnswerRevs: [10, 11, 12] });
+    const p1 = patchStageParamsChained(draftIdOf('bench-s1'), 's_0', { variant: 'turbo' });
+    const p2 = patchStageParamsChained(draftIdOf('bench-s1'), 's_0', { variant: 'raw' });
+    const p3 = patchStageParamsChained(draftIdOf('bench-s1'), 's_0', { variant: 'kroma-base' });
+    await Promise.all([p1, p2, p3]);
+    const state = await flushStageWrites(draftIdOf('bench-s1'), 's_0');
+    // every write landed; the ledger holds no refusal
+    expect(state.failedKeys).toEqual([]);
+    const revs = fakes.calls
+      .filter((c) => c.method === 'drafts/patch')
+      .map((c) => c.args['expectRev']);
+    // the first rides the fetched rev (7); each later write rides
+    // the ANSWERED rev (10, 11), never the stale render-time rev
+    // shared by all three direct writers
+    expect(revs).toEqual([7, 10, 11]);
+    // the LAW, not the example: no two chained writers share a rev —
+    // a shared rev IS the collision the CAS fence exists to refuse
+    expect(new Set(revs).size).toBe(revs.length);
   });
 });

@@ -7,7 +7,7 @@ import { createElement as h, useCallback, useEffect, useMemo, useRef, useState }
 import { Button, IconCloseOutlineRegular, IconLoadingOutlineRegular, IconPlayOutlineRegular, Input, Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
 import css from './card.module.css'
 import { fetchFormSpec, fieldsOf } from '@melite/card-base/client'
-import { forgetDraftWrites, patchStageParams } from './draft.ts'
+import { forgetDraftWrites, patchStageParamsChained } from './draft.ts'
 import type { CardsDraftValue } from './cards-resource.ts'
 import { fetchBench, benchSessionKey } from './cards-resource.ts'
 import { uploadInputFile } from '@melite/card-base/client'
@@ -436,7 +436,7 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
         if (!fresh.stages.some((s) => s.id === target)) {
           throw new Error('the stage the file was dropped on is gone — attach again')
         }
-        return patchStageParams(fresh.draftId, target, { [field]: src })
+        return patchStageParamsChained(fresh.draftId, target, { [field]: src })
       })
       .then(() => {
         attachingRef.current = false
@@ -671,6 +671,14 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
       onStop: () => { onStopStage(open) },
       onClose,
       onRemoved: () => { closeDrill(); reload() },
+      // THE FACE-TRUTH RESYNC (2026-11-03, the blank round-trip
+      // burn): a LANDED discrete drill write (the atomic pick, the
+      // recipe departure) re-reads the bench — the recipe face
+      // derives from the resolved doc (base under user), so without
+      // the re-read it keeps naming the departed row after its
+      // write landed. keepOpen: the drill STAYS OPEN, the stage row
+      // swaps to the fresh one (the refreshTick law's own shape).
+      onResync: () => { reload({ keepOpen: true }) },
       // THE SETTLEMENT RIDE (2026-10-15): the implicit return
       // carries the write's settlement to the drill — a braced body
       // would swallow it back to void and re-strand the ghost.

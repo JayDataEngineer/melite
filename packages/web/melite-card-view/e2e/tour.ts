@@ -25,6 +25,12 @@
  *      the bench once at open; a stage seeded after can miss the
  *      render), then expand the sidebar and open the estate's guide
  *      tab by the plugin's OWN hard-coded title.
+ *  7. dismissMaskingDialogs — one pass over every known masking
+ *      dialog (notice, account Get started, models Configure later),
+ *      never throws; the probe-less half of dismissOnboarding.
+ *  8. ensureRightSidebarOpen — expand + Melite Bench tab with the
+ *      panel-open receipt (never a swallowed click): the masked-click
+ *      law's own seat.
  *
  * The workspace pre-state (no workspace chosen → empty session tree)
  * is HOST state and belongs to the README's lane recipe, which seeds
@@ -85,7 +91,41 @@ function composerOf(page: Page) {
  *
  *  The loop is bounded: a host with NO dialogs probes true on the
  *  first round and pays ~2s, and a composer slow to BOOT gets the last
- *  round's full budget instead of the probe's. */
+ *  round's full budget instead of the probe's.
+ *
+ *  THREE dialogs, not two (2026-11-01): the account "Get started"
+ *  (Close / Add API Key / Sign in) mounts LATE via the readiness join
+ *  and is a different surface from the models "Configure later" pass —
+ *  dismissMaskingDialogs below owns the full set; this loop owns the
+ *  clickable-composer proof. */
+/** One pass over the known masking dialogs — cheapest first, never
+ *  throws: absence is the common case. No reachability probe; the
+ *  caller owns the proof (dismissOnboarding's composer click, or the
+ *  panel-open receipt in ensureRightSidebarOpen). */
+export async function dismissMaskingDialogs(page: Page, timeoutMs = 10_000): Promise<void> {
+  // THE NOTICE FIRST: it stacks OVER the API-key dialogs, so the
+  // other order leaves the composer masked behind it.
+  try {
+    await page.getByRole('dialog').filter({ hasText: /Notice/ })
+      .getByRole('button', { name: 'Continue' }).click({ timeout: timeoutMs })
+  } catch { /* no first-run notice on this host */ }
+  // THE ACCOUNT DIALOG (2026-11-01, the settled-run 3/3 red at
+  // studio-agent-writes :298): the shell's "Get started" (Close / Add
+  // API Key / Sign in) — CLIENT state that mounts LATE (seen OPEN 8
+  // minutes after settle's double dismiss, once the readiness join
+  // resolves) and masks every pointer. A DIFFERENT dialog from the
+  // models "Configure later" pass below, which is why the old loop
+  // never cleared it: it dismissed a dialog that was never there
+  // while this one held the mask. Close commits nothing.
+  try {
+    await page.getByRole('dialog').filter({ hasText: /Get started/ })
+      .getByRole('button', { name: 'Close' }).click({ timeout: timeoutMs })
+  } catch { /* no account onboarding dialog on this host */ }
+  try {
+    await page.getByRole('button', { name: 'Configure later' }).click({ timeout: timeoutMs })
+  } catch { /* host already configured — no onboarding dialog */ }
+}
+
 export async function dismissOnboarding(page: Page): Promise<void> {
   const ROUNDS = 3
   for (let round = 0; round < ROUNDS; round++) {
@@ -96,16 +136,59 @@ export async function dismissOnboarding(page: Page): Promise<void> {
       await composerOf(page).click({ timeout: last ? 30_000 : 2_000 })
       return
     } catch { /* still masked (or not booted) — dismiss, then re-probe */ }
-    // THE NOTICE FIRST: it stacks OVER the API-key dialog, so the
-    // other order leaves the composer masked behind it.
-    try {
-      await page.getByRole('dialog').filter({ hasText: /Notice/ })
-        .getByRole('button', { name: 'Continue' }).click({ timeout: 10_000 })
-    } catch { /* no first-run notice on this host */ }
-    try {
-      await page.getByRole('button', { name: 'Configure later' }).click({ timeout: 30_000 })
-    } catch { /* host already configured — no onboarding dialog */ }
+    // One bounded pass per round (10s per dialog — the late mount gets
+    // three windows, and the last round's composer probe already waits
+    // out a late boot; the old 30s Configure-later wait per round only
+    // ever paid out on a host that never shows it).
+    await dismissMaskingDialogs(page)
   }
+}
+
+/** Open the right sidebar's Melite Bench tab and PROVE it opened.
+ *
+ *  THE MASKED-CLICK LAW (2026-11-01, the settled-run 3/3 red at
+ *  studio-agent-writes :298): the expand + tab clicks under the
+ *  re-mounted Get started dialog are intercepted — swallowed by
+ *  `.catch(()=>{})` they became a silently unopened panel (the failure
+ *  DOM still shows "Open right sidebar" with the dialog OPEN; zero
+ *  tiles of any text). This helper never swallows: each round
+ *  re-dismisses (the dialog re-mounts late), re-clicks, and asserts
+ *  the tab content actually rendered — `cards-tab-scroll` wraps EVERY
+ *  tab face (loading, failed, body alike), so it is the panel's own
+ *  receipt even on a bench that has nothing to show yet. A panel that
+ *  never opens fails HERE with its own named cause, never downstream
+ *  on an empty tile grid. */
+export async function ensureRightSidebarOpen(page: Page): Promise<void> {
+  const ROUNDS = 3
+  for (let round = 0; round < ROUNDS; round++) {
+    // Already open (a retry, or a host that kept it so) — the tab
+    // receipt alone is the proof, no clicks left to mis-fire.
+    try {
+      await page.getByTestId('cards-tab-scroll').first().waitFor({ state: 'visible', timeout: 5_000 })
+      return
+    } catch { /* the panel is not open yet — dismiss, then open */ }
+    await dismissOnboarding(page)
+    try {
+      // The expand seat exists only while the sidebar is closed; the
+      // probe above already returned when open, so a miss here is the
+      // open-race itself — the tab click below still gets its chance.
+      await page.locator('[data-sidebar-right-expand]').first().click({ timeout: 10_000 })
+    } catch { /* already open, or still masked — the tab click decides */ }
+    try {
+      // THE GUIDE TAB — the estate plugin's OWN hard-coded title (see
+      // openCardsWithBench), never the shell's locale copy.
+      await page.getByRole('button', { name: /Melite Bench/ }).first().click({ timeout: 10_000 })
+    } catch { /* still masked — next round re-dismisses and retries */ continue }
+    try {
+      await page.getByTestId('cards-tab-scroll').first().waitFor({ state: 'visible', timeout: 15_000 })
+      return
+    } catch { /* masked or slow — next round re-dismisses and retries */ }
+  }
+  throw new Error(
+    'THE RIGHT SIDEBAR NEVER OPENED: three dismiss+expand+tab rounds left no Melite Bench tab content — '
+    + 'the onboarding dialog is re-mounting over the clicks, or the host never served the tab. '
+    + 'A silently unopened panel (the 2026-11-01 settled-run red) is never allowed past this seat.',
+  )
 }
 
 /** THE ACTIVATION GRACE (doors.ts `estateStillActivating`): every seat
@@ -184,6 +267,11 @@ export async function settle(page: Page): Promise<void> {
   // before the estate composition leaves its activation gate, and the
   // mint's own doors answer the boot race until it does.
   await waitForEstate(page)
+  // THE POST-GRACE RE-MOUNT (2026-11-01, the settled-run 3/3 red):
+  // the account Get started dialog lands when the readiness join
+  // resolves — DURING the grace wait above, AFTER the double dismiss.
+  // A third pass after the gate costs one composer click when clean.
+  await dismissOnboarding(page)
 }
 
 /** Open SOME conversation (stroke 83): the wall must never pass or
@@ -395,7 +483,7 @@ export async function seedBenchH3(page: Page, sessionKey: string): Promise<void>
     doc: {
       card: 'h3-timeline',
       engine: 'comfyui',
-      params: { variant: 'h3', quant: 'int8', model: 'h3', calls: [{ text: 'A single shot — describe the action, camera, and mood.', start_frame: 0, end_frame: 175 }] },
+      params: { variant: 'timeline', quant: 'int8', model: 'h3', calls: [{ text: 'A single shot — describe the action, camera, and mood.', start_frame: 0, end_frame: 175 }] },
       inputs: {},
       outputs: { default: 'image' },
       expect_rev: rev,

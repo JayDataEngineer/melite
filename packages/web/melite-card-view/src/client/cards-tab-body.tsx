@@ -57,7 +57,7 @@ import { forgetStageWrites, paramFields, patchStageOutcome, patchStageParams, sc
 import css from './card.module.css'
 import { runCardStage, runBenchSequential, describePass } from './stage-run.ts'
 import type { CardsBenchValue, CardsDraftValue, CardsRunValue, BenchStageView } from './cards-resource.ts'
-import { fetchMediaLibrary, CARDS_BENCH_ADDRESS, benchAddressOf, benchSessionKey, benchSessionOfAddress, cardsRunAddress, fetchBench, fetchLatestRunForDraft, freshStageRow, markCardsSurface, observeRunOutcome, openCardsResource, parseCardsAddress, reconcileBenchRuns, restoreRunToBench } from './cards-resource.ts'
+import { fetchMediaLibrary, CARDS_BENCH_ADDRESS, benchAddressOf, benchSessionOfAddress, carriedBenchKey, cardsRunAddress, fetchBench, fetchLatestRunForDraft, freshStageRow, markCardsSurface, observeRunOutcome, openCardsResource, parseCardsAddress, reconcileBenchRuns, restoreRunToBench } from './cards-resource.ts'
 import { uploadInputFile } from '@melite/card-base/client'
 import { stopRun } from '@melite/card-base/client'
 import { statusOrPendingOf } from '@melite/contracts/stageView'
@@ -180,7 +180,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   // 'main' serves unattributed seats. The bench record rides the
   // session-qualified address so two conversations' tabs never share
   // one stream; run/draft addresses pass through untouched.
-  const benchKey = benchSessionKey(props.sessionId ?? benchSessionOfAddress(resolveCardsAddress(rawAddress)))
+  const benchKey = carriedBenchKey(props.sessionId ?? benchSessionOfAddress(resolveCardsAddress(rawAddress)))
   const benchAddress = benchAddressOf(benchKey)
   // THE MARKED KEY (2026-10-24): spell the tab's own bench key into
   // the spotlight's marker channel — the slot-prop truth re-keys the

@@ -87,7 +87,14 @@ function modelRefKey(ref, name, variant, quant) {
 function extensionKey(id) {
     return `extension:${id}`;
 }
-function routeCoordinates(ref, decl) {
+/** The variant/quant coordinates a family ref resolves to (route →
+ *  variant id). Exported for the declared-resources wall's subset arm
+ *  — the wall derives its expected plan from the SAME coordinate law
+ *  the seat consumes, never a second spelling.
+ *  @param ref the family-scoped model ref
+ *  @param decl the family DECL
+ *  @returns the resolved variant/quant ids (null when unstated) */
+export function routeCoordinates(ref, decl) {
     let variant = ref.variant ?? null;
     let quant = ref.quant ?? null;
     for (const candidate of decl.variants) {
@@ -104,6 +111,34 @@ function routeCoordinates(ref, decl) {
     }
     return { variant, quant };
 }
+/** The basename of a non-empty path — a TOTAL function (split/pop
+ *  fallbacks are dead on non-empty strings; this spelling cannot
+ *  return undefined and carries no dead `??` arm).
+ *  @param path a trimmed, non-empty lane path
+ *  @returns the final path segment */
+function laneBasename(path) {
+    const cut = path.lastIndexOf("/");
+    return cut === -1 ? path : path.slice(cut + 1);
+}
+/** Every `model_path` string's basename in a folded lane-inputs
+ *  record (the declared-resources wall's modelPaths walker, shared
+ *  spelling — the plan and the wall read the same shape). The walk
+ *  is FLAT because the contract is flat: EngineFacts admits only
+ *  scalar members and registerFamily refuses every unknown or
+ *  nested key at the door, so the old dict/array depth-recursion
+ *  was unreachable under its only feeder and is deleted (the
+ *  audit-2026-10-13 dead-code law).
+ *  @param value the folded lane-inputs record (family + variant + cell)
+ *  @param into the basename set the walk fills */
+function collectModelPaths(value, into) {
+    if (value === null || typeof value !== "object" || Array.isArray(value))
+        return;
+    for (const [k, v] of Object.entries(value)) {
+        if (k === "model_path" && typeof v === "string" && v.trim() !== "") {
+            into.add(laneBasename(v.trim()));
+        }
+    }
+}
 function familyPlan(ref, decl) {
     // UNION LAW (2026-10-12 model audit, fix 1): provisions AND the
     // variant-cell artifact both download — the qwen families declare
@@ -113,6 +148,8 @@ function familyPlan(ref, decl) {
     for (const row of decl.provisions ?? []) {
         items.push(modelPlanItem(ref, row, "direct"));
     }
+    const coordinates = routeCoordinates(ref, decl);
+    const resolved = modelsService().resolve(ref.id, coordinates.variant, coordinates.quant);
     // THE SNAPSHOT CHANNEL (the lying-Download cure, 2026-11-10):
     // directory-shaped weights ride snapshot_provisions — repo +
     // revision + allow patterns — through the same plan door every
@@ -120,7 +157,34 @@ function familyPlan(ref, decl) {
     // whole-dirs (joycaption, kimodo, qwen3-tts HF trees) used to
     // throw "declares no downloadable provisions" here while the
     // button promised a download; the fold makes the promise true.
-    for (const row of decl.snapshot_provisions ?? []) {
+    //
+    // THE COORDINATE-SCOPED SUBSET (the F45 7.5× cure, 2026-11-01):
+    // a snapshot row is ONE selectable checkpoint's backing tree (the
+    // DECL authors one row per variant — the joycaption precedent) —
+    // the plan fetches the rows the RESOLVED coordinates' lane inputs
+    // name (family → variant → cell fold, the cardsLanes merge
+    // order; basename match, the linkability wall's spelling), never
+    // every upstream variant. The burn: one family acquire_weight on
+    // florence2 planned all fourteen rows (24.97GB streamed) where the
+    // asked default's declared subset is one tree — the union law's
+    // family-wide half never applied to per-variant rows. A family
+    // whose folded lane inputs name NO snapshot row keeps every row
+    // (the family-wide byte bag — declared fetchable bytes are never
+    // silently dropped).
+    const laneNamedTrees = new Set();
+    // per-KEY override (the cardsLanes merge order): a stated variant's
+    // model_path REPLACES the family's for the same key — the ask
+    // fetches the tree the fold resolves to, never the default's tree
+    // beside it
+    const foldedLane = {
+        ...(decl.lane_inputs ?? {}),
+        ...(resolved.variant?.lane_inputs ?? {}),
+        ...(resolved.cell?.lane_inputs ?? {}),
+    };
+    collectModelPaths(foldedLane, laneNamedTrees);
+    const named = (decl.snapshot_provisions ?? []).filter((row) => laneNamedTrees.has(laneBasename(row.name)));
+    const snapshotRows = named.length > 0 ? named : (decl.snapshot_provisions ?? []);
+    for (const row of snapshotRows) {
         items.push({
             kind: "snapshot",
             key: `model:${ref.id}:snapshot:${row.name}`,
@@ -135,8 +199,6 @@ function familyPlan(ref, decl) {
             provider: "hf-snapshot",
         });
     }
-    const coordinates = routeCoordinates(ref, decl);
-    const resolved = modelsService().resolve(ref.id, coordinates.variant, coordinates.quant);
     const artifact = resolved.cell?.artifact;
     if (artifact !== undefined && artifact !== null) {
         // resolved.variant/resolved.cell are the RESOLUTION's own picks

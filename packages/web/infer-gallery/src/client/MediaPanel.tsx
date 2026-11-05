@@ -20,7 +20,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Modal, Pill } from '@deepseek-ai/dsh-client-ui-primitives'
 import { MediaDrilldown } from '../drilldown.tsx'
 import { loadDraftOntoBench, loadRunOntoBench } from './bench-load.ts'
-import { artifactNameOf, artifactPathOfUrl, deleteArtifact, deleteArtifacts, renameArtifact } from './artifact-ops.ts'
+import { artifactNameOf, artifactPathOfUrl, archiveArtifact, archiveArtifacts, deleteArtifact, deleteArtifacts, renameArtifact, restoreArtifact, restoreArtifacts } from './artifact-ops.ts'
 
 /** THE ESTATE-ARTIFACT ADDRESS (2026-09-10 regression fix): run artifacts
  *  live outside the DSH workspace, so no document owner can read them.
@@ -117,6 +117,10 @@ interface MediaItem {
   time: string
   file: string
   created: number
+  /** The tucked-away face (mass-archive law): an archived tile paints
+   *  dimmed + badged, selects into the restore verb (never delete),
+   *  and hides unless the operator toggles archived visible. */
+  archived: boolean
 }
 
 const extRe = (exts: readonly string[]): RegExp => new RegExp('\\.(' + exts.join('|') + ')(\\?|$)', 'i')
@@ -202,10 +206,26 @@ function timeLabel(sec: unknown): string {
 }
 
 /** Flatten the runs feed into media tiles (poster map, frame-flood
- *  guard, dedup by url, label law, final-film-first sort tie-break). */
+ *  guard, dedup by url, label law, final-film-first sort tie-break).
+ *  THE ARCHIVED FACE (mass-archive law): a run's tucked rows emit
+ *  alongside the live tiles with `archived: true` — the panel hides
+ *  them unless toggled, and they select into restore, never delete.
+ *  One url space (live + tucked share the dedupe set — a file is
+ *  either live or tucked, never both, and the set enforces it). */
 export function flatten(runs: GalleryRunRow[]): MediaItem[] {
   const items: MediaItem[] = []
   const seen = new Set<string>()
+  // THE LABEL LAW (one spelling for both faces): the tile's quoted
+  // head reads the run prompt, else the run name, else the composed
+  // calls text, else the flow/run id.
+  const headFor = (run: GalleryRunRow): string => {
+    const prompt = String(run.prompt ?? '').replace(/\s+/g, ' ').trim()
+    const callsText = callsTextOf(run.params)
+    const labelSrc = prompt !== '' ? prompt : (run.name ?? '') !== '' ? String(run.name) : callsText
+    return labelSrc !== ''
+      ? '"' + labelSrc.slice(0, 48) + (labelSrc.length > 48 ? '\u2026' : '') + '"'
+      : String(run.flow ?? run.run_id ?? '')
+  }
   for (const run of runs) {
     const arts = Array.isArray(run.artifacts) ? run.artifacts : []
     // Poster map: sibling *_last_frame.png / *_poster.png keyed by artifact stem.
@@ -241,15 +261,7 @@ export function flatten(runs: GalleryRunRow[]): MediaItem[] {
       const file = a.name ?? baseName(url)
       if (dropFrames && kind === 'image' && FRAME_DUMP.test(file)) continue
       const stem = file.replace(/\.[^.]+$/, '')
-      const prompt = String(run.prompt ?? '').replace(/\s+/g, ' ').trim()
-      // YAML-flow runs carry no run.prompt — the story text lives in
-      // params.calls[0].text; use it before the bare flow name so the
-      // tile is labeled AND searchable ("cyberpunk" must hit).
-      const callsText = callsTextOf(run.params)
-      const labelSrc = prompt !== '' ? prompt : (run.name ?? '') !== '' ? String(run.name) : callsText
-      const head = labelSrc !== ''
-        ? '"' + labelSrc.slice(0, 48) + (labelSrc.length > 48 ? '\u2026' : '') + '"'
-        : String(run.flow ?? run.run_id ?? '')
+      const head = headFor(run)
       // concatenated film = video without a _w<N>_hash window suffix
       const isFinal = kind === 'video' && !WINDOW_FILM.test(file)
       let poster = ''
@@ -287,6 +299,35 @@ export function flatten(runs: GalleryRunRow[]): MediaItem[] {
         time: timeLabel(run.created_at),
         file,
         created: typeof run.created_at === 'number' ? run.created_at : 0,
+        archived: false,
+      })
+    }
+    // THE TUCKED TILES: the archived face emits plain tiles (no
+    // poster/window heuristics — a tucked file is provenance-in-
+    // waiting, not the run's face; face = url, never a sibling).
+    // Same label law, same dedupe set, same sort below.
+    const tucked = Array.isArray(run.archived) ? run.archived : []
+    for (const a of tucked) {
+      const kind = kindOf(a)
+      const url = a.url ?? ''
+      if (kind === null || url === '' || seen.has(url)) continue
+      seen.add(url)
+      const file = a.name ?? baseName(url)
+      items.push({
+        id: url,
+        kind,
+        url,
+        face: url,
+        poster: kind === 'image' ? url : '',
+        segment: false,
+        head: headFor(run),
+        final: false,
+        runId: String(run.run_id ?? ''),
+        draftId: typeof run.draft_id === 'string' ? draftIdOf(run.draft_id) : draftIdOf(''),
+        time: timeLabel(run.created_at),
+        file,
+        created: typeof run.created_at === 'number' ? run.created_at : 0,
+        archived: true,
       })
     }
   }
@@ -398,7 +439,7 @@ function tileBgFor(kind: Kind): string {
  * as content styles. (THE LOST MODAL, restored with the full port —
  * the bare gallery opened a new browser tab instead.)
  */
-function Overlay({ item, onClose, openArtifact, siblings, onNavigate, onDelete, onRename }: {
+function Overlay({ item, onClose, openArtifact, siblings, onNavigate, onDelete, onRename, onArchive, onRestore }: {
   item: MediaItem
   onClose: () => void
   openArtifact: (item: MediaItem) => void
@@ -411,6 +452,11 @@ function Overlay({ item, onClose, openArtifact, siblings, onNavigate, onDelete, 
    *  owns the confirm/inline faces, these own the host doors. */
   onDelete: (item: MediaItem) => Promise<void>
   onRename: (item: MediaItem, name: string) => Promise<void>
+  /** THE TUCKED VERBS (mass-archive law): archive tucks a live tile,
+   *  restore brings a tucked tile back — both fire immediate in the
+   *  drilldown (reversible, no confirm), both close + reload here. */
+  onArchive: (item: MediaItem) => Promise<void>
+  onRestore: (item: MediaItem) => Promise<void>
 }) {
   // ONE face everywhere (the operator's 1:1 order): the shared
   // MediaDrilldown — this surface only adapts its richer item (the
@@ -431,6 +477,8 @@ function Overlay({ item, onClose, openArtifact, siblings, onNavigate, onDelete, 
       }}
       onDelete={(drill) => onDelete(item)}
       onRename={(drill, name) => onRename(item, name)}
+      onArchive={(drill) => onArchive(item)}
+      onRestore={(drill) => onRestore(item)}
     />
   )
 }
@@ -511,10 +559,57 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set())
   const [deleteArmed, setDeleteArmed] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  /* THE TUCKED FACE (mass-archive law, operator ruling 2026-11-14
+   * item (a)): archived tiles hide unless the operator toggles them
+   * visible. The mass verbs arm SEPARATELY — archive sweeps the
+   * selection's live subset, restore sweeps its tucked subset, delete
+   * refuses the tucked (its doors would refuse: the sidecar guard).
+   * The selection stays ONE set — each verb filters by face. */
+  const [showArchived, setShowArchived] = useState(false)
+  const [archiveArmed, setArchiveArmed] = useState(false)
+  const [restoreArmed, setRestoreArmed] = useState(false)
+  const [archiving, setArchiving] = useState(false)
+  /* DRAG-SELECT (operator 2026-11-14, "click and drag would be ideal"):
+   * click-each-box stands for small sweeps; a 19-loser candidate sweep
+   * wants one gesture. In select mode a held pointer paints the
+   * selection — every tile the pointer enters while held takes the
+   * stroke's fate (add when the press started on an unselected tile,
+   * remove when it started on a selected one). A press WITHOUT movement
+   * stays a plain click and toggles one. Shift-click selects the
+   * visible range between the last anchor and the clicked tile. */
+  const dragSelecting = useRef(false)
+  const dragAdd = useRef(true)
+  const dragMoved = useRef(false)
+  const dragAnchorId = useRef<string | null>(null)
+  const suppressSelectClick = useRef(false)
+  const lastAnchor = useRef<string | null>(null)
+  useEffect(() => {
+    if (!selectMode) {
+      dragSelecting.current = false
+      dragMoved.current = false
+      dragAnchorId.current = null
+      suppressSelectClick.current = false
+      lastAnchor.current = null
+    }
+  }, [selectMode])
+  useEffect(() => {
+    const end = (): void => { dragSelecting.current = false; dragAnchorId.current = null }
+    window.addEventListener('pointerup', end)
+    window.addEventListener('pointercancel', end)
+    return () => {
+      window.removeEventListener('pointerup', end)
+      window.removeEventListener('pointercancel', end)
+    }
+  }, [])
   /* The synchronous half of the busy guard: state re-renders too late
    * to stop a second click in the same tick (the stale-closure double
    * fire — audit 311bccca). */
   const deletingRef = useRef(false)
+  /* The synchronous half of the mass-archive busy guard (the
+   * deletingRef law above): the tuck/restore verbs share one busy
+   * flag — they never run together, and one ref stops a same-tick
+   * double fire on either. */
+  const archivingRef = useRef(false)
   /* The synchronous half of the restore-overlap guard: state
    *  re-renders too late to stop a second click in the same tick
    *  (the deletingRef law above) — the in-flight draft ids live in
@@ -527,7 +622,7 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
   /* PAGINATION (operator 2026-10-22): the grid renders one page; a
    * filter/sort/tab change re-anchors the scan to its first page. */
   const [page, setPage] = useState(0)
-  useEffect(() => { setPage(0) }, [cat, search, sort, tab])
+  useEffect(() => { setPage(0) }, [cat, search, sort, tab, showArchived])
   /* The tab's own navigation face (the standard hook every tab body
    * receives). Hook-count law: the prop is stable per mount, so the
    * conditional call keeps one hook order for the panel's lifetime. */
@@ -670,14 +765,31 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
 
   /** THE MODAL MUTATIONS (the mediasidebar's popup modal on media
    *  stuff): delete unlinks the artifact file then closes the modal
-   *  and reloads the feed; rename re-points the open preview onto
-   *  the door's answer and reloads behind it. Both throw LOUD for
-   *  the drilldown's error face when the URL rides no gallery path
-   *  or the door refuses. */
+   *  and reloads the feed; archive tucks it into the run's
+   *  `_archived/` dir; restore brings a tucked file back; rename
+   *  re-points the open preview onto the door's answer and reloads
+   *  behind it. All throw LOUD for the drilldown's error face when
+   *  the URL rides no gallery path or the door refuses. */
   const deleteItem = async (item: MediaItem): Promise<void> => {
     const target = artifactPathOfUrl(item.url)
     if (target === null) throw new Error('delete failed (not a gallery artifact — nothing to delete)')
     await deleteArtifact(target)
+    setPreview(null)
+    load()
+  }
+
+  const archiveItem = async (item: MediaItem): Promise<void> => {
+    const target = artifactPathOfUrl(item.url)
+    if (target === null) throw new Error('archive failed (not a gallery artifact — nothing to archive)')
+    await archiveArtifact(target)
+    setPreview(null)
+    load()
+  }
+
+  const restoreItem = async (item: MediaItem): Promise<void> => {
+    const target = artifactPathOfUrl(item.url)
+    if (target === null) throw new Error('restore failed (not a gallery artifact — nothing to restore)')
+    await restoreArtifact(target)
     setPreview(null)
     load()
   }
@@ -691,6 +803,13 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
   }
 
   const items = useMemo(() => flatten(runs), [runs])
+  /* THE LIVE / TUCKED SPLIT (mass-archive law): chips, the header
+   * stat and the tab pill count the LIVE face — tucked rows are
+   * provenance-in-waiting, and counting them as artifacts would
+   * re-inflate the grid the tuck just swept. The toggle pill names
+   * the tucked count separately. */
+  const liveItems = useMemo(() => items.filter((it) => !it.archived), [items])
+  const archivedCount = items.length - liveItems.length
   /* TRUNCATION VISIBILITY (audit gap 6): the route stashes {listed,total}
    * on run rows the seat capped — surface the count so a 3-of-40
    * listing never reads as data loss. */
@@ -699,13 +818,17 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
     [runs],
   )
   const counts = useMemo(() => {
-    const c = { all: items.length, ...Object.fromEntries(KIND_ORDER.map((k) => [k, 0])) } as Record<Cat, number>
-    for (const it of items) c[it.kind] += 1
+    const c = { all: liveItems.length, ...Object.fromEntries(KIND_ORDER.map((k) => [k, 0])) } as Record<Cat, number>
+    for (const it of liveItems) c[it.kind] += 1
     return c
-  }, [items])
+  }, [liveItems])
   const shown = useMemo(() => {
     const q = search.trim().toLowerCase()
     const out = items.filter((it) => {
+      // the tucked face hides unless toggled (the toggle pill is the
+      // only way in — a filter match must never surface a tucked row
+      // the operator asked not to see)
+      if (it.archived && !showArchived) return false
       if (cat !== 'all' && it.kind !== cat) return false
       if (q === '') return true
       return (it.head + ' ' + it.file + ' ' + it.time).toLowerCase().includes(q)
@@ -713,7 +836,7 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
     if (sort === 'old') out.sort((a, b) => a.created - b.created)
     else if (sort === 'name') out.sort((a, b) => a.file.localeCompare(b.file))
     return out
-  }, [items, cat, search, sort])
+  }, [items, cat, search, sort, showArchived])
   const pageCount = Math.max(1, Math.ceil(shown.length / PAGE_SIZE))
   // shown shrinking (a delete, a filter) must never strand the scan
   // past the last page.
@@ -722,13 +845,71 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
     () => shown.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE),
     [shown, safePage],
   )
+  /* THE VERB SUBSETS (mass-archive law): one selection, three verbs —
+   * archive + delete sweep the live subset, restore sweeps the tucked
+   * subset. A tucked id in the delete sweep is skipped, never sent
+   * (the doors would refuse it: sidecar guard on delete, rename of a
+   * hidden file, already-archived on archive). */
+  const selectedLive = useMemo(
+    () => items.filter((it) => selected.has(it.id) && !it.archived),
+    [items, selected],
+  )
+  const selectedTucked = useMemo(
+    () => items.filter((it) => selected.has(it.id) && it.archived),
+    [items, selected],
+  )
 
   const toggleSelect = (it: MediaItem): void => {
     setDeleteArmed(false)
+    setArchiveArmed(false)
+    setRestoreArmed(false)
+    lastAnchor.current = it.id
     setSelected((was) => {
       const next = new Set(was)
       if (next.has(it.id)) next.delete(it.id)
       else next.add(it.id)
+      return next
+    })
+  }
+
+  /** Paint one tile with the stroke's fate during a drag (add on a
+   *  fresh press, remove on a press that started selected). */
+  const paintSelect = (id: string): void => {
+    setDeleteArmed(false)
+    setArchiveArmed(false)
+    setRestoreArmed(false)
+    lastAnchor.current = id
+    const add = dragAdd.current
+    setSelected((was) => {
+      if (add && was.has(id)) return was
+      if (!add && !was.has(id)) return was
+      const next = new Set(was)
+      if (add) next.add(id)
+      else next.delete(id)
+      return next
+    })
+  }
+
+  /** Shift-click: the visible range between the anchor and the target
+   *  joins the selection (anchored on the current page's order). */
+  const rangeSelect = (it: MediaItem): void => {
+    const anchor = lastAnchor.current
+    setDeleteArmed(false)
+    setArchiveArmed(false)
+    setRestoreArmed(false)
+    lastAnchor.current = it.id
+    setSelected((was) => {
+      const next = new Set(was)
+      next.add(it.id)
+      if (anchor !== null) {
+        const ids = pageItems.map((p) => p.id)
+        const a = ids.indexOf(anchor)
+        const b = ids.indexOf(it.id)
+        if (a !== -1 && b !== -1) {
+          const [lo, hi] = a < b ? [a, b] : [b, a]
+          for (let i = lo; i <= hi; i += 1) next.add(ids[i])
+        }
+      }
       return next
     })
   }
@@ -749,6 +930,9 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
     // spared under a success face).
     for (const it of items) {
       if (!selected.has(it.id)) continue
+      // the tucked subset never reaches the delete doors (the sidecar
+      // guard would refuse it — the verb-subsets law above)
+      if (it.archived) continue
       const p = artifactPathOfUrl(it.url)
       if (p === null) notGallery += 1
       else targets.push(p)
@@ -778,6 +962,89 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
     }
   }
 
+  /** THE MASS ARCHIVE (operator ruling 2026-11-14, item (a)): one
+   *  armed verb over the selection's LIVE subset — "mass archive
+   *  beside delete (19 losers + 1 winner, one gesture deletes the
+   *  losers)". Doors run per file and a failure is RECORDED, not
+   *  thrown — the feed reloads either way, so tucked tiles leave and
+   *  failed tiles stay visible under the spoken summary. The tally
+   *  rides the action banner (the mass-delete tally's seat — one
+   *  action outcome face, never the feed-error face). */
+  const archiveSelected = async (): Promise<void> => {
+    if (archivingRef.current) return
+    const targets: string[] = []
+    let skipped = 0
+    // the selection is the intent (audit 311bccca F1, the delete
+    // twin's law) — the verb sweeps the whole LIVE subset, never the
+    // filtered face; tucked ids skip (never sent, the subsets law).
+    for (const it of selectedLive) {
+      const p = artifactPathOfUrl(it.url)
+      if (p === null) skipped += 1
+      else targets.push(p)
+    }
+    archivingRef.current = true
+    setArchiving(true)
+    try {
+      const answer = await archiveArtifacts(targets)
+      setSelected(new Set())
+      setArchiveArmed(false)
+      setSelectMode(false)
+      if (answer.failed.length > 0 || skipped > 0) {
+        const first = answer.failed[0]?.message ?? ''
+        setDeleteNote(
+          'archived ' + String(answer.archived) +
+          ' · failed ' + String(answer.failed.length + skipped) +
+          (first === '' ? '' : ' — ' + first) +
+          (skipped > 0 ? ' (· ' + String(skipped) + ' selection(s) are not live gallery files)' : ''),
+        )
+      } else {
+        setDeleteNote('')
+      }
+      load()
+    } finally {
+      archivingRef.current = false
+      setArchiving(false)
+    }
+  }
+
+  /** THE MASS RESTORE (the mass-archive law's return half): one armed
+   *  verb over the selection's TUCKED subset — the tucked tiles come
+   *  back beside their siblings. Same recorded-failure shape as the
+   *  archive twin. */
+  const restoreSelected = async (): Promise<void> => {
+    if (archivingRef.current) return
+    const targets: string[] = []
+    let skipped = 0
+    for (const it of selectedTucked) {
+      const p = artifactPathOfUrl(it.url)
+      if (p === null) skipped += 1
+      else targets.push(p)
+    }
+    archivingRef.current = true
+    setArchiving(true)
+    try {
+      const answer = await restoreArtifacts(targets)
+      setSelected(new Set())
+      setRestoreArmed(false)
+      setSelectMode(false)
+      if (answer.failed.length > 0 || skipped > 0) {
+        const first = answer.failed[0]?.message ?? ''
+        setDeleteNote(
+          'restored ' + String(answer.restored) +
+          ' · failed ' + String(answer.failed.length + skipped) +
+          (first === '' ? '' : ' — ' + first) +
+          (skipped > 0 ? ' (· ' + String(skipped) + ' selection(s) are not archived gallery files)' : ''),
+        )
+      } else {
+        setDeleteNote('')
+      }
+      load()
+    } finally {
+      archivingRef.current = false
+      setArchiving(false)
+    }
+  }
+
   /* Category chips ride the DSH Pill 1:1 (active/onClick/children —
    * the handrolled bordered-button replica died here 2026-09-09: the
    * panel runs inside the DSH host, so the DSW pill chrome IS the
@@ -802,7 +1069,7 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
         <span style={{ fontWeight: 700, fontSize: 14 }}>{galleryCopy.panelTitle}</span>
         <Stat>
-          {galleryCopy.statRunsArtifacts({ runs: runs.length, artifacts: items.length })}{gatewayErrors.length > 0 ? galleryCopy.statGatewayNotes({ count: gatewayErrors.length }) : ''}{truncatedRuns > 0 ? galleryCopy.statCapped({ count: truncatedRuns }) : ''}{runsFeed.stale ? galleryCopy.statStale : ''}
+          {galleryCopy.statRunsArtifacts({ runs: runs.length, artifacts: liveItems.length })}{gatewayErrors.length > 0 ? galleryCopy.statGatewayNotes({ count: gatewayErrors.length }) : ''}{truncatedRuns > 0 ? galleryCopy.statCapped({ count: truncatedRuns }) : ''}{runsFeed.stale ? galleryCopy.statStale : ''}
         </Stat>
         <span style={{ flex: 1 }} />
         {/* FLOWS ↔ ARTIFACTS: the two faces of the archive — composed
@@ -816,7 +1083,7 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
               key={t}
               active={tab === t}
               onClick={() => { setTab(t) }}
-            >{t === 'flows' ? galleryCopy.tabFlows({ count: drafts.length }) : galleryCopy.tabArtifacts({ count: items.length })}</Pill>
+            >{t === 'flows' ? galleryCopy.tabFlows({ count: drafts.length }) : galleryCopy.tabArtifacts({ count: liveItems.length })}</Pill>
           ))}
         </span>
         {/* SORT (operator 2026-09-23): three Pills in the DSH chrome —
@@ -832,10 +1099,13 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
           ))}
         </span>
         {/* SELECT (operator 2026-10-22): multi-select over the ARTIFACTS
-            grid for a mass delete — hidden on the flows face, where a
-            selection means nothing. Leaving the mode clears the
-            selection; the destructive pill arms first — the first press
-            names the count, the next deletes. */}
+            grid — hidden on the flows face, where a selection means
+            nothing. Leaving the mode clears the selection; the
+            destructive pill arms first — the first press names the
+            count, the next deletes. THE TUCKED VERBS (mass-archive
+            law): archive sweeps the selection's live subset beside
+            delete; restore sweeps its tucked subset — each pill shows
+            only when its subset is non-empty and names ITS count. */}
         {tab === 'artifacts' && (
           <>
             <Pill
@@ -846,6 +1116,8 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                 if (selectMode) {
                   setSelected(new Set())
                   setDeleteArmed(false)
+                  setArchiveArmed(false)
+                  setRestoreArmed(false)
                   setSelectMode(false)
                   return
                 }
@@ -855,16 +1127,40 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
             {selectMode && selected.size > 0 && (
               <span style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                 <span style={{ fontSize: 12, color: labelPrimary2 }}>{galleryCopy.selectedCount({ count: selected.size })}</span>
-                <Pill active={false} onClick={() => { setSelected(new Set()); setDeleteArmed(false) }}>{galleryCopy.clearAction}</Pill>
-                <Pill
-                  active={deleteArmed}
-                  aria-busy={deleting}
-                  onClick={() => {
-                    if (deleting) return
-                    if (!deleteArmed) { setDeleteArmed(true); return }
-                    void deleteSelected()
-                  }}
-                >{deleteArmed ? galleryCopy.confirmDelete({ count: selected.size }) : galleryCopy.deleteSelected}</Pill>
+                <Pill active={false} onClick={() => { setSelected(new Set()); setDeleteArmed(false); setArchiveArmed(false); setRestoreArmed(false) }}>{galleryCopy.clearAction}</Pill>
+                {selectedLive.length > 0 && (
+                  <Pill
+                    active={archiveArmed}
+                    aria-busy={archiving}
+                    onClick={() => {
+                      if (archiving) return
+                      if (!archiveArmed) { setArchiveArmed(true); return }
+                      void archiveSelected()
+                    }}
+                  >{archiveArmed ? galleryCopy.confirmArchive({ count: selectedLive.length }) : galleryCopy.archiveSelected}</Pill>
+                )}
+                {selectedLive.length > 0 && (
+                  <Pill
+                    active={deleteArmed}
+                    aria-busy={deleting}
+                    onClick={() => {
+                      if (deleting) return
+                      if (!deleteArmed) { setDeleteArmed(true); return }
+                      void deleteSelected()
+                    }}
+                  >{deleteArmed ? galleryCopy.confirmDelete({ count: selectedLive.length }) : galleryCopy.deleteSelected}</Pill>
+                )}
+                {selectedTucked.length > 0 && (
+                  <Pill
+                    active={restoreArmed}
+                    aria-busy={archiving}
+                    onClick={() => {
+                      if (archiving) return
+                      if (!restoreArmed) { setRestoreArmed(true); return }
+                      void restoreSelected()
+                    }}
+                  >{restoreArmed ? galleryCopy.confirmRestore({ count: selectedTucked.length }) : galleryCopy.restoreSelected}</Pill>
+                )}
               </span>
             )}
           </>
@@ -875,6 +1171,18 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
 
       <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
         {chip('all', galleryCopy.chipAll)}{KIND_ORDER.map((k) => chip(k, KIND_LABEL[k]))}
+        {/* THE TUCKED TOGGLE (mass-archive law): the archived face
+          * hides unless toggled — the pill names the tucked count and
+          * shows only while something is tucked (or while on, so it
+          * can always be switched back off). */}
+        {archivedCount > 0 || showArchived
+          ? (
+              <Pill
+                active={showArchived}
+                onClick={() => { setShowArchived((v) => !v) }}
+              >{galleryCopy.showArchived({ count: archivedCount })}</Pill>
+            )
+          : null}
       </div>
 
       {tab === 'flows'
@@ -938,19 +1246,66 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
       {tab === 'artifacts' && uiError !== ''
         ? <ErrorBanner>{galleryCopy.openFailed({ error: uiError })}</ErrorBanner>
         : null}
-      {tab === 'artifacts' && (feedError !== ''
+      {tab === 'artifacts' && feedError !== ''
         ? <ErrorBanner>{galleryCopy.feedFailed({ error: feedError })}</ErrorBanner>
-        : loading && items.length === 0
-          ? <Empty>{galleryCopy.loadingRuns}</Empty>
-          : shown.length === 0
-            ? <Empty>{galleryCopy.noArtifacts}</Empty>
-            : (
+        : null}
+      {tab === 'artifacts' && (
+        // THE EITHER-WAY FACE (feed-plane coverage audit G1): a
+        // failed refresh banners ABOVE the cached grid, never in
+        // place of it — the feed hook's own promise ("the cached
+        // data stays painted either way", useFeed) is the panel's
+        // face too. An exclusive banner here erased the boot cache's
+        // tiles while the header stat + kind chips still counted
+        // them: one panel, two contradictory faces. No cache to
+        // keep (shown empty): the banner alone owns the failure.
+        feedError !== '' && shown.length === 0
+          ? null
+          : loading && items.length === 0
+            ? <Empty>{galleryCopy.loadingRuns}</Empty>
+            : shown.length === 0
+              ? <Empty>{galleryCopy.noArtifacts}</Empty>
+              : (
                 <>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(148px, 1fr))', gap: 10 }}>
+                  <div
+                    data-infer-media-grid="1"
+                    onPointerUp={() => { dragSelecting.current = false; dragAnchorId.current = null }}
+                    onPointerCancel={() => { dragSelecting.current = false; dragAnchorId.current = null }}
+                    style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(148px, 1fr))', gap: 10, touchAction: 'pan-y', userSelect: selectMode ? 'none' : undefined }}
+                  >
                     {pageItems.map((it) => (
                       <button
                         key={it.id}
-                        onClick={() => { if (selectMode) toggleSelect(it); else setPreview(it) }}
+                        onClick={(e) => {
+                          if (!selectMode) { setPreview(it); return }
+                          if (suppressSelectClick.current) { suppressSelectClick.current = false; return }
+                          if (e.shiftKey) rangeSelect(it)
+                          else toggleSelect(it)
+                        }}
+                        onPointerDown={(e) => {
+                          if (!selectMode) return
+                          if (e.pointerType === 'mouse' && e.button !== 0) return
+                          // The press OPENS a stroke but paints nothing
+                          // yet: a press without movement stays a click
+                          // (toggle), a press with movement paints every
+                          // entered tile with the stroke's fate.
+                          dragSelecting.current = true
+                          dragMoved.current = false
+                          dragAnchorId.current = it.id
+                          dragAdd.current = !selected.has(it.id)
+                          suppressSelectClick.current = false
+                        }}
+                        onPointerEnter={() => {
+                          if (!selectMode || !dragSelecting.current) return
+                          // First tile entered paints the anchor too —
+                          // the press itself never entered it.
+                          if (!dragMoved.current && dragAnchorId.current !== null) {
+                            paintSelect(dragAnchorId.current)
+                          }
+                          dragMoved.current = true
+                          suppressSelectClick.current = true
+                          paintSelect(it.id)
+                        }}
+                        onPointerUp={() => { dragSelecting.current = false; dragAnchorId.current = null }}
                         aria-pressed={selectMode ? selected.has(it.id) : undefined}
                         className={css.tile}
                         style={{
@@ -959,6 +1314,9 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                           background: tileBgFor(it.kind),
                           display: 'flex', alignItems: 'center', justifyContent: 'center', color: textTertiary2,
                           textAlign: 'left', fontFamily: 'inherit',
+                          // the tucked face paints dimmed (provenance-
+                          // in-waiting, never the run's live face)
+                          opacity: it.archived ? 0.55 : undefined,
                         }}
                       >
                       {it.poster !== '' && it.kind !== 'video'
@@ -1013,6 +1371,20 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                           )
                         : null}
                       <TileBadge item={it} />
+                      {/* THE TUCKED BADGE (mass-archive law): a tucked
+                        * tile names itself — the dim alone reads as a
+                        * loading state, never as archived. Archived
+                        * tiles never segment (plain tiles, the
+                        * flatten law), so the badge owns left-bottom. */}
+                      {it.archived
+                        ? (
+                            <span style={{
+                              position: 'absolute', left: 6, bottom: 6, background: fillSubtle2,
+                              borderRadius: 6, padding: '3px 6px', lineHeight: 1, color: labelPrimary4,
+                              fontSize: 10, letterSpacing: '0.04em',
+                            }}>{galleryCopy.archivedBadge}</span>
+                          )
+                        : null}
                       {/* THE SELECTION MARKER: in select mode every tile
                         * shows its checkbox face — filled + check when
                         * selected, an empty dot when not. */}
@@ -1128,6 +1500,8 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
           onNavigate={(next) => { setPreview(next) }}
           onDelete={deleteItem}
           onRename={renameItem}
+          onArchive={archiveItem}
+          onRestore={restoreItem}
         />
         : null}
     </PanelShell>

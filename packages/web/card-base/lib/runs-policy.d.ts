@@ -51,6 +51,36 @@ export declare const WIRE_LANE_INPUT_MISSING = "runs/lane-input-missing";
 export declare const WIRE_LIFECYCLE_INFLIGHT = "runs/lifecycle-inflight";
 /** One runs/status read (normalized once — readRunStatus's law). */
 export declare function fetchRunStatus(runId: string, signal?: AbortSignal): Promise<RunStatusRow>;
+/** One chain-run picker candidate: a run the estate's own rows
+ *  prove checkpointed (THE STORE CHECK — the F35 execute door's
+ *  own read, mirrored client-side; a row without the stamp names no
+ *  candidate, and nothing is fabricated). */
+export interface ChainRunCandidate {
+    /** The estate run id — the value the picker binds (the execute
+     *  door's run-id grammar resolves it to the store). */
+    runId: string;
+    /** The engine-side chain store the run left (chain_store.run_name). */
+    store: string;
+    /** The lane the run rode (the served variant; the flow name backstops). */
+    variant: string;
+    /** The checkpointed scene count the stamp itself reports. */
+    scenes: number;
+    /** Newest-first sort key (created_at, epoch ms; 0 when unreadable). */
+    created: number;
+}
+/** THE CHAIN-RUN PICKER'S SOURCE (the runs library's own surface):
+ *  runs/list names the estate's runs; each candidate run's status
+ *  doc is read for the chain stamp — a run whose row carries
+ *  chain_store is a real resume source, a plain film proves nothing
+ *  and stays out. Runs newest-first (the operator resumes recent
+ *  work; the raw list interleaves media-bearing rows first). A
+ *  refused status (the run is gone from the registry) skips that
+ *  row — no evidence, no candidate. A GATEWAY failure (the lane
+ *  itself down — the api-gateway client folds every carrier throw
+ *  into the gateway/internal branch) is NOT a verdict: it rethrows,
+ *  so an unreachable estate never renders as the honest-empty "no
+ *  chain runs yet". */
+export declare function fetchChainRunCandidates(signal?: AbortSignal): Promise<ChainRunCandidate[]>;
 /** One runs/list row by run_id (the file-era face — runs/status only
  *  knows live runs; the list is the completed runs' SSOT). */
 export declare function fetchListRow(runId: string, signal?: AbortSignal): Promise<Record<string, unknown> | null>;

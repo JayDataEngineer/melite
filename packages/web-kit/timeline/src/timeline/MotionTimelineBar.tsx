@@ -249,6 +249,16 @@ export interface MotionTimelineBarProps {
    *  Opt-in; absent or empty → byte-identical (the audioClipCards /
    *  kfLaneCards precedent). */
   commissions?: CommissionRow[]
+  /** THE PLANNED TAIL (the frame-offset segments' other half,
+   *  2026-11-03): the armed-but-unrendered frames a commission will
+   *  deliver (an extend's deliveredFrames). The AXIS extends to
+   *  totalFrames + plannedFrames (ticks, zoom-fit, the scroll tail)
+   *  and the band beyond totalFrames renders hatched
+   *  ([data-planned-band], pointer-transparent) — the operator sees
+   *  WHERE the armed windows land BEFORE the run spends the GPU. The
+   *  playhead NEVER enters it: scrub clamps at the real film's end.
+   *  Absent/0 → byte-identical bar. */
+  plannedFrames?: number
   /** ── STYLING SEAM (2026-09-07, the shadcn rule): the bar is a
    *  shared component and takes className/style like every other
    *  primitive — the tenant's shell (border, rounding) rides the
@@ -372,6 +382,7 @@ export function MotionTimelineBar({
   audioClipCards = false,
   kfLaneCards = false,
   commissions,
+  plannedFrames,
   className,
   style,
   theme,
@@ -381,16 +392,26 @@ export function MotionTimelineBar({
   const playhead = theme?.playhead ?? PLAYHEAD
   const scrollRef = useRef<HTMLDivElement | null>(null)
 
+  // THE PLANNED TAIL's axis (2026-11-03): the scale rides the REAL
+  // film plus the armed-but-unrendered delivery (ticks, zoom-fit,
+  // scroll tail all preview where the windows land); the playhead
+  // NEVER enters the tail — scrub clamps at the real film's end (the
+  // frames exist only after the run spends the GPU; scrubbing them
+  // would show content that does not exist).
+  const axisFrames = totalFrames + Math.max(0, plannedFrames ?? 0)
   // Scale (absolute pin, zoom, frame<->px) + the pointer session.
-  const scale = useTimelineScale({ scrollRef, frameIdx, totalFrames, fps, initialSeconds })
+  const scale = useTimelineScale({ scrollRef, frameIdx, totalFrames: axisFrames, fps, initialSeconds })
+  const frameChange = plannedFrames !== undefined && plannedFrames > 0
+    ? (f: number) => onFrameChange(Math.min(f, totalFrames))
+    : onFrameChange
   const drag = useTimelineDragSession({
     T1: scale.T1, effPpf: scale.effPpf, ppf: scale.ppf, dragScale: scale.dragScale,
     setPpf: scale.setPpf, setBasePpf: scale.setBasePpf, setDragScale: scale.setDragScale,
     prompts, audioLayers, packed, xToFrame: scale.xToFrame, keepTailVisible: scale.keepTailVisible,
-    onFrameChange, onScrubStart, onScrubEnd, onSelect, onKeyframeMove,
+    onFrameChange: frameChange, onScrubStart, onScrubEnd, onSelect, onKeyframeMove,
     onPromptMove, onPromptResize, onExtend, onAudioClipMove,
   })
-  const { ticks, stepSec } = buildTicks(scale.contentW, scale.effPpf, totalFrames, fps)
+  const { ticks, stepSec } = buildTicks(scale.contentW, scale.effPpf, axisFrames, fps)
 
   return (
     <div
@@ -410,6 +431,17 @@ export function MotionTimelineBar({
         scrollRef={scrollRef} contentW={scale.contentW}
         suppressClickRef={drag.suppressClickRef} onSelect={onSelect}
       >
+        {plannedFrames !== undefined && plannedFrames > 0 ? (
+          /* THE PLANNED BAND: the armed tail's hatched reservation,
+           * pointer-transparent (the tail is not a scrub surface — the
+           * clamp above holds the playhead at the real film's end). */
+          <div
+            data-planned-band=""
+            className={css.plannedBand}
+            style={{ left: scale.frameToPx(totalFrames), width: Math.max(0, scale.contentW - scale.frameToPx(totalFrames)) }}
+            aria-hidden="true"
+          />
+        ) : null}
         <TimelineRuler
           ticks={ticks} stepSec={stepSec} fps={fps} barBg={barBg}
           frameToPx={scale.frameToPx} frameAt={scale.frameAt} onPromptAdd={onPromptAdd}

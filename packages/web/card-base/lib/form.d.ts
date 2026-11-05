@@ -28,7 +28,7 @@
  * pattern).
  */
 import { createElement as h } from 'react';
-import { type BboxFaceComponent, type PaintFaceComponent } from './mods.js';
+import { type BboxFaceComponent, type OrbitFaceComponent, type PaintFaceComponent } from './mods.js';
 import { type FormSpecDoc, type FormVariantRow, type SpecField, type SpecValues } from './spec.js';
 import { type FieldAtomClaim, type SquareHost, type SquareWire } from './square-provider.js';
 export { useFormSpec } from './use-form-spec.js';
@@ -44,7 +44,7 @@ export { PackPrompt, ModelAxes, RecipePills } from './axes.js';
  *  over the USER layer (the settings law: presence IS the override
  *  mark, the reset chip removes it). The constructor OWNS the square
  *  provider (no call site wires it, no call site can forget it). */
-export declare function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference, omitInputRail, omitFields, omitRecipeRow, mutedViolations }: {
+export declare function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, orbitFace, paintReference, omitInputRail, omitFields, omitRecipeRow, mutedViolations }: {
     /** the WHOLE emission (the schema envelope + model/variants) —
      *  REQUIRED now: the fields, the axes, and the mod param rows all
      *  derive from THIS (useFormSpec fetches it). */
@@ -116,6 +116,11 @@ export declare function CardForm({ spec, user, base, onSet, onPick, onUnset, wir
     /** THE BBOX FACE (stroke 78): the host's selection modal for
      *  bbox-canvas kinds. Absent host = the four inputs hold. */
     bboxFace?: BboxFaceComponent;
+    /** THE ORBIT FACE (the reshoot orb, 2026-11-15): the host's
+     *  camera-pose orb for orbit-canvas kinds. Absent host = the
+     *  three number dials hold. Threaded verbatim into the mod
+     *  section. */
+    orbitFace?: OrbitFaceComponent;
     /** the card-level image field feeding the brush reference
      *  (mask: 'input_image'). Absent = no verb. */
     paintReference?: string;

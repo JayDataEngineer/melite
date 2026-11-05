@@ -120,28 +120,61 @@ export function armEstateRemoteLazyBind(source: () => Partial<EstateNamespaces>)
 }
 
 /** The bound namespaces — LOUD when unbound, and the LAZY BIND'S
- *  MOUTH: the first verb after the mounts land pulls the armed
- *  getter once (order-proof — by first use, the mounter has long
- *  booted); a verb before the mounts (or on a host without the
- *  estate plugin) meets the loud wiring refusal, never a hang and
- *  never a silent fallback. */
+ *  MOUTH: every verb pulls the armed getter once (order-proof — by
+ *  first use, the mounter has long booted) and REBINDS when the live
+ *  namespaces are a different mount generation (the 2026-11-01
+ *  from-media burn: the bind cached the namespace OBJECTS once, and a
+ *  re-applied mounter deletes the old generation's method installs on
+ *  dispose — the cached facade kept answering `media.list is not a
+ *  function` while the live mount served fine). A verb before the
+ *  mounts (or on a host without the estate plugin) meets the loud
+ *  wiring refusal, never a hang and never a silent fallback. */
 export function estateRemote(): EstateNamespaces {
-  if (bound === undefined && lazySource !== undefined) {
-    try {
-      bindEstateRemoteFromRemote(lazySource())
-    } catch (wiringError) {
-      // wiringError: the mounts were still absent at verb time —
-      // falling through to the loud refusal below IS the handling
-      // (the getter stays armed; a later verb retries)
-      // the namespaces were still absent at verb time — fall through
-      // to the loud refusal below (the getter stays armed; a later
-      // verb retries against a booted mounter)
+  if (lazySource !== undefined) {
+    const live = pullLiveNamespaces()
+    if (live !== undefined && (bound === undefined || generationChanged(live, bound))) {
+      bindEstateRemote(live)
     }
-  }
-  if (bound === undefined) {
+  }  if (bound === undefined) {
     throw new Error('estate remote not mounted — the verbs ride ctx.remote (the TYPERT_REMOTE contributions must mount before any call)')
   }
   return bound
+}
+
+/** One live read through the armed getter, COMPLETE-OR-NOTHING: the
+ *  four namespaces (manage stays optional — studios that never manage
+ *  keep their inject lists) or undefined when any core one is absent
+ *  (a mount generation still landing — the caller keeps its last-good
+ *  bind and the missing namespace's own guard names the wiring fault
+ *  at the verb). */
+function pullLiveNamespaces(): EstateNamespaces | undefined {
+  const source = lazySource
+  if (source === undefined) return undefined
+  let live: Partial<EstateNamespaces>
+  try {
+    live = source()
+  } catch {
+    return undefined // absent at verb time — not a new generation
+  }
+  if (live.bench === undefined || live.drafts === undefined
+    || live.runs === undefined || live.media === undefined) return undefined
+  return {
+    bench: live.bench,
+    drafts: live.drafts,
+    runs: live.runs,
+    media: live.media,
+    ...(live.manage === undefined ? {} : { manage: live.manage }),
+  }
+}
+
+/** True when the live read is a different mount generation than the
+ *  bound one (any namespace identity changed — the re-apply signal).
+ *  The BOUND pair rides as an argument, narrowed by the caller's
+ *  `bound === undefined ||` short-circuit — the predicate is total
+ *  and owns no unbound guard (the audit-2026-10-13 dead-code law). */
+function generationChanged(live: EstateNamespaces, bound: EstateNamespaces): boolean {
+  return live.bench !== bound.bench || live.drafts !== bound.drafts
+    || live.runs !== bound.runs || live.media !== bound.media
 }
 
 /** THE BIND SEAM, HARNESS-SHAPED (2026-09-29, the fourth lane

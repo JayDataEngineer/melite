@@ -37,7 +37,7 @@
  *        renders kind.fields through the same constructor atoms —
  *        the fields NEVER render flat on the card form.
  */
-import { createElement as h, useState } from 'react'
+import { createElement as h, useEffect, useState } from 'react'
 import type { ReactElement } from 'react'
 import { Button, IconPlusOutlineRegular, Input, Menu, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import css from './card.module.css'
@@ -47,6 +47,7 @@ import { coerceFieldEdit, fieldRequired, isHybridKind, isOptionKind, optionKeyOf
 import { modCommitWrite } from '@melite/contracts/formSpec'
 import { SpecMenuSelect } from './atoms.tsx'
 import { Tip } from './layout.tsx'
+import type { ChainRunCandidate } from './runs-policy.ts'
 
 /** THE CATALOG PICKER ROWS (S7i): ghost '— pick —', served rows
  *  verbatim (the catalog's own faces), and the drifted pick stays
@@ -61,6 +62,91 @@ function catalogRows(k: ModifierKind, draftOption: string): Array<{ id: string, 
   }
   return rows
 }
+
+/** THE CHAIN-RUN PICKER (the upscale leaf's `chain-run` field — the
+ *  free-text store name burn): the seat renders a REAL picker over
+ *  the LIVE chain-store runs (the loader rides the host's wire, the
+ *  same injection the media rows ride) — HUMAN-LABELED rows (run id,
+ *  lane, scene count), the drifted/pasted value stays VISIBLE marked
+ *  unregistered (catalogRows' own law), and the free-text affordance
+ *  survives as the EXPLICIT advanced fallback beneath the menu. A
+ *  host without the runs lane (loader absent) or a failed load
+ *  degrades to the plain text input — the field never blocks, never
+ *  fabricates. */
+function ChainRunPicker(props: {
+  f: SpecField
+  value: unknown
+  onEdit: (name: string, v: unknown) => void
+  loadChainRuns?: (signal: AbortSignal) => Promise<ChainRunCandidate[]>
+}): ReturnType<typeof h> {
+  const [rows, setRows] = useState<ChainRunCandidate[] | null>(null)
+  const [failed, setFailed] = useState(false)
+  const load = props.loadChainRuns
+  useEffect(() => {
+    if (load === undefined) return
+    const ctl = new AbortController()
+    load(ctl.signal)
+      .then((r) => { setRows(r) })
+      .catch((e: unknown) => {
+        // a superseded flight aborts by design — cleanup, never an
+        // error face (use-form-spec's own law)
+        if (ctl.signal.aborted) return
+        setFailed(true)
+      })
+    return () => { ctl.abort() }
+  }, [load])
+  const current = typeof props.value === 'string' ? props.value : ''
+  const edit = (v: string): void => { props.onEdit(props.f.name, v) }
+  // THE DEGRADE LAW (the faces' own: absent host = the plain inputs
+  // hold): no lane, or a load that died, renders the text input —
+  // the field stays usable, the truth stays honest. The load state
+  // rides the seat as a rendered fact (the seat's own face, the
+  // stage-caption idiom — the walls read it, never a sleep).
+  const degraded = load === undefined || failed
+  return h('div', {
+    className: css.modField,
+    'data-chain-run-picker': props.f.name,
+    'data-chain-runs-loaded': failed ? 'failed' : (rows !== null ? 'true' : 'false'),
+  },
+    degraded
+      ? h(Input, {
+          type: 'text',
+          value: current,
+          placeholder: props.f.placeholder ?? '',
+          title: props.f.tooltip,
+          'aria-label': props.f.label,
+          onChange: (e: { target: { value: string } }) => { edit(e.target.value) },
+        })
+      : [
+          h(SpecMenuSelect, {
+            key: 'menu',
+            label: props.f.label,
+            value: current,
+            rows: (() => {
+              const menuRows: Array<{ id: string, label: string }> = [{ id: '', label: '— pick —' }]
+              for (const c of rows ?? []) menuRows.push({ id: c.runId, label: chromeCopy.chainRunOptionLabel({ run: c.runId, kind: c.variant, scenes: c.scenes }) })
+              if (current !== '' && menuRows.every((r) => r.id !== current)) {
+                menuRows.push({ id: current, label: current + ' (unregistered)' })
+              }
+              return menuRows
+            })(),
+            ...(props.f.tooltip !== undefined && props.f.tooltip !== '' ? { title: props.f.tooltip } : {}),
+            onPick: (id: string) => { edit(id) },
+          }),
+          rows !== null && rows.length === 0
+            ? h('span', { key: 'empty', className: css.modLeafHint }, chromeCopy.chainRunEmptyNote)
+            : null,
+          h(Input, {
+            key: 'advanced',
+            type: 'text',
+            value: current,
+            placeholder: chromeCopy.chainRunAdvancedLabel,
+            'aria-label': chromeCopy.chainRunAdvancedLabel,
+            onChange: (e: { target: { value: string } }) => { edit(e.target.value) },
+          }),
+        ],
+  )
+}
 import { chromeCopy } from './locales/chromeCopy.ts'
 
 // THE FACE CONTRACTS (stroke 79 — the seam-law unification;
@@ -73,10 +159,16 @@ import { chromeCopy } from './locales/chromeCopy.ts'
 // change through onChange; the leaf's own Add/Save/Cancel own the
 // commit chrome. The retired modal-shaped verbs (a Paint / Draw
 // box button opening a SECOND modal over the leaf) died.
-export type { PaintCanvasFaceProps, BboxCanvasFaceProps } from '@melite/contracts'
-import type { BboxCanvasFaceProps, PaintCanvasFaceProps } from '@melite/contracts'
+export type { PaintCanvasFaceProps, BboxCanvasFaceProps, OrbitCanvasFaceProps } from '@melite/contracts'
+import type { BboxCanvasFaceProps, OrbitCanvasFaceProps, PaintCanvasFaceProps } from '@melite/contracts'
 
 export type BboxFaceComponent = (props: BboxCanvasFaceProps) => ReactElement
+
+/** THE ORBIT FACE (the reshoot orb, 2026-11-15): the host's
+ *  camera-pose orb — a component, not an import (card-base stays
+ *  atom-generic). Absent host = the orb never renders (the three
+ *  number dials hold — graceful by design). */
+export type OrbitFaceComponent = (props: OrbitCanvasFaceProps) => ReactElement
 
 /** THE PAINT FACE (paint-leaf-canvas.md, embedded stroke 95): the
  *  host's brush canvas — a component, not an import (card-base
@@ -107,6 +199,11 @@ export interface ModifiersSectionProps {
    *  of the leaf popup; shares paintReference (the card's ONE
    *  image field is both faces' reference). */
   bboxFace?: BboxFaceComponent
+  /** THE ORBIT FACE (the reshoot orb, 2026-11-15): the host's
+   *  camera-pose orb for orbit-canvas kinds — EMBEDDED at the top
+   *  of the leaf popup (absent host = the three number dials
+   *  hold). */
+  orbitFace?: OrbitFaceComponent
   /** the card-level image field whose value is the leaf faces'
    *  reference — the brush paints OVER it, the rectangle selects
    *  ON it (mask: 'input_image'). */
@@ -114,6 +211,11 @@ export interface ModifiersSectionProps {
   /** The host's media source (threaded from the constructor's wire)
    *  — the leaf's image inputs pick from the library like a card's. */
   loadMedia?: (kind: string, signal: AbortSignal) => Promise<Array<{ url: string; name: string }>>
+  /** THE CHAIN-RUN SOURCE (the upscale leaf's picker): the live
+   *  chain-store runs, threaded from the constructor's wire like the
+   *  media rows. Absent → the chain-run field degrades to its plain
+   *  text input. */
+  loadChainRuns?: (signal: AbortSignal) => Promise<ChainRunCandidate[]>
   /** THE FLOW CANDIDATES (E2-11a — the region-mask picker law): the
    *  host bench's other stages' latest artifacts, threaded from the
    *  constructor's wire. The leaf's From-flow picker serves THESE —
@@ -747,16 +849,27 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
                 : option !== null && option.defaults !== undefined && typeof option.defaults['steps'] === 'number' ? option.defaults['steps'] as number : undefined
               // THE ENTRY FACE (2026-09-21, the operator's "not just
               // MCPs"): a tile names its SELECTION. The catalog hit
-              // names it (as before); else the entry's own select
-              // field names it — an MCP tile reads 'blender', a skill
-              // tile its leaf — resolved through the kind's served
-              // field options, never hand-spelled. Only then the id
-              // title and the bare kind label fallbacks.
+              // names it (as before); else the entry's own pick
+              // field names it — a select (served vocabulary) or a
+              // file pick (media rows: the qvoice persona, the F54
+              // ghost-parameter cure — a staged persona that tiles
+              // as a bare 'Voice' hides which voice the run composes);
+              // a served options list labels it, and an optionless
+              // pick names its own value. Only then the id title and
+              // the bare kind label fallbacks.
               const picked = (k.fields ?? []).find((f) =>
-                f.type === 'select' && typeof entry[f.name] === 'string' && (entry[f.name] as string) !== '')
-              const pickedLabel = picked === undefined ? null : (picked.options ?? [])
-                .map((o) => typeof o === 'string' ? { value: o, label: o } : o)
-                .find((o) => o.value === entry[picked.name] as string)?.label ?? null
+                (f.type === 'select' || f.type === 'file') && typeof entry[f.name] === 'string' && (entry[f.name] as string) !== '')
+              const pickedLabel = picked === undefined ? null : (() => {
+                const row = (picked.options ?? [])
+                  .map((o) => typeof o === 'string' ? { value: o, label: o } : o)
+                  .find((o) => o.value === entry[picked.name] as string)
+                if (row !== undefined) return row.label
+                // An option-less FILE pick names its own value (the
+                // staged persona is the tile's identity, F54); an
+                // option-less select keeps the kind-label fall (a
+                // vocabulary field with no served rows names nothing).
+                return picked.type === 'file' && (picked.options ?? []).length === 0 ? String(entry[picked.name]) : null
+              })()
           return h(ModTile, {
             key: tileIds[i]!,
             tileId: tileIds[i]!,
@@ -852,7 +965,8 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
       closeLabel: chromeCopy.leafCloseLabel,
       className: css.modLeafModal,
     },
-      h(ModLeaf, { leaf, values, hideFields: seated, onDraft: { setDraftOption, setDraftStrength, setDraftParams, setDraftSteps, draftOption, draftStrength, draftParams, draftSteps }, onError: setLeafError, onSave: saveLeaf, onDelete: deleteLeaf, leafError, paintFace: props.paintFace, bboxFace: props.bboxFace, paintReferenceValue: typeof props.paintReference === 'string' ? String(values[props.paintReference] ?? '') : '', ...(props.loadMedia !== undefined ? { loadMedia: props.loadMedia } : {}),
+      h(ModLeaf, { leaf, values, hideFields: seated, onDraft: { setDraftOption, setDraftStrength, setDraftParams, setDraftSteps, draftOption, draftStrength, draftParams, draftSteps }, onError: setLeafError, onSave: saveLeaf, onDelete: deleteLeaf, leafError, paintFace: props.paintFace, bboxFace: props.bboxFace, ...(props.orbitFace !== undefined ? { orbitFace: props.orbitFace } : {}), paintReferenceValue: typeof props.paintReference === 'string' ? String(values[props.paintReference] ?? '') : '', ...(props.loadMedia !== undefined ? { loadMedia: props.loadMedia } : {}),
+        ...(props.loadChainRuns !== undefined ? { loadChainRuns: props.loadChainRuns } : {}),
         ...(props.candidates !== undefined ? { candidates: props.candidates } : {}),
         ...(props.candidatesFor !== undefined ? { candidatesFor: props.candidatesFor } : {}),
         // THE MOD-KIND KNOB LAW (E2-7): the kind's own scalars ride
@@ -935,10 +1049,16 @@ function ModLeaf(props: {
   /** THE BBOX FACE (stroke 78, embedded stroke 95): same law —
    *  absent host = the four number inputs hold. */
   bboxFace?: BboxFaceComponent
+  /** THE ORBIT FACE (the reshoot orb, 2026-11-15): same law —
+   *  absent host = the three number dials hold (graceful). */
+  orbitFace?: OrbitFaceComponent
   paintReferenceValue: string
   /** The host's media source — the leaf's image inputs pick from
    *  the library like a card's. */
   loadMedia?: (kind: string, signal: AbortSignal) => Promise<Array<{ url: string; name: string }>>
+  /** THE CHAIN-RUN SOURCE (the upscale leaf's picker): threaded
+   *  from the constructor's wire; absent → the plain text input. */
+  loadChainRuns?: (signal: AbortSignal) => Promise<ChainRunCandidate[]>
   /** the flow rows + per-field narrowing (E2-11a — see the section's own props). */
   candidates?: Array<{ id: string; label: string; url: string }>
   candidatesFor?: (f: SpecField) => Array<{ id: string; label: string; url: string }>
@@ -968,6 +1088,26 @@ function ModLeaf(props: {
   const paintField = props.paintFace !== undefined && k.leaf_face === 'paint-canvas'
     ? (k.fields ?? []).find((f) => f.type === 'image' || f.wtype === 'image')
     : undefined
+  // THE ORBIT ORB (the reshoot orb, 2026-11-15): the host's
+  // camera-pose orb for orbit-canvas kinds — EMBEDDED above the
+  // field stack. The orb is ADDITIVE (never faceOwned): it writes
+  // the SAME orbit/tilt/dolly draft seats the number dials write
+  // (ONE TRUTH, two views of one draft), so the dials stay.
+  const orbitCanvas = props.orbitFace !== undefined && k.leaf_face === 'orbit-canvas'
+  // the orb's pose read (the draft's own seats, kind defaults as fallback)
+  const draftPose = (): { orbit: number; tilt: number; dolly: number } => {
+    const num = (v: unknown, fb: number): number =>
+      typeof v === 'number' && Number.isFinite(v) ? v : fb;
+    const fieldDefault = (name: string, fb: number): number => {
+      const f = (k.fields ?? []).find((ff) => ff.name === name);
+      return typeof f?.default === 'number' && Number.isFinite(f.default) ? f.default : fb;
+    };
+    return {
+      orbit: num(onDraft.draftParams['orbit'], fieldDefault('orbit', 0)),
+      tilt: num(onDraft.draftParams['tilt'], fieldDefault('tilt', 0)),
+      dolly: num(onDraft.draftParams['dolly'], fieldDefault('dolly', 1)),
+    };
+  };
   const facePresent = bboxCanvas || paintField !== undefined
   // reads the draft's quad (all four present, finite, ≥0 = set)
   const draftQuad = (): { x: number; y: number; width: number; height: number } | null => {
@@ -1154,9 +1294,9 @@ function ModLeaf(props: {
         // params-left / preview-right): a face-bearing leaf seats
         // the canvas LEFT and the knobs RIGHT; a faceless leaf keeps
         // the single column (nothing to split around).
-        (bboxCanvas || paintField !== undefined)
+        (bboxCanvas || paintField !== undefined || orbitCanvas)
         ? h('div', { className: css.modLeafSplit },
-            h('div', { className: css.modLeafStage, 'data-leaf-stage': bboxCanvas ? 'bbox' : 'paint' },
+            h('div', { className: css.modLeafStage, 'data-leaf-stage': bboxCanvas ? 'bbox' : orbitCanvas ? 'orbit' : 'paint' },
               // THE REGION CAPTION (the operator's correction,
               // 2026-10-08: "BBOX IS NOT MANUAL, IT IS AUTOMATED" —
               // Impact Pack's boxes come from the DETECTOR, so this
@@ -1183,6 +1323,13 @@ function ModLeaf(props: {
                       onChange: (dataUrl: string) => { onDraft.setDraftParams({ ...onDraft.draftParams, [paintField.name]: dataUrl }) },
                     }))
                 : null,
+              orbitCanvas && props.orbitFace !== undefined
+                ? h('div', { className: css.modField, 'data-leaf-canvas': 'orbit' },
+                    h(props.orbitFace, {
+                      value: draftPose(),
+                      onChange: (pose: { orbit: number; tilt: number; dolly: number }) => { onDraft.setDraftParams({ ...onDraft.draftParams, orbit: pose.orbit, tilt: pose.tilt, dolly: pose.dolly }) },
+                    }))
+                : null,
             ),
             h('div', { className: css.modLeafFields },
               // THE SECTION CAPTION (2026-10-08, the operator's
@@ -1203,7 +1350,18 @@ function ModLeaf(props: {
                   // caption opens the OS file dialog through the
                   // square's hidden input.
                   const sq = own.square(f)
-                  const atom = h(SpecAtom, {
+                  // THE CHAIN-RUN SEAT (the upscale leaf's picker): a
+                  // `chain-run` field renders the LIVE picker, never
+                  // the bare text atom (the free-text burn's cure —
+                  // the picker's own degrade law lives in it).
+                  const atom = f.type === 'chain-run'
+                    ? h(ChainRunPicker, {
+                        f,
+                        value: onDraft.draftParams[f.name],
+                        onEdit: (name: string, v: unknown) => { onDraft.setDraftParams({ ...onDraft.draftParams, [name]: coerceFieldEdit(f, v) }) },
+                        ...(props.loadChainRuns !== undefined ? { loadChainRuns: props.loadChainRuns } : {}),
+                      })
+                    : h(SpecAtom, {
                     f,
                     value: onDraft.draftParams[f.name],
                     // the leaf's patch boundary (see the hybrid arm)
@@ -1239,7 +1397,17 @@ function ModLeaf(props: {
           leafFields.map((f) => h('div', { key: f.name },
             (() => {
               const sq = own.square(f)
-              const atom = h(SpecAtom, {
+              // THE CHAIN-RUN SEAT (see the canvas-present arm above):
+              // the picker rides BOTH plain arms — the face's presence
+              // never decides the run seat's shape.
+              const atom = f.type === 'chain-run'
+                ? h(ChainRunPicker, {
+                    f,
+                    value: onDraft.draftParams[f.name],
+                    onEdit: (name: string, v: unknown) => { onDraft.setDraftParams({ ...onDraft.draftParams, [name]: coerceFieldEdit(f, v) }) },
+                    ...(props.loadChainRuns !== undefined ? { loadChainRuns: props.loadChainRuns } : {}),
+                  })
+                : h(SpecAtom, {
                 f,
                 value: onDraft.draftParams[f.name],
                 // the leaf's patch boundary (see the hybrid arm)

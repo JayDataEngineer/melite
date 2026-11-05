@@ -140,8 +140,11 @@ test('seedAxisValues: the first-declared law; held values win on reopen', () => 
   // still omits the key — 'unknown quant ""' stays refused)
   expect(seedAxisValues(KREA, { variant: 'raw', model: 'krea-2-raw' }))
     .toEqual({ variant: 'raw', quant: 'int8_convrot' })
-  // a matrix-less spec seeds nothing
-  expect(seedAxisValues({ ...KREA, variants: [] }, {})).toEqual({})
+  // a matrix-less spec seeds no AXES — but the family still names
+  // itself at birth (the gate-11 anny cure: the model arm rides
+  // above the groups guard; a family spec with no axis vocabulary
+  // is never born family-less)
+  expect(seedAxisValues({ ...KREA, variants: [] }, {})).toEqual({ model: 'krea-2' })
 })
 
 test('seedUser: the user-layer seed is the axis seed over held params (presence law)', () => {
@@ -1160,20 +1163,32 @@ test('switching the Model select resets the Variant axis (the drill never holds 
   const state = { user: { prompt: 'a cat', model: 'krea-2', variant: 'turbo', quant: 'int8_convrot' } as SpecValues }
   const onSet = (name: string, v: unknown): void => { state.user = { ...state.user, [name]: v } }
   // THE ATOMIC PICK SEAT (required by construction): the host
-  // merges the WHOLE patch — picks are one contract, one write
-  const onPick = (patch: Record<string, unknown>): void => { state.user = { ...state.user, ...patch } }
+  // merges the WHOLE patch — picks are one contract, one write —
+  // and a NULL VERDICT DELETES from the user layer (the
+  // settings-eater law's departure clause: the departing family's
+  // axis words never ride the arrival state)
+  const onPick = (patch: Record<string, unknown>): void => {
+    const next: SpecValues = { ...state.user }
+    for (const [k, v] of Object.entries(patch)) {
+      if (v === null) delete next[k]
+      else next[k] = v
+    }
+    state.user = next
+  }
   render(createElement(CardForm, {
     spec: { ...KREA, families: [{ id: 'anima', present: true }] },
     user: state.user,
     onSet,
     onPick,
   }))
-  // a FAMILY switch clears the axes (the refetched family's rows
-  // seed — stroke 19/20's law); krea-2-raw is not an option at all
+  // a FAMILY switch departs the axes as nulls (the gate-11 cure —
+  // '' is a stated empty selection the door refuses whole-frame);
+  // the user layer DELETES them and the refetched family's rows
+  // seed — stroke 19/20's law; krea-2-raw is not an option at all
   await pickAxisRow('Model', /^Anima/)
   await waitFor(() => { expect(state.user['model']).toBe('anima') })
-  expect(state.user['variant']).toBe('')
-  expect(state.user['quant']).toBe('')
+  expect('variant' in state.user, 'the departed variant key is DELETED, never a stated ""').toBe(false)
+  expect('quant' in state.user, 'the departed quant key is DELETED, never a stated ""').toBe(false)
 })
 
 // ── THE NO-FALLBACK LAW (operator, hour 26: "NO. MORE. FALLBACKS.
@@ -1416,10 +1431,16 @@ test('SELECTING A FAMILY FILTERS VARIANT+QUANT: the cross-spec pick clears the a
         })
       },
       // THE ATOMIC PICK SEAT (required by construction): the switch
-      // lands as ONE frame — model + cleared axes, never per-key
+      // lands as ONE frame — model + departed axes, never per-key —
+      // and a NULL VERDICT DELETES (the settings-eater law's
+      // departure clause)
       onPick: (patch: Record<string, unknown>) => {
         setUser((m) => {
-          const next = { ...m, ...patch }
+          const next: SpecValues = { ...m }
+          for (const [k, v] of Object.entries(patch)) {
+            if (v === null) delete next[k]
+            else next[k] = v
+          }
           picked.push({ ...next })
           return next
         })
@@ -1428,12 +1449,14 @@ test('SELECTING A FAMILY FILTERS VARIANT+QUANT: the cross-spec pick clears the a
   })
   render(comp)
   await pickAxisRow('Model', /Anima/)
-  // the patch modelSwitchPatch produced: axes CLEARED — turbo/int8
-  // (krea's rows) never ride under anima
+  // the patch modelSwitchPatch produced: axes DEPARTED AS NULLS —
+  // turbo/int8 (krea's rows) never ride under anima, and the state
+  // never holds a stated "" (the gate-11 cure: the door refuses a
+  // stated empty selection whole-frame)
   const after = picked[picked.length - 1]
   expect(after['model']).toBe('anima')
-  expect(after['variant']).toBe('')
-  expect(after['quant']).toBe('')
+  expect('variant' in after, 'the departed variant key is DELETED').toBe(false)
+  expect('quant' in after, 'the departed quant key is DELETED').toBe(false)
 })
 
 test('THE FILTER, END TO END: a cleared cross-spec pick seeds the NEW family\'s rows on its own spec (select krea-2 → variant/quant become krea\'s)', async () => {

@@ -23,8 +23,7 @@
     "@melite/card-base": "workspace:*",
     "@melite/contracts": "workspace:*",
     "clsx": "*",
-    "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react": "^19.3.0"
   },
   "devDependencies": {
     "@testing-library/react": "*",

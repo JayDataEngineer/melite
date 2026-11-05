@@ -109,6 +109,14 @@ export function mediaKindsDisjoint() {
     }
     return true;
 }
+/** The tucked-away dir (the mass-archive law, operator ruling
+ *  2026-11-14, item (a)): archived artifacts rest under
+ *  `<run>/_archived/<tail>` — the underscore prefix keeps them out
+ *  of every listing walk, while the bytes survive beside the run
+ *  and restore is a move back, never a reconstruction. ONE spelling:
+ *  the gallery archive/restore doors, the media list walk, and the
+ *  runs-list archived face all read this, never a literal. */
+export const ARCHIVED_DIR_NAME = '_archived';
 /** Is this the harness's own BOOKKEEPING file (a run dir sidecar)?
  *  ONE spelling (the text-kind stroke, 2026-10-24): the underscore
  *  prefix is the estate's sidecar convention (_request.json,

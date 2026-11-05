@@ -28,6 +28,11 @@ export interface MediaDrilldownItem {
   file: string
   head: string
   time: string
+  /** The tucked-away face (mass-archive law): an archived tile swaps
+   *  the live verbs (delete/rename/archive — all refuse an archived
+   *  path) for restore. Optional — surfaces that never tuck (the
+   *  card zoom) leave it absent, always live. */
+  archived?: boolean
 }
 
 /** Text artifact view (the text-kind stroke, 2026-10-24): the
@@ -132,21 +137,26 @@ function ModelView({ item, openArtifact }: { item: MediaDrilldownItem; openArtif
  * self-painted surface), walk WRAP-AROUND, and the keyboard
  * ArrowLeft/ArrowRight ride the same verbs. No siblings = exactly
  * the old face (both call sites unchanged until wired). */
-export function MediaDrilldown({ item, onClose, openArtifact, siblings, onNavigate, onDelete, onRename }: {
+export function MediaDrilldown({ item, onClose, openArtifact, siblings, onNavigate, onDelete, onRename, onArchive, onRestore }: {
   item: MediaDrilldownItem
   onClose: () => void
   openArtifact?: (item: MediaDrilldownItem) => void
   siblings?: MediaDrilldownItem[]
   onNavigate?: (next: MediaDrilldownItem) => void
   /** THE MODAL MUTATIONS (the mediasidebar's popup modal on media
-   *  stuff): OPTIONAL delete + rename verbs — a surface with no
-   *  mutating door (the card zoom) simply hides both buttons (the
-   *  3D-door pattern: optional prop, absent face). The verbs are
-   *  async (the host doors); the drilldown owns the confirm +
-   *  inline-rename faces, the busy/error states, and NOTHING else —
-   *  the parent owns what happens after (close / re-point / reload). */
+   *  stuff): OPTIONAL delete + rename + archive + restore verbs — a
+   *  surface with no mutating door (the card zoom) simply hides its
+   *  buttons (the 3D-door pattern: optional prop, absent face). The
+   *  verbs are async (the host doors); the drilldown owns the
+   *  confirm + inline-rename faces, the busy/error states, and
+   *  NOTHING else — the parent owns what happens after (close /
+   *  re-point / reload). Archive + restore fire IMMEDIATE (no
+   *  confirm — both reverse: un-archive, un-restore); only the
+   *  destructive delete arms first. */
   onDelete?: (item: MediaDrilldownItem) => Promise<void>
   onRename?: (item: MediaDrilldownItem, name: string) => Promise<void>
+  onArchive?: (item: MediaDrilldownItem) => Promise<void>
+  onRestore?: (item: MediaDrilldownItem) => Promise<void>
 }): React.JSX.Element {
   const walkable = siblings ?? []
   const at = walkable.findIndex((s) => s.url === item.url)
@@ -223,9 +233,34 @@ export function MediaDrilldown({ item, onClose, openArtifact, siblings, onNaviga
     setOpError('')
     inflight.current = false
   }, [item.url])
-  const canDelete = onDelete !== undefined
-  const canRename = onRename !== undefined
-  const showActions = canDelete || canRename
+  const canDelete = onDelete !== undefined && item.archived !== true
+  const canRename = onRename !== undefined && item.archived !== true
+  // THE TUCKED FACE (mass-archive law): an archived tile's live
+  // verbs would all refuse at the doors (delete hits the sidecar
+  // guard, rename re-points a hidden file, archive is already-done)
+  // — so the face swaps them for restore, never a dead button.
+  const canArchive = onArchive !== undefined && item.archived !== true
+  const canRestore = onRestore !== undefined && item.archived === true
+  const showActions = canDelete || canRename || canArchive || canRestore
+  const fireReversible = (verb: ((item: MediaDrilldownItem) => Promise<void>) | undefined): void => {
+    if (verb === undefined || inflight.current) return
+    const seat = item.url
+    inflight.current = true
+    setBusy(true)
+    setOpError('')
+    void verb(item)
+      .catch((e: unknown) => {
+        // THE SEAT GUARD (the delete verb's twin): a stale settle
+        // never paints the held seat's face.
+        if (!mountedRef.current || seatUrlRef.current !== seat) return
+        setOpError(e instanceof Error ? e.message : String(e))
+      })
+      .finally(() => {
+        inflight.current = false
+        if (!mountedRef.current || seatUrlRef.current !== seat) return
+        setBusy(false)
+      })
+  }
   const startDelete = (): void => {
     setOpError('')
     setMode('confirmDelete')
@@ -387,6 +422,8 @@ export function MediaDrilldown({ item, onClose, openArtifact, siblings, onNaviga
                   ? (
                       <>
                         {canRename ? actionBtn(galleryCopy.renameAction, startRename, { testid: 'drill-rename', aria: galleryCopy.renameAria }) : null}
+                        {canArchive ? actionBtn(galleryCopy.archiveAction, () => { fireReversible(onArchive) }, { testid: 'drill-archive', aria: galleryCopy.archiveAria }) : null}
+                        {canRestore ? actionBtn(galleryCopy.restoreArtifactAction, () => { fireReversible(onRestore) }, { testid: 'drill-restore', aria: galleryCopy.restoreArtifactAria }) : null}
                         {canDelete ? actionBtn(galleryCopy.deleteAction, startDelete, { danger: true, testid: 'drill-delete', aria: galleryCopy.deleteAria }) : null}
                       </>
                     )

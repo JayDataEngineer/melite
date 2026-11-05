@@ -10,8 +10,18 @@
 import { estateRemote, unwrapRemote } from './estate-remote.ts'
 
 /** media/list — the runs-tree library (the picker's injected
- *  source; kind-filtered). */
+ *  source; kind-filtered). The mounted media namespace must serve
+ *  `list` — a namespace object without the method is a wiring fault
+ *  (the 2026-11-01 operator burn: a stale bind surfaced the raw
+ *  `estateRemote(...).media.list is not a function` as picker copy),
+ *  so the guard refuses in the door's own voice, never a programmer
+ *  TypeError, and the bind seam's live re-pull has already had its
+ *  chance to heal a stale generation before this read. */
 export async function fetchMediaLibrary(kind: string, signal?: AbortSignal): Promise<Array<{ url: string; name: string }>> {
-  const v = await unwrapRemote(estateRemote().media.list(kind, signal), 'media/list')
+  const media = estateRemote().media
+  if (typeof media.list !== 'function') {
+    throw new Error('the mounted media namespace does not serve media/list — the estate media contribution is not mounted (reload the page to re-mount the bundles)')
+  }
+  const v = await unwrapRemote(media.list(kind, signal), 'media/list')
   return Array.isArray(v.items) ? v.items.filter((it) => typeof it?.url === 'string' && typeof it?.name === 'string') : []
 }

@@ -112,6 +112,16 @@ export declare const chromeCopy: {
     readonly addModifierAria: "Add modifier";
     /** Add-modifier square's hover title. */
     readonly addModifierTitle: "Add a modifier";
+    /** Chain-run picker row label: the estate run id, the lane it rode, and the scene count its chain stamp reports. */
+    readonly chainRunOptionLabel: (p: {
+        run: string;
+        kind: string;
+        scenes: number;
+    }) => string;
+    /** Chain-run picker's free-text affordance (the advanced fallback — a placeholder AND accessible name). */
+    readonly chainRunAdvancedLabel: "Advanced — paste a run id";
+    /** Chain-run picker's honest empty (the store check found no checkpointed run). */
+    readonly chainRunEmptyNote: "No chain runs yet — a swap, repair, extend or refine press leaves its scenes here.";
     /** Named-presence popup title: "Name the <kind label>" (the add gesture opens one field, never a knob wall). */
     readonly namedPresenceTitle: (p: {
         kindLabel: string;

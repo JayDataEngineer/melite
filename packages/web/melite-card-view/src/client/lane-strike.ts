@@ -33,12 +33,16 @@
  * (SD-7). PURE — the caller owns the write.
  */
 import {
+  activeRecipeId,
+  composeCandidateDoc,
   composeValidate,
   dropStaleReopenCarry,
   resolveValue,
+  rowsFor,
   type FormSpecDoc,
   type SpecValues,
 } from '@melite/card-base/client'
+import { CATEGORIES } from '@melite/contracts/planes'
 
 export interface LaneStrike {
   /** The base copy with the dead stamps removed — the map to resolve
@@ -87,6 +91,45 @@ export function strikeDeadLaneStamps(
       if (withStamp.length > withoutStamp.length) {
         delete out['quant']
         strikes.push('quant')
+      }
+    }
+  }
+  // (c) THE DEPARTED RECIPE'S GHOSTS (the qwen-img-edit-21 burn,
+  // 2026-11-15): the recipe face derives over base ⊕ user
+  // (composeCandidateDoc — the drill's pickHeld layer), and the
+  // base is the LAST RESOLUTION's stamp plane: the estate refreshes
+  // it when it re-resolves, not when a pick re-keys the doc. A
+  // recipe switch therefore leaves the departed row's stamps in the
+  // base — the layer carries BOTH rows' stamps and activeRecipeId
+  // names NEITHER (the twin-stamp dead zone; the live wire: the doc
+  // held remove-background's full stamp {prompt, steps 8, cfg 1}
+  // while the served base still resolved upstream's
+  // sampler/scheduler — the face read the placeholder for good over
+  // a doc the pure derivation names). The judge is clause-2's own
+  // verb, by difference: when the layer names NO row, strike the
+  // base-held recipe-plane keys the user never authored — a pick's
+  // authorship lands in the USER map (the atomic pick's merge), so
+  // a recipe stamp with no user word and no live row is a ghost —
+  // and keep the strike only when the struck layer names a row (the
+  // estate doc's own truth decides, never a guessed neighbor). THE
+  // REOPEN CASE never strikes: a base whose layer still names a row
+  // IS that row's stamp plane — the dead-zone gate closes before
+  // any key moves.
+  const named = activeRecipeId(spec, composeCandidateDoc(out, user, {}))
+  if (named === undefined) {
+    const recipeKeys = new Set<string>()
+    for (const row of rowsFor(spec, CATEGORIES.recipe)) {
+      for (const k of Object.keys(row.defaults)) recipeKeys.add(k)
+    }
+    const ghosts = Object.keys(out).filter((k) => recipeKeys.has(k) && !(k in user))
+    if (ghosts.length > 0) {
+      const struck: SpecValues = { ...out }
+      for (const k of ghosts) delete struck[k]
+      if (activeRecipeId(spec, composeCandidateDoc(struck, user, {})) !== undefined) {
+        for (const k of ghosts) {
+          delete out[k]
+          strikes.push(k)
+        }
       }
     }
   }

@@ -6,9 +6,11 @@
 // functions, deep-equal — no fetch, no DOM.
 import { describe, expect, test } from "vitest";
 import {
+  benchAddressOf,
   benchSessionOfAddress,
   cardsDraftStageAddress,
   cardsRunAddress,
+  carriedBenchKey,
   emptyBench,
   isTerminal,
   mergeRunFrame,
@@ -55,6 +57,30 @@ describe("the address grammar — refusals are null, never throws", () => {
     expect(benchSessionOfAddress("dsh-resource://cards/bench")).toBe("main");
     expect(benchSessionOfAddress("dsh-resource://cards/bench/conv-9")).toBe("conv-9");
     expect(benchSessionOfAddress("dsh-resource://cards/run/run-1")).toBe("main");
+  });
+
+  // THE DELEGATED SEAT CARRIES (the one-seat law's client half,
+  // 2026-10-31 — the construct-flow-link replay's find): the tool
+  // forwards a delegated lane's key as delegate:<key>; the grammar
+  // gate falls it to 'main', so a delegated lane's construct card
+  // linked to a bench no face watched. The address channel carries
+  // the spelling verbatim — the ESTATE door re-seats it (seatOf).
+  test("a delegate: bench tail carries VERBATIM (the estate door re-seats it — never a silent main)", () => {
+    expect(benchSessionOfAddress("dsh-resource://cards/bench/delegate:s_chat7")).toBe("delegate:s_chat7");
+    expect(carriedBenchKey("delegate:s_chat7")).toBe("delegate:s_chat7");
+  });
+
+  test("the carry is narrow: junk stays under the grammar gate (main), legal keys unchanged", () => {
+    expect(carriedBenchKey("delegate:")).toBe("main");
+    expect(carriedBenchKey("delegate:not@a/key")).toBe("main");
+    expect(carriedBenchKey("delegated:s_chat7")).toBe("main"); // the prefix is exact
+    expect(carriedBenchKey("conv-9")).toBe("conv-9");
+    expect(carriedBenchKey("")).toBe("main");
+  });
+
+  test("the address round-trips a delegated seat (the link opens what the projector named)", () => {
+    expect(benchAddressOf("delegate:s_chat7")).toBe("dsh-resource://cards/bench/delegate:s_chat7");
+    expect(benchSessionOfAddress(benchAddressOf("delegate:s_chat7"))).toBe("delegate:s_chat7");
   });
 });
 

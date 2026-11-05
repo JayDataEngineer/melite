@@ -75,6 +75,90 @@ async function listRunRows(signal?: AbortSignal): Promise<Record<string, unknown
   return runs.filter((r): r is Record<string, unknown> => typeof r === 'object' && r !== null)
 }
 
+/** One chain-run picker candidate: a run the estate's own rows
+ *  prove checkpointed (THE STORE CHECK — the F35 execute door's
+ *  own read, mirrored client-side; a row without the stamp names no
+ *  candidate, and nothing is fabricated). */
+export interface ChainRunCandidate {
+  /** The estate run id — the value the picker binds (the execute
+   *  door's run-id grammar resolves it to the store). */
+  runId: string
+  /** The engine-side chain store the run left (chain_store.run_name). */
+  store: string
+  /** The lane the run rode (the served variant; the flow name backstops). */
+  variant: string
+  /** The checkpointed scene count the stamp itself reports. */
+  scenes: number
+  /** Newest-first sort key (created_at, epoch ms; 0 when unreadable). */
+  created: number
+}
+
+/** The record view of a wire value, or null when it is not an
+ *  object (the typed narrow — arrays answer null; the anti-sniff
+ *  census's 'type the value instead' law, no as-unknown double-cast). */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+/** The chain stamp a status doc carries, or null: the FIRST stage
+ *  whose result_outputs hold a coherent chain_store ({run_name,
+ *  scenes, end_clip} — the registrar's stamp, read by the same walk
+ *  the execute door's chainStoreNameOf performs). */
+function chainStampOfDoc(doc: Record<string, unknown>): { store: string; scenes: number } | null {
+  const stages: unknown[] = Array.isArray(doc['stages']) ? doc['stages'] : []
+  for (const st of stages) {
+    const stage = isRecord(st) ? st : null
+    if (stage === null) continue
+    const ro = isRecord(stage['result_outputs']) ? stage['result_outputs'] : null
+    if (ro === null) continue
+    const cs = isRecord(ro['chain_store']) ? ro['chain_store'] : null
+    if (cs === null) continue
+    const name = cs['run_name']
+    if (typeof name !== 'string' || name === '') continue
+    const scenes = cs['scenes']
+    return { store: name, scenes: typeof scenes === 'number' && Number.isFinite(scenes) ? scenes : 0 }
+  }
+  return null
+}
+
+/** THE CHAIN-RUN PICKER'S SOURCE (the runs library's own surface):
+ *  runs/list names the estate's runs; each candidate run's status
+ *  doc is read for the chain stamp — a run whose row carries
+ *  chain_store is a real resume source, a plain film proves nothing
+ *  and stays out. Runs newest-first (the operator resumes recent
+ *  work; the raw list interleaves media-bearing rows first). A
+ *  refused status (the run is gone from the registry) skips that
+ *  row — no evidence, no candidate. A GATEWAY failure (the lane
+ *  itself down — the api-gateway client folds every carrier throw
+ *  into the gateway/internal branch) is NOT a verdict: it rethrows,
+ *  so an unreachable estate never renders as the honest-empty "no
+ *  chain runs yet". */
+export async function fetchChainRunCandidates(signal?: AbortSignal): Promise<ChainRunCandidate[]> {
+  const out: ChainRunCandidate[] = []
+  for (const r of await listRunRows(signal)) {
+    const rid = r['run_id'] ?? r['id']
+    if (typeof rid !== 'string' || rid === '') continue
+    let doc: Record<string, unknown> | null
+    try {
+      const answered: unknown = await unwrapRemote(estateRemote().runs.status(rid, signal), 'runs/status')
+      doc = isRecord(answered) ? answered : null
+    } catch (e: unknown) {
+      if (isEstateRefusal(e) && e.code !== 'gateway/internal' && e.code !== 'gateway/cancelled') continue
+      throw e
+    }
+    if (doc === null) continue
+    const stamp = chainStampOfDoc(doc)
+    if (stamp === null) continue
+    const variant = typeof doc['variant'] === 'string' && doc['variant'] !== ''
+      ? doc['variant']
+      : (typeof doc['flow'] === 'string' && doc['flow'] !== '' ? doc['flow'] : 'run')
+    const created = typeof r['created_at'] === 'number' ? r['created_at'] : 0
+    out.push({ runId: rid, store: stamp.store, variant, scenes: stamp.scenes, created })
+  }
+  out.sort((a, b) => b.created - a.created)
+  return out
+}
+
 /** One runs/list row by run_id (the file-era face — runs/status only
  *  knows live runs; the list is the completed runs' SSOT). */
 export async function fetchListRow(

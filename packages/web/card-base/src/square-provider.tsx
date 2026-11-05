@@ -13,6 +13,7 @@ import {
 import { readAsDataURL } from './chrome.ts'
 import { uploadInputFile } from './wire.ts'
 import { type SpecField } from './spec.ts'
+import type { ChainRunCandidate } from './runs-policy.ts'
 import { rejectionVoice } from './rejection-voice.ts'
 import { t } from './locales/square.ts'
 import { EmptyState } from './layout.tsx'
@@ -482,6 +483,12 @@ export interface SquareWire {
    *  list (honest, never a hidden fetch). */
   loadMedia?: (kind: string, signal: AbortSignal) => Promise<Array<{ url: string; name: string }>>
   candidatesFor?: (f: SpecField) => Array<{ id: string; label: string; url: string }>
+  /** THE CHAIN-RUN SOURCE (the upscale leaf's picker law): the
+   *  checkpointed runs arrive INJECTED like the media rows — the
+   *  host owns the runs lane; the base carries no transport of its
+   *  own. Absent → the chain-run field degrades to its plain text
+   *  input (honest, never a hidden fetch). */
+  loadChainRuns?: (signal: AbortSignal) => Promise<ChainRunCandidate[]>
   /** The surface's OWN file law (optional): when present, From file
    *  and OS drops route here instead of the default upload door —
    *  bespoke vocabularies (the studio's inline data:-URL cap) keep

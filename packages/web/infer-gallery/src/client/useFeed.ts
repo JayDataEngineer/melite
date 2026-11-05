@@ -153,7 +153,16 @@ export function useFeed<T>(url: string, decode: (json: unknown) => T, initial: T
     // never a terminal red banner that heals itself seconds later.
     fetchUntilSeated(url, { signal: ctrl.signal })
       .then(async (r) => {
+        // THE SUPERSEDED SUCCESS (boot-feed audit F4b): the abort only
+        // rejects an IN-FLIGHT fetch — a response that already arrived
+        // keeps its body read alive, and the late read would setData
+        // OVER the load that replaced it (and poison the cache with a
+        // feed no live load ever served). A superseded load paints
+        // nothing: the guard rides both sides of the body read, since
+        // the abort can land while the bytes stream in.
+        if (ctrl.signal.aborted) return
         const json: unknown = await r.json()
+        if (ctrl.signal.aborted) return
         if (!r.ok) {
           const msg = (json as { error?: unknown }).error
           throw new Error(typeof msg === 'string' && msg !== '' ? msg : 'HTTP ' + String(r.status))

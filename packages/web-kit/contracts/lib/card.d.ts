@@ -48,7 +48,7 @@ export interface CardResult {
     artifacts: Record<string, string>;
     metadata: Record<string, unknown>;
     durationSec?: number;
-    /** Multi-output click-through (render_glb_views → 8 views). */
+    /** Multi-output click-through (a run's named gallery rows). */
     gallery?: {
         name: string;
         url: string;
@@ -59,6 +59,13 @@ export interface CardResult {
         url: string | null;
         artifact: string;
     }[];
+    /** THE ESTATE HERO POINTER (the reshoot burn, 2026-11-15): the
+    * run's OWN product — the executor leads it (the semantic output
+    * first, the engine-film law) and the estate carries it as the
+    * hero of the result. A reshoot's window save re-stamps the
+    * source clip beside it (`__<12hex>` dedup), and the stamp breaks
+    * every artifact-name tier — this pointer outranks names. */
+    url?: string;
 }
 export interface CardInputBinding {
     slot: string;

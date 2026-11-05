@@ -347,3 +347,82 @@ describe("restoreRunToBench — the carry batch law (operator order b, 2026-10-2
     expect(benchResultDefects(outcomes[0]!["result"] as Record<string, unknown>)).toEqual([]);
   });
 });
+
+// ── THE DRIFT CURE (audit restore-preview-recurrence F4, cure D3 —
+//    the restore leg of the fifteenth report's class): a count-equal
+//    restore whose run ORDER drifted used to voice the drift and
+//    still land the positional carry — a voiced lie was still a lie
+//    on the tile. The cure: the DETECTED case (the position stage's
+//    own identity names another draft row) SKIPS the carry — the
+//    drifted row lands preview-less; the identity-silent history
+//    heal (skeleton ids naming no row) still carries by position.
+describe("restoreRunToBench — the drift cure (a detected order drift voices and skips — it never paints)", () => {
+  test("a count-equal REORDER lands the run's own rows, leaves the drifted row preview-less, and still voices the drift", async () => {
+    const fakes = mountEstateFakes({
+      benchDoc: { session: "s1", rev: 7, log: [], stages: [] },
+      draftStages: [
+        { id: "s_0", card: "h3-film", engine: "comfyui", params: { prompt: "a" } },
+        { id: "s_1", card: "sfx", engine: "comfyui", params: { prompt: "b" } },
+      ],
+    });
+    // counts equal (2 run stages = 2 carded draft rows) so the
+    // position tier is LIVE; the order drifted: position 0 holds
+    // s_1's identity, position 1 a skeleton id. s_0 joins by NEITHER
+    // id nor stamp — the drift is detectable from the position
+    // stage's own evidence.
+    const report = await restoreRunToBench({
+      ...runWithStages(),
+      stages: [
+        { id: "s_1", status: "completed", url: "/melite-media/runs/r_9/b.mp4", gallery: [{ name: "b.mp4" }] },
+        { id: "h3-film", status: "completed", url: "/melite-media/runs/r_9/a.mp4", gallery: [{ name: "a.mp4" }] },
+      ],
+    }, 'owner');
+    // the rows LAND — the cure loses the paint, not the restore.
+    expect(report.added).toBe(2);
+    expect(report.skipped).toBe(0);
+    // NO MEDIA on the drifted row: the outcome key never rides it —
+    // this is the invariant the whole cure guards.
+    const rows = batchRows(fakes);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]!).not.toHaveProperty("outcome");
+    // only s_1 (the own-id tier) carried; s_1's media never painted
+    // onto the drifted s_0.
+    expect(report.carried).toBe(1);
+    // the VOICE still fires — the operator hears what happened.
+    expect(report.notes).toHaveLength(1);
+    expect(report.notes[0]).toMatch(/positional carry for s_0.*s_1.*drifted/);
+    expect(report.notes[0]).toMatch(/carry is skipped/);
+    // s_1 keeps its OWN outcome through the id tier — never the
+    // position's media, never a cross-paint.
+    const carried = rowOutcome(rows, "s_1")!["result"] as Record<string, unknown>;
+    expect(carried["url"]).toBe("/melite-media/runs/r_9/b.mp4");
+    expect((carried as { run_id: string }).run_id).toBe("r_9");
+    expect(benchResultDefects(carried)).toEqual([]);
+  });
+
+  test("the identity-silent history heal still carries by position — the cure bites only the DETECTED drift", async () => {
+    const fakes = mountEstateFakes({
+      benchDoc: { session: "s1", rev: 7, log: [], stages: [] },
+      draftStages: [
+        { id: "s_0", card: "h3-film", engine: "comfyui", params: { prompt: "a" } },
+        { id: "s_1", card: "sfx", engine: "comfyui", params: { prompt: "b" } },
+      ],
+    });
+    // skeleton ids on BOTH stages, order-preserving: no stage's
+    // identity names any draft row — nothing detects a drift, so the
+    // position tier stays history's heal and carries both rows.
+    const report = await restoreRunToBench({
+      ...runWithStages(),
+      stages: [
+        { id: "h3-film", status: "completed", url: "/melite-media/runs/r_9/a.mp4", gallery: [{ name: "a.mp4" }] },
+        { id: "h3-film", status: "completed", url: "/melite-media/runs/r_9/b.mp4", gallery: [{ name: "b.mp4" }] },
+      ],
+    }, 'owner');
+    expect(report.added).toBe(2);
+    expect(report.carried).toBe(2);
+    expect(report.notes).toEqual([]);
+    const rows = batchRows(fakes);
+    expect((rowOutcome(rows, "s_0")!["result"] as Record<string, unknown>)["url"]).toBe("/melite-media/runs/r_9/a.mp4");
+    expect((rowOutcome(rows, "s_1")!["result"] as Record<string, unknown>)["url"]).toBe("/melite-media/runs/r_9/b.mp4");
+  });
+});

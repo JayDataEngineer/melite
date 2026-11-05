@@ -202,7 +202,7 @@ export interface ModifierKind {
    *  selection canvas — the reference image the user drags a
    *  rectangle on (absent host degrades to the four number
    *  inputs). */
-  leaf_face?: 'paint-canvas' | 'bbox-canvas'
+  leaf_face?: 'paint-canvas' | 'bbox-canvas' | 'orbit-canvas'
   /** THE SECTION CAPTION (2026-10-08, the operator's demand —
    *  "SAM2 AND SAM3 DON'T HAVE BBOX FILTER"): the kind's declared
    *  one-line name for what the field stack IS, seated ABOVE the

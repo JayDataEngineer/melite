@@ -376,6 +376,7 @@ select option {
 .modLeafActions { display: flex; gap: 8px; }
 .modField { display: flex; flex-direction: column; gap: 4px; font-size: 11px; }
 .modLeafError { margin: 0; font-size: 11px; color: #e06c5f; }
+.modLeafHint { font-size: 11px; opacity: .65; }
 
 /* THE PICKER MODAL (2026-09-13, the source-row stroke) — the default
  * face of the From flow / From media selector. Token-only colors. */

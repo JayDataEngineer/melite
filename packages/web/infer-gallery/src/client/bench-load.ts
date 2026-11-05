@@ -445,6 +445,27 @@ export async function loadRunOntoBench(runId: string, deps: BenchLoadDeps): Prom
             // for sidecars with NO stage rows at all (pre-sidecar-
             // stage runs), where no per-stage truth exists to honor.
             else if (sideStages.length === 0 && result !== undefined) st['result'] = result
+            // THE EXPLICIT-NULL CLEAR, CLIENT HALF (D1, the
+            // restore-preview recurrence audit 2026-10-31,
+            // dev_docs/audits/journey/2026-10-31-restore-preview-recurrence.md
+            // F1): a row this run's truth leaves preview-less posts
+            // result: null, never a stripped absence. The estate
+            // carry is fill-never-clobber over ABSENT keys — absence
+            // reads "the poster is silent", and the ensure door
+            // re-attaches the bench doc's own memory for that stage
+            // id: over a once-cross-stamped doc that memory is the
+            // fossil, so every reload-from-history re-painted the
+            // burn with the floor cure green (the reservoir, proven
+            // live through the real doors in the audit's R1). null
+            // STATES the truth — this row has no preview — and the
+            // door's null-clear arm deletes the memory key (one null
+            // law, both transports; the patch door's RFC 7386).
+            else st['result'] = null
+          } else {
+            // the skipped set: the same explicit clear — the run
+            // never produced them, and their doc memory must not
+            // ride the reload either (see the null-clear law above).
+            st['result'] = null
           }
           st['provenance'] = RESTORED_PROVENANCE_SPELLING
         }

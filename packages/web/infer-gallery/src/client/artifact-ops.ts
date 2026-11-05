@@ -62,6 +62,42 @@ export async function deleteArtifact(path: string): Promise<void> {
   }
 }
 
+/** Tuck one run-relative artifact into the run's `_archived/` dir. */
+export async function archiveArtifact(path: string): Promise<void> {
+  let res: Response
+  try {
+    res = await fetch('/infer-gallery/artifact-archive', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ path }),
+    })
+  } catch (e) {
+    throw new Error('archive failed — ' + (e instanceof Error ? e.message : String(e)))
+  }
+  if (!res.ok) {
+    const answer: unknown = await res.json().catch(() => null)
+    throw new Error('archive failed (' + await refusalOf(res, answer) + ')')
+  }
+}
+
+/** Move one archived artifact back beside its siblings. */
+export async function restoreArtifact(path: string): Promise<void> {
+  let res: Response
+  try {
+    res = await fetch('/infer-gallery/artifact-restore', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ path }),
+    })
+  } catch (e) {
+    throw new Error('restore failed — ' + (e instanceof Error ? e.message : String(e)))
+  }
+  if (!res.ok) {
+    const answer: unknown = await res.json().catch(() => null)
+    throw new Error('restore failed (' + await refusalOf(res, answer) + ')')
+  }
+}
+
 /** The mass-delete answer: per-file outcomes, never a first-failure
  *  abort — the operator asked for N deletions and reads which landed. */
 export interface DeleteManyAnswer {
@@ -81,10 +117,72 @@ export async function deleteArtifacts(paths: readonly string[]): Promise<DeleteM
       await deleteArtifact(path)
       deleted += 1
     } catch (e) {
-      failed.push({ path, message: e instanceof Error ? e.message : String(e) })
+      // THE VERB THROWS ONLY ERROR (every refusal and every transport
+      // failure is wrapped in `new Error` at deleteArtifact's throw
+      // sites) — so the recorded voice rides the message directly, with
+      // no foreign-voice arm (the artifactNameOf precedent above:
+      // proven at the source, not re-checked at the use).
+      failed.push({ path, message: (e as Error).message })
     }
   }
   return { deleted, failed }
+}
+
+/** The mass-archive answer: per-file outcomes, never a first-failure
+ *  abort — the operator asked for N tucks and reads which landed. */
+export interface ArchiveManyAnswer {
+  archived: number
+  failed: Array<{ path: string; message: string }>
+}
+
+/** Tuck several artifacts, one door call per file. A failure is
+ *  RECORDED, not thrown (the delete twin's law — a partial tuck
+ *  still reports every file). */
+export async function archiveArtifacts(paths: readonly string[]): Promise<ArchiveManyAnswer> {
+  const failed: ArchiveManyAnswer['failed'] = []
+  let archived = 0
+  for (const path of paths) {
+    try {
+      await archiveArtifact(path)
+      archived += 1
+    } catch (e) {
+      // THE VERB THROWS ONLY ERROR (every refusal and every transport
+      // failure is wrapped in `new Error` at archiveArtifact's throw
+      // sites) — so the recorded voice rides the message directly, with
+      // no foreign-voice arm (the artifactNameOf precedent above:
+      // proven at the source, not re-checked at the use).
+      failed.push({ path, message: (e as Error).message })
+    }
+  }
+  return { archived, failed }
+}
+
+/** The mass-restore answer: per-file outcomes, never a
+ *  first-failure abort. */
+export interface RestoreManyAnswer {
+  restored: number
+  failed: Array<{ path: string; message: string }>
+}
+
+/** Restore several archived artifacts, one door call per file. A
+ *  failure is RECORDED, not thrown (the delete twin's law). */
+export async function restoreArtifacts(paths: readonly string[]): Promise<RestoreManyAnswer> {
+  const failed: RestoreManyAnswer['failed'] = []
+  let restored = 0
+  for (const path of paths) {
+    try {
+      await restoreArtifact(path)
+      restored += 1
+    } catch (e) {
+      // THE VERB THROWS ONLY ERROR (every refusal and every transport
+      // failure is wrapped in `new Error` at restoreArtifact's throw
+      // sites) — so the recorded voice rides the message directly, with
+      // no foreign-voice arm (the artifactNameOf precedent above:
+      // proven at the source, not re-checked at the use).
+      failed.push({ path, message: (e as Error).message })
+    }
+  }
+  return { restored, failed }
 }
 
 /** Rename one artifact inside its own directory — resolves the new

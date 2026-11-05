@@ -62,6 +62,20 @@ export const galleryCopy = {
   confirmDelete: (p: { count: number }): string => `Confirm delete ${p.count}?`,
   /** The un-armed destructive pill. */
   deleteSelected: "Delete selected",
+  /** The armed archive pill (names the count — tucking is
+   *  reversible, but the mass gesture still arms first, the
+   *  delete twin's law: one gesture tucks N losers at once). */
+  confirmArchive: (p: { count: number }): string => `Confirm archive ${p.count}?`,
+  /** The un-armed archive pill. */
+  archiveSelected: "Archive selected",
+  /** The armed restore pill (names the count). */
+  confirmRestore: (p: { count: number }): string => `Confirm restore ${p.count}?`,
+  /** The un-armed restore pill. */
+  restoreSelected: "Restore selected",
+  /** The archived-face toggle pill (names the tucked count). */
+  showArchived: (p: { count: number }): string => `Archived (${p.count})`,
+  /** The archived tile's badge (the tucked face is dimmed + named). */
+  archivedBadge: "archived",
   /** The search box placeholder. */
   searchPlaceholder: "search prompt, file…",
   // ── Kind chips + labels ──────────────────────────────────────────────
@@ -160,6 +174,14 @@ export const galleryCopy = {
   nextMediaAria: "Next media",
   /** The rename verb's face. */
   renameAction: "Rename",
+  /** The archive verb's face (the tucked-away half of deletion UX). */
+  archiveAction: "Archive",
+  /** The archive verb's accessible name. */
+  archiveAria: "Archive media file",
+  /** The restore verb's face (brings a tucked file back). */
+  restoreArtifactAction: "Restore",
+  /** The restore verb's accessible name. */
+  restoreArtifactAria: "Restore archived media file",
   /** The rename verb's accessible name. */
   renameAria: "Rename media file",
   /** The delete verb's face. */

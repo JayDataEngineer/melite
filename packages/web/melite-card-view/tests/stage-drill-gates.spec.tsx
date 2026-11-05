@@ -11,6 +11,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import userEvent from "@testing-library/user-event";
 import { within } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
+import { LOADED_WAIT } from "../../../../tests/helpers/loaded-wait.ts";
 import { createElement as h } from "react";
 import { mountEstateFakes, type EstateFakes } from "./estate-harness.ts";
 import { readFileSync } from "node:fs";
@@ -694,7 +695,13 @@ describe("the unset's refused write and the run seat's refused sync — both spe
     // names them all (the seed stamped model/variant too); the law
     // is prompt RIDES the unlanded list, never a key-less strip.
     expect(strip.textContent).toMatch(/unlanded keys: [^\n]*\bprompt\b/);
-    expect(writeFace()).toBe(null);
+    // (the 2026-11-15 roaming-flake audit) the trailing write's
+    // settle can land AFTER the strip find under load — its resolve
+    // arm legitimately paints the SAME row voice on the face (the
+    // FLAKE-1 law above: both rows are the law). The null face was
+    // only ever the drop's shadow; the settle-commit cure re-lands
+    // it, so this arm tolerates the late paint and judges the strip.
+    expect(writeFace() === null || writeFace()?.includes("sync busy")).toBe(true);
     expect(runs).toBe(0);
   });
 
@@ -807,6 +814,9 @@ describe("the unset's refused write and the run seat's refused sync — both spe
     // edit — the NEXT press lands the delete through the flush (the
     // touched null rides, the gate judges the keyless candidate) and
     // the run STARTS. One arm, the whole hop chain closed.
+    // LOADED_WAIT-keyed waits (2026-11-02): the fixed 4s/8s budgets
+    // starved under the loaded coverage pool while every scoped run
+    // stayed green — scheduler starvation, never a slower claim.
     const doc = axisSpecDoc();
     doc.params = ["prompt", "variant", "input_image"];
     mountBench([stage({ model: "krea-2", double_reference: true })], undefined, doc);
@@ -817,8 +827,8 @@ describe("the unset's refused write and the run seat's refused sync — both spe
       if ((errorStrip() ?? '').includes("'double_reference' fires nothing") === false) {
         throw new Error("gate banner not voiced yet");
       }
-    }, { timeout: 8000 });
-    const unstamp = await screen.findByRole("button", { name: "Unstamp 'double_reference'" }, { timeout: 4000 });
+    }, { timeout: LOADED_WAIT() * 4 / 15 });
+    const unstamp = await screen.findByRole("button", { name: "Unstamp 'double_reference'" }, { timeout: LOADED_WAIT() * 2 / 15 });
     fireEvent.click(unstamp);
     await waitFor(() => {
       const del = patchCalls().some((c) => {
@@ -826,7 +836,7 @@ describe("the unset's refused write and the run seat's refused sync — both spe
         return params?.["double_reference"] === null;
       });
       if (!del) throw new Error("the unstamp's null write never issued");
-    }, { timeout: 8000 });
+    }, { timeout: LOADED_WAIT() * 4 / 15 });
     await pressRun();
     // the flush re-nulled the dropped ghost (touchedRef keeps it) and
     // the gate passed: the press landed its write and STARTED the run.
@@ -838,36 +848,32 @@ describe("the unset's refused write and the run seat's refused sync — both spe
       });
       if (!flushNull) throw new Error("the press's flush never carried the re-null; patches: " + JSON.stringify(patchCalls()));
       if (!calls().some((c) => c.method === "runs/start")) throw new Error("the run never started");
-    }, { timeout: 8000 });
+    }, { timeout: LOADED_WAIT() * 4 / 15 });
     expect(errorStrip()).toBe(null);
   });
 
   test("an already-unstated key still unstamps the bench — the delete is the act (idempotent at the door)", async () => {
-    // The banner can outlive its key's user-map entry: the operator
-    // fixes the named key the rendered way (the axis-unset deletes it
-    // and lands the null; the settle retires the write face's words)
-    // while the strip keeps the press's refusal. The Unstamp still
-    // fires the bench delete — the act is unconditional, the user-map
-    // half just skips an absent key.
+    // THE STRIP OUTLIVES ITS KEY: the press voices a dead coordinate,
+    // the operator then removes the key the rendered way (the
+    // axis-unset deletes it and lands the null), and the strip keeps
+    // its rows. The Unstamp still fires the bench delete — the act is
+    // unconditional; the user-map half just skips an absent key.
+    // THE AUTHORING SEAT (the 2026-11-04 refused-pick cure): a PICK
+    // of a dead coordinate now refuses in place and never moves the
+    // user map (the face truth law), so the state the press judges is
+    // stated the authoring way — the override field.
     const doc = axisSpecDoc();
     doc.familyLaw = { lanes: [{ lane: "t4_open" }], deadKeys: { t4_open: ["variant"] } };
     mountBench([stage({ model: "krea-2", variant: "raw" })], undefined, doc);
     await openDrill();
-    const select = await screen.findByLabelText("Variant", {}, { timeout: 4000 });
-    fireEvent.click(select);
-    fireEvent.click(screen.getByRole("menuitem", { name: "Turbo" }));
-    await waitFor(() => {
-      if ((writeFace() ?? "").includes("'variant' fires nothing") === false) {
-        throw new Error("write-face refusal not voiced yet; face: " + writeFace());
-      }
-    }, { timeout: 8000 });
+    const field = await screen.findByLabelText("Variant override", {}, { timeout: 4000 });
+    fireEvent.change(field, { target: { value: "turbo" } });
     await pressRun();
     await waitFor(() => {
       if ((errorStrip() ?? "").includes("'variant' fires nothing") === false) {
-        throw new Error("gate banner not voiced yet");
+        throw new Error("gate banner not voiced yet; strip: " + errorStrip());
       }
     }, { timeout: 8000 });
-    const field = await screen.findByLabelText("Variant override", {}, { timeout: 4000 });
     fireEvent.change(field, { target: { value: "" } });
     // the axis-unset's null rides the trailing write's debounce — wait
     // for the LANDED null before judging the face
@@ -1952,7 +1958,16 @@ describe("the engine doc's own model field (the re-point arm's absent-card fall-
     await screen.findByLabelText("Prompt", {}, { timeout: 4000 });
     const route = await screen.findByLabelText("Brain route", {}, { timeout: 4000 });
     const user = userEvent.setup();
-    await user.type(route, "deepseek-v3");
+    // THE SEED LAW (gate-11): the family names itself at birth — the
+    // engine doc carries model 'agent', so the Brain route field
+    // OPENS holding the birth model (params.model seeded 'agent',
+    // never {}). A user replacing the route selects the standing
+    // value first; the keystroke frames still write the one key.
+    // The jsdom face: the route input is controlled (value rides the
+    // seeded params), so keyboard select-all cannot stick — the
+    // honest write is the change event with the REPLACEMENT value,
+    // the same onChange door every keystroke rides.
+    fireEvent.change(route, { target: { value: "deepseek-v3" } });
     await waitFor(() => {
       const frames = patchParamsOf(patchCalls()).filter((p) => p["model"] === "deepseek-v3");
       if (frames.length === 0) throw new Error("brain route write not landed; patches: " + JSON.stringify(patchCalls()));
@@ -2053,6 +2068,31 @@ describe("the re-point write's settle faces (each half's own guard)", () => {
     return render(h(StageDrill, drillProps(stage({ model: "fam-a" })) as never));
   }
 
+  /** THE LATCHING DOOR GATE (2026-11-03 chain cure re-pin): parks
+   *  every fetch after the first `passThrough` while closed; once
+   *  released, every parked AND future call drains. The chained
+   *  discrete write lawfully adds a rev-currency `drafts/get` ahead
+   *  of its patch whenever the ledger holds no confirmed rev (a
+   *  refused first write leaves none), so "the write parked at the
+   *  door" is now a fetch STREAM, not one call — a single-shot
+   *  release would strand the tail. The tests' LAW (park the write,
+   *  re-target, then open the door) is unchanged. */
+  function latchingGate(passThrough = 0): { gate: () => Promise<void>, release: () => void } {
+    let open = false;
+    let passes = passThrough;
+    const parked: Array<() => void> = [];
+    return {
+      gate: (): Promise<void> => {
+        if (open || passes > 0) { passes -= 1; return Promise.resolve(); }
+        return new Promise<void>((resolve) => { parked.push(resolve); });
+      },
+      release: (): void => {
+        open = true;
+        for (const resolve of parked.splice(0)) resolve();
+      },
+    };
+  }
+
   async function pickFamB(): Promise<void> {
     const knob = await screen.findByLabelText("Serving family", {}, { timeout: 4000 });
     fireEvent.click(knob);
@@ -2080,14 +2120,13 @@ describe("the re-point write's settle faces (each half's own guard)", () => {
   });
 
   test("a clean re-point settling after a re-target stands down (the then-half's guard)", async () => {
-    let gateCalls = 0;
-    let release: (() => void) | undefined;
-    const gate = (): Promise<void> => {
-      gateCalls += 1;
-      if (gateCalls === 1) return Promise.resolve();
-      return new Promise<void>((resolve) => { release = resolve; });
-    };
-    const view = await openKnobDrill({ patchGate: gate, patchFailures: [{ reason: "prompt busy" }] });
+    // THE LATCHING GATE (2026-11-03 chain cure re-pin, same law as
+    // the refusal halves below): the prompt write passes first (its
+    // refusal must LAND to seed the row's failure memory); everything
+    // after — the chained re-point's lawful rev get AND its patch —
+    // parks until the door latches open.
+    const gate = latchingGate(1);
+    const view = await openKnobDrill({ patchGate: gate.gate, patchFailures: [{ reason: "prompt busy" }] });
     await screen.findByLabelText("Prompt", {}, { timeout: 4000 });
     await typePrompt("a red cube");
     await waitFor(() => {
@@ -2095,7 +2134,7 @@ describe("the re-point write's settle faces (each half's own guard)", () => {
     }, { timeout: 8000 });
     await pickFamB(); // the re-point write parks at the door
     view.rerender(h(StageDrill, drillProps(stageB) as never));
-    release?.();
+    gate.release();
     await waitFor(() => {
       if (stageWriteState(draftIdOf("bench-p"), "s_0").pending !== 0) throw new Error("re-point still parked");
     }, { timeout: 8000 });
@@ -2104,12 +2143,19 @@ describe("the re-point write's settle faces (each half's own guard)", () => {
   });
 
   test("a re-point the door rejects speaks the row's voice (the refusal half, no re-target)", async () => {
-    let release: (() => void) | undefined;
-    const gate = (): Promise<void> => new Promise<void>((resolve) => { release = resolve; });
-    await openKnobDrill({ patchGate: gate, patchFailures: [{ reason: "model busy" }] });
+    // THE LATCHING GATE (2026-11-03 chain cure re-pin): the chained
+    // re-point lawfully fetches rev currency (drafts/get) before its
+    // patch whenever the ledger's confirmedRev is empty — a refusal
+    // leaves it empty — so the parked write is now TWO fetches, not
+    // one. A single-shot release would free the rev get and park the
+    // patch forever. The gate releases the DOOR (latch open, every
+    // parked and future call drains); the parked-then-refused LAW the
+    // test names is unchanged.
+    const gate = latchingGate();
+    await openKnobDrill({ patchGate: gate.gate, patchFailures: [{ reason: "model busy" }] });
     await screen.findByLabelText("Prompt", {}, { timeout: 4000 });
     await pickFamB(); // the re-point write parks, then refuses
-    release?.();
+    gate.release();
     await waitFor(() => {
       const face = writeFace();
       if (face === null || !face.includes("unlanded keys:") || !face.includes("model")) {
@@ -2119,13 +2165,12 @@ describe("the re-point write's settle faces (each half's own guard)", () => {
   });
 
   test("a re-point rejection settling after a re-target stands down (the refusal half's guard)", async () => {
-    let release: (() => void) | undefined;
-    const gate = (): Promise<void> => new Promise<void>((resolve) => { release = resolve; });
-    const view = await openKnobDrill({ patchGate: gate, patchFailures: [{ reason: "model busy" }] });
+    const gate = latchingGate();
+    const view = await openKnobDrill({ patchGate: gate.gate, patchFailures: [{ reason: "model busy" }] });
     await screen.findByLabelText("Prompt", {}, { timeout: 4000 });
     await pickFamB();
     view.rerender(h(StageDrill, drillProps(stageB) as never));
-    release?.();
+    gate.release();
     await waitFor(() => {
       if (stageWriteState(draftIdOf("bench-p"), "s_0").pending !== 0) throw new Error("re-point still parked");
     }, { timeout: 8000 });

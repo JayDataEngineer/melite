@@ -29,8 +29,6 @@
       name: '@melite-plugin/dsh-estate'
     - id: family-anny
       name: '@melite/models-anny'
-    - id: family-anycreature
-      name: '@melite/models-anycreature'
     - id: family-fit
       name: '@melite/models-fit'
     - id: family-pixal3d

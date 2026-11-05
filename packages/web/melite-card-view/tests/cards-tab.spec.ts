@@ -340,35 +340,41 @@ describe("restoreRunToBench — the card back into a flow", () => {
     expect(rows[1]?.["outcome"]).toMatchObject({ runStatus: "failed" });
   });
 
-  // THE REORDER VOICE (previews fold F4, 2026-11-12): a same-count
-  // restore whose run order drifted paints row i with run stage i
-  // through the LEGACY tier. When the drifted stage carries identity
-  // naming a DIFFERENT draft row, the drift is detectable — and now
-  // VOICED: s_0's position holds the stage whose id says s_1. The
-  // carry still lands (the tier is history's only join) but the note
-  // names the drift; the skeleton-id history heal (no identity) stays
-  // silent by the arm above.
-  test("a same-count REORDER voices itself when the position stage names another draft row (the LEGACY tier never repaints silently against identity)", async () => {
+  // THE REORDER VOICE + THE DRIFT SKIP (previews fold F4,
+  // 2026-11-12; the D3 cure): a same-count restore whose run order
+  // drifted painted row i with run stage i through the LEGACY tier.
+  // When the drifted stage carries identity naming a DIFFERENT draft
+  // row, the drift is detectable: s_0's position holds the stage
+  // whose id says s_1. The cure VOICES the drift and SKIPS the
+  // carry — the drifted row lands preview-less (a voiced lie was
+  // still a lie on the tile); the skeleton-id history heal (no
+  // identity) stays silent by the arm above.
+  test("a same-count REORDER skips the positional carry when the position stage names another draft row (voiced, no paint)", async () => {
     const { calls } = mountFakes({
       draftStages: [{ id: "s_0", card: "h3-film" }, { id: "s_1", card: "sfx" }],
       benchDoc: { draft_id: "bench-main", rev: 2, stages: [], log: [] },
     });
     // run order drifted: position 0 carries s_1's identity. s_0
     // joins by NEITHER id nor stamp (no stage names s_0), so the
-    // position tier paints it — against the stage's own evidence.
+    // drift is detected — the carry must NOT paint s_1's media there.
     const report = await restoreRunToBench(run({
       stages: [
         { id: "s_1", status: "completed", url: "sfx/b.mp4" },
         { id: "h3-film", status: "completed", url: "film/a.mp4" },
       ],
     }), 'main');
-    expect(report.carried).toBe(2);
+    // the rows still LAND (added 2) — the cure loses the paint, not
+    // the restore; only s_1's own-id tier carried.
+    expect(report.added).toBe(2);
+    expect(report.carried).toBe(1);
     expect(report.notes).toHaveLength(1);
     expect(report.notes[0]).toMatch(/positional carry for s_0.*s_1.*drifted/);
+    expect(report.notes[0]).toMatch(/carry is skipped/);
     const rows = carryRows(calls);
-    // s_1 carries its OWN outcome through the id tier; s_0's row
-    // wears the position paint — the lie the note names.
-    expect(rows[0]?.["outcome"]).toMatchObject({ runStatus: "done", result: { run_id: "r1", url: "sfx/b.mp4" } });
+    // s_1 carries its OWN outcome through the id tier; s_0's drifted
+    // row takes NO outcome — no media painted on a row the identity
+    // disowns.
+    expect(rows[0]).not.toHaveProperty("outcome");
     expect(rows[1]?.["outcome"]).toMatchObject({ runStatus: "done", result: { run_id: "r1", url: "sfx/b.mp4" } });
   });
 

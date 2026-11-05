@@ -40,9 +40,15 @@
 import { createElement as h } from 'react';
 import type { ReactElement } from 'react';
 import { type ModifierKind, type SpecField, type SpecValues } from './spec.js';
-export type { PaintCanvasFaceProps, BboxCanvasFaceProps } from '@melite/contracts';
-import type { BboxCanvasFaceProps, PaintCanvasFaceProps } from '@melite/contracts';
+import type { ChainRunCandidate } from './runs-policy.js';
+export type { PaintCanvasFaceProps, BboxCanvasFaceProps, OrbitCanvasFaceProps } from '@melite/contracts';
+import type { BboxCanvasFaceProps, OrbitCanvasFaceProps, PaintCanvasFaceProps } from '@melite/contracts';
 export type BboxFaceComponent = (props: BboxCanvasFaceProps) => ReactElement;
+/** THE ORBIT FACE (the reshoot orb, 2026-11-15): the host's
+ *  camera-pose orb — a component, not an import (card-base stays
+ *  atom-generic). Absent host = the orb never renders (the three
+ *  number dials hold — graceful by design). */
+export type OrbitFaceComponent = (props: OrbitCanvasFaceProps) => ReactElement;
 /** THE PAINT FACE (paint-leaf-canvas.md, embedded stroke 95): the
  *  host's brush canvas — a component, not an import (card-base
  *  stays atom-generic; the custom face is the CARD's UI, delivered
@@ -71,6 +77,11 @@ export interface ModifiersSectionProps {
      *  of the leaf popup; shares paintReference (the card's ONE
      *  image field is both faces' reference). */
     bboxFace?: BboxFaceComponent;
+    /** THE ORBIT FACE (the reshoot orb, 2026-11-15): the host's
+     *  camera-pose orb for orbit-canvas kinds — EMBEDDED at the top
+     *  of the leaf popup (absent host = the three number dials
+     *  hold). */
+    orbitFace?: OrbitFaceComponent;
     /** the card-level image field whose value is the leaf faces'
      *  reference — the brush paints OVER it, the rectangle selects
      *  ON it (mask: 'input_image'). */
@@ -81,6 +92,11 @@ export interface ModifiersSectionProps {
         url: string;
         name: string;
     }>>;
+    /** THE CHAIN-RUN SOURCE (the upscale leaf's picker): the live
+     *  chain-store runs, threaded from the constructor's wire like the
+     *  media rows. Absent → the chain-run field degrades to its plain
+     *  text input. */
+    loadChainRuns?: (signal: AbortSignal) => Promise<ChainRunCandidate[]>;
     /** THE FLOW CANDIDATES (E2-11a — the region-mask picker law): the
      *  host bench's other stages' latest artifacts, threaded from the
      *  constructor's wire. The leaf's From-flow picker serves THESE —

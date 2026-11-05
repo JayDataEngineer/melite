@@ -351,6 +351,46 @@ test('axisPickPatch: the row overlay rides (model-skipped), its axis stamps, bel
   expect(axisPickPatch(spec, recipe)).toEqual({ steps: 50 })
 })
 
+test('THE STAMP FILTER (the tagger burn): a row default the picked row\'s lane does not serve never rides the pick frame', () => {
+  // THE BURN (gate-11 probe p, 2026-11-16): the tagger card's variant
+  // rows carry a `checkpoint` default (the engine's model-file
+  // coordinate) that no served lane surfaces. The pick stamped it,
+  // the compose mirror field-named it ("field 'checkpoint' fires
+  // nothing on this lane — the served surface does not declare it"),
+  // and the door refused the WHOLE frame after the user map had
+  // already taken it — the face followed every pick while the doc
+  // stranded on the birth row, zero wire frames, zero voices. The
+  // stamp filter rides the mirror's own truth (the row's lane
+  // surface): an internal coordinate stays the server's compose
+  // business, resolved from the axis stamp.
+  const tagger = {
+    form: 'tagger', model: 'wd14',
+    schema: doc().schema,
+    features: { variant_groups: { Variant: { label: 'Variant' } } },
+    variants: [
+      V('t-moat', 'Variant', { label: 'Moat', defaults: { checkpoint: 'moat.pt' } }),
+      V('t-eva', 'Variant', { label: 'Eva', defaults: { checkpoint: 'eva.pt', threshold: 0.7 } }),
+    ],
+    lanes: { base: ['prompt', 'threshold'], variants: { 't-eva': { params: ['threshold'] } } },
+  } as unknown as FormSpecDoc
+  const eva = rowsFor(tagger, 'Variant').find((r) => r.id === 't-eva')!
+  const moat = rowsFor(tagger, 'Variant').find((r) => r.id === 't-moat')!
+  // the pick: the checkpoint never rides; the lane-served threshold
+  // and the variant stamp do — the frame the mirror admits whole
+  expect(axisPickPatch(tagger, eva)).toEqual({ threshold: 0.7, variant: 't-eva' })
+  expect(axisPickPatch(tagger, moat)).toEqual({ variant: 't-moat' })
+  // THE SAME LAW AT THE MODEL RAIL (modelSwitchPatch's same-spec
+  // route arm): a route row's unsanctioned default dies there too —
+  // one spelling at both pick builders
+  expect(modelSwitchPatch(tagger, 'wd14', {}).checkpoint).toBeUndefined()
+  // THE LEGACY PICK (never a guess): a family with NO lane truth
+  // stamps its defaults verbatim — the filter fires only where the
+  // lane truth exists
+  const laneless = { ...doc() } as FormSpecDoc
+  const hd = rowsFor(laneless, 'Variant').find((r) => r.id === 'r-hd')!
+  expect(axisPickPatch(laneless, hd)).toEqual({ steps: 40, variant: 'r-hd', quant: 'q-fp8' })
+})
+
 test('axisPickPatch: a below-axis with nothing composing rests empty (never a foreign row)', () => {
   const spec: FormSpecDoc = {
     form: 'x',
@@ -367,12 +407,17 @@ test('modelSwitchPatch: the same family keeps its coordinates; a switch clears e
   // and the lora bag rides untouched — same model, its own mods stay
   expect(modelSwitchPatch(spec, 'krea-2')).toEqual({ model: 'krea-2', variant: 'r-sd', quant: 'q-fp8' })
   // a re-pointed route is still a SWITCH (routes are not models):
-  // EVERY axis clears AND the mod bag dies with its model — the drill
+  // EVERY axis departs as a NULL (the gate-11 cure, 2026-11-16 —
+  // probe (m)'s door refusal: 'a stated empty selection is not a
+  // choice (pick one, or remove the key and let compose default
+  // it)'; '' refused the whole frame and the doc never took the
+  // arrival) AND the mod bag dies with its model — the drill
   // refetches the HD family's own spec, the departed bag never rides
-  expect(modelSwitchPatch(spec, 'krea-2-hd')).toEqual({ model: 'krea-2-hd', variant: '', quant: '', loras: null })
-  // a foreign family: EVERY axis clears, the bag dies (this spec's
-  // rows AND its lora field are another family's currency)
-  expect(modelSwitchPatch(spec, 'other')).toEqual({ model: 'other', variant: '', quant: '', loras: null })
+  expect(modelSwitchPatch(spec, 'krea-2-hd')).toEqual({ model: 'krea-2-hd', variant: null, quant: null, loras: null })
+  // a foreign family: EVERY axis departs as a null, the bag dies
+  // (this spec's rows AND its lora field are another family's
+  // currency)
+  expect(modelSwitchPatch(spec, 'other')).toEqual({ model: 'other', variant: null, quant: null, loras: null })
   // no re-point union for the empty model: first-composing rows seat
   // (crossSpec false against itself — the bag law rides the switch
   // arms only, never the reseed)
@@ -531,7 +576,10 @@ test('modelSwitchPatch: an axis with nothing composing rests empty', () => {
     features: { variant_groups: { Variant: {}, Precision: {} } },
     variants: [V('r-hd', 'Variant')],
   } as unknown as FormSpecDoc
-  expect(modelSwitchPatch(spec, 'krea-2')).toEqual({ model: 'krea-2', variant: 'r-hd', precision: '' })
+  // the empty branch rides the SAME null law as the cross-family
+  // departure (the gate-11 cure — the door refuses a stated empty
+  // selection whole-frame; null deletes and compose defaults)
+  expect(modelSwitchPatch(spec, 'krea-2')).toEqual({ model: 'krea-2', variant: 'r-hd', precision: null })
 })
 
 // THE EMPTY-SELECTION LAW's form half (2026-10-10): an axis with
@@ -546,6 +594,28 @@ test('seedAxisValues: an axis with no composing row OMITS its key (never a state
     variants: [],
   } as unknown as FormSpecDoc
   expect(seedAxisValues(sparse, {})).toEqual({});
+});
+
+// THE SEED NAMES THE FAMILY AT BIRTH — ABOVE THE GROUPS GUARD (the
+// gate-11 anny burn, 2026-11-16: a family spec with NO axis
+// vocabulary — anny's single group-less variant row — early-returned
+// out of the seed and the stage was born FAMILY-LESS; the sweep's
+// seed-law red: 'anny: the bench doc carries a model coordinate
+// (doc null — the seed law names the family at birth)'). The model
+// arm is the family (stroke 21) and fires for every spec that
+// carries one, independent of the axis walk.
+test('seedAxisValues: a group-less family spec still seeds its model (the anny burn — the stage is never born family-less)', () => {
+  const groupless: FormSpecDoc = {
+    form: 'form_3d_anny',
+    model: 'anny',
+    variants: [{ id: 'anny', label: 'Anny', group: '', route: 'anny', order: 0, cells: [] }],
+  } as unknown as FormSpecDoc
+  expect(seedAxisValues(groupless, {}),
+    'the family names itself at birth even with zero axis groups (the early return ate the model arm)').toEqual({ model: 'anny' })
+  // a held model always wins (the pass-along law — seedUser's {...held}
+  // spread, never seedAxisValues' own seat: the arm defers to a held
+  // family and the walk adds nothing over it)
+  expect(seedUser(groupless, { model: 'anny' })).toEqual({ model: 'anny' })
 });
 
 test('seedAxisValues: first-composing rows seed; the held always win; the family stamps the model', () => {

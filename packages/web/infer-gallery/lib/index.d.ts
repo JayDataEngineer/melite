@@ -34,6 +34,13 @@
  *   one artifact inside its own directory (the modal's rename
  *   button — `name` is a bare segment, never a path; existing
  *   targets refuse 409).
+ * - `POST /infer-gallery/artifact-archive {path}` → tucks one
+ *   artifact into the run's `_archived/` dir (the mass-archive
+ *   verb — the file leaves every listing while its bytes survive;
+ *   restore brings it back).
+ * - `POST /infer-gallery/artifact-restore {path}` → moves an
+ *   archived artifact back beside its siblings (the `_archived/`
+ *   segment is stripped; existing targets refuse 409).
  *
  * Failure policy: route handlers own their full response
  * lifecycle; the routes never throw.

@@ -85,17 +85,17 @@
   "loader_info": null,
   "mod_schemas": {
     "loras": {
-      "uid": 80,
+      "uid": 100,
       "refs": {
-        "75": {
+        "95": {
           "type": "string",
           "meta": {}
         },
-        "76": {
+        "96": {
           "type": "number",
           "meta": {}
         },
-        "77": {
+        "97": {
           "type": "number",
           "meta": {
             "min": 1,
@@ -111,18 +111,18 @@
             }
           }
         },
-        "78": {
+        "98": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "name": 75,
-            "strength": 76,
-            "steps": 77
+            "name": 95,
+            "strength": 96,
+            "steps": 97
           }
         },
-        "79": {
+        "99": {
           "type": "array",
           "meta": {
             "default": [],
@@ -135,36 +135,52 @@
               "order": 0
             }
           },
-          "inner": 78
+          "inner": 98
         },
-        "80": {
+        "100": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "loras": 79
+            "loras": 99
           }
         }
       }
     },
     "mask": {
-      "uid": 99,
+      "uid": 19,
       "refs": {
-        "81": {
+        "0": {
           "type": "any",
           "meta": {
-            "description": "Region Mask",
+            "description": "Mask Bag",
             "extra": {
               "wtype": "mask",
               "group": "mask",
               "zone": "mods",
               "order": -1,
-              "tooltip": "Add the mask mod, then drop an RGBA PNG whose alpha channel marks the region."
+              "tooltip": "The mask mod bag — ONE entry: { input_image?, input_mask, mask_mode, mask_* }. No inner \"mask\" field exists: the painted region rides input_mask (an RGBA PNG path); the base to inpaint on rides input_image (a photograph); to edit a photo by instruction use the image-edit card."
             }
           }
         },
-        "82": {
+        "1": {
+          "type": "string",
+          "meta": {
+            "role": "path",
+            "extra": {
+              "wtype": "image",
+              "group": "input",
+              "zone": "inputs",
+              "order": -2,
+              "width": 1,
+              "columns": 3,
+              "tooltip": "The base to inpaint on (a photograph). With a region stated (input_mask or a detector) the detailer reworks THAT image's region — no generation composes. Unstated: the base is the render itself."
+            },
+            "description": "Region Base Image"
+          }
+        },
+        "2": {
           "type": "string",
           "meta": {
             "role": "path",
@@ -180,22 +196,22 @@
             "description": "Region Mask"
           }
         },
-        "83": {
+        "3": {
           "type": "const",
           "meta": {},
           "value": "auto"
         },
-        "84": {
+        "4": {
           "type": "const",
           "meta": {},
           "value": "crop_stitch"
         },
-        "85": {
+        "5": {
           "type": "const",
           "meta": {},
           "value": "full_frame"
         },
-        "86": {
+        "6": {
           "type": "union",
           "meta": {
             "default": "crop_stitch",
@@ -220,32 +236,32 @@
             }
           },
           "list": [
-            83,
-            84,
-            85
+            3,
+            4,
+            5
           ]
         },
-        "87": {
+        "7": {
           "type": "const",
           "meta": {},
           "value": "off"
         },
-        "88": {
+        "8": {
           "type": "const",
           "meta": {},
           "value": "person"
         },
-        "89": {
+        "9": {
           "type": "const",
           "meta": {},
           "value": "face"
         },
-        "90": {
+        "10": {
           "type": "const",
           "meta": {},
           "value": "hand"
         },
-        "91": {
+        "11": {
           "type": "union",
           "meta": {
             "default": "off",
@@ -266,13 +282,13 @@
             }
           },
           "list": [
-            87,
-            88,
-            89,
-            90
+            7,
+            8,
+            9,
+            10
           ]
         },
-        "92": {
+        "12": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -290,7 +306,7 @@
             }
           }
         },
-        "93": {
+        "13": {
           "type": "number",
           "meta": {
             "min": -32,
@@ -308,7 +324,7 @@
             }
           }
         },
-        "94": {
+        "14": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -326,7 +342,7 @@
             }
           }
         },
-        "95": {
+        "15": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -344,7 +360,7 @@
             }
           }
         },
-        "96": {
+        "16": {
           "type": "boolean",
           "meta": {
             "default": false,
@@ -359,7 +375,7 @@
             }
           }
         },
-        "97": {
+        "17": {
           "type": "number",
           "meta": {
             "min": 64,
@@ -377,13 +393,13 @@
             }
           }
         },
-        "98": {
+        "18": {
           "type": "number",
           "meta": {
             "min": 0.05,
             "max": 1,
             "step": 0.05,
-            "default": 0.5,
+            "default": 1,
             "description": "Region Denoise",
             "extra": {
               "wtype": "number",
@@ -391,27 +407,28 @@
               "zone": "mods",
               "order": 9,
               "width": 1,
-              "tooltip": "How strongly the region is reworked (DetailerForEach denoise): 0.5 keeps structure, 1 fully rewrites the crop."
+              "tooltip": "How strongly the region is reworked (DetailerForEach denoise): 1 fully rewrites the crop — the default, so the requested edit lands; lower it explicitly only to keep more of the original pixels."
             }
           }
         },
-        "99": {
+        "19": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "mask": 81,
-            "input_mask": 82,
-            "mask_mode": 86,
-            "mask_detector": 91,
-            "mask_context_pad": 92,
-            "mask_grow": 93,
-            "mask_feather": 94,
-            "mask_threshold": 95,
-            "mask_invert": 96,
-            "mask_detail_size": 97,
-            "mask_denoise": 98
+            "mask": 0,
+            "input_image": 1,
+            "input_mask": 2,
+            "mask_mode": 6,
+            "mask_detector": 11,
+            "mask_context_pad": 12,
+            "mask_grow": 13,
+            "mask_feather": 14,
+            "mask_threshold": 15,
+            "mask_invert": 16,
+            "mask_detail_size": 17,
+            "mask_denoise": 18
           }
         }
       }
@@ -441,283 +458,283 @@
     "default": "image"
   },
   "schema": {
-    "uid": 74,
+    "uid": 94,
     "refs": {
-      "0": {
+      "20": {
         "type": "const",
         "meta": {},
         "value": "cfgpp_ud10_ab"
       },
-      "1": {
+      "21": {
         "type": "const",
         "meta": {},
         "value": "ddim"
       },
-      "2": {
+      "22": {
         "type": "const",
         "meta": {},
         "value": "ddpm"
       },
-      "3": {
+      "23": {
         "type": "const",
         "meta": {},
         "value": "deis"
       },
-      "4": {
+      "24": {
         "type": "const",
         "meta": {},
         "value": "dpm_2"
       },
-      "5": {
+      "25": {
         "type": "const",
         "meta": {},
         "value": "dpm_2_ancestral"
       },
-      "6": {
+      "26": {
         "type": "const",
         "meta": {},
         "value": "dpm_adaptive"
       },
-      "7": {
+      "27": {
         "type": "const",
         "meta": {},
         "value": "dpm_fast"
       },
-      "8": {
+      "28": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m"
       },
-      "9": {
+      "29": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_cfg_pp"
       },
-      "10": {
+      "30": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde"
       },
-      "11": {
+      "31": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde_gpu"
       },
-      "12": {
+      "32": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde_heun"
       },
-      "13": {
+      "33": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde_heun_gpu"
       },
-      "14": {
+      "34": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2s_ancestral"
       },
-      "15": {
+      "35": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2s_ancestral_cfg_pp"
       },
-      "16": {
+      "36": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_3m_sde"
       },
-      "17": {
+      "37": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_3m_sde_gpu"
       },
-      "18": {
+      "38": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_sde"
       },
-      "19": {
+      "39": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_sde_gpu"
       },
-      "20": {
+      "40": {
         "type": "const",
         "meta": {},
         "value": "er_sde"
       },
-      "21": {
+      "41": {
         "type": "const",
         "meta": {},
         "value": "euler"
       },
-      "22": {
+      "42": {
         "type": "const",
         "meta": {},
         "value": "euler_ancestral"
       },
-      "23": {
+      "43": {
         "type": "const",
         "meta": {},
         "value": "euler_ancestral_cfg_pp"
       },
-      "24": {
+      "44": {
         "type": "const",
         "meta": {},
         "value": "euler_cfg_pp"
       },
-      "25": {
+      "45": {
         "type": "const",
         "meta": {},
         "value": "exp_heun_2_x0"
       },
-      "26": {
+      "46": {
         "type": "const",
         "meta": {},
         "value": "exp_heun_2_x0_sde"
       },
-      "27": {
+      "47": {
         "type": "const",
         "meta": {},
         "value": "gradient_estimation"
       },
-      "28": {
+      "48": {
         "type": "const",
         "meta": {},
         "value": "gradient_estimation_cfg_pp"
       },
-      "29": {
+      "49": {
         "type": "const",
         "meta": {},
         "value": "heun"
       },
-      "30": {
+      "50": {
         "type": "const",
         "meta": {},
         "value": "heunpp2"
       },
-      "31": {
+      "51": {
         "type": "const",
         "meta": {},
         "value": "ipndm"
       },
-      "32": {
+      "52": {
         "type": "const",
         "meta": {},
         "value": "ipndm_v"
       },
-      "33": {
+      "53": {
         "type": "const",
         "meta": {},
         "value": "lcm"
       },
-      "34": {
+      "54": {
         "type": "const",
         "meta": {},
         "value": "lms"
       },
-      "35": {
+      "55": {
         "type": "const",
         "meta": {},
         "value": "res_multistep"
       },
-      "36": {
+      "56": {
         "type": "const",
         "meta": {},
         "value": "res_multistep_ancestral"
       },
-      "37": {
+      "57": {
         "type": "const",
         "meta": {},
         "value": "res_multistep_ancestral_cfg_pp"
       },
-      "38": {
+      "58": {
         "type": "const",
         "meta": {},
         "value": "res_multistep_cfg_pp"
       },
-      "39": {
+      "59": {
         "type": "const",
         "meta": {},
         "value": "sa_solver"
       },
-      "40": {
+      "60": {
         "type": "const",
         "meta": {},
         "value": "sa_solver_pece"
       },
-      "41": {
+      "61": {
         "type": "const",
         "meta": {},
         "value": "seeds_2"
       },
-      "42": {
+      "62": {
         "type": "const",
         "meta": {},
         "value": "seeds_3"
       },
-      "43": {
+      "63": {
         "type": "const",
         "meta": {},
         "value": "uni_pc"
       },
-      "44": {
+      "64": {
         "type": "const",
         "meta": {},
         "value": "uni_pc_bh2"
       },
-      "45": {
+      "65": {
         "type": "const",
         "meta": {},
         "value": "beta"
       },
-      "46": {
+      "66": {
         "type": "const",
         "meta": {},
         "value": "ddim_uniform"
       },
-      "47": {
+      "67": {
         "type": "const",
         "meta": {},
         "value": "exponential"
       },
-      "48": {
+      "68": {
         "type": "const",
         "meta": {},
         "value": "karras"
       },
-      "49": {
+      "69": {
         "type": "const",
         "meta": {},
         "value": "kl_optimal"
       },
-      "50": {
+      "70": {
         "type": "const",
         "meta": {},
         "value": "linear_quadratic"
       },
-      "51": {
+      "71": {
         "type": "const",
         "meta": {},
         "value": "normal"
       },
-      "52": {
+      "72": {
         "type": "const",
         "meta": {},
         "value": "sgm_uniform"
       },
-      "53": {
+      "73": {
         "type": "const",
         "meta": {},
         "value": "simple"
       },
-      "54": {
+      "74": {
         "type": "string",
         "meta": {}
       },
-      "55": {
+      "75": {
         "type": "array",
         "meta": {
           "default": [],
@@ -733,9 +750,9 @@
             "tooltip": "Ordered input images — the FIRST is the image being edited; the rest are references the prompt can cite as <image2>, <image3>… in order. Capacity follows the boarded model; more than it admits refuses loudly."
           }
         },
-        "inner": 54
+        "inner": 74
       },
-      "56": {
+      "76": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -745,7 +762,7 @@
           "description": "Input Image"
         }
       },
-      "57": {
+      "77": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -755,7 +772,7 @@
           "description": "Image 2"
         }
       },
-      "58": {
+      "78": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -765,11 +782,11 @@
           "description": "Image 3"
         }
       },
-      "59": {
+      "79": {
         "type": "string",
         "meta": {}
       },
-      "60": {
+      "80": {
         "type": "array",
         "meta": {
           "default": [],
@@ -778,9 +795,9 @@
             "hidden": true
           }
         },
-        "inner": 59
+        "inner": 79
       },
-      "61": {
+      "81": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -790,7 +807,7 @@
           "description": "Region Mask"
         }
       },
-      "62": {
+      "82": {
         "type": "string",
         "meta": {
           "description": "Prompt",
@@ -805,7 +822,7 @@
           }
         }
       },
-      "63": {
+      "83": {
         "type": "string",
         "meta": {
           "description": "Negative Prompt",
@@ -818,7 +835,7 @@
           }
         }
       },
-      "64": {
+      "84": {
         "type": "number",
         "meta": {
           "step": 1,
@@ -834,7 +851,7 @@
           }
         }
       },
-      "65": {
+      "85": {
         "type": "number",
         "meta": {
           "step": 1,
@@ -850,7 +867,7 @@
           }
         }
       },
-      "66": {
+      "86": {
         "type": "boolean",
         "meta": {
           "description": "Match Input Resolution",
@@ -865,7 +882,7 @@
           }
         }
       },
-      "67": {
+      "87": {
         "type": "number",
         "meta": {
           "description": "Seed",
@@ -879,7 +896,7 @@
           }
         }
       },
-      "68": {
+      "88": {
         "type": "number",
         "meta": {
           "description": "Steps",
@@ -896,7 +913,7 @@
           }
         }
       },
-      "69": {
+      "89": {
         "type": "number",
         "meta": {
           "description": "Guidance Scale",
@@ -913,7 +930,7 @@
           }
         }
       },
-      "70": {
+      "90": {
         "type": "union",
         "meta": {
           "description": "Sampler",
@@ -927,26 +944,6 @@
           }
         },
         "list": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12,
-          13,
-          14,
-          15,
-          16,
-          17,
-          18,
-          19,
           20,
           21,
           22,
@@ -971,10 +968,30 @@
           41,
           42,
           43,
-          44
+          44,
+          45,
+          46,
+          47,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53,
+          54,
+          55,
+          56,
+          57,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63,
+          64
         ]
       },
-      "71": {
+      "91": {
         "type": "union",
         "meta": {
           "description": "Scheduler",
@@ -988,18 +1005,18 @@
           }
         },
         "list": [
-          45,
-          46,
-          47,
-          48,
-          49,
-          50,
-          51,
-          52,
-          53
+          65,
+          66,
+          67,
+          68,
+          69,
+          70,
+          71,
+          72,
+          73
         ]
       },
-      "72": {
+      "92": {
         "type": "boolean",
         "meta": {
           "description": "Use Stock Nodes",
@@ -1013,7 +1030,7 @@
           }
         }
       },
-      "73": {
+      "93": {
         "type": "boolean",
         "meta": {
           "description": "Double Reference",
@@ -1026,30 +1043,30 @@
           }
         }
       },
-      "74": {
+      "94": {
         "type": "object",
         "meta": {
           "default": {}
         },
         "dict": {
-          "input_images": 55,
-          "image1": 56,
-          "image2": 57,
-          "image3": 58,
-          "reference_images": 60,
-          "input_mask": 61,
-          "prompt": 62,
-          "negative_prompt": 63,
-          "width": 64,
-          "height": 65,
-          "match_input_resolution": 66,
-          "seed": 67,
-          "steps": 68,
-          "cfg": 69,
-          "sampler": 70,
-          "scheduler": 71,
-          "use_stock_nodes": 72,
-          "double_reference": 73
+          "input_images": 75,
+          "image1": 76,
+          "image2": 77,
+          "image3": 78,
+          "reference_images": 80,
+          "input_mask": 81,
+          "prompt": 82,
+          "negative_prompt": 83,
+          "width": 84,
+          "height": 85,
+          "match_input_resolution": 86,
+          "seed": 87,
+          "steps": 88,
+          "cfg": 89,
+          "sampler": 90,
+          "scheduler": 91,
+          "use_stock_nodes": 92,
+          "double_reference": 93
         }
       }
     }

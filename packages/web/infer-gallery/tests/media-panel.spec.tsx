@@ -452,6 +452,51 @@ describe('MediaPanel — stubbed feed over the gallery routes', () => {
     expect(await screen.findByText(/failed to load runs: estate_unreachable/)).toBeTruthy()
   })
 
+  // G4 (feed-plane coverage audit, 2026-11-02): the drafts-feed error
+  // absorption is a DOCUMENTED decision (MediaPanel: "the drafts
+  // feed's error is deliberately not rendered; the runs view stays
+  // fully usable") — this arm is its judge. A dead drafts door beside
+  // a green runs door: the artifacts face stays fully intact with NO
+  // banner, and the flows face degrades only its own count. A future
+  // edit that renders the drafts feed's error globally reds here.
+  it('a dead DRAFTS feed never blanks the runs view (the documented absorption keeps its judge)', async () => {
+    vi.stubGlobal('fetch', (url: string) =>
+      url === '/infer-gallery/drafts'
+        ? Promise.resolve(new Response(JSON.stringify({ error: 'estate_unreachable' }), { status: 500 }))
+        : runsFeed([run({ artifacts: [{ url: '/v/live.png', type: 'image' }] })]))
+    render(<MediaPanel />)
+    expect(await screen.findByText(/live\.png/)).toBeTruthy()
+    expect(screen.queryByText(/estate_unreachable/), 'the drafts door\'s error is deliberately not rendered').toBeNull()
+    // the flows face still renders — the dead drafts door degrades its
+    // OWN count (0 drafts), never the runs face
+    fireEvent.click(screen.getByText('Flows 0'))
+    expect(await screen.findByText('0 drafts')).toBeTruthy()
+  })
+
+  it('THE EITHER-WAY FACE: a failed refresh KEEPS the cached grid painted under the banner', async () => {
+    // G1 (feed-plane coverage audit): the boot-staged cache paints
+    // instantly, the fresh load then fails. The hook's promise
+    // (useFeed: "the cached data stays painted either way") must be
+    // the PANEL's face too — the banner voices the failed refresh
+    // ABOVE the surviving grid; the cached tiles never vanish under
+    // an exclusive error face, and the header's counts stay true to
+    // the tiles on screen (one face, never two).
+    const cachedJson = { runs: [run({ artifacts: [{ url: '/v/cached.png', type: 'image' }] })], errors: [] }
+    localStorage.setItem('melite:feed:/infer-gallery/runs', JSON.stringify({ v: 1, feed: cachedJson }))
+    vi.stubGlobal('fetch', (url: string) =>
+      url === '/infer-gallery/runs'
+        ? Promise.resolve(new Response(JSON.stringify({ error: 'estate_unreachable' }), { status: 502 }))
+        : draftsFeed([]))
+    render(<MediaPanel />)
+    // the cached tile paints from the boot cache…
+    expect(await screen.findByText(/cached\.png/)).toBeTruthy()
+    // …the failed refresh banners — WITHOUT erasing the grid…
+    expect(await screen.findByText(/failed to load runs: estate_unreachable/)).toBeTruthy()
+    expect(screen.getByText(/cached\.png/)).toBeTruthy()
+    // …and the header counts what is actually on screen.
+    expect(screen.getByText(/1 runs · 1 artifacts/)).toBeTruthy()
+  })
+
   it('rows without run_id are dropped LOUDLY into the gateway notes', async () => {
     vi.stubGlobal('fetch', (url: string) =>
       url === '/infer-gallery/runs'
@@ -1340,6 +1385,39 @@ describe('MediaPanel — selection, mass delete, pagination (2026-10-22 operator
     expect(screen.getByLabelText('Open as cards — this run')).toBeTruthy()
     expect(screen.queryByText(/selected/)).toBeNull()
   })
+
+  it('click-and-drag paints the stroke: one press selects the swept tiles (operator 2026-11-14)', async () => {
+    feedOf(galleryItems(4))
+    render(<MediaPanel />)
+    await screen.findByText(/4 runs · 4 artifacts/)
+    fireEvent.click(screen.getByText('Select'))
+    const t0 = await tileOf('0')
+    const t1 = await tileOf('1')
+    const t2 = await tileOf('2')
+    // press on tile 0, sweep through 1 and 2, release — all three ride
+    fireEvent.pointerDown(t0, { pointerType: 'mouse', button: 0 })
+    fireEvent.pointerEnter(t1)
+    fireEvent.pointerEnter(t2)
+    fireEvent.pointerUp(t2)
+    expect(screen.getByText('3 selected')).toBeTruthy()
+    // a plain click still toggles one off after the stroke (a real
+    // click rides a press first, which clears the stroke's suppressor)
+    fireEvent.pointerDown(t1, { pointerType: 'mouse', button: 0 })
+    fireEvent.pointerUp(t1)
+    fireEvent.click(t1)
+    expect(screen.getByText('2 selected')).toBeTruthy()
+  })
+
+  it('shift-click selects the visible range between anchor and target', async () => {
+    feedOf(galleryItems(4))
+    render(<MediaPanel />)
+    await screen.findByText(/4 runs · 4 artifacts/)
+    fireEvent.click(screen.getByText('Select'))
+    fireEvent.click(await tileOf('0'))
+    expect(screen.getByText('1 selected')).toBeTruthy()
+    fireEvent.click(await tileOf('3'), { shiftKey: true })
+    expect(screen.getByText('4 selected')).toBeTruthy()
+  })
 })
 
 // THE NO-OVERLAY LAW (operator mandate 2026-11-05, overturns the
@@ -1447,5 +1525,283 @@ describe('MediaPanel — the boot-staged stale face', () => {
     await waitFor(() => { expect(screen.getByText('fresh card')).toBeTruthy() })
     const cleared = document.querySelector('[data-infer-media-drafts-stat]') as HTMLElement | null
     expect(cleared?.textContent).toBe('1 drafts')
+  })
+})
+
+// THE ARCHIVED FACE (mass-archive law, operator ruling 2026-11-14
+// item (a)): the runs list serves a run's tucked rows ALONGSIDE its
+// live list — the panel hides them unless toggled, selects them into
+// restore (never delete), and sweeps the live subset into archive
+// with one armed gesture. Every arm below pins one clause.
+describe('MediaPanel — the archived face (mass-archive law)', () => {
+  const LIVE = '/infer-gallery/artifact?path=' + encodeURIComponent('run-tuck/gen/live.png')
+  const TUCKED = '/infer-gallery/artifact?path=' + encodeURIComponent('run-tuck/_archived/old.png')
+  const tuckedRun = (): GalleryRunRow => run({
+    run_id: 'run-tuck',
+    prompt: 'tuck me',
+    artifacts: [{ url: LIVE, name: 'live.png', type: 'image' }],
+    archived: [{ url: TUCKED, name: 'old.png', type: 'image' }],
+  })
+  const feedOf = (rows: GalleryRunRow[]): void => {
+    vi.stubGlobal('fetch', (url: string) =>
+      url === '/infer-gallery/runs' ? runsFeed(rows) : draftsFeed([]))
+  }
+
+  it('flatten emits the tucked face with archived:true under the same label law and one url space', () => {
+    const items = flatten([tuckedRun()])
+    expect(items).toHaveLength(2)
+    const live = items.find((i) => i.url === LIVE)!
+    const tucked = items.find((i) => i.url === TUCKED)!
+    expect(live.archived).toBe(false)
+    expect(tucked.archived).toBe(true)
+    // the same label law (the run's prompt heads both faces)
+    expect(tucked.head).toBe('"tuck me"')
+    // one url space: a file is either live or tucked, never both
+    const duped = flatten([run({
+      run_id: 'run-dup',
+      artifacts: [{ url: LIVE, name: 'live.png', type: 'image' }],
+      archived: [{ url: LIVE, name: 'live.png', type: 'image' }],
+    })])
+    expect(duped).toHaveLength(1)
+    expect(duped[0]!.archived).toBe(false)
+  })
+
+  it('the tucked face hides unless toggled; the counts stay live-honest', async () => {
+    feedOf([tuckedRun()])
+    render(<MediaPanel />)
+    await waitFor(() => { expect(screen.getByText(/1 runs · 1 artifacts/)).toBeTruthy() })
+    // chips + header count the LIVE face only
+    expect(screen.getByText('All 1')).toBeTruthy()
+    expect(screen.getByText('Archived (1)')).toBeTruthy()
+    // the tucked tile is nowhere: not in the grid, not in a filter match
+    expect(screen.queryByText(/old\.png$/)).toBeNull()
+    const box = screen.getByPlaceholderText(/search prompt/) as HTMLInputElement
+    fireEvent.change(box, { target: { value: 'old.png' } })
+    expect(screen.queryByText(/old\.png$/)).toBeNull()
+    expect(screen.getByText(/no artifacts match/)).toBeTruthy()
+    // the toggle opens the tucked face: dimmed tile, named badge
+    fireEvent.change(box, { target: { value: '' } })
+    fireEvent.click(screen.getByText('Archived (1)'))
+    const tile = await waitFor(() => {
+      const el = screen.getByText(/old\.png$/).closest('button')
+      expect(el).toBeTruthy()
+      return el as HTMLElement
+    })
+    expect(tile.style.opacity).toBe('0.55')
+    expect(tile.textContent).toMatch(/archived/)
+    // toggling back off hides it again
+    fireEvent.click(screen.getByText('Archived (1)'))
+    expect(screen.queryByText(/old\.png$/)).toBeNull()
+  })
+
+  it('no tucked rows means no toggle pill (the face is absent, never an empty toggle)', async () => {
+    feedOf([run({ artifacts: [{ url: LIVE, name: 'live.png', type: 'image' }] })])
+    render(<MediaPanel />)
+    await waitFor(() => { expect(screen.getByText(/1 runs · 1 artifacts/)).toBeTruthy() })
+    expect(screen.queryByText(/Archived \(/)).toBeNull()
+  })
+
+  it('the mass archive tucks the live subset with one armed gesture', async () => {
+    const seen: Array<{ url: string; body: unknown }> = []
+    let runsCalls = 0
+    vi.stubGlobal('fetch', vi.fn(async (url: unknown, init?: RequestInit): Promise<Response> => {
+      const target = String(url)
+      if (target === '/infer-gallery/runs') {
+        runsCalls += 1
+        return runsFeed(runsCalls === 1 ? [tuckedRun()] : [])
+      }
+      if (target === '/infer-gallery/drafts') return draftsFeed([])
+      if (target === '/infer-gallery/artifact-archive') {
+        seen.push({ url: target, body: JSON.parse(String(init?.body)) })
+        return new Response(JSON.stringify({ ok: true }), { status: 200 })
+      }
+      throw new Error('unexpected fetch ' + target)
+    }))
+    render(<MediaPanel />)
+    await screen.findByText(/1 runs · 1 artifacts/)
+    fireEvent.click(screen.getByText('Select'))
+    const tile = await waitFor(() => {
+      const el = screen.getByText(/live\.png$/).closest('button')
+      expect(el).toBeTruthy()
+      return el as HTMLElement
+    })
+    fireEvent.click(tile)
+    // THE ARM: the first press names the count, the next tucks
+    fireEvent.click(screen.getByText('Archive selected'))
+    expect(screen.getByText('Confirm archive 1?')).toBeTruthy()
+    expect(seen).toHaveLength(0)
+    fireEvent.click(screen.getByText('Confirm archive 1?'))
+    await waitFor(() => { expect(seen).toHaveLength(1) })
+    expect((seen[0]!.body as { path: string }).path).toBe('run-tuck/gen/live.png')
+    // the mode exits and the feed reloaded behind it
+    await waitFor(() => { expect(runsCalls).toBeGreaterThanOrEqual(2) })
+    expect(screen.queryByText(/selected/)).toBeNull()
+  })
+
+  it('the mass restore brings the tucked subset back; delete never sweeps the tucked', async () => {
+    const archived: Array<{ url: string; body: unknown }> = []
+    const restored: Array<{ url: string; body: unknown }> = []
+    const deleted: Array<{ url: string; body: unknown }> = []
+    vi.stubGlobal('fetch', vi.fn(async (url: unknown, init?: RequestInit): Promise<Response> => {
+      const target = String(url)
+      if (target === '/infer-gallery/runs') return runsFeed([tuckedRun()])
+      if (target === '/infer-gallery/drafts') return draftsFeed([])
+      if (target === '/infer-gallery/artifact-archive') {
+        archived.push({ url: target, body: JSON.parse(String(init?.body)) })
+        return new Response(JSON.stringify({ ok: true }), { status: 200 })
+      }
+      if (target === '/infer-gallery/artifact-restore') {
+        restored.push({ url: target, body: JSON.parse(String(init?.body)) })
+        return new Response(JSON.stringify({ ok: true }), { status: 200 })
+      }
+      if (target === '/infer-gallery/artifact-delete') {
+        deleted.push({ url: target, body: JSON.parse(String(init?.body)) })
+        return new Response(JSON.stringify({ ok: true }), { status: 200 })
+      }
+      throw new Error('unexpected fetch ' + target)
+    }))
+    render(<MediaPanel />)
+    await screen.findByText(/1 runs · 1 artifacts/)
+    fireEvent.click(screen.getByText('Archived (1)'))
+    fireEvent.click(screen.getByText('Select'))
+    const tuckedTile = await waitFor(() => {
+      const el = screen.getByText(/old\.png$/).closest('button')
+      expect(el).toBeTruthy()
+      return el as HTMLElement
+    })
+    fireEvent.click(tuckedTile)
+    // a tucked-only selection offers restore, never delete or archive
+    expect(screen.queryByText('Delete selected')).toBeNull()
+    expect(screen.queryByText('Archive selected')).toBeNull()
+    fireEvent.click(screen.getByText('Restore selected'))
+    fireEvent.click(screen.getByText('Confirm restore 1?'))
+    await waitFor(() => { expect(restored).toHaveLength(1) })
+    expect((restored[0]!.body as { path: string }).path).toBe('run-tuck/_archived/old.png')
+    expect(archived).toHaveLength(0)
+    expect(deleted).toHaveLength(0)
+  })
+
+  it('a mixed selection deletes the live subset only (the tucked id never reaches the delete door)', async () => {
+    const deleted: Array<{ url: string; body: unknown }> = []
+    vi.stubGlobal('fetch', vi.fn(async (url: unknown, init?: RequestInit): Promise<Response> => {
+      const target = String(url)
+      if (target === '/infer-gallery/runs') return runsFeed([tuckedRun()])
+      if (target === '/infer-gallery/drafts') return draftsFeed([])
+      if (target === '/infer-gallery/artifact-delete') {
+        deleted.push({ url: target, body: JSON.parse(String(init?.body)) })
+        return new Response(JSON.stringify({ ok: true }), { status: 200 })
+      }
+      throw new Error('unexpected fetch ' + target)
+    }))
+    render(<MediaPanel />)
+    await screen.findByText(/1 runs · 1 artifacts/)
+    fireEvent.click(screen.getByText('Archived (1)'))
+    fireEvent.click(screen.getByText('Select'))
+    const liveTile = await waitFor(() => {
+      const el = screen.getByText(/live\.png$/).closest('button')
+      expect(el).toBeTruthy()
+      return el as HTMLElement
+    })
+    const tuckedTile = await waitFor(() => {
+      const el = screen.getByText(/old\.png$/).closest('button')
+      expect(el).toBeTruthy()
+      return el as HTMLElement
+    })
+    fireEvent.click(liveTile)
+    fireEvent.click(tuckedTile)
+    expect(screen.getByText('2 selected')).toBeTruthy()
+    // the delete pill names the LIVE subset, not the whole selection
+    fireEvent.click(screen.getByText('Delete selected'))
+    expect(screen.getByText('Confirm delete 1?')).toBeTruthy()
+    fireEvent.click(screen.getByText('Confirm delete 1?'))
+    await waitFor(() => { expect(deleted).toHaveLength(1) })
+    expect((deleted[0]!.body as { path: string }).path).toBe('run-tuck/gen/live.png')
+  })
+
+  it('a partial mass archive speaks the tally and the failed tile stays visible', async () => {
+    const rows = [tuckedRun()]
+    let runsCalls = 0
+    vi.stubGlobal('fetch', vi.fn(async (url: unknown, init?: RequestInit): Promise<Response> => {
+      const target = String(url)
+      if (target === '/infer-gallery/runs') {
+        runsCalls += 1
+        return runsFeed(runsCalls === 1 ? rows : rows)
+      }
+      if (target === '/infer-gallery/drafts') return draftsFeed([])
+      if (target === '/infer-gallery/artifact-archive') {
+        return new Response(JSON.stringify({ error: 'file busy' }), { status: 500 })
+      }
+      throw new Error('unexpected fetch ' + target)
+    }))
+    render(<MediaPanel />)
+    await screen.findByText(/1 runs · 1 artifacts/)
+    fireEvent.click(screen.getByText('Select'))
+    const tile = await waitFor(() => {
+      const el = screen.getByText(/live\.png$/).closest('button')
+      expect(el).toBeTruthy()
+      return el as HTMLElement
+    })
+    fireEvent.click(tile)
+    fireEvent.click(screen.getByText('Archive selected'))
+    fireEvent.click(screen.getByText('Confirm archive 1?'))
+    // the tally speaks in its OWN banner (the mass-delete tally's
+    // seat — an action outcome, never the feed-error face), and the
+    // survivor still renders (failed ops keep data visible)
+    expect(await screen.findByText(/archived 0 · failed 1/)).toBeTruthy()
+    expect(screen.getByText(/file busy/)).toBeTruthy()
+    expect(screen.getByText(/live\.png$/)).toBeTruthy()
+  })
+
+  it('the drilldown swaps verbs by face: live archives, tucked restores (no dead buttons)', async () => {
+    const archived: Array<string> = []
+    const restored: Array<string> = []
+    let runsCalls = 0
+    vi.stubGlobal('fetch', vi.fn(async (url: unknown, init?: RequestInit): Promise<Response> => {
+      const target = String(url)
+      if (target === '/infer-gallery/runs') {
+        runsCalls += 1
+        return runsFeed(runsCalls === 1 ? [tuckedRun()] : [tuckedRun()])
+      }
+      if (target === '/infer-gallery/drafts') return draftsFeed([])
+      if (target === '/infer-gallery/artifact-archive') {
+        archived.push(target)
+        return new Response(JSON.stringify({ ok: true }), { status: 200 })
+      }
+      if (target === '/infer-gallery/artifact-restore') {
+        restored.push(target)
+        return new Response(JSON.stringify({ ok: true }), { status: 200 })
+      }
+      throw new Error('unexpected fetch ' + target)
+    }))
+    render(<MediaPanel />)
+    // the LIVE face: archive fires immediate (reversible, no
+    // confirm), delete still arms, restore is absent
+    const liveTile = await waitFor(() => {
+      const el = screen.getByText(/live\.png$/).closest('button')
+      expect(el).toBeTruthy()
+      return el as HTMLElement
+    })
+    fireEvent.click(liveTile)
+    await screen.findByTestId('drill-archive')
+    expect(screen.queryByTestId('drill-restore')).toBeNull()
+    expect(screen.queryByTestId('drill-delete')).not.toBeNull()
+    fireEvent.click(screen.getByTestId('drill-archive'))
+    await waitFor(() => { expect(archived).toHaveLength(1) })
+    await waitFor(() => { expect(screen.queryByTestId('drill-archive')).toBeNull() })
+    // the TUCKED face: restore fires immediate, the live verbs hide
+    fireEvent.click(screen.getByText('Archived (1)'))
+    const tuckedTile = await waitFor(() => {
+      const el = screen.getByText(/old\.png$/).closest('button')
+      expect(el).toBeTruthy()
+      return el as HTMLElement
+    })
+    fireEvent.click(tuckedTile)
+    await screen.findByTestId('drill-restore')
+    expect(screen.queryByTestId('drill-archive')).toBeNull()
+    expect(screen.queryByTestId('drill-delete')).toBeNull()
+    expect(screen.queryByTestId('drill-rename')).toBeNull()
+    fireEvent.click(screen.getByTestId('drill-restore'))
+    await waitFor(() => { expect(restored).toHaveLength(1) })
+    await waitFor(() => { expect(screen.queryByTestId('drill-restore')).toBeNull() })
   })
 })

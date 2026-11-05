@@ -670,12 +670,6 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       ctx.plugin(row, { repoRoot: config.repoRoot, stateRoot, stateRoots });
       continue;
     }
-    // the drafts row rides the SAME resolved root (its unit-file
-    // tree is <stateRoot>/storage — one law, both seats)
-    if (row === draftsPlugin) {
-      ctx.plugin(row, { storageRoot: join(stateRoot, "storage") });
-      continue;
-    }
     if ((row as { name?: string }).name === "melite-engine-mcp-row") {
       ctx.plugin(row, { engines: mcpEngines });
       continue;

@@ -185,7 +185,11 @@ describe("the stage-view load refusal (the drill's miss face)", () => {
     mountMissDrill();
     await waitFor(() => expect(missFace()).toBeTruthy());
     fireEvent.click(within(missFace()).getByRole("button", { name: "Dismiss error" }));
-    expect(document.querySelector('[data-testid="stage-view-load-refusal"]')).toBeNull();
+    // (the 2026-11-15 roaming-flake audit) the no-act pattern's
+    // discrete click does not always flush synchronously under a
+    // loaded pool — poll the retired state (the pattern's own
+    // settled-read law), never a sync read at the interrupt edge.
+    await waitFor(() => expect(document.querySelector('[data-testid="stage-view-load-refusal"]')).toBeNull());
     // the retirement is not the fallback's return: the studio-declared
     // lane renders no prompt-edition form after the × (the fallback
     // extermination holds under the dismissal)

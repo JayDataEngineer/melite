@@ -133,6 +133,32 @@ describe('useFeed — the load engine', () => {
     expect(result.current.data).toEqual({ runs: [{ run_id: 'r9' }] })
     unmount()
   })
+
+  // G2 (feed-plane coverage audit, 2026-11-02): reload CLEARS a landed
+  // error — the banner never outlives its cause once a retry seats.
+  // The load() door wipes error before the fetch (useFeed :149); this
+  // arm proves the whole face: terminal error → reload → fresh seat
+  // → error empty AND data fresh, together.
+  it('reload clears a landed error when the retry seats (the banner never outlives its cause)', async () => {
+    let n = 0
+    stubFetch(() => {
+      ++n
+      return n === 1
+        ? Promise.resolve(new Response(JSON.stringify({ error: 'estate_unreachable' }), { status: 502 }))
+        : ok({ runs: [{ run_id: 'r2' }] })
+    })
+    const { result, unmount } = renderHook(() => useFeed('/u', decode, EMPTY))
+    await waitFor(() => { expect(result.current.loading).toBe(false) })
+    expect(result.current.error).toBe('estate_unreachable')
+    act(() => { result.current.reload() })
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false)
+      expect(result.current.error).toBe('')
+    })
+    expect(result.current.data).toEqual({ runs: [{ run_id: 'r2' }] })
+    expect(n).toBe(2)
+    unmount()
+  })
 })
 
 describe('useFeed — the estate boot race (wait voices, never terminal)', () => {
@@ -370,6 +396,20 @@ describe('useFeed — the boot-staged cache (E2-3 arm 2)', () => {
     unmount()
   })
 
+  // G3 (feed-plane coverage audit, 2026-11-02): the stamp law's SECOND
+  // conjunct fires alone — a CURRENT-version envelope with NO feed
+  // member is not a cache either (v:1 passes, !('feed' in env) evicts).
+  // The old-era arm drove conjunct one; this arm owns conjunct two.
+  it('a current-version envelope with NO feed member evicts (the second conjunct fires alone)', async () => {
+    localStorage.setItem(KEY, JSON.stringify({ v: 1 }))
+    hangFetch()
+    const { result, unmount } = renderHook(() => useFeed('/infer-gallery/runs', decode, EMPTY))
+    expect(result.current.stale, 'no staged face from a feedless envelope').toBe(false)
+    expect(result.current.data).toEqual(EMPTY)
+    expect(localStorage.getItem(KEY), 'the feedless envelope is EVICTED at boot').toBeNull()
+    unmount()
+  })
+
   it('a CURRENT-VERSION cache whose decode THROWS evicts the entry (the boot survives fresh)', async () => {
     // the envelope is current but the feed shape is poison for THIS
     // era's decoder — the discard must also REMOVE, or every later
@@ -443,6 +483,92 @@ describe('useFeed — the boot-staged cache (E2-3 arm 2)', () => {
     expect(result.current.stale).toBe(false)
     // and the OWNING load's cache write is the one that lands (its
     // served feed persists):
+    expect(localStorage.getItem(KEY)).toBe(JSON.stringify({ v: 1, feed: { runs: [{ run_id: 'r2' }] } }))
+    unmount()
+  })
+
+  // THE SUPERSEDED SUCCESS (boot-feed audit F4b): the abort only
+  // rejects an IN-FLIGHT fetch — a response that already arrived keeps
+  // its body read alive. Pre-cure the late body read setData'd OVER
+  // the load that replaced it (and poisoned the cache with a feed no
+  // live load ever served). The success path is abort-guarded on both
+  // sides of the body read, since the abort can land while the bytes
+  // stream in.
+  it('a superseded load whose BODY resolves after its abort paints nothing (no data, no cache write)', async () => {
+    localStorage.setItem(KEY, JSON.stringify({ v: 1, feed: { runs: [{ run_id: 'r1' }] } }))
+    let releaseBody1: (() => void) | null = null
+    const bodyGate1 = new Promise<void>((res) => { releaseBody1 = res })
+    let release2: (() => void) | null = null
+    const gate2 = new Promise<void>((res) => { release2 = res })
+    const LATE = { runs: [{ run_id: 'r1-late' }] }
+    let n = 0
+    stubFetch(() => {
+      ++n
+      if (n === 1) {
+        // the response ARRIVED (fetch resolved) but its body read hangs
+        return Promise.resolve({ ok: true, status: 200, json: () => bodyGate1.then(() => LATE) } as unknown as Response)
+      }
+      return gate2.then(() => ok({ runs: [{ run_id: 'r2' }] }))
+    })
+    const { result, unmount } = renderHook(() => useFeed('/infer-gallery/runs', decode, EMPTY))
+    expect(result.current.data).toEqual({ runs: [{ run_id: 'r1' }] })
+    // reload mid-body-read: load #1 is aborted, load #2 hangs
+    act(() => { result.current.reload() })
+    expect(n).toBe(2)
+    // the superseded load's BODY resolves after its abort
+    await act(async () => { releaseBody1!() })
+    expect(result.current.data, 'the dead load paints no data over the cached face').toEqual({ runs: [{ run_id: 'r1' }] })
+    expect(result.current.loading, 'the dead load clears no loading truth').toBe(true)
+    expect(result.current.stale, 'the dead load clears no stale face').toBe(true)
+    expect(localStorage.getItem(KEY), 'the dead load writes no cache either').toBe(JSON.stringify({ v: 1, feed: { runs: [{ run_id: 'r1' }] } }))
+    // the owning load seats normally
+    release2!()
+    await waitFor(() => { expect(result.current.loading).toBe(false) })
+    expect(result.current.data).toEqual({ runs: [{ run_id: 'r2' }] })
+    expect(localStorage.getItem(KEY)).toBe(JSON.stringify({ v: 1, feed: { runs: [{ run_id: 'r2' }] } }))
+    unmount()
+  })
+
+  // THE PRE-READ GUARD (cure-wave audit 2026-11-02, the solo-firing
+  // debt): the arm above proves the POST-read side — the abort lands
+  // while the bytes stream. THIS arm proves the other side alone: the
+  // response itself resolves only AFTER its load was superseded, so
+  // the then-callback ENTERS already-aborted and must return BEFORE
+  // the body read — r.json is never even called.
+  it('a superseded load whose RESPONSE resolves after its abort never reads the body (the pre-read guard fires alone)', async () => {
+    localStorage.setItem(KEY, JSON.stringify({ v: 1, feed: { runs: [{ run_id: 'r1' }] } }))
+    let release1: (() => void) | null = null
+    const gate1 = new Promise<void>((res) => { release1 = res })
+    let release2: (() => void) | null = null
+    const gate2 = new Promise<void>((res) => { release2 = res })
+    const json1 = vi.fn(() => Promise.resolve({ runs: [{ run_id: 'r1-late' }] }))
+    let n = 0
+    stubFetch(() => {
+      ++n
+      if (n === 1) {
+        // the transport itself is gated: the response ARRIVES only
+        // after this load was already aborted
+        return gate1.then(() => ({ ok: true, status: 200, json: json1 } as unknown as Response))
+      }
+      return gate2.then(() => ok({ runs: [{ run_id: 'r2' }] }))
+    })
+    const { result, unmount } = renderHook(() => useFeed('/infer-gallery/runs', decode, EMPTY))
+    expect(result.current.data).toEqual({ runs: [{ run_id: 'r1' }] })
+    // reload while load #1's transport still hangs: load #1 is aborted
+    act(() => { result.current.reload() })
+    expect(n).toBe(2)
+    // the superseded transport RESOLVES after its abort — a success
+    // arriving for a dead load
+    await act(async () => { release1!() })
+    expect(json1, 'the pre-read guard returned before the body read — r.json never ran').not.toHaveBeenCalled()
+    expect(result.current.data, 'the dead load paints nothing over the cached face').toEqual({ runs: [{ run_id: 'r1' }] })
+    expect(result.current.loading, 'the dead load clears no loading truth').toBe(true)
+    expect(result.current.stale, 'the dead load clears no stale face').toBe(true)
+    expect(localStorage.getItem(KEY), 'the dead load writes no cache either').toBe(JSON.stringify({ v: 1, feed: { runs: [{ run_id: 'r1' }] } }))
+    // the owning load seats normally
+    release2!()
+    await waitFor(() => { expect(result.current.loading).toBe(false) })
+    expect(result.current.data).toEqual({ runs: [{ run_id: 'r2' }] })
     expect(localStorage.getItem(KEY)).toBe(JSON.stringify({ v: 1, feed: { runs: [{ run_id: 'r2' }] } }))
     unmount()
   })

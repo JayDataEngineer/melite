@@ -355,9 +355,23 @@ export function RecipePills({ spec, onPick, values, omitRow }) {
         const row = pillRows.find((r) => r.id === id);
         if (row === undefined)
             return;
-        // the pick-reconcile seam (2026-11-05): the pill's pick clamps
-        // held out-of-envelope knobs too — the filter above stays
-        // stamp-only (reconciled keys never create a pill from nothing)
+        // THE ROW-TO-ROW SWITCH LAW (2026-11-15, the sweep's live catch:
+        // "a pick that does not land is a silent drop" — qwen-img-edit-21
+        // held Upstream Solvers' sampler/scheduler; picking Remove
+        // Background wrote only the arrival's prompt, the solver pair
+        // stayed stated, and the pill derived the OLD row forever). A
+        // pick is a SWITCH, not an overlay: the active row's stamps
+        // DEPART through the same reconciled derivation the blank rides
+        // (spec.ts's clamped-stamp law), then the arrival's stamp lands
+        // — ONE atomic write, both halves. The departure's own gate
+        // (held == the derivation) keeps hand-edited drifts stated, and
+        // the spread order keeps an overlapping key the arrival's stamp
+        // wins. With nothing active there is nothing to depart — the
+        // fresh-doc pick is the arrival write alone (the G4 law).
+        // the pick-reconcile seam (2026-11-05) rides the same write:
+        // the pill's pick clamps held out-of-envelope knobs too — the
+        // filter above stays stamp-only (reconciled keys never create a
+        // pill from nothing)
         onPick(axisPickPatch(spec, row, values));
     };
     // THE BLANK WRITE (k, 2026-11-08): picking "no recipe" applies the
@@ -370,7 +384,11 @@ export function RecipePills({ spec, onPick, values, omitRow }) {
         const row = pillRows.find((r) => r.id === active);
         if (row === undefined)
             return;
-        onPick(recipeDeparturePatch(row, values));
+        // THE CLAMPED-STAMP LAW rides the departure: the patch derives
+        // through the same reconcile the pick wrote (spec.ts's own law —
+        // the flux-klein blank burn, 2026-11-03: a clamped pick must be
+        // departable, or its stamps stay stated forever).
+        onPick(recipeDeparturePatch(spec, row, values));
     };
     const recipeRows = [
         { id: '', label: chromeCopy.recipeBlankRow },

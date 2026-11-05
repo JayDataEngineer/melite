@@ -2357,7 +2357,10 @@ window.__ModuleLoader__.load({
 		var init_familyLane = __esmMin((() => {}));
 		//#endregion
 		//#region ../../web-kit/contracts/lib/FlowTypes.js
-		var init_FlowTypes = __esmMin((() => {}));
+		var FLOW_ID_RE;
+		var init_FlowTypes = __esmMin((() => {
+			FLOW_ID_RE = /^[a-z_][a-z0-9_-]*$/;
+		}));
 		//#endregion
 		//#region ../../web-kit/contracts/lib/benchResult.js
 		/** benchResult.ts — THE BENCH STAGE RESULT CONTRACT (the operator's
@@ -3948,6 +3951,51 @@ window.__ModuleLoader__.load({
 			}
 			return out;
 		}
+		/**
+		* THE LIVE-ROWS FILTER (GAPS-9, the archived-compile burn: an
+		* archived stale draft's params blocked every future bench-wide
+		* compile). F11 rests archived rows on the RUN faces — the COMPILE
+		* faces rest them too. projectStages strips the archived FLAG (it
+		* is not a wire key) but keeps the ROW, so a spent row's stale
+		* params judged bench-wide. Compile callers filter here FIRST:
+		* only LIVE rows judge. (Read/spell/floor/rewire keep the full
+		* view — they report or touch addressed rows, never judge.)
+		*
+		* Moved to the contract (2026-10-31, F14's estate half): the
+		* projection had ONE writer while only the agent tool composed —
+		* the estate's add-stage gate composes the same view, so the
+		* projection is the contract's now (the audit's Rule 1 law: a
+		* second writer means the same bench reads as a different
+		* document depending on which door projected it).
+		*/
+		function liveBenchRows(stages) {
+			if (!Array.isArray(stages)) return stages;
+			return stages.filter((s) => !(typeof s === "object" && s !== null && !Array.isArray(s) && s["archived"] === true));
+		}
+		/**
+		* Project bench stage rows onto the flow_inline wire contract
+		* (the doors forbid provenance/runStatus/result/title as extras —
+		* they strip; `card` RIDES (STAGE_KEYS admit it) because the
+		* kinds pass derives input kinds from the card's own flowKinds —
+		* stripping it manufactured phantom "wired but untyped" refusals
+		* on correctly-wired card stages; engine defaults comfyui).
+		*/
+		function projectStages(stages) {
+			if (!Array.isArray(stages)) return [];
+			const source = stages.filter((s) => typeof s === "object" && s !== null && !Array.isArray(s));
+			return normalizeBenchStages(source).map((row, i) => {
+				const from = source[i];
+				row["id"] = String(from["id"] ?? "");
+				if (typeof from["id"] === "string" && from["id"] !== "") row["id"] = from["id"];
+				for (const key of Object.keys(row)) {
+					if (key === "expected" || WIRE_STAGE_KEYS.includes(key)) continue;
+					delete row[key];
+				}
+				if (typeof from["expected"] === "object" && from["expected"] !== null && !Array.isArray(from["expected"])) row["expected"] = from["expected"];
+				else delete row["expected"];
+				return row;
+			});
+		}
 		/** Sanitize one candidate id onto a legal bench session key —
 		* 'main' for anything the grammar refuses. THE ONE SPELLING of the
 		* routing decision (the li-ay stroke, 2026-10-11): the decision
@@ -3962,6 +4010,30 @@ window.__ModuleLoader__.load({
 		* sanitize — not four. */
 		function benchSessionOf(id) {
 			return typeof id === "string" && SESSION_RE.test(id) ? id : "main";
+		}
+		/** Carry one candidate key onto the key the bench doors take — the
+		*  delegated-seat spelling rides VERBATIM, everything else sanitizes
+		*  (benchSessionOf). THE ONE SPELLING of the carry decision (the
+		*  one-seat law's client half, 2026-10-31): the construct tool
+		*  forwards a delegated lane's bench key as `delegate:<key>` (the
+		*  benchKeyOfExec mint), and the estate door re-seats it (drafts
+		*  seatOf) — but the ':' is outside SESSION_RE, so a seat that
+		*  sanitized first silently routed a delegated card to 'main', the
+		*  delegation split alive on the link channel (found by the
+		*  construct-flow-link snapshot replay). The carry lives HERE, beside
+		*  the sanitize it wraps: a seat that re-spelled `SESSION_RE.test`
+		*  over the slice would be a second decision body over the same
+		*  grammar — the exact drift the li-ay stroke killed. Narrow by
+		*  construction: only `delegate:` + a grammar-legal inner key
+		*  carries; junk (`delegate:`, `delegate:not@a/key`, the
+		*  near-miss `delegated:…`) falls to the sanitize like every
+		*  other non-key. */
+		function carriedBenchKey(key) {
+			if (typeof key === "string" && key.startsWith("delegate:")) {
+				const inner = key.slice(9);
+				if (SESSION_RE.test(inner)) return key;
+			}
+			return benchSessionOf(key);
 		}
 		/** THE PARSE-EDGE / TEST MINT: brand a draft id read off the wire or
 		*  disk (route the typeof-guarded value through here at the door
@@ -4103,6 +4175,7 @@ window.__ModuleLoader__.load({
 			EXTRA_KEYS: () => EXTRA_KEYS$1,
 			EXTRA_KEY_SET: () => EXTRA_KEY_SET$1,
 			FLF_MODES: () => FLF_MODES,
+			FLOW_ID_RE: () => FLOW_ID_RE,
 			LEGACY_RUN_MEDIA_PREFIX: () => LEGACY_RUN_MEDIA_PREFIX$1,
 			LOAD_CARRY_KEYS: () => LOAD_CARRY_KEYS,
 			MEDIA_SET: () => MEDIA_SET,
@@ -4134,6 +4207,7 @@ window.__ModuleLoader__.load({
 			benchSessionOf: () => benchSessionOf,
 			canonicalRunMediaUrl: () => canonicalRunMediaUrl,
 			cardResultFromRecord: () => cardResultFromRecord,
+			carriedBenchKey: () => carriedBenchKey,
 			cellArtifactCoordinates: () => cellArtifactCoordinates,
 			cnEntriesOf: () => cnEntriesOf,
 			crossRootOrder: () => crossRootOrder,
@@ -4166,6 +4240,7 @@ window.__ModuleLoader__.load({
 			laneStaleCarry: () => laneStaleCarry,
 			laneSurfaceOf: () => laneSurfaceOf$1,
 			laneTogetherClosure: () => laneTogetherClosure,
+			liveBenchRows: () => liveBenchRows,
 			loraAdaptersOf: () => loraAdaptersOf,
 			loraIdOf: () => loraIdOf,
 			loraLabel: () => loraLabel,
@@ -4182,6 +4257,7 @@ window.__ModuleLoader__.load({
 			normalizeSegmentStatus: () => normalizeSegmentStatus,
 			offeredPool: () => offeredPool$1,
 			projectStageView: () => projectStageView,
+			projectStages: () => projectStages,
 			projectUpstreamStages: () => projectUpstreamStages,
 			reseatDeadKeys: () => reseatDeadKeys,
 			resolveCellRow: () => resolveCellRow$1,
@@ -9295,6 +9371,12 @@ window.__ModuleLoader__.load({
 			addModifierAria: "Add modifier",
 			/** Add-modifier square's hover title. */
 			addModifierTitle: "Add a modifier",
+			/** Chain-run picker row label: the estate run id, the lane it rode, and the scene count its chain stamp reports. */
+			chainRunOptionLabel: (p) => `${p.run} — ${p.kind}, ${p.scenes} ${p.scenes === 1 ? "scene" : "scenes"}`,
+			/** Chain-run picker's free-text affordance (the advanced fallback — a placeholder AND accessible name). */
+			chainRunAdvancedLabel: "Advanced — paste a run id",
+			/** Chain-run picker's honest empty (the store check found no checkpointed run). */
+			chainRunEmptyNote: "No chain runs yet — a swap, repair, extend or refine press leaves its scenes here.",
 			/** Named-presence popup title: "Name the <kind label>" (the add gesture opens one field, never a knob wall). */
 			namedPresenceTitle: (p) => `Name the ${p.kindLabel}`,
 			/** Named-presence popup's single input label + accessible name. */
@@ -9823,8 +9905,10 @@ window.__ModuleLoader__.load({
 				if (v === null || Array.isArray(v)) continue;
 				out[k] = v;
 			}
+			const bagKeys = new Set((spec.features?.modifiers ?? []).map((k) => k.param_key));
 			if (base !== void 0) for (const [k, v] of Object.entries(base)) {
-				if (v === null || v === void 0 || Array.isArray(v)) continue;
+				if (v === null || v === void 0) continue;
+				if (Array.isArray(v) && !bagKeys.has(k)) continue;
 				out[k] = v;
 			}
 			for (const [k, v] of Object.entries(user)) {
@@ -9908,6 +9992,33 @@ window.__ModuleLoader__.load({
 			const v = variantId === null ? void 0 : lanes.variants?.[variantId]?.relations;
 			if (v !== void 0) out.push(v);
 			return out;
+		}
+		/** THE PICK'S SANCTIONED STAMPS (the tagger burn, gate-11 probe p,
+		*  2026-11-16): a variant row's defaults may name the lane's
+		*  INTERNAL coordinates (a checkpoint path the engine resolves from
+		*  the variant stamp itself) — keys the row's own resolved lane does
+		*  not serve. The compose mirror field-names such a key and the door
+		*  refuses the WHOLE frame ("field 'checkpoint' fires nothing on
+		*  this lane — the served surface does not declare it"), so a pick
+		*  that stamped it never left the studio while the face followed the
+		*  user map — the doc stranded on the birth row through every later
+		*  pick. The stamp filter rides the mirror's own truth, one
+		*  spelling: the PICKED row's lane surface (family base ∪ variant
+		*  additions) plus the transport's own words. A family that serves
+		*  no lane truth keeps its legacy pick — the defaults ride verbatim,
+		*  never a guess.
+		* @param spec the served form-spec the pick derives over.
+		* @param row the row being picked (its lane is the arrival lane).
+		* @returns the sanctioned key set, or null when no lane truth exists. */
+		function sanctionedStampKeys(spec, row) {
+			const surface = laneSurfaceFor(spec, row.id, null);
+			if (surface === null) return null;
+			const declared = new Set(surface);
+			for (const g of axisGroups(spec)) declared.add(axisKey(g));
+			declared.add("model");
+			for (const k of spec.studio_writes ?? []) declared.add(k);
+			for (const k of modOwnedFields(spec)) declared.add(k);
+			return declared;
 		}
 		/** The numeric bounds that judge the resolved lane: family rows,
 		*  per-field replaced by the variant's own (the DECL cascade's
@@ -10034,6 +10145,27 @@ window.__ModuleLoader__.load({
 		*  (address resolution, walls) still see it. */
 		function rowsFor(spec, group) {
 			return (spec.variants ?? []).filter((v) => v.group === group && v.alias !== true);
+		}
+		/** THE ROW-CLAIM LAW (the 15th report, symptom 2 — audit
+		*  2026-10-31-modpress-row-face): a card's declared studio renders a
+		*  bench row ONLY when the row's params carry at least one key the
+		*  studio owns (studio_writes). An agent-pressed mod-only row —
+		*  {refine: […]} with no calls, no keyframes — is NOT the studio's
+		*  document; hydrating it seats the one-window starter and buries
+		*  the bag, so the GENERIC form is its designed face (CardForm
+		*  renders every declared mod field group — the row's whole truth).
+		*  A DECL that names no writes list owns everything: the studio is
+		*  the card's only author, and the fallback-extermination wall's
+		*  force (arm A of stage-view-refusal) stands. PURE.
+		*  @param spec the doc's served form-spec.
+		*  @param params the frozen bench row's params.
+		*  @returns true when the studio tenant claims the row. */
+		function studioClaimsRow(spec, params) {
+			const writes = spec.studio_writes;
+			if (writes === void 0 || writes.length === 0) return true;
+			if (params === void 0) return false;
+			for (const key of writes) if (params[key] !== void 0) return true;
+			return false;
 		}
 		/** THE CHAIN (one direction: an axis filters the axes BELOW it): a
 		*  row composes with the current selection when its `owner` is empty
@@ -10203,8 +10335,10 @@ window.__ModuleLoader__.load({
 		*  first composing row). */
 		function axisPickPatch(spec, row, held) {
 			const patch = {};
+			const sanctioned = sanctionedStampKeys(spec, row);
 			for (const [k, v] of Object.entries(row.defaults)) {
 				if (k === "model") continue;
+				if (sanctioned !== null && !sanctioned.has(k)) continue;
 				patch[k] = v;
 			}
 			const groups = axisGroups(spec);
@@ -10365,7 +10499,7 @@ window.__ModuleLoader__.load({
 			for (const g of groups) {
 				const composing = composingRows(spec, g, active);
 				if (composing.length === 0 || crossSpec) {
-					patch[axisKey(g)] = "";
+					patch[axisKey(g)] = null;
 					active[g] = "";
 					continue;
 				}
@@ -10373,8 +10507,10 @@ window.__ModuleLoader__.load({
 					return (typeof r.defaults["model"] === "string" && r.defaults["model"] !== "" ? r.defaults["model"] : r.route) === model;
 				}) ?? composing[0];
 				if (g === CATEGORIES.variant && seededVariant === void 0) seededVariant = row;
+				const sanctioned = sanctionedStampKeys(spec, row);
 				for (const [k, v] of Object.entries(row.defaults)) {
 					if (k === "model") continue;
+					if (sanctioned !== null && !sanctioned.has(k)) continue;
 					patch[k] = v;
 				}
 				patch[axisKey(g)] = axisStampOf(row);
@@ -10442,6 +10578,13 @@ window.__ModuleLoader__.load({
 		function seedAxisValues(spec, held) {
 			const out = {};
 			const groups = axisGroups(spec);
+			{
+				const heldModel = held["model"];
+				if (typeof heldModel !== "string" || heldModel === "") {
+					const model = typeof spec.model === "string" && spec.model !== "" ? spec.model : "";
+					if (model !== "") out["model"] = model;
+				}
+			}
 			if (groups.length === 0) return out;
 			const address = addressClaimOf(spec);
 			const active = {};
@@ -10471,11 +10614,6 @@ window.__ModuleLoader__.load({
 					}
 				}
 				if (write !== "") out[axisKey(g)] = write;
-			}
-			const heldModel = held["model"];
-			if (typeof heldModel !== "string" || heldModel === "") {
-				const model = typeof spec.model === "string" && spec.model !== "" ? spec.model : "";
-				if (model !== "") out["model"] = model;
 			}
 			return out;
 		}
@@ -10601,12 +10739,27 @@ window.__ModuleLoader__.load({
 		*  stamp is the user's word and stands (deepEqualJson, the F3 fix —
 		*  `===` never matched an array bag). NEVER a persisted `recipe`
 		*  key (the dead card-recipe layer; the compose door refuses the
-		*  undeclared param). PURE — the caller owns the write. */
-		function recipeDeparturePatch(row, held) {
+		*  undeclared param). PURE — the caller owns the write.
+		*
+		*  THE CLAMPED-STAMP LAW (2026-11-03, the flux-klein blank burn): a
+		*  recipe picked under a clamping envelope writes the RECONCILED
+		*  stamp (a recipe's 50 composes to 8 under a 4-step distill — the
+		*  override reconcile's own law), so the departure compares held
+		*  against the stamp the pick WROTE — the same derivation the pill
+		*  lights by (activeRecipeId: "the stamp the pill DERIVES must be
+		*  the stamp the pick WRITES") — never the row's RAW defaults. The
+		*  raw comparison made a clamped pick UNDEPARTABLE: held carried
+		*  the clamp (8/2), the raw stamps (50/4) never matched, the blank
+		*  wrote an empty frame, and the clamped values stayed stated
+		*  forever with no error anywhere. A key whose derived stamp the
+		*  reconcile dropped (nothing was written) has nothing to depart. */
+		function recipeDeparturePatch(spec, row, held) {
+			const written = axisPickPatch(spec, row, held);
 			const patch = {};
-			for (const [k, v] of Object.entries(row.defaults)) {
+			for (const k of Object.keys(row.defaults)) {
 				if (k === "model") continue;
-				if (held !== void 0 && deepEqualJson(held[k], v)) patch[k] = null;
+				if (!(k in written)) continue;
+				if (held !== void 0 && deepEqualJson(held[k], written[k])) patch[k] = null;
 			}
 			return patch;
 		}
@@ -10704,7 +10857,7 @@ window.__ModuleLoader__.load({
 		/** THE MIRROR'S RESOLVED SURFACE (the tts lockout cure, 2026-11-10):
 		*  the doc's lane surface — family base ∪ variant additions ∪ cell
 		*  additions — the SAME merged surface the estate write door judges
-		*  (cardsRegistry admitFamily's laneSurfaceOf call) and the form's
+		*  (cardsRegistry admitStageRelations' laneSurfaceOf call) and the form's
 		*  own visibility read (fieldOnLane). The mirror judged the FAMILY
 		*  BASE projection alone (the served `params`) and refused the
 		*  variant's own persona picker ('voice') on the 0.6B customvoice
@@ -10979,8 +11132,8 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:packages/web/card-base/src/card.module.css.mjs
-		const css$4 = ".emezXW_specForm :where(input,textarea,select,button){box-sizing:border-box}.emezXW_specForm{flex-direction:column;gap:12px;display:flex}.emezXW_specGroup{flex-direction:column;gap:8px;display:flex}.emezXW_modelAxes{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;display:grid}.emezXW_modelAxes .emezXW_specGroupTitle{grid-column:1/-1;margin-bottom:0}.emezXW_modelAxes>.emezXW_specHint{grid-column:1/-1}.emezXW_axesPair{grid-column:1/-1;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start;gap:10px;display:grid}.emezXW_axesPair>*{min-width:0}.emezXW_specGroupTitle{color:var(--dsw-alias-label-secondary);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.emezXW_specField{flex-direction:column;gap:6px;display:flex}.emezXW_specFieldKey{color:var(--dsw-alias-label-secondary);align-items:center;min-height:20px;font-size:12px;display:flex}.emezXW_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.emezXW_specHint{color:var(--dsw-alias-label-secondary);font-size:11px}.emezXW_laneWarn{border-top:1px solid var(--dsw-alias-state-critical,#e5484d);border-bottom:1px solid var(--dsw-alias-state-critical,#e5484d);color:var(--dsw-alias-state-critical,#e5484d);margin:0;padding:6px 0;font-size:11px;line-height:1.5}.emezXW_laneWarn p{margin:0}.emezXW_specInfo{border:1px solid var(--dsw-alias-label-secondary);width:12px;height:12px;color:var(--dsw-alias-label-secondary);cursor:help;vertical-align:middle;user-select:none;border-radius:50%;flex:none;justify-content:center;align-items:center;margin-left:5px;font-family:Georgia,Times New Roman,serif;font-size:9px;font-style:italic;line-height:1;display:inline-flex}.emezXW_specFieldHead{justify-content:space-between;align-items:center;gap:6px;display:flex}.emezXW_specDice{width:20px;height:20px;color:var(--dsw-alias-label-secondary);cursor:pointer;opacity:.65;background:0 0;border:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.emezXW_specDice:hover{opacity:1}.emezXW_specDiceOn{color:var(--dsw-alias-accent-primary,#4a7dbd);opacity:1}select option{color:canvastext;background:canvas}.emezXW_specSelect{color-scheme:light;background:var(--dsw-alias-interactive-bg-hover);border:.5px solid var(--dsw-alias-border-l2);box-sizing:border-box;color:inherit;font:inherit;text-overflow:ellipsis;white-space:nowrap;border-radius:6px;width:100%;min-width:0;padding:5px 8px;font-size:13px;display:block;overflow:hidden}.emezXW_specSelectText{text-overflow:ellipsis;white-space:nowrap;min-width:0;display:block;overflow:hidden}.emezXW_specSelectStatic{cursor:default;justify-content:center;display:flex}.emezXW_specSliderRow{align-items:center;gap:8px;display:flex}.emezXW_specSlider{accent-color:var(--dsw-alias-accent,#3b82f6);flex:1}.emezXW_specSliderInput{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;width:7ch;min-width:6ch;font-size:12px}.emezXW_specSliderValue{color:var(--dsw-alias-label-secondary);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.emezXW_specSliderZero{color:var(--dsw-alias-label-secondary);white-space:nowrap;text-overflow:ellipsis;max-width:22ch;font-size:11px;overflow:hidden}.emezXW_specTextarea{background:var(--dsw-alias-interactive-bg-hover);border:.5px solid var(--dsw-alias-border-l2);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.emezXW_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.emezXW_squareOff{opacity:.5;pointer-events:none}.emezXW_squareBox{border:.5px solid var(--dsw-alias-border-l2);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.emezXW_squareOver{border-color:var(--dsw-alias-border-l3);box-shadow:0 0 0 2px var(--dsw-alias-border-l1)}.emezXW_squareThumb{object-fit:cover;width:100%;height:100%}.emezXW_squareMesh{pointer-events:none;position:absolute;inset:0}.emezXW_squareGlyph{color:var(--dsw-alias-label-tertiary)}.emezXW_squareEmptyIcon{align-items:center;display:flex}.emezXW_squareHeld{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;max-width:100%;font-size:9px;overflow:hidden}.emezXW_squareActions{pointer-events:none;justify-content:flex-end;align-items:flex-end;padding:4px;display:flex;position:absolute;inset:0}.emezXW_squareActions>*{pointer-events:auto}.emezXW_squarePick{background:var(--dsw-alias-interactive-bg-hover-solid);border:.5px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;border-radius:999px;justify-content:center;align-items:center;width:22px;height:22px;padding:0;display:flex;position:absolute;top:4px;left:4px}.emezXW_squareBadge{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;max-width:100%;font-size:10px;line-height:17px;overflow:hidden}.emezXW_squareX{background:var(--dsw-alias-interactive-bg-hover-solid);border:.5px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.emezXW_squareLabel{color:var(--dsw-alias-label-primary);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.emezXW_squareMetric{color:var(--dsw-alias-label-tertiary);font-size:10px;line-height:17px}.emezXW_squareFileInput{display:none}.emezXW_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.emezXW_modHead{align-items:baseline;gap:8px;display:flex}.emezXW_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.emezXW_modHint{opacity:.45;font-size:9px}.emezXW_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.emezXW_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.emezXW_modTile:active{cursor:grabbing}.emezXW_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.emezXW_modTileStrength{opacity:.55;font-size:9px}.emezXW_modTileSteps{opacity:.55;font-variant-numeric:tabular-nums;font-size:9px}.emezXW_modAddSquare{border:1px dashed var(--dsw-alias-border-l3);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out), background-color var(--ds-transition-duration) var(--ds-ease-in-out);background:0 0;border-radius:8px;justify-content:center;align-items:center;width:64px;display:flex}.emezXW_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4);opacity:1}.emezXW_tileDragging{opacity:.5}.emezXW_modTileRecipe{cursor:default;border-style:dashed}.emezXW_modTileRecipe .emezXW_modTileStrength:after{content:\" · recipe\"}.emezXW_specChips{flex-wrap:wrap;gap:4px;display:flex}.emezXW_modLeafModal{width:min(760px,100vw - 32px);max-height:min(80vh,760px);overflow-y:auto}.emezXW_modLeafSplit{grid-template-columns:minmax(0,7fr) minmax(240px,5fr);align-items:start;gap:12px;display:grid}.emezXW_modLeafStage{min-width:0}.emezXW_modStageCaption{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}@media (width<=720px){.emezXW_modLeafSplit{grid-template-columns:minmax(0,1fr)}}.emezXW_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.emezXW_modLeafFields{gap:8px;display:grid}.emezXW_modLeafActions{gap:8px;display:flex}.emezXW_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.emezXW_modLeafError{color:#e06c5f;margin:0;font-size:11px}.emezXW_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.emezXW_pickRow{display:block}.emezXW_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out), background-color var(--ds-transition-duration) var(--ds-ease-in-out);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.emezXW_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.emezXW_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.emezXW_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.emezXW_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.emezXW_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.emezXW_sourceRow{flex-direction:column;display:flex}.emezXW_sourceRowErr{color:#e06c5f;word-break:break-word;margin:2px 0 0;font-size:11px}.emezXW_sourceRowBusy{color:var(--dsw-alias-label-secondary);word-break:break-word;margin:2px 0 0;font-size:11px}.emezXW_specSlotRow{flex-wrap:wrap;align-items:flex-start;gap:8px;display:flex}.emezXW_specGrid{align-items:start;gap:8px;display:grid}.emezXW_specSlotCell{flex-direction:column;gap:4px;display:flex}.emezXW_inputRail{gap:10px}.emezXW_specStack{flex-direction:column;gap:6px;display:flex}[data-stack-add] .emezXW_squareBox{border-style:dashed}.emezXW_sz14{flex:none;width:14px;height:14px}.emezXW_wireDialog{width:min(448px,100vw - 32px);max-height:60vh;overflow-y:auto}.emezXW_wireUnwire{text-align:left;cursor:pointer;border:0;border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);width:100%;color:var(--dsw-alias-state-error-primary);background:0 0;align-items:center;gap:8px;padding:8px 12px;font-size:11px;display:flex}.emezXW_wireUnwire:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.emezXW_wireList{margin:0;padding:0;list-style:none}.emezXW_wireList>li+li{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent)}.emezXW_wireEmpty{color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);padding:12px;font-size:11px}.emezXW_wireOption{text-align:left;cursor:pointer;width:100%;color:var(--dsw-alias-label-primary);background:0 0;border:0;align-items:center;gap:8px;padding:8px 12px;display:flex}.emezXW_wireOption:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.emezXW_wireSelected{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent)}.emezXW_wireIdx{font-variant-numeric:tabular-nums;background:color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;font-size:9px;font-weight:700;display:flex}.emezXW_wireThumb{object-fit:cover;border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);border-radius:4px;flex:none;width:32px;height:32px}.emezXW_wireThumbFallback{border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;display:flex}.emezXW_wireMeta{flex:1;min-width:0}.emezXW_wireTitle{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-primary);font-size:11px;font-weight:500;overflow:hidden}.emezXW_wireOut{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);margin-left:4px;font-size:9px}.emezXW_wireSub{text-overflow:ellipsis;white-space:nowrap;font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);font-size:9px;overflow:hidden}.emezXW_wiredTag{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);color:var(--dsw-alias-brand-primary);border-radius:4px;flex:none;padding:2px 6px;font-size:9px;font-weight:600}.emezXW_specLinkBtn{font:inherit;cursor:pointer;color:var(--dsw-alias-state-business-primary);background:0 0;border:none;padding:0;text-decoration:underline}.emezXW_specLinkBtn:disabled{cursor:default;color:var(--dsw-alias-label-tertiary);text-decoration:none}.emezXW_specGrid :where(input,select){width:100%}.emezXW_tipAnchor{display:inline-flex}.emezXW_tipFill{display:block}.emezXW_ctlRow,.emezXW_ctlRowSm{color:var(--dsw-alias-label-secondary);justify-content:space-between;align-items:center;gap:8px;font-size:10px;display:flex}.emezXW_ctlRow select,.emezXW_ctlRowSm select{font-size:10px}.emezXW_sectionLabel{justify-content:space-between;align-items:baseline;gap:8px;display:flex}.emezXW_sectionLabelText{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.emezXW_sectionLabelTail{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.emezXW_emptyPane,.emezXW_emptyOverlay{text-align:center;flex-direction:column;justify-content:center;align-items:center;gap:6px;display:flex}.emezXW_emptyPane{box-sizing:border-box;width:100%;height:100%;padding:24px 0}.emezXW_emptyOverlay{pointer-events:none;padding:24px;position:absolute;inset:0}.emezXW_emptyTitle{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px;font-weight:500}.emezXW_emptyHint{color:var(--dsw-alias-label-tertiary);max-width:25rem;margin:0;font-size:10px;line-height:1.6}.emezXW_paneHeaderPreview{flex:none;align-items:baseline;gap:6px;padding-bottom:6px;display:flex}.emezXW_paneHeaderStrip{border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);align-items:center;gap:8px;padding:4px 10px;display:flex}.emezXW_paneTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:10px;font-weight:600}.emezXW_paneMeta{color:var(--dsw-alias-label-tertiary);font-size:9px}.emezXW_paneMetaNum{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.emezXW_paneHint{color:var(--dsw-alias-label-tertiary);margin-left:auto;font-size:9px}.emezXW_paneShell{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);border-radius:6px;flex:none;overflow:hidden}@keyframes emezXW_panePulse{0%,to{opacity:1}50%{opacity:.45}}.emezXW_skeleton{background:color-mix(in srgb, var(--dsw-alias-label-secondary) 22%, transparent);border-radius:6px;animation:1.6s ease-in-out infinite emezXW_panePulse}.emezXW_pickSearch{margin:0 0 8px}.emezXW_pickSearchInput{background:var(--dsw-alias-interactive-bg-default,transparent);border:1px solid var(--dsw-alias-border-l2);box-sizing:border-box;color:var(--dsw-alias-label-primary);border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.emezXW_pickSearchInput:focus{border-color:var(--dsw-alias-border-l4);outline:none}";
-		const tagId$4 = "@melite/card-base/card.module.css@11399026";
+		const css$4 = ".emezXW_specForm :where(input,textarea,select,button){box-sizing:border-box}.emezXW_specForm{flex-direction:column;gap:12px;display:flex}.emezXW_specGroup{flex-direction:column;gap:8px;display:flex}.emezXW_modelAxes{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;display:grid}.emezXW_modelAxes .emezXW_specGroupTitle{grid-column:1/-1;margin-bottom:0}.emezXW_modelAxes>.emezXW_specHint{grid-column:1/-1}.emezXW_axesPair{grid-column:1/-1;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start;gap:10px;display:grid}.emezXW_axesPair>*{min-width:0}.emezXW_specGroupTitle{color:var(--dsw-alias-label-secondary);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.emezXW_specField{flex-direction:column;gap:6px;display:flex}.emezXW_specFieldKey{color:var(--dsw-alias-label-secondary);align-items:center;min-height:20px;font-size:12px;display:flex}.emezXW_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.emezXW_specHint{color:var(--dsw-alias-label-secondary);font-size:11px}.emezXW_laneWarn{border-top:1px solid var(--dsw-alias-state-critical,#e5484d);border-bottom:1px solid var(--dsw-alias-state-critical,#e5484d);color:var(--dsw-alias-state-critical,#e5484d);margin:0;padding:6px 0;font-size:11px;line-height:1.5}.emezXW_laneWarn p{margin:0}.emezXW_specInfo{border:1px solid var(--dsw-alias-label-secondary);width:12px;height:12px;color:var(--dsw-alias-label-secondary);cursor:help;vertical-align:middle;user-select:none;border-radius:50%;flex:none;justify-content:center;align-items:center;margin-left:5px;font-family:Georgia,Times New Roman,serif;font-size:9px;font-style:italic;line-height:1;display:inline-flex}.emezXW_specFieldHead{justify-content:space-between;align-items:center;gap:6px;display:flex}.emezXW_specDice{width:20px;height:20px;color:var(--dsw-alias-label-secondary);cursor:pointer;opacity:.65;background:0 0;border:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.emezXW_specDice:hover{opacity:1}.emezXW_specDiceOn{color:var(--dsw-alias-accent-primary,#4a7dbd);opacity:1}select option{color:canvastext;background:canvas}.emezXW_specSelect{color-scheme:light;background:var(--dsw-alias-interactive-bg-hover);border:.5px solid var(--dsw-alias-border-l2);box-sizing:border-box;color:inherit;font:inherit;text-overflow:ellipsis;white-space:nowrap;border-radius:6px;width:100%;min-width:0;padding:5px 8px;font-size:13px;display:block;overflow:hidden}.emezXW_specSelectText{text-overflow:ellipsis;white-space:nowrap;min-width:0;display:block;overflow:hidden}.emezXW_specSelectStatic{cursor:default;justify-content:center;display:flex}.emezXW_specSliderRow{align-items:center;gap:8px;display:flex}.emezXW_specSlider{accent-color:var(--dsw-alias-accent,#3b82f6);flex:1}.emezXW_specSliderInput{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;width:7ch;min-width:6ch;font-size:12px}.emezXW_specSliderValue{color:var(--dsw-alias-label-secondary);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.emezXW_specSliderZero{color:var(--dsw-alias-label-secondary);white-space:nowrap;text-overflow:ellipsis;max-width:22ch;font-size:11px;overflow:hidden}.emezXW_specTextarea{background:var(--dsw-alias-interactive-bg-hover);border:.5px solid var(--dsw-alias-border-l2);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.emezXW_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.emezXW_squareOff{opacity:.5;pointer-events:none}.emezXW_squareBox{border:.5px solid var(--dsw-alias-border-l2);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.emezXW_squareOver{border-color:var(--dsw-alias-border-l3);box-shadow:0 0 0 2px var(--dsw-alias-border-l1)}.emezXW_squareThumb{object-fit:cover;width:100%;height:100%}.emezXW_squareMesh{pointer-events:none;position:absolute;inset:0}.emezXW_squareGlyph{color:var(--dsw-alias-label-tertiary)}.emezXW_squareEmptyIcon{align-items:center;display:flex}.emezXW_squareHeld{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;max-width:100%;font-size:9px;overflow:hidden}.emezXW_squareActions{pointer-events:none;justify-content:flex-end;align-items:flex-end;padding:4px;display:flex;position:absolute;inset:0}.emezXW_squareActions>*{pointer-events:auto}.emezXW_squarePick{background:var(--dsw-alias-interactive-bg-hover-solid);border:.5px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;border-radius:999px;justify-content:center;align-items:center;width:22px;height:22px;padding:0;display:flex;position:absolute;top:4px;left:4px}.emezXW_squareBadge{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;max-width:100%;font-size:10px;line-height:17px;overflow:hidden}.emezXW_squareX{background:var(--dsw-alias-interactive-bg-hover-solid);border:.5px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.emezXW_squareLabel{color:var(--dsw-alias-label-primary);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.emezXW_squareMetric{color:var(--dsw-alias-label-tertiary);font-size:10px;line-height:17px}.emezXW_squareFileInput{display:none}.emezXW_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.emezXW_modHead{align-items:baseline;gap:8px;display:flex}.emezXW_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.emezXW_modHint{opacity:.45;font-size:9px}.emezXW_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.emezXW_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.emezXW_modTile:active{cursor:grabbing}.emezXW_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.emezXW_modTileStrength{opacity:.55;font-size:9px}.emezXW_modTileSteps{opacity:.55;font-variant-numeric:tabular-nums;font-size:9px}.emezXW_modAddSquare{border:1px dashed var(--dsw-alias-border-l3);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out), background-color var(--ds-transition-duration) var(--ds-ease-in-out);background:0 0;border-radius:8px;justify-content:center;align-items:center;width:64px;display:flex}.emezXW_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4);opacity:1}.emezXW_tileDragging{opacity:.5}.emezXW_modTileRecipe{cursor:default;border-style:dashed}.emezXW_modTileRecipe .emezXW_modTileStrength:after{content:\" · recipe\"}.emezXW_specChips{flex-wrap:wrap;gap:4px;display:flex}.emezXW_modLeafModal{width:min(760px,100vw - 32px);max-height:min(80vh,760px);overflow-y:auto}.emezXW_modLeafSplit{grid-template-columns:minmax(0,7fr) minmax(240px,5fr);align-items:start;gap:12px;display:grid}.emezXW_modLeafStage{min-width:0}.emezXW_modStageCaption{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}@media (width<=720px){.emezXW_modLeafSplit{grid-template-columns:minmax(0,1fr)}}.emezXW_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.emezXW_modLeafFields{gap:8px;display:grid}.emezXW_modLeafActions{gap:8px;display:flex}.emezXW_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.emezXW_modLeafError{color:#e06c5f;margin:0;font-size:11px}.emezXW_modLeafHint{opacity:.65;font-size:11px}.emezXW_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.emezXW_pickRow{display:block}.emezXW_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out), background-color var(--ds-transition-duration) var(--ds-ease-in-out);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.emezXW_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.emezXW_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.emezXW_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.emezXW_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.emezXW_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.emezXW_sourceRow{flex-direction:column;display:flex}.emezXW_sourceRowErr{color:#e06c5f;word-break:break-word;margin:2px 0 0;font-size:11px}.emezXW_sourceRowBusy{color:var(--dsw-alias-label-secondary);word-break:break-word;margin:2px 0 0;font-size:11px}.emezXW_specSlotRow{flex-wrap:wrap;align-items:flex-start;gap:8px;display:flex}.emezXW_specGrid{align-items:start;gap:8px;display:grid}.emezXW_specSlotCell{flex-direction:column;gap:4px;display:flex}.emezXW_inputRail{gap:10px}.emezXW_specStack{flex-direction:column;gap:6px;display:flex}[data-stack-add] .emezXW_squareBox{border-style:dashed}.emezXW_sz14{flex:none;width:14px;height:14px}.emezXW_wireDialog{width:min(448px,100vw - 32px);max-height:60vh;overflow-y:auto}.emezXW_wireUnwire{text-align:left;cursor:pointer;border:0;border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);width:100%;color:var(--dsw-alias-state-error-primary);background:0 0;align-items:center;gap:8px;padding:8px 12px;font-size:11px;display:flex}.emezXW_wireUnwire:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.emezXW_wireList{margin:0;padding:0;list-style:none}.emezXW_wireList>li+li{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent)}.emezXW_wireEmpty{color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);padding:12px;font-size:11px}.emezXW_wireOption{text-align:left;cursor:pointer;width:100%;color:var(--dsw-alias-label-primary);background:0 0;border:0;align-items:center;gap:8px;padding:8px 12px;display:flex}.emezXW_wireOption:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.emezXW_wireSelected{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent)}.emezXW_wireIdx{font-variant-numeric:tabular-nums;background:color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;font-size:9px;font-weight:700;display:flex}.emezXW_wireThumb{object-fit:cover;border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);border-radius:4px;flex:none;width:32px;height:32px}.emezXW_wireThumbFallback{border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;display:flex}.emezXW_wireMeta{flex:1;min-width:0}.emezXW_wireTitle{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-primary);font-size:11px;font-weight:500;overflow:hidden}.emezXW_wireOut{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);margin-left:4px;font-size:9px}.emezXW_wireSub{text-overflow:ellipsis;white-space:nowrap;font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);font-size:9px;overflow:hidden}.emezXW_wiredTag{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);color:var(--dsw-alias-brand-primary);border-radius:4px;flex:none;padding:2px 6px;font-size:9px;font-weight:600}.emezXW_specLinkBtn{font:inherit;cursor:pointer;color:var(--dsw-alias-state-business-primary);background:0 0;border:none;padding:0;text-decoration:underline}.emezXW_specLinkBtn:disabled{cursor:default;color:var(--dsw-alias-label-tertiary);text-decoration:none}.emezXW_specGrid :where(input,select){width:100%}.emezXW_tipAnchor{display:inline-flex}.emezXW_tipFill{display:block}.emezXW_ctlRow,.emezXW_ctlRowSm{color:var(--dsw-alias-label-secondary);justify-content:space-between;align-items:center;gap:8px;font-size:10px;display:flex}.emezXW_ctlRow select,.emezXW_ctlRowSm select{font-size:10px}.emezXW_sectionLabel{justify-content:space-between;align-items:baseline;gap:8px;display:flex}.emezXW_sectionLabelText{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.emezXW_sectionLabelTail{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.emezXW_emptyPane,.emezXW_emptyOverlay{text-align:center;flex-direction:column;justify-content:center;align-items:center;gap:6px;display:flex}.emezXW_emptyPane{box-sizing:border-box;width:100%;height:100%;padding:24px 0}.emezXW_emptyOverlay{pointer-events:none;padding:24px;position:absolute;inset:0}.emezXW_emptyTitle{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px;font-weight:500}.emezXW_emptyHint{color:var(--dsw-alias-label-tertiary);max-width:25rem;margin:0;font-size:10px;line-height:1.6}.emezXW_paneHeaderPreview{flex:none;align-items:baseline;gap:6px;padding-bottom:6px;display:flex}.emezXW_paneHeaderStrip{border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);align-items:center;gap:8px;padding:4px 10px;display:flex}.emezXW_paneTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:10px;font-weight:600}.emezXW_paneMeta{color:var(--dsw-alias-label-tertiary);font-size:9px}.emezXW_paneMetaNum{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.emezXW_paneHint{color:var(--dsw-alias-label-tertiary);margin-left:auto;font-size:9px}.emezXW_paneShell{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);border-radius:6px;flex:none;overflow:hidden}@keyframes emezXW_panePulse{0%,to{opacity:1}50%{opacity:.45}}.emezXW_skeleton{background:color-mix(in srgb, var(--dsw-alias-label-secondary) 22%, transparent);border-radius:6px;animation:1.6s ease-in-out infinite emezXW_panePulse}.emezXW_pickSearch{margin:0 0 8px}.emezXW_pickSearchInput{background:var(--dsw-alias-interactive-bg-default,transparent);border:1px solid var(--dsw-alias-border-l2);box-sizing:border-box;color:var(--dsw-alias-label-primary);border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.emezXW_pickSearchInput:focus{border-color:var(--dsw-alias-border-l4);outline:none}";
+		const tagId$4 = "@melite/card-base/card.module.css@4ce55dbc";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$4) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/card-base";
@@ -11006,6 +11159,7 @@ window.__ModuleLoader__.load({
 			"modLeafActions": "emezXW_modLeafActions",
 			"modLeafError": "emezXW_modLeafError",
 			"modLeafFields": "emezXW_modLeafFields",
+			"modLeafHint": "emezXW_modLeafHint",
 			"modLeafModal": "emezXW_modLeafModal",
 			"modLeafSplit": "emezXW_modLeafSplit",
 			"modLeafStage": "emezXW_modLeafStage",
@@ -13165,17 +13319,54 @@ window.__ModuleLoader__.load({
 			lazySource = source;
 		}
 		/** The bound namespaces — LOUD when unbound, and the LAZY BIND'S
-		*  MOUTH: the first verb after the mounts land pulls the armed
-		*  getter once (order-proof — by first use, the mounter has long
-		*  booted); a verb before the mounts (or on a host without the
-		*  estate plugin) meets the loud wiring refusal, never a hang and
-		*  never a silent fallback. */
+		*  MOUTH: every verb pulls the armed getter once (order-proof — by
+		*  first use, the mounter has long booted) and REBINDS when the live
+		*  namespaces are a different mount generation (the 2026-11-01
+		*  from-media burn: the bind cached the namespace OBJECTS once, and a
+		*  re-applied mounter deletes the old generation's method installs on
+		*  dispose — the cached facade kept answering `media.list is not a
+		*  function` while the live mount served fine). A verb before the
+		*  mounts (or on a host without the estate plugin) meets the loud
+		*  wiring refusal, never a hang and never a silent fallback. */
 		function estateRemote() {
-			if (bound === void 0 && lazySource !== void 0) try {
-				bindEstateRemoteFromRemote(lazySource());
-			} catch (wiringError) {}
+			if (lazySource !== void 0) {
+				const live = pullLiveNamespaces();
+				if (live !== void 0 && (bound === void 0 || generationChanged(live, bound))) bindEstateRemote(live);
+			}
 			if (bound === void 0) throw new Error("estate remote not mounted — the verbs ride ctx.remote (the TYPERT_REMOTE contributions must mount before any call)");
 			return bound;
+		}
+		/** One live read through the armed getter, COMPLETE-OR-NOTHING: the
+		*  four namespaces (manage stays optional — studios that never manage
+		*  keep their inject lists) or undefined when any core one is absent
+		*  (a mount generation still landing — the caller keeps its last-good
+		*  bind and the missing namespace's own guard names the wiring fault
+		*  at the verb). */
+		function pullLiveNamespaces() {
+			const source = lazySource;
+			if (source === void 0) return void 0;
+			let live;
+			try {
+				live = source();
+			} catch {
+				return;
+			}
+			if (live.bench === void 0 || live.drafts === void 0 || live.runs === void 0 || live.media === void 0) return void 0;
+			return {
+				bench: live.bench,
+				drafts: live.drafts,
+				runs: live.runs,
+				media: live.media,
+				...live.manage === void 0 ? {} : { manage: live.manage }
+			};
+		}
+		/** True when the live read is a different mount generation than the
+		*  bound one (any namespace identity changed — the re-apply signal).
+		*  The BOUND pair rides as an argument, narrowed by the caller's
+		*  `bound === undefined ||` short-circuit — the predicate is total
+		*  and owns no unbound guard (the audit-2026-10-13 dead-code law). */
+		function generationChanged(live, bound) {
+			return live.bench !== bound.bench || live.drafts !== bound.drafts || live.runs !== bound.runs || live.media !== bound.media;
 		}
 		/** THE BIND SEAM, HARNESS-SHAPED (2026-09-29, the fourth lane
 		*  receipt): the client-bundle preset inlines card-base into every
@@ -14781,7 +14972,7 @@ window.__ModuleLoader__.load({
 				if (active === void 0) return;
 				const row = pillRows.find((r) => r.id === active);
 				if (row === void 0) return;
-				onPick(recipeDeparturePatch(row, values));
+				onPick(recipeDeparturePatch(spec, row, values));
 			};
 			const recipeRows = [{
 				id: "",
@@ -14966,7 +15157,7 @@ window.__ModuleLoader__.load({
 		*  over the USER layer (the settings law: presence IS the override
 		*  mark, the reset chip removes it). The constructor OWNS the square
 		*  provider (no call site wires it, no call site can forget it). */
-		function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference, omitInputRail, omitFields, omitRecipeRow, mutedViolations }) {
+		function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, orbitFace, paintReference, omitInputRail, omitFields, omitRecipeRow, mutedViolations }) {
 			const fields = omitFields !== void 0 ? fieldsOf(spec).filter((f) => !omitFields(f.name)) : fieldsOf(spec);
 			const value = resolveValue(spec, user, base);
 			const fieldByName = new Map(fields.map((f) => [f.name, f]));
@@ -15257,8 +15448,10 @@ window.__ModuleLoader__.load({
 				...onPatch !== void 0 ? { onPatch } : {},
 				...paintFace !== void 0 ? { paintFace } : {},
 				...bboxFace !== void 0 ? { bboxFace } : {},
+				...orbitFace !== void 0 ? { orbitFace } : {},
 				...paintReference !== void 0 ? { paintReference } : {},
 				...wire?.loadMedia !== void 0 ? { loadMedia: wire.loadMedia } : {},
+				...wire?.loadChainRuns !== void 0 ? { loadChainRuns: wire.loadChainRuns } : {},
 				...wire?.candidates !== void 0 ? { candidates: wire.candidates } : {},
 				...wire?.candidatesFor !== void 0 ? { candidatesFor: wire.candidatesFor } : {}
 			}) : null, own.wireMenu);
@@ -15338,6 +15531,96 @@ window.__ModuleLoader__.load({
 				label: titleCaseId(draftOption) + " (unregistered)"
 			});
 			return rows;
+		}
+		/** THE CHAIN-RUN PICKER (the upscale leaf's `chain-run` field — the
+		*  free-text store name burn): the seat renders a REAL picker over
+		*  the LIVE chain-store runs (the loader rides the host's wire, the
+		*  same injection the media rows ride) — HUMAN-LABELED rows (run id,
+		*  lane, scene count), the drifted/pasted value stays VISIBLE marked
+		*  unregistered (catalogRows' own law), and the free-text affordance
+		*  survives as the EXPLICIT advanced fallback beneath the menu. A
+		*  host without the runs lane (loader absent) or a failed load
+		*  degrades to the plain text input — the field never blocks, never
+		*  fabricates. */
+		function ChainRunPicker(props) {
+			const [rows, setRows] = (0, react.useState)(null);
+			const [failed, setFailed] = (0, react.useState)(false);
+			const load = props.loadChainRuns;
+			(0, react.useEffect)(() => {
+				if (load === void 0) return;
+				const ctl = new AbortController();
+				load(ctl.signal).then((r) => {
+					setRows(r);
+				}).catch((e) => {
+					if (ctl.signal.aborted) return;
+					setFailed(true);
+				});
+				return () => {
+					ctl.abort();
+				};
+			}, [load]);
+			const current = typeof props.value === "string" ? props.value : "";
+			const edit = (v) => {
+				props.onEdit(props.f.name, v);
+			};
+			const degraded = load === void 0 || failed;
+			return (0, react.createElement)("div", {
+				className: card_module_css_default.modField,
+				"data-chain-run-picker": props.f.name,
+				"data-chain-runs-loaded": failed ? "failed" : rows !== null ? "true" : "false"
+			}, degraded ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+				type: "text",
+				value: current,
+				placeholder: props.f.placeholder ?? "",
+				title: props.f.tooltip,
+				"aria-label": props.f.label,
+				onChange: (e) => {
+					edit(e.target.value);
+				}
+			}) : [
+				(0, react.createElement)(SpecMenuSelect, {
+					key: "menu",
+					label: props.f.label,
+					value: current,
+					rows: (() => {
+						const menuRows = [{
+							id: "",
+							label: "— pick —"
+						}];
+						for (const c of rows ?? []) menuRows.push({
+							id: c.runId,
+							label: chromeCopy.chainRunOptionLabel({
+								run: c.runId,
+								kind: c.variant,
+								scenes: c.scenes
+							})
+						});
+						if (current !== "" && menuRows.every((r) => r.id !== current)) menuRows.push({
+							id: current,
+							label: current + " (unregistered)"
+						});
+						return menuRows;
+					})(),
+					...props.f.tooltip !== void 0 && props.f.tooltip !== "" ? { title: props.f.tooltip } : {},
+					onPick: (id) => {
+						edit(id);
+					}
+				}),
+				rows !== null && rows.length === 0 ? (0, react.createElement)("span", {
+					key: "empty",
+					className: card_module_css_default.modLeafHint
+				}, chromeCopy.chainRunEmptyNote) : null,
+				(0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+					key: "advanced",
+					type: "text",
+					value: current,
+					placeholder: chromeCopy.chainRunAdvancedLabel,
+					"aria-label": chromeCopy.chainRunAdvancedLabel,
+					onChange: (e) => {
+						edit(e.target.value);
+					}
+				})
+			]);
 		}
 		/** The ride-through projection of an entry: everything the modal
 		*  does NOT own, serialized. Two entries are strangers when their
@@ -15825,11 +16108,15 @@ window.__ModuleLoader__.load({
 					const scalar = scalarKeyOf(k);
 					const strength = typeof entry[scalar] === "number" ? entry[scalar] : option !== null && option.defaults !== void 0 && typeof option.defaults[scalar] === "number" ? option.defaults[scalar] : void 0;
 					const steps = typeof entry["steps"] === "number" ? entry["steps"] : option !== null && option.defaults !== void 0 && typeof option.defaults["steps"] === "number" ? option.defaults["steps"] : void 0;
-					const picked = (k.fields ?? []).find((f) => f.type === "select" && typeof entry[f.name] === "string" && entry[f.name] !== "");
-					const pickedLabel = picked === void 0 ? null : (picked.options ?? []).map((o) => typeof o === "string" ? {
-						value: o,
-						label: o
-					} : o).find((o) => o.value === entry[picked.name])?.label ?? null;
+					const picked = (k.fields ?? []).find((f) => (f.type === "select" || f.type === "file") && typeof entry[f.name] === "string" && entry[f.name] !== "");
+					const pickedLabel = picked === void 0 ? null : (() => {
+						const row = (picked.options ?? []).map((o) => typeof o === "string" ? {
+							value: o,
+							label: o
+						} : o).find((o) => o.value === entry[picked.name]);
+						if (row !== void 0) return row.label;
+						return picked.type === "file" && (picked.options ?? []).length === 0 ? String(entry[picked.name]) : null;
+					})();
 					return (0, react.createElement)(ModTile, {
 						key: tileIds[i],
 						tileId: tileIds[i],
@@ -15914,8 +16201,10 @@ window.__ModuleLoader__.load({
 				leafError,
 				paintFace: props.paintFace,
 				bboxFace: props.bboxFace,
+				...props.orbitFace !== void 0 ? { orbitFace: props.orbitFace } : {},
 				paintReferenceValue: typeof props.paintReference === "string" ? String(values[props.paintReference] ?? "") : "",
 				...props.loadMedia !== void 0 ? { loadMedia: props.loadMedia } : {},
+				...props.loadChainRuns !== void 0 ? { loadChainRuns: props.loadChainRuns } : {},
 				...props.candidates !== void 0 ? { candidates: props.candidates } : {},
 				...props.candidatesFor !== void 0 ? { candidatesFor: props.candidatesFor } : {},
 				kindScalars: {
@@ -15968,6 +16257,19 @@ window.__ModuleLoader__.load({
 			const hidden = props.hideFields;
 			const bboxCanvas = props.bboxFace !== void 0 && k.leaf_face === "bbox-canvas";
 			const paintField = props.paintFace !== void 0 && k.leaf_face === "paint-canvas" ? (k.fields ?? []).find((f) => f.type === "image" || f.wtype === "image") : void 0;
+			const orbitCanvas = props.orbitFace !== void 0 && k.leaf_face === "orbit-canvas";
+			const draftPose = () => {
+				const num = (v, fb) => typeof v === "number" && Number.isFinite(v) ? v : fb;
+				const fieldDefault = (name, fb) => {
+					const f = (k.fields ?? []).find((ff) => ff.name === name);
+					return typeof f?.default === "number" && Number.isFinite(f.default) ? f.default : fb;
+				};
+				return {
+					orbit: num(onDraft.draftParams["orbit"], fieldDefault("orbit", 0)),
+					tilt: num(onDraft.draftParams["tilt"], fieldDefault("tilt", 0)),
+					dolly: num(onDraft.draftParams["dolly"], fieldDefault("dolly", 1))
+				};
+			};
 			const facePresent = bboxCanvas || paintField !== void 0;
 			const draftQuad = () => {
 				const quad = [
@@ -16087,9 +16389,9 @@ window.__ModuleLoader__.load({
 						onDraft.setDraftSteps(e.target.value);
 					}
 				}));
-			})() : null) : bboxCanvas || paintField !== void 0 ? (0, react.createElement)("div", { className: card_module_css_default.modLeafSplit }, (0, react.createElement)("div", {
+			})() : null) : bboxCanvas || paintField !== void 0 || orbitCanvas ? (0, react.createElement)("div", { className: card_module_css_default.modLeafSplit }, (0, react.createElement)("div", {
 				className: card_module_css_default.modLeafStage,
-				"data-leaf-stage": bboxCanvas ? "bbox" : "paint"
+				"data-leaf-stage": bboxCanvas ? "bbox" : orbitCanvas ? "orbit" : "paint"
 			}, bboxCanvas && props.bboxFace !== void 0 ? (0, react.createElement)("div", {
 				className: card_module_css_default.modStageCaption,
 				"data-stage-caption": "region"
@@ -16112,12 +16414,35 @@ window.__ModuleLoader__.load({
 						[paintField.name]: dataUrl
 					});
 				}
+			})) : null, orbitCanvas && props.orbitFace !== void 0 ? (0, react.createElement)("div", {
+				className: card_module_css_default.modField,
+				"data-leaf-canvas": "orbit"
+			}, (0, react.createElement)(props.orbitFace, {
+				value: draftPose(),
+				onChange: (pose) => {
+					onDraft.setDraftParams({
+						...onDraft.draftParams,
+						orbit: pose.orbit,
+						tilt: pose.tilt,
+						dolly: pose.dolly
+					});
+				}
 			})) : null), (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, k.section !== void 0 ? (0, react.createElement)("div", {
 				className: card_module_css_default.modStageCaption,
 				"data-stage-caption": "filter"
 			}, k.section) : null, leafFields.map((f) => (0, react.createElement)("div", { key: f.name }, (() => {
 				const sq = own.square(f);
-				const atom = (0, react.createElement)(SpecAtom, {
+				const atom = f.type === "chain-run" ? (0, react.createElement)(ChainRunPicker, {
+					f,
+					value: onDraft.draftParams[f.name],
+					onEdit: (name, v) => {
+						onDraft.setDraftParams({
+							...onDraft.draftParams,
+							[name]: coerceFieldEdit(f, v)
+						});
+					},
+					...props.loadChainRuns !== void 0 ? { loadChainRuns: props.loadChainRuns } : {}
+				}) : (0, react.createElement)(SpecAtom, {
 					f,
 					value: onDraft.draftParams[f.name],
 					onEdit: (name, v) => {
@@ -16135,7 +16460,17 @@ window.__ModuleLoader__.load({
 				"data-stage-caption": "filter"
 			}, k.section) : null, leafFields.map((f) => (0, react.createElement)("div", { key: f.name }, (() => {
 				const sq = own.square(f);
-				const atom = (0, react.createElement)(SpecAtom, {
+				const atom = f.type === "chain-run" ? (0, react.createElement)(ChainRunPicker, {
+					f,
+					value: onDraft.draftParams[f.name],
+					onEdit: (name, v) => {
+						onDraft.setDraftParams({
+							...onDraft.draftParams,
+							[name]: coerceFieldEdit(f, v)
+						});
+					},
+					...props.loadChainRuns !== void 0 ? { loadChainRuns: props.loadChainRuns } : {}
+				}) : (0, react.createElement)(SpecAtom, {
 					f,
 					value: onDraft.draftParams[f.name],
 					onEdit: (name, v) => {
@@ -16413,6 +16748,76 @@ window.__ModuleLoader__.load({
 		async function listRunRows(signal) {
 			const row = await unwrapRemote(estateRemote().runs.list("500", signal), "runs/list");
 			return (Array.isArray(row["runs"]) ? row["runs"] : []).filter((r) => typeof r === "object" && r !== null);
+		}
+		/** The record view of a wire value, or null when it is not an
+		*  object (the typed narrow — arrays answer null; the anti-sniff
+		*  census's 'type the value instead' law, no as-unknown double-cast). */
+		function isRecord(value) {
+			return typeof value === "object" && value !== null && !Array.isArray(value);
+		}
+		/** The chain stamp a status doc carries, or null: the FIRST stage
+		*  whose result_outputs hold a coherent chain_store ({run_name,
+		*  scenes, end_clip} — the registrar's stamp, read by the same walk
+		*  the execute door's chainStoreNameOf performs). */
+		function chainStampOfDoc(doc) {
+			const stages = Array.isArray(doc["stages"]) ? doc["stages"] : [];
+			for (const st of stages) {
+				const stage = isRecord(st) ? st : null;
+				if (stage === null) continue;
+				const ro = isRecord(stage["result_outputs"]) ? stage["result_outputs"] : null;
+				if (ro === null) continue;
+				const cs = isRecord(ro["chain_store"]) ? ro["chain_store"] : null;
+				if (cs === null) continue;
+				const name = cs["run_name"];
+				if (typeof name !== "string" || name === "") continue;
+				const scenes = cs["scenes"];
+				return {
+					store: name,
+					scenes: typeof scenes === "number" && Number.isFinite(scenes) ? scenes : 0
+				};
+			}
+			return null;
+		}
+		/** THE CHAIN-RUN PICKER'S SOURCE (the runs library's own surface):
+		*  runs/list names the estate's runs; each candidate run's status
+		*  doc is read for the chain stamp — a run whose row carries
+		*  chain_store is a real resume source, a plain film proves nothing
+		*  and stays out. Runs newest-first (the operator resumes recent
+		*  work; the raw list interleaves media-bearing rows first). A
+		*  refused status (the run is gone from the registry) skips that
+		*  row — no evidence, no candidate. A GATEWAY failure (the lane
+		*  itself down — the api-gateway client folds every carrier throw
+		*  into the gateway/internal branch) is NOT a verdict: it rethrows,
+		*  so an unreachable estate never renders as the honest-empty "no
+		*  chain runs yet". */
+		async function fetchChainRunCandidates(signal) {
+			const out = [];
+			for (const r of await listRunRows(signal)) {
+				const rid = r["run_id"] ?? r["id"];
+				if (typeof rid !== "string" || rid === "") continue;
+				let doc;
+				try {
+					const answered = await unwrapRemote(estateRemote().runs.status(rid, signal), "runs/status");
+					doc = isRecord(answered) ? answered : null;
+				} catch (e) {
+					if (isEstateRefusal(e) && e.code !== "gateway/internal" && e.code !== "gateway/cancelled") continue;
+					throw e;
+				}
+				if (doc === null) continue;
+				const stamp = chainStampOfDoc(doc);
+				if (stamp === null) continue;
+				const variant = typeof doc["variant"] === "string" && doc["variant"] !== "" ? doc["variant"] : typeof doc["flow"] === "string" && doc["flow"] !== "" ? doc["flow"] : "run";
+				const created = typeof r["created_at"] === "number" ? r["created_at"] : 0;
+				out.push({
+					runId: rid,
+					store: stamp.store,
+					variant,
+					scenes: stamp.scenes,
+					created
+				});
+			}
+			out.sort((a, b) => b.created - a.created);
+			return out;
 		}
 		/** One runs/list row by run_id (the file-era face — runs/status only
 		*  knows live runs; the list is the completed runs' SSOT). */
@@ -17016,6 +17421,7 @@ window.__ModuleLoader__.load({
 			const [error, setError] = (0, react.useState)(null);
 			const [user, setUser] = (0, react.useState)(params);
 			const [open, setOpen] = (0, react.useState)({});
+			const departedRef = (0, react.useRef)(/* @__PURE__ */ new Set());
 			const rowResult = typeof row["result"] === "object" && row["result"] !== null ? row["result"] : null;
 			const ownRunId = typeof rowResult?.run_id === "string" && rowResult.run_id !== "" ? rowResult.run_id : null;
 			const ownUrl = typeof rowResult?.url === "string" && rowResult.url !== "" ? rowResult.url : null;
@@ -17043,10 +17449,15 @@ window.__ModuleLoader__.load({
 				setSpec(liveSpec);
 				setUser((prev) => {
 					const held = typeof prev["model"] === "string" && prev["model"] !== "" ? prev["model"] : void 0;
+					const seed = {};
+					for (const [k, v] of Object.entries(params)) {
+						if (departedRef.current.has(k)) continue;
+						seed[k] = v;
+					}
 					return held !== void 0 ? {
-						...params,
+						...seed,
 						model: held
-					} : { ...params };
+					} : { ...seed };
 				});
 				props.onSurface(liveSpec.size === "huge" ? "huge" : "");
 			}, [liveSpec, specError]);
@@ -17078,7 +17489,8 @@ window.__ModuleLoader__.load({
 				}));
 				seat.trailing({ [name]: coerced });
 			};
-			const servedBase = typeof row["resolved"] === "object" && row["resolved"] !== null && !Array.isArray(row["resolved"]) ? row["resolved"] : void 0;
+			const servedBaseRaw = typeof row["resolved"] === "object" && row["resolved"] !== null && !Array.isArray(row["resolved"]) ? row["resolved"] : void 0;
+			const servedBase = servedBaseRaw === void 0 ? void 0 : Object.fromEntries(Object.entries(servedBaseRaw).filter(([k]) => !departedRef.current.has(k)));
 			const value = resolveValue(spec ?? { form: "" }, user, servedBase);
 			const specRows = spec !== null ? fieldsOf(spec) : [];
 			const { square: squareFor, wireMenu } = useSquareProvider(onEdit, { candidates: props.upstream.map((u) => ({
@@ -17107,12 +17519,19 @@ window.__ModuleLoader__.load({
 				params: (0, react.createElement)("div", { className: studio_module_css_default.studioRail }, (0, react.createElement)(ModelAxes, {
 					spec,
 					value,
+					user,
+					pickHeld: composeCandidateDoc(servedBase ?? {}, user, {}),
 					onSet: onEdit,
 					onPick: (patch) => {
-						setUser((prev) => ({
-							...prev,
-							...patch
-						}));
+						for (const [k, v] of Object.entries(patch)) if (v === null) departedRef.current.add(k);
+						else departedRef.current.delete(k);
+						setUser((prev) => {
+							const next = { ...prev };
+							for (const [k, v] of Object.entries(patch)) if (v === null) delete next[k];
+							else next[k] = v;
+							return next;
+						});
+						seat.now(patch);
 					}
 				}), declaration.expose.map((g) => (0, react.createElement)("section", {
 					key: g,
@@ -17366,9 +17785,18 @@ window.__ModuleLoader__.load({
 						...identityCoeffs !== void 0 && identityCoeffs !== null && identityCoeffs.length > 0 ? { identityCoeffs } : {},
 						...localChanges !== void 0 && localChanges !== null && Object.keys(localChanges).length > 0 ? { localChanges } : {}
 					}).then((d) => {
-						if (alive) setDoc(d);
+						if (alive) {
+							setDoc(d);
+							setTimeout(() => {
+								if (alive) setDoc(d);
+							}, 0);
+						}
 					}).catch((e) => {
-						if (alive) setFailed(rejectionVoice(e));
+						if (!alive) return;
+						setFailed(rejectionVoice(e));
+						setTimeout(() => {
+							if (alive) setFailed(rejectionVoice(e));
+						}, 0);
 					});
 				}, 120);
 				return () => {
@@ -18212,9 +18640,17 @@ window.__ModuleLoader__.load({
 		* (or a test fake); the base form carries no transport of its own.
 		*/
 		/** media/list — the runs-tree library (the picker's injected
-		*  source; kind-filtered). */
+		*  source; kind-filtered). The mounted media namespace must serve
+		*  `list` — a namespace object without the method is a wiring fault
+		*  (the 2026-11-01 operator burn: a stale bind surfaced the raw
+		*  `estateRemote(...).media.list is not a function` as picker copy),
+		*  so the guard refuses in the door's own voice, never a programmer
+		*  TypeError, and the bind seam's live re-pull has already had its
+		*  chance to heal a stale generation before this read. */
 		async function fetchMediaLibrary(kind, signal) {
-			const v = await unwrapRemote(estateRemote().media.list(kind, signal), "media/list");
+			const media = estateRemote().media;
+			if (typeof media.list !== "function") throw new Error("the mounted media namespace does not serve media/list — the estate media contribution is not mounted (reload the page to re-mount the bundles)");
+			const v = await unwrapRemote(media.list(kind, signal), "media/list");
 			return Array.isArray(v.items) ? v.items.filter((it) => typeof it?.url === "string" && typeof it?.name === "string") : [];
 		}
 		//#endregion
@@ -18377,6 +18813,7 @@ window.__ModuleLoader__.load({
 		exports.estateInputVideoUrl = estateInputVideoUrl;
 		exports.estateRemote = estateRemote;
 		exports.fetchCardCatalog = fetchCardCatalog;
+		exports.fetchChainRunCandidates = fetchChainRunCandidates;
 		exports.fetchFormSpec = fetchFormSpec;
 		exports.fetchFormsTable = fetchFormsTable;
 		exports.fetchLatestRunForDraft = fetchLatestRunForDraft;
@@ -18461,6 +18898,7 @@ window.__ModuleLoader__.load({
 		exports.startCardRun = startCardRun;
 		exports.startFlowInlineRun = startFlowInlineRun;
 		exports.stopRun = stopRun;
+		exports.studioClaimsRow = studioClaimsRow;
 		exports.subscribe = subscribe;
 		exports.titleCaseId = titleCaseId;
 		exports.toastHoldMs = toastHoldMs;

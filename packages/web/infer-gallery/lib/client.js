@@ -307,6 +307,40 @@ window.__ModuleLoader__.load({
 				throw new Error("delete failed (" + await refusalOf$1(res, answer) + ")");
 			}
 		}
+		/** Tuck one run-relative artifact into the run's `_archived/` dir. */
+		async function archiveArtifact(path) {
+			let res;
+			try {
+				res = await fetch("/infer-gallery/artifact-archive", {
+					method: "POST",
+					headers: { "content-type": "application/json" },
+					body: JSON.stringify({ path })
+				});
+			} catch (e) {
+				throw new Error("archive failed — " + (e instanceof Error ? e.message : String(e)));
+			}
+			if (!res.ok) {
+				const answer = await res.json().catch(() => null);
+				throw new Error("archive failed (" + await refusalOf$1(res, answer) + ")");
+			}
+		}
+		/** Move one archived artifact back beside its siblings. */
+		async function restoreArtifact(path) {
+			let res;
+			try {
+				res = await fetch("/infer-gallery/artifact-restore", {
+					method: "POST",
+					headers: { "content-type": "application/json" },
+					body: JSON.stringify({ path })
+				});
+			} catch (e) {
+				throw new Error("restore failed — " + (e instanceof Error ? e.message : String(e)));
+			}
+			if (!res.ok) {
+				const answer = await res.json().catch(() => null);
+				throw new Error("restore failed (" + await refusalOf$1(res, answer) + ")");
+			}
+		}
 		/** Unlink several run-relative artifacts, one door call per file (the
 		*  host route has no batch arm). A failure is RECORDED, not thrown:
 		*  the remaining files still delete, and the caller voices the
@@ -320,11 +354,50 @@ window.__ModuleLoader__.load({
 			} catch (e) {
 				failed.push({
 					path,
-					message: e instanceof Error ? e.message : String(e)
+					message: e.message
 				});
 			}
 			return {
 				deleted,
+				failed
+			};
+		}
+		/** Tuck several artifacts, one door call per file. A failure is
+		*  RECORDED, not thrown (the delete twin's law — a partial tuck
+		*  still reports every file). */
+		async function archiveArtifacts(paths) {
+			const failed = [];
+			let archived = 0;
+			for (const path of paths) try {
+				await archiveArtifact(path);
+				archived += 1;
+			} catch (e) {
+				failed.push({
+					path,
+					message: e.message
+				});
+			}
+			return {
+				archived,
+				failed
+			};
+		}
+		/** Restore several archived artifacts, one door call per file. A
+		*  failure is RECORDED, not thrown (the delete twin's law). */
+		async function restoreArtifacts(paths) {
+			const failed = [];
+			let restored = 0;
+			for (const path of paths) try {
+				await restoreArtifact(path);
+				restored += 1;
+			} catch (e) {
+				failed.push({
+					path,
+					message: e.message
+				});
+			}
+			return {
+				restored,
 				failed
 			};
 		}
@@ -465,6 +538,20 @@ window.__ModuleLoader__.load({
 			confirmDelete: (p) => `Confirm delete ${p.count}?`,
 			/** The un-armed destructive pill. */
 			deleteSelected: "Delete selected",
+			/** The armed archive pill (names the count — tucking is
+			*  reversible, but the mass gesture still arms first, the
+			*  delete twin's law: one gesture tucks N losers at once). */
+			confirmArchive: (p) => `Confirm archive ${p.count}?`,
+			/** The un-armed archive pill. */
+			archiveSelected: "Archive selected",
+			/** The armed restore pill (names the count). */
+			confirmRestore: (p) => `Confirm restore ${p.count}?`,
+			/** The un-armed restore pill. */
+			restoreSelected: "Restore selected",
+			/** The archived-face toggle pill (names the tucked count). */
+			showArchived: (p) => `Archived (${p.count})`,
+			/** The archived tile's badge (the tucked face is dimmed + named). */
+			archivedBadge: "archived",
 			/** The search box placeholder. */
 			searchPlaceholder: "search prompt, file…",
 			/** The all-kinds chip face. */
@@ -552,6 +639,14 @@ window.__ModuleLoader__.load({
 			nextMediaAria: "Next media",
 			/** The rename verb's face. */
 			renameAction: "Rename",
+			/** The archive verb's face (the tucked-away half of deletion UX). */
+			archiveAction: "Archive",
+			/** The archive verb's accessible name. */
+			archiveAria: "Archive media file",
+			/** The restore verb's face (brings a tucked file back). */
+			restoreArtifactAction: "Restore",
+			/** The restore verb's accessible name. */
+			restoreArtifactAria: "Restore archived media file",
 			/** The rename verb's accessible name. */
 			renameAria: "Rename media file",
 			/** The delete verb's face. */
@@ -1019,7 +1114,7 @@ window.__ModuleLoader__.load({
 		* self-painted surface), walk WRAP-AROUND, and the keyboard
 		* ArrowLeft/ArrowRight ride the same verbs. No siblings = exactly
 		* the old face (both call sites unchanged until wired). */
-		function MediaDrilldown({ item, onClose, openArtifact, siblings, onNavigate, onDelete, onRename }) {
+		function MediaDrilldown({ item, onClose, openArtifact, siblings, onNavigate, onDelete, onRename, onArchive, onRestore }) {
 			const walkable = siblings ?? [];
 			const at = walkable.findIndex((s) => s.url === item.url);
 			const seat = react.useRef(null);
@@ -1072,9 +1167,26 @@ window.__ModuleLoader__.load({
 				setOpError("");
 				inflight.current = false;
 			}, [item.url]);
-			const canDelete = onDelete !== void 0;
-			const canRename = onRename !== void 0;
-			const showActions = canDelete || canRename;
+			const canDelete = onDelete !== void 0 && item.archived !== true;
+			const canRename = onRename !== void 0 && item.archived !== true;
+			const canArchive = onArchive !== void 0 && item.archived !== true;
+			const canRestore = onRestore !== void 0 && item.archived === true;
+			const showActions = canDelete || canRename || canArchive || canRestore;
+			const fireReversible = (verb) => {
+				if (verb === void 0 || inflight.current) return;
+				const seat = item.url;
+				inflight.current = true;
+				setBusy(true);
+				setOpError("");
+				verb(item).catch((e) => {
+					if (!mountedRef.current || seatUrlRef.current !== seat) return;
+					setOpError(e instanceof Error ? e.message : String(e));
+				}).finally(() => {
+					inflight.current = false;
+					if (!mountedRef.current || seatUrlRef.current !== seat) return;
+					setBusy(false);
+				});
+			};
 			const startDelete = () => {
 				setOpError("");
 				setMode("confirmDelete");
@@ -1237,14 +1349,29 @@ window.__ModuleLoader__.load({
 							onClick: (e) => {
 								e.stopPropagation();
 							},
-							children: mode === "idle" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [canRename ? actionBtn(galleryCopy.renameAction, startRename, {
-								testid: "drill-rename",
-								aria: galleryCopy.renameAria
-							}) : null, canDelete ? actionBtn(galleryCopy.deleteAction, startDelete, {
-								danger: true,
-								testid: "drill-delete",
-								aria: galleryCopy.deleteAria
-							}) : null] }) : mode === "confirmDelete" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
+							children: mode === "idle" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
+								canRename ? actionBtn(galleryCopy.renameAction, startRename, {
+									testid: "drill-rename",
+									aria: galleryCopy.renameAria
+								}) : null,
+								canArchive ? actionBtn(galleryCopy.archiveAction, () => {
+									fireReversible(onArchive);
+								}, {
+									testid: "drill-archive",
+									aria: galleryCopy.archiveAria
+								}) : null,
+								canRestore ? actionBtn(galleryCopy.restoreArtifactAction, () => {
+									fireReversible(onRestore);
+								}, {
+									testid: "drill-restore",
+									aria: galleryCopy.restoreArtifactAria
+								}) : null,
+								canDelete ? actionBtn(galleryCopy.deleteAction, startDelete, {
+									danger: true,
+									testid: "drill-delete",
+									aria: galleryCopy.deleteAria
+								}) : null
+							] }) : mode === "confirmDelete" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 									style: {
 										color: labelPrimary2,
@@ -2036,7 +2163,8 @@ window.__ModuleLoader__.load({
 								const own = resultOfStage(sideRowFor(st["id"], i), String(side["run_id"] ?? ""));
 								if (own !== void 0) st["result"] = own;
 								else if (sideStages.length === 0 && result !== void 0) st["result"] = result;
-							}
+								else st["result"] = null;
+							} else st["result"] = null;
 							st["provenance"] = RESTORED_PROVENANCE_SPELLING$1;
 						}
 						await loadStagesOntoBench(bsStages, (bs.intent !== "" ? bs.intent : "restored run").slice(0, 77), deps);
@@ -2263,7 +2391,9 @@ window.__ModuleLoader__.load({
 				setLoading(true);
 				setError("");
 				fetchUntilSeated(url, { signal: ctrl.signal }).then(async (r) => {
+					if (ctrl.signal.aborted) return;
 					const json = await r.json();
+					if (ctrl.signal.aborted) return;
 					if (!r.ok) {
 						const msg = json.error;
 						throw new Error(typeof msg === "string" && msg !== "" ? msg : "HTTP " + String(r.status));
@@ -2665,10 +2795,21 @@ window.__ModuleLoader__.load({
 			}
 		}
 		/** Flatten the runs feed into media tiles (poster map, frame-flood
-		*  guard, dedup by url, label law, final-film-first sort tie-break). */
+		*  guard, dedup by url, label law, final-film-first sort tie-break).
+		*  THE ARCHIVED FACE (mass-archive law): a run's tucked rows emit
+		*  alongside the live tiles with `archived: true` — the panel hides
+		*  them unless toggled, and they select into restore, never delete.
+		*  One url space (live + tucked share the dedupe set — a file is
+		*  either live or tucked, never both, and the set enforces it). */
 		function flatten(runs) {
 			const items = [];
 			const seen = /* @__PURE__ */ new Set();
+			const headFor = (run) => {
+				const prompt = String(run.prompt ?? "").replace(/\s+/g, " ").trim();
+				const callsText = callsTextOf(run.params);
+				const labelSrc = prompt !== "" ? prompt : (run.name ?? "") !== "" ? String(run.name) : callsText;
+				return labelSrc !== "" ? "\"" + labelSrc.slice(0, 48) + (labelSrc.length > 48 ? "…" : "") + "\"" : String(run.flow ?? run.run_id ?? "");
+			};
 			for (const run of runs) {
 				const arts = Array.isArray(run.artifacts) ? run.artifacts : [];
 				const posters = /* @__PURE__ */ new Map();
@@ -2693,10 +2834,7 @@ window.__ModuleLoader__.load({
 					const file = a.name ?? baseName(url);
 					if (dropFrames && kind === "image" && FRAME_DUMP.test(file)) continue;
 					const stem = file.replace(/\.[^.]+$/, "");
-					const prompt = String(run.prompt ?? "").replace(/\s+/g, " ").trim();
-					const callsText = callsTextOf(run.params);
-					const labelSrc = prompt !== "" ? prompt : (run.name ?? "") !== "" ? String(run.name) : callsText;
-					const head = labelSrc !== "" ? "\"" + labelSrc.slice(0, 48) + (labelSrc.length > 48 ? "…" : "") + "\"" : String(run.flow ?? run.run_id ?? "");
+					const head = headFor(run);
 					const isFinal = kind === "video" && !WINDOW_FILM.test(file);
 					let poster = "";
 					let face = url;
@@ -2724,7 +2862,32 @@ window.__ModuleLoader__.load({
 						draftId: typeof run.draft_id === "string" ? draftIdOf$1(run.draft_id) : draftIdOf$1(""),
 						time: timeLabel(run.created_at),
 						file,
-						created: typeof run.created_at === "number" ? run.created_at : 0
+						created: typeof run.created_at === "number" ? run.created_at : 0,
+						archived: false
+					});
+				}
+				const tucked = Array.isArray(run.archived) ? run.archived : [];
+				for (const a of tucked) {
+					const kind = kindOf(a);
+					const url = a.url ?? "";
+					if (kind === null || url === "" || seen.has(url)) continue;
+					seen.add(url);
+					const file = a.name ?? baseName(url);
+					items.push({
+						id: url,
+						kind,
+						url,
+						face: url,
+						poster: kind === "image" ? url : "",
+						segment: false,
+						head: headFor(run),
+						final: false,
+						runId: String(run.run_id ?? ""),
+						draftId: typeof run.draft_id === "string" ? draftIdOf$1(run.draft_id) : draftIdOf$1(""),
+						time: timeLabel(run.created_at),
+						file,
+						created: typeof run.created_at === "number" ? run.created_at : 0,
+						archived: true
 					});
 				}
 			}
@@ -2924,7 +3087,7 @@ window.__ModuleLoader__.load({
 		* as content styles. (THE LOST MODAL, restored with the full port —
 		* the bare gallery opened a new browser tab instead.)
 		*/
-		function Overlay({ item, onClose, openArtifact, siblings, onNavigate, onDelete, onRename }) {
+		function Overlay({ item, onClose, openArtifact, siblings, onNavigate, onDelete, onRename, onArchive, onRestore }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(MediaDrilldown, {
 				item,
 				onClose,
@@ -2937,7 +3100,9 @@ window.__ModuleLoader__.load({
 					onNavigate(siblings.find((s) => s.url === next.url));
 				},
 				onDelete: (drill) => onDelete(item),
-				onRename: (drill, name) => onRename(item, name)
+				onRename: (drill, name) => onRename(item, name),
+				onArchive: (drill) => onArchive(item),
+				onRestore: (drill) => onRestore(item)
 			});
 		}
 		/** Sidebar tab glyph — exported for the (JSX-free) client entry. */
@@ -3012,7 +3177,39 @@ window.__ModuleLoader__.load({
 			const [selected, setSelected] = (0, react.useState)(/* @__PURE__ */ new Set());
 			const [deleteArmed, setDeleteArmed] = (0, react.useState)(false);
 			const [deleting, setDeleting] = (0, react.useState)(false);
+			const [showArchived, setShowArchived] = (0, react.useState)(false);
+			const [archiveArmed, setArchiveArmed] = (0, react.useState)(false);
+			const [restoreArmed, setRestoreArmed] = (0, react.useState)(false);
+			const [archiving, setArchiving] = (0, react.useState)(false);
+			const dragSelecting = (0, react.useRef)(false);
+			const dragAdd = (0, react.useRef)(true);
+			const dragMoved = (0, react.useRef)(false);
+			const dragAnchorId = (0, react.useRef)(null);
+			const suppressSelectClick = (0, react.useRef)(false);
+			const lastAnchor = (0, react.useRef)(null);
+			(0, react.useEffect)(() => {
+				if (!selectMode) {
+					dragSelecting.current = false;
+					dragMoved.current = false;
+					dragAnchorId.current = null;
+					suppressSelectClick.current = false;
+					lastAnchor.current = null;
+				}
+			}, [selectMode]);
+			(0, react.useEffect)(() => {
+				const end = () => {
+					dragSelecting.current = false;
+					dragAnchorId.current = null;
+				};
+				window.addEventListener("pointerup", end);
+				window.addEventListener("pointercancel", end);
+				return () => {
+					window.removeEventListener("pointerup", end);
+					window.removeEventListener("pointercancel", end);
+				};
+			}, []);
 			const deletingRef = (0, react.useRef)(false);
+			const archivingRef = (0, react.useRef)(false);
 			const draftInflight = (0, react.useRef)(/* @__PURE__ */ new Set());
 			const [deleteNote, setDeleteNote] = (0, react.useState)("");
 			const [page, setPage] = (0, react.useState)(0);
@@ -3022,7 +3219,8 @@ window.__ModuleLoader__.load({
 				cat,
 				search,
 				sort,
-				tab
+				tab,
+				showArchived
 			]);
 			const tabInfo = useTabInfo !== void 0 ? useTabInfo() : void 0;
 			/** Open one 3D artifact as the estate-artifact resource (ModelView). */
@@ -3141,14 +3339,29 @@ window.__ModuleLoader__.load({
 			};
 			/** THE MODAL MUTATIONS (the mediasidebar's popup modal on media
 			*  stuff): delete unlinks the artifact file then closes the modal
-			*  and reloads the feed; rename re-points the open preview onto
-			*  the door's answer and reloads behind it. Both throw LOUD for
-			*  the drilldown's error face when the URL rides no gallery path
-			*  or the door refuses. */
+			*  and reloads the feed; archive tucks it into the run's
+			*  `_archived/` dir; restore brings a tucked file back; rename
+			*  re-points the open preview onto the door's answer and reloads
+			*  behind it. All throw LOUD for the drilldown's error face when
+			*  the URL rides no gallery path or the door refuses. */
 			const deleteItem = async (item) => {
 				const target = artifactPathOfUrl(item.url);
 				if (target === null) throw new Error("delete failed (not a gallery artifact — nothing to delete)");
 				await deleteArtifact(target);
+				setPreview(null);
+				load();
+			};
+			const archiveItem = async (item) => {
+				const target = artifactPathOfUrl(item.url);
+				if (target === null) throw new Error("archive failed (not a gallery artifact — nothing to archive)");
+				await archiveArtifact(target);
+				setPreview(null);
+				load();
+			};
+			const restoreItem = async (item) => {
+				const target = artifactPathOfUrl(item.url);
+				if (target === null) throw new Error("restore failed (not a gallery artifact — nothing to restore)");
+				await restoreArtifact(target);
 				setPreview(null);
 				load();
 			};
@@ -3165,18 +3378,21 @@ window.__ModuleLoader__.load({
 				load();
 			};
 			const items = (0, react.useMemo)(() => flatten(runs), [runs]);
+			const liveItems = (0, react.useMemo)(() => items.filter((it) => !it.archived), [items]);
+			const archivedCount = items.length - liveItems.length;
 			const truncatedRuns = (0, react.useMemo)(() => runs.filter((r) => r.truncated !== void 0 && r.truncated.total > r.truncated.listed).length, [runs]);
 			const counts = (0, react.useMemo)(() => {
 				const c = {
-					all: items.length,
+					all: liveItems.length,
 					...Object.fromEntries(KIND_ORDER.map((k) => [k, 0]))
 				};
-				for (const it of items) c[it.kind] += 1;
+				for (const it of liveItems) c[it.kind] += 1;
 				return c;
-			}, [items]);
+			}, [liveItems]);
 			const shown = (0, react.useMemo)(() => {
 				const q = search.trim().toLowerCase();
 				const out = items.filter((it) => {
+					if (it.archived && !showArchived) return false;
 					if (cat !== "all" && it.kind !== cat) return false;
 					if (q === "") return true;
 					return (it.head + " " + it.file + " " + it.time).toLowerCase().includes(q);
@@ -3188,17 +3404,63 @@ window.__ModuleLoader__.load({
 				items,
 				cat,
 				search,
-				sort
+				sort,
+				showArchived
 			]);
 			const pageCount = Math.max(1, Math.ceil(shown.length / PAGE_SIZE));
 			const safePage = Math.min(page, pageCount - 1);
 			const pageItems = (0, react.useMemo)(() => shown.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE), [shown, safePage]);
+			const selectedLive = (0, react.useMemo)(() => items.filter((it) => selected.has(it.id) && !it.archived), [items, selected]);
+			const selectedTucked = (0, react.useMemo)(() => items.filter((it) => selected.has(it.id) && it.archived), [items, selected]);
 			const toggleSelect = (it) => {
 				setDeleteArmed(false);
+				setArchiveArmed(false);
+				setRestoreArmed(false);
+				lastAnchor.current = it.id;
 				setSelected((was) => {
 					const next = new Set(was);
 					if (next.has(it.id)) next.delete(it.id);
 					else next.add(it.id);
+					return next;
+				});
+			};
+			/** Paint one tile with the stroke's fate during a drag (add on a
+			*  fresh press, remove on a press that started selected). */
+			const paintSelect = (id) => {
+				setDeleteArmed(false);
+				setArchiveArmed(false);
+				setRestoreArmed(false);
+				lastAnchor.current = id;
+				const add = dragAdd.current;
+				setSelected((was) => {
+					if (add && was.has(id)) return was;
+					if (!add && !was.has(id)) return was;
+					const next = new Set(was);
+					if (add) next.add(id);
+					else next.delete(id);
+					return next;
+				});
+			};
+			/** Shift-click: the visible range between the anchor and the target
+			*  joins the selection (anchored on the current page's order). */
+			const rangeSelect = (it) => {
+				const anchor = lastAnchor.current;
+				setDeleteArmed(false);
+				setArchiveArmed(false);
+				setRestoreArmed(false);
+				lastAnchor.current = it.id;
+				setSelected((was) => {
+					const next = new Set(was);
+					next.add(it.id);
+					if (anchor !== null) {
+						const ids = pageItems.map((p) => p.id);
+						const a = ids.indexOf(anchor);
+						const b = ids.indexOf(it.id);
+						if (a !== -1 && b !== -1) {
+							const [lo, hi] = a < b ? [a, b] : [b, a];
+							for (let i = lo; i <= hi; i += 1) next.add(ids[i]);
+						}
+					}
 					return next;
 				});
 			};
@@ -3212,6 +3474,7 @@ window.__ModuleLoader__.load({
 				let notGallery = 0;
 				for (const it of items) {
 					if (!selected.has(it.id)) continue;
+					if (it.archived) continue;
 					const p = artifactPathOfUrl(it.url);
 					if (p === null) notGallery += 1;
 					else targets.push(p);
@@ -3231,6 +3494,70 @@ window.__ModuleLoader__.load({
 				} finally {
 					deletingRef.current = false;
 					setDeleting(false);
+				}
+			};
+			/** THE MASS ARCHIVE (operator ruling 2026-11-14, item (a)): one
+			*  armed verb over the selection's LIVE subset — "mass archive
+			*  beside delete (19 losers + 1 winner, one gesture deletes the
+			*  losers)". Doors run per file and a failure is RECORDED, not
+			*  thrown — the feed reloads either way, so tucked tiles leave and
+			*  failed tiles stay visible under the spoken summary. The tally
+			*  rides the action banner (the mass-delete tally's seat — one
+			*  action outcome face, never the feed-error face). */
+			const archiveSelected = async () => {
+				if (archivingRef.current) return;
+				const targets = [];
+				let skipped = 0;
+				for (const it of selectedLive) {
+					const p = artifactPathOfUrl(it.url);
+					if (p === null) skipped += 1;
+					else targets.push(p);
+				}
+				archivingRef.current = true;
+				setArchiving(true);
+				try {
+					const answer = await archiveArtifacts(targets);
+					setSelected(/* @__PURE__ */ new Set());
+					setArchiveArmed(false);
+					setSelectMode(false);
+					if (answer.failed.length > 0 || skipped > 0) {
+						const first = answer.failed[0]?.message ?? "";
+						setDeleteNote("archived " + String(answer.archived) + " · failed " + String(answer.failed.length + skipped) + (first === "" ? "" : " — " + first) + (skipped > 0 ? " (· " + String(skipped) + " selection(s) are not live gallery files)" : ""));
+					} else setDeleteNote("");
+					load();
+				} finally {
+					archivingRef.current = false;
+					setArchiving(false);
+				}
+			};
+			/** THE MASS RESTORE (the mass-archive law's return half): one armed
+			*  verb over the selection's TUCKED subset — the tucked tiles come
+			*  back beside their siblings. Same recorded-failure shape as the
+			*  archive twin. */
+			const restoreSelected = async () => {
+				if (archivingRef.current) return;
+				const targets = [];
+				let skipped = 0;
+				for (const it of selectedTucked) {
+					const p = artifactPathOfUrl(it.url);
+					if (p === null) skipped += 1;
+					else targets.push(p);
+				}
+				archivingRef.current = true;
+				setArchiving(true);
+				try {
+					const answer = await restoreArtifacts(targets);
+					setSelected(/* @__PURE__ */ new Set());
+					setRestoreArmed(false);
+					setSelectMode(false);
+					if (answer.failed.length > 0 || skipped > 0) {
+						const first = answer.failed[0]?.message ?? "";
+						setDeleteNote("restored " + String(answer.restored) + " · failed " + String(answer.failed.length + skipped) + (first === "" ? "" : " — " + first) + (skipped > 0 ? " (· " + String(skipped) + " selection(s) are not archived gallery files)" : ""));
+					} else setDeleteNote("");
+					load();
+				} finally {
+					archivingRef.current = false;
+					setArchiving(false);
 				}
 			};
 			const chip = (c, label) => {
@@ -3268,7 +3595,7 @@ window.__ModuleLoader__.load({
 							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Stat, { children: [
 								galleryCopy.statRunsArtifacts({
 									runs: runs.length,
-									artifacts: items.length
+									artifacts: liveItems.length
 								}),
 								gatewayErrors.length > 0 ? galleryCopy.statGatewayNotes({ count: gatewayErrors.length }) : "",
 								truncatedRuns > 0 ? galleryCopy.statCapped({ count: truncatedRuns }) : "",
@@ -3285,7 +3612,7 @@ window.__ModuleLoader__.load({
 									onClick: () => {
 										setTab(t);
 									},
-									children: t === "flows" ? galleryCopy.tabFlows({ count: drafts.length }) : galleryCopy.tabArtifacts({ count: items.length })
+									children: t === "flows" ? galleryCopy.tabFlows({ count: drafts.length }) : galleryCopy.tabArtifacts({ count: liveItems.length })
 								}, t))
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
@@ -3311,6 +3638,8 @@ window.__ModuleLoader__.load({
 									if (selectMode) {
 										setSelected(/* @__PURE__ */ new Set());
 										setDeleteArmed(false);
+										setArchiveArmed(false);
+										setRestoreArmed(false);
 										setSelectMode(false);
 										return;
 									}
@@ -3336,10 +3665,25 @@ window.__ModuleLoader__.load({
 										onClick: () => {
 											setSelected(/* @__PURE__ */ new Set());
 											setDeleteArmed(false);
+											setArchiveArmed(false);
+											setRestoreArmed(false);
 										},
 										children: galleryCopy.clearAction
 									}),
-									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
+									selectedLive.length > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
+										active: archiveArmed,
+										"aria-busy": archiving,
+										onClick: () => {
+											if (archiving) return;
+											if (!archiveArmed) {
+												setArchiveArmed(true);
+												return;
+											}
+											archiveSelected();
+										},
+										children: archiveArmed ? galleryCopy.confirmArchive({ count: selectedLive.length }) : galleryCopy.archiveSelected
+									}),
+									selectedLive.length > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
 										active: deleteArmed,
 										"aria-busy": deleting,
 										onClick: () => {
@@ -3350,7 +3694,20 @@ window.__ModuleLoader__.load({
 											}
 											deleteSelected();
 										},
-										children: deleteArmed ? galleryCopy.confirmDelete({ count: selected.size }) : galleryCopy.deleteSelected
+										children: deleteArmed ? galleryCopy.confirmDelete({ count: selectedLive.length }) : galleryCopy.deleteSelected
+									}),
+									selectedTucked.length > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
+										active: restoreArmed,
+										"aria-busy": archiving,
+										onClick: () => {
+											if (archiving) return;
+											if (!restoreArmed) {
+												setRestoreArmed(true);
+												return;
+											}
+											restoreSelected();
+										},
+										children: restoreArmed ? galleryCopy.confirmRestore({ count: selectedTucked.length }) : galleryCopy.restoreSelected
 									})
 								]
 							})] }),
@@ -3372,7 +3729,17 @@ window.__ModuleLoader__.load({
 							marginBottom: 12,
 							flexWrap: "wrap"
 						},
-						children: [chip("all", galleryCopy.chipAll), KIND_ORDER.map((k) => chip(k, KIND_LABEL[k]))]
+						children: [
+							chip("all", galleryCopy.chipAll),
+							KIND_ORDER.map((k) => chip(k, KIND_LABEL[k])),
+							archivedCount > 0 || showArchived ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
+								active: showArchived,
+								onClick: () => {
+									setShowArchived((v) => !v);
+								},
+								children: galleryCopy.showArchived({ count: archivedCount })
+							}) : null
+						]
 					}),
 					tab === "flows" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
 						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
@@ -3493,16 +3860,56 @@ window.__ModuleLoader__.load({
 					] }) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(FeedErrors, { errors: gatewayErrors }),
 					tab === "artifacts" && deleteNote !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ErrorBanner, { children: deleteNote }) : null,
 					tab === "artifacts" && uiError !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ErrorBanner, { children: galleryCopy.openFailed({ error: uiError }) }) : null,
-					tab === "artifacts" && (feedError !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ErrorBanner, { children: galleryCopy.feedFailed({ error: feedError }) }) : loading && items.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, { children: galleryCopy.loadingRuns }) : shown.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, { children: galleryCopy.noArtifacts }) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+					tab === "artifacts" && feedError !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ErrorBanner, { children: galleryCopy.feedFailed({ error: feedError }) }) : null,
+					tab === "artifacts" && (feedError !== "" && shown.length === 0 ? null : loading && items.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, { children: galleryCopy.loadingRuns }) : shown.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, { children: galleryCopy.noArtifacts }) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						"data-infer-media-grid": "1",
+						onPointerUp: () => {
+							dragSelecting.current = false;
+							dragAnchorId.current = null;
+						},
+						onPointerCancel: () => {
+							dragSelecting.current = false;
+							dragAnchorId.current = null;
+						},
 						style: {
 							display: "grid",
 							gridTemplateColumns: "repeat(auto-fill, minmax(148px, 1fr))",
-							gap: 10
+							gap: 10,
+							touchAction: "pan-y",
+							userSelect: selectMode ? "none" : void 0
 						},
 						children: pageItems.map((it) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
-							onClick: () => {
-								if (selectMode) toggleSelect(it);
-								else setPreview(it);
+							onClick: (e) => {
+								if (!selectMode) {
+									setPreview(it);
+									return;
+								}
+								if (suppressSelectClick.current) {
+									suppressSelectClick.current = false;
+									return;
+								}
+								if (e.shiftKey) rangeSelect(it);
+								else toggleSelect(it);
+							},
+							onPointerDown: (e) => {
+								if (!selectMode) return;
+								if (e.pointerType === "mouse" && e.button !== 0) return;
+								dragSelecting.current = true;
+								dragMoved.current = false;
+								dragAnchorId.current = it.id;
+								dragAdd.current = !selected.has(it.id);
+								suppressSelectClick.current = false;
+							},
+							onPointerEnter: () => {
+								if (!selectMode || !dragSelecting.current) return;
+								if (!dragMoved.current && dragAnchorId.current !== null) paintSelect(dragAnchorId.current);
+								dragMoved.current = true;
+								suppressSelectClick.current = true;
+								paintSelect(it.id);
+							},
+							onPointerUp: () => {
+								dragSelecting.current = false;
+								dragAnchorId.current = null;
 							},
 							"aria-pressed": selectMode ? selected.has(it.id) : void 0,
 							className: overlay_module_css_default.tile,
@@ -3520,7 +3927,8 @@ window.__ModuleLoader__.load({
 								justifyContent: "center",
 								color: "var(--dsw-alias-text-tertiary, rgba(148,163,184,0.75))",
 								textAlign: "left",
-								fontFamily: "inherit"
+								fontFamily: "inherit",
+								opacity: it.archived ? .55 : void 0
 							},
 							children: [
 								it.poster !== "" && it.kind !== "video" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
@@ -3587,6 +3995,21 @@ window.__ModuleLoader__.load({
 									children: galleryCopy.chipSegment
 								}) : null,
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(TileBadge, { item: it }),
+								it.archived ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									style: {
+										position: "absolute",
+										left: 6,
+										bottom: 6,
+										background: "var(--dsw-alias-fill-subtle, rgba(2,6,23,0.72))",
+										borderRadius: 6,
+										padding: "3px 6px",
+										lineHeight: 1,
+										color: "var(--dsw-alias-label-primary, #e2e8f0)",
+										fontSize: 10,
+										letterSpacing: "0.04em"
+									},
+									children: galleryCopy.archivedBadge
+								}) : null,
 								selectMode ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 									style: {
 										position: "absolute",
@@ -3710,7 +4133,9 @@ window.__ModuleLoader__.load({
 							setPreview(next);
 						},
 						onDelete: deleteItem,
-						onRename: renameItem
+						onRename: renameItem,
+						onArchive: archiveItem,
+						onRestore: restoreItem
 					}) : null
 				]
 			});
@@ -6023,7 +6448,10 @@ window.__ModuleLoader__.load({
 		var init_familyLane = __esmMin((() => {}));
 		//#endregion
 		//#region ../../web-kit/contracts/lib/FlowTypes.js
-		var init_FlowTypes = __esmMin((() => {}));
+		var FLOW_ID_RE;
+		var init_FlowTypes = __esmMin((() => {
+			FLOW_ID_RE = /^[a-z_][a-z0-9_-]*$/;
+		}));
 		//#endregion
 		//#region ../../web-kit/contracts/lib/benchResult.js
 		/** benchResult.ts — THE BENCH STAGE RESULT CONTRACT (the operator's
@@ -7595,6 +8023,51 @@ window.__ModuleLoader__.load({
 			}
 			return out;
 		}
+		/**
+		* THE LIVE-ROWS FILTER (GAPS-9, the archived-compile burn: an
+		* archived stale draft's params blocked every future bench-wide
+		* compile). F11 rests archived rows on the RUN faces — the COMPILE
+		* faces rest them too. projectStages strips the archived FLAG (it
+		* is not a wire key) but keeps the ROW, so a spent row's stale
+		* params judged bench-wide. Compile callers filter here FIRST:
+		* only LIVE rows judge. (Read/spell/floor/rewire keep the full
+		* view — they report or touch addressed rows, never judge.)
+		*
+		* Moved to the contract (2026-10-31, F14's estate half): the
+		* projection had ONE writer while only the agent tool composed —
+		* the estate's add-stage gate composes the same view, so the
+		* projection is the contract's now (the audit's Rule 1 law: a
+		* second writer means the same bench reads as a different
+		* document depending on which door projected it).
+		*/
+		function liveBenchRows(stages) {
+			if (!Array.isArray(stages)) return stages;
+			return stages.filter((s) => !(typeof s === "object" && s !== null && !Array.isArray(s) && s["archived"] === true));
+		}
+		/**
+		* Project bench stage rows onto the flow_inline wire contract
+		* (the doors forbid provenance/runStatus/result/title as extras —
+		* they strip; `card` RIDES (STAGE_KEYS admit it) because the
+		* kinds pass derives input kinds from the card's own flowKinds —
+		* stripping it manufactured phantom "wired but untyped" refusals
+		* on correctly-wired card stages; engine defaults comfyui).
+		*/
+		function projectStages(stages) {
+			if (!Array.isArray(stages)) return [];
+			const source = stages.filter((s) => typeof s === "object" && s !== null && !Array.isArray(s));
+			return normalizeBenchStages(source).map((row, i) => {
+				const from = source[i];
+				row["id"] = String(from["id"] ?? "");
+				if (typeof from["id"] === "string" && from["id"] !== "") row["id"] = from["id"];
+				for (const key of Object.keys(row)) {
+					if (key === "expected" || WIRE_STAGE_KEYS.includes(key)) continue;
+					delete row[key];
+				}
+				if (typeof from["expected"] === "object" && from["expected"] !== null && !Array.isArray(from["expected"])) row["expected"] = from["expected"];
+				else delete row["expected"];
+				return row;
+			});
+		}
 		/** Sanitize one candidate id onto a legal bench session key —
 		* 'main' for anything the grammar refuses. THE ONE SPELLING of the
 		* routing decision (the li-ay stroke, 2026-10-11): the decision
@@ -7609,6 +8082,30 @@ window.__ModuleLoader__.load({
 		* sanitize — not four. */
 		function benchSessionOf(id) {
 			return typeof id === "string" && SESSION_RE.test(id) ? id : "main";
+		}
+		/** Carry one candidate key onto the key the bench doors take — the
+		*  delegated-seat spelling rides VERBATIM, everything else sanitizes
+		*  (benchSessionOf). THE ONE SPELLING of the carry decision (the
+		*  one-seat law's client half, 2026-10-31): the construct tool
+		*  forwards a delegated lane's bench key as `delegate:<key>` (the
+		*  benchKeyOfExec mint), and the estate door re-seats it (drafts
+		*  seatOf) — but the ':' is outside SESSION_RE, so a seat that
+		*  sanitized first silently routed a delegated card to 'main', the
+		*  delegation split alive on the link channel (found by the
+		*  construct-flow-link snapshot replay). The carry lives HERE, beside
+		*  the sanitize it wraps: a seat that re-spelled `SESSION_RE.test`
+		*  over the slice would be a second decision body over the same
+		*  grammar — the exact drift the li-ay stroke killed. Narrow by
+		*  construction: only `delegate:` + a grammar-legal inner key
+		*  carries; junk (`delegate:`, `delegate:not@a/key`, the
+		*  near-miss `delegated:…`) falls to the sanitize like every
+		*  other non-key. */
+		function carriedBenchKey(key) {
+			if (typeof key === "string" && key.startsWith("delegate:")) {
+				const inner = key.slice(9);
+				if (SESSION_RE.test(inner)) return key;
+			}
+			return benchSessionOf(key);
 		}
 		/** THE PARSE-EDGE / TEST MINT: brand a draft id read off the wire or
 		*  disk (route the typeof-guarded value through here at the door
@@ -7750,6 +8247,7 @@ window.__ModuleLoader__.load({
 			EXTRA_KEYS: () => EXTRA_KEYS,
 			EXTRA_KEY_SET: () => EXTRA_KEY_SET,
 			FLF_MODES: () => FLF_MODES,
+			FLOW_ID_RE: () => FLOW_ID_RE,
 			LEGACY_RUN_MEDIA_PREFIX: () => LEGACY_RUN_MEDIA_PREFIX,
 			LOAD_CARRY_KEYS: () => LOAD_CARRY_KEYS,
 			MEDIA_SET: () => MEDIA_SET,
@@ -7781,6 +8279,7 @@ window.__ModuleLoader__.load({
 			benchSessionOf: () => benchSessionOf,
 			canonicalRunMediaUrl: () => canonicalRunMediaUrl,
 			cardResultFromRecord: () => cardResultFromRecord,
+			carriedBenchKey: () => carriedBenchKey,
 			cellArtifactCoordinates: () => cellArtifactCoordinates,
 			cnEntriesOf: () => cnEntriesOf,
 			crossRootOrder: () => crossRootOrder,
@@ -7813,6 +8312,7 @@ window.__ModuleLoader__.load({
 			laneStaleCarry: () => laneStaleCarry,
 			laneSurfaceOf: () => laneSurfaceOf,
 			laneTogetherClosure: () => laneTogetherClosure,
+			liveBenchRows: () => liveBenchRows,
 			loraAdaptersOf: () => loraAdaptersOf,
 			loraIdOf: () => loraIdOf,
 			loraLabel: () => loraLabel,
@@ -7829,6 +8329,7 @@ window.__ModuleLoader__.load({
 			normalizeSegmentStatus: () => normalizeSegmentStatus,
 			offeredPool: () => offeredPool,
 			projectStageView: () => projectStageView,
+			projectStages: () => projectStages,
 			projectUpstreamStages: () => projectUpstreamStages,
 			reseatDeadKeys: () => reseatDeadKeys,
 			resolveCellRow: () => resolveCellRow,

@@ -1,5 +1,6 @@
 import type { Context, Plugin } from "@deepseek-ai/cordis";
-import { type DeclarationPort } from "@melite/estate-provisioning";
+import { type DeclarationPort, type ResourceRef } from "@melite/estate-provisioning";
+import type { ModelDecl } from "@melite/comfyui-card-kit/model-contract";
 import Schema from "@deepseek-ai/schemastery";
 /** The readiness retry backoff (500ms, raced against the caller's
  *  abort signal). The sleep rides the fiber-scoped timer — ctx.timeout
@@ -54,6 +55,19 @@ export declare const ProvisioningCompositionConfig: Schema<Schemastery.ObjectS<N
     durableDownloads: Schema<boolean, boolean, "plain">;
     downloadClaimIntervalMs: Schema<number, number, "plain">;
 }>>, "plain">;
+/** The variant/quant coordinates a family ref resolves to (route →
+ *  variant id). Exported for the declared-resources wall's subset arm
+ *  — the wall derives its expected plan from the SAME coordinate law
+ *  the seat consumes, never a second spelling.
+ *  @param ref the family-scoped model ref
+ *  @param decl the family DECL
+ *  @returns the resolved variant/quant ids (null when unstated) */
+export declare function routeCoordinates(ref: Extract<ResourceRef, {
+    kind: "model";
+}>, decl: ModelDecl): {
+    variant: string | null;
+    quant: string | null;
+};
 /** The direct-model arm's idle budget when the caller passes no
  *  signal (audit V-E9 → the 9.35GB cure, 2026-10-10): the dial
  *  bounds IDLE, never duration — a whole-body cap aborts a healthy

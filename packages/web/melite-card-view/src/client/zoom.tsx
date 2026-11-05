@@ -79,7 +79,13 @@ export interface ZoomDetailProps {
   onRemoved: () => void
   /** THE RESYNC SEAT (2026-09-15, the stuck cure): a detail write
    *  that refused after its rebase asks the view to re-read the
-   *  bench so the next gesture composes against fresh truth. */
+   *  bench so the next gesture composes against fresh truth. Since
+   *  2026-11-03 the seat carries the FACE-TRUTH law too: a LANDED
+   *  discrete drill write (the atomic pick, the recipe departure)
+   *  refreshes the bench the same way — the recipe face derives
+   *  from the resolved doc (base under user), so without the
+   *  re-read it keeps naming the departed row after its write
+   *  landed (the blank round-trip burn). */
   onResync?: () => void
   /** params patch verb (the surface slot's onPatch currency).
    *  THE SETTLEMENT RIDE (2026-10-15, the ghost cure): carries the
@@ -474,7 +480,7 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
           // unaffected: their zoomDetail scrolls inside.
           h('div', { key: 'body', className: css.zoomBody },
             ready
-              ? h(props.detail, { stage, bench: rest.bench, running: rest.running, onRun: rest.onRun, onStop: rest.onStop, onClose, onRemoved: rest.onRemoved, onPatchParams: rest.onPatchParams, renderStageView: rest.renderStageView, renderPreview: rest.renderPreview, onSurface, runId: rest.runId, bindRun: (r: () => void) => { boundRef.current = r }, bindEnhance: bindEnhanceStable, cardLabel: props.cardLabel ?? null })
+              ? h(props.detail, { stage, bench: rest.bench, running: rest.running, onRun: rest.onRun, onStop: rest.onStop, onClose, onRemoved: rest.onRemoved, onResync: rest.onResync, onPatchParams: rest.onPatchParams, renderStageView: rest.renderStageView, renderPreview: rest.renderPreview, onSurface, runId: rest.runId, bindRun: (r: () => void) => { boundRef.current = r }, bindEnhance: bindEnhanceStable, cardLabel: props.cardLabel ?? null })
               : h(ZoomSkeleton),
           ),
         ),

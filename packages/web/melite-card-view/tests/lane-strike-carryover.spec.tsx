@@ -30,6 +30,8 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { createElement as h } from "react";
 
 import {
+  activeRecipeId,
+  composeCandidateDoc,
   resolveValue,
   type FormSpecDoc,
   type SpecValues,
@@ -150,6 +152,54 @@ describe('THE BASE STRIKE (audits 018 C4 + 016 C5) — the departed base stamp n
     strikeDeadLaneStamps(spec as FormSpecDoc, { variant: 'kroma-base' }, base)
     expect(base, 'the strike returns a copy — the served map is untouched').toEqual(frozen)
   })
+
+  test('THE TWIN-STAMP DEAD ZONE (qwen-img-edit-21 burn, 2026-11-15): the departed recipe\u2019s base ghosts strike — the face derives the picked row over the clean layer', async () => {
+    const spec = await formSpecArm('qwen-img-edit-21')
+    expect(spec, 'the served qwen-img-edit-21 spec resolves').not.toBeNull()
+    // THE LIVE WIRE, verbatim: the pick landed remove-background
+    // (the doc/params hold its full stamp) while the served base —
+    // the LAST resolution's plane — still resolves the departed
+    // upstream-solvers stamps. base ⊕ user carries BOTH rows\u2019
+    // stamps and the derivation names NEITHER: the recipe face
+    // reads the placeholder for good over a doc the pure
+    // derivation names.
+    const user: SpecValues = { variant: 'turbo', quant: 'int8_convrot', model: 'qwen-img-edit-21', prompt: 'Remove the background, and output a PNG image' }
+    const base: SpecValues = { steps: 8, cfg: 1, prompt: 'Remove the background, and output a PNG image', sampler: 'euler', scheduler: 'simple' }
+    const strike = strikeDeadLaneStamps(spec as FormSpecDoc, user, base)
+    expect(strike.strikes, 'the departed recipe\u2019s ghosts are named').toEqual(['sampler', 'scheduler'])
+    expect('sampler' in strike.base, 'the base plane no longer resurrects the departed stamps under the pick\u2019s deletions').toBe(false)
+    // THE FACE\u2019S OWN SEAT: the derivation layer the drill feeds
+    // the pill (composeCandidateDoc(base, user)) names the row the
+    // pick wrote — never the placeholder.
+    const layer = composeCandidateDoc(strike.base, user, {})
+    expect(activeRecipeId(spec as FormSpecDoc, layer), 'the struck layer names the picked row').toBe('remove-background')
+    expect(activeRecipeId(spec as FormSpecDoc, composeCandidateDoc(base, user, {})), 'the UNSTRUCK layer is the dead zone — the burn\u2019s shape, pinned').toBeUndefined()
+  })
+
+  test('THE REOPEN EDGE never strikes: a base whose layer still names a row IS that row\u2019s stamp plane', async () => {
+    const spec = await formSpecArm('qwen-img-edit-21')
+    expect(spec, 'the served qwen-img-edit-21 spec resolves').not.toBeNull()
+    // no pick landed this session: the base alone carries
+    // upstream\u2019s resolved stamps and the layer names the row —
+    // the dead-zone gate is closed before any key moves
+    const user: SpecValues = { variant: 'turbo', quant: 'int8_convrot', model: 'qwen-img-edit-21' }
+    const base: SpecValues = { steps: 8, cfg: 1, sampler: 'euler', scheduler: 'simple' }
+    const { strikes, shown } = struckView(spec as FormSpecDoc, user, base)
+    expect(strikes, 'a live row\u2019s own stamp plane never strikes').toEqual([])
+    expect(shown.sampler, 'the row\u2019s stamps still resolve').toBe('euler')
+  })
+
+  test('THE DEAD ZONE WITH NO EXIT never strikes: striking recipe ghosts that name no row keeps the base', async () => {
+    const spec = await formSpecArm('qwen-img-edit-21')
+    expect(spec, 'the served qwen-img-edit-21 spec resolves').not.toBeNull()
+    // a hand-edited layer (a prompt that names no row, ghosts that
+    // leave no row either): the strike judges by difference and
+    // keeps the plane — nothing to gain, nothing moved
+    const user: SpecValues = { variant: 'turbo', quant: 'int8_convrot', model: 'qwen-img-edit-21', prompt: 'a hand-typed prompt' }
+    const base: SpecValues = { steps: 8, cfg: 1, sampler: 'euler', scheduler: 'simple' }
+    const { strikes } = struckView(spec as FormSpecDoc, user, base)
+    expect(strikes, 'no row named after the strike means no strike').toEqual([])
+  })
 })
 
 // ── THE STRIKE NOTE (the named heal, dismissible) ─────────────────
@@ -224,6 +274,12 @@ describe('the strike note — the named heal at the drill seat', () => {
     expect(screen.getByTestId('lane-strike-note').textContent).toContain('voice')
     const dismiss = within(screen.getByTestId('lane-strike-note')).getByRole("button", { name: "Dismiss error" });
     expect(screen.getByTestId('lane-strike-note').contains(dismiss), 'the × rides INSIDE the note (the anchor law)').toBe(true)
+    // SETTLE BARRIER (the roaming-dom-flake cure trial, 2026-11-15):
+    // this arm struck three times under full-gate load — the dismiss's
+    // update lost against the still-settling mount cascade (captured
+    // signature: dev_docs/audits/journey/roaming-dom-flake-2026-11-15.md).
+    // The barrier drains pending cascade work before the gesture.
+    await new Promise((r) => setTimeout(r, 50));
     fireEvent.click(dismiss)
     // waitFor, not a sync assert: the mount cascade can still be
     // settling when the click lands (the 2026-10-30 flake audit's

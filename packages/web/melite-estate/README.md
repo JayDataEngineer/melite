@@ -37,5 +37,5 @@ Independent — the row contributes no content to model requests.
 ## Known Limitations and Deferred Work
 
 - **No MCP engine by default** — `mcp:…` stages refuse by name at their own door until an engine is explicitly seated; a 3D bench is a DSH-profile concern, not this row's.
-- **The bundle gate's scope is the core surface** — card studios stay optional by design, since a headless commission estate composes without them; the every-bundle sweep belongs to dsh-app-boot upstream.
+- **The bundle gate's scope is the core surface** — card studios stay optional by design, since the agent-server commission estate composes without them; the every-bundle sweep belongs to dsh-app-boot upstream.
 - **No `./invariant` companion** — the row's mount claims are composition facts checked by the bundle gate at boot; independent observations cannot diverge around a runtime assertion here.

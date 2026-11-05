@@ -210,8 +210,15 @@ test('Run in the drill patches the domain FIRST, then starts the run', async () 
   // the patch (freshStageRow), never the client's stale open-row. The
   // old assertion stopped at patch-order; the run composed the row as
   // it stood at tile-click and silently dropped every edit.
+  // THE PIN'S OWN RE-PIN (2026-11-03 chain cure): the serialized write
+  // chain lawfully fetches rev currency (drafts/get) BEFORE its patch;
+  // indexOf would match that get and pass with NO re-read at all. The
+  // law is the re-read that CARRIES the run: the last get before
+  // runs/start must sit after the last patch before it.
   const methods = calls.map((c) => c.method)
-  expect(methods.indexOf('drafts/get')).toBeGreaterThan(methods.indexOf('drafts/patch'))
+  const runStart = methods.indexOf('runs/start')
+  const lastPatchBeforeRun = methods.lastIndexOf('drafts/patch', runStart)
+  expect(methods.lastIndexOf('drafts/get', runStart)).toBeGreaterThan(lastPatchBeforeRun)
   const start = calls.find((c) => c.method === 'runs/start')
   expect(start?.args).toMatchObject({ doc: { prompt: typed, steps: 20 } })
   // F21 (2026-10-30): the press NAMES its bench stage. The run door

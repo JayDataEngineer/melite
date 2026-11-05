@@ -188,8 +188,12 @@ export function PoserFigureStage({ identityModel, identityCoeffs, localChanges, 
         ...(identityCoeffs !== undefined && identityCoeffs !== null && identityCoeffs.length > 0 ? { identityCoeffs } : {}),
         ...(localChanges !== undefined && localChanges !== null && Object.keys(localChanges).length > 0 ? { localChanges } : {}),
       })
-        .then((d) => { if (alive) setDoc(d) })
-        .catch((e: unknown) => { if (alive) setFailed(rejectionVoice(e)) })
+        .then((d) => { if (alive) { setDoc(d); setTimeout(() => { if (alive) setDoc(d) }, 0) } })
+        .catch((e: unknown) => {
+          if (!alive) return
+          setFailed(rejectionVoice(e))
+          setTimeout(() => { if (alive) setFailed(rejectionVoice(e)) }, 0)
+        })
     }, 120)
     return () => { alive = false; clearTimeout(timer) }
     // sig (not the arrays): a stable string dep — identityCoeffs and
