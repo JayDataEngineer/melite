@@ -643,7 +643,7 @@ test('THE NAMED-SURFACE LAW (operator order, 2026-11-12): the default face names
       },
       modifiers: [
         { kind: 'mask', category: 'list', fields: ['mask', 'input_mask', 'mask_mode', 'mask_detector'] },
-        { kind: 'lora', category: 'list', fields: ['loras'], param_key: 'loras' },
+        { kind: 'lora', category: 'list', fields: ['loras'], param_key: 'loras', entry: 'option', option_key: 'id' },
       ],
     },
   })

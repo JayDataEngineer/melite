@@ -19,11 +19,15 @@ vi.mock('@melite/comfyui-cordis', () => ({
   },
 }))
 
+// THE ROWS MIRROR THE SSOT's OPTION CONTRACT (lora audit F4-adjacent
+// fixture drift, 2026-11-15): a mock that drops entry/option_key
+// renders a different face than the served row while the suite stays
+// green — keep these byte-faithful to MODIFIER_PACKS.
 vi.mock('../src/discovery.ts', () => ({
   MODIFIER_PACKS: {
     qvoice: { kind: 'qvoice', label: 'Voice', cardinality: 'list' },
-    controlnet: { kind: 'controlnet', label: 'ControlNet', cardinality: 'list', param_key: 'controlnets' },
-    loras: { kind: 'lora', label: 'LoRAs', cardinality: 'list' },
+    controlnet: { kind: 'controlnet', label: 'ControlNet', cardinality: 'list', max_stack: 5, param_key: 'controlnets', entry: 'hybrid', option_key: 'type' },
+    loras: { kind: 'lora', label: 'LoRAs', cardinality: 'list', entry: 'option', option_key: 'id', entry_shape: '{id | name, strength?, steps?}' },
   },
 }))
 
