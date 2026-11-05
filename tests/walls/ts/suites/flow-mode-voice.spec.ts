@@ -11,13 +11,21 @@
  * (a silent mishandle, never a loud refusal — the schema is
  * type:'string', so no 422 fires).
  *
+ * W-1 (2026-11-05, operator option 2): the ad-hoc hatch is DELETED
+ * (F3-13 proved it never was bench-isolated — it landed through
+ * loadBench overwrite:true, replacing stages + intent; the per-stage
+ * {stage} press (W-8) is the hand-built replacement and rides the
+ * bench pass, so 'adhoc' left the tool with runAdHoc). The census
+ * pins the THREE-value set; a reintroduced mode:'adhoc' return reds
+ * BY NAME.
+ *
  * Arm 1 — THE CENSUS: the returned set derives from every
  *   `mode: '…'` literal in the tool's execute paths; the documented
  *   set is the output-schema `mode` property's description line.
  *   Undocumented values RED BY NAME (bench was the first red).
  *
  * Depth: the real tool source on both sides, never a hand list —
- * a new composition returning a fifth mode reds until the
+ * a new composition returning a fourth mode reds until the
  * description teaches it (docs follow code).
  */
 import { describe, expect, it } from 'vitest'
@@ -50,11 +58,14 @@ function documentedOf(): string[] {
 describe('THE FLOW MODE VOICE (the output description names every returned mode)', () => {
   it('arm 1 — every returned mode value is documented (an undocumented value reds BY NAME)', () => {
     const returned = returnedOf()
-    expect(returned.length, 'the return sweep must find the execute-path modes').toBeGreaterThanOrEqual(4)
-    expect(returned, 'the tool serves the four compositions').toEqual(['adhoc', 'bench', 'card', 'flow'])
+    expect(returned.length, 'the return sweep must find the execute-path modes').toBeGreaterThanOrEqual(3)
+    // W-1: the ad-hoc mode is gone — 'adhoc' here reds BY NAME, and a
+    // reintroduced runAdHoc return reds this census until the
+    // description teaches it again (docs follow code).
+    expect(returned, 'the tool serves the three compositions (W-1 deleted the ad-hoc mode)').toEqual(['bench', 'card', 'flow'])
     const doc = documentedOf()
     const undocumented = returned.filter((v) => !doc.includes(v))
     expect(undocumented, 'undocumented mode value (an agent switching on the documented set mishandles it): ' + JSON.stringify(undocumented)).toEqual([])
-    expect(doc.length, 'the enumeration must name compositions').toBeGreaterThanOrEqual(4)
+    expect(doc.length, 'the enumeration must name compositions').toBeGreaterThanOrEqual(3)
   })
 })

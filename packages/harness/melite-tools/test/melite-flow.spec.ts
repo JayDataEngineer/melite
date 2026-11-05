@@ -1,21 +1,20 @@
 // melite_flow walls (vitest, fetch mocked — no gateway, no
-// GPU). Ports the build_flow compose contract + the flow_run /
-// card_run L4 walls onto the ONE execution verb:
-//   1. AD-HOC: validate runs FIRST and its refusal rides the VALUE
-//      verbatim (the AI feedback loop — no draft exists on refusal)
-//   2. connects fold into typed edges; inference + loud pre-HTTP
-//      refusals for unkind'd initial wires (values, never throws)
-//   3. CARD: the allowlist is DERIVED from /v1/card-tools (the
+// GPU). Ports the flow_run / card_run L4 walls onto the ONE execution
+// verb:
+//   1. W-1 (2026-11-05): the ad-hoc door is GONE — {stages}/{connects}
+//      refuse in tombstone words naming the per-stage verb, before any
+//      bench read; the {stage} press leaves siblings + intent untouched
+//   2. CARD: the allowlist is DERIVED from /v1/card-tools (the
 //      hardcoded 6-model list is dead); refusals ride the value
-//   4. L4: the test flag rides the start body in ALL THREE modes
-//   5. CARD BIRTH LAW: compose-first in every mode — the start
+//   3. L4: the test flag rides the start body in every mode
+//   4. CARD BIRTH LAW: compose-first in every mode — the start
 //      rides the minted draft_id; a refused compose never starts
 
 import { describe, test, vi } from 'vitest'
 import assert from 'node:assert/strict'
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import { ToolArgsError } from '@deepseek-ai/dsh-tools'
-import { foldConnects, meliteFlow, observeAndAttribute } from '../src/tools/melite-flow.ts'
+import { meliteFlow, observeAndAttribute } from '../src/tools/melite-flow.ts'
 import type { Estate } from '../src/estate.ts'
 import { fakeEstate, fakeEstateStatus } from './fake-estate.ts'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
@@ -48,18 +47,6 @@ function mockEstate(handlers: Array<(lane: string, args: unknown[]) => { status:
   return { calls: fake.calls, request: fake.estate }
 }
 
-const FLOW = {
-  id: 'still-to-motion',
-  description: 'gen then animate',
-  stages: [
-    { id: 'still', engine: 'comfyui', params: { workflow: 'w' }, outputs: { default: 'image' } },
-    { id: 'move', engine: 'comfyui', params: {} },
-  ],
-  connects: [
-    { from: 'still', to: 'move.frame' },          // kind inferred: image
-    { from: 'initial.prompt', to: 'move.prompt', kind: 'text' },
-  ],
-}
 
 /** The bench law: every run mode ensures THE shared bench first —
  *  the fixtures answer it like the bench door would. The CAS
@@ -105,125 +92,6 @@ function decodeJsonBody(args: unknown[] | undefined): Record<string, unknown> {
   return args[0] as Record<string, unknown>
 }
 
-describe('melite_flow adhoc — the AI feedback loop', () => {
-  test('validate runs FIRST; draft + start follow; result carries no flow body', async () => {
-    const seen = mockEstate([okBenchWith('d1'), okValidate, okDraftThenStart('d1', 'r1')])
-    const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ ...FLOW }, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
-    assert.equal(out.error, undefined)
-    assert.equal(out.mode, 'adhoc')
-    assert.equal(out.target, 'still-to-motion')
-    assert.equal(out.run_id, 'r1')
-    // ONE carrier: the compiled body rides the DRAFT DOC (`flow`
-    // member — the card surface hydrates from the draft), never the
-    // tool result. A result-carried copy would be a second source of
-    // truth to drift.
-    assert.equal(out.flow_inline, undefined)
-    assert.equal(out.flow, undefined)
-    const paths = seen.calls.map((c) => c.lane)
-    // the CURRENT law (REBUILD-12): validate FIRST (no GPU on a bad
-    // wire), then the CAS read (GET the bench row — a live rev rides
-    // as expect_rev), then the bench ensure (the doc-backed draft),
-    // then start. No drafts door.
-    assert.equal(paths[0], 'runsValidate')
-    assert.equal(paths[1], 'benchGet', 'the CAS bench read')
-    assert.equal(paths[2], 'benchEnsure')
-    assert.equal(paths[3], 'runsStart')
-    const draftBody = decodeJsonBody(seen.calls[2]!.args)
-    // the folded body: connect inference + explicit kind
-    const move = (draftBody.stages as Array<{ inputs: unknown; expected: unknown }>)[1]
-    assert.deepEqual(move.inputs, {
-      frame: { stage: 'still', output: 'default' },
-      prompt: { initial: 'prompt' },
-    })
-    assert.deepEqual(move.expected, { frame: 'image', prompt: 'text' })
-    // the draft body: one tile per stage, ids SHARED with the flow
-    // body (the editor's param overlay joins card ↔ flow stage by id —
-    // mismatched ids would silently drop user edits at Run time)
-    const tiles = draftBody.stages as Array<{ id: string; engine: string }>
-    assert.equal(tiles.length, 2)
-    assert.deepEqual(tiles.map((s) => s.id), ['still', 'move'])
-    assert.equal(tiles[0].engine, 'comfyui')
-    // the start presses the BENCH the graph landed (GAPS-8, the
-    // multi-stage port): a two-stage ad-hoc graph is multi-stage, so
-    // the start rides the draft press ({draft_id} alone — the draft
-    // door composes every stage, benchComposed lift) never flow_inline
-    // (the gateway's start gate serves single-stage flow_inline only)
-    const startBody = decodeJsonBody(seen.calls[3]!.args)
-    assert.equal(startBody.flow_inline, undefined, 'no hand-authored multi-stage flow_inline start')
-    assert.equal(startBody.draft_id, 'd1')
-    assert.equal(startBody.test, false)
-  })
-
-  // F31 (2026-11-03, the operator's "adhoc skill" finding — the
-  // verbatim quote rides the friction log, redacted here per the
-  // 2026-11-05 profanity ruling): a stages press that never landed on the bench was
-  // an INVISIBLE press — work that looked like it happened and left
-  // no authoring surface. The multi-stage landing is pinned above;
-  // this arm pins the SINGLE-stage shape on the same law: even a
-  // one-stage ad-hoc graph is on the bench before it presses (the
-  // user can see it, edit it, re-run it from the cards tab).
-  test('F31: a SINGLE-stage stages press also LANDS on the bench before it starts (no invisible press)', async () => {
-    const { calls, request } = mockEstate([
-      okBenchWith('d_single'),
-      okValidate,
-      (lane) => {
-        if (lane === 'runsStart') return { status: 202, body: { run_id: 'run-single', status: 'queued' } }
-        return undefined
-      },
-    ])
-    const out = await meliteFlow(request).execute({
-      stages: [{ id: 'solo', engine: 'comfyui', params: { workflow: 'w' }, outputs: { default: 'image' } }],
-    } as never, fakeExec(AbortSignal.timeout(5000)))
-    assert.equal(String((out as Record<string, unknown>)['error'] ?? ''), '', 'the press succeeds')
-    const paths = calls.map((c) => c.lane)
-    assert.ok(paths.includes('benchGet'), 'the CAS bench read ran')
-    const ensure = calls.find((c) => c.lane === 'benchEnsure')
-    assert.ok(ensure !== undefined, 'the single-stage graph LANDED on the bench — never an invisible press')
-    const doc = decodeJsonBody(ensure.args)
-    const tiles = doc['stages'] as Array<{ id: string }>
-    assert.deepEqual(tiles.map((t) => t.id), ['solo'], 'the landed doc carries the stage')
-    // the single-stage start keeps its direct flow_inline shape (the
-    // gateway's start gate serves single-stage inline) AND names the
-    // draft it landed
-    const start = decodeJsonBody(calls.find((c) => c.lane === 'runsStart')!.args)
-    assert.equal(start['draft_id'], 'd_single', 'the start names the landed draft')
-  })
-
-  test('a compile refusal rides the VALUE verbatim and no draft is posted', async () => {
-    const refusal = "flow 'x' stage 'move' input 'frame': expected text, got image "
-      + "from stage 'still' output 'default' — must be text"
-    const seen = mockEstate([okBench, 
-      () => ({ status: 400, body: { error: refusal } }),
-    ])
-    const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ ...FLOW }, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
-    assert.ok(String(out.error).includes(refusal), String(out.error) + ' lacks ' + refusal)   // verbatim compile text, valued
-    assert.equal(seen.calls.some((c) => c.lane === 'cardCompose'), false)
-  })
-
-  test('initial wires without a kind refuse pre-HTTP (nothing to infer)', async () => {
-    const seen = mockEstate([okBench, okValidate])
-    const tool = meliteFlow(seen.request)
-    const out = await tool.execute({
-      stages: [{ id: 'a', engine: 'comfyui' }],
-      connects: [{ from: 'initial.prompt', to: 'a.prompt' }],
-    }, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
-    assert.ok(String(out.error).includes('initial wires ALWAYS need an explicit kind'), String(out.error) + ' lacks ' + 'initial wires ALWAYS need an explicit kind')
-    assert.equal(seen.calls.length, 0)      // refused before any HTTP
-  })
-
-  test('connects naming unknown stages refuse with the known list', async () => {
-    const quiet = mockEstate([okBench, ])
-    const tool = meliteFlow(quiet.request)
-    const out = await tool.execute({
-      stages: [{ id: 'a', engine: 'comfyui' }],
-      connects: [{ from: 'ghost', to: 'a.x' }],
-    }, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
-    assert.ok(String(out.error).includes('unknown stage'), String(out.error) + ' lacks ' + 'unknown stage')
-    assert.ok(String(out.error).includes('"ghost"'), String(out.error) + ' lacks ' + '"ghost"')
-  })
-})
 
 describe('melite_flow card — the live allowlist', () => {
   const CATALOG = { models: { 'new-model-1': { family: 'krea' } }, families: { krea: { label: 'Krea 2' } } }
@@ -951,19 +819,6 @@ describe('melite_flow L4 — the test flag rides every mode', () => {
     assert.deepEqual(seen.calls.map((c) => c.lane), ['loadCard'])
   })
 
-  test('adhoc multi-stage: test:true rides the draft press', async () => {
-    const seen = mockEstate([okBenchWith('d2'), okValidate, okDraftThenStart('d2', 'r2')])
-    const tool = meliteFlow(seen.request)
-    await tool.execute({ ...FLOW, test: true }, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } }))
-    const posts = seen.calls.filter((s) => s.lane === 'runsStart')
-    assert.equal(posts.length, 1)
-    const body = decodeJsonBody(posts[0]!.args)
-    assert.equal(body.test, true)
-    // GAPS-8: the two-stage ad-hoc graph presses the bench (draft
-    // door), never flow_inline
-    assert.equal(body.flow_inline, undefined)
-    assert.equal(body.draft_id, 'd2')
-  })
 })
 
 describe('melite_flow tile contract — the chat hydrates from the render', () => {
@@ -1012,15 +867,6 @@ describe('melite_flow tile contract — the chat hydrates from the render', () =
     assert.ok(text2.includes('r7b'), text2 + ' lacks the run id')
   })
 
-  test('adhoc success: render token parses to the minted draft', async () => {
-    const seen = mockEstate([okBenchWith('draft-tile-2'), okValidate, okDraftThenStart('draft-tile-2', 'r8')])
-    const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ ...FLOW }, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
-    assert.equal(out.draft_id, 'draft-tile-2')
-    const parts = tool.output.render({ ...FLOW }, out as never) as Array<{ text?: string }>
-    const text = parts.map((p) => p?.text ?? '').join('\n')
-    assert.equal(parseTileToken(text), 'draft-tile-2')
-  })
 
   test('THE RUN-ID VISIBILITY LAW (032/033): bench success names the final run at top level and EVERY minted id in the prose', async () => {
     // the maker paid for two runs; the old render printed ONE '?'
@@ -1418,9 +1264,8 @@ describe('melite_flow bench — the remote refusal voice', () => {
 })
 
 // ---- gap closure (2026-09-12): per-file 100% for melite-flow.ts ----
-// foldConnects is pure (exported) — its arms close directly; the run
-// fns are module-private, so their arms close through execute with a
-// scripted estate. All remotes scripted: no gateway, no GPU.
+// the run fns are module-private, so their arms close through execute
+// with a scripted estate. All remotes scripted: no gateway, no GPU.
 
 function ensureOk(draftId: string) {
   return (lane: string, args: unknown[]) => {
@@ -1538,77 +1383,7 @@ describe('melite_flow guards — the exactly-one law + the wrapper gate', () => 
     const seen = mockEstate([okBench, okValidate])
     const tool = meliteFlow(seen.request)
     await assert.rejects(tool.execute(undefined as never, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })), ToolArgsError)
-    await assert.rejects(tool.execute({ stages: 'x' } as never, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })), ToolArgsError)
     await assert.rejects(tool.execute({ params: [] } as never, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })), ToolArgsError)
-    assert.equal(seen.calls.length, 0)
-  })
-
-  // THE ROW CONTRACT (the strictness audit's fix 8): stage and
-  // connect rows were additionalProperties blobs — a typo'd row key
-  // rode silent into the fold. The rows are declared now: validateArgs
-  // refuses an undeclared key, a stage row missing id/engine, and a
-  // connect missing from/to BEFORE execute, with the key named.
-  // Cross-mode exactly-one stays in execute — the implicit object
-  // root grammar carries per-property annotations only (no root
-  // oneOf); the two-compositions test above pins that refusal.
-  test('stage rows refuse undeclared keys, missing id/engine at the wrapper gate', async () => {
-    const seen = mockEstate([okBench, okValidate])
-    const tool = meliteFlow(seen.request)
-    await assert.rejects(
-      tool.execute({ stages: [{ id: 's1', engine: 'comfyui', boardd: 1 }] } as never, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })),
-      (e: unknown) => {
-        assert.ok(e instanceof ToolArgsError)
-        assert.match((e as ToolArgsError).message, /"stages\[0\]\.boardd" is not a declared property/)
-        return true
-      },
-    )
-    await assert.rejects(
-      tool.execute({ stages: [{ engine: 'comfyui' }] } as never, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })),
-      (e: unknown) => {
-        assert.ok(e instanceof ToolArgsError)
-        assert.match((e as ToolArgsError).message, /missing required property "stages\[0\]\.id"/)
-        return true
-      },
-    )
-    await assert.rejects(
-      tool.execute({ stages: [{ id: 's1' }] } as never, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })),
-      (e: unknown) => {
-        assert.ok(e instanceof ToolArgsError)
-        assert.match((e as ToolArgsError).message, /missing required property "stages\[0\]\.engine"/)
-        return true
-      },
-    )
-    assert.equal(seen.calls.length, 0)
-  })
-
-  test('connect rows refuse missing from/to and undeclared keys at the wrapper gate', async () => {
-    const seen = mockEstate([okBench, okValidate])
-    const tool = meliteFlow(seen.request)
-    await assert.rejects(
-      tool.execute({ stages: [{ id: 's1', engine: 'comfyui' }], connects: [{ to: 's1.image' }] } as never, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })),
-      (e: unknown) => {
-        assert.ok(e instanceof ToolArgsError)
-        assert.match((e as ToolArgsError).message, /missing required property "connects\[0\]\.from"/)
-        return true
-      },
-    )
-    await assert.rejects(
-      tool.execute({ stages: [{ id: 's1', engine: 'comfyui' }], connects: [{ from: 's1', to: 's2.image', zeta: 1 }] } as never, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })),
-      (e: unknown) => {
-        assert.ok(e instanceof ToolArgsError)
-        assert.match((e as ToolArgsError).message, /"connects\[0\]\.zeta" is not a declared property/)
-        return true
-      },
-    )
-    assert.equal(seen.calls.length, 0)
-  })
-
-  test('empty stages refuse (non-empty rows only)', async () => {
-    const seen = mockEstate([okBench, okValidate])
-    const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ stages: [] }, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
-    assert.equal(out.mode, 'adhoc')
-    assert.ok(String(out.error).includes('non-empty array'), String(out.error))
     assert.equal(seen.calls.length, 0)
   })
 
@@ -1633,22 +1408,66 @@ describe('melite_flow guards — the exactly-one law + the wrapper gate', () => 
     assert.ok(String(out.error).includes('INSIDE params'), 'the seat is stated')
     assert.equal(seen.calls.length, 0, 'nothing starts on a stray arg')
   })
+
+  // THE TOMBSTONE GATE (W-1, 2026-11-05, operator option 2): the
+  // ad-hoc hatch is DELETED — {stages}/{connects} (+ the ad-hoc-only
+  // {id}/{description}) are no longer known args, so they refuse at
+  // the stray gate in tombstone words naming the per-stage verb,
+  // BEFORE the exactly-one gate (a bare {stages:[...]} names its cure,
+  // never reads as nothing-selected) and before any bench read.
+  test('W-1 arm 1 (THE WALL): {stages} refuses in tombstone words naming the {stage} press, before any bench read', async () => {
+    const seen = mockEstate([])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({ stages: [{ id: 'a', engine: 'comfyui' }] } as never, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.ok(String(out.error).includes('stages'), 'the refused key is named')
+    assert.ok(String(out.error).includes('ad-hoc stages are gone'), 'the tombstone names the deletion')
+    assert.ok(String(out.error).includes('stage: "<bench stage id>"'), 'the refusal names the per-stage press')
+    assert.ok(String(out.error).includes('bench row'), 'the refusal names the bench row')
+    assert.equal(out.mode, 'flow')
+    assert.equal(seen.calls.length, 0, 'the refusal precedes every estate call — no bench read, no landing')
+  })
+
+  test('W-1 arm 2: {stages + connects} refuse TOGETHER — the stray gate fires before the exactly-one voice', async () => {
+    const seen = mockEstate([])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({
+      stages: [{ id: 'a', engine: 'comfyui' }],
+      connects: [{ from: 'initial.prompt', to: 'a.prompt', kind: 'text' }],
+    } as never, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    const msg = String(out.error)
+    assert.ok(msg.includes('"connects"'), 'the stray enumeration carries BOTH deleted keys')
+    assert.ok(msg.includes('ad-hoc stages are gone'), 'the tombstone voice carries')
+    assert.equal(seen.calls.length, 0, 'nothing reaches the estate')
+  })
+
+  test('W-1 arm 3: the ad-hoc-only {id}/{description} params refuse too', async () => {
+    const seen = mockEstate([])
+    const tool = meliteFlow(seen.request)
+    for (const args of [{ id: 'my-graph' }, { description: 'what it makes' }]) {
+      const out = await tool.execute(args as never, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+      assert.ok(String(out.error).includes('ad-hoc stages are gone'), String(out.error))
+    }
+    assert.equal(seen.calls.length, 0)
+  })
 })
 
 describe('melite_flow presentCall/render/meta — the faces', () => {
-  test('presentCall names card | flow | adhoc | ? (the gate owns the junk face)', () => {
+  test('presentCall names card | flow | ? (the gate owns the junk face)', () => {
     const tool = meliteFlow(fakeEstate({}).estate)
     // (§7 P7: the faces render only schema-valid args — mistyped or
     // non-object args are refused by the gate, never rendered by a
-    // second seat. {} is schema-valid (all top-level optional).)
+    // second seat. {} is schema-valid (all top-level optional).
+    // W-1: {stages} is no longer a declared arg (the ad-hoc hatch is
+    // deleted) — it renders the unseated face, never an ad-hoc card.)
     const pc = (a: unknown) => tool.presentCall!(a as never)
     assert.equal(pc({ card: 'image-gen' })!.title, 'Run image-gen')
     assert.equal(pc({ card: '', flow: 'foo' })!.title, 'Run foo')
     assert.equal(pc({ flow: 'foo' })!.title, 'Run foo')
+    assert.equal(pc({ stage: 's_0' })!.title, 'Run stage s_0')
     assert.equal(pc({ card: 5, flow: 'f' }), undefined)
-    assert.equal(pc({ stages: [1, 2] }), undefined)
+    assert.equal(pc({ stages: [1, 2] })!.title, 'Run ?')
     assert.equal(pc({})!.title, 'Run ?')
-    assert.equal(pc({ card: '', flow: '', stages: 'x' }), undefined)
+    assert.equal(pc({ card: '', flow: '', stages: 'x' })!.title, 'Run ?')
     assert.equal(pc(undefined), undefined)
     assert.equal(pc(null), undefined)
     assert.equal(pc('x'), undefined)
@@ -2676,257 +2495,8 @@ describe('melite_flow template — the flows-are-compositions law (2026-11-14)',
   })
 })
 
-describe('melite_flow adhoc — validate + compose refusals', () => {
-  test('a transport validate failure propagates (never valued)', async () => {
-    const seen = mockEstate([() => { throw new Error('validate down') }])
-    const tool = meliteFlow(seen.request)
-    await assert.rejects(tool.execute({ ...FLOW }, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })), /validate down/)
-    assert.equal(seen.calls.length, 1)
-  })
 
-  test('a messageless validate refusal values the compile default', async () => {
-    const seen = mockEstate([() => { throw new RemoteError('runs/flow-compile', '', { loc: 'flow' }) }])
-    const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ ...FLOW }, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
-    assert.equal(out.error, 'flow does not compile')
-    assert.equal(out.mode, 'adhoc')
-  })
 
-  test('a refused bench ensure values the adhoc error (no start)', async () => {
-    const seen = mockEstate([
-      okValidate,
-      (lane: string, args: unknown[]) => {
-        if (lane === 'benchEnsure') return { status: 200, body: { error: 'bench moved: rev is 2, caller held 1' } }
-        return undefined
-      },
-      benchAlive,
-    ])
-    const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ ...FLOW }, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
-    assert.equal(out.mode, 'adhoc')
-    assert.ok(String(out.error).includes('bench moved'), String(out.error))
-    assert.equal(seen.calls.some((c) => c.lane === 'runsStart'), false)
-  })
-
-  test('a refused adhoc start carries the error and NO draft_id', async () => {
-    // 200-with-{error}: the start door answered (not refused) with a
-    // value-carried error — startRun's res.error arm (the 400 arm rides
-    // the bench refusal test above).
-    const seen = mockEstate([okBench, okValidate, () => ({ status: 200, body: { error: 'queue full' } })])
-    const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ ...FLOW }, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
-    assert.equal(out.mode, 'adhoc')
-    assert.equal(out.target, 'still-to-motion')
-    assert.ok(String(out.error).includes('queue full'), String(out.error))
-    assert.equal(out.draft_id, undefined)
-  })
-
-  test('a non-Error bench failure values its string form', async () => {
-    const seen = mockEstate([
-      okValidate,
-      (lane: string, args: unknown[]) => {
-        if (lane === 'benchGet' || lane === 'benchVerb') throw 'wire-down'
-        return undefined
-      },
-      ensureOk('d_adhoc'),
-    ])
-    const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ ...FLOW }, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
-    assert.equal(out.mode, 'adhoc')
-    assert.equal(out.error, 'wire-down')
-  })
-
-  test('connect-less stages compile bare (adhoc id + empty description)', async () => {
-    const seen = mockEstate([ensureOk('d_nc'), benchAlive, okValidate, startOk('r_nc')])
-    const tool = meliteFlow(seen.request)
-    const out = await tool.execute(
-      { stages: [{ id: 'a', engine: 'comfyui' }] },
-      fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } }),
-    ) as Record<string, unknown>
-    assert.equal(out.mode, 'adhoc')
-    assert.equal(out.target, 'adhoc')
-    assert.equal(out.run_id, 'r_nc')
-    const startBody = decodeJsonBody(seen.calls.find((c) => c.lane === 'runsStart')!.args)
-    assert.deepEqual((startBody.flow_inline as { stages: unknown }).stages, [
-      { id: 'a', engine: 'comfyui', description: '', params: {} },
-    ])
-  })
-})
-
-// GAPS-8 — THE MULTI-STAGE PORT (the unported burn: a two-stage
-// ad-hoc graph refused "multi-stage graphs are unported" at the
-// start gate). The gateway's START gate serves single-stage
-// flow_inline runs only; the ad-hoc graph lands on the bench first,
-// so the port presses the bench it landed (the draft press) instead
-// of the refused hand-authored multi-stage flow_inline start.
-describe('melite_flow adhoc — GAPS-8: the multi-stage port', () => {
-  // THE ONE-SEAT LAW's test face (audit 2026-10-31): a delegated
-  // lane carries no conversation id and refuses — these walls drive
-  // the PARENT conversation's seat (session-<uuid>), the only lane
-  // the door authors.
-  const sexec = () => fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })
-  // THE GATEWAY'S OWN LAW, scripted: a multi-stage flow_inline start
-  // refuses exactly like the door refuses it (single-stage policy +
-  // curated-lane lift); the draft press queues. The cure routes the
-  // multi-stage graph around the refused shape lawfully — toggling
-  // the cure out re-sends the refused shape and reds both arms.
-  const gatewayLaw = (lane: string, args: unknown[]) => {
-    if (lane === 'runsStart') {
-      const body = args[0] as { flow_inline?: { stages?: unknown[] } }
-      const n = Array.isArray(body.flow_inline?.stages) ? body.flow_inline!.stages!.length : 0
-      if (n > 1) {
-        return {
-          status: 400,
-          body: {
-            error: 'this gateway serves single-stage flow_inline runs only ('
-              + String(n) + ' stages) — multi-stage graphs are unported '
-              + "(curated registry flows except: name a registry flow id, or drive {flow: '<name>'})",
-          },
-        }
-      }
-      return { status: 202, body: { run_id: 'r_port', status: 'queued' } }
-    }
-    return undefined
-  }
-  // Card-carrying stages: the bench the graph lands IS composable —
-  // the draft door composes card stages through the registry walk
-  // (a cardless row belongs in a flow, not the bench).
-  const TWO_STAGES = [
-    { id: 'still', engine: 'comfyui', card: 'image-gen', params: { prompt: 'a harbour' }, outputs: { default: 'image' } },
-    { id: 'move', engine: 'comfyui', card: 'image-edit', params: {} },
-  ]
-  const WIRE = [{ from: 'still', to: 'move.frame' }]
-
-  test('a two-stage ad-hoc graph presses the bench it landed — run_id rides, no flow_inline start', async () => {
-    const seen = mockEstate([okBenchWith('d_multi'), okValidate, gatewayLaw])
-    const tool = meliteFlow(seen.request)
-    const out = await tool.execute(
-      { id: 'harbour-run', stages: TWO_STAGES, connects: WIRE },
-      sexec(),
-    ) as Record<string, unknown>
-    assert.equal(out.error, undefined, 'the ported multi-stage graph starts: ' + String(out.error))
-    assert.equal(out.mode, 'adhoc')
-    assert.equal(out.target, 'harbour-run')
-    assert.equal(out.run_id, 'r_port')
-    assert.equal(out.draft_id, 'd_multi')
-    // compile-first stands: validate, then the bench landing, then start
-    assert.deepEqual(
-      seen.calls.map((c) => c.lane),
-      ['runsValidate', 'benchGet', 'benchEnsure', 'runsStart'],
-    )
-    // the landed bench carries both card stages (the draft door's compose needs them)
-    const draftBody = decodeJsonBody(seen.calls[2]!.args)
-    assert.deepEqual(
-      (draftBody.stages as Array<{ id: string; card: string }>).map((s) => [s.id, s.card]),
-      [['still', 'image-gen'], ['move', 'image-edit']],
-    )
-    // THE PORT: the draft press — {draft_id} alone, never flow_inline
-    const startBody = decodeJsonBody(seen.calls[3]!.args)
-    assert.equal(startBody.flow_inline, undefined, 'no hand-authored multi-stage flow_inline start')
-    assert.equal(startBody.draft_id, 'd_multi')
-    assert.equal(startBody.test, false)
-  })
-
-  test('the single stage keeps the direct flow_inline start (the port boundary)', async () => {
-    const seen = mockEstate([okBenchWith('d_single'), okValidate, gatewayLaw])
-    const tool = meliteFlow(seen.request)
-    const out = await tool.execute(
-      { stages: [{ id: 'a', engine: 'comfyui', params: {} }] },
-      sexec(),
-    ) as Record<string, unknown>
-    assert.equal(out.error, undefined)
-    assert.equal(out.run_id, 'r_port')
-    const startBody = decodeJsonBody(seen.calls.find((c) => c.lane === 'runsStart')!.args)
-    assert.equal((startBody.flow_inline as { id: string }).id, 'adhoc', 'one stage rides flow_inline still')
-    assert.deepEqual((startBody.flow_inline as { stages: unknown[] }).stages.length, 1)
-    assert.equal(startBody.draft_id, 'd_single')
-  })
-})
-
-describe('foldConnects — the typed fold (pure)', () => {
-  const pair = [
-    { id: 'still', engine: 'comfyui', params: {}, outputs: { default: 'image' } },
-    { id: 'move', engine: 'comfyui', params: {} },
-  ]
-
-  test('missing row fields default (id/engine/description/card/params/outputs)', () => {
-    assert.deepEqual(foldConnects('f', [{}], []), [
-      { id: '', engine: '', description: '', card: '', params: {}, inputs: {}, expected: {}, outputs: {} },
-    ])
-  })
-
-  test('outputs/params shapes: arrays and nulls shed, empties fold bare', () => {
-    const folded = foldConnects('f', [
-      { id: 'a', engine: 'e', outputs: [], params: [] },
-      { id: 'b', engine: 'e', outputs: null, params: null },
-      { id: 'c', engine: 'e', outputs: {}, params: { p: 1 } },
-    ], [])
-    assert.deepEqual(folded.map((s) => s.outputs), [{}, {}, {}])
-    assert.deepEqual(folded.map((s) => s.params), [{}, {}, { p: 1 }])
-  })
-
-  test('a connect without from/to refuses (nothing to fold)', () => {
-    assert.throws(() => foldConnects('f', [{ id: 'a', engine: 'e' }], [{}]), /connect needs \{from, to\}/)
-  })
-
-  test('a to without stage.input shape refuses', () => {
-    assert.throws(
-      () => foldConnects('f', [{ id: 'a', engine: 'e' }], [{ from: 'initial.x', kind: 'text', to: 'nodot' }]),
-      /is not "stage\.input"/,
-    )
-  })
-
-  test('a to naming an unknown stage refuses with the known list', () => {
-    assert.throws(
-      () => foldConnects('f', [{ id: 'a', engine: 'e' }], [{ from: 'initial.x', kind: 'text', to: 'ghost.in' }]),
-      /unknown stage "ghost".*stages: a/,
-    )
-  })
-
-  test('a dot-less from infers the default output (no kind needed)', () => {
-    const folded = foldConnects('f', pair, [{ from: 'still', to: 'move.frame' }])
-    assert.deepEqual(folded[1].inputs, { frame: { stage: 'still', output: 'default' } })
-    assert.deepEqual(folded[1].expected, { frame: 'image' })
-  })
-
-  test('a dotted from infers the named output (no kind needed)', () => {
-    const folded = foldConnects('f', pair, [{ from: 'still.default', to: 'move.frame' }])
-    assert.deepEqual(folded[1].expected, { frame: 'image' })
-  })
-
-  test('a from naming an unknown stage refuses (initial wires named)', () => {
-    assert.throws(
-      () => foldConnects('f', pair, [{ from: 'ghost.out', to: 'move.frame', kind: 'text' }]),
-      /unknown stage "ghost".*initial wires/,
-    )
-  })
-
-  test('kind resolution: empty/non-string kinds infer; explicit kinds win', () => {
-    const empty = foldConnects('f', pair, [{ from: 'still', to: 'move.frame', kind: '' }])
-    assert.deepEqual(empty[1].expected, { frame: 'image' })
-    const num = foldConnects('f', pair, [{ from: 'still', to: 'move.frame', kind: 5 }])
-    assert.deepEqual(num[1].expected, { frame: 'image' })
-    const explicit = foldConnects('f', pair, [{ from: 'still', to: 'move.frame', kind: 'video' }])
-    assert.deepEqual(explicit[1].expected, { frame: 'video' })
-  })
-
-  test('a stage-to-stage wire without kind or declaration refuses upstream-voiced', () => {
-    assert.throws(
-      () => foldConnects('f', [{ id: 'a', engine: 'e' }, { id: 'b', engine: 'e' }], [{ from: 'a.x', to: 'b.in' }]),
-      /does not declare this output/,
-    )
-  })
-
-  test('a twice-wired input refuses', () => {
-    assert.throws(
-      () => foldConnects('f', [{ id: 'b', engine: 'e' }], [
-        { from: 'initial.p', kind: 'text', to: 'b.in' },
-        { from: 'initial.q', kind: 'text', to: 'b.in' },
-      ]),
-      /wired twice/,
-    )
-  })
-})
 
 describe('melite_flow bench — the queue lane law arms', () => {
   test('an explicit params.model short-circuits (never re-derived from the card id)', async () => {
@@ -3114,33 +2684,6 @@ describe('melite_flow bench — the degenerate-shape arms', () => {
   })
 })
 
-describe('melite_flow adhoc — the card fold + compile-first gate (035 dead-route receipt)', () => {
-  test('foldConnects keeps the card on the wire body (035 dead-route receipt: the drop hid the card from every gate)', async () => {
-    const seen = mockEstate([
-      (lane: string, args: unknown[]) => {
-        if (lane === 'runsValidate') return { status: 200, body: { ok: true } }
-        if (lane === 'benchGet') return { status: 200, body: { draft_id: 'd1', rev: 1, stages: [] } }
-        if (lane === 'benchEnsure') return { status: 200, body: { draft_id: 'd1', rev: 2 } }
-        if (lane === 'runsStart') return { status: 400, body: { error: 'flow_inline stage "s0": card= stages are unported on this gateway' } }
-        return undefined
-      },
-    ])
-    const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ stages: [{ id: 's0', engine: 'comfyui', card: 'image-gen', params: { prompt: 'x' } }] }, fakeExec(AbortSignal.timeout(8000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
-    // the START door's own honest voice — never the engine's
-    // `node carries no inline workflow`
-    assert.match(String(out['error']), /card= stages are unported/)
-    const v = seen.calls.find((c) => c.lane === 'runsValidate')
-    const row = ((v!.args[0] as { stages: Array<Record<string, unknown>> }).stages)[0]!
-    assert.equal(row['card'], 'image-gen')
-  })
-
-  test('a cardless stages row never synthesizes an empty card key', async () => {
-    const rows = foldConnects('f', [{ id: 's0', engine: 'comfyui', params: { prompt: 'x' } }], [])
-    assert.equal('card' in (rows[0] as unknown as Record<string, unknown>), true)
-    assert.equal((rows[0] as unknown as { card: string }).card, '')
-  })
-})
 
 describe('melite_flow bench — the status distill arms', () => {
   test('a multi-stage status body with no matching stage row yields no url (st undefined)', async () => {
@@ -3416,6 +2959,26 @@ describe('melite_flow stage — THE PER-STAGE PRESS (W-8, 2026-11-05)', () => {
     assert.equal(JSON.stringify(bench.stages), before, 'the sibling rows are byte-identical across the press')
   })
 
+  // W-1 arm 2 — the F3-13 recut, off W-8's verb: the per-stage press is
+  // the ONLY hand-built press left, and it must be bench-PRESERVING —
+  // no CAS landing, no overwrite, ever. F3-13 proved the deleted hatch
+  // (runAdHoc → loadBench overwrite:true) REPLACED the shared bench's
+  // stages + intent; this arm pins that no {stage} press ever lands a
+  // new bench.
+  test('W-1 arm 2 (F3-13 recut): a {stage} press never lands a bench — zero benchEnsure, the read bench is THE bench', async () => {
+    const bench = stageBench()
+    const before = JSON.stringify(bench)
+    const seen = stagePressEstate(bench)
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({ stage: 's_0' }, fakeExec(AbortSignal.timeout(8000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.status, 'done', String(out.error))
+    const ensures = seen.calls.filter((c) => c.lane === 'benchEnsure')
+    assert.equal(ensures.length, 0, `a per-stage press must never land a bench — benchEnsure fired ${ensures.length}× (F3-13: the deleted hatch replaced the shared bench through loadBench overwrite:true)`)
+    assert.equal(JSON.stringify(bench), before, 'the bench doc is byte-identical across the press — stages AND intent')
+    const writes = seen.calls.filter((c) => c.lane !== 'runsStart' && c.lane !== 'runsStatus' && c.lane !== 'draftsStagePatch')
+    assert.deepEqual(writes.map((c) => c.lane), ['loadCard', 'benchGet'], 'besides the run lifecycle, the press only READS the bench')
+  })
+
   test('W-8 arm 2: an unknown stage id refuses naming the known ids, with zero starts', async () => {
     const seen = stagePressEstate(stageBench())
     const tool = meliteFlow(seen.request)
@@ -3433,7 +2996,7 @@ describe('melite_flow stage — THE PER-STAGE PRESS (W-8, 2026-11-05)', () => {
     const seen = stagePressEstate(stageBench())
     const tool = meliteFlow(seen.request)
     const out = await tool.execute({ stage: 's_0', bench: true }, fakeExec(AbortSignal.timeout(6000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
-    assert.match(String(out.error), /exactly one composition per call: bench \| card \| flow \| stages \| stage — never combined/, 'the exclusivity voice names the stage arm')
+    assert.match(String(out.error), /exactly one composition per call: bench \| card \| flow \| stage — never combined/, 'the exclusivity voice names the stage arm')
     assert.equal(seen.calls.length, 0, 'the refusal precedes every estate call')
     // An empty-string stage counts as absent (the hasStage gate): the
     // call refuses as nothing-selected, never as a stage press.

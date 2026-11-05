@@ -34,22 +34,25 @@
 //   Flipping the DECL to singular reds this arm and forces the cure
 //   decision to be re-made.
 //
-//   THE WIRE LANDS — the real foldConnects → flowFromBody over the
-//   real defs: the stated list kind serves; the film row carries the
-//   expected list kind and the stage edge. The BENCH face rides the
-//   same gate: a hand-written expected audio_list composes (the
-//   h3-timeline tool doc teaches hand-written expected kinds for
-//   wired rows — that teaching must not be a trap on a declared
-//   list port).
+//   W-1 (2026-11-05): the ad-hoc fold face (foldConnects) is DELETED
+//   with the hatch it served — the wall's stated-kind and derivation
+//   arms ride the surviving BENCH face (flowFromBody over the real
+//   defs): a stated audio_list composes (and a hand-written expected
+//   audio_list — the h3-timeline tool doc teaches hand-written
+//   expected kinds for wired rows, that teaching must not be a trap
+//   on a declared list port); an unstated kind derives from the
+//   card's own port declaration and the list law admits the singular
+//   producer.
 //
-//   THE SINGULAR LIE REFUSES — `audio` against the declared
+//   THE SINGULAR LIE REFUSES — `audio` stated against the declared
 //   audio_list still refuses in the sweep's own voice: the cure grew
 //   the vocabulary, it never weakened the DECL-contradiction guard.
 //
-//   THE VOICE DERIVES — the fold's no-kind refusal enumerates exactly
-//   [...KIND_VOCAB], and inlineKind refuses a non-member naming the
-//   same set. A reintroduced hand copy reds the first half; a
-//   vocabulary leak ('audio_lists') reds the second.
+//   THE ENFORCER'S VOICE DERIVES — inlineKind refuses a non-member
+//   naming exactly the closed set (the deleted fold's no-kind voice
+//   enumerated the same SSOT; the hatch is gone, the voice judge
+//   stays). A reintroduced hand copy reds this arm; a vocabulary
+//   leak ('audio_lists') reds it too.
 //
 //   THE BENCH LANE STAYS OPEN — rows WITHOUT expected compose through
 //   kindsOk's card-ports derivation + the list law: the pre-existing
@@ -71,16 +74,15 @@
 // Red-proofs (§5, hands off the target files): revert the three
 // `_list` rows in KIND_VOCAB (runsValidateShared.ts) → THE WIRE LANDS
 // reds verbatim with the `is not a Kind — the closed vocabulary is
-// [...nine singulars]` refusal (both the fold face and the bench
-// face). THE SINGULAR LIE REFUSES, THE VOICE DERIVES (both halves
-// derive from the same shrunken SSOT) and the two DECL/lane arms stay
-// green — each guards a different invariant on its own path. For the
-// voices half: flip tts's DECL back to `voices: 'voice'`
-// (packages/audio/tts/src/card.ts) → THE DECL IS THE TRUTH reds on
-// the voices pin, THE VOICES WIRE LANDS reds in the sweep's voice
-// (`expected audio_list, got voice`), and THE REGISTRATION JUDGE
-// reds naming tts.outputs.voices — one toggle, three arms, each on
-// its own path. Restore → green.
+// [...nine singulars]` refusal (the stated-kind bench face and the
+// enforcer's voice). THE SINGULAR LIE REFUSES and the two DECL/lane
+// arms stay green — each guards a different invariant on its own
+// path. For the voices half: flip tts's DECL back to
+// `voices: 'voice'` (packages/audio/tts/src/card.ts) → THE DECL IS
+// THE TRUTH reds on the voices pin, THE VOICES WIRE LANDS reds in
+// the sweep's voice (`expected audio_list, got voice`), and THE
+// REGISTRATION JUDGE reds naming tts.outputs.voices — one toggle,
+// three arms, each on its own path. Restore → green.
 //
 // Run: npx vitest run tests/walls/ts/suites/connect-kind-vocabulary.spec.ts
 import { describe, expect, it, beforeAll, afterAll, vi } from "vitest";
@@ -105,7 +107,6 @@ vi.mock("@melite/comfyui-cordis", async (importOriginal) => {
   return { ...real, liveObjectInfo: oiFixture.censusFn };
 });
 
-import { foldConnects } from "../../../../packages/harness/melite-tools/src/tools/melite-flow.ts";
 import { flowFromBody } from "../../../../packages/harness/estate-queue/src/runsValidateStages.ts";
 import { inlineKind } from "../../../../packages/harness/estate-queue/src/runsValidateInline.ts";
 import { KIND_VOCAB } from "@melite/estate-queue";
@@ -122,25 +123,12 @@ function midFor(card: string): string {
   return boards[0] as string;
 }
 
-/** The adhoc body exactly as melite_flow adhoc mode serves it: the
- *  fold's per-stage rows verbatim, one tts producer wired into the
- *  film's soundtrack conditioning port. `fromOutput` selects the
- *  producer channel (`default` the preview flac, `voices` the
- *  persisted .qvoice set — F48's one-word cure rides the latter). */
-function adhocBody(kind: string | undefined, fromOutput = "default"): Record<string, unknown> {
-  const stages = [
-    { id: "voice", engine: "comfyui", card: "tts", params: { model: midFor("tts") } },
-    { id: "film", engine: "comfyui", card: "h3-timeline", params: { model: midFor("h3-timeline") } },
-  ];
-  const connects = [
-    { from: "voice." + fromOutput, to: "film.ref_audios", ...(kind === undefined ? {} : { kind }) },
-  ];
-  const folded = foldConnects("unkindable-probe", stages as never, connects as never);
-  return { id: "unkindable-probe", stages: folded };
-}
-
-/** The bench-shaped body: the same two card rows with the wire stated
- *  on the row (the rewire door's landing shape), expected as given. */
+/** The bench-shaped body: two card rows with the wire stated on the
+ *  row (the rewire door's landing shape), expected as given.
+ *  `fromOutput` selects the producer channel (`default` the preview
+ *  flac, `voices` the persisted .qvoice set — F48's one-word cure
+ *  rides the latter). W-1 deleted the ad-hoc fold face this wall's
+ *  early arms rode; the bench face is the surviving connect door. */
 function benchBody(expected: Record<string, string>, fromOutput = "default"): Record<string, unknown> {
   return {
     id: "unkindable-bench",
@@ -196,8 +184,13 @@ describe("the connect Kind vocabulary (F48: the unkindable wire)", () => {
     expect(tts.flowKinds.outputs["voices"], "the voices channel declares the LIST kind (F48's one-word cure, 2026-11-14 — `voice` was a kind no wire door carries)").toBe("audio_list");
   });
 
-  it("THE VOICES WIRE LANDS — the .qvoice set composes into the film's soundtrack seat (adhoc face)", () => {
-    const flow = flowFromBody(adhocBody("audio_list", "voices"), cards, ["comfyui"]);
+  it("THE VOICES WIRE LANDS — the .qvoice set composes into the film's soundtrack seat (the derived bench face)", () => {
+    // W-1 deleted the ad-hoc fold face; the voices wire rides the
+    // surviving bench face with NO stated kind — the derivation takes
+    // the card's own audio_list and the list law admits the singular
+    // producer, the same admission the stated-kind arm pins.
+    expect(() => flowFromBody(benchBody({}, "voices"), cards, ["comfyui"])).not.toThrow();
+    const flow = flowFromBody(benchBody({ ref_audios: "audio_list" }, "voices"), cards, ["comfyui"]);
     const film = flow.stages[1] as unknown as {
       expected: Array<{ name: string; kind: string }>;
       inputs: Array<{ name: string; edge: unknown }>;
@@ -249,42 +242,14 @@ describe("the connect Kind vocabulary (F48: the unkindable wire)", () => {
     expect(judged, "the judge swept the booted defs' port tables").toBeGreaterThan(20);
   });
 
-  it("THE WIRE LANDS — the stated list kind serves at the real connect door", () => {
-    const flow = flowFromBody(adhocBody("audio_list"), cards, ["comfyui"]);
-    const film = flow.stages[1] as unknown as {
-      expected: Array<{ name: string; kind: string }>;
-      inputs: Array<{ name: string; edge: unknown }>;
-    };
-    expect(film.expected).toContainEqual({ name: "ref_audios", kind: "audio_list" });
-    expect(film.inputs).toContainEqual({
-      name: "ref_audios",
-      edge: { kind: "stage", stage: "voice", output: "default" },
-    });
-  });
-
   it("THE WIRE LANDS ON THE BENCH FACE — the hand-written expected list kind composes", () => {
     expect(() => flowFromBody(benchBody({ ref_audios: "audio_list" }), cards, ["comfyui"])).not.toThrow();
   });
 
   it("THE SINGULAR LIE REFUSES — the sweep keeps guarding the DECL's own voice", () => {
-    const msg = refused(adhocBody("audio"));
+    const msg = refused(benchBody({ ref_audios: "audio" }));
     expect(msg).toContain("contradicts card");
     expect(msg).toContain("audio_list");
-  });
-
-  it("THE VOICE DERIVES — the fold's no-kind refusal enumerates exactly the closed set", () => {
-    let msg = "";
-    try {
-      foldConnects("voice-probe", [
-        { id: "voice", engine: "comfyui", card: "tts", params: {} },
-        { id: "film", engine: "comfyui", card: "h3-timeline", params: {} },
-      ] as never, [
-        { from: "voice.default", to: "film.ref_audios" },
-      ] as never);
-    } catch (e) {
-      msg = e instanceof Error ? e.message : String(e);
-    }
-    expect(msg).toContain("state it (" + [...KIND_VOCAB].join(", ") + ")");
   });
 
   it("THE ENFORCER'S CLOSURE — a non-member refuses naming the same set", () => {

@@ -121,7 +121,10 @@ describe("THE SERVED-CALL-SHAPE WALL — no flow doc teaches a key the door refu
   it("ARM 1 — the reference is the tool's own declared schema, and it is non-empty", () => {
     assert.ok(DECLARED.length > 3,
       "meliteFlow's declared parameters must be readable — the wall judges the door's grammar, never a copy");
-    for (const key of ["flow", "params", "bench", "card", "stages", "prompt"]) {
+    // W-1 (2026-11-05): the ad-hoc `stages` arm is deleted — the pin
+    // carries the per-stage `stage` key instead (the only hand-built
+    // press); a reintroduced `stages` parameter reds this arm.
+    for (const key of ["flow", "params", "bench", "card", "stage", "prompt"]) {
       assert.ok(DECLARED.includes(key), `the door declares '${key}'`);
     }
   });

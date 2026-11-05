@@ -216,13 +216,7 @@ describe("presentCall disclosure composition", () => {
     const byName = new Map(ALL);
     assert.match(byName.get("melite_flow")!.presentCall!({ card: "c9", model: "m9" })!.title, /c9/);
     assert.match(byName.get("melite_flow")!.presentCall!({ flow: "f9" })!.title, /f9/);
-    assert.match(
-      // (§7 P7: schema-valid adhoc stages — the gate passes them to
-      // the presenter; the pre-purge `{}` items were refused by the
-      // gate and only rendered through the deleted second seat.)
-      byName.get("melite_flow")!.presentCall!({ stages: [{ id: "a", engine: "e" }, { id: "b", engine: "e" }, { id: "c", engine: "e" }] })!.title,
-      /adhoc \(3 stages\)/,
-    );
+    assert.match(byName.get("melite_flow")!.presentCall!({ stage: "s_9" })!.title, /s_9/);
     assert.match(byName.get("run_status")!.presentCall!({ runId: "r42" })!.title, /r42/);
     assert.match(byName.get("melite_skill_read")!.presentCall!({ id: "s1" })!.title, /s1/);
     assert.match(

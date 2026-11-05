@@ -129,8 +129,11 @@ const main = async () => {
       { card: 'image-gen', model: '__smoke_no_such__' }, {}],
     ['melite_flow(flow loud-fail: no such template)', lib.meliteFlow(estate),
       { flow: '__smoke_no_such__' }, {}],
-    ['melite_flow(adhoc loud-fail: bad stage)', lib.meliteFlow(estate),
-      { stages: [{ id: 'x' }] }, {}],
+    // W-1 (2026-11-05): the ad-hoc hatch is deleted — a {stages} press
+    // refuses IN WORDS (the tombstone voice naming the {stage} press),
+    // riding the value like every other loud-fail, never a throw.
+    ['melite_flow(tombstone: adhoc stages refuse)', lib.meliteFlow(estate),
+      { stages: [{ id: 'x', engine: 'comfyui' }] }, {}],
     ['melite_flow(empty: no composition)', lib.meliteFlow(estate), {}, {}],
     ['comfy_manage(status)', lib.comfyManage(estate), { action: 'status' }, {}],
     ['comfy_manage(provision loud-fail)', lib.comfyManage(estate), { action: 'provision_model', model: '__smoke_no_such_model__' }, {}],
@@ -155,7 +158,7 @@ const main = async () => {
       // upstream of the compose door. The refusal is a throw off
       // execute (invalid arguments: …), never a silent pass; these
       // arms pin that the wall fires.
-      if (label === 'melite_construct(bad verb refuses)' || label === 'melite_flow(adhoc loud-fail: bad stage)') {
+      if (label === 'melite_construct(bad verb refuses)') {
         try {
           await tool.execute(args, exec)
           note(label, false, 'no refusal — the args wall did not fire')

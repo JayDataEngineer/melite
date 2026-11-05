@@ -1,15 +1,17 @@
 // melite_flow — Melite flow (the rework, 2026-09-09): the ONE
 // execution verb. Takes a card or a flow tool call and executes it
-// through the serial GPU queue — card_run + flow_run + build_flow
-// unified (their three paths survive inside, the draft ceremony
-// does not surface). Drafts stay DOOR-level (CARD BIRTH LAW: card,
-// bench and ad-hoc starts ride a doc-backed draft_id — minted here,
-// never argued; a MATERIALIZED flow press rides the bench draft it
-// just landed, a card-less flow rides the door's own doc — the
-// flow-doc exemption, see runTemplate).
+// through the serial GPU queue — card_run + flow_run unified (their
+// two paths survive inside, the draft ceremony does not surface).
+// Drafts stay DOOR-level (CARD BIRTH LAW: card and bench starts ride
+// a doc-backed draft_id — minted here, never argued; a MATERIALIZED
+// flow press rides the bench draft it just landed, a card-less flow
+// rides the door's own doc — the flow-doc exemption, see
+// runTemplate).
 //
 // FOUR compositions, exactly one per call (the mode word stays one of
-// the four the flow-mode-voice wall pins — a stage press rides 'bench'):
+// the three the flow-mode-voice wall pins — a stage press rides 'bench'):
+//   - {bench} — run THE shared bench exactly as it stands (what the
+//     user's Run press runs: one sequential pass, card by card).
 //   - {card, model, prompt?, params?} — a single card (the old
 //     card_run path, composed inside: manifest gate + runnability
 //     gate + defaults merge, then draft + {model} start).
@@ -28,10 +30,12 @@
 //     admits the key ({upscale: 2} on image-upscale), {stage_id:
 //     {…}} targets one stage — keys the stage's card does not
 //     admit refuse loud, before any run.
-//   - {stages, connects?} — cards drafted on the fly (the old
-//     build_flow MULTI path: COMPILE FIRST at validate — no GPU on
-//     a bad wire — then draft + {flow_inline} start).
-// Returns {run_id} (card/bench/ad-hoc and a materialized flow also
+// W-1 (2026-11-05) deleted the {stages, connects} ad-hoc hatch the
+// 11-14 flows-are-compositions ruling kept — F3-13 proved it never
+// was bench-isolated, and hand-built work now presses ONE seated bench
+// row with {stage}; the estate flow_inline arm still serves
+// single-stage bodies, it just has no tool caller.
+// Returns {run_id} (card/bench and a materialized flow also
 // carry draft_id); poll with run_status. One active run
 // machine-wide. L4 test flag rides every mode. The draft_id rides
 // the value AND the render's leading `card <draftId>` token — the
@@ -47,7 +51,6 @@ import { loadCardDefs } from '@melite/comfyui-cordis';
 import { boardedMap, resolveSpecKeyForTool } from "../discovery.js";
 import { isTerminalStatus, statusOf, statusOrPendingOf } from '@melite/contracts/stageView';
 import { admitCrossRegimeJoin } from '@melite/models-h3';
-import { KIND_VOCAB } from '@melite/estate-queue';
 /** The row's model (the QUEUE LANE LAW, agent-side): the row's
  *  params may name `model` explicitly; otherwise the card id
  *  resolves through form-spec's OWN alias law (boarded[0] — the
@@ -95,105 +98,8 @@ function crossRegimeAdmissionOf(card, params) {
     const height = typeof params['height'] === 'number' ? params['height'] : 768;
     return admitCrossRegimeJoin(width, height, tier);
 }
-/** Fold flat connects into per-stage typed edges. LOUD on shapes the
- * gateway would only bounce later — the agent reads the refusal HERE,
- * before any HTTP round trip. Kind resolution: the connect's `kind`
- * wins; a stage-to-stage connect may omit it when the upstream stage
- * DECLARES its outputs (inferred); an `initial.*` connect must state
- * it (nothing to infer from — the agent knows what its key carries). */
-export function foldConnects(flowId, stages, connects) {
-    const folded = stages.map((st) => {
-        const outputs = {};
-        const o = st.outputs;
-        if (o !== null && typeof o === 'object' && !Array.isArray(o)) {
-            for (const [k, v] of Object.entries(o)) {
-                outputs[k] = String(v);
-            }
-        }
-        return {
-            id: String(st.id ?? ''),
-            engine: String(st.engine ?? ''),
-            description: String(st.description ?? ''),
-            card: typeof st.card === 'string' ? st.card : '',
-            params: (st.params !== null && typeof st.params === 'object'
-                && !Array.isArray(st.params))
-                ? st.params : {},
-            inputs: {},
-            expected: {},
-            outputs,
-        };
-    });
-    const byId = new Map(folded.map((s) => [s.id, s]));
-    for (const c of connects) {
-        const from = typeof c.from === 'string' ? c.from : '';
-        const to = typeof c.to === 'string' ? c.to : '';
-        if (from === '' || to === '') {
-            throw new Error('build_flow: connect needs {from, to} — got from=' + JSON.stringify(c.from)
-                + ' to=' + JSON.stringify(c.to)
-                + ' (from: "stage[.output]" or "initial.key"; to: "stage.input")');
-        }
-        // to: "stage.input" — stage ids cannot contain dots (FLOW_ID_RE),
-        // so the FIRST dot is the seam.
-        const toDot = to.indexOf('.');
-        if (toDot < 1) {
-            throw new Error('build_flow: connect to=' + JSON.stringify(to)
-                + ' is not "stage.input" — the receiving stage and its input name');
-        }
-        const target = byId.get(to.slice(0, toDot));
-        if (target === undefined) {
-            throw new Error('build_flow: connect to=' + JSON.stringify(to)
-                + ' names unknown stage ' + JSON.stringify(to.slice(0, toDot))
-                + ' (flow ' + flowId + ' stages: ' + folded.map((s) => s.id).join(', ') + ')');
-        }
-        const inputName = to.slice(toDot + 1);
-        let edge;
-        let inferred;
-        if (from.startsWith('initial.')) {
-            edge = { initial: from.slice('initial.'.length) };
-        }
-        else {
-            const dot = from.indexOf('.');
-            const stageId = dot < 0 ? from : from.slice(0, dot);
-            const output = dot < 0 ? 'default' : from.slice(dot + 1);
-            const upstream = byId.get(stageId);
-            if (upstream === undefined) {
-                throw new Error('build_flow: connect from=' + JSON.stringify(from)
-                    + ' names unknown stage ' + JSON.stringify(stageId)
-                    + ' (initial wires are "initial.<key>")');
-            }
-            edge = { stage: stageId, output };
-            // kind inference: only when the upstream DECLARES this output
-            inferred = upstream.outputs[output];
-        }
-        let kind;
-        if (typeof c.kind === 'string' && c.kind.length > 0)
-            kind = c.kind;
-        else if (inferred !== undefined)
-            kind = inferred;
-        if (kind === undefined) {
-            // THE VOICE DERIVES (F48, 2026-11-01): the enumeration is the
-            // door's KIND_VOCAB, never a hand copy (the old literal had
-            // already dropped `data` and had no list spellings — an agent
-            // wiring a list seat could not state the card's declared kind).
-            throw new Error('build_flow: connect ' + JSON.stringify(from) + ' -> ' + JSON.stringify(to)
-                + ' has no kind and none can be inferred — state it ('
-                + [...KIND_VOCAB].join(', ') + ')'
-                + (from.startsWith('initial.')
-                    ? ' (initial wires ALWAYS need an explicit kind)'
-                    : ' (the upstream stage does not declare this output)'));
-        }
-        if (target.inputs[inputName] !== undefined) {
-            throw new Error('build_flow: stage ' + target.id + ' input ' + JSON.stringify(inputName)
-                + ' is wired twice');
-        }
-        target.inputs[inputName] = edge;
-        target.expected[inputName] = kind;
-    }
-    return folded;
-}
 const TIMEOUT_MS = 30_000;
 const DRAFT_TIMEOUT_MS = 15_000;
-const VALIDATE_TIMEOUT_MS = 15_000;
 /** THE OBSERVATION BUDGET (the commission wedge landing, 2026-10-03):
  *  the outcome observer polled WITHOUT a wall clock — a run whose
  *  claim never released (the queue's single-active lane) hung the
@@ -262,12 +168,12 @@ async function startRun(estate, body, signal) {
  *  the start still rides a doc-backed draft_id, now the bench's). */
 async function loadBench(estate, body, signal) {
     // THE CAS READ-MODIFY-WRITE (the door's own law): under the host's
-    // persistent storage the shared bench SURVIVES runs — a bare
-    // {stages} ensure on an existing bench refuses bench/cas-conflict.
+    // persistent storage the shared bench SURVIVES runs — a bare birth
+    // ensure on an existing bench refuses bench/cas-conflict.
     // Read the row first; a live bench's rev rides as expect_rev, a
     // missing bench births (no expect_rev — the birth arm).
-    // body.session is set by all three internal call sites (runSingle /
-    // runTemplate / runAdHoc each pass the one-bench-law session —
+    // body.session is set by both internal call sites (runSingle /
+    // runTemplate each pass the one-bench-law session —
     // execute's bench, the caller's conversation bench) — the cast
     // rides that call-site proof instead of a dead 'default' fallback
     // (2026-09-12).
@@ -1167,78 +1073,6 @@ a, signal) {
         ...started,
     };
 }
-/** AD-HOC (the old build_flow MULTI path): COMPILE FIRST at
- *  validate (no GPU on a bad wire), then draft + {flow_inline}. */
-async function runAdHoc(estate, a, signal) {
-    const rawStages = a.stages;
-    if (!Array.isArray(rawStages) || rawStages.length === 0) {
-        return { mode: 'adhoc', target: 'adhoc', error: 'stages must be a non-empty array of {id, engine, params?, outputs?} rows' };
-    }
-    const flowId = typeof a.id === 'string' && a.id !== '' ? a.id : 'adhoc';
-    const connects = Array.isArray(a.connects) ? a.connects : [];
-    let folded;
-    try {
-        folded = foldConnects(flowId, rawStages, connects);
-    }
-    catch (e) {
-        return { mode: 'adhoc', target: flowId, error: e instanceof Error ? e.message : /* v8 ignore next -- foldConnects throws Error only: all six sites `new Error`, and property-access TypeErrors are Errors too (2026-09-12) */ String(e) };
-    }
-    const flowBody = {
-        id: flowId,
-        description: typeof a.description === 'string' ? a.description : '',
-        stages: folded.map((s) => ({
-            id: s.id,
-            engine: s.engine,
-            description: s.description,
-            ...(s.card !== '' ? { card: s.card } : {}),
-            params: s.params,
-            ...(Object.keys(s.inputs).length > 0 ? { inputs: s.inputs } : {}),
-            ...(Object.keys(s.expected).length > 0 ? { expected: s.expected } : {}),
-            ...(Object.keys(s.outputs).length > 0 ? { outputs: s.outputs } : {}),
-        })),
-    };
-    try {
-        await estate.runsValidate(flowBody, signal, VALIDATE_TIMEOUT_MS);
-    }
-    catch (e) {
-        const re = remoteErrorOf(e);
-        if (re !== null && re !== undefined) {
-            return { mode: 'adhoc', target: flowId, error: re.message || 'flow does not compile' };
-        }
-        throw e;
-    }
-    let draftId;
-    try {
-        draftId = await loadBench(estate, {
-            session: a.bench,
-            intent: flowId,
-            stages: folded,
-        }, signal);
-    }
-    catch (e) {
-        return { mode: 'adhoc', target: flowId, error: e instanceof Error ? e.message : String(e) };
-    }
-    const started = await startRun(estate, 
-    // THE MULTI-STAGE PORT (GAPS-8, the unported burn: a two-stage
-    // ad-hoc graph refused "multi-stage graphs are unported" at the
-    // start gate). The gateway's START gate serves single-stage
-    // flow_inline runs only — a hand-authored multi-stage graph stays
-    // refused there, and the curated-lane lift belongs to the
-    // registry's own ids (name a registry flow). But the ad-hoc graph
-    // already LANDED on the bench above, and the bench's own DRAFT
-    // door composes every stage through the same registry walk the
-    // merged worker runs multi-stage on (the benchComposed lift — the
-    // estate's draft-door wall proves the admission). So a
-    // multi-stage ad-hoc graph presses the bench it just landed (the
-    // draft press: {draft_id} alone, never flow_inline); the single
-    // stage keeps the direct flow_inline start.
-    folded.length > 1
-        ? { draft_id: draftId, test: wireBool(a.test) }
-        : { flow_inline: flowBody, test: wireBool(a.test), draft_id: draftId }, signal);
-    if (typeof started["error"] === 'string')
-        return { mode: 'adhoc', target: flowId, ...started };
-    return { mode: 'adhoc', target: flowId, draft_id: draftId, ...started };
-}
 export function meliteFlow(estate) {
     // PRESENTATION SEAT (§7 P7, the tool-presentation wall — one
     // seat for the invalid face): the presenter rides defineTool
@@ -1253,7 +1087,7 @@ export function meliteFlow(estate) {
         const target = typeof a.card === 'string' && a.card !== '' ? a.card
             : typeof a.flow === 'string' && a.flow !== '' ? a.flow
                 : typeof a.stage === 'string' && a.stage !== '' ? `stage ${a.stage}`
-                    : Array.isArray(a.stages) ? `adhoc (${a.stages.length} stages)` : '?';
+                    : '?';
         return { card: 'generic', title: `Run ${target}`, kind: 'execute' };
     };
     // Ledger row 8 (2026-09-10): defineTool wraps the literal — the
@@ -1265,9 +1099,8 @@ export function meliteFlow(estate) {
         description: 'Execute through the serial GPU queue — the ONE execution verb. Exactly one per call: bench (run THE shared '
             + 'bench exactly as it stands — what the user\'s Run press runs) | card (a card id + model — single '
             + 'generation) | flow (a NAMED template from melite_load) | stage (ONE bench stage id — runs that stage alone '
-            + 'through the bench pass, siblings + intent untouched) | stages (engine-node stages on the fly: [{id, engine, '
-            + 'params?, outputs?}] + optional connects — compiled at validate BEFORE any GPU is spent; a multi-stage graph '
-            + 'presses the bench it lands (the draft press), the single stage the direct flow_inline start). Compositions '
+            + 'through the bench pass, siblings + intent untouched; hand-built work presses ONE seated row, never a '
+            + 'hand-authored graph). Compositions '
             + 'LOAD the shared bench first (nothing mints fresh — one state, one log, one undo); every start rides the '
             + 'bench\'s doc-backed draft_id (CARD BIRTH LAW) — it rides the value as the chat tile handle, never an '
             + 'agent arg. Returns {run_id, draft_id}; poll with run_status. One active run machine-wide.',
@@ -1275,18 +1108,15 @@ export function meliteFlow(estate) {
         // (no type/properties wrapper) — every composition arm stays
         // optional because exactly-one cross-property exclusivity is not
         // expressible in this grammar (per-property annotations only);
-        // execute owns that refusal. What the schema CAN own, it does:
-        // stage rows refuse an undeclared key or a missing id/engine,
-        // connect rows a missing from/to — validateArgs fires these
-        // before execute runs.
+        // execute owns that refusal.
         parameters: {
             bench: {
                 type: 'boolean',
-                description: 'BENCH mode: run THE shared bench exactly as it stands (what the user\'s Run press runs). A JSON boolean — true, never the string "true". Exclusive with card/flow/stages/stage.',
+                description: 'BENCH mode: run THE shared bench exactly as it stands (what the user\'s Run press runs). A JSON boolean — true, never the string "true". Exclusive with card/flow/stage.',
             },
             stage: {
                 type: 'string',
-                description: 'PER-STAGE mode — the id of ONE stage on the shared bench (e.g. s_0); runs that stage alone through the same compose/wire-resolution/attribution path the bench pass uses, never its siblings. Exclusive with bench | card | flow | stages.',
+                description: 'PER-STAGE mode — the id of ONE stage on the shared bench (e.g. s_0); runs that stage alone through the same compose/wire-resolution/attribution path the bench pass uses, never its siblings. Exclusive with bench | card | flow.',
             },
             card: {
                 type: 'string',
@@ -1299,35 +1129,6 @@ export function meliteFlow(estate) {
             flow: {
                 type: 'string',
                 description: 'TEMPLATE mode: the flow name exactly as loaded.',
-            },
-            stages: {
-                type: 'array',
-                items: {
-                    type: 'object',
-                    additionalProperties: false,
-                    properties: {
-                        id: { type: 'string', required: true, description: 'The stage id (connects and run rows name it).' },
-                        engine: { type: 'string', required: true, description: 'The engine id (e.g. comfyui).' },
-                        card: { type: 'string', description: 'The card id the stage composes through — the card fold keeps it on the row so start\'s card gate fires (035 dead-route receipt).' },
-                        description: { type: 'string', description: 'What the stage produces.' },
-                        params: { type: 'object', additionalProperties: true, description: 'Engine node params (open — the engine owns the keys).' },
-                        outputs: { type: 'object', additionalProperties: true, description: 'Output channels {name: kind}.' },
-                    },
-                },
-                description: 'AD-HOC mode: [{id, engine, description?, params?, outputs?: {name: kind}}]. Exclusive with card/flow.',
-            },
-            connects: {
-                type: 'array',
-                items: {
-                    type: 'object',
-                    additionalProperties: false,
-                    properties: {
-                        from: { type: 'string', required: true, description: '"stage[.output]" | "initial.key".' },
-                        to: { type: 'string', required: true, description: '"stage.input".' },
-                        kind: { type: 'string', description: 'The wire kind when it cannot be derived.' },
-                    },
-                },
-                description: 'AD-HOC mode: [{from: "stage[.output]" | "initial.key", to: "stage.input", kind?}].',
             },
             prompt: {
                 type: 'string',
@@ -1343,14 +1144,6 @@ export function meliteFlow(estate) {
                 additionalProperties: true,
                 description: 'Overrides merged over the mode defaults (seed, knobs).',
             },
-            id: {
-                type: 'string',
-                description: 'AD-HOC mode: the pipeline name for the compiled flow.',
-            },
-            description: {
-                type: 'string',
-                description: 'AD-HOC mode: what the pipeline produces.',
-            },
             test: {
                 type: 'boolean',
                 description: 'L4 barrier: true routes the run to test-output, hidden from production assets. Default false.',
@@ -1365,8 +1158,8 @@ export function meliteFlow(estate) {
                     run_id: { type: 'string', description: 'The queue run id — poll with run_status(run_id). Absent on a pre-run refusal; PRESENT on a stopped-mid-flow refusal (a stage that ran and failed — render prints it after the error).' },
                     draft_id: { type: 'string', description: 'The minted card draft id — the chat tile handle (?meliteCards=). Absent on refusal.' },
                     status: { type: 'string', description: 'The bench outcome: done | pending | stopped | queued | running. pending = the observation budget spent on a still-live run (the run continues on the queue — re-wait with run_status(run_id)); absent on refusal.' },
-                    mode: { type: 'string', description: 'Which composition ran (or was attempted): bench | card | flow | adhoc. bench is the commonest success value — the shared-bench run returns mode:\'bench\' at every bench return site.', required: true },
-                    target: { type: 'string', description: 'The card id, flow name, or ad-hoc pipeline name (echoed on refusal).', required: true },
+                    mode: { type: 'string', description: 'Which composition ran (or was attempted): bench | card | flow. bench is the commonest success value — the shared-bench run returns mode:\'bench\' at every bench return site.', required: true },
+                    target: { type: 'string', description: 'The card id, flow name, or bench draft id (echoed on refusal).', required: true },
                     error: { type: 'string', description: 'The refusal text — present exactly when the tool refused (render prints REFUSED).' },
                 },
                 // Ledger row 11 (2026-09-10): required is the fields EVERY
@@ -1579,10 +1372,25 @@ export function meliteFlow(estate) {
             const hasBench = a.bench === true;
             const hasCard = typeof a.card === 'string' && a.card !== '';
             const hasFlow = typeof a.flow === 'string' && a.flow !== '';
-            const hasStages = a.stages !== undefined;
             const hasStage = typeof a.stage === 'string' && a.stage !== '';
-            const modes = [hasBench, hasCard, hasFlow, hasStages, hasStage].filter(Boolean).length;
-            /* The three guards below carry mode/target: the declared
+            const modes = [hasBench, hasCard, hasFlow, hasStage].filter(Boolean).length;
+            // THE UNKNOWN-ARG VOICE (029's self-critique #1, 2026-09-24 +
+            // W-1, 2026-11-05): a card param at FLOW top-level (qvoice_save
+            // beside card) used to drop SILENTLY — the bag only spreads
+            // known keys — and the maker paid a generic missing-params
+            // refusal instead of the pointed one. Unknown top-level keys
+            // refuse HERE, naming the seat (card params ride INSIDE
+            // params) — and the deleted ad-hoc arms (stages, connects, id,
+            // description) refuse HERE too, in tombstone words, BEFORE the
+            // exactly-one gate (so a bare {stages:[...]} names its cure
+            // instead of reading as nothing-selected).
+            const KNOWN_FLOW_ARGS = ['bench', 'card', 'model', 'flow', 'prompt', 'params', 'test', 'stage'];
+            const known = new Set(KNOWN_FLOW_ARGS);
+            const stray = Object.keys(args).filter((k) => !known.has(k));
+            if (stray.length > 0) {
+                return jsonClean({ mode: 'flow', target: '', error: 'unknown melite_flow arg(s) ' + JSON.stringify(stray) + ' — ad-hoc stages are gone (W-1, 2026-11-05: a hand-built graph landed on the shared bench and replaced its stages); press ONE seated bench row with stage: "<bench stage id>"; card params (text, voice_name, qvoice, variant, …) ride INSIDE params, never top-level; top-level carries only bench | card (+model) | flow | stage (+params/prompt/test)' });
+            }
+            /* The two guards below carry mode/target: the declared
              * output.schema requires them, and a bare {error} here died at
              * the tool-call validation layer — the schema error ("missing
              * value.mode/target") reached the agent INSTEAD of the guard's
@@ -1591,22 +1399,10 @@ export function meliteFlow(estate) {
              * 'flow' + target '' name nothing-selected, the same voice the
              * hasFlow guard uses. */
             if (modes === 0) {
-                return jsonClean({ mode: 'flow', target: '', error: 'one composition is required: bench (run what is there) | card (+model) | flow | stages (cards drafted on the fly) | stage (one bench stage alone)' });
+                return jsonClean({ mode: 'flow', target: '', error: 'one composition is required: bench (run what is there) | card (+model) | flow | stage (one bench stage alone)' });
             }
             if (modes > 1) {
-                return jsonClean({ mode: 'flow', target: '', error: 'exactly one composition per call: bench | card | flow | stages | stage — never combined' });
-            }
-            // THE UNKNOWN-ARG VOICE (029's self-critique #1, 2026-09-24):
-            // a card param at FLOW top-level (qvoice_save beside card)
-            // used to drop SILENTLY — the bag only spreads known keys —
-            // and the maker paid a generic missing-params refusal instead
-            // of the pointed one. Unknown top-level keys refuse HERE,
-            // naming the seat (card params ride INSIDE params).
-            const KNOWN_FLOW_ARGS = ['bench', 'card', 'model', 'flow', 'stages', 'connects', 'prompt', 'params', 'id', 'description', 'test', 'stage'];
-            const known = new Set(KNOWN_FLOW_ARGS);
-            const stray = Object.keys(args).filter((k) => !known.has(k));
-            if (stray.length > 0) {
-                return jsonClean({ mode: 'flow', target: '', error: 'unknown melite_flow arg(s) ' + JSON.stringify(stray) + ' — card params (text, voice_name, qvoice, variant, …) ride INSIDE params, never top-level; top-level carries only bench | card (+model) | flow | stages (+connects/id/description/test)' });
+                return jsonClean({ mode: 'flow', target: '', error: 'exactly one composition per call: bench | card | flow | stage — never combined' });
             }
             // THE ONE-BENCH LAW (§22, 2026-09-22): flow lands on the
             // CALLER's conversation bench (benchKeyOfExec — the agent's own
@@ -1637,13 +1433,8 @@ export function meliteFlow(estate) {
                         params: bag, test, bench,
                     }, exec.signal));
                 }
-                return jsonClean(await runAdHoc(estate, {
-                    stages: a.stages,
-                    connects: a.connects,
-                    id: a.id,
-                    description: typeof a.description === 'string' ? a.description : undefined,
-                    test, bench,
-                }, exec.signal));
+                /* v8 ignore next -- the exactly-one gate above guarantees one arm matched; every arm returns */
+                throw new Error('unreachable: exactly-one composition gate passed with no matching arm');
             }
             catch (e) {
                 const re = remoteErrorOf(e);
@@ -1652,13 +1443,12 @@ export function meliteFlow(estate) {
                     // schema requires of EVERY shape — comfy-manage's ok/action
                     // pattern) so a careful refusal never fails output validation.
                     // BENCH-ONLY (2026-09-12): the sole RemoteError escaping to this
-                    // catch is runBench's bench GET — runSingle/runTemplate/runAdHoc
+                    // catch is runBench's bench GET — runSingle/runTemplate
                     // convert every remote refusal to an {error} value inside
-                    // (loadBench try/catch, startRun's remote arm, validate's remote
-                    // arm); non-remote errors rethrow below. The old flow/card/adhoc
-                    // mapping was dead here and mislabeled bench failures as
-                    // adhoc/pipeline — the refusal rides bench's own mode/target
-                    // (a real mislabel, fixed minimally).
+                    // (loadBench try/catch, startRun's remote arm); non-remote
+                    // errors rethrow below. The old flow/card mapping was dead
+                    // here and mislabeled bench failures — the refusal rides
+                    // bench's own mode/target (a real mislabel, fixed minimally).
                     return jsonClean({ error: re.message || 'remote refused', mode: 'bench', target: benchDraftIdOf(bench) });
                 }
                 throw e;
