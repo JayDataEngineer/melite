@@ -15,7 +15,6 @@
  * rows, detail strings) rides dict functions with typed params — the
  * dictionary owns the static sentence shape, the site feeds the values.
  */
-/** The typed dictionary. Keys are stable copy ids; template entries take exactly the params they declare. */
 export declare const assetsCopy: {
     /** Next-button label for the status arm. */
     readonly actionRefreshStatus: "Refresh status";
@@ -447,8 +446,10 @@ export declare const assetsCopy: {
     readonly refusedRowNote: (p: {
         row: string;
     }) => string;
-    /** LoRA file-picker field label. */
-    readonly loraFileField: "LoRA file (.safetensors, .ckpt, .pt, .bin, .gguf) — or drop it here";
+    /** LoRA file-picker field label; the extension list rides the SSOT
+     *  (@melite/contracts/loraExtensions — lora audit F2), never a
+     *  hand-spelled copy of the allowlist. */
+    readonly loraFileField: string;
     /** Civit download-boundary note. */
     readonly civitNote: "Downloads stay in your browser: civit.ai needs your account, so you download, the estate only copies bytes it is handed.";
     /** Absolute-path field label. */

@@ -78,8 +78,12 @@ export interface UserLoraFile {
 /** THE ONE LORA EXTENSION ALLOWLIST (the F1 dedup, lora audit
  *  2026-11-15): the rows-file validator and the tray's directory scan
  *  judge the same file universe — a drop the rows door would seat must
- *  never be the drop the tray silently skips, or the reverse. */
-export const LORA_EXTENSIONS = ['.safetensors', '.ckpt', '.pt', '.bin', '.gguf']
+ *  never be the drop the tray silently skips, or the reverse. The
+ *  initializer's home is @melite/contracts/loraExtensions since the F2
+ *  dedup — the browser seats need the same list and may not import a
+ *  node:fs module; this import + re-export keeps the tray's F1 seam. */
+import { LORA_EXTENSIONS } from '@melite/contracts/loraExtensions'
+export { LORA_EXTENSIONS }
 
 /** The rows file's default home (the shipped state is ABSENT — the
  *  door is opt-in; `lora_list` reports the path it would read). */

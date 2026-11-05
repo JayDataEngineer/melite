@@ -176,6 +176,32 @@ window.__ModuleLoader__.load({
 			return Math.min(100, Math.round(bytes / total * 100));
 		}
 		//#endregion
+		//#region ../../web-kit/contracts/src/loraExtensions.ts
+		/** THE LORA EXTENSION SSOT — the one allowlist's tier-agnostic home.
+		*
+		*  History: the list lived in @melite/comfyui-cordis/user-loras and the
+		*  engine seats consumed it from there (lora audit F1, commit
+		*  038fd6a40). The browser seats could not: that module reads node:fs,
+		*  and a client bundle may not inline it. @melite/contracts is a
+		*  declared dependency of card-base, melite-card-deck AND
+		*  comfyui-cordis, so the literal moved here — one initializer on the
+		*  tree — and the engine seam re-exports it verbatim (userLoras.ts),
+		*  keeping the F1 law: the rows-file validator, the tray scan, the OS
+		*  file dialogs and the field copy all judge the same file universe
+		*  (lora audit F2, 2026-11-15). */
+		const LORA_EXTENSIONS = [
+			".safetensors",
+			".ckpt",
+			".pt",
+			".bin",
+			".gguf"
+		];
+		/** The OS file-dialog accept value, DERIVED from the list — the two
+		*  upload seats (card-base's upload square, the Manager sidebar's
+		*  copy-in row) consume this instead of spelling the list a second
+		*  time. */
+		const LORA_ACCEPT = LORA_EXTENSIONS.join(",");
+		//#endregion
 		//#region src/assetsCopy.ts
 		/**
 		* assetsCopy.ts — THE ASSET-BROWSER CHROME COPY DICTIONARY (the deck's
@@ -571,8 +597,10 @@ window.__ModuleLoader__.load({
 			yourRowsLabel: "your rows:",
 			/** Refused-row prefix; the site feeds the live wire problem string. */
 			refusedRowNote: (p) => "refused row — " + p.row,
-			/** LoRA file-picker field label. */
-			loraFileField: "LoRA file (.safetensors, .ckpt, .pt, .bin, .gguf) — or drop it here",
+			/** LoRA file-picker field label; the extension list rides the SSOT
+			*  (@melite/contracts/loraExtensions — lora audit F2), never a
+			*  hand-spelled copy of the allowlist. */
+			loraFileField: "LoRA file (" + LORA_EXTENSIONS.join(", ") + ") — or drop it here",
 			/** Civit download-boundary note. */
 			civitNote: "Downloads stay in your browser: civit.ai needs your account, so you download, the estate only copies bytes it is handed.",
 			/** Absolute-path field label. */
@@ -823,7 +851,7 @@ window.__ModuleLoader__.load({
 							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
 								type: "file",
 								className: assets_module_css_default.input,
-								accept: ".safetensors,.ckpt,.pt,.bin,.gguf",
+								accept: LORA_ACCEPT,
 								onChange: (e) => {
 									const file = e.target.files?.[0];
 									if (file === void 0) return;

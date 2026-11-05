@@ -17,6 +17,7 @@
       "node"
     ],
     "paths": {
+        "@melite/contracts/loraExtensions": ["./../../web-kit/contracts/src/loraExtensions.ts"],
         "@melite/image-mask-studio/orbit-canvas": ["./../../image/mask-studio/src/ui/OrbitLeafCanvas.tsx"],
         "@melite/video-frames": ["./../../video/frames/src/index.ts"],
         "@melite/video-frames/card": ["./../../video/frames/src/card.ts"],

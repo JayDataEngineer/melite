@@ -17,6 +17,8 @@
  */
 
 /** The typed dictionary. Keys are stable copy ids; template entries take exactly the params they declare. */
+import { LORA_EXTENSIONS } from '@melite/contracts/loraExtensions'
+
 // v8 ignore next -- exercised key-by-key by the client-copy census wall (the deck tree pins zero)
 export const assetsCopy = {
   /** Next-button label for the status arm. */
@@ -393,8 +395,10 @@ export const assetsCopy = {
   yourRowsLabel: 'your rows:',
   /** Refused-row prefix; the site feeds the live wire problem string. */
   refusedRowNote: (p: { row: string }): string => 'refused row — ' + p.row,
-  /** LoRA file-picker field label. */
-  loraFileField: 'LoRA file (.safetensors, .ckpt, .pt, .bin, .gguf) — or drop it here',
+  /** LoRA file-picker field label; the extension list rides the SSOT
+   *  (@melite/contracts/loraExtensions — lora audit F2), never a
+   *  hand-spelled copy of the allowlist. */
+  loraFileField: 'LoRA file (' + LORA_EXTENSIONS.join(', ') + ') — or drop it here',
   /** Civit download-boundary note. */
   civitNote: 'Downloads stay in your browser: civit.ai needs your account, so you download, the estate only copies bytes it is handed.',
   /** Absolute-path field label. */

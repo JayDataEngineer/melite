@@ -18,6 +18,7 @@
           "node"
       ],
       "paths": {
+        "@melite/contracts/loraExtensions": ["./../../web-kit/contracts/src/loraExtensions.ts"],
         "@melite/image-mask-studio/orbit-canvas": ["./../../image/mask-studio/src/ui/OrbitLeafCanvas.tsx"],
         "@deepseek-ai/cordis-plugin-timer": ["./../../../vendor/cordis_plugins/timer/src/index.ts"],
         "@melite/video-frames": ["./../../video/frames/src/index.ts"],

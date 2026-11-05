@@ -28,6 +28,7 @@ import { Button, Input, Menu } from '@deepseek-ai/dsh-client-ui-primitives'
 import css from './assets.module.css'
 import { postManage } from './assets-tab.tsx'
 import { assetsCopy } from '../assetsCopy.ts'
+import { LORA_ACCEPT } from '@melite/contracts/loraExtensions'
 
 /** The manage plane's own envelope shape (the sidebar's, restated
  *  locally: assets-tab's copy is not exported, and this block must not
@@ -278,7 +279,7 @@ function LoraBlock({ familyOptions = [] }: LoraBlockProps): ReturnType<typeof Re
           <input
             type="file"
             className={css.input}
-            accept=".safetensors,.ckpt,.pt,.bin,.gguf"
+            accept={LORA_ACCEPT /* the SSOT list, never a hand-spelled copy (lora audit F2) */}
             onChange={(e) => {
               const file = e.target.files?.[0]
               if (file === undefined) return

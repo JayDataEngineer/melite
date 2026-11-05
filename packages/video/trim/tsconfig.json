@@ -15,6 +15,7 @@
     ],
     "types": ["node"],
     "paths": {
+        "@melite/contracts/loraExtensions": ["./../../web-kit/contracts/src/loraExtensions.ts"],
         "@melite/image-mask-studio/orbit-canvas": ["./../../image/mask-studio/src/ui/OrbitLeafCanvas.tsx"],
         "@melite/3d-anny": ["./../../3d/anny/src/index.ts"],
         "@melite/3d-anny/card": ["./../../3d/anny/src/card.ts"],

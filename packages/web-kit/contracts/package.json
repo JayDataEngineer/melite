@@ -46,6 +46,10 @@
       "types": "./lib/loraTypes.d.ts",
       "default": "./lib/loraTypes.js"
     },
+    "./loraExtensions": {
+      "types": "./lib/loraExtensions.d.ts",
+      "default": "./lib/loraExtensions.js"
+    },
     "./mediaKinds": {
       "types": "./lib/mediaKinds.d.ts",
       "default": "./lib/mediaKinds.js"
