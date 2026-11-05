@@ -55,46 +55,62 @@ describe("every declared download url answers upstream", () => {
 
     const dead: string[] = [];
     const errors: string[] = [];
-    let probed = 0;
+    const targets: { key: string; name?: string; url: string }[] = [];
     for (const ref of refs) {
       const key =
         ref.kind === "model"
           ? (ref.owner === "family" ? ref.id : `card/${ref.id}`)
           : `extension/${ref.id}`;
       let plan: ProvisionPlan;
-      const probeItems = (): { kind: string; name?: string; url?: string }[] =>
-        plan.items.map((it) => ({
-          kind: it.kind,
-          name: "name" in it ? it.name : undefined,
-          url: "url" in it ? it.url : undefined,
-        }));
       try {
         plan = await port.resolve(ref);
       } catch {
         continue; // the offline wall owns refusals
       }
-      for (const item of probeItems()) {
+      for (const item of plan.items.map((it) => ({
+        kind: it.kind,
+        name: "name" in it ? it.name : undefined,
+        url: "url" in it ? it.url : undefined,
+      }))) {
         if ((item.url ?? "") === "") continue;
-        probed += 1;
-        try {
-          const status = await probe(item.url!);
-          if (status >= 400) {
-            dead.push(
-              `${key}: '${item.name ?? "?"}' → HTTP ${status} — ` +
-                `${item.url}`,
-            );
-          }
-        } catch (error: unknown) {
-          errors.push(
-            `${key}: '${item.name ?? "?"}' → ${(error as Error).message} ` +
-              `— ${item.url}`,
+        targets.push({ key, name: item.name, url: item.url! });
+      }
+    }
+    // THE SWEEP'S OWN BUDGET: every source is asked AT ONCE. A
+    // sequential walk made the suite deadline the SUM of every url's
+    // 30s signal, so an ordinary slow network red a healthy
+    // declaration; each HEAD keeps its own 30s abort, and the suite
+    // bounds the sweep, not the sum.
+    type Target = (typeof targets)[number];
+    type Outcome =
+      | { target: Target; status: number }
+      | { target: Target; error: string };
+    const outcomes = await Promise.all(targets.map(async (target): Promise<Outcome> => {
+      try {
+        return { target, status: await probe(target.url) };
+      } catch (error: unknown) {
+        return { target, error: (error as Error).message };
+      }
+    }));
+    for (const outcome of outcomes) {
+      const { target } = outcome;
+      if ("status" in outcome) {
+        if (outcome.status >= 400) {
+          dead.push(
+            `${target.key}: '${target.name ?? "?"}' → HTTP ${outcome.status} — ` +
+              `${target.url}`,
           );
         }
+      } else {
+        errors.push(
+          `${target.key}: '${target.name ?? "?"}' → ${outcome.error} ` +
+            `— ${target.url}`,
+        );
       }
     }
     assert.ok(
-      probed >= 30,
-      `probed only ${probed} urls — the enumeration broke (expected ` +
+      outcomes.length >= 30,
+      `probed only ${outcomes.length} urls — the enumeration broke (expected ` +
         `dozens of declared sources)`,
     );
     assert.deepEqual(dead, [], "DECLARED SOURCES THAT ARE NOT REAL");
