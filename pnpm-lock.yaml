@@ -7,6 +7,11 @@ settings:
 overrides:
   '@deepseek-ai/cosmokit': 1.8.5
 
+patchedDependencies:
+  '@stable-canvas/comfyui-client@1.5.9':
+    hash: 1b6a1178ad4b938c489833b9666ab6aec5fd881d4452d3b399c25ba8078fed9d
+    path: patches/@stable-canvas__comfyui-client@1.5.9.patch
+
 importers:
 
   .:
@@ -586,7 +591,7 @@ importers:
         version: link:../../video/trim
       '@stable-canvas/comfyui-client':
         specifier: ^1.5.9
-        version: 1.5.9
+        version: 1.5.9(patch_hash=1b6a1178ad4b938c489833b9666ab6aec5fd881d4452d3b399c25ba8078fed9d)
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.5
@@ -14604,7 +14609,7 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
-  '@stable-canvas/comfyui-client@1.5.9': {}
+  '@stable-canvas/comfyui-client@1.5.9(patch_hash=1b6a1178ad4b938c489833b9666ab6aec5fd881d4452d3b399c25ba8078fed9d)': {}
 
   '@stablelib/base64@1.0.1': {}
 

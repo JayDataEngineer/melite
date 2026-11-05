@@ -7,25 +7,28 @@
     "dsh": ">=0.2.1-rc.2 <0.3.0"
   },
   "dependencies": {
+    "@melite-plugin/dsh-card-deck": "0.2.2-alpha",
+    "@melite-plugin/dsh-card-view": "0.2.2-alpha",
+    "@melite-plugin/dsh-estate": "0.2.2-alpha",
+    "@melite-plugin/dsh-gallery": "0.2.2-alpha",
+    "@melite/card-base": "0.2.2-alpha",
     "@melite/harness-provisioner": "0.2.2-alpha",
     "@melite/harness-tools": "0.2.2-alpha",
-    "@melite-plugin/dsh-estate": "0.2.2-alpha",
-    "@melite/card-base": "0.2.2-alpha",
-    "@melite/three-client": "0.2.2-alpha",
-    "@melite-plugin/dsh-card-view": "0.2.2-alpha",
-    "@melite-plugin/dsh-card-deck": "0.2.2-alpha",
-    "@melite-plugin/dsh-gallery": "0.2.2-alpha",
-    "@melite/video-h3-timeline": "0.2.2-alpha",
+    "@melite/image-input-prep": "0.2.2-alpha",
     "@melite/motion-motion": "0.2.2-alpha",
-    "@melite/image-input-prep": "0.2.2-alpha"
+    "@melite/three-client": "0.2.2-alpha",
+    "@melite/video-h3-timeline": "0.2.2-alpha"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.5",
+    "@deepseek-ai/dsh-api-gateway": "0.2.1-rc.2",
     "@deepseek-ai/dsh-brand": "0.2.1-rc.2",
     "@melite/estate-drafts": "workspace:*",
     "@melite/estate-manage": "workspace:*",
     "@melite/estate-media": "workspace:*",
+    "@melite/estate-queue": "workspace:*",
     "@melite/estate-runs": "workspace:*",
+    "@melite/models-kimodo": "workspace:*",
     "@shikijs/langs": "4.4.3",
     "@types/node": "^22.20.0",
     "@vitest/coverage-istanbul": "4.1.11",
@@ -33,12 +36,13 @@
     "anser": "2.3.5",
     "clsx": "2.1.1",
     "happy-dom": "^20.10.2",
+    "istanbul-lib-report": "^3.0.1",
     "jsdom": "^29.1.1",
     "katex": "0.16.47",
     "knip": "^6.34.0",
     "lefthook": "^2.1.12",
-    "lightningcss": "^1.33.0",
     "leo-profanity": "1.9.0",
+    "lightningcss": "^1.33.0",
     "mdast-util-from-markdown": "2.0.3",
     "mdast-util-gfm": "3.1.0",
     "mdast-util-math": "3.0.0",
@@ -56,11 +60,7 @@
     "simple-icons": "16.31.0",
     "vitest": "^4.1.8",
     "yaml": "2.9.1",
-    "zod": "4.4.3",
-    "istanbul-lib-report": "^3.0.1",
-    "@deepseek-ai/dsh-api-gateway": "0.2.1-rc.2",
-    "@melite/estate-queue": "workspace:*",
-    "@melite/models-kimodo": "workspace:*"
+    "zod": "4.4.3"
   },
   "scripts": {
     "hooks:seat": "node tools/install-lefthook.mjs",
@@ -114,6 +114,9 @@
   "pnpm": {
     "overrides": {
       "@deepseek-ai/cosmokit": "1.8.5"
+    },
+    "patchedDependencies": {
+      "@stable-canvas/comfyui-client@1.5.9": "patches/@stable-canvas__comfyui-client@1.5.9.patch"
     }
   }
 }
