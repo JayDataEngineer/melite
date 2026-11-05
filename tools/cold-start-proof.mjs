@@ -19,7 +19,7 @@
 //        pnpm-workspace.yaml, cordis.patch.yml,
 //        tools/render-seat-patch.mjs, LICENSE): the lean seat is
 //        proven, not the whole repo. CI seats the github: remote
-//        instead (--remote github:JayDataEngineer/melite#v0.2.1-alpha) —
+//        instead (--remote github:JayDataEngineer/melite#v0.2.2-alpha) —
 //        the same command, the public channel.
 //     C  container-compose-estate  `dsh --profile coldstart
 //        --dump-config` composes the estate: the melite bundle
@@ -56,7 +56,7 @@
 // Flags:
 //   --remote <spec>   the seat remote (default: file:///proof/seat,
 //                     staged in-container from the repo mount; CI
-//                     passes github:JayDataEngineer/melite#v0.2.1-alpha)
+//                     passes github:JayDataEngineer/melite#v0.2.2-alpha)
 //   --image <image>   the container image (default node:22-bookworm-slim)
 //   --dsh-cli <ver>   the @deepseek-ai/dsh CLI version the container
 //                     installs globally (default 0.2.1-rc.5)
