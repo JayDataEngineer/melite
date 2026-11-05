@@ -57,24 +57,11 @@
       "batch_size": 1
     }
   },
-  "SkipLayerGuidanceDiTSimple.0": {
-    "class_type": "SkipLayerGuidanceDiTSimple",
-    "inputs": {
-      "model": [
-        "ModelSamplingAuraFlow.0",
-        0
-      ],
-      "double_layers": "",
-      "single_layers": "22",
-      "start_percent": 0,
-      "end_percent": 0.5
-    }
-  },
   "KSampler.0": {
     "class_type": "KSampler",
     "inputs": {
       "model": [
-        "SkipLayerGuidanceDiTSimple.0",
+        "ModelSamplingAuraFlow.0",
         0
       ],
       "positive": [

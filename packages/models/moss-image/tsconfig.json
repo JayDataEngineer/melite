@@ -18,6 +18,7 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "paths": {
+        "@melite/image-mask-studio/orbit-canvas": ["./../../image/mask-studio/src/ui/OrbitLeafCanvas.tsx"],
         "@melite/video-frames": ["./../../video/frames/src/index.ts"],
         "@melite/video-frames/card": ["./../../video/frames/src/card.ts"],
         "@melite/video-track": ["./../../video/track/src/index.ts"],
@@ -131,7 +132,6 @@
         "@melite/models-anima/mods/mask": ["./../anima/mods/mask.ts"],
         "@melite/models-anny": ["./../anny/src/index.ts"],
         "@melite/models-anny/mods/verbs": ["./../anny/mods/verbs.ts"],
-        "@melite/models-anycreature": ["./../anycreature/src/index.ts"],
         "@melite/models-concat": ["./../concat/src/index.ts"],
         "@melite/models-fit": ["./../fit/src/index.ts"],
         "@melite/models-florence2": ["./../florence2/src/index.ts"],

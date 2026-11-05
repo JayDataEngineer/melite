@@ -2,6 +2,12 @@ import { loadTextPair, decodeSave, stackLoras } from "@melite/comfyui-card-kit";
 import { fireLoras, refuseIPAdapterFiring } from "@melite/comfyui-card-kit/guard";
 import { diffusionParamRows } from "@melite/comfyui-card-kit/paramRows";
 import { parseDiffusionLaneFacts } from "@melite/comfyui-card-kit/facts";
+/** The Comfy-Org template's exposed negative-box default (verbatim,
+ *  the 2026-11-04 artifact burn): the lane encodes a REAL negative on
+ *  every compose — the template never zero-outs, and a zeroed
+ *  unconditional (score = cfg·cond, no uncond cancellation) fed the
+ *  16/32px patch-grid lattice beside the over-armed SLG. */
+const TEMPLATE_NEGATIVE = "nsfw, worst quality, bad anatomy, watermark, jpeg artifact";
 /** The t2i facts door: the resolved lane_inputs parsed into the
  *  closed shape. An unknown encoder class refuses here, never
  *  silently routes to a stock lane.
@@ -22,17 +28,18 @@ export function parseT2IFacts(raw) {
 }
 /** The text-to-image action: the official MOSS-Image template — the
  *  UNETLoader + the declared shift wrap + CLIPLoader (moss_image) +
- *  VAELoader, the stock CLIPTextEncode pair, EmptyFlux2LatentImage at
- *  card resolution, SkipLayerGuidanceDiTSimple on single layer 22,
- *  and the template's plain KSampler (sampler/scheduler ride the
- *  card's knobs, family defaults er_sde/simple). Creation order IS
- *  node-id order (the recipe law).
+ *  VAELoader, the CLIPTextEncode pair, EmptyFlux2LatentImage at card
+ *  resolution, SLG DISARMED (the template's own default — the
+ *  bypass, never the patch node), and the template's plain KSampler
+ *  (sampler/scheduler ride the card's knobs, family defaults
+ *  er_sde/simple). Creation order IS node-id order (the recipe law).
  *
  * THE NEGATIVE ARM: MOSS's SFT lane runs live guidance (CFG 3), so a
  * STATED negative_prompt encodes through CLIPTextEncode and bites; a
- * BLANK negative composes ConditioningZeroOut over the positive —
- * the true unconditional (encoding an empty string through the 9B
- * tokenizer buys nothing).
+ * BLANK negative encodes the template's own reference default
+ * ("nsfw, worst quality, bad anatomy, watermark, jpeg artifact") —
+ * the template never composes a zeroed unconditional (a zeroed
+ * negative fed the 2026-11-04 patch-grid artifact burn).
  *
  * No reference arm: the create card takes no reference inputs
  * (operator ruling, 2026-10-11) — a stated reference_images key
@@ -61,19 +68,25 @@ export const t2i = {
         refuseIPAdapterFiring(model, p);
         const { clip, vae } = loadTextPair(g, facts);
         const positive = g.node("CLIPTextEncode", { text: p.prompt, clip }).out();
-        const negativeText = p.negative_prompt ?? "";
-        const negative = negativeText.trim() === ""
-            ? g.node("ConditioningZeroOut", { conditioning: positive }).out()
-            : g.node("CLIPTextEncode", { text: negativeText, clip }).out();
+        // THE OFFICIAL NEGATIVE (the 2026-11-04 artifact burn): blank
+        // encodes the template's own reference default; stated encodes
+        // the stated text. Never ConditioningZeroOut.
+        const negativeText = (p.negative_prompt ?? "").trim() === "" ? TEMPLATE_NEGATIVE : p.negative_prompt;
+        const negative = g.node("CLIPTextEncode", { text: negativeText, clip }).out();
         const latent = g.node("EmptyFlux2LatentImage", { width: p.width, height: p.height, batch_size: 1 }).out();
-        // THE TEMPLATE SAMPLER (the 2026-10-20 weave burn — the operator's
-        // own order: match the original workflow): the template IS a plain
-        // KSampler over the SLG-patched model (er_sde/simple). The shift
-        // wrap rode ModelSamplingAuraFlow above; SLG patches the sampling
-        // model, and the KSampler samples through it — the seed is already
-        // concrete here (the interpreter mints the -1 sentinel).
-        const guided = g.node("SkipLayerGuidanceDiTSimple", { model: unet, double_layers: "", single_layers: "22", start_percent: 0, end_percent: 0.5 }).out();
-        const sampled = g.node("KSampler", { model: guided, positive, negative, latent_image: latent, seed: p.seed, steps: p.steps, cfg: p.cfg, sampler_name: p.sampler, scheduler: p.scheduler, denoise: 1 });
+        // THE TEMPLATE SAMPLER (the 2026-10-20 weave burn; re-seated by
+        // the 2026-11-04 artifact burn): a plain KSampler over the
+        // shift-wrapped model (er_sde/simple) — and SLG DISARMED. The
+        // Comfy-Org template carries SkipLayerGuidanceDiTSimple but ships
+        // its switch_1 ("SLG") false, the switch routing the sampler off
+        // the raw wrapped model; stamping it ON (single layer 22, first
+        // half of the schedule) replaces the uncond prediction with a
+        // layer-skipped pass, so cfg·(cond − uncond_skipped) amplifies
+        // the 2×2 DiT patch-grid bias — the measured 16/32px lattice.
+        // Melite emits the bypass directly: no SLG node, the sampler
+        // samples through the wrap. The seed is already concrete here
+        // (the interpreter mints the -1 sentinel).
+        const sampled = g.node("KSampler", { model: unet, positive, negative, latent_image: latent, seed: p.seed, steps: p.steps, cfg: p.cfg, sampler_name: p.sampler, scheduler: p.scheduler, denoise: 1 });
         return decodeSave(g, sampled.out(0), vae, `${runId}/gen`).out();
     },
 };

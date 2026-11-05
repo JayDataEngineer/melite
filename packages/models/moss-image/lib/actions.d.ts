@@ -37,17 +37,18 @@ export type T2IParams = {
 export declare function parseT2IFacts(raw: LaneInputsFacts): T2IFacts;
 /** The text-to-image action: the official MOSS-Image template — the
  *  UNETLoader + the declared shift wrap + CLIPLoader (moss_image) +
- *  VAELoader, the stock CLIPTextEncode pair, EmptyFlux2LatentImage at
- *  card resolution, SkipLayerGuidanceDiTSimple on single layer 22,
- *  and the template's plain KSampler (sampler/scheduler ride the
- *  card's knobs, family defaults er_sde/simple). Creation order IS
- *  node-id order (the recipe law).
+ *  VAELoader, the CLIPTextEncode pair, EmptyFlux2LatentImage at card
+ *  resolution, SLG DISARMED (the template's own default — the
+ *  bypass, never the patch node), and the template's plain KSampler
+ *  (sampler/scheduler ride the card's knobs, family defaults
+ *  er_sde/simple). Creation order IS node-id order (the recipe law).
  *
  * THE NEGATIVE ARM: MOSS's SFT lane runs live guidance (CFG 3), so a
  * STATED negative_prompt encodes through CLIPTextEncode and bites; a
- * BLANK negative composes ConditioningZeroOut over the positive —
- * the true unconditional (encoding an empty string through the 9B
- * tokenizer buys nothing).
+ * BLANK negative encodes the template's own reference default
+ * ("nsfw, worst quality, bad anatomy, watermark, jpeg artifact") —
+ * the template never composes a zeroed unconditional (a zeroed
+ * negative fed the 2026-11-04 patch-grid artifact burn).
  *
  * No reference arm: the create card takes no reference inputs
  * (operator ruling, 2026-10-11) — a stated reference_images key

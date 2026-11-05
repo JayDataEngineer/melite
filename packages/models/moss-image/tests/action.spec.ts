@@ -2,9 +2,11 @@
 // the official MOSS-Image template (the Comfy-Org `image_moss_image_t2i`
 // template, cross-checked against the OpenMOSS developer workflow) —
 // the loader trio over the moss tokenizer (w4a8_gptq), the small VAE,
-// the declared ModelSamplingAuraFlow shift, the
-// CLIPTextEncode/ConditioningZeroOut negative branch,
-// SkipLayerGuidanceDiTSimple on single layer 22, and the template's
+// the declared ModelSamplingAuraFlow shift, a CLIPTextEncode negative
+// on EVERY compose (blank encodes the template's reference default —
+// the template never zero-outs), SLG DISARMED (the template ships
+// switch_1 "SLG" false, routing the sampler off the raw wrapped
+// model — melite emits the bypass directly), and the template's
 // plain KSampler (er_sde/simple). The interpreter's own contract
 // walls live in card-kit's tests/action.spec.ts.
 import { describe, it } from "vitest";
@@ -61,17 +63,25 @@ describe("the t2i action — the official MOSS-Image template topology", () => {
     assertGraphGolden(golden("the-composed-prompt-is-the-committed-golden-arm-a-s"), graphOf(action), "the composed prompt is the committed golden arm (a stated negative encodes)");
   });
 
-  it("a blank negative composes ConditioningZeroOut — the true unconditional", () => {
+  it("a blank negative encodes the template's reference default — the lane never zero-outs", () => {
+    // THE 2026-11-04 ARTIFACT BURN: the Comfy-Org template's negative
+    // box carries an exposed default and encodes it on every compose;
+    // a zeroed unconditional (score = cfg·cond, no uncond
+    // cancellation) fed the 16/32px patch-grid lattice beside the
+    // over-armed SLG. Blank encodes the template's own string.
     const action = new GraphBuilder({});
     instantiateAction(t2i, { ...PARAMS, negative_prompt: "" }, FACTS, action, "probe-zero");
     const graph = graphOf(action);
-    assert.equal(nodesOf(action, "ConditioningZeroOut"), 1, "the blank negative rides the zero-out arm");
-    assert.equal(nodesOf(action, "CLIPTextEncode"), 1, "only the positive encodes through the tokenizer");
-    assertGraphGolden(golden("a-blank-negative-composes-conditioningzeroout-t"), graph, "a blank negative composes ConditioningZeroOut (the true unconditional)");
+    assert.equal(nodesOf(action, "ConditioningZeroOut"), 0, "never a zeroed unconditional on this lane");
+    assert.equal(nodesOf(action, "CLIPTextEncode"), 2, "positive and negative BOTH encode through the tokenizer");
+    const negative = Object.values(graph).filter((n) => n.class_type === "CLIPTextEncode")
+      .find((n) => n.inputs.text !== PARAMS.prompt);
+    assert.equal(negative?.inputs.text, "nsfw, worst quality, bad anatomy, watermark, jpeg artifact", "the blank negative encodes the template's exposed default, verbatim");
+    assertGraphGolden(golden("a-blank-negative-encodes-the-template-reference-neg"), graph, "a blank negative encodes the template's reference default");
     const absent = new GraphBuilder({});
     const { negative_prompt: _omitted, ...noNegative } = PARAMS;
     instantiateAction(t2i, noNegative, FACTS, absent, "probe-zero");
-    assert.deepEqual(graphOf(absent), graph, "an ABSENT negative_prompt composes the identical zero-out wire");
+    assert.deepEqual(graphOf(absent), graph, "an ABSENT negative_prompt composes the identical reference-negative wire");
   });
 
   it("THE DECLARED SHIFT: the moss lane wraps ModelSamplingAuraFlow at 5.0 (the krea-2 arm, not klein's scheduler-computed shift)", () => {
@@ -81,20 +91,18 @@ describe("the t2i action — the official MOSS-Image template topology", () => {
     const shiftNodes = Object.values(graph).filter((n) => n.class_type === "ModelSamplingAuraFlow");
     assert.equal(shiftNodes.length, 1, "the declared shift composes exactly one sampling-model wrap");
     assert.equal(shiftNodes[0]?.inputs.shift, 5.0, "the wrap rides the DECL's declared 5.0");
-    // and the sampler consumes the SLG patch over the WRAPPED model
-    // (the wire spells connections as [nodeId, outputIndex] handles)
-    const slg = Object.values(graph).find((n) => n.class_type === "SkipLayerGuidanceDiTSimple");
-    assert.deepEqual(slg?.inputs.model, ["ModelSamplingAuraFlow.0", 0], "SLG patches the shift wrap");
-    const sampler = Object.values(graph).find((n) => n.class_type === "KSampler");
-    assert.deepEqual(sampler?.inputs.model, ["SkipLayerGuidanceDiTSimple.0", 0], "the sampler samples through the SLG patch");
+    // and the sampler consumes the WRAP directly (the template's SLG
+    // ships disarmed — link 51 routes the raw wrapped model; the wire
+    // spells connections as [nodeId, outputIndex] handles)
+    assert.equal(shiftNodes.length === 1 && Object.values(graph).some((n) => n.class_type === "KSampler" && JSON.stringify(n.inputs.model) === JSON.stringify(["ModelSamplingAuraFlow.0", 0])), true, "the sampler samples through the shift wrap, no SLG patch between");
     // the inert spelling (the door's optional-shift contract): a
     // resolved row carrying no sampling_shift composes the bare unet
     const bare = new GraphBuilder({});
     const { sampling_shift: _omitted, ...noShift } = FACTS.lane_inputs as Record<string, unknown>;
     instantiateAction(t2i, PARAMS, { ...FACTS, lane_inputs: noShift } as ModelFacts, bare, "probe-no-shift");
     assert.equal(nodesOf(bare, "ModelSamplingAuraFlow"), 0, "no declared shift, no wrap");
-    const bareSlg = Object.values(graphOf(bare)).find((n) => n.class_type === "SkipLayerGuidanceDiTSimple");
-    assert.deepEqual(bareSlg?.inputs.model, ["UNETLoader.0", 0], "SLG patches the raw unet");
+    const bareSampler = Object.values(graphOf(bare)).find((n) => n.class_type === "KSampler");
+    assert.deepEqual(bareSampler?.inputs.model, ["UNETLoader.0", 0], "no declared shift, the sampler rides the raw unet (still no SLG patch)");
   });
 
   it("GATE S rides the declared rule: the sentinel -1 mints a concrete seed, two runs differ", () => {
@@ -109,16 +117,15 @@ describe("the t2i action — the official MOSS-Image template topology", () => {
     assert.notEqual(s1, s2, "run-again under the sentinel mints fresh");
   });
 
-  it("the sampler rides the SLG-patched model over the template canvas (the wire, not just the census)", () => {
+  it("the sampler rides the wrapped model over the template canvas, SLG DISARMED (the wire, not just the census)", () => {
     const action = new GraphBuilder({});
     instantiateAction(t2i, PARAMS, FACTS, action, "probe-wire");
     const graph = graphOf(action);
-    const slg = Object.values(graph).find((n) => n.class_type === "SkipLayerGuidanceDiTSimple");
     const sampler = Object.values(graph).find((n) => n.class_type === "KSampler");
     // the wire spells connections as [nodeId, outputIndex] handles
-    assert.deepEqual(sampler?.inputs.model, ["SkipLayerGuidanceDiTSimple.0", 0], "the KSampler samples through the SLG patch");
+    assert.equal(Object.values(graph).filter((n) => n.class_type === "SkipLayerGuidanceDiTSimple").length, 0, "the template ships SLG DISARMED (switch_1 false) — melite emits the bypass, never the patch");
+    assert.deepEqual(sampler?.inputs.model, ["ModelSamplingAuraFlow.0", 0], "the KSampler samples through the shift wrap");
     assert.deepEqual(sampler?.inputs.latent_image, ["EmptyFlux2LatentImage.0", 0], "the canvas feeds the sampler");
-    assert.deepEqual(slg?.inputs.model, ["ModelSamplingAuraFlow.0", 0], "SLG patches the shift-wrapped model");
     assert.equal(sampler?.inputs.seed, 7, "the stated seed rides the KSampler");
     assert.equal(sampler?.inputs.steps, 50, "steps ride through");
     assert.equal(sampler?.inputs.cfg, 3, "cfg rides through");
@@ -138,7 +145,7 @@ describe("the t2i action — the official MOSS-Image template topology", () => {
   // simple)→VAEDecode, SLG on single layer 22, w4a8_gptq tokenizer,
   // small VAE). The born-red arm: every template load-bearing piece,
   // one assertion each.
-  it("THE TEMPLATE TOPOLOGY: w4a8_gptq + small VAE + plain KSampler er_sde/simple + SLG on single layer 22", () => {
+  it("THE TEMPLATE TOPOLOGY: w4a8_gptq + small VAE + plain KSampler er_sde/simple + SLG disarmed", () => {
     const action = new GraphBuilder({});
     instantiateAction(t2i, { ...PARAMS, sampler: "er_sde" }, FACTS, action, "probe-template");
     const graph = graphOf(action);
@@ -151,9 +158,16 @@ describe("the t2i action — the official MOSS-Image template topology", () => {
     assert.ok(sampler, "the template samples through the plain KSampler, not the advanced stack");
     assert.equal(sampler?.inputs.sampler_name, "er_sde", "the template sampler is er_sde");
     assert.equal(sampler?.inputs.scheduler, "simple", "the template scheduler is simple");
-    const slg = Object.values(graph).find((n) => n.class_type === "SkipLayerGuidanceDiTSimple");
-    assert.ok(slg, "skip-layer guidance rides — the template carries it ON in all four templates");
-    assert.equal(slg?.inputs.single_layers, "22", "guidance at the official layer 22");
+    // THE ARTIFACT BURN (2026-11-04): the template CARRIES
+    // SkipLayerGuidanceDiTSimple but ships it DISARMED — exposed
+    // switch_1 ("SLG") false, the ComfySwitchNode routing the
+    // KSampler off the raw wrapped model (link 51). Stamping it ON
+    // (single layer 22, first half of the schedule) replaces the
+    // uncond prediction with a layer-skipped pass, so
+    // cfg·(cond − uncond_skipped) amplifies the 2×2 DiT patch-grid
+    // bias — the measured 16/32px lattice. Melite emits the bypass
+    // directly.
+    assert.equal(Object.values(graph).filter((n) => n.class_type === "SkipLayerGuidanceDiTSimple").length, 0, "SLG rides DISARMED — the template's own default, and never the stamped-on patch");
     for (const gone of ["Flux2Scheduler", "KSamplerSelect", "CFGGuider", "RandomNoise", "SamplerCustomAdvanced"]) {
       assert.equal(nodesOf(action, gone), 0, `${gone} leaves with the advanced stack`);
     }

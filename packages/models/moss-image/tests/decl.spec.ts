@@ -143,3 +143,56 @@ describe("the declared cell artifacts are pinned verbatim", () => {
     }
   });
 });
+
+// THE INT8 INNOCENCE LAW (the moss-fft-ab audit, 2026-11-04): the
+// exact-twin A/B — seed 20261301, 50 steps / CFG 3.0 / er_sde /
+// simple, 1024², the ONLY delta the checkpoint — measured bf16 vs
+// int8_convrot at −0.03% raw mid-band magnitude and 0.13 dB on the
+// 12–37px residual peak: the quant tier is NOT the artifact's
+// lever. A mottle "cure" that flips the sft DEFAULT cell to bf16
+// (or otherwise abandons int8) violates the audit; the default
+// stays the int8 convrot combo.
+// @contract models-moss-int8-innocence
+describe("THE INT8 INNOCENCE LAW — the default cell stays the int8 convrot combo (the FFT A/B exonerated int8_convrot)", () => {
+  it("the sft DEFAULT cell is the int8 convrot combo, read through the DECL export — bf16 stays the second cell, never the default", () => {
+    const sft = DECL.variants.find((v) => v.id === "sft")!;
+    const lane = DECL.lane_inputs as Record<string, unknown>;
+    // the engine's own default-cell law is FIRST DECLARED; the combo
+    // is the quant token + the file the family lane loads + the
+    // download artifact that file's source names — the faces judged
+    // against each other, never against a copied string.
+    const dflt = sft.cells[0]!;
+    const second = sft.cells[1]!;
+    assert.equal(dflt.quant, "int8_convrot",
+      "the variant default (the first-declared cell) is the int8 convrot tier — flipping it to bf16 as a mottle cure is the violation the FFT A/B refutes");
+    assert.equal((dflt.lane_inputs as Record<string, unknown>)["unet"], lane["unet"],
+      "the default cell's checkpoint IS the family lane's unet — the fresh-card default composes the int8 split");
+    assert.ok(String((dflt.artifact as Record<string, unknown>)["source_url"]).endsWith(`/${String((dflt.lane_inputs as Record<string, unknown>)["unet"])}`),
+      "the default cell's own download artifact names the same int8 file it loads");
+    assert.equal(second.quant, "bf16",
+      "bf16 stays the declared SECOND cell — a legal opt-in quant, never the default");
+    assert.notEqual(second.route, dflt.route,
+      "the second cell keeps its own route address; the family route still binds the int8 cell");
+  });
+});
+
+// THE ATTRIBUTION LAW (the 021 audit F4/C2 + the 2026-11-04
+// diagnosis §6.4): the family defaults are OpenMOSS's OWN t2i
+// recommendations — the comparison table inside the Comfy-Org
+// template ("for results closer to the official ones, try 50 steps
+// and CFG 3") — and the Comfy-Org template UI's own widget defaults
+// (25 steps / CFG 2.5) never substitute for them. The VALUES are
+// the attribution: this row is the face every fresh card serves.
+// @contract models-moss-defaults-attribution
+describe("THE ATTRIBUTION LAW — the defaults are OpenMOSS's own t2i table, never the template UI's 25/2.5", () => {
+  it("the family defaults row is verbatim OpenMOSS 1024² / 50 steps / CFG 3 / er_sde / simple", () => {
+    assert.deepEqual(DECL.defaults, {
+      width: 1024,
+      height: 1024,
+      steps: 50,
+      cfg: 3,
+      sampler: "er_sde",
+      scheduler: "simple",
+    }, "the defaults are OpenMOSS's own t2i recommendations — a 25/2.5 flip lets the template UI substitute for the audited attribution");
+  });
+});

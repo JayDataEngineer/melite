@@ -5,7 +5,7 @@ kind: package-library
 
 # moss-image
 
-moss-image registers MOSS-Image (form `form_generate`, label "MOSS-Image", genre `image`, engine `comfyui`): OpenMOSS's 5B DiT in the FLUX.2 latent space, served through Comfy-Org's repack, Apache-2.0. Defaults are the template's own: 1024×1024, 50 steps, CFG 3, `er_sde` / `simple` — and unlike klein the knobs wire: the template's plain KSampler takes them. The flow shift is declared (5.0) and rides ModelSamplingAuraFlow. Prompts take line breaks and quoted text for rendered typography and native JSON bbox layouts — prompt-side craft, no extra knob. Provisions carry the template's OWN files with digests: the `qwen3.5_9b_w4a8_gptq` tokenizer (~7.3 GB) and the small flux2 VAE (~250 MB) — the first cure's klein-pair dedupe was reverted once the operator's render proved the template files load-bearing. A 300 s timeout floor keeps the 50-step lane from being judged hung.
+moss-image registers MOSS-Image (form `form_generate`, label "MOSS-Image", genre `image`, engine `comfyui`): OpenMOSS's 5B DiT in the FLUX.2 latent space, served through Comfy-Org's repack, Apache-2.0. Defaults are OpenMOSS's own t2i recommendations (the comparison table in Comfy-Org's template): 1024×1024, 50 steps, CFG 3, `er_sde` / `simple` — the Comfy-Org template UI itself ships 25 steps / CFG 2.5 — and unlike klein the knobs wire: the template's plain KSampler takes them. The flow shift is declared (5.0) and rides ModelSamplingAuraFlow. Prompts take line breaks and quoted text for rendered typography and native JSON bbox layouts — prompt-side craft, no extra knob. Provisions carry the template's OWN files with digests: the `qwen3.5_9b_w4a8_gptq` tokenizer (~7.3 GB) and the small flux2 VAE (~250 MB) — the first cure's klein-pair dedupe was reverted once the operator's render proved the template files load-bearing. A 300 s timeout floor keeps the 50-step lane from being judged hung.
 
 ## Variants and recipes
 
@@ -14,7 +14,7 @@ moss-image registers MOSS-Image (form `form_generate`, label "MOSS-Image", genre
 
 ## The t2i action
 
-`prompt` is required; the declared surface is prompt, negative_prompt, width, height, seed, steps, cfg, sampler, scheduler. The graph: UNETLoader + the declared shift wrap + CLIPLoader (`moss_image`) + VAELoader, the CLIPTextEncode pair, EmptyFlux2LatentImage at card resolution, SkipLayerGuidanceDiTSimple on single layer 22, and the plain KSampler → decode and save under `<run>/gen`. NO advanced stack: the Flux2Scheduler/KSamplerSelect/CFGGuider/RandomNoise/SamplerCustomAdvanced topology — the klein sigma ladder — never emits on this lane; it was the 2026-10-20 weave burn. The negative arm bites: CFG 3 is live guidance, so a stated negative encodes and steers, while a blank one composes ConditioningZeroOut. No reference seat: a stated `reference_images` key refuses.
+`prompt` is required; the declared surface is prompt, negative_prompt, width, height, seed, steps, cfg, sampler, scheduler. The graph matches the official Comfy-Org template (`image_moss_image_t2i`) 1:1: UNETLoader + the declared shift wrap + CLIPLoader (`moss_image`) + VAELoader, the CLIPTextEncode pair, EmptyFlux2LatentImage at card resolution, and the plain KSampler riding the shift wrap directly → decode and save under `<run>/gen`. NO advanced stack: the Flux2Scheduler/KSamplerSelect/CFGGuider/RandomNoise/SamplerCustomAdvanced topology — the klein sigma ladder — never emits on this lane; it was the 2026-10-20 weave burn. The template's SkipLayerGuidanceDiT ships its SLG switch false, and melite emits the bypass: no SLG node on this lane. The negative is a REAL encode on every compose: a blank `negative_prompt` encodes the template's reference default (`nsfw, worst quality, bad anatomy, watermark, jpeg artifact`), a stated one encodes the stated text — ConditioningZeroOut is never composed here. No reference seat: a stated `reference_images` key refuses.
 
 ## Mods
 
@@ -38,5 +38,5 @@ Independent — each generation is its own engine request; no shared prefix.
 
 ## Known Limitations and Deferred Work
 
-- **The sampler pair follows the repack author** — OpenMOSS's own HF-loader flow runs euler/sgm_uniform; the family follows the Comfy-Org template's er_sde/simple, the reference for the provisioned weights.
+- **The defaults follow OpenMOSS, not the template UI** — 1024², 50 steps, CFG 3, `er_sde` / `simple` are OpenMOSS's own t2i recommendations (the comparison table in Comfy-Org's template); the Comfy-Org template UI itself ships 25 steps / CFG 2.5.
 - **Live behavior unobserved** — documented from the DECL and action build, not verified against the running model.

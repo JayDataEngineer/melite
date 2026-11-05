@@ -5,10 +5,11 @@ export const DECL = {
     "label": "MOSS-Image",
     "description": "MOSS-Image — OpenMOSS's 5B DiT in the FLUX.2 latent space: a 50-step SFT lane (25-30 for fast iteration) at CFG 3, typography through line breaks and quoted text, layout through native JSON bboxes in the prompt. Apache-2.0 licensed (OpenMOSS's own release terms).",
     "engine": "comfyui",
-    // The Comfy-Org template's own defaults: 1024², 50 steps,
-    // CFG 3, er_sde, simple. `sampler`/`scheduler` declare the card
-    // domain (the models-against-cards law) and WIRE through the
-    // template's plain KSampler — the knobs work on this lane.
+    // OpenMOSS's own t2i defaults (the template's comparison table):
+    // 1024², 50 steps, CFG 3, er_sde, simple — the Comfy-Org template
+    // UI ships 25/2.5. `sampler`/`scheduler` declare the card domain
+    // (the models-against-cards law) and WIRE through the template's
+    // plain KSampler — the knobs work on this lane.
     "defaults": {
         "width": 1024,
         "height": 1024,
@@ -203,9 +204,10 @@ export const DECL = {
         // THE LANE BRANCH KEY (the text_encode_node precedent — data,
         // never a family-id switch): the stock CLIPTextEncode over the
         // moss tokenizer; the negative arm branches on the stated
-        // prompt (blank → ConditioningZeroOut, the true unconditional;
-        // stated → a real encoded negative — CFG 3 is a live guidance
-        // arm on this lane, negatives work).
+        // prompt (blank → the template's own reference default negative;
+        // stated → the stated text — the lane NEVER composes a zeroed
+        // unconditional, the 2026-11-04 artifact burn; CFG 3 is a live
+        // guidance arm on this lane, negatives work).
         "text_encode_node": "CLIPTextEncode",
         // THE DECLARED SHIFT: MOSS's template pins flow shift 5.0 and
         // rides ModelSamplingAuraFlow with it (unlike klein, whose
