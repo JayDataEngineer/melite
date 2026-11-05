@@ -62,6 +62,7 @@ export declare function observeAndAttribute(estate: Estate, draftId: DraftId, st
     status: string;
     url: string;
     artifacts: string[];
+    asset_urls: string[];
     host_paths: string[];
     stamp_note?: string;
 }>;

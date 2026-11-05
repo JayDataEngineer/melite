@@ -3588,11 +3588,13 @@ window.__ModuleLoader__.load({
 			}
 			const assetUrls = stringsOf(result["assetUrls"]);
 			const metadata = recordOf(result["metadata"]);
-			if (Object.keys(artifacts).length === 0 && assetUrls.length === 0) return null;
+			const heroUrl = nonEmptyString(result["url"]);
+			if (heroUrl === "" && Object.keys(artifacts).length === 0 && assetUrls.length === 0) return null;
 			return {
 				artifacts,
 				assetUrls,
 				metadata,
+				...heroUrl === "" ? {} : { url: heroUrl },
 				...typeof result["durationSec"] === "number" ? { durationSec: result["durationSec"] } : {},
 				...galleryOf(result["gallery"]) === void 0 ? {} : { gallery: galleryOf(result["gallery"]) },
 				...previewsOf(result["motionPreviews"]) === void 0 ? {} : { motionPreviews: previewsOf(result["motionPreviews"]) }
@@ -7725,6 +7727,23 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region src/client/chat-preview.ts
+		/** THE ROW'S ARTIFACT SET (cure 2, 2026-11-15): the persisted urls as
+		*  {name, url} rows — the whole set renders (the all-visible law,
+		*  card-base preview.tsx). The lead is ALWAYS first: the projector
+		*  unshifts it, and a hand-built row without it gets it here — the
+		*  hero seat never loses the url the meta names. A row with no set
+		*  renders the lead alone (the pre-cure shape). */
+		function artifactSetOf(raw, lead) {
+			const urls = Array.isArray(raw) ? raw.filter((u) => typeof u === "string" && u !== "") : [];
+			if (!urls.includes(lead)) urls.unshift(lead);
+			return urls.map((u) => {
+				const name = u.split("/").pop() ?? u;
+				return {
+					name: name === "" ? u : name,
+					url: u
+				};
+			});
+		}
 		/** Derive the frozen chat heroes from the call's OWN persisted rows.
 		* @param rows The presentationMeta `previews` array, served verbatim
 		*        (an absent key is an empty list — a card that pressed
@@ -7739,14 +7758,10 @@ window.__ModuleLoader__.load({
 				if (stageId === null || url === null) continue;
 				const kind = previewKindFor(url);
 				if (kind !== "video" && kind !== "image" && kind !== "audio") continue;
-				const name = url.split("/").pop() ?? url;
 				out.push({
 					stageId,
 					kind,
-					artifacts: [{
-						name: name === "" ? url : name,
-						url
-					}],
+					artifacts: artifactSetOf(row.artifacts, url),
 					runStatus: typeof row.status === "string" ? row.status : ""
 				});
 			}
@@ -7832,6 +7847,8 @@ window.__ModuleLoader__.load({
 			let draftId = null;
 			let runId = null;
 			let previews = [];
+			let frozenRows = [];
+			let frozenIntent = null;
 			if (settled && block.isError !== true) {
 				const meta = block.meta;
 				if (meta !== null && typeof meta === "object" && !Array.isArray(meta)) {
@@ -7848,9 +7865,26 @@ window.__ModuleLoader__.load({
 						return [{
 							stage: r["stage"],
 							url: r["url"],
-							status: typeof r["status"] === "string" ? r["status"] : ""
+							status: typeof r["status"] === "string" ? r["status"] : "",
+							artifacts: Array.isArray(r["artifacts"]) ? r["artifacts"].filter((u) => typeof u === "string" && u !== "") : []
 						}];
 					});
+					const metaRows = meta["rows"];
+					if (Array.isArray(metaRows) && metaRows.length > 0) frozenRows = metaRows.flatMap((row) => {
+						if (row === null || typeof row !== "object" || Array.isArray(row)) return [];
+						const r = row;
+						if (typeof r["stage"] !== "string" || r["stage"] === "") return [];
+						return [{
+							stage: r["stage"],
+							card: typeof r["card"] === "string" ? r["card"] : "",
+							status: typeof r["status"] === "string" ? r["status"] : "",
+							runId: typeof r["run_id"] === "string" ? r["run_id"] : "",
+							url: typeof r["url"] === "string" ? r["url"] : "",
+							artifacts: Array.isArray(r["artifacts"]) ? r["artifacts"].filter((u) => typeof u === "string" && u !== "") : []
+						}];
+					});
+					const metaIntent = meta["intent"];
+					if (typeof metaIntent === "string" && metaIntent !== "") frozenIntent = metaIntent;
 				}
 				if (draftId === null && Array.isArray(block.content)) for (const part of block.content) {
 					if (part === null || typeof part !== "object") continue;
@@ -7876,7 +7910,9 @@ window.__ModuleLoader__.load({
 				malformedArgs,
 				settled,
 				isError: block.isError === true,
-				previews
+				previews,
+				frozenRows,
+				frozenIntent
 			};
 		}
 		/** Draft doc + live run status (all doors in draft.ts; the live tail
@@ -8126,10 +8162,28 @@ window.__ModuleLoader__.load({
 				}), dismiss]
 			});
 		}
+		/** THE FROZEN ROWS FACE (the stale-two-run audit, cure 1,
+		*  2026-11-15): the settle-time pass rows distilled into the card-row
+		*  shape the chat tile renders — the press's OWN stage list, exactly
+		*  as the projector froze it. Never the bench's present tense: a
+		*  historical card shows the rows THAT call produced, once, forever
+		*  (the same law the previews froze under, 2026-11-19). */
+		function frozenRowsOf(rows) {
+			return rows.map((r) => ({
+				stageId: r.stage,
+				title: r.card !== "" ? r.card : r.stage,
+				kind: "stage",
+				service: null,
+				prompt: null,
+				status: statusOrPendingOf(r.status),
+				thumbUrl: r.url !== "" ? r.url : null
+			}));
+		}
 		/** One melite_flow call as the REAL action cards (native React, in-tree). */
 		function FlowCards({ block, openSurface, openMedia }) {
 			const parsed = (0, react.useMemo)(() => parseCardsBlock(block), [block]);
-			const { doc, live, error, refresh, startedRun } = useDraft(parsed.draftId);
+			const frozen = parsed.frozenRows.length > 0;
+			const { doc, live, error, refresh, startedRun } = useDraft(frozen ? null : parsed.draftId);
 			const [openStage, setOpenStage] = (0, react.useState)(null);
 			if (parsed.settled && !parsed.isError && parsed.draftId === null && parsed.runId === null) return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 				className: card_module_css_default.card,
@@ -8166,7 +8220,7 @@ window.__ModuleLoader__.load({
 					children: parsed.isError ? chromeCopy.draftFailed : chromeCopy.composing
 				})
 			});
-			const rows = doc !== null ? cardRows(doc, live) : [];
+			const rows = frozen ? frozenRowsOf(parsed.frozenRows) : doc !== null ? cardRows(doc, live) : [];
 			const previews = chatPreviewsFor(parsed.previews);
 			const openRow = rows.find((r) => r.stageId === openStage) ?? null;
 			const openParams = doc?.stages.find((s) => s.id === openStage)?.params ?? {};
@@ -8201,7 +8255,7 @@ window.__ModuleLoader__.load({
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 								className: card_module_css_default.model,
-								children: doc?.intent ?? parsed.model ?? chromeCopy.flowFallback
+								children: parsed.frozenIntent ?? doc?.intent ?? parsed.model ?? chromeCopy.flowFallback
 							}),
 							parsed.malformedArgs && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 								className: card_module_css_default.state,
@@ -8227,7 +8281,7 @@ window.__ModuleLoader__.load({
 							})
 						]
 					}),
-					doc === null && error === null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+					!frozen && doc === null && error === null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 						className: card_module_css_default.load,
 						children: chromeCopy.cardsLoading
 					}),
@@ -21183,7 +21237,30 @@ window.__ModuleLoader__.load({
 				candidates,
 				candidatesFor,
 				loadMedia: _melite_card_base_client.fetchMediaLibrary,
-				loadChainRuns: _melite_card_base_client.fetchChainRunCandidates
+				loadChainRuns: _melite_card_base_client.fetchChainRunCandidates,
+				...spec !== null ? {
+					uploadLora: (file, opts) => (0, _melite_card_base_client.uploadLoraDoor)(file, {
+						families: (0, _melite_card_base_client.resolveFamilyKey)(spec),
+						strength: opts.strength
+					}),
+					refreshSpec: async () => {
+						const held = specRef.current;
+						if (held === null) return;
+						const family = typeof held.model === "string" && held.model !== "" ? held.model : null;
+						if (family === null) return;
+						const seq = specFetchSeqRef.current += 1;
+						pendingSpecRef.current = {
+							family,
+							seq
+						};
+						try {
+							const doc = await (0, _melite_card_base_client.fetchFormSpec)(family);
+							if (specFetchSeqRef.current === seq) setSpec(doc);
+						} catch {} finally {
+							if (pendingSpecRef.current?.seq === seq) pendingSpecRef.current = null;
+						}
+					}
+				} : {}
 			};
 			const run = async () => {
 				setError(null);

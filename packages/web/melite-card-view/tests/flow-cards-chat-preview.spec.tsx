@@ -125,4 +125,145 @@ describe("Q3 CHAT PREVIEWS — the press's own persisted rows, frozen", () => {
     expect(seen.map((c) => c.method)).not.toContain("runs/status");
     expect(seen.map((c) => c.method)).not.toContain("runs/subscribe");
   });
+
+  // THE RUN-SPELLED WALL (the stale-two-run audit §walls a,
+  // 2026-11-15): the captured burn painted two heroes from two
+  // different runs under a present-bench pending row. These fixtures
+  // carry the burn's own urls — the meta rows under run-ceeb…/
+  // run-c80a…, the draft doc's stage results under OTHER run ids —
+  // and demand the heroes' srcs are the META urls exactly.
+  test("THE RUN-SPELLED WALL: hero srcs are the meta urls exactly — the doc's other-run results never paint", async () => {
+    const metaUrls = [
+      "/melite-media/runs/run-ceeb721bcd51-a9cbfe9f/h3-film/SaveVideo.0_h3_t4_w1_00001_.mp4",
+      "/melite-media/runs/run-c80a8afa5a28-a9ccdde4/h3-film/SaveVideo.2_extend_film_00001_.mp4",
+    ];
+    wire({
+      draftStages: [
+        // the foreign bench: both stages settled under OTHER runs — if
+        // the strip derives from the doc, THESE srcs paint (the bleed).
+        { id: "s_a", title: "windows", kind: "generation", status: "success", params: {}, result: { url: "/melite-media/runs/run-OTHER-a/h3-film/SaveVideo.9_film_00001_.mp4", artifacts: { output: "/melite-media/runs/run-OTHER-a/h3-film/SaveVideo.9_film_00001_.mp4" } } },
+        { id: "s_b", title: "film", kind: "generation", status: "success", params: {}, result: { url: "/melite-media/runs/run-OTHER-b/h3-film/SaveVideo.8_film_00001_.mp4" } },
+      ],
+      draftBenchRev: 3, draftIntent: "the foreign bench",
+    });
+    const { container } = render(h(FlowCards, { block: settled({
+      meta: {
+        draft_id: "draft-1",
+        previews: [
+          { stage: "s_a", url: metaUrls[0], status: "done" },
+          { stage: "s_b", url: metaUrls[1], status: "done" },
+        ],
+      },
+    }) }));
+    const heroes = await screen.findAllByTestId("stage-preview-video-hero", {}, { timeout: 4000 });
+    expect(heroes).toHaveLength(2);
+    expect(heroes.map((v) => v.getAttribute("src"))).toEqual(metaUrls);
+    expect(container.querySelectorAll("[data-chat-preview]")).toHaveLength(2);
+  });
+
+  // THE FOUR-TAKE FACE (the stale-two-run audit §walls c, cure 2,
+  // 2026-11-15): one hero + four strip thumbs — the whole set renders
+  // (the all-visible law, card-base preview.tsx), never the lead alone.
+  test("THE FOUR-TAKE FACE: a meta row with a 4-artifact set renders one hero + four strip thumbs", async () => {
+    const set = [
+      "/melite-media/runs/run-4takes/h3-film/SaveVideo.2_film_00001_.mp4",
+      "/melite-media/runs/run-4takes/h3-film/SaveVideo.0_h3_t4_w1_00001_.mp4",
+      "/melite-media/runs/run-4takes/h3-film/SaveVideo.1_h3_t4_w2_00001_.mp4",
+      "/melite-media/runs/run-4takes/h3-film/SaveVideo.3_h3_t4_w3_00001_.mp4",
+    ];
+    wire({ draftStages: STAGES.map((s) => ({ ...s })), draftBenchRev: 3, draftIntent: "the film" });
+    const { container } = render(h(FlowCards, { block: settled({
+      meta: {
+        draft_id: "draft-1",
+        previews: [{ stage: "s_vid", url: set[0], status: "done", artifacts: set }],
+      },
+    }) }));
+    const hero = await screen.findByTestId("stage-preview-video-hero", {}, { timeout: 4000 });
+    expect(hero.getAttribute("src")).toBe(set[0]);
+    const strip = container.querySelector('[data-testid="stage-preview-video-strip"]');
+    expect(strip).not.toBeNull();
+    expect(strip!.querySelectorAll("button")).toHaveLength(4);
+    // every thumb renders one of the set's urls (the order rides too)
+    const thumbSrcs = Array.from(strip!.querySelectorAll("button")).map((t) =>
+      (t.querySelector("video") ?? t.querySelector("img"))?.getAttribute("src"));
+    expect(thumbSrcs).toEqual(set);
+  });
+
+  // THE DISCRIMINATOR (the stale-two-run audit §walls b, cure 1,
+  // 2026-11-15): a settled block WITH meta.rows renders its OWN press —
+  // the frozen rows face + the frozen head — and fires NO drafts/get.
+  test("THE DISCRIMINATOR: a settled block with meta.rows fires no drafts/get and renders exactly meta.rows", async () => {
+    const seen = wire({
+      // THE FOREIGN BENCH: the fake serves a DIFFERENT stage list with
+      // a DIFFERENT intent — if the card re-derives from the doc, the
+      // foreign rows paint and this arm reds on both counts.
+      draftStages: [
+        { id: "f_0", title: "foreign stage", kind: "generation", status: "pending", params: {} },
+        { id: "f_1", title: "another foreign", kind: "generation", status: "success", params: {} },
+        { id: "f_2", title: "third foreign", kind: "generation", status: "success", params: {} },
+      ],
+      draftBenchRev: 99, draftIntent: "THE PRESENT-BENCH INTENT",
+    }).calls;
+    const { container } = render(h(FlowCards, { block: settled({
+      meta: {
+        draft_id: "draft-1",
+        intent: "the frozen press's own intent",
+        rows: [
+          { stage: "s_w", card: "h3-timeline", status: "done", run_id: "run-ceeb721bcd51-a9cbfe9f", url: "/melite-media/runs/run-ceeb721bcd51-a9cbfe9f/h3-film/SaveVideo.0_h3_t4_w1_00001_.mp4" },
+          { stage: "s_q", card: "image-gen", status: "queued", run_id: "run-c80a8afa5a28-a9ccdde4" },
+          { stage: "s_sk", card: "tts", status: "skipped" },
+          { stage: "s_th", card: "sweep", status: "error" },
+        ],
+        previews: [
+          { stage: "s_w", url: "/melite-media/runs/run-ceeb721bcd51-a9cbfe9f/h3-film/SaveVideo.0_h3_t4_w1_00001_.mp4", status: "done" },
+        ],
+      },
+    }) }));
+    // the frozen rows render synchronously (no fetch behind them)
+    await screen.findByText("the frozen press's own intent", {}, { timeout: 4000 });
+    const rendered = Array.from(container.querySelectorAll("[data-stage]"))
+      .map((el) => [el.getAttribute("data-stage"), el.getAttribute("data-status")]);
+    expect(rendered).toEqual([
+      ["s_w", "done"],
+      ["s_q", "queued"],
+      ["s_sk", "skipped"],
+      ["s_th", "error"],
+    ]);
+    expect(container.textContent).not.toContain("THE PRESENT-BENCH INTENT");
+    expect(container.textContent).not.toContain("foreign stage");
+    // the auto-render half: no drafts/get — the storm is dead
+    await new Promise((r) => setTimeout(r, 200));
+    expect(seen.map((c) => c.method)).not.toContain("drafts/get");
+  });
+
+  // THE PENDING RECEIPT (the stale-two-run audit §walls b, cure 1):
+  // a settled block whose meta.status is the pending receipt — the
+  // pass SO FAR, its last stage queued without a url — renders heroes
+  // only for the rows that minted urls, and its rows are the meta rows.
+  test("THE PENDING RECEIPT: heroes only for pass rows that minted urls; rows are meta.rows", async () => {
+    wire({
+      draftStages: [{ id: "f_0", title: "foreign", kind: "generation", status: "pending", params: {} }],
+      draftBenchRev: 99, draftIntent: "THE PRESENT-BENCH INTENT",
+    });
+    const { container } = render(h(FlowCards, { block: settled({
+      meta: {
+        draft_id: "draft-1",
+        intent: "the pending press",
+        status: "pending",
+        rows: [
+          { stage: "s_w", card: "h3-timeline", status: "done", run_id: "run-ceeb721bcd51-a9cbfe9f", url: "/melite-media/runs/run-ceeb721bcd51-a9cbfe9f/h3-film/SaveVideo.0_h3_t4_w1_00001_.mp4" },
+          { stage: "s_q", card: "h3-timeline", status: "queued", run_id: "run-c80a8afa5a28-a9ccdde4" },
+        ],
+        previews: [
+          { stage: "s_w", url: "/melite-media/runs/run-ceeb721bcd51-a9cbfe9f/h3-film/SaveVideo.0_h3_t4_w1_00001_.mp4", status: "done" },
+        ],
+      },
+    }) }));
+    const hero = await screen.findByTestId("stage-preview-video-hero", {}, { timeout: 4000 });
+    expect(hero.getAttribute("src")).toBe("/melite-media/runs/run-ceeb721bcd51-a9cbfe9f/h3-film/SaveVideo.0_h3_t4_w1_00001_.mp4");
+    expect(container.querySelectorAll("[data-chat-preview]")).toHaveLength(1);
+    const rendered = Array.from(container.querySelectorAll("[data-stage]"))
+      .map((el) => [el.getAttribute("data-stage"), el.getAttribute("data-status")]);
+    expect(rendered).toEqual([["s_w", "done"], ["s_q", "queued"]]);
+  });
 });

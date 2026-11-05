@@ -1713,6 +1713,70 @@ describe('melite_flow presentCall/render/meta — the faces', () => {
     } as never) as Record<string, unknown>
     assert.ok(!('previews' in bare), 'no pass, no previews key — never an empty-strip ambiguity')
   })
+
+  test('presentationMeta persists the pass rows + the settle-time intent (the discriminator, cure 1, 2026-11-15)', () => {
+    // THE STALE-TWO-RUN BURN (audit chat-flowcard-stale-videos,
+    // 2026-11-05): the replayed card re-derived its rows AND its head
+    // from the re-fetched present-time bench doc — a pending row and a
+    // foreign intent under a settled block, on a bench every later
+    // press rewrites whole. The cure freezes the pass rows THEMSELVES
+    // (every stage of THAT call's press: settled, skipped, thrown) and
+    // the settle-time intent into the meta, so the card renders its
+    // own press and fires no drafts/get.
+    const tool = meliteFlow(fakeEstate({}).estate)
+    const meta = tool.output.presentationMeta!({ bench: true } as never, {
+      mode: 'bench', target: 'd1 @ rev 3', draft_id: 'd1', status: 'done',
+      intent: 'four 5s takes',
+      pass: [
+        { stage: 's_0', card: 'tts', skipped: 'done', last_run: null },
+        { stage: 's_1', card: 'h3', run_id: 'r1', status: 'done', url: '/melite-media/runs/r1/h3-film/film.mp4', artifacts: ['h3-film/film.mp4'], asset_urls: ['/melite-media/runs/r1/h3-film/film.mp4', '/melite-media/runs/r1/h3-film/w1.mp4'] },
+        { stage: 's_2', card: 'still', run_id: 'r2', status: 'queued' },
+        { stage: 's_3', card: 'sweep', thrown: 'transport died mid-start' },
+      ],
+    } as never) as Record<string, unknown>
+    assert.deepEqual(meta['rows'], [
+      { stage: 's_0', card: 'tts', status: 'skipped' },
+      { stage: 's_1', card: 'h3', status: 'done', run_id: 'r1', url: '/melite-media/runs/r1/h3-film/film.mp4', artifacts: ['/melite-media/runs/r1/h3-film/film.mp4', '/melite-media/runs/r1/h3-film/w1.mp4'] },
+      { stage: 's_2', card: 'still', status: 'queued', run_id: 'r2' },
+      { stage: 's_3', card: 'sweep', status: 'error' },
+    ], 'every pass row freezes with its settle-time truth — skipped/thrown included')
+    assert.equal(meta['intent'], 'four 5s takes', 'the settle-time intent rides beside the rows — the frozen head')
+    // no intent in the value (a pre-cure replay, a hand-built row) →
+    // no key: the card falls back, never fabricates a head
+    const bare = tool.output.presentationMeta!({ bench: true } as never, {
+      mode: 'bench', target: 'd1 @ rev 3', draft_id: 'd1', status: 'done',
+      pass: [{ stage: 's_0', card: 'tts', run_id: 'r1', status: 'done', url: '/melite-media/runs/r1/out.wav' }],
+    } as never) as Record<string, unknown>
+    assert.ok(!('intent' in bare), 'no intent in the value, no intent key')
+  })
+
+  test('a pass row carrying the artifact SET persists the set in the meta row (the four-take face, cure 2, 2026-11-15)', () => {
+    // THE FOUR-TAKE BURN: the chat card froze the LEAD url alone, so
+    // the run's other takes (the window shards beside the film) never
+    // reached the thread. The observer's SET — the media-spelled urls
+    // it already rewrites (asset_urls, lead first) — persists into the
+    // meta row whole, and the chat strip renders every take.
+    const tool = meliteFlow(fakeEstate({}).estate)
+    const set = [
+      '/melite-media/runs/r1/h3-film/SaveVideo.2_film_00001_.mp4',
+      '/melite-media/runs/r1/h3-film/SaveVideo.0_h3_t4_w1_00001_.mp4',
+      '/melite-media/runs/r1/h3-film/SaveVideo.1_h3_t4_w2_00001_.mp4',
+      '/melite-media/runs/r1/h3-film/SaveVideo.3_h3_t4_w3_00001_.mp4',
+    ]
+    const meta = tool.output.presentationMeta!({ bench: true } as never, {
+      mode: 'bench', target: 'd1 @ rev 3', draft_id: 'd1', status: 'done',
+      pass: [
+        { stage: 's_1', card: 'h3', run_id: 'r1', status: 'done',
+          url: set[0], artifacts: ['h3-film/SaveVideo.2_film_00001_.mp4'], asset_urls: set },
+      ],
+    } as never) as Record<string, unknown>
+    const previews = meta['previews'] as Array<Record<string, unknown>>
+    assert.deepEqual(previews[0]!['artifacts'], set,
+      'the SET persists — the lead first, every take with it')
+    assert.equal(previews[0]!['url'], set[0], 'the lead url is unchanged (the frozen hero)')
+    const rows = meta['rows'] as Array<Record<string, unknown>>
+    assert.deepEqual(rows[0]!['artifacts'], set, 'the frozen row carries the same set')
+  })
 })
 
 describe('melite_flow bench — the agent drives THE shared bench', () => {
@@ -1806,6 +1870,9 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
       // honestly, never "unchanged").
       { stage: 's_0', card: 'img-to-mesh', skipped: 'done', last_run: null },
       { stage: 's_1', card: 'image-gen', run_id: 'rb1', status: 'done', url: '/melite-media/runs/rb1/img/SaveImage_00001_.png',
+        // THE FOUR-TAKE FACE (cure 2, 2026-11-15): the browser-spelled
+        // artifact set rides beside the raw `artifacts` wire spelling.
+        asset_urls: ['/melite-media/runs/rb1/img/SaveImage_00001_.png'],
         host_paths: ['test-output/rb1/img/SaveImage_00001_.png'] },
     ])
     // ONE start — the DONE row never starts (skip-done law)

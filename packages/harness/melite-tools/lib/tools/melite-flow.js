@@ -326,6 +326,12 @@ async function runBench(estate, a, signal) {
         return empty;
     const draftId = typeof b['draft_id'] === 'string' ? draftIdOf(b['draft_id']) : benchDraftIdOf(a.bench);
     const target = `${benchDraftIdOf(a.bench)} @ rev ${String(b['rev'] ?? '?')}`;
+    // THE FROZEN FACE'S HEAD (the stale-two-run audit, cure 1,
+    // 2026-11-15): the bench's intent AT SETTLE rides the result so
+    // presentationMeta persists it beside the pass rows — the replayed
+    // card's head reads THIS, never the bench's present-tense intent a
+    // later press rewrote.
+    const intent = typeof b['intent'] === 'string' ? b['intent'] : '';
     const pass = [];
     // THE PRESS KEEPS GOING (F20 residual, 2026-10-30): a stage that
     // settled FAILED is recorded here and the pass moves on — the run
@@ -403,9 +409,11 @@ async function runBench(estate, a, signal) {
                     ? ' — or melite_construct undo to restore the bench the retired press replaced'
                     : '';
                 return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId,
+                    ...(intent !== '' ? { intent } : {}),
                     error: `stage ${stageId} is the "${refFlow}" flow template reference (a retired melite_flow press landed it — the bench doors refuse the shape now; the flow runs through its own start door, not this bench pass); remove it with melite_construct remove_stage ${stageId} if the bench should run without the flow${undoCure}`, pass };
             }
             return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId,
+                ...(intent !== '' ? { intent } : {}),
                 error: `stage ${stageId} names no card — nothing to compose (melite_construct patch)`, pass };
         }
         const params = row['params'] !== null && typeof row['params'] === 'object' && !Array.isArray(row['params'])
@@ -436,6 +444,7 @@ async function runBench(estate, a, signal) {
                     && typeof ref['stage'] === 'string';
                 if (!isStageWire) {
                     return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId,
+                        ...(intent !== '' ? { intent } : {}),
                         error: 'input ' + JSON.stringify(name) + ' is neither {stage, output} nor a resolvable binding — the bench pass maps only stage wires (got ' + JSON.stringify(ref ?? null) + ')', pass };
                 }
                 const upstreamId = String(ref['stage']);
@@ -445,6 +454,7 @@ async function runBench(estate, a, signal) {
                 const url = typeof res['url'] === 'string' && res['url'] !== '' ? res['url'] : '';
                 if (url === '') {
                     return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId,
+                        ...(intent !== '' ? { intent } : {}),
                         error: 'input ' + JSON.stringify(name) + ' is wired to stage ' + JSON.stringify(upstreamId)
                             + ' which has no output yet — run it first (or clear the wire). The bench pass resolves wires to the upstream\'s last result; it never drops them.', pass };
                 }
@@ -521,7 +531,7 @@ async function runBench(estate, a, signal) {
             continue;
         }
         if (typeof started['error'] === 'string') {
-            return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId, error: started['error'], pass };
+            return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId, ...(intent !== '' ? { intent } : {}), error: started['error'], pass };
         }
         const runId = started['run_id'];
         let outcome;
@@ -538,6 +548,7 @@ async function runBench(estate, a, signal) {
             ...(regimeWarning !== null ? { warning: regimeWarning } : {}),
             ...(outcome.url !== '' ? { url: outcome.url } : {}),
             ...(outcome.artifacts.length > 0 ? { artifacts: outcome.artifacts } : {}),
+            ...(outcome.asset_urls.length > 0 ? { asset_urls: outcome.asset_urls } : {}),
             ...(outcome.host_paths.length > 0 ? { host_paths: outcome.host_paths } : {}),
             ...(outcome.stamp_note !== undefined ? { stamp_note: outcome.stamp_note } : {}) });
         if (outcome.status === 'queued') {
@@ -547,7 +558,7 @@ async function runBench(estate, a, signal) {
             // render prints `[pending] — poll with run_status`, and the
             // background attribution link still lands the terminal stamp
             // on the stage row when the run settles.
-            return { mode: 'bench', target, draft_id: draftId, status: 'pending', stoppedAt: stageId, run_id: runId, pass };
+            return { mode: 'bench', target, draft_id: draftId, status: 'pending', stoppedAt: stageId, run_id: runId, ...(intent !== '' ? { intent } : {}), pass };
         }
         if (outcome.status !== 'done') {
             // THE PASS CONTINUES (F20 residual, 2026-10-30): a stage that
@@ -595,10 +606,12 @@ async function runBench(estate, a, signal) {
         const first = failures[0];
         return { mode: 'bench', target, draft_id: draftId, run_id: lastRun, status: 'stopped',
             stoppedAt: first.stage,
+            ...(intent !== '' ? { intent } : {}),
             error: `stage ${first.stage} (${first.card}) ` + (first.status === 'threw' ? 'threw (a transport or resolution error — read pass[] for the rest)' : `ended ${first.status}`) + (failures.length > 1 ? ` — ${failures.length} stages failed (the pass still pressed every stage; read pass[])` : ' (the pass still pressed the remaining stages)'),
             ...(lastHosts.length > 0 ? { host_paths: lastHosts } : {}), pass };
     }
     return { mode: 'bench', target, draft_id: draftId, run_id: lastRun, status: 'done',
+        ...(intent !== '' ? { intent } : {}),
         ...(lastHosts.length > 0 ? { host_paths: lastHosts } : {}), pass };
 }
 /** Signal-honoring sleep — the observer's poll cadence (the run-wire
@@ -702,7 +715,7 @@ export async function observeAndAttribute(estate, draftId, stageId, runId, signa
             // folded like every other arm of this poller: unknown-outcome
             // is the 'stopped' CardStatus by the owner's contract
             if (re !== null && re !== undefined && re.code === 'runs/unknown-run')
-                return { status: statusOf('unknown'), url: '', artifacts: [], host_paths: [] };
+                return { status: statusOf('unknown'), url: '', artifacts: [], asset_urls: [], host_paths: [] };
             await sleepAbort(1500, signal);
             continue;
         }
@@ -799,7 +812,14 @@ export async function observeAndAttribute(estate, draftId, stageId, runId, signa
             catch (e) {
                 noteMiss('failed', e instanceof Error ? e.message : String(e));
             }
-            return { status: terminal, url, artifacts: arts, host_paths: hostPaths, ...(stampNote !== undefined ? { stamp_note: stampNote } : {}) };
+            // THE FOUR-TAKE FACE (the stale-two-run audit, cure 2,
+            // 2026-11-15): the SET rides the outcome in the BROWSER
+            // spelling — the same toMediaUrl rewrite the lead got, in the
+            // stage gallery's own order (the lead first, the run door's
+            // ordering law). The pass row's `artifacts` key stays the raw
+            // wire spelling (its own wall pins it); `asset_urls` is the
+            // chat face's set.
+            return { status: terminal, url, artifacts: arts, asset_urls: assetUrls, host_paths: hostPaths, ...(stampNote !== undefined ? { stamp_note: stampNote } : {}) };
         }
         // the queue-feedback stamp, classified by the fold (queued or
         // still-waiting stamps queued; 'live'/'stopping' stamp running).
@@ -834,7 +854,7 @@ export async function observeAndAttribute(estate, draftId, stageId, runId, signa
             if (rearms > 0) {
                 void observeAndAttribute(estate, draftId, stageId, runId, new AbortController().signal, test, budgetMs, rearms - 1).catch(String);
             }
-            return { status: 'queued', url: '', artifacts: [], host_paths: [], ...(stampNote !== undefined ? { stamp_note: stampNote } : {}) };
+            return { status: 'queued', url: '', artifacts: [], asset_urls: [], host_paths: [], ...(stampNote !== undefined ? { stamp_note: stampNote } : {}) };
         }
         await sleepAbort(1500, signal);
     }
@@ -1431,9 +1451,57 @@ export function meliteFlow(estate) {
                                 stage: typeof p['stage'] === 'string' ? p['stage'] : '?',
                                 url: String(p['url']),
                                 status: typeof p['status'] === 'string' ? p['status'] : 'done',
+                                // THE FOUR-TAKE FACE (the stale-two-run audit, cure 2,
+                                // 2026-11-15): the row's own artifact SET rides — the
+                                // media-spelled urls the observer rewrote (the lead
+                                // first). The chat strip renders the whole set (the
+                                // all-visible law); before this key it froze the LEAD
+                                // url alone and the run's other takes never reached
+                                // the thread.
+                                ...(Array.isArray(p['asset_urls'])
+                                    ? p['asset_urls'].some((u) => typeof u === 'string' && u !== '')
+                                        ? { artifacts: p['asset_urls'].filter((u) => typeof u === 'string' && u !== '') }
+                                        : {}
+                                    : {}),
                             })),
+                            // THE DISCRIMINATOR (the stale-two-run audit, cure 1,
+                            // 2026-11-15): the pass rows THEMSELVES freeze here —
+                            // every stage of THAT call's press with its settle-time
+                            // status, run id, lead url and artifact set. The replayed
+                            // card renders THIS face and fires no drafts/get; the
+                            // bench's present tense (its rows and its intent, both
+                            // rewritten whole by every later press) never reaches a
+                            // historical card again.
+                            rows: v.pass.map((p) => {
+                                const row = {
+                                    stage: typeof p['stage'] === 'string' ? p['stage'] : '?',
+                                    card: typeof p['card'] === 'string' ? p['card'] : '',
+                                    // THE ROW'S OWN VERDICT: the settled outcome's word;
+                                    // a skip and a throw are words too — the frozen face
+                                    // shows what THAT call saw, never a fabricated state.
+                                    status: typeof p['status'] === 'string' && p['status'] !== ''
+                                        ? p['status']
+                                        : p['skipped'] !== undefined
+                                            ? 'skipped'
+                                            : typeof p['thrown'] === 'string' && p['thrown'] !== '' ? 'error' : '',
+                                };
+                                if (typeof p['run_id'] === 'string' && p['run_id'] !== '')
+                                    row['run_id'] = p['run_id'];
+                                if (typeof p['url'] === 'string' && p['url'] !== '')
+                                    row['url'] = p['url'];
+                                if (Array.isArray(p['asset_urls'])) {
+                                    const arts = p['asset_urls'].filter((u) => typeof u === 'string' && u !== '');
+                                    if (arts.length > 0)
+                                        row['artifacts'] = arts;
+                                }
+                                return row;
+                            }),
                         }
                         : {}),
+                    // THE FROZEN HEAD (cure 1): the settle-time intent rides
+                    // beside the rows — the card's head reads THIS, never the
+                    // bench's current intent under a historical card.
+                    ...(typeof v.intent === 'string' && v.intent !== '' ? { intent: v.intent } : {}),
                 };
             },
         },

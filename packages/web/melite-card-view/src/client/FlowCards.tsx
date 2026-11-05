@@ -63,6 +63,7 @@ import {
   cardRows, fetchDraft, paramFields, patchStageParamsChained, refuseForUnlandedWrite, runFinished, startDraft,
 } from './draft.ts'
 import type { CardRow, DraftDoc, RunStatusDoc } from './draft.ts'
+import { statusOrPendingOf } from '@melite/contracts/stageView'
 import { draftIdOf, type DraftId } from '@melite/contracts/benchStage'
 import { rejectionVoice } from './rejection-voice.ts'
 import { chromeCopy } from '../chromeCopy.ts'
@@ -79,6 +80,20 @@ export interface FlowCardsProps {
    *  in). The header affordance renders only when the register site
    *  provides it; a shell refusal returns false and the card stays. */
   openMedia?: () => boolean
+}
+
+/** One FROZEN pass row (the discriminator, cure 1 of the
+ *  stale-two-run audit, 2026-11-15): a stage of the press THAT call
+ *  made, with its settle-time truth — the tool's presentationMeta
+ *  `rows` lift. `runId`/`artifacts` ride for provenance; the row face
+ *  renders stage, card, status and the lead url. */
+export interface FrozenRow {
+  stage: string
+  card: string
+  status: string
+  runId: string
+  url: string
+  artifacts: string[]
 }
 
 /** Parse the melite_flow / card-tool call: the draft id, the run id
@@ -100,7 +115,12 @@ export function parseCardsBlock(block: ToolCallBlockView): {
   malformedArgs: boolean
   settled: boolean
   isError: boolean
-  previews: Array<{ stage: string, url: string, status: string }>
+  previews: Array<{ stage: string, url: string, status: string, artifacts: string[] }>
+  /** THE FROZEN FACE (cure 1): the settle-time pass rows + intent,
+   *  lifted from the projector's persisted keys. Non-empty rows mean
+   *  the block renders its OWN press and never re-fetches the bench. */
+  frozenRows: FrozenRow[]
+  frozenIntent: string | null
 } {
   const settled = block.kind === 'tool-result'
   const argsRaw = settled ? (block.call?.argsRaw ?? '') : (block.argsRaw ?? '')
@@ -130,7 +150,9 @@ export function parseCardsBlock(block: ToolCallBlockView): {
   // (patch calls, legacy logs) carry an empty list and render no
   // strip — never the present-time bench's heroes under a
   // historical card.
-  let previews: Array<{ stage: string, url: string, status: string }> = []
+  let previews: Array<{ stage: string, url: string, status: string, artifacts: string[] }> = []
+  let frozenRows: FrozenRow[] = []
+  let frozenIntent: string | null = null
   if (settled && block.isError !== true) {
     // 1. NATIVE: the persisted presentationMeta payload.
     const meta = block.meta
@@ -141,7 +163,7 @@ export function parseCardsBlock(block: ToolCallBlockView): {
       if (typeof rid === 'string' && rid !== '') runId = rid
       const rows = (meta as Record<string, unknown>)['previews']
       if (Array.isArray(rows)) {
-        previews = rows.flatMap((row): Array<{ stage: string, url: string, status: string }> => {
+        previews = rows.flatMap((row): Array<{ stage: string, url: string, status: string, artifacts: string[] }> => {
           if (row === null || typeof row !== 'object' || Array.isArray(row)) return []
           const r = row as Record<string, unknown>
           if (typeof r['stage'] !== 'string' || r['stage'] === '') return []
@@ -150,9 +172,41 @@ export function parseCardsBlock(block: ToolCallBlockView): {
             stage: r['stage'],
             url: r['url'],
             status: typeof r['status'] === 'string' ? r['status'] : '',
+            // THE FOUR-TAKE FACE (cure 2, 2026-11-15): the row's own
+            // artifact set rides to the strip (absent on pre-cure
+            // rows — the lead alone renders, the old shape).
+            artifacts: Array.isArray(r['artifacts'])
+              ? (r['artifacts'] as unknown[]).filter((u): u is string => typeof u === 'string' && u !== '')
+              : [],
           }]
         })
       }
+      // THE FROZEN FACE (the stale-two-run audit, cure 1, 2026-11-15):
+      // the persisted pass rows — the press's OWN stage list, frozen at
+      // settle. Present and non-empty ⇒ the block renders THIS face and
+      // never re-derives rows or the head from the re-fetched bench doc
+      // (whose present tense every later press rewrites whole). Absent
+      // (pre-cure logs, patch calls) ⇒ the present-day path unchanged.
+      const metaRows = (meta as Record<string, unknown>)['rows']
+      if (Array.isArray(metaRows) && metaRows.length > 0) {
+        frozenRows = metaRows.flatMap((row): FrozenRow[] => {
+          if (row === null || typeof row !== 'object' || Array.isArray(row)) return []
+          const r = row as Record<string, unknown>
+          if (typeof r['stage'] !== 'string' || r['stage'] === '') return []
+          return [{
+            stage: r['stage'],
+            card: typeof r['card'] === 'string' ? r['card'] : '',
+            status: typeof r['status'] === 'string' ? r['status'] : '',
+            runId: typeof r['run_id'] === 'string' ? r['run_id'] : '',
+            url: typeof r['url'] === 'string' ? r['url'] : '',
+            artifacts: Array.isArray(r['artifacts'])
+              ? (r['artifacts'] as unknown[]).filter((u): u is string => typeof u === 'string' && u !== '')
+              : [],
+          }]
+        })
+      }
+      const metaIntent = (meta as Record<string, unknown>)['intent']
+      if (typeof metaIntent === 'string' && metaIntent !== '') frozenIntent = metaIntent
     }
     // 2. LEGACY: the render token (pre-projector logs; the rule this
     //    view parsed for years — the token after 'card ' or 'draft ').
@@ -171,7 +225,7 @@ export function parseCardsBlock(block: ToolCallBlockView): {
       }
     }
   }
-  return { draftId, runId, flowName, model, malformedArgs, settled, isError: block.isError === true, previews }
+  return { draftId, runId, flowName, model, malformedArgs, settled, isError: block.isError === true, previews, frozenRows, frozenIntent }
 }
 
 /** Draft doc + live run status (all doors in draft.ts; the live tail
@@ -390,10 +444,34 @@ function CardRowLine({ row, error, onOpen, onDismissError }: {
   )
 }
 
+/** THE FROZEN ROWS FACE (the stale-two-run audit, cure 1,
+ *  2026-11-15): the settle-time pass rows distilled into the card-row
+ *  shape the chat tile renders — the press's OWN stage list, exactly
+ *  as the projector froze it. Never the bench's present tense: a
+ *  historical card shows the rows THAT call produced, once, forever
+ *  (the same law the previews froze under, 2026-11-19). */
+function frozenRowsOf(rows: ReadonlyArray<FrozenRow>): CardRow[] {
+  return rows.map((r) => ({
+    stageId: r.stage,
+    title: r.card !== '' ? r.card : r.stage,
+    kind: 'stage',
+    service: null,
+    prompt: null,
+    status: statusOrPendingOf(r.status),
+    thumbUrl: r.url !== '' ? r.url : null,
+  }))
+}
+
 /** One melite_flow call as the REAL action cards (native React, in-tree). */
 export function FlowCards({ block, openSurface, openMedia }: FlowCardsProps) {
   const parsed = useMemo(() => parseCardsBlock(block), [block])
-  const { doc, live, error, refresh, startedRun } = useDraft(parsed.draftId)
+  // THE DISCRIMINATOR (cure 1, 2026-11-15): a settled block whose meta
+  // carries rows renders its OWN press and fires NO drafts/get — the
+  // refetch below is gated off (null) so a replayed transcript's 193
+  // historical cards stop re-reading the live bench on every paint.
+  // Unsettled calls and pre-cure logs (no meta rows) keep the fetch.
+  const frozen = parsed.frozenRows.length > 0
+  const { doc, live, error, refresh, startedRun } = useDraft(frozen ? null : parsed.draftId)
   const [openStage, setOpenStage] = useState<string | null>(null)
 
   // A settled, successful call whose result predates the draft contract
@@ -441,7 +519,12 @@ export function FlowCards({ block, openSurface, openMedia }: FlowCardsProps) {
     )
   }
 
-  const rows = doc !== null ? cardRows(doc, live) : []
+  // THE ROWS SOURCE (cure 1, 2026-11-15): frozen rows from the block's
+  // own meta when the discriminator holds; the re-fetched bench doc
+  // only for the unsettled live call and pre-cure logs (no meta rows).
+  const rows: CardRow[] = frozen
+    ? frozenRowsOf(parsed.frozenRows)
+    : doc !== null ? cardRows(doc, live) : []
   // Q3 (operator 2026-11-09), refrozen 2026-11-19 — THE PRESS'S OWN
   // HEROES: the call's persisted preview rows render INLINE in the
   // thread (not only the bench link), one hero per pressed stage
@@ -485,7 +568,10 @@ export function FlowCards({ block, openSurface, openMedia }: FlowCardsProps) {
     <div className={css.card} data-dsh-part="melite-flow-card" data-draft-id={parsed.draftId}>
       <div className={css.head}>
         <span className={css.badge}>{chromeCopy.brand}</span>
-        <span className={css.model}>{doc?.intent ?? parsed.model ?? chromeCopy.flowFallback}</span>
+        {/* THE FROZEN HEAD (cure 1, 2026-11-15): the settle-time intent
+            the projector persisted — never the bench's current intent
+            under a historical card (the doc is not even fetched here). */}
+        <span className={css.model}>{parsed.frozenIntent ?? doc?.intent ?? parsed.model ?? chromeCopy.flowFallback}</span>
         {/* L10: a corrupt args body badges — never a header-less
             render that reads as a model-less call */}
         {parsed.malformedArgs && <span className={css.state} data-state="error">{chromeCopy.argsUnparseable}</span>}
@@ -497,7 +583,9 @@ export function FlowCards({ block, openSurface, openMedia }: FlowCardsProps) {
             provides the shell face. */}
         {openMedia !== undefined && <button type="button" className={css.media} onClick={() => { openMedia() }}>{chromeCopy.openMedia}</button>}
       </div>
-      {doc === null && error === null && <div className={css.load}>{chromeCopy.cardsLoading}</div>}
+      {/* THE LOADING LINE GATE (cure 1): the frozen face fetched no
+          doc by design — the eternal "loading…" would be a lie. */}
+      {!frozen && doc === null && error === null && <div className={css.load}>{chromeCopy.cardsLoading}</div>}
       {rows.map((row) => {
         // The voiced error: the row's failure unless THIS text was
         // retired — the const narrowing carries the string into the

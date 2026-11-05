@@ -25,14 +25,36 @@ export interface ChatPreviewRow {
   stage?: unknown
   url?: unknown
   status?: unknown
+  /** THE FOUR-TAKE FACE (the stale-two-run audit, cure 2,
+   *  2026-11-15): the row's OWN artifact set — media-spelled urls,
+   *  the lead first — the projector persisted at settle. Absent on
+   *  pre-cure rows (the lead alone renders, the old shape). */
+  artifacts?: unknown
 }
 
-/** One frozen in-chat hero: its stage, its kind, its single artifact. */
+/** One frozen in-chat hero: its stage, its kind, its artifact set. */
 export interface ChatPreview {
   stageId: string
   kind: ChatPreviewKind
   artifacts: Array<{ name: string, url: string }>
   runStatus: string
+}
+
+/** THE ROW'S ARTIFACT SET (cure 2, 2026-11-15): the persisted urls as
+ *  {name, url} rows — the whole set renders (the all-visible law,
+ *  card-base preview.tsx). The lead is ALWAYS first: the projector
+ *  unshifts it, and a hand-built row without it gets it here — the
+ *  hero seat never loses the url the meta names. A row with no set
+ *  renders the lead alone (the pre-cure shape). */
+function artifactSetOf(raw: unknown, lead: string): Array<{ name: string, url: string }> {
+  const urls = Array.isArray(raw)
+    ? raw.filter((u): u is string => typeof u === 'string' && u !== '')
+    : []
+  if (!urls.includes(lead)) urls.unshift(lead)
+  return urls.map((u) => {
+    const name = u.split('/').pop() ?? u
+    return { name: name === '' ? u : name, url: u }
+  })
 }
 
 /** Derive the frozen chat heroes from the call's OWN persisted rows.
@@ -49,11 +71,10 @@ export function chatPreviewsFor(rows: ReadonlyArray<ChatPreviewRow>): ChatPrevie
     if (stageId === null || url === null) continue
     const kind = previewKindFor(url)
     if (kind !== 'video' && kind !== 'image' && kind !== 'audio') continue
-    const name = url.split('/').pop() ?? url
     out.push({
       stageId,
       kind,
-      artifacts: [{ name: name === '' ? url : name, url }],
+      artifacts: artifactSetOf(row.artifacts, url),
       runStatus: typeof row.status === 'string' ? row.status : '',
     })
   }
