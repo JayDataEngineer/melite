@@ -167,7 +167,7 @@ describe("THE INT8 INNOCENCE LAW — the default cell stays the int8 convrot com
       "the variant default (the first-declared cell) is the int8 convrot tier — flipping it to bf16 as a mottle cure is the violation the FFT A/B refutes");
     assert.equal((dflt.lane_inputs as Record<string, unknown>)["unet"], lane["unet"],
       "the default cell's checkpoint IS the family lane's unet — the fresh-card default composes the int8 split");
-    assert.ok(String((dflt.artifact as Record<string, unknown>)["source_url"]).endsWith(`/${String((dflt.lane_inputs as Record<string, unknown>)["unet"])}`),
+    assert.ok(dflt.artifact?.source_url.endsWith(`/${String((dflt.lane_inputs as Record<string, unknown>)["unet"])}`),
       "the default cell's own download artifact names the same int8 file it loads");
     assert.equal(second.quant, "bf16",
       "bf16 stays the declared SECOND cell — a legal opt-in quant, never the default");
