@@ -163,7 +163,7 @@ describe("the mount guards — hooks and snapshots", () => {
 
   test("a loading snapshot waits out loud", async () => {
     mount({ useResource: () => ({ status: "loading" }) });
-    expect(await screen.findByText(/loading .*…/, {}, { timeout: 4000 })).toBeTruthy();
+    expect(await screen.findByTestId('bench-skeleton', {}, { timeout: 4000 })).toBeTruthy();
   });
 
   test("a failed snapshot voices the estate's own words", async () => {

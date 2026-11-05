@@ -50,6 +50,7 @@ import { OrbitLeafCanvas } from '@melite/image-mask-studio/orbit-canvas'
 import { cardLlmArg, setCardLlm } from '@melite/catalog'
 import { paramFields, patchStageOutcome, patchStageParamsChained, mediaUrl, stageWriteState, unlandedWriteVoice } from './draft.ts'
 import css from './card.module.css'
+import { FormSkeleton } from './skeleton.tsx'
 import { StudioShell } from '@melite/card-base/client'
 import { fetchMediaLibrary, fetchChainRunCandidates } from './cards-resource.ts'
 import { uploadInputFile } from '@melite/card-base/client'
@@ -1868,7 +1869,11 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
                 }, h(IconCloseOutlineRegular, { size: 12 }))))
           : null,
         h('div', { className: css.params },
-        !loaded ? h('div', { className: css.load }, 'form…')
+        // THE REAL SKELETON (operator 2026-11-15: "Instead of form… —
+        // can we get a real skeleton when things are loading?"): the
+        // hydrating rail renders the shimmer shapes CardForm will
+        // render, never a text ellipsis.
+        !loaded ? h(FormSkeleton)
         : spec !== null
           ? h(CardForm, {
             spec, user, base: servedBase, onSet, onPick, onUnset, wire,

@@ -238,6 +238,6 @@ describe("the uniform law — EVERY early face rides the same scroll seat (no ex
     // loading: the wait face, inside the seat.
     mountInClip([{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }],
       () => ({ status: "loading" as const }));
-    expect(scroller().textContent).toMatch(/loading .*…/);
+    expect(scroller().querySelector('[data-testid="bench-skeleton"]')).toBeTruthy();
   });
 });

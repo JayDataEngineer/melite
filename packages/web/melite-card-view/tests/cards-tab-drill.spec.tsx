@@ -264,7 +264,7 @@ describe("the drill's unmount guards — late answers never touch a dead drill",
     const user = userEvent.setup();
     await user.click(firstTile());
     // the detail mounted and waits on both doors
-    await screen.findByText("form…", {}, { timeout: 4000 });
+    await screen.findByTestId("stage-form-skeleton", {}, { timeout: 4000 });
     // close SYNCHRONOUSLY (no await between — microtasks must not run)
     fireEvent.click(screen.getByLabelText("Collapse card"));
     expect(document.querySelector('[data-testid="stage-preview-seat"]')).toBeNull();

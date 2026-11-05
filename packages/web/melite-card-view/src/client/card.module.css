@@ -1016,6 +1016,28 @@
 .skShort { flex: 1 1 0%; height: 28px; }
 .skBlock { border-radius: 10px; height: 120px; }
 .skRow { display: flex; gap: 10px; }
+/* THE LOADING SEAT (skeleton.tsx): label-width and tile-width lines
+ * beside the shared heights, the shell that stacks them, and the
+ * screen-reader word that keeps the shapes honest for non-visual
+ * seats. */
+.skLabel { width: 30%; }
+.skTile { flex: 1 1 0%; height: 64px; }
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 8px 0;
+  width: 100%;
+}
+.srOnly {
+  border: 0;
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
 
 @keyframes zoomShimmer {
   from { background-position: 150% 0; }

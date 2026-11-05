@@ -164,7 +164,7 @@ describe("the drill's reject-after-unmount guard — a late failure stays silent
     formCtl.formSpec = "deferred-reject";
     const user = userEvent.setup();
     await user.click(firstTile());
-    await screen.findByText("form…", {}, { timeout: 4000 });
+    await screen.findByTestId("stage-form-skeleton", {}, { timeout: 4000 });
     fireEvent.click(screen.getByLabelText("Collapse card"));
     expect(document.querySelector('[data-testid="stage-preview-seat"]')).toBeNull();
     formCtl.rejectFormSpec!(new Error("gone"));

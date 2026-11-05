@@ -55,6 +55,7 @@ import { cardLlmArg } from '@melite/catalog'
 import type { CatalogCard, FormSpecDoc, ModifierKind, SpecValues, StartOutcome } from '@melite/card-base/client'
 import { forgetStageWrites, paramFields, patchStageOutcome, patchStageParams, scheduleStagePatch, unlandedWriteVoice } from './draft.ts'
 import css from './card.module.css'
+import { BenchSkeleton } from './skeleton.tsx'
 import { runCardStage, runBenchSequential, describePass } from './stage-run.ts'
 import type { CardsBenchValue, CardsDraftValue, CardsRunValue, BenchStageView } from './cards-resource.ts'
 import { fetchMediaLibrary, CARDS_BENCH_ADDRESS, benchAddressOf, benchSessionOfAddress, carriedBenchKey, cardsRunAddress, fetchBench, fetchLatestRunForDraft, freshStageRow, markCardsSurface, observeRunOutcome, openCardsResource, parseCardsAddress, reconcileBenchRuns, restoreRunToBench } from './cards-resource.ts'
@@ -857,7 +858,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
         ))
     }
     return withTabScroll(
-      h('p', { className: css.loading }, 'loading ' + address + '…'))
+      h(BenchSkeleton))
   }
   const stageError = value.kind === 'run' ? null : terminalStageErrorOf(value.stages)
   // A local claim always voices (it is this tab's own fresh refusal);

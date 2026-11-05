@@ -54,6 +54,7 @@ import css from './card.module.css'
 import { Button, IconCloseOutlineRegular, Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
 import { AudioStagePreview, ImageStagePreview, VideoStagePreview } from '@melite/card-base/client'
 import { CardDrill } from './card-drill.tsx'
+import { CardsSkeleton } from './skeleton.tsx'
 import { cardsDraftStageAddress, subscribeRunFrames, tileStatusFromVerdict } from './cards-resource.ts'
 import type { CardsRunValue } from './cards-resource.ts'
 import { STATUS_DOT } from './bench-row.ts'
@@ -593,9 +594,11 @@ export function FlowCards({ block, openSurface, openMedia }: FlowCardsProps) {
             provides the shell face. */}
         {openMedia !== undefined && <button type="button" className={css.media} onClick={() => { openMedia() }}>{chromeCopy.openMedia}</button>}
       </div>
-      {/* THE LOADING LINE GATE (cure 1): the frozen face fetched no
-          doc by design — the eternal "loading…" would be a lie. */}
-      {!frozen && doc === null && error === null && <div className={css.load}>{chromeCopy.cardsLoading}</div>}
+      {/* THE LOADING SEAT (skeleton law, operator 2026-11-15): the
+          non-frozen face while the doc hydrates renders the card-row
+          shapes, never a text ellipsis — the frozen face fetched no
+          doc by design and renders nothing (cure 1). */}
+      {!frozen && doc === null && error === null && <CardsSkeleton />}
       {rows.map((row) => {
         // The voiced error: the row's failure unless THIS text was
         // retired — the const narrowing carries the string into the

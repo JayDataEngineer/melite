@@ -67,8 +67,9 @@ export declare const chromeCopy: {
         kind: string;
         value: string;
     }) => string;
-    /** Loading face while the draft doc hydrates. */
-    readonly cardsLoading: "cards…";
+    /** The skeleton seats' visually-hidden word (skeleton.tsx): the
+     * shapes are the visible face; this is the non-visual truth. */
+    readonly skeletonLoading: "loading";
     /** Drill title: the host's "Card " prefix over the row's own (data) title. */
     readonly cardTitle: (p: {
         name: string;

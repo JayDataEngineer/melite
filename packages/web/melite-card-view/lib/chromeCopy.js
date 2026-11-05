@@ -72,8 +72,9 @@ export const chromeCopy = {
     cardsTabGuide: 'The Melite bench — the shared bench and its runs.',
     /** A chat file mention's tooltip title, naming the live kind + value. */
     mentionTitle: (p) => `melite ${p.kind} ${p.value} — opens the Media page`,
-    /** Loading face while the draft doc hydrates. */
-    cardsLoading: 'cards…',
+    /** The skeleton seats' visually-hidden word (skeleton.tsx): the
+     * shapes are the visible face; this is the non-visual truth. */
+    skeletonLoading: 'loading',
     /** Drill title: the host's "Card " prefix over the row's own (data) title. */
     cardTitle: (p) => 'Card ' + p.name,
     /** Add-card door title + the bench grid's trailing Add tile name. */

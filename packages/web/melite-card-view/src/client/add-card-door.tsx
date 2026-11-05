@@ -6,6 +6,7 @@ import { Button, IconCloseOutlineRegular, Input, Modal } from '@deepseek-ai/dsh-
 import { fetchCardCatalog, fetchFormSpec, seedRecipeStamp, seedUser, type CatalogCard, type FormSpecDoc } from '@melite/card-base/client'
 import { titleCaseId } from '@melite/card-base/client'
 import css from './card.module.css'
+import { CardsSkeleton } from './skeleton.tsx'
 import type { CardsBenchValue, BenchStageView } from './cards-resource.ts'
 import { fetchBench } from './cards-resource.ts'
 import { addStageWire } from './add-stage.ts'
@@ -162,7 +163,7 @@ export function AddCardDoor({ bench, sessionKey, onAdded, onClose, onAddedRow }:
           onClick: () => setAddError(null),
         }, h(IconCloseOutlineRegular, { size: 12 })),
       ) : null,
-      cards === null && catalogError === null ? h('div', { className: css.load }, 'cards…') : null,
+      cards === null && catalogError === null ? h(CardsSkeleton) : null,
       // SECTIONS KEPT (operator, stroke 46d fix): the genre titles
       // STAY — the complaint was their SIZE, not their existence.
       // The titles now dominate the card labels (the css owns it).
