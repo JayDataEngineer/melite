@@ -7,17 +7,17 @@
     "dsh": ">=0.2.1-rc.2 <0.3.0"
   },
   "dependencies": {
-    "@melite/harness-provisioner": "0.2.0-alpha",
-    "@melite/harness-tools": "0.2.0-alpha",
-    "@melite-plugin/dsh-estate": "0.2.0-alpha",
-    "@melite/card-base": "0.2.0-alpha",
-    "@melite/three-client": "0.2.0-alpha",
-    "@melite-plugin/dsh-card-view": "0.2.0-alpha",
-    "@melite-plugin/dsh-card-deck": "0.2.0-alpha",
-    "@melite-plugin/dsh-gallery": "0.2.0-alpha",
-    "@melite/video-h3-timeline": "0.2.0-alpha",
-    "@melite/motion-motion": "0.2.0-alpha",
-    "@melite/image-input-prep": "0.2.0-alpha"
+    "@melite/harness-provisioner": "0.2.2-alpha",
+    "@melite/harness-tools": "0.2.2-alpha",
+    "@melite-plugin/dsh-estate": "0.2.2-alpha",
+    "@melite/card-base": "0.2.2-alpha",
+    "@melite/three-client": "0.2.2-alpha",
+    "@melite-plugin/dsh-card-view": "0.2.2-alpha",
+    "@melite-plugin/dsh-card-deck": "0.2.2-alpha",
+    "@melite-plugin/dsh-gallery": "0.2.2-alpha",
+    "@melite/video-h3-timeline": "0.2.2-alpha",
+    "@melite/motion-motion": "0.2.2-alpha",
+    "@melite/image-input-prep": "0.2.2-alpha"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.5",

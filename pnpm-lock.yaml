@@ -12,37 +12,37 @@ importers:
   .:
     dependencies:
       '@melite-plugin/dsh-card-deck':
-        specifier: 0.2.0-alpha
+        specifier: 0.2.2-alpha
         version: link:packages/web/melite-card-deck
       '@melite-plugin/dsh-card-view':
-        specifier: 0.2.0-alpha
+        specifier: 0.2.2-alpha
         version: link:packages/web/melite-card-view
       '@melite-plugin/dsh-estate':
-        specifier: 0.2.0-alpha
+        specifier: 0.2.2-alpha
         version: link:packages/web/melite-estate
       '@melite-plugin/dsh-gallery':
-        specifier: 0.2.0-alpha
+        specifier: 0.2.2-alpha
         version: link:packages/web/infer-gallery
       '@melite/card-base':
-        specifier: 0.2.0-alpha
+        specifier: 0.2.2-alpha
         version: link:packages/web/card-base
       '@melite/harness-provisioner':
-        specifier: 0.2.0-alpha
+        specifier: 0.2.2-alpha
         version: link:packages/harness/provisioner
       '@melite/harness-tools':
-        specifier: 0.2.0-alpha
+        specifier: 0.2.2-alpha
         version: link:packages/harness/melite-tools
       '@melite/image-input-prep':
-        specifier: 0.2.0-alpha
+        specifier: 0.2.2-alpha
         version: link:packages/image/input-prep
       '@melite/motion-motion':
-        specifier: 0.2.0-alpha
+        specifier: 0.2.2-alpha
         version: link:packages/motion/motion
       '@melite/three-client':
-        specifier: 0.2.0-alpha
+        specifier: 0.2.2-alpha
         version: link:packages/web/three-client
       '@melite/video-h3-timeline':
-        specifier: 0.2.0-alpha
+        specifier: 0.2.2-alpha
         version: link:packages/video/h3-timeline
     devDependencies:
       '@deepseek-ai/cordis':
