@@ -39,7 +39,11 @@ import { randomBytes } from 'node:crypto';
 import { closeSync, copyFileSync, existsSync, fsyncSync, mkdirSync, openSync, readdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { basename, dirname, extname, join } from 'node:path';
 import { runtimeModelsRoot } from "./catalog.js";
-const LORA_EXTENSIONS = ['.safetensors', '.ckpt', '.pt', '.bin', '.gguf'];
+/** THE ONE LORA EXTENSION ALLOWLIST (the F1 dedup, lora audit
+ *  2026-11-15): the rows-file validator and the tray's directory scan
+ *  judge the same file universe — a drop the rows door would seat must
+ *  never be the drop the tray silently skips, or the reverse. */
+export const LORA_EXTENSIONS = ['.safetensors', '.ckpt', '.pt', '.bin', '.gguf'];
 /** The rows file's default home (the shipped state is ABSENT — the
  *  door is opt-in; `lora_list` reports the path it would read). */
 const DEFAULT_USER_LORAS_PATH = './data/loras/user-loras.json';

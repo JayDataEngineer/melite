@@ -1,9 +1,8 @@
 import { readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadEndpointConfig } from "../comfyui-config.js";
-import { resolveEngineLorasDir } from "../userLoras.js";
+import { LORA_EXTENSIONS, resolveEngineLorasDir } from "../userLoras.js";
 export const inject = ['comfyui'];
-const TRAY_EXTENSIONS = ['.safetensors', '.ckpt', '.pt', '.bin', '.gguf'];
 /** The tray's own rows for a loras dir: one row per weights file
  * under a FAMILY dir. A root-level weights file names no family and
  * is skipped (a row rides a model); non-weights files are skipped
@@ -40,7 +39,7 @@ export function trayLoraRows(dir) {
         for (const name of files.sort()) {
             if (name.startsWith('.'))
                 continue; // part files and dotfiles never serve
-            if (!TRAY_EXTENSIONS.includes(name.slice(name.lastIndexOf('.')).toLowerCase()))
+            if (!LORA_EXTENSIONS.includes(name.slice(name.lastIndexOf('.')).toLowerCase()))
                 continue;
             const stem = name.slice(0, name.lastIndexOf('.'));
             if (stem === '')

@@ -29,13 +29,12 @@ import type { Context } from '@deepseek-ai/cordis'
 import { readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { loadEndpointConfig } from '../comfyui-config.ts'
-import { resolveEngineLorasDir, type UserLoraRow } from '../userLoras.ts'
+import { LORA_EXTENSIONS, resolveEngineLorasDir, type UserLoraRow } from '../userLoras.ts'
 // the ctx.comfyui augmentation rides the service module:
 import type { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
 
 export const inject = ['comfyui']
 
-const TRAY_EXTENSIONS = ['.safetensors', '.ckpt', '.pt', '.bin', '.gguf']
 
 /** The tray's own rows for a loras dir: one row per weights file
  * under a FAMILY dir. A root-level weights file names no family and
@@ -68,7 +67,7 @@ export function trayLoraRows(dir: string): UserLoraRow[] {
     }
     for (const name of files.sort()) {
       if (name.startsWith('.')) continue // part files and dotfiles never serve
-      if (!TRAY_EXTENSIONS.includes(name.slice(name.lastIndexOf('.')).toLowerCase())) continue
+      if (!LORA_EXTENSIONS.includes(name.slice(name.lastIndexOf('.')).toLowerCase())) continue
       const stem = name.slice(0, name.lastIndexOf('.'))
       if (stem === '') continue
       rows.push({
