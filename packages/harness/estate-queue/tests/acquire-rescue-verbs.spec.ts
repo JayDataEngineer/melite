@@ -205,7 +205,27 @@ describe("the stuck acquire's verbs (k2: no retry, no delete — the door must o
   it("ARM 8 — the COMPOSED hop: a REAL service restarted over its store answers poll/retry/discard through dispatchManage", async () => {
     const root = mkdtempSync(join(tmpdir(), "acquire-verbs-composed-"));
     roots.push(root);
-    const plan = modelPlan(modelRef("moss-image"));
+    // THE TMPFS-HONEST SIZE (the 2026-11-05 CI cure): disk admission
+    // reserves the plan's declared bytes plus the 1GB floor against
+    // the store root's free space — at the real moss weight (5.4GB)
+    // this arm demanded a ~6.5GB-free tmpdir, and a stock 40GB tmpfs
+    // at 92% refused admission (state 'blocked', "free space or
+    // narrow the request") before the stall watchdog could ever
+    // fire: a false red on every push off a full /tmp. The
+    // composed-hop law — real service, real stall-settled failure,
+    // real restart over the same store, verbs through the real
+    // dispatchManage door — does not ride the weight's absolute
+    // size; the plan keeps its shape with a synthetic small size.
+    const realPlan = modelPlan(modelRef("moss-image"));
+    // Narrow by the kind discriminant before the spread: TS does not
+    // distribute object spreads over the item union, so an un-narrowed
+    // spread loses its discriminant and stops being a ProvisionPlanItem.
+    const realItem = realPlan.items[0];
+    if (realItem.kind !== "model") throw new Error("the moss-image plan must seat a model item");
+    const plan: ProvisionPlan = {
+      ...realPlan,
+      items: [{ ...realItem, sizeBytes: 1_048_576 }],
+    };
     const stalledConfig = (r: string): ProvisioningConfig => ({
       declaration: { resolve: async (): Promise<ProvisionPlan> => plan },
       storeRoot: r,
