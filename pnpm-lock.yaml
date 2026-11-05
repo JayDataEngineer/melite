@@ -9,7 +9,7 @@ overrides:
 
 patchedDependencies:
   '@stable-canvas/comfyui-client@1.5.9':
-    hash: 1b6a1178ad4b938c489833b9666ab6aec5fd881d4452d3b399c25ba8078fed9d
+    hash: 57aff7ff3045c832dd16607ea94b459e0b8f41b4569212e863c2c5aeaccb670f
     path: patches/@stable-canvas__comfyui-client@1.5.9.patch
 
 importers:
@@ -591,7 +591,7 @@ importers:
         version: link:../../video/trim
       '@stable-canvas/comfyui-client':
         specifier: ^1.5.9
-        version: 1.5.9(patch_hash=1b6a1178ad4b938c489833b9666ab6aec5fd881d4452d3b399c25ba8078fed9d)
+        version: 1.5.9(patch_hash=57aff7ff3045c832dd16607ea94b459e0b8f41b4569212e863c2c5aeaccb670f)
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.5
@@ -14609,7 +14609,7 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
-  '@stable-canvas/comfyui-client@1.5.9(patch_hash=1b6a1178ad4b938c489833b9666ab6aec5fd881d4452d3b399c25ba8078fed9d)': {}
+  '@stable-canvas/comfyui-client@1.5.9(patch_hash=57aff7ff3045c832dd16607ea94b459e0b8f41b4569212e863c2c5aeaccb670f)': {}
 
   '@stablelib/base64@1.0.1': {}
 
