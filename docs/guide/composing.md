@@ -20,25 +20,34 @@ this mode the agent never drives the engine directly: every run crosses
 the estate's queue. `comfy_manage` is for status and declared-resource
 management (installing packs and weights), not generation.
 
-## Headless commissions
+## Delegated runs (headless commissions)
 
-A headless profile boots the agent server as a one-shot task runner:
+One-shot task runners are DSH's own surface — melite renders no parallel
+headless mount:
 
 ```sh
-MELITE_HEADLESS=1 dsh --profile headless "<task brief>"
+dsh headless "<task brief>"
 ```
 
-Headless sessions may use `melite_flow` to submit a card or named flow
-and `run_status` to monitor it. They cross the same queue and
-draft-backed registration path as the studio.
+To let an agent START runs itself, flip the lane's delegation:
+
+```text
+/melite-runs on
+```
+
+The toggle persists in `${DSH_HOME:-$HOME/.dsh}/melite-runs-state.json`; a
+boot whose record is ON seats `melite_flow` (submit a card or named flow)
+and `run_status` (monitor). They cross the same queue and draft-backed
+registration path as the studio. With the record OFF (the default), runs
+wait for the user's Run press.
 
 ## Wiring the agent driver
 
 The agent seats need one LLM driver: a `cordis.patch.yml` in
 `${DSH_HOME:-$HOME/.dsh}` naming the provider and model, and the
 provider key under the same root in `.credentials.yaml` (mode 0600;
-never committed, never printed). With the key seated, the headless
-estate selects the driver with `MELITE_AGENT_ROUTE`
+never committed, never printed). With the key seated, the estate
+job server selects the driver with `MELITE_AGENT_ROUTE`
 (`<provider>/<model>`).
 
 From there the flow is conversational: ask for an image, the agent

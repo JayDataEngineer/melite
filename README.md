@@ -5,15 +5,10 @@
 [![tests](https://img.shields.io/github/actions/workflow/status/JayDataEngineer/melite/tests.yml?branch=main&label=tests)](https://github.com/JayDataEngineer/melite/actions/workflows/tests.yml)
 [![Release](https://img.shields.io/github/v/release/JayDataEngineer/melite?include_prereleases)](https://github.com/JayDataEngineer/melite/releases)
 
-Melite is an agent media-creation kit. Users and agents compose cards on a
-shared bench; the estate validates the card, queues one run, calls ComfyUI or
-another engine, and serves the resulting artifacts. A card can contain
-multi-call compositions such as an H3 film while the current runs seat still
-accepts one compiled stage per start.
-
-The current architecture is DSH + Cordis + TypeScript. DSH is the only web
-host. The old standalone gateway, Python core, C server, and gateway HTTP
-client are retired; they are not alternate launch paths.
+Melite is an agent media-creation kit. Users and agents compose cards on a shared bench; the
+estate validates the card, queues one run at a time, calls ComfyUI or another engine behind the
+engines contract, and serves the resulting artifacts. The architecture is DSH + Cordis +
+TypeScript; DSH is the only web host.
 
 ## Architecture
 
@@ -30,155 +25,83 @@ changing the harness or composing media.
 
 ## Install
 
-The publish channel is npm: `release:bump` sets one version across the
-estate, `release:mint` gates and packs every tarball (the license,
-hygiene, and payload gates above), the seats publish to the registry,
-and the GitHub release lands the same bytes as the asset record with
-`release-manifest.json`. Every melite-owned package in a release
-carries one identical version, and the release tag is exactly
-`v<that version>`. Pre-releases carry an `-alpha` suffix on every
-channel. The full sequence — including the registry-lookup shape
-pre- and post-publish — is proven on every release by
-`tools/release-rehearsal.mjs` (one command, ten receipts, in a fresh
-container).
-
-Consumers install through the `dsh` CLI:
+Prerequisites: Node.js ≥ 22.18 with pnpm ≥ 10 (pnpm is a Node program — enable it with
+`corepack enable pnpm`), a ComfyUI you already run, and the `dsh` CLI:
 
 ```sh
-npm install -g @deepseek-ai/dsh@0.2.1-rc.2   # the profile CLI
-corepack enable && corepack prepare pnpm@10.33.2 --activate
-dsh plugin --profile <name> add @melite/harness-tools@0.2.0-alpha
-dsh plugin --profile <name> install
+npm install -g @deepseek-ai/dsh
 ```
 
-The npm channel fills in registry-throttled batches (five packages per
-walk, dependency order first); while a batch walk is mid-flight the
-entry package may not resolve on the registry yet — the same gated
-tarballs are always downloadable from the
-[v0.2.0-alpha release assets](https://github.com/JayDataEngineer/melite/releases/tag/v0.2.0-alpha)
-as an interim source.
+Melite installs engine extensions through ComfyUI-Manager's git-url door and downloads weights
+through Manager's model queue. Open both in `<ComfyUI>/user/__manager/config.ini` (Manager's
+v3.38 layout — create the file if it is absent) and restart ComfyUI. Manager reads the file once
+at startup:
 
-Two dsh runtime facts the install must honor, both proven by the
-rehearsal:
+```ini
+[default]
+security_level = normal-
+allow_git_url_install = true
+```
 
-- the CLI's profile template pins older member versions; pin
-  `@deepseek-ai/dsh-base` and the four members named in the rehearsal
-  seed (`tools/release-rehearsal.mjs`, `SKEW_PINNED`) at the CLI's own
-  version in dependencies and `pnpm-workspace.yaml` overrides;
-- `@deepseek-ai/dsh-web-app` must be a bundle layer of the profile —
-  it provides the `webServer` service the melite web plugins wait on.
+This is the full setting for a local engine: the git-url door wants the flag plus a loopback
+listen (`--listen 127.0.0.1`, the default for a personal ComfyUI) and is independent of the
+tier; the tier itself admits every melite download at `normal-` on a loopback engine. Set
+`security_level = weak` only when the engine listens on a shared address and still needs
+non-safetensors weights. The estate verifies every downloaded file against its declared
+sha256, so the digest gate, not the tier, owns the download boundary. Check the live value
+any time with `comfy_manage`'s `status` action: the manager row reports the security line
+verbatim.
 
-The web UI boots with `dsh --profile <name> --no-open --port <port>`;
-the printed token URL is the entry point (the browser-trust fence
-rejects every other first request).
+Seat Melite into a DSH profile — the official DSH way, one command:
 
-**No other setup is required to boot.** A fresh install names no
-roots and carries no config: the estate row pins per-user defaults
-(`~/.local/share/melite`) before its rows mount, so the profile above
-boots a green estate — every seat active, the web UI serving — with
-zero configuration. Weights and the engine are separate, deliberate
-downloads (below) and are only needed to actually run media.
+```sh
+dsh plugin --profile melite add "github:JayDataEngineer/melite#main"
+```
 
-## Wiring the agent driver
-
-The estate's agent seats need one LLM driver. The driver is a DSH
-provider row: a `cordis.patch.yml` in `${DSH_HOME:-$HOME/.dsh}`
-naming the provider and model, and the provider key under the same
-root in `.credentials.yaml` (mode 0600; never committed, never
-printed). With the key seated, the headless estate selects the
-driver with `MELITE_AGENT_ROUTE` (`<provider>/<model>`).
-
-From there the flow is conversational: ask for an image, the agent
-composes it on the bench card (discover → load → construct, boarding
-weights and engine extensions as needed), and RUNS START AT YOUR RUN
-PRESS on the card — never the agent's.
+An estate job server exists as a separate profile (`estate`); one-shot headless agents
+are DSH's own surface (`dsh headless "task brief"`), not a melite profile.
 
 ## Quick start
 
-Requirements:
-
-- Node.js ≥ 22.18 and pnpm ≥ 10 (via corepack)
-- git (with network access for submodules — the vendored engine
-  extensions ride submodules; the Cordis/DSH reference material is
-  developer-local and untracked, never a submodule)
-- a reachable ComfyUI instance, or the managed-instance recipe
-- `dsh` on `PATH` for profile boot
-- the Cordis/DSH reference checkout when implementing framework behavior
-
-Clone with submodules, or initialize them inside an existing checkout:
+1. Seat — the official DSH way, one command:
 
 ```sh
-git clone --recurse-submodules https://github.com/JayDataEngineer/melite.git
-# or, inside a plain clone:
-git submodule update --init --recursive
+dsh plugin --profile melite add "github:JayDataEngineer/melite#main"
 ```
 
-Install workspace dependencies and render the supported DSH profiles:
+2. Boot:
 
 ```sh
-pnpm install
-node packages/harness/provisioner/bin/infer-provision.mjs all
+dsh --profile melite
 ```
 
-The provisioner renders `melite-test`, `headless`, and `estate`
-under `${DSH_HOME:-$HOME/.dsh}/profiles/`. It writes machine-local profile
-state; the source of truth remains this repository.
+The boot binds a port itself and prints the entry token URL; pass `--port` only when a fixed port
+is required. The agent seats need one LLM driver — configure it
+with DSH's provider mechanism (the DSH documentation owns the row format); until then the studio
+runs and the agent tools report themselves unseated.
 
-Those two commands do **not** give you a runnable estate. Weights and the
-engine are separate, deliberate downloads on a fresh machine. The
-provisioning CLI is plain Node — the same commands on Windows, macOS, and
-Linux:
+3. Compose: ask the agent for media, or open a card in the studio — the contract is the next
+section.
 
-```sh
-pnpm run provision -- init-store   # lay the empty model store (fresh clones) —
-                                   # paths/sync refuse a store that does not exist
-pnpm run provision -- sync        # ComfyUI core + Manager checkout (managed instance)
-pnpm run provision -- extensions  # declared packs — installed BY ComfyUI-Manager's
-                                   # git-url door, so the engine must be UP first
-pnpm run provision -- models      # declared weights — tens of GB, sha-pinned rows
-```
+4. Acquire on missing — no shell step, ever. Missing models and packs install into YOUR engine:
+in-app pack installs ride your own ComfyUI-Manager's git-url door, weights land on your engine's
+own model folders, and when the estate's store should join the engine's view the attach door
+writes `extra_model_paths.yaml` into the engine tree (a restart applies it). The endpoint is
+configured by the seat; the attach door and `comfy_manage` status report the live one. The load
+payload marks every boarded model and declared pack present or absent; the agent acquires through
+`comfy_manage` (`install_extension`, `provision_model`, `acquire_weight`); you acquire from the
+card form — the Download prompt beside an undownloaded model, the Install prompt beside a missing
+declared pack — and from the run-failure popup, which queues the same doors with live byte
+progress.
 
-`provision models` queues every declared provision (family provisions rows
-and variant-cell artifacts) through ComfyUI-Manager; `--dry-run` lists the
-plan without downloading. Model files keep their own upstream licenses; this
-repository's license covers the code.
-
-Check the configured ComfyUI endpoint and declarations:
-
-```sh
-pnpm run provision -- verify
-```
-
-If you cloned or moved the checkout, repin the profile paths once by
-re-rendering them:
-
-```sh
-node packages/harness/provisioner/bin/infer-provision.mjs all
-```
-
-`inference.config.json` is the estate default configuration. The engine reads
-its live endpoint from `COMFYUI_URL` or the ComfyUI endpoint file; the current
-repository default is `http://127.0.0.1:8188`.
-
-From inside a DSH session, provisioning rides the extension's own tools:
-loading a card reports missing weights and packs in the load payload, and
-`comfy_manage` installs them (`install_extension`, `provision_model`). No
-shell step is part of the product.
-
-Boot the studio:
-
-```sh
-dsh --profile melite-test --port 3088
-```
-
-The port is a deployment choice. The test lane conventionally uses `3088`; do
-not infer a gateway port from older documentation.
+Estate admins pre-seeding a managed instance use the provisioning CLI (`pnpm run provision`,
+`--dry-run` first) — its own documentation is the provision script's header and
+[`docs/guide/getting-started.md`](docs/guide/getting-started.md). Model files keep their own
+upstream licenses; this repository's license covers the code.
 
 ## Composing and running
 
-### Browser/chat sessions
-
-The agent-facing compose contract is progressive disclosure:
+The browser/chat compose contract is progressive disclosure:
 
 ```text
 melite_discover → melite_load → melite_construct
@@ -192,89 +115,6 @@ Agents must not curl ComfyUI, hand-build a workflow, or call raw estate
 endpoints in this mode. `comfy_manage` is for status and declared resource
 management, not generation.
 
-### Headless commissions
-
-A headless profile has the delegated execution interface:
-
-```sh
-MELITE_HEADLESS=1 MELITE_STATE_ROOT="$PWD" \
-  dsh --profile headless "human task brief"
-```
-
-Headless sessions may use `melite_flow` to submit a card or named flow and
-`run_status` to monitor it. They still cross the same queue and draft-backed
-registration path.
-
-## Testing
-
-The repository test plane is Vitest. Package tests live beside their
-packages; cross-cutting walls live under `tests/walls/ts`.
-
-```sh
-pnpm run test
-pnpm run test:coverage
-pnpm run test:e2e
-pnpm run test:expected
-pnpm run test:bench
-pnpm run test:snapshot
-pnpm run test:web
-```
-
-`test:coverage` is the CI coverage command. The e2e tier is mixed: individual
-suites gate on their own environment, engine, lane, or `FILM_E2E` conditions;
-it is not accurate to describe the whole tier as key-gated. See
-[`tests/README.md`](tests/README.md).
-
-Architecture lint is available as:
-
-```sh
-pnpm run lint
-```
-
-A product-visible tool or card change also updates the relevant recorded-session
-snapshot. The coverage policy is described in
-`references/deepseek-harness/docs/testing.md` when that external reference
-checkout is available.
-
-## Repository map
-
-| Path | Owner |
-| --- | --- |
-| `packages/harness/` | DSH tools, queue, provisioner, and shared harness contracts |
-| `packages/estate/` | DSH-native drafts, runs, media, models, manage, and provisioning seats |
-| `packages/engines/` | engine contract and ComfyUI/MCP adapters |
-| `packages/{image,audio,video,motion,3d}/` | card and model families |
-| `packages/web-kit/` and `packages/web/` | shared UI primitives and DSH web surfaces |
-| `vendor/comfyui_extensions/` | first-party Layer C packs |
-| `vendor/cordis_plugins/` | pinned Cordis platform packages |
-| `references/` | read-only study material; developer-local and untracked — seeded from a DSH source checkout, never a submodule |
-| `dev_docs/` | developer-local material (untracked): working plan, ledger, audits, runbooks |
-
-## Documentation
-
-The public documentation site is a VitePress projection of this
-repository's Markdown — canonical sources live in [`docs/`](docs/) and
-this README; `website/docs.mjs` is the explicit public allowlist and
-`scripts/project-docs.mjs` the projector. The site builds and publishes
-to GitHub Pages by [`.github/workflows/docs.yml`](.github/workflows/docs.yml).
-Develop locally with `pnpm run docs:dev`; build with `pnpm run docs:build`
-(local preview builds set `DOCS_REPO_SLUG=<owner>/<repo>` so out-of-manifest
-links project to GitHub URLs).
-
-## Documentation rules
-
-- Current documentation describes the DSH/Cordis implementation, not a retired
-  gateway.
-- Historical plans and audits are evidence, not setup instructions.
-- The executable declaration or contract owns a list, port, profile, or tool
-  vocabulary; prose links to it instead of copying it.
-- Update the relevant README and a recorded snapshot when a user-visible
-  contract changes.
-- Never commit credentials, signed URLs, or machine-specific state roots.
-
-The working plan and the forward-looking work index live in `dev_docs/`
-(developer-local, untracked).
-
 ## License
 
 Code: GNU AGPL-3.0-or-later ([LICENSE](LICENSE)). Model weights, LoRAs,
@@ -282,11 +122,3 @@ control nets, and other provisioned artifacts keep their own upstream
 licenses, which prevail over AGPL for those artifacts — scope and
 carve-outs in [NOTICE](NOTICE) (mirrored publicly as [NOTICE.md](NOTICE.md)). Vendored code under `vendor/`
 retains its upstream licenses.
-
-One family needs plain words: the MiniMax H3 weights and their
-derivatives (Viggle-Animate INT8, Fun ControlNet Union 2.0, the
-character-swap LoRA) carry the H3 Community License — worldwide use
-EXCLUDING the EU, UK, South Korea, and the United States, which need
-a separate grant (api@minimax.io). Every provisioned weight states
-its license in its DECL row; `pnpm run provision -- models --dry-run`
-lists each artifact before anything downloads.

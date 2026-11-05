@@ -1,36 +1,62 @@
 # Install
 
-The publish channel is npm: one version across the estate
-(`release:bump`), gated tarballs (`release:mint`), registry publish,
-and the GitHub release landing the same bytes as the asset record.
-Every melite package in a release carries one identical version, the
-tag is exactly `v<that version>`, and pre-releases carry an `-alpha`
-suffix on every channel. The sequence is proven end-to-end on every
-release by `tools/release-rehearsal.mjs`.
-
-## The consumer path: the `dsh` CLI
+One command and a boot. Melite seats into a DSH profile from this
+GitHub repository — no npm account, no token, no repository clone, no
+build step. Prerequisites: Node.js ≥ 22.18 and the `dsh` CLI.
 
 ```sh
-npm install -g @deepseek-ai/dsh@0.2.1-rc.2   # the profile CLI
-corepack enable && corepack prepare pnpm@10.33.2 --activate
-dsh plugin --profile <name> add @melite/harness-tools@0.2.0-alpha
-dsh plugin --profile <name> install
+npm install -g @deepseek-ai/dsh
 ```
 
-The plugin verbs resolve the profile's packages from the npm
-registry. Boot the studio with:
+## Seat
 
 ```sh
-dsh --profile melite-test --port 3088
+dsh plugin --profile melite add "github:JayDataEngineer/melite#main"
 ```
 
-The printed token URL is the entry point. The port is a deployment
-choice; `3088` is the test-lane convention.
+The command seats the repository into the profile as a prebuilt
+bundle — committed build output, no compile step, no npm registry.
+Restart an already-running runner after seating; a fresh boot needs
+nothing extra. The estate job server exists as its own profile
+(`estate`); one-shot headless agents are DSH's own surface
+(`dsh headless "task brief"`), not a melite profile.
+
+## Engine doors
+
+Melite installs engine extensions through ComfyUI-Manager's git-url
+door and downloads weights through Manager's model queue. Open both in
+`<ComfyUI>/user/__manager/config.ini` (create the file if it is
+absent) and restart ComfyUI:
+
+```ini
+[default]
+security_level = normal-
+allow_git_url_install = true
+```
+
+This is the full setting for a local engine: the git-url door wants
+the flag plus a loopback listen (`--listen 127.0.0.1`, the default
+for a personal ComfyUI) and is independent of the tier; the tier
+itself admits every melite download at `normal-` on a loopback
+engine. Set `security_level = weak` only when the engine listens on a
+shared address and still needs non-safetensors weights. The estate
+verifies every downloaded file against its declared sha256, so the
+digest gate, not the tier, owns the download boundary. `comfy_manage`'s
+`status` action reports the live line verbatim.
+
+## Boot
+
+```sh
+dsh --profile melite
+```
+
+The boot binds a port itself and prints the entry token URL; pass
+`--port` only when a fixed port is required. The agent seats need
+one LLM driver — configure it with DSH's provider mechanism.
 
 ## Weights and the engine are not included
 
 An install ships code. Model weights and the ComfyUI engine are
-separate, deliberate downloads — see
-[getting started](/guide/getting-started) for the provisioning steps.
-Model files keep their own upstream licenses; see
-[license](/guide/license).
+separate, deliberate downloads — missing models and packs are
+acquired in-app (see the README's Quick start). Model files keep
+their own upstream licenses; see [license](/guide/license).
