@@ -1,0 +1,18 @@
+#!/bin/sh
+# THE PUSH-STAGE DELEGATE: the commit stage of this repo lives in
+# .githooks (core.hooksPath, the serve-freshness gate) while the
+# push stage lives in lefthook.yml — this shim is the wire between
+# them. Git runs this file on every push; it execs lefthook's
+# pre-push job set verbatim (staged-trash, arch-lint, walls,
+# final-newline, the full battery, the profanity gate, the push-set
+# sentry) with git's own stdin handoff, so no hooksPath choice can
+# disarm the push gates. A missing lefthook binary refuses the push
+# aloud — never a silent skip.
+set -e
+dir=$(git rev-parse --show-toplevel)
+if [ ! -x "$dir/node_modules/.bin/lefthook" ]; then
+  echo "pre-push: lefthook is not installed under $dir — run pnpm install, then push again." >&2
+  echo "pre-push: refusing to push unjudged (the push stage owns profanity, walls, and the battery)." >&2
+  exit 1
+fi
+exec "$dir/node_modules/.bin/lefthook" run pre-push "$@"

@@ -154,7 +154,26 @@ pre-push:
       # .scratch/hook-profanity.$$ (the evidence the operator rules
       # on); green sweeps it. mkdir first — a fresh clone has no
       # .scratch (the GT-02 lesson).
-      run: mkdir -p .scratch && node tools/profanity-gate.mjs packages scripts tools lefthook.yml --history '@{push}..HEAD' > .scratch/hook-profanity.$$.log 2>&1; code=$?; tail -n 20 .scratch/hook-profanity.$$.log; if [ $code -ne 0 ]; then echo "profanity log kept at .scratch/hook-profanity.$$"; exit $code; fi; rm -f .scratch/hook-profanity.$$.log; exit $code
+      run: mkdir -p .scratch && node tools/profanity-gate.mjs packages scripts tools tests lefthook.yml --history '@{push}..HEAD' > .scratch/hook-profanity.$$.log 2>&1; code=$?; tail -n 20 .scratch/hook-profanity.$$.log; if [ $code -ne 0 ]; then echo "profanity log kept at .scratch/hook-profanity.$$"; exit $code; fi; rm -f .scratch/hook-profanity.$$.log; exit $code
+
+    # THE COMFYUI-NODES PUSH GATE (operator 2026-11-07: "add some
+    # push only test that does this, to see if all of our custom
+    # comfyui nodes are fully commited and pushed beforehand, and
+    # that we have no dead comfyui extension pins for the other ones
+    # we rely on"). Push-only by necessity: FACE 1 (no
+    # uncommitted/untracked bytes on the custom-node planes) is
+    # invisible to CI, which judges the committed tree, and FACE 3
+    # (every manifest pin + vendored gitlink still exists ON ITS
+    # REMOTE) needs the network the keyless unit plane forbids.
+    # First live run (2026-11-15) refused a real tree: two dirty
+    # gitlinks and two pins dead upstream (CameraReference3D
+    # d2540a97, Upscaler-Plus 63649245). ~40s, ~30 probes, pool of
+    # 6, one retry per probe. The wall is
+    # comfyui-push-gate.spec.ts; the CLI is tools/comfyui-push-gate.mjs.
+    # NO GLOB — the pins rot on OTHER remotes (force-pushes we never
+    # see), so it fires on every push.
+    - name: comfyui-nodes (committed + alive pins)
+      run: node tools/comfyui-push-gate.mjs
 
     # THE PUSH-SET SENTRY (audit 018 C3b, lefthook 2.1.12 probation
     # 2026-10-27): the LAST job on every push. It derives the push set
