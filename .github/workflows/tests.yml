@@ -45,6 +45,24 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: "Build (battery order law: build-plane first, then walls)"
         run: pnpm run build
+      - name: Lib sync (a fresh build reproduces the committed lib/)
+        run: |
+          # GT-06 (the round-5 gate audit): git diff is BLIND to
+          # untracked files — a build emitting a brand-new lib path
+          # rode this gate green. The porcelain sweep sees both.
+          # (class B D6: the unit job builds the same plane the tiers
+          # job does — the drift gate rides BOTH seats.)
+          git diff --exit-code -- '**/lib/**' || {
+            echo "CI FAIL: lib/ drifted from a fresh build — the artifact must land in the same commit as the src";
+            git status --porcelain -- '**/lib/**';
+            exit 1;
+          }
+          UNTRACKED="$(git status --porcelain -- '**/lib/**')"
+          if [ -n "$UNTRACKED" ]; then
+            echo "CI FAIL: a fresh build emitted UNTRACKED lib files the diff cannot see:"
+            echo "$UNTRACKED"
+            exit 1
+          fi
       - name: Unit
         run: pnpm run test
 
@@ -223,6 +241,24 @@ jobs:
         run: pnpm --filter @melite-plugin/dsh-card-view exec playwright install --with-deps chromium
       - name: Studio browser wall (tracked seed, REQUIRE mode)
         run: E2E_STUDIO_REQUIRE=1 pnpm run test:e2e:studio
+
+  # THE COLD-START SEAT (operator 2026-11-04: "a user FROM NOTHING runs
+  # the simple commands and starts generating with Krea-2 — provably,
+  # with a container proving it's clean"): the driver's container face
+  # alone — a naked node container, a fresh DSH_HOME, the official
+  # `dsh plugin add` against the PUBLIC github remote, and the composed
+  # profile carrying the melite bundle rows. The driver is a standalone
+  # .mjs riding docker only, so this seat needs no pnpm install; the
+  # engine arms stay opt-in locally (tests/coldstart) — CI never
+  # downloads a weight.
+  cold-start-proof:
+    name: 'cold-start proof (container face — seat from nothing)'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Container seat proof
+        run: 'node tools/cold-start-proof.mjs --container-only --remote "github:JayDataEngineer/melite#main"'
 
   # No walls job: the wall suites run inside `unit` (root vitest
   # node project). Live GPU inference stays opt-in locally — it needs

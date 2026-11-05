@@ -1,0 +1,113 @@
+# melite — the repo-root bundle patch, rendered by tools/render-seat-patch.mjs.
+# DO NOT EDIT THE ROWS BY HAND: they derive from the carrier packages' own
+# cordis.patch.yml files (listed inside the renderer) in tools/consumer-install.mjs's
+# PROFILE_BASES order, so a profile seated with
+#   dsh plugin --profile <name> add github:JayDataEngineer/melite#<ref>
+# composes the same rows a consumer-install profile composes. Re-render and
+# commit after any carrier patch change; the seat-parity wall reds otherwise.
+# The four web-surface rows are disabled at composition time when the profile
+# carries no @deepseek-ai/dsh-web-app bundle (the startedBundles check), which is the
+# runtime form of consumer-install's non-web mount policy.
+- id: skill-filesystem
+  disabled: true
+- insert:
+    - id: card-studio-img-to-mesh
+      name: "@melite/3d-img-to-mesh"
+- insert:
+    - id: melite-tools
+      name: "@melite/harness-tools"
+    - id: melite-tools-doors
+      name: "@melite/harness-tools/doors"
+      disabled: !!js "!(ctx.get('profileContext')?.startedBundles ?? []).includes('@deepseek-ai/dsh-web-app')"
+- insert:
+    - id: melite-estate
+      name: "@melite-plugin/dsh-estate"
+    - id: family-anny
+      name: "@melite/models-anny"
+    - id: family-fit
+      name: "@melite/models-fit"
+    - id: family-pixal3d
+      name: "@melite/models-pixal3d"
+    - id: family-skin
+      name: "@melite/models-skin"
+    - id: family-somax
+      name: "@melite/models-somax"
+    - id: family-transfer-rig
+      name: "@melite/models-transfer-rig"
+    - id: family-trellis2-native
+      name: "@melite/models-trellis2-native"
+    - id: family-moss-sfx
+      name: "@melite/models-moss-sfx"
+    - id: family-music3
+      name: "@melite/models-music3"
+    - id: family-yue2
+      name: "@melite/models-yue2"
+    - id: family-qwen3-tts
+      name: "@melite/models-qwen3-tts"
+    - id: family-anima
+      name: "@melite/models-anima"
+    - id: family-fibo2-edit
+      name: "@melite/models-fibo2-edit"
+    - id: family-florence2
+      name: "@melite/models-florence2"
+    - id: family-flux-klein
+      name: "@melite/models-flux-klein"
+    - id: family-input
+      name: "@melite/models-input"
+    - id: family-joycaption
+      name: "@melite/models-joycaption"
+    - id: family-joytag
+      name: "@melite/models-joytag"
+    - id: family-krea-2
+      name: "@melite/models-krea-2"
+    - id: family-mask
+      name: "@melite/models-mask"
+    - id: family-moss-image
+      name: "@melite/models-moss-image"
+    - id: family-qwen-img-21
+      name: "@melite/models-qwen-img-21"
+    - id: family-qwen-img-edit-21
+      name: "@melite/models-qwen-img-edit-21"
+    - id: family-qwen-img-edit-2511
+      name: "@melite/models-qwen-img-edit-2511"
+    - id: family-seedvr2-ema
+      name: "@melite/models-seedvr2-ema"
+    - id: family-wd14
+      name: "@melite/models-wd14"
+    - id: family-z-image
+      name: "@melite/models-z-image"
+    - id: family-kimodo
+      name: "@melite/models-kimodo"
+    - id: family-gem-soma
+      name: "@melite/models-gem-soma"
+    - id: family-concat
+      name: "@melite/models-concat"
+    - id: family-h3
+      name: "@melite/models-h3"
+- insert:
+    - id: card-base
+      name: "@melite/card-base"
+- insert:
+    - id: three-client
+      name: "@melite/three-client"
+- insert:
+    - id: infer-card-view
+      name: "@melite-plugin/dsh-card-view"
+      disabled: !!js "!(ctx.get('profileContext')?.startedBundles ?? []).includes('@deepseek-ai/dsh-web-app')"
+- insert:
+    - id: ray-card-deck
+      name: "@melite-plugin/dsh-card-deck"
+      disabled: !!js "!(ctx.get('profileContext')?.startedBundles ?? []).includes('@deepseek-ai/dsh-web-app')"
+- insert:
+    - id: infer-gallery
+      name: "@melite-plugin/dsh-gallery"
+      disabled: !!js "!(ctx.get('profileContext')?.startedBundles ?? []).includes('@deepseek-ai/dsh-web-app')"
+- insert:
+    - id: h3-studio
+      name: "@melite/video-h3-timeline"
+- insert:
+    - id: motion-studio
+      name: "@melite/motion-motion"
+- insert:
+    - id: input-prep-studio
+      name: "@melite/image-input-prep"

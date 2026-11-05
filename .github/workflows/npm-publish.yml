@@ -1,9 +1,21 @@
-# Publish a release's tarballs to npm — nothing else. No build, no mint,
-# no rehearsal, no watchdog, no re-arm: dispatch with a tag whose GitHub
-# release carries the gated *.tgz assets, and this uploads them with the
-# NPM_TOKEN secret. Re-runs are always safe (versions already live are
-# skipped); if npm's account throttle holds the window the run fails red
-# and you dispatch it again later.
+# Publish a release's tarballs to a npm registry — nothing else. No build, no
+# mint, no rehearsal, no watchdog, no re-arm: dispatch with a tag whose GitHub
+# release carries the gated *.tgz assets, and this uploads them. Re-runs are
+# always safe (versions already live on the target registry are skipped).
+#
+# The registry is a dispatch input. The default is registry.npmjs.org (the
+# primary, keyless-for-consumers channel) with the NPM_TOKEN secret — exactly
+# the historical behavior. When npm's ACCOUNT-level publish throttle holds the
+# window, dispatch with registry: https://npm.pkg.github.com to drive the same
+# gated bytes through GitHub Packages (the bypass lane, plan
+# dev_docs/agents/plans/2026-11-01-npm-throttle-bypass.md §2): the token is
+# GPR_WRITE (a classic PAT with write:packages — fine-grained PATs do not work
+# on npm.pkg.github.com) or, once the repo lives under a `melite` owner
+# (scope == owner, lowercase), falls back to the workflow's own GITHUB_TOKEN.
+# GPR demands auth on READS too, so consumers need the scoped .npmrc rows from
+# docs/guide/install.md; npmjs stays primary and keyless. If the throttle
+# holds the window on npmjs, the run fails red and you dispatch it again
+# later — or dispatch the bypass.
 name: Publish to npm
 
 on:
@@ -12,6 +24,11 @@ on:
       tag:
         description: 'Release tag whose release assets hold the tarballs'
         required: true
+        type: string
+      registry:
+        description: 'Registry URL to publish against (npm.pkg.github.com = the throttle bypass lane)'
+        required: false
+        default: 'https://registry.npmjs.org'
         type: string
       limit:
         description: 'Publish at most N packages this run (0 = the whole set)'
@@ -26,10 +43,11 @@ on:
 
 permissions:
   contents: read
+  packages: write
 
 jobs:
   publish:
-    name: Upload tarballs to registry.npmjs.org
+    name: Upload tarballs to ${{ inputs.registry }}
     runs-on: ubuntu-24.04
     timeout-minutes: 350
     steps:
@@ -39,10 +57,12 @@ jobs:
           ref: ${{ inputs.tag }}
           persist-credentials: false
 
+      # setup-node writes //npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+      # (or the npmjs row) into ~/.npmrc for the publish step's token.
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
-          registry-url: https://registry.npmjs.org
+          registry-url: ${{ inputs.registry }}
 
       - name: Download the release tarballs
         env:
@@ -53,5 +73,9 @@ jobs:
 
       - name: Publish to npm
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: node tools/publish-npm.mjs --from dist/npm --limit "${{ inputs.limit }}" --pace-ms "${{ inputs.pace-ms }}"
+          # npmjs runs take NPM_TOKEN. GitHub Packages runs take GPR_WRITE
+          # (classic PAT, write:packages — the shape that works while the repo
+          # owner is JayDataEngineer and the scopes are @melite/*), falling
+          # back to GITHUB_TOKEN once owner == scope (`melite`).
+          NODE_AUTH_TOKEN: ${{ inputs.registry == 'https://npm.pkg.github.com' && (secrets.GPR_WRITE || secrets.GITHUB_TOKEN) || secrets.NPM_TOKEN }}
+        run: node tools/publish-npm.mjs --from dist/npm --registry "${{ inputs.registry }}" --limit "${{ inputs.limit }}" --pace-ms "${{ inputs.pace-ms }}"
