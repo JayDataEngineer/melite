@@ -605,7 +605,12 @@ test('THE MODS LINE RIDES (stroke 79 — the agent sees the kinds beside params)
   // params is named beside it, so the seats cannot conflate.)
   assert.ok(text.includes('`model` selector rides top-level'), 'the model seat is stated')
   assert.ok(text.includes('ONE named exception'), 'the tts params.model exception is named')
-  assert.ok(text.includes("params {model: 'qwen3-tts-large'}"), 'the exception seat shape is spelled')
+  // (D3-08, 2026-11-15: the literal re-pointed post-fold —
+  // 'qwen3-tts-large' died in the 2026-10-26 size-at-quant fold; the
+  // family's one lawful id is 'qwen3-tts'. The tool-model-seat-literals
+  // wall keeps this honest: a teaching that names an unresolvable id
+  // reds there.)
+  assert.ok(text.includes("params {model: 'qwen3-tts'}"), 'the exception seat shape is spelled')
   // kindless cards stay line-less (never an empty mods line)
   const plain = tool.output.render(
     { name: 'c', inference_type: 'card' },
