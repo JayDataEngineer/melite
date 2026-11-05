@@ -6551,11 +6551,9 @@ window.__ModuleLoader__.load({
 		*  plugin's effect disposer). */
 		function watchBenchLands(getSession, onAgentLand, signal, remote, benchNs, subscribeSession) {
 			let stopped = false;
-			const ctrl = new AbortController();
 			const halt = () => {
 				if (stopped) return;
 				stopped = true;
-				ctrl.abort();
 			};
 			signal?.addEventListener("abort", halt, { once: true });
 			if (signal?.aborted === true) halt();
@@ -6627,7 +6625,7 @@ window.__ModuleLoader__.load({
 						} else lastRevs.set(key, bench.rev);
 					}
 				} catch (error) {
-					if (pageUnloading) return;
+					if (pageUnloading || stopped) return;
 					console.error("[melite-card-view] bench spotlight stream failed:", error);
 				} finally {
 					offSubscribe?.();
@@ -10660,7 +10658,8 @@ window.__ModuleLoader__.load({
 		*  time … you are submitting a form, not hacking the mainframe"):
 		*  the ONE function every write-side gate calls after the strict
 		*  judge — it drops the authoring-incomplete class (the
-		*  unstated-required word, a together half, an either_or half).
+		*  unstated-required word, a together half, an either_or half, and
+		*  the DELIVERABLE-SIZE half).
 		*  The registry's write doors AND the form's inline gate BOTH drop
 		*  through THIS function — attempt 12 (2026-11-11) was exactly this
 		*  drift: the door filtered, the form's own copy of the judgment
@@ -10668,10 +10667,18 @@ window.__ModuleLoader__.load({
 		*  was green because the walls drove the door, not the form. One
 		*  spelling; a second copy of this class test anywhere is the
 		*  multiple-seat disease.
+		*  THE SIZE HALF (2026-11-15, the operator's image-edit burn: width
+		*  2024 typed, height still empty, and the bench refused the
+		*  keystroke with "state both width and height" — so NEITHER axis
+		*  ever landed and the run refused a card the studio showed filled):
+		*  writing a form is sequential, so a stated size pair is only ever
+		*  admissibly half-typed. The write seat admits the half; the run
+		*  seat still refuses it (judgeDeliverableSize rides the strict
+		*  judge there).
 		* @param violations the strict judge's violations (any seat)
 		* @returns the violations a write-side gate may voice */
 		function dropAuthoringIncomplete(violations) {
-			return violations.filter((v) => !isUnstatedRequiredVoice(v.message) && !isTogetherHalfVoice(v.message) && !isEitherOrHalfVoice(v.message));
+			return violations.filter((v) => !isUnstatedRequiredVoice(v.message) && !isTogetherHalfVoice(v.message) && !isEitherOrHalfVoice(v.message) && !isDeliverableHalfVoice(v.message));
 		}
 		/** The together-half class test: the sentence names a together group
 		*  whose members are not all stated yet.
@@ -10686,6 +10693,18 @@ window.__ModuleLoader__.load({
 		* @returns true when the sentence is the either_or-half voice */
 		function isEitherOrHalfVoice(text) {
 			return text.includes(EITHER_OR_HALF_STEM);
+		}
+		/** The deliverable-size half's sentence stem (judgeDeliverableSize's
+		*  first law): match_input_resolution is OFF and exactly one axis is
+		*  stated. THE WRITE SEAT ADMITS THIS CLASS (the frictionless-authoring
+		*  ruling, extended 2026-11-15): the pair can only be typed one key at
+		*  a time, so judging each keystroke as a malformed deliverable made
+		*  the pair UNWRITABLE and the card unrunnable. The RUN seat keeps the
+		*  strict judgment — a half pair never composes.
+		* @param text the refusal sentence to classify
+		* @returns true when the sentence is the deliverable-size half voice */
+		function isDeliverableHalfVoice(text) {
+			return text.includes(DELIVERABLE_HALF_STEM);
 		}
 		/** The heal's stricter twin: the text is the unstated-required class
 		* AND NOTHING ELSE. A composite refusal (the judge joins multiple
@@ -11258,7 +11277,7 @@ window.__ModuleLoader__.load({
 				}))
 			}));
 		}
-		var RELATION_WORDS, quote, UNSTATED_REQUIRED_STEM, TOGETHER_HALF_STEM, EITHER_OR_HALF_STEM, statedOf, visibleRows, visibleCells, knownIds, knownQuants;
+		var RELATION_WORDS, quote, UNSTATED_REQUIRED_STEM, TOGETHER_HALF_STEM, EITHER_OR_HALF_STEM, DELIVERABLE_HALF_STEM, statedOf, visibleRows, visibleCells, knownIds, knownQuants;
 		var init_laneRelations = __esmMin((() => {
 			RELATION_WORDS = {
 				requires: true,
@@ -11272,6 +11291,7 @@ window.__ModuleLoader__.load({
 			UNSTATED_REQUIRED_STEM = "this lane requires ";
 			TOGETHER_HALF_STEM = " ride together on this lane (state all or none)";
 			EITHER_OR_HALF_STEM = " — the stated combination completes none of them";
+			DELIVERABLE_HALF_STEM = "state both width and height";
 			statedOf = (stated) => typeof stated === "string" ? stated : null;
 			visibleRows = (variants) => variants.filter((v) => v.hide_from_dropdown !== true);
 			visibleCells = (cells) => cells.filter((c) => c.hide_from_dropdown !== true);
@@ -12617,6 +12637,7 @@ window.__ModuleLoader__.load({
 			hasModifierCapability: () => hasModifierCapability,
 			healRunMediaPaths: () => healRunMediaPaths,
 			isDataUrl: () => isDataUrl,
+			isDeliverableHalfVoice: () => isDeliverableHalfVoice,
 			isEitherOrHalfVoice: () => isEitherOrHalfVoice,
 			isLiveRunStatus: () => isLiveRunStatus$1,
 			isProvenance: () => isProvenance,

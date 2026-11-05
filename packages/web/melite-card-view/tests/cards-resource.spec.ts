@@ -76,12 +76,15 @@ interface FakeBench {
   drop: () => void
   /** The next open for this key rejects (terminal). */
   failOpen: (key: string, error: Error) => void
+  /** The parked read rejects now (the transport's scope-abort death). */
+  kill: (error: Error) => void
   /** Whether a live channel is open for the key. */
   isOpen: (key: string) => boolean
 }
 
 function fakeRemote(): FakeBench {
   const channels: Channel[] = []
+  const killers = new Set<(error: Error) => void>()
   const pending = new Map<string, Array<Record<string, unknown>>>()
   const rejections = new Map<string, Error>()
   const isOpen = (key: string): boolean => channels.some((c) => c.key === key && c.open)
@@ -147,6 +150,15 @@ function fakeRemote(): FakeBench {
       closeChannel()
       for (const waiter of parked.splice(0)) waiter.resolve({ done: true, value: undefined as never })
     })
+    // THE CARRIER-DEATH SEAT (the console-audit cure's fake): the real
+    // transport rejects a parked read when the plugin scope aborts the
+    // generation — "signal is aborted without reason". kill() fires
+    // exactly that rejection so the watcher's classification is judged.
+    killers.add((error: Error) => {
+      if (failed !== undefined) return
+      failed = error
+      for (const waiter of parked.splice(0)) waiter.reject(failed)
+    })
     const run = async (): Promise<void> => {
       while (!lifetime.signal.aborted && failed === undefined) {
         try {
@@ -209,6 +221,7 @@ function fakeRemote(): FakeBench {
     push,
     drop: () => { for (const c of channels) { c.open = false; c.wake?.() } },
     failOpen: (key, error) => { rejections.set(key, error) },
+    kill: (error) => { for (const k of killers) k(error) },
     isOpen,
   }
 }
@@ -718,6 +731,38 @@ describe('the bench spotlight (the one-flow reveal, stream edition)', () => {
     await until(() => landed.length === 1)
     expect(landed).toEqual(['s_new']) // the new conversation's agent: fires with ITS key
     stop()
+  })
+
+  test('THE RECONCILE TEARDOWN IS SILENT: a halted watcher\'s transport abort never logs (console-audit cure, 2026-11-15)', async () => {
+    // THE OPERATOR'S NOISE: every reconcile halted the watcher and the
+    // transport then rejected the parked read with RemoteError "signal
+    // is aborted without reason" — logged as a supervisor failure.
+    const bench = fakeRemote()
+    const errors: unknown[][] = []
+    const spy = vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => { errors.push(args) })
+    try {
+      const stop = watchBenchLands(() => 'main', () => {}, undefined, bench.remote, bench.remote.bench, undefined)
+      await until(() => bench.isOpen('main'))
+      stop() // the plugin disposer / scope teardown
+      bench.kill(new Error('signal is aborted without reason'))
+      await tick(4)
+      expect(errors).toEqual([])
+    } finally { spy.mockRestore() }
+  })
+
+  test('THE FAILURE STILL SPEAKS: a LIVE watcher\'s transport death stays logged (the latch keeps its teeth)', async () => {
+    const bench = fakeRemote()
+    const errors: unknown[][] = []
+    const spy = vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => { errors.push(args) })
+    try {
+      const stop = watchBenchLands(() => 'main', () => {}, undefined, bench.remote, bench.remote.bench, undefined)
+      await until(() => bench.isOpen('main'))
+      bench.kill(new Error('carrier died mid-read'))
+      await tick(4)
+      expect(errors.length).toBe(1)
+      expect(String(errors[0]?.[0] ?? '')).toContain('bench spotlight stream failed')
+      stop()
+    } finally { spy.mockRestore() }
   })
 
   test('the seat law: reveal only when the cards surface is not the visible seat', () => {

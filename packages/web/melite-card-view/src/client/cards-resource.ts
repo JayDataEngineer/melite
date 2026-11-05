@@ -536,11 +536,9 @@ export function watchBenchLands(
   subscribeSession: ((fn: () => void) => () => void) | undefined,
 ): () => void {
   let stopped = false
-  const ctrl = new AbortController()
   const halt = (): void => {
     if (stopped) return
     stopped = true
-    ctrl.abort()
   }
   signal?.addEventListener('abort', halt, { once: true })
   if (signal?.aborted === true) halt()
@@ -623,7 +621,12 @@ const run = async (): Promise<void> => {
       // terminal supervisor failure — best-effort seat, logged only.
       // The navigation-teardown latch (pagehide) classifies the
       // reload's own abort: teardown, not a failure.
-      if (pageUnloading) return
+      // THE STOPPED LATCH (console-audit cure, 2026-11-15): the
+      // plugin disposer halts the watcher and the transport then
+      // rejects the parked read with "signal is aborted without
+      // reason" — on EVERY reconcile. A stopped watcher owns no
+      // truth, so its death is teardown, never a supervisor failure.
+      if (pageUnloading || stopped) return
       console.error('[melite-card-view] bench spotlight stream failed:', error)
     } finally {
       offSubscribe?.()
