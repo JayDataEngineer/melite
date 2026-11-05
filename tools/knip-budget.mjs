@@ -69,12 +69,20 @@ const BUDGET = {
   //    still fires on any growth past these numbers, and the cure is
   //    the ROADMAP's knip-back row (delete-with-its-consumers or
   //    teach-the-entry), never a number bump again.
-  files: 64,
+  //  - files 64->57, exports 242->238 (RE-BASELINED DOWN 2026-11-15,
+  //    the knip-back row's first cure): the hot-plugin corpse and its
+  //    README deleted in their own commit (no profile mounted either;
+  //    the lora verbs' rearmLoraFlavors owns the whole door now) and
+  //    the train's plan/proof code reached by its entries. types stays
+  //    178 -- the provisioning/src/types.ts barrel-shadow row is still
+  //    owed. A number that falls is taken: the caps track the true
+  //    census, both directions.
+  files: 57,
   dependencies: 15,
   devDependencies: 50,
   unlisted: 1,
   unresolved: 0,
-  exports: 242,
+  exports: 238,
   types: 178,
   // enumMembers / duplicates: "duplicates" excluded in knip.jsonc
 }

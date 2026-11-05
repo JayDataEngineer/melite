@@ -4,8 +4,10 @@
 // patch-yml edit before it served. The file at userLorasPath()
 // now registers at composition time — the same composeModPlane
 // the family flavors ride — so rows serve with no profile edit
-// and no drop-in. The hot plugin (web/melte-estate/hot) remains
-// the door for a SECOND file, not the only door.
+// and no drop-in. THE HOT PLUGIN IS GONE (knip-back, 2026-11-15):
+// the typo'd web/melte-estate/hot corpse no profile mounted was
+// deleted; every lora verb re-reads this file through
+// rearmLoraFlavors (userLoras.ts), so ONE file is the whole door.
 //
 // The law is unchanged: nothing fetches (the rows carry
 // documentation urls only), and the leaf still refuses a
