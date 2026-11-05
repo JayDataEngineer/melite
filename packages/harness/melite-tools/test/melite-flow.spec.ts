@@ -3018,3 +3018,180 @@ describe('melite_flow stage — THE PER-STAGE PRESS (W-8, 2026-11-05)', () => {
     assert.equal(pc({ stage: '' })!.title, 'Run ?')
   })
 })
+
+describe('W-2 — the stale downstream skip (the input_runs snapshot law)', () => {
+  // THE BURN (FRICTION_3.md:464, RG-P4-3, the operator's "serious
+  // one"): bench s_0 image-gen → s_1 upscale wired input_image ←
+  // s_0.default. First press: s_0 skipped-done, s_1 ran
+  // (run-b6a124416862). Patched s_0 seed 42750 → 73001 (the door
+  // cleared the done mark) and pressed: s_0 re-ran (run-d83403ae8eb5,
+  // new image), s_1 SKIPPED and kept its artifact derived from the OLD
+  // s_0 image — the bench presented the new output beside a stale
+  // derived output. The runStatus-only skip never noticed the upstream
+  // identity move. THE LAW (W-2): a done row skips only while its
+  // recorded input_runs snapshot still names the run identities its
+  // wires resolve to now; the attribution stamps the snapshot, so the
+  // match is judgeable on the next press.
+  //
+  // The fake estate's stage-patch door WRITES the stamp into the doc
+  // (runStatus + result) exactly like the real drafts door — a press
+  // leaves persistent marks the next press reads.
+
+  /** The RG-P4-3 bench: both rows done; s_1 carries the snapshot from
+   *  its own last run (it consumed r_gen_1's output). */
+  function w2Bench(): Record<string, unknown> {
+    return {
+      draft_id: 'd_w2', rev: 12, intent: 'lighthouse upscale', log: [],
+      stages: [
+        { id: 's_0', card: 'image-gen', runStatus: 'done', params: { model: 'krea-2', seed: 42750 },
+          result: { run_id: 'r_gen_1', url: '/melite-media/runs/r_gen_1/gen/SaveImage_00001_.png' } },
+        { id: 's_1', card: 'upscale-tools', runStatus: 'done',
+          params: { model: 'seedvr2-ema', input_image: '$input_image' },
+          inputs: { input_image: { stage: 's_0', output: 'default' } },
+          result: { run_id: 'r_up_1', url: '/melite-media/runs/r_up_1/upscale/SaveImage_00001_.png',
+            input_runs: { input_image: 'r_gen_1' } } },
+      ],
+    }
+  }
+
+  /** The live estate: fresh run ids per start (minted off the burn's
+   *  own sequence), per-run completed polls, and the patch door that
+   *  lands the stamp on the doc. */
+  function w2Handler(bench: Record<string, unknown>) {
+    const seq: Record<string, number> = {}
+    const runStage = new Map<string, string>()
+    return (lane: string, args: unknown[]): { status: number; body: unknown } | undefined => {
+      if (lane === 'benchGet') return { status: 200, body: bench }
+      if (lane === 'runsStart') {
+        const body = args[0] as Record<string, unknown>
+        const stage = String(body['bench_stage_id'])
+        seq[stage] = (seq[stage] ?? 1) + 1
+        const id = stage === 's_0' ? `r_gen_${seq[stage]}` : `r_up_${seq[stage]}`
+        runStage.set(id, stage)
+        return { status: 202, body: { run_id: id, status: 'queued' } }
+      }
+      if (lane === 'runsStatus') {
+        const stage = runStage.get(args[0] as string) ?? ''
+        return { status: 200, body: { status: 'completed', stages: [{
+          id: stage,
+          url: stage === 's_0' ? 'gen/SaveImage_00001_.png' : 'upscale/SaveImage_00001_.png',
+        }] } }
+      }
+      if (lane === 'draftsStagePatch') {
+        const stageId = args[1] as string
+        const body = args[2] as Record<string, unknown>
+        const row = (bench.stages as Array<Record<string, unknown>>).find((s) => s['id'] === stageId)
+        if (row !== undefined) {
+          if (typeof body['runStatus'] === 'string') row['runStatus'] = body['runStatus']
+          if (body['result'] !== undefined) row['result'] = body['result']
+        }
+        return { status: 200, body: { delivered: true, patched: ['runStatus', 'result'] } }
+      }
+      return undefined
+    }
+  }
+
+  async function press(handler: ReturnType<typeof w2Handler>): Promise<{ out: Record<string, unknown>; seen: ReturnType<typeof mockEstate> }> {
+    const seen = mockEstate([handler])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(15000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    return { out, seen }
+  }
+
+  test('W-2 ARM A (THE WALL): s_0 re-runs on the seed patch — wired s_1 ALSO RUNS and stamps the NEW upstream identity', async () => {
+    const bench = w2Bench()
+    // the operator's patch: seed changed → the patch door cleared the
+    // done mark (W-9); the old result memory stays on the row
+    ;(bench.stages as Array<Record<string, unknown>>)[0]!['runStatus'] = 'pending'
+    const { out, seen } = await press(w2Handler(bench))
+    assert.equal(out.status, 'done', String(out.error))
+    const starts = seen.calls.filter((c) => c.lane === 'runsStart')
+    assert.equal(starts.length, 2, `THE BURN SHAPE: both rows must run — s_1 skipped its stale upstream result (${starts.length} starts)`)
+    const pass = out.pass as Array<Record<string, unknown>>
+    assert.equal(pass[0]!['run_id'], 'r_gen_2', 's_0 re-ran')
+    assert.equal(pass[1]!['run_id'], 'r_up_2', 's_1 minted a NEW run — the burn kept run-b6a124416862 alive under its stale skip')
+    assert.match(String(pass[1]!['stale']), /input snapshot mismatch/,
+      'the pass row says WHY the row re-ran — the burn was invisible exactly here')
+    // the derivation: s_1's press carries s_0's NEW output, never the
+    // old image (the burn presented the new source beside a stale
+    // derived artifact)
+    const s1Body = starts[1]!.args[0] as Record<string, unknown>
+    assert.equal(s1Body['bench_stage_id'], 's_1')
+    assert.equal(s1Body['input_image'], '/melite-media/runs/r_gen_2/gen/SaveImage_00001_.png',
+      'the wire resolved to the NEW s_0 run — the artifact derives from the moved source')
+    // the snapshot landed: s_1's terminal stamp names the CURRENT
+    // upstream identity, so the NEXT press can judge the match
+    const s1Patches = seen.calls
+      .filter((c) => c.lane === 'draftsStagePatch' && c.args[1] === 's_1')
+      .map((c) => c.args[2] as Record<string, unknown>)
+    const terminal = s1Patches.find((p) => p['runStatus'] === 'done')
+    assert.deepEqual((terminal!['result'] as Record<string, unknown>)['input_runs'],
+      { input_image: 'r_gen_2' }, 'the stamp carries the press-time snapshot')
+    // and s_0 (no wired inputs) takes no snapshot seat
+    const s0Terminal = seen.calls
+      .filter((c) => c.lane === 'draftsStagePatch' && c.args[1] === 's_0')
+      .map((c) => c.args[2] as Record<string, unknown>)
+      .find((p) => p['runStatus'] === 'done')
+    assert.ok(!('input_runs' in (s0Terminal!['result'] as Record<string, unknown>)), 'a row with no wired inputs stamps no snapshot')
+    // the render face prints the stale voice beside the run
+    const text = (meliteFlow(seen.request).output.render({ bench: true }, out as never) as Array<{ text?: string }>)
+      .map((p) => p?.text ?? '').join('\n')
+    assert.ok(text.includes('↻ input snapshot mismatch'), 'the operator reads why the row re-ran in the pass prose')
+  })
+
+  test('W-2 ARM B (guard, no over-invalidation): an unchanged re-press with matching snapshots skips both rows — zero starts', async () => {
+    const { out, seen } = await press(w2Handler(w2Bench()))
+    assert.equal(out.status, 'done')
+    assert.equal(seen.calls.filter((c) => c.lane === 'runsStart').length, 0,
+      'the skip law preserved — a matching snapshot never spends a run')
+    assert.deepEqual(out.pass, [
+      { stage: 's_0', card: 'image-gen', skipped: 'done', last_run: 'r_gen_1' },
+      { stage: 's_1', card: 'upscale-tools', skipped: 'done', last_run: 'r_up_1' },
+    ])
+  })
+
+  test('W-2 ARM C (guard, sibling): a patched unwired sibling runs alone — the wired branch still skips', async () => {
+    const bench = w2Bench()
+    // s_2 (no wires) was patched — its done mark cleared; s_0/s_1
+    // untouched, s_1's snapshot still matches
+    ;(bench.stages as Array<Record<string, unknown>>).push({
+      id: 's_2', card: 'tts', runStatus: 'pending', params: { model: 'tts-1' },
+    })
+    const { out, seen } = await press(w2Handler(bench))
+    assert.equal(out.status, 'done', String(out.error))
+    const starts = seen.calls.filter((c) => c.lane === 'runsStart')
+    assert.equal(starts.length, 1, 'only the patched sibling runs')
+    assert.equal((starts[0]!.args[0] as Record<string, unknown>)['bench_stage_id'], 's_2')
+    const pass = out.pass as Array<Record<string, unknown>>
+    assert.equal(pass[0]!['skipped'], 'done', 'the wired branch does not inherit the sibling\u2019s staleness')
+    assert.equal(pass[1]!['skipped'], 'done', 's_1\u2019s snapshot names only ITS wires — an unrelated patch never invalidates it')
+  })
+
+  test('W-2 ARM D (legacy): a done wired row with NO input_runs re-runs ONCE, stamps, then skips on the next press', async () => {
+    const bench = w2Bench()
+    // the pre-W-2 done mark: the snapshot was never stamped
+    const legacyResult = (bench.stages as Array<Record<string, unknown>>)[1]!['result'] as Record<string, unknown>
+    delete legacyResult['input_runs']
+    const first = await press(w2Handler(bench))
+    assert.equal(first.out.status, 'done', String(first.out.error))
+    // safe-on-stale: the row runs once (s_0 done-skips — it has no wires)
+    assert.equal(first.seen.calls.filter((c) => c.lane === 'runsStart').length, 1)
+    const pass = first.out.pass as Array<Record<string, unknown>>
+    assert.equal(pass[0]!['skipped'], 'done')
+    assert.equal(pass[1]!['run_id'], 'r_up_2')
+    assert.match(String(pass[1]!['stale']), /input snapshot missing/,
+      'the legacy voice names the missing snapshot, not a silent re-run')
+    const s1Patches = first.seen.calls
+      .filter((c) => c.lane === 'draftsStagePatch' && c.args[1] === 's_1')
+      .map((c) => c.args[2] as Record<string, unknown>)
+    const terminal = s1Patches.find((p) => p['runStatus'] === 'done')
+    assert.deepEqual((terminal!['result'] as Record<string, unknown>)['input_runs'],
+      { input_image: 'r_gen_1' }, 'the stamp records what the run consumed — s_0 did not move')
+    // second press: the stamp landed persistently — the row skips now
+    const second = await press(w2Handler(bench))
+    assert.equal(second.out.status, 'done')
+    assert.equal(second.seen.calls.filter((c) => c.lane === 'runsStart').length, 0,
+      'the stamped row skips — safe-on-stale spends exactly one run')
+    assert.equal((second.out.pass as Array<Record<string, unknown>>)[1]!['skipped'], 'done')
+  })
+})

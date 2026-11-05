@@ -20,7 +20,7 @@ import type { ToolDefinition } from '../types.js';
  *  /melite-media/runs/<runId>/, urls that carry a scheme or lead
  *  with / pass verbatim (the ONE rewrite — the run-wire law,
  *  mirrored). */
-export declare function observeAndAttribute(estate: Estate, draftId: DraftId, stageId: string, runId: string, signal: AbortSignal, test: boolean, budgetMs?: number, rearms?: number): Promise<{
+export declare function observeAndAttribute(estate: Estate, draftId: DraftId, stageId: string, runId: string, signal: AbortSignal, test: boolean, budgetMs?: number, rearms?: number, inputRuns?: Record<string, string>): Promise<{
     status: string;
     url: string;
     artifacts: string[];

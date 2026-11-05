@@ -242,7 +242,10 @@ async function loadBench(
  *  rows with a reason, and — since F20's residual cure (2026-10-30) —
  *  a settled FAILURE or a THROWN start is recorded and the pass
  *  CONTINUES to the remaining stages; only a pre-run REFUSAL (a doc
- *  the door will not accept) stops the pass. */
+ *  the door will not accept) stops the pass. W-2 (2026-11-05): a
+ *  done row skips only while its recorded input_runs snapshot still
+ *  names the run identities its wires resolve to now — an upstream
+ *  that re-ran breaks the match and the row runs. */
 async function runBench(
   estate: Estate,
   a: { test?: boolean; bench: string },
@@ -288,6 +291,44 @@ async function runBench(
   // failure, so no caller can read a pass with a failed stage as
   // clean.
   const failures: Array<{ stage: string, card: string, status: string, run_id: string }> = []
+  // THE PASS'S OWN MIRROR (W-2): the run ids THIS press minted, by
+  // stage — a downstream row resolves its wires against the identity
+  // the press actually produced, never the pre-press memory. Press-local
+  // bookkeeping only: the doc copy in hand is never written (the estate
+  // learns the id through the attribution's stamp door).
+  const mintedRuns = new Map<string, string>()
+  // THE INPUT-RUNS SNAPSHOT (W-2, 2026-11-05, FRICTION_3 RG-P4-3): the
+  // identity of every wired input AT PRESS TIME —
+  // { <input name>: <upstream stage's result.run_id> } — read off the
+  // bench doc already in hand (no extra estate call), with a stage
+  // this pass re-ran answering its FRESH id. A static value is not a
+  // wire and takes no seat in the dict; a wire whose upstream is
+  // missing or has no result records the marker ''. `undefined`
+  // answers for a row with NO wired inputs — a row outside the law
+  // (nothing it consumes can go stale under it).
+  const inputRunsOf = (row: Record<string, unknown>): Record<string, string> | undefined => {
+    const wires = row['inputs'] !== null && typeof row['inputs'] === 'object' && !Array.isArray(row['inputs'])
+      ? row['inputs'] as Record<string, unknown> : {}
+    const names = Object.keys(wires)
+    if (names.length === 0) return undefined
+    const snapshot: Record<string, string> = {}
+    for (const name of names) {
+      const ref = wires[name]
+      const upstreamId = ref !== null && typeof ref === 'object' && typeof (ref as Record<string, unknown>)['stage'] === 'string'
+        ? String((ref as Record<string, unknown>)['stage']) : ''
+      if (upstreamId === '') continue
+      const minted = mintedRuns.get(upstreamId)
+      if (minted !== undefined) {
+        snapshot[name] = minted
+        continue
+      }
+      const upstream = rows.find((r) => r['id'] === upstreamId)
+      const res = upstream !== undefined && upstream['result'] !== null && typeof upstream['result'] === 'object' && !Array.isArray(upstream['result'])
+        ? upstream['result'] as Record<string, unknown> : {}
+      snapshot[name] = typeof res['run_id'] === 'string' ? res['run_id'] as string : ''
+    }
+    return snapshot
+  }
   for (const row of rows) {
     const stageId = row['id'] as string
     // THE PER-STAGE PRESS (W-8): the named row alone rides the
@@ -315,6 +356,14 @@ async function runBench(
       pass.push({ stage: stageId, card, skipped: 'archived' })
       continue
     }
+    // W-2: resolve the row's wired inputs to the CURRENT upstream
+    // identities before the skip test — the same resolution the skip
+    // judge below compares against and the attribution stamps.
+    const currentInputs = inputRunsOf(row)
+    // The stale voice, set only when a done mark fails the snapshot
+    // law and the row falls through to run (the operator reads why it
+    // re-ran on the pass row).
+    let staleVoice: string | undefined
     {
       const folded = statusOrPendingOf(typeof row['runStatus'] === 'string' ? row['runStatus'] as string : '')
       if (folded === 'done' || folded === 'cached' || folded === 'reused') {
@@ -331,8 +380,38 @@ async function runBench(
           ? row['result'] as Record<string, unknown> : null
         const lastRun = result !== null && typeof result['run_id'] === 'string' && result['run_id'] !== ''
           ? result['run_id'] as string : null
-        pass.push({ stage: stageId, card, skipped: 'done', last_run: lastRun })
-        continue
+        // THE INPUT-RUNS SNAPSHOT LAW (W-2, 2026-11-05, FRICTION_3
+        // RG-P4-3): a done mark may SKIP only when the input_runs
+        // snapshot it recorded still names the SAME run identities its
+        // wired inputs resolve to now — deep equal over the same key
+        // set (extra/missing keys = mismatch). The burn: s_0 image-gen
+        // re-ran on a seed patch while wired s_1 upscale SKIPPED and
+        // kept its artifact derived from the OLD s_0 image — the
+        // runStatus-only skip never noticed the upstream identity
+        // move. No snapshot at all on a row that HAS wired inputs is
+        // STALE too (safe-on-stale: it re-runs once, stamps, and
+        // skips from then on); a row with NO wired inputs keeps
+        // skipping as today (nothing it consumes can move).
+        const stamped = result !== null && result['input_runs'] !== null
+          && typeof result['input_runs'] === 'object' && !Array.isArray(result['input_runs'])
+          ? result['input_runs'] as Record<string, unknown> : null
+        if (currentInputs !== undefined) {
+          const currentKeys = Object.keys(currentInputs)
+          const matches = stamped !== null
+            && Object.keys(stamped).length === currentKeys.length
+            && currentKeys.every((k) => stamped[k] === currentInputs[k])
+          if (!matches) {
+            staleVoice = stamped === null
+              ? 'input snapshot missing on the done mark — re-running to record what it consumed'
+              : 'input snapshot mismatch — a wired upstream re-ran since this row\u2019s last run; its artifact derived from the old output'
+          } else {
+            pass.push({ stage: stageId, card, skipped: 'done', last_run: lastRun })
+            continue
+          }
+        } else {
+          pass.push({ stage: stageId, card, skipped: 'done', last_run: lastRun })
+          continue
+        }
       }
     }
     if (card === '') {
@@ -488,9 +567,10 @@ async function runBench(
       return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId, ...(intent !== '' ? { intent } : {}), ...(only !== undefined ? { stage: only } : {}), error: started['error'], pass }
     }
     const runId = started['run_id'] as string
+    if (runId !== '') mintedRuns.set(stageId, runId)
     let outcome: Awaited<ReturnType<typeof observeAndAttribute>>
     try {
-      outcome = await observeAndAttribute(estate, draftId, stageId, runId, signal, wireBool(a.test))
+      outcome = await observeAndAttribute(estate, draftId, stageId, runId, signal, wireBool(a.test), OBSERVE_MAX_MS, 2, currentInputs)
     } catch (thrown) {
       const why = thrown instanceof Error ? thrown.message : String(thrown)
       pass.push({ stage: stageId, card, run_id: runId, thrown: why })
@@ -498,6 +578,7 @@ async function runBench(
       continue
     }
     pass.push({ stage: stageId, card, run_id: runId, status: outcome.status,
+      ...(staleVoice !== undefined ? { stale: staleVoice } : {}),
       ...(regimeWarning !== null ? { warning: regimeWarning } : {}),
       ...(outcome.url !== '' ? { url: outcome.url } : {}),
       ...(outcome.artifacts.length > 0 ? { artifacts: outcome.artifacts } : {}),
@@ -662,6 +743,11 @@ export async function observeAndAttribute(
   test: boolean,
   budgetMs: number = OBSERVE_MAX_MS,
   rearms: number = 2,
+  // W-2: the input-runs snapshot the RUNNING row resolved at press
+  // time (runBench only; the card/flow single-run callers pass none).
+  // Lands inside the terminal result dict so the row's next skip test
+  // can compare it against the upstream identities as they stand then.
+  inputRuns?: Record<string, string>,
 ): Promise<{ status: string; url: string; artifacts: string[]; asset_urls: string[]; host_paths: string[]; stamp_note?: string }> {
   const deadline = Date.now() + budgetMs
   let lastLive = ''
@@ -746,6 +832,10 @@ export async function observeAndAttribute(
       }
       const result: Record<string, unknown> = { run_id: runId }
       if (url !== '') result['url'] = url
+      // W-2: the terminal stamp carries the press-time input snapshot —
+      // the live patch above stays minimal, this is the evidence the
+      // next skip test judges.
+      if (inputRuns !== undefined) result['input_runs'] = inputRuns
       const artifacts: Record<string, string> = {}
       const assetUrls: string[] = []
       for (const name of names) {
@@ -814,7 +904,7 @@ export async function observeAndAttribute(
       // settles or the chain's re-arms run out (the queue-side
       // armor bounds the run itself).
       if (rearms > 0) {
-        void observeAndAttribute(estate, draftId, stageId, runId, new AbortController().signal, test, budgetMs, rearms - 1).catch(String)
+        void observeAndAttribute(estate, draftId, stageId, runId, new AbortController().signal, test, budgetMs, rearms - 1, inputRuns).catch(String)
       }
       return { status: 'queued', url: '', artifacts: [], asset_urls: [], host_paths: [], ...(stampNote !== undefined ? { stamp_note: stampNote } : {}) }
     }
@@ -1259,6 +1349,13 @@ export function meliteFlow(estate: Estate): ToolDefinition {
             // face obeys).
             + (typeof p['warning'] === 'string' && p['warning'] !== ''
               ? '\n    ⚠ ' + p['warning']
+              : '')
+            // W-2 — THE STALE FACE: a row that re-ran because its wired
+            // input's snapshot no longer matches prints why, beside the
+            // run it minted (the RG-P4-3 burn was invisible exactly
+            // here: the pass read "unchanged" while the source moved).
+            + (typeof p['stale'] === 'string' && p['stale'] !== ''
+              ? '\n    ↻ ' + p['stale']
               : '')
             + (typeof p['url'] === 'string' && p['url'] !== '' ? ' ' + p['url'] : '')
             + (Array.isArray(p['host_paths']) && (p['host_paths'] as unknown[]).length > 0
