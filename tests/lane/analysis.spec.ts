@@ -22,7 +22,7 @@
  */
 import { describe, it, expect } from 'vitest'
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, statSync, utimesSync } from 'node:fs'
+import { existsSync, mkdtempSync, mkdirSync, writeFileSync, readFileSync, statSync, utimesSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -50,6 +50,14 @@ const REAL_FILM = join(REPO_LOCAL, 'bench/2026-09-20-seam-swap/new-driftcontrol_
 /** A REAL glTF binary (the creature lane) and a real motion rig. */
 const REAL_MESH = join(REPO_LOCAL, 'data/runs/output/run-08c627659a19-6d9cd785/creature.glb')
 const REAL_RIG = join(REPO_LOCAL, 'data/runs/output/run-be29e189215d-6c335282/motion.glb')
+
+/** THE SEATED-SKIP LAW (the demo-state-seed canon): the real
+ *  artifacts under bench/ and data/runs/output are machine-local —
+ *  untracked by law, absent on every fresh clone. The describes that
+ *  eat real bytes seat-guard with the reason in the title; the
+ *  pure-classification suite fires everywhere. */
+const REALS_SEATED = [REAL_FILM, REAL_MESH, REAL_RIG].every((p) => existsSync(p))
+const SKIP_REALS = 'NOT SEATED: machine-local bench/runs real artifacts (bench/2026-09-20-seam-swap film + two data/runs/output rigs) — fires on the dev box, skips loud on fresh clones'
 
 const bytes = (path: string): Uint8Array => new Uint8Array(readFileSync(path))
 
@@ -161,7 +169,7 @@ function mintVideoOnlyMp4(): { name: string; path: string } {
   return { name, path }
 }
 
-describe('the analyst — the VIDEO verdict (a real film, and the refusals)', () => {
+describe.skipIf(!REALS_SEATED)('the analyst — the VIDEO verdict (a real film, and the refusals) (skips when NOT SEATED: ' + SKIP_REALS + ')', () => {
   it('reads a real H3 film: h264 video with geometry and duration, aac audio', () => {
     const verdict = analyzeVideoBytes(bytes(REAL_FILM))
     expect(verdict.reasons).toEqual([])
@@ -211,7 +219,7 @@ describe('the analyst — the VIDEO verdict (a real film, and the refusals)', ()
   })
 })
 
-describe('the analyst — the MESH verdict (real glTF, and structural refusals)', () => {
+describe.skipIf(!REALS_SEATED)('the analyst — the MESH verdict (real glTF, and structural refusals) (skips when NOT SEATED: ' + SKIP_REALS + ')', () => {
   it('parses a real creature glb: 2 primitives, real vertices, a real buffer', () => {
     const verdict = analyzeMeshBytes(bytes(REAL_MESH))
     expect(verdict.reasons).toEqual([])
@@ -254,7 +262,7 @@ describe('the analyst — the MESH verdict (real glTF, and structural refusals)'
   })
 })
 
-describe('the analyst — the run tree', () => {
+describe.skipIf(!REALS_SEATED)('the analyst — the run tree (skips when NOT SEATED: ' + SKIP_REALS + ')', () => {
   it('reads a run dir into its receipt: status, stages, artifacts, sidecars', () => {
     const root = tempRoot()
     const dir = mintRun(root, {
@@ -308,9 +316,12 @@ describe('the analyst — the run tree', () => {
   })
 })
 
-describe('the analyst — the PATH verdicts (the runbook refusals, as code)', () => {
-  const realFilm = bytes(REAL_FILM)
-  const realMesh = bytes(REAL_RIG)
+describe.skipIf(!REALS_SEATED)('the analyst — the PATH verdicts (the runbook refusals, as code) (skips when NOT SEATED: ' + SKIP_REALS + ')', () => {
+  // Deferred seats: a skipped suite's collection callback still runs
+  // (vitest builds the tree to mark children skipped), so the bytes
+  // read behind the gate, never at collection on an unseated clone.
+  const realFilm = REALS_SEATED ? bytes(REAL_FILM) : new Uint8Array()
+  const realMesh = REALS_SEATED ? bytes(REAL_RIG) : new Uint8Array()
 
   it('PASSES the video path when a completed run holds a real film', () => {
     const root = tempRoot()
@@ -531,7 +542,7 @@ describe('the analyst — the PATH verdicts (the runbook refusals, as code)', ()
   })
 })
 
-describe('the analyst — the transcript discovery (the collision law)', () => {
+describe.skipIf(!REALS_SEATED)('the analyst — the transcript discovery (the collision law) (skips when NOT SEATED: ' + SKIP_REALS + ')', () => {
   function mintTranscript(dir: string, name: string, mtimeMs: number): void {
     mkdirSync(dir, { recursive: true })
     const path = join(dir, name)
@@ -587,7 +598,7 @@ describe('the analyst — the transcript discovery (the collision law)', () => {
   })
 })
 
-describe('the analyst — the report', () => {
+describe.skipIf(!REALS_SEATED)('the analyst — the report (skips when NOT SEATED: ' + SKIP_REALS + ')', () => {
   it('renders the marks and the reasons a reader can act on', () => {
     const root = tempRoot()
     mintRun(root, { runId: 'run-film', status: 'completed', files: { 'film.mp4': bytes(REAL_FILM) } })
