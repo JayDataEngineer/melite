@@ -25,9 +25,19 @@ const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(HERE, '..', '..', '..', '..')
 const PACK = join(ROOT, 'bench', 'demo-state-seed', 'runs')
 const OUTPUT = join(PACK, 'output')
-const SEEDS = readdirSync(OUTPUT).filter((n) => n.startsWith('run-')).sort()
+// THE SEATED-PACK GUARD (the 2026-11-05 CI cure): bench/ is
+// machine-local BY LAW (.gitignore — per-machine artifacts, never
+// source), so a fresh CI clone carries no pack and the module-scope
+// readdir below died ENOENT before any arm could judge (the CI unit
+// tier red). The wall rides the seated-pack precedent
+// (gpu-tier-keyless.spec.ts's dsh-on-PATH, 13bc60fb4): the arms run
+// where the pack is SEATED — dev machines and demo machines, via the
+// pre-push full battery — and skip LOUDLY (never silently) where the
+// data cannot exist.
+const PACK_SEATED = existsSync(OUTPUT)
+const SEEDS = PACK_SEATED ? readdirSync(OUTPUT).filter((n) => n.startsWith('run-')).sort() : []
 
-test('the demo seed pack lists through the estate door, decodes in the panel, and every artifact exists', async () => {
+test.skipIf(!PACK_SEATED)('the demo seed pack lists through the estate door, decodes in the panel, and every artifact exists (skipped when the seed pack is not seated: bench/ is machine-local by law — the wall fires where the pack lives)', async () => {
   assert.ok(SEEDS.length >= 3, `the pack ships its seeds (found ${SEEDS.length})`)
   const { count, runs } = await listRunsAcross([PACK], 50, async () => false)
   assert.equal(count, SEEDS.length, 'every seed dir counts')
@@ -44,7 +54,7 @@ test('the demo seed pack lists through the estate door, decodes in the panel, an
   assert.equal(feed.runs.length, SEEDS.length, 'no row is dropped by the decoder')
 })
 
-test('every seeded artifact path exists on disk and the film seed thumbnails to its clip', () => {
+test.skipIf(!PACK_SEATED)('every seeded artifact path exists on disk and the film seed thumbnails to its clip (skipped when the seed pack is not seated: bench/ is machine-local by law — the wall fires where the pack lives)', () => {
   for (const seed of SEEDS) {
     const dir = join(OUTPUT, seed)
     const sidecar = join(dir, '_flow.json')
