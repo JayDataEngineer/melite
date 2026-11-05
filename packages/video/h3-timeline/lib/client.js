@@ -5041,6 +5041,9 @@ window.__ModuleLoader__.load({
 			});
 			const gapPin = keyframes.some((k) => pinDropVerdict(calls, k.frame) === null);
 			const refusalFace = laneErr ?? (gapPin ? studioCopy.gapRefusal : null);
+			const refuseCallsEdit = () => {
+				setLaneErr(studioCopy.callsDormantHint(callsFace.kind));
+			};
 			const barFps = filmMap?.fps ?? fps;
 			const barSeconds = (barTotal / barFps).toFixed(2);
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_melite_card_base_client.PaneShell, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.PaneHeader, {
@@ -5095,10 +5098,10 @@ window.__ModuleLoader__.load({
 						onKeyframeMove: (id, frame) => handleKeyframeMove(id, docFromFilm(frame)),
 						onKeyframeDelete: handleKeyframeDelete,
 						onTrackAdd: openTrackAdd,
-						onPromptUpdate: handlePromptUpdate,
-						onPromptMove: (id, s, e) => handlePromptMove(id, docFromFilm(s), docFromFilm(e)),
-						onPromptResize: (id, s, e) => handlePromptResize(id, docFromFilm(s), docFromFilm(e)),
-						onPromptDelete: handlePromptDelete,
+						onPromptUpdate: callsFace.face === "dormant" ? refuseCallsEdit : handlePromptUpdate,
+						onPromptMove: callsFace.face === "dormant" ? refuseCallsEdit : (id, s, e) => handlePromptMove(id, docFromFilm(s), docFromFilm(e)),
+						onPromptResize: callsFace.face === "dormant" ? refuseCallsEdit : (id, s, e) => handlePromptResize(id, docFromFilm(s), docFromFilm(e)),
+						onPromptDelete: callsFace.face === "dormant" ? refuseCallsEdit : handlePromptDelete,
 						onExtend: (newTotal) => handleExtend(docFromFilm(newTotal)),
 						tracks: VIDEO_TIMELINE_TRACKS.map((t) => ({ ...t })),
 						packed: true,

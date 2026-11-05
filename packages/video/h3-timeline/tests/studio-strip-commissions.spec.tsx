@@ -11,8 +11,8 @@
 //
 // Locale law: every word here comes from `studioCopy` — the pane authors
 // no literal, so the arm asserts the dictionary's own output.
-import { afterEach, describe, expect, it } from "vitest"
-import { cleanup, render } from "@testing-library/react"
+import { afterEach, describe, expect, it, vi } from "vitest"
+import { cleanup, fireEvent, render } from "@testing-library/react"
 import { createElement as h } from "react"
 import { StudioStripPane } from "../src/ui/studio/StudioStripPane.tsx"
 import type { DocCommission } from "../src/ui/studio/commissions.ts"
@@ -24,7 +24,7 @@ afterEach(cleanup)
 
 const noop = (): void => {}
 
-function strip(commissions: DocCommission[], calls: DocCall[] = []) {
+function strip(commissions: DocCommission[], calls: DocCall[] = [], overrides: Record<string, unknown> = {}) {
   return h(StudioStripPane, {
     calls,
     fps: 24,
@@ -66,6 +66,7 @@ function strip(commissions: DocCommission[], calls: DocCall[] = []) {
     addKeyframeWithImage: async () => {},
     enterKfView: noop,
     enterAudioView: noop,
+    ...overrides,
   } as never)
 }
 
@@ -311,5 +312,72 @@ describe("THE MOD-MODE CALLS FACE (2026-11-14 — the default call bar under a m
     // window and band share the film-end edge (the 124f tail)
     const band = container.querySelector("[data-planned-band]") as HTMLElement
     expect(parseFloat(band.style.left)).toBeCloseTo(parseFloat(seg.style.left), 5)
+  })
+
+  // (THE MOD-MODE EDIT DOORS, 2026-11-15 — the h3-modreplace-calls-bug
+  // audit) the add door already stands down under a dormant face
+  // (:460's onPromptAdd gate) but the FOUR per-call edit doors wired
+  // unconditionally — an operator could still move/resize/retext/delete
+  // a call the armed run would never read (dead-text authoring
+  // persisting beside the armed bag). This arm drives the REAL kit
+  // gestures against the REAL pane and expects: every write spy stays
+  // cold, the shared refusal slot carries the dictionary's dormant
+  // voice, and the PLAIN face keeps every door (the gate is the
+  // face's, never a broken wire).
+  it("ARM O — under a dormant face the four EDIT doors refuse loud and the writes never fire; the plain face keeps every door", () => {
+    const spies = {
+      update: vi.fn(), move: vi.fn(), resize: vi.fn(), del: vi.fn(),
+    }
+    const overrides: Record<string, unknown> = {
+      handlePromptUpdate: spies.update,
+      handlePromptMove: spies.move,
+      handlePromptResize: spies.resize,
+      handlePromptDelete: spies.del,
+    }
+    // TWO authored calls: call 0 is first (edge-l dead by law) but NOT
+    // last (edge-r is a resize grip, not the extend pull)
+    const second: DocCall = { text: "the second beat", start_frame: 90, end_frame: 96 }
+    const { container } = render(strip([REPLACE], [AUTHORED, second], overrides))
+    const clips = [...container.querySelectorAll("[data-prompt-clip]")] as HTMLElement[]
+    expect(clips, "both authored calls paint under the dormant face (ARM G's law)").toHaveLength(2)
+
+    // EDIT: double-click opens the inline editor; a change + blur is
+    // the commit path that calls onPromptUpdate
+    fireEvent.doubleClick(clips[0]!)
+    const editor = clips[0]!.querySelector("input") as HTMLInputElement
+    expect(editor, "double-click opens the inline editor").not.toBeNull()
+    fireEvent.change(editor, { target: { value: "retexted dead text" } })
+    fireEvent.blur(editor)
+
+    // MOVE: body drag (pointer down → window move → up)
+    fireEvent.pointerDown(clips[0]!, { button: 0, clientX: 100 })
+    fireEvent.pointerMove(window, { clientX: 140 })
+    fireEvent.pointerUp(window, { clientX: 140 })
+
+    // RESIZE: the right edge grip of the non-last clip
+    fireEvent.pointerDown(clips[0]!.querySelector('[data-prompt-edge="r"]')!, { button: 0, clientX: 150 })
+    fireEvent.pointerMove(window, { clientX: 170 })
+    fireEvent.pointerUp(window, { clientX: 170 })
+
+    // DELETE: the ✕ button
+    fireEvent.click(clips[1]!.querySelector("button")!)
+
+    expect(spies.update, "retexting a call the armed run never reads refuses").not.toHaveBeenCalled()
+    expect(spies.move, "moving a dormant call refuses").not.toHaveBeenCalled()
+    expect(spies.resize, "resizing a dormant call refuses").not.toHaveBeenCalled()
+    expect(spies.del, "deleting a dormant call refuses").not.toHaveBeenCalled()
+    // the refusal is LOUD, in the shared slot, in the dictionary's own
+    // dormant voice naming the armed kind
+    const refusal = container.querySelector('[data-testid="tl-strip-file-error"]') as HTMLElement
+    expect(refusal, "the shared refusal slot paints").not.toBeNull()
+    expect(refusal.textContent).toBe(studioCopy.callsDormantHint("replace"))
+
+    // THE PLAIN FACE KEEPS EVERY DOOR — same spies, no armed bag: the
+    // delete write FIRES (the gate is the dormant face's, never a
+    // broken wire)
+    const plain = render(strip([], [AUTHORED, second], overrides))
+    const plainClips = [...plain.container.querySelectorAll("[data-prompt-clip]")] as HTMLElement[]
+    fireEvent.click(plainClips[1]!.querySelector("button")!)
+    expect(spies.del, "the plain face's delete door still writes").toHaveBeenCalledTimes(1)
   })
 })

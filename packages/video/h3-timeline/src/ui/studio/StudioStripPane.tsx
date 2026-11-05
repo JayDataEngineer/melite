@@ -350,6 +350,11 @@ export function StudioStripPane({
   // same law's wording (studioCopy.gapRefusal).
   const gapPin = keyframes.some((k) => pinDropVerdict(calls, k.frame) === null)
   const refusalFace = laneErr ?? (gapPin ? studioCopy.gapRefusal : null)
+  // (THE MOD-MODE CALLS FACE — the edit doors' refusal, 2026-11-15)
+  // under a dormant face the strip's four per-call edit doors answer
+  // this, never the write: the dead-text law the add door already
+  // carries, in the shared refusal slot, the dictionary's own voice.
+  const refuseCallsEdit = () => { setLaneErr(studioCopy.callsDormantHint(callsFace.kind)) }
   // (D3, operator 2026-11-06: "calls bar only goes to 5.5s vs film
   // 'Final cut 9.06s · frame 145/162'") — the meta line rides the
   // SAME truth the bar axis below rides: the FILM's frames + fps
@@ -414,10 +419,22 @@ export function StudioStripPane({
       // (D7, the lane-add parity law) the keyframes track head's add
       // door — the up-arrow icon, the audio heads' own grammar.
       onTrackAdd={openTrackAdd}
-      onPromptUpdate={handlePromptUpdate}
-      onPromptMove={(id, s, e) => handlePromptMove(id, docFromFilm(s), docFromFilm(e))}
-      onPromptResize={(id, s, e) => handlePromptResize(id, docFromFilm(s), docFromFilm(e))}
-      onPromptDelete={handlePromptDelete}
+      // (THE MOD-MODE CALLS FACE — the edit doors, 2026-11-15) the four
+      // per-call edit doors stand down under a dormant face: editing a
+      // call the armed run will never read is the same dead-text
+      // authoring the add door below already refuses — the refusal is
+      // LOUD, in the shared laneErr slot, in the dictionary's dormant
+      // voice. The plain and prompt faces keep every door. The bench
+      // write door itself stays open — the agent's calls rewrite is
+      // lawful doc authoring (the three-door accord); this is the
+      // operator-posture law and it fires where the operator's
+      // gesture enters.
+      onPromptUpdate={callsFace.face === "dormant" ? refuseCallsEdit : handlePromptUpdate}
+      onPromptMove={callsFace.face === "dormant" ? refuseCallsEdit
+        : (id, s, e) => handlePromptMove(id, docFromFilm(s), docFromFilm(e))}
+      onPromptResize={callsFace.face === "dormant" ? refuseCallsEdit
+        : (id, s, e) => handlePromptResize(id, docFromFilm(s), docFromFilm(e))}
+      onPromptDelete={callsFace.face === "dormant" ? refuseCallsEdit : handlePromptDelete}
       // (D3's ghost, 2026-11-06) the tail pull arrives in FILM
       // frames; the doc write rides the INVERSE map — never a raw
       // linear delta. With a scaled window (film 162 ↔ doc 132) the
