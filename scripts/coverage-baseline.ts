@@ -741,6 +741,10 @@ export const COVERAGE_BASELINE: Record<string, {
   // on top; lift with the lane law's own arms)
   '**/packages/web-kit/contracts/src/familyLane.ts': { statements: 93.94, branches: 90.91, functions: 85.71, lines: 91.3 },
   '**/packages/web-kit/contracts/src/loraTypes.ts': { statements: null, branches: null, functions: null, lines: null },
+  // the lora-extension SSOT (lora audit F2/F3 move): the literal plus
+  // its two derived faces, measured 100x4 through the engine seam's
+  // spec (comfyui-cordis tests/lora-extension-ssot.spec.ts).
+  '**/packages/web-kit/contracts/src/loraExtensions.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   // (new-row pin 2026-10-28, the ratchet's rowless-file refusal caught
   // the clip-geometry stamp's landing: media-probe.ts (commit 20d0a760e)
   // — the mp4/wav byte probe moved to its zero-dep contracts seat to
@@ -937,10 +941,6 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web/melite-card-view/src/client/card-labels.ts': { statements: 92.86, branches: 83.33, functions: 85.71, lines: 88.89 },
   '**/packages/web/melite-card-view/src/client/card-mentions.ts': { statements: 98.18, branches: 96.15, functions: 90, lines: 97.56 },
   '**/packages/web/melite-card-view/src/client/card-tools.ts': { statements: 50, branches: null, functions: null, lines: 50 },
-  // the q3 frozen in-chat previews (2026-10-20): row pinned at the
-  // scoped measured face of its own suites (chat-preview.spec.ts +
-  // flow-cards-chat-preview.spec.tsx)
-  '**/packages/web/melite-card-view/src/client/chat-preview.ts': { statements: 91.67, branches: 82.61, functions: 50, lines: 90.91 },
   '**/packages/web/melite-card-view/src/client/cards-resource.ts': { statements: 99.34, branches: 97.08, functions: 97.98, lines: 99.62 },
   '**/packages/web/melite-card-view/src/client/cards-tab-body.tsx': { statements: 98.05, branches: 96.18, functions: 96.36, lines: 98.82 },
   '**/packages/web/melite-card-view/src/client/construct-card.tsx': { statements: 97.67, branches: 97.01, functions: 87.5, lines: 97.37 },
@@ -958,6 +958,9 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web/melite-card-view/src/client/rejection-voice.ts': { statements: 85.71, branches: 83.33, functions: 50, lines: 80 },
   '**/packages/web/melite-card-view/src/client/run-rescue-core.ts': { statements: 96.99, branches: 95.1, functions: 91.67, lines: 99.29 },
   '**/packages/web/melite-card-view/src/client/run-rescue.tsx': { statements: 98.25, branches: 94.91, functions: 95.45, lines: 99.04 },
+  // the loading-seat skeleton (commit 3eb2db82f): measured 100x4 at its
+  // own four-arm spec (skeleton-law.spec.tsx), the only importer-mount.
+  '**/packages/web/melite-card-view/src/client/skeleton.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/melite-card-view/src/client/sortable-tile.tsx': { statements: 94.74, branches: 96.26, functions: 92.86, lines: 98.28 },
   // 2026-11-06 follow-up regen: the disposition (af120dcb9) deleted the
   // null guard and cited the two defense arms; the file measures 100x4.

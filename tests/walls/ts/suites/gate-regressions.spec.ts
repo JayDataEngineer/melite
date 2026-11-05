@@ -697,7 +697,11 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // Repinned 631 -> 635 (2026-11-04, deliberate): the loras tray module
   // (lib/mods + lib/src/mods) and the authored-skill plane's two modules
   // (skillAuthored, skill-write) emit four new tracked .js files.
-  const LIB_CENSUS_PIN = 635;
+  // Repinned 635 -> 636 (2026-11-15, deliberate): the lora-extension
+  // SSOT moved to web-kit/contracts (lora audit F2), and its built emit
+  // packages/web-kit/contracts/lib/loraExtensions.js is the 636th
+  // tracked .js — the engine seam re-exports it, so the lib rides.
+  const LIB_CENSUS_PIN = 636;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {
