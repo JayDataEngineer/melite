@@ -8,10 +8,14 @@
 // just landed, a card-less flow rides the door's own doc — the
 // flow-doc exemption, see runTemplate).
 //
-// THREE modes, exactly one per call:
+// FOUR compositions, exactly one per call (the mode word stays one of
+// the four the flow-mode-voice wall pins — a stage press rides 'bench'):
 //   - {card, model, prompt?, params?} — a single card (the old
 //     card_run path, composed inside: manifest gate + runnability
 //     gate + defaults merge, then draft + {model} start).
+//   - {stage} — ONE bench stage alone (W-8, 2026-11-05): the named
+//     row's composition runs through the bench pass's own
+//     compose/wire-resolution/attribution path, never its siblings.
 //   - {flow, params?} — a NAMED template (the old flow_run path,
 //     reworked 2026-11-14 by the flows-are-compositions law: a
 //     card-stage flow MATERIALIZES onto the bench as its card rows
@@ -318,7 +322,7 @@ async function loadBench(estate, body, signal) {
  *  a settled FAILURE or a THROWN start is recorded and the pass
  *  CONTINUES to the remaining stages; only a pre-run REFUSAL (a doc
  *  the door will not accept) stops the pass. */
-async function runBench(estate, a, signal) {
+async function runBench(estate, a, signal, only) {
     const empty = { mode: 'bench', target: benchDraftIdOf(a.bench), error: 'the bench is empty — construct stages first (melite_construct)' };
     let b;
     try {
@@ -336,6 +340,14 @@ async function runBench(estate, a, signal) {
         : [];
     if (rows.length === 0)
         return empty;
+    // THE PER-STAGE PRESS (W-8, 2026-11-05): `melite_flow {stage}` runs ONE
+    // named bench stage's composition and nothing else — the pass skips
+    // every sibling row below. An unknown id refuses HERE, naming the
+    // bench's own ids and the add_stage cure — never a silent
+    // whole-bench press, never an empty-id guess.
+    if (only !== undefined && !rows.some((r) => r['id'] === only)) {
+        return { mode: 'bench', target: benchDraftIdOf(a.bench), error: `the bench holds no stage "${only}" — its stages are ${rows.map((r) => String(r['id'])).join(', ')}; add it with melite_construct add_stage or press one of those` };
+    }
     const draftId = typeof b['draft_id'] === 'string' ? draftIdOf(b['draft_id']) : benchDraftIdOf(a.bench);
     const target = `${benchDraftIdOf(a.bench)} @ rev ${String(b['rev'] ?? '?')}`;
     // THE FROZEN FACE'S HEAD (the stale-two-run audit, cure 1,
@@ -354,6 +366,12 @@ async function runBench(estate, a, signal) {
     const failures = [];
     for (const row of rows) {
         const stageId = row['id'];
+        // THE PER-STAGE PRESS (W-8): the named row alone rides the
+        // compose/wire-resolution/attribution path below — every sibling
+        // is skipped before any read, so a half-written sibling can never
+        // abort this press (F3-10) and the bench intent rides untouched.
+        if (only !== undefined && stageId !== only)
+            continue;
         const card = typeof row['card'] === 'string' && row['card'] !== '' ? row['card'] : '';
         // THE CACHE-HIT SKIP, folded (2026-10-01): the raw 'done' compare
         // re-ran every stage the estate settles 'completed' and every
@@ -422,10 +440,12 @@ async function runBench(estate, a, signal) {
                     : '';
                 return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId,
                     ...(intent !== '' ? { intent } : {}),
+                    ...(only !== undefined ? { stage: only } : {}),
                     error: `stage ${stageId} is the "${refFlow}" flow template reference (a retired melite_flow press landed it — the bench doors refuse the shape now; the flow runs through its own start door, not this bench pass); remove it with melite_construct remove_stage ${stageId} if the bench should run without the flow${undoCure}`, pass };
             }
             return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId,
                 ...(intent !== '' ? { intent } : {}),
+                ...(only !== undefined ? { stage: only } : {}),
                 error: `stage ${stageId} names no card — nothing to compose (melite_construct patch)`, pass };
         }
         const params = row['params'] !== null && typeof row['params'] === 'object' && !Array.isArray(row['params'])
@@ -457,6 +477,7 @@ async function runBench(estate, a, signal) {
                 if (!isStageWire) {
                     return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId,
                         ...(intent !== '' ? { intent } : {}),
+                        ...(only !== undefined ? { stage: only } : {}),
                         error: 'input ' + JSON.stringify(name) + ' is neither {stage, output} nor a resolvable binding — the bench pass maps only stage wires (got ' + JSON.stringify(ref ?? null) + ')', pass };
                 }
                 const upstreamId = String(ref['stage']);
@@ -467,6 +488,7 @@ async function runBench(estate, a, signal) {
                 if (url === '') {
                     return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId,
                         ...(intent !== '' ? { intent } : {}),
+                        ...(only !== undefined ? { stage: only } : {}),
                         error: 'input ' + JSON.stringify(name) + ' is wired to stage ' + JSON.stringify(upstreamId)
                             + ' which has no output yet — run it first (or clear the wire). The bench pass resolves wires to the upstream\'s last result; it never drops them.', pass };
                 }
@@ -543,7 +565,7 @@ async function runBench(estate, a, signal) {
             continue;
         }
         if (typeof started['error'] === 'string') {
-            return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId, ...(intent !== '' ? { intent } : {}), error: started['error'], pass };
+            return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId, ...(intent !== '' ? { intent } : {}), ...(only !== undefined ? { stage: only } : {}), error: started['error'], pass };
         }
         const runId = started['run_id'];
         let outcome;
@@ -570,7 +592,7 @@ async function runBench(estate, a, signal) {
             // render prints `[pending] — poll with run_status`, and the
             // background attribution link still lands the terminal stamp
             // on the stage row when the run settles.
-            return { mode: 'bench', target, draft_id: draftId, status: 'pending', stoppedAt: stageId, run_id: runId, ...(intent !== '' ? { intent } : {}), pass };
+            return { mode: 'bench', target, draft_id: draftId, status: 'pending', stoppedAt: stageId, run_id: runId, ...(intent !== '' ? { intent } : {}), ...(only !== undefined ? { stage: only } : {}), pass };
         }
         if (outcome.status !== 'done') {
             // THE PASS CONTINUES (F20 residual, 2026-10-30): a stage that
@@ -619,12 +641,24 @@ async function runBench(estate, a, signal) {
         return { mode: 'bench', target, draft_id: draftId, run_id: lastRun, status: 'stopped',
             stoppedAt: first.stage,
             ...(intent !== '' ? { intent } : {}),
+            ...(only !== undefined ? { stage: only } : {}),
             error: `stage ${first.stage} (${first.card}) ` + (first.status === 'threw' ? 'threw (a transport or resolution error — read pass[] for the rest)' : `ended ${first.status}`) + (failures.length > 1 ? ` — ${failures.length} stages failed (the pass still pressed every stage; read pass[])` : ' (the pass still pressed the remaining stages)'),
             ...(lastHosts.length > 0 ? { host_paths: lastHosts } : {}), pass };
     }
     return { mode: 'bench', target, draft_id: draftId, run_id: lastRun, status: 'done',
         ...(intent !== '' ? { intent } : {}),
+        ...(only !== undefined ? { stage: only } : {}),
         ...(lastHosts.length > 0 ? { host_paths: lastHosts } : {}), pass };
+}
+/** THE PER-STAGE PRESS (W-8, 2026-11-05): `melite_flow {stage}` runs ONE
+ *  named bench stage's composition and nothing else — the same
+ *  compose/wire-resolution/attribution path the bench pass rides
+ *  (runBench's `only` filter), never its siblings. Sibling stages and
+ *  the bench intent stay byte-identical; the receipt names the pressed
+ *  row (`stage`). Mode stays 'bench': the per-stage press is the bench
+ *  pass with a one-row filter, never a fifth composition. */
+async function runStage(estate, a, signal) {
+    return runBench(estate, { test: a.test, bench: a.bench }, signal, a.stage);
 }
 /** Signal-honoring sleep — the observer's poll cadence (the run-wire
  *  cadence, 1500ms). DECIDED per-plane (the dry-sweep's J5, recorded
@@ -1218,7 +1252,8 @@ export function meliteFlow(estate) {
         const a = (args ?? {});
         const target = typeof a.card === 'string' && a.card !== '' ? a.card
             : typeof a.flow === 'string' && a.flow !== '' ? a.flow
-                : Array.isArray(a.stages) ? `adhoc (${a.stages.length} stages)` : '?';
+                : typeof a.stage === 'string' && a.stage !== '' ? `stage ${a.stage}`
+                    : Array.isArray(a.stages) ? `adhoc (${a.stages.length} stages)` : '?';
         return { card: 'generic', title: `Run ${target}`, kind: 'execute' };
     };
     // Ledger row 8 (2026-09-10): defineTool wraps the literal — the
@@ -1229,7 +1264,8 @@ export function meliteFlow(estate) {
         name: 'melite_flow',
         description: 'Execute through the serial GPU queue — the ONE execution verb. Exactly one per call: bench (run THE shared '
             + 'bench exactly as it stands — what the user\'s Run press runs) | card (a card id + model — single '
-            + 'generation) | flow (a NAMED template from melite_load) | stages (engine-node stages on the fly: [{id, engine, '
+            + 'generation) | flow (a NAMED template from melite_load) | stage (ONE bench stage id — runs that stage alone '
+            + 'through the bench pass, siblings + intent untouched) | stages (engine-node stages on the fly: [{id, engine, '
             + 'params?, outputs?}] + optional connects — compiled at validate BEFORE any GPU is spent; a multi-stage graph '
             + 'presses the bench it lands (the draft press), the single stage the direct flow_inline start). Compositions '
             + 'LOAD the shared bench first (nothing mints fresh — one state, one log, one undo); every start rides the '
@@ -1246,7 +1282,11 @@ export function meliteFlow(estate) {
         parameters: {
             bench: {
                 type: 'boolean',
-                description: 'BENCH mode: run THE shared bench exactly as it stands (what the user\'s Run press runs). A JSON boolean — true, never the string "true". Exclusive with card/flow/stages.',
+                description: 'BENCH mode: run THE shared bench exactly as it stands (what the user\'s Run press runs). A JSON boolean — true, never the string "true". Exclusive with card/flow/stages/stage.',
+            },
+            stage: {
+                type: 'string',
+                description: 'PER-STAGE mode — the id of ONE stage on the shared bench (e.g. s_0); runs that stage alone through the same compose/wire-resolution/attribution path the bench pass uses, never its siblings. Exclusive with bench | card | flow | stages.',
             },
             card: {
                 type: 'string',
@@ -1540,7 +1580,8 @@ export function meliteFlow(estate) {
             const hasCard = typeof a.card === 'string' && a.card !== '';
             const hasFlow = typeof a.flow === 'string' && a.flow !== '';
             const hasStages = a.stages !== undefined;
-            const modes = [hasBench, hasCard, hasFlow, hasStages].filter(Boolean).length;
+            const hasStage = typeof a.stage === 'string' && a.stage !== '';
+            const modes = [hasBench, hasCard, hasFlow, hasStages, hasStage].filter(Boolean).length;
             /* The three guards below carry mode/target: the declared
              * output.schema requires them, and a bare {error} here died at
              * the tool-call validation layer — the schema error ("missing
@@ -1550,10 +1591,10 @@ export function meliteFlow(estate) {
              * 'flow' + target '' name nothing-selected, the same voice the
              * hasFlow guard uses. */
             if (modes === 0) {
-                return jsonClean({ mode: 'flow', target: '', error: 'one composition is required: bench (run what is there) | card (+model) | flow | stages (cards drafted on the fly)' });
+                return jsonClean({ mode: 'flow', target: '', error: 'one composition is required: bench (run what is there) | card (+model) | flow | stages (cards drafted on the fly) | stage (one bench stage alone)' });
             }
             if (modes > 1) {
-                return jsonClean({ mode: 'flow', target: '', error: 'exactly one composition per call: bench | card | flow | stages — never combined' });
+                return jsonClean({ mode: 'flow', target: '', error: 'exactly one composition per call: bench | card | flow | stages | stage — never combined' });
             }
             // THE UNKNOWN-ARG VOICE (029's self-critique #1, 2026-09-24):
             // a card param at FLOW top-level (qvoice_save beside card)
@@ -1561,7 +1602,7 @@ export function meliteFlow(estate) {
             // and the maker paid a generic missing-params refusal instead
             // of the pointed one. Unknown top-level keys refuse HERE,
             // naming the seat (card params ride INSIDE params).
-            const KNOWN_FLOW_ARGS = ['bench', 'card', 'model', 'flow', 'stages', 'connects', 'prompt', 'params', 'id', 'description', 'test'];
+            const KNOWN_FLOW_ARGS = ['bench', 'card', 'model', 'flow', 'stages', 'connects', 'prompt', 'params', 'id', 'description', 'test', 'stage'];
             const known = new Set(KNOWN_FLOW_ARGS);
             const stray = Object.keys(args).filter((k) => !known.has(k));
             if (stray.length > 0) {
@@ -1575,6 +1616,11 @@ export function meliteFlow(estate) {
             // exactly like construct's benchKeyOf fallback.
             const bench = benchKeyOfExec(exec);
             try {
+                if (hasStage) {
+                    return jsonClean(await runStage(estate, {
+                        stage: a.stage, test, bench,
+                    }, exec.signal));
+                }
                 if (hasBench) {
                     return jsonClean(await runBench(estate, { test, bench }, exec.signal));
                 }

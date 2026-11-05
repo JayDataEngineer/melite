@@ -3357,3 +3357,97 @@ describe('melite_flow bench — THE WIRE RESOLUTION LAW (session 7a82, autopsy P
     assert.equal(seen.calls.filter((c) => c.lane === 'runsStart').length, 0, 'no run started — the pass refused ahead of the wall')
   })
 })
+
+describe('melite_flow stage — THE PER-STAGE PRESS (W-8, 2026-11-05)', () => {
+  // F3-10's shape: one half-written stage aborts the WHOLE press ("the
+  // bench holds no ... — its stages are ..." is the unknown-id cousin;
+  // the burn itself is a compose-incomplete sibling blocking every
+  // other probe in the batch), and there is no per-stage verb to route
+  // around it. The bench below holds three card stages; s_2's wire
+  // dangles at a stage that does not exist, so a whole-bench press
+  // would press s_0 + s_1 then STOP at s_2 — the per-stage verb presses
+  // s_0 alone and leaves s_1/s_2 and the bench intent byte-identical.
+  function stageBench() {
+    return {
+      draft_id: 'd_stage', rev: 7, intent: 'three takes for the client cut',
+      stages: [
+        { id: 's_0', card: 'tts', params: {} },
+        { id: 's_1', card: 'sfx', params: {} },
+        { id: 's_2', card: 'sfx', params: {}, inputs: { clip: { stage: 's_9', output: 'default' } } },
+      ],
+    }
+  }
+
+  function stagePressEstate(bench: ReturnType<typeof stageBench>) {
+    return mockEstate([
+      (lane: string, _args: unknown[]) => {
+        if (lane === 'benchGet') return { status: 200, body: bench }
+        if (lane === 'runsStart') return { status: 202, body: { run_id: 'r_stage_0', status: 'queued' } }
+        if (lane === 'runsStatus') {
+          return { status: 200, body: { status: 'completed', stages: [{ id: 's_0', url: '/runs/a0.flac' }] } }
+        }
+        if (lane === 'draftsStagePatch') return { status: 200, body: { delivered: true, patched: ['runStatus', 'result'] } }
+        return undefined
+      },
+    ])
+  }
+
+  test('W-8 arm 1 (THE WALL): {stage:"s_0"} presses s_0 alone — one start, one-row pass, named receipt, siblings + intent untouched', async () => {
+    const bench = stageBench()
+    const before = JSON.stringify(bench.stages)
+    const seen = stagePressEstate(bench)
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({ stage: 's_0' }, fakeExec(AbortSignal.timeout(8000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.mode, 'bench', 'the mode word stays bench — the per-stage press is the bench pass with a one-row filter, never a fifth composition')
+    assert.equal(out.status, 'done')
+    assert.equal(out.stage, 's_0', 'the receipt names the pressed row')
+    assert.equal(out.target, 'bench-session-chat7 @ rev 7')
+    assert.equal(out.intent, 'three takes for the client cut', 'the bench intent rides untouched')
+    assert.equal(out.run_id, 'r_stage_0')
+    const pass = out.pass as Array<Record<string, unknown>>
+    assert.equal(pass.length, 1, 'the pass holds exactly the pressed row — never its siblings')
+    assert.equal(pass[0]!['stage'], 's_0')
+    assert.equal(pass[0]!['run_id'], 'r_stage_0')
+    const starts = seen.calls.filter((c) => c.lane === 'runsStart')
+    assert.equal(starts.length, 1, 'exactly one run is minted — a whole-bench press would mint s_0 + s_1 then stop at s_2')
+    for (const s of starts) {
+      assert.equal((s.args[0] as Record<string, unknown>)['bench_stage_id'], 's_0', 'no press of s_1/s_2 rides any start body')
+    }
+    assert.equal(JSON.stringify(bench.stages), before, 'the sibling rows are byte-identical across the press')
+  })
+
+  test('W-8 arm 2: an unknown stage id refuses naming the known ids, with zero starts', async () => {
+    const seen = stagePressEstate(stageBench())
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({ stage: 's_3' }, fakeExec(AbortSignal.timeout(6000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.mode, 'bench')
+    assert.match(
+      String(out.error),
+      /the bench holds no stage "s_3" — its stages are s_0, s_1, s_2; add it with melite_construct add_stage or press one of those/,
+      'the refusal names the unknown id, every known id, and the cure',
+    )
+    assert.equal(seen.calls.filter((c) => c.lane === 'runsStart').length, 0, 'no run starts on an unknown stage')
+  })
+
+  test('W-8 arm 3: {stage + bench} refuses in the exactly-one voice without touching the estate', async () => {
+    const seen = stagePressEstate(stageBench())
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({ stage: 's_0', bench: true }, fakeExec(AbortSignal.timeout(6000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.match(String(out.error), /exactly one composition per call: bench \| card \| flow \| stages \| stage — never combined/, 'the exclusivity voice names the stage arm')
+    assert.equal(seen.calls.length, 0, 'the refusal precedes every estate call')
+    // An empty-string stage counts as absent (the hasStage gate): the
+    // call refuses as nothing-selected, never as a stage press.
+    const seen2 = stagePressEstate(stageBench())
+    const tool2 = meliteFlow(seen2.request)
+    const out2 = await tool2.execute({ stage: '' }, fakeExec(AbortSignal.timeout(6000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.match(String(out2.error), /one composition is required/, 'an empty stage is absent — the call names nothing selected')
+    assert.equal(seen2.calls.length, 0)
+  })
+
+  test('W-8 presentCall face: the pressed stage rides the title', async () => {
+    const tool = meliteFlow(fakeEstate({}).estate)
+    const pc = (a: unknown) => tool.presentCall!(a as never)
+    assert.equal(pc({ stage: 's_0' })!.title, 'Run stage s_0')
+    assert.equal(pc({ stage: '' })!.title, 'Run ?')
+  })
+})
