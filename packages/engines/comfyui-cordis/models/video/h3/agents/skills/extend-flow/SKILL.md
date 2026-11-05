@@ -5,8 +5,6 @@ description: Extend a clip with more seconds — when the take is RIGHT and the 
 
 # Extend Flow
 
-> VERIFIED LIVE 2026-11-12 against receipt `contracts/receipts/2026-11-12-cards-h3-extend-anchor-fresh-join.md` (run run-2f1562f35f9f-88f40dfb — extend_seconds 3.75 on the engine grid with the 39-frame overlap joined live into one film at the 48 kHz film rate: the last-frame anchor law, the mask-link law, and the join-rate law all rendered, not just composed).
-
 ## The decision
 
 Extend when the clip's take is right and the story needs more of it.
@@ -19,8 +17,7 @@ per doc.
 
 One card, one bag: bench the h3-timeline card with the `extend` arm
 (`melite_construct add_stage` card "h3-timeline", the seats below in
-`params.extend[0]`; the flow id `extend-video` is a RUN-DOOR name —
-add_stage refuses it, naming its card riders) and the run starts at
+`params.extend[0]` — the card is the door) and the run starts at
 the user's Run press. The seats:
 
 - `source_clip` — the prior clip, a stageable video. An earlier run's
@@ -49,13 +46,12 @@ own tail. The whole clip also rides the motion-identity reference
 seat, so the continuation keeps the clip's world texture, not just
 its final pose.
 
-## THE SEAM LAW — say this before the press (measured 2026-11-13)
+## THE SEAM LAW — say this before the press
 
 The anchor is an IMAGE REFERENCE, not a pixel lock. The continuation
 is a fresh window at full denoise, so its first frame is a NEW pose,
-not the frame it was handed. Measured on the operator's 430 f
-kunoichi clip extended by 3.75 s (run-26363645ae2b-8861f195, `x0`
-430 f + `x1` 90 f, 1312×736):
+not the frame it was handed. Measured on a 430 f clip extended by
+3.75 s (`x0` 430 f + `x1` 90 f, 1312×736):
 
     adjacent frames inside the source : Δ2.8–4.1   (0–255 scale)
     source last frame → extension[0]  : Δ24.8
@@ -85,8 +81,7 @@ tail's file law — one mp4 under the run's `extend_film` prefix.
 Multi-window extends (stated > 362f) use BOTH join primitives: the
 in-chain windows assemble under ChainAssemble (`extend_chain`
 prefix), then prior file + assembly join through the concat's
-`append` seat — one film, two joins composed (the flow skill's "What
-runs" carries the full wiring). The
+`append` seat — one film, two joins composed. The
 extended film is itself a stageable clip: chained extends feed
 `extend_film` back as the next call's `source_clip` (the
 timeline-craft skill owns the drift-control law for long chains —

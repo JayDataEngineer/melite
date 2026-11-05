@@ -22,12 +22,12 @@ knob-side: repeat the subject block verbatim and the ambient bed in every
 window (the laws below), and let the engine own the seam geometry.
 
 To append seconds AFTER a finished film — instead of re-tiling — the
-extend-video flow anchors a fresh window on the film's last frame and
-joins the files; a stated append beyond one window composes N uniform
-windows in-chain there too — the extend-flow skill owns that multi-window
-contract.
+h3-timeline card's extend arm anchors a fresh window on the film's last
+frame and joins the files (the card is the door); a stated append beyond
+one window composes N uniform windows in-chain too — the extend-flow
+skill owns that multi-window contract.
 
-The N-window law (operator order 2026-09-04) is "ONE card = N calls =
+The N-window law is "ONE card = N calls =
 ONE run = ONE film" — the lane runs **N** windows (any N, default
 templated 4), not strictly 4. Fewer calls hold the last on tail windows
 (an airlock hold), so three calls is legal. The card composes the entire
@@ -150,9 +150,11 @@ model="h3-timeline"` + your window plan (no curl):
   with the nearest legal frame; nothing is silently re-framed.
 - The lane runs N windows (any N, default templated 4). Fewer calls hold
   the last on tail windows (an airlock hold), so three calls is legal.
-- Audio-guided variant: add top-level `"audio": "/abs/path.wav"` — window 1
-  runs the AddGuide variant (the card's `audio` knob resolves to the
-  guide-audio branch), later windows chain.
+- **DEAD — do not use:** the old "audio-guided variant: top-level `audio`"
+  advice named a param that exists NOWHERE in the h3 schema (the press
+  refuses as unknown param). Audio guidance enters ONLY via `audio_clips`
+  rows (file paths, positioned) or the `ref_audios` bus — there is no
+  top-level audio knob and no AddGuide route from one.
 - Same seed across windows = consistent world texture.
 - Artifacts (all under `<runId>/`, ComfyUI's counter suffix appended):
   `h3_t4_w<k>_*.mp4` per window (its own clip and its own audio stem),

@@ -6,8 +6,6 @@ description: "Professional headshot from a reference photo — identity locked b
 
 # Headshot
 
-> VERIFIED LIVE 2026-11-12 against receipt `contracts/receipts/2026-11-12-models-qwen-edit-21-docs.md` (run run-5248b62e167f-870a5339 — the editorial-headshot prompt rendered live end-to-end with the face held by pointing at the image, never described: the identity law this skill teaches). Geometry note: this doc's sizing passage was reworked to the render-sizing law after that press — the run proves the prompt pattern, density, and identity law; a post-rework stated-pair press is owed for the sizing seat.
-
 ## What it is for
 
 A headshot is a NEW PICTURE OF THE SUBJECT — the construct branch:
@@ -53,7 +51,7 @@ for. Leakage guard: nothing about the face changes at all.
 
 image-edit card, `model: qwen-img-edit-21`: `input_images` =
 [the photo], the prompt, fixed seed to iterate. THE RENDER SIZES
-ITSELF (the ground-truth cure, 2026-11-12): a headshot is vertical,
+ITSELF: a headshot is vertical,
 so state the pair on the card (match OFF, 2:3 or 3:4 portrait —
 e.g. 832×1216) and the sampler renders that exact canvas — never
 crop the photo to make it vertical (a crop throws away the pixels

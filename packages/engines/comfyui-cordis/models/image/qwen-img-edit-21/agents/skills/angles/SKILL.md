@@ -6,8 +6,6 @@ description: "Change the viewpoint — orbit in degrees, raise or drop the camer
 
 # Angles
 
-> VERIFIED LIVE 2026-11-12 against receipt `contracts/receipts/2026-11-12-models-qwen-edit-21-docs.md` (run run-058463e038ae-870748d6 — the 45-degree orbit prompt rendered live end-to-end with pose and scale held: the name-the-move-in-degrees pattern plus the identity law this skill teaches). Geometry note: this doc's sizing passage was reworked to the render-sizing law after that press — the run proves the prompt pattern, density, and identity law; a post-rework stated-pair press is owed for the sizing seat.
-
 ## What it is for
 
 An angle change orbits the CAMERA (or turns the subject's head) and
@@ -58,8 +56,7 @@ the same relative positions").
 
 image-edit card, `model: qwen-img-edit-21`: `input_images` =
 [the photo], the degrees-and-direction prompt, fixed seed. THE
-RENDER SIZES ITSELF (the ground-truth cure, 2026-11-12): a
-viewpoint change that also wants a wider/taller frame states the
+RENDER SIZES ITSELF: a viewpoint change that also wants a wider/taller frame states the
 new pair on the card (match OFF) and the sampler renders that exact
 canvas — never crop the anchor to reframe (pad to grow when the
 wider view needs more room).

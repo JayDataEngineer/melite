@@ -27,7 +27,6 @@ melite_construct add_stage — card "h3-timeline", params:
   "fps": 24,
   "seed": 59144818769896,
   "width": 1344, "height": 768,
-  "identity": "yellow-eared rabbit mascot, pink dress",
   "calls": [
     { "text": "opener beat — settle, then explode into a sprint",
       "start_frame": 0, "end_frame": 90,
@@ -47,11 +46,11 @@ LAWS baked in (all pre-GPU 4xx refusals, nothing silent):
   exactly where the previous one ended. Off-grid spans are refused with
   the nearest legal frame — never silently re-framed.
 - **`image` ONLY on calls[0].** It is the identity/guide reference for the opener.
-- **`identity` REQUIRED when the film opens from an image** (window 2+ have no image
-  input; this text rides every chain prompt as `[Identity, hold exactly] …`).
-  IDENTITY = CHARACTER ONLY: species, costume, colors. NEVER lighting/time-of-day/
-  weather (a leaked "at night" shifts the environment across the seam — witnessed).
-  Environment continuity is the chain latent's job.
+- **NAME THE SUBJECT in the opener's text** (species, costume, colors — the text
+  rides every chain prompt as `[Identity, hold exactly] …`; there is no identity
+  knob, the prompt text is the only carrier). IDENTITY = CHARACTER ONLY: NEVER
+  lighting/time-of-day/weather (a leaked "at night" shifts the environment across
+  the seam — witnessed). Environment continuity is the chain latent's job.
 - **Geometry: uniform 1344×768** (his default). Declared once; every window rides it.
 - **LayerSwitch.switch = false, ALWAYS** (chain-supremacy law, hard-coded): the song
   wrapper (SongContext) replaces his direct chain at the sampler when true and the
@@ -61,7 +60,7 @@ LAWS baked in (all pre-GPU 4xx refusals, nothing silent):
   Same seed across re-rolls keeps world texture.
 - **Seam:** 39 protected frames (his smallest legal AV boundary), trimmed at stitch.
 
-### Shot N — come back later, chain off a PRIOR run's latents
+### Shot N — come back later, extend a PRIOR run's film
 
 ```json
 {
@@ -71,24 +70,26 @@ LAWS baked in (all pre-GPU 4xx refusals, nothing silent):
     "fps": 24,
     "seed": 59144818769896,
     "width": 1344, "height": 768,
-    "continue_from": "run-6a977a0e-73c8af7fe6c0-1",
-    "identity": "yellow-eared rabbit mascot, pink dress",
-    "calls": [
-      { "text": "the rabbit rounds the bend at full speed",
-        "start_frame": 0, "end_frame": 56 }
+    "extend": [
+      { "source_clip": "/melite-media/runs/<run_id>/<file>.mp4",
+        "extend_prompt": "the rabbit rounds the bend at full speed" }
     ]
   }
 }
 ```
 
-- `continue_from` = a PRIOR run id (its latents live on the output mount under
-  `<run>/h3_context/clip_*.safetensors`). Window 1 of THIS card becomes a chain
-  window fed by the prior run's LAST clip — character/motion/ambience continue.
-  Works minutes or days later; latents persist.
-- **NO `image` on calls[0] of a continuation** (refused): the prior latent is the
-  anchor. `identity` required instead.
-- Beats are 51f from frame 0 (this shot's own timeline) — a carried window is 17f.
-- Chain more shots by pointing each new card at the PREVIOUS shot's run id.
+- `extend` is the continuation arm: `source_clip` stages the prior
+  run's film artifact (a `/melite-media/runs/<run_id>/<file>.mp4` URL
+  from the runs list lands; the arm anchors on its LAST FRAME
+  in-graph) and `extend_prompt` states the MOTION AND SOUND that
+  follow — name the subject again there (species/costume/colors; the
+  text is the only identity carrier).
+- Numeric seats (`extend_seconds`, `seed`) ride the arm's own
+  defaults (2.33s / seed 0); the engine grid refuses off-grid lengths
+  loud and names the nearest legal compositions.
+- The extend arm is the card's own (the one-call extend-video wrapper
+  flow retired 2026-11-14, flows-are-compositions — bench the card,
+  state the extend bag).- Chain more shots by extending each prior shot's film in turn.
 
 ### Music (any shot, or the final film)
 
@@ -123,9 +124,8 @@ Or put the whole track over the concatenated film with ONE ffmpeg amix pass.
 
 | Refusal | Meaning |
 |---|---|
-| `identity required` | image-anchored film (or continuation) without `params.identity` |
-| `continue_from: no h3_context` | prior run id has no saved latents |
-| `continue_from: image refused` | continuation cards[0] carried `image` |
+| extend grid off-length | `extend_seconds` off the engine grid — the door names the nearest legal compositions |
+| unknown extend source | `source_clip` is not a stageable video (a browser-local URL refuses; upload first) |
 | mirror-gate (-26/-27/-28) | unsanctioned inject key / severed link / sibling window drift |
 | uniform-geometry | windows declared divergent geometry |
 
@@ -135,7 +135,8 @@ Films are made ONE VERIFIED WINDOW AT A TIME. Look BEFORE more GPU burns:
 1. Beat lands → extract the seam: `ffmpeg -ss <sew_t-0.15> -i stitch -frames:v 1`
    and just past it. Same subject? Ship. Morph? The identity line drifted or an
    unsanctioned switch flipped (both impossible by default now).
-2. To extend a GOOD run: `continue_from` that run id (never re-render the head).
+2. To extend a GOOD run: stage its film as the extend arm's `source_clip`
+   (never re-render the head).
 3. One active run at a time (serial GPU). The user's stop control on the
    card halts a run. NEVER kill processes; gateway restarts are operator-only.
 

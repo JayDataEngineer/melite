@@ -6,8 +6,6 @@ description: "Poster or flyer layout — zones, type hierarchy, and the rendered
 
 # Poster
 
-> VERIFIED LIVE 2026-11-12 against receipt `contracts/receipts/2026-11-12-models-qwen-edit-21-docs.md` (run run-71735c425e1c-870a53d1 — the key-art poster prompt rendered live end-to-end with the subject carried as hero and the copy zones composed: the rendered-text doctrine in action). Geometry note: this doc's sizing passage was reworked to the render-sizing law after that press — the run proves the prompt pattern, density, and identity law; a post-rework stated-pair press is owed for the sizing seat.
-
 ## What it is for
 
 A poster is a NEW PICTURE built from the reference: the subject or
@@ -55,21 +53,21 @@ treatment; no extra words creep in around the edges (say "no
 additional text"). Under-editing guard: the result must clearly
 read as a DESIGNED poster — real hierarchy, real margins — not the
 photo with a caption. If the canvas grows (portrait poster from a
-landscape still), a bare prompt cannot grow it — the output
-inherits the anchor's frame: pad the canvas to the poster ratio
-first (the pad-and-instruct recipe — stage the wider frame as
-pixels, then prompt the band as scene to continue; the zooms
-skill's outpaint arm owns the recipe).
+landscape still), STATE THE GROWTH: this lane renders the stated
+canvas natively — `match_input_resolution: false` + the poster's
+`width`/`height` seats the source 1:1 inside the poster frame, then
+prompt the new band as scene to
+continue (the zooms skill's outpaint arm owns the recipe). Pad the
+canvas as pixels only when the exact frame must pre-exist upstream.
 
 ## Composing the run
 
 image-edit card, `model: qwen-img-edit-21`: `input_images` =
-[the source], the prompt, fixed seed. THE RENDER SIZES ITSELF (the
-ground-truth cure, 2026-11-12): state the poster's portrait pair on
+[the source], the prompt, fixed seed. THE RENDER SIZES ITSELF: state the poster's portrait pair on
 the card (match OFF, 2:3 or 3:4 — e.g. 832×1216) and the sampler
-renders that exact canvas — never crop the anchor to portrait (pad
-the canvas to grow it instead when the layout needs more room; the
-outpaint arm owns that recipe).
+renders that exact canvas with the source seated 1:1 inside — a
+WIDER stated pair is itself the outpaint (prompt the new space);
+never crop the anchor to portrait.
 
 ## Density tripwire
 

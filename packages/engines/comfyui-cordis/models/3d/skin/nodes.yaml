@@ -9,6 +9,8 @@ extensions:
   # (the ref the live engine serves) — content verified non-functional vs
   # the prior pin (category strings only; receipt
   # 2026-10-21-estate-pin-recure.md).
-  ref: 1b700240319185f096ca0bebb9801e56719610f7
+  # cfa126fc re-pin 2026-11-01: the DECL row lagged the f2b5934 vendor re-cure gitlink; the sync tripwire caught the lag.
+  # c4a9c6236056 re-pin 2026-11-01b: THE BLENDER LANE REMOVAL (operator: melite carries no blender) — RayRenderGLBViews deleted from the pack.
+  ref: c4a9c6236056681d1b00afba8134bfb1a5d2b9f2
   required: true
-  desc: SkinPack (deterministic detail maps, CPU) + SkinApply (GLB texture surgery) + RayRenderGLBViews (proof turnaround).
+  desc: SkinPack (deterministic detail maps, CPU) + SkinApply (GLB texture surgery). The proof-turnaround renderer (RayRenderGLBViews) was deleted with the blender lane (2026-11-01).

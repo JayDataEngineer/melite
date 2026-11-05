@@ -26,7 +26,17 @@ extensions:
     # 2026-10-23 pack cure re-pin (same as the motion lane's row —
     # ONE install unit): f283926 reads the chain's own artifact name
     # and is pushed to origin/main.
-    ref: 6685fa7f07706bf637d37b3e50ff1529f2408bfb
+    # ef0b656b61 re-pin 2026-11-01: the motion lane's rebind shim never ran
+    # (import a.b as c binds the re-exported FUNCTION over the submodule name,
+    # so _lm.get_env_var AttributeError'd on every load) — the shim is deleted;
+    # the pack resolves the checkpoint folder itself through the avatar
+    # category and instantiates through the lib's own Hydra tail.
+    # e7e0ffde re-pin 2026-11-13 (press block, same as the motion lane's row —
+    # ONE install unit): cure 2 — the global declaration the offline arm's
+    # model_info cache needed (UnboundLocalError on every live load).
+    # 1e7848f4 re-pin 2026-11-13 (press block): cure 3 — the variant dir walks the DECL
+    # home's tail (the direct door's root/variant join missed the provisioned kimodo level).
+    ref: 1e7848f473f8aea7ec63547d9627d8b26ac21076
     required: false
     desc: >-
       Image -> Anny (all-age parametric human model), both engines:

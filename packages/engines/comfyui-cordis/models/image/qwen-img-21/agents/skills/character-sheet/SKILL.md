@@ -60,8 +60,9 @@ carries `orthographic`, the white background, and the panel list — the
 other nine describe the character, never the layout.
 
 Hard output rules: no code fences, no JSON, English-only visible text in
-the image, and no pixel resolutions (the lane's `resolution` knob owns
-sizing; naming pixels in the prompt fights it).
+the image, and no pixel resolutions (sizing owns the `width`/`height`
+seats on the image-gen card you compose through — `resolution` names no
+knob there; naming pixels in the prompt fights the card).
 
 ## Composing the run
 

@@ -5,9 +5,7 @@ description: MiniMax H3 prompt rules — prose describing a scene unfolding over
 # MiniMax H3 — per-model prompt-enhance recipes (the model's agent-facing
 # interface file; agents/ = the AI agent's interface with the model).
 # Keys are ROUTE keys of this model — the loader enforces that every key
-# is in this dir's owned-route set. Migrated from
-# config/editor/enhance_prompts.yaml models: (2026-08-16), rewritten to
-# H3's NATIVE structured format 2026-08-17 against the official guide.
+# is in this dir's owned-route set.
 #
 # The authoritative prompt-format guides are vendored VERBATIM from
 # MiniMax-AI/MiniMax-H3 into this bundle, each as its own skill row:
@@ -25,9 +23,9 @@ description: MiniMax H3 prompt rules — prose describing a scene unfolding over
 # NOTE: h3 routes no longer compose the video_gen shared base — it bans
 # "cut to" / multiple scenes ("one continuous take per generation"),
 # which directly contradicts H3's native '[Shot 2] At 00:03.500, the
-# camera cuts to ...' multi-shot format (guide §4.2). video_gen stays
-# defined here for its other consumers (wan-vace, scail2-animate —
-# ltx-director-* died in the 2026-10-12 kill); h3 composes the native
+# camera cuts to ...' multi-shot format (guide §4.2). No route
+# composes video_gen today — it stays defined here as the reserved
+# generic base; h3 composes the native
 # video_h3_native base below.
 h3:
   role: "You are a MiniMax H3 video prompting expert. Rewrite the user's rough prompt into H3's native three-field prompt format (the official T2VA/I2VA/FL2VA/L2VA guide, condensed into the notes below; the full guide is skill row model:h3:h3-guide-base.md)."
@@ -67,9 +65,8 @@ h3-ref2va:
 
 # ── Shared blocks (reserved map, merged tree-wide) ──────────────────────
 # This file owns two shared blocks:
-#   video_gen — the generic single-take video base (retired central
-#     file's shared: section, 2026-08-16), composed by wan-vace,
-#     scail2-animate (ltx-director-* died 2026-10-12). h3 routes NO
+#   video_gen — the generic single-take video base. No route
+#     composes it today. h3 routes NO
 #     LONGER compose it (it bans
 #     cuts/multi-shot — H3's native format uses both).
 #   video_h3_native — H3's own base: the native-format rules common to
@@ -129,13 +126,9 @@ shared:
     - Emit the labeled fields as plain 'field: content' lines — no markdown
       headings, no bullet lists inside the fields.
 
-  # The output-format blocks (restored 2026-09-13, hour 24 stroke 10):
-  # the dead gateway's loader injected these tails in code; the
-  # migration into this file lost them — a recipe without a STRICT
-  # JSON clause yields prose and the enhance parser refuses. The
-  # file owns them now (the z-image law: img_gen_json lives in
-  # z-image's file). Text is the old served fixtures', dedented to
-  # this file's own grammar.
+  # The output-format blocks: a recipe without a STRICT
+  # JSON clause yields prose and the enhance parser refuses —
+  # this file owns the tails.
   video_gen_json: |
     ## Output format — STRICT
     Return ONLY a single JSON object. No markdown fences, no explanation,

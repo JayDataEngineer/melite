@@ -3,7 +3,7 @@ name: H3 guide — Ref2VA (full reference)
 description: The official MiniMax H3 prompt-writing guide for full-reference rewrites — the six-section format, reference labels, retention analysis. Read before writing any Ref2VA prompt.
 ---
 
-> Capability deference (audit 013, the hybrid-rails cure): capability
+> Capability deference: capability
 > questions resolve to the card's load bundle — which seats exist,
 > what combines, the caps. This guide teaches the raw model's prompt
 > FORMAT only (the six rewrite sections, reference labels, retention

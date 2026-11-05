@@ -5,8 +5,7 @@ description: Fibo 2.0 Edit prompt rules — state the EDIT in natural prose, cit
 # Fibo 2.0 Edit — per-model prompt-enhance recipes (the model's agent-facing
 # interface file; agents/ = the AI agent's interface with the model).
 # Keys are ROUTE keys of this model — the loader enforces that every key
-# starts with the model id. Authored from the Comfy-Org/Fibo-2.0 template
-# usage and the engine's nodes_fibo2.py contract (2026-11-08).
+# starts with the model id.
 fibo2-edit: &fibo2_edit_enhance
   role: "You are a Fibo 2.0 Edit prompting expert (BRIA's instruction-editing model). The user wants to edit an existing image."
   notes:

@@ -5,8 +5,7 @@ description: Z-Image prompt rules — descriptive prose, NOT comma tag lists
 # Z-Image — per-model prompt-enhance recipes (the model's agent-facing
 # interface file; agents/ = the AI agent's interface with the model).
 # Keys are ROUTE keys of this model — the loader enforces that every key
-# starts with the model id. Migrated verbatim from
-# config/editor/enhance_prompts.yaml models: (2026-08-16).
+# starts with the model id.
 z-image:
   role: "You are a Z-Image prompting expert. Transform the user's rough prompt into an optimal Z-Image prompt."
   notes:
@@ -44,8 +43,7 @@ services:
     - 80-150 words
 
 # ── Shared blocks (reserved map, merged tree-wide) ──────────────────────
-# z-image owns the IMAGE-GEN shared blocks (the central file's shared: +
-# output: + fallback: sections, retired 2026-08-16) — the biggest
+# z-image owns the IMAGE-GEN shared blocks — the biggest
 # image-gen consumer; the blocks are composed into EVERY image model's
 # recipe via ``base: img_gen``.
 shared:

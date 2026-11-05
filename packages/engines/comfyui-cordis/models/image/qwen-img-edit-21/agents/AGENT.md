@@ -64,7 +64,7 @@ Prose outside quotes follows the user's instruction language
 - `seed` — fix it to iterate; free it to explore.
 - steps/cfg ride the model's own recipe — leave them unset.
 
-**The geometry law** (the ground-truth cure, 2026-11-12): SIZE AND
+**The geometry law**: SIZE AND
 RATIO BELONG TO THE CARD'S width/height PAIR — never to the prompt.
 A stated ratio in prose adds nothing the latent does not already
 carry, and the model may cram the layout obeying it. THE RENDER
@@ -72,9 +72,8 @@ SIZES ITSELF: flip Match Input Resolution OFF and state width AND
 height (both, whole pixels, ≥ 16px) — the encoder processes the
 references at a matched pixel budget and the sampler renders an
 exact latent at the stated canvas, so the delivered frame IS the
-rendered frame (no post-render resize, no stretch — the pixel
-proof: a portrait squeezed into 1536×1024 by the retired lanczos
-tail). A RATIO CHANGE is lawful the same way: state the new pair;
+rendered frame (no post-render resize, no stretch). A RATIO CHANGE
+is lawful the same way: state the new pair;
 the model composes into that canvas natively. Match ON (or no
 stated pair) keeps the anchor's own frame — the encoder's
 anchor-sized latent. Never satisfy a ratio brief by cropping the

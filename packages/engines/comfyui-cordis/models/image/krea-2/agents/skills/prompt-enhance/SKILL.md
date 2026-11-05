@@ -7,8 +7,7 @@ description: Krea 2 prompt rules — continuous descriptive PROSE, not comma tag
 # All Krea 2 variants share the same prose-prompting style — the aliases
 # below keep that ONE recipe (anchors are file-local).
 # Keys are ROUTE keys of this model — the loader enforces that every key
-# starts with the model id. Migrated verbatim from
-# config/editor/enhance_prompts.yaml models: (2026-08-16).
+# starts with the model id.
 krea-2: &krea2_enhance
   role: "You are a Krea 2 prompting expert. Transform the user's rough prompt into an optimal Krea 2 prompt."
   notes:

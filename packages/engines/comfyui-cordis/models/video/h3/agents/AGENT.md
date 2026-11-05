@@ -5,7 +5,7 @@ description: "MiniMax H3 video studio — joint video + audio generation (native
 
 # MiniMax H3 — Video Studio
 
-> Capability deference (audit 013, the hybrid-rails cure): capability
+> Capability deference: capability
 > questions resolve to the card's load bundle — which seats exist,
 > what combines, the caps. The guides below teach the raw model's
 > prompt FORMAT only; the card's served surface owns the seats. Where

@@ -1,6 +1,6 @@
 # fit — ComfyUI extension dependencies (fit-card stroke 2b, 2026-09-06).
 # The fitting lane rides OUR authored pack (melite-poser-nodes — FitProp
-# placement surgery + RayRenderGLBViews proof views); bound live via the
+# placement surgery); bound live via the
 # the Manager queue install (github.com/JayDataEngineer/melite-poser-nodes). check_card_requires resolves this against object_info.
 extensions:
 - name: melite-poser-nodes
@@ -9,6 +9,8 @@ extensions:
   # (the ref the live engine serves) — content verified non-functional vs
   # the prior pin (category strings only; receipt
   # 2026-10-21-estate-pin-recure.md).
-  ref: 1b700240319185f096ca0bebb9801e56719610f7
+  # cfa126fc re-pin 2026-11-01: the DECL row lagged the f2b5934 vendor re-cure gitlink; the sync tripwire caught the lag.
+  # c4a9c6236056 re-pin 2026-11-01b: THE BLENDER LANE REMOVAL (operator: melite carries no blender) — RayRenderGLBViews deleted from the pack.
+  ref: c4a9c6236056681d1b00afba8134bfb1a5d2b9f2
   required: true
-  desc: FitProp (socket/fit/grip placement surgery) + RayRenderGLBViews (proof turnaround).
+  desc: FitProp (socket/fit/grip placement surgery). The proof-turnaround renderer (RayRenderGLBViews) was deleted with the blender lane (2026-11-01).

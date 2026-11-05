@@ -16,7 +16,16 @@ extensions:
     # reaches the cure (receipt
     # dev_docs/contracts/receipts/2026-10-23-infra-vram-headroom-gate.md
     # names the drift).
-    ref: 6685fa7f07706bf637d37b3e50ff1529f2408bfb
+    # 9a6a1d1a re-pin 2026-11-01: the DECL row lagged the f2b5934 vendor re-cure gitlink; the sync tripwire caught the lag.
+    # ef0b656b re-pin 2026-11-01 (F41 ride-along): the row lagged the 8a3022732 kimodo
+    # motion-cure gitlink (the pack's own HEAD) — the divergent-pin refusal against the
+    # 3d lane's identical row blocked every manifest regen; ONE install unit, one pin.
+    # e7e0ffd re-pin 2026-11-13 (press block): cure 2 — the global declaration for the
+    # model_info cache; ef0b656b's first LIVE load raised UnboundLocalError at
+    # _apply_network_patches :396 (the static verification never loaded live).
+    # 1e7848f4 re-pin 2026-11-13 (press block): cure 3 — the variant dir walks the DECL
+    # home's tail (the direct door's root/variant join missed the provisioned kimodo level).
+    ref: 1e7848f473f8aea7ec63547d9627d8b26ac21076
     required: true
     desc: KimodoLoader + KimodoTextToPose (the NVIDIA-package wrap — THE kimodo implementation) — text to SOMA-77 motion NPZ.
     # 2026-09-08 (red-closure lane): pip restated identical to the 3d
@@ -35,6 +44,8 @@ extensions:
     # (the ref the live engine serves) — content verified non-functional vs
     # the prior pin (category strings only; receipt
     # 2026-10-21-estate-pin-recure.md).
-    ref: 1b700240319185f096ca0bebb9801e56719610f7
+    # cfa126fc re-pin 2026-11-01: the DECL row lagged the f2b5934 vendor re-cure gitlink; the sync tripwire caught the lag.
+    # c4a9c6236056 re-pin 2026-11-01b: THE BLENDER LANE REMOVAL (operator: melite carries no blender) — RayRenderGLBViews deleted from the pack.
+    ref: c4a9c6236056681d1b00afba8134bfb1a5d2b9f2
     required: true
-    desc: RaySomaxBake — skins the motion NPZ onto a SOMAX-rigged character GLB.
+    desc: RaySomaxBake — skins the motion NPZ onto a SOMAX-rigged character GLB (pure CPU numpy; the pack's blender seats were deleted 2026-11-01).

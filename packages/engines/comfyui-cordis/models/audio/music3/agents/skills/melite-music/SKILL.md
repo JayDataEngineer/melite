@@ -12,7 +12,7 @@ Music via the music3 lane. Live-proven pattern.
 
 ## Lyrics law
 Tagged sections: [Intro] [Verse 1] [Chorus] [Verse 2] [Bridge] [Outro]. Match the Arrangement timeline order.
-Presets: draft_short (iteration), song (standard), final_long (delivery). Iterate on draft_short; only final render at song/final_long.
+Length rides the `duration` knob (the schema's own row): keep drafts short, render the final at the brief's full length.
 
 ## Run door
 Compose it with `melite_construct` `add_stage` (`card="music",

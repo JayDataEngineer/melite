@@ -1,6 +1,6 @@
 ---
 name: keyframe-flow
-description: Keyframe-first production loop — pose/edit stills cheaply with qwen-img-edit-2511 (4-step lightning + vn lora), then animate the approved frame through h3's first-frame anchoring. Use when a shot must start on an exact composition or a specific character pose.
+description: Keyframe-first production loop — pose/edit stills cheaply with qwen-img-edit-21 on the image-edit card, then animate the approved frame through h3's first-frame anchoring. Use when a shot must start on an exact composition or a specific character pose.
 ---
 
 # Keyframe Flow
@@ -8,11 +8,12 @@ description: Keyframe-first production loop — pose/edit stills cheaply with qw
 ## The loop
 
 1. **Base frame** — generate or take a still (z-image, scan, drawing).
-2. **Pose it** — qwen-img-edit-2511 lane: qwen-image-edit-2511 lightning
-   (4 steps, cfg 1.0). Iterate HERE — an edit costs seconds; a
-   re-render costs minutes. (A character-sheet lora is NOT boarded
-   on this family — pose iteration rides the plain lightning lane;
-   the family's boarded loras are the ones melite_load names.)
+2. **Pose it** — the qwen-img-edit-21 lane on the image-edit card
+   (steps/cfg ride the model's own recipe — leave them unset).
+   Iterate HERE — an edit costs seconds; a re-render costs minutes.
+   (A character-sheet lora is NOT boarded on this family — pose
+   iteration rides the plain edit lane; the family's boarded loras
+   are the ones melite_load names.)
 3. **Approve** — look at the frame: composition, wardrobe, lighting.
 4. **Animate** — h3 with the approved PNG as the image input (I2VA
    first-frame anchoring). The video's first frame IS that PNG.
@@ -37,13 +38,13 @@ window re-conditions on rendered frames, not re-imagined text.
 
 ## Run doors
 
-qwen-img-edit-2511: model qwen-img-edit-2511-lightning4, prompt, image /abs/base.png
+qwen-img-edit-21:  model qwen-img-edit-21, prompt, image /abs/base.png, seed 7
 h3:                model h3, prompt, image /abs/frame.png, seed 7
 
-All three recipes (standard / draft / final) ride the ByteDance 4-step
-lora — the pick changes geometry and the finishing rail, not the speed.
+All three recipes (standard / draft / final) share one lora bag —
+the pick changes geometry and the finishing rail, not the speed.
 Same seed family across a shot re-rolls; change seed for variation.
 
-(2026-11-02) The folded `h3-keyframe` route is retired — h3's own image
-input carries the anchoring (one model, one variant, one quant, three
-recipes). This skill left its old home with the route.
+There is no separate `h3-keyframe` route — h3's own image input
+carries the anchoring (one model, one variant, one quant, three
+recipes).

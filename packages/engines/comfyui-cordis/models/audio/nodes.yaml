@@ -38,12 +38,48 @@ extensions:
     # law's Layer C half. Prior aee6505 (2026-11-12): the boot env
     # assert (audit 016) — the pack refuses import when the shared
     # venv un-converges under it
-    # 58c8afd 2026-11-12 (tts NEW-1 pointer, same day as c8a718b):
-    # the fit gate's refusal names the REACHABLE cure — the estate's
-    # free door (comfy_manage free) chains /audiocore/release_warmed
-    # and drops the warmed torch seats the gate starves against, not
-    # just the Unload node no estate door can feed.
-    ref: 58c8afd47d863c9c7fb7f58ddb70068fe7876897
+    # 69a4838 2026-11-01 (the soundtrack merged-form wire, conditioning
+    # half): MeliteAudioTensorSlice — the stamped window's tensor seat
+    # (a typed AUDIO socket `audio_tensor`; the file slice node's Combo
+    # seat can never take a producer link) with the file node's exact
+    # slice law minus folder_paths; the h3 compose seats a spelled
+    # conditioning stamp here and the merge lands the producer's link
+    # (session 1's interim conditioning door deleted estate-side).
+    # ENGINE RESTART OWED (the pack is rsynced; the class serves only
+    # after the boot — the boot-fixture regen + the fixture-derived
+    # wall arm + the extension-manifest regen ride the consolidated
+    # window). Contained within it: 0023243 2026-11-01 (the film
+    # tail: WIRED_CLIP_SEATS=4 + optional wired_audio_1..4 AUDIO
+    # seats — a clips_json row MAY omit src IFF it carries wired: k
+    # (the h3 compose seats a $spell src on the seat; the merge lands
+    # the producer's link there); wired seats refuse foreign rates and
+    # unset seats loud; the $spell clip-src refusal names the cure;
+    # the stale env-arms docstring fixed — its own restart was owed
+    # then; both pins serve after ONE boot). Contained within that:
+    # nothing — straight child of e4e4c13.
+    # e4e4c13 2026-11-01 (vendor re-cure: audiocpp/qwen3_tts homes ride
+    # folder categories — the upstream env-strip wall's re-pin; the
+    # 0c6d045 DECL row lagged the f2b5934 gitlink move and the sync
+    # tripwire caught it). Contained within it: 0c6d045 2026-11-01
+    # (F30 vendor half: MeliteQVoiceCopy never renames the mint +
+    # receipts saved_qvoice_path beside voice_file). Prior pin 58c8afd
+    # (2026-11-12 tts NEW-1 pointer;
+    # the fit gate's refusal names the REACHABLE cure) is contained.
+    # ff7568a 2026-11-01 (TTS mod-surface quartet, the audit brief's
+    # P1): c8cda2a cures F51+F50 — voice_strength STEERS IDENTITY
+    # from the bank neutral (steered = neutral + (emb − neutral) ×
+    # strength; s=1.0 short-circuits byte-identical, measured live;
+    # no-bank degrades loud to identity; the ">0.9 PCM corr"
+    # acceptance was proven architecturally unsatisfiable — the
+    # embedding conditions the codec prefill, so PCM corr is a
+    # bit-identity detector, and the audit's 0.10 was its noise
+    # floor) and speaker_name leaves AudiocoreTTS's required block
+    # (the phantom required speaker, F50). ff7568a rides docstring-
+    # only (the render-truth note). Live engine serves c8cda2a
+    # since the 18:0x restart. Prior pin 69a4838 (the soundtrack
+    # conditioning wire) is contained. Pack walls:
+    # tests/test_identity_steering.py 11/11.
+    ref: ff7568a67fa6343d52a84f7c7d6130c649164954
     required: true
     desc: >-
       The ONE audio pack: Qwen3-TTS synthesis (qwen3_tts — card lane

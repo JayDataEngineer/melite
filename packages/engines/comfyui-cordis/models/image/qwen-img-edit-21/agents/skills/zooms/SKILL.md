@@ -6,8 +6,6 @@ description: "Change the framing — zoom in (tighten on the subject) or zoom ou
 
 # Zooms
 
-> VERIFIED LIVE 2026-11-12 against receipt `contracts/receipts/2026-11-12-models-qwen-edit-21-docs.md` (run run-c05b19aa5e19-870a5480 — the tight-portrait-crop prompt rendered live end-to-end with subject and scene held: the frame-change pattern this skill teaches).
-
 ## What it is for
 
 A zoom is a CAMERA-FRAME edit, not a content edit: the world stays,
@@ -33,14 +31,25 @@ leakage.
 
 ## Zoom out (the outpaint arm)
 
-The canvas grows, so the geometry law needs help FIRST: the output
-inherits the anchor's frame, so stage the wider frame as pixels
-BEFORE the run — this is the pad-and-instruct recipe (the only
-outpaint path; no outpaint knobs exist on any door):
+**THE NATIVE PATH: SIZE READJUST.** This lane RENDERS the stated
+canvas natively — flip `match_input_resolution: false`, state the
+wider `width`/`height`, and prompt the new space as outpainting. The
+anchor seats 1:1 inside the stated frame at its original scale (the
+proof: an 832-wide source stated 2160×1216 came back with the
+subject pixel-identical at dead center — only the new street was
+invented, mean |diff| concentrated exactly in the added margins).
+No staged pixels, no seam risk, one press.
+
+The pad-and-instruct recipe (stage the padded frame yourself, then
+edit) remains for the OTHER edit lane (fibo2 resizes the
+deliverable after the render — a wider pair there stretches the
+picture) and for the case where an exact pixel frame must exist
+upstream. It is a fallback there, never "the only outpaint path".
 
 1. Pad the anchor locally (PIL): paste the source at its edge of the
    target canvas, fill the new band with a color sampled from the
-   source's adjacent background.
+   source's adjacent background. (Only when the exact pixel frame
+   must pre-exist — otherwise state the size and skip to the prompt.)
 2. Feed the padded canvas as the anchor with an instruction prompt
    that names the band as content to fill ("Outpaint the solid dark
    band at the bottom: …continue the scene…").
@@ -72,9 +81,10 @@ third").
 ## Composing the run
 
 image-edit card, `model: qwen-img-edit-21`: `input_images` =
-[the photo], the prompt, fixed seed. In: no prep. Out: prep the
-wider anchor FIRST — the output inherits the anchor's frame, so
-the frame you want is the frame you stage.
+[the photo], the prompt, fixed seed. Out: for the zoom-out arm,
+`match_input_resolution: false` + the stated wider `width`/`height`
+IS the wider frame — the lane renders the stated canvas natively.
+Pad first only when the exact pixel frame must exist upstream.
 
 ## Density tripwire
 

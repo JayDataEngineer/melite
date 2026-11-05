@@ -58,19 +58,41 @@ extensions:
   desc: RTXVideoSuperResolution (bypassed group; class must register).
 - name: melite-utility-nodes
   url: https://github.com/JayDataEngineer/melite-utility-nodes
-  # 2026-11-12 F19 ChainUpscale loop: re-pinned to 7ba44fb (the h3
-  # chain store listing — GET /melite/h3-chain-runs and
-  # /melite/h3-chain-checkpoints?run= answer the run names and the
-  # mtime-ordered per-scene revisions off the engine's own h3_chains
-  # store, with the 400-missing-query / 404-unknown-run law; the
-  # execute door resolves the upscale card's bare run name through
-  # them; pack unit wall 4/4). Additive only: the boundary classes
-  # byte-untouched; the vendor gitlink rides the same parent commit.
-  ref: 7ba44fb6b59b18f6f16389656e676f2790c44ecb
+  # 2026-11-01 F41 MeliteUnload.video bench-pass seat + VRAM
+  # before/after receipt logging: re-pinned to 1d08d01. Prior pins
+  # 67ba385 (2026-10-31 F35 dual-layout read) + 7ba44fb (F19
+  # ChainUpscale loop) stay additive-only; the vendor gitlink rides
+  # the same parent commit.
+  # d81b4d43cc re-pin 2026-11-01: the DECL row lagged the f2b5934 vendor re-cure gitlink; the sync tripwire caught the lag.
+  # fb30c1b2 re-pin 2026-11-01 (F41): MeliteBoundary — the pass seam's wildcard
+  # passthrough the planMerge splice seats ON the stage-A → stage-B tensor wire,
+  # so the eviction is output-reachable (the dead-island cure); the eviction
+  # body factored into _release_memory(), shared with MeliteUnload (byte-identical).
+  # 3ad9692 re-pin 2026-11-14 (F62): the list door — MeliteCollectLatents
+  # (N scalar latents -> ONE list, pin order IS member order, gaps refuse
+  # loud) + MeliteListAt (one element back out by film-order index). The
+  # latent-handoff compose's wire shape: the engine's prompt format wires
+  # one link per pin, so the INPUT_IS_LIST refine handoff reads N chunks
+  # only through a single list producer.
+  # e048f9d re-pin 2026-11-14 (F61): MeliteOverlapJoinVideos — the refine
+  # seam's blend join. Consecutive refine windows re-render the same source
+  # span; the head-trim + concat tail resolved the duplication with a hard
+  # cut (the refine-seam audit's r89→r90 pop). The blend join crossfades each
+  # stated overlap (symmetric ramp, frames + soundtrack, assembled =
+  # Σ frames − Σ overlaps) — the skill doc's hand-ffmpeg xfade recipe made a
+  # compose seat. Prior pins stay additive-only; the vendor gitlink rides the
+  # same parent commit.
+  ref: 3ad969241a261bb90fcaaa227ea36bee4d3005b8
   required: true
   desc: >-
-    MeliteUnload / MeliteConcatVideos — the film's window-save boundary
-    and video join; ConcatVideos' optional append seats an exact wired
+    MeliteUnload / MeliteBoundary / MeliteConcatVideos /
+    MeliteOverlapJoinVideos — the film's window-save
+    boundary, the pass seam's in-graph eviction seat (F41: the merged plan's
+    stage-A → stage-B tensor wire rides it), the video join, and the refine
+    seam's blend join (F61: the overlap crossfade that resolves a carried
+    window's duplicated span — frames + soundtrack, C1 at both span
+    boundaries);
+    ConcatVideos' optional append seats an exact wired
     saved-file as the join's last member (the multi-window extend
     compose face, 2026-11-12). The card already requires this pack; no
     manifest installed it (extension census, 2026-10-13).
@@ -90,6 +112,23 @@ extensions:
     (torch/safetensors/numpy/Pillow are core-provided).
 - name: Comfyui_Minimax_h3_latent_Upscaler-Plus
   url: https://github.com/xmarre/Comfyui_Minimax_h3_latent_Upscaler-Plus
+  # 6364924 re-pin 2026-11-15 (F65): the refine handoff's parse call
+  # unwraps carry_prefix_frames through _value_at before the CSV parse —
+  # INPUT_IS_LIST wraps EVERY input as a list, so the node's own default
+  # "" died in its own validation ("must be a CSV string, got list") on
+  # the first F61/F62 proving press. Repo wall
+  # tests/test_h3_refine_carry_door.py judges the call site + shapes,
+  # green-red-green toggle-proven. Includes e26faa9 (F62 close-out: the
+  # e2e arm carries real rank-5 samples; a283a97 the latent handoff —
+  # carry_prefix_frames CSV of token-exact whole frame counts, one per
+  # chunk, film order, the first 0, stamps the protected zero-prefix
+  # video mask and the sequence body copies each chunk's exact
+  # post-refine tail into the next chunk's prefix before sampler 2, on
+  # the explicit model+positive path — a fully-protected prefix IS the
+  # deliberation, the carry no longer requires a refine_state).
+  # Prior pin 63649245 (dead upstream 2026-11-15: xmarre force-pushed
+  # past it; the comfyui-push-gate's live probe caught it); prior pin
+  # e26faa9 (2026-11-14, the F62 close-out re-pin).
   ref: fc58fb80246bc58383929d21e78f54cf87d6507a
   required: true
   desc: >-
@@ -118,7 +157,7 @@ extensions:
   # continuation window k≥2), but no manifest ever declared the
   # pack — the boot fixture's residue rows named the gap when the
   # regen facts leg refused the class-set.
-  ref: b80ea45a2fbec1105a7de6868fb1747308bf470c
+  ref: 5214645619109c95e1eef600b3a220e4ee782c54
   required: true
   desc: >-
     MiniMaxH3FiniteLatentContinuation / MiniMaxH3FiniteSegmentFinalize

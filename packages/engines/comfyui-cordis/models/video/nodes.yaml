@@ -21,7 +21,21 @@ extensions:
     desc: H3PeopleMask + H3GreyMannequins + H3SourceSlice (the Source Slice commit is HEAD) + swap/montage plans — the mask + mannequin + slice seats. No extra pip deps (upstream: torch/numpy/Pillow ride ComfyUI).
   - name: ComfyUI-MiniMaxH3-Context-Loop
     url: https://github.com/JayDataEngineer/ComfyUI-MiniMaxH3-Context-Loop
-    ref: e6d700d731a3803aa18a6c6036a24aa6d9fa5b3c
+    # 2026-11-13: c4d3371 — F-A, the advance lookup splits merged ids
+    # on the LAST dot only: _explore_output_nodes re-joined estate
+    # planMerge's "sid::nid.idx" advance targets into
+    # "sid::a.0.sid::b.0" and the multi-scene upscale advance died on
+    # NodeNotFoundError before the second scene delivered (_recurse's
+    # get_node). Bare output ids in dotted parents stay subgraph-relative
+    # (rsplit); namespaced/dotted ids ride verbatim;
+    # tests/_explore_output_nodes_unit_test.py pins both planes.
+    # 2026-11-01: 85bfa31 — the prompt-optimizer DELETION (operator
+    # ruling: any prompt optimizer is superseded by a skill; the
+    # H3_PROMPT_OPTIMIZER_ALLOWED_ORIGINS env seat dies whole with the
+    # /prompt-optimize + /project-assets/describe routes and the editor
+    # Optimize lane). Prior pin 2680ee2 (2026-11-01 a53e1df, F35
+    # _read_json file-naming) is fully contained.
+    ref: c4d3371e5fe7106bdfc07dc47c02e61c1394573c
     required: true
     desc: Clip chaining, checkpoints, masked targets (ContexMaskedTarget), MaskGridPreview, final assembly — the edit-target + loop seats. Estate-maintained fork (GPL-3.0, upstream history preserved): ethanfel force-pushed past the estate h3-chain gap cures (e6d700d7), orphaning the pinned line — the fork carries those bytes. Upstream floor 0.7.3+. No requirements file.
   - name: ComfyUI-Fantastic-MiniMaxH3-PromptBuilder

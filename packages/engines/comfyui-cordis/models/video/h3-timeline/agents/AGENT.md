@@ -5,7 +5,7 @@ description: Multi-window H3 timeline — plan windows, seam them on last frames
 
 # H3 Timeline (multi-window)
 
-The N-window law (operator order 2026-09-04): **ONE card = N calls = ONE run = ONE film**.
+The N-window law: **ONE card = N calls = ONE run = ONE film**.
 The card composes the entire multi-window film in a SINGLE ComfyUI
 submission (`h3-film` skeleton, ONE `native.execute`). Every window
 after the first seams on the previous one AUTOMATICALLY — the
@@ -17,9 +17,9 @@ file-tail law (windows save, then the estate's concat node stitches
 the saved files — never ffmpeg).
 
 Skills: `timeline-craft` (window planning, seams, audio continuity,
-budget), and for appending seconds AFTER a finished film: the
-`extend-video` flow (a fresh window anchored on the film's last
-frame, joined into one file — see its leaf skill). Compose door:
+budget), and for appending seconds AFTER a finished film: the card's
+`extend` arm (a fresh window anchored on the film's last frame, joined
+into one file — the extend-flow skill). Compose door:
 `melite_construct` `add_stage` with
 `card="h3-timeline", model="h3-timeline"`, seed N, your `params.calls`,
 onto the shared bench — live in the user's cards tab; the run starts at

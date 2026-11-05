@@ -13,12 +13,12 @@ skill does not own a downloader, a `sync.sh`, or a separate Manager client.
 ## Compose and run
 
 Use `melite_discover` → `melite_load` → `melite_construct`. Add the Music3
-card with the loaded caption and preset fields. Browser sessions stop at the
+card with the loaded caption and duration fields. Browser sessions stop at the
 user's Run press; a sanctioned headless commission may use `melite_flow` and
 `run_status`.
 
 The caption remains the primary creative control. Use the loaded schema for
-section structure, preset names, seeds, and duration. Do not infer a missing
+section structure, seeds, and duration. Do not infer a missing
 preset or silently substitute another music lane.
 
 ## Gate and delivery

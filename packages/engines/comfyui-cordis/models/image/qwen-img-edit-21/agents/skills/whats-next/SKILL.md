@@ -6,8 +6,6 @@ description: "Advance the moment — the next beat as a still: state deltas name
 
 # What's Next
 
-> VERIFIED LIVE 2026-11-12 against receipt `contracts/receipts/2026-11-12-models-qwen-edit-21-docs.md` (run run-6477ced34d3c-8707495a — the next-beat prompt rendered live end-to-end with the world held and the state advanced: the named-deltas pattern this skill teaches).
-
 ## What it is for
 
 A continuation is a NEW PICTURE OF THE SAME WORLD one beat later:
@@ -50,7 +48,12 @@ Under-editing: the beat must be legible without the caption —
 compare and the state has clearly advanced. Leakage: nothing
 unnamed moves; the world is not tidied, restyled, or re-populated.
 Identity: same people, same clothes — a continuation is not a
-recast.
+recast. FRAMING: every beat you
+name must live INSIDE the pictured frame — pointing at something
+outside the frame does not reveal it; it re-frames or re-stages
+the shot instead (zoom out first if the beat needs more room, or
+name what the in-frame evidence shows: "the sound came from the
+left" renders as heads turning, not as the off-screen source).
 
 ## Composing the run
 

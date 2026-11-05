@@ -2,18 +2,17 @@
 # 2026-09-04). The rig-transfer lane rides OUR authored pack
 # (melite-autorig-nodes — KimodoTransferWeights + SaveRiggedModel);
 # installed via the Manager queue (github.com/JayDataEngineer/melite-autorig-nodes).
-# SYSTEM REQUIREMENT (Law 0, 2026-09-07): the pack shells `blender -b`
-# for FBX export — the Blender binary must be on PATH, BLENDER_BIN set,
-# or the portable copy present (the ONE resolver law, features/008 M13,
-# 2026-10-21: env → PATH → portable → loud; the SKINTOKEN_BLENDER_BIN
-# foreign var is gone from the pack). No compose-time check runs: the
-# pack's own resolver raises LOUD at node time when the binary is
-# missing (the python card_requires.py gate died with the Python
-# estate, 2026-10-03 audit step 8). The installed pack serves this law
-# from its pinned ref; the ref bumps when the pack ships it.
+# NO BLENDER (operator 2026-11-01: melite carries no blender — it rides
+# the DSH profiles): the pack's FBX/retarget arms (blender_convert.py,
+# blender_retarget.py) and the blender binary requirement were deleted
+# from the pack at 11440daf6b37; KimodoExportFBX writes the rigged GLB
+# itself. The old SYSTEM REQUIREMENT paragraph (the `blender -b` PATH/
+# env/portable resolver law) died with those arms.
 extensions:
 - name: melite-autorig-nodes
   url: https://github.com/JayDataEngineer/melite-autorig-nodes
-  ref: add7154fec4d31c051b881cf5dae5be34fe1560e
+  # c94fdea814 re-pin 2026-11-01: the DECL row lagged the f2b5934 vendor re-cure gitlink; the sync tripwire caught the lag.
+  # 11440daf6b37 re-pin 2026-11-01b: THE BLENDER LANE REMOVAL — the pack's blender arms deleted.
+  ref: 11440daf6b3727176b42506188b76eaedc6d6560
   required: true
-  desc: KimodoTransferWeights (GPU KNN weight transfer) + SaveRiggedModel (persist). Requires Blender binary on PATH (FBX export).
+  desc: KimodoTransferWeights (GPU KNN weight transfer) + SaveRiggedModel (persist) + KimodoExportFBX (SOMA-77 weight transfer, GLB out — the blender arms deleted 2026-11-01).

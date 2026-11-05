@@ -6,8 +6,6 @@ description: "Production character/design sheet from one reference — the verba
 
 # Design Sheet
 
-> VERIFIED LIVE 2026-11-12 against receipt `contracts/receipts/2026-11-12-models-qwen-edit-21-docs.md` (run run-a3368f43ccea-877f316e — the 1,708-word ten-section draft rendered live into a clean native sheet with no card size stated and no post-resize: the density law and the contract-following behavior this skill teaches). Geometry note: this doc's sizing passage was reworked to the render-sizing law after that press — the run proves the prompt pattern, density, and identity law; a post-rework stated-pair press is owed for the sizing seat.
-
 ## What it is, and which sheet to reach for
 
 A design sheet is a single 3:2 landscape image carrying a character
@@ -102,7 +100,7 @@ Entity name: {{name}}
 - The `{{name}}` seat is the entity name the user gives (the
   sheet's title); everything else comes from looking at the
   reference.
-- THE RENDER SIZES ITSELF (the ground-truth cure, 2026-11-12): the
+- THE RENDER SIZES ITSELF: the
   card's width/height pair (match OFF) IS the render size — the
   encoder processes the references at a matched budget and the
   sampler renders an exact latent at the stated canvas, so a 3:2
@@ -130,12 +128,11 @@ sheet to the edit or video lane as the identity reference.
 
 ## Worked example — a complete ten-section draft
 
-The one clean run in the record consumed a draft of exactly this
-shape verbatim (provenance: run `run-a3368f43ccea` — the run's own
-request carried this draft as its prompt, 1,708 words, ten
-sections, anchor already 1536×1024 at 3:2, no card size pair, no
-post-render resize). Read it as the
-contract demonstrated, not as a template to copy: every zone is
+A draft of exactly this shape consumes verbatim as the edit
+prompt — 1,708 words, ten sections; with the anchor already
+1536×1024 at 3:2 it needs no stated pair and no post-render
+resize. Read it as the contract demonstrated, not as a template to
+copy: every zone is
 placed, every label is quoted, the identity locks are restated in
 full in §3 and again in §10.
 

@@ -5,8 +5,7 @@ description: Anima prompt rules — comma-separated Danbooru tags first, short c
 # Anima — per-model prompt-enhance recipes (the model's agent-facing
 # interface file; agents/ = the AI agent's interface with the model).
 # Keys are ROUTE keys of this model — the loader enforces that every key
-# starts with the model id. Migrated verbatim from
-# config/editor/enhance_prompts.yaml models: (2026-08-16).
+# starts with the model id.
 anima:
   role: "You are an anime image prompting expert for the Anima model (2B text-to-image, anime/illustration focused)."
   notes:
