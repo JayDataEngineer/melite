@@ -21117,8 +21117,9 @@ window.__ModuleLoader__.load({
 					for (const [k, v] of Object.entries(m)) if (k !== name) next[k] = v;
 					return next;
 				});
-				setGateSet([]);
-				setError(null);
+				const survivors = gateSet.filter((v) => v.field !== name);
+				setGateSet(survivors);
+				setError(survivors.length === 0 ? null : survivors.map((v) => gateRefusalVoice(v)).join("\n"));
 				setWriteFace((cur) => cur !== null && cur.includes("'" + name + "'") ? null : cur);
 				const settleDraftId = bench.draftId;
 				const settleStageId = stage.id;
@@ -21131,7 +21132,8 @@ window.__ModuleLoader__.load({
 			}, [
 				bench.draftId,
 				bench.rev,
-				stage.id
+				stage.id,
+				gateSet
 			]);
 			const servedBaseRaw = typeof stage.resolved === "object" && stage.resolved !== null && !Array.isArray(stage.resolved) ? stage.resolved : void 0;
 			const laneStrike = strikeDeadLaneStamps(spec, user, servedBaseRaw);

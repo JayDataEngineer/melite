@@ -1128,8 +1128,15 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       for (const [k, v] of Object.entries(m)) if (k !== name) next[k] = v
       return next
     })
-    setGateSet([])
-    setError(null)
+    // THE SHRINK LAW (the dupe census's P1-F, 2026-11-15): one row's
+    // unstamp retires ITS field's rows and leaves the survivors on the
+    // strip — the whole-set retire forced one press per ghost. The
+    // field-less (inert) rows stay: they name no key to clear. The
+    // seat's words shrink with the set (the strip mounts under
+    // `error`: nulling it would take the strip down with the row).
+    const survivors = gateSet.filter((v) => v.field !== name)
+    setGateSet(survivors)
+    setError(survivors.length === 0 ? null : survivors.map((v) => gateRefusalVoice(v)).join('\n'))
     // the WRITE FACE too: the trailing write's gate voiced the same
     // field-named refusal on its own face — its subject just left the
     // bench, so the words retire with it (a later refusal re-voices).
@@ -1144,7 +1151,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         if (!guardStage(settleStageId)) return
         settleCommit(() => { setWriteFace(unlandedWriteVoice(settleDraftId, settleStageId)) })
       })
-  }, [bench.draftId, bench.rev, stage.id])
+  }, [bench.draftId, bench.rev, stage.id, gateSet])
   // THE RESOLVED VALUE — derived per render (never state): exactly
   // what a Run composes, what the prompt tile and the enhance sweep
   // read, what the form shows. THE SERVED BASE (hour-26 stroke 15,
