@@ -36,7 +36,6 @@
 //  - drop the `f.name !== k.param_key` filter in the leaf's
 //    leafFields → the BAG-NEVER-A-FIELD arm reds (the mask kind's
 //    "Mask Bag" text input returns).
-/// <reference types="vite/client" />
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { createElement as h } from 'react'
 import { readdirSync } from 'node:fs'
@@ -48,6 +47,16 @@ import { LorasFields } from '@melite/comfyui-card-kit/pack-fields'
 import type { FormSpecDoc } from '../src/spec.ts'
 import { CardForm } from '../src/form.tsx'
 import { unbindEstateRemote } from '../src/estate-remote.ts'
+
+// The test tier's tsconfig carries no vite/client types (the package
+// does not depend on vite's type face), so the glob's own shape is
+// declared here — the runtime is vite's transform, this is only tsc's
+// face. The generic return keeps the seed module narrowed at its use.
+declare global {
+  interface ImportMeta {
+    glob<T>(pattern: string, options: { eager: true }): Record<string, T>
+  }
+}
 
 afterEach(() => { cleanup(); unbindEstateRemote(); vi.restoreAllMocks() })
 
