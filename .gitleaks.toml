@@ -57,7 +57,7 @@
       # web client bundles and contracts: slash-joined event-key
       # chains (provenance/runStatus/result/title).
       '''packages/web-kit/contracts/''',
-      '''packages/(motion/motion|web/card-base|web/infer-gallery|web/melite-card-view)/lib/client\.js$''',
+      '''packages/(motion/motion|web/card-base|web/infer-gallery|web/melite-card-view|web/melite-card-deck)/lib/client\.js$''',
       # engine + harness specs: node class names, fixture ids, and
       # pack-resolution pin SHAs.
       '''packages/engines/comfyui-(card-kit|cordis)/tests/''',
@@ -90,6 +90,21 @@
       '''packages/engines/comfyui-cordis/scripts/provision-models\.ts$''',
       '''packages/engines/comfyui-cordis/lib/scripts/provision-models\.(js|d\.ts)$''',
       '''tools/knip-budget\.mjs$''',
+    ]
+
+  [[rules.allowlists]]
+    description = "package tsconfig path tables — slash-joined source-path literals, reference data the entropy heuristic cannot tell from keys"
+    # Seated from the 2026-11-05 unpushed-range census (79 hits, all
+    # in the lora-SSOT tsconfig regen ff7e0aa74, all one class: the
+    # compiler paths tables mapping @melite/* specifiers to
+    # slash-joined src files — e.g. 'kit/contracts/src/loraExtensions'
+    # — never key material). Scoped to THIS rule only; the keyword
+    # rules below stay armed on every tsconfig.
+    paths = [
+      '''(^|/)tsconfig(\.[a-z]+)?\.json$''',
+      # same class, same census: the card-deck client bundle inline
+      # and the facade rows table carry the same src path literal.
+      '''tools/facade-rows\.json$''',
     ]
 
 [[rules]]
