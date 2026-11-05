@@ -5,7 +5,6 @@
   description = "Global allowlist"
   paths = [
     '''(.*?)(jpg|gif|doc|pdf|bin|svg|socket|png|md|lock|sum)''',
-    '''go\.sum$''',
   ]
 
 [[rules]]
@@ -31,6 +30,48 @@
       '''tests/walls/ts/fixtures/models-lib-sync-manifest\.json$''',
       '''tests/walls/ts/suites/timeline-agent-run-projection\.spec\.ts$''',
       '''\.js\.map$''',
+      # the drafts domain's emitted typert host adapter: its 32-44
+      # char base64 runs are generated reference tables, never keys;
+      # the keyword rules below stay armed on this file.
+      '''packages/estate/drafts/lib/typert\.host\.js$''',
+      # the same drafts domain's emitted typert remote-client adapter
+      # (the sibling of typert.host.js) — generated reference tables.
+      '''packages/estate/drafts/lib/typert\.remote-client\.js$''',
+    ]
+
+  [[rules.allowlists]]
+    description = "engine node class names, slash-bearing path literals, hex census SHAs, and submodule pins — reference data the entropy heuristic cannot tell from keys"
+    # Every row below was seated from a git-scoped census of the
+    # release-train range (293 hits, 71 files, all inspected): the
+    # matches are CamelCase engine node identifiers 32+ chars
+    # (MiniMaxH3FiniteLatentContinuation), slash-joined source path
+    # and event-key literals, 40-hex/64-hex census and pin SHAs, and
+    # one base64 PNG seed header — never symmetric key material.
+    # Scoped to THIS rule only; the keyword rules below stay armed
+    # on every one of these files.
+    paths = [
+      # h3 model family + timeline card code and tests: node class
+      # names and the family's census SHAs ride src, lib, and specs.
+      '''packages/models/h3/''',
+      '''packages/video/h3-timeline/''',
+      # web client bundles and contracts: slash-joined event-key
+      # chains (provenance/runStatus/result/title).
+      '''packages/web-kit/contracts/''',
+      '''packages/(motion/motion|web/card-base|web/infer-gallery|web/melite-card-view)/lib/client\.js$''',
+      # engine + harness specs: node class names, fixture ids, and
+      # pack-resolution pin SHAs.
+      '''packages/engines/comfyui-(card-kit|cordis)/tests/''',
+      '''packages/harness/melite-tools/test/''',
+      '''packages/web/melite-estate/tests/provisioning-coverage\.spec\.ts$''',
+      # e2e seeds and receipts: the base64 1x1 PNG header and engine
+      # path literals.
+      '''tests/e2e/''',
+      # wall suites and fixtures: bench path literals, boot-receipt
+      # sha256 census rows, tsconfig path tables.
+      '''tests/walls/''',
+      # vendored extension submodules: the gitlink entry IS the pin
+      # SHA — the ref itself, never a key.
+      '''vendor/comfyui_extensions/''',
     ]
 
 [[rules]]

@@ -1,7 +1,3 @@
-# === Editor tooling ===
-compile_commands.json
-.cache/
-
 # === Test coverage report (vitest --coverage html/text) ===
 coverage/
 
@@ -21,11 +17,14 @@ coverage/
 *.onnx
 
 # === Pipeline output (artifacts, not source) ===
-data/delivery/
-data/input/
 output/
 productions/
 test-output/
+# bench/ is machine-local by convention: benchmark runs and their
+# dumps/measurements are per-machine artifacts, never source (the
+# staged-trash gate judges pushed paths — an untracked bench/ cannot
+# ride a push).
+bench/
 
 # === Media artifacts (queue output) ===
 *.mp4
@@ -55,12 +54,14 @@ downloaded_files/
 # static png when the AI-gated screenshot is absent — a keyless
 # clone must carry it, so it rides the repo, not the ignore.
 !packages/web/melite-card-view/e2e/assets/*.png
+# mesh-door render fixture: tracked e2e evidence (same law as the
+# card-view negation above) — *.png must not swallow it.
+!packages/web/infer-gallery/e2e/*.png
 
 # === Runtime / scratch ===
 .dsh_work/
 .scratch/
 .pytest_cache/
-Testing/Temporary/
 
 # === Node.js ===
 **/node_modules/
@@ -70,9 +71,9 @@ __pycache__/
 *.pyc
 
 # === Secrets / credentials ===
-# The tracked estate default config (a local copy with machine paths —
-# engine URLs, model storage roots — stays uncommitted by convention;
-# the row keeps an untracked copy out of history).
+# The ROOT inference.config.json is tracked by design (portable
+# defaults); this row guards untracked copies elsewhere (machine
+# paths — engine URLs, model storage roots — never ride history).
 inference.config.json
 .env
 .env.*
@@ -94,16 +95,6 @@ Thumbs.db
 *.zip
 *.7z
 
-# === Web build artifacts ===
-# Prebundled three.js (~10 MB) — `npm install three` regenerates it
-# from node_modules; vendor/draco and vendor/examples/jsm are
-# committed source and stay.
-plugins/web/editor/public/vendor/build/
-# Skin preview snapshots (build outputs from the standalone-classic
-# skin renderer). Currently caught by *.png, but a non-PNG added to
-# preview/ would leak — dir rule makes the intent explicit.
-plugins/web/dsh/skins/**/preview/
-
 # === Docs site (the VitePress projection's disposable trees — the
 # canonical sources live in docs/ and README.md and stay tracked;
 # scripts/project-docs.mjs owns the generated tree) ===
@@ -124,8 +115,6 @@ dev_docs/
 /agent-sessions/
 /drafts/
 
-# === Dead C++ era (post python-orchestrator migration) ===
-third_party/
 # === Live C++ engine build dirs ===
 # kimodo / autoremesher / anycreature build out-of-source into
 # data/runtime/<engine>/build/ (cmake out-of-source layout). The
@@ -147,8 +136,6 @@ plugins/**/.venv
 # === Python plugin session scratch (uvicorn + starlette) ===
 # uvicorn + starlette dump a `.sesskey` on boot when the TestClient
 # spins up; it's a per-run session id, never source.
-/.sesskey
-plugins/**/.sesskey
 **/.sesskey
 
 # data/ — the data root (never commit state; README is the law doc)
@@ -191,7 +178,6 @@ data/runtime/dsh-harness-home/
 # plugins/gateway/scripts/link-vendored-platform.sh (harness layout), never committed
 vendor/cordis_plugins/*/lib/
 test-results/
-packages/harness/estate-queue/dist/
 
 # the 3D door browser wall harness bundle (built by `pnpm run test:web:mesh`)
 packages/web/infer-gallery/e2e/mesh-door/dist/
@@ -199,12 +185,10 @@ packages/web/infer-gallery/e2e/mesh-door/dist/
 # dsh lane runtime lock (the 3088 lock-wait guard's file)
 gateway.lock
 
-# the ship's per-package content stamp (scripts/ship-lane.sh writes it at
-# build time and re-verifies it on every ship, --no-build included: the
-# receipt is a HASH of src, so the file itself is build output, never a
-# tracked artifact — a tracked stamp would be a stamp nobody can falsify)
-packages/*/lib/.src-stamp
-packages/*/*/lib/.src-stamp
+# .src-stamp rows were removed (2026-11-15 ignore-cruft audit): the
+# stamps ARE tracked canonical artifacts — client-bundle-freshness
+# recomputes every tracked stamp and floors the census at four. No
+# ignore row may name them.
 .tsconfig.test.json
 # the test tier's per-worker SYNTHESIZED config: scripts/typecheck-tests.mjs
 # writes `.tsconfig.test.<pid>.json` beside each package tsconfig so parallel

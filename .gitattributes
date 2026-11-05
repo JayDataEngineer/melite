@@ -1,0 +1,7 @@
+# The checkout line-ending law (windows-latest CI red, 2026-10-31):
+# the index is 100% LF and every checkout must be byte-identical to
+# it on every OS — a CRLF windows checkout broke source-grepping
+# walls and the recipe parser (16 unit-red tests, PARAM-SEAT-PARITY
+# + its census cascade). text=auto keeps git's binary detection;
+# eol=lf pins the working tree on every platform.
+* text=auto eol=lf

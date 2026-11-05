@@ -1,6 +1,13 @@
 ## @tanstack/react-virtual + virtual-core ship lockfile entries published
 ## the same day; pnpm's default minimumReleaseAge rejects them.
 minimumReleaseAge: 0
+## THE ROOT SEAT'S DEV LINK (the dsh plugin-install plane): the root manifest
+## carries the melite carriers as registry-exact `dependencies` so a consumer
+## seat (`dsh plugin add github:JayDataEngineer/melite#<ref>`) resolves them
+## from the published channel. In THIS workspace the same names are members,
+## so pnpm links the member whenever its version satisfies the root's range —
+## one physical copy per name, never a registry twin beside the source tree.
+linkWorkspacePackages: true
 ## THE PLUGIN WORKSPACE (2026-08-21 law: plugins are REAL packages; the
 ## package manager materializes every cross-package link per-OS. No
 ## hand-rolled node_modules links are ever committed; a fresh clone +

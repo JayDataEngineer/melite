@@ -1,6 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
-  // RENAMED knip.json -> knip.jsonc (2026-11-30, the knip-cure audit):
+  // RENAMED knip.json -> knip.jsonc (the knip-cure audit):
   // knip parses comments only for the .jsonc/.json5 extensions (knip
   // dist/util/fs.js -> strip-json-comments with trailingCommas:true),
   // so the loader/seam arguments below live beside the entries they
@@ -19,7 +19,6 @@
     "data/**",
     "references/**",
     "packages/engines/comfyui-cordis/src/generated/vocab.ts",
-    "packages/web-kit/scripts/gen-registry.ts",
     "tests/walls/ts/suites/fixtures/reference-webserver-match.ts",
     "**/lib/**",
     "**/dist/**"
@@ -78,6 +77,13 @@
     "@melite/comfyui-card-kit",
     "@melite/comfyui-cordis",
     "@melite/contracts",
+    // The dsh.bundle seat plane (registry row root-seat-parity): the root
+    // declares its carriers for DSH consumers -- `dsh plugin add` installs
+    // them and DSH's reconcile() appends dsh.bundle.patch to the profile's
+    // dsh.profile.bundles. No root module imports them; that is the seat
+    // contract, not debt (the same argument as the provisioner block below).
+    "@melite/harness-provisioner",
+    "@melite/image-input-prep",
     "@melite/estate-provisioning",
     "@melite/models-anny",
     "@melite/models-fibo2-edit",
@@ -86,6 +92,13 @@
     "@melite/models-moss-sfx",
     "@melite/models-music3",
     "@melite/models-qwen-img-edit-21",
+    "@melite/motion-motion",
+    "@melite/three-client",
+    "@melite/video-h3-timeline",
+    "@melite-plugin/dsh-card-deck",
+    "@melite-plugin/dsh-card-view",
+    "@melite-plugin/dsh-gallery",
+    "@melite-plugin/dsh-estate",
     "@testing-library/react",
     "react",
     "tsdown"
@@ -162,7 +175,6 @@
         "@melite/image-upscale-tools",
         "@melite/models-anima",
         "@melite/models-anny",
-        "@melite/models-anycreature",
         "@melite/models-concat",
         "@melite/models-fibo2-edit",
         "@melite/models-fit",
@@ -214,7 +226,6 @@
       "ignoreDependencies": [
         "@melite/models-anima",
         "@melite/models-anny",
-        "@melite/models-anycreature",
         "@melite/models-concat",
         "@melite/models-fibo2-edit",
         "@melite/models-fit",

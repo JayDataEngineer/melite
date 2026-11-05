@@ -11,13 +11,46 @@ importers:
 
   .:
     dependencies:
-      lightningcss:
-        specifier: ^1.33.0
-        version: 1.33.0
+      '@melite-plugin/dsh-card-deck':
+        specifier: 0.2.0-alpha
+        version: link:packages/web/melite-card-deck
+      '@melite-plugin/dsh-card-view':
+        specifier: 0.2.0-alpha
+        version: link:packages/web/melite-card-view
+      '@melite-plugin/dsh-estate':
+        specifier: 0.2.0-alpha
+        version: link:packages/web/melite-estate
+      '@melite-plugin/dsh-gallery':
+        specifier: 0.2.0-alpha
+        version: link:packages/web/infer-gallery
+      '@melite/card-base':
+        specifier: 0.2.0-alpha
+        version: link:packages/web/card-base
+      '@melite/harness-provisioner':
+        specifier: 0.2.0-alpha
+        version: link:packages/harness/provisioner
+      '@melite/harness-tools':
+        specifier: 0.2.0-alpha
+        version: link:packages/harness/melite-tools
+      '@melite/image-input-prep':
+        specifier: 0.2.0-alpha
+        version: link:packages/image/input-prep
+      '@melite/motion-motion':
+        specifier: 0.2.0-alpha
+        version: link:packages/motion/motion
+      '@melite/three-client':
+        specifier: 0.2.0-alpha
+        version: link:packages/web/three-client
+      '@melite/video-h3-timeline':
+        specifier: 0.2.0-alpha
+        version: link:packages/video/h3-timeline
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.5
         version: 4.0.5(@deepseek-ai/cordis-plugin-include@1.0.10)(@deepseek-ai/cordis-plugin-loader@1.0.6)
+      '@deepseek-ai/dsh-api-gateway':
+        specifier: 0.2.1-rc.2
+        version: 0.2.1-rc.2(@deepseek-ai/cordis@4.0.5)
       '@deepseek-ai/dsh-brand':
         specifier: 0.2.1-rc.2
         version: 0.2.1-rc.2(@deepseek-ai/cordis@4.0.5)
@@ -30,9 +63,15 @@ importers:
       '@melite/estate-media':
         specifier: workspace:*
         version: link:packages/estate/media
+      '@melite/estate-queue':
+        specifier: workspace:*
+        version: link:packages/harness/estate-queue
       '@melite/estate-runs':
         specifier: workspace:*
         version: link:packages/estate/runs
+      '@melite/models-kimodo':
+        specifier: workspace:*
+        version: link:packages/models/kimodo
       '@shikijs/langs':
         specifier: 4.4.3
         version: 4.4.3
@@ -54,6 +93,9 @@ importers:
       happy-dom:
         specifier: ^20.10.2
         version: 20.13.1
+      istanbul-lib-report:
+        specifier: ^3.0.1
+        version: 3.0.1
       jsdom:
         specifier: ^29.1.1
         version: 29.1.1
@@ -69,6 +111,9 @@ importers:
       leo-profanity:
         specifier: 1.9.0
         version: 1.9.0
+      lightningcss:
+        specifier: ^1.33.0
+        version: 1.33.0
       mdast-util-from-markdown:
         specifier: 2.0.3
         version: 2.0.3
@@ -151,9 +196,6 @@ importers:
 
   packages/3d/img-to-mesh:
     dependencies:
-      '@deepseek-ai/dsh-client-ui-primitives':
-        specifier: 0.2.1-rc.2
-        version: 0.2.1-rc.2(@deepseek-ai/cordis@4.0.5)
       '@deepseek-ai/dsh-client-ui-renderer':
         specifier: 0.2.1-rc.2
         version: 0.2.1-rc.2(@deepseek-ai/cordis@4.0.5)
@@ -224,9 +266,6 @@ importers:
       '@melite/contracts':
         specifier: workspace:*
         version: link:../../web-kit/contracts
-      '@melite/models-anycreature':
-        specifier: workspace:*
-        version: link:../../models/anycreature
       '@melite/models-gem-soma':
         specifier: workspace:*
         version: link:../../models/gem-soma
@@ -443,9 +482,6 @@ importers:
       '@melite/models-anny':
         specifier: workspace:*
         version: link:../../models/anny
-      '@melite/models-anycreature':
-        specifier: workspace:*
-        version: link:../../models/anycreature
       '@melite/models-concat':
         specifier: workspace:*
         version: link:../../models/concat
@@ -585,9 +621,6 @@ importers:
       '@melite/three-client':
         specifier: workspace:*
         version: link:../../../../web/three-client
-      clsx:
-        specifier: '*'
-        version: 2.1.1
       react:
         specifier: ^19.3.0
         version: 19.3.0
@@ -604,9 +637,6 @@ importers:
 
   packages/engines/comfyui/src/action_cards/motion/ui:
     dependencies:
-      '@deepseek-ai/dsh-client-ui-primitives':
-        specifier: 0.2.1-rc.2
-        version: 0.2.1-rc.2(@deepseek-ai/cordis@4.0.5)
       '@melite/card-base':
         specifier: workspace:*
         version: link:../../../../../../web/card-base
@@ -628,9 +658,6 @@ importers:
       react:
         specifier: ^19.3.0
         version: 19.3.0
-      react-dom:
-        specifier: ^19.3.0
-        version: 19.3.0(react@19.3.0)
     devDependencies:
       '@types/node':
         specifier: 22.20.1
@@ -740,9 +767,6 @@ importers:
       '@deepseek-ai/dsh-typert-protocol':
         specifier: 0.2.1-rc.2
         version: 0.2.1-rc.2(@deepseek-ai/cordis@4.0.5)
-      zod:
-        specifier: 4.4.3
-        version: 4.4.3
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.5
@@ -768,9 +792,6 @@ importers:
       '@melite/contracts':
         specifier: workspace:*
         version: link:../../web-kit/contracts
-      zod:
-        specifier: 4.4.3
-        version: 4.4.3
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.5
@@ -827,9 +848,6 @@ importers:
       '@deepseek-ai/dsh-atomic-write':
         specifier: 0.2.1-rc.2
         version: 0.2.1-rc.2(@deepseek-ai/cordis@4.0.5)
-      '@deepseek-ai/dsh-subprocess':
-        specifier: 0.2.1-rc.2
-        version: 0.2.1-rc.2(@deepseek-ai/cordis@4.0.5)(@deepseek-ai/dsh-http-proxy@0.2.1-rc.2(@deepseek-ai/cordis@4.0.5))
       '@deepseek-ai/dsh-timeout':
         specifier: 0.2.1-rc.2
         version: 0.2.1-rc.2(@deepseek-ai/cordis@4.0.5)
@@ -849,9 +867,6 @@ importers:
       '@deepseek-ai/dsh-typert-protocol':
         specifier: 0.2.1-rc.2
         version: 0.2.1-rc.2(@deepseek-ai/cordis@4.0.5)
-      zod:
-        specifier: 4.4.3
-        version: 4.4.3
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.5
@@ -888,9 +903,6 @@ importers:
         specifier: 0.2.1-rc.2
         version: 0.2.1-rc.2(@deepseek-ai/cordis@4.0.5)
       '@deepseek-ai/dsh-brand':
-        specifier: 0.2.1-rc.2
-        version: 0.2.1-rc.2(@deepseek-ai/cordis@4.0.5)
-      '@deepseek-ai/dsh-home-paths':
         specifier: 0.2.1-rc.2
         version: 0.2.1-rc.2(@deepseek-ai/cordis@4.0.5)
       '@deepseek-ai/dsh-timeout':
@@ -1014,9 +1026,6 @@ importers:
       '@melite/video-h3-timeline':
         specifier: workspace:*
         version: link:../../video/h3-timeline
-      unrun:
-        specifier: ^0.3.1
-        version: 0.3.1
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.5
@@ -1357,22 +1366,6 @@ importers:
       '@melite/contracts':
         specifier: workspace:*
         version: link:../../web-kit/contracts
-    devDependencies:
-      '@deepseek-ai/cordis':
-        specifier: ^4.0.5
-        version: 4.0.5(@deepseek-ai/cordis-plugin-include@1.0.10)(@deepseek-ai/cordis-plugin-loader@1.0.6)
-      '@types/node':
-        specifier: ^22.20.0
-        version: 22.20.1
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
-  packages/models/anycreature:
-    dependencies:
-      '@melite/comfyui-card-kit':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-card-kit
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.5
@@ -1975,9 +1968,6 @@ importers:
       '@deepseek-ai/dsh-tools':
         specifier: 0.2.1-rc.2
         version: 0.2.1-rc.2(f4f5dafa2004c02f6afbbbc8518bca23)
-      '@deepseek-ai/schemastery':
-        specifier: ^3.18.5
-        version: 3.18.5
       '@melite-plugin/timeline':
         specifier: workspace:*
         version: link:../../web-kit/timeline
@@ -2170,9 +2160,6 @@ importers:
       react:
         specifier: ^19.3.0
         version: 19.3.0
-      react-dom:
-        specifier: ^19.3.0
-        version: 19.3.0(react@19.3.0)
     devDependencies:
       '@testing-library/react':
         specifier: '*'
@@ -2691,9 +2678,6 @@ importers:
       '@melite/models-anny':
         specifier: workspace:*
         version: link:../../models/anny
-      '@melite/models-anycreature':
-        specifier: workspace:*
-        version: link:../../models/anycreature
       '@melite/models-concat':
         specifier: workspace:*
         version: link:../../models/concat
