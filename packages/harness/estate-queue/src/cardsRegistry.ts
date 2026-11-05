@@ -93,6 +93,7 @@ import type { FlowsSeatService } from "./flowsData.ts";
 // stateRoots()'s `this.ctx.queue` deref relies on; without it a
 // program reaching this file without service.ts sees a bare Context)
 import type { QueueService } from "./service.ts";
+import { resolveSourceRefs } from "./runsSourceEcho.ts";
 import { CardArmError, EnvelopeRefusal, phaseRefusal, phaseRefusalCode } from "./cardsArmError.ts";
 import { RUNS_ERROR_CODES } from "./runsErrorCodes.ts";
 export { CardArmError } from "./cardsArmError.ts";
@@ -348,6 +349,30 @@ function bagSourceBytes(leaf: string): Uint8Array | null {
   return null;
 }
 
+/** Resolve a probe source through the estate's OWN roots first (the
+ *  runs trees a prior stage's render left behind — runsSourceEcho's
+ *  resolver, the run door's own vocabulary: run-tails land in
+ *  `<root>/output/<runId>/<rel>`, absolutes verbatim), then the
+ *  compose spellings. A produced clip is the bench's actual posture
+ *  (the rev-122 burn's 7.5 s film): the three compose candidates
+ *  never saw it, and the window probes silently went deaf. A source
+ *  that resolves nowhere answers null — the belt, never an invented
+ *  refusal. */
+function bagSourceBytesViaRoots(leaf: string, roots: readonly string[]): Uint8Array | null {
+  try {
+    for (const row of resolveSourceRefs([leaf], roots)) {
+      const st = statSync(row.file);
+      if (!st.isFile()) continue;
+      return new Uint8Array(readFileSync(row.file));
+    }
+  } catch {
+    /* a leaf the estate roots cannot resolve (a dead run tail, a
+     * grammar miss) falls to the compose spellings — the compose
+     * door's own voice owns dead sources, never this probe */
+  }
+  return bagSourceBytes(leaf);
+}
+
 /** THE SILENT-SOURCE REFUSAL (friction F26, round 6): a bag source
  *  with no audio track used to die mid-run inside the vendored VHS
  *  extractor's raw ffmpeg dump — after the GPU bill. The door now
@@ -395,7 +420,7 @@ function refuseSilentSource(card: string, params: Record<string, unknown>): void
  *  length, the window's start, and the cure. Same probe posture as
  *  the silent-source refusal: only a positive reading refuses; a
  *  clip this probe cannot read stays the engine's own belt. */
-function refuseRefineWindowPastClip(card: string, params: Record<string, unknown>): void {
+function refuseRefineWindowPastClip(card: string, params: Record<string, unknown>, roots: readonly string[]): void {
   if (card !== "h3-timeline") return;
   const bag = params["refine"];
   if (!Array.isArray(bag)) return;
@@ -407,7 +432,7 @@ function refuseRefineWindowPastClip(card: string, params: Record<string, unknown
     const rawStart = rec["start_seconds"];
     const start = typeof rawStart === "number" && Number.isFinite(rawStart) ? rawStart : 0;
     if (!(start > 0)) continue;
-    const bytes = bagSourceBytes(leaf);
+    const bytes = bagSourceBytesViaRoots(leaf, roots);
     if (bytes === null) continue;
     let probed: ProbeResult;
     try {
@@ -447,14 +472,14 @@ function refuseRefineWindowPastClip(card: string, params: Record<string, unknown
  *  probe cannot read stays the engine's own belt. end_seconds
  *  beyond the last frame stays the loader's documented clamp,
  *  never this door's. */
-function refuseTrimStartPastClip(card: string, params: Record<string, unknown>): void {
+function refuseTrimStartPastClip(card: string, params: Record<string, unknown>, roots: readonly string[]): void {
   if (card !== "trim") return;
   const leaf = typeof params["clip"] === "string" ? params["clip"].trim() : "";
   if (leaf === "") return;
   const rawStart = params["start_seconds"];
   const start = typeof rawStart === "number" && Number.isFinite(rawStart) ? rawStart : 0;
   if (!(start > 0)) return;
-  const bytes = bagSourceBytes(leaf);
+  const bytes = bagSourceBytesViaRoots(leaf, roots);
   if (bytes === null) return;
   let probed: ProbeResult;
   try {
@@ -2212,12 +2237,16 @@ export class CardRegistryService extends Service {
     refuseSilentSource(prep.card, prep.params);
     // THE REFINE WINDOW RANGE REFUSAL (F36): a window whose
     // start_seconds runs past its own source clip refuses here,
-    // zero GPU, with the clip and the probed length named.
-    refuseRefineWindowPastClip(prep.card, prep.params);
+    // zero GPU, with the clip and the probed length named. The
+    // source resolves through the estate's own roots first — a
+    // produced clip (a prior stage's output) is a real posture,
+    // not a probe deaf spot (F3-08).
+    refuseRefineWindowPastClip(prep.card, prep.params, this.stateRoots());
     // THE TRIM START RANGE REFUSAL (F3-08): a trim whose start lands
     // past the source's last frame refuses here too — same belt,
-    // zero GPU, the trim card's own 24 fps contract.
-    refuseTrimStartPastClip(prep.card, prep.params);
+    // zero GPU, the trim card's own 24 fps contract, the same
+    // estate-roots resolution.
+    refuseTrimStartPastClip(prep.card, prep.params, this.stateRoots());
     // THE BOARD CHECK RIDES THE RUN SEAT TOO (the behavioural
     // re-check's BYPASS 1: the bench refused an unoffered model
     // address, but `validate` with the SAME address composed the

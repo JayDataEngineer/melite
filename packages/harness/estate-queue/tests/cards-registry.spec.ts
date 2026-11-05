@@ -1060,6 +1060,80 @@ describe("phase1Card + phase2Card (the two phases, one compose seat)", () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+  it("THE PRODUCED CLIP RESOLVES (friction F3-08, the clip-source seat): a trim AND a refine window whose source is a prior stage's output — spelled as a run tail only the estate's own roots resolve — refuse past the tail in the same words", async () => {
+    // THE REV-122 MISS: the bench composes over PRODUCED clips (a
+    // prior stage's render in the run tree), but the window probes
+    // resolved only the three compose spellings — a produced leaf
+    // read as null and the arm silently went deaf while the live
+    // bench composed green (start 99 on a 7.5 s film, rev 122). The
+    // door now resolves through the queue seat's own roots
+    // (runsSourceEcho's resolver) before the compose spellings; the
+    // burn face refuses identically on both window seats.
+    const root = mkdtempSync(join(tmpdir(), "trim-produced-"));
+    const runId = "run-deadbeef-f308wall";
+    const gen = join(root, "output", runId, "gen");
+    mkdirSync(gen, { recursive: true });
+    // 90 frames at the film clock = 3.75s (the log's own shape)
+    writeFileSync(join(gen, "f308-wall.mp4"), craftTimedMp4(928, 1344, 90));
+    const c2 = new Context();
+    new FlowsSeatService(c2);
+    (c2 as unknown as { queue: unknown }).queue = { stateRoot: root, stateRoots: [root] as string[] };
+    const svc2 = new CardRegistryService(c2);
+    await svc2.prime();
+    const produced = `${runId}/gen/f308-wall.mp4`;
+    try {
+      // THE TRIM BURN FACE on the produced spelling
+      await expect(
+        svc2.phase1Card({ card: "trim", clip: produced, start_seconds: 99, end_seconds: -1 }, "trim"),
+      ).rejects.toThrow(
+        /the trim window starts at 99s \(skip 2376 frames at the trim card's 24 fps\) but "run-deadbeef-f308wall\/gen\/f308-wall\.mp4" carries 90 frame\(s\) \(3\.75s\)/,
+      );
+      // THE REFINE FACE rides the same resolver: the same produced
+      // spelling past the tail refuses with the film clock's words
+      await expect(
+        svc2.phase1Card(
+          { prompt: "a yard at dusk", refine: [{ source_clip: produced, refine_prompt: "sharpen the leaves", start_seconds: 99 }] },
+          "h3-timeline",
+        ),
+      ).rejects.toThrow(
+        /the refine window starts at 99s \(skip 2376 frames at the film clock\) but "run-deadbeef-f308wall\/gen\/f308-wall\.mp4" carries 90 frame\(s\)/,
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+  it("THE CLIP-SOURCE BELT (friction F3-08): a produced spelling the estate roots cannot resolve still composes, and a produced clip inside its own tail hears no voice — the probe refuses only on a positive reading", async () => {
+    // The belt posture is the cure's own contract: the probe may not
+    // invent a refusal for a leaf it cannot see (a dead run tail is
+    // the run door's own voice), and a live produced clip whose
+    // window starts INSIDE it stays belt — only past the tail
+    // refuses.
+    const root = mkdtempSync(join(tmpdir(), "trim-belt-"));
+    const c2 = new Context();
+    new FlowsSeatService(c2);
+    (c2 as unknown as { queue: unknown }).queue = { stateRoot: root, stateRoots: [root] as string[] };
+    const svc2 = new CardRegistryService(c2);
+    await svc2.prime();
+    const noTrimVoice = async (bagBody: Record<string, unknown>): Promise<void> => {
+      try {
+        await svc2.phase1Card(bagBody, "trim");
+      } catch (e: unknown) {
+        expect(String((e as Error).message)).not.toMatch(/trim window starts/);
+      }
+    };
+    try {
+      // a dead run tail: no output tree, no compose spelling, no
+      // input-index leaf
+      await noTrimVoice({ card: "trim", clip: "run-deadbeef-gones/gen/f308-wall.mp4", start_seconds: 99, end_seconds: -1 });
+      // a LIVE produced clip, window inside it: skip 24 < 90 — belt
+      const gen = join(root, "output", "run-deadbeef-f308live", "gen");
+      mkdirSync(gen, { recursive: true });
+      writeFileSync(join(gen, "f308-wall.mp4"), craftTimedMp4(928, 1344, 90));
+      await noTrimVoice({ card: "trim", clip: "run-deadbeef-f308live/gen/f308-wall.mp4", start_seconds: 1.0, end_seconds: -1 });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
   it("THE BAG GUARD'S TAIL ARMS (the silent-source belt skips what it cannot judge): junk entries, clip-less entries, dead leaves, directory leaves, and unnamed containers ride to the run door's own voice — never this probe's", async () => {
     // The belt judges only what it can name: an entry that is not an
     // object, an entry without a source_clip, a leaf that resolves
