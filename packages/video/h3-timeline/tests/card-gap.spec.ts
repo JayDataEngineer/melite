@@ -1566,17 +1566,20 @@ describe("the clips-stitch (positioned clips land in the post-generation mix nod
       ),
       /audio_clips: a positioned clip row has no src/,
     );
-    const g = new GraphBuilder();
-    def.compose(
-      def.schema({
-        calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
-        audio_clips: [{ noSrc: true }],
-      }),
-      model, g, "run_clips_junk",
+    // F3-06: a row that states anything without src refuses too —
+    // {noSrc: true} is a stated key on a source-less row, the exact
+    // shape the old law let ride as a silent no-op (the compose
+    // refuses loud instead of dropping the row quietly)
+    assert.throws(
+      () => def.compose(
+        def.schema({
+          calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+          audio_clips: [{ noSrc: true }],
+        }),
+        model, new GraphBuilder(), "run_clips_junk",
+      ),
+      /audio_clips: a clip row has no src/,
     );
-    const out = graphOf(g);
-    assert.equal(ofClass(out, "LoadAudio").length, 0, "an unpositioned junk row rides nowhere");
-    assert.equal(ofClass(out, "MeliteAudioSlice").length, 0);
     const g2 = new GraphBuilder();
     assert.throws(
       () => def.compose(

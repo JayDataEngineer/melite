@@ -54,10 +54,14 @@ describe("hydrateLayerA audio_clips drop speech (E7, row 89 — every dropped ro
   it("a junk object with no clip meaning drops under the same voice — alone, the lane is honestly absent", () => {
     const { warns, restore } = captureVoice()
     try {
+      // F3-06: a STATED junk row ({note: …}) now refuses at the parse,
+      // and the hydrate names the refusal while dropping it (HIGH-4's
+      // law holds — the row never reaches the doc state unnamed). The
+      // CONTENTLESS row keeps the no-src-and-no-position voice above.
       const doc = hydrateLayerA({ audio_clips: [{ note: "not a clip" }] })
       assert.equal(doc.audio_clips, undefined)
       assert.equal(warns.length, 1)
-      assert.match(warns[0]!, /audio_clips\[0\] carries no src and no position/)
+      assert.match(warns[0]!, /audio_clips\[0\] failed to hydrate.*a clip row has no src/)
     } finally {
       restore()
     }
