@@ -907,6 +907,26 @@ inputRuns) {
         await sleepAbort(1500, signal);
     }
 }
+/** W-5's strict-form comparator (F3-12, 2026-11-05): a key-sorted
+ *  recursive JSON spelling, so params equality is independent of key
+ *  order — a held row written by another call site still matches its
+ *  identical twin. Both sides are normalized (the press normalizes at
+ *  normalizeJsonArrayParams, the held row was normalized at ITS
+ *  write), so the canonical spellings compare equal only for
+ *  identical work.
+ *
+ * @param v - a JSON params value.
+ * @returns the canonical spelling compared for twin equality.
+ */
+function canonJson(v) {
+    if (Array.isArray(v))
+        return '[' + v.map(canonJson).join(',') + ']';
+    if (v !== null && typeof v === 'object') {
+        const obj = v;
+        return '{' + Object.keys(obj).sort().map((k) => JSON.stringify(k) + ':' + canonJson(obj[k])).join(',') + '}';
+    }
+    return JSON.stringify(v);
+}
 /** SINGLE (the old card_run path, composed inside): manifest gate
  *  + runnability gate + defaults merge, then draft + {model}. */
 async function runSingle(estate, 
@@ -1018,6 +1038,28 @@ a, signal) {
     let stageId = 's_0';
     let rode;
     if (heldStages.length > 0 && existing !== null) {
+        // W-5 — THE TWIN-CARD REFUSE GUARD (F3-12, operator ruling
+        // 2026-11-05: "card press on a bench already holding that card →
+        // REFUSE naming the row"; cure map bench-state Item 2 option (b),
+        // the strict form): a held row of the SAME card with normalized
+        // params/seed equality is the work this press is about to spend a
+        // SECOND identical GPU run on (the burn: same seed 73020, same
+        // params, pixel Δ 0.00 — billed twice, plus the s_1 mint onto the
+        // shared bench). REFUSE before the append and before the start —
+        // the minted-stage half dies with the append that never fires —
+        // naming the row id, its last run, and the cure doors (press that
+        // row, or patch its params to change the work). A DIFFERENT card,
+        // or the same card with different params, falls through to the
+        // F15 merge arm below (the merge law is bounded, not deleted).
+        const twin = heldStages.find((st) => st['card'] === card && canonJson(st['params']) === canonJson(stageParams));
+        if (twin !== undefined) {
+            const twinId = String(twin['id']);
+            const twinResult = twin['result'] !== null && typeof twin['result'] === 'object' && !Array.isArray(twin['result'])
+                ? twin['result'] : null;
+            const twinLastRun = twinResult !== null && typeof twinResult['run_id'] === 'string' && twinResult['run_id'] !== ''
+                ? twinResult['run_id'] : null;
+            return { mode: 'card', target: card, error: `the bench already holds this card as stage ${twinId} with the same params${twinLastRun !== null ? ` (last run ${twinLastRun})` : ' (never run)'} — pressing it again would spend a second identical GPU run (F3-12 double spend); nothing was appended and no run was started: press that row directly with melite_flow {stage:"${twinId}"}, or patch its params with melite_construct patch to change the work and run again` };
+        }
         try {
             const appendOnce = (rev) => estate.benchVerb(a.bench, 'add_stage', {
                 card,

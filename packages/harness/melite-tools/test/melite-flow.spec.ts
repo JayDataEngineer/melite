@@ -229,6 +229,106 @@ describe('melite_flow card — the live allowlist', () => {
     })
   })
 
+  // W-5 (2026-11-05, F3-12 double spend — the FRICTION_3.md burn, cure
+  // map bench-state Item 2 option (b), operator ruling: "card press on
+  // a bench already holding that card → REFUSE naming the row"): the
+  // twin arms BOUND the merge law above — the append-on-held-bench is
+  // lawful only for work the bench does not already hold. Registry row
+  // harness-flow-card-twin-refuse.
+  const twinParams = { text: 'a cat', seed: 73020, loras: [{ id: 'x', strength: 1 }] }
+  const twinBench = (result?: Record<string, unknown>) => ({
+    session: 'main', rev: 3, draft_id: 'd-held', log: [],
+    stages: [{
+      id: 's_0', card: 'tts', params: { ...twinParams, model: 'tts-1' },
+      ...(result !== undefined ? { result } : {}),
+    }],
+  })
+  const twinHandlers = (): Array<(lane: string, args: unknown[]) => { status: number; body: unknown } | undefined> => [
+    (lane: string, args: unknown[]) => {
+      if (lane === 'benchGet') return { status: 200, body: twinBench({ run_id: 'r-first', url: '/runs/first.wav' }) }
+      if (lane === 'benchVerb') return { status: 200, body: { rev: 4, stage: 's_1' } }
+      if (lane === 'runsStart') return { status: 202, body: { run_id: 'r-twin', status: 'queued' } }
+      if (lane === 'runsStatus') {
+        return { status: 200, body: { status: 'completed', stages: [{ id: String((args[0] as Record<string, unknown>)['run_id'] ?? 's_1'), url: 'tts/out.wav' }] } }
+      }
+      if (lane === 'draftsStagePatch') return { status: 200, body: { delivered: true } }
+      return undefined
+    },
+  ]
+
+  test('W-5 arm 1 (THE WALL): a card press on a bench already holding the SAME card with the same params/seed REFUSES — zero runs minted, zero stage rows added', async () => {
+    const seen = mockEstate(twinHandlers())
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({
+      card: 'tts', model: 'tts-1',
+      params: { ...twinParams },
+    }, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.mode, 'card')
+    assert.equal(out.target, 'tts')
+    assert.match(
+      String(out.error),
+      /already holds this card as stage s_0 with the same params/,
+      'the refusal names the held row',
+    )
+    assert.equal(
+      seen.calls.filter((c) => c.lane === 'runsStart').length,
+      0,
+      'ZERO run ids minted — the second identical GPU run never starts (the F3-12 burn spent run-8b69504fd7cc beside run-96e2635542b9)',
+    )
+    assert.equal(
+      seen.calls.filter((c) => c.lane === 'benchVerb').length,
+      0,
+      'ZERO stage rows added — the minted-stage half dies with the append that never fires (the burn minted s_1, rev 126→127)',
+    )
+  })
+
+  test('W-5 arm 2 (voice + the working door): the refusal names the row id, its last_run, and a door that RUNS', async () => {
+    // the twin has NO result memory — the honest voice says "never
+    // run" instead of inventing a run id (the qa8 GAPS-12 law's twin).
+    const seen = mockEstate(twinHandlers().map((h) => (lane: string, args: unknown[]) => {
+      if (lane === 'benchGet') return { status: 200, body: twinBench() }
+      return h(lane, args)
+    }))
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({
+      card: 'tts', model: 'tts-1', params: { ...twinParams },
+    }, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.match(String(out.error), /stage s_0 with the same params \(never run\)/,
+      'the row id rides the refusal, and a row with no result names the truth')
+    assert.match(String(out.error), /melite_flow \{stage:"s_0"\}/, 'the press door is named')
+    assert.match(String(out.error), /melite_construct patch/, 'the patch door is named')
+    // THE NAMED DOOR DELIVERS (doors-refusal-door-pin's law): the very
+    // same bench pressed through the named door runs the row.
+    const byDoor = await tool.execute({ stage: 's_0' }, fakeExec(AbortSignal.timeout(6000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(byDoor.error, undefined, JSON.stringify(byDoor))
+    assert.equal(byDoor.run_id, 'r-twin', 'the door the refusal named is a working door')
+  })
+
+  test('W-5 arm 3 (guard boundary): a DIFFERENT card on the held bench still appends + runs — the F15 merge keeps its receipt', async () => {
+    const seen = mockEstate(twinHandlers())
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({
+      card: 'image-edit', model: 'image-edit-21', params: { prompt: 'edit this' },
+    }, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.error, undefined, 'a different card never trips the twin guard')
+    assert.match(String(out.rode), /merge-arm \(bench held 1 stage\(s\) — appended s_1, nothing replaced\)/)
+    assert.equal(seen.calls.filter((c) => c.lane === 'benchVerb').length, 1, 'the lawful append fired once')
+    assert.equal(seen.calls.filter((c) => c.lane === 'runsStart').length, 1, 'the run minted once')
+  })
+
+  test('W-5 arm 4 (params-mismatch — the strict form judged): the SAME card with DIFFERENT params is not a twin — it appends + runs per the F15 law, never refuses-and-silences', async () => {
+    const seen = mockEstate(twinHandlers())
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({
+      card: 'tts', model: 'tts-1',
+      params: { ...twinParams, seed: 999 },
+    }, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.error, undefined, 'a params mismatch is not the held work — the strict form stays silent')
+    assert.match(String(out.rode), /merge-arm/, 'the F15 merge answers (bounded, not deleted)')
+    assert.equal(seen.calls.filter((c) => c.lane === 'benchVerb').length, 1)
+    assert.equal(seen.calls.filter((c) => c.lane === 'runsStart').length, 1)
+  })
+
   test('a merged press whose start REFUSES carries the rode line + the refusal (never a silent retry)', async () => {
     const heldBench = {
       session: 'main', rev: 0, draft_id: 'd-held', log: [],
