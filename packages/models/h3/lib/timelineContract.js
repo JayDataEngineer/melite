@@ -370,7 +370,17 @@ export function refGenreOf(name, url) {
             return 'image';
         return 'video';
     }
-    const source = `${lowerName} ${url ? url.toLowerCase().split('?')[0] : ''}`;
+    let urlFace = url?.toLowerCase() ?? '';
+    const pathMatch = /(?:^|[?&])path=([^&]+)/.exec(urlFace);
+    if (pathMatch !== null) {
+        try {
+            urlFace = decodeURIComponent(pathMatch[1]);
+        }
+        catch {
+            urlFace = pathMatch[1];
+        }
+    }
+    const source = `${lowerName} ${urlFace.split('?')[0]}`;
     const extension = source.split('.').pop().split(/[^a-z0-9]/)[0];
     if (['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'avif'].includes(extension))
         return 'image';

@@ -1969,7 +1969,7 @@ window.__ModuleLoader__.load({
 			const WINDOW_FILM = /_w\d+_\w+_?\.mp4$/i;
 			const media = arts.filter(isMedia);
 			if (media.length === 0) return void 0;
-			const film = media.find((p) => /(?:^|\/)h3_t4_film_\d+_\.mp4$/i.test(p) && !WINDOW_FILM.test(p));
+			const film = media.find((p) => /(?:^|[/_])h3_t4_film_\d+_\.mp4$/i.test(p) && !WINDOW_FILM.test(p));
 			const video = media.find((p) => isVideo(p) && !WINDOW_FILM.test(p));
 			const hero = film ?? video ?? media.find((p) => !WINDOW_FILM.test(p)) ?? media[0];
 			const tailOf = runTailOf$1;
@@ -7630,11 +7630,13 @@ window.__ModuleLoader__.load({
 			}
 			const assetUrls = stringsOf(result["assetUrls"]);
 			const metadata = recordOf(result["metadata"]);
-			if (Object.keys(artifacts).length === 0 && assetUrls.length === 0) return null;
+			const heroUrl = nonEmptyString(result["url"]);
+			if (heroUrl === "" && Object.keys(artifacts).length === 0 && assetUrls.length === 0) return null;
 			return {
 				artifacts,
 				assetUrls,
 				metadata,
+				...heroUrl === "" ? {} : { url: heroUrl },
 				...typeof result["durationSec"] === "number" ? { durationSec: result["durationSec"] } : {},
 				...galleryOf(result["gallery"]) === void 0 ? {} : { gallery: galleryOf(result["gallery"]) },
 				...previewsOf(result["motionPreviews"]) === void 0 ? {} : { motionPreviews: previewsOf(result["motionPreviews"]) }

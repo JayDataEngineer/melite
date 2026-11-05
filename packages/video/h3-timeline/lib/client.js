@@ -219,11 +219,13 @@ window.__ModuleLoader__.load({
 			}
 			const assetUrls = stringsOf$1(result["assetUrls"]);
 			const metadata = recordOf$2(result["metadata"]);
-			if (Object.keys(artifacts).length === 0 && assetUrls.length === 0) return null;
+			const heroUrl = nonEmptyString$1(result["url"]);
+			if (heroUrl === "" && Object.keys(artifacts).length === 0 && assetUrls.length === 0) return null;
 			return {
 				artifacts,
 				assetUrls,
 				metadata,
+				...heroUrl === "" ? {} : { url: heroUrl },
 				...typeof result["durationSec"] === "number" ? { durationSec: result["durationSec"] } : {},
 				...galleryOf$1(result["gallery"]) === void 0 ? {} : { gallery: galleryOf$1(result["gallery"]) },
 				...previewsOf$1(result["motionPreviews"]) === void 0 ? {} : { motionPreviews: previewsOf$1(result["motionPreviews"]) }
@@ -1135,7 +1137,14 @@ window.__ModuleLoader__.load({
 				if (lowerName.endsWith("_last_frame") || lowerName.includes("_prev")) return "image";
 				return "video";
 			}
-			const extension = `${lowerName} ${url ? url.toLowerCase().split("?")[0] : ""}`.split(".").pop().split(/[^a-z0-9]/)[0];
+			let urlFace = url?.toLowerCase() ?? "";
+			const pathMatch = /(?:^|[?&])path=([^&]+)/.exec(urlFace);
+			if (pathMatch !== null) try {
+				urlFace = decodeURIComponent(pathMatch[1]);
+			} catch {
+				urlFace = pathMatch[1];
+			}
+			const extension = `${lowerName} ${urlFace.split("?")[0]}`.split(".").pop().split(/[^a-z0-9]/)[0];
 			if ([
 				"png",
 				"jpg",
@@ -3980,10 +3989,12 @@ window.__ModuleLoader__.load({
 			};
 			const history = historyRows(row, result, metadata);
 			if (history.length > 0) metadata["history"] = history;
+			const heroUrl = typeof result["url"] === "string" && result["url"].trim() !== "" ? result["url"] : base?.url;
 			return {
 				assetUrls,
 				artifacts,
 				metadata,
+				...heroUrl === void 0 ? {} : { url: heroUrl },
 				...base?.durationSec === void 0 ? {} : { durationSec: base.durationSec },
 				...base?.gallery === void 0 ? {} : { gallery: base.gallery },
 				...base?.motionPreviews === void 0 ? {} : { motionPreviews: base.motionPreviews }
@@ -10661,11 +10672,13 @@ window.__ModuleLoader__.load({
 			}
 			const assetUrls = stringsOf(result["assetUrls"]);
 			const metadata = recordOf(result["metadata"]);
-			if (Object.keys(artifacts).length === 0 && assetUrls.length === 0) return null;
+			const heroUrl = nonEmptyString(result["url"]);
+			if (heroUrl === "" && Object.keys(artifacts).length === 0 && assetUrls.length === 0) return null;
 			return {
 				artifacts,
 				assetUrls,
 				metadata,
+				...heroUrl === "" ? {} : { url: heroUrl },
 				...typeof result["durationSec"] === "number" ? { durationSec: result["durationSec"] } : {},
 				...galleryOf(result["gallery"]) === void 0 ? {} : { gallery: galleryOf(result["gallery"]) },
 				...previewsOf(result["motionPreviews"]) === void 0 ? {} : { motionPreviews: previewsOf(result["motionPreviews"]) }

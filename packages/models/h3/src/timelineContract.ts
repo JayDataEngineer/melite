@@ -430,7 +430,16 @@ export function refGenreOf(name: string, url?: string): 'image' | 'video' | 'aud
     if (lowerName.endsWith('_last_frame') || lowerName.includes('_prev')) return 'image'
     return 'video'
   }
-  const source = `${lowerName} ${url ? url.toLowerCase().split('?')[0] : ''}`
+  let urlFace = url?.toLowerCase() ?? ''
+  const pathMatch = /(?:^|[?&])path=([^&]+)/.exec(urlFace)
+  if (pathMatch !== null) {
+    try {
+      urlFace = decodeURIComponent(pathMatch[1] as string)
+    } catch {
+      urlFace = pathMatch[1] as string
+    }
+  }
+  const source = `${lowerName} ${urlFace.split('?')[0]}`
   const extension = (source.split('.').pop() as string).split(/[^a-z0-9]/)[0] as string
   if (['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'avif'].includes(extension)) return 'image'
   if (['mp4', 'webm', 'mov', 'mkv', 'avi', 'm4v'].includes(extension)) return 'video'

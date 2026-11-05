@@ -30,6 +30,23 @@ function owner(
   }
 }
 
+test('THE ESTATE HERO POINTER rides the generic projection (the loaded-history starvation burn, 2026-11-15)', () => {
+  // the wand-restored face names its hero ONLY by the pointer (the
+  // sidecar's url over the product tail, re-derived client-side with
+  // no film-shaped artifact key) — a projection that drops result.url
+  // starves every pointer-tier consumer on every restored face. A
+  // pointer-only result is still a result (the hero alone), never
+  // null.
+  expect(cardResultFromRecord({ url: '/infer-gallery/artifact?path=run-x%2Ff.mp4' })).toEqual({
+    artifacts: {},
+    assetUrls: [],
+    metadata: {},
+    url: '/infer-gallery/artifact?path=run-x%2Ff.mp4',
+  })
+  // and the pointer carries beside the named face
+  expect(cardResultFromRecord({ url: '/u/final.mp4', artifacts: { a: '/a' }, assetUrls: ['/a'] })?.url).toBe('/u/final.mp4')
+})
+
 test('cardResultFromRecord normalizes artifacts, media, metadata, gallery, and previews', () => {
   expect(cardResultFromRecord(null)).toBeNull()
   expect(cardResultFromRecord({ artifacts: { good: '/a', empty: '', number: 3 }, assetUrls: ['/a', '', 3] })).toEqual({

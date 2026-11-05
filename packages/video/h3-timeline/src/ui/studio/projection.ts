@@ -172,10 +172,20 @@ function harvestResult(
   }
   const history = historyRows(row, result, metadata)
   if (history.length > 0) metadata['history'] = history
+  // THE ESTATE HERO POINTER rides (the loaded-history starvation burn,
+  // 2026-11-15): the wand-restored result names its hero ONLY by the
+  // pointer (the sidecar row's url over the product tail) — dropping
+  // it here kills filmstripOf's pointer tier on every restored face
+  // and the studio falls to window tiles. The live row's pointer wins
+  // over the contract base (both name the same run's product).
+  const heroUrl = typeof result['url'] === 'string' && result['url'].trim() !== ''
+    ? result['url'] as string
+    : base?.url
   return {
     assetUrls,
     artifacts,
     metadata,
+    ...(heroUrl === undefined ? {} : { url: heroUrl }),
     ...(base?.durationSec === undefined ? {} : { durationSec: base.durationSec }),
     ...(base?.gallery === undefined ? {} : { gallery: base.gallery }),
     ...(base?.motionPreviews === undefined ? {} : { motionPreviews: base.motionPreviews }),

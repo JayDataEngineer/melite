@@ -196,12 +196,21 @@ export function cardResultFromRecord(value) {
     }
     const assetUrls = stringsOf(result['assetUrls']);
     const metadata = recordOf(result['metadata']);
-    if (Object.keys(artifacts).length === 0 && assetUrls.length === 0)
+    // THE ESTATE HERO POINTER rides (the loaded-history starvation burn,
+    // 2026-11-15): the wand-restored face re-derives its result from the
+    // sidecar's url+gallery with no film-shaped artifact KEY, so the
+    // pointer is the ONE tier that can name the hero — dropping it here
+    // starves filmstripOf's pointer tier on every restored face (the
+    // operator's tiles-instead-of-full-video). A pointer-only result is
+    // still a result (the hero alone), never null.
+    const heroUrl = nonEmptyString(result['url']);
+    if (heroUrl === '' && Object.keys(artifacts).length === 0 && assetUrls.length === 0)
         return null;
     return {
         artifacts,
         assetUrls,
         metadata,
+        ...(heroUrl === '' ? {} : { url: heroUrl }),
         ...(typeof result['durationSec'] === 'number' ? { durationSec: result['durationSec'] } : {}),
         ...(galleryOf(result['gallery']) === undefined ? {} : { gallery: galleryOf(result['gallery']) }),
         ...(previewsOf(result['motionPreviews']) === undefined ? {} : { motionPreviews: previewsOf(result['motionPreviews']) }),

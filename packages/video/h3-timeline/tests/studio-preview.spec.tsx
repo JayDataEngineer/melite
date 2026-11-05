@@ -13,6 +13,8 @@ import { describe, it } from "vitest"
 import assert from "node:assert/strict"
 import { render, screen } from "@testing-library/react"
 import { StudioPreview } from "../src/ui/studio/StudioPreview.tsx"
+import { projectH3StageViewProps } from "../src/ui/studio/projection.ts"
+import { filmstripOf } from "../src/ui/studio/useDerivedView.ts"
 
 function preview(over?: Record<string, unknown>) {
   const els = render(
@@ -194,5 +196,78 @@ describe("the hero (ONE player, windows only mid-run)", () => {
     preview()
     assert.ok(screen.getByText("No render yet — author the calls below, then Run."))
     assert.ok(screen.getByText("render a run to see the film"), "the hint rides studioCopy.previewEmptyHint")
+  })
+})
+
+describe("the loaded-history face (the wand-restored result renders the persisted hero — the starvation burn, 2026-11-15)", () => {
+  // THE JOURNEY JUDGE: wand → bench ensure → h3 projection →
+  // filmstripOf → StudioPreview. No wall crossed this chain before —
+  // each seam was judged alone (bench-load POST bodies here-side,
+  // hand-fed props in the arms above), and the operator's loaded
+  // history collapsed to WINDOW TILES while every seam stayed green
+  // (dev_docs/audits/journey/h3-history-load-video-2026-11-05.md).
+  // The restore re-derives each result from the sidecar's url +
+  // gallery names as GALLERY ROUTES with run-tail artifact keys — no
+  // film-shaped key on window-spelled products — so the hero can only
+  // arrive through result.url (the estate hero pointer) classified by
+  // the tail the route's path= query names. This arm rides the REAL
+  // projection and the REAL derivation on the REAL restored shape.
+  const route = (tail: string): string => "/infer-gallery/artifact?path=" + encodeURIComponent(tail)
+  const restoredFilmstrip = (result: Record<string, unknown>): { final: string | null; windows: Array<{ name: string; url: string }> } => {
+    const { stage } = projectH3StageViewProps({
+      stageId: "s_0",
+      cardName: "h3-timeline",
+      row: { params: {}, result },
+      runStatus: "completed",
+      onPatch: () => {},
+      onRun: () => {},
+      upstream: [],
+    } as never)
+    return filmstripOf(stage.result)
+  }
+
+  it("the operator's burn verbatim: a window-spelled product restored as a gallery-route pointer renders the FULL VIDEO, never tiles", () => {
+    // the captured DOM's own shape: run-87986cb0fc0d-a2fa54c3, the
+    // product saved under the WINDOW spelling, the wand's result
+    // carrying it as the hero pointer over a run-tail-keyed map
+    const tail = "run-87986cb0fc0d-a2fa54c3/h3-film/SaveVideo.0_h3_t4_w1_00001_.mp4"
+    const filmstrip = restoredFilmstrip({
+      run_id: "run-87986cb0fc0d-a2fa54c3",
+      url: route(tail),
+      artifacts: { [tail]: route(tail) },
+      assetUrls: [route(tail)],
+    })
+    assert.equal(filmstrip.final, route(tail), "the pointer tier fires through the real projection (the gallery route classifies by its path= tail)")
+    const h = preview({ filmstrip })
+    assert.ok(screen.getByTestId("tl-final-cut"), "the full video renders — 1:1 with what the run settled")
+    assert.equal(screen.queryByTestId("tl-window-tile"), null, "tiles are MID-RUN evidence only, never the loaded-history face")
+    h.els.unmount()
+  })
+
+  it("the estate hero pointer stands alone (no flat list, a window-only map) — the pointer tier is the restored face's own hero seat", () => {
+    // assetUrls ABSENT: the flat tier cannot rescue; the window-only
+    // artifact map cannot name the hero. The pointer is the only seat
+    // left — this arm isolates it so its toggle reds alone.
+    const tail = "run-87986cb0fc0d-a2fa54c3/h3-film/SaveVideo.0_h3_t4_w1_00001_.mp4"
+    const filmstrip = restoredFilmstrip({
+      run_id: "run-87986cb0fc0d-a2fa54c3",
+      url: route(tail),
+      artifacts: { [tail]: route(tail) },
+    })
+    assert.equal(filmstrip.final, route(tail), "the pointer tier fires with no other tier available")
+    assert.equal(filmstrip.windows.length, 1, "the window still tiles as evidence beneath the final")
+  })
+
+  it("the film-key face still leads by NAME (an in-graph assembly is the cut by its own law)", () => {
+    const film = "run-c80a8afa5a28-a9ccdde4/h3-film/SaveVideo.2_h3_t4_film_00001_.mp4"
+    const win = "run-c80a8afa5a28-a9ccdde4/h3-film/SaveVideo.0_h3_t4_w1_00001_.mp4"
+    const filmstrip = restoredFilmstrip({
+      run_id: "run-c80a8afa5a28-a9ccdde4",
+      url: route(win),
+      artifacts: { [film]: route(film), [win]: route(win) },
+      assetUrls: [route(film), route(win)],
+    })
+    assert.equal(filmstrip.final, route(film), "the engine-film name outranks the pointer (tier 1)")
+    assert.equal(filmstrip.windows.length, 1, "the window still tiles as evidence beneath the final")
   })
 })

@@ -119,8 +119,15 @@ function resultOfRun(
   const WINDOW_FILM = /_w\d+_\w+_?\.mp4$/i
   const media = arts.filter(isMedia)
   if (media.length === 0) return undefined
+  // THE FILM FINDER IS THE ONE LAW (the loaded-history starvation
+  // burn, 2026-11-15): this private copy `/(?:^|\/)h3_t4_film…/`
+  // missed the `SaveVideo.<n>_h3_t4_film_…` harvest prefix the F14
+  // naming mints (filmLead.ts's ENGINE_FILM_RE accepts `(?:^|[/_])`)
+  // — its generic-video tier happened to catch the film today, a
+  // weaker private law beside the estate's own. The finder now
+  // matches the engine-film law verbatim, never a private copy.
   const film = media.find((p: string): boolean =>
-    /(?:^|\/)h3_t4_film_\d+_\.mp4$/i.test(p) && !WINDOW_FILM.test(p),
+    /(?:^|[/_])h3_t4_film_\d+_\.mp4$/i.test(p) && !WINDOW_FILM.test(p),
   )
   const video = media.find((p: string): boolean => isVideo(p) && !WINDOW_FILM.test(p))
   const hero = film ?? video ?? media.find((p: string): boolean => !WINDOW_FILM.test(p)) ?? media[0]
