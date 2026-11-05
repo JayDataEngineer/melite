@@ -10,8 +10,8 @@
  * the upload spec, the foreign-URL refusal literal, the declared
  * short name, and the LinkArtifact type.
  */
-import { runMediaPrefixOf, canonicalRunMediaUrl } from "@melite/contracts/benchStage"
-import { fetchMediaLibrary } from "@melite/card-base/client"
+import { runHostMediaUrl, runMediaPrefixOf, canonicalRunMediaUrl } from "@melite/contracts/benchStage"
+import { estateInputUrl, fetchMediaLibrary, isImageUrl } from "@melite/card-base/client"
 /** One upstream image artifact — a link-to-previous-output picker row. */
 export interface LinkArtifact {
   /** The ctx-key NAME the picker writes (what _resolveSource resolves). */
@@ -91,6 +91,29 @@ export function displaySource(v: string, nameToUrl: Map<string, string>): string
   if (v.startsWith("data:")) return v
   return nameToUrl.get(v) ?? v
 }
+/** A POSIX absolute HOST path — real, run-stageable transport currency
+ *  the browser cannot resolve against the web origin (the spelling the
+ *  agent's construct lands). Served estate paths never start with
+ *  these roots. */
+const ABSOLUTE_HOST_PATH = /^\/(?:home|Users|root|mnt|media|opt|srv|tmp|var)\//
+
+/** THE SERVABLE DECLARED FACE (the operator's broken-images burn,
+ *  2026-11-15): the display URL a declared chip may paint, or null
+ *  when the value is real transport currency that no <img> can fetch.
+ *  Resolution mirrors the card-base square: an estate upload path
+ *  renders from the assets door, a run-id host path heals to the media
+ *  route, a plain served value rides verbatim — and an absolute host
+ *  path resolves to nothing (the chip paints its held face instead).
+ * @param url the declared value, verbatim.
+ * @returns the servable display URL, or null for a non-servable value.
+ */
+export function declaredServableUrl(url: string): string | null {
+  const hostMedia = runHostMediaUrl(url)
+  return estateInputUrl(url)
+    ?? (hostMedia !== null && isImageUrl(url) ? hostMedia : null)
+    ?? (isImageUrl(url) && !ABSOLUTE_HOST_PATH.test(url) ? url : null)
+}
+
 /** Short display name for a declared URL (last path segment) — the
  * full URL rides the title. */
 export function declaredShortName(url: string): string {

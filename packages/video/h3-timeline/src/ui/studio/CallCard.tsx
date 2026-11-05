@@ -18,7 +18,7 @@ import { readAsDataURL } from '@melite/card-base/client'
 import { SourceRow } from '@melite/card-base/client'
 import { SeamControls } from "./CallFrameSubcard.tsx"
 import { CallCardPrompt } from "./CallCardPrompt.tsx"
-import { FOREIGN_URL_REFUSAL, REF_UPLOAD_SPEC, declaredShortName, displaySource, estateMediaChip } from "./refUtils.ts"
+import { FOREIGN_URL_REFUSAL, REF_UPLOAD_SPEC, declaredServableUrl, declaredShortName, displaySource, estateMediaChip } from "./refUtils.ts"
 import { parseFrameEdit } from "./docGrid.ts"
 import {
   IMAGE_BUS_SLOTS,
@@ -82,6 +82,21 @@ function cardSpanLine(start: number, end: number, delivered: number) {
 function DeclaredChip({ url, kind, onRemove, removeLabel }: { url: string; kind: "image" | "video" | "audio" | "mod"; onRemove?: () => void; removeLabel?: string }) {
   const short = declaredShortName(url)
   const [open, setOpen] = useState(false)
+  // THE SERVABLE FACE (the agent-input burn, 2026-11-15): a declared
+  // value can be REAL transport currency that no <img> can fetch — an
+  // absolute host path the agent patched ('/home/…/x.png' is
+  // run-stageable, not origin-servable) or a persisted estate upload
+  // ('data/input/x.png', which the assets door serves). The declared
+  // lane resolves the SAME order the card-base square owns: estate
+  // input path → run-id host path (runHostMediaUrl) → the value as
+  // served. A value that resolves to nothing renders the HELD face
+  // (name + tag, no broken glyph); a resolved <img> that still dies
+  // on the wire flips to the same face through onError.
+  // the judge stays isImageUrl (one spelling, ANY lane — a video lane
+  // may carry image currency); resolution only decides WHAT is served
+  const served = declaredServableUrl(url)
+  const [dead, setDead] = useState<string | null>(null)
+  const thumb = served !== null && dead !== served ? served : null
   return (
     <span
       className={s.declaredChip}
@@ -95,7 +110,7 @@ function DeclaredChip({ url, kind, onRemove, removeLabel }: { url: string; kind:
           restore). The judge is isImageUrl (one spelling,
           card-base's own), so a mod lane carrying image currency
           previews identically to a reference lane. */}
-      {isImageUrl(url) ? (
+      {thumb !== null ? (
         <Button
           type="button"
           variant="ghost"
@@ -103,7 +118,12 @@ function DeclaredChip({ url, kind, onRemove, removeLabel }: { url: string; kind:
           aria-label={studioCopy.imagePreviewAria(short)}
           onClick={() => { setOpen(true) }}
         >
-          <img src={url} alt={short} className={s.declaredThumb} />
+          <img
+            src={thumb}
+            alt={short}
+            className={s.declaredThumb}
+            onError={() => { setDead(served) }}
+          />
         </Button>
       ) : null}
       <span className={s.declaredName}>{short}</span>
@@ -122,7 +142,7 @@ function DeclaredChip({ url, kind, onRemove, removeLabel }: { url: string; kind:
       ) : null}
       {open ? (
         <ImageLightbox
-          src={url}
+          src={thumb ?? served ?? url}
           alt={short}
           labels={{ dialog: studioCopy.imagePreviewDialog, close: studioCopy.imagePreviewClose }}
           onClose={() => { setOpen(false) }}

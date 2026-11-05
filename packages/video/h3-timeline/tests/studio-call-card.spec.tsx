@@ -457,6 +457,61 @@ describe("D2 (operator 2026-11-06): image chips preview through the DSH ImagePre
   })
 })
 
+describe("THE SERVABLE DECLARED FACE (the operator's broken-images burn, 2026-11-15): a chip paints only a servable src", () => {
+  const renderDeclared = (refImages: string[]) => render(
+    <CallCard c={{ ...BASE }} i={0} deps={deps({ layerA: { fps: 24, seed: 42, ref_images: refImages } }).d} />,
+  )
+
+  it("an ABSOLUTE HOST path paints the HELD face — no <img>, no broken glyph, the name still speaks", () => {
+    // THE BURN VERBATIM: the agent patched
+    // /home/user/test/showcase/titledrops/chibi_sheet_v2.png — real,
+    // run-stageable currency that the web origin 404s. The chip used
+    // to mount <img src=that path> and the browser drew its broken
+    // glyph.
+    const h = renderDeclared(["/home/user/test/showcase/titledrops/chibi_sheet_v2.png"])
+    const chip = h.container.querySelector('[data-testid="tl-declared-ref"]')
+    assert.ok(chip, "the declared chip renders")
+    assert.equal(chip!.querySelector("img"), null, "no <img> can fetch a host path — the held face paints instead")
+    const title = chip!.getAttribute("title") ?? ""
+    assert.match(title, /\/home\/user\/test\/showcase\/titledrops\/chibi_sheet_v2\.png/, "the full value stays on the title (the honest face)")
+    h.unmount()
+  })
+
+  it("a RUN-ID host path heals to the media route (the same bytes the run wrote)", () => {
+    const runId = "run-065be7aab4e0-aab00b68"
+    const h = renderDeclared([`/home/user/output/runs/${runId}/output/frame.png`])
+    const img = h.container.querySelector('[data-testid="tl-declared-ref"] img')
+    assert.ok(img, "the servable rewrite carries a thumb")
+    const src = img!.getAttribute("src") ?? ""
+    assert.ok(src.startsWith("/melite-media/runs/" + runId), "the src points at the media route, never the host path")
+    h.unmount()
+  })
+
+  it("a persisted ESTATE upload renders from the assets door (data/input/x.png)", () => {
+    const h = renderDeclared(["data/input/chibi_sheet_v2.png"])
+    const img = h.container.querySelector('[data-testid="tl-declared-ref"] img')
+    assert.ok(img, "the estate upload carries a thumb")
+    assert.equal(img!.getAttribute("src"), "/v1/assets/inputs/chibi_sheet_v2.png")
+    h.unmount()
+  })
+
+  it("a served URL rides verbatim (no rewrite of lawful currency)", () => {
+    const h = renderDeclared(["https://u/l1.png"])
+    assert.equal(h.container.querySelector('[data-testid="tl-declared-ref"] img')!.getAttribute("src"), "https://u/l1.png")
+    h.unmount()
+  })
+
+  it("a servable src that DIES on the wire flips to the held face through onError", () => {
+    const h = renderDeclared(["https://u/dead.png"])
+    const chip = h.container.querySelector('[data-testid="tl-declared-ref"]')!
+    const img = chip.querySelector("img")!
+    fireEvent.error(img)
+    assert.equal(chip.querySelector("img"), null, "the dead src leaves — no browser glyph")
+    assert.ok(chip.textContent?.includes("dead.png"), "the chip keeps naming its value")
+    h.unmount()
+  })
+})
+
 describe("THE LAYER A/B CANON (2026-10-24): a stated call lane REPLACES the declared lane; absent inherits", () => {
   const LAYER = { fps: 24, seed: 42, ref_images: ["https://u/d1.png", "https://u/d2.png"] }
   it("a stated call lane hides the card defaults — the count rides the EFFECTIVE list, the tail names the arm", () => {

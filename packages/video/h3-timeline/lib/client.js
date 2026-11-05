@@ -3869,6 +3869,34 @@ window.__ModuleLoader__.load({
 			if (prefix === null || prefix === "/melite-media/runs") return value;
 			return RUN_MEDIA_PREFIX$1 + value.slice(prefix.length);
 		}
+		/** THE HOST-PATH MIRROR (the agent-slot preview burn, 2026-11-12: the
+		*  operator put an image into a card's image input slot and the square
+		*  painted the browser's broken-image glyph): melite_view hands an
+		*  agent BOTH lanes — `url` (the browser's /melite-media/runs/… URL)
+		*  and `host` (the same artifact's path under the estate's output
+		*  tree on the host). An agent that patches the HOST spelling into a
+		*  slot holds a real, run-stageable value (resolveArtifactFile accepts
+		*  absolute paths inside the output root) that no <img> can fetch —
+		*  isImageUrl passes any root-relative path with an image tail, so the
+		*  glyph burned. The run dir's OWN name (the run-id grammar) is the
+		*  one coordinate both lanes share: a host path carrying a run-id
+		*  segment names the same bytes the media route serves, so the display
+		*  rewrites it to that URL. DISPLAY ONLY — the param keeps the host
+		*  path verbatim (the currency law); a path that addresses no run
+		*  media, an already-serving media URL (both spellings —
+		*  canonicalRunMediaUrl owns those), and every scheme-ful or
+		*  protocol-relative value ride untouched (null). */
+		function runHostMediaUrl$1(value) {
+			if (!value.startsWith("/") || value.startsWith("//")) return null;
+			if (runMediaPrefixOf$1(value) !== null) return null;
+			const segs = value.split("/");
+			for (let i = 0; i < segs.length - 1; i++) {
+				if (!RUN_ID_RE$1.test(segs[i])) continue;
+				return "/melite-media/runs/" + segs.slice(i).map(encodeURIComponent).join("/");
+			}
+			return null;
+		}
+		const RUN_ID_RE$1 = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;
 		//#endregion
 		//#region src/ui/studio/projection.ts
 		/**
@@ -4238,6 +4266,25 @@ window.__ModuleLoader__.load({
 		function displaySource(v, nameToUrl) {
 			if (v.startsWith("data:")) return v;
 			return nameToUrl.get(v) ?? v;
+		}
+		/** A POSIX absolute HOST path — real, run-stageable transport currency
+		*  the browser cannot resolve against the web origin (the spelling the
+		*  agent's construct lands). Served estate paths never start with
+		*  these roots. */
+		const ABSOLUTE_HOST_PATH = /^\/(?:home|Users|root|mnt|media|opt|srv|tmp|var)\//;
+		/** THE SERVABLE DECLARED FACE (the operator's broken-images burn,
+		*  2026-11-15): the display URL a declared chip may paint, or null
+		*  when the value is real transport currency that no <img> can fetch.
+		*  Resolution mirrors the card-base square: an estate upload path
+		*  renders from the assets door, a run-id host path heals to the media
+		*  route, a plain served value rides verbatim — and an absolute host
+		*  path resolves to nothing (the chip paints its held face instead).
+		* @param url the declared value, verbatim.
+		* @returns the servable display URL, or null for a non-servable value.
+		*/
+		function declaredServableUrl(url) {
+			const hostMedia = runHostMediaUrl$1(url);
+			return (0, _melite_card_base_client.estateInputUrl)(url) ?? (hostMedia !== null && (0, _melite_card_base_client.isImageUrl)(url) ? hostMedia : null) ?? ((0, _melite_card_base_client.isImageUrl)(url) && !ABSOLUTE_HOST_PATH.test(url) ? url : null);
 		}
 		/** Short display name for a declared URL (last path segment) — the
 		* full URL rides the title. */
@@ -5650,12 +5697,15 @@ window.__ModuleLoader__.load({
 		function DeclaredChip({ url, kind, onRemove, removeLabel }) {
 			const short = declaredShortName(url);
 			const [open, setOpen] = (0, react.useState)(false);
+			const served = declaredServableUrl(url);
+			const [dead, setDead] = (0, react.useState)(null);
+			const thumb = served !== null && dead !== served ? served : null;
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 				className: studio_module_css_default.declaredChip,
 				"data-testid": "tl-declared-ref",
 				title: kind === "mod" ? studioCopy.modDeclaredChipTitle(url) : studioCopy.declaredChipTitle(url),
 				children: [
-					(0, _melite_card_base_client.isImageUrl)(url) ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+					thumb !== null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 						type: "button",
 						variant: "ghost",
 						className: studio_module_css_default.declaredThumbBtn,
@@ -5664,9 +5714,12 @@ window.__ModuleLoader__.load({
 							setOpen(true);
 						},
 						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
-							src: url,
+							src: thumb,
 							alt: short,
-							className: studio_module_css_default.declaredThumb
+							className: studio_module_css_default.declaredThumb,
+							onError: () => {
+								setDead(served);
+							}
 						})
 					}) : null,
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
@@ -5687,7 +5740,7 @@ window.__ModuleLoader__.load({
 						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, { className: studio_module_css_default.sz10 })
 					}) : null,
 					open ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.ImageLightbox, {
-						src: url,
+						src: thumb ?? served ?? url,
 						alt: short,
 						labels: {
 							dialog: studioCopy.imagePreviewDialog,
@@ -9507,7 +9560,8 @@ window.__ModuleLoader__.load({
 		*  time … you are submitting a form, not hacking the mainframe"):
 		*  the ONE function every write-side gate calls after the strict
 		*  judge — it drops the authoring-incomplete class (the
-		*  unstated-required word, a together half, an either_or half).
+		*  unstated-required word, a together half, an either_or half, and
+		*  the DELIVERABLE-SIZE half).
 		*  The registry's write doors AND the form's inline gate BOTH drop
 		*  through THIS function — attempt 12 (2026-11-11) was exactly this
 		*  drift: the door filtered, the form's own copy of the judgment
@@ -9515,10 +9569,18 @@ window.__ModuleLoader__.load({
 		*  was green because the walls drove the door, not the form. One
 		*  spelling; a second copy of this class test anywhere is the
 		*  multiple-seat disease.
+		*  THE SIZE HALF (2026-11-15, the operator's image-edit burn: width
+		*  2024 typed, height still empty, and the bench refused the
+		*  keystroke with "state both width and height" — so NEITHER axis
+		*  ever landed and the run refused a card the studio showed filled):
+		*  writing a form is sequential, so a stated size pair is only ever
+		*  admissibly half-typed. The write seat admits the half; the run
+		*  seat still refuses it (judgeDeliverableSize rides the strict
+		*  judge there).
 		* @param violations the strict judge's violations (any seat)
 		* @returns the violations a write-side gate may voice */
 		function dropAuthoringIncomplete(violations) {
-			return violations.filter((v) => !isUnstatedRequiredVoice(v.message) && !isTogetherHalfVoice(v.message) && !isEitherOrHalfVoice(v.message));
+			return violations.filter((v) => !isUnstatedRequiredVoice(v.message) && !isTogetherHalfVoice(v.message) && !isEitherOrHalfVoice(v.message) && !isDeliverableHalfVoice(v.message));
 		}
 		/** The together-half class test: the sentence names a together group
 		*  whose members are not all stated yet.
@@ -9533,6 +9595,18 @@ window.__ModuleLoader__.load({
 		* @returns true when the sentence is the either_or-half voice */
 		function isEitherOrHalfVoice(text) {
 			return text.includes(EITHER_OR_HALF_STEM);
+		}
+		/** The deliverable-size half's sentence stem (judgeDeliverableSize's
+		*  first law): match_input_resolution is OFF and exactly one axis is
+		*  stated. THE WRITE SEAT ADMITS THIS CLASS (the frictionless-authoring
+		*  ruling, extended 2026-11-15): the pair can only be typed one key at
+		*  a time, so judging each keystroke as a malformed deliverable made
+		*  the pair UNWRITABLE and the card unrunnable. The RUN seat keeps the
+		*  strict judgment — a half pair never composes.
+		* @param text the refusal sentence to classify
+		* @returns true when the sentence is the deliverable-size half voice */
+		function isDeliverableHalfVoice(text) {
+			return text.includes(DELIVERABLE_HALF_STEM);
 		}
 		/** The heal's stricter twin: the text is the unstated-required class
 		* AND NOTHING ELSE. A composite refusal (the judge joins multiple
@@ -10105,7 +10179,7 @@ window.__ModuleLoader__.load({
 				}))
 			}));
 		}
-		var RELATION_WORDS, quote, UNSTATED_REQUIRED_STEM, TOGETHER_HALF_STEM, EITHER_OR_HALF_STEM, statedOf, visibleRows, visibleCells, knownIds, knownQuants;
+		var RELATION_WORDS, quote, UNSTATED_REQUIRED_STEM, TOGETHER_HALF_STEM, EITHER_OR_HALF_STEM, DELIVERABLE_HALF_STEM, statedOf, visibleRows, visibleCells, knownIds, knownQuants;
 		var init_laneRelations = __esmMin((() => {
 			RELATION_WORDS = {
 				requires: true,
@@ -10119,6 +10193,7 @@ window.__ModuleLoader__.load({
 			UNSTATED_REQUIRED_STEM = "this lane requires ";
 			TOGETHER_HALF_STEM = " ride together on this lane (state all or none)";
 			EITHER_OR_HALF_STEM = " — the stated combination completes none of them";
+			DELIVERABLE_HALF_STEM = "state both width and height";
 			statedOf = (stated) => typeof stated === "string" ? stated : null;
 			visibleRows = (variants) => variants.filter((v) => v.hide_from_dropdown !== true);
 			visibleCells = (cells) => cells.filter((c) => c.hide_from_dropdown !== true);
@@ -11343,6 +11418,7 @@ window.__ModuleLoader__.load({
 			hasModifierCapability: () => hasModifierCapability,
 			healRunMediaPaths: () => healRunMediaPaths,
 			isDataUrl: () => isDataUrl,
+			isDeliverableHalfVoice: () => isDeliverableHalfVoice,
 			isEitherOrHalfVoice: () => isEitherOrHalfVoice,
 			isLiveRunStatus: () => isLiveRunStatus,
 			isProvenance: () => isProvenance,
