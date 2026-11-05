@@ -42,7 +42,7 @@
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { readFileSync, readlinkSync } from "node:fs";
+import { existsSync, readFileSync, readlinkSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import "../../../helpers/boot-models.ts";
 import { modelIds, registryIds, registryModel } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
@@ -91,7 +91,17 @@ function keysOf(body: string): Set<string> {
 const DELEGATED = process.env.MELITE_TIER_DELEGATED === "1";
 
 describe("the wiring-roots wall (one store, four truths, all reconciled)", () => {
-  it("IDEMPOTENCE — the runtime yaml is exactly what the config produces", () => {
+  // THE SEATED-RUNTIME SHAPE (the 2026-11-16 CI cure): the idempotence
+  // law compares the CONFIG's product against the OPERATOR'S RENDERED
+  // copy — a file `provision paths` writes on the machine that runs
+  // the engine (data/runtime is untracked). A fresh clone — and CI —
+  // carries no rendered copy: nothing was ever rendered, so there is
+  // no stale-vs-config fact to judge. Skip LOUD naming the command;
+  // the config-produces law still judges through the STORE/CLOSURE
+  // legs (both derive from the config directly), and the disk law
+  // fires on the estate box where the rendered copy exists.
+  const RUNTIME_SEATED = existsSync(`${runtime()}/extra_model_paths.yaml`);
+  it.skipIf(!RUNTIME_SEATED)("IDEMPOTENCE — the runtime yaml is exactly what the config produces (skipped when no rendered copy exists — fresh clone/CI: `node --experimental-strip-types packages/engines/comfyui-cordis/scripts/provision.ts paths` renders it)", () => {
     const expected = generatedBody();
     const disk = diskBody();
     assert.equal(disk, expected,

@@ -179,7 +179,13 @@ describe('THE DIRTY FIXTURE — several kinds, file+line+list named', () => {
     }
   })
 
-  it('the AUTHORED FACES of the real tree are clean TODAY (the ruling held)', () => {
+  // THE WHOLE-TREE SWEEP (the 2026-11-16 CI cure): the arm scans the
+  // FULL authored tree through the gate binary — under CI's cold cache
+  // the sweep's tail crossed vitest's 30s default and the gate died as
+  // a timeout, not a verdict. The budget names the sweep reality
+  // (real-card-wire's spawn-budget precedent); the gate is NEVER
+  // skipped — a clean verdict must be produced and judged.
+  it('the AUTHORED FACES of the real tree are clean TODAY (the ruling held)', { timeout: 240_000 }, () => {
     // The gate's first live catch (2 quoted profanities) was cured by
     // the operator's 2026-11-05 redact-both ruling — the scan exits 0.
     // A future profane face lands red RIGHT HERE. A crash (no verdict

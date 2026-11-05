@@ -80,6 +80,16 @@ function pnpmHealthy(): boolean {
 const PNPM_OK = pnpmHealthy();
 const gate = test.skipIf(!PNPM_OK);
 
+// THE SEED SHAPE (the 2026-11-16 CI cure): the S7a/S8 join reads the
+// @deepseek-ai bundle patches through the SEEDED reference tree —
+// untracked by design (AGENTS.md: a fresh clone carries none of it),
+// so a CI runner has no patch layers to parse and the insert census
+// would judge zero rows. The join skips LOUD naming the unseeded
+// tree; the hermetic BUNDLE PIN arm below still judges the checked-in
+// provisioner bundle everywhere.
+const REFERENCES_SEATED = existsSync(join(REPO, "references", "deepseek-harness", "packages", "bundle"));
+const joinGate = test.skipIf(!PNPM_OK || !REFERENCES_SEATED);
+
 // BUNDLE PIN (dev_docs/deployment/dsh-profiles.md — hermetic, plain `test`:
 // it scans the checked-in bundle, needs no pnpm, and stays green where
 // the render arms above self-skip). The HOST `skill-filesystem` row is
@@ -459,7 +469,7 @@ for (const profile of ["melite-test", "estate"]) {
 //   is in webRows; a self-registering web row outside the list
 //   pends forever in non-web mounts with no red anywhere.
 for (const profile of ["melite-test", "estate"]) {
-  gate(`the ${profile} profile joins its disables and web surface to mounted rows (S7a/S8)`, () => {
+  joinGate(`the ${profile} profile joins its disables and web surface to mounted rows (S7a/S8${REFERENCES_SEATED ? "" : "; skipped when the reference tree is unseeded — fresh clone/CI: the @deepseek-ai bundle patches live in references/"}${PNPM_OK ? "" : "; skipped when pnpm is unavailable"})`, () => {
     const home: string = mkdtempSync(join(tmpdir(), "provisioner-wall-"));
     render(home, profile);
     const dir: string = join(home, "profiles", profile);

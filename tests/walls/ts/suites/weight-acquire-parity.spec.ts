@@ -82,9 +82,20 @@ describe("THE WEIGHT-OFFER PARITY WALL — a Download button may exist only wher
       return;
     }
     const sentence = miss.message;
+    // ORDER-INDEPENDENT SUBJECT (the 2026-11-16 CI cure): the walk
+    // reports the FIRST missing declared row, and which hand-only tree
+    // leads the report is machine state (the operator's store carries
+    // hand-placed copies the clone lacks — on CI CustomVoice leads,
+    // on the estate box Base did). The wall's law is not the lead
+    // name: the refusal must name A hand-only tree of this family —
+    // the subject is genuinely a hand-only refusal — and carry NO
+    // fetch anchor.
     assert.ok(
-      sentence.includes("Qwen3-TTS-12Hz-1.7B-Base-merged"),
-      "the refusal names the missing tree — got: " + sentence,
+      handOnly.some((n) => sentence.includes(n)),
+      "the refusal names a hand-only tree of the family (the miss report may lead with any declared row; the subject here is the hand-only class) — got: " +
+        sentence +
+        " — hand-only set: " +
+        JSON.stringify(handOnly),
     );
     assert.ok(
       !/fetch it:/.test(sentence),

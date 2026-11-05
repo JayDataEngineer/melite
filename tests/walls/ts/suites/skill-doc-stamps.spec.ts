@@ -11,7 +11,7 @@
 // stamp, so the wall now enforces the ban itself — corpus-wide,
 // derived by walk, no roster to rot.
 import { describe, expect, it } from 'vitest';
-import { readdirSync, readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import YAML from 'yaml';
 
@@ -63,7 +63,18 @@ describe('THE SERVED-DOC PROVENANCE BAN WALL (agent docs teach law, never histor
     }
   });
 
-  it('the registry row states the ban (the law has a seat)', () => {
+  // THE CLONE SHAPE (the contracts-registry REGISTRY_PRESENT pattern,
+  // 2026-11-16 CI cure): the law's seat is the registry row, and the
+  // registry lives in dev_docs/ — deliberately untracked, absent on
+  // every fresh clone and on CI. The corpus ban arm above judges
+  // everywhere (its subject is the tracked packages/ tree); this arm
+  // — the law's ACCOUNT — skips loud on the clone shape exactly like
+  // contracts-registry.spec does, and fires on every development
+  // machine where the registry exists. The skip sentinel for the
+  // whole clone shape lives on the registry wall (a half-tree that
+  // lost the registry directory reds there).
+  const REGISTRY_PRESENT = existsSync(join(ROOT, 'dev_docs', 'contracts', 'registry', 'cards-tier.yaml'));
+  it.skipIf(!REGISTRY_PRESENT)('the registry row states the ban (the law has a seat; skipped on the clone shape — dev_docs/ is developer-local and absent on CI)', () => {
     const invariant = rowDoc();
     expect(invariant, 'the row names the ban').toMatch(/provenance|archaeology|stamp/i);
     expect(invariant, 'the row names the banned classes').toMatch(/receipt/i);

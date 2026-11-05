@@ -7,13 +7,39 @@
 // requiring the module fires nothing. main() boots the card registry
 // (composeCards + composeModPlane) before composing; the happy paths
 // pin that boot.
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 // THE OPERATOR-STATE FIREWALL (2026-11-15): the spawned CLI boots the
 // plane — its rows read must be isolated from operator machine state
 import { isolateOperatorModState } from "../../../../tests/helpers/operator-modstate-isolation.ts";
 isolateOperatorModState();
+// THE KEYLESS CENSUS (the 2026-11-16 CI cure) + THE HERMETIC STORE:
+// the spawned door boots against the engine (GET /object_info) and
+// composes through the lane-presence walk — a fresh clone has NEITHER
+// the engine NOR the downloaded store, so every compose arm died on
+// "fetch failed" / "lane presence" before its own law was judged.
+// Serve the tracked boot double and point COMFYUI_URL at it
+// (resolveEngineBaseUrl reads the env first), and seed the declared
+// store rows via the house overlay — both ride the spawnSync env
+// inheritance, so the subprocess runs the real door against the
+// fixture world and the door's own contract stays the subject.
+import { installLaneStoreOverlay, restoreLaneStoreOverlay } from "../../../../tests/helpers/lane-store-overlay.ts";
+import { startObjectInfoStub, stopObjectInfoStub } from "../../../../tests/helpers/object-info-stub.ts";
+// the overlay seeds the DECLARED rows of the booted census — the
+// carddefs.spec precedent: cascade first, then read the registry
+import { cascadeInit } from "../src/models/models.ts";
+await cascadeInit();
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+
+beforeAll(async () => {
+  process.env["COMFYUI_URL"] = await startObjectInfoStub();
+  installLaneStoreOverlay();
+});
+afterAll(() => {
+  delete process.env["COMFYUI_URL"];
+  restoreLaneStoreOverlay();
+  stopObjectInfoStub();
+});
 
 /** The entry-guard law: importing the CLI module executes nothing.
  *  cli.ts is an exports row the walls suite requires; a self-executing

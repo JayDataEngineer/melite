@@ -38,7 +38,8 @@
 //   the seat's per body.
 //
 // Run: npx vitest run tests/walls/ts/suites/three-door-agreement.spec.ts
-import { describe, expect, it, beforeAll, vi } from "vitest";
+import { describe, expect, it, beforeAll, afterAll, vi } from "vitest";
+import { installLaneStoreOverlay, restoreLaneStoreOverlay } from "../../../helpers/lane-store-overlay.ts";
 import { Context } from "@deepseek-ai/cordis";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -153,9 +154,15 @@ beforeAll(async () => {
   // the object_info read rides the fixture mock above).
   svc = new CardRegistryService(ctx);
   await svc.prime();
+  // THE HERMETIC STORE (lane-store-overlay): the three doors all
+  // compose the burn doc through the real presence walk — the wall's
+  // subject is door ACCORD, not the machine's download state. Seed
+  // the declared rows a fresh-clone store lacks.
+  installLaneStoreOverlay();
   const defs = svc.defsSync();
   cards = { defsSync: () => defs, objectInfo: () => null };
 }, 120_000);
+afterAll(() => restoreLaneStoreOverlay());
 
 describe("the three-door verdict accord (the retired inject-keys law)", () => {
   it("THE MIRROR ADMITS THE BURN — the client gate has no lane dead letter left to speak", () => {

@@ -118,7 +118,12 @@ describe("endpoint config (the SSOT read)", () => {
       "package-anchored default finds the shipped endpoint under a fixture repo root");
     assert.equal(typeof resolveRepoRoot(), "string");
     delete process.env["MELITE_REPO_ROOT"];
-    assert.ok(resolveRepoRoot().endsWith("inference.cpp"), "the default climbs four hops to the repo");
+    // THE REPO, NOT A DIRECTORY NAME (the 2026-11-16 CI cure — the dev
+    // box's checkout dir froze into the assertion and red on every
+    // runner whose checkout is named differently). The anchor's law is
+    // that the default lands on THIS repo's root, judged by the repo's
+    // own marker, never a checkout-dir literal.
+    assert.ok(existsSync(join(resolveRepoRoot(), "pnpm-workspace.yaml")), "the default climbs four hops to the repo");
   });
   it("THE STATE HOME LAW (F1): the write target is the untracked overlay, never the tracked seed", () => {
     const root = tmpRoot();

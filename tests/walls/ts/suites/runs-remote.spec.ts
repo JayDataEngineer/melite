@@ -5,10 +5,11 @@
 // seat on purpose: the pump's engine seam must settle the run
 // FAILED with the loud miswire text (never a silent accept).
 import { assertHermeticRode } from "../../../helpers/hermetic-engine.ts";
+import { installLaneStoreOverlay, restoreLaneStoreOverlay } from "../../../helpers/lane-store-overlay.ts";
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { onTestFinished, test, vi } from "vitest";
+import { afterAll, onTestFinished, test, vi } from "vitest";
 import assert from "node:assert/strict";
 import { Context, type Plugin } from '@deepseek-ai/cordis';
 import { RemoteError, remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol';
@@ -96,6 +97,12 @@ async function boot(withDraft = true): Promise<Booted> {
   await ctx.plugin(cardRegistryProvider as unknown as Plugin);
   await ctx.plugin(runsRegistryPlugin as unknown as Plugin);
   await ctx.plugin(runsRemotePlugin as unknown as Plugin);
+  // THE HERMETIC STORE (lane-store-overlay): the card arms compose
+  // through the real presence walk — the subject is the runs plane,
+  // not the machine's download state. Seed the declared rows a
+  // fresh-clone store lacks (idempotent per process; the walk reads
+  // the booted registry, seated by the plugin above).
+  installLaneStoreOverlay();
   if (withDraft) await seedDraft(ctx, doc("d_ok"));
   const runs = (ctx as unknown as {
     runs: RunsRuntimeService;
@@ -103,6 +110,9 @@ async function boot(withDraft = true): Promise<Booted> {
   });
   return { ctx, runs: runs.runs, adapter: runs.runsRemote, fiber, root: stateRoot };
 }
+// the file-scope overlay dies with the worker: restore the real root
+// and drop the fixture tree once every test in this file settled
+afterAll(() => restoreLaneStoreOverlay());
 
 /** Place a queued row straight into the queue seat's core (the
  *  deterministic live-stop probe — the pump is never kicked). */
@@ -523,7 +533,9 @@ test("runs/list — the restore-port envelope: media-first sort, skip laws, trun
       created_at: 1700000000,
     }),
   );
-  // run-zombie: sidecar says running → failed (read-time override).
+  // run-zombie: sidecar says running → the row SERVES running
+  // (W-12, 667630ed0: the read-time terminal override is deleted —
+  // rows carry their written status verbatim).
   mkdirSync(join(out, "run-cccccccccccc-00000003"), { recursive: true });
   writeFileSync(
     join(join(out, "run-cccccccccccc-00000003"), "_flow.json"),
@@ -560,11 +572,12 @@ test("runs/list — the restore-port envelope: media-first sort, skip laws, trun
   assert.equal(a1["url"], "run-aaaaaaaaaaaa-00000001/img_1.png");
   assert.equal(a1["path"], "./output/run-aaaaaaaaaaaa-00000001/img_1.png");
   // bare tier: newest-first within the tier — zombie run (1700000050)
-  // before the orphan run (1700000000); zombie → failed; orphan
-  // draft cleared (row survives).
+  // before the orphan run (1700000000); zombie → running VERBATIM (the
+  // W-12 cure: the read never stamps a terminal word on a non-terminal
+  // run); orphan draft cleared (row survives).
   const second = env.runs[1] as Record<string, unknown>;
   assert.equal(second["run_id"], "run-cccccccccccc-00000003");
-  assert.equal(second["status"], "failed", "read-time zombie override");
+  assert.equal(second["status"], "running", "the row carries its written status verbatim (W-12: no read-time zombie override)");
   const third = env.runs[2] as Record<string, unknown>;
   assert.equal(third["run_id"], "run-bbbbbbbbbbbb-00000002");
   assert.equal(third["status"], "failed", "error → failed");

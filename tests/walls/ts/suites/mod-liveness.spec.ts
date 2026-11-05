@@ -85,7 +85,28 @@ import { factsPath } from "../../../../packages/harness/estate-queue/src/cardsFa
 import { loadFacts } from "../../../../packages/engines/comfyui-card-kit/src/facts.ts";
 import { ComposeRefusal } from "../../../../packages/engines/comfyui-card-kit/src/errors.ts";
 
-const OFFLINE = process.env["MELITE_WALLS_OFFLINE"] === "1";
+// THE LIVE-SEAT GATE (the e2e engine-gate.ts pattern, 2026-11-16):
+// arm 1 needs a LIVE engine. MELITE_WALLS_OFFLINE=1 forces the loud
+// skip; a machine with no seated endpoint and nothing answering the
+// engine URL (a fresh clone, CI) is the same no-engine state and skips
+// the same way — the seated-endpoint law keeps its judge on the lane
+// machines where the seat exists. Arms 2-3 are hermetic and always
+// run.
+const OFFLINE = await (async (): Promise<boolean> => {
+  if (process.env["MELITE_WALLS_OFFLINE"] === "1") return true;
+  let url: string;
+  try {
+    url = resolveEngineBaseUrl();
+  } catch {
+    return true; // no endpoint seated anywhere — the live arm cannot prove the listing
+  }
+  try {
+    const res = await fetch(`${url}/system_stats`, { signal: AbortSignal.timeout(5_000) });
+    return !res.ok;
+  } catch {
+    return true; // nothing answering the seated URL — no engine
+  }
+})();
 
 type Row = { id: string; filename: string; families: string[] };
 

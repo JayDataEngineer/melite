@@ -99,7 +99,16 @@ describe("THE BOOT FIXTURE, DERIVED (E8: the double is a census-derived artifact
     );
   });
 
-  it("the receipt's census stamp is fresh — a moved census reds as regen owed", () => {
+  // THE CLONE SHAPE (the 2026-11-16 CI cure, the contracts-registry
+  // REGISTRY_PRESENT pattern): the census input is a live machine
+  // harvest (data/tmp is untracked) — absent on every fresh clone and
+  // on CI, present on every development machine, which is the machine
+  // class this arm guards (a moved census must red as regen owed).
+  // Absence skips LOUD with the harvest command; the provenance arm
+  // below owns the same absence with its early return.
+  const CENSUS_PRESENT = existsSync(CENSUS);
+
+  it.skipIf(!CENSUS_PRESENT)("the receipt's census stamp is fresh — a moved census reds as regen owed (skipped on a clone: the census input is not harvested — scripts/regen-node-vocab.mjs --boot --live harvests it)", () => {
     assert.ok(existsSync(RECEIPT), "no regen receipt beside the fixture — the fixture is still a frozen literal; regen with scripts/regen-node-vocab.mjs --boot");
     const receipt = JSON.parse(readFileSync(RECEIPT, "utf8")) as Receipt;
     if (!existsSync(CENSUS)) {

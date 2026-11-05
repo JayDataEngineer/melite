@@ -18,7 +18,7 @@
 // `.pathname` derivation off import.meta.url reds by file and line).
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync, existsSync } from "node:fs";
 import { isAbsolute, join, win32 } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -43,7 +43,12 @@ describe("THE OS-ABSOLUTE PATH DERIVATION LAW (windows CI class C, 2026-10-31)",
     // presence at every derivation site).
     const fixed = fileURLToPath(new URL("../../../../", import.meta.url)).replace(/[\\/]$/, "");
     assert.equal(isAbsolute(fixed), true, "fileURLToPath derives an absolute path on the running platform");
-    assert.ok(fixed.endsWith("inference.cpp"), `the derivation names the real repo root (got '${fixed}')`);
+    // THE REPO, NOT A DIRECTORY NAME (the 2026-11-16 CI cure — this
+    // arm red on every runner whose checkout directory is not the dev
+    // box's). The derivation's law is that it names THIS repo's root,
+    // judged by the repo's own markers, never a frozen checkout-dir
+    // literal.
+    assert.ok(existsSync(join(fixed, "pnpm-workspace.yaml")), `the derivation names the real repo root (got '${fixed}')`);
   });
 
   it("ARM 2 — the census: no import.meta.url .pathname derivation remains in the executable tree", () => {

@@ -27,7 +27,7 @@
 // which is correct, because the law is not "the channel is called
 // default" but "a wire naming a channel the card DECLARES resolves
 // to a node that EXISTS".
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
@@ -36,6 +36,28 @@ import { join } from "node:path";
 import { planMerge } from "../../../../packages/engines/comfyui-cordis/src/comfyui-merge.ts";
 import type { MergeRow } from "../../../../packages/engines/comfyui-cordis/src/comfyui-merge.ts";
 import { cardPackages } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
+import { installLaneStoreOverlay, restoreLaneStoreOverlay } from "../../../helpers/lane-store-overlay.ts";
+import { startObjectInfoStub, stopObjectInfoStub } from "../../../helpers/object-info-stub.ts";
+import { cascadeInit } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
+
+// THE KEYLESS CENSUS + THE HERMETIC STORE (the 2026-11-16 CI cure):
+// the REAL compose door this wall spawns boots against the engine and
+// composes through the lane-presence walk — a fresh clone has neither
+// the engine nor the store, so every compose died on "fetch failed" /
+// "lane presence" before the WIRE law was judged. Serve the tracked
+// boot double at COMFYUI_URL (resolveEngineBaseUrl reads the env
+// first) and seed the declared rows via the house overlay; both ride
+// the spawnSync env inheritance into the real subprocess.
+await cascadeInit();
+beforeAll(async () => {
+  process.env["COMFYUI_URL"] = await startObjectInfoStub();
+  installLaneStoreOverlay();
+});
+afterAll(() => {
+  delete process.env["COMFYUI_URL"];
+  restoreLaneStoreOverlay();
+  stopObjectInfoStub();
+});
 
 const FACTS = "packages/engines/comfyui-cordis/data/model-facts.json";
 const CLI = "packages/engines/comfyui-cordis/src/cli.ts";

@@ -46,7 +46,7 @@
 import "../../../../tests/helpers/boot-models.ts";
 import { describe, it, beforeAll } from "vitest";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
@@ -2165,6 +2165,15 @@ const PACK_SHARPEN_NODES_PY = join(
   "nodes", "sharpen_nodes.py",
 );
 
+// THE RUNTIME-DEPLOY SHAPE (the 2026-11-16 CI cure, the engine-tree-
+// sync precedent): ARMs 48-50 parse the INSTALLED vendored pack — a
+// runtime deploy under data/runtime/, untracked developer state a
+// fresh clone (and every CI runner) carries none of. The served-truth
+// law keeps its judge on every seat that owns the deploy and skips
+// LOUD elsewhere; the tracked boot fixture still carries the served
+// grid the arms 48-50 compare against.
+const PACK_SEATED = existsSync(PACK_SHARPEN_NODES_PY);
+
 /** The served V3 combo: base input id + one child-name set per
  *  option key, parsed off the pack's define_schema source. */
 function servedSharpenCombo(): { base: string; options: Map<string, readonly string[]> } {
@@ -2252,7 +2261,7 @@ const SHARPEN_LEAF_OF: Record<string, string> = {
 };
 
 describe("U2 · the sharpen emission is the served V3 DynamicCombo shape (GAPS-1/F9)", () => {
-  it("ARM 48 — every served option composes its option key on the base wire + exactly its served children on dotted wires, stated values verbatim", async () => {
+  it.skipIf(!PACK_SEATED)("ARM 48 — every served option composes its option key on the base wire + exactly its served children on dotted wires, stated values verbatim (skipped when the vendored KJNodes runtime deploy is absent — fresh clone/CI: the engine tree owns the pack)", async () => {
     const served = servedSharpenCombo();
     assert.equal(served.base, "method", "U2: the served combo's base input is not 'method' — the composer wires a renamed seat");
     for (const [key, children] of served.options) {
@@ -2280,7 +2289,7 @@ describe("U2 · the sharpen emission is the served V3 DynamicCombo shape (GAPS-1
     }
   });
 
-  it("ARM 49 — the flat grouped dict is dead: no ImageSharpenKJ node carries an object on the base wire", async () => {
+  it.skipIf(!PACK_SEATED)("ARM 49 — the flat grouped dict is dead: no ImageSharpenKJ node carries an object on the base wire (skipped when the vendored KJNodes runtime deploy is absent — fresh clone/CI: the engine tree owns the pack)", async () => {
     const served = servedSharpenCombo();
     const graph = await composeH3({
       length: 56, calls: [SHOT()], seed: SEED,
@@ -2299,7 +2308,7 @@ describe("U2 · the sharpen emission is the served V3 DynamicCombo shape (GAPS-1
     }
   });
 
-  it("ARM 50 — unstated leaves keep the tuned operating point through the projection (shape changed, values did not)", async () => {
+  it.skipIf(!PACK_SEATED)("ARM 50 — unstated leaves keep the tuned operating point through the projection (shape changed, values did not; skipped when the vendored KJNodes runtime deploy is absent — fresh clone/CI: the engine tree owns the pack)", async () => {
     const served = servedSharpenCombo();
     const graph = await composeH3({
       length: 56, calls: [SHOT()], seed: SEED,

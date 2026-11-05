@@ -33,6 +33,19 @@ const CARD_VIEW = join(import.meta.dirname, "..", "..", "..", "..", "packages", 
 const REPO = join(import.meta.dirname, "..", "..", "..", "..");
 const LANE = join(REPO, "scripts", "e2e-gpu-lane.sh");
 
+// THE PREREQUISITE ORDER (the 2026-11-16 CI cure): the lane script's
+// skip laws run in order — port, dsh-on-PATH (scripts/e2e-gpu-lane.sh
+// "no dsh binary on PATH"), THEN the engine probe. A runner without
+// the dsh binary skips BEFORE the engine gate, so the arm's subject
+// (the gate's engine skip/loud voices) never executes. The arm rides
+// the same prerequisite: dsh present, else skip LOUD naming it — the
+// gate contract keeps its judge on every seat that can reach the
+// gate (dev boxes, GPU runners).
+const DSH_ON_PATH = spawnSync(
+  "bash",
+  ["-c", `command -v ${(process.env.DSH_BIN ?? "dsh").replace(/'/g, "")} >/dev/null 2>&1`],
+).status === 0;
+
 // THE PNPM SEAT (class B R7, 2026-10-31): the arms spawned `pnpm`
 // bare — on windows the PATH shim is pnpm.cmd and Node refuses to
 // exec a .cmd without a shell, so the seat resolves PNPM_HOME (the
@@ -177,7 +190,7 @@ describe("THE GPU TIER'S KEYLESS CONTRACT (the both-angles tier)", () => {
     expect(tile).toMatch(/'data-stage-status':\s*row\.status/);
   });
 
-  it.skipIf(process.platform === "win32")("the launcher's ENGINE GATE: dead engine skips keyless, FAILS LOUD under REQUIRE (skipped on win32: the launcher is the linux GPU lane's bash machinery — the gate contract rides the ubuntu/macos legs)", async () => {
+  it.skipIf(process.platform === "win32" || !DSH_ON_PATH)("the launcher's ENGINE GATE: dead engine skips keyless, FAILS LOUD under REQUIRE (skipped on win32: the launcher is the linux GPU lane's bash machinery — the gate contract rides the ubuntu/macos legs; skipped when no dsh binary is on PATH — CI: the script's skip laws stop at dsh before the engine gate)", async () => {
     // Arm 4, both edges: the gate probes the engine before any home
     // is built or host booted (fast, side-effect-free — the script
     // exits at the gate). E2E_GPU_PORT names a port this wall chose

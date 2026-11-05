@@ -31,8 +31,9 @@
 // must register before the barrel's first evaluation, so this import
 // precedes boot-models.
 import { assertHermeticRode } from "../../../helpers/hermetic-engine.ts";
+import { installLaneStoreOverlay, restoreLaneStoreOverlay } from "../../../helpers/lane-store-overlay.ts";
 import { fillFor as probeFillFor, namedMulti, namedParam, undeclaredNames } from "../../../../packages/engines/comfyui-cordis/scripts/compose-probe.ts";
-import { describe, it, beforeAll, onTestFinished } from "vitest";
+import { describe, it, beforeAll, afterAll, onTestFinished } from "vitest";
 import assert from "node:assert/strict";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -911,7 +912,14 @@ describe("every studio tenant's persisted key set composes on its own derived la
     assertHermeticRode();
     await loadCardDefs();
     cardDefs = await loadCardDefs();
+    // THE HERMETIC STORE (lane-store-overlay): this wall's subject is
+    // PARAM-SEAT PARITY — persisted key sets composing on their own
+    // lanes — never the machine's download state. Seed the declared
+    // rows a fresh-clone store lacks so the presence gate judges the
+    // law on every machine.
+    installLaneStoreOverlay();
   }, 90_000);
+  afterAll(() => restoreLaneStoreOverlay());
 
   it("THE WINDOW-FAMILY VOICE (the agent flow's step-8 burn): a stated lane on the REAL boarded family teaches the derivation law, never a pool list", () => {
     // THE BURN (transcript, 2026-11-12): the agent patched

@@ -79,7 +79,17 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 }
 
 describe("THE ARCHIVE WALL — every real sidecar's snapshot parses under the contract", () => {
-  it("the runs tree's bench/card snapshots all parse (the wand's whole restore population)", () => {
+  // THE DELEGATED SEAT (the 2026-11-16 CI cure, the wiring-roots S3
+  // seam): the wall's subject is the OPERATOR'S REAL RUNS TREE —
+  // machine history the estate box accumulates, untracked by design,
+  // and no CI runner owns that truth (a runner's data/runs is debris
+  // earlier suites wrote, an empty population by construction). The
+  // unit/coverage jobs set MELITE_TIER_DELEGATED=1 for exactly this
+  // class of machine-state wall; the estate box runs unarmed-skip-
+  // free. The empty-tree red the header pins still fires on any seat
+  // that owns an archive and lost its population.
+  const ESTATE_BOX = process.env.MELITE_TIER_DELEGATED !== "1";
+  it.skipIf(!ESTATE_BOX)("the runs tree's bench/card snapshots all parse (the wand's whole restore population; skipped on delegated CI seats — the estate box owns the runs archive)", () => {
     const tally: Tally = { sidecars: 0, benchSnapshots: 0, cardSnapshots: 0, failures: [] };
     walk(join(resolveRepoRoot(), "data", "runs"), tally);
     assert.ok(

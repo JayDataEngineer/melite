@@ -183,8 +183,23 @@ function runProbe(matrix: ProbeMatrix): ProbeResult {
 // delegation text gone, or a silent-skip shim replacing the exec.
 
 function hooksDir(): string {
-  const configured = execFileSync('git', ['config', 'core.hooksPath'], { cwd: REPO, encoding: 'utf8' }).trim()
-  return configured ? resolve(REPO, configured) : join(REPO, '.git', 'hooks')
+  // THE CANONICAL FALLBACK (the 2026-11-16 CI cure): a fresh clone —
+  // and CI — carries no local core.hooksPath (tools/install-lefthook.mjs
+  // deliberately skips on CI), and the old `.git/hooks` default threw
+  // `git config`'s exit-1 into the wall before any wire byte was
+  // judged. When nothing is configured, the repo's OWN canonical hooks
+  // home is .githooks (tracked, the wire this wall exists to judge);
+  // a configured path still wins so a user-repointed wiring is judged
+  // as pointed, never as intended.
+  let configured = ''
+  try {
+    configured = execFileSync('git', ['config', 'core.hooksPath'], { cwd: REPO, encoding: 'utf8' }).trim()
+  } catch {
+    configured = ''
+  }
+  if (configured) return resolve(REPO, configured)
+  const canonical = join(REPO, '.githooks')
+  return existsSync(canonical) ? canonical : join(REPO, '.git', 'hooks')
 }
 
 describe('THE PUSH-WIRE (the core.hooksPath disarm cure, 2026-11-15)', () => {

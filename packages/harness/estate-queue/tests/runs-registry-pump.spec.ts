@@ -263,8 +263,13 @@ describe("pump + engine", () => {
   // row instead of naming the missing binary.
   const ffmpegOk = (): boolean =>
     spawnSync("ffmpeg", ["-version"], { encoding: "utf8" }).status === 0;
+  // THE TOOL GATE (the 2026-11-16 CI cure): the film arms write REAL
+  // tiny mp4s — ffmpeg is their material, not their subject. The two
+  // arms skip LOUD on a host without the binary (CI); the mux-valve
+  // law's engine-side arms above and below judge everywhere.
+  const FFMPEG_PRESENT = ffmpegOk();
   const needFfmpeg = (): void => {
-    assert.ok(ffmpegOk(), "ffmpeg is unavailable — the film-presentation arms need real tiny mp4s");
+    assert.ok(FFMPEG_PRESENT, "ffmpeg is unavailable — the film-presentation arms need real tiny mp4s");
   };
   const mkMp4 = (dir: string, name: string, secs: string): boolean =>
     spawnSync(
@@ -277,7 +282,7 @@ describe("pump + engine", () => {
     ).status === 0;
 
 
-  it("THE ENGINE FILM LEADS (in-graph concat; the harness never muxes)", async () => {
+  it.skipIf(!FFMPEG_PRESENT)("THE ENGINE FILM LEADS (in-graph concat; the harness never muxes; skipped when ffmpeg is unavailable — CI: the film arms need real tiny mp4s)", async () => {
     needFfmpeg();
     const s = seat();
     const engine = engineSeat(s);
@@ -303,7 +308,7 @@ describe("pump + engine", () => {
     assert.ok(!row.artifacts.some((a: string) => a.endsWith("film_video_mux.mp4")));
   });
 
-  it("THE VALVE IS DEAD (2026-09-22, the operator's provenance law): windows-only films keep the windows — the harness never concats, never mixes", async () => {
+  it.skipIf(!FFMPEG_PRESENT)("THE VALVE IS DEAD (2026-09-22, the operator's provenance law): windows-only films keep the windows — the harness never concats, never mixes (skipped when ffmpeg is unavailable — CI: the film arms need real tiny mp4s)", async () => {
     needFfmpeg();
     const s = seat();
     const engine = engineSeat(s);

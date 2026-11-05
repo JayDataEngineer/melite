@@ -34,7 +34,8 @@
 // the filled outputs must equal the row's cardIo — the ONE TABLE both doors read).
 import "../../../helpers/hermetic-engine.ts";
 import "../../../helpers/boot-models.ts";
-import { describe, it, beforeAll } from "vitest";
+import { installLaneStoreOverlay, restoreLaneStoreOverlay } from "../../../helpers/lane-store-overlay.ts";
+import { describe, it, beforeAll, afterAll } from "vitest";
 import assert from "node:assert/strict";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -99,7 +100,13 @@ beforeAll(async (): Promise<void> => {
   writeFileSync(join(probeDir, "probe.glb"), "");
   writeFileSync(join(probeDir, "probe.wav"), "");
   writeFileSync(join(probeDir, "probe.txt"), "");
+  // THE HERMETIC STORE (lane-store-overlay): the wall composes EVERY
+  // registry flow — its subject is producer/agreement, not the
+  // machine's download state. Seed the declared rows a fresh-clone
+  // store lacks so every stage composes past the presence gate.
+  installLaneStoreOverlay();
 }, 90_000);
+afterAll(() => restoreLaneStoreOverlay());
 
 /** The probe initial for a declared initial kind (the start door's own vocabulary, runsStart). */
 function probeInitial(kind: string): string {

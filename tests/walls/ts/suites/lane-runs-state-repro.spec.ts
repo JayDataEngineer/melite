@@ -39,7 +39,7 @@
 // removed in afterEach.
 import { assertHermeticRode } from "../../../helpers/hermetic-engine.ts";
 import "../../../helpers/boot-models.ts";
-import { appendFileSync, cpSync, existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { appendFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -60,6 +60,14 @@ import { mountFamilyRoster } from "../lib/family-roster.ts";
 import { QueueService } from "../../../../packages/harness/estate-queue/src/service.ts";
 
 const REAL_RUNS = join(import.meta.dirname, "..", "..", "..", "..", "data", "runs");
+
+// THE LANE-STATE SHAPE (the 2026-11-16 CI cure): laws 2 and 5 copy the
+// OPERATOR'S REAL runs tree — machine history the estate box
+// accumulates, untracked by design. A fresh clone — and every CI
+// runner — carries no seated tree, so there is no state history to
+// boot against. Skip LOUD naming the owner; the hermetic laws (1, 3,
+// 4, 6) still judge everywhere.
+const REAL_TREE_SEATED = existsSync(REAL_RUNS);
 
 const SEATS = REQUIRED_SEATS;
 
@@ -257,7 +265,7 @@ describe("the false-death hunt's four laws", () => {
     expect(registered, "every service the context registered is settled (a registered-but-unsettled seat is the false death)").toEqual([]);
   });
 
-  it("2. THE TREE: the bundle settles every seat against a copy of the REAL runs tree", { timeout: 40_000 }, async () => {
+  it.skipIf(!REAL_TREE_SEATED)("2. THE TREE: the bundle settles every seat against a copy of the REAL runs tree (skipped when no real runs tree is seated — fresh clone/CI: the estate box owns the lane's state history)", { timeout: 40_000 }, async () => {
     expect(existsSync(REAL_RUNS)).toBe(true);
     const root = join(sandbox("law2-tree"), "runs");
     copyRealTree(root);
@@ -315,7 +323,7 @@ describe("the false-death hunt's four laws", () => {
     expect(registered, "every service the context registered is settled (a registered-but-unsettled seat is the false death)").toEqual([]);
   });
 
-  it("5. THE DIRTY TREE: a real boot settles over a corrupt sidecar and steals a dead holder's lock (cold-boot audit F10.2)", { timeout: 40_000 }, async () => {
+  it.skipIf(!REAL_TREE_SEATED)("5. THE DIRTY TREE: a real boot settles over a corrupt sidecar and steals a dead holder's lock (cold-boot audit F10.2; skipped when no real runs tree is seated — fresh clone/CI: the estate box owns the lane's state history)", { timeout: 40_000 }, async () => {
     expect(existsSync(REAL_RUNS)).toBe(true);
     const root = join(sandbox("law5-dirty"), "runs");
     copyRealTree(root);
@@ -350,7 +358,12 @@ describe("the false-death hunt's four laws", () => {
 
   it("4. THE LOCK LAW: a live-pid lock refuses the gate; dead is stolen; clean acquires", { timeout: 20_000 }, async (t) => {
     const root = join(sandbox("law4-lock"), "runs");
-    copyRealTree(root);
+    // HERMETIC SEED (the 2026-11-16 CI cure): the arm's subject is
+    // acquireLock's pid logic on this synthetic root — the real-tree
+    // copy seeded no state the assertions read, so the fresh-clone
+    // dependency it carried was incidental. A bare runs dir serves
+    // the law everywhere.
+    mkdirSync(root, { recursive: true });
     // a lock held by OUR OWN pid — alive by definition
     writeFileSync(join(root, "gateway.lock"), String(process.pid));
     const refused = acquireLock(root, process.pid);

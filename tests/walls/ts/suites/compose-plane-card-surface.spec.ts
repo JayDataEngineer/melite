@@ -39,6 +39,7 @@
 //
 // Run: npx vitest run tests/walls/ts/suites/compose-plane-card-surface.spec.ts
 import { describe, expect, it, beforeAll, afterAll, vi } from "vitest";
+import { installLaneStoreOverlay, restoreLaneStoreOverlay } from "../../../helpers/lane-store-overlay.ts";
 import { Context } from "@deepseek-ai/cordis";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -93,10 +94,16 @@ beforeAll(async () => {
     validate: (doc: unknown, signal: AbortSignal) => validateArm(doc, signal, ctx),
   });
   bench = new BenchRemoteService(ctx);
+  // THE HERMETIC STORE (lane-store-overlay): the arms press real
+  // cards through the presence walk — the subject is the card
+  // SURFACE, not the machine's download state. Seed the declared
+  // rows a fresh-clone store lacks.
+  installLaneStoreOverlay();
 }, 120_000);
 
 afterAll(async () => {
   await ctx.fiber.dispose();
+  restoreLaneStoreOverlay();
 });
 
 /** A marker-carrying bench doc in the RETIRED press's landed shape,

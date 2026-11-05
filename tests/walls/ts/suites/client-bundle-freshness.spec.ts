@@ -78,8 +78,21 @@ function isStale(bundleMtime: number, newestSrcMtime: number): boolean {
   return bundleMtime < newestSrcMtime;
 }
 
+// THE CHECKOUT-MTIME CLASS (the 2026-11-16 CI cure): this arm's mtime
+// signal is meaningful only AFTER a build act. A fresh checkout
+// materializes the committed lib/client.js and every src byte within
+// the same second in readdir order — the bundle's mtime there is the
+// checkout's write order, never a build, so the arm judges noise and
+// reds healthy trees. CI judges the same law BY BYTES instead: the
+// unit job's Lib-sync step rebuilds and refuses any lib/ drift (the
+// stale bundle would diverge from its own src). The dev-box law —
+// "a tsc-only rebuild left a stale serve" — fires here, where mtimes
+// carry the build act. Same dual check tools/install-lefthook.mjs
+// uses for the same CI shape.
+const CHECKOUT_MTIMES = process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true";
+
 describe("THE SERVED-BUNDLE FRESHNESS LAW", () => {
-  it("every lib/client.js is at least as new as its package's newest src byte (tsc-only rebuilds can never leave a stale serve)", () => {
+  it.skipIf(CHECKOUT_MTIMES)("every lib/client.js is at least as new as its package's newest src byte (tsc-only rebuilds can never leave a stale serve; CI: the Lib-sync byte gate owns this law — checkout mtimes are write order, not a build)", () => {
     const bundles = clientBundles();
     assert.ok(bundles.length >= 6, "the census sees the six web client bundles (got " + String(bundles.length) + " — the walker itself rotted)");
     const stale: string[] = [];

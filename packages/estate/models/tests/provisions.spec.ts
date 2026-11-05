@@ -65,6 +65,15 @@ const BAD_BYTES = Buffer.from("tampered-bytes-that-miss-the-decl-sha");
 // anchoring test below pins that half
 const LIVE_STORE = "/mnt/data/models/image-gen/comfyui";
 
+// THE STATE-HOME SHAPE (the 2026-11-16 CI cure): the download_path
+// arm and the V8 no-env-seam arm judge the OPERATOR'S STATE HOME —
+// a machine-mounted store (data/inference.local.json overlay,
+// untracked) a fresh clone and every CI runner lack; there the
+// checkout resolves the repo-relative SEED instead (the anchoring
+// test pins that half and still fires). These two arms keep their
+// judge on the seat that owns the state home and skip LOUD elsewhere.
+const STATE_HOME_SEATED = existsSync(LIVE_STORE);
+
 function row(over: Partial<ProvisionRow> = {}): ProvisionRow {
   return {
     name: "skin_standard.npz",
@@ -316,7 +325,7 @@ describe("loadStoreRoot (the config-file plane)", () => {
     assert.ok(/DOWNLOAD arm/.test(doc), "the JSDoc names the one arm it derives");
     assert.ok(/NOT derived here/.test(doc), "the JSDoc names the arms it does not derive");
   });
-  test("the tracked checkout resolves the endpoint download_path", () => {
+  test.skipIf(!STATE_HOME_SEATED)("the tracked checkout resolves the endpoint download_path (skipped when no state home is mounted — fresh clone/CI: the checkout resolves the repo-relative seed, the anchoring test pins that)", () => {
     assert.equal(loadStoreRoot(findRepoRoot(process.cwd())), LIVE_STORE);
   });
   test("endpoint base_path wins when download_path is absent", () => {
@@ -492,7 +501,7 @@ describe("loadStoreRoot (the config-file plane)", () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
-  test("the checkout configs resolve with no env seam (V8: the pin is the apply-time config read)", () => {
+  test.skipIf(!STATE_HOME_SEATED)("the checkout configs resolve with no env seam (V8: the pin is the apply-time config read; skipped when no state home is mounted — fresh clone/CI: the checkout resolves the repo-relative seed, the anchoring test pins that)", () => {
     assert.equal(loadStoreRoot(findRepoRoot(process.cwd())), LIVE_STORE);
   });
 });

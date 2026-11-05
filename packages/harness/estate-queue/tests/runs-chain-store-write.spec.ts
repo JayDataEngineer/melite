@@ -40,7 +40,8 @@
 // refused on melite-audio-nodes the wall never judged — the FIRST
 // import hermeticizes the file onto the tracked boot double).
 import { assertHermeticRode } from "../../../../tests/helpers/hermetic-engine.ts";
-import { describe, it, afterEach, beforeAll, vi } from "vitest";
+import { installLaneStoreOverlay, restoreLaneStoreOverlay } from "../../../../tests/helpers/lane-store-overlay.ts";
+import { describe, it, afterEach, beforeAll, afterAll, vi } from "vitest";
 import assert from "node:assert/strict";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -78,6 +79,7 @@ afterEach(() => {
     TMP = "";
   }
 });
+afterAll(() => restoreLaneStoreOverlay());
 const tmp = (): string => {
   const d = mkdtempSync(join(tmpdir(), "chain-door-"));
   TMP = TMP === "" ? d : TMP + ":" + d;
@@ -101,6 +103,11 @@ beforeAll(async () => {
   // no decorative mocks: the boot double actually answered the prime
   assertHermeticRode();
   await loadCardDefs();
+  // THE HERMETIC STORE (lane-store-overlay): the chain arms press
+  // h3 compositions through the real presence walk — the subject is
+  // the store WRITE chain, not the machine's download state. Seed
+  // the declared rows a fresh-clone store lacks.
+  installLaneStoreOverlay();
   (ctx as unknown as { cardRegistry: unknown }).cardRegistry = cards;
   composeOnceFake.mockImplementation(
     async (_cards: unknown, _card: string, _mid: string, params: Record<string, unknown>): Promise<Record<string, unknown>> => {
