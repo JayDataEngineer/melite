@@ -5,7 +5,7 @@
 import { afterEach, beforeEach, describe, it, onTestFinished } from "vitest";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync, rmSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -184,7 +184,11 @@ describe("endpoint config (the SSOT read)", () => {
       "m.endpointConfigPath(), m.endpointSeedPath(), Object.keys(m.loadEndpointConfig()).length > 0])))",
       join(install, "lib", "src", "comfyui-config.js")], { encoding: "utf8", env: childEnv });
     const [writeTarget, seedPath, seedServes]: [string, string, boolean] = JSON.parse(out) as [string, string, boolean];
-    assert.equal(seedPath, join(install, "data", "comfyui_endpoint.json"),
+    // Compare realpaths, not spellings: on macOS the child's file://
+    // import resolves through the /var → /private/var symlink and
+    // reports the aliased prefix while this side keeps tmpdir()'s
+    // spelling. The law is that both name the same installed seed file.
+    assert.equal(realpathSync(seedPath), realpathSync(join(install, "data", "comfyui_endpoint.json")),
       "the installed copy anchored its seed on its own package root");
     assert.ok(seedServes, "the installed copy's seed resolves with no env pin");
     assert.ok(existsSync(seedPath), "the installed copy's candidate exists on disk");

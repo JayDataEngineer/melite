@@ -629,9 +629,15 @@ export function apply(ctx, config = {}) {
                     return;
                 }
                 try {
-                    await fs.stat(fullNext);
-                    fail(res, 409, 'already_exists', { message: 'a file already carries that name', path: next });
-                    return;
+                    const [source, destination] = await Promise.all([fs.stat(full), fs.stat(fullNext)]);
+                    // A case-insensitive filesystem (APFS, NTFS) answers the
+                    // recased spelling with the source's own inode — that is a
+                    // case-only recase, not a clobber; only a DIFFERENT file
+                    // refuses 409.
+                    if (!(source.dev === destination.dev && source.ino === destination.ino)) {
+                        fail(res, 409, 'already_exists', { message: 'a file already carries that name', path: next });
+                        return;
+                    }
                 }
                 catch {
                     // absent — the rename may proceed.

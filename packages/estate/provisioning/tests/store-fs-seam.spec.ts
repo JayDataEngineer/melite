@@ -83,9 +83,8 @@ function operation(id = "op-seam"): ProvisionOperation {
   };
 }
 
-function recordPath(rootPath: string, id: string): string {
-  return join(rootPath, `${createHash("sha256").update(id).digest("hex")}.json`);
-}
+// The store's record filename derivation (sha256 of the operation
+// id + .json) — stated once; the lstat mocks match on its suffix.
 
 async function rejectsCode(promise: Promise<unknown>, code: string): Promise<OperationStoreError> {
   try {
@@ -101,9 +100,13 @@ async function rejectsCode(promise: Promise<unknown>, code: string): Promise<Ope
 describe("operation store filesystem seams", () => {
   test("rejects a non-regular record path", async () => {
     const storeRoot = root();
-    const path = recordPath(storeRoot, "other");
+    // Match on the record's unique sha filename, not the full path:
+    // the store realpath()s its root before lstat, and on macOS that
+    // resolves tmpdir()'s /var prefix to /private/var — a different
+    // spelling of the same file. Linux spellings already coincide.
+    const filename = `${createHash("sha256").update("other").digest("hex")}.json`;
     fsMocks.lstat.mockImplementation(async (...args: unknown[]) => {
-      if (args[0] === path) return { isSymbolicLink: () => false, isFile: () => false, isDirectory: () => false };
+      if (String(args[0]).endsWith(filename)) return { isSymbolicLink: () => false, isFile: () => false, isDirectory: () => false };
       return actualFs.lstat(...(args as Parameters<ActualFs["lstat"]>));
     });
     await rejectsCode(new FileOperationStore(storeRoot).load("other"), "invalid-record");
@@ -111,9 +114,9 @@ describe("operation store filesystem seams", () => {
 
   test("surfaces a non-ENOENT lstat failure", async () => {
     const storeRoot = root();
-    const path = recordPath(storeRoot, "denied");
+    const filename = `${createHash("sha256").update("denied").digest("hex")}.json`;
     fsMocks.lstat.mockImplementation(async (...args: unknown[]) => {
-      if (args[0] === path) throw Object.assign(new Error("denied"), { code: "EACCES" });
+      if (String(args[0]).endsWith(filename)) throw Object.assign(new Error("denied"), { code: "EACCES" });
       return actualFs.lstat(...(args as Parameters<ActualFs["lstat"]>));
     });
     await assert.rejects(new FileOperationStore(storeRoot).load("denied"));
