@@ -26,16 +26,41 @@ const W2 = [56 / 24, 73 / 24];
 const W3 = [56 / 24, 90 / 24, 124 / 24];
 
 describe("parseFilmMixClips — the one law for what a clip IS", () => {
-  it("the auto law: text → dialogue, textless → music; unpositioned src-less rows skip", () => {
+  it("the auto law: text → dialogue, textless → music; the contentless row (no stated key) is the one skip", () => {
     const clips = parseFilmMixClips([
       { src: "d.flac", start_frame: 10, dur_frames: 40, text: "get down, now." },
       { src: "m.flac", start_frame: 0, dur_frames: 124 },
-      { noSrc: true },
+      {},
       null,
     ]);
     assert.equal(clips.length, 2);
     assert.equal(clips[0]!.cls, "dialogue");
     assert.equal(clips[1]!.cls, "music");
+  });
+
+  it("THE SOURCE-LESS ROW LAW (F3-06): a row that states anything without src refuses — never a silent phantom row", () => {
+    // THE BURN (R-P3-16, rev 120): {gain: 0.5} beside a lawful film
+    // composed as a silent no-op — the row was neither placed nor
+    // refused (the old whitelist knew six keys, `gain` rode the
+    // `continue`)
+    assert.throws(
+      () => parseFilmMixClips([{ gain: 0.5 }]),
+      /a clip row has no src — the film mix cannot mix a source-less row; state src or drop the row/,
+    );
+    assert.throws(
+      () => parseFilmMixClips([{ gain: 0.5, text: "" }]),
+      /a clip row has no src/,
+    );
+    // a stated key with a blank value is still a stated key — the
+    // blank law tolerates NO-stated-key rows only
+    assert.throws(
+      () => parseFilmMixClips([{ noSrc: true }]),
+      /a clip row has no src/,
+    );
+    assert.throws(
+      () => parseFilmMixClips([{ text: 4, class: 9 }]),
+      /a clip row has no src/,
+    );
   });
 
   it("positioned source-less rows refuse loud", () => {
@@ -54,10 +79,10 @@ describe("parseFilmMixClips — the one law for what a clip IS", () => {
       () => parseFilmMixClips([{ text: "the line", src: "  " }]),
       /positioned clip row has no src/,
     );
-    // rows that claim nothing stay skippable junk: empty strings, a
-    // non-string field, and the truly empty row
+    // rows that state NOTHING stay skippable junk: the truly empty
+    // row (the blank law's only tolerance under the source-less law)
     assert.deepEqual(
-      parseFilmMixClips([{}, { noSrc: true }, { text: "", class: "", id: "", name: "" }, { text: 4, class: 9 }]),
+      parseFilmMixClips([{}, null]),
       [],
     );
   });

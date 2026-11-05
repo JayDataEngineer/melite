@@ -12,8 +12,10 @@ export interface FilmMixClip {
 }
 /** Parse raw audio_clips rows — the card's one law for what a clip
  *  IS: a src without a numeric start_frame refuses loud (never a
- *  silent misplacement); a row without src is junk and skips; the
- *  class auto law (text → dialogue, textless → music) rides here. */
+ *  silent misplacement); a row that states anything without src
+ *  refuses loud (never a silent phantom row); only the contentless
+ *  row (no stated key at all) is junk and skips; the class auto law
+ *  (text → dialogue, textless → music) rides here. */
 export declare function parseFilmMixClips(rows: readonly unknown[]): FilmMixClip[];
 /** One window's doc span + seam for the owner map. */
 export interface FilmMixSpan {

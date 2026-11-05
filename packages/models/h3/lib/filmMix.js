@@ -20,8 +20,10 @@ import { DOC_FPS_DEFAULT, spanOverlap, spanStanzaFrames } from './timelineContra
 export { spanOverlap, spanStanzaFrames } from './timelineContract.js';
 /** Parse raw audio_clips rows — the card's one law for what a clip
  *  IS: a src without a numeric start_frame refuses loud (never a
- *  silent misplacement); a row without src is junk and skips; the
- *  class auto law (text → dialogue, textless → music) rides here. */
+ *  silent misplacement); a row that states anything without src
+ *  refuses loud (never a silent phantom row); only the contentless
+ *  row (no stated key at all) is junk and skips; the class auto law
+ *  (text → dialogue, textless → music) rides here. */
 export function parseFilmMixClips(rows) {
     const clips = [];
     // THE ROW-LEVEL NUMERIC RESTORE (attempt-035's wire family, the
@@ -48,6 +50,19 @@ export function parseFilmMixClips(rows) {
                 (typeof row.name === 'string' && row.name.trim() !== '');
             if (positioned) {
                 throw new Error('audio_clips: a positioned clip row has no src — the film mix cannot place a source-less row');
+            }
+            // THE SOURCE-LESS ROW LAW (F3-06, R-P3-16): the old whitelist
+            // refused only six "positioning" keys and let every OTHER
+            // stated key take the silent `continue` — {gain: 0.5} beside a
+            // lawful film COMPOSED as a phantom no-op (the run completed,
+            // the row performed nothing, nothing said so). A row that
+            // states ANYTHING and carries no src places nothing and mixes
+            // nothing: refuse it in its own voice. The blank law stays the
+            // only tolerance — a row with NO stated key is still skippable
+            // authoring junk.
+            const stated = Object.keys(row).some((k) => row[k] !== undefined);
+            if (stated) {
+                throw new Error('audio_clips: a clip row has no src — the film mix cannot mix a source-less row; state src or drop the row');
             }
             continue;
         }
