@@ -194,7 +194,8 @@ describe("the refine skill's dial table agrees with the code's own homes", () =>
       "the doc refuses the file-sourced 'second pass with context'");
     assert.match(md, /CHAIN door/i,
       "the doc points at the chain door as the context-carrying pass");
-    assert.match(md, /ARM 7/i, "the doc names the wall that settles the carry seat");
+    assert.match(md, /ARM 3b/i,
+      "the doc names the carrier harness whose carry is stood down (F3-14)");
     assert.match(md, /Never describe a\s+press here as "the second pass"/i,
       "the doc names the wrong label an agent must not use");
     // THE SERVED SEAT carries the same fact, so a form user learns it
@@ -214,12 +215,19 @@ describe("the refine skill's dial table agrees with the code's own homes", () =>
     const servedStack = refineKind.max_stack;
     assert.equal(servedStack, MAX_COMPOSED_WINDOWS,
       "the served refine bag stacks to the composed-window ceiling");
-    // THE DESIGN: one press tiles the film — the bag takes multiple
-    // window entries (the frontmatter description is the contract)
+    // THE DESIGN: the bag takes multiple window entries, and the
+    // MULTI-WINDOW PRESS IS THE ABUTTING HARD CUT — the carried join
+    // is dead in the engine (F3-14) and refused at the door, so the
+    // doc must name the burn instead of promising the carried tile.
     assert.match(md, /multiple window entries/,
       "the doc states the bag takes multiple window entries");
-    assert.match(md, /one press tiles the film/i,
-      "the doc states the design: one press tiles the film");
+    assert.match(md, /F3-14/,
+      "the doc names the F3-14 stand-down");
+    assert.match(md, /DEAD in the engine today/i,
+      "the doc states the carried join is dead in the engine");
+    assert.match(md, /ABUTTING/i,
+      "the doc states the lawful multi-window press: the abutting hard cut");
+    expect(md).not.toMatch(/one press tiles the film/i);
     // the STOPGAP claim is gone — the doc no longer teaches the gap
     expect(md).not.toMatch(/the bag is max_stack 1/i);
     expect(md).not.toMatch(/DECLARED STOPGAP/);

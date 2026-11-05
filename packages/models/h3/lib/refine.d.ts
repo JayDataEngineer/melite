@@ -136,6 +136,24 @@ export declare function renderH3Refine(entry: Record<string, unknown>, p: Record
  * @param runId the run tree's id (window + film prefixes ride it)
  * @returns the terminal SaveVideo passthrough — the assembled film
  * at `<runId>/refine` (N=1: the single window's own save) */
+/** THE CARRY STAND-DOWN (F3-14, operator burn 2026-11-05 — two
+ *  presses, both died the same way): the engine path that would carry
+ *  a refine film's own continuation between windows is DEAD — window
+ *  0 renders and bills, then window 1 dies at its handoff with
+ *  `ValueError: Drift-Control AV packed mask does not match its audio
+ *  stream` (the Drift-Control mask state splits the packed mask by
+ *  the install-time stream shapes, drift_control_av.py:159, and a
+ *  continuation-carried latent's audio prefix no longer lands; the
+ *  node is MinimaxH3LatentUpscaler3DRefineHandoff). The door refuses
+ *  the carried shape instead of billing a partial; the hard cut
+ *  (overlap_frames 0, or abutting starts) is the lawful press today.
+ *  The engine cure is owed (ROADMAP F3-14): seed the mask state from
+ *  the sampling latent, or strip the foreign denoise-mask patch in
+ *  the handoff. Removing this refusal IS the toggle that re-arms the
+ *  carry walk.
+ * @param what the carried shape the press stated, in frames
+ * @returns the refusal sentence (the caller throws it) */
+export declare function refineCarryStanddown(what: string): string;
 /** THE CARRY'S TOKEN LAW (F62, 2026-11-14): the H3 VAE maps frames to
  *  latent tokens non-linearly — 2 tokens cover the first 5 frames,
  *  then every 5 further tokens cover 17 frames (the timeline
@@ -194,6 +212,21 @@ export declare const lawfulCarryStart: (prev: {
  * @param carries each join's carried overlap in frames (one per join)
  * @param runId the run tree's id (member + film prefixes ride it)
  * @returns the assembled film's SaveVideo passthrough */
+/** THE CARRY LAW, judged without emitting (the stand-down and the
+ *  carrier share one judge): the entries tile the stated windows one
+ *  per window, every join is token-exact, each window passes its own
+ *  seat/ceiling door, and the tiling seats (mode + scale) agree across
+ *  the film. Called by `renderH3RefineCarry` before its walk and by
+ *  the bag/loop before the F3-14 stand-down, so a malformed shape
+ *  keeps its own better voice and the stand-down owns only lawful
+ *  carries.
+ * @param entries the film's entries, film order (one per window)
+ * @param windows each window's cap + skip, film order (≥ 2)
+ * @param carries each join's carried overlap in frames (one per join) */
+export declare function assertRefineCarryLawful(entries: ReadonlyArray<Record<string, unknown>>, windows: ReadonlyArray<{
+    cap: number;
+    skip: number;
+}>, carries: readonly number[]): void;
 export declare function renderH3RefineCarry(entries: ReadonlyArray<Record<string, unknown>>, p: Record<string, unknown>, facts: H3Facts, g: GraphBuilder, windows: ReadonlyArray<{
     cap: number;
     skip: number;

@@ -309,21 +309,27 @@ const EXTEND_MOD: DeclaredModifierKind = {
  *  learned upscale + the low-sigma refinement pass, one node) over
  *  the clip's own frames + soundtrack. THE MULTI-ENTRY LAW (GAPS-19,
  *  2026-11-01): the bag stacks to the film's composed-window ceiling
- *  and the entries ARE the windows — one press tiles the film
- *  through the family carrier (one refine window per entry, joined
- *  IN-GRAPH at <runId>/refine; the continuity laws — one film per
- *  bag, no gaps, no full overlap — are the family renderer's, so
- *  every door judges them identically). The declared alternative
- *  stays lawful and byte-cheap: ONE entry composes the single-window
- *  emission exactly, so the walk posture (press, judge, press) is a
- *  per-window judgment, never a workaround. ONE variant path: scale
- *  2.0, lock_audio, bf16 — the entry carries only the refine seats
- *  (source_clip, refine_prompt, denoise, steps, seed, clip_seconds,
- *  start_seconds); the model plane stays family-owned. The deferred
- *  ChainUpscale LOOP (prior-run lineage, recursive expand, no estate
- *  requeue driver) is the named follow-up, never this arm. Emission
- *  ends in the refine SaveVideo (the extend terminal's own file law
- *  — no ChainAssemble: a refine has no loop lineage to assemble). */
+ *  and the entries ARE the windows — the windows tile through the
+ *  family carrier (one refine window per entry, joined IN-GRAPH at
+ *  <runId>/refine; the continuity laws — one film per bag, no gaps,
+ *  no full overlap — are the family renderer's, so every door judges
+ *  them identically). THE CARRY IS DEAD IN THE ENGINE (F3-14,
+ *  operator burn 2026-11-05): a carried join (overlap ≥ 1 f) refuses
+ *  at the door — window 0 would bill and window 1 would die at its
+ *  handoff with a Drift-Control mask error — so only ABUTTING entries
+ *  (a zero-carry join, the plain concat) tile today; the carried
+ *  shape waits on the engine cure (ROADMAP F3-14). The declared
+ *  alternative stays lawful and byte-cheap: ONE entry composes the
+ *  single-window emission exactly, so the walk posture (press, judge,
+ *  press) is a per-window judgment, never a workaround. ONE variant
+ *  path: scale 2.0, lock_audio, bf16 — the entry carries only the
+ *  refine seats (source_clip, refine_prompt, denoise, steps, seed,
+ *  clip_seconds, start_seconds); the model plane stays family-owned.
+ *  The deferred ChainUpscale LOOP (prior-run lineage, recursive
+ *  expand, no estate requeue driver) is the named follow-up, never
+ *  this arm. Emission ends in the refine SaveVideo (the extend
+ *  terminal's own file law — no ChainAssemble: a refine has no loop
+ *  lineage to assemble). */
 const REFINE_MOD: DeclaredModifierKind = {
   kind: 'refine',
   label: 'Refine',
@@ -354,7 +360,7 @@ const REFINE_MOD: DeclaredModifierKind = {
   // judgment, not a workaround — the one-entry bag composes the
   // single-window emission byte-identically (the sequential-press
   // law).
-  section: `Refine — a standalone second pass over staged source clips: 2x learned latent upscale + the low-sigma H3 refinement pass in one node (the film handoff's own spelling), decoded and saved as one film. The bag takes MULTIPLE window entries — one press tiles the film: each entry IS one window (its own Source clip, Refine prompt, and window seats), entries tile ONE staged leaf in order, and the run assembles the windows into one <runId>/refine film. The window is what the 2x memory ceiling allows (${String(REFINE_DEFAULT_CLIP_SECONDS * 24)} f measured green, ${String(REFINE_2X_OOM_FRAMES)} f OOM) and the bag carries at most ${String(MAX_COMPOSED_WINDOWS)} window entries. The declared alternative stays lawful: refine one window per press — judge each window before pressing the next (Start seconds stepped forward). One entry with Windows above 1 tiles itself (window size + count + overlap seats — the card does the frame math, no hand-tiled entries needed). The soundtrack is the window's own, always. Film runs leave this arm empty.`,
+  section: `Refine — a standalone second pass over staged source clips: 2x learned latent upscale + the low-sigma H3 refinement pass in one node (the film handoff's own spelling), decoded and saved as one film. The bag takes MULTIPLE window entries — each entry IS one window (its own Source clip, Refine prompt, and window seats), the entries cover ONE staged leaf in order, and the run assembles the windows into one <runId>/refine film. THE CARRY IS DEAD IN THE ENGINE TODAY (F3-14): a carried join (consecutive windows overlapping by 1 f or more) REFUSES at the door — window 0 would bill, then window 1 would die at its handoff with a Drift-Control mask error — so the lawful multi-window press is the ABUTTING bag: start each window at the previous window's end (a zero-carry join, the plain concat, hard cuts at every seam). One entry with Windows above 1 follows the same law: state Overlap 0 to tile, and the default 22 refuses. The window is what the 2x memory ceiling allows (${String(REFINE_DEFAULT_CLIP_SECONDS * 24)} f measured green, ${String(REFINE_2X_OOM_FRAMES)} f OOM) and the bag carries at most ${String(MAX_COMPOSED_WINDOWS)} window entries. The declared alternative stays lawful: refine one window per press — judge each window before pressing the next (Start seconds stepped forward). The soundtrack is the window's own, always. Film runs leave this arm empty.`,
   fields: [
     // The seat TYPES (the picker law, the siblings' own): the video
     // seat is `file` + media 'video'; the prompt seat is text
@@ -368,7 +374,7 @@ const REFINE_MOD: DeclaredModifierKind = {
     // constants — refine-window audit D1: the served card must never
     // carry a hand-typed copy of a measured ceiling)
     { name: 'clip_seconds', label: 'Window seconds', type: 'number', default: REFINE_DEFAULT_CLIP_SECONDS, min: 0.5, max: 60, step: 0.25, tooltip: `How much of the clip this pass refines, from the window start: ${String(REFINE_DEFAULT_CLIP_SECONDS)} s = ${String(REFINE_DEFAULT_CLIP_SECONDS * 24)} f at 24 fps, the widest window measured green at 2x (2688×1536). The pass reads only this window, so a long film is covered by advancing Start seconds — and any upsizing window past ${(REFINE_2X_OOM_FRAMES / 24).toFixed(2)} s (${String(REFINE_2X_OOM_FRAMES)} f) is refused: that is where the measured OOM sits (the ceiling is the window's; only a same-size 1x pass reads wider). A window must also START inside the clip: a Start past the last frame yields no frames, and a window longer than what remains is quietly shortened.` },
-    { name: 'start_seconds', label: 'Start seconds', type: 'number', default: 0, min: 0, max: 3600, step: 0.25, tooltip: 'Where this window starts in the source clip (0 = the first frame). Each entry refines one window; step consecutive entries so each join lands on the token grid 5, 22, 39 … frames (the film\u2019s own seam is 22 f: start the next window 22 f before this one ends, e.g. window seconds 3.75 s and Start 0 / 2.83 s) so one press tiles a longer film — the carrier derives the carried overlap and mounts the film\u2019s own continuation per join, and a gap, an out-of-order window, or an off-grid carry refuses at the door naming the exact start that lands 22 f. The declared alternative: one entry per press, this seat stepped forward each time. The last window starts inside the clip: a start past the final frame lands no frames and the door refuses in words.' },
+    { name: 'start_seconds', label: 'Start seconds', type: 'number', default: 0, min: 0, max: 3600, step: 0.25, tooltip: 'Where this window starts in the source clip (0 = the first frame). Each entry refines one window. On today\u2019s engine a multi-window film must be ABUTTING: start each window at the previous window\u2019s end (window seconds 3.75 s → Start 0 / 3.75 s) — the joins are the plain concat (hard cuts), because a carried join is DEAD in the engine (F3-14) and any overlap of 1 f or more refuses at the door. A gap, an out-of-order window, or an off-grid carry also refuses, naming the exact frame. The declared alternative: one entry per press, this seat stepped forward each time. The last window starts inside the clip: a start past the final frame lands no frames and the door refuses in words.' },
     // THE CAPACITY SEATS (the F24 burn, 2026-10-30): the 2x handoff
     // OOMs past the measured 141 f, and the node itself serves an
     // exact-size mode — a ≤1x pass fits. Both seats ride the node's
@@ -388,11 +394,11 @@ const REFINE_MOD: DeclaredModifierKind = {
     // frame-exact starts the 0.25-step dials cannot reach. 1 keeps the
     // single-window walk posture (judge each window before pressing
     // the next); hand-tiled entries stay for mixed-seat bags.
-    { name: 'windows', label: 'Windows', type: 'number', default: 1, min: 1, max: MAX_COMPOSED_WINDOWS, step: 1, tooltip: 'How many windows this ONE entry tiles (the auto-tile: window k starts at Start seconds + k × (window − overlap), so one press covers Windows × (window − overlap) + overlap frames). 1 is the single-window walk. A windows seat above 1 on ANY entry of a multi-entry bag refuses — the bag already IS the tiling.' },
+    { name: 'windows', label: 'Windows', type: 'number', default: 1, min: 1, max: MAX_COMPOSED_WINDOWS, step: 1, tooltip: 'How many windows this ONE entry tiles (the auto-tile: window k starts at Start seconds + k × (window − overlap), so one press covers Windows × (window − overlap) + overlap frames). 1 is the single-window walk. The engine\u2019s carried join is DEAD today (F3-14), so an auto-tile needs Overlap 0 (abutting windows, the hard cut); the default 22 refuses at the door. A windows seat above 1 on ANY entry of a multi-entry bag refuses — the bag already IS the tiling.' },
     // (the default is DERIVED from the family contract's own seam —
     // refine-window audit D1: the served card never carries a
     // hand-typed copy of a measured constant)
-    { name: 'overlap_frames', label: 'Overlap (frames)', type: 'number', default: REFINE_DEFAULT_OVERLAP_FRAMES, min: 0, step: 1, tooltip: 'How many frames each window re-covers from the previous one (the join\u2019s carry, in whole frames — the card works out every window\u2019s start from window size minus this). 22 is the film\u2019s own seam and token-exact: a token-exact carry (5, 22, 39 \u2026) hands each window the previous window\u2019s latent through the same continuation a normal generation uses, and the join trims the carried head \u2014 video and audio stay continuous; any other overlap of 1 or more is refused (the only other join is 0 — the abutting hard cut): a crossfade of two independent renders is a double exposure, not a soft step, so it is never mounted. Rides only with Windows above 1 (a lone window has no join); must be shorter than the window.' },
+    { name: 'overlap_frames', label: 'Overlap (frames)', type: 'number', default: REFINE_DEFAULT_OVERLAP_FRAMES, min: 0, step: 1, tooltip: 'How many frames each window re-covers from the previous one (the join\u2019s carry, in whole frames — the card works out every window\u2019s start from window size minus this). 0 is the ONLY lawful join today: the abutting hard cut, the plain concat, no carried continuation. 22 (the film\u2019s own seam, token-exact) mounts the film\u2019s continuation — and that carry is DEAD in the engine (F3-14: window 0 bills, then window 1 dies at its handoff with a Drift-Control packed-mask error), so every overlap of 1 or more REFUSES at the door until the engine cure lands. Rides only with Windows above 1 (a lone window has no join); must be shorter than the window.' },
   ],
 }
 

@@ -488,6 +488,27 @@ export function renderH3Refine(
  * @param runId the run tree's id (window + film prefixes ride it)
  * @returns the terminal SaveVideo passthrough — the assembled film
  * at `<runId>/refine` (N=1: the single window's own save) */
+/** THE CARRY STAND-DOWN (F3-14, operator burn 2026-11-05 — two
+ *  presses, both died the same way): the engine path that would carry
+ *  a refine film's own continuation between windows is DEAD — window
+ *  0 renders and bills, then window 1 dies at its handoff with
+ *  `ValueError: Drift-Control AV packed mask does not match its audio
+ *  stream` (the Drift-Control mask state splits the packed mask by
+ *  the install-time stream shapes, drift_control_av.py:159, and a
+ *  continuation-carried latent's audio prefix no longer lands; the
+ *  node is MinimaxH3LatentUpscaler3DRefineHandoff). The door refuses
+ *  the carried shape instead of billing a partial; the hard cut
+ *  (overlap_frames 0, or abutting starts) is the lawful press today.
+ *  The engine cure is owed (ROADMAP F3-14): seed the mask state from
+ *  the sampling latent, or strip the foreign denoise-mask patch in
+ *  the handoff. Removing this refusal IS the toggle that re-arms the
+ *  carry walk.
+ * @param what the carried shape the press stated, in frames
+ * @returns the refusal sentence (the caller throws it) */
+export function refineCarryStanddown(what: string): string {
+  return `h3-timeline refine: ${what} would carry the film's own continuation between windows — and that carry is DEAD in the engine today (F3-14, operator burn 2026-11-05): the carried window dies at its handoff with "ValueError: Drift-Control AV packed mask does not match its audio stream" (the Drift-Control mask state splits the packed mask by the install-time stream shapes, drift_control_av.py:159, and a continuation-carried latent's audio prefix no longer lands; the node is MinimaxH3LatentUpscaler3DRefineHandoff). Window 0 renders and bills BEFORE that failure, so the door refuses the carry shape instead of billing a partial. The hard cut serves today: state overlap_frames 0 (the auto-tile) or start the next window at the previous window's end (the bag) — the plain concat of independent windows, no continuation. The carried refine is owed the engine cure (ROADMAP F3-14).`
+}
+
 /** THE CARRY'S TOKEN LAW (F62, 2026-11-14): the H3 VAE maps frames to
  *  latent tokens non-linearly — 2 tokens cover the first 5 frames,
  *  then every 5 further tokens cover 17 frames (the timeline
@@ -572,15 +593,22 @@ const refineTilingDiff = (a: Record<string, unknown>, b: Record<string, unknown>
  * @param carries each join's carried overlap in frames (one per join)
  * @param runId the run tree's id (member + film prefixes ride it)
  * @returns the assembled film's SaveVideo passthrough */
-export function renderH3RefineCarry(
+/** THE CARRY LAW, judged without emitting (the stand-down and the
+ *  carrier share one judge): the entries tile the stated windows one
+ *  per window, every join is token-exact, each window passes its own
+ *  seat/ceiling door, and the tiling seats (mode + scale) agree across
+ *  the film. Called by `renderH3RefineCarry` before its walk and by
+ *  the bag/loop before the F3-14 stand-down, so a malformed shape
+ *  keeps its own better voice and the stand-down owns only lawful
+ *  carries.
+ * @param entries the film's entries, film order (one per window)
+ * @param windows each window's cap + skip, film order (≥ 2)
+ * @param carries each join's carried overlap in frames (one per join) */
+export function assertRefineCarryLawful(
   entries: ReadonlyArray<Record<string, unknown>>,
-  p: Record<string, unknown>,
-  facts: H3Facts,
-  g: GraphBuilder,
   windows: ReadonlyArray<{ cap: number; skip: number }>,
   carries: readonly number[],
-  runId: string,
-): OutputHandle {
+): void {
   if (entries.length !== windows.length) {
     throw new Error(
       `h3-timeline refine: the carry face names ${entries.length} entries over ${windows.length} windows — one entry per window, film order`,
@@ -626,6 +654,18 @@ export function renderH3RefineCarry(
       )
     }
   }
+}
+
+export function renderH3RefineCarry(
+  entries: ReadonlyArray<Record<string, unknown>>,
+  p: Record<string, unknown>,
+  facts: H3Facts,
+  g: GraphBuilder,
+  windows: ReadonlyArray<{ cap: number; skip: number }>,
+  carries: readonly number[],
+  runId: string,
+): OutputHandle {
+  assertRefineCarryLawful(entries, windows, carries)
   // ── ONE shared plane for the whole film (the film's own posture:
   // one unet stack, one clip, the two VAEs; the boundary chain below
   // orders the saves, never a second unet) ──
@@ -799,7 +839,16 @@ export function renderH3RefineBag(
     : `State window ${offGrid + 1} at frame ${lawful} (${(lawful / clockFps).toFixed(3)} s) for a 22 f carry — the film's own seam — (the nearest rung above the measured span is ${rung} f), or make the join zero-carry (start window ${offGrid + 1} at frame ${prev.skip + prev.cap}, the hard cut).`}`,
       )
     }
-    return renderH3RefineCarry(bag, p, facts, g, origins, originsCarries, runId)
+    // THE CARRY STAND-DOWN (F3-14): the shape above is exactly the
+    // engine path that dies at window 1's handoff. Judge the shape
+    // first (a malformed bag keeps its own better voice), then refuse
+    // before a single node is emitted (the wall asserts g stays
+    // empty), so the press never bills window 0.
+    assertRefineCarryLawful(bag, origins, originsCarries)
+    const spans = originsCarries
+      .map((carry, k) => `window ${k}→${k + 1} carries ${carry} f`)
+      .join(', ')
+    throw new Error(refineCarryStanddown(`the carried join${originsCarries.length === 1 ? '' : 's'} (${spans})`))
   }
   const prefixes: string[] = []
   const saves: OutputHandle[] = []
@@ -908,7 +957,14 @@ export function renderH3RefineWindows(
     }))
     const carries = new Array<number>(loop.windows - 1).fill(loop.overlapFrames)
     const entries = new Array<Record<string, unknown>>(loop.windows).fill(entry)
-    return renderH3RefineCarry(entries, p, facts, g, windows, carries, runId)
+    // THE CARRY STAND-DOWN (F3-14): the carried joins die at window
+    // 1's handoff in the engine today; refuse before a node is
+    // emitted. The zero-overlap loop (the hard cut) never reaches here.
+    assertRefineCarryLawful(entries, windows, carries)
+    const joins = loop.windows - 1
+    throw new Error(refineCarryStanddown(
+      `a ${loop.windows}-window loop at a ${loop.overlapFrames} f overlap (${joins} carried join${joins === 1 ? '' : 's'})`,
+    ))
   }
   for (let k = 0; k < loop.windows; k += 1) {
     const prefix = `${runId}/refine_w${k}`

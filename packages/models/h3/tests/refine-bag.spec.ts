@@ -108,96 +108,23 @@ describe("the refine bag carrier (GAPS-19: N entries tile ONE film)", () => {
     assert.equal(ofClass(nodes, "MiniMaxH3FiniteSegmentFinalize").length, 0, "no carried head on the first window");
   });
 
-  it("ARM B2 — THE TILING PARITY: a two-entry bag rides the film tail's own skeleton, seam to terminal, on the 22 f carry", () => {
+  it("ARM B2 — THE CARRY STAND-DOWN (F3-14): a carried two-entry bag REFUSES at the door, naming the engine failure — and emits NOTHING", () => {
     // 48 f windows, the second starting 26 f in — the DERIVED carry is
-    // 0 + 48 − 26 = 22 f, the film's own token-exact seam (5, 22, 39 …).
-    // The carried join mounts the FILM'S OWN continuation (round 27,
-    // operator order: the context carry is identical to a normal
-    // gen's), the finalize trims the carried head, and the tail is the
-    // plain file concat.
+    // 0 + 48 − 26 = 22 f, the film's own token-exact seam. The compose
+    // mounts the film's own continuation correctly, but the carried
+    // window dies in the engine today (F3-14: the Drift-Control AV
+    // mask split), so the door refuses after its own judgments and
+    // before any node — window 0 must never bill.
     const g = new GraphBuilder();
-    renderH3RefineBag(
-      [entry(), entry({ start_seconds: 26 / 24 })],
-      {}, facts, g, "run-b2",
+    assert.throws(
+      () => renderH3RefineBag(
+        [entry(), entry({ start_seconds: 26 / 24 })],
+        {}, facts, g, "run-b2",
+      ),
+      /would carry the film's own continuation between windows — and that carry is DEAD in the engine today \(F3-14/,
+      "the carry shape refuses, naming the dead engine path",
     );
-    const nodes = walk(g);
-    // exactly N window saves + the one terminal film save
-    const saves = ofClass(nodes, "SaveVideo");
-    assert.deepEqual(
-      saves.map(([, n]) => n.inputs.filename_prefix),
-      ["run-b2/refine_w0", "run-b2/refine_w1", "run-b2/refine"],
-      "two per-window saves at the loop's walled spelling (k 0-based, film order) + the one terminal",
-    );
-    // TWO window bodies, one handoff each
-    assert.equal(ofClass(nodes, "VHS_LoadVideo").length, 2, "one loader per window");
-    assert.equal(ofClass(nodes, "MinimaxH3LatentUpscaler3DRefineHandoff").length, 2,
-      "one handoff per window — every window re-samples under its own carry");
-    // THE CONTEXT CARRY IS THE FILM'S OWN NODE: window 1's continuation
-    // takes window 0's joint target under the film's seats.
-    const conts = ofClass(nodes, "MiniMaxH3FiniteLatentContinuation");
-    assert.equal(conts.length, 1, "one continuation at the one carried join");
-    const [contId, cont] = conts[0]!;
-    assert.equal(cont.inputs.iteration, 1, "window 1's continuation");
-    assert.equal(cont.inputs.overlap_frames, 22, "the DERIVED carry is the film's own seam");
-    assert.equal(cont.inputs.continue_audio_latent, true, "the soundtrack takes the film's soft release");
-    assert.equal(nodeOf(nodes, cont.inputs.previous_latent).class_type,
-      "MiniMaxH3ContexMaskedTarget", "previous_latent is window 0's joint target");
-    assert.equal(nodeOf(nodes, cont.inputs.target_latent).class_type,
-      "MiniMaxH3ContexMaskedTarget", "window 1's own joint target");
-    // the film's joint-AV constructor is the estate's one: size probe →
-    // white mask → edit latent → masked target, both seats riding the
-    // SolidMask LINK (F10: a bare handle dict dies at reshape).
-    const masks = ofClass(nodes, "SolidMask");
-    assert.equal(masks.length, 2, "one everywhere-generate mask per window");
-    for (const [maskId] of masks) {
-      const edits = ofClass(nodes, "MiniMaxH3FantasticVideoEditLatent")
-        .filter(([, n]) => refOf(n.inputs.mask) === maskId);
-      assert.equal(edits.length, 1, "the edit latent's mask seat is that window's own SolidMask link");
-      assert.equal(edits[0]![1].inputs.keep_audio, true, "the source soundtrack is held unchanged");
-    }
-    // THE CARRIED HEAD: the film's finalize trims window 1's head; the
-    // seam never replays. Window 0 carries nothing and trims nothing.
-    const fins = ofClass(nodes, "MiniMaxH3FiniteSegmentFinalize");
-    assert.equal(fins.length, 1, "only the carried window trims a head");
-    assert.equal(fins[0]![1].inputs.iteration, 1, "the film's finalize seat");
-    assert.equal(fins[0]![1].inputs.overlap_frames, 22, "the trim states the carried span");
-    assert.equal(fins[0]![1].inputs.trim_audio_head, true, "picture AND sound leave by the same seam");
-    assert.equal(nodeOf(nodes, fins[0]![1].inputs.sampled_latent).class_type,
-      "MinimaxH3LatentUpscaler3DRefineHandoff", "the trim rides the carried window's own refine");
-    const member0 = saves.find(([, n]) => n.inputs.filename_prefix === "run-b2/refine_w0")!;
-    assert.equal(nodeOf(nodes, nodeOf(nodes, member0[1].inputs.video).inputs.images).class_type,
-      "VAEDecode", "window 0 saves its own untrimmed decode");
-    const member1 = saves.find(([, n]) => n.inputs.filename_prefix === "run-b2/refine_w1")!;
-    assert.equal(nodeOf(nodes, nodeOf(nodes, member1[1].inputs.video).inputs.images).class_type,
-      "MiniMaxH3FiniteSegmentFinalize", "window 1 saves the trimmed picture");
-    // THE TAIL IS THE PLAIN FILE CONCAT — no crossfade anywhere.
-    const concat = ofClass(nodes, "MeliteConcatVideos")[0]!;
-    assert.equal(concat[1].inputs.videos, "run-b2/refine_w0,run-b2/refine_w1",
-      "the concat consumes exactly the N window prefixes in film order");
-    assert.equal(ofClass(nodes, "MeliteOverlapJoinVideos").length, 0,
-      "no overlap join — the carry is the latent, never a blend");
-    // THE BOUNDARY CHAIN: one MeliteUnload per window save, token-
-    // chained, and the concat's ordering token transitively depends on
-    // EVERY save (the §20 memory law — N windows must never co-reside).
-    const unloads = ofClass(nodes, "MeliteUnload");
-    assert.equal(unloads.length, 2, "one boundary per window save");
-    for (const [, u] of unloads) {
-      assert.equal(u.inputs.unload_models, false, "the flush is idempotent, weights stay resident");
-      assert.equal(nodeOf(nodes, u.inputs.video).class_type, "SaveVideo", "each boundary consumes its own window's save passthrough");
-    }
-    const closure = upstream(nodes, refOf(concat[1].inputs.after));
-    for (const [id] of unloads) assert.ok(closure.has(id), `the concat's ordering token waits on boundary ${id}`);
-    for (const [, u] of unloads) {
-      assert.ok(closure.has(refOf(u.inputs.video)), "every window save is upstream of the concat (the 2026-09-23 cut-film crime, re-proven)");
-    }
-    // the loader seats read the STATED windows at the film clock
-    const loads = ofClass(nodes, "VHS_LoadVideo").map(([, n]) => ({
-      cap: n.inputs.frame_load_cap, skip: n.inputs.skip_first_frames,
-    }));
-    assert.deepEqual(loads, [
-      { cap: Math.round(2 * FPS), skip: 0 },
-      { cap: Math.round(2 * FPS), skip: 26 },
-    ], "each entry's clip_seconds/start_seconds IS its window (cap/skip at 24 fps)");
+    assert.deepEqual(walk(g), {}, "the refusal lands BEFORE any node — no partial emission to bill");
   });
 
   it("ARM B3 — LAW 1, ONE FILM PER BAG: entries naming different staged leaves refuse LOUD", () => {
@@ -376,10 +303,21 @@ describe("the refine bag carrier (GAPS-19: N entries tile ONE film)", () => {
   it("ARM B11 — THE JOINT CARRY CHAIN: every join mounts the film's continuation over the PREDECESSOR's target", () => {
     // three 48 f windows at 26 f steps: joins of 22 f each (the film's
     // own token-exact seam), so windows 1 and 2 both carry.
+    // THE CARRIER'S OWN SHAPE: the bag door refuses the carry shape
+    // (F3-14 stand-down, ARM B2), so this arm judges the harness the
+    // engine cure will re-wire — the origins/carries the bag derives
+    // for 48 f windows at 26 f steps (0 + 48 − 26 = 22 f each).
     const g = new GraphBuilder();
-    renderH3RefineBag(
+    renderH3RefineCarry(
       [entry(), entry({ start_seconds: 26 / 24 }), entry({ start_seconds: 52 / 24 })],
-      {}, facts, g, "run-b11",
+      {}, facts, g,
+      [
+        { cap: Math.round(2 * FPS), skip: 0 },
+        { cap: Math.round(2 * FPS), skip: 26 },
+        { cap: Math.round(2 * FPS), skip: 52 },
+      ],
+      [22, 22],
+      "run-b11",
     );
     const nodes = walk(g);
     const conts = ofClass(nodes, "MiniMaxH3FiniteLatentContinuation");
@@ -432,11 +370,26 @@ describe("the refine bag carrier (GAPS-19: N entries tile ONE film)", () => {
     // its text): each window may state its own prompt and dials, and
     // the carry threads the previous window's joint target only.
     const g = new GraphBuilder();
-    renderH3RefineBag(
-      [entry(), entry({ start_seconds: 26 / 24, refine_prompt: "a different pass" })],
-      {}, facts, g, "run-b12",
+    assert.throws(
+      () => renderH3RefineBag(
+        [entry(), entry({ start_seconds: 26 / 24, refine_prompt: "a different pass" })],
+        {}, facts, g, "run-b12",
+      ),
+      /the carried join \(window 0→1 carries 22 f\) would carry the film's own continuation/,
+      "per-entry conditioning never buys the carried face past the stand-down",
     );
-    const nodes = walk(g);
+    assert.deepEqual(walk(g), {}, "no node emitted");
+    // THE CARRIER'S OWN SHAPE (the harness the engine cure re-wires):
+    // the same two entries compose per-window conditioning on the carry.
+    const carry = new GraphBuilder();
+    renderH3RefineCarry(
+      [entry(), entry({ start_seconds: 26 / 24, refine_prompt: "a different pass" })],
+      {}, facts, carry,
+      [{ cap: Math.round(2 * FPS), skip: 0 }, { cap: Math.round(2 * FPS), skip: 26 }],
+      [22],
+      "run-b12",
+    );
+    const nodes = walk(carry);
     const texts = ofClass(nodes, "CLIPTextEncode").map(([, n]) => n.inputs.text);
     assert.deepEqual([...texts].sort(), ["a different pass", "sharper detail, unchanged motion"],
       "each window's own prompt reaches its own encode");
@@ -517,9 +470,12 @@ describe("the refine bag carrier (GAPS-19: N entries tile ONE film)", () => {
     // film's continuation wraps the model, not the text or the sampler
     // seats, so differing steps/seed compose window by window.
     const lawful = new GraphBuilder();
-    renderH3RefineBag(
+    renderH3RefineCarry(
       [entry(), entry({ start_seconds: 26 / 24, steps: 7, seed: 9 })],
-      {}, facts, lawful, "run-b24-dials",
+      {}, facts, lawful,
+      [{ cap: Math.round(2 * FPS), skip: 0 }, { cap: Math.round(2 * FPS), skip: 26 }],
+      [22],
+      "run-b24-dials",
     );
     const nodes = walk(lawful);
     assert.deepEqual(ofClass(nodes, "BasicScheduler").map(([, n]) => n.inputs.steps).sort(), [6, 7],
@@ -673,12 +629,27 @@ describe("the refine bag carrier (GAPS-19: N entries tile ONE film)", () => {
     // feeds both its continuation and its handoff. The old carry fed
     // one schedule to a whole list, which is exactly the divergence the
     // film's own carry deleted.
+    // The bag door refuses the carried shape (F3-14 stand-down, ARM
+    // B2): per-window schedules stay a carrier law until the engine cure.
     const g = new GraphBuilder();
-    renderH3RefineBag(
-      [entry(), entry({ start_seconds: 26 / 24, denoise: 0.4 })],
-      {}, facts, g, "run-b18",
+    assert.throws(
+      () => renderH3RefineBag(
+        [entry(), entry({ start_seconds: 26 / 24, denoise: 0.4 })],
+        {}, facts, g, "run-b18",
+      ),
+      /would carry the film's own continuation between windows/,
+      "a carried bag refuses before any schedule is built",
     );
-    const nodes = walk(g);
+    assert.deepEqual(walk(g), {}, "no node emitted");
+    const carrier = new GraphBuilder();
+    renderH3RefineCarry(
+      [entry(), entry({ start_seconds: 26 / 24, denoise: 0.4 })],
+      {}, facts, carrier,
+      [{ cap: Math.round(2 * FPS), skip: 0 }, { cap: Math.round(2 * FPS), skip: 26 }],
+      [22],
+      "run-b18",
+    );
+    const nodes = walk(carrier);
     assert.deepEqual(ofClass(nodes, "BasicScheduler").map(([, n]) => n.inputs.denoise), [0.32, 0.4],
       "each window's own denoise schedule composes, film order");
     const cont = ofClass(nodes, "MiniMaxH3FiniteLatentContinuation")[0]!;
@@ -707,8 +678,26 @@ describe("the refine bag carrier (GAPS-19: N entries tile ONE film)", () => {
     // carried window and the plain file concat (renderH3RefineCarry
     // through the bag door).
     const g = new GraphBuilder();
-    renderH3RefineBag([entry({ windows: 3 })], {}, facts, g, "run-b20");
-    const nodes = walk(g);
+    assert.throws(
+      () => renderH3RefineBag([entry({ windows: 3 })], {}, facts, g, "run-b20"),
+      /a 3-window loop at a 22 f overlap \(2 carried joins\) would carry the film's own continuation/,
+      "the auto-tile's carried loop refuses, naming its own seats",
+    );
+    assert.deepEqual(walk(g), {}, "no node emitted");
+    // the carrier's own arithmetic for the same seats (starts 0/26/52)
+    const carrier = new GraphBuilder();
+    renderH3RefineCarry(
+      [entry(), entry(), entry()],
+      {}, facts, carrier,
+      [
+        { cap: Math.round(2 * FPS), skip: 0 },
+        { cap: Math.round(2 * FPS), skip: 26 },
+        { cap: Math.round(2 * FPS), skip: 52 },
+      ],
+      [22, 22],
+      "run-b20",
+    );
+    const nodes = walk(carrier);
     const loads = ofClass(nodes, "VHS_LoadVideo")
       .map(([, n]) => ({ cap: n.inputs.frame_load_cap, skip: n.inputs.skip_first_frames }));
     assert.deepEqual(loads, [

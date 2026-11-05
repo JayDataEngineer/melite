@@ -181,7 +181,7 @@ describe("the refine kind (the fifth mod bag)", () => {
     assert.equal(ofClass(out, 'MiniMaxH3FiniteLatentContinuation').length, 0, 'no carry node on the refine path');
   });
 
-  it("THE TILING PARITY (GAPS-19, plan §3 Arm 1): a 2-entry bag through the card door rides the film path's own 2-window tiling skeleton", () => {
+  it("THE CARRY STAND-DOWN AT THE CARD DOOR (F3-14): a 2-entry carried bag refuses before any node, naming the engine failure and the hard-cut cure", () => {
     // THE FILM PATH (the proven skeleton): one press, two windows,
     // per-window saves, the boundary chain, the in-graph concat.
     const filmG = new GraphBuilder();
@@ -193,75 +193,46 @@ describe("the refine kind (the fifth mod bag)", () => {
       length: 124,
     }) as Record<string, unknown>, model, filmG, 'run_rfmod_film2');
     const film = graphOf(filmG);
-    // THE REFINE BAG (this cure): two entries of ONE staged leaf —
-    // 90 f windows, the second starting 68 f in (the carried overlap
-    // derives to 0 + 90 − 68 = 22 f, the film's own token-exact seam;
-    // an off-grid carry refuses — FRICTION F26).
+    // THE REFINE BAG (the F3-14 stand-down): two entries of ONE staged
+    // leaf — 90 f windows, the second starting 68 f in, the carried
+    // overlap deriving to 0 + 90 − 68 = 22 f, the film's own
+    // token-exact seam. The compose mounts that carry correctly, but
+    // the engine dies at window 1's handoff, so the CARD DOOR refuses
+    // the shape before a node exists — the parity this arm judges is
+    // the film path's own skeleton plus the refine door's exact voice.
     const bagG = new GraphBuilder();
-    def.compose(def.schema({
-      calls: [{ text: 'a slow push in', start_frame: 0, end_frame: 56 }], length: 56,
-      refine: [REFINE_ENTRY(), { ...REFINE_ENTRY(), start_seconds: 68 / 24 }],
-    }) as Record<string, unknown>, model, bagG, 'run_rfmod_bag2');
-    const bag = graphOf(bagG);
+    assert.throws(
+      () => def.compose(def.schema({
+        calls: [{ text: 'a slow push in', start_frame: 0, end_frame: 56 }], length: 56,
+        refine: [REFINE_ENTRY(), { ...REFINE_ENTRY(), start_seconds: 68 / 24 }],
+      }) as Record<string, unknown>, model, bagG, 'run_rfmod_bag2'),
+      /the carried join \(window 0→1 carries 22 f\) would carry the film's own continuation between windows — and that carry is DEAD in the engine today \(F3-14/,
+      'the card door refuses the carried tiling, naming the engine failure and the hard-cut cure',
+    );
+    assert.deepEqual(graphOf(bagG), {},
+      'no node emitted — the refusal precedes every save, so nothing can bill');
 
-    // THE SHARED SKELETON, property by property, both paths:
-    for (const [out, wins, terminal] of [
-      [film, ['run_rfmod_film2/h3_t4_w1', 'run_rfmod_film2/h3_t4_w2'], 'run_rfmod_film2/h3_t4_film'],
-      [bag, ['run_rfmod_bag2/refine_w0', 'run_rfmod_bag2/refine_w1'], 'run_rfmod_bag2/refine'],
-    ] as Array<[ReturnType<typeof graphOf>, string[], string]>) {
-      const saves = ofClass(out, 'SaveVideo').map(([, n]) => String(n.inputs['filename_prefix']));
-      assert.deepEqual([...saves].sort(), [terminal, ...wins].sort(),
-        `N window saves + the one terminal: ${terminal}`);
-      const boundaries = ofClass(out, 'MeliteUnload');
-      assert.equal(boundaries.length, wins.length,
-        `one unload boundary per window (${terminal})`);
-      // THE JOIN FACE IS IDENTICAL (round 27, operator order: "ZERO
-      // DIFFERENCE BETWEEN THE CONTEXT CARRY FROM THE NORMAL GENS AND
-      // THE REFINE GENS"): both paths hard-concat the saved members;
-      // the carry itself rode the latent continuation inside each
-      // window, never a file blend.
-      const concats = ofClass(out, 'MeliteConcatVideos');
-      assert.equal(concats.length, 1, `the plain concat joins the files (${terminal})`);
-      assert.equal(concats[0]![1].inputs['videos'], wins.join(','),
-        `the join consumes the N window prefixes in film order (${terminal})`);
-      assert.equal(ofClass(out, 'MeliteOverlapJoinVideos').length, 0,
-        `no crossfade on either path (${terminal})`);
-      assert.equal(ofClass(out, 'MiniMaxH3FiniteLatentContinuation').length, 1,
-        `one continuation at the one carried join (${terminal})`);
-      assert.equal(ofClass(out, 'MiniMaxH3FiniteSegmentFinalize').length, 1,
-        `one head-trim on the one carried window (${terminal})`);
-      if (!terminal.includes('h3_t4_film')) {
-        assert.equal(ofClass(out, 'MiniMaxH3ContexMaskedTarget').length, wins.length,
-          `the refine builds one joint AV target per window (${terminal})`);
-      }
-      assert.equal(ofClass(out, 'CreateVideo').length, wins.length + 1,
-        `N window containers + the film container (${terminal})`);
-      const terminalSave = ofClass(out, 'SaveVideo').find(([, n]) => n.inputs['filename_prefix'] === terminal)!;
-      assert.equal(nodeOf(out, terminalSave[1].inputs['video']).class_type, 'CreateVideo',
-        `the terminal muxes the joined film (${terminal})`);
-    }
-    // NO DIVERGENCE LEFT IN THE CARRY ITSELF: both paths mount the
-    // same node with the same seats — the round-27 cure. (What each
-    // path carries differs by what it HAS: the film carries its own
-    // sampled latent, the refine its joint target — the base grid
-    // both ways, which is the F44 law.)
-    for (const [out, label] of [[film, 'film'], [bag, 'refine']] as Array<[ReturnType<typeof graphOf>, string]>) {
-      const cont = ofClass(out, 'MiniMaxH3FiniteLatentContinuation')[0]!;
-      assert.equal(cont[1].inputs['overlap_frames'], 22, `${label}: the 22 f seam`);
-      assert.equal(cont[1].inputs['continue_audio_latent'], true, `${label}: the soundtrack takes the same release`);
-      assert.equal(cont[1].inputs['iteration'], 1, `${label}: the join is window 1`);
-      assert.notEqual(cont[1].inputs['previous_latent'], undefined, `${label}: previous_latent is wired`);
-      assert.equal(ofClass(out, 'MiniMaxH3FiniteSegmentFinalize').length, 1,
-        `${label}: the carried window trims its head`);
-    }
-    // the boundary chain's transitive closure orders every save on
-    // BOTH paths (the same judge the family arm walks)
+    // THE FILM PATH'S OWN SKELETON still holds (the carry it mounts is
+    // the normal gen's, which the engine serves):
+    const filmWins = ['run_rfmod_film2/h3_t4_w1', 'run_rfmod_film2/h3_t4_w2'];
+    const filmTerminal = 'run_rfmod_film2/h3_t4_film';
+    const saves = ofClass(film, 'SaveVideo').map(([, n]) => String(n.inputs['filename_prefix']));
+    assert.deepEqual([...saves].sort(), [filmTerminal, ...filmWins].sort(),
+      'N window saves + the one terminal');
+    assert.equal(ofClass(film, 'MeliteUnload').length, filmWins.length,
+      'one unload boundary per window');
+    const concats = ofClass(film, 'MeliteConcatVideos');
+    assert.equal(concats.length, 1, 'the plain concat joins the files');
+    assert.equal(concats[0]![1].inputs['videos'], filmWins.join(','),
+      'the join consumes the N window prefixes in film order');
+    assert.equal(ofClass(film, 'MiniMaxH3FiniteLatentContinuation').length, 1,
+      'one continuation at the one carried join');
+    assert.equal(ofClass(film, 'MiniMaxH3FiniteSegmentFinalize').length, 1,
+      'one head-trim on the carried window');
     const chainsOrderEverySave = (out: ReturnType<typeof graphOf>, wins: string[]): void => {
       const boundaries = ofClass(out, 'MeliteUnload');
       const finalBoundary = boundaries[boundaries.length - 1]!;
-      // (F61) the join node follows the path: concat on the film
-      // tail, the overlap blend on the refine bag
-      const joinNode = ofClass(out, 'MeliteConcatVideos')[0] ?? ofClass(out, 'MeliteOverlapJoinVideos')[0]!;
+      const joinNode = ofClass(out, 'MeliteConcatVideos')[0]!;
       assert.equal(refOf(joinNode[1].inputs['after']), finalBoundary[0],
         'the join waits on the FINAL boundary token');
       for (const [, b] of boundaries) {
@@ -270,17 +241,7 @@ describe("the refine kind (the fifth mod bag)", () => {
         assert.ok(wins.includes(String(saveNode.inputs['filename_prefix'])), 'the boundary map covers the window set');
       }
     };
-    chainsOrderEverySave(film, ['run_rfmod_film2/h3_t4_w1', 'run_rfmod_film2/h3_t4_w2']);
-    chainsOrderEverySave(bag, ['run_rfmod_bag2/refine_w0', 'run_rfmod_bag2/refine_w1']);
-    // THE REFINEMENT-SIDE SEATS: one handoff per window (each member
-    // re-renders under its carry), the derived 22 f seam, the film's
-    // finalize on the carried window and the plain concat tail.
-    assert.equal(ofClass(bag, 'MinimaxH3LatentUpscaler3DRefineHandoff').length, 2,
-      'one handoff per window — the carry binds each member\'s sampler');
-    assert.equal(ofClass(bag, 'MiniMaxH3FiniteSegmentFinalize').length, 1,
-      'the carried window trims its head; the seam never replays');
-    const bagLoads = ofClass(bag, 'VHS_LoadVideo').map(([, n]) => [n.inputs['frame_load_cap'], n.inputs['skip_first_frames']]);
-    assert.deepEqual(bagLoads, [[90, 0], [90, 68]], 'each entry IS one window: its own cap and skip at the film clock');
+    chainsOrderEverySave(film, filmWins);
   });
 
 
@@ -573,15 +534,15 @@ describe("the refine kind (the fifth mod bag)", () => {
     assert.ok(node, 'the resolved output node exists in the composed graph');
     assert.equal(node.class_type, 'SaveVideo', 'the armed refine resolves to a SaveVideo');
     assert.equal(node.inputs.filename_prefix, 'run_rfmod_out/refine', 'the refine terminal, never a film save');
-    // THE N FACE (GAPS-19): the resolved output is the JOINED film's
-    // terminal — never a window save.
-    const two = compose([REFINE_ENTRY(), { ...REFINE_ENTRY(), start_seconds: 68 / 24 }], 'run_rfmod_out_n');
-    const flow2 = resolveCardFlowOutputs(def, two.walked, graphOf(two.g));
-    const out2 = graphOf(two.g);
-    const node2 = out2[flow2.outputNodes.default!];
-    assert.ok(node2, 'the N-face resolved output node exists');
-    assert.equal(node2.class_type, 'SaveVideo', 'the tiled refine resolves to a SaveVideo');
-    assert.equal(node2.inputs.filename_prefix, 'run_rfmod_out_n/refine', 'the ASSEMBLED film terminal, never a window save (refine_w*)');
+    // THE N FACE (GAPS-19): a carried bag used to resolve the JOINED
+    // film's terminal (never a window save) — but the carried join is
+    // DEAD in the engine (F3-14), so the card door refuses the shape
+    // before any node (the stand-down wall owns the sentence).
+    assert.throws(
+      () => compose([REFINE_ENTRY(), { ...REFINE_ENTRY(), start_seconds: 68 / 24 }], 'run_rfmod_out_n'),
+      /Drift-Control AV packed mask does not match its audio stream/,
+      'the tiled refine refuses at the card door instead of billing window 0',
+    );
   });
 
   it("every cross-arm pair refuses LOUD naming the silently-dropped arm", () => {

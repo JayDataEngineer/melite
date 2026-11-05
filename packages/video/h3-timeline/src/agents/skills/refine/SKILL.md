@@ -1,6 +1,6 @@
 ---
 name: refine
-description: "Second-pass refine on the h3-timeline: seat a source clip plus one window (start + length) and a refine prompt per entry on the refine mod bag; the RefineHandoff applies a 2x learned latent upscale and a low-denoise H3 pass to THAT WINDOW, decoding to <run>/refine. The bag takes multiple window entries — one press tiles the film (every entry is one refine window over the SAME source clip, consecutive windows overlap by the compose's own arithmetic, and the pass splices them in-graph on the film tiling's save boundaries, up to 32 window entries). One window per press is the DECLARED ALTERNATIVE — judge each window before pressing the next. Mod-bag door — NOT a re-render and NOT the upscale arm."
+description: "Second-pass refine on the h3-timeline: seat a source clip plus one window (start + length) and a refine prompt per entry on the refine mod bag; the RefineHandoff applies a 2x learned latent upscale and a low-denoise H3 pass to THAT WINDOW, decoding to <run>/refine. The bag takes multiple window entries, but ABUTTING starts only: a carried join (overlap of 1 f or more) is REFUSED at the compose door — that carry is DEAD in the engine today (F3-14: window 0 bills, then window 1 dies at its handoff with a Drift-Control packed-mask error) — so the hard cut (0 overlap, the plain concat, up to 32 window entries) is the lawful tile. One window per press is the DECLARED ALTERNATIVE — judge each window before pressing the next. Mod-bag door — NOT a re-render and NOT the upscale arm."
 genre: video
 ---
 
@@ -23,12 +23,17 @@ genre: video
 > and what step 6 exists for: 90 f @2× is green, 141 f @2× OOM'd, and
 > a 430 f window @1.0 OOM'd too (20.08 GiB allocated, 830 MiB short,
 > node `MinimaxH3LatentUpscaler3DRefineHandoff`) — the WINDOW is the
-> memory unit at every scale. NOT yet proven live: a multi-window BAG
-> press (the tiling composes in-graph and is walled —
-> `refine-bag.spec.ts` — riding the film tiling's save boundaries and
-> concat; the live GPU press over a multi-entry bag is the operator's
-> runbook). The seam tax in step 6 is measured; the walk's join is
-> still the operator's judgement.
+> memory unit at every scale. BURNED live (F3-14): the
+> carried multi-window bag dies at window 1's handoff with
+> `ValueError: Drift-Control AV packed mask does not match its audio
+> stream`, after window 0 billed and saved. The door now REFUSES that
+> shape before any node, so the only multi-window press that runs is
+> the ABUTTING bag (0 overlap, the plain concat); the carried seam
+> waits on the engine cure (ROADMAP F3-14). NOT yet proven live: an
+> ABUTTING multi-window bag press (the concat composes in-graph and is
+> walled — `refine-bag.spec.ts` + `refine-carry-standdown.spec.ts` — but
+> the live GPU press over a multi-window bag is the operator's runbook);
+> the carried face is burned and refused, never a promise.
 
 ## What it is (and is NOT)
 
@@ -99,7 +104,8 @@ before, byte-identical.)
      loader's `skip_first_frames`, seconds × 24). 0 is the clip head.
      Advance it window by window to walk a longer film — the walk is
      the DECLARED ALTERNATIVE (step 6); stacking the entries on the
-     bag lets one press tile it.
+     bag at ABUTTING starts lets one press tile it (the hard cut — a
+     carried join is refused today, F3-14).
    A window past 141 f (5.875 s) REFUSES at the compose door before
    the engine runs: 141 f is the measured OOM (it missed by 1.06 GiB
    with 20.13 GiB already resident), and H3 memory
@@ -125,18 +131,18 @@ before, byte-identical.)
     states the join's carry. The compose derives every window's start
     (Start seconds + k × (window − overlap)), so a human states a
     SIZE and a COUNT instead of hand-tiling entries with frame-exact
-    starts. The default overlap 22 is the film's own seam and
-    token-exact, so a default auto-tile with agreeing prompt/dials
-    takes the film's own carry (one continuation per join, the
-    head-trim, the plain concat); any other overlap of 1 or more
-    REFUSES at compose naming the measured carry and the nearest grid rung —
-    the crossfade of two independent renders (the ghost) is not
-    served; 0 walks the hard cut. `windows` above 1 on ANY entry
-    of a MULTI-entry bag refuses — the bag already IS the tiling, so
-    auto-tile lives on a lone entry only. A lone window ignores the
-    overlap seat (no join). The ceiling still judges each derived
-    window (past 141 f refuses naming the numbers), and the overlap
-    must be shorter than the window.
+    starts. THE CARRY IS DEAD IN THE ENGINE TODAY (F3-14): an overlap
+    of 1 or more mounts the film's continuation, and that press dies
+    at window 1's handoff after window 0 bills — so the door REFUSES
+    every overlap ≥ 1, including the default 22. The lawful auto-tile
+    states `overlap_frames` 0: the windows ABUT, the join is the
+    plain concat, every seam is a hard cut. `windows` above 1 on ANY
+    entry of a MULTI-entry bag refuses — the bag already IS the
+    tiling, so auto-tile lives on a lone entry only. A lone window
+    ignores the overlap seat (no join). The ceiling still judges each
+    derived window (past 141 f refuses naming the numbers), and the
+    overlap must be shorter than the window. The carried seam waits
+    on the engine cure (ROADMAP F3-14).
 4. **Set the pass dials.** The entry fields (the card's served ranges,
    tested guidance):
    - `denoise` (0.05–0.5, 0.32) — the partial-denoise strength of the
@@ -161,14 +167,17 @@ before, byte-identical.)
    - `windows` (1–32, 1) — how many windows this ONE entry tiles
      (the auto-tile: the compose derives every window's start,
      so one press covers the film with no hand-tiled entries). 1 is
-     the single-window walk posture.
-   - `overlap_frames` (0+, 22) — the join's carry in whole frames
-     (default 22: the film's own seam and token-exact — the default
-     auto-tile walks the film's continuation). Any other overlap of
-     1 or more refuses (an off-grid carry cannot continue the
-     stream, and a crossfade of two independent renders is the
-     ghost); 0 walks the hard cut. Rides only with `windows` above 1
-     (a lone window has no join) and must be shorter than the window.
+     the single-window walk posture. A carry above 0 is refused
+     today (F3-14), so an auto-tile states `overlap_frames` 0.
+   - `overlap_frames` (0+, 22) — the join's carry in whole frames.
+     0 is the ONLY lawful join today: the abutting hard cut (the
+     plain concat, no carried continuation). 22 is the film's own
+     seam and token-exact, but the carried continuation it mounts is
+     DEAD in the engine today (F3-14: window 0 bills, then window 1
+     dies at its handoff with a Drift-Control packed-mask error), so
+     every overlap of 1 or more REFUSES at the door until the engine
+     cure lands. Rides only with `windows` above 1 (a lone window has
+     no join) and must be shorter than the window.
 5. **Confirm.** Show the bound clip, the window in words ("from 5.0 s
    for 3.75 s"), the pass dials ("2x, denoise 0.32, 6 steps"), and
    that every other arm is empty.
@@ -178,56 +187,59 @@ before, byte-identical.)
    watcher who isn't there).
 6. **Press.** The user presses Run. Browser/chat agents never
    execute; headless commissions ride `melite_flow` per the maker
-   runbook. The bag takes multiple window entries, so ONE press can
-   tile a long film (the design — up to 32 window entries, one
-   `start_seconds` per entry, same source clip). THE WALK IS THE
+   runbook. The bag takes multiple window entries, so ONE press tiles
+   a long film at ABUTTING starts (up to 32 window entries, one
+   `start_seconds` per entry, same source clip) — a carried join is
+   refused today (F3-14). THE WALK IS THE
    DECLARED ALTERNATIVE: a windowed film pass driven press by press,
    where you judge each window before pressing the next — lawful,
    byte-cheap, and the posture the walk below spells out.
 
    ### The walk's loop and splice (the declared alternative, step by step)
 
-   The walk's step is the window length MINUS the 22 f seam overlap —
-   never the window length itself:
+   The walk's step is the FULL window length: the windows ABUT, and
+   every seam is a hard cut. At the 3.75 s window (90 f):
 
-       overlap_frames = 22                    (the measured carry; 0 is a hard cut)
-       step_frames    = clip_seconds × 24 − overlap_frames
-       step_seconds   = step_frames / 24      e.g. 90 − 22 = 68 f = 2.833 s
+       overlap_frames = 0                     (the hard cut; a carried join refuses today, F3-14)
+       step_frames    = clip_seconds × 24      e.g. 90 f = 3.75 s
+       step_seconds   = step_frames / 24
 
-   The 3.75 s window (90 f) steps **2.83 s** forward each press. A
-   430 f clip at that window is six presses at `start_seconds`
-   0 / 2.83 / 5.67 / 8.50 / 11.33 / 14.17 (the last one starts at clip
-   length − window length, per THE WALK BOUND). A FULL-window step
-   (3.75 s) shares no frames: every seam is a jump cut, not a refine
-   seam. The 22 f carry exists so the next window refines frames the
-   last window already covered, and the two renders agree there to
-   Δ≈9 (measured on a shared 66 f offset; adjacent frames differ by
-   Δ≈4.3, so the seam is a soft step, not a pop).
+   A 430 f clip at that window is five presses at `start_seconds`
+   0 / 3.75 / 7.50 / 11.25 / 15.00 (the last one starts at clip length
+   − window length, per THE WALK BOUND). The 22 f carry step
+   (90 − 22 = 68 f = 2.83 s) belongs to the carried face: it composes
+   (the soft seam below), but it is DEAD in the engine today (F3-14)
+   and refused at the door — do not plan a press around it until the
+   engine cure lands.
 
    SPLICE THE WINDOWS — it is part of the pass, not an optional
-   extra. A carried bag mounts the FILM'S OWN carry on every join:
+   extra. The composed carrier still builds the film's own carry:
    each window builds its joint AV target (the source frames + its
    own soundtrack), window k≥2 receives window k−1's joint latent
    through `MiniMaxH3FiniteLatentContinuation` with the film's own
    seats (iteration, the carried overlap, continue_audio_latent, the
    model + sigmas the handoff samples with), the handoff re-renders
    from the provided prefix, and `MiniMaxH3FiniteSegmentFinalize`
-   trims the carried head. The tail is the plain file concat,
-   assembled length = Σ windows − Σ carries, frame-exact. NO hand
-   ffmpeg, no trim verb, nothing to run afterwards: press the bag,
-   judge the join. This is the SAME mechanism a normal generation
-   uses — not a lookalike.
+   trims the carried head. The tail is the plain file concat. But
+   that shape REFUSES at the door today (F3-14): no node is emitted,
+   so window 0 never bills. What runs is the ABUTTING bag: windows
+   butted end to end, the plain file concat, hard cuts at every seam,
+   assembled length = Σ windows, frame-exact. NO hand ffmpeg, NO trim verb,
+   nothing to run afterwards: press the bag, judge the seams.
 
-   There are exactly TWO joins: a TOKEN-EXACT carry (5, 22, 39 …)
-   walks the film's continuation; a ZERO-carry join is the plain
-   hard cut. Anything else refuses at compose, naming the measured
-   carry, the token grid, and the start that lands 22 f.
+   There are exactly TWO joins: a TOKEN-EXACT carry (5, 22, 39 …) —
+   the composed continuation, REFUSED today (F3-14); and a
+   ZERO-carry join, the plain hard cut, the only join that runs.
+   Anything else refuses at compose, naming the measured carry, the
+   token grid, and the start that lands 22 f.
 
-   THE SEAM, honestly: a 22 f carry means each join re-renders
-   ~0.92 s the previous window already covered, and the finalize
-   drops that span from the member — the film does not replay it and
-   nothing is crossfaded. The previous window's tail is in the
-   model's prefix; the incoming window's head is generated under it.
+   THE SEAM, when the engine cure lands: a 22 f carry means each join
+   re-renders ~0.92 s the previous window already covered, and the
+   finalize drops that span from the member — the film does not
+   replay it and nothing is crossfaded. The previous window's tail is
+   in the model's prefix; the incoming window's head is generated
+   under it. Today's abutting cut has no re-rendered span at all: the
+   seam is a jump cut.
 
    NO CROSSFADE, EVER: a blend of two INDEPENDENT renders is
    a DOUBLE EXPOSURE (the ghost),
@@ -235,7 +247,7 @@ before, byte-identical.)
    the pop — measured Δ8.86–9.80 across the
    carry against Δ4.3 between adjacent frames inside one window.
    The crossfade is not served; an off-grid carry
-   refuses at compose instead. The carried span is BIT-IDENTICAL:
+   REFUSES at compose instead. The carried span is BIT-IDENTICAL:
    the finalize drops the incoming window's re-rendered head, so
    every frame the film emits across the join is the previous
    window's own decode, never a blend — and
@@ -256,12 +268,14 @@ before, byte-identical.)
    - a film that must be seamless TODAY on the audio too: press ONE
      90 f window (3.75 s) — a single window is seam-free by
      construction;
-   - a film longer than one window: the token-exact carry walks the
-     video seam inside the model itself and the audio seam walks
-     softly; a bag that cannot carry (non-exact overlap,
-     disagreeing seats) is REFUSED — restate the starts on the grid
-     or abut the windows. Do not promise more than the face you
-     mounted.
+   - a film longer than one window: tile it with ABUTTING windows
+     (0 overlap — the hard cut, the plain concat) or press window by
+     window; the token-exact carried seam composes but is REFUSED at
+     the door today (F3-14, the engine burns window 1's handoff), so
+     do not promise a carried seam until the engine cure lands. A bag
+     that cannot abut (gaps, out-of-order, disagreeing seats) is
+     REFUSED — state the starts abutting and the seats agreeing. Do
+     not promise more than the face you mounted.
 
    Judge each window before pressing the next, and judge the join
    before calling the film done.
@@ -274,11 +288,13 @@ sampler's state. That is why the arm is a RESTYLE of the pixels —
 but it is not context-free inside itself:
 
 - Every window builds a JOINT AV latent from its own frames +
-  soundtrack, and window k≥2 mounts the film's own
+  soundtrack, and the carried face mounts the film's own
   `MiniMaxH3FiniteLatentContinuation` over window k−1's joint latent
-  (law: `refine-loop.spec.ts` ARM 7). The carry crosses the joins
-  INSIDE this execution — never from the source run, whose latent
-  does not exist any more.
+  (the harness the stand-down holds: `refine-loop.spec.ts` ARM 3b).
+  That carry is DEAD in the engine today (F3-14) and the door refuses
+  it; what runs is the abutting concat. Either way the carry would
+  cross joins INSIDE this execution — never from the source run,
+  whose latent does not exist any more.
 - The only metadata that can cross from the source run is its prompt
   text, and only by being restated (see the style law below).
 - A genuine deferred second pass — one that inherits the source
@@ -334,7 +350,8 @@ cures, in the order to try them:
 
 1. **Narrow the window** (default 3.75 s) — 90 f is measured green;
    walk the film window by window (the DECLARED ALTERNATIVE), or
-   stack the bag's window entries and let one press tile it.
+   stack the bag's window entries at ABUTTING starts and let one press
+   tile it (the hard cut; a carried join is refused today — F3-14).
 2. **`scale` 1.0** — a same-size refine lifts the ceiling but does
    NOT remove it: the handoff still materialises the whole window's
    latents. Measured: 90 f at 2× green; 141 f at 2× OOM (1.06 GiB

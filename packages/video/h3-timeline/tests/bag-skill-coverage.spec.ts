@@ -216,14 +216,20 @@ describe("every served mod bag has a skill leaf an agent can read", () => {
     // OOM); repair shipped every dial with NO worked press, so an
     // agent had to invent its window numbers. Both are now law.
     const refine = readSkill("refine");
-    assert.match(refine, /step is the window length MINUS the 22 f seam overlap/,
-      "refine/SKILL.md states the step is the window MINUS the 22 f overlap");
-    assert.match(refine, /never\s+the window length itself/,
-      "refine/SKILL.md REFUTES the step=window teaching that leaves a hard cut");
-    assert.match(refine, /90 − 22 = 68 f = 2\.833 s/,
-      "refine/SKILL.md shows the arithmetic on the reference window");
-    assert.match(refine, /0 \/ 2\.83 \/ 5\.67/,
-      "refine/SKILL.md walks start_seconds at the stepped clock");
+    // (F3-14 re-pin, 2026-11-05: the carried join is DEAD in the
+    // engine — window 0 bills, window 1 dies at its handoff — so the
+    // doc's walk step is the FULL window (abutting, the hard cut) and
+    // the 22 f carry step is named only as the refused face. The old
+    // assert pinned the carried step as the teaching; that was the
+    // burn's own recipe.)
+    assert.match(refine, /step is the\s+FULL window length/,
+      "refine/SKILL.md states the walk step is the full window (the abutting hard cut)");
+    assert.match(refine, /overlap_frames = 0\b/,
+      "refine/SKILL.md pins overlap_frames 0 as the lawful walk");
+    assert.match(refine, /0 \/ 3\.75 \/ 7\.50/,
+      "refine/SKILL.md walks start_seconds at the abutting clock");
+    assert.match(refine, /22 f carry step[\s\S]{0,120}DEAD in the engine today \(F3-14\)/,
+      "refine/SKILL.md names the 22 f carry step as the refused face, never the recipe");
     assert.match(refine, /430 f window @1\.0 OOM/i,
       "refine/SKILL.md carries the measured 430 f-at-1.0 OOM");
     assert.match(refine, /NO trim verb/i,
