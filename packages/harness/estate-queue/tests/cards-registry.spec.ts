@@ -82,6 +82,7 @@ import {
 } from "../src/cardsRegistry.ts";
 import { loadCardDefs, theService } from "../../../engines/comfyui-cordis/src/cardDefs.ts";
 import { prepareCardParams } from "../src/cardsCompose.ts";
+import { ESTATE_STORE_SEATED, STORE_SEATED_SKIP } from "../../../../tests/helpers/estate-store-seat.ts";
 import { FlowsSeatService } from "../src/flowsData.ts";
 
 let svc: CardRegistryService;
@@ -768,7 +769,7 @@ describe("composeValidateCard (the validate refusal voice)", () => {
   });
 });
 
-describe("phase1Card + phase2Card (the two phases, one compose seat)", () => {
+describe.skipIf(!ESTATE_STORE_SEATED)("phase1Card + phase2Card (the two phases, one compose seat) (" + STORE_SEATED_SKIP + ")", () => {
   it("THE CLIP-GEOMETRY STAMP (2026-10-28, the operator's burn: width/height defaulting to zero for viggle): zeroed size knobs take the clip's OWN geometry before any resolution or judge", async () => {
     // A hand-crafted minimal MP4 (ftyp + moov{trak{tkhd, mdia{hdlr:
     // vide}}}) — the probe's tkhd fallback arm reads the display
@@ -1748,7 +1749,7 @@ function craftMinimalWav(): Buffer {
   return Buffer.concat([riff, chunk("fmt ", fmt), chunk("data", Buffer.alloc(4))]);
 }
 
-describe("THE ONE-BENCH FAMILY DOOR — RETIRED (2026-11-15): no lane dead letter; the lane fires the post quartet", () => {
+describe.skipIf(!ESTATE_STORE_SEATED)("THE ONE-BENCH FAMILY DOOR — RETIRED (2026-11-15): no lane dead letter; the lane fires the post quartet (" + STORE_SEATED_SKIP + ")", () => {
   // operator (2026-11-14, verbatim): "sharpen_enabled,
   // interpolate_enabled, sr_switch, second_pass_enabled fires
   // nothing on the t4r lane — the lane refuses it (unsanctioned

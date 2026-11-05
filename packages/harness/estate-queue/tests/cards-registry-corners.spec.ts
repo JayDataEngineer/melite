@@ -14,6 +14,7 @@ import { join } from "node:path";
 import { CardRegistryService } from "../src/cardsRegistry.ts";
 import { plainStage, FlowsSeatService } from "../src/flowsData.ts";
 import type { RegistryFlow, RegistryStage } from "../src/flowsData.ts";
+import { ESTATE_STORE_SEATED, STORE_SEATED_SKIP } from "../../../../tests/helpers/estate-store-seat.ts";
 
 let svc: CardRegistryService;
 // the flows seat the census reads — one instance, hoisted so the
@@ -179,7 +180,7 @@ describe("the familyless tolerance (a card id as the model address)", () => {
   });
 });
 
-describe("composeValidateCard's address and prepare faces", () => {
+describe.skipIf(!ESTATE_STORE_SEATED)("composeValidateCard's address and prepare faces (" + STORE_SEATED_SKIP + ")", () => {
   it("a card-id address a family card does not offer refuses at the board check (the offer is the address)", async () => {
     // upscale-tools boards seedvr2-ema; its own id is not an
     // offer — BROKEN-A's law holds at the validate door too

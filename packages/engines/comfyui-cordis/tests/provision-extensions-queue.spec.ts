@@ -103,6 +103,13 @@ describe("urlInstalled + installedHead", () => {
   mkdirSync(cn, { recursive: true });
   execSync("git init -q", { cwd: cn, env: gitEnv });
   execSync("git config remote.origin.url " + url, { cwd: cn, env: gitEnv });
+  // THE RUNNER-IDENTITY SEAT (the 2026-11-05 CI cure): a fresh CI
+  // runner has no global git author, and this module-scope probe
+  // commit reds the whole file with "Author identity unknown" before
+  // any arm can judge. The fixture repo carries its own identity
+  // (the historyRepo precedent, profanity-gate.spec.ts) — never the
+  // machine's.
+  execSync("git config user.email t@t && git config user.name t", { cwd: cn, env: gitEnv });
   execSync("git commit -q --allow-empty -m probe", { cwd: cn, env: gitEnv });
 
   it("matches the installed clone by its git remote, not its dir name", () => {

@@ -33,6 +33,7 @@ import type { LaneRelations } from "@melite/contracts/laneRelations";
 import { RELATION_WORDS } from "@melite/contracts/laneRelations";
 import { cellRoute as qwenCellRoute, DECL as qwenDecl } from "@melite/models-qwen3-tts";
 import { FlowsSeatService } from "../src/flowsData.ts";
+import { ESTATE_STORE_SEATED, STORE_SEATED_SKIP } from "../../../../tests/helpers/estate-store-seat.ts";
 
 let svc: CardRegistryService;
 let bootCtx: Context;
@@ -1273,7 +1274,7 @@ describe("THE RE-CHECK'S TWO BYPASSES ARE CLOSED", () => {
 // whole judgment down and the surface/relation laws never ran at
 // validate. An export conflict answered ok:true there while the bench
 // and the start door both refused it.
-describe("THE LANE LAWS AT THE VALIDATE SEAT", () => {
+describe.skipIf(!ESTATE_STORE_SEATED)("THE LANE LAWS AT THE VALIDATE SEAT (" + STORE_SEATED_SKIP + ")", () => {
   it("the save contradiction refuses THROUGH composeValidateCard (not only at the run press)", async () => {
     // the same state the run press refuses (a save beside a saved
     // persona — the door HOLDS it, the compose seat refuses it),
@@ -2039,7 +2040,7 @@ describe("THE OUTPUT-RESOLUTION SEAM AT BOTH SEATS", () => {
 // validate verdict EQUALS the start throw, word for word — two
 // doors, one refusal. Neuter the validate seat's seam call and
 // this arm reds (validate answers null while start still throws).
-describe("F2 — THE DOORS AGREE ON OUTPUT RESOLUTION", () => {
+describe.skipIf(!ESTATE_STORE_SEATED)("F2 — THE DOORS AGREE ON OUTPUT RESOLUTION (" + STORE_SEATED_SKIP + ")", () => {
   const body = { model: "qwen3-tts", text: "speak" };
 
   it("validate's verdict is start's throw, verbatim", async () => {

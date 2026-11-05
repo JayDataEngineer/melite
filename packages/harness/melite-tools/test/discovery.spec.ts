@@ -40,11 +40,15 @@ vi.mock('@melite/comfyui-cordis', async (importOriginal) => {
   }
 })
 
-/** The OLD tree's served-spec fixtures — the byte referee for recipe
- *  composition (infer-baseline-tmp sits beside this repo). */
+/** The OLD tree's served-spec fixture — the byte referee for recipe
+ *  composition. VENDORED (the 2026-11-05 CI cure): the referee lived
+ *  in the infer-baseline-tmp sibling checkout, present only on dev
+ *  machines — a fresh CI clone ENOENT'd and red the arm with a
+ *  machine-shape verdict. The bytes are the old tree's served spec,
+ *  frozen; a tracked copy fires the referee on every seat. */
 const OLD_FIXTURES = resolve(
   dirname(fileURLToPath(import.meta.url)),
-  '../../../../../infer-baseline-tmp/web/editor/src/__tests__/fixtures',
+  'fixtures',
 )
 import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition'
 import {

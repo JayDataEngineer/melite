@@ -34,8 +34,10 @@ bench/
 *.mp3
 *.flac
 # ...except the byte-small committed test fixtures the walls prove
-# binaries against (the §24 film arm's 2s fixture, etc.)
+# binaries against (the §24 film arm's 2s fixture, the §33 audio
+# arm's 0.5s tone, etc.)
 !packages/harness/melite-tools/test/fixtures/*.mp4
+!packages/harness/melite-tools/test/fixtures/*.wav
 *.jpg
 *.jpeg
 *.png
