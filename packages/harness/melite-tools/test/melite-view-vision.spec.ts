@@ -379,7 +379,7 @@ beforeAll(() => {
   utimesSync(join(still, 'gen_00001_.png'), new Date('2026-01-01T00:00:00Z'), new Date('2026-01-01T00:00:00Z'))
   const film = join(root, 'output', 'run-face001-film')
   mkdirSync(film, { recursive: true })
-  copyFileSync(new URL('./fixtures/film-2s.mp4', import.meta.url), join(film, 'film.mp4'))
+  copyFileSync(new URL('../../../../tests/fixtures/film-2s.mp4', import.meta.url), join(film, 'film.mp4'))
   const mesh = join(root, 'output', 'run-44c30351b94e-eye')
   mkdirSync(join(mesh, 'img-to-mesh'), { recursive: true })
   writeFileSync(join(mesh, 'img-to-mesh', 'eye_00001.glb'), glbBytes())

@@ -86,7 +86,7 @@ beforeAll(() => {
   // the success path against the estate's own binaries
   const film = join(root, 'output', 'run-face001-wide')
   mkdirSync(film, { recursive: true })
-  copyFileSync(new URL('./fixtures/film-2s.mp4', import.meta.url), join(film, 'film.mp4'))
+  copyFileSync(new URL('../../../../tests/fixtures/film-2s.mp4', import.meta.url), join(film, 'film.mp4'))
 })
 
 afterAll(() => {
@@ -573,7 +573,7 @@ describe('melite_view film — the §24 observe arm (fakes for the engine render
     // staged leaf, the engine-flat name, the run row's full path.
     const f14 = join(root, 'output', 'run-face010-f14')
     mkdirSync(join(f14, 'h3-film'), { recursive: true })
-    copyFileSync(new URL('./fixtures/film-2s.mp4', import.meta.url), join(f14, 'h3-film', 'SaveVideo.0_h3_t4_w1_00001_.mp4'))
+    copyFileSync(new URL('../../../../tests/fixtures/film-2s.mp4', import.meta.url), join(f14, 'h3-film', 'SaveVideo.0_h3_t4_w1_00001_.mp4'))
     const { ctx } = fakeCtx()
     const tool = meliteView(ctx, fakeProc())
     for (const token of [
@@ -1360,7 +1360,7 @@ describe('melite_view GAPS-5 — the newest-unopenable fall-through (qa8 receipt
   beforeAll(() => {
     const dir = join(root, 'output', 'run-af77bdd6136b-qa8')
     mkdirSync(dir, { recursive: true })
-    copyFileSync(new URL('./fixtures/film-2s.mp4', import.meta.url), join(dir, 'trailer_swap_003.mp4'))
+    copyFileSync(new URL('../../../../tests/fixtures/film-2s.mp4', import.meta.url), join(dir, 'trailer_swap_003.mp4'))
     writeFileSync(join(dir, 'cut_source.webm'), JUNK_WEBM)
     // the webm is NEWEST (the receipt's order: the cure must skip it)
     utimesSync(join(dir, 'trailer_swap_003.mp4'), new Date('2026-01-01T00:00:00Z'), new Date('2026-01-01T00:00:00Z'))

@@ -12,7 +12,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { probeMedia, probeMp4, probeWav, type ProbedStream } from '../src/tools/mp4Probe.ts'
 
-const film = new Uint8Array(readFileSync(new URL('./fixtures/film-2s.mp4', import.meta.url)))
+const film = new Uint8Array(readFileSync(new URL('../../../../tests/fixtures/film-2s.mp4', import.meta.url)))
 const tone = new Uint8Array(readFileSync(new URL('../../../../tests/fixtures/tone-05s.wav', import.meta.url)))
 
 describe('the MP4 probe against the committed film fixture', () => {
