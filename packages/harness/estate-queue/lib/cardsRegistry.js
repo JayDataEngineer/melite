@@ -425,6 +425,53 @@ function refuseRefineWindowPastClip(card, params) {
             `window inside the clip (start_seconds < ${clipEndS}s) or refine the longer source`, "invalid_request");
     }
 }
+/** THE TRIM START RANGE REFUSAL (friction F3-08, TRM-P0-9): a trim
+ *  whose start_seconds runs past the source clip's end used to
+ *  compose silently — the loader skips at or past the frame count,
+ *  lands zero frames, and the run answers done with an empty clip.
+ *  The door probes the trim's source BEFORE the run registers and
+ *  refuses when the skip (start_seconds × 24, the trim card's own
+ *  fps contract) lands at or past the clip's probed frame count —
+ *  in words, naming the clip, its probed length, the window's
+ *  start, and the cure. The sibling of the refine window-range
+ *  refusal above (that law lives on the h3 window seat), same
+ *  probe posture: only a positive reading refuses; a clip this
+ *  probe cannot read stays the engine's own belt. end_seconds
+ *  beyond the last frame stays the loader's documented clamp,
+ *  never this door's. */
+function refuseTrimStartPastClip(card, params) {
+    if (card !== "trim")
+        return;
+    const leaf = typeof params["clip"] === "string" ? params["clip"].trim() : "";
+    if (leaf === "")
+        return;
+    const rawStart = params["start_seconds"];
+    const start = typeof rawStart === "number" && Number.isFinite(rawStart) ? rawStart : 0;
+    if (!(start > 0))
+        return;
+    const bytes = bagSourceBytes(leaf);
+    if (bytes === null)
+        return;
+    let probed;
+    try {
+        probed = probeMedia(bytes);
+    }
+    catch {
+        return;
+    }
+    const video = probed.streams.find((stream) => stream.codec_type === "video");
+    const frames = video?.frames ?? (probed.duration_s !== undefined ? Math.round(probed.duration_s * 24) : undefined);
+    if (frames === undefined || frames <= 0)
+        return;
+    const skip = Math.round(start * 24);
+    if (skip < frames)
+        return;
+    const clipEndS = (frames / 24).toFixed(2);
+    throw new CardArmError(400, `the trim window starts at ${start}s (skip ${skip} frames at the trim card's 24 fps) but "${leaf}" carries ` +
+        `${frames} frame(s)${probed.duration_s !== undefined ? ` (${probed.duration_s}s)` : ""} — the loader's ` +
+        `skip_first_frames runs past the clip's last frame and the run composes an empty clip; trim inside the ` +
+        `clip (start_seconds < ${clipEndS}s) — end_seconds beyond the last frame stays the loader's own clamp`, "invalid_request");
+}
 /** The card-scope seat for the clip-geometry stamp: resolves the
  *  card the run addresses — the family route's famRow.card, or the
  *  familyless id itself — mirroring prepareCardParams's two arms,
@@ -2102,6 +2149,10 @@ export class CardRegistryService extends Service {
         // start_seconds runs past its own source clip refuses here,
         // zero GPU, with the clip and the probed length named.
         refuseRefineWindowPastClip(prep.card, prep.params);
+        // THE TRIM START RANGE REFUSAL (F3-08): a trim whose start lands
+        // past the source's last frame refuses here too — same belt,
+        // zero GPU, the trim card's own 24 fps contract.
+        refuseTrimStartPastClip(prep.card, prep.params);
         // THE BOARD CHECK RIDES THE RUN SEAT TOO (the behavioural
         // re-check's BYPASS 1: the bench refused an unoffered model
         // address, but `validate` with the SAME address composed the

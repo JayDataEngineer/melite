@@ -1014,6 +1014,52 @@ describe("phase1Card + phase2Card (the two phases, one compose seat)", () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+  it("THE TRIM START RANGE REFUSAL (friction F3-08, TRM-P0-9): a trim whose start_seconds runs past the source clip's end refuses at the door in words — never the silent empty-clip done", async () => {
+    // The burn (the Phase-3 violation log): start_seconds 99 on a
+    // 3.75s clip composed GREEN — the run answered done and the
+    // operator's clip came back EMPTY (skip 2376 frames into 90).
+    // The door probes the trim's source first: skip (start × 24)
+    // at or past the probed frame count refuses here, naming clip,
+    // length, start, and the cure — the trim sibling of the F36
+    // refine law above. Only a positive reading refuses; the
+    // end-beyond-tail face stays the loader's documented clamp.
+    const dir = mkdtempSync(join(tmpdir(), "trim-range-"));
+    // 90 frames at the film clock = 3.75s (the log's own shape)
+    const short = join(dir, "short.mp4");
+    writeFileSync(short, craftTimedMp4(928, 1344, 90));
+    const body = (start: number, end = -1): Record<string, unknown> => ({
+      card: "trim", clip: short, start_seconds: start, end_seconds: end,
+    });
+    const noRangeVoice = async (bagBody: Record<string, unknown>): Promise<void> => {
+      try {
+        await svc.phase1Card(bagBody, "trim");
+      } catch (e: unknown) {
+        expect(String((e as Error).message)).not.toMatch(/trim window starts/);
+      }
+    };
+    try {
+      // THE BURN FACE: start 99s over a 3.75s clip
+      await expect(svc.phase1Card(body(99), "trim")).rejects.toThrow(
+        /the trim window starts at 99s \(skip 2376 frames at the trim card's 24 fps\) but ".*short\.mp4" carries 90 frame\(s\) \(3\.75s\) — the loader's skip_first_frames runs past the clip's last frame and the run composes an empty clip; trim inside the clip \(start_seconds < 3\.75s\) — end_seconds beyond the last frame stays the loader's own clamp/,
+      );
+      // the boundary edge: skip exactly AT the frame count (90 on
+      // 90) is the same empty clip — at-or-past refuses
+      await expect(svc.phase1Card(body(3.75), "trim")).rejects.toThrow(/trim window starts at 3\.75s/);
+      // a start INSIDE the clip hears no such voice
+      await noRangeVoice(body(1.0));
+      // END BEYOND THE TAIL stays the loader's documented clamp,
+      // never this door's (start 0, end 999 on a 3.75s clip)
+      await noRangeVoice(body(0, 999));
+      // a clip the probe cannot time (no mvhd — no duration, no
+      // frames) rides even with the wild start: only a positive
+      // reading refuses
+      const untimed = join(dir, "untimed.mp4");
+      writeFileSync(untimed, craftMinimalMp4(928, 1344, true));
+      await noRangeVoice({ card: "trim", clip: untimed, start_seconds: 99, end_seconds: -1 });
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
   it("THE BAG GUARD'S TAIL ARMS (the silent-source belt skips what it cannot judge): junk entries, clip-less entries, dead leaves, directory leaves, and unnamed containers ride to the run door's own voice — never this probe's", async () => {
     // The belt judges only what it can name: an entry that is not an
     // object, an entry without a source_clip, a leaf that resolves
