@@ -32,6 +32,10 @@
     "paths": {
       "@deepseek-ai/cordis": ["../../../packages/estate/drafts/node_modules/@deepseek-ai/cordis"],
       "@deepseek-ai/cordis-plugin-timer": ["../../../packages/harness/estate-queue/node_modules/@deepseek-ai/cordis-plugin-timer"],
+      // The from-media transport wall's carrier (2026-11-01): the
+      // card-base-anchored copy, the same row vitest.shared.ts's
+      // RUNTIME_LIB_ALIAS anchors at runtime.
+      "@deepseek-ai/dsh-api-gateway/client": ["../../../packages/web/card-base/node_modules/@deepseek-ai/dsh-api-gateway/lib/types/client/index.d.ts"],
       "@deepseek-ai/dsh-storage": ["../../../packages/estate/drafts/node_modules/@deepseek-ai/dsh-storage"],
       "@deepseek-ai/dsh-storage-domain": ["../../../packages/estate/drafts/node_modules/@deepseek-ai/dsh-storage-domain"],
       "@deepseek-ai/dsh-storage-json": ["../../../packages/estate/drafts/node_modules/@deepseek-ai/dsh-storage-json"],
@@ -71,9 +75,13 @@
       "@melite/contracts/rootsManifest": ["../../../packages/web-kit/contracts/src/rootsManifest.ts"],
       "@melite/engine-contract": ["../../../packages/engines/contract/src/index.ts"],
       "@melite/estate-drafts": ["../../../packages/estate/drafts/src/index.ts"],
+      "@melite/estate-drafts/remote": ["../../../packages/estate/drafts/src/typert.remote-client.d.ts"],
       "@melite/estate-manage": ["../../../packages/estate/manage/src/index.ts"],
+      "@melite/estate-manage/remote": ["../../../packages/estate/manage/src/typert.remote-client.d.ts"],
+      "@melite/estate-media/remote": ["../../../packages/estate/media/src/typert.remote-client.d.ts"],
       "@melite/estate-provisioning": ["../../../packages/estate/provisioning/src/index.ts"],
-      "@melite/estate-runs": ["../../../packages/estate/runs/src/index.ts"]
+      "@melite/estate-runs": ["../../../packages/estate/runs/src/index.ts"],
+      "@melite/estate-runs/remote": ["../../../packages/estate/runs/src/typert.remote-client.d.ts"]
     }
   },
   // L12 (li-aq.3): the include named *.test.ts while every suite

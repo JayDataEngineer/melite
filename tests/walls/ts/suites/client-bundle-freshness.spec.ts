@@ -18,7 +18,8 @@
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { execSync } from "node:child_process";
+import { execSync, execFileSync } from "node:child_process";
+import { deriveSrcStamp } from "../../../../tools/src-stamp.mjs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -137,11 +138,14 @@ describe("THE SERVED-BUNDLE FRESHNESS LAW", () => {
   // is a function of the builder's locale (en_US.UTF-8 interfiles
   // upper/lowercase differently than C) — a stamp built on a dev
   // box NEVER matched a CI recompute, so the tiers lib-drift gate
-  // could never pass. The recipe is LC_ALL=C now (ship-lane.sh
-  // stamp_src, lane-freshness.sh, build-plane.mjs writeSrcStamp);
-  // this arm recomputes every tracked lib/.src-stamp through the
-  // canonical pipeline and refuses on mismatch — a stale stamp OR
-  // a recipe drift reds here, derivation over literal.
+  // could never pass. The recipe is node-native now
+  // (tools/src-stamp.mjs deriveSrcStamp — in-process crypto over the
+  // deterministic input set, byte-identical to the LC_ALL=C shell
+  // recipe it replaced; ship-lane.sh stamp_src stays the shell
+  // oracle and emit-determinism.spec.ts proves node === shell); this
+  // arm recomputes every tracked lib/.src-stamp through the native
+  // derivation and refuses on mismatch — a stale stamp OR a
+  // derivation drift reds here, derivation over literal.
   it("every tracked lib/.src-stamp equals the canonical (LC_ALL=C) recompute of its own src", () => {
     const tracked = execSync("git ls-files", { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 })
       .split("\n")
@@ -149,15 +153,12 @@ describe("THE SERVED-BUNDLE FRESHNESS LAW", () => {
     assert.ok(tracked.length >= 4, `the stamp roster collapsed (${tracked.length}) — the walk broke`);
     const offenders: string[] = [];
     for (const f of tracked) {
-      const pkgDir = join(ROOT, dirname(dirname(f))); // the package root — find src runs there, not in lib/
-      const live = execSync(
-        "find src \\( -name '*.ts' -o -name '*.tsx' \\) | LC_ALL=C sort | xargs sha256sum 2>/dev/null | sha256sum | cut -c1-16",
-        { cwd: pkgDir, encoding: "utf8" },
-      ).trim();
+      const pkgDir = join(ROOT, dirname(dirname(f))); // the package root — the derivation walks src there, not in lib/
+      const live = deriveSrcStamp(pkgDir);
       const seated = readFileSync(join(ROOT, f), "utf8").trim();
       if (live !== seated) offenders.push(`${f}: canonical ${live}, seated ${seated}`);
     }
-    assert.deepEqual(offenders, [], `non-canonical src stamps (rebuild them with the LC_ALL=C recipe):\n${offenders.join("\n")}`);
+    assert.deepEqual(offenders, [], `non-canonical src stamps (rebuild with the node recipe — node tools/build-plane.mjs build <pkg>):\n${offenders.join("\n")}`);
   });
 
   // THE BUILDER-DECLARATION LAW (the 2026-10-30 lane outage): every
@@ -168,8 +169,15 @@ describe("THE SERVED-BUNDLE FRESHNESS LAW", () => {
   // bin was gone, lane-rebuild step 1 exited 127 into /dev/null, and
   // :3088 never came up. The declaration, not the bin, is the truth a
   // fresh clone installs from; the bin is its shadow.
+  //
+  // THE ROSTER RIDES ARGV (class B R9, 2026-10-31): the roster query
+  // used to shell `git ls-files '**/tsdown.config.ts'` — single
+  // quotes are NOT quotes under cmd.exe, so on windows the pathspec
+  // matched nothing and the roster collapsed to 0. The argv form
+  // carries the same git and the same pathspec with no shell to
+  // misquote it.
   it("every package with a tsdown.config.ts declares tsdown in devDependencies (the builder is installed, never inherited)", () => {
-    const tracked = execSync("git ls-files '**/tsdown.config.ts'", { cwd: ROOT, encoding: "utf8", maxBuffer: 16 * 1024 * 1024 })
+    const tracked = execFileSync("git", ["ls-files", "**/tsdown.config.ts"], { cwd: ROOT, encoding: "utf8", maxBuffer: 16 * 1024 * 1024 })
       .split("\n")
       .filter((f) => f.trim() !== "");
     assert.ok(tracked.length >= 10, `the tsdown config roster collapsed (${tracked.length}) — the walk broke`);

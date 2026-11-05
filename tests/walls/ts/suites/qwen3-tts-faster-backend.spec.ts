@@ -1,7 +1,7 @@
 // qwen3-tts-faster-backend.spec.ts — THE FASTER BACKEND WALL
 // (operator: "qwen-tts 0.1 ... REPLACES qwen-tts dude. We do ONE or the
-// other, not faster-qwen AND normal qwen"; "wrap faster tts, add the
-// qvoice crap, wrap the moss-tts-sfx-2 implementation").
+// other, not faster-qwen AND normal qwen"; wrap faster tts, add the
+// qvoice lane, wrap the moss-tts-sfx-2 implementation).
 //
 // engines/qwen3_tts.py wraps FasterQwen3TTS (torch backend), never raw
 // qwen_tts, for all synthesis — the wrapped qwen handle (self._qwen)
@@ -59,6 +59,14 @@ const py = (code: string): string => {
 const LOADER = `
 import sys, types, importlib.util
 pack = '${join(ROOT, "vendor", "comfyui_extensions", "melite-audio-nodes")}'
+# THE FOLDER SEAT (the vendor re-cure, f2b59343e: the pack reads no
+# process env — core.py's own law: "Tests stub the folder_paths module
+# (sys.modules)"): the audiocpp category resolves to the harness's
+# temp dir; the probe never loads a model.
+folder_paths = types.ModuleType('folder_paths')
+folder_paths.folder_names_and_paths = {'audiocpp': ([], {'.safetensors', '.pt'})}
+folder_paths.get_folder_paths = lambda key: ['${tmpdir().replace(/\\/g, "/")}']
+sys.modules['folder_paths'] = folder_paths
 pkg = types.ModuleType('walltest'); pkg.__path__ = [pack]
 sys.modules['walltest'] = pkg
 for sub in ('core', 'qvoice'):

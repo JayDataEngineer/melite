@@ -107,7 +107,9 @@ describe('THE QUANT-AXIS CELLS WALL — every offered coordinate serves (audit 0
   it('SERVABILITY — every offered Variant row carries an offered cell, and every offered (variant x quant) resolves through door + mirror + artifacts', async () => {
     const svc: ModelsService = modelsService()
     const rows = svc.catalogModels()
-    expect(rows.length, 'the real boot serves the family table (a silent empty catalog would make the wall vacuous)').toBeGreaterThanOrEqual(32)
+    // 32 -> 31 (2026-11-01, the blender-lane removal): the anycreature
+    // family leaves the boot's family table.
+    expect(rows.length, 'the real boot serves the family table (a silent empty catalog would make the wall vacuous)').toBeGreaterThanOrEqual(31)
     const failures: string[] = []
     let families = 0
     let variants = 0

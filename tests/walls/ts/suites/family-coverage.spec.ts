@@ -34,12 +34,12 @@
 // Run: npx vitest run tests/walls/ts/suites/family-coverage.spec.ts
 import { assertHermeticRode } from "../../../helpers/hermetic-engine.ts";
 import { describe, expect, it } from "vitest";
-import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { grepTree } from "../lib/tree-grep.ts";
 
 import { Context } from "@deepseek-ai/cordis";
 import "../../../helpers/boot-models.ts";
@@ -118,12 +118,12 @@ export function coverageCensus(defs: Map<string, CardDefinition>): { rows: Cover
       const selfDir = dirs.get(fam) ?? "";
       const roots = consumerRoots(selfDir).filter((r) => r !== "");
       if (roots.length > 0) {
-        try {
-          const out = execFileSync("grep", ["-rl", "-F", fam, ...roots, "--include=*.ts", "--include=*.tsx"], { encoding: "utf8" });
-          boundBy = out.split("\n").filter((f) => f !== "").map((f) => f.replace(ROOT + "/", ""));
-        } catch {
-          boundBy = [];
-        }
+        // THE SCAN IS NODE-NATIVE AND CANNOT LIE (class B R4,
+        // 2026-10-31): the grep -rl spawn sat in a silent catch — a
+        // failed grep degraded boundBy to [] and the family passed
+        // as reachable-when-unbound. grepTree walks the same roots,
+        // the same extension set, and THROWS on an unreadable root.
+        boundBy = grepTree(fam, roots).map((f) => f.replace(ROOT + "/", ""));
       }
     }
     const row: CoverageRow = { family: fam, unoffered, boardedBy: boards, boundBy };
@@ -172,8 +172,9 @@ describe("family-coverage (every family is reachable through the card plane)", (
       // left this list — its beta-one tree rides a pinned snapshot
       // row + the declared tree/home the run gate probes (the lane
       // files channel), so the debt is paid for the default.
-      // BURN D GRADUATION (2026-10-26 — "HOW DOES MODELS WITHOUT
-      // FUCKING LINKS GO ALL GREEN?"): BOTH taggers left — wd14
+      // BURN D GRADUATION (2026-10-26, the no-link all-green burn —
+      // how models without links stayed all green): BOTH taggers
+      // left — wd14
       // rides 22 single-file provisions rows (the onnx+csv pair per
       // checkpoint, the node's own upstream map), florence2 rides
       // 14 pinned snapshot rows (the joycaption precedent) — every

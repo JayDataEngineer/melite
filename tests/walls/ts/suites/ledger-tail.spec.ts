@@ -1,11 +1,14 @@
 import { onTestFinished, test } from 'vitest'
 import assert from 'node:assert/strict'
-import { mkdtempSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context, type Plugin } from '@deepseek-ai/cordis'
 import timerPlugin from '@deepseek-ai/cordis-plugin-timer'
 import queuePlugin, { appendLedger } from '../../../../packages/harness/estate-queue/src/index.ts'
+import { engineDirs, modelRows } from '../../../../packages/harness/estate-queue/src/skillRows.ts'
+import { hSkillRead } from '../../../../packages/harness/estate-queue/src/skillPlane.ts'
+import { tailLedger } from '../../../../packages/harness/estate-queue/src/ledgerTail.ts'
 import type { EstateMethod } from '../../../../packages/harness/melite-tools/src/estate.ts'
 
 /** THE LEDGER-TAIL WALL (REBUILD-19, the gateway kill): the dead
@@ -156,4 +159,115 @@ test('the ledger clamp is 1..500 — proven against a journal LARGER than the ca
   const last = t.entries[2] as { event?: string }
   assert.equal(first.event, 'clamp.x598')
   assert.equal(last.event, 'clamp.x600')
+})
+
+// U4 ARM 1 (2026-10-31, the ledger's skill-read event class): a real
+// melite_skill_read lands skill.read in the journal, and the tail's
+// skill. filter serves it. The read id DERIVES from the live walks
+// (the first non-spawn model row — never a frozen literal), the tail
+// is read both sides of the read (the matched DELTA, never a bare
+// count), and the journal is a real one on a temp stateRoot. The
+// emission site (hSkillRead → appendLedger, skillPlane.ts:395) fires
+// on its real door; the tail (tailLedger) reads on its real door.
+test('U4 ARM 1 — a real skill read ledgers skill.read and the skill. filter serves it', async () => {
+  const ROOT = join(import.meta.dirname, '../../../..')
+  const state = mkdtempSync(join(tmpdir(), 'ledger-u4-'))
+  const journal = join(state, 'output', '_ledger.jsonl')
+  let sid: string | null = null
+  for (const engine of engineDirs(join(ROOT, 'packages', 'engines'))) {
+    for (const row of modelRows(engine)) {
+      if (row.row.scope.endsWith('-spawn')) continue
+      sid = row.row.id
+      break
+    }
+    if (sid !== null) break
+  }
+  assert.ok(sid !== null, 'the live tree serves at least one readable skill row')
+  const before = tailLedger(journal, '50', 'skill.')
+  assert.equal(before.matched, 0, 'the fresh journal names no skill rows (else the delta proves nothing)')
+  const ans = hSkillRead(ROOT, state, sid)
+  assert.equal(ans.status, 200, 'the derived skill id reads on the real door: ' + JSON.stringify(ans.payload).slice(0, 200))
+  const after = tailLedger(journal, '50', 'skill.')
+  assert.equal(after.matched, before.matched + 1, 'exactly the read landed (a seeded journal would pass a bare count)')
+  assert.equal(after.entries.length, 1, 'the filter serves exactly the read')
+  const row = after.entries[0] as { event?: unknown; data?: unknown }
+  assert.equal(row.event, 'skill.read', 'the landed row carries the skill-read class')
+  assert.equal((row.data as { id?: unknown } | null | undefined)?.id, sid, 'the landed row names the read id')
+})
+
+// U4 ARM 2 (2026-10-31, the dead filter vocabulary): every event
+// class the ledger_tail surface names is emitted by its owner seat.
+// The emitted set derives from the estate-queue appendLedger call
+// sites (static literals plus the dynamic run. prefix family); the
+// named set derives from the tool surface text (dotted classes plus
+// quoted filter examples). A name no seat emits — server.boot,
+// run.registered, run.state, prov.state, the bare prov prefix — reds
+// BY NAME.
+test('U4 ARM 2 — every event class the ledger filter vocabulary names has an emitting seat', () => {
+  const ROOT = join(import.meta.dirname, '../../../..')
+  const srcDir = join(ROOT, 'packages/harness/estate-queue/src')
+  const literals = new Set<string>()
+  const dynamicPrefixes = new Set<string>()
+  for (const file of readdirSync(srcDir).filter((f) => f.endsWith('.ts'))) {
+    const text = readFileSync(join(srcDir, file), 'utf8')
+    for (const m of text.matchAll(/appendLedger\(\s*[\w$]+\s*,\s*"([^"]+)"(\s*\+)?/g)) {
+      if (m[2] !== undefined) dynamicPrefixes.add(m[1]!)
+      else literals.add(m[1]!)
+    }
+  }
+  assert.ok(literals.size > 0, 'the census found emitters (else the arm judges nothing)')
+  const surface = readFileSync(join(ROOT, 'packages/harness/melite-tools/src/tools/ledger-tail.ts'), 'utf8')
+  const named = new Set<string>()
+  for (const m of surface.matchAll(/\b(server|prov|run|skill)\.[a-z_*]*/g)) named.add(m[0])
+  for (const m of surface.matchAll(/"(server|prov|run|skill)"/g)) named.add(m[1]!)
+  const live = (token: string): boolean => {
+    const base = token.endsWith('*') ? token.slice(0, -1) : token
+    if (literals.has(base) || dynamicPrefixes.has(base)) return true
+    for (const lit of literals) if (lit.startsWith(base)) return true
+    return false
+  }
+  const dead = [...named].filter((t) => !live(t)).sort()
+  assert.deepEqual(dead, [], 'dead filter vocabulary (a named class no seat emits): ' + JSON.stringify(dead))
+})
+
+// U4 ARM 3 (2026-11-01, the vocab-audit W1 wall — the ARM 2 blind
+// spot): every ledgerEvent CONSTRUCTED anywhere in estate-queue
+// (not only appendLedger literals) is emitted by an appendLedger
+// site, and every ledger("…")-shaped comment promises an emitted
+// class. ARM 2 derives the emitted set only from
+// appendLedger(…,"…") literals + the dynamic run. prefix — a
+// RetryNote.ledgerEvent string never passes that regex, so the
+// census was blind to the constructed literal that promised the
+// journal row run.stage_retry no seat ever emitted (rank 3 MEDIUM:
+// the journal promised an audit row that never lands). A
+// reintroduced constructed-but-unemitted literal REDS BY NAME.
+test('U4 ARM 3 — every constructed ledgerEvent literal is emitted (the stage_retry class)', () => {
+  const ROOT = join(import.meta.dirname, '../../../..')
+  const srcDir = join(ROOT, 'packages/harness/estate-queue/src')
+  const literals = new Set<string>()
+  const dynamicPrefixes = new Set<string>()
+  const constructed = new Set<string>()
+  let scanned = 0
+  for (const file of readdirSync(srcDir).filter((f) => f.endsWith('.ts'))) {
+    scanned += 1
+    const text = readFileSync(join(srcDir, file), 'utf8')
+    for (const m of text.matchAll(/appendLedger\(\s*[\w$]+\s*,\s*"([^"]+)"(\s*\+)?/g)) {
+      if (m[2] !== undefined) dynamicPrefixes.add(m[1]!)
+      else literals.add(m[1]!)
+    }
+    // RetryNote-style construction: ledgerEvent: "run.stage_retry"
+    for (const m of text.matchAll(/ledgerEvent:\s*"([^"]+)"/g)) constructed.add(m[1]!)
+    // comment promises: ledger("run.stage_retry", ...) — the
+    // lowercase spelling (appendLedger's capital L never matches)
+    for (const m of text.matchAll(/(?<![A-Za-z])ledger\("([^"]+)"/g)) constructed.add(m[1]!)
+  }
+  assert.ok(scanned > 20, 'the census swept the seat sources (else the arm judges nothing)')
+  assert.ok(literals.size > 0, 'the census found emitters (else the arm judges nothing)')
+  const live = (token: string): boolean => {
+    if (literals.has(token) || dynamicPrefixes.has(token)) return true
+    for (const lit of literals) if (lit.startsWith(token)) return true
+    return false
+  }
+  const dead = [...constructed].filter((t) => !live(t)).sort()
+  assert.deepEqual(dead, [], 'constructed-but-unemitted ledger class (a journal promise no seat keeps): ' + JSON.stringify(dead))
 })

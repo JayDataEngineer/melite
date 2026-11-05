@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
+import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { parse } from 'yaml'
 import { judgeStaged } from '../../../../tools/staged-trash-gate.mjs'
@@ -72,5 +75,51 @@ describe('THE STAGED-TRASH GATE (the tree-hygiene wall)', () => {
       .filter((run) => run.length > 0)
     expect(runs.length).toBeGreaterThan(0) // the hook is not an empty shell
     expect(runs.some((run) => run.includes('node tools/staged-trash-gate.mjs'))).toBe(true)
+  })
+
+  // THE DOOR ARMS (2026-11-15): the arms above judge the PURE function,
+  // and the seat's main() had never been judged — it read the INDEX on
+  // every call (so at pre-push, where the index equals HEAD, it judged
+  // nothing: the gate that cannot fire, this file's own named defect
+  // class) and it refused correct UNTRACKS (an ignore rule naming a
+  // deleted path is the reason it left, never a force-add). These two
+  // arms ride main() through a child process in a throwaway repo and
+  // pin both halves: the hook's file argument is the judged set, and a
+  // deletion carries no bytes in.
+  const runGate = (cwd: string, args: string[]) => {
+    const res = spawnSync(process.execPath, [join(ROOT, 'tools/staged-trash-gate.mjs'), ...args], { cwd, encoding: 'utf8' })
+    return { status: res.status ?? -1, out: `${res.stdout ?? ''}${res.stderr ?? ''}` }
+  }
+  const scratchRepo = () => {
+    const dir = mkdtempSync(join(tmpdir(), 'trash-gate-'))
+    const git = (args: string[]) => spawnSync('git', args, { cwd: dir, encoding: 'utf8' })
+    git(['init', '-q'])
+    git(['config', 'user.email', 'wall@example.com'])
+    git(['config', 'user.name', 'wall'])
+    writeFileSync(join(dir, '.gitignore'), 'ignored/\n')
+    writeFileSync(join(dir, 'keep.txt'), 'keep\n')
+    git(['add', '.gitignore', 'keep.txt'])
+    git(['commit', '-q', '-m', 'seed'])
+    return dir
+  }
+
+  it('DOOR: a pushed ignored path refuses even though the index is clean (the hook argument is the judged set)', () => {
+    const dir = scratchRepo()
+    mkdirSync(join(dir, 'ignored'), { recursive: true })
+    writeFileSync(join(dir, 'ignored', 'capture.bin'), 'bytes\n')
+    const { status, out } = runGate(dir, ['ignored/capture.bin'])
+    expect(status, out).toBe(1)
+    expect(out).toContain('IGNORED-PATH')
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('DOOR: a deletion of an ignored path rides (an untrack carries no bytes in)', () => {
+    const dir = scratchRepo()
+    // the path MATCHES the ignore rule (that is why it is being
+    // untracked) yet is absent on disk — the hook may still hand it
+    // over from the range; the gate judges what will exist
+    const { status, out } = runGate(dir, ['ignored/capture.bin'])
+    expect(status, out).toBe(0)
+    rmSync(dir, { recursive: true, force: true })
   })
 })

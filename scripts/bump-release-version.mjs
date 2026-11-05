@@ -26,7 +26,7 @@
  * packages keep their upstream versions.
  */
 import { readFileSync, writeFileSync } from 'node:fs'
-import { execSync } from 'node:child_process'
+import { execFileSync } from 'node:child_process'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -50,7 +50,10 @@ function parseArgs(argv) {
 
 function discoverPackages() {
   const found = []
-  const listing = execSync("git ls-files '*/package.json'", { cwd: REPO, encoding: 'utf8' })
+  // (class B R11, 2026-10-31) argv form — the quoted-shell spelling
+  // rides cmd.exe quote-stripping; git's own pathspec glob needs no
+  // shell at all.
+  const listing = execFileSync('git', ['ls-files', '*/package.json'], { cwd: REPO, encoding: 'utf8' })
   for (const rel of listing.split('\n')) {
     if (!rel || rel.includes('node_modules/')) continue
     const dir = dirname(join(REPO, rel))

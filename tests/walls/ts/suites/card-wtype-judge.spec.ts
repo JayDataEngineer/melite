@@ -145,7 +145,7 @@ const CARD_ROSTER = 17; // 18→17 2026-11-12: the openjutsu card deleted by ope
 // edit-arm trio + mask_expand + the mannequin blur pair +
 // frame_load_cap) — every wtype agreeing with its zod shape, argued
 // here.
-const FIELD_ROSTER = 493; // 504→493 2026-11-12: the eleven flat reshoot_* knob fields retire into the reshoot mod bag (§8 — the kind's entry fields ride the modifiers channel, outside the judged face)
+const FIELD_ROSTER = 482; // 493→482 2026-11-01: the blender-lane removal — the rig card's creature/decimate/format/species rows, gem-soma's two export knobs, and anny's five turnaround knobs leave the judged face. (504→493 2026-11-12: the eleven flat reshoot_* knobs retired into the reshoot mod bag.)
 
 interface DictField {
   readonly type?: string;

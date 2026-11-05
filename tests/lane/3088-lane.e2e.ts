@@ -18,7 +18,8 @@
  * judging itself live in tests/lane/analysis.spec.ts and run with no
  * engine at all.
  *
- * To COMMISSION a fresh video or 3D brief through the headless maker
+ * To COMMISSION a fresh video or 3D brief through the maker (the
+ * supervisor's --profile names the lane — the estate profile)
  * (the real 3088 lane, minutes long, provider quota), run
  * `pnpm run test:lane:commission -- --path video|3d|both`. This spec
  * then judges whatever the tree holds — the harness never fabricates

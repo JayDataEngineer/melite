@@ -15,7 +15,7 @@
 //   DRIVE_ORDER  the verbatim order sentence for the turn
 // Exit 0 = run_id observed in the committed response.
 import { spawn } from "node:child_process";
-import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -39,10 +39,27 @@ writeFileSync(
   JSON.stringify({ id: "drive", card: CARD, model: MODEL, params: PARAMS }),
 );
 
+// ── the delegation preflight (HEADLESS IS DSH'S, 2026-11-14): this
+// drive presses melite_flow, and the run doors seat ONLY on the
+// home's persisted /melite-runs record. Refuse loud naming the path
+// and the cure — never steal the operator's toggle by writing it here.
+{
+  const home = process.env.DSH_HOME ?? join(process.env.HOME ?? "", ".dsh");
+  const record = join(home, "melite-runs-state.json");
+  let delegated = false;
+  try { delegated = JSON.parse(readFileSync(record, "utf8")).delegated === true } catch { /* absent or corrupt reads as OFF */ }
+  if (!delegated) {
+    console.error("drive-3d: FAIL — the run doors are not delegated: " + record
+      + " does not read {\"delegated\":true}. Cure: /melite-runs on in a lane, or write {\"delegated\":true} to that record (flip it back off afterwards).");
+    process.exit(1);
+  }
+  console.log("drive-3d: delegation record ON — the run doors will seat at boot");
+}
+
 const child = spawn("dsh", ["--profile", PROFILE], {
   stdio: ["pipe", "pipe", "pipe"],
   cwd: STATE_ROOT,
-  env: { ...process.env, MELITE_STATE_ROOT: STATE_ROOT, MELITE_HEADLESS: "1" },
+  env: { ...process.env, MELITE_STATE_ROOT: STATE_ROOT },
 });
 
 let buf = "";

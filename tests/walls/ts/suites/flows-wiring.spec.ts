@@ -16,6 +16,7 @@
 
 import { assertHermeticRode } from "../../../helpers/hermetic-engine.ts";
 import { existsSync, readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import "../../../helpers/boot-models.ts";
 import { describe, it, beforeAll } from "vitest";
 import assert from "node:assert/strict";
@@ -49,7 +50,9 @@ describe("THE LEAF<->ROW INTERLOCK (flows wave-2: object-forge taught a dead rem
   // + a dead repo path — and NO wall compared any of it. This
   // interlock derives both faces and judges them against each
   // other: the leaf describes exactly the row that runs.
-  const REPO: string = new URL("../../../../", import.meta.url).pathname;
+  // fileURLToPath, never URL.pathname (the windows CI doubled-drive
+  // class, 2026-10-31: '/D:/…' is drive-rooted RELATIVE on win32).
+  const REPO: string = fileURLToPath(new URL("../../../../", import.meta.url));
 
   it("every flow with a leaf: tool.json names <id_snake>_flow, models the registry id, carries only the row's own params, and names only the row's stage ids in overlays", () => {
     const failures: string[] = [];
@@ -148,18 +151,15 @@ describe("the flow-registry wiring wall (the live door's own construction, over 
     // C-M7 (the wall audit, 2026-09-28): `>= 10` against the real
     // flow count let flows die silently. The census is exact, and it
     // is the registry's own name list — no hand number beside it.
-    // The count is the CUT roster's (2026-10-13: five 3D/rig rows
-    // retired; body-to-somax stays — the motion studio drives it)
-    // + character-factory (2026-10-09: the AssetFurnace-shape
-    // lift→rig→motion chain, gap audit 012)
-    // + object-forge (2026-10-11: concept→lift, all card= — the
-    // row's remesh stage left 2026-10-13; the second {flow:}-door
-    // one-shot)
-    // + extend-video (2026-11-12: the first MOD-BAG-arming flow —
-    // one card= stage on h3-timeline whose extend bag rides $spells
-    // resolved against the wired initials).
+    // 7 since the card-wrapper collapse (2026-11-14,
+    // flows-are-compositions: body-to-somax/audio-native-tts/
+    // extend-video/music-native retired — a one-card "flow" was a
+    // wrapper; the cards press their own doors now). History: the
+    // CUT roster 2026-10-13 (five 3D/rig rows retired), +
+    // character-factory 2026-10-09 (re-aimed 2026-11-01), +
+    // object-forge 2026-10-11, +extend-video 2026-11-12 (−2026-11-14).
     const names = SEED.names();
-    assert.equal(names.length, 11, `the registry serves exactly 11 flows, got ${names.length}`);
+    assert.equal(names.length, 7, `the registry serves exactly 7 flows, got ${names.length}`);
     assert.equal(new Set(names).size, names.length, "the registry's flow names are unique");
   });
 
@@ -181,20 +181,23 @@ describe("the flow-registry wiring wall (the live door's own construction, over 
     assert.deepEqual(failures, [], "every registry flow must compose and validate through the door's own construction");
   });
 
-  it("the kindsOk law is pinned on the tts row (the hole this wall closed): every wired input has its expected Kind", () => {
-    const tts = registryFlowToInline(expandRegistryFlow(SEED.get("audio-native-tts")!, SEED)) as {
+  it("the kindsOk law is pinned on the make row (the hole this wall closed): every wired input has its expected Kind", () => {
+    // (re-homed 2026-11-14 from the retired audio-native-tts wrapper
+    // — the law needs a live card= row with a wired initial; the
+    // image-upscale make stage wires exactly one.)
+    const up = registryFlowToInline(expandRegistryFlow(SEED.get("image-upscale")!, SEED)) as {
       stages: Array<{ inputs: Record<string, unknown>; expected: Record<string, string> }>;
     };
-    const stage = tts.stages[0]!;
+    const stage = up.stages[0]!;
     const names = Object.keys(stage.inputs);
     // C-L16 (the wall audit, 2026-09-28): `names.length > 0` is a
     // floor — a flow that wired the WRONG inputs passed. The truth is
-    // exactly one wired input, "text", and it is pinned as a set.
-    assert.deepEqual(names, ["text"],
-      `audio-native-tts wires exactly ["text"] (got ${JSON.stringify(names)}) — a new wired input is a deliberate edit, not a floor`);
+    // exactly one wired input, "prompt", and it is pinned as a set.
+    assert.deepEqual(names, ["prompt"],
+      `image-upscale's make stage wires exactly ["prompt"] (got ${JSON.stringify(names)}) — a new wired input is a deliberate edit, not a floor`);
     for (const name of names) {
       assert.ok(stage.expected[name] !== undefined,
-        `audio-native-tts stage wires input '${name}' with no expected Kind — the exact hole this wall closed`);
+        `image-upscale's make stage wires input '${name}' with no expected Kind — the exact hole this wall closed`);
     }
   });
 

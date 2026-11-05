@@ -172,7 +172,7 @@ async function bootBundle(root: string): Promise<Context> {
   await ctx.plugin(Storage as unknown as Plugin);
   await ctx.plugin({ name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as unknown as Plugin, { root });
   await ctx.plugin({ name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as unknown as Plugin, { backend: "json" });
-  await ctx.plugin(draftsPlugin as unknown as Plugin, { storageRoot: join(root, "storage") });
+  await ctx.plugin(draftsPlugin as unknown as Plugin);
   // THE FAMILY ROWS — the composition the bundle censuses (the
   // patch roster; direct-mount rigs seat them themselves)
   await mountFamilyRoster(ctx);
@@ -299,7 +299,7 @@ describe("the false-death hunt's four laws", () => {
     await ctx2.plugin(Storage as unknown as Plugin);
     await ctx2.plugin({ name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as unknown as Plugin, { root: join(home, "profile-data") });
     await ctx2.plugin({ name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as unknown as Plugin, { backend: "json" });
-    await ctx2.plugin(draftsPlugin as unknown as Plugin, { storageRoot: join(home, "profile-data", "drafts") });
+    await ctx2.plugin(draftsPlugin as unknown as Plugin);
     await mountFamilyRoster(ctx2);
     // the estate gets NO root config — only a bounded settle budget
     await ctx2.plugin(estateBundle as unknown as Plugin, { seatSettleBudgetMs: 20_000 });

@@ -75,7 +75,6 @@ writeFileSync(${JSON.stringify(record)}, JSON.stringify({
     SUPERVISOR_STATE_ROOT: process.env.SUPERVISOR_STATE_ROOT ?? '',
     SUPERVISOR_DONE_GLOB: process.env.SUPERVISOR_DONE_GLOB ?? '',
     SUPERVISOR_MAX_ATTEMPTS: process.env.SUPERVISOR_MAX_ATTEMPTS ?? '',
-    MELITE_HEADLESS: process.env.MELITE_HEADLESS ?? '',
   },
 }, null, 2))
 ${opts.transcript === true ? `{
@@ -105,6 +104,7 @@ async function launchThroughRealSupervisor(
   const result = await commission({
     path: 'video',
     slug: opts.slug,
+    profile: 'estate',
     stateRoot: opts.stateRoot,
     transcriptDir: opts.transcriptDir,
     maxAttempts: opts.maxAttempts,
@@ -238,7 +238,7 @@ describe('the commissioner — the launch prompt (the laws ride here, not the br
 
 describe('the commissioner — the launch (a stubbed maker, never a real one)', () => {
   it('mints both files without executing when asked for the dry shape', async () => {
-    const result = await commission({ path: 'video', slug: 'lane-dry', execute: false })
+    const result = await commission({ path: 'video', slug: 'lane-dry', profile: 'estate', execute: false })
     expect(result.exit_code).toBeNull()
     expect(existsSync(result.brief_path)).toBe(true)
     expect(existsSync(result.prompt_path)).toBe(true)
@@ -246,7 +246,7 @@ describe('the commissioner — the launch (a stubbed maker, never a real one)', 
     expect(readFileSync(result.prompt_path, 'utf8')).toMatch(/Read the brief file at/)
   })
 
-  it('passes the done-GLOB (never a predicted exact path) and the headless profile to the supervisor', async () => {
+  it('passes the done-GLOB (never a predicted exact path) and the named profile to the supervisor', async () => {
     const stub = stubMaker({ transcript: true })
     const transcriptDir = mkdtempSync(join(tmpdir(), 'lane-transcripts-'))
     const stateRoot = mkdtempSync(join(tmpdir(), 'lane-state-'))
@@ -258,10 +258,10 @@ describe('the commissioner — the launch (a stubbed maker, never a real one)', 
     })
     expect(launched.code).toBe(0)
     const seen = JSON.parse(launched.env) as { env: Record<string, string>; profile: string; prompt: string; argv: string[] }
-    expect(seen.profile).toBe('headless')
+    expect(seen.profile).toBe('estate')
     expect(seen.env.SUPERVISOR_DONE_GLOB).toBe(`${transcriptDir}/transcript-lane-glob-*.md`)
-    // the supervisor exports the headless lane + pins the state root
-    expect(seen.env.MELITE_HEADLESS).toBe('1')
+    // no MELITE_HEADLESS export exists anywhere (HEADLESS IS DSH'S —
+    // the parallel interface is dead; the profile is the whole lane)
     // J12: the pin rides a minted --patch overlay naming the estate
     // row's stateRoot (the env seam is retired)
     const estatePatch = `${launched.logPrefix}-estate.patch.yml`
@@ -328,7 +328,7 @@ describe('the commissioner — the launch (a stubbed maker, never a real one)', 
     delete process.env['MELITE_AGENT_ROUTE']
     let dry: Awaited<ReturnType<typeof commission>>
     try {
-      dry = await commission({ path: 'video', slug: 'lane-seat', execute: false })
+      dry = await commission({ path: 'video', slug: 'lane-seat', profile: 'estate', execute: false })
     } finally {
       if (hadAmbient) process.env['MELITE_AGENT_ROUTE'] = ambient
     }
@@ -338,6 +338,7 @@ describe('the commissioner — the launch (a stubbed maker, never a real one)', 
     const explicit = await commission({
       path: 'video',
       slug: 'lane-seat2',
+      profile: 'estate',
       execute: false,
       env: { MELITE_AGENT_ROUTE: 'opencode-go/some-model' },
     })
@@ -354,7 +355,7 @@ describe('the commissioner — the launch (a stubbed maker, never a real one)', 
     process.env['MELITE_AGENT_ROUTE'] = 'sentinel-shell/zephyr-audit'
     let middle: Awaited<ReturnType<typeof commission>>
     try {
-      middle = await commission({ path: 'video', slug: 'lane-seat3', execute: false })
+      middle = await commission({ path: 'video', slug: 'lane-seat3', profile: 'estate', execute: false })
     } finally {
       if (hadAmbient) process.env['MELITE_AGENT_ROUTE'] = ambient
       else delete process.env['MELITE_AGENT_ROUTE']
@@ -364,8 +365,8 @@ describe('the commissioner — the launch (a stubbed maker, never a real one)', 
   })
 
   it('the launch env keeps the collision-law glob and the pinned state root beside the route', async () => {
-    const dry = await commission({ path: '3d', slug: 'lane-env', execute: false, stateRoot: '/tmp/lane-state-x' })
-    assert.equal(dry.env?.['SUPERVISOR_PROFILE'], 'headless')
+    const dry = await commission({ path: '3d', slug: 'lane-env', profile: 'estate', execute: false, stateRoot: '/tmp/lane-state-x' })
+    assert.equal(dry.env?.['SUPERVISOR_PROFILE'], 'estate')
     assert.equal(dry.env?.['SUPERVISOR_STATE_ROOT'], '/tmp/lane-state-x')
     assert.match(String(dry.env?.['SUPERVISOR_DONE_GLOB']), /transcript-lane-env-\*\.md$/)
     // a receipt never carries a credential: the env it reports is the
@@ -385,17 +386,18 @@ describe('the commissioner — the launch (a stubbed maker, never a real one)', 
     const ambientHome = process.env['DSH_HOME']
     const ambientPatch = process.env['SUPERVISOR_DSH_PATCH']
     const dshHome = mkdtempSync(join(tmpdir(), 'lane-dsh-home-'))
-    mkdirSync(join(dshHome, 'profiles', 'headless'), { recursive: true })
-    writeFileSync(join(dshHome, 'profiles', 'headless', 'llm.patch.yml'), '# overlay\n', 'utf8')
+    mkdirSync(join(dshHome, 'profiles', 'estate'), { recursive: true })
+    writeFileSync(join(dshHome, 'profiles', 'estate', 'llm.patch.yml'), '# overlay\n', 'utf8')
     try {
       process.env['DSH_HOME'] = dshHome
       delete process.env['SUPERVISOR_DSH_PATCH']
-      const dry = await commission({ path: 'video', slug: 'lane-overlay', execute: false })
-      assert.equal(dry.env?.['SUPERVISOR_DSH_PATCH'], join(dshHome, 'profiles', 'headless', 'llm.patch.yml'))
+      const dry = await commission({ path: 'video', slug: 'lane-overlay', profile: 'estate', execute: false })
+      assert.equal(dry.env?.['SUPERVISOR_DSH_PATCH'], join(dshHome, 'profiles', 'estate', 'llm.patch.yml'))
       // explicit env > the discovered overlay (the house law)
       const explicit = await commission({
         path: 'video',
         slug: 'lane-overlay',
+        profile: 'estate',
         execute: false,
         env: { SUPERVISOR_DSH_PATCH: '/operator/owns/this.patch.yml' },
       })
@@ -415,7 +417,7 @@ describe('the commissioner — the launch (a stubbed maker, never a real one)', 
     try {
       process.env['DSH_HOME'] = dshHome
       delete process.env['SUPERVISOR_DSH_PATCH']
-      const dry = await commission({ path: 'video', slug: 'lane-bare', execute: false })
+      const dry = await commission({ path: 'video', slug: 'lane-bare', profile: 'estate', execute: false })
       assert.equal(dry.env?.['SUPERVISOR_DSH_PATCH'], undefined)
     } finally {
       if (ambientHome === undefined) delete process.env['DSH_HOME']
@@ -438,6 +440,7 @@ describe('the commissioner — the launch (a stubbed maker, never a real one)', 
     const result = await commission({
       path: '3d',
       slug: 'lane-logs',
+      profile: 'estate',
       stateRoot,
       transcriptDir,
       env: { SUPERVISOR_DSH_BIN: stub.bin, SUPERVISOR_BACKOFF_S: '0' },
@@ -451,7 +454,7 @@ describe('the commissioner — the launch (a stubbed maker, never a real one)', 
 describe('the commissioner — the work dir is a real, readable receipt', () => {
   it('keeps the brief and prompt together, and the transcript dir is where the law says', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'lane-work-'))
-    const result = await commission({ path: 'video', slug: 'lane-files', workDir: dir, execute: false })
+    const result = await commission({ path: 'video', slug: 'lane-files', profile: 'estate', workDir: dir, execute: false })
     expect(result.brief_path.startsWith(dir)).toBe(true)
     expect(result.prompt_path.startsWith(dir)).toBe(true)
     expect(result.log_prefix.startsWith(dir)).toBe(true)
@@ -462,7 +465,7 @@ describe('the commissioner — the work dir is a real, readable receipt', () => 
 
   it('creates a work dir when the caller names none (never a silent cwd write)', async () => {
     const before = existsSync(join(process.cwd(), 'brief-lane-auto.md'))
-    const result = await commission({ path: '3d', slug: 'lane-auto', execute: false })
+    const result = await commission({ path: '3d', slug: 'lane-auto', profile: 'estate', execute: false })
     expect(existsSync(join(process.cwd(), 'brief-lane-auto.md'))).toBe(before)
     expect(result.brief_path).toMatch(/lane-3d-/)
   })

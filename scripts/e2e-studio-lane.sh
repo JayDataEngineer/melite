@@ -375,6 +375,11 @@ if [ -n "$AGENT_ROUTE" ]; then
 fi
 
 # ── seed the bench over the host's own /api wire ──────────────────
+# 'main' is LAWFUL here (the §8.3 reader law, audit 2026-10-31): the
+# studio lane is a genuinely unattributed seat — no DSH conversation
+# exists on it, so the headless fallback applies and the tab watches
+# main. Never re-point this to a session- key: the lane has no
+# generation to inherit from.
 curl -sL -c "$COOKIES" "$E2E_STUDIO_URL" -o /dev/null
 curl -s -b "$COOKIES" -X POST "http://127.0.0.1:$PORT/api/bench/ensure" \
   -H 'content-type: application/json' \

@@ -57,13 +57,25 @@ const BUDGET = {
   //    tsconfig paths to src/ -- no config teaching can bridge that
   //    without hiding findings, so it stays budgeted. DO NOT delete code
   //    to move these numbers; deletions land as their own cure commits.
-  files: 62,
+  //  - files 62->64, exports 241->242, types 177->178 (RE-BASELINED UP
+  //    2026-11-15, the release-train measure): the train that shipped
+  //    the lora plane, the cold-start proof lane and the seat manifest
+  //    added code the entry graph cannot reach -- two tracked files
+  //    with no importer (the typo'd `packages/web/melte-estate/hot/
+  //    user-loras.plugin.ts` hot-plugin corpse no profile mounts, and
+  //    `packages/estate/provisioning/src/types.ts` whose consumers
+  //    import the barrels) plus one dead export and one dead type in
+  //    the new plan/proof code. Census debt, not weakening: the gate
+  //    still fires on any growth past these numbers, and the cure is
+  //    the ROADMAP's knip-back row (delete-with-its-consumers or
+  //    teach-the-entry), never a number bump again.
+  files: 64,
   dependencies: 15,
   devDependencies: 50,
   unlisted: 1,
   unresolved: 0,
-  exports: 241,
-  types: 177,
+  exports: 242,
+  types: 178,
   // enumMembers / duplicates: "duplicates" excluded in knip.jsonc
 }
 

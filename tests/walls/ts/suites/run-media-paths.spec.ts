@@ -132,11 +132,13 @@ describe("the publish-plane coverage law — every declared output kind publishe
     // a CHANNEL_EXTS row — the bound semantic producers the bound arm
     // publishes kind-blind (no extension guessing): motion's motion_npz
     // ('data', via its KimodoTextToPose binding) and tts's voices
-    // ('voice', via its MeliteQVoiceCopy binding). A third rowless kind
+    // ('audio_list', via its MeliteQVoiceCopy binding — the KIND_VOCAB
+    // list law, 2026-11-02: a list channel carries the _list kind, so
+    // the bare 'voice' spelling is unstatable). A third rowless kind
     // is the lesion (text was it); a new semantic kind updates this row
     // WITH its binding justification, never silently.
     const rowless = [...carriers.keys()].filter((k) => CHANNEL_EXTS[k] === undefined).sort();
-    expect(rowless).toEqual(["data", "voice"]);
+    expect(rowless).toEqual(["audio_list", "data"]);
     // ... and every carrier of a semantic kind is bound (an unbound
     // carrier would skip silently — the first expect's shape).
     for (const k of rowless) {

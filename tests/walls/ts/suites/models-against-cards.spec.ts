@@ -17,21 +17,18 @@ import { modelsService } from "../../../../packages/engines/comfyui-cordis/src/m
 import { ENGINE_TRUTH as ENGINE_TRUTH_SSOT } from "../../../../packages/engines/comfyui-cordis/src/models/validate.ts";
 import { assertSchemaAcceptsMinimalRows } from '../../../../packages/engines/comfyui-card-kit/src/model-contract.ts';
 import { readFileSync } from "node:fs";
-import { execFileSync } from "node:child_process";
+import { grepTree } from "../lib/tree-grep.ts";
 
 /** Which non-grammar files NAME a token (the readers census — the
  *  design audit's Q5: a declarer nobody reads is a claim nothing
- *  keeps). */
+ *  keeps). Node-native since class B R4 (2026-10-31): the grep -rl
+ *  spawn's silent catch degraded the census to a fallback of
+ *  whatever stdout survived the failure — a wall that could pass on
+ *  a scan that never ran. grepTree throws on an unreadable root
+ *  instead; the token ("base_body") is metachar-free, so literal
+ *  scan ≡ the regex grep ran. */
 function execGrep(token: string, roots: string[], skip: readonly string[] = []): string[] {
-  try {
-    const out = execFileSync("grep", ["-rl", token, ...roots, "--include=*.ts", "--include=*.tsx"], {
-      encoding: "utf8",
-    });
-    return out.split("\n").filter((f) => f !== "" && !skip.some((s) => f.includes(s)));
-  } catch (e) {
-    const out = (e as { stdout?: string }).stdout ?? "";
-    return out.split("\n").filter((f) => f !== "" && !skip.some((s) => f.includes(s)));
-  }
+  return grepTree(token, roots).filter((f) => !skip.some((s) => f.includes(s)));
 }
 import { describe, it } from "vitest";
 
@@ -520,7 +517,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // judged params face.
     // (Earlier: 502 -> 513, 2026-10-28 swap build R0a — the track
     // card's eleven fields joined.)
-    assert.equal(walked, 493,
+    assert.equal(walked, 482,
       `the census walked the estate's fields (${String(walked)} — a re-zoned or re-typed field set MOVES this number; growth is argued here, loss means the census emptied an arm)`);
     // judged 8 -> 6 (2026-11-08, the latent law): the image-edit
     // card's width/height leave the params zone (hidden compatibility
@@ -920,11 +917,11 @@ describe("models against cards (the cross-validation, resurrected)", () => {
       if (decl?.unoffered === true) unoffered.push(id); else foreign.push(id);
     }
     assert.deepEqual(dead, [
-      "anycreature", "concat",
+      "concat",
       "fit", "gem-soma",
       "mask-select", "skin",
       "somax",
-    ], `the unboarded registry rows are the named 7 (saw ${String(dead.length)}: ${dead.join(", ")}) — a death or resurrection is a deliberate edit`);
+    ], `the unboarded registry rows are the named 6 (anycreature died with the blender lane, 2026-11-01; saw ${String(dead.length)}: ${dead.join(", ")}) — a death or resurrection is a deliberate edit`);
     // DERIVED (the flake audit): the unoffered rows are the dead rows
     // MINUS the foreign-engine ones — both sets are named right here,
     // so the count is their difference, not a hand-maintained number.
@@ -957,8 +954,8 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // rows (fibo2-edit provisions the BF16 Qwen3-VL encoder + the
     // flux2-family VAE; the int8 encoder is deliberately absent —
     // the open upstream bug's seat).
-    // 20 -> 21 (burn d, 2026-10-26 — "HOW DOES MODELS WITHOUT
-    // FUCKING LINKS GO ALL GREEN?"): wd14 joins — 22 single-file
+    // 20 -> 21 (burn d, 2026-10-26, the no-link all-green burn — how
+    // models without links stayed all green): wd14 joins — 22 single-file
     // rows (one onnx+csv pair per selectable tagger, off the node's
     // OWN upstream map); florence2 rides the snapshot channel, not
     // provisions.
@@ -1012,7 +1009,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
 // VDA-Small secondary-path files, the video VAE (h3's digest,
 // re-declared: the family owns every weight its lane loads) and the
 // frozen text embed (the pack repo's text_cond row).
-const PROVISION_ROW_COUNT = 96; // 95→96 2026-11-13: the reshoot official rework — h3 provisions the CrossView LoRA (Cseti/MiniMax-H3_Ref2VA-LoRA-CrossView-Warp_v1)
+const PROVISION_ROW_COUNT = 97; // 95→96 2026-11-13: the reshoot official rework — h3 provisions the CrossView LoRA (Cseti/MiniMax-H3_Ref2VA-LoRA-CrossView-Warp_v1); 96→97 2026-11-01: the silver-dareties default cure — h3 provisions the official silver_official_releases DARE-TIES merge (silveroxides minimax_h3_fl2v_turbo_silver_dareties_comfy_pruned_v2)
     const declarers: string[] = [];
     let judged = 0;
     for (const id of registryIds()) {
@@ -2000,7 +1997,8 @@ describe("THE TWO-HOMES BOUNDS-SYNC WALL (card schema == action ParamSpec, every
     // ParamSpec rows sync against the card schema per carried
     // address (length/width/height/steps/shift_video/shift_audio
     // bounds + the seed sentinel; offenders empty).
-    assert.equal(pairs, 796, "the shared-name pair census changed — update this pin deliberately"); // 829→796 2026-11-12 (§8): the eleven flat reshoot_* knobs retire from the h3 schema AND its three action ParamSpec faces — 11 × 3 shared-name pairs leave both homes together
+    assert.equal(pairs, 791, "the shared-name pair census changed — update this pin deliberately"); // 829→796 2026-11-12 (§8): the eleven flat reshoot_* knobs retire from the h3 schema AND its three action ParamSpec faces — 11 × 3 shared-name pairs leave both homes together
+    // 796→791 2026-11-01 (the blender-lane removal): the rig card's fbx/decimate/species knobs and gem-soma's two export knobs leave both homes together
     assert.deepEqual(offenders, [], `two-homes drift (card schema vs action ParamSpec):\n${offenders.join("\n")}`);
   });
 });
@@ -2194,8 +2192,8 @@ describe("THE SNAPSHOT↔MERGE SPLIT (no lying snapshot rows)", () => {
     // at a pinned 40-hex revision, 13 load-covering literals). Four
     // shards plus the index ride the whole-dir channel (never
     // single-file rows); a fifth row is an unreviewed fetch.
-    // 4 -> 18 (burn d, 2026-10-26 — "HOW DOES MODELS WITHOUT FUCKING
-    // LINKS GO ALL GREEN?"): florence2's fourteen whole-repo trees
+    // 4 -> 18 (burn d, 2026-10-26, the no-link all-green burn — how
+    // models without links stayed all green): florence2's fourteen whole-repo trees
     // join, one pinned row per selectable checkpoint (the node's own
     // snapshot_download target into models/LLM — the joycaption
     // precedent, and every literal is liveness-probed at its pinned
@@ -2312,6 +2310,60 @@ describe("THE SNAPSHOT↔MERGE SPLIT (no lying snapshot rows)", () => {
     assert.ok(
       !snapshotsOf("qwen3-tts").has("Qwen3-TTS-12Hz-0.6B-CustomVoice-merged"),
       "the 0.6B merged tree carries no snapshot row",
+    );
+  });
+
+  // THE CONFINED-STORE-PATH ARM (the F45 burn, 2026-11-01): every
+  // snapshot row constructs its store paths at DECL-authoring time —
+  // `folder/name/<allow pattern>` — and every segment must be a safe
+  // relative path piece, or the row CAN traverse: ".." climbs out of
+  // the family root, an absolute or backslash path escapes the
+  // spelling, a trailing slash makes the file row a directory claim.
+  // The store-side door refuses such a landing loud at download time
+  // ("artifact path traverses a non-directory" — never weakened);
+  // this arm kills the class at authoring time, naming the row
+  // verbatim before any byte moves.
+  it("every snapshot row's store paths resolve inside the family root (no traversal class)", () => {
+    const offenders: string[] = [];
+    /** One safe relative path piece: no empty/./.. segment, no
+     *  backslash, not absolute. */
+    const safeSegments = (path: string, what: string, family: string, row: string): void => {
+      if (path.includes("\\")) offenders.push(`${family}/${row}: ${what} '${path}' carries a backslash`);
+      if (path.startsWith("/")) offenders.push(`${family}/${row}: ${what} '${path}' is absolute`);
+      for (const segment of path.split("/")) {
+        if (segment === "" || segment === "." || segment === "..") {
+          offenders.push(`${family}/${row}: ${what} '${path}' carries the unsafe segment '${segment}'`);
+        }
+      }
+    };
+    for (const id of registryIds()) {
+      for (const row of registryModel(id).snapshot_provisions ?? []) {
+        if (row.folder === "") offenders.push(`${id}/${row.name}: folder is empty (the tree lands at the store root, parentless)`);
+        else safeSegments(row.folder, "folder", id, row.name);
+        safeSegments(row.name, "tree name", id, row.name);
+        if (row.name.includes("/")) offenders.push(`${id}/${row.name}: tree name spans segments (the landed dir's basename)`);
+        for (const pattern of row.allow_patterns) {
+          if (pattern === "") {
+            offenders.push(`${id}/${row.name}: an allow pattern is empty`);
+            continue;
+          }
+          if (pattern.endsWith("/*")) {
+            // dir/* subtree prefix (the snapshot channel's own
+            // patternMatches law): the DIR half carries the segments
+            safeSegments(pattern.slice(0, -2), "allow glob", id, row.name);
+          } else {
+            safeSegments(pattern, "allow pattern", id, row.name);
+            if (pattern.endsWith("/")) offenders.push(`${id}/${row.name}: allow pattern '${pattern}' ends with a slash (a directory claim, never a file row)`);
+          }
+        }
+      }
+    }
+    assert.deepEqual(
+      offenders,
+      [],
+      "TRAVERSING SNAPSHOT ROWS — a declared file row that can resolve outside its family root " +
+        "(the store door would refuse it loud mid-download; the DECL must never author it):\n" +
+        offenders.join("\n"),
     );
   });
 });

@@ -11,6 +11,7 @@
 import "../../../helpers/boot-models.ts";
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
+import { fileURLToPath } from "node:url";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { LANE_TOPOLOGY as QWEN_TOPOLOGY } from "../../../../packages/models/qwen3-tts/src/index.ts";
@@ -33,7 +34,9 @@ import {
 // the DERIVED values keeps every real regression (a family that stops
 // registering, a variant that loses its flat address, a route nobody
 // declares) while surviving a legitimate addition with no edit here.
-const REPO_ROOT = new URL("../../../../", import.meta.url).pathname
+// fileURLToPath, never URL.pathname (the windows CI doubled-drive
+// class, 2026-10-31: '/D:/…' is drive-rooted RELATIVE on win32).
+const REPO_ROOT = fileURLToPath(new URL("../../../../", import.meta.url))
 
 /** Every family id a package under packages/models declares, read
  *  from each DECL's own literal — the tree, never a count. */

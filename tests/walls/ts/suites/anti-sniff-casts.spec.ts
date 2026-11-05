@@ -47,7 +47,11 @@ const BASELINE: Record<string, number> = {
   'packages/web/melite-card-view/src/client/stage-drill.tsx': 2,
   'packages/web/melite-card-view/src/client/add-stage.ts': 1,
   'packages/web/card-base/src/stage3d.ts': 1,
-  'packages/web/infer-gallery/src/index.ts': 2,
+  // gallery index stepped OUT (2026-11-02, the mass-archive cure's
+  // cast retirement): the four mutating doors pass IncomingMessage
+  // straight into readJsonBody/readArchiveBody — the host types the
+  // request, so the file is cast-free. A new as-unknown site here
+  // reds as a file with NO baseline row.
   'packages/web/melite-estate/src/provisioning.ts': 1,
   'packages/harness/melite-tools/src/doors.ts': 1,
 }
@@ -167,7 +171,11 @@ const ALL_FORMS_BASELINE: Record<string, number> = {
   // trail.ts: 1 — the archived-history copy VERBATIM MOVED here from remote.ts
   // (the carry-batch extraction, 2026-10-26); remote.ts stepped 8→7 in the same move.
   'packages/estate/drafts/src/trail.ts': 1,
-  'packages/estate/drafts/src/store.ts': 1,
+  // store.ts: 1 — stepped OUT 2026-11-01 (the battery residual cures):
+  // the legacy-drafts import shim that carried the file's one cast was
+  // deleted whole by the E4 wave (e4de0b0c2, 2026-10-31); the file is
+  // cast-free and the row was stale against it. A step-down is recorded,
+  // never silent.
   'packages/estate/provisioning/src/manager-client.ts': 1,
   'packages/estate/provisioning/src/operation-store.ts': 5,
   'packages/estate/provisioning/src/snapshot.ts': 1,
@@ -194,16 +202,21 @@ const ALL_FORMS_BASELINE: Record<string, number> = {
   'packages/harness/melite-tools/src/tools/melite-flow.ts': 4,
   'packages/harness/melite-tools/src/tools/melite-view.ts': 8,
   'packages/models/h3/src/actions.ts': 3,
-  'packages/models/krea-2/src/actions.ts': 2,
-  'packages/models/qwen-img-21/src/actions.ts': 2,
   'packages/models/yue2/src/actions.ts': 1,
   'packages/motion/motion/src/ui/studio/motionDoc.ts': 2,
   'packages/video/h3-timeline/src/tool.ts': 1,
   'packages/video/h3-timeline/src/ui/studio/CallCard.tsx': 1,
-  'packages/video/h3-timeline/src/ui/studio/RunRecipeEngine.tsx': 8,
+  // stepped 8 -> 6 (2026-11-15, the post-chain hoist + the lane
+  // dead-letter retirement: the reseat/flip-writer casts died with
+  // the machinery).
+  'packages/video/h3-timeline/src/ui/studio/RunRecipeEngine.tsx': 6,
   'packages/video/h3-timeline/src/ui/studio/docCalls.ts': 1,
-  'packages/video/h3-timeline/src/ui/studio/docHydrate.ts': 3,
-  'packages/video/h3-timeline/src/ui/studio/useShownDoc.ts': 5,
+  // stepped 3 -> 2 (2026-11-15: the emit-omission block's cast died).
+  'packages/video/h3-timeline/src/ui/studio/docHydrate.ts': 2,
+  // stepped 5 -> 2 (2026-11-15, the retirement: the reseat writer
+  // and the flip-writer delete pass are deleted; the commit is one
+  // layer-shaped write and the ops are plain).
+  'packages/video/h3-timeline/src/ui/studio/useShownDoc.ts': 2,
   'packages/web-kit/catalog/src/FlowProtocol.ts': 1,
   'packages/web-kit/contracts/src/familyLane.ts': 1,
   'packages/web-kit/contracts/src/formSpec.ts': 1,
@@ -218,7 +231,8 @@ const ALL_FORMS_BASELINE: Record<string, number> = {
   'packages/web/card-base/src/wire.ts': 1,
   'packages/web/infer-gallery/src/client/mesh-view.tsx': 2,
   'packages/web/infer-gallery/src/client/useFeed.ts': 1,
-  'packages/web/infer-gallery/src/index.ts': 2,
+  // (mass-archive cure, 2026-11-02: gallery index.ts stepped out —
+  // cast-free, see the inline-cast census above.)
   'packages/web/melite-card-deck/src/client/assets-tab.tsx': 1,
   'packages/web/melite-card-view/src/client/add-stage.ts': 3,
   'packages/web/melite-card-view/src/client/bench-row.ts': 1,

@@ -629,16 +629,27 @@ async function mint (opts) {
     const orderPath = join(dest, 'order.txt')
     writeFileSync(orderPath, ordered.join('\n') + '\n')
 
+    // MANIFEST v2: every row carries the package name and version
+    // beside the asset facts. Consumer tooling (the github-way
+    // installer) maps name -> release-asset URL from this file alone;
+    // v1 rows (file/sha/bytes only) forced a tarball download to
+    // learn the name.
     const manifest = {
-      manifest: 1,
+      manifest: 2,
       tag,
       commit,
       packedAt: new Date().toISOString(),
-      packages: files.map((f) => ({
-        file: f.split('/').pop(),
-        bytes: Number(run('stat', ['-c', '%s', f])),
-        sha256: sha256(f),
-      })),
+      packages: files.map((f) => {
+        const byFile = [...innerFiles.values()].find((v) => v.f === f)
+        if (!byFile?.inner?.name) fail(`manifest: ${f} has no inner package name`)
+        return {
+          name: byFile.inner.name,
+          version: byFile.inner.version,
+          file: f.split('/').pop(),
+          bytes: Number(run('stat', ['-c', '%s', f])),
+          sha256: sha256(f),
+        }
+      }),
     }
     const manifestPath = join(dest, 'release-manifest.json')
     writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n')

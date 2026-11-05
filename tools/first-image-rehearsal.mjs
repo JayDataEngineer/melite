@@ -68,6 +68,23 @@ for (const m of readFileSync(KEYENV, 'utf8').matchAll(/^export ([A-Z0-9_]+)="([^
   keyEnv[m[1]] = m[2]
 }
 
+// ── the delegation preflight (HEADLESS IS DSH'S, 2026-11-14) ──────
+// This rehearsal presses melite_flow on the estate lane, and the run
+// doors seat ONLY on the home's persisted /melite-runs record. Refuse
+// loud BEFORE any machine mutation — never a boot whose agent holds
+// no run verb.
+{
+  const record = join(DSH_HOME, 'melite-runs-state.json')
+  let delegated = false
+  try { delegated = JSON.parse(readFileSync(record, 'utf8')).delegated === true } catch { /* absent or corrupt reads as OFF */ }
+  if (!delegated) {
+    console.error('[first-image] FAIL — the run doors are not delegated: ' + record
+      + ' does not read {"delegated":true}. Cure: /melite-runs on in a lane, or write {"delegated":true} to that record (flip it back off afterwards).')
+    process.exit(1)
+  }
+  log('delegation record ON — the run doors will seat at boot')
+}
+
 // ── PREPARE: the machine as the rehearsal needs it ────────────────
 // The stock engine is a systemd --user unit that auto-respawns a bare
 // kill (proven live 2026-10-13: kill → a new pid owned the port
@@ -214,17 +231,11 @@ const child = spawn(DSH_BIN, ['--profile', 'estate', ...(existsSync(OVERLAY) ? [
   env: {
     ...process.env, ...keyEnv, DSH_HOME,
     NODE_OPTIONS: '--experimental-strip-types',
-    // the delegated operator (the run-door law): estate profile
-    // config already sets headless:true — this is the same law,
-    // explicit at spawn, so the seating never depends on the
-    // profile layer alone. (The repo's AGENTS.md agent-mode section
-    // — "no melite_flow in this mode" — reaches the lane's context
-    // via initialize cwd and can outweigh it; ask 3 names the
-    // contract for the same reason.)
-    MELITE_HEADLESS: '1',
-    // own state root (the queue is serial-by-design over one root;
+    // the run doors seat from the home's persisted delegation record
+    // (the preflight above verified it ON) — no env spell exists.
+    // Own state root (the queue is serial-by-design over one root;
     // the studio lane holds the repo root — see the estate drive)
-    // rides the minted estate overlay above (J12)
+    // rides the minted estate overlay above (J12).
   },
   stdio: ['pipe', 'pipe', 'pipe'],
 })
@@ -359,9 +370,9 @@ try {
   {
     const mark = frames.length
     const r = await ask([
-      'Run it now. This is a HEADLESS JOB LANE — you are the delegated',
-      'operator and melite_flow IS in your tools (the agent-mode',
-      '"runs start at the user press" contract is for browser lanes).',
+      'Run it now. This lane is the DELEGATED operator: the home\'s',
+      '/melite-runs record is ON, so melite_flow IS in your tools (the',
+      '"runs start at the user press" contract is for undelegated lanes).',
       'Call melite_flow with card="image-gen", model="krea-2",',
       'prompt="first image on a cold machine — a blue octahedron", test=true.',
       'Report the run_id.',

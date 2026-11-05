@@ -59,6 +59,23 @@ writeFileSync(
   JSON.stringify({ id: "agent-drive", stages: [AGENT_STAGE] }, null, 2),
 );
 
+// ── the delegation preflight (HEADLESS IS DSH'S, 2026-11-14): this
+// drive presses melite_flow, and the run doors seat ONLY on the
+// home's persisted /melite-runs record. Refuse loud naming the path
+// and the cure — never steal the operator's toggle by writing it here.
+{
+  const home = process.env.DSH_HOME ?? join(process.env.HOME ?? "", ".dsh");
+  const record = join(home, "melite-runs-state.json");
+  let delegated = false;
+  try { delegated = JSON.parse(readFileSync(record, "utf8")).delegated === true } catch { /* absent or corrupt reads as OFF */ }
+  if (!delegated) {
+    console.error("agent-drive: FAIL — the run doors are not delegated: " + record
+      + " does not read {\"delegated\":true}. Cure: /melite-runs on in a lane, or write {\"delegated\":true} to that record (flip it back off afterwards).");
+    process.exit(1);
+  }
+  console.log("agent-drive: delegation record ON — the run doors will seat at boot");
+}
+
 const child = spawn("dsh", ["--profile", "estate"], {
   stdio: ["pipe", "pipe", "pipe"],
   // NEUTRAL CWD (the estate-drive debt fix): the child boots in the
@@ -67,7 +84,6 @@ const child = spawn("dsh", ["--profile", "estate"], {
   env: {
     ...process.env,
     MELITE_STATE_ROOT: STATE_ROOT,
-    MELITE_HEADLESS: "1",
     MELITE_AGENT_ROUTE: AGENT_ROUTE,
   },
 });

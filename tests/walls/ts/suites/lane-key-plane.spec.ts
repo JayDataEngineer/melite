@@ -73,7 +73,7 @@ function environKeys(pid: string): Set<string> {
  *  sibling specs' subprocesses every gate (flake class 3,
  *  flake-slowness-wave2). The substring face survives as
  *  laneMentioned (the named-check), never as a key.
- *  `--profile` parses FIRST — a `--profile headless --patch
+ *  `--profile` parses FIRST — a `--profile estate --patch
  *  profiles/web/...` boot must not read as web (the lane-key row,
  *  2026-10-20).
  *  @param cmdline — a /proc cmdline body (NUL-separated argv).
@@ -211,9 +211,9 @@ test("resolution names a rotated-away key (the negative control)", () => {
 
 test("laneOfCmdline keys ONLY on --profile; the substring face is the named-check (the lane-key row + class 3)", () => {
   const nul = "\0";
-  // the row's exact shape: the flag names headless, the patch path
-  // names web — the boot keys to HEADLESS
-  assert.equal(laneOfCmdline(["dsh", "web", "--profile", "headless", "--patch", "profiles/web/cordis.patch.yml"].join(nul)), "headless");
+  // the row's exact shape: the flag names a server profile, the
+  // patch path names web — the boot keys to the PROFILE
+  assert.equal(laneOfCmdline(["dsh", "web", "--profile", "estate", "--patch", "profiles/web/cordis.patch.yml"].join(nul)), "estate");
   // = form parses the same way
   assert.equal(laneOfCmdline(["dsh", "--profile=bench", "serve"].join(nul)), "bench");
   // a flag with no value keys nothing

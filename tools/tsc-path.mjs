@@ -15,8 +15,7 @@
 // (a lockfile where no package links typescript), then PATH, then a
 // loud refusal. It prints the absolute tsc path on stdout.
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
-import { execFileSync } from "node:child_process";
+import { delimiter, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = join(fileURLToPath(import.meta.url), "..", "..");
@@ -105,14 +104,27 @@ if (best !== null) {
   process.stdout.write(best + "\n");
   process.exit(0);
 }
-try {
-  const onPath = execFileSync("command", ["-v", "tsc"], { encoding: "utf8", shell: "/bin/bash" }).trim();
-  if (onPath !== "") {
-    process.stdout.write(onPath + "\n");
-    process.exit(0);
+// THE PATH FALLBACK (class B R11, 2026-10-31): `command -v tsc`
+// through /bin/bash is the cmd.exe-incompatible class, and its
+// printed launcher is not a node entry anyway — both consumers
+// spawn `node <printed>`. Walk PATH in node; prefer the launcher's
+// own package entry so the printed path is ALWAYS the JS file.
+{
+  const launcher = process.platform === "win32" ? "tsc.cmd" : "tsc";
+  for (const dir of (process.env.PATH ?? "").split(delimiter)) {
+    if (dir === "") continue;
+    const pkgEntry = join(dir, "node_modules", "typescript", "bin", "tsc");
+    if (existsSync(pkgEntry)) {
+      process.stdout.write(pkgEntry + "\n");
+      process.exit(0);
+    }
+    // unix launchers ARE the JS entry (a shebang script); a bare
+    // windows .cmd is a shell shim node cannot run — never printed.
+    if (process.platform !== "win32" && existsSync(join(dir, launcher))) {
+      process.stdout.write(join(dir, launcher) + "\n");
+      process.exit(0);
+    }
   }
-} catch {
-  /* no PATH compiler either — the refusal below names the cure */
 }
 console.error("tsc-path: no typescript compiler found (no workspace link, no node_modules/.pnpm/typescript@*, no tsc on PATH) — run pnpm install");
 process.exit(1);

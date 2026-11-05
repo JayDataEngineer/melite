@@ -42,7 +42,7 @@ import { mergeManifest } from "@melite/comfyui-cordis/provisioning-manifest";
 import { IMPACT_DETECTOR_PROVISIONS } from "@melite/comfyui-card-kit/impact";
 import { DECL } from "@melite/models-qwen-img-edit-21";
 import {
-  ensureManagerSecurityWeak,
+  ensureManagerSecurityNormalMinus,
   MELITE_MODEL_BASE,
   writeManagerLocalModelList,
 } from "../../packages/engines/comfyui-cordis/scripts/provision-models.ts";
@@ -294,7 +294,7 @@ export async function bootColdStartWorld(scratchRoot: string): Promise<ColdStart
   // model channel needs — both written before first boot, exactly as
   // the managed instance is built.
   pinManagerConfig(coreRoot);
-  ensureManagerSecurityWeak(join(coreRoot, "user", "__manager", "config.ini"));
+  ensureManagerSecurityNormalMinus(join(coreRoot, "user", "__manager", "config.ini"));
 
   const rows = declaredRows();
   writeManagerLocalModelList(join(coreRoot, MANAGER_DIR, "model-list.json"), [
@@ -364,7 +364,6 @@ export async function bootColdStartWorld(scratchRoot: string): Promise<ColdStart
         required: true,
         provider: "git",
         ...(extension.ref.trim() === "" ? {} : { ref: extension.ref }),
-        ...(extension.version.trim() === "" ? {} : { version: extension.version }),
         requirements: [...extension.pip],
         nodeTypes: [],
       }],
@@ -379,7 +378,6 @@ export async function bootColdStartWorld(scratchRoot: string): Promise<ColdStart
         required: true,
         provider: "git",
         ...(kimodo.ref.trim() === "" ? {} : { ref: kimodo.ref }),
-        ...(kimodo.version.trim() === "" ? {} : { version: kimodo.version }),
         requirements: [...kimodo.pip],
         nodeTypes: [],
       }],

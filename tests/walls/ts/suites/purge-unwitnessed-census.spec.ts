@@ -109,7 +109,7 @@ function valueCells(): Cell[] {
   const MUSIC_PROMPT_ANCHOR =
     'ARM 1 — the stated prompt rides VERBATIM to the text-encode consumer (hop [4]→[5])'
   const MUSIC_LYRICS_CONTROL =
-    'CONTROL — the card face carries lyrics today (the drop is the FLOW face, not the card)'
+    'CONTROL — the card face carries lyrics (the flow face retired with the music-native row)'
   const MODE_FIRE_ANCHOR =
     'yue2: mode melody states the mode at BOTH consumers; mode off composes no planner'
   for (const family of ['music3', 'yue2'] as const) {
@@ -117,7 +117,7 @@ function valueCells(): Cell[] {
       if (knob === 'prompt') {
         cells.push({ id: `${family}.${knob} hop[5]`, status: 'W', sd: 'SD-6', wall: WALL.musicValues, anchor: MUSIC_PROMPT_ANCHOR, note: 'verbatim at the text-encode/style consumers' })
       } else if (knob === 'lyrics') {
-        cells.push({ id: `${family}.${knob} hop[5]-card`, status: 'W', sd: 'SD-6', wall: WALL.musicValues, anchor: MUSIC_LYRICS_CONTROL, note: 'card face only — the FLOW face drop is SD-4 (below)' })
+        cells.push({ id: `${family}.${knob} hop[5]-card`, status: 'W', sd: 'SD-6', wall: WALL.musicValues, anchor: MUSIC_LYRICS_CONTROL, note: 'card face — the lyrics law\'s live seat since the wrapper row retired (2026-11-14)' })
       } else if (knob === 'mode' && family === 'yue2') {
         cells.push({ id: `${family}.${knob} hop[5]`, status: 'W', sd: 'SD-1', wall: WALL.musicValues, anchor: MODE_FIRE_ANCHOR, note: 'fires at both YuE2 consumers' })
       } else if (knob === 'mode') {
@@ -236,12 +236,12 @@ function valueCells(): Cell[] {
     sr_switch: { anchor: 'ARM 17 — the interp + sr seats verbatim (model/multiplier at the FILM pair, resolution/DiT model at the SeedVR2 pair), both switches on under the master', note: 'topology-pinned switch owner' },
     sr_model: { anchor: 'ARM 17 — the interp + sr seats verbatim (model/multiplier at the FILM pair, resolution/DiT model at the SeedVR2 pair), both switches on under the master', note: 'model at SeedVR2LoadDiTModel' },
     sr_resolution: { anchor: 'ARM 17 — the interp + sr seats verbatim (model/multiplier at the FILM pair, resolution/DiT model at the SeedVR2 pair), both switches on under the master', note: 'resolution at SeedVR2VideoUpscaler' },
-    sharpen_enabled: { anchor: 'ARM 18 — the five sharpen leaves verbatim in the ImageSharpenKJ method dict + sharpen_enabled owns the sharpen switch', note: 'topology-pinned switch owner' },
-    sharpen_method: { anchor: 'ARM 18 — the five sharpen leaves verbatim in the ImageSharpenKJ method dict + sharpen_enabled owns the sharpen switch', note: 'method.method in the grouped dict' },
-    sharpen_strength: { anchor: 'ARM 18 — the five sharpen leaves verbatim in the ImageSharpenKJ method dict + sharpen_enabled owns the sharpen switch', note: 'method.strength in the grouped dict' },
-    sharpen_radius: { anchor: 'ARM 18 — the five sharpen leaves verbatim in the ImageSharpenKJ method dict + sharpen_enabled owns the sharpen switch', note: 'method.radius in the grouped dict' },
-    sharpen_threshold: { anchor: 'ARM 18 — the five sharpen leaves verbatim in the ImageSharpenKJ method dict + sharpen_enabled owns the sharpen switch', note: 'method.threshold in the grouped dict' },
-    sharpen_iterations: { anchor: 'ARM 18 — the five sharpen leaves verbatim in the ImageSharpenKJ method dict + sharpen_enabled owns the sharpen switch', note: 'method.iterations in the grouped dict' },
+    sharpen_enabled: { anchor: 'ARM 18 — the stated sharpen leaves verbatim on the V3 combo wires', note: 'topology-pinned switch owner' },
+    sharpen_method: { anchor: 'ARM 18 — the stated sharpen leaves verbatim on the V3 combo wires', note: 'the option key on the base wire' },
+    sharpen_strength: { anchor: 'ARM 18 — the stated sharpen leaves verbatim on the V3 combo wires', note: 'the method.strength dotted wire' },
+    sharpen_radius: { anchor: 'ARM 18 — the stated sharpen leaves verbatim on the V3 combo wires', note: 'the method.radius dotted wire' },
+    sharpen_threshold: { anchor: 'ARM 18 — the stated sharpen leaves verbatim on the V3 combo wires', note: 'the method.threshold dotted wire' },
+    sharpen_iterations: { anchor: 'ARM 18 — the stated sharpen leaves verbatim on the V3 combo wires', note: 'NO wire under adaptive_usm (deconvolution’s seat; U2 ARM 48 pins it under its own option)' },
     sharpen_switch: { anchor: 'ARM 32 — a stated sharpen_switch (the second retired alias) never rides the sharpen switch (the sharpen_enabled primary owns it)', note: 'retired alias — its OWN firing arm (ARM 23 exercises the interp alias)' },
     interp_switch: { anchor: 'ARM 23 — the legacy switch aliases are retired dead law: a stated interp_switch never rides the interp switch (the primary owns it)', note: 'retired alias — the arm pins the primary-owns-it law' },
     sla_switch: { anchor: 'ARM 31 — a stated sla_switch rides the t4r attention pick verbatim (both poles), the branches stay SLA-direct vs chunked by edge, and the unstated doc rides the PrimitiveBoolean-false default node', note: 'NOT retired — the t4r arm READS it at the attention pick (the census note that called it retired was the narration drift; corrected 2026-11-09)' },
@@ -339,8 +339,13 @@ function switchCells(): Cell[] {
     {
       id: 'h3 SPE/SR across re-derivation', status: 'W', sd: 'SD-1',
       wall: WALL.injectKeysMatrix,
-      anchor: 'LAW C — THE TRANSACTION CELL (ERROR g, red): every single-write judge green at its gesture, the flip green, the product refused LIVE',
-      note: 'the family flip reseats the SPE/SR four NAMED (reseatFamilyDead.dropped, sorted), the gesture gate names them, the walk refuses the raw view — loud at every seat',
+      // RETITLED (2026-11-15, the lane dead-letter retirement): the
+      // family flip no longer reseats (there is no dead letter to
+      // reseat); the matrix's LAW C now witnesses the stronger truth —
+      // the stamps SURVIVE the t4_open->t4r derivation and FIRE at the
+      // run door, and the film-only key's refusal keeps its own LAW B.
+      anchor: 'LAW C — THE TRANSACTION: the t4_open era carrying the Final Cut stamps, flipped to t4r by a keyframe pin, keeps its stamps through the settlement and composes at the run door',
+      note: 'the SPE/SR four now FIRE on every lane across re-derivation (the hoisted post chain); the walk refuses the film-only key and the run door names it (LAW B), the null law is one grammar (LAW E) — loud at every seat',
     },
   ]
 }
@@ -379,8 +384,8 @@ function sdCells(): Cell[] {
     {
       id: 'SD-4 music lyrics unwireable on the flow face', status: 'W', sd: 'SD-4',
       wall: WALL.musicValues,
-      anchor: 'every flow input the card declares is statable on the music-native flow row (CURED 821475e43: was RED — lyrics)',
-      note: 'CURED 821475e43 (lyrics seat rides flowsRegistryRows :336/:372-375/:386); ARM 3 statability + value-landing arms green',
+      anchor: 'CONTROL — the card face carries lyrics (the flow face retired with the music-native row)',
+      note: 'CURED 821475e43 on the then-live music-native row (lyrics seat rode flowsRegistryRows :336/:372-375/:386); the wrapper row retired 2026-11-14 (flows-are-compositions) and the law\'s live seat is the CARD-face control + 4b corruption proof — the {model:} door composes it',
     },
     { id: 'SD-4 h3 post keys lack flowKinds.inputs/admits slots', status: 'W', sd: 'SD-4',
       wall: 'tests/walls/ts/suites/postkeys-flowkinds-census.spec.ts',

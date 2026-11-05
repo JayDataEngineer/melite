@@ -20,7 +20,10 @@
 // not hand-kept: the address set comes from composing every facts
 // row's card (packages/engines/comfyui-cordis/scripts/
 // boot-address-set-probe.ts, the dead-card wall's own probe law),
-// and every row's value is re-harvested verbatim from the census.
+// and every row's value is re-harvested from the census through the
+// SANITIZE STEP (machine media-input rosters and third-party pack
+// option/tooltip bytes masked out — the exposure-audit cure,
+// 2026-11-15; the census capture itself stays untouched).
 // The curated residue the probe cannot reach (the walls' film-graph
 // composes — lane-gated branches the fill loop does not unlock) is
 // named, with a justification per row, in
@@ -84,8 +87,10 @@ if (flag("--help")) {
       tests/walls/fixtures/object_info.boot.json from a /object_info
       census — the class set from composing every facts row's card
       (the probe address set) plus the receipted bootstrap residue,
-      every row's value verbatim from the census — and stamp the
-      census source into object_info.boot.receipt.json.
+      every row's value from the census through the sanitize step
+      (machine media-input rosters and third-party pack option/tooltip
+      bytes masked; the census capture itself stays untouched) — and
+      stamp the census source into object_info.boot.receipt.json.
 
       --live     harvest the census from the live engine first
                  (refreshes data/tmp/object_info_prod.json).
@@ -251,6 +256,114 @@ if (addressOutsideCensus.length > 0) {
     `a card's pack is absent from the engine; no vocabulary written: ${addressOutsideCensus.join(", ")}`);
 }
 
+// 3.5 THE SANITIZE STEP (the exposure-audit cure, 2026-11-15): the
+// census is a live machine capture; the double it feeds is a tracked
+// file. Its combo rosters enumerate THIS machine's media directories
+// (personal filenames) and third-party packs carry their own upstream
+// prompt/tooltip prose — neither re-enters the tracked tree. Two
+// structural masks, always on (a --no-sanitize escape would be the
+// hole the audit closed):
+//   M1 MEDIA-INPUT MASK — a combo whose detail carries an upload
+//      marker (`*upload*` key, ComfyUI's disk-enumeration flag) lists
+//      a machine media directory at boot; the sanitized-boot premise
+//      is an EMPTY media-input tree, so the roster emits empty.
+//   M2 THIRD-PARTY ROSTER MASK — a non-melite custom_node pack's
+//      option rosters and tooltip prose are upstream content; the
+//      schema row (input names, types, groups) stays verbatim, the
+//      content bytes do not ride. A COMFY_DYNAMICCOMBO_V3 head IS
+//      schema: its declared option grid (option keys + typed inputs,
+//      default/min/max/step) rides verbatim on third-party rows too
+//      — the served-grid judges (h3 value-roundtrip ARM 51) diff
+//      against that grid — and only its `tooltip` prose bytes are
+//      stripped. Legacy rosters and upload-marker rosters still
+//      empty (the original mask shape).
+// The derivation wall byte-judges both masks on the fixture.
+const isThirdPartyPack = (pythonModule) =>
+  typeof pythonModule === "string" && pythonModule.startsWith("custom_nodes.") &&
+  !pythonModule.startsWith("custom_nodes.melite-");
+const comboRoster = (spec) => {
+  // both /object_info combo spellings: a legacy array roster head, or
+  // a string head with the roster in the detail object
+  if (Array.isArray(spec) && Array.isArray(spec[0])) return { roster: spec[0], detail: spec[1] };
+  if (Array.isArray(spec) && typeof spec[0] === "string" && spec[1] !== null &&
+      typeof spec[1] === "object" && Array.isArray(spec[1].options)) {
+    return { roster: spec[1].options, detail: spec[1] };
+  }
+  return null;
+};
+const hasUploadMarker = (detail) => detail !== null && typeof detail === "object" &&
+  Object.keys(detail).some((k) => /upload/i.test(k) && (detail[k] === true || typeof detail[k] === "string"));
+/** A COMFY_DYNAMICCOMBO_V3 head carries the node's DECLARED option
+ *  grid — option keys plus typed inputs (name, type, default/min/max/
+ *  step) — the schema plane M2 keeps verbatim, never upstream prose.
+ *  The grid's only prose bytes are `tooltip` keys inside each input's
+ *  detail; stripV3Tooltips removes exactly those (the JJC_JoyCaption
+ *  class the audit caught, now scoped to the prose, not the grid). */
+const V3_COMBO_HEAD = "COMFY_DYNAMICCOMBO_V3";
+const isV3Combo = (spec) => Array.isArray(spec) && spec[0] === V3_COMBO_HEAD;
+const stripV3Tooltips = (detail) => {
+  if (detail === null || typeof detail !== "object") return;
+  const options = Array.isArray(detail.options) ? detail.options : [];
+  for (const opt of options) {
+    if (opt === null || typeof opt !== "object") continue;
+    const inputs = opt.inputs;
+    if (inputs === null || typeof inputs !== "object") continue;
+    for (const group of ["required", "optional"]) {
+      const groupInputs = inputs[group];
+      if (groupInputs === null || typeof groupInputs !== "object") continue;
+      for (const inputSpec of Object.values(groupInputs)) {
+        if (Array.isArray(inputSpec) && inputSpec[1] !== null &&
+            typeof inputSpec[1] === "object" && "tooltip" in inputSpec[1]) {
+          delete inputSpec[1].tooltip;
+        }
+      }
+    }
+  }
+};
+const sanitizeRow = (row) => {
+  const out = structuredClone(row);
+  const thirdParty = isThirdPartyPack(out.python_module);
+  for (const group of ["required", "optional"]) {
+    const inputs = out.input?.[group];
+    if (inputs === null || typeof inputs !== "object") continue;
+    for (const spec of Object.values(inputs)) {
+      const combo = comboRoster(spec);
+      if (combo === null) continue;
+      if (isV3Combo(spec)) {
+        // the declared V3 grid is schema: it rides (third-party or
+        // not), minus its tooltip prose; an upload marker on a V3
+        // row is a disk enumeration wearing the grid spelling — the
+        // M1 empty-roster law still applies over it
+        if (hasUploadMarker(combo.detail)) {
+          spec[1].options = [];
+        } else if (thirdParty) {
+          stripV3Tooltips(spec[1]);
+        }
+        continue;
+      }
+      if (hasUploadMarker(combo.detail) || thirdParty) {
+        // the masked row is ALWAYS the modern spelling with an empty
+        // roster: a legacy ARRAY head emptied in place would parse as
+        // an enum PRESENT but EMPTY (the value judges refuse every
+        // wired value against it), while an empty modern roster parses
+        // as enum absent — the wiring judges only what the
+        // declaration says (the parseInputSpec tolerated shape)
+        if (Array.isArray(spec[0])) {
+          spec[0] = "COMBO";
+          spec[1] = { ...(combo.detail !== null && typeof combo.detail === "object" ? combo.detail : {}), options: [] };
+        } else {
+          spec[1].options = [];
+        }
+      }
+    }
+  }
+  if (thirdParty && typeof out.description === "string") out.description = "";
+  return out;
+};
+const sanitized = {};
+for (const c of censusClasses) sanitized[c] = sanitizeRow(census[c]);
+const sanitizedClasses = new Set(Object.keys(sanitized));
+
 // 4. THE DIFF against the committed fixture, then the emit.
 const priorFixtureRaw = readFileSync(FIXTURE, "utf8");
 const priorFixture = JSON.parse(priorFixtureRaw);
@@ -259,10 +372,10 @@ const added = [...fixtureClasses].filter((c) => !priorKeys.has(c)).sort();
 const pruned = [...priorKeys].filter((c) => !fixtureClasses.has(c)).sort();
 const canonicalRow = (v) => ensureAsciiJson(v).replace(/\n$/, "");
 const updated = [...fixtureClasses].filter((c) => priorKeys.has(c)
-  && canonicalRow(priorFixture[c]) !== canonicalRow(census[c])).sort();
+  && canonicalRow(priorFixture[c]) !== canonicalRow(sanitized[c])).sort();
 
 const emitted = {};
-for (const c of [...fixtureClasses].sort()) emitted[c] = census[c];
+for (const c of [...fixtureClasses].sort()) emitted[c] = sanitized[c];
 // The emit is CANONICAL (sorted at every level). The frozen literal
 // B1 grew by APPENDING (41 unsorted rows after the sorted 58), so the
 // first derived regen canonicalizes the order — one-time, named here,

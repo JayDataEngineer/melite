@@ -63,9 +63,16 @@ for dir in packages/web/card-base packages/web/melite-card-view \
   # build prints its own tail, naming the package and the cure door.
   TS_ERR="$(mktemp)"
   if ! (cd "$dir" && ./node_modules/.bin/tsdown >"$TS_ERR" 2>&1); then
-    echo "TSDOWN FAILED: $dir (tail of its own output; a missing ./node_modules/.bin/tsdown means the package does not declare the tsdown devDep — every browser-served package must)"
-    tail -12 "$TS_ERR"
-    rm -f "$TS_ERR"
+    code=$?
+    if [ "$code" = "127" ]; then
+      echo "TSDOWN FAILED: $dir — ./node_modules/.bin/tsdown missing (exit 127): the package does not declare the tsdown devDep — every browser-served package must"
+    else
+      echo "TSDOWN FAILED: $dir (exit $code — head + tail of its own output; full log kept at $TS_ERR)"
+    fi
+    echo "── head ──"
+    head -30 "$TS_ERR"
+    echo "── tail ──"
+    tail -30 "$TS_ERR"
     exit 1
   fi
   rm -f "$TS_ERR"

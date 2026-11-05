@@ -148,20 +148,26 @@ describe("the registry-flow wiring wall (the hand-authored graphs, judged)", () 
     console.log(`registry-flow wiring wall: ${names.length} flows, ${nodes} nodes judged against the snapshot (${familyNodes} composed from family actions)`)
     // E-M8: the censuses are EXACT (a floor let a fixture or a
     // graph shrink silently — the wall would judge less and say green).
-    // 12 since the key-judge extension (motion-journey CURE-6,
-    // 2026-11-06): +RaySomaxBake (kimodo's bake arm, guarded on
-    // preview_glb), -AnnyGroundBody/-AnnySelectPerson/
+    // 11 fixture classes since the blender-lane removal (2026-11-01):
+    // -RayRenderGLBViews (the proof-sheet renderer died with the
+    // pack). 12 since the key-judge extension (motion-journey
+    // CURE-6, 2026-11-06): +RaySomaxBake (kimodo's bake arm,
+    // guarded on preview_glb), -AnnyGroundBody/-AnnySelectPerson/
     // -MultiHMR2ImageToAnny (python-era corpses with no composer
-    // left in the tree — vacuous fixture rows judge nothing).
-    expect(Object.keys(doc).length, "the tracked fixture carries the flow classes (exact)").toBe(12);
-    // the CUT roster's census (2026-10-13: five 3D/rig rows
-    // retired; body-to-somax stays — the motion studio drives it)
-    // + character-factory (2026-10-09: lift→rig→motion, audit 012)
-    // + object-forge (2026-10-11: concept→lift, all card= — its
-    // remesh stage left 2026-10-13)
-    // + extend-video (2026-11-12: the first mod-bag card= flow —
-    // h3-timeline's extend arm)
-    expect(names.length, "the registry flows judged, exact").toBe(11);
+    // left in the tree — vacuous fixture rows judge nothing). The
+    // four card-wrapper rows deleted 2026-11-14
+    // (flows-are-compositions: body-to-somax/audio-native-tts/
+    // extend-video/music-native — card= stages ride the card plane,
+    // never this fixture) changed no class: still 11.
+    expect(Object.keys(doc).length, "the tracked fixture carries the flow classes (exact)").toBe(11);
+    // the roster's census: 7 since the card-wrapper collapse
+    // (2026-11-14, flows-are-compositions — a one-card "flow" was a
+    // wrapper; the cards press their own doors now). History: the
+    // CUT roster 2026-10-13 (five 3D/rig rows retired), +character-
+    // factory 2026-10-09 (re-aimed 2026-11-01), +object-forge
+    // 2026-10-11, +extend-video 2026-11-12 (−2026-11-14),
+    // +body-to-somax stayed past the CUT (−2026-11-14).
+    expect(names.length, "the registry flows judged, exact").toBe(7);
     // (the atom vocabulary, stroke 4 — completed): EVERY census
     // stage's backend is a declared action now — anny's estimator
     // chains + verbatim bake, and the meld verbs' coat/seat (their
@@ -172,16 +178,17 @@ describe("the registry-flow wiring wall (the hand-authored graphs, judged)", () 
     // materialize, so character's body/skin/fit hops count in).
     // Zero hand-authored nodes remain — every census graph rides
     // the same hierarchy a card stage rides. The CUT roster
-    // (2026-10-13) judges 6 family-composed nodes over 3 family
-    // stages (anny-hmr-estimator's estimator chain + fit-seat's
-    // seat + anny-params' compose; the retired character hop
-    // lattice died with its row).
-    expect(familyNodes, "the nodes composed from family actions, exact").toBe(6);
+    // (2026-10-13) judged 6 family-composed nodes over 3 family
+    // stages; the blender-lane removal (2026-11-01) re-pins to
+    // 5 over 3 (anny-hmr-estimator's estimator chain + fit-seat's
+    // seat + anny-params' compose — anny's compose lost the
+    // renderGLBViews tail, its turnaround knobs left the params doc).
+    expect(familyNodes, "the nodes composed from family actions, exact").toBe(5);
     // the STAGE census (exact): an action composing zero nodes would
     // shrink the node count silently — the stage count refuses it.
     expect(familyStages, "the stages composed from family actions, exact").toBe(3);
     expect(nodes - familyNodes, "the hand-authored nodes remaining, exact").toBe(0);
-    expect(nodes, "the nodes judged, exact").toBe(6);
+    expect(nodes, "the nodes judged, exact").toBe(5);
     // the dotted sub-keys: the remesh combo's sign_mode sub-values
     // died with the garment literal (the pixal3d mesh action owns
     // that node now). Zero is the current truth — a dotted sub-key

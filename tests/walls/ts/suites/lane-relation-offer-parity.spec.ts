@@ -1,8 +1,8 @@
 // lane-relation-offer-parity.spec.ts — THE OFFERED-STATE PARITY WALL
 // (operator 2026-10-22, the persona burn: the CustomVoice face still
 // offered Preset Speaker=None while the lane's persona fields rode
-// together — "a gate prevents the error from happening ... the only
-// gates I give a shit about are the GLOBAL ones, the ones in the CI").
+// together — gates must prevent the error, and the only gates that
+// matter are the GLOBAL ones, the ones in the CI).
 //
 // THE GAP IT KILLS: the relation WORDS have a judge
 // (@melite/contracts/laneRelations — one spelling, every seat) and

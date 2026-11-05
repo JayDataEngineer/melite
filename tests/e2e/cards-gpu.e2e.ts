@@ -208,12 +208,13 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: mesh (anny, the trellis lift, rig)', (
   it.skipIf(!weightsPresent('anny'))('anny default: the parametric bake composes and RUNS', async () => {
     await withWorld('cards-gpu-anny', async (w) => {
       const s = await runCard(w, {
-        model: 'anny', resolution: 256, samples: 1,
+        model: 'anny',
       }, 'anny default')
       assert.ok(byClass(s, 'AnnyParamsToGlb').length >= 1, 'the parametric bake runs')
-      assert.ok(byClass(s, 'RayRenderGLBViews').length >= 1, 'the turnaround renders')
-      assert.equal(byClass(s, 'SaveImage').length, 8, 'the eight turnaround views save')
-      assert.equal(firstBytes(s).readUInt32BE(0), 0x89504e47, 'the turnaround artifact is a real PNG')
+      assert.ok(byClass(s, 'CompositeCharacter').length >= 1, 'the body assembles')
+      assert.equal(byClass(s, 'RayRenderGLBViews').length, 0, 'the turnaround renderer is gone (blender lane removed 2026-11-01)')
+      assert.equal(byClass(s, 'SaveImage').length, 0, 'the seated GLB is the output — no image saves')
+      assert.equal(firstBytes(s).readUInt32BE(0), 0x676c5446, 'the seated artifact is a real GLB (glTF magic)')
     })
   }, 300_000)
 
@@ -375,9 +376,11 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: audio (tts lanes, music lengths, the s
       }, 'music full-length')
       const latent = byClass(s, 'EmptyMiniMaxMusic3LatentAudio')
       assert.equal(latent.length, 1, 'the music latent seats the pill duration')
-      assert.equal(latent[0]![1].inputs?.seconds, 360, 'the full-length pill stamps 360 seconds')
       const enc = byClass(s, 'MiniMaxMusic3TextEncode')
       assert.equal(enc.length, 1, 'the caption encodes')
+      // THE AR LINK (audit 014 D1): latent seconds derives from the
+      // encoder's realized AR — cond slot 1 — never a literal
+      assert.deepEqual(latent[0]![1].inputs?.seconds, [enc[0]![0], 1], 'the latent length rides the AR link')
       assert.equal(enc[0]![1].inputs?.max_duration, 360, 'the encoder rides the same duration')
       assert.ok(firstBytes(s).length > 1024, 'the song artifact carries real bytes')
     })
@@ -461,7 +464,7 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: film and motion (the remaining h3 + ki
         model: 'h3', width: 768, height: 448, steps: 8,
         calls: [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 90, image: anchor }],
       }, 'h3 draft_02mp')
-      assert.ok(nodesWith(s, /minimax_h3_fl2v_turbo_8step_v1\.0/).length >= 1, 'the absent-bag turbo default rides')
+      assert.ok(nodesWith(s, /minimax_h3_fl2v_turbo_silver_dareties_comfy_pruned_v2\.safetensors/).length >= 1, 'the absent-bag silver DARE-TIES default rides')
       const sched = byClass(s, 'BasicScheduler')
       assert.ok(sched.length >= 1, 'the scheduler runs')
       assert.equal(sched[0]![1].inputs?.steps, 8, 'the tier pill stamps 8 steps')
@@ -476,7 +479,7 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: film and motion (the remaining h3 + ki
         model: 'h3', width: 1344, height: 768, steps: 30,
         calls: [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 90, image: anchor }],
       }, 'h3 final_hd')
-      assert.ok(nodesWith(s, /minimax_h3_fl2v_turbo_8step_v1\.0/).length >= 1, 'the absent-bag turbo default rides')
+      assert.ok(nodesWith(s, /minimax_h3_fl2v_turbo_silver_dareties_comfy_pruned_v2\.safetensors/).length >= 1, 'the absent-bag silver DARE-TIES default rides')
       const sched = byClass(s, 'BasicScheduler')
       assert.ok(sched.length >= 1, 'the scheduler runs')
       assert.equal(sched[0]![1].inputs?.steps, 30, 'the tier pill stamps 30 steps')

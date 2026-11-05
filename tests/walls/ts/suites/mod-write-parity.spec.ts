@@ -1,8 +1,7 @@
 // mod-write-parity.spec.ts — THE MOD-WRITE PARITY WALL (operator
-// 2026-10-22, the qvoice_save burn: "THE QVOICE OF QWEN TTS MOD IS
-// FULLY BORKEN, PARAMETER INPUTS ARE FUCKED — THE WRITE DID NOT
-// LAND: compose-door: unknown param(s) on the tts card: qvoice_save
-// ... GREEN! GREEN! YOUR FAVOURITE LIE!").
+// 2026-10-22, the qvoice_save burn: the qwen tts mod's qvoice parameter
+// inputs were broken — the write did not land: compose-door: unknown
+// param(s) on the tts card: qvoice_save ... and the suite stayed green).
 //
 // THE CLASS (Journey Law §3.12 — the SECOND same-class burn today;
 // burn #2 owes the class wall): the face builds what the door

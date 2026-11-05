@@ -1,7 +1,6 @@
 // variant-envelope-declaration.spec.ts — THE ENVELOPE DECLARATION LAW
-// (the E2-8 cure, operator 2026-11-08: "ANIMA GENEATIONS LOOK COMPELTLEY
-// OFF, LIKE IT'S A BAD TEXT ENCODER, OR FUCKING SOMETHING" —
-// dev_docs/ERRORS_2.md E2-8).
+// (the E2-8 cure, operator 2026-11-08: anima generations look completely
+// off — like a bad text encoder — dev_docs/ERRORS_2.md E2-8).
 //
 // The burn: anima renders came back washed and prompt-deaf. The text
 // encoder chain was exonerated (the served TE/VAE/clip_type match the

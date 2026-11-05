@@ -13,6 +13,19 @@
 // DELETED-FILE arm reds; (4) the matcher build toggled to null → the
 // dirty-fixture + engine arms red (red-by-construction on a gateless
 // tree). See dev_docs/audits/contracts/profanity-gate-2026-11-05.md.
+//
+// Red-proofs (2026-11-15, the exposure audit's history + faces cures):
+// (5) the message phase toggled out (commitMessages replaced by an
+// empty Map in scanHistory) → "names the MESSAGE hit on a clean tree"
+// reds (messages 1→0: "expected +0 to be 1") and the clean-messages
+// twin reds ("expected +0 to be 2"); (6) the hook run line toggled
+// back to the pre-audit faces (`packages scripts tools lefthook.yml`)
+// → "lefthook pre-push carries the two-phase profanity job" reds
+// (substring misses the widened literal) AND "the hook run-line faces
+// EQUAL the gate DEFAULT_FACES" reds ("expected [ Array(4) ] to
+// deeply equal [ Array(5) ]" — the parse arm catches a one-face
+// drift the substring probe was built to miss). Restored green:
+// 20/20, gate 0 hit(s) over packages scripts tools tests lefthook.yml.
 import { describe, it, expect } from 'vitest'
 import { execFileSync, spawnSync } from 'node:child_process'
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
@@ -40,7 +53,7 @@ const gate = req('../../../../tools/profanity-gate.mjs') as {
   historyCommits: (root: string, range: string) => string[]
   scanHistory: (root: string, range: string, matchers?: unknown) => {
     hits: { commit: string, file: string, line: number, word: string, list: string }[]
-    commits: number, blobs: number
+    commits: number, blobs: number, messages: number
   }
   resolveHistoryRange: (root: string, wanted: string) => { range: string, skip?: boolean, why?: string }
 }
@@ -250,6 +263,67 @@ describe('HISTORY MODE — the range judges commits in their own trees', () => {
       expect(resolved.why).toMatch(/no upstream/)
     } finally { rmSync(fx.dir, { recursive: true, force: true }) }
   })
+
+  // THE MESSAGE ARM (the 2026-11-15 exposure audit, cure 4a): the
+  // blob walk never sees a quote that rode the commit TEXT — a clean
+  // tree with a profane %B body passed the pre-push history phase
+  // (the PM-GAP class: real commits carried burn quotes in bodies
+  // under clean subjects). The gate judges every message with the
+  // same lists; the hit names the sha and reads file '(commit
+  // message)'.
+  const messageRepo = () => {
+    const dir = mkdtempSync(join(tmpdir(), 'melite-profanity-msg-'))
+    const cfg = ['-c', 'user.email=fx@fx', '-c', 'user.name=fx', '-c', 'commit.gpgsign=false']
+    execFileSync('git', ['-C', dir, 'init', '-q'])
+    execFileSync('git', ['-C', dir, 'symbolic-ref', 'HEAD', 'refs/heads/main'])
+    writeFileSync(join(dir, 'clean.md'), 'plain prose only\n')
+    execFileSync('git', ['-C', dir, 'add', '-A'])
+    execFileSync('git', ['-C', dir, ...cfg, 'commit', '-qm', 'one: clean subject, clean body'])
+    execFileSync('git', ['-C', dir, ...cfg, 'commit', '--allow-empty', '-qm', 'two: clean subject', '-m', `the burn quote said ${EN} in the body`])
+    return { dir, shaDirty: git(dir, 'rev-parse', 'HEAD').trim() }
+  }
+
+  it('names the MESSAGE hit on a clean tree (the quote that rode the commit text)', () => {
+    const fx = messageRepo()
+    try {
+      // the tip TREE is clean of profanity — but the range judges
+      // each commit in its OWN FULL TREE (not its diff), so the
+      // second commit's clean.md is still one judged blob; the ONLY
+      // hit below can come from the message phase
+      const range = gate.scanHistory(fx.dir, 'HEAD~1..HEAD')
+      expect(range.commits).toBe(1)
+      expect(range.blobs).toBe(1)
+      expect(range.messages).toBe(1)
+      // %B is the raw message: line 1 the subject, line 2 the blank
+      // separator, line 3 the body — the quote rode the BODY
+      expect(range.hits).toEqual([{
+        commit: fx.shaDirty, file: '(commit message)', line: 3, word: EN, list: 'leo:en',
+      }])
+      // --all sees both messages; the clean first commit stays green
+      const all = gate.scanHistory(fx.dir, '--all')
+      expect(all.commits).toBe(2)
+      expect(all.messages).toBe(2)
+      expect(all.hits).toHaveLength(1)
+      expect(all.hits[0].commit).toBe(fx.shaDirty)
+    } finally { rmSync(fx.dir, { recursive: true, force: true }) }
+  })
+
+  it('a repo of clean messages stays green and the messages phase still counts', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'melite-profanity-msgclean-'))
+    try {
+      const cfg = ['-c', 'user.email=fx@fx', '-c', 'user.name=fx', '-c', 'commit.gpgsign=false']
+      execFileSync('git', ['-C', dir, 'init', '-q'])
+      execFileSync('git', ['-C', dir, 'symbolic-ref', 'HEAD', 'refs/heads/main'])
+      writeFileSync(join(dir, 'clean.md'), 'plain prose only\n')
+      execFileSync('git', ['-C', dir, 'add', '-A'])
+      execFileSync('git', ['-C', dir, ...cfg, 'commit', '-qm', 'one'])
+      execFileSync('git', ['-C', dir, ...cfg, 'commit', '--allow-empty', '-qm', 'two', '-m', 'the body restates the contract plainly'])
+      const r = gate.scanHistory(dir, '--all')
+      expect(r.commits).toBe(2)
+      expect(r.messages).toBe(2)
+      expect(r.hits).toEqual([])
+    } finally { rmSync(dir, { recursive: true, force: true }) }
+  })
 })
 
 describe('PATH + ALLOWLIST LAW', () => {
@@ -317,9 +391,26 @@ describe('WIRING — the gate fires at push AND at publish (toggle-out reds)', (
     expect(job, 'the pre-push profanity job exists').not.toBe('')
     expect(job).toContain('node tools/profanity-gate.mjs')
     // PHASE 1: the authored faces WHOLESALE (superset of the push set)
-    expect(job).toContain('packages scripts tools lefthook.yml')
+    expect(job).toContain('packages scripts tools tests lefthook.yml')
     // PHASE 2: the push range, resolved against @{push}
     expect(job).toContain("--history '@{push}..HEAD'")
+  })
+
+  it('the hook run-line faces EQUAL the gate DEFAULT_FACES (parsed, not substring — the 2026-11-15 tests/ widening)', () => {
+    // A substring probe passes while the run line drifts (a face
+    // added to one side only). Parse the actual argv out of the
+    // lefthook run line and judge it against the gate's own export:
+    // the hook judges exactly the faces the gate declares, both ways.
+    const hook = readFileSync(join(ROOT, 'lefthook.yml'), 'utf8')
+    const job = hook.split('- name: profanity')[1] ?? ''
+    const run = job.split('\n').find((l) => l.trim().startsWith('run:')) ?? ''
+    const argv = run.replace(/^.*node tools\/profanity-gate\.mjs /, '').trim()
+    const facePart = argv.split('--history')[0].trim()
+    const faces = facePart.split(/\s+/).filter(Boolean)
+    expect(faces).toEqual([...gate.DEFAULT_FACES])
+    // the widened face is present by name (the exposure audit's cure:
+    // tests/ is authored prose and rides the live phase)
+    expect(faces).toContain('tests')
   })
 
   it('the mint carries G10 after G9, calling the refusal over every tarball', () => {

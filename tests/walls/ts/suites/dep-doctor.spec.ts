@@ -51,8 +51,12 @@ describe("dep-doctor — the one-version gate", () => {
         mkdirSync(cellDir, { recursive: true });
         writeFileSync(join(cellDir, "package.json"), JSON.stringify({ name: "@deepseek-ai/thing", version: "1.0.0" }));
       }
-      symlinkSync(join(store, cells[0]!, "node_modules", "@deepseek-ai", "thing"), join(a, "node_modules", "@deepseek-ai", "thing"), "dir");
-      symlinkSync(join(store, cells[1]!, "node_modules", "@deepseek-ai", "thing"), join(b, "node_modules", "@deepseek-ai", "thing"), "dir");
+      // (class B R10, 2026-10-31) directory symlinks need a privilege
+      // on windows that junctions do not; the targets are absolute, so
+      // a junction is the same judgment on either platform.
+      const dirLink = process.platform === "win32" ? "junction" : "dir";
+      symlinkSync(join(store, cells[0]!, "node_modules", "@deepseek-ai", "thing"), join(a, "node_modules", "@deepseek-ai", "thing"), dirLink);
+      symlinkSync(join(store, cells[1]!, "node_modules", "@deepseek-ai", "thing"), join(b, "node_modules", "@deepseek-ai", "thing"), dirLink);
       // the doctor derives ROOT from its own URL — copy it with ROOT pinned
       mkdirSync(join(root, "scripts"), { recursive: true });
       const real = readFileSync(DOCTOR, "utf8");

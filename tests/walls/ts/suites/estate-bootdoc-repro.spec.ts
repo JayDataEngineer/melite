@@ -11,12 +11,17 @@
 // It is a REPRO first: run it and read the failure's own voice.
 import { assertHermeticRode } from "../../../helpers/hermetic-engine.ts";
 import { bundleSeats } from "../../helpers/bundle-seats.ts";
-const REPO = new URL("../../../../", import.meta.url).pathname.replace(/\/$/, "");
+// fileURLToPath, never URL.pathname: on a windows file URL the
+// pathname is '/D:/…' — win32 reads that as drive-rooted RELATIVE and
+// join re-roots it on the cwd's drive ('D:\D:\a\…', the CI ENOENT
+// class of 2026-10-31).
+const REPO = fileURLToPath(new URL("../../../../", import.meta.url)).replace(/[\\/]$/, "");
 import "../../../helpers/boot-models.ts";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { Context, type Plugin } from "@deepseek-ai/cordis";
 import timerPlugin from "@deepseek-ai/cordis-plugin-timer";
 import draftsPlugin from "@melite/estate-drafts";
@@ -83,8 +88,7 @@ beforeAll(async () => {
   await ctx.plugin(Storage as unknown as Plugin);
   await ctx.plugin({ name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as unknown as Plugin, { root });
   await ctx.plugin({ name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as unknown as Plugin, { backend: "json" });
-  // J12: the roots ride plugin configs (the retired env seams)
-  await ctx.plugin(draftsPlugin as unknown as Plugin, { storageRoot: join(root, "storage") });
+  await ctx.plugin(draftsPlugin as unknown as Plugin);
   // THE FAMILY ROWS — the composition the bundle censuses (the
   // patch roster; the wall mounts them itself — no Loader here)
   await mountFamilyRoster(ctx);

@@ -27,7 +27,7 @@
 // deliberately not installed yet, it is named below with its reason.
 
 import { describe, it, expect } from "vitest";
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -276,15 +276,31 @@ describe("THE EXTENSION CENSUS (install side ⇔ check side ⇔ card requires)",
 // (b) ledgered RETIRED below with its reason. Deletion is the
 // operator's call — this wall only makes the state NAMED.
 describe("THE VENDOR→INSTALL CENSUS (every vendored submodule is installed or ledgered)", () => {
-  /** Vendored extension submodule names from .gitmodules. */
-  function vendoredExtensionNames(): string[] {
-    const text = readFileSync(join(ROOT, ".gitmodules"), "utf8");
+  /** The vendored-extension names of a .gitmodules TEXT — the parser
+   *  both the real read and the CRLF twin arm ride. */
+  function namesFrom(text: string): string[] {
     const out: string[] = [];
-    for (const m of text.matchAll(/\[submodule "([^"]+)"\]\n\tpath = (\S+)\n\turl = (\S+)/gu)) {
+    for (const m of text.matchAll(/\[submodule "([^"]+)"\]\r?\n\tpath = (\S+)\r?\n\turl = (\S+)/gu)) {
       if (m[2]!.startsWith("vendor/comfyui_extensions/")) out.push(m[2]!.split("/").pop()!);
     }
     return out;
   }
+
+  /** Vendored extension submodule names from .gitmodules. The line
+   *  separators are `\r?\n` (class E1, 2026-10-31): a CRLF checkout
+   *  previously parsed to ZERO names and this census emptied into a
+   *  vacuous green — the cold-clone wall's parser is hardened the
+   *  same way, one cure on both readers. */
+  function vendoredExtensionNames(): string[] {
+    return namesFrom(readFileSync(join(ROOT, ".gitmodules"), "utf8"));
+  }
+
+  it("the .gitmodules name parse is checkout-byte-independent: the CRLF twin of the real file names the SAME rows (class E1)", () => {
+    const text = readFileSync(join(ROOT, ".gitmodules"), "utf8");
+    const lf = namesFrom(text);
+    expect(lf.length, "the real .gitmodules names vendored extensions on the LF reading").toBeGreaterThan(0);
+    expect(namesFrom(text.replace(/\n/gu, "\r\n")), "the CRLF checkout must name the identical rows").toEqual(lf);
+  });
 
   /** Pip-level install rows: the [tool.uv.sources] git sources' repo
    *  basenames (the pyproject edge — melite-model-base installs this
@@ -458,12 +474,16 @@ describe("THE CARD-REQUIRED INSTALL CENSUS (every card-required pinned pack is l
       if (shape !== "none") {
         const clone = join(cn, "ComfyUI-MiniMaxH3Mod");
         mkdirSync(clone, { recursive: true });
-        execSync("git init -q . && git config user.email t@t && git config user.name t && " +
-          "git commit -q --allow-empty -m pin", { cwd: clone, encoding: "utf8" });
-        execSync("git remote add origin " + url, { cwd: clone, encoding: "utf8" });
-        pin = execSync("git rev-parse HEAD", { cwd: clone, encoding: "utf8" }).trim();
+        // argv form (class B R11): the && chain and the interpolated
+        // url rode cmd.exe quote-stripping; git needs no shell here.
+        for (const args of [["init", "-q", "."], ["config", "user.email", "t@t"], ["config", "user.name", "t"]]) {
+          execFileSync("git", args, { cwd: clone, stdio: "ignore" });
+        }
+        execFileSync("git", ["commit", "-q", "--allow-empty", "-m", "pin"], { cwd: clone, stdio: "ignore" });
+        execFileSync("git", ["remote", "add", "origin", url], { cwd: clone, stdio: "ignore" });
+        pin = execFileSync("git", ["rev-parse", "HEAD"], { cwd: clone, encoding: "utf8" }).trim();
         if (shape === "drift") {
-          execSync("git commit -q --allow-empty -m drift", { cwd: clone, encoding: "utf8" });
+          execFileSync("git", ["commit", "-q", "--allow-empty", "-m", "drift"], { cwd: clone, stdio: "ignore" });
         }
       }
       return { root, pin };

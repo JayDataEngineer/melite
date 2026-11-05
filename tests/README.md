@@ -21,7 +21,7 @@ The root `package.json` owns the test tiers:
 | `pnpm run test:web:browser` | Playwright suites for the card-view and card-deck packages |
 | `pnpm run test:lane` | the 3088 lane harness's live gate (video + 3D-non-Unity paths, real estate) |
 | `pnpm run test:lane:analyse` | the lane analyst as a driver: judge the paths, exit non-zero on a fail or a block |
-| `pnpm run test:lane:commission` | commission a real headless maker for a path, then analyse what it left |
+| `pnpm run test:lane:commission` | commission a real maker for a path, then analyse what it left |
 
 The root Vitest config partitions specs into isolated node, DOM, DOM18, and
 React-18 deck projects. Package-local `typecheck` commands may still exist;
@@ -112,7 +112,7 @@ required, and keep the overall receipt open until that class of proof runs.
 ## The 3088 lane harness
 
 `tests/lane/` is the harness for the 3088 media maker lane: it
-COMMISSIONS a real headless maker through `scripts/commission-supervisor.sh`
+COMMISSIONS a real maker through `scripts/commission-supervisor.sh`
 (the runbook's one-call launch, with the transcript's collision-law done-GLOB
 and the queue-lock turn-wait) and ANALYZES what the commission left behind —
 the run tree, the run's own sidecars, and the artifact bytes themselves.

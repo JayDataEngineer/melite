@@ -17,10 +17,11 @@
  *   boot (the collision law: the maker mints the `<HHMM>` name at
  *   FINISH time, so a predicted exact path reads every success as a
  *   flake).
- * - The commission is the HEADLESS maker on the 3088 lane through the
- *   supervisor. This module never hand-drives an estate door and
- *   never talks to 3080: a maker-less "harness" is the substitute the
- *   runbook forbids.
+ * - The commission is the maker on the 3088 lane through the
+ *   supervisor (the supervisor's SUPERVISOR_PROFILE names the DSH
+ *   profile — required, never defaulted). This module never
+ *   hand-drives an estate door and never talks to 3080: a maker-less
+ *   "harness" is the substitute the runbook forbids.
  * - The paths commissioned are the two the operator named: VIDEO
  *   (h3-timeline's film) and 3D non-Unity (the mesh cards/flows —
  *   Unity is an MCP editor lane, not this maker's).
@@ -42,10 +43,10 @@ export const SUPERVISOR = join(REPO_ROOT, 'scripts/commission-supervisor.sh')
  *  `h3-timeline` (packages/video/h3-timeline, one card, family h3) is
  *  the only video card, and the non-Unity mesh cards are
  *  `img-to-mesh`, `rig` (plus the mesh-emitting
- *  registry flows anny-hmr / body-to-somax / character / fit-seat /
- *  skin-apply — the card-stage flows among them are validate-only on
- *  the queue: their cards compose through the bench, which is how
- *  the maker reaches them). `anny` alone writes an 8-view PNG sheet,
+ *  registry flows anny-hmr / character / fit-seat — the wrapper
+ *  rows retired 2026-11-14, flows-are-compositions; their cards
+ *  compose through the bench, which is how the maker reaches them).
+ *  `anny` alone writes an 8-view PNG sheet,
  *  not a mesh — a 3D brief must therefore reach a mesh-writing
  *  card. */
 export interface PathTableRow {
@@ -71,7 +72,7 @@ export const PATH_TABLE: Readonly<Record<PathName, PathTableRow>> = {
     path: '3d',
     deliverable: 'one usable 3D model file of the subject, saved as a single binary mesh',
     receipt: 'a binary mesh (.glb) with real geometry',
-    cards: ['img-to-mesh', 'rig', 'anny-hmr', 'body-to-somax', 'character', 'fit-seat', 'skin-apply'],
+    cards: ['img-to-mesh', 'rig', 'anny-hmr', 'character', 'fit-seat'],
     receipt_note: 'anny alone writes a multi-view image sheet, not a mesh — reach a mesh-writing card for the deliverable',
   },
 } as const
@@ -210,7 +211,9 @@ export interface CommissionOptions {
   /** the state root the maker runs under (the supervisor's own) */
   stateRoot?: string
   transcriptDir?: string
-  profile?: string
+  /** the DSH profile the supervisor boots (the estate maker lane);
+   *  REQUIRED — a commission names its lane, it never defaults one */
+  profile: string
   maxAttempts?: number
   lockWaitS?: number
   env?: Record<string, string>
@@ -271,10 +274,9 @@ function tail(text: string, lines = 40): string {
 
 /** THE LAUNCH: mint the brief + launch prompt, then run the
  *  supervisor (the runbook's one-call launch). The supervisor owns
- *  the transient-vs-quota classifier, the queue-lock turn-wait, and
- *  the MELITE_HEADLESS export; this function only supplies its two
- *  files, the done-glob, and the boot stamp the analyst's transcript
- *  discovery needs. */
+ *  the transient-vs-quota classifier and the queue-lock turn-wait;
+ *  this function supplies the profile, its two files, the done-glob,
+ *  and the boot stamp the analyst's transcript discovery needs. */
 /** THE RECEIPT ENV (2026-09-26) — the launch env and the REPORTED
  *  env are two different things.
  *
@@ -325,7 +327,7 @@ export async function commission(opts: CommissionOptions): Promise<CommissionRes
   const env: Record<string, string> = {
     ...(process.env as Record<string, string>),
     ...(opts.env ?? {}),
-    SUPERVISOR_PROFILE: opts.profile ?? 'headless',
+    SUPERVISOR_PROFILE: opts.profile,
     SUPERVISOR_STATE_ROOT: stateRoot,
     MELITE_AGENT_ROUTE:
       (opts.env ?? {})['MELITE_AGENT_ROUTE']
@@ -349,7 +351,7 @@ export async function commission(opts: CommissionOptions): Promise<CommissionRes
     const overlay = join(
       process.env['DSH_HOME'] ?? join(homedir(), '.dsh'),
       'profiles',
-      opts.profile ?? 'headless',
+      opts.profile,
       'llm.patch.yml',
     )
     if (existsSync(overlay)) env['SUPERVISOR_DSH_PATCH'] = overlay

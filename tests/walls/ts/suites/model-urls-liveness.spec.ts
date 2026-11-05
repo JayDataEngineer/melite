@@ -94,8 +94,8 @@ describe.skipIf(OFFLINE)("THE URL-LIVENESS GATE (every declared download answers
     // fancyfeast/llama-joycaption-beta-one-hf-llava at a 40-hex
     // revision with 13 load-covering literals (every literal is
     // probed below; a dead file is a red wall, not a bigger census)
-    // 4 -> 18 (burn d, 2026-10-26 — "HOW DOES MODELS WITHOUT FUCKING
-    // LINKS GO ALL GREEN?"): florence2's fourteen whole-repo trees
+    // 4 -> 18 (burn d, 2026-10-26, the no-link all-green burn — how
+    // models without links stayed all green): florence2's fourteen whole-repo trees
     // join, one pinned row per selectable checkpoint (the node's own
     // snapshot_download target, pre-seeded — every literal probed
     // below at its pinned revision).

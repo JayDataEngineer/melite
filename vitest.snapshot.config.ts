@@ -1,4 +1,5 @@
 import { availableParallelism } from 'node:os'
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 import {
   PROXY_SETUP,
@@ -22,7 +23,7 @@ const snapshotMaxConcurrency = positiveIntFromEnv(
 // Replay/refresh never load .env; only record reads a key.
 if (process.env.DSH_SNAPSHOT === 'record') {
   try {
-    process.loadEnvFile(new URL('.env', import.meta.url).pathname)
+    process.loadEnvFile(fileURLToPath(new URL('.env', import.meta.url)))
   } catch (error) {
     // ENOENT (no .env) is fine — the key may already be in the environment.
     // Surface any other failure rather than silently recording with wrong env.

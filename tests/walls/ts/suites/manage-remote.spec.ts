@@ -13,7 +13,7 @@
 // NO comfyui seat on purpose — the wall proves the plane's behavior
 // with the engine ABSENT (the honest degrade), mirroring runs-remote.
 import "../../../helpers/boot-models.ts";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { onTestFinished, test } from "vitest";
@@ -45,17 +45,6 @@ interface Booted {
   root: string;
 }
 
-function doc(id: string): string {
-  return JSON.stringify({
-    draft_id: id,
-    status: "draft",
-    createdAt: 1700000000000,
-    completedAt: null,
-    intent: "test " + id,
-    stages: [{ id: "s_0", inputs: [""], provenance: "agent" }],
-  });
-}
-
 /** OWN the env this rig sets (the flake audit, 2026-10-15): three
  *  keys were written with no hook anywhere in the file, so a later
  *  spec in the same fork inherited a state root whose tree this rig
@@ -81,8 +70,6 @@ async function boot(): Promise<Booted> {
   writeFileSync(endpointPath, JSON.stringify({ url: "http://127.0.0.1:9", extra: "sibling", nested: { keep: true } }));
   process.env["COMFYUI_ENDPOINT_CONFIG"] = endpointPath;
   const stateRoot = join(root, "state");
-  mkdirSync(join(stateRoot, "drafts"), { recursive: true });
-  writeFileSync(join(stateRoot, "drafts", "d_ok.json"), doc("d_ok"));
   const ctx = new Context();
   // cross-copy plugin shapes ride the honest Plugin cast — never
   // poisons the ctx.plugin overload into a required Config.
@@ -99,8 +86,7 @@ async function boot(): Promise<Booted> {
     { name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as unknown as Plugin,
     { backend: "json" },
   );
-  // J12: the storage root rides the plugin config (the retired seam)
-  await ctx.plugin(draftsPlugin as unknown as Plugin, { storageRoot: join(stateRoot, "storage") });
+  await ctx.plugin(draftsPlugin as unknown as Plugin);
   await ctx.plugin(manageProvider as unknown as Plugin);
   await ctx.plugin(manageRemotePlugin as unknown as Plugin);
   const booted = (ctx as unknown as { manageRemote: ManageRemoteService });

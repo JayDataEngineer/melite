@@ -228,9 +228,24 @@ describe("a wire between REAL composed cards resolves to a node that EXISTS", ()
       `s_1 wired to ${crossed.target}, which is NOT a node in the merged graph ` +
       `(keys: ${Object.keys(plan.workflow).join(", ")}) — a producer link must land on a real node`,
     );
-    // 3. and it is the PRODUCER's node, not something from the consumer
-    assert.ok(crossed.target.startsWith("s_0::"),
-      `s_1's input resolved to ${crossed.target}, which is not in the producing stage s_0`);
+    // 3. and it resolves toward the PRODUCER's stage, not something
+    //    from the consumer — directly, or THROUGH the F41 pass-seam
+    //    boundary (the merge mediates every FromStage wire with a
+    //    MeliteBoundary whose through carries the producer link; the
+    //    boundary is the output-reachable eviction seat).
+    const viaBoundary = crossed.target.startsWith("__unload$");
+    const producerOf = viaBoundary
+      ? String(((plan.workflow[crossed.target] as { inputs?: { through?: unknown[] } }).inputs ?? {})["through"]?.[0] ?? "")
+      : crossed.target;
+    assert.ok(
+      viaBoundary || crossed.target.startsWith("s_0::"),
+      `s_1's input resolved to ${crossed.target}, which is neither the producing stage s_0 ` +
+      "nor an __unload$ boundary — the seam lost its mediator",
+    );
+    assert.ok(
+      producerOf.startsWith("s_0::"),
+      `s_1's wire mediated by ${crossed.target} resolves to ${producerOf}, which is not in the producing stage s_0`,
+    );
   }, 120_000);
 
   it("the BACKWARD arrangement of the same two real cards ALSO resolves", () => {
@@ -257,13 +272,23 @@ describe("a wire between REAL composed cards resolves to a node that EXISTS", ()
       if (!key.startsWith("s_1::")) return false;
       const ins = (node as { inputs?: Record<string, unknown> }).inputs;
       if (typeof ins !== "object" || ins === null) return false;
-      // a link that LEAVES s_1 is the bench's edge; the real card's
+      // a link that LEAVES s_1 is the bench's edge (direct to the
+      // producer, or THROUGH the F41 seam boundary); the real card's
       // own internal hops stay inside it
-      return Object.values(ins).some(
-        (v) => Array.isArray(v) && typeof v[0] === "string" && v[0].startsWith("s_0::"),
-      );
+      return Object.values(ins).some((v) => {
+        if (!(Array.isArray(v) && typeof v[0] === "string")) return false;
+        return v[0].startsWith("s_0::") || v[0].startsWith("__unload$");
+      });
     });
     assert.ok(crossed, "the backward arrangement of two REAL cards did not resolve");
+    // and the boundary the wire rides THROUGH aims at the producer:
+    // the seam's eviction stays output-reachable in this arrangement too
+    const boundary = Object.entries(plan.workflow).find(([key, node]) =>
+      key.startsWith("__unload$") &&
+      String((node as { class_type?: string }).class_type ?? "") === "MeliteBoundary" &&
+      String(((node as { inputs?: Record<string, unknown> }).inputs ?? {})["through"]?.[0] ?? "").startsWith("s_0::"),
+    );
+    assert.ok(boundary, "no __unload$ boundary mediates the backward wire with its through aimed at s_0");
   }, 120_000);
 });
 

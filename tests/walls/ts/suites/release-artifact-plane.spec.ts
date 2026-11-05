@@ -11,11 +11,42 @@
 // LOUDLY, by package name; a silent skip would be the wall dying.
 import { describe, it, expect } from 'vitest'
 import { execFileSync, spawnSync } from 'node:child_process'
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
+
+// ---- portable spawn seats (class B R3, 2026-10-31) ----
+// The live-smoke used to seat pnpm at the hardcoded
+// `$HOME/.local/share/pnpm/pnpm` (the linux layout only), list the
+// packed tarballs through `bash -c ls`, and read every inner file
+// through `bash -c tar -xzOf`. The bash wrappers are the
+// windows-fatal part (cmd.exe quote/pipe parse death), not tar
+// itself — System32 bsdtar handles -xzOf/-tzf/-czf, so tar rides
+// direct argv. pnpm resolves per platform: PNPM_HOME (the seat
+// pnpm/action-setup exports on every CI leg), then the linux
+// default, then PATH; on win32 the shim is `pnpm.cmd` and it spawns
+// through cmd.exe (Node refuses to exec a .cmd without a shell), so
+// argv must stay free of spaces — the mkdtemp/tmpdir paths here are.
+
+/** The repo-root-relative member reads: same archive, same member,
+ *  no shell to misquote the path. */
+function tarFile(f: string, member: string): string {
+  return execFileSync('tar', ['-xzOf', f, member], { encoding: 'utf8' })
+}
+
+/** { bin, shell }: the pnpm to spawn and whether it needs the shell
+ *  carrier (win32 .cmd shims only). */
+function pnpmSeat(): { bin: string; shell: boolean } {
+  const cmd = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
+  const dirs = [
+    process.env['PNPM_HOME'] ?? '',
+    join(process.env['HOME'] ?? '', '.local/share/pnpm'),
+  ].filter((d) => d !== '')
+  const bin = dirs.map((d) => join(d, cmd)).find((c) => existsSync(c)) ?? cmd
+  return { bin, shell: process.platform === 'win32' }
+}
 
 const req = createRequire(import.meta.url)
 const gates = req('../../../../tools/release-artifacts.mjs') as {
@@ -244,15 +275,17 @@ describe('G5 — live-tree smoke (audit case 5, guarded on built lib/)', () => {
     }
     const dest = mkdtempSync(join(tmpdir(), 'melite-live-probe-'))
     try {
+      const pnpm = pnpmSeat()
       const tgzs: string[] = []
       for (const p of probes) {
-        execFileSync(join(process.env.HOME ?? '/', '.local/share/pnpm/pnpm'), ['--dir', join(ROOT, p), 'pack', '--pack-destination', dest], { stdio: 'ignore' })
+        execFileSync(pnpm.bin, ['--dir', join(ROOT, p), 'pack', '--pack-destination', dest], { stdio: 'ignore', shell: pnpm.shell })
       }
-      const listed = execFileSync('bash', ['-c', `ls ${dest}/*.tgz`], { encoding: 'utf8' }).split('\n').filter(Boolean)
-      for (const f of listed) {
-        const tarName = f.split('/').pop() as string
+      const listed = readdirSync(dest).filter((f) => f.endsWith('.tgz')).sort()
+      for (const name of listed) {
+        const f = join(dest, name)
+        const tarName = name
         const listing = execFileSync('tar', ['-tzf', f], { encoding: 'utf8' }).split('\n').filter(Boolean)
-        const inner = JSON.parse(execFileSync('bash', ['-c', `tar -xzOf ${f} package/package.json`], { encoding: 'utf8' }))
+        const inner = JSON.parse(tarFile(f, 'package/package.json'))
         gates.validateTarballPayload(inner, listing, tarName)
         gates.classifyEntry(inner, tarName)
         const literals = gates.exportsRows(inner, listing, tarName)
@@ -372,8 +405,8 @@ describe('G1.5 — publish rewrite (hygiene strip + registry manifest)', () => {
     })
     try {
       gates.stripPackedTarballs([fx.f])
-      const js = execFileSync('bash', ['-c', `tar -xzOf ${fx.f} package/lib/index.js`], { encoding: 'utf8' })
-      const manifest = JSON.parse(execFileSync('bash', ['-c', `tar -xzOf ${fx.f} package/package.json`], { encoding: 'utf8' }))
+      const js = tarFile(fx.f, 'package/lib/index.js')
+      const manifest = JSON.parse(tarFile(fx.f, 'package/package.json'))
       expect(js).not.toContain('dated 2026-01-01')
       expect(js).toContain('Contract line stays.')
       expect(manifest.private).toBeUndefined()
@@ -388,7 +421,7 @@ describe('G1.5 — publish rewrite (hygiene strip + registry manifest)', () => {
     })
     try {
       gates.stripPackedTarballs([fx.f])
-      const manifest = JSON.parse(execFileSync('bash', ['-c', `tar -xzOf ${fx.f} package/package.json`], { encoding: 'utf8' })) as { devDependencies?: unknown }
+      const manifest = JSON.parse(tarFile(fx.f, 'package/package.json')) as { devDependencies?: unknown }
       expect(manifest.devDependencies).toBeUndefined()
     } finally { rmSync(fx.dir, { recursive: true, force: true }) }
   })
@@ -406,9 +439,9 @@ describe('G1.5 — publish rewrite (hygiene strip + registry manifest)', () => {
     })
     try {
       gates.stripPackedTarballs([bare.f, own.f])
-      const injected = JSON.parse(execFileSync('bash', ['-c', `tar -xzOf ${bare.f} package/package.json`], { encoding: 'utf8' })) as { engines?: { node?: string } }
+      const injected = JSON.parse(tarFile(bare.f, 'package/package.json')) as { engines?: { node?: string } }
       expect(injected.engines?.node).toBe('>=22.18.0')
-      const kept = JSON.parse(execFileSync('bash', ['-c', `tar -xzOf ${own.f} package/package.json`], { encoding: 'utf8' })) as { engines?: { node?: string } }
+      const kept = JSON.parse(tarFile(own.f, 'package/package.json')) as { engines?: { node?: string } }
       expect(kept.engines?.node).toBe('>=22.18.0')
     } finally {
       rmSync(bare.dir, { recursive: true, force: true })
@@ -425,7 +458,7 @@ describe('G1.5 — publish rewrite (hygiene strip + registry manifest)', () => {
     })
     try {
       gates.stripPackedTarballs([fx.f])
-      const readme = execFileSync('bash', ['-c', `tar -xzOf ${fx.f} package/README.md`], { encoding: 'utf8' })
+      const readme = tarFile(fx.f, 'package/README.md')
       expect(readme.startsWith('# The compose plane')).toBe(true)
       expect(readme).not.toContain('kind:')
       expect(readme).toContain('Prose.')
@@ -441,7 +474,7 @@ describe('G1.5 — publish rewrite (hygiene strip + registry manifest)', () => {
     })
     try {
       gates.stripPackedTarballs([fx.f])
-      const readme = execFileSync('bash', ['-c', `tar -xzOf ${fx.f} package/README.md`], { encoding: 'utf8' })
+      const readme = tarFile(fx.f, 'package/README.md')
       expect(readme.startsWith('# Plain readme')).toBe(true)
       expect(readme).toContain('not a fence')
     } finally { rmSync(fx.dir, { recursive: true, force: true }) }
@@ -480,7 +513,7 @@ describe('G1.5 — publish rewrite (hygiene strip + registry manifest)', () => {
     })
     try {
       gates.stripPackedTarballs([fx.f])
-      const yml = execFileSync('bash', ['-c', `tar -xzOf ${fx.f} package/cordis.patch.yml`], { encoding: 'utf8' })
+      const yml = tarFile(fx.f, 'package/cordis.patch.yml')
       expect(yml).not.toContain('2026-10-11')
       expect(yml).not.toContain('overlay law')
       expect(yml).toContain('clean section note stays')
@@ -514,7 +547,7 @@ describe('G1.5 — publish rewrite (hygiene strip + registry manifest)', () => {
     })
     try {
       gates.stripPackedTarballs([fx.f])
-      const shipped = execFileSync('bash', ['-c', `tar -xzOf ${fx.f} package/LICENSE`], { encoding: 'utf8' })
+      const shipped = tarFile(fx.f, 'package/LICENSE')
       expect(shipped).toBe(readFileSync(join(ROOT, 'licenses', 'AGPL-3.0-or-later.txt'), 'utf8'))
       expect(shipped).toContain('13. Remote Network Interaction; Use with the GNU General Public License.')
     } finally { rmSync(fx.dir, { recursive: true, force: true }) }

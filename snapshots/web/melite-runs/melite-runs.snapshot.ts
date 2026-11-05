@@ -3,7 +3,7 @@
  * USER-VISIBLE contract, replayed WITHOUT a booted host — the exact
  * strings the operator's composer serves and the door names the
  * agent's tool list gains. The unit spec
- * (packages/harness/melite-tools/test/index.spec.ts:257) owns the
+ * (packages/harness/melite-tools/test/index.spec.ts) owns the
  * MECHANICS (re-seat, dispose, no duplicate seats); this scenario
  * owns the product face: the command row, the four handler texts
  * verbatim, and the boot default (browser lanes start with the run
@@ -18,11 +18,12 @@
  */
 import { describe, it, afterEach } from 'vitest'
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseSnapshotManifest, selectGeneration } from '../../../tests/snapshot-support/storage.ts'
-import { apply, HEADLESS_TOOL_NAMES } from '../../../packages/harness/melite-tools/src/index.ts'
+import { apply, RUN_DOOR_NAMES } from '../../../packages/harness/melite-tools/src/index.ts'
 import type { Context } from '@deepseek-ai/cordis'
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -72,11 +73,28 @@ function clearEnv(k: string): void {
   if (!(k in savedEnv)) savedEnv[k] = process.env[k]
   delete process.env[k]
 }
+
+let specHome: string | undefined
+const previousHome = process.env.DSH_HOME
+/** Pin DSH_HOME to a fresh throwaway before any mount: apply boots
+ *  on the PERSISTED delegation record, so the operator's real home
+ *  must never decide a replay — and an `on` here must never write
+ *  the operator's state file. */
+function pinHome(): void {
+  specHome = mkdtempSync(join(tmpdir(), 'melite-runs-snapshot-'))
+  process.env.DSH_HOME = specHome
+}
 afterEach(() => {
   for (const [k, v] of Object.entries(savedEnv)) {
     if (v === undefined) delete process.env[k]
     else process.env[k] = v
     delete savedEnv[k]
+  }
+  if (specHome !== undefined) {
+    rmSync(specHome, { recursive: true, force: true })
+    specHome = undefined
+    if (previousHome === undefined) delete process.env.DSH_HOME
+    else process.env.DSH_HOME = previousHome
   }
 })
 
@@ -96,7 +114,7 @@ describe('web melite-runs (the AI-run toggle face, keyless)', () => {
   })
 
   it('serves the command row the composer lists', () => {
-    clearEnv('MELITE_HEADLESS')
+    pinHome()
     clearEnv('MELITE_ADHOC')
     clearEnv('MELITE_CARD_TOOLS')
     const { cmd } = mountBrowserLane()
@@ -109,18 +127,18 @@ describe('web melite-runs (the AI-run toggle face, keyless)', () => {
     assert.deepEqual(cmd.input, { hint: '[on|off]' }, 'the input hint')
   })
 
-  it('browser boot default: the run doors are ABSENT (runs start at the user\u2019s Run press)', () => {
-    clearEnv('MELITE_HEADLESS')
+  it('boot default (no persisted record): the run doors are ABSENT (runs start at the user\u2019s Run press)', () => {
+    pinHome()
     clearEnv('MELITE_ADHOC')
     clearEnv('MELITE_CARD_TOOLS')
     const { toolNames } = mountBrowserLane()
-    for (const h of HEADLESS_TOOL_NAMES) {
+    for (const h of RUN_DOOR_NAMES) {
       assert.ok(!toolNames().includes(h), `run door ${h} leaked at browser boot`)
     }
   })
 
   it('on: the exact success text and both doors live in the agent\u2019s tool list', () => {
-    clearEnv('MELITE_HEADLESS')
+    pinHome()
     clearEnv('MELITE_ADHOC')
     clearEnv('MELITE_CARD_TOOLS')
     const { cmd, toolNames } = mountBrowserLane()
@@ -132,14 +150,14 @@ describe('web melite-runs (the AI-run toggle face, keyless)', () => {
       'the ON text verbatim',
     )
     assert.deepEqual(
-      HEADLESS_TOOL_NAMES.filter((h) => !toolNames().includes(h)),
+      RUN_DOOR_NAMES.filter((h) => !toolNames().includes(h)),
       [],
       'every run door seated by on',
     )
   })
 
   it('off and bare read: the OFF text verbatim, doors withdrawn', () => {
-    clearEnv('MELITE_HEADLESS')
+    pinHome()
     clearEnv('MELITE_ADHOC')
     clearEnv('MELITE_CARD_TOOLS')
     const { cmd, toolNames } = mountBrowserLane()
@@ -147,7 +165,7 @@ describe('web melite-runs (the AI-run toggle face, keyless)', () => {
     const off = cmd.handler({ rawInput: 'off' })
     assert.equal(off.kind, 'success')
     assert.equal(off.text, 'AI runs OFF — runs start at the user\u2019s Run press again. Recorded.', 'the OFF text verbatim')
-    for (const h of HEADLESS_TOOL_NAMES) {
+    for (const h of RUN_DOOR_NAMES) {
       assert.ok(!toolNames().includes(h), `run door ${h} never withdrawn by off`)
     }
     const read = cmd.handler({ rawInput: '' })
@@ -156,7 +174,7 @@ describe('web melite-runs (the AI-run toggle face, keyless)', () => {
   })
 
   it('unknown argument: the refusal text verbatim', () => {
-    clearEnv('MELITE_HEADLESS')
+    pinHome()
     clearEnv('MELITE_ADHOC')
     clearEnv('MELITE_CARD_TOOLS')
     const { cmd } = mountBrowserLane()

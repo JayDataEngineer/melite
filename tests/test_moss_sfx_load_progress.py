@@ -37,7 +37,18 @@ def _load_core(monkeypatch, engine_factory):
     engines = types.ModuleType(engines_name)
     engines.__path__ = [str(PACKAGE_ROOT / "engines")]
     monkeypatch.setitem(sys.modules, engines_name, engines)
-    monkeypatch.setenv("AUDIOCPP_MODELS_DIR", str(PACKAGE_ROOT))
+    # The vendor re-cure (f2b59343e, 2026-10-31) retired the
+    # AUDIOCPP_MODELS_DIR env seat — the pack reads ComfyUI's
+    # folder_paths registry only ("this pack never reads process
+    # env") and its own release-unit test seats the category by
+    # stubbing that module; this estate seat stubs it the same way,
+    # monkeypatch-scoped so the stub never outlives the test.
+    folder_paths = types.ModuleType("folder_paths")
+    folder_paths.folder_names_and_paths = {
+        "audiocpp": ([str(PACKAGE_ROOT)], {".gguf"}),
+    }
+    folder_paths.get_folder_paths = lambda key: [str(PACKAGE_ROOT)]
+    monkeypatch.setitem(sys.modules, "folder_paths", folder_paths)
     core = _load_module(f"{package_name}.core", PACKAGE_ROOT / "core.py")
     monkeypatch.setitem(
         sys.modules,

@@ -85,12 +85,20 @@ describe("the bench session grammar has one rule", () => {
     // decision now (benchSessionOf, beside SESSION_RE): every seat
     // imports it, no seat spells a grammar OR a sanitize, and this
     // arm bans both spellings in code.
-    const seats: Array<[string, string]> = [
-      ["cards tab", "../../../../packages/web/melite-card-view/src/client/cards-resource.ts"],
-      ["gallery", "../../../../packages/web/infer-gallery/src/client/bench-load.ts"],
-      ["agent tool", "../../../../packages/harness/melite-tools/src/tools/melite-construct.ts"],
+    const seats: Array<[string, string, RegExp]> = [
+      // THE CARRY JOINED THE DECISION (the one-seat law's client
+      // half, 2026-10-31): a delegated lane's bench key rides as
+      // delegate:<key> — the ':' is outside SESSION_RE, so the cards
+      // tab must NOT sanitize it (the split routed a delegated card
+      // to 'main'). Its producer is the contract's carriedBenchKey
+      // (benchStage, wrapped around this same benchSessionOf); the
+      // ban arms below now fire on a seat that re-spells EITHER
+      // decision — the sanitize OR the carry — over the grammar.
+      ["cards tab", "../../../../packages/web/melite-card-view/src/client/cards-resource.ts", /carriedBenchKey/],
+      ["gallery", "../../../../packages/web/infer-gallery/src/client/bench-load.ts", /benchSessionOf/],
+      ["agent tool", "../../../../packages/harness/melite-tools/src/tools/melite-construct.ts", /benchSessionOf/],
     ];
-    for (const [name, path] of seats) {
+    for (const [name, path, producer] of seats) {
       const src = readFileSync(new URL(`${path}`, import.meta.url), "utf8");
       const code = src
         .replace(/\/\*[\s\S]*?\*\//g, " ")
@@ -107,8 +115,8 @@ describe("the bench session grammar has one rule", () => {
       // rebuilt a second producer in place)
       expect(code, `${name}: no private ternary-to-'main' body — the decision is the contract's`)
         .not.toMatch(/\?[^:?]+:\s*['"`]main['"`]/);
-      expect(code, `${name}: the seat reads the contract's benchSessionOf (one producer)`)
-        .toMatch(/benchSessionOf/);
+      expect(code, `${name}: the seat reads the contract's producer (one decision — the carry or the sanitize, never a local spelling)`)
+        .toMatch(producer);
     }
   });
 

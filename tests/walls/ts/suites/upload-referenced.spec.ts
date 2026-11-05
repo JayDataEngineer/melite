@@ -245,3 +245,53 @@ describe("the character bundle arm (004/C2: record → compose → staged)", () 
     }
   });
 });
+
+describe("uploadReferenced the wired soundtrack rows (the merged-form wire, 2026-11-01)", () => {
+  it("a wired row (no src) stages nothing and rides verbatim; the wired_audio_k seat carries the spell", async () => {
+    const s = stub(200);
+    const base = await listen(s);
+    try {
+      const { graph, uploaded } = await uploadReferenced(sdkClient(base), {
+        "1": { class_type: "MeliteFilmAudioMix", inputs: {
+          videos: "h3_w1,h3_w2", after: "boundary",
+          clips_json: JSON.stringify([{ wired: 1, start_sec: 0, dur_sec: 0, class: "music" }]),
+          wired_audio_1: "$bed", duck_spans: "", music_duck_spans: "", duck_db: -12, film_seconds: 8,
+        } },
+      } as never);
+      assert.equal(Object.keys(uploaded).length, 0, "a wired row staged an upload — the walk parsed the manifest");
+      const ins = (graph["1"] as { inputs: Record<string, unknown> }).inputs;
+      assert.deepEqual(
+        JSON.parse(ins.clips_json as string),
+        [{ wired: 1, start_sec: 0, dur_sec: 0, class: "music" }],
+        "the wired manifest row must ride byte-identical — no src key may appear",
+      );
+      assert.equal(ins.wired_audio_1, "$bed",
+        "the spelled soundtrack never rode the seat — the ext gate must ride a spell verbatim");
+    } finally {
+      s.close();
+    }
+  });
+
+  it("a spelled conditioning stamp rides the tensor seat verbatim, stages nothing; the path stamp still stages", async () => {
+    // THE CONDITIONING TENSOR SEAT (session 2): MeliteAudioTensorSlice
+    // .audio_tensor carries the spell through the walk untouched; the
+    // file-slice path stamp keeps its staged-file handoff.
+    const s = stub(200);
+    const base = await listen(s);
+    try {
+      const data = "data:audio/flac;base64," + Buffer.from("path-stamp-wall").toString("base64");
+      const { graph, uploaded } = await uploadReferenced(sdkClient(base), {
+        "7": { class_type: "MeliteAudioTensorSlice", inputs: { audio_tensor: "$line1", start_seconds: 0, duration_seconds: 1 } },
+        "8": { class_type: "MeliteAudioSlice", inputs: { audio: data, start_seconds: 0, duration_seconds: 1 } },
+      } as never);
+      assert.equal(Object.keys(uploaded).length, 1, "the spelled tensor stamp staged an upload — the walk must ride a spell verbatim");
+      const tensor = (graph["7"] as { inputs: Record<string, unknown> }).inputs;
+      assert.equal(tensor.audio_tensor, "$line1",
+        "the spelled conditioning stamp never rode the tensor seat verbatim");
+      const path = (graph["8"] as { inputs: Record<string, unknown> }).inputs.audio as string;
+      assert.notEqual(path, data, "the path stamp's staged handoff must keep staging — its seat still left the data URL");
+    } finally {
+      s.close();
+    }
+  });
+});

@@ -111,6 +111,11 @@ function run(dir: string, prompt: string, prefix: string, extra: Record<string, 
         // the suite is hermetic again.
         SUPERVISOR_STATE_ROOT: dir,
         SUPERVISOR_LOCK_WAIT_S: '0',
+        // the profile is REQUIRED now (HEADLESS IS DSH'S, 2026-11-14:
+        // no default lane) — the stub never boots a real profile, so
+        // the name is hermetic; a MISSING knob dies loud (the arm
+        // below pins that).
+        SUPERVISOR_PROFILE: 'estate',
       },
       timeout: 30_000,
       stdio: 'pipe',
@@ -134,6 +139,7 @@ function runWithoutDoneMarker(dir: string, prompt: string, prefix: string): numb
         // hermetic turn-wait, same reason as run() above
         SUPERVISOR_STATE_ROOT: dir,
         SUPERVISOR_LOCK_WAIT_S: '0',
+        SUPERVISOR_PROFILE: 'estate',
       },
       timeout: 30_000,
       stdio: 'pipe',
@@ -152,6 +158,18 @@ function attemptLogs(prefix: string): string[] {
 }
 
 describe('commission-supervisor.sh — the transient-vs-quota law (§25 answered)', () => {
+  it('a MISSING SUPERVISOR_PROFILE dies loud — no default lane exists (HEADLESS IS DSH\'S)', () => {
+    const { dir, prompt, prefix } = stage(['ok'])
+    const r = spawnSync('bash', [SCRIPT, prompt, prefix], {
+      env: { ...process.env, SUPERVISOR_DSH_BIN: join(dir, 'seq.js'), SUPERVISOR_BACKOFF_S: '0', SUPERVISOR_STATE_ROOT: dir, SUPERVISOR_LOCK_WAIT_S: '0' },
+      timeout: 30_000, encoding: 'utf8',
+    })
+    assert.notEqual(r.status, 0, 'the script refuses to boot without a named profile')
+    assert.match(r.stderr ?? '', /SUPERVISOR_PROFILE is required/,
+      'the refusal names the knob and the cure')
+    assert.deepEqual(attemptLogs(prefix), [], 'the refusal precedes any launch')
+  })
+
   it('a TRANSIENT 429 relaunches: second attempt succeeds, exit 0, two attempt logs', () => {
     const { dir, prompt, prefix } = stage(['transient', 'ok'])
     assert.equal(run(dir, prompt, prefix), 0)
@@ -269,7 +287,7 @@ describe('commission-supervisor.sh — the transient-vs-quota law (§25 answered
 describe('commission-supervisor — the done-marker glob (the mismatchint fix, 2026-09-26)', () => {
   function runGlob(dir: string, prompt: string, prefix: string, env: Record<string, string>): { code: number, stderr: string } {
     const r = spawnSync('bash', [SCRIPT, prompt, prefix], {
-      env: { ...process.env, SUPERVISOR_DSH_BIN: join(dir, 'seq.js'), SUPERVISOR_BACKOFF_S: '0', SUPERVISOR_MAX_ATTEMPTS: '3', SUPERVISOR_STATE_ROOT: dir, SUPERVISOR_LOCK_WAIT_S: '0', ...env },
+      env: { ...process.env, SUPERVISOR_DSH_BIN: join(dir, 'seq.js'), SUPERVISOR_BACKOFF_S: '0', SUPERVISOR_MAX_ATTEMPTS: '3', SUPERVISOR_STATE_ROOT: dir, SUPERVISOR_LOCK_WAIT_S: '0', SUPERVISOR_PROFILE: 'estate', ...env },
       timeout: 30_000, encoding: 'utf8',
     })
     return { code: r.status ?? -1, stderr: (r.stderr ?? '') + (r.stdout ?? '') }
@@ -314,7 +332,7 @@ const r = runGlob(dir, prompt, prefix, { SUPERVISOR_DONE_GLOB: join(dir, 'transc
 describe('commission-supervisor — the queue-lock turn-wait (two makers, one queue)', () => {
   function runLock(dir: string, prompt: string, prefix: string, env: Record<string, string>): { code: number, stderr: string } {
     const r = spawnSync('bash', [SCRIPT, prompt, prefix], {
-      env: { ...process.env, SUPERVISOR_DSH_BIN: join(dir, 'seq.js'), SUPERVISOR_BACKOFF_S: '0', SUPERVISOR_MAX_ATTEMPTS: '3', SUPERVISOR_DONE_MARKER: join(dir, 'transcript.md'), SUPERVISOR_LOCK_WAIT_S: '0', ...env },
+      env: { ...process.env, SUPERVISOR_DSH_BIN: join(dir, 'seq.js'), SUPERVISOR_BACKOFF_S: '0', SUPERVISOR_MAX_ATTEMPTS: '3', SUPERVISOR_DONE_MARKER: join(dir, 'transcript.md'), SUPERVISOR_LOCK_WAIT_S: '0', SUPERVISOR_PROFILE: 'estate', ...env },
       timeout: 30_000, encoding: 'utf8',
     })
     return { code: r.status ?? -1, stderr: (r.stderr ?? '') + (r.stdout ?? '') }
@@ -390,6 +408,7 @@ describe('commission-supervisor — the cross-roots estate overlay (J12)', () =>
           // lane instead of the roots override it exists to prove
           SUPERVISOR_STATE_ROOT: dir,
           SUPERVISOR_LOCK_WAIT_S: '0',
+          SUPERVISOR_PROFILE: 'estate',
         },
         timeout: 30_000,
         stdio: 'pipe',

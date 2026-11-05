@@ -450,7 +450,12 @@ const PINS: Record<string, number> = {
   // candidate ("card_compose: " + reFam) — the same arm-A refusal
   // voice at the same gate, not presentation copy. The settlement's
   // USER-FACING voice rides studioCopy.gateSettled (the dictionary).
-  'packages/video/h3-timeline/src/ui': 6,
+  // STEPPED 6 -> 4 (2026-11-15, the lane dead-letter retirement): the
+  // flip settlement and its reseat machinery are DELETED (the lane
+  // fires the post quartet everywhere; no per-lane dead letter, no
+  // re-judge) — the settlement's two arm-A literals died with it.
+  // The remaining 4 are the pre-existing S-A1/S-A2/S-A3 seats above.
+  'packages/video/h3-timeline/src/ui': 4,
   'packages/image/mask-studio/src/ui': 0,
   // card-base: 36 (the S7j/class-4 merge, argued above) + 6 from the
   // D1 .ts arms — all arm A `message` properties in .ts: the wire
@@ -494,7 +499,18 @@ const PINS: Record<string, number> = {
   // data-condition titles above): the sentence names the media-kind
   // mismatch the seat refuses — joined to the same adjudicated
   // residue, localized only by forking the media-kind voice.
-  'packages/web/card-base/src': 51,
+  // RE-PIN 51→53 (2026-11-12, 64f64a552 the chain-run picker seat):
+  // +2 SpecMenuSelect label values — the chain-run picker's ghost row
+  // ('— pick —') and its drifted-pick marker (' (unregistered)') at
+  // mods.tsx's chain-run field. The SAME adjudicated pair-class the
+  // S7j merge ruled for the catalog picker (the ghost row + the
+  // unregistered row): the new seat renders the same picker row law
+  // over the estate's chain-store runs, and its ghost/drift markers
+  // must speak the catalog picker's VALUES verbatim — localizing one
+  // seat's pair would fork the two pickers' row identity. The served
+  // row labels themselves ride chromeCopy.chainRunOptionLabel (the
+  // dictionary); only the ghost and drift markers are residue.
+  'packages/web/card-base/src': 53,
   // card-view: 13 — the D1 dictionary moves landed (the cards-tab
   // title/guide trio + the mention title now ride chromeCopy), so the
   // residue is two DEBT classes, every seat computed law-voiceing:
@@ -567,7 +583,18 @@ const PINS: Record<string, number> = {
   // 400's machine key travels beside it; the contract row
   // cards-gallery-rename-law pins the wording) — same class as the
   // ×18 above; localizing forks the door's identity per locale.
-  'packages/web/infer-gallery/src': 24,
+  // RE-PIN 24→36 (2026-11-02, the mass-archive cure, ruling item
+  // (a)): +12 the archive/restore refusal voices (index.ts — POST
+  // {path} ×1, run-relative ×1, already_archived ×1, sidecar ×1,
+  // no-such-artifact ×2, already_exists ×1, not_archived ×1,
+  // no-such-archived ×2, archive-dir-itself ×1, live-collision ×1).
+  // Same class as the ×18+1: each message is the door's refusal
+  // identity (its machine code — already_archived, not_archived,
+  // already_exists — travels beside it; the contract row
+  // gates-gallery-mass-archive pins the wording); localizing forks
+  // the door's identity per locale. Next dictionary pass owns only
+  // sidebar chrome (galleryCopy), never these wire voices.
+  'packages/web/infer-gallery/src': 36,
   // action_cards: 0 — the pose stage, motion poster/viewer and poster
   // shell ride actionCopy.ts.
   'packages/engines/comfyui/src/action_cards': 0,

@@ -581,7 +581,7 @@ for i in $(seq 1 24); do
     fi
     code=$(curl -sk -m 20 -b "$COOKIE_JAR" -o /tmp/ship-ensure.json -w '%{http_code}' \
       -X POST "$ORIGIN/v1/bench/ensure" \
-      -H 'content-type: application/json' -d '{"session":"main"}' 2>/dev/null)
+      -H 'content-type: application/json' -d '{"session":"ship-lane-probe"}' 2>/dev/null)
     if [ "$code" = "200" ]; then
       ok "operator session minted (from $log); bench plane answered after ~$((i * 10))s"
       settled=1

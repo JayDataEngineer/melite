@@ -11,8 +11,11 @@
 // repeatable pass: run it after `pnpm run build` in any package.
 import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const ROOT = new URL('..', import.meta.url).pathname;
+// fileURLToPath, never URL.pathname (the windows CI doubled-drive
+// class, 2026-10-31: '/D:/…' is drive-rooted RELATIVE on win32).
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const SPEC = /(from\s*|import\(\s*)(["'])(\.\.?\/[^"']*?)\.ts(["'])/g;
 let touched = 0;
 let files = 0;

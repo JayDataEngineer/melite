@@ -34,6 +34,27 @@
 // derive from facts + boarded (the liveness roster) — no hand list,
 // no literal count.
 //
+// THE CONDITIONAL-SURFACE LAW (the 36-burn skip cure, 2026-11-03):
+// a DECLARED field is not always a PARAM-WRITABLE field. Two legal
+// classes refuse a bare probe — the CONDITIONAL field (image-edit's
+// width/height fire only when match_input_resolution is OFF; the
+// refusal voice itself teaches the flip) and the FAMILY-SWITCHING
+// field (h3's T4_ONLY_KEYS: stating them re-derives the window
+// family t4r, which then bans them — they ride the B2 flip writer,
+// never a bare params write). The wall's old bulk probe seeded every
+// declared field at once, these seats refused at the SOURCE, and
+// every h3-timeline and image-edit transition rode no gesture at
+// all — the skip was the disease. The cure: each seat's surface is
+// classified THROUGH the door (row defaults first, then every
+// default-less field probed ALONE); admitted fields join the stored
+// state, refused fields become the seat's CONDITIONAL roster and
+// their voices must TEACH (the honest-voice rider class — a bare
+// refusal of a declared field reds). Gestures ride every seat; the
+// typing arm types only admissible fields (a conditional field
+// refusing bare is the door's own law, walled elsewhere); the
+// bulk-write safety net keeps the old burn log for any card whose
+// jointly-admitted fields still refuse together.
+//
 // JOURNEY (§2): [1] the hands (variant menu, text box) → [2] the
 // stored bench doc (door-written) → [3]/[4] the write door (both
 // patch verbs — the felt refusal) → end-to-end on the real
@@ -110,7 +131,7 @@ beforeAll(async () => {
   await ctx.plugin(Storage as never, undefined as never);
   await ctx.plugin({ name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as never, { root: join(root, "storage") } as never);
   await ctx.plugin({ name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as never, { backend: "json" } as never);
-  new DraftsDomainSeatService(ctx, { storageRoot: join(root, "storage") });
+  new DraftsDomainSeatService(ctx);
   installBenchChangeSeam(ctx);
   // THE REAL REGISTRY as the doors' seat (the dropper + admission)
   new FlowsSeatService(ctx);
@@ -165,14 +186,108 @@ async function revOf(docId: string): Promise<number> {
   return benchBlockOf((row?.doc ?? {}) as Record<string, unknown>).rev;
 }
 
+/** One seat's door-classified surface: the fields whose probe
+ *  ADMITS (they join every stored state) and the CONDITIONAL roster
+ *  (field → the door's own refusal voice — must teach, never bare).
+ *  Derived once per seat THROUGH the GUI door itself; the gestures
+ *  never re-derive it. */
+interface SeatClass {
+  admissible: string[];
+  conditional: Map<string, string>;
+}
+
+const seatClasses = new Map<string, SeatClass>();
+
+/** A typed probe literal when the door's own voice names the kind it
+ * wants (the refusal voice IS the teacher: `$.f expected number but
+ * got string` — a wrong-typed probe is the wall's guess, never a
+ * door law, so it is solved, not classified). */
+function probeOfKind(kind: string): unknown {
+  switch (kind) {
+    case "number": case "integer": return 0;
+    case "boolean": return true;
+    case "array": return [];
+    case "object": return {};
+    default: return "variant-switch probe";
+  }
+}
+
+/** Classify one seat's surface through the door: the row's own
+ *  defaults write first (the operator's real fresh-card state), then
+ *  every default-less field probes ALONE on top — a probe that
+ *  admits is a stored-state field; a probe that refuses is the
+ *  conditional class and its voice rides verbatim. */
+async function classifySeat(
+  card: string, family: string, seat: Seat, tag: string,
+): Promise<SeatClass> {
+  const key = `${card}\u0000${family}\u0000${seat.variantId}\u0000${seat.quant}`;
+  const cached = seatClasses.get(key);
+  if (cached !== undefined) return cached;
+  const docId = `bench-${tag}`;
+  const axis: Record<string, unknown> = { model: family, variant: seat.variantId };
+  if (seat.quant !== "") axis["quant"] = seat.quant;
+  await drafts.table("docs").put(docId, {
+    updated_at: 1,
+    doc: {
+      draft_id: docId, intent: "gesture", status: "ready", createdAt: 1, completedAt: null,
+      stages: [{ id: "s_0", card, params: axis }],
+      bench: { rev: 0, log: [] },
+    } as never,
+  });
+  const spec = await formSpecArm(family, undefined, []);
+  if (!specs.has(family)) specs.set(family, spec);
+  const rowDefaults = ((spec?.variants ?? []).find((r) => r.id === seat.variantId)?.defaults ?? {}) as Record<string, unknown>;
+  let rev = 0;
+  // the defaults write — the real fresh card (never a burn class)
+  const defaultsPatch: Record<string, unknown> = {};
+  for (const f of seat.surface) {
+    if (Object.prototype.hasOwnProperty.call(rowDefaults, f)) defaultsPatch[f] = rowDefaults[f];
+  }
+  if (Object.keys(defaultsPatch).length > 0) {
+    await gui.patch(docId, "s_0", { params: defaultsPatch }, rev, sig);
+    rev = await revOf(docId);
+  }
+  // the per-field probes — ALONE, on top of the defaults state; a
+  // typed refusal (the voice names the wanted kind) is retried with
+  // the typed literal before any classification
+  const admissible: string[] = [];
+  const conditional = new Map<string, string>();
+  for (const f of seat.surface) {
+    if ((AXIS_KEYS as readonly string[]).includes(f)) continue;
+    if (Object.prototype.hasOwnProperty.call(rowDefaults, f)) { admissible.push(f); continue; }
+    let value: unknown = probeFor(f);
+    let voice: string | null = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        await gui.patch(docId, "s_0", { params: { [f]: value } }, rev, sig);
+        rev = await revOf(docId);
+        voice = null;
+        break;
+      } catch (err) {
+        voice = err instanceof Error ? err.message : String(err);
+        const m = voice.match(/expected (\w+) but got/);
+        if (m === null) break;
+        value = probeOfKind(m[1] === undefined ? "" : m[1]);
+      }
+    }
+    if (voice === null) admissible.push(f);
+    else conditional.set(f, voice);
+  }
+  const out = { admissible, conditional };
+  seatClasses.set(key, out);
+  return out;
+}
+
 /** Birth a bench doc holding one stage SEATED at `seat`, then write
- *  the seat's surface through the GUI door itself — a stored state
- *  is only ever what the door admits, with values the spec row
- *  itself declares (a refusal is that card's own burn, returned
- *  verbatim; the pair has no legal stored state to switch from). */
+ *  the seat's DOOR-ADMISSIBLE surface (defaults + probe-admitted
+ *  fields, classified once through the door itself) — a stored state
+ *  is only ever what the door admits (a bulk refusal is that card's
+ *  own burn, returned verbatim; the conditional roster is judged by
+ *  the teaching-voice arm below). */
 async function seedThroughDoor(
   card: string, family: string, seat: Seat, tag: string,
 ): Promise<SeededDoc> {
+  const cls = await classifySeat(card, family, seat, `vs-c${tag}`);
   const docId = `bench-${tag}`;
   const axis: Record<string, unknown> = { model: family, variant: seat.variantId };
   if (seat.quant !== "") axis["quant"] = seat.quant;
@@ -187,7 +302,7 @@ async function seedThroughDoor(
   const spec = specs.get(family);
   const rowDefaults = ((spec?.variants ?? []).find((r) => r.id === seat.variantId)?.defaults ?? {}) as Record<string, unknown>;
   const surface: Record<string, unknown> = {};
-  for (const f of seat.surface) surface[f] = rowDefaults[f] ?? probeFor(f);
+  for (const f of cls.admissible) surface[f] = rowDefaults[f] ?? probeFor(f);
   try {
     await gui.patch(docId, "s_0", { params: surface }, 0, sig);
   } catch (err) {
@@ -252,6 +367,68 @@ describe("THE VARIANT-SWITCH GESTURE — every card, every transition, both door
       "the tts → voicedesign gesture (the operator's burn) must be in the roster").toBe(true);
   });
 
+  it("THE SKIP IS DEAD (the 36-burn cure, 2026-11-03): every previously-burned seat class — h3-timeline's inject vocabulary, image-edit's match-gated pair — seeds through the door and its transitions RIDE", async () => {
+    // The old wall bulk-probed every declared field at once; the
+    // h3 seats refused (the probe itself derives t4r, which bans
+    // the probed keys) and the image-edit seats refused (width
+    // fires only when match_input_resolution is OFF) — 36 source
+    // burns, every one of those transitions skipped, the gestures
+    // judged nothing for two whole cards. The classified seed must
+    // land both classes clean; a regression to the bulk probe reds
+    // here on the first h3 seat.
+    const bad: string[] = [];
+    let ridden = { h3: 0, edit: 0 };
+    for (const [cardId, def] of await loadCardDefs()) {
+      const wants = cardId === "h3-timeline" ? "h3" : cardId === "image-edit" ? "edit" : null;
+      if (wants === null) continue;
+      for (const family of def.boarded ?? []) {
+        for (const seat of seatsOf(family)) {
+          const seeded = await seedThroughDoor(cardId, family, seat, `vs-skip-${wants}-${seat.variantId}-${seat.quant || "none"}`);
+          if (seeded.burned !== null) {
+            bad.push(seeded.burned);
+          } else {
+            ridden = wants === "h3" ? { ...ridden, h3: ridden.h3 + 1 } : { ...ridden, edit: ridden.edit + 1 };
+          }
+        }
+      }
+    }
+    expect(bad, "the skip-class seats — each must seed clean through the classified door (the burn log below is the regression)").toEqual([]);
+    expect(ridden.h3, "h3-timeline seats ride (the inject-vocabulary class)").toBeGreaterThan(0);
+    expect(ridden.edit, "image-edit seats ride (the match-gated class)").toBeGreaterThan(0);
+  }, 180000);
+  it("THE CONDITIONAL ROSTER TEACHES (the honest-voice rider class): every door-refused declared field names its repair door — a bare refusal of a declared field reds", async () => {
+    // Fleet-wide census: classify EVERY seat of EVERY boarded family
+    // through the door, then judge the voices. The one surviving
+    // legal conditional class teaches by design — image-edit's width
+    // names the match_input_resolution flip. h3's old inject class
+    // (the t4r dead letter) is RETIRED: its refusal voice must appear
+    // ZERO times fleet-wide, and its seats must classify clean (the
+    // retirement's own receipt). Any NEW conditional field must teach
+    // like the flip class (name the flip, the restate, the null, or
+    // the door) — "refused: X" is the dead-box bug wearing a
+    // classification badge.
+    const bare: string[] = [];
+    const stale: string[] = [];
+    let taught = { flip: 0 };
+    for (const [cardId, def] of await loadCardDefs()) {
+      for (const family of def.boarded ?? []) {
+        for (const seat of seatsOf(family)) {
+          const cls = await classifySeat(cardId, family, seat, `vs-voice-${cardId}-${family}-${seat.variantId}-${seat.quant || "none"}`);
+          for (const [field, voice] of cls.conditional) {
+            const where = `${cardId} / ${family} / ${seat.variantId}${seat.quant} / '${field}'`;
+            if (/match_input_resolution/.test(voice)) taught.flip++;
+            else if (/unsanctioned inject keys/.test(voice)) stale.push(`${where}: ${voice}`);
+            if (!/(flip|restate|null|switch|delete|remove|turn off|patch door|through the studio)/i.test(voice)) {
+              bare.push(`${where}: BARE REFUSAL — ${voice}`);
+            }
+          }
+        }
+      }
+    }
+    expect(bare, "conditional fields whose refusal teaches no repair — the honest-voice rider class").toEqual([]);
+    expect(taught.flip, "the match-gated conditional class is present and teaching").toBeGreaterThan(0);
+    expect(stale, "the retired inject vocabulary never refuses a declared field again (the retirement's receipt)").toEqual([]);
+  }, 600000);
   it("GESTURE A — THE SWITCH through the GUI's door (drafts/patch, the keystroke door): the variant pick lands with the source lane's state stored", async () => {
     const bad: string[] = [];
     let n = 0;
@@ -272,8 +449,7 @@ describe("THE VARIANT-SWITCH GESTURE — every card, every transition, both door
       for (const b of sourceBurns) console.log("  - " + b);
     }
     expect(bad, "stuck switches — the operator changed the variant and the write refused (the attempt-11 class)").toEqual([]);
-  });
-
+  }, 300000);
   it("GESTURE B — the same switch through the agent's door (bench/patch): the wired control lands", async () => {
     const bad: string[] = [];
     let n = 0;
@@ -287,8 +463,7 @@ describe("THE VARIANT-SWITCH GESTURE — every card, every transition, both door
       }
     }
     expect(bad, "the same gesture on the wired door — parity control (a roster only the unwired door refuses is the split)").toEqual([]);
-  });
-
+  }, 300000);
   it("GESTURE C — THE OPERATOR'S SEQUENCE: fresh card on the source lane, switch the variant, then type in each of the target lane's own boxes — every write lands", async () => {
     const bad: string[] = [];
     let n = 0;
@@ -305,12 +480,15 @@ describe("THE VARIANT-SWITCH GESTURE — every card, every transition, both door
         bad.push(`${t.card} / ${t.family} / ${t.from.variantId}${t.from.quant} → ${t.to.variantId}${t.to.quant}: THE SWITCH DID NOT LAND — ${err instanceof Error ? err.message : String(err)}`);
         continue;
       }
-      // then the boxes: each target-surface field typed ALONE (the
-      // mid-edit state the studio actually holds between keystrokes)
+      // then the boxes: each target-ADMISSIBLE field typed ALONE (the
+      // mid-edit state the studio actually holds between keystrokes);
+      // a conditional field (classified refusing at the probe —
+      // width-under-match-on, the t4-only inject vocabulary) legally
+      // refuses bare and rides the teaching-voice arm instead
       const spec = specs.get(t.family);
       const rowDefaults = ((spec?.variants ?? []).find((r) => r.id === t.to.variantId)?.defaults ?? {}) as Record<string, unknown>;
-      for (const f of t.to.surface) {
-        if ((AXIS_KEYS as readonly string[]).includes(f)) continue;
+      const cls = await classifySeat(t.card, t.family, t.to, `vs-c-box${n}`);
+      for (const f of cls.admissible) {
         try {
           await gui.patch(seeded.docId, "s_0", { params: { [f]: rowDefaults[f] ?? probeFor(f) } }, rev, sig);
           rev = await revOf(seeded.docId);
@@ -331,8 +509,7 @@ describe("THE VARIANT-SWITCH GESTURE — every card, every transition, both door
       }
     }
     expect(bad, "dead boxes — the operator switched the variant and the very next keystroke refused (the save accepts a form being filled)").toEqual([]);
-  });
-
+  }, 600000);
   it("THE RUN GATE (the same ruling's other half): a landed together-half pair SAVES at the write door and the RUN PRESS refuses it — the pair completes at the press, never mid-form", async () => {
     // the burn's own pair: qwen3-tts's ref lane declares ref_audio +
     // ref_text together. Seed on the source seat, SWITCH to the seat

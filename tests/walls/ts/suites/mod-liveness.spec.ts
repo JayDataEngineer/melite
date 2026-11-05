@@ -269,7 +269,11 @@ function engineDouble(): Promise<{
     if (String(req.url).includes("object_info")) {
       served += 1;
       const g = generation;
-      const loras = g === 1 ? ["e6-gen1/alpha.safetensors"] : ["e6-gen1/alpha.safetensors", "beta.safetensors"];
+      // G2 names the landed file by its COMBO NAME — the shelf law
+      // (2026-11-15) lands a stated-family install under
+      // <family>/<file>, and the engine's own enumeration serves the
+      // subpath, never the bare name
+      const loras = g === 1 ? ["e6-gen1/alpha.safetensors"] : ["e6-gen1/alpha.safetensors", "e6-fixture/beta.safetensors"];
       const stems = g === 1 ? ["(none)", "pack_a"] : ["(none)", "pack_a", "pack_b"];
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify({
@@ -340,7 +344,7 @@ describe("ARM 2 — THE OBJECT_INFO CACHE STALENESS LAW (the listing doors serve
       // the NEXT listing serves the changed world — never the stale G1
       const list2 = await manage({ action: "lora_list" }, ctx);
       assert.deepEqual((list2.data as Record<string, unknown>)["engine_loras"],
-        ["e6-gen1/alpha.safetensors", "beta.safetensors"],
+        ["e6-gen1/alpha.safetensors", "e6-fixture/beta.safetensors"],
         "lora_list served STALE bytes after the landing — the cache outlived the change");
       const ref2 = await manage({ action: "refmods_list" }, ctx);
       assert.deepEqual((ref2.data as Record<string, unknown>)["stems"], ["pack_a", "pack_b"],
@@ -482,7 +486,7 @@ describe("ARM 3 — THE MENU/COMPOSE FLAVOR LAW (the menu's rows equal the compo
         // the menu face: the served options, verbatim
         const menuIds = (mod.options ?? []).map((o) => o.value).sort();
         // the compose face: the door's own catalog
-        const compose = svc.modCatalogForCompose(pack, model, def.boarded ?? []);
+        const compose = svc.modCatalogForCompose(pack, model, envelopeKey, def.boarded ?? []);
         // THE LAW: the menu offers exactly the composable rows — the
         // compose catalog's rows the run's family owns (the door's
         // value plane). The compose catalog may carry the door-refused
@@ -531,7 +535,7 @@ describe("ARM 3 — THE MENU/COMPOSE FLAVOR LAW (the menu's rows equal the compo
       [],
       "image-gen@anima must serve the honest empty (no anima rows exist)",
     );
-    const composeAnima = svc.modCatalogForCompose("loras", "anima", ["krea-2", "z-image", "anima", "qwen-img-21", "flux-klein"]);
+    const composeAnima = svc.modCatalogForCompose("loras", "anima", "anima", ["krea-2", "z-image", "anima", "qwen-img-21", "flux-klein"]);
     const foreign = composeAnima.rows.filter((r) => !owningFamilies("loras", r.id).includes("anima"));
     assert.ok(
       foreign.length > 0,
@@ -557,7 +561,7 @@ describe("ARM 3 — THE MENU/COMPOSE FLAVOR LAW (the menu's rows equal the compo
     // THE POSITIVE CONTROL: the h3 lane serves its roster on BOTH faces
     // (the run family owns every row — menu and compose agree in full)
     const menuH3 = svc.modCatalog("loras", "h3").rows.map((r) => r.id).sort();
-    const composeH3 = svc.modCatalogForCompose("loras", "h3", ["h3"]).rows.map((r) => r.id).sort();
+    const composeH3 = svc.modCatalogForCompose("loras", "h3", "h3", ["h3"]).rows.map((r) => r.id).sort();
     assert.ok(menuH3.length >= 10, `the h3 roster census moved (${menuH3.length}) — update this floor deliberately`);
     assert.deepEqual(menuH3, composeH3, "the h3 lane's two faces must serve the same rows");
     for (const id of menuH3) {

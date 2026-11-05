@@ -148,9 +148,10 @@ describe("the h3 post chain mirrors the doc (burn b — the serialized graph is 
     }, "h3_postchain_arm4_sharpen");
     const sharp = census(graph, "ImageSharpenKJ");
     assert.ok(sharp.length === 1, "sharpen_enabled on composes exactly one ImageSharpenKJ");
-    const method = sharp[0][1].inputs.method as Record<string, unknown>;
-    assert.equal(method.method, "adaptive_usm", "the stated sharpen_method rides the method dict");
-    assert.equal(method.strength, 0.55, "the stated sharpen_strength rides the method dict");
+    assert.equal(sharp[0][1].inputs.method, "adaptive_usm", "the stated sharpen_method rides the base wire (GAPS-1 V3)");
+    assert.equal(sharp[0][1].inputs["method.strength"], 0.55, "the stated sharpen_strength rides the dotted wire");
+    assert.equal(sharp[0][1].inputs["method.radius"], 1.0, "the unstated radius keeps the tuned default on its dotted wire");
+    assert.equal(sharp[0][1].inputs["method.threshold"], 0.05, "the unstated threshold keeps the tuned default on its dotted wire");
     assert.ok(census(graph, "SeedVR2VideoUpscaler").length === 0, "sr off ⇒ no SeedVR2VideoUpscaler");
     assert.ok(census(graph, "FrameInterpolate").length === 0, "interp off ⇒ no FrameInterpolate");
   });

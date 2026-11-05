@@ -28,10 +28,10 @@
 //      SCHEMA gate (slice 5: the verb is required; a payload never
 //      derives a verb and a bare call is not exempt).
 //   5. t4-voice (T4) — the load voice names a tool the mode owns. The
-//      agent-mode contract bans `melite_flow`; the render already
-//      branches on `opts.headless`, so the arm renders BOTH modes and
-//      judges the sentences (slice 2 re-cut the source-text pin — a
-//      string in a file is not a voice).
+//      compose-mode contract bans `melite_flow`; the render already
+//      branches on `opts.delegated`, so the arm renders BOTH modes
+//      and judges the sentences (slice 2 re-cut the source-text pin
+//      — a string in a file is not a voice).
 //   6. first-door grammar + landing states (T7/T6, slice 5) — the
 //      construct restores a declared ARRAY lane AT THE WRITE and echoes
 //      the derivation, refuses an undeclared input lane by name, and
@@ -147,10 +147,11 @@ describe("THE VIBE SUITE BASELINE — the agent flow's acceptance harness (v0 pi
     const h3 = loadCard(ROOT, cards as never, null, "h3-timeline") as { craft?: { prompt_hint?: string }; digest?: string };
     const hint = String(h3.craft?.prompt_hint ?? "");
     assert.ok(hint.length > 0, "the h3 load bundle serves the card's craft hint (the digest tier)");
-    assert.match(hint, /Two image rails, both live/, "the hybrid-rails combinability sentence rides the served hint");
+    assert.match(hint, /Two reference rails, both live/, "the hybrid-rails combinability sentence rides the served hint");
     assert.match(hint, /keyframes lane/, "the hint names the pins home (the timeline's keyframes lane) — never a face row");
     assert.match(hint, /\bimage\b/, "the hint names the anchor seat");
     assert.match(hint, /ref_images/, "the hint names the reference stack seat — name-sufficiency, not prose");
+    assert.match(hint, /ref_videos/, "the hint names the motion-guide rail seat (the census cure: kin was never served)");
     assert.ok(typeof h3.digest === "string" && h3.digest.length > 0, "the bundle carries its content digest");
   });
 
@@ -211,26 +212,26 @@ describe("THE VIBE SUITE BASELINE — the agent flow's acceptance harness (v0 pi
     assert.equal(seen.length, 0, "nothing was read");
   });
 
-  it("T4: the load voice names the door the MODE owns (agent: construct; headless: flow) — never a phantom verb", () => {
-    // THE BURN (transcript step 3): the agent-mode load told the model
-    // "open with melite_flow" — a tool the agent-mode contract bans.
-    // The render branches on opts.headless today; this arm renders
-    // both modes and judges the sentences, so a re-inlined phantom
-    // verb reds. (A source-text pin certified the branch's presence,
-    // never its voice — the weak-wall class.)
+  it("T4: the load voice names the door the MODE owns (compose: construct; delegated: flow) — never a phantom verb", () => {
+    // THE BURN (transcript step 3): the compose-mode load told the
+    // model "open with melite_flow" — a tool the compose-mode
+    // contract bans. The render branches on opts.delegated today;
+    // this arm renders both modes and judges the sentences, so a
+    // re-inlined phantom verb reds. (A source-text pin certified the
+    // branch's presence, never its voice — the weak-wall class.)
     const value = { name: "c", inference_type: "card", bundle: { kind: "card", name: "c", signature: null } };
     const args = { name: "c", inference_type: "card" };
-    const voice = (headless: boolean): string => {
-      const tool = meliteLoad({} as never, headless ? { headless: true } : {});
+    const voice = (delegated: boolean): string => {
+      const tool = meliteLoad({} as never, delegated ? { delegated: true } : {});
       const parts = tool.output.render(args, value as never) as Array<{ text?: string }>;
       return parts.map((p) => p?.text ?? "").join("\n");
     };
-    const agent = voice(false);
-    assert.ok(!agent.includes("melite_flow"), "agent mode must never name melite_flow — the contract bans it");
-    assert.ok(agent.includes("melite_construct"), "agent mode names the door it owns (construct/add_stage)");
-    assert.ok(/runs start at the user's Run press/.test(agent), "agent mode names who starts the run");
-    const headless = voice(true);
-    assert.ok(headless.includes("melite_flow"), "headless owns the flow verb — its voice keeps it");
+    const compose = voice(false);
+    assert.ok(!compose.includes("melite_flow"), "compose mode must never name melite_flow — the contract bans it");
+    assert.ok(compose.includes("melite_construct"), "compose mode names the door it owns (construct/add_stage)");
+    assert.ok(/runs start at the user's Run press/.test(compose), "compose mode names who starts the run");
+    const delegated = voice(true);
+    assert.ok(delegated.includes("melite_flow"), "the delegated boot owns the flow verb — its voice keeps it");
   });
 
   it("T7 CURED (slice 5): a declared ARRAY lane is restored AT THE WRITE — the spell never reaches run admission as a string", async () => {
@@ -252,7 +253,7 @@ describe("THE VIBE SUITE BASELINE — the agent flow's acceptance harness (v0 pi
       params: { model: "minimax-h3", prompt: "a cat", ref_images: "$ref_images" },
       inputs: { ref_images: { initial: "ref_images" } },
       expect_rev: 7,
-    } as never, fakeExec(AbortSignal.timeout(5000))) as Record<string, unknown>;
+    } as never, fakeExec(AbortSignal.timeout(5000), { agent: { id: 'session-vibe-walk' } })) as Record<string, unknown>;
     const write = seen.find((r) => r.lane === "benchVerb" && r.args[1] === "add_stage");
     assert.ok(write, "the stage was written");
     const params = (write.args[2] as Record<string, unknown>)["params"] as Record<string, unknown>;
@@ -276,7 +277,7 @@ describe("THE VIBE SUITE BASELINE — the agent flow's acceptance harness (v0 pi
       verb: "add_stage", card: "h3-timeline",
       params: { model: "minimax-h3", prompt: "x" },
       inputs: { reference_images: { initial: "reference_images" } },
-    } as never, fakeExec(AbortSignal.timeout(5000))) as Record<string, unknown>;
+    } as never, fakeExec(AbortSignal.timeout(5000), { agent: { id: 'session-vibe-walk' } })) as Record<string, unknown>;
     assert.equal(out["ok"], false);
     assert.equal(out["error_kind"], "unknown-lane");
     assert.match(String(out["error"]), /"reference_images" is not a port of card "h3-timeline"/);
@@ -288,11 +289,14 @@ describe("THE VIBE SUITE BASELINE — the agent flow's acceptance harness (v0 pi
     assert.equal(seen.length, 0, "a refused lane never reaches the bench");
   });
 
-  it("T7 CURED (slice 5): the three landing states are distinct — compiling, landed-but-refused (+ remedy), unproven", async () => {
+  it("T7 CURED (slice 5, re-stated by the no-mint-on-refusal law): the three landing states are distinct — compiling, refused-before-mint (+ remedy, NOTHING landed), unproven", async () => {
     // The transcript's most confusing state: the write LANDED and the
     // compile refused, but the answer said only "rev N". The door now
     // names all three states, and a card-schema violation rides a
     // structured remedy the agent can act on without decoding prose.
+    // The no-mint-on-refusal cure (F14/F26, 2026-10-31) moved the
+    // refusal BEFORE the write: a refused compose lands nothing — the
+    // remedy is a closable VALUE, never a landed rev.
     const refusedSeen: Array<{ lane: string; args: unknown[] }> = [];
     const refused = fakeEstateRecorded(refusedSeen, (lane) => {
       if (lane === "benchVerb") return { rev: 8, stage: "s_0" };
@@ -305,16 +309,18 @@ describe("THE VIBE SUITE BASELINE — the agent flow's acceptance harness (v0 pi
     const landed = await meliteConstruct(refused.estate).execute({
       verb: "add_stage", card: "h3-timeline",
       params: { model: "minimax-h3", prompt: "x", steps: 35 }, expect_rev: 7,
-    } as never, fakeExec(AbortSignal.timeout(5000))) as Record<string, unknown>;
-    assert.equal(landed["landing"], "landed_not_compiling", "the stage is ON the bench — the refusal is a closable value");
+    } as never, fakeExec(AbortSignal.timeout(5000), { agent: { id: 'session-vibe-walk' } })) as Record<string, unknown>;
+    assert.equal(landed["landing"], undefined, "a refusal lands NOTHING — no-mint-on-refusal");
+    assert.equal(landed["error_kind"], "compile-refused", "the refusal is a closable value, never a landed rev");
     assert.deepEqual(landed["remedy"], { public_param: "steps", current_value: 35, allowed_values: [4, 30] }, "the cure is data, not prose");
+    assert.equal(refusedSeen.filter((c) => c.lane === "benchVerb").length, 0, "no mint on refusal — the write lane is never called");
     // the unproven state: the seat failed after the call left
     const broken = fakeEstateRecorded([], (lane) => {
       throw new Error("socket closed after send");
     });
     const unproven = await meliteConstruct(broken.estate).execute({
       verb: "patch", stage: "s1", params: { p: 2 }, expect_rev: 6,
-    } as never, fakeExec(AbortSignal.timeout(5000))) as Record<string, unknown>;
+    } as never, fakeExec(AbortSignal.timeout(5000), { agent: { id: 'session-vibe-walk' } })) as Record<string, unknown>;
     assert.equal(unproven["landing"], "ambiguous_no_write", "a transport failure never implies a clean no-op");
   });
 });
@@ -359,7 +365,7 @@ describe("THE CARD-OWNED CRAFT (slice 6) — the write door restores the look's 
       verb: "add_stage", card: "image-gen",
       params: { model: animaValue, prompt: "1girl,long_hair,,smile" },
       expect_rev: 2,
-    } as never, fakeExec(AbortSignal.timeout(5000))) as Record<string, unknown>;
+    } as never, fakeExec(AbortSignal.timeout(5000), { agent: { id: 'session-vibe-walk' } })) as Record<string, unknown>;
     const write = seen.find((r) => r.lane === "benchVerb" && r.args[1] === "add_stage");
     assert.ok(write, "the stage was written");
     const stored = (write.args[2] as Record<string, unknown>)["params"] as Record<string, unknown>;
@@ -486,7 +492,7 @@ describe("THE LIVE WALK — the measured door cost of the ideal path (the ratche
     const load = meliteLoad(estate, {});
     const construct = meliteConstruct(estate);
     const skill = skillRead(estate);
-    const exec = fakeExec(AbortSignal.timeout(5000));
+    const exec = fakeExec(AbortSignal.timeout(5000), { agent: { id: 'session-vibe-walk' } });
     const render = (tool: typeof load, args: unknown, value: unknown): string =>
       (tool.output.render(args, value) as Array<{ text?: string }>).map((p) => p?.text ?? "").join("\n");
 

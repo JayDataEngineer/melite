@@ -121,7 +121,13 @@ describe("a wire survives the whole chain: door → store → compose → merge"
       names,
     );
     expect((plan.workflow["s_1::n"] as Record<string, unknown>)["inputs"]).toEqual({
-      image: ["s_0::save", 0],
+      // F41 pass 2.5: the seam's eviction boundary mediates the wire —
+      // output-reachable by construction (B consumes its through).
+      image: ["__unload$0", 0],
+    });
+    expect((plan.workflow["__unload$0"] as Record<string, unknown>)["inputs"]).toEqual({
+      through: ["s_0::save", 0],
+      unload_models: false,
     });
   });
 
@@ -153,7 +159,13 @@ describe("a wire survives the whole chain: door → store → compose → merge"
       inputNamesOf(stages),
     );
     expect((plan.workflow["s_0::n"] as Record<string, unknown>)["inputs"]).toEqual({
-      image: ["s_1::save", 0],
+      // the same seam law on the backward arrangement: one boundary,
+      // its through aimed at the producing stage's Save
+      image: ["__unload$0", 0],
+    });
+    expect((plan.workflow["__unload$0"] as Record<string, unknown>)["inputs"]).toEqual({
+      through: ["s_1::save", 0],
+      unload_models: false,
     });
   });
 

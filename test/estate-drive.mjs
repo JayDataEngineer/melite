@@ -24,7 +24,7 @@
 // Exit 0 = the drive passed (run_id + artifact observed).
 
 import { spawn } from "node:child_process";
-import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -41,6 +41,23 @@ writeFileSync(
   }),
 );
 
+// ── the delegation preflight (HEADLESS IS DSH'S, 2026-11-14): this
+// drive presses melite_flow, and the run doors seat ONLY on the
+// home's persisted /melite-runs record. Refuse loud naming the path
+// and the cure — never steal the operator's toggle by writing it here.
+{
+  const home = process.env.DSH_HOME ?? join(process.env.HOME ?? "", ".dsh");
+  const record = join(home, "melite-runs-state.json");
+  let delegated = false;
+  try { delegated = JSON.parse(readFileSync(record, "utf8")).delegated === true } catch { /* absent or corrupt reads as OFF */ }
+  if (!delegated) {
+    console.error("estate-drive: FAIL — the run doors are not delegated: " + record
+      + " does not read {\"delegated\":true}. Cure: /melite-runs on in a lane, or write {\"delegated\":true} to that record (flip it back off afterwards).");
+    process.exit(1);
+  }
+  console.log("estate-drive: delegation record ON — the run doors will seat at boot");
+}
+
 const child = spawn("dsh", ["--profile", "estate"], {
   stdio: ["pipe", "pipe", "pipe"],
   // NEUTRAL CWD (2026-09-12 debt fix): the child boots in the STATE
@@ -55,10 +72,8 @@ const child = spawn("dsh", ["--profile", "estate"], {
   env: {
     ...process.env,
     MELITE_STATE_ROOT: STATE_ROOT,
-    // The documented interface selector (melite-tools index.ts): the
-    // run doors (melite_flow, run_status) ride the HEADLESS interface
-    // — the agent-server mounts' selector, one env var, no config.
-    MELITE_HEADLESS: "1",
+    // the run doors seat from the home's persisted delegation record
+    // (the preflight above verified it ON) — no env spell exists.
   },
 });
 

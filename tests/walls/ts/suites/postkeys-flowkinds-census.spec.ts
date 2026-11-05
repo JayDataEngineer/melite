@@ -16,11 +16,13 @@
 //
 // THE ROSTER IS DERIVED twice over: the compose face is the SERVED
 // FormSpecDoc (formSpecArm — the real schema envelope, not a copy),
-// and the post-face law is the family's OWN declared sets
-// (@melite/models-h3/timelineContract — T4_ONLY_KEYS / FILM_ONLY_KEYS
-// / SECOND_PASS_KNOBS, imported verbatim). A post key the walk
-// refuses must be served by the face (the integrity arm) and must
-// resolve to a flow channel or to an EXPLICIT per-key judgment here —
+// and the post-face roster is the face's OWN `second_pass` group
+// (derived from the served extra.group, never a hand list) joined
+// with the family's FILM_ONLY_KEYS. Since the lane-law retirement
+// (2026-11-15) there is no per-lane dead-letter set: every post key
+// is lawful on every lane, so the census judges the CHANNEL, not the
+// lane. A post key must be served by the face (the integrity arm) and
+// must resolve to a flow channel or to an EXPLICIT per-key judgment here —
 // a key deliberately edgeless is judged per key, with the channel
 // that owns it named; the SD-5 sin (an exemption wearing a comment)
 // is refused by construction: the judgment table must cover EXACTLY
@@ -39,11 +41,7 @@ import { loadCardDefs } from "@melite/comfyui-cordis";
 import { CardRegistryService } from "../../../../packages/harness/estate-queue/src/cardsRegistry.ts";
 import type {} from "../../../../packages/harness/estate-queue/src/service.ts";
 import { seedFlowsSeat } from "../../../../packages/harness/estate-queue/src/flowsData.ts";
-import {
-  T4_ONLY_KEYS,
-  FILM_ONLY_KEYS,
-  SECOND_PASS_KNOBS,
-} from "@melite/models-h3/timelineContract";
+import { FILM_ONLY_KEYS } from "@melite/models-h3/timelineContract";
 import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import type { SchemaEnvelope, SchemaRef } from "@melite/contracts/formSpec";
 
@@ -78,14 +76,27 @@ async function composeFaceOf(card: string): Promise<string[] | null> {
   return Object.keys(root.dict);
 }
 
-/** THE POST-FACE LAW, DERIVED from the family's own module (never a
- *  hand list here): the family-conditional keys the walk refuses on a
- *  derived-t4r doc (T4_ONLY_KEYS), the film-only knob
- *  (FILM_ONLY_KEYS), and the master-gated nine (SECOND_PASS_KNOBS —
- *  a subset of T4_ONLY_KEYS, unioned for completeness). */
-const H3_POST_FACE: readonly string[] = [
-  ...new Set<string>([...T4_ONLY_KEYS, ...FILM_ONLY_KEYS, ...SECOND_PASS_KNOBS]),
-].sort();
+/** THE POST-FACE ROSTER, DERIVED from the SERVED face itself: every
+ *  schema field the card declares under the `second_pass` group (the
+ *  compose face's own grouping — masters, leaves and the refine
+ *  quartet), joined with the family's film-only set. A key that
+ *  leaves the group leaves the census; the aliases carry no group
+ *  and are judged by their own firing arms, never resurrected here. */
+async function postFaceOf(card: string): Promise<string[] | null> {
+  const doc = await formSpecArm(card);
+  if (doc === null) return null;
+  const env = doc.schema as SchemaEnvelope;
+  const root: SchemaRef | undefined = env.refs[env.uid];
+  if (root?.dict === undefined) return null;
+  const group = Object.entries(root.dict)
+    .filter(([, id]) => {
+      const ref = env.refs[id];
+      const extra = (ref?.meta?.["extra"] ?? {}) as Record<string, unknown>;
+      return extra["group"] === "second_pass";
+    })
+    .map(([k]) => k);
+  return [...new Set<string>([...group, ...FILM_ONLY_KEYS])].sort();
+}
 
 /** THE FLOW CHANNELS a card declares, derived: ports
  *  (flowKinds.inputs + legacyAliases) and admits (exact or
@@ -116,6 +127,14 @@ const EDGELESS_JUDGMENT: Record<string, { channel: string; why: string }> = {
     channel: "schema knob (the compose door + the flow lattice's cardGate ride the same schema walk)",
     why: "post-chain master — a scalar switch, never a media rail; the rail law seats image/file slots only (h3-timeline card.ts flowKinds)",
   },
+  upscale_route: {
+    channel: "schema knob (the route-master gate refuses it loud without its master — F44)",
+    why: "post-chain sub-gate — an enum choosing the second pass's upscale route, never a media rail; refuses unless second_pass_enabled=true",
+  },
+  upscale_model: {
+    channel: "schema knob (rides the route — the model choice for the route's upscale pass)",
+    why: "post-chain leaf — a scalar model choice, never a media rail; meaningless without upscale_route and its master",
+  },
   sharpen_enabled: {
     channel: "schema knob (per-call fold; the post chain's only door is the doc master)",
     why: "post-chain leaf — a scalar knob, never a media rail; the same walk admits it wherever the lane honors it",
@@ -140,10 +159,6 @@ const EDGELESS_JUDGMENT: Record<string, { channel: string; why: string }> = {
     channel: "schema knob (per-call fold)",
     why: "post-chain leaf — a bounded scalar, never a media rail",
   },
-  sharpen_switch: {
-    channel: "schema knob (retired alias — never rides the switch, ARM 32 of the value wall)",
-    why: "retired alias, judged dead by its own firing arm; an edge would resurrect it",
-  },
   interpolate_enabled: {
     channel: "schema knob (per-call fold; the post chain's only door is the doc master)",
     why: "post-chain leaf — a scalar switch, never a media rail",
@@ -155,10 +170,6 @@ const EDGELESS_JUDGMENT: Record<string, { channel: string; why: string }> = {
   interp_multiplier: {
     channel: "schema knob (per-call fold)",
     why: "post-chain leaf — a bounded scalar, never a media rail",
-  },
-  interp_switch: {
-    channel: "schema knob (retired alias — never rides the switch, ARM 23 of the value wall)",
-    why: "retired alias, judged dead by its own firing arm; an edge would resurrect it",
   },
   sr_switch: {
     channel: "schema knob (doc-level master)",
@@ -172,9 +183,26 @@ const EDGELESS_JUDGMENT: Record<string, { channel: string; why: string }> = {
     channel: "schema knob (doc-level)",
     why: "post-chain leaf — a resolution enum, never a media rail",
   },
-  attention_backend: {
-    channel: "schema knob (doc-level; T4_ONLY — the walk refuses it on a derived-t4r doc)",
-    why: "attention build enum — engine-build vocabulary, never a media rail",
+  // THE REFINE QUARTET (GAPS-17/F25 residual; the rider seats landed
+  // 4b8b73990 2026-10-18 + the denoise window 77ad9eee0 2026-10-20):
+  // the T3 refine rider's four seats, read only behind the
+  // second-pass master — lawful on every lane since the 2026-11-15
+  // chain hoist. Each is judged at the family plane — the seat named.
+  refine_lora: {
+    channel: "schema knob (group second_pass, visible_when second_pass_enabled=true; optionsFrom 'loras')",
+    why: "the T3 rider's instrument — a refiner ROW NAME from the served loras catalog, never a media rail; an unknown id refuses loud at resolveRefineSeat (h3 actions.ts; value-roundtrip ARM 4/5, the loras-served-band wall) and empty = no rider (the byte-stable plain pass)",
+  },
+  refine_strength: {
+    channel: "schema knob (group second_pass, visible_when second_pass_enabled=true; walk bounds [0,2])",
+    why: "the rider's weight-strength override on its OWN loader (the primary stack never changes), never a media rail; the stated value rides verbatim into the LTX stack_data, the unstated one rides the row's default_strength (h3 actions.ts resolveRefineSeat; value-roundtrip ARM 4/4b)",
+  },
+  refine_steps: {
+    channel: "schema knob (group second_pass, visible_when second_pass_enabled=true; walk bounds [1,10])",
+    why: "the rider's closing-pass step count, never a media rail; judged inside the named row's declared [steps_min, steps_max] at resolveRefineSeat — out-of-domain refuses loud (h3 actions.ts; the refine-seat-domain wall, value-roundtrip ARM 4), and a riderless stated count is a cross-gate leaf that never reaches the Stage-2 schedule (ARM 45)",
+  },
+  refine_denoise: {
+    channel: "schema knob (group second_pass, visible_when second_pass_enabled=true; walk bounds [0.05,1] default 0.35)",
+    why: "the refinement window — the shared Stage-2 denoise (the rider over the pass-1 latent; the latent-upscale handoff inside the LBH kernel), never a media rail; the [0.05,1] band refuses loud at resolveStage2Denoise (h3 actions.ts; ARM 4f parity at the family plane) and denoise 1 is refused on the handoff arm by the sigmas law (ARM 46) — 1.0 stays the taomate full-denoise mechanic off-arm",
   },
   duck_depth_db: {
     channel: "schema knob (film-only — read solely by computeFilmMix inside the multi-window boundary)",
@@ -191,32 +219,12 @@ const EDGELESS_JUDGMENT: Record<string, { channel: string; why: string }> = {
  *  a judged port that gains a seat contradicts its judgment and
  *  reds until the table re-judges. Key = "<flow>/<stage>:<port>". */
 const ROW_PORT_JUDGMENT: Record<string, { lane: string; door: string }> = {
-  "audio-native-tts/tts:ref_audio": {
-    lane: "the phase-1b speech gate — text in, wav out (the row's own description)",
-    door: "the voice-reference rail rides the {model:} door (GET /v1/form-spec?model=qwen3-tts), which serves the card's full face",
-  },
-  "body-to-somax/rig:donor_glb": {
-    lane: "BODY_TO_SOMAX's chained auto-rig lane (mesh_glb seated from the lift)",
-    door: "the donor-retarget rail rides the {model:} door (the rig card's full face)",
-  },
-  "body-to-somax/rig:creature_glb": {
-    lane: "BODY_TO_SOMAX's chained auto-rig lane (mesh_glb seated from the lift)",
-    door: "the creature-transfer rail rides the {model:} door (the rig card's full face)",
-  },
-  "character-factory/lift:rigged_glb": {
-    lane: "the photo→mesh lift (input_image seated; the stage PRODUCES the rigged mesh)",
-    door: "the re-drive-with-existing-mesh rail rides the {model:} door (the img-to-mesh card's full face)",
-  },
-  "character-factory/lift:target_glb": {
-    lane: "the photo→mesh lift (input_image seated; the stage PRODUCES the rigged mesh)",
-    door: "the re-drive-with-target rail rides the {model:} door (the img-to-mesh card's full face)",
-  },
   "character-factory/rig:donor_glb": {
-    lane: "the chain's auto-rig stage (mesh_glb seated from the lift stage)",
+    lane: "the chain's auto-rig stage (mesh_glb seated from the mesh initial — the lift left the row 2026-11-01, the rig-hop dead ref)",
     door: "the donor-retarget rail rides the {model:} door (the rig card's full face)",
   },
   "character-factory/rig:creature_glb": {
-    lane: "the chain's auto-rig stage (mesh_glb seated from the lift stage)",
+    lane: "the chain's auto-rig stage (mesh_glb seated from the mesh initial — the lift left the row 2026-11-01, the rig-hop dead ref)",
     door: "the creature-transfer rail rides the {model:} door (the rig card's full face)",
   },
   "character-factory/motion:motion_npz": {
@@ -231,31 +239,6 @@ const ROW_PORT_JUDGMENT: Record<string, { lane: string; door: string }> = {
     lane: "the forge's photo→mesh lift (input_image seated; the stage PRODUCES the rigged mesh)",
     door: "the re-drive-with-target rail rides the {model:} door (the img-to-mesh card's full face)",
   },
-  // THE EXTEND-VIDEO CURATED LANE (2026-11-12): the row drives ONE
-  // arm — the fresh continuation — whose anchor (the prior clip's
-  // last frame) and references (the whole clip on both buses) are
-  // taken IN-GRAPH off the seated source_clip, never wired rails.
-  // Every media rail the card declares stays the {model:} door's.
-  "extend-video/extend:image": {
-    lane: "the extend's fresh-continuation lane (source_clip seated; the anchor is the prior clip's own tail, taken in-graph)",
-    door: "the guide-image rail rides the {model:} door (the h3-timeline card's full face)",
-  },
-  "extend-video/extend:last_frame": {
-    lane: "the extend's fresh-continuation lane (the last frame IS the in-graph anchor — ImageFromBatch -1 off source_clip, never a wired rail)",
-    door: "the FL2VA end-anchor rail rides the {model:} door (the h3-timeline card's full face)",
-  },
-  "extend-video/extend:ref_images": {
-    lane: "the extend's fresh-continuation lane (the pixel anchor is the prior's own tail frame, wired in-graph off source_clip)",
-    door: "the image-reference bus rides the {model:} door (the h3-timeline card's full face)",
-  },
-  "extend-video/extend:ref_videos": {
-    lane: "the extend's fresh-continuation lane (the motion identity is the whole prior clip, wired in-graph off source_clip)",
-    door: "the video-reference bus rides the {model:} door (the h3-timeline card's full face)",
-  },
-  "extend-video/extend:ref_audios": {
-    lane: "the extend's fresh-continuation lane (the extension generates fresh audio — the muted reference is the chain's own, never a wired rail)",
-    door: "the audio-reference bus rides the {model:} door (the h3-timeline card's full face)",
-  },
   // THE RESHOOT RETIREMENT (§8 of the multiwindow unification audit,
   //  2026-11-12): the re-shoot clip rode the flowKinds rail as
   //  reshoot_clip; the fourth-mod-bag law seats it on the reshoot mod
@@ -267,23 +250,27 @@ const ROW_PORT_JUDGMENT: Record<string, { lane: string; door: string }> = {
 // ── THE CENSUS ──────────────────────────────────────────────────────
 describe("THE CARD↔FLOWS CROSS-PLANE CENSUS (SD-4 estate-wide — every compose face resolves to a flow channel or a judged edgeless)", () => {
   it("the post-face law is served by the compose face it governs (the derivation's own integrity gate)", async () => {
-    // The walk refuses T4_ONLY members on PRESENCE (schema.ts's gate);
-    // the face must therefore SERVE every one of them — a post key the
+    // The roster is the SERVED group's own keys plus the film-only
+    // set; the face must serve every one of them — a post key the
     // face does not serve is a ghost law (the census would judge
-    // nothing). FILM_ONLY_KEYS rides the same face. The roster and the
-    // face are both derived: this arm is the census's own derivation
-    // gate, and it reds if either side drifts.
+    // nothing). The roster and the face are both derived: this arm is
+    // the census's own derivation gate, and it reds if either side
+    // drifts (a group key the envelope drops, or a film-only key the
+    // face never declares).
     const face = await composeFaceOf("h3-timeline");
     expect(face, "the h3-timeline card serves a form doc (the census's roster seat)").not.toBeNull();
-    const missing = H3_POST_FACE.filter((k) => !face!.includes(k));
+    const roster = (await postFaceOf("h3-timeline"))!;
+    expect(roster.length, "the served post-face roster is non-empty (the census has a roster)").toBeGreaterThan(0);
+    const missing = roster.filter((k) => !face!.includes(k));
     expect(
       missing,
       `POST-FACE GHOST KEYS — the family's declared post law names keys the served compose face does not serve ` +
       `(the walk refuses presence; the face must serve what the walk refuses, or the law judges a ghost): ${JSON.stringify(missing)}`,
     ).toEqual([]);
-    // The roster is non-empty — an emptied declared law would silence
-    // the whole census (the vacuous-wall kill).
-    expect(H3_POST_FACE.length, "the declared post-face law is non-empty (the census has a roster)").toBeGreaterThan(0);
+    // THE RETIREMENT'S OWN RECEIPT: the group carries the masters and
+    // the leaves — a roster that lost its master would silently shrink
+    // the census, so the master is pinned by name.
+    expect(roster, "the roster carries the post master (the group derivation is live)").toContain("second_pass_enabled");
   });
 
   it("every served post-face key resolves to a flow channel or a per-key edgeless judgment (SD-4 — the red that listed the unslotted keys)", async () => {
@@ -302,11 +289,12 @@ describe("THE CARD↔FLOWS CROSS-PLANE CENSUS (SD-4 estate-wide — every compos
     );
     const face = await composeFaceOf("h3-timeline");
     expect(face).not.toBeNull();
-    const unjudged = H3_POST_FACE.filter((k) => EDGELESS_JUDGMENT[k] === undefined);
-    const contradicted = H3_POST_FACE.filter(
+    const roster = (await postFaceOf("h3-timeline"))!;
+    const unjudged = roster.filter((k) => EDGELESS_JUDGMENT[k] === undefined);
+    const contradicted = roster.filter(
       (k) => EDGELESS_JUDGMENT[k] !== undefined && (ports.includes(k) || admitsKey(admits, k)),
     );
-    const unslotted = H3_POST_FACE.filter(
+    const unslotted = roster.filter(
       (k) => !ports.includes(k) && !admitsKey(admits, k),
     );
     // THE SD-4 RED, KEPT HONEST: the assertion names every post key

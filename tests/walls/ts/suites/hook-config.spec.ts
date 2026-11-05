@@ -84,7 +84,14 @@ describe('THE PUSH-SET SENTRY (the loud stand-down)', () => {
 // only where its config file lives, so the scratch tree's jobs
 // never fire on real pushes here.
 
-const LEFTHOOK_BIN = join(REPO, 'node_modules', '.bin', 'lefthook')
+// THE BIN IS PER-PLATFORM (class B R5, 2026-10-31): windows pnpm
+// installs a lefthook.cmd shim — the extensionless sh shim cannot
+// exec there (the install tool seats the same switch:
+// tools/install-lefthook.mjs). The .cmd rides cmd.exe (Node refuses
+// to exec a .cmd without a shell — the shell carrier at the spawn
+// below); the stdin feed carries no cmd metacharacters (ref paths +
+// 40-hex shas) and the probe dirs are mkdtemp paths without spaces.
+const LEFTHOOK_BIN = join(REPO, 'node_modules', '.bin', process.platform === 'win32' ? 'lefthook.cmd' : 'lefthook')
 
 interface ProbeResult {
   ranSentryStyle: boolean
@@ -140,7 +147,7 @@ function runProbe(matrix: ProbeMatrix): ProbeResult {
     }
     try {
       execFileSync(LEFTHOOK_BIN, ['run', 'pre-push', 'origin', remote],
-        { cwd: dir, stdio: ['pipe', 'pipe', 'pipe'], input: stdinLine })
+        { cwd: dir, stdio: ['pipe', 'pipe', 'pipe'], input: stdinLine, shell: process.platform === 'win32' })
     } catch {
       // exit status is the jobs' verdict, not the probe's — the LOG
       // judges, exactly like the hook summary does.
@@ -164,6 +171,38 @@ function runProbe(matrix: ProbeMatrix): ProbeResult {
     rmSync(dir, { recursive: true, force: true })
   }
 }
+
+// ── THE PUSH-WIRE (the 2026-11-15 disarm cure) ────────────────────
+// core.hooksPath=.githooks (the serve-freshness commit stage) also
+// unlinked git from lefthook's ENTIRE pre-push set: no pre-push in
+// .githooks meant the profanity gate, walls, battery, and sentry
+// never fired on any push after it — a release of 293 commits rode
+// the silence. The wire is .githooks/pre-push delegating to
+// `lefthook run pre-push`. These arms red the moment the wire is
+// cut again, from EITHER side: the delegate file gone, the
+// delegation text gone, or a silent-skip shim replacing the exec.
+
+function hooksDir(): string {
+  const configured = execFileSync('git', ['config', 'core.hooksPath'], { cwd: REPO, encoding: 'utf8' }).trim()
+  return configured ? resolve(REPO, configured) : join(REPO, '.git', 'hooks')
+}
+
+describe('THE PUSH-WIRE (the core.hooksPath disarm cure, 2026-11-15)', () => {
+  it('whatever owns core.hooksPath carries a pre-push file — a hooks path with no pre-push is the disarm', () => {
+    // The toggle: delete .githooks/pre-push (or the .git/hooks one)
+    // and this arm reds — the exact shape that let the release ride.
+    expect(existsSync(join(hooksDir(), 'pre-push')),
+      `no pre-push under ${hooksDir()} — every push stage (profanity, walls, battery) is disarmed`).toBe(true)
+  })
+
+  it('the pre-push file delegates to lefthook run pre-push — it must be the wire, not a stub', () => {
+    const shim = readFileSync(join(hooksDir(), 'pre-push'), 'utf8')
+    expect(shim, 'the delegate execs the lefthook pre-push job set').toContain('lefthook')
+    expect(shim).toContain('run pre-push')
+    expect(shim, 'no silent-pass stub: an exit 0 before the exec is the disarm in miniature').not.toMatch(/exit\s+0(?![\s\S]*lefthook)/)
+    expect(shim, 'a missing lefthook binary refuses the push aloud, never a silent skip').toMatch(/exit\s+1/)
+  })
+})
 
 describe('THE EMPTY-PUSH-SET PROBATION (lefthook 2.1.12, 2026-10-27)', () => {
   it('a set-carrying push runs every job (the code-carrying shape is always gated)', () => {

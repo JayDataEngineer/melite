@@ -18,7 +18,8 @@ import timerPlugin from '@deepseek-ai/cordis-plugin-timer';
 // pieces imported from the packages, rows assembled inline. No
 // re-exporting wrapper package (the estate never re-packages DSH
 // plugin pieces as its own surface).
-import draftsPlugin from '@melite/estate-drafts';
+import draftsPlugin, { openDraftsDomain } from '@melite/estate-drafts';
+import type { DraftRecord } from "../../../../packages/estate/drafts/src/spec.js";
 import Storage from '@deepseek-ai/dsh-storage';
 import {
   apply as jsonApply, Config as JsonConfig, inject as jsonInject, name as jsonName,
@@ -47,22 +48,31 @@ interface Booted {
 }
 
 
-function doc(id: string): string {
-  return JSON.stringify({
+function doc(id: string): DraftRecord["doc"] {
+  return {
     draft_id: id,
     status: "draft",
     createdAt: 1700000000000,
     completedAt: null,
     intent: "test " + id,
     stages: [{ id: "s_0", inputs: [""], provenance: "agent" }],
+  };
+}
+
+/** Land one draft row straight in the domain (the pre-domain
+ *  drafts-tree import is retired, 2026-11-01 — the rig seeds the
+ *  same door the run submit gate reads). */
+async function seedDraft(ctx: Context, docBody: DraftRecord["doc"]): Promise<void> {
+  const drafts = await openDraftsDomain(ctx);
+  await drafts.table("docs").put(docBody.draft_id, {
+    updated_at: 1_700_000_000,
+    doc: docBody,
   });
 }
 
 async function boot(withDraft = true): Promise<Booted> {
   const root = mkdtempSync(join(tmpdir(), "runs-remote-"));
   const stateRoot = join(root, "state");
-  mkdirSync(join(stateRoot, "drafts"), { recursive: true });
-  if (withDraft) writeFileSync(join(stateRoot, "drafts", "d_ok.json"), doc("d_ok"));
   const ctx = new Context();
   // cross-copy plugin shapes ride the honest Plugin cast — never
   // poisons the ctx.plugin overload into a required Config.
@@ -80,11 +90,13 @@ async function boot(withDraft = true): Promise<Booted> {
     { name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as unknown as Plugin,
     { backend: "json" },
   );
-  // J12: the storage root rides the plugin config (the retired seam)
-  await ctx.plugin(draftsPlugin as unknown as Plugin, { storageRoot: join(stateRoot, "storage") });
+  // the drafts row rides the composition site's facility (the json
+  // backend's own root names the unit tree — no second root here)
+  await ctx.plugin(draftsPlugin as unknown as Plugin);
   await ctx.plugin(cardRegistryProvider as unknown as Plugin);
   await ctx.plugin(runsRegistryPlugin as unknown as Plugin);
   await ctx.plugin(runsRemotePlugin as unknown as Plugin);
+  if (withDraft) await seedDraft(ctx, doc("d_ok"));
   const runs = (ctx as unknown as {
     runs: RunsRuntimeService;
     runsRemote: RunsRemoteService;
@@ -104,7 +116,10 @@ function bootInsertRun(ctx: Context, row: unknown): void {
 
 /** One inline flow body (single comfyui stage) — pure JSON, so the
  *  adapter's RunStartDoc face accepts it verbatim (the seat's own
- *  start takes unknown and refuses bad envelopes at runtime). */
+ *  start takes unknown and refuses bad envelopes at runtime). The
+ *  stage names its own channels (the ONE TABLE, flows-producer-
+ *  agreement: the engine registry names engines, never outputs — an
+ *  undeclared stage refuses at the door). */
 function inlineBody(draftId: string): RunStartDoc {
   return {
     draft_id: draftId,
@@ -112,7 +127,7 @@ function inlineBody(draftId: string): RunStartDoc {
     flow_inline: {
       id: "f_test",
       stages: [
-        { id: "s_0", engine: "comfyui", params: { workflow: { "1": { class_type: "KSampler" } } } },
+        { id: "s_0", engine: "comfyui", outputs: { out: "image" }, params: { workflow: { "1": { class_type: "KSampler" } } } },
       ],
     },
   };
@@ -521,7 +536,7 @@ test("runs/list — the restore-port envelope: media-first sort, skip laws, trun
     JSON.stringify({ status: "completed", pipeline: "_secret", seed: 0, created_at: 1700000200 }),
   );
 
-  const env = await runs.list("200", sig, true);
+  const env = await runs.list("200", sig);
   // count keeps ALL FOUR (incl. the skipped _-pipeline run).
   assert.equal(env.count, 4);
   // media-first: run-media leads; hidden run absent (skipped).
@@ -557,17 +572,17 @@ test("runs/list — the restore-port envelope: media-first sort, skip laws, trun
 
   // limit quirks: "1_0" parses (py int()); junk refuses with the
   // door's text as the runs face's invalid-request.
-  const env10 = await runs.list("1_0", sig, true);
+  const env10 = await runs.list("1_0", sig);
   assert.equal(env10.count, 4);
   await assert.rejects(
-    () => runs.list("x", sig, true),
+    () => runs.list("x", sig),
     (e: unknown): boolean => {
       const re = (e as { code?: string }).code;
       return re === "runs/invalid-request";
     },
   );
   try {
-    await runs.list("x", sig, true);
+    await runs.list("x", sig);
     assert.fail("unreachable");
   } catch (e) {
     assert.equal(
@@ -612,7 +627,7 @@ test("runs/validate — the pure compile pipeline, door-verbatim voices", async 
         description: "",
         stages: [
           { id: "s0", engine: "comfyui", params: { workflow: "w" }, outputs: { default: "image" } },
-          { id: "s1", engine: "comfyui", params: {}, inputs: { default: { stage: "s0", output: "default" } }, expected: { default: "image" } },
+          { id: "s1", engine: "comfyui", params: {}, outputs: { default: "image" }, inputs: { default: { stage: "s0", output: "default" } }, expected: { default: "image" } },
         ],
       },
     },
@@ -630,15 +645,17 @@ test("runs/validate — the pure compile pipeline, door-verbatim voices", async 
   // 2. a wire refusal: edge into a stage that lacks the input —
   //    runs/flow-compile, the door's flow.py voice, batch rows.
   try {
-    // s0 rides the engine default outputs (default:image) — an edge
-    // naming an UNDECLARED output ("nothere") cannot resolve.
+    // s0 declares its outputs (default:image — the ONE TABLE; the
+    // retired engine-default fill no longer exists) — an edge naming
+    // an UNDECLARED output ("nothere") cannot resolve. s1 names its
+    // own produced channel, so the wire judge is what fires here.
     await runs.validate(
       {
         flow_inline: {
           id: "bad_wire",
           stages: [
             { id: "s0", engine: "comfyui", params: {}, outputs: { default: "image" } },
-            { id: "s1", engine: "comfyui", params: {}, inputs: { frame: { stage: "s0", output: "nothere" } }, expected: { frame: "image" } },
+            { id: "s1", engine: "comfyui", params: {}, outputs: { frame: "image" }, inputs: { frame: { stage: "s0", output: "nothere" } }, expected: { frame: "image" } },
           ],
         },
       },
@@ -676,6 +693,7 @@ test("runs/validate — the pure compile pipeline, door-verbatim voices", async 
           {
             id: "s0",
             engine: "comfyui",
+            outputs: { out: "image" },
             params: { workflow: { "1": { class_type: "KSampler" } } },
           },
         ],
@@ -693,6 +711,7 @@ test("runs/validate — the pure compile pipeline, door-verbatim voices", async 
             {
               id: "s0",
               engine: "comfyui",
+              outputs: { out: "image" },
               params: { workflow: { "1": { class_type: "NoSuchNodeEver" } } },
             },
           ],
@@ -714,7 +733,7 @@ test("runs/validate — the pure compile pipeline, door-verbatim voices", async 
   const r = (await request(
     "POST",
     "/v1/flows/validate",
-    { flow_inline: { id: "c", stages: [{ id: "s0", engine: "comfyui", params: {} }] } },
+    { flow_inline: { id: "c", stages: [{ id: "s0", engine: "comfyui", outputs: { out: "image" }, params: {} }] } },
     sig,
     20000,
   )) as Record<string, unknown>;
@@ -865,16 +884,16 @@ test("W9b THE PRESS NAMES ITS ROW (the F21 burn, 2026-10-30): a single-card pres
   // press names the row it came from (`bench_stage_id`, door
   // vocabulary), the arm judges membership against the draft, and the
   // digest speaks the draft's namespace.
-  const { runs, fiber, root } = await boot();
+  const { ctx, runs, fiber, root } = await boot();
   const sig = new AbortController().signal;
-  writeFileSync(join(root, "drafts", "d_multi.json"), JSON.stringify({
+  await seedDraft(ctx, {
     draft_id: "d_multi",
     status: "draft",
     createdAt: 1700000000000,
     completedAt: null,
     intent: "two-stage bench",
     stages: [{ id: "s_0", inputs: [""], provenance: "agent" }, { id: "s_1", inputs: [""], provenance: "agent" }],
-  }));
+  });
   const started = await runs.start(
     { model: "krea-2", test: true, draft_id: "d_multi", bench_stage_id: "s_1", params: { prompt: "a red boat" } },
     sig,
@@ -1069,9 +1088,11 @@ test("the compile-time initial gate — both {flow:} doors refuse before registr
   // the LIST for the refused path — passed even when start()
   // registered the run BEFORE the gate refused (both refused arms
   // stayed red-correct and the arm stayed green). The refused doc
-  // carries test:true, and this wall's runs land under
-  // test-output/ (which list() never scans), so the honest check
-  // reads BOTH output roots on disk.
+  // carries test:true, and REGISTERED test rows land under
+  // test-output/ too — the list scans BOTH seats since the
+  // visible-bench flip (operator ruling 2026-11-14, item (b)), so
+  // the honest check reads BOTH output roots on disk: a registered
+  // run would list, a refusal registers none.
   const { readdirSync: rd, existsSync: ex } = await import("node:fs");
   const runRoots = [join(booted.root, "output"), join(booted.root, "test-output")];
   const registered = runRoots.flatMap((r) => (ex(r) ? rd(r) : []))
@@ -1139,11 +1160,15 @@ test("the remote adapter speaks every registry arm (start/status/list/stop/valid
   assert.ok(seen !== undefined && terminal.has(seen),
     `the run reached a TERMINAL status (the vocabulary's own set), not a transient reading (saw ${String(seen)})`);
   // list: the raw-limit envelope rides the adapter (py int()
-  // semantics). The queued run carries test: true — the door's skip
-  // law hides it, so the envelope serves 0.
+  // semantics). THE VISIBLE-BENCH LAW (operator ruling 2026-11-14,
+  // item (b)): the queued run carries test: true and the scan
+  // covers BOTH seats — the envelope serves 1, stamped test:true
+  // (the skip law it replaced hid it: count 0, runs []).
   const env = await adapter.remoteExportList("10", sig);
-  assert.equal(env.count, 0);
-  assert.equal(env.runs.length, 0);
+  assert.equal(env.count, 1);
+  assert.equal(env.runs.length, 1);
+  assert.equal(env.runs[0]!["run_id"], receipt.run_id);
+  assert.equal(env.runs[0]!["test"], true);
   // stop: refuses LOUD (coverage of the arm, cards-run-row-truth) —
   // the run already settled FAILED; the adapter's RemoteError names
   // the wire code and the true state, never "stopping", never a
@@ -1165,7 +1190,7 @@ test("the remote adapter speaks every registry arm (start/status/list/stop/valid
         description: "",
         stages: [
           { id: "s0", engine: "comfyui", params: { workflow: "w" }, outputs: { default: "image" } },
-          { id: "s1", engine: "comfyui", params: {}, inputs: { default: { stage: "s0", output: "default" } }, expected: { default: "image" } },
+          { id: "s1", engine: "comfyui", params: {}, outputs: { default: "image" }, inputs: { default: { stage: "s0", output: "default" } }, expected: { default: "image" } },
         ],
       },
     },
@@ -1190,7 +1215,7 @@ test("the remote adapter speaks every registry arm (start/status/list/stop/valid
 // WIRED bench (the only bench shape that takes the composed-run
 // path), through the real start door, and the composition must land.
 test("the whole-bench run composes every card stage (the row's own coordinates never ride a card)", { timeout: 60_000 }, async () => {
-  const { runs, fiber, root } = await boot();
+  const { ctx, runs, fiber } = await boot();
   const sig = new AbortController().signal;
   // a bench with a cross-stage wire: s_1 takes s_0's image. The
   // wire is what routes the door through composeBenchStages — the
@@ -1211,9 +1236,7 @@ test("the whole-bench run composes every card stage (the row's own coordinates n
       },
     ],
   };
-  // J12: the state root is the booted manifest (never an env read)
-  const stateRoot = root;
-  writeFileSync(join(stateRoot, "drafts", "d_ok.json"), JSON.stringify(bench));
+  await seedDraft(ctx, bench);
   let refusal = "";
   let runId: string | null = null;
   try {
@@ -1340,7 +1363,7 @@ test("a bench-composed run carries its OWN snapshot (restore never falls back to
   // and the bench-run door passed NEITHER — so Run ALL registered a
   // run whose "restore the workflow that made this" re-read the
   // mutable bench draft, which has moved on by then.
-  const { runs, fiber, root } = await boot();
+  const { ctx, runs, fiber, root } = await boot();
   const sig = new AbortController().signal;
   const bench = {
     draft_id: "d_ok",
@@ -1353,9 +1376,7 @@ test("a bench-composed run carries its OWN snapshot (restore never falls back to
       { id: "s_1", card: "image-gen", params: { model: "krea-2", prompt: "closer" }, inputs: { image1: { stage: "s_0", output: "default" } } },
     ],
   };
-  // J12: the state root is the booted manifest (never an env read)
-  const stateRoot = root;
-  writeFileSync(join(stateRoot, "drafts", "d_ok.json"), JSON.stringify(bench));
+  await seedDraft(ctx, bench);
   let runId: string | null = null;
   try {
     // the draft door (the bench run's own press — the one-press

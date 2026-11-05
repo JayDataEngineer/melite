@@ -18,7 +18,7 @@
 //   live in dev_docs/audits/testing/2026-10-18-render-vs-boot.md
 //   §2b); the served graph is the only witness that cannot lie.
 //
-// - B0 (headless/estate): `--dump-config` exits 0 and its stderr
+// - B0 (estate): `--dump-config` exits 0 and its stderr
 //   EQUALS the pinned benign warning set — bundle-resolution and
 //   patch drift on the non-web mounts, deterministic and keyless.
 //
@@ -353,10 +353,10 @@ boot("the rendered lane seats its brain and serves the operator's faces (runs, c
 
 // THE DUMP PINS (B0): exit 0 and stderr EQUALS the benign set. The
 // three `patch: entry not found` warnings are the renderer's own
-// disables naming rows only WEB bundles contribute (the headless
-// and estate mounts disable infer-card-view / ray-card-deck /
+// disables naming rows only WEB bundles contribute (the estate
+// mount disables infer-card-view / ray-card-deck /
 // infer-gallery by id; the rows land when card-view/deck/gallery
-// mount, which server profiles never do). Pinning the exact set
+// mount, which the server profile never does). Pinning the exact set
 // makes ANY change — a fourth warning, a renamed row, a silent
 // renderer — fail here instead of on an operator's boot.
 const BENIGN: readonly string[] = [
@@ -364,7 +364,7 @@ const BENIGN: readonly string[] = [
   'patch: entry "ray-card-deck" not found',
   'patch: entry "infer-gallery" not found',
 ];
-for (const profile of ["headless", "estate"] as const) {
+for (const profile of ["estate"] as const) {
   dump(`the ${profile} profile resolves its full composition at dump (exit 0, the pinned benign stderr)`, () => {
     const home: string = mkdtempSync(join(tmpdir(), "provisioner-dump-"));
     try {

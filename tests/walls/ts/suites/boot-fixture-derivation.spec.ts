@@ -29,6 +29,19 @@
 //               composes, receipted with a justification in
 //               object_info.boot.bootstrap.json) — an unreceipted
 //               extra reds naming the corpse.
+//   SANITATION  the census is a live machine capture; the double it
+//               feeds is a tracked file (the exposure-audit cure,
+//               2026-11-15). Three byte-level arms: no combo roster
+//               rides a media filename (a machine disk listing is
+//               boot state, never schema truth); every upload-marker
+//               combo (image/audio/video — the disk-enumeration flag)
+//               emits an empty roster (the sanitized-boot premise:
+//               an EMPTY media-input tree); every non-melite
+//               custom-node row serves no option bytes and no tooltip
+//               prose (upstream pack content never re-enters the
+//               tracked tree — the JJC_JoyCaption extra_option lists
+//               the audit caught). The regen's sanitize step is the
+//               mechanism; these arms are its enforcement.
 //
 // The regen leg is scripts/regen-node-vocab.mjs --boot (census input
 // in, fixture + receipt out; --live harvests the engine first). The
@@ -154,6 +167,136 @@ describe("THE BOOT FIXTURE, DERIVED (E8: the double is a census-derived artifact
     assert.equal(
       Object.keys(fixture).length, receipt.derivation.fixture_class_count,
       "the fixture's class count disagrees with its own receipt — hand-edited after the regen",
+    );
+  });
+});
+
+// THE SANITATION ARMS (the exposure-audit cure, 2026-11-15): the mask
+// twins below mirror scripts/regen-node-vocab.mjs's sanitize step —
+// the two implementations enforce each other (the ensureAsciiJson
+// twin precedent). Toggle-out proof: the pre-cure fixture bytes (the
+// census capture's verbatim rosters — machine media filenames in the
+// upload-flag combos, upstream option/tooltip prose in the
+// third-party rows) red all three arms named.
+const MEDIA_EXT = /\.(mp3|wav|flac|ogg|m4a|mp4|webm|mov|mkv|avi|png|jpe?g|gif|webp)$/i;
+const isThirdPartyPack = (pythonModule: unknown): boolean =>
+  typeof pythonModule === "string" && pythonModule.startsWith("custom_nodes.") &&
+  !pythonModule.startsWith("custom_nodes.melite-");
+/** Both /object_info combo spellings: a legacy array roster head, or
+ *  a string head with the roster in the detail object. */
+const comboRoster = (spec: unknown): unknown[] | null => {
+  if (Array.isArray(spec) && Array.isArray(spec[0])) return spec[0];
+  if (Array.isArray(spec) && typeof spec[0] === "string" && spec[1] !== null &&
+      typeof spec[1] === "object" && Array.isArray((spec[1] as Record<string, unknown>).options)) {
+    return (spec[1] as Record<string, unknown>).options as unknown[];
+  }
+  return null;
+};
+const hasUploadMarker = (detail: unknown): boolean => {
+  if (detail === null || typeof detail !== "object") return false;
+  return Object.keys(detail as Record<string, unknown>).some((k) =>
+    /upload/i.test(k) && ((detail as Record<string, unknown>)[k] === true ||
+      typeof (detail as Record<string, unknown>)[k] === "string"));
+};
+const comboSpecs = (fixture: Record<string, unknown>): Array<{ site: string; spec: unknown; detail: unknown; row: Record<string, unknown> }> => {
+  const out: Array<{ site: string; spec: unknown; detail: unknown; row: Record<string, unknown> }> = [];
+  for (const [cls, raw] of Object.entries(fixture)) {
+    const row = raw as Record<string, unknown>;
+    const input = row.input as Record<string, Record<string, unknown>> | undefined;
+    for (const group of ["required", "optional"] as const) {
+      const inputs = input?.[group];
+      if (inputs === null || typeof inputs !== "object") continue;
+      for (const [key, spec] of Object.entries(inputs)) {
+        let detail: unknown = null;
+        if (Array.isArray(spec) && spec.length > 1 && spec[1] !== null && typeof spec[1] === "object") detail = spec[1];
+        out.push({ site: `${cls}.${key}`, spec, detail, row });
+      }
+    }
+  }
+  return out;
+};
+
+describe("THE BOOT FIXTURE, SANITIZED (the census capture is machine state; the double is tracked)", () => {
+  it("no combo roster rides a media filename — a machine disk listing never re-enters", () => {
+    const fixture = JSON.parse(readFileSync(FIXTURE, "utf8")) as Record<string, unknown>;
+    const offenders: string[] = [];
+    for (const { site, spec } of comboSpecs(fixture)) {
+      const roster = comboRoster(spec);
+      if (roster === null) continue;
+      const media = roster.filter((o) => typeof o === "string" && MEDIA_EXT.test(o));
+      if (media.length > 0) offenders.push(`${site} (${media.length} media entries, e.g. ${String(media[0])})`);
+    }
+    assert.deepEqual(
+      offenders, [],
+      `the boot fixture carries machine media filenames in ${offenders.length} combo roster(s) — ` +
+      `a disk listing is boot state, never schema truth; regen with scripts/regen-node-vocab.mjs --boot:\n  ${offenders.slice(0, 8).join("\n  ")}`,
+    );
+  });
+
+  it("every upload-marker combo emits an empty roster — the sanitized-boot premise held", () => {
+    const fixture = JSON.parse(readFileSync(FIXTURE, "utf8")) as Record<string, unknown>;
+    const offenders: string[] = [];
+    for (const { site, spec, detail } of comboSpecs(fixture)) {
+      if (!hasUploadMarker(detail)) continue;
+      const roster = comboRoster(spec);
+      if (roster !== null && roster.length > 0) offenders.push(`${site} (${roster.length} entries survive the mask)`);
+    }
+    assert.deepEqual(
+      offenders, [],
+      `${offenders.length} upload-marker combo roster(s) in the boot fixture are non-empty — the regen's ` +
+      `media-input mask (an EMPTY media-input tree at capture) is toggled out or drifted:\n  ${offenders.join("\n  ")}`,
+    );
+  });
+
+  it("non-melite custom-node rows serve no roster bytes and no tooltip prose — the third-party mask held (declared V3 grids ride: they are schema, not prose)", () => {
+    const fixture = JSON.parse(readFileSync(FIXTURE, "utf8")) as Record<string, unknown>;
+    const offenders: string[] = [];
+    const V3_COMBO_HEAD = "COMFY_DYNAMICCOMBO_V3";
+    const v3Tooltips = (detail: unknown): string[] => {
+      if (detail === null || typeof detail !== "object") return [];
+      const options = Array.isArray((detail as Record<string, unknown>).options)
+        ? (detail as Record<string, unknown>).options as unknown[] : [];
+      const hits: string[] = [];
+      for (const opt of options) {
+        if (opt === null || typeof opt !== "object") continue;
+        const inputs = (opt as Record<string, unknown>).inputs;
+        if (inputs === null || typeof inputs !== "object") continue;
+        for (const group of ["required", "optional"] as const) {
+          const groupInputs = (inputs as Record<string, Record<string, unknown>>)[group];
+          if (groupInputs === null || typeof groupInputs !== "object") continue;
+          for (const [name, inputSpec] of Object.entries(groupInputs)) {
+            if (Array.isArray(inputSpec) && inputSpec[1] !== null && typeof inputSpec[1] === "object" &&
+                "tooltip" in (inputSpec[1] as Record<string, unknown>)) {
+              hits.push(name);
+            }
+          }
+        }
+      }
+      return hits;
+    };
+    for (const [cls, raw] of Object.entries(fixture)) {
+      const row = raw as Record<string, unknown>;
+      if (!isThirdPartyPack(row.python_module)) continue;
+      for (const { site, spec } of comboSpecs({ [cls]: row })) {
+        const isV3 = Array.isArray(spec) && spec[0] === V3_COMBO_HEAD;
+        if (isV3) {
+          // the DECLARED V3 option grid is the node's schema row —
+          // it rides verbatim; only its tooltip prose bytes die
+          const detail = Array.isArray(spec) && spec[1] !== null && typeof spec[1] === "object" ? spec[1] : null;
+          const prose = v3Tooltips(detail);
+          if (prose.length > 0) offenders.push(`${site} (${prose.length} tooltip bytes survive the grid strip, e.g. ${prose[0]})`);
+          continue;
+        }
+        const roster = comboRoster(spec);
+        if (roster !== null && roster.length > 0) offenders.push(`${site} (${roster.length} option entries)`);
+      }
+      if (typeof row.description === "string" && row.description !== "") offenders.push(`${cls}.description (tooltip prose)`);
+    }
+    assert.deepEqual(
+      offenders, [],
+      `${offenders.length} third-party pack byte row(s) in the boot fixture — upstream option/tooltip content ` +
+      `never re-enters the tracked tree (the JJC_JoyCaption extra_option lists the audit caught); ` +
+      `regen with scripts/regen-node-vocab.mjs --boot:\n  ${offenders.slice(0, 8).join("\n  ")}`,
     );
   });
 });

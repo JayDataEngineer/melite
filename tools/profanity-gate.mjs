@@ -49,9 +49,11 @@
 // range in its OWN tree (git ls-tree + one git cat-file --batch per
 // commit, streamed — never a checkout), so commit A adding profanity
 // and commit B removing it cannot ride a clean tip through a push.
-// History cures (filter-repo, rewrites) are OPERATOR-ONLY — the
-// PR-history law bans raw --force — the gate reports, it never
-// rewrites.
+// Each commit's MESSAGE (%B) is judged by the same matchers — a hit
+// fails the range naming the sha and the word — so a burn quoted in
+// prose cannot hide behind a clean tree. History cures (filter-repo,
+// rewrites) are OPERATOR-ONLY — the PR-history law bans raw --force —
+// the gate reports, it never rewrites.
 //
 // CLI:
 //   node tools/profanity-gate.mjs <paths…>            repo mode
@@ -94,8 +96,11 @@ export const SEGMENT_EXCLUDED = new Set(['node_modules', '.git', 'vendor'])
  *  face IS the publish face). */
 export const REPO_ONLY_SEGMENTS = new Set(['lib', 'dist', 'coverage'])
 
-/** The authored faces of the pre-push live phase. */
-export const DEFAULT_FACES = ['packages', 'scripts', 'tools', 'lefthook.yml']
+/** The authored faces of the pre-push live phase. tests/ rides the
+ *  default faces since the 2026-11-15 exposure audit: the walls are
+ *  authored prose too, and their burn-quote heritage reds the gate
+ *  exactly like any other face. */
+export const DEFAULT_FACES = ['packages', 'scripts', 'tools', 'tests', 'lefthook.yml']
 
 /** ALLOWLIST — word-level false positives only; every entry names its
  *  dated reason (the colliding language and OUR legitimate usage).
@@ -390,10 +395,49 @@ export function historyCommits (root, range) {
 }
 
 /**
- * History mode: judge every commit in the range in its OWN tree. Each
- * commit's text paths stream through one git cat-file --batch (never a
- * checkout); non-blob entries (submodule pointers) and binary-looking
- * bodies are skipped. The FULL repo path law applies per commit —
+ * The range's commit messages, batched: one `git log --no-walk
+ * --stdin` pass per chunk (argv-length safe on a whole-history
+ * baseline), raw %B bodies keyed by sha. The message phase's input —
+ * a commit whose MESSAGE carries a hit fails the range even when its
+ * tree is clean (the PM-GAP class: the quote rode the commit text and
+ * the blob walk never saw it).
+ * @param {string} root repo root
+ * @param {string[]} shas commit shas (git rev-list order)
+ * @returns {Map<string, string>} sha -> raw message body (%B)
+ */
+export function commitMessages (root, shas) {
+  const out = new Map()
+  const CHUNK = 200
+  for (let c = 0; c < shas.length; c += CHUNK) {
+    const chunk = shas.slice(c, c + CHUNK)
+    const r = spawnSync('git', ['-C', root, 'log', '--no-walk', '--format=%H%x00%B%x00', '--stdin'], {
+      input: chunk.join('\n') + '\n',
+      maxBuffer: 1 << 26,
+    })
+    if (r.status !== 0) throw new Error(`profanity-gate: git log --stdin failed: ${r.stderr}`)
+    const buf = r.stdout
+    // parse sha\0message\0 sequences, in input order
+    let cur = 0
+    while (cur < buf.length) {
+      const shaEnd = buf.indexOf(0x00, cur)
+      if (shaEnd === -1) break
+      const msgEnd = buf.indexOf(0x00, shaEnd + 1)
+      if (msgEnd === -1) break
+      out.set(buf.slice(cur, shaEnd).toString('utf8'), buf.slice(shaEnd + 1, msgEnd).toString('utf8'))
+      cur = msgEnd + 1
+    }
+  }
+  return out
+}
+
+/**
+ * History mode: judge every commit in the range in its OWN tree and
+ * in its MESSAGE. Each commit's text paths stream through one git
+ * cat-file --batch (never a checkout); non-blob entries (submodule
+ * pointers) and binary-looking bodies are skipped; the raw %B message
+ * is judged with the same lists (the PM-GAP cure: a profane commit
+ * message fails the range even when its tree is clean). The FULL repo
+ * path law applies per commit —
  * every commit carries its own source tree, so build outputs
  * (lib/dist/coverage) are judged at their source commit; the packed
  * tarball remains the only place built bytes are judged (they are what
@@ -401,7 +445,7 @@ export function historyCommits (root, range) {
  * @param {string} root repo root
  * @param {string} range a git rev-range or 'all'
  * @param {{ matchers: { name: string, re: RegExp }[], any: RegExp }} [matchers]
- * @returns {{ hits: { commit: string, file: string, line: number, word: string, list: string }[], commits: number, blobs: number }}
+ * @returns {{ hits: { commit: string, file: string, line: number, word: string, list: string }[], commits: number, blobs: number, messages: number }}
  */
 export function scanHistory (root, range, matchers = buildMatchers()) {
   const commits = historyCommits(root, range)
@@ -452,7 +496,17 @@ export function scanHistory (root, range, matchers = buildMatchers()) {
       }
     }
   }
-  return { hits, commits: commits.length, blobs }
+  // THE MESSAGE ARM (the PM-GAP cure, 2026-11-15): every commit's raw
+  // %B rides the same lists; a hit names the sha and the word and
+  // fails the range. The file field is '(commit message)' so the hit
+  // line reads beside the tree hits it joins.
+  const messages = commitMessages(root, commits)
+  for (const [sha, text] of messages) {
+    for (const h of scanText(text, matchers)) {
+      hits.push({ commit: sha, file: '(commit message)', ...h })
+    }
+  }
+  return { hits, commits: commits.length, blobs, messages: messages.size }
 }
 
 /**
@@ -515,9 +569,9 @@ function main (argv) {
       console.log(`profanity-gate: history — SKIPPED LOUDLY: ${resolved.why}`)
       return
     }
-    const { hits, commits, blobs } = scanHistory(process.cwd(), resolved.range, bundle)
+    const { hits, commits, blobs, messages } = scanHistory(process.cwd(), resolved.range, bundle)
     for (const h of hits) console.log(`profanity-gate: history ${h.commit.slice(0, 10)} ${h.file}:${h.line}: "${h.word}" [${h.list}]`)
-    console.log(`profanity-gate: history ${resolved.range} — ${commits} commits / ${blobs} text blobs — ${hits.length} hit(s)`)
+    console.log(`profanity-gate: history ${resolved.range} — ${commits} commits / ${blobs} text blobs / ${messages} messages — ${hits.length} hit(s)`)
     process.exitCode = hits.length > 0 ? 1 : 0
     return
   }

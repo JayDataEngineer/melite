@@ -13,6 +13,9 @@
  *    regenerate                        rebuild INVARIANTS.md from the
  *                                      registries (never hand-edited
  *                                      past curation marks)
+ *    set-invariant --id <ID> --invariant <law>
+ *                 re-state the law a row guards (a rework re-spelled
+ *                 the cure), never hand-edited YAML
  *
  *  The registry lives at dev_docs/contracts/registry/<tier>-tier.yaml
  *  (schema in AGENTS.md LAW 4); receipts at
@@ -192,6 +195,43 @@ function main() {
     console.log(`contract: ${id} wall -> ${spec.join(', ')}`)
     return
   }
+  if (verb === 'set-invariant') {
+    // deterministic invariant correction: the LAW a row guards changed
+    // (a rework re-spelled the cure), so the row's invariant text is
+    // re-stated here — never by hand-editing the YAML (same
+    // deterministic-writer law as set-wall)
+    const id = arg('id')
+    const invariant = arg('invariant')
+    if (invariant === undefined || invariant.trim() === '') fail('--invariant needs the re-stated law')
+    const row = findRow(id)
+    const rows = tierRows(row.tier)
+    const target = rows.find((r) => r.id === id)
+    target.invariant = invariant.trim()
+    writeTier(row.tier, rows)
+    regenerate()
+    console.log(`contract: ${id} invariant re-stated`)
+    return
+  }
+  if (verb === 'set-truth-home') {
+    // deterministic truth-home correction: a row naming its home with
+    // line suffixes or a moved path re-points here, never by hand-editing
+    // the YAML (same deterministic-writer law as set-wall)
+    const id = arg('id')
+    const files = arg('files').split(',').map((s) => s.trim()).filter(Boolean)
+    if (files.length === 0) fail('--files needs at least one path')
+    for (const f of files) {
+      if (!existsSync(join(ROOT, f))) fail(`truth_home path ${f} does not exist on disk — the registry never names a dead home`)
+      if (f.includes(':')) fail(`truth_home path ${f} carries a line suffix — truth_home names files, not lines`)
+    }
+    const row = findRow(id)
+    const rows = tierRows(row.tier)
+    const target = rows.find((r) => r.id === id)
+    target.truth_home = { ...(target.truth_home ?? {}), files: files.length === 1 ? files[0] : files }
+    writeTier(row.tier, rows)
+    regenerate()
+    console.log(`contract: ${id} truth_home -> ${files.join(', ')}`)
+    return
+  }
   if (verb === 'seat-row') {
     // a new contract lands as a registry row + a receipt — never a
     // prose table row (AGENTS.md LAW 4)
@@ -222,7 +262,7 @@ function main() {
     regenerate()
     return
   }
-  fail(`unknown verb ${JSON.stringify(verb)} — list | show | seat-row | set-wall | record-proof | regenerate`)
+  fail(`unknown verb ${JSON.stringify(verb)} — list | show | seat-row | set-wall | set-invariant | set-truth-home | record-proof | regenerate`)
 }
 
 main()

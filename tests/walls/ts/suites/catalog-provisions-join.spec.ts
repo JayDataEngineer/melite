@@ -36,7 +36,9 @@ describe("THE POSITIVE CATALOG→PROVISIONS JOIN (A6)", () => {
     const rows = svc.catalogModels();
     // the real boot's own floor: the family table serves (a silent
     // empty catalog would make the join vacuously green)
-    assert.ok(rows.length >= 32, `the real boot serves the family table (got ${rows.length})`);
+    // 32 -> 31 (2026-11-01, the blender-lane removal): the anycreature
+    // family leaves the boot's family table.
+    assert.ok(rows.length >= 31, `the real boot serves the family table (got ${rows.length})`);
 
     const drift: string[] = [];
     const defaultMisses: string[] = [];

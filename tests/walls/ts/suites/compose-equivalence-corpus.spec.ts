@@ -25,12 +25,14 @@
  *       null deletes — estate/drafts/src/bench.ts:969-983's
  *       merge-patch arm, verbatim law) over the persisted base.
  *   B — the walk's own defaults: the same doc's UI truth
- *       (mergeDocLayers — defined-wins, docModel.ts) MINUS the two
- *       recorded lawful transforms (T4_ONLY_KEYS on a derived-t4r
- *       doc — the B1 emit law whose omission this corpus re-proves
- *       at graph depth; FILM_ONLY_KEYS off the film shape — the B6
- *       gate). B never passes through the serializer, so a seat the
- *       serializer invents, drops, or mangles diverges HERE.
+ *       (mergeDocLayers — defined-wins, docModel.ts) MINUS the one
+ *       recorded lawful transform still alive (FILM_ONLY_KEYS off the
+ *       film shape — the B6 gate). The old B1 emission (T4_ONLY keys
+ *       stripped on a derived-t4r doc) is RETIRED: the t4r arm mounts
+ *       the post chain, so the studio's stated finish keys ride and
+ *       fire there — this corpus re-proves that at graph depth. B
+ *       never passes through the serializer, so a seat the serializer
+ *       invents, drops, or mangles diverges HERE.
  *   The equivalence judge compares A and B at every named node
  *   input (each row's precedent cited inline); the sweep arm pins
  *   the STATED values themselves (the tautology tooth — if A and B
@@ -93,7 +95,7 @@ import { mergeDocLayers } from "../../../../packages/video/h3-timeline/src/ui/st
 import { hydrateCalls, serializeCalls, hydrateKeyframes, serializeKeyframes } from "../../../../packages/video/h3-timeline/src/ui/studio/docCalls.ts"
 import { film } from "@melite/models-h3/actions"
 import { schema as h3schemaFn } from "@melite/models-h3/schema"
-import { T4_ONLY_KEYS, FILM_ONLY_KEYS, deriveWindowFamily } from "@melite/models-h3/timelineContract"
+import { FILM_ONLY_KEYS, deriveWindowFamily } from "@melite/models-h3/timelineContract"
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph"
 import { instantiateAction } from "@melite/comfyui-card-kit"
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts"
@@ -226,19 +228,19 @@ const DIALOGUE_CLIP = {
 
 const CORPUS: ReadonlyArray<CorpusMember> = [
   {
-    name: "single-window t4r (the anchor guide; the Final Cut residue healed; the sweep row A stated)",
-    // the persisted doc still carries the Final Cut pick's post
-    // stamps (the residue); the studio's state cleared them (the D8
-    // heal's gesture — undefined = the clear) and stated the sweep
-    // row A knobs over the t4r arm's fallback poles where the
-    // precedent did (stabilize_motion TRUE over the false fallback).
+    name: "single-window t4r carrying the finish chain (the retirement's member; the sweep row A stated)",
+    // THE 2026-11-15 CURE's member: the anchor guide derives t4r and
+    // the doc states the WHOLE finish chain (master + SeedVR2 +
+    // sharpen + interp). Pre-cure the studio stripped these stamps
+    // and this lane composed no post node; the arm's presence guard
+    // below is the graph-depth receipt that they now fire.
     base: {
       seed: 7, width: 768, height: 448, steps: 12,
       sr_switch: true, second_pass_enabled: true,
+      sharpen_enabled: true, interpolate_enabled: true,
       calls: [{ text: "the courier steps in", start_frame: 0, end_frame: 90, image: "anchor.png" }],
     },
     gestures: {
-      sr_switch: undefined, second_pass_enabled: undefined,
       sla_sparsity: 0.9, sla_block_size: "64", sla_min_seq_len: 7680,
       sla_dense_last_steps: 4, sla_protect_audio: false,
       sla_dense_steps: "1-3", sla_dense_backend: "pytorch",
@@ -250,6 +252,9 @@ const CORPUS: ReadonlyArray<CorpusMember> = [
       { cls: "MiniMaxH3ReferenceToVideo", min: 1, why: "the r2v generator composes on the anchor arm" },
       { cls: "CreateVideo", min: 1, why: "the container composes" },
       { cls: "ComfyMathExpression", min: 1, why: "the t4r gold inverse composes" },
+      { cls: "SeedVR2VideoUpscaler", min: 1, why: "the t4r arm mounts the super-res chain" },
+      { cls: "ImageSharpenKJ", min: 1, why: "the t4r arm mounts the sharpen chain" },
+      { cls: "FrameInterpolate", min: 1, why: "the t4r arm mounts the interpolation chain" },
     ],
   },
   {
@@ -422,13 +427,6 @@ function walkDefaultsDoc(member: CorpusMember): Record<string, unknown> {
     keyframes: hydrateKeyframes(member.base.keyframes),
   })
   const family = deriveWindowFamily(stated)
-  if (family === "t4r") {
-    // THE B1 EMIT LAW's receipt, at graph depth: the studio omits
-    // every T4_ONLY member on a derived-t4r doc because the walk
-    // REFUSES them (the Final Cut brick); B records the same
-    // transform or B is not the walk's own defaults at all.
-    for (const k of T4_ONLY_KEYS) delete stated[k]
-  }
   if (family !== "t4_chain") {
     // THE FILM-ONLY GATE's receipt (B6): duck_depth_db reads only
     // inside the film boundary; off the film shape the walk refuses.
@@ -526,14 +524,21 @@ describe("THE COMPOSE-EQUIVALENCE CORPUS (studio state → walk → graph inputs
       // rides the latent seats
       const sched = Object.values(doc).find((n) => n.class_type === "BasicScheduler")
       expect(sched!.inputs.steps).toBe(12)
-      // THE T4 RECEIPT at graph depth: the healed residue arms no
-      // post chain on the reference lane
-      expect(Object.values(doc).some((n) => n.class_type === "ImageSharpenKJ")).toBe(false)
+      // THE RETIREMENT'S RECEIPT at graph depth: the stated finish
+      // chain FIRES on the reference lane (the burn's exact shape) —
+      // pre-cure this lane composed none of these nodes.
+      const post = Object.values(doc)
+      for (const cls of ["ImageSharpenKJ", "SeedVR2VideoUpscaler", "FrameInterpolate"]) {
+        expect(post.some((n) => n.class_type === cls), `${cls} fires from the studio's serialized t4r doc`).toBe(true)
+      }
       // THE UNSTATED CLOCK (the gold inverse): the doc states no fps,
-      // so the expression must carry the walk's own 24 — a serializer
-      // clock-stamp reds here by name
-      const gold = Object.values(doc).find((n) => n.class_type === "ComfyMathExpression")
-      expect(String(gold!.inputs.expression)).toContain("* 24")
+      // so the inverse expression must carry the walk's own 24 — the
+      // interp multiplier adds its OWN expression (a × 2), so the
+      // gold inverse is selected by its 24, never by emission order.
+      const gold = post.find(
+        (n) => n.class_type === "ComfyMathExpression" && String(n.inputs.expression).includes("24"),
+      )
+      expect(gold, "the t4r gold inverse composes at the walk's own clock").toBeDefined()
       expect(String(gold!.inputs.expression)).not.toContain("* 16")
     }
     // MEMBER 3 — the stated 16 clock: the stamps book 4.0s and the
@@ -566,17 +571,16 @@ describe("THE COMPOSE-EQUIVALENCE CORPUS (studio state → walk → graph inputs
       expect(fpsSeat.feedClass ?? "scalar").toBe("PrimitiveFloat")
       expect(fpsSeat.feedValue).toBe(24)
     }
-    // MEMBER 5 — the sweep row B: the sharpen dict + the interp pair.
+    // MEMBER 5 — the sweep row B: the sharpen V3 combo wires + the interp pair.
     {
       const doc = compose(serializedDoc(secondPass!), "d1_sweep_post")
       const sharp = Object.values(doc).find((n) => n.class_type === "ImageSharpenKJ")
       expect(sharp, "the sharpen leaf composes under the master").toBeDefined()
-      const method = sharp!.inputs.method as Record<string, unknown>
-      expect(method.method).toBe("adaptive_usm")
-      expect(method.strength).toBe(0.4)
-      expect(method.radius).toBe(2.5)
-      expect(method.threshold).toBe(0.9)
-      expect(method.iterations).toBe(2)
+      expect(sharp!.inputs.method).toBe("adaptive_usm")
+      expect(sharp!.inputs["method.strength"]).toBe(0.4)
+      expect(sharp!.inputs["method.radius"]).toBe(2.5)
+      expect(sharp!.inputs["method.threshold"]).toBe(0.9)
+      expect(sharp!.inputs["method.iterations"]).toBeUndefined()
       const interpLoader = Object.values(doc).find((n) => n.class_type === "FrameInterpolationModelLoader")
       expect(interpLoader!.inputs.model_name).toBe("rife47.pth")
       const interp = Object.values(doc).find((n) => n.class_type === "FrameInterpolate")
@@ -602,13 +606,18 @@ describe("THE COMPOSE-EQUIVALENCE CORPUS (studio state → walk → graph inputs
       const stage3 = scheds.find((n) => n.inputs.denoise === 0.35)
       expect(stage3, "the Stage-3 scheduler carries the 0.35 refinement window").toBeDefined()
       expect(stage3!.inputs.steps).toBe(6)
-      // pass 1 renders the halved grid (the kernel's own quarter-scale
-      // distillation); the second pass works at the stated full size
+      // pass 1 renders the FULL stated grid — F44 (dabeb9a25): the
+      // halving ternary `headW = upscaleOn ? width/2 : width` was the
+      // burn's suspect, not a feature — the handoff's 2× lands at 2×
+      // OF WHATEVER THE HEAD WAS, so a halved head silently halved the
+      // deliverable (the burn's 672x384 stamp for a stated 1344x768;
+      // run-e49908ddf224 rode the same handoff over a full-base grid
+      // to 2688x1536). The arm fires red if the halving ever returns.
       const pass1 = scheds.find((n) => n.inputs.denoise === 1)
       expect(pass1, "the pass-1 scheduler composes at the full window").toBeDefined()
       const latents = Object.values(doc).filter((n) => n.class_type === "EmptyH3LatentVideo" || n.class_type === "MiniMaxH3ReferenceToVideo")
       const heads = latents.map((n) => `${n.inputs.width}x${n.inputs.height}`)
-      expect(heads.some((h) => h === "384x224"), `pass 1's head halves under the arm (got ${heads.join(",")})`).toBe(true)
+      expect(heads.length > 0 && heads.every((h) => h === "768x448"), `pass 1's head stays the full stated grid under the arm — the handoff doubles whatever the head is, so halving here halves the deliverable (F44, dabeb9a25; got ${heads.join(",")})`).toBe(true)
       // cure 6 — the UNSTATED SLA seat at graph depth: dense 2 +
       // stabilize true (the spec's flicker law), serialized through
       const sla = Object.values(doc).find((n) => n.class_type === "H3SLAAttention")
@@ -641,19 +650,30 @@ describe("THE COMPOSE-EQUIVALENCE CORPUS (studio state → walk → graph inputs
     }
   })
 
-  it("THE FAMILY LAWS hold at graph depth: t4r arms no post chain, the film shape alone arms the mix desk", () => {
-    // The corpus's two family-conditional members, judged by CLASS
-    // PRESENCE (the graph is the receipt): the emit law's omission
-    // (B1) lands as "no post chain nodes on the t4r lanes"; the
-    // film-only gate (B6) lands as "the mix desk exists only under
-    // the film boundary".
-    const [, ref2va, , cut, , , keyframed] = CORPUS
+  it("THE FAMILY LAWS hold at graph depth: the t4r arm FIRES the chain it states, an unstated t4r stays clean, and the film shape alone arms the mix desk", () => {
+    // The corpus's family-conditional members, judged by CLASS
+    // PRESENCE and ABSENCE (the graph is the receipt): the retired
+    // B1 omission's replacement is "the t4r lane fires exactly the
+    // post nodes its doc states"; the surviving film-only gate (B6)
+    // is "the mix desk exists only under the film boundary".
+    const [finish, ref2va, , cut, , , keyframed] = CORPUS
+    // THE POSITIVE LEG: the finish member's t4r doc states the whole
+    // chain, and every node lands.
+    const finishDoc = compose(serializedDoc(finish!), "d1_family_finish")
+    for (const post of ["ImageSharpenKJ", "FrameInterpolate", "SeedVR2VideoUpscaler"]) {
+      expect(
+        Object.values(finishDoc).some((n) => n.class_type === post),
+        `${finish!.name}: ${post} MUST compose — the t4r arm mounts the chain (the burn's exact shape)`,
+      ).toBe(true)
+    }
+    // THE NEGATIVE LEG: t4r members that state no finish stamp compose
+    // no post node — the chain is master-gated, never mounted blind.
     for (const member of [ref2va!, keyframed!]) {
       const doc = compose(serializedDoc(member), `d1_family_${member.name.slice(0, 12)}`)
       for (const post of ["ImageSharpenKJ", "FrameInterpolate", "SeedVR2VideoUpscaler"]) {
         expect(
           Object.values(doc).some((n) => n.class_type === post),
-          `${member.name}: ${post} composed on a t4r lane — the emit law's omission died`,
+          `${member.name}: ${post} composed without a stated finish stamp — the master gate is dead`,
         ).toBe(false)
       }
     }

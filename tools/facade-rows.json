@@ -308,6 +308,9 @@
   "@melite/image-mask-studio/bbox-canvas": [
     "./packages/image/mask-studio/src/ui/BboxLeafCanvas.tsx"
   ],
+  "@melite/image-mask-studio/orbit-canvas": [
+    "./packages/image/mask-studio/src/ui/OrbitLeafCanvas.tsx"
+  ],
   "@melite/image-tagger": [
     "./packages/image/tagger/src/card.ts"
   ],
@@ -334,9 +337,6 @@
   ],
   "@melite/models-anny/mods/verbs": [
     "./packages/models/anny/mods/verbs.ts"
-  ],
-  "@melite/models-anycreature": [
-    "./packages/models/anycreature/src/index.ts"
   ],
   "@melite/models-concat": [
     "./packages/models/concat/src/index.ts"

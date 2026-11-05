@@ -8,7 +8,7 @@
 // passed. Both importers resolve this file as TypeScript — vitest
 // through its transform, the script through Node's native type
 // stripping (>= 23.6; the script guards it loud).
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
@@ -58,11 +58,17 @@ export function emitProgram(pkgDir: string, tsconfig: string, tsc: string): stri
       "--outDir", out,
       "--sourceMap", "false",
       "--declarationMap", "false",
-    ], { stdio: ["ignore", "ignore", "pipe"] });
+      "--newLine", "lf",
+    ], { stdio: ["ignore", "pipe", "pipe"] });
   } catch (err) {
     rmSync(out, { recursive: true, force: true });
-    const stderr = err instanceof Error && "stderr" in err ? String((err as { stderr?: unknown }).stderr ?? "") : "";
-    throw new Error(`${relative(ROOT, pkgDir)} ${tsconfig} refuses to emit — ${stderr.slice(0, 400)}`);
+    // tsc reports config-load failures (TS50xx) on STDOUT, type
+    // errors on stderr — a refusal message that reads only one
+    // stream names nothing.
+    const streams = err instanceof Error && "stdout" in err
+      ? `${String((err as { stdout?: unknown }).stdout ?? "")}${String((err as { stderr?: unknown }).stderr ?? "")}`
+      : "";
+    throw new Error(`${relative(ROOT, pkgDir)} ${tsconfig} refuses to emit — ${streams.slice(0, 400)}`);
   }
   return out;
 }
@@ -71,11 +77,7 @@ export function emitProgram(pkgDir: string, tsconfig: string, tsc: string): stri
  *  lib plane carries them, a maps-off emit does not), trailing
  *  whitespace normalized (tsc's final newline rides the comment). */
 export function normalizedBody(path: string): string {
-  return readFileSync(path, "utf8")
-    .split("\n")
-    .filter((line) => !line.startsWith("//# sourceMappingURL="))
-    .join("\n")
-    .replace(/\s+$/, "");
+  return normalizeBody(readFileSync(path, "utf8"));
 }
 
 /** Sorted relative paths of every file under `dir` (slash separators
@@ -90,26 +92,75 @@ export function walkFiles(dir: string, prefix = ""): string[] {
   return rows.sort();
 }
 
+/** A served-plane reader: one lib-relative path in, the plane's text
+ *  for it — or null when the plane does not carry it (a judged miss,
+ *  never an error). Everything the judge compares rides this seam. */
+export type ServedReader = (rel: string) => string | null;
+
+/** THE INDEX-BYTE SERVED READER (class B D4, 2026-10-31): the plane
+ *  the judge consults is the COMMITTED one — stage-0 index bytes
+ *  (`git show :<rel>`), exactly what a fresh clone checks out —
+ *  never the working tree, where an uncommitted rebuild could pass
+ *  the judge while the committed bytes drifted (the manifest would
+ *  then bless the drift). Checkout-independent by construction: the
+ *  index stores LF, so a CRLF checkout reads the same bytes back.
+ *  The root and spawn are injectable — the wall arms the reader on
+ *  throwaway /tmp repos. */
+export function indexReader(libDir: string, root: string = ROOT, spawn: typeof spawnSync = spawnSync): ServedReader {
+  const prefix = relative(root, libDir).split("\\").join("/");
+  if (prefix.startsWith("..")) throw new Error(`indexReader: ${libDir} is not inside ${root}`);
+  return (rel) => {
+    const r = spawn("git", ["show", `:${prefix}/${rel}`], { cwd: root, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+    if (r.status !== 0) return null;
+    return r.stdout ?? "";
+  };
+}
+
+/** The committed plane's FILE LIST (class B D4): tracked entries
+ *  under the lib dir, lib-relative — the enumeration the unemitted
+ *  sweep and the lib hash ride, so an untracked leftover on disk
+ *  (never a clone's bytes) cannot enter a verdict. */
+export function indexLibFiles(libDir: string, root: string = ROOT, spawn: typeof spawnSync = spawnSync): string[] {
+  const prefix = relative(root, libDir).split("\\").join("/");
+  if (prefix.startsWith("..")) throw new Error(`indexLibFiles: ${libDir} is not inside ${root}`);
+  const r = spawn("git", ["ls-files", "--", prefix], { cwd: root, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+  if (r.status !== 0) throw new Error(`indexLibFiles: git ls-files refused (${r.stderr})`);
+  return (r.stdout ?? "").split("\n")
+    .filter((p) => p !== "")
+    .map((p) => p.startsWith(`${prefix}/`) ? p.slice(prefix.length + 1) : p)
+    .sort();
+}
+
+/** The normalization at text level (the path-level `normalizedBody`
+ *  below is its file reader). */
+export function normalizeBody(text: string): string {
+  return text
+    .split("\n")
+    .filter((line) => !line.startsWith("//# sourceMappingURL="))
+    .join("\n")
+    .replace(/\s+$/, "");
+}
+
 /** Byte equality for the RUNTIME plane (.js), presence for types
- *  (.d.ts). `emitted` is the fresh temp tree, `lib` the served plane;
- *  only files under directories the program actually emits are
- *  required to exist in the emit (a sibling program — the mods build
- *  — owns the rest of lib). */
-export function compareEmitted(pkg: string, program: string, emittedDir: string, libDir: string): LibDrift {
+ *  (.d.ts). `emitted` is the fresh temp tree; the served plane is
+ *  read through `served` — by default the INDEX reader below, so the
+ *  judged plane is the committed one, never the working tree's
+ *  maybe-rebuilt copy (class B D4). */
+export function compareEmitted(pkg: string, program: string, emittedDir: string, libDir: string, served: ServedReader = indexReader(libDir), servedFiles: string[] = indexLibFiles(libDir)): LibDrift {
   const drift: LibDrift = { pkg, program, stale: [], unemitted: [] };
   const emittedFiles = walkFiles(emittedDir);
   for (const rel of emittedFiles) {
-    const served = join(libDir, rel);
-    if (!existsSync(served)) {
+    const servedBytes = served(rel);
+    if (servedBytes === null) {
       drift.stale.push(`${rel} (served lib misses the emitted file)`);
       continue;
     }
-    if (rel.endsWith(".js") && normalizedBody(served) !== normalizedBody(join(emittedDir, rel))) {
+    if (rel.endsWith(".js") && normalizeBody(servedBytes) !== normalizedBody(join(emittedDir, rel))) {
       drift.stale.push(rel);
     }
   }
   const emittedDirs = new Set(emittedFiles.map((rel) => dirname(rel)));
-  for (const rel of walkFiles(libDir)) {
+  for (const rel of servedFiles) {
     if (!/\.(js|d\.ts)$/.test(rel)) continue;
     if (!emittedDirs.has(dirname(rel))) continue;
     if (!emittedFiles.includes(rel)) drift.unemitted.push(`${rel} (served lib carries a file the src no longer emits)`);
@@ -175,13 +226,17 @@ export function familySrcHash(pkgDir: string): string {
  *  trailing whitespace trimmed), every .d.ts by PRESENCE ONLY. Never
  *  d.ts bytes: declaration emit bakes toolchain-flavored import
  *  spellings (the header law), and hashing them would red-loop the
- *  ratchet on a compiler bump the judge itself passes. */
-export function familyLibHash(pkgDir: string): string {
-  const lib = join(pkgDir, "lib");
+ *  ratchet on a compiler bump the judge itself passes. (class B D4)
+ *  Both the enumeration and the bytes ride the INDEX plane — an
+ *  uncommitted rebuild must never bless a manifest row. */
+export function familyLibHash(pkgDir: string, served: ServedReader = indexReader(join(pkgDir, "lib")), servedFiles: string[] = indexLibFiles(join(pkgDir, "lib"))): string {
   const h = createHash("sha256");
-  for (const rel of walkFiles(lib)) {
-    if (rel.endsWith(".js")) h.update(`js ${rel}\0${normalizedBody(join(lib, rel))}\0`);
-    else if (rel.endsWith(".d.ts")) h.update(`dts ${rel}\n`);
+  for (const rel of servedFiles) {
+    if (rel.endsWith(".js")) {
+      const bytes = served(rel);
+      if (bytes === null) throw new Error(`${relative(ROOT, pkgDir)}/lib/${rel} is tracked but has no stage-0 index bytes — the index and the file list must agree`);
+      h.update(`js ${rel}\0${normalizeBody(bytes)}\0`);
+    } else if (rel.endsWith(".d.ts")) h.update(`dts ${rel}\n`);
   }
   return h.digest("hex");
 }

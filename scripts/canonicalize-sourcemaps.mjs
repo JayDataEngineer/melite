@@ -7,8 +7,11 @@
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const ROOT = new URL("..", import.meta.url).pathname;
+// fileURLToPath, never URL.pathname (the windows CI doubled-drive
+// class, 2026-10-31: '/D:/…' is drive-rooted RELATIVE on win32).
+const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const args = process.argv.slice(2);
 const files = args.length > 0
   ? args

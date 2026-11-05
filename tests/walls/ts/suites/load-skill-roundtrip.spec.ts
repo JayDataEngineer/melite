@@ -56,8 +56,7 @@ beforeAll(async () => {
   await ctx.plugin(Storage as unknown as Plugin);
   await ctx.plugin({ name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as unknown as Plugin, { root });
   await ctx.plugin({ name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as unknown as Plugin, { backend: "json" });
-  // J12: the roots ride plugin configs (the retired env seams)
-  await ctx.plugin(draftsPlugin as unknown as Plugin, { storageRoot: join(root, "storage") });
+  await ctx.plugin(draftsPlugin as unknown as Plugin);
   // THE FAMILY ROWS — the composition the bundle censuses (the
   // patch roster; direct-mount rigs seat them themselves)
   await mountFamilyRoster(ctx);
@@ -152,7 +151,22 @@ interface SkillLine { id?: string }
 // 53 -> 54 (2026-11-13, the second-pass skill): the post chain's
 // master + 19 gated knobs got their doc (report §14.2). The id
 // round-tripped 200 with a body in the arm above before this repin.
-const EXPECTED_CARD_SKILLS = 54;
+// 54 -> 55 (2026-11-13, the gamekit-vo restore): the tts card's
+// gamekit-vo skill line was served by a doc an unowned working-tree
+// deletion had removed (src-orphan-law's ENOENT caught the tracked-
+// but-deleted file); the doc — current post-F49 law, the qvoice
+// mod-bag grammar — was restored, and its id round-tripped 200 with
+// a body in the arm above before this repin.
+// 55 -> 56 (2026-11-15, the h3 recipe skill): the timeline agent's
+// delivery-recipe SKILL (skills/recipe/, the QA session's authorized
+// landing) joined the card's skill lines; its id round-tripped 200
+// with a body in the arm above before this repin.
+const EXPECTED_CARD_SKILLS = 53;
+// 56 → 53 (2026-11-15, the 2511 retirement): the retired family's
+// served agents tree (prompt-enhance + pose-iteration skills + the
+// family AGENT doc's line) is deleted — a hidden lane teaches
+// nothing. Every remaining advertised id round-tripped 200 with a
+// body in the arm above before this repin (the census's own law).
 // 8 → 11 (2026-10-11): object-forge's skillRefs — image-gen +
 // img-to-mesh card lines and z-image's prompt-enhance ride the flow
 // bundle (card:quad-remesh resolves null — the card ships no agent
@@ -179,7 +193,19 @@ const EXPECTED_CARD_SKILLS = 54;
 // had no skill at all, so an agent set a leaf and got a silent no-op.
 // The id round-tripped 200 with a body in the arm above before this
 // repin (the census's own law).
-const EXPECTED_FLOW_SKILLS = 24;
+// 24 -> 25 (2026-11-13, the gamekit-vo restore): the flow bundles that
+// advertise the tts card's skills regained gamekit-vo with the doc's
+// restore (same event as the card census's 54 -> 55); the id
+// round-tripped 200 with a body in the arm above before this repin.
+// 25 -> 8 (2026-11-14, the flows-are-compositions retirement): the
+// four card-wrapper flow rows died (audio-native-tts, extend-video,
+// music-native, body-to-somax) with their three leaf SKILL.mds, and
+// their card-skill rides died with the bundles — the tts, music and
+// h3-timeline card lines ride the CARD census now (55 ids), not the
+// flow one; only the four surviving flows' own bundles advertise
+// here. Every advertised id round-tripped 200 with a body in the arm
+// above before this repin (the census's own law).
+const EXPECTED_FLOW_SKILLS = 8;
 
 describe("the id namespace law: load-advertised ids round-trip through the read door", () => {
   it("every CARD skill line it advertises, hSkillRead serves 200 with a body", async () => {

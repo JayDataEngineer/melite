@@ -36,7 +36,7 @@ import { describe, it, beforeAll, onTestFinished } from "vitest";
 import assert from "node:assert/strict";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 
 // THE CARD TIER, BOOTED THE CARD SPEC'S WAY (models registry + card
@@ -63,7 +63,9 @@ import { fieldsOf } from "../../../../packages/web/card-base/src/spec.ts";
 // — the arm drives THE module it imports, and a second hand-serializer
 // tenant reds the dispatch assert until it teaches this judge.
 import { serializeLayerA, hydrateLayerA } from "../../../../packages/video/h3-timeline/src/ui/studio/docHydrate.ts";
-import { deriveWindowFamily, T4_ONLY_KEYS } from "@melite/models-h3/timelineContract";
+import { deriveWindowFamily } from "@melite/models-h3/timelineContract";
+import { benchDraftIdOf } from "@melite/contracts/benchStage";
+import { deriveFamilyLane, reseatDeadKeys, type FamilyLaw } from "@melite/contracts/familyLane";
 // SD-3's door rig (the commit seam OUTSIDE studio commits): the real
 // drafts/bench plugin over real DSH storage rows, and the remoteError
 // classifier (discrimination is never instanceof — the drafts wall's
@@ -453,9 +455,9 @@ describe("every facts row composes its card alive (the dead-card wall)", () => {
         // floors own it); this arm reports wired-VALUE findings.
         if (refusal instanceof ComposeRefusal && (refusal.code === "unknown-node" || refusal.code === "malformed-graph")) break;
         const message = refusal instanceof Error ? refusal.message : String(refusal);
-        // THE PROVISIONER LAW (operator 2026-11-09: "if a model is
-        // not on disk, that is not a red unless our auto-provisioner
-        // sucks"): a FILENAME the engine's folder enum lacks is
+        // THE PROVISIONER LAW (operator 2026-11-09: a model missing
+        // from disk is not a red while the auto-provisioner covers
+        // the miss): a FILENAME the engine's folder enum lacks is
         // provisioning state while the family's DECL declares it
         // downloadable — the download prompt owns the miss. With no
         // declared source the provisioner is blind and the miss
@@ -827,18 +829,17 @@ const H3_STAMP_COMPLETION: Record<string, unknown> = {
 
 /** The h3 lane docs, one per derived window family — real studio
  *  states (the R2 door arm's discipline), each doc carrying only its
- *  seats: the keyframe pin that derives t4r (with the Final Cut pick's
- *  stamps riding the studio state — THE BURN's repro (A), the
- *  operator's own scenario), the single-call text doc that derives
- *  t4_open (the maximal post state, legal on its lane), the two-call
- *  film that derives t4_chain. The FAMILY is DERIVED from each doc
+ *  seats: the keyframe pin that derives t4r (with the finish stamps
+ *  riding the studio state — THE BURN's repro (A), lawful since the
+ *  2026-11-15 chain hoist), the single-call text doc that derives
+ *  t4_open (the maximal post state), the two-call film that derives
+ *  t4_chain. The FAMILY is DERIVED from each doc
  *  (deriveWindowFamily) — never named by hand. */
 const H3_LANE_DOCS: ReadonlyArray<{ seats: Record<string, unknown>; extra: Record<string, unknown> }> = [
   {
-    // repro (A): the Final Cut pick's stamps + a keyframe pin — the
-    // pre-B1 serializer emitted them and the walk refused the four
-    // verbatim; the landed gate deletes them at the emit and the doc
-    // composes clean.
+    // repro (A): the finish stamps + a keyframe pin — the pre-cure
+    // serializer emitted them into a doc whose lane mounted no chain;
+    // since the hoist the lane fires them and the doc composes.
     seats: {
       keyframes: [{ image: "anchor.png", frame: 0 }],
       calls: [{ text: "the courier steps in", start_frame: 0, end_frame: 90 }],
@@ -896,6 +897,7 @@ function h3CoverageDoc(): Record<string, unknown> {
 
 describe("every studio tenant's persisted key set composes on its own derived lane (the param-seat-parity wall, B4/R1)", () => {
   let svc: CardRegistryService;
+  let cardDefs: Awaited<ReturnType<typeof loadCardDefs>> | undefined;
   beforeAll(async () => {
     const ctx = new Context();
     // the dangling sweep reads the queue seat's manifest — a bare
@@ -908,6 +910,7 @@ describe("every studio tenant's persisted key set composes on its own derived la
     await svc.prime();
     assertHermeticRode();
     await loadCardDefs();
+    cardDefs = await loadCardDefs();
   }, 90_000);
 
   it("THE WINDOW-FAMILY VOICE (the agent flow's step-8 burn): a stated lane on the REAL boarded family teaches the derivation law, never a pool list", () => {
@@ -958,6 +961,21 @@ describe("every studio tenant's persisted key set composes on its own derived la
       (v.route === fam || v.id === fam || (v.cells ?? []).some((c) => c.route === fam)))
     || row.variants.some((v) => (v.cells ?? []).some((c) => c.hide_from_dropdown === true && c.route === fam));
 
+  /** THE FAMILY LAW, DERIVED OFF THE CARD'S OWN BOARDED DECLs (the
+   *  one seat's home: ModelDecl.familyLaw — h3's index serves the
+   *  contract module's FAMILY_LAW by reference; the card definition
+   *  carries nothing, and the per-card reseatFamily face is dead).
+   *  Undefined for a card boarding no law-declaring family. */
+  const lawOfCard = (cardId: string): FamilyLaw | undefined => {
+    const def = cardDefs?.get(cardId);
+    if (def === undefined) return undefined;
+    for (const family of def.boarded) {
+      const law = getModel(family).familyLaw;
+      if (law !== undefined) return law;
+    }
+    return undefined;
+  };
+
   /** THE BENCH SETTLEMENT (bench.ts's merge-patch, verbatim law: per
    *  key, null deletes) — the view the run press actually reads. */
   const settleBench = (
@@ -997,6 +1015,9 @@ describe("every studio tenant's persisted key set composes on its own derived la
     }
     assert.ok(roster.length >= 3, `the derived roster collapsed to ${roster.length} tenant(s) (${roster.join(", ")}) — the studio.writes lift broke`);
     const offenders: string[] = [];
+    /** Rows whose derived lane refused part of the staged vocabulary
+     *  and rode the write door's reseat — the anti-vacuity floor. */
+    let deadReseats = 0;
 
     for (const tenant of roster) {
       const rows = groups.get(tenant)!;
@@ -1079,13 +1100,16 @@ describe("every studio tenant's persisted key set composes on its own derived la
             offenders.push(`${tenant} / ${family}: the studio's own settled emit REFUSES at the real walk — ${err instanceof Error ? err.message : String(err)}`);
           }
           if (family === "t4r") {
-            // THE B1 EMIT LAW AT THE PAYLOAD DEPTH: the serializer
-            // deletes every T4_ONLY member a stamped state carries (the
-            // repro-(A) scenario) — the settled doc carries nothing the
-            // walk would refuse.
-            for (const k of T4_ONLY_KEYS) {
-              if (saved[k] !== undefined && saved[k] !== null) {
-                offenders.push(`${tenant} / t4r: the serializer's own emit states "${k}" (${String(saved[k])}) — the walk refuses it on the reference lane`);
+            // THE RETIREMENT'S RECEIPT AT THE PAYLOAD DEPTH: a finish
+            // stamp the state holds rides the serializer's emit on
+            // t4r — the burn's scenario is now the COMPOSING doc, and
+            // the door above proved it. A serializer that strips it
+            // again reds here by name.
+            for (const k of H3_BURN_FOUR) {
+              const stated = (state as Record<string, unknown>)[k];
+              if (stated === undefined || stated === null) continue;
+              if (saved[k] !== stated) {
+                offenders.push(`${tenant} / t4r: the serializer's own emit LOST the stated "${k}" (${String(stated)} → ${String(saved[k])}) — the burn's silent-drop class is back`);
               }
             }
           }
@@ -1139,7 +1163,52 @@ describe("every studio tenant's persisted key set composes on its own derived la
           if (coords.includes(k)) continue;
           staged[k] = `data:text/plain;base64,c2VhdC1wYXJpdHk=`;
         }
-        const body: Record<string, unknown> = { model: fam, ...staged };
+        // ── THE FAMILY RESEAT AT THE STORED-ROW DEPTH (2026-11-03) ──
+        // The staged vocabulary is the writer's FULL vocabulary, and on
+        // a family whose lane is DERIVED that vocabulary can derive a
+        // lane refusing half its own keys (h3: the guide seats derive
+        // t4r, whose dead set is the T4_ONLY leaves). No stored row
+        // ever looks like that — the write door reseats a flipped row
+        // through the shared drop (@melite/contracts reseatDeadKeys)
+        // BEFORE the judges and the store. This arm judges both
+        // halves, so neither can go silent: the raw vocabulary REFUSES
+        // naming exactly the law's dead set (the walk is real; the
+        // fixture is genuinely door-illegal), and the door's own
+        // reseat is what lets the tenant's stored row compose. The law
+        // is DERIVED off the card's boarded DECLs (getModel), never a
+        // copy — h3's FAMILY_LAW is the single home.
+        const rawBody: Record<string, unknown> = { model: fam, ...staged };
+        const law = lawOfCard(row.card);
+        let body = rawBody;
+        if (law !== undefined) {
+          const lane = deriveFamilyLane(law, rawBody);
+          const deadSet = law.deadKeys[lane] ?? [];
+          const expected = deadSet.filter((k) => k in staged).sort();
+          if (expected.length > 0) {
+            let rawRefusal = "";
+            try {
+              const rawPrep = prepareCardParams(svc, rawBody, fam, "admission");
+              admissionRefusal(svc, rawPrep.card, rawPrep.fam, rawPrep.params, "admission");
+            } catch (err) {
+              rawRefusal = err instanceof Error ? err.message : String(err);
+            }
+            if (rawRefusal === "") {
+              offenders.push(`${tenant} / ${fam}: the raw vocabulary derives '${lane}' yet ADMITS — the law's dead keys (${expected.join(", ")}) are refused by no judge; the lane's refusal went silent`);
+            } else {
+              for (const k of expected) {
+                if (!rawRefusal.includes(k)) {
+                  offenders.push(`${tenant} / ${fam}: the '${lane}' refusal does not name the dead key '${k}' — the voice must name every stranded key: ${rawRefusal}`);
+                }
+              }
+            }
+            const seated = reseatDeadKeys(law, rawBody, rawBody);
+            if (JSON.stringify(seated.dropped) !== JSON.stringify(expected)) {
+              offenders.push(`${tenant} / ${fam}: the write door's own reseat on the '${lane}' lane dropped ${JSON.stringify(seated.dropped)} — the law names ${JSON.stringify(expected)}; the stored row the next run composes would still carry the strand`);
+            }
+            body = seated.params;
+            deadReseats += 1;
+          }
+        }
         let prep;
         try {
           prep = prepareCardParams(svc, body, fam, "admission");
@@ -1148,8 +1217,10 @@ describe("every studio tenant's persisted key set composes on its own derived la
           offenders.push(`${tenant} / ${fam}: the tenant's own persisted key set REFUSES at the admission door — ${err instanceof Error ? err.message : String(err)}`);
           continue;
         }
-        // every staged key lands INSIDE the envelope, value verbatim
-        for (const k of Object.keys(staged)) {
+        // every surviving staged key lands INSIDE the envelope, value
+        // verbatim (a key the law reseated away is judged above)
+        for (const k of Object.keys(body)) {
+          if (k === "model") continue;
           if (!(k in prep.params) || prep.params[k] !== staged[k]) {
             offenders.push(`${tenant} / ${fam}: persisted key '${k}' did not land inside the envelope (params: ${Object.keys(prep.params).join(", ")})`);
           }
@@ -1246,16 +1317,16 @@ describe("every studio tenant's persisted key set composes on its own derived la
         } catch (err) {
           offenders.push(`${tenant}: the served variant stamp REFUSES at the admission door — ${err instanceof Error ? err.message : String(err)}`);
         }
-        // THE FAMILY-STAMPING ROWS (derived: a served row whose stamp
-        // carries a T4_ONLY member) — the family-conditional tenant's
-        // honest edge: the stamp composes on the lane that honors it
-        // and refuses loud, naming its members, on the lane that
-        // cannot. A silent compose there is the green-fraud itself.
+        // THE FINISH-STAMPING ROWS (derived: a served row whose stamp
+        // carries one of the burn's four) — since the 2026-11-15 hoist
+        // the stamp composes on the lane that derives t4r exactly as
+        // it does on t4_open; the chain FIRES there. A row that still
+        // fails at either door is the brick back.
         if (face === "serializer") {
-          const t4StampRows = stampRows.filter((v) =>
-            Object.keys(v.defaults ?? {}).some((k) => (T4_ONLY_KEYS as readonly string[]).includes(k)));
-          assert.ok(t4StampRows.length > 0, `${tenant}: no served variant row stamps a T4_ONLY member — the Final Cut pick's stamp vanished from the served spec; the stamp judge went vacuous`);
-          for (const v of t4StampRows) {
+          const finishStampRows = stampRows.filter((v) =>
+            Object.keys(v.defaults ?? {}).some((k) => (H3_BURN_FOUR as readonly string[]).includes(k)));
+          assert.ok(finishStampRows.length > 0, `${tenant}: no served variant row stamps a finish key — the Final Cut pick's stamp vanished from the served spec; the stamp judge went vacuous`);
+          for (const v of finishStampRows) {
             const openBase: Record<string, unknown> = {
               seed: 7,
               calls: [{ text: "the harbour holds its breath", start_frame: 0, end_frame: 90 }],
@@ -1266,31 +1337,24 @@ describe("every studio tenant's persisted key set composes on its own derived la
             } catch (err) {
               offenders.push(`${tenant}: served stamp row '${v.id}' refuses on its sanctioned lane (t4_open) — ${err instanceof Error ? err.message : String(err)}`);
             }
+            // THE SAME STAMP ON THE REFERENCE LANE: the burn's exact
+            // shape composes (the chain mounts there now), so the
+            // receipt is a GREEN run door, not a refusal voice.
             const t4rBase: Record<string, unknown> = {
               seed: 7,
               keyframes: [{ image: "anchor.png", frame: 0 }],
               calls: [{ text: "the courier steps in", start_frame: 0, end_frame: 90, image: "anchor.png" }],
               ...(v.defaults ?? {}),
             };
-            let refused = "";
             try {
               await svc.phase1Card({ ...t4rBase, card: firstOffered.row.card, model: owningFam }, owningFam);
             } catch (err) {
-              refused = err instanceof Error ? err.message : String(err);
-            }
-            const t4Members = Object.keys(v.defaults ?? {}).filter((k) => (T4_ONLY_KEYS as readonly string[]).includes(k));
-            if (refused === "") {
-              offenders.push(`${tenant}: served stamp row '${v.id}' COMPOSED on a derived-t4r doc carrying ${t4Members.join(", ")} — the family walk lost its sanction gate`);
-            } else {
-              for (const k of t4Members) {
-                if (!refused.includes(k)) offenders.push(`${tenant}: the t4r refusal for stamp row '${v.id}' does not name its member '${k}': ${refused}`);
-              }
+              offenders.push(`${tenant}: served stamp row '${v.id}' REFUSES on a derived-t4r doc — the lane's chain is not mounted: ${err instanceof Error ? err.message : String(err)}`);
             }
           }
-          // THE BURN'S NEGATIVE CONTROL (repro (A)'s hand doc): the
-          // four-key stamp on a keyframe doc refuses with the walk's
-          // verbatim voice — the refusal is a wall receipt, never an
-          // operator discovery again.
+          // THE BURN'S POSITIVE CONTROL (repro (A)'s hand doc): the
+          // four-key keyframe doc COMPOSES with the walk's own voice
+          // silent — the retirement's receipt at the run door.
           const fourKeyDoc: Record<string, unknown> = {
             seed: 7,
             keyframes: [{ image: "anchor.png", frame: 0 }],
@@ -1303,12 +1367,8 @@ describe("every studio tenant's persisted key set composes on its own derived la
           } catch (err) {
             burnRefused = err instanceof Error ? err.message : String(err);
           }
-          if (burnRefused === "" || !burnRefused.includes("unsanctioned inject keys")) {
-            offenders.push(`${tenant}: the burn's four-key keyframe doc no longer refuses with the walk's voice (got: ${burnRefused || "a clean compose"}) — the t4r sanction gate moved or died`);
-          } else {
-            for (const k of H3_BURN_FOUR) {
-              if (!burnRefused.includes(k)) offenders.push(`${tenant}: the four-key refusal does not name '${k}': ${burnRefused}`);
-            }
+          if (burnRefused !== "") {
+            offenders.push(`${tenant}: the burn's four-key keyframe doc REFUSES at the run door again (${burnRefused}) — the lane dead letter came back`);
           }
         }
       }
@@ -1319,6 +1379,16 @@ describe("every studio tenant's persisted key set composes on its own derived la
       if (hidden.length > 0) console.log(`[param-seat-parity] ${tenant}: hidden-quant rows staged by no one (the door's own hide marks): ${hidden.join(", ")}`);
     }
 
+    // THE RETIREMENT'S RECEIPT: no family dead-set reseat fires on
+    // any tenant — h3's law carries no lane dead letters any more.
+    // A non-zero count means a lane dead letter came back; the
+    // generic drop's own teeth are judged by the matrix wall's LAW F
+    // against a synthetic orphan law (a real one no longer exists).
+    assert.equal(
+      deadReseats,
+      0,
+      "a family dead-set reseat FIRED during the sweep — a lane dead letter exists again; the 2026-11-15 retirement deleted the class",
+    );
     assert.deepEqual(offenders, [], `PARAM-SEAT-PARITY BROKEN:\n${offenders.join("\n")}`);
   });
 
@@ -1430,7 +1500,6 @@ describe("presence-at-door: the commit seam outside studio commits refuses an il
   it("THE ILLEGAL-KEY ARM: a key no card declares through the real drafts/patch door refuses loud — the compose door's own voice names the key at the write, and the row never carries it", async () => {
     const root = mkdtempSync(join(tmpdir(), "sd3-presence-"));
     onTestFinished(() => rmSync(root, { recursive: true, force: true }));
-    mkdirSync(join(root, "drafts"), { recursive: true });
     const ctx = new Context();
     // THE REAL REGISTRY (the drafts wall's every-boot law): the door's
     // legal key set is the card DECL — served by the same service the
@@ -1447,7 +1516,7 @@ describe("presence-at-door: the commit seam outside studio commits refuses an il
       { name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as unknown as Plugin,
       { backend: "json" },
     );
-    await ctx.plugin(draftsPlugin as unknown as Plugin, { storageRoot: join(root, "storage") });
+    await ctx.plugin(draftsPlugin as unknown as Plugin);
     const live = ctx as unknown as Context;
     const { draftId, stageId, rev } = await seedStage(live, "sd3bad", "image-gen");
 
@@ -1476,7 +1545,6 @@ describe("presence-at-door: the commit seam outside studio commits refuses an il
   it("THE DOOR'S ROSTER IS THE DECL'S: a key the image-gen card's own schema declares rides the same door and lands — the refusal is set membership on the derived surface, never a blanket door", async () => {
     const root = mkdtempSync(join(tmpdir(), "sd3-roster-"));
     onTestFinished(() => rmSync(root, { recursive: true, force: true }));
-    mkdirSync(join(root, "drafts"), { recursive: true });
     const ctx = new Context();
     const registry = new CardRegistryService(new Context());
     await registry.prime();
@@ -1490,7 +1558,7 @@ describe("presence-at-door: the commit seam outside studio commits refuses an il
       { name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as unknown as Plugin,
       { backend: "json" },
     );
-    await ctx.plugin(draftsPlugin as unknown as Plugin, { storageRoot: join(root, "storage") });
+    await ctx.plugin(draftsPlugin as unknown as Plugin);
     const live = ctx as unknown as Context;
     // THE DERIVED KEY: read off the card's DECL row (schemaNames — the
     // knob surface the emitter projects), never a hand list. The floor
@@ -1511,10 +1579,9 @@ describe("presence-at-door: the commit seam outside studio commits refuses an il
     assert.equal(stageParamsOf(after, stageId)["negative_prompt"], "blurry", "the landed key is the stored row's own state");
   });
 
-  it("THE FAMILY SEAM: the t4r presence walk's inject keys refuse at the write door in the run door's own voice — one hop before compose, and the identical body without the key lands", async () => {
+  it("THE FAMILY SEAM RETIRED: the t4r finish doc LANDS at the write door and the stored row carries its stamp — one law, no lane refusal", async () => {
     const root = mkdtempSync(join(tmpdir(), "sd3-family-"));
     onTestFinished(() => rmSync(root, { recursive: true, force: true }));
-    mkdirSync(join(root, "drafts"), { recursive: true });
     const ctx = new Context();
     const registry = new CardRegistryService(new Context());
     await registry.prime();
@@ -1528,13 +1595,13 @@ describe("presence-at-door: the commit seam outside studio commits refuses an il
       { name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as unknown as Plugin,
       { backend: "json" },
     );
-    await ctx.plugin(draftsPlugin as unknown as Plugin, { storageRoot: join(root, "storage") });
+    await ctx.plugin(draftsPlugin as unknown as Plugin);
     const live = ctx as unknown as Context;
     const { draftId, stageId, rev } = await seedStage(live, "sd3t4r", "h3-timeline");
     // THE AUDIT'S OWN EXAMPLE (SD-3's rows: SPE/SR stamps meeting the
-    // value-blind presence walk): a guided single-call doc derives t4r
-    // (deriveWindowFamily — the same contract module the walk reads),
-    // and the sr_switch stamp is an inject key on that lane.
+    // value-blind presence walk): a guided single-call doc derives
+    // t4r, and since the 2026-11-15 chain hoist the sr_switch stamp is
+    // a LAWFUL key there — the engine mounts the chain it arms.
     const t4rBody: Record<string, unknown> = {
       model: "h3",
       variant: "timeline",
@@ -1543,35 +1610,27 @@ describe("presence-at-door: the commit seam outside studio commits refuses an il
       sr_switch: true,
     };
     assert.equal(deriveWindowFamily(t4rBody as never), "t4r", "the probe body derives t4r on the walk's own derivation — a stale derivation invalidates this arm, not the door");
-    const refused = await failureOf(
+    const landed = await failureOf(
       live.draftsRemote.remoteExportPatch(draftId, stageId, { params: t4rBody }, rev, sig),
     );
-    assert.ok(refused !== null && typeof refused === "object", "the write door refuses the inject key — the walk's verdict fires at the commit seam, not only at compose");
-    assert.equal(
-      (refused as { code?: string }).code, "bench/family-refusal",
-      "the refusal rides the family admission's own code: " + JSON.stringify(refused),
-    );
-    assert.match(
-      String((refused as { message?: string }).message ?? ""),
-      /unsanctioned inject keys: sr_switch/,
-      "the refusal is the RUN DOOR'S OWN VERDICT (the presence walk's spine), spoken one hop before compose",
-    );
-    // THE PRESENCE, NOT THE SHAPE: the identical body minus the inject
-    // key lands — the door judged the KEY, never the body's accent.
-    const clean = { ...t4rBody };
-    delete clean["sr_switch"];
-    const ok = await live.draftsRemote.remoteExportPatch(draftId, stageId, { params: clean }, rev, sig);
-    assert.equal((ok as { delivered?: boolean }).delivered, true, "the same body without the inject key lands");
+    assert.equal(landed, null, "the write door LANDS the t4r finish doc — no lane refusal exists any more: " + JSON.stringify(landed));
     const after = await live.draftsRemote.get(draftId, sig);
     const params = stageParamsOf(after, stageId);
-    assert.equal(params["sr_switch"], undefined, "the refused key is not in the stored row");
+    assert.equal(params["sr_switch"], true, "the stored row carries the stamp the operator stated (never silently dropped)");
     assert.ok(Array.isArray(params["calls"]), "the landed body's own plane rides");
+    // THE PRESENCE, NOT THE SHAPE: the identical body MINUS the stamp
+    // still lands — the door judged nothing that would split it.
+    const clean = { ...t4rBody };
+    delete clean["sr_switch"];
+    const rev2 = (await live.draftsRemote.get(draftId, sig)) as { rev?: number };
+    const ok = await live.draftsRemote.remoteExportPatch(draftId, stageId, { params: clean }, rev2.rev ?? rev + 1, sig);
+    assert.equal((ok as { delivered?: boolean }).delivered, true, "the same body without the stamp lands");
+    assert.ok(Array.isArray(stageParamsOf(await live.draftsRemote.get(draftId, sig), stageId)["calls"]), "the second land's plane rides");
   });
 
-  it("THE FAMILY SEAM, BOTH DOORS (2026-11-11, the one-seat law): the agent's bench/patch verb refuses the IDENTICAL authored inject key with the identical verdict — a wall that drives one door certifies one door, and the split lived exactly there (the bench verb's union fallback silently dropped the authored key while the GUI's verb refused it)", async () => {
+  it("THE FAMILY SEAM, BOTH DOORS (the one-seat law): the agent's bench/patch verb LANDS the identical authored finish doc — one law, both transports", async () => {
     const root = mkdtempSync(join(tmpdir(), "sd3-family-b-"));
     onTestFinished(() => rmSync(root, { recursive: true, force: true }));
-    mkdirSync(join(root, "drafts"), { recursive: true });
     const ctx = new Context();
     const registry = new CardRegistryService(new Context());
     await registry.prime();
@@ -1585,7 +1644,7 @@ describe("presence-at-door: the commit seam outside studio commits refuses an il
       { name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as unknown as Plugin,
       { backend: "json" },
     );
-    await ctx.plugin(draftsPlugin as unknown as Plugin, { storageRoot: join(root, "storage") });
+    await ctx.plugin(draftsPlugin as unknown as Plugin);
     const live = ctx as unknown as Context;
     const seeded = await live.benchRemote.addStage("sd3t4rb", { card: "h3-timeline", expect_rev: 0 }, sig);
     const refused = await failureOf(
@@ -1599,14 +1658,10 @@ describe("presence-at-door: the commit seam outside studio commits refuses an il
         expect_rev: seeded.rev,
       }, sig),
     );
-    assert.ok(refused !== null && typeof refused === "object",
-      "the agent's door refuses the authored inject key exactly as the GUI's door does — one law, both transports");
-    assert.equal((refused as { code?: string }).code, "bench/family-refusal",
-      "the refusal rides the family admission's own code on this door too: " + JSON.stringify(refused));
-    assert.match(
-      String((refused as { message?: string }).message ?? ""),
-      /unsanctioned inject keys: sr_switch/,
-      "the agent's door speaks the run door's own verdict, never a silent drop",
-    );
+    assert.equal(refused, null,
+      "the agent's door LANDS the authored finish doc exactly as the GUI's door does — one law, both transports: " + JSON.stringify(refused));
+    const after = await live.draftsRemote.get(benchDraftIdOf("sd3t4rb") as never, sig);
+    assert.equal(stageParamsOf(after, String(seeded.stage))["sr_switch"], true,
+      "the agent's land stores the same stamped row the GUI's door stores");
   });
 });

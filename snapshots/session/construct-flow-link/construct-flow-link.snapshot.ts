@@ -55,9 +55,20 @@ describe('construct flow-link (keyless replay)', () => {
       agent: { id: 's_chat7' },
     } as never)) as Record<string, unknown>
 
-    // the persisted channel: the projector's payload is exactly {bench}
+    // the persisted channel: the projector's payload is exactly
+    // {bench}. THE ONE-SEAT SPELLING (2026-10-31, benchKeyOfExec):
+    // this exec's bare uuid agent id is a DELEGATED lane, so the
+    // tool forwards the seat as delegate:s_chat7 — the estate door
+    // re-seats it to the parent conversation's bench (seatOf), and
+    // the client address channel carries the spelling verbatim
+    // (cards-resource carriedBenchKey — this replay found the client
+    // falling it to 'main', the delegation split on the link
+    // channel, cured the same night). The RECORDED row below
+    // predates the spelling (a pre-law recording — replay-only, no
+    // record machinery), so the log-round-trip arms assert the
+    // recorded bytes' own fidelity and name the difference.
     const meta = tool.output.presentationMeta!({} as never, out as never) as Record<string, unknown>
-    assert.deepEqual(meta, { bench: 's_chat7' })
+    assert.deepEqual(meta, { bench: 'delegate:s_chat7' })
 
     // (audit-followups M3, 2026-11-06) the settled block rides the
     // RECORDED tool-result row — the log→meta→card half the F3 audit
@@ -74,8 +85,15 @@ describe('construct flow-link (keyless replay)', () => {
       content: readonly unknown[]
     }
     assert.equal(rec.call?.name, 'melite_construct', 'the row carries its call head')
-    assert.deepEqual(rec.meta, { bench: 's_chat7' }, 'the persisted meta survives the log round-trip byte-for-byte')
-    assert.deepEqual(rec.meta, meta, 'the recorded meta equals the live projection')
+    assert.deepEqual(rec.meta, { bench: 's_chat7' }, 'the recorded (pre-law) bytes survive the log round-trip byte-for-byte')
+    // the pre-law recording's key vs the live projection: the
+    // difference is EXACTLY the one-seat spelling (the delegate:
+    // prefix the law added) — anything else would be drift
+    assert.equal(
+      'delegate:' + (rec.meta as { bench?: string }).bench,
+      (meta as { bench?: string }).bench,
+      'the live projection differs from the recording by exactly the one-seat delegate: spelling',
+    )
     const block: ToolCallBlockView = {
       kind: 'tool-result',
       callId: rec.callId,
@@ -90,7 +108,13 @@ describe('construct flow-link (keyless replay)', () => {
     const link = screen.getByRole('button')
     assert.equal(link.getAttribute('aria-label'), 'open flow', 'the flow link renders from the persisted meta alone')
     fireEvent.click(link)
-    assert.deepEqual(opened, ['dsh-resource://cards/bench/s_chat7'], 'the link opens the conversation bench address')
+    // THE CARD RENDERS THE PERSISTED ROW (persistence-fidelity: the
+    // link address is built from the recording's own meta bytes, not
+    // the live projection) — this recording predates the one-seat
+    // spelling, so its link is the pre-law address. The client carry
+    // (carriedBenchKey) is proven on the pure plane: a delegate:
+    // meta renders a delegate: address, verbatim.
+    assert.deepEqual(opened, ['dsh-resource://cards/bench/s_chat7'], 'the link opens the address the recorded meta names (the card channel is faithful to its persisted row)')
     cleanup()
   })
 })

@@ -82,7 +82,11 @@ describe.skipIf(!ENGINE_FREE)('inference smoke (with live ComfyUI)', () => {
         test: false,
         flow_inline: {
           id: 'smoke',
-          stages: [{ id: 's', engine: 'comfyui', params: { workflow: TURBO_GRAPH } }],
+          // THE ONE TABLE (runsStart.ts 2026-11-01): a stage with no
+          // outputs and no card_io refuses at admission — the
+          // engine-registry default fill is retired. This smoke's
+          // single SaveImage names its channel.
+          stages: [{ id: 's', engine: 'comfyui', outputs: { default: 'image' }, params: { workflow: TURBO_GRAPH } }],
         },
       } as never, new AbortController().signal)
       assert.equal(ans.status, 'queued')

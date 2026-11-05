@@ -19,6 +19,8 @@
       "@melite/comfyui-card-kit/model-contract": ["../../packages/engines/comfyui-card-kit/src/model-contract.ts"],
       "@melite/comfyui-cordis/provisioning-manifest": ["../../packages/engines/comfyui-cordis/scripts/provision-extensions-manifest.ts"],
       "@melite/estate-provisioning": ["../../packages/estate/provisioning/src/index.ts"],
+      "@melite/estate-queue": ["../../packages/harness/estate-queue/src/index.ts"],
+      "@melite/models-krea-2": ["../../packages/models/krea-2/src/index.ts"],
       "@melite/models-qwen-img-edit-21": ["../../packages/models/qwen-img-edit-21/src/index.ts"]
     }
   },

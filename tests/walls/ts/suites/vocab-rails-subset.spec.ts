@@ -130,10 +130,8 @@ const JOINED_RAILS: { decl: string; join: string; exact?: boolean }[] = [
 const LOCAL: { site: string; values: () => readonly string[]; reason: string }[] = [
   { site: "tts:voice", values: () => PRESET_SPEAKERS, reason: "the model's own built-in CustomVoice roster (the engine node declares no speaker combo)" },
   { site: "music:mode", values: () => inlineVocab("audio/music/src/card.ts", "mode"), reason: "the MMAudio lane's prompt-side mode toggle (no engine combo declares it)" },
-  { site: "anny:transparent", values: () => inlineVocab("3d/anny/src/card.ts", "transparent"), reason: "wire-string toggle under the loose anny law (str(x) != 'false' — the vendor step-doc, not an engine combo)" },
   { site: "tagger:extra_option", values: () => TAGGER_EXTRA_OPTIONS, reason: "the JoyCaption instruction list minus the engine's own vulgar-caption row — the card deliberately drops that one upstream combo entry (release hygiene, 2026-10-16: the tracked tree keeps no profanity); the engine node keeps its full dropdown" },
   { site: "input-prep:media_type", values: () => inlineVocab("image/input-prep/src/card.ts", "media_type"), reason: "card-local media-kind toggle" },
-  { site: "rig:file_format", values: () => inlineVocab("3d/rig/src/card.ts", "file_format"), reason: "card-local export-format toggle — glb for the web estate, fbx for the DSH-profile Unity door (the M5 ruling: the node converts through headless Blender; no engine combo declares formats)" },
   { site: "h3:attention_backend", values: () => inlineVocab("models/h3/src/schema.ts", "attention_backend"), reason: "the h3 family's own model vocabulary (its kitchen's attention modes)" },
   { site: "h3:sla_block_size", values: () => inlineVocab("models/h3/src/schema.ts", "sla_block_size"), reason: "the h3 family's own SLA block sizes" },
   { site: "h3:sla_dense_backend", values: () => inlineVocab("models/h3/src/schema.ts", "sla_dense_backend"), reason: "the h3 family's own dense backend picker" },
@@ -280,8 +278,9 @@ describe("THE VOCAB-RAILS SUBSET WALL — every closed vocabulary is engine-join
       // + upscale_model (JOINED to the handoff's model_name combo).
       "models/h3/src/schema.ts": 13,
       "image/tagger/src/card.ts": 4,
-      "3d/anny/src/card.ts": 1,
-      "3d/rig/src/card.ts": 1,
+      // the blender-lane removal (2026-11-01): anny's transparent row
+      // and rig's file_format row are gone — no 3d card carries a
+      // card-local vocabulary( site anymore.
       "audio/music/src/card.ts": 1,
       "audio/tts/src/card.ts": 1,
       // 2 -> 3 (2026-11-08, the model choice): scale_model joined —

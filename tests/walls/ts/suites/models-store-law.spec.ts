@@ -353,6 +353,18 @@ describe("THE MODELS-STORE LAW — real artifacts, no unnamed bytes", () => {
         }
       }
       if (dirWired) continue;
+      // THE LORAS TRAY (operator 2026-11-04: "I want the
+      // functionality of adding random loras I found online,
+      // providing it to the agent, and then having it appear under
+      // loras mod with the right name, to just work"): the store's
+      // loras/ tree is the operator's own picker tray — weights
+      // there are served vocabulary under the mods fate (the estate
+      // never fetches them; the engine's lora door enumerates the
+      // whole tree and the loras flavor serves them), never dead
+      // downloads. Static flavor rows keep their provenance links;
+      // the tray needs no tracked-text blessing per file — the
+      // loras-mod-serves-the-tray wall owns the serve side.
+      if (rel.startsWith("loras/") && weightsFile.test(base)) continue;
       dead.push(rel);
     }
     expect(dead, "store files no DECL/lane/mods/fixture names — name them or delete them").toEqual([]);

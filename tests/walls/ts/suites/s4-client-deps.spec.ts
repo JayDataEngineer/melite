@@ -76,9 +76,13 @@ describe("S4a — the real DSH client set is the estate's dependency", () => {
     // a host leaving the atoms train or a new UI package joining
     // are both deliberate edits this list names.
     assert.deepEqual(ATOM_HOSTS.map((h) => h.slice(h.indexOf("packages"))), [
-      "packages/3d/img-to-mesh", // the stale exclusion comment died (F-M1): its studio DOES ride the atoms
+      // 2026-11-01: img-to-mesh + action_cards/motion/ui left the train —
+      // the cruft census (commit 88fdd9069) cut their @melite-side
+      // verified-unused dependency rows, the primitives row among them
+      // (zero src references in both packages; the derivation here is
+      // content-based, so the host set follows the dependency). Their
+      // F-M1-era studio consumption rides sibling packages now.
       "packages/engines/comfyui/src/action_cards",
-      "packages/engines/comfyui/src/action_cards/motion/ui",
       "packages/image/mask-studio",
       "packages/motion/motion", // missed by the hand list (F-M1)
       "packages/video/h3-timeline",

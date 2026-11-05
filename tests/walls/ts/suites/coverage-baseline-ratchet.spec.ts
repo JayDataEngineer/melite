@@ -293,12 +293,10 @@ const CAS_LANDING_NEW_FLOORS: Record<string, { statements: number, branches: num
   '**/packages/estate/provisioning/src/snapshot.ts': { statements: 95.38, branches: 86.95, functions: 100, lines: 100 },
 };
 
-/** THE CAS DEEPEN (1 row) — the scoped probe seated operation-store
- *  at its single-suite face; the first FULL-gate measurement of the
- *  CAS code came in below it (the loaded pool's interleaving skips
- *  marker-race paths the scoped run takes deterministically). The
- *  row re-seats at the full gate's failing face — the same
- *  load-jitter law that seated MotionTimelineBarDrag. */
+/** THE CAS DEEPEN (1 row) — RETIRED 2026-11-03: the ghost/flood-cure
+ *  regen re-measured operation-store above the argued from face and
+ *  the cleanup arm removed the entry; the consts stay as the
+ *  archaeology of the face it argued (from → to). */
 const CAS_DEEPEN_OLD_FLOORS: Record<string, { statements: number, branches: number, functions: number, lines: number }> = {
   '**/packages/estate/provisioning/src/operation-store.ts': { statements: 91.45, branches: 92.89, functions: 96.96, lines: 93.49 },
 };
@@ -690,8 +688,6 @@ const LANDED_DEBT2_OLD_FLOORS: Record<string, { statements: number, branches: nu
     '**/packages/models/anima/src/promptTags.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
     '**/packages/models/anny/src/actions.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
     '**/packages/models/anny/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
-    '**/packages/models/anycreature/src/actions.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
-    '**/packages/models/anycreature/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
     '**/packages/models/concat/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
     '**/packages/models/fibo2-edit/src/actions.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
     '**/packages/models/fibo2-edit/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
@@ -1226,8 +1222,6 @@ const LANDED_DEBT2_NEW_FLOORS: Record<string, { statements: number, branches: nu
     '**/packages/models/anima/src/promptTags.ts': { statements: 97.62, branches: 97.44, functions: 75, lines: 97.14 },
     '**/packages/models/anny/src/actions.ts': { statements: 95.45, branches: 92.86, functions: 85.71, lines: 95.24 },
     '**/packages/models/anny/src/index.ts': { statements: 75, branches: null, functions: 50, lines: 66.67 },
-    '**/packages/models/anycreature/src/actions.ts': { statements: 83.33, branches: null, functions: 50, lines: 83.33 },
-    '**/packages/models/anycreature/src/index.ts': { statements: 75, branches: null, functions: 50, lines: 66.67 },
     '**/packages/models/concat/src/index.ts': { statements: 75, branches: null, functions: 50, lines: 66.67 },
     '**/packages/models/fibo2-edit/src/actions.ts': { statements: 97.56, branches: 96.97, functions: 66.67, lines: 97.44 },
     '**/packages/models/fibo2-edit/src/index.ts': { statements: 75, branches: null, functions: 50, lines: 66.67 },
@@ -1683,7 +1677,10 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     '**/packages/video/h3-timeline/src/ui/studio/usePromptMutations.ts',
     '**/packages/web-kit/catalog/src/catalogContract.ts',
     '**/packages/web/card-base/src/axes.tsx',
-    '**/packages/web/card-base/src/mods.tsx',
+    // mods.tsx left this list 2026-11-03 (the ghost/flood-cure-era
+    // regen over faces A,C): the committed row re-measured at its
+    // argued from face (100/99.77/100/100), so the cleanup arm
+    // demanded its removal in the same landing.
     '**/packages/web/card-base/src/preview.tsx',
     '**/packages/web/infer-gallery/src/drilldown.tsx',
     '**/packages/web/melite-card-deck/src/client/lora-section.tsx'
@@ -1748,7 +1745,15 @@ const ARGUED_FLOOR_DROPS: Record<string, {
   // spread rides LAST so a key this regen re-drops (a row the 11-06
   // or tail entries argued down before) is owned by the CURRENT
   // argument, never two.
-  ...Object.fromEntries(Object.keys(REGEN_2026_10_23_OLD_FLOORS).map((key) => [key, {
+  // VOIDING A DELETED ROW'S ARGUMENT (2026-11-15): an argued drop
+  // excuses a row that still exists. When a landing DELETES or renames
+  // the file (omitT4Recipe -> omitLaneRecipe here), the historical
+  // argument has nothing left to excuse and must not demand a baseline
+  // row for a path that is gone — so the spreads skip keys with no
+  // baseline row. A LIVE file missing its row still reds in the
+  // row-census arm above ("every gated file has exactly one baseline
+  // row"), so nothing slips through this filter.
+  ...Object.fromEntries(Object.keys(REGEN_2026_10_23_OLD_FLOORS).filter((key) => COVERAGE_BASELINE[key] !== undefined).map((key) => [key, {
     from: REGEN_2026_10_23_OLD_FLOORS[key]!,
     to: REGEN_2026_10_23_NEW_FLOORS[key]!,
     roadmapHeading: "The 2026-10-23 gate regeneration — 61 rows re-pinned at the stable measured faces",
@@ -1762,13 +1767,11 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     reviewBy: "2026-12-23",
     reason: "the two-fetch hole (save-then-reread let the race's loser clobber the winner's claim stamp and read its own back) closes at the store itself: saveIfState is a wx-create claim marker arbitrated by the filesystem, cross-handle and cross-process; the three touched files re-seat at the scoped provisioning-pool faces (the full pool only adds covered paths on top) — lift the floors back with the CAS's own arms before the review date",
   }])),
-  ...Object.fromEntries(Object.keys(CAS_DEEPEN_OLD_FLOORS).map((key) => [key, {
-    from: CAS_DEEPEN_OLD_FLOORS[key]!,
-    to: CAS_DEEPEN_NEW_FLOORS[key]!,
-    roadmapHeading: "The claim CAS landing — the two-seat race's store-arbiter cure",
-    reviewBy: "2026-12-23",
-    reason: "the CAS landing's first FULL-gate measurement seated operation-store below the scoped probe's single-suite face (the loaded pool's interleaving skips marker-race paths the scoped run takes deterministically — the same load-jitter law that seated MotionTimelineBarDrag at its failing face) — re-measure at a calm load or lift with the CAS's own arms before the review date",
-  }])),
+  // THE CAS DEEPEN entry left 2026-11-03 (the ghost/flood-cure-era
+  // regen over faces A,C): operation-store re-measured at
+  // 94.58/95.27/96.97/96.51 — above its argued from face
+  // (91.45/92.89/96.96/93.49) — so the cleanup arm demanded its
+  // removal in the same landing.
   ...Object.fromEntries(Object.keys(TRANSPORT_DEEPEN_OLD_FLOORS).map((key) => [key, {
     from: TRANSPORT_DEEPEN_OLD_FLOORS[key]!,
     to: TRANSPORT_DEEPEN_NEW_FLOORS[key]!,
@@ -1853,7 +1856,12 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     '**/packages/engines/comfyui-cordis/src/comfyui-host.ts',
     '**/packages/engines/comfyui-cordis/src/comfyui-merge.ts',
     '**/packages/engines/comfyui-cordis/src/comfyui-outputs.ts',
-    '**/packages/engines/comfyui-cordis/src/comfyui-transport.ts',
+    // comfyui-transport left this list 2026-11-03 (the ghost/flood-
+    // cure regen over faces A,C): the row re-measured at
+    // 89.77/78.18/89.47/90.79 — above this entry's from face on all
+    // four metrics — so the cleanup arm demanded its removal in the
+    // same landing. The TRANSPORT_DEEPEN entry for the same key
+    // stays: its from face is not yet reached.
     '**/packages/engines/comfyui-cordis/src/comfyui-types.ts',
     '**/packages/engines/comfyui-cordis/src/comfyui-upload.ts',
     '**/packages/engines/comfyui-cordis/src/entries/comfyui-engine.ts',
@@ -1900,7 +1908,13 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     '**/packages/estate/provisioning/src/contracts.ts',
     '**/packages/estate/provisioning/src/manager-client.ts',
     '**/packages/estate/provisioning/src/manager-provider.ts',
-    '**/packages/estate/provisioning/src/operation-store.ts',
+    // operation-store left this list 2026-11-03 (the ghost/flood-cure
+    // regen over faces A,C): the row re-measured at
+    // 94.58/95.27/96.97/96.51 — above this entry's from face
+    // (91.04/92.3/96.96/93.49) on all four metrics — so the cleanup
+    // arm demanded its removal in the same landing. The CAS_LANDING
+    // entry for the same key stays: its from face (96.53/97.45/100/
+    // 97.94) is not yet reached.
     '**/packages/estate/provisioning/src/snapshot.ts',
     '**/packages/estate/runs/src/index.ts',
     '**/packages/harness/estate-call/src/cardTool.ts',
@@ -1940,7 +1954,6 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     '**/packages/harness/estate-queue/src/queueSidecar.ts',
     '**/packages/harness/estate-queue/src/queueSubmit.ts',
     '**/packages/harness/estate-queue/src/queueSweep.ts',
-    '**/packages/harness/estate-queue/src/resurrect.ts',
     '**/packages/harness/estate-queue/src/runtimeProvision.ts',
     '**/packages/harness/estate-queue/src/runsChange.ts',
     '**/packages/harness/estate-queue/src/runsErrorCodes.ts',
@@ -2016,8 +2029,6 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     '**/packages/models/anima/src/promptTags.ts',
     '**/packages/models/anny/src/actions.ts',
     '**/packages/models/anny/src/index.ts',
-    '**/packages/models/anycreature/src/actions.ts',
-    '**/packages/models/anycreature/src/index.ts',
     '**/packages/models/concat/src/index.ts',
     '**/packages/models/fibo2-edit/src/actions.ts',
     '**/packages/models/fibo2-edit/src/index.ts',
@@ -2117,7 +2128,6 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     '**/packages/video/h3-timeline/src/ui/studio/docGrid.ts',
     '**/packages/video/h3-timeline/src/ui/studio/docHydrate.ts',
     '**/packages/video/h3-timeline/src/ui/studio/docModel.ts',
-    '**/packages/video/h3-timeline/src/ui/studio/omitT4Recipe.ts',
     '**/packages/video/h3-timeline/src/ui/studio/docPatch.ts',
     '**/packages/video/h3-timeline/src/ui/studio/pendingOps.ts',
     '**/packages/video/h3-timeline/src/ui/studio/pickVerdict.ts',
@@ -2240,7 +2250,11 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     '**/packages/web/card-base/src/icons.tsx',
     '**/packages/web/card-base/src/layout.tsx',
     '**/packages/web/card-base/src/media-library.ts',
-    '**/packages/web/card-base/src/mods.tsx',
+    // mods.tsx left this list 2026-11-03 (the ghost/flood-cure regen
+    // over faces A,C): the row re-measured at 99.8/98.48/99.14/99.75
+    // — above this entry's from face (99.76/97.65/98.95/99.7) on all
+    // four metrics — so the cleanup arm demanded its removal in the
+    // same landing, beside the 11-06-spread entry removed with it.
     '**/packages/web/card-base/src/pick-store.ts',
     '**/packages/web/card-base/src/rejection-voice.ts',
     '**/packages/web/card-base/src/poser-figure.tsx',
@@ -2276,7 +2290,11 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     '**/packages/web/infer-gallery/src/client/ui.tsx',
     '**/packages/web/infer-gallery/src/client/useFeed.ts',
     '**/packages/web/infer-gallery/src/client/waitState.ts',
-    '**/packages/web/infer-gallery/src/drilldown.tsx',
+    // (round-19 burn, 2026-11-15) drilldown left here — the gallery
+    // lane's arms lifted the row past this entry's from face
+    // (99.25/98.05/97.36/99.02 → seated 99.35/99.24/97.67/99.16), so
+    // the cleanup arm demanded its removal in the same landing; the
+    // earlier 11-06 entry (from 100) stays the owner.
     '**/packages/web/melite-card-deck/src/client/index.ts',
     '**/packages/web/melite-card-deck/src/client/lora-section.tsx',
     '**/packages/web/melite-card-deck/src/index.ts',
@@ -2320,7 +2338,7 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     '**/packages/web/viewer-base/src/wire.ts',
     '**/packages/web/viewer/src/client/index.ts',
     '**/packages/web/viewer/src/index.ts',
-  ].map((key) => [key, {
+  ].filter((key) => COVERAGE_BASELINE[key] !== undefined).map((key) => [key, {
     from: LANDED_DEBT2_OLD_FLOORS[key]!,
     // CLAMPED at the entry face: a metric the mint RAISED above the
     // seated floor needs no excuse (raises ride the ratchet), and the
@@ -2342,21 +2360,11 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     reviewBy: string,
     reason: string,
   }>,
-  // (2026-11-30, the grown-pool flap) MotionTimelineBarDrag branches:
-  // the row's documented load-jitter class (the 2026-10-23 regen
-  // already recorded the same swing: 74.8 → 73.28) recurred under
-  // the grown full pool — the drag-race arms interleave differently
-  // and the two marker-race branch points go dark while every test
-  // stays green. Two independent full-gate faces measured 73.28
-  // branches; seated at the recurring failing face per the
-  // PoseViewer3D precedent. All other metrics keep their floors.
-  '**/packages/web-kit/timeline/src/timeline/MotionTimelineBarDrag.ts': {
-    from: { statements: 89.36, branches: 74.05, functions: 76.19, lines: 94.02 },
-    to: { statements: 89.36, branches: 73.28, functions: 76.19, lines: 94.02 },
-    roadmapHeading: "The MotionTimelineBarDrag load-jitter flap — branches re-seated at the recurring failing face (2026-11-30)",
-    reviewBy: "2026-12-30",
-    reason: "the drag-race branch pair is load-interleaved: under the grown full pool two independent gate faces measured branches 73.28 with every test green (the same face the 2026-10-23 regen recorded), while the calm-load face measures 74.05 — a floor at the calm face flaps the gate per the PoseViewer3D precedent; re-measure at calm load or lift with deterministic drag arms before the review date",
-  },
+  // (round-19 burn, 2026-11-15) MotionTimelineBarDrag left here — the
+  // regeneration's two same-tree faces measured the calm branch face
+  // (74.05) and seated the row exactly at the entry's from face, so
+  // the cleanup arm demanded its removal in the same landing (the
+  // documented load-jitter class keeps its watch in the roadmap).
   // (2026-10-30, the proving-gate flap) service.ts branches: the
   // a8cfccc00 mint took min(1018,1017,1017) covered over the
   // A/C/final faces and minted (1017−1)/1104 = 92.03; the first
@@ -2366,13 +2374,83 @@ const ARGUED_FLOOR_DROPS: Record<string, {
   // worst face: (1016−1)/1104 = 91.94. The flap clause's own class
   // (PoseViewer3D): a floor at the high face flaps the gate with
   // CI load.
+  // (round-19 burn, 2026-11-15) service.ts RE-ARGUED at the K=1 mint:
+  // the regeneration seated 96.08/92.12 at its two green faces, the
+  // cleanup arm voided the old entry (the row had reached its from
+  // face), and the proving runs then measured a FOUR-path spread
+  // under load on every metric (1152..1148 of 1198 statements,
+  // 1018..1016 of 1104 branches) with all tests green — service.ts's
+  // own timing arms decide paths by wall-clock, and the regen's two
+  // faces were both lucky highs. The worst observed face across
+  // runs 4-7 seats the row, one path below per metric — 95.74/91.94,
+  // numbers the 2026-10-30 entry knew all along (its from face).
+  // (round-29 burn, 2026-11-03) service.ts ROUND THREE: the regen
+  // (94b684428) re-raised statements/functions/lines back OVER this
+  // entry's mint (95.74→95.91, 94.9→95.41, 97.2→97.39) without
+  // voiding it, and the next full-gate proving run re-measured the
+  // spread one path deeper on every metric (1148/1198 statements,
+  // 1016/1104 branches, 187/196 functions, 1007/1036 lines, all
+  // tests green). The row re-seats at the K=1 mint over the round-29
+  // worst face: 95.66/91.85/94.89/97.1. The regen may never raise a
+  // row that holds a live argued entry past its mint — that trample
+  // is the bug this third entry exists to close.
   '**/packages/estate/provisioning/src/service.ts': {
-    from: { statements: 95.74, branches: 92.03, functions: 94.39, lines: 97.1 },
-    to: { statements: 95.74, branches: 91.94, functions: 94.39, lines: 97.1 },
-    roadmapHeading: "The service.ts load-jitter flap — branches seated at the K=1 mint over the observed worst face",
-    reviewBy: "2026-11-30",
-    reason: "load-nondeterministic branch count under the full gate: the A/C/final faces minted 92.03, the proving face measured 1016/1104 (92.02) — one path beyond the margin; seated with one path of headroom",
+    from: { statements: 95.91, branches: 91.94, functions: 95.41, lines: 97.39 },
+    to: { statements: 95.66, branches: 91.85, functions: 94.89, lines: 97.1 },
+    roadmapHeading: "The service.ts load-jitter flap, round three — re-seated at the K=1 mint after the regen trampled the round-two mint",
+    reviewBy: "2026-12-15",
+    reason: "load-nondeterministic path counts under the full gate, the receipted four-path timing spread (service.ts's own timing arms decide paths by wall-clock): the round-19 mint held until the 2026-11-03 regen re-raised three of its four metrics over the argued floor, and the next proving run measured 1148/1198 statements, 1016/1104 branches, 187/196 functions, 1007/1036 lines with EVERY test green. The row seats one path below each worst observed face. Lift with deterministic arms or re-measure at calm load before the review date",
   },
+  // (round-29 burn, 2026-11-03) comfyui-transport re-argued: the
+  // round-19 entry retired when the row "climbed back past from",
+  // but the climb was a lucky face — the transport's own reconnect
+  // arms decide paths by wall-clock, and the gate's proving set
+  // re-measured the two-path spread (78/88 vs 80/88 statements,
+  // 43/55 vs 44/55 branches) with all tests green, twice at the low
+  // face. The row seats at the K=1 mint over the low face:
+  // statements 77/88, branches 42/55, lines 68/76; functions kept
+  // (met at the low face exactly).
+  '**/packages/engines/comfyui-cordis/src/comfyui-transport.ts': {
+    from: { statements: 89.77, branches: 78.18, functions: 89.47, lines: 90.79 },
+    to: { statements: 87.5, branches: 76.36, functions: 89.47, lines: 89.47 },
+    roadmapHeading: "The comfyui-transport reconnect-spread flap — re-seated at the K=1 mint over the twice-observed low face",
+    reviewBy: "2026-12-15",
+    reason: "the transport's reconnect arms decide paths by wall-clock under the full pool: two of the round-29 proving runs measured the low face (78/88 statements, 43/55 branches, 69/76 lines) and two the high face (80/88, 44/55, 70/76) with EVERY test green — the round-19 retirement rode a lucky high face. The row seats one path below the low face on the three flapping metrics; functions stays (met at the low face). Lift with deterministic arms or re-measure at calm load before the review date",
+  },
+  // (round-29 burn, 2026-11-03) MotionTimelineBarDrag re-argued: the
+  // round-19 removal rode the calm face; the gate's proving set since
+  // measured the branch face as low as 96/131 (73.28) with all tests
+  // green — the drag gesture arms decide coverage by event timing
+  // under load. The row seats one path below the worst observed
+  // branch face: 95/131 = 72.52; the other three metrics held their
+  // floors at every observed face.
+  '**/packages/web-kit/timeline/src/timeline/MotionTimelineBarDrag.ts': {
+    from: { statements: 89.36, branches: 74.81, functions: 76.19, lines: 94.02 },
+    to: { statements: 89.36, branches: 72.52, functions: 76.19, lines: 94.02 },
+    roadmapHeading: "The MotionTimelineBarDrag gesture-timing branch flap — re-seated at the K=1 mint over the worst observed face",
+    reviewBy: "2026-12-15",
+    reason: "the drag gesture arms decide branch coverage by event timing under the loaded pool: the branch face swung 96..99 of 131 across the round-29 proving runs (73.28..75.57) with EVERY test green, and the round-19 cleanup removed the entry off the calm face. Branches seat one path below the worst observed face; statements/functions/lines met their floors at every observed face. Lift with deterministic arms or re-measure at calm load before the review date",
+  },
+  // (round-29 burn, 2026-11-03) melite-estate provisioning.ts: the
+  // gate's proving run D measured the view one path down on both
+  // counting metrics (234/237 statements, 57/58 functions) with all
+  // tests green, while E/F/G measured 235/237 and 58/58 — the same
+  // load-timing class (the view's lazy arms decide paths by
+  // wall-clock). The row seats one path below run D's face on the
+  // two flapping metrics; branches/lines met their floors at every
+  // observed face.
+  '**/packages/web/melite-estate/src/provisioning.ts': {
+    from: { statements: 99.11, branches: 98.31, functions: 98.28, lines: 98.99 },
+    to: { statements: 98.31, branches: 98.31, functions: 96.55, lines: 98.99 },
+    roadmapHeading: "The melite-estate provisioning view flap — seated at the K=1 mint over run D's low face",
+    reviewBy: "2026-12-15",
+    reason: "the estate provisioning view's lazy arms decide paths by wall-clock under the loaded pool: proving run D measured 234/237 statements (98.73) and 57/58 functions (98.27) with EVERY test green, while runs E/F/G measured 235/237 and 58/58. The two flapping metrics seat one path below run D's face. Lift with deterministic arms or re-measure at calm load before the review date",
+  },
+  // (round-19 burn, 2026-11-15) MotionTimelineBarDrag left here — the
+  // regeneration's two same-tree faces measured the calm branch face
+  // (74.05) and seated the row exactly at this entry's from face, so
+  // the cleanup arm demanded its removal in the same landing (the
+  // documented load-jitter class keeps its watch in the roadmap).
 };
 
 /** The pre-regeneration floors (the poisoned-era faces the 2026-10-22
@@ -2515,12 +2593,26 @@ describe("THE COVERAGE RATCHET LAW (floors only move UP; every gated file has a 
       return;
     }
     const before = parseRows(prev);
+    // ONE whole-tree numstat (class B F3, 2026-10-31): the clause
+    // used to spawn `git diff --numstat HEAD -- <rel>` per baseline
+    // row — 616 spawns on a full run, the windows spawn-tax class.
+    // Same counts, one spawn; a path absent from the diff is 0
+    // deleted (git prints nothing for it), a binary row keeps the
+    // raw NaN the per-file spelling produced (never coerced to 0).
+    const whole = execFileSyncSafe(["git", "diff", "--numstat", "HEAD"]);
+    const deletedByPath = new Map<string, number>();
+    if (whole !== null) {
+      for (const line of whole.split("\n")) {
+        if (line === "") continue;
+        const [deleted, , ...rest] = line.split("\t");
+        deletedByPath.set(rest.join("\t"), Number(deleted));
+      }
+    }
     for (const [key, row] of Object.entries(COVERAGE_BASELINE)) {
       const was = before[key];
       if (was === undefined) continue; // a NEW row cannot move down
       const rel = key.replace(/^\*\*\//u, "");
-      const numstat = execFileSyncSafe(["git", "diff", "--numstat", "HEAD", "--", rel]);
-      const deleted = numstat === null ? 0 : Number(numstat.trim().split("\t")[0] ?? "0");
+      const deleted = deletedByPath.get(rel) ?? 0;
       for (const metric of ["statements", "branches", "functions", "lines"] as const) {
         const now = (row as Record<string, number | null>)[metric];
         // NULL (zero paths) never participates in monotonicity: a
@@ -2656,7 +2748,11 @@ describe("THE COVERAGE EMPTY-TABLE TRIPWIRE (no rows is a loud failure, never a 
   it("the gate wires the tripwire and the config carries no `!` include row — the root cause's own row", () => {
     const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")) as { scripts: Record<string, string> };
     expect(pkg.scripts["test:coverage"], "the gate must chain the tripwire after vitest").toContain("coverage-rows-tripwire.mjs");
-    expect(pkg.scripts["test:coverage"], "the gate must pin the canonical shared reportsDirectory").toContain("MELITE_COVERAGE_SHARED=1");
+    // (class B R8, 2026-10-31) the shared-reports seat rides the
+    // walker's leading --coverage-shared flag — the old inline
+    // `MELITE_COVERAGE_SHARED=1` env prefix is the cmd.exe-incompatible
+    // class; the walker sets the identical value before forking.
+    expect(pkg.scripts["test:coverage"], "the gate must pin the canonical shared reportsDirectory (via the walker's flag, not an inline env prefix)").toContain("run-walker-safe.mjs --coverage-shared");
     const config = readFileSync(join(ROOT, "vitest.config.ts"), "utf8");
     expect(config, "every coverage run must leave the machine-readable table the tripwire reads").toContain("'json-summary'");
     expect(config).toContain("MELITE_COVERAGE_SHARED");
@@ -2781,5 +2877,120 @@ describe("THE NULL-FLOOR MINT + K=1 MARGIN (the regen's own classification law)"
     const verdict = runRegen(dir, [face, face],
       "export const COVERAGE_BASELINE = {\n" + row("**/x/src/e.ts", "40/null/40/40") + "\n};\n");
     expect(verdict.code, "stable fail-set with a null floor riding").toBe(0);
+  });
+});
+
+import { existsSync } from "node:fs";
+
+describe("THE FLOOR-WRITE ATOMICITY (U5, 2026-10-31: never-cut + all-or-nothing)", () => {
+  // Tonight's law: floors are measured values, ratchet = arms, never
+  // floor cuts — do NOT lower any floor; the write/bump path is
+  // all-or-nothing. The regen is the write/bump seat: a floor set
+  // that partially applies (some files' floors bumped, others not)
+  // must refuse rather than half-land. These arms ride the CLI's
+  // real door (node scripts/coverage-regen.mjs) over /tmp fixtures,
+  // never the tree's own baseline.
+  const u5Face = (files: Record<string, Record<string, [number, number]>>): string => {
+    const body: Record<string, unknown> = {};
+    for (const [file, metrics] of Object.entries(files)) {
+      body[file] = Object.fromEntries(Object.entries(metrics).map(([k, [covered, total]]) => [
+        k,
+        { covered, total, pct: total === 0 ? 100 : (100 * covered) / total },
+      ]));
+    }
+    return JSON.stringify(body);
+  };
+
+  const u5Row = (glob: string, floors: string): string =>
+    `  '${glob}': { statements: ${floors.split("/")[0]}, branches: ${floors.split("/")[1]}, functions: ${floors.split("/")[2]}, lines: ${floors.split("/")[3]} },`;
+
+  const u5Run = (dir: string, faces: string[], baseline: string, dropsName?: string):
+    { code: number; out: string; table: string; drops: string | null } => {
+    faces.forEach((face, i) => writeFileSync(join(dir, `u5face-${i}.json`), face));
+    writeFileSync(join(dir, "baseline.ts"), baseline);
+    const args = [
+      join(ROOT, "scripts", "coverage-regen.mjs"),
+      "--summaries", faces.map((_, i) => join(dir, `u5face-${i}.json`)).join(","),
+      "--baseline", join(dir, "baseline.ts"),
+    ];
+    if (dropsName !== undefined) args.push("--drops", join(dir, dropsName));
+    try {
+      const out = execFileSync("node", args, { encoding: "utf8", cwd: ROOT, stdio: ["ignore", "pipe", "pipe"] });
+      return {
+        code: 0,
+        out,
+        table: readTmp(join(dir, "baseline.ts"), "utf8"),
+        drops: dropsName === undefined ? null : readTmp(join(dir, dropsName), "utf8"),
+      };
+    } catch (e) {
+      const err = e as { status?: number; stdout?: string; stderr?: string };
+      return {
+        code: err.status ?? 1,
+        out: (err.stdout ?? "") + (err.stderr ?? ""),
+        table: readTmp(join(dir, "baseline.ts"), "utf8"),
+        drops: dropsName !== undefined && existsSync(join(dir, dropsName))
+          ? readTmp(join(dir, dropsName), "utf8")
+          : null,
+      };
+    }
+  };
+
+  it("a measured face below a seated floor never lands — the row holds, the raise still rides, the drop is argued", () => {
+    const dir = mkdtempSync(join(tmpdir(), "cov-u5-nevercut-"));
+    // statements measured 20/20 (margin 95) above its floor 90: the
+    // bump lands. branches measured 7/10 (margin 60) below its floor
+    // 80: the cut must NOT land — tonight's law, not the old
+    // capped-at-nothing shape.
+    const face = u5Face({
+      "/w/x/src/f.ts": { statements: [20, 20], branches: [7, 10], functions: [4, 4], lines: [10, 10] },
+    });
+    const verdict = u5Run(dir, [face, face],
+      "export const COVERAGE_BASELINE = {\n" + u5Row("**/x/src/f.ts", "90/80/75/90") + "\n};\n",
+      "drops.mjs");
+    expect(verdict.code, "a stable fail-set still exits 0").toBe(0);
+    expect(verdict.table, "the raise rides").toContain("statements: 95");
+    expect(verdict.table, "the seated floor holds against the measured cut").toContain("branches: 80");
+    expect(verdict.table, "no floor moved down").not.toContain("branches: 60");
+    expect(verdict.drops, "the drop is emitted for argued review").toContain("**/x/src/f.ts");
+    expect(verdict.drops, "the argued entry carries was -> measured").toContain("// -> 95/60/75/90");
+    const residue = readdirSync(dir).filter((f) => f.includes(".regen-tmp-"));
+    expect(residue, "one atomic write leaves no temp residue").toEqual([]);
+  });
+
+  it("a drops-write failure refuses whole — the baseline is byte-identical, no half-applied raise", () => {
+    const dir = mkdtempSync(join(tmpdir(), "cov-u5-allornothing-"));
+    // Inputs that WOULD succeed (ARM 1's shape): the old ordering
+    // rewrote the baseline first and crashed on the drops write
+    // after — the raise half-landed without its argued table. The
+    // new ordering writes the drops report before the baseline
+    // moves, so the refusal leaves the floor set untouched.
+    const face = u5Face({
+      "/w/x/src/f.ts": { statements: [20, 20], branches: [7, 10], functions: [4, 4], lines: [10, 10] },
+    });
+    const baseline = "export const COVERAGE_BASELINE = {\n" + u5Row("**/x/src/f.ts", "90/80/75/90") + "\n};\n";
+    const verdict = u5Run(dir, [face, face], baseline, join("no-such-dir", "drops.mjs"));
+    expect(verdict.code, "the unwritable drops path refuses").not.toBe(0);
+    expect(verdict.table, "refusal leaves the floor set byte-identical (no half-applied raise)").toBe(baseline);
+    expect(verdict.drops, "no argued table without the write it argues").toBe(null);
+  });
+
+  it("an unstable fail-set refuses before the first write — bytes and no argued table", () => {
+    const dir = mkdtempSync(join(tmpdir(), "cov-u5-unstable-"));
+    // face-1 measures branches 7/10 (below the floor 80): it fails
+    // where face-0 passes — the tree is not measurable. The regen
+    // must refuse naming the drift, with the baseline untouched and
+    // no drops file conjured for a write that never happened.
+    const pass = u5Face({
+      "/w/x/src/f.ts": { statements: [20, 20], branches: [10, 10], functions: [4, 4], lines: [10, 10] },
+    });
+    const fail = u5Face({
+      "/w/x/src/f.ts": { statements: [20, 20], branches: [7, 10], functions: [4, 4], lines: [10, 10] },
+    });
+    const baseline = "export const COVERAGE_BASELINE = {\n" + u5Row("**/x/src/f.ts", "90/80/75/90") + "\n};\n";
+    const verdict = u5Run(dir, [pass, fail], baseline, "drops.mjs");
+    expect(verdict.code, "unstable fail-set refuses").not.toBe(0);
+    expect(verdict.out, "the refusal names the drift").toMatch(/fail-set|unstable|drift/i);
+    expect(verdict.table, "refusal before the first write: bytes identical").toBe(baseline);
+    expect(verdict.drops, "no argued table for a refused run").toBe(null);
   });
 });

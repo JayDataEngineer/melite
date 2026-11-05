@@ -55,7 +55,7 @@ it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline'))('h3-timeline live fold
       // execution; the replay half is pinned headless in
       // runs-hero.spec.ts, not here (retry: 2 would replay attempt 1
       // on every attempt without it).
-      { draft_id: 'd1', test: false, model: 'h3', prompt: `a red cube slides slowly across a white table (fold-wall ${Date.now()})`, width: 768, height: 448 } as never,
+      { draft_id: 'd1', test: false, model: 'h3', calls: [{ text: `a red cube slides slowly across a white table (fold-wall ${Date.now()})`, start_frame: 0, end_frame: 90 }], width: 768, height: 448 } as never,
       new AbortController().signal,
     )
     assert.equal(ans.status, 'queued', 'the card run must queue')

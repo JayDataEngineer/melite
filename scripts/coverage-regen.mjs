@@ -30,6 +30,12 @@
 //      spelling), and a null floor whose metric later carries paths
 //      REFUSES the regen naming glob:metric. A whole-file vacuous
 //      row mints null×4.
+//   4. ATOMICITY (U5, 2026-10-31) — the floor set applies whole or
+//      refuses: the drops report writes before the baseline moves,
+//      and the baseline lands in ONE temp+rename write (rewrites and
+//      row additions computed in memory, never in two writes with a
+//      re-read between). A crash mid-write leaves old or new bytes,
+//      never a half-applied floor set.
 //
 // Usage:
 //   node scripts/coverage-regen.mjs --summaries a.json b.json c.json \
@@ -39,7 +45,7 @@
 // place with only row numbers changed; the drop table is written);
 // exit 1 = a loud refusal naming the unstable faces.
 
-import { readFileSync, writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync, renameSync, statSync, chmodSync } from 'node:fs'
 
 const args = process.argv.slice(2)
 const flag = (name) => {
@@ -192,8 +198,13 @@ console.error('coverage-regen: fail-set stable across ' + faces.length + ' faces
 
 // EMIT: rewrite row floors — null for zero-path metrics (the honest
 // vacuous spelling), the K=1 margin for number metrics — and collect
-// the drop table (drops are capped at nothing here; the ratchet
-// spec's entries own the capping review).
+// the drop table. THE NEVER-CUT LAW (U5, 2026-10-31: floors are
+// measured values, ratchet = arms, never floor cuts): a measured
+// face BELOW a seated number floor never lands — the written row
+// keeps the old floor and the drop is EMITTED for argued review in
+// the ratchet spec (the only road a floor moves down). Number→null
+// on whole-metric vacuity stays the honest mint (the threshold
+// spread excludes nulls; a numeric floor there enforces a lie).
 const drops = []
 const out = baseline.replace(ROW_RE, (_whole, pre, st, m1, br, m2, fn, m3, ln, post) => {
   const glob = (_whole.match(/'(\*\*\/[^']+)'/) ?? [])[1]
@@ -213,27 +224,28 @@ const out = baseline.replace(ROW_RE, (_whole, pre, st, m1, br, m2, fn, m3, ln, p
       : null
   }
   const dropped = METRICS.filter((k) => now[k] !== null && was[k] !== null && now[k] < was[k])
-  if (dropped.length > 0) drops.push({ glob, was, now })
+  if (dropped.length > 0) {
+    // A cut the mechanism must not land: the argued entry (was →
+    // MEASURED — snapshotted before the cap below) rides the drop
+    // table; the WRITTEN row holds every dropped metric at its
+    // seated floor.
+    drops.push({ glob, was, now: { ...now } })
+    for (const k of dropped) now[k] = was[k]
+  }
   const spell = (v) => (v === null ? 'null' : String(v))
   return pre + spell(now.statements) + m1 + spell(now.branches) + m2 + spell(now.functions) + m3 + spell(now.lines) + post
 })
-writeFileSync(baselinePath, out)
-
-if (dropsPath !== undefined) {
-  const lines = []
-  for (const d of drops) {
-    lines.push("  '" + d.glob + "': { statements: " + d.was.statements + ", branches: " + d.was.branches + ', functions: ' + d.was.functions + ', lines: ' + d.was.lines + ' }, // -> ' + d.now.statements + '/' + d.now.branches + '/' + d.now.functions + '/' + d.now.lines)
-  }
-  writeFileSync(dropsPath, '// coverage-regen drop table (' + drops.length + ' rows below their seated floors)\n' + lines.join('\n') + '\n')
-}
-console.error('coverage-regen: ' + computed.length + ' rows re-seated; ' + drops.length + ' rows DROPPED (argue each in the ratchet spec)' + (dropsPath !== undefined ? '; drop table at ' + dropsPath : ''))
 
 // MISSING ROWS (the ratchet's first arm: every gated file has exactly
 // one row). A gated file absent from the table is judged by nothing —
 // the regen seats it at its MIN face, inserted in sorted position.
+// Computed against the rewritten text IN MEMORY: the floor set below
+// lands in ONE atomic write, never in the old two-write shape (row
+// rewrites, then a re-read plus row additions) that half-applied on
+// a crash between the writes.
 const GATED_RE = /\/packages\/[^/]+\/[^/]+\/src\/.*\.(ts|tsx)$/u
 const knownGlobs = new Set(computed.map((c) => c.glob))
-let finalText = readFileSync(baselinePath, 'utf8')
+let finalText = out
 const added = []
 for (const file of faces[0].keys()) {
   if (!GATED_RE.test(file)) continue
@@ -259,7 +271,29 @@ for (const file of faces[0].keys()) {
   finalText = lines.join('\n')
   added.push(glob + ' @ ' + min.statements + '/' + min.branches + '/' + min.functions + '/' + min.lines)
 }
-if (added.length > 0) {
-  writeFileSync(baselinePath, finalText)
-  for (const a of added) console.error('coverage-regen: ROW ADDED (was judged by nothing): ' + a)
+
+// ALL-OR-NOTHING (U5, 2026-10-31): the floor set applies whole or
+// refuses. The drops report writes FIRST — a drops-write failure
+// (unwritable path) refuses before the baseline moves, so the tree
+// never holds rewritten floors without their argued table. The
+// baseline itself lands in ONE atomic temp+rename write: a crash
+// mid-write leaves the old bytes or the new bytes, never a splice
+// of rewritten rows without their added rows.
+if (dropsPath !== undefined) {
+  const lines = []
+  for (const d of drops) {
+    lines.push("  '" + d.glob + "': { statements: " + d.was.statements + ", branches: " + d.was.branches + ', functions: ' + d.was.functions + ', lines: ' + d.was.lines + ' }, // -> ' + d.now.statements + '/' + d.now.branches + '/' + d.now.functions + '/' + d.now.lines)
+  }
+  writeFileSync(dropsPath, '// coverage-regen drop table (' + drops.length + ' rows below their seated floors)\n' + lines.join('\n') + '\n')
 }
+console.error('coverage-regen: ' + computed.length + ' rows re-seated; ' + drops.length + ' rows HELD (argue each in the ratchet spec)' + (dropsPath !== undefined ? '; drop table at ' + dropsPath : ''))
+const tmpPath = baselinePath + '.regen-tmp-' + process.pid
+writeFileSync(tmpPath, finalText)
+try {
+  chmodSync(tmpPath, statSync(baselinePath).mode)
+} catch {
+  // A stat/chmod miss never blocks the write (odd mounts, raced
+  // deletes) — the bytes are the law, the mode a courtesy.
+}
+renameSync(tmpPath, baselinePath)
+for (const a of added) console.error('coverage-regen: ROW ADDED (was judged by nothing): ' + a)

@@ -3,9 +3,8 @@
 // Rides the source-plane facade (@melite/estate-drafts -> src; the
 // standard-decorator plugin lowers @Remote). In-process only: a real
 // Context, the real DSH storage rows (json backend + domain facility)
-// over scratch dirs, two legacy draft files (the one-time import),
-// then the remotes' list/get/ensure over the domain. No HTTP, no
-// server, no port.
+// over scratch dirs, two seeded domain docs, then the remotes'
+// list/get/ensure over the domain. No HTTP, no server, no port.
 //
 // Framework values ride the resolution facade (vitest.shared.ts):
 // workspace packages -> src, DSH runtime libs -> the estate-anchored
@@ -15,7 +14,7 @@
 import { assertHermeticRode } from "../../../helpers/hermetic-engine.ts";
 import { test, onTestFinished } from "vitest";
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, utimesSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Context, type Plugin } from '@deepseek-ai/cordis';
@@ -24,11 +23,12 @@ import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol';
 // (session-projection-cache/tests/fixtures.spec.ts l.27-104): the
 // packages' pieces imported and the rows assembled inline. The
 // estate re-packages nothing.
-import draftsPlugin from '@melite/estate-drafts';
+import draftsPlugin, { openDraftsDomain } from '@melite/estate-drafts';
 import { CardRegistryService } from "../../../../packages/harness/estate-queue/src/cardsRegistry.ts";
 // BenchDoc rides its defining file (the package index never
 // re-exports it) — type-only, erased at runtime.
 import type { BenchDoc } from "../../../../packages/estate/drafts/src/remote.ts";
+import type { DraftRecord } from "../../../../packages/estate/drafts/src/spec.js";
 import Storage from '@deepseek-ai/dsh-storage';
 import {
   apply as jsonApply, Config as JsonConfig, inject as jsonInject, name as jsonName,
@@ -47,8 +47,8 @@ function mintRoot(): string {
 
 const sig = new AbortController().signal;
 
-function doc(id: string, extra: Record<string, unknown> = {}): string {
-  return JSON.stringify({
+function doc(id: string, extra: Record<string, unknown> = {}): DraftRecord["doc"] {
+  return {
     draft_id: id,
     status: "draft",
     createdAt: 1700000000000,
@@ -56,34 +56,19 @@ function doc(id: string, extra: Record<string, unknown> = {}): string {
     intent: "test " + id,
     stages: [{ id: "s_0", inputs: [""], provenance: "agent" }],
     ...extra,
-  });
+  };
 }
 
-async function boot(extraLegacy: Record<string, string> = {}): Promise<Context> {
-  return await bootAt(join(mintRoot(), "state"), extraLegacy);
+async function boot(extraDocs: Record<string, DraftRecord["doc"]> = {}): Promise<Context> {
+  return await bootAt(join(mintRoot(), "state"), extraDocs);
 }
 
 /** The same rig against a CHOSEN state root (the durability arm needs
- *  two boots on ONE root; store.ts:85-88 caches the opened domain in a
+ *  two boots on ONE root; store.ts caches the opened domain in a
  *  WeakMap keyed on the facility object IDENTITY, so a fresh Context
- *  builds a fresh facility and re-opens from disk at :114 — the
- *  re-boot really reads the file). */
-async function bootAt(stateRoot: string, extraLegacy: Record<string, string> = {}): Promise<Context> {
-  mkdirSync(join(stateRoot, "drafts"), { recursive: true });
-  // Two legacy docs: d_old (older mtime) + d_new (newer, carries
-  // model/name display keys for the index row).
-  writeFileSync(join(stateRoot, "drafts", "d_old.json"), doc("d_old"));
-  writeFileSync(
-    join(stateRoot, "drafts", "d_new.json"),
-    doc("d_new", { model: "krea-2", name: "hero" }),
-  );
-  for (const [name, body] of Object.entries(extraLegacy)) {
-    writeFileSync(join(stateRoot, "drafts", name), body);
-  }
-  const old = new Date("2026-01-01T00:00:00Z");
-  const now = new Date("2026-09-01T00:00:00Z");
-  utimesSync(join(stateRoot, "drafts", "d_old.json"), old, old);
-  utimesSync(join(stateRoot, "drafts", "d_new.json"), now, now);
+ *  builds a fresh facility and re-opens from disk — the re-boot
+ *  really reads the file). */
+async function bootAt(stateRoot: string, extraDocs: Record<string, DraftRecord["doc"]> = {}): Promise<Context> {
   const ctx = new Context();
   // THE LIVE DOOR RIDES EVERY BOOT (the depth debt's cure, 2026-10-24 —
   // the remote-walls-depth audit: 30/31 bench-write arms ran
@@ -106,9 +91,22 @@ async function bootAt(stateRoot: string, extraLegacy: Record<string, string> = {
     { name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as unknown as Plugin,
     { backend: "json" },
   );
-  // J12: the storage root rides the plugin config (the retired
-  // MELITE_STATE_ROOT / MELITE_STORAGE_ROOT env seams' call data)
-  await ctx.plugin(draftsPlugin as unknown as Plugin, { storageRoot: join(stateRoot, "storage") });
+  // the drafts row rides the composition site's facility (the json
+  // backend's own root names the unit tree — no second root here)
+  await ctx.plugin(draftsPlugin as unknown as Plugin);
+  // THE DOMAIN SEED (the pre-domain drafts-tree import is retired,
+  // 2026-11-01): d_old + d_new (+ the arm's extras) land straight in
+  // the docs table — the same door the remotes read. Recency rides
+  // the record's updated_at column (d_new newer).
+  const docs = (await openDraftsDomain(ctx)).table("docs");
+  await docs.put("d_old", { updated_at: 1_767_225_600, doc: doc("d_old") });
+  await docs.put("d_new", {
+    updated_at: 1_788_220_800,
+    doc: doc("d_new", { model: "krea-2", name: "hero" }),
+  });
+  for (const [id, body] of Object.entries(extraDocs)) {
+    await docs.put(id, { updated_at: 1_790_000_000, doc: body });
+  }
   return ctx as unknown as Context;
 }
 
@@ -123,12 +121,12 @@ async function failureOf(p: Promise<unknown>): Promise<Record<string, unknown> |
   );
 }
 
-test("drafts/list serves the legacy import, recency DESC", async () => {
+test("drafts/list serves domain rows, recency DESC", async () => {
   const ctx = await boot();
   const out = await ctx.draftsRemote.list(sig);
   assert.equal(out.count, 2);
   assert.equal(out.drafts.length, 2);
-  // Newer mtime first.
+  // Newer updated_at first.
   assert.equal(out.drafts[0]!.draft_id, "d_new");
   assert.equal(out.drafts[1]!.draft_id, "d_old");
   // B-L11 (the wall audit, 2026-09-28): these reads were non-null
@@ -576,7 +574,7 @@ test("drafts/patch lands the runStatus/result arms (the old door's other keys)",
 test("the wire arms speak: every remoteExportX delegates verbatim", async () => {
   const ctx = await boot();
   // drafts/list + drafts/get BEFORE the bench draft exists — the
-  // legacy pair only.
+  // seeded pair only.
   const listed = await ctx.draftsRemote.remoteExportList(sig);
   assert.equal(listed.count, 2);
   assert.equal(listed.drafts[0]!.draft_id, "d_new");
@@ -723,28 +721,12 @@ test("drafts/patch bad-stage-id: the empty id refuses with the door's voice", as
 });
 
 test("index fallbacks: title when name/intent are empty, service when model is absent, caps slice long strings", async () => {
-  const bare = (extra: Record<string, unknown>): string =>
-    JSON.stringify({
-      draft_id: "d_x",
-      status: "draft",
-      createdAt: 1,
-      completedAt: null,
-      intent: "",
-      stages: [{ id: "s_0", inputs: [""] }],
-      ...extra,
-    });
   const ctx = await boot({
     // No name, empty intent → the title carries the display; no model
     // → the service carries the model face.
-    "d_title.json": bare({ draft_id: "d_title", title: "the title", service: "svc" }).replace(
-      '"d_x"',
-      '"d_title"',
-    ),
+    d_title: doc("d_title", { intent: "", title: "the title", service: "svc" }),
     // A name past the 160 cap → sliced to 159.
-    "d_long.json": bare({ draft_id: "d_long", name: "L".repeat(200) }).replace(
-      '"d_x"',
-      '"d_long"',
-    ),
+    d_long: doc("d_long", { intent: "", name: "L".repeat(200) }),
   });
   const out = await ctx.draftsRemote.remoteExportList(sig);
   assert.equal(out.count, 4);

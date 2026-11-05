@@ -61,7 +61,7 @@ describe("findMissingBundles — presence, never fiber phase", () => {
     assert.deepEqual(findMissingBundles([TOOLS, DOORS]), []);
   });
 
-  it("either tools row proves the bundle (server profiles disable the doors row by id; headless lanes never mount it)", () => {
+  it("either tools row proves the bundle (server profiles disable the doors row by id; agent-server lanes never mount it)", () => {
     assert.deepEqual(findMissingBundles([TOOLS]), []);
     assert.deepEqual(findMissingBundles([DOORS]), []);
   });

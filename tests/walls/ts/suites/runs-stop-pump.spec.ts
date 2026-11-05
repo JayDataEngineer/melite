@@ -18,7 +18,7 @@
 // stop anyway) goes RED here.
 import { assertHermeticRode } from "../../../helpers/hermetic-engine.ts";
 import { createServer, type Server, type IncomingMessage } from "node:http";
-import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
@@ -27,7 +27,7 @@ import { test } from "vitest";
 import assert from "node:assert/strict";
 import { Context, type Plugin } from "@deepseek-ai/cordis";
 import timerPlugin from "@deepseek-ai/cordis-plugin-timer";
-import draftsPlugin from "@melite/estate-drafts";
+import draftsPlugin, { openDraftsDomain } from "@melite/estate-drafts";
 import Storage from "@deepseek-ai/dsh-storage";
 import {
   apply as jsonApply, Config as JsonConfig, inject as jsonInject, name as jsonName,
@@ -125,17 +125,6 @@ interface Booted {
  *  resolves to the parking engine instead of the loud miswire. */
 async function bootWithEngine(base: string): Promise<Booted> {
   const stateRoot = join(mkdtempSync(join(tmpdir(), "runs-stop-pump-")), "state");
-  mkdirSync(join(stateRoot, "drafts"), { recursive: true });
-  for (const id of ["d_ok", "d_two"]) {
-    writeFileSync(join(stateRoot, "drafts", id + ".json"), JSON.stringify({
-      draft_id: id,
-      status: "draft",
-      createdAt: 1700000000000,
-      completedAt: null,
-      intent: "test " + id,
-      stages: [{ id: "s_0", inputs: [""], provenance: "agent" }],
-    }));
-  }
   const ctx = new Context();
   await ctx.plugin(timerPlugin as unknown as Plugin);
   await ctx.plugin(comfyuiHostProvider as unknown as Plugin, { url: base });
@@ -150,16 +139,38 @@ async function bootWithEngine(base: string): Promise<Booted> {
     { name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as unknown as Plugin,
     { backend: "json" },
   );
-  await ctx.plugin(draftsPlugin as unknown as Plugin, { storageRoot: join(stateRoot, "storage") });
+  // the drafts row rides the composition site's facility (the json
+  // backend's own root names the unit tree — no second root here)
+  await ctx.plugin(draftsPlugin as unknown as Plugin);
   await ctx.plugin(cardRegistryProvider as unknown as Plugin);
   await ctx.plugin(runsRegistryPlugin as unknown as Plugin);
   await ctx.plugin(runsRemotePlugin as unknown as Plugin);
+  // THE DOMAIN SEED (the pre-domain drafts-tree import is retired,
+  // 2026-11-01): the two run rows land straight in the docs table —
+  // the same door the run submit gate reads.
+  const docs = (await openDraftsDomain(ctx)).table("docs");
+  for (const id of ["d_ok", "d_two"]) {
+    await docs.put(id, {
+      updated_at: 1_700_000_000,
+      doc: {
+        draft_id: id,
+        status: "draft",
+        createdAt: 1700000000000,
+        completedAt: null,
+        intent: "test " + id,
+        stages: [{ id: "s_0", inputs: [""], provenance: "agent" }],
+      },
+    });
+  }
   const runs = (ctx as unknown as { runs: RunsRuntimeService });
   return { ctx, runs: runs.runs, fiber };
 }
 
 /** One inline flow body (single comfyui stage) — the same shape the
- *  runs-remote walls submit. */
+ *  runs-remote walls submit. The stage names its own channels (the
+ *  ONE TABLE, flows-producer-agreement: the engine registry names
+ *  engines, never outputs — an undeclared stage refuses at the
+ *  door). */
 function inlineBody(draftId: string): RunStartDoc {
   return {
     draft_id: draftId,
@@ -167,7 +178,7 @@ function inlineBody(draftId: string): RunStartDoc {
     flow_inline: {
       id: "f_test",
       stages: [
-        { id: "s_0", engine: "comfyui", params: { workflow: { "1": { class_type: "KSampler" } } } },
+        { id: "s_0", engine: "comfyui", outputs: { out: "image" }, params: { workflow: { "1": { class_type: "KSampler" } } } },
       ],
     },
   };

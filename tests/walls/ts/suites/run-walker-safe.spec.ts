@@ -12,7 +12,7 @@
 // (a real product break stays red), and never for foreign
 // absolute paths outside the tree.
 import { describe, expect, it } from 'vitest'
-import { pinVitestSeat, runPreflight, tmpPreflight, walkerNamedPaths, walkerVerdict } from '../../../../scripts/run-walker-safe.mjs'
+import { parseWalkerFlags, pinVitestSeat, runPreflight, tmpPreflight, unsetLaneEnvs, walkerNamedPaths, walkerVerdict } from '../../../../scripts/run-walker-safe.mjs'
 
 const ROOT = '/repo'
 const exists = (p: string) => p === '/repo/packages/models/krea-2/lib/index.js' ||
@@ -232,5 +232,51 @@ describe('runPreflight (the live wiring, armed through its own injection seams)'
     expect(text).toMatch(/pruned 1 .*melite-cold-a/)
     expect(text).toMatch(/could not remove 1 .*melite-cold-b/)
     expect(text).toMatch(/REFUSING/)
+   })
+ })
+
+describe('unsetLaneEnvs + parseWalkerFlags (run-walker-safe.mjs — the lane-env hygiene, class B R8, 2026-10-31)', () => {
+  it('the wrapper scrubs EXACTLY the lane envs — unset, not emptied (suites key on === undefined)', () => {
+    const env: Record<string, string | undefined> = {
+      MELITE_MCP_ENGINES: 'blender,unity',
+      MELITE_AGENT_ROUTE: '3088',
+      MELITE_COVERAGE_SHARED: undefined,
+      HOME: '/home/keeper',
+      PATH: '/usr/bin',
+    }
+    unsetLaneEnvs(env)
+    expect(env.MELITE_MCP_ENGINES).toBeUndefined()
+    expect('MELITE_MCP_ENGINES' in env, 'deleted, never set to "" — an empty value is a PRESENT value to `=== undefined` readers').toBe(false)
+    expect(env.MELITE_AGENT_ROUTE).toBeUndefined()
+    expect('MELITE_AGENT_ROUTE' in env).toBe(false)
+    expect(env.HOME).toBe('/home/keeper')
+    expect(env.PATH).toBe('/usr/bin')
+  })
+
+  it('the default seat is the process env (the wrapper calls it bare before forking)', () => {
+    const keep = { ...process.env }
+    try {
+      process.env.MELITE_MCP_ENGINES = 'seat'
+      process.env.MELITE_AGENT_ROUTE = 'route'
+      unsetLaneEnvs()
+      expect(process.env.MELITE_MCP_ENGINES).toBeUndefined()
+      expect(process.env.MELITE_AGENT_ROUTE).toBeUndefined()
+    } finally {
+      delete process.env.MELITE_MCP_ENGINES
+      delete process.env.MELITE_AGENT_ROUTE
+      Object.assign(process.env, keep)
+    }
+  })
+
+  it('leading walker flags parse off the wrapped argv — the coverage-shared carrier among them', () => {
+    const { flags, argv } = parseWalkerFlags(['--coverage-shared', 'vitest', 'run', '--coverage'])
+    expect(flags.coverageShared).toBe(true)
+    expect(argv, 'the wrapped command stays verbatim after the flag strip').toEqual(['vitest', 'run', '--coverage'])
+    expect(parseWalkerFlags(['vitest', 'run']).flags.coverageShared).toBe(false)
+    expect(parseWalkerFlags(['--coverage-shared', '--coverage-shared', 'vitest', 'run']).argv, 'repeats consume, never leak into the wrapped argv').toEqual(['vitest', 'run'])
+    // a flag AFTER the command belongs to the wrapped command, not the walker
+    const later = parseWalkerFlags(['vitest', 'run', '--coverage-shared'])
+    expect(later.flags.coverageShared).toBe(false)
+    expect(later.argv).toEqual(['vitest', 'run', '--coverage-shared'])
   })
 })

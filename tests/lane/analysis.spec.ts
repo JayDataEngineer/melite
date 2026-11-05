@@ -639,7 +639,7 @@ describe('the harness modules load under the DRIVER\'S OWN loader', () => {
   const node = process.execPath
   for (const mod of ['analysis.ts', 'commission.ts', 'run.ts']) {
     it(`node strip-types parses ${mod} (the driver's own loader)`, () => {
-      const target = new URL(`./${mod}`, import.meta.url).pathname
+      const target = fileURLToPath(new URL(`./${mod}`, import.meta.url))
       // --check is SYNTAX ONLY under the real loader: importing a lane
       // module would EXECUTE it (run.ts is a CLI: importing it boots
       // an analysis and exits), so the wall checks, never runs.

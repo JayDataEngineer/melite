@@ -1,15 +1,17 @@
 // provisioner-render.spec.ts — the profile renderer renders
 // (2026-09-11: infer-provision.mjs renders the boot profiles
-// — melite-test / headless / estate — and nothing
+// — melite-test / estate — and nothing
 // exercised it. A template rename or a dropped web-row disable
 // would boot clean and surface only as a hung non-web mount or
 // a double-registered tools plane).
+// (2026-11-14: HEADLESS IS DSH'S — the melite `headless` profile row
+// is gone; `dsh headless "task"` rides DSH's own shipped template.)
 //
 // The wall shells the bin's OWN door (`profile <name>
 // --dsh-home <tmp>`) — never a reimplementation — into a tmp
 // DSH_HOME (the operator's ~/.dsh is never touched) and asserts
 // the render contract: the profile dir with a bundles package.json,
-// the web-surface rows DISABLED in the headless mount (no webServer
+// the web-surface rows DISABLED in the non-web mount (no webServer
 // there — activation would pend forever), the empty row set in the
 // web mount (the bundle patch owns every row, no drift). The bin's
 // trailing `pnpm install` only links local link: deps (offline-safe).
@@ -82,7 +84,8 @@ const gate = test.skipIf(!PNPM_OK);
 // it scans the checked-in bundle, needs no pnpm, and stays green where
 // the render arms above self-skip). The HOST `skill-filesystem` row is
 // pinned OFF for every profile the provisioner bundle mounts —
-// otherwise the headless profile auto-injects workspace skills into
+// otherwise DSH's agent-server lanes (which do not bundle
+// dsh-web-app) auto-inject workspace skills into
 // every agent context (the pre-loaded-surface bug).
 test("provisioner bundle pins the skill-filesystem host row OFF", () => {
   const bundle = readFileSync(
@@ -146,54 +149,33 @@ function renderDies(profile: string, ...flags: string[]): string {
 // known list, render NOTHING.
 gate("an unknown profile name dies loud and renders nothing (F7)", () => {
   const stderr: string = renderDies("inferecne");
-  assert.match(stderr, /unknown profile 'inferecne' — known: melite-test, headless, estate/,
+  assert.match(stderr, /unknown profile 'inferecne' — known: melite-test, estate/,
     "the refusal names the typo and the known profiles");
 });
 
-gate("headless renders with the web-surface rows disabled (no webServer in that mount)", () => {  const home: string = mkdtempSync(join(tmpdir(), "provisioner-wall-"));
-  render(home, "headless");
-  const dir: string = join(home, "profiles", "headless");
-  assert.ok(existsSync(join(dir, "package.json")), "package.json renders");
-  assert.ok(existsSync(join(dir, "cordis.yml")), "cordis.yml renders");
-  // SELF-REGISTRATION ids (stroke 88, 2026-09-17): the packages' own
-  // cordis.patch.yml files insert their rows; the renderer disables
-  // the web-plane ones by THOSE ids in non-web mounts (the retired
-  // provisioner twin rows — infer-tools-doors/infer-card-deck/
-  // infer-gallery-host — double-mounted the tool plane and killed
-  // every fresh boot).
-  const patch: string = readFileSync(join(dir, "cordis.patch.yml"), "utf8");
+gate("the retired melite headless profile name is NOT a known profile (HEADLESS IS DSH'S)", () => {
+  // HEADLESS IS DSH'S (operator 2026-11-14): melite stopped rendering
+  // a parallel headless mount — `dsh headless "task"` is DSH's own
+  // shipped profile. The name must refuse loud, never fall back.
+  const stderr: string = renderDies("headless");
+  assert.match(stderr, /unknown profile 'headless' — known: melite-test, estate/,
+    "the retired name refuses loud and names the real roster");
+});
+
+// (2026-11-14: the headless render gate is gone WITH the profile row
+// — HEADLESS IS DSH'S. What the gate uniquely owned beyond the estate
+// gate below, the bin's exact webRows census, keeps as its own
+// hermetic pin: it parses the bin's source, needs no render, no pnpm.)
+test("the bin's webRows census is exactly the four web-surface rows (E-M9)", () => {
   // E-M9 (the wall audit, 2026-09-28): the four row ids were RE-TYPED
-  // here beside the bin's own `webRows` array — a fifth web row the
-  // renderer disables rode unjudged, and a removed one kept passing.
-  // The oracle is the BIN'S OWN LIST, parsed from its source, and
-  // the rendered patch must disable EXACTLY those rows (no more, no
-  // fewer, no half-disabled).
-  const webRows = binWebRows();
-  assert.deepEqual(webRows,
+  // in a render gate beside the bin's own `webRows` array — a fifth
+  // web row the renderer disables rode unjudged, and a removed one
+  // kept passing. The oracle is the BIN'S OWN LIST, parsed from its
+  // source, pinned to the literal roster — a web row landing or
+  // leaving is a deliberate edit.
+  assert.deepEqual(binWebRows(),
     ["infer-card-view", "infer-gallery", "melite-tools-doors", "ray-card-deck"],
     "the bin's webRows list, exactly — a web row landing or leaving is a deliberate edit");
-  const disabled = [...patch.matchAll(/^- id: (\S+)\n  disabled: true$/gm)].map((m) => m[1]!).sort();
-  assert.deepEqual(disabled, [...webRows].sort(),
-    `every web-surface row the bin disables is disabled in the mount — and NO other row (got ${disabled.join(", ")})`);
-  // the headless mount bundles the tools plane DIRECT (no twin rows
-  // anywhere — the crash law of stroke 88)
-  const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8")) as {
-    dsh?: { profile?: { bundles?: string[] } };
-  };
-  assert.ok(
-    pkg.dsh?.profile?.bundles?.includes("@melite/harness-tools") === true,
-    "the headless mount bundles @melite/harness-tools (got:\n" + JSON.stringify(pkg.dsh?.profile?.bundles),
-  );
-  // THE DELEGATED-OPERATOR PIN: the headless mount RUNS jobs — the
-  // tools row selects the HEADLESS interface (melite_flow +
-  // run_status). The faceless-maker commission (2026-10-21) proved
-  // the compose-only mount: benches composed, every execution
-  // refused at the absent verb.
-  assert.match(
-    patch,
-    /- id: melite-tools\n  config:\n    headless: true/,
-    "the headless mount pins the tools row's HEADLESS interface (the run doors)",
-  );
 });
 
 // (single-setup law 2026-10-18: the retired `inference` base carried
@@ -202,9 +184,9 @@ gate("headless renders with the web-surface rows disabled (no webServer in that 
 
 // E-M9 (the wall audit, 2026-09-28): the estate and melite-test
 // profiles had NO arm at all — the two mounts the operator actually
-// runs (the job server and the test lane) were unwalled while
-// headless and inference were pinned.
-gate("the estate profile renders the HEADLESS tools interface in a non-web mount", () => {
+// runs (the job server and the test lane) were unwalled while the
+// retired headless and inference rows were pinned.
+gate("the estate profile renders a non-web mount without a tools-interface pin", () => {
   const home: string = mkdtempSync(join(tmpdir(), "provisioner-wall-"));
   render(home, "estate");
   const dir: string = join(home, "profiles", "estate");
@@ -217,15 +199,17 @@ gate("the estate profile renders the HEADLESS tools interface in a non-web mount
   // the estate mount has no webServer: every web row is disabled
   const disabled = [...patch.matchAll(/^- id: (\S+)\n  disabled: true$/gm)].map((m) => m[1]!).sort();
   assert.deepEqual(disabled, binWebRows(), "the estate mount disables exactly the web-surface rows");
-  // and it pins the tools row's HEADLESS interface (the job server
-  // executes; it never composes the browser doors)
-  assert.ok(/^tools-interface:\s*headless$/m.test(patch) || patch.includes("headless"),
-    "the estate mount pins the tools row's headless interface");
+  // NO TOOLS-INTERFACE PIN (2026-11-14, HEADLESS IS DSH'S): the
+  // retired `headless: true` melite-tools config row is gone — the
+  // estate agent's run doors follow the home's persisted delegation
+  // record like every other mount. A config spell must not grow back.
+  assert.ok(!/headless/.test(patch),
+    "the estate mount carries no headless pin — the parallel interface stays dead");
   // THE DURABLE PIN'S OTHER HALF (its own arm, never the web gate's):
   // a non-web mount renders the estate row WITHOUT durableDownloads —
-  // a job server / headless task is a short-lived process; a claimer
-  // in it orphans every fetch it dies mid-flight (the same lifetime
-  // finding). Its presses take their own wire, exactly as before.
+  // a job server is a short-lived process; a claimer in it orphans
+  // every fetch it dies mid-flight (the same lifetime finding). Its
+  // presses take their own wire, exactly as before.
   const estateRows = parseYaml(patch) as Array<Record<string, unknown>>;
   const estatePin = estateRows.find((r) => r["id"] === "melite-estate") as Record<string, unknown> | undefined;
   assert.ok(estatePin !== undefined, "the estate mount carries the seat pin");
@@ -264,7 +248,7 @@ gate("the melite-test profile renders the WEB mount with the estate seat pin", (
   // the requested-row law — landed whole, but the RENDERER never
   // emitted the pin, so every fresh render wiped the manual
   // deployment step and the lane booted TRANSIENT: no heartbeat, no
-  // claimer, and the lifetime wedge (a headless press's fetch dies
+  // claimer, and the lifetime wedge (a short-lived press's fetch dies
   // with its session, nothing claims the requested row) live again.
   // The web mount is the long-lived process — it renders the pin.
   assert.equal(config["durableDownloads"], true,
@@ -354,11 +338,11 @@ test("--profile-rows dies loud on a non-row file (no install needed)", () => {
 // installed package and `dsh --profile melite-test`
 // refused to boot ("cannot resolve profile bundle"). In-box
 // @deepseek-ai/* bundles resolve from the DSH install, never the
-// profile dir. The arm renders ALL THREE profiles through the bin's
+// profile dir. The arm renders EVERY profile through the bin's
 // own door and judges the RENDERED roster against the RENDERED
 // dependencies — a bundle landing in a base without its dep shows
 // here, never at boot.
-for (const profile of ["melite-test", "headless", "estate"]) {
+for (const profile of ["melite-test", "estate"]) {
   gate(`the ${profile} profile installs every non-in-box bundle it mounts (the coverage cure)`, () => {
     const home: string = mkdtempSync(join(tmpdir(), "provisioner-wall-"));
     render(home, profile);
@@ -394,7 +378,7 @@ for (const profile of ["melite-test", "headless", "estate"]) {
 // patch, judged nothing, and stayed green on BOTH sides — the
 // negative control caught the vacuous wall, and this assertion is
 // the lesson wired in.)
-for (const profile of ["melite-test", "headless", "estate"]) {
+for (const profile of ["melite-test", "estate"]) {
   gate(`the ${profile} profile mounts a row for every client external its mounted bundles declare (the closure cure)`, () => {
     const home: string = mkdtempSync(join(tmpdir(), "provisioner-wall-"));
     render(home, profile);
@@ -427,7 +411,7 @@ for (const profile of ["melite-test", "headless", "estate"]) {
     // PLATFORM LAW (this arm's first real catch, 2026-10-18): the
     // provisioner's patch mounts @melite/3d-img-to-mesh on every
     // lane, and its external (@melite/card-base/client) only rides
-    // the web base — a dangling external on headless/estate. But
+    // the web base — a dangling external on estate. But
     // the package's dsh.client declares platform: web, and web
     // client bytes compose only in a web mount (the loader's own
     // law): the external is inert on server profiles, whose
@@ -474,7 +458,7 @@ for (const profile of ["melite-test", "headless", "estate"]) {
 //   S8 — every mounted row whose package injects the web surface
 //   is in webRows; a self-registering web row outside the list
 //   pends forever in non-web mounts with no red anywhere.
-for (const profile of ["melite-test", "headless", "estate"]) {
+for (const profile of ["melite-test", "estate"]) {
   gate(`the ${profile} profile joins its disables and web surface to mounted rows (S7a/S8)`, () => {
     const home: string = mkdtempSync(join(tmpdir(), "provisioner-wall-"));
     render(home, profile);
@@ -546,8 +530,8 @@ for (const profile of ["melite-test", "headless", "estate"]) {
     const faceNames = new Set(insertRows.map((r) => r.name));
     // VACUITY GUARD: the census itself resolves (the same guard the
     // base ⊇ faces wall carries) — an empty scan would pass the check
-    // below on nothing. The bundled subset is per-profile: the headless
-    // and estate mounts bundle no web faces at all (S7a pins their web
+    // below on nothing. The bundled subset is per-profile: the
+    // estate mount bundles no web faces at all (S7a pins its web
     // rows disabled).
     const faces = selfRegisteringWebFaces();
     assert.ok(faces.includes("@melite/card-base"),
@@ -572,8 +556,8 @@ for (const profile of ["melite-test", "headless", "estate"]) {
     // belong to DSH, and pinning them here would make every upstream
     // bump redden this wall. What THIS repo owns is the web-plane
     // join: melite-test mounts its web rows live (none disabled),
-    // and headless/estate land exactly ONE web-row disable — the
-    // tools door the server planes bundle direct — leaving the
+    // and the estate mount lands exactly ONE web-row disable — the
+    // tools door the server plane bundles direct — leaving the
     // pinned three-row no-op warn set (render-vs-boot.md:285-289).
     const webRows = binWebRows();
     const webLanding = [...disabledIds].filter((id) => webRows.includes(id) && insertIds.has(id)).sort();
@@ -783,21 +767,21 @@ test("a missing pnpm dies loud instead of printing boot lines (F6)", () => {
 
 test("a held render lock refuses the second render (F6)", () => {
   const home: string = mkdtempSync(join(tmpdir(), "provisioner-f6-"));
-  const dir: string = join(home, "profiles", "headless");
+  const dir: string = join(home, "profiles", "estate");
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, ".render.lock"), `${String(process.pid)}\n`);
-  const stderr: string = runBinDiesAt(home, { ...process.env }, "profile", "headless");
+  const stderr: string = runBinDiesAt(home, { ...process.env }, "profile", "estate");
   assert.ok(stderr.includes(".render.lock") && stderr.includes(String(process.pid)),
     `the refusal names the lock and the live holder (got: ${stderr.slice(0, 300)})`);
 });
 
 gate("a stale render lock is taken with a warning (F6)", () => {
   const home: string = mkdtempSync(join(tmpdir(), "provisioner-wall-"));
-  const dir: string = join(home, "profiles", "headless");
+  const dir: string = join(home, "profiles", "estate");
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, ".render.lock"), "999999999\n");
   const stdout: string = execFileSync(process.execPath,
-    [BIN, "profile", "headless", "--dsh-home", home],
+    [BIN, "profile", "estate", "--dsh-home", home],
     { encoding: "utf8", cwd: REPO, timeout: 300_000 });
   assert.ok(stdout.includes("stale render lock"),
     `the take says so on stdout (got: ${stdout.slice(0, 300)})`);
@@ -829,7 +813,7 @@ test("the install carries a timeout and the writes go through temp+rename (F6, s
 // re-render freely (the no-drift law unchanged).
 gate("F1: a package.json without our provenance stamp is REFUSED, not clobbered", () => {
   const home: string = mkdtempSync(join(tmpdir(), "provisioner-f1-"));
-  const dir: string = join(home, "profiles", "headless");
+  const dir: string = join(home, "profiles", "estate");
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "package.json"), JSON.stringify({
     name: "hand-composed-profile", private: true,
@@ -838,7 +822,7 @@ gate("F1: a package.json without our provenance stamp is REFUSED, not clobbered"
   let stderr = "";
   try {
     execFileSync(process.execPath,
-      [BIN, "profile", "headless", "--dsh-home", home],
+      [BIN, "profile", "estate", "--dsh-home", home],
       { encoding: "utf8", cwd: REPO, timeout: 300_000 });
     assert.fail("the render was expected to refuse a foreign package.json");
   } catch (err) {
@@ -860,19 +844,19 @@ gate("F1: a package.json without our provenance stamp is REFUSED, not clobbered"
 
 gate("F1: --force-render backs the foreign file up and proceeds; our own stamp re-renders freely", () => {
   const home: string = mkdtempSync(join(tmpdir(), "provisioner-f1-"));
-  const dir: string = join(home, "profiles", "headless");
+  const dir: string = join(home, "profiles", "estate");
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "package.json"), JSON.stringify({
     name: "hand-composed-profile", private: true,
     dependencies: { precious: "keep-me" },
   }, null, 2));
-  render(home, "headless", "--force-render");
+  render(home, "estate", "--force-render");
   // the backup is the original, byte-identical
   const bak = readFileSync(join(dir, "package.json.prerender.bak"), "utf8");
   assert.ok(bak.includes("hand-composed-profile"),
     "the .prerender.bak holds the pre-render original");
   // and the render is ours now: a RE-render needs no force
-  render(home, "headless");
+  render(home, "estate");
   const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8")) as {
     dependencies?: Record<string, string>;
   };

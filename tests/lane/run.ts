@@ -9,15 +9,17 @@
  *              fails or is blocked — a blocked harness is never a
  *              pass.
  *
- *   commission launch a REAL headless maker on the 3088 lane for the
+ *   commission launch a REAL maker on the 3088 lane for the
  *              chosen path(s) through scripts/commission-supervisor.sh
  *              (minutes long; spends provider quota), then analyse
  *              what it left behind. `--dry` mints the brief + launch
  *              prompt and prints them without launching anything.
+ *              `--profile <name>` names the DSH profile the supervisor
+ *              boots — REQUIRED (the estate maker lane is `estate`).
  *
  * Usage:
  *   node --experimental-strip-types tests/lane/run.ts analyse [--path video|3d|both]
- *   node --experimental-strip-types tests/lane/run.ts commission --path video|3d|both [--dry]
+ *   node --experimental-strip-types tests/lane/run.ts commission --path video|3d|both --profile estate [--dry]
  *
  * The harness never fabricates a receipt, never hand-drives an estate
  * door, and never treats a self-skip as a pass (RUNBOOK-3088-AGENT).
@@ -40,6 +42,8 @@ interface Args {
   phase: 'analyse' | 'commission'
   path: PathName | 'both'
   dry: boolean
+  /** the DSH profile the supervisor boots (commission phase only) */
+  profile?: string
   /** THE WINDOW: only runs newer than this are judged (the tree is
    *  cumulative; the default is 24h so a stand-alone analyse reports
    *  the recent commission, not the archive) */
@@ -60,6 +64,10 @@ function parseArgs(argv: readonly string[]): Args {
       i++
     } else if (arg === '--dry') {
       out.dry = true
+    } else if (arg === '--profile') {
+      const value = argv[i + 1]
+      if (value !== undefined && value !== '') out.profile = value
+      i++
     } else if (arg === '--since') {
       const raw = argv[i + 1]
       const parsed = raw !== undefined ? Date.parse(raw) : Number(raw)
@@ -178,6 +186,12 @@ const args = parseArgs(process.argv.slice(2))
 if (args.phase === 'analyse') {
   process.exit(analyse([], args.sinceMs))
 } else {
+  // FAIL LOUD (HEADLESS IS DSH'S, 2026-11-14): a commission names the
+  // DSH profile it boots — the retired `headless` default is gone.
+  if (args.profile === undefined) {
+    console.error('[lane] commission requires --profile <name> — the DSH profile the supervisor boots (the estate maker lane is `estate`)')
+    process.exit(2)
+  }
   const base = args.slug ?? `lane-harness-${new Date().toISOString().replace(/[-:T]/g, '').slice(0, 13)}`
   const results: CommissionResult[] = []
   for (const name of chosen(args.path)) {
@@ -189,6 +203,7 @@ if (args.phase === 'analyse') {
     const result = await commission({
       path: name,
       slug,
+      profile: args.profile,
       subject: args.subject,
       sourceImage: args.sourceImage,
       execute: !args.dry,

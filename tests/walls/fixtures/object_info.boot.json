@@ -469,14 +469,15 @@
       "default": 1,
       "max": 2,
       "min": 0,
-      "step": 0.05
+      "step": 0.05,
+      "tooltip": "Identity scale of the loaded persona (the F51 cure, 2026-11-01): steered = bank-neutral + (embedding - bank-neutral) * strength \u2014 the PCA steering law, never a raw rescale. 1.0 = the saved voice bit-identical (the lock), < 1 pulls toward the voices bank's neutral voice, > 1 exaggerates. With no computable bank mean this rides as 1.0 (identity, loud warning) \u2014 it never re-rolls the performance."
      }
     ],
     "voices_dir": [
      "STRING",
      {
       "default": "",
-      "placeholder": "/mnt/data/models/audio/voices (default)"
+      "placeholder": "qvoice folder seat (default)"
      }
     ]
    },
@@ -1905,17 +1906,10 @@
   "input": {
    "required": {
     "aspect_ratio": [
-     [
-      "source",
-      "16:9",
-      "9:16",
-      "1:1",
-      "4:3",
-      "3:4",
-      "21:9"
-     ],
+     "COMBO",
      {
       "default": "source",
+      "options": [],
       "tooltip": "Output shape. 'source' keeps the clip's own ratio; the others centre-crop to it."
      }
     ],
@@ -2038,25 +2032,18 @@
      }
     ],
     "interp_motion": [
-     [
-      "linear",
-      "ease_in",
-      "ease_out",
-      "ease_in_out",
-      "smooth"
-     ],
+     "COMBO",
      {
       "default": "linear",
+      "options": [],
       "tooltip": "Shape and timing of the camera path. linear = straight legs at constant speed. ease_in / ease_out / ease_in_out = the same legs with the camera settling into every keyframe. smooth = a Catmull-Rom spline gliding through them with no corner. Only used while use_keyframes is ON."
      }
     ],
     "interpolation": [
-     [
-      "linear",
-      "smooth"
-     ],
+     "COMBO",
      {
       "default": "linear",
+      "options": [],
       "tooltip": "Driven by interp_motion."
      }
     ],
@@ -2405,7 +2392,7 @@
  },
  "DetailerForEach": {
   "category": "ImpactPack/Detailer",
-  "description": "It enhances details by inpainting each region within the detected area bundle (SEGS) after enlarging them based on the guide size.",
+  "description": "",
   "display_name": "Detailer (SEGS)",
   "has_intermediate_output": false,
   "input": {
@@ -2547,74 +2534,16 @@
      "CONDITIONING"
     ],
     "sampler_name": [
-     [
-      "euler",
-      "euler_cfg_pp",
-      "euler_ancestral",
-      "euler_ancestral_cfg_pp",
-      "heun",
-      "heunpp2",
-      "exp_heun_2_x0",
-      "exp_heun_2_x0_sde",
-      "dpm_2",
-      "dpm_2_ancestral",
-      "lms",
-      "dpm_fast",
-      "dpm_adaptive",
-      "dpmpp_2s_ancestral",
-      "dpmpp_2s_ancestral_cfg_pp",
-      "dpmpp_sde",
-      "dpmpp_sde_gpu",
-      "dpmpp_2m",
-      "dpmpp_2m_cfg_pp",
-      "dpmpp_2m_sde",
-      "dpmpp_2m_sde_gpu",
-      "dpmpp_2m_sde_heun",
-      "dpmpp_2m_sde_heun_gpu",
-      "dpmpp_3m_sde",
-      "dpmpp_3m_sde_gpu",
-      "ddpm",
-      "lcm",
-      "ipndm",
-      "ipndm_v",
-      "deis",
-      "cfgpp_ud10_ab",
-      "res_multistep",
-      "res_multistep_cfg_pp",
-      "res_multistep_ancestral",
-      "res_multistep_ancestral_cfg_pp",
-      "gradient_estimation",
-      "gradient_estimation_cfg_pp",
-      "er_sde",
-      "seeds_2",
-      "seeds_3",
-      "sa_solver",
-      "sa_solver_pece",
-      "ddim",
-      "uni_pc",
-      "uni_pc_bh2"
-     ]
+     "COMBO",
+     {
+      "options": []
+     }
     ],
     "scheduler": [
-     [
-      "simple",
-      "sgm_uniform",
-      "karras",
-      "exponential",
-      "ddim_uniform",
-      "beta",
-      "normal",
-      "linear_quadratic",
-      "kl_optimal",
-      "AYS SDXL",
-      "AYS SD1",
-      "AYS SVD",
-      "GITS[coeff=1.2]",
-      "LTXV[default]",
-      "OSS FLUX",
-      "OSS Wan",
-      "OSS Chroma"
-     ]
+     "COMBO",
+     {
+      "options": []
+     }
     ],
     "seed": [
      "INT",
@@ -2715,34 +2644,17 @@
    },
    "required": {
     "model": [
-     [
-      "microsoft/Florence-2-base",
-      "microsoft/Florence-2-base-ft",
-      "microsoft/Florence-2-large",
-      "microsoft/Florence-2-large-ft",
-      "HuggingFaceM4/Florence-2-DocVQA",
-      "thwri/CogFlorence-2.1-Large",
-      "thwri/CogFlorence-2.2-Large",
-      "gokaygokay/Florence-2-SD3-Captioner",
-      "gokaygokay/Florence-2-Flux-Large",
-      "MiaoshouAI/Florence-2-base-PromptGen-v1.5",
-      "MiaoshouAI/Florence-2-large-PromptGen-v1.5",
-      "MiaoshouAI/Florence-2-base-PromptGen-v2.0",
-      "MiaoshouAI/Florence-2-large-PromptGen-v2.0",
-      "PJMixers-Images/Florence-2-base-Castollux-v0.5"
-     ],
+     "COMBO",
      {
-      "default": "microsoft/Florence-2-base"
+      "default": "microsoft/Florence-2-base",
+      "options": []
      }
     ],
     "precision": [
-     [
-      "fp16",
-      "bf16",
-      "fp32"
-     ],
+     "COMBO",
      {
-      "default": "fp16"
+      "default": "fp16",
+      "options": []
      }
     ]
    }
@@ -3475,23 +3387,10 @@
      "IMAGE"
     ],
     "task": [
-     [
-      "region_caption",
-      "dense_region_caption",
-      "region_proposal",
-      "caption",
-      "detailed_caption",
-      "more_detailed_caption",
-      "caption_to_phrase_grounding",
-      "referring_expression_segmentation",
-      "ocr",
-      "ocr_with_region",
-      "docvqa",
-      "prompt_gen_tags",
-      "prompt_gen_mixed_caption",
-      "prompt_gen_analyze",
-      "prompt_gen_mixed_caption_plus"
-     ]
+     "COMBO",
+     {
+      "options": []
+     }
     ],
     "text_input": [
      "STRING",
@@ -3911,7 +3810,7 @@
  },
  "GrowMaskWithBlur": {
   "category": "KJNodes/masking",
-  "description": "\n# GrowMaskWithBlur\n- mask: Input mask or mask batch\n- expand: Expand or contract mask or mask batch by a given amount\n- incremental_expandrate: increase expand rate by a given amount per frame\n- tapered_corners: use tapered corners\n- flip_input: flip input mask\n- blur_radius: value higher than 0 will blur the mask\n- lerp_alpha: alpha value for interpolation between frames\n- decay_factor: decay value for interpolation between frames\n- fill_holes: fill holes in the mask (slow)",
+  "description": "",
   "display_name": "Grow Mask With Blur",
   "has_intermediate_output": false,
   "input": {
@@ -4023,7 +3922,7 @@
   "api_node": false,
   "category": "PlagueKind/model_patches/minimax",
   "deprecated": false,
-  "description": "Rebases dense MiniMax-H3 LoRA AdaLN weights onto a pruned (curve-form) checkpoint, so they are applied instead of being skipped with 51 'ERROR lora ... adaln_proj' lines. Place it after your LoRA loader. Works in both directions: dense LoRA on a pruned base, or curve-form LoRA on a full one.",
+  "description": "",
   "dev_only": false,
   "display_name": "H3 AdaLN LoRA Fix",
   "essentials_category": null,
@@ -4036,11 +3935,7 @@
      {
       "default": "port",
       "multiselect": false,
-      "options": [
-       "port",
-       "strip",
-       "off"
-      ],
+      "options": [],
       "tooltip": "port: rebase the AdaLN weights onto the basis the model actually uses - quiet log, and the timestep modulation is restored. strip: just drop the incompatible weights - quiet log, output identical to having no fix at all. off: passthrough, leaves the errors in place."
      }
     ],
@@ -4080,7 +3975,7 @@
  },
  "H3OneClickSwapPlan": {
   "category": "conditioning/minimax/context_loop",
-  "description": "Splits a source video into overlapping H3 clips and writes the character-swap prompt for each clip.",
+  "description": "",
   "display_name": "H3 One-Click Swap Plan",
   "has_intermediate_output": false,
   "input": {
@@ -4155,13 +4050,10 @@
      }
     ],
     "overlap_frames": [
-     [
-      22,
-      39,
-      56
-     ],
+     "COMBO",
      {
       "default": 39,
+      "options": [],
       "tooltip": "Frames each clip repeats from the previous clip."
      }
     ],
@@ -4169,15 +4061,10 @@
      "IMAGE"
     ],
     "resolution": [
-     [
-      "480p",
-      "576p",
-      "736p",
-      "768p",
-      "1080p"
-     ],
+     "COMBO",
      {
       "default": "736p",
+      "options": [],
       "tooltip": "Short edge of the generated video; the shape follows the source video. 480p is a quick preview; 1080p is about 2.5x slower than 736p and needs much more memory."
      }
     ],
@@ -4275,7 +4162,7 @@
   "api_node": false,
   "category": "PlagueKind/model_patches/minimax",
   "deprecated": false,
-  "description": "Block-sparse attention for MiniMax-H3, matching the inference sequences benefit most, so the gain grows with resolution and duration; short ones fall back to dense automatically.",
+  "description": "",
   "dev_only": false,
   "display_name": "H3 SLA Attention",
   "essentials_category": null,
@@ -4288,16 +4175,7 @@
      {
       "default": "comfy_kitchen",
       "multiselect": false,
-      "options": [
-       "pytorch",
-       "comfy_kitchen",
-       "sage:auto",
-       "sage:qk_int8_pv_fp16_cuda",
-       "sage:qk_int8_pv_fp16_triton",
-       "sage:qk_int8_pv_fp8_cuda",
-       "sage:qk_int8_pv_fp8_cuda++",
-       "auto"
-      ],
+      "options": [],
       "tooltip": "Attention kernel used on every dense fall-through (short sequences, dense_last_steps, dense_steps). 'comfy_kitchen' (default, Comfy Kitchen int8) is fast enough on the handful of dense steps this node runs to be worth its precision tradeoff there. 'pytorch' pins the plain reference kernel instead if you want zero quantization anywhere in the dense path, at real cost to dense-step speed -- dense steps are the ones this node already decided must be exact, so that's the safest choice if you're chasing maximum quality over speed there. The 'sage:*' modes match an existing sage-attention kernel dropdown one-for-one -- 'sage:auto' lets the sageattention package pick; the rest pin a specific kernel + pv_accum_dtype: fp16_cuda uses fp32 accum (safest), fp8_cuda uses fp32+fp32 (safest of the fp8 pair), fp8_cuda++ uses fp32+fp16 (faster, more overflow-prone -- try this first if fp8_cuda works but you want more speed). Needs the sageattention package installed; falls back to whatever's already active with a logged warning if it isn't, or if a specific kernel is missing from your installed version. 'auto' restores the old behaviour of using whatever backend is already active globally. The sparse path is unaffected by this setting either way -- it never goes through backend selection at all."
      }
     ],
@@ -4381,11 +4259,7 @@
      {
       "default": "32",
       "multiselect": false,
-      "options": [
-       "32",
-       "64",
-       "128"
-      ],
+      "options": [],
       "tooltip": "How many sequence tokens share one key selection. Unrelated to the model's 128-wide heads. This matters far more for audio than video: H3 packs audio at 80 rows per second, so a 128-row block forces 1.6 s of audio down one attention pattern, while the same 128 rows are only 3% of a video frame. Speech came out robotic at 128 and clean at 64, for about 2% more time -- halving the block doubles the block count, so the attention work is identical and only the routing gets finer. Use 128 only if you generate without meaningful audio. Coming down to 32 has increased the quality even further for marginal slowdown "
      }
     ],
@@ -4787,7 +4661,7 @@
   "api_node": false,
   "category": "KJNodes/image",
   "deprecated": false,
-  "description": "GPU-accelerated image sharpening with multiple methods.\n\n**RCAS** \u2014 AMD's Robust Contrast-Adaptive Sharpening (from FSR).\nSingle 5-tap cross filter that adapts to local contrast.\nMinimal artifacts, good for general use with little tuning.\n\n**Adaptive USM** \u2014 Unsharp mask with local variance modulation.\nSharpens detail-rich areas more, flat/noisy areas less.\nMore controllable than RCAS via radius and threshold parameters.\n\n**High-Pass** \u2014 Extracts high-frequency detail and blends it back.\nGives a \"clarity\" enhancement feel. Uses radius to control detail scale.\n\n**Deconvolution** \u2014 Richardson-Lucy iterative deconvolution.\nCan recover actual lost detail from blur, not just enhance edges.\nUses radius as the estimated blur kernel and iterations to control convergence.",
+  "description": "",
   "dev_only": false,
   "display_name": "Image Sharpen KJ",
   "essentials_category": null,
@@ -4817,8 +4691,7 @@
             "default": 0.8,
             "max": 1,
             "min": 0,
-            "step": 0.01,
-            "tooltip": "0 = no sharpening, 1 = full RCAS sharpening."
+            "step": 0.01
            }
           ]
          }
@@ -4834,8 +4707,7 @@
             "default": 1,
             "max": 5,
             "min": 0.5,
-            "step": 0.1,
-            "tooltip": "Gaussian blur sigma for the unsharp mask. Larger = enhances coarser detail."
+            "step": 0.1
            }
           ],
           "strength": [
@@ -4844,8 +4716,7 @@
             "default": 0.5,
             "max": 3,
             "min": 0,
-            "step": 0.01,
-            "tooltip": "Sharpening multiplier. Values above 1.0 give aggressive sharpening."
+            "step": 0.01
            }
           ],
           "threshold": [
@@ -4854,8 +4725,7 @@
             "default": 0.05,
             "max": 1,
             "min": 0,
-            "step": 0.01,
-            "tooltip": "Noise gate. Higher = only sharpen areas with more texture/detail. 0 = sharpen everything."
+            "step": 0.01
            }
           ]
          }
@@ -4871,8 +4741,7 @@
             "default": 1,
             "max": 5,
             "min": 0.5,
-            "step": 0.1,
-            "tooltip": "Gaussian blur sigma defining the frequency cutoff. Larger = enhances coarser detail."
+            "step": 0.1
            }
           ],
           "strength": [
@@ -4881,8 +4750,7 @@
             "default": 0.5,
             "max": 3,
             "min": 0,
-            "step": 0.01,
-            "tooltip": "Blend factor for high-frequency detail. Values above 1.0 give a punchier effect."
+            "step": 0.01
            }
           ]
          }
@@ -4898,8 +4766,7 @@
             "default": 10,
             "max": 100,
             "min": 1,
-            "step": 1,
-            "tooltip": "Richardson-Lucy iterations. More = sharper but slower, diminishing returns past ~20."
+            "step": 1
            }
           ],
           "radius": [
@@ -4908,8 +4775,7 @@
             "default": 1,
             "max": 5,
             "min": 0.5,
-            "step": 0.1,
-            "tooltip": "Sigma of the assumed Gaussian blur to reverse."
+            "step": 0.1
            }
           ],
           "strength": [
@@ -4918,8 +4784,7 @@
             "default": 0.5,
             "max": 1,
             "min": 0,
-            "step": 0.01,
-            "tooltip": "Blend between original (0) and fully deconvolved (1)."
+            "step": 0.01
            }
           ]
          }
@@ -5131,7 +4996,7 @@
  },
  "JJC_DownloadAndLoadJoyCaptionModel": {
   "category": "JoyCaption",
-  "description": "Loads the JoyCaption model, automatically downloading it if it's not already present.",
+  "description": "",
   "display_name": "Download and Load JoyCaption Model",
   "has_intermediate_output": false,
   "input": {
@@ -5145,12 +5010,9 @@
      }
     ],
     "memory_mode": [
-     [
-      "Default",
-      "Balanced (8-bit)",
-      "Maximum Savings (4-bit)"
-     ],
+     "COMBO",
      {
+      "options": [],
       "tooltip": "VRAM usage profile. Lower-memory modes use quantization and can be slower."
      }
     ],
@@ -5191,244 +5053,61 @@
  },
  "JJC_JoyCaption": {
   "category": "JoyCaption",
-  "description": "Runs JoyCaption on the input image to generate a caption. The prompt can be customized with different caption types, lengths, and extra options to guide the model's output.",
+  "description": "",
   "display_name": "JoyCaption",
   "has_intermediate_output": false,
   "input": {
    "required": {
     "caption_length": [
-     [
-      "any",
-      "very short",
-      "short",
-      "medium-length",
-      "long",
-      "very long",
-      "20",
-      "30",
-      "40",
-      "50",
-      "60",
-      "70",
-      "80",
-      "90",
-      "100",
-      "110",
-      "120",
-      "130",
-      "140",
-      "150",
-      "160",
-      "170",
-      "180",
-      "190",
-      "200",
-      "210",
-      "220",
-      "230",
-      "240",
-      "250",
-      "260"
-     ],
+     "COMBO",
      {
+      "options": [],
       "tooltip": "Target caption length."
      }
     ],
     "caption_type": [
-     [
-      "Descriptive",
-      "Descriptive (Casual)",
-      "Straightforward",
-      "Stable Diffusion Prompt",
-      "MidJourney",
-      "Danbooru tag list",
-      "e621 tag list",
-      "Rule34 tag list",
-      "Booru-like tag list",
-      "Art Critic",
-      "Product Listing",
-      "Social Media Post"
-     ],
+     "COMBO",
      {
+      "options": [],
       "tooltip": "Preset caption style/template."
      }
     ],
     "extra_option1": [
-     [
-      "",
-      "If there is a person/character in the image you must refer to them as {name}.",
-      "Do NOT include information about people/characters that cannot be changed (like ethnicity, gender, etc), but do still include changeable attributes (like hair style).",
-      "Include information about lighting.",
-      "Include information about camera angle.",
-      "Include information about whether there is a watermark or not.",
-      "Include information about whether there are JPEG artifacts or not.",
-      "If it is a photo you MUST include information about what camera was likely used and details such as aperture, shutter speed, ISO, etc.",
-      "Do NOT include anything sexual; keep it PG.",
-      "Do NOT mention the image's resolution.",
-      "You MUST include information about the subjective aesthetic quality of the image from low to very high.",
-      "Include information on the image's composition style, such as leading lines, rule of thirds, or symmetry.",
-      "Do NOT mention any text that is in the image.",
-      "Specify the depth of field and whether the background is in focus or blurred.",
-      "If applicable, mention the likely use of artificial or natural lighting sources.",
-      "Do NOT use any ambiguous language.",
-      "Include whether the image is sfw, suggestive, or nsfw.",
-      "ONLY describe the most important elements of the image.",
-      "If it is a work of art, do not include the artist's name or the title of the work.",
-      "Identify the image orientation (portrait, landscape, or square) and aspect ratio if obvious.",
-      "Use vulgar slang and profanity, such as (but not limited to) \"fucking,\" \"slut,\" \"cock,\" etc.",
-      "Do NOT use polite euphemisms\u2014lean into blunt, casual phrasing.",
-      "Include information about the ages of any people/characters when applicable.",
-      "Mention whether the image depicts an extreme close-up, close-up, medium close-up, medium shot, cowboy shot, medium wide shot, wide shot, or extreme wide shot.",
-      "Do not mention the mood/feeling/etc of the image.",
-      "Explicitly specify the vantage height (eye-level, low-angle worm\u2019s-eye, bird\u2019s-eye, drone, rooftop, etc.).",
-      "If there is a watermark, you must mention it.",
-      "Your response will be used by a text-to-image model, so avoid useless meta phrases like \u201cThis image shows\u2026\u201d, \"You are looking at...\", etc."
-     ],
+     "COMBO",
      {
+      "options": [],
       "tooltip": "Optional instruction appended to the prompt."
      }
     ],
     "extra_option2": [
-     [
-      "",
-      "If there is a person/character in the image you must refer to them as {name}.",
-      "Do NOT include information about people/characters that cannot be changed (like ethnicity, gender, etc), but do still include changeable attributes (like hair style).",
-      "Include information about lighting.",
-      "Include information about camera angle.",
-      "Include information about whether there is a watermark or not.",
-      "Include information about whether there are JPEG artifacts or not.",
-      "If it is a photo you MUST include information about what camera was likely used and details such as aperture, shutter speed, ISO, etc.",
-      "Do NOT include anything sexual; keep it PG.",
-      "Do NOT mention the image's resolution.",
-      "You MUST include information about the subjective aesthetic quality of the image from low to very high.",
-      "Include information on the image's composition style, such as leading lines, rule of thirds, or symmetry.",
-      "Do NOT mention any text that is in the image.",
-      "Specify the depth of field and whether the background is in focus or blurred.",
-      "If applicable, mention the likely use of artificial or natural lighting sources.",
-      "Do NOT use any ambiguous language.",
-      "Include whether the image is sfw, suggestive, or nsfw.",
-      "ONLY describe the most important elements of the image.",
-      "If it is a work of art, do not include the artist's name or the title of the work.",
-      "Identify the image orientation (portrait, landscape, or square) and aspect ratio if obvious.",
-      "Use vulgar slang and profanity, such as (but not limited to) \"fucking,\" \"slut,\" \"cock,\" etc.",
-      "Do NOT use polite euphemisms\u2014lean into blunt, casual phrasing.",
-      "Include information about the ages of any people/characters when applicable.",
-      "Mention whether the image depicts an extreme close-up, close-up, medium close-up, medium shot, cowboy shot, medium wide shot, wide shot, or extreme wide shot.",
-      "Do not mention the mood/feeling/etc of the image.",
-      "Explicitly specify the vantage height (eye-level, low-angle worm\u2019s-eye, bird\u2019s-eye, drone, rooftop, etc.).",
-      "If there is a watermark, you must mention it.",
-      "Your response will be used by a text-to-image model, so avoid useless meta phrases like \u201cThis image shows\u2026\u201d, \"You are looking at...\", etc."
-     ],
+     "COMBO",
      {
       "advanced": true,
+      "options": [],
       "tooltip": "Optional instruction appended to the prompt."
      }
     ],
     "extra_option3": [
-     [
-      "",
-      "If there is a person/character in the image you must refer to them as {name}.",
-      "Do NOT include information about people/characters that cannot be changed (like ethnicity, gender, etc), but do still include changeable attributes (like hair style).",
-      "Include information about lighting.",
-      "Include information about camera angle.",
-      "Include information about whether there is a watermark or not.",
-      "Include information about whether there are JPEG artifacts or not.",
-      "If it is a photo you MUST include information about what camera was likely used and details such as aperture, shutter speed, ISO, etc.",
-      "Do NOT include anything sexual; keep it PG.",
-      "Do NOT mention the image's resolution.",
-      "You MUST include information about the subjective aesthetic quality of the image from low to very high.",
-      "Include information on the image's composition style, such as leading lines, rule of thirds, or symmetry.",
-      "Do NOT mention any text that is in the image.",
-      "Specify the depth of field and whether the background is in focus or blurred.",
-      "If applicable, mention the likely use of artificial or natural lighting sources.",
-      "Do NOT use any ambiguous language.",
-      "Include whether the image is sfw, suggestive, or nsfw.",
-      "ONLY describe the most important elements of the image.",
-      "If it is a work of art, do not include the artist's name or the title of the work.",
-      "Identify the image orientation (portrait, landscape, or square) and aspect ratio if obvious.",
-      "Use vulgar slang and profanity, such as (but not limited to) \"fucking,\" \"slut,\" \"cock,\" etc.",
-      "Do NOT use polite euphemisms\u2014lean into blunt, casual phrasing.",
-      "Include information about the ages of any people/characters when applicable.",
-      "Mention whether the image depicts an extreme close-up, close-up, medium close-up, medium shot, cowboy shot, medium wide shot, wide shot, or extreme wide shot.",
-      "Do not mention the mood/feeling/etc of the image.",
-      "Explicitly specify the vantage height (eye-level, low-angle worm\u2019s-eye, bird\u2019s-eye, drone, rooftop, etc.).",
-      "If there is a watermark, you must mention it.",
-      "Your response will be used by a text-to-image model, so avoid useless meta phrases like \u201cThis image shows\u2026\u201d, \"You are looking at...\", etc."
-     ],
+     "COMBO",
      {
       "advanced": true,
+      "options": [],
       "tooltip": "Optional instruction appended to the prompt."
      }
     ],
     "extra_option4": [
-     [
-      "",
-      "If there is a person/character in the image you must refer to them as {name}.",
-      "Do NOT include information about people/characters that cannot be changed (like ethnicity, gender, etc), but do still include changeable attributes (like hair style).",
-      "Include information about lighting.",
-      "Include information about camera angle.",
-      "Include information about whether there is a watermark or not.",
-      "Include information about whether there are JPEG artifacts or not.",
-      "If it is a photo you MUST include information about what camera was likely used and details such as aperture, shutter speed, ISO, etc.",
-      "Do NOT include anything sexual; keep it PG.",
-      "Do NOT mention the image's resolution.",
-      "You MUST include information about the subjective aesthetic quality of the image from low to very high.",
-      "Include information on the image's composition style, such as leading lines, rule of thirds, or symmetry.",
-      "Do NOT mention any text that is in the image.",
-      "Specify the depth of field and whether the background is in focus or blurred.",
-      "If applicable, mention the likely use of artificial or natural lighting sources.",
-      "Do NOT use any ambiguous language.",
-      "Include whether the image is sfw, suggestive, or nsfw.",
-      "ONLY describe the most important elements of the image.",
-      "If it is a work of art, do not include the artist's name or the title of the work.",
-      "Identify the image orientation (portrait, landscape, or square) and aspect ratio if obvious.",
-      "Use vulgar slang and profanity, such as (but not limited to) \"fucking,\" \"slut,\" \"cock,\" etc.",
-      "Do NOT use polite euphemisms\u2014lean into blunt, casual phrasing.",
-      "Include information about the ages of any people/characters when applicable.",
-      "Mention whether the image depicts an extreme close-up, close-up, medium close-up, medium shot, cowboy shot, medium wide shot, wide shot, or extreme wide shot.",
-      "Do not mention the mood/feeling/etc of the image.",
-      "Explicitly specify the vantage height (eye-level, low-angle worm\u2019s-eye, bird\u2019s-eye, drone, rooftop, etc.).",
-      "If there is a watermark, you must mention it.",
-      "Your response will be used by a text-to-image model, so avoid useless meta phrases like \u201cThis image shows\u2026\u201d, \"You are looking at...\", etc."
-     ],
+     "COMBO",
      {
       "advanced": true,
+      "options": [],
       "tooltip": "Optional instruction appended to the prompt."
      }
     ],
     "extra_option5": [
-     [
-      "",
-      "If there is a person/character in the image you must refer to them as {name}.",
-      "Do NOT include information about people/characters that cannot be changed (like ethnicity, gender, etc), but do still include changeable attributes (like hair style).",
-      "Include information about lighting.",
-      "Include information about camera angle.",
-      "Include information about whether there is a watermark or not.",
-      "Include information about whether there are JPEG artifacts or not.",
-      "If it is a photo you MUST include information about what camera was likely used and details such as aperture, shutter speed, ISO, etc.",
-      "Do NOT include anything sexual; keep it PG.",
-      "Do NOT mention the image's resolution.",
-      "You MUST include information about the subjective aesthetic quality of the image from low to very high.",
-      "Include information on the image's composition style, such as leading lines, rule of thirds, or symmetry.",
-      "Do NOT mention any text that is in the image.",
-      "Specify the depth of field and whether the background is in focus or blurred.",
-      "If applicable, mention the likely use of artificial or natural lighting sources.",
-      "Do NOT use any ambiguous language.",
-      "Include whether the image is sfw, suggestive, or nsfw.",
-      "ONLY describe the most important elements of the image.",
-      "If it is a work of art, do not include the artist's name or the title of the work.",
-      "Identify the image orientation (portrait, landscape, or square) and aspect ratio if obvious.",
-      "Use vulgar slang and profanity, such as (but not limited to) \"fucking,\" \"slut,\" \"cock,\" etc.",
-      "Do NOT use polite euphemisms\u2014lean into blunt, casual phrasing.",
-      "Include information about the ages of any people/characters when applicable.",
-      "Mention whether the image depicts an extreme close-up, close-up, medium close-up, medium shot, cowboy shot, medium wide shot, wide shot, or extreme wide shot.",
-      "Do not mention the mood/feeling/etc of the image.",
-      "Explicitly specify the vantage height (eye-level, low-angle worm\u2019s-eye, bird\u2019s-eye, drone, rooftop, etc.).",
-      "If there is a watermark, you must mention it.",
-      "Your response will be used by a text-to-image model, so avoid useless meta phrases like \u201cThis image shows\u2026\u201d, \"You are looking at...\", etc."
-     ],
+     "COMBO",
      {
       "advanced": true,
+      "options": [],
       "tooltip": "Optional instruction appended to the prompt."
      }
     ],
@@ -5818,92 +5497,32 @@
   "has_intermediate_output": false,
   "input": {
    "optional": {
-    "decimate_ratio": [
-     "FLOAT",
-     {
-      "default": 0.2,
-      "max": 1,
-      "min": 0,
-      "step": 0.05,
-      "tooltip": "Mesh decimation ratio (0=off, 0.2=reduce to 20%% of faces). Uses Collapse mode which preserves skin weights. Reduces file size ~70%%."
-     }
-    ],
-    "in_place": [
-     "BOOLEAN",
-     {
-      "default": true,
-      "tooltip": "In-place motion: zero root horizontal drift so character walks on a treadmill (stays centered). Recommended for Pose Studio."
-     }
-    ],
-    "npz_path": [
-     "STRING",
-     {
-      "default": "",
-      "forceInput": true,
-      "multiline": false,
-      "tooltip": "Optional: SOMA-77 motion NPZ for retargeting. If provided, Blender retargets motion onto the character. If empty, just converts format."
-     }
-    ],
     "preserve_texture": [
      "BOOLEAN",
      {
       "default": true,
-      "tooltip": "SOMAX standalone mode only. When True (default), the output GLB keeps the source mesh's textures. When False, all textures are stripped and the mesh is given a flat SOMA-blue material \u2014 useful when you want to apply textures later in Pose Studio or an external tool. Ignored for retarget."
+      "tooltip": "When True (default), the output GLB keeps the source mesh's textures. When False, all textures are stripped and the mesh is given a flat SOMA-blue material \u2014 useful when you want to apply textures later in Pose Studio or an external tool."
      }
-    ],
+    ]
+   },
+   "required": {
     "source_glb": [
      "STRING",
      {
       "default": "",
       "forceInput": true,
       "multiline": false,
-      "tooltip": "Optional: original textured GLB. When provided (and no npz_path), GPU transfers the rig + skin weights from rigged_path onto THIS mesh, preserving textures. Uses AABB-aligned torch.cdist nearest-neighbor on the RTX 4090 (~10s for 500K verts) and writes the GLB directly \u2014 no Blender involved."
-     }
-    ]
-   },
-   "required": {
-    "file_format": [
-     [
-      "fbx",
-      "glb"
-     ],
-     {
-      "default": "fbx",
-      "tooltip": "FBX for Unity/Unreal/Kimodo. GLB for web/Three.js."
-     }
-    ],
-    "fps": [
-     "INT",
-     {
-      "default": 30,
-      "max": 120,
-      "min": 1,
-      "tooltip": "Output animation frame rate."
-     }
-    ],
-    "rigged_path": [
-     "STRING",
-     {
-      "default": "",
-      "forceInput": true,
-      "multiline": false,
-      "tooltip": "Path to a rigged GLB/FBX with Mixamo bone names. Connect from SaveRiggedModel or provide a path."
+      "tooltip": "Original textured GLB to rig. The SOMA-77 template's weights transfer onto THIS mesh (AABB-aligned torch.cdist nearest-neighbor on the RTX 4090, ~10s for 500K verts) and the rigged GLB is written directly."
      }
     ]
    }
   },
   "input_order": {
    "optional": [
-    "npz_path",
-    "in_place",
-    "decimate_ratio",
-    "source_glb",
     "preserve_texture"
    ],
    "required": [
-    "rigged_path",
-    "fps",
-    "file_format"
+    "source_glb"
    ]
   },
   "is_input_list": false,
@@ -5915,7 +5534,7 @@
    false
   ],
   "output_name": [
-   "animated_path"
+   "rigged_path"
   ],
   "output_node": true,
   "python_module": "custom_nodes.melite-autorig-nodes",
@@ -5927,6 +5546,35 @@
   "display_name": "Load Kimodo Model",
   "has_intermediate_output": false,
   "input": {
+   "optional": {
+    "offline": [
+     "BOOLEAN",
+     {
+      "default": true,
+      "tooltip": "True blocks huggingface_hub network calls (air-gapped pods); False restores the library defaults"
+     }
+    ],
+    "text_encoder_device": [
+     [
+      "cpu",
+      "cuda"
+     ],
+     {
+      "default": "cpu",
+      "tooltip": "LLM2Vec encoder device (cpu keeps VRAM free for the diffusion model)"
+     }
+    ],
+    "text_encoder_mode": [
+     [
+      "local",
+      "auto"
+     ],
+     {
+      "default": "local",
+      "tooltip": "local builds the LLM2Vec encoder in-process; auto probes the vendor API service first"
+     }
+    ]
+   },
    "required": {
     "model_name": [
      "STRING",
@@ -5939,6 +5587,11 @@
    }
   },
   "input_order": {
+   "optional": [
+    "text_encoder_device",
+    "text_encoder_mode",
+    "offline"
+   ],
    "required": [
     "model_name"
    ]
@@ -6171,6 +5824,7 @@
       "h3/minimax_h3_fl2v_lightx2v_v0.1_dareties_v4_step600_comfy_fro.safetensors",
       "h3/minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16.safetensors",
       "h3/minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors",
+      "h3/minimax_h3_fl2v_turbo_silver_dareties_comfy_pruned_v2.safetensors",
       "h3/minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors",
       "h3/minimax_h3_taomate_3step_lora_avg_rank_19_bf16.safetensors",
       "h3/minimax_h3_turbo_v4_step600_ema.safetensors",
@@ -6207,13 +5861,10 @@
    },
    "required": {
     "mode": [
-     [
-      "normal",
-      "ltx",
-      "minimax"
-     ],
+     "COMBO",
      {
-      "default": "normal"
+      "default": "normal",
+      "options": []
      }
     ],
     "model": [
@@ -6276,64 +5927,7 @@
      {
       "audio_upload": true,
       "multiselect": false,
-      "options": [
-       "01 Dildolech (Kelis Milkshake Parody_7699f5cb82b7.mp3",
-       "07 - Sex and Violence (feat. Melissa McNaught)_fd1a34c11c44.flac",
-       "Makhna clip 10s-15s_e7258bfa8214.webm",
-       "SaveAudio.0_design_00001_38b227c8bdcf.flac",
-       "SaveAudio.0_sfx_00001_a3590a151fe9.flac",
-       "SaveAudio.0_tts_00001_f21427d87c2e.flac",
-       "SaveAudioAdvanced.0_music_00001_10c86983ccba.mp3",
-       "SaveVideo.0_h3_t4_w1_00001__727eaada1377.mp4",
-       "SaveVideo.2_extend_film_00001__2701a65532ba.mp4",
-       "VHS_VideoCombine.0_mannequin_00001_89e1fea228bb.mp4",
-       "VHS_VideoCombine.0_openjutsu_00001-audio_09e163466dfd.mp4",
-       "VHS_VideoCombine.0_openjutsu_00001-audio_67d4712670b8.mp4",
-       "VHS_VideoCombine.0_openjutsu_00001-audio_78b3e868f8de.mp4",
-       "VHS_VideoCombine.0_openjutsu_00001-audio_8b8cc8e50c4c.mp4",
-       "anime-girl.mp4",
-       "anime-girl_26185d275266.mp4",
-       "cards-gpu-tts-base-ref_bfe2acab4b33.wav",
-       "cut_mannequin.mp4",
-       "cut_source.webm",
-       "cut_source_fix.webm",
-       "cut_source_v2.webm",
-       "cut_tail_df3180418e40.webm",
-       "cut_tail_exact_1a0f24c3a378.mp4",
-       "film_b5daccf1bb15.mp4",
-       "h3_t4_film_00001__ac34e57f53c3.mp4",
-       "h3_t4_film_00002__13e27f55cc1c.mp4",
-       "h3_t4_film_00004__f4d2cd453178.mp4",
-       "h3_t4_film_00005__2aa467ff757e.mp4",
-       "h3_t4_w1_00001__a7c9b7cb82a6.mp4",
-       "h3_t4_w1_00068__533aceec71e5.mp4",
-       "h3_t4_w1_00069__7f612db51789.mp4",
-       "h3_t4_w1_00077__91fd20bc2a27.mp4",
-       "h3_t4_w1_00078__26185d275266.mp4",
-       "h3_t4_w1_00081__21d43cbfd869.mp4",
-       "h3_t4_w1_00082__491994e8a99b.mp4",
-       "h3_t4_w2_00004__a1fa72843541.mp4",
-       "input-prep-verify-tone_3c2a21677dcd.wav",
-       "line_e853f3067188.flac",
-       "makhna_clip_e7258bfa8214.webm",
-       "makhna_cut16_afa3cf8b8e89.webm",
-       "refine_small_56.mp4",
-       "refine_small_56_61378b33e3e0.mp4",
-       "refine_small_56_ee39c08ee8e4.mp4",
-       "reshoot_124f_bad.mp4",
-       "reshoot_tail_175.mp4",
-       "reshoot_tail_175_15e3c96e469e.mp4",
-       "run-7492bb0d9f57-8b4b87f8_repair_6145791d9a19.mp4",
-       "soft-piano_5d082fcabbb3.mp3",
-       "swap_film_v1.mp4",
-       "swap_film_v1_9c383840d58f.mp4",
-       "swap_mannequin.mp4",
-       "swap_source_clip.webm",
-       "tail_mannequin.mp4",
-       "tail_source.webm",
-       "tts_line1.flac",
-       "voice_c02d117219a9.m4a"
-      ]
+      "options": []
      }
     ]
    }
@@ -6452,112 +6046,10 @@
   "input": {
    "required": {
     "image": [
-     [
-      "00075-2286428479_5600aecdb168.jpg",
-      "36039_fd673969123f.jpg",
-      "A029_282ff6428c97.jpg",
-      "MummyGirl_5dc5418fd089.jpg",
-      "SaveImage.0_edit_00001__0235d3eccb02.png",
-      "SaveImage.0_edit_00001__239d72f5b56e.png",
-      "SaveImage.0_edit_00001__2cd42b55e762.png",
-      "SaveImage.0_edit_00001__37e8ff902419.png",
-      "SaveImage.0_edit_00001__3986d4d09264.png",
-      "SaveImage.0_edit_00001__41b018ade25b.png",
-      "SaveImage.0_edit_00001__4d51beb2cc98.png",
-      "SaveImage.0_edit_00001__4fac0a3e2013.png",
-      "SaveImage.0_edit_00001__597ba5b4769f.png",
-      "SaveImage.0_edit_00001__5ea2de6b0a4e.png",
-      "SaveImage.0_edit_00001__699850493269.png",
-      "SaveImage.0_edit_00001__770ae32a14e8.png",
-      "SaveImage.0_edit_00001__ab16b046de27.png",
-      "SaveImage.0_edit_00001__ba84b265f65d.png",
-      "SaveImage.0_edit_00001__c1775484286d.png",
-      "SaveImage.0_edit_00001__c50c76c5132a.png",
-      "SaveImage.0_edit_00001__c646d3ccbc27.png",
-      "SaveImage.0_edit_00001__d18c63de9ec6.png",
-      "SaveImage.0_edit_00001__ea9aa3d5baad.png",
-      "SaveImage.0_edit_00001__f57d1713bfb3.png",
-      "SaveImage.0_gen_00001__09689fe61e7a.png",
-      "SaveImage.0_gen_00001__0ce3280a3d13.png",
-      "SaveImage.0_gen_00001__1413e536053c.png",
-      "SaveImage.0_gen_00001__1ac37322189c.png",
-      "SaveImage.0_gen_00001__2193b347e808.png",
-      "SaveImage.0_gen_00001__329b23c3f4de.png",
-      "SaveImage.0_gen_00001__39db8ade4a1e.png",
-      "SaveImage.0_gen_00001__3a075223adfa.png",
-      "SaveImage.0_gen_00001__42f043968aa6.png",
-      "SaveImage.0_gen_00001__4efbfe6341d0.png",
-      "SaveImage.0_gen_00001__50f22877cd95.png",
-      "SaveImage.0_gen_00001__5600ae8fc592.png",
-      "SaveImage.0_gen_00001__62b97ce19787.png",
-      "SaveImage.0_gen_00001__7bbaa6b64c60.png",
-      "SaveImage.0_gen_00001__85379519f4df.png",
-      "SaveImage.0_gen_00001__b39603162638.png",
-      "SaveImage.0_gen_00001__c0aa96997f3e.png",
-      "SaveImage.0_gen_00001__e2a6713311a9.png",
-      "SaveImage.0_gen_00001__f5d9b3b3a1c9.png",
-      "SaveImage.0_gen_00001__f99a509d3b3e.png",
-      "SaveImage.0_gen_00003__b2c4aa63c9eb.png",
-      "SaveImage.0_input_prep_00001__8cea4dcdf6f1.png",
-      "SaveImage.0_input_prep_00001__abe3b0054abe.png",
-      "SaveImage.0_input_prep_00001__c6b7f7f620fe.png",
-      "SaveImage.0_instance_00001__ffe7e1274cdf.png",
-      "SaveImage.0_openjutsu_00028__5bcfe0dce8a5.png",
-      "SaveImage.1_detect_boxes_00001__e1ba45bbc14e.png",
-      "anime-girl-blue-hair_c646d3ccbc27.png",
-      "anime-girl-ref-crop_8fc3bd3a7d83.png",
-      "anime-girl-ref_d777a2dfd38a.png",
-      "anime-girl.png",
-      "anime-girl_5600ae8fc592.png",
-      "bake-variance-probe-anchor_e79e0539a052.png",
-      "cards-gpu-h3-bake-anchor_e79e0539a052.png",
-      "cards-gpu-h3-dare-anchor_e79e0539a052.png",
-      "cards-gpu-h3-draft-anchor_e79e0539a052.png",
-      "cards-gpu-h3-hd-anchor_e79e0539a052.png",
-      "cards-gpu-seedvr2-anchor_e79e0539a052.png",
-      "character_img_00009__fb3e000684f8.png",
-      "cut_mask_union.png",
-      "cut_masks_union_ab20cd8cb48d.png",
-      "cut_still.png",
-      "ddd_9c427ecf8043.png",
-      "download (2)_c47310e743c1.png",
-      "e2e_anchor (1).png",
-      "e2e_anchor.png",
-      "example.png",
-      "hera_hades2_anima_v7_f8d779bcf1ed.png",
-      "hera_sheet_anchor_1536x1024_5df608653ee5.png",
-      "hera_tall_anchor_2x_d126cba5aadb.png",
-      "hera_tall_anchor_532cfa15cb8c.png",
-      "heroine_baldsrc_back_1ef8663b7812.png",
-      "heroine_baldsrc_front_e7ab636a20c7.png",
-      "heroine_baldsrc_side_002cf9baed88.png",
-      "heroine_baldsrc_threequarter_left_d071b06d4164.png",
-      "heroine_baldsrc_threequarter_right_526984c6a8a4.png",
-      "heroine_ref_nude_r379_1c7f38a300b1.png",
-      "heroine_ref_nude_r379_notail_0c403836ca94.png",
-      "input-prep-verify_76cbdd22ae31.png",
-      "melite-data-1d3efadeb639ca12_700ae1b16e8a.png",
-      "melite-data-4703258cd8213f17_5600aecdb168.jpg",
-      "melite-data-58045ad11e46d53f_5600aecdb168.jpg",
-      "melite-data-5bd1165a72f97550_fd9660a4273a.png",
-      "melite-data-5f814b766a662ba3_fd9660a4273a.png",
-      "melite-data-a54444dc3c33aa3f_6002e3c934d8.png",
-      "melite-data-b25d7e2155a224ec_72844f29c4a6.png",
-      "melite-data-d04dce8f14c03ce1_6002e3c934d8.png",
-      "melite-data-d51c0532d60a18db_6002e3c934d8.png",
-      "melite-data-f89cdad5ffb1023f_5600aecdb168.jpg",
-      "pit_316dc8d3861c.png",
-      "qa_frame_reshoot.png",
-      "source_7804de2d8921.png",
-      "sss_b8f4d80c061c.webp",
-      "stage_mesh_42053183f429.png",
-      "style_reference_013012c51fb1.webp",
-      "swap_mask_union.png",
-      "swap_ninja_still.png",
-      "tail_mask_union.png"
-     ],
+     "COMBO",
      {
-      "image_upload": true
+      "image_upload": true,
+      "options": []
      }
     ]
    }
@@ -6610,112 +6102,10 @@
      ]
     ],
     "image": [
-     [
-      "00075-2286428479_5600aecdb168.jpg",
-      "36039_fd673969123f.jpg",
-      "A029_282ff6428c97.jpg",
-      "MummyGirl_5dc5418fd089.jpg",
-      "SaveImage.0_edit_00001__0235d3eccb02.png",
-      "SaveImage.0_edit_00001__239d72f5b56e.png",
-      "SaveImage.0_edit_00001__2cd42b55e762.png",
-      "SaveImage.0_edit_00001__37e8ff902419.png",
-      "SaveImage.0_edit_00001__3986d4d09264.png",
-      "SaveImage.0_edit_00001__41b018ade25b.png",
-      "SaveImage.0_edit_00001__4d51beb2cc98.png",
-      "SaveImage.0_edit_00001__4fac0a3e2013.png",
-      "SaveImage.0_edit_00001__597ba5b4769f.png",
-      "SaveImage.0_edit_00001__5ea2de6b0a4e.png",
-      "SaveImage.0_edit_00001__699850493269.png",
-      "SaveImage.0_edit_00001__770ae32a14e8.png",
-      "SaveImage.0_edit_00001__ab16b046de27.png",
-      "SaveImage.0_edit_00001__ba84b265f65d.png",
-      "SaveImage.0_edit_00001__c1775484286d.png",
-      "SaveImage.0_edit_00001__c50c76c5132a.png",
-      "SaveImage.0_edit_00001__c646d3ccbc27.png",
-      "SaveImage.0_edit_00001__d18c63de9ec6.png",
-      "SaveImage.0_edit_00001__ea9aa3d5baad.png",
-      "SaveImage.0_edit_00001__f57d1713bfb3.png",
-      "SaveImage.0_gen_00001__09689fe61e7a.png",
-      "SaveImage.0_gen_00001__0ce3280a3d13.png",
-      "SaveImage.0_gen_00001__1413e536053c.png",
-      "SaveImage.0_gen_00001__1ac37322189c.png",
-      "SaveImage.0_gen_00001__2193b347e808.png",
-      "SaveImage.0_gen_00001__329b23c3f4de.png",
-      "SaveImage.0_gen_00001__39db8ade4a1e.png",
-      "SaveImage.0_gen_00001__3a075223adfa.png",
-      "SaveImage.0_gen_00001__42f043968aa6.png",
-      "SaveImage.0_gen_00001__4efbfe6341d0.png",
-      "SaveImage.0_gen_00001__50f22877cd95.png",
-      "SaveImage.0_gen_00001__5600ae8fc592.png",
-      "SaveImage.0_gen_00001__62b97ce19787.png",
-      "SaveImage.0_gen_00001__7bbaa6b64c60.png",
-      "SaveImage.0_gen_00001__85379519f4df.png",
-      "SaveImage.0_gen_00001__b39603162638.png",
-      "SaveImage.0_gen_00001__c0aa96997f3e.png",
-      "SaveImage.0_gen_00001__e2a6713311a9.png",
-      "SaveImage.0_gen_00001__f5d9b3b3a1c9.png",
-      "SaveImage.0_gen_00001__f99a509d3b3e.png",
-      "SaveImage.0_gen_00003__b2c4aa63c9eb.png",
-      "SaveImage.0_input_prep_00001__8cea4dcdf6f1.png",
-      "SaveImage.0_input_prep_00001__abe3b0054abe.png",
-      "SaveImage.0_input_prep_00001__c6b7f7f620fe.png",
-      "SaveImage.0_instance_00001__ffe7e1274cdf.png",
-      "SaveImage.0_openjutsu_00028__5bcfe0dce8a5.png",
-      "SaveImage.1_detect_boxes_00001__e1ba45bbc14e.png",
-      "anime-girl-blue-hair_c646d3ccbc27.png",
-      "anime-girl-ref-crop_8fc3bd3a7d83.png",
-      "anime-girl-ref_d777a2dfd38a.png",
-      "anime-girl.png",
-      "anime-girl_5600ae8fc592.png",
-      "bake-variance-probe-anchor_e79e0539a052.png",
-      "cards-gpu-h3-bake-anchor_e79e0539a052.png",
-      "cards-gpu-h3-dare-anchor_e79e0539a052.png",
-      "cards-gpu-h3-draft-anchor_e79e0539a052.png",
-      "cards-gpu-h3-hd-anchor_e79e0539a052.png",
-      "cards-gpu-seedvr2-anchor_e79e0539a052.png",
-      "character_img_00009__fb3e000684f8.png",
-      "cut_mask_union.png",
-      "cut_masks_union_ab20cd8cb48d.png",
-      "cut_still.png",
-      "ddd_9c427ecf8043.png",
-      "download (2)_c47310e743c1.png",
-      "e2e_anchor (1).png",
-      "e2e_anchor.png",
-      "example.png",
-      "hera_hades2_anima_v7_f8d779bcf1ed.png",
-      "hera_sheet_anchor_1536x1024_5df608653ee5.png",
-      "hera_tall_anchor_2x_d126cba5aadb.png",
-      "hera_tall_anchor_532cfa15cb8c.png",
-      "heroine_baldsrc_back_1ef8663b7812.png",
-      "heroine_baldsrc_front_e7ab636a20c7.png",
-      "heroine_baldsrc_side_002cf9baed88.png",
-      "heroine_baldsrc_threequarter_left_d071b06d4164.png",
-      "heroine_baldsrc_threequarter_right_526984c6a8a4.png",
-      "heroine_ref_nude_r379_1c7f38a300b1.png",
-      "heroine_ref_nude_r379_notail_0c403836ca94.png",
-      "input-prep-verify_76cbdd22ae31.png",
-      "melite-data-1d3efadeb639ca12_700ae1b16e8a.png",
-      "melite-data-4703258cd8213f17_5600aecdb168.jpg",
-      "melite-data-58045ad11e46d53f_5600aecdb168.jpg",
-      "melite-data-5bd1165a72f97550_fd9660a4273a.png",
-      "melite-data-5f814b766a662ba3_fd9660a4273a.png",
-      "melite-data-a54444dc3c33aa3f_6002e3c934d8.png",
-      "melite-data-b25d7e2155a224ec_72844f29c4a6.png",
-      "melite-data-d04dce8f14c03ce1_6002e3c934d8.png",
-      "melite-data-d51c0532d60a18db_6002e3c934d8.png",
-      "melite-data-f89cdad5ffb1023f_5600aecdb168.jpg",
-      "pit_316dc8d3861c.png",
-      "qa_frame_reshoot.png",
-      "source_7804de2d8921.png",
-      "sss_b8f4d80c061c.webp",
-      "stage_mesh_42053183f429.png",
-      "style_reference_013012c51fb1.webp",
-      "swap_mask_union.png",
-      "swap_ninja_still.png",
-      "tail_mask_union.png"
-     ],
+     "COMBO",
      {
-      "image_upload": true
+      "image_upload": true,
+      "options": []
      }
     ]
    }
@@ -6809,52 +6199,7 @@
      "COMBO",
      {
       "multiselect": false,
-      "options": [
-       "Makhna clip 10s-15s_e7258bfa8214.webm",
-       "SaveVideo.0_h3_t4_w1_00001__727eaada1377.mp4",
-       "SaveVideo.2_extend_film_00001__2701a65532ba.mp4",
-       "VHS_VideoCombine.0_mannequin_00001_89e1fea228bb.mp4",
-       "VHS_VideoCombine.0_openjutsu_00001-audio_09e163466dfd.mp4",
-       "VHS_VideoCombine.0_openjutsu_00001-audio_67d4712670b8.mp4",
-       "VHS_VideoCombine.0_openjutsu_00001-audio_78b3e868f8de.mp4",
-       "VHS_VideoCombine.0_openjutsu_00001-audio_8b8cc8e50c4c.mp4",
-       "anime-girl.mp4",
-       "anime-girl_26185d275266.mp4",
-       "cut_mannequin.mp4",
-       "cut_source.webm",
-       "cut_source_fix.webm",
-       "cut_source_v2.webm",
-       "cut_tail_df3180418e40.webm",
-       "cut_tail_exact_1a0f24c3a378.mp4",
-       "film_b5daccf1bb15.mp4",
-       "h3_t4_film_00001__ac34e57f53c3.mp4",
-       "h3_t4_film_00002__13e27f55cc1c.mp4",
-       "h3_t4_film_00004__f4d2cd453178.mp4",
-       "h3_t4_film_00005__2aa467ff757e.mp4",
-       "h3_t4_w1_00001__a7c9b7cb82a6.mp4",
-       "h3_t4_w1_00068__533aceec71e5.mp4",
-       "h3_t4_w1_00069__7f612db51789.mp4",
-       "h3_t4_w1_00077__91fd20bc2a27.mp4",
-       "h3_t4_w1_00078__26185d275266.mp4",
-       "h3_t4_w1_00081__21d43cbfd869.mp4",
-       "h3_t4_w1_00082__491994e8a99b.mp4",
-       "h3_t4_w2_00004__a1fa72843541.mp4",
-       "makhna_clip_e7258bfa8214.webm",
-       "makhna_cut16_afa3cf8b8e89.webm",
-       "refine_small_56.mp4",
-       "refine_small_56_61378b33e3e0.mp4",
-       "refine_small_56_ee39c08ee8e4.mp4",
-       "reshoot_124f_bad.mp4",
-       "reshoot_tail_175.mp4",
-       "reshoot_tail_175_15e3c96e469e.mp4",
-       "run-7492bb0d9f57-8b4b87f8_repair_6145791d9a19.mp4",
-       "swap_film_v1.mp4",
-       "swap_film_v1_9c383840d58f.mp4",
-       "swap_mannequin.mp4",
-       "swap_source_clip.webm",
-       "tail_mannequin.mp4",
-       "tail_source.webm"
-      ],
+      "options": [],
       "video_upload": true
      }
     ]
@@ -6915,6 +6260,7 @@
       "h3/minimax_h3_fl2v_lightx2v_v0.1_dareties_v4_step600_comfy_fro.safetensors",
       "h3/minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16.safetensors",
       "h3/minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors",
+      "h3/minimax_h3_fl2v_turbo_silver_dareties_comfy_pruned_v2.safetensors",
       "h3/minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors",
       "h3/minimax_h3_taomate_3step_lora_avg_rank_19_bf16.safetensors",
       "h3/minimax_h3_turbo_v4_step600_ema.safetensors",
@@ -7031,6 +6377,7 @@
       "h3/minimax_h3_fl2v_lightx2v_v0.1_dareties_v4_step600_comfy_fro.safetensors",
       "h3/minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16.safetensors",
       "h3/minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors",
+      "h3/minimax_h3_fl2v_turbo_silver_dareties_comfy_pruned_v2.safetensors",
       "h3/minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors",
       "h3/minimax_h3_taomate_3step_lora_avg_rank_19_bf16.safetensors",
       "h3/minimax_h3_turbo_v4_step600_ema.safetensors",
@@ -7234,66 +6581,10 @@
   "input": {
    "required": {
     "audio": [
-     [
-      "01 Dildolech (Kelis Milkshake Parody_7699f5cb82b7.mp3",
-      "07 - Sex and Violence (feat. Melissa McNaught)_fd1a34c11c44.flac",
-      "Makhna clip 10s-15s_e7258bfa8214.webm",
-      "SaveAudio.0_design_00001_38b227c8bdcf.flac",
-      "SaveAudio.0_sfx_00001_a3590a151fe9.flac",
-      "SaveAudio.0_tts_00001_f21427d87c2e.flac",
-      "SaveAudioAdvanced.0_music_00001_10c86983ccba.mp3",
-      "SaveVideo.0_h3_t4_w1_00001__727eaada1377.mp4",
-      "SaveVideo.2_extend_film_00001__2701a65532ba.mp4",
-      "VHS_VideoCombine.0_mannequin_00001_89e1fea228bb.mp4",
-      "VHS_VideoCombine.0_openjutsu_00001-audio_09e163466dfd.mp4",
-      "VHS_VideoCombine.0_openjutsu_00001-audio_67d4712670b8.mp4",
-      "VHS_VideoCombine.0_openjutsu_00001-audio_78b3e868f8de.mp4",
-      "VHS_VideoCombine.0_openjutsu_00001-audio_8b8cc8e50c4c.mp4",
-      "anime-girl.mp4",
-      "anime-girl_26185d275266.mp4",
-      "cards-gpu-tts-base-ref_bfe2acab4b33.wav",
-      "cut_mannequin.mp4",
-      "cut_source.webm",
-      "cut_source_fix.webm",
-      "cut_source_v2.webm",
-      "cut_tail_df3180418e40.webm",
-      "cut_tail_exact_1a0f24c3a378.mp4",
-      "film_b5daccf1bb15.mp4",
-      "h3_t4_film_00001__ac34e57f53c3.mp4",
-      "h3_t4_film_00002__13e27f55cc1c.mp4",
-      "h3_t4_film_00004__f4d2cd453178.mp4",
-      "h3_t4_film_00005__2aa467ff757e.mp4",
-      "h3_t4_w1_00001__a7c9b7cb82a6.mp4",
-      "h3_t4_w1_00068__533aceec71e5.mp4",
-      "h3_t4_w1_00069__7f612db51789.mp4",
-      "h3_t4_w1_00077__91fd20bc2a27.mp4",
-      "h3_t4_w1_00078__26185d275266.mp4",
-      "h3_t4_w1_00081__21d43cbfd869.mp4",
-      "h3_t4_w1_00082__491994e8a99b.mp4",
-      "h3_t4_w2_00004__a1fa72843541.mp4",
-      "input-prep-verify-tone_3c2a21677dcd.wav",
-      "line_e853f3067188.flac",
-      "makhna_clip_e7258bfa8214.webm",
-      "makhna_cut16_afa3cf8b8e89.webm",
-      "refine_small_56.mp4",
-      "refine_small_56_61378b33e3e0.mp4",
-      "refine_small_56_ee39c08ee8e4.mp4",
-      "reshoot_124f_bad.mp4",
-      "reshoot_tail_175.mp4",
-      "reshoot_tail_175_15e3c96e469e.mp4",
-      "run-7492bb0d9f57-8b4b87f8_repair_6145791d9a19.mp4",
-      "soft-piano_5d082fcabbb3.mp3",
-      "swap_film_v1.mp4",
-      "swap_film_v1_9c383840d58f.mp4",
-      "swap_mannequin.mp4",
-      "swap_source_clip.webm",
-      "tail_mannequin.mp4",
-      "tail_source.webm",
-      "tts_line1.flac",
-      "voice_c02d117219a9.m4a"
-     ],
+     "COMBO",
      {
-      "audio upload": "audio"
+      "audio upload": "audio",
+      "options": []
      }
     ],
     "duration_seconds": [
@@ -7334,6 +6625,62 @@
   ],
   "output_node": false,
   "python_module": "custom_nodes.melite-audio-nodes",
+  "search_aliases": []
+ },
+ "MeliteBoundary": {
+  "category": "melite/film",
+  "description": "",
+  "display_name": "\ud83c\udfac Melite Boundary (pass seam)",
+  "has_intermediate_output": false,
+  "input": {
+   "optional": {
+    "after": [
+     "STRING",
+     {
+      "tooltip": "a prior boundary's token \u2014 pure ordering, never read"
+     }
+    ],
+    "through": [
+     "*",
+     {
+      "tooltip": "the seam's tensor \u2014 returned untouched (the passthrough that keeps this node output-reachable)"
+     }
+    ]
+   },
+   "required": {
+    "unload_models": [
+     "BOOLEAN",
+     {
+      "default": false
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "optional": [
+    "through",
+    "after"
+   ],
+   "required": [
+    "unload_models"
+   ]
+  },
+  "is_input_list": false,
+  "name": "MeliteBoundary",
+  "output": [
+   "*",
+   "STRING"
+  ],
+  "output_is_list": [
+   false,
+   false
+  ],
+  "output_name": [
+   "through",
+   "after_out"
+  ],
+  "output_node": false,
+  "python_module": "custom_nodes.melite-utility-nodes",
   "search_aliases": []
  },
  "MeliteConcatVideos": {
@@ -7413,6 +6760,30 @@
       "multiline": false,
       "tooltip": "JSON array of absolute state roots ([\"/abs/root\", ...]) \u2014 Layer A's submit-time walk stamps the estate's roots manifest here; the clip-source walk searches these output/ trees before any env arm"
      }
+    ],
+    "wired_audio_1": [
+     "AUDIO",
+     {
+      "tooltip": "Optional wired soundtrack seat 1 \u2014 the producer's AUDIO tensor for the clips_json row carrying wired: 1 (the merge lands the upstream link here)"
+     }
+    ],
+    "wired_audio_2": [
+     "AUDIO",
+     {
+      "tooltip": "Optional wired soundtrack seat 2 \u2014 the producer's AUDIO tensor for the clips_json row carrying wired: 2 (the merge lands the upstream link here)"
+     }
+    ],
+    "wired_audio_3": [
+     "AUDIO",
+     {
+      "tooltip": "Optional wired soundtrack seat 3 \u2014 the producer's AUDIO tensor for the clips_json row carrying wired: 3 (the merge lands the upstream link here)"
+     }
+    ],
+    "wired_audio_4": [
+     "AUDIO",
+     {
+      "tooltip": "Optional wired soundtrack seat 4 \u2014 the producer's AUDIO tensor for the clips_json row carrying wired: 4 (the merge lands the upstream link here)"
+     }
     ]
    },
    "required": {
@@ -7427,7 +6798,7 @@
      {
       "default": "[]",
       "multiline": true,
-      "tooltip": "JSON array of {src, start_sec, dur_sec, class} \u2014 the card renders the filmMix manifest here verbatim"
+      "tooltip": "JSON array of {src | wired, start_sec, dur_sec, class} \u2014 the card renders the filmMix manifest here verbatim; a wired: k row rides the wired_audio_k seat instead of a file"
      }
     ],
     "duck_db": [
@@ -7477,7 +6848,11 @@
   },
   "input_order": {
    "optional": [
-    "state_roots"
+    "state_roots",
+    "wired_audio_1",
+    "wired_audio_2",
+    "wired_audio_3",
+    "wired_audio_4"
    ],
    "required": [
     "videos",
@@ -7550,7 +6925,7 @@
      "STRING",
      {
       "default": "",
-      "tooltip": "Engine-side voices mount override. EMPTY = the documented root (/mnt/data/models/audio/voices) resolved at RUN time \u2014 an empty default is deliberate: a directory path defaultled into the graph is unrepresentable to the source-echo guard (attempt-018's finding: the whole design lane refused), so the fallback lives in the node, never in the graph"
+      "tooltip": "Engine-side voices mount override. EMPTY = the qvoice folder seat resolved at RUN time \u2014 an empty default is deliberate: a directory path defaultled into the graph is unrepresentable to the source-echo guard (attempt-018's finding: the whole design lane refused), so the fallback lives in the folder machinery, never in the graph"
      }
     ]
    },
@@ -7612,6 +6987,12 @@
      {
       "tooltip": "A PRIOR boundary's token \u2014 chains the boundaries so the final token provably waits for EVERY window save (pure ordering; never read)"
      }
+    ],
+    "video": [
+     "VIDEO",
+     {
+      "tooltip": "A window's SaveVideo output \u2014 the film-tail seat (last consumer: the tensor dies here). OPTIONAL since F41: leave unconnected between non-video stages and chain on `after` alone."
+     }
     ]
    },
    "required": {
@@ -7620,18 +7001,15 @@
      {
       "default": false
      }
-    ],
-    "video": [
-     "VIDEO"
     ]
    }
   },
   "input_order": {
    "optional": [
+    "video",
     "after"
    ],
    "required": [
-    "video",
     "unload_models"
    ]
   },
@@ -7755,7 +7133,7 @@
   "api_node": false,
   "category": "KJNodes/experimental",
   "deprecated": false,
-  "description": "Chunks the MiniMax H3 feedforward (SwiGLU) over the packed token dim to reduce peak VRAM usage. Each chunk still goes through ComfyUI's fused INT8 kernel when the model is quantized, and since activations are quantized per-token the output matches the unchunked model.",
+  "description": "",
   "dev_only": false,
   "display_name": "MiniMax H3 Chunk FeedForward",
   "essentials_category": null,
@@ -8335,7 +7713,7 @@
  },
  "MiniMaxH3MotionContext": {
   "category": "conditioning/minimax",
-  "description": "Pin a run of consecutive frames from a previous clip as never-denoised conditioning rows, so the model reads real motion instead of guessing it from a single still. With context_latent wired, both picture and sound are sliced from the previous clip's latent, skipping the decode and re-encode that cost a little quality at every link. A last_frame anchor on the incoming conditioning is kept and pinned alongside the head.",
+  "description": "",
   "display_name": "H3 Motion Context",
   "has_intermediate_output": false,
   "input": {
@@ -8379,14 +7757,10 @@
      "CONDITIONING"
     ],
     "context_length": [
-     [
-      "22",
-      "5",
-      "39",
-      "56"
-     ],
+     "COMBO",
      {
       "default": "22",
+      "options": [],
       "tooltip": "Frames of the previous clip's picture to carry over. Only these lengths are whole numbers of latent steps, so only these are offered. 5 is just barely fluid, 22 is nearly seamless. Longer windows pin more motion but come off the front of the delivered clip, so 56 spends 2.3 seconds of the render on frames you throw away."
      }
     ],
@@ -8433,7 +7807,7 @@
  },
  "MiniMaxH3MotionContextLoadLatent": {
   "category": "conditioning/minimax",
-  "description": "Load a latent saved by H3 Motion Context Save Latent, for the context_latent input only.",
+  "description": "",
   "display_name": "H3 Motion Context Load Latent",
   "has_intermediate_output": false,
   "input": {
@@ -8480,7 +7854,7 @@
  },
  "MiniMaxH3MotionContextSaveLatent": {
   "category": "conditioning/minimax",
-  "description": "Save the sampler's AV latent so the next run's Motion Context node can pin audio from it via the matching Load node.",
+  "description": "",
   "display_name": "H3 Motion Context Save Latent",
   "has_intermediate_output": false,
   "input": {
@@ -8534,7 +7908,7 @@
  },
  "MiniMaxH3MotionContextTrim": {
   "category": "conditioning/minimax",
-  "description": "Remove the leading pinned frames from a decoded H3 clip, trimming picture and sound by the same duration.",
+  "description": "",
   "display_name": "H3 Motion Context Trim",
   "has_intermediate_output": false,
   "input": {
@@ -8610,7 +7984,7 @@
   "api_node": false,
   "category": "MiniMax-H3/mod",
   "deprecated": false,
-  "description": "Inject a loader bundle of RefMods into a MiniMax H3 conditioning. Accepts both the pack's MINIMAX_H3_COND and the built-in CONDITIONING and returns the same type.",
+  "description": "",
   "dev_only": false,
   "display_name": "Apply H3 RefMod",
   "essentials_category": null,
@@ -8623,9 +7997,7 @@
      {
       "default": "(none)",
       "multiselect": false,
-      "options": [
-       "(none)"
-      ],
+      "options": [],
       "tooltip": "Optional shared graph preset \u2014 leave on '(none)' to use the curve widgets above. Selecting one loads direction/shape/value from a saved debug-grid PNG (graph embedded in its metadata) or a legacy .json, in models/refmods/graph_presets/. Share the preset PNG itself to share a curve. New presets appear after a restart."
      }
     ],
@@ -8660,11 +8032,7 @@
      {
       "default": "shuffle",
       "multiselect": false,
-      "options": [
-       "shuffle",
-       "subset",
-       "legacy_subset"
-      ]
+      "options": []
      }
     ]
    },
@@ -8684,13 +8052,7 @@
      {
       "default": "constant",
       "multiselect": false,
-      "options": [
-       "constant",
-       "concept_at_start",
-       "concept_at_middle",
-       "concept_at_end",
-       "concept_at_ends"
-      ],
+      "options": [],
       "tooltip": "Weighting envelope across THIS MOD'S OWN ref frames (stacked images / video-ref latent frames) \u2014 i.e. WHICH reference content dominates, NOT where the concept appears in the output video (ref tokens are not bound to output time; for output-timing control use the 'H3 RefMod Step Curve' node instead, which runs over the denoise timeline). 'constant' (default) = every ref frame at full strength (official-ref parity). The old default 'concept_at_end' fades early stack frames toward blur, roughly HALVING average strength on multi-frame mods. Old saved workflows keep their saved values."
      }
     ],
@@ -8699,19 +8061,7 @@
      {
       "default": "linear",
       "multiselect": false,
-      "options": [
-       "linear",
-       "ease",
-       "sigmoid",
-       "tanh",
-       "quadratic",
-       "cubic",
-       "exponential",
-       "stair",
-       "elastic",
-       "bump",
-       "dip"
-      ],
+      "options": [],
       "tooltip": "How the weighting travels between its endpoints: 'linear', 'ease' (smoothstep), 'sigmoid'/'tanh' (S-curves, tanh with a steeper knee), 'quadratic', 'cubic', 'exponential', 'stair' (stepped), 'elastic' (overshoots), 'bump'/'dip' (peak/trough mid-stack). Only matters when curve_direction != constant."
      }
     ],
@@ -8821,19 +8171,16 @@
      "VAE"
     ],
     "budget_policy": [
-     [
-      "error",
-      "truncate"
-     ]
+     "COMBO",
+     {
+      "options": []
+     }
     ],
     "concept_type": [
-     [
-      "voice",
-      "singing",
-      "music_style",
-      "sound_fx",
-      "ambience"
-     ]
+     "COMBO",
+     {
+      "options": []
+     }
     ],
     "description": [
      "STRING",
@@ -8911,7 +8258,7 @@
   "api_node": false,
   "category": "MiniMax-H3/mod",
   "deprecated": false,
-  "description": "Turn one or more references of the same concept into a RefMod. Stills plug into ref_image_1, video frames into ref_video_1, and the next slot of that type appears. refs are stacked into one video-kind mod, so a multi-image moodboard keeps each ref's own content instead of averaging away. 'training' mode (default) compresses the refs to a grid and refines it \u2014 good identity at a fraction of the tokens; 'encode' stores the full-res encode (max identity, MB-size mod). Flip 'merge' on to extract a collection as ONE consensus latent (joint refinement against every ref) instead of a stack.",
+  "description": "",
   "dev_only": false,
   "display_name": "Create H3 RefMod",
   "essentials_category": null,
@@ -8930,10 +8277,7 @@
      {
       "default": "truncate",
       "multiselect": false,
-      "options": [
-       "truncate",
-       "error"
-      ],
+      "options": [],
       "tooltip": "On max_tokens overflow: truncate uses the existing frame reduction; error stops without saving. 0 max_tokens disables the cap."
      }
     ],
@@ -8942,12 +8286,7 @@
      {
       "default": "manual",
       "multiselect": false,
-      "options": [
-       "manual",
-       "identity_encode",
-       "style_experimental",
-       "motion_sequence"
-      ],
+      "options": [],
       "tooltip": "manual preserves controls. identity_encode: Full Reference, resolution=1024, steps=0, merge/motion_only off. style_experimental: Compressed Reference, pool=8x8, steps=150, merge/motion_only off. motion_sequence: Compressed Reference, pool=16x16, merge/motion_only off; preserves frame limit and Refinement Steps. It keeps appearance, not frame differences."
      }
     ],
@@ -9034,19 +8373,7 @@
      {
       "default": "generic",
       "multiselect": false,
-      "options": [
-       "generic",
-       "identity",
-       "pose_motion",
-       "clothing",
-       "background",
-       "voice",
-       "singing",
-       "music_style",
-       "sound_fx",
-       "ambience",
-       "style"
-      ],
+      "options": [],
       "tooltip": "Metadata only; does not select a learning algorithm. What this mod represents \u2014 'identity' (a specific person/character), 'pose_motion' (a pose/dance/gesture/camera move), 'clothing', 'background', 'style', or 'generic'. Stored in the mod and used by the loaders' prompt_hint output (merges concept_type + description into a string you can concat onto your CLIP prompt). 'identity' in training mode with a small grid also triggers a warning nudging you toward 'encode' mode or a bigger grid \u2014 pooling is lossy in exactly the way that destroys facial identity."
      }
     ],
@@ -9102,12 +8429,7 @@
      {
       "default": "Compressed Reference",
       "multiselect": false,
-      "options": [
-       "Compressed Reference",
-       "Full Reference",
-       "training",
-       "encode"
-      ],
+      "options": [],
       "tooltip": "Compressed Reference pools the latent and optionally refines its reconstruction. Full Reference stores the VAE encode, subject to resolution/frame/token limits. Neither mode trains H3 weights. Legacy mode values remain accepted."
      }
     ],
@@ -9317,90 +8639,66 @@
      }
     ],
     "components_1": [
-     [
-      "All",
-      "Visual",
-      "Audio"
-     ],
+     "COMBO",
      {
       "default": "All",
+      "options": [],
       "tooltip": "Select the modalities to load from this slot. Excluded tensors are not loaded. Also applies to standalone RefMods."
      }
     ],
     "components_2": [
-     [
-      "All",
-      "Visual",
-      "Audio"
-     ],
+     "COMBO",
      {
       "default": "All",
+      "options": [],
       "tooltip": "Select the modalities to load from this slot. Excluded tensors are not loaded. Also applies to standalone RefMods."
      }
     ],
     "components_3": [
-     [
-      "All",
-      "Visual",
-      "Audio"
-     ],
+     "COMBO",
      {
       "default": "All",
+      "options": [],
       "tooltip": "Select the modalities to load from this slot. Excluded tensors are not loaded. Also applies to standalone RefMods."
      }
     ],
     "components_4": [
-     [
-      "All",
-      "Visual",
-      "Audio"
-     ],
+     "COMBO",
      {
       "default": "All",
+      "options": [],
       "tooltip": "Select the modalities to load from this slot. Excluded tensors are not loaded. Also applies to standalone RefMods."
      }
     ],
     "components_5": [
-     [
-      "All",
-      "Visual",
-      "Audio"
-     ],
+     "COMBO",
      {
       "default": "All",
+      "options": [],
       "tooltip": "Select the modalities to load from this slot. Excluded tensors are not loaded. Also applies to standalone RefMods."
      }
     ],
     "components_6": [
-     [
-      "All",
-      "Visual",
-      "Audio"
-     ],
+     "COMBO",
      {
       "default": "All",
+      "options": [],
       "tooltip": "Select the modalities to load from this slot. Excluded tensors are not loaded. Also applies to standalone RefMods."
      }
     ],
     "components_7": [
-     [
-      "All",
-      "Visual",
-      "Audio"
-     ],
+     "COMBO",
      {
       "default": "All",
+      "options": [],
       "tooltip": "Select the modalities to load from this slot. Excluded tensors are not loaded. Also applies to standalone RefMods."
      }
     ],
     "components_8": [
-     [
-      "All",
-      "Visual",
-      "Audio"
-     ],
+     "COMBO",
      {
       "default": "All",
+      "options": [],
       "tooltip": "Select the modalities to load from this slot. Excluded tensors are not loaded. Also applies to standalone RefMods."
      }
     ],
@@ -9584,98 +8882,58 @@
      }
     ],
     "mod_1": [
-     [
-      "(none)",
-      "SaveImage.0_edit_00001_",
-      "SaveImage.0_gen_00001_",
-      "bake-variance-probe-anchor",
-      "vanellope_example"
-     ],
+     "COMBO",
      {
+      "options": [],
       "tooltip": "RefMod 1 to load, or (none)."
      }
     ],
     "mod_2": [
-     [
-      "(none)",
-      "SaveImage.0_edit_00001_",
-      "SaveImage.0_gen_00001_",
-      "bake-variance-probe-anchor",
-      "vanellope_example"
-     ],
+     "COMBO",
      {
+      "options": [],
       "tooltip": "RefMod 2 to load, or (none)."
      }
     ],
     "mod_3": [
-     [
-      "(none)",
-      "SaveImage.0_edit_00001_",
-      "SaveImage.0_gen_00001_",
-      "bake-variance-probe-anchor",
-      "vanellope_example"
-     ],
+     "COMBO",
      {
+      "options": [],
       "tooltip": "RefMod 3 to load, or (none)."
      }
     ],
     "mod_4": [
-     [
-      "(none)",
-      "SaveImage.0_edit_00001_",
-      "SaveImage.0_gen_00001_",
-      "bake-variance-probe-anchor",
-      "vanellope_example"
-     ],
+     "COMBO",
      {
+      "options": [],
       "tooltip": "RefMod 4 to load, or (none)."
      }
     ],
     "mod_5": [
-     [
-      "(none)",
-      "SaveImage.0_edit_00001_",
-      "SaveImage.0_gen_00001_",
-      "bake-variance-probe-anchor",
-      "vanellope_example"
-     ],
+     "COMBO",
      {
+      "options": [],
       "tooltip": "RefMod 5 to load, or (none)."
      }
     ],
     "mod_6": [
-     [
-      "(none)",
-      "SaveImage.0_edit_00001_",
-      "SaveImage.0_gen_00001_",
-      "bake-variance-probe-anchor",
-      "vanellope_example"
-     ],
+     "COMBO",
      {
+      "options": [],
       "tooltip": "RefMod 6 to load, or (none)."
      }
     ],
     "mod_7": [
-     [
-      "(none)",
-      "SaveImage.0_edit_00001_",
-      "SaveImage.0_gen_00001_",
-      "bake-variance-probe-anchor",
-      "vanellope_example"
-     ],
+     "COMBO",
      {
+      "options": [],
       "tooltip": "RefMod 7 to load, or (none)."
      }
     ],
     "mod_8": [
-     [
-      "(none)",
-      "SaveImage.0_edit_00001_",
-      "SaveImage.0_gen_00001_",
-      "bake-variance-probe-anchor",
-      "vanellope_example"
-     ],
+     "COMBO",
      {
+      "options": [],
       "tooltip": "RefMod 8 to load, or (none)."
      }
     ],
@@ -10121,7 +9379,7 @@
   "api_node": false,
   "category": "KJNodes/experimental",
   "deprecated": false,
-  "description": "Reduces peak VRAM of the MiniMax H3 attention without changing the math. Splits the attention call into head groups so the kernel's internal transients (int8 q/k copies, fp32 accumulator) shrink by the chunk count while the fused qkv buffer is alive, and frees the qkv buffer / normed block input as soon as they're consumed. Output is identical to the unpatched model.",
+  "description": "",
   "dev_only": false,
   "display_name": "MiniMax H3 Low VRAM Attention",
   "essentials_category": null,
@@ -10279,7 +9537,7 @@
  },
  "MinimaxH3LatentUpscaler3DRefineHandoff": {
   "category": "video/MinimaxH3",
-  "description": "Learned LBH 3D upscale followed by low-sigma MiniMax H3 refinement. H3 Continuum chunk lists are refined sequentially so each Native-Masked continuation prefix is replaced by the exact post-refine tail of the preceding chunk before sampler 2. The LATENT output is final/decode-ready.",
+  "description": "",
   "display_name": "MiniMax H3 Latent Upscaler + Refine (3D)",
   "has_intermediate_output": false,
   "input": {
@@ -10337,12 +9595,10 @@
      }
     ],
     "device": [
-     [
-      "cuda",
-      "cpu"
-     ],
+     "COMBO",
      {
-      "default": "cuda"
+      "default": "cuda",
+      "options": []
      }
     ],
     "height": [
@@ -10380,25 +9636,17 @@
      }
     ],
     "mode": [
-     [
-      "scale by multiplier",
-      "target dimensions",
-      "megapixels"
-     ],
+     "COMBO",
      {
-      "default": "scale by multiplier"
+      "default": "scale by multiplier",
+      "options": []
      }
     ],
     "model_name": [
-     [
-      "2x_APISR_RRDB_GAN_generator.pth",
-      "4x_APISR_GRL_GAN_generator.pth",
-      "ltx-2-spatial-upscaler-x2-1.0.safetensors",
-      "ltx-2-temporal-upscaler-x2-1.0.safetensors",
-      "ltx-2.3-spatial-upscaler-x2-1.1.safetensors",
-      "ltx-2.3-temporal-upscaler-x2-1.0.safetensors",
-      "minimax_h3_latent_upscaler_3d_bf16.safetensors"
-     ]
+     "COMBO",
+     {
+      "options": []
+     }
     ],
     "noise": [
      "NOISE"
@@ -10412,13 +9660,10 @@
      }
     ],
     "precision": [
-     [
-      "fp32",
-      "fp16",
-      "bf16"
-     ],
+     "COMBO",
      {
-      "default": "fp16"
+      "default": "fp16",
+      "options": []
      }
     ],
     "sampler": [
@@ -10788,7 +10033,7 @@
   "api_node": false,
   "category": "KJNodes/sampling",
   "deprecated": false,
-  "description": "Adds a dedicated live-preview frame on this node, with overridable max resolution. Default ComfyUI preview caps at 512px; this node sends its own preview straight to a DOM widget on the node so pixel-space models (Chroma Radiance, ZImage, HiDream-O1, \u2026) can be previewed at full sampler resolution.",
+  "description": "",
   "dev_only": false,
   "display_name": "Model Preview Override",
   "essentials_category": null,
@@ -10806,10 +10051,7 @@
      {
       "default": "none",
       "multiselect": false,
-      "options": [
-       "none",
-       "taeh3.safetensors"
-      ],
+      "options": [],
       "tooltip": "Tiny VAE decoder from models/vae_approx for true-RGB previews. Overrides Latent2RGB and the 'vae' input."
      }
     ],
@@ -11608,184 +10850,6 @@
   "python_module": "comfy_extras.nodes_custom_sampler",
   "search_aliases": null
  },
- "RayCreatureRigBridge": {
-  "category": "melite/creature",
-  "description": "",
-  "display_name": "\ud83e\uddbe Creature Rig Bridge (TRELLIS mesh -> anyCreature anims)",
-  "has_intermediate_output": false,
-  "input": {
-   "required": {
-    "creature_glb": [
-     "STRING",
-     {
-      "forceInput": true,
-      "multiline": false,
-      "tooltip": "anyCreature GLB (armature + idle/move): filename in input/ or output/, or absolute path."
-     }
-    ],
-    "height_ratio": [
-     "FLOAT",
-     {
-      "default": 1,
-      "max": 10,
-      "min": 0.05,
-      "tooltip": "Mesh height as a fraction of the creature bind-pose height."
-     }
-    ],
-    "max_influences": [
-     "INT",
-     {
-      "default": 3,
-      "max": 8,
-      "min": 1,
-      "tooltip": "Max bone influences per vertex (nearest segments win)."
-     }
-    ],
-    "mesh_glb": [
-     "STRING",
-     {
-      "forceInput": true,
-      "multiline": false,
-      "tooltip": "Static textured mesh GLB (e.g. TRELLIS asset) to bind onto the skeleton."
-     }
-    ],
-    "strip_body": [
-     "BOOLEAN",
-     {
-      "default": true,
-      "tooltip": "Delete the creature body meshes; export only the bound mesh."
-     }
-    ]
-   }
-  },
-  "input_order": {
-   "required": [
-    "creature_glb",
-    "mesh_glb",
-    "height_ratio",
-    "max_influences",
-    "strip_body"
-   ]
-  },
-  "is_input_list": false,
-  "name": "RayCreatureRigBridge",
-  "output": [
-   "STRING"
-  ],
-  "output_is_list": [
-   false
-  ],
-  "output_name": [
-   "glb_path"
-  ],
-  "output_node": false,
-  "python_module": "custom_nodes.melite-poser-nodes",
-  "search_aliases": []
- },
- "RayRenderGLBViews": {
-  "category": "TechNoir/Mesh",
-  "description": "",
-  "display_name": "\ud83c\udfac Render GLB Views (Blender EEVEE_NEXT \u00d78 angles)",
-  "has_intermediate_output": false,
-  "input": {
-   "required": {
-    "focal_length": [
-     "INT",
-     {
-      "default": 50,
-      "max": 400,
-      "min": 10
-     }
-    ],
-    "framing": [
-     "FLOAT",
-     {
-      "default": 1.2,
-      "max": 3,
-      "min": 1,
-      "tooltip": "Camera margin multiplier (1.0=exact fit, 1.2=20% headroom)."
-     }
-    ],
-    "glb_path": [
-     "STRING",
-     {
-      "forceInput": true,
-      "multiline": false,
-      "tooltip": "GLB to render (filename in input/ or output/, or absolute path)."
-     }
-    ],
-    "resolution": [
-     "INT",
-     {
-      "default": 768,
-      "max": 2048,
-      "min": 64,
-      "tooltip": "Square render resolution (matches Qwen-Image-Edit input)."
-     }
-    ],
-    "samples": [
-     "INT",
-     {
-      "default": 64,
-      "max": 4096,
-      "min": 1,
-      "tooltip": "EEVEE_NEXT TAA samples (higher = cleaner)."
-     }
-    ],
-    "transparent": [
-     "BOOLEAN",
-     {
-      "default": false
-     }
-    ]
-   }
-  },
-  "input_order": {
-   "required": [
-    "glb_path",
-    "resolution",
-    "samples",
-    "framing",
-    "focal_length",
-    "transparent"
-   ]
-  },
-  "is_input_list": false,
-  "name": "RayRenderGLBViews",
-  "output": [
-   "IMAGE",
-   "IMAGE",
-   "IMAGE",
-   "IMAGE",
-   "IMAGE",
-   "IMAGE",
-   "IMAGE",
-   "IMAGE"
-  ],
-  "output_is_list": [
-   false,
-   false,
-   false,
-   false,
-   false,
-   false,
-   false,
-   false
-  ],
-  "output_name": [
-   "front_mesh",
-   "front_right_mesh",
-   "right_mesh",
-   "back_right_mesh",
-   "back_mesh",
-   "back_left_mesh",
-   "left_mesh",
-   "front_left_mesh"
-  ],
-  "output_node": true,
-  "python_module": "custom_nodes.melite-poser-nodes",
-  "search_aliases": []
- },
  "RaySomaxBake": {
   "category": "TechNoir/Animation",
   "description": "",
@@ -12267,18 +11331,9 @@
      }
     ],
     "detection_hint": [
-     [
-      "center-1",
-      "horizontal-2",
-      "vertical-2",
-      "rect-4",
-      "diamond-4",
-      "mask-area",
-      "mask-points",
-      "mask-point-bbox",
-      "none"
-     ],
+     "COMBO",
      {
+      "options": [],
       "tooltip": "It is recommended to use only center-1.\nWhen refining the mask of SEGS with the SAM (Segment Anything) model, center-1 uses only the rectangular area of SEGS and a single point at the exact center as hints.\nOther options were added during the experimental stage and do not work well."
      }
     ],
@@ -12309,12 +11364,9 @@
      }
     ],
     "mask_hint_use_negative": [
-     [
-      "False",
-      "Small",
-      "Outter"
-     ],
+     "COMBO",
      {
+      "options": [],
       "tooltip": "When detecting with SAM (Segment Anything), negative hints are applied as follows:\nSmall: When the SEGS is smaller than 10 pixels in size\nOuter: Sampling the image area outside the SEGS region at regular intervals"
      }
     ],
@@ -12372,27 +11424,22 @@
  },
  "SAMLoader": {
   "category": "ImpactPack",
-  "description": "Load the SAM (Segment Anything) model. This can be used in places that utilize SAM detection functionality, such as SAMDetector or SimpleDetector.\nThe SAM detection functionality in Impact Pack must use the SAM_MODEL loaded through this node.",
+  "description": "",
   "display_name": "SAMLoader (Impact)",
   "has_intermediate_output": false,
   "input": {
    "required": {
     "device_mode": [
-     [
-      "AUTO",
-      "Prefer GPU",
-      "CPU"
-     ],
+     "COMBO",
      {
+      "options": [],
       "tooltip": "AUTO: Only applicable when a GPU is available. It temporarily loads the SAM_MODEL into VRAM only when the detection function is used.\nPrefer GPU: Tries to keep the SAM_MODEL on the GPU whenever possible. This can be used when there is sufficient VRAM available.\nCPU: Always loads only on the CPU."
      }
     ],
     "model_name": [
-     [
-      "sam2.1_hiera_large.pt",
-      "sam_vit_b_01ec64.pth"
-     ],
+     "COMBO",
      {
+      "options": [],
       "tooltip": "The detection accuracy varies depending on the SAM model. ESAM can only be used if ComfyUI-YoloWorld-EfficientSAM is installed."
      }
     ]
@@ -13683,7 +12730,7 @@
   "api_node": false,
   "category": "SEEDVR2",
   "deprecated": false,
-  "description": "Load and configure SeedVR2 DiT (Diffusion Transformer) model for video upscaling. Supports BlockSwap memory optimization for low VRAM systems, model caching for batch processing, multi-GPU offloading, and torch.compile acceleration. \n\nConnect to Video Upscaler node.",
+  "description": "",
   "dev_only": false,
   "display_name": "SeedVR2 (Down)Load DiT Model",
   "essentials_category": null,
@@ -13696,13 +12743,7 @@
      {
       "default": "sdpa",
       "multiselect": false,
-      "options": [
-       "sdpa",
-       "flash_attn_2",
-       "flash_attn_3",
-       "sageattn_2",
-       "sageattn_3"
-      ],
+      "options": [],
       "tooltip": "Attention computation backend:\n\u2022 sdpa: PyTorch scaled_dot_product_attention (default, stable, always available)\n\u2022 flash_attn_2: Flash Attention 2 (Ampere+, requires flash-attn package)\n\u2022 flash_attn_3: Flash Attention 3 (Hopper+, requires flash-attn with FA3 support)\n\u2022 sageattn_2: SageAttention 2 (requires sageattention package)\n\u2022 sageattn_3: SageAttention 3 (Blackwell/RTX 50xx only, requires sageattn3 package)\n\nSDPA is recommended - stable and works everywhere.\nFlash Attention and SageAttention provide speedup through optimized CUDA kernels on compatible GPUs."
      }
     ],
@@ -13728,11 +12769,7 @@
      {
       "default": "none",
       "multiselect": false,
-      "options": [
-       "none",
-       "cpu",
-       "cuda:0"
-      ],
+      "options": [],
       "tooltip": "Device to offload DiT model when not actively processing.\n\u2022 'none': Keep model on inference device (default, fastest)\n\u2022 'cpu': Offload to system RAM (reduces VRAM usage)\n\u2022 'cuda:X': Offload to another GPU (good balance if available)\n\nRequired for BlockSwap (blocks_to_swap or swap_io_components)."
      }
     ],
@@ -13756,9 +12793,7 @@
      {
       "default": "cuda:0",
       "multiselect": false,
-      "options": [
-       "cuda:0"
-      ],
+      "options": [],
       "tooltip": "GPU device for DiT model inference (upscaling phase)"
      }
     ],
@@ -13767,18 +12802,7 @@
      {
       "default": "seedvr2_ema_3b_fp8_e4m3fn.safetensors",
       "multiselect": false,
-      "options": [
-       "seedvr2_ema_3b-Q4_K_M.gguf",
-       "seedvr2_ema_3b-Q8_0.gguf",
-       "seedvr2_ema_3b_fp8_e4m3fn.safetensors",
-       "seedvr2_ema_3b_fp16.safetensors",
-       "seedvr2_ema_7b-Q4_K_M.gguf",
-       "seedvr2_ema_7b_fp8_e4m3fn_mixed_block35_fp16.safetensors",
-       "seedvr2_ema_7b_fp16.safetensors",
-       "seedvr2_ema_7b_sharp-Q4_K_M.gguf",
-       "seedvr2_ema_7b_sharp_fp8_e4m3fn_mixed_block35_fp16.safetensors",
-       "seedvr2_ema_7b_sharp_fp16.safetensors"
-      ],
+      "options": [],
       "tooltip": "DiT (Diffusion Transformer) model for video upscaling.\nModels automatically download on first use.\nAdditional models can be added to the ComfyUI models folder."
      }
     ]
@@ -13822,7 +12846,7 @@
   "api_node": false,
   "category": "SEEDVR2",
   "deprecated": false,
-  "description": "Load and configure SeedVR2 VAE (Variational Autoencoder) for encoding/decoding video frames to/from latent space. Supports tiled processing to handle high resolutions on limited VRAM, model caching, multi-GPU offloading, and torch.compile acceleration. \n\nConnect to Video Upscaler node.",
+  "description": "",
   "dev_only": false,
   "display_name": "SeedVR2 (Down)Load VAE Model",
   "essentials_category": null,
@@ -13892,11 +12916,7 @@
      {
       "default": "none",
       "multiselect": false,
-      "options": [
-       "none",
-       "cpu",
-       "cuda:0"
-      ],
+      "options": [],
       "tooltip": "Device to offload VAE model when not actively processing.\n\u2022 'none': Keep model on inference device (default, fastest)\n\u2022 'cpu': Offload to system RAM (reduces VRAM usage)\n\u2022 'cuda:X': Offload to another GPU (good balance if available)"
      }
     ],
@@ -13905,11 +12925,7 @@
      {
       "default": "false",
       "multiselect": false,
-      "options": [
-       "false",
-       "encode",
-       "decode"
-      ],
+      "options": [],
       "tooltip": "Tile debug visualization mode:\n\u2022 'false': No visualization overlay (default)\n\u2022 'encode': Show encoding tile boundaries\n\u2022 'decode': Show decoding tile boundaries\n\nOnly works when respective tiling is enabled."
      }
     ],
@@ -13926,9 +12942,7 @@
      {
       "default": "cuda:0",
       "multiselect": false,
-      "options": [
-       "cuda:0"
-      ],
+      "options": [],
       "tooltip": "GPU device for VAE model inference (encoding/decoding phases)"
      }
     ],
@@ -13937,9 +12951,7 @@
      {
       "default": "ema_vae_fp16.safetensors",
       "multiselect": false,
-      "options": [
-       "ema_vae_fp16.safetensors"
-      ],
+      "options": [],
       "tooltip": "VAE (Variational Autoencoder) model for encoding/decoding.\nModels automatically download on first use.\nAdditional models can be added to the ComfyUI models folder."
      }
     ]
@@ -13987,7 +12999,7 @@
   "api_node": false,
   "category": "SEEDVR2",
   "deprecated": false,
-  "description": "SeedVR2 main upscaling node: processes video frames using DiT and VAE models with diffusion-based enhancement. Handles RGB/RGBA formats, maintains temporal consistency across frames, applies color correction, and manages VRAM through intelligent tensor offloading. \n\nRequires DiT and VAE model configurations.",
+  "description": "",
   "dev_only": false,
   "display_name": "SeedVR2 Video Upscaler (v2.5.24)",
   "essentials_category": null,
@@ -14027,11 +13039,7 @@
      {
       "default": "cpu",
       "multiselect": false,
-      "options": [
-       "none",
-       "cpu",
-       "cuda:0"
-      ],
+      "options": [],
       "tooltip": "Device for storing intermediate tensors between processing phases (default: cpu).\n\u2022 'none': Keep all tensors on inference device (fastest but highest VRAM usage)\n\u2022 'cpu': Offload to system RAM (recommended for long videos, slower transfers)\n\u2022 'cuda:X': Offload to another GPU (good balance if available, faster than CPU)"
      }
     ],
@@ -14072,14 +13080,7 @@
      {
       "default": "lab",
       "multiselect": false,
-      "options": [
-       "lab",
-       "wavelet",
-       "wavelet_adaptive",
-       "hsv",
-       "adain",
-       "none"
-      ],
+      "options": [],
       "tooltip": "Corrects color shifts in upscaled output to match original input (default: lab).\nThe upscaling process may alter colors; this applies color grading to restore them.\n\n\u2022 lab: Perceptual color matching with detail preservation (recommended)\n\u2022 wavelet: Frequency-based natural colors, preserves fine details\n\u2022 wavelet_adaptive: Wavelet base with targeted saturation correction\n\u2022 hsv: Hue-conditional saturation matching\n\u2022 adain: Statistical style transfer approach\n\u2022 none: No color correction applied"
      }
     ],
@@ -14449,89 +13450,6 @@
   "output_node": false,
   "python_module": "custom_nodes.melite-poser-nodes",
   "search_aliases": []
- },
- "SkipLayerGuidanceDiTSimple": {
-  "api_node": false,
-  "category": "advanced/guidance",
-  "deprecated": false,
-  "description": "Simple version of the SkipLayerGuidanceDiT node that only modifies the uncond pass.",
-  "dev_only": false,
-  "display_name": null,
-  "essentials_category": null,
-  "experimental": true,
-  "has_intermediate_output": false,
-  "input": {
-   "required": {
-    "double_layers": [
-     "STRING",
-     {
-      "advanced": true,
-      "default": "7, 8, 9",
-      "multiline": false
-     }
-    ],
-    "end_percent": [
-     "FLOAT",
-     {
-      "advanced": true,
-      "default": 1,
-      "max": 1,
-      "min": 0,
-      "step": 0.001
-     }
-    ],
-    "model": [
-     "MODEL",
-     {}
-    ],
-    "single_layers": [
-     "STRING",
-     {
-      "advanced": true,
-      "default": "7, 8, 9",
-      "multiline": false
-     }
-    ],
-    "start_percent": [
-     "FLOAT",
-     {
-      "advanced": true,
-      "default": 0,
-      "max": 1,
-      "min": 0,
-      "step": 0.001
-     }
-    ]
-   }
-  },
-  "input_order": {
-   "required": [
-    "model",
-    "double_layers",
-    "single_layers",
-    "start_percent",
-    "end_percent"
-   ]
-  },
-  "is_input_list": false,
-  "name": "SkipLayerGuidanceDiTSimple",
-  "output": [
-   "MODEL"
-  ],
-  "output_is_list": [
-   false
-  ],
-  "output_matchtypes": null,
-  "output_name": [
-   "MODEL"
-  ],
-  "output_node": false,
-  "output_tooltips": [
-   null
-  ],
-  "price_badge": null,
-  "python_module": "comfy_extras.nodes_slg",
-  "search_aliases": null
  },
  "TextEncodeFibo2": {
   "api_node": false,
@@ -15228,12 +14146,10 @@
   "input": {
    "required": {
     "model_name": [
-     [
-      "bbox/face_yolov8m.pt",
-      "bbox/hand_yolov8s.pt",
-      "bbox/yolo11m.pt",
-      "segm/person_yolov8m-seg.pt"
-     ]
+     "COMBO",
+     {
+      "options": []
+     }
     ]
    }
   },
@@ -15276,23 +14192,16 @@
    },
    "required": {
     "aspect_ratio": [
-     [
-      "Auto (Input Image)",
-      "1:1 (Square)",
-      "2:3 (Portrait Photo)",
-      "3:2 (Photo)",
-      "3:4 (Portrait Standard)",
-      "4:3 (Standard)",
-      "9:16 (Portrait Widescreen)",
-      "16:9 (Widescreen)",
-      "21:9 (Ultrawide)"
-     ]
+     "COMBO",
+     {
+      "options": []
+     }
     ],
     "crop": [
-     [
-      "disabled",
-      "center"
-     ]
+     "COMBO",
+     {
+      "options": []
+     }
     ],
     "divisible_by": [
      "FLOAT",
@@ -15345,13 +14254,10 @@
      }
     ],
     "scale_mode": [
-     [
-      "Dimensions (W \u00d7 H)",
-      "Multiplier",
-      "Longer Side",
-      "Shorter Side",
-      "Total Pixels (MP)"
-     ]
+     "COMBO",
+     {
+      "options": []
+     }
     ],
     "short_side_target": [
      "FLOAT",
@@ -15362,13 +14268,10 @@
      }
     ],
     "upscale_method": [
-     [
-      "nearest-exact",
-      "bilinear",
-      "area",
-      "bicubic",
-      "lanczos"
-     ]
+     "COMBO",
+     {
+      "options": []
+     }
     ],
     "width": [
      "FLOAT",
@@ -15826,7 +14729,7 @@
  },
  "VHS_LoadVideo": {
   "category": "Video Helper Suite \ud83c\udfa5\ud83c\udd65\ud83c\udd57\ud83c\udd62",
-  "description": "Load Video \ud83c\udfa5\ud83c\udd65\ud83c\udd57\ud83c\udd62<div style=\"font-size: 0.8em\"><div id=VHS_shortdesc>Loads a video from the input folder</div></div><div style=\"font-size: 0.8em\"><div vhs_title=\"Inputs\" style=\"display: flex; font-size: 0.8em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">Inputs: <div vhs_title=\"meta_batch\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">meta_batch: (optional) Connect to a Meta Batch manager to divide extremely long sequences into sub batches. See the documentation for Meta Batch Manager</div></div><div vhs_title=\"vae\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">vae: (optional) If provided the node will output latents instead of images. This drastically reduces the required RAM (not VRAM) when working with long (100+ frames) sequences<div style=\"font-size: 1em\">Using this is strongly encouraged unless connecting to a node that requires a blue image connection such as Apply Controllnet</div></div></div></div></div><div vhs_title=\"Outputs\" style=\"display: flex; font-size: 0.8em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">Outputs: <div vhs_title=\"IMAGE\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">IMAGE: The loaded images</div></div><div vhs_title=\"frame_count\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">frame_count: The length of images just returned</div></div><div vhs_title=\"audio\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">audio: The audio from the loaded video</div></div><div vhs_title=\"video_info\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">video_info: Exposes additional info about the video such as the source frame rate, or the total length</div></div><div vhs_title=\"LATENT\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">LATENT: The loaded images pre-converted to latents. Only available when a vae is connected</div></div></div></div><div vhs_title=\"Widgets\" style=\"display: flex; font-size: 0.8em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">Widgets: <div vhs_title=\"video\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">video: The video file to be loaded. Lists all files with a video extension in the ComfyUI/Input folder</div></div><div vhs_title=\"force_rate\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">force_rate: Drops or duplicates frames so that the produced output has the target frame rate. Many motion models are trained on videos of a specific frame rate and will give better results if input matches that frame rate. If set to 0, all frames are returned. May give unusual results with inputs that have a variable frame rate like animated gifs. Reducing this value can also greatly reduce the execution time and memory requirements.</div></div><div vhs_title=\"force_size\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">force_size: Previously was used to provide suggested resolutions. Instead, custom_width and custom_height can be disabled by setting to 0.</div></div><div vhs_title=\"custom_width\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">custom_width: Allows for an arbitrary width to be entered, cropping to maintain aspect ratio if both are set</div></div><div vhs_title=\"custom_height\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">custom_height: Allows for an arbitrary height to be entered, cropping to maintain aspect ratio if both are set</div></div><div vhs_title=\"frame_load_cap\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">frame_load_cap: The maximum number of frames to load. If 0, all frames are loaded.</div></div><div vhs_title=\"skip_first_frames\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">skip_first_frames: A number of frames which are discarded before producing output.</div></div><div vhs_title=\"select_every_nth\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">select_every_nth: Similar to frame rate. Keeps only the first of every n frames and discard the rest. Has better compatibility with variable frame rate inputs such as gifs. When combined with force_rate, select_every_nth_applies after force_rate so the resulting output has a frame rate equivalent to force_rate/select_every_nth. select_every_nth does not apply to skip_first_frames</div></div><div vhs_title=\"format\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">format: Updates other widgets so that only values supported by the given format can be entered and provides recommended defaults.</div></div><div vhs_title=\"choose video to upload\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">choose video to upload: An upload button is provided to upload local files to the input folder</div></div><div vhs_title=\"videopreview\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">videopreview: Displays a preview for the selected video input. If advanced previews is enabled, this preview will reflect the frame_load_cap, force_rate, skip_first_frames, and select_every_nth values chosen. If the video has audio, it will also be previewed when moused over. Additional preview options can be accessed with right click.</div></div></div></div></div>",
+  "description": "",
   "display_name": "Load Video (Upload) \ud83c\udfa5\ud83c\udd65\ud83c\udd57\ud83c\udd62",
   "has_intermediate_output": false,
   "input": {
@@ -15836,16 +14739,7 @@
    },
    "optional": {
     "format": [
-     [
-      "None",
-      "AnimateDiff",
-      "Mochi",
-      "LTXV",
-      "Hunyuan",
-      "Cosmos",
-      "Wan",
-      "H3"
-     ],
+     "COMBO",
      {
       "default": "AnimateDiff",
       "formats": {
@@ -15937,7 +14831,8 @@
         ],
         "target_rate": 16
        }
-      }
+      },
+      "options": []
      }
     ],
     "meta_batch": [
@@ -16005,52 +14900,10 @@
      }
     ],
     "video": [
-     [
-      "Makhna clip 10s-15s_e7258bfa8214.webm",
-      "SaveVideo.0_h3_t4_w1_00001__727eaada1377.mp4",
-      "SaveVideo.2_extend_film_00001__2701a65532ba.mp4",
-      "VHS_VideoCombine.0_mannequin_00001_89e1fea228bb.mp4",
-      "VHS_VideoCombine.0_openjutsu_00001-audio_09e163466dfd.mp4",
-      "VHS_VideoCombine.0_openjutsu_00001-audio_67d4712670b8.mp4",
-      "VHS_VideoCombine.0_openjutsu_00001-audio_78b3e868f8de.mp4",
-      "VHS_VideoCombine.0_openjutsu_00001-audio_8b8cc8e50c4c.mp4",
-      "anime-girl.mp4",
-      "anime-girl_26185d275266.mp4",
-      "cut_mannequin.mp4",
-      "cut_source.webm",
-      "cut_source_fix.webm",
-      "cut_source_v2.webm",
-      "cut_tail_df3180418e40.webm",
-      "cut_tail_exact_1a0f24c3a378.mp4",
-      "film_b5daccf1bb15.mp4",
-      "h3_t4_film_00001__ac34e57f53c3.mp4",
-      "h3_t4_film_00002__13e27f55cc1c.mp4",
-      "h3_t4_film_00004__f4d2cd453178.mp4",
-      "h3_t4_film_00005__2aa467ff757e.mp4",
-      "h3_t4_w1_00001__a7c9b7cb82a6.mp4",
-      "h3_t4_w1_00068__533aceec71e5.mp4",
-      "h3_t4_w1_00069__7f612db51789.mp4",
-      "h3_t4_w1_00077__91fd20bc2a27.mp4",
-      "h3_t4_w1_00078__26185d275266.mp4",
-      "h3_t4_w1_00081__21d43cbfd869.mp4",
-      "h3_t4_w1_00082__491994e8a99b.mp4",
-      "h3_t4_w2_00004__a1fa72843541.mp4",
-      "makhna_clip_e7258bfa8214.webm",
-      "makhna_cut16_afa3cf8b8e89.webm",
-      "refine_small_56.mp4",
-      "refine_small_56_61378b33e3e0.mp4",
-      "refine_small_56_ee39c08ee8e4.mp4",
-      "reshoot_124f_bad.mp4",
-      "reshoot_tail_175.mp4",
-      "reshoot_tail_175_15e3c96e469e.mp4",
-      "run-7492bb0d9f57-8b4b87f8_repair_6145791d9a19.mp4",
-      "swap_film_v1.mp4",
-      "swap_film_v1_9c383840d58f.mp4",
-      "swap_mannequin.mp4",
-      "swap_source_clip.webm",
-      "tail_mannequin.mp4",
-      "tail_source.webm"
-     ]
+     "COMBO",
+     {
+      "options": []
+     }
     ]
    }
   },
@@ -16100,7 +14953,7 @@
  },
  "VHS_LoadVideoPath": {
   "category": "Video Helper Suite \ud83c\udfa5\ud83c\udd65\ud83c\udd57\ud83c\udd62",
-  "description": "Load Video (Path) \ud83c\udfa5\ud83c\udd65\ud83c\udd57\ud83c\udd62<div style=\"font-size: 0.8em\"><div id=VHS_shortdesc>Loads a video from an arbitrary path</div></div><div style=\"font-size: 0.8em\"><div vhs_title=\"Inputs\" style=\"display: flex; font-size: 0.8em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">Inputs: <div vhs_title=\"meta_batch\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">meta_batch: (optional) Connect to a Meta Batch manager to divide extremely long sequences into sub batches. See the documentation for Meta Batch Manager</div></div><div vhs_title=\"vae\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">vae: (optional) If provided the node will output latents instead of images. This drastically reduces the required RAM (not VRAM) when working with long (100+ frames) sequences<div style=\"font-size: 1em\">Using this is strongly encouraged unless connecting to a node that requires a blue image connection such as Apply Controllnet</div></div></div></div></div><div vhs_title=\"Outputs\" style=\"display: flex; font-size: 0.8em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">Outputs: <div vhs_title=\"IMAGE\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">IMAGE: The loaded images</div></div><div vhs_title=\"frame_count\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">frame_count: The length of images just returned</div></div><div vhs_title=\"audio\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">audio: The audio from the loaded video</div></div><div vhs_title=\"video_info\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">video_info: Exposes additional info about the video such as the source frame rate, or the total length</div></div><div vhs_title=\"LATENT\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">LATENT: The loaded images pre-converted to latents. Only available when a vae is connected</div></div></div></div><div vhs_title=\"Widgets\" style=\"display: flex; font-size: 0.8em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">Widgets: <div vhs_title=\"video\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">video: The video file to be loaded.<div style=\"font-size: 1em\">You can also select an image to load it as a single frame</div><div style=\"font-size: 1em\">This is a VHS_PATH input. When edited, it provides a list of possible valid files or directories</div><div style=\"font-size: 1em\"><video preload=\"none\" src=https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite/assets/4284322/729b7185-1fca-41d8-bc8d-a770bb2a5ce6 muted loop controls controlslist=\"nodownload noremoteplayback noplaybackrate\" style=\"width: 0px; min-width: 100%\" class=\"VHS_loopedvideo\"></div><div style=\"font-size: 1em\">The current top-most completion may be selected with Tab</div><div style=\"font-size: 1em\">You can navigate up a directory by pressing Ctrl+B (or Ctrl+W if supported by browser)</div><div style=\"font-size: 1em\">The filter on suggested file types can be disabled by pressing Ctrl+G.</div><div style=\"font-size: 1em\">If converted to an input, this functions as a string</div></div></div><div vhs_title=\"force_rate\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">force_rate: Drops or duplicates frames so that the produced output has the target frame rate. Many motion models are trained on videos of a specific frame rate and will give better results if input matches that frame rate. If set to 0, all frames are returned. May give unusual results with inputs that have a variable frame rate like animated gifs. Reducing this value can also greatly reduce the execution time and memory requirements.</div></div><div vhs_title=\"force_size\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">force_size: Previously was used to provide suggested resolutions. Instead, custom_width and custom_height can be disabled by setting to 0.</div></div><div vhs_title=\"custom_width\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">custom_width: Allows for an arbitrary width to be entered, cropping to maintain aspect ratio if both are set</div></div><div vhs_title=\"custom_height\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">custom_height: Allows for an arbitrary height to be entered, cropping to maintain aspect ratio if both are set</div></div><div vhs_title=\"frame_load_cap\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">frame_load_cap: The maximum number of frames to load. If 0, all frames are loaded.</div></div><div vhs_title=\"skip_first_frames\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">skip_first_frames: A number of frames which are discarded before producing output.</div></div><div vhs_title=\"select_every_nth\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">select_every_nth: Similar to frame rate. Keeps only the first of every n frames and discard the rest. Has better compatibility with variable frame rate inputs such as gifs. When combined with force_rate, select_every_nth_applies after force_rate so the resulting output has a frame rate equivalent to force_rate/select_every_nth. select_every_nth does not apply to skip_first_frames</div></div><div vhs_title=\"format\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">format: Updates other widgets so that only values supported by the given format can be entered and provides recommended defaults.</div></div><div vhs_title=\"videopreview\" style=\"display: flex; font-size: 1em\" class=\"VHS_collapse\"><div style=\"color: #AAA; height: 1.5em;\">[<span style=\"font-family: monospace\">-</span>]</div><div style=\"width: 100%\">videopreview: Displays a preview for the selected video input. Will only be shown if Advanced Previews is enabled. This preview will reflect the frame_load_cap, force_rate, skip_first_frames, and select_every_nth values chosen. If the video has audio, it will also be previewed when moused over. Additional preview options can be accessed with right click.</div></div></div></div></div>",
+  "description": "",
   "display_name": "Load Video (Path) \ud83c\udfa5\ud83c\udd65\ud83c\udd57\ud83c\udd62",
   "has_intermediate_output": false,
   "input": {
@@ -16110,16 +14963,7 @@
    },
    "optional": {
     "format": [
-     [
-      "None",
-      "AnimateDiff",
-      "Mochi",
-      "LTXV",
-      "Hunyuan",
-      "Cosmos",
-      "Wan",
-      "H3"
-     ],
+     "COMBO",
      {
       "default": "AnimateDiff",
       "formats": {
@@ -16211,7 +15055,8 @@
         ],
         "target_rate": 16
        }
-      }
+      },
+      "options": []
      }
     ],
     "meta_batch": [
@@ -16607,21 +15452,10 @@
      "IMAGE"
     ],
     "model": [
-     [
-      "wd-eva02-large-tagger-v3",
-      "wd-vit-tagger-v3",
-      "wd-swinv2-tagger-v3",
-      "wd-convnext-tagger-v3",
-      "wd-v1-4-moat-tagger-v2",
-      "wd-v1-4-convnextv2-tagger-v2",
-      "wd-v1-4-convnext-tagger-v2",
-      "wd-v1-4-convnext-tagger",
-      "wd-v1-4-vit-tagger-v2",
-      "wd-v1-4-swinv2-tagger-v2",
-      "wd-v1-4-vit-tagger"
-     ],
+     "COMBO",
      {
-      "default": "wd-v1-4-moat-tagger-v2"
+      "default": "wd-v1-4-moat-tagger-v2",
+      "options": []
      }
     ],
     "replace_underscore": [

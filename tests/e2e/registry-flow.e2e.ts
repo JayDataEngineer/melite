@@ -25,7 +25,8 @@
 import { describe, it } from 'vitest'
 import assert from 'node:assert/strict'
 import { existsSync, readFileSync, statSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { Context } from '@deepseek-ai/cordis'
 import { EnginesService } from '../../packages/engines/contract/src/engines.ts'
 import { ComfyUIHostService } from '../../packages/engines/comfyui-cordis/src/comfyui.ts'
@@ -37,7 +38,9 @@ import { FlowsSeatService } from '../../packages/harness/estate-queue/src/flowsD
 import { mintSandbox } from '../harness.ts'
 import { ENGINE_FREE, ENGINE_HOST, ENGINE_PORT } from './engine-gate.ts'
 
-const REPO_ROOT = resolve(new URL('../..', import.meta.url).pathname)
+// fileURLToPath, never URL.pathname (the windows CI doubled-drive
+// class, 2026-10-31: '/D:/…' is drive-rooted RELATIVE on win32).
+const REPO_ROOT = fileURLToPath(new URL('../..', import.meta.url)).replace(/[\\/]$/, '')
 const PHOTO = join(REPO_ROOT, 'data', 'input', '36039.jpg')
 
 

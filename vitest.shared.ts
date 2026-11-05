@@ -157,6 +157,14 @@ const DRAFTS_DEPS = path.join(import.meta.dirname, 'packages/estate/drafts/node_
 
 export const RUNTIME_LIB_ALIAS: Record<string, string> = {
   '@deepseek-ai/cordis': path.join(DRAFTS_DEPS, 'cordis/lib/index.js'),
+  // THE FROM-MEDIA TRANSPORT WALL's carrier (2026-11-01): the real
+  // gateway client — the card-base-anchored node build, the same copy
+  // card-base's own dependency row resolves — so the wall mounts the
+  // real $mount machinery; the dom lane keeps its
+  // RemoteStreamCarrierError stand-in (the project alias wins over
+  // this row). Subpath row; no bare parent row exists (nothing
+  // imports one).
+  '@deepseek-ai/dsh-api-gateway/client': path.join(import.meta.dirname, 'packages/web/card-base/node_modules/@deepseek-ai/dsh-api-gateway/lib/client.node.js'),
   '@deepseek-ai/dsh-storage': path.join(DRAFTS_DEPS, 'dsh-storage/lib/index.js'),
   '@deepseek-ai/dsh-storage-json': path.join(DRAFTS_DEPS, 'dsh-storage-json/lib/index.js'),
   '@deepseek-ai/dsh-storage-domain': path.join(DRAFTS_DEPS, 'dsh-storage-domain/lib/index.js'),

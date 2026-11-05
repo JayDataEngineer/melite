@@ -227,7 +227,13 @@ test('the artifact grammar accepts subdir names and refuses traversal (the live-
 // `>= 4` floor was silently missing. These round-trips drive each
 // handler's refusal laws directly (the fail-closed half of the
 // contract: method discipline, containment, sidecar protection).
-test('the delete + rename routes round-trip their refusal laws', async () => {
+// THE MASS-ARCHIVE EXTENSION (operator ruling 2026-11-14, item
+// (a)): the tuck's two doors ride the same loop — archive shares
+// all three laws plus its already_archived position voice, while
+// restore's position law answers not_archived (even for sidecars —
+// the tuck's shape is judged before provenance, the door's own
+// comment).
+test('the delete + rename + archive routes round-trip their refusal laws; restore answers not_archived', async () => {
   const galleryMod = (await import('../../../../packages/web/infer-gallery/src/index.ts')) as {
     default?: Plugin;
   } & Record<string, unknown>
@@ -246,7 +252,7 @@ test('the delete + rename routes round-trip their refusal laws', async () => {
       if (event === 'end') fn()
     },
   })
-  for (const route of ['/infer-gallery/artifact-delete', '/infer-gallery/artifact-rename']) {
+  for (const route of ['/infer-gallery/artifact-delete', '/infer-gallery/artifact-rename', '/infer-gallery/artifact-archive']) {
     // method discipline: GET refuses 405
     const wrong = new FakeRes()
     await byPath(route).handler({ method: 'GET', url: route } as never, wrong)
@@ -262,5 +268,28 @@ test('the delete + rename routes round-trip their refusal laws', async () => {
     await byPath(route).handler(post(JSON.stringify({ path: 'run-abc123-word/_request.json', name: 'x.png' })) as never, side)
     assert.equal(side.status, 400, route + ': protected sidecar refuses')
     assert.match(String(side.body), /protected_sidecar/, route + ': names the provenance law')
+  }
+  // the tuck's own position voice: an archived path is already
+  // tucked — restore brings it back, never a second tuck.
+  const tucked = new FakeRes()
+  await byPath('/infer-gallery/artifact-archive').handler(post(JSON.stringify({ path: 'run-abc123-word/_archived/old.png' })) as never, tucked)
+  assert.equal(tucked.status, 400, 'archive: an _archived/ path refuses')
+  assert.match(String(tucked.body), /already_archived/, 'archive: names the position law')
+  // the restore half: method + containment ride the shared laws,
+  // but EVERY non-tucked shape — live files AND sidecars alike —
+  // answers not_archived (the position check precedes provenance).
+  const restore = '/infer-gallery/artifact-restore'
+  const rWrong = new FakeRes()
+  await byPath(restore).handler({ method: 'GET', url: restore } as never, rWrong)
+  assert.equal(rWrong.status, 405, 'restore: non-POST refuses 405')
+  const rAbs = new FakeRes()
+  await byPath(restore).handler(post(JSON.stringify({ path: '/etc/passwd' })) as never, rAbs)
+  assert.equal(rAbs.status, 400, 'restore: non-run-relative path refuses')
+  assert.match(String(rAbs.body), /forbidden_path/, 'restore: names the containment law')
+  for (const target of ['run-abc123-word/gen/a.png', 'run-abc123-word/_request.json']) {
+    const r = new FakeRes()
+    await byPath(restore).handler(post(JSON.stringify({ path: target })) as never, r)
+    assert.equal(r.status, 400, 'restore: ' + target + ' refuses')
+    assert.match(String(r.body), /not_archived/, 'restore: ' + target + ' names the position law')
   }
 })

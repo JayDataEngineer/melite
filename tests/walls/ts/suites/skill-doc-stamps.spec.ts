@@ -1,100 +1,72 @@
-// skill-doc-stamps — THE DOC-STAMP SWEEP WALL (the F2 VERIFIED stamp
-// sweep, ROADMAP owed line, 2026-11-12): every skill doc that carries a
-// VERIFIED LIVE stamp is judged against real doors, never a frozen
-// literal. The stamped roster is the registry row's OWN truth_home
-// (cards-skill-doc-stamps) — the wall reads the row, the row names the
-// docs, the docs name their runs and receipts, and the wall checks each
-// cited run id resolves in the runs ledger (data/runs/output/<id> with
-// _request.json + _flow.json) and each cited receipt is a real file
-// under dev_docs/contracts/receipts/. A stamp outside the roster reds,
-// so new stamps land through the registry row, never beside it.
+// skill-doc-stamps — THE SERVED-DOC PROVENANCE BAN WALL (operator
+// 2026-11-15: served docs are not skills — they are tied to files and
+// cruft, and provenance like git history does not belong on them):
+// agent docs are PROMPT MATERIAL served to LLM agents at runtime —
+// they teach current capability law only. Provenance archaeology
+// (VERIFIED LIVE stamps, receipt paths, run ids, dated operator
+// orders, friction-report cites, commit shas) is BANNED from every
+// served SKILL.md/AGENT.md; the forensic record lives in
+// dev_docs/contracts/receipts, never in prompt copy. The pre-ban
+// design judged stamps against real runs; the cure deleted every
+// stamp, so the wall now enforces the ban itself — corpus-wide,
+// derived by walk, no roster to rot.
 import { describe, expect, it } from 'vitest';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import YAML from 'yaml';
 
 const ROOT = join(import.meta.dirname, '../../../..');
 const ROW_ID = 'cards-skill-doc-stamps';
-const RUNS = join(ROOT, 'data/runs/output');
-const RECEIPTS = join(ROOT, 'dev_docs/contracts/receipts');
-const STAMP_RE = /VERIFIED LIVE (\d{4}-\d{2}-\d{2}) against ([\s\S]*?)(?=\n\n)/;
 
-/** The registry row that owns the sweep (the roster's real home). */
-function roster(): string[] {
-  const doc = YAML.parse(
-    readFileSync(join(ROOT, 'dev_docs/contracts/registry/cards-tier.yaml'), 'utf8'),
-  ) as { rows?: Array<{ id?: string; truth_home?: { files?: string[] } }> };
-  const row = (doc.rows ?? []).find((r) => r.id === ROW_ID);
-  expect(row, `registry row ${ROW_ID} exists (seat it via the contract CLI, never by hand)`).toBeDefined();
-  const files = row!.truth_home?.files ?? [];
-  expect(files.length, `row ${ROW_ID} names its stamped docs`).toBeGreaterThan(0);
-  return files;
-}
-
-/** Every SKILL.md under packages/ (the walk, not a hand list). */
-function allSkills(): string[] {
+/** Every served agent doc under packages/ (the walk, not a hand list). */
+function servedDocs(): string[] {
   const out: string[] = [];
   const walk = (dir: string): void => {
     for (const e of readdirSync(dir, { withFileTypes: true })) {
       const p = join(dir, e.name);
       if (e.isDirectory()) walk(p);
-      else if (e.name === 'SKILL.md') out.push(p);
+      else if (e.name === 'SKILL.md' || e.name === 'AGENT.md') out.push(p);
     }
   };
   walk(join(ROOT, 'packages'));
   return out.map((p) => p.slice(ROOT.length + 1)).sort();
 }
 
-const stampOf = (md: string): RegExpExecArray | null => STAMP_RE.exec(md);
-const runIdsOf = (body: string): string[] =>
-  [...body.matchAll(/run-[0-9a-f]+-[0-9a-f]+/g)].map((m) => m[0]);
-const receiptOf = (body: string): string | null => {
-  const m = /receipts\/([a-z0-9-]+\.md)/.exec(body);
-  return m === null ? null : m[1];
-};
+/** The registry row that owns the ban (the law's seat — read, never hand-edited). */
+function rowDoc(): string {
+  const doc = YAML.parse(
+    readFileSync(join(ROOT, 'dev_docs/contracts/registry/cards-tier.yaml'), 'utf8'),
+  ) as { rows?: Array<{ id?: string; invariant?: string }> };
+  const row = (doc.rows ?? []).find((r) => r.id === ROW_ID);
+  expect(row, `registry row ${ROW_ID} exists (seat it via the contract CLI, never by hand)`).toBeDefined();
+  return row!.invariant ?? '';
+}
 
-describe('THE DOC-STAMP SWEEP WALL (stamps are earned by live runs only)', () => {
-  it('every rostered doc carries a well-formed VERIFIED LIVE stamp (date + receipt + run)', () => {
-    for (const rel of roster()) {
-      const abs = join(ROOT, rel);
-      expect(existsSync(abs), `rostered doc exists: ${rel}`).toBe(true);
-      const md = readFileSync(abs, 'utf8');
-      const stamp = stampOf(md);
-      expect(stamp, `${rel} carries a VERIFIED LIVE <date> against ... stamp`).not.toBeNull();
-      expect(stamp![1], `${rel}: the stamp is dated`).toMatch(/^2026-/);
-      expect(receiptOf(stamp![2]!), `${rel}: the stamp names a receipt under dev_docs/contracts/receipts/`).not.toBeNull();
-      expect(runIdsOf(stamp![2]!).length, `${rel}: the stamp cites at least one run id`).toBeGreaterThan(0);
-    }
-  });
+const BANNED: ReadonlyArray<{ name: string; re: RegExp; why: string }> = [
+  { name: 'VERIFIED LIVE stamp', re: /VERIFIED LIVE/, why: 'a stamp is provenance, not law — earn trust in dev_docs, teach law in the doc' },
+  { name: 'receipt path', re: /receipts\/[a-z0-9-]+\.md/, why: 'receipt files are the forensic plane (dev_docs), never served prompt copy' },
+  { name: 'run id', re: /run-[0-9a-f]+-[0-9a-f]+/, why: 'a historical run id teaches nothing an agent can press — teach the press shape' },
+  { name: 'dated order', re: /2026-\d{2}-\d{2}|operator 2026/, why: 'dates and operator stamps are history; the law stands on its own' },
+  { name: 'friction-report cite', re: /friction[- ]report #?\d+/, why: 'the report is the finding\'s home, not the doc\'s authority' },
+  { name: 'commit sha', re: /commit [0-9a-f]{9}/, why: 'git history is not capability law' },
+];
 
-  it('every run id a stamp cites resolves in the runs ledger (request + flow on disk)', () => {
-    for (const rel of roster()) {
-      const stamp = stampOf(readFileSync(join(ROOT, rel), 'utf8'));
-      expect(stamp, `${rel} carries a stamp`).not.toBeNull();
-      for (const id of runIdsOf(stamp![2]!)) {
-        const dir = join(RUNS, id);
-        expect(existsSync(join(dir, '_request.json')), `${rel}: ${id} has its ledger request`).toBe(true);
-        expect(existsSync(join(dir, '_flow.json')), `${rel}: ${id} has its composed flow`).toBe(true);
+describe('THE SERVED-DOC PROVENANCE BAN WALL (agent docs teach law, never history)', () => {
+  it('no served SKILL.md/AGENT.md carries any banned provenance pattern', () => {
+    const docs = servedDocs();
+    expect(docs.length, 'the walk finds the served corpus (a zero walk is a broken walk)').toBeGreaterThan(50);
+    for (const rel of docs) {
+      const md = readFileSync(join(ROOT, rel), 'utf8');
+      for (const b of BANNED) {
+        expect(b.re.test(md), `${rel} carries a ${b.name} — ${b.why}`).toBe(false);
       }
     }
   });
 
-  it('every receipt a stamp cites is a real file (a moved receipt reds, never rots)', () => {
-    for (const rel of roster()) {
-      const stamp = stampOf(readFileSync(join(ROOT, rel), 'utf8'));
-      expect(stamp, `${rel} carries a stamp`).not.toBeNull();
-      const receipt = receiptOf(stamp![2]!);
-      expect(receipt, `${rel}: the stamp names a receipt`).not.toBeNull();
-      expect(existsSync(join(RECEIPTS, receipt!)), `${rel}: the named receipt exists: ${receipt}`).toBe(true);
-    }
-  });
-
-  it('no skill doc outside the roster carries a VERIFIED LIVE stamp (unstamped stamps are a lie)', () => {
-    const owned = new Set(roster());
-    for (const rel of allSkills()) {
-      if (owned.has(rel)) continue;
-      const md = readFileSync(join(ROOT, rel), 'utf8');
-      expect(stampOf(md), `${rel} carries an unrostered VERIFIED LIVE stamp — seat it through row ${ROW_ID} first`).toBeNull();
-    }
+  it('the registry row states the ban (the law has a seat)', () => {
+    const invariant = rowDoc();
+    expect(invariant, 'the row names the ban').toMatch(/provenance|archaeology|stamp/i);
+    expect(invariant, 'the row names the banned classes').toMatch(/receipt/i);
+    expect(invariant, 'the row names the forensic plane').toMatch(/dev_docs/);
   });
 });

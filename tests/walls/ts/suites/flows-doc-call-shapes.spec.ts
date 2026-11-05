@@ -2,7 +2,8 @@
 // H3/H9, skills-harness audit 2026-11-13). A served flow doc that
 // teaches a call shape the door REFUSES or SILENTLY DROPS costs a
 // burning run per guess: extend-video taught `{flow, source_clip,
-// extend_prompt}` (the unknown-arg gate refuses the strays),
+// extend_prompt}` (the unknown-arg gate refuses the strays; the
+// wrapper row retired 2026-11-14 — the founding burn stays narrated),
 // object-forge taught a top-level `prompt` (accepted by the arg list,
 // never read by the template arm), image-upscale taught `add_stage
 // flow` (construct has no flow seat), craft-loop taught a raw

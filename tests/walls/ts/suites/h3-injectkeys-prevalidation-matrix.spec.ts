@@ -1,48 +1,53 @@
 /**
  * h3-injectkeys-prevalidation-matrix.spec.ts — THE PRE-VALIDATION
- * SEAT (ERROR g, audit §3 SD-3; journey law §2 hop [3]→[4] with the
- * gestures at hop [1]→[2]). The operator's burn: "a week of
- * pre-validation, and it still fired LIVE" — the compose gate refused
- * a write that never left the studio with the operator's own spine:
+ * SEAT, RE-AIMED AT THE FIRED STATE (the lane-law retirement,
+ * 2026-11-15). The historical burn: "a week of pre-validation, and it
+ * still fired LIVE" — the compose gate refused a write that never
+ * left the studio with the operator's own spine:
  * THE COMPOSE GATE REFUSED — card 'h3-timeline' refused params:
  * h3_window(t4r): unsanctioned inject keys: interpolate_enabled,
  * second_pass_enabled, sharpen_enabled, sr_switch.
  *
- * WHY THE WEEK STAYED GREEN: every single-write judge was walked —
- * the pick gate (omitT4RecipeRow), the bench write door's family arm
- * (admitFamily, card.ts:220), the compose gate's variant/envelope
- * judge (composeValidate), the run door's walk (schema.ts:573-601) —
- * each judged ITS OWN write legal. The burn lives in the
- * TRANSACTION: a Final-Cut pick sanctioned on the open lane, THEN a
- * keyframe pin (agent patch / tool write / any non-studio arrival —
- * useShownDoc.ts:226-231's honest edge) that flips the derived family
- * under the carried stamps. No seat owns the pair; the product
- * refuses at the next compose.
+ * THE ROOT CAUSE the 2026-11-15 cure removed: renderH3Window's t4r
+ * arm went straight from decode to CreateVideo and never mounted the
+ * image-space post chain, so four separate courts (the walk, the card
+ * admission, the pick verdict, the rail's omit/emit-strip) refused
+ * the post keys on that lane instead of firing them. The chain is now
+ * HOISTED ABOVE the family branch: the t4r arm mounts SeedVR2 /
+ * ImageSharpenKJ / FrameInterpolate exactly as the else arm does.
  *
- * THE WALL: the suite-level DECL matrix — every served variant row ×
- * every served recipe row × every derived lane (t4_open / t4r /
- * t4_chain, assembled through deriveWindowFamily's OWN derivation:
- * 1 text call / +keyframes / 2 tiled calls) × the doc carrying the
- * burn's four booleans or carrying none. 36 cells, judged by the REAL
- * seats — the walk (h3schemaFn), the write door (def.admitFamily),
- * the row gate (omitT4RecipeRow), the run door (svc.phase1Card) for
- * the era and the product. NO FROZEN FIXTURES: rows come from
- * formSpecArm over the booted estate, the key set from the contract
- * module the walk itself reads.
+ * THE WALL, re-aimed: the suite-level DECL matrix — every served
+ * variant row × every served recipe row × every derived lane
+ * (t4_open / t4r / t4_chain, assembled through deriveWindowFamily's
+ * OWN derivation) × the doc carrying the finish quartet or carrying
+ * none. Every cell must pass the walk, the write door and (on a
+ * representative per lane) the RUN DOOR — a lane where a stated
+ * finish key fires nothing is the class this wall exists to catch.
+ * The surviving single-window omission is the film-only knob
+ * (duck_depth_db): sanctioned on t4_chain, refused by the walk and
+ * the run door on t4r/t4_open, and withheld from the rail by
+ * omitFilmRecipeRow. NO FROZEN FIXTURES: rows come from formSpecArm
+ * over the booted estate.
  *
  * THE LAWS:
- *   A. NO SANCTIONED CELL REFUSES — a cell whose doc carries no
- *      family-dead key on its derived lane passes the walk AND the
- *      write door clean.
- *   B. NO UNSANCTIONED CELL PASSES SILENTLY — a t4r cell carrying any
- *      T4_ONLY key is refused by BOTH the walk (the operator's spine)
- *      and the write door.
- *   C. THE TRANSACTION CELL (PRE-REGISTERED RED) — the era (t4_open +
- *      Final Cut + the four booleans) is green at every single-write
- *      judge; the keyframe flip lands with NO seat refusing the
- *      gesture; the product refuses at the walk and the run door. The
- *      law the week owed: the flip gesture refuses AT THE GESTURE or
- *      reseats the stamps — never a stored doc refusing later.
+ *   A. NO CELL REFUSES — every served cell passes the walk, the
+ *      write door and the run door; the finish quartet is lawful on
+ *      every lane because the chain fires there.
+ *   B. THE FILM-ONLY LETTER KEEPS ITS TEETH — a single-window doc
+ *      stating duck_depth_db is refused by the walk (and by the run
+ *      door), while the chain doc composes it; the row gate withholds
+ *      a row whose stamp is film-only.
+ *   C. THE TRANSACTION — the t4_open era carrying the Final Cut
+ *      stamps, flipped to t4r by a keyframe pin, lands with its
+ *      stamps INTACT and composes at the run door; no reseat drops
+ *      them (the settlement is the plain merge-patch law now).
+ *   D. THE SERVED LAW PIN — the served familyLaw still derives the
+ *      contract module's lanes verbatim; deadKeys is empty (the
+ *      retirement's own receipt).
+ *   E. THE NULL LAW — an explicit null on a finish key is UNSTATED at
+ *      both seats, one grammar.
+ *   F. THE DECLARATION JUDGE — familyLawDrift still reds an orphan or
+ *      empty declaration at boot; the h3 seat settles nothing.
  */
 import { assertHermeticRode } from "../../../helpers/hermetic-engine.ts";
 import "../../../helpers/boot-models.ts";
@@ -57,18 +62,20 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { schema as h3schemaFn } from "@melite/models-h3/schema";
-import { deriveWindowFamily, FAMILY_LAW, T4_ONLY_KEYS } from "@melite/models-h3/timelineContract";
-import { reseatDeadKeys } from "@melite/contracts/familyLane";
+import { deriveWindowFamily, FAMILY_LAW } from "@melite/models-h3/timelineContract";
 import { axisPickPatch, composeValidate } from "@melite/card-base/client";
 import type { FormSpecDoc, FormVariantRow } from "@melite/card-base/client";
-import { omitT4RecipeRow } from "../../../../packages/video/h3-timeline/src/ui/studio/omitT4Recipe.ts";
+import { omitFilmOnlyField, omitFilmRecipeRow } from "../../../../packages/video/h3-timeline/src/ui/studio/omitLaneRecipe.ts";
 
-/** THE OPERATOR'S OWN SPINE — the receipt, never silenced. */
-const REFUSAL_SPINE = /h3_window\(t4r\): unsanctioned inject keys: /;
-const FOUR_SPINE = /unsanctioned inject keys: interpolate_enabled, second_pass_enabled, sharpen_enabled, sr_switch/;
+/** THE FINISH QUARTET + the route — the burn's keys, lawful on every
+ *  lane since the chain hoist (2026-11-15). The sorted spelling is
+ *  the walk's own voice when a genuine orphan key appears. */
+const FINISH = ["interpolate_enabled", "second_pass_enabled", "sharpen_enabled", "sr_switch", "upscale_route"] as const;
 
-/** THE BURN'S FOUR, in the operator's sorted spelling. */
-const FOUR = ["interpolate_enabled", "second_pass_enabled", "sharpen_enabled", "sr_switch"] as const;
+/** THE FILM-ONLY LETTER — read solely by the multi-window mix
+ *  (computeFilmMix), so a single-window doc stating it is the class
+ *  the walk still refuses. */
+const FILM_ONLY = "duck_depth_db";
 
 /** THE BENCH MERGE-PATCH LAW (drafts door, bench.ts:969-985 — per
  *  key, null deletes), SETTLED THROUGH THE FAMILY RESEAT (the ERROR
@@ -86,12 +93,11 @@ function settleRaw(base: Record<string, unknown>, saved: Record<string, unknown>
   return settled;
 }
 function settle(base: Record<string, unknown>, saved: Record<string, unknown>): Record<string, unknown> {
-  // THE CARRY LINE (2026-11-11): the settlement drops the doc's own
-  // stranded stamps — the prior is the PRE-PATCH state (base, the
-  // stored row this write rides), never the merged view: a T4-only
-  // key the PATCH itself authors stands for the family clause to
-  // refuse.
-  return reseatDeadKeys(FAMILY_LAW, settleRaw(base, saved), base).params;
+  // THE MERGE-PATCH LAW (the retirement's shape): per key, null
+  // deletes — and nothing else. The old family reseat dropped the
+  // burn's quartet on a t4r flip; since the chain fires there, the
+  // quartet is a stated truth the settlement carries untouched.
+  return settleRaw(base, saved);
 }
 
 /** THE LANES, assembled through deriveWindowFamily's own derivation
@@ -139,18 +145,15 @@ const BOOLEAN_AXES: Array<{ axis: string, state: Record<string, unknown> }> = [
   { axis: "unstated", state: {} },
 ];
 
-/** The DECL's own cell law: a cell is UNSANCTIONED iff its assembled
- *  doc derives t4r while carrying any T4_ONLY key — the exact
- *  judgment the walk (schema.ts:573-577) and the write door
- *  (card.ts:220) speak. No copy: T4_ONLY_KEYS rides the contract
- *  module, the family rides the contract's own derivation. */
-function unsanctioned(doc: Record<string, unknown>): boolean {
-  if (deriveWindowFamily(doc) !== "t4r") return false;
-  const explicit = new Set(Object.keys(doc));
-  return (T4_ONLY_KEYS as readonly string[]).some((k) => explicit.has(k));
+/** THE SURVIVING CELL LAW: a cell is a FILM-ONLY LETTER iff its
+ *  assembled doc states duck_depth_db on a lane that is not the
+ *  multi-window chain — the exact judgment schema.ts's FILM_ONLY
+ *  gate speaks. */
+function filmOnlyLetter(doc: Record<string, unknown>): boolean {
+  return deriveWindowFamily(doc) !== "t4_chain" && Object.keys(doc).includes(FILM_ONLY);
 }
 
-describe("THE PRE-VALIDATION SEAT (the DECL matrix wall — no sanctioned cell refuses; no unsanctioned cell passes silently; the transaction reds)", () => {
+describe("THE PRE-VALIDATION SEAT, re-aimed (the matrix — no served cell refuses; the film-only letter keeps its teeth; the flip keeps its stamps)", () => {
   let svc: CardRegistryService;
   let spec: NonNullable<Awaited<ReturnType<typeof formSpecArm>>>;
   let def: NonNullable<Awaited<ReturnType<typeof loadCardDefs>>["get"]>;
@@ -201,7 +204,7 @@ describe("THE PRE-VALIDATION SEAT (the DECL matrix wall — no sanctioned cell r
     }
   }
 
-  it("LAWS A+B (the matrix): every cell of the served DECL — no sanctioned cell refuses, no unsanctioned cell passes silently", () => {
+  it("LAW A — every served cell passes the walk and the write door, and the finish quartet fires at the run door on EVERY lane (the retirement's positive matrix)", async () => {
     const variantRows = rowsOf("Variant");
     const recipeRows = rowsOf("Recipe");
     expect(variantRows.length, "the served DECL carries the Variant rows").toBeGreaterThan(0);
@@ -216,20 +219,13 @@ describe("THE PRE-VALIDATION SEAT (the DECL matrix wall — no sanctioned cell r
             const doc = cell(assemble, v, r, state);
             const derived = deriveWindowFamily(doc);
             expect(derived, `the cell's lane derives through the contract (${lane} assembled → ${derived})`).toBe(lane);
-            const bad = unsanctioned(doc);
+            // THE FINISH QUARTET IS LAW ON EVERY LANE: no cell claims
+            // a dead letter; the walk and the write door must agree.
+            if (filmOnlyLetter(doc)) violations.push(`a served cell states the film-only letter (lane ${lane}, variant ${String(v.id)}, recipe ${String(r.id)}, ${axis}) — the DECL must not ship it`);
             const walkMsg = walk(doc);
-            const admit = def.admitFamily(doc);
-            if (!bad) {
-              // LAW A: sanctioned cells pass BOTH real seats clean.
-              if (walkMsg !== null) violations.push(`LAW A refused a sanctioned cell (lane ${lane}, variant ${String(v.id)}, recipe ${String(r.id)}, ${axis}): walk — ${walkMsg}`);
-              if (admit.ok !== true) violations.push(`LAW A refused a sanctioned cell (lane ${lane}, variant ${String(v.id)}, recipe ${String(r.id)}, ${axis}): write door — ${String(admit.error)}`);
-            } else {
-              // LAW B: unsanctioned cells are refused by BOTH seats,
-              // in the operator's own voice.
-              if (walkMsg === null) violations.push(`LAW B: an unsanctioned cell passed the walk silently (lane ${lane}, variant ${String(v.id)}, recipe ${String(r.id)}, ${axis})`);
-              else if (!REFUSAL_SPINE.test(walkMsg)) violations.push(`LAW B: the walk's refusal lost the spine (lane ${lane}, variant ${String(v.id)}, recipe ${String(r.id)}, ${axis}): ${walkMsg}`);
-              if (admit.ok !== false) violations.push(`LAW B: the write door admitted an unsanctioned cell silently (lane ${lane}, variant ${String(v.id)}, recipe ${String(r.id)}, ${axis})`);
-            }
+            const admit = svc.admitStageFamily("h3-timeline", doc);
+            if (walkMsg !== null) violations.push(`LAW A refused a served cell (lane ${lane}, variant ${String(v.id)}, recipe ${String(r.id)}, ${axis}): walk — ${walkMsg}`);
+            if (admit.ok !== true) violations.push(`LAW A refused a served cell (lane ${lane}, variant ${String(v.id)}, recipe ${String(r.id)}, ${axis}): write door — ${String(admit.error)}`);
           }
         }
       }
@@ -239,79 +235,92 @@ describe("THE PRE-VALIDATION SEAT (the DECL matrix wall — no sanctioned cell r
     // rows × the served Recipe rows × the 2 boolean axes.
     expect(cells, "the full matrix walked (3 lanes × variant rows × recipe rows × 2 boolean axes)")
       .toBe(LANES.length * variantRows.length * recipeRows.length * BOOLEAN_AXES.length);
-    // THE ROW GATE, the DECL matrix's offer-side control (the J4
-    // negative control omitT4Recipe.ts names): a recipe whose stamp
-    // intersects the family-dead keys is not offered on t4r — the
-    // Final Cut row must be judged off the t4r lane and offered on
-    // the open lane.
+    // THE ROW GATE, the offer side: the Final Cut row's stamps are
+    // lawful on every lane now — the pill rides everywhere.
     const finalRow = recipeRows.find((r) => r.id === "final");
     expect(finalRow, "the served DECL carries the Final Cut row").toBeDefined();
     if (finalRow !== undefined) {
-      expect(omitT4RecipeRow(spec, finalRow), "the row gate judges Final Cut's stamp family-dead (sr_switch ∈ T4_ONLY) — the row-level J4 control").toBe(true);
+      expect(omitFilmRecipeRow(spec, finalRow), "the Final Cut row is OFFERED on the reference lane — its stamps fire there").toBe(false);
+    }
+    // THE RUN DOOR ON EVERY LANE (the fourth court the burn crossed):
+    // the same four-stated doc must compose — a lane whose arm skips
+    // the post chain would resolve here with the stamps landing in no
+    // node, which is exactly the refused-doc class this wall names.
+    for (const { lane, assemble } of LANES) {
+      const doc = cell(assemble, null, finalRow ?? null, BOOLEAN_AXES[0]!.state);
+      expect(deriveWindowFamily(doc), `the door cell derives ${lane}`).toBe(lane);
+      await expect(
+        svc.phase1Card({ ...doc, card: "h3-timeline", model: "h3" }, "h3"),
+        `${lane}: the finish quartet composes at the real run door`,
+      ).resolves.toBeDefined();
     }
   });
 
-  it("LAW C — THE TRANSACTION CELL (ERROR g, red): every single-write judge green at its gesture, the flip green, the product refused LIVE", async () => {
+  it("LAW B — the film-only letter keeps its teeth: t4_chain composes duck_depth_db; the single-window lanes refuse it at the walk AND the run door; the row gate withholds a film-stamped row", async () => {
+    // THE SANCTIONED LEG (the positive control — a gate that refused
+    // duck_depth_db everywhere would pass the other half while
+    // breaking the mix desk): the chain doc carries it clean.
+    const chainBase = LANES.find((l) => l.lane === "t4_chain")!.assemble();
+    const chainDoc = { ...chainBase, [FILM_ONLY]: -14 };
+    expect(walk(chainDoc), "the multi-window chain composes the mix-desk knob").toBeNull();
+    await expect(svc.phase1Card({ ...chainDoc, card: "h3-timeline", model: "h3" }, "h3"),
+      "the chain's mix-desk knob reaches the run door").resolves.toBeDefined();
+    // THE SINGLE-WINDOW LEGS: the walk refuses BY NAME, and the run
+    // door (which rides the walk) refuses the same doc — one spelling.
+    for (const lane of ["t4r", "t4_open"] as const) {
+      const base = LANES.find((l) => l.lane === lane)!.assemble();
+      const doc = { ...base, [FILM_ONLY]: -14 };
+      const msg = walk(doc);
+      expect(msg, `${lane}: the walk refuses the film-only letter`).toMatch(new RegExp(FILM_ONLY));
+      await expect(svc.phase1Card({ ...doc, card: "h3-timeline", model: "h3" }, "h3"),
+        `${lane}: the run door refuses the film-only letter too`).rejects.toThrow(new RegExp(FILM_ONLY));
+      // and the FIELD predicate agrees with the walk's one spelling
+      expect(omitFilmOnlyField(FILM_ONLY), "omitFilmOnlyField reads the same set").toBe(true);
+    }
+    // THE ROW GATE'S TEETH (a row stamping the film-only key is
+    // withheld; a geometry-only row still rides)
+    const filmRow = { id: "film_mix", label: "Film Mix", group: "Recipe", defaults: { [FILM_ONLY]: -18 },
+      route: "", hint: null, engine: "comfyui", quant: null, vram_peak_gb: null, owner: "" };
+    expect(omitFilmRecipeRow(spec, filmRow), "a row stamping duck_depth_db is withheld").toBe(true);
+    const draftRow = rowsOf("Recipe").find((r) => !omitFilmRecipeRow(spec, r));
+    expect(draftRow, "the DECL carries at least one film-legal recipe row").toBeDefined();
+    expect(omitFilmRecipeRow(spec, draftRow), "a clean row still rides").toBe(false);
+  });
+
+  it("LAW C — THE TRANSACTION: the t4_open era carrying the Final Cut stamps, flipped to t4r by a keyframe pin, keeps its stamps through the settlement and composes at the run door", async () => {
     const recipeRows = rowsOf("Recipe");
     const finalRow = recipeRows.find((r) => r.id === "final");
     expect(finalRow, "the served DECL carries the Final Cut row").toBeDefined();
     const open = LANES[0]!;
-    // THE ERA: the open lane carries the Final Cut stamps and the four
-    // booleans — the Final-Cut era of the doc, every stamp sanctioned
-    // HERE. Every single-write judge of the era is green, at the REAL
-    // seats, in order:
+    // THE ERA: the open lane carries the Final Cut stamps and the
+    // finish quartet — lawful here, and lawful after the flip.
     const era = cell(open.assemble, null, finalRow ?? null, BOOLEAN_AXES[0]!.state);
     expect(deriveWindowFamily(era), "the era's own derived lane is t4_open").toBe("t4_open");
-    expect(omitT4RecipeRow(spec, finalRow ?? {}), "the pick's own judge offered the row (the row gate's lane condition lives at the caller — the open lane consults nothing)").toBe(true);
+    expect(omitFilmRecipeRow(spec, finalRow ?? {}), "the pick's own judge offers the row on the open lane").toBe(false);
     expect(walk(era), "the era doc passes the walk clean").toBeNull();
-    expect(def.admitFamily(era).ok, "the era doc passes the write door clean").toBe(true);
+    expect(svc.admitStageFamily("h3-timeline", era).ok, "the era doc passes the write door clean").toBe(true);
     await expect(svc.phase1Card({ ...era, card: "h3-timeline", model: "h3" }, "h3"),
-      "the era composes at the REAL run door (the pick's pre-validation, green)").resolves.toBeDefined();
-    // THE FLIP: the keyframe pin rides a params patch (the agent
-    // patch / tool write shape — the exact keys such a write carries)
-    // through the bench merge-patch settlement — which now owns the
-    // flip (the family reseat: the stamps drop at the settlement, the
-    // drafts doors' reseatStageFamily seat).
+      "the era composes at the REAL run door").resolves.toBeDefined();
+    // THE FLIP: the keyframe pin rides a params patch through the
+    // bench merge-patch settlement (per key, null deletes — nothing
+    // else). The product derives t4r with the stamps standing.
     const pin = { keyframes: [{ image: "anchor.png", frame: 0 }] };
-    const raw = settleRaw(era, pin);
     const product = settle(era, pin);
     expect(deriveWindowFamily(product), "the flip flipped the derived family").toBe("t4r");
-    // THE LAW THE WEEK OWED: the flip GESTURE refuses AT THE GESTURE
-    // or some seat reseats the carried stamps — never a stored doc
-    // refusing later. The reseat path: the settlement lands the
-    // stamps' DELETE (the receipt below names them) and the client
-    // gate (composeValidate's family clause) refuses the SAME pair at
-    // the gesture — both judged here on the REAL seats.
-    const flipGate = def.admitFamily(pin);
-    const gestureViolations = composeValidate(spec, raw);
-    const doorMsg = await svc.phase1Card({ ...product, card: "h3-timeline", model: "h3" }, "h3")
-      .then(() => null, (e: unknown) => (e instanceof Error ? e.message : String(e)));
-    const walkMsg = walk(product);
-    const gestureClean = flipGate.ok === true;
-    expect(gestureClean && (walkMsg === null && doorMsg === null),
-      `ERROR g (the transaction): the flip gesture landed GREEN (write door: ${flipGate.ok === true ? "ok" : String(flipGate.error)}) and the PRODUCT refuses live — walk: ${String(walkMsg)} — run door: ${String(doorMsg)} — the settlement seat (the family reseat) did not own the flip`,
-    ).toBe(true);
-    // THE RESEAT RECEIPT (the cure's own voice, never silent): the
-    // product carries NONE of the carried stamps — the settlement
-    // dropped exactly the burn's four, sorted.
-    const dropped = reseatDeadKeys(FAMILY_LAW, raw, era).dropped;
-    expect(dropped, "the reseat names exactly what it dropped (sorted)").toEqual([...FOUR].sort());
-    for (const k of dropped) {
-      expect(product, `the product no longer carries '${k}'`).not.toHaveProperty(k);
+    for (const k of ["second_pass_enabled", "sr_switch", "sharpen_enabled", "interpolate_enabled"] as const) {
+      expect(product[k], `the flip NEVER strips the operator's stated '${k}'`).toBe(era[k]);
     }
-    // THE GESTURE'S OWN JUDGE (the client clause, one hop before the
-    // wire): composeValidate's family clause names the four on the
-    // RAW merged view — the gate refuses the pair at the gesture, the
-    // second seat of the law's disjunction.
-    const named = gestureViolations
-      .map((v) => /field '([^']+)' fires nothing on the t4r lane/.exec(v.message)?.[1] ?? "")
-      .filter((k) => k !== "");
-    expect(named.sort(), "the gesture gate names the burn's four").toEqual([...FOUR].sort());
-    // THE NO-MUTE COMPANION (never silenced): the walk still refuses
-    // the RAW view in the operator's verbatim spine — the settlement
-    // reseat never muted the door.
-    expect(() => h3schemaFn(raw), "the raw merged view still refuses with the spine").toThrow(REFUSAL_SPINE);
-    expect(() => h3schemaFn(raw), "the raw merged view names exactly the burn's four").toThrow(FOUR_SPINE);
+    // THE PRODUCT COMPOSES — the burn's exact pair is lawful now: the
+    // walk, the write door and the run door all land it.
+    expect(walk(product), "the flipped product passes the walk").toBeNull();
+    expect(svc.admitStageFamily("h3-timeline", product).ok, "the flipped product passes the write door").toBe(true);
+    await expect(svc.phase1Card({ ...product, card: "h3-timeline", model: "h3" }, "h3"),
+      "the flipped product composes at the run door — the burn's exact pair").resolves.toBeDefined();
+    // NO RESEAT EXISTS: the seat resolves the DECL's law and drops
+    // nothing on h3 (deadKeys is empty) — the retirement's receipt.
+    const seat = svc.reseatStageFamily("h3-timeline", product, era);
+    expect(seat, "the seat resolves h3's family law off the DECL").not.toBeNull();
+    expect(seat?.dropped ?? ["<null>"], "nothing is dropped on a lane that fires the stamps").toEqual([]);
   });
 
   it("LAW D — THE SERVED LAW PIN (the family clause's one-owner proof): the served spec's familyLaw IS the contract module", () => {
@@ -325,7 +334,7 @@ describe("THE PRE-VALIDATION SEAT (the DECL matrix wall — no sanctioned cell r
     const law = (spec as unknown as { familyLaw?: NonNullable<FormSpecDoc["familyLaw"]> }).familyLaw;
     expect(law, "the served h3 spec carries the family law").toBeDefined();
     if (law === undefined) return;
-    expect(law.deadKeys.t4r, "the dead keys ARE the module's set").toEqual([...T4_ONLY_KEYS]);
+    expect(law.deadKeys, "the retirement leaves NO lane dead letters — every lane fires its chain").toEqual({});
     // THE GENERIC EVALUATOR (the client's own derivation over the
     // data — composeValidate's deriveFamilyLane spelling, driven here
     // through a real gate call on a doc carrying ONLY the probe's
@@ -377,72 +386,62 @@ describe("THE PRE-VALIDATION SEAT (the DECL matrix wall — no sanctioned cell r
     expect(drifts, `the served familyLaw derives the contract module verbatim:\n${drifts.join("\n")}`).toEqual([]);
   });
 
-  it("LAW E — THE NULL LAW (the journey FAIL reopens the cure, 2026-11-08): gate≡walk on null, no second grammar — an explicit null on a dead key is UNSTATED at both seats", async () => {
+  it("LAW E — THE NULL LAW (one grammar): an explicit null on a finish key is UNSTATED at both seats", async () => {
     // THE PLATFORM'S ONE NULL LAW (the drill null-set precedent +
     // the 21 lane's journey-PASSed null→200): null is the switch
-    // verbs' delete mark (modelSwitchPatch null verdicts,
-    // mergeSwitchFrame, seedUser consume it) — an arrival door that
-    // reads null as stated re-opens the exact gap ERROR g burned
-    // through (a gate that promises [] while the walk refuses 400).
-    // Today the gate reads null absent (familyKeyPresent) while the
-    // walk's `explicit` (schema.ts:531) counts every Object key —
-    // this arm reds on the walk half until the walk aligns.
+    // verbs' delete mark — an arrival door that reads null as stated
+    // re-opens the exact gap ERROR g burned through (a gate that
+    // promises [] while the walk refuses 400).
     const recipeRows = rowsOf("Recipe");
     const finalRow = recipeRows.find((r) => r.id === "final");
     const open = LANES[0]!;
     const era = cell(open.assemble, null, finalRow ?? null, BOOLEAN_AXES[0]!.state);
     const pin = { keyframes: [{ image: "anchor.png", frame: 0 }] };
-    const nulled = { ...settle(era, pin), ...Object.fromEntries(FOUR.map((k) => [k, null])) };
+    const nulled = { ...settle(era, pin), ...Object.fromEntries(FINISH.map((k) => [k, null])) };
     expect(deriveWindowFamily(nulled), "the null-carried doc is still t4r").toBe("t4r");
-    // THE GATE HALF (already green — pinned so the grammar cannot
-    // drift the other way): a null-carried dead key is unstated.
-    const named = composeValidate(spec, nulled)
-      .map((v) => /field '([^']+)' fires nothing on the t4r lane/.exec(v.message)?.[1] ?? "")
-      .filter((k) => k !== "");
-    expect(named, "the gate reads null-carried dead keys as unstated").toEqual([]);
-    // THE WALK HALF (red until the cure): the same doc must compose.
-    expect(walk(nulled), "the walk reads null-carried dead keys as unstated — ONE null law").toBeNull();
-    expect(() => h3schemaFn(nulled), "the walk's spine stays silent on null-carried dead keys").not.toThrow();
+    expect(composeValidate(spec, nulled), "the gate reads null-carried keys as unstated").toEqual([]);
+    expect(walk(nulled), "the walk reads null-carried keys as unstated — ONE null law").toBeNull();
+    // THE COMPOSE DOOR'S OWN NULL GRAMMAR (a different seat, never a
+    // lane law): the arrival door refuses an explicit null on a key
+    // whose declaration carries a default — "send a real value or
+    // omit the key". That refusal is lane-blind and predates the
+    // retirement; the walk's unstated reading is what the studio's
+    // delete rides on.
+    await expect(svc.phase1Card({ ...nulled, card: "h3-timeline", model: "h3" }, "h3"),
+      "the compose door refuses null-carried keys outright (its own arrival grammar)")
+      .rejects.toThrow(/is null but its declaration carries a default/);
   });
 
-  it("LAW F — THE ONE SEAT, DECL-DRIVEN (the one-seat migration, 2026-11-12): the registry's reseatStageFamily derives the drop from the MODEL DECL's familyLaw through the shared spelling — no per-card face exists, and the declaration judge reds a law nobody can derive", async () => {
+  it("LAW F — THE DECLARATION JUDGE (the one-seat migration, 2026-11-12): the registry's reseatStageFamily resolves the MODEL DECL's law and drops nothing after the retirement; familyLawDrift reds a law nobody can derive", async () => {
     // THE ROW'S OWN GATE (ROADMAP, the one-seat destination): a wall
     // arm drives the lane-declaration path itself — the DECL names
-    // its dead keys, the registry's seat derives the drop from it,
-    // never from a card face. The service above IS the primed real
-    // registry (the same prime() the estate boots); the card def
-    // carries no family law and no reseat face — the law resolves
-    // through the boarded family's DECL (getModel).
-    // (1) THE FLIP'S CARRIED STRAND drops, exactly the module's set:
-    // a t4_open era carrying the burn's four under a keyframe pin —
-    // the merged view derives t4r, the prior owned the four.
+    // its law, the registry's seat derives from it, never from a
+    // card face. The service above IS the primed real registry.
+    // (1) THE FLIP CARRIES ITS STAMPS: a t4_open era carrying the
+    // finish quartet under a keyframe pin — the merged view derives
+    // t4r, and nothing drops.
     const open = LANES[0]!;
     const era = cell(open.assemble, null, null, null);
-    const prior: Record<string, unknown> = { ...era, ...Object.fromEntries(FOUR.map((k) => [k, true])) };
+    const prior: Record<string, unknown> = { ...era, ...Object.fromEntries(FINISH.map((k) => [k, true])) };
     const flip = { ...prior, keyframes: [{ image: "anchor.png", frame: 0 }] };
     const seat = svc.reseatStageFamily("h3-timeline", flip, prior);
     expect(seat, "the seat resolves h3's family law off the DECL — never null").not.toBeNull();
-    if (seat === null) return;
-    expect([...seat.dropped], "the DECL-driven seat drops exactly the burn's four (sorted)").toEqual([...FOUR].sort());
-    for (const k of seat.dropped) {
-      expect(seat.params, `the landed row no longer carries '${k}'`).not.toHaveProperty(k);
+    expect(seat?.dropped ?? ["<null>"], "the DECL carries no dead letters — nothing drops").toEqual([]);
+    for (const k of FINISH) {
+      if (k === "upscale_route") continue
+      expect(seat?.params, `the landed row still carries '${k}'`).toHaveProperty(k);
     }
-    // (2) THE CARRY LINE (2026-11-11): a dead key THIS write authors
-    // (absent from the prior) stands — the drop is never a launderer.
-    const authored = { ...era, keyframes: [{ image: "anchor.png", frame: 0 }], sr_switch: true };
-    const authoredSeat = svc.reseatStageFamily("h3-timeline", authored, era);
-    expect(authoredSeat?.dropped ?? [], "an authored dead key stands for the family clause to refuse").toEqual([]);
-    // (3) A DOC WHOSE LANE HONORS THE KEYS rides unchanged.
+    // (2) A DOC WHOSE LANE HONORS THE KEYS rides unchanged.
     const honored = svc.reseatStageFamily("h3-timeline", prior, prior);
-    expect(honored?.dropped ?? [], "the t4_open doc rides unchanged (dropped: [])").toEqual([]);
-    // (4) THE DECLARATION JUDGE (familyLawDrift — prime() throws on
+    expect(honored?.dropped ?? ["<null>"], "the t4_open doc rides unchanged (dropped: [])").toEqual([]);
+    // (3) THE DECLARATION JUDGE (familyLawDrift — prime() throws on
     // its verdict): the real boarded laws carry no drift, an orphan
     // deadKeys lane is named, and an empty lane list is named. This
     // is the judge's OWN firing arm — gutting it reds here AND
     // silences prime's boot gate.
     const laws = new Map<string, typeof FAMILY_LAW>();
-    for (const [, def] of await loadCardDefs()) {
-      for (const family of def.boarded) {
+    for (const [, d] of await loadCardDefs()) {
+      for (const family of d.boarded) {
         const law = getModel(family).familyLaw;
         if (law !== undefined && !laws.has(family)) laws.set(family, law);
       }
@@ -458,5 +457,16 @@ describe("THE PRE-VALIDATION SEAT (the DECL matrix wall — no sanctioned cell r
       .toContain("mock-family: deadKeys names undeclared lanes [\"nobody\"]");
     expect(familyLawDrift(new Map([["empty", { lanes: [], deadKeys: {} }]])), "a law with no lanes reds at boot")
       .toContain("empty: no lanes declared");
+    // (4) THE LANE-DEAD-LETTER BAN: the empty slot cannot silently
+    // re-grow the law the burn convicted — a law that declares dead
+    // keys on a REAL lane reds at boot, naming the cure (fix the
+    // renderer, or gate the shape with a repair-teaching law).
+    const deadLetter = new Map(laws);
+    deadLetter.set("mock-dead-letter", {
+      lanes: [{ lane: "t4r", guideKeys: ["image"] }],
+      deadKeys: { t4r: ["second_pass_enabled"] },
+    });
+    expect(familyLawDrift(deadLetter), "a non-empty deadKeys reds even on a legitimately declared lane")
+      .toContain('mock-dead-letter: lane t4r declares dead keys ["second_pass_enabled"] — no lane dead letter may ship (cure the renderer or gate the shape)');
   });
 });

@@ -22,7 +22,11 @@
 //
 // Run: npx vitest run tests/walls/ts/suites/mod-interlock.spec.ts
 
+// THE HERMETIC TRAY (2026-11-04): these arms census the family's
+// DECLARED lora rows, so the operator's own tray is pinned empty.
+import "../../../helpers/no-loras-tray.ts";
 import assert from "node:assert/strict";
+import { fileURLToPath } from "node:url";
 // THE PER-FILE BOOT, first import (li-bp's battery red): this spec
 // reads registryIds()/getModel() — the models service singleton —
 // but never booted it, inheriting whatever boot a SIBLING suite in
@@ -74,7 +78,9 @@ test("mods registered through the service as plugins (PORT LAW: Schemastery cont
     // contract, so the whole 12-knob lanpaint/outpaint surface left
     // with it. The absorbed surface is loras + the 11 mask riders.)
     "loras",
-    "mask", "input_mask", "mask_mode", "mask_detector", "mask_context_pad",
+    // (the impact-pack pair, 2026-11-15: input_image is the region
+    // base seat — first of the mask riders, before input_mask)
+    "mask", "input_image", "input_mask", "mask_mode", "mask_detector", "mask_context_pad",
     "mask_grow", "mask_feather", "mask_threshold", "mask_invert", "mask_detail_size", "mask_denoise",
   ], "image-edit absorbs the edit packs' surface, exactly and in order");
   // every mod's fields ARE a z.object contract (the dual-decl pattern)
@@ -87,7 +93,7 @@ test("mods registered through the service as plugins (PORT LAW: Schemastery cont
     // MASK-C (the image-gen region gap): the mask pack contract
     // absorbs onto the gen card for the cured qwen-img-21 boarding
     // (the bag + the ten scalar riders, pack-sorted after loras).
-    "mask", "input_mask", "mask_mode", "mask_detector", "mask_context_pad",
+    "mask", "input_image", "input_mask", "mask_mode", "mask_detector", "mask_context_pad",
     "mask_grow", "mask_feather", "mask_threshold", "mask_invert",
     "mask_detail_size", "mask_denoise",
   ],
@@ -371,8 +377,9 @@ test("THE CONSUMPTION GATE (paper §3.2.2): a smuggled mutation on a non-boardin
   // refusal atom is the z-image row with its boarding retracted
   // (the qvoice leg's counterfactual shape).
   const { GraphBuilder } = await import("../../../../packages/engines/comfyui-cordis/src/index.ts");
+  // fileURLToPath, never URL.pathname (the windows CI doubled-drive class, 2026-10-31)
   const facts = loadFacts(
-    new URL("../../../../packages/engines/comfyui-cordis/data/model-facts.json", import.meta.url).pathname,
+    fileURLToPath(new URL("../../../../packages/engines/comfyui-cordis/data/model-facts.json", import.meta.url)),
     reads,
   );
   const zim = facts.models["z-image"];
@@ -422,8 +429,9 @@ test("THE CONSUMPTION GATE, qvoice leg: a stated artifact fires only on boarding
   // (ungated composition). Counterfactual shape: the qwen row with
   // its boarding retracted must refuse, naming atom + pack.
   const { GraphBuilder } = await import("../../../../packages/engines/comfyui-cordis/src/index.ts");
+  // fileURLToPath, never URL.pathname (the windows CI doubled-drive class, 2026-10-31)
   const facts = loadFacts(
-    new URL("../../../../packages/engines/comfyui-cordis/data/model-facts.json", import.meta.url).pathname,
+    fileURLToPath(new URL("../../../../packages/engines/comfyui-cordis/data/model-facts.json", import.meta.url)),
     reads,
   );
   const qwen = facts.models["qwen3-tts"];

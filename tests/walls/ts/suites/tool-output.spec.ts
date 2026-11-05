@@ -103,6 +103,12 @@ async function drive(
     sessionId: "wall",
     callId: "wall",
     toolCallId: "wall",
+    // THE LIVE SEAT'S SHAPE (the ONE-SEAT law, audit
+    // 2026-10-31-one-seat-bench-identity): the DSH agent seat carries
+    // agent.id = the session generation id, and the bench key derives
+    // from it — a fabricated seat without one is a delegated lane the
+    // bench doors refuse loud. sessionId stays the trace id.
+    agent: { id: "session-tool-output-wall" },
   } as never);
   // execute's envelope is unknown-statically but always the
   // canonical JSON envelope at runtime — render's JsonValue face.
@@ -113,14 +119,11 @@ async function drive(
   return { envelope, lines };
 }
 
-// OWN the env (the flake audit, 2026-10-15): this file set both keys
-// in a beforeAll with no afterAll at all, and MELITE_HEADLESS is
-// restored nowhere in the tree — its one in-process reader is
-// melite-tools/src/index.ts:193, so any later test in the same fork
-// inherited a headless estate. Capture at set time, unwind with the
-// suite (onTestFinished cannot own a beforeAll's writes — it fires
-// after the whole suite).
-const OWNED_ENV = ["MELITE_HEADLESS"] as const;
+// OWN the env (the flake audit, 2026-10-15): keys set in beforeAll
+// are captured at set time and unwound with the suite — a later test
+// in the same fork never inherits this wall's seams (onTestFinished
+// cannot own a beforeAll's writes — it fires after the whole suite).
+const OWNED_ENV = ["DSH_HOME", "MELITE_BENCH_STORAGE"] as const;
 const savedEnv = new Map(OWNED_ENV.map((k) => [k, process.env[k]] as const));
 
 afterAll(() => {
@@ -132,7 +135,14 @@ afterAll(() => {
 
 beforeAll(async () => {
   const root = mkdtempSync(join(tmpdir(), "tool-output-wall-"));
-  process.env["MELITE_HEADLESS"] = "1";
+  // THE DELEGATED BOOT (the runs law): this wall drives melite_flow
+  // and proves the estate doors seated at apply, so it boots on a
+  // persisted ON record in its own throwaway DSH_HOME — the real
+  // seat-pin door (runsDelegation.ts), never an env spell.
+  const home = join(root, "dsh-home");
+  mkdirSync(home, { recursive: true });
+  process.env["DSH_HOME"] = home;
+  writeFileSync(join(home, "melite-runs-state.json"), '{"delegated":true}\n');
   // THE RACE CURE (rec 1): this spec's bench seeds AND the seats'
   // bench reads ride one ISOLATED root — never the shared repo tree
   // (the disclose wall's empty-bench arm is out of the blast radius
@@ -181,21 +191,23 @@ beforeAll(async () => {
     // this wall proves the card faces EXECUTE + RENDER over the live
     // composition, so it opts in; the agent lane default (BASE only)
     // is pinned in melite-tools/test/index.spec.ts
-    { headless: true, cardTools: true },
+    { cardTools: true },
   );
 }, 60_000);
 
 describe("the melite tool faces answer over the live composition", () => {
-  it("every base + headless + card tool registers (headless seats the estate doors AT APPLY — the maker law)", async () => {
-    // THE EXPANSION LAW (operator 2026-10-08): BROWSER apply seats
-    // only the eager trio; the deferred estate doors seat on the
-    // first catalog touch. THE MAKER LAW (transcript-016 audit,
-    // operator 2026-09-24): HEADLESS runners fix their tool catalog
-    // at boot, so headless apply seats the deferred five immediately
-    // — promised-but-unreachable doors burned nine catalog hunts and
-    // whole reasoning spirals. This composition opts into headless
-    // (the run doors + card faces), so the five sit at apply; the
-    // browser-side deferral stays pinned in melite-tools' index.spec.
+  it("every base + run door + card tool registers (the delegated boot seats the estate doors AT APPLY)", async () => {
+    // THE EXPANSION LAW (operator 2026-10-08): a boot with no
+    // persisted record seats only the eager trio; the deferred
+    // estate doors seat on the first catalog touch. THE SEAT PIN
+    // (transcript-016 audit, operator 2026-09-24): a lane whose
+    // agent RUNS fixes its tool catalog at boot, so a delegated
+    // boot (the persisted ON record above) seats the deferred five
+    // immediately — promised-but-unreachable doors burned nine
+    // catalog hunts and whole reasoning spirals. This composition
+    // boots delegated (the run doors + card faces), so the five sit
+    // at apply; the compose-side deferral stays pinned in
+    // melite-tools' index.spec.
     const makerDoors = ["melite_view", "comfy_manage", "melite_skill_read", "ledger_tail"];
     for (const name of makerDoors) {
       assert.ok(tools.registered.some((d) => d.name === name), `${name} seated at apply (the maker law)`);
@@ -221,9 +233,11 @@ describe("the melite tool faces answer over the live composition", () => {
     const { seedFlowsSeat } = await import("../../../../packages/harness/estate-queue/src/flowsData.ts");
     const flowNames = seedFlowsSeat().names();
     // the CUT roster's census (2026-10-13): eight flows
-    // + character-factory (2026-10-09, audit 012) — the floor
-    // stays a floor; the exact pins live in disclose + flows-data.
-    assert.ok(flowNames.length >= 8, `the flows registry is real (${String(flowNames.length)})`);
+    // + character-factory (2026-10-09, audit 012) — then the
+    // flows-are-compositions retirement (2026-11-14): seven
+    // compositions; the floor stays a floor; the exact pins live in
+    // disclose + flows-data.
+    assert.ok(flowNames.length >= 7, `the flows registry is real (${String(flowNames.length)})`);
     // F-M3 exact: the envelope's OWN census claim (counts.flows) is
     // the registry's census — the rows view may clamp (the
     // counts-first law), the count never lies.
@@ -387,9 +401,10 @@ describe("the melite tool faces answer over the live composition", () => {
 });
 
 afterAll(() => {
-  // the race-cure seam dies with the spec — never leaks the
+  // the race-cure seams die with the spec — never leak the
   // isolated root into sibling files on this worker
   delete process.env["MELITE_BENCH_STORAGE"];
+  rmSync(join(benchRoot, ".."), { recursive: true, force: true });
 });
 
 describe("the hermetic engine (the gate-37 flake cure: no live socket on the boot path)", () => {

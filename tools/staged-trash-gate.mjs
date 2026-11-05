@@ -22,7 +22,7 @@
 //      outputs or captures, never source: refuse outside
 //      tests/fixtures/** (the fixture home).
 import { execFileSync } from 'node:child_process'
-import { statSync } from 'node:fs'
+import { existsSync, statSync } from 'node:fs'
 
 const SIZE_LIMIT = 5 * 1024 * 1024
 const SANCTIONED_SIZE = [/^packages\/[^/]+\/[^/]+\/lib\//, /^packages\/[^/]+\/lib\//, /^tests\/fixtures\//, /^tests\/integration\/assets\//, /^pnpm-lock\.yaml$/]
@@ -40,8 +40,27 @@ export function judgeStaged(paths, { sizeOf = (p) => { try { return statSync(p).
   return refusals
 }
 
+/** The paths the gate judges: the hook's own {push_files} argument when
+ *  the caller passes one (the pre-push contract — judging the index
+ *  instead, as this seat once did, made the gate inert at exactly the
+ *  seat that carries the fleet), else the staged set. Deletions are
+ *  never judged: a path leaving the tree carries no bytes in, and an
+ *  ignore rule naming it is the reason it was untracked, never a
+ *  force-add. @param {string[]} argv the hook's file arguments
+ *  @returns {string[]} the existing paths to judge */
+function judgePaths(argv) {
+  const args = argv.filter((p) => p !== '' && !p.startsWith('-'))
+  const raw = args.length > 0
+    ? args
+    // ACMR: additions, copies, modifications, renames — never deletions
+    : execFileSync('git', ['diff', '--cached', '--name-only', '--diff-filter=ACMR', '-z'], { encoding: 'utf8' }).split('\0').filter(Boolean)
+  // the hook may hand a path the range deleted while the worktree still
+  // holds an unrelated edit; the judged plane is what will EXIST
+  return raw.filter((p) => existsSync(p))
+}
+
 function main() {
-  const staged = execFileSync('git', ['diff', '--cached', '--name-only', '-z'], { encoding: 'utf8' }).split('\0').filter(Boolean)
+  const staged = judgePaths(process.argv.slice(2))
   if (staged.length === 0) return
   let ignoredSet = new Set()
   try {

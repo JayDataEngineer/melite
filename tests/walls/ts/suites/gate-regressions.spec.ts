@@ -3,7 +3,8 @@ import { assertGraphGolden } from "../../../../tests/helpers/graph-golden.ts";
 import { ComposeRefusal } from "@melite/comfyui-card-kit/errors";
 import { existsSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { join, relative } from "node:path";
-import { spawnSync, execSync, execFileSync } from "node:child_process";
+import { spawnSync, execFileSync } from "node:child_process";
+import { readCommittedBatch } from "../lib/committed-batch.ts";
 
 // GATE REGRESSIONS — one pin per WEDGE this estate has actually been
 // wedged on (2026-10-10, the operator's law: "make sure we are
@@ -21,16 +22,11 @@ function read(path: string): string {
   return readFileSync(join(REPO, path), "utf8");
 }
 
-/** The COMMITTED bytes of a tracked path (`git show HEAD:<path>`) —
- *  the committed-lib and committed-file arms' byte source. This wall
- *  judges what a clone carries; a working-tree read judges churn the
- *  landing never committed (2026-10-20: an estate-queue lib rebuild
- *  mid-flight reded the d.ts specifier arm on bytes HEAD never
- *  carried, and the deleted doors.mjs ENOENT'd the store-path sweep
- *  outright). A landing's bytes are judged the moment they commit. */
-function readCommitted(path: string): string {
-  return execFileSync("git", ["show", `HEAD:${path}`], { cwd: REPO, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
-}
+// The COMMITTED-bytes law (a landing's bytes are judged the moment
+// they commit; a working-tree read judges churn the landing never
+// committed — 2026-10-20) lives in tests/walls/ts/lib/committed-batch.ts
+// now: the same `git show` bytes, one spawn instead of one per file
+// (class F1/F2, 2026-10-31).
 
 describe("THE HOOK THAT CRIED RED (the SIGPIPE wedge)", () => {
   it("the walls job redirects to a file and propagates vitest's exit code", () => {
@@ -181,7 +177,9 @@ describe("THE SHIP'S GATE ORDER (build before typecheck, --no-build skipping gat
     // regex blessed: the --unit refusal called bad() before bash had
     // defined it, so the console said "bad: command not found" where
     // the FAIL line belonged. Behaviour is the receipt now.
-    const syntax = spawnSync("bash", ["-n", join(REPO, "scripts/ship-lane.sh")]);
+    // POSIX-BY-AUDIENCE: the ship lane IS a bash script — its syntax
+    // check runs bash, deliberately.
+    const syntax = spawnSync("bash", ["-n", join(REPO, "scripts/ship-lane.sh")]); // census-allow
     expect(syntax.status, "ship-lane.sh must stay syntactically whole").toBe(0);
     const res = spawnSync(
       "bash",
@@ -205,8 +203,21 @@ describe("THE SHIP'S GATE ORDER (build before typecheck, --no-build skipping gat
     // wall asks the SAME question the way the ship does, by running
     // the ship script's own derivation, so a new compiled package is
     // judged the moment it joins the set.
-    const derived = execFileSync("bash", ["-c", 'cd "' + REPO + '" && source <(sed -n "/^derive_compiled()/,/^COMPILED=/p" scripts/ship-lane.sh); printf "%s " "${COMPILED[@]}"'], { encoding: "utf8" });
-    const pkgs = derived.trim().split(/\s+/).filter(Boolean);
+    // THE SPAWN IS PORTABLE (class B, 2026-10-31): the arm used to
+    // replay the derivation through `bash -c "source <(sed …)"` —
+    // process substitution cmd.exe cannot parse. The ship's
+    // derivation is ALREADY node (derive_compiled shells `node -e`),
+    // so the arm lifts that exact body out of the pinned script and
+    // runs it under this node — the ship's own code, one portable
+    // spawn, zero second implementation to drift. A reshaped recipe
+    // (or a body that grows a single quote) reds the extraction below
+    // instead of passing vacuously.
+    const shipGate = read("scripts/ship-lane.sh");
+    const body = /derive_compiled\(\) \{\n  node -e '([\s\S]*?)'\n\}/u.exec(shipGate)?.[1];
+    expect(body, "derive_compiled still carries the node derivation the ship runs").toBeDefined();
+    const derived = spawnSync(process.execPath, ["-e", body!], { cwd: REPO, encoding: "utf8" });
+    expect(derived.status, `the ship's own derivation refused: ${derived.stderr}`).toBe(0);
+    const pkgs = (derived.stdout ?? "").trim().split(/\s+/).filter(Boolean);
     // The estate's compiled half must never empty out: a derivation
     // that silently returns nothing would ship a host with no lib.
     for (const p of pkgs) {
@@ -420,15 +431,27 @@ describe("THE STALE-LIB SHIP (a green ship must prove the lane runs THIS tree)",
     expect(ship).toContain('if [ "$(printf \'%s\' "$STALE_RE" | tr -cd \'|\' | wc -c)" -lt 4 ]');
     expect(ship).toContain('for p in "${CLIENT_BUNDLES[@]}"; do');
     expect(ship).toContain('if grep -Eiq "$STALE_RE"');
-    // the derivation is REAL: run the gate's own extraction and
-    // compare against the helper's declared bodies
+    // the derivation is REAL: replay the gate's own extraction and
+    // compare against the helper's declared bodies. The replay is
+    // node-native now (class B R2, 2026-10-31: the execSync'd
+    // `sed | paste` pipeline died under cmd.exe — single quotes are
+    // not quotes and the pipe splits anywhere) and models the pinned
+    // sed program's EXACT semantics, strictness included: a line
+    // substitutes only when it ENDS in `/i?,` — no trailing
+    // whitespace (the JS `declared` regex allows \s*$, the sed does
+    // not; that strictness is the ship-time parse gate), and a
+    // matched line always prints. BRE `i\?` is the OPTIONAL i, so
+    // the JS spelling is `i?` — a literal "?" never matches. A
+    // helper shape the ship's sed cannot parse still reds here,
+    // never silently at ship time.
     const helper = read("tests/walls/helpers/stale-tab-vocabulary.ts");
     const declared = [...helper.matchAll(/^  \/(.+)\/i?,\s*$/gm)].map((m) => m[1]);
     expect(declared.length, "the helper still declares the five faces").toBeGreaterThanOrEqual(5);
-    const extracted = execSync(
-      "sed -n 's#^  /\\(.*\\)/i\\?,$#\\1#p' tests/walls/helpers/stale-tab-vocabulary.ts | paste -sd'|' -",
-      { cwd: REPO, encoding: "utf8" },
-    ).trim();
+    const extracted = helper
+      .split("\n")
+      .map((line) => /^  \/(.*)\/i?,$/u.exec(line)?.[1])
+      .filter((body) => body !== undefined)
+      .join("|");
     expect(extracted).toBe(declared.join("|"));
   });
 
@@ -636,7 +659,8 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // first-boot preflight core (the five-axis read the preflight verb
   // and the estate boot note ride), repinned with its landing.
   // 626 -> 627 (2026-11-12): extend.js — the h3 extend arm's
-  // renderer seat (the extend-video flow, report §3 staged plan),
+  // renderer seat (the extend-video flow's plan, report §3; the
+  // wrapper row retired 2026-11-14, the card arm keeps the file),
   // repinned with its landing.
   // 627 -> 628 (2026-11-12): chainEdit.js — the masked-edit
   // unification's shared spine (renderMaskedEditChain; loadVideo +
@@ -654,7 +678,26 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // ChainUpscale loop's renderer seat (renderH3ChainUpscale; the
   // segment-wise 2x second pass on the sixth mod bag), repinned
   // with its landing.
-  const LIB_CENSUS_PIN = 631;
+  // 631 -> 630 (2026-11-01, attributed, folded into this repin):
+  // 23042c26c (the bootSweep twin-door cruft fold) deleted
+  // estate-queue's resurrect.js and rebuilt libs without stepping
+  // this pin — exactly the unjudged census step the exact-equality
+  // arm exists to catch; the tree measured 630 before the cut.
+  // 630 -> 628 (2026-11-01, the blender-lane removal): the
+  // anycreature family leaves the tracked tree — its two lib .js
+  // files (actions.js, index.js) go with the package.
+  // 628 -> 630 (2026-11-03): the reshoot orb's two lib faces —
+  // OrbitLeafCanvas.js (the orb canvas itself, round-20 commit
+  // 150a15271, whose landing never stepped this pin) + orbCopy.js
+  // (the orb's locale-owned copy module, same landing, its lib emit
+  // committed round-21); repinned here deliberately, both attributed.
+  // 630 -> 631 (2026-11-03): the one-spelling alias fold's new source
+  // face (commit e284173f4, cards: serve + write land the canonical
+  // seat) — its built lib alias-fold.js is the 631st tracked .js.
+  // Repinned 631 -> 635 (2026-11-04, deliberate): the loras tray module
+  // (lib/mods + lib/src/mods) and the authored-skill plane's two modules
+  // (skillAuthored, skill-write) emit four new tracked .js files.
+  const LIB_CENSUS_PIN = 635;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {
@@ -677,9 +720,16 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   });
 
   it("no emitted JS names a relative .ts specifier", () => {
+    // THE BYTES ARRIVE IN ONE SPAWN (class F1, 2026-10-31): the arm
+    // used to `git show HEAD:<f>` per lib file (~631 sequential
+    // spawns) and blew the windows 30 s wall on spawn cost alone.
+    // readCommittedBatch streams the identical bytes in one
+    // `git cat-file --batch`, so the regex judges the identical
+    // verdict (def-triage F1's gate: byte-identical offender set).
+    const bodies = readCommittedBatch(libFiles, REPO);
     const offenders: string[] = [];
     for (const f of libFiles) {
-      if (/(?:from\s*|import\(\s*)(["'])\.[^"']*\.ts\1/.test(readCommitted(f))) offenders.push(f);
+      if (/(?:from\s*|import\(\s*)(["'])\.[^"']*\.ts\1/.test(bodies.get(f)!)) offenders.push(f);
     }
     expect(offenders, `emitted JS carrying a .ts specifier: ${offenders.join(" | ")}`).toEqual([]);
   });
@@ -706,9 +756,13 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
     const dtsFiles = execFileSync("git", ["ls-files"], { cwd: REPO, encoding: "utf8" })
       .split("\n")
       .filter((f) => /(^|\/)lib\/.*\.d\.ts$/.test(f));
+    // ONE spawn for the roster, ONE for the bytes (class F2,
+    // 2026-10-31): the per-file `git show` fan-out here blew the
+    // windows 30 s wall alongside the .js arm above.
+    const bodies = readCommittedBatch(dtsFiles, REPO);
     const offenders: string[] = [];
     for (const f of dtsFiles) {
-      if (/(?:from\s*|import\(\s*)(["'])\.[^"']*\.ts\1/.test(readCommitted(f))) offenders.push(f);
+      if (/(?:from\s*|import\(\s*)(["'])\.[^"']*\.ts\1/.test(bodies.get(f)!)) offenders.push(f);
     }
     expect(offenders, `emitted d.ts carrying a .ts specifier: ${offenders.join(" | ")}`).toEqual([]);
   });
@@ -719,9 +773,14 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
     // clone carries — a working-tree deletion of a tracked sibling
     // is churn, not a broken emit (2026-10-20).
     const tracked = new Set(execFileSync("git", ["ls-files"], { cwd: REPO, encoding: "utf8" }).split("\n"));
+    // The bytes ride the same one-spawn batch as the specifier arms
+    // (class F5 sweep, 2026-10-31): this arm was a third per-file
+    // `git show` fan-out — the same windows spawn-tax class waiting
+    // for the next slow leg.
+    const bodies = readCommittedBatch(libFiles, REPO);
     const offenders: string[] = [];
     for (const f of libFiles) {
-      for (const m of readCommitted(f).matchAll(specRe)) {
+      for (const m of bodies.get(f)!.matchAll(specRe)) {
         const base = relative(REPO, join(REPO, f, "..", m[2]));
         const candidates = [
           base,

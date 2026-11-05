@@ -37,10 +37,13 @@
 import "../../../helpers/boot-models.ts";
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
+import { fileURLToPath } from "node:url";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { registryIds, registryModel } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
-const REPO_ROOT = new URL("../../../../", import.meta.url).pathname;
+// fileURLToPath, never URL.pathname (the windows CI doubled-drive
+// class, 2026-10-31: '/D:/…' is drive-rooted RELATIVE on win32).
+const REPO_ROOT = fileURLToPath(new URL("../../../../", import.meta.url));
 
 /** The label face's bound: the longest honest id in today's tree is
  *  46 (florence2's upstream repo paths — provider-owned, kept). A

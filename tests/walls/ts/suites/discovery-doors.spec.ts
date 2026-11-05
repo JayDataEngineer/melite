@@ -16,6 +16,9 @@
 //      (the door 404s, never an invented envelope).
 //
 // Run: npx vitest run tests/walls/ts/suites/discovery-doors.spec.ts
+// THE HERMETIC TRAY (2026-11-04): these arms census the family's
+// DECLARED lora rows, so the operator's own tray is pinned empty.
+import "../../../helpers/no-loras-tray.ts";
 import "../../../helpers/boot-models.ts";
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";

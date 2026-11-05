@@ -19,7 +19,15 @@
 // describe-scope read sees a booted service — the same guarantee,
 // scoped to the files that ask for it.
 import { cascadeInit } from "../../packages/engines/comfyui-cordis/src/models/models.ts";
+import { isolateOperatorModState } from "./operator-modstate-isolation.ts";
 
+// THE OPERATOR-STATE FIREWALL (2026-11-15): the booted plane must
+// never read the operator's real user-loras.json or engine shelf —
+// a wall's premise is fixture truth, not machine state (the
+// pixel-anim row and its shelf drop red two walls at once). Runs
+// before the cascade so every family composition, the rows flavor,
+// and the tray walk read the isolated empty seats.
+isolateOperatorModState();
 await cascadeInit();
 
 export {};

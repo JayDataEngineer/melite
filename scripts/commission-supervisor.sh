@@ -26,7 +26,9 @@
 #   [out-prefix]          attempt logs land at <prefix>-attempt<k>.log
 # Knobs (tests stub the binary + zero the backoff):
 #   SUPERVISOR_DSH_BIN       (default: first dsh on PATH, run via node)
-#   SUPERVISOR_PROFILE       (default headless)
+#   SUPERVISOR_PROFILE       REQUIRED — the DSH profile the maker
+#                             boots (the estate maker lane is
+#                             `estate`); no default lane exists
 #   SUPERVISOR_DSH_PATCH     optional --patch overlay path, passed to
 #                             the launcher before the prompt (machine-
 #                             local provider rows compose with the
@@ -60,7 +62,7 @@ set -uo pipefail
 PROMPT_FILE="${1:?usage: commission-supervisor.sh <launch-prompt-file> [out-prefix]}"
 OUT_PREFIX="${2:-/tmp/commission}"
 DSH_BIN="${SUPERVISOR_DSH_BIN:-$(command -v dsh 2>/dev/null || echo dsh)}"
-PROFILE="${SUPERVISOR_PROFILE:-headless}"
+PROFILE="${SUPERVISOR_PROFILE:?commission-supervisor: SUPERVISOR_PROFILE is required — name the DSH profile the maker boots (the estate maker lane is estate)}"
 PATCH_ARGS=()
 [ -n "${SUPERVISOR_DSH_PATCH:-}" ] && PATCH_ARGS+=(--patch "${SUPERVISOR_DSH_PATCH}")
 STATE_ROOT="${SUPERVISOR_STATE_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
@@ -257,8 +259,7 @@ while :; do
   LOG="${OUT_PREFIX}-attempt${ATTEMPT}.log"
   # THE TURN-WAIT: never launch a maker into a lock its sibling owns
   wait_for_queue_lock
-  MELITE_HEADLESS=1 \
-    node "${DSH_BIN}" --profile "${PROFILE}" ${PATCH_ARGS[@]+"${PATCH_ARGS[@]}"} --patch "${MINTED_PATCH}" "$(cat "${PROMPT_FILE}")" \
+  node "${DSH_BIN}" --profile "${PROFILE}" ${PATCH_ARGS[@]+"${PATCH_ARGS[@]}"} --patch "${MINTED_PATCH}" "$(cat "${PROMPT_FILE}")" \
     >"${LOG}" 2>&1
   CODE=$?
 

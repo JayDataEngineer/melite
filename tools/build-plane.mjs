@@ -24,6 +24,7 @@ import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, rmSync,
 import { join, dirname, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
+import { deriveSrcStamp } from './src-stamp.mjs'
 import { createHash } from 'node:crypto'
 import { sep } from 'node:path'
 
@@ -691,7 +692,11 @@ export function buildOne(pkgDir) {
   }
   let code = 0, out = ''
   for (const face of faces) {
-    const r = spawnSync(process.execPath, [tscBin, '-p', face], { cwd: pkgDir, encoding: 'utf8' })
+    // --newLine lf (class B D4): tsc's default is the HOST's line
+    // ending — a windows emit would CRLF the disk lib against the
+    // LF index law (and diverge from every linux-built face). One
+    // flag makes the emit host-independent.
+    const r = spawnSync(process.execPath, [tscBin, '-p', face, '--newLine', 'lf'], { cwd: pkgDir, encoding: 'utf8' })
     if (r.status !== 0) { code = r.status; out = (r.stdout + r.stderr).slice(0, 4000); break }
   }
   // typert pass (the estate four): the generator OWNS two lib doors the
@@ -737,16 +742,18 @@ export function buildOne(pkgDir) {
   return { dir: pkgDir, code, out }
 }
 
-// The stamp recipe mirrors ship-lane.sh stamp_src byte-for-byte: the
-// sorted src/*.ts(x) list, sha256 of the sha256sum lines, first 16.
-// SHELLED, not reimplemented — a JS sort collates differently from
-// the shell's sort and the stamp must match the ship's verifier
-// byte-for-byte (the motion seat proved the drift). LC_ALL=C pinned
-// 2026-10-30: the shell's OWN sort collates by locale, and an
-// en_US-built stamp never matched a CI recompute (tiers lib-drift).
+// The stamp recipe is node-native (tools/src-stamp.mjs
+// deriveSrcStamp, in-process crypto over the deterministic input
+// set) and byte-identical to ship-lane.sh stamp_src — the shell
+// recipe it replaced shelled `bash -c "find src ... | LC_ALL=C
+// sort | xargs sha256sum ..."` per package, which degraded on
+// windows (cmd.exe parse death, windows find.exe, LC_ALL=C not a
+// command) and left the estate-singleton floor at 3-of-5 stamped
+// bundles. No child_process for the derivation — a dead spawn can
+// no longer silently write an empty stamp (the old code never
+// checked r.status).
 function writeSrcStamp(pkgDir) {
-  const r = spawnSync('bash', ['-c', "find src \\( -name '*.ts' -o -name '*.tsx' \\) | LC_ALL=C sort | xargs sha256sum 2>/dev/null | sha256sum | cut -c1-16"], { cwd: pkgDir, encoding: 'utf8' })
-  const stamp = (r.stdout || '').trim()
+  const stamp = deriveSrcStamp(pkgDir)
   writeFileSync(join(pkgDir, 'lib/.src-stamp'), stamp + '\n')
   return stamp
 }

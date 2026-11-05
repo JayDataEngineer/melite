@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import net from "node:net";
 
 // THE GPU TIER'S KEYLESS CONTRACT (dev_docs/plans/gpu-playwright-tier-
@@ -33,17 +33,29 @@ const CARD_VIEW = join(import.meta.dirname, "..", "..", "..", "..", "packages", 
 const REPO = join(import.meta.dirname, "..", "..", "..", "..");
 const LANE = join(REPO, "scripts", "e2e-gpu-lane.sh");
 
+// THE PNPM SEAT (class B R7, 2026-10-31): the arms spawned `pnpm`
+// bare — on windows the PATH shim is pnpm.cmd and Node refuses to
+// exec a .cmd without a shell, so the seat resolves PNPM_HOME (the
+// action-setup export) first, falls back to PATH, and rides cmd.exe
+// through the shell carrier on win32 only (the argv carries no
+// cmd metacharacters and the seat dirs have no spaces).
+function runPnpm(argv: string[], o: { cwd: string; env: Record<string, string | undefined>; timeout: number }): { code: number | null; out: string } {
+  const cmdName = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
+  const home = process.env["PNPM_HOME"] ?? "";
+  const bin = home !== "" && existsSync(join(home, cmdName)) ? join(home, cmdName) : cmdName;
+  const r = spawnSync(bin, argv, { cwd: o.cwd, encoding: "utf8", env: o.env, timeout: o.timeout, shell: process.platform === "win32" });
+  return { code: r.status, out: (r.stdout ?? "") + (r.stderr ?? "") };
+}
+
 /** Run playwright's collector in a seat and return { code, out }.
  * @param config the playwright config file name to collect through.
  * @param env extra env for the child. */
 function collect(config: string, env: Record<string, string> = {}): { code: number | null; out: string } {
-  const r = spawnSync("pnpm", ["exec", "playwright", "test", "--list", "-c", config], {
+  return runPnpm(["exec", "playwright", "test", "--list", "-c", config], {
     cwd: CARD_VIEW,
-    encoding: "utf8",
     env: { ...process.env, ...env },
     timeout: 120_000,
   });
-  return { code: r.status, out: (r.stdout ?? "") + (r.stderr ?? "") };
 }
 
 /** A port this wall can name for the lane's port check (the script
@@ -90,14 +102,12 @@ describe("THE GPU TIER'S KEYLESS CONTRACT (the both-angles tier)", () => {
     const stripped: Record<string, string> = { ...process.env } as Record<string, string>;
     delete stripped.E2E_STUDIO_URL;
     delete stripped.E2E_GPU;
-    const r = spawnSync("pnpm", ["exec", "playwright", "test", "-c", "playwright.gpu.config.ts"], {
+    const { code, out } = runPnpm(["exec", "playwright", "test", "-c", "playwright.gpu.config.ts"], {
       cwd: CARD_VIEW,
-      encoding: "utf8",
       env: stripped,
       timeout: 180_000,
     });
-    const out = (r.stdout ?? "") + (r.stderr ?? "");
-    expect(r.status, `the gateless run exited 0 with a skip (${out.slice(0, 300)})`).toBe(0);
+    expect(code, `the gateless run exited 0 with a skip (${out.slice(0, 300)})`).toBe(0);
     expect(out, "the spec skipped, never ran").toMatch(/1 skipped|skipped/);
     expect(out).not.toContain("failed");
   });
@@ -115,14 +125,12 @@ describe("THE GPU TIER'S KEYLESS CONTRACT (the both-angles tier)", () => {
     // census inside the wall.
     const sweepEnv: Record<string, string> = { ...(process.env as Record<string, string>), E2E_GPU: "1", E2E_STUDIO_URL: "http://127.0.0.1:9" };
     delete sweepEnv.E2E_GPU_SWEEP;
-    const r = spawnSync("pnpm", ["exec", "playwright", "test", "-c", "playwright.gpu.config.ts", "e2e/gpu/all-cards-sweep.spec.ts"], {
+    const { code, out } = runPnpm(["exec", "playwright", "test", "-c", "playwright.gpu.config.ts", "e2e/gpu/all-cards-sweep.spec.ts"], {
       cwd: CARD_VIEW,
-      encoding: "utf8",
       env: sweepEnv,
       timeout: 180_000,
     });
-    const out = (r.stdout ?? "") + (r.stderr ?? "");
-    expect(r.status, `the gateless-of-census sweep exited 0 with a skip (${out.slice(0, 300)})`).toBe(0);
+    expect(code, `the gateless-of-census sweep exited 0 with a skip (${out.slice(0, 300)})`).toBe(0);
     expect(out, "the sweep skipped on its own gate, never ran").toMatch(/1 skipped/);
     expect(out).not.toMatch(/failed|passed/);
   });
@@ -169,7 +177,7 @@ describe("THE GPU TIER'S KEYLESS CONTRACT (the both-angles tier)", () => {
     expect(tile).toMatch(/'data-stage-status':\s*row\.status/);
   });
 
-  it("the launcher's ENGINE GATE: dead engine skips keyless, FAILS LOUD under REQUIRE", async () => {
+  it.skipIf(process.platform === "win32")("the launcher's ENGINE GATE: dead engine skips keyless, FAILS LOUD under REQUIRE (skipped on win32: the launcher is the linux GPU lane's bash machinery — the gate contract rides the ubuntu/macos legs)", async () => {
     // Arm 4, both edges: the gate probes the engine before any home
     // is built or host booted (fast, side-effect-free — the script
     // exits at the gate). E2E_GPU_PORT names a port this wall chose
@@ -178,7 +186,7 @@ describe("THE GPU TIER'S KEYLESS CONTRACT (the both-angles tier)", () => {
     // owns.
     const port = String(await aFreePort());
     const dead = { E2E_GPU_ENGINE: "http://127.0.0.1:9", E2E_GPU_PORT: port };
-    const skip = spawnSync("bash", [LANE], {
+    const skip = spawnSync("bash", [LANE], { // census-allow: the linux GPU lane is a bash artifact (win32-skipped arm)
       cwd: REPO,
       encoding: "utf8",
       env: { ...process.env, ...dead },
@@ -188,7 +196,7 @@ describe("THE GPU TIER'S KEYLESS CONTRACT (the both-angles tier)", () => {
     expect(skip.status, `the keyless dead-engine lane skips (exit 0): ${skipOut.slice(0, 300)}`).toBe(0);
     expect(skipOut, "the skip names the engine as the reason").toContain("engine at http://127.0.0.1:9 unreachable");
 
-    const loud = spawnSync("bash", [LANE], {
+    const loud = spawnSync("bash", [LANE], { // census-allow: the linux GPU lane is a bash artifact (win32-skipped arm)
       cwd: REPO,
       encoding: "utf8",
       env: { ...process.env, ...dead, E2E_GPU_REQUIRE: "1" },

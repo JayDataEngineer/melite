@@ -1,5 +1,5 @@
-// THE INSTALL CONTRACT (audit 019 C2, operator order 2026-10-27: "SH
-// scripts are out — no sh bullshit allowed"): the consumer install
+// THE INSTALL CONTRACT (audit 019 C2, operator order 2026-10-27: sh
+// scripts are out — no shell-script install door): the consumer install
 // path is the dsh CLI over published assets — npm installs the CLI,
 // the plugin verb resolves the profile, the rehearsal proves the
 // sequence. The shell installer that duplicated that sequence

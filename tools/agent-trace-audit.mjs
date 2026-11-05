@@ -102,6 +102,9 @@ function newestSession() {
 }
 
 function audit() {
+  // POSIX-BY-AUDIENCE (class B R11, 2026-10-31): the zstd pipe is the
+  // operator's own lane (owner-local audit tooling on the dev seat);
+  // the shell template is deliberate, not a portability miss.
   const trace = execSync(`zstd -dc ${JSON.stringify(newestSession())}`, { maxBuffer: 128 * 1024 * 1024 }).toString('utf8')
   const calls = new Map()
   const results = []

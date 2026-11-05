@@ -1,5 +1,5 @@
-// THE PROVISIONER LAW (operator 2026-11-09: "if a model is not on
-// disk, that is not a red unless our auto-provisioner sucks") —
+// THE PROVISIONER LAW (operator 2026-11-09: a model missing from
+// disk is not a red while the auto-provisioner can serve it) —
 // shared home for the test tier's two runners (the compose-liveness
 // sweep and the golden driver). The live compose door REFUSES a
 // filename the engine cannot serve (the download prompt owns the

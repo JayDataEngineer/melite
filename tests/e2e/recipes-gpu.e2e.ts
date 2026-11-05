@@ -33,6 +33,9 @@ import { QueueService } from '../../packages/harness/estate-queue/src/service.ts
 import { mintSandbox } from '../harness.ts'
 import { lanePresenceMiss } from '../../packages/harness/estate-queue/src/cardsLanes.ts'
 import { ENGINE_FREE, ENGINE_HOST, ENGINE_PORT } from './engine-gate.ts'
+import { uploadAnchorPng } from './gpu-harness.ts'
+import { H3_LORA_ROWS } from '../../packages/models/h3/mods/loras.ts'
+import { REFINE_DENOISE_DEFAULT } from '../../packages/models/h3/src/schema.ts'
 
 
 /** THE WEIGHTS GATE (roadmap §10's e2e debt, 2026-09-21): a GPU
@@ -245,26 +248,14 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
     try {
       // THE ANCHOR: a real upload through ComfyUI's own upload door
       // (the same door the lane's input slots ride) — a 64×64 PNG.
-      const png = Buffer.from(
-        'iVBORw0KGgoAAAANSUhEUgAAAEAAAAAQACAIAAB8t0tHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAEUlEQVR4nGP8z0AswMKAAcAFAA8F5xk4AAAAAElFTkSuQmCC',
-        'base64',
-      )
-      const fd = new FormData()
-      fd.append('image', new Blob([png], { type: 'image/png' }), 'e2e_anchor.png')
-      const up = await fetch(`http://${ENGINE_HOST}:${ENGINE_PORT}/upload/image`, {
-        method: 'POST', body: fd,
-        signal: AbortSignal.timeout(30_000),
-      })
-      assert.ok(up.ok, 'the anchor upload lands: ' + up.status)
-      const upBody = await up.json() as { name?: string }
-      const anchor = upBody['name'] ?? 'e2e_anchor.png'
+      const anchor = await uploadAnchorPng('h3 draft')
 
       // THE PILL PAYLOAD VERBATIM (draft, operator 2026-11-02: "for
       // low resolution, that is good for the draft recipe"): the
       // same turbo SELECTION + the draft geometry stamps.
       const s = await runCard(w, {
         model: 'h3',
-        calls: [{ text: 'a red cube slides slowly across a white table', image: anchor, knobs: { width: 768, height: 448 } }],
+        calls: [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 90, image: anchor, knobs: { width: 768, height: 448 } }],
         loras: [{ id: 'h3_turbo8_v1' }],
       }, 'h3 draft')
       const ltx = nodesWith(s, /LTX_lora_loader/)
@@ -286,19 +277,7 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
     try {
       // THE ANCHOR: a real upload through ComfyUI's own upload door
       // (the same door the lane's input slots ride) — a 64×64 PNG.
-      const png = Buffer.from(
-        'iVBORw0KGgoAAAANSUhEUgAAAEAAAAAQACAIAAB8t0tHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAEUlEQVR4nGP8z0AswMKAAcAFAA8F5xk4AAAAAElFTkSuQmCC',
-        'base64',
-      )
-      const fd = new FormData()
-      fd.append('image', new Blob([png], { type: 'image/png' }), 'e2e_anchor.png')
-      const up = await fetch(`http://${ENGINE_HOST}:${ENGINE_PORT}/upload/image`, {
-        method: 'POST', body: fd,
-        signal: AbortSignal.timeout(30_000),
-      })
-      assert.ok(up.ok, 'the anchor upload lands: ' + up.status)
-      const upBody = await up.json() as { name?: string }
-      const anchor = upBody['name'] ?? 'e2e_anchor.png'
+      const anchor = await uploadAnchorPng('h3 standard')
 
       // THE BIRTH PAYLOAD VERBATIM (standard, the 2026-11-02 trio's
       // default; 2026-11-07 the bag is the turbo): SELECTION ONLY, NO
@@ -307,7 +286,7 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       // 768×448 on every fresh card).
       const s = await runCard(w, {
         model: 'h3',
-        calls: [{ text: 'a red cube slides slowly across a white table', image: anchor }],
+        calls: [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 90, image: anchor }],
         loras: [{ id: 'h3_turbo8_v1' }],
       }, 'h3 standard')
       const ltx = nodesWith(s, /LTX_lora_loader/)
@@ -327,28 +306,18 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
   it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline') || !weightsPresent('seedvr2-ema'))('h3-timeline final: the finishing tier mounts the SeedVR2 rail behind the master switch and RUNS', async () => {
     const w = await bootWorld('recipes-h3-final-')
     try {
-      const png = Buffer.from(
-        'iVBORw0KGgoAAAANSUhEUgAAAEAAAAAQACAIAAB8t0tHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAEUlEQVR4nGP8z0AswMKAAcAFAA8F5xk4AAAAAElFTkSuQmCC',
-        'base64',
-      )
-      const fd = new FormData()
-      fd.append('image', new Blob([png], { type: 'image/png' }), 'e2e_anchor.png')
-      const up = await fetch(`http://${ENGINE_HOST}:${ENGINE_PORT}/upload/image`, {
-        method: 'POST', body: fd,
-        signal: AbortSignal.timeout(30_000),
-      })
-      assert.ok(up.ok, 'the anchor upload lands: ' + up.status)
-      const upBody = await up.json() as { name?: string }
-      const anchor = upBody['name'] ?? 'e2e_anchor.png'
-
-      // THE FINAL-CUT PAYLOAD VERBATIM (final, 2026-11-02): the same
-      // turbo bag plus the second-pass rail — the master switch
+      // NO ANCHOR (the final-cut emit law — card-compose-liveness
+      // H3_LANE_DOCS repro A): the studio's serializer DELETES the
+      // guide seats at the final-cut emit, because an image-anchored
+      // doc derives t4r and t4r refuses the t4-dead second-pass rail
+      // (h3_window(t4r) unsanctioned inject keys, proven live on the
+      // estate 2026-11-02). The final cut is a maximal text doc: the
+      // same turbo bag plus the second-pass rail — the master switch
       // and the SeedVR2 super-res switch. sr_resolution stays
       // unstated (the knob's own 1080 floor owns it).
       const s = await runCard(w, {
         model: 'h3',
-        prompt: 'a red cube slides slowly across a white table',
-        image: anchor,
+        calls: [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 90 }],
         loras: [{ id: 'h3_turbo8_v1' }],
         second_pass_enabled: true,
         sr_switch: true,
@@ -370,19 +339,7 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
   it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline'))('h3-timeline void receipt: estate-held calls compose into the workflow and RUN', async () => {
     const w = await bootWorld('recipes-h3-void-')
     try {
-      const png = Buffer.from(
-        'iVBORw0KGgoAAAANSUhEUgAAAEAAAAAQACAIAAB8t0tHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAEUlEQVR4nGP8z0AswMKAAcAFAA8F5xk4AAAAAElFTkSuQmCC',
-        'base64',
-      )
-      const fd = new FormData()
-      fd.append('image', new Blob([png], { type: 'image/png' }), 'e2e_anchor.png')
-      const up = await fetch(`http://${ENGINE_HOST}:${ENGINE_PORT}/upload/image`, {
-        method: 'POST', body: fd,
-        signal: AbortSignal.timeout(30_000),
-      })
-      assert.ok(up.ok, 'the anchor upload lands: ' + up.status)
-      const upBody = await up.json() as { name?: string }
-      const anchor = upBody['name'] ?? 'e2e_anchor.png'
+      const anchor = await uploadAnchorPng('h3 void receipt')
 
       const promptText = 'a red cube slides slowly across a white table'
       const s = await runCard(w, {
@@ -420,17 +377,21 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
   // ── THE T3 REFINE RIDER'S GPU RECEIPT (roadmap item 2 — the
   // crowd's third tier on real silicon): pass A rides the official
   // 8-step turbo (the marriage), pass B is the RIDER — taomate
-  // from the served catalog at the ROW's own 0.7 @ 3 (no explicit
-  // overrides: the row is the truth). Asserts the closing pass
-  // MOUNTS on the run workflow (two samplers, the rider's own
+  // from the served catalog at the ROW's own strength @ steps (no
+  // explicit overrides: the row is the truth). Asserts the closing
+  // pass MOUNTS on the run workflow (two samplers, the rider's own
   // loader, the row-declared schedule) and the film settles with
-  // real bytes. ──
-  it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline'))('h3-timeline T3 refine rider: the taomate closing pass mounts (own loader @ 0.7/3) and RUNS', async () => {
+  // real bytes. THE ROW IS READ, NOT COPIED (2026-11-14, the live
+  // press that caught this arm's stale 0.7 literal: the catalog row
+  // has declared 0.35 since a527bf0e8, so the arm had never been
+  // green on any box with the weights — a frozen literal is the
+  // drift this arm must not have). ──
+  it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline'))('h3-timeline T3 refine rider: the taomate closing pass mounts (own loader at the catalog row\'s own strength/steps) and RUNS', async () => {
     const w = await bootWorld('recipes-h3-refine-')
     try {
       const s = await runCard(w, {
         model: 'h3',
-        prompt: 'a red cube slides slowly across a white table',
+        calls: [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 90 }],
         width: 768, height: 448, steps: 8, second_pass_enabled: true,
         loras: [{ id: 'h3_turbo8_v1' }],
         refine_lora: 'h3_taomate_3step',
@@ -444,9 +405,22 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       const rows = JSON.parse(String(refineLoader[0]![1].inputs!['stack_data'])) as Array<{ lora?: string, str?: number, on?: boolean }>
       const row = rows.find((r) => r['on'] === true)
       assert.ok(row !== undefined && String(row['lora']).includes('taomate'), 'the refiner row is ON')
-      assert.equal(row!['str'], 0.7, 'the strength is the row-declared 0.7')
+      // THE CATALOG IS THE TRUTH: the expected strength/steps are
+      // READ from the served row, never a literal copy (the live
+      // press 2026-11-14 red this arm's hand-typed 0.7 against the
+      // row's 0.35 — an arm that could never pass, silently).
+      const catalog = H3_LORA_ROWS.find((r) => r.id === 'h3_taomate_3step')
+      assert.ok(catalog !== undefined, 'the taomate row is served by the catalog')
+      assert.equal(row!['str'], catalog.default_strength, 'the strength is the row-declared default_strength')
       const scheds = byClass(s, 'BasicScheduler')
-      assert.ok(scheds.some(([, n]) => n.inputs?.['steps'] === 3 && n.inputs?.['denoise'] === 1.0), "the closing schedule: the row's 3 steps at full denoise")
+      // THE WINDOW IS THE DECLARED ONE (the P0 audit re-tuned the old
+      // full-denoise 1.0 to the researched 0.30-0.35 band): unstated
+      // refine_denoise rides the declared default, read from its one
+      // home — the same drift class as the strength literal above.
+      assert.ok(
+        scheds.some(([, n]) => n.inputs?.['steps'] === catalog.steps && n.inputs?.['denoise'] === REFINE_DENOISE_DEFAULT),
+        "the closing schedule: the row's own steps at the DECLARED refinement window",
+      )
       assert.equal(firstBytes(s).length > 1024, true, 'the refined video artifact is real bytes')
     } finally {
       w.stop()
@@ -454,35 +428,58 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
     }
   }, 600_000)
 
-  it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline'))('h3-timeline reshoot: the camera re-shoot RUNS live with the F13d depth-grid match (no broadcast crash) and renders real bytes', async () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline'))('h3-timeline reshoot: the camera re-shoot RUNS live on the official port (no resize hack, metric geometry) and renders real bytes', async () => {
     const w = await bootWorld('recipes-h3-reshoot-')
     try {
       // THE LIVE PROOF the friction report's §5 demanded: the reshoot
       // arm's first deep run died at CrossViewWarp (`operands could
       // not be broadcast (736,1312) (718,1280)` — run-e7a5182d153c).
-      // With the F13d cure the depth stack resizes to the frames'
-      // grid BEFORE both warps and the render completes.
+      // RE-STATED 2026-11-03 (the official port, 644966c00): the
+      // first cut's F13d depth-grid resize seat is RETIRED — the
+      // official Comfy-Org comfy-reshoot chain runs the RAW warp on
+      // MoGe-2 metric geometry (no VDA, no resize, no hole fill).
+      // The RUN-door row judges the official seats, never the
+      // retired hack (unit reshoot.spec.ts pins exact per-compose
+      // counts; this row judges the merged RUN shape + live bytes).
       const s = await runCard(w, {
         model: 'h3',
         calls: [{ text: 'the camera orbits slowly around the subject', start_frame: 0, end_frame: 56, knobs: { width: 768, height: 448 } }],
         loras: [{ id: 'h3_turbo8_v1' }],
         reshoot: [{ source_clip: 'swap_film_v1.mp4', orbit: 12 }],
       }, 'h3 reshoot live')
-      // THE F13d CURE, judged on the RUN workflow (the serialized
-      // graph the engine actually executed): exactly one resize seat,
-      // reference-wired to the VHS frames, feeding BOTH warps.
-      const rs = byClass(s, 'ImageResizeKJ')
-      assert.equal(rs.length, 1, 'exactly one depth-grid resize seat')
-      assert.equal(rs[0]![1].inputs?.['keep_proportion'], false, 'an exact grid copy — never a letterbox')
-      assert.equal(rs[0]![1].inputs?.['width'], 0, 'the reference owns the size')
-      assert.equal(String(rs[0]![1].inputs?.['get_image_size']).includes('VHS_LoadVideo'), true,
-        'the resize reference is the clip frames themselves')
+      // THE OFFICIAL CHAIN, judged on the RUN workflow (the
+      // serialized graph the engine actually executed): the retired
+      // first-cut seats stay dead, the official seats ride.
+      assert.equal(byClass(s, 'ImageResizeKJ').length, 0, 'no depth-grid resize hack — the official port resizes nothing')
+      assert.equal(byClass(s, 'LoadVideoDepthAnythingModel').length, 0, 'no VDA depth — geometry is MoGe metric')
+      assert.equal(byClass(s, 'MiniMaxH3FunControlNetApply').length, 0, 'no Fun ControlNet apply — the official app runs none')
+      const prep = byClass(s, 'CrossViewPrepareClip')
+      assert.ok(prep.length >= 1, 'the prepare seat mounts')
+      assert.equal(prep[0]![1].inputs?.['aspect_ratio'], 'source', 'the clip normalizes at the source aspect')
+      assert.ok(String(prep[0]![1].inputs?.['video']).includes('LoadVideo'), 'the prepare reads the staged source clip')
+      const moge = byClass(s, 'LoadMoGeModel')
+      assert.ok(moge.length >= 1, 'the MoGe-2 checkpoint loads')
+      assert.equal(moge[0]![1].inputs?.['model_name'], 'moge_2_vitl_normal_fp16.safetensors', 'the official metric checkpoint')
+      const infer = byClass(s, 'MoGeInference')
+      assert.ok(infer.length >= 1, 'the metric inference mounts')
+      assert.equal(infer[0]![1].inputs?.['force_projection'], true, 'the official posture forces projection')
       const warps = byClass(s, 'CrossViewWarp')
-      assert.equal(warps.length, 2, 'both warp passes mount')
+      assert.ok(warps.length >= 1, 'at least one warp pass mounts')
       for (const [id, wp] of warps) {
-        assert.equal(String(wp.inputs?.['depth']).includes('ImageResizeKJ'), true,
-          `${id}: the warp depth rides the MATCHED stack (the raw VDA grid was the crash)`)
+        assert.equal(wp.inputs?.['depth'], undefined,
+          `${id}: the warp takes NO brightness depth — metric geometry only (the raw VDA grid was the crash)`)
+        assert.ok(String(wp.inputs?.['frames']).includes('CrossViewPrepareClip'),
+          `${id}: the warp renders the prepared clip`)
+        assert.ok(String(wp.inputs?.['moge_geometry']).includes('MoGeInference'),
+          `${id}: the warp rides the matched metric stack`)
+        assert.equal(wp.inputs?.['pivot_override'], false, `${id}: the official posture keeps px/py/pz dead`)
       }
+      const lora = byClass(s, 'LoraLoaderModelOnly').filter(([, n]) => String(n.inputs?.['lora_name']).includes('CrossView-Warp'))
+      assert.equal(lora.length, 1, 'the CrossView LoRA loads once')
+      assert.equal(lora[0]![1].inputs?.['strength_model'], 0.8, 'the official default 0.8')
+      const r2v = byClass(s, 'MiniMaxH3ReferenceToVideo')
+      assert.ok(r2v.some(([, n]) => String(n.inputs?.['prompt']).startsWith('crossview.')),
+        'the trigger word leads the r2v prompt — the LoRA fires')
       assert.equal(firstBytes(s).length > 1024, true, 'the re-shot video artifact is real bytes')
     } finally {
       w.stop()
@@ -597,9 +594,14 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       }, 'music3 short-sting')
       const latent = nodesWith(s, /EmptyMiniMaxMusic3LatentAudio/)
       assert.ok(latent.length >= 1, 'the RUN workflow carries the music latent node')
-      const seconds = (latent[0]![1] as { inputs: Record<string, unknown> }).inputs['seconds']
-      assert.equal(seconds, 5, 'the latent seconds is the recipe-stamped 5')
       const enc = nodesWith(s, /MiniMaxMusic3TextEncode/)
+      assert.ok(enc.length >= 1, 'the RUN workflow carries the music text encoder')
+      const encId = enc[0]![0] as string
+      // THE AR LINK (audit 014 D1): the latent length is DERIVED
+      // from the encoder's realized AR — cond slot 1 — never a
+      // twice-addressed literal; max_duration is the user's only seat
+      assert.deepEqual((latent[0]![1] as { inputs: Record<string, unknown> }).inputs['seconds'], [encId, 1],
+        'the latent seconds rides the encoder AR link')
       assert.equal((enc[0]![1] as { inputs: Record<string, unknown> }).inputs['max_duration'], 5,
         'the text-encode max_duration is the recipe-stamped 5')
       const bytes = firstBytes(s)
@@ -648,6 +650,7 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       assert.ok(synth.length >= 1, 'the RUN workflow carries the audiocore synth node')
       const inputs = (synth[0]![1] as { inputs: Record<string, unknown> }).inputs
       assert.equal(inputs['temperature'], 0.05, 'the synth temperature is the recipe-stamped 0.05')
+      assert.ok(nodesWith(s, /SaveAudio/).length >= 1, 'the default SaveAudio seat saves the line')
       const bytes = firstBytes(s)
       assert.ok(bytes.length > 512, 'the tts artifact is real bytes (' + bytes.length + ')')
     } finally {
@@ -695,7 +698,7 @@ describe.skipIf(!ENGINE_FREE)('the qwen 2.1 pair on the GPU (with live ComfyUI)'
       try {
         const s2 = await runCard(w2, {
           model: 'qwen-img-edit-21', prompt: 'make the cube blue',
-          image1: chainInput, width: 512, height: 512,
+          image1: chainInput,
         }, 'qwen-img-edit-21 edit')
         assert.ok(byClass(s2, 'QwenImage21Cache').length === 1, 'the RUN workflow wraps the unet in the 2.1 cache')
         assert.ok(byClass(s2, 'TextEncodeQwenImage21').length === 1)
@@ -709,7 +712,7 @@ describe.skipIf(!ENGINE_FREE)('the qwen 2.1 pair on the GPU (with live ComfyUI)'
         // wiring asserted verbatim before the run.
         const bgPayload = {
           model: 'qwen-img-edit-21', prompt: 'Remove the background, and output a PNG image',
-          image1: join(s2.runDir, s2.stageUrl), width: 512, height: 512,
+          image1: join(s2.runDir, s2.stageUrl),
         }
         const bg1 = await cards.phase1Card(bgPayload, 'qwen-img-edit-21')
         const bgGraph = (await cards.phase2Card(bg1, 'bg-check')).graph as Record<string, { class_type?: string, inputs?: Record<string, unknown> }>
@@ -738,10 +741,10 @@ describe.skipIf(!ENGINE_FREE)('the qwen 2.1 pair on the GPU (with live ComfyUI)'
     const w = await bootWorld('recipes-q21-turbo-')
     try {
       const cards = (w.ctx as unknown as { cardRegistry: { phase1Card: (b: Record<string, unknown>, m: string) => Promise<{ params: Record<string, unknown> }>, phase2Card: (p1: unknown, runId: string) => Promise<{ graph: Record<string, unknown> }> } }).cardRegistry
-      // the route address selects the turbo variant; the 8-step
+      // the variant+quant address selects the turbo route; the 8-step
       // marriage rides the route's resolver_defaults into the form
       const p1 = await cards.phase1Card({
-        model: 'qwen-img-21', variant: 'turbo-int8', prompt: 'a small red cube on a white field',
+        model: 'qwen-img-21', variant: 'turbo', quant: 'int8_convrot', prompt: 'a small red cube on a white field',
         width: 512, height: 512,
       }, 'qwen-img-21')
       assert.equal(p1.params?.steps, 8, 'the turbo route stamps steps 8 (upstream: Turbo uses 8 steps)')
@@ -756,7 +759,7 @@ describe.skipIf(!ENGINE_FREE)('the qwen 2.1 pair on the GPU (with live ComfyUI)'
       assert.equal(sampler![1].inputs?.cfg, 1, 'cfg 1 inherits the family default')
 
       const s = await runCard(w, {
-        model: 'qwen-img-21', variant: 'turbo-int8', prompt: 'a small red cube on a white field',
+        model: 'qwen-img-21', variant: 'turbo', quant: 'int8_convrot', prompt: 'a small red cube on a white field',
         width: 512, height: 512,
       }, 'qwen-img-21 turbo-int8')
       assert.ok(byClass(s, 'UNETLoader').length === 1, 'the RUN workflow loads the turbo weights')

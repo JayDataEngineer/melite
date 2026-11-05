@@ -139,7 +139,9 @@ describe("THE FLOW FACE'S CARRY LAW (SD-4) — an advertised param reaches the s
       }
     }
     assert.ok(judged > 0, "the seat serves no overlays — the overlay path law judged nothing");
-    for (const canary of ["image-upscale:seed->polish/seed", "music-native:duration->music/duration"]) {
+    // (the music-native duration canary retired with its wrapper
+    // row, 2026-11-14 — the walk itself is derived and stays armed)
+    for (const canary of ["image-upscale:seed->polish/seed"]) {
       assert.ok(judgedSeats.includes(canary), `the overlay walk never judged ${canary} — the seat join broke`);
     }
     assert.deepEqual(failures, [], `FLOW FACE CARRY (arm 2) — ${failures.length} mis-aimed overlay${failures.length === 1 ? "" : "s"} of ${judged} judged:\n${failures.join("\n")}`);
@@ -149,6 +151,7 @@ describe("THE FLOW FACE'S CARRY LAW (SD-4) — an advertised param reaches the s
     const defs = await loadCardDefs();
     const failures: string[] = [];
     let judged = 0;
+    const judgedSeats: string[] = [];
     for (const name of SEAT.names()) {
       const row = SEAT.get(name);
       if (row === undefined) continue;
@@ -177,6 +180,7 @@ describe("THE FLOW FACE'S CARRY LAW (SD-4) — an advertised param reaches the s
         }
         for (const key of Object.keys(stage.params ?? {})) {
           judged += 1;
+          judgedSeats.push(`${name}:${stage.id}/${key}`);
           if (!admitted.has(key) && !STAGE_ROUTING_KEYS.includes(key)) {
             failures.push(`${name}: stage '${stage.id}' composes '${key}' but card '${card}' admits [${[...admitted].join(", ")}] and '${key}' is not the routing selector (runsRegistry.ts:792) — the value reaches no consumer`);
           }
@@ -184,15 +188,17 @@ describe("THE FLOW FACE'S CARRY LAW (SD-4) — an advertised param reaches the s
       }
     }
     assert.ok(judged > 0, "no card-plane stage param was judged — the card-door join is vacuous");
-    // Non-vacuity canary for the recut: the mod-bag walk must judge
-    // the first bag-carrying row (extend-video) — a wall that walks
+    // Non-vacuity canary (re-homed 2026-11-14: the extend-video row
+    // and its mod-bag stamp died with the wrapper retirement — the
+    // bag admission below stays derived over def.mods so a future
+    // bag-bearing row is auto-judged; the bag-key law's live seats
+    // are the mod walls — mod-write-parity, mod-liveness — which
+    // judge the params-emit and compose-door sides): the walk must
+    // judge a real survivor's stage params — a wall that walks
     // nothing proves nothing.
-    const extendRow = SEAT.get("extend-video");
-    assert.ok(
-      extendRow !== undefined &&
-        Object.keys((extendRow.stages[0] as { params?: Record<string, unknown> })?.params ?? {}).includes("extend"),
-      "the extend-video row lost its mod bag stamp — the bag-key recut judged nothing",
-    );
+    for (const canary of ["image-upscale:polish/input_image", "image-upscale:make/model"]) {
+      assert.ok(judgedSeats.includes(canary), `the param walk never judged ${canary} — the card-door join broke`);
+    }
     assert.deepEqual(failures, [], `FLOW FACE CARRY (arm 3) — ${failures.length} unadmitted stage param${failures.length === 1 ? "" : "s"} of ${judged} judged:\n${failures.join("\n")}`);
   });
 });

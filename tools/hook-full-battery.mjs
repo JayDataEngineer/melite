@@ -10,8 +10,11 @@
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const REPO = new URL("..", import.meta.url).pathname;
+// fileURLToPath, never URL.pathname (the windows CI doubled-drive
+// class, 2026-10-31: '/D:/…' is drive-rooted RELATIVE on win32).
+const REPO = fileURLToPath(new URL("..", import.meta.url));
 
 // THE WORKSPACE EXCLUSION LAW (the typert fast-fail, 2026-11-12):
 // pnpm-workspace.yaml EXCLUDES packages/vendor/typert-protocol (the
@@ -236,15 +239,19 @@ for (const [label, config] of [
   }
   console.log(`ok   ${label} tier`);
 }
-const pytest = spawnSync("python3", ["-m", "pytest", "tests/", "-q"], { cwd: REPO, encoding: "utf8" });
+// (class B R11, 2026-10-31) windows' python3 is the Store alias stub
+// that opens the marketplace instead of the interpreter — probe
+// 'python' there; same seat, real binary.
+const pythonBin = process.platform === "win32" ? "python" : "python3";
+const pytest = spawnSync(pythonBin, ["-m", "pytest", "tests/", "-q"], { cwd: REPO, encoding: "utf8" });
 if (pytest.error !== undefined && pytest.error !== null) {
-  console.warn("SKIP-LOUD: python3 absent — the vendored layer C pytest seat is unjudged here (CI owns it; install python3 + pytest to judge locally)");
+  console.warn(`SKIP-LOUD: ${pythonBin} absent — the vendored layer C pytest seat is unjudged here (CI owns it; install ${pythonBin} + pytest to judge locally)`);
 } else if (pytest.status === 5 || /No module named pytest/u.test(pytest.stdout + pytest.stderr)) {
   console.warn("SKIP-LOUD: pytest absent — the vendored layer C seat is unjudged here (pip install pytest; CI owns it)");
 } else if (pytest.status !== 0) {
   console.error(pytest.stdout);
   console.error(pytest.stderr);
-  console.error("BATTERY FAIL: pytest seat (python3 -m pytest tests/ -q)");
+  console.error(`BATTERY FAIL: pytest seat (${pythonBin} -m pytest tests/ -q)`);
   process.exit(1);
 } else {
   console.log("ok   pytest seat (vendored layer C)");

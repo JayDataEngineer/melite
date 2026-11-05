@@ -1,9 +1,9 @@
 import "../../../helpers/boot-models.ts";
 import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
-import { execFileSync } from "node:child_process";
 import { join, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+import { deriveSrcStamp } from "../../../../tools/src-stamp.mjs";
 
 // THE ESTATE SINGLETON LAW (2026-09-29, the from-media outage's
 // second layer): the client-bundle preset inlines card-base into
@@ -46,18 +46,18 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../../..");
 
-/** ship-lane's own recipe (scripts/ship-lane.sh stamp_src): the
- * LC_ALL=C-sorted src/*.ts(x) sha256 chain, first 16 hex chars.
- * LC_ALL=C (2026-10-30): sort order is hash input — the canonical
- * stamp law shared with client-bundle-freshness; an ambient locale
- * made the recompute host-dependent. */
+/** ship-lane's own recipe (scripts/ship-lane.sh stamp_src), derived
+ * node-native: the LC_ALL=C-sorted src/*.ts(x) sha256 chain, first
+ * 16 hex chars — tools/src-stamp.mjs deriveSrcStamp, byte-identical
+ * to the shell pipeline it replaced (no bash spawn: on windows the
+ * execFileSync("bash", ["-c", ...]) form resolved bash but died in
+ * cmd.exe's quote/pipe parse, and a dead spawn's unchecked error
+ * degraded the whole STAMP PLANE). LC_ALL=C (2026-10-30): sort
+ * order is hash input — the canonical stamp law shared with
+ * client-bundle-freshness; an ambient locale made the recompute
+ * host-dependent. */
 function stampSrc(pkgDir: string): string {
-  const out = execFileSync(
-    "bash",
-    ["-c", `cd ${JSON.stringify(join(ROOT, pkgDir))} && find src \\( -name '*.ts' -o -name '*.tsx' \\) | LC_ALL=C sort | xargs sha256sum 2>/dev/null | sha256sum | cut -c1-16`],
-    { encoding: "utf8" },
-  ).trim();
-  return out;
+  return deriveSrcStamp(join(ROOT, pkgDir));
 }
 
 /** every shipped browser bundle: the lib/client.js files under

@@ -152,6 +152,16 @@ describe('h3 strip commissions (keyless replay)', () => {
       // the rail sits under the head that labels it
       const head = container.querySelector('[data-lane-head="commission"][data-lane-head-id="extend"]')!
       assert.match(String(head.textContent), new RegExp(studioCopy.commissionKindLabel('extend')))
+      // (2026-11-14, the mod-mode calls face) the recorded session is
+      // itself a mod-mode ask — the calls lane names its readership:
+      // the re-shoot arm READS the call text (its prompt is
+      // "crossview. " + the text), so the lane the operator authored
+      // into is labelled the run's PROMPT SEAT — and the non-reading
+      // extend armed beside it never makes the lane dormant (a reader
+      // wins: the run reads calls if any armed action does)
+      const callsHead = container.querySelector('[data-lane-head="prompts"]')!
+      assert.equal(callsHead.textContent, studioCopy.callsPromptSeatLabel('reshoot'))
+      assert.notEqual(callsHead.textContent, studioCopy.callsDormantLabel('extend'))
     } finally {
       unmount()
     }

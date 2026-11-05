@@ -239,12 +239,46 @@ async function runLane(argv) {
   return second.code ?? 1
 }
 
+/** THE LANE-ENV UNSET (class B R8, 2026-10-31): the lane envs are
+ *  set by a melite session (the MCP estate seat); suites key their
+ *  verdict purity on their ABSENCE (`=== undefined` — unset, not
+ *  empty). The hygiene used to ride `env -u` package.json prefixes —
+ *  a coreutils-ism cmd.exe cannot parse, so vanilla windows dev
+ *  could not run the gate at all. The wrapper owns it now: every
+ *  wrapped run starts pristine, one home, no shell required.
+ *  @param env the env record to scrub (defaults to process.env). */
+export function unsetLaneEnvs(env = process.env) {
+  delete env.MELITE_MCP_ENGINES
+  delete env.MELITE_AGENT_ROUTE
+  return env
+}
+
+/** Leading walker flags (before the wrapped command). The only one
+ *  today carries the coverage gate's shared-reports seat — the old
+ *  inline `MELITE_COVERAGE_SHARED=1` env spelling is the same
+ *  cmd.exe-incompatible class as `env -u`. Everything after the
+ *  first non-flag argument belongs to the wrapped command.
+ *  @param argv the caller's argv. */
+export function parseWalkerFlags(argv) {
+  const flags = { coverageShared: false }
+  const rest = [...argv]
+  while (rest.length > 0 && rest[0] === '--coverage-shared') {
+    flags.coverageShared = true
+    rest.shift()
+  }
+  return { flags, argv: rest }
+}
+
 async function main() {
   let argv = process.argv.slice(2)
+  const { flags, argv: wrapped } = parseWalkerFlags(argv)
+  argv = wrapped
   if (argv.length === 0) {
     console.error('run-walker-safe: expected the command to wrap, e.g. node scripts/run-walker-safe.mjs vitest run --coverage')
     process.exit(2)
   }
+  unsetLaneEnvs()
+  if (flags.coverageShared) process.env.MELITE_COVERAGE_SHARED = '1'
   const seat = pinVitestSeat(argv)
   if (seat.refused) {
     console.error("run-walker-safe: REFUSING: bare 'vitest' would resolve through PATH (a global install lacks @vitest/coverage-v8 — zero coverage rows, exit 1, stale summaries) and this repo carries no node_modules/vitest/dist/cli.js to pin instead")

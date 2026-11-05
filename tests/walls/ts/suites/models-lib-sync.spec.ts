@@ -51,7 +51,7 @@
 //
 // Run: npx vitest run tests/walls/ts/suites/models-lib-sync.spec.ts
 import { describe, expect, it } from "vitest";
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { tmpdir } from "node:os";
 import {
@@ -64,6 +64,8 @@ import {
   judgeFamily,
   loadManifest,
   type LibDrift,
+  type ServedReader,
+  walkFiles,
 } from "../lib/models-lib-sync-judge.ts";
 
 describe("models-lib-sync (the served family lib is the fresh emit of its src)", () => {
@@ -119,13 +121,19 @@ describe("models-lib-sync (the served family lib is the fresh emit of its src)",
       writeFileSync(join(lib, "index.js"), "export const a = 0;\n");
       writeFileSync(join(lib, "sub", "mod.js"), "export const b = 2;\n");
       writeFileSync(join(lib, "sub", "ghost.js"), "export const dead = 3;\n");
-      const drift = compareEmitted("fixture", "tsconfig.build.json", emitted, lib);
+      // the fixture lives outside any git repo, so the comparison
+      // logic is armed on an explicit DISK seam here; the index seam
+      // itself is judged in emit-determinism.spec.ts (class B D4)
+      const diskServed: ServedReader = (rel) => {
+        try { return readFileSync(join(lib, rel), "utf8"); } catch { return null; }
+      };
+      const drift = compareEmitted("fixture", "tsconfig.build.json", emitted, lib, diskServed, walkFiles(lib));
       expect(drift.stale).toEqual(["index.js"]);
       expect(drift.unemitted).toEqual(["sub/ghost.js (served lib carries a file the src no longer emits)"]);
       // the fresh twin passes
       writeFileSync(join(lib, "index.js"), "export const a = 1;\n");
       rmSync(join(lib, "sub", "ghost.js"));
-      const clean = compareEmitted("fixture", "tsconfig.build.json", emitted, lib);
+      const clean = compareEmitted("fixture", "tsconfig.build.json", emitted, lib, diskServed, walkFiles(lib));
       expect(clean.stale).toEqual([]);
       expect(clean.unemitted).toEqual([]);
     } finally {

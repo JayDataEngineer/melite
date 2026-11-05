@@ -69,7 +69,9 @@ if (target === '' || target === '-') {
 if (!existsSync(target)) { console.error('log not found: ' + target); process.exit(1) }
 
 // a busy session log runs past 64 MB decompressed — the streaming
-// pipe (not a capped buffer) keeps the walk honest
+// pipe (not a capped buffer) keeps the walk honest.
+// POSIX-BY-AUDIENCE (class B R11, 2026-10-31): owner-local dev-seat
+// tooling; the sh pipe is deliberate, not a portability miss.
 const safe = target.replace(/'/g, "'\\''")
 const raw = execFileSync('sh', ['-c', "zstdcat '" + safe + "' | head -c 268435456"], { maxBuffer: 268435456 }).toString('utf8')
 
@@ -158,7 +160,9 @@ writeFileSync(out, head.concat(body).join('\n') + '\n')
 console.log('leaves: ' + String(rows.length) + ' · envelopes: ' + String(envelopes) + ' · failures: ' + String(rows.filter((r) => r.err !== '').length))
 console.log('sidecar: ' + out)
 
-// ── helpers (node:readdir/stat kept tiny — no deps) ─────────────
+// ── helpers ─────────────────────────────────────────────────────
+// POSIX-BY-AUDIENCE (class B R11, 2026-10-31): `ls`/`stat -c` are
+// coreutils seats on the owner's dev lane; owner-local tooling.
 function readdirSafe(p) {
   try { return execFileSync('ls', ['-1', p]).toString('utf8').trim().split('\n').filter((x) => x !== '') } catch { return [] }
 }

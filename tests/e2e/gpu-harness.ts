@@ -38,6 +38,7 @@ import { mintSandbox } from '../harness.ts'
  *  deferral), never presence alone. */
 export { ENGINE_HOST, ENGINE_PORT } from './engine-gate.ts'
 import { ENGINE_HOST, ENGINE_PORT } from './engine-gate.ts'
+import { ANCHOR_PNG_B64, uploadAnchorPng as uploadAnchorPngAt } from './anchor-upload.ts'
 
 /** THE WEIGHTS GATE (roadmap §10's e2e debt, 2026-09-21): a GPU
  *  receipt row needs BOTH the engine and the family's lane weights —
@@ -182,27 +183,13 @@ export function byClass(s: Settled, cls: string): Array<[string, { class_type?: 
     .filter(([, r]) => (r as { class_type?: string }).class_type === cls) as Array<[string, { class_type?: string, inputs?: Record<string, unknown> }]>
 }
 
-// A 64×64 RGBA PNG anchor (checker 200/90 — PIL-verified: the FIRST
-// anchor's bytes carried a corrupt IHDR (bit depth 0) that uploaded
-// fine and died at LoadImage on every box with an engine, failing
-// the established pixal3d row too. These bytes were generated,
-// PIL-opened, and embedded — never hand-typed.)
-const ANCHOR_PNG_B64 =
-  'iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAeElEQVR4nO3SoQ0AMAwEscz5E2erdIiCRqrR0QOu7p4k82trw8TL1oYJAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAggggAACCCCAAAIIIIAAAi57ACFFIob5MV0aAAAAAElFTkSuQmCC'
-
 /** A real upload through ComfyUI's own upload door — returns the
- * staged file name the lane's image slots address. */
+ * staged file name the lane's image slots address. The law itself
+ * (overwrite stated, answer judged) lives in anchor-upload.ts so the
+ * keyless wall can judge it; this binding supplies the live lane's
+ * door. */
 export async function uploadAnchorPng(tag: string): Promise<string> {
-  const png = Buffer.from(ANCHOR_PNG_B64, 'base64')
-  const fd = new FormData()
-  fd.append('image', new Blob([png], { type: 'image/png' }), 'e2e_anchor.png')
-  const up = await fetch(`http://${ENGINE_HOST}:${ENGINE_PORT}/upload/image`, {
-    method: 'POST', body: fd,
-    signal: AbortSignal.timeout(30_000),
-  })
-  assert.ok(up.ok, tag + ': the anchor upload lands: ' + up.status)
-  const upBody = await up.json() as { name?: string }
-  return upBody['name'] ?? 'e2e_anchor.png'
+  return uploadAnchorPngAt({ engineUrl: `http://${ENGINE_HOST}:${ENGINE_PORT}` }, tag)
 }
 
 /** Run one row's world lifecycle (boot → body → dispose) — the

@@ -16,6 +16,7 @@
 // only resolves inside this repo cannot pass here by construction.
 import { describe, it, expect } from "vitest";
 import { execFileSync, spawnSync } from "node:child_process";
+import { pythonBin } from "../lib/python-bin.ts";
 import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -23,13 +24,26 @@ import { tmpdir } from "node:os";
 const ROOT = join(import.meta.dirname, "..", "..", "..", "..");
 const VENDOR = join(ROOT, "vendor", "comfyui_extensions");
 
+/** The submodule rows of a .gitmodules TEXT (class E1, 2026-10-31):
+ *  the line separators are `\r?\n` — a CRLF checkout (core.autocrlf,
+ *  the windows eol class) previously parsed to ZERO rows and every
+ *  arm above degenerated to vacuous green while judging nothing.
+ *  One parser, both byte flavors. */
+function submoduleRows(text: string): Array<{ name: string; path: string; url: string }> {
+  const rows: Array<{ name: string; path: string; url: string }> = [];
+  for (const m of text.matchAll(/\[submodule "([^\]]+)"\]\r?\n\tpath = (\S+)\r?\n\turl = (\S+)/gu)) {
+    rows.push({ name: m[1]!, path: m[2]!, url: m[3]! });
+  }
+  return rows;
+}
+
 /** Vendored extension submodules: dir → tracked gitlink SHA. */
 function gitlinks(): Map<string, string> {
   const out = new Map<string, string>();
   const text = readFileSync(join(ROOT, ".gitmodules"), "utf8");
-  for (const m of text.matchAll(/\[submodule "([^\]]+)"\]\n\tpath = (\S+)\n\turl = (\S+)/gu)) {
-    if (!m[2]!.startsWith("vendor/comfyui_extensions/")) continue;
-    out.set(m[2]!.split("/").pop()!, gitlinkSha(m[2]!));
+  for (const row of submoduleRows(text)) {
+    if (!row.path.startsWith("vendor/comfyui_extensions/")) continue;
+    out.set(row.path.split("/").pop()!, gitlinkSha(row.path));
   }
   return out;
 }
@@ -168,6 +182,26 @@ print(json.dumps(violations))
 `;
 
 describe("THE COLD-CLONE PACK WALL (every published pack imports from its own clone)", () => {
+  it("the .gitmodules parser is checkout-byte-independent: the CRLF twin of the real file parses to the SAME rows (class E1)", () => {
+    // CLASS E / CLASS A root (2026-10-31): a windows checkout
+    // (core.autocrlf) carries the file with \r\n line endings — the
+    // `\n`-only regex parsed ZERO submodule rows, the census above
+    // silently emptied, and every arm degenerated to vacuous green.
+    // The twin: the REAL file's bytes, both flavors, one parser.
+    const text = readFileSync(join(ROOT, ".gitmodules"), "utf8");
+    const lf = submoduleRows(text);
+    expect(lf.length, "the real .gitmodules parses to rows on the LF reading").toBeGreaterThan(0);
+    const crlf = submoduleRows(text.replace(/\n/gu, "\r\n"));
+    expect(crlf, "the CRLF checkout must parse to the identical rows").toEqual(lf);
+    // And a CRLF-flavored synthetic module appended to the LF real
+    // file parses too (a fresh submodule row is not lost to its
+    // neighbor's line ending).
+    const extra = '\r\n[submodule "e1-twin-probe"]\r\n\tpath = vendor/comfyui_extensions/e1-twin-probe\r\n\turl = https://example.invalid/e1-twin-probe\r\n';
+    const withExtra = submoduleRows(text + extra);
+    expect(withExtra.length).toBe(lf.length + 1);
+    expect(withExtra.at(-1)).toEqual({ name: "e1-twin-probe", path: "vendor/comfyui_extensions/e1-twin-probe", url: "https://example.invalid/e1-twin-probe" });
+  });
+
   it("no cloned pack .py mutates sys.path toward a repo-layout or absolute path (AST-judged on the clone)", () => {
     // ALL repos judged before ONE expect — a first-fail loop would
     // mask every later repo's violations behind the alphabet.
@@ -177,7 +211,7 @@ describe("THE COLD-CLONE PACK WALL (every published pack imports from its own cl
       try {
         const files = pyFiles(clone);
         expect(files.length, `${repo}: the clone carries no .py files — the archive is empty`).toBeGreaterThan(0);
-        const r = spawnSync("python3", ["-c", AST_PROBE, ...files], { encoding: "utf8" });
+        const r = spawnSync(pythonBin(), ["-c", AST_PROBE, ...files], { encoding: "utf8" });
         expect(r.status, `${repo}: the AST judge itself died\n${r.stderr}`).toBe(0);
         const violations = JSON.parse(r.stdout) as Array<{ file: string; literals: string[] }>;
         for (const v of violations) {
@@ -196,7 +230,7 @@ describe("THE COLD-CLONE PACK WALL (every published pack imports from its own cl
       // The dev box has kimodo pip-installed (the requirements leg
       // itself); the COLD state is simulated exactly — a meta-path
       // blocker refuses the one name, torch/numpy stay importable.
-      const r = spawnSync("python3", ["-c", `
+      const r = spawnSync(pythonBin(), ["-c", `
 import importlib.abc, importlib.util, json, sys
 class _BlockKimodo(importlib.abc.MetaPathFinder):
     def find_spec(self, fullname, path=None, target=None):
@@ -237,7 +271,7 @@ print(json.dumps({
     try {
       mkdirSync(join(stubRoot, "kimodo"));
       writeFileSync(join(stubRoot, "kimodo", "__init__.py"), 'value = "pip-leg"\n');
-      const r = spawnSync("python3", ["-c", `
+      const r = spawnSync(pythonBin(), ["-c", `
 import importlib.util, json, sys
 before = set(sys.path)
 spec = importlib.util.spec_from_file_location(

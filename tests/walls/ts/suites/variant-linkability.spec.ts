@@ -1,10 +1,10 @@
 // @contract models-variant-linkability
 //
-// THE LINKABILITY WALL (burn d, 2026-10-26). Operator, verbatim:
-// "YOU HAVE SHIT THAT DOES NOT AUTO PROVISION WITH AN ALL GREEN
-// PIPELINE! FUCK YOU. MANY KREA2 VARIANTS SAY 'MODEL ONLY ON DISK'.
-// WHAT THE EVER LOVING FUCK, HOW DOES MODELS WITHOUT FUCKING LINKS
-// GO ALL GREEN? FUCK YOU!"
+// THE LINKABILITY WALL (burn d, 2026-10-26). Operator, restated:
+// models that do not auto-provision sat under an all-green pipeline —
+// many krea2 variants reported 'model only on disk', and models
+// without links went all green. The verbatim burn lives in
+// dev_docs/audits/no-link-models-green-2026-10-26.md.
 //
 // The audit (dev_docs/audits/no-link-models-green-2026-10-26.md)
 // found the hole: five walls orbit linkability, each judging
@@ -269,7 +269,7 @@ describe("THE LINKABILITY WALL (burn d: no-link variants never sail green)", () 
     for (const row of KREA_ROWS) {
       if (loraFate(row as unknown as Record<string, unknown>).never) loraNever += 1;
     }
-    assert.equal(selectable, 184, "the selectable-variant census moved — update this pin deliberately"); // 185→184 2026-11-12: the openjutsu lane deleted (operator order) — viggle-animate's variant dies // 184→185 2026-10-27: viggle-animate serves (the openjutsu lane, feature 023); 189→183 2026-11-12: the seedvr2 7B death (audit 018's live burn) — the row died at every seedvr2 address view (-6); 183→184 2026-10-27: music3-int8 serves (audit 014 C5, the int8 low-VRAM lane)
+    assert.equal(selectable, 183, "the selectable-variant census moved — update this pin deliberately"); // 184→183 2026-11-01: the blender-lane removal — the anycreature family (its one selectable variant) is deleted // 185→184 2026-11-12: the openjutsu lane deleted (operator order) — viggle-animate's variant dies // 184→185 2026-10-27: viggle-animate serves (the openjutsu lane, feature 023); 189→183 2026-11-12: the seedvr2 7B death (audit 018's live burn) — the row died at every seedvr2 address view (-6); 183→184 2026-10-27: music3-int8 serves (audit 014 C5, the int8 low-VRAM lane)
     assert.deepEqual(
       [...diskOnlyByFamily.entries()].sort(),
       [["moss-sfx", 1], ["qwen3-tts", 5], ["qwen3-tts-base", 5], ["qwen3-tts-voicedesign", 5], ["qwen3-tts-voicedesign-base", 5], ["qwen3-tts-voicedesign-design", 5]],
@@ -306,8 +306,8 @@ describe("THE LINKABILITY WALL (burn d: no-link variants never sail green)", () 
   });
 
   // ARM 4 — THE ANCHOR-AT-THE-DOOR LAW (the kroma burn, operator
-  // 2026-10-26: "IF A SINGLE WEIGHT DOES NOT HAVE A FUCKING URL TO
-  // DOWNLOAD FROM — WE GET REDS IN THE TESTING SUITE — ALWAYS").
+  // 2026-10-26: a single weight without a url to download from must
+  // red the testing suite — always).
   // ARM 1 judges that a channel EXISTS somewhere in the family; this
   // arm judges THE DOOR: the run gate's own anchor resolver
   // (laneFetchAnchor — provisions, the STATED cell/variant artifact,
