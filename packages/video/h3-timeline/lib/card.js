@@ -188,7 +188,7 @@ const REPAIR_MOD = {
         { name: 'source_clip', label: 'Source clip', type: 'file', media: 'video', default: '', tooltip: 'The clip whose region is repaired. Binds ONE staged leaf: the VHS window loader + the core LoadVideo both read it by staged name, and the timeline reads it back off the native VIDEO wire.' },
         { name: 'repair_prompt', label: 'Repair prompt', type: 'text', default: '', tooltip: 'The repair action text — what the masked region should become (agent-composed, user-confirmed; rides the reference-video prompt seat).' },
         { name: 'region_prompt', label: 'Region prompt', type: 'text', default: '', tooltip: 'The free-text SAM3 detection target naming the region — "hands", "a person", "a face". The mask tracks every matching object frame by frame and grows by mask_grow px.' },
-        { name: 'denoise', label: 'Denoise', type: 'number', default: 0.32, min: 0.05, max: 0.5, step: 0.01, tooltip: 'The partial-denoise strength of the masked pass (the refine window is 0.30–0.35; lower = subtler). The declared band 0.05–0.5 binds at compose: outside it refuses loud. 1 or more is the reshoot pole — a repair is a refine, never a re-render.' },
+        { name: 'denoise', label: 'Denoise', type: 'number', default: 0.32, min: 0.05, max: 0.5, step: 0.01, tooltip: 'The partial-denoise strength of the masked pass (the refine window is 0.30–0.35; lower = subtler). The declared band 0.05–0.5 binds on every run: outside it refuses loud. 1 or more is the reshoot pole — a repair is a refine, never a re-render.' },
         { name: 'mask_grow', label: 'Mask grow px', type: 'number', default: 16, min: 0, max: 96, step: 1, tooltip: 'Pixels the tracked mask grows before the edit (seam ring protection; 0 repairs exactly the detected region — the grow-0 seam test).' },
         { name: 'detection_threshold', label: 'Detection threshold', type: 'number', default: 0.5, min: 0, max: 1, step: 0.01, tooltip: 'The SAM3 text-detection score threshold (lower finds more objects, noisier masks).' },
         { name: 'window_start', label: 'Window start (frames)', type: 'number', default: 0, min: 0, max: 100000, step: 1, tooltip: 'Frames (at the film clock, 24 fps) to skip before the repair window — 0 starts at the clip head.' },
@@ -322,7 +322,7 @@ const REFINE_MOD = {
         // (agent-composed, user-confirmed); the dials are numbers.
         { name: 'source_clip', label: 'Source clip', type: 'file', media: 'video', default: '', tooltip: 'The clip whose frames the second pass refines. Binds ONE staged leaf: the VHS loader reads it by staged name at the film clock, and the encode seats read its frames + soundtrack.' },
         { name: 'refine_prompt', label: 'Refine prompt', type: 'text', default: '', tooltip: 'The refine text — what the upscaled frames should hold (agent-composed, user-confirmed; rides the CLIPTextEncode positive seat — the node refuses without model + positive). THE PROMPT IS THE ONLY STYLE LEVER: nothing from the source prompt, seed or schedule carries, so restate the source\'s own look (the medium and the identity anchors) beside the quality asks — a generic quality-only prompt silently restyles the shot. This door RESTYLES decoded pixels and carries no lineage — a saved clip has no latent left, so a true context-carrying second pass is the chain 2-pass door, never this one.' },
-        { name: 'denoise', label: 'Denoise', type: 'number', default: 0.32, min: 0.05, max: 0.5, step: 0.01, tooltip: 'The partial-denoise strength of the refinement pass (the refine window is 0.30–0.35; lower = subtler). The declared band 0.05–0.5 binds at compose: outside it refuses loud. 1 or more is the re-render pole — a refine is never a re-render (the handoff\'s sigmas law: 0 <= sigmas[0] < 1).' },
+        { name: 'denoise', label: 'Denoise', type: 'number', default: 0.32, min: 0.05, max: 0.5, step: 0.01, tooltip: 'The partial-denoise strength of the refinement pass (the refine window is 0.30–0.35; lower = subtler). The declared band 0.05–0.5 binds on every run: outside it refuses loud. 1 or more is the re-render pole — a refine is never a re-render (the handoff\'s sigmas law: 0 <= sigmas[0] < 1).' },
         { name: 'steps', label: 'Refine steps', type: 'number', default: 6, min: 1, max: 30, step: 1, tooltip: 'The refinement schedule steps (the low-sigma second pass; the sampler steps stay the doc marriage).' },
         { name: 'seed', label: 'Refine seed', type: 'number', default: 0, min: 0, max: 4294967295, step: 1, tooltip: 'The refinement noise seed (0 runs the reference posture).' },
         // (the numbers are DERIVED from the model package's exported
@@ -443,7 +443,7 @@ const UPSCALE_MOD = {
         // dials are numbers.
         { name: 'chain_run', label: 'Chain run', type: 'chain-run', default: '', tooltip: 'The run whose checkpointed scenes this pass resumes — pick from the live list; Advanced accepts an id the list does not hold.' },
         { name: 'prompt', label: 'Pass-2 prompt', type: 'text', default: '', tooltip: 'What the upscaled frames should hold (agent-composed, user-confirmed). Blank reuses the source run\'s own per-scene prompts — the documented posture for a pure resolution pass.' },
-        { name: 'denoise', label: 'Denoise', type: 'number', default: 0.24, min: 0.05, max: 0.5, step: 0.01, tooltip: 'The partial-denoise strength of the pass-2 re-render (the recipe\'s own window is 0.24; lower = subtler). The declared band 0.05–0.5 binds at compose: outside it refuses loud. 1 or more is the reshoot pole — an upscale is never a re-render (that is a reshoot, and the reshoot door exists).' },
+        { name: 'denoise', label: 'Denoise', type: 'number', default: 0.24, min: 0.05, max: 0.5, step: 0.01, tooltip: 'The partial-denoise strength of the pass-2 re-render (the recipe\'s own window is 0.24; lower = subtler). The declared band 0.05–0.5 binds on every run: outside it refuses loud. 1 or more is the reshoot pole — an upscale is never a re-render (that is a reshoot, and the reshoot door exists).' },
         { name: 'steps', label: 'Pass-2 steps', type: 'number', default: 20, min: 1, max: 30, step: 1, tooltip: 'The pass-2 schedule steps (the recipe runs 20; the sampler stays res_multistep, the loop family\'s own spelling).' },
         { name: 'segment_crf', label: 'Segment CRF', type: 'number', default: 18, min: 0, max: 51, step: 1, tooltip: 'The H.264 quality of the persisted HQ scene segments (the adapter\'s own seat; 18 is its default).' },
     ],
@@ -473,6 +473,15 @@ const DECLARED_MOD_KINDS = [
  * param_key) */
 export function judgeDeclaredBands(p) {
     for (const kind of DECLARED_MOD_KINDS) {
+        // THE RESHOOT CARVE-OUT (h3-reshoot-chain ARM 3): the reshoot
+        // bag's dials already meet a judge — the emission's own camera
+        // door (bandedAll), which refuses naming every offender, its
+        // recorded value, and the never-a-widget-400 tail, against the
+        // same bounds its DeclaredModifierKind rows state (ARM 2 pins
+        // the 1:1). This walk firing first would only preempt that
+        // richer voice with a thinner one — the same law, said worse.
+        if (kind.kind === 'reshoot')
+            continue;
         const bag = p[kind.param_key];
         if (!Array.isArray(bag))
             continue;
