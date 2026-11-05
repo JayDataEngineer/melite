@@ -864,6 +864,82 @@ describe("listRuns envelope", () => {
   });
 });
 
+describe("THE RUNS-PER-DRAFT DOOR (the stale-two-run chat audit's cure 3)", () => {
+  // THE FIXTURE LAW (audit §walls c): two runs, distinct `draft_id`s
+  // in sidecar rows — the sidecar scalars the real writer seats
+  // ahead of every payload (queueSidecar's IDENTITY KEYS), so the
+  // 8191-byte window always reaches them.
+  const put = (state: string, name: string, over: Record<string, unknown>): void => {
+    const dir = join(state, "output", name);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "_flow.json"), JSON.stringify({
+      run_id: name,
+      status: "completed",
+      pipeline: "flow_inline",
+      seed: 7,
+      test: false,
+      created_at: 100,
+      ...over,
+    }));
+    writeFileSync(join(dir, "a.png"), "img");
+  };
+  const twoDrafts = (): string => {
+    const state = tmp();
+    put(state, "run-alpha", { draft_id: "bench-alpha", created_at: 200 });
+    put(state, "run-beta", { draft_id: "bench-beta", created_at: 100 });
+    return state;
+  };
+
+  it("the draft filter returns only that draft's runs (the audit's (c) arm)", async () => {
+    const state = twoDrafts();
+    const { count, runs } = await listRuns(state, 10, async () => true, { draftId: "bench-alpha" });
+    assert.equal(count, 2, "the scan total is unchanged — the filter narrows the ROWS, never the count");
+    assert.deepEqual(runs.map((r) => r["run_id"]), ["run-alpha"], "no foreign draft row serves");
+    const beta = await listRuns(state, 10, async () => true, { draftId: "bench-beta" });
+    assert.deepEqual(beta.runs.map((r) => r["run_id"]), ["run-beta"]);
+    const none = await listRuns(state, 10, async () => true, { draftId: "bench-gone" });
+    assert.deepEqual(none.runs, [], "a draft with no takes serves the empty face, never a guess");
+  });
+
+  it("the bench-stage filter matches the stage_ids digest (the bench address rides first)", async () => {
+    // The digest maps bench_stage_id FIRST (queueSidecar's stage_ids
+    // seat) — a bench stage's takes are the rows whose array names it.
+    const state = tmp();
+    put(state, "run-s1", { draft_id: "d1", stage_ids: "s_0,s_1", created_at: 200 });
+    put(state, "run-s2", { draft_id: "d1", stage_ids: "s_2", created_at: 100 });
+    const { runs } = await listRuns(state, 10, async () => true, { benchStageId: "s_1" });
+    assert.deepEqual(runs.map((r) => r["run_id"]), ["run-s1"]);
+    const solo = await listRuns(state, 10, async () => true, { benchStageId: "s_2" });
+    assert.deepEqual(solo.runs.map((r) => r["run_id"]), ["run-s2"]);
+  });
+
+  it("the filter's window is the draft's own tail, never the global limit's", async () => {
+    // The draft's OLDER takes survive a foreign NEWER run: the slice
+    // rides the FILTERED order, so a limit-1 unfiltered press cannot
+    // crowd the draft's archive out of its own door.
+    const state = tmp();
+    put(state, "run-foreign", { draft_id: "bench-other", created_at: 300 });
+    put(state, "run-new", { draft_id: "bench-mine", created_at: 200 });
+    put(state, "run-old", { draft_id: "bench-mine", created_at: 100 });
+    const unfiltered = await listRuns(state, 1, async () => true);
+    assert.deepEqual(unfiltered.runs.map((r) => r["run_id"]), ["run-foreign"], "the global window slices before build");
+    const filtered = await listRuns(state, 1, async () => true, { draftId: "bench-mine" });
+    assert.deepEqual(filtered.runs.map((r) => r["run_id"]), ["run-new"], "the filtered window slices AFTER the filter");
+  });
+
+  it("the filter reads the SERVED row — an orphan-cleared link matches nothing", async () => {
+    // applyDraftOverlay's law: orphans lose their draft link, never
+    // the row. The filter judges the row's own claim, so a deleted
+    // draft's cleared rows serve no draft archive (the unfiltered
+    // gallery still lists them — visibility is not lost).
+    const state = twoDrafts();
+    const { runs } = await listRuns(state, 10, async () => false, { draftId: "bench-alpha" });
+    assert.deepEqual(runs, []);
+    const unfiltered = await listRuns(state, 10, async () => false);
+    assert.equal(unfiltered.runs.length, 2, "the rows themselves survive, links cleared");
+  });
+});
+
 describe("THE ARCHIVED FACE (mass-archive law, operator ruling 2026-11-14 item (a))", () => {
   const tuckDir = (): string => {
     const dir: string = mkdtempSync(join(tmpdir(), "runs-list-tuck-"));

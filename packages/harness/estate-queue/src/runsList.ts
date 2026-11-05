@@ -573,6 +573,37 @@ export function firstQuery(
 }
 // ── the list arm (the registry's business face) ────────────────────
 
+/** THE RUNS-PER-DRAFT DOOR's filter (the stale-two-run chat audit's
+ *  cure 3, 2026-11-15): the archive query for "all takes of this
+ *  draft". Both keys OPTIONAL — an absent key filters nothing. A
+ *  FILTER on the existing list, never a second roster: the same
+ *  scan, sort, and row law; only the served rows are narrowed. */
+export interface RunsListFilter {
+  /** Exact match against the SERVED row's `draft_id` — the row's
+   *  own claim is the truth (the orphan overlay's cleared link
+   *  matches nothing, per applyDraftOverlay's law). */
+  draftId?: string;
+  /** Membership in the row's `stage_ids` digest — the CSV sidecar
+   *  seat spells the bench address FIRST (queueSidecar.ts stage_ids:
+   *  bench_stage_id before the skeleton id), so a bench stage's
+   *  takes are the rows that name it. */
+  benchStageId?: string;
+}
+
+/** The filter's row law: every STATED key must hold on the served
+ *  row (AND, never OR). Absent filter serves every row. */
+function runsFilterServes(
+  row: Record<string, unknown>,
+  filter: RunsListFilter,
+): boolean {
+  if (filter.draftId !== undefined && row["draft_id"] !== filter.draftId) return false;
+  if (filter.benchStageId !== undefined) {
+    const ids: unknown = row["stage_ids"];
+    if (!Array.isArray(ids) || !(ids as unknown[]).includes(filter.benchStageId)) return false;
+  }
+  return true;
+}
+
 interface RunsEnt {
   readonly dir: string;
   readonly created: number;
@@ -876,8 +907,9 @@ export async function listRuns(
   stateRoot: string,
   limit: number,
   hasDraft: (draftId: DraftId) => Promise<boolean>,
+  filter?: RunsListFilter,
 ): Promise<{ count: number; runs: Record<string, unknown>[] }> {
-  return listRunsAcross([stateRoot], limit, hasDraft);
+  return listRunsAcross([stateRoot], limit, hasDraft, filter);
 }
 
 /** §23 CROSS-ROOTS (2026-09-23): the union list across the
@@ -887,11 +919,16 @@ export async function listRuns(
  *  (refused cards SKIPPED but counted, per root). Every served row
  *  names its root (served_from) and its seat (`test`, `path`);
  *  same-run-id collisions serve the FIRST manifest root's row
- *  (own writes win — the sort is stable, own root scanned first). */
+ *  (own writes win — the sort is stable, own root scanned first).
+ *  The optional runs-per-draft filter (RunsListFilter — the
+ *  stale-two-run audit's cure 3) narrows the SERVED rows only:
+ *  count stays the scan total, and the limit slices the FILTERED
+ *  order, never the scan's. */
 export async function listRunsAcross(
   roots: string[],
   limit: number,
   hasDraft: (draftId: DraftId) => Promise<boolean>,
+  filter?: RunsListFilter,
 ): Promise<{ count: number; runs: Record<string, unknown>[] }> {
   const ents: RunsEnt[] = [];
   for (const root of roots) ents.push(...scanRunsRoot(root));
@@ -902,15 +939,24 @@ export async function listRunsAcross(
     if (am !== bm) return am - bm;
     return b.created - a.created; // newest-first; stable
   });
-  const sliced: RunsEnt[] = ents.slice(0, limit);
+  // THE RUNS-PER-DRAFT DOOR (the stale-two-run chat audit's cure 3,
+  // 2026-11-15): a stated filter walks the WHOLE sorted scan (the
+  // first-root-wins dedup intact) and slices AFTER the filter — the
+  // window is the draft's own tail, never the global limit's (a
+  // draft's older takes survive a foreign newer run). Absent filter:
+  // the restore port's path unchanged — sliced before build.
+  const filtered: boolean =
+    filter !== undefined && (filter.draftId !== undefined || filter.benchStageId !== undefined);
+  const scanned: RunsEnt[] = filtered ? ents : ents.slice(0, limit);
   const seen = new Set<string>();
   const rows: Record<string, unknown>[] = [];
-  for (const ent of sliced) {
+  for (const ent of scanned) {
     if (seen.has(ent.dir)) continue; // first manifest root wins
     seen.add(ent.dir);
     const row = await buildRunCard(join(ent.root, ent.seat), ent, hasDraft);
     if (row === null) continue; // RESILIENCE LAW: loud skip
+    if (filtered && !runsFilterServes(row, filter as RunsListFilter)) continue;
     rows.push({ ...row, served_from: ent.root });
   }
-  return { count, runs: rows };
+  return { count, runs: filtered ? rows.slice(0, limit) : rows };
 }

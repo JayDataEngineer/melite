@@ -107,6 +107,22 @@ export declare function parseIntOrNull(s: string): number | null;
  *  value wins; the shared ctx parseQuery keeps blanks, so the
  *  filter lives here (parse_qs default). */
 export declare function firstQuery(qs: Record<string, string[]>, name: string, dflt: string): string;
+/** THE RUNS-PER-DRAFT DOOR's filter (the stale-two-run chat audit's
+ *  cure 3, 2026-11-15): the archive query for "all takes of this
+ *  draft". Both keys OPTIONAL — an absent key filters nothing. A
+ *  FILTER on the existing list, never a second roster: the same
+ *  scan, sort, and row law; only the served rows are narrowed. */
+export interface RunsListFilter {
+    /** Exact match against the SERVED row's `draft_id` — the row's
+     *  own claim is the truth (the orphan overlay's cleared link
+     *  matches nothing, per applyDraftOverlay's law). */
+    draftId?: string;
+    /** Membership in the row's `stage_ids` digest — the CSV sidecar
+     *  seat spells the bench address FIRST (queueSidecar.ts stage_ids:
+     *  bench_stage_id before the skeleton id), so a bench stage's
+     *  takes are the rows that name it. */
+    benchStageId?: string;
+}
 /** THE MUTATION NOTICE (the gallery-rename staleness cure,
  *  2026-10-28): rowCache keys a built row on the RUN DIR mtime +
  *  the sidecar mtime — but a gallery rename/delete inside a SUBDIR
@@ -128,7 +144,7 @@ export declare function firstQuery(qs: Record<string, string[]>, name: string, d
 export declare function noteRunTreeChanged(mutatedPath: string): void;
 /** The runs-list envelope (the restore port): the BOTH-SEATS scan per root (visible-bench law), media-first + newest sort, the limit sliced off the merged order, the limit parsed (raw STRING — the lane/remote pass the raw text; underscores parse, non-ints refuse), refused cards SKIPPED but counted. */
 /** url/thumbnail are run-RELATIVE (the /v1/assets prefix died with the app — the header's law). */
-export declare function listRuns(stateRoot: string, limit: number, hasDraft: (draftId: DraftId) => Promise<boolean>): Promise<{
+export declare function listRuns(stateRoot: string, limit: number, hasDraft: (draftId: DraftId) => Promise<boolean>, filter?: RunsListFilter): Promise<{
     count: number;
     runs: Record<string, unknown>[];
 }>;
@@ -139,8 +155,12 @@ export declare function listRuns(stateRoot: string, limit: number, hasDraft: (dr
  *  (refused cards SKIPPED but counted, per root). Every served row
  *  names its root (served_from) and its seat (`test`, `path`);
  *  same-run-id collisions serve the FIRST manifest root's row
- *  (own writes win — the sort is stable, own root scanned first). */
-export declare function listRunsAcross(roots: string[], limit: number, hasDraft: (draftId: DraftId) => Promise<boolean>): Promise<{
+ *  (own writes win — the sort is stable, own root scanned first).
+ *  The optional runs-per-draft filter (RunsListFilter — the
+ *  stale-two-run audit's cure 3) narrows the SERVED rows only:
+ *  count stays the scan total, and the limit slices the FILTERED
+ *  order, never the scan's. */
+export declare function listRunsAcross(roots: string[], limit: number, hasDraft: (draftId: DraftId) => Promise<boolean>, filter?: RunsListFilter): Promise<{
     count: number;
     runs: Record<string, unknown>[];
 }>;

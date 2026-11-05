@@ -324,8 +324,12 @@ export declare class RunsRuntimeService extends Service {
     /** The list arm (REBUILD-7): the restore-port envelope over the
      *  output roots. The raw limit STRING rides from the lane (strict
      *  int() semantics: underscores parse, junk refuses). The drafts
-     *  probe rides the drafts remote. */
-    list(rawLimit: string, signal: AbortSignal): Promise<{
+     *  probe rides the drafts remote. The optional draft/stage
+     *  filters (the stale-two-run chat audit's cure 3 — runsList.ts
+     *  RunsListFilter) narrow the served rows to one draft's takes;
+     *  an empty string reads ABSENT (the parse_qs blank law), never
+     *  as a match against the empty id. */
+    list(rawLimit: string, signal: AbortSignal, draftId?: string, benchStageId?: string): Promise<{
         count: number;
         runs: Record<string, unknown>[];
     }>;

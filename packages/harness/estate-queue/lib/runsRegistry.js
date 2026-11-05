@@ -2270,8 +2270,12 @@ export class RunsRuntimeService extends Service {
     /** The list arm (REBUILD-7): the restore-port envelope over the
      *  output roots. The raw limit STRING rides from the lane (strict
      *  int() semantics: underscores parse, junk refuses). The drafts
-     *  probe rides the drafts remote. */
-    async list(rawLimit, signal) {
+     *  probe rides the drafts remote. The optional draft/stage
+     *  filters (the stale-two-run chat audit's cure 3 — runsList.ts
+     *  RunsListFilter) narrow the served rows to one draft's takes;
+     *  an empty string reads ABSENT (the parse_qs blank law), never
+     *  as a match against the empty id. */
+    async list(rawLimit, signal, draftId, benchStageId) {
         signal.throwIfAborted();
         // The door's 400 text (parseIntOrNull in runsList.ts) — the runs face's invalid-request refusal.
         // ONLY this parse folds; every other failure stays loud (no absorb).
@@ -2287,9 +2291,15 @@ export class RunsRuntimeService extends Service {
         // list with `test: true` stamped (listRunsAcross owns the
         // seats; there is no flag-filtered list, hiding by query is
         // not a door this estate serves).
-        return await listRunsAcross(this.ctx.queue.stateRoots, limit, async (draftId) => {
+        const filter = (draftId !== undefined && draftId !== "") || (benchStageId !== undefined && benchStageId !== "")
+            ? {
+                ...(draftId !== undefined && draftId !== "" ? { draftId } : {}),
+                ...(benchStageId !== undefined && benchStageId !== "" ? { benchStageId } : {}),
+            }
+            : undefined;
+        return await listRunsAcross(this.ctx.queue.stateRoots, limit, async (probeId) => {
             try {
-                await this.ctx.draftsRemote.get(draftId, signal);
+                await this.ctx.draftsRemote.get(probeId, signal);
                 return true;
             }
             catch (e) {
@@ -2300,7 +2310,7 @@ export class RunsRuntimeService extends Service {
                 void e;
                 return false;
             }
-        });
+        }, filter);
     }
     /** The validate arm (REBUILD-8): the PURE compile pipeline
      *  (flowFromBody → compile → pin sweep → the 200 row) over the
