@@ -6,6 +6,8 @@ import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import {
   cellArtifactCoordinates,
+  dropAuthoringIncomplete,
+  isDeliverableHalfVoice,
   judgeDeliverableSize,
   judgeLaneRelations,
   judgeLaneSurface,
@@ -452,6 +454,33 @@ describe("judgeDeliverableSize (the size door's size law — one spelling, four 
   it("the first law in the order wins (half before integer, integer before floor)", () => {
     const out = judgeDeliverableSize({ match_input_resolution: false, width: 8.5 });
     assert.match(out[0]?.message ?? "", /state both width and height/);
+  });
+});
+
+describe("dropAuthoringIncomplete + the deliverable-size half (the write-seat law, 2026-11-15)", () => {
+  const half = judgeDeliverableSize({ match_input_resolution: false, width: 2024 })[0]!;
+  const bothOff = judgeDeliverableSize({ match_input_resolution: false, width: 2024, height: 1024 });
+  const onStated = judgeDeliverableSize({ match_input_resolution: true, width: 2024, height: 1024 })[0]!;
+  const fractional = judgeDeliverableSize({ match_input_resolution: false, width: 2024.5, height: 1024 })[0]!;
+  const tiny = judgeDeliverableSize({ match_input_resolution: false, width: 8, height: 8 })[0]!;
+
+  it("the half voice is the size class (the ONE stem, never a re-typed literal)", () => {
+    assert.equal(isDeliverableHalfVoice(half.message), true);
+    assert.equal(isDeliverableHalfVoice(onStated.message), false);
+    assert.equal(isDeliverableHalfVoice(fractional.message), false);
+  });
+
+  it("the write seat drops the half (a form is typed one key at a time) and keeps every stated-wrong class", () => {
+    assert.deepEqual(dropAuthoringIncomplete([half]), []);
+    // both axes lawful = nothing to drop (and nothing remains)
+    assert.deepEqual(dropAuthoringIncomplete(bothOff), []);
+    // the stated-wrong classes still refuse a write (they are not
+    // authoring halves: pressing with those values is a real mistake)
+    assert.deepEqual(dropAuthoringIncomplete([onStated]), [onStated]);
+    assert.deepEqual(dropAuthoringIncomplete([fractional]), [fractional]);
+    assert.deepEqual(dropAuthoringIncomplete([tiny]), [tiny]);
+    // a composite (half beside a stated-wrong) keeps the stated-wrong
+    assert.deepEqual(dropAuthoringIncomplete([half, onStated]), [onStated]);
   });
 });
 

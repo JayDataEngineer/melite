@@ -1666,19 +1666,24 @@ describe("THE STATED-SIZE WALL (the size door, 2026-11-12 — a stated pair SIZE
     ).toEqual({ ok: true });
   });
 
-  it("a lone axis under OFF refuses (a half deliverable is malformed — state both)", () => {
-    const verdict = svc.admitStageRelations("image-edit", {
+  it("a lone axis under OFF ADMITS at the write seat and REFUSES at the run seat (the frictionless-authoring extension, 2026-11-15)", async () => {
+    // THE WRITE-SEAT CURE (the operator's image-edit burn: width 2024
+    // typed, height still empty, and the bench refused the keystroke —
+    // so NEITHER axis landed and the shown card was never the judged
+    // one). A form is written one key at a time: the write seat admits
+    // the half, the STRICT run seat still refuses it (a half pair never
+    // composes).
+    const half = {
       model: "qwen-img-edit-21",
       prompt: "make it night",
       image1: "x.png",
       match_input_resolution: false,
       width: 1328,
-    });
-    expect(verdict.ok).toBe(false);
-    if (!verdict.ok) {
-      expect(verdict.error).toContain("'width'");
-      expect(verdict.error).toContain("state both width and height");
     }
+    expect(svc.admitStageRelations("image-edit", half)).toEqual({ ok: true })
+    await expect(
+      svc.phase1Card(half, "qwen-img-edit-21"),
+    ).rejects.toThrow(/state both width and height/)
   });
 
   it("match OFF demands integers >= 16 (the old ceiling probe 4096 passes whole — the input-prep laws own the domain)", () => {

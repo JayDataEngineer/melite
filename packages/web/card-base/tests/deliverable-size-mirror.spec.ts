@@ -77,11 +77,16 @@ describe('THE FORM GATE judges the deliverable values (laneViolations)', () => {
     expect(out[0]?.message ?? '').not.toContain('fires nothing on this lane')
   })
 
-  test('a half pair under OFF refuses with the state-both voice', () => {
+  test('a half pair under OFF types CLEAN at the write seat (the frictionless-authoring extension, 2026-11-15)', () => {
+    // THE OPERATOR'S IMAGE-EDIT BURN: width 2024 typed, height still
+    // empty — the old gate flagged the keystroke, the bench write
+    // refused it, and NEITHER axis ever landed while the studio showed
+    // both. A form is written one key at a time: the write seat drops
+    // the size half (dropAuthoringIncomplete), the RUN seat keeps it
+    // (the compose-mirror arm below).
     const spec = editSpec()
-    const out = laneViolations(spec, fieldsOf(spec), { match_input_resolution: false, width: 1024 })
-    expect(hits(out, 'width')).toBe(1)
-    expect(out[0]?.message ?? '').toContain('state both width and height')
+    expect(laneViolations(spec, fieldsOf(spec), { match_input_resolution: false, width: 2024 })).toEqual([])
+    expect(laneViolations(spec, fieldsOf(spec), { match_input_resolution: false, height: 1024 })).toEqual([])
   })
 })
 
@@ -107,6 +112,13 @@ describe('THE COMPOSE MIRROR judges the deliverable values (composeValidate)', (
     expect(voice).toContain('card_compose: ')
     expect(voice).toContain('flip match_input_resolution to false')
     expect(voice).not.toContain('does not declare it')
+  })
+
+  test('a half pair under OFF still refuses at the RUN mirror (a half pair never composes)', () => {
+    const doc: SpecValues = { model: 'qwen-img-edit-21', prompt: 'make it night', match_input_resolution: false, width: 2024 }
+    const out = composeValidate(editSpec(), doc)
+    expect(hits(out, 'width')).toBe(1)
+    expect(out.find((v) => v.field === 'width')?.message ?? '').toContain('state both width and height')
   })
 
   test('a key no lane declares still refuses (the mirror keeps its departed-surface teeth)', () => {

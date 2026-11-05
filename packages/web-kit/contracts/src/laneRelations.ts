@@ -331,7 +331,8 @@ export function isUnstatedRequiredVoice(text: string): boolean {
  *  time … you are submitting a form, not hacking the mainframe"):
  *  the ONE function every write-side gate calls after the strict
  *  judge — it drops the authoring-incomplete class (the
- *  unstated-required word, a together half, an either_or half).
+ *  unstated-required word, a together half, an either_or half, and
+ *  the DELIVERABLE-SIZE half).
  *  The registry's write doors AND the form's inline gate BOTH drop
  *  through THIS function — attempt 12 (2026-11-11) was exactly this
  *  drift: the door filtered, the form's own copy of the judgment
@@ -339,13 +340,22 @@ export function isUnstatedRequiredVoice(text: string): boolean {
  *  was green because the walls drove the door, not the form. One
  *  spelling; a second copy of this class test anywhere is the
  *  multiple-seat disease.
+ *  THE SIZE HALF (2026-11-15, the operator's image-edit burn: width
+ *  2024 typed, height still empty, and the bench refused the
+ *  keystroke with "state both width and height" — so NEITHER axis
+ *  ever landed and the run refused a card the studio showed filled):
+ *  writing a form is sequential, so a stated size pair is only ever
+ *  admissibly half-typed. The write seat admits the half; the run
+ *  seat still refuses it (judgeDeliverableSize rides the strict
+ *  judge there).
  * @param violations the strict judge's violations (any seat)
  * @returns the violations a write-side gate may voice */
 export function dropAuthoringIncomplete<T extends { message: string }>(violations: readonly T[]): T[] {
   return violations.filter((v) =>
     !isUnstatedRequiredVoice(v.message)
     && !isTogetherHalfVoice(v.message)
-    && !isEitherOrHalfVoice(v.message))
+    && !isEitherOrHalfVoice(v.message)
+    && !isDeliverableHalfVoice(v.message))
 }
 
 /** The sentence stems of the two AUTHORING-HALF voices — a together
@@ -376,6 +386,23 @@ export function isTogetherHalfVoice(text: string): boolean {
 export function isEitherOrHalfVoice(text: string): boolean {
   return text.includes(EITHER_OR_HALF_STEM);
 }
+
+/** The deliverable-size half's sentence stem (judgeDeliverableSize's
+ *  first law): match_input_resolution is OFF and exactly one axis is
+ *  stated. THE WRITE SEAT ADMITS THIS CLASS (the frictionless-authoring
+ *  ruling, extended 2026-11-15): the pair can only be typed one key at
+ *  a time, so judging each keystroke as a malformed deliverable made
+ *  the pair UNWRITABLE and the card unrunnable. The RUN seat keeps the
+ *  strict judgment — a half pair never composes.
+ * @param text the refusal sentence to classify
+ * @returns true when the sentence is the deliverable-size half voice */
+export function isDeliverableHalfVoice(text: string): boolean {
+  return text.includes(DELIVERABLE_HALF_STEM);
+}
+
+/** The size-half stem — the ONE spelling shared by the judge's voice
+ *  and the write-seat class test (never a re-typed literal). */
+const DELIVERABLE_HALF_STEM: string = 'state both width and height';
 
 /** The heal's stricter twin: the text is the unstated-required class
  * AND NOTHING ELSE. A composite refusal (the judge joins multiple
