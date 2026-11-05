@@ -188,7 +188,7 @@ const REPAIR_MOD = {
         { name: 'source_clip', label: 'Source clip', type: 'file', media: 'video', default: '', tooltip: 'The clip whose region is repaired. Binds ONE staged leaf: the VHS window loader + the core LoadVideo both read it by staged name, and the timeline reads it back off the native VIDEO wire.' },
         { name: 'repair_prompt', label: 'Repair prompt', type: 'text', default: '', tooltip: 'The repair action text — what the masked region should become (agent-composed, user-confirmed; rides the reference-video prompt seat).' },
         { name: 'region_prompt', label: 'Region prompt', type: 'text', default: '', tooltip: 'The free-text SAM3 detection target naming the region — "hands", "a person", "a face". The mask tracks every matching object frame by frame and grows by mask_grow px.' },
-        { name: 'denoise', label: 'Denoise', type: 'number', default: 0.32, min: 0.05, max: 0.5, step: 0.01, tooltip: 'The partial-denoise strength of the masked pass (the refine window is 0.30–0.35; lower = subtler). 1 or more is refused — a repair is a refine, never a re-render.' },
+        { name: 'denoise', label: 'Denoise', type: 'number', default: 0.32, min: 0.05, max: 0.5, step: 0.01, tooltip: 'The partial-denoise strength of the masked pass (the refine window is 0.30–0.35; lower = subtler). The declared band 0.05–0.5 binds at compose: outside it refuses loud. 1 or more is the reshoot pole — a repair is a refine, never a re-render.' },
         { name: 'mask_grow', label: 'Mask grow px', type: 'number', default: 16, min: 0, max: 96, step: 1, tooltip: 'Pixels the tracked mask grows before the edit (seam ring protection; 0 repairs exactly the detected region — the grow-0 seam test).' },
         { name: 'detection_threshold', label: 'Detection threshold', type: 'number', default: 0.5, min: 0, max: 1, step: 0.01, tooltip: 'The SAM3 text-detection score threshold (lower finds more objects, noisier masks).' },
         { name: 'window_start', label: 'Window start (frames)', type: 'number', default: 0, min: 0, max: 100000, step: 1, tooltip: 'Frames (at the film clock, 24 fps) to skip before the repair window — 0 starts at the clip head.' },
@@ -241,7 +241,7 @@ const EXTEND_MOD = {
         // (agent-composed, user-confirmed).
         { name: 'source_clip', label: 'Source clip', type: 'file', media: 'video', default: '', tooltip: 'The clip whose seconds are extended. Binds ONE staged leaf: the VHS loader + the core LoadVideo both read it by staged name, and the timeline reads it back off the native VIDEO wire.' },
         { name: 'extend_prompt', label: 'Extend prompt', type: 'text', default: '', tooltip: 'The continuation text — MOTION and SOUND for the appended seconds, picking up exactly where the clip ends (agent-composed, user-confirmed; rides the reference-video prompt seat).' },
-        { name: 'extend_seconds', label: 'Extend seconds', type: 'number', default: 2.33, min: 0.92, max: 432.29, step: 0.01, tooltip: 'Seconds appended — must add up exactly: a single window lands on the engine grid at 24fps (22+17k frames, refuse loud otherwise; landable: 2.33s = 56f, 3.75s = 90f, 5.17s = 124f, 15.08s = 362f — the largest single window); above 362f the door joins N uniform 22+17k windows under the 39f context overlap, exact delivery or a refusal naming the neighbors (ceiling 32 windows = 432.29s).' },
+        { name: 'extend_seconds', label: 'Extend seconds', type: 'number', default: 2.33, min: 0.91, max: 432.29, step: 0.01, tooltip: 'Seconds appended — must add up exactly: a single window lands on the engine grid at 24fps (22+17k frames, refuse loud otherwise; landable: 0.92s = 22f (the grid floor), 2.33s = 56f, 3.75s = 90f, 5.17s = 124f, 15.08s = 362f — the largest single window); above 362f the door joins N uniform 22+17k windows under the 39f context overlap, exact delivery or a refusal naming the neighbors (ceiling 32 windows = 432.29s).' },
         { name: 'seed', label: 'Plan seed', type: 'number', default: 0, min: 0, max: 4294967295, step: 1, tooltip: 'The chain plan base_seed (the reference runs 0; the sampler seed stays the doc seed).' },
         { name: 'steps', label: 'Plan steps', type: 'number', default: 6, min: 1, max: 30, step: 1, tooltip: 'The chain plan default_steps (reference 6; the sampler steps stay the doc marriage).' },
         { name: 'overlap_frames', label: 'Overlap frames', type: 'number', default: 39, min: 22, max: 56, step: 17, tooltip: 'The plan overlap_frames (reference 39; in-run-only — the join itself is the film tail file law). The multi-window composition law carries exactly 39: a multi-window extend under another value refuses loud (every law-home pins 39).' },
@@ -322,7 +322,7 @@ const REFINE_MOD = {
         // (agent-composed, user-confirmed); the dials are numbers.
         { name: 'source_clip', label: 'Source clip', type: 'file', media: 'video', default: '', tooltip: 'The clip whose frames the second pass refines. Binds ONE staged leaf: the VHS loader reads it by staged name at the film clock, and the encode seats read its frames + soundtrack.' },
         { name: 'refine_prompt', label: 'Refine prompt', type: 'text', default: '', tooltip: 'The refine text — what the upscaled frames should hold (agent-composed, user-confirmed; rides the CLIPTextEncode positive seat — the node refuses without model + positive). THE PROMPT IS THE ONLY STYLE LEVER: nothing from the source prompt, seed or schedule carries, so restate the source\'s own look (the medium and the identity anchors) beside the quality asks — a generic quality-only prompt silently restyles the shot. This door RESTYLES decoded pixels and carries no lineage — a saved clip has no latent left, so a true context-carrying second pass is the chain 2-pass door, never this one.' },
-        { name: 'denoise', label: 'Denoise', type: 'number', default: 0.32, min: 0.05, max: 0.5, step: 0.01, tooltip: 'The partial-denoise strength of the refinement pass (the refine window is 0.30–0.35; lower = subtler). 1 or more is refused — a refine is never a re-render (the handoff\'s sigmas law: 0 <= sigmas[0] < 1).' },
+        { name: 'denoise', label: 'Denoise', type: 'number', default: 0.32, min: 0.05, max: 0.5, step: 0.01, tooltip: 'The partial-denoise strength of the refinement pass (the refine window is 0.30–0.35; lower = subtler). The declared band 0.05–0.5 binds at compose: outside it refuses loud. 1 or more is the re-render pole — a refine is never a re-render (the handoff\'s sigmas law: 0 <= sigmas[0] < 1).' },
         { name: 'steps', label: 'Refine steps', type: 'number', default: 6, min: 1, max: 30, step: 1, tooltip: 'The refinement schedule steps (the low-sigma second pass; the sampler steps stay the doc marriage).' },
         { name: 'seed', label: 'Refine seed', type: 'number', default: 0, min: 0, max: 4294967295, step: 1, tooltip: 'The refinement noise seed (0 runs the reference posture).' },
         // (the numbers are DERIVED from the model package's exported
@@ -443,11 +443,62 @@ const UPSCALE_MOD = {
         // dials are numbers.
         { name: 'chain_run', label: 'Chain run', type: 'chain-run', default: '', tooltip: 'The run whose checkpointed scenes this pass resumes — pick from the live list; Advanced accepts an id the list does not hold.' },
         { name: 'prompt', label: 'Pass-2 prompt', type: 'text', default: '', tooltip: 'What the upscaled frames should hold (agent-composed, user-confirmed). Blank reuses the source run\'s own per-scene prompts — the documented posture for a pure resolution pass.' },
-        { name: 'denoise', label: 'Denoise', type: 'number', default: 0.24, min: 0.05, max: 0.5, step: 0.01, tooltip: 'The partial-denoise strength of the pass-2 re-render (the recipe\'s own window is 0.24; lower = subtler). 1 or more is refused — an upscale is never a re-render (that is a reshoot, and the reshoot door exists).' },
+        { name: 'denoise', label: 'Denoise', type: 'number', default: 0.24, min: 0.05, max: 0.5, step: 0.01, tooltip: 'The partial-denoise strength of the pass-2 re-render (the recipe\'s own window is 0.24; lower = subtler). The declared band 0.05–0.5 binds at compose: outside it refuses loud. 1 or more is the reshoot pole — an upscale is never a re-render (that is a reshoot, and the reshoot door exists).' },
         { name: 'steps', label: 'Pass-2 steps', type: 'number', default: 20, min: 1, max: 30, step: 1, tooltip: 'The pass-2 schedule steps (the recipe runs 20; the sampler stays res_multistep, the loop family\'s own spelling).' },
         { name: 'segment_crf', label: 'Segment CRF', type: 'number', default: 18, min: 0, max: 51, step: 1, tooltip: 'The H.264 quality of the persisted HQ scene segments (the adapter\'s own seat; 18 is its default).' },
     ],
 };
+/** THE CARD-DECLARED KINDS (one roster, two readers: the served
+ *  mods row below and the declared-band judge's walk). */
+const DECLARED_MOD_KINDS = [
+    REPLACE_MOD, REPAIR_MOD, EXTEND_MOD, REFINE_MOD, RESHOOT_MOD, UPSCALE_MOD, LORAS_MOD,
+];
+/** THE DECLARED-BAND JUDGE (F3-07, R-P3-18): a number seat's DECLARED
+ *  band binds at the compose door. Every armed bag entry's stated
+ *  numeric field is judged against its declared min/max — the
+ *  DeclaredModifierKind field rows are the truth home, read at
+ *  compose time (never a copied literal), so a band edit binds
+ *  without a judge edit. The estate admission judges bag KEYS only
+ *  (cardsCompose.ts) and the mods-schema gate checks the row's SHAPE
+ *  only (min <= max), so this walk is the only judge an entry's
+ *  VALUES ever meet.
+ *
+ *  The >= 1 pole on a sub-1 band is NOT the band's: full denoise is
+ *  a different CLASS — a re-render — and the family door refuses it
+ *  in its own voice (repair/upscale/refine sigmas law); the band
+ *  judge steps aside there and keeps its voice for tunes inside the
+ *  reachable range.
+ *
+ * @param p the walked doc params (the mod bags ride their kinds'
+ * param_key) */
+export function judgeDeclaredBands(p) {
+    for (const kind of DECLARED_MOD_KINDS) {
+        const bag = p[kind.param_key];
+        if (!Array.isArray(bag))
+            continue;
+        for (const [i, e] of bag.entries()) {
+            if (e === null || typeof e !== 'object' || Array.isArray(e))
+                continue;
+            const entry = e;
+            for (const f of kind.fields ?? []) {
+                if (f.type !== 'number')
+                    continue;
+                const min = f.min;
+                const max = f.max;
+                if (typeof min !== 'number' || typeof max !== 'number')
+                    continue;
+                const v = entry[String(f.name)];
+                if (typeof v !== 'number' || !Number.isFinite(v))
+                    continue;
+                if (v >= 1 && max < 1)
+                    continue; // the re-render pole — the family door's own voice
+                if (v < min || v > max) {
+                    throw new Error(`h3-timeline ${kind.kind} entry ${i}: '${String(f.name)}': ${v} is outside this seat's declared band ${min}–${max} — the declaration binds, not the tooltip`);
+                }
+            }
+        }
+    }
+}
 /** THE FAMILY ACTION BINDING (the atom vocabulary's video stroke):
  *  the h3 family's declared film action composes the whole lane-true
  *  segment from the gated, lifted doc this card's plane produced —
@@ -512,6 +563,12 @@ export const ACTION_BINDINGS = {
         refineStackBag('refine', ref);
         oneEntryBag('reshoot', rsh, 'reshoot');
         oneEntryBag('upscale', ups, 'upscale');
+        // THE DECLARED-BAND JUDGE (F3-07, R-P3-18): every armed entry's
+        // stated numeric fields bind their declared min/max at this door
+        // — the value-judge the estate admission and the mods-schema gate
+        // never run. Rides BEFORE any dispatch (film, swap, repair,
+        // extend, refine, upscale all pass through here).
+        judgeDeclaredBands(p);
         const replaceArmed = Array.isArray(raw) && raw.length > 0;
         const repairArmed = Array.isArray(rep) && rep.length > 0;
         const extendArmed = Array.isArray(ext) && ext.length > 0;
@@ -803,7 +860,7 @@ export function registerCard(ctx, comfy) {
         // The mask card's sam3/sam2/draw precedent — one kind per arm,
         // entry fields as the popup's tiles, requires as the
         // presence-gated arm packs.
-        mods: [REPLACE_MOD, REPAIR_MOD, EXTEND_MOD, REFINE_MOD, RESHOOT_MOD, UPSCALE_MOD, LORAS_MOD],
+        mods: DECLARED_MOD_KINDS,
         jsonArrayParams: JSON_ARRAY_PARAMS,
         // the packs the window graph rides (EXTENSION LAW) + the film
         // tail's file boundary (melite-utility-nodes: MeliteUnload +

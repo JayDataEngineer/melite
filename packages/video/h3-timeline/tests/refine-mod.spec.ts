@@ -398,8 +398,16 @@ describe("the refine kind (the fifth mod bag)", () => {
         refine: [entry],
       }) as Record<string, unknown>;
     for (const [entry, re] of [
-      [{ ...REFINE_ENTRY(), clip_seconds: 0 }, /clip_seconds 0 — a refine window needs frames/],
-      [{ ...REFINE_ENTRY(), start_seconds: -1 }, /start_seconds -1 — a window starts at or after the clip's first frame/],
+      // F3-07: the DECLARED band binds at the compose door first —
+      // clip_seconds 0 and start_seconds -1 are out-of-band tunes on
+      // their declared rows ([0.5–60], [0–3600]); the family seats'
+      // own negative-window / needs-frames voices keep speaking for
+      // direct callers (renderH3RefineBag), the compose voice is the
+      // declaration's.
+      [{ ...REFINE_ENTRY(), clip_seconds: 0 },
+        /'clip_seconds': 0 is outside this seat's declared band 0.5–60 — the declaration binds, not the tooltip/],
+      [{ ...REFINE_ENTRY(), start_seconds: -1 },
+        /'start_seconds': -1 is outside this seat's declared band 0–3600 — the declaration binds, not the tooltip/],
       [{ ...REFINE_ENTRY(), clip_seconds: 6 },
         /a 144 f window at 2x — the 2x pass was measured OOM at 141 f and green at 90 f/],
     ] as Array<[Record<string, unknown>, RegExp]>) {

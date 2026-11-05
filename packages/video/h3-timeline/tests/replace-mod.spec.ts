@@ -265,7 +265,7 @@ describe("the replace kind", () => {
     const walked = def.schema({
       replace: [{
         ...SWAP_ENTRY(),
-        seed: 4242, steps: 8, clip_seconds: 3, overlap_frames: 12, resolution: '1080p',
+        seed: 4242, steps: 8, clip_seconds: 3, overlap_frames: 22, resolution: '1080p',
       }],
     }) as Record<string, unknown>;
     const g = new GraphBuilder();
@@ -275,7 +275,7 @@ describe("the replace kind", () => {
     assert.equal(head.seed, 4242, "a stated seed stamps the plan head");
     assert.equal(head.steps, 8, "a stated steps stamps the plan head");
     assert.equal(head.clip_seconds, 3, "a stated clip_seconds stamps the plan head");
-    assert.equal(head.overlap_frames, 12, "a stated overlap_frames stamps the plan head");
+    assert.equal(head.overlap_frames, 22, "a stated overlap_frames stamps the plan head (22: the combo's floor, a lawful non-default — the declared band 22–56 binds, F3-07)");
     assert.equal(head.resolution, '1080p', "a stated tier overrides the 736p default");
     const chain = ofClass(out, 'MiniMaxH3ChainPlanModern')[0][1].inputs;
     assert.equal(chain.base_seed, 4242, "the chain plan carries the stated base_seed");

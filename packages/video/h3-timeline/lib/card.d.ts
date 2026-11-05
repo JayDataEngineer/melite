@@ -16,6 +16,25 @@ export { carrier, JSON_ARRAY_PARAMS, schema } from '@melite/models-h3/schema';
  *  family's own DECL, and with it the lane's files. */
 export declare const BOARDED: string[];
 export declare const VARIANT_ADDRESSES: string[];
+/** THE DECLARED-BAND JUDGE (F3-07, R-P3-18): a number seat's DECLARED
+ *  band binds at the compose door. Every armed bag entry's stated
+ *  numeric field is judged against its declared min/max — the
+ *  DeclaredModifierKind field rows are the truth home, read at
+ *  compose time (never a copied literal), so a band edit binds
+ *  without a judge edit. The estate admission judges bag KEYS only
+ *  (cardsCompose.ts) and the mods-schema gate checks the row's SHAPE
+ *  only (min <= max), so this walk is the only judge an entry's
+ *  VALUES ever meet.
+ *
+ *  The >= 1 pole on a sub-1 band is NOT the band's: full denoise is
+ *  a different CLASS — a re-render — and the family door refuses it
+ *  in its own voice (repair/upscale/refine sigmas law); the band
+ *  judge steps aside there and keeps its voice for tunes inside the
+ *  reachable range.
+ *
+ * @param p the walked doc params (the mod bags ride their kinds'
+ * param_key) */
+export declare function judgeDeclaredBands(p: Record<string, unknown>): void;
 /** THE FAMILY ACTION BINDING (the atom vocabulary's video stroke):
  *  the h3 family's declared film action composes the whole lane-true
  *  segment from the gated, lifted doc this card's plane produced —

@@ -22,6 +22,7 @@ import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
+import { judgeDeclaredBands } from "../src/card.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -100,12 +101,13 @@ describe("the repair kind", () => {
     assert.ok(String(by.region_prompt.tooltip).includes('"hands"'),
       "the region tooltip names the param values (hands / a person / a face) — no card-per-region");
     // THE DENOISE CEILING (the refine window law): the field's hint
-    // bounds are 0.05–0.50 with the 0.32 default; the loud >= 1
-    // refusal lives at the compose door (the row below).
+    // bounds are 0.05–0.50 with the 0.32 default; the DECLARED BAND
+    // binds at the compose door (the F3-07 arms below) and the loud
+    // >= 1 reshoot pole keeps its own voice at the family door.
     assert.equal(by.denoise.type, 'number');
     assert.equal(by.denoise.default, 0.32, "the default sits in the 0.30–0.35 refine window");
-    assert.equal(by.denoise.min, 0.05, "the hint floor");
-    assert.equal(by.denoise.max, 0.5, "the hint ceiling (compose refuses >= 1 loud)");
+    assert.equal(by.denoise.min, 0.05, "the declared floor (the band judge binds it)");
+    assert.equal(by.denoise.max, 0.5, "the declared ceiling (the band judge binds it)");
     // The plan tier vocabulary, closed (same tiers as the swap arm).
     assert.equal(by.resolution.type, 'select');
     assert.deepEqual(
@@ -188,6 +190,53 @@ describe("the repair kind", () => {
       /denoise 1 >= 1.*never a re-render/s,
       "full denoise would boil the held region into a new take — the sigmas law precedent (actions.ts refine arm) guards this seat",
     );
+  });
+
+  it("THE DECLARED BAND BINDS (F3-07): denoise 0.8 refuses naming the declared 0.05–0.5 band — the door enforces the declaration, not the tooltip", () => {
+    // THE BURN (R-P3-18, rev 118): repair[{denoise:0.8, …}] COMPOSED —
+    // the door refused only >= 1 while the DECLARED row stated
+    // 0.05–0.5; a full-noise "repair" (a reshoot by the doc's own
+    // law) was one press from running.
+    const walked = def.schema({ repair: [{ ...REPAIR_ENTRY(), denoise: 0.8 }] }) as Record<string, unknown>;
+    assert.throws(
+      () => def.compose(walked, model, new GraphBuilder(), "run_repair_band_ceiling"),
+      /'denoise': 0.8 is outside this seat's declared band 0.05–0.5 — the declaration binds, not the tooltip/,
+    );
+  });
+
+  it("THE DECLARED BAND BINDS (F3-07): denoise 0.02 refuses the same voice — the declared floor is law, not a hint", () => {
+    const walked = def.schema({ repair: [{ ...REPAIR_ENTRY(), denoise: 0.02 }] }) as Record<string, unknown>;
+    assert.throws(
+      () => def.compose(walked, model, new GraphBuilder(), "run_repair_band_floor"),
+      /'denoise': 0.02 is outside this seat's declared band 0.05–0.5 — the declaration binds, not the tooltip/,
+    );
+  });
+
+  it("THE BAND JUDGE IS GENERIC (F3-07's class arm): any declared kind's stated numeric field binds its own row — and the >= 1 pole on a sub-1 band stays the family door's voice", () => {
+    // The judge reads the DeclaredModifierKind field rows directly —
+    // the NEXT declared band cannot silently join the unenforced set.
+    assert.throws(
+      () => judgeDeclaredBands({ repair: [{ denoise: 0.7 }] }),
+      /'denoise': 0.7 is outside this seat's declared band 0.05–0.5/,
+      "an out-of-band tune on a declared number seat violates",
+    );
+    assert.throws(
+      () => judgeDeclaredBands({ repair: [{ mask_grow: 500 }] }),
+      /'mask_grow': 500 is outside this seat's declared band 0–96/,
+      "a second kind's field binds its own band (the class, not the denoise instance)",
+    );
+    assert.throws(
+      () => judgeDeclaredBands({ loras: [{ strength: 3 }] }),
+      /'strength': 3 is outside this seat's declared band 0–2/,
+      "a third kind binds too (the roster walk, not a repair-shaped copy)",
+    );
+    judgeDeclaredBands({ repair: [{ denoise: 0.32, mask_grow: 16 }, { denoise: 0.5 }] });
+    judgeDeclaredBands({ repair: [{ denoise: 1 }] });
+    judgeDeclaredBands({ replace: [{ source_clip: 'c.mp4' }] });
+    judgeDeclaredBands({});
+    // nothing threw: in-band tunes pass, the >= 1 pole on a sub-1 band
+    // steps aside for the family door's sigmas voice, a non-array bag
+    // and an absent bag are the unused arm
   });
 
   it("a bound arm composes the masked second-pass chain on the family's own plane", () => {

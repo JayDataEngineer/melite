@@ -6548,8 +6548,10 @@ window.__ModuleLoader__.load({
 		//#region ../../models/h3/src/filmMix.ts
 		/** Parse raw audio_clips rows — the card's one law for what a clip
 		*  IS: a src without a numeric start_frame refuses loud (never a
-		*  silent misplacement); a row without src is junk and skips; the
-		*  class auto law (text → dialogue, textless → music) rides here. */
+		*  silent misplacement); a row that states anything without src
+		*  refuses loud (never a silent phantom row); only the contentless
+		*  row (no stated key at all) is junk and skips; the class auto law
+		*  (text → dialogue, textless → music) rides here. */
 		function parseFilmMixClips(rows) {
 			const clips = [];
 			const INT_STRING = /^[+-]?\d+$/;
@@ -6562,6 +6564,7 @@ window.__ModuleLoader__.load({
 				const src = typeof row.src === "string" ? row.src.trim() : "";
 				if (src === "") {
 					if (row.start_frame !== void 0 || row.dur_frames !== void 0 || typeof row.text === "string" && row.text.trim() !== "" || typeof row.class === "string" && row.class.trim() !== "" || typeof row.id === "string" && row.id.trim() !== "" || typeof row.name === "string" && row.name.trim() !== "") throw new Error("audio_clips: a positioned clip row has no src — the film mix cannot place a source-less row");
+					if (Object.keys(row).some((k) => row[k] !== void 0)) throw new Error("audio_clips: a clip row has no src — the film mix cannot mix a source-less row; state src or drop the row");
 					continue;
 				}
 				if (typeof row.start_frame !== "number" || !Number.isFinite(row.start_frame)) throw new Error(`audio_clips: a clip with src but no numeric start_frame — the audio lanes own placement (re-add the clip)`);
