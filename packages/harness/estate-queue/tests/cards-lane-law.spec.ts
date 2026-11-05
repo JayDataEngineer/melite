@@ -1686,6 +1686,37 @@ describe("THE STATED-SIZE WALL (the size door, 2026-11-12 — a stated pair SIZE
     ).rejects.toThrow(/state both width and height/)
   });
 
+  it("the SEQUENTIAL journey: the operator's exact keystroke order lands (flip, width, height) and the whole pair composes (W4)", async () => {
+    // THE JOURNEY WALL (the image-edit burn, 2026-11-15): the report's
+    // W4 — the DRILL writes ONE key per door write, the door judges
+    // the MERGED stored row. Replayed at the real registry seat, in
+    // the operator's order, so the deadlock can never come back green:
+    // typed-but-not-yet-paired is a WRITE-SEAT state now, and only
+    // the strict run seat still demands the whole pair.
+    const stored: Record<string, unknown> = {
+      model: "qwen-img-edit-21",
+      prompt: "four direction view",
+      image1: "x.png",
+      match_input_resolution: true,
+    }
+    // 0) a width typed while match is still ON: still a REAL mistake —
+    //    refused at the write seat with the flip voice.
+    const onStated = svc.admitStageRelations("image-edit", { ...stored, width: 2024 })
+    expect(onStated.ok).toBe(false)
+    if (!onStated.ok) expect(onStated.error).toContain("flip match_input_resolution to false")
+    // 1) the flip lands (OFF with neither axis is the lawful identity)
+    expect(svc.admitStageRelations("image-edit", { ...stored, match_input_resolution: false })).toEqual({ ok: true })
+    stored.match_input_resolution = false
+    // 2) WIDTH ALONE LANDS — the cure's whole point (no half deadlock)
+    expect(svc.admitStageRelations("image-edit", { ...stored, width: 2024 })).toEqual({ ok: true })
+    stored.width = 2024
+    // 3) HEIGHT ALONE LANDS too; the merged row now holds the pair
+    expect(svc.admitStageRelations("image-edit", { ...stored, height: 1024 })).toEqual({ ok: true })
+    stored.height = 1024
+    // 4) the whole pair passes the strict RUN seat (a half never would)
+    await expect(svc.phase1Card(stored, "qwen-img-edit-21")).resolves.toBeTruthy()
+  })
+
   it("match OFF demands integers >= 16 (the old ceiling probe 4096 passes whole — the input-prep laws own the domain)", () => {
     const fractional = svc.admitStageRelations("image-edit", {
       model: "qwen-img-edit-21",
