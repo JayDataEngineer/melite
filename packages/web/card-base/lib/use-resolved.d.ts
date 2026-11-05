@@ -16,6 +16,11 @@ export declare function useResolvedForm(family: string, user: Record<string, unk
     /** The spec's field row by wire name (the coercion's own lookup,
      * exposed for hosts that render their own atoms). */
     fieldOf: (name: string) => SpecField | undefined;
+    /** THE SAME-SESSION REFRESH (2026-11-15, the lora upload leaf):
+     *  stale-while-revalidate re-fetch of the served spec — the form
+     *  never blanks mid-edit; a landed lora row serves in the SAME
+     *  session. Threaded onto the host wire beside `uploadLora`. */
+    refresh: () => Promise<void>;
 };
 /** The layer composition — PURE, exported for the seam's own wall:
  * with a spec it is exactly resolveValue (schema <- model_defaults

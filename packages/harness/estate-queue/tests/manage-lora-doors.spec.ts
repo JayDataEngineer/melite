@@ -18,7 +18,7 @@
  */
 import { describe, it, afterEach } from "vitest";
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { dispatchManage } from "../src/managePlane.ts";
@@ -266,6 +266,87 @@ describe("the manage plane — the LoRA doors (the Manager sidebar's own vocabul
       assert.deepEqual(readFileSync(join(dir, "h3", "uploaded.safetensors")), bytes);
       // the seat wrote the rows file (no paste, no repo pollution)
       assert.equal(JSON.parse(readFileSync(rows, "utf8")).rows.length, 1);
+    } finally {
+      if (prev === undefined) delete process.env["MELITE_COMFYUI_LORAS_DIR"];
+      else process.env["MELITE_COMFYUI_LORAS_DIR"] = prev;
+      if (prevRows === undefined) delete process.env["MELITE_USER_LORAS"];
+      else process.env["MELITE_USER_LORAS"] = prevRows;
+    }
+  });
+
+  // THE BUTTON'S STRENGTH SEAT (W2, the mods-plane upload button
+  // 2026-11-05): the operator's default strength rides the install
+  // req into BOTH the seated row and the answer's row echo — the
+  // same value the picker seeds from and compose honors for
+  // unstated strengths. Toggling the threading out (the seat's
+  // literal reverting to 1) reds this on its own path: the row
+  // answers 1, not 0.8.
+  it("lora_install BYTES with default_strength: the operator's value seats and echoes (never a hardcoded 1)", async () => {
+    const ctx = CTX({ objectInfo: engineAnswer(["h3/one.safetensors"]) });
+    const dir = join(tempRoot("lane-strength-"), "loras");
+    const rows = join(tempRoot("lane-strength-rows-"), "user-loras.json");
+    const prev = process.env["MELITE_COMFYUI_LORAS_DIR"];
+    const prevRows = process.env["MELITE_USER_LORAS"];
+    process.env["MELITE_COMFYUI_LORAS_DIR"] = dir;
+    process.env["MELITE_USER_LORAS"] = rows;
+    try {
+      const bytes = Buffer.alloc(16, 3);
+      const [code, res] = await run(
+        {
+          action: "lora_install",
+          filename: "op-pick.safetensors",
+          data: "data:application/octet-stream;base64," + bytes.toString("base64"),
+          families: ["h3"],
+          default_strength: 0.8,
+        },
+        ctx,
+      );
+      assert.equal(code, 200);
+      const data = res.data as Record<string, unknown> & { row?: Record<string, unknown> };
+      assert.equal(data["row_seated"], true);
+      // THE ECHO: the answer's row names the operator's value —
+      // the button reads THIS to paint the leaf's dial
+      assert.equal(data["row"]?.["default_strength"], 0.8);
+      // THE PERSISTED ROW carries it (the picker seed + compose
+      // default both read the file, not the answer)
+      const seated = JSON.parse(readFileSync(rows, "utf8")) as { rows: Array<Record<string, unknown>> };
+      assert.equal(seated.rows.length, 1);
+      assert.equal(seated.rows[0]?.["default_strength"], 0.8);
+    } finally {
+      if (prev === undefined) delete process.env["MELITE_COMFYUI_LORAS_DIR"];
+      else process.env["MELITE_COMFYUI_LORAS_DIR"] = prev;
+      if (prevRows === undefined) delete process.env["MELITE_USER_LORAS"];
+      else process.env["MELITE_USER_LORAS"] = prevRows;
+    }
+  });
+
+  it("lora_install refuses an out-of-band default_strength in the door's own voice (a lying default serves twice)", async () => {
+    const ctx = CTX({ objectInfo: engineAnswer(["h3/one.safetensors"]) });
+    const dir = join(tempRoot("lane-band-"), "loras");
+    const rows = join(tempRoot("lane-band-rows-"), "user-loras.json");
+    const prev = process.env["MELITE_COMFYUI_LORAS_DIR"];
+    const prevRows = process.env["MELITE_USER_LORAS"];
+    process.env["MELITE_COMFYUI_LORAS_DIR"] = dir;
+    process.env["MELITE_USER_LORAS"] = rows;
+    try {
+      for (const bad of [2.5, -0.1]) {
+        const [code, res] = await run(
+          {
+            action: "lora_install",
+            filename: "bad.safetensors",
+            data: "data:application/octet-stream;base64,AAAA",
+            families: ["h3"],
+            default_strength: bad,
+          },
+          ctx,
+        );
+        assert.equal(code, 422, `default_strength ${String(bad)}`);
+        assert.equal(res.ok, false);
+        assert.match(res.detail, /default_strength must be a finite number in 0–2/);
+      }
+      // NOTHING LANDED — the band is judged before any byte or row
+      assert.equal(existsSync(dir), false);
+      assert.equal(existsSync(rows), false);
     } finally {
       if (prev === undefined) delete process.env["MELITE_COMFYUI_LORAS_DIR"];
       else process.env["MELITE_COMFYUI_LORAS_DIR"] = prev;

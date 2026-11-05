@@ -37,7 +37,7 @@ import { Button, IconCloseOutlineRegular, Input, Modal, Pill, StateDot } from '@
 import { CardDrill } from './card-drill.tsx'
 import { MediaDrilldown, type MediaDrilldownItem } from '@melite-plugin/dsh-gallery/drilldown'
 import type { StageViewOwnerProps } from './types.ts'
-import { coerceFieldEdit, fetchFormSpec, fieldsOf, resolveValue, seedUser, reseatEnvelopeKeys, CardForm, type FormSpecDoc, type SpecValues } from '@melite/card-base/client'
+import { coerceFieldEdit, fetchFormSpec, fieldsOf, resolveValue, seedUser, reseatEnvelopeKeys, CardForm, resolveFamilyKey, uploadLoraDoor, type FormSpecDoc, type SpecValues } from '@melite/card-base/client'
 import { axisUnset, axisGroups, axisKey, composeCandidateDoc, composeValidate, dropStaleReopenCarry, mergeSwitchFrame, modelSwitchPatch, studioClaimsRow } from '@melite/card-base/client'
 import type { ComposeViolation } from '@melite/card-base/client'
 import { forgetStageWrites, reconcileStageWriteFailures, refuseForUnlandedWrite, scheduleStageParam } from './draft.ts'
@@ -1357,8 +1357,53 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
   // the form's picker receives its rows INJECTED, never a fetch of
   // its own). loadChainRuns rides the mounted runs namespace the
   // same way — the upscale leaf's chain-run picker (the free-text
-  // store-name burn's cure).
-  const wire = { candidates, candidatesFor, loadMedia: fetchMediaLibrary, loadChainRuns: fetchChainRunCandidates }
+  // store-name burn's cure). THE LORA HAND-UPLOAD (2026-11-15): the
+  // host owns the transport + the family shelf (the SERVED spec's
+  // own family — never a re-derivation); the refresh is
+  // stale-while-revalidate over the same model (a bare setSpec swap
+  // — the seeding lives in the arrival effect, a refresh never
+  // re-seeds). Absent spec = no affordance (the degrade law).
+  const wire = {
+    candidates,
+    candidatesFor,
+    loadMedia: fetchMediaLibrary,
+    loadChainRuns: fetchChainRunCandidates,
+    ...(spec !== null
+      ? {
+          uploadLora: (file: File, opts: { strength?: number }) =>
+            uploadLoraDoor(file, { families: resolveFamilyKey(spec), strength: opts.strength }),
+          refreshSpec: async (): Promise<void> => {
+            const held = specRef.current
+            if (held === null) return
+            // the standing doc's own family is the refetch key — a
+            // model-less doc (the type admits it) has nothing to
+            // refresh, mirroring the arrival effect's empty guard
+            const family = typeof held.model === 'string' && held.model !== '' ? held.model : null
+            if (family === null) return
+            // THE SEQ FENCE (the completeness audit's land-blocker,
+            // 2026-11-15): the model-guard alone raced the commit —
+            // specRef trails setSpec by one commit, so a refresh
+            // settling inside a re-key's commit window landed the
+            // DEPARTED family's doc (sticky until the next arrival).
+            // The refresh claims the arrival effect's own sequence
+            // before fetching and lands only when no newer claim
+            // stands; the pending row rides too, so a run press
+            // fences while a refresh answer is owed (the P4 law).
+            const seq = (specFetchSeqRef.current += 1)
+            pendingSpecRef.current = { family, seq }
+            try {
+              const doc = await fetchFormSpec(family)
+              if (specFetchSeqRef.current === seq) setSpec(doc)
+            } catch {
+              // the standing spec survives a refused refresh — the
+              // drill's error face stays the arrival effect's own
+            } finally {
+              if (pendingSpecRef.current?.seq === seq) pendingSpecRef.current = null
+            }
+          },
+        }
+      : {}),
+  }
   const run = async (): Promise<void> => {
     setError(null)
     try {

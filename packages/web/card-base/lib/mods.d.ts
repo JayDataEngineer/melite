@@ -97,6 +97,23 @@ export interface ModifiersSectionProps {
      *  media rows. Absent → the chain-run field degrades to its plain
      *  text input. */
     loadChainRuns?: (signal: AbortSignal) => Promise<ChainRunCandidate[]>;
+    /** THE LORA UPLOAD SOURCE (2026-11-15, the mods-plane hand-upload):
+     *  the host's estate transport (POST /v1/uploads/lora — raw
+     *  octet-stream) with the host's own family resolution. Absent →
+     *  the OPTION-kind leaf renders no upload affordance (the degrade
+     *  law — the same honest absence loadChainRuns degrades to). */
+    uploadLora?: (file: File, opts: {
+        strength?: number;
+    }) => Promise<{
+        id: string;
+        default_strength?: number;
+        row_seated: boolean;
+        refusal?: string;
+    }>;
+    /** THE SAME-SESSION REFRESH (rides the upload wire): stale-while-
+     *  revalidate form-spec refetch — a landed lora row serves in the
+     *  picker the SAME session. Absent → the id serves on next mount. */
+    refreshSpec?: () => Promise<void>;
     /** THE FLOW CANDIDATES (E2-11a — the region-mask picker law): the
      *  host bench's other stages' latest artifacts, threaded from the
      *  constructor's wire. The leaf's From-flow picker serves THESE —

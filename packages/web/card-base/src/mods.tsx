@@ -47,6 +47,7 @@ import { coerceFieldEdit, fieldRequired, isHybridKind, isOptionKind, optionKeyOf
 import { modCommitWrite } from '@melite/contracts/formSpec'
 import { SpecMenuSelect } from './atoms.tsx'
 import { Tip } from './layout.tsx'
+import { rejectionVoice } from './rejection-voice.ts'
 import type { ChainRunCandidate } from './runs-policy.ts'
 
 /** THE CATALOG PICKER ROWS (S7i): ghost '— pick —', served rows
@@ -216,6 +217,21 @@ export interface ModifiersSectionProps {
    *  media rows. Absent → the chain-run field degrades to its plain
    *  text input. */
   loadChainRuns?: (signal: AbortSignal) => Promise<ChainRunCandidate[]>
+  /** THE LORA UPLOAD SOURCE (2026-11-15, the mods-plane hand-upload):
+   *  the host's estate transport (POST /v1/uploads/lora — raw
+   *  octet-stream) with the host's own family resolution. Absent →
+   *  the OPTION-kind leaf renders no upload affordance (the degrade
+   *  law — the same honest absence loadChainRuns degrades to). */
+  uploadLora?: (file: File, opts: { strength?: number }) => Promise<{
+    id: string
+    default_strength?: number
+    row_seated: boolean
+    refusal?: string
+  }>
+  /** THE SAME-SESSION REFRESH (rides the upload wire): stale-while-
+   *  revalidate form-spec refetch — a landed lora row serves in the
+   *  picker the SAME session. Absent → the id serves on next mount. */
+  refreshSpec?: () => Promise<void>
   /** THE FLOW CANDIDATES (E2-11a — the region-mask picker law): the
    *  host bench's other stages' latest artifacts, threaded from the
    *  constructor's wire. The leaf's From-flow picker serves THESE —
@@ -628,7 +644,13 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
     // leaf modal's Add/Save button, rendered iff leaf !== null — no
     // caller can observe the null state.)
     const open = leaf!
-    const k = open.kind
+    // THE LIVE KIND AT SAVE TIME (the upload refresh, 2026-11-15):
+    // the same re-resolution the render rides — a row the refreshed
+    // serve added must pass the served-rows judgment HERE too (the
+    // stale kind would refuse the just-uploaded id as
+    // hand-spelled). A kind the refresh retired saves against its
+    // last serve; unknown ids still refuse loud.
+    const k = kinds.find((x) => x.kind === open.kind.kind && x.param_key === open.kind.param_key) ?? open.kind
     const entries = entriesOf(k)
     if (isHybridKind(k)) {
       // HYBRID kind: the catalog select binds option_key; the row's
@@ -958,15 +980,27 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
     // knobs scroll under it). Same grammar as CardDrill/.wireDialog:
     // className lands on the modal card; max-height + overflow own
     // the scroll.
-    leaf !== null ? h(Modal, {
+    // THE LIVE-KIND RE-RESOLUTION (the upload refresh, 2026-11-15):
+    // the leaf seat captures its kind at OPEN time, but a host spec
+    // refresh (the upload wire's stale-while-revalidate) re-serves
+    // the kinds — an open leaf must serve the LIVE options (the
+    // uploaded row pickable in the SAME session), never the stale
+    // object it opened against. Identity = kind + param_key; a kind
+    // the refresh retired keeps its last serve (the edit stays
+    // honest — saveLeaf's refusal law still judges unknown rows).
+    leaf !== null ? (() => {
+      const live = kinds.find((k) => k.kind === leaf.kind.kind && k.param_key === leaf.kind.param_key) ?? leaf.kind
+      return h(Modal, {
       open: true,
       onClose: () => { setLeaf(null) },
-      title: leaf.mode === 'create' ? chromeCopy.leafCreateTitle({ kindLabel: leaf.kind.label }) : chromeCopy.leafEditTitle({ kindLabel: leaf.kind.label }),
+      title: leaf.mode === 'create' ? chromeCopy.leafCreateTitle({ kindLabel: live.label }) : chromeCopy.leafEditTitle({ kindLabel: live.label }),
       closeLabel: chromeCopy.leafCloseLabel,
       className: css.modLeafModal,
     },
-      h(ModLeaf, { leaf, values, hideFields: seated, onDraft: { setDraftOption, setDraftStrength, setDraftParams, setDraftSteps, draftOption, draftStrength, draftParams, draftSteps }, onError: setLeafError, onSave: saveLeaf, onDelete: deleteLeaf, leafError, paintFace: props.paintFace, bboxFace: props.bboxFace, ...(props.orbitFace !== undefined ? { orbitFace: props.orbitFace } : {}), paintReferenceValue: typeof props.paintReference === 'string' ? String(values[props.paintReference] ?? '') : '', ...(props.loadMedia !== undefined ? { loadMedia: props.loadMedia } : {}),
+      h(ModLeaf, { leaf: { ...leaf, kind: live }, values, hideFields: seated, onDraft: { setDraftOption, setDraftStrength, setDraftParams, setDraftSteps, draftOption, draftStrength, draftParams, draftSteps }, onError: setLeafError, onSave: saveLeaf, onDelete: deleteLeaf, leafError, paintFace: props.paintFace, bboxFace: props.bboxFace, ...(props.orbitFace !== undefined ? { orbitFace: props.orbitFace } : {}), paintReferenceValue: typeof props.paintReference === 'string' ? String(values[props.paintReference] ?? '') : '', ...(props.loadMedia !== undefined ? { loadMedia: props.loadMedia } : {}),
         ...(props.loadChainRuns !== undefined ? { loadChainRuns: props.loadChainRuns } : {}),
+        ...(props.uploadLora !== undefined ? { uploadLora: props.uploadLora } : {}),
+        ...(props.refreshSpec !== undefined ? { refreshSpec: props.refreshSpec } : {}),
         ...(props.candidates !== undefined ? { candidates: props.candidates } : {}),
         ...(props.candidatesFor !== undefined ? { candidatesFor: props.candidatesFor } : {}),
         // THE MOD-KIND KNOB LAW (E2-7): the kind's own scalars ride
@@ -974,8 +1008,9 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
         // kind's knobs ever get (the section rows died with the
         // burn). Committed envelope-level like any card scalar, the
         // same commitScalar the leafless kinds still ride.
-        kindScalars: { fields: leaf.kind.kindFields ?? [], values, onCommit: commitScalar } }),
-    ) : null,
+        kindScalars: { fields: live.kindFields ?? [], values, onCommit: commitScalar } }),
+      )
+    })() : null,
     // THE NAMED-PRESENCE POPUP (operator 2026-10-22: the Design mod
     // "has a popup, it can just be 'name'"): one field, two
     // controls — confirm states the chip (booleans true + the
@@ -1059,6 +1094,19 @@ function ModLeaf(props: {
   /** THE CHAIN-RUN SOURCE (the upscale leaf's picker): threaded
    *  from the constructor's wire; absent → the plain text input. */
   loadChainRuns?: (signal: AbortSignal) => Promise<ChainRunCandidate[]>
+  /** THE LORA UPLOAD SOURCE (2026-11-15): the host's estate
+   *  transport with its own family resolution; absent → the
+   *  OPTION-kind leaf renders no upload affordance (the degrade
+   *  law). */
+  uploadLora?: (file: File, opts: { strength?: number }) => Promise<{
+    id: string
+    default_strength?: number
+    row_seated: boolean
+    refusal?: string
+  }>
+  /** THE SAME-SESSION REFRESH (rides the upload wire): stale-while-
+   *  revalidate form-spec refetch after a landed row. */
+  refreshSpec?: () => Promise<void>
   /** the flow rows + per-field narrowing (E2-11a — see the section's own props). */
   candidates?: Array<{ id: string; label: string; url: string }>
   candidatesFor?: (f: SpecField) => Array<{ id: string; label: string; url: string }>
@@ -1075,6 +1123,39 @@ function ModLeaf(props: {
   const { leaf, onDraft, onSave, onDelete, leafError } = props
   const k = leaf.kind
   const hidden = props.hideFields
+  // THE HAND-UPLOAD GESTURE (2026-11-15, the operator's feature: "add
+  // a button to upload a LORA and setting default strength — an
+  // alternative to the AI doing it via upload"): the file rides the
+  // host's wire (the door POSTs raw octet-stream bytes and seats the
+  // row itself — LAND = SEATED, no restart); the answer's combo name
+  // IS the bag id (never a hand-spelled one); the stale-while-
+  // revalidate refresh re-serves the picker so the row is pickable in
+  // the SAME session. Absent wire = no affordance at all (the
+  // degrade law, below).
+  const [uploadStrength, setUploadStrength] = useState('')
+  const [uploadBusy, setUploadBusy] = useState(false)
+  const runUpload = (file: File): void => {
+    const wire = props.uploadLora
+    if (wire === undefined || uploadBusy) return
+    setUploadBusy(true)
+    const n = Number(uploadStrength)
+    void wire(file, { ...(uploadStrength !== '' && Number.isFinite(n) ? { strength: n } : {}) })
+      .then(async (answer) => {
+        if (answer.row_seated) {
+          // the seated combo name is the id the bag commits; blank
+          // strength rides the ROW's new default (the create seed
+          // law reads it off the refreshed option)
+          onDraft.setDraftOption(answer.id)
+          onDraft.setDraftStrength('')
+          props.onError(null)
+          if (props.refreshSpec !== undefined) await props.refreshSpec()
+        } else {
+          props.onError(answer.refusal ?? chromeCopy.loraUploadRefusedNote)
+        }
+      })
+      .catch((e: unknown) => { props.onError(rejectionVoice(e)) })
+      .finally(() => { setUploadBusy(false) })
+  }
   // THE EMBEDDED CANVAS (stroke 95 — the operator's design: the
   // mod popup CARRIES the visual preview): a leaf_face kind with a
   // host-delivered face renders the canvas at the TOP of the leaf.
@@ -1248,6 +1329,55 @@ function ModLeaf(props: {
               onChange: (e: { target: { value: string } }) => { onDraft.setDraftStrength(e.target.value) },
             }),
           ),
+          // THE HAND-UPLOAD ROW (2026-11-15, the operator's feature):
+          // the catalog never being the whole world — a lora the
+          // operator already HAS on their machine uploads from the
+          // leaf itself (the Manager sidebar's gesture, seated where
+          // the bag is authored). The wire is host-injected; absent
+          // host = no row (the degrade law — never a hidden fetch).
+          // The dial seats the ROW's default strength (0–2, blank =
+          // the door's 1); per-use strength stays the dial above.
+          props.uploadLora !== undefined
+            ? h('div', {
+                className: css.modField,
+                'data-testid': 'mod-lora-upload',
+                onDragOver: (e: { preventDefault: () => void }) => { e.preventDefault() },
+                onDrop: (e: { preventDefault: () => void, dataTransfer: { files: Array<File | null> } }) => {
+                  e.preventDefault()
+                  const file = e.dataTransfer.files[0]
+                  if (file !== null && file !== undefined) runUpload(file)
+                },
+              },
+              h('label', { title: chromeCopy.loraUploadHint, 'data-testid': 'mod-lora-upload-verb' },
+                chromeCopy.loraUploadVerb,
+                h('input', {
+                  type: 'file',
+                  accept: '.safetensors,.ckpt,.pt,.bin,.gguf',
+                  style: { display: 'none' },
+                  disabled: uploadBusy,
+                  onChange: (e: { target: { files: { [i: number]: File | null } | null, value: string } }) => {
+                    const file = e.target.files?.[0]
+                    if (file !== null && file !== undefined) runUpload(file)
+                    // re-picking the SAME file must re-fire (the
+                    // input holds its last value otherwise)
+                    e.target.value = ''
+                  },
+                }),
+              ),
+              h(Input, {
+                type: 'number',
+                step: '0.05',
+                min: '0',
+                max: '2',
+                'aria-label': chromeCopy.loraUploadStrengthLabel,
+                title: chromeCopy.loraUploadStrengthTitle,
+                placeholder: chromeCopy.loraUploadStrengthPlaceholder,
+                value: uploadStrength,
+                disabled: uploadBusy,
+                onChange: (e: { target: { value: string } }) => { setUploadStrength(e.target.value) },
+              }),
+            )
+            : null,
           // STEPS APPLIED (2026-09-18, the operator's plaguekind
           // law): option kinds whose served rows carry a distill
           // step count render the row here — one lora for four

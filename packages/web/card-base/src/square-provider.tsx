@@ -489,6 +489,28 @@ export interface SquareWire {
    *  own. Absent → the chain-run field degrades to its plain text
    *  input (honest, never a hidden fetch). */
   loadChainRuns?: (signal: AbortSignal) => Promise<ChainRunCandidate[]>
+  /** THE LORA UPLOAD SOURCE (2026-11-15, the mods-plane hand-upload):
+   *  the host owns the estate transport (POST /v1/uploads/lora — raw
+   *  octet-stream, never base64) AND the family shelf (the host
+   *  resolves the card's own family from its served doc — the atom
+   *  never guesses it). Absent → the OPTION-kind mod leaf renders no
+   *  upload affordance (the degrade law: honest absence, never a
+   *  hidden fetch). The answer carries the SEATED combo name — the
+   *  bag entry's id is always the door's name, never a hand-spelled
+   *  one. */
+  uploadLora?: (file: File, opts: { strength?: number }) => Promise<{
+    /** the seated combo name '<family>/<file>' — the bag entry's id */
+    id: string
+    default_strength?: number
+    row_seated: boolean
+    refusal?: string
+  }>
+  /** THE FORM-SPEC REFRESH (stale-while-revalidate): re-fetches the
+   *  served spec WITHOUT clearing the current one — the form never
+   *  blanks mid-edit. The upload leaf calls it after a landed row so
+   *  the picker serves the new id in the SAME session. Absent → no
+   *  same-session refresh (the id still serves on the next mount). */
+  refreshSpec?: () => Promise<void>
   /** The surface's OWN file law (optional): when present, From file
    *  and OS drops route here instead of the default upload door —
    *  bespoke vocabularies (the studio's inline data:-URL cap) keep

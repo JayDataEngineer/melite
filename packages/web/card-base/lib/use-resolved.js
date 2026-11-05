@@ -31,7 +31,7 @@ import { coerceFieldEdit, fieldsOf, resolveValue } from "./spec.js";
  * params — sparse by design); `base` is the persisted layer under
  * it (the bench/stage row's params), when the surface has one. */
 export function useResolvedForm(family, user, onWrite, base) {
-    const { spec, error } = useFormSpec(family);
+    const { spec, error, refresh } = useFormSpec(family);
     const resolved = useMemo(() => resolveValueLayered(spec, base, user), [spec, base, user]);
     const fieldOf = useCallback((name) => spec !== null ? fieldsOf(spec).find((f) => f.name === name) : undefined, [spec]);
     const edit = useCallback((name, v) => {
@@ -50,7 +50,7 @@ export function useResolvedForm(family, user, onWrite, base) {
         }
         onWrite(name, coerceFieldEdit(f, v));
     }, [fieldOf, onWrite]);
-    return { spec, error, resolved, edit, fieldOf };
+    return { spec, error, resolved, edit, fieldOf, refresh };
 }
 /** The layer composition — PURE, exported for the seam's own wall:
  * with a spec it is exactly resolveValue (schema <- model_defaults

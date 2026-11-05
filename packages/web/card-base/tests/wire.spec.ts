@@ -14,6 +14,7 @@ import {
   fetchFormSpec,
   postManageAction,
   uploadInputFile,
+  uploadLoraDoor,
 } from '../src/wire.ts'
 import { resetCardFamiliesCache } from '@melite-plugin/melite-run-wire'
 import { bindEstateRemoteFromRemote, unbindEstateRemote, type EstateNamespaces } from '../src/estate-remote.ts'
@@ -415,4 +416,57 @@ test('a non-object node INSIDE a mod refs bag is skipped; its siblings still jud
   expect(() => assertFormSpecDoc(doc, 'cast-only')).toThrow(
     "mod:pose ref n3: wtype 'switch' is not in WTYPE_SET",
   )
+})
+
+// THE LORA TRANSPORT'S OWN DOOR (2026-11-15, the mods-plane upload):
+// the family is the caller's and it is REQUIRED — an absent family
+// would ride the door's flat arm (bytes land, NO row seats, the
+// refusal arrives after the upload spent its bytes). The transport
+// refuses BEFORE the POST; the fetch double records every call so
+// the arm proves no byte ever left.
+
+test('uploadLoraDoor refuses an absent family BEFORE the POST (never lands flat)', async () => {
+  const calls: string[] = []
+  const real = globalThis.fetch
+  globalThis.fetch = (async (input: unknown) => {
+    calls.push(String(input))
+    throw new Error('the wall never serves the lora door without a family')
+  }) as typeof fetch
+  try {
+    const file = new File(['%MEL'], 'x.safetensors')
+    await expect(uploadLoraDoor(file, {})).rejects.toThrow(/families is empty — the row would never seat/)
+    await expect(uploadLoraDoor(file, { families: '' })).rejects.toThrow(/families is empty/)
+    expect(calls).toEqual([])
+  } finally {
+    globalThis.fetch = real
+  }
+})
+
+test('uploadLoraDoor POSTs octet-stream with filename+families+strength and projects the seated row', async () => {
+  const real = globalThis.fetch
+  let seenUrl = ''
+  let seenInit: RequestInit | undefined
+  globalThis.fetch = (async (input: unknown, init?: RequestInit) => {
+    seenUrl = String(input)
+    seenInit = init
+    return new Response(JSON.stringify({
+      filename: 'h3/x.safetensors',
+      row_seated: true,
+      row: { id: 'h3/x.safetensors', filename: 'h3/x.safetensors', families: ['h3'], default_strength: 0.8 },
+    }), { status: 200 })
+  }) as typeof fetch
+  try {
+    const file = new File(['%MEL'], 'x.safetensors')
+    const answer = await uploadLoraDoor(file, { families: 'h3', strength: 0.8 })
+    expect(seenUrl).toContain('/v1/uploads/lora?')
+    expect(seenUrl).toContain('filename=x.safetensors')
+    expect(seenUrl).toContain('families=h3')
+    expect(seenUrl).toContain('strength=0.8')
+    expect(seenInit?.method).toBe('POST')
+    expect(String((seenInit?.headers as Record<string, string>)['content-type'])).toBe('application/octet-stream')
+    expect(seenInit?.body).toBe(file)
+    expect(answer).toEqual({ id: 'h3/x.safetensors', default_strength: 0.8, row_seated: true })
+  } finally {
+    globalThis.fetch = real
+  }
 })

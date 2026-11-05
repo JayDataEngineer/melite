@@ -22,7 +22,7 @@
  * row outside the generic seam's grid grammar; the Width/Height
  * injects own geometry, one surface).
  */
-import { CardForm, ControlRow, SectionLabel, SpecAtom, useResolvedForm, type SquareWire } from "@melite/card-base/client"
+import { CardForm, ControlRow, SectionLabel, SpecAtom, useResolvedForm, uploadLoraDoor, resolveFamilyKey, type SquareWire } from "@melite/card-base/client"
 import { axisUnset, composeValidate } from '@melite/card-base/client'
 import { resolvePickVerdictDoc } from "./pickVerdict.ts"
 import { fetchMediaLibrary } from '@melite/card-base/client'
@@ -68,7 +68,7 @@ export function RunRecipeEngine({
   // RESOLVED values (schema defaults <- model defaults <- Layer A —
   // a sparse document renders its declared defaults, NEVER blanks),
   // and the edit verb that coerces at the schema boundary.
-  const { spec, edit, resolved } = useResolvedForm(
+  const { spec, edit, resolved, refresh } = useResolvedForm(
     "h3-timeline",
     layerA as unknown as Record<string, unknown>,
     setLayerAKey as unknown as (n: string, v: unknown) => void,
@@ -114,6 +114,21 @@ export function RunRecipeEngine({
   const wire: SquareWire = {
     candidates: refArtifacts.map((a) => ({ id: a.name, label: a.name, url: a.url })),
     loadMedia: fetchMediaLibrary,
+    // THE LORA HAND-UPLOAD (2026-11-15, the operator's feature: "add
+    // a button to upload a LORA and setting default strength — an
+    // alternative to the AI doing it via upload"): the host owns the
+    // transport AND the family shelf — the card's own served family
+    // (resolveFamilyKey, the same derivation fieldsOf scopes by), so
+    // the upload lands under <loras>/<family>/ and the seated row
+    // serves this card's picker. The refresh is stale-while-
+    // revalidate: the picker serves the new id in the SAME session.
+    ...(spec !== null
+      ? {
+          uploadLora: (file: File, opts: { strength?: number }) =>
+            uploadLoraDoor(file, { families: resolveFamilyKey(spec), strength: opts.strength }),
+          refreshSpec: refresh,
+        }
+      : {}),
   }
   // THE GATE FACE (the drill's own voice): a refused compose never
   // writes, and the refusal SAYS so in the door's words — never a

@@ -680,6 +680,20 @@ export function apply(c, config = {}) {
                     if (families.some((f) => !/^[a-z0-9][a-z0-9-]*$/i.test(f))) {
                         return fail(400, 'families must be comma-separated family ids');
                     }
+                    // THE OPERATOR'S DEFAULT STRENGTH (2026-11-15, the mods-plane
+                    // upload button): optional, finite, banded 0–2 — the same
+                    // band the controlnet strength slider declares (packs.ts
+                    // min(0).max(2)). Seated on the ROW, so the picker seed and
+                    // the compose-time unstated-strength default read ONE value.
+                    const strengthRaw = url.searchParams.get('strength');
+                    let default_strength = 1;
+                    if (strengthRaw !== null && strengthRaw !== '') {
+                        const n = Number(strengthRaw);
+                        if (!Number.isFinite(n) || n < 0 || n > 2) {
+                            return fail(400, 'strength must be a finite number in 0–2 (the row default)');
+                        }
+                        default_strength = n;
+                    }
                     // THE DECLARED-LENGTH CAP, PRE-BUFFER: the refusal answers
                     // before readBody allocates anything — a 600MB upload is
                     // refused at the header, never held in memory. Chunked
@@ -724,7 +738,7 @@ export function apply(c, config = {}) {
                             filename: comboName,
                             families,
                             label: landed.filename.replace(/\.[^.]+$/, ''),
-                            default_strength: 1,
+                            default_strength,
                         });
                         if (seated.ok)
                             row_seated = true;
@@ -752,7 +766,7 @@ export function apply(c, config = {}) {
                             id: comboName,
                             filename: comboName,
                             families,
-                            default_strength: 1,
+                            default_strength,
                         },
                     });
                     res.writeHead(200, { 'content-type': 'application/json' });

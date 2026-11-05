@@ -3558,11 +3558,13 @@ window.__ModuleLoader__.load({
 			}
 			const assetUrls = stringsOf(result["assetUrls"]);
 			const metadata = recordOf(result["metadata"]);
-			if (Object.keys(artifacts).length === 0 && assetUrls.length === 0) return null;
+			const heroUrl = nonEmptyString(result["url"]);
+			if (heroUrl === "" && Object.keys(artifacts).length === 0 && assetUrls.length === 0) return null;
 			return {
 				artifacts,
 				assetUrls,
 				metadata,
+				...heroUrl === "" ? {} : { url: heroUrl },
 				...typeof result["durationSec"] === "number" ? { durationSec: result["durationSec"] } : {},
 				...galleryOf(result["gallery"]) === void 0 ? {} : { gallery: galleryOf(result["gallery"]) },
 				...previewsOf(result["motionPreviews"]) === void 0 ? {} : { motionPreviews: previewsOf(result["motionPreviews"]) }
@@ -9454,7 +9456,25 @@ window.__ModuleLoader__.load({
 			/** Toast banner's dismiss action label (audit 017 C4): the DSH
 			*  Toast's inline action seat — the press retires the toast now,
 			*  ahead of its auto-retire clock. */
-			dismissToast: "Dismiss"
+			dismissToast: "Dismiss",
+			/** Lora hand-upload verb (2026-11-15, the operator's feature): the
+			*  mods-plane ghost row that opens the OS file dialog. */
+			loraUploadVerb: "Upload a LoRA…",
+			/** Lora hand-upload row's hover law: what the gesture does, where
+			*  the file lands, and that no restart follows. */
+			loraUploadHint: "Upload a LoRA file from this machine — it lands on the engine’s loras shelf for this card and serves in the picker without a restart. Drag-drop works too.",
+			/** Lora upload strength dial: visible label + accessible name (one
+			*  wording, two seats — the strength grammar's own law). */
+			loraUploadStrengthLabel: "Upload strength",
+			/** Lora upload strength dial's placeholder: blank rides the door's
+			*  default (1). */
+			loraUploadStrengthPlaceholder: "blank = 1",
+			/** Lora upload strength dial's hover law: the ROW default this
+			*  seats — picks seed from it, unstated strengths compose with it. */
+			loraUploadStrengthTitle: "The uploaded row’s default strength — new picks seed from it, and a use that states no strength composes with it. 0–2.",
+			/** Lora upload fallback refusal (the door seated no row and carried
+			*  no refusal voice of its own). */
+			loraUploadRefusedNote: "The upload landed but no picker row was seated — check the families shelf with the Manager."
 		};
 		//#endregion
 		//#region src/spec.ts
@@ -13836,6 +13856,55 @@ window.__ModuleLoader__.load({
 				file: path.split("/").pop()
 			};
 		}
+		/** THE BINARY LORA DOOR (2026-11-15, the mods-plane hand-upload): the
+		*  operator's hand-upload alternative to the agent's estate tools —
+		*  raw octet-stream bytes straight to POST /v1/uploads/lora, never a
+		*  base64 data URL (the transport cure's own law: a 200MB LoRA costs
+		*  200MB, never a ~267MB string inside a JSON body). The door seats
+		*  the picker row itself (LAND = SEATED — restart_required:false,
+		*  never a next_action) and answers the combo name; this transport
+		*  only voices its refusals, never invents its own. The family is
+		*  the CALLER's (the host resolves the card's own family — the atom
+		*  never guesses it).
+		* @param file - the browser File the operator picked or dropped.
+		* @param opts - the family shelf id (REQUIRED — one family = the
+		*  shelf law's `<loras>/<family>/` placement; absent refuses before
+		*  any byte is spent) and the operator's default strength (banded
+		*  0–2 at the door; absent = 1).
+		* @returns the seated row's combo name + defaults. */
+		async function uploadLoraDoor(file, opts) {
+			if (opts.families === void 0 || opts.families === "") throw new Error("upload refused: the host must pass the card's family (families is empty — the row would never seat)");
+			const qs = new URLSearchParams({
+				filename: file.name,
+				families: opts.families
+			});
+			if (opts.strength !== void 0) qs.set("strength", String(opts.strength));
+			const res = await fetch("/v1/uploads/lora?" + qs.toString(), {
+				method: "POST",
+				headers: { "content-type": "application/octet-stream" },
+				body: file
+			});
+			if (!res.ok) {
+				const body = await res.json().catch(() => null);
+				const err = typeof body === "object" && body !== null ? Reflect.get(body, "error") : void 0;
+				throw new Error(typeof err === "string" ? "upload refused: " + err : "upload refused: HTTP " + String(res.status));
+			}
+			const out = await res.json();
+			const ans = typeof out === "object" && out !== null ? out : {};
+			const row = typeof ans["row"] === "object" && ans["row"] !== null ? ans["row"] : {};
+			const idOf = (v) => typeof v === "string" ? v : "";
+			const id = idOf(row["id"]) || idOf(ans["filename"]);
+			if (id === "") throw new Error("the lora door answered without a row name");
+			const seated = ans["row_seated"] === true;
+			const refusal = idOf(ans["row_refusal"]);
+			const strength = row["default_strength"];
+			return {
+				id,
+				...typeof strength === "number" ? { default_strength: strength } : {},
+				row_seated: seated,
+				...refusal !== "" ? { refusal } : {}
+			};
+		}
 		//#endregion
 		//#region src/square-provider.tsx
 		/** square-provider.tsx — extracted from form.tsx (hour 15, the godfile split; the
@@ -15018,7 +15087,7 @@ window.__ModuleLoader__.load({
 		//#endregion
 		//#region src/use-form-spec.ts
 		/** use-form-spec.ts — extracted from form.tsx (hour 15, the godfile split; the
-		* operator's DRY audit law: one seam, one small file, one wall). */
+		*  operator's DRY audit law: one seam, one small file, one wall). */
 		/** THE SERVED-SPEC HOOK (the DRY extraction, 2026-09-13): four
 		*  consumers (mask-studio's TuneSection, h3's RunAdvancedPanels,
 		*  img-to-mesh's client, ideogram4's client) each hand-copied the
@@ -15032,17 +15101,19 @@ window.__ModuleLoader__.load({
 		function useFormSpec(modelId) {
 			const [spec, setSpec] = (0, react.useState)(null);
 			const [error, setError] = (0, react.useState)(null);
+			const tokenRef = (0, react.useRef)(0);
 			const id = typeof modelId === "string" && modelId !== "" ? modelId : null;
 			(0, react.useEffect)(() => {
 				if (id === null) return;
 				const ctl = new AbortController();
+				const token = ++tokenRef.current;
 				setSpec(null);
 				setError(null);
 				fetchFormSpec(id, ctl.signal).then((doc) => {
-					setSpec(doc);
+					if (tokenRef.current === token) setSpec(doc);
 				}).catch((e) => {
 					if (ctl.signal.aborted) return;
-					setError(rejectionVoice(e));
+					if (tokenRef.current === token) setError(rejectionVoice(e));
 				});
 				return () => {
 					ctl.abort();
@@ -15050,7 +15121,17 @@ window.__ModuleLoader__.load({
 			}, [id]);
 			return {
 				spec,
-				error
+				error,
+				refresh: (0, react.useCallback)(async () => {
+					if (id === null) return;
+					const token = ++tokenRef.current;
+					try {
+						const doc = await fetchFormSpec(id);
+						if (tokenRef.current === token) setSpec(doc);
+					} catch (e) {
+						if (tokenRef.current === token) setError(rejectionVoice(e));
+					}
+				}, [id])
 			};
 		}
 		//#endregion
@@ -15452,6 +15533,8 @@ window.__ModuleLoader__.load({
 				...paintReference !== void 0 ? { paintReference } : {},
 				...wire?.loadMedia !== void 0 ? { loadMedia: wire.loadMedia } : {},
 				...wire?.loadChainRuns !== void 0 ? { loadChainRuns: wire.loadChainRuns } : {},
+				...wire?.uploadLora !== void 0 ? { uploadLora: wire.uploadLora } : {},
+				...wire?.refreshSpec !== void 0 ? { refreshSpec: wire.refreshSpec } : {},
 				...wire?.candidates !== void 0 ? { candidates: wire.candidates } : {},
 				...wire?.candidatesFor !== void 0 ? { candidatesFor: wire.candidatesFor } : {}
 			}) : null, own.wireMenu);
@@ -15908,7 +15991,7 @@ window.__ModuleLoader__.load({
 			};
 			const saveLeaf = () => {
 				const open = leaf;
-				const k = open.kind;
+				const k = kinds.find((x) => x.kind === open.kind.kind && x.param_key === open.kind.param_key) ?? open.kind;
 				const entries = entriesOf(k);
 				if (isHybridKind(k)) {
 					const key = optionKeyOf(k);
@@ -16173,46 +16256,54 @@ window.__ModuleLoader__.load({
 					setPickAt(null);
 				},
 				portal: true
-			}) : null, leaf !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
-				open: true,
-				onClose: () => {
-					setLeaf(null);
-				},
-				title: leaf.mode === "create" ? chromeCopy.leafCreateTitle({ kindLabel: leaf.kind.label }) : chromeCopy.leafEditTitle({ kindLabel: leaf.kind.label }),
-				closeLabel: chromeCopy.leafCloseLabel,
-				className: card_module_css_default.modLeafModal
-			}, (0, react.createElement)(ModLeaf, {
-				leaf,
-				values,
-				hideFields: seated,
-				onDraft: {
-					setDraftOption,
-					setDraftStrength,
-					setDraftParams,
-					setDraftSteps,
-					draftOption,
-					draftStrength,
-					draftParams,
-					draftSteps
-				},
-				onError: setLeafError,
-				onSave: saveLeaf,
-				onDelete: deleteLeaf,
-				leafError,
-				paintFace: props.paintFace,
-				bboxFace: props.bboxFace,
-				...props.orbitFace !== void 0 ? { orbitFace: props.orbitFace } : {},
-				paintReferenceValue: typeof props.paintReference === "string" ? String(values[props.paintReference] ?? "") : "",
-				...props.loadMedia !== void 0 ? { loadMedia: props.loadMedia } : {},
-				...props.loadChainRuns !== void 0 ? { loadChainRuns: props.loadChainRuns } : {},
-				...props.candidates !== void 0 ? { candidates: props.candidates } : {},
-				...props.candidatesFor !== void 0 ? { candidatesFor: props.candidatesFor } : {},
-				kindScalars: {
-					fields: leaf.kind.kindFields ?? [],
+			}) : null, leaf !== null ? (() => {
+				const live = kinds.find((k) => k.kind === leaf.kind.kind && k.param_key === leaf.kind.param_key) ?? leaf.kind;
+				return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
+					open: true,
+					onClose: () => {
+						setLeaf(null);
+					},
+					title: leaf.mode === "create" ? chromeCopy.leafCreateTitle({ kindLabel: live.label }) : chromeCopy.leafEditTitle({ kindLabel: live.label }),
+					closeLabel: chromeCopy.leafCloseLabel,
+					className: card_module_css_default.modLeafModal
+				}, (0, react.createElement)(ModLeaf, {
+					leaf: {
+						...leaf,
+						kind: live
+					},
 					values,
-					onCommit: commitScalar
-				}
-			})) : null, namedLeaf !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
+					hideFields: seated,
+					onDraft: {
+						setDraftOption,
+						setDraftStrength,
+						setDraftParams,
+						setDraftSteps,
+						draftOption,
+						draftStrength,
+						draftParams,
+						draftSteps
+					},
+					onError: setLeafError,
+					onSave: saveLeaf,
+					onDelete: deleteLeaf,
+					leafError,
+					paintFace: props.paintFace,
+					bboxFace: props.bboxFace,
+					...props.orbitFace !== void 0 ? { orbitFace: props.orbitFace } : {},
+					paintReferenceValue: typeof props.paintReference === "string" ? String(values[props.paintReference] ?? "") : "",
+					...props.loadMedia !== void 0 ? { loadMedia: props.loadMedia } : {},
+					...props.loadChainRuns !== void 0 ? { loadChainRuns: props.loadChainRuns } : {},
+					...props.uploadLora !== void 0 ? { uploadLora: props.uploadLora } : {},
+					...props.refreshSpec !== void 0 ? { refreshSpec: props.refreshSpec } : {},
+					...props.candidates !== void 0 ? { candidates: props.candidates } : {},
+					...props.candidatesFor !== void 0 ? { candidatesFor: props.candidatesFor } : {},
+					kindScalars: {
+						fields: live.kindFields ?? [],
+						values,
+						onCommit: commitScalar
+					}
+				}));
+			})() : null, namedLeaf !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
 				open: true,
 				onClose: () => {
 					setNamedLeaf(null);
@@ -16255,6 +16346,26 @@ window.__ModuleLoader__.load({
 			const { leaf, onDraft, onSave, onDelete, leafError } = props;
 			const k = leaf.kind;
 			const hidden = props.hideFields;
+			const [uploadStrength, setUploadStrength] = (0, react.useState)("");
+			const [uploadBusy, setUploadBusy] = (0, react.useState)(false);
+			const runUpload = (file) => {
+				const wire = props.uploadLora;
+				if (wire === void 0 || uploadBusy) return;
+				setUploadBusy(true);
+				const n = Number(uploadStrength);
+				wire(file, { ...uploadStrength !== "" && Number.isFinite(n) ? { strength: n } : {} }).then(async (answer) => {
+					if (answer.row_seated) {
+						onDraft.setDraftOption(answer.id);
+						onDraft.setDraftStrength("");
+						props.onError(null);
+						if (props.refreshSpec !== void 0) await props.refreshSpec();
+					} else props.onError(answer.refusal ?? chromeCopy.loraUploadRefusedNote);
+				}).catch((e) => {
+					props.onError(rejectionVoice(e));
+				}).finally(() => {
+					setUploadBusy(false);
+				});
+			};
 			const bboxCanvas = props.bboxFace !== void 0 && k.leaf_face === "bbox-canvas";
 			const paintField = props.paintFace !== void 0 && k.leaf_face === "paint-canvas" ? (k.fields ?? []).find((f) => f.type === "image" || f.wtype === "image") : void 0;
 			const orbitCanvas = props.orbitFace !== void 0 && k.leaf_face === "orbit-canvas";
@@ -16364,7 +16475,44 @@ window.__ModuleLoader__.load({
 				onChange: (e) => {
 					onDraft.setDraftStrength(e.target.value);
 				}
-			})), (k.options ?? []).some((o) => typeof o.defaults?.steps === "number") ? (() => {
+			})), props.uploadLora !== void 0 ? (0, react.createElement)("div", {
+				className: card_module_css_default.modField,
+				"data-testid": "mod-lora-upload",
+				onDragOver: (e) => {
+					e.preventDefault();
+				},
+				onDrop: (e) => {
+					e.preventDefault();
+					const file = e.dataTransfer.files[0];
+					if (file !== null && file !== void 0) runUpload(file);
+				}
+			}, (0, react.createElement)("label", {
+				title: chromeCopy.loraUploadHint,
+				"data-testid": "mod-lora-upload-verb"
+			}, chromeCopy.loraUploadVerb, (0, react.createElement)("input", {
+				type: "file",
+				accept: ".safetensors,.ckpt,.pt,.bin,.gguf",
+				style: { display: "none" },
+				disabled: uploadBusy,
+				onChange: (e) => {
+					const file = e.target.files?.[0];
+					if (file !== null && file !== void 0) runUpload(file);
+					e.target.value = "";
+				}
+			})), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+				type: "number",
+				step: "0.05",
+				min: "0",
+				max: "2",
+				"aria-label": chromeCopy.loraUploadStrengthLabel,
+				title: chromeCopy.loraUploadStrengthTitle,
+				placeholder: chromeCopy.loraUploadStrengthPlaceholder,
+				value: uploadStrength,
+				disabled: uploadBusy,
+				onChange: (e) => {
+					setUploadStrength(e.target.value);
+				}
+			})) : null, (k.options ?? []).some((o) => typeof o.defaults?.steps === "number") ? (() => {
 				const rowOpts = k.options ?? [];
 				const activeRow = rowOpts.find((o) => o.value === onDraft.draftOption) ?? rowOpts[0];
 				const rMin = activeRow?.defaults?.steps_min;
@@ -16615,7 +16763,7 @@ window.__ModuleLoader__.load({
 		* params — sparse by design); `base` is the persisted layer under
 		* it (the bench/stage row's params), when the surface has one. */
 		function useResolvedForm(family, user, onWrite, base) {
-			const { spec, error } = useFormSpec(family);
+			const { spec, error, refresh } = useFormSpec(family);
 			const resolved = (0, react.useMemo)(() => resolveValueLayered(spec, base, user), [
 				spec,
 				base,
@@ -16634,7 +16782,8 @@ window.__ModuleLoader__.load({
 					}
 					onWrite(name, coerceFieldEdit(f, v));
 				}, [fieldOf, onWrite]),
-				fieldOf
+				fieldOf,
+				refresh
 			};
 		}
 		/** The layer composition — PURE, exported for the seam's own wall:
@@ -18908,6 +19057,7 @@ window.__ModuleLoader__.load({
 		exports.unsetFaceTip = unsetFaceTip;
 		exports.unwrapRemote = unwrapRemote;
 		exports.uploadInputFile = uploadInputFile;
+		exports.uploadLoraDoor = uploadLoraDoor;
 		exports.useFormSpec = useFormSpec;
 		exports.useResolvedForm = useResolvedForm;
 		exports.useSquareProvider = useSquareProvider;

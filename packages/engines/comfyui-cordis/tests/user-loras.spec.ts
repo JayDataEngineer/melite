@@ -853,6 +853,68 @@ describe("LAND = SEATED (the pixel-anim cure)", () => {
     expect(out.ok).toBe(false);
     if (!out.ok) expect(out.reason).toMatch(/the rows file could not be written/u);
   });
+
+  // THE BUTTON'S OWN SEAT (W1/W4, the mods-plane upload button
+  // 2026-11-05): the door threads the operator's default strength
+  // into the row it seats — one row, through the ONE writer, and
+  // the value survives the read back. Toggling the door's strength
+  // threading out (doors.ts / managePlane.ts reverting to the
+  // hardcoded 1) reds the persistence arm below on its own path:
+  // the row answers default_strength 1, not 0.8.
+  it("a seat carrying the operator's default_strength persists it — the row's own default is the door's to seat (W4)", () => {
+    const rowsPath = join(root, "strength.json");
+    const seated = seatUserLoraRow(
+      {
+        id: "h3/blend.safetensors",
+        filename: "h3/blend.safetensors",
+        families: ["h3"],
+        label: "blend",
+        default_strength: 0.8,
+      },
+      rowsPath,
+    );
+    expect(seated.ok).toBe(true);
+    // EXACTLY ONE row through the ONE writer — the button never
+    // writes the file itself, and a parallel second writer would
+    // show here as two rows or a lost first seat
+    const read = readUserLoraRows(rowsPath);
+    expect(read.problems).toEqual([]);
+    expect(read.rows).toHaveLength(1);
+    // the operator's value round-trips through the validator the
+    // file door re-reads on every serve — 0.8, not the hardcoded 1
+    expect(read.rows[0]?.default_strength).toBe(0.8);
+    // the validator itself accepts the field (its existing arm
+    // pins the shape; this pins the VALUE the button seats)
+    expect(validateUserLoraRow(read.rows[0], 0).problem).toBeUndefined();
+    // THE LANDING LAW (R4, 2026-11-15 — the M-E1 class): the seat's
+    // part file carries the unique pid-ms-hex suffix landLoraFile
+    // spells, so the rows directory holds NO residue after the
+    // rename — a fixed `.part` path let two cross-process seats
+    // (two tabs, two harness processes) collide and publish torn
+    // bytes the next reader refuses. Judged as the observable law
+    // (zero part residue + a parseable file), the same face the
+    // M-E1 arms own for the weights landing.
+    expect(readdirSync(root).filter((f) => f.includes(".part"))).toEqual([]);
+    expect(readUserLoraRows(rowsPath).problems).toEqual([]);
+  });
+
+  it("a seat WITHOUT a strength seats no default — the 1 the operator sees is the DOOR's literal, compose's own fallback (W4 twin)", () => {
+    const rowsPath = join(root, "nostrength.json");
+    const seated = seatUserLoraRow(
+      { id: "h3/plain.safetensors", filename: "h3/plain.safetensors", families: ["h3"] },
+      rowsPath,
+    );
+    expect(seated.ok).toBe(true);
+    const read = readUserLoraRows(rowsPath);
+    expect(read.rows).toHaveLength(1);
+    // the SEAT invents nothing: absent operator value = the field
+    // stays unset (the validator drops nothing in), and compose's
+    // own chain (service.ts: stated ?? row.default_strength ?? 1.0)
+    // answers 1.0 for it. The literal 1 in the door's answer is the
+    // DOOR's to pass (pinned in manage-lora-doors.spec W2) — never
+    // a second default born here.
+    expect(read.rows[0]?.default_strength).toBeUndefined();
+  });
 });
 
 // ── THE TRAY STAND-DOWN (rearmLoraFlavors' own catch + null-dir arms) ──

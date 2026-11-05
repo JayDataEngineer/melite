@@ -547,6 +547,12 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
             // chain-store runs ride the SAME wire — one injection, every
             // seat (a leaf without the lane degrades to the text input).
             ...(wire?.loadChainRuns !== undefined ? { loadChainRuns: wire.loadChainRuns } : {}),
+            // THE LORA HAND-UPLOAD LAW (2026-11-15): the upload
+            // transport + the same-session spec refresh ride the SAME
+            // wire — one injection, one leaf (an atom without a host
+            // renders no upload affordance at all).
+            ...(wire?.uploadLora !== undefined ? { uploadLora: wire.uploadLora } : {}),
+            ...(wire?.refreshSpec !== undefined ? { refreshSpec: wire.refreshSpec } : {}),
             // THE REGION-MASK PICKER LAW (E2-11a): the mod leaf's
             // From-flow picker rides the SAME rows the card face's
             // squares ride — one wire, every seat (a leaf that forgot

@@ -12,5 +12,13 @@ import { type FormSpecDoc } from './spec.js';
 export declare function useFormSpec(modelId: string | null | undefined): {
     spec: FormSpecDoc | null;
     error: string | null;
+    /** THE SAME-SESSION REFRESH (2026-11-15, the lora upload leaf):
+     *  stale-while-revalidate — re-fetches the served spec WITHOUT
+     *  clearing the current one, so the form never blanks mid-edit and
+     *  the next paint swaps the options (a landed lora row serves in
+     *  the SAME session). A refusal leaves the standing spec in place
+     *  and reports through `error`. Superseded flights (an id change
+     *  or a later refresh) never land — the shared token orphans them. */
+    refresh: () => Promise<void>;
 };
 //# sourceMappingURL=use-form-spec.d.ts.map

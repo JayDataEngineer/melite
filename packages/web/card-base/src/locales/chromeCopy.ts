@@ -181,6 +181,24 @@ export const chromeCopy = {
    *  Toast's inline action seat — the press retires the toast now,
    *  ahead of its auto-retire clock. */
   dismissToast: 'Dismiss',
+  /** Lora hand-upload verb (2026-11-15, the operator's feature): the
+   *  mods-plane ghost row that opens the OS file dialog. */
+  loraUploadVerb: 'Upload a LoRA\u2026',
+  /** Lora hand-upload row's hover law: what the gesture does, where
+   *  the file lands, and that no restart follows. */
+  loraUploadHint: 'Upload a LoRA file from this machine \u2014 it lands on the engine\u2019s loras shelf for this card and serves in the picker without a restart. Drag-drop works too.',
+  /** Lora upload strength dial: visible label + accessible name (one
+   *  wording, two seats — the strength grammar's own law). */
+  loraUploadStrengthLabel: 'Upload strength',
+  /** Lora upload strength dial's placeholder: blank rides the door's
+   *  default (1). */
+  loraUploadStrengthPlaceholder: 'blank = 1',
+  /** Lora upload strength dial's hover law: the ROW default this
+   *  seats — picks seed from it, unstated strengths compose with it. */
+  loraUploadStrengthTitle: 'The uploaded row\u2019s default strength \u2014 new picks seed from it, and a use that states no strength composes with it. 0\u20132.',
+  /** Lora upload fallback refusal (the door seated no row and carried
+   *  no refusal voice of its own). */
+  loraUploadRefusedNote: 'The upload landed but no picker row was seated \u2014 check the families shelf with the Manager.',
 } as const
 
 /** The dictionary's key union — the typed `chromeT` seat's domain. */

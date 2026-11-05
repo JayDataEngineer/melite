@@ -205,4 +205,64 @@ export async function uploadInputFile(file, signal, dataUrl) {
     //  so the basename is always a string — no fallback to invent.)
     return { name: path, file: path.split('/').pop() };
 }
+/** THE BINARY LORA DOOR (2026-11-15, the mods-plane hand-upload): the
+ *  operator's hand-upload alternative to the agent's estate tools —
+ *  raw octet-stream bytes straight to POST /v1/uploads/lora, never a
+ *  base64 data URL (the transport cure's own law: a 200MB LoRA costs
+ *  200MB, never a ~267MB string inside a JSON body). The door seats
+ *  the picker row itself (LAND = SEATED — restart_required:false,
+ *  never a next_action) and answers the combo name; this transport
+ *  only voices its refusals, never invents its own. The family is
+ *  the CALLER's (the host resolves the card's own family — the atom
+ *  never guesses it).
+ * @param file - the browser File the operator picked or dropped.
+ * @param opts - the family shelf id (REQUIRED — one family = the
+ *  shelf law's `<loras>/<family>/` placement; absent refuses before
+ *  any byte is spent) and the operator's default strength (banded
+ *  0–2 at the door; absent = 1).
+ * @returns the seated row's combo name + defaults. */
+export async function uploadLoraDoor(file, opts) {
+    // THE FAMILY IS REQUIRED (the completeness audit's fail-fast,
+    // 2026-11-15): an absent family would ride the door's FLAT arm —
+    // bytes land, NO row seats, and the operator reads a refusal
+    // after the upload already spent its bytes. The transport refuses
+    // BEFORE the POST (the leaf's catch voices it) — a host that
+    // forgets the family learns it loud, never by landing flat.
+    if (opts.families === undefined || opts.families === '') {
+        throw new Error('upload refused: the host must pass the card\'s family (families is empty — the row would never seat)');
+    }
+    const qs = new URLSearchParams({ filename: file.name, families: opts.families });
+    if (opts.strength !== undefined)
+        qs.set('strength', String(opts.strength));
+    const res = await fetch('/v1/uploads/lora?' + qs.toString(), {
+        method: 'POST',
+        headers: { 'content-type': 'application/octet-stream' },
+        body: file,
+    });
+    if (!res.ok) {
+        // the door's own voice rides (the uploadInputFile law): a refusal
+        // body's error field names the gate that refused
+        const body = await res.json().catch(() => null);
+        const err = typeof body === 'object' && body !== null ? Reflect.get(body, 'error') : undefined;
+        throw new Error(typeof err === 'string'
+            ? 'upload refused: ' + err
+            : 'upload refused: HTTP ' + String(res.status));
+    }
+    const out = await res.json();
+    const ans = typeof out === 'object' && out !== null ? out : {};
+    const row = typeof ans['row'] === 'object' && ans['row'] !== null ? ans['row'] : {};
+    const idOf = (v) => typeof v === 'string' ? v : '';
+    const id = idOf(row['id']) || idOf(ans['filename']);
+    if (id === '')
+        throw new Error('the lora door answered without a row name');
+    const seated = ans['row_seated'] === true;
+    const refusal = idOf(ans['row_refusal']);
+    const strength = row['default_strength'];
+    return {
+        id,
+        ...(typeof strength === 'number' ? { default_strength: strength } : {}),
+        row_seated: seated,
+        ...(refusal !== '' ? { refusal } : {}),
+    };
+}
 //# sourceMappingURL=wire.js.map

@@ -49,8 +49,13 @@ export function useResolvedForm(
   /** The spec's field row by wire name (the coercion's own lookup,
    * exposed for hosts that render their own atoms). */
   fieldOf: (name: string) => SpecField | undefined
+  /** THE SAME-SESSION REFRESH (2026-11-15, the lora upload leaf):
+   *  stale-while-revalidate re-fetch of the served spec — the form
+   *  never blanks mid-edit; a landed lora row serves in the SAME
+   *  session. Threaded onto the host wire beside `uploadLora`. */
+  refresh: () => Promise<void>
 } {
-  const { spec, error } = useFormSpec(family)
+  const { spec, error, refresh } = useFormSpec(family)
   const resolved = useMemo(
     () => resolveValueLayered(spec, base, user),
     [spec, base, user],
@@ -79,7 +84,7 @@ export function useResolvedForm(
     },
     [fieldOf, onWrite],
   )
-  return { spec, error, resolved, edit, fieldOf }
+  return { spec, error, resolved, edit, fieldOf, refresh }
 }
 
 /** The layer composition — PURE, exported for the seam's own wall:

@@ -234,6 +234,10 @@ describe('THE S7 CLASS-4 WALL · card-base · TIP GRAMMAR', () => {
     //    controls carry raw title, TrajectoryToolbar.tsx:60,92,105):
     //    square.tsx:247,256 squareX/squarePick.
     //  - drag-mode hint on the sortable tile: mods.tsx:1017.
+    //  - the lora upload verb's hint (the mods-plane hand-upload,
+    //    2026-11-15): the upload row's LABEL carries the drag-drop +
+    //    accept hint — the same caption-label idiom as :799/:938/:969
+    //    (a one-line hover on a plain label, no positioning need).
     //  - the single-family static Model select (the model-plane
     //    wave, 2026-11-05: a family count of ONE is a STATED face —
     //    the static select carries the row's own label, titled, the
@@ -241,7 +245,7 @@ describe('THE S7 CLASS-4 WALL · card-base · TIP GRAMMAR', () => {
     expect(seatsIn(seats, 'atoms.tsx', 'element'), 'atoms.tsx').toBe(3)
     expect(seatsIn(seats, 'axes.tsx', 'element'), 'axes.tsx').toBe(1)
     expect(seatsIn(seats, 'form.tsx', 'element'), 'form.tsx').toBe(5)
-    expect(seatsIn(seats, 'mods.tsx', 'element'), 'mods.tsx').toBe(4)
+    expect(seatsIn(seats, 'mods.tsx', 'element'), 'mods.tsx').toBe(5)
     expect(seatsIn(seats, 'preview.tsx', 'element'), 'preview.tsx').toBe(4)
     expect(seatsIn(seats, 'square.tsx', 'element'), 'square.tsx').toBe(3)
     expect(seats.filter((s) => s.kind === 'element' && !['atoms.tsx', 'axes.tsx', 'form.tsx', 'mods.tsx', 'preview.tsx', 'square.tsx'].includes(s.rel)),
@@ -254,10 +258,14 @@ describe('THE S7 CLASS-4 WALL · card-base · TIP GRAMMAR', () => {
     //    one-line tooltip is the hover, 2026-11-01; the picker's menu
     //    trigger rides the S7h spread channel, uncounted here like
     //    atoms.tsx:114's own spread).
+    //  - the lora upload strength dial (the mods-plane hand-upload,
+    //    2026-11-15): the row's Input carries the band hint (0–2,
+    //    blank = the door's 1) — the embedded field face, the same
+    //    rest-channel idiom as the leaf's range Input above.
     //  - preview.tsx:170 the StaleBadge capsule (the S7j Pill
     //    conversion kept the hover hint — TrajectoryToolbar class).
     expect(seatsIn(seats, 'atoms.tsx', 'component'), 'atoms.tsx rest channel').toBe(3)
-    expect(seatsIn(seats, 'mods.tsx', 'component'), 'mods.tsx rest channel').toBe(2)
+    expect(seatsIn(seats, 'mods.tsx', 'component'), 'mods.tsx rest channel').toBe(3)
     expect(seatsIn(seats, 'preview.tsx', 'component'), 'preview.tsx rest channel').toBe(1)
     expect(seats.filter((s) => s.kind === 'component' && !['atoms.tsx', 'mods.tsx', 'preview.tsx'].includes(s.rel)),
       'no rest-channel title seat outside the argued files').toEqual([])

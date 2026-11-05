@@ -261,6 +261,12 @@ export function parseReq(doc) {
         data: str("data"),
         filename: str("filename") || str("file"),
         families: Array.isArray(d["families"]) ? d["families"].map(String).filter((s) => s !== "") : [],
+        // THE OPERATOR'S DEFAULT STRENGTH (2026-11-15, the mods-plane
+        // upload button): seated on the row so the picker seed and the
+        // compose-time unstated-strength default read ONE value; banded
+        // 0–2 (the controlnet slider's band, packs.ts). 1 = the door's
+        // historic default (unstated).
+        default_strength: num("default_strength", 1),
         operation_id: str("operation_id"),
         // THE LORA-FETCH VERIFY (see Req.sha256)
         sha256: str("sha256"),
@@ -2204,6 +2210,13 @@ async function hLoraList(req, ctx) {
 async function hLoraInstall(req, ctx) {
     const cfg = ctx.endpoint();
     estateOnly(req, cfg);
+    // THE OPERATOR'S DEFAULT STRENGTH bands 0–2 — the controlnet
+    // slider's band (packs.ts); the row validator accepts any finite
+    // number, so the DOOR owns the band (a lying default serves twice:
+    // the picker seed and the compose-time unstated default)
+    if (!Number.isFinite(req.default_strength) || req.default_strength < 0 || req.default_strength > 2) {
+        throw new Refused(422, 'default_strength must be a finite number in 0–2 (the row default)');
+    }
     const root = engineLorasDir(cfg);
     // a copy needs a REAL target — an undeclared dir refuses loud
     // (never a guessed path on someone else's machine)
@@ -2268,7 +2281,7 @@ async function loraInstalled(req, ctx, dir, family, result, verb) {
             filename: comboName,
             families: req.families,
             label: result.filename.replace(/\.[^.]+$/, ''),
-            default_strength: 1,
+            default_strength: req.default_strength,
         });
         if (seated.ok)
             row_seated = true;
@@ -2295,7 +2308,7 @@ async function loraInstalled(req, ctx, dir, family, result, verb) {
             id: comboName,
             filename: comboName,
             families: req.families,
-            default_strength: 1,
+            default_strength: req.default_strength,
         },
     });
 }

@@ -5300,7 +5300,7 @@ window.__ModuleLoader__.load({
 		*/
 		/** Layer A rail: Recipe (clock) + Engine (H3 sampling) + geometry. */
 		function RunRecipeEngine({ base, layerA, setLayerAKey, setLayerA, refArtifacts }) {
-			const { spec, edit, resolved } = (0, _melite_card_base_client.useResolvedForm)("h3-timeline", layerA, setLayerAKey, base);
+			const { spec, edit, resolved, refresh } = (0, _melite_card_base_client.useResolvedForm)("h3-timeline", layerA, setLayerAKey, base);
 			const family = (0, react.useMemo)(() => deriveWindowFamily(mergeDocLayers(base, layerA)), [base, layerA]);
 			const omitDead = family === "t4_chain" ? void 0 : (name) => omitFilmOnlyField(name);
 			const omitRecipe = family !== "t4_chain" && spec !== null ? (row) => omitFilmRecipeRow(spec, row) : void 0;
@@ -5310,7 +5310,14 @@ window.__ModuleLoader__.load({
 					label: a.name,
 					url: a.url
 				})),
-				loadMedia: _melite_card_base_client.fetchMediaLibrary
+				loadMedia: _melite_card_base_client.fetchMediaLibrary,
+				...spec !== null ? {
+					uploadLora: (file, opts) => (0, _melite_card_base_client.uploadLoraDoor)(file, {
+						families: (0, _melite_card_base_client.resolveFamilyKey)(spec),
+						strength: opts.strength
+					}),
+					refreshSpec: refresh
+				} : {}
 			};
 			const [gateFace, setGateFace] = (0, react.useState)(null);
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [

@@ -256,7 +256,15 @@ export function seatUserLoraRow(
   rows.push(seated)
   try {
     mkdirSync(dirname(path), { recursive: true })
-    const part = path + '.part'
+    // THE UNIQUE PART (R4 hardening, 2026-11-15): the fixed
+    // `${path}.part` spelling made two concurrent seats (two tabs
+    // uploading at once) collide on ONE part path — one rename
+    // publishes the other's partial rows, a torn file the next
+    // reader refuses. Same random-pid-ms-hex spelling landLoraFile
+    // carries (the M-E1 law); the lost-UPDATE half (last whole-file
+    // writer wins) is unchanged by design — the rows file keeps one
+    // writer per process and replace-by-filename heals the next seat.
+    const part = `${path}.part-${process.pid}-${Date.now()}-${randomBytes(6).toString('hex')}`
     writeFileSync(part, JSON.stringify({ rows }, null, 2) + '\n')
     // one atomic landing — a torn write leaves nothing the reader serves
     renameSync(part, path)

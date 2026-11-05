@@ -1506,6 +1506,51 @@ describe('binary lora door', () => {
     )
   })
 
+  test('THE OPERATOR STRENGTH QUERY (the mods-plane button, 2026-11-15): ?strength= seats the row default and echoes it — absent stays the door 1', async () => {
+    const dir = withDir()
+    const h = boot({})
+    const post = async (query: string): Promise<{ status: number, body: Record<string, unknown> }> => call(h.routes, '/v1/uploads/lora', {
+      method: 'POST',
+      url: '/v1/uploads/lora?filename=' + encodeURIComponent(TAG + 'op.safetensors') + '&families=z-image' + query,
+      raw: LORA_BYTES.toString('latin1'),
+      headers: {
+        'content-type': 'application/octet-stream',
+        'content-length': String(LORA_BYTES.byteLength),
+      },
+    })
+    // the operator's stated default seats + echoes
+    const withStrength = await post('&strength=0.8')
+    assert.equal(withStrength.status, 200)
+    const row = withStrength.body['row'] as { default_strength?: number }
+    assert.equal(row.default_strength, 0.8)
+    const seated = JSON.parse(await fs.readFile(path.join(dir, 'user-loras.json'), 'utf8')) as { rows: Array<{ default_strength?: number }> }
+    assert.equal(seated.rows[0]?.default_strength, 0.8)
+    // re-upload WITHOUT the query replaces by filename and answers
+    // the door default — one row, never two
+    const withoutStrength = await post('')
+    assert.equal(withoutStrength.status, 200)
+    const flat = withoutStrength.body['row'] as { default_strength?: number }
+    assert.equal(flat.default_strength, 1)
+    const reRead = JSON.parse(await fs.readFile(path.join(dir, 'user-loras.json'), 'utf8')) as { rows: Array<{ default_strength?: number }> }
+    assert.equal(reRead.rows.length, 1)
+    assert.equal(reRead.rows[0]?.default_strength, 1)
+  })
+
+  test('an out-of-band strength query refuses 400 before any byte lands', async () => {
+    withDir()
+    const h = boot({})
+    for (const bad of ['2.5', '-0.1', 'abc']) {
+      const r = await call(h.routes, '/v1/uploads/lora', {
+        method: 'POST',
+        url: '/v1/uploads/lora?filename=' + encodeURIComponent(TAG + 'bad.safetensors') + '&families=z-image&strength=' + encodeURIComponent(bad),
+        raw: 'x',
+        headers: { 'content-type': 'application/octet-stream', 'content-length': '1' },
+      })
+      assert.equal(r.status, 400, bad)
+      assert.ok(String((r.body as { error: string }).error).includes('strength must be a finite number in 0–2'))
+    }
+  })
+
   test('THE PRE-BUFFER CAP: an over-cap declared length answers 413 with NO body ever read', async () => {
     withDir()
     const h = boot({})

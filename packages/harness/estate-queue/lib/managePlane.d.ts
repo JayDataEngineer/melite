@@ -139,6 +139,11 @@ export interface Req {
     path: string;
     data: string;
     families: string[];
+    /** THE OPERATOR'S DEFAULT STRENGTH (2026-11-15, the mods-plane
+     *  upload button): seated on the user-loras row so the picker seed
+     *  and the compose-time unstated-strength default read ONE value.
+     *  Banded 0–2 at the door; 1 = the historic default. */
+    default_strength: number;
     /** THE LORA-FETCH VERIFY (the operator's 2026-11-09 cure item 1:
      *  sha256 verify when stated) — the source-stated digest, carried
      *  into the provisioning acquire so the landing verifies. Empty =
