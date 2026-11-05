@@ -2925,6 +2925,10 @@ describe('melite_flow stage — THE PER-STAGE PRESS (W-8, 2026-11-05)', () => {
     return mockEstate([
       (lane: string, _args: unknown[]) => {
         if (lane === 'benchGet') return { status: 200, body: bench }
+        // served (never pressed on the green path) so a reintroduced
+        // landing (the F3-13 shape) reds on the WALL's own assertion,
+        // not on an unmocked-lane crash
+        if (lane === 'benchEnsure') return { status: 200, body: { delivered: true, draft_id: bench.draft_id } }
         if (lane === 'runsStart') return { status: 202, body: { run_id: 'r_stage_0', status: 'queued' } }
         if (lane === 'runsStatus') {
           return { status: 200, body: { status: 'completed', stages: [{ id: 's_0', url: '/runs/a0.flac' }] } }
@@ -2976,7 +2980,7 @@ describe('melite_flow stage — THE PER-STAGE PRESS (W-8, 2026-11-05)', () => {
     assert.equal(ensures.length, 0, `a per-stage press must never land a bench — benchEnsure fired ${ensures.length}× (F3-13: the deleted hatch replaced the shared bench through loadBench overwrite:true)`)
     assert.equal(JSON.stringify(bench), before, 'the bench doc is byte-identical across the press — stages AND intent')
     const writes = seen.calls.filter((c) => c.lane !== 'runsStart' && c.lane !== 'runsStatus' && c.lane !== 'draftsStagePatch')
-    assert.deepEqual(writes.map((c) => c.lane), ['loadCard', 'benchGet'], 'besides the run lifecycle, the press only READS the bench')
+    assert.deepEqual(writes.map((c) => c.lane), ['benchGet'], 'besides the run lifecycle, the press only READS the bench')
   })
 
   test('W-8 arm 2: an unknown stage id refuses naming the known ids, with zero starts', async () => {
