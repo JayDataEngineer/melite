@@ -565,3 +565,133 @@ describe('melite_flow bench — the run-id-less start (the empty-error trap’s 
     )
   })
 })
+
+// R-4 (2026-11-05, D3-04 — FRICTION_3.md:79-80 + :491): the press
+// census + the rev-confirm landing admission. The burn: s_89 + s_90
+// were minted back-to-back and pressed together — the run held only
+// s_89, and "s_90 sat unrun with no warning anywhere in the press
+// receipt". Registry row harness-flow-press-census.
+describe('melite_flow bench — the press census + the rev-confirm landing admission (R-4 / D3-04)', () => {
+  /** A fresh image-gen row the pass will press. */
+  const freshRow = { id: 's_1', card: 'image-gen', params: { model: 'anima' } }
+  /** A settled done row the pass will skip. */
+  const doneRow = { id: 's_0', card: 'tts', runStatus: 'done', params: {}, result: { run_id: 'r_old', url: '/runs/old.flac' } }
+
+  test('R-4 arm 1 (THE WALL): a press receipt carries every PRESSED stage id + the snapshot rev — the bench pass and the W-8 per-stage press alike', async () => {
+    let reads = 0
+    const fake = fakeEstateStatus([
+      (lane: string) => {
+        if (lane === 'benchGet') {
+          reads += 1
+          return { status: 200, body: { draft_id: 'd_arms', rev: 12, stages: [doneRow, freshRow] } }
+        }
+        return undefined
+      },
+      ...settledLanes('r_census', '/runs/census.png'),
+    ])
+    const tool = meliteFlow(fake.estate)
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(6000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.status, 'done')
+    assert.deepEqual(out.pressed, ['s_1'],
+      'the census names the pressed ids — a skipped-done row is not a press (the D3-04 caller compares this against its own mint answers)')
+    assert.equal(out.rev, 12, 'the snapshot rev rides machine-readable (the `@ rev N` prose already carried it)')
+    // the W-8 per-stage press rides the same return
+    const fake2 = fakeEstateStatus([
+      (lane: string) => {
+        if (lane === 'benchGet') return { status: 200, body: { draft_id: 'd_arms', rev: 12, stages: [doneRow, freshRow] } }
+        return undefined
+      },
+      ...settledLanes('r_census', '/runs/census.png'),
+    ])
+    const tool2 = meliteFlow(fake2.estate)
+    const out2 = await tool2.execute({ stage: 's_1' }, fakeExec(AbortSignal.timeout(6000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out2.status, 'done')
+    assert.deepEqual(out2.pressed, ['s_1'], 'the per-stage press carries the same census face')
+    assert.equal(out2.rev, 12)
+  })
+
+  test('R-4 arm 2 (THE WALL): a rev that moved between the snapshot read and the press warns on the pressed row — and the press STILL runs', async () => {
+    let reads = 0
+    const fake = fakeEstateStatus([
+      (lane: string) => {
+        if (lane === 'benchGet') {
+          reads += 1
+          // the mid-settle shape: the mint door answered `landing:
+          // landed_and_compiling` and the bench moved under the press
+          return { status: 200, body: { draft_id: 'd_arms', rev: reads === 1 ? 431 : 432, stages: [freshRow] } }
+        }
+        return undefined
+      },
+      ...settledLanes('r_race', '/runs/race.png'),
+    ])
+    const tool = meliteFlow(fake.estate)
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(6000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.status, 'done', 'the warning is an ADMISSION, never a gate — the press ran')
+    const pass = out.pass as Array<Record<string, unknown>>
+    const warning = String(pass[0]!['warning'] ?? '')
+    assert.match(warning, /bench rev moved between the snapshot read and this press \(rev 431 → rev 432\)/, warning)
+    assert.match(warning, /something may still be landing/, 'the warning names the D3-04 race, not a generic bench move')
+    assert.equal(fake.calls.filter((c) => c.lane === 'runsStart').length, 1, 'the press still ran')
+    assert.equal(out.rev, 431, 'the receipt names the SNAPSHOT the press judged against')
+  })
+
+  test('R-4 arm 2b (the joined voice): an h3 admission and a landing race share the row — neither voice shadows the other', async () => {
+    let reads = 0
+    const fake = fakeEstateStatus([
+      (lane: string) => {
+        if (lane === 'benchGet') {
+          reads += 1
+          return { status: 200, body: { draft_id: 'd_arms', rev: reads === 1 ? 1 : 2, stages: [
+            { id: 's_1', card: 'h3-timeline', params: { extend: [{ source_clip: 'film_a', resolution: '736p' }] } },
+          ] } }
+        }
+        return undefined
+      },
+      ...settledLanes('r_join', '/runs/join.mp4'),
+    ])
+    const tool = meliteFlow(fake.estate)
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(6000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.status, 'done')
+    const warning = String((out.pass as Array<Record<string, unknown>>)[0]!['warning'] ?? '')
+    assert.ok(warning.startsWith('h3-timeline: CROSS-REGIME JOIN'), 'the F18 admission leads the row voice')
+    assert.ok(warning.includes('bench rev moved between the snapshot read and this press'), 'the landing race follows — joined, never shadowed')
+  })
+
+  test('R-4 arm 2c (the advisory face): a confirm read that DIES in transport never gates the press — no warning is the honest face', async () => {
+    let reads = 0
+    const fake = fakeEstateStatus([
+      (lane: string) => {
+        if (lane === 'benchGet') {
+          reads += 1
+          if (reads > 1) throw new Error('confirm read transport down')
+          return { status: 200, body: { draft_id: 'd_arms', rev: 7, stages: [freshRow] } }
+        }
+        return undefined
+      },
+      ...settledLanes('r_advisory', '/runs/advisory.png'),
+    ])
+    const tool = meliteFlow(fake.estate)
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(6000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.status, 'done', 'the advisory confirm swallowed its own transport death — the press ran on the snapshot it holds')
+    const pass = out.pass as Array<Record<string, unknown>>
+    assert.equal(pass[0]!['warning'], undefined, 'a confirm that cannot read admits nothing')
+    assert.equal(fake.calls.filter((c) => c.lane === 'runsStart').length, 1)
+  })
+
+  test('R-4 arm 3 (guard): a settled bench presses WARNING-FREE — the rev-confirm never makes the settle mandatory', async () => {
+    const fake = fakeEstateStatus([
+      (lane: string) => {
+        if (lane === 'benchGet') return { status: 200, body: { draft_id: 'd_arms', rev: 90, stages: [freshRow] } }
+        return undefined
+      },
+      ...settledLanes('r_settled', '/runs/settled.png'),
+    ])
+    const tool = meliteFlow(fake.estate)
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(6000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.status, 'done')
+    const pass = out.pass as Array<Record<string, unknown>>
+    assert.equal(pass[0]!['warning'], undefined,
+      'no false warning: the rev stood still between the snapshot read and the press — a settled bench is silent')
+    assert.equal(fake.calls.filter((c) => c.lane === 'runsStart').length, 1, 'the press ran normally')
+  })
+})

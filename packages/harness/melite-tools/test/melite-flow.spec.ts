@@ -3079,8 +3079,17 @@ describe('melite_flow stage — THE PER-STAGE PRESS (W-8, 2026-11-05)', () => {
     const ensures = seen.calls.filter((c) => c.lane === 'benchEnsure')
     assert.equal(ensures.length, 0, `a per-stage press must never land a bench — benchEnsure fired ${ensures.length}× (F3-13: the deleted hatch replaced the shared bench through loadBench overwrite:true)`)
     assert.equal(JSON.stringify(bench), before, 'the bench doc is byte-identical across the press — stages AND intent')
+    // R-4 (D3-04): the press READS the bench twice — the snapshot it
+    // judges against + the ONE advisory rev-confirm before the start —
+    // and WRITES it never. The read bound stays pinned at 2: a third
+    // read would be a re-read loop, and any benchVerb/benchEnsure lane
+    // here is a landing (F3-13).
     const writes = seen.calls.filter((c) => c.lane !== 'runsStart' && c.lane !== 'runsStatus' && c.lane !== 'draftsStagePatch')
-    assert.deepEqual(writes.map((c) => c.lane), ['benchGet'], 'besides the run lifecycle, the press only READS the bench')
+    assert.deepEqual(
+      writes.map((c) => c.lane),
+      ['benchGet', 'benchGet'],
+      'besides the run lifecycle, the press only READS the bench — the snapshot + the ONE advisory rev-confirm (R-4), never a write lane',
+    )
   })
 
   test('W-8 arm 2: an unknown stage id refuses naming the known ids, with zero starts', async () => {

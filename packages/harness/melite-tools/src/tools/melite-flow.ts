@@ -225,6 +225,41 @@ async function loadBench(
   return draftIdOf(id)
 }
 
+/** R-4's rev-confirm read (D3-04, 2026-11-05): ONE advisory re-read of
+ *  the bench rev immediately before the press begins — a rev that
+ *  moved between the snapshot read and the press means something is
+ *  still landing (the burn: a press issued while the previous mint
+ *  was still `landed_and_compiling` snapshotted before the new stage
+ *  joined, and s_90 sat unrun with no warning anywhere in the press
+ *  receipt). The warning is an ADMISSION, never a gate (the F18
+ *  precedent): the press still runs on the snapshot it holds. A doc
+ *  that serves no rev admits nothing (no false warning invented from
+ *  absence).
+ *
+ * @param estate - the estate handle.
+ * @param bench - the session bench key.
+ * @param snapshotRev - the rev the pass's snapshot read served.
+ * @param signal - the caller's abort signal.
+ * @returns the landing-race warning text, or undefined when the rev stood still.
+ */
+async function revConfirmLanding(estate: Estate, bench: string, snapshotRev: unknown, signal: AbortSignal): Promise<string | undefined> {
+  try {
+    const confirm = await estate.benchGet(bench, signal, 15_000) as Record<string, unknown>
+    const fresh = typeof confirm['rev'] === 'number' ? confirm['rev'] : undefined
+    const snap = typeof snapshotRev === 'number' ? snapshotRev : undefined
+    // an unreadable rev on either side admits nothing (no false warning
+    // invented from absence); a rev that STOOD STILL admits nothing —
+    // the warning exists only for a rev that MOVED
+    if (snap === undefined || fresh === snap) return undefined
+    return `bench rev moved between the snapshot read and this press (rev ${snap} → rev ${fresh}) — something may still be landing; if a stage you just minted is missing from the pressed census, re-press it`
+  } catch {
+    // advisory read: a transport hiccup in the confirm never gates the
+    // press (the pass still runs on the snapshot it holds) — no
+    // warning is the honest face, never a swallowed refusal
+    return undefined
+  }
+}
+
 /** BENCH (the AI-control pillar, 2026-09-12): the agent drives THE
  *  shared bench exactly like the user's Run press — ONE SEQUENTIAL
  *  PASS, agent-side, one card at a time through the serial queue.
@@ -283,6 +318,25 @@ async function runBench(
   // card's head reads THIS, never the bench's present-tense intent a
   // later press rewrote.
   const intent = typeof b['intent'] === 'string' ? (b['intent'] as string) : ''
+  // R-4 — THE PRESS CENSUS (D3-04, 2026-11-05): every press receipt
+  // carries the stage ids this pass pressed and the snapshot rev the
+  // press judged against — rows/rev already in hand at the snapshot
+  // read, so the census is assembly, never a second read. The burn:
+  // s_89 + s_90 were minted back-to-back and pressed together, the run
+  // held only s_89, and no receipt anywhere said which stages the
+  // press actually saw. The W-8 per-stage press rides the same return.
+  const pressed: string[] = []
+  const pressCensus = (): Record<string, unknown> => ({
+    pressed: [...pressed],
+    rev: typeof b['rev'] === 'number' ? b['rev'] : null,
+  })
+  // R-4 — THE REV-CONFIRM (the landing-race admission): re-read the
+  // bench rev immediately before the press. ONE read, BEFORE the pass
+  // starts — the pass's own attribution stamps move the rev on every
+  // settle, so a per-stage confirm would false-warn every settled
+  // bench (the settle must not become mandatory). Fired, the warning
+  // rides every pressed pass row beside the F18 admission seat.
+  const landingWarning = await revConfirmLanding(estate, a.bench, b['rev'], signal)
   const pass: Array<Record<string, unknown>> = []
   // THE PRESS KEEPS GOING (F20 residual, 2026-10-30): a stage that
   // settled FAILED is recorded here and the pass moves on — the run
@@ -444,12 +498,12 @@ async function runBench(
         return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId,
           ...(intent !== '' ? { intent } : {}),
           ...(only !== undefined ? { stage: only } : {}),
-          error: `stage ${stageId} is the "${refFlow}" flow template reference (a retired melite_flow press landed it — the bench doors refuse the shape now; the flow runs through its own start door, not this bench pass); remove it with melite_construct remove_stage ${stageId} if the bench should run without the flow${undoCure}`, pass }
+          error: `stage ${stageId} is the "${refFlow}" flow template reference (a retired melite_flow press landed it — the bench doors refuse the shape now; the flow runs through its own start door, not this bench pass); remove it with melite_construct remove_stage ${stageId} if the bench should run without the flow${undoCure}`, ...pressCensus(), pass }
       }
       return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId,
         ...(intent !== '' ? { intent } : {}),
         ...(only !== undefined ? { stage: only } : {}),
-        error: `stage ${stageId} names no card — nothing to compose (melite_construct patch)`, pass }
+        error: `stage ${stageId} names no card — nothing to compose (melite_construct patch)`, ...pressCensus(), pass }
     }
     const params = row['params'] !== null && typeof row['params'] === 'object' && !Array.isArray(row['params'])
       ? row['params'] as Record<string, unknown> : {}
@@ -481,7 +535,7 @@ async function runBench(
           return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId,
             ...(intent !== '' ? { intent } : {}),
             ...(only !== undefined ? { stage: only } : {}),
-            error: 'input ' + JSON.stringify(name) + ' is neither {stage, output} nor a resolvable binding — the bench pass maps only stage wires (got ' + JSON.stringify(ref ?? null) + ')', pass }
+            error: 'input ' + JSON.stringify(name) + ' is neither {stage, output} nor a resolvable binding — the bench pass maps only stage wires (got ' + JSON.stringify(ref ?? null) + ')', ...pressCensus(), pass }
         }
         const upstreamId = String(ref!['stage'])
         const upstream = rows.find((r) => r['id'] === upstreamId)
@@ -493,7 +547,7 @@ async function runBench(
             ...(intent !== '' ? { intent } : {}),
             ...(only !== undefined ? { stage: only } : {}),
             error: 'input ' + JSON.stringify(name) + ' is wired to stage ' + JSON.stringify(upstreamId)
-              + ' which has no output yet — run it first (or clear the wire). The bench pass resolves wires to the upstream\'s last result; it never drops them.', pass }
+              + ' which has no output yet — run it first (or clear the wire). The bench pass resolves wires to the upstream\'s last result; it never drops them.', ...pressCensus(), pass }
         }
         const spell = '$' + name
         const substitute = (v: unknown): unknown => {
@@ -523,6 +577,12 @@ async function runBench(
     // math, cited); this is the pass voice, the one face the
     // operator reads during a bench press.
     const regimeWarning = crossRegimeAdmissionOf(card, resolved)
+    // R-4: one warning seat per row — the row's own admission (F18)
+    // first, the landing race (D3-04) second; joined so neither voice
+    // shadows the other.
+    const rowWarning = regimeWarning !== null
+      ? (landingWarning !== undefined ? regimeWarning + ' ' + landingWarning : regimeWarning)
+      : landingWarning
     // A familyless stage presses the DRAFT ARM alone (the same body
     // runSingle's wired path rides): the run door composes the bench's
     // stages — the familyless one by its own card id. A model key here
@@ -551,6 +611,11 @@ async function runBench(
     // `pass[]` with it, so the operator saw a stack and none of the
     // stages' outcomes. The same law as a settled failure now holds:
     // record it, name it at the end, keep pressing.
+    // R-4: the census records the press ISSUED — the start is being
+    // handed its body (a refused or thrown start is still a pressed
+    // row: the receipt's `pressed` names every stage the pass reached
+    // its start lane with).
+    pressed.push(stageId)
     let started: Record<string, unknown>
     try {
       started = await startRun(estate, model === ''
@@ -564,7 +629,7 @@ async function runBench(
       continue
     }
     if (typeof started['error'] === 'string') {
-      return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId, ...(intent !== '' ? { intent } : {}), ...(only !== undefined ? { stage: only } : {}), error: started['error'], pass }
+      return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId, ...(intent !== '' ? { intent } : {}), ...(only !== undefined ? { stage: only } : {}), ...pressCensus(), error: started['error'], pass }
     }
     const runId = started['run_id'] as string
     if (runId !== '') mintedRuns.set(stageId, runId)
@@ -579,7 +644,7 @@ async function runBench(
     }
     pass.push({ stage: stageId, card, run_id: runId, status: outcome.status,
       ...(staleVoice !== undefined ? { stale: staleVoice } : {}),
-      ...(regimeWarning !== null ? { warning: regimeWarning } : {}),
+      ...(rowWarning !== undefined ? { warning: rowWarning } : {}),
       ...(outcome.url !== '' ? { url: outcome.url } : {}),
       ...(outcome.artifacts.length > 0 ? { artifacts: outcome.artifacts } : {}),
       ...(outcome.asset_urls.length > 0 ? { asset_urls: outcome.asset_urls } : {}),
@@ -592,7 +657,7 @@ async function runBench(
       // render prints `[pending] — poll with run_status`, and the
       // background attribution link still lands the terminal stamp
       // on the stage row when the run settles.
-      return { mode: 'bench', target, draft_id: draftId, status: 'pending', stoppedAt: stageId, run_id: runId, ...(intent !== '' ? { intent } : {}), ...(only !== undefined ? { stage: only } : {}), pass }
+      return { mode: 'bench', target, draft_id: draftId, status: 'pending', stoppedAt: stageId, run_id: runId, ...(intent !== '' ? { intent } : {}), ...(only !== undefined ? { stage: only } : {}), ...pressCensus(), pass }
     }
     if (outcome.status !== 'done') {
       // THE PASS CONTINUES (F20 residual, 2026-10-30): a stage that
@@ -640,12 +705,12 @@ async function runBench(
       ...(intent !== '' ? { intent } : {}),
       ...(only !== undefined ? { stage: only } : {}),
       error: `stage ${first.stage} (${first.card}) ` + (first.status === 'threw' ? 'threw (a transport or resolution error — read pass[] for the rest)' : `ended ${first.status}`) + (failures.length > 1 ? ` — ${failures.length} stages failed (the pass still pressed every stage; read pass[])` : ' (the pass still pressed the remaining stages)'),
-      ...(lastHosts.length > 0 ? { host_paths: lastHosts } : {}), pass }
+      ...(lastHosts.length > 0 ? { host_paths: lastHosts } : {}), ...pressCensus(), pass }
   }
   return { mode: 'bench', target, draft_id: draftId, run_id: lastRun, status: 'done',
     ...(intent !== '' ? { intent } : {}),
     ...(only !== undefined ? { stage: only } : {}),
-    ...(lastHosts.length > 0 ? { host_paths: lastHosts } : {}), pass }
+    ...(lastHosts.length > 0 ? { host_paths: lastHosts } : {}), ...pressCensus(), pass }
 }
 
 /** THE PER-STAGE PRESS (W-8, 2026-11-05): `melite_flow {stage}` runs ONE
