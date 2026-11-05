@@ -1411,7 +1411,14 @@ export function meliteFlow(estate) {
                             // own result memory). A done mark with no run behind
                             // it reads skipped honestly, never unchanged.
                             : typeof p['last_run'] === 'string' && p['last_run'] !== ''
-                                ? ' — unchanged since its last run; patch params to re-run'
+                                // W-9 (2026-11-05, RG-P4-1b — the patch-same-value
+                                // drift): the old "patch params to re-run" taught
+                                // any-patch-re-runs, but the estate keeps the done
+                                // mark on a same-value patch (bench.ts:1376 clears
+                                // runStatus only on a real canonical-spelling
+                                // change). The teacher names the VALUE: only a
+                                // param VALUE change (or a clear) re-arms the stage.
+                                ? ' — unchanged since its last run; patch a param VALUE to re-run'
                                 : ' — done on record but no last run behind it; patch params to force a run')
                         : String(p['status'] ?? p['skipped'] ?? '?')) + ']'
                         // THE LOUD MISS FACE (the no-feedback defect): a stamp

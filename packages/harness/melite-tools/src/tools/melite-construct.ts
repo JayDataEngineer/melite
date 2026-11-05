@@ -1343,6 +1343,17 @@ export function meliteConstruct(
         // flow re-runs the stage — no [done] no-op to diagnose.
         if ((v as { stale?: unknown }).stale === true) {
           lines.push('stale: params changed — the stage\'s done mark is cleared; the next flow re-runs it (its old artifact stays readable as last_run)')
+        } else if (v.verb === 'patch') {
+          // THE KEEP-DONE VOICE (W-9 / RG-P4-1b, 2026-11-05 — the
+          // patch-same-value drift: the estate keeps the done mark on
+          // a same-value patch — bench.ts:1376 compares canonical
+          // spellings and clears runStatus only on a real change — but
+          // the idempotent patch answered nothing about the mark while
+          // the press skip taught "patch params to re-run" as if any
+          // patch re-runs. The patch that changed nothing says so:
+          // the mark stands, and only a VALUE change (or a clear)
+          // re-arms the stage).
+          lines.push('no value change — done mark stands; patch a VALUE or clear the mark to re-run')
         }
         // THE SPELL VOICE, RENDERED (the compose-time spell gate,
         // 2026-10-21): the payload names every $-token and its one
@@ -1781,8 +1792,11 @@ export function meliteConstruct(
           // THE STALENESS VOICE (the silent no-op cure): the door
           // answers stale:true when the patch changed params and
           // invalidated the stage's done mark — the model reads WHY
-          // its next flow will re-run (or, absent stale, that the
-          // write was idempotent and the done mark stands).
+          // its next flow will re-run — and keep_done:true when the
+          // write was idempotent (no value change: the estate kept
+          // the mark, bench.ts:1376, so the answer says the mark
+          // stands instead of leaving the model to the skip line's
+          // any-patch reading).
           const stale = r['stale'] === true
           // THE COMPILE VERDICT RIDES A PARAMS-CHANGED PATCH (session
           // 7a82's autopsy P3, 2026-11-12): the steps-25 ∉ [4,8]
@@ -1795,7 +1809,7 @@ export function meliteConstruct(
           // closable teaching line the next mutation can still cure).
           const compile = stale === true ? await compileVerdictOf(estate, bench, signal) : undefined
           return out({ rev: r.rev, stage: r.stage, patched: r.patched,
-            ...(stale ? { stale: true } : {}),
+            ...(stale ? { stale: true } : { keep_done: true }),
             ...(spellLines.length > 0 ? { spells: spellLines } : {}),
             ...(appliedDerivations.length > 0 ? { applied_derivations: appliedDerivations } : {}),
             ...(compile !== undefined ? { ...compile } : {}),

@@ -525,6 +525,54 @@ describe('melite_construct mutations — every verb', () => {
     assert.equal(quiet.stale, undefined, 'an idempotent write carries no stale key')
   })
 
+  test('W-9 arm 1 (THE WALL): a same-value patch answers keep-done — the done mark stands, voiced in answer and render', async () => {
+    // THE LAW (estate bench.ts:1367-1380, walled at
+    // bench-mutations.spec.ts:38,46-59): a same-value patch keeps the
+    // done mark — canonicalParams(stored) === beforeCanonical clears
+    // nothing. The drift was voice-only: the idempotent patch rode no
+    // keep-done word and the render printed no line. This arm pins the
+    // honest keep-done voice: the answer carries keep_done (and NO
+    // stale key) and the render carries the keep-done line.
+    const { estate } = mockEstate((lane, args) => {
+      if (lane === 'benchVerb' && args[1] === 'patch') return { rev: 9, stage: 's1', patched: [] }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const tool = meliteConstruct(estate)
+    const out = await tool.execute({ verb: 'patch', stage: 's1', params: { p: 2 }, expect_rev: 8 }, exec()) as Record<string, unknown>
+    assert.equal(out.keep_done, true, 'the door\'s keep-done voice rides the answer — the mark stands')
+    assert.equal(out.stale, undefined, 'an idempotent write carries no stale key — the CHANGED line must never print here')
+    const blocks = tool.output!.render!({ verb: 'patch', stage: 's1' } as never, out as never) as Array<{ type?: string, text?: string }>
+    const rendered = blocks.map((b) => b.text ?? '').join('\n')
+    assert.ok(
+      rendered.includes('no value change — done mark stands; patch a VALUE or clear the mark to re-run'),
+      'the render prints the keep-done line — a payload key nobody prints is a voice nobody hears: ' + rendered,
+    )
+    assert.ok(!rendered.includes('params changed'), 'the CHANGED line never prints for a same-value patch: ' + rendered)
+  })
+
+  test('W-9 arm 2: a real change still renders the existing params-CHANGED line — the changed voice survives the keep-done cure', async () => {
+    // The keep-done else-branch must never shadow the params-CHANGED
+    // line: a real value change clears the mark (bench.ts:1377-1380)
+    // and the render says exactly that, in the words the burn heard.
+    const { estate } = mockEstate((lane, args) => {
+      if (lane === 'benchVerb' && args[1] === 'patch') return { rev: 7, stage: 's1', patched: ['p'], stale: true }
+      if (lane === 'benchGet') return { session: 'session-chat7', rev: 7, intent: '', stages: [{ id: 's1', params: { p: 2 } }], log: [] }
+      if (lane === 'runsValidate') return { ok: true }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const tool = meliteConstruct(estate)
+    const out = await tool.execute({ verb: 'patch', stage: 's1', params: { p: 2 }, expect_rev: 6 }, exec()) as Record<string, unknown>
+    assert.equal(out.stale, true, 'a real change still answers stale:true')
+    assert.equal(out.keep_done, undefined, 'a real change never carries the keep-done key — one law, one voice')
+    const blocks = tool.output!.render!({ verb: 'patch', stage: 's1' } as never, out as never) as Array<{ type?: string, text?: string }>
+    const rendered = blocks.map((b) => b.text ?? '').join('\n')
+    assert.ok(
+      rendered.includes('stale: params changed — the stage\'s done mark is cleared; the next flow re-runs it'),
+      'the existing params-CHANGED line still renders verbatim: ' + rendered,
+    )
+    assert.ok(!rendered.includes('done mark stands'), 'the keep-done line never prints for a real change: ' + rendered)
+  })
+
   test('patch merges params onto one stage', async () => {
     const { seen, estate } = mockEstate((lane, args) => {
       if (lane === 'benchVerb' && args[1] === 'patch') return { rev: 6, stage: 's1', patched: ['p'] }

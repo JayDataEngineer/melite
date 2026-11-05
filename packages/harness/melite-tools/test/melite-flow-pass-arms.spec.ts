@@ -340,8 +340,38 @@ describe('melite_flow bench — the done mark requires a last run (qa8 GAPS-12/F
     assert.deepEqual(out.pass, [{ stage: 's_0', card: 'tts', skipped: 'done', last_run: 'r_old' }])
     assert.equal(fake.calls.filter((c) => c.lane === 'runsStart').length, 0, 'the grounded mark still skips — no re-run')
     assert.ok(
-      textOf(tool, out).includes('s_0 tts [skipped done — unchanged since its last run; patch params to re-run]'),
+      textOf(tool, out).includes('s_0 tts [skipped done — unchanged since its last run; patch a param VALUE to re-run]'),
       'a mark WITH a run behind it earns the unchanged claim',
+    )
+  })
+
+  test('W-9 arm 3 (THE WALL): the skip teacher names the VALUE — the any-patch reading dies at this seat', async () => {
+    // RG-P4-1b (2026-11-05): the old "patch params to re-run" taught
+    // any-patch-re-runs, but the estate keeps the done mark on a
+    // same-value patch (bench.ts:1376 clears runStatus only on a real
+    // canonical-spelling change). The teacher recut names the VALUE:
+    // only a param VALUE change (or a clear) re-arms the stage — and
+    // the old any-patch wording never prints.
+    const fake = fakeEstateStatus([
+      (lane: string) => {
+        if (lane === 'benchGet') {
+          return { status: 200, body: benchWith([
+            { id: 's_0', card: 'tts', runStatus: 'done', params: {}, result: { run_id: 'r_old', url: '/runs/old.flac' } },
+          ]) }
+        }
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(fake.estate)
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(6000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    const text = textOf(tool, out)
+    assert.ok(
+      text.includes('patch a param VALUE to re-run'),
+      'the skip voice teaches the VALUE law: ' + text,
+    )
+    assert.ok(
+      !text.includes('patch params to re-run'),
+      'the any-patch reading is dead at this seat — the old wording never prints: ' + text,
     )
   })
 
