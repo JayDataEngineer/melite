@@ -62,131 +62,6 @@ export const ANNY_PARAMS: RegistryFlow = {
   tool: null,
   skillRefs: [],
 };
-export const AUDIO_NATIVE_TTS: RegistryFlow = {
-  id: "audio-native-tts",
-  description:
-    "Phase 1b gate: Qwen3-TTS 12Hz CustomVoice via the live melite-audio-nodes " +
-    "island pack in the serving ComfyUI container (pure-ComfyUI audio lane; " +
-    "retires the C audio engine for TTS). RUNS on the {flow:} door " +
-    "(2026-10-04: the VALIDATE-ONLY stamp is GONE — the start door " +
-    "composes the row's card stages through the card plane); the {model:} " +
-    "door drives the same card directly.",
-  stages: [
-    plainStage({
-      id: "tts",
-      engine: CARD_PLANE_ENGINE,
-      card: "tts",
-      description: "Qwen3-TTS text to speech via the tts card",
-      // THE INITIAL IS NAMED FOR THE CHANNEL IT FEEDS (2026-10-04, the
-      // merge-hole cure): the wiring law spells every wired channel
-      // `$<channel>`, and the merge resolves a $spell against links ∪
-      // request INITIALS — so a channel `text` fed by initial("prompt")
-      // spelled `$text` resolved against neither and the run died at
-      // the merge. anny-hmr names all three the same (photo/photo/
-      // $photo); so does this row now.
-      inputs: { text: initial("text") },
-      // every wired input needs its expected Kind (kindsOk's own
-      // law) — this row shipped without it and only the LIVE
-      // /v1/flows/validate path tripped it; completed at the
-      // round-trip stroke 2026-09-20 beside the wall that catches
-      // the class (kindsOk over every registry flow)
-      expected: { text: "text" },
-      outputs: { wav: "audio" },
-      cardIo: { wav: "audio" },
-      // ONE HOME FOR FLOW DEFAULTS (audit 015 C2): no seed stamp —
-      // the tts card's own default (-1, random) rules at compose and
-      // the seed-sentinel gate mints a fresh take per run, the same
-      // take-freshness a GUI card stage gets. A stated seed rides the
-      // declared overlay; the stamp that stood here (seed 42) was a
-      // second default-write that locked every flow take to 42.
-      params: { model: "qwen3-tts", text: "$text" },
-    }),
-  ],
-  initialValidators: { text: "text" },
-  tool: {
-    name: "speak",
-    version: 1,
-    description:
-      "Qwen3-TTS 12Hz CustomVoice speech in one call — text in, wav out " +
-      "(pure-ComfyUI audio lane).",
-    properties: {
-      // the caller key IS the initial name (2026-10-04): the extractor
-      // lifts declared validators only, so a `prompt` property over a
-      // `text` initial would advertise a key the door never reads.
-      text: {
-        ptype: "string",
-        description: "what to say",
-        default: null,
-        hasDefault: false,
-        minimum: null,
-        maximum: null,
-        enum: null,
-      },
-      // ONE HOME FOR FLOW DEFAULTS (audit 015 C2): the tool publishes
-      // no seed default — the tts card's own default (-1, fresh mint)
-      // rules when the caller omits the seed, so a published number
-      // here would advertise a take-lock the run never composes. The
-      // overlay stays: a stated seed pins the take.
-      seed: {
-        ptype: "integer",
-        description:
-          "voice sampler seed (omit for a fresh take — the card mints one)",
-        default: null,
-        hasDefault: false,
-        minimum: 0,
-        maximum: 2147483647,
-        enum: null,
-      },
-    },
-    required: ["text"],
-    overlays: [{ param: "seed", stage: "tts", path: ["seed"], choices: null }],
-  },
-  skillRefs: [],
-};
-export const BODY_TO_SOMAX: RegistryFlow = {
-  id: "body-to-somax",
-  description:
-    "Bare body GLB → SOMAX-rigged GLB: the anny→kimodo bridge (the baked " +
-    "SOMA-77 template weight transfer, standalone-rig mode — no Blender). The " +
-    "motion studio posts this behind the scenes when a wired body isn't SOMAX; " +
-    "any bare human mesh (anny bake, TRELLIS, upload) rides the same door. " +
-    "RUNS on the {flow:} door (2026-10-04: the VALIDATE-ONLY stamp is " +
-    "GONE — the start door composes the row's card stages through the " +
-    "card plane); drive the rig card " +
-    "through the bench or {model:}.",
-  stages: [
-    plainStage({
-      id: "rig",
-      engine: CARD_PLANE_ENGINE,
-      card: "rig",
-      description:
-        "SOMA-77 template weight transfer (barycentric, the autorig pack's " +
-        "baked function) via the rig card's auto mode — the gem-soma " +
-        "family's declared rig action composes the KimodoExportFBX segment",
-      inputs: { glb: initial("glb") },
-      expected: { glb: "mesh" },
-      outputs: { body: "mesh" },
-      cardIo: { body: "mesh" },
-      // THE LANE IS THE FAMILY'S (the atom vocabulary, stroke 3): this
-      // stage hand-wired the KimodoExportFBX node in the flow plane —
-      // a second copy of the gem-soma rig lane. It names the card +
-      // mode; the family's declared action composes the graph.
-      // (out_dir/timeout_s are RAW-stage knobs — a card stage's
-      // params are card-admitted knobs only; the compose door owns
-      // the run dir and the card's own contract the timeout.)
-      params: {
-        mesh_glb: "$glb",
-        mode: "auto",
-        preserve_texture: true,
-        decimate_ratio: 0,
-      },
-    }),
-  ],
-  initialValidators: { glb: "glb" },
-  tool: null,
-  skillRefs: [],
-};
-
 export const FIT_SEAT: RegistryFlow = {
   id: "fit-seat",
   description:
@@ -194,12 +69,12 @@ export const FIT_SEAT: RegistryFlow = {
     "dress/prop verb engine): the meld row assembles in-pack from the verb's " +
     "own vocabulary, and the request MUST carry `bone` (the bone that " +
     "carries the prop — the door refuses without it), " +
-    "FitProp grafts, the turnaround proves.",
+    "FitProp grafts — the seated GLB is the verb's output.",
   stages: [
     plainStage({
       id: "seat",
       engine: CARD_PLANE_ENGINE,
-      description: "FitRow (knobs -> meld row) -> FitProp (graft) -> proof views",
+      description: "FitRow (knobs -> meld row) -> FitProp (graft) — the seated GLB out",
       // THE TWO FILES AND THE BONE (the rest of the fit row is the
       // verb's own vocabulary inside the action — stroke-89's law).
       // The bone is a BARE NAME, so it rides the text initial kind,
@@ -209,8 +84,8 @@ export const FIT_SEAT: RegistryFlow = {
       expected: { body: "mesh", prop: "mesh", bone: "text" },
       // THE VERB'S BACKEND IS A DECLARED ACTION (the atom
       // vocabulary, stroke 4): the fit-seat verb's nodes compose
-      // from the fit family's DECL — every knob rides verbatim, the
-      // proof framing is FIXED in the action build. The row routes;
+      // from the fit family's DECL — every knob rides verbatim. The
+      // row routes;
       // the declaration owns the graph (SubActionMod law — the
       // 2026-09-16 retirement killed the fit CARD; the family is
       // the sanctioned seam, not a revival).
@@ -245,6 +120,11 @@ export const IMAGE_UPSCALE: RegistryFlow = {
       inputs: { prompt: initial("prompt") },
       // the wiring wall's law (2026-09-20): every wired input typed
       expected: { prompt: "text" },
+      // THE ROW RENAMES THE CARD'S CHANNEL (the object-forge concept
+      // precedent): the image-gen card binds `default` on its
+      // flowOutputBindings row; this row renames it to the flow-plane
+      // `image` the polish stage wires — kind-matched, one-to-one.
+      outputs: { image: "image" },
       cardIo: { image: "image" },
       // ONE HOME FOR FLOW DEFAULTS (audit 015 C2): no seed stamp on
       // either stage — the image-gen and upscale-tools cards both
@@ -315,6 +195,45 @@ export const IMAGE_UPSCALE: RegistryFlow = {
         maximum: 2147483647,
         enum: null,
       },
+      // THE SIZE CHANNELS (the hop-doubling cure, 2026-11-01): the
+      // row published no make-size or polish-resolution face, so
+      // every press rode the cards' defaults — the make at
+      // krea-2's 1024×1024, the polish at the FHD rail (1080 short
+      // side) — the burn's "never doubles": a 2x press needs the
+      // make at the operator's class (e.g. 1344×768) and the polish
+      // resolution at twice that short side (1536). Declared the
+      // seed-overlay way (the twin-stage pattern), bounds the cards'
+      // own schemas already enforce.
+      width: {
+        ptype: "integer",
+        description:
+          "make canvas width (16-step, 256–2048; state the operator's class, e.g. 1344)",
+        default: null,
+        hasDefault: false,
+        minimum: 256,
+        maximum: 2048,
+        enum: null,
+      },
+      height: {
+        ptype: "integer",
+        description:
+          "make canvas height (16-step, 256–2048; e.g. 768)",
+        default: null,
+        hasDefault: false,
+        minimum: 256,
+        maximum: 2048,
+        enum: null,
+      },
+      resolution: {
+        ptype: "integer",
+        description:
+          "SeedVR2 target short side (256–2160; 1080 = the FHD rail, state twice the make short side to double, e.g. 1536)",
+        default: null,
+        hasDefault: false,
+        minimum: 256,
+        maximum: 2160,
+        enum: null,
+      },
     },
     required: ["image_model", "prompt"],
     overlays: [
@@ -326,6 +245,9 @@ export const IMAGE_UPSCALE: RegistryFlow = {
       },
       { param: "seed", stage: "make", path: ["seed"], choices: null },
       { param: "seed", stage: "polish", path: ["seed"], choices: null },
+      { param: "width", stage: "make", path: ["width"], choices: null },
+      { param: "height", stage: "make", path: ["height"], choices: null },
+      { param: "resolution", stage: "polish", path: ["resolution"], choices: null },
     ],
   },
   skillRefs: [
@@ -336,220 +258,14 @@ export const IMAGE_UPSCALE: RegistryFlow = {
     "model:z-image:prompt-enhance",
   ],
 };
-export const VIDEO_EXTEND: RegistryFlow = {
-  id: "extend-video",
-  description:
-    "More seconds of coherent motion appended to a prior clip — the " +
-    "extend-video flow (report dev_docs/audits/features/" +
-    "extend-video-flow-2026-11-12.md): ONE card= stage on h3-timeline " +
-    "whose extend arm renders a fresh continuation anchored on the prior " +
-    "clip's LAST FRAME (negative batch index, in-graph), at full denoise " +
-    "under an all-white mask, then joins prior + new through the film " +
-    "tail's own file law (both parts save at SaveVideo prefixes; " +
-    "MeliteConcatVideos decodes them back strictly after every save). " +
-    "RUNS on the {flow:} door (the 2026-10-04 card-stage cure — the row " +
-    "composes through the card plane as one merged run); the {model:} " +
-    "door drives the same card with the extend mod armed on the bench.",
-  stages: [
-    plainStage({
-      id: "extend",
-      engine: CARD_PLANE_ENGINE,
-      card: "h3-timeline",
-      description:
-        "The continuation window via the h3-timeline card's extend arm — " +
-        "prior clip in (VHS force_rate 24), last-frame anchor, fresh " +
-        "denoise-1 window, joined film out",
-      inputs: {
-        source_clip: initial("source_clip"),
-        extend_prompt: initial("extend_prompt"),
-      },
-      // hand-written ONLY because the card's flowKinds declares
-      // none of these slots (the derivation law's exception clause:
-      // the row names what the card cannot know about its own
-      // initials). The numeric seats (extend_seconds, seed) ride NO
-      // initial — the initial kinds are the closed five
-      // (photo/video/glb/bake_params/text, flowsData.ts:74) and a
-      // number refuses every one; worse, a $spell ALWAYS resolves
-      // to its normalized STRING at the merge, so a numeric spell
-      // would land "2.33" in the bag and the renderer's typed read
-      // would silently snap to the default — the exact silent snap
-      // the grid door exists to kill. Numbers state through the
-      // WHOLE-BAG params override (applyFlowParamsOverlay: the
-      // array value replaces the bag raw, JSON numbers intact).
-      expected: { source_clip: "video", extend_prompt: "text" },
-      cardIo: { default: "video" },
-      params: {
-        model: "h3-timeline",
-        // THE MOD BAG (params-emit's law: entries ride as an array
-        // under params.<param_key>, never flattened): the two string
-        // seats are $spells resolved at the merge against this
-        // stage's wired initials — both REQUIRED, so every spell
-        // always resolves (an optional spell would refuse mid-run;
-        // the requiredInitials door guarantees the body carries
-        // both). The numeric seats (extend_seconds, seed) ride the
-        // renderer's own defaults (2.33s / seed 0); a caller pinning
-        // one passes params: {extend: [{…full bag…}]} and the
-        // override replaces this stamp wholesale with raw values.
-        extend: [
-          {
-            source_clip: "$source_clip",
-            extend_prompt: "$extend_prompt",
-          },
-        ],
-      },
-    }),
-  ],
-  initialValidators: { source_clip: "video", extend_prompt: "text" },
-  requiredInitials: ["source_clip", "extend_prompt"],
-  tool: {
-    name: "extend_video",
-    version: 1,
-    description:
-      "Append fresh seconds to a prior clip (one call: the prior clip + " +
-      "a continuation prompt in, the joined extended film out — the prior " +
-      "plays first, new motion and sound follow). The prior clip is a " +
-      "stageable video (mp4/webm/mkv/mov/m4v/avi — a /melite-media/runs/ " +
-      "artifact URL from an earlier run lands) and rides the flow body's " +
-      "source_clip key. The prompt states MOTION and SOUND picking up " +
-      "where the clip ends. extend_seconds (default 2.33) must land on " +
-      "the engine grid (frames become seconds at the schema fps " +
-      "default: 2.33s = 56f, 3.75s = 90f, 5.17s = 124f, 15.08s = 362f " +
-      "the largest single window — beyond it the door composes N " +
-      "uniform windows under the 39f overlap, exact delivery or a " +
-      "loud refusal; off-grid values refuse at the compose door) and " +
-      "states " +
-      "through params: {extend: [{extend_seconds: …, seed: …}]} — " +
-      "numbers ride the bag, never the flow body.",
-    properties: {
-      source_clip: {
-        ptype: "string",
-        description:
-          "the prior clip — a stageable video path (a /melite-media/" +
-          "runs/<run_id>/<file>.mp4 artifact URL from an earlier run " +
-          "lands; a browser-local blob/data URL refuses — upload first)",
-        default: null,
-        hasDefault: false,
-        minimum: null,
-        maximum: null,
-        enum: null,
-      },
-      extend_prompt: {
-        ptype: "string",
-        description:
-          "the continuation text — MOTION and SOUND for the appended " +
-          "seconds, picking up exactly where the clip ends",
-        default: null,
-        hasDefault: false,
-        minimum: null,
-        maximum: null,
-        enum: null,
-      },
-    },
-    required: ["source_clip", "extend_prompt"],
-    overlays: [],
-  },
-  skillRefs: ["card:h3-timeline"],
-};
-export const MUSIC_NATIVE: RegistryFlow = {
-  id: "music-native",
-  description:
-    "Music generation as a CARD stage — prompt in, audio out via the music " +
-    "card (MiniMax Music 3, the boarded row; see GET /v1/models). Repointed " +
-    "at the mono-engine law by the wiring wall 2026-09-20: the row still " +
-    "named the retired audio_cpp tier and a card id that no longer exists — " +
-    "a fossil only the live validate path ever tripped. RUNS on the " +
-    "{flow:} door (2026-10-04: the VALIDATE-ONLY stamp is GONE — the " +
-    "start door composes the row's card stages through the card plane); " +
-    "the {model:} door drives the same card directly.",
-  stages: [
-    plainStage({
-      id: "music",
-      engine: CARD_PLANE_ENGINE,
-      card: "music",
-      description:
-        "MiniMax Music 3 via the music card — the lane composes the doc " +
-        "into the ComfyUI graph (UNET/CLIP/VAE loaders + the music sampler)",
-      inputs: { prompt: initial("prompt") },
-      expected: { prompt: "text" },
-      cardIo: { default: "audio" },
-      params: {
-        prompt: "$prompt",
-        // THE LYRICS SEAT (value-arm cure, 2026-11-08): "" is the
-        // instrumental default — the card bakes an absent/empty lyric
-        // as "" (MiniMax's instrumental convention), never an absent
-        // ref, so the seat stays a plain literal (a "$lyrics" spell
-        // would refuse unresolved on instrumental calls) and the
-        // stated lyric rides the declared overlay.
-        lyrics: "",
-        model: "music3",
-        // ONE HOME FOR FLOW DEFAULTS (audit 015 C2): no duration
-        // stamp — the music card's own default (30) rules, the same
-        // length a GUI card stage gets; the stamp that stood here
-        // (120) was a second default-write that made agent music
-        // 120 s while human card music stayed 30 s. A stated duration
-        // rides the declared overlay.
-        seed: -1,
-      },
-    }),
-  ],
-  initialValidators: { prompt: "text" },
-  tool: {
-    name: "compose_music",
-    version: 1,
-    description:
-      "Music generation in one call (MiniMax Music 3 via the music card) — " +
-      "prompt in, audio out; state lyrics for sung verses (omit for instrumental).",
-    properties: {
-      prompt: {
-        ptype: "string",
-        description: "what to play",
-        default: null,
-        hasDefault: false,
-        minimum: null,
-        maximum: null,
-        enum: null,
-      },
-      // ONE HOME FOR FLOW DEFAULTS (audit 015 C2): the tool publishes
-      // no duration default — the music card's own default (30)
-      // rules when the caller omits it, so a published 120 advertised
-      // a length the run never composes. The bounds stay (the card's
-      // own declared cap, pointed at, not restated as a default).
-      duration: {
-        ptype: "integer",
-        description:
-          "seconds of music (the card caps 5..360; omit for the card's own default)",
-        default: null,
-        hasDefault: false,
-        minimum: 5,
-        maximum: 360,
-        enum: null,
-      },
-      lyrics: {
-        ptype: "string",
-        description:
-          "song lyrics (verse-form text sung by the music); omit for instrumental",
-        default: null,
-        hasDefault: false,
-        minimum: null,
-        maximum: null,
-        enum: null,
-      },
-    },
-    required: ["prompt"],
-    overlays: [
-      { param: "duration", stage: "music", path: ["duration"], choices: null },
-      { param: "lyrics", stage: "music", path: ["lyrics"], choices: null },
-    ],
-  },
-  skillRefs: [],
-};
 export const CRAFT_LOOP: RegistryFlow = {
   id: "craft-loop",
   description:
     "The agentic craft loop: a named image-capable model route critiques " +
     "each capture and decides the next act command until done (or the " +
     "iteration cap). The act leg rides ANY registered engine (comfyui " +
-    "graphs, mcp:blender tool calls); captures land in the run dir and " +
+    "graphs, MCP tool calls on the DSH-profile seats); captures land " +
+    "in the run dir and " +
     "attach to the critique. Driven by the runs door with engine " +
     "'craft' stages — see flows/craft-loop/agents/AGENT.md.",
   stages: [
@@ -557,48 +273,99 @@ export const CRAFT_LOOP: RegistryFlow = {
       id: "loop",
       engine: "craft",
       description: "act → capture → critique → decide (the loop engine)",
-      inputs: {},
+      // THE CHANNEL LAW (the merge-hole cure, born on the retired
+      // audio-native-tts wrapper): a $spell in params must name a channel the stage
+      // WIRES — the compose judge's pool is inputNames ∪ initial
+      // edges, so the three dials ride as initial("…") edges of the
+      // same name (agent_prompt/agent_prompt/$agent_prompt, the
+      // anny-hmr naming law). The craft executor consumes them
+      // through its own $spell fold against the run's request
+      // initials (the executor contract's fifth argument) — the
+      // edges are the channel truth, the fold the value truth.
+      inputs: {
+        agent_prompt: initial("agent_prompt"),
+        command: initial("command"),
+        max_iterations: initial("max_iterations"),
+      },
+      // hand-written (the derivation law is for card= stages; this
+      // is an engine-verb row): brief prose is TEXT, the command
+      // object is DATA, the bound is NUM — the closed Kind
+      // vocabulary's own words.
+      expected: { agent_prompt: "text", command: "data", max_iterations: "num" },
       outputs: { default: "image" },
-      params: {},
+      // THE F58 BINDING (2026-11-02): the three loop dials ride as
+      // $spells against the run's request initials — the brief as
+      // PROSE (the door's `brief` kind: no path law, the critic
+      // reads it as data), the command as a JSON OBJECT (the `json`
+      // kind: the {engine, params} row the craft gate owns — NOT
+      // the {engine, comfyui, workflow} shape FAILURES pressed),
+      // and max_iterations as a NUMBER (digit-strings refuse at the
+      // door; the typed value rides the merge unchanged). An
+      // omitted max_iterations omits the key — the engine's own
+      // default law. `model` stays a LANE DEFAULT this wave (the
+      // loop's route id, not a flow initial — documented in
+      // flows/craft-loop/agents/AGENT.md).
+      params: {
+        agent_prompt: "$agent_prompt",
+        command: "$command",
+        max_iterations: "$max_iterations",
+      },
     }),
   ],
-  initialValidators: {},
+  // requiredInitials (fit-seat's GOOD shape): the door refuses an
+  // absent brief or command BEFORE the run registers — not sixty
+  // seconds in at the engine gate. max_iterations is optional (the
+  // engine defaults it).
+  initialValidators: {
+    agent_prompt: "brief",
+    command: "json",
+    max_iterations: "number",
+  },
+  requiredInitials: ["agent_prompt", "command"],
   tool: null,
   skillRefs: [],
 };
 export const CHARACTER_FACTORY: RegistryFlow = {
   id: "character-factory",
   description:
-    "Photo → clothed character → rigged → animated (the AssetFurnace-shape " +
-    "chain, estate-native): img-to-mesh lift with the repair knobs ON, rig " +
-    "auto (SOMA-77, BODY_TO_SOMAX's lane chained), kimodo text→motion " +
-    "skinned onto the rigged mesh (somax bake in-graph). Multi-stage: " +
-    "named registry flows DRIVE at start (the curated-lane lift, " +
-    "runsRegistry's own law — the refusal is hand-authored inline " +
-    "only); stages also drive one card at a time — see " +
-    "flows/character-factory/agents/AGENT.md. Creature motion rides the " +
-    "MOTION phase instead (unimate dataset clip → rig copy bridge, " +
-    "game-profile MCPs) — documented in the leaf, never a registry " +
-    "stage (unimate is an MCP, not melite).",
+    "Supplied body → rigged → animated, one merged run (the character " +
+    "factory's rig→motion leg): the body GLB path rides the `mesh` " +
+    "initial — the rig lane's own feed, any bare human mesh " +
+    "(an anny bake, a TRELLIS lift, an estimator body) — the rig stage " +
+    "composes SOMA-77 auto (KimodoExportFBX), and the motion stage " +
+    "skins kimodo text→motion onto the rigged mesh in-graph " +
+    "(RaySomaxBake; the rigged-path link is STRING→STRING, the one " +
+    "hop the served engine carries). THE LIFT HOP IS NOT A STAGE " +
+    "(2026-11-01, the rig-hop dead ref, GPU live-receipt C9): the " +
+    "photo→mesh lift's served producer (img-to-mesh's Save3DAdvanced) " +
+    "is a terminal FILE_3D save — no served node consumes FILE_3D and " +
+    "the merge's slot-0 link is the only in-graph transport — so the " +
+    "lift rides the img-to-mesh card door or the object-forge row, and " +
+    "its artifact path feeds THIS row's `mesh` initial (the run-chain; " +
+    "the C6→D8 receipt shape). Multi-stage: named registry flows " +
+    "DRIVE at start (the curated-lane lift, runsRegistry's own law — " +
+    "the refusal is hand-authored inline only); stages also drive one " +
+    "card at a time — see flows/character-factory/agents/AGENT.md. " +
+    "Creature motion rides the MOTION phase instead (unimate dataset " +
+    "clip → rig copy bridge, game-profile MCPs) — documented in the " +
+    "leaf, never a registry stage (unimate is an MCP, not melite).",
   stages: [
-    plainStage({
-      id: "lift",
-      engine: CARD_PLANE_ENGINE,
-      card: "img-to-mesh",
-      description: "Photo → textured mesh via the img-to-mesh card (repair knobs ON)",
-      inputs: { photo: initial("photo") },
-      // the wiring wall's law (2026-09-20): every wired input typed
-      expected: { photo: "image" },
-      outputs: { mesh: "mesh" },
-      cardIo: { mesh: "mesh" },
-      params: { model: "pixal3d", input_image: "$photo" },
-    }),
     plainStage({
       id: "rig",
       engine: CARD_PLANE_ENGINE,
       card: "rig",
-      description: "SOMA-77 auto-rig via the rig card (BODY_TO_SOMAX's lane, chained)",
-      inputs: { mesh: fromStage("lift", "mesh") },
+      // THE SEAT IS THE INITIAL (the re-aim): the rig hop's mesh
+      // rides a GLB path initial, exactly the lane the retired
+      // body-to-somax wrapper served live — an initial substitutes as a STRING value at
+      // the merge, so the carrier (PrimitiveString) is type-clean.
+      // The old in-graph `mesh: fromStage("lift", "mesh")` wire is
+      // the dead ref: the lift's bound producer slot is FILE_3D,
+      // and the engine refuses the STRING carrier input loud
+      // (silently dropping the downstream KimodoExportFBX +
+      // RaySomaxBake outputs — the C9 class).
+      description:
+        "SOMA-77 auto-rig via the rig card (BODY_TO_SOMAX's lane, on the supplied body)",
+      inputs: { mesh: initial("mesh") },
       expected: { mesh: "mesh" },
       outputs: { body: "mesh" },
       cardIo: { body: "mesh" },
@@ -620,8 +387,8 @@ export const CHARACTER_FACTORY: RegistryFlow = {
       params: { model: "kimodo", prompt: "$prompt", preview_glb: "$preview" },
     }),
   ],
-  initialValidators: { photo: "photo", prompt: "text" },
-  requiredInitials: ["photo", "prompt"],
+  initialValidators: { mesh: "glb", prompt: "text" },
+  requiredInitials: ["mesh", "prompt"],
   tool: null,
   skillRefs: [],
 };
@@ -646,6 +413,13 @@ export const OBJECT_FORGE: RegistryFlow = {
       inputs: { prompt: initial("prompt") },
       // the wiring wall's law (2026-09-20): every wired input typed
       expected: { prompt: "text" },
+      // THE ROW RENAMES THE CARD'S CHANNEL (the character-factory
+      // lift/rig precedent): the image-gen card binds `default` on its
+      // flowOutputBindings row (the producer-law declaration door);
+      // this row renames it to the flow-plane `image` the lift wires —
+      // kind-matched, one-to-one, so output_nodes follow the rename
+      // and `concept.image` resolves in the producer table.
+      outputs: { image: "image" },
       cardIo: { image: "image" },
       params: { model: "z-image", prompt: "$prompt" },
     }),

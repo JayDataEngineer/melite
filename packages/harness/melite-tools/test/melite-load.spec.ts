@@ -453,8 +453,8 @@ describe('melite_load render — THE INTERFACE LAW (the agent-mode breakdown, 20
     assert.ok(text.includes('melite_construct') && text.includes("live in the user's cards tab") && text.includes("user's Run press"), text)
   })
 
-  test('the headless face keeps the execution verb', () => {
-    const tool = meliteLoad(stubEstate(), { headless: true })
+  test('the delegated face keeps the execution verb', () => {
+    const tool = meliteLoad(stubEstate(), { delegated: true })
     const parts = tool.output.render(
       { name: 'c', inference_type: 'card' },
       { name: 'c', inference_type: 'card', bundle: { kind: 'card', name: 'c' } } as never,
@@ -463,19 +463,26 @@ describe('melite_load render — THE INTERFACE LAW (the agent-mode breakdown, 20
     assert.ok(text.startsWith('loaded card c — open with melite_flow'), text)
   })
 
-  // THE FLOW SENTENCE (batch-5 closure, 2026-10-14 — O25l): a flow
-  // load in the compose face tells the agent the honest split — run
-  // doors, not add_stage hunting — while its card stages stay
-  // benchable. The empty lane and the bare signature model ride the
-  // same render block.
-  test('a flow load speaks the run-door split; an empty lane speaks its refusal law; a bare model speaks', () => {
+  // THE FLOW SENTENCE (batch-5 closure, 2026-10-14 — O25l; the
+  // flows-are-compositions split, 2026-11-14): a flow load in the
+  // compose face tells the agent the honest landing — a card-stage
+  // flow comes out as CARDS (bench_stages rows, ONE construct write),
+  // a card-less flow the run-door split — while the empty lane and
+  // the bare signature model ride the same render block.
+  test('a flow load speaks the card landing or the run-door split; an empty lane speaks its refusal law; a bare model speaks', () => {
     const tool = meliteLoad(stubEstate())
     const render = (bundle: unknown): string =>
       (tool.output.render({ name: 'x', inference_type: 'flow', detail: true }, { name: 'x', inference_type: 'flow', bundle } as never) as Array<{ text?: string }>)
         .map((p) => p?.text ?? '').join('\n')
-    // 1) the flow split, verbatim
+    // 1) THE FLOW COMES OUT AS CARDS (slice C): the bundle carries
+    //    bench_stages and the hint names the ONE-write landing
+    const cards = render({ kind: 'flow', name: 'f', bench_stages: [{ id: 's_0', card: 'image-gen' }] })
+    assert.ok(cards.startsWith('loaded flow f — it is a flow of cards — the bundle carries its bench_stages rows'), cards)
+    assert.ok(cards.includes("melite_construct load {stages: <the bench_stages rows verbatim>, intent: 'f'}"), cards)
+    assert.ok(cards.includes("runs start at the user's Run press"), cards)
+    // 1b) a flow with NO card seats keeps the honest run-door split
     const flow = render({ kind: 'flow', name: 'f' })
-    assert.ok(flow.startsWith('loaded flow f — it is a flow, not a card — drive it through the run doors; its card stages may also be benched with melite_construct (add_stage), and its family.action stages compose when the flow runs'), flow)
+    assert.ok(flow.startsWith('loaded flow f — it is a flow, not a card — drive it through the run doors; its stages compose on the family/engine planes at run time (no card seats to bench), and its card stages may still be benched one by one with melite_construct (add_stage)'), flow)
     // 2) a lane that declares NOTHING still names the refusal law
     const empty = render({ kind: 'card', name: 'c', signature: { lanes: { fam: {} } } })
     const laneLine = empty.split('\n').find((l) => l.startsWith('lane fam:')) ?? ''
@@ -485,6 +492,64 @@ describe('melite_load render — THE INTERFACE LAW (the agent-mode breakdown, 20
     const model = render({ kind: 'card', name: 'c', signature: { model: 'qwen-x' } })
     assert.ok(model.includes('signature model: qwen-x'), model)
     assert.equal(model.split('\n').some((l) => l.startsWith('lane ')), false)
+  })
+
+  // F57 (operator 2026-11-13: "single-stage flow initial keys are
+  // UNDOCUMENTED — natural keys fail with internal errors … the
+  // error text is the only teacher") — the OPEN names the initial
+  // seats: keys with validator kinds, requireds marked. The anny
+  // spell stems (photo, params_json) and craft-loop's brief/command
+  // dials are learned HERE, before any natural-key press meets the
+  // seam. RE-PINNED with the glosses (the anny-params typed-array
+  // seat): the kind's SHAPE renders beside the kind, so the
+  // 139-float estimated doc is taught as an OBJECT, never a
+  // hand-typed JSON string.
+  test('a flow load names its initial seats with kinds, glosses and requireds (F57 + the typed-array seat)', () => {
+    const tool = meliteLoad(stubEstate())
+    const render = (bundle: unknown): string =>
+      (tool.output.render({ name: 'x', inference_type: 'flow', detail: true }, { name: 'x', inference_type: 'flow', bundle } as never) as Array<{ text?: string }>)
+        .map((p) => p?.text ?? '').join('\n')
+    const anny = render({ kind: 'flow', name: 'anny-hmr-estimator', initials: { validators: { photo: 'photo' }, required: [], keys: ['photo'], glosses: { photo: 'file path (or {path})' } } })
+    assert.ok(anny.includes('flow initials: photo (photo — file path (or {path}))'), anny)
+    // THE TYPED-ARRAY SEAT'S SPELL: anny-params' open line names the
+    // dialect doc law and the OBJECT transport, one derivation deep
+    const ap = render({
+      kind: 'flow',
+      name: 'anny-params',
+      initials: {
+        validators: { params_json: 'bake_params' },
+        required: [],
+        keys: ['params_json'],
+        glosses: { params_json: "the preset dialect doc {dialect: 'authored'|'estimated', phenotype: number[11 authored|6 estimated], local_changes?: {morph: number} (authored) | scale: number[139] (estimated)} — send the doc as a JSON OBJECT, never a hand-typed string" },
+      },
+    })
+    assert.ok(ap.includes('params_json (bake_params — the preset dialect doc'), ap)
+    assert.ok(ap.includes('scale: number[139] (estimated)'), ap)
+    assert.ok(ap.includes('send the doc as a JSON OBJECT, never a hand-typed string'), ap)
+    const craft = render({
+      kind: 'flow',
+      name: 'craft-loop',
+      initials: {
+        validators: { agent_prompt: 'brief', command: 'json', max_iterations: 'number' },
+        required: ['agent_prompt', 'command'],
+        keys: ['agent_prompt', 'command', 'max_iterations'],
+        glosses: { agent_prompt: 'non-empty prose', command: 'JSON object (or its string spelling)', max_iterations: 'finite JSON number' },
+      },
+    })
+    assert.ok(
+      craft.includes('flow initials: agent_prompt* (brief — non-empty prose), command* (json — JSON object (or its string spelling)), max_iterations (number — finite JSON number) (* required)'),
+      craft,
+    )
+    // a gloss-less bundle (an older estate) keeps the F57 kind face —
+    // the render never depends on the gloss alone
+    const legacy = render({ kind: 'flow', name: 'anny-hmr-estimator', initials: { validators: { photo: 'photo' }, required: [], keys: ['photo'] } })
+    assert.ok(legacy.includes('flow initials: photo (photo)'), legacy)
+    // a flow with no initial seats keeps the bare headline
+    const bare = render({ kind: 'flow', name: 'f' })
+    assert.equal(bare.includes('flow initials:'), false)
+    // a CARD bundle never speaks the flow-initials line
+    const card = render({ kind: 'card', name: 'c', initials: { validators: { photo: 'photo' }, required: [], keys: ['photo'] } })
+    assert.equal(card.includes('flow initials:'), false)
   })
 })
 
@@ -642,5 +707,87 @@ describe('melite_load render — the lane line', () => {
   test('a legacy bundle states no lane line at all (absence is the legacy truth)', () => {
     const t = text({ kind: 'card', name: 'image-gen', signature: { model: 'krea-2', params_schema: { properties: { prompt: {} }, required: [] } } })
     assert.ok(!t.includes('lane '), t.slice(0, 300))
+  })
+})
+
+describe('melite_load render — the unruly-initials face (synthetic flow bundles)', () => {
+  const flowText = (initials: unknown): string => {
+    const tool = meliteLoad(stubEstate())
+    const parts = tool.output.render(
+      { name: 'f', inference_type: 'flow' },
+      { name: 'f', inference_type: 'flow', bundle: { kind: 'flow', name: 'f', initials } } as never,
+    ) as Array<{ text?: string }>
+    return parts.map((p) => p?.text ?? '').join('\n')
+  }
+  test('non-array required/keys read as empty — no initials line, never a throw', () => {
+    const t = flowText({ validators: { a: 'clip' }, required: 'yes', keys: 42 })
+    assert.ok(!t.includes('flow initials:'), t.slice(0, 300))
+  })
+  test('a non-string validator value rides bare — the kind seat stays empty, no paren', () => {
+    const t = flowText({ validators: { a: 42 }, keys: ['a'] })
+    assert.ok(t.includes('flow initials: a'), t.slice(0, 300))
+    assert.ok(!t.includes('a ('), t.slice(0, 300))
+  })
+  test('a kind-less gloss is dropped — the dialect doc never rides without its kind', () => {
+    const t = flowText({ validators: {}, glosses: { a: 'shape doc' }, keys: ['a'] })
+    assert.ok(t.includes('flow initials: a'), t.slice(0, 300))
+    assert.ok(!t.includes('shape doc'), t.slice(0, 300))
+  })
+  test('non-object glosses ride kind-only — the gloss seat stays empty', () => {
+    const t = flowText({ validators: { a: 'clip' }, glosses: 'x', keys: ['a'] })
+    assert.ok(t.includes('a (clip)'), t.slice(0, 300))
+  })
+  test('a non-string gloss entry rides kind-only', () => {
+    const t = flowText({ validators: { a: 'clip' }, glosses: { a: 42 }, keys: ['a'] })
+    assert.ok(t.includes('a (clip)'), t.slice(0, 300))
+  })
+  test('the required star rides exactly when the key is required', () => {
+    const starred = flowText({ validators: { a: 'clip' }, required: ['a'], keys: ['a'] })
+    assert.ok(starred.includes('a* (clip)'), starred.slice(0, 300))
+    assert.ok(starred.includes('(* required)'), starred.slice(0, 300))
+    const plain = flowText({ validators: { a: 'clip' }, required: [], keys: ['a'] })
+    assert.ok(plain.includes('a (clip)'), plain.slice(0, 300))
+    assert.ok(!plain.includes('(* required)'), plain.slice(0, 300))
+  })
+})
+
+describe('melite_load render — the giant-surface and style seats (synthetic card bundles)', () => {
+  const cardText = (signature: unknown, detail?: boolean): string => {
+    const tool = meliteLoad(stubEstate())
+    const parts = tool.output.render(
+      { name: 'c', inference_type: 'card', detail },
+      { name: 'c', inference_type: 'card', bundle: { kind: 'card', name: 'c', signature } } as never,
+    ) as Array<{ text?: string }>
+    return parts.map((p) => p?.text ?? '').join('\n')
+  }
+  test('a 41-knob surface keeps the count line and names its requireds', () => {
+    const props: Record<string, unknown> = {}
+    for (let i = 0; i < 41; i++) props['p' + i] = {}
+    const t = cardText({ model: 'krea-2', params_schema: { properties: props, required: ['p0'] } })
+    assert.ok(t.includes('params: 41 (required: p0)'), t.slice(0, 300))
+  })
+  test('an empty-string model style seats nothing — no family, no pack seats', () => {
+    const t = cardText({ model: '', params_schema: { properties: { prompt: {} }, required: [] } })
+    assert.ok(!t.includes('signature model:'), t.slice(0, 300))
+  })
+  test('a colon-led style yields the empty family — skipped, never a registry miss', () => {
+    const t = cardText({ model: ':x', params_schema: { properties: { prompt: {} }, required: [] } })
+    assert.ok(t.includes('signature model: :x'), t.slice(0, 300))
+    assert.ok(!t.includes('[] ('), t.slice(0, 500))
+  })
+  test('a duplicated family seats once — the second style is the same seat', () => {
+    const t = cardText({ model: 'a:x', params_schema: { properties: { prompt: {}, model: { enum: ['a:y'] } }, required: [] } })
+    assert.ok(t.includes('signature model: a:x'), t.slice(0, 300))
+  })
+  test('THE COLD-DEFS FACE (unbooted card defs — pack seats degrade to none, never a throw)', async () => {
+    const { resetCardDefsForTests, loadCardDefs } = await import('@melite/comfyui-cordis')
+    resetCardDefsForTests()
+    try {
+      const t = cardText({ model: 'krea-2:turbo', params_schema: { properties: { prompt: {} }, required: [] } })
+      assert.ok(t.includes('signature model: krea-2:turbo'), t.slice(0, 300))
+      assert.ok(!t.includes('[] ('), 'no pack seats ride without the service: ' + t.slice(0, 500))
+    } finally {
+      await loadCardDefs()
+    }
   })
 })

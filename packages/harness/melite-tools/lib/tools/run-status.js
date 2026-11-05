@@ -1,5 +1,5 @@
 /**
- * run_status — the run monitor (headless).
+ * run_status — the run monitor.
  *
  * Poll ONE run through its lifecycle: GET {gateway}/v1/flows/
  * status/<run_id> → status, per-stage stages[].status, artifacts (the
@@ -10,7 +10,9 @@
  * (/v1/flows/stop/<id>) stays operator-ordered — this tool only
  * READS.
  *
- * Registered ONLY in headless mounts (config headless:true).
+ * Registered by the /melite-runs delegation: the user's toggle seats
+ * it, and a boot whose persisted record reads ON seats it (see
+ * runsDelegation.ts).
  */
 import { defineTool } from '@deepseek-ai/dsh-tools';
 import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol';

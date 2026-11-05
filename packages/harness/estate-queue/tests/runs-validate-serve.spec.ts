@@ -99,22 +99,27 @@ describe("prunedFor (the branch prune)", () => {
 });
 
 describe("toGraph (the output projection)", () => {
-  it("stage outputs ride; cardIo rides when outputs are empty; the engine default lands last", () => {
+  it("stage outputs ride; cardIo rides when outputs are empty; an output-less, card-less stage refuses (the one table — no engine fill)", () => {
     const f = flowOf([
       buildStageRow(0, stage({ id: "a", outputs: { out: "image" } })),
       buildStageRow(1, stage({ id: "b", outputs: {}, card_io: { thumb: "image" } })),
       buildStageRow(2, stage({ id: "c", outputs: {}, card_io: {} })),
     ]);
-    const g = toGraph(f);
+    const g = toGraph({ ...f, stages: f.stages.slice(0, 2) });
     expect(g[0]?.outputs).toEqual([{ name: "out", kind: "image" }]);
     expect(g[1]?.outputs).toEqual([{ name: "thumb", kind: "image" }]);
-    expect(g[2]?.outputs).toEqual([{ name: "default", kind: "image" }]);
     expect(g[0]?.inputFrom).toEqual([]);
     expect(g[0]?.params).toEqual({});
+    // the third stage declares nothing and names no card — the
+    // one-table cure (2026-11-01): the engine registry is
+    // membership-only, so there is no {default: <engine kind>} to
+    // project. The seat refuses in the declaration voice.
+    expect(() => toGraph({ ...f, stages: f.stages.slice(2) }))
+      .toThrow(/stage "c" declares no outputs and names no card/);
   });
-  it("an mcp: stage projects the mcp-client default", () => {
+  it("an mcp: stage with no tables refuses in the declaration voice (membership passed — the channels did not)", () => {
     const f = flowOf([buildStageRow(0, stage({ id: "m", engine: "mcp:blender", outputs: {}, card_io: {} }))]);
-    expect(toGraph(f)[0]?.outputs).toEqual([{ name: "default", kind: "image" }]);
+    expect(() => toGraph(f)).toThrow(/stage "m" declares no outputs and names no card/);
   });
   it("an unknown engine refuses in the lattice's voice (never a TypeError on a missed guarantee)", () => {
     // P7 latent, serve door: toGraph reads the table only because
@@ -229,7 +234,7 @@ describe("inlineArm + serveSubject (the serve arms)", () => {
     );
   });
 
-  it("THE MEMBERSHIP + DEFAULT-OUTPUT PARITY (audit S-S6): a grammatical-but-unregistered engine refuses at BOTH doors with the same verdict; an outputless agent stage fills ONE kind everywhere", () => {
+  it("THE MEMBERSHIP + NO-FILL PARITY (audit S-S6, one-table cut): a grammatical-but-unregistered engine refuses at BOTH doors with the same verdict; an outputless stage refuses at BOTH doors — the engine registry fills nothing anywhere", () => {
     const ghost = {
       id: "f1",
       stages: [stage({ id: "a", engine: "mcp:ghost" })],
@@ -263,19 +268,42 @@ describe("inlineArm + serveSubject (the serve arms)", () => {
     expect(
       (compileFlowInline(live, ["comfyui", "mcp:blender"]) as { stages: unknown[] }).stages.length,
     ).toBe(1);
-    // THE DEFAULT-OUTPUT FILL: validate's fill is lattice-internal
-    // (the 200 row serves the declared outputs verbatim — {} stays
-    // {}), but the KIND it judges the stage by is the table's own
-    // (agent -> text), and the run door's compiled fill now consults
-    // the SAME table — the old flat "image" judged text at validate
-    // and bound image at run
+    // THE NO-FILL PARITY (the one-table cure, 2026-11-01):
+    // validate's 200 used to serve the declared outputs verbatim
+    // ({} stayed {}) while judging the stage by the table's kind
+    // (agent -> text), and the run door's fill bound the SAME kind —
+    // two doors agreeing on a kind no declared table names. The
+    // membership-only registry names no kinds now, so an outputless,
+    // card-less stage refuses at BOTH doors with the declaration
+    // voice — the agreement survives as a shared refusal. Declare
+    // the channel and both doors serve it.
     const agentDoc = { id: "f1", stages: [stage({ id: "a", engine: "agent", outputs: {} })] };
-    const a200 = inlineArm(agentDoc, null, ["comfyui", "agent"]);
-    expect(a200.status).toBe(200);
+    const a400 = inlineArm(agentDoc, null, ["comfyui", "agent"]);
+    expect(a400.status).toBe(400);
+    expect(String((a400.payload as Record<string, unknown>)["error"])).toBe(
+      'flow "f1" stage "a" declares no outputs and names no card — ' +
+      "add outputs={'<channel>': <Kind>} (the closed Kind vocabulary is " +
+      // F48 (2026-11-01): the three contracted `_list` seats joined
+      // the closed vocabulary — the connect door states the card's
+      // declared kind (h3 ref_audios: audio_list) instead of
+      // refusing every spelling of the wire.
+      '["text","image","video","audio","mesh","num","lora","seg","data",' +
+      '"image_list","video_list","audio_list"]) or wire the stage to its card',
+    );
     const compiled = compileFlowInline(agentDoc, ["comfyui", "agent"]) as {
-      stages: Array<{ outputs: Record<string, unknown> }>;
+      status: number;
+      payload: { error: unknown };
     };
-    expect(compiled.stages[0]?.["outputs"]).toEqual({ default: "text" });
+    expect(compiled.status).toBe(400);
+    expect(String(compiled.payload["error"])).toContain("declares no outputs and carries no card_io");
+    const declared = {
+      id: "f1",
+      stages: [stage({ id: "a", engine: "agent", outputs: { transcript: "text" } })],
+    };
+    expect(inlineArm(declared, null, ["comfyui", "agent"]).status).toBe(200);
+    expect(
+      (compileFlowInline(declared, ["comfyui", "agent"]) as { stages: unknown[] }).stages.length,
+    ).toBe(1);
   });
 
   it("a clean inline body serves 200 with nodes, cost, and no skips", () => {

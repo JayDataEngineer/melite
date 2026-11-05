@@ -136,7 +136,7 @@ const main = async () => {
     ['comfy_manage(provision loud-fail)', lib.comfyManage(estate), { action: 'provision_model', model: '__smoke_no_such_model__' }, {}],
     ['melite_skill_read', lib.skillRead(estate), null, {}], // id filled from index
     ['ledger_tail', lib.ledgerTail(estate), { limit: 3 }, {}],
-    // --- the HEADLESS run doors (MELITE_HEADLESS=1 registration) —
+    // --- the /melite-runs delegation's run doors (the toggle's seat) —
     // run_status refusal proof: unknown run = named 404 riding the value.
     ['run_status(unknown run)', lib.runStatus(estate), { runId: 'run-__smoke_none__' }, {}],
   ]

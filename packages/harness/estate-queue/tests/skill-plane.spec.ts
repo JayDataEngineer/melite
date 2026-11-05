@@ -20,7 +20,7 @@ import {
   modelRows,
   wireSkill,
 } from "../src/skillPlane.ts";
-import { flowDecls } from "../src/skillRows.ts";
+import { authoredRows, flowDecls } from "../src/skillRows.ts";
 
 const REPO = process.cwd();
 let ROOT = "";
@@ -250,6 +250,51 @@ describe("modelRows", () => {
     assert.match(body, /- `model:m6:bare\.md` — bare/);
     assert.ok(!body.includes("bare:"), "an empty description adds no colon tail");
   });
+
+  it("the authored walk skips dot leaves and stem dirs with no doc, and serves the live one", () => {
+    // THE AUTHORED WALK (skillAuthored.ts's tree): a dot dir is the
+    // editor's own (never a skill), a stem dir with no SKILL.md is
+    // the half-written write (never a row) — both skip silently —
+    // while a landed doc walks with the per-model id shape.
+    const state = mkdtempSync(join(tmpdir(), "skills-authored-"));
+    tmpDirs.push(state);
+    mkdirSync(join(state, "skills", "m1", ".dot"), { recursive: true });
+    writeFileSync(join(state, "skills", "m1", ".dot", "SKILL.md"), "# Dot\n");
+    mkdirSync(join(state, "skills", "m1", "half-written"), { recursive: true });
+    mkdirSync(join(state, "skills", "m1", "good"), { recursive: true });
+    writeFileSync(
+      join(state, "skills", "m1", "good", "SKILL.md"),
+      '---\nname: good\ndescription: The live doc.\n---\nbody\n',
+    );
+    const rows = authoredRows(state, "m1", "g1");
+    assert.deepEqual(rows.map((r) => r.row.id), ["model:m1:good"]);
+    assert.equal(rows[0].row.name, "good");
+    assert.equal(rows[0].row.description, "The live doc.");
+  });
+
+  it("modelRows threads the state root: a written skill walks under its family", () => {
+    // THE AUTHORED PLANE (lora hand-off): the agent's write lands in
+    // the state root and the SAME walk serves it — a modelRows call
+    // without the root stays the tracked tree alone.
+    mkEstate(false);
+    const state = mkdtempSync(join(tmpdir(), "skills-authored-root-"));
+    tmpDirs.push(state);
+    mkdirSync(join(state, "skills", "m1", "hand-off"), { recursive: true });
+    writeFileSync(
+      join(state, "skills", "m1", "hand-off", "SKILL.md"),
+      '---\nname: hand-off\ndescription: The authored row.\n---\nbody\n',
+    );
+    const tracked = modelRows(join(ROOT, "packages", "engines", "eng-a"));
+    assert.ok(
+      !tracked.some((r) => r.row.id === "model:m1:hand-off"),
+      "without the root the walk is the tracked tree alone",
+    );
+    const withRoot = modelRows(join(ROOT, "packages", "engines", "eng-a"), state);
+    const row = withRoot.find((r) => r.row.id === "model:m1:hand-off");
+    assert.ok(row, "the authored doc walks under the family that owns it");
+    assert.equal(row.row.scope, "model-skill");
+    assert.equal(row.row.model, "m1");
+  });
 });
 
 describe("cardRows", () => {
@@ -368,15 +413,17 @@ describe("flowRows", () => {
   it("renders one gated row per declaration (SKILL.md wins, else registry)", () => {
     mkEstate();
     const rows = flowRows(ROOT);
-    assert.ok(rows.length >= 8); // the eight-flow registry (template cut, 2026-10-13)
+    assert.ok(rows.length >= 7); // the seven-flow registry (flows-are-compositions retirement, 2026-11-14)
     const anny = rows.find((r) => r.row.id === "flow:anny-hmr-estimator");
     assert.ok(anny !== undefined);
     assert.ok(anny.bodyPath !== null && anny.bodyPath.endsWith(join("flows", "anny-hmr-estimator", "SKILL.md")));
     assert.equal(anny.bodyText, null);
-    const tts = rows.find((r) => r.row.id === "flow:audio-native-tts");
-    assert.ok(tts !== undefined && tts.bodyText !== null && tts.bodyText.length > 0);
-    assert.equal(tts.row.scope, "flow");
-    assert.deepEqual(tts.row.steps?.[0], { id: "tts", type: "comfyui", plugin: "comfyui" });
+    // (re-homed 2026-11-14 from the retired audio-native-tts wrapper —
+    // image-upscale renders its registry body the same way)
+    const bodyRow = rows.find((r) => r.row.id === "flow:image-upscale");
+    assert.ok(bodyRow !== undefined && bodyRow.bodyText !== null && bodyRow.bodyText.length > 0);
+    assert.equal(bodyRow.row.scope, "flow");
+    assert.deepEqual(bodyRow.row.steps?.[0], { id: "make", type: "comfyui", plugin: "comfyui" });
     const up = rows.find((r) => r.row.id === "flow:image-upscale");
     assert.ok(up !== undefined && up.row.stepCount === up.row.steps?.length);
   });
@@ -412,7 +459,7 @@ describe("flowRows", () => {
     // the un-seated read composes every family stage and serves every
     // flow row. The skip is per-flow, never lane-wide.
     const served = flowRows(ROOT);
-    assert.ok(served.length >= 8, "a seated table serves every flow row again");
+    assert.ok(served.length >= 7, "a seated table serves every flow row again (seven since the wrapper retirement, 2026-11-14)");
   });
 
   // A NON-ERROR THROW (the coverage queue's skillRows batch,
@@ -433,7 +480,7 @@ describe("flowRows", () => {
     assert.deepEqual(anny.stages, []);
     assert.equal(anny.tool, null);
     // the fold is per-flow: every row answers, none throws
-    assert.ok(decls.length >= 8, "the hostile seat refuses flows, never the walk");
+    assert.ok(decls.length >= 7, "the hostile seat refuses flows, never the walk (seven since the wrapper retirement, 2026-11-14)");
   });
 });
 
@@ -494,7 +541,7 @@ describe("buildSkillIndex + findSkill", () => {
     assert.match(lane.bodyText as string, /comma tags, NOT prose/);
     const flow = findSkill(ROOT, "flow:anny-hmr-estimator");
     assert.ok(flow !== null && flow.bodyText === null);
-    const rendered = findSkill(ROOT, "flow:audio-native-tts");
+    const rendered = findSkill(ROOT, "flow:image-upscale");
     assert.ok(rendered !== null && rendered.bodyText !== null);
     assert.equal(findSkill(ROOT, "ghost"), null);
   });
@@ -539,7 +586,7 @@ describe("hSkillRead", () => {
         const p = f.payload as { id: string; name: string; scope: string; content: string };
         assert.equal(p.id, "model:m1:plain.md");
         assert.equal(p.content, "plain skill\n");
-        const r = hSkillRead(ROOT, state, "flow:audio-native-tts");
+        const r = hSkillRead(ROOT, state, "flow:image-upscale");
         assert.equal(r.status, 200);
         assert.ok((r.payload as { content: string }).content.length > 0);
         const n = hSkillRead(ROOT, state, "ghost");
@@ -616,11 +663,11 @@ describe("hSkillRead", () => {
 describe("wireSkill (real rows)", () => {
   it("drops nulls, keeps empties, maps steps", () => {
     mkEstate();
-    const flowRow = findSkill(ROOT, "flow:audio-native-tts");
+    const flowRow = findSkill(ROOT, "flow:image-upscale");
     assert.ok(flowRow !== null);
     const flow = wireSkill(flowRow.row);
-    assert.deepEqual(flow["steps"], [{ id: "tts", type: "comfyui", plugin: "comfyui" }]);
-    assert.equal(flow["step_count"], 1);
+    assert.deepEqual(flow["steps"], [{ id: "make", type: "comfyui", plugin: "comfyui" }, { id: "polish", type: "comfyui", plugin: "comfyui" }]);
+    assert.equal(flow["step_count"], 2);
     assert.ok(!("genre" in flow) && !("card" in flow) && !("model" in flow));
     const cardRow = findSkill(ROOT, "card:c1");
     assert.ok(cardRow !== null);
@@ -644,5 +691,64 @@ describe("wireSkill (real rows)", () => {
     assert.equal(bare["genre"], "g");
     assert.equal(bare["card"], "c");
     assert.equal(bare["model"], "m");
+  });
+});
+
+describe("buildSkillIndex — the writer-root param (the §8.3 orphan cure)", () => {
+  it("a queueStateRoot-pinned call reads the WRITER's tree and ignores the repo tree", () => {
+    // THE ORPHAN (audit 2026-10-31 §8.3): the selection reader globbed
+    // <repo>/data/runs/storage — a root the live writer (the drafts
+    // store at <queue.stateRoot>/storage, the composition's own
+    // derivation) never writes on a stateRoot-pinned or cold-profile
+    // lane — an EMPTY selection in production. The cure threads the
+    // queue seat's state root through; both trees here are THIS
+    // spec's own temp dirs, so the arm reds the moment the param is
+    // ignored (the repo-tree seed would serve and the writer-tree
+    // seed would vanish).
+    mkEstate();
+    const repoDocs = join(ROOT, "data", "runs", "storage", "drafts", "docs");
+    mkdirSync(repoDocs, { recursive: true });
+    writeFileSync(
+      join(repoDocs, "bench-session-repo.json"),
+      JSON.stringify({ record: { doc: { stages: [{ card: "c1", params: {} }] } } }),
+    );
+    const state = mkdtempSync(join(tmpdir(), "skills-writer-"));
+    tmpDirs.push(state);
+    const writerDocs = join(state, "storage", "drafts", "docs");
+    mkdirSync(writerDocs, { recursive: true });
+    writeFileSync(
+      join(writerDocs, "bench-session-writer.json"),
+      JSON.stringify({ record: { doc: { stages: [{ card: "c2", params: {} }] } } }),
+    );
+    const idx = buildSkillIndex(ROOT, state) as { cards: Array<{ id: string }> };
+    assert.ok(idx.cards.some((c) => c.id === "c2"), "the writer-tree bench serves");
+    assert.ok(
+      !idx.cards.some((c) => c.id === "c1"),
+      "the repo-tree bench — the root no producer writes — never serves through a pinned root",
+    );
+  });
+
+  it("the MELITE_BENCH_STORAGE seam wins over the caller root (the walls' isolation law)", () => {
+    // The seam (race-class rec 1, debt 11) moves writer AND reader
+    // together — never the reader alone: a wall pinning the env must
+    // keep its isolation even when a caller root rides in.
+    mkEstate();
+    const state = mkdtempSync(join(tmpdir(), "skills-writer-"));
+    tmpDirs.push(state);
+    const seam = mkdtempSync(join(tmpdir(), "skills-seam-"));
+    tmpDirs.push(seam);
+    const seamDocs = join(seam, "drafts", "docs");
+    mkdirSync(seamDocs, { recursive: true });
+    writeFileSync(
+      join(seamDocs, "bench-session-seam.json"),
+      JSON.stringify({ record: { doc: { stages: [{ card: "c2", params: {} }] } } }),
+    );
+    process.env["MELITE_BENCH_STORAGE"] = seam;
+    try {
+      const idx = buildSkillIndex(ROOT, state) as { cards: Array<{ id: string }> };
+      assert.ok(idx.cards.some((c) => c.id === "c2"), "the seam tree serves over the passed writer root");
+    } finally {
+      delete process.env["MELITE_BENCH_STORAGE"];
+    }
   });
 });

@@ -14,6 +14,7 @@ import type { ManageCtx } from "./managePlane.ts";
 import { probeEndpoint } from "./manageProbe.ts";
 import { managerGet } from "./managerRail.ts";
 import { loadShippedExtensionManifest } from "@melite/comfyui-cordis/provisioning-manifest";
+import { errText } from "./runsTypes.ts";
 
 /** One axis verdict: green, or a miss naming the door that closes
  * it. There is no third state — an axis that could not be checked
@@ -38,8 +39,28 @@ function row(axis: PreflightRow["axis"], state: PreflightRow["state"], detail: s
   return state === "miss" ? { axis, state, detail, door } : { axis, state, detail };
 }
 
-function errText(e: unknown): string {
-  return (e instanceof Error ? e.message : String(e)).slice(0, 200);
+/** One landed-identity key for a pack id in the census compare:
+ *  Manager lists canonical-case names (`ComfyUI-Impact-Pack`) and
+ *  channel-qualified ids (`comfyui-impact-pack@nightly`) while the
+ *  manifest declares the bare id (`comfyui-impact-pack`) — so
+ *  landed identity folds case and strips the channel suffix. The
+ *  2026-11-03 burn: both impact rows read "not landed" for a month
+ *  over a case fold while the engine imported them at their pins.
+ *  Channel DISCIPLINE is not this axis — the provision loop's ref
+ *  convergence owns which commit a row sits at; this key answers
+ *  presence only.
+ *  @param id the pack id exactly as its side keyed it.
+ *  @returns the folded, channel-stripped id. */
+function censusKey(id: string): string {
+  const fold = id.trim().toLowerCase();
+  const channel = fold.indexOf("@");
+  return channel === -1 ? fold : fold.slice(0, channel);
+}
+
+/** The preflight's detail budget (a whole-axis miss row stays one
+ * row); the message half rides the shared thrown-value fold (F38). */
+function errDetail(e: unknown): string {
+  return errText(e).slice(0, 200);
 }
 
 /** `GET <url>/models/<folder>` — registration-only (the preflight's
@@ -104,7 +125,7 @@ export async function runPreflight(mctx: ManageCtx): Promise<PreflightRow[]> {
         "ComfyUI-Manager answered /customnode/installed (" + Object.keys(installed).length + " pack(s) listed)"));
     } catch (e) {
       rows.push(row("manager", "miss",
-        "the manager rail refused: " + errText(e) +
+        "the manager rail refused: " + errDetail(e) +
         " — the engine is up but ComfyUI-Manager is absent or refusing (BYO engines must carry it; every pack door rides it)",
         "install_extension_url (after the engine carries ComfyUI-Manager — https://github.com/Comfy-Org/ComfyUI-Manager)"));
     }
@@ -119,22 +140,34 @@ export async function runPreflight(mctx: ManageCtx): Promise<PreflightRow[]> {
     try {
       const declared = loadShippedExtensionManifest();
       const required = declared.filter((d) => d.required);
-      const missing = required.filter((d) => !Object.prototype.hasOwnProperty.call(installed, d.name));
+      const listed = new Set(Object.keys(installed).map(censusKey));
+      const missing = required.filter((d) => !listed.has(censusKey(d.name)));
       const optional = declared.length - required.length;
       if (missing.length === 0) {
         rows.push(row("packs", "green",
           "every required declared pack landed (" + required.length + " of " + declared.length +
           " rows required" + (optional > 0 ? "; " + optional + " optional" : "") + ")"));
       } else {
+        // THE OPERATOR DOOR (qa8 F6/GAPS-11 estate cure, 2026-11-01:
+        // install_extension on the Impact ids is a DEAD door — Manager
+        // HTTP 400 on the git_url rail for both ids — so the cure rides
+        // install_extension_url with the real repos, never the id door.
+        // THE AUTO-PROVISION LAW (operator 2026-11-01): these ARE the
+        // manifest's declared rows — the URL door byte-matches the pin
+        // and provisions with NO operator gesture; operator_confirmed
+        // is only for URLs the manifest does not declare. The detail
+        // carries each missing pack's declared repo.
         rows.push(row("packs", "miss",
-          missing.length + " required pack(s) not landed: " + missing.map((d) => d.name).join(", "),
-          "install_extension"));
+          missing.length + " required pack(s) not landed: " + missing.map((d) => d.name).join(", ") +
+          " — install each from its declared repo with install_extension_url (the declared URL auto-provisions — no operator_confirmed needed for a manifest pin): " +
+          missing.map((d) => d.name + " <" + d.url + ">").join(", "),
+          "install_extension_url"));
       }
     } catch (e) {
       // The shipped manifest's own loud refusal (missing/malformed
       // data file) is a packs miss naming the regenerate door —
       // never a silent zero-row census (the 019 F1 burn's shape).
-      rows.push(row("packs", "miss", errText(e),
+      rows.push(row("packs", "miss", errDetail(e),
         "regenerate: pnpm --filter @melite/comfyui-cordis run regen:extension-manifest"));
     }
   }

@@ -127,6 +127,12 @@ describe("modelValidateArm (the model envelope)", () => {
     defsSync: (): unknown => new Map([
       ["tts", { requiresModel: true, schema: (p: unknown): unknown => p }],
     ]),
+    // F56: the walk now runs the shared family-less hijack law before
+    // phase1Card — the stub models the service's cardDecls (tts is
+    // family-carrying, so the gate is a no-op for these rows).
+    cardDecls: (): unknown => ({
+      tts: { skeleton: "tts", boarded: ["qwen3-tts"], schemaNames: [], admits: [], spells: [] },
+    }),
     primeObjectInfo: (): Promise<boolean> => Promise.resolve(prime),
     phase1Card,
   });
@@ -178,6 +184,120 @@ describe("modelValidateArm (the model envelope)", () => {
       expect(out["ok"]).toBe(true);
       expect(String(out["note"])).toContain("compose walk skipped");
       expect(composed).toBe(false);
+    } finally {
+      await ctx.fiber.dispose();
+    }
+  });
+
+  // THE FAMILY-LESS HIJACK LAW'S WALK SEAT (F56, 2026-11-14 —
+  // operator: "trim's add_stage misrouted into the krea-2/turbo image
+  // lane demanding a prompt. The family-less tool card never reached
+  // its own surface"): this walk's body carries no `card` key, so the
+  // prepareCardParams seat of the law cannot see the row's card — the
+  // walk fires the SAME law on its own card name, BEFORE phase1Card
+  // resolves the stated model into a stranger's lane. The arm pins
+  // both: the refusal voice AND that phase1Card never ran.
+  it("a family-less card row with a stated foreign model REFUSES at the walk seat — phase1Card never runs (F56)", async () => {
+    const ctx = new Context();
+    new FlowsSeatService(ctx);
+    let composed = false;
+    (ctx as unknown as { cardRegistry: unknown }).cardRegistry = {
+      defsSync: (): unknown => new Map([
+        ["trim", { requiresModel: false, schema: (p: unknown): unknown => p }],
+      ]),
+      cardDecls: (): unknown => ({
+        trim: { skeleton: "trim", boarded: [], schemaNames: ["clip"], admits: [], spells: [] },
+      }),
+      primeObjectInfo: (): Promise<boolean> => Promise.resolve(true),
+      phase1Card: (): Promise<unknown> => { composed = true; return Promise.resolve({}); },
+    };
+    try {
+      const row = cardStage({ model: "krea-2", clip: "/a.mp4", start_seconds: 0, end_seconds: -1 });
+      row["card"] = "trim";
+      await expect(validate(
+        { flow_inline: { id: "bench", stages: [row] } },
+        new AbortController().signal,
+        ctx,
+      )).rejects.toMatchObject({
+        message: expect.stringContaining("lane hijack"),
+      });
+      expect(composed).toBe(false);
+    } finally {
+      await ctx.fiber.dispose();
+    }
+  });
+
+  // the control half: the SAME family-less row with NO model seats
+  // through phase1Card on the card-unit arm (mid = the card id) — the
+  // clean trim shape the live estate 200s.
+  it("a clean family-less card row (no model) composes its own card-unit surface through the walk (F56 control)", async () => {
+    const ctx = new Context();
+    new FlowsSeatService(ctx);
+    let composedWith = "";
+    (ctx as unknown as { cardRegistry: unknown }).cardRegistry = {
+      defsSync: (): unknown => new Map([
+        ["trim", { requiresModel: false, schema: (p: unknown): unknown => p }],
+      ]),
+      cardDecls: (): unknown => ({
+        trim: { skeleton: "trim", boarded: [], schemaNames: ["clip"], admits: [], spells: [] },
+      }),
+      primeObjectInfo: (): Promise<boolean> => Promise.resolve(true),
+      phase1Card: (body: Record<string, unknown>, mid: string): Promise<unknown> => {
+        composedWith = mid;
+        return Promise.resolve({});
+      },
+    };
+    try {
+      const row = cardStage({ clip: "/a.mp4", start_seconds: 0, end_seconds: -1 });
+      row["card"] = "trim";
+      const out = await validate(
+        { flow_inline: { id: "bench", stages: [row] } },
+        new AbortController().signal,
+        ctx,
+      ) as Record<string, unknown>;
+      expect(out["ok"]).toBe(true);
+      expect(composedWith).toBe("trim");
+    } finally {
+      await ctx.fiber.dispose();
+    }
+  });
+
+  // THE GUI-ADD BURN (2026-11-01): the walk's note path flattened
+  // EVERY compose refusal into one string, so the pre-mint WRITE gate
+  // downstream read the authoring-incomplete class as terminal — and
+  // the tts card was UN-ADDABLE from the cards tab (its lane requires
+  // `text`; the GUI's add door seeds a card's axes only, the words
+  // are typed in the form the landed stage opens). The frictionless-
+  // authoring ruling (operator 2026-11-11) drops the class at every
+  // write seat; for the flag to reach that gate, the class must
+  // survive THIS door as its tabled wire code — never a flattened
+  // string. Every other refusal keeps the wall-pinned note voice
+  // (the arm above).
+  it("the authoring-incomplete class keeps its CODE through the door (never a flattened note)", async () => {
+    const ctx = new Context();
+    new FlowsSeatService(ctx);
+    (ctx as unknown as { cardRegistry: unknown }).cardRegistry = regWith(
+      (): Promise<unknown> => Promise.reject(new CardArmError(
+        400,
+        "lane 'qwen3-tts/customvoice' refuses the state: this lane requires 'text' — 'text' is not stated — every tts lane speaks words — state the text to synthesize",
+        "card_compose_incomplete",
+      )),
+      true,
+    );
+    try {
+      const thrown = await validate(
+        // the GUI's own add shape: axis seeds only, no text
+        { flow_inline: { id: "bench", stages: [cardStage({ model: "qwen3-tts", variant: "customvoice" })] } },
+        new AbortController().signal,
+        ctx,
+      ).then(
+        () => null,
+        (e: unknown) => e,
+      );
+      expect(thrown, "the textless add's projection must refuse at the compose walk").not.toBe(null);
+      expect((thrown as { code?: unknown }).code).toBe("runs/card-compose-incomplete");
+      expect((thrown as Error).message).toContain('"s_0"');
+      expect((thrown as Error).message).toContain("every tts lane speaks words");
     } finally {
       await ctx.fiber.dispose();
     }

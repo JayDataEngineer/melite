@@ -4,7 +4,7 @@
  *
  * The bundle patch (cordis.patch.yml) covers the ROWS; this bin covers
  * the PROFILES: renders ready-to-boot profile dirs (melite-test /
- * headless / estate) and installs their link deps. Every render
+ * estate) and installs their link deps. Every render
  * stamps render-provenance.json (F5: who/what/when/flags) and holds
  * the profile's render lock across render+install (F6).
  * Self-locating — every path derives from this file's own location
@@ -32,8 +32,9 @@
  * brain — plus any operator rows spliced verbatim by --profile-rows
  * (llm provider rows ride the profile layer the same way the web
  * profile's own patch carries them; the file is never re-serialized).
- * The template pins: our bundle + the dsh web base for 'melite-test',
- * the plain headless base for 'headless'.
+ * The template pins: our bundle + the dsh web base for 'melite-test'.
+ * There is no melite headless profile: HEADLESS IS DSH'S (`dsh headless`,
+ * its own shipped `headless` profile) — melite renders no parallel mount.
  */
 
 import { execSync } from 'node:child_process'
@@ -208,23 +209,12 @@ const PROFILE_BASES = {
     '@melite/harness-tools', '@melite-plugin/dsh-estate', '@melite/card-base', '@melite/three-client',
     '@melite-plugin/dsh-card-view', '@melite-plugin/dsh-card-deck', '@melite-plugin/dsh-gallery',
     '@melite/video-h3-timeline', '@melite/motion-motion', '@melite/image-input-prep'],
-  // headless = the agent server: one-shot task runner + the tools
-  // plane (harness-tools self-registers its melite-tools row; the
-  // renderer disables the web-plane doors row in this mount).
-  // dsh-estate rides here too: a headless task that composes media
-  // reaches the same runs/queue/drafts seats through melite_flow —
-  // without the bundle the tool answers ABSENCE (the estate-drive
-  // finding, 2026-10-13; the state-root pin still applies — an
-  // unpinned queue seat refuses loud by design).
-  headless: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-headless', '@melite/harness-provisioner',
-    '@melite/harness-tools', '@melite-plugin/dsh-estate'],
   // estate = the job server: the SDK JSON-RPC base (estate-drive
   // spawns this profile; the estate row serves the runs lanes
   // in-process — no second app, no HTTP). dsh-estate bundles the
   // runs/queue/drafts seats — without it melite_flow answers
   // ABSENCE ("no seat of that family is mounted on this lane"),
-  // the 2026-10-13 estate-drive finding. The renderer pins the
-  // tools row's HEADLESS interface by its self-registration id.
+  // the 2026-10-13 estate-drive finding.
   estate: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-sdk-app', '@melite/harness-provisioner',
     '@melite/harness-tools', '@melite-plugin/dsh-estate'],
 }
@@ -275,7 +265,7 @@ function renderProfile(name) {  // In-box bundles (@deepseek-ai/*) resolve from 
   // from a registry - only OUR link goes in dependencies. Mirrors what
   // `dsh plugin` itself initializes (PROFILE_TEMPLATES + reconcile).
   // Unknown names REFUSE (provisioner audit F7, cured 2026-10-21): the
-  // old `|| PROFILE_BASES.headless` fallback turned a typo into a
+  // old default-to-first-base fallback turned a typo into a
   // bootable-looking directory with the wrong rows and exit 0.
   if (!(name in PROFILE_BASES)) {
     console.error(`infer-provision: unknown profile '${name}' — known: ${Object.keys(PROFILE_BASES).join(', ')}`)
@@ -290,7 +280,7 @@ function renderProfile(name) {  // In-box bundles (@deepseek-ai/*) resolve from 
   // deps — every plugin package the bundle rows name must become a
   // DIRECT link: dep here. The provisioner's manifest declares them
   // as workspace:* specs; a link:-only scan dropped them, so the
-  // headless/estate profiles mounted @melite/harness-tools as a
+  // server profile mounted @melite/harness-tools as a
   // bundle row with NO installed package — the tool lane could not
   // load (ledger li-headless-profile-deps). workspace specs resolve
   // by scanning this repository's own pnpm workspace globs
@@ -384,14 +374,14 @@ function renderProfile(name) {  // In-box bundles (@deepseek-ai/*) resolve from 
   pkg.dsh = { profile: { bundles: [...new Set(bundles)] } }
   writeFileAtomic(join(dst, 'package.json'), JSON.stringify(pkg, null, 2) + String.fromCharCode(10))
   // The cordis.yml USER layer stays EMPTY — the bundle patch owns every
-  // melite row (no drift). NON-web mounts (headless/SDK) get the
+  // melite row (no drift). NON-web mounts (SDK) get the
   // web-surface rows mechanically DISABLED in the profile patch (by the
   // packages' SELF-REGISTRATION ids, 2026-09-17): no webServer service
   // exists to activate them. The bundle owns the rows; the renderer
   // owns the per-app mount shape and the seat pins below.
   const webMount = bundles.includes('@deepseek-ai/dsh-web-app')
   // melite-tools-doors is web-profiles-only by its own contract (the
-  // ✦ doors need webServer+llm — absent in sdk/headless mounts); the
+  // ✦ doors need webServer+llm — absent in sdk mounts); the
   // renderer disables it with the other web rows in non-web mounts.
   const webRows = ['melite-tools-doors',
                    'infer-card-view', 'ray-card-deck', 'infer-gallery']
@@ -407,9 +397,9 @@ function renderProfile(name) {  // In-box bundles (@deepseek-ai/*) resolve from 
   // durableDownloads: true rides WEB mounts only (the 2026-10-22
   // downloads-stream audit): the lane is the long-lived process that
   // owns fetch lifetimes — its durable claim ticker claims requested
-  // rows and stamps the claimer heartbeat, so a headless press's
+  // rows and stamps the claimer heartbeat, so a task press's
   // wanted download survives its own session dying. A non-web mount
-  // (headless task, estate job server) is short-lived: a claimer in
+  // (estate job server) is short-lived: a claimer in
   // it would orphan every fetch it died mid-flight, so its presses
   // take their own wire, exactly as before.
   const estateRow = bundles.includes('@melite-plugin/dsh-estate')
@@ -464,23 +454,7 @@ function renderProfile(name) {  // In-box bundles (@deepseek-ai/*) resolve from 
         + '# No webServer service in this mount: the four web-surface rows\n'
         + '# are disabled so activation cannot pend forever.\n'
         + webRows.map(id => '- id: ' + id + '\n  disabled: true\n').join('')
-        + estateRow + operatorRows
-        // DELEGATED-OPERATOR MOUNTS (estate | headless): this mount
-        // RUNS jobs — the tools row selects the HEADLESS interface
-        // (the melite_flow + run_status run doors). Pinned in the
-        // render (not ambient env) because the interface is profile
-        // state: browser mounts compose, the job server executes.
-        // The 'headless' agent server rides the same pin — its base
-        // list promises melite_flow ("a headless task that composes
-        // media reaches the same runs/queue/drafts seats"), and the
-        // faceless-maker commission (2026-10-21) proved the
-        // compose-only mount: benches composed and validated, every
-        // execution refused at the absent verb. Every other mount
-        // keeps the browser default.
-        + (name === 'estate' || name === 'headless'
-          ? '# HEADLESS interface: the delegated operator runs jobs here.\n'
-            + '- id: melite-tools\n  config:\n    headless: true\n'
-          : ''))
+        + estateRow + operatorRows)
   writeFileAtomic(join(dst, 'cordis.yml'), '# rendered by infer-provision' + '\n' + '[]' + '\n')
   const ws = join(dst, 'pnpm-workspace.yaml')
   if (!existsSync(ws)) writeFileAtomic(ws, 'packages:' + '\n' + '  - node_modules/*' + '\n')
@@ -559,7 +533,7 @@ switch (cmd) {
     // command renders + installs every profile (the gateway health
     // check died with the gateway — there is no second process to
     // probe anymore).
-    for (const name of ['melite-test', 'headless', 'estate']) {
+    for (const name of ['melite-test', 'estate']) {
       renderInstall(name)
     }
     log('boot with:')
@@ -569,13 +543,14 @@ switch (cmd) {
     log('   launch — binary pin, version floor, home, and unit. The shapes below')
     log('   are what the door runs UNDER THE HOOD, never a hand-run shortcut:)')
     log('  dsh --profile melite-test            # the studio GUI + TEST lane (one process, no :33081)')
-    log('  dsh --profile headless "<task>"      # one-shot agent with card tools')
     log('  dsh --profile estate                 # the SDK job server (estate row)')
+    log('  one-shot agents ride DSH itself: dsh headless "<task>" (DSH ships the')
+    log('  headless profile; melite maintains no parallel mount)')
     break
   }
   case 'profile': {
     renderInstall(PROFILE)
-    log('boot with: dsh --profile ' + PROFILE + (PROFILE === 'melite-test' ? '' : ' "<task>"'))
+    log('boot with: dsh --profile ' + PROFILE)
     break
   }
   // the `preset` arm died with installPreset (undefined since the

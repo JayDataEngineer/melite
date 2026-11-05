@@ -150,6 +150,10 @@ interface Seats {
   skills?: {
     index(): unknown
     read(id: string, signal: AbortSignal): unknown
+    /** The WRITE door (melite_skill_write): the agent authors one
+     *  skill doc. The body is raw wire JSON — the seat validates it;
+     *  a refusal throws the door's voice. */
+    write(body: Record<string, unknown>): unknown
   }
 
   /** The load seat (REBUILD-17): Melite load opens ONE card or
@@ -358,6 +362,13 @@ async function trySeats(
   if (method === 'GET' && path === '/v1/skills') {
     if (seats.skills === undefined) return undefined
     return seats.skills.index()
+  }
+  // THE WRITE SIDE (melite_skill_write): the agent authors a skill
+  // doc; the seat validates the wire body and lands it in the
+  // authored plane (one walk serves write and read alike).
+  if (method === 'POST' && path === '/v1/skills') {
+    if (seats.skills === undefined) return undefined
+    return seats.skills.write(body as Record<string, unknown>)
   }
   m = /^\/v1\/skills\/([^/?]+)$/.exec(path)
   if (method === 'GET' && m !== null) {
@@ -654,7 +665,18 @@ async function performEstateRequest(
 /** The bench plane's mutation verbs — the eight arms the bench
  *  seat answers 1:1 (the router's regex admits the same eight;
  *  `archive` is F11's spent-stage mark — the row stays, every run
- *  face skips it). */
+ *  face skips it).
+ *
+ *  OWNERSHIP (vocab audit 2026-11-01 W4): `add_stages` (plural)
+ *  is a seat WITHOUT a tool verb — no melite_construct verb and
+ *  no benchVerb('add_stages') press exists in the tool plane. Its
+ *  ONE wire-direct owner is the GUI restore path
+ *  (packages/web/melite-card-view/src/client/cards-resource.ts
+ *  restoreRunToBench → bench/add-stages: the N-stage restore lands
+ *  as ONE write, one rev, one history event). A seat with no
+ *  caller is retired; this one has a named caller, so the verb
+ *  stays — and the bench-batch-ownership wall reds the moment the
+ *  caller set empties. */
 export type BenchVerb = 'patch' | 'add_stage' | 'add_stages' | 'remove_stage' | 'archive' | 'clear' | 'rewire' | 'undo'
 
 /** The tool plane's ONE estate seam: the typed lanes. A tool factory
@@ -689,6 +711,9 @@ export interface Estate {
   /** The skills seat: the index and the one-doc read. */
   skillsIndex(signal: AbortSignal, timeoutMs?: number): Promise<unknown>
   skillRead(id: string, signal: AbortSignal, timeoutMs?: number): Promise<unknown>
+  /** The WRITE door (POST /v1/skills): the agent authors one skill
+   *  doc; a refusal rejects with the door's voice. */
+  skillWrite(doc: Record<string, unknown>, signal: AbortSignal, timeoutMs?: number): Promise<unknown>
   /** The load seat: one card or flow bundle. */
   loadCard(inferenceType: string, name: string, signal: AbortSignal, timeoutMs?: number): Promise<unknown>
   /** The queue seat's journal tail. SEATLESS reads as an EMPTY tail
@@ -823,6 +848,10 @@ export function makeEstate(ctx: EstateHost): Estate {
         signal, timeoutMs),
     skillsIndex: lane('GET /v1/skills', SKILLS_LANE,
       (s) => s.skills === undefined ? undefined : s.skills.index()),
+    skillWrite: (doc, signal, timeoutMs) =>
+      estateLane(ctx, 'POST /v1/skills', SKILLS_LANE,
+        (s) => s.skills === undefined ? undefined : s.skills.write(doc),
+        signal, timeoutMs),
     skillRead: (id, signal, timeoutMs) =>
       estateLane(ctx, `GET /v1/skills/${encodeURIComponent(id)}`, SKILLS_LANE,
         (s) => s.skills === undefined ? undefined : s.skills.read(id, signal),

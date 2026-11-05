@@ -6,6 +6,7 @@ import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 import type { FlowsValidateAnswer } from "./runsValidate.ts";
 import type { CardRegistryService } from "./cardsRegistry.ts";
 import { RUNS_ERROR_CODES } from "./runsErrorCodes.ts";
+import { refuseFamilylessHijack } from "./cardsCompose.ts";
 import { expandRegistryFlow, registryFlowToInline, registryInitialsError } from "./flowsData.ts";
 import { applyFlowParamsOverride, overlayDecls } from "./flowsParamsOverlay.ts";
 import type { FlowsSeatService } from "./flowsData.ts";
@@ -295,9 +296,37 @@ export async function validate(
           ? (service !== undefined ? { ...params, model: service } : { ...params })
           : { ...params, model: mid };
       try {
+        // THE FAMILY-LESS HIJACK LAW'S SECOND SEAT (F56, 2026-11-14):
+        // this walk's body carries no `card` key (the model-door
+        // shape), so prepareCardParams cannot see the row's own card —
+        // the shared law fires HERE too, on the walk's own card name,
+        // before any phase1Card resolution folds the stated model
+        // into a stranger's lane (trim + krea-2 lived as image-gen).
+        refuseFamilylessHijack(svc, String(st["card"]), params["model"] ?? service);
         await svc.phase1Card(body, mid);
       } catch (e) {
         if (e instanceof CardArmError) {
+          // THE INCOMPLETE CLASS KEEPS ITS CODE (the GUI-add burn,
+          // 2026-11-01): the walk's note path flattens every refusal
+          // into one string, so the pre-mint WRITE gate downstream
+          // read the class as a terminal refusal — and no card whose
+          // lane declares a required word the add door does not seed
+          // (tts's `text` — the GUI seeds axes only) could ever be
+          // ADDED from the cards tab. The frictionless-authoring
+          // ruling (operator 2026-11-11: "you are submitting a form,
+          // not hacking the mainframe") drops the authoring-
+          // incomplete class at every write seat; the class rides the
+          // door's own throw pattern here, under the wire code the
+          // table already carries (runs/card-compose-incomplete —
+          // the client's heal-vs-carry split reads the same key).
+          // Every other refusal keeps the wall-pinned note voice.
+          if (e.code === "card_compose_incomplete") {
+            throw new RemoteError(
+              RUNS_ERROR_CODES["card_compose_incomplete"],
+              "stage " + JSON.stringify(String(st["id"])) + ": " + e.message,
+              { loc: "stages" },
+            );
+          }
           return "REFUSED stage " + JSON.stringify(String(st["id"])) + ": " + e.message;
         }
         throw e;

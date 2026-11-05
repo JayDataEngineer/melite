@@ -22,10 +22,6 @@ export { ManageGatewayService } from "./manageRegistry.ts";
 export type { QueueConfig } from "./service.ts";
 export * from "./vocab.ts";
 export * from "./queue.ts";
-// bootSweep twins (queue.ts core impl + resurrect.ts QueueRoots
-// wrapper): the explicit export wins over the stars — the wrapper
-// is the domain seam.
-export { bootSweep } from "./resurrect.ts";
 import { FlowsSeatService } from "./flowsData.ts";
 
 export const name = "estate-queue";

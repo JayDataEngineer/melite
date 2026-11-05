@@ -619,3 +619,98 @@ describe("stampCardOverlay — THE DERIVED-STAMP RELEASE (a lane's own residue p
     expect(riding["qvoice"]).toBe("/v/x");
   });
 });
+
+// THE CARRY JUDGE'S EMPTY SHELF (cardsVariant.ts 260-262, the bag
+// law's second voice): the judge reads the arrival family's OWN
+// catalog. A foreign bag on a family the catalog serves no rows for
+// refuses with the empty-shelf voice, never an empty known-list.
+describe("stampCardOverlay — THE CARRY JUDGE'S EMPTY SHELF (a foreign bag on a row-less family names the empty shelf)", () => {
+  const imageRow = () =>
+    row({
+      card: "image-gen",
+      defaults: {},
+      variants: [
+        { id: "turbo", group: "", route: "", cells: [{ quant: "int8_convrot", route: "" }], resolver_defaults: {} },
+      ],
+    });
+
+  it("a foreign loras bag on anima (the booted loras catalog serves no anima rows) refuses with the empty-shelf voice", async () => {
+    const { loadCardDefs, theService } = await import("@melite/comfyui-cordis");
+    await loadCardDefs();
+    const knowns = theService().modCatalog("loras", "anima").rows.map((r) => r.id);
+    expect(knowns, "the arm's live precondition: the boot serves no anima loras rows").toEqual([]);
+    const sel = selectCardVariant(
+      "anima", imageRow(), { variant: "turbo", quant: "int8_convrot" }, "9",
+    );
+    let refused = "";
+    try {
+      stampCardOverlay(
+        { loras: [{ id: "ghost-row", strength: 0.8 }] },
+        imageRow(), decl({ schemaNames: [] }), sel, "9", "anima",
+      );
+    } catch (e) {
+      refused = e instanceof Error ? e.message : String(e);
+    }
+    expect(refused).toContain('unknown loras row "ghost-row"');
+    expect(refused).toContain("(the family serves no rows)");
+    expect(refused).toContain('for model "anima" variant "turbo"');
+  });
+
+  it("the control: the same foreign bag on krea-2 (a family the catalog serves) names the known rows", async () => {
+    const { loadCardDefs, theService } = await import("@melite/comfyui-cordis");
+    await loadCardDefs();
+    const knowns = theService().modCatalog("loras", "krea-2").rows.map((r) => r.id);
+    expect(knowns.length, "the arm's live precondition: the boot serves krea-2 loras rows").toBeGreaterThan(0);
+    expect(knowns).not.toContain("ghost-row");
+    const sel = selectCardVariant(
+      "krea-2", imageRow(), { variant: "turbo", quant: "int8_convrot" }, "9",
+    );
+    let refused = "";
+    try {
+      stampCardOverlay(
+        { loras: [{ id: "ghost-row", strength: 0.8 }] },
+        imageRow(), decl({ schemaNames: [] }), sel, "9", "krea-2",
+      );
+    } catch (e) {
+      refused = e instanceof Error ? e.message : String(e);
+    }
+    expect(refused).toContain("(known: " + knowns.join(", ") + ")");
+  });
+
+  it("the junk half: null, filename, and empty-id entries are the bag law's skips — they refuse nothing and ride verbatim", async () => {
+    const { loadCardDefs } = await import("@melite/comfyui-cordis");
+    await loadCardDefs();
+    const sel = selectCardVariant(
+      "anima", imageRow(), { variant: "turbo", quant: "int8_convrot" }, "9",
+    );
+    const carried = [null, { name: "authored.safetensors" }, { id: "" }];
+    const out = stampCardOverlay(
+      { loras: carried }, imageRow(), decl({ schemaNames: [] }), sel, "9", "anima",
+    );
+    expect(out["loras"]).toEqual(carried);
+  });
+
+  it("the served half: a carried id the arrival family already serves is its own counterpart, never a refusal — the known-list skip", async () => {
+    const { loadCardDefs, theService } = await import("@melite/comfyui-cordis");
+    await loadCardDefs();
+    const knowns = theService().modCatalog("loras", "krea-2").rows.map((r) => r.id);
+    expect(knowns.length, "the arm's live precondition: the boot serves krea-2 loras rows").toBeGreaterThan(0);
+    const served = knowns[0] as string;
+    const sel = selectCardVariant(
+      "krea-2", imageRow(), { variant: "turbo", quant: "int8_convrot" }, "9",
+    );
+    const out = stampCardOverlay(
+      { loras: [{ id: served, strength: 0.8 }] }, imageRow(), decl({ schemaNames: [] }), sel, "9", "krea-2",
+    );
+    expect(out["loras"]).toEqual([{ id: served, strength: 0.8 }]);
+  });
+});
+
+// liftCardParams — THE ABSENT-KEY LAW (cardsVariant.ts 457): an
+// explicit undefined reads as absent, matching what JSON persistence
+// would hand the row. The surviving keys ride verbatim.
+describe("liftCardParams — THE ABSENT-KEY LAW (an explicit undefined is absent, never a value)", () => {
+  it("an explicit-undefined key dies; the surviving keys ride", () => {
+    expect(liftCardParams({ width: 512, ckpt: undefined })).toEqual({ width: 512 });
+  });
+});

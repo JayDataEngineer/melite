@@ -118,11 +118,14 @@ describe("the settle_stale action (tts NEW-2: pre-rebuild claims retire by opera
     root = mkdtempSync(join(tmpdir(), "settle-boot-"));
     try {
       const now = Date.now();
-      plantSidecar("run-preboot", "queued", now - 3_600_000);
+      // INSIDE the 120s submit grace (the grace alone would SKIP
+      // this sidecar) but PREDATING the boot receipt — the settle
+      // below proves the BOOT rule, never the grace.
+      plantSidecar("run-preboot", "queued", now - 60_000);
       mkdirSync(join(root, "data", "runtime", "comfyui"), { recursive: true });
       writeFileSync(
-        join(root, "data", "runtime", "comfyui", ".estate-boot.json"),
-        JSON.stringify({ boot_at: now - 1_800_000, source: "estate restart" }),
+        join(root, "data", "runtime", "comfyui", ".estate-engine-boot.json"),
+        JSON.stringify({ boot_at: now - 30_000, source: "estate restart" }),
       );
       globalThis.fetch = (async () => queueJson([], [])) as unknown as typeof fetch;
       const [code, env] = await run({ action: "settle_stale" });

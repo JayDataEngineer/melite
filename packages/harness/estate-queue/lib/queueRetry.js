@@ -11,13 +11,11 @@
 export function shouldRetry(ask) {
     return ask.attempt < ask.maxExtra && !ask.stopSet;
 }
-/** One documented retry: sidecar row + events bus +
- *  ledger — never a silent re-run. */
+/** One documented retry: sidecar row + events bus — never a
+ *  silent re-run, never a journal row (see RetryNote). */
 export function noteStageRetry(runId, stageId, stageIndex, attempt, why) {
     return {
         stagePatch: { retries_used: attempt, retry_last_error: why },
-        ledgerEvent: "run.stage_retry",
-        ledgerData: { run_id: runId, stage: stageId, attempt, error: why },
         busFrame: { type: "stage", stage: stageId, index: stageIndex, retry: attempt },
     };
 }

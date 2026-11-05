@@ -64,7 +64,8 @@ import { RETIRED_RUNNER_KNOBS, RETIRED_CARRY_KEYS, DOOR_KEYS } from "./vocab.js"
 import { resolveTestFlag, executeCeilOf } from "./queueSubmit.js";
 export { executeCeilOf };
 import { WIRE_STAGE_KEYS, STAGE_PATCH_KEYS } from "@melite/contracts/benchStage";
-export { STAGE_PATCH_KEYS };
+import { FLOW_ID_RE } from "@melite/contracts";
+export { STAGE_PATCH_KEYS, FLOW_ID_RE };
 /** flow_inline top-level keys (the served shape). */
 export const INLINE_TOP_KEYS = ["description", "id", "stages"];
 /** flow_inline stage keys (extra=forbid at the door) — the
@@ -72,8 +73,15 @@ export const INLINE_TOP_KEYS = ["description", "id", "stages"];
  *  bench projection needs the same rule to build a wire row, and two
  *  copies of a door's key list is how a reader and a writer drift. */
 export const STAGE_KEYS = WIRE_STAGE_KEYS;
-/** Stage/flow identifier shape. */
-export const FLOW_ID_RE = /^[a-z_][a-z0-9_-]*$/;
+/** Stage/flow identifier shape — the CONTRACT's spelling now
+ *  (FlowTypes.ts FLOW_ID_RE, moved 2026-10-31 for F14's estate
+ *  half): the estate drafts' add-stage pre-mint gate cannot import
+ *  this package (the queue injects the drafts remote — the edge
+ *  points down), and it derives the same ``bench`` fallback for
+ *  free-text intents, so the grammar's one home is the contract
+ *  floor. A grammar spelled in two modules is the H13 drift class
+ *  (the DRAFT_ID_RE mirror this module already deleted). The
+ *  re-export above keeps the queue's historical importers stable. */
 /** PATCH .../stages/:sid accepted keys — the CONTRACT's list, in the
  *  voice's order (B-M9: this was a second copy in a different order;
  *  the two doors disagreed about what the door wants). */

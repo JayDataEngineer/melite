@@ -69,13 +69,18 @@ export declare function resolveCardOutputsOrThrow(defs: ReadonlyMap<string, Pick
 export declare const FAMILY_RESEAT_CARVE: readonly string[];
 /** THE FAMILY-LAW DECLARATION JUDGE (the one-seat migration,
  *  2026-11-12 — pure core; prime() throws on its verdict): every
- *  declared law must name at least one lane, and every deadKeys
- *  lane must be a lane the lanes array declares. A drop keyed to a
- *  lane nobody derives never fires — a law the estate refuses to
- *  serve, red at boot BEFORE any live write. Pure over the
- *  (family → law) pairs so the wall drives the judge's own path;
- *  prime() resolves the pairs off the card defs' boarded families
- *  (getModel — the DECL's one home).
+ *  declared law must name at least one lane, every deadKeys lane
+ *  must be a lane the lanes array declares, and NO lane may declare
+ *  dead keys at all (the lane-dead-letter ban, 2026-11-15 — the
+ *  operator's gate-11 burn: a key a lane's renderer cannot honor
+ *  means THAT RENDERER is incomplete, never that a lawful doc may be
+ *  refused; cure the renderer, or gate the shape with a repair-
+ *  teaching law — the FILM_ONLY precedent). A drop keyed to a lane
+ *  nobody derives never fires — a law the estate refuses to serve,
+ *  red at boot BEFORE any live write. Pure over the (family → law)
+ *  pairs so the wall drives the judge's own path; prime() resolves
+ *  the pairs off the card defs' boarded families (getModel — the
+ *  DECL's one home).
  *  @param laws the declared family laws, keyed by family id
  *  @returns the drift sentences (empty = every law serves) */
 export declare function familyLawDrift(laws: ReadonlyMap<string, FamilyLaw>): string[];
@@ -277,19 +282,17 @@ export declare class CardRegistryService extends Service {
         error: string;
     };
     /** THE FAMILY ADMISSION (journey-closure B5, 2026-10-17 — hop 3's
-     *  first judge, the write doors' arm of the walk): the card's own
-     *  family clause (CardDefinition.admitFamily — h3-timeline
-     *  declares the t4r inject-keys clause its compose walk enforces)
-     *  judges the MERGED params view — the params the next run would
-     *  compose — and the refusal speaks the run door's own voice one
-     *  hop earlier. Where the model and lane admissions judge
-     *  dict membership (board, surface, relation words), THIS judge
-     *  runs the family-conditional walk the run door runs, so the
-     *  patch door's "the params the NEXT run would compose" claim is
-     *  true for family-conditional cards. A card with no definition,
-     *  or with no family contract (the optional face absent), passes —
-     *  the clause is a no-op for every card that declares no family
-     *  walk. A JUDGE, NOT A GUARD (the operator's no-blocker ruling,
+     *  first judge, the write doors' arm of the walk): an OPTIONAL card
+     *  clause (CardDefinition.admitFamily) judged on the MERGED params
+     *  view — the params the next run would compose. NO LIVE CARD
+     *  DECLARES ONE after the 2026-11-15 lane-dead-letter retirement:
+     *  h3-timeline's t4r inject-keys face was deleted when the t4r
+     *  render arm gained the post chain (every finish key fires on
+     *  every lane), and the DECL's family-law judge bans a non-empty
+     *  deadKeys at boot, so this seat is an honest no-op for today's
+     *  cards. It remains for a genuine future family clause: the
+     *  refusal then speaks the run door's own voice one hop earlier.
+     *  A JUDGE, NOT A GUARD (the operator's no-blocker ruling,
      *  CONTRACTS.md §4-17): the verdict refuses the WRITE at the
      *  write door; the stored bench state keeps its own law (loads,
      *  reads, and the restore carve are the drafts side's to honor). */

@@ -9,6 +9,9 @@ import { join } from "node:path";
 import {
   expandRegistryFlow,
   FlowsSeatService,
+  flowInitialKeys,
+  flowInitialGlosses,
+  initialKindGloss,
   seedFlowsSeat,
   fromStage,
   linkedStage,
@@ -81,18 +84,24 @@ describe("registry", () => {
   // kimodo-native, skin-apply, agent-spawn); the anny lanes the
   // chips drive survive, and body-to-somax stays — the motion
   // studio's import door drives it live.
-  // + character-factory (2026-10-09: lift→rig→motion, audit 012).
-  it("names eleven flows; the getter answers unknowns with undefined", () => {
+  // + character-factory (2026-10-09, audit 012; re-aimed 2026-11-01
+  //   — the dead lift→rig hop left the row, rig→motion on the mesh
+  //   initial).
+  it("names seven flows; the getter answers unknowns with undefined", () => {
     // ten since object-forge (4cecc55b) — the landed census move this
-    // estate-queue wall missed; eleven since extend-video (23b8bcfb4,
-    // the extend-video flow's row — the two string seats on initials,
-    // the numeric knobs on the whole-bag params override).
+    // estate-queue wall missed; eleven since extend-video (23b8bcfb4);
+    // SEVEN since the card-wrapper collapse (2026-11-14,
+    // flows-are-compositions: body-to-somax/audio-native-tts/
+    // extend-video/music-native retired — a one-card "flow" was a
+    // wrapper; the cards press their own doors now).
     const seat = seedFlowsSeat();
     const names = seat.names();
-    assert.equal(names.length, 11);
+    assert.equal(names.length, 7);
     assert.deepEqual([...names].sort(), names);
     assert.ok(seat.get("anny-hmr-estimator") !== undefined);
-    assert.ok(seat.get("extend-video") !== undefined);
+    assert.ok(seat.get("image-upscale") !== undefined);
+    assert.equal(seat.get("extend-video"), undefined);
+    assert.equal(seat.get("body-to-somax"), undefined);
     assert.equal(seat.get("ghost"), undefined);
   });
 
@@ -194,8 +203,41 @@ describe("registry", () => {
       assert.ok(svc.get("live-probe") !== undefined);
     });
 
-    it("a from_flow link to a LATER-registering flow is legal at registration (cross-row wiring stays compile-time)", () => {
-      // the dry-run judges each stage's own shape only — a link's
+    it("THE WIRED-INITIALS INTERLOCK skips edges that cannot name a validator (a string edge, a non-string initial name)", () => {
+      // link-adjacent values ride through registration unjudged: a
+      // bare string edge (never an {initial} link) and a non-string
+      // initial name (never a validator key) admit — only a STRING
+      // initial name reaches the validator lookup, where an
+      // undeclared one still refuses LOUD
+      const base = liveFlow();
+      const stage = base.stages[0]!;
+      // the runtime tolerates shapes the static row type refuses —
+      // a bare string edge and a numeric initial name ride unjudged
+      // (the interlock judges STRING initial names only), so the arm
+      // feeds them past the static gate deliberately (the spec's
+      // junk-feed pattern, L181/L668)
+      const mixed = {
+        ...base,
+        stages: [{
+          ...stage,
+          inputs: {
+            direct: "$photo" as never,
+            numbered: { initial: 42 } as never,
+          } as Record<string, never>,
+        }],
+      } as typeof base;
+      disposers.push(svc.register(mixed));
+      assert.ok(svc.get("live-probe") !== undefined);
+      const bad = {
+        ...base,
+        id: "live-probe-2",
+        stages: [{ ...stage, inputs: { ghost: { initial: "undeclared" } } }],
+      };
+      assert.throws(() => svc.register(bad), /declares no validator/);
+      assert.equal(svc.get("live-probe-2"), undefined);
+    });
+
+    it("a from_flow link to a LATER-registering flow is legal at registration (cross-row wiring stays compile-time)", () => {      // the dry-run judges each stage's own shape only — a link's
       // target may register after its linker; expansion owns that
       // law (the live-seat G1 cure).
       const seed = svc.get("fit-seat")!;
@@ -437,15 +479,19 @@ describe("registryFlowToInline", () => {
     const skipped = inline.stages.filter((s) => "skip_when" in s);
     assert.equal(skipped.length, 2);
     assert.deepEqual(skipped[0]!["skip_when"], { initial: "starter_image", when: "present" });
-    const tts = registryFlowToInline(SEED.get("audio-native-tts")!) as {
+    // (re-homed 2026-11-14 from the retired audio-native-tts wrapper:
+    // the projection law needs a live card= row — image-upscale's
+    // make stage carries the same four seats)
+    const up = registryFlowToInline(SEED.get("image-upscale")!) as {
       stages: Array<Record<string, unknown>>;
     };
-    assert.deepEqual(tts.stages[0]!["card_io"], { wav: "audio" });
-    // the initial is named for the channel it feeds (2026-10-04): the
-    // row's `$text` spell resolves against a `text` initial, not `prompt`
-    assert.deepEqual(tts.stages[0]!["inputs"], { text: { initial: "text" } });
-    assert.deepEqual(tts.stages[0]!["outputs"], { wav: "audio" });
-    assert.equal(tts.stages[0]!["card"], "tts");
+    assert.deepEqual(up.stages[0]!["card_io"], { image: "image" });
+    // the initial is named for the channel it feeds (2026-10-04 law,
+    // born on the tts row): a `$prompt` spell resolves against a
+    // `prompt` initial
+    assert.deepEqual(up.stages[0]!["inputs"], { prompt: { initial: "prompt" } });
+    assert.deepEqual(up.stages[0]!["outputs"], { image: "image" });
+    assert.equal(up.stages[0]!["card"], "image-gen");
     // (the atom vocabulary, stroke 3): the motion card stage — the
     // card's flowOutputBindings own the motion_npz channel (card_io),
     // and output_nodes died with the hand-wired literal it annotated.
@@ -499,7 +545,7 @@ describe("registryFlowToInline", () => {
         // deleted 2026-10-04 — operator: commercial route only)
         "Sam3dBodyImageToAnny.0" in annyParams.workflow,
     );
-    assert.ok(!("skip_when" in tts.stages[0]!));
+    assert.ok(!("skip_when" in up.stages[0]!));
   });
 });
 
@@ -600,6 +646,16 @@ describe("registryInitialsError", () => {
         registryInitialsError(fit, { body: "b.glb", prop: "p.glb", bone: "a/b" }, r)!,
         /"bone" is a bare name/,
       );
+      // the VIDEO side of the vocab ternary: no seed flow declares
+      // one, so the arm rides a synthetic video validator — a staged
+      // mp4 passes, a txt refuses as video (never image, never mesh)
+      const videoRow = { ...anny, initialValidators: { ...anny.initialValidators, clip: "video" as const } };
+      writeFileSync(join(r.repoRoot, "clip.mp4"), "mp4");
+      assert.equal(registryInitialsError(videoRow, { clip: "clip.mp4" }, r), null);
+      assert.match(
+        registryInitialsError(videoRow, { clip: "clip.txt" }, r)!,
+        /not a stageable video/,
+      );
     } finally {
       dropRoots();
     }
@@ -626,6 +682,134 @@ describe("registryInitialsError", () => {
     } finally {
       dropRoots();
     }
+  });
+
+  // F58 (2026-11-02, the craft-loop binding — FAILURES.md's open
+  // item): the loop flow's three dials were never bound; presses
+  // died engine-side with the gate's stranger voice. These arms
+  // walk the REAL registry row (the familyAdmissionOf lesson —
+  // judge the truth, never a copy) and pin the door's three typed
+  // kinds + the required-initials law.
+  it("F58: the craft-loop row binds its three dials; the door judges brief/number/json + the requireds", () => {
+    const r = roots();
+    try {
+      const craft = SEED.get("craft-loop")!;
+      // THE REAL-ROW WALKER: the stage's $spell binding and the
+      // declaration it resolves against
+      const loopRow = craft.stages[0] as { params?: Record<string, unknown> };
+      assert.equal(loopRow.params?.["agent_prompt"], "$agent_prompt");
+      assert.equal(loopRow.params?.["command"], "$command");
+      assert.equal(loopRow.params?.["max_iterations"], "$max_iterations");
+      assert.deepEqual(craft.initialValidators, {
+        agent_prompt: "brief",
+        command: "json",
+        max_iterations: "number",
+      });
+      assert.deepEqual(craft.requiredInitials, ["agent_prompt", "command"]);
+
+      const command = { engine: "comfyui", params: { workflow: { a: 1 } } };
+      const good = {
+        agent_prompt: "a red cube on white, product-shot lighting",
+        command,
+        max_iterations: 4,
+      };
+      // the honest press passes the door
+      assert.equal(registryInitialsError(craft, good, r), null);
+
+      // requiredInitials: absent brief/command refuse BEFORE any run
+      // registers (fit-seat's GOOD shape — never the engine's
+      // sixty-seconds-in voice)
+      assert.match(
+        registryInitialsError(craft, { command }, r)!,
+        /"agent_prompt" is REQUIRED by the "craft-loop" flow/,
+      );
+      assert.match(
+        registryInitialsError(craft, { agent_prompt: "p" }, r)!,
+        /"command" is REQUIRED by the "craft-loop" flow/,
+      );
+      // an empty/whitespace brief takes the KIND's own voice
+      assert.match(
+        registryInitialsError(craft, { ...good, agent_prompt: "   " }, r)!,
+        /"agent_prompt" must be a non-empty brief/,
+      );
+
+      // brief: a number refuses; PROSE WITH PATH CHARS PASSES (no
+      // path law — the brief is data, "a 3/4 view, ../styled" is
+      // honest prose the text kind would mis-refuse)
+      assert.match(
+        registryInitialsError(craft, { ...good, agent_prompt: 42 }, r)!,
+        /"agent_prompt" must be a non-empty brief \(got number\)/,
+      );
+      assert.equal(
+        registryInitialsError(craft, { ...good, agent_prompt: "a 3/4 view, ../styled" }, r),
+        null,
+      );
+
+      // number: a digit-string REFUSES (send JSON numbers); the
+      // number passes
+      assert.match(
+        registryInitialsError(craft, { ...good, max_iterations: "4" }, r)!,
+        /"max_iterations" must be a finite number \(got string — send JSON numbers, not strings\)/,
+      );
+      assert.equal(registryInitialsError(craft, { ...good, max_iterations: 4 }, r), null);
+
+      // json: the object passes; its JSON-string spelling passes; a
+      // non-parsing string refuses; an array refuses. The WRONG
+      // inner shape ({engine, comfyui, workflow} — what FAILURES
+      // pressed) PASSES the door: the door judges parseability +
+      // objectness only, the ENGINE gate owns the {engine, params}
+      // row — the documented division of voices
+      assert.equal(
+        registryInitialsError(craft, { ...good, command: '{"engine":"comfyui","params":{}}' }, r),
+        null,
+      );
+      assert.match(
+        registryInitialsError(craft, { ...good, command: "{nope" }, r)!,
+        /"command" is a JSON string that does not parse/,
+      );
+      assert.match(
+        registryInitialsError(craft, { ...good, command: [1] }, r)!,
+        /"command" must be a JSON object or its string spelling/,
+      );
+      assert.equal(
+        registryInitialsError(craft, { ...good, command: { engine: "comfyui", comfyui: "x", workflow: {} } }, r),
+        null,
+      );
+    } finally {
+      dropRoots();
+    }
+  });
+
+  it("F58: the extractor rides TYPED values (the number 40 survives; the command object rides verbatim)", () => {
+    const craft = SEED.get("craft-loop")!;
+    const brief = "a red cube on white";
+    const command = { engine: "comfyui", params: { workflow: { a: 1 } } };
+    const out = extractRequestInitials(craft, {
+      agent_prompt: brief,
+      command,
+      max_iterations: 40,
+    });
+    assert.ok("initials" in out);
+    assert.equal(out.initials["agent_prompt"], brief);
+    assert.deepEqual(out.initials["command"], command);
+    assert.equal(out.initials["max_iterations"], 40);
+    assert.equal(typeof out.initials["max_iterations"], "number", "the NUMBER rides — the engine gate reads a number");
+    // the JSON-string spelling folds to the object at the door
+    const folded = extractRequestInitials(craft, {
+      agent_prompt: brief,
+      command: '{"engine":"comfyui","params":{}}',
+    });
+    assert.ok("initials" in folded);
+    assert.deepEqual(folded.initials["command"], { engine: "comfyui", params: {} });
+    // an omitted OPTIONAL initial stays absent (the engine's own
+    // default law owns it)
+    const bare = extractRequestInitials(craft, { agent_prompt: brief, command });
+    assert.ok("initials" in bare);
+    assert.ok(!("max_iterations" in bare.initials));
+    // the digit-string refuses at the EXTRACTOR too (the gate's belt)
+    const refused = extractRequestInitials(craft, { agent_prompt: brief, command, max_iterations: "40" });
+    assert.ok("refusal" in refused);
+    assert.match(refused.refusal, /"max_iterations" must be a finite number \(got string/);
   });
 });
 
@@ -661,6 +845,19 @@ describe("extractRequestInitials — the engine merge's linkable form", () => {
       normalizedInitialValue("params_json", "bake_params", (() => {}) as unknown as object),
       null,
     );
+    // the BRIEF null side: a non-string (or empty) brief normalizes
+    // to nothing, never a literal
+    assert.equal(normalizedInitialValue("agent_prompt", "brief", 42), null);
+    assert.equal(normalizedInitialValue("agent_prompt", "brief", "  "), null);
+    // the JSON null sides: a parsed non-object, an array value, and
+    // an unparsable string each normalize to nothing
+    assert.equal(normalizedInitialValue("command", "json", "42"), null);
+    assert.equal(normalizedInitialValue("command", "json", [1]), null);
+    assert.equal(normalizedInitialValue("command", "json", "{"), null);
+    assert.deepEqual(
+      normalizedInitialValue("command", "json", { engine: "comfyui" }),
+      { engine: "comfyui" },
+    );
   });
 
   it("extracts declared keys only; absent stays absent", () => {
@@ -685,7 +882,9 @@ describe("extractRequestInitials — the engine merge's linkable form", () => {
     // $prompt — neither a FromStage-wired input name nor a request
     // initial". This walks the registry and pins the law for every
     // card-bearing row, so a future row cannot repeat the hole.
-    const cardFlows = ["audio-native-tts", "image-upscale", "music-native", "body-to-somax"];
+    // (the retired wrappers left the walk 2026-11-14; every
+    // card-bearing survivor row stays judged)
+    const cardFlows = ["image-upscale", "character-factory", "object-forge"];
     for (const id of cardFlows) {
       const flow = SEED.get(id)!;
       const declared = Object.keys(flow.initialValidators);
@@ -705,15 +904,14 @@ describe("extractRequestInitials — the engine merge's linkable form", () => {
         }
       }
     }
-    // and the tts flow's own text initial LIFTS end to end (the key the
-    // tool face advertises — channel, initial, spell and caller key are
-    // all `text`, the anny-hmr convention)
-    const tts = SEED.get("audio-native-tts")!;
-    assert.deepEqual(extractRequestInitials(tts, { text: "hello world" }), {
-      initials: { text: "hello world" },
+    // and a live row's own initial LIFTS end to end (the key the
+    // tool face advertises — channel, initial, spell and caller key
+    // are one name, the anny-hmr convention; re-homed from the
+    // retired tts wrapper to image-upscale's make stage)
+    const upRow = SEED.get("image-upscale")!;
+    assert.deepEqual(extractRequestInitials(upRow, { prompt: "hello world" }), {
+      initials: { prompt: "hello world" },
     });
-    const toolRow = tts.tool as unknown as { required?: string[] } | null;
-    assert.deepEqual(toolRow?.required, ["text"]);
   });
 
   it("names the refusing initial in the door's own voice", () => {
@@ -818,9 +1016,9 @@ describe("registrySkillBody", () => {
     assert.ok(expandedText.includes("skip when initial 'starter_image' is present"));
     const text = registrySkillBody(skipFlow, SEED);
     assert.ok(text.includes("from anny-hmr-estimator/estimate"));
-    const tts = registrySkillBody(SEED.get("audio-native-tts")!, SEED);
-    assert.ok(tts.includes("card_io wav: audio"));
-    assert.ok(tts.includes("initial 'text'"), "the initial is named for the channel (2026-10-04)");
+    const tts = registrySkillBody(SEED.get("image-upscale")!, SEED);
+    assert.ok(tts.includes("card_io image: image"));
+    assert.ok(tts.includes("initial 'prompt'"), "the initial is named for the channel (the 2026-10-04 law)");
     const up = registrySkillBody(expandRegistryFlow(SEED.get("image-upscale")!, SEED), SEED);
     assert.ok(up.includes("stage "));
   });
@@ -1214,5 +1412,133 @@ describe("initialFileCandidates (the F5 claim probe's trees)", () => {
     } finally {
       dropRoots();
     }
+  });
+});
+
+// ── F57: the initial-key derivation (the leaf-naming law) ───────
+// Operator 2026-11-13: "single-stage flow initial keys are
+// UNDOCUMENTED — natural keys fail with internal errors … the error
+// text is the only teacher." The disclosure tier (summary rows,
+// load bundles, discover/load renders) all derive their key lists
+// HERE — requireds first, registry order within — so the taught
+// roster can never disagree with the validating one.
+describe("flowInitialKeys — F57 derivation", () => {
+  it("requireds lead, registry order within each half", () => {
+    const flow = {
+      id: "probe",
+      description: "d",
+      stages: [],
+      initialValidators: { photo: "photo", agent_prompt: "brief", command: "json" },
+      requiredInitials: ["command"],
+      tool: null,
+      skillRefs: [],
+    } as unknown as RegistryFlow;
+    assert.deepEqual(flowInitialKeys(flow), ["command", "photo", "agent_prompt"]);
+    // no requiredInitials → validator order, unchanged
+    const opt = {
+      id: "probe",
+      description: "d",
+      stages: [],
+      initialValidators: { b: "glb", a: "text" },
+      tool: null,
+      skillRefs: [],
+    } as unknown as RegistryFlow;
+    assert.deepEqual(flowInitialKeys(opt), ["b", "a"]);
+  });
+});
+
+// ── the anny-params typed-array seat (F57's owed half, the FAILURES.md
+// triage note: "the 139-float JSON-in-string transport stays fragile;
+// this cure documents the keys but does not build the seat") ──────
+// Two laws close it:
+//   SHAPE — the kind's gloss names the dialect doc (dialect,
+//   phenotype 11|6, local_changes | scale 139) and its OBJECT
+//   spelling, derived ONCE in the registry, so no face teaches a
+//   hand-typed JSON string;
+//   TRANSPORT — a REAL estimated doc (a 139-float scale array) rides
+//   the door as a JSON OBJECT, arrays as arrays, through the gate
+//   AND the extractor; the string spelling stays only as the
+//   engine-merge ride. Digit-string items refuse (send JSON
+//   numbers, never quoted ones).
+describe("initialKindGloss + flowInitialGlosses — the shape taught once", () => {
+  it("every kind the roster serves carries a non-empty gloss (a walker, never a frozen list)", () => {
+    const seat = seedFlowsSeat();
+    const kinds = new Set<string>();
+    for (const name of seat.names()) {
+      for (const kind of Object.values(seat.get(name)!.initialValidators)) kinds.add(kind);
+    }
+    assert.ok(kinds.size >= 6, `roster kinds: ${[...kinds].join(", ")}`);
+    for (const kind of kinds) {
+      const gloss = initialKindGloss(kind as never);
+      assert.ok(typeof gloss === "string" && gloss.trim() !== "", `kind ${kind} carries a gloss`);
+    }
+  });
+
+  it("bake_params names the dialect doc's own law + the OBJECT spelling", () => {
+    const gloss = initialKindGloss("bake_params");
+    // the shape: dialect, phenotype lengths, the two carry arms
+    assert.match(gloss, /dialect: 'authored'\|'estimated'/);
+    assert.match(gloss, /phenotype: number\[11 authored\|6 estimated\]/);
+    assert.match(gloss, /scale: number\[139\] \(estimated\)/);
+    assert.match(gloss, /local_changes\?: \{morph: number\}/);
+    // the transport: the OBJECT spelling taught, the string refused
+    assert.match(gloss, /send the doc as a JSON OBJECT, never a hand-typed string/);
+  });
+
+  it("flowInitialGlosses derives per key from the row (anny-params' spell verbatim)", () => {
+    const ap = SEED.get("anny-params")!;
+    assert.deepEqual(Object.keys(flowInitialGlosses(ap)), ["params_json"]);
+    assert.equal(flowInitialGlosses(ap)["params_json"], initialKindGloss("bake_params"));
+  });
+});
+
+describe("the bake_params OBJECT transport — arrays ride arrays (the typed-array seat)", () => {
+  const roots = () => ({ repoRoot: process.cwd(), stateRoot: tmpdir() });
+  // a REAL estimated doc: phenotype 6 + scale 139 — the exact
+  // re-instantiation the preset-load verb owes bit-exact
+  const estimatedDoc = (): Record<string, unknown> => ({
+    dialect: "estimated",
+    phenotype: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6],
+    scale: Array.from({ length: 139 }, (_v, i) => (i % 7) / 7),
+  });
+  const authoredDoc = (): Record<string, unknown> => ({
+    dialect: "authored",
+    phenotype: Array.from({ length: 11 }, () => 0.5),
+    local_changes: { jaw_width: 0.25 },
+  });
+
+  it("an estimated OBJECT doc (139-float scale array) passes the gate AND the extractor", () => {
+    const ap = SEED.get("anny-params")!;
+    const doc = estimatedDoc();
+    assert.equal(registryInitialsError(ap, { params_json: doc }, roots()), null);
+    const out = extractRequestInitials(ap, { params_json: doc });
+    assert.ok("initials" in out, JSON.stringify(out));
+    // the extracted string re-parses to the SAME doc — the merge
+    // ride never mangles the arrays
+    const rode = JSON.parse(out.initials["params_json"] as string) as Record<string, unknown>;
+    assert.equal(rode.dialect, "estimated");
+    assert.deepEqual(rode.phenotype, doc.phenotype);
+    assert.deepEqual(rode.scale, doc.scale);
+    assert.equal((rode.scale as number[]).length, 139);
+  });
+
+  it("an authored OBJECT doc with local_changes rides the same door", () => {
+    const ap = SEED.get("anny-params")!;
+    assert.equal(registryInitialsError(ap, { params_json: authoredDoc() }, roots()), null);
+  });
+
+  it("a digit-string item inside the arrays refuses (send JSON numbers, never quoted ones)", () => {
+    const ap = SEED.get("anny-params")!;
+    const doc = estimatedDoc();
+    (doc.scale as unknown[])[3] = "0.5";
+    const err = registryInitialsError(ap, { params_json: doc }, roots());
+    assert.match(err!, /scale\.3: Input should be a valid number/);
+  });
+
+  it("a function or array top-level shape still refuses the belt's own voice", () => {
+    const ap = SEED.get("anny-params")!;
+    const refused = extractRequestInitials(ap, { params_json: (() => {}) as unknown as string });
+    assert.ok("refusal" in refused);
+    assert.match(refused.refusal, /"params_json" must be a params_json string or object/);
   });
 });

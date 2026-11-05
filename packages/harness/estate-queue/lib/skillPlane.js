@@ -18,6 +18,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { benchPicksSync } from "./bench.js";
 import { appendLedger } from "./queue.js";
+import { writeAuthoredSkill } from "./skillAuthored.js";
 import { engineDirs, modelRows, cardRows, flowRows } from "./skillRows.js";
 // the extracted planes re-export through the skill plane's door
 export { disclosureRoot } from "./skillFs.js";
@@ -58,7 +59,28 @@ export function wireSkill(r) {
         out["step_count"] = r.stepCount;
     return out;
 }
-export function buildSkillIndex(repo) {
+/**
+ * The binding-vocabulary index (GET /v1/skills): the OWNING SURFACES'
+ * rows for the live bench's selection — one row per FAMILY and per
+ * CARD, plus the flow count. Never a skill-id listing (the
+ * no-dump rework, 2026-09-21).
+ *
+ * @param repo the disclosure root the walks read (engines, cards,
+ * flows).
+ * @param queueStateRoot the queue seat's state root — the ONE-ROOT
+ * law's reader half (audit 2026-10-31 §8.3, the skillPlane
+ * reader/root orphan): the estate composition derives the drafts
+ * WRITER's storage tree from this same root
+ * (`storageRoot: join(stateRoot, "storage")`, melite-estate
+ * index.ts:676), so the reader follows the writer at every
+ * deployment shape — a config.stateRoot pin and the cold-profile
+ * default both re-seat reader and writer together. Undefined: the
+ * direct-caller fallback (the store's own default law, the
+ * repo-relative tree) — a lane with no queue seat has no writer
+ * either.
+ * @returns the index envelope (count, families, cards, flows).
+ */
+export function buildSkillIndex(repo, queueStateRoot) {
     const engines = engineDirs(join(repo, "packages", "engines"));
     const families = new Map();
     const cards = new Map();
@@ -70,14 +92,17 @@ export function buildSkillIndex(repo) {
         // vocabulary door is melite_discover (a paid tool call), never
         // this index. The full-catalog dump below was the last leak —
         // it handed the agent every card entrance for one cheap scan.
-        // ONE ROOT (audit 004/C1): the bench reader rides the WRITER's
-        // tree — <repoRoot>/data/runs/storage/drafts/docs, the same
-        // resolution as the estate's drafts mount (resolveStateRoot's
-        // default law; a config.stateRoot override deployment pins the
-        // same root on both sides through its own config). The
-        // MELITE_BENCH_STORAGE seam (race-class rec 1, debt 11) moves
-        // writer AND reader together — never the reader alone.
-        const picks = benchPicksSync(process.env["MELITE_BENCH_STORAGE"] ?? join(repo, "data", "runs", "storage"));
+        // ONE ROOT (audit 004/C1; the §8.3 orphan cure): the bench
+        // reader rides the WRITER's tree, <queueStateRoot>/storage —
+        // the same derivation the composition hands the drafts row
+        // (one root spelled once per side, one identity behind both).
+        // The MELITE_BENCH_STORAGE seam (race-class rec 1, debt 11)
+        // still moves writer AND reader together — never the reader
+        // alone; the walls pin it over any caller root.
+        const writerRoot = queueStateRoot === undefined ? undefined : join(queueStateRoot, "storage");
+        const picks = benchPicksSync(process.env["MELITE_BENCH_STORAGE"] ??
+            writerRoot ??
+            join(repo, "data", "runs", "storage"));
         const pickedCards = new Set(picks.map((p) => p.card).filter((c) => c !== null));
         const pickedModels = new Set(picks.map((p) => p.model).filter((m) => m !== null));
         const selectionEmpty = pickedCards.size === 0 && pickedModels.size === 0;
@@ -93,7 +118,7 @@ export function buildSkillIndex(repo) {
             };
         }
         for (const engine of engines) {
-            for (const r of modelRows(engine)) {
+            for (const r of modelRows(engine, queueStateRoot)) {
                 if (r.row.scope.endsWith("-spawn"))
                     continue;
                 const mid = r.row.model;
@@ -162,7 +187,7 @@ export function buildSkillIndex(repo) {
 /** @param modelsSeat the context's models service when mounted — the
  *  flow rows compose from the seat the runs doors thread (the
  *  lane-seat law); the booted singleton otherwise */
-export function findSkill(repo, sid, modelsSeat, flowsSeat) {
+export function findSkill(repo, sid, modelsSeat, flowsSeat, stateRoot) {
     for (const fr of flowRows(repo, modelsSeat, flowsSeat)) {
         if (fr.row.id === sid) {
             return { row: fr.row, path: fr.bodyPath, bodyText: fr.bodyText };
@@ -170,7 +195,7 @@ export function findSkill(repo, sid, modelsSeat, flowsSeat) {
     }
     const engines = engineDirs(join(repo, "packages", "engines"));
     for (const engine of engines) {
-        for (const r of modelRows(engine)) {
+        for (const r of modelRows(engine, stateRoot)) {
             if (r.row.id === sid)
                 return { row: r.row, path: r.bodyText === undefined ? r.path : null, bodyText: r.bodyText ?? null };
         }
@@ -188,7 +213,7 @@ export function findSkill(repo, sid, modelsSeat, flowsSeat) {
  *  same seat-threading law as findSkill) */
 export function hSkillRead(repo, stateRoot, sid, modelsSeat, flowsSeat) {
     try {
-        const found = findSkill(repo, sid, modelsSeat, flowsSeat);
+        const found = findSkill(repo, sid, modelsSeat, flowsSeat, stateRoot);
         if (found === null) {
             return { status: 404, payload: { error: "no such skill: " + JSON.stringify(sid) } };
         }
@@ -264,6 +289,31 @@ export function hSkillRead(repo, stateRoot, sid, modelsSeat, flowsSeat) {
         if (!(e instanceof LaneWireError))
             throw e;
         return { status: 500, payload: { error: e.message } };
+    }
+}
+/** POST /v1/skills: land one authored skill doc (the agent's write
+ *  door — melite_skill_write). The doc lands in the state root's
+ *  authored plane and the same walk that serves tracked skills serves
+ *  it: written and read are one law. The write ledgers skill.write,
+ *  so which skills the agent authored is auditable exactly as which
+ *  it read.
+ *  @param repo the checkout root (the family seat is verified there)
+ *  @param stateRoot the estate's state root
+ *  @param draft the skill as the door's caller stated it
+ *  @returns 200 with the served answer, or 400 carrying the refusal
+ *    voice (missing field, unsafe leaf, unseated family, or an
+ *    existing doc without replace) */
+export function hSkillWrite(repo, stateRoot, draft) {
+    try {
+        const written = writeAuthoredSkill(repo, stateRoot, draft);
+        appendLedger(stateRoot, "skill.write", { id: written.id, path: written.path, replaced: written.replaced });
+        return { status: 200, payload: written };
+    }
+    catch (e) {
+        return {
+            status: 400,
+            payload: { error: e instanceof Error ? e.message : String(e) },
+        };
     }
 }
 //# sourceMappingURL=skillPlane.js.map

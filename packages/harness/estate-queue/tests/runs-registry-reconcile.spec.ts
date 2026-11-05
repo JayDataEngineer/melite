@@ -96,7 +96,7 @@ const seatAt = (state: string, cardOver: Record<string, (...args: never[]) => un
 const inlineBody = (over: Record<string, unknown> = {}): Record<string, unknown> => ({
   draft_id: "d1",
   test: false,
-  flow_inline: { id: "x", stages: [{ id: "s", engine: "comfyui" }] },
+  flow_inline: { id: "x", stages: [{ id: "s", engine: "comfyui", outputs: { out: "image" } }] },
   ...over,
 });
 
@@ -170,7 +170,7 @@ const wfBody82 = (): Record<string, unknown> =>
   inlineBody({
     flow_inline: {
       id: "x",
-      stages: [{ id: "s", engine: "comfyui", params: WF }],
+      stages: [{ id: "s", engine: "comfyui", params: WF, outputs: { out: "image" } }],
     },
   });
 
@@ -820,6 +820,7 @@ describe("the writer's own bytes survive the process", () => {
             {
               id: "s",
               engine: "comfyui",
+              outputs: { out: "image" },
               params: { workflow: { "1": { class_type: "UNETLoader", inputs: { prompt: blob } } } },
             },
           ],

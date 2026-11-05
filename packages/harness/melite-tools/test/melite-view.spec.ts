@@ -1345,3 +1345,64 @@ describe('melite_view vocabularies — the SSOT fold (dry-reaudit N4, 2026-11-12
     assert.equal(imageMediaTypeForPath('hero.gif'), 'image/gif')
   })
 })
+
+// @contract melite-view-gaps5-fallthrough
+describe('melite_view GAPS-5 — the newest-unopenable fall-through (qa8 receipt run-af77bdd6136b)', () => {
+  // THE RECEIPT SHAPE: the run held a valid mp4 (`…_swap_003.mp4`)
+  // beside a NEWER `cut_source.webm` the in-repo probe cannot read;
+  // the old newest-only pick probed the webm, refused, and never tried
+  // the mp4. The wall mounts the tool's media-selection seam (the real
+  // walk over a real runs tree, the real TypeScript probe, the render
+  // seam faked) and asserts the first OPENABLE media is viewed.
+  const sheet: MediaSheetRender = async () => PNG_BYTES
+  const JUNK_WEBM = 'this webm is not a container the probe knows'
+
+  beforeAll(() => {
+    const dir = join(root, 'output', 'run-af77bdd6136b-qa8')
+    mkdirSync(dir, { recursive: true })
+    copyFileSync(new URL('./fixtures/film-2s.mp4', import.meta.url), join(dir, 'trailer_swap_003.mp4'))
+    writeFileSync(join(dir, 'cut_source.webm'), JUNK_WEBM)
+    // the webm is NEWEST (the receipt's order: the cure must skip it)
+    utimesSync(join(dir, 'trailer_swap_003.mp4'), new Date('2026-01-01T00:00:00Z'), new Date('2026-01-01T00:00:00Z'))
+    utimesSync(join(dir, 'cut_source.webm'), new Date('2026-01-02T00:00:00Z'), new Date('2026-01-02T00:00:00Z'))
+    // the all-unopenable twin: a newer junk webm over an older junk mp4
+    const bare = join(root, 'output', 'run-bad0bad0-nofilm')
+    mkdirSync(bare, { recursive: true })
+    writeFileSync(join(bare, 'old_cut.mp4'), 'not a container either')
+    writeFileSync(join(bare, 'cut_source.webm'), JUNK_WEBM)
+    utimesSync(join(bare, 'old_cut.mp4'), new Date('2026-01-01T00:00:00Z'), new Date('2026-01-01T00:00:00Z'))
+    utimesSync(join(bare, 'cut_source.webm'), new Date('2026-01-02T00:00:00Z'), new Date('2026-01-02T00:00:00Z'))
+  })
+
+  test('a newer unopenable .webm falls through to the older openable .mp4', async () => {
+    const { ctx, attachments } = fakeCtx()
+    const out = await meliteView(ctx, sheet).execute({ run_id: 'run-af77bdd6136b-qa8' }, visualExec as never) as ViewedImageValue
+    assert.equal(out.film!.file, 'trailer_swap_003.mp4', 'the first OPENABLE media is viewed, not the newest file')
+    assert.equal(out.url, '/melite-media/runs/run-af77bdd6136b-qa8/trailer_swap_003.mp4')
+    assert.equal(out.image!.name, 'trailer_swap_003-sheet.png')
+    assert.equal(out.film!.duration_s, 2, 'the probe verdict rides the served row')
+    assert.equal(attachments.saved.length, 1)
+  })
+
+  test('an explicit artifact still wins: it selects its match, probed alone', async () => {
+    const { ctx } = fakeCtx()
+    const tool = meliteView(ctx, sheet)
+    // naming the mp4 selects it despite the newer webm
+    const named = await tool.execute({ run_id: 'run-af77bdd6136b-qa8', artifact: 'swap_003' }, visualExec as never) as ViewedImageValue
+    assert.equal(named.film!.file, 'trailer_swap_003.mp4')
+    // naming the webm refuses with the webm's own voice — no silent
+    // fall-through to the openable mp4 past an explicit selection
+    await assert.rejects(
+      tool.execute({ run_id: 'run-af77bdd6136b-qa8', artifact: 'cut_source' }, visualExec as never),
+      /cannot view the film "cut_source\.webm": the media probe recognized neither/,
+    )
+  })
+
+  test('all-unopenable keeps the exact-container refusal words, naming the newest', async () => {
+    const { ctx } = fakeCtx()
+    await assert.rejects(
+      meliteView(ctx, sheet).execute({ run_id: 'run-bad0bad0-nofilm' }, visualExec as never),
+      /cannot view the film "cut_source\.webm": the media probe recognized neither an MP4\/MOV container nor a RIFF\/WAVE stream/,
+    )
+  })
+})

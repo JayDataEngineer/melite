@@ -87,7 +87,10 @@ describe("the runs door through the lane's models seat", () => {
     // surfaced only when this suite next ran (the boarding wave never
     // did); the count now names the booted truth again.
     // 32 -> 33 (2026-10-27, the swap family: viggle-animate, audit 023).
-    assert.equal(seat.allDecls().length, 32, "the booted table, not a bare service (the FAMILY_PKGS census)"); // 33 -> 32 (2026-11-12): the openjutsu lane deleted — viggle-animate dies
+    // 33 -> 32 (2026-11-12): the openjutsu lane deleted — viggle-animate dies.
+    // 32 -> 31 (2026-11-01, the blender-lane removal): anycreature dies
+    // with the species lane (RayCreatureRigBridge, the pack side).
+    assert.equal(seat.allDecls().length, 31, "the booted table, not a bare service (the FAMILY_PKGS census)");
     const err = await remote(() =>
       svc.start({ draft_id: "d1", test: false, flow: "fit-seat" }, new AbortController().signal),
     );
@@ -197,7 +200,7 @@ describe("the runs door through the lane's models seat", () => {
           test: false,
           flow_inline: {
             id: "not-a-registry-flow",
-            stages: [{ id: "s", engine: "comfyui", params: { workflow: { "1": { class_type: "UNETLoader", inputs: {} } } } }],
+            stages: [{ id: "s", engine: "comfyui", outputs: { out: "image" }, params: { workflow: { "1": { class_type: "UNETLoader", inputs: {} } } } }],
           },
         },
         new AbortController().signal,
@@ -215,7 +218,7 @@ describe("the runs door through the lane's models seat", () => {
           test: false,
           flow_inline: {
             id: 42 as unknown as string,
-            stages: [{ id: "s", engine: "comfyui", params: { workflow: { "1": { class_type: "UNETLoader", inputs: {} } } } }],
+            stages: [{ id: "s", engine: "comfyui", outputs: { out: "image" }, params: { workflow: { "1": { class_type: "UNETLoader", inputs: {} } } } }],
           },
         },
         new AbortController().signal,
@@ -231,7 +234,7 @@ describe("the runs door through the lane's models seat", () => {
           draft_id: "d1",
           test: false,
           flow_inline: {
-            stages: [{ id: "s", engine: "comfyui", params: { workflow: { "1": { class_type: "UNETLoader", inputs: {} } } } }],
+            stages: [{ id: "s", engine: "comfyui", outputs: { out: "image" }, params: { workflow: { "1": { class_type: "UNETLoader", inputs: {} } } } }],
           },
         },
         new AbortController().signal,

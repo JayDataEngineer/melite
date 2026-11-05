@@ -21,6 +21,7 @@ import { benchResultDefects } from "@melite/contracts/benchResult";
 import { remoteErrorOf } from "@deepseek-ai/dsh-typert-protocol";
 import { needComfyUI } from "@melite/comfyui-cordis";
 import type { EngineJson } from "@melite/comfyui-cordis";
+import { STAGE_RESERVED_PARAMS } from "@melite/comfyui-cordis";
 import {
   expandRegistryFlow,
   FlowsSeatService,
@@ -56,6 +57,7 @@ import { applyFlowParamsOverride, overlayDecls } from "./flowsParamsOverlay.ts";
 export { toRemoteError } from "./runsRefusalVoices.ts";
 import { readFileSync } from "node:fs";
 import {
+  CARD_ENVELOPE_KEYS,
   CardArmError,
   liftCardParams,
   type Phase1Card,
@@ -79,7 +81,7 @@ import {
   RUN_STATUSES,
 } from "./runsTypes.ts";
 import type { RunRecord } from "./runsTypes.ts";
-import { runOne, runEngine as runEngineOf } from "./runsExecute.ts";
+import { runOne, runEngine as runEngineOf, stampUnansweredRows } from "./runsExecute.ts";
 import { engineFilmName } from "./filmLead.ts";
 import { validate as validateArm, modelValidateArm } from "./runsValidateArms.ts";
 import { BENCH_DRAFT_PREFIX_RE, benchDraftIdOf } from '@melite/contracts/benchStage'
@@ -421,6 +423,12 @@ function curatedBenchLog(stageCount: number): void {
     " composed stage(s) with their FromStage links riding as stage inputs",
   );
 }
+
+/** The estate run-id grammar (queueCore's newRunId mint:
+ *  run-<12hex>-<8hex>, plus the seed sweep's `-s<k>` family seat).
+ *  The upscale door's ONLY registry-resolving spelling — every other
+ *  chain_run value is a store name and passes untouched. */
+const ESTATE_RUN_ID_RE = /^run-[0-9a-f]+(?:-[0-9a-f]+)*(?:-s\d+)?$/;
 
 /** The card plane's engine is the CONTRACT's (benchStage.ts) — the
  *  bench is the card bench, and that is where it is stated. This arm
@@ -773,15 +781,34 @@ export class RunsRuntimeService extends Service {
     const params = (typeof row["params"] === "object" && row["params"] !== null && !Array.isArray(row["params"]))
       ? { ...(row["params"] as Record<string, unknown>) }
       : {};
+    // THE STAGE-RESERVED CARRY (F-C, 2026-11-13): the merge plane's
+    // stage-policy keys (comfyui-merge.ts STAGE_RESERVED_PARAMS — the
+    // unload boundary's knob, the merged VRAM budget) live on the
+    // STAGE row, not the card surface. Admission stays the declared
+    // CARD law, so the reserved keys are lifted OUT of the compose
+    // walk here (phase 1 would refuse them as undeclared card params —
+    // the live P7 press's refusal) and carried back onto the COMPOSED
+    // row's params additively, so planMerge's paramsByStage reads the
+    // bag the bench stored. The copy above keeps the original row
+    // untouched; the graph receipt below still judges the doc
+    // verbatim.
+    const reserved: Record<string, unknown> = {};
+    for (const k of STAGE_RESERVED_PARAMS) {
+      if (params[k] !== undefined) {
+        reserved[k] = params[k];
+        delete params[k];
+      }
+    }
     const card = String(row["card"] ?? "");
     // STROKE 3'S FALLBACK (the validate walk's own shape —
     // runsValidateArms: a family-less card stage composes by its OWN
     // card id — mid alone, never an injected body.model, which would
     // hit the board check before prepareCardParams resolved the
     // card-unit arm). The old `?? ""` handed prepareCardParams an
-    // empty mid — "model id \"\" is not a legal identifier" on the
-    // body-to-somax rig hop and every family-less flow stage after
-    // it (the af-move commission's stop, 2026-10-09).
+    // empty mid — "model id \"\" is not a legal identifier" on a
+    // family-less flow stage's card hop (the af-move commission's
+    // stop, 2026-10-09; the body-to-somax wrapper row that burned
+    // there died 2026-11-14, flows-are-compositions).
     // THE ROUTING-KEY STAMP (2026-10-12 hunt, finding 1): when the
     // effective routing key rode an EXPLICIT spelling — params.model
     // or the row's service key — the compose lanes that value while
@@ -836,6 +863,10 @@ export class RunsRuntimeService extends Service {
         { loc: "stages" },
       );
     }
+    // THE INITIAL-TENSOR REFUSAL (the initial-grammar law, audit
+    // 2026-11-14-initial-grammar-gap) rides AFTER phase2, on the
+    // composed graph — the seat a spell lands in is only visible
+    // there. See the gate below the phase try/catch.
     let p1: Phase1Card;
     let composed: Awaited<ReturnType<typeof cards.phase2Card>>;
     try {
@@ -893,20 +924,99 @@ export class RunsRuntimeService extends Service {
       }
       throw e;
     }
-    const stageOutputs = (typeof row["outputs"] === "object" && row["outputs"] !== null && !Array.isArray(row["outputs"])
+    // THE INITIAL-TENSOR REFUSAL (the initial-grammar law, audit
+    // 2026-11-14-initial-grammar-gap): a $spell bound to an INITIAL
+    // resolves at the merge to the initial's VALUE — legal on a
+    // value seat (a STRING/INT/FLOAT dial) or a Load* file slot, a
+    // BURN on a tensor slot (the F48 voices→ref_audios class: the
+    // node received a string where the engine wants a link —
+    // TypeError at run time, after the kind gate stayed green). The
+    // SEAT is only visible in the composed graph, so the gate rides
+    // after phase2, judging every initial-bound spell against the
+    // engine's own served slot types (the live /object_info census —
+    // the same table the pack gate refuses closed on). This is the
+    // mirror of the merge's ROW-4 file-slot gate
+    // (comfyui-merge.ts): ROW-4 refuses a producer LINK in a Load*
+    // slot; this refuses an initial VALUE in a tensor slot. The
+    // media KIND cannot judge this — rig's mesh_glb is a "mesh"
+    // port that legally takes an initial $glb (a LoadGLB path seat;
+    // the rig card's auto lane runs green) while upscale's
+    // input_image tensor seat refuses the same shape.
+    {
+      const census = cards.objectInfo();
+      if (census !== null) {
+        const initialBound: Set<string> = new Set();
+        if (typeof row["inputs"] === "object" && row["inputs"] !== null && !Array.isArray(row["inputs"])) {
+          for (const [wire, edge] of Object.entries(row["inputs"] as Record<string, unknown>)) {
+            if (typeof edge === "object" && edge !== null && !Array.isArray(edge) &&
+              typeof (edge as Record<string, unknown>)["initial"] === "string") {
+              initialBound.add(wire);
+            }
+          }
+        }
+        if (initialBound.size > 0) {
+          const VALUE_SLOT_TYPES: ReadonlySet<string> = new Set(["STRING", "INT", "FLOAT", "BOOLEAN"]);
+          const wf = (composed.graph ?? {}) as Record<string, { class_type?: unknown; inputs?: unknown }>;
+          for (const node of Object.values(wf)) {
+            const cls = String(node["class_type"] ?? "");
+            if (cls.startsWith("Load")) continue;
+            const info = (census as Record<string, { input?: { required?: Record<string, unknown>; optional?: Record<string, unknown> } }>)[cls]?.input;
+            const ins = node["inputs"];
+            if (typeof ins !== "object" || ins === null || Array.isArray(ins)) continue;
+            for (const [slot, val] of Object.entries(ins as Record<string, unknown>)) {
+              if (typeof val !== "string" || !val.startsWith("$") || val.length < 2) continue;
+              if (!initialBound.has(val.slice(1))) continue;
+              const decl = info?.required?.[slot] ?? info?.optional?.[slot];
+              // a type tuple ["IMAGE", {…}] declares its slot type; a
+              // combo list (nested array) or an absent entry takes a
+              // value by construction — never refused here. A "*"
+              // wildcard is a LINK seat the node's own code types
+              // (the reference bundle's inputs) — an initial VALUE
+              // there is the F48 burn class, so it refuses too.
+              const slotType = Array.isArray(decl) && typeof decl[0] === "string" ? decl[0] : null;
+              if (slotType === null || VALUE_SLOT_TYPES.has(slotType)) continue;
+              throw new RemoteError(
+                "runs/invalid-request",
+                label + JSON.stringify(id) + ": node " + JSON.stringify(cls) +
+                  " input " + JSON.stringify(slot) + " carries " + val +
+                  " but input " + JSON.stringify(val.slice(1)) +
+                  " is an initial binding — the initial's VALUE would land in the engine's " +
+                  JSON.stringify(slotType) + " slot, which wants a link (a tensor seat needs a producer). " +
+                  "Wire the input from a prior stage's output, or feed the file through the card's own loader param.",
+                { loc: "stages" },
+              );
+            }
+          }
+        }
+      }
+    }
+    const rowOutputs = (typeof row["outputs"] === "object" && row["outputs"] !== null && !Array.isArray(row["outputs"])
       && Object.keys(row["outputs"] as Record<string, unknown>).length > 0)
       ? { ...(row["outputs"] as Record<string, unknown>) }
-      // THE BENCH'S OUTPUTS WIN ONLY WHEN THEY CARRY CHANNELS
-      // (the work audit's R1 — a regression the card-ports law
-      // introduced here): a card stage's stored outputs are `{}` by
-      // design (the channels derive from the card's own ports at
-      // compose), and this line kept that `{}` verbatim — so the
-      // merged worker published ZERO channels and every $spell
-      // consumer downstream got nothing where the old fabricated
-      // `{default: 'image'}` at least published one. An EMPTY
-      // channel map means "unfilled": the compose's own ports
-      // answer, exactly as the single-card path already does.
-      : composed.outputs;
+      : undefined;
+    const rowCardIo = (typeof row["card_io"] === "object" && row["card_io"] !== null && !Array.isArray(row["card_io"])
+      && Object.keys(row["card_io"] as Record<string, unknown>).length > 0)
+      ? { ...(row["card_io"] as Record<string, unknown>) }
+      : undefined;
+    const composedOuts = (typeof composed.outputs === "object" && composed.outputs !== null
+      && Object.keys(composed.outputs as Record<string, unknown>).length > 0)
+      ? { ...(composed.outputs as Record<string, unknown>) }
+      : undefined;
+    const cardDeclaredOuts: unknown = cards.defsSync().get(card)?.flowKinds?.outputs;
+    const cardDeclared = (typeof cardDeclaredOuts === "object" && cardDeclaredOuts !== null
+      && Object.keys(cardDeclaredOuts as Record<string, unknown>).length > 0)
+      ? { ...(cardDeclaredOuts as Record<string, unknown>) }
+      : undefined;
+    const stageOutputs: Record<string, unknown> =
+      // THE ONE TABLE (2026-11-01): the bench's outputs win when
+      // they carry channels (the work audit's R1 — preserved: a
+      // regression the card-ports law introduced here), then the
+      // compose's own ports (the card's bindings, the mask-produce
+      // law's seat), then the row's declared cardIo table, then the
+      // card's declared output kinds. An EMPTY channel map means
+      // "undeclared" at every leg — the start door refuses it loud
+      // (never a fabricated {default: <engine kind>}).
+      rowOutputs ?? composedOuts ?? rowCardIo ?? cardDeclared ?? {};
     // THE OUTPUT RENAME FOLLOWS THE BINDINGS (the run-9f8bd60f8cb8
     // receipt-gate cure, 2026-10-09): a row may rename the card's
     // channels (outputs {body: "mesh"} over the card's own
@@ -954,12 +1064,15 @@ export class RunsRuntimeService extends Service {
       params: {
         workflow: composed.graph as unknown as EngineJson,
         output_nodes: (renamedAny ? renamedNodes : cardNodes) as unknown as EngineJson,
+        // THE STAGE-RESERVED CARRY (F-C): the merge plane's own keys
+        // ride beside the composed graph — additive, never a card key.
+        ...reserved,
       },
       // THE DECLARED INPUT KINDS RIDE (2026-10-04): the compiler reads
       // `expected` for its kindsOk walk and defaults an absent bag to
       // {} — so a composed stage that dropped it would compile with NO
       // kind assertion on its own inputs. The registry rows declare
-      // them (audio-native-tts: { text: "text" }), and the check is
+      // them (anny-hmr-estimator: { photo: "photo" }), and the check is
       // theirs, not the composer's to discard.
       //
       // THE KINDS PROJECTION (audit J-E1, 2026-10-22): the derivation
@@ -987,8 +1100,9 @@ export class RunsRuntimeService extends Service {
    *  registryFlowToInline with its `card` references INTACT, and the
    *  inline compiler refuses a `card=` stage (runsStart.ts:184-192,
    *  the 2026-09-25 multi-stage boundary stamp) — so every card-
-   *  bearing flow (audio-native-tts, image-upscale, music-native,
-   *  body-to-somax) could validate but never start, and an app
+   *  bearing flow (image-upscale and the wrapper rows of the
+   *  era — audio-native-tts/music-native/body-to-somax, since
+   *  retired 2026-11-14) could validate but never start, and an app
    *  calling a named flow got 400 runs/preview-scope.
    *
    *  The bench run already proved multi-stage card execution on the
@@ -1009,15 +1123,22 @@ export class RunsRuntimeService extends Service {
      *  for every composed card stage (composeCardStageRow's seat). */
     receiptsOut?: Record<string, GraphReceiptStageRow>,
   ): Promise<Record<string, unknown>> {
-    const rows = inlineDoc["stages"];
-    // registryFlowToInline always projects an array of object rows, so
-    // the non-array answer needs no second shape (the compile-time
-    // gate below judges the same value).
-    if (!Array.isArray(rows)) return inlineDoc;
+    // registryFlowToInline always projects an array of object rows
+    // and the raw door's junkFree gate admits only arrays of object
+    // rows — the non-array fallback never fires (the bench twin's
+    // own pruned dead leg, composeBenchStages). The assertion names
+    // the callers' guaranteed shape, never unknown (the sniff wall
+    // counts as-unknown sites against the baseline).
+    const rows = inlineDoc["stages"] as Array<Record<string, unknown>>;
     const out: Array<Record<string, unknown>> = [];
     for (const [i, st] of rows.entries()) {
-      if (typeof st !== "object" || st === null) continue;
-      const row = st as Record<string, unknown>;
+      const item: unknown = st;
+      /* v8 ignore next -- both callers guarantee object rows (the
+       * projection above, the raw door's junkFree gate), so the junk
+       * skip never fires here — the walk's belt for a caller that
+       * skips the gates. */
+      if (typeof item !== "object" || item === null) continue;
+      const row = item as Record<string, unknown>;
       const card = typeof row["card"] === "string" ? row["card"] : "";
       const id = typeof row["id"] === "string" && row["id"] !== "" ? row["id"] : "s_" + String(i);
       out.push(
@@ -1087,6 +1208,59 @@ export class RunsRuntimeService extends Service {
     /** INTERNAL (stroke 83 boot resurrect): reuse a dead process's
      *  run id when replaying its _request.json — the remote surface
      *  never passes this (two-arg wire calls only). */
+    reuse?: { runId: RunId },
+  ): Promise<PressStartSummary> {
+    try {
+      return await this.startInner(doc, signal, reuse);
+    } catch (error: unknown) {
+      this.ledgerPressRefused(doc, error, reuse);
+      throw error;
+    }
+  }
+
+  /** THE REFUSED-PRESS ECHO (the lost sfx run, 2026-11-03 — the
+   *  operator's law: "IF SOMETHING GENERATES WITHOUT THE UNDERLYING
+   *  DATA, THAT IS AN EXTREME ERROR THAT CAUSES WORK THAT CANNOT BE
+   *  RECOVERED"). A press that refuses at this door registers
+   *  NOTHING — no run row, no _request.json, no ledger line — so the
+   *  intent existed only in the GUI's transient state and the work
+   *  was unrecoverable exactly. The press itself is journalled here:
+   *  one append-only `press.refused` row with the refusal's code +
+   *  voice and a capped echo of the pressed body, so "what did I
+   *  press and why did it die" is one grep away forever, on every
+   *  refused press. NEVER throws (the refusal rides; the echo is
+   *  evidence, never a second failure). A replay's refusal carries
+   *  `replay_of` — the run row settles its own loud failure (stroke
+   *  83); this row journals the press attempt itself.
+   *  @param doc the pressed body (echoed capped — media never rides
+   *  bodies, but an inline doc can be large)
+   *  @param error the door's refusal (or any throw — the echo is
+   *  honest for transport faults too)
+   *  @param reuse the replay marker when the press is a boot replay */
+  private ledgerPressRefused(doc: unknown, error: unknown, reuse?: { runId: RunId }): void {
+    try {
+      const stateRoot: string = this.ctx.queue.stateRoot;
+      const remote = remoteErrorOf(error);
+      const body: string = JSON.stringify(doc) ?? "unserializable";
+      const CAPPED = 4000;
+      appendLedger(stateRoot, "press.refused", {
+        code: remote?.code ?? "throw",
+        voice: errText(error).slice(0, 400),
+        draft_id: typeof doc === "object" && doc !== null
+          ? (((doc as Record<string, unknown>)["draft_id"] as string | undefined) ?? null)
+          : null,
+        ...(reuse !== undefined ? { replay_of: reuse.runId } : {}),
+        request: body.length > CAPPED ? body.slice(0, CAPPED) + "…+trunc" : body,
+      });
+    } catch {
+      /* the echo never replaces the refusal (appendLedger already
+       * self-swallows I/O; this guards the stateRoot read itself) */
+    }
+  }
+
+  private async startInner(
+    doc: unknown,
+    signal: AbortSignal,
     reuse?: { runId: RunId },
   ): Promise<PressStartSummary> {
     signal.throwIfAborted();
@@ -1376,25 +1550,35 @@ export class RunsRuntimeService extends Service {
     // row says so.
     let benchDoc: Record<string, unknown> | undefined;
     const benchWarnings: string[] = [];
-    try {
-      // R7 CURE (round-14 race audit, LOW — the run-press live alias):
-      // the drafts read answers the CACHED doc by reference (the
-      // cached-object law), so composing + snapshotting from it naked
-      // let a mutation landing between press and snapshot straddle
-      // the two (a snapshot that was not quite a snapshot). The
-      // press now owns a DEEP copy: what the run composes and what
-      // the sidecar snapshots is the SAME frozen instant, no matter
-      // what the live bench does next.
-      benchDoc = structuredClone(
-        await this.ctx.draftsRemote.get(checked.draftId, signal),
-      ) as Record<string, unknown>;
-    } catch (e: unknown) {
-      benchDoc = undefined;
-      benchWarnings.push(
-        "bench snapshot read failed at press (" +
-        (e instanceof Error ? e.message : String(e)) +
-        ") — only the card snapshot rode; restore reconstructs from the live bench",
-      );
+    // THE FLOW-DOC EXEMPTION'S READ GATE (flows-are-compositions
+    // slice C): a {flow}/{flow_inline} press with no draft_id has no
+    // bench to snapshot — skipping the read is the legal shape, not
+    // an outage, so no warning rides (the run row is the record;
+    // restore reconstructs from the live registry, the run-rooted
+    // face Slice A served). A PRESENT draft_id (the materialized
+    // bench the melite_flow press lands) snapshots exactly as the
+    // card arm does.
+    if (checked.draftId !== undefined) {
+      try {
+        // R7 CURE (round-14 race audit, LOW — the run-press live alias):
+        // the drafts read answers the CACHED doc by reference (the
+        // cached-object law), so composing + snapshotting from it naked
+        // let a mutation landing between press and snapshot straddle
+        // the two (a snapshot that was not quite a snapshot). The
+        // press now owns a DEEP copy: what the run composes and what
+        // the sidecar snapshots is the SAME frozen instant, no matter
+        // what the live bench does next.
+        benchDoc = structuredClone(
+          await this.ctx.draftsRemote.get(checked.draftId, signal),
+        ) as Record<string, unknown>;
+      } catch (e: unknown) {
+        benchDoc = undefined;
+        benchWarnings.push(
+          "bench snapshot read failed at press (" +
+            (e instanceof Error ? e.message : String(e)) +
+            ") — only the card snapshot rode; restore reconstructs from the live bench",
+        );
+      }
     }
     // THE ONE RUN ID, MINTED ONCE (the operator's live refusal,
     // 2026-09-28: "run sources resolve nowhere (1 dead:
@@ -1460,6 +1644,78 @@ export class RunsRuntimeService extends Service {
     let benchComposed = false;
     if (selected.door === "draft" && benchDoc !== undefined) {
       const wired = benchWiring(benchDoc);
+      // THE CLAIMED-STAGE PRESS (the ghost-run burn, 2026-11-19:
+      // "running flows that don't show up on the bench"). A body
+      // carrying bench_stage_id names the ONE row the caller
+      // pressed — until now this door ignored the claim and
+      // composed the WHOLE bench into one merged run: every
+      // sibling stage re-executed on the GPU, the run's stage
+      // digest named every row (so a failure poisoned every
+      // tile's last_run), and the settle mirror stamped 'stopped'
+      // onto rows nobody pressed. The claim arm composes ONLY the
+      // claimed row — the same ONE-PRESS ONE-CARD law the {model:}
+      // door owns, reached from the familyless walk. The claim is
+      // JUDGED (benchStageIdOf's membership law: a stale or
+      // foreign id refuses loud, never a stamp on a row nobody
+      // pressed); an archived claim refuses in the archived skip's
+      // own voice.
+      const claimRaw: unknown = body["bench_stage_id"];
+      const claim = typeof claimRaw === "string" && claimRaw !== "" ? claimRaw : undefined;
+      const benchFams: Record<string, string> = {};
+      // THE GRAPH-RECEIPT LEDGER (P1): the bench rows' per-stage
+      // queue-time evidence rides the same function-scope ledger
+      // as the fams (the seat the registration door reads).
+      const benchReceipts: Record<string, GraphReceiptStageRow> = {};
+      let composed: Array<Record<string, unknown>>;
+      if (claim !== undefined) {
+        benchStageIdOf(benchDoc, "", claim, checked.draftId ?? draftIdOf(""));
+        const claimRows = benchDoc["stages"];
+        /* v8 ignore next 1 -- pinned by benchStageIdOf's membership law above: a non-array stages list can never contain the claimed id, so the door refused before this read; the fallback stays as the read's own contract */
+        const allRows = Array.isArray(claimRows) ? claimRows : [];
+        const claimed = allRows.find((r): r is Record<string, unknown> =>
+          typeof r === "object" && r !== null && (r as Record<string, unknown>)["id"] === claim);
+        // benchStageIdOf judged membership above — the find reads
+        // the same ledger once, for the row itself.
+        /* v8 ignore next 7 -- pinned by benchStageIdOf's membership law above (runsRegistry's own benchStageIdOf refuses any id that names no stage row before this block runs); the backstop stays in case the two reads ever diverge */
+        if (claimed === undefined) {
+          throw toRemoteError(refusal(
+            400,
+            "bench_stage_id " + JSON.stringify(claim) + " names no stage row of draft " +
+            JSON.stringify(String(checked.draftId ?? "")) + " — the press names the row it came from, and that row must exist on the bench (reopen the tab and press again)",
+            "invalid_request",
+          ));
+        }
+        if (claimed["archived"] === true) {
+          throw toRemoteError(refusal(
+            400,
+            "bench stage " + JSON.stringify(claim) + " is archived — a spent stage composes nowhere; unarchive it to run it again",
+            "invalid_request",
+          ));
+        }
+        // THE WIRE RESOLUTION LAW, server half: a single-stage press
+        // has no upstream stages to merge, so every wire must arrive
+        // RESOLVED — the caller's concrete params overlay the row's
+        // own bag (the client resolves each $spell to the upstream's
+        // last result before the start; the same law the {model:}
+        // door's body rides). The row's `inputs` edges are dropped
+        // here ON PURPOSE: there is no upstream stage in this run to
+        // link, and a $spell the caller did NOT resolve rides the
+        // unwired-spell gate's refusal (composeCardStageRow) — the
+        // honest wall, never a link to nowhere at the merge.
+        const overlay: Record<string, unknown> = {};
+        for (const [k, v] of Object.entries(body)) {
+          if (!(CARD_ENVELOPE_KEYS as readonly string[]).includes(k)) overlay[k] = v;
+        }
+        const rowParams =
+          typeof claimed["params"] === "object" && claimed["params"] !== null && !Array.isArray(claimed["params"])
+            ? { ...(claimed["params"] as Record<string, unknown>) } : {};
+        const single: Record<string, unknown> = {
+          ...claimed,
+          params: { ...rowParams, ...overlay },
+        };
+        delete single["inputs"];
+        composed = [await this.composeCardStageRow(single, claim, runId, "bench stage ", benchFams, benchReceipts)];
+      } else {
       // THE BENCH RUN, COMPOSED (the draft door): this door composes
       // EVERY card stage of the bench — through the SAME registry walk
       // a single card start uses, laws and all — and submits ONE
@@ -1478,12 +1734,8 @@ export class RunsRuntimeService extends Service {
         // before it registered. The id is minted ONCE, here, and both
         // the compose and the registration take it — one derivation,
         // and a wall drives the pair.
-        const benchFams: Record<string, string> = {};
-        // THE GRAPH-RECEIPT LEDGER (P1): the bench rows' per-stage
-        // queue-time evidence rides the same function-scope ledger
-        // as the fams (the seat the registration door reads).
-        const benchReceipts: Record<string, GraphReceiptStageRow> = {};
-        const composed = await this.composeBenchStages(benchDoc, runId, benchFams, benchReceipts);
+        composed = await this.composeBenchStages(benchDoc, runId, benchFams, benchReceipts);
+      }
         // the bench-composed stages' families reach the same claim
         // re-probe ledger the flow arm feeds (S-S4): the empty-ledger
         // carve-out below is the card-single path alone, never this
@@ -1509,8 +1761,10 @@ export class RunsRuntimeService extends Service {
         // never silent (NO SILENT BEHAVIOR, the same order as the
         // spell gate below)
         console.log(
-          "[runs] the draft-door bench run composed " + String(composed.length) +
-          " stages, wires " + JSON.stringify(wired.cross) + " riding as stage inputs",
+          claim !== undefined
+            ? "[runs] the draft-door claimed-stage press composed 1 stage (" + claim + ") — the bench's other rows were not pressed"
+            : "[runs] the draft-door bench run composed " + String(composed.length) +
+              " stages, wires " + JSON.stringify(wired.cross) + " riding as stage inputs",
         );
     }
 
@@ -1530,6 +1784,11 @@ export class RunsRuntimeService extends Service {
         if (e instanceof CardArmError) throw toRemoteError(cardRefusal(e));
         throw e;
       }
+      // THE CHAIN-STORE RUN-ID DOOR (the F35 write side, session 2):
+      // the upscale bag's run-id bindings resolve to their stores
+      // BEFORE compose — a store-less id refuses here (the honest
+      // plain-film voice), a store spelling passes untouched.
+      p1 = this.resolveUpscaleChainRunIds(p1);
       let composed: Awaited<ReturnType<typeof cards.phase2Card>>;
       try {
         composed = await cards.phase2Card(p1, runId);
@@ -1675,7 +1934,12 @@ export class RunsRuntimeService extends Service {
           benchDoc,
           skeleton,
           typeof body["bench_stage_id"] === "string" ? body["bench_stage_id"] : undefined,
-          checked.draftId,
+          // the {model:} door always carries a draft_id (the CARD
+          // BIRTH LAW binds it; the envelope's flow-doc exemption
+          // admits only flow/flow_inline bodies) — the ?? covers the
+          // type, never a real press
+          /* v8 ignore next 1 -- the CARD BIRTH LAW pins checked.draftId on this arm; the ?? covers the type, never a real press */
+          checked.draftId ?? draftIdOf(""),
         ),
         // The {model:} card door's engine (the compose plane is
         // ComfyUI's — the card arm rides it by construction).
@@ -1712,7 +1976,11 @@ export class RunsRuntimeService extends Service {
         compiled: { stages: [cardStage] },
         testFlag: checked.testFlag,
       executeCeilMs: checked.ceilMs,
-        draftId: checked.draftId,
+        // the {model:} door always carries a draft_id (CARD BIRTH
+        // LAW; the flow-doc exemption never reaches this arm) — the
+        // ?? covers the type, never a real press
+        /* v8 ignore next 1 -- the CARD BIRTH LAW pins checked.draftId on this arm; the ?? covers the type, never a real press */
+        draftId: checked.draftId ?? draftIdOf(""),
         stateRoot,
         enqueue: (row): number => this.core.enqueue(row as never),
         // F-6(b): the admission warn computes pre-registration so
@@ -2114,11 +2382,20 @@ export class RunsRuntimeService extends Service {
     // first cut was NAMED NOT CURED; judging the compiled rows needs
     // no card plane at all.)
     try {
-      kindsOk(typeof replayId === "string" ? replayId : "flow_inline", replayJudgeRows(compiled), {}, undefined);
+      kindsOk(typeof replayId === "string" ? replayId : "flow_inline", replayJudgeRows(compiled), undefined);
     } catch (judgeError) {
+      /* v8 ignore next 3 -- pinned by kindsOk's own contract: it throws FlowError for every judge refusal it raises, so the non-FlowError side never fires from this press; the guard stays as the catch's own contract */
       if (judgeError instanceof FlowError) {
         throw new RemoteError("runs/invalid-request", judgeError.message, { loc: "body" });
       }
+      /* v8 ignore next -- kindsOk judges the rows this same press
+       * just compiled: its non-FlowError arms (needCardRegistry's
+       * plain Error, the row-shape guards) judge caller-authored
+       * rows, while compiled rows arrive well-shaped — the compiler
+       * refused anything else — with no card stages left
+       * (composition consumed them). Only the kind lattice
+       * (FlowError) can fire here; the rethrow is the belt for a
+       * future kindsOk arm that throws outside the lattice. */
       throw judgeError;
     }
     if (compiled.stages.length !== 1) {
@@ -2170,7 +2447,10 @@ export class RunsRuntimeService extends Service {
       compiled,
       testFlag: checked.testFlag,
       executeCeilMs: checked.ceilMs,
-      draftId: checked.draftId,
+      // the flow arms may run doc-less (the flow-doc exemption): the
+      // empty id records exactly that — no draft, the run row is the
+      // record; a materialized flow press carries its bench id here
+      draftId: checked.draftId ?? draftIdOf(""),
       stateRoot,
       enqueue: (row): number => this.core.enqueue(row as never),
       // the bench-read warning rides the inline arm too (audit N-S3)
@@ -2251,7 +2531,6 @@ export class RunsRuntimeService extends Service {
   async list(
     rawLimit: string,
     signal: AbortSignal,
-    test = false,
   ): Promise<{ count: number; runs: Record<string, unknown>[] }> {
     signal.throwIfAborted();
     // The door's 400 text (parseIntOrNull in runsList.ts) — the runs face's invalid-request refusal.
@@ -2267,6 +2546,11 @@ export class RunsRuntimeService extends Service {
     const limit: number = Math.max(1, Math.min(500, parsed));
     // §23 CROSS-ROOTS: the union list across the manifest (own
     // root first — own rows win collisions, every row served_from).
+    // THE VISIBLE-BENCH LAW (operator ruling 2026-11-14, item (b)):
+    // the scan covers BOTH out seats per root — test:true runs
+    // list with `test: true` stamped (listRunsAcross owns the
+    // seats; there is no flag-filtered list, hiding by query is
+    // not a door this estate serves).
     return await listRunsAcross(
       this.ctx.queue.stateRoots,
       limit,
@@ -2310,6 +2594,83 @@ export class RunsRuntimeService extends Service {
     } catch { url = ""; }
     const warn = filmMemoryWarn(load, await fetchEngineMem(url));
     return warn === null ? [] : [warn];
+  }
+
+  /** THE CHAIN-STORE RUN-ID DOOR (the F35 write side, session 2): an
+   *  h3-timeline doc's upscale entry may bind its source by ESTATE
+   *  RUN ID — resolved HERE, before compose, through the run row the
+   *  harvest registrar stamped (result_outputs.chain_store.run_name),
+   *  so the composed manager carries a BARE STORE NAME and the
+   *  execute door's existing law (gates-h3-chain-selection-door)
+   *  keeps judging name→store — one judge per edge. A store-spelling
+   *  binding (swap_…/picture_… — anything off the run-id grammar)
+   *  passes byte-untouched with ZERO registry reads: the store stays
+   *  the only existence truth, judged where it is already walled. An
+   *  id-grammar spelling with no row — or a row whose stages carry no
+   *  chain_store — refuses LOUD at this door naming the plain-film
+   *  law, never the execute door's typo-reading 404 (the run row,
+   *  not the store, answers "was this a chain run"). The determinism
+   *  corner: the grammar resolves through the registry ONLY and never
+   *  falls through to the store, so a store literally named like a
+   *  run id binds by its exact spelling only when it does NOT match
+   *  the grammar. Runs between phase 1 (the doc validated) and phase
+   *  2 (the graph composed) — a refusal names the field, never a
+   *  zombie slot. */
+  resolveUpscaleChainRunIds(p1: Phase1Card): Phase1Card {
+    const bag: unknown = p1.params?.["upscale"];
+    if (!Array.isArray(bag) || bag.length === 0) return p1;
+    const resolved: unknown[] = [];
+    let changed = false;
+    for (const entry of bag) {
+      if (entry === null || typeof entry !== "object" || Array.isArray(entry)) {
+        resolved.push(entry);
+        continue;
+      }
+      const rec: Record<string, unknown> = entry as Record<string, unknown>;
+      const chainRun: unknown = rec["chain_run"];
+      if (typeof chainRun !== "string" || !ESTATE_RUN_ID_RE.test(chainRun)) {
+        // a store spelling (or a shape the upscale arm's own
+        // blank-seat refusal owns): byte-untouched, zero registry reads
+        resolved.push(entry);
+        continue;
+      }
+      const store: string | null = this.chainStoreNameOf(chainRun);
+      if (store === null) {
+        throw toRemoteError(refusal(
+          400,
+          "runs/chain-run-unresolved: run \"" + chainRun + "\" left no chain store — " +
+            "plain films don't checkpoint (a film's windows join by file; no scene latents " +
+            "survive). Bind a swap/repair/extend run's chain store (its run row carries " +
+            "chain_store), or re-press the film through a chain seat first",
+          "invalid_request",
+        ));
+      }
+      resolved.push({ ...rec, chain_run: store });
+      changed = true;
+    }
+    if (!changed) return p1;
+    return { ...p1, params: { ...p1.params, upscale: resolved } };
+  }
+
+  /** The store name a run row carries (the registrar's stamp), or
+   *  null: the live map first, the durable _flow.json on its miss —
+   *  the same two faces the status door reads. */
+  private chainStoreNameOf(runId: string): string | null {
+    const live = this.liveRun(runId);
+    const stages: unknown = live !== undefined
+      ? live.stages
+      : this.diskRunRow(runId)?.row["stages"];
+    if (!Array.isArray(stages)) return null;
+    for (const st of stages) {
+      if (st === null || typeof st !== "object" || Array.isArray(st)) continue;
+      const ro: unknown = (st as Record<string, unknown>)["result_outputs"];
+      if (ro === null || typeof ro !== "object" || Array.isArray(ro)) continue;
+      const store: unknown = (ro as Record<string, unknown>)["chain_store"];
+      if (store === null || typeof store !== "object" || Array.isArray(store)) continue;
+      const name: unknown = (store as Record<string, unknown>)["run_name"];
+      if (typeof name === "string" && name !== "") return name;
+    }
+    return null;
   }
 
   async status(
@@ -2356,6 +2717,11 @@ export class RunsRuntimeService extends Service {
     // the map row now reads the settled verdict.
     if (this.resyncSettledTruth(run)) {
       const disk = this.diskRunRow(runId);
+      /* v8 ignore next -- the synchronous re-read of the row the
+       * resync just adopted: no await sits between the resync's own
+       * read and this one, so the durable row cannot vanish
+       * mid-tick in any seat — the undefined leg is the belt for a
+       * torn durable write between the two reads. */
       if (disk !== undefined) {
         return withStageReports(
           { ...enrichDiskRow(disk.row), from_disk: true, queue_position: this.core.queuePosition(run.runId), served_from: disk.root },
@@ -2709,6 +3075,12 @@ export class RunsRuntimeService extends Service {
   private resolvePress(pressKey: string | undefined, summary: PressStartSummary): void {
     if (pressKey === undefined) return;
     const pending = this.pendingPresses.get(pressKey);
+    /* v8 ignore next -- the minter holds its own reservation: the
+     * key lands in pendingPresses synchronously at reservePress
+     * (before the first await) and leaves in the finally AFTER this
+     * resolve — no path deletes between, so a defined key always
+     * finds its waiter here. The belt for a future caller that
+     * resolves without reserving. */
     if (pending !== undefined) pending.resolve(summary);
   }
 
@@ -2718,6 +3090,11 @@ export class RunsRuntimeService extends Service {
    *  run again). */
   private failPress(pressKey: string, error: unknown): void {
     const pending = this.pendingPresses.get(pressKey);
+    /* v8 ignore next -- same reservation invariant as resolvePress
+     * above: the failing minter's own key is still held (the
+     * finally deletes AFTER this reject), so the waiter is always
+     * found — the belt for a future caller that fails a key it
+     * never reserved. */
     if (pending !== undefined) pending.reject(error);
   }
 
@@ -2757,6 +3134,9 @@ export class RunsRuntimeService extends Service {
     this.presses.set(pressKey, runId);
     while (this.presses.size > RunsRuntimeService.PRESS_MEMORY_MAX) {
       const oldest = this.presses.keys().next();
+      /* v8 ignore next -- the map holds >0 entries whenever the loop
+       * runs (size > PRESS_MEMORY_MAX > 0), so next() always yields —
+       * the sweep mirror's identical guard carries the same ignore. */
       if (oldest.done) break;
       this.presses.delete(oldest.value);
     }
@@ -2834,13 +3214,11 @@ export class RunsRuntimeService extends Service {
           if (laneMiss !== null) {
             run.status = "failed";
             run.error = laneMiss.message;
-            for (const stage of run.stages) {
-              const st: unknown = stage["status"];
-              if (st === "queued" || st === "pending" || st === undefined) {
-                stage["status"] = "failed";
-                stage["error"] = laneMiss.message;
-              }
-            }
+            // THE PER-ROW TRUTH STAMP (F2): a claim refusal is the
+            // RUN's verdict — nothing ever answered. The sole stage
+            // owns the cause; unanswered peers read stopped and
+            // never carry the borrowed text.
+            stampUnansweredRows(run, laneMiss.message, false);
             await claimPersist(run);
             await this.settle(run);
             continue;
@@ -2862,9 +3240,21 @@ export class RunsRuntimeService extends Service {
           const roots = { stateRoot: this.ctx.queue.stateRoot, repoRoot: resolveRepoRoot() };
           let initialMiss: string | null = null;
           for (const key of fileKeys) {
+            /* v8 ignore next -- initialFileKeys is string[]-typed on
+             * the run row and every live row arrives through typed
+             * construction (door, replay, pump) — a non-string key is
+             * unconstructible through every seat that stamps it; the
+             * unknown read is torn-state defense for durable
+             * variance. */
             if (typeof key !== "string") continue;
             const raw: unknown = run.initials[key];
-            if (typeof raw !== "string") continue; // merged-worker arm owns absent/linked values
+            /* v8 ignore next -- the press gate normalizes photo/glb
+             * initials to strings (normalizedInitialValue) or refuses
+             * the press, and the replay path re-runs that same
+             * extractor — so a stamped key carries a string on every
+             * live row. Absent/linked values are the merged worker's
+             * own seat (it resolves them), never the probe's. */
+            if (typeof raw !== "string") continue;
             if (!initialFileCandidates(raw.trim(), roots).some((cand) => isFile(cand))) {
               initialMiss = "initial " + JSON.stringify(key) + " is not on disk (" + raw.trim() + ")";
               break;
@@ -2873,13 +3263,10 @@ export class RunsRuntimeService extends Service {
           if (initialMiss !== null) {
             run.status = "failed";
             run.error = initialMiss;
-            for (const stage of run.stages) {
-              const st: unknown = stage["status"];
-              if (st === "queued" || st === "pending" || st === undefined) {
-                stage["status"] = "failed";
-                stage["error"] = initialMiss;
-              }
-            }
+            // THE PER-ROW TRUTH STAMP (F2): same law as the lane
+            // refusal above — the run owns the verdict, the sole
+            // stage carries it, peers read stopped.
+            stampUnansweredRows(run, initialMiss, false);
             await claimPersist(run);
             await this.settle(run);
             continue;
@@ -2914,12 +3301,10 @@ export class RunsRuntimeService extends Service {
           // keeps claiming: the queue may delay a run, never
           // strand it.
           const text: string = "run seat escape (pump settle): " + errText(exc);
-          for (const stage of run.stages) {
-            if (stage["status"] === "running") {
-              stage["status"] = "failed";
-              stage["error"] = text;
-            }
-          }
+          // THE PER-ROW TRUTH STAMP (F2): the escape is the run's
+          // receipt — the sole stage carries it, unanswered peers
+          // read stopped with no borrowed text.
+          stampUnansweredRows(run, text, false);
           run.status = "failed";
           run.error = text;
           try {
@@ -3067,7 +3452,10 @@ function benchStageIdOf(
  *  The result face: run_id always; the run-relative media url of the
  *  stage's own output when one exists (the husk clobber's other
  *  half — a bookkeeping mirror never blanks a hero it can name); the
- *  error voice (stage's, else the run's) when the word is failed. */
+ *  error voice is the stage's OWN error, never the run's — the
+ *  pass-level cause rides the run doc (run_status answers for the
+ *  pass), and a row that borrowed it would name another stage's
+ *  cause (qa8 F43, the per-row status law). */
 export function settleMirrorPatches(run: RunRecord): Array<{ stageId: string; patch: Record<string, unknown> }> {
   const out: Array<{ stageId: string; patch: Record<string, unknown> }> = [];
   for (const stage of run.stages) {
@@ -3090,7 +3478,7 @@ export function settleMirrorPatches(run: RunRecord): Array<{ stageId: string; pa
       : undefined;
     const voice = typeof stage["error"] === "string" && stage["error"] !== ""
       ? stage["error"]
-      : word === "failed" && typeof run.error === "string" ? run.error : undefined;
+      : undefined;
     out.push({
       stageId,
       patch: {

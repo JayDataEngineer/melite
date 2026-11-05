@@ -13,6 +13,7 @@
 // bands, defaults, fields) and the pack row is dropped. Judged on the
 // REAL card and the REAL registry, through the same door
 // `melite_load` rides — not on a fixture.
+import "../../../../tests/helpers/no-loras-tray.ts";
 import "../../../../tests/helpers/boot-models.ts";
 import { beforeAll, describe, expect, it } from "vitest";
 import assert from "node:assert/strict";
@@ -28,6 +29,7 @@ type Mod = {
   fields?: Array<{ name?: string }>;
   options?: Array<{
     value?: string
+    label?: string
     model?: string
     defaults?: Record<string, unknown>
   }>;
@@ -126,10 +128,16 @@ describe("the served modifier list carries one row per bag", () => {
     const row = mods.find((m) => m.param_key === "loras")
     assert.ok(row !== undefined, "the loras row is served")
     const opts = row!.options ?? []
-    expect(opts.length, "the mirror serves the whole catalog on the kind itself").toBe(11)
+    expect(opts.length, "the mirror serves the whole catalog on the kind itself").toBe(12)
+    const merge = opts.find((o) => o.value === "h3_silver_dareties")
+    assert.ok(merge !== undefined, "the silver merge row rides the mirrored catalog")
+    expect(merge!.defaults, "the silver merge row's married facts ride the read seat").toEqual({
+      strength: 0.8, steps: 8, steps_min: 4, steps_max: 8, shift_video: 8,
+    })
+    expect(String(merge!.model), "the resolved filename rides beside the facts").toContain("silver_dareties")
     const turbo = opts.find((o) => o.value === "h3_lightx2v_turbo")
-    assert.ok(turbo !== undefined, "the default row rides the mirrored catalog")
-    expect(turbo!.defaults, "the turbo row's married facts ride the read seat").toEqual({
+    assert.ok(turbo !== undefined, "the experimental row stays a pick on the mirrored catalog")
+    expect(turbo!.defaults, "the experimental turbo row's married facts ride the read seat").toEqual({
       strength: 0.6, steps: 8, steps_min: 4, steps_max: 8, shift_video: 12,
     })
     expect(String(turbo!.model), "the resolved filename rides beside the facts").toContain("turbo_4to8step")
@@ -151,8 +159,28 @@ describe("the served modifier list carries one row per bag", () => {
     const resolved = h3DefaultLoraEntry()
     expect(served).toEqual(resolved)
     expect(Object.keys(served!).sort()).toEqual(["id", "steps", "strength"])
-    expect(served!.id).toBe("h3_lightx2v_turbo")
-    expect(served!.strength).toBe(0.6)
+    expect(served!.id).toBe("h3_silver_dareties")
+    expect(served!.strength).toBe(0.8)
     expect(served!.steps).toBe(8)
+  });
+
+  // THE NAME LAW (the silver-dareties default cure, 2026-11-01):
+  // the operator burned TWICE on a default whose label hid its
+  // identity — the seated row was named like a LightX2V file while
+  // the operator's order was "the silveroxides merge". The served
+  // default's chip carries the author AND the merge: its catalog
+  // label contains "Silveroxides" and "DARE-TIES". A default whose
+  // chip hides the author reds here.
+  it("ARM 7 — the served default's label names the author and the merge (Silveroxides + DARE-TIES, the name law)", () => {
+    const row = mods.find((m) => m.param_key === "loras")
+    assert.ok(row !== undefined, "the loras row is served")
+    const served = (row as unknown as { default_entry?: { id?: string } }).default_entry
+    assert.ok(served?.id !== undefined, "the card serves a default_entry for the absent-bag chip")
+    const opts = row!.options ?? []
+    const def = opts.find((o) => o.value === served!.id)
+    assert.ok(def !== undefined, `the default row '${served!.id}' rides the mirrored catalog`)
+    const label = def.label ?? ""
+    expect(label).toContain("Silveroxides")
+    expect(label).toContain("DARE-TIES")
   });
 });

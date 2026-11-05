@@ -43,17 +43,31 @@ export interface RegistryStage {
     } | null;
     readonly fromFlow: RegistryFromFlow | null;
 }
-/** The compile-time initial kinds (flow.initial_validators). */
-export type RegistryInitialKind = "photo" | "video" | "glb" | "bake_params" | "text";
-/** One headless-tool overlay (FlowToolOverlay: tool param -> the
- *  stage doc path it stamps, with the value choices map). */
+/** The compile-time initial kinds (flow.initial_validators). The
+ * file kinds (photo/video/glb) ride checkFileInitial; text is a BARE
+ * NAME (no path law violations); bake_params is the preset dialect;
+ * the three F58 kinds (2026-11-02, the craft-loop binding): brief is
+ * PROSE (a value no file door ever reads — no path law applies),
+ * number is a finite JSON number (digit-strings refuse — the caller
+ * sent JSON, a string where a number belongs is a caller bug, never
+ * a fold), json is an object or its JSON-string spelling (the
+ * consuming engine's own gate owns the inner shape — the initial
+ * door judges parseability only). */
+export type RegistryInitialKind = "photo" | "video" | "glb" | "bake_params" | "text" | "brief" | "number" | "json";
+/** The extracted initial value (F58): strings for the name/file
+ * kinds, NUMBERS for number, OBJECTS for json — the run row's
+ * initials record is EngineJson-shaped, so the typed values ride to
+ * the engine merge unchanged. */
+export type ExtractedInitial = string | number | Record<string, unknown>;
+/** One flow-tool overlay (FlowToolOverlay: the run door's param ->
+ *  the stage doc path it stamps, with the value choices map). */
 export interface RegistryToolOverlay {
     readonly param: string;
     readonly stage: string;
     readonly path: readonly string[];
     readonly choices: Record<string, string> | null;
 }
-/** One headless-tool property (FlowToolProperty). */
+/** One flow-tool property (FlowToolProperty). */
 export interface RegistryToolProperty {
     readonly ptype: string;
     readonly description: string;
@@ -63,8 +77,9 @@ export interface RegistryToolProperty {
     readonly maximum: number | null;
     readonly enum: readonly string[] | null;
 }
-/** The headless surface (FlowTool: name + version + schema +
- *  required + overlays). Absent (null) on flows with no tool=. */
+/** The flow-tool surface (FlowTool: name + version + schema +
+ *  required + overlays) — the run door's face for a registry flow.
+ *  Absent (null) on flows with no tool=. */
 export interface RegistryTool {
     readonly name: string;
     readonly version: number;
@@ -89,6 +104,41 @@ export interface RegistryFlow {
     readonly tool: RegistryTool | null;
     readonly skillRefs: readonly string[];
 }
+/** A flow's initial KEYS as disclosure serves them (F57, operator
+ *  2026-11-13: "single-stage flow initial keys are UNDOCUMENTED —
+ *  natural keys fail with internal errors … the error text is the
+ *  only teacher"). Derived from the row itself — requiredInitials
+ *  first (the door's own refusal order), then any remaining
+ *  validator keys — so the discovery/open faces can name the TRUE
+ *  seats (the spell stems: $photo→photo, $params_json→params_json)
+ *  before a natural-key press meets the seam. One truth, never a
+ *  hand-maintained roster.
+ * @param flow the registry row
+ * @returns the initial keys, required first, registry order within */
+export declare function flowInitialKeys(flow: RegistryFlow): readonly string[];
+/** One initial kind's disclosure gloss — the anny-params typed-array
+ * seat (F57's owed half, operator FAILURES.md triage 2026-11-02:
+ * "the 139-float JSON-in-string transport stays fragile; this cure
+ * documents the keys but does not build the seat"). The KEYS were
+ * named; the SHAPE stayed untaught, so an agent re-instantiating an
+ * estimated bake hand-typed a 139-float JSON string. The door has
+ * blessed the OBJECT spelling since the belt first served (arrays
+ * ride arrays on the wire; the string survives only as the
+ * engine-merge ride onto AnnyParamsToGlb's own string input) — the
+ * gloss names that transport and the dialect doc's own law, so the
+ * open face teaches the shape BEFORE a press meets the seam, the
+ * same leaf-naming law one level deeper. One derivation per kind,
+ * rendered by every initial-seat face, never a hand-maintained
+ * copy.
+ * @param kind the declared validator kind
+ * @returns the gloss the open line renders beside the kind */
+export declare function initialKindGloss(kind: RegistryInitialKind): string;
+/** A flow's initial keys → glosses, the same derivation order the
+ * validators hold (the bundle's initials record rides both so the
+ * open face renders kinds and shapes from one truth).
+ * @param flow the registry row
+ * @returns the gloss per declared initial key */
+export declare function flowInitialGlosses(flow: RegistryFlow): Record<string, string>;
 export declare function initial(key: string): RegistryInitialEdge;
 export declare function fromStage(stage: string, output: string): RegistryStageEdge;
 export declare function plainStage(row: {
@@ -199,18 +249,24 @@ export declare function initialFileCandidates(raw: string, roots: InitialsRoots)
  *  them). Runs BEFORE any run registers, on both doors. */
 export declare function registryInitialsError(flow: RegistryFlow, body: Record<string, unknown>, roots: InitialsRoots): string | null;
 /** The initial VALUE one gate-blessed body entry carries, in the
- *  string form the engine merge links a $spell against: file
+ *  form the engine merge links a $spell against: file
  *  initials give their path ({path: …} unwraps — the two spellings
  *  the gate blesses), bake_params gives its params_json string
  *  (objects stringify — the dialect the belt validates). Null
  *  refuses a shape the gate would have refused, so a mangled
  *  durable body fails loud at the door instead of shipping an
  *  "[object Object]" literal to the engine.
+ *  THE F58 TYPED RIDE (2026-11-02): brief gives its string verbatim,
+ *  number gives the NUMBER itself, json gives the OBJECT — the run
+ *  row's initials record is EngineJson-shaped and the merge returns
+ *  these values verbatim, so a numeric initial (craft's
+ *  max_iterations) reaches the engine gate still a number, never a
+ *  stringified stranger.
  *  @param key the initial's declared name, for the refusal voice
  *  @param kind the declared validator kind
  *  @param value the raw body entry
- *  @returns the normalized string, or null when the shape is neither */
-export declare function normalizedInitialValue(key: string, kind: RegistryInitialKind, value: unknown): string | null;
+ *  @returns the normalized value, or null when the shape is neither */
+export declare function normalizedInitialValue(key: string, kind: RegistryInitialKind, value: unknown): ExtractedInitial | null;
 /** The request initials a body carries for a flow's declared
  *  validators, normalized per {@link normalizedInitialValue}:
  *  declared keys, present values only; absent stays absent (the
@@ -225,7 +281,7 @@ export declare function normalizedInitialValue(key: string, kind: RegistryInitia
  *  @param body the request body
  *  @returns the normalized initials record, or a refusal string */
 export declare function extractRequestInitials(flow: RegistryFlow, body: Record<string, unknown>): {
-    initials: Record<string, string>;
+    initials: Record<string, ExtractedInitial>;
 } | {
     refusal: string;
 };

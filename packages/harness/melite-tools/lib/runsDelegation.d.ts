@@ -25,15 +25,12 @@ export declare function readRunsDelegation(log?: {
  * @param state the delegation to record.
  * @returns undefined on success, else the failure's message. */
 export declare function writeRunsDelegation(state: RunsDelegationState): string | undefined;
-/** THE BOOT LAW (pure — the wiring's one decision): which
- * delegation does this mount boot with? headless boots seated (the
- * delegated operator, config's own law); a browser mount boots on
- * the PERSISTED record — the operator's last toggle outlives the
- * reload — defaulting to the browser law (false) when nothing
+/** THE BOOT LAW (pure — the wiring's one decision): this mount boots
+ * on the PERSISTED record — the operator's last toggle outlives the
+ * reload — defaulting to the compose law (false) when nothing
  * persists.
  *
- * @param headless the config's interface flag.
  * @param persisted the record read at boot (null when none).
  * @returns the delegation this boot seats. */
-export declare function resolveDelegationAtBoot(headless: boolean, persisted: RunsDelegationState | null): boolean;
+export declare function resolveDelegationAtBoot(persisted: RunsDelegationState | null): boolean;
 //# sourceMappingURL=runsDelegation.d.ts.map

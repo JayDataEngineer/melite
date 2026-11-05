@@ -3,7 +3,7 @@
 // stage rows, wires, the card gate, kinds, engines, flow_from_body.
 import { coerceWireArrays, coerceWireNumbers, unwrapItemArrays } from '@melite/comfyui-card-kit';
 import { checkStrictBody } from "./runsGates.js";
-import { FLOW_ID_RE, INLINE_TOP_SORTED, STAGE_KEYS_SORTED, FlowError, engineDefaultOutput, needCardRegistry, } from "./runsValidateShared.js";
+import { FLOW_ID_RE, INLINE_TOP_SORTED, STAGE_KEYS_SORTED, FlowError, engineKnown, needCardRegistry, } from "./runsValidateShared.js";
 import { edgeRef, inlineEdge, inlineKind, inlineSkip } from "./runsValidateInline.js";
 import { KIND_VOCAB } from "./runsValidateShared.js";
 import { coerceRecord, minLengthRefusal } from "./runsValidateRefusals.js";
@@ -191,11 +191,26 @@ export function wiresResolve(flowId, stages) {
 export function cardGate(flowId, st, cards) {
     const defs = needCardRegistry(cards, "cardGate").defsSync();
     const def = defs.get(st.card);
-    // requiresModel: false (pure-tool cards, boarded: []) skips the
-    // {model:} demand — the row.requires_model. Unknown
-    // cards still hit the model gate first (order preserved: the wall
-    // pins the model-gate text verbatim).
-    if (def?.requiresModel !== false) {
+    // THE REGISTRATION-FIRST LAW (F56 voice cure, 2026-11-14): an
+    // UNKNOWN card refused with the model demand first named a param
+    // the card could never take ("card 'image-upscale' requires
+    // params.model" — the live receipt; the operator's agent then
+    // states a model to satisfy a nonsense demand and lands in a
+    // stranger's lane). Unknown cards hear the registration voice
+    // FIRST; a KNOWN card keeps the model-gate order (the wall pins
+    // that voice verbatim). requiresModel: false (pure-tool cards,
+    // boarded: []) skips the {model:} demand — the row.requires_model.
+    if (def === undefined) {
+        throw new FlowError("flow " +
+            JSON.stringify(flowId) +
+            " stage " +
+            JSON.stringify(st.id) +
+            ": card " +
+            JSON.stringify(st.card) +
+            " is not a registered card (the card set boots from " +
+            "src/cards — see GET /v1/tools for the served surface)");
+    }
+    if (def.requiresModel !== false) {
         const model = st.params["model"];
         if (!model || !String(model).trim()) {
             throw new FlowError("flow " +
@@ -208,16 +223,6 @@ export function cardGate(flowId, st, cards) {
                 "against — see GET /v1/models) — the flow-stage equivalent " +
                 "of the {model:} door");
         }
-    }
-    if (def === undefined) {
-        throw new FlowError("flow " +
-            JSON.stringify(flowId) +
-            " stage " +
-            JSON.stringify(st.id) +
-            ": card " +
-            JSON.stringify(st.card) +
-            " is not a registered card (the card set boots from " +
-            "src/cards — see GET /v1/tools for the served surface)");
     }
     try {
         // THE WIRE-COERCION FAMILY AT THE LATTICE SEAT (attempt-035's
@@ -261,14 +266,43 @@ export function coerceSnapshotBody(def, body) {
     const carrier = (def.schemaCarrier ?? def.schema);
     return coerceWireNumbers(carrier, coerceWireArrays(carrier, unwrapItemArrays(body)));
 }
-// kindsOk with engineDefaults ({} at construction = deferred,
-// the ENGINE_TABLE at validate_engines = full).
-export function kindsOk(flowId, stages, engineDefaults, cards) {
+// kindsOk (the one-table cure, 2026-11-01): a stage's output
+// channels come from the stage's OWN tables — declared outputs,
+// else card_io — else the card's declared output kinds (a card
+// stage derives from its card's flowKinds.outputs, the same table
+// the compose reads). The engine registry is membership-only: it
+// names no kinds, so an output-less cardless stage refuses here
+// instead of taking a fabricated {default: ...}. Deferred reads
+// survive only for a card whose def declares no outputs at all
+// (downstream reads skip it as upstream-unknown, never refused).
+export function kindsOk(flowId, stages, cards) {
     // The lattice gate is its own pass BEFORE kinds (
     // docstring: "Runs BEFORE _validate_kinds").
     for (const st of stages) {
-        if (st.card)
-            cardGate(flowId, st, cards);
+        if (!st.card)
+            continue;
+        cardGate(flowId, st, cards);
+        // THE CARD-PORTS FILL (the compose-plane cure, 2026-11-14): a
+        // card stage that declares no channels of its own reads its
+        // output table from the CARD's declared ports — the same leg the
+        // run compose takes (runsRegistry composeCardStageRow's
+        // `cardDeclared`) and the same table the resolution below reads.
+        // The one-table cure (2026-11-01) deleted the fabricated engine
+        // default but left this walk reading only the ROW's own tables,
+        // so every bench card row — whose stored shape is outputs:{} by
+        // the card-ports law (benchStage normalizeBenchStage: absent on a
+        // card stage stays absent, compose fills from the ports) —
+        // refused the premint compose in the card-less voice. The fill
+        // rides the row the walk just judged: row-declared outputs and
+        // card_io always win, a card declaring no ports stays deferred.
+        if (st.outputs.length === 0 && st.cardIo.length === 0) {
+            const def = needCardRegistry(cards, "kindsOk").defsSync().get(st.card);
+            const declared = def?.flowKinds?.outputs ?? {};
+            for (const [name, kind] of Object.entries(declared)) {
+                if (typeof kind === "string")
+                    st.cardIo.push({ name, kind });
+            }
+        }
     }
     // THE DERIVATION LAW (roadmap §12): a card stage's input kind
     // DERIVES from the card's own flowKinds.inputs when the port is
@@ -365,27 +399,33 @@ export function kindsOk(flowId, stages, engineDefaults, cards) {
             resolved.set(o.name, o.kind);
         for (const o of st.cardIo)
             resolved.set(o.name, o.kind);
-        if (resolved.size === 0 && !st.card) {
-            if (st.engine in engineDefaults) {
-                /* v8 ignore start -- the table never carries null (non-nullable
-                   defs): deferred ({}) callers miss at the `in`, full callers
-                   always hit a string (2026-09-12) */
-                const def = engineDefaults[st.engine] ?? null;
-                if (def === null) {
-                    throw new FlowError("flow " +
-                        JSON.stringify(flowId) +
-                        " stage " +
-                        JSON.stringify(st.id) +
-                        ": engine " +
-                        JSON.stringify(st.engine) +
-                        " declares no default_output and stage declares no " +
-                        "outputs — add outputs={'default': <Kind>} on the stage, " +
-                        "or set DEFAULT_OUTPUT on the engine");
+        if (resolved.size === 0) {
+            if (st.card) {
+                // THE CARD'S OWN TABLE (the one-table cure): a card stage
+                // with no declared outputs derives them from the card's
+                // declared output kinds — cardGate above already proved the
+                // registry present and the card registered, so defsSync()
+                // reads loud, never silent. A card declaring no outputs at
+                // all stays deferred (the old shape: downstream reads skip
+                // it as upstream-unknown).
+                const defs = needCardRegistry(cards, "kindsOk").defsSync();
+                const declared = defs.get(st.card)?.flowKinds?.outputs ?? {};
+                for (const [name, kind] of Object.entries(declared)) {
+                    if (typeof kind === "string")
+                        resolved.set(name, kind);
                 }
-                /* v8 ignore stop */
-                resolved.set("default", def);
             }
-            // else: defer; the validate_engines() pass fills it in.
+            else {
+                throw new FlowError("flow " +
+                    JSON.stringify(flowId) +
+                    " stage " +
+                    JSON.stringify(st.id) +
+                    " declares no outputs and names no card — " +
+                    "add outputs={'<channel>': <Kind>} (the closed Kind " +
+                    "vocabulary is " +
+                    JSON.stringify([...KIND_VOCAB]) +
+                    ") or wire the stage to its card");
+            }
         }
         if (resolved.size > 0)
             outputsByStage.set(st.id, resolved);
@@ -443,9 +483,11 @@ export function kindsOk(flowId, stages, engineDefaults, cards) {
     }
 }
 // validateEngines: every stage's engine through the
-// bus — here the wall-pinned ENGINE_TABLE (existence + DEFAULT_OUTPUT);
-// then the FULL kind pass. Unknown-engine text mirrors
-// plugins.load_engine verbatim.
+// bus — here the wall-pinned ENGINE_TABLE (existence ONLY — the
+// kind-free registry: the one-table cure deleted the per-engine
+// default kinds, so this pass judges membership and the FULL kind
+// pass below judges declarations); then the FULL kind pass.
+// Unknown-engine text mirrors plugins.load_engine verbatim.
 export function validateEngines(flow, cards, 
 /** THE LIVE SEAT'S REGISTERED IDS (audit S-S6, 2026-10-22): when
  *  the door can see the engines seat, membership is judged by the
@@ -454,7 +496,6 @@ export function validateEngines(flow, cards,
  *  the press. Absent (seat-less boots, pure walls) the wall-pinned
  *  ENGINE_TABLE keeps the pre-seam shape. */
 knownEngines) {
-    const engineDefaults = {};
     for (const st of flow.stages) {
         if (knownEngines !== undefined && !knownEngines.includes(st.engine)) {
             throw new FlowError("flow " +
@@ -469,8 +510,7 @@ knownEngines) {
                     : knownEngines.slice().sort().join(", ")) +
                 ")");
         }
-        const def = engineDefaultOutput(st.engine);
-        if (def === undefined) {
+        if (!engineKnown(st.engine)) {
             throw new FlowError("flow " +
                 JSON.stringify(flow.id) +
                 " stage " +
@@ -481,9 +521,8 @@ knownEngines) {
                 JSON.stringify(st.engine) +
                 " (no engine plugin declares it)");
         }
-        engineDefaults[st.engine] = def;
     }
-    kindsOk(flow.id, flow.stages, engineDefaults, cards);
+    kindsOk(flow.id, flow.stages, cards);
     return flow;
 }
 // flowFromBody: JSON body -> validated Flow.
@@ -511,12 +550,13 @@ export function flowFromBody(body, cards, knownEngines) {
         rows.push(buildStageRow(i, stagesIn[i]));
     }
     const flowId = String(rec["id"] ?? "");
-    // Flow construction: wires + deferred kinds.
+    // Flow construction: wires + kinds (a cardless output-less stage
+    // refuses in kindsOk — no engine table to fill it from).
     if (flowId === "") {
         throw new FlowError(minLengthRefusal("Flow", "id"));
     }
     wiresResolve(flowId, rows);
-    kindsOk(flowId, rows, {}, cards);
+    kindsOk(flowId, rows, cards);
     const flow = { id: flowId, description: String(rec["description"] ?? ""), stages: rows };
     return validateEngines(flow, cards, knownEngines);
 }

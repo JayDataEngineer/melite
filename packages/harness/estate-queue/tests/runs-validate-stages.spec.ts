@@ -153,6 +153,23 @@ describe("cardGate (the model+registration+schema verdicts)", () => {
     expect(() => cardGate("f1", cstage("ghost-card"), fakeCards() as never))
       .toThrow(/"ghost-card" is not a registered card/);
   });
+  // THE REGISTRATION-FIRST LAW (F56 voice cure, 2026-11-14): an
+  // unknown card with NO model used to hear "requires params.model"
+  // — a param the ghost could never take; the operator's agent then
+  // stated a model to satisfy the nonsense demand and landed in a
+  // stranger's lane. The registration voice fires first for unknown
+  // cards (live receipt: 'image-upscale' at the estate door).
+  it("an unknown card with NO model hears the registration voice, never the model demand (F56)", () => {
+    let msg = "";
+    try {
+      cardGate("f1", cstage("ghost-card", {}), fakeCards() as never);
+      expect.unreachable();
+    } catch (e) {
+      msg = (e as Error).message;
+    }
+    expect(msg).toMatch(/"ghost-card" is not a registered card/);
+    expect(msg).not.toMatch(/requires params\.model/);
+  });
   it("a model card without params.model refuses with the model voice; a pure-tool card skips it", () => {
     expect(() => cardGate("f1", cstage("model-card", {}), fakeCards() as never))
       .toThrow(/requires params\.model/);
@@ -198,7 +215,7 @@ describe("kindsOk (the kind-matching passes)", () => {
       // NO expected for image2 — the derivation must supply it
       expected: { image1: "image" },
     });
-    expect(() => kindsOk("f1", [gen, oldGraph], { comfyui: "image" }, namedCards as never)).not.toThrow();
+    expect(() => kindsOk("f1", [gen, oldGraph], namedCards as never)).not.toThrow();
     // a CONTRADICTED alias kind still refuses loud (the alias is a
     // kind source, not a silence)
     const liar = kstage("edit", {
@@ -206,7 +223,7 @@ describe("kindsOk (the kind-matching passes)", () => {
       inputs: { image2: { stage: "gen", output: "default" } },
       expected: { image2: "text" },
     });
-    expect(() => kindsOk("f1", [gen, liar], { comfyui: "image" }, namedCards as never))
+    expect(() => kindsOk("f1", [gen, liar], namedCards as never))
       .toThrow(/input "image2".*contradicts card/);
   });
   it("THE LIST LAW (the naming law's lattice half): a _list seat accepts its singular producer — video feeds video_list, image feeds image_list — and the wrong singular still refuses loud", () => {
@@ -235,24 +252,24 @@ describe("kindsOk (the kind-matching passes)", () => {
       ref_images: { stage: "img", output: "default" },
       ref_videos: { stage: "vid", output: "default" },
       ref_audios: { stage: "aud", output: "default" },
-    })], { comfyui: "image" }, namedCards as never)).not.toThrow();
+    })], namedCards as never)).not.toThrow();
     // the WRONG singular refuses loud (an image is not a motion guide)
     expect(() => kindsOk("f1", [img, filmInputs({
       ref_videos: { stage: "img", output: "default" },
-    })], { comfyui: "image" }, namedCards as never))
+    })], namedCards as never))
       .toThrow(/expected video_list, got image.*must be video_list/);
   });
   it("matched kinds pass; mismatched kinds refuse with the must-be voice", () => {
     const a = kstage("a", { outputs: { out: "image" } });
     const b = kstage("b", { inputs: { img: { stage: "a", output: "out" } }, expected: { img: "image" } });
-    expect(() => kindsOk("f1", [a, b], { comfyui: "image" }, cards as never)).not.toThrow();
+    expect(() => kindsOk("f1", [a, b], cards as never)).not.toThrow();
     const c = kstage("c", { inputs: { img: { stage: "a", output: "out" } }, expected: { img: "text" } });
-    expect(() => kindsOk("f1", [a, c], { comfyui: "image" }, cards as never))
+    expect(() => kindsOk("f1", [a, c], cards as never))
       .toThrow(/expected text, got image from stage "a" output "out" — must be text/);
   });
   it("inputs/expected mismatch refuses with both voices", () => {
     try {
-      kindsOk("f1", [kstage("a", { inputs: { x: { initial: "seed" } }, expected: { z: "text" } })], {}, cards as never);
+      kindsOk("f1", [kstage("a", { inputs: { x: { initial: "seed" } }, expected: { z: "text" } })], cards as never);
       expect.unreachable();
     } catch (e) {
       expect((e as Error).message).toMatch(/wired but untyped: \["x"\]/);
@@ -262,19 +279,57 @@ describe("kindsOk (the kind-matching passes)", () => {
   it("an upstream output miss refuses with the declared-outputs voice; forward refs defer (skipped)", () => {
     const a = kstage("a", { outputs: { out: "image" } });
     const b = kstage("b", { inputs: { img: { stage: "a", output: "nope" } }, expected: { img: "image" } });
-    expect(() => kindsOk("f1", [a, b], {}, cards as never))
+    expect(() => kindsOk("f1", [a, b], cards as never))
       .toThrow(/stage "a" has no output named "nope" \(declared outputs: \["out"\]\)/);
     // a forward stage edge defers: upstream unknown, never refused
     const fwd = kstage("z", { inputs: { img: { stage: "later", output: "out" } }, expected: { img: "image" } });
-    expect(() => kindsOk("f1", [fwd], {}, cards as never)).not.toThrow();
+    expect(() => kindsOk("f1", [fwd], cards as never)).not.toThrow();
   });
-  it("an output-less, card-less stage with a known engine takes the engine default; an unknown engine defers at construction and refuses at the full pass", () => {
+  it("an output-less, card-less stage refuses at construction (no engine table to fill from); an unknown engine refuses at the full pass", () => {
     const bare = kstage("a", { outputs: {} });
-    expect(() => kindsOk("f1", [bare], { comfyui: "image" }, cards as never)).not.toThrow();
-    expect(() => kindsOk("f1", [bare], {}, cards as never)).not.toThrow();
+    expect(() => kindsOk("f1", [bare], cards as never))
+      .toThrow(/stage "a" declares no outputs and names no card/);
     const flow = { id: "f1", description: "", stages: [kstage("a", { engine: "nosuch" })] };
     expect(() => validateEngines(flow as never, null)).toThrow(/no engine plugin for type "nosuch"/);
   });
+  it("THE CARD'S OWN TABLE (the one-table cure): a card stage with no declared outputs derives them from the card's declared output kinds", () => {
+    // the music card's wrapper-row shape (music-native, retired
+    // 2026-11-14): the row declares nothing, the card
+    // declares {default: "audio"} — the lattice judges the card's
+    // kinds, never a fabricated engine kind. Downstream wires to
+    // the derived channel resolve; wires to a channel the card
+    // never declares refuse against the DERIVED set.
+    const deriving = {
+      defsSync: () => new Map([["music-card", {
+        requiresModel: false,
+        schema: (): void => undefined,
+        flowKinds: { inputs: {}, outputs: { default: "audio" }, requiresModel: false },
+      }]]),
+    };
+    const silent = kstage("s", { card: "music-card", params: {}, outputs: {}, card_io: {} });
+    const down = kstage("d", {
+      inputs: { track: { stage: "s", output: "default" } },
+      expected: { track: "audio" },
+      outputs: { out: "audio" },
+    });
+    expect(() => kindsOk("f1", [silent, down], deriving as never)).not.toThrow();
+    const liar = kstage("d", {
+      inputs: { track: { stage: "s", output: "nope" } },
+      expected: { track: "audio" },
+      outputs: { out: "audio" },
+    });
+    expect(() => kindsOk("f1", [silent, liar], deriving as never))
+      .toThrow(/stage "s" has no output named "nope" \(declared outputs: \["default"\]\)/);
+  });
+  // NOTE (the initial-grammar law, 2026-11-14): kindsOk holds NO
+  // arm for the initial-bound $spell on a tensor seat — the seat a
+  // spell lands in (Load* file slot vs tensor slot) is only visible
+  // in the COMPOSED graph, so the law lives solely at the compose
+  // door (runsRegistry composeCardStageRow, post-phase2 census
+  // gate) with its wall at flows-producer-agreement ARM 6. A
+  // media-kind judgment here false-fired on live rows (rig's
+  // mesh_glb "mesh" port legally takes an initial $glb — a LoadGLB
+  // path seat).
 });
 
 describe("validateEngines + flowFromBody (the composition)", () => {
@@ -335,7 +390,7 @@ describe("the toll arms (falsy maps, nullish scalars, initial-edge skips)", () =
     expect(r.description).toBe("");
     // a card_io row rides kindsOk's resolved map (the upstream-known voice)
     const src = ks("src", { outputs: { out: "image" }, card_io: { thumb: "image" }, expected: {} });
-    expect(() => kindsOk("f1", [src], {}, cards as never)).not.toThrow();
+    expect(() => kindsOk("f1", [src], cards as never)).not.toThrow();
     // description key ABSENT tolls "" (the in-missing arm)
     const noDesc: Record<string, unknown> = stage({ card_io: { thumb: "image" } });
     delete noDesc["description"];
@@ -361,7 +416,7 @@ describe("the toll arms (falsy maps, nullish scalars, initial-edge skips)", () =
   it("one-sided mismatches name only their side", () => {
     // wired but untyped ALONE
     try {
-      kindsOk("f1", [ks("a", { inputs: { x: { initial: "seed" } }, expected: {} })], {}, cards as never);
+      kindsOk("f1", [ks("a", { inputs: { x: { initial: "seed" } }, expected: {} })], cards as never);
       expect.unreachable();
     } catch (e) {
       expect((e as Error).message).toMatch(/wired but untyped: \["x"\]/);
@@ -369,7 +424,7 @@ describe("the toll arms (falsy maps, nullish scalars, initial-edge skips)", () =
     }
     // typed but unwired ALONE
     try {
-      kindsOk("f1", [ks("a", { expected: { z: "text" } })], {}, cards as never);
+      kindsOk("f1", [ks("a", { expected: { z: "text" } })], cards as never);
       expect.unreachable();
     } catch (e) {
       expect((e as Error).message).toMatch(/typed but unwired: \["z"\]/);
@@ -379,11 +434,11 @@ describe("the toll arms (falsy maps, nullish scalars, initial-edge skips)", () =
   it("initial edges skip both lattice passes; card stages gate inside kindsOk; non-Error schema throws map through String()", () => {
     const initRow = ks("a", { inputs: { seed: { initial: "7" } }, expected: { seed: "num" }, outputs: { out: "image" } });
     expect(() => wiresResolve("f1", [initRow])).not.toThrow();
-    expect(() => kindsOk("f1", [initRow], {}, cards as never)).not.toThrow();
+    expect(() => kindsOk("f1", [initRow], cards as never)).not.toThrow();
     const tool = ks("t", { card: "pure-tool", params: {} });
-    expect(() => kindsOk("f1", [tool], {}, cards as never)).not.toThrow();
+    expect(() => kindsOk("f1", [tool], cards as never)).not.toThrow();
     const strThrow = ks("u", { card: "string-thrower", params: {} });
-    expect(() => kindsOk("f1", [strThrow], {}, cards as never))
+    expect(() => kindsOk("f1", [strThrow], cards as never))
       .toThrow(/schema refused body — flat string refusal/);
   });
 });
@@ -398,7 +453,7 @@ describe("the untyped-wire refusal teaches the whole cure", () => {
     row(0, stage({ id, ...over }))
   it("the voice names the Kind vocabulary, the expected {} fix, and the card-schema route", () => {
     try {
-      kindsOk("f1", [ks("a", { inputs: { x: { initial: "seed" } }, expected: {} })], {}, noPortCards as never);
+      kindsOk("f1", [ks("a", { inputs: { x: { initial: "seed" } }, expected: {} })], noPortCards as never);
       expect.unreachable();
     } catch (e) {
       const message = (e as Error).message;
@@ -407,6 +462,65 @@ describe("the untyped-wire refusal teaches the whole cure", () => {
       expect(message).toContain('"text"');
       expect(message).toContain('"mesh"');
       expect(message).toContain('"lora"');
+    }
+  });
+});
+
+// ── THE DEFERRED CARD STAGE (the F46 compose-plane cure's tail,
+// 2026-11-14: the card-ports fill + the card's-own-table derivation
+// added branches no arm drove — a card stage with no row channels,
+// on a card declaring no ports, must DEFER through both tables, and
+// the live seat's empty engine list must refuse naming itself) ────
+describe("the deferred card stage (the fill's empty fallback + the own-table derivation)", () => {
+  const ks = (id: string, over: Record<string, unknown> = {}): FlowStageRow =>
+    row(0, stage({ id, ...over }));
+  it("a card stage declaring nothing, on a card declaring nothing, defers — the fill's ?? {} fallback rides and downstream skips it as upstream-unknown", () => {
+    // bare-card carries NO flowKinds at all: def?.flowKinds?.outputs
+    // is undefined, so the fill's `?? {}` fallback rides (no push)
+    // and the derivation's chain + fallback ride the same way below.
+    const portless = {
+      defsSync: () => new Map([["bare-card", {
+        requiresModel: false,
+        schema: (): void => undefined,
+      }]]),
+    };
+    const silent = ks("s", { card: "bare-card", params: {}, outputs: {}, card_io: {} });
+    expect(() => kindsOk("f1", [silent], portless as never)).not.toThrow();
+    // a downstream wire to the deferred stage skips (no entry in the
+    // outputs table — upstream-unknown), never refuses against the
+    // empty table
+    const down = ks("d", {
+      inputs: { img: { stage: "s", output: "default" } },
+      expected: { img: "image" },
+      outputs: { out: "image" },
+    });
+    expect(() => kindsOk("f1", [silent, down], portless as never)).not.toThrow();
+  });
+  it("a non-string declared kind is skipped by BOTH tables — the registry seam's unknown value invents no channel", () => {
+    // loose-card's declared outputs carry an unknown (non-string)
+    // value: the fill's typeof guard skips it (no cardIo push) and
+    // the own-table derivation skips it too — the row still defers,
+    // and no phantom channel enters the resolved table.
+    const loose = {
+      defsSync: () => new Map([["loose-card", {
+        requiresModel: false,
+        schema: (): void => undefined,
+        flowKinds: { inputs: {}, outputs: { weird: 42 }, requiresModel: false },
+      }]]),
+    };
+    const silent = ks("s", { card: "loose-card", params: {}, outputs: {}, card_io: {} });
+    expect(() => kindsOk("f1", [silent], loose as never)).not.toThrow();
+  });
+  it("the live seat's empty engine list refuses naming itself (the none-registered voice)", () => {
+    const flow = {
+      id: "f1", description: "",
+      stages: [ks("s1", { outputs: { out: "image" } })],
+    };
+    try {
+      validateEngines(flow as never, null, []);
+      expect.unreachable();
+    } catch (e) {
+      expect((e as Error).message).toMatch(/serves registered engines only \(none registered\)/);
     }
   });
 });

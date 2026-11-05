@@ -36,6 +36,13 @@
 // SIMPLE, no mocks: the real boot (loadCardDefs — flavors register
 // LOUD), the real registry seat, the real facts file.
 import { assertHermeticRode } from "../../../../tests/helpers/hermetic-engine.ts";
+// THE OPERATOR-STATE FIREWALL (2026-11-15): d5Door composes the
+// REAL mod plane — without this the operator's rows file and engine
+// shelf leak machine state into the catalog premises (the T7 burn
+// cell's row-less anima fallback died on the real pixel-anim row
+// and its shelf drop)
+import { isolateOperatorModState } from "../../../../tests/helpers/operator-modstate-isolation.ts";
+isolateOperatorModState();
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -353,19 +360,30 @@ describe("T6 — the family admission against the REAL defs (B5)", () => {
     steps: 20,
   };
 
-  it("a Final-Cut stamp on a keyframe doc refuses with the run door's own voice", () => {
-    const verdict = svc.admitStageFamily("h3-timeline", {
+  it("the family seat is an honest no-op on the real def: the post quartet ADMITS, and the film-only key is the compose walk's own judge", () => {
+    // RE-AIMED 2026-11-15 (the lane dead-letter retirement): the
+    // operator's burn doc — a keyframe-anchored window carrying the
+    // finish quartet — now COMPOSES on t4r (the post chain mounts on
+    // every lane), and h3-timeline declares NO admission face (card.ts's
+    // retirement note). The family seat therefore passes every doc the
+    // card's declaration carries; the genuinely unfireable shape
+    // (duck_depth_db, read only inside the multi-window film tail) is
+    // refused by the card's own compose walk — schema.ts:818's
+    // film-only letter — which packages/models/h3/tests/door.spec.ts
+    // fires directly. The seat judges no lane dead letter of its own.
+    const quartet = svc.admitStageFamily("h3-timeline", {
       ...KEYFRAME_DOC, second_pass_enabled: true, sr_switch: true,
     });
-    expect(verdict.ok).toBe(false);
-    expect(verdict.ok ? "" : verdict.error).toBe(
-      "card 'h3-timeline' refused params: h3_window(t4r): unsanctioned inject keys: second_pass_enabled, sr_switch",
-    );
+    expect(quartet).toEqual({ ok: true });
+    expect(svc.admitStageFamily("h3-timeline", {
+      ...KEYFRAME_DOC, duck_depth_db: 0.5,
+    })).toEqual({ ok: true });
   });
 
-  it("a clean keyframe doc and a t4_open stamped doc pass; a non-family card is a no-op", () => {
+  it("a clean keyframe doc, a t4_open stamped doc and a quartet keyframe doc pass; a non-family card is a no-op", () => {
     expect(svc.admitStageFamily("h3-timeline", KEYFRAME_DOC)).toEqual({ ok: true });
     expect(svc.admitStageFamily("h3-timeline", { steps: 20, sr_switch: true })).toEqual({ ok: true });
+    expect(svc.admitStageFamily("h3-timeline", { steps: 20, duck_depth_db: 0.2 })).toEqual({ ok: true });
     expect(svc.admitStageFamily("image-gen", { whatever: "unjudged" })).toEqual({ ok: true });
   });
 });
@@ -442,6 +460,23 @@ describe("T7 — no bag value registered outside the run's active family compose
     } finally {
       dispose();
     }
+  });
+
+  it("the routed cell: the z-image family's own realism row composes on its int8 route (the e2e red's keyless judge)", async () => {
+    const comfy = await d5Door();
+    // the 2026-11-03 live red: model 'z-image' resolves to route
+    // z-image-int8, and the engine door's route-first catalog lookup
+    // fell through to krea-2's rows (image-gen boards krea-2 first)
+    // — unknown-lora for the run family's OWN row. The family tier
+    // cures it; this cell judges the cure through the real door
+    // (real cards, real mod plane, real facts), no fixture catalog.
+    const graph = comfy.compose("image-gen", "z-image-int8", {
+      prompt: "a serene mountain lake at dawn, soft light",
+      loras: [{ id: "zimage_realism", strength: 0.7 }],
+    }, "d5_routed_family_tier") as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+    const stacks = Object.values(graph).filter((n) => n.class_type === "LoraLoaderModelOnly");
+    expect(stacks.length).toBeGreaterThan(0);
+    expect(stacks.some((n) => n.inputs["lora_name"] === "z-image/z-image-realism.safetensors")).toBe(true);
   });
 });
 

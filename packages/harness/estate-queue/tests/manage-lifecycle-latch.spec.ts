@@ -144,7 +144,7 @@ const seat = (): { svc: RunsRuntimeService; core: QueueCore } => {
 const inlineBody = (): Record<string, unknown> => ({
   draft_id: "d1",
   test: false,
-  flow_inline: { id: "x", stages: [{ id: "s", engine: "comfyui" }] },
+  flow_inline: { id: "x", stages: [{ id: "s", engine: "comfyui", outputs: { out: "image" } }] },
 });
 const sig = (): AbortSignal => new AbortController().signal;
 const remote = async (fn: () => Promise<unknown>): Promise<RemoteError> => {

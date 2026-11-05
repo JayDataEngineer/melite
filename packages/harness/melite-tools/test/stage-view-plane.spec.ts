@@ -13,12 +13,15 @@ import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { stageViewDeclaration } from "../src/stageViewPlane.ts";
 
 const ROOT = join(dirnameOf(), "../../../..");
 
 function dirnameOf(): string {
-  return new URL(".", import.meta.url).pathname;
+  // fileURLToPath, never URL.pathname (the windows CI doubled-drive
+  // class, 2026-10-31: '/D:/…' is drive-rooted RELATIVE on win32).
+  return fileURLToPath(new URL(".", import.meta.url));
 }
 
 /** The tree's own registration count, derived independently of the

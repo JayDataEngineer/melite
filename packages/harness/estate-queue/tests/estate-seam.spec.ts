@@ -1,17 +1,16 @@
 // estate-seam.spec.ts — the package seams: the QueueService seat
 // (root, lock-first refusal, ledger face, PID-checked release on
-// fiber dispose), the index plugin rows, and the resurrect adapter
-// pair (thin wrappers — the discipline lives in queue.ts).
+// fiber dispose), the index plugin rows, and the index face's ONE
+// sweep door (the core queueSweep bootSweep — no adapter twin).
 import { describe, it, afterEach } from "vitest";
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Context } from "@deepseek-ai/cordis";
 import { QueueCore } from "../src/queue.ts";
 import { QueueService } from "../src/service.ts";
-import { apply, runsRegistryPlugin } from "../src/index.ts";
-import { bootSweep } from "../src/resurrect.ts";
+import { apply, bootSweep, runsRegistryPlugin } from "../src/index.ts";
 
 let TMP = "";
 afterEach(() => {
@@ -108,12 +107,14 @@ describe("index plugin rows", () => {
   });
 });
 
-describe("resurrect adapters", () => {
-  it("the QueueRoots sweep adapter retires stale running claims (the hollow bootResurrect is retired with it)", async () => {
-    // stroke 83: bootResurrect is GONE — the service's bootReconcile
-    // replays _request.json through the start door (its walls live
-    // in runs-registry.spec). The adapter file still owns the
-    // QueueRoots sweep signature the estate seam rides.
+describe("the index face's sweep door", () => {
+  it("the package face serves the CORE bootSweep (stateRoot, liveRunIds) — a live queued claim is shielded, a stale running claim sweeps", async () => {
+    // E3 (cruft census 2026-11-01): the face once re-exported a
+    // QueueRoots signature wrapper (resurrect.ts) beside the core
+    // queueSweep door. One door remains — this arm judges the CORE
+    // signature through the face itself, so re-pointing the face at
+    // any future adapter twin reds here. (The sweep's own
+    // dispositions arm in full at queue-lock-sweep.spec.ts.)
     const root = tmp();
     const out = join(root, "output");
     mkdirSync(join(out, "run-old"), { recursive: true });
@@ -128,11 +129,17 @@ describe("resurrect adapters", () => {
       JSON.stringify({ status: "running", draft_id: "d1" }),
     );
     writeFileSync(join(out, "run-stale", "_request.json"), "{}");
-    const roots = { stateRoot: root, runsRoot: join(root, "output"), ledgerPath: join(root, "output", "_ledger.jsonl") };
-    // the queued record is LIVE work (shielded); the stale running
-    // claim sweeps.
-    const swept = await bootSweep(roots, ["run-old"]);
-    assert.ok(swept.includes("run-stale"));
-    assert.ok(!swept.includes("run-old"));
+    const swept = await bootSweep(root, ["run-old"]);
+    assert.deepEqual(swept, ["run-stale"]);
+    const stale = JSON.parse(readFileSync(join(out, "run-stale", "_flow.json"), "utf8")) as Record<
+      string,
+      unknown
+    >;
+    assert.equal(stale["status"], "failed");
+    const live = JSON.parse(readFileSync(join(out, "run-old", "_flow.json"), "utf8")) as Record<
+      string,
+      unknown
+    >;
+    assert.equal(live["status"], "queued");
   });
 });

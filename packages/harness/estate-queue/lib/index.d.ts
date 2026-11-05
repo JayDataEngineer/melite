@@ -6,7 +6,6 @@ export { ManageGatewayService } from "./manageRegistry.js";
 export type { QueueConfig } from "./service.js";
 export * from "./vocab.js";
 export * from "./queue.js";
-export { bootSweep } from "./resurrect.js";
 export declare const name = "estate-queue";
 export declare const inject: string[];
 export declare function apply(ctx: Context, config?: QueueConfig): void;

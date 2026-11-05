@@ -34,6 +34,13 @@ export class LoadResolverService extends Service {
       throw new Error("load needs name (discover it first)");
     }
     const repo = resolveRepoRoot();
+    // THE AUTHORED SKILL PLANE'S READER: the same state root the write
+    // door (melite_skill_write) and the skill read walk ride — a
+    // skill the agent authored is disclosed by melite_load exactly as
+    // a tracked one (the 2026-11-04 gap: write landed, discovery did
+    // not see it). Absent queue seat = the tracked tree alone.
+    const queue = this.ctx.get("queue") as { stateRoot?: string } | undefined;
+    const stateRoot = queue?.stateRoot;
     if (inferenceType === "flow") {
       // The flow bundle composes from the LANES seat (the lane-seat
       // law, audit finding 4): the same read the runs doors thread, so
@@ -46,6 +53,7 @@ export class LoadResolverService extends Service {
           name,
           this.ctx.get("models") as FamilyModelsSeat | undefined,
           this.ctx.get("meliteFlows") as FlowsSeat | undefined,
+          stateRoot,
         ),
       };
     }
@@ -60,6 +68,7 @@ export class LoadResolverService extends Service {
         this.ctx.cardRegistry,
         this.ctx.get("models") as CardModelsSeat | undefined,
         name,
+        stateRoot,
       ),
     };
   }

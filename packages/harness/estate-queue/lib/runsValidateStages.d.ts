@@ -19,7 +19,7 @@ export declare function cardGate(flowId: string, st: FlowStageRow, cards?: CardR
  *  untouched, and an unknown card rides verbatim (nothing to
  *  derive from). */
 export declare function coerceSnapshotBody(def: CardDefinition | undefined, body: Record<string, unknown>): Record<string, unknown>;
-export declare function kindsOk(flowId: string, stages: FlowStageRow[], engineDefaults: Record<string, string | null>, cards?: CardRegistryLike | null): void;
+export declare function kindsOk(flowId: string, stages: FlowStageRow[], cards?: CardRegistryLike | null): void;
 export declare function validateEngines(flow: Flow, cards?: CardRegistryLike | null, 
 /** THE LIVE SEAT'S REGISTERED IDS (audit S-S6, 2026-10-22): when
  *  the door can see the engines seat, membership is judged by the

@@ -27,6 +27,11 @@
 // importing these names from ./runsValidate.ts.
 export { FlowError } from "./runsValidateShared.ts";
 export type { CardRegistryLike, FlowsValidateAnswer } from "./runsValidateShared.ts";
+// THE VOCABULARY'S ONE ADDRESS (F48, 2026-11-01): the connect door's
+// teaching voices DERIVE from KIND_VOCAB (melite-tools' fold refusal
+// rode a hand copy that had already dropped `data`) — the enforcer
+// and every voice must enumerate the same closed set.
+export { KIND_VOCAB } from "./runsValidateShared.ts";
 export { strictBody } from "./runsValidateStages.ts";
 export { inlineArm, serveSubject } from "./runsValidateServe.ts";
 

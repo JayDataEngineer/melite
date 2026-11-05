@@ -29,6 +29,7 @@ import type {
 import { Context } from "@deepseek-ai/cordis";
 import { dispatchManage } from "../src/managePlane.ts";
 import type { ManageCtx } from "../src/managePlane.ts";
+import { lifecycleInFlight } from "../src/lifecycleLatch.ts";
 import { resolveStateRoot } from "../src/queueLock.ts";
 import { rootsManifest } from "../src/rootsManifest.ts";
 
@@ -706,6 +707,42 @@ describe("lifecycle guard + orchestration", () => {
       rmRoot();
     }
   });
+
+  it("launch re-arms the guard on a dead lane — the seat re-binds, never a stale handle (U6)", async () => {
+    mkRoot();
+    const bin = mkdtempSync(join(tmpdir(), "launch-hold-"));
+    try {
+      // Guard parity with stop/restart: a live run refuses launch
+      // without force (qa8's "no lifecycle guard" face).
+      runFlow("run-live", "running");
+      route(() => json({}));
+      const [gc, genv] = await manage({ action: "launch" });
+      assert.equal(gc, 409);
+      assert.match(genv.detail, /1 active run\(s\) \(run-live\)/);
+      // The dead lane: no runs claimed. The start call hangs; the
+      // re-arm must hold the latch across it (the seat re-binds to
+      // the launch action), and the hold lifts on settle.
+      rmSync(join(ROOT, "data", "runs", "output", "run-live"), { recursive: true, force: true });
+      writeFileSync(join(bin, "systemctl"), "#!/bin/sh\nsleep 30\n", "utf8");
+      chmodSync(join(bin, "systemctl"), 0o755);
+      process.env.PATH = bin + ":" + realPath;
+      assert.equal(lifecycleInFlight(), null, "no teardown in flight before the press");
+      const controller = new AbortController();
+      const pending = manage({ action: "launch", force: true }, CTX({ signal: controller.signal }));
+      let seen: string | null = null;
+      for (let i = 0; i < 200 && seen === null; i++) {
+        seen = lifecycleInFlight();
+        if (seen === null) await new Promise((r) => setTimeout(r, 10));
+      }
+      assert.equal(seen, "launch", "the re-arm actually re-arms: launch holds the guard across the start call");
+      controller.abort();
+      await assert.rejects(pending, "the aborted start propagates");
+      assert.equal(lifecycleInFlight(), null, "the hold lifts on settle — no leaked seat");
+    } finally {
+      rmSync(bin, { recursive: true, force: true });
+      rmRoot();
+    }
+  });
 });
 
 describe("hLifecycle cancellation", () => {
@@ -1178,6 +1215,34 @@ describe("hInstallExtension", () => {
       assert.equal(e4.ok, false);
       assert.equal((e4.data as { state: string }).state, "partial");
       assert.deepEqual((e4.data as { queued: string[] }).queued, ["extension:pack"]);
+    } finally {
+      rmRoot();
+    }
+  });
+
+  it("a plan-side throw that is not a declaration miss voices no-plan, never undeclared (the 1168 arm)", async () => {
+    // THE TRUE-MISS LAW's other half (qa8 F6/GAPS-11): when plan()
+    // throws for every node WITHOUT the declaration port's own "is
+    // not declared" voice (an unloadable manifest, a seat miswire),
+    // the 404 names "no plan resolved", never the undeclared law.
+    // The existing undeclared arm pins the undeclared half; this arm
+    // pins the other half — together they cover both sides of the
+    // cause fold.
+    mkRoot();
+    try {
+      const failing = {
+        reconcile: async (): Promise<never[]> => [],
+        plan: async (): Promise<never> => { throw new Error("manifest unloadable: boom"); },
+        ensure: async (): Promise<never> => { throw new Error("unreached"); },
+      };
+      const [code, env] = await manage(
+        { action: "install_extension", nodes: ["pack"] },
+        CTX({ provisioning: failing as unknown as ManageCtx["provisioning"] }),
+      );
+      assert.equal(code, 404);
+      assert.equal(env.ok, false);
+      assert.match(env.detail, /no plan resolved/);
+      assert.doesNotMatch(env.detail, /is not declared/);
     } finally {
       rmRoot();
     }

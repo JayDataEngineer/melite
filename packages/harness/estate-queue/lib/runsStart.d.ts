@@ -46,10 +46,12 @@ export interface CompiledStage {
     readonly expected: Record<string, EngineJson>;
     readonly outputNodes: Record<string, EngineJson>;
     readonly inputNames: Record<string, string>;
-    /** The stage DECLARED its outputs map (false = the engine-table
-     *  fill supplied {default: ...}). The replay judge judges only
-     *  fully-declared docs — a filled row's real channels live in the
-     *  card plane (validate + the compose own those verdicts). */
+    /** The stage DECLARED its outputs (true = the outputs map or the
+     *  cardIo table rode the doc — both are the doc's own tables, so
+     *  the replay judge can read the channels. False = a fill supplied
+     *  them from outside the doc (pre-one-table docs, whose engine-fill
+     *  {default: ...} channels live nowhere the doc names). The replay
+     *  judge judges only fully-declared docs. */
     readonly outputsDeclared: boolean;
 }
 /** flow_inline structural compile — door-verbatim (structure via

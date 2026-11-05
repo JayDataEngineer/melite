@@ -16,6 +16,7 @@ import { tmpdir } from 'node:os'
 import * as path from 'node:path'
 import * as os from 'node:os'
 import { Context } from '@deepseek-ai/cordis'
+import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import { apply, inject, ESTATE_PENDING_GRACE_MS, ESTATE_PENDING_REARM_MS } from '../src/doors.ts'
 import { buildSkillIndex, disclosureRoot } from '@melite/estate-queue'
 import { resolveRepoRoot } from '@melite/comfyui-cordis'
@@ -89,6 +90,10 @@ function fakeHost(opts?: {
    *  field seats ids 'mcp:<server>' here — the MCP card's OPT-IN
    *  signal (error j2); undefined leaves the seat unmounted. */
   engines?: string[]
+  /** the estate queue seat's state root: the skill census's
+   *  selection rides it (the §8.3 writer-root cure); undefined
+   *  leaves the seat unmounted (the repo fallback stands). */
+  queueStateRoot?: string
 }): { host: unknown; routes: Route[]; labels: string[] } {
   const routes: Route[] = []
   const labels: string[] = []
@@ -119,6 +124,12 @@ function fakeHost(opts?: {
       // the engines seat (the MCP card's opt-in signal — error j2)
       if (serviceName === 'engines' && opts?.engines !== undefined) {
         return { ids: () => [...opts.engines!] }
+      }
+      // the estate queue seat (the skill census's writer root — the
+      // §8.3 cure): the stub READS the state root the way the real
+      // seat carries it
+      if (serviceName === 'queue' && opts?.queueStateRoot !== undefined) {
+        return { stateRoot: opts.queueStateRoot }
       }
       // the DSH browser carrier (the /v1 auth gate probes for it)
       if (serviceName === 'connection' && opts?.connectionRejection !== undefined) {
@@ -1440,16 +1451,27 @@ describe('binary lora door', () => {
     const dir = mkdtempSync(path.join(os.tmpdir(), 'melite-lora-door-'))
     created.push(dir)
     process.env['MELITE_COMFYUI_LORAS_DIR'] = dir
+    // ROWS-FILE ISOLATION (the poison cure, 2026-11-15): this door
+    // SEATS rows now — a spec without this override writes the
+    // machine's real data/loras/user-loras.json and the next boot
+    // dies on the debris at the mod interlock
+    process.env['MELITE_USER_LORAS'] = path.join(dir, 'user-loras.json')
     return dir
   }
   let savedEnv: string | undefined
-  beforeEach(() => { savedEnv = process.env['MELITE_COMFYUI_LORAS_DIR'] })
+  let savedRows: string | undefined
+  beforeEach(() => {
+    savedEnv = process.env['MELITE_COMFYUI_LORAS_DIR']
+    savedRows = process.env['MELITE_USER_LORAS']
+  })
   afterEach(() => {
     if (savedEnv === undefined) delete process.env['MELITE_COMFYUI_LORAS_DIR']
     else process.env['MELITE_COMFYUI_LORAS_DIR'] = savedEnv
+    if (savedRows === undefined) delete process.env['MELITE_USER_LORAS']
+    else process.env['MELITE_USER_LORAS'] = savedRows
   })
 
-  test('raw octet-stream bytes land in the declared loras dir; the answer carries the row suggestion', async () => {
+  test('raw octet-stream bytes land and SEAT the row (LAND = SEATED, the flat multi-family arm)', async () => {
     const dir = withDir()
     const h = boot({})
     const { status, body } = await call(h.routes, '/v1/uploads/lora', {
@@ -1462,14 +1484,22 @@ describe('binary lora door', () => {
       },
     })
     assert.equal(status, 200)
-    const out = body as { filename: string, bytes: number, install_dir: string, next_action: string, row_suggestion: { id: string, families: string[] } }
+    const out = body as { filename: string, bytes: number, install_dir: string, restart_required: boolean, row_seated: boolean, row: { id: string, filename: string, families: string[] } }
     assert.equal(out.filename, TAG + 'shiny.safetensors')
     assert.equal(out.bytes, LORA_BYTES.byteLength)
     assert.equal(out.install_dir, dir)
-    assert.equal(out.next_action, 'restart')
-    // the id collapses non-alphanumerics (the manage arm's own rule)
-    assert.equal(out.row_suggestion.id, TAG.replace(/-/g, '_') + 'shiny')
-    assert.deepEqual(out.row_suggestion.families, ['z-image', 'qwen'])
+    // THE RESTART LIE IS DEAD — no commanded reboot, and NO fake
+    // next_action either (no manage verb follows a landed row; a
+    // fake one renders a dead button the plane would 422)
+    assert.equal('next_action' in (body as Record<string, unknown>), false)
+    assert.equal(out.restart_required, false)
+    // LAND = SEATED: two families = the flat arm, the row carries
+    // every stated family, written to the ISOLATED rows file
+    assert.equal(out.row_seated, true)
+    assert.equal(out.row.id, TAG + 'shiny.safetensors')
+    assert.deepEqual(out.row.families, ['z-image', 'qwen'])
+    const seated = JSON.parse(await fs.readFile(path.join(dir, 'user-loras.json'), 'utf8')) as { rows: Array<{ id: string }> }
+    assert.equal(seated.rows[0]?.id, TAG + 'shiny.safetensors')
     assert.deepEqual(
       await fs.readFile(path.join(dir, TAG + 'shiny.safetensors')),
       LORA_BYTES,
@@ -1555,15 +1585,25 @@ describe('binary lora door', () => {
     // No env override and no model_base_path in the endpoint file: the
     // dir is null and the door refuses without buffering a byte.
     delete process.env['MELITE_COMFYUI_LORAS_DIR']
-    const h = boot({})
-    const r = await call(h.routes, '/v1/uploads/lora', {
-      method: 'POST',
-      url: '/v1/uploads/lora?filename=a.safetensors',
-      raw: 'x',
-      headers: { 'content-type': 'application/octet-stream', 'content-length': '8' },
-    })
-    assert.equal(r.status, 502)
-    assert.ok(String((r.body as { error: string }).error).includes('undeclared'))
+    // THE UNDECLARED PREMISE (2026-11-04): the resolver's third leg
+    // answers the checkout's own runtime tree when it exists, so this
+    // arm points the root at a tree that carries none.
+    const prevRepo = process.env['MELITE_REPO_ROOT']
+    process.env['MELITE_REPO_ROOT'] = mkdtempSync(path.join(tmpdir(), 'doors-norepo-'))
+    try {
+      const h = boot({})
+      const r = await call(h.routes, '/v1/uploads/lora', {
+        method: 'POST',
+        url: '/v1/uploads/lora?filename=a.safetensors',
+        raw: 'x',
+        headers: { 'content-type': 'application/octet-stream', 'content-length': '8' },
+      })
+      assert.equal(r.status, 502)
+      assert.ok(String((r.body as { error: string }).error).includes('undeclared'))
+    } finally {
+      if (prevRepo === undefined) delete process.env['MELITE_REPO_ROOT']
+      else process.env['MELITE_REPO_ROOT'] = prevRepo
+    }
   })
 
   test('a body that dies mid-read refuses 500 — Error and non-Error both voice', async () => {
@@ -2062,6 +2102,45 @@ describe('/v1 prefix discovery arms', () => {
     }
   })
 
+  test('form-spec census rides the queue seat state root (the §8.3 writer-root cure)', async () => {
+    // ONE ROOT: with the estate queue mounted, the selection reads
+    // the WRITER's tree (<queueStateRoot>/storage/drafts/docs — the
+    // derivation melite-estate index.ts:676 hands the drafts row)
+    // and IGNORES the repo tree no producer writes; without the seat
+    // the repo fallback stands (the test above). Toggle the census's
+    // probe out and the writer seed goes invisible — this arm reds.
+    const state = mkdtempSync(path.join(tmpdir(), 'doors-writer-'))
+    const writerDoc = path.join(state, 'storage', 'drafts', 'docs', 'bench-session-doors-writer.json')
+    mkdirSync(path.dirname(writerDoc), { recursive: true })
+    writeFileSync(
+      writerDoc,
+      JSON.stringify({ record: { doc: { stages: [{ card: 'image-gen', params: { model: 'krea-2' } }] } } }),
+    )
+    const repoDoc = path.join(resolveRepoRoot(), 'data', 'runs', 'storage', 'drafts', 'docs', 'bench-session-doors-repo.json')
+    mkdirSync(path.dirname(repoDoc), { recursive: true })
+    writeFileSync(
+      repoDoc,
+      JSON.stringify({ record: { doc: { stages: [{ card: 'image-edit', params: {} }] } } }),
+    )
+    try {
+      const h = boot({ schemas: [{ name: 'melite_discover', description: 'discover things' }], queueStateRoot: state })
+      const r = await call(h.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/form-spec?model=agent' })
+      assert.equal(r.status, 200)
+      const body = r.body as {
+        features: { modifiers: Array<{ param_key: string; fields?: Array<{ options?: Array<{ value: string; label: string }> }> }> }
+      }
+      const skills = body.features.modifiers.find((m) => m.param_key === 'skills')
+      assert.ok(skills !== undefined, 'the agent doc carries the skills modifier')
+      const labels = (skills.fields![0]!.options ?? []).map((o) => o.label)
+      assert.ok(labels.includes('image-gen'), 'the writer-tree bench serves')
+      assert.ok(labels.includes('krea-2'), 'the benched family serves')
+      assert.ok(!labels.includes('image-edit'), 'the repo-tree bench (no producer writes it) never rides a seated root')
+    } finally {
+      rmSync(state, { recursive: true, force: true })
+      rmSync(repoDoc, { force: true })
+    }
+  })
+
   test('form-spec serves the craft engine doc (no card, no family)', async () => {
     const h = boot({})
     const r = await call(h.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/form-spec?model=craft' })
@@ -2112,6 +2191,42 @@ describe('/v1 prefix seat lanes', () => {
     assert.equal(empty.status, 200)
   })
 
+  test('PATCH forwards its JSON body to the seat (the settled-run e2e 502)', async () => {
+    // THE PATCH BODY LAW (2026-11-01): the /v1 front used to read
+    // request bodies on POST only, so the drafts stage PATCH rode
+    // body=undefined into the seat and died as 'draft stage patch
+    // needs a JSON body' (502) — the browser plane's only run-stamp
+    // door. The arm below fails if the front ever drops a PATCH body
+    // again; the seat sees the exact patch plus the attribution seat
+    // law (expectRev null, signal in its own slot).
+    const h = seatsHost()
+    const seen: unknown[][] = []
+    const inner = (h as unknown as { host: { get(name: string): unknown } }).host
+    const origGet = inner.get.bind(inner)
+    inner.get = (name: string) => name === 'draftsRemote'
+      ? {
+        patch: async (...args: unknown[]) => {
+          seen.push(args)
+          return { rev: 7 }
+        },
+      }
+      : origGet(name)
+    const patch = { runStatus: 'done', result: { run_id: 'r1' } }
+    const r = await call(h.routes, '/v1', {
+      method: 'PATCH',
+      url: 'http://localhost/v1/flows/drafts/d7/stages/s3',
+      body: patch,
+    })
+    assert.equal(r.status, 200)
+    assert.equal(seen.length, 1)
+    const args = seen[0]!
+    assert.equal(args[0], 'd7')
+    assert.equal(args[1], 's3')
+    assert.deepEqual(args[2], patch)
+    assert.equal(args[3], null)
+    assert.ok(args[4] instanceof AbortSignal)
+  })
+
   test('a non-object POST body gets a named 400 at the door (strictness fix 6)', async () => {
     const h = seatsHost()
     for (const [label, raw] of [['array', '[1,2]'], ['number', '42'], ['string', '"x"'], ['null', 'null']] as const) {
@@ -2147,6 +2262,47 @@ describe('/v1 prefix seat lanes', () => {
     const bad = await call(h.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/manage' })
     assert.equal(bad.status, 502)
     assert.ok(String((bad.body as { error: string }).error).includes('no seat on this lane serves'))
+  })
+
+  test('the authored-skill plane answers its OWN class: a refusal is 400, an absence 404 (never the 502 catch-all)', async () => {
+    const h = fakeHost({})
+    const host = h.host as { get(name: string): unknown }
+    host.get = (serviceName: string) => {
+      if (serviceName !== 'meliteSkills') return undefined
+      return {
+        index: () => [],
+        // the seat's real throws after the 2026-11-04 cure: a refused
+        // draft is the CALLER's error, a missing doc is absence —
+        // neither is a transport failure
+        write: () => {
+          throw new RemoteError('melite/skill-refused', 'skill write refusal: model: Field required', {})
+        },
+        read: () => {
+          throw new RemoteError('melite/skill-unknown', 'no such skill: "ghost"', { skillId: 'ghost' })
+        },
+      }
+    }
+    apply(host as never, {})
+    const refused = await call(h.routes, '/v1', {
+      method: 'POST',
+      url: 'http://localhost/v1/skills',
+      body: {},
+    })
+    assert.equal(refused.status, 400)
+    assert.deepEqual(refused.body, {
+      error: 'skill write refusal: model: Field required',
+      code: 'melite/skill-refused',
+    })
+    const missing = await call(h.routes, '/v1', {
+      method: 'GET',
+      url: 'http://localhost/v1/skills/ghost',
+    })
+    assert.equal(missing.status, 404)
+    assert.deepEqual(missing.body, {
+      skillId: 'ghost',
+      error: 'no such skill: "ghost"',
+      code: 'melite/skill-unknown',
+    })
   })
 
   test('non-JSON POST bodies 400; read failures 400; seat failures 502', async () => {

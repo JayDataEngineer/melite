@@ -104,6 +104,30 @@ describe("benchPicksSync — the live seat's law", () => {
     rmSync(docs(), { recursive: true, force: true });
     assert.deepEqual(benchPicksSync(ROOT), []);
   });
+
+  it("a non-ENOENT roster failure voices LOUD and answers empty (ENOTDIR is never the tolerated absence)", () => {
+    // the roster PATH exists but is not a dir: readdir throws ENOTDIR,
+    // the failure the ENOENT fence does not swallow — the census path
+    // must degrade to nothing AND name the failure, never crash.
+    rmSync(ROOT, { recursive: true, force: true });
+    writeFileSync(ROOT, "a file where the storage root stood");
+    const errors: unknown[][] = [];
+    const realError = console.error;
+    console.error = (...a: unknown[]): void => { errors.push(a); };
+    try {
+      assert.deepEqual(benchPicksSync(ROOT), []);
+    } finally {
+      console.error = realError;
+    }
+    assert.ok(
+      errors.some((a) => String(a[0]).includes("[benchPicksSync] roster read failed:")),
+      `the roster failure must voice itself: ${JSON.stringify(errors.map((a) => String(a[0])))}`,
+    );
+    assert.ok(
+      errors.some((a) => (a[1] as NodeJS.ErrnoException)?.code === "ENOTDIR"),
+      "the voiced failure carries the ENOTDIR cause",
+    );
+  });
 });
 
 describe("benchPicksSync — the whole law in one pass", () => {

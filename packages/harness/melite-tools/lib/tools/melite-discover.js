@@ -130,7 +130,12 @@ export function meliteDiscover(estate, expandEstateDoors) {
                 if (flows.length > 0) {
                     out.push('flows:');
                     for (const f of flows.slice(0, RENDER_CLAMP)) {
-                        out.push(`  ${line(f?.name)} — ${line(f?.title)} (${num(f?.stages)} stages)`);
+                        // (F57, 2026-11-13) the line NAMES the flow's initial keys
+                        // — the spell-stem seats the flow door binds ($photo→
+                        // photo), derived from the registry — so the TRUE press is
+                        // learned at discovery, never through the seam's refusal.
+                        const initials = Array.isArray(f?.initials) ? f.initials.filter((k) => typeof k === 'string') : [];
+                        out.push(`  ${line(f?.name)} — ${line(f?.title)} (${num(f?.stages)} stages${initials.length > 0 ? `; initials: ${initials.join(', ')}` : ''})`);
                     }
                     if (!wantsAll && nf > RENDER_CLAMP)
                         out.push(`  +${nf - RENDER_CLAMP} more — detail=true lists every line`);

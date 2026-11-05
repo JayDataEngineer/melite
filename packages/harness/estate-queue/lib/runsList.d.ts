@@ -4,6 +4,10 @@ import { type DraftId } from "@melite/contracts/benchStage";
 export declare function parseLeadingInt(s: string): number;
 /** sidecar_num: first `"key":`, strtol the tail, default when the key is absent. */
 export declare function sidecarNum(text: string, key: string, dflt: number): number;
+/** sidecar_bool: first `"key":`, skip spaces/tabs, expect the
+ *  `true`/`false` literal — default when the key is absent or
+ *  non-boolean (never guessed; a torn write reads the default). */
+export declare function sidecarBool(text: string, key: string, dflt: boolean): boolean;
 /** sidecar_str: BYTE-wise exact — first `"key":`, skip spaces/tabs, expect `"`, decode \\n \\r \\t \" \\ (any other escape lands literally — \u stays "u"), stop at cap-1 BYTES. Operates on the UTF-8 bytes (D5). */
 export declare function sidecarStr(raw: Uint8Array, key: string, cap: number): string;
 /** _sidecar_str_impl found-ness: only the runs-list status site reads it — a present-but-empty "status" serves "" (the gate then skips the row), while an absent/non-string key serves "unknown". */
@@ -18,6 +22,19 @@ export declare function mediaCandidates(runDir: string): MediaCand[];
 /** run_artifacts: image/video/audio/model rows (image capped at _MAX_IMGS — counted but unlisted past it), everything else skipped; the {truncated,listed,total} marker when entries went unlisted. */
 /** path keeps the "./output/<run>/" literal. */
 export declare function runArtifacts(runDir: string, outDirLiteral: string): Record<string, unknown>[];
+/** _archived_artifacts (the mass-archive law, operator ruling
+ *  2026-11-14, item (a)): the tucked-away face — files resting under
+ *  `<run>/_archived/`, served as a SEPARATE array (the live `arts`
+ *  grammar is untouched: artifactRowOk still demands exactly its six
+ *  keys, so archived rows ride no 7-key exception). Same row shape
+ *  (name/path/bytes/url/type/size), same type law, same two-tier
+ *  depth as the live walk (top files + one subdir level — the tuck
+ *  preserves the relative tail, so deeper nestings do not occur);
+ *  NO image cap (tucked rows flood no grid — the panel hides them
+ *  unless the operator toggles them visible, and the tuck is an
+ *  operator gesture, never an engine frame-dump). Absent dir reads
+ *  as the empty face, never a throw. */
+export declare function runArchivedArtifacts(runDir: string, outDirLiteral: string): Record<string, unknown>[];
 /** _run_thumbnail: cached poster wins; else — THE WITNESS LAW (F32 cure,
  *  2026-11-13) — the run's VIDEO leads, then the first still.
  *
@@ -69,6 +86,18 @@ export declare function runRowOrNull(row: {
         listed: number;
         total: number;
     };
+    /** THE ARCHIVED FACE (mass-archive law, operator ruling
+     *  2026-11-14, item (a)): the tucked-away rows ride ALONGSIDE
+     *  the live list — the live grammar untouched. Optional —
+     *  runs with nothing archived stamp nothing. */
+    archived?: Record<string, unknown>[];
+    /** THE TEST STAMP (visible-bench law, operator ruling
+     *  2026-11-14, item (b)): the seat the run rode —
+     *  test-output/ rows stamp true. The live face stamps the
+     *  same key (runsRegistry's TEST FLAG), so both faces agree.
+     *  Optional — pre-cure sidecars predate the key and read as
+     *  production. */
+    test?: boolean;
 }): Record<string, unknown> | null;
 /** Strict int parse: surrounding whitespace stripped, one optional
  *  sign, ASCII digits with single internal underscores ("1_0" ->
@@ -97,19 +126,20 @@ export declare function firstQuery(qs: Record<string, string[]>, name: string, d
  *  the run-id segment is what matters).
  */
 export declare function noteRunTreeChanged(mutatedPath: string): void;
-/** The runs-list envelope (the restore port): the output-root scan, media-first + newest sort, the limit parse (raw STRING — the lane/remote pass the raw text; underscores parse, non-ints refuse), refused cards SKIPPED but counted. */
+/** The runs-list envelope (the restore port): the BOTH-SEATS scan per root (visible-bench law), media-first + newest sort, the limit sliced off the merged order, the limit parsed (raw STRING — the lane/remote pass the raw text; underscores parse, non-ints refuse), refused cards SKIPPED but counted. */
 /** url/thumbnail are run-RELATIVE (the /v1/assets prefix died with the app — the header's law). */
 export declare function listRuns(stateRoot: string, limit: number, hasDraft: (draftId: DraftId) => Promise<boolean>): Promise<{
     count: number;
     runs: Record<string, unknown>[];
 }>;
 /** §23 CROSS-ROOTS (2026-09-23): the union list across the
- *  manifest — every root scanned, one media-first + newest sort,
+ *  manifest — every root scanned (BOTH out seats per root since
+ *  the visible-bench flip), one media-first + newest sort,
  *  the limit sliced off the merged order, the scan total counted
  *  (refused cards SKIPPED but counted, per root). Every served row
- *  names its root (served_from); same-run-id collisions serve the
- *  FIRST manifest root's row (own writes win — the sort is stable,
- *  own root scanned first). */
+ *  names its root (served_from) and its seat (`test`, `path`);
+ *  same-run-id collisions serve the FIRST manifest root's row
+ *  (own writes win — the sort is stable, own root scanned first). */
 export declare function listRunsAcross(roots: string[], limit: number, hasDraft: (draftId: DraftId) => Promise<boolean>): Promise<{
     count: number;
     runs: Record<string, unknown>[];

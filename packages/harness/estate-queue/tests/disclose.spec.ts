@@ -16,7 +16,7 @@ import {
   searchFlows,
 } from "../src/discloseRegistry.ts";
 import type { FlowSummary, SearchableCard } from "../src/discloseRegistry.ts";
-import { FlowsSeatService } from "../src/flowsData.ts";
+import { FlowsSeatService, seedFlowsSeat } from "../src/flowsData.ts";
 
 const defs = (rows: Array<[string, SearchableCard]>): ReadonlyMap<string, SearchableCard> =>
   new Map(rows);
@@ -95,8 +95,10 @@ describe("searchCards", () => {
 
 describe("searchFlows", () => {
   const rows: FlowSummary[] = [
-    { name: "b-flow", title: "Beta", description: "second", stages: 2, skillRefs: [] },
-    { name: "a-flow", title: "Alpha", description: "first", stages: 1, skillRefs: ["s"] },
+    // initials: [] — the search corpus is q-routing only; the F57
+    // key-naming law is judged on the real roster (flowSummaryRows)
+    { name: "b-flow", title: "Beta", description: "second", stages: 2, skillRefs: [], initials: [] },
+    { name: "a-flow", title: "Alpha", description: "first", stages: 1, skillRefs: ["s"], initials: [] },
   ];
 
   it("empty q returns all sorted; tokens narrow", () => {
@@ -124,6 +126,40 @@ describe("flowSummaryRows", () => {
     );
   });
 
+  // ── F57 (operator 2026-11-13: "single-stage flow initial keys are
+  // UNDOCUMENTED — natural keys fail with internal errors … the error
+  // text is the only teacher") — the DISCOVERY tier names every
+  // flow's initial keys, derived from the registry row (required
+  // first, then the optional validators), so the spell-stem seats the
+  // flow door binds are learned BEFORE a natural-key press meets the
+  // seam. A real-roster walker, never a frozen list: a new flow owes
+  // its initials the day it seats.
+  it("F57: every summary row names its registry initial keys (required first) — the anny spell stems included", () => {
+    const seat = seedFlowsSeat();
+    const rows = flowSummaryRows(resolveRepoRoot());
+    const byName = new Map(rows.map((r) => [r.name, r]));
+    for (const name of seat.names()) {
+      const row = seat.get(name)!;
+      const required = row.requiredInitials ?? [];
+      const optional = Object.keys(row.initialValidators).filter((k) => !required.includes(k));
+      const expected = [...required, ...optional];
+      assert.deepEqual(
+        byName.get(name)?.initials,
+        expected,
+        `${name}: the summary names the row's initial keys, required first`,
+      );
+    }
+    // THE F57 SPELLS, verbatim — the exact seats the operator's
+    // natural-key presses (image, mesh) missed
+    assert.deepEqual(byName.get("anny-hmr-estimator")?.initials, ["photo"]);
+    assert.deepEqual(byName.get("anny-params")?.initials, ["params_json"]);
+    // requireds lead: craft-loop's brief+command before the optional dial
+    assert.deepEqual(byName.get("craft-loop")?.initials, ["agent_prompt", "command", "max_iterations"]);
+    // fit-seat's bone is REQUIRED (the vendor row gate) — it leads
+    // the two optional mesh seats
+    assert.deepEqual(byName.get("fit-seat")?.initials, ["bone", "body", "prop"]);
+  });
+
   it("no leaf reads the registry title; leaves override it", () => {
     const repo = mkdtempSync(join(tmpdir(), "disclose-repo-"));
     try {
@@ -132,13 +168,13 @@ describe("flowSummaryRows", () => {
         writeFileSync(join(repo, "flows", name, "tool.json"), JSON.stringify(body));
       };
       leaf("anny-hmr-estimator", { stage_title: "Anny face" });
-      leaf("audio-native-tts", {});
-      leaf("body-to-somax", { stage_title: "" });
+      leaf("image-upscale", {});
+      leaf("object-forge", { stage_title: "" });
       leaf("craft-loop", { stage_title: 5 });
       const byName = new Map(flowSummaryRows(repo).map((r) => [r.name, r.title]));
       assert.equal(byName.get("anny-hmr-estimator"), "Anny face");
-      assert.equal(byName.get("audio-native-tts"), "audio-native-tts");
-      assert.equal(byName.get("body-to-somax"), "body-to-somax");
+      assert.equal(byName.get("image-upscale"), "image-upscale");
+      assert.equal(byName.get("object-forge"), "object-forge");
       assert.equal(byName.get("craft-loop"), "craft-loop");
       assert.equal(byName.get("fit-seat"), "fit-seat");
     } finally {
@@ -167,6 +203,11 @@ describe("DiscloseDirectoryService", () => {
     const flows = seat().discover("flows", "", "");
     assert.ok(Array.isArray(flows.flows));
     assert.equal(flows.cards, undefined);
+    // F57: the provider serves the summary rows VERBATIM — the
+    // initial keys ride to the tool face (the "; initials:"
+    // segment), never hand-stripped at the seam
+    const anny = flows.flows?.find((f) => f.name === "anny-hmr-estimator");
+    assert.deepEqual(anny?.initials, ["photo"]);
     const cards = seat().discover("cards", "one", "");
     assert.deepEqual(cards.cards?.map((r) => r.id), ["c1"]);
     assert.equal(cards.flows, undefined);
@@ -209,20 +250,23 @@ describe("flowContractRows (the app door: what a named flow TAKES)", () => {
   it("states every registry flow's stages, inputs, outputs and tool signature", () => {
     const rows = flowContractRows();
     assert.ok(rows.length > 0, "the registry has flows to describe");
-    const tts = rows.find((r) => r.id === "audio-native-tts");
-    assert.ok(tts !== undefined, "audio-native-tts carries a contract");
+    // (re-homed 2026-11-14 from the retired audio-native-tts wrapper —
+    // image-upscale carries the same contract shape, two stages deep)
+    const up = rows.find((r) => r.id === "image-upscale");
+    assert.ok(up !== undefined, "image-upscale carries a contract");
     // the stage is STATED, not counted — an app reads the card + params
-    assert.equal(tts.stages.length, 1);
-    assert.equal(tts.stages[0]?.card, "tts");
-    assert.equal(tts.stages[0]?.engine, "comfyui", "the card plane's engine id");
+    assert.equal(up.stages.length, 2);
+    assert.equal(up.stages[0]?.card, "image-gen");
+    assert.equal(up.stages[0]?.engine, "comfyui", "the card plane's engine id");
     // the tool signature is the JSON-Schema face the flow declares
-    const tool = tts.tool as { name?: string; required?: string[] } | null;
-    assert.equal(tool?.name, "speak");
-    // the caller key IS the initial name (2026-10-04) — a contract that
-    // advertised a key the door never reads would be a lying API
-    assert.deepEqual(tool?.required, ["text"]);
+    const tool = up.tool as { name?: string; required?: string[] } | null;
+    assert.equal(tool?.name, "image_upscale");
+    // the caller key IS the initial name (the 2026-10-04 law) — a
+    // contract that advertised a key the door never reads would be a
+    // lying API
+    assert.deepEqual(tool?.required, ["image_model", "prompt"]);
     // and the validate-time gate rides, so a caller knows what must hold
-    assert.deepEqual(tts.initialValidators, { text: "text" });
+    assert.deepEqual(up.initialValidators, { prompt: "text" });
     // every row names itself; none is anonymous
     for (const r of rows) assert.equal(r.id, r.id.trim() === "" ? "" : r.id);
   });

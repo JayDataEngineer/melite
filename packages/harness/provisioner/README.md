@@ -31,19 +31,21 @@ Declared exports: `.` (the workspace-linked bundle row) and `./package.json`.
 ```sh
 node packages/harness/provisioner/bin/infer-provision.mjs all
 node packages/harness/provisioner/bin/infer-provision.mjs profile melite-test
-node packages/harness/provisioner/bin/infer-provision.mjs profile headless --dsh-home /tmp/melite-dsh
+node packages/harness/provisioner/bin/infer-provision.mjs profile estate --dsh-home /tmp/melite-dsh
 ```
 
-`all` renders `inference`, `headless`, `estate`, and `melite-test`, then runs
-pnpm in each rendered profile. The output is machine-local state; the source
-of truth is this package and the workspace.
+`all` renders `melite-test` and `estate`, then runs pnpm in each rendered
+profile. The output is machine-local state; the source of truth is this
+package and the workspace.
 
 ## Interfaces
 
-- `inference` and `melite-test` mount the web app and the browser card UI.
-- `headless` mounts the DSH headless app. `MELITE_HEADLESS=1` selects the
-  delegated run interface.
-- `estate` mounts the SDK app and the headless tool interface.
+- `melite-test` mounts the web app and the browser card UI.
+- `estate` mounts the SDK app as a job-server lane.
+- Headless one-shot runs are DSH's own surface: `dsh headless "task brief"`
+  rides DSH's shipped `headless` profile. Melite renders no parallel headless
+  mount; the run doors (`melite_flow` / `run_status`) seat from the home's
+  persisted `/melite-runs` record in every profile.
 
 The tool transport is in-process through the mounted estate row. Do not add a
 `MELITE_GATEWAY` setting or a second HTTP service.
@@ -61,7 +63,7 @@ profile is not a substitute for reading that reference.
 ## Verification
 
 ```sh
-pnpm --dir packages/harness/provisioner exec infer-provision profile headless --dsh-home /tmp/melite-dsh
+pnpm --dir packages/harness/provisioner exec infer-provision profile estate --dsh-home /tmp/melite-dsh
 pnpm run test
 pnpm run lint
 ```
@@ -92,6 +94,6 @@ Independent — no conversation state.
 
 - **Rendered profiles are machine-local state** — they are not a source of
   truth; re-render after manifest or workspace changes.
-- **Headless selection is render-time** — `MELITE_HEADLESS` picks the
-  delegated run interface per profile; there is no per-request interface
-  switch.
+- **There is no melite headless profile** — HEADLESS IS DSH'S
+  (`dsh headless "task"`); `profile headless` refuses loud, and run-door
+  seating follows the home's `/melite-runs` record, not a render flag.

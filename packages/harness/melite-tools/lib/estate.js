@@ -198,6 +198,14 @@ async function trySeats(ctx, method, path, body, signal) {
             return undefined;
         return seats.skills.index();
     }
+    // THE WRITE SIDE (melite_skill_write): the agent authors a skill
+    // doc; the seat validates the wire body and lands it in the
+    // authored plane (one walk serves write and read alike).
+    if (method === 'POST' && path === '/v1/skills') {
+        if (seats.skills === undefined)
+            return undefined;
+        return seats.skills.write(body);
+    }
     m = /^\/v1\/skills\/([^/?]+)$/.exec(path);
     if (method === 'GET' && m !== null) {
         if (seats.skills === undefined)
@@ -541,6 +549,7 @@ export function makeEstate(ctx) {
         flowsContracts: lane('GET /v1/flows', DISCLOSE_LANE, (s) => s.disclose === undefined ? undefined : s.disclose.contracts()),
         manageAct: (doc, signal, timeoutMs) => estateLane(ctx, 'POST /v1/manage', MANAGE_LANE, (s) => s.manage === undefined ? undefined : s.manage.act(doc, signal), signal, timeoutMs),
         skillsIndex: lane('GET /v1/skills', SKILLS_LANE, (s) => s.skills === undefined ? undefined : s.skills.index()),
+        skillWrite: (doc, signal, timeoutMs) => estateLane(ctx, 'POST /v1/skills', SKILLS_LANE, (s) => s.skills === undefined ? undefined : s.skills.write(doc), signal, timeoutMs),
         skillRead: (id, signal, timeoutMs) => estateLane(ctx, `GET /v1/skills/${encodeURIComponent(id)}`, SKILLS_LANE, (s) => s.skills === undefined ? undefined : s.skills.read(id, signal), signal, timeoutMs),
         loadCard: (inferenceType, name, signal, timeoutMs) => estateLane(ctx, `GET /v1/load?inference_type=${encodeURIComponent(inferenceType)}&name=${encodeURIComponent(name)}`, LOAD_LANE, (s) => s.load === undefined ? undefined : s.load.load(inferenceType, name), signal, timeoutMs),
         ledgerTail: (limit, event, signal, timeoutMs) => estateLane(ctx, 'GET /v1/ledger', QUEUE_LANE, 

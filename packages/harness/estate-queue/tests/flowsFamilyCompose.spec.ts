@@ -62,8 +62,10 @@ const ANNY_ESTIMATE_FLOW = (): RegistryFlow => ({
 
 describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
   it("a card-only flow passes through untouched", () => {
-    const row = SEED.get("audio-native-tts");
-    assert.notEqual(row, undefined, "audio-native-tts is a registry flow");
+    // (re-homed 2026-11-14 from the retired audio-native-tts wrapper —
+    // image-upscale is a card-only survivor: both stages board cards)
+    const row = SEED.get("image-upscale");
+    assert.notEqual(row, undefined, "image-upscale is a registry flow");
     const expanded = expandRegistryFlow(row!, SEED);
     assert.equal(composeFamilyStages(expanded, decls, "seated"), expanded);
   });

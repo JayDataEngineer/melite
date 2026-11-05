@@ -14,17 +14,15 @@ export interface CardRegistryLike {
 }
 export declare const ENGINE_TABLE: Record<string, {
     plugin: string;
-    def: string;
 }>;
-/** THE ENGINE TABLE'S DEFAULT READ (P7 latent): the lattice's own
- *  rule, owned once — mcp:<server> grammar ids read the mcp-client
- *  row ("image"), table rows read their def, anything else reads
- *  undefined (unknown: no fill — the caller's door refuses, never
- *  guesses). Both doors derive from this one read (validate's
- *  lattice below, start's empty-outputs fill): a future grammar id
- *  absent from the table makes BOTH refuse instead of splitting
- *  validate-refuses/start-accepts. */
-export declare function engineDefaultOutput(engine: string): string | undefined;
+/** THE ENGINE MEMBERSHIP READ (the one-table cure, 2026-11-01):
+ *  the lattice's and the start door's shared existence check —
+ *  table rows plus the mcp-client grammar leg (read here, never
+ *  retyped at either door). It answers existence ONLY: what a
+ *  stage produces comes from the stage's own tables (outputs,
+ *  card_io, the card's declared kinds), never from this registry.
+ *  Unknown ids refuse at the caller's door, in the door's voice. */
+export declare function engineKnown(engine: string): boolean;
 export declare const KIND_VOCAB: readonly string[];
 export declare const SKIP_VOCAB: readonly string[];
 export declare const INLINE_TOP_SORTED: readonly string[];

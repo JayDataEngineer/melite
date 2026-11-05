@@ -38,7 +38,6 @@ import { appendLedger, graphReceiptFoldOf, outRootFor, refusal, sidecarDoc, side
 import type { GraphReceiptStageRow, QueueRefusal } from "./queue.ts";
 import { lifecycleInFlight } from "./lifecycleLatch.ts";
 import { toRemoteError } from "./runsRefusalVoices.ts";
-import { engineDefaultOutput } from "./runsValidateShared.ts";
 import { rootsManifest } from "./rootsManifest.ts";
 // the envelope-refusal SSOT lives in queueSubmit.ts (beside
 // walkSubmitEnvelope, the one walker the registry delegates to) —
@@ -181,10 +180,12 @@ export interface CompiledStage {
   readonly expected: Record<string, EngineJson>;
   readonly outputNodes: Record<string, EngineJson>;
   readonly inputNames: Record<string, string>;
-  /** The stage DECLARED its outputs map (false = the engine-table
-   *  fill supplied {default: ...}). The replay judge judges only
-   *  fully-declared docs — a filled row's real channels live in the
-   *  card plane (validate + the compose own those verdicts). */
+  /** The stage DECLARED its outputs (true = the outputs map or the
+   *  cardIo table rode the doc — both are the doc's own tables, so
+   *  the replay judge can read the channels. False = a fill supplied
+   *  them from outside the doc (pre-one-table docs, whose engine-fill
+   *  {default: ...} channels live nowhere the doc names). The replay
+   *  judge judges only fully-declared docs. */
   readonly outputsDeclared: boolean;
 }
 
@@ -397,43 +398,37 @@ export function compileFlowInline(
         "invalid_request",
       );
     }
-    // THE ENGINE TABLE'S OWN DEFAULT (audit S-S6, 2026-10-22; P7
-    // latent: one read, both doors): validate's lattice treats an
-    // EMPTY outputs map as stageless and judges the stage by the
-    // engine's table def (craft->image, agent->text) — start's old
-    // flat "image" bound a different kind than the lattice judged,
-    // by coincidence agreeing on every reachable engine. The fill
-    // now reads engineDefaultOutput (the lattice's own rule: mcp leg
-    // + table). The undefined leg is the future-split guard: the
-    // engine gate above admits only grammatical, registered ids, so
-    // no reachable engine reads it — a grammar id the table has not
-    // learned yet refuses HERE, in the door's voice, instead of
-    // validating-refuse/start-accepting.
+    // THE ONE TABLE (2026-11-01): an empty outputs map means
+    // "undeclared" — the compiler reads the stage's OWN card_io
+    // table (the card's declared output channels, carried on the
+    // row), never the engine registry (membership-only since the
+    // cure: it names no kinds). A stage with neither refuses here,
+    // in the door's voice, naming the fix — a fabricated
+    // {default: <engine kind>} once bound the retired music-native
+    // wrapper's audio channel as image (the row died 2026-11-14).
     const declaredOutputs: unknown = st["outputs"];
     const outputsDeclared =
       typeof declaredOutputs === "object" && declaredOutputs !== null &&
       !Array.isArray(declaredOutputs) &&
       Object.keys(declaredOutputs as Record<string, unknown>).length > 0;
+    const rawCardIo: unknown = st["card_io"];
+    const cardIoDeclared =
+      typeof rawCardIo === "object" && rawCardIo !== null &&
+      !Array.isArray(rawCardIo) &&
+      Object.keys(rawCardIo as Record<string, unknown>).length > 0;
     let outputs: Record<string, EngineJson>;
     if (outputsDeclared) {
       outputs = declaredOutputs as Record<string, EngineJson>;
+    } else if (cardIoDeclared) {
+      outputs = rawCardIo as Record<string, EngineJson>;
     } else {
-      const kind: string | undefined = engineDefaultOutput(engine);
-      /* v8 ignore next -- the engine gate above admits only grammatical,
-         registered ids (all table- or mcp-leg-covered); the undefined
-         leg is the future-split guard, unreachable until the grammar
-         grows a table-unknown id. */
-      if (kind === undefined) {
-        return refusal(
-          400,
-          "flow_inline stage " + JSON.stringify(sid) + ": engine " +
-            JSON.stringify(engine) +
-            " has no default output kind — the engine table names no row for it" +
-            " (a grammar id the table has not learned yet); name it in the table",
-          "invalid_request",
-        );
-      }
-      outputs = { default: kind };
+      return refusal(
+        400,
+        "flow_inline stage " + JSON.stringify(sid) + " declares no outputs and carries no card_io — " +
+          "name every produced channel on the stage (outputs={'<channel>': <Kind>}) or carry the card's " +
+          "declared cardIo table; the engine registry names engines, never their outputs",
+        "invalid_request",
+      );
     }
     const expected: Record<string, EngineJson> =
       typeof st["expected"] === "object" && st["expected"] !== null && !Array.isArray(st["expected"])
@@ -491,7 +486,7 @@ export function compileFlowInline(
         "invalid_request",
       );
     }
-    stages.push({ id: sid, engine, params, outputs, outputsDeclared, expected, outputNodes, inputNames });
+    stages.push({ id: sid, engine, params, outputs, outputsDeclared: outputsDeclared || cardIoDeclared, expected, outputNodes, inputNames });
   }
   return { stages };
 }

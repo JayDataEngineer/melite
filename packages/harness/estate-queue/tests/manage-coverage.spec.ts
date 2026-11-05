@@ -1,6 +1,6 @@
 import { afterEach, describe, it, vi } from "vitest";
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { resourceKey } from "@melite/estate-provisioning";
@@ -38,8 +38,26 @@ vi.mock("node:child_process", async () => {
   return { execFile };
 });
 
+// THE RECEIPT-WRITE ABORT SEAM (managePlane.ts 489-504): the atomic
+// receipt writer aborts the caller mid-write so the arm judges the
+// catch's abort half — a torn write under a live caller stays a
+// silent success, under a cancelled caller it propagates.
+const receipt = vi.hoisted(() => ({ aborters: [] as Array<() => void> }));
+
+vi.mock("../src/queueLock.ts", async (importOriginal) => {
+  const mod = await importOriginal<typeof import("../src/queueLock.ts")>();
+  return {
+    ...mod,
+    writeJsonAtomic: async (filePath: string, obj: unknown) => {
+      for (const abort of receipt.aborters.splice(0)) abort();
+      return mod.writeJsonAtomic(filePath, obj);
+    },
+  };
+});
+
 import { dispatchManage, Refused } from "../src/managePlane.ts";
 import type { ManageCtx, ManageEnvelope } from "../src/managePlane.ts";
+import { loadShippedExtensionManifest } from "@melite/comfyui-cordis/provisioning-manifest";
 
 const realFetch = globalThis.fetch;
 // the ?? "" guard (the flake audit's A1 step 5, 2026-10-15): an
@@ -339,6 +357,126 @@ describe("manage cancellation and rail coverage", () => {
         reason instanceof Error ? error === reason : (error as Error).name === "AbortError",
       );
     }
+  });
+
+  it("an abort inside the engine-boot receipt write propagates (the issued reboot is never laundered into a success)", async () => {
+    // THE LAW (managePlane.ts 489-504, MP-R2): the receipt write
+    // swallows its own failure — the engine IS rebooting regardless
+    // — with ONE exception: the caller's own abort. An abort
+    // surfacing inside the write propagates (the hRestart finally
+    // still drops the cache) instead of laundering into a success
+    // the caller cancelled. The repoRoot is a FILE (a torn write is
+    // real, never simulated); the abort lands inside the write via
+    // the file's own writer seam.
+    root = mkdtempSync(join(tmpdir(), "manage-cancel-"));
+    const marker = join(root, "not-a-dir");
+    writeFileSync(marker, "i am a file, not a dir");
+    const controller = new AbortController();
+    globalThis.fetch = (async (url: unknown) => {
+      if (String(url).endsWith("/manager/reboot")) return json({});
+      return text("unused", 500);
+    }) as unknown as typeof fetch;
+    receipt.aborters.push(() => controller.abort(new Error("receipt-abort")));
+    try {
+      await assert.rejects(
+        run({ action: "restart" }, { repoRoot: marker, signal: controller.signal }),
+        /receipt-abort/,
+        "the caller's abort reason propagates past the swallowed receipt failure",
+      );
+    } finally {
+      receipt.aborters.length = 0;
+    }
+  });
+
+  it("a torn engine-boot receipt write under a live caller stays a silent success (the reboot is issued regardless)", async () => {
+    // THE LAW'S OTHER HALF (managePlane.ts 489-504, MP-R2): the
+    // receipt write swallows its own failure — the engine IS
+    // rebooting regardless. The repoRoot is a FILE (a torn write is
+    // real, never simulated) and the caller stays live: the answer
+    // is the issued voice, and no receipt file exists to lie about
+    // the boot.
+    root = mkdtempSync(join(tmpdir(), "manage-cancel-"));
+    const marker = join(root, "not-a-dir");
+    writeFileSync(marker, "i am a file, not a dir");
+    globalThis.fetch = (async (url: unknown) => {
+      if (String(url).endsWith("/manager/reboot")) return json({});
+      return text("unused", 500);
+    }) as unknown as typeof fetch;
+    const [code, envelope] = await run({ action: "restart" }, { repoRoot: marker });
+    assert.equal(code, 200);
+    assert.match(envelope.detail, /reboot issued/, "the issued reboot answers, never the torn write");
+    assert.equal(
+      (() => { try { return readFileSync(join(marker, "data", "runtime", "comfyui", ".estate-engine-boot.json"), "utf8"); } catch { return undefined; } })(),
+      undefined,
+      "no receipt file lies about the boot",
+    );
+  });
+});
+
+describe("manage declared-pin door", () => {
+  // THE DECLARED-PIN DOOR (managePlane.ts 1259-1260, 1263): packs
+  // the shipped manifest declares ride BYTE-VERIFIED pins — the URL
+  // must equal the row's; a stated ref must equal the pinned ref;
+  // an omitted ref installs THE PIN, never a floating HEAD. All 28
+  // shipped rows carry non-empty refs, so the pin always rides the
+  // request (the empty-ref alternate is data-dead).
+  const pinnedDoor = () => {
+    const rows = loadShippedExtensionManifest();
+    assert.ok(rows.length > 0, "the shipped manifest declares at least one pack");
+    const pinned = rows[0] as { url: string; ref: string };
+    assert.ok(pinned.ref !== "", "the pinned row carries its byte-verified ref");
+    const seen: Array<{ request: unknown; options: unknown }> = [];
+    const recording = {
+      ...provisioning,
+      acquireExternal: async (request: unknown, options: unknown) => {
+        seen.push({ request, options });
+        return provisioning.acquireExternal(request as never, options as never);
+      },
+    } as unknown as ProvisioningServiceDefinition;
+    return { pinned, seen, recording };
+  };
+
+  it("a manifest URL without a stated ref installs THE PIN with the operator's pre-approval (no gesture demanded)", async () => {
+    root = mkdtempSync(join(tmpdir(), "manage-pin-"));
+    const { pinned, seen, recording } = pinnedDoor();
+    const [code, envelope] = await run(
+      { action: "install_extension_url", url: pinned.url },
+      { provisioning: recording },
+    );
+    assert.equal(code, 200);
+    assert.equal(seen.length, 1);
+    assert.deepEqual(
+      seen[0]?.request,
+      { kind: "extension", url: pinned.url, ref: pinned.ref },
+      "the omitted ref installs THE PIN, never a floating HEAD",
+    );
+    assert.deepEqual(seen[0]?.options, { operatorConfirmed: true }, "the manifest row IS the recorded approval");
+    assert.equal((envelope.data as { next_action: string }).next_action, "restart");
+  });
+
+  it("a stated ref that EQUALS the pin rides the same door (the equality half)", async () => {
+    root = mkdtempSync(join(tmpdir(), "manage-pin-"));
+    const { pinned, seen, recording } = pinnedDoor();
+    const [code] = await run(
+      { action: "install_extension_url", url: pinned.url, ref: pinned.ref },
+      { provisioning: recording },
+    );
+    assert.equal(code, 200);
+    assert.equal(seen.length, 1);
+    assert.deepEqual(seen[0]?.request, { kind: "extension", url: pinned.url, ref: pinned.ref });
+    assert.deepEqual(seen[0]?.options, { operatorConfirmed: true });
+  });
+
+  it("a stated ref that DIFFERS from the pin falls through to the human's gate (no silent substitution)", async () => {
+    root = mkdtempSync(join(tmpdir(), "manage-pin-"));
+    const { pinned, seen, recording } = pinnedDoor();
+    const [code, envelope] = await run(
+      { action: "install_extension_url", url: pinned.url, ref: `not-${pinned.ref}` },
+      { provisioning: recording },
+    );
+    assert.equal(code, 409);
+    assert.match(envelope.detail, /operator_confirmed/, "the mismatched ref keeps the human's gate");
+    assert.equal(seen.length, 0, "the mismatched ref never reaches the provisioner");
   });
 });
 
@@ -649,6 +787,70 @@ describe("manage status projections", () => {
     } as unknown as ProvisioningServiceDefinition;
     const [, installedStatus] = await run({ action: "status" }, { provisioning: installedOnly });
     assert.equal((installedStatus.data as { next_action: string }).next_action, "restart");
+  });
+
+  it("a verified-changed row without either detail answers detail-less (the fallback's own fallback is absence)", async () => {
+    // THE LAW (managePlane.ts 587-588): a re-verified operation in
+    // a CHANGED state re-states the row; when neither the fresh
+    // items nor the old row carry a detail, the answer carries none
+    // — never a fabricated word about the operation.
+    root = mkdtempSync(join(tmpdir(), "manage-status-"));
+    statusRoute();
+    const changedRef = extensionRef("changed");
+    const changedProvisioning = {
+      ...provisioning,
+      reconcile: async () => [{ ref: changedRef, state: "active", items: [] }],
+      operationOf: () => ({
+        operationId: "op-changed",
+        ref: changedRef,
+        state: "active",
+        items: [{ key: "extension:changed", kind: "extension", state: "active" }],
+        startedAt: Date.now(),
+      }),
+      verifyOperation: async (operation: { state: string }) => ({
+        operationId: "op-changed",
+        ref: changedRef,
+        state: "restart_required",
+        items: [{ key: "extension:changed", kind: "extension", state: "restart_required" }],
+        startedAt: Date.now(),
+      }),
+    } as unknown as ProvisioningServiceDefinition;
+    const [, envelope] = await run({ action: "status" }, { provisioning: changedProvisioning });
+    const data = envelope.data as { resources: Array<{ state: string; detail?: string; operation_id?: string }> };
+    assert.equal(data.resources.length, 1);
+    assert.equal(data.resources[0]?.state, "restart_required", "the verified state re-states the row");
+    assert.equal(data.resources[0]?.operation_id, "op-changed");
+    assert.ok(!("detail" in (data.resources[0] as Record<string, unknown>)), "no detail rides a detail-less change");
+  });
+
+  it("an unknown ITEM over a decided row still marks the census partial (rows and items are each the scan's artifact)", async () => {
+    // THE LAW (managePlane.ts 802-803, the anima burn): a 1.5s
+    // budget cannot sha256-census a healthy estate, and the mark
+    // derives from BOTH levels — a row-level 'unknown' OR an item
+    // with state 'unknown' under a decided row. A failed item over
+    // unchecked siblings still aggregates failed (that verdict
+    // stands); the partial mark rides beside it regardless.
+    root = mkdtempSync(join(tmpdir(), "manage-status-"));
+    statusRoute();
+    const partialRef = extensionRef("partial");
+    const partialProvisioning = {
+      ...provisioning,
+      reconcile: async () => [{
+        ref: partialRef,
+        state: "active",
+        items: [{ key: "extension:partial", kind: "extension", state: "unknown" }],
+      }],
+      operationOf: () => undefined,
+    } as unknown as ProvisioningServiceDefinition;
+    const [, envelope] = await run({ action: "status" }, { provisioning: partialProvisioning });
+    const data = envelope.data as {
+      resources: Array<{ state: string; items: Array<{ state: string }> }>;
+      census_partial?: boolean;
+    };
+    assert.equal(data.resources.length, 1);
+    assert.equal(data.resources[0]?.state, "active", "the decided verdict stands — the mark is beside it, not over it");
+    assert.equal(data.resources[0]?.items[0]?.state, "unknown");
+    assert.equal(data.census_partial, true, "the item-level unknown marks the census partial");
   });
 
   it("rejects a caller aborted after the manager promises settle", async () => {

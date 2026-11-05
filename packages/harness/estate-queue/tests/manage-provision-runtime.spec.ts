@@ -310,4 +310,19 @@ describe("THE PROVISION_RUNTIME VERB (the banner's firing door, E2-2 Piece B)", 
     assert.equal(reply.data?.["kind"], "broken-seed", "the escaping entries never hit, so the seed reads chipped");
     assert.equal(existsSync(TARGET), false, "no link lands on a declaration-bug seed");
   });
+
+  it("an unknown runtime over an EMPTY catalog names none — the zero-decl vocabulary (the 1544 arm)", async () => {
+    // THE EMPTY-CATALOG VOICE: with no family DECL declaring any
+    // runtime, the refusal cannot name a vocabulary — it says "none",
+    // never an empty join or a guessed name. The door still refuses
+    // 422, still names the stated runtime, still touches nothing.
+    arm();
+    const emptyCtx = { ...ctx(), models: { allDecls: () => [] } } as unknown as ManageCtx;
+    const [status, env] = await dispatchManage({ action: "provision_runtime", runtime: "no-such-runtime" }, emptyCtx);
+    const reply = env as { ok: boolean; detail: string; data?: Record<string, unknown> };
+    assert.equal(status, 422);
+    assert.match(reply.detail, /no-such-runtime/);
+    assert.match(reply.detail, /none/, "the empty catalog voices none, never a blank list");
+    assert.equal(existsSync(TARGET), false);
+  });
 });

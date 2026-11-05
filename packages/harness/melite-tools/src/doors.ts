@@ -13,7 +13,7 @@
  * The two planes now live as two loader entries from one package:
  *
  *   infer-tools        src/index.ts   inject ['tools']          — every
- *                      profile, headless included.
+ *                      profile, DSH's own headless included.
  *   infer-tools-doors  src/doors.ts   inject ['webServer','llm',
  *                      'tools'] — web profiles only (the editor ✦
  *                      buttons' same-origin doors); the estate patch
@@ -125,6 +125,18 @@ function probeMcpEngines(c: CtxView): string[] | null {
     .filter((id): id is string => typeof id === 'string' && id.startsWith(MCP_ENGINE_PREFIX))
     .map((id) => id.slice(MCP_ENGINE_PREFIX.length))
     .sort()
+}
+
+/** The estate queue seat's state root (undefined when the seat is
+ *  absent or names nothing — the doors row can mount without the
+ *  estate): the skill census's selection rides the WRITER's root
+ *  through it, the same identity the composition derives the drafts
+ *  writer's storage tree from (the §8.3 reader/root orphan cure;
+ *  buildSkillIndex owns the join). The probe never propagates. */
+function probeQueueStateRoot(c: CtxView): string | undefined {
+  const seat = c.get('queue') as { stateRoot?: unknown } | undefined
+  if (seat == null || typeof seat.stateRoot !== 'string' || seat.stateRoot.length === 0) return undefined
+  return seat.stateRoot
 }
 
 /** The OPTED-IN MCP servers (the estate's own engines seat: the
@@ -403,6 +415,78 @@ const poserEngineCall = (
       ok(text === '' ? {} : (JSON.parse(text) as unknown))
     })
     .catch((error: unknown) => fail(502, { error: `poser: engine unreachable (${error instanceof Error ? error.message : /* v8 ignore next -- the SDK rejects with Errors only (2026-09-16) */ String(error)})` }))
+}
+
+/** The estate lanes' error map (the false-death fix, 2026-10-08,
+ *  corrected twice — the second critique caught bench/
+ *  store-failed defaulting to 400 and ~20 codes classified
+ *  only by silence): a day-long hunt read every 502 as a dead
+ *  runs seat — the 502s were seat REFUSALS, wrong bodies and
+ *  boot-settle races, on a healthy lane. A named protocol
+ *  refusal means the seat ANSWERED — never the absent-seat
+ *  502 — and the failure's own details ride in the body
+ *  verbatim (loc, per-stage errors, the manage envelope's
+ *  action/status/data). THE COMPLETE CLASS INVENTORY — every
+ *  code declared by the protocol's seats is named below, none
+ *  rides the default silently:
+ *   - 400 caller-fault — body/shape/refusal voices: the runs/
+ *     family (bad-envelope, draft-required, draft-malformed,
+ *     draft-unknown, invalid-request, preview-scope,
+ *     flow-compile, workflow-pin, card-compose) — ALL raised
+ *     from CardArmError(400) voices; lane-input-missing (the
+ *     named asset has no store copy — the request is
+ *     unexecutable as sent; the body carries the fetch URL);
+ *     bench bad-body/bad-wire/self-wire/dead-wire (shape
+ *     refusals); draft bad-id/bad-patch/bad-stage-id/
+ *     patch-unknown-keys; media/kind; gateway/bad-request;
+ *     melite/skill-refused (the authored-skill writer's voice —
+ *     the draft is the caller's to fix).
+ *   - 404 not-found — runs/unknown-run, runs/run-unknown,
+ *     bench/not-found, bench/stage-not-found,
+ *     bench/wire-stage-not-found (a named thing absent),
+ *     bench/nothing-to-undo (no live action matches the walk),
+ *     draft/not-found, melite/skill-unknown (the authored-skill
+ *     plane's read door).
+ *   - 409 conflict — bench/cas-conflict (carries current_rev),
+ *     bench/overwrite-required (the load's own overwrite law),
+ *     bench/duplicate-stage.
+ *   - 502 infra — the storage layer refused while the call was
+ *     valid: bench/store-failed, draft/store-failed,
+ *     draft/cannot-persist, media/no-seat, gateway/internal,
+ *     gateway/cancelled.
+ *   - manage/refused → the ENVELOPE's own details.status
+ *     (the manage plane always sets one; a missing/garbage
+ *     status is the SEAT's bug, not the caller's request —
+ *     500, never 400).
+ *  A code NOT in the table defaults to 400 — the honest class
+ *  for an unknown future refusal (the seat answered; the body
+ *  carries the code for discrimination), and every code the
+ *  protocol declares today IS in the table. */
+export const REFUSAL_STATUS_OF: Readonly<Record<string, number>> = {
+  // 400 — the caller's own input (the seat answered; the draft or
+  // the request is theirs to fix)
+  'melite/skill-refused': 400,
+  // 404 — a named thing is absent
+  'runs/unknown-run': 404,
+  'runs/run-unknown': 404,
+  'bench/not-found': 404,
+  'bench/stage-not-found': 404,
+  'bench/wire-stage-not-found': 404,
+  'bench/nothing-to-undo': 404,
+  'draft/not-found': 404,
+  // the authored-skill plane's read door (the id names nothing)
+  'melite/skill-unknown': 404,
+  // 409 — state conflicts
+  'bench/cas-conflict': 409,
+  'bench/overwrite-required': 409,
+  'bench/duplicate-stage': 409,
+  // 502 — the storage/infra layer refused while the call was valid
+  'bench/store-failed': 502,
+  'draft/store-failed': 502,
+  'draft/cannot-persist': 502,
+  'media/no-seat': 502,
+  'gateway/internal': 502,
+  'gateway/cancelled': 502,
 }
 
 export function apply(c: CtxView, config: Config = {}): void {
@@ -767,25 +851,60 @@ export function apply(c: CtxView, config: Config = {}): void {
           }
           // the dir resolves BEFORE the body is read — an undeclared
           // loras dir refuses without holding the upload's bytes
-          const { resolveEngineLorasDir, installUserLoraBuffer } = await import('@melite/comfyui-cordis/user-loras')
-          const dir = resolveEngineLorasDir(loadEndpointConfig() as Record<string, unknown>)
-          if (dir === null) {
+          const { resolveEngineLorasDir, installUserLoraBuffer, seatUserLoraRow } = await import('@melite/comfyui-cordis/user-loras')
+          const { rearmLoraFlavors } = await import('@melite/comfyui-cordis')
+          const root = resolveEngineLorasDir(loadEndpointConfig() as Record<string, unknown>)
+          if (root === null) {
             return fail(502, 'the loras install dir is undeclared — set MELITE_COMFYUI_LORAS_DIR or the endpoint model_base_path (never guessed)')
           }
+          // THE SHELF LAW (lora_fetch's own, the pixel-anim cure):
+          // exactly one family lands under <loras>/<family>/ so the
+          // tray (presence = row) serves it; zero or many land flat
+          const family = families.length === 1 ? families[0] : ''
+          if (family !== '' && !/^[a-z0-9][a-z0-9-]*$/i.test(family)) {
+            return fail(400, 'families must be family ids (the loras subfolder name): ' + family)
+          }
+          const dir = family !== '' ? root + '/' + family : root
           const bytes = await readBody(req)
           const landed = installUserLoraBuffer(filename, bytes, dir)
           if (!landed.ok) return fail(422, landed.reason)
+          // LAND = SEATED: families stated → the row is WRITTEN and
+          // the flavors re-armed; the picker serves it on the next
+          // compose — no paste, no restart, no file edit
+          const comboName = family !== '' ? family + '/' + landed.filename : landed.filename
+          let row_seated = false
+          let row_refusal = ''
+          if (families.length > 0) {
+            const seated = seatUserLoraRow({
+              id: comboName,
+              filename: comboName,
+              families,
+              label: landed.filename.replace(/\.[^.]+$/, ''),
+              default_strength: 1,
+            })
+            if (seated.ok) row_seated = true
+            else row_refusal = seated.reason
+          }
+          const rearm = rearmLoraFlavors()
           const out = JSON.stringify({
-            filename: landed.filename,
+            filename: comboName,
             bytes: landed.bytes,
             install_dir: dir,
-            // core reads its folder list at import — a reboot is the
-            // only refresh this repo owns
-            next_action: 'restart',
-            restart_required: true,
-            row_suggestion: {
-              id: landed.filename.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9]+/g, '_'),
-              filename: landed.filename,
+            row_seated,
+            ...(row_refusal !== '' ? { row_refusal } : {}),
+            flavors: rearm,
+            serves_now: row_seated || rearm.tray_rows > 0,
+            // the pinned core's loras listing is mtime-live (it
+            // re-stats the folder per read) — a landed weight file
+            // composes without a reboot; restarts serve custom_nodes
+            // (import-time), never weight files. NO next_action: no
+            // manage verb follows a landed row (a fake one renders a
+            // dead button); restart_required:false + the row carry
+            // the cure
+            restart_required: false,
+            row: {
+              id: comboName,
+              filename: comboName,
               families,
               default_strength: 1,
             },
@@ -822,7 +941,7 @@ export function apply(c: CtxView, config: Config = {}): void {
       // second (401) — packages/client/connection/src/rpc-host.ts.
       // Probed, never injected (the tutorial's documented pattern,
       // estate.ts's seats law): a lane with no browser carrier (the
-      // headless commission estate, the SDK app) keeps serving /v1,
+      // SDK job server) keeps serving /v1,
       // and a lane that HAS one fences it with that lane's own
       // config. No melite-owned token scheme: DSH's note records the
       // decision that API tokens are not accepted on API paths.
@@ -867,74 +986,11 @@ export function apply(c: CtxView, config: Config = {}): void {
         res.writeHead(status, { 'content-type': 'application/json', 'content-length': String(Buffer.byteLength(body)) })
         res.end(Buffer.from(body))
       }
-      /** The estate lanes' error map (the false-death fix, 2026-10-08,
-       *  corrected twice — the second critique caught bench/
-       *  store-failed defaulting to 400 and ~20 codes classified
-       *  only by silence): a day-long hunt read every 502 as a dead
-       *  runs seat — the 502s were seat REFUSALS, wrong bodies and
-       *  boot-settle races, on a healthy lane. A named protocol
-       *  refusal means the seat ANSWERED — never the absent-seat
-       *  502 — and the failure's own details ride in the body
-       *  verbatim (loc, per-stage errors, the manage envelope's
-       *  action/status/data). THE COMPLETE CLASS INVENTORY — every
-       *  code declared by the protocol's seats is named below, none
-       *  rides the default silently:
-       *   - 400 caller-fault — body/shape/refusal voices: the runs/
-       *     family (bad-envelope, draft-required, draft-malformed,
-       *     draft-unknown, invalid-request, preview-scope,
-       *     flow-compile, workflow-pin, card-compose) — ALL raised
-       *     from CardArmError(400) voices; lane-input-missing (the
-       *     named asset has no store copy — the request is
-       *     unexecutable as sent; the body carries the fetch URL);
-       *     bench bad-body/bad-wire/self-wire/dead-wire (shape
-       *     refusals); draft bad-id/bad-patch/bad-stage-id/
-       *     patch-unknown-keys; media/kind; gateway/bad-request.
-       *   - 404 not-found — runs/unknown-run, runs/run-unknown,
-       *     bench/not-found, bench/stage-not-found,
-       *     bench/wire-stage-not-found (a named thing absent),
-       *     bench/nothing-to-undo (no live action matches the walk),
-       *     draft/not-found.
-       *   - 409 conflict — bench/cas-conflict (carries current_rev),
-       *     bench/overwrite-required (the load's own overwrite law),
-       *     bench/duplicate-stage.
-       *   - 502 infra — the storage layer refused while the call was
-       *     valid: bench/store-failed, draft/store-failed,
-       *     draft/cannot-persist, media/no-seat, gateway/internal,
-       *     gateway/cancelled.
-       *   - manage/refused → the ENVELOPE's own details.status
-       *     (the manage plane always sets one; a missing/garbage
-       *     status is the SEAT's bug, not the caller's request —
-       *     500, never 400).
-       *  A code NOT in the table defaults to 400 — the honest class
-       *  for an unknown future refusal (the seat answered; the body
-       *  carries the code for discrimination), and every code the
-       *  protocol declares today IS in the table. */
-      const REFUSAL_STATUS: Readonly<Record<string, number>> = {
-        // 404 — a named thing is absent
-        'runs/unknown-run': 404,
-        'runs/run-unknown': 404,
-        'bench/not-found': 404,
-        'bench/stage-not-found': 404,
-        'bench/wire-stage-not-found': 404,
-        'bench/nothing-to-undo': 404,
-        'draft/not-found': 404,
-        // 409 — state conflicts
-        'bench/cas-conflict': 409,
-        'bench/overwrite-required': 409,
-        'bench/duplicate-stage': 409,
-        // 502 — the storage/infra layer refused a valid call
-        'bench/store-failed': 502,
-        'draft/store-failed': 502,
-        'draft/cannot-persist': 502,
-        'media/no-seat': 502,
-        'gateway/internal': 502,
-        'gateway/cancelled': 502,
-      }
       const failEstate = (error: unknown): void => {
         const remote = remoteErrorOf(error)
         const message = error instanceof Error ? error.message : String(error)
         if (remote !== undefined) {
-          let status = REFUSAL_STATUS[remote.code] ?? 400
+          let status = REFUSAL_STATUS_OF[remote.code] ?? 400
           const details: unknown = remote.details
           // details FIRST — ours win on a key collision (a details
           // row carrying its own error/code never masks the protocol's)
@@ -959,8 +1015,10 @@ export function apply(c: CtxView, config: Config = {}): void {
         }
         fail(502, { error: message })
       }
-      // Discovery arms are GET; seat lanes carry both (bench patch
-      // is POST, drafts GET).
+      // Discovery arms are GET; seat lanes carry bodies on POST and
+      // PATCH (bench verbs ride POST, the drafts stage patch rides
+      // PATCH — a body-carrying method the front must read, never
+      // drop).
       // CALLER-GONE LAW: bind to the RESPONSE's premature close
       // (res 'close' before writableEnded), never req 'close' — a
       // POST's message-complete fires req 'close' the moment the
@@ -1067,7 +1125,12 @@ export function apply(c: CtxView, config: Config = {}): void {
             // configuring a subagent; leaf skill ids are learned from
             // the owning surface (melite_load), never enumerated.
             const skillCensus = () => {
-              const idx = buildSkillIndex(disclosureRoot()) as {
+              // ONE ROOT (the §8.3 orphan cure): the selection rides
+              // the queue seat's state root — the writer's own
+              // identity — when the estate is mounted on this lane;
+              // the repo-relative fallback stands seat-less (no seat,
+              // no writer).
+              const idx = buildSkillIndex(disclosureRoot(), probeQueueStateRoot(c)) as {
                 families: Array<{ id: string; entrance: string | null }>;
                 cards: Array<{ id: string; entrance: string | null }>;
               }
@@ -1131,7 +1194,13 @@ export function apply(c: CtxView, config: Config = {}): void {
           } as const)
         }
         const request = makeEstateRequest(c)
-        if (method === 'POST') {
+        // THE PATCH BODY LAW (2026-11-01, the settled-run e2e red):
+        // PATCH /v1/flows/drafts/:id/stages/:stage carries the patch in
+        // its body — the front used to read bodies on POST only, so
+        // every HTTP PATCH rode body=undefined into the seat and died
+        // as 'draft stage patch needs a JSON body' (502). The seat
+        // lanes serve GET/POST/PATCH only; both body methods read here.
+        if (method === 'POST' || method === 'PATCH') {
           readBody(req).then((buf) => {
             let body: unknown
             try {
@@ -1144,9 +1213,9 @@ export function apply(c: CtxView, config: Config = {}): void {
             // `42`, `"x"`, or `[1,2]` rode straight into the seat.
             // Field-level law belongs to each seat (it throws its own
             // named errors); the OBJECT shape is the seam this door
-            // owns — every /v1 POST verb takes a record body.
+            // owns — every body-carrying /v1 verb takes a record body.
             if (body === null || typeof body !== 'object' || Array.isArray(body)) {
-              return fail(400, { error: `seat lane: POST ${path} needs a JSON object body (got ${body === null ? 'null' : Array.isArray(body) ? 'an array' : `a ${typeof body}`})` })
+              return fail(400, { error: `seat lane: ${method} ${path} needs a JSON object body (got ${body === null ? 'null' : Array.isArray(body) ? 'an array' : `a ${typeof body}`})` })
             }
             request(method, pathWithQuery, body, signal, 120_000)
               .then((value) => ok(value))

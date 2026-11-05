@@ -25,6 +25,11 @@
 // public import surface below is UNCHANGED — existing importers keep
 // importing these names from ./runsValidate.ts.
 export { FlowError } from "./runsValidateShared.js";
+// THE VOCABULARY'S ONE ADDRESS (F48, 2026-11-01): the connect door's
+// teaching voices DERIVE from KIND_VOCAB (melite-tools' fold refusal
+// rode a hand copy that had already dropped `data`) — the enforcer
+// and every voice must enumerate the same closed set.
+export { KIND_VOCAB } from "./runsValidateShared.js";
 export { strictBody } from "./runsValidateStages.js";
 export { inlineArm, serveSubject } from "./runsValidateServe.js";
 // ── the door ────────────────────────────────────────────────────

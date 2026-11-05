@@ -16,12 +16,15 @@ import {
   listRuns,
   listRunsAcross,
   mediaCandidates,
+  noteRunTreeChanged,
   parseIntOrNull,
+  runArchivedArtifacts,
   runArtifacts,
   runDirHasMedia,
   runRowOrNull,
   runThumbnail,
   sidecarNum,
+  sidecarBool,
   sidecarStr,
   sidecarStrFound,
   parseLeadingInt,
@@ -537,6 +540,13 @@ describe("listRuns envelope", () => {
     put("run-private", sidecar({ pipeline: "_hidden" }), false);
     put("run-BAD!", sidecar(), false);
     mkdirSync(join(out, "notes"), { recursive: true });
+    // THE VISIBLE-BENCH LANE (item (b)): one test:true run rides
+    // the test-output/ seat — the union scan counts and serves it
+    // (media, created 150: sorts between run-good and run-err).
+    const lane = join(state, "test-output", "run-lane");
+    mkdirSync(lane, { recursive: true });
+    writeFileSync(join(lane, "_flow.json"), sidecar({ created: 150, created_at: 150, test: true }));
+    writeFileSync(join(lane, "a.png"), "img");
   };
   it("a truncated listing stamps the ROW FIELD (the panel's capped face — previews 2b, 2026-11-12)", async () => {
     // The marker rode only INSIDE the artifacts array; the panel's
@@ -706,7 +716,10 @@ describe("listRuns envelope", () => {
     const state = tmp();
     populate(state);
     const { count, runs } = await listRuns(state, 500, async (id) => id === "d1");
-    assert.equal(count, 8);
+    // THE VISIBLE-BENCH COUNT (item (b)): the union scan counts
+    // the test-output/ seat too — 9 dirs, the lane row sorting
+    // media-first by its created stamp (newest of the media tier).
+    assert.equal(count, 9);
     // THE TEXT-STROKE ORDER (the 2026-10-24 tagger repair: json ∈
     // galleryText, so a sidecar-only dir IS media-class — run-nostatus
     // ("{}", created 0) sorts media-first ahead of run-nofile (no
@@ -714,27 +727,33 @@ describe("listRuns envelope", () => {
     // both were non-media and the tie broke by scan order.
     assert.deepEqual(
       runs.map((r) => r["run_id"]),
-      ["run-good", "run-err", "run-zombie", "run-nostatus", "run-nofile"],
+      ["run-lane", "run-good", "run-err", "run-zombie", "run-nostatus", "run-nofile"],
     );
-    const good = runs[0] as Record<string, unknown>;
+    const lane = runs[0] as Record<string, unknown>;
+    assert.equal(lane["test"], true);
+    assert.equal(
+      (lane["artifacts"] as Record<string, unknown>[])[0]!["path"],
+      "./test-output/run-lane/a.png",
+    );
+    const good = runs[1] as Record<string, unknown>;
     assert.equal(good["status"], "completed");
     assert.equal(good["prompt"], "hi");
     assert.equal(good["draft_id"], "d1");
     assert.deepEqual(good["params"], { seed: 7 });
     assert.equal(good["thumbnail"], "run-good/a.png");
     assert.equal((good["artifacts"] as unknown[]).length, 1);
-    const err = runs[1] as Record<string, unknown>;
+    const err = runs[2] as Record<string, unknown>;
     assert.equal(err["status"], "failed");
     assert.equal(err["created_at"], 60);
-    const zombie = runs[2] as Record<string, unknown>;
+    const zombie = runs[3] as Record<string, unknown>;
     assert.equal(zombie["status"], "failed");
     assert.equal(zombie["created_at"], 50);
     assert.deepEqual(zombie["params"], { seed: -1 });
-    const nofile = runs[4] as Record<string, unknown>;
+    const nofile = runs[5] as Record<string, unknown>;
     // (no sidecar file at all reads the "success" default — only a
     // present-but-keyless sidecar reads "unknown".)
     assert.equal(nofile["status"], "success");
-    const nostatus = runs[3] as Record<string, unknown>;
+    const nostatus = runs[4] as Record<string, unknown>;
     // (the keyless "{}" sidecar reads "unknown", pinned by id — the
     // text stroke moved it ahead of nofile, its status law unchanged.)
     assert.equal(nostatus["run_id"], "run-nostatus");
@@ -762,9 +781,9 @@ describe("listRuns envelope", () => {
     populate(state);
     // (the slice rides the sorted list — the two loud-skips sort high.)
     const { count, runs } = await listRuns(state, 5, async () => true);
-    assert.equal(count, 8);
+    assert.equal(count, 9);
     assert.equal(runs.length, 2);
-    assert.equal(runs[0]!["run_id"], "run-good");
+    assert.equal(runs[0]!["run_id"], "run-lane");
   });
 
   it("the 8192 collected cap holds", async () => {
@@ -842,5 +861,318 @@ describe("listRuns envelope", () => {
     const { runs } = await listRuns(state, 10, async () => true);
     assert.equal(runs.length, 1);
     assert.deepEqual((runs[0] as Record<string, unknown>)["artifacts"], []);
+  });
+});
+
+describe("THE ARCHIVED FACE (mass-archive law, operator ruling 2026-11-14 item (a))", () => {
+  const tuckDir = (): string => {
+    const dir: string = mkdtempSync(join(tmpdir(), "runs-list-tuck-"));
+    TMP = TMP === "" ? dir : TMP + ":" + dir;
+    return dir;
+  };
+
+  it("runArchivedArtifacts: an absent _archived/ dir reads as the empty face, never a throw", () => {
+    const dir = tuckDir();
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "live.png"), "img");
+    assert.deepEqual(runArchivedArtifacts(dir, "./output/run-tuck"), []);
+  });
+
+  it("tucked rows ride the 6-key shape with _archived/ in path/url — top files + one subdir level, sidecars skipped", () => {
+    const dir = tuckDir();
+    mkdirSync(join(dir, "_archived", "gen"), { recursive: true });
+    writeFileSync(join(dir, "_archived", "old.png"), "old");
+    writeFileSync(join(dir, "_archived", "gen", "deep.mp4"), "deep");
+    writeFileSync(join(dir, "_archived", "_flow.json"), "{}"); // provenance: never media
+    const arts = runArchivedArtifacts(dir, "./output/run-tuck");
+    assert.equal(arts.length, 2);
+    for (const a of arts) {
+      assert.deepEqual(Object.keys(a).sort(), ["bytes", "name", "path", "size", "type", "url"]);
+    }
+    const top = arts.find((a) => a["name"] === "old.png") as Record<string, unknown>;
+    assert.equal(top["type"], "image");
+    assert.equal(top["path"], "./output/run-tuck/_archived/old.png");
+    assert.equal(top["url"], "run-tuck/_archived/old.png");
+    const deep = arts.find((a) => a["name"] === "deep.mp4") as Record<string, unknown>;
+    assert.equal(deep["type"], "video");
+    assert.equal(deep["path"], "./output/run-tuck/_archived/gen/deep.mp4");
+    assert.equal(deep["url"], "run-tuck/_archived/gen/deep.mp4");
+  });
+
+  it("no image cap rides the tucked face (the tuck is an operator gesture, never an engine frame-dump)", () => {
+    const dir = tuckDir();
+    mkdirSync(join(dir, "_archived"), { recursive: true });
+    for (let i = 0; i < 25; i++) writeFileSync(join(dir, "_archived", "f" + i + ".png"), "img");
+    const arts = runArchivedArtifacts(dir, "./output/run-tuck");
+    assert.equal(arts.length, 25);
+  });
+
+  it("runRowOrNull: archived rides ALONGSIDE the live list; empty stamps nothing; a bad tucked row refuses the run", () => {
+    const good = {
+      name: "old.png",
+      path: "./output/run-x/_archived/old.png",
+      bytes: 3,
+      url: "run-x/_archived/old.png",
+      type: "image",
+      size: 3,
+    };
+    const row = runRowOrNull({
+      ...stamp([]),
+      archived: [good],
+    }) as Record<string, unknown>;
+    assert.deepEqual(row["archived"], [good]);
+    assert.deepEqual(row["artifacts"], []);
+    // runs with nothing archived stamp nothing (optional key, never guessed).
+    const bare = runRowOrNull(stamp([])) as Record<string, unknown>;
+    assert.ok(!("archived" in bare));
+    // the gate keeps teeth on the tucked face too: one bad row
+    // refuses the whole run, exactly like the live face.
+    assert.equal(
+      runRowOrNull({ ...stamp([]), archived: [{ ...good, type: "spec" }] }),
+      null,
+    );
+  });
+
+  it("listRuns: a tucked run rows both faces — the live walk never sees the tucked bytes", async () => {
+    const state = tmp();
+    const dir = join(state, "output", "run-tucked");
+    mkdirSync(join(dir, "_archived"), { recursive: true });
+    writeFileSync(
+      join(dir, "_flow.json"),
+      JSON.stringify({
+        status: "completed", pipeline: "voice", prompt: "hi", draft_id: "d1", seed: 7, created_at: 100,
+      }),
+    );
+    writeFileSync(join(dir, "live.png"), "img");
+    writeFileSync(join(dir, "_archived", "old.png"), "tucked");
+    const { count, runs } = await listRuns(state, 10, async () => true);
+    assert.equal(count, 1);
+    const row = runs[0] as Record<string, unknown>;
+    const arts = row["artifacts"] as Record<string, unknown>[];
+    assert.ok(arts.some((a) => a["name"] === "live.png"), "the live file lists live");
+    assert.ok(!arts.some((a) => String(a["name"] ?? "").includes("old")), "the tucked file never lists live");
+    const archived = row["archived"] as Record<string, unknown>[];
+    assert.equal(archived.length, 1);
+    assert.equal(archived[0]!["name"], "old.png");
+    assert.equal(archived[0]!["url"], "run-tucked/_archived/old.png");
+  });
+});
+
+describe("THE VISIBLE-BENCH FACE (operator ruling 2026-11-14, item (b))", () => {
+  it("sidecarBool: true/false literals read; absent and non-boolean read the default (never guessed)", () => {
+    assert.equal(sidecarBool('{"test":true}', "test", false), true);
+    assert.equal(sidecarBool('{"test":false}', "test", true), false);
+    assert.equal(sidecarBool('{}', "test", false), false);
+    assert.equal(sidecarBool('{"test":"yes"}', "test", false), false);
+    assert.equal(sidecarBool('{"test":1}', "test", true), true);
+    assert.equal(sidecarBool("", "test", false), false);
+  });
+
+  it("runRowOrNull: the test stamp rides ALWAYS (the live face's law — absent reads production)", () => {
+    const stamped = runRowOrNull({ ...stamp([]), test: true }) as Record<string, unknown>;
+    assert.equal(stamped["test"], true);
+    const bare = runRowOrNull(stamp([])) as Record<string, unknown>;
+    assert.equal(bare["test"], false);
+  });
+
+  it("listRuns: a test-output/ run lists with test:true — scratch is storage, never invisibility", async () => {
+    const state = tmp();
+    const prod = join(state, "output", "run-prod");
+    mkdirSync(prod, { recursive: true });
+    writeFileSync(join(prod, "_flow.json"), JSON.stringify({
+      status: "completed", pipeline: "voice", prompt: "hi", draft_id: "d1", seed: 7, created_at: 100,
+    }));
+    writeFileSync(join(prod, "live.png"), "img");
+    const lane = join(state, "test-output", "run-lane");
+    mkdirSync(lane, { recursive: true });
+    writeFileSync(join(lane, "_flow.json"), JSON.stringify({
+      status: "completed", pipeline: "voice", prompt: "hi", draft_id: "d1", seed: 7, created_at: 200, test: true,
+    }));
+    writeFileSync(join(lane, "probe.png"), "img");
+    const { count, runs } = await listRuns(state, 10, async () => true);
+    assert.equal(count, 2);
+    assert.equal(runs.length, 2);
+    const testRow = runs.find((r) => r["run_id"] === "run-lane") as Record<string, unknown>;
+    assert.ok(testRow, "the test-lane run lists");
+    assert.equal(testRow["test"], true);
+    const arts = testRow["artifacts"] as Record<string, unknown>[];
+    assert.equal(arts[0]!["path"], "./test-output/run-lane/probe.png");
+    assert.equal(arts[0]!["url"], "run-lane/probe.png");
+    const prodRow = runs.find((r) => r["run_id"] === "run-prod") as Record<string, unknown>;
+    assert.ok(prodRow, "the production run still lists");
+    assert.equal(prodRow["test"], false);
+    assert.equal((prodRow["artifacts"] as Record<string, unknown>[])[0]!["path"], "./output/run-prod/live.png");
+  });
+
+  it("listRuns: a pre-cure sidecar without the test key reads production (never guessed)", async () => {
+    const state = tmp();
+    const lane = join(state, "test-output", "run-legacy");
+    mkdirSync(lane, { recursive: true });
+    writeFileSync(join(lane, "_flow.json"), JSON.stringify({
+      status: "completed", pipeline: "voice", seed: 7, created_at: 100,
+    }));
+    writeFileSync(join(lane, "old.png"), "img");
+    const { runs } = await listRuns(state, 10, async () => true);
+    assert.equal(runs[0]!["test"], false);
+  });
+
+  it("listRuns: a same run id in both seats serves production (first seat wins)", async () => {
+    const state = tmp();
+    for (const seat of ["output", "test-output"]) {
+      const dir = join(state, seat, "run-same");
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(join(dir, "_flow.json"), JSON.stringify({
+        status: "completed",
+        pipeline: seat === "output" ? "prod-voice" : "lane-voice",
+        seed: 7,
+        created_at: 100,
+        ...(seat === "test-output" ? { test: true } : {}),
+      }));
+      writeFileSync(join(dir, "a.png"), "img");
+    }
+    const { count, runs } = await listRuns(state, 10, async () => true);
+    assert.equal(count, 1);
+    assert.equal(runs.length, 1);
+    assert.equal(runs[0]!["flow"], "prod-voice");
+    assert.equal(runs[0]!["test"], false);
+  });
+
+  it("listRunsAcross: test rows union across manifest roots carrying served_from + the test stamp", async () => {
+    const first = tmp();
+    const lane = join(first, "test-output", "run-away");
+    mkdirSync(lane, { recursive: true });
+    writeFileSync(join(lane, "_flow.json"), JSON.stringify({
+      status: "completed", pipeline: "voice", seed: 7, created_at: 100, test: true,
+    }));
+    writeFileSync(join(lane, "a.png"), "img");
+    const { count, runs } = await listRunsAcross([first], 10, async () => true);
+    assert.equal(count, 1);
+    assert.equal(runs[0]!["run_id"], "run-away");
+    assert.equal(runs[0]!["test"], true);
+    assert.equal(runs[0]!["served_from"], first);
+  });
+});
+
+describe("runArchivedArtifacts — the tucked walk's own edges", () => {
+  const tuckDir = (): string => {
+    const dir: string = mkdtempSync(join(tmpdir(), "runs-list-tuckedge-"));
+    TMP = TMP === "" ? dir : TMP + ":" + dir;
+    return dir;
+  };
+
+  it("a slash-less literal rides whole (the archived runBase fold names the dir itself)", () => {
+    const dir = tuckDir();
+    mkdirSync(join(dir, "_archived"), { recursive: true });
+    writeFileSync(join(dir, "_archived", "old.png"), "old");
+    const arts = runArchivedArtifacts(dir, "run-tuck");
+    assert.equal(arts.length, 1);
+    assert.equal(arts[0]!["path"], "run-tuck/_archived/old.png");
+    assert.equal(arts[0]!["url"], "run-tuck/_archived/old.png");
+  });
+
+  it("audio/model/text tuck while non-media drops silently (the tucked type fold judges every side)", () => {
+    const dir = tuckDir();
+    mkdirSync(join(dir, "_archived"), { recursive: true });
+    writeFileSync(join(dir, "_archived", "v.wav"), "a"); // audio: judges past video
+    writeFileSync(join(dir, "_archived", "m.glb"), "m"); // model: judges past audio
+    writeFileSync(join(dir, "_archived", "n.txt"), "n"); // text: judges past model
+    writeFileSync(join(dir, "_archived", "notes"), "non-media drops, never refuses");
+    const arts = runArchivedArtifacts(dir, "./output/run-tuck");
+    const byName = new Map(arts.map((a) => [a["name"], a["type"]]));
+    assert.equal(byName.get("v.wav"), "audio");
+    assert.equal(byName.get("m.glb"), "model");
+    assert.equal(byName.get("n.txt"), "text");
+    assert.ok(!byName.has("notes"), "a non-media tucked file drops silently");
+  });
+
+  it("a dangling tucked link drops, never refuses (the tucked size fold's -1)", () => {
+    const dir = tuckDir();
+    mkdirSync(join(dir, "_archived"), { recursive: true });
+    writeFileSync(join(dir, "_archived", "old.png"), "old");
+    symlinkSync(join(dir, "_archived", "ghost.png"), join(dir, "_archived", "link.png"));
+    const arts = runArchivedArtifacts(dir, "./output/run-tuck");
+    assert.deepEqual(arts.map((a) => a["name"]), ["old.png"]);
+  });
+
+  it("an unreadable tucked subdir is skipped, never a throw", () => {
+    const dir = tuckDir();
+    mkdirSync(join(dir, "_archived", "sub"), { recursive: true });
+    writeFileSync(join(dir, "_archived", "sub", "x.png"), "x");
+    writeFileSync(join(dir, "_archived", "top.png"), "t");
+    chmodSync(join(dir, "_archived", "sub"), 0o000);
+    try {
+      assert.deepEqual(
+        runArchivedArtifacts(dir, "./output/run-tuck").map((a) => a["name"]),
+        ["top.png"],
+      );
+    } finally {
+      chmodSync(join(dir, "_archived", "sub"), 0o755);
+    }
+  });
+
+  it("a non-servable tucked leaf and a nested tucked dir are skipped (the tucked sub-loop's two continues)", () => {
+    const dir = tuckDir();
+    mkdirSync(join(dir, "_archived", "sub", "nested"), { recursive: true });
+    writeFileSync(join(dir, "_archived", "sub", "_skip.png"), "s"); // underscore leaf: never servable
+    writeFileSync(join(dir, "_archived", "sub", "keep.png"), "k");
+    writeFileSync(join(dir, "_archived", "sub", "nested", "deep.png"), "d"); // depth 3: never walked
+    const arts = runArchivedArtifacts(dir, "./output/run-tuck");
+    assert.deepEqual(arts.map((a) => a["name"]), ["keep.png"]);
+  });
+});
+
+describe("runDirHasMedia — the subdir walk's patience", () => {
+  it("a subdir's non-media files don't vote — the walk keeps looking", () => {
+    const root = tmp();
+    mkdirSync(join(root, "sub"));
+    writeFileSync(join(root, "sub", "plain"), "f"); // no extension: keeps looking
+    writeFileSync(join(root, "sub", "x.png"), "x");
+    assert.equal(runDirHasMedia(root), true);
+  });
+});
+
+describe("noteRunTreeChanged — the mutation notice (the gallery-rename staleness cure)", () => {
+  const sidecar = (): string =>
+    JSON.stringify({ status: "completed", pipeline: "voice", seed: 7, created_at: 100 });
+
+  it("a path naming no run id is a no-op — the caches hold", async () => {
+    const state = tmp();
+    const dir = join(state, "output", "run-noticed");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "_flow.json"), sidecar());
+    writeFileSync(join(dir, "a.png"), "img");
+    const before = await listRuns(state, 10, async () => true);
+    assert.equal(before.runs.length, 1);
+    noteRunTreeChanged(join(state, "output", "notes", "a.png")); // no run-<id> segment
+    const after = await listRuns(state, 10, async () => true);
+    assert.deepEqual(after, before);
+  });
+
+  it("a gallery rename invalidates the cached row — the next list rebuilds it", async () => {
+    const state = tmp();
+    const dir = join(state, "output", "run-mut");
+    mkdirSync(join(dir, "gen"), { recursive: true });
+    writeFileSync(join(dir, "_flow.json"), sidecar());
+    writeFileSync(join(dir, "gen", "old.png"), "img");
+    const first = await listRuns(state, 10, async () => true);
+    const firstArts = first.runs[0]!["artifacts"] as Record<string, unknown>[];
+    assert.ok(firstArts.some((a) => a["url"] === "run-mut/gen/old.png"));
+    // the mutation lands one level down: the run dir mtime never
+    // moves, so the un-noticed list serves the pre-mutation row
+    rmSync(join(dir, "gen", "old.png"));
+    writeFileSync(join(dir, "gen", "new.png"), "img");
+    const stale = await listRuns(state, 10, async () => true);
+    const staleArts = stale.runs[0]!["artifacts"] as Record<string, unknown>[];
+    assert.ok(
+      staleArts.some((a) => a["url"] === "run-mut/gen/old.png"),
+      "without the notice the cache holds the pre-mutation row",
+    );
+    // the notice names the run by its path segment: both caches drop
+    // it and the next list rebuilds from disk
+    noteRunTreeChanged(join(dir, "gen", "new.png"));
+    const fresh = await listRuns(state, 10, async () => true);
+    const freshArts = fresh.runs[0]!["artifacts"] as Record<string, unknown>[];
+    assert.ok(freshArts.some((a) => a["url"] === "run-mut/gen/new.png"));
+    assert.ok(!freshArts.some((a) => a["url"] === "run-mut/gen/old.png"));
   });
 });

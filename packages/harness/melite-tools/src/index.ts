@@ -1,30 +1,29 @@
 /**
  * `@melite/harness-tools` — the estate's DSH tool surface.
  *
- * TWO INTERFACES, ONE PLUGIN (the interface law):
+ * ONE INTERFACE: compose-first. The agent discovers, loads lanes,
+ * reads skills, authors cards on the bench (melite_construct) and
+ * does not execute by default — the run door is the USER's Run press
+ * on the card. This keeps the old contract
+ * (agent/prompts/BASE_PROMPT.md): "It composes; it never executes."
  *
- *   BROWSER (default — no env): compose-only. The agent discovers,
- *   loads lanes, reads skills, authors cards on the bench
- *   (melite_construct) and NEVER executes — the run door is the
- *   USER's Run press on the card. This keeps the old contract
- *   (agent/prompts/BASE_PROMPT.md): "It composes; it never
- *   executes."
- *
- *   HEADLESS (config headless:true — the one-shot/agent mounts): the
- *   DELEGATED OPERATOR. Same queue, same doors, plus the ONE
- *   execution verb melite_flow (a card or a flow tool call — single,
- *   template, or stages drafted on the fly), with run_status as the
- *   monitor. Both ride the queue's registration door — never a
- *   bypass, never a hand-assembled graph (QUEUE LANE LAW).
+ * THE RUN DOORS (melite_flow + run_status) are the /melite-runs
+ * delegation's, not an interface: the user's toggle seats them
+ * mid-session, and the persisted record (runsDelegation.ts) seats
+ * them at boot — the operator's last toggle outlives the reload.
+ * Both ride the queue's registration door — never a bypass, never a
+ * hand-assembled graph (QUEUE LANE LAW). There is no config-selected
+ * headless interface: HEADLESS IS DSH'S (`dsh headless`, its own
+ * shipped profile); melite carries no parallel mode.
  *
  * AD HOC TOOLS (config adhocTools): registered ONLY when a session
  * names them. (Empty since the disclosure stroke: enhance_prompt
  * died as a tool — the editor ✦ door below keeps the user surface
  * via harnessEnhance.)
  *
- * BASE toolset (both interfaces): melite_discover, melite_construct,
- * melite_load, melite_view, comfy_manage, melite_skill_read,
- * ledger_tail (+ melite_flow + run_status headless).
+ * BASE toolset: melite_discover, melite_construct, melite_load,
+ * melite_view, comfy_manage, melite_skill_read, ledger_tail
+ * (+ melite_flow + run_status when the delegation is ON).
  * Card tools compose from their card packages (named imports above
  * — the fetch registrar retired with its last row).
  *
@@ -55,6 +54,7 @@ import { meliteLoad } from './tools/melite-load.ts'
 import { meliteView } from './tools/melite-view.ts'
 import { meliteRead } from './tools/melite-read.ts'
 import { skillRead } from './tools/skill-read.ts'
+import { skillWrite } from './tools/skill-write.ts'
 import { ledgerTail } from './tools/ledger-tail.ts'
 import type { ToolDefinition } from './types.ts'
 import { harnessEnhance, resolveHarnessRoutes, matchHarnessRoute, routeName } from './llm-complete.ts'
@@ -81,6 +81,7 @@ export { meliteLoad } from './tools/melite-load.ts'
 export { meliteView } from './tools/melite-view.ts'
 export { meliteRead, readRunText } from './tools/melite-read.ts'
 export { skillRead } from './tools/skill-read.ts'
+export { skillWrite } from './tools/skill-write.ts'
 export { ledgerTail } from './tools/ledger-tail.ts'
 
 /** Cordis plugin name used by loader diagnostics. */
@@ -88,7 +89,7 @@ export const name = 'melite-tools'
 
 /**
  * Services this fiber NEEDS: tools + the harness LLM seam (enhance
- * rides ctx.llm). No webServer dependency — headless/SDK mounts boot
+ * rides ctx.llm). No webServer dependency — SDK mounts boot
  * without one.
  */
 // inject law (split 2026-09-10): THIS plugin is the profile-agnostic
@@ -107,10 +108,6 @@ export const inject = ['tools']
  * with a precise error").
  */
 export interface Config {
-  /** HEADLESS interface: register the run doors (melite_flow,
-   *  run_status) — the delegated operator. Default false (browser law:
-   *  the model composes, the USER presses Run). */
-  headless?: boolean
   /** AD HOC tool names, never in a base toolset ('enhance_prompt').
    *  Accepts a single string or a list. */
   adhocTools?: string | string[]
@@ -128,7 +125,6 @@ export interface Config {
 /** The validator twin of {@link Config} (the loader applies defaults;
  *  direct apply calls resolve undefined as the documented default). */
 export const Config: Schema<Config> = Schema.object({
-  headless: Schema.boolean().default(false),
   adhocTools: Schema.union([Schema.string(), Schema.array(Schema.string())]),
   cardTools: Schema.boolean().default(false),
 })
@@ -147,18 +143,21 @@ export const EAGER_TOOL_NAMES = [
  * catalog's doors, not DSH core's skill machinery — the old
  * unprefixed names invited exactly that conflation). */
 export const DEFERRED_TOOL_NAMES = [
-  'melite_view', 'melite_read', 'comfy_manage', 'melite_skill_read', 'ledger_tail',
+  'melite_view', 'melite_read', 'comfy_manage', 'melite_skill_read', 'melite_skill_write', 'ledger_tail',
 ] as const
 
-/** BASE tool names — both interfaces (discovery, compose, view,
- * management, audit). melite_view is the observe arm (viewing an
- * artifact is not a run press — the interface law holds). */
+/** BASE tool names (discovery, compose, view, management, audit).
+ *  melite_view is the observe arm (viewing an artifact is not a run
+ *  press — the compose law holds). */
 export const BASE_TOOL_NAMES = [
   ...EAGER_TOOL_NAMES, ...DEFERRED_TOOL_NAMES,
 ] as const
 
-/** HEADLESS-only run doors (config headless:true) — the delegated operator. */
-export const HEADLESS_TOOL_NAMES = [
+/** THE RUN DOORS — the /melite-runs delegation's execution verbs,
+ *  seated by the user's toggle and by the persisted record at boot
+ *  (runsDelegation.ts). Not an interface: the same lane gains and
+ *  loses them with the delegation. */
+export const RUN_DOOR_NAMES = [
   'melite_flow', 'run_status',
 ] as const
 
@@ -169,7 +168,7 @@ export const ADHOC_TOOL_NAMES = [] as const
 
 /** Every tool name this plugin can own (registration log + smoke filter). */
 export const MELITE_TOOL_NAMES = [
-  ...BASE_TOOL_NAMES, ...HEADLESS_TOOL_NAMES, ...ADHOC_TOOL_NAMES,
+  ...BASE_TOOL_NAMES, ...RUN_DOOR_NAMES, ...ADHOC_TOOL_NAMES,
 ] as const
 
 /** Register the Melite tools against the live estate gateway.
@@ -195,17 +194,15 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   // here instead of at every register site (2026-09-12).
   const call = asEstateCall(makeEstateRequest(ctx))
 
-  // THE INTERFACE RESOLVE (one explicit step — the profile's
-  // cordis.yml row pins every gate; no env seam: V6 cure, 2026-10-18)
-  const headless = config.headless === true
-  // THE PERSISTED DELEGATION (session 90a0b920 burn, 2026-11-05:
+  // THE DELEGATION RESOLVE (one explicit step): the boot's delegation
+  // reads the PERSISTED record (session 90a0b920 burn, 2026-11-05:
   // "the melite_runs auto mode turned off... after I had it on") —
   // the toggle's state was memory-only, so a lane reload rebooted
   // browser lanes UNSEATED and the transcript shows the theft
   // (melite_flow answered 11:35, "unknown tool melite_flow" 11:39,
   // no /melite-runs off between). The boot now reads the operator's
   // last toggle; every toggle writes it back.
-  const bootDelegated = resolveDelegationAtBoot(headless, readRunsDelegation(c.logger))
+  const bootDelegated = resolveDelegationAtBoot(readRunsDelegation(c.logger))
   const adhoc = (Array.isArray(config.adhocTools)
     ? config.adhocTools.map((s: string) => s.trim()).filter(Boolean)
     : (typeof config.adhocTools === 'string'
@@ -215,9 +212,10 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   const cardTools = config.cardTools === true
 
   c.logger.info(
-    'melite-tools: %s interface — %d base + %d headless run door(s) + %d ad hoc, gateway %s',
-    headless ? 'HEADLESS' : 'BROWSER', BASE_TOOL_NAMES.length,
-    headless ? HEADLESS_TOOL_NAMES.length : 0, adhoc.length, 'typed estate lanes (F-1)',
+    'melite-tools: %d base tool(s) + %d run door(s) + %d ad hoc — runs %s, gateway %s',
+    BASE_TOOL_NAMES.length, bootDelegated ? RUN_DOOR_NAMES.length : 0,
+    adhoc.length, bootDelegated ? "DELEGATED (the AI's toggle is ON)" : 'browser (the user\u2019s Run press)',
+    'typed estate lanes (F-1)',
   )
 
   // BASE, DEFERRED — THE EXPANSION SEAT (progressive disclosure,
@@ -240,6 +238,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       ['melite_read', () => c.tools.register(meliteRead(ctx))],
       ['comfy_manage', () => c.tools.register(comfyManage(estate))],
       ['melite_skill_read', () => c.tools.register(skillRead(estate))],
+      ['melite_skill_write', () => c.tools.register(skillWrite(estate))],
       ['ledger_tail', () => c.tools.register(ledgerTail(estate))],
     ]
     for (const [name, register] of doors) {
@@ -266,52 +265,43 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     seated.clear()
   })
 
-  // BASE, EAGER (both interfaces): disclosure + the compose loop.
-  // The compose face carries the interface flag (the INTERFACE LAW,
-  // 2026-09-13: its model-facing copy names the run door THIS mount
-  // owns — the browser hint points at the user's Run press, headless
-  // at melite_flow — never a phantom verb). construct + load are
-  // seated through the /melite-runs toggle's reseat (the flag they
-  // carry flips with the delegation state); discover carries none.
+  // BASE, EAGER: disclosure + the compose loop. The compose face
+  // carries the delegation flag (the copy law, 2026-09-13: its
+  // model-facing copy names the run door THIS lane's delegation
+  // owns — the browser hint points at the user's Run press, the
+  // delegated lane's at melite_flow — never a phantom verb).
+  // construct + load are seated through the /melite-runs toggle's
+  // reseat (the flag they carry flips with the delegation state);
+  // discover carries none.
   c.tools.register(meliteDiscover(estate, expandEstateDoors))
   let composeSeats: Array<() => void> = []
   const seatComposeLoop = (delegated: boolean): void => {
     for (const dispose of composeSeats.splice(0)) dispose()
     composeSeats.push(
-      c.tools.register(meliteConstruct(estate, { headless: delegated })),
-      c.tools.register(meliteLoad(estate, { headless: delegated, expandEstateDoors })),
+      c.tools.register(meliteConstruct(estate, { delegated })),
+      c.tools.register(meliteLoad(estate, { delegated, expandEstateDoors })),
     )
   }
   seatComposeLoop(bootDelegated)
 
-  // HEADLESS SEATS EAGER (transcript-016 audit, operator 2026-09-24:
-  // "the tool should be as simple to use as possible"): the headless
-  // runner's tool catalog is FIXED AT BOOT — mid-session registrations
-  // never reach its function list, so the deferred doors were promised
-  // in every eager tool's description yet unreachable, and the maker
-  // burned nine catalog hunts plus whole reasoning spirals planning
-  // around a comfy_manage it could never call. A maker has a job of
-  // known depth (view artifacts, read skills, tail the ledger) — the
-  // disclosure tax buys nothing headless. Seat at boot.
-  if (headless) expandEstateDoors()
-  // THE SEAT PIN (session 90a0b920's flap class, L336-377): a
-  // delegated browser lane that reloads booted with the deferred
-  // doors ABSENT until some catalog touch re-seated them — the
-  // agent's first post-reload estate call met 'unknown tool
+  // THE SEAT PIN (session 90a0b920's flap class, L336-377, plus the
+  // transcript-016 audit, operator 2026-09-24: "the tool should be as
+  // simple to use as possible"): a delegated lane that reloads booted
+  // with the deferred doors ABSENT until some catalog touch re-seated
+  // them — the agent's first post-reload estate call met 'unknown tool
   // "comfy_manage"' and burned the session on a hunt. Delegation ON
   // means the agent RUNS the estate: its surface is needed from the
   // first call, so the doors pin at boot. The off-lane keeps the
   // progressive-disclosure law (operator 2026-10-08) — seats there
   // still arrive on first catalog touch.
-  else if (bootDelegated) expandEstateDoors()
+  if (bootDelegated) expandEstateDoors()
 
   // THE RUN DOORS — runtime-seatable (the /melite-runs toggle,
   // operator 2026-10-13: "a / command that toggles if the AI
-  // executes flows or not"). headless mounts boot with them seated
-  // (the delegated operator); browser mounts boot with them absent
-  // (the interface law: the user presses Run). Both seats are the
-  // QUEUE LANE LAW's own registrations — never a bypass, never a
-  // hand-assembled graph.
+  // executes flows or not"). A boot whose persisted record reads ON
+  // seats them at boot; OFF/absent leaves them out (the user's Run
+  // press owns runs). Both seats are the QUEUE LANE LAW's own
+  // registrations — never a bypass, never a hand-assembled graph.
   // (2026-10-01: the withArgCoercion valve that wrapped these two
   // registrations is DELETED — it rewrote args AFTER the session log
   // wrote them, breaking Model-visible⟺logged. The late-arrival
@@ -340,8 +330,9 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   // model request (a boot-fixed catalog — the transcript-016 note —
   // sees them at its next session), and the command's result says
   // so plainly. Registered only where a commands registry is
-  // composed (browser lanes); its absence on headless one-shots is
-  // the designed skip, not a degraded mount.
+  // composed (browser lanes); its absence on server mounts (the SDK
+  // app composes no commands registry) is the designed skip, not a
+  // degraded mount.
   c.inject(['commands'], (child) => {
     // THE ONE COMMANDS READ (F-4's "where the typed inject is free"
     // boundary): dsh-commands' Context augmentation is not in this

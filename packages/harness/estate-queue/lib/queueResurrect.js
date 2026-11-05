@@ -262,7 +262,4 @@ export function planResurrect(stateRoot, readSidecar = (runId) => {
     candidates.sort((a, b) => a.created - b.created);
     return { order: candidates.map((c) => c.runId), orphans };
 }
-/** One rebuilt queued run — RETIRED (stroke 83): the hollow
- *  requeue road is deleted; the service's bootReconcile REPLAYS _request.json
- *  through the start door so revived rows carry REAL params. */
 //# sourceMappingURL=queueResurrect.js.map

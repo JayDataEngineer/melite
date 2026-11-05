@@ -1,11 +1,20 @@
 /**
  * ledger_tail - work off the file ledger: the append-only activity
  * journal (output/_ledger.jsonl) the gateway maintains for EVERY
- * material event - server.boot, run.registered, run.state, prov.state,
- * skill.read. This tool tails it (GET /v1/ledger), oldest -> newest
- * within the tail, so the agent can answer "what happened here",
- * resume interrupted work, and audit its own skill usage without
- * asking the user or trusting memory.
+ * material event - run.queued, run.<status>, run.resurrected,
+ * run.swept, server.lock_stolen, skill.read. This tool tails it
+ * (GET /v1/ledger), oldest -> newest within the tail, so the agent
+ * can answer "what happened here", resume interrupted work, and
+ * audit its own skill usage without asking the user or trusting
+ * memory.
+ *
+ * THE VOCABULARY LAW (U4, 2026-10-31): every event class named here
+ * is emitted by its owner seat (the estate-queue appendLedger sites
+ * the ledger-tail wall censuses) — a filter naming an event nothing
+ * emits is dead surface, retired, never documented. The boot,
+ * registered, state, and provision classes named no emitter and are
+ * gone; the bare provision prefix never matched a row and is gone
+ * with them.
  */
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'
@@ -56,14 +65,14 @@ export function ledgerTail(estate: Estate): ToolDefinition {
   const def = defineTool({
     name: 'ledger_tail',
     description:
-      'Tail the gateway file ledger (append-only journal of runs, provisions, skill reads, server '
-      + 'boots). Use to answer "what happened / what ran / what downloaded", to resume interrupted '
+      'Tail the gateway file ledger (append-only journal of runs, lock-steals, and skill reads). '
+      + 'Use to answer "what happened / what ran", to resume interrupted '
       + 'work after a restart, or to audit activity. Entries come back oldest -> newest within the '
       + 'tail; to resume interrupted work, take the run id from a run.* row and poll it with '
       + 'run_status (the exact error string and artifacts come back), or re-open the card with '
       + 'melite_load and stage it again. '
       + 'Args: limit (optional, default 50, max 500), event (optional prefix filter, e.g. "run." '
-      + 'or "prov").',
+      + 'or "skill.").',
     // ParameterSchemaSpec grammar: the map IS the implicit object root
     // (no type/properties wrapper) — both filters are optional.
     parameters: {
@@ -73,7 +82,7 @@ export function ledgerTail(estate: Estate): ToolDefinition {
       },
       event: {
         type: 'string',
-        description: 'Optional event-name prefix filter, e.g. "run.", "prov", "skill".',
+        description: 'Optional event-name prefix filter, e.g. "run.", "server.", "skill.".',
       },
     },
     presentCall,

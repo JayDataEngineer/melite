@@ -80,6 +80,7 @@ import { readFileSync, statSync } from "node:fs";
  *  imported through the engine's public surface like every other
  *  engine dep. No deep path, no runtime-only dodge. */
 import { bootModels, cardDefsNow, ComposeRefusal, getModel, liveScanOrder, loadCardDefs, loadFacts, owningAtom, registryIds, registryModel, resolveCardFlowOutputs, resolveRepoRoot, theService } from "@melite/comfyui-cordis";
+import { foldLegacyAliases } from '@melite/comfyui-card-kit';
 import { probeMedia } from '@melite/contracts/media-probe';
 import { DOOR_KEYS } from "./runsGates.js";
 import { CardArmError, EnvelopeRefusal, phaseRefusalCode } from "./cardsArmError.js";
@@ -373,6 +374,57 @@ function refuseSilentSource(card, params) {
         }
     }
 }
+/** THE REFINE WINDOW RANGE REFUSAL (qa8 F36): chaining a refined
+ *  output with a start_seconds past the clip's end used to crash
+ *  VHS mid-run (`both buffer length (0) and count (-1) must not be
+ *  0`) — after the GPU bill. The door probes the window's source
+ *  clip BEFORE the run registers and refuses when the window's skip
+ *  (start_seconds × 24 at the film clock) lands at or past the
+ *  clip's own frame count — in words, naming the clip, its probed
+ *  length, the window's start, and the cure. Same probe posture as
+ *  the silent-source refusal: only a positive reading refuses; a
+ *  clip this probe cannot read stays the engine's own belt. */
+function refuseRefineWindowPastClip(card, params) {
+    if (card !== "h3-timeline")
+        return;
+    const bag = params["refine"];
+    if (!Array.isArray(bag))
+        return;
+    for (const entry of bag) {
+        if (entry === null || typeof entry !== "object" || Array.isArray(entry))
+            continue;
+        const rec = entry;
+        const leaf = typeof rec["source_clip"] === "string" ? rec["source_clip"].trim() : "";
+        if (leaf === "")
+            continue;
+        const rawStart = rec["start_seconds"];
+        const start = typeof rawStart === "number" && Number.isFinite(rawStart) ? rawStart : 0;
+        if (!(start > 0))
+            continue;
+        const bytes = bagSourceBytes(leaf);
+        if (bytes === null)
+            continue;
+        let probed;
+        try {
+            probed = probeMedia(bytes);
+        }
+        catch {
+            continue;
+        }
+        const video = probed.streams.find((stream) => stream.codec_type === "video");
+        const frames = video?.frames ?? (probed.duration_s !== undefined ? Math.round(probed.duration_s * 24) : undefined);
+        if (frames === undefined || frames <= 0)
+            continue;
+        const skip = Math.round(start * 24);
+        if (skip < frames)
+            continue;
+        const clipEndS = (frames / 24).toFixed(2);
+        throw new CardArmError(400, `the refine window starts at ${start}s (skip ${skip} frames at the film clock) but "${leaf}" carries ` +
+            `${frames} frame(s)${probed.duration_s !== undefined ? ` (${probed.duration_s}s)` : ""} — the loader's ` +
+            `skip_first_frames runs past the clip's end and the engine dies in the buffer arithmetic; start the ` +
+            `window inside the clip (start_seconds < ${clipEndS}s) or refine the longer source`, "invalid_request");
+    }
+}
 /** The card-scope seat for the clip-geometry stamp: resolves the
  *  card the run addresses — the family route's famRow.card, or the
  *  familyless id itself — mirroring prepareCardParams's two arms,
@@ -471,13 +523,18 @@ function familyLawOfCard(def) {
 }
 /** THE FAMILY-LAW DECLARATION JUDGE (the one-seat migration,
  *  2026-11-12 — pure core; prime() throws on its verdict): every
- *  declared law must name at least one lane, and every deadKeys
- *  lane must be a lane the lanes array declares. A drop keyed to a
- *  lane nobody derives never fires — a law the estate refuses to
- *  serve, red at boot BEFORE any live write. Pure over the
- *  (family → law) pairs so the wall drives the judge's own path;
- *  prime() resolves the pairs off the card defs' boarded families
- *  (getModel — the DECL's one home).
+ *  declared law must name at least one lane, every deadKeys lane
+ *  must be a lane the lanes array declares, and NO lane may declare
+ *  dead keys at all (the lane-dead-letter ban, 2026-11-15 — the
+ *  operator's gate-11 burn: a key a lane's renderer cannot honor
+ *  means THAT RENDERER is incomplete, never that a lawful doc may be
+ *  refused; cure the renderer, or gate the shape with a repair-
+ *  teaching law — the FILM_ONLY precedent). A drop keyed to a lane
+ *  nobody derives never fires — a law the estate refuses to serve,
+ *  red at boot BEFORE any live write. Pure over the (family → law)
+ *  pairs so the wall drives the judge's own path; prime() resolves
+ *  the pairs off the card defs' boarded families (getModel — the
+ *  DECL's one home).
  *  @param laws the declared family laws, keyed by family id
  *  @returns the drift sentences (empty = every law serves) */
 export function familyLawDrift(laws) {
@@ -489,6 +546,11 @@ export function familyLawDrift(laws) {
         const orphan = Object.keys(law.deadKeys).filter((l) => !lanes.has(l));
         if (orphan.length > 0)
             drift.push(`${family}: deadKeys names undeclared lanes ${JSON.stringify(orphan)}`);
+        for (const [lane, keys] of Object.entries(law.deadKeys)) {
+            if (lanes.has(lane) && keys.length > 0) {
+                drift.push(`${family}: lane ${lane} declares dead keys ${JSON.stringify(keys)} — no lane dead letter may ship (cure the renderer or gate the shape)`);
+            }
+        }
     }
     return drift;
 }
@@ -1068,19 +1130,17 @@ export class CardRegistryService extends Service {
         return verdict === null ? { ok: true } : { ok: false, error: verdict };
     }
     /** THE FAMILY ADMISSION (journey-closure B5, 2026-10-17 — hop 3's
-     *  first judge, the write doors' arm of the walk): the card's own
-     *  family clause (CardDefinition.admitFamily — h3-timeline
-     *  declares the t4r inject-keys clause its compose walk enforces)
-     *  judges the MERGED params view — the params the next run would
-     *  compose — and the refusal speaks the run door's own voice one
-     *  hop earlier. Where the model and lane admissions judge
-     *  dict membership (board, surface, relation words), THIS judge
-     *  runs the family-conditional walk the run door runs, so the
-     *  patch door's "the params the NEXT run would compose" claim is
-     *  true for family-conditional cards. A card with no definition,
-     *  or with no family contract (the optional face absent), passes —
-     *  the clause is a no-op for every card that declares no family
-     *  walk. A JUDGE, NOT A GUARD (the operator's no-blocker ruling,
+     *  first judge, the write doors' arm of the walk): an OPTIONAL card
+     *  clause (CardDefinition.admitFamily) judged on the MERGED params
+     *  view — the params the next run would compose. NO LIVE CARD
+     *  DECLARES ONE after the 2026-11-15 lane-dead-letter retirement:
+     *  h3-timeline's t4r inject-keys face was deleted when the t4r
+     *  render arm gained the post chain (every finish key fires on
+     *  every lane), and the DECL's family-law judge bans a non-empty
+     *  deadKeys at boot, so this seat is an honest no-op for today's
+     *  cards. It remains for a genuine future family clause: the
+     *  refusal then speaks the run door's own voice one hop earlier.
+     *  A JUDGE, NOT A GUARD (the operator's no-blocker ruling,
      *  CONTRACTS.md §4-17): the verdict refuses the WRITE at the
      *  write door; the stored bench state keeps its own law (loads,
      *  reads, and the restore carve are the drafts side's to honor). */
@@ -1829,7 +1889,19 @@ export class CardRegistryService extends Service {
         if (typeof mid !== "string" || mid === "")
             return null;
         try {
-            return prepareCardParams(this, body, mid, "serve").params;
+            const prep = prepareCardParams(this, body, mid, "serve");
+            // THE ONE-SPELLING SERVE (operator 2026-11-14: "the agent and
+            // user have different input parameters"): the compose lanes
+            // merge a card's legacyAliases engine-side, so a row carrying
+            // image1/image_name RUNS with the image — but serving the
+            // params verbatim left the canonical seat (input_images /
+            // image) EMPTY on the drill's form and the user stared at a
+            // BLANK input for an image the agent had attached. The serve
+            // is the 1:1 law (the map the NEXT RUN composes): the same
+            // fold the lane performs, served — one spelling on every
+            // face, the stored doc untouched.
+            const kinds = this.defsSync().get(prep.card)?.flowKinds;
+            return foldLegacyAliases(kinds, prep.params);
         }
         catch {
             return null;
@@ -2026,6 +2098,10 @@ export class CardRegistryService extends Service {
         // and the file named (the run door's own envelope walk, so the
         // validate seat hears the same sentence).
         refuseSilentSource(prep.card, prep.params);
+        // THE REFINE WINDOW RANGE REFUSAL (F36): a window whose
+        // start_seconds runs past its own source clip refuses here,
+        // zero GPU, with the clip and the probed length named.
+        refuseRefineWindowPastClip(prep.card, prep.params);
         // THE BOARD CHECK RIDES THE RUN SEAT TOO (the behavioural
         // re-check's BYPASS 1: the bench refused an unoffered model
         // address, but `validate` with the SAME address composed the

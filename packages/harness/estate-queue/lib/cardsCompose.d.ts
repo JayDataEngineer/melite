@@ -11,6 +11,20 @@ export interface ComposeSeat {
     primeObjectInfo(): Promise<boolean>;
     readsSync(): FactsReads;
     resolveCardFamily(mid: string, facts?: Record<string, import("./cardsFacts.js").ModelFactsRow>): string;
+    /** THE FAMILY DOOR AT THE COMPOSE SEAT (operator 2026-11-14, the
+     *  t4r four-key burn: "the AI MADE A CARD WITH THAT ERROR, AND
+     *  RENDERED ANYWAYS"): the card's own admitFamily clause, judged
+     *  by prepareCardParams on the RAW lifted body (pre-stamp). An
+     *  OPTIONAL seam: NO LIVE CARD declares a clause after the
+     *  2026-11-15 lane-law retirement — the t4r arm mounts the post
+     *  chain, so no finish key is lane-dead, and a non-empty DECL
+     *  deadKeys is banned at boot. A seat without the face admits. */
+    admitStageFamily?(card: string, params: Record<string, unknown>): {
+        ok: true;
+    } | {
+        ok: false;
+        error: string;
+    };
     /** The §23 cross-roots manifest (the queue seat's stateRoots —
      *  the dangling sweep's trees; J12: config-named, never env). */
     stateRoots(): readonly string[];
@@ -35,6 +49,23 @@ export declare function composeOnce(deps: ComposeSeat, card: string, fam: string
  *  by every other seat, which takes the strict read here.
  */
 export declare function admissionRefusal(deps: ComposeSeat, card: string, fam: string, lifted: Record<string, unknown>, phase: string, facts?: Record<string, ModelFactsRow>): void;
+/** THE FAMILY-LESS HIJACK LAW (F56, 2026-11-14): a registered
+ *  family-less card (boarded: [], requiresModel: false — trim,
+ *  frames, track, the pure tools) composes by its OWN id; a stated
+ *  params.model/service naming anything else would resolve THAT
+ *  family and compose its card instead, judging this card's params
+ *  by a stranger's admission. The refusal fires at the door, before
+ *  any lane resolves. One law, two seats: prepareCardParams (the
+ *  compose doors) and the validate walk's own phase1Card call (its
+ *  body carries no `card` key — the card name is the walk's own
+ *  variable).
+ *  @param deps the compose seat (the decl projection).
+ *  @param card the row's own card id ("" = the caller has none; the
+ *  gate is a no-op then).
+ *  @param seat the stated model/service value, whatever shape.
+ *  @param facts the caller-resolved facts table (optional — the
+ *  seat's own read when omitted). */
+export declare function refuseFamilylessHijack(deps: ComposeSeat, card: string, seat: unknown, facts?: Record<string, ModelFactsRow>): void;
 /** Resolve + sweep + select + overlay + lift (steps 2-6):
    *  everything before compose. Throws CardArmError (the door maps
    *  it to the refusal envelope). `phase` stamps the phase-N voice

@@ -89,16 +89,25 @@ describe("the manage plane — the LoRA doors (the Manager sidebar's own vocabul
     writeFileSync(rowsPath, JSON.stringify([
       { id: "mine", filename: "z-image/two.safetensors", families: ["z-image"], label: "Mine" },
     ]), "utf8");
+    // MELITE_USER_LORAS isolation: the machine's REAL rows file
+    // (an operator install) must never leak into the spec — the
+    // re-arm reads the same spelling the doors do
+    const prevRows = process.env["MELITE_USER_LORAS"];
+    process.env["MELITE_USER_LORAS"] = join(tempRoot("lane-list-rows-"), "absent.json");
     const [code, res] = await run({ action: "lora_list" }, ctx);
     assert.equal(code, 200);
     assert.equal(res.ok, true);
     const data = res.data as Record<string, unknown>;
     assert.deepEqual(data["engine_loras"], OBJECT_INFO);
     assert.equal(data["install_dir"], "/models/loras");
+    if (prevRows === undefined) delete process.env["MELITE_USER_LORAS"];
+    else process.env["MELITE_USER_LORAS"] = prevRows;
     // the rows file is read from the declared path (absent here = the
     // door is opt-in, never an error)
     assert.equal(data["user_rows_present"], false);
-    assert.equal(data["next_action_after_install"], "restart");
+    // SERVE TIMING, not a next_action — no manage verb follows a
+    // landed row (a fake action literal renders a dead button)
+    assert.equal(data["serve_after_install"], "next-compose");
     void ctx; void rowsPath;
   });
 
@@ -170,13 +179,16 @@ describe("the manage plane — the LoRA doors (the Manager sidebar's own vocabul
     }
   });
 
-  it("lora_install COPIES the operator's own file and names the restart it needs", async () => {
+  it("lora_install COPIES the operator's own file, seats the row, and names NO restart (LAND = SEATED)", async () => {
     const ctx = CTX({ objectInfo: engineAnswer(["h3/one.safetensors"]) }); // the new file is NOT in the combo yet
     const src = join(tempRoot("lane-src-"), "my_lora.safetensors");
     writeFileSync(src, Buffer.alloc(64, 7));
     const dir = join(tempRoot("lane-loras-"), "loras");
+    const rows = join(tempRoot("lane-rows-"), "user-loras.json");
     const prev = process.env["MELITE_COMFYUI_LORAS_DIR"];
+    const prevRows = process.env["MELITE_USER_LORAS"];
     process.env["MELITE_COMFYUI_LORAS_DIR"] = dir;
+    process.env["MELITE_USER_LORAS"] = rows;
     try {
       const [code, res] = await run(
         { action: "lora_install", path: src, families: ["h3"] },
@@ -184,22 +196,31 @@ describe("the manage plane — the LoRA doors (the Manager sidebar's own vocabul
       );
       assert.equal(code, 200);
       const data = res.data as Record<string, unknown>;
-      assert.equal(data["filename"], "my_lora.safetensors");
+      // THE SHELF LAW: one family → the file lands under the family
+      // dir and the combo name carries the prefix
+      assert.equal(data["filename"], "h3/my_lora.safetensors");
       assert.equal(data["bytes"], 64);
       assert.equal(data["in_combo_now"], false);
-      assert.equal(data["restart_required"], true);
-      assert.equal(data["next_action"], "restart");
+      // THE RESTART LIE IS DEAD: the listing is mtime-live, the row
+      // is seated — the next compose serves it
+      assert.equal(data["restart_required"], false);
+      assert.equal("next_action" in data, false);
+      assert.equal(data["row_seated"], true);
       // the copy is really there, byte-identical (never a fetch)
-      const landed = join(dir, "my_lora.safetensors");
+      const landed = join(dir, "h3", "my_lora.safetensors");
       assert.equal(readFileSync(landed).length, 64);
       assert.deepEqual(readFileSync(landed), readFileSync(src));
-      // and the row the operator adds next rides the answer
-      const row = data["row_suggestion"] as Record<string, unknown>;
-      assert.equal(row["filename"], "my_lora.safetensors");
-      assert.deepEqual(row["families"], ["h3"]);
+      // THE ROW IS SEATED IN THE FILE — no paste, the file is the truth
+      const seated = JSON.parse(readFileSync(rows, "utf8")) as { rows: Array<Record<string, unknown>> };
+      assert.equal(seated.rows.length, 1);
+      assert.equal(seated.rows[0]?.["id"], "h3/my_lora.safetensors");
+      assert.equal(seated.rows[0]?.["filename"], "h3/my_lora.safetensors");
+      assert.deepEqual(seated.rows[0]?.["families"], ["h3"]);
     } finally {
       if (prev === undefined) delete process.env["MELITE_COMFYUI_LORAS_DIR"];
       else process.env["MELITE_COMFYUI_LORAS_DIR"] = prev;
+      if (prevRows === undefined) delete process.env["MELITE_USER_LORAS"];
+      else process.env["MELITE_USER_LORAS"] = prevRows;
     }
   });
 
@@ -210,8 +231,11 @@ describe("the manage plane — the LoRA doors (the Manager sidebar's own vocabul
   it("lora_install BYTES: a browser upload lands without a path (bytes first, the name named)", async () => {
     const ctx = CTX({ objectInfo: engineAnswer(["h3/one.safetensors"]) });
     const dir = join(tempRoot("lane-bytes-"), "loras");
+    const rows = join(tempRoot("lane-bytes-rows-"), "user-loras.json");
     const prev = process.env["MELITE_COMFYUI_LORAS_DIR"];
+    const prevRows = process.env["MELITE_USER_LORAS"];
     process.env["MELITE_COMFYUI_LORAS_DIR"] = dir;
+    process.env["MELITE_USER_LORAS"] = rows;
     try {
       // bytes without a filename refuses in its own voice
       const [nf, nfres] = await run(
@@ -234,14 +258,19 @@ describe("the manage plane — the LoRA doors (the Manager sidebar's own vocabul
       );
       assert.equal(code, 200);
       const data = res.data as Record<string, unknown>;
-      assert.equal(data["filename"], "uploaded.safetensors");
+      assert.equal(data["filename"], "h3/uploaded.safetensors");
       assert.equal(data["bytes"], 32);
-      assert.equal(data["restart_required"], true);
+      assert.equal(data["restart_required"], false);
+      assert.equal(data["row_seated"], true);
       // the landed file is the upload, byte-identical (never a fetch)
-      assert.deepEqual(readFileSync(join(dir, "uploaded.safetensors")), bytes);
+      assert.deepEqual(readFileSync(join(dir, "h3", "uploaded.safetensors")), bytes);
+      // the seat wrote the rows file (no paste, no repo pollution)
+      assert.equal(JSON.parse(readFileSync(rows, "utf8")).rows.length, 1);
     } finally {
       if (prev === undefined) delete process.env["MELITE_COMFYUI_LORAS_DIR"];
       else process.env["MELITE_COMFYUI_LORAS_DIR"] = prev;
+      if (prevRows === undefined) delete process.env["MELITE_USER_LORAS"];
+      else process.env["MELITE_USER_LORAS"] = prevRows;
     }
   });
 
@@ -251,7 +280,14 @@ describe("the manage plane — the LoRA doors (the Manager sidebar's own vocabul
     // answering null is the normal managed-lane state, not a fault —
     // the doors must refuse in the registration voice, not crash
     const prev = process.env["MELITE_COMFYUI_LORAS_DIR"];
+    const prevRepo = process.env["MELITE_REPO_ROOT"];
     delete process.env["MELITE_COMFYUI_LORAS_DIR"];
+    // THE UNDECLARED PREMISE (2026-11-04): the resolver's third leg
+    // answers the checkout's own runtime tree when it exists — the
+    // operator's machine has one, so "nothing declares a dir" must
+    // also point the root at a tree that carries none (else the test
+    // judges the machine, not the law).
+    process.env["MELITE_REPO_ROOT"] = tempRoot("lane-norepo-");
     try {
       const ctx = CTX({
         objectInfo: engineAnswer(OBJECT_INFO),
@@ -274,6 +310,8 @@ describe("the manage plane — the LoRA doors (the Manager sidebar's own vocabul
     } finally {
       if (prev === undefined) delete process.env["MELITE_COMFYUI_LORAS_DIR"];
       else process.env["MELITE_COMFYUI_LORAS_DIR"] = prev;
+      if (prevRepo === undefined) delete process.env["MELITE_REPO_ROOT"];
+      else process.env["MELITE_REPO_ROOT"] = prevRepo;
     }
   });
 
@@ -363,7 +401,8 @@ describe("lora_install — the bytes/live seats", () => {
     // the live arms evaluate resolveEngineBaseUrl and refuse: an
     // empty endpoint config means no URL was ever configured, so
     // objectInfoDoc catches to null and invalidate has no key to
-    // drop — the install still answers in the restart voice
+    // drop — the install still answers in the honest not-in-combo
+    // voice (mtime-live listing, no commanded restart)
     const cfg = join(tempRoot("lane-noep-"), "endpoint.json");
     writeFileSync(cfg, "{}", "utf8");
     const prevCfg = process.env["COMFYUI_ENDPOINT_CONFIG"];
@@ -384,9 +423,10 @@ describe("lora_install — the bytes/live seats", () => {
         ctx,
       );
       assert.equal(code, 200);
-      assert.match(res.detail, /restart the engine to enter its list/);
+      assert.match(res.detail, /not yet in the engine's combo read/);
       const data = res.data as Record<string, unknown>;
-      assert.equal(data["restart_required"], true);
+      assert.equal(data["restart_required"], false);
+      assert.equal("next_action" in data, false);
     } finally {
       if (prevCfg === undefined) delete process.env["COMFYUI_ENDPOINT_CONFIG"];
       else process.env["COMFYUI_ENDPOINT_CONFIG"] = prevCfg;
@@ -394,6 +434,68 @@ describe("lora_install — the bytes/live seats", () => {
       else process.env["COMFYUI_URL"] = prevUrl;
       if (prev === undefined) delete process.env["MELITE_COMFYUI_LORAS_DIR"];
       else process.env["MELITE_COMFYUI_LORAS_DIR"] = prev;
+    }
+  });
+
+  it("a family id that is not a subfolder name refuses (the shelf law's spelling gate)", async () => {
+    // ONE family must spell the loras subfolder — a name with a
+    // space (or a slash) is never a directory the engine serves, so
+    // the door 422s before any copy, never landing bytes under a
+    // junk path.
+    const ctx = CTX({ objectInfo: engineAnswer([]) });
+    const dir = join(tempRoot("lane-badfam-"), "loras");
+    const prev = process.env["MELITE_COMFYUI_LORAS_DIR"];
+    process.env["MELITE_COMFYUI_LORAS_DIR"] = dir;
+    try {
+      const src = join(tempRoot("lane-badfamsrc-"), "my_lora.safetensors");
+      writeFileSync(src, Buffer.alloc(16, 7));
+      const [code, res] = await run(
+        { action: "lora_install", path: src, families: ["has space!"] },
+        ctx,
+      );
+      assert.equal(code, 422);
+      assert.equal(res.ok, false);
+      assert.match(res.detail, /families\[0\] must be a family id/);
+      assert.match(res.detail, /has space!/);
+    } finally {
+      if (prev === undefined) delete process.env["MELITE_COMFYUI_LORAS_DIR"];
+      else process.env["MELITE_COMFYUI_LORAS_DIR"] = prev;
+    }
+  });
+
+  it("a land over an unreadable rows file still lands — the seat's refusal rides the answer (the install half of LAND = SEATED)", async () => {
+    // THE MIRROR of the fetch door's corrupt-rows arm: the copy
+    // already landed, so the answer stays 200 + row_refusal naming
+    // the rows file's own problem — never a failed install wearing
+    // a seat's refusal.
+    const ctx = CTX({ objectInfo: engineAnswer([]) });
+    const src = join(tempRoot("lane-seatsrc-"), "seated_lora.safetensors");
+    writeFileSync(src, Buffer.alloc(16, 7));
+    const dir = join(tempRoot("lane-seatref-"), "loras");
+    const rowsFile = join(tempRoot("lane-seatrows-"), "user-loras.json");
+    writeFileSync(rowsFile, "[junk row]");
+    const prev = process.env["MELITE_COMFYUI_LORAS_DIR"];
+    const prevRows = process.env["MELITE_USER_LORAS"];
+    process.env["MELITE_COMFYUI_LORAS_DIR"] = dir;
+    process.env["MELITE_USER_LORAS"] = rowsFile;
+    try {
+      const [code, res] = await run(
+        { action: "lora_install", path: src, families: ["h3"] },
+        ctx,
+      );
+      assert.equal(code, 200);
+      assert.equal(res.ok, true, "the copy landed — a seat refusal never wears the install's face");
+      const data = res.data as Record<string, unknown>;
+      assert.equal(data["row_seated"], false);
+      assert.match(String(data["row_refusal"]), /not JSON|not an object|is required/, "the rows file's own refusal rides the answer");
+      assert.match(res.detail, /ROW REFUSED/);
+      // the copy is really there (the bytes are the truth, the row is the debt)
+      assert.equal(readFileSync(join(dir, "h3", "seated_lora.safetensors")).length, 16);
+    } finally {
+      if (prev === undefined) delete process.env["MELITE_COMFYUI_LORAS_DIR"];
+      else process.env["MELITE_COMFYUI_LORAS_DIR"] = prev;
+      if (prevRows === undefined) delete process.env["MELITE_USER_LORAS"];
+      else process.env["MELITE_USER_LORAS"] = prevRows;
     }
   });
 });

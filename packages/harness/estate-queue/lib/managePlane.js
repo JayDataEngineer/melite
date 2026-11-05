@@ -15,9 +15,11 @@ import { promisify } from "node:util";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { resolveRuntimeProvision, nodeRuntimeFs, runtimeEnvView, engineOutputDir, engineRootOf, sentinelHit } from "./runtimeProvision.js";
+import { loadShippedExtensionManifest } from "@melite/comfyui-cordis/provisioning-manifest";
 import { ComfyError, endpointConfigPath, invalidateObjectInfo, liveObjectInfo, loadEndpointConfig, resolveEngineBaseUrl, } from "@melite/comfyui-cordis";
 import { writeJsonAtomic } from "./queueLock.js";
-import { installUserLora, installUserLoraBytes, loraNamesFromObjectInfo, readUserLoraRows, refmodNamesFromObjectInfo, resolveEngineLorasDir, unboardedRows, userLorasPath, validateUserLoraRow, } from "@melite/comfyui-cordis/user-loras";
+import { installUserLora, installUserLoraBytes, loraNamesFromObjectInfo, readUserLoraRows, refmodNamesFromObjectInfo, resolveEngineLorasDir, seatUserLoraRow, unboardedRows, userLorasPath, validateUserLoraRow, } from "@melite/comfyui-cordis/user-loras";
+import { rearmLoraFlavors } from "@melite/comfyui-cordis";
 import { AcquireBusyError, LIVE_ACQUIRE_STATES } from "@melite/estate-provisioning";
 import { ManagerApiError, managerGet, managerPost, planeUnavailable } from "./managerRail.js";
 import { probeEndpoint, activeRuns, managerSecurity, engineQueueView, settleStaleClaims } from "./manageProbe.js";
@@ -924,7 +926,27 @@ async function hInstallExtension(req, ctx) {
             .map(({ node }) => node);
         const operations = results.map(({ node, ref, plan, result }) => operationRow(node, result, ref, plan));
         if (results.length === 0) {
-            throw new Refused(404, "extension is not declared: " + misses.join(", "), {
+            // THE TRUE-MISS LAW (qa8 F6/GAPS-11 cure, 2026-11-01): the misses
+            // ARE the diagnosis — plan() threw for every node, and each miss
+            // already carries plan()'s own per-node voice. The old text stamped
+            // "no declared repo maps these ids" over ALL of them — a FALSE law
+            // the night the Impact packs missed: both ARE declared rows
+            // (extension-manifest.json:245/:265, pinned refs, required:true),
+            // and a plan-side throw that is not a declaration miss (an
+            // unloadable manifest, a seat miswire) is not an undeclared id.
+            // Voice each miss; name the undeclared law only for the misses that
+            // speak it (the declaration port's own "is not declared" voice —
+            // packages/web/melite-estate/src/provisioning.ts). The operator door
+            // (qa8 F6/GAPS-11) still closes every genuinely undeclared id:
+            // retrying install_extension replays the dead door, so the URL door
+            // (operator-approved git URL + operator_confirmed) rides every 404.
+            const undeclared = misses.filter((m) => m.includes("is not declared"));
+            const other = misses.filter((m) => !m.includes("is not declared"));
+            const cause = [
+                ...(undeclared.length > 0 ? ["extension is not declared: " + undeclared.join(", ")] : []),
+                ...(other.length > 0 ? ["no plan resolved: " + other.join(", ")] : []),
+            ].join("; ");
+            throw new Refused(404, cause + " — install with install_extension_url + the operator-approved git URL (operator_confirmed=true)", {
                 state: "failed",
                 requested,
                 succeeded,
@@ -970,7 +992,15 @@ async function hInstallExtension(req, ctx) {
  *  409 before any fetch: the service's own gate would also block,
  *  but the refusal must name the wire field, not the service's
  *  internal voice. Returns the refusal envelope, or null to
- *  proceed. */
+ *  proceed.
+ *
+ *  NO next_action (vocab audit 2026-11-01, rank 1 HIGH):
+ *  operator_confirmed is a boolean REQUEST PARAM, not a manage
+ *  action — emitting it as next_action rendered an operator-
+ *  pressable Button whose press could only 422 (the F20 shape:
+ *  the refusal names X the enum refuses). The detail below
+ *  teaches the wire field; there is no door to follow, so the
+ *  envelope carries none. */
 function operatorConfirmGate(req, door) {
     if (req.operator_confirmed === true)
         return null;
@@ -982,7 +1012,6 @@ function operatorConfirmGate(req, door) {
             state: "conflict",
             detail: door + ": external acquisitions land bytes from a caller-named URL — pass operator_confirmed=true " +
                 "(the human's approval) to proceed. The flag is recorded with the operation.",
-            next_action: "operator_confirmed",
         },
     ];
 }
@@ -992,6 +1021,20 @@ async function hInstallExtensionUrl(req, ctx) {
     // THE SEAT ASKS FIRST (the hProvisionModel order law): a seatless
     // lane names its own 503 before any human flag is demanded
     const provisioner = provisioningOf(ctx);
+    // THE DECLARED-PIN DOOR (the operator's auto-provision law,
+    // 2026-11-01): packs the shipped manifest declares ride
+    // BYTE-VERIFIED pins — installing one through the URL door is the
+    // provisioning path itself, not an external acquisition, and
+    // needs NO operator gesture. The URL must equal the row's; a
+    // stated ref must equal the pinned ref; an omitted ref installs
+    // THE PIN, never a floating HEAD. The manifest row IS the
+    // approval recorded with the operation. An unpinned URL keeps
+    // the human's gate (the confirm refusal below).
+    const declared = loadShippedExtensionManifest().find((row) => row.url === req.url);
+    if (declared !== undefined && (req.ref === "" || req.ref === declared.ref)) {
+        const result = await withManageTimeout(req, ctx, (signal) => provisioner.acquireExternal({ kind: "extension", url: declared.url, ...(declared.ref === "" ? {} : { ref: declared.ref }) }, { operatorConfirmed: true }, signal));
+        return provisionEnvelope(req.action, result);
+    }
     const confirmed = operatorConfirmGate(req, "install_extension_url");
     if (confirmed !== null)
         return confirmed;
@@ -1120,8 +1163,20 @@ async function hLoraFetch(req, ctx) {
             note: "the lora LANDED; the engine restart is owed and did not fire: " + why,
         };
     }
+    // LAND = SEATED (the pixel-anim cure): the fetch writes the row
+    // itself — the picker serves it on the next compose regardless of
+    // the restart chain's outcome below
+    const seat = seatUserLoraRow({
+        id: comboName,
+        filename: comboName,
+        families: [family],
+        source_url: req.url,
+        label: filename.replace(/\.[^.]+$/, ""),
+    });
+    const rearm = rearmLoraFlavors();
     const detail = comboName + " landed for " + family + " — " + restartVoice.note +
-        (inComboNow ? " (already in the engine's combo)" : " (not yet in the engine's combo read)");
+        (inComboNow ? " (already in the engine's combo)" : " (not yet in the engine's combo read)") +
+        (seat.ok ? "; picker row seated — composes now" : "; ROW REFUSED: " + seat.reason);
     const first = result.items[0];
     const data = {
         family,
@@ -1133,11 +1188,13 @@ async function hLoraFetch(req, ctx) {
         in_combo_now: inComboNow,
         restart_required: restartVoice.restart_required,
         next_action: restartVoice.next_action,
-        // THE ROW SUGGESTION (the lora_install door's pattern): paste
-        // this into the family's user rows (or the DECL) and the
-        // picker's id-pick composes; the engine name serves as the
-        // candidate either way (the mods union)
-        row_suggestion: {
+        row_seated: seat.ok,
+        ...(seat.ok ? {} : { row_refusal: seat.reason }),
+        rows_path: userLorasPath(),
+        flavors: rearm,
+        // THE SEATED ROW (was a paste suggestion — LAND = SEATED): the
+        // row the picker's id-pick composes, written by this verb
+        row: {
             id: comboName,
             filename: comboName,
             families: [family],
@@ -1682,8 +1739,22 @@ async function hStop(req, ctx) {
     }
 }
 async function hLaunch(req, ctx) {
+    guardLifecycle(req, ctx);
     estateOnly(req, ctx.endpoint());
-    return await systemctl(req, "start", ctx.comfyUnit, ctx.signal);
+    // THE LAUNCH RE-ARM (U6, 2026-10-31): launch is the only road back
+    // from a dead lane, and it held no guard — a run pressed mid-start
+    // slipped through with no seat holding the teardown (the stale
+    // handle: the press never saw "launch" in flight). The start call
+    // rides the lifecycle latch like every sibling teardown, so the
+    // re-arm actually re-arms: the seat re-binds to the launch action
+    // across the call and releases on settle.
+    const releaseLifecycle = holdLifecycle(req.action);
+    try {
+        return await systemctl(req, "start", ctx.comfyUnit, ctx.signal);
+    }
+    finally {
+        releaseLifecycle();
+    }
 }
 async function hUpdate(req, ctx) {
     if (req.target !== "comfy") {
@@ -1763,16 +1834,42 @@ async function hFree(req, ctx) {
     // THE LIFECYCLE LATCH (MP-R1, 2026-10-10): held across the free
     // call so a run pressed mid-free refuses instead of tearing.
     const releaseLifecycle = holdLifecycle(req.action);
+    // THE WARMED-SEAT COUNT, ANSWERED (qa8 F42): the envelope carries
+    // what the chain released — never the silent no-op face the burn
+    // served ("free issued" while 8.35 GB stayed resident).
+    let warmed;
     try {
         await managerPost(b, "/free", { unload_models: true, free_memory: true }, { ctx, timeoutMs: 30_000 });
     }
     catch (e) {
+        releaseLifecycle();
         throw mapRail(e, req.action);
+    }
+    // THE WARMED-SEAT CHAIN (qa8 F42): native /free evicts only
+    // ComfyUI-core-tracked models; the qwen3 torch engine's
+    // process-wide warmed handles (~4.3 GB per variant) are the audio
+    // pack's engine-owned seats, invisible to /free — the burn's
+    // resident cache never dropped and only a restart cleared. The
+    // pack's release door (e4e4c13: POST /audiocore/release_warmed)
+    // fires the same release_warmed_handles() the Unload node does;
+    // the free door chains it after native /free and ANSWERS WITH THE
+    // COUNT. A lane that does not carry the audio pack names itself
+    // (404) and the free verdict still lands — native eviction
+    // happened; the chain names what it could not reach.
+    try {
+        const released = await managerPost(b, "/audiocore/release_warmed", {}, { ctx, timeoutMs: 30_000 });
+        const n = released?.["released"];
+        warmed = typeof n === "number"
+            ? "warmed-seat chain released " + String(n) + " handle(s)"
+            : "warmed-seat chain answered";
+    }
+    catch {
+        warmed = "warmed-seat chain unavailable (the audio pack is not loaded on this lane)";
     }
     finally {
         releaseLifecycle();
     }
-    return ok(req.action, "free issued (next worker iteration)", { next_action: "status" });
+    return ok(req.action, "free issued (next worker iteration); " + warmed, { next_action: "status" });
 }
 /** THE STALE-CLAIM SETTLE (tts NEW-2, 2026-11-12): retire sidecars
  *  that claim a live word but cannot be live, so the lifecycle
@@ -2070,34 +2167,53 @@ async function hLoraList(req, ctx) {
     const cfg = ctx.endpoint();
     estateOnly(req, cfg);
     const combo = loraNamesFromObjectInfo(await objectInfoDoc(ctx, railMs(req)));
+    // THE SELF-HEALING READ (the pixel-anim cure): a LoRA landed by
+    // any means (install door, upload door, plain cp) serves the
+    // picker the moment ANY lora verb runs — the flavors re-arm from
+    // the rows file and the dir, the same registration the compose
+    // gate reads. Looking at the tray IS the refresh.
+    const rearm = rearmLoraFlavors();
     const file = readUserLoraRows(userLorasPath());
     const unboarded = unboardedRows(file.rows, combo);
-    return ok(req.action, combo.length + ' LoRA name(s) the engine accepts; ' + file.rows.length + ' user row(s) offered', {
+    return ok(req.action, combo.length + ' LoRA name(s) the engine accepts; ' + file.rows.length + ' user row(s) offered; '
+        + rearm.tray_rows + ' tray row(s) serving', {
         engine_loras: combo,
         user_rows: file.rows,
         user_rows_path: file.path,
         user_rows_present: !file.absent,
-        user_row_problems: file.problems,
+        user_row_problems: [...file.problems, ...rearm.problems],
         // rows the engine does NOT have: named here, not at /prompt
         unboarded,
         install_dir: engineLorasDir(cfg) ?? LORAS_DIR_UNDECLARED,
-        // a file copied in is only seen by the combo after a reboot —
-        // core enumerates folder_paths at import, and a reboot is the
-        // only refresh primitive this repo owns
-        next_action_after_install: 'restart',
+        flavors_serving_now: { user_rows: rearm.user_rows, tray_rows: rearm.tray_rows },
+        // the engine's own listing is mtime-live (the pinned core
+        // re-stats per read); a landed file composes without a reboot.
+        // SERVE TIMING, not a next_action: no manage verb follows a
+        // landed row — the operator's next press on the card composes
+        serve_after_install: 'next-compose',
     });
 }
 /** `lora_install` — COPY, never fetch. The operator's law: no loras
- *  remote; the file is one the operator already has. The answer names
- *  the restart it needs, because the combo is read at engine import. */
+ *  remote; the file is one the operator already has. LAND = SEATED
+ *  (the pixel-anim cure, 2026-11-15): with families stated the door
+ *  seats the picker row itself and re-arms the lora flavors — the
+ *  row serves on the NEXT COMPOSE, no paste, no restart, no file
+ *  edit. THE SHELF LAW (lora_fetch's own): exactly one family lands
+ *  under `<loras>/<family>/` so the tray (presence = row) sees it;
+ *  zero or many families land flat and ride the rows file alone. */
 async function hLoraInstall(req, ctx) {
     const cfg = ctx.endpoint();
     estateOnly(req, cfg);
-    const dir = engineLorasDir(cfg);
+    const root = engineLorasDir(cfg);
     // a copy needs a REAL target — an undeclared dir refuses loud
     // (never a guessed path on someone else's machine)
-    if (dir === null)
+    if (root === null)
         throw new Refused(502, LORAS_DIR_UNDECLARED);
+    const family = req.families.length === 1 ? req.families[0] : '';
+    if (family !== '' && !/^[a-z0-9][a-z0-9-]*$/i.test(family)) {
+        throw new Refused(422, 'families[0] must be a family id (the loras subfolder name): ' + family);
+    }
+    const dir = family !== '' ? root + '/' + family : root;
     // THE BYTES ARM: a browser upload (the civit flow) needs no path
     if (req.data !== '') {
         if (req.filename === '')
@@ -2108,7 +2224,7 @@ async function hLoraInstall(req, ctx) {
         const landed = installUserLoraBytes(req.filename, req.data, dir, req.data.length);
         if (!landed.ok)
             throw new Refused(422, landed.reason, { filename: req.filename, install_dir: dir });
-        return loraInstalled(req, ctx, dir, landed, 'uploaded');
+        return loraInstalled(req, ctx, dir, family, landed, 'uploaded');
     }
     need(req, 'path');
     const result = installUserLora(req.path, dir);
@@ -2117,37 +2233,67 @@ async function hLoraInstall(req, ctx) {
         // data), so the sidebar reads it like every other refusal
         throw new Refused(422, result.reason, { path: req.path, install_dir: dir });
     }
-    return loraInstalled(req, ctx, dir, result, 'copied');
+    return loraInstalled(req, ctx, dir, family, result, 'copied');
 }
-/** THE ANSWER both arms share: the name, the bytes, whether the
- *  engine already lists it, and the restart it needs. The pinned
- *  core's folder listing is mtime-live (cached_filename_list_
- *  re-stats each folder per read — data/runtime/comfyui/
- *  folder_paths.py:499), so a landed file shows in the next census
- *  WITHOUT a reboot; the harness's own cached /object_info doc is
- *  the stale layer, and the acquisition doors drop it (1a6f773c).
- *  A restart stays required for custom_nodes (import-time), never
- *  for a weight file. The row suggestion rides along so the
- *  operator's next step is a paste, not a hunt. */
-async function loraInstalled(req, ctx, dir, result, verb) {
+/** THE ANSWER both arms share: the name, the bytes, the row it
+ *  seated, and whether it serves NOW. The pinned core's folder
+ *  listing is mtime-live (cached_filename_list_ re-stats each
+ *  folder per read — data/runtime/comfyui/folder_paths.py:499), so
+ *  a landed file shows in the next census WITHOUT a reboot; the
+ *  harness's own cached /object_info doc is the stale layer, and
+ *  the acquisition doors drop it (1a6f773c). A restart stays
+ *  required for custom_nodes (import-time), never for a weight
+ *  file — the envelope carries NO next_action (no manage verb
+ *  follows a landed row; a fake one renders a dead button), and
+ *  restart_required:false + the detail voice the cure: the row
+ *  composes on the next press — never a commanded reboot of a
+ *  healthy engine. */
+async function loraInstalled(req, ctx, dir, family, result, verb) {
     // truth at answer time: the engine may have rebooted since the
     // cache filled (an out-of-band restart), so the combo read below
     // must not serve the pre-restart doc — one fresh fetch per install
     invalidateLiveObjectInfo(ctx);
     const combo = loraNamesFromObjectInfo(await objectInfoDoc(ctx, railMs(req)));
-    const visible = combo.includes(result.filename);
-    return ok(req.action, verb + ' ' + result.filename + ' (' + result.bytes + ' bytes) into ' + dir
-        + (visible ? ' — already in the engine\'s list' : ' — restart the engine to enter its list'), {
-        filename: result.filename,
+    // THE COMBO NAME (the shelf law): under a family dir the engine
+    // lists "<family>/<file>"; flat, the bare name
+    const comboName = family !== '' ? family + '/' + result.filename : result.filename;
+    const visible = combo.includes(comboName);
+    // LAND = SEATED: families stated → the row is WRITTEN and the
+    // flavors re-armed; the compose gate serves it on the next request
+    let row_seated = false;
+    let row_refusal = '';
+    if (req.families.length > 0) {
+        const seated = seatUserLoraRow({
+            id: comboName,
+            filename: comboName,
+            families: req.families,
+            label: result.filename.replace(/\.[^.]+$/, ''),
+            default_strength: 1,
+        });
+        if (seated.ok)
+            row_seated = true;
+        else
+            row_refusal = seated.reason;
+    }
+    const rearm = rearmLoraFlavors();
+    const serves_now = row_seated || rearm.tray_rows > 0;
+    const detail = verb + ' ' + comboName + ' (' + result.bytes + ' bytes) into ' + dir
+        + (visible ? ' — already in the engine\'s list' : ' — not yet in the engine\'s combo read (its listing is mtime-live, no restart needed)')
+        + (row_seated ? '; picker row seated — composes now' : row_refusal !== '' ? '; ROW REFUSED: ' + row_refusal : '; no families stated, no row seated');
+    return ok(req.action, detail, {
+        filename: comboName,
         bytes: result.bytes,
         install_dir: dir,
         in_combo_now: visible,
-        next_action: 'restart',
-        restart_required: !visible,
-        // the row the operator adds next, ready to paste
-        row_suggestion: {
-            id: result.filename.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9]+/g, '_'),
-            filename: result.filename,
+        row_seated,
+        ...(row_refusal !== '' ? { row_refusal } : {}),
+        rows_path: userLorasPath(),
+        flavors: rearm,
+        serves_now,
+        restart_required: false,
+        row: {
+            id: comboName,
+            filename: comboName,
             families: req.families,
             default_strength: 1,
         },

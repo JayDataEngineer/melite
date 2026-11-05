@@ -2,6 +2,7 @@ import { Service } from "@deepseek-ai/cordis";
 import type { Context } from "@deepseek-ai/cordis";
 import type { RunId } from "./queueCore.js";
 export { toRemoteError } from "./runsRefusalVoices.js";
+import { type Phase1Card } from "./cardsRegistry.js";
 import type { FlowsValidateAnswer } from "./runsValidate.js";
 import type { RunRecord } from "./runsTypes.js";
 /** THE START SUMMARY (the door's answer face): what start() and the
@@ -232,8 +233,9 @@ export declare class RunsRuntimeService extends Service {
      *  registryFlowToInline with its `card` references INTACT, and the
      *  inline compiler refuses a `card=` stage (runsStart.ts:184-192,
      *  the 2026-09-25 multi-stage boundary stamp) — so every card-
-     *  bearing flow (audio-native-tts, image-upscale, music-native,
-     *  body-to-somax) could validate but never start, and an app
+     *  bearing flow (image-upscale and the wrapper rows of the
+     *  era — audio-native-tts/music-native/body-to-somax, since
+     *  retired 2026-11-14) could validate but never start, and an app
      *  calling a named flow got 400 runs/preview-scope.
      *
      *  The bench run already proved multi-stage card execution on the
@@ -253,6 +255,27 @@ export declare class RunsRuntimeService extends Service {
     reuse?: {
         runId: RunId;
     }): Promise<PressStartSummary>;
+    /** THE REFUSED-PRESS ECHO (the lost sfx run, 2026-11-03 — the
+     *  operator's law: "IF SOMETHING GENERATES WITHOUT THE UNDERLYING
+     *  DATA, THAT IS AN EXTREME ERROR THAT CAUSES WORK THAT CANNOT BE
+     *  RECOVERED"). A press that refuses at this door registers
+     *  NOTHING — no run row, no _request.json, no ledger line — so the
+     *  intent existed only in the GUI's transient state and the work
+     *  was unrecoverable exactly. The press itself is journalled here:
+     *  one append-only `press.refused` row with the refusal's code +
+     *  voice and a capped echo of the pressed body, so "what did I
+     *  press and why did it die" is one grep away forever, on every
+     *  refused press. NEVER throws (the refusal rides; the echo is
+     *  evidence, never a second failure). A replay's refusal carries
+     *  `replay_of` — the run row settles its own loud failure (stroke
+     *  83); this row journals the press attempt itself.
+     *  @param doc the pressed body (echoed capped — media never rides
+     *  bodies, but an inline doc can be large)
+     *  @param error the door's refusal (or any throw — the echo is
+     *  honest for transport faults too)
+     *  @param reuse the replay marker when the press is a boot replay */
+    private ledgerPressRefused;
+    private startInner;
     /** THE SWEEP START (friction #9's fan-out): one press, N seeds —
      *  each seed its own run, all under one shared run-id prefix.
      *  Every per-run law rides startReserved unchanged (phase gates,
@@ -302,7 +325,7 @@ export declare class RunsRuntimeService extends Service {
      *  output roots. The raw limit STRING rides from the lane (strict
      *  int() semantics: underscores parse, junk refuses). The drafts
      *  probe rides the drafts remote. */
-    list(rawLimit: string, signal: AbortSignal, test?: boolean): Promise<{
+    list(rawLimit: string, signal: AbortSignal): Promise<{
         count: number;
         runs: Record<string, unknown>[];
     }>;
@@ -320,6 +343,31 @@ export declare class RunsRuntimeService extends Service {
      *  unreachable, stats unparseable) returns none — admission never
      *  blocks on a stats read. */
     filmAdmissionWarnings(cardId: string, body: Record<string, unknown>): Promise<string[]>;
+    /** THE CHAIN-STORE RUN-ID DOOR (the F35 write side, session 2): an
+     *  h3-timeline doc's upscale entry may bind its source by ESTATE
+     *  RUN ID — resolved HERE, before compose, through the run row the
+     *  harvest registrar stamped (result_outputs.chain_store.run_name),
+     *  so the composed manager carries a BARE STORE NAME and the
+     *  execute door's existing law (gates-h3-chain-selection-door)
+     *  keeps judging name→store — one judge per edge. A store-spelling
+     *  binding (swap_…/picture_… — anything off the run-id grammar)
+     *  passes byte-untouched with ZERO registry reads: the store stays
+     *  the only existence truth, judged where it is already walled. An
+     *  id-grammar spelling with no row — or a row whose stages carry no
+     *  chain_store — refuses LOUD at this door naming the plain-film
+     *  law, never the execute door's typo-reading 404 (the run row,
+     *  not the store, answers "was this a chain run"). The determinism
+     *  corner: the grammar resolves through the registry ONLY and never
+     *  falls through to the store, so a store literally named like a
+     *  run id binds by its exact spelling only when it does NOT match
+     *  the grammar. Runs between phase 1 (the doc validated) and phase
+     *  2 (the graph composed) — a refusal names the field, never a
+     *  zombie slot. */
+    resolveUpscaleChainRunIds(p1: Phase1Card): Phase1Card;
+    /** The store name a run row carries (the registrar's stamp), or
+     *  null: the live map first, the durable _flow.json on its miss —
+     *  the same two faces the status door reads. */
+    private chainStoreNameOf;
     status(runId: string, signal: AbortSignal, includeLog?: boolean): Promise<Record<string, unknown>>;
     stop(runId: string, signal: AbortSignal): Promise<Record<string, unknown>>;
     /** The live map (the queue seat's core registry — rich rows). */
@@ -421,7 +469,10 @@ export declare class RunsRuntimeService extends Service {
  *  The result face: run_id always; the run-relative media url of the
  *  stage's own output when one exists (the husk clobber's other
  *  half — a bookkeeping mirror never blanks a hero it can name); the
- *  error voice (stage's, else the run's) when the word is failed. */
+ *  error voice is the stage's OWN error, never the run's — the
+ *  pass-level cause rides the run doc (run_status answers for the
+ *  pass), and a row that borrowed it would name another stage's
+ *  cause (qa8 F43, the per-row status law). */
 export declare function settleMirrorPatches(run: RunRecord): Array<{
     stageId: string;
     patch: Record<string, unknown>;

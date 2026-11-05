@@ -1,8 +1,8 @@
 // index.ts walls (vitest, fake host — no estate, no network): the
 // plugin surface (name/inject/tool-name consts) plus apply's
-// interface law — browser default, headless via env or config, ad
-// hoc parsing (env wins, string-or-list config, trim/filter), and
-// the exact registration sets.
+// delegation law — the persisted record seats the run doors, ad hoc
+// parsing (string-or-list config, trim/filter), and the exact
+// registration sets.
 //
 // THE ISOLATED DSH HOME (2026-11-09): apply boots on the PERSISTED
 // delegation (runsDelegation.ts) — without a pinned DSH_HOME the
@@ -21,7 +21,7 @@ import {
   BASE_TOOL_NAMES,
   EAGER_TOOL_NAMES,
   DEFERRED_TOOL_NAMES,
-  HEADLESS_TOOL_NAMES,
+  RUN_DOOR_NAMES,
   inject,
   MELITE_TOOL_NAMES,
   name,
@@ -41,6 +41,13 @@ afterAll(() => {
   else process.env.DSH_HOME = previousHome
   rmSync(specHome, { recursive: true, force: true })
 })
+
+/** Reset the persisted delegation to ABSENT (the compose law's boot:
+ *  no record, no run doors). Each arm owns its own record state — a
+ *  written ON must never leak into the next arm's boot. */
+const clearRecord = (): void => {
+  rmSync(join(specHome, 'melite-runs-state.json'), { force: true })
+}
 
 interface Fake {
   ctx: unknown
@@ -89,7 +96,7 @@ async function touchCatalog(f: Fake): Promise<void> {
 }
 
 const BASE = [...BASE_TOOL_NAMES]
-const HEADLESS = [...HEADLESS_TOOL_NAMES]
+const RUN_DOORS = [...RUN_DOOR_NAMES]
 const CARD_TOOLS = [
   'music',
   'tts',
@@ -110,19 +117,20 @@ describe('plugin surface', () => {
       'melite_discover', 'melite_load', 'melite_construct',
     ])
     assert.deepEqual([...DEFERRED_TOOL_NAMES], [
-      'melite_view', 'melite_read', 'comfy_manage', 'melite_skill_read', 'ledger_tail',
+      'melite_view', 'melite_read', 'comfy_manage', 'melite_skill_read', 'melite_skill_write', 'ledger_tail',
     ])
-    assert.deepEqual(HEADLESS, ['melite_flow', 'run_status'])
+    assert.deepEqual(RUN_DOORS, ['melite_flow', 'run_status'])
     assert.deepEqual([...ADHOC_TOOL_NAMES], [])
-    assert.deepEqual([...MELITE_TOOL_NAMES].sort(), [...BASE, ...HEADLESS].sort())
+    assert.deepEqual([...MELITE_TOOL_NAMES].sort(), [...BASE, ...RUN_DOORS].sort())
   })
 })
 
-describe('apply browser interface (default)', () => {
+describe('apply compose law (no record)', () => {
   // THE CARD GATE (operator law 2026-09-21): the default toolset is
   // BASE ONLY — engine faces sit in NO agent lane's toolset at turn
   // one. Maker faces opt in with cardTools:true (the web profile).
   test('registers BASE only — card tools gated off, never the run doors', async () => {
+    clearRecord()
     const f = fakeCtx()
     await apply(f.ctx as unknown as Context)
     const names = f.registered.map((r) => r.name)
@@ -130,7 +138,7 @@ describe('apply browser interface (default)', () => {
     for (const e of EAGER_TOOL_NAMES) assert.ok(names.includes(e), 'missing eager ' + e)
     for (const d of DEFERRED_TOOL_NAMES) assert.ok(!names.includes(d), 'deferred seated early: ' + d)
     for (const c of CARD_TOOLS) assert.ok(!names.includes(c), 'card tool leaked: ' + c)
-    for (const h of HEADLESS) assert.ok(!names.includes(h), 'run door leaked: ' + h)
+    for (const h of RUN_DOORS) assert.ok(!names.includes(h), 'run door leaked: ' + h)
     assert.equal(names.length, EAGER_TOOL_NAMES.length)
     // THE CATALOG TOUCH (twice) seats the deferred five — idempotently
     await touchCatalog(f)
@@ -138,12 +146,13 @@ describe('apply browser interface (default)', () => {
     const seated = f.registered.map((r) => r.name)
     for (const d of DEFERRED_TOOL_NAMES) assert.ok(seated.includes(d), 'door never seated: ' + d)
     assert.equal(seated.length, EAGER_TOOL_NAMES.length + DEFERRED_TOOL_NAMES.length)
-    assert.ok(String(f.logs[0][1]).includes('BROWSER'))
-    assert.equal(f.logs[0][3], 0) // headless run door count
-    assert.equal(f.logs[0][4], 0) // ad hoc count
+    assert.ok(String(f.logs[0][4]).includes('browser'))
+    assert.equal(f.logs[0][2], 0) // run door count
+    assert.equal(f.logs[0][3], 0) // ad hoc count
   })
 
   test('cardTools:true opts the maker face in (base + card tools)', async () => {
+    clearRecord()
     const f = fakeCtx()
     await apply(f.ctx as unknown as Context, { cardTools: true })
     const names = f.registered.map((r) => r.name)
@@ -151,49 +160,56 @@ describe('apply browser interface (default)', () => {
     assert.equal(names.length, EAGER_TOOL_NAMES.length + CARD_TOOLS.length)
   })
 
-  test('an explicit empty config is the browser interface too (base only)', async () => {
+  test('an explicit empty config is the compose law too (base only)', async () => {
+    clearRecord()
     const f = fakeCtx()
     await apply(f.ctx as unknown as Context, {})
     assert.equal(f.registered.length, EAGER_TOOL_NAMES.length)
   })
 })
 
-describe('apply headless interface', () => {
-  test('config headless:true registers the run doors without env', async () => {
+describe('apply delegated boot (the persisted record ON)', () => {
+  test('a persisted ON record seats the run doors at boot', async () => {
+    clearRecord()
+    assert.equal(writeRunsDelegation({ delegated: true }), undefined)
     const f = fakeCtx()
-    await apply(f.ctx as unknown as Context, { headless: true })
+    await apply(f.ctx as unknown as Context)
     const names = f.registered.map((r) => r.name)
-    for (const h of HEADLESS) assert.ok(names.includes(h), 'missing run door ' + h)
-    // THE MAKER SEATS EAGER (transcript-016 audit): headless runners
-    // fix their tool catalog at boot — deferred doors must sit at
-    // apply or they are promised-but-unreachable for the whole maker
+    for (const h of RUN_DOORS) assert.ok(names.includes(h), 'missing run door ' + h)
+    // THE SEAT PIN (transcript-016 audit): a lane whose agent RUNS
+    // needs its estate surface from the first call — deferred doors
+    // sit at boot or they are promised-but-unreachable for the whole
     // session (nine catalog hunts + reasoning spirals around doors
-    // the maker could never call).
-    for (const d of DEFERRED_TOOL_NAMES) assert.ok(names.includes(d), 'maker door never seated at boot: ' + d)
-    // headless agent rig: card faces stay gated off there too
-    assert.equal(names.length, EAGER_TOOL_NAMES.length + DEFERRED_TOOL_NAMES.length + HEADLESS.length)
-    assert.ok(String(f.logs[0][1]).includes('HEADLESS'))
-    assert.equal(f.logs[0][3], HEADLESS.length)
+    // the agent could never call).
+    for (const d of DEFERRED_TOOL_NAMES) assert.ok(names.includes(d), 'delegated door never seated at boot: ' + d)
+    // agent rig: card faces stay gated off here too
+    assert.equal(names.length, EAGER_TOOL_NAMES.length + DEFERRED_TOOL_NAMES.length + RUN_DOORS.length)
+    assert.ok(String(f.logs[0][4]).includes('DELEGATED'))
+    assert.equal(f.logs[0][2], RUN_DOORS.length)
   })
 
-  test('config headless:false stays browser', async () => {
+  test('there is no config-selected headless interface — the record decides', async () => {
+    clearRecord()
     const f = fakeCtx()
-    await apply(f.ctx as unknown as Context, { headless: false })
-    assert.ok(!f.registered.some((r) => r.name === 'melite_flow'))
+    await apply(f.ctx as unknown as Context, { cardTools: true })
+    assert.ok(!f.registered.some((r) => r.name === 'melite_flow'),
+      'an OFF record seated a run door — the parallel interface grew back')
   })
 })
 
 describe('apply ad hoc parsing', () => {
   test('config array adhocTools trims and drops empties', async () => {
+    clearRecord()
     const f = fakeCtx()
     await apply(f.ctx as unknown as Context, { adhocTools: [' x ', '', 'y'] })
-    assert.equal(f.logs[0][4], 2)
+    assert.equal(f.logs[0][3], 2)
   })
 
   test('config string adhocTools splits on commas', async () => {
+    clearRecord()
     const f = fakeCtx()
     await apply(f.ctx as unknown as Context, { adhocTools: 'p,q' })
-    assert.equal(f.logs[0][4], 2)
+    assert.equal(f.logs[0][3], 2)
   })
 })
 
@@ -235,17 +251,18 @@ describe('the /melite-runs toggle (the user-side AI-run door, 2026-10-13)', () =
   }
 
   test('on seats the run doors + flips the compose loop; off reverses both', async () => {
+    clearRecord()
     const f = fakeCtxWithCommands()
     await apply(f.ctx as unknown as Context)
     const names = () => f.registered.map((r) => r.name)
-    // browser default: no run doors
-    for (const h of HEADLESS) assert.ok(!names().includes(h), 'run door leaked at boot: ' + h)
+    // compose default: no run doors
+    for (const h of RUN_DOORS) assert.ok(!names().includes(h), 'run door leaked at boot: ' + h)
     const [cmd] = f.seatRegistry()
     assert.equal(cmd.name, 'melite-runs')
     const constructBefore = f.registered.find((r) => r.name === 'melite_construct')
     const seated = cmd.handler({ rawInput: 'on' })
     assert.equal(seated.kind, 'success')
-    for (const h of HEADLESS) assert.ok(names().includes(h), 'run door never seated: ' + h)
+    for (const h of RUN_DOORS) assert.ok(names().includes(h), 'run door never seated: ' + h)
     // the compose loop re-seats with the flipped interface flag (its
     // model-facing copy names the door this mount now owns): the OLD
     // construct seat is disposed and a NEW definition lands
@@ -254,10 +271,11 @@ describe('the /melite-runs toggle (the user-side AI-run door, 2026-10-13)', () =
     assert.notEqual(constructDefs[0], constructBefore, 'compose loop never re-seated')
     const unseated = cmd.handler({ rawInput: 'off' })
     assert.equal(unseated.kind, 'success')
-    for (const h of HEADLESS) assert.ok(!names().includes(h), 'run door never unseated: ' + h)
+    for (const h of RUN_DOORS) assert.ok(!names().includes(h), 'run door never unseated: ' + h)
   })
 
   test('bare invocation reads the state; unknown argument refuses', async () => {
+    clearRecord()
     const f = fakeCtxWithCommands()
     await apply(f.ctx as unknown as Context)
     const [cmd] = f.seatRegistry()
@@ -268,19 +286,23 @@ describe('the /melite-runs toggle (the user-side AI-run door, 2026-10-13)', () =
     assert.equal(bad.kind, 'error')
   })
 
-  test('a headless mount boots with the doors seated; the command can still unseat them', async () => {
+  test('a delegated boot keeps the doors seated; the command can still unseat them', async () => {
+    clearRecord()
+    assert.equal(writeRunsDelegation({ delegated: true }), undefined)
     const f = fakeCtxWithCommands()
-    await apply(f.ctx as unknown as Context, { headless: true })
+    await apply(f.ctx as unknown as Context)
     const names = () => f.registered.map((r) => r.name)
-    for (const h of HEADLESS) assert.ok(names().includes(h), 'headless boot lost a run door: ' + h)
+    for (const h of RUN_DOORS) assert.ok(names().includes(h), 'delegated boot lost a run door: ' + h)
     const [cmd] = f.seatRegistry()
     cmd.handler({ rawInput: 'off' })
-    for (const h of HEADLESS) assert.ok(!names().includes(h), 'off failed to unseat on headless: ' + h)
+    for (const h of RUN_DOORS) assert.ok(!names().includes(h), 'off failed to unseat a delegated boot: ' + h)
   })
 
   test('on while already seated is a no-op (no stacked doors); toggle flips both ways', async () => {
+    clearRecord()
+    assert.equal(writeRunsDelegation({ delegated: true }), undefined)
     const f = fakeCtxWithCommands()
-    await apply(f.ctx as unknown as Context, { headless: true })
+    await apply(f.ctx as unknown as Context)
     const names = () => f.registered.map((r) => r.name)
     const [cmd] = f.seatRegistry()
     // 'on' while the boot already seated the doors: the early
@@ -288,14 +310,14 @@ describe('the /melite-runs toggle (the user-side AI-run door, 2026-10-13)', () =
     const again = cmd.handler({ rawInput: 'on' })
     assert.equal(again.kind, 'success')
     const doorCount = (n: string) => f.registered.filter((r) => r.name === n).length
-    for (const h of HEADLESS) assert.equal(doorCount(h), 1, 'on-while-seated stacked a door: ' + h)
+    for (const h of RUN_DOORS) assert.equal(doorCount(h), 1, 'on-while-seated stacked a door: ' + h)
     // toggle from seated → unseated, then back — both directions
     const toggedOff = cmd.handler({ rawInput: 'toggle' })
     assert.equal(toggedOff.kind, 'success')
-    for (const h of HEADLESS) assert.ok(!names().includes(h), 'toggle failed to unseat: ' + h)
+    for (const h of RUN_DOORS) assert.ok(!names().includes(h), 'toggle failed to unseat: ' + h)
     const toggedOn = cmd.handler({ rawInput: 'toggle' })
     assert.equal(toggedOn.kind, 'success')
-    for (const h of HEADLESS) assert.ok(names().includes(h), 'toggle failed to re-seat: ' + h)
+    for (const h of RUN_DOORS) assert.ok(names().includes(h), 'toggle failed to re-seat: ' + h)
   })
 
   // THE BURN'S OWN FIRING ARM (session 90a0b920, 2026-11-05: "the
@@ -307,9 +329,9 @@ describe('the /melite-runs toggle (the user-side AI-run door, 2026-10-13)', () =
     assert.equal(writeRunsDelegation({ delegated: true }), undefined)
     assert.deepEqual(readRunsDelegation(), { delegated: true })
     const f = fakeCtxWithCommands()
-    await apply(f.ctx as unknown as Context) // browser config — no headless
+    await apply(f.ctx as unknown as Context) // no config — the record decides
     const names = f.registered.map((r) => r.name)
-    for (const h of HEADLESS) assert.ok(names.includes(h), 'the reload stole the delegation: ' + h)
+    for (const h of RUN_DOORS) assert.ok(names.includes(h), 'the reload stole the delegation: ' + h)
 
     // THE SEAT PIN (the flap class, L336-377): a delegated reload
     // boots with the ESTATE doors pinned too — no catalog touch, no
@@ -323,7 +345,7 @@ describe('the /melite-runs toggle (the user-side AI-run door, 2026-10-13)', () =
     assert.equal(writeRunsDelegation({ delegated: false }), undefined)
     const g = fakeCtxWithCommands()
     await apply(g.ctx as unknown as Context)
-    for (const h of HEADLESS) assert.ok(!g.registered.map((r) => r.name).includes(h), 'an OFF record seated a door: ' + h)
+    for (const h of RUN_DOORS) assert.ok(!g.registered.map((r) => r.name).includes(h), 'an OFF record seated a door: ' + h)
     // the off-lane keeps the progressive-disclosure law: deferred
     // doors arrive on first catalog touch, never at boot
     for (const d of ['melite_view', 'comfy_manage', 'ledger_tail']) {
@@ -332,6 +354,7 @@ describe('the /melite-runs toggle (the user-side AI-run door, 2026-10-13)', () =
   })
 
   test('the toggle\'s success voice states whether the flip persisted', async () => {
+    clearRecord()
     const f = fakeCtxWithCommands()
     await apply(f.ctx as unknown as Context)
     const [cmd] = f.seatRegistry()

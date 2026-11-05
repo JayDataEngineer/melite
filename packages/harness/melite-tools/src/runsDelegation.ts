@@ -9,8 +9,8 @@
 //
 // THE LAW: the delegation survives the process. One JSON file under
 // the lane's DSH home; boot reads it, every toggle writes it. Absent
-// DSH_HOME (headless one-shots, alien mounts) has no file to keep —
-// those boots are headless and seated by config anyway.
+// DSH_HOME (alien mounts, memory-only lanes) has no file to keep —
+// those boots read as unseated (the user's Run press owns runs).
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
@@ -74,17 +74,13 @@ export function writeRunsDelegation(state: RunsDelegationState): string | undefi
   }
 }
 
-/** THE BOOT LAW (pure — the wiring's one decision): which
- * delegation does this mount boot with? headless boots seated (the
- * delegated operator, config's own law); a browser mount boots on
- * the PERSISTED record — the operator's last toggle outlives the
- * reload — defaulting to the browser law (false) when nothing
+/** THE BOOT LAW (pure — the wiring's one decision): this mount boots
+ * on the PERSISTED record — the operator's last toggle outlives the
+ * reload — defaulting to the compose law (false) when nothing
  * persists.
  *
- * @param headless the config's interface flag.
  * @param persisted the record read at boot (null when none).
  * @returns the delegation this boot seats. */
-export function resolveDelegationAtBoot(headless: boolean, persisted: RunsDelegationState | null): boolean {
-  if (headless) return true
+export function resolveDelegationAtBoot(persisted: RunsDelegationState | null): boolean {
   return persisted?.delegated === true
 }

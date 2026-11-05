@@ -43,10 +43,43 @@ function errName(err) {
     }
     return "Error";
 }
-/** "<Type>: <msg>" — the worker's terminal error text. */
+/** THE THROWN-VALUE FOLD (qa8 F38): run_status once served
+ * "Error: [object Object]" for a real OOM because a plain-object
+ * throw met String(). A thrown non-Error renders by its own words —
+ * a bare string verbatim; an object's message/error string fields
+ * first, then its JSON; a circular or unserializable value folds to
+ * its key roster. The vacuous "[object Object]" can never leave this
+ * door. */
+export function foldThrownValue(value) {
+    if (typeof value === "string")
+        return value;
+    if (value instanceof Error)
+        return value.message;
+    if (typeof value === "object" && value !== null) {
+        const rec = value;
+        for (const key of ["message", "error", "detail", "reason"]) {
+            const v = rec[key];
+            if (typeof v === "string" && v.trim() !== "")
+                return v;
+        }
+        try {
+            const json = JSON.stringify(value);
+            if (json !== "{}" && json !== "[]")
+                return json;
+        }
+        catch {
+            // circular or BigInt — the key roster below still names it
+        }
+        const keys = Object.keys(rec);
+        return keys.length > 0 ? "{ " + keys.join(", ") + " }" : "{}";
+    }
+    return String(value);
+}
+/** "<Type>: <msg>" — the worker's terminal error text. The message
+ * half rides the thrown-value fold (F38): a thrown object reaches
+ * the run's error column as its own words. */
 export function errText(err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    return errName(err) + ": " + msg;
+    return errName(err) + ": " + foldThrownValue(err);
 }
 /** The settle persist (the R3 durable-queue mirror of registration,
  *  door-verbatim): the terminal status rewrites the run's

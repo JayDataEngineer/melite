@@ -8,13 +8,17 @@ import { chmodSync, mkdtempSync, rmSync, readFileSync, existsSync } from "node:f
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  AGENT_ENGINE_ID,
+  COMFYUI_ENGINE_ID,
+  CRAFT_ENGINE_ID,
+} from "@melite/engine-contract";
+import {
   compileFlowInline,
   envelopeRefusal,
   registerCompiledRun,
   selectSubmitDoor,
   unknownDraftRefusal,
 } from "../src/runsStart.ts";
-import { ENGINE_TABLE } from "../src/runsValidateShared.ts";
 import type { CompiledStage } from "../src/runsStart.ts";
 import { newRunId } from "../src/queueCore.ts";
 import type { RunRecord } from "../src/runsTypes.ts";
@@ -70,7 +74,7 @@ describe("compileFlowInline", () => {
     // now refuses in its own voice, naming the spell and the fix.
     const out = compileFlowInline(doc([
       stage({ id: "gen", outputs: { default: "image" } }),
-      stage({ id: "edit", params: { prompt: "make it blue", image1: "$image1" } }),
+      stage({ id: "edit", outputs: { out: "image" }, params: { prompt: "make it blue", image1: "$image1" } }),
     ])) as { payload: { error: string; code: string }; status: number };
     assert.equal(out.status, 400);
     assert.equal(out.payload.code, "invalid_request");
@@ -83,6 +87,7 @@ describe("compileFlowInline", () => {
       stage({ id: "gen", outputs: { default: "image" } }),
       stage({
         id: "edit",
+        outputs: { out: "image" },
         params: { prompt: "make it blue", image1: "$image1" },
         inputs: { image1: { stage: "gen", output: "default" } },
       }),
@@ -94,6 +99,7 @@ describe("compileFlowInline", () => {
       stage({ id: "gen", outputs: { default: "image" } }),
       stage({
         id: "edit",
+        outputs: { out: "image" },
         params: { prompt: "x", image1: "$image1", reference_images: ["$ghost"] },
         inputs: { image1: { stage: "gen", output: "default" } },
       }),
@@ -166,9 +172,11 @@ describe("compileFlowInline", () => {
     };
     assert.match(noneReg.payload.error, /registered engines only \(none registered\)/);
     // Registered on the caller's list: ADMITTED (the seam's law —
-    // the door serves what the engines seat knows).
+    // the door serves what the engines seat knows) — with declared
+    // outputs (an output-less stage refuses at the fill, never the
+    // gate: the gate judges membership, the fill judges channels).
     const admitted = compileFlowInline(
-      doc([stage({ engine: "mcp:blender" })]),
+      doc([stage({ engine: "mcp:blender", outputs: { out: "image" } })]),
       ["comfyui", "mcp:blender"],
     ) as { stages: unknown[] };
     assert.equal(admitted.stages.length, 1);
@@ -177,7 +185,7 @@ describe("compileFlowInline", () => {
       /skip_when is unported/,
     );
     assert.equal(
-      (compileFlowInline(doc([stage({ skip_when: null })])) as { stages: unknown[] }).stages.length,
+      (compileFlowInline(doc([stage({ skip_when: null, outputs: { out: "image" } })])) as { stages: unknown[] }).stages.length,
       1,
     );
     assert.match(
@@ -185,7 +193,7 @@ describe("compileFlowInline", () => {
       /card= stages are unported/,
     );
     assert.equal(
-      (compileFlowInline(doc([stage({ card: "" })])) as { stages: unknown[] }).stages.length,
+      (compileFlowInline(doc([stage({ card: "", outputs: { out: "image" } })])) as { stages: unknown[] }).stages.length,
       1,
     );
   });
@@ -211,11 +219,27 @@ describe("compileFlowInline", () => {
     assert.deepEqual(st.expected, { img: "image" });
     assert.deepEqual(st.outputNodes, { a: "1" });
     assert.deepEqual(st.inputNames, { good: "up.img", seed: "__initial__.seed" });
-    const filled = compileFlowInline(doc([stage()])) as { stages: CompiledStage[] };
-    assert.deepEqual(filled.stages[0]!.outputs, { default: "image" });
+    const filled = compileFlowInline(doc([stage({ card_io: { thumb: "image" } })])) as { stages: CompiledStage[] };
+    assert.deepEqual(filled.stages[0]!.outputs, { thumb: "image" });
     assert.deepEqual(filled.stages[0]!.expected, {});
     assert.deepEqual(filled.stages[0]!.outputNodes, {});
     assert.deepEqual(filled.stages[0]!.inputNames, {});
+    // THE ONE TABLE (2026-11-01): an output-less, cardIo-less stage
+    // REFUSES — the engine registry names engines, never their
+    // outputs (music-native's {default: "image"} mislabel over the
+    // card's {default: "audio"} was the burn; the wrapper row retired
+    // 2026-11-14, the law stays). The voice names the stage and the
+    // fix.
+    const bare = compileFlowInline(doc([stage()])) as unknown as {
+      status: number;
+      payload: { error: string; code: string };
+    };
+    assert.equal(bare.status, 400);
+    assert.equal(bare.payload.code, "invalid_request");
+    assert.match(
+      bare.payload.error,
+      /stage "s" declares no outputs and carries no card_io/,
+    );
     // params.output_nodes rides the container law too (P7 B2): a
     // malformed nested value refuses, never drops into {}.
     const badNodes = compileFlowInline(
@@ -266,25 +290,29 @@ describe("compileFlowInline", () => {
         /params\.output_nodes must be an object \(got string\)/,
       );
     });
-    it("the empty-outputs fill equals the lattice's read for the derived engine roster (the P7 latent lock)", () => {
-      // The derived roster: every ENGINE_TABLE key + the mcp grammar
-      // arm. Start's fill and validate's engineDefaults must read the
-      // SAME row — today they agree by coincidence (two spellings of
-      // the mcp leg: the table-miss literal here, the mcp-client row
-      // in the lattice). The cure makes it one shared read; this arm
-      // reds the moment either door drifts from the other.
-      const roster = [...Object.keys(ENGINE_TABLE), "mcp:blender", "mcp:ghost-9_x"];
+    it("the empty-outputs fill reads the row's cardIo table for the derived engine roster (the one-table cut)", () => {
+      // The derived roster: every engine id the contract knows plus
+      // the mcp grammar arms. Start's fill reads the ROW's cardIo —
+      // the kind rides the stage, never the engine — and a stage
+      // carrying neither table refuses in the door's voice. The old
+      // arm pinned the engine registry's per-kind fill here; the
+      // cure deleted that second source, and this arm reds the
+      // moment either door fills from the engine again.
+      const roster = [COMFYUI_ENGINE_ID, CRAFT_ENGINE_ID, AGENT_ENGINE_ID, "mcp:blender", "mcp:ghost-9_x"];
       const known = [...roster, "comfyui"];
       for (const engine of roster) {
         const out = compileFlowInline(
-          doc([stage({ id: "s", engine, outputs: {} })]),
+          doc([stage({ id: "s", engine, outputs: {}, card_io: { ch: "audio" } })]),
           known,
         ) as unknown as { stages: CompiledStage[] };
         const filled = out.stages[0]?.outputs as Record<string, unknown>;
-        const want = engine.startsWith("mcp:")
-          ? "image"
-          : (ENGINE_TABLE[engine] as { def: string } | undefined)?.def;
-        assert.equal(filled["default"], want, `engine ${engine}`);
+        assert.deepEqual(filled, { ch: "audio" }, `engine ${engine}`);
+        const bare = compileFlowInline(
+          doc([stage({ id: "s", engine, outputs: {} })]),
+          known,
+        ) as unknown as { status: number; payload: { error: string } };
+        assert.equal(bare.status, 400, `engine ${engine}`);
+        assert.match(bare.payload.error, /declares no outputs and carries no card_io/, `engine ${engine}`);
       }
     });
     it("a malformed BINDING refuses: a number where a wire belongs", () => {
@@ -297,7 +325,7 @@ describe("compileFlowInline", () => {
       );
     });
     it("an ABSENT container is still legal (most stages carry no inputs at all)", () => {
-      const { stages } = compileFlowInline(doc([stage({ params: { workflow: {} } })])) as {
+      const { stages } = compileFlowInline(doc([stage({ params: { workflow: {} }, outputs: { out: "image" } })])) as {
         stages: CompiledStage[];
       };
       assert.equal(stages.length, 1);

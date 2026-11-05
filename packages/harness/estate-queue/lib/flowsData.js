@@ -22,6 +22,68 @@ import { CARD_PLANE_ENGINE, LEGACY_RUN_MEDIA_PREFIX, RUN_MEDIA_PREFIX } from "@m
 import { join, resolve } from "node:path";
 import { mediaVocab } from "./mediaKinds.js";
 import { validateBakeParams } from "./bakeParams.js";
+/** A flow's initial KEYS as disclosure serves them (F57, operator
+ *  2026-11-13: "single-stage flow initial keys are UNDOCUMENTED —
+ *  natural keys fail with internal errors … the error text is the
+ *  only teacher"). Derived from the row itself — requiredInitials
+ *  first (the door's own refusal order), then any remaining
+ *  validator keys — so the discovery/open faces can name the TRUE
+ *  seats (the spell stems: $photo→photo, $params_json→params_json)
+ *  before a natural-key press meets the seam. One truth, never a
+ *  hand-maintained roster.
+ * @param flow the registry row
+ * @returns the initial keys, required first, registry order within */
+export function flowInitialKeys(flow) {
+    const required = flow.requiredInitials ?? [];
+    const optional = Object.keys(flow.initialValidators).filter((k) => !required.includes(k));
+    return [...required, ...optional];
+}
+/** One initial kind's disclosure gloss — the anny-params typed-array
+ * seat (F57's owed half, operator FAILURES.md triage 2026-11-02:
+ * "the 139-float JSON-in-string transport stays fragile; this cure
+ * documents the keys but does not build the seat"). The KEYS were
+ * named; the SHAPE stayed untaught, so an agent re-instantiating an
+ * estimated bake hand-typed a 139-float JSON string. The door has
+ * blessed the OBJECT spelling since the belt first served (arrays
+ * ride arrays on the wire; the string survives only as the
+ * engine-merge ride onto AnnyParamsToGlb's own string input) — the
+ * gloss names that transport and the dialect doc's own law, so the
+ * open face teaches the shape BEFORE a press meets the seam, the
+ * same leaf-naming law one level deeper. One derivation per kind,
+ * rendered by every initial-seat face, never a hand-maintained
+ * copy.
+ * @param kind the declared validator kind
+ * @returns the gloss the open line renders beside the kind */
+export function initialKindGloss(kind) {
+    switch (kind) {
+        case "bake_params":
+            return "the preset dialect doc {dialect: 'authored'|'estimated', phenotype: number[11 authored|6 estimated], local_changes?: {morph: number} (authored) | scale: number[139] (estimated)} — send the doc as a JSON OBJECT, never a hand-typed string";
+        case "photo":
+        case "video":
+        case "glb":
+            return "file path (or {path})";
+        case "text":
+            return "bare name";
+        case "brief":
+            return "non-empty prose";
+        case "number":
+            return "finite JSON number";
+        case "json":
+            return "JSON object (or its string spelling)";
+    }
+}
+/** A flow's initial keys → glosses, the same derivation order the
+ * validators hold (the bundle's initials record rides both so the
+ * open face renders kinds and shapes from one truth).
+ * @param flow the registry row
+ * @returns the gloss per declared initial key */
+export function flowInitialGlosses(flow) {
+    const out = {};
+    for (const [key, kind] of Object.entries(flow.initialValidators)) {
+        out[key] = initialKindGloss(kind);
+    }
+    return out;
+}
 // ── shared builders ─────────────────────────────────────────────
 export function initial(key) {
     return { initial: key };
@@ -81,19 +143,15 @@ export function linkedStage(flow, stage, id, inputs) {
  *  (default unlimited), inputs (the plus-box list). The stage
  *  params carry those fields at DRIVE time; the registry row is
  *  the template + the agent leaf. */
-import { BODY_TO_SOMAX, ANNY_HMR_ESTIMATOR, ANNY_PARAMS, AUDIO_NATIVE_TTS, CHARACTER_FACTORY, FIT_SEAT, IMAGE_UPSCALE, MUSIC_NATIVE, CRAFT_LOOP, OBJECT_FORGE, VIDEO_EXTEND, } from "./flowsRegistryRows.js";
+import { ANNY_HMR_ESTIMATOR, ANNY_PARAMS, CHARACTER_FACTORY, FIT_SEAT, IMAGE_UPSCALE, CRAFT_LOOP, OBJECT_FORGE, } from "./flowsRegistryRows.js";
 import { Service } from "@deepseek-ai/cordis";
 const REGISTRY = {
     "craft-loop": CRAFT_LOOP,
     "anny-hmr-estimator": ANNY_HMR_ESTIMATOR,
-    "body-to-somax": BODY_TO_SOMAX,
     "character-factory": CHARACTER_FACTORY,
     "anny-params": ANNY_PARAMS,
-    "audio-native-tts": AUDIO_NATIVE_TTS,
-    "extend-video": VIDEO_EXTEND,
     "fit-seat": FIT_SEAT,
     "image-upscale": IMAGE_UPSCALE,
-    "music-native": MUSIC_NATIVE,
     "object-forge": OBJECT_FORGE,
 };
 /** A pure read-only seat over the boot seed (REGISTRY verbatim, no
@@ -388,8 +446,9 @@ function checkFileInitial(key, kind, value, roots) {
         : "";
     // The vocab is TYPED DATA now (mediaKinds.ts, REBUILD-7) — no
     // repo-anchored kindsPath read survives the re-home. The video
-    // kind rides the same vocab's video list (the extend-video flow's
-    // prior-clip initial — mp4/webm/mkv/mov/m4v/avi).
+    // kind rides the same vocab's video list (a prior-clip initial —
+    // mp4/webm/mkv/mov/m4v/avi; born on the retired extend-video
+    // wrapper).
     const kinds = mediaVocab();
     const allowed = kind === "photo" ? kinds.image : kind === "video" ? kinds.video : kinds.model;
     if (!allowed.includes(ext)) {
@@ -505,6 +564,50 @@ export function registryInitialsError(flow, body, roots) {
             }
             continue;
         }
+        // A BRIEF initial is PROSE (F58, the craft-loop binding): the
+        // brief is data a critique loop reads — no file door ever opens
+        // it, so the path law that guards names would mis-refuse honest
+        // prose ("a 3/4 view poster"). The door judges emptiness only;
+        // length and sense are the critic's problem.
+        if (kind === "brief") {
+            if (typeof value !== "string" || value.trim() === "") {
+                return "initial " + JSON.stringify(key) +
+                    " must be a non-empty brief (got " + (typeof value) + ")";
+            }
+            continue;
+        }
+        // A NUMBER initial is a finite JSON number (F58): digit-strings
+        // REFUSE — the caller sent JSON, and a silent fold would mask the
+        // caller's shape bug until the engine's own numeric gate refused
+        // it with a stranger's voice.
+        if (kind === "number") {
+            if (typeof value !== "number" || !Number.isFinite(value)) {
+                return "initial " + JSON.stringify(key) +
+                    " must be a finite number (got " + (typeof value) + " — send JSON numbers, not strings)";
+            }
+            continue;
+        }
+        // A JSON initial is an object or its JSON-string spelling (F58):
+        // the door judges parseability + objectness only — the consuming
+        // engine's gate owns the inner shape (craft's command row:
+        // {engine, params}, refused by the engine's own LOUD voice).
+        if (kind === "json") {
+            let v = value;
+            if (typeof v === "string") {
+                try {
+                    v = JSON.parse(v);
+                }
+                catch {
+                    return "initial " + JSON.stringify(key) +
+                        " is a JSON string that does not parse";
+                }
+            }
+            if (typeof v !== "object" || v === null || Array.isArray(v)) {
+                return "initial " + JSON.stringify(key) +
+                    " must be a JSON object or its string spelling (got " + (typeof value) + ")";
+            }
+            continue;
+        }
         const err = checkFileInitial(key, kind, value, roots);
         if (err !== null)
             return err;
@@ -527,17 +630,23 @@ export function registryInitialsError(flow, body, roots) {
     return null;
 }
 /** The initial VALUE one gate-blessed body entry carries, in the
- *  string form the engine merge links a $spell against: file
+ *  form the engine merge links a $spell against: file
  *  initials give their path ({path: …} unwraps — the two spellings
  *  the gate blesses), bake_params gives its params_json string
  *  (objects stringify — the dialect the belt validates). Null
  *  refuses a shape the gate would have refused, so a mangled
  *  durable body fails loud at the door instead of shipping an
  *  "[object Object]" literal to the engine.
+ *  THE F58 TYPED RIDE (2026-11-02): brief gives its string verbatim,
+ *  number gives the NUMBER itself, json gives the OBJECT — the run
+ *  row's initials record is EngineJson-shaped and the merge returns
+ *  these values verbatim, so a numeric initial (craft's
+ *  max_iterations) reaches the engine gate still a number, never a
+ *  stringified stranger.
  *  @param key the initial's declared name, for the refusal voice
  *  @param kind the declared validator kind
  *  @param value the raw body entry
- *  @returns the normalized string, or null when the shape is neither */
+ *  @returns the normalized value, or null when the shape is neither */
 export function normalizedInitialValue(key, kind, value) {
     // A TEXT initial is a BARE NAME: nothing unwraps it and nothing
     // path-shaped reaches it, so the {path: …} arm below never runs
@@ -546,6 +655,26 @@ export function normalizedInitialValue(key, kind, value) {
     // first — this arm makes the extractor honest on its own.)
     if (kind === "text")
         return typeof value === "string" ? value : null;
+    if (kind === "brief")
+        return typeof value === "string" && value.trim() !== "" ? value : null;
+    if (kind === "number")
+        return typeof value === "number" && Number.isFinite(value) ? value : null;
+    if (kind === "json") {
+        if (typeof value === "string") {
+            try {
+                const parsed = JSON.parse(value);
+                return typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)
+                    ? parsed
+                    : null;
+            }
+            catch {
+                return null;
+            }
+        }
+        return typeof value === "object" && value !== null && !Array.isArray(value)
+            ? value
+            : null;
+    }
     if (typeof value === "string")
         return value;
     if (kind === "bake_params") {
@@ -588,8 +717,14 @@ export function extractRequestInitials(flow, body) {
                             (typeof value) + ")"
                         : kind === "text"
                             ? " must be a bare name (got " + (typeof value) + ")"
-                            : " must be a file path string or {path: ...} (got " +
-                                (typeof value) + ")"),
+                            : kind === "brief"
+                                ? " must be a non-empty brief (got " + (typeof value) + ")"
+                                : kind === "number"
+                                    ? " must be a finite number (got " + (typeof value) + " — send JSON numbers, not strings)"
+                                    : kind === "json"
+                                        ? " must be a JSON object or its string spelling (got " + (typeof value) + ")"
+                                        : " must be a file path string or {path: ...} (got " +
+                                            (typeof value) + ")"),
             };
         }
         initials[key] = normalized;

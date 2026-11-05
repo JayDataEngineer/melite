@@ -35,11 +35,14 @@ import { describe, it, beforeAll } from "vitest";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { loadCardDefs } from "@melite/comfyui-cordis";
 import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import { seedFlowsSeat } from "../src/flowsData.ts";
 
-const REPO: string = new URL("../../../..", import.meta.url).pathname;
+// fileURLToPath, never URL.pathname (the windows CI doubled-drive
+// class, 2026-10-31: '/D:/…' is drive-rooted RELATIVE on win32).
+const REPO: string = fileURLToPath(new URL("../../../..", import.meta.url));
 const SEAT = seedFlowsSeat();
 
 // The leaf JSON's structural read (same narrow-parse shape the
@@ -166,9 +169,11 @@ describe("THE ONE-HOME-FOR-FLOW-DEFAULTS WALL (audit 015 C2 — the registry der
     }
     console.log(`stage-stamp parity roster (stamps judged against card defaults): ${judged.sort().join(", ") || "(none)"}`);
     // Non-vacuity canaries: the sweep must actually WALK
-    // declared-default seats — the minted music seed the row keeps
-    // and the rig template values (seats, never numbers).
-    for (const canary of ["music-native/music/seed", "body-to-somax/rig/mode"]) {
+    // declared-default seats — the rig template values (seats, never
+    // numbers; the music seed and body-to-somax seats died with the
+    // wrapper rows, 2026-11-14 — character-factory's rig stage is the
+    // live seat of the same law).
+    for (const canary of ["character-factory/rig/mode", "character-factory/rig/preserve_texture"]) {
       assert.ok(
         judged.includes(canary),
         `the sweep never judged ${canary} — the derivation broke (a wall that walks nothing proves nothing)`,
@@ -212,8 +217,10 @@ describe("THE ONE-HOME-FOR-FLOW-DEFAULTS WALL (audit 015 C2 — the registry der
     console.log(`tool-face overlay roster (walked): ${walked.sort().join(", ")}`);
     // Non-vacuity canaries: the walk must reach the seats the cure
     // de-defaulted, so a derivation break cannot fake an empty
-    // failure set (the seat names, never numbers).
-    for (const canary of ["audio-native-tts:seed->tts/seed", "music-native:duration->music/duration", "image-upscale:seed->make/seed"]) {
+    // failure set (the seat names, never numbers; the tts and music
+    // seats died with the wrapper rows, 2026-11-14 — image-upscale's
+    // twin seed seats are the live seats of the same law).
+    for (const canary of ["image-upscale:seed->make/seed", "image-upscale:seed->polish/seed"]) {
       assert.ok(walked.includes(canary), `the overlay walk never reached ${canary} — the derivation broke`);
     }
     assert.deepEqual(failures, [], "tool faces publishing divergent card defaults:\n" + failures.join("\n"));
@@ -231,17 +238,19 @@ describe("THE ONE-HOME-FOR-FLOW-DEFAULTS WALL (audit 015 C2 — the registry der
       const leafPath = join(dir, "tool.json");
       if (!existsSync(leafPath)) continue;
       scanned.push(name);
-      // THE BAG-OVERRIDE ARM (H7, 2026-11-13): a flow whose numbers ride
-      // the whole-bag override (extend-video: `params.extend[{...}]`)
-      // publishes no top-level property for them, yet the leaf rightly
-      // states their CARD defaults. Those claims judge against the
+      // THE BAG-OVERRIDE ARM (H7, 2026-11-13; its founding row,
+      // extend-video, retired 2026-11-14 — the law stays derived and
+      // armed for the next bag-bearing row): a flow whose numbers
+      // ride the whole-bag override (`params.<bag>[{...}]`) publishes
+      // no top-level property for them, yet the leaf rightly states
+      // their CARD defaults. Those claims judge against the
       // card's own declared default — the card is the one home either
       // way. A param the row does not publish AND the card does not
       // declare is still a failure: the leaf would be teaching a
       // number that exists nowhere.
-      // A flow's numbers ride the CARD's mod BAG (extend-video:
-      // `params.extend[{extend_seconds, seed}]`), and a bag field's
-      // served default is the card's own declaration — so the bag
+      // A flow's numbers may ride the CARD's mod BAG (the retired
+      // extend-video rode `params.extend[{extend_seconds, seed}]`),
+      // and a bag field's served default is the card's own declaration — so the bag
       // reads BEFORE the root walk (the root `seed` 42 is the film's,
       // the extend bag's own seed is 0).
       const bagDefaults = row.stages
@@ -316,7 +325,9 @@ describe("THE ONE-HOME-FOR-FLOW-DEFAULTS WALL (audit 015 C2 — the registry der
     );
     // Non-vacuity: the scan must read the three cured leaves and see
     // real property text — a scan over nothing proves nothing.
-    for (const canary of ["music-native", "audio-native-tts", "image-upscale"]) {
+    // (the music-native and audio-native-tts leaves died with their
+    // wrapper rows, 2026-11-14 — image-upscale's leaf is the live seat)
+    for (const canary of ["image-upscale"]) {
       assert.ok(scanned.includes(canary), `the leaf scan never read flows/${canary}/ — the walk broke`);
     }
     assert.ok(propsSeen > 0, "no leaf property description was read — the scan is walking empty leaves");

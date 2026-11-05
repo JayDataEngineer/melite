@@ -4,7 +4,19 @@
 import { WIRE_STAGE_KEYS } from "@melite/contracts/benchStage";
 import { engineIdOk } from "@melite/engine-contract";
 import { INLINE_TOP_KEYS } from "./runsGates.js";
-// ENGINE_TABLE: engine_type -> {plugin_id, default_output kind}.
+// ENGINE_TABLE: engine_type -> {plugin_id} — THE KIND-FREE
+// REGISTRY (the one-table cure, 2026-11-01): this table names which
+// engine ids exist, never what they produce. The old per-engine
+// `def` output kind was the bench's SECOND output table —
+// validate's lattice judged a stage by the table's kind while the
+// card's own cardIo table declared another (the retired
+// music-native wrapper's {default: "image"} mislabel over the
+// music card's {default: "audio"} — the row died 2026-11-14,
+// flows-are-compositions),
+// and start's empty-outputs fill bound yet a third. One table now:
+// the stage's own declared outputs, else its card_io, else the
+// card's declared output kinds. An engine row with none of those
+// refuses — a missing declaration is never filled from here.
 // MONO-ENGINE LAW (operator order, 2026-09-08: "we are building an
 // api caller for comfyui, not having engines anymore"): ComfyUI is
 // the only engine. The old engine tiers (cpp/audio-cpp,
@@ -14,31 +26,42 @@ import { INLINE_TOP_KEYS } from "./runsGates.js";
 // rebirth as vendored ComfyUI custom nodes. Probed live from
 // scan_engines(); re-derived per run.
 export const ENGINE_TABLE = {
-    comfyui: { plugin: "comfyui", def: "image" },
+    comfyui: { plugin: "comfyui" },
     // Stroke 55 (the engine-generics seam): the craft loop engine +
     // the MCP grammar arm — any mcp:<server> id matching the seat's
     // grammar admits (membership stays the runs door's registry arm).
-    craft: { plugin: "craft", def: "image" },
+    craft: { plugin: "craft" },
     // Stroke 60 (plan §5): the agent engine — the spawner loop. Its
     // stage is validated like any engine stage (params carry the four
     // pinned fields); outputs are arbitrary (artifacts land in the
     // run dir).
-    agent: { plugin: "agent", def: "text" },
+    agent: { plugin: "agent" },
 };
-/** THE ENGINE TABLE'S DEFAULT READ (P7 latent): the lattice's own
- *  rule, owned once — mcp:<server> grammar ids read the mcp-client
- *  row ("image"), table rows read their def, anything else reads
- *  undefined (unknown: no fill — the caller's door refuses, never
- *  guesses). Both doors derive from this one read (validate's
- *  lattice below, start's empty-outputs fill): a future grammar id
- *  absent from the table makes BOTH refuse instead of splitting
- *  validate-refuses/start-accepts. */
-export function engineDefaultOutput(engine) {
+/** THE ENGINE MEMBERSHIP READ (the one-table cure, 2026-11-01):
+ *  the lattice's and the start door's shared existence check —
+ *  table rows plus the mcp-client grammar leg (read here, never
+ *  retyped at either door). It answers existence ONLY: what a
+ *  stage produces comes from the stage's own tables (outputs,
+ *  card_io, the card's declared kinds), never from this registry.
+ *  Unknown ids refuse at the caller's door, in the door's voice. */
+export function engineKnown(engine) {
     if (engine.startsWith("mcp:") && engineIdOk(engine))
-        return "image";
-    return ENGINE_TABLE[engine]?.def;
+        return true;
+    return engine in ENGINE_TABLE;
 }
 // ── closed vocabularies (Kind / SkipWhen order) ──────
+// THE LIST KINDS (F48, the unkindable wire, 2026-11-01): the three
+// `_list` seats the naming law contracts (image_list ← image,
+// video_list ← video, audio_list ← audio — runsValidateStages' list
+// law and contract-law's LAW 9 edge pin are the same closed set) are
+// Kind members here, not a derived suffix: a derived `k + "_list"`
+// admission would open text_list/mesh_list — kinds no wire carries.
+// The DECL is the truth: h3's ref_audios is an array seat (cap 3,
+// per-producer window stamps ref_audio_i), so the connect door must
+// be able to STATE its declared kind — before this, every spelling
+// refused (audio_list here, audio at the card-contradiction sweep)
+// and the tts→film conditioning wire was unkindable at every flow
+// door. A new kind is a contract act.
 export const KIND_VOCAB = [
     "text",
     "image",
@@ -49,6 +72,9 @@ export const KIND_VOCAB = [
     "lora",
     "seg",
     "data",
+    "image_list",
+    "video_list",
+    "audio_list",
 ];
 export const SKIP_VOCAB = ["present", "absent"];
 // _INLINE_TOP_KEYS sorted (dead/allowed messages) — DERIVED, not

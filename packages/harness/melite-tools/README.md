@@ -1,17 +1,20 @@
 ---
-description: The estate's DSH tool surface as a bundle — the compose-only browser toolset, the headless delegated-operator doors, and the editor's Enhance host routes.
+description: The estate's DSH tool surface as a bundle — the compose-first toolset, the /melite-runs delegation's run doors, and the editor's Enhance host routes.
 kind: package-bundle
 ---
 
 # @melite/harness-tools
 
 `@melite/harness-tools` is the estate's agent-facing tool plane, mounted as
-a DSH bundle. One package, two interfaces: browser (default) is compose-only
-— the agent discovers, loads, and authors on the bench, and never executes;
-the run press stays the user's. Headless (`headless: true`) is the delegated
-operator: the same queue doors plus the one execution verb `melite_flow` and
-its `run_status` monitor. It calls the estate seats in-process (no HTTP, no
-gateway) and mounts card tools imported from their own packages.
+a DSH bundle. The toolset is compose-first: the agent discovers, loads, and
+authors on the bench, and does not execute by default — the run press stays
+the user's. The run doors (`melite_flow` + `run_status`) belong to the
+`/melite-runs` delegation: the user's toggle seats them mid-session, and the
+persisted record (`melite-runs-state.json` under the lane's DSH home) seats
+them at boot. It calls the estate seats in-process (no HTTP, no gateway)
+and mounts card tools imported from their own packages. There is no
+config-selected headless interface — HEADLESS IS DSH'S (`dsh headless`,
+its own shipped profile); melite carries no parallel mode.
 
 ## Contract
 
@@ -20,8 +23,8 @@ gateway) and mounts card tools imported from their own packages.
   tools — web profiles only; server profiles disable the row by id).
 - Base toolset: `melite_discover`, `melite_load`, `melite_construct`,
   `melite_view`, `comfy_manage`, `melite_skill_read`,
-  `ledger_tail`; headless adds `melite_flow` and `run_status`. `adhocTools`
-  registers session-named extras only.
+  `ledger_tail`; the /melite-runs delegation adds `melite_flow` and
+  `run_status`. `adhocTools` registers session-named extras only.
 - Doors: `/melite-tools/catalog` (live tool schemas + llm route list) and
   `/melite-tools/enhance` (the editor door; one execution core shared with
   everything else).
@@ -51,8 +54,8 @@ enhance-door calls are independent one-shots outside it.
 
 ## Known Limitations and Deferred Work
 
-- **The browser interface never executes** — a compose-only session cannot
-  run a card; that is the contract, and headless is the only execution
-  mount.
+- **Compose-only until the user delegates** — a compose-only session cannot
+  run a card; that is the contract, and the /melite-runs delegation is the
+  only execution seat.
 - **Enhance routes are deployment-resolved** — the door enumerates whatever
   llm routes the fiber carries; there is no per-request route pin.

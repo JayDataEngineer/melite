@@ -132,8 +132,27 @@ describe("walkSubmitEnvelope (the one pre-registration walker, in order)", () =>
       assert.equal(w.ceilMs, want);
     }
   });
-  it("missing or empty draft_id refuses draft_required (CARD BIRTH LAW)", async () => {
-    for (const doc of [{ flow: "f" }, { draft_id: "", flow: "f" }, { draft_id: 7, flow: "f" }]) {
+  it("THE FLOW-DOC EXEMPTION (flows-are-compositions slice C, 2026-11-14): a draft-less {flow} doc walks ok", async () => {
+    // CARD BIRTH LAW's own exemption: a flow-doc body ({flow} or
+    // {flow_inline}) carrying NO draft_id key admits — the card-less
+    // flow press rides the door's own doc (family actions, engine
+    // verbs), and the materialized press carries the bench draft it
+    // landed. Present-but-bad shapes still refuse, and the existence
+    // probe rides only a present draft.
+    let probed = false;
+    const w = await walkSubmitEnvelope({ flow: "f" }, () => {
+      probed = true;
+      return false;
+    });
+    assert.equal(w.kind, "ok");
+    if (w.kind !== "ok") return;
+    assert.equal(w.draftId, undefined);
+    assert.equal(probed, false, "the probe rides only a present draft_id");
+    const inline = await walkSubmitEnvelope({ flow_inline: { id: "x", stages: [] } }, ok);
+    assert.equal(inline.kind, "ok");
+  });
+  it("missing or empty draft_id refuses draft_required outside the flow-doc exemption (CARD BIRTH LAW)", async () => {
+    for (const doc of [{ draft_id: "", flow: "f" }, { draft_id: 7, flow: "f" }, { model: "m" }]) {
       const w = await walkSubmitEnvelope(doc, ok);
       assert.equal(w.kind, "refusal");
       if (w.kind !== "refusal") return;
@@ -226,16 +245,15 @@ describe("shouldRetry (R3.3: attempts remain AND no stop)", () => {
 });
 
 describe("noteStageRetry (one documented retry)", () => {
-  it("the three rows agree on attempt + stage identity", () => {
+  it("the two rows agree on attempt + stage identity — and promise NO journal row", () => {
     const n = noteStageRetry("run-1", "st-b", 2, 1, "engine 502");
     assert.deepEqual(n.stagePatch, { retries_used: 1, retry_last_error: "engine 502" });
-    assert.equal(n.ledgerEvent, "run.stage_retry");
-    assert.deepEqual(n.ledgerData, {
-      run_id: "run-1",
-      stage: "st-b",
-      attempt: 1,
-      error: "engine 502",
-    });
+    // THE RETIRED PROMISE (vocab audit 2026-11-01, rank 3 MEDIUM):
+    // the note once constructed ledgerEvent/ledgerData for a
+    // run.stage_retry journal row no seat ever emitted. The fields
+    // are gone — the note is stage-row + bus frame only.
+    assert.equal("ledgerEvent" in n, false, "no ledgerEvent construction");
+    assert.equal("ledgerData" in n, false, "no ledgerData construction");
     assert.deepEqual(n.busFrame, { type: "stage", stage: "st-b", index: 2, retry: 1 });
   });
 });

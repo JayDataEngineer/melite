@@ -4,6 +4,7 @@
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
 import { DIR_ID_ALIASES, isDir, isFile, subdirs, readText, stem } from "./skillFs.ts";
+import { authoredSkillDoc } from "./skillAuthored.ts";
 import { frontmatter, gateSkill } from "./skillFrontmatter.ts";
 import type { DocRow, SkillRow, StepRow } from "./skillPlane.ts";
 import { LaneWireError } from "./skillPlane.ts";
@@ -12,7 +13,7 @@ import type { FlowsSeat } from "./flowsData.ts";
 import { composeFamilyStages, liveFamilySeat } from "./flowsFamilyCompose.ts";
 import type { FamilyModelsSeat } from "./flowsFamilyCompose.ts";
 
-/** One registry headless-tool property, projected to the frozen
+/** One registry flow-tool property, projected to the frozen
  *  FlowToolDecl shape (always ptype + description; enum / default /
  *  minimum / maximum ride only when the registry declares them —
  *  nulls never serve). */
@@ -65,7 +66,7 @@ interface FlowDecl {
  *  silently — the registry is code, so a declaration bug throws LOUD
  *  out of expandRegistryFlow instead of marking a row). Skips the
  *  registry when flows/ is absent (_flow_rows 387-388: not-a-dir
- *  -> []). The headless tool rides the registry declaration
+ *  -> []). The flow tool rides the registry declaration
  *  verbatim (projected to the frozen row shape); hasSkillMd reads
  *  the flows/<id>/SKILL.md leaf live. skillRefs ride the registry
  *  declaration (empty today — the frozen refs pointed at the RETIRED flow.py rows and the retired enhance recipes).
@@ -315,7 +316,42 @@ function familyLane(
 
 /** LEVEL 1+3 model docs (lane_disclosure._model_rows 259-312):
  *  GUIDE.md / agents/AGENT.md / agents/skills/* per model dir. */
-export function modelRows(engine: string): DocRow[] {
+/** THE AUTHORED SKILL WALK (skillAuthored.ts): docs the agent wrote
+ *  live under <stateRoot>/skills/<family>/<stem>/SKILL.md and serve
+ *  under the per-model id shape (`model:<family>:<stem>`), so a
+ *  written skill is discoverable in melite_load and read by
+ *  melite_skill_read with no extra door.
+ *  @param stateRoot the estate's state root (the authored plane)
+ *  @param mid the model family id
+ *  @param genre the family's genre, for the row's scoping
+ *  @returns rows in stem order (a stable index) */
+export function authoredRows(stateRoot: string, mid: string, genre: string | null): DocRow[] {
+  const rows: DocRow[] = [];
+  const root: string = join(stateRoot, "skills", mid);
+  let names: string[];
+  try {
+    names = readdirSync(root).sort();
+  } catch {
+    // no authored skill for this family (the absent root is the
+    // empty case, never an error)
+    return rows;
+  }
+  for (const sname of names) {
+    if (sname.startsWith(".")) continue;
+    const r: DocRow | null = readDoc(
+      authoredSkillDoc(stateRoot, mid, sname),
+      "model:" + mid + ":" + sname,
+      "model-skill",
+      genre,
+      null,
+      mid,
+    );
+    if (r !== null) rows.push(r);
+  }
+  return rows;
+}
+
+export function modelRows(engine: string, stateRoot?: string): DocRow[] {
   const rows: DocRow[] = [];
   const modelsRoot: string = join(engine, "models");
   if (!isDir(modelsRoot)) return rows;
@@ -340,6 +376,13 @@ export function modelRows(engine: string): DocRow[] {
         mid,
       );
       if (agent !== null) rows.push(agent);
+      // THE AUTHORED PLANE (skillAuthored.ts): the agent writes skills
+      // into the state root — a written doc is walked here so the same
+      // index and read doors serve it as the tracked ones (the lora
+      // hand-off's skill lands this way).
+      if (stateRoot !== undefined) {
+        for (const r of authoredRows(stateRoot, mid, genre)) rows.push(r);
+      }
       // THE SPAWN PLANE (subagent-only; the index filters, the
       // spawn reader resolves — never listed to the constructor).
       // Walked BEFORE the skills loop: a spawn-only model dir (no

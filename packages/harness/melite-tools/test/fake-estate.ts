@@ -33,7 +33,7 @@ export function fakeEstate(lanes: Record<string, FakeLane>): FakeEstate {
     'draftsList', 'draftsGet', 'draftsStagePatch', 'cardCompose',
     'benchGet', 'benchEnsure', 'benchVerb',
     'runsValidate', 'runsStart', 'runsStatus', 'runsStop', 'runsList',
-    'discover', 'flowsContracts', 'manageAct', 'skillsIndex', 'skillRead',
+    'discover', 'flowsContracts', 'manageAct', 'skillsIndex', 'skillRead', 'skillWrite',
     'loadCard', 'ledgerTail',
   ] as const
   const estate = {} as Record<string, unknown>

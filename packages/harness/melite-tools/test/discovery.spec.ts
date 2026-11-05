@@ -4,6 +4,7 @@
 // formsTable/cardSections, which take their defs as an argument):
 // key resolution, the forms table law, section shapes, and the live
 // door arms.
+import "../../../../tests/helpers/no-loras-tray.ts";
 import "../../../../tests/helpers/boot-models.ts";
 import { agentFormDoc } from '@melite/engine-agent'
 import type { SamplerEnvelope } from '@melite/contracts/laneRelations'
@@ -15,6 +16,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, test, expect, vi } from 'vitest'
 import assert from 'node:assert/strict'
 import { loadCardDefs, theService } from '@melite/comfyui-cordis'
+
 
 /** The registry view toggle for the absence law (the undeclaring-card
  *  fixture below): with the flag up, getModel serves a paramless
@@ -961,12 +963,15 @@ describe('live door arms', () => {
     // sigma grid (8-step 12, 4-step 6; larryvrh declares none).
     assert.deepEqual(lora!['marries'], { steps: 'max', shift_video: 'max' }, 'the loras kind declares the steps + shift marriage (max aggregation)')
     const opts = (lora!['options'] ?? []) as unknown as Array<Record<string, unknown> & { value?: string }>
-    assert.equal(opts.length, 11, 'the mirrored catalog serves every DECL row on the kind itself')
+    assert.equal(opts.length, 12, 'the mirrored catalog serves every DECL row on the kind itself')
+    const silver = opts.find((o) => o.value === 'h3_silver_dareties')
     const dareties = opts.find((o) => o.value === 'h3_lightx2v_dareties')
     const turbo = opts.find((o) => o.value === 'h3_lightx2v_turbo')
-    assert.ok(dareties !== undefined && turbo !== undefined, 'both distill rows serve')
+    assert.ok(silver !== undefined && dareties !== undefined && turbo !== undefined, 'the distill rows serve — the silver merge among them')
+    assert.deepEqual(silver!['defaults'], { strength: 0.8, steps: 8, steps_min: 4, steps_max: 8, shift_video: 8 }, 'the Silveroxides DARE-TIES Merge (the DEFAULT, operator 2026-11-01): strength 0.8 (the briefed band\u2019s midpoint, the dareties author\u2019s rec), designed 6\u20138 steps usable to 4 (the turbo line\u2019s floor), married shift 8 (the dareties settings thread\u2019s 8/3)')
+    assert.equal(silver!['label'], 'Silveroxides DARE-TIES Merge', 'the default\u2019s label names the author and the merge — never a LightX2V label (the name law)')
     assert.deepEqual(dareties!['defaults'], { strength: 0.8, steps: 4, steps_min: 4, steps_max: 4, shift_video: 6 }, 'dareties v4: a four-step distill (fixed point, its declared domain — the value-arms ARM 12: the leaf dials the row\u2019s own span, never the generic envelope); strength 0.8 per the operator 2026-09-21 (silveroxides\u2019 documented solo range 0.6\u20130.8); married shift 6 (the 4-step grid)')
-    assert.deepEqual(turbo!['defaults'], { strength: 0.6, steps: 8, steps_min: 4, steps_max: 8, shift_video: 12 }, 'turbo 4-8: the married default rides WITH its declared range; married shift 12 (its 8-step grid)')
+    assert.deepEqual(turbo!['defaults'], { strength: 0.6, steps: 8, steps_min: 4, steps_max: 8, shift_video: 12 }, 'turbo 4-8 (the EXPERIMENTAL row, pick-only since the silver merge took the default): the married default rides WITH its declared range; married shift 12 (its 8-step grid)')
     // ── THE CATALOG EXPANSION (2026-09-20, operator: "add multiple
     // loras and let the user choose"): the official lightx2v turbos
     // + the Kijai Acc adapters serve as user picks — strength 1 per
@@ -998,11 +1003,40 @@ describe('live door arms', () => {
     const lora = modifiers.find((m) => m['param_key'] === 'loras')
     assert.ok(lora !== undefined)
     const options = (lora!['options'] ?? []) as unknown as Array<Record<string, unknown>>
+    assert.ok(options.some((option) => option['value'] === 'h3_silver_dareties'))
+    assert.deepEqual(
+      options.find((option) => option['value'] === 'h3_silver_dareties')!['defaults'],
+      { strength: 0.8, steps: 8, steps_min: 4, steps_max: 8, shift_video: 8 },
+    )
+    // the experimental row keeps its facts beside the default
     assert.ok(options.some((option) => option['value'] === 'h3_lightx2v_turbo'))
     assert.deepEqual(
       options.find((option) => option['value'] === 'h3_lightx2v_turbo')!['defaults'],
       { strength: 0.6, steps: 8, steps_min: 4, steps_max: 8, shift_video: 12 },
     )
+  })
+
+  test('formSpecArm serves the reshoot orbit-canvas face with its pose seats (the reshoot orb — one truth)', async () => {
+    // THE RESHOOT ORB (2026-11-15 — the operator: "it already
+    // existed as the output, build it for the input"): the reshoot
+    // kind declares leaf_face 'orbit-canvas' and the orb + the
+    // orbit/tilt/dolly number dials write the SAME draft seats
+    // (ONE TRUTH — the ModLeaf orb commit writes draftParams
+    // orbit/tilt/dolly, the seats the dials already own). Toggle:
+    // drop leaf_face or rename a seat and this reds.
+    const spec = await formSpecSweep('h3-timeline')
+    assert.ok(spec !== null)
+    const modifiers = spec.features?.modifiers ?? []
+    const reshoot = modifiers.find((m) => m['kind'] === 'reshoot')
+    assert.ok(reshoot !== undefined, 'the reshoot kind serves')
+    assert.equal(reshoot!['leaf_face'], 'orbit-canvas', 'the orb face serves verbatim')
+    const fields = [...(reshoot!['fields'] ?? [])]
+    for (const [name, dflt] of [['orbit', -30], ['tilt', 20], ['dolly', 1]] as Array<[string, number]>) {
+      const f = fields.find((ff) => ff.name === name)
+      assert.ok(f !== undefined, `the ${name} seat serves`)
+      assert.equal(f!.type, 'number', `the ${name} seat stays a number dial`)
+      assert.equal(f!.default, dflt, `the ${name} seat keeps its declared default`)
+    }
   })
 
   test("formSpecArm serves the AGENT ENGINE doc from the declared contract (stroke 66 — the census rides LIVE)", async () => {

@@ -222,6 +222,34 @@ export function admissionRefusal(deps, card, fam, lifted, phase, facts) {
             (fieldHints.length > 0 ? " Mod-field families:" + fieldHints.join(";") : ""));
     }
 }
+/** THE FAMILY-LESS HIJACK LAW (F56, 2026-11-14): a registered
+ *  family-less card (boarded: [], requiresModel: false — trim,
+ *  frames, track, the pure tools) composes by its OWN id; a stated
+ *  params.model/service naming anything else would resolve THAT
+ *  family and compose its card instead, judging this card's params
+ *  by a stranger's admission. The refusal fires at the door, before
+ *  any lane resolves. One law, two seats: prepareCardParams (the
+ *  compose doors) and the validate walk's own phase1Card call (its
+ *  body carries no `card` key — the card name is the walk's own
+ *  variable).
+ *  @param deps the compose seat (the decl projection).
+ *  @param card the row's own card id ("" = the caller has none; the
+ *  gate is a no-op then).
+ *  @param seat the stated model/service value, whatever shape.
+ *  @param facts the caller-resolved facts table (optional — the
+ *  seat's own read when omitted). */
+export function refuseFamilylessHijack(deps, card, seat, facts) {
+    if (card === "")
+        return;
+    const decl = deps.cardDecls(facts)[card];
+    if (decl === undefined || decl.boarded.length > 0)
+        return;
+    if (typeof seat !== "string" || seat === "" || seat === card)
+        return;
+    throw new CardArmError(400, "card " + JSON.stringify(card) + " declares no model family (a family-less tool card — it composes by its own id), so the stated model " +
+        JSON.stringify(seat) + " is a lane hijack: the row would compose " +
+        JSON.stringify(seat) + "'s card instead and this card's params would be judged by a stranger's admission. Drop the model key — the card's own surface owns every default.", "invalid_request");
+}
 /** Resolve + sweep + select + overlay + lift (steps 2-6):
    *  everything before compose. Throws CardArmError (the door maps
    *  it to the refusal envelope). `phase` stamps the phase-N voice
@@ -251,6 +279,20 @@ export function prepareCardParams(deps, body, mid, phase, factsArg) {
     if (!FLOW_ID_RE.test(mid)) {
         throw new CardArmError(400, "model id " + JSON.stringify(mid) + " is not a legal identifier", "invalid_request");
     }
+    // THE FAMILY-LESS HIJACK GATE (F56, 2026-11-14 — operator: "trim's
+    // add_stage misrouted into the krea-2/turbo image lane demanding a
+    // prompt. The family-less tool card never reached its own surface"):
+    // a stage row that names a REGISTERED family-less card (boarded: [])
+    // composes by its own id — the card-unit arm below. But `mid` folds a
+    // stated params.model/service FIRST, so trim + model 'krea-2' resolved
+    // KREA's family and composed the image-gen card instead (live receipt:
+    // /v1/flows/validate answered "unknown param(s) on the image-gen card:
+    // clip, end_seconds, start_seconds" — the trim params judged by a
+    // stranger's admission, and with prompt-shaped params the row would
+    // have validated GREEN as a krea image). ONE LAW, TWO SEATS: the
+    // validate walk's own phase1Card call carries no `card` key in its
+    // body, so the helper is exported and called there too.
+    refuseFamilylessHijack(deps, typeof body["card"] === "string" ? body["card"] : "", body["model"] ?? body["service"], facts);
     const resolves = mid in facts || deps.resolveCardFamily(mid, facts) in facts || deps.modelMids().has(mid);
     if (!resolves) {
         // THE CARD-UNIT COMPOSE (2026-10-08 second pass — the
@@ -303,6 +345,19 @@ export function prepareCardParams(deps, body, mid, phase, factsArg) {
             " (no registered card definition for the card model " + JSON.stringify(mid) + " names)", "card_compose");
     }
     const sel = selectCardVariant(mid, famRow, body, phase, familyLanesOf(decl.boarded), fam);
+    // THE ONE-BENCH FAMILY DOOR (operator 2026-11-14 — "I KEPT
+    //  SAYING ONE BENCH. BUT THAT IS *never* TRUE"; RETIRED as a
+    //  regular seat 2026-11-15): the t4r four-key burn is cured in
+    //  the RENDERER, not by a refusal — renderH3Window now hoists
+    //  the post chain above the family branch, so every finish key
+    //  fires on every lane and h3-timeline declares no admission
+    //  face. The seat still runs when a card declares one, on the
+    //  RAW lifted body (pre-stamp), so a genuine family clause keeps
+    //  one voice across write, serve and compose.
+    const famVerdict = deps.admitStageFamily?.(famRow.card, liftCardParams(body));
+    if (famVerdict !== undefined && !famVerdict.ok) {
+        throw new CardArmError(400, famVerdict.error, "invalid_request");
+    }
     const stamped = stampCardOverlay(body, famRow, decl, sel, phase, fam);
     return {
         mid,

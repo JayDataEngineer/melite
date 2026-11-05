@@ -91,7 +91,7 @@ const seat = (cardOver: Record<string, (...args: never[]) => unknown> = {}): Sea
 const inlineBody = (over: Record<string, unknown> = {}): Record<string, unknown> => ({
   draft_id: "d1",
   test: false,
-  flow_inline: { id: "x", stages: [{ id: "s", engine: "comfyui" }] },
+  flow_inline: { id: "x", stages: [{ id: "s", engine: "comfyui", outputs: { out: "image" } }] },
   ...over,
 });
 
@@ -167,7 +167,7 @@ const wfBody82 = (): Record<string, unknown> =>
   inlineBody({
     flow_inline: {
       id: "x",
-      stages: [{ id: "s", engine: "comfyui", params: WF }],
+      stages: [{ id: "s", engine: "comfyui", params: WF, outputs: { out: "image" } }],
     },
   });
 

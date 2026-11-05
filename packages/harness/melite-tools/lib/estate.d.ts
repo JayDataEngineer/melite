@@ -47,7 +47,18 @@ export declare function makeEstateRequest(ctx: EstateHost): EstateRequest;
 /** The bench plane's mutation verbs — the eight arms the bench
  *  seat answers 1:1 (the router's regex admits the same eight;
  *  `archive` is F11's spent-stage mark — the row stays, every run
- *  face skips it). */
+ *  face skips it).
+ *
+ *  OWNERSHIP (vocab audit 2026-11-01 W4): `add_stages` (plural)
+ *  is a seat WITHOUT a tool verb — no melite_construct verb and
+ *  no benchVerb('add_stages') press exists in the tool plane. Its
+ *  ONE wire-direct owner is the GUI restore path
+ *  (packages/web/melite-card-view/src/client/cards-resource.ts
+ *  restoreRunToBench → bench/add-stages: the N-stage restore lands
+ *  as ONE write, one rev, one history event). A seat with no
+ *  caller is retired; this one has a named caller, so the verb
+ *  stays — and the bench-batch-ownership wall reds the moment the
+ *  caller set empties. */
 export type BenchVerb = 'patch' | 'add_stage' | 'add_stages' | 'remove_stage' | 'archive' | 'clear' | 'rewire' | 'undo';
 /** The tool plane's ONE estate seam: the typed lanes. A tool factory
  *  takes `Estate` and calls methods — never `request('GET', path)`. */
@@ -81,6 +92,9 @@ export interface Estate {
     /** The skills seat: the index and the one-doc read. */
     skillsIndex(signal: AbortSignal, timeoutMs?: number): Promise<unknown>;
     skillRead(id: string, signal: AbortSignal, timeoutMs?: number): Promise<unknown>;
+    /** The WRITE door (POST /v1/skills): the agent authors one skill
+     *  doc; a refusal rejects with the door's voice. */
+    skillWrite(doc: Record<string, unknown>, signal: AbortSignal, timeoutMs?: number): Promise<unknown>;
     /** The load seat: one card or flow bundle. */
     loadCard(inferenceType: string, name: string, signal: AbortSignal, timeoutMs?: number): Promise<unknown>;
     /** The queue seat's journal tail. SEATLESS reads as an EMPTY tail

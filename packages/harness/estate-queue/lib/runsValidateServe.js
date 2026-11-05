@@ -1,7 +1,7 @@
 // runsValidateServe.ts — the shared compile-serve tail split from
 // runsValidate.ts (pure move, zero logic changes): branch prune, to_graph,
 // the $channel gate, cost preview, and the inline/named serve arms.
-import { FlowError, engineDefaultOutput } from "./runsValidateShared.js";
+import { FlowError, engineKnown } from "./runsValidateShared.js";
 import { edgeRef } from "./runsValidateInline.js";
 import { flowFromBody, kindsOk, wiresResolve } from "./runsValidateStages.js";
 import { batchRows, sweepWorkflows } from "./runsValidateSweeps.js";
@@ -63,9 +63,9 @@ export function prunedFor(flow, body, cards) {
         merged.push({ ...st, inputs: newInputs });
     }
     // RECONSTRUCTED — every construction validator re-runs (TS scope:
-    // wires + deferred kinds; card/tool/validators are no-ops here).
+    // wires + kinds; card/tool/validators are no-ops here).
     wiresResolve(flow.id, merged);
-    kindsOk(flow.id, merged, {}, cards);
+    kindsOk(flow.id, merged, cards);
     return { flow: { id: flow.id, description: flow.description, stages: merged }, pruned: [...pruned.keys()] };
 }
 export function toGraph(flow) {
@@ -80,14 +80,12 @@ export function toGraph(flow) {
                 outputs.push({ ...o });
         }
         else {
-            // THE SHARED DEFAULT READ (P7 latent): validateEngines refused
-            // unknown engines upstream, so this hit is proven — but the
-            // rule (mcp leg + table) is still read here, not retyped, so
-            // the day the table grows this seat cannot disagree. The
-            // undefined leg is the defense-in-depth voice for a guarantee
-            // missed, in the lattice's own words.
-            const def = engineDefaultOutput(st.engine);
-            if (def === undefined) {
+            // THE ONE TABLE (2026-11-01): outputs else cardIo — a stage
+            // with neither refuses LOUD, in the lattice's own voice for a
+            // missed guarantee (unknown engine) or the declaration voice
+            // (a known engine names no channels). The engine registry is
+            // membership-only: it fills nothing.
+            if (!engineKnown(st.engine)) {
                 throw new FlowError("flow " +
                     JSON.stringify(flow.id) +
                     " stage " +
@@ -98,7 +96,12 @@ export function toGraph(flow) {
                     JSON.stringify(st.engine) +
                     " (no engine plugin declares it)");
             }
-            outputs.push({ name: "default", kind: def });
+            throw new FlowError("flow " +
+                JSON.stringify(flow.id) +
+                " stage " +
+                JSON.stringify(st.id) +
+                " declares no outputs and names no card — " +
+                "add outputs={'<channel>': <Kind>} on the stage");
         }
         return {
             id: st.id,

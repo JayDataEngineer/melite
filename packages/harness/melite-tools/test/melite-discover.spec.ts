@@ -224,6 +224,33 @@ describe('melite_discover render — the counts line', () => {
     )
   })
 
+  // F57 (operator 2026-11-13: "single-stage flow initial keys are
+  // UNDOCUMENTED — natural keys fail with internal errors … the
+  // error text is the only teacher") — the DISCOVERY line names the
+  // flow's initial keys, so a natural-key press (image, mesh) is
+  // corrected by the catalog itself, before any load or run.
+  test('flow lines name their initial keys (F57: the leaf-naming law)', () => {
+    const tool = meliteDiscover(stubEstate(), () => {})
+    const withInitials = (i: number, initials: string[]): Record<string, unknown> => ({
+      ...flowLine(i),
+      initials,
+    })
+    const parts = tool.output.render(
+      {},
+      {
+        flows: [withInitials(0, ['photo']), withInitials(1, ['agent_prompt', 'command']), flowLine(2)],
+        cards: [],
+      } as never,
+    ) as Array<{ text?: string }>
+    const text = parts.map((p) => p?.text ?? '').join('\n')
+    assert.ok(text.includes('flow-0 — Flow 0 (2 stages; initials: photo)'), 'the anny spell stem names itself')
+    assert.ok(
+      text.includes('flow-1 — Flow 1 (2 stages; initials: agent_prompt, command)'),
+      'requireds lead the list',
+    )
+    assert.ok(text.includes('flow-2 — Flow 2 (2 stages)'), 'no initials → no segment, the line stays bare')
+  })
+
   test('every ranked row says WHY it surfaced (slice 3: the ranked-answer law)', () => {
     const tool = meliteDiscover(stubEstate(), () => {})
     const parts = tool.output.render(

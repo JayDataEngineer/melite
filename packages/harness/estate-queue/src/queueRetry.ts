@@ -16,14 +16,16 @@ export interface RetryAsk {
 export interface RetryNote {
   /** The stage-row stamp (retries_used + retry_last_error). */
   readonly stagePatch: { retries_used: number; retry_last_error: string };
-  /** The durable row: ledger("run.stage_retry", ...). */
-  readonly ledgerEvent: string;
-  readonly ledgerData: {
-    run_id: string;
-    stage: string;
-    attempt: number;
-    error: string;
-  };
+  /** NO journal row (vocab audit 2026-11-01, rank 3 MEDIUM): an
+   *  earlier revision of this note constructed ledgerEvent /
+   *  ledgerData fields promising a durable run.stage_retry journal
+   *  row that no seat ever emitted — zero production callers, and
+   *  the ledger-tail census wall was blind to constructed-but-
+   *  never-emitted literals. The promise is retired, not seated:
+   *  there is no retry LOOP to audit (no production caller retries
+   *  today), so a journal row would certify an audit trail for a
+   *  path that does not run. The note is stage-row + bus frame
+   *  only. */
   /** The live row: publish(run_id, stage/…/retry). Key order . */
   readonly busFrame: {
     type: string;
@@ -41,8 +43,8 @@ export function shouldRetry(ask: RetryAsk): boolean {
   return ask.attempt < ask.maxExtra && !ask.stopSet;
 }
 
-/** One documented retry: sidecar row + events bus +
- *  ledger — never a silent re-run. */
+/** One documented retry: sidecar row + events bus — never a
+ *  silent re-run, never a journal row (see RetryNote). */
 export function noteStageRetry(
   runId: string,
   stageId: string,
@@ -52,8 +54,6 @@ export function noteStageRetry(
 ): RetryNote {
   return {
     stagePatch: { retries_used: attempt, retry_last_error: why },
-    ledgerEvent: "run.stage_retry",
-    ledgerData: { run_id: runId, stage: stageId, attempt, error: why },
     busFrame: { type: "stage", stage: stageId, index: stageIndex, retry: attempt },
   };
 }

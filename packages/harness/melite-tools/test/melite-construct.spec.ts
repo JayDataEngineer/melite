@@ -22,6 +22,7 @@ import { meliteConstruct, projectStages } from '../src/tools/melite-construct.ts
 import type { Estate } from '../src/estate.ts'
 import { fakeEstate, fakeEstateRecorded } from './fake-estate.ts'
 import { fakeExec } from './fake-exec.ts'
+import { loadCardDefs } from '@melite/comfyui-cordis'
 
 // The foreign seat's undeclared failure code this wall simulates —
 // declared here (type-only, erased at runtime) so the RemoteError seam
@@ -50,14 +51,18 @@ function mockEstate(handler: (lane: string, args: unknown[]) => unknown): {
 }
 
 function exec() {
-  return fakeExec(AbortSignal.timeout(5000))
+  // THE ONE-SEAT LAW's test face (audit 2026-10-31): a delegated
+  // lane carries no conversation id and refuses — every spec here
+  // drives the PARENT conversation's seat (session-<uuid>), the only
+  // lane the door authors.
+  return fakeExec(AbortSignal.timeout(5000), { agent: { id: 'session-chat7' } })
 }
 
 function stubEstate(): Estate {
   return fakeEstate({}).estate
 }
 
-const ROW = { session: 'main', rev: 4, intent: 'make art', stages: [{ id: 's0' }], log: [{ rev: 4 }] }
+const ROW = { session: 'session-chat7', rev: 4, intent: 'make art', stages: [{ id: 's0' }], log: [{ rev: 4 }] }
 
 describe('melite_construct presentCall — the Bench card', () => {
   test('verb + stage ride the title', () => {
@@ -89,67 +94,70 @@ describe('melite_construct presentCall — the Bench card', () => {
   })
 })
 
-describe('melite_construct — THE PER-CONVERSATION BENCH (stroke 44: the flow belongs to the conversation)', () => {
+describe('melite_construct — THE ONE-SEAT BENCH (stroke 44 + the one-seat law, receipt 2026-10-31-infra-bench-one-seat-identity: the flow belongs to the conversation, and an attributed lane never merges into main)', () => {
   test("the agent's own session IS the bench key — ToolExecution.agent.id binds it", async () => {
     const { seen, estate } = mockEstate((lane, args) => {
-      if (lane === 'benchGet' && args[0] === 's_chat7') return { ...ROW, session: 's_chat7' }
+      if (lane === 'benchGet' && args[0] === 'session-chat7') return { ...ROW, session: 'session-chat7' }
       throw new Error('unmocked lane ' + lane)
     })
     const tool = meliteConstruct(estate)
-    const out = await tool.execute({ verb: 'read' }, fakeExec(AbortSignal.timeout(5000), { agent: { id: 's_chat7' } })) as Record<string, unknown>
-    assert.equal(out.bench, 's_chat7')
+    const out = await tool.execute({ verb: 'read' }, fakeExec(AbortSignal.timeout(5000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.bench, 'session-chat7')
     assert.equal(out.ok, true)
-    assert.ok(seen.some((r) => r.lane === 'benchGet' && r.args[0] === 's_chat7'))
+    assert.ok(seen.some((r) => r.lane === 'benchGet' && r.args[0] === 'session-chat7'))
   })
 
   test('the conversation WINS over an explicit bench key — cross-conversation state is unreachable, not merely discouraged', async () => {
     const { estate } = mockEstate((lane, args) => {
-      if (lane === 'benchGet' && args[0] === 's_chat7') return { ...ROW, session: 's_chat7' }
+      if (lane === 'benchGet' && args[0] === 'session-chat7') return { ...ROW, session: 'session-chat7' }
       throw new Error('unmocked lane ' + lane)
     })
     const tool = meliteConstruct(estate)
-    const out = await tool.execute({ verb: 'read', bench: 'main' }, fakeExec(AbortSignal.timeout(5000), { agent: { id: 's_chat7' } })) as Record<string, unknown>
-    assert.equal(out.bench, 's_chat7')
+    const out = await tool.execute({ verb: 'read', bench: 'main' }, fakeExec(AbortSignal.timeout(5000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.bench, 'session-chat7')
   })
 
-  test('no agent (headless/script seats) — the explicit key applies, else main', async () => {
+  test('no agent (headless/script seats) — the explicit key applies, else main (the genuinely unattributed seat is the fallback the one-seat law leaves alive)', async () => {
     const a = mockEstate((lane, args) => {
       if (lane === 'benchGet' && args[0] === 'probe') return ROW
       throw new Error('unmocked lane ' + lane)
     })
-    const outA = await meliteConstruct(a.estate).execute({ verb: 'read', bench: 'probe' }, exec()) as Record<string, unknown>
+    const outA = await meliteConstruct(a.estate).execute({ verb: 'read', bench: 'probe' }, fakeExec(AbortSignal.timeout(5000))) as Record<string, unknown>
     assert.equal(outA.bench, 'probe')
 
     const b = mockEstate((lane, args) => {
       if (lane === 'benchGet' && args[0] === 'main') return ROW
       throw new Error('unmocked lane ' + lane)
     })
-    const outB = await meliteConstruct(b.estate).execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    const outB = await meliteConstruct(b.estate).execute({ verb: 'read' }, fakeExec(AbortSignal.timeout(5000))) as Record<string, unknown>
     assert.equal(outB.bench, 'main')
   })
 
-  test('a junk agent id refuses to leak — sanitized to main', async () => {
+  test('a DELEGATED id (bare uuid) forwards under the seat prefix — the re-seat is the estate seatOf\'s call, never a tool-side sanitize (the DELEGATION arm)', async () => {
+    const delegated = '3f9d2c1a-6f0e-4a55-9c1a-2b7d8e4f5a60'
+    const seat = 'delegate:' + delegated
     const { seen, estate } = mockEstate((lane, args) => {
-      if (lane === 'benchGet' && args[0] === 'main') return ROW
+      if (lane === 'benchGet' && args[0] === seat) return { ...ROW, session: seat }
       throw new Error('unmocked lane ' + lane)
     })
     const tool = meliteConstruct(estate)
-    const out = await tool.execute({ verb: 'read' }, fakeExec(AbortSignal.timeout(5000), { agent: { id: 'not a key/..' } })) as Record<string, unknown>
-    assert.equal(out.bench, 'main')
-    assert.ok(seen.some((r) => r.lane === 'benchGet' && r.args[0] === 'main'))
+    const out = await tool.execute({ verb: 'read' }, fakeExec(AbortSignal.timeout(5000), { agent: { id: delegated } })) as Record<string, unknown>
+    assert.equal(out.bench, seat, 'the bare uuid rides under the seat prefix — the estate owns the re-seat')
+    assert.ok(seen.some((r) => r.lane === 'benchGet' && r.args[0] === seat))
+    assert.equal(seen.some((r) => r.args[0] === 'main'), false, 'never silently sanitized onto main')
   })
 })
 
 describe('melite_construct read — freshness first', () => {
   test('read GETs the bench row', async () => {
     const { seen, estate } = mockEstate((lane, args) => {
-      if (lane === 'benchGet' && args[0] === 'main') return ROW
+      if (lane === 'benchGet' && args[0] === 'session-chat7') return ROW
       throw new Error('unmocked lane ' + lane)
     })
     const tool = meliteConstruct(estate)
     const out = await tool.execute({ verb: 'read' }, exec()) as Record<string, unknown>
     assert.equal(out.verb, 'read')
-    assert.equal(out.bench, 'main')
+    assert.equal(out.bench, 'session-chat7')
     assert.equal(out.ok, true)
     assert.equal(out.rev, 4)
     assert.equal(out.intent, 'make art')
@@ -161,7 +169,7 @@ describe('melite_construct read — freshness first', () => {
 
   test('a missing verb REFUSES at the schema gate — a bare call never reads (slice 5)', async () => {
     const { seen, estate } = mockEstate((lane, args) => {
-      if (lane === 'benchGet' && args[0] === 'main') return ROW
+      if (lane === 'benchGet' && args[0] === 'session-chat7') return ROW
       throw new Error('unmocked lane ' + lane)
     })
     const tool = meliteConstruct(estate)
@@ -177,33 +185,34 @@ describe('melite_construct read — freshness first', () => {
     assert.equal(seen.length, 0, 'nothing was read or written')
   })
 
-  test('a named side-bench rides the path', async () => {
+  test('a named side-bench is IGNORED — the conversation wins (the one-seat law: an attributed lane never leaves its conversation)', async () => {
     const { seen, estate } = mockEstate((lane, args) => {
-      if (lane === 'benchGet' && args[0] === 'side_1') return { ...ROW, session: 'side_1' }
+      if (lane === 'benchGet' && args[0] === 'session-chat7') return { ...ROW, session: 'session-chat7' }
       throw new Error('unmocked lane ' + lane)
     })
     const tool = meliteConstruct(estate)
     const out = await tool.execute({ verb: 'read', bench: 'side_1' }, exec()) as Record<string, unknown>
-    assert.equal(out.bench, 'side_1')
+    assert.equal(out.bench, 'session-chat7')
     assert.equal(seen[0]!.lane, 'benchGet')
+    assert.equal(seen[0]!.args[0], 'session-chat7', 'side_1 was never read — the conversation bench was')
   })
 
   test('an invalid bench falls back to the shared bench', async () => {
     const { seen, estate } = mockEstate((lane, args) => {
-      if (lane === 'benchGet' && args[0] === 'main') return ROW
+      if (lane === 'benchGet' && args[0] === 'session-chat7') return ROW
       throw new Error('unmocked lane ' + lane)
     })
     const tool = meliteConstruct(estate)
     const out = await tool.execute({ verb: 'read', bench: 'bad bench!' }, exec()) as Record<string, unknown>
-    assert.equal(out.bench, 'main')
+    assert.equal(out.bench, 'session-chat7')
     assert.equal(seen[0]!.lane, 'benchGet')
   })
 
   test('a missing bench births via ensure, then reads', async () => {
     const { seen, estate } = mockEstate((lane, args) => {
-      if (lane === 'benchGet' && args[0] === 'main') {
+      if (lane === 'benchGet' && args[0] === 'session-chat7') {
         if (seen.filter((c) => c.lane === 'benchGet').length === 1) {
-          throw new RemoteError('bench/not-found', 'no such bench', { session: 'main' })
+          throw new RemoteError('bench/not-found', 'no such bench', { session: 'session-chat7' })
         }
         return ROW
       }
@@ -217,13 +226,13 @@ describe('melite_construct read — freshness first', () => {
       seen.map((c) => c.lane),
       ['benchGet', 'benchEnsure', 'benchGet'],
     )
-    assert.deepEqual(seen[1]!.args[0], { session: 'main' })
+    assert.deepEqual(seen[1]!.args[0], { session: 'session-chat7' })
   })
 
   test('a foreign remote on the read refuses, never births', async () => {
     const { seen, estate } = mockEstate((lane, args) => {
-      if (lane === 'benchGet' && args[0] === 'main') {
-        throw new RemoteError('bench/broken', 'seat blew up', { session: 'main' })
+      if (lane === 'benchGet' && args[0] === 'session-chat7') {
+        throw new RemoteError('bench/broken', 'seat blew up', { session: 'session-chat7' })
       }
       throw new Error('unmocked lane ' + lane)
     })
@@ -240,7 +249,7 @@ describe('melite_construct read — freshness first', () => {
     const tool = meliteConstruct(estate)
     const out = await tool.execute({ verb: 'read' }, exec()) as Record<string, unknown>
     assert.equal(out.verb, 'read')
-    assert.equal(out.bench, 'main')
+    assert.equal(out.bench, 'session-chat7')
     assert.equal(out.ok, false)
     assert.equal(out.error, 'down')
     assert.equal(out.error_kind, 'remote')
@@ -318,12 +327,86 @@ describe('melite_construct validate — compile, no GPU', () => {
   })
 })
 
+// THE LIVE-ROWS LAW (GAPS-9, the archived-compile burn: an archived
+// stale draft's params blocked every future bench-wide compile).
+// F11 rests archived rows on the RUN faces; the COMPILE faces rest
+// them too — projectStages strips the archived FLAG (not a wire key)
+// but kept the ROW, so a spent row's stale params judged bench-wide.
+// These arms mint two rows, archive one post-mint through the real
+// archive verb, and prove the compile excludes it: the validate door
+// below REFUSES any bench whose archived row rides (the burn's own
+// shape — a stale draft that no longer compiles), so a green
+// compiles:true proves the archived row never reached the judge.
+describe('melite_construct validate — GAPS-9: only LIVE rows judge', () => {
+  // A bench whose rows carry the archive flag the way the seat
+  // stores them post-archive: one live row, one spent row with the
+  // stale params of the burn.
+  const mintThenArchive = () => {
+    let archived = false
+    const live = { id: 's_live', engine: 'comfyui', params: { p: 1 } }
+    const spent = { id: 's_old', engine: 'comfyui', params: { p: 'stale' } }
+    const doc = () => ({
+      session: 'session-chat7', rev: archived ? 10 : 9, intent: '', log: [],
+      stages: archived ? [live, { ...spent, archived: true }] : [live, spent],
+    })
+    return { live, spent, doc, setArchived: () => { archived = true } }
+  }
+
+  test('an archived row post-mint never reaches the compile — live rows alone judge', async () => {
+    const bench = mintThenArchive()
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet') return bench.doc()
+      // the archive verb lands on the seat (the F11 mark)
+      if (lane === 'benchVerb' && args[1] === 'archive') {
+        bench.setArchived()
+        return { rev: 10, stage: 's_old' }
+      }
+      if (lane === 'runsValidate') {
+        // THE BURN'S OWN SHAPE: the seat refuses a bench whose spent
+        // row rides — its stale params no longer compile. A green
+        // verdict proves the archived row was excluded, never judged.
+        const stages = (args[0] as { flow_inline: { stages: unknown[] } }).flow_inline.stages
+        const ids = stages.map((s) => (s as Record<string, unknown>)['id'])
+        if (ids.includes('s_old')) return { ok: false, error: 'stale draft params do not compile' }
+        return { ok: true }
+      }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const tool = meliteConstruct(estate)
+    const archived = await tool.execute({ verb: 'archive', stage: 's_old', expect_rev: 9 }, exec()) as Record<string, unknown>
+    assert.equal(archived.archived, true, 'the spent row rests post-mint')
+    const out = await tool.execute({ verb: 'validate' }, exec()) as Record<string, unknown>
+    assert.equal(out.compiles, true, 'the live row alone compiles — the archived row never judged')
+    const validate = seen.find((c) => c.lane === 'runsValidate')!
+    const sent = (validate.args[0] as { flow_inline: { stages: Array<Record<string, unknown>> } }).flow_inline.stages
+    assert.deepEqual(sent.map((s) => s['id']), ['s_live'], 'only the LIVE row rides the wire')
+    assert.ok(!('archived' in sent[0]!), 'no archived flag leaks onto the wire')
+  })
+
+  test('an all-archived bench compiles nothing — the empty-bench voice, no door call', async () => {
+    const { seen, estate } = mockEstate((lane) => {
+      if (lane === 'benchGet') {
+        return {
+          session: 'session-chat7', rev: 10, intent: '', log: [],
+          stages: [{ id: 's_old', engine: 'comfyui', params: { p: 'stale' }, archived: true }],
+        }
+      }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const tool = meliteConstruct(estate)
+    const out = await tool.execute({ verb: 'validate' }, exec()) as Record<string, unknown>
+    assert.equal(out.compiles, false)
+    assert.equal(out.note, 'bench is empty', 'a bench of only resting rows holds nothing to judge')
+    assert.equal(seen.some((c) => c.lane === 'runsValidate'), false, 'no live rows, no door call')
+  })
+})
+
 describe('melite_construct mutations — every verb', () => {
   test('load replaces stages wholesale', async () => {
     const stages = [{ id: 's1', engine: 'comfyui' }]
     const { seen, estate } = mockEstate((lane, args) => {
       if (lane === 'benchEnsure') return { rev: 5, stages }
-      if (lane === 'benchGet') return { session: 'main', rev: 5, intent: 'make art', stages, log: [] }
+      if (lane === 'benchGet') return { session: 'session-chat7', rev: 5, intent: 'make art', stages, log: [] }
       if (lane === 'runsValidate') return { ok: true }
       throw new Error('unmocked lane ' + lane)
     })
@@ -335,7 +418,11 @@ describe('melite_construct mutations — every verb', () => {
     assert.equal(out.rev, 5)
     assert.deepEqual(out.stages, stages)
     assert.equal(out.landing, 'landed_and_compiling', 'a load that lands stages carries its compile verdict (slice 5)')
-    assert.deepEqual(seen[0]!.args[0], { session: 'main', stages, intent: 'make art', expect_rev: 4 })
+    // the pre-mint gate (F14/F26) composes BEFORE the write — the
+    // ensure is the write, not the first call anymore
+    const ensure = seen.find((r) => r.lane === 'benchEnsure')
+    assert.ok(ensure, 'the ensure fired after the gate')
+    assert.deepEqual(ensure!.args[0], { session: 'session-chat7', stages, intent: 'make art', expect_rev: 4 })
   })
 
   test('load defaults to empty stages and drops a blank intent', async () => {
@@ -345,14 +432,14 @@ describe('melite_construct mutations — every verb', () => {
     })
     const tool = meliteConstruct(estate)
     await tool.execute({ verb: 'load', intent: '', expect_rev: 0 }, exec())
-    assert.deepEqual(seen[0]!.args[0], { session: 'main', stages: [], expect_rev: 0 })
+    assert.deepEqual(seen[0]!.args[0], { session: 'session-chat7', stages: [], expect_rev: 0 })
   })
 
   test('load with overwrite:true confirms wholesale replacement (the overwrite law)', async () => {
     const stages = [{ id: 's1', engine: 'comfyui' }]
     const { seen, estate } = mockEstate((lane, args) => {
       if (lane === 'benchEnsure') return { rev: 6, stages }
-      if (lane === 'benchGet') return { session: 'main', rev: 6, intent: 'make art', stages, log: [] }
+      if (lane === 'benchGet') return { session: 'session-chat7', rev: 6, intent: 'make art', stages, log: [] }
       if (lane === 'runsValidate') return { ok: true }
       throw new Error('unmocked lane ' + lane)
     })
@@ -363,7 +450,9 @@ describe('melite_construct mutations — every verb', () => {
     ) as Record<string, unknown>
     assert.equal(out.rev, 6)
     assert.deepEqual(out.stages, stages)
-    assert.deepEqual(seen[0]!.args[0], { session: 'main', stages, intent: 'make art', overwrite: true, expect_rev: 4 })
+    const ensure = seen.find((r) => r.lane === 'benchEnsure')
+    assert.ok(ensure, 'the ensure fired after the gate')
+    assert.deepEqual(ensure!.args[0], { session: 'session-chat7', stages, intent: 'make art', overwrite: true, expect_rev: 4 })
   })
 
   // THE AUTO-REV FRONT DOOR (session 90a0b920's friction map: the
@@ -373,7 +462,7 @@ describe('melite_construct mutations — every verb', () => {
   // the write — the CAS door still guards every write.
   test('an omitted expect_rev fills from one bounded read (the mutation never demands a prior read call)', async () => {
     const { seen, estate } = mockEstate((lane, args) => {
-      if (lane === 'benchGet' && args[0] === 'main') return { session: 'main', rev: 9, intent: '', stages: [{ id: 's1' }], log: [] }
+      if (lane === 'benchGet' && args[0] === 'session-chat7') return { session: 'session-chat7', rev: 9, intent: '', stages: [{ id: 's1' }], log: [] }
       if (lane === 'benchVerb' && args[1] === 'patch') return { rev: 10, stage: 's1', patched: ['p'] }
       throw new Error('unmocked lane ' + lane)
     })
@@ -412,7 +501,7 @@ describe('melite_construct mutations — every verb', () => {
     // readable (the done mark stands).
     const { estate } = mockEstate((lane, args) => {
       if (lane === 'benchVerb' && args[1] === 'patch') return { rev: 7, stage: 's1', patched: ['p'], stale: true }
-      if (lane === 'benchGet') return { session: 'main', rev: 7, intent: '', stages: [{ id: 's1', params: { p: 2 } }], log: [] }
+      if (lane === 'benchGet') return { session: 'session-chat7', rev: 7, intent: '', stages: [{ id: 's1', params: { p: 2 } }], log: [] }
       if (lane === 'runsValidate') return { ok: true }
       throw new Error('unmocked lane ' + lane)
     })
@@ -454,7 +543,7 @@ describe('melite_construct mutations — every verb', () => {
   test('add_stage carries the optional wiring', async () => {
     const { seen, estate } = mockEstate((lane, args) => {
       if (lane === 'benchVerb' && args[1] === 'add_stage') return { rev: 7, stage: 's2' }
-      if (lane === 'benchGet') return { session: 'main', rev: 7, intent: '', stages: [{ id: 's2' }], log: [] }
+      if (lane === 'benchGet') return { session: 'session-chat7', rev: 7, intent: '', stages: [{ id: 's2' }], log: [] }
       if (lane === 'runsValidate') return { ok: true }
       throw new Error('unmocked lane ' + lane)
     })
@@ -464,7 +553,9 @@ describe('melite_construct mutations — every verb', () => {
       exec(),
     ) as Record<string, unknown>
     assert.equal(out.stage, 's2')
-    assert.deepEqual(seen[0]!.args[2], {
+    const add = seen.find((r) => r.lane === 'benchVerb' && r.args[1] === 'add_stage')
+    assert.ok(add, 'the add_stage write fired')
+    assert.deepEqual(add!.args[2], {
       card: 'c', engine: 'comfyui', params: { p: 1 }, inputs: { x: 1 }, expect_rev: 6,
     })
   })
@@ -472,13 +563,15 @@ describe('melite_construct mutations — every verb', () => {
   test('add_stage drops absent wiring', async () => {
     const { seen, estate } = mockEstate((lane, args) => {
       if (lane === 'benchVerb' && args[1] === 'add_stage') return { rev: 7, stage: 's2' }
-      if (lane === 'benchGet') return { session: 'main', rev: 7, intent: '', stages: [{ id: 's2' }], log: [] }
+      if (lane === 'benchGet') return { session: 'session-chat7', rev: 7, intent: '', stages: [{ id: 's2' }], log: [] }
       if (lane === 'runsValidate') return { ok: true }
       throw new Error('unmocked lane ' + lane)
     })
     const tool = meliteConstruct(estate)
     await tool.execute({ verb: 'add_stage', card: 'c', expect_rev: 6 }, exec())
-    assert.deepEqual(seen[0]!.args[2], { card: 'c', expect_rev: 6 })
+    const add = seen.find((r) => r.lane === 'benchVerb' && r.args[1] === 'add_stage')
+    assert.ok(add, 'the add_stage write fired')
+    assert.deepEqual(add!.args[2], { card: 'c', expect_rev: 6 })
   })
 
   test('remove_stage splices one stage out', async () => {
@@ -534,7 +627,7 @@ describe('melite_construct mutations — every verb', () => {
   test('rewire sets a binding', async () => {
     const { seen, estate } = mockEstate((lane, args) => {
       if (lane === 'benchVerb' && args[1] === 'rewire') return { rev: 9, stage: 's1', input: 'in' }
-      if (lane === 'benchGet') return { session: 'main', rev: 7, intent: '', stages: [{ id: 's2' }], log: [] }
+      if (lane === 'benchGet') return { session: 'session-chat7', rev: 7, intent: '', stages: [{ id: 's2' }], log: [] }
       if (lane === 'runsValidate') return { ok: true }
       throw new Error('unmocked lane ' + lane)
     })
@@ -556,7 +649,7 @@ describe('melite_construct mutations — every verb', () => {
   test('rewire without from clears the binding', async () => {
     const { seen, estate } = mockEstate((lane, args) => {
       if (lane === 'benchVerb' && args[1] === 'rewire') return { rev: 9, stage: 's1', input: 'in' }
-      if (lane === 'benchGet') return { session: 'main', rev: 7, intent: '', stages: [{ id: 's2' }], log: [] }
+      if (lane === 'benchGet') return { session: 'session-chat7', rev: 7, intent: '', stages: [{ id: 's2' }], log: [] }
       if (lane === 'runsValidate') return { ok: true }
       throw new Error('unmocked lane ' + lane)
     })
@@ -662,22 +755,79 @@ describe('melite_construct refusals — the CAS voice', () => {
 
   })
 
+  // THE STATED-HOLD LAW (GAPS-10, the silent-land burn: `patch
+  // {expect_rev: 58}` on a rev-69 bench LANDED at rev 70): a STATED
+  // expect_rev is an assertion — "the state you saw" — and a bench
+  // that moved under the assertion REFUSES loud. The verdict
+  // surfaces verbatim with current_rev (the client re-reads and
+  // re-applies); no re-read, no retry, no silent land. The
+  // drafts-side CAS (estate/drafts bench.ts casCheck) always
+  // refused — this wall pins the TOOL face to the same law.
+  test('GAPS-10: a STATED stale expect_rev refuses loud — one POST, no re-read, current_rev rides', async () => {
+    const { seen, estate } = mockEstate((lane) => {
+      if (lane === 'benchGet') return { rev: 69, stages: [] } // must never be read
+      throw new RemoteError('bench/cas-conflict',
+        'bench moved under the patch (expect_rev 58, current 69) — re-read and re-apply',
+        { current_rev: 69, expect_rev: 58 })
+    })
+    const tool = meliteConstruct(estate)
+    const out = await tool.execute(
+      // numeric params carry no spell token and no wire shape, so
+      // the patch arm fires no pre-read — the ONLY call is the POST
+      { verb: 'patch', stage: 's_0', params: { steps: 22 }, expect_rev: 58 },
+      exec(),
+    ) as Record<string, unknown>
+    assert.equal(out.ok, false, 'the stale stated hold never lands')
+    assert.equal(out.rev, undefined, 'no rev returned — nothing was written')
+    assert.equal(out.error_kind, 'bench/cas-conflict')
+    assert.equal(out.error, 'bench moved under the patch (expect_rev 58, current 69) — re-read and re-apply')
+    assert.equal(out.current_rev, 69, 'the verdict carries the CURRENT rev for the re-read')
+    // exactly ONE post, ZERO reads (numeric params carry no spell
+    // token and no wire shape, so the patch arm fires no pre-read):
+    // the stated hold never rebases
+    assert.equal(seen.filter((s) => s.lane === 'benchVerb').length, 1)
+    assert.equal(seen.filter((s) => s.lane === 'benchGet').length, 0)
+  })
+
+  // THE STATED-HOLD LAW, spelled out (a stated STRING-carrying patch
+  // pre-reads its card — the pre-read is NOT a rebase): the stale
+  // hold still refuses after its own pre-read, with NO second re-read
+  // and NO retry.
+  test('GAPS-10, spelled: a stated string patch refuses on its own pre-read — one GET, one POST, no retry', async () => {
+    const { seen, estate } = mockEstate((lane) => {
+      if (lane === 'benchGet') return { rev: 69, stages: [{ id: 's_0', card: 'image-gen' }] }
+      throw new RemoteError('bench/cas-conflict',
+        'bench moved under the patch (expect_rev 58, current 69) — re-read and re-apply',
+        { current_rev: 69, expect_rev: 58 })
+    })
+    const tool = meliteConstruct(estate)
+    const out = await tool.execute(
+      { verb: 'patch', stage: 's_0', params: { model: 'qwen-img-edit-2511' }, expect_rev: 58 },
+      exec(),
+    ) as Record<string, unknown>
+    assert.equal(out.ok, false, 'the stale stated hold never lands')
+    assert.equal(out.current_rev, 69, 'the verdict carries the CURRENT rev for the re-read')
+    assert.equal(seen.filter((s) => s.lane === 'benchVerb').length, 1)
+    assert.equal(seen.filter((s) => s.lane === 'benchGet').length, 1,
+      'only the card pre-read — no rebase re-read')
+  })
+
   // THE ONE-RETRY REBASE (the operator's stuck-agent cure, 2026-10-09:
   // "I can't even change models in the cards — it breaks"): the tool
-  // face inherits the GUI's withRebase law. A held expect_rev goes
-  // stale the moment anything else writes the bench — the browser
-  // edits, a concurrent agent, or the caller's own prior patch whose
-  // new rev it never folded. On the door's cas-conflict the tool
-  // re-reads the fresh rev and re-applies ONCE; the agent's model
-  // switch lands instead of stranding on a stale hold.
-  test('THE REBASE: a stale expect_rev re-reads the fresh rev and re-applies once — the model switch lands', async () => {
+  // face inherits the GUI's withRebase law for the rev the TOOL
+  // filled. An OMITTED expect_rev is no assertion — the fill-read's
+  // rev can race a concurrent write, and one bounded re-read +
+  // re-apply lands the agent's model switch instead of stranding on
+  // a race it never authored. A STATED hold never takes this path
+  // (the GAPS-10 wall above).
+  test('THE REBASE: an OMITTED expect_rev re-reads the fresh rev and re-applies once — the model switch lands', async () => {
     let posts = 0
     const { seen, estate } = mockEstate((lane, args) => {
       const b = (lane === 'benchVerb' ? args[2] : args[0]) as Record<string, unknown>
       if (lane === 'benchGet') return { rev: 23, stages: [] }
       posts += 1
       if (posts === 1) {
-        // the door's verdict: the bench moved under the caller's hold
+        // the door's verdict: the bench moved under the fill's rev
         throw new RemoteError('bench/cas-conflict',
           'bench main moved: rev is 23, caller held 21', { current_rev: 23, expect_rev: 21 })
       }
@@ -686,16 +836,16 @@ describe('melite_construct refusals — the CAS voice', () => {
     })
     const tool = meliteConstruct(estate)
     const out = await tool.execute(
-      { verb: 'patch', stage: 's_0', params: { model: 'qwen-img-edit-2511' }, expect_rev: 21 },
+      { verb: 'patch', stage: 's_0', params: { model: 'qwen-img-edit-2511' } },
       exec(),
     ) as Record<string, unknown>
     assert.equal(out.verb, 'patch')
     assert.equal(out.rev, 24)
     assert.equal(out.stage, 's_0')
     // the sequence: the craft pre-read (slice 6 — a string-bearing
-    // patch must learn the stage's card before its law can apply), the
-    // refused POST (stale 21), the fresh GET, the landing POST (23) —
-    // one retry, no loops
+    // patch must learn the stage's card before its law can apply; it
+    // doubles as the auto-rev fill), the refused POST, the fresh GET,
+    // the landing POST (23) — one retry, no loops
     assert.deepEqual(seen.map((s) => s.lane), [
       'benchGet',
       'benchVerb',
@@ -712,12 +862,16 @@ describe('melite_construct refusals — the CAS voice', () => {
     })
     const tool = meliteConstruct(estate)
     const out = await tool.execute(
-      { verb: 'patch', stage: 's_0', params: {}, expect_rev: 21 },
+      { verb: 'patch', stage: 's_0', params: { model: 'qwen-img-edit-2511' } },
       exec(),
     ) as Record<string, unknown>
     assert.equal(out.ok, false)
     assert.equal(out.error_kind, 'bench/cas-conflict')
-    // TWO posts only: the stale attempt + the single re-applied retry
+    // the string params pre-read BOTH the auto-rev fill (caller's own
+    // land) and the card — hence full sequence GET,POST,GET,POST
+    assert.deepEqual(seen.map((s) => s.lane), ['benchGet', 'benchVerb', 'benchGet', 'benchVerb'])
+    // TWO posts only: the raced fill attempt + the single re-applied
+    // retry — then the verdict surfaces
     assert.equal(seen.filter((s) => s.lane === 'benchVerb').length, 2)
   })
 
@@ -752,14 +906,14 @@ describe('melite_construct refusals — the CAS voice', () => {
     })
     const tool = meliteConstruct(estate)
     const out = await tool.execute(
-      { verb: 'patch', stage: 's_0', params: {}, expect_rev: 21 },
+      { verb: 'patch', stage: 's_0', params: {} },
       exec(),
     ) as Record<string, unknown>
     assert.equal(out.ok, false)
     assert.equal(out.error_kind, 'bench/cas-conflict')
     assert.equal(out.error, 'bench main moved: rev is 23, caller held 21')
-    // the stale POST, the revless GET — and no second POST
-    assert.deepEqual(seen.map((s) => s.lane), ['benchVerb', 'benchGet'])
+    // the fill GET, the POST, the revless re-read GET — and no second POST
+    assert.deepEqual(seen.map((s) => s.lane), ['benchGet', 'benchVerb', 'benchGet'])
   })
 
   test('a non-numeric rev carries none', async () => {
@@ -1006,8 +1160,8 @@ describe('melite_construct — THE INTERFACE LAW (the agent-mode breakdown, 2026
     assert.ok(tool.description.includes("runs start at the user's Run press, never yours"), tool.description)
   })
 
-  test('the headless face keeps the delegated-operator phrasing', async () => {
-    const tool = meliteConstruct(stubEstate(), { headless: true })
+  test('the delegated face keeps the delegated-operator phrasing', async () => {
+    const tool = meliteConstruct(stubEstate(), { delegated: true })
     assert.ok(tool.description.includes('melite_flow runs what is here'), tool.description)
   })
 })
@@ -1017,7 +1171,7 @@ describe('melite_construct read — last_run (the lookup the agent cannot do its
   // runs), so the bench's draft_id joins to the runs list
   // server-side — the read annotates, the agent never hunts.
   const BENCH = {
-    session: 'main', rev: 2, intent: 'bench', draft_id: 'bench-main',
+    session: 'session-chat7', rev: 2, intent: 'bench', draft_id: 'bench-main',
     stages: [{ id: 's_0', card: 'image-gen' }, { id: 's_1', card: 'image-edit' }],
     log: [],
   }
@@ -1032,7 +1186,7 @@ describe('melite_construct read — last_run (the lookup the agent cannot do its
 
   test('each stage carries the NEWEST run that names it; foreign drafts never leak', async () => {
     const { estate } = mockEstate((lane, args) => {
-      if (lane === 'benchGet' && args[0] === 'main') return BENCH
+      if (lane === 'benchGet' && args[0] === 'session-chat7') return BENCH
       if (lane === 'runsList' && args[0] === '100') return RUNS
       throw new Error('unmocked lane ' + lane)
     })
@@ -1053,7 +1207,7 @@ describe('melite_construct read — last_run (the lookup the agent cannot do its
     // produced a PNG. Membership in the run's stage_ids digest is
     // now the only ticket to a stamp.
     const seen = mockEstate((lane, args) => {
-      if (lane === 'benchGet' && args[0] === 'main') return BENCH
+      if (lane === 'benchGet' && args[0] === 'session-chat7') return BENCH
       if (lane === 'runsList' && args[0] === '100') return {
         count: 1,
         runs: [
@@ -1070,7 +1224,7 @@ describe('melite_construct read — last_run (the lookup the agent cannot do its
 
   test('a run with no stage_ids digest (pre-fix sidecar) stamps nothing — unknown membership is no stamp', async () => {
     const seen = mockEstate((lane, args) => {
-      if (lane === 'benchGet' && args[0] === 'main') return BENCH
+      if (lane === 'benchGet' && args[0] === 'session-chat7') return BENCH
       if (lane === 'runsList' && args[0] === '100') return {
         count: 1,
         runs: [
@@ -1092,7 +1246,7 @@ describe('melite_construct read — last_run (the lookup the agent cannot do its
     // An id-less stage row is an object (past the malformed guard) but
     // names nothing, so even the newest matching run stamps nothing.
     const { estate } = mockEstate((lane, args) => {
-      if (lane === 'benchGet' && args[0] === 'main') return { ...BENCH, stages: [{ card: 'image-gen' }] }
+      if (lane === 'benchGet' && args[0] === 'session-chat7') return { ...BENCH, stages: [{ card: 'image-gen' }] }
       if (lane === 'runsList' && args[0] === '100') return RUNS
       throw new Error('unmocked lane ' + lane)
     })
@@ -1104,7 +1258,7 @@ describe('melite_construct read — last_run (the lookup the agent cannot do its
 
   test('a failed runs call degrades to verbatim stages with NO runs key — lookup-failed stays distinct', async () => {
     const { estate } = mockEstate((lane, args) => {
-      if (lane === 'benchGet' && args[0] === 'main') return BENCH
+      if (lane === 'benchGet' && args[0] === 'session-chat7') return BENCH
       throw new Error('runs seat down')
     })
     const out = await meliteConstruct(estate).execute({ verb: 'read' }, exec()) as Record<string, unknown>
@@ -1115,7 +1269,7 @@ describe('melite_construct read — last_run (the lookup the agent cannot do its
 
   test('no draft match — explicit null + window facts (never-ran vs window-miss reads off the totals)', async () => {
     const norun = mockEstate((lane, args) => {
-      if (lane === 'benchGet' && args[0] === 'main') return BENCH
+      if (lane === 'benchGet' && args[0] === 'session-chat7') return BENCH
       if (lane === 'runsList' && args[0] === '100') return { count: 1372, runs: [RUNS.runs[2]] }
       throw new Error('unmocked lane ' + lane)
     })
@@ -1126,7 +1280,7 @@ describe('melite_construct read — last_run (the lookup the agent cannot do its
     // total >> checked: the agent can see the window may have missed.
     assert.deepEqual(out.runs, { checked: 1, total: 1372, matched: 0 })
     const nodraft = mockEstate((lane, args) => {
-      if (lane === 'benchGet' && args[0] === 'main') return ROW
+      if (lane === 'benchGet' && args[0] === 'session-chat7') return ROW
       throw new Error('unmocked lane ' + lane)
     })
     const out2 = await meliteConstruct(nodraft.estate).execute({ verb: 'read' }, exec()) as Record<string, unknown>
@@ -1135,7 +1289,7 @@ describe('melite_construct read — last_run (the lookup the agent cannot do its
 
   test('a hit carries the window facts too', async () => {
     const { estate } = mockEstate((lane, args) => {
-      if (lane === 'benchGet' && args[0] === 'main') return BENCH
+      if (lane === 'benchGet' && args[0] === 'session-chat7') return BENCH
       if (lane === 'runsList' && args[0] === '100') return { count: 3, runs: RUNS.runs }
       throw new Error('unmocked lane ' + lane)
     })
@@ -1166,9 +1320,9 @@ describe('melite_construct projectStages — card rides (the phantom-refusal cur
 
   test('validate forwards card in flow_inline — derivation can fire', async () => {
     const { estate, seen } = mockEstate((lane, args) => {
-      if (lane === 'benchGet' && args[0] === 'main') {
+      if (lane === 'benchGet' && args[0] === 'session-chat7') {
         return {
-          session: 'main', rev: 1, intent: 'bench',
+          session: 'session-chat7', rev: 1, intent: 'bench',
           stages: [{
             id: 's_1', card: 'image-edit', engine: 'comfyui',
             params: { image1: '$image1', prompt: 'suit' },
@@ -1195,7 +1349,7 @@ describe('melite_construct add_stage — expected/outputs ride (the load workaro
   test('stated expected/outputs forward verbatim', async () => {
     const { seen, estate } = mockEstate((lane, args) => {
       if (lane === 'benchVerb' && args[1] === 'add_stage') return { rev: 7, stage: 's2' }
-      if (lane === 'benchGet') return { session: 'main', rev: 7, intent: '', stages: [{ id: 's2' }], log: [] }
+      if (lane === 'benchGet') return { session: 'session-chat7', rev: 7, intent: '', stages: [{ id: 's2' }], log: [] }
       if (lane === 'runsValidate') return { ok: true }
       throw new Error('unmocked lane ' + lane)
     })
@@ -1209,7 +1363,9 @@ describe('melite_construct add_stage — expected/outputs ride (the load workaro
       exec(),
     ) as Record<string, unknown>
     assert.equal(out.stage, 's2')
-    assert.deepEqual(seen[0]!.args[2], {
+    const add = seen.find((r) => r.lane === 'benchVerb' && r.args[1] === 'add_stage')
+    assert.ok(add, 'the add_stage write fired')
+    assert.deepEqual(add!.args[2], {
       card: 'c', params: { p: 1 }, inputs: { x: { stage: 's_0', output: 'default' } },
       expected: { x: 'image' }, outputs: { default: 'image' }, expect_rev: 6,
     })
@@ -1238,7 +1394,12 @@ describe('melite_construct add_stage — expected/outputs ride (the load workaro
 // unwrap runs BEFORE any request: the bench stores clean.
 describe('melite_construct execute — the array wire guard', () => {
   test('THE RECEIPT: add_stage params carrying {item:[…]} POST unwrapped', async () => {
-    const { seen, estate } = mockEstate(() => ({}))
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet') return { session: 'session-chat7', rev: 3, intent: '', stages: [], log: [] }
+      if (lane === 'runsValidate') return { ok: true }
+      if (lane === 'benchVerb') return {}
+      return {}
+    })
     const tool = meliteConstruct(estate)
     const r = (await tool.execute(
       {
@@ -1259,7 +1420,10 @@ describe('melite_construct execute — the array wire guard', () => {
   })
 
   test('load stages[].params unwrap at depth; the "" arm stays for the card seat', async () => {
-    const { seen, estate } = mockEstate(() => ({ rev: 5, stages: [] }))
+    const { seen, estate } = mockEstate((lane) => {
+      if (lane === 'runsValidate') return { ok: true }
+      return { rev: 5, stages: [] }
+    })
     const tool = meliteConstruct(estate)
     await tool.execute(
       {
@@ -1275,7 +1439,11 @@ describe('melite_construct execute — the array wire guard', () => {
   })
 
   test('FROZEN wire args never throw and still unwrap (the 035 freeze receipt: Cannot assign to read only property params)', async () => {
-    const { seen, estate } = mockEstate(() => ({}))
+    const { seen, estate } = mockEstate((lane) => {
+      if (lane === 'benchGet') return { session: 'session-chat7', rev: 1, intent: '', stages: [], log: [] }
+      if (lane === 'runsValidate') return { ok: true }
+      return {}
+    })
     const tool = meliteConstruct(estate)
     // the wire may deliver the args object read-only — the rebind
     // law walks a copy and never writes to the caller's object
@@ -1288,7 +1456,11 @@ describe('melite_construct execute — the array wire guard', () => {
   })
 
   test('a genuine object with an item key never unwraps (two keys = not the wire shape)', async () => {
-    const { seen, estate } = mockEstate(() => ({}))
+    const { seen, estate } = mockEstate((lane) => {
+      if (lane === 'benchGet') return { session: 'session-chat7', rev: 1, intent: '', stages: [], log: [] }
+      if (lane === 'runsValidate') return { ok: true }
+      return {}
+    })
     const tool = meliteConstruct(estate)
     await tool.execute(
       { verb: 'add_stage', card: 'c', expect_rev: 1, params: { meta: { item: 'label', x: 1 } } },
@@ -1305,8 +1477,9 @@ describe('melite_construct execute — the array wire guard', () => {
 describe("add_stage — the empty-stage drop (035 attempt-14 Probe-A strand)", () => {
   test("a shared-schema stage:'' rides dropped (never the full refusal)", async () => {
     const seen = mockEstate((lane, args) => {
-      if (lane === 'benchGet' && args[0] === 'main') return { rev: 1, stages: [] }
+      if (lane === 'benchGet' && args[0] === 'session-chat7') return { rev: 1, stages: [] }
       if (lane === 'benchVerb' && args[1] === 'add_stage') return { rev: 2, stage: 's_0' }
+      if (lane === 'runsValidate') return { ok: true }
       return undefined
     })
     const tool = meliteConstruct(seen.estate)
@@ -1326,7 +1499,7 @@ describe("add_stage — the empty-stage drop (035 attempt-14 Probe-A strand)", (
 describe("read — the params summary (035 attempt-15 gap #3)", () => {
   test("stage rows carry model + array shapes for probe verification", async () => {
     const seen = mockEstate((lane, args) => {
-      if (lane === 'benchGet' && args[0] === 'main') {
+      if (lane === 'benchGet' && args[0] === 'session-chat7') {
         return {
           rev: 2, draft_id: 'd1',
           stages: [{ id: 's_0', card: 'h3-timeline', engine: 'comfyui', params: { model: 'h3', ref_images: ['/a.png', '/b.png'], prompt: 'x' } }],
@@ -1346,7 +1519,7 @@ describe("read — the params summary (035 attempt-15 gap #3)", () => {
 describe("read — the params summary guard paths", () => {
   test("a wrapped {item} array is named 'wrapped{item}' (the Probe-B receipt shape)", async () => {
     const seen = mockEstate((lane, args) => {
-      if (lane === 'benchGet' && args[0] === 'main') {
+      if (lane === 'benchGet' && args[0] === 'session-chat7') {
         return {
           rev: 2, draft_id: 'd1',
           stages: [{ id: 's_0', card: 'h3', params: { ref_images: { item: ['/a.png'] } } }],
@@ -1365,14 +1538,14 @@ describe("read — the params summary guard paths", () => {
 describe('read enrichment defensive paths', () => {
   test('empty stages and absent draft ids skip the run lookup', async () => {
     const seen = mockEstate((lane, args) => {
-      if (lane === 'benchGet' && args[0] === 'main') return { rev: 1, stages: [] }
+      if (lane === 'benchGet' && args[0] === 'session-chat7') return { rev: 1, stages: [] }
       throw new Error('unexpected lane ' + lane)
     })
     const out = await meliteConstruct(seen.estate).execute({ verb: 'read' }, exec()) as Record<string, unknown>
     assert.deepEqual(out.stages, [])
     assert.equal(seen.seen.length, 1)
     const second = mockEstate((lane, args) => {
-      if (lane === 'benchGet' && args[0] === 'main') return { rev: 1, draft_id: '', stages: [{ id: 's' }] }
+      if (lane === 'benchGet' && args[0] === 'session-chat7') return { rev: 1, draft_id: '', stages: [{ id: 's' }] }
       throw new Error('unexpected lane ' + lane)
     })
     const out2 = await meliteConstruct(second.estate).execute({ verb: 'read' }, exec()) as Record<string, unknown>
@@ -1382,7 +1555,7 @@ describe('read enrichment defensive paths', () => {
 
   test('malformed run rows and stage rows degrade to explicit null receipts', async () => {
     const seen = mockEstate((lane, args) => {
-      if (lane === 'benchGet' && args[0] === 'main') return {
+      if (lane === 'benchGet' && args[0] === 'session-chat7') return {
         rev: 1, draft_id: 'd1', stages: [null, 'bad', { id: 's', params: { model: 'm', list: [1], wrapped: { item: [] } } }],
       }
       if (lane === 'runsList' && args[0] === '100') return {
@@ -1401,7 +1574,7 @@ describe('read enrichment defensive paths', () => {
 
   test('non-array run envelopes and nonnumeric totals use the honest fallback', async () => {
     const badRows = mockEstate((lane, args) => {
-      if (lane === 'benchGet' && args[0] === 'main') return { rev: 1, draft_id: 'd1', stages: [{ id: 's' }] }
+      if (lane === 'benchGet' && args[0] === 'session-chat7') return { rev: 1, draft_id: 'd1', stages: [{ id: 's' }] }
       if (lane === 'runsList' && args[0] === '100') return { runs: {}, count: 4 }
       throw new Error('unexpected lane ' + lane)
     })
@@ -1409,7 +1582,7 @@ describe('read enrichment defensive paths', () => {
     assert.deepEqual(out.stages, [{ id: 's' }])
     assert.equal('runs' in out, false)
     const badTotal = mockEstate((lane, args) => {
-      if (lane === 'benchGet' && args[0] === 'main') return { rev: 1, draft_id: 'd1', stages: [{ id: 's' }] }
+      if (lane === 'benchGet' && args[0] === 'session-chat7') return { rev: 1, draft_id: 'd1', stages: [{ id: 's' }] }
       if (lane === 'runsList' && args[0] === '100') return { runs: [], count: 'many' }
       throw new Error('unexpected lane ' + lane)
     })
@@ -1419,7 +1592,7 @@ describe('read enrichment defensive paths', () => {
 
   test('a no-match read preserves malformed stage rows and exercises no-match summaries', async () => {
     const seen = mockEstate((lane, args) => {
-      if (lane === 'benchGet' && args[0] === 'main') return { rev: 1, draft_id: 'd1', stages: [null, 'bad', { id: 's', params: null }] }
+      if (lane === 'benchGet' && args[0] === 'session-chat7') return { rev: 1, draft_id: 'd1', stages: [null, 'bad', { id: 's', params: null }] }
       if (lane === 'runsList' && args[0] === '100') return { runs: [{ draft_id: 'other' }], count: 1 }
       throw new Error('unexpected lane ' + lane)
     })
@@ -1429,7 +1602,7 @@ describe('read enrichment defensive paths', () => {
 
   test('the newest matching run carries export fields and skips malformed stages', async () => {
     const seen = mockEstate((lane, args) => {
-      if (lane === 'benchGet' && args[0] === 'main') return {
+      if (lane === 'benchGet' && args[0] === 'session-chat7') return {
         rev: 1, draft_id: 'd1', stages: [null, { id: 's', params: { model: 'm' } }],
       }
       if (lane === 'runsList' && args[0] === '100') return {
@@ -1472,7 +1645,7 @@ describe('construct render defensive paths', () => {
 
   test('validate accepts a non-string bench intent and supplies the fallback flow id', async () => {
     const seen = mockEstate((lane, args) => {
-      if (lane === 'benchGet' && args[0] === 'main') return { rev: 1, intent: 7, stages: [{ id: 's' }] }
+      if (lane === 'benchGet' && args[0] === 'session-chat7') return { rev: 1, intent: 7, stages: [{ id: 's' }] }
       if (lane === 'runsValidate') return { ok: true }
       throw new Error('unexpected lane ' + lane)
     })
@@ -1497,13 +1670,13 @@ describe('melite_construct presentationMeta — the native flow-link channel', (
 
   test('a read projects its bench key — the link opens the conversation flow, never main by default', async () => {
     const { estate } = mockEstate((lane, args) => {
-      if (lane === 'benchGet' && args[0] === 's_chat7') return { ...ROW, session: 's_chat7' }
+      if (lane === 'benchGet' && args[0] === 'session-chat7') return { ...ROW, session: 'session-chat7' }
       throw new Error('unmocked lane ' + lane)
     })
     const tool = meliteConstruct(estate)
-    const out = await tool.execute({ verb: 'read' }, fakeExec(AbortSignal.timeout(5000), { agent: { id: 's_chat7' } })) as Record<string, unknown>
-    assert.equal(out.bench, 's_chat7')
-    assert.deepEqual(metaOf(tool, out), { bench: 's_chat7' })
+    const out = await tool.execute({ verb: 'read' }, fakeExec(AbortSignal.timeout(5000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.bench, 'session-chat7')
+    assert.deepEqual(metaOf(tool, out), { bench: 'session-chat7' })
   })
 
   test('a mutation projects its bench key — the edited flow is the linked flow', async () => {
@@ -1516,8 +1689,8 @@ describe('melite_construct presentationMeta — the native flow-link channel', (
       { verb: 'patch', stage: 's1', params: { p: 1 }, expect_rev: 5 },
       exec(),
     ) as Record<string, unknown>
-    assert.equal(out.bench, 'main')
-    assert.deepEqual(metaOf(tool, out), { bench: 'main' })
+    assert.equal(out.bench, 'session-chat7')
+    assert.deepEqual(metaOf(tool, out), { bench: 'session-chat7' })
   })
 
   test('a refusal still projects the bench — the flow is where the operator looks next', async () => {
@@ -1534,7 +1707,7 @@ describe('melite_construct presentationMeta — the native flow-link channel', (
     ) as Record<string, unknown>
     assert.equal(out.ok, false)
     const meta = metaOf(tool, out)
-    assert.equal(meta.bench, 'main')
+    assert.equal(meta.bench, 'session-chat7')
     assert.ok(String(meta.error).includes('bench moved'), 'the error rides beside the bench')
   })
 
@@ -1546,7 +1719,7 @@ describe('melite_construct presentationMeta — the native flow-link channel', (
   test('EVERY verb projects its bench key — load, add_stage, remove_stage, clear, rewire, undo, validate', async () => {
     const { estate } = mockEstate((lane, args) => {
       const verb = args[1]
-      if (lane === 'benchGet') return { ...ROW, session: 'main' }
+      if (lane === 'benchGet') return { ...ROW, session: 'session-chat7' }
       if (lane === 'benchEnsure') return { rev: 5, stages: [] }
       if (lane === 'benchVerb') {
         if (verb === 'add_stage') return { rev: 5, stage: 's1', added: true }
@@ -1562,13 +1735,13 @@ describe('melite_construct presentationMeta — the native flow-link channel', (
     const cases: Array<[string, Record<string, unknown>, string]> = [
       // (audit-followups M1, 2026-11-06) add_stage rides the sweep too
       // — the title always named it; the cases array never did.
-      ['add_stage', { verb: 'add_stage', card: 'image-gen', expect_rev: 4 }, 'main'],
-      ['load', { verb: 'load', stages: [], intent: 'x', expect_rev: 4 }, 'main'],
-      ['remove_stage', { verb: 'remove_stage', stage: 's1', expect_rev: 7 }, 'main'],
-      ['clear', { verb: 'clear', expect_rev: 11 }, 'main'],
-      ['rewire', { verb: 'rewire', stage: 's1', input: 'in', expect_rev: 8 }, 'main'],
-      ['undo', { verb: 'undo', n: 2, expect_rev: 11 }, 'main'],
-      ['validate', { verb: 'validate' }, 'main'],
+      ['add_stage', { verb: 'add_stage', card: 'image-gen', expect_rev: 4 }, 'session-chat7'],
+      ['load', { verb: 'load', stages: [], intent: 'x', expect_rev: 4 }, 'session-chat7'],
+      ['remove_stage', { verb: 'remove_stage', stage: 's1', expect_rev: 7 }, 'session-chat7'],
+      ['clear', { verb: 'clear', expect_rev: 11 }, 'session-chat7'],
+      ['rewire', { verb: 'rewire', stage: 's1', input: 'in', expect_rev: 8 }, 'session-chat7'],
+      ['undo', { verb: 'undo', n: 2, expect_rev: 11 }, 'session-chat7'],
+      ['validate', { verb: 'validate' }, 'session-chat7'],
     ]
     for (const [name, input, bench] of cases) {
       const out = await tool.execute(input, exec()) as Record<string, unknown>
@@ -1626,8 +1799,10 @@ describe('melite_construct — THE SPELL VOICE (compose-time spell judgement)', 
   test('add_stage: the SESSION BURN shape — an unwired $spell reads request_initial and the voice teaches the two legal sources', async () => {
     const { estate } = mockEstate((lane, args) => {
       if (lane === 'benchVerb' && args[1] === 'add_stage') return ADD_ANSWER
-      // the AUTO-REV fill (rev-less mutations read once)
-      if (lane === 'benchGet') return { session: 'main', rev: 1, intent: '', stages: [], log: [] }
+      // the AUTO-REV fill (rev-less mutations read once) + the
+      // pre-mint gate's own read/compose (F14/F26)
+      if (lane === 'benchGet') return { session: 'session-chat7', rev: 1, intent: '', stages: [], log: [] }
+      if (lane === 'runsValidate') return { ok: true }
       throw new Error('unmocked lane ' + lane)
     })
     const out = await meliteConstruct(estate).execute({
@@ -1649,6 +1824,8 @@ describe('melite_construct — THE SPELL VOICE (compose-time spell judgement)', 
   test('add_stage: no spells → no spells key (payload stays lean)', async () => {
     const { estate } = mockEstate((lane, args) => {
       if (lane === 'benchVerb' && args[1] === 'add_stage') return ADD_ANSWER
+      if (lane === 'benchGet') return { session: 'session-chat7', rev: 1, intent: '', stages: [], log: [] }
+      if (lane === 'runsValidate') return { ok: true }
       throw new Error('unmocked lane ' + lane)
     })
     const out = await meliteConstruct(estate).execute({
@@ -1670,7 +1847,7 @@ describe('melite_construct — THE SPELL VOICE (compose-time spell judgement)', 
     const tool = meliteConstruct(estate)
     const out = await tool.execute({
       verb: 'patch', stage: 's_1', params: { image: '$image' },
-    }, fakeExec(AbortSignal.timeout(5000), { agent: { id: 's_chat7' } })) as Record<string, unknown>
+    }, fakeExec(AbortSignal.timeout(5000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
     const spells = out['spells'] as Array<Record<string, unknown>>
     assert.equal(spells[0]!['resolves'], 'channel')
     assert.equal(spells[0]!['via'], 's_0.png')
@@ -1684,7 +1861,7 @@ describe('melite_construct — THE SPELL VOICE (compose-time spell judgement)', 
     seen.length = 0
     const lean = await tool.execute({
       verb: 'patch', stage: 's_1', params: { prompt: 'a cat' }, expect_rev: 4,
-    }, fakeExec(AbortSignal.timeout(5000), { agent: { id: 's_chat7' } })) as Record<string, unknown>
+    }, fakeExec(AbortSignal.timeout(5000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
     assert.equal('spells' in lean, false)
     assert.equal(seen.filter((entry) => entry.lane === 'benchGet').length, 1)
 
@@ -1693,7 +1870,7 @@ describe('melite_construct — THE SPELL VOICE (compose-time spell judgement)', 
     seen.length = 0
     const filled = await tool.execute({
       verb: 'patch', stage: 's_1', params: { prompt: 'a cat' },
-    }, fakeExec(AbortSignal.timeout(5000), { agent: { id: 's_chat7' } })) as Record<string, unknown>
+    }, fakeExec(AbortSignal.timeout(5000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
     assert.equal('spells' in filled, false)
     assert.equal(seen.filter((entry) => entry.lane === 'benchGet').length, 1)
   })
@@ -1735,13 +1912,13 @@ describe('melite_construct — THE SPELL VOICE (compose-time spell judgement)', 
     assert.doesNotMatch(lean, /spell/)
   })
 
-  test('THE COMPILE VERDICT rides the wiring mutation (the worst-loop cure): a refusing gate teaches in the answer', async () => {
-    const { estate } = mockEstate((lane, args) => {
+  test('THE COMPILE VERDICT rides the wiring mutation (the worst-loop cure): a refusing gate teaches in the answer — and NO MINT lands on a refusal (F14/F26)', async () => {
+    const { seen, estate } = mockEstate((lane, args) => {
       if (lane === 'benchVerb' && args[1] === 'add_stage') return ADD_ANSWER
       if (lane === 'benchGet') return { session: 's_chat7', rev: 9, intent: '', stages: [{ id: 's_2' }], log: [] }
       if (lane === 'runsValidate') {
         // the gate's teaching refusal, verbatim as the estate throws it
-        return Promise.reject(Object.assign(new Error('flow "bench" stage "s_2": inputs/expected mismatch (wired but untyped: ["image1"]) — every input needs an expected Kind, every expected Kind needs an input — state the wire\'s kind with expected {"image1": "image"} on the stage (the closed Kind vocabulary is ["text","image","video","audio","mesh","num","lora","seg","data"]; a card whose ports declare the slot types itself — load its schema first)'), { code: 'flow/invalid' }))
+        return Promise.reject(Object.assign(new Error('flow "bench" stage "s_3": inputs/expected mismatch (wired but untyped: ["image1"]) — every input needs an expected Kind, every expected Kind needs an input — state the wire\'s kind with expected {"image1": "image"} on the stage (the closed Kind vocabulary is ["text","image","video","audio","mesh","num","lora","seg","data"]; a card whose ports declare the slot types itself — load its schema first)'), { code: 'flow/invalid' }))
       }
       throw new Error('unmocked lane ' + lane)
     })
@@ -1749,17 +1926,26 @@ describe('melite_construct — THE SPELL VOICE (compose-time spell judgement)', 
       verb: 'add_stage', card: 'image-edit',
       inputs: { image1: { stage: 's_0', output: 'default' } },
     }, exec()) as Record<string, unknown>
-    // the write LANDED (stage minted) and the verdict rides the answer
-    assert.equal(out.stage, 's_2')
-    assert.equal(out.compile_ok, false)
-    assert.match(String(out.compile_error), /wired but untyped/)
-    assert.match(String(out.compile_error), /"image1": "image"/)
-    assert.match(String(out.compile_error), /lora/)
-    // THE RENDER prints it — the model-facing law
+    // THE GHOST-STAGE LAW (F14/F26): the refusal answers BEFORE the
+    // write — the stage was never minted, nothing landed, nothing to
+    // undo. The teaching refusal rides the answer verbatim.
+    assert.equal(out.ok, false, 'the gate refused — a value, never a failed mutation')
+    assert.equal(out.error_kind, 'compile-refused')
+    assert.match(String(out.error), /wired but untyped/)
+    assert.match(String(out.error), /"image1": "image"/)
+    assert.match(String(out.error), /lora/)
+    assert.equal(out.stage, undefined, 'no stage was minted on a refused compose')
+    assert.equal(out.rev, undefined, 'no rev moved — the bench was never written')
+    assert.equal(out.landing, undefined, 'nothing landed — the landing vocabulary never fires on a refusal')
+    assert.equal(seen.some((r) => r.lane === 'benchVerb'), false, 'THE MINT NEVER FIRED — the door was never called')
+    // THE RENDER prints a landed write's refusing verdict (the rebase
+    // path can still land non-compiling — the post-mint verdict's own
+    // arm pins that voice below); here the render face over the
+    // landed shape.
     const tool = meliteConstruct(estate)
     const parts = tool.output.render(
       { verb: 'add_stage', card: 'image-edit' },
-      { verb: 'add_stage', bench: 's_chat7', ok: true, rev: 9, stage: 's_2', compile_ok: false, compile_error: String(out.compile_error) } as never,
+      { verb: 'add_stage', bench: 's_chat7', ok: true, rev: 9, stage: 's_2', compile_ok: false, compile_error: String(out.error) } as never,
     ) as Array<{ text?: string }>
     const text = parts.map((p) => p?.text ?? '').join('\n')
     assert.match(text, /COMPILE REFUSED/)
@@ -1800,14 +1986,22 @@ describe('melite_construct — THE SPELL VOICE (compose-time spell judgement)', 
 // judges the live derivation, never a frozen literal: a card that
 // moves its floor moves this wall's expectation source with it.
 describe('melite_construct — floor (the declared-minimum resolution clamp)', () => {
-  const benchOf = (stages: unknown[]): Record<string, unknown> => ({ session: 'main', rev: 7, stages })
+  // THE ONE-WRITE WALK (the U5 residual's cure): the walk plans every
+  // stage's floors, then lands the WHOLE plan through one benchEnsure
+  // (the ensure/load door: CAS + the admission seat judge the entire
+  // replacement before anything stores) — a refusal anywhere leaves
+  // the bench byte-identical. The door-level atomicity arm lives
+  // estate-side (drafts/tests/bench-floor-atomicity.spec.ts, row
+  // flows-floor-walk-atomicity); THESE arms pin the clamp semantics
+  // at the tool seam.
+  const benchOf = (stages: unknown[]): Record<string, unknown> => ({ session: 'session-chat7', rev: 7, stages })
 
   test('clamps above-floor resolution params to the card-declared minimum, voicing every write', async () => {
     const { seen, estate } = mockEstate((lane, args) => {
       if (lane === 'benchGet') {
         return benchOf([{ id: 's_0', card: 'image-gen', params: { model: 'qwen-img-21', width: 2048, height: 1024 } }])
       }
-      if (lane === 'benchVerb' && args[1] === 'patch') return { rev: 8, stage: 's_0', patched: ['width', 'height'] }
+      if (lane === 'benchEnsure') return { rev: 8, session: 'session-chat7', stages: [] }
       throw new Error('unmocked lane ' + lane)
     })
     const out = await meliteConstruct(estate).execute({ verb: 'floor' }, exec()) as Record<string, unknown>
@@ -1821,12 +2015,16 @@ describe('melite_construct — floor (the declared-minimum resolution clamp)', (
     assert.equal(width!['to'], 256)
     assert.ok(height, 'height is voiced')
     assert.equal(height!['to'], 256)
-    // THE WIRE: the clamp rides the patch verb's own CAS door
-    const patch = seen.find((r) => r.lane === 'benchVerb' && r.args[1] === 'patch')
-    assert.ok(patch, 'the floor wrote through patch')
-    const doc = patch!.args[2] as Record<string, unknown>
-    assert.deepEqual(doc['params'], { width: 256, height: 256 })
+    // THE WIRE: the whole plan lands through ONE whole-bench write —
+    // the ensure door's load arm, CAS-held on the read rev.
+    const write = seen.find((r) => r.lane === 'benchEnsure')
+    assert.ok(write, 'the floor wrote through the ensure door')
+    const doc = write!.args[0] as Record<string, unknown>
+    assert.equal(doc['overwrite'], true, 'the non-empty bench rides the overwrite gate under CAS')
     assert.equal(doc['expect_rev'], 7, 'the read rev rides the write (CAS)')
+    const posted = doc['stages'] as Array<Record<string, unknown>>
+    assert.equal(posted.length, 1)
+    assert.deepEqual(posted[0]!['params'], { model: 'qwen-img-21', width: 256, height: 256 })
     assert.equal(out['rev'], 8)
   })
 
@@ -1835,17 +2033,18 @@ describe('melite_construct — floor (the declared-minimum resolution clamp)', (
       if (lane === 'benchGet') {
         return benchOf([{ id: 's_0', card: 'image-gen', params: { model: 'qwen-img-21', prompt: 'x' } }])
       }
-      if (lane === 'benchVerb' && args[1] === 'patch') return { rev: 9, stage: 's_0', patched: ['width', 'height'] }
+      if (lane === 'benchEnsure') return { rev: 9, session: 'session-chat7', stages: [] }
       throw new Error('unmocked lane ' + lane)
     })
     const out = await meliteConstruct(estate).execute({ verb: 'floor' }, exec()) as Record<string, unknown>
-    const doc = (seen.find((r) => r.lane === 'benchVerb' && r.args[1] === 'patch'))!.args[2] as Record<string, unknown>
-    assert.deepEqual(doc['params'], { width: 256, height: 256 })
+    const doc = (seen.find((r) => r.lane === 'benchEnsure'))!.args[0] as Record<string, unknown>
+    const posted = doc['stages'] as Array<Record<string, unknown>>
+    assert.deepEqual(posted[0]!['params'], { model: 'qwen-img-21', prompt: 'x', width: 256, height: 256 })
     const floored = ((out['stages'] as Array<Record<string, unknown>>)[0]!['floored']) as Array<Record<string, unknown>>
     assert.equal(floored.find((f) => f['param'] === 'width')!['from'], '(default)')
   })
 
-  test('at-or-below params are untouched (idempotent) and a stage can be targeted alone', async () => {
+  test('at-or-below params ride untouched and a stage can be targeted alone — the replacement carries the rest verbatim', async () => {
     const { seen, estate } = mockEstate((lane, args) => {
       if (lane === 'benchGet') {
         return benchOf([
@@ -1853,18 +2052,23 @@ describe('melite_construct — floor (the declared-minimum resolution clamp)', (
           { id: 's_1', card: 'image-gen', params: { model: 'qwen-img-21', width: 512, height: 512 } },
         ])
       }
-      if (lane === 'benchVerb' && args[1] === 'patch') return { rev: 10, stage: 's_1', patched: ['width', 'height'] }
+      if (lane === 'benchEnsure') return { rev: 10, session: 'session-chat7', stages: [] }
       throw new Error('unmocked lane ' + lane)
     })
     const out = await meliteConstruct(estate).execute({ verb: 'floor', stage: 's_1' }, exec()) as Record<string, unknown>
     const rows = out['stages'] as Array<Record<string, unknown>>
-    assert.equal(rows.length, 1, 'the named stage is the only target')
+    assert.equal(rows.length, 1, 'the named stage is the only voiced target')
     assert.equal(rows[0]!['stage'], 's_1')
-    const patches = seen.filter((r) => r.lane === 'benchVerb' && r.args[1] === 'patch')
-    assert.equal(patches.length, 1, 'the already-minimal s_0 never wrote')
+    const writes = seen.filter((r) => r.lane === 'benchEnsure')
+    assert.equal(writes.length, 1, 'the whole walk is one write')
+    const posted = (writes[0]!.args[0] as Record<string, unknown>)['stages'] as Array<Record<string, unknown>>
+    assert.equal(posted.length, 2, 'every row re-lands — the replacement is the whole bench')
+    assert.deepEqual(posted[0], { id: 's_0', card: 'image-gen', params: { model: 'qwen-img-21', width: 256, height: 256 } },
+      'the already-minimal s_0 rides verbatim')
+    assert.equal((posted[1]!['params'] as Record<string, unknown>)['width'], 256)
   })
 
-  test('a card with no resolution group (or an unknown card) says so honestly — never a silent no-op patch', async () => {
+  test('a card with no resolution group (or an unknown card) says so honestly — never a silent no-op write', async () => {
     const { seen, estate } = mockEstate((lane, args) => {
       if (lane === 'benchGet') return benchOf([{ id: 's_0', card: 'no-such-card', params: { width: 4096 } }])
       throw new Error('unmocked lane ' + lane)
@@ -1874,7 +2078,20 @@ describe('melite_construct — floor (the declared-minimum resolution clamp)', (
     assert.equal(rows.length, 1)
     assert.deepEqual(rows[0]!['floored'], [])
     assert.match(String(rows[0]!['note']), /no resolution group/)
-    assert.ok(!seen.some((r) => r.lane === 'benchVerb'), 'nothing written for a floorless card')
+    assert.ok(!seen.some((r) => r.lane === 'benchEnsure'), 'nothing written for a floorless card')
+  })
+
+  test('an already-minimal bench writes nothing — the no-op keeps its rev and its log', async () => {
+    const { seen, estate } = mockEstate((lane) => {
+      if (lane === 'benchGet') {
+        return benchOf([{ id: 's_0', card: 'image-gen', params: { model: 'qwen-img-21', width: 256, height: 256 } }])
+      }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const out = await meliteConstruct(estate).execute({ verb: 'floor' }, exec()) as Record<string, unknown>
+    assert.equal(out['rev'], 7, 'the read rev rides unchanged')
+    assert.match(String(out['note']), /nothing to write/)
+    assert.ok(!seen.some((r) => r.lane === 'benchEnsure'), 'an already-minimal bench never writes')
   })
 
   test('a named stage that is not on the bench refuses by name', async () => {
@@ -1902,7 +2119,7 @@ describe('melite_construct — session 7a82 autopsy laws (P3 + P5, 2026-11-12)',
     const { estate } = mockEstate((lane, args) => {
       if (lane === 'benchVerb' && args[1] === 'patch') return { rev: 12, stage: 's1', patched: ['steps'], stale: true }
       if (lane === 'benchGet') {
-        return { session: 'main', rev: 12, intent: '', stages: [
+        return { session: 'session-chat7', rev: 12, intent: '', stages: [
           { id: 's1', card: 'image-gen', params: { model: 'krea-2', steps: 25 } },
         ], log: [] }
       }
@@ -1943,7 +2160,7 @@ describe('melite_construct — session 7a82 autopsy laws (P3 + P5, 2026-11-12)',
 
   test('P5 (slice 5): a call with no verb is refused by the SCHEMA gate — a payload never derives a verb, and a bare call is not exempt', async () => {
     const { seen, estate } = mockEstate((lane) => {
-      if (lane === 'benchGet') return { session: 'main', rev: 3, intent: '', stages: [], log: [] }
+      if (lane === 'benchGet') return { session: 'session-chat7', rev: 3, intent: '', stages: [], log: [] }
       throw new Error('unmocked lane ' + lane)
     })
     const tool = meliteConstruct(estate)
@@ -1972,7 +2189,7 @@ describe('melite_construct — slice 6 (the card-owned craft preprocessor)', () 
     const { seen, estate } = mockEstate((lane, args) => {
       if (lane === 'benchVerb' && args[1] === 'add_stage') return { rev: 4, stage: 's_0' }
       if (lane === 'benchGet') {
-        return { session: 'main', rev: 4, intent: '', log: [], stages: [{ id: 's_0', card: 'image-gen', params: { model: 'anima:base:fp8', prompt: '1girl, long hair, smile' } }] }
+        return { session: 'session-chat7', rev: 4, intent: '', log: [], stages: [{ id: 's_0', card: 'image-gen', params: { model: 'anima:base:fp8', prompt: '1girl, long hair, smile' } }] }
       }
       if (lane === 'runsValidate') return { ok: true }
       throw new Error('unmocked lane ' + lane)
@@ -1996,7 +2213,7 @@ describe('melite_construct — slice 6 (the card-owned craft preprocessor)', () 
   test('the prose looks collapse whitespace and never touch a legal prompt', async () => {
     const { seen, estate } = mockEstate((lane, args) => {
       if (lane === 'benchVerb' && args[1] === 'add_stage') return { rev: 4, stage: 's_0' }
-      if (lane === 'benchGet') return { session: 'main', rev: 4, intent: '', log: [], stages: [] }
+      if (lane === 'benchGet') return { session: 'session-chat7', rev: 4, intent: '', log: [], stages: [] }
       if (lane === 'runsValidate') return { ok: true }
       throw new Error('unmocked lane ' + lane)
     })
@@ -2017,7 +2234,7 @@ describe('melite_construct — slice 5 (first-door wire grammar + landing states
     const { seen, estate } = mockEstate((lane, args) => {
       if (lane === 'benchVerb' && args[1] === 'add_stage') return { rev: 8, stage: 's_0' }
       if (lane === 'benchGet') {
-        return { session: 'main', rev: 8, intent: '', log: [], stages: [{ id: 's_0', card: 'h3-timeline', params: { ref_images: ['$ref_images'] } }] }
+        return { session: 'session-chat7', rev: 8, intent: '', log: [], stages: [{ id: 's_0', card: 'h3-timeline', params: { ref_images: ['$ref_images'] } }] }
       }
       if (lane === 'runsValidate') return { ok: true }
       throw new Error('unmocked lane ' + lane)
@@ -2044,7 +2261,7 @@ describe('melite_construct — slice 5 (first-door wire grammar + landing states
     const { seen, estate } = mockEstate((lane, args) => {
       if (lane === 'benchVerb' && args[1] === 'patch') return { rev: 9, stage: 's_1', patched: ['ref_images'], stale: true }
       if (lane === 'benchGet') {
-        return { session: 'main', rev: 9, intent: '', log: [], stages: [{ id: 's_1', card: 'h3-timeline', params: { ref_images: ['$ref_images'] } }] }
+        return { session: 'session-chat7', rev: 9, intent: '', log: [], stages: [{ id: 's_1', card: 'h3-timeline', params: { ref_images: ['$ref_images'] } }] }
       }
       if (lane === 'runsValidate') return { ok: true }
       throw new Error('unmocked lane ' + lane)
@@ -2057,6 +2274,88 @@ describe('melite_construct — slice 5 (first-door wire grammar + landing states
     assert.deepEqual(params['ref_images'], ['$ref_images'])
     assert.equal((out['applied_derivations'] as Array<Record<string, unknown>>)[0]!['rule'], 'spell-to-array')
     assert.equal(out['landing'], 'landed_and_compiling')
+  })
+
+  // ── THE EXPECTED-KIND CURE (friction F32, 2026-11-03): the
+  // h3-timeline card doc DOCUMENTS wiring soundtrack producers as
+  // custom stage inputs with hand-written expected kinds
+  // ({"line1": "audio"}), and the run layer's $spell resolution
+  // supports exactly that — but this door's port check refused the
+  // card's own documented shape. A custom lane with a declared
+  // expected kind is lawful (the kind pass judges it by its kind);
+  // without one the refusal stays (the text-only class).
+  test('F32: a custom lane with a declared expected kind LANDS (the card doc\'s own documented $spell shape)', async () => {
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet') {
+        return { session: 'session-chat7', rev: 8, intent: '', log: [], stages: [{ id: 's_0', card: 'tts', params: {} }] }
+      }
+      if (lane === 'runsValidate') return { ok: true }
+      if (lane === 'benchVerb' && args[1] === 'add_stage') return { rev: 9, stage: 's_1' }
+      throw new Error('unmocked lane ' + lane + ' ' + JSON.stringify(args).slice(0, 80))
+    })
+    const out = await meliteConstruct(estate).execute({
+      verb: 'add_stage', card: 'h3-timeline',
+      params: { model: 'minimax-h3', prompt: 'the figure turns', audio_clips: [{ id: 'l1', name: 'line', src: '$line1', start_frame: 0, dur_frames: 22, class: 'dialogue', text: 'you came back' }] },
+      inputs: { line1: { stage: 's_0', output: 'default' } },
+      expected: { line1: 'audio' },
+    }, exec()) as Record<string, unknown>
+    assert.equal(out['ok'], true, 'the documented wire lands — never the unknown-lane refusal: ' + String(out['error']))
+    const write = seen.find((r) => r.lane === 'benchVerb' && r.args[1] === 'add_stage')
+    const written = (write!.args[2] as Record<string, unknown>)['expected'] as Record<string, unknown>
+    assert.deepEqual(written, { line1: 'audio' }, 'the expected-kind declaration rides the write')
+  })
+
+  test('F32: a custom lane with NO expected kind still refuses, and the refusal names the cure', async () => {
+    const { estate } = mockEstate((lane) => { throw new Error('unmocked lane ' + lane) })
+    const out = await meliteConstruct(estate).execute({
+      verb: 'add_stage', card: 'h3-timeline',
+      params: { model: 'minimax-h3', prompt: 'x' },
+      inputs: { line1: { stage: 's_0', output: 'default' } },
+    }, exec()) as Record<string, unknown>
+    assert.equal(out['ok'], false)
+    assert.equal(out['error_kind'], 'unknown-lane')
+    assert.match(String(out['error']), /"line1" is not a port of card "h3-timeline"/)
+    assert.match(String(out['error']), /declare the lane's expected kind/, 'the refusal teaches the documented shape')
+  })
+
+  test('F32: a load carrying the expected map on the row lands its custom lanes (the row is the declaration\'s home)', async () => {
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet') return ROW
+      if (lane === 'runsValidate') return { ok: true }
+      if (lane === 'benchEnsure') return { rev: 5 }
+      if (lane === 'benchVerb' && args[1] === 'load') return { rev: 5 }
+      throw new Error('unmocked lane ' + lane + ' ' + JSON.stringify(args).slice(0, 80))
+    })
+    const out = await meliteConstruct(estate).execute({
+      verb: 'load', intent: 'the gauntlet film',
+      stages: [{ card: 'h3-timeline', params: { model: 'minimax-h3', prompt: 'x', audio_clips: [{ id: 'l1', name: 'line', src: '$line1', start_frame: 0, dur_frames: 22 }] }, inputs: { line1: { stage: 's_0', output: 'default' } }, expected: { line1: 'audio' } }],
+    }, exec()) as Record<string, unknown>
+    assert.equal(out['ok'], true, 'the load lands: ' + String(out['error']))
+    const ensure = seen.find((r) => r.lane === 'benchEnsure')
+    const row = ((ensure!.args[0] as Record<string, unknown>)['stages'] as Array<Record<string, unknown>>)[0]!
+    assert.deepEqual(row['expected'], { line1: 'audio' }, 'the expected-kind declaration rides the bench doc')
+  })
+
+  test('F32: a rewire of a lawfully-declared custom lane lands (the bench row\'s expected is the declaration)', async () => {
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet') {
+        return {
+          session: 'session-chat7', rev: 9, intent: '', log: [],
+          stages: [
+            { id: 's_0', card: 'tts', params: {} },
+            { id: 's_1', card: 'h3-timeline', params: { model: 'minimax-h3', prompt: 'x' }, inputs: { line1: { stage: 's_0', output: 'default' } }, expected: { line1: 'audio' } },
+          ],
+        }
+      }
+      if (lane === 'runsValidate') return { ok: true }
+      if (lane === 'benchVerb' && args[1] === 'rewire') return { rev: 10, stage: 's_1', input: 'line1' }
+      throw new Error('unmocked lane ' + lane + ' ' + JSON.stringify(args).slice(0, 80))
+    })
+    const out = await meliteConstruct(estate).execute({
+      verb: 'rewire', stage: 's_1', input: 'line1', from: { stage: 's_0', output: 'default' }, expect_rev: 9,
+    }, exec()) as Record<string, unknown>
+    assert.equal(out['ok'], true, 'the rewire of a declared custom lane lands: ' + String(out['error']))
+    assert.ok(seen.some((r) => r.lane === 'benchVerb' && r.args[1] === 'rewire'), 'the write happened')
   })
 
   test('an undeclared input lane REFUSES, named — never the silent-accept class', async () => {
@@ -2077,22 +2376,109 @@ describe('melite_construct — slice 5 (first-door wire grammar + landing states
     assert.equal(seen.length, 0, 'nothing was read or written')
   })
 
-  test('a landed stage that does not compile carries landed_not_compiling + a structured remedy', async () => {
-    const { estate } = mockEstate((lane) => {
+  // ── THE GHOST-STAGE LAW (F14/F26, qa8 s_15 + GAPS-15) — NO MINT ON
+  // REFUSAL. The add's compile verdict used to run AFTER the mint, so
+  // a refused compose still LANDED the illegal row and the ghost
+  // blocked every later whole-bench compile/validate. The gate now
+  // judges the PROJECTION (live rows + candidate) BEFORE the write —
+  // a refusal answers, the bench is never written.
+  test('a REFUSED add lands NOTHING — no mint on refusal (F14/F26, the canon arm)', async () => {
+    const { seen, estate } = mockEstate((lane) => {
       if (lane === 'benchVerb') return { rev: 8, stage: 's_0' }
       if (lane === 'benchGet') {
-        return { session: 'main', rev: 8, intent: '', log: [], stages: [{ id: 's_0', card: 'h3-timeline', params: { model: 'minimax-h3', prompt: 'x', steps: 35 } }] }
+        return { session: 'session-chat7', rev: 8, intent: '', log: [], stages: [{ id: 's_0', card: 'h3-timeline', params: { model: 'minimax-h3', prompt: 'x', steps: 35 } }] }
       }
-      if (lane === 'runsValidate') return { ok: false, error: 'flow "bench" stage "s_0": card "h3-timeline" schema refused body — $.steps expected number between 4 and 30' }
+      if (lane === 'runsValidate') return { ok: false, error: 'flow "bench" stage "s_1": card "h3-timeline" schema refused body — $.steps expected number between 4 and 30' }
       throw new Error('unmocked lane ' + lane)
     })
     const out = await meliteConstruct(estate).execute({
       verb: 'add_stage', card: 'h3-timeline',
       params: { model: 'minimax-h3', prompt: 'x', steps: 35 }, expect_rev: 7,
     }, exec()) as Record<string, unknown>
+    assert.equal(out['ok'], false, 'the gate refused — a value, never a failed mutation')
+    assert.equal(out['error_kind'], 'compile-refused')
+    assert.match(String(out['error']), /schema refused body/)
+    assert.match(String(out['error']), /steps/)
+    // THE STRUCTURED REMEDY still rides the refusal (the agent can act
+    // on it without decoding prose)
+    assert.deepEqual(out['remedy'], { public_param: 'steps', current_value: 35, allowed_values: [4, 30] })
+    // NOTHING landed: no stage minted, no rev moved, no landing state
+    assert.equal(out['stage'], undefined)
+    assert.equal(out['rev'], undefined)
+    assert.equal(out['landing'], undefined)
+    // THE MINT NEVER FIRED — the door was never called; there is
+    // nothing to roll back
+    assert.equal(seen.some((r) => r.lane === 'benchVerb'), false,
+      'a refused add writes NOTHING — never a ghost stage to undo')
+  })
+
+  test('the gate judges the PROJECTION — the post-add bench (live rows + candidate), not the args alone', async () => {
+    const { seen, estate } = mockEstate((lane) => {
+      if (lane === 'benchVerb') return { rev: 9, stage: 's_1' }
+      if (lane === 'benchGet') {
+        return { session: 'session-chat7', rev: 8, intent: '', log: [], stages: [{ id: 's_0', card: 'h3-timeline', params: { model: 'minimax-h3', prompt: 'x' } }] }
+      }
+      if (lane === 'runsValidate') return { ok: true }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const out = await meliteConstruct(estate).execute({
+      verb: 'add_stage', card: 'h3-timeline',
+      params: { model: 'minimax-h3', prompt: 'x', steps: 8 }, expect_rev: 7,
+    }, exec()) as Record<string, unknown>
+    assert.equal(out['stage'], 's_1', 'the write landed past the gate')
+    const v = seen.find((r) => r.lane === 'runsValidate')
+    assert.ok(v, 'the gate composed before the write')
+    const stages = (v!.args[0] as { flow_inline: { stages: Array<Record<string, unknown>> } }).flow_inline.stages
+    assert.equal(stages.length, 2, 'the judged view is the post-add bench')
+    assert.equal(stages[0]!['id'], 's_0', 'the live rows judge first')
+    assert.equal(stages[1]!['id'], 's_1', 'the candidate rides the door\'s own mint twin (max+1)')
+    assert.equal(stages[1]!['card'], 'h3-timeline')
+  })
+
+  test('a write that REBASES onto a moved bench composes the LANDED bench — landed_not_compiling survives the pre-gate', async () => {
+    let reads = 0
+    let posts = 0
+    const badRow = { id: 's_9', card: 'h3-timeline', params: { model: 'minimax-h3', prompt: 'x', steps: 35 } }
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet') {
+        reads += 1
+        // read 1: the gate's view (clean). reads 2+: the bench MOVED
+        // under the fill race — the rebase's fresh rev and the
+        // post-mint verdict's landed truth
+        return reads === 1
+          ? { session: 'session-chat7', rev: 5, intent: '', log: [], stages: [] }
+          : { session: 'session-chat7', rev: 9, intent: '', log: [], stages: [badRow] }
+      }
+      if (lane === 'benchVerb' && args[1] === 'add_stage') {
+        posts += 1
+        if (posts === 1) {
+          throw new RemoteError('bench/cas-conflict',
+            'bench moved under the add (expect_rev 5, current 9) — re-read and re-apply',
+            { current_rev: 9, expect_rev: 5 })
+        }
+        return { rev: 10, stage: 's_10' }
+      }
+      if (lane === 'runsValidate') {
+        // the gate judged the clean projection; the LANDED bench
+        // refuses (the moved row's stale params)
+        const stages = (args[0] as { flow_inline: { stages: Array<{ id?: unknown }> } }).flow_inline.stages
+        return stages.some((s) => s['id'] === 's_9')
+          ? { ok: false, error: 'flow "bench" stage "s_9": card "h3-timeline" schema refused body — $.steps expected number between 4 and 30' }
+          : { ok: true }
+      }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const out = await meliteConstruct(estate).execute({
+      verb: 'add_stage', card: 'h3-timeline', params: { model: 'minimax-h3', prompt: 'x' },
+    }, exec()) as Record<string, unknown>
+    // the write LANDED (the rebase carried it) and the verdict of the
+    // LANDED bench rides — the landing vocabulary stays honest
+    assert.equal(out['stage'], 's_10')
+    assert.equal(out['rev'], 10)
     assert.equal(out['compile_ok'], false)
     assert.equal(out['landing'], 'landed_not_compiling', 'the write LANDED — the refusal is a closable value, not a failed mutation')
-    assert.deepEqual(out['remedy'], { public_param: 'steps', current_value: 35, allowed_values: [4, 30] })
+    assert.equal(seen.filter((r) => r.lane === 'benchVerb').length, 2,
+      'the rebase rode the same door twice (refused attempt, landed retry)')
   })
 
   test('a transport failure is ambiguous_no_write — never an implied clean no-op', async () => {
@@ -2108,5 +2494,368 @@ describe('melite_construct — slice 5 (first-door wire grammar + landing states
     const blocks = tool.output!.render!({} as never, out as never) as Array<{ type?: string, text?: string }>
     const text = blocks.map((b) => b.text ?? '').join('\n')
     assert.match(text, /landing: ambiguous_no_write — the write is UNPROVEN/)
+  })
+})
+
+// ── THE PER-STAGE SOLO FAN-OUT (F28, qa8 residual item 12 — the
+// whole-projection verdict said WHETHER the bench compiles, never
+// WHICH stage burned) ─────────────────────────────────────────────
+// On a refusal the verdict door fans out: each unsiblinged stage
+// runs SOLO against the same door, and stage_verdicts names the
+// burning stage. Sibling-wired stages skip (their solo would burn
+// on the absent sibling — the projection's shape, never their
+// fault). The fan-out is read-only judging (runsValidate, never
+// benchVerb) — the no-mint law holds: a refused add still lands
+// NOTHING. Green answers keep their exact shape with zero extra
+// door calls.
+describe('melite_construct — F28: the refused verdict names its stage', () => {
+  type Doc = { flow_inline: { id: string, stages: Array<Record<string, unknown>> } }
+  const idsOf = (args: unknown): string[] =>
+    (args as Doc).flow_inline.stages.map((s) => String(s['stage'] ?? s['id'] ?? ''))
+
+  test('validate: a refusing bench fans out — the bad stage burns solo, the good stage clears', async () => {
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet') {
+        return {
+          session: 'session-chat7', rev: 7, intent: '', log: [],
+          stages: [
+            { id: 's_0', engine: 'comfyui', params: { p: 'bad' } },
+            { id: 's_1', engine: 'comfyui', params: { p: 1 } },
+          ],
+        }
+      }
+      if (lane === 'runsValidate') {
+        const ids = idsOf(args[0])
+        // the whole burns on s_0's stale params; solos judge alone
+        if (ids.includes('s_0')) {
+          return { ok: false, error: 'stage "s_0" refuses: $.p expected number but got bad' }
+        }
+        return { ok: true }
+      }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const out = await meliteConstruct(estate).execute({ verb: 'validate' }, exec()) as Record<string, unknown>
+    assert.equal(out['compiles'], false, 'the whole still refuses')
+    assert.deepEqual(out['stage_verdicts'], [
+      { stage: 's_0', compile_ok: false, compile_error: 'stage "s_0" refuses: $.p expected number but got bad' },
+      { stage: 's_1', compile_ok: true },
+    ], 'the refusal names s_0 and clears s_1')
+    const calls = seen.filter((r) => r.lane === 'runsValidate')
+    assert.equal(calls.length, 3, 'one whole + two solos, in projection order')
+    assert.deepEqual(idsOf(calls[1]!.args[0]), ['s_0'], 'the solo carries ONLY its stage')
+    assert.deepEqual(idsOf(calls[2]!.args[0]), ['s_1'])
+    assert.equal(seen.some((r) => r.lane === 'benchVerb'), false, 'judging never writes')
+  })
+
+  test('add_stage: a refused compose names the candidate AND still mints nothing (no-mint intact)', async () => {
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet') {
+        return {
+          session: 'session-chat7', rev: 7, intent: '', log: [],
+          stages: [{ id: 's_0', engine: 'comfyui', params: { p: 1 } }],
+        }
+      }
+      if (lane === 'runsValidate') {
+        const ids = idsOf(args[0])
+        // the candidate twin (max+1) burns at the door on steps 35
+        // (the tool grammar passes it — the ghost-test precedent);
+        // the live row alone is clean
+        if (ids.includes('s_1')) {
+          return { ok: false, error: 'stage "s_1" refuses: $.steps expected number between 4 and 30 but got 35' }
+        }
+        return { ok: true }
+      }
+      if (lane === 'benchVerb') return { rev: 8, stage: 's_1' }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const out = await meliteConstruct(estate).execute({
+      verb: 'add_stage', card: 'h3-timeline',
+      params: { model: 'minimax-h3', prompt: 'x', steps: 35 },
+    }, exec()) as Record<string, unknown>
+    assert.equal(out['ok'], false, 'the gate refused')
+    assert.equal(out['error_kind'], 'compile-refused')
+    assert.deepEqual(out['stage_verdicts'], [
+      { stage: 's_0', compile_ok: true },
+      { stage: 's_1', compile_ok: false, compile_error: 'stage "s_1" refuses: $.steps expected number between 4 and 30 but got 35' },
+    ], 'the live row clears, the candidate burns')
+    assert.equal(out['stage'], undefined, 'no stage minted on a refused compose')
+    assert.equal(out['rev'], undefined, 'no rev moved — the bench was never written')
+    assert.equal(seen.some((r) => r.lane === 'benchVerb'), false, 'THE MINT NEVER FIRED — the fan-out only judges')
+  })
+
+  test('a sibling-wired stage skips its solo and names the sibling — the projection shape is never its fault', async () => {
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet') {
+        return {
+          session: 'session-chat7', rev: 7, intent: '', log: [],
+          stages: [
+            { id: 's_0', engine: 'comfyui', params: { p: 1 } },
+            { id: 's_1', engine: 'comfyui', params: { p: 2 }, inputs: { image1: { stage: 's_0', output: 'default' } } },
+          ],
+        }
+      }
+      if (lane === 'runsValidate') {
+        const ids = idsOf(args[0])
+        if (ids.length === 2) return { ok: false, error: 'the whole burns (some other stage)' }
+        if (ids[0] === 's_0') return { ok: true }
+        throw new Error('the sibling-wired solo must never run — got solo for ' + ids[0])
+      }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const out = await meliteConstruct(estate).execute({ verb: 'validate' }, exec()) as Record<string, unknown>
+    assert.equal(out['compiles'], false, 'the whole still refuses')
+    assert.deepEqual(out['stage_verdicts'], [
+      { stage: 's_0', compile_ok: true },
+      { stage: 's_1', solo: 'skipped-sibling-wired', via: 's_0' },
+    ], 's_1 skips and names s_0 instead of burning on the absent sibling')
+    assert.equal(seen.filter((r) => r.lane === 'runsValidate').length, 2, 'one whole + the s_0 solo only')
+  })
+
+  test('a compiling bench pays zero extra door calls and its answer keeps its exact shape', async () => {
+    const { seen, estate } = mockEstate((lane) => {
+      if (lane === 'benchGet') {
+        return {
+          session: 'session-chat7', rev: 7, intent: '', log: [],
+          stages: [{ id: 's_0', engine: 'comfyui', params: { p: 1 } }],
+        }
+      }
+      if (lane === 'runsValidate') return { ok: true }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const out = await meliteConstruct(estate).execute({ verb: 'validate' }, exec()) as Record<string, unknown>
+    assert.equal(out['compiles'], true)
+    assert.ok(!('stage_verdicts' in out), 'green answers carry no fan-out key')
+    assert.equal(seen.filter((r) => r.lane === 'runsValidate').length, 1, 'the whole alone judges')
+  })
+
+  test('patch: a landed-but-refusing bench attributes per stage on the post-mint verdict', async () => {
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet') {
+        return {
+          session: 'session-chat7', rev: 7, intent: '', log: [],
+          stages: [{ id: 's_0', engine: 'comfyui' }, { id: 's_1', engine: 'comfyui' }],
+        }
+      }
+      if (lane === 'benchVerb' && args[1] === 'patch') {
+        return { rev: 8, stage: 's_0', patched: ['p'], stale: true }
+      }
+      if (lane === 'runsValidate') {
+        const ids = idsOf(args[0])
+        if (ids.includes('s_1')) return { ok: false, error: 'stage "s_1" refuses: bad params' }
+        return { ok: true }
+      }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const out = await meliteConstruct(estate).execute({
+      verb: 'patch', stage: 's_0', params: { p: 2 }, expect_rev: 7,
+    }, exec()) as Record<string, unknown>
+    assert.equal(out['compile_ok'], false, 'the post-mint verdict refuses')
+    assert.equal(out['landing'], 'landed_not_compiling', 'the write landed — the verdict is honest about it')
+    assert.deepEqual(out['stage_verdicts'], [
+      { stage: 's_0', compile_ok: true },
+      { stage: 's_1', compile_ok: false, compile_error: 'stage "s_1" refuses: bad params' },
+    ], 'the landed verdict names s_1')
+    assert.equal(seen.filter((r) => r.lane === 'benchVerb').length, 1, 'the write landed exactly once')
+  })
+})
+
+// ── THE MINT CARRIES THE SEAT (F27, qa8 s_14/s_18 — session 7a82's
+// familyless ghosts) ─────────────────────────────────────────────
+// The bench stage's family address is params.model. A card-mode add
+// for a card whose family rides params.model (image-edit, music)
+// minted a FAMILYLESS row, and only the operator's press met
+// `no declared action for family ''`. The seat now rides the mint:
+// first-declared family when nothing is stated (the same boarded[0]
+// the cards tab seeds and the Run press resolves), a stated
+// top-level `model` folds into params.model, a stated params.model
+// IS the seat. Every wall here derives its expectation from the REAL
+// card defs (loadCardDefs) — a card that moves its board moves the
+// wall's expectation source with it.
+describe('melite_construct add_stage — the mint carries the family seat (F27)', () => {
+  const gateLanes = (): ReturnType<typeof mockEstate> => mockEstate((lane, args) => {
+    if (lane === 'benchGet') return { session: 'session-chat7', rev: 4, intent: '', log: [], stages: [] }
+    if (lane === 'benchVerb' && args[1] === 'add_stage') return { rev: 5, stage: 's_0' }
+    if (lane === 'runsValidate') return { ok: true }
+    throw new Error('unmocked lane ' + lane)
+  })
+
+  test('a family-carrying card with no stated model takes its FIRST-DECLARED family (boarded[0])', async () => {
+    const { seen, estate } = gateLanes()
+    const defs = await loadCardDefs()
+    const expected = defs.get('image-edit')!.boarded[0]
+    const out = await meliteConstruct(estate).execute({
+      verb: 'add_stage', card: 'image-edit', params: { prompt: 'make it dusk' },
+    }, exec()) as Record<string, unknown>
+    assert.equal(out.ok, true)
+    const add = seen.find((r) => r.lane === 'benchVerb' && r.args[1] === 'add_stage')
+    assert.ok(add, 'the mint fired')
+    const params = (add!.args[2] as { params: Record<string, unknown> }).params
+    assert.equal(params['model'], expected,
+      'the minted row carries the seat — never a familyless ghost')
+    const derived = (out['applied_derivations'] as Array<Record<string, unknown>>)
+    const seat = derived.find((d) => d['param'] === 'model')
+    assert.ok(seat, 'the carry echoes an applied_derivations line')
+    assert.equal(seat!['to'], expected)
+    assert.equal(seat!['rule'], 'first-declared-family')
+  })
+
+  test('a stated top-level model folds into params.model — the seat the mint used to drop', async () => {
+    const { seen, estate } = gateLanes()
+    const defs = await loadCardDefs()
+    const boarded = defs.get('music')!.boarded
+    const stated = boarded[boarded.length - 1]! // the NON-default family — the agent's own pick
+    const out = await meliteConstruct(estate).execute({
+      verb: 'add_stage', card: 'music', model: stated, params: { prompt: 'a slow waltz' },
+    }, exec()) as Record<string, unknown>
+    const add = seen.find((r) => r.lane === 'benchVerb' && r.args[1] === 'add_stage')
+    assert.ok(add, 'the mint fired')
+    const params = (add!.args[2] as { params: Record<string, unknown> }).params
+    assert.equal(params['model'], stated, 'the stated seat rides the mint')
+    const seat = (out['applied_derivations'] as Array<Record<string, unknown>>).find((d) => d['param'] === 'model')
+    assert.equal(seat!['rule'], 'model-seat-to-params')
+  })
+
+  test('a stated params.model IS the seat — rides untouched, never a second seat', async () => {
+    const { seen, estate } = gateLanes()
+    const defs = await loadCardDefs()
+    const boarded = defs.get('music')!.boarded
+    const stated = boarded[boarded.length - 1]!
+    const out = await meliteConstruct(estate).execute({
+      verb: 'add_stage', card: 'music', model: boarded[0], params: { model: stated, prompt: 'x' },
+    }, exec()) as Record<string, unknown>
+    const add = seen.find((r) => r.lane === 'benchVerb' && r.args[1] === 'add_stage')
+    const params = (add!.args[2] as { params: Record<string, unknown> }).params
+    assert.equal(params['model'], stated, 'params.model wins — one seat, the bag\'s own word')
+    assert.deepEqual(out['applied_derivations'] ?? [], [], 'no model derivation echoed')
+  })
+
+  test('a pure-tool card (no board) seeds nothing — never a fake family', async () => {
+    const { seen, estate } = gateLanes()
+    const defs = await loadCardDefs()
+    const def = defs.get('mask')!
+    assert.equal(def.boarded.length, 0, 'the probe card is genuinely tool-only')
+    await meliteConstruct(estate).execute({
+      verb: 'add_stage', card: 'mask', params: { prompt: 'x' },
+    }, exec())
+    const add = seen.find((r) => r.lane === 'benchVerb' && r.args[1] === 'add_stage')
+    const params = (add!.args[2] as { params: Record<string, unknown> }).params
+    assert.equal('model' in params, false, 'no seat minted for a card that owns none')
+  })
+})
+
+// ── NO MINT ON REFUSAL at the replace door (F14/F26's law on the
+// one-shot compose): load used to benchEnsure the wholesale replace
+// BEFORE the compile verdict ran — a refused compose left the bench
+// REPLACED with the illegal rows. The gate now composes the
+// replacement BEFORE the write; a refusal keeps the prior bench.
+describe('melite_construct load — no mint on refusal (F14/F26 at the replace door)', () => {
+  test('a refused replacement writes NOTHING — the prior bench stands', async () => {
+    const { seen, estate } = mockEstate((lane) => {
+      if (lane === 'benchEnsure') return { rev: 6, stages: [] }
+      if (lane === 'runsValidate') {
+        return { ok: false, error: 'flow "bench" stage "s1": card "h3-timeline" schema refused body — $.steps expected number between 4 and 30' }
+      }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const stages = [{ id: 's1', engine: 'comfyui' }]
+    const out = await meliteConstruct(estate).execute(
+      { verb: 'load', stages, intent: 'make art', overwrite: true, expect_rev: 4 },
+      exec(),
+    ) as Record<string, unknown>
+    assert.equal(out['ok'], false)
+    assert.equal(out['error_kind'], 'compile-refused')
+    assert.match(String(out['error']), /schema refused body/)
+    assert.equal(out['rev'], undefined, 'no rev moved — the bench keeps its prior state')
+    assert.equal(out['landing'], undefined)
+    assert.equal(seen.some((r) => r.lane === 'benchEnsure'), false,
+      'the replace never fired — nothing to undo')
+  })
+})
+
+describe('melite_construct — THE ONE-SPELLING WRITE (operator 2026-11-14: "I told you ONE BENCH, but the agent and user have different input parameters")', () => {
+  // The burn: the agent stated the legacy alias (image1 on
+  // image-edit, image_name on the h3 video card), the run composed
+  // it engine-side, and the user's drill rendered the CANONICAL
+  // seat EMPTY — a blank input square for an image the agent had
+  // attached. The write stores the STATE, not the wire's spelling:
+  // the fold merges the alias into the canonical seat (the compose
+  // lane's own law — declared order, blanks dropped, a stated
+  // canonical WINS) and nulls the alias out of the stored row.
+  test('patch: the image1 alias lands as input_images — the drill\'s seat, one channel in the stored row', async () => {
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet') return {
+        session: 'session-chat7', rev: 3, intent: '',
+        stages: [{ id: 's1', card: 'image-edit', params: { model: 'qwen-img-edit-21' } }], log: [],
+      }
+      if (lane === 'benchVerb' && args[1] === 'patch') return { rev: 4, stage: 's1', patched: ['image1'] }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const out = await meliteConstruct(estate).execute(
+      { verb: 'patch', stage: 's1', params: { image1: 'data/input/a.png' } },
+      exec(),
+    ) as Record<string, unknown>
+    const write = seen.find((r) => r.lane === 'benchVerb')!.args[2] as Record<string, unknown>
+    const params = write['params'] as Record<string, unknown>
+    assert.deepEqual(params['input_images'], ['data/input/a.png'], 'the canonical seat carries the alias value')
+    assert.equal(params['image1'], null, 'the alias key is nulled out of the stored row (merge-patch unset)')
+    const derivs = out['applied_derivations'] as Array<Record<string, unknown>>
+    assert.ok(derivs.some((d) => d['param'] === 'input_images'), 'the fold echoes its derivation — the agent sees the canonical seat')
+  })
+
+  test('patch: an alias stated over a row that already holds the canonical seat folds AWAY (the migration law on the merged row)', async () => {
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet') return {
+        session: 'session-chat7', rev: 3, intent: '',
+        stages: [{ id: 's1', card: 'image-edit', params: { model: 'qwen-img-edit-21', input_images: ['data/input/user.png'] } }], log: [],
+      }
+      if (lane === 'benchVerb' && args[1] === 'patch') return { rev: 4, stage: 's1', patched: ['image1'] }
+      throw new Error('unmocked lane ' + lane)
+    })
+    await meliteConstruct(estate).execute(
+      { verb: 'patch', stage: 's1', params: { image1: 'data/input/agent.png' } },
+      exec(),
+    )
+    const write = seen.find((r) => r.lane === 'benchVerb')!.args[2] as Record<string, unknown>
+    const params = write['params'] as Record<string, unknown>
+    assert.equal(params['input_images'], undefined, 'the user\'s stated list WINS — the alias never overwrites it')
+    assert.equal(params['image1'], null, 'the alias still leaves the stored row — one spelling')
+  })
+
+  test('add_stage: the h3 video card\'s image_name alias mints as the canonical image seat', async () => {
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchVerb' && args[1] === 'add_stage') return { rev: 7, stage: 's2' }
+      if (lane === 'benchGet') return { session: 'session-chat7', rev: 7, intent: '', stages: [{ id: 's2' }], log: [] }
+      if (lane === 'runsValidate') return { ok: true }
+      throw new Error('unmocked lane ' + lane)
+    })
+    await meliteConstruct(estate).execute(
+      { verb: 'add_stage', card: 'h3-timeline', params: { image_name: 'data/input/first.png' } },
+      exec(),
+    )
+    const add = seen.find((r) => r.lane === 'benchVerb' && r.args[1] === 'add_stage')!
+    const params = (add.args[2] as Record<string, unknown>)['params'] as Record<string, unknown>
+    assert.equal(params['image'], 'data/input/first.png', 'the canonical First-frame seat carries the alias value')
+    assert.equal('image_name' in params, false, 'the fresh row never carries the retired spelling')
+  })
+
+  test('patch: a $spell alias folds into the list seat — the spell gate and rewrite both recurse lists', async () => {
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchGet') return {
+        session: 'session-chat7', rev: 2, intent: '',
+        stages: [{ id: 's1', card: 'image-edit', params: { model: 'qwen-img-edit-21' } }], log: [],
+      }
+      if (lane === 'benchVerb' && args[1] === 'patch') return { rev: 3, stage: 's1', patched: ['image1'] }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const out = await meliteConstruct(estate).execute(
+      { verb: 'patch', stage: 's1', params: { image1: '$image1' } },
+      exec(),
+    ) as Record<string, unknown>
+    const write = seen.find((r) => r.lane === 'benchVerb')!.args[2] as Record<string, unknown>
+    const params = write['params'] as Record<string, unknown>
+    assert.deepEqual(params['input_images'], ['$image1'], 'the channel reference rides the canonical list seat')
+    assert.equal(params['image1'], null)
+    const spells = out['spells'] as Array<Record<string, unknown>>
+    assert.ok(Array.isArray(spells) && spells.length > 0, 'the spell voice still names the token')
   })
 })

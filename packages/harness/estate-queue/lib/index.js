@@ -11,10 +11,6 @@ export { RunsRuntimeService } from "./runsRegistry.js";
 export { ManageGatewayService } from "./manageRegistry.js";
 export * from "./vocab.js";
 export * from "./queue.js";
-// bootSweep twins (queue.ts core impl + resurrect.ts QueueRoots
-// wrapper): the explicit export wins over the stars — the wrapper
-// is the domain seam.
-export { bootSweep } from "./resurrect.js";
 import { FlowsSeatService } from "./flowsData.js";
 export const name = "estate-queue";
 export const inject = ["timer"];

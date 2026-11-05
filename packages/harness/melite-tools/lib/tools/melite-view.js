@@ -20,9 +20,9 @@ import { mediaVocab } from "@melite/contracts/mediaKinds";
  * bespoke vision lane: the attachment service owns normalization,
  * limits, and the durable log.
  *
- * VIEWING IS NOT A RUN PRESS (the interface law): this tool lands
- * in the BASE toolset — browser sessions may look at what a run
- * produced; only the run DOORS stay headless-gated.
+ * VIEWING IS NOT A RUN PRESS (the compose law): this tool lands
+ * in the BASE toolset — any session may look at what a run
+ * produced; only the run DOORS wait for the delegation.
  *
  * CONTAINMENT (estate/media's law, same spelling): the run id must
  * match the queue's RUN_ID grammar, and the file path is BUILT from
@@ -291,11 +291,39 @@ export async function viewFilmArtifact(seat, runId, artifact, exec, ctx, attachm
     if (picked.length === 0) {
         throw new Error('run "' + runId + '" has no film artifact containing "' + artifact + '" — the run holds: ' + own.slice(0, 8).map((i) => i.name).join(', ') + ' ' + searchedVoice(rootsManifest(seat.stateRoot, seat.stateRoots ?? [])));
     }
-    const row = picked[0];
-    const absPath = join(found.root, 'output', row.runId, row.name);
+    // GAPS-5 (qa8, 2026-10-31): the newest media is not always openable —
+    // a run can hold an unprobed `.webm` beside a valid `.mp4`, and the
+    // old newest-only pick refused on the webm without ever trying the
+    // mp4. With no caller selection the arm probes every candidate
+    // newest-first and serves the first OPENABLE one; the
+    // exact-container refusal fires only when NOTHING opens (the
+    // newest candidate's voice, the sentence the old pick spoke). An
+    // explicit artifact still wins outright: its match is probed alone,
+    // refusal unchanged.
+    const candidates = artifact.length > 0 ? picked.slice(0, 1) : picked;
+    let row = picked[0];
+    let absPath = join(found.root, 'output', row.runId, row.name);
+    let probe;
+    let newestRefusal;
+    for (const candidate of candidates) {
+        const candidatePath = join(found.root, 'output', candidate.runId, candidate.name);
+        try {
+            probe = await probeFile(candidatePath, candidate.name, 'film', read);
+        }
+        catch (error) {
+            if (newestRefusal === undefined)
+                newestRefusal = error instanceof Error ? error : new Error(String(error));
+            probe = undefined;
+            continue;
+        }
+        row = candidate;
+        absPath = candidatePath;
+        break;
+    }
+    if (probe === undefined)
+        throw newestRefusal;
     // THE PROBE IS TYPESCRIPT: the container is a box tree, so its facts
     // are read from bytes. No ffprobe, no host binary, no subprocess.
-    const probe = await probeFile(absPath, row.name, 'film', read);
     // THE TEXT-ONLY OBSERVE ARM: the probe facts are text, so a route
     // that cannot take an image still gets the observation — unless the
     // lane seats a seeing route (the delegated eye below), in which

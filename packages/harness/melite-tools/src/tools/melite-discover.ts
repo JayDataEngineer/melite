@@ -116,7 +116,7 @@ export function meliteDiscover(estate: Estate, expandEstateDoors: () => void): T
       },
       render: (args, value) => {
         const v = value as {
-          flows?: Array<{ name?: unknown; title?: unknown; stages?: unknown }>
+          flows?: Array<{ name?: unknown; title?: unknown; stages?: unknown; initials?: unknown }>
           cards?: Array<{ id?: unknown; label?: unknown; tags?: unknown; matched_by?: unknown }>
           counts?: { flows?: unknown; cards?: unknown }
           totals?: { flows?: unknown; cards?: unknown }
@@ -168,7 +168,12 @@ export function meliteDiscover(estate: Estate, expandEstateDoors: () => void): T
         if (flows.length > 0) {
           out.push('flows:')
           for (const f of flows.slice(0, RENDER_CLAMP)) {
-            out.push(`  ${line(f?.name)} — ${line(f?.title)} (${num(f?.stages)} stages)`)
+            // (F57, 2026-11-13) the line NAMES the flow's initial keys
+            // — the spell-stem seats the flow door binds ($photo→
+            // photo), derived from the registry — so the TRUE press is
+            // learned at discovery, never through the seam's refusal.
+            const initials = Array.isArray(f?.initials) ? f.initials.filter((k): k is string => typeof k === 'string') : []
+            out.push(`  ${line(f?.name)} — ${line(f?.title)} (${num(f?.stages)} stages${initials.length > 0 ? `; initials: ${initials.join(', ')}` : ''})`)
           }
           if (!wantsAll && nf > RENDER_CLAMP) out.push(`  +${nf - RENDER_CLAMP} more — detail=true lists every line`)
         }

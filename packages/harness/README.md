@@ -5,7 +5,7 @@ bench/estate seats, the serial queue, and the profile provisioner.
 
 | Package | Responsibility |
 | --- | --- |
-| `melite-tools` | Browser/headless DSH tool surface and in-process estate transport |
+| `melite-tools` | DSH tool surface and in-process estate transport |
 | `estate-queue` | queue, runs, card registry, disclosure, skills, load, and management seats |
 | `estate-call` | shared card-tool envelope and JSON-array transport helpers |
 | `provisioner` | vanilla-DSH bundle and profile renderer |
@@ -25,16 +25,19 @@ The tool vocabulary and interface split are declared in
 - base: `melite_discover`, `melite_load`, `melite_construct`;
 - deferred: `melite_view`, `melite_read`, `comfy_manage`,
   `melite_skill_read`, `ledger_tail`;
-- headless: `melite_flow`, `run_status`.
+- run doors: `melite_flow`, `run_status` — seated by the home's persisted
+  `/melite-runs` record (HEADLESS IS DSH'S: `dsh headless "task"` is DSH's
+  own shipped profile; melite renders no parallel headless mount).
 
 ## Profiles
 
 `packages/harness/provisioner/bin/infer-provision.mjs` renders:
 
-- `inference` — web studio;
-- `headless` — one-shot DSH agent;
 - `estate` — SDK/job-server composition;
 - `melite-test` — test web composition.
+
+(One-shot headless agents are DSH's own surface: `dsh headless "task"` rides
+DSH's shipped `headless` profile.)
 
 Render profiles into a DSH home with:
 

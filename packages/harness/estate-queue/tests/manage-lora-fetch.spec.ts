@@ -20,7 +20,7 @@
 //      a refused/failed chain leaves the fetch ok:true and voices the
 //      owed restart (restart_required + next_action), never a failed
 //      fetch wearing a restart's refusal.
-import { describe, it, afterEach } from "vitest";
+import { describe, it, afterEach, beforeEach, vi } from "vitest";
 import assert from "node:assert/strict";
 import { createServer, type Server } from "node:http";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -28,6 +28,33 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { dispatchManage } from "../src/managePlane.ts";
 import type { ManageCtx } from "../src/managePlane.ts";
+
+// THE RECEIPT-WRITE ABORT SEAM (managePlane.ts 1984-1991, 1993-2007,
+// 1402-1403: the lora_fetch restart chain): the atomic receipt writer
+// aborts the caller mid-write so the arm judges the chain's catch —
+// a torn write under a live caller stays a silent success, under a
+// cancelled caller the reason propagates (never laundered into a
+// fabricated restart voice).
+const receipt = vi.hoisted(() => ({ aborters: [] as Array<() => void> }));
+
+vi.mock("../src/queueLock.ts", async (importOriginal) => {
+  const mod = await importOriginal<typeof import("../src/queueLock.ts")>();
+  return {
+    ...mod,
+    writeJsonAtomic: async (filePath: string, obj: unknown) => {
+      // the abort rides ONLY the engine-boot receipt write — the
+      // row seating ahead of it lands under a live caller. The write
+      // itself is torn (it throws): a bare abort never fails the
+      // atomic write, and only a torn write under cancellation reaches
+      // the catch's abort half.
+      if (filePath.endsWith(".estate-engine-boot.json") && receipt.aborters.length > 0) {
+        for (const abort of receipt.aborters.splice(0)) abort();
+        throw new Error("torn receipt write (simulated tear under cancellation)");
+      }
+      return mod.writeJsonAtomic(filePath, obj);
+    },
+  };
+});
 
 const tempRoots: string[] = [];
 const tempRoot = (prefix: string): string => {
@@ -40,6 +67,21 @@ afterEach(() => {
     const dir = tempRoots.pop();
     if (dir !== undefined) rmSync(dir, { recursive: true, force: true });
   }
+});
+
+// ROWS-FILE ISOLATION (the poison cure, 2026-11-15): lora_fetch
+// SEATS its row through the real userLorasPath() — without this
+// override every fetch test writes the machine's real
+// data/loras/user-loras.json and the debris takes the next boot's
+// mod interlock down (the 174-file red cascade class)
+let savedRows: string | undefined;
+beforeEach(() => {
+  savedRows = process.env["MELITE_USER_LORAS"];
+  process.env["MELITE_USER_LORAS"] = join(tempRoot("lora-fetch-rows-"), "user-loras.json");
+});
+afterEach(() => {
+  if (savedRows === undefined) delete process.env["MELITE_USER_LORAS"];
+  else process.env["MELITE_USER_LORAS"] = savedRows;
 });
 
 /** The recorded request a fake acquireExternal saw (the wall reads it
@@ -271,6 +313,136 @@ describe("the manage plane — lora_fetch (the operator's 2026-11-09 order)", ()
     assert.match(res.detail, /restart/i);
   });
 
+  it("THE RESTART CHAIN (blind-combo arm): an unreadable combo read still lands — the fetch never waits on the combo", async () => {
+    // THE COMBO ASK'S NULL-DOC CONTRACT (managePlane.ts 1385-1389):
+    // an unreachable engine proves nothing and refuses nothing — the
+    // land proceeds with inComboNow=false and the restart chain still
+    // fires. The reboot succeeds here, so the answer is the issued
+    // voice, never a folded refusal.
+    const srv: Server = createServer((req, res) => {
+      if (req.method === "POST" && req.url === "/manager/reboot") {
+        res.writeHead(200, { "content-type": "application/json" });
+        res.end("{}");
+        return;
+      }
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ LoraLoaderModelOnly: { input: { required: { lora_name: [[], {}] } } } }));
+    });
+    await new Promise<void>((resolve) => srv.listen(0, "127.0.0.1", resolve));
+    const addr = srv.address();
+    const port = String(typeof addr === "object" && addr !== null ? addr.port : 0);
+    const prevUrl = process.env["COMFYUI_URL"];
+    process.env["COMFYUI_URL"] = "http://127.0.0.1:" + port;
+    try {
+      const seen: Acquired[] = [];
+      const ctx = CTX({
+        provisioning: recordingProvisioner((a) => seen.push(a)),
+        objectInfo: async (): Promise<never> => { throw new Error("combo blind"); },
+      });
+      const [code, res] = await run({ ...FETCH, filename: "krea2_fetched.safetensors" }, ctx);
+      assert.equal(code, 200);
+      assert.equal(res.ok, true, "the land stands — a blind combo never refuses the fetch");
+      assert.equal(seen.length, 1, "the landing happened");
+      assert.equal(res.restart_required, false);
+      assert.match(res.detail, /restart issued/i);
+    } finally {
+      srv.closeAllConnections();
+      srv.close(() => undefined);
+      if (prevUrl === undefined) delete process.env["COMFYUI_URL"];
+      else process.env["COMFYUI_URL"] = prevUrl;
+    }
+  });
+
+  it("THE RESTART CHAIN (deadline arm): a combo read that exceeds its deadline still lands — the loud 504 folds, the fetch proceeds", async () => {
+    // THE COMBO ASK'S DEADLINE FOLD (managePlane.ts 1385-1389): the
+    // live read's deadline throws the LOUD Refused(504) — and the
+    // combo ask folds it anyway: a hung combo proves nothing about
+    // the land. The arm rides the LIVE read (no ctx seam — the hang
+    // server never answers /object_info) with timeout_seconds:1 so
+    // the 1000ms rail bound fires for real, then the reboot succeeds
+    // and the answer is the issued voice.
+    const srv: Server = createServer((req, res) => {
+      if (req.method === "POST" && req.url === "/manager/reboot") {
+        res.writeHead(200, { "content-type": "application/json" });
+        res.end("{}");
+        return;
+      }
+      // /object_info hangs past any deadline — the deadline is the
+      // arm's subject, never a forged body
+    });
+    await new Promise<void>((resolve) => srv.listen(0, "127.0.0.1", resolve));
+    const addr = srv.address();
+    const port = String(typeof addr === "object" && addr !== null ? addr.port : 0);
+    const prevUrl = process.env["COMFYUI_URL"];
+    process.env["COMFYUI_URL"] = "http://127.0.0.1:" + port;
+    try {
+      const seen: Acquired[] = [];
+      const ctx = CTX({ provisioning: recordingProvisioner((a) => seen.push(a)) });
+      const [code, res] = await run(
+        { ...FETCH, filename: "krea2_fetched.safetensors", timeout_seconds: 1 },
+        ctx,
+      );
+      assert.equal(code, 200);
+      assert.equal(res.ok, true, "the land stands — a deadline-blind combo never refuses the fetch");
+      assert.equal(seen.length, 1, "the landing happened");
+      assert.equal(res.restart_required, false);
+      assert.match(res.detail, /restart issued/i);
+    } finally {
+      srv.closeAllConnections();
+      srv.close(() => undefined);
+      if (prevUrl === undefined) delete process.env["COMFYUI_URL"];
+      else process.env["COMFYUI_URL"] = prevUrl;
+    }
+  });
+
+  it("THE RESTART CHAIN (cancelled-receipt arm): an abort inside the chain's receipt write escapes as the abort reason — no restart voice is fabricated", async () => {
+    // THE CHAIN'S CATCH (managePlane.ts 1402-1403, outer-false +
+    // inner-true): the reboot was ISSUED (200 from the Manager) and
+    // the chain folds the abort-surfaced Error into the owed-restart
+    // voice — but the caller is cancelled, so dispatch's post-check
+    // (2759-2762) yields to the cancellation instead of serving a
+    // voice nobody asked for. Observable: the abort reason escapes
+    // (never a fabricated "restart issued"), and the land stands.
+    const srv: Server = createServer((req, res) => {
+      if (req.method === "POST" && req.url === "/manager/reboot") {
+        res.writeHead(200, { "content-type": "application/json" });
+        res.end("{}");
+        return;
+      }
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ LoraLoaderModelOnly: { input: { required: { lora_name: [["krea-2/krea2_fetched.safetensors"], {}] } } } }));
+    });
+    await new Promise<void>((resolve) => srv.listen(0, "127.0.0.1", resolve));
+    const addr = srv.address();
+    const port = String(typeof addr === "object" && addr !== null ? addr.port : 0);
+    const prevUrl = process.env["COMFYUI_URL"];
+    process.env["COMFYUI_URL"] = "http://127.0.0.1:" + port;
+    try {
+      const seen: Acquired[] = [];
+      const controller = new AbortController();
+      const ctx = CTX({ provisioning: recordingProvisioner((a) => seen.push(a)) });
+      receipt.aborters.push(() => controller.abort(new Error("chain-receipt-abort")));
+      try {
+        await assert.rejects(
+          run(
+            { ...FETCH, filename: "krea2_fetched.safetensors" },
+            { ...ctx, signal: controller.signal },
+          ),
+          /chain-receipt-abort/,
+          "the caller's abort reason escapes — never a fabricated restart voice",
+        );
+      } finally {
+        receipt.aborters.length = 0;
+      }
+      assert.equal(seen.length, 1, "the land stands — a cancelled receipt never un-lands the fetch");
+    } finally {
+      srv.closeAllConnections();
+      srv.close(() => undefined);
+      if (prevUrl === undefined) delete process.env["COMFYUI_URL"];
+      else process.env["COMFYUI_URL"] = prevUrl;
+    }
+  });
+
   it("THE RESTART CHAIN (issued arm): the chain rides the guarded restart door and reports the reboot", async () => {
     const srv: Server = createServer((req, res) => {
       if (req.method === "POST" && req.url === "/manager/reboot") {
@@ -299,6 +471,99 @@ describe("the manage plane — lora_fetch (the operator's 2026-11-09 order)", ()
       srv.close(() => undefined);
       if (prevUrl === undefined) delete process.env["COMFYUI_URL"];
       else process.env["COMFYUI_URL"] = prevUrl;
+    }
+  });
+
+  it("a filename with a path separator refuses — the bare-name law (C5, the 1342 arm)", async () => {
+    // THE BARE-NAME LAW: the URL's query never names the file and a
+    // stated filename never carries a directory — the family subfolder
+    // is the door's own spelling, never the caller's. A slash (or an
+    // unconfined segment) 422s before the seat ask, before the human's
+    // flag — nothing is acquired on a refusal.
+    const seen: Acquired[] = [];
+    const ctx = CTX({ provisioning: recordingProvisioner((a) => seen.push(a)) });
+    const [code, res] = await run({ ...FETCH, filename: "sub/dir.safetensors" }, ctx);
+    assert.equal(code, 422);
+    assert.match(res.detail, /bare name/);
+    assert.equal(seen.length, 0);
+  });
+
+  it("a land with no stored path answers without one — the pathless receipt (the 1417 arm)", async () => {
+    // THE PATHLESS RECEIPT: the answer carries the stored path only
+    // when the landing recorded one — a provisioner that lands without
+    // a path (a virtual or pending row) still answers 200 with the
+    // combo identity, the operation id, and the restart voice, never a
+    // fabricated path. The existing lands pin the path half; this arm
+    // pins the pathless half.
+    const pathless = {
+      reconcile: async (): Promise<never[]> => [],
+      acquireExternal: async (): Promise<unknown> => ({
+        operationId: "op-lora-fetch-nopath",
+        ref: { kind: "model", owner: "card", id: "external:x" },
+        state: "active",
+        outcome: "active",
+        restartRequired: false,
+        items: [{ key: "op-lora-fetch-nopath", kind: "model", state: "active", outcome: "active" }],
+      }),
+    } as unknown as ManageCtx["provisioning"];
+    const ctx = CTX({
+      provisioning: pathless,
+      objectInfo: async () => ({ LoraLoaderModelOnly: { input: { required: { lora_name: [[], {}] } } } }),
+    });
+    const [code, res] = await run({ ...FETCH, filename: "krea2_nopath.safetensors" }, ctx);
+    assert.equal(code, 200);
+    assert.equal(res.ok, true);
+    const data = res.data as Record<string, unknown>;
+    assert.equal(data["filename"], "krea-2/krea2_nopath.safetensors");
+    assert.ok(!("path" in data), "no path rides a pathless landing");
+  });
+
+  it("THE ABORT MID-LAND: a caller abort between the landing and the restart propagates the caller's reason — the fetch is never laundered into a success", async () => {
+    // THE LAW (managePlane.ts 1385-1408): the combo ask and the
+    // restart chain both fold an abort into the owed-restart voice
+    // instead of refusing — but a dispatch past those folds still
+    // answers the CALLER's abort, never a 200 the caller cancelled.
+    // The fake aborts mid-land (the landing already happened); the
+    // door must reject with the caller's own reason.
+    const controller = new AbortController();
+    const aborting = recordingProvisioner(() => {
+      controller.abort(new Error("mid-land-abort"));
+    });
+    const ctx = CTX({ provisioning: aborting });
+    await assert.rejects(
+      dispatchManage({ ...FETCH, filename: "krea2_aborted.safetensors" }, ctx, controller.signal),
+      /mid-land-abort/,
+      "the caller's abort reason propagates, never a success envelope",
+    );
+  });
+
+  it("THE CORRUPT ROWS FILE: a land over an unreadable rows file still lands — the seat's refusal rides the answer, never a failed fetch", async () => {
+    // LAND = SEATED meets a rows file the reader refuses (torn JSON
+    // from a crashed earlier write): the fetch already landed, so the
+    // answer stays 200 + ROW REFUSED, and the operator learns the file
+    // is the problem — never a failed fetch wearing a seat's refusal.
+    const rowsDir = tempRoot("lora-fetch-corrupt-rows-");
+    const rowsFile = join(rowsDir, "user-loras.json");
+    writeFileSync(rowsFile, "{torn json,");
+    const prevRows = process.env["MELITE_USER_LORAS"];
+    process.env["MELITE_USER_LORAS"] = rowsFile;
+    try {
+      const seen: Acquired[] = [];
+      const ctx = CTX({
+        provisioning: recordingProvisioner((a) => seen.push(a)),
+        objectInfo: async () => ({ LoraLoaderModelOnly: { input: { required: { lora_name: [[], {}] } } } }),
+      });
+      const [code, res] = await run({ ...FETCH, filename: "krea2_corrupt.safetensors" }, ctx);
+      assert.equal(code, 200);
+      assert.equal(res.ok, true, "the fetch landed — a seat refusal never wears the fetch's face");
+      assert.equal(seen.length, 1, "the landing happened");
+      const data = res.data as Record<string, unknown>;
+      assert.equal(data["row_seated"], false);
+      assert.match(String(data["row_refusal"]), /not JSON/, "the rows file's own refusal rides the answer");
+      assert.match(res.detail, /ROW REFUSED/);
+    } finally {
+      if (prevRows === undefined) delete process.env["MELITE_USER_LORAS"];
+      else process.env["MELITE_USER_LORAS"] = rowsFile;
     }
   });
 });

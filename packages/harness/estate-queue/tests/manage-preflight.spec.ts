@@ -147,7 +147,7 @@ describe("the preflight door (audit 019 C3)", () => {
     assert.match(engine?.detail ?? "", /no engine url/);
   });
 
-  it("ARM drop manifest row: the packs miss names EVERY missing required row and the install_extension door", async () => {
+  it("ARM drop manifest row: the packs miss names EVERY missing required row and the install_extension_url door (qa8 F6/GAPS-11 estate cure)", async () => {
     const storeDir = join(ROOT, "store");
     mkdirSync(storeDir);
     // pack-b dropped from the installed list; pack-opt optional and absent
@@ -159,8 +159,33 @@ describe("the preflight door (audit 019 C3)", () => {
     assert.equal(packs?.state, "miss");
     assert.match(packs?.detail ?? "", /pack-b/);
     assert.doesNotMatch(packs?.detail ?? "", /pack-opt/, "optional rows are not misses");
-    assert.equal(packs?.door, "install_extension");
-    assert.ok(answer.misses.some((m) => m.includes("packs") && m.includes("install_extension")));
+    assert.equal(packs?.door, "install_extension_url");
+    assert.ok(answer.misses.some((m) => m.includes("packs") && m.includes("install_extension_url")));
+    assert.match(packs?.detail ?? "", /operator_confirmed/);
+  });
+
+  it("ARM census identity: Manager's canonical-case and @channel keys still land their declared rows (the 2026-11-03 impact burn)", async () => {
+    // Manager listed 'ComfyUI-Impact-Pack' and 'comfyui-impact-pack@nightly'
+    // while the manifest declares 'comfyui-impact-pack' — the engine imported
+    // the pack at its pin for a month while the exact-key census read every
+    // impact row MISSING. Both Manager spellings are a LANDED row; only a
+    // genuinely absent row is a miss.
+    const storeDir = join(ROOT, "store");
+    mkdirSync(storeDir);
+    route(greenRoute({ "Pack-A": "1", "pack-b@nightly": "2" }));
+    const answer = await preflight(CTX({
+      endpoint: () => ({
+        provision: "byo", url: "http://engine:8188",
+        model_download_path: storeDir,
+        extra_model_folders: { checkpoints: "checkpoints" },
+      }),
+    }));
+    assert.equal(answer.code, 200);
+    assert.equal(answer.env.ok, true, "case- and channel-folded census keys land their rows — no packs miss");
+    assert.deepEqual(answer.misses, []);
+    const packs = answer.axes.filter((a) => a.axis === "packs")[0];
+    assert.equal(packs?.state, "green");
+    assert.match(packs?.detail ?? "", /every required declared pack landed/);
   });
 
   it("ARM empty store: a CONFIGURED weights root absent from disk is a named miss", async () => {

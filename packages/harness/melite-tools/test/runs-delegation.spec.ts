@@ -4,9 +4,9 @@
 // turned off... after I had it on"):
 //   1. ROUNDTRIP: write → read returns the same record; the file
 //      lives under the lane's DSH_HOME.
-//   2. BOOT LAW: headless boots seated (config wins over any
-//      record); a browser mount boots on the persisted record,
-//      defaulting to the browser law (false) when nothing persists.
+//   2. BOOT LAW: every mount boots on the persisted record — the
+//      operator's last toggle outlives the reload, defaulting to
+//      the compose law (false) when nothing persists.
 //   3. ABSENT: no file → null (the browser law's default).
 //   4. CORRUPT/FOREIGN: a bad file refuses LOUD (the warn names the
 //      path) and reads as absent — never a silent true.
@@ -52,18 +52,13 @@ describe('THE PERSISTED DELEGATION — roundtrip', () => {
 })
 
 describe('THE BOOT LAW (pure — the wiring\'s one decision)', () => {
-  test('headless boots seated, whatever the record says (config wins)', () => {
-    assert.equal(resolveDelegationAtBoot(true, null), true)
-    assert.equal(resolveDelegationAtBoot(true, { delegated: false }), true)
+  test('a mount boots on the PERSISTED record — the operator\'s last toggle outlives the reload', () => {
+    assert.equal(resolveDelegationAtBoot({ delegated: true }), true)
+    assert.equal(resolveDelegationAtBoot({ delegated: false }), false)
   })
 
-  test('a browser mount boots on the PERSISTED record — the operator\'s last toggle outlives the reload', () => {
-    assert.equal(resolveDelegationAtBoot(false, { delegated: true }), true)
-    assert.equal(resolveDelegationAtBoot(false, { delegated: false }), false)
-  })
-
-  test('nothing persisted → the browser law (false): runs start at the user\'s Run press', () => {
-    assert.equal(resolveDelegationAtBoot(false, null), false)
+  test('nothing persisted → the compose law (false): runs start at the user\'s Run press', () => {
+    assert.equal(resolveDelegationAtBoot(null), false)
   })
 })
 

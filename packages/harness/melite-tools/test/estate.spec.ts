@@ -418,11 +418,11 @@ describe('disclose/manage/skills/load/ledger lanes', () => {
     let calls = 0
     const r = req({ disclose: {
       discover: (): unknown => ({}),
-      contracts: () => { calls += 1; return { flows: [{ id: 'audio-native-tts' }] } },
+      contracts: () => { calls += 1; return { flows: [{ id: 'image-upscale' }] } },
     } })
     assert.deepEqual(
       await r('GET', '/v1/flows', undefined, SIG, 1000),
-      { flows: [{ id: 'audio-native-tts' }] },
+      { flows: [{ id: 'image-upscale' }] },
     )
     assert.equal(calls, 1)
     // the submit lanes keep their own paths — the contract arm steals none

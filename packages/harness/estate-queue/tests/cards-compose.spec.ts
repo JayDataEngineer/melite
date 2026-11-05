@@ -208,6 +208,67 @@ describe("prepareCardParams (steps 2-6, the refusal ladder)", () => {
     expect(() => prepareCardParams(seat(), {}, "ghost", "1"))
       .toThrow(/no model unit for model: ghost/);
   });
+  // ── THE FAMILY-LESS HIJACK GATE (F56, 2026-11-14 — operator:
+  //    "trim's add_stage misrouted into the krea-2/turbo image lane
+  //    demanding a prompt. The family-less tool card never reached
+  //    its own surface"): a registered family-less card (boarded: [])
+  //    composes by its OWN id; a stated params.model folding to a
+  //    resolvable family used to compose THE MODEL'S card instead
+  //    (live receipt: trim + krea-2 judged trim's clip params by
+  //    image-gen's admission). The gate refuses the hijack at the
+  //    door, before any lane resolves. ───────────────────────────
+  describe("the family-less hijack gate (F56)", () => {
+    const toolDecl: CardDeclRow = {
+      skeleton: "trim", boarded: [], schemaNames: ["clip"], admits: [], spells: [],
+    };
+    const hijackSeat = (): ComposeSeat => seat({
+      cardDecls: (): Record<string, CardDeclRow> => ({ mycard: decl, trim: toolDecl }),
+      // 'krea-2' resolves as a family — without the gate, mid folds
+      // to it and the compose walks image-gen's admission
+      modelFacts: (): Record<string, ModelFactsRow> => ({
+        ...facts,
+        "krea-2": {
+          card: "image-gen", defaults: {},
+          variants: [{ id: "base", group: "", route: "", resolver_defaults: {}, cells: [] }],
+        },
+      }),
+    });
+    it("a family-less card with a stated foreign model REFUSES with the hijack voice (both cards named)", () => {
+      expect(() => prepareCardParams(
+        hijackSeat(), { card: "trim", model: "krea-2", clip: "/a.mp4", start_seconds: 0, end_seconds: -1 },
+        "krea-2", "1",
+      )).toThrow(/lane hijack.*image-gen's card instead|is a lane hijack/);
+      expect(() => prepareCardParams(
+        hijackSeat(), { card: "trim", model: "krea-2", clip: "/a.mp4", start_seconds: 0, end_seconds: -1 },
+        "krea-2", "1",
+      )).toThrow(/card "trim" declares no model family/);
+    });
+    it("a clean family-less row composes its OWN card-unit surface (no family, modelId '')", () => {
+      const p = prepareCardParams(
+        hijackSeat(), { card: "trim", clip: "/a.mp4", start_seconds: 0, end_seconds: -1 },
+        "trim", "1",
+      );
+      expect(p.card).toBe("trim");
+      expect(p.familyless).toBe(true);
+      expect(p.modelId).toBe("");
+      expect(p.fam).toBe("");
+    });
+    it("the self-naming residue (model === the card's own id) is not a hijack — the card-unit arm takes it", () => {
+      const p = prepareCardParams(
+        hijackSeat(), { card: "trim", model: "trim", clip: "/a.mp4" },
+        "trim", "1",
+      );
+      expect(p.familyless).toBe(true);
+    });
+    it("a FAMILY-CARRYING card keeps its legal seat (the gate never fires off a boarded card)", () => {
+      const p = prepareCardParams(
+        hijackSeat(), { card: "mycard", model: "fam", ckpt: "x" },
+        "fam", "1",
+      );
+      expect(p.fam).toBe("fam");
+      expect(p.card).toBe("mycard");
+    });
+  });
   it("a resolvable model prepares: family, card, skeleton, lifted params", () => {
     const p = prepareCardParams(seat(), { ckpt: "x", variant: "base", quant: "fp16" }, "fam", "1");
     expect(p.fam).toBe("fam");
@@ -279,5 +340,24 @@ describe("prepareCardParams (steps 2-6, the refusal ladder)", () => {
   it("a mid that resolves through the mids set still prepares", () => {
     const p = prepareCardParams(seat({ resolveCardFamily: () => "fam" }), {}, "fam", "1");
     expect(p.fam).toBe("fam");
+  });
+  it("the family door refuses when the card's own clause fails, and passes when it holds", () => {
+    // THE ONE-BENCH FAMILY DOOR (the t4r burn's seat, retired as a
+    // regular seat 2026-11-15 — the chair still runs when a card
+    // declares one): a failing clause refuses 400 with the card's
+    // own voice on the RAW lifted body; a holding clause prepares
+    // the stamped row unchanged.
+    const refused = seat({
+      admitStageFamily: (card: string, params: Record<string, unknown>) =>
+        card === "mycard" && params["ckpt"] === "x"
+          ? { ok: false, error: "family gate: mycard refuses ckpt x on this bench" }
+          : { ok: true },
+    });
+    const message = refusalMessage(() => prepareCardParams(refused, { ckpt: "x" }, "fam", "1"));
+    expect(message).toMatch(/family gate: mycard refuses ckpt x on this bench/);
+    const held = prepareCardParams(refused, { ckpt: "y" }, "fam", "1");
+    expect(held.fam).toBe("fam");
+    expect(held.card).toBe("mycard");
+    expect(held.params).toEqual({ ckpt: "y" });
   });
 });

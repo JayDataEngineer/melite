@@ -222,7 +222,9 @@ describe("lanePresenceRefusal (the gate)", () => {
   });
   it("a family without lane_inputs stands down (the ?? toll)", () => {
     arm(null);
-    assert.equal(lanePresenceRefusal("anycreature"), null);
+    // fit (weightless maps — no lane row) probes the stand-down since
+    // the anycreature retirement (2026-11-01, the blender lane).
+    assert.equal(lanePresenceRefusal("fit"), null);
   });
   it("a missing lane file without a provision row omits the hint", async () => {
     // REPLACES a vacuous pin (audit 2026-10-13): the old body called

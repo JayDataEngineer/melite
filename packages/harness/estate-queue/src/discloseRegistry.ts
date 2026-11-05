@@ -23,7 +23,7 @@ import { Service } from "@deepseek-ai/cordis";
 import type { Context } from "@deepseek-ai/cordis";
 import { resolveRepoRoot } from "@melite/comfyui-cordis";
 import type { CardRegistryService } from "./cardsRegistry.ts";
-import { seedFlowsSeat } from "./flowsData.ts";
+import { flowInitialKeys, seedFlowsSeat } from "./flowsData.ts";
 import type { FlowsSeat } from "./flowsData.ts";
 
 // ── the pures (verbatim) ──────────────────────────────────────
@@ -53,6 +53,11 @@ export interface FlowSummary {
   readonly description: string;
   readonly stages: number;
   readonly skillRefs: readonly string[];
+  /** The flow's initial KEYS (F57, 2026-11-13: the spell-stem seats
+   *  the flow door binds — photo, params_json — named at DISCOVERY,
+   *  derived from the registry row, so the error text is never the
+   *  only teacher). */
+  readonly initials: readonly string[];
 }
 
 /** The search surface a card def offers (the def itself satisfies
@@ -87,7 +92,7 @@ const MODALITY_WORDS: Readonly<Record<string, string>> = {
   animation: "video", animate: "video", film: "video",
   audio: "audio", sound: "audio", sounds: "audio", music: "audio", voice: "audio",
   speech: "audio", talk: "audio", talking: "audio",
-  mesh: "mesh", "3d": "mesh", blender: "mesh",
+  mesh: "mesh", "3d": "mesh",
 };
 
 /** Request verbs → the OPERATION tag they mean. A card declares its
@@ -235,7 +240,7 @@ export function flowSummaryRows(
     } catch {
       // no leaf — the registry row stands alone
     }
-    out.push({ name, title, description: flow.description, stages: flow.stages.length, skillRefs: flow.skillRefs });
+    out.push({ name, title, description: flow.description, stages: flow.stages.length, skillRefs: flow.skillRefs, initials: flowInitialKeys(flow) });
   }
   return out;
 }

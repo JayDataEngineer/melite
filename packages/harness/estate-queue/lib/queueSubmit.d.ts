@@ -134,7 +134,10 @@ export declare function walkSubmitEnvelope(doc: unknown, draftExists: (draftId: 
     kind: "ok";
     body: Record<string, unknown>;
     testFlag: boolean;
-    draftId: DraftId;
+    /** Undefined on the FLOW-DOC EXEMPTION (a {flow}/{flow_inline}
+     *  body with no draft_id — the flow's own doc is the birth
+     *  doc). Every other shape carries one (the CARD BIRTH LAW). */
+    draftId: DraftId | undefined;
     /** The start body's own execute ceiling (absent = the queue
      *  config decides; <= 0 disables the fuse). */
     ceilMs: number | undefined;

@@ -36,7 +36,7 @@ export function meliteLoad(
   // seat law is index.spec's subject (the apply wiring always passes
   // it — a missed production wiring shows as doors never seating,
   // loud on the first catalog touch).
-  opts: { headless?: boolean; expandEstateDoors?: () => void } = {},
+  opts: { delegated?: boolean; expandEstateDoors?: () => void } = {},
 ): ToolDefinition {
   // PRESENTATION SEAT (§7 P7, the tool-presentation wall — one
   // seat for the invalid face): the presenter rides defineTool
@@ -47,9 +47,13 @@ export function meliteLoad(
   // not change) now reads against the gated face. execute validation
   // (ToolArgsError/INVALID_ARGS) is unaffected.
   const presentCall: (args: unknown) => ToolCallView = (args) => {
-    const a = (args ?? {}) as { name?: unknown; inference_type?: unknown };
-    const nm = typeof a.name === 'string' && a.name !== '' ? a.name : '?';
-    return { card: 'generic', title: `Load ${nm}`, kind: 'search' };
+    // (defineTool's soft gate owns the invalid face — the wrapper
+    // returns undefined before this presenter ever runs, so args is
+    // always the validated object here; a defensive default or a
+    // placeholder side would be uncoverable by construction, not
+    // untested, and coverage counts an untaken side either way.)
+    const a = args as { name: string };
+    return { card: 'generic', title: `Load ${a.name}`, kind: 'search' };
   };
   // Ledger row 8 (2026-09-10): defineTool wraps the literal — the
   // registry gains schema compilation + input validation
@@ -125,6 +129,16 @@ export function meliteLoad(
             model_hints?: Array<{ description?: unknown; present?: unknown }>
             craft?: { prompt_hint?: unknown }
             stages?: Array<Record<string, unknown>>
+            // THE FLOW-AS-CARDS ROWS (flows-are-compositions slice C):
+            // a card-stage flow's bench materialization — present iff
+            // every stage is a card row; absent = the run-door face.
+            bench_stages?: Array<Record<string, unknown>>
+            // (F57, the leaf-naming law) the flow's initial seats:
+            // validators (key → kind), the required roster, and the
+            // derived key order — named at the top of the open. The
+            // glosses (the anny-params typed-array seat) carry each
+            // kind's shape beside the kind.
+            initials?: { validators?: Record<string, unknown>; required?: unknown; keys?: unknown; glosses?: Record<string, unknown> }
           }
           error?: string
         }
@@ -164,12 +178,53 @@ export function meliteLoad(
         // may be benched, its family.action stages compose when the
         // flow runs. Telling a flow's reader to add_stage sent
         // makers hunting a door that refuses (the honest split).
-        const next = opts.headless === true
+        // THE FLOW COMES OUT AS CARDS (flows-are-compositions slice C,
+        // operator 2026-11-14): a card-stage flow serves its bench rows
+        // on the bundle (bench_stages) — the landing is ONE
+        // melite_construct load with those rows, never a stage-by-stage
+        // hunt. A flow with no card seats (family actions, engine
+        // verbs) keeps the run-door face — the honest split.
+        const benchRows = Array.isArray(b.bench_stages) ? b.bench_stages : []
+        const next = opts.delegated === true
           ? 'open with melite_flow'
           : str(b.kind) === 'flow'
-            ? 'it is a flow, not a card — drive it through the run doors; its card stages may also be benched with melite_construct (add_stage), and its family.action stages compose when the flow runs'
+            ? (benchRows.length > 0
+                ? 'it is a flow of cards — the bundle carries its bench_stages rows (the same graph the {flow} door composes); land them on the shared bench in ONE write: melite_construct load {stages: <the bench_stages rows verbatim>, intent: \''
+                  + str(b.name) + '\'}; keep editing the cards there; runs start at the user\'s Run press'
+                : 'it is a flow, not a card — drive it through the run doors; its stages compose on the family/engine planes at run time (no card seats to bench), and its card stages may still be benched one by one with melite_construct (add_stage)')
             : 'compose it with melite_construct (add_stage) — the bench state is live in the user\'s cards tab; keep editing it there; runs start at the user\'s Run press'
         const out: string[] = [`loaded ${str(b.kind) || '?'} ${str(b.name) || '?'} — ${next}`]
+        // THE INITIAL SEATS, NAMED AT THE TOP (F57, operator
+        // 2026-11-13: "single-stage flow initial keys are
+        // UNDOCUMENTED — natural keys fail with internal errors … the
+        // error text is the only teacher"). A flow's open names its
+        // initial keys with their validator kinds, requireds marked —
+        // the leaf-naming law for the leafless rows (the anny spell
+        // stems photo/params_json), derived from the registry, before
+        // any press meets the seam.
+        if (str(b.kind) === 'flow' && b.initials != null && typeof b.initials === 'object') {
+          const vals = b.initials.validators
+          const glosses = b.initials.glosses
+          const reqList = Array.isArray(b.initials.required)
+            ? b.initials.required.filter((r): r is string => typeof r === 'string') : []
+          const keys = Array.isArray(b.initials.keys)
+            ? b.initials.keys.filter((k): k is string => typeof k === 'string') : []
+          // THE TYPED-ARRAY SEAT (the anny-params half, F57's owed
+          // tail): the kind alone taught a name, not a shape — an
+          // agent re-instantiating an estimated bake hand-typed a
+          // 139-float JSON string. The gloss (derived once in the
+          // registry, ridden on the bundle) names the dialect doc
+          // and its OBJECT spelling right beside the kind.
+          const seat = (k: string): string => {
+            const kind = vals !== undefined && typeof vals[k] === 'string' ? ` (${vals[k]}` : ''
+            const gloss = glosses !== undefined && typeof glosses === 'object' && typeof glosses[k] === 'string'
+              ? (kind !== '' ? ` — ${glosses[k] as string}` : '') : ''
+            return (reqList.includes(k) ? k + '*' : k) + kind + gloss + (kind !== '' ? ')' : '')
+          }
+          if (keys.length > 0) {
+            out.push('flow initials: ' + keys.map(seat).join(', ') + (reqList.length > 0 ? ' (* required)' : ''))
+          }
+        }
         // THE CARD ABSTRACTION LAW (operator 2026-09-21): during
         // inference the agent interfaces with the CARD, never the
         // model — the card bundle NEVER names family ids. The hints

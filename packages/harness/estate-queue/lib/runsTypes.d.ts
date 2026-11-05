@@ -206,7 +206,17 @@ export interface RunRecord {
 }
 /** The engine's path relative to the run dir (runRel, door-verbatim). */
 export declare function runRel(run: RunRecord, art: string): string;
-/** "<Type>: <msg>" — the worker's terminal error text. */
+/** THE THROWN-VALUE FOLD (qa8 F38): run_status once served
+ * "Error: [object Object]" for a real OOM because a plain-object
+ * throw met String(). A thrown non-Error renders by its own words —
+ * a bare string verbatim; an object's message/error string fields
+ * first, then its JSON; a circular or unserializable value folds to
+ * its key roster. The vacuous "[object Object]" can never leave this
+ * door. */
+export declare function foldThrownValue(value: unknown): string;
+/** "<Type>: <msg>" — the worker's terminal error text. The message
+ * half rides the thrown-value fold (F38): a thrown object reaches
+ * the run's error column as its own words. */
 export declare function errText(err: unknown): string;
 /** The settle persist (the R3 durable-queue mirror of registration,
  *  door-verbatim): the terminal status rewrites the run's

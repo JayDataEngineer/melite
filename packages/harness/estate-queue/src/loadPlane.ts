@@ -15,8 +15,8 @@ import { semanticModelEntries } from "@melite/comfyui-card-kit/semanticModelKnob
 import type { ModelsService } from "@melite/comfyui-cordis";
 import { laneContractsFor, type LaneContractDecl } from "@melite/contracts/laneRelations";
 import type { CardRegistryService } from "./cardsRegistry.ts";
-import { seedFlowsSeat } from "./flowsData.ts";
-import type { FlowsSeat } from "./flowsData.ts";
+import { flowInitialKeys, flowInitialGlosses, seedFlowsSeat, expandRegistryFlow } from "./flowsData.ts";
+import type { FlowsSeat, RegistryFlow } from "./flowsData.ts";
 import { toolBaseRows } from "./toolProjection.ts";
 import { modelRows, cardRows, engineDirs, wireSkill, findSkill } from "./skillPlane.ts";
 import type { FamilyModelsSeat } from "./flowsFamilyCompose.ts";
@@ -265,7 +265,11 @@ export function skillLinesForCard(repo: string, cardId: string): Array<Record<st
  *  (the caller concatenates), then family by family. A boarded id
  *  with no rows contributes nothing (the walk is the truth — never
  *  a refusal; anima itself ships no AGENT.md, only the skill). */
-export function skillLinesForFamilies(repo: string, fams: readonly string[]): Array<Record<string, unknown>> {
+export function skillLinesForFamilies(
+  repo: string,
+  fams: readonly string[],
+  stateRoot?: string,
+): Array<Record<string, unknown>> {
   const out: Array<Record<string, unknown>> = [];
   const seen = new Set<string>();
   // (M6: engineDirs never throws — missing roots read empty — so the
@@ -277,7 +281,11 @@ export function skillLinesForFamilies(repo: string, fams: readonly string[]): Ar
   for (const engine of engines) {
     let rows;
     try {
-      rows = modelRows(engine);
+      // THE AUTHORED PLANE rides the same walk the write door landed
+      // in (skillAuthored): a skill the agent authored is discoverable
+      // from melite_load exactly as a tracked one — without the root
+      // the walk is the tracked tree alone (the opt-in law).
+      rows = modelRows(engine, stateRoot);
     } catch (e) {
       // M6: an engine whose model rows cannot be read vanishes from
       // the skill walk — that degrade is NAMED, never silent.
@@ -394,6 +402,7 @@ export function loadCard(
   cards: CardRegistryService,
   modelsSeat: CardModelsSeat | null | undefined,
   cardId: string,
+  stateRoot?: string,
 ): Record<string, unknown> {
   // ADMISSION BEFORE THE DEPENDENCY (the flow arm's own order at
   // loadFlow: the referent first, the seat that serves it second).
@@ -472,7 +481,7 @@ export function loadCard(
       // THE BOARDED CRAFT (discover+load contract, 2026-09-22):
       // the boarded families' model skills ride the same bundle —
       // no second hunt before compose.
-      ...skillLinesForFamilies(repo, (def as { boarded: readonly string[] }).boarded),
+      ...skillLinesForFamilies(repo, (def as { boarded: readonly string[] }).boarded, stateRoot),
     ],
     model_hints: hints,
     pack_hints,
@@ -490,6 +499,84 @@ export function loadCard(
   return bundle;
 }
 
+/** THE FLOW-AS-CARDS PROJECTION (flows-are-compositions slice C,
+ * operator 2026-11-14: "WHEN YOU LOAD A FLOW, IT COMES OUT AS
+ * CARDS… THE BENCH OF CARDS REPRESENTS A FLOW"): a card-stage flow
+ * projects onto the bench's own row grammar — one row per stage,
+ * `card` + the stage's params, every fromStage wire remapped to the
+ * bench's s_0..s_n ids, initial wires verbatim ({initial} — the
+ * bench grammar admits both shapes at every write door). The
+ * projection rides the SAME expansion walk the {flow} start door
+ * composes through (expandRegistryFlow — from_flow links resolved
+ * live), so what the bench shows and what the door compiles are one
+ * graph, never a parallel derivation.
+ *
+ * A flow materializes ONLY while every stage is a card row: a
+ * family-action stage (anny.estimate_photo, fit.seat — the family
+ * DECL composes its nodes at expansion, no card seat exists) or an
+ * engine-verb stage (craft-loop's drive-time fields) has NO card to
+ * land as, and a skip_when stage carries a run-conditioned stage
+ * count the static bench cannot hold. Those flows keep the run-door
+ * face — the honest bound (the flows-are-compositions audit's
+ * contradictions 1-3), named in the refusal, never a silent
+ * half-landing.
+ *
+ * Pure: the registry's rows are never aliased (params/outputs
+ * structuredClone'd, the expansion's own detach already guards the
+ * template) and the return is fresh JSON — safe to serve on the
+ * load bundle and to press onto a bench verbatim.
+ *
+ * @param row the registry flow (the seat's live row)
+ * @param seat the flows seat (from_flow links resolve live — the
+ *   same seat expansion reads, never a second table)
+ * @returns the bench rows ({flow, stages: s_0..s_n}), or the named
+ *   refusal when a stage holds no card seat
+ * @throws the expansion's own authoring errors (dangling from_flow
+ *   links, raw-workflow shapes) — authoring bugs die loud at the
+ *   read the same way they die at the press */
+export function flowBenchStages(
+  row: RegistryFlow,
+  seat: FlowsSeat,
+): { flow: string; stages: Array<Record<string, unknown>> } | { flow: string; refused: string } {
+  for (const st of row.stages) {
+    if (st.skipWhen !== null) {
+      return {
+        flow: row.id,
+        refused: "stage '" + st.id + "' carries skip_when — the bench holds static card rows, never a run-conditioned stage count (the {flow} door owns the skip law)",
+      };
+    }
+    if (st.card === "") {
+      const plane: string = st.family !== ""
+        ? "the family plane (family '" + st.family + "' action '" + st.action + "' — the DECL composes its nodes at expansion)"
+        : "an engine verb (" + st.engine + " — the runs door drives it directly)";
+      return {
+        flow: row.id,
+        refused: "stage '" + st.id + "' composes on " + plane + " and has no card seat to land as (the {flow} door runs it)",
+      };
+    }
+  }
+  const expanded: RegistryFlow = expandRegistryFlow(row, seat);
+  const benchIdOf: Map<string, string> = new Map(
+    expanded.stages.map((st, i): [string, string] => [st.id, "s_" + String(i)]),
+  );
+  const stages: Array<Record<string, unknown>> = expanded.stages.map((st, i): Record<string, unknown> => ({
+    id: "s_" + String(i),
+    card: st.card,
+    engine: st.engine,
+    description: st.description,
+    params: structuredClone(st.params) as Record<string, unknown>,
+    inputs: Object.fromEntries(
+      Object.entries(st.inputs).map(([chan, edge]): [string, unknown] =>
+        "initial" in edge
+          ? [chan, { initial: edge.initial }]
+          : [chan, { stage: benchIdOf.get(edge.stage) ?? edge.stage, output: edge.output }],
+      ),
+    ),
+    outputs: structuredClone(st.outputs) as Record<string, unknown>,
+  }));
+  return { flow: row.id, stages };
+}
+
 /** Melite load for a FLOW: the leaf agents md + the registry
  *  signature (the tool overlay verbatim — ONE spelling, the same
  *  object validate/start enforce; null when the row declares
@@ -503,6 +590,7 @@ export function loadFlow(
   flowName: string,
   modelsSeat?: FamilyModelsSeat | null,
   flowsSeat?: FlowsSeat | null,
+  stateRoot?: string,
 ): Record<string, unknown> {
   const row = (flowsSeat ?? seedFlowsSeat()).get(flowName);
   if (row === undefined) throw new Error(`disclose: unknown flow '${flowName}'`);
@@ -537,7 +625,7 @@ export function loadFlow(
     }
   };
   const pushFamilyLines = (fam: string): void => {
-    for (const line of skillLinesForFamilies(repo, [fam])) {
+    for (const line of skillLinesForFamilies(repo, [fam], stateRoot)) {
       const id = String((line as { id: unknown }).id);
       if (id === "" || seen.has(id)) continue;
       seen.add(id);
@@ -581,11 +669,39 @@ export function loadFlow(
       required: row.tool.required,
       overlays: row.tool.overlays,
     },
+    // THE INITIAL SEATS NAMED AT THE TOP (F57, the leaf-naming law:
+    // leaves and bundles name their initial keys, never teach them
+    // through seam errors): the validators (key → kind) plus the
+    // required roster, derived from the row — the spell-stem seats
+    // ($photo→photo) an open reads BEFORE the first press. The
+    // GLOSSES (the anny-params typed-array seat) carry each kind's
+    // shape one level deeper: bake_params names the dialect doc and
+    // its OBJECT spelling, so the 139-float estimated transport is
+    // taught, never hand-typed as a string.
+    initials: {
+      validators: { ...row.initialValidators },
+      required: row.requiredInitials?.slice() ?? [],
+      keys: flowInitialKeys(row),
+      glosses: flowInitialGlosses(row),
+    },
     agents: flowLeafDocs(repo, flowName),
     stages,
     refs: row.skillRefs.slice(),
     skills,
   };
+  // THE FLOW COMES OUT AS CARDS (flows-are-compositions slice C): a
+  // card-stage flow serves its bench rows on the bundle — ONE
+  // materialization body (the same expansion the {flow} door
+  // composes), landable as a single write by melite_construct load
+  // (agent mode) or the run door's press (the delegated boot).
+  // Absent = the
+  // flow's stages hold no card seats (family action / engine verb /
+  // skip_when) and it keeps the run-door face — the slim `stages`
+  // list above still names every stage and its plane.
+  const materialized = flowBenchStages(row, flowsSeat ?? seedFlowsSeat());
+  if (!("refused" in materialized)) {
+    bundle["bench_stages"] = materialized.stages;
+  }
   bundle["digest"] = bundleDigest(bundle);
   return bundle;
 }

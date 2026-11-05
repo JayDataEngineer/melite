@@ -55,12 +55,15 @@ describe('the comfy_manage tool face — the lora_fetch recipe', () => {
       description: string
       parameters: { properties: { action: { enum: readonly string[] }, operator_confirmed: { description: string } } }
     }
-    // THE OPERATOR'S ORDER, VERBATIM (the tool description is the
-    // agent's only curriculum — the burn's recipe rides it or no
-    // agent ever executes it)
+    // THE CURED RECIPE (the pixel-anim burn, 2026-11-15): the tool
+    // description is the agent's only curriculum — it must teach
+    // LAND = SEATED and the COMPOSE next action, never the restart
+    // lie (the engine's loras listing is mtime-live; reboots serve
+    // custom_nodes, never weight files)
+    assert.doesNotMatch(def.description, /auto restart/)
     assert.match(
       def.description,
-      /add a lora to <family>: lora_fetch url → auto restart → the mod appears in the family's mods/,
+      /NO restart, NO file edits, NO paste/,
     )
     assert.ok(def.parameters.properties.action.enum.includes('lora_fetch'), 'lora_fetch is a dispatchable action')
     // THE GATE PARAM IS DESCRIBED FOR THE NEW VERB TOO (never

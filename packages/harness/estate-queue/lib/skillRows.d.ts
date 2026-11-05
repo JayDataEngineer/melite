@@ -1,7 +1,7 @@
 import type { DocRow, SkillRow } from "./skillPlane.js";
 import type { FlowsSeat } from "./flowsData.js";
 import type { FamilyModelsSeat } from "./flowsFamilyCompose.js";
-/** One registry headless-tool property, projected to the frozen
+/** One registry flow-tool property, projected to the frozen
  *  FlowToolDecl shape (always ptype + description; enum / default /
  *  minimum / maximum ride only when the registry declares them —
  *  nulls never serve). */
@@ -38,7 +38,7 @@ interface FlowDecl {
  *  silently — the registry is code, so a declaration bug throws LOUD
  *  out of expandRegistryFlow instead of marking a row). Skips the
  *  registry when flows/ is absent (_flow_rows 387-388: not-a-dir
- *  -> []). The headless tool rides the registry declaration
+ *  -> []). The flow tool rides the registry declaration
  *  verbatim (projected to the frozen row shape); hasSkillMd reads
  *  the flows/<id>/SKILL.md leaf live. skillRefs ride the registry
  *  declaration (empty today — the frozen refs pointed at the RETIRED flow.py rows and the retired enhance recipes).
@@ -67,7 +67,17 @@ export declare function spawnRows(cdir: string, prefix: string, scope: "card-spa
 export declare function engineDirs(enginesRoot: string): string[];
 /** LEVEL 1+3 model docs (lane_disclosure._model_rows 259-312):
  *  GUIDE.md / agents/AGENT.md / agents/skills/* per model dir. */
-export declare function modelRows(engine: string): DocRow[];
+/** THE AUTHORED SKILL WALK (skillAuthored.ts): docs the agent wrote
+ *  live under <stateRoot>/skills/<family>/<stem>/SKILL.md and serve
+ *  under the per-model id shape (`model:<family>:<stem>`), so a
+ *  written skill is discoverable in melite_load and read by
+ *  melite_skill_read with no extra door.
+ *  @param stateRoot the estate's state root (the authored plane)
+ *  @param mid the model family id
+ *  @param genre the family's genre, for the row's scoping
+ *  @returns rows in stem order (a stable index) */
+export declare function authoredRows(stateRoot: string, mid: string, genre: string | null): DocRow[];
+export declare function modelRows(engine: string, stateRoot?: string): DocRow[];
 export interface CardWalk {
     readonly rows: DocRow[];
     readonly buckets: Map<string, {

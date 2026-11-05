@@ -27,7 +27,7 @@ import assert from "node:assert/strict";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { resourceKey, FileOperationStore, ProvisioningService } from "@melite/estate-provisioning";
+import { resourceKey, AcquireBusyError, FileOperationStore, ProvisioningService } from "@melite/estate-provisioning";
 import { Context } from "@deepseek-ai/cordis";
 import type {
   ProvisionOperation,
@@ -301,5 +301,132 @@ describe("the stuck acquire's verbs (k2: no retry, no delete — the door must o
     } finally {
       await ctxB.fiber.dispose();
     }
+  });
+});
+
+// THE RESCUE REFUSALS (the error half the happy-path verbs never
+// judge): a live row refuses 409 at the shared live-refusal, a lane
+// without the seats refuses 503, an unknown id 404s, a landed row
+// refuses 409 (nothing to retry), a busy retry waits 429 with the
+// dead row intact, a broken retry rethrows, and the discard verb
+// carries the same seat/id law.
+describe("the stuck acquire's verbs — the refusal half (every error the door can voice)", () => {
+  it("a LIVE row refuses acquire_retry 409 (the verb is for a settled row, never a live one)", async () => {
+    const fake = fakeProvisioning();
+    fake.plans.set(resourceKey(modelRef("moss-image")), modelPlan(modelRef("moss-image")));
+    const ctx = ctxFor(fake);
+    const [, start] = await dispatchManage(
+      { action: "acquire_weight", model: "moss-image", file: "moss_image_sft_int8_convrot.safetensors" }, ctx);
+    assert.equal(start.ok, true);
+    const liveOp = String(dataOf(start)["operation_id"]);
+    const [code, retry] = await dispatchManage({ action: "acquire_retry", operation_id: liveOp }, ctx);
+    assert.equal(code, 409);
+    assert.match(retry.detail, /still in flight/);
+    assert.match(retry.detail, /acquire_retry is for a settled operation/);
+  });
+
+  it("a LIVE row refuses acquire_discard 409 (the same shared live-refusal guards both verbs)", async () => {
+    const fake = fakeProvisioning();
+    fake.plans.set(resourceKey(modelRef("moss-image")), modelPlan(modelRef("moss-image")));
+    const ctx = ctxFor(fake);
+    const [, start] = await dispatchManage(
+      { action: "acquire_weight", model: "moss-image", file: "moss_image_sft_int8_convrot.safetensors" }, ctx);
+    const liveOp = String(dataOf(start)["operation_id"]);
+    const [code, discard] = await dispatchManage({ action: "acquire_discard", operation_id: liveOp }, ctx);
+    assert.equal(code, 409);
+    assert.match(discard.detail, /still in flight/);
+  });
+
+  it("a retry on a lane without the seats refuses 503 (never a TypeError)", async () => {
+    const fake = fakeProvisioning();
+    const ctx = ctxFor(fake);
+    const seatless = {
+      ...ctx,
+      provisioning: { reconcile: async (): Promise<ResourceStatus[]> => [] },
+    } as unknown as ManageCtx;
+    const [code, retry] = await dispatchManage({ action: "acquire_retry", operation_id: "op-ghost" }, seatless);
+    assert.equal(code, 503);
+    assert.match(retry.detail, /acquire_retry is not configured on this lane/);
+  });
+
+  it("a retry of an unknown id 404s (never a fake zero)", async () => {
+    const fake = fakeProvisioning();
+    const ctx = ctxFor(fake);
+    const [code, retry] = await dispatchManage({ action: "acquire_retry", operation_id: "op-ghost" }, ctx);
+    assert.equal(code, 404);
+    assert.match(retry.detail, /unknown acquire_weight operation: op-ghost/);
+  });
+
+  it("a retry of a LANDED row refuses 409 (the weights are on the store — nothing to retry)", async () => {
+    const fake = fakeProvisioning();
+    fake.plans.set(resourceKey(modelRef("moss-image")), modelPlan(modelRef("moss-image")));
+    const ctx = ctxFor(fake);
+    const [, start] = await dispatchManage(
+      { action: "acquire_weight", model: "moss-image", file: "moss_image_sft_int8_convrot.safetensors" }, ctx);
+    const opId = String(dataOf(start)["operation_id"]);
+    const row = fake.ledger.get(opId);
+    assert.ok(row !== undefined);
+    fake.ledger.set(opId, { ...row, state: "installed" });
+    const [code, retry] = await dispatchManage({ action: "acquire_retry", operation_id: opId }, ctx);
+    assert.equal(code, 409);
+    assert.match(retry.detail, /already landed/);
+    assert.match(retry.detail, /nothing to retry/);
+  });
+
+  it("a retry whose fresh fetch hits the cap waits 429 (the dead row stays exactly as it was)", async () => {
+    const fake = fakeProvisioning();
+    fake.plans.set(resourceKey(modelRef("moss-image")), modelPlan(modelRef("moss-image")));
+    const ctx = ctxFor(fake);
+    const deadOp = await startAndFail(fake, ctx);
+    const before = fake.ledger.get(deadOp);
+    assert.ok(before !== undefined && before.state === "failed");
+    const busy = {
+      ...fake,
+      startWeightAcquire: async (): Promise<string> => {
+        throw new AcquireBusyError("plane at cap — poll the live operation or wait for one to settle");
+      },
+    } as unknown as ProvisioningServiceDefinition;
+    const busyCtx = ctxFor(busy);
+    const [code, retry] = await dispatchManage({ action: "acquire_retry", operation_id: deadOp }, busyCtx);
+    assert.equal(code, 429);
+    assert.equal(retry.ok, false);
+    assert.equal(retry.state, "busy");
+    assert.equal((retry as unknown as Record<string, unknown>)["retry_after_ms"], 5_000);
+    assert.equal(fake.ledger.get(deadOp)?.state, "failed", "the dead row is untouched by the refused retry");
+  });
+
+  it("a retry whose fresh fetch breaks rethrows (only the cap is a wait)", async () => {
+    const fake = fakeProvisioning();
+    fake.plans.set(resourceKey(modelRef("moss-image")), modelPlan(modelRef("moss-image")));
+    const ctx = ctxFor(fake);
+    const deadOp = await startAndFail(fake, ctx);
+    const broken = {
+      ...fake,
+      startWeightAcquire: async (): Promise<string> => { throw new Error("fresh wire exploded"); },
+    } as unknown as ProvisioningServiceDefinition;
+    const brokenCtx = ctxFor(broken);
+    const [code, retry] = await dispatchManage({ action: "acquire_retry", operation_id: deadOp }, brokenCtx);
+    assert.equal(code, 500);
+    assert.match(retry.detail, /fresh wire exploded/);
+  });
+
+  it("a discard on a lane without the seats refuses 503 (never a TypeError)", async () => {
+    const fake = fakeProvisioning();
+    const ctx = ctxFor(fake);
+    const seatless = {
+      ...ctx,
+      provisioning: { reconcile: async (): Promise<ResourceStatus[]> => [] },
+    } as unknown as ManageCtx;
+    const [code, discard] = await dispatchManage({ action: "acquire_discard", operation_id: "op-ghost" }, seatless);
+    assert.equal(code, 503);
+    assert.match(discard.detail, /acquire_discard is not configured on this lane/);
+  });
+
+  it("a discard of an unknown id 404s (never a silent clear)", async () => {
+    const fake = fakeProvisioning();
+    const ctx = ctxFor(fake);
+    const [code, discard] = await dispatchManage({ action: "acquire_discard", operation_id: "op-ghost" }, ctx);
+    assert.equal(code, 404);
+    assert.match(discard.detail, /unknown acquire_weight operation: op-ghost/);
   });
 });

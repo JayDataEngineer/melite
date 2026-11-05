@@ -114,7 +114,7 @@ const seat = (
     //
     // CARD STAGES RIDE THESE FLOWS (the atom vocabulary, stroke 3 —
     // the flow-system stroke): the character flow's z-image stages,
-    // garment stage, and rig hop (body-to-somax) are card= stages,
+    // garment stage, and rig hop are card= stages,
     // so the structural fake serves those cards and their family
     // rows. The fake stays structural — no engine, no facts file, no
     // compose.
@@ -131,6 +131,22 @@ const seat = (
             // stage params (the wire-coercion seat); the structural
             // fake admits the body verbatim — the real card's schema
             // is exercised by the card's own suite, not here
+            schema: (v: unknown): unknown => v,
+          },
+        ],
+        [
+          // image-edit rides the same bench docs as image-gen (every
+          // two-stage tolerance bench wires s_0.default into s_1's
+          // input_images) — the one-table cure (2026-11-01) reads the
+          // card's declared table at compose time, so the fake serves
+          // it the way the real registry does: the input port the
+          // wires feed and the output channel the judge checks.
+          "image-edit",
+          {
+            id: "image-edit",
+            boarded: [],
+            requiresModel: false,
+            flowKinds: { inputs: { input_images: "image" }, outputs: { default: "image" }, requiresModel: false },
             schema: (v: unknown): unknown => v,
           },
         ],
@@ -214,7 +230,7 @@ const seat = (
 const inlineBody = (over: Record<string, unknown> = {}): Record<string, unknown> => ({
   draft_id: "d1",
   test: false,
-  flow_inline: { id: "x", stages: [{ id: "s", engine: "comfyui" }] },
+  flow_inline: { id: "x", stages: [{ id: "s", engine: "comfyui", outputs: { out: "image" } }] },
   ...over,
 });
 
@@ -559,7 +575,7 @@ describe("press idempotency (audit N-E1)", () => {
       draft_id: "d1",
       test: false,
       press_key: "press-body-key",
-      flow_inline: { id: "x", stages: [{ id: "s", engine: "comfyui", params: { prompt } }] },
+      flow_inline: { id: "x", stages: [{ id: "s", engine: "comfyui", params: { prompt }, outputs: { out: "image" } }] },
     });
     const minter = s.svc.start(bodyWith("first"), sig());
     await flush();
@@ -616,7 +632,7 @@ describe("validate", () => {
     ]);
     const s = seat({ defsSync: (): unknown => defs });
     const ok = await s.svc.validate(
-      inlineBody({ flow_inline: { id: "x", stages: [{ id: "s", card: "c", engine: "comfyui", params: {} }] } }),
+      inlineBody({ flow_inline: { id: "x", stages: [{ id: "s", card: "c", engine: "comfyui", params: {}, outputs: { out: "image" } }] } }),
       sig(),
     );
     assert.equal((ok as { status?: unknown; ok?: unknown })["ok"] ?? true, true);
@@ -662,7 +678,7 @@ describe("validate", () => {
       },
     });
     const ok = await s.svc.validate(
-      inlineBody({ flow_inline: { id: "x", stages: [{ id: "s", card: "sfx", engine: "comfyui", params: { model: "moss_sfx_v2", prompt: "drip" } }] } }),
+      inlineBody({ flow_inline: { id: "x", stages: [{ id: "s", card: "sfx", engine: "comfyui", params: { model: "moss_sfx_v2", prompt: "drip" }, outputs: { default: "audio" } }] } }),
       sig(),
     );
     assert.equal((ok as { ok?: unknown })["ok"], true);
@@ -691,7 +707,7 @@ describe("validate", () => {
       },
     });
     const caught = await remote(() => s.svc.validate(
-      inlineBody({ flow_inline: { id: "x", stages: [{ id: "s", card: "sfx", engine: "comfyui", params: { model: "moss_sfx_v2", prompt: "drip" } }] } }),
+      inlineBody({ flow_inline: { id: "x", stages: [{ id: "s", card: "sfx", engine: "comfyui", params: { model: "moss_sfx_v2", prompt: "drip" }, outputs: { default: "audio" } }] } }),
       sig(),
     ));
     assert.match(String(caught.message), /lane miss.*moss_sfx_v2.*not found/,
@@ -963,9 +979,14 @@ describe("validate", () => {
       assert.match(String(rec["error"]), /lane presence: family 'z-image'/);
       const stages = rec["stages"] as Array<Record<string, unknown>>;
       assert.equal(stages.length, 2);
+      // THE PER-ROW STATUS TRUTH (qa8 F2): the claim refusal is the
+      // RUN's verdict — a two-stage bench's rows never answered, so
+      // neither claims it: they read stopped and carry no borrowed
+      // text (the run doc above carries the lane voice). The
+      // sole-stage press keeps its own voice (the arm above).
       for (const stage of stages) {
-        assert.equal(stage["status"], "failed");
-        assert.match(String(stage["error"]), /no store copy exists/);
+        assert.equal(stage["status"], "stopped");
+        assert.equal(stage["error"], undefined);
       }
     } finally {
       if (prevCfg === undefined) delete process.env["COMFYUI_ENDPOINT_CONFIG"];
@@ -1752,6 +1773,30 @@ describe("status + stop", () => {
     assert.equal((await remote(() => s.svc.status("run-f5none123456-00000004", sig()))).code, "runs/unknown-run");
   });
 
+  it("a settled disk row without an error key resyncs status and adopts nothing", async () => {
+    // THE SETTLED-TRUTH DOOR's error-less face (the stuck-run cure's
+    // quiet half): a clean settle wrote NO error key — the durable
+    // boundary carries only what the run said. The live row still
+    // claiming running over that tree resyncs to the settled
+    // verdict, and the live error text stands (nothing to adopt).
+    const s = seat();
+    const id = "run-f5noerr1234567-00000006";
+    const dir = join(s.state, "output", id);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "_flow.json"), JSON.stringify({
+      run_id: id, status: "completed", draft_id: "d1",
+      stages: [{ id: "s1", status: "completed" }], skipped_stages: [],
+      artifacts: ["film.mp4"],
+    }));
+    live(s, { runId: id, status: "running", dir, error: "stale worker text" });
+    const got = await s.svc.status(id, sig());
+    assert.equal(got["status"], "completed");
+    assert.equal(got["from_disk"], true);
+    const row = s.core.runs.get(id) as RunRecord;
+    assert.equal(row.status, "completed", "the live row now reads the settled verdict");
+    assert.equal(row.error, "stale worker text", "no error key on disk adopts nothing");
+  });
+
   it("terminal empty rows stay live when disk is absent or has no usable arrays", async () => {
     const s = seat();
     const noDisk = live(s, { runId: "run-terminal-no-disk", status: "completed" });
@@ -1962,6 +2007,46 @@ describe("withStageReports + sidecarReaderFor (the pure decorate, function-grain
     );
     assert.deepEqual(out["warnings"], ["existing", "report sidecar bad.report.json is not JSON — skipped"]);
   });
+
+  it("junk gallery entries contribute no candidates (the sidecar tolerance, the 298/303/305 arm)", () => {
+    // THE GALLERY TOLERANCE: the candidate fold reads the stage's
+    // gallery bag as it stands — a null row, a bare-string row, an
+    // empty-named row, and a dir-named row (no stem) each contribute
+    // NOTHING, never throw. The row passes through untouched and no
+    // sidecar is read.
+    const dir = tmp();
+    const seen: string[] = [];
+    const read = (name: string): string | null => {
+      seen.push(name);
+      return null;
+    };
+    const row = {
+      run_id: "run-p",
+      stages: [{ id: "s", gallery: [null, "bare-string", { name: "" }, { name: "foo/" }] }],
+    };
+    const out = withStageReports(row as never, read);
+    assert.equal(out, row);
+    assert.deepEqual(seen, [], "no candidate, no read");
+  });
+
+  it("a hero url carrying the run-id prefix strips to the run-relative name (the 312 arm)", () => {
+    // THE RUN-ID PREFIX STRIP: a stage url of `<run-id>/<rel>`
+    // (the status door's own spelling) strips the `/<run-id>/` marker
+    // before the sibling lookup — the sidecar beside the hero is
+    // found by its run-relative name. The existing hero arm pins the
+    // unprefixed half; this arm pins the prefixed half.
+    const rep = (status: string): Record<string, unknown> =>
+      ({ kind: "report", status, title: "Rig validation" });
+    const dir = tmp();
+    mkdirSync(join(dir, "3D"), { recursive: true });
+    writeFileSync(join(dir, "3D", "foo.report.json"), JSON.stringify(rep("pass")));
+    const row = {
+      run_id: "run-p",
+      stages: [{ id: "s", url: "http://x/run-p/3D/foo.glb", gallery: [] }],
+    };
+    const out = withStageReports(row as never, sidecarReaderFor(dir));
+    assert.deepEqual((out["stages"] as Array<Record<string, unknown>>)[0]?.["reports"], { foo: rep("pass") });
+  });
 });
 
 describe("film admission warn (F-6b)", () => {
@@ -2154,8 +2239,8 @@ describe("the multi-stage boundary (2026-09-25 — curated lane lifts the length
           flow_inline: {
             id: "hand-authored",
             stages: [
-              { id: "a", engine: "comfyui" },
-              { id: "b", engine: "comfyui" },
+              { id: "a", engine: "comfyui", outputs: { out: "image" } },
+              { id: "b", engine: "comfyui", outputs: { out: "image" } },
             ],
           },
         }),
@@ -2199,7 +2284,7 @@ describe("the multi-stage boundary (2026-09-25 — curated lane lifts the length
           id: "image-upscale",
           stages: [
             { id: "make", engine: "comfyui", params: WF, outputs: { image: "image" } },
-            { id: "polish", engine: "comfyui", params: WF, inputs: { image: { stage: "make", output: "image" } } },
+            { id: "polish", engine: "comfyui", params: WF, outputs: { image: "image" }, inputs: { image: { stage: "make", output: "image" } } },
           ],
         },
       }),
@@ -2220,8 +2305,8 @@ describe("the multi-stage boundary (2026-09-25 — curated lane lifts the length
   it("the registry's CARD flows RUN on the {flow:} door (2026-10-04: the card stages compose)", async () => {
     // The VALIDATE-ONLY stamp is GONE. A registry row projects with
     // its `card` references intact and the inline compiler refuses
-    // those, so every card flow (audio-native-tts, image-upscale,
-    // music-native, body-to-somax) could validate but never start —
+    // those, so every card flow (image-upscale and its kin; the
+    // wrapper rows retired 2026-11-14) could validate but never start —
     // an app calling a named flow got 400 runs/preview-scope. The
     // start door now composes them through the SAME card walk the
     // bench run uses, so the compiler only ever sees compiled stages.
@@ -2307,15 +2392,21 @@ describe("the multi-stage boundary (2026-09-25 — curated lane lifts the length
       };
       const glbPath = join(tmpdir(), `receipt-gate-${Date.now()}-${process.pid}.glb`);
       writeFileSync(glbPath, "glb");
+      // (re-homed 2026-11-14 from the retired body-to-somax wrapper —
+      // character-factory's rig stage carries the same rename: the
+      // rig card's {default: "mesh"} serves as the row's {body: "mesh"})
       const r = (await s.svc.start(
-        { draft_id: "d1", test: false, flow: "body-to-somax", glb: glbPath },
+        { draft_id: "d1", test: false, flow: "character-factory", mesh: glbPath, prompt: "a test character" },
         sig(),
       )) as { run_id?: string };
       const run = await settleWait(s, String(r["run_id"]));
       assert.equal(run.status, "completed", "the renamed run completes its receipt");
-      assert.equal(seen.length, 1);
+      const rigRow = seen.find(
+        (row) => Object.keys((row as Record<string, unknown>)["outputNodes"] as Record<string, unknown> ?? {}).includes("body"),
+      );
+      assert.ok(rigRow !== undefined, "the rig stage's merge row is present");
       assert.deepEqual(
-        (seen[0] as Record<string, unknown>)["outputNodes"],
+        (rigRow as Record<string, unknown>)["outputNodes"],
         { body: "7" },
         "the binding rides the row's channel name, not the card's",
       );
@@ -2796,6 +2887,81 @@ describe("the one-press one-card law — the press is one card, and the draft-do
       "the row names the absent snapshot: " + JSON.stringify(darkRow.warnings),
     );
   });
+
+  it("a claim over a STAGELESS doc refuses — a doc with no rows names nothing", async () => {
+    // benchStageIdOf's non-array face: a fresh draft whose doc never
+    // materialized stage rows ({} — the seat's own default) carries
+    // no membership ledger, so ANY claim is foreign and refuses
+    // naming the stage, and nothing mints.
+    const s = modelDoorSeat(
+      { SaveImage: { class_type: "SaveImage", inputs: { filename_prefix: "gen" } } },
+    );
+    const err = await remote(() =>
+      s.svc.start(
+        { draft_id: "d1", test: false, model: "m1", params: { prompt: "x" }, bench_stage_id: "s_9" },
+        sig(),
+      ),
+    );
+    assert.equal(err.code, "runs/invalid-request");
+    assert.match(err.message, /bench_stage_id "s_9" names no stage row of draft "d1"/);
+    assert.equal(s.core.runs.size, 0, "a claim over a stageless doc never mints a run");
+  });
+
+  it("a single ID-LESS row answers the card skeleton — the positional fallback's own spelling", async () => {
+    // benchStageIdOf's unclaimed face: one bench row with no id
+    // string is exactly one candidate — no claim needed, no
+    // ambiguity — so the row is stamped the composed skeleton, the
+    // same namespace the digest minted before the claim law.
+    const s = modelDoorSeat(
+      { SaveImage: { class_type: "SaveImage", inputs: { filename_prefix: "gen" } } },
+      { stages: [{ card: "image-gen", params: { model: "m1", prompt: "x" } }] },
+    );
+    const ans = (await s.svc.start(
+      { draft_id: "d1", test: false, model: "m1", params: { prompt: "x" } },
+      sig(),
+    )) as { run_id: string };
+    const row = s.core.runs.get(ans.run_id) as unknown as {
+      stages: Array<{ benchStageId?: string }>;
+    };
+    assert.equal(row.stages[0]?.benchStageId, "edit",
+      "an id-less single row is stamped the composed skeleton");
+  });
+
+  it("a snapshot outage that rejects with a BARE STRING still voices — the claim rides, the warning names it", async () => {
+    // The dark arm's transport twin: some lanes reject with a bare
+    // string (a fetch shim's own voice, never an Error instance) —
+    // the snapshot warning stringifies the value itself, never
+    // "[object Object]", and the unjudgeable claim still rides.
+    const s = modelDoorSeat(
+      { SaveImage: { class_type: "SaveImage", inputs: { filename_prefix: "gen" } } },
+      { stages: [{ id: "s_0", card: "image-gen", params: { model: "m1", prompt: "x" } }] },
+    );
+    const ctx = (s.svc as unknown as { ctx: Context }).ctx;
+    const drafts = (ctx as unknown as {
+      draftsRemote: { get: (id: string, signal: AbortSignal) => Promise<unknown> };
+    }).draftsRemote;
+    const real = drafts.get.bind(drafts);
+    let calls = 0;
+    drafts.get = async (id: string, signal: AbortSignal): Promise<unknown> => {
+      calls += 1;
+      if (calls > 1) throw "transport down";
+      return await real(id, signal);
+    };
+    const ans = (await s.svc.start(
+      { draft_id: "d1", test: false, model: "m1", params: { prompt: "x" }, bench_stage_id: "s_7" },
+      sig(),
+    )) as { run_id: string };
+    const row = s.core.runs.get(ans.run_id) as unknown as {
+      stages: Array<{ benchStageId?: string }>;
+      warnings?: string[];
+    };
+    assert.equal(row.stages[0]?.benchStageId, "s_7",
+      "with no snapshot the claim is trusted, never silently dropped");
+    assert.ok(
+      (row.warnings ?? []).some((w) => /bench snapshot read failed.*transport down/.test(w)),
+      "the warning voices the bare-string rejection itself: " + JSON.stringify(row.warnings),
+    );
+  });
 });
 
 // ── THE WIRE CENSUS (benchWiring, the pure projection): the door's
@@ -2854,6 +3020,30 @@ describe("benchWiring (the pure wire census)", () => {
     assert.deepEqual(w.cross, ["with_port <- s_0.default", "bare <- s_0"]);
     assert.deepEqual(w.self, ["own <- s_1"]);
   });
+
+  it("a bench without a stages array carries no wires (the non-array fallback, the 453 arm)", () => {
+    // THE NON-ARRAY FALLBACK: benchWiring reads the bench doc as it
+    // stands — a doc with no stages array (an emptied bench, a
+    // hand-written doc without stages) declares no wire, never throws.
+    // The junk-rows arm pins the array half; this arm pins the
+    // non-array half.
+    assert.deepEqual(benchWiring({}), { cross: [], self: [] });
+    assert.deepEqual(benchWiring({ stages: "junk" }), { cross: [], self: [] });
+  });
+});
+
+// ── THE UPSCALE RESOLVER'S OWN TOLERANCES (resolveUpscaleChainRunIds,
+//    the 2387 arm): a non-object upscale entry (null, a bare store
+//    spelling, an array) is byte-untouched — only an id-grammar
+//    chain_run string ever reaches the registry. ────────────────────
+
+describe("the upscale chain-run resolver's tolerances", () => {
+  it("non-object upscale entries pass through byte-untouched, never a registry read", () => {
+    const s = seat();
+    const bag = [null, "plain-store", 42, ["array"]];
+    const out = s.svc.resolveUpscaleChainRunIds({ params: { upscale: bag } } as never);
+    assert.deepEqual(out.params?.["upscale"], bag);
+  });
 });
 
 // ── THE BENCH COMPOSE'S OWN TOLERANCES (composeBenchStages through
@@ -2865,7 +3055,7 @@ describe("benchWiring (the pure wire census)", () => {
 describe("the bench compose's tolerances", () => {
   it("a familyless stage composes by its OWN card id — the stroke-3 walk (the rig hop, af-move 2026-10-09)", async () => {
     // THE RIG HOP'S STOP (the af-move commission, 2026-10-09): the
-    // body-to-somax stage carries NO model key — mode auto IS the
+    // rig stage (character-factory) carries NO model key — mode auto IS the
     // family selection. The compose's old mid fallback (`?? ""`)
     // handed phase-1 an empty address ("model id \"\" is not a legal
     // identifier"); the cure mirrors the validate walk: mid = the
@@ -2891,7 +3081,6 @@ describe("the bench compose's tolerances", () => {
             id: "s_1",
             card: "rig",
             params: { mode: "auto" },
-            inputs: { mesh_glb: { stage: "s_0", output: "default" } },
           },
         ],
       },
@@ -3196,7 +3385,7 @@ describe("the parity judge (audits F-S4/S5)", () => {
     assert.ok(ans.run_id.length > 0, "the consistent doc enqueues");
   });
 
-  it("the single-stage bench doc (no expected, engine default output) still drives", async () => {
+  it("the single-stage bench doc (no expected, declared outputs) still drives", async () => {
     const s = seat();
     // the engine seat: the wall pins the doc DRIVING (settled
     // completed), not just enqueueing
@@ -3211,8 +3400,10 @@ describe("the parity judge (audits F-S4/S5)", () => {
       promptId: "pb",
     });
     // the doc carries its own inline workflow (a params-less stage
-    // fails at the engine's compose — not this wall's subject)
-    const ans = await s.svc.start(inlineBody({ flow_inline: { id: "x", stages: [{ id: "s", engine: "comfyui", params: WF }] } }), sig());
+    // fails at the engine's compose — not this wall's subject) and
+    // declares its own output channel (the one-table cure, 2026-11-01:
+    // the engine registry names engines, never their outputs).
+    const ans = await s.svc.start(inlineBody({ flow_inline: { id: "x", stages: [{ id: "s", engine: "comfyui", params: WF, outputs: { out: "image" } }] } }), sig());
     await settleWait(s, ans.run_id);
     assert.equal(s.core.runs.get(ans.run_id)?.status, "completed");
   });

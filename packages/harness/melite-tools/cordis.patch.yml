@@ -8,8 +8,8 @@
 # execution core with the enhance_prompt tool; /melite-tools/catalog).
 #
 # TWO ROWS (2026-09-10 doors split): melite-tools is the tool plane
-# (inject ['tools'] — activates in EVERY composition, sdk/headless
-# included); melite-tools-doors is the web-route plane (inject
+# (inject ['tools'] — activates in EVERY composition, sdk included);
+# melite-tools-doors is the web-route plane (inject
 # webServer+llm+tools — web profiles only; server profiles disable
 # the row by id, the way the estate patch does).
 - insert:

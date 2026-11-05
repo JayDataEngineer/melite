@@ -22,7 +22,7 @@ import type {
   ResourceStatus,
   WeightAcquireProgress,
 } from "@melite/estate-provisioning";
-import { dispatchManage } from "../src/managePlane.ts";
+import { dispatchManage, Refused } from "../src/managePlane.ts";
 import type { ManageCtx } from "../src/managePlane.ts";
 import { liveObjectInfo } from "@melite/comfyui-cordis";
 import type { ModelsService } from "@melite/comfyui-cordis";
@@ -49,15 +49,15 @@ const modelRef = (
 
 const SIZE = 8;
 
-function modelPlan(ref: ModelRef): ProvisionPlan {
+function modelPlan(ref: ModelRef, name = "weight.bin"): ProvisionPlan {
   return {
     ref,
     items: [{
       kind: "model",
-      key: `model:${ref.owner}:${ref.id}::weight.bin`,
+      key: `model:${ref.owner}:${ref.id}::` + name,
       owner: ref.owner,
       id: ref.id,
-      name: "weight.bin",
+      name,
       folder: "checkpoints",
       url: "https://example.invalid/weight.bin",
       sha256: "a".repeat(64),
@@ -82,6 +82,8 @@ interface Fake extends ProvisioningServiceDefinition {
   durableMode: boolean;
   claimerLive: boolean;
   ledger: Map<string, WeightAcquireProgress>;
+  /** The poll seam is always seated on this fake (0 arms drop it). */
+  progressOf: (operationId: string) => WeightAcquireProgress | null;
   land: (operationId: string) => void;
 }
 
@@ -724,5 +726,141 @@ describe("the weight-landing re-arm (the presence face follows the landing)", ()
     assert.equal(fake.startCalls.length, 2);
     assert.equal(fake.requestCalls.length, 1);
     assert.match(String(started["detail"]), /acquiring weight-fam/);
+  });
+});
+
+// THE PLAN-FAILURE AND COORDINATE EDGES (the coverage batch):
+// the fuse's own refusal voice, the card fallback's nested refusal,
+// the extension-item subset, the quant-less coordinate, the
+// variant-less coordinate, the non-busy start throw, and the live
+// phase on the start's answer.
+describe("manage acquire_weight — the plan-failure and coordinate edges", () => {
+  it("a plan that refuses with its own voice keeps it (the fuse never becomes a 404)", async () => {
+    const fake = fakeProvisioning();
+    fake.failures.set(resourceKey(modelRef("weight-fam")), new Refused(504, "the fuse blew: fuse voice"));
+    const ctx = ctxFor(fake);
+    const [code, envelope] = await dispatchManage({ action: "acquire_weight", model: "weight-fam" }, ctx);
+    assert.equal(code, 504, "a Refused plan failure keeps its own status, never the unknown-model 404");
+    assert.match(envelope.detail, /the fuse blew/);
+  });
+
+  it("a card fallback whose plan also refuses voices the NESTED refusal (the family miss is not the story)", async () => {
+    const fake = fakeProvisioning();
+    fake.failures.set(resourceKey(modelRef("weight-fam")), new Error("family lane down"));
+    fake.failures.set(resourceKey(modelRef("weight-fam", "card")), new Refused(503, "card seat down"));
+    const ctx = ctxFor(fake);
+    const [code, envelope] = await dispatchManage({ action: "acquire_weight", model: "weight-fam" }, ctx);
+    assert.equal(code, 503, "the nested Refused rethrows past the 404");
+    assert.match(envelope.detail, /card seat down/);
+    assert.equal(fake.planCalls.length, 2, "family first, then the card fallback");
+  });
+
+  it("an EXTENSION plan item subsets by id (the file→items wall keys extensions by id, never by name)", async () => {
+    const fake = fakeProvisioning();
+    const ref = modelRef("ext-fam");
+    fake.plans.set(resourceKey(ref), {
+      ref,
+      items: [{
+        kind: "extension",
+        key: "extension:pack-x",
+        id: "pack-x",
+        required: true,
+        provider: "manager",
+        registry: "example",
+        version: "1",
+      }],
+    });
+    const ctx = ctxFor(fake);
+    const [code, envelope] = await dispatchManage(
+      { action: "acquire_weight", model: "ext-fam", file: "pack-x" }, ctx);
+    assert.equal(code, 200);
+    assert.deepEqual(fake.startOptions, [{ items: ["pack-x"] }], "the subset reached startWeightAcquire");
+    assert.match(String(dataOf(envelope)["operation_id"]), /^op-weight-/);
+  });
+
+  it("a cell artifact WITHOUT a quant re-plans at the variant-only coordinate (the quant-less row still names its lane)", async () => {
+    const fake = fakeProvisioning();
+    const defaultRef = modelRef("quantless-fam");
+    const variantRef = modelRef("quantless-fam", "family", "turbo");
+    fake.plans.set(resourceKey(defaultRef), modelPlan(defaultRef));
+    fake.plans.set(resourceKey(variantRef), modelPlan(variantRef, "quantless-turbo.safetensors"));
+    const decl = {
+      id: "quantless-fam",
+      variants: [
+        { id: "turbo", cells: [{ artifact: { source_url: "https://example.invalid/quantless-turbo.safetensors" } }] },
+      ],
+    };
+    const ctx = ctxFor(fake, [decl as never]);
+    const [code] = await dispatchManage(
+      { action: "acquire_weight", model: "quantless-fam", file: "quantless-turbo.safetensors" }, ctx);
+    assert.equal(code, 200);
+    // the re-plan rode the file's own coordinates — variant stated,
+    // quant OMITTED (the artifact names no quant, the door guesses none)
+    assert.deepEqual(fake.planCalls, [defaultRef, variantRef]);
+    assert.deepEqual(fake.startCalls, [variantRef]);
+    assert.ok(!("quant" in (fake.startCalls[0] as ModelRef)), "no quant key rides a quant-less coordinate");
+  });
+
+  it("a coordinate the DECL cannot name never re-plans (a variant-less artifact is item-not-found, never a guessed fetch)", async () => {
+    const fake = fakeProvisioning();
+    const defaultRef = modelRef("variantless-fam");
+    fake.plans.set(resourceKey(defaultRef), modelPlan(defaultRef));
+    const decl = {
+      id: "variantless-fam",
+      variants: [
+        { cells: [{ quant: "int8", artifact: { source_url: "https://example.invalid/variantless.safetensors" } }] },
+      ],
+    };
+    const ctx = ctxFor(fake, [decl as never]);
+    const [code, envelope] = await dispatchManage(
+      { action: "acquire_weight", model: "variantless-fam", file: "variantless.safetensors" }, ctx);
+    assert.equal(code, 422);
+    assert.match(envelope.detail, /item-not-found/);
+    assert.equal(fake.planCalls.length, 1, "no coordinate re-plan for an unnameable coordinate");
+    assert.equal(fake.startCalls.length, 0, "no fetch started");
+  });
+
+  it("a DECL with no variants array cannot name a coordinate either (the bare DECL's miss is item-not-found, never a guessed fetch)", async () => {
+    // THE ?? RIGHT SIDE (managePlane.ts 1772-1774): a family DECL
+    // that declares no variants array (a bare id row) plans the same
+    // default coordinate — and a filename no row names still 422s
+    // after exactly the default plan, never a floating-HEAD guess.
+    const fake = fakeProvisioning();
+    const defaultRef = modelRef("bare-fam");
+    fake.plans.set(resourceKey(defaultRef), modelPlan(defaultRef));
+    const ctx = ctxFor(fake, [{ id: "bare-fam" } as never]);
+    const [code, envelope] = await dispatchManage(
+      { action: "acquire_weight", model: "bare-fam", file: "bare.safetensors" }, ctx);
+    assert.equal(code, 422);
+    assert.match(envelope.detail, /item-not-found/);
+    assert.equal(fake.planCalls.length, 1, "no coordinate re-plan without a variants array to derive from");
+    assert.equal(fake.startCalls.length, 0, "no fetch started");
+  });
+
+  it("a start that throws a NON-busy failure rethrows (only the cap is a wait)", async () => {
+    const fake = fakeProvisioning();
+    fake.plans.set(resourceKey(modelRef("weight-fam")), modelPlan(modelRef("weight-fam")));
+    const wired = { ...fake, startWeightAcquire: async (): Promise<string> => { throw new Error("wire exploded"); } };
+    const ctx = ctxFor(wired);
+    const [code, envelope] = await dispatchManage({ action: "acquire_weight", model: "weight-fam" }, ctx);
+    assert.equal(code, 500, "a non-busy start failure is a 500, never the 429 wait");
+    assert.match(envelope.detail, /wire exploded/);
+  });
+
+  it("a start whose ledger row carries a live phase answers it (the face's first paint already names the flowing phase)", async () => {
+    const fake = fakeProvisioning();
+    fake.plans.set(resourceKey(modelRef("weight-fam")), modelPlan(modelRef("weight-fam")));
+    const real = fake.progressOf.bind(fake);
+    const phased = {
+      ...fake,
+      progressOf: (operationId: string): WeightAcquireProgress | null => {
+        const row = real(operationId);
+        return row === null ? null : { ...row, phase: "verify" };
+      },
+    };
+    const ctx = ctxFor(phased);
+    const [code, envelope] = await dispatchManage({ action: "acquire_weight", model: "weight-fam" }, ctx);
+    assert.equal(code, 200);
+    assert.equal(dataOf(envelope)["phase"], "verify", "the live phase rides the start's answer");
   });
 });

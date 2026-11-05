@@ -125,6 +125,35 @@ export function declaredPrimaryFirst(names, stem) {
         return names;
     return [hero, ...names.filter((n) => n !== hero)];
 }
+/** THE PER-ROW TRUTH STAMP (qa8 F2/F43, the per-row status law): a
+ *  pass-level death settles every UNANSWERED stage row by ownership —
+ *  a stage's outcome marks only its own row. A row that already
+ *  answered (completed/failed/stopped) stands untouched. A named
+ *  owner — the fence refusal's own stage, the missing-harvest rows
+ *  the verdict condemns — reads failed with the cause. Ownerless, a
+ *  SOLE-stage run's row still reads the run's word with the cause:
+ *  one stage and the run are the same pass, so the receipt is its
+ *  own. Every other unanswered row reads stopped and carries NO
+ *  error text — "failed" would claim an outcome it never produced,
+ *  and the text would name another stage's cause. The pass-level
+ *  word itself rides the run doc (run.status + run.error), never the
+ *  rows. Pure over the run record; every runOne catch and the pump's
+ *  claim refusals share it. */
+export function stampUnansweredRows(run, text, stopped, owners) {
+    const sole = run.stages.length === 1 ? run.stages[0] : undefined;
+    for (const stage of run.stages) {
+        const word = stage["status"];
+        if (word === "completed" || word === "failed" || word === "stopped")
+            continue;
+        if (owners?.has(stage) === true || (owners === undefined && stage === sole)) {
+            stage["status"] = stopped ? "stopped" : "failed";
+            stage["error"] = text;
+        }
+        else {
+            stage["status"] = "stopped";
+        }
+    }
+}
 /** One run through the merged path (door-verbatim: stages ->
  *  running + merged:true, splice rows, ONE executeFlow submit,
  *  per-stage harvest + result_outputs, the stop-gated terminal
@@ -176,15 +205,11 @@ export async function runOne(run, ctx, settle) {
         }
         catch (exc) {
             const text = errText(exc);
-            for (const stage of run.stages) {
-                // (every stage reads running — runOne stamps them before
-                // the engine call, so this fence never filters.)
-                /* v8 ignore next */
-                if (stage["status"] === "running") {
-                    stage["status"] = "failed";
-                    stage["error"] = text;
-                }
-            }
+            // THE PER-ROW TRUTH STAMP (F2): a pass-level refusal (mixed
+            // engines, an unknown engine) names no single stage — the
+            // unanswered rows read stopped, the sole stage owns the
+            // cause, and the run doc carries the word.
+            stampUnansweredRows(run, text, false);
             run.status = "failed";
             run.error = text;
             await settle(run);
@@ -209,17 +234,11 @@ export async function runOne(run, ctx, settle) {
     catch (exc) {
         // splice refusal pre-submit: the run fails with the
         // planner's text (the per-stage fallback loop is later
-        // scope).
+        // scope). THE PER-ROW TRUTH STAMP (F2): the splice cannot
+        // name the offending stage — the rows read stopped, the sole
+        // stage owns the cause, the run doc carries the word.
         const text = errText(exc);
-        for (const stage of run.stages) {
-            // (every stage reads running — runOne stamps them just
-            // above, so the fence never filters.)
-            /* v8 ignore next */
-            if (stage["status"] === "running") {
-                stage["status"] = "failed";
-                stage["error"] = text;
-            }
-        }
+        stampUnansweredRows(run, text, false);
         run.status = "failed";
         run.error = text;
         await settle(run);
@@ -305,15 +324,12 @@ export async function runOne(run, ctx, settle) {
             }
             catch (exc) {
                 const text = errText(exc);
-                for (const st of run.stages) {
-                    // (same fence as the splice-catch above — every stage is
-                    // still running when this splice reports.)
-                    /* v8 ignore next */
-                    if (st["status"] === "running") {
-                        st["status"] = "failed";
-                        st["error"] = text;
-                    }
-                }
+                // THE PER-ROW TRUTH STAMP (F43): the fence's refusal is the
+                // offending stage's OWN verdict — the assert names its card
+                // and its graph — so that row alone reads failed with the
+                // cause; its peers never pressed and carry no borrowed
+                // text (the run doc carries the word for the pass).
+                stampUnansweredRows(run, text, false, new Set([stage]));
                 run.status = "failed";
                 run.error = text;
                 await settle(run);
@@ -414,16 +430,19 @@ export async function runOne(run, ctx, settle) {
         stampReceiptPromptId(run, result.promptId);
         // THE MISSING-STAGE REFUSAL (P7 B1): the engine answered for a
         // submitted stage id or it did not — there is no empty success.
-        // Judge the whole harvest BEFORE touching a stage row, so one
-        // missing id fails every running stage instead of leaving the
-        // answered stages completed beside it.
-        const missingStageIds = run.stages
-            .map((stage) => stage.id)
-            .filter((id) => result.stages[id] === undefined);
-        if (missingStageIds.length > 0) {
-            throw new Error("runs/missing-stage-result: the engine result has no row for " +
-                missingStageIds.map((id) => `stage "${id}"`).join(", ") +
-                " — a submitted stage with no result fails, never settles completed/empty");
+        // The harvest is refused whole (no completed row beside an
+        // unanswered one), and the rows the verdict condemns stamp
+        // FIRST (the per-row truth stamp, F43): the missing ids are
+        // the refusal's own subjects — they read failed with it —
+        // while the rows the engine did answer settle through the
+        // catch below as stopped, never carrying a borrowed verdict.
+        const missingRows = new Set(run.stages.filter((stage) => result.stages[stage.id] === undefined));
+        if (missingRows.size > 0) {
+            const refusal = "runs/missing-stage-result: the engine result has no row for " +
+                [...missingRows].map((s) => `stage "${s.id}"`).join(", ") +
+                " — a submitted stage with no result fails, never settles completed/empty";
+            stampUnansweredRows(run, refusal, false, missingRows);
+            throw new Error(refusal);
         }
         for (const stage of run.stages) {
             const row = result.stages[stage.id];
@@ -488,14 +507,13 @@ export async function runOne(run, ctx, settle) {
     catch (exc) {
         const text = errText(exc);
         const stopped = run.stopFlag && text.toLowerCase().includes("stop");
+        // THE PER-ROW TRUTH STAMP (F2): the merged submit's death is
+        // the RUN's receipt, not each row's — answered rows stand, the
+        // sole stage carries the cause, and every unanswered peer reads
+        // stopped with no borrowed text. The pass-level word rides the
+        // run doc below.
+        stampUnansweredRows(run, text, stopped);
         for (const stage of run.stages) {
-            // (same fence as the splice-catch above — every stage is
-            // still running here.)
-            /* v8 ignore next */
-            if (stage["status"] === "running") {
-                stage["status"] = stopped ? "stopped" : "failed";
-                stage["error"] = text;
-            }
             delete stage["progress"];
             delete stage["activity"];
         }

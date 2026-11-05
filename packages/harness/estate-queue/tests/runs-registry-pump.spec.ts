@@ -9,12 +9,21 @@ import { describe, it, afterEach, vi } from "vitest";
 // hop by law) to reject through a mock gated to this file's flag;
 // every other test runs the original untouched.
 let claimPersistThrows = false;
+// THE BARE-STRING TWIN (coverage-burn round-19): the same escape
+// hatch rejecting with a bare string — a lane that answers
+// unstructured rejections still trips the fence, and the voice
+// stringifies the value itself.
+let claimPersistThrowsBare = false;
 vi.mock("../src/runsTypes.ts", async (importOriginal) => {
   const orig = await importOriginal<typeof import("../src/runsTypes.ts")>();
   return {
     ...orig,
     claimPersist: (run: Parameters<typeof orig.claimPersist>[0]): Promise<void> =>
-      claimPersistThrows ? Promise.reject(new Error("claim persist exploded")) : orig.claimPersist(run),
+      claimPersistThrows
+        ? Promise.reject(new Error("claim persist exploded"))
+        : claimPersistThrowsBare
+          ? Promise.reject("claim persist exploded")
+          : orig.claimPersist(run),
   };
 });
 import { spawnSync } from "node:child_process";
@@ -113,7 +122,7 @@ const seat = (cardOver: Record<string, (...args: never[]) => unknown> = {}): Sea
 const inlineBody = (over: Record<string, unknown> = {}): Record<string, unknown> => ({
   draft_id: "d1",
   test: false,
-  flow_inline: { id: "x", stages: [{ id: "s", engine: "comfyui" }] },
+  flow_inline: { id: "x", stages: [{ id: "s", engine: "comfyui", outputs: { out: "image" } }] },
   ...over,
 });
 
@@ -175,7 +184,7 @@ describe("pump + engine", () => {
     inlineBody({
       flow_inline: {
         id: "x",
-        stages: [{ id: "s", engine: "comfyui", params: WF }],
+        stages: [{ id: "s", engine: "comfyui", params: WF, outputs: { out: "image" } }],
       },
       ...over,
     });
@@ -474,6 +483,44 @@ describe("pump + engine", () => {
     }
   });
 
+  it("a pump scaffold escape with a bare-string rejection releases the claim and voices the value itself (audit N-S7's twin)", async () => {
+    // A lane that answers unstructured rejections: claimPersist
+    // rejects with a bare string, never an Error — the fence still
+    // releases the claim, and the voice carries the value itself,
+    // never "[object Object]".
+    const s = seat();
+    engineSeat(s);
+    const logs: string[] = [];
+    const spy = vi.spyOn(console, "log").mockImplementation((...a: unknown[]) => {
+      logs.push(a.map((x) => String(x)).join(" "));
+    });
+    claimPersistThrowsBare = true;
+    try {
+      await s.svc.start(wfBody(), sig());
+      for (let i = 0; i < 500; i++) {
+        if (s.core.activeId === null && !s.svc.pumping) break;
+        await new Promise((r) => setTimeout(r, 10));
+      }
+      assert.equal(s.core.activeId, null, "the fence released the stranded claim");
+      assert.equal(s.svc.pumping, false);
+      assert.ok(logs.some((l) => /pump scaffold escape/.test(l)), "the escape is voiced: " + logs.join(" | "));
+      assert.ok(
+        logs.some((l) => /claim persist exploded/.test(l) && !/\[object Object\]/.test(l)),
+        "the bare string is voiced itself: " + logs.join(" | "),
+      );
+      // UNSTRANDED BY CONSTRUCTION: with the hatch healthy again,
+      // the next run claims and settles normally
+      claimPersistThrowsBare = false;
+      const second = await s.svc.start(wfBody(), sig());
+      const row2 = await settleWait(s, second.run_id);
+      assert.equal(row2.status, "completed");
+      assert.equal(s.core.activeId, null);
+    } finally {
+      claimPersistThrowsBare = false;
+      spy.mockRestore();
+    }
+  });
+
   it("stop converges stopped (flag + stop text; the error stays empty)", async () => {
     const s = seat();
     const engine = engineSeat(s);
@@ -538,6 +585,59 @@ describe("pump + engine", () => {
     const row = await settleWait(s, ans.run_id);
     assert.equal(row.status, "stopped");
     assert.equal((s.core.runs.get(ans.run_id) as RunRecord).stopFlag, true);
+  });
+
+  it("a bare-string interrupt rejection still converges (the voice names the string, the flag rules)", async () => {
+    // A lane that answers unstructured rejections: the engine
+    // interrupt fails with a bare string, never an Error instance —
+    // the outage stays observable in the log and the stopFlag still
+    // converges the run.
+    const s = seat();
+    const engine = engineSeat(s);
+    engine.stopForRunDir = async (runDir: string): Promise<void> => {
+      engine.stops.push(runDir);
+      throw "wire down";
+    };
+    const logs: string[] = [];
+    const spy = vi.spyOn(console, "log").mockImplementation((...a: unknown[]) => {
+      logs.push(a.map((x) => String(x)).join(" "));
+    });
+    try {
+      let release!: (v: FlowResult) => void;
+      let echo: MergeRow[] = [];
+      engine.onFlow = (rows) => {
+        echo = rows;
+        return new Promise<FlowResult>((res) => void (release = res));
+      };
+      const ans = await s.svc.start(wfBody(), sig());
+      await waitRunning(s, ans.run_id);
+      assert.deepEqual(await s.svc.stop(ans.run_id, sig()), {
+        run_id: ans.run_id,
+        status: "stopping",
+      });
+      // the stop delivery to the engine is async — poll the log
+      // rail, not a fixed 20ms
+      for (let i = 0; i < 200; i++) {
+        if (logs.some((l) => /stop interrupt failed:/.test(l))) break;
+        if (i === 199) throw new Error("the interrupt outage was never voiced " + ans.run_id);
+        await new Promise((r) => setTimeout(r, 10));
+      }
+      assert.ok(
+        logs.some((l) => /wire down/.test(l) && !/\[object Object\]/.test(l)),
+        "the bare-string outage is voiced itself: " + logs.join(" | "),
+      );
+      release({
+        stages: Object.fromEntries(
+          echo.map((r) => [r.stageId, { outputs: {}, artifacts: [] }]),
+        ),
+        promptId: "p",
+      });
+      const row = await settleWait(s, ans.run_id);
+      assert.equal(row.status, "stopped");
+      assert.equal((s.core.runs.get(ans.run_id) as RunRecord).stopFlag, true);
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it("a queued rich row without inputNames rides the default (pump loops FIFO)", async () => {
@@ -605,9 +705,13 @@ describe("pump + engine", () => {
     assert.equal(row.status, "failed");
     assert.match(row.error, /initial "gone" is not on disk/);
     assert.match(row.error, /lost\.png/);
+    // THE PER-ROW STATUS TRUTH (qa8 F2): the claim refusal is the
+    // RUN's verdict — a two-stage run's rows never answered, so
+    // neither claims it: they read stopped and carry no borrowed
+    // text (the run doc above carries the press voice).
     for (const st of row.stages) {
-      assert.equal(st.status, "failed");
-      assert.match(st.error as string, /initial "gone" is not on disk/);
+      assert.equal(st.status, "stopped");
+      assert.equal(st.error, undefined);
     }
   });
 
@@ -726,6 +830,61 @@ describe("pump + engine", () => {
     assert.equal(bRow.stopFlag, true); // the sweep pressed its flag too — the next boot's reconcile owns it
     assert.equal(s.svc.tearingDown, true); // the PUBLIC gate a next claim consults
     assert.equal(s.svc.pumping, false);
+    void release;
+  });
+
+  it("THE TEARDOWN TWIN: a bare-string interrupt still voices itself while the flags converge", async () => {
+    // The teardown arm's transport twin: the in-flight interrupt
+    // fails with a bare string — teardown never throws, the voice
+    // carries the value itself, and the same three convergences
+    // hold (stopped row, pressed interrupt, parked queue).
+    const s = seat();
+    const engine = engineSeat(s);
+    let release: (() => void) | undefined;
+    const parked = new Promise<void>((r) => { release = r; });
+    engine.onFlow = async (_rows, runDir, _in, _init, opts) => {
+      await new Promise<void>((done) => {
+        const tick = (): void => {
+          if (opts.shouldStop?.()) { done(); return; }
+          setTimeout(tick, 5);
+        };
+        tick();
+      });
+      release?.();
+      return { stages: { s: { outputs: {}, artifacts: [] } }, promptId: "p" };
+    };
+    const a = await s.svc.start(wfBody(), sig());
+    await waitRunning(s, a.run_id);
+    const b = await s.svc.start(wfBody({ name_hint: "second" }), sig());
+    assert.equal((s.core.runs.get(b.run_id) as RunRecord).status, "queued");
+    engine.stopForRunDir = async (runDir: string): Promise<void> => {
+      engine.stops.push(runDir);
+      throw "wire down";
+    };
+    const logs: string[] = [];
+    const spy = vi.spyOn(console, "log").mockImplementation((...a2: unknown[]) => {
+      logs.push(a2.map((x) => String(x)).join(" "));
+    });
+    try {
+      const ctx = (s.svc as unknown as { ctx: Context }).ctx;
+      await ctx.fiber.dispose();
+      await parked;
+      const aRow = await settleWait(s, a.run_id);
+      assert.equal(aRow.status, "stopped");
+      assert.ok(engine.stops.includes(aRow.dir), "the dispose pressed the engine interrupt");
+      assert.ok(
+        logs.some((l) => /teardown interrupt failed:/.test(l) && /wire down/.test(l)),
+        "the bare-string teardown outage is voiced itself: " + logs.join(" | "),
+      );
+      await new Promise((r) => setTimeout(r, 50));
+      const bRow = s.core.runs.get(b.run_id) as RunRecord;
+      assert.equal(bRow.status, "queued");
+      assert.equal(bRow.stopFlag, true);
+      assert.equal(s.svc.tearingDown, true);
+      assert.equal(s.svc.pumping, false);
+    } finally {
+      spy.mockRestore();
+    }
     void release;
   });
 

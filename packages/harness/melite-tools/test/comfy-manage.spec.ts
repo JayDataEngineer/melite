@@ -914,3 +914,50 @@ describe('comfy_manage acquire_weight — the agent seat on the one acquisition 
     assert.match(totalOnly[0]?.text ?? '', /progress: \?\/8 bytes/)
   })
 })
+
+describe('comfy_manage settle_stale + provision_runtime — the cure verbs ride the enum (qa8 GAPS-13/F20)', () => {
+  test('both verbs ride the tool enum, forward their fields, and the SSOT admits them (never the unknown-action 422)', async () => {
+    const tool = comfyManage(stubEstate())
+    const params = tool.parameters as { properties?: Record<string, { enum?: string[] }> }
+    const actions = params.properties?.['action']?.enum ?? []
+    assert.ok(actions.includes('settle_stale'), 'settle_stale on the enum — the status face teaches it as the cure')
+    assert.ok(actions.includes('provision_runtime'), 'provision_runtime on the enum — the run-rescue banner posts it')
+
+    // settle_stale forwards bare: the operator's one-gesture retire.
+    const settle = mockEstate(() => ({ ok: true, action: 'settle_stale', detail: 'settled 1 stale claim(s), skipped 0' }))
+    const settled = await comfyManage(settle.estate).execute({ action: 'settle_stale' }, exec()) as Record<string, unknown>
+    assert.deepEqual(settle.seen[0]?.body, { action: 'settle_stale' })
+    assert.equal(settled.action, 'settle_stale')
+
+    // provision_runtime forwards the runtime NAME (never a path).
+    const link = mockEstate(() => ({ ok: true, action: 'provision_runtime', detail: 'provision_runtime anny-estimator: linked' }))
+    await comfyManage(link.estate).execute({ action: 'provision_runtime', runtime: 'anny-estimator' }, exec())
+    assert.deepEqual(link.seen[0]?.body, { action: 'provision_runtime', runtime: 'anny-estimator' })
+
+    // THE MIRROR (the GAPS-13 law: the enum teaches only what the
+    // lane answers): both verbs pass the SSOT's closed vocabulary —
+    // the answer below is each handler's own voice, never the
+    // unknown-action 422. settle_stale against a dead engine refuses
+    // 409 fail-closed; provision_runtime without its name refuses
+    // 422 naming the missing field.
+    const realFetch = globalThis.fetch
+    globalThis.fetch = (async () => { throw new Error('engine down') }) as typeof fetch
+    try {
+      const ctx = {
+        repoRoot: process.cwd(),
+        stateRoots: [],
+        endpoint: () => ({ provision: 'managed', url: 'http://engine:8188' }),
+        models: { allDecls: () => [] },
+        timeout: () => () => {},
+      } as unknown as ManageCtx
+      const [settleCode, settleEnv] = await dispatchManage({ action: 'settle_stale' }, ctx)
+      assert.equal(settleCode, 409)
+      assert.match(String(settleEnv.detail), /settle_stale refused/)
+      const [rtCode, rtEnv] = await dispatchManage({ action: 'provision_runtime' }, ctx)
+      assert.equal(rtCode, 422)
+      assert.match(String(rtEnv.detail), /provision_runtime requires: runtime/)
+    } finally {
+      globalThis.fetch = realFetch
+    }
+  })
+})

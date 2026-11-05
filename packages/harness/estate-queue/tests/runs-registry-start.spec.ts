@@ -112,7 +112,7 @@ const seat = (cardOver: Record<string, (...args: never[]) => unknown> = {}): Sea
 const inlineBody = (over: Record<string, unknown> = {}): Record<string, unknown> => ({
   draft_id: "d1",
   test: false,
-  flow_inline: { id: "x", stages: [{ id: "s", engine: "comfyui" }] },
+  flow_inline: { id: "x", stages: [{ id: "s", engine: "comfyui", outputs: { out: "image" } }] },
   ...over,
 });
 
@@ -217,8 +217,8 @@ describe("start inline arm", () => {
     const two = {
       id: "x",
       stages: [
-        { id: "a", engine: "comfyui" },
-        { id: "b", engine: "comfyui" },
+        { id: "a", engine: "comfyui", outputs: { out: "image" } },
+        { id: "b", engine: "comfyui", outputs: { out: "image" } },
       ],
     };
     const err = await remote(() => s.svc.start(inlineBody({ flow_inline: two }), sig()));
@@ -235,6 +235,7 @@ describe("start inline arm", () => {
         stages: [{
           id: "s",
           engine: "comfyui",
+          outputs: { out: "image" },
           params: { workflow: { n: { class_type: "LoadImage", inputs: { image: dead } } } },
         }],
       },
@@ -704,6 +705,34 @@ describe("start raw flow_inline card compose", () => {
     assert.equal(s.core.runs.size, 0);
   });
 
+  it("a card-less id-less row rides the passthrough and refuses at the row-shape gate — never the card lattice", async () => {
+    // The passthrough's own face (audit B85/B151/B152/B154): a
+    // hand-authored object row naming NO card is not junk (the raw
+    // door's junkFree admits every object row) — but the walk only
+    // fires when a SIBLING names a card (the mixed-doc law: engine
+    // rows pass through untouched beside composed card rows). The
+    // card row below opens the walk; the card-less row rides the
+    // passthrough untouched — and the compile gate refuses the
+    // missing stage id before the card lattice ever hears the row.
+    // The defaulted "s_0" never lands on the row; the refusal names
+    // the shape debt, never a card.
+    const s = seat({
+      phase1Card: async (): Promise<unknown> => p1,
+      phase2Card: async (): Promise<unknown> => ({
+        graph: { n: { class_type: "EmptyLatentImage", inputs: { width: 64, height: 64 } } },
+        outputNodes: { out: "n" },
+        outputs: { out: "image" },
+      }),
+    });
+    const err = await remote(() => s.svc.start(cardDoc([
+      { id: "s0", card: "c", params: {} },
+      { params: {} },
+    ]), sig()));
+    assert.equal(err.code, "runs/invalid-request", "the row-shape refusal, never a 500");
+    assert.match(err.message, /[Ss]tage[^.]*id/, "the refusal names the missing stage id");
+    assert.equal(s.core.runs.size, 0, "nothing registered on a refusal");
+  });
+
   it("the claim and receipt ledgers ride the registered row — stageFams + graph receipt stages for the composed card", async () => {
     const s = seat({
       phase1Card: async (): Promise<unknown> => p1,
@@ -725,5 +754,245 @@ describe("start raw flow_inline card compose", () => {
       receiptRow["stage"] === "s0",
       "the graph-receipt ledger carries the composed stage's evidence row (registration order)",
     );
+  });
+});
+
+// THE COMPOSE-CORE GRAIN (coverage-burn round-19): the card walk's
+// routing stamp, its transport rethrow, the initial-tensor gate's
+// pass/refuse faces, and the doc-less press — each arm rides the
+// raw flow_inline door the same way a caller-authored doc would.
+describe("start raw compose core (stamp, rethrow, tensor gate, doc-less press)", () => {
+  const p1 = {
+    mid: "m",
+    fam: "f",
+    card: "c",
+    skeleton: "sk",
+    decl: {},
+    params: {},
+    spell: null,
+  };
+  const cardDoc = (stages: unknown[]): Record<string, unknown> => ({
+    draft_id: "d1",
+    test: false,
+    flow_inline: { id: "x", stages },
+  });
+  const graphOf = (graph: Record<string, unknown>): Record<string, unknown> => ({
+    graph,
+    outputNodes: { out: "n" },
+    outputs: { out: "image" },
+  });
+  // A live /object_info census with one tensor seat and one value
+  // seat — the same table the pack gate refuses closed.
+  const census = (): unknown => ({
+    KSampler: { input: { required: { image: ["IMAGE", {}] } } },
+    Prompt: { input: { required: { text: ["STRING", {}] } } },
+  });
+  const composeSeat = (
+    phase2: () => Promise<unknown>,
+    extra: Record<string, (...args: never[]) => unknown> = {},
+  ): Seat =>
+    seat({
+      phase1Card: async (): Promise<unknown> => p1,
+      phase2Card: phase2,
+      objectInfo: (): unknown => census(),
+      ...extra,
+    });
+
+  it("a service-bearing row stamps the routing key the lane judge reads", async () => {
+    // THE ROUTING-KEY STAMP (2026-10-12 hunt, finding 1): an
+    // explicit service spelling rides the phase-1 body as
+    // params.model, so the run lanes under the value the admission
+    // judge gated (the judged doc is never rewritten — the receipt
+    // pins that law, this arm pins the compose copy's).
+    const seen: Array<Record<string, unknown>> = [];
+    const s = seat({
+      phase1Card: async (body: Record<string, unknown>): Promise<unknown> => {
+        seen.push(body);
+        return p1;
+      },
+      phase2Card: async (): Promise<unknown> =>
+        graphOf({ n: { class_type: "EmptyLatentImage", inputs: { width: 64, height: 64 } } }),
+    });
+    const ans = await s.svc.start(
+      cardDoc([{ id: "s0", card: "c", service: "svc-1", params: {} }]),
+      sig(),
+    );
+    assert.match(String(ans.run_id), /^run-/);
+    assert.equal(seen.length, 1);
+    assert.equal(
+      seen[0]["model"],
+      "svc-1",
+      "the stamp hands the card plane the value that lanes",
+    );
+  });
+
+  it("an explicitly-cleared service stamps nothing — the card id lanes", async () => {
+    // The GUI's cleared routing override rides as "" (never null):
+    // the stamp treats it as unset — the phase-1 body carries no
+    // model key and mid falls back to the card id.
+    const seen: Array<Record<string, unknown>> = [];
+    const s = seat({
+      phase1Card: async (body: Record<string, unknown>): Promise<unknown> => {
+        seen.push(body);
+        return p1;
+      },
+      phase2Card: async (): Promise<unknown> =>
+        graphOf({ n: { class_type: "EmptyLatentImage", inputs: { width: 64, height: 64 } } }),
+    });
+    const ans = await s.svc.start(
+      cardDoc([{ id: "s0", card: "c", service: "", params: {} }]),
+      sig(),
+    );
+    assert.match(String(ans.run_id), /^run-/);
+    assert.equal(seen.length, 1);
+    assert.ok(!("model" in seen[0]), "an empty service spelling stamps no model key");
+  });
+
+  it("a generic phase-1 transport rethrows past the CardArmError gate", async () => {
+    // The twin of the phase-2 transport arm: a non-card failure
+    // (a fetch that died mid-compose) is the caller's error, not a
+    // card refusal — it propagates unmapped and mints nothing.
+    const s = seat({
+      phase1Card: async (): Promise<unknown> => {
+        throw new Error("phase1 blew up");
+      },
+    });
+    await assert.rejects(s.svc.start(cardDoc([{ id: "s0", card: "c", params: {} }]), sig()), /phase1 blew up/);
+    assert.equal(s.core.runs.size, 0, "nothing registered on a transport failure");
+  });
+
+  // A hand-written row states its wire kinds (the kinds split's
+  // own law): every initial-bound input below carries expected, so
+  // the parity judge reads a typed wire, never an untyped one.
+  const wired = (over: Record<string, unknown>): Record<string, unknown> => ({
+    id: "s0",
+    card: "c",
+    params: {},
+    inputs: { f: { initial: "f" } },
+    expected: { f: "image" },
+    ...over,
+  });
+
+  it("an initial-bound $spell on a tensor seat refuses with the tensor voice", async () => {
+    // THE INITIAL-TENSOR REFUSAL's pin (the F48 burn class): the
+    // initial's VALUE would land in the engine's IMAGE slot, which
+    // wants a producer link — the compose refuses naming the flow
+    // stage, the slot, and the rewrite that fixes it.
+    const s = composeSeat(async (): Promise<unknown> =>
+      graphOf({ n: { class_type: "KSampler", inputs: { image: "$f" } } }),
+    );
+    const err = await remote(() => s.svc.start(cardDoc([wired({})]), sig()));
+    assert.equal(err.code, "runs/invalid-request");
+    assert.match(err.message, /tensor seat needs a producer/);
+    assert.match(err.message, /"IMAGE"/);
+    assert.equal(s.core.runs.size, 0, "nothing registered on a tensor refusal");
+  });
+
+  it("a census with no initial-bound wire skips the tensor walk", async () => {
+    // The gate's fail-open face: the census rode (a live seat) but
+    // the row wires nothing initial-bound — composition proceeds,
+    // no slot is judged.
+    const s = composeSeat(async (): Promise<unknown> =>
+      graphOf({ n: { class_type: "EmptyLatentImage", inputs: { width: 64, height: 64 } } }),
+    );
+    const ans = await s.svc.start(cardDoc([{ id: "s0", card: "c", params: {} }]), sig());
+    assert.match(String(ans.run_id), /^run-/);
+    assert.equal(s.core.runs.size, 1);
+  });
+
+  it("a graph-less phase-2 answer composes against the empty graph", async () => {
+    // A card arm that returns no graph (a metadata-only compose):
+    // the tensor walk reads the empty seat and passes — the run
+    // still registers.
+    const s = composeSeat(async (): Promise<unknown> => ({}));
+    const ans = await s.svc.start(
+      cardDoc([wired({ outputs: { out: "image" } })]),
+      sig(),
+    );
+    assert.match(String(ans.run_id), /^run-/);
+    assert.equal(s.core.runs.size, 1);
+  });
+
+  it("a classless node takes the empty-class census miss and composes", async () => {
+    // A composed node naming no class (a pass-through adapter the
+    // census never heard of): the lookup misses, no slot is typed,
+    // the spell rides — composition proceeds.
+    const s = composeSeat(async (): Promise<unknown> =>
+      graphOf({ n: { inputs: { s: "$f" } } }),
+    );
+    const ans = await s.svc.start(
+      cardDoc([wired({})]),
+      sig(),
+    );
+    assert.match(String(ans.run_id), /^run-/);
+    assert.equal(s.core.runs.size, 1);
+  });
+
+  it("a Load* file slot is exempt — the initial's VALUE is the seat's own language", async () => {
+    // The mirror of ROW-4: a LoadImage file slot TAKES an initial
+    // value by construction, so the tensor walk passes it over.
+    const s = composeSeat(async (): Promise<unknown> =>
+      graphOf({ n: { class_type: "LoadImage", inputs: { image: "$f" } } }),
+    );
+    const ans = await s.svc.start(
+      cardDoc([wired({})]),
+      sig(),
+    );
+    assert.match(String(ans.run_id), /^run-/);
+    assert.equal(s.core.runs.size, 1);
+  });
+
+  it("a node with a non-object inputs bag passes the tensor walk over", async () => {
+    // A foreign node shape (inputs as a bare literal, not a bag):
+    // there are no slots to judge — the walk passes it over and the
+    // run registers.
+    const s = composeSeat(async (): Promise<unknown> =>
+      graphOf({ n: { class_type: "KSampler", inputs: "junk" } }),
+    );
+    const ans = await s.svc.start(
+      cardDoc([wired({})]),
+      sig(),
+    );
+    assert.match(String(ans.run_id), /^run-/);
+    assert.equal(s.core.runs.size, 1);
+  });
+
+  it("an initial-bound $spell on a STRING seat composes — values belong there", async () => {
+    // The value-seat face: the same $spell shape that burns on a
+    // tensor slot is legal on a STRING dial — the walk passes it and
+    // the run registers.
+    const s = composeSeat(async (): Promise<unknown> =>
+      graphOf({ n: { class_type: "Prompt", inputs: { text: "$f" } } }),
+    );
+    const ans = await s.svc.start(
+      cardDoc([wired({})]),
+      sig(),
+    );
+    assert.match(String(ans.run_id), /^run-/);
+    assert.equal(s.core.runs.size, 1);
+  });
+
+  it("a doc-less flow_inline press runs with no draft — the run row is the record", async () => {
+    // THE FLOW-DOC EXEMPTION's press (the agent's ad-hoc bypass):
+    // no bench to snapshot, no bench id to carry, no draft to
+    // mirror — the run registers draft-less and settles.
+    const s = seat({
+      phase1Card: async (): Promise<unknown> => p1,
+      phase2Card: async (): Promise<unknown> =>
+        graphOf({ n: { class_type: "EmptyLatentImage", inputs: { width: 64, height: 64 } } }),
+    });
+    const engine = engineSeat(s);
+    engine.onFlow = async (): Promise<FlowResult> => ({
+      stages: { s0: { outputs: {}, artifacts: [] } },
+      promptId: "p",
+    });
+    const ans = (await s.svc.start(
+      { test: false, flow_inline: { id: "x", stages: [{ id: "s0", card: "c", params: {} }] } },
+      sig(),
+    )) as { run_id: string };
+    assert.match(ans.run_id, /^run-/);
+    const row = await settleWait(s, ans.run_id);
+    assert.equal(row.status, "completed", "doc-less settle failed: " + row.error);
+    assert.equal(row.draftId, "", "doc-less presses carry the empty draft id");
   });
 });

@@ -13,7 +13,9 @@ import { fakeEstate, fakeEstateRecorded } from './fake-estate.ts'
 import { fakeExec } from './fake-exec.ts'
 
 function exec() {
-  return fakeExec(AbortSignal.timeout(5000))
+  // THE ONE-SEAT LAW's test face (receipt 2026-10-31-infra-bench-one-seat-identity):
+  // the PARENT conversation's seat — the only lane the door authors.
+  return fakeExec(AbortSignal.timeout(5000), { agent: { id: 'session-chat7' } })
 }
 
 function stubEstate() {

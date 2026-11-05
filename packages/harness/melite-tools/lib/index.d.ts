@@ -1,30 +1,29 @@
 /**
  * `@melite/harness-tools` — the estate's DSH tool surface.
  *
- * TWO INTERFACES, ONE PLUGIN (the interface law):
+ * ONE INTERFACE: compose-first. The agent discovers, loads lanes,
+ * reads skills, authors cards on the bench (melite_construct) and
+ * does not execute by default — the run door is the USER's Run press
+ * on the card. This keeps the old contract
+ * (agent/prompts/BASE_PROMPT.md): "It composes; it never executes."
  *
- *   BROWSER (default — no env): compose-only. The agent discovers,
- *   loads lanes, reads skills, authors cards on the bench
- *   (melite_construct) and NEVER executes — the run door is the
- *   USER's Run press on the card. This keeps the old contract
- *   (agent/prompts/BASE_PROMPT.md): "It composes; it never
- *   executes."
- *
- *   HEADLESS (config headless:true — the one-shot/agent mounts): the
- *   DELEGATED OPERATOR. Same queue, same doors, plus the ONE
- *   execution verb melite_flow (a card or a flow tool call — single,
- *   template, or stages drafted on the fly), with run_status as the
- *   monitor. Both ride the queue's registration door — never a
- *   bypass, never a hand-assembled graph (QUEUE LANE LAW).
+ * THE RUN DOORS (melite_flow + run_status) are the /melite-runs
+ * delegation's, not an interface: the user's toggle seats them
+ * mid-session, and the persisted record (runsDelegation.ts) seats
+ * them at boot — the operator's last toggle outlives the reload.
+ * Both ride the queue's registration door — never a bypass, never a
+ * hand-assembled graph (QUEUE LANE LAW). There is no config-selected
+ * headless interface: HEADLESS IS DSH'S (`dsh headless`, its own
+ * shipped profile); melite carries no parallel mode.
  *
  * AD HOC TOOLS (config adhocTools): registered ONLY when a session
  * names them. (Empty since the disclosure stroke: enhance_prompt
  * died as a tool — the editor ✦ door below keeps the user surface
  * via harnessEnhance.)
  *
- * BASE toolset (both interfaces): melite_discover, melite_construct,
- * melite_load, melite_view, comfy_manage, melite_skill_read,
- * ledger_tail (+ melite_flow + run_status headless).
+ * BASE toolset: melite_discover, melite_construct, melite_load,
+ * melite_view, comfy_manage, melite_skill_read, ledger_tail
+ * (+ melite_flow + run_status when the delegation is ON).
  * Card tools compose from their card packages (named imports above
  * — the fetch registrar retired with its last row).
  *
@@ -46,12 +45,13 @@ export { meliteLoad } from './tools/melite-load.js';
 export { meliteView } from './tools/melite-view.js';
 export { meliteRead, readRunText } from './tools/melite-read.js';
 export { skillRead } from './tools/skill-read.js';
+export { skillWrite } from './tools/skill-write.js';
 export { ledgerTail } from './tools/ledger-tail.js';
 /** Cordis plugin name used by loader diagnostics. */
 export declare const name = "melite-tools";
 /**
  * Services this fiber NEEDS: tools + the harness LLM seam (enhance
- * rides ctx.llm). No webServer dependency — headless/SDK mounts boot
+ * rides ctx.llm). No webServer dependency — SDK mounts boot
  * without one.
  */
 export declare const inject: string[];
@@ -63,10 +63,6 @@ export declare const inject: string[];
  * with a precise error").
  */
 export interface Config {
-    /** HEADLESS interface: register the run doors (melite_flow,
-     *  run_status) — the delegated operator. Default false (browser law:
-     *  the model composes, the USER presses Run). */
-    headless?: boolean;
     /** AD HOC tool names, never in a base toolset ('enhance_prompt').
      *  Accepts a single string or a list. */
     adhocTools?: string | string[];
@@ -93,19 +89,22 @@ export declare const EAGER_TOOL_NAMES: readonly ["melite_discover", "melite_load
  * twins carry the melite_ prefix (operator 2026-10-08: they are OUR
  * catalog's doors, not DSH core's skill machinery — the old
  * unprefixed names invited exactly that conflation). */
-export declare const DEFERRED_TOOL_NAMES: readonly ["melite_view", "melite_read", "comfy_manage", "melite_skill_read", "ledger_tail"];
-/** BASE tool names — both interfaces (discovery, compose, view,
- * management, audit). melite_view is the observe arm (viewing an
- * artifact is not a run press — the interface law holds). */
-export declare const BASE_TOOL_NAMES: readonly ["melite_discover", "melite_load", "melite_construct", "melite_view", "melite_read", "comfy_manage", "melite_skill_read", "ledger_tail"];
-/** HEADLESS-only run doors (config headless:true) — the delegated operator. */
-export declare const HEADLESS_TOOL_NAMES: readonly ["melite_flow", "run_status"];
+export declare const DEFERRED_TOOL_NAMES: readonly ["melite_view", "melite_read", "comfy_manage", "melite_skill_read", "melite_skill_write", "ledger_tail"];
+/** BASE tool names (discovery, compose, view, management, audit).
+ *  melite_view is the observe arm (viewing an artifact is not a run
+ *  press — the compose law holds). */
+export declare const BASE_TOOL_NAMES: readonly ["melite_discover", "melite_load", "melite_construct", "melite_view", "melite_read", "comfy_manage", "melite_skill_read", "melite_skill_write", "ledger_tail"];
+/** THE RUN DOORS — the /melite-runs delegation's execution verbs,
+ *  seated by the user's toggle and by the persisted record at boot
+ *  (runsDelegation.ts). Not an interface: the same lane gains and
+ *  loses them with the delegation. */
+export declare const RUN_DOOR_NAMES: readonly ["melite_flow", "run_status"];
 /** AD HOC names (config adhocTools) — never in a base toolset.
  *  (empty since the disclosure stroke: enhance_prompt died as a tool —
  *  the editor ✦ door below keeps the user surface via harnessEnhance.) */
 export declare const ADHOC_TOOL_NAMES: readonly [];
 /** Every tool name this plugin can own (registration log + smoke filter). */
-export declare const MELITE_TOOL_NAMES: readonly ["melite_discover", "melite_load", "melite_construct", "melite_view", "melite_read", "comfy_manage", "melite_skill_read", "ledger_tail", "melite_flow", "run_status"];
+export declare const MELITE_TOOL_NAMES: readonly ["melite_discover", "melite_load", "melite_construct", "melite_view", "melite_read", "comfy_manage", "melite_skill_read", "melite_skill_write", "ledger_tail", "melite_flow", "run_status"];
 /** Register the Melite tools against the live estate gateway.
  *  THE TYPED CONTEXT (F-2/F-4 cure, 2026-11-05): the hand-declared
  *  CtxView parallel is retired — logger/effect are cordis Context

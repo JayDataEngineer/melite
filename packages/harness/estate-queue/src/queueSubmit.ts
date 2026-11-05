@@ -212,10 +212,27 @@ export function submitEnvelopeStructuralRefusal(doc: unknown): QueueRefusal | nu
     return envelopeRefusal("bad-test", doc, { testFlag });
   }
   const draftId: unknown = body["draft_id"];
+  // THE FLOW-DOC EXEMPTION (flows-are-compositions slice C,
+  // 2026-11-14): a body naming a flow door (flow | flow_inline)
+  // carries its OWN doc — the registry row / the inline stages — so
+  // the CARD BIRTH LAW's draft_id requirement does not bind it (the
+  // Slice-A {flow} press minted a bench draft purely to satisfy this
+  // gate; the marker row died, and with it the press's only draft
+  // source — every run-door {flow} press refused draft_required
+  // while the fake-estate walls certified the call shape, the exact
+  // anti-ghost seam). The EXEMPTION IS REQUIREDNESS ONLY: a draft_id
+  // that IS present still walks the whole shape law below (empty,
+  // non-string, malformed all refuse) — a flow press naming a draft
+  // gets it probed and snapshot like any other.
+  const namesFlowDoc: boolean = "flow" in body || "flow_inline" in body;
   if (typeof draftId !== "string" || draftId === "") {
-    return envelopeRefusal("missing-draft", doc);
+    if (draftId === undefined && namesFlowDoc) {
+      // absent + a flow door key: the flow's own doc is the birth doc
+    } else {
+      return envelopeRefusal("missing-draft", doc);
+    }
   }
-  if (!draftIdOk(draftId)) {
+  if (draftId !== undefined && typeof draftId === "string" && draftId !== "" && !draftIdOk(draftId)) {
     return envelopeRefusal("malformed-draft", doc, { draftId });
   }
   // THE PRESS KEY (audit N-E1): an OPTIONAL client-minted id naming
@@ -429,7 +446,10 @@ export async function walkSubmitEnvelope(
       kind: "ok";
       body: Record<string, unknown>;
       testFlag: boolean;
-      draftId: DraftId;
+      /** Undefined on the FLOW-DOC EXEMPTION (a {flow}/{flow_inline}
+       *  body with no draft_id — the flow's own doc is the birth
+       *  doc). Every other shape carries one (the CARD BIRTH LAW). */
+      draftId: DraftId | undefined;
       /** The start body's own execute ceiling (absent = the queue
        *  config decides; <= 0 disables the fuse). */
       ceilMs: number | undefined;
@@ -441,9 +461,14 @@ export async function walkSubmitEnvelope(
   const body = doc as Record<string, unknown>;
   // THE PARSE EDGE: the draft_id arrived on the wire and passed the
   // structural walk above (present, non-empty, draftIdOk) — branded
-  // here (the DraftId seating; the brand is compile-time-only).
-  const draftId = draftIdOf(body["draft_id"] as string);
-  if (!(await draftExists(draftId))) {
+  // here (the DraftId seating; the brand is compile-time-only). The
+  // FLOW-DOC EXEMPTION admits its absence: a {flow}/{flow_inline}
+  // body runs doc-less (the flow's own declaration is the doc —
+  // nothing to probe, nothing to snapshot; the run row is the
+  // record).
+  const rawDraftId: unknown = body["draft_id"];
+  const draftId: DraftId | undefined = rawDraftId === undefined ? undefined : draftIdOf(rawDraftId as string);
+  if (draftId !== undefined && !(await draftExists(draftId))) {
     return { kind: "refusal", refusal: unknownDraftRefusal(draftId) };
   }
   // THE PER-RUN CEILING REFUSAL (the F8 burn): the shape is judged at

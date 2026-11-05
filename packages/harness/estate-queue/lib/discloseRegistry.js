@@ -20,7 +20,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { Service } from "@deepseek-ai/cordis";
 import { resolveRepoRoot } from "@melite/comfyui-cordis";
-import { seedFlowsSeat } from "./flowsData.js";
+import { flowInitialKeys, seedFlowsSeat } from "./flowsData.js";
 /** The words a user sentence carries but no card owns — articles,
  *  pronouns, auxiliaries and request verbs. Ignored for scoring (the
  *  full-sentence miss was the transcript's first call: "Make an image
@@ -41,7 +41,7 @@ const MODALITY_WORDS = {
     animation: "video", animate: "video", film: "video",
     audio: "audio", sound: "audio", sounds: "audio", music: "audio", voice: "audio",
     speech: "audio", talk: "audio", talking: "audio",
-    mesh: "mesh", "3d": "mesh", blender: "mesh",
+    mesh: "mesh", "3d": "mesh",
 };
 /** Request verbs → the OPERATION tag they mean. A card declares its
  *  operations in tags (generate/edit/upscale); the user's verb is the
@@ -184,7 +184,7 @@ export function flowSummaryRows(repo, flowsSeat) {
         catch {
             // no leaf — the registry row stands alone
         }
-        out.push({ name, title, description: flow.description, stages: flow.stages.length, skillRefs: flow.skillRefs });
+        out.push({ name, title, description: flow.description, stages: flow.stages.length, skillRefs: flow.skillRefs, initials: flowInitialKeys(flow) });
     }
     return out;
 }

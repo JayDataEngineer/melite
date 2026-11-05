@@ -1,4 +1,5 @@
 import { servableLeaf } from "@melite/contracts/mediaKinds";
+import { ARCHIVED_DIR_NAME } from "@melite/contracts/mediaKinds";
 import { draftIdOf } from "@melite/contracts/benchStage";
 // runsList.ts — the runs LIST surface (REBUILD-7, gateway kill):
 // the retired runs door's list arm (GET /v1/flows/runs, the restore port) re-homed verbatim into the queue package as the registry's `list` business arm.
@@ -34,6 +35,21 @@ export function sidecarNum(text, key, dflt) {
     if (i < 0)
         return dflt;
     return parseLeadingInt(text.slice(i + needle.length));
+}
+/** sidecar_bool: first `"key":`, skip spaces/tabs, expect the
+ *  `true`/`false` literal — default when the key is absent or
+ *  non-boolean (never guessed; a torn write reads the default). */
+export function sidecarBool(text, key, dflt) {
+    const needle = '"' + key + '":';
+    const i = text.indexOf(needle);
+    if (i < 0)
+        return dflt;
+    const tail = text.slice(i + needle.length).replace(/^[ \t]+/, "");
+    if (tail.startsWith("true"))
+        return true;
+    if (tail.startsWith("false"))
+        return false;
+    return dflt;
 }
 /** sidecar_str: BYTE-wise exact — first `"key":`, skip spaces/tabs, expect `"`, decode \\n \\r \\t \" \\ (any other escape lands literally — \u stays "u"), stop at cap-1 BYTES. Operates on the UTF-8 bytes (D5). */
 export function sidecarStr(raw, key, cap) {
@@ -238,6 +254,83 @@ export function runArtifacts(runDir, outDirLiteral) {
         : [named.find((art) => art['name'] === film), ...named.filter((art) => art['name'] !== film)];
     return marker === undefined ? ordered : [...ordered, marker];
 }
+/** _archived_artifacts (the mass-archive law, operator ruling
+ *  2026-11-14, item (a)): the tucked-away face — files resting under
+ *  `<run>/_archived/`, served as a SEPARATE array (the live `arts`
+ *  grammar is untouched: artifactRowOk still demands exactly its six
+ *  keys, so archived rows ride no 7-key exception). Same row shape
+ *  (name/path/bytes/url/type/size), same type law, same two-tier
+ *  depth as the live walk (top files + one subdir level — the tuck
+ *  preserves the relative tail, so deeper nestings do not occur);
+ *  NO image cap (tucked rows flood no grid — the panel hides them
+ *  unless the operator toggles them visible, and the tuck is an
+ *  operator gesture, never an engine frame-dump). Absent dir reads
+ *  as the empty face, never a throw. */
+export function runArchivedArtifacts(runDir, outDirLiteral) {
+    const runBase = (() => {
+        const stripped = outDirLiteral.replace(/\/+$/, "");
+        const slash = stripped.lastIndexOf("/");
+        return slash >= 0 ? stripped.slice(slash + 1) : stripped;
+    })();
+    const out = [];
+    const push = (rel, full) => {
+        const base = rel.includes("/")
+            ? rel.slice(rel.lastIndexOf("/") + 1)
+            : rel;
+        const t = artifactType(base);
+        if (t !== "image" && t !== "video" && t !== "audio" && t !== "model" && t !== "text")
+            return;
+        const size = fileSize(full);
+        if (size < 0)
+            return;
+        out.push({
+            name: base,
+            path: outDirLiteral + "/" + ARCHIVED_DIR_NAME + "/" + rel,
+            bytes: size,
+            url: runBase + "/" + ARCHIVED_DIR_NAME + "/" + rel,
+            type: t,
+            size,
+        });
+    };
+    let tops;
+    try {
+        tops = readdirSync(join(runDir, ARCHIVED_DIR_NAME));
+    }
+    catch {
+        return [];
+    }
+    tops.sort(byteLess);
+    const subs = [];
+    for (const name of tops) {
+        if (!servableLeaf(name))
+            continue;
+        const full = join(runDir, ARCHIVED_DIR_NAME, name);
+        if (isDir(full))
+            subs.push(name);
+        else
+            push(name, full);
+    }
+    subs.sort(byteLess);
+    for (const sub of subs) {
+        let inner;
+        try {
+            inner = readdirSync(join(runDir, ARCHIVED_DIR_NAME, sub));
+        }
+        catch {
+            continue;
+        }
+        inner.sort(byteLess);
+        for (const name of inner) {
+            if (!servableLeaf(name))
+                continue;
+            const full = join(runDir, ARCHIVED_DIR_NAME, sub, name);
+            if (isDir(full))
+                continue;
+            push(sub + "/" + name, full);
+        }
+    }
+    return out;
+}
 /** _run_thumbnail: cached poster wins; else — THE WITNESS LAW (F32 cure,
  *  2026-11-13) — the run's VIDEO leads, then the first still.
  *
@@ -388,6 +481,10 @@ export function runRowOrNull(row) {
         if (!artifactRowOk(a))
             return null;
     }
+    for (const a of row.archived ?? []) {
+        if (!artifactRowOk(a))
+            return null;
+    }
     // a half-shaped truncation verdict refuses the row whole (the
     // gate's own law: never serve a shape it cannot vouch for)
     if (row.truncated !== undefined
@@ -411,6 +508,10 @@ export function runRowOrNull(row) {
         ...(row.truncated !== undefined && isIntGe0(row.truncated.listed) && isIntGe0(row.truncated.total)
             ? { truncated: { listed: row.truncated.listed, total: row.truncated.total } }
             : {}),
+        ...(row.archived !== undefined && row.archived.length > 0 ? { archived: row.archived } : {}),
+        // the TEST STAMP rides ALWAYS (the live face's law — a missing
+        // key would read as "unstamped", never as production).
+        test: row.test === true,
     };
 }
 /** Strict int parse: surrounding whitespace stripped, one optional
@@ -480,31 +581,38 @@ function scanRunEnt(runDir) {
     return ent;
 }
 function scanRunsRoot(stateRoot) {
-    // The PROD output root only (the door's list scanned
-    // roots.runsRoot; test runs never listed — kept 1:1).
-    const outputRoot = join(stateRoot, "output");
-    let names;
-    try {
-        names = readdirSync(outputRoot);
-    }
-    catch {
-        names = [];
-    }
+    // BOTH out seats (the visible-bench law): production first, then
+    // test — a same-id collision serves production.
     const ents = [];
-    for (const name of names) {
-        if (ents.length >= 8192)
-            break; // the C's 8192 collected cap
-        if (!name.startsWith("run-"))
+    const seen = new Set();
+    for (const seat of ["output", "test-output"]) {
+        const seatRoot = join(stateRoot, seat);
+        let names;
+        try {
+            names = readdirSync(seatRoot);
+        }
+        catch {
             continue;
-        const ent = scanRunEnt(join(outputRoot, name));
-        if (ent === undefined)
-            continue;
-        ents.push({
-            dir: name,
-            created: ent.created,
-            media: ent.media,
-            root: stateRoot,
-        });
+        }
+        for (const name of names) {
+            if (ents.length >= 8192)
+                break; // the C's 8192 collected cap
+            if (!name.startsWith("run-"))
+                continue;
+            if (seen.has(name))
+                continue;
+            seen.add(name);
+            const ent = scanRunEnt(join(seatRoot, name));
+            if (ent === undefined)
+                continue;
+            ents.push({
+                dir: name,
+                created: ent.created,
+                media: ent.media,
+                root: stateRoot,
+                seat,
+            });
+        }
     }
     return ents;
 }
@@ -538,6 +646,12 @@ async function buildRunCard(outputRoot, ent, hasDraft) {
     let exported = "";
     let exportedPath = "";
     let seed = -1;
+    // THE TEST FLAG, READ (visible-bench law): the row's own
+    // sidecar names the seat it rode — the writer persists `test`
+    // (queueSidecar's IDENTITY KEYS); absent reads production for
+    // pre-cure trees, and NO sidecar (ENOENT) is production, same
+    // as the completed-run default above.
+    let testFlag = false;
     let created = ent.created;
     const rawBytes = buf === null ? Buffer.alloc(0) : Buffer.from(buf, "utf8");
     if (buf !== null) {
@@ -568,13 +682,14 @@ async function buildRunCard(outputRoot, ent, hasDraft) {
         // root is long, so the slice budget doubles the name's.
         exportedPath = sidecarStr(rawBytes, "export_path", 256);
         seed = sidecarNum(buf, "seed", -1);
+        testFlag = sidecarBool(buf, "test", false);
         const at = buf.indexOf('"created_at":');
         if (at >= 0)
             created = parseLeadingInt(buf.slice(at + 13));
     }
     if (pipeline.startsWith("_"))
         return null; // user-surface law
-    const literal = "./output/" + ent.dir;
+    const literal = "./" + ent.seat + "/" + ent.dir;
     const arts = runArtifacts(runDir, literal);
     // THE CAPPED FACE (previews 2b, 2026-11-12): the truncation marker
     // rides the artifact list's tail, but the panel's capped counter
@@ -582,6 +697,11 @@ async function buildRunCard(outputRoot, ent, hasDraft) {
     // so a 3-of-6 listing never reads as complete (the grid says a
     // product is missing).
     const truncMarker = arts.find((a) => a["truncated"] === true);
+    // THE ARCHIVED FACE (mass-archive law): the tuck's rows ride the
+    // row beside the live list — the live walk never sees them (the
+    // `_archived/` dir fails the servable law at the top level), so
+    // this second sweep is the only reader that opens that dir.
+    const archivedArts = runArchivedArtifacts(runDir, literal);
     const built = runRowOrNull({
         run_id: ent.dir,
         name: pipeline,
@@ -595,11 +715,13 @@ async function buildRunCard(outputRoot, ent, hasDraft) {
         ...(truncMarker !== undefined
             ? { truncated: { listed: truncMarker["listed"], total: truncMarker["total"] } }
             : {}),
+        ...(archivedArts.length > 0 ? { archived: archivedArts } : {}),
         params: { seed },
         draft_id: draft,
         ...(stageIdsRaw !== "" ? { stage_ids: stageIdsRaw.split(",") } : {}),
         ...(exported !== "" ? { export_name: exported } : {}),
         ...(exportedPath !== "" ? { export_path: exportedPath } : {}),
+        test: testFlag,
     });
     if (built === null)
         return null; // user-surface / RESILIENCE LAW loud skip — never cached
@@ -653,18 +775,19 @@ async function applyDraftOverlay(row, hasDraft) {
     }
     return served;
 }
-/** The runs-list envelope (the restore port): the output-root scan, media-first + newest sort, the limit parse (raw STRING — the lane/remote pass the raw text; underscores parse, non-ints refuse), refused cards SKIPPED but counted. */
+/** The runs-list envelope (the restore port): the BOTH-SEATS scan per root (visible-bench law), media-first + newest sort, the limit sliced off the merged order, the limit parsed (raw STRING — the lane/remote pass the raw text; underscores parse, non-ints refuse), refused cards SKIPPED but counted. */
 /** url/thumbnail are run-RELATIVE (the /v1/assets prefix died with the app — the header's law). */
 export async function listRuns(stateRoot, limit, hasDraft) {
     return listRunsAcross([stateRoot], limit, hasDraft);
 }
 /** §23 CROSS-ROOTS (2026-09-23): the union list across the
- *  manifest — every root scanned, one media-first + newest sort,
+ *  manifest — every root scanned (BOTH out seats per root since
+ *  the visible-bench flip), one media-first + newest sort,
  *  the limit sliced off the merged order, the scan total counted
  *  (refused cards SKIPPED but counted, per root). Every served row
- *  names its root (served_from); same-run-id collisions serve the
- *  FIRST manifest root's row (own writes win — the sort is stable,
- *  own root scanned first). */
+ *  names its root (served_from) and its seat (`test`, `path`);
+ *  same-run-id collisions serve the FIRST manifest root's row
+ *  (own writes win — the sort is stable, own root scanned first). */
 export async function listRunsAcross(roots, limit, hasDraft) {
     const ents = [];
     for (const root of roots)
@@ -684,7 +807,7 @@ export async function listRunsAcross(roots, limit, hasDraft) {
         if (seen.has(ent.dir))
             continue; // first manifest root wins
         seen.add(ent.dir);
-        const row = await buildRunCard(join(ent.root, "output"), ent, hasDraft);
+        const row = await buildRunCard(join(ent.root, ent.seat), ent, hasDraft);
         if (row === null)
             continue; // RESILIENCE LAW: loud skip
         rows.push({ ...row, served_from: ent.root });

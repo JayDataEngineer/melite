@@ -92,6 +92,7 @@ const wfBody = (pressKey: string): Record<string, unknown> => ({
     stages: [{
       id: "s",
       engine: "comfyui",
+      outputs: { out: "image" },
       params: { workflow: { "1": { class_type: "UNETLoader", inputs: {} } } },
     }],
   },

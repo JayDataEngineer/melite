@@ -4,13 +4,16 @@
 # Installing this bundle into ANY profile (dsh plugin --profile <name>
 # add <repo>/packages/harness/dsh/provisioner) mounts:
 #
-#   infer-tools          the tool registry, TWO interfaces (profile
-#                        config / MELITE_HEADLESS selects): BASE = discovery
-#                        (melite_discover, melite_load), the bench
-#                        (melite_construct), management (comfy_manage),
-#                        craft (skill_index, skill_read), audit
-#                        (ledger_tail); HEADLESS adds the run doors
-#                        melite_flow / run_status (queue-native).
+#   infer-tools          the tool registry, ONE interface: BASE =
+#                        discovery (melite_discover, melite_load), the
+#                        bench (melite_construct), management
+#                        (comfy_manage), craft (skill_index,
+#                        skill_read), audit (ledger_tail). The run
+#                        doors melite_flow / run_status seat from the
+#                        home's persisted /melite-runs record — there
+#                        is no config or env selector (HEADLESS IS
+#                        DSH'S: `dsh headless "task"` is DSH's own
+#                        shipped profile).
 #                        enhance_prompt is AD HOC (MELITE_ADHOC), never base.
 #   infer-card-view-*    editable action cards rendered in the
 #                        conversation (host row serves the editor bundle
@@ -47,8 +50,9 @@
 # melite_load → skill_read), never a pre-loaded catalog. The pin
 # silences the HOST layer only: a preset that genuinely wants local
 # skill discovery still mounts its OWN preset-layer row. Without this
-# pin the headless profile auto-injects (only dsh-web-app disables the
-# host row, and headless does not bundle it). The row below is an
+# pin the agent-server profiles auto-inject (only dsh-web-app disables
+# the host row, and the server profiles do not bundle it). The row
+# below is an
 # OVERRIDE (column-0 `- id:`, no `insert:`): it patches the dsh-base
 # row and mounts nothing.
 

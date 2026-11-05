@@ -54,8 +54,7 @@
     "@melite/image-image-gen": "workspace:*",
     "@melite/models-h3": "workspace:*",
     "@melite/motion-motion": "workspace:*",
-    "@melite/video-h3-timeline": "workspace:*",
-    "unrun": "^0.3.1"
+    "@melite/video-h3-timeline": "workspace:*"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.5",
@@ -68,7 +67,7 @@
     "cordis.patch.yml"
   ],
   "license": "AGPL-3.0-or-later",
-  "description": "The estate's DSH tool surface as a bundle — the compose-only browser toolset, the headless delegated-operator doors, and the editor's Enhance host routes.",
+  "description": "The estate's DSH tool surface as a bundle — the compose-first toolset, the /melite-runs delegation's run doors, and the editor's Enhance host routes.",
   "repository": {
     "type": "git",
     "url": "https://github.com/JayDataEngineer/melite.git",

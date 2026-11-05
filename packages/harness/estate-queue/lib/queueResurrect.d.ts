@@ -58,7 +58,4 @@ export interface QueueRoots {
     readonly runsRoot: string;
     readonly ledgerPath: string;
 }
-/** One rebuilt queued run — RETIRED (stroke 83): the hollow
- *  requeue road is deleted; the service's bootReconcile REPLAYS _request.json
- *  through the start door so revived rows carry REAL params. */
 //# sourceMappingURL=queueResurrect.d.ts.map

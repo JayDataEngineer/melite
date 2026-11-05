@@ -1,7 +1,7 @@
 import { emitModifierKinds } from "@melite/comfyui-cordis";
 import type { ModelsService } from "@melite/comfyui-cordis";
 import type { CardRegistryService } from "./cardsRegistry.js";
-import type { FlowsSeat } from "./flowsData.js";
+import type { FlowsSeat, RegistryFlow } from "./flowsData.js";
 import { toolBaseRows } from "./toolProjection.js";
 import type { FamilyModelsSeat } from "./flowsFamilyCompose.js";
 /** A card id → its package dir. The cardPackages rows are package
@@ -54,7 +54,7 @@ export declare function skillLinesForCard(repo: string, cardId: string): Array<R
  *  (the caller concatenates), then family by family. A boarded id
  *  with no rows contributes nothing (the walk is the truth — never
  *  a refusal; anima itself ships no AGENT.md, only the skill). */
-export declare function skillLinesForFamilies(repo: string, fams: readonly string[]): Array<Record<string, unknown>>;
+export declare function skillLinesForFamilies(repo: string, fams: readonly string[], stateRoot?: string): Array<Record<string, unknown>>;
 export declare function flowLeafDocs(repo: string, flowName: string): Array<{
     path: string;
     text: string;
@@ -80,7 +80,49 @@ export type CardModelsSeat = Pick<ModelsService, "allDecls" | "checkModelPresent
  *  presence-marked, never a run-time surprise; LLM-powered enhance
  *  stays the user's ✦ door, never served here). Throws LOUD
  *  on unknown ids (the door maps to 404). */
-export declare function loadCard(repo: string, cards: CardRegistryService, modelsSeat: CardModelsSeat | null | undefined, cardId: string): Record<string, unknown>;
+export declare function loadCard(repo: string, cards: CardRegistryService, modelsSeat: CardModelsSeat | null | undefined, cardId: string, stateRoot?: string): Record<string, unknown>;
+/** THE FLOW-AS-CARDS PROJECTION (flows-are-compositions slice C,
+ * operator 2026-11-14: "WHEN YOU LOAD A FLOW, IT COMES OUT AS
+ * CARDS… THE BENCH OF CARDS REPRESENTS A FLOW"): a card-stage flow
+ * projects onto the bench's own row grammar — one row per stage,
+ * `card` + the stage's params, every fromStage wire remapped to the
+ * bench's s_0..s_n ids, initial wires verbatim ({initial} — the
+ * bench grammar admits both shapes at every write door). The
+ * projection rides the SAME expansion walk the {flow} start door
+ * composes through (expandRegistryFlow — from_flow links resolved
+ * live), so what the bench shows and what the door compiles are one
+ * graph, never a parallel derivation.
+ *
+ * A flow materializes ONLY while every stage is a card row: a
+ * family-action stage (anny.estimate_photo, fit.seat — the family
+ * DECL composes its nodes at expansion, no card seat exists) or an
+ * engine-verb stage (craft-loop's drive-time fields) has NO card to
+ * land as, and a skip_when stage carries a run-conditioned stage
+ * count the static bench cannot hold. Those flows keep the run-door
+ * face — the honest bound (the flows-are-compositions audit's
+ * contradictions 1-3), named in the refusal, never a silent
+ * half-landing.
+ *
+ * Pure: the registry's rows are never aliased (params/outputs
+ * structuredClone'd, the expansion's own detach already guards the
+ * template) and the return is fresh JSON — safe to serve on the
+ * load bundle and to press onto a bench verbatim.
+ *
+ * @param row the registry flow (the seat's live row)
+ * @param seat the flows seat (from_flow links resolve live — the
+ *   same seat expansion reads, never a second table)
+ * @returns the bench rows ({flow, stages: s_0..s_n}), or the named
+ *   refusal when a stage holds no card seat
+ * @throws the expansion's own authoring errors (dangling from_flow
+ *   links, raw-workflow shapes) — authoring bugs die loud at the
+ *   read the same way they die at the press */
+export declare function flowBenchStages(row: RegistryFlow, seat: FlowsSeat): {
+    flow: string;
+    stages: Array<Record<string, unknown>>;
+} | {
+    flow: string;
+    refused: string;
+};
 /** Melite load for a FLOW: the leaf agents md + the registry
  *  signature (the tool overlay verbatim — ONE spelling, the same
  *  object validate/start enforce; null when the row declares
@@ -89,6 +131,6 @@ export declare function loadCard(repo: string, cards: CardRegistryService, model
 /** @param modelsSeat the context's models service when mounted — the
  *  flow's skill lines resolve through the seat the runs doors
  *  thread (the lane-seat law); the booted singleton otherwise */
-export declare function loadFlow(repo: string, flowName: string, modelsSeat?: FamilyModelsSeat | null, flowsSeat?: FlowsSeat | null): Record<string, unknown>;
+export declare function loadFlow(repo: string, flowName: string, modelsSeat?: FamilyModelsSeat | null, flowsSeat?: FlowsSeat | null, stateRoot?: string): Record<string, unknown>;
 /** First-non-blank query value (the catalogs qFirst shape). */
 //# sourceMappingURL=loadPlane.d.ts.map

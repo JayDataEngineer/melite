@@ -2,23 +2,33 @@
 // execution verb. Takes a card or a flow tool call and executes it
 // through the serial GPU queue — card_run + flow_run + build_flow
 // unified (their three paths survive inside, the draft ceremony
-// does not surface). Drafts stay DOOR-level (CARD BIRTH LAW: every
-// start rides a doc-backed draft_id — minted here, never argued).
+// does not surface). Drafts stay DOOR-level (CARD BIRTH LAW: card,
+// bench and ad-hoc starts ride a doc-backed draft_id — minted here,
+// never argued; a MATERIALIZED flow press rides the bench draft it
+// just landed, a card-less flow rides the door's own doc — the
+// flow-doc exemption, see runTemplate).
 //
 // THREE modes, exactly one per call:
 //   - {card, model, prompt?, params?} — a single card (the old
 //     card_run path, composed inside: manifest gate + runnability
 //     gate + defaults merge, then draft + {model} start).
-//   - {flow, params?} — a NAMED template (the old flow_run path:
-//     drafts {flow,...} + {flow} start). params are the OVERRIDE
-//     door onto the template's stage params: a flat value rides the
-//     one stage whose card admits the key ({file_format: "fbx"} on
-//     body-to-somax), {stage_id: {…}} targets one stage — keys the
-//     stage's card does not admit refuse loud, before any run.
+//   - {flow, params?} — a NAMED template (the old flow_run path,
+//     reworked 2026-11-14 by the flows-are-compositions law: a
+//     card-stage flow MATERIALIZES onto the bench as its card rows
+//     — ONE write, the same expansion the {flow} door composes —
+//     and the run presses the flow door carrying the bench's
+//     draft_id; a flow with no card seats (family actions, engine
+//     verbs, skip_when) presses draft-less and lands its run row
+//     alone). params are the OVERRIDE door onto the template's
+//     stage params: a flat value rides the one stage whose card
+//     admits the key ({upscale: 2} on image-upscale), {stage_id:
+//     {…}} targets one stage — keys the stage's card does not
+//     admit refuse loud, before any run.
 //   - {stages, connects?} — cards drafted on the fly (the old
 //     build_flow MULTI path: COMPILE FIRST at validate — no GPU on
 //     a bad wire — then draft + {flow_inline} start).
-// Returns {run_id, draft_id}; poll with run_status. One active run
+// Returns {run_id} (card/bench/ad-hoc and a materialized flow also
+// carry draft_id); poll with run_status. One active run
 // machine-wide. L4 test flag rides every mode. The draft_id rides
 // the value AND the render's leading `card <draftId>` token — the
 // chat tile handle (FlowCards parseCardsBlock), never an agent arg.
@@ -33,6 +43,7 @@ import { loadCardDefs } from '@melite/comfyui-cordis';
 import { boardedMap, resolveSpecKeyForTool } from "../discovery.js";
 import { isTerminalStatus, statusOf, statusOrPendingOf } from '@melite/contracts/stageView';
 import { admitCrossRegimeJoin } from '@melite/models-h3';
+import { KIND_VOCAB } from '@melite/estate-queue';
 /** The row's model (the QUEUE LANE LAW, agent-side): the row's
  *  params may name `model` explicitly; otherwise the card id
  *  resolves through form-spec's OWN alias law (boarded[0] — the
@@ -156,9 +167,13 @@ export function foldConnects(flowId, stages, connects) {
         else if (inferred !== undefined)
             kind = inferred;
         if (kind === undefined) {
+            // THE VOICE DERIVES (F48, 2026-11-01): the enumeration is the
+            // door's KIND_VOCAB, never a hand copy (the old literal had
+            // already dropped `data` and had no list spellings — an agent
+            // wiring a list seat could not state the card's declared kind).
             throw new Error('build_flow: connect ' + JSON.stringify(from) + ' -> ' + JSON.stringify(to)
-                + ' has no kind and none can be inferred — state it (text, image,'
-                + ' video, audio, mesh, num, lora, seg)'
+                + ' has no kind and none can be inferred — state it ('
+                + [...KIND_VOCAB].join(', ') + ')'
                 + (from.startsWith('initial.')
                     ? ' (initial wires ALWAYS need an explicit kind)'
                     : ' (the upstream stage does not declare this output)'));
@@ -344,11 +359,52 @@ async function runBench(estate, a, signal) {
         {
             const folded = statusOrPendingOf(typeof row['runStatus'] === 'string' ? row['runStatus'] : '');
             if (folded === 'done' || folded === 'cached' || folded === 'reused') {
-                pass.push({ stage: stageId, card, skipped: 'done' });
+                // THE LAST-RUN GROUND (qa8 GAPS-12/F19, 2026-11-01): the done
+                // mark REQUIRES a last run. The bench row's own result memory
+                // (result.run_id — stamped by the same attribution that wrote
+                // runStatus) is the evidence the prose claims below. A done
+                // mark with no run behind it (a bare runStatus write — the
+                // drafts/patch door admits runStatus without result) still
+                // skips, but the pass row carries last_run: null so the
+                // render reads honestly instead of claiming "unchanged since
+                // its last run" for a row that never ran.
+                const result = row['result'] !== null && typeof row['result'] === 'object' && !Array.isArray(row['result'])
+                    ? row['result'] : null;
+                const lastRun = result !== null && typeof result['run_id'] === 'string' && result['run_id'] !== ''
+                    ? result['run_id'] : null;
+                pass.push({ stage: stageId, card, skipped: 'done', last_run: lastRun });
                 continue;
             }
         }
         if (card === '') {
+            // THE FOREIGN-ROW VOICE (the compose-plane cure, 2026-11-14): a
+            // card-less row carrying ref_flow is a RETIRED flow template
+            // marker — an older melite_flow press landed it before the
+            // flows-are-compositions law; the bench write doors refuse the
+            // shape now, but a doc the old door wrote still serves (the
+            // read stays tolerant by the un-wedge line). The run rides the
+            // {flow} start arm, never this pass, so "patch the stage" names
+            // an impossible cure for a row with no card surface. The voice
+            // names the row's origin and the removal path; a genuinely
+            // card-less row keeps the patch voice.
+            const refFlow = typeof row['ref_flow'] === 'string' && row['ref_flow'] !== '' ? row['ref_flow'] : '';
+            if (refFlow !== '') {
+                // THE RESTORE CURE (F60b, slice E): when the bench's own
+                // history holds a non-reverted load entry (the serve
+                // projection strips the inverse, but a load entry always
+                // carries one — the undo verb answers for what it holds),
+                // undo rewinds to the bench the press replaced — a stronger
+                // cure than dropping the row, and the voice says so.
+                const logRaw = b['log'];
+                const logRows = Array.isArray(logRaw)
+                    ? logRaw.filter((e) => typeof e === 'object' && e !== null)
+                    : [];
+                const undoCure = logRows.some((e) => e['kind'] === 'load' && e['reverted'] !== true)
+                    ? ' — or melite_construct undo to restore the bench the retired press replaced'
+                    : '';
+                return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId,
+                    error: `stage ${stageId} is the "${refFlow}" flow template reference (a retired melite_flow press landed it — the bench doors refuse the shape now; the flow runs through its own start door, not this bench pass); remove it with melite_construct remove_stage ${stageId} if the bench should run without the flow${undoCure}`, pass };
+            }
             return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId,
                 error: `stage ${stageId} names no card — nothing to compose (melite_construct patch)`, pass };
         }
@@ -432,6 +488,15 @@ async function runBench(estate, a, signal) {
         // every $spell a wire resolves left as a concrete value; a spell
         // with NO wire still rides — the door's spell gate names it, the
         // one honest wall left for a genuinely unresolvable promise.
+        // THE FAMILYLESS HALF RIDES THEM TOO (the ghost-run burn,
+        // 2026-11-19): a familyless press {draft_id, bench_stage_id}
+        // used to drop the resolved bag and ride the draft door's
+        // WHOLE-BENCH compose — every sibling re-executed in one merged
+        // run the bench could not see. The door now composes ONLY the
+        // claimed row, and the claim arm resolves the row's wires from
+        // THIS bag (there is no upstream stage in a single-stage run to
+        // merge) — a spell the wires did not resolve refuses loud at the
+        // door's unwired-spell gate.
         // F21 — THE PRESS ROW'S OWN KEY (2026-10-30): the run door persists
         // bench_stage_id onto the queue row and the sidecar maps it back,
         // but nothing wrote it, so every live press (run-c6bfa91defe7,
@@ -446,7 +511,7 @@ async function runBench(estate, a, signal) {
         let started;
         try {
             started = await startRun(estate, model === ''
-                ? { test: wireBool(a.test), draft_id: draftId, bench_stage_id: stageId }
+                ? { ...resolved, test: wireBool(a.test), draft_id: draftId, bench_stage_id: stageId }
                 : { ...resolved, model, test: wireBool(a.test), draft_id: draftId, bench_stage_id: stageId }, signal);
         }
         catch (thrown) {
@@ -794,8 +859,15 @@ a, signal) {
     let model = a.model;
     if (!model)
         model = await modelForCard(card, a.params);
+    // THE NAMED-DOOR LAW (the F20 canon: a refusal naming a door must
+    // have the door) + the qa8 F22 residual (2026-11-01: utility cards
+    // board [] by design, and the family-explicit cure was a dead end
+    // for them): the voice names BOTH working cures — the family pick
+    // when the card boards one, and the bench stage path that runs a
+    // familyless card today. The wall (doors-refusal-door-pin.spec.ts)
+    // pins that every named door exists in the same toolset.
     if (!model)
-        return { mode: 'card', target: card, error: 'model is required: this card boards no default family — name the family explicitly (melite_load lists the boarded families on the card)' };
+        return { mode: 'card', target: card, error: 'model is required: this card boards no default family — name the family explicitly (melite_load lists the boarded families on the card); a card with no family runs as a bench stage instead (melite_construct add_stage composes it without a family)' };
     // THE CARD ARM OWNS THE COMPOSE (REBUILD-9): the runs registry's
     // start {model:} arm gates (manifest/runnability), overlays the
     // route-lens stamp (family defaults + variant resolver_defaults),
@@ -938,7 +1010,22 @@ a, signal) {
     }
     return { mode: 'card', target: card, model, draft_id: draftId, ...(rode !== undefined ? { rode } : {}), ...started };
 }
-/** TEMPLATE (the old flow_run path): drafts {flow,...} + start. */
+/** TEMPLATE (the old flow_run path): a {flow} press that MATERIALIZES
+ *  the flow's cards onto the bench, then starts the run through the
+ *  flow's own door. (The FLOWS-ARE-COMPOSITIONS law, operator
+ *  2026-11-14: "WHEN YOU LOAD A FLOW, IT COMES OUT AS CARDS… THE
+ *  BENCH OF CARDS REPRESENTS A FLOW" — slice A killed the ref_flow
+ *  marker row, and slice C replaces the press it poisoned: a
+ *  card-stage flow lands as its CARD rows (ONE bench write, the
+ *  same expansion the {flow} door composes, undoable via the
+ *  melite_construct undo the landing's history carries), and the
+ *  run presses the flow door carrying the bench's draft_id — the
+ *  envelope's CARD BIRTH law satisfied by a draft that EXISTS and
+ *  shows the very cards being run. A flow whose stages hold no card
+ *  seats (family actions, engine verbs, skip_when — the
+ *  contradictions the audit named) keeps the draft-less face: the
+ *  run row alone is the landing, and the start door's flow-doc
+ *  exemption admits the press.) */
 async function runTemplate(estate, 
 // hasFlow gate (execute, the sole caller): flow is a non-empty string
 // and params always an object here — no fallbacks exist to cover
@@ -949,28 +1036,70 @@ a, signal) {
     if (!flow)
         return { mode: 'flow', target: '', error: 'flow is required (a discovered flow name)' };
     const overrides = a.params;
-    let draftId;
+    // THE MATERIALIZING READ (slice C): the load face serves the flow's
+    // bench rows (flowBenchStages — the SAME expansion the {flow} start
+    // door composes, so the bench shows the graph the door compiles).
+    // A read refusal (unknown flow, an authoring throw) names itself
+    // BEFORE any bench write or run press — no half-landing.
+    let benchRows;
     try {
-        // TEMPLATE load sugar: the bench carries the template REFERENCE
-        // (the {flow} start arm expands the graph server-side; the run
-        // registry snapshots it). One marker row keeps the doc honest.
-        draftId = await loadBench(estate, {
-            session: a.bench,
-            intent: flow,
-            stages: [{ id: 's_0', engine: CARD_PLANE_ENGINE, ref_flow: flow, params: {} }],
-        }, signal);
+        const bundle = await estate.loadCard('flow', flow, signal, DRAFT_TIMEOUT_MS);
+        const rawRows = bundle['bench_stages'];
+        if (Array.isArray(rawRows) && rawRows.length > 0) {
+            benchRows = rawRows.filter((r) => typeof r === 'object' && r !== null && !Array.isArray(r));
+        }
     }
     catch (e) {
-        // The bench remote's refusal (RemoteError) — its message is the
-        // diagnostic ("bench moved: rev is N, caller held M").
-        return { mode: 'flow', target: flow, error: e instanceof Error ? e.message : String(e) };
+        const re = remoteErrorOf(e);
+        return { mode: 'flow', target: flow, error: re !== null && re !== undefined && re.message !== '' ? re.message : (e instanceof Error ? e.message : String(e)) };
     }
-    const started = await startRun(estate, { ...overrides, flow, test: wireBool(a.test), draft_id: draftId }, signal);
-    // a refused start carries the error and NO draft_id — a tile never
-    // mounts for a run that never registered (the estate card-tool law).
-    if (typeof started["error"] === 'string')
-        return { mode: 'flow', target: flow, ...started };
-    return { mode: 'flow', target: flow, draft_id: draftId, ...started };
+    // ONE WRITE, THE WHOLE BENCH IS THE FLOW (the landing declares
+    // itself — the one-shared-state law; the landing's history entry
+    // carries the stages_before inverse, so melite_construct undo
+    // restores what the flow replaced). The anti-ghost-bench ruling:
+    // the press is visible as bench rows AND a run row.
+    let draftId;
+    if (benchRows !== undefined) {
+        try {
+            draftId = await loadBench(estate, {
+                session: a.bench,
+                intent: flow,
+                stages: benchRows,
+            }, signal);
+        }
+        catch (e) {
+            return { mode: 'flow', target: flow, error: e instanceof Error ? e.message : String(e) };
+        }
+    }
+    const started = await startRun(estate, {
+        ...overrides,
+        flow,
+        test: wireBool(a.test),
+        // the bench draft rides when the flow materialized (the CARD
+        // BIRTH envelope + the run row's restore path: the wand
+        // rebuilds the flow's cards); a card-less flow presses the
+        // door's own doc (the flow-doc exemption) and lands its run row
+        // alone.
+        ...(draftId !== undefined ? { draft_id: draftId } : {}),
+    }, signal);
+    // a refused start carries the error and NO run_id — the prose
+    // names the refusal, never a press that never registered. A
+    // materialized bench SURVIVES the refusal: the cards stay visible
+    // (the initial the door refused is fixable on the bench — or by
+    // the next press), and undo remains the operator's cure.
+    if (typeof started["error"] === 'string') {
+        return {
+            mode: 'flow', target: flow,
+            ...(draftId !== undefined ? { draft_id: draftId } : {}),
+            ...started,
+        };
+    }
+    return {
+        mode: 'flow', target: flow,
+        ...(draftId !== undefined ? { draft_id: draftId } : {}),
+        ...(benchRows !== undefined ? { materialized: benchRows.length } : {}),
+        ...started,
+    };
 }
 /** AD-HOC (the old build_flow MULTI path): COMPILE FIRST at
  *  validate (no GPU on a bad wire), then draft + {flow_inline}. */
@@ -1023,7 +1152,23 @@ async function runAdHoc(estate, a, signal) {
     catch (e) {
         return { mode: 'adhoc', target: flowId, error: e instanceof Error ? e.message : String(e) };
     }
-    const started = await startRun(estate, { flow_inline: flowBody, test: wireBool(a.test), draft_id: draftId }, signal);
+    const started = await startRun(estate, 
+    // THE MULTI-STAGE PORT (GAPS-8, the unported burn: a two-stage
+    // ad-hoc graph refused "multi-stage graphs are unported" at the
+    // start gate). The gateway's START gate serves single-stage
+    // flow_inline runs only — a hand-authored multi-stage graph stays
+    // refused there, and the curated-lane lift belongs to the
+    // registry's own ids (name a registry flow). But the ad-hoc graph
+    // already LANDED on the bench above, and the bench's own DRAFT
+    // door composes every stage through the same registry walk the
+    // merged worker runs multi-stage on (the benchComposed lift — the
+    // estate's draft-door wall proves the admission). So a
+    // multi-stage ad-hoc graph presses the bench it just landed (the
+    // draft press: {draft_id} alone, never flow_inline); the single
+    // stage keeps the direct flow_inline start.
+    folded.length > 1
+        ? { draft_id: draftId, test: wireBool(a.test) }
+        : { flow_inline: flowBody, test: wireBool(a.test), draft_id: draftId }, signal);
     if (typeof started["error"] === 'string')
         return { mode: 'adhoc', target: flowId, ...started };
     return { mode: 'adhoc', target: flowId, draft_id: draftId, ...started };
@@ -1053,7 +1198,8 @@ export function meliteFlow(estate) {
         description: 'Execute through the serial GPU queue — the ONE execution verb. Exactly one per call: bench (run THE shared '
             + 'bench exactly as it stands — what the user\'s Run press runs) | card (a card id + model — single '
             + 'generation) | flow (a NAMED template from melite_load) | stages (engine-node stages on the fly: [{id, engine, '
-            + 'params?, outputs?}] + optional connects — compiled at validate BEFORE any GPU is spent). Compositions '
+            + 'params?, outputs?}] + optional connects — compiled at validate BEFORE any GPU is spent; a multi-stage graph '
+            + 'presses the bench it lands (the draft press), the single stage the direct flow_inline start). Compositions '
             + 'LOAD the shared bench first (nothing mints fresh — one state, one log, one undo); every start rides the '
             + 'bench\'s doc-backed draft_id (CARD BIRTH LAW) — it rides the value as the chat tile handle, never an '
             + 'agent arg. Returns {run_id, draft_id}; poll with run_status. One active run machine-wide.',
@@ -1147,7 +1293,7 @@ export function meliteFlow(estate) {
                     run_id: { type: 'string', description: 'The queue run id — poll with run_status(run_id). Absent on a pre-run refusal; PRESENT on a stopped-mid-flow refusal (a stage that ran and failed — render prints it after the error).' },
                     draft_id: { type: 'string', description: 'The minted card draft id — the chat tile handle (?meliteCards=). Absent on refusal.' },
                     status: { type: 'string', description: 'The bench outcome: done | pending | stopped | queued | running. pending = the observation budget spent on a still-live run (the run continues on the queue — re-wait with run_status(run_id)); absent on refusal.' },
-                    mode: { type: 'string', description: 'Which composition ran (or was attempted): card | flow | adhoc.', required: true },
+                    mode: { type: 'string', description: 'Which composition ran (or was attempted): bench | card | flow | adhoc. bench is the commonest success value — the shared-bench run returns mode:\'bench\' at every bench return site.', required: true },
                     target: { type: 'string', description: 'The card id, flow name, or ad-hoc pipeline name (echoed on refusal).', required: true },
                     error: { type: 'string', description: 'The refusal text — present exactly when the tool refused (render prints REFUSED).' },
                 },
@@ -1189,7 +1335,15 @@ export function meliteFlow(estate) {
                         + ' [' + (p['status'] === undefined && p['skipped'] !== undefined
                         ? 'skipped ' + String(p['skipped']) + (p['skipped'] === 'archived'
                             ? ' — spent stage resting; unarchive to run it again'
-                            : ' — unchanged since its last run; patch params to re-run')
+                            // THE LAST-RUN GROUND (qa8 GAPS-12/F19, 2026-11-01):
+                            // "unchanged since its last run" names a run — it
+                            // prints only when the pass row carries one
+                            // (last_run, grounded at the skip site in the row's
+                            // own result memory). A done mark with no run behind
+                            // it reads skipped honestly, never unchanged.
+                            : typeof p['last_run'] === 'string' && p['last_run'] !== ''
+                                ? ' — unchanged since its last run; patch params to re-run'
+                                : ' — done on record but no last run behind it; patch params to force a run')
                         : String(p['status'] ?? p['skipped'] ?? '?')) + ']'
                         // THE LOUD MISS FACE (the no-feedback defect): a stamp
                         // that never landed means the watching user's cards tab
@@ -1212,7 +1366,24 @@ export function meliteFlow(estate) {
                     : '';
                 return [{
                         type: 'text',
-                        text: 'card ' + String(v.draft_id ?? '?') + ' · flow ' + String(v.target ?? '?')
+                        // THE FLOW PRESS'S DRAFT FACE (the flows-are-compositions
+                        // law, slice C): a MATERIALIZED flow press carries the
+                        // bench draft — the token leads and the chat tile
+                        // hydrates from the very cards the run is pressing (the
+                        // handle resolves: the bench holds them). A card-less
+                        // flow (family action / engine verb) carries no draft and
+                        // no token leads — the prose names the flow and its run
+                        // directly (a fake token would feed the legacy tile
+                        // parser a handle that resolves nowhere).
+                        text: (typeof v.draft_id === 'string' && v.draft_id !== '' ? 'card ' + v.draft_id + ' · ' : '')
+                            + 'flow ' + String(v.target ?? '?')
+                            // the landing names itself: a materialized press says how
+                            // many card rows it landed (the operator's anti-ghost-bench
+                            // ruling — every press is visible on the bench AND the
+                            // run lane).
+                            + (typeof v.materialized === 'number'
+                                ? ` (materialized ${v.materialized} cards on the bench)`
+                                : '')
                             // no dangling arrow: an all-skipped bench mints nothing
                             // (run_id '') and the header says so — the id prints only
                             // when a run exists to poll.
@@ -1244,6 +1415,25 @@ export function meliteFlow(estate) {
                     ...typeof v.run_id === 'string' && v.run_id !== '' ? { run_id: v.run_id } : {},
                     ...typeof v.status === 'string' && v.status !== '' ? { status: v.status } : {},
                     ...typeof v.error === 'string' && v.error !== '' ? { error: v.error } : {},
+                    // THE PRESS'S OWN HEROES (the refresh-flood burn, 2026-11-19:
+                    // a page refresh re-rendered the same settled artifacts in
+                    // every historical chat card, repeating). The chat card's
+                    // inline strip derives from THIS persisted array — the pass
+                    // rows that minted a url — frozen at settle time. Before it,
+                    // the card re-derived the strip from the present-time draft
+                    // doc, so every historical card in a replayed transcript
+                    // stamped the whole bench's CURRENT heroes under itself.
+                    ...(Array.isArray(v.pass)
+                        ? {
+                            previews: v.pass
+                                .filter((p) => typeof p['url'] === 'string' && p['url'] !== '')
+                                .map((p) => ({
+                                stage: typeof p['stage'] === 'string' ? p['stage'] : '?',
+                                url: String(p['url']),
+                                status: typeof p['status'] === 'string' ? p['status'] : 'done',
+                            })),
+                        }
+                        : {}),
                 };
             },
         },

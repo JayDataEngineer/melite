@@ -455,6 +455,98 @@ describe("resolveStageParams (the resolved-serve degrade)", () => {
   });
 });
 
+describe("THE ONE-SPELLING SERVE (operator 2026-11-14: \"I told you ONE BENCH, but the agent and user have different input parameters\")", () => {
+  // The burn: the agent attached the input image (params image1 on
+  // image-edit, image_name on the h3 video card — spellings the
+  // tool's own docs taught and the compose lanes still admit), the
+  // run composed it, and the user's drill rendered the CANONICAL
+  // seat EMPTY — a blank input square for an image that was there.
+  // The serve is the 1:1 law (the map the NEXT RUN composes): the
+  // lanes merge aliases engine-side, so the serve folds the same
+  // merge and hands the form ONE spelling — the canonical seat.
+  it("THE IMAGE-EDIT BURN: a row stating the image1 alias serves input_images — the drill's form renders the agent's image, never a blank square", () => {
+    const resolved = svc.resolveStageParams({
+      model: "qwen-img-edit-21",
+      prompt: "brighten the anchor",
+      image1: "data/input/a.png",
+    });
+    expect(resolved).not.toBeNull();
+    const r = resolved as Record<string, unknown>;
+    expect(r["input_images"]).toEqual(["data/input/a.png"]);
+    expect(r).not.toHaveProperty("image1");
+    // the untouched member still rides (the fold is alias-only)
+    expect(r["prompt"]).toBe("brighten the anchor");
+  });
+  it("THE VIDEO-CARD BURN (h3): the image_name alias serves the canonical image seat — the timeline's First frame renders", () => {
+    const resolved = svc.resolveStageParams({
+      model: "h3",
+      image_name: "data/input/first.png",
+    });
+    expect(resolved).not.toBeNull();
+    const r = resolved as Record<string, unknown>;
+    expect(r["image"]).toBe("data/input/first.png");
+    expect(r).not.toHaveProperty("image_name");
+  });
+  it("THE MIGRATION LAW rides the serve: a stated canonical WINS and the alias folds away — never a second spelling beside the user's", () => {
+    const resolved = svc.resolveStageParams({
+      model: "qwen-img-edit-21",
+      input_images: ["data/input/user.png"],
+      image1: "data/input/agent.png",
+    });
+    expect(resolved).not.toBeNull();
+    const r = resolved as Record<string, unknown>;
+    expect(r["input_images"]).toEqual(["data/input/user.png"]);
+    expect(r).not.toHaveProperty("image1");
+  });
+  it("declared order, blanks dropped: anchor, numbered slots, then the stack — the lane's own merge order", () => {
+    const resolved = svc.resolveStageParams({
+      model: "qwen-img-edit-21",
+      image1: "data/input/a.png",
+      image2: "  ",
+      image3: "data/input/c.png",
+      reference_images: ["data/input/d.png", "data/input/e.png"],
+    });
+    expect(resolved).not.toBeNull();
+    expect((resolved as Record<string, unknown>)["input_images"]).toEqual([
+      "data/input/a.png",
+      "data/input/c.png",
+      "data/input/d.png",
+      "data/input/e.png",
+    ]);
+  });
+  it("a blank-only alias folds to nothing (the empty list law — compose drops blanks, the serve never invents a slot)", () => {
+    const resolved = svc.resolveStageParams({
+      model: "qwen-img-edit-21",
+      image1: "   ",
+    });
+    expect(resolved).not.toBeNull();
+    expect((resolved as Record<string, unknown>)["input_images"]).toBeUndefined();
+  });
+  it("THE 1:1 COMPOSE PROOF: the folded serve composes the SAME list the raw row composes (orderedInputImages equal on every alias shape)", async () => {
+    const kit = await import("@melite/comfyui-card-kit");
+    const def = (await loadCardDefs()).get("image-edit");
+    const fk = def?.flowKinds;
+    expect(fk).toBeDefined();
+    const shapes: Array<Record<string, unknown>> = [
+      { image1: "data/input/a.png" },
+      { image2: "data/input/b.png" },
+      { image3: "data/input/c.png" },
+      { reference_images: ["data/input/d.png", "data/input/e.png"] },
+      { image1: "data/input/a.png", image2: "data/input/b.png", reference_images: ["data/input/d.png"] },
+      { image1: "  " },
+      { input_images: ["data/input/x.png"], image1: "data/input/a.png" },
+      { input_images: [], image1: "data/input/a.png" },
+      {},
+    ];
+    for (const raw of shapes) {
+      expect(
+        kit.orderedInputImages(kit.foldLegacyAliases(fk, raw)),
+        "shape " + JSON.stringify(raw),
+      ).toEqual(kit.orderedInputImages(raw));
+    }
+  });
+});
+
 describe("needCardRegistry (the miswire voice)", () => {
   it("an explicit service rides; null refuses LOUD", () => {
     expect(needCardRegistry(svc, "test")).toBe(svc);
@@ -834,6 +926,94 @@ describe("phase1Card + phase2Card (the two phases, one compose seat)", () => {
       expect(String((e as Error).message)).not.toMatch(/has no audio track/);
     }
   });
+  it("THE REFINE WINDOW RANGE REFUSAL (qa8 F36): a window whose start_seconds runs past its source clip's end refuses at the door in words — never the VHS buffer crash mid-run", async () => {
+    // The burn: chaining a refined output with start_seconds past its
+    // end crashed VHS (`both buffer length (0) and count (-1) must
+    // not be 0`) AFTER the GPU bill. The door probes the window's
+    // clip first: skip (start × 24 at the film clock) at or past the
+    // probed frame count refuses here, naming clip, length, start,
+    // and the cure. Only a positive reading refuses — a clip the
+    // probe cannot time stays the engine's belt.
+    const dir = mkdtempSync(join(tmpdir(), "refine-range-"));
+    // 48 frames at the film clock = 2.0s
+    const short = join(dir, "short.mp4");
+    writeFileSync(short, craftTimedMp4(928, 1344, 48));
+    const body = (start: number | undefined): Record<string, unknown> => ({
+      prompt: "a yard at dusk",
+      refine: [
+        start === undefined
+          ? { source_clip: short, refine_prompt: "sharpen the leaves" }
+          : { source_clip: short, refine_prompt: "sharpen the leaves", start_seconds: start },
+      ],
+    });
+    const noRangeVoice = async (bagBody: Record<string, unknown>): Promise<void> => {
+      try {
+        await svc.phase1Card(bagBody, "h3-timeline");
+      } catch (e: unknown) {
+        expect(String((e as Error).message)).not.toMatch(/refine window starts/);
+      }
+    };
+    try {
+      // THE BURN FACE: start 2s over a 2s clip — skip 48 meets 48 frames
+      await expect(svc.phase1Card(body(2.0), "h3-timeline")).rejects.toThrow(
+        /the refine window starts at 2s \(skip 48 frames at the film clock\) but ".*short\.mp4" carries 48 frame\(s\) \(2s\) — the loader's skip_first_frames runs past the clip's end and the engine dies in the buffer arithmetic; start the window inside the clip \(start_seconds < 2\.00s\)/,
+      );
+      // a window INSIDE the clip hears no such voice
+      await noRangeVoice(body(1.0));
+      // an unstated start stays the engine's belt
+      await noRangeVoice(body(undefined));
+      // a clip the probe cannot time (no mvhd — no duration, no
+      // frames) rides even with a wild start: only a positive
+      // reading refuses
+      const untimed = join(dir, "untimed.mp4");
+      writeFileSync(untimed, craftMinimalMp4(928, 1344, true));
+      await noRangeVoice({
+        prompt: "a yard at dusk",
+        refine: [{ source_clip: untimed, refine_prompt: "sharpen the leaves", start_seconds: 99 }],
+      });
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+  it("THE BAG'S SECOND WINDOW IS PROBED TOO (qa8 F36, GAPS-19): a stacked refine bag whose SECOND entry starts past the clip's end refuses at the door — the probe walks every window, not just bag[0]", async () => {
+    // THE BAG FACE OF THE BURN: the walk composes N windows over ONE
+    // source, so a past-end origin on entry k>0 would die in the same
+    // VHS buffer arithmetic AFTER the GPU bill. The probe reads every
+    // entry's clip: the second window's skip past the probed frame
+    // count refuses with the same sentence, naming the same clip.
+    const dir = mkdtempSync(join(tmpdir(), "refine-range-bag-"));
+    const short = join(dir, "short.mp4");
+    writeFileSync(short, craftTimedMp4(928, 1344, 48)); // 48 frames = 2.0s
+    const bag = (second: Record<string, unknown>): Record<string, unknown> => ({
+      prompt: "a yard at dusk",
+      refine: [
+        { source_clip: short, refine_prompt: "sharpen the leaves" },
+        second,
+      ],
+    });
+    const noRangeVoice = async (bagBody: Record<string, unknown>): Promise<void> => {
+      try {
+        await svc.phase1Card(bagBody, "h3-timeline");
+      } catch (e: unknown) {
+        expect(String((e as Error).message)).not.toMatch(/refine window starts/);
+      }
+    };
+    try {
+      // THE BURN FACE ON ENTRY 1: the head window is clean; the tail
+      // window's start 2s over the 2s clip refuses
+      await expect(
+        svc.phase1Card(bag({ source_clip: short, refine_prompt: "the tail, sharper", start_seconds: 2.0 }), "h3-timeline"),
+      ).rejects.toThrow(
+        /the refine window starts at 2s \(skip 48 frames at the film clock\) but ".*short\.mp4" carries 48 frame\(s\)/,
+      );
+      // a tail window INSIDE the clip hears no such voice
+      await noRangeVoice(bag({ source_clip: short, refine_prompt: "the tail, sharper", start_seconds: 1.0 }));
+      // an unstated tail origin rides the engine's belt (it starts at 0)
+      await noRangeVoice(bag({ source_clip: short, refine_prompt: "the tail, sharper" }));
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
   it("THE BAG GUARD'S TAIL ARMS (the silent-source belt skips what it cannot judge): junk entries, clip-less entries, dead leaves, directory leaves, and unnamed containers ride to the run door's own voice — never this probe's", async () => {
     // The belt judges only what it can name: an entry that is not an
     // object, an entry without a source_clip, a leaf that resolves
@@ -930,20 +1110,47 @@ describe("phase1Card + phase2Card (the two phases, one compose seat)", () => {
   });
 
   it("a plain body composes phase-1 and phase-2 rides the same seat", async () => {
-    composeOnce.mockClear();
+    // THE SUBJECT IS DECLARED, NEVER INHERITED (the order-coupling
+    // cure, 2026-11-01): this arm used to ride Object.keys(facts)[0]
+    // — the facts fixture's ROW ORDER chose the composed family
+    // (anima sorted first, so the arm composed image-gen and the
+    // assertions held). A facts regen that fronts any other family
+    // flips the verdict with zero code movement (toggled 2026-11-01:
+    // fronting 'anny' reds THIS arm alone — "unknown param(s) on the
+    // anny card: prompt" — while the 78 order-tolerant arms stay
+    // green). The subject is now the first facts row whose DECLARED
+    // card is image-gen — the same family the arm always composed,
+    // picked by declaration, never by position.
     const facts = svc.modelFacts();
-    const mid = Object.keys(facts)[0] as string;
+    const mid = Object.keys(facts).find((id) => facts[id]?.card === "image-gen");
+    if (mid === undefined) {
+      throw new Error("no image-gen facts row — the arm's declared subject is gone");
+    }
     // THE BODY IS NOW A LEGAL ONE (2026-10-10, the DECL audit's gap 4
-    // kill): the first model is an image family, whose required word
-    // now says the prompt must be stated — a prompt-less body is
-    // refused at the bench AND at the phase seat, and this arm is
-    // about the two phases riding one seat, not about composing
-    // nothing.
+    // kill): an image family's required word says the prompt must be
+    // stated — a prompt-less body is refused at the bench AND at the
+    // phase seat, and this arm is about the two phases riding one
+    // seat, not about composing nothing. THE DOUBLE CARRIES THE REAL
+    // EMIT (the object-forge producer-law cure, 2026-11-01): the
+    // image-gen card's flowOutputBindings row phase-2 resolves
+    // against the graph — the fake composes the save every family
+    // press emits, so the seat's phases stay the arm's subject.
+    // THE SEAM IS PER-ARM (the shared-mock-state cure, the same
+    // order lesson): mockClear left PRIOR ARMS' queued
+    // once-implementations alive (the tts arm queues two above), so
+    // this arm's queue could inherit another arm's emits — the
+    // verdict coupled to arm ORDER. mockReset drops the once-queue
+    // and restores the factory fallback, so this arm consumes
+    // exactly its own two emits in any arm order.
+    composeOnce.mockReset();
+    const emitted = { "SaveImage.0": { class_type: "SaveImage", inputs: {} } };
+    composeOnce.mockResolvedValueOnce(emitted as never).mockResolvedValueOnce(emitted as never);
     const p1 = await svc.phase1Card({ model: mid, prompt: "a harbour at dusk" }, mid);
     expect(p1.spell).toBeNull();
     const c = await svc.phase2Card(p1, "run-1");
-    expect(c.graph).toEqual({ graph: true });
+    expect(c.graph).toEqual(emitted);
     expect(c.skeleton).toBe(p1.skeleton);
+    expect(c.outputNodes).toEqual({ default: "SaveImage.0" });
     expect(composeOnce).toHaveBeenCalledTimes(2);
   });
 });
@@ -1361,6 +1568,40 @@ function craftMinimalMp4(width: number, height: number, audio = false): Buffer {
   ]);
 }
 
+/** A timed variant for the F36 range arms: the same shape plus an
+ *  mvhd (v0, timescale 24) so the probe answers duration_s — the
+ *  movie clock the range refusal reads. Carries the sound track
+ *  (the silent-source door runs first and would otherwise speak). */
+function craftTimedMp4(width: number, height: number, frames: number): Buffer {
+  const box = (type: string, body: Buffer): Buffer => {
+    const head = Buffer.alloc(8);
+    head.writeUInt32BE(body.length + 8, 0);
+    head.write(type, 4, "ascii");
+    return Buffer.concat([head, body]);
+  };
+  const tkhd = Buffer.alloc(84);
+  tkhd.writeUInt32BE(0, 0);
+  tkhd.writeUInt32BE(width << 16, 76);
+  tkhd.writeUInt32BE(height << 16, 80);
+  const hdlr = Buffer.alloc(24);
+  hdlr.write("vide", 8, "ascii");
+  const trak = Buffer.concat([box("tkhd", tkhd), box("mdia", box("hdlr", hdlr))]);
+  const shdlr = Buffer.alloc(24);
+  shdlr.write("soun", 8, "ascii");
+  const strak = box("trak", box("mdia", box("hdlr", shdlr)));
+  const mvhd = Buffer.alloc(20);
+  mvhd.writeUInt32BE(0, 0); // version 0 + flags
+  // created + modified stay zero
+  mvhd.writeUInt32BE(24, 12); // timescale: the film clock
+  mvhd.writeUInt32BE(frames, 16); // duration: the frame count
+  const ftyp = Buffer.alloc(8);
+  ftyp.write("isom", 4, "ascii");
+  return Buffer.concat([
+    box("ftyp", ftyp),
+    box("moov", Buffer.concat([box("mvhd", mvhd), box("trak", trak), strak])),
+  ]);
+}
+
 /** A minimal probe-able PCM WAV (RIFF/WAVE + fmt + data): the probe
  *  answers with ONE audio stream that carries no display size — the
  *  clip-geometry stamp's no-video-stream arm. Pure bytes, hermetic.
@@ -1386,3 +1627,85 @@ function craftMinimalWav(): Buffer {
   riff.write("WAVE", 8, "ascii");
   return Buffer.concat([riff, chunk("fmt ", fmt), chunk("data", Buffer.alloc(4))]);
 }
+
+describe("THE ONE-BENCH FAMILY DOOR — RETIRED (2026-11-15): no lane dead letter; the lane fires the post quartet", () => {
+  // operator (2026-11-14, verbatim): "sharpen_enabled,
+  // interpolate_enabled, sr_switch, second_pass_enabled fires
+  // nothing on the t4r lane — the lane refuses it (unsanctioned
+  // inject keys); the estate walk refuses the same key at the door.
+  // The AI MADE A CARD WITH THAT ERROR, AND RENDERED ANYWAYS...! I
+  // KEPT SAYING ONE BENCH. BUT THAT IS *never* TRUE."
+  //
+  // THE CURE IS THE RENDERER, NEVER A LOUDER REFUSAL (2026-11-15):
+  // the t4r render arm now MOUNTS the post chain (actions.ts
+  // renderH3Window hoists it above the family branch), so the four
+  // fire on every lane and the card declares NO family admission
+  // face (card.ts's retirement note). ONE BENCH now holds the other
+  // way round: the write seat is an honest no-op on a card with no
+  // face, the compose seat admits and keeps the quartet, the
+  // validate walk lands it, and the serve hands it on with its
+  // stamps — four doors, one verdict. The only family-shaped refusal
+  // left is the compose walk's film-only gate (schema.ts:
+  // duck_depth_db is read only inside the multi-window film tail),
+  // and that gate fires at the run door; packages/models/h3/tests/
+  // door.spec.ts owns its firing proof.
+  const clean = { model: "h3", image: "data/input/first.png" };
+  const quartet = {
+    ...clean,
+    sharpen_enabled: true,
+    interpolate_enabled: true,
+    sr_switch: true,
+    second_pass_enabled: true,
+  };
+
+  it("A. the seat is a no-op on the real def (no lane dead letter) and the compose seat admits the quartet", () => {
+    expect(svc.admitStageFamily("h3-timeline", quartet)).toEqual({ ok: true });
+    const prep = prepareCardParams(svc, { ...quartet }, "h3", "1");
+    // the quartet is NOT state the door may eat: it lands in the
+    // prepared params and the run composes it
+    expect(prep.params["sharpen_enabled"]).toBe(true);
+    expect(prep.params["interpolate_enabled"]).toBe(true);
+    expect(prep.params["sr_switch"]).toBe(true);
+    expect(prep.params["second_pass_enabled"]).toBe(true);
+    // the film-only key is ADMITTED at the write/compose seats too:
+    // the stored doc keeps its author's bytes and the run door's walk
+    // (the card's def.schema) speaks the film-only letter — no door
+    // pretends to be the other's judge.
+    expect(svc.admitStageFamily("h3-timeline", { ...clean, duck_depth_db: 0.4 })).toEqual({ ok: true });
+  });
+
+  it("B. the CLEAN t4r compose stamps ZERO of the four (the seat cannot false-fire) and a legal film keeps its post keys", () => {
+    const prep = prepareCardParams(svc, { ...clean }, "h3", "1");
+    expect(prep.params["sharpen_enabled"]).toBeUndefined();
+    expect(prep.params["interpolate_enabled"]).toBeUndefined();
+    expect(prep.params["sr_switch"]).toBeUndefined();
+    expect(prep.params["second_pass_enabled"]).toBeUndefined();
+    const film = {
+      model: "h3",
+      prompt: "two beats",
+      calls: [
+        { prompt: "beat one" },
+        { prompt: "beat two", second_pass_enabled: true },
+      ],
+    };
+    const filmPrep = prepareCardParams(svc, film, "h3", "1");
+    expect(filmPrep.params["calls"]).toEqual(film.calls);
+  });
+
+  it("C. the validate walk lands the quartet doc on h3-timeline (the burn no longer bricks the press)", async () => {
+    const verdict = await svc.phase1Card({ ...quartet }, "h3");
+    expect(verdict.card).toBe("h3-timeline");
+    const cleanVerdict = await svc.phase1Card({ ...clean }, "h3");
+    expect(cleanVerdict.card).toBe("h3-timeline");
+  });
+
+  it("D. the serve hands the run the doc it authored — the quartet keeps its stamps", () => {
+    const served = svc.resolveStageParams({ ...quartet }) as Record<string, unknown>;
+    expect(served).not.toBeNull();
+    expect(served["sharpen_enabled"]).toBe(true);
+    expect(served["interpolate_enabled"]).toBe(true);
+    expect(served["sr_switch"]).toBe(true);
+    expect(served["second_pass_enabled"]).toBe(true);
+    expect(served["image"]).toBe("data/input/first.png");
+  });
+});

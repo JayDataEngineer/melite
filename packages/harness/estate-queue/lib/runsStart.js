@@ -22,7 +22,6 @@ import { FLOW_INLINE_TOP_VOICE, INLINE_TOP_KEYS, STAGE_KEYS, checkFlowInlineTop,
 import { appendLedger, graphReceiptFoldOf, outRootFor, refusal, sidecarDoc, sidecarStageOf, variantOfBodies, writeJsonAtomic } from "./queue.js";
 import { lifecycleInFlight } from "./lifecycleLatch.js";
 import { toRemoteError } from "./runsRefusalVoices.js";
-import { engineDefaultOutput } from "./runsValidateShared.js";
 import { rootsManifest } from "./rootsManifest.js";
 // the envelope-refusal SSOT lives in queueSubmit.ts (beside
 // walkSubmitEnvelope, the one walker the registry delegates to) —
@@ -292,39 +291,33 @@ export function compileFlowInline(inline, knownEngines = [CARD_PLANE_ENGINE]) {
                 "); a shape that cannot be read is refused here, not dropped — a dropped " +
                 "output_nodes makes the run register without it", "invalid_request");
         }
-        // THE ENGINE TABLE'S OWN DEFAULT (audit S-S6, 2026-10-22; P7
-        // latent: one read, both doors): validate's lattice treats an
-        // EMPTY outputs map as stageless and judges the stage by the
-        // engine's table def (craft->image, agent->text) — start's old
-        // flat "image" bound a different kind than the lattice judged,
-        // by coincidence agreeing on every reachable engine. The fill
-        // now reads engineDefaultOutput (the lattice's own rule: mcp leg
-        // + table). The undefined leg is the future-split guard: the
-        // engine gate above admits only grammatical, registered ids, so
-        // no reachable engine reads it — a grammar id the table has not
-        // learned yet refuses HERE, in the door's voice, instead of
-        // validating-refuse/start-accepting.
+        // THE ONE TABLE (2026-11-01): an empty outputs map means
+        // "undeclared" — the compiler reads the stage's OWN card_io
+        // table (the card's declared output channels, carried on the
+        // row), never the engine registry (membership-only since the
+        // cure: it names no kinds). A stage with neither refuses here,
+        // in the door's voice, naming the fix — a fabricated
+        // {default: <engine kind>} once bound the retired music-native
+        // wrapper's audio channel as image (the row died 2026-11-14).
         const declaredOutputs = st["outputs"];
         const outputsDeclared = typeof declaredOutputs === "object" && declaredOutputs !== null &&
             !Array.isArray(declaredOutputs) &&
             Object.keys(declaredOutputs).length > 0;
+        const rawCardIo = st["card_io"];
+        const cardIoDeclared = typeof rawCardIo === "object" && rawCardIo !== null &&
+            !Array.isArray(rawCardIo) &&
+            Object.keys(rawCardIo).length > 0;
         let outputs;
         if (outputsDeclared) {
             outputs = declaredOutputs;
         }
+        else if (cardIoDeclared) {
+            outputs = rawCardIo;
+        }
         else {
-            const kind = engineDefaultOutput(engine);
-            /* v8 ignore next -- the engine gate above admits only grammatical,
-               registered ids (all table- or mcp-leg-covered); the undefined
-               leg is the future-split guard, unreachable until the grammar
-               grows a table-unknown id. */
-            if (kind === undefined) {
-                return refusal(400, "flow_inline stage " + JSON.stringify(sid) + ": engine " +
-                    JSON.stringify(engine) +
-                    " has no default output kind — the engine table names no row for it" +
-                    " (a grammar id the table has not learned yet); name it in the table", "invalid_request");
-            }
-            outputs = { default: kind };
+            return refusal(400, "flow_inline stage " + JSON.stringify(sid) + " declares no outputs and carries no card_io — " +
+                "name every produced channel on the stage (outputs={'<channel>': <Kind>}) or carry the card's " +
+                "declared cardIo table; the engine registry names engines, never their outputs", "invalid_request");
         }
         const expected = typeof st["expected"] === "object" && st["expected"] !== null && !Array.isArray(st["expected"])
             ? st["expected"]
@@ -380,7 +373,7 @@ export function compileFlowInline(inline, knownEngines = [CARD_PLANE_ENGINE]) {
                 JSON.stringify([...new Set(ghosts)].sort()) +
                 " but the stage wires no input of that name — the merge would refuse it at run time ('$name' must name a FromStage-wired input or a request initial; name it or wire it)", "invalid_request");
         }
-        stages.push({ id: sid, engine, params, outputs, outputsDeclared, expected, outputNodes, inputNames });
+        stages.push({ id: sid, engine, params, outputs, outputsDeclared: outputsDeclared || cardIoDeclared, expected, outputNodes, inputNames });
     }
     return { stages };
 }

@@ -37,12 +37,20 @@ const ACTIONS = [
     // acquire_retry/acquire_discard is not 422'd at this seat.
     'acquire_retry', 'acquire_discard',
     'restart', 'stop', 'launch', 'update', 'switch_version', 'free',
+    // THE SETTLE + RUNTIME VERBS (qa8 GAPS-13/F20, 2026-11-01): the
+    // manage LANE answers both (managePlane's own ACTIONS rows) and
+    // the status face already teaches settle_stale as the retire cure
+    // (:211) — the tool seat's client-side enum mirrors them so an
+    // agent-driven retire or runtime-link is not 422'd at this seat.
+    // Every action the tool's own help text names is enumerable.
+    'settle_stale', 'provision_runtime',
     'snapshot_save', 'snapshot_restore',
     'lora_list', 'lora_install',
-    // THE LORA-FETCH VERB (the operator's 2026-11-09 order): a stated
-    // LoRA URL rides the provisioning service into the family's loras
-    // subfolder, auto-restarts, and appears in the family's mods — the
-    // SSOT's ACTIONS row voices the amended law.
+    // THE LORA-FETCH VERB (the operator's 2026-11-09 order, the
+    // pixel-anim cure 2026-11-15): a stated LoRA URL rides the
+    // provisioning service into the family's loras subfolder AND seats
+    // its picker row — the mod composes on the next compose, no
+    // restart. The SSOT's ACTIONS row voices the amended law.
     'lora_fetch',
     'refmods_list',
     // THE PREFLIGHT VERB (audit 019 C3): the named setup-miss list —
@@ -364,16 +372,19 @@ export function comfyManage(estate) {
             + 'snapshot_restore (environment snapshots; restore is refused while '
             + 'runs are active); endpoint_set (point at a different ComfyUI server '
             + 'url — validate-first: an unreachable url is refused, never written); install_extension (registry ids), '
-            + 'install_extension_url (git url + optional ref pin) and download_model (url) refuse without operator_confirmed=true — the human\'s explicit URL approval, never the agent\'s own; provision_model '
+            + 'install_extension_url (git url + optional ref pin; a URL the shipped extension manifest declares auto-provisions from its byte-verified pin — no operator_confirmed) and download_model (url) refuse without operator_confirmed=true — the human\'s explicit URL approval, never the agent\'s own; provision_model '
             + '(declared model id from melite_load; Manager search results are external-catalog rows, not provision ids); acquire_weight '
             + '(THE run-failure weight door — ONE door with the bench popup Download button: start with model + optional file/variant/quant, '
             + 'take the operation_id from the answer, then poll the SAME action with operation_id for live bytes/total until a terminal state); lora_list (the '
-            + 'engine-accepted LoRA names plus the user rows file) and lora_install (copy or upload a LoRA file the operator '
-            + 'already has — never fetched; the answer names the restart that follows); lora_fetch — THE LORA RECIPE (the operator\'s 2026-11-09 order): '
-            + 'add a lora to <family>: lora_fetch url → auto restart → the mod appears in the family\'s mods (the human\'s operator_confirmed gates it like '
-            + 'every external fetch; the answer carries the combo name, whether the engine already lists it, and a row_suggestion for the family\'s rows); '
+            + 'engine-accepted LoRA names plus the user rows file — and the self-healing read: it re-arms the lora flavors, so a file landed by ANY '
+            + 'means serves the family\'s mods after the next lora verb) and lora_install (copy or upload a LoRA file the operator '
+            + 'already has — never fetched; THE LORA RECIPE for an attached/local file: pass filename + path (or data) + families:["<family>"] and the '
+            + 'door does BOTH halves — the file lands under the family\'s loras shelf AND the picker row is seated; the mod composes on the next '
+            + 'compose, NO restart, NO file edits, NO paste); lora_fetch — THE LORA RECIPE for a URL (the operator\'s 2026-11-09 order): '
+            + 'add a lora to <family>: lora_fetch url → the file lands under the family\'s loras subfolder, the picker row is seated, and the mod '
+            + 'composes (the human\'s operator_confirmed gates it like every external fetch; the answer carries the combo name and the seated row); '
             + 'refmods_list (the engine\'s own '
-            + 'MiniMaxH3RefModsLoader mod combos off /object_info — the refmod picker\'s candidate feed, read-only); preflight — THE SETUP READ (call it FIRST on a fresh lane): one named list of every setup miss (engine reachable, Manager present, required declared packs landed, store root on disk, extra-model wiring visible), each miss naming the door that closes it — never discover them as mid-run burns; restart, stop, launch, update '
+            + 'MiniMaxH3RefModsLoader mod combos off /object_info — the refmod picker\'s candidate feed, read-only); preflight — THE SETUP READ (call it FIRST on a fresh lane): one named list of every setup miss (engine reachable, Manager present, required declared packs landed, store root on disk, extra-model wiring visible), each miss naming the door that closes it — never discover them as mid-run burns; settle_stale (retire the never-settled sidecar claims the status face names — operator gesture, the guard stays fail-closed) and provision_runtime (link the engine tree\'s data/runtime/<name> to the repo seed — the run-rescue banner\'s own door, runtime NAME only); restart, stop, launch, update '
             + '(target comfy), switch_version, free. INFRA UPKEEP only — it '
             + 'never runs inference, and lifecycle actions are refused while runs are '
             + 'active (stop them or pass force).',
@@ -413,7 +424,7 @@ export function comfyManage(estate) {
             families: {
                 type: 'array',
                 items: { type: 'string' },
-                description: 'lora_install: family ids for the row suggestion in the answer (e.g. ["z-image"]). lora_fetch: EXACTLY ONE family — the loras subfolder the engine serves the file under (e.g. ["krea-2"]; the combo name becomes "<family>/<file>").',
+                description: 'lora_install: family ids for the seated picker row — with EXACTLY ONE family the file lands under the family\'s loras subfolder and the combo name becomes "<family>/<file>" (e.g. ["anima"]); always state it for an install the user will compose with. lora_fetch: EXACTLY ONE family, same shelf law.',
             },
             sha256: {
                 type: 'string',
@@ -425,6 +436,7 @@ export function comfyManage(estate) {
             },
             variant: { type: 'string', description: 'provision_model / acquire_weight: optional variant id.' },
             quant: { type: 'string', description: 'provision_model / acquire_weight: optional quant cell id.' },
+            runtime: { type: 'string', description: 'provision_runtime: the runtime NAME to link (e.g. "anny-estimator" — the family scan serves the name server-side; the run-rescue banner already posts this verb, the client never paths it).' },
             file: { type: 'string', description: 'acquire_weight: the missing weight filename for display (e.g. "sam2.1_hiera_large.pt"); the DECL owns the fetch source.' },
             operation_id: { type: 'string', description: 'acquire_weight: poll key — the operation_id from the start answer; the tracker polls the same action with this until a terminal state.' },
             query: { type: 'string', description: 'search_models: search text (omit or empty lists the whole Manager external catalog, capped at 50).' },
@@ -487,7 +499,7 @@ export function comfyManage(estate) {
             // forward only declared fields — the SSOT envelope is extra=forbid
             const body = { action: a.action };
             for (const k of ['nodes', 'url', 'ref', 'relative_path', 'filename', 'file', 'model',
-                'variant', 'quant', 'query', 'tail', 'version',
+                'variant', 'quant', 'runtime', 'query', 'tail', 'version',
                 'target', 'force', 'snapshot', 'path', 'data',
                 'families', 'operation_id', 'operator_confirmed', 'sha256']) {
                 if (a[k] !== undefined && a[k] !== null && a[k] !== '')

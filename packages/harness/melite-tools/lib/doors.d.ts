@@ -103,6 +103,52 @@ export declare const ESTATE_PENDING_GRACE_MS = 120000;
  *  cannot extend the grace window. Exported for the re-arm wall
  *  (a later boot race gets a fresh window: doors.spec.ts). */
 export declare const ESTATE_PENDING_REARM_MS = 10000;
+/** The estate lanes' error map (the false-death fix, 2026-10-08,
+ *  corrected twice — the second critique caught bench/
+ *  store-failed defaulting to 400 and ~20 codes classified
+ *  only by silence): a day-long hunt read every 502 as a dead
+ *  runs seat — the 502s were seat REFUSALS, wrong bodies and
+ *  boot-settle races, on a healthy lane. A named protocol
+ *  refusal means the seat ANSWERED — never the absent-seat
+ *  502 — and the failure's own details ride in the body
+ *  verbatim (loc, per-stage errors, the manage envelope's
+ *  action/status/data). THE COMPLETE CLASS INVENTORY — every
+ *  code declared by the protocol's seats is named below, none
+ *  rides the default silently:
+ *   - 400 caller-fault — body/shape/refusal voices: the runs/
+ *     family (bad-envelope, draft-required, draft-malformed,
+ *     draft-unknown, invalid-request, preview-scope,
+ *     flow-compile, workflow-pin, card-compose) — ALL raised
+ *     from CardArmError(400) voices; lane-input-missing (the
+ *     named asset has no store copy — the request is
+ *     unexecutable as sent; the body carries the fetch URL);
+ *     bench bad-body/bad-wire/self-wire/dead-wire (shape
+ *     refusals); draft bad-id/bad-patch/bad-stage-id/
+ *     patch-unknown-keys; media/kind; gateway/bad-request;
+ *     melite/skill-refused (the authored-skill writer's voice —
+ *     the draft is the caller's to fix).
+ *   - 404 not-found — runs/unknown-run, runs/run-unknown,
+ *     bench/not-found, bench/stage-not-found,
+ *     bench/wire-stage-not-found (a named thing absent),
+ *     bench/nothing-to-undo (no live action matches the walk),
+ *     draft/not-found, melite/skill-unknown (the authored-skill
+ *     plane's read door).
+ *   - 409 conflict — bench/cas-conflict (carries current_rev),
+ *     bench/overwrite-required (the load's own overwrite law),
+ *     bench/duplicate-stage.
+ *   - 502 infra — the storage layer refused while the call was
+ *     valid: bench/store-failed, draft/store-failed,
+ *     draft/cannot-persist, media/no-seat, gateway/internal,
+ *     gateway/cancelled.
+ *   - manage/refused → the ENVELOPE's own details.status
+ *     (the manage plane always sets one; a missing/garbage
+ *     status is the SEAT's bug, not the caller's request —
+ *     500, never 400).
+ *  A code NOT in the table defaults to 400 — the honest class
+ *  for an unknown future refusal (the seat answered; the body
+ *  carries the code for discrimination), and every code the
+ *  protocol declares today IS in the table. */
+export declare const REFUSAL_STATUS_OF: Readonly<Record<string, number>>;
 export declare function apply(c: CtxView, config?: Config): void;
 export {};
 //# sourceMappingURL=doors.d.ts.map

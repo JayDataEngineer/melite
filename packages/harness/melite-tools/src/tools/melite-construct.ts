@@ -1,5 +1,10 @@
-import { WIRE_STAGE_KEYS, benchSessionOf, normalizeBenchStages } from "@melite/contracts/benchStage"
+import { benchSessionOf, liveBenchRows, projectStages } from "@melite/contracts/benchStage"
 import { FLOW_ID_RE } from '@melite/estate-queue'
+// The projection pair moved to the contract (2026-10-31, F14's
+// estate half): the estate's add-stage gate composes the same
+// wire view, so the projection has one writer. Re-exported here —
+// the construct spec imports them off this module's face.
+export { liveBenchRows, projectStages }
 // melite-construct.ts — THE AUTHOR VERB over one shared bench
 // (the bench rework, 2026-09-10). melite_flow executes;
 // melite_construct AUTHORS — verbs over
@@ -57,7 +62,7 @@ import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol'
 import type { Estate, BenchVerb } from '../estate.ts'
 import type { JsonValue, ToolDefinition } from '../types.ts'
 import { jsonClean } from '../json-clean.ts'
-import { coerceWireArrays, unwrapItemArrays } from '@melite/comfyui-card-kit'
+import { coerceWireArrays, foldLegacyAliases, unwrapItemArrays } from '@melite/comfyui-card-kit'
 import { loadCardDefs } from '@melite/comfyui-cordis'
 import { emitKnob } from '@melite/comfyui-card-kit/params-emit'
 import { extraOf } from '@melite/contracts/extraKeys'
@@ -67,7 +72,7 @@ import { extraOf } from '@melite/contracts/extraKeys'
  *  hold the call open. */
 const DOC_TIMEOUT_MS = 20_000
 
-/** The default bench — the unattributed seat (headless runs,
+/** The default bench — the unattributed seat (script runs,
  *  legacy callers). */
 export const DEFAULT_BENCH = 'main'
 
@@ -80,13 +85,35 @@ export const DEFAULT_BENCH = 'main'
 // construct binds to exactly that key, so a conversation's agent
 // can only ever author its OWN bench — cross-conversation state is
 // unreachable, not merely discouraged.
+//
+// THE ONE-SEAT LAW (audit 2026-10-31-one-seat-bench-identity, the
+// sixteenth report + the depth verdict's re-seat order): the agent
+// seat NEVER silently falls to 'main' for an ATTRIBUTED lane. Three
+// seat shapes, one derivation:
+//   • `session-<uuid>` — the conversation generation itself: the key
+//     IS the seat (benchSessionOf).
+//   • a bare uuid — a DELEGATED lane's agent.id: forwarded under the
+//     `delegate:` seat prefix and re-seated estate-side (the bench
+//     doors' seatOf walks the caller's parentSession chain and writes
+//     the PARENT conversation's bench — the one seat both faces
+//     watch); unresolvable, the estate door refuses loud
+//     (bench/unseated). Benching the bare uuid itself would write a
+//     doc no tab watches — the delegation split. The prefix is the
+//     delegation signal: a bare key WITHOUT it is an unattributed
+//     seat's own explicit key (main, script keys) and must not be re-seated.
+//   • absent — the genuinely unattributed seat (scripts and other
+//     agent-less callers):
+//     the explicit bench arg applies, else main — the fallback the
+//     audit leaves alive ("genuinely unattributed seats only").
 export function benchKeyOfExec(exec: { agent?: { id?: unknown } }): string {
-  // THE ONE SPELLING (the li-ay stroke, 2026-10-11): the sanitize
-  // decision was spelled inline here TWICE (this one and benchKeyOf
-  // below) while the two clients spelled it again — the contract
-  // floor owns the decision now, beside its grammar.
   const id = exec.agent?.id
-  return benchSessionOf(typeof id === 'string' ? id : undefined)
+  if (typeof id !== 'string' || id === '') return DEFAULT_BENCH
+  if (id.startsWith('session-')) return benchSessionOf(id)
+  // A delegated lane forwards under the seat prefix; the estate's
+  // seatOf owns the re-seat and refuses loud when the host sessions
+  // service cannot resolve a parent conversation (never a silent
+  // bench-<uuid> birth).
+  return 'delegate:' + id
 }
 
 type ConstructResult = {
@@ -182,31 +209,205 @@ function landingOf(compile: Record<string, unknown> | undefined): Record<string,
   return { landing: compile['compile_ok'] === true ? 'landed_and_compiling' : 'landed_not_compiling' }
 }
 
-/** Run the compile check the validate verb runs, over the bench's
- *  CURRENT stages (post-write truth), and fold the verdict into a
- *  result-payload fragment. Never throws — a compile refusal is a
+/** The address of one projected stage row (the view's id — the
+ *  source row's own id, ''-valued when the row carries none). */
+function stageAddrOf(row: Record<string, unknown>): string {
+  return String(row['stage'] ?? row['id'] ?? '')
+}
+
+/** The sibling stage one projected row wires to, if any — the
+ *  {stage} reference inside its inputs that names ANOTHER row of the
+ *  same projection. A solo run of a sibling-wired stage would refuse
+ *  on the missing wire even when the bench is healthy (the sibling
+ *  rides the whole projection, never the solo), so the fan-out skips
+ *  these rows and names the sibling instead. Returns undefined for
+ *  unwired rows, self-wires, and wires to stages outside the view
+ *  (a dangling wire IS that stage's own news — the solo runs and the
+ *  door refuses, correctly attributed). */
+function siblingWiredTo(
+  stages: Array<Record<string, unknown>>, row: Record<string, unknown>,
+): string | undefined {
+  const addrs = new Set(stages.map((entry) => stageAddrOf(entry)))
+  const self = stageAddrOf(row)
+  // read the row's own inputs record directly (never the address
+  // lookup — an id-less row must still scan its own wires).
+  const inputs = row['inputs']
+  if (typeof inputs !== 'object' || inputs === null || Array.isArray(inputs)) return undefined
+  for (const slot of Object.values(inputs as Record<string, unknown>)) {
+    if (typeof slot === 'object' && slot !== null && !Array.isArray(slot)) {
+      const to = (slot as Record<string, unknown>)['stage']
+      if (typeof to === 'string' && to !== '' && to !== self && addrs.has(to)) return to
+    }
+  }
+  return undefined
+}
+
+/** F28 — THE PER-STAGE SOLO FAN-OUT (2026-11-01, qa8 residual item
+ *  12). The whole-projection verdict says WHETHER the bench
+ *  compiles; when it refuses, the operator still cannot see WHICH
+ *  stage burned. Each unsiblinged stage runs SOLO against the same
+ *  door (same flow id, same timeout) so a refusal names its stage:
+ *  a solo that compiles clears its stage, a solo that refuses
+ *  carries that stage's own door error. Sibling-wired stages skip
+ *  (see siblingWiredTo) — their solo would burn on the absent
+ *  sibling, which is the projection's shape, never their fault.
+ *  Read-only: runsValidate judges, never writes — the no-mint law
+ *  (F14/F26) holds, benchVerb never fires from this fan-out. */
+async function soloStageVerdicts(
+  estate: Estate, flowId: string, stages: Array<Record<string, unknown>>, signal: AbortSignal,
+): Promise<Array<Record<string, unknown>>> {
+  const verdicts: Array<Record<string, unknown>> = []
+  for (const row of stages) {
+    const addr = stageAddrOf(row)
+    const via = siblingWiredTo(stages, row)
+    if (via !== undefined) {
+      verdicts.push({ stage: addr, solo: 'skipped-sibling-wired', via })
+      continue
+    }
+    try {
+      const r = await estate.runsValidate(
+        { flow_inline: { id: flowId, stages: [row] } }, signal, 20000) as Record<string, unknown>
+      if (r['ok'] === true || r['valid'] === true) verdicts.push({ stage: addr, compile_ok: true })
+      else {
+        verdicts.push({
+          stage: addr, compile_ok: false,
+          compile_error: typeof r['error'] === 'string' ? r['error'] : JSON.stringify(r),
+        })
+      }
+    } catch (e) {
+      const refusal = remoteErrorOf(e)
+      verdicts.push({
+        stage: addr, compile_ok: false,
+        compile_error: refusal !== undefined ? refusal.message : e instanceof Error ? e.message : String(e),
+      })
+    }
+  }
+  return verdicts
+}
+
+/** The compile verdict over an EXPLICIT stage projection — the one
+ *  door the validate verb, the post-write verdict, and the pre-mint
+ *  gate (F14/F26) all walk. Never throws — a compile refusal is a
  *  VALUE the answer teaches with, not a failed mutation.
- *  @returns undefined when the bench holds no stages to compile. */
-async function compileVerdictOf(
-  estate: Estate, bench: string, signal: AbortSignal,
+ *  @returns undefined when the projection is empty (nothing judges). */
+async function verdictOfStages(
+  estate: Estate, intent: unknown, stages: Array<Record<string, unknown>>, signal: AbortSignal,
 ): Promise<Record<string, unknown> | undefined> {
-  const b = await readBench(estate, bench, signal)
-  const stages = projectStages(b.stages)
   if (stages.length === 0) return undefined
-  const intent: string = typeof b.intent === 'string' ? b.intent : ''
   const flowId: string =
-    intent !== '' && FLOW_ID_RE.test(intent) ? intent : 'bench'
+    typeof intent === 'string' && intent !== '' && FLOW_ID_RE.test(intent) ? intent : 'bench'
   try {
     const r = await estate.runsValidate(
       { flow_inline: { id: flowId, stages } }, signal, 20000) as Record<string, unknown>
     if (r['ok'] === true || r['valid'] === true) return { compile_ok: true }
     const compileError = typeof r['error'] === 'string' ? r['error'] : JSON.stringify(r)
-    return { compile_ok: false, compile_error: compileError, ...(await remedyFragment(stages)) }
+    // F28: the whole refused — fan out the solos so the refusal names
+    // its stage. The green path returns above with ZERO extra calls.
+    return {
+      compile_ok: false, compile_error: compileError, ...(await remedyFragment(stages)),
+      stage_verdicts: await soloStageVerdicts(estate, flowId, stages, signal),
+    }
   } catch (e) {
     // the gate's refusal IS the verdict (the teaching voice rides it)
     const refusal = remoteErrorOf(e)
     const message = refusal !== undefined ? refusal.message : e instanceof Error ? e.message : String(e)
-    return { compile_ok: false, compile_error: message, ...(await remedyFragment(stages)) }
+    return {
+      compile_ok: false, compile_error: message, ...(await remedyFragment(stages)),
+      stage_verdicts: await soloStageVerdicts(estate, flowId, stages, signal),
+    }
+  }
+}
+
+/** Run the compile check the validate verb runs, over the bench's
+ *  CURRENT stages (post-write truth), and fold the verdict into a
+ *  result-payload fragment.
+ *  @returns undefined when the bench holds no stages to compile. */
+async function compileVerdictOf(
+  estate: Estate, bench: string, signal: AbortSignal,
+): Promise<Record<string, unknown> | undefined> {
+  const b = await readBench(estate, bench, signal)
+  // GAPS-9: only LIVE rows judge — an archived spent row never
+  // reaches the compile (its flag strips in projection, its stale
+  // params must not judge).
+  return verdictOfStages(estate, b['intent'], projectStages(liveBenchRows(b['stages'])), signal)
+}
+
+/** The projection's twin of the door's own mint (drafts bench.ts
+ *  highestStageSuffix/nextStageId: MAX s_<n> + 1, skipping taken
+ *  ids). Names the candidate row INSIDE the judged view only — the
+ *  stored row's id stays the door's mint, and the answer names the
+ *  door's own r.stage. Never a second writer: this value is never
+ *  stored anywhere. */
+function projectedStageId(rows: unknown): string {
+  const taken = new Set<string>()
+  let max = -1
+  if (Array.isArray(rows)) {
+    for (const row of rows) {
+      if (typeof row !== 'object' || row === null) continue
+      const id = String((row as Record<string, unknown>)['id'] ?? '')
+      taken.add(id)
+      const m = /^s_(\d+)$/.exec(id)
+      if (m !== null && Number(m[1]) > max) max = Number(m[1])
+    }
+  }
+  let n = max
+  let fresh: string
+  do { n += 1; fresh = 's_' + String(n) } while (taken.has(fresh))
+  return fresh
+}
+
+/** The card def field the family-seat carry reads (structural —
+ *  the live CardDefinition carries it). */
+type FamilySeatDef = { boarded?: readonly unknown[] };
+
+/** The card's first-declared family (boarded[0]) — the same default
+ *  the client add door seeds and the run press resolves (the
+ *  catalog's card-id alias law: first = the DEFAULT family).
+ *  Undefined for a card with no board to name (pure-tool). The board
+ *  is the predicate — the card-face requiresModel flag is a
+ *  provisions concern and is false on family-carrying cards too
+ *  (image-edit, music: live defs, F27's own burn). */
+function firstDeclaredFamilyOf(def: unknown): string | undefined {
+  if (def === null || typeof def !== 'object') return undefined
+  const d = def as FamilySeatDef
+  if (!Array.isArray(d.boarded)) return undefined
+  return d.boarded.find((f): f is string => typeof f === 'string' && f !== '')
+}
+
+/** THE MINT CARRIES THE SEAT (F27, qa8 session 7a82): the bench
+ *  stage's family address is params.model — the one seat the estate
+ *  reads (the bench StagePick walk, the card gate's demand, the
+ *  family-conditional cards' compose). A card-mode add that stated
+ *  the seat anywhere else minted a FAMILYLESS row, and only the
+ *  operator's press met `no declared action for family ''`. The seat
+ *  now rides the mint: a stated top-level `model` folds into
+ *  params.model; a family-carrying card with NO stated seat takes
+ *  its first-declared family (firstDeclaredFamilyOf — the same
+ *  boarded[0] the GUI derives). A stated params.model is THE seat
+ *  and rides untouched (identity = the no-derivation signal, the
+ *  same contract coerceArrayLanes speaks). Every carry echoes an
+ *  applied_derivations line — the agent sees the seat the row holds.
+ *  @param model the add_stage top-level `model` arg (undefined when
+ *  the caller stated none).
+ *  @param params the derived params bag (undefined = none stated).
+ *  @param def the card definition (undefined = no board law). */
+function familySeatCarry(
+  model: unknown, params: Record<string, unknown> | undefined, def: unknown,
+): { params: Record<string, unknown> | undefined; derived: Array<Record<string, unknown>> } {
+  if (params !== undefined && typeof params['model'] === 'string' && params['model'] !== '') {
+    return { params, derived: [] }
+  }
+  const statedTop = typeof model === 'string' && model !== ''
+  const seat = statedTop ? model as string : firstDeclaredFamilyOf(def)
+  if (seat === undefined) return { params, derived: [] }
+  return {
+    params: { ...(params ?? {}), model: seat },
+    derived: [{
+      param: 'model',
+      from: (params !== undefined ? params['model'] : undefined) ?? null,
+      to: seat,
+      rule: statedTop ? 'model-seat-to-params' : 'first-declared-family',
+    }],
   }
 }
 
@@ -369,11 +570,30 @@ function isCasConflict(e: unknown): boolean {
  *  browser's cure: on the door's cas-conflict, re-read the fresh
  *  rev and re-apply ONCE. Non-destructive verbs only — load's
  *  wholesale replacement still refuses when moved (a rebase there
- *  could clobber a concurrent write silently). */
+ *  could clobber a concurrent write silently).
+ *
+ *  THE STATED-HOLD LAW (GAPS-10, the silent-land burn: `patch
+ *  {expect_rev: 58}` on a rev-69 bench LANDED at rev 70): the
+ *  rebase is the AUTO-REV front door's own cure, never a
+ *  stale-hold eraser. A STATED expect_rev is an assertion — "the
+ *  state you saw" (the schema's own words) — and a bench that moved
+ *  under an assertion REFUSES loud: the verdict surfaces with
+ *  current_rev and the client re-reads and re-applies. Only a rev
+ *  the TOOL filled (the caller omitted expect_rev, or a verb like
+ *  floor that reads the rev itself) may rebase: the caller asserted
+ *  nothing, so one bounded retry behind the fill's race is honest.
+ *  The drafts-side CAS (estate/drafts bench.ts casCheck) was always
+ *  strict — the leniency lived here alone. */
 async function postBenchVerb(
   estate: Estate, bench: string, verbPath: BenchVerb,
   body: Record<string, unknown>, signal: AbortSignal,
+  /** true = the rev riding this body was TOOL-read (the caller
+   *  stated none), so the one-retry rebase may fire behind a race.
+   *  Default reads the body: a present expect_rev is the caller's
+   *  assertion and never rebases. */
+  opts?: { autoRev?: boolean },
 ): Promise<Record<string, unknown>> {
+  const autoRev = opts?.autoRev ?? !(body['expect_rev'] !== undefined && body['expect_rev'] !== null)
   const attempt = (rev: unknown): Promise<Record<string, unknown>> =>
     estate.benchVerb(bench, verbPath,
       { ...body, expect_rev: rev }, signal, 15000) as Promise<Record<string, unknown>>
@@ -395,6 +615,11 @@ async function postBenchVerb(
     return await attempt(rev0)
   } catch (e) {
     if (!isCasConflict(e)) throw e
+    // THE STATED-HOLD REFUSAL (GAPS-10): a caller-stated rev that
+    // met a moved bench surfaces the verdict itself — no re-read,
+    // no retry, no silent land. The door's own current_rev rides
+    // the answer, so the client's re-read-and-retry lands.
+    if (!autoRev) throw e
     const fresh = await readBench(estate, bench, signal)
     const rev = fresh['rev']
     if (typeof rev !== 'number') throw e
@@ -548,57 +773,8 @@ function firstArtifactPath(artifacts: unknown[]): string {
   return p.startsWith('./') ? p.slice(2) : p
 }
 
-/** Project bench stage rows onto the flow_inline wire contract
- *  (the doors forbid provenance/runStatus/result/title as extras —
- *  they strip; `card` RIDES (STAGE_KEYS admit it) because the
- *  kinds pass derives input kinds from the card's own flowKinds —
- *  stripping it manufactured phantom "wired but untyped" refusals
- *  on correctly-wired card stages; engine defaults comfyui). */
-export function projectStages(stages: unknown): Record<string, unknown>[] {
-  if (!Array.isArray(stages)) return []
-  // THE CONTRACT SHAPES EVERY ROW (2026-10-10, the audit's Rule 1 —
-  // this was a second writer, so the same bench read as a different
-  // document depending on which door projected it; and the audit's
-  // Rule 3, which forbade it from DEMANDING the engine the contract
-  // derives). The contract carries the card-ports law, the media-path
-  // heal, the self-naming strip and the engine derivation — the
-  // projection only preserves the view's identity and the fields the
-  // compile needs (`expected`).
-  const source = stages
-    .filter((s): s is Record<string, unknown> => typeof s === 'object' && s !== null && !Array.isArray(s))
-  return normalizeBenchStages(source).map((row, i) => {
-    // normalizeBenchStages is 1:1 over its input — one normalized row
-    // pushed per source row, never a skip (benchStage.ts:243-263) — so
-    // index i of the projection always has a source row behind it (the
-    // re-audit, 2026-10-16).
-    const from = source[i] as Record<string, unknown>
-    // the view's id is the SOURCE's id, stringified (an absent id
-    // reports as ''), never the contract's birth mint — the view
-    // reports what the bench holds, it does not mint
-    row['id'] = String(from['id'] ?? '')
-    // the caller's own id rides (the projection is a VIEW, not a
-    // mint): a row with NO id stays id-less rather than gaining the
-    // contract's birth mint — the view reports what the bench holds
-    if (typeof from['id'] === 'string' && from['id'] !== '') row['id'] = from['id']
-    // THE VIEW ADMITS THE WIRE'S OWN KEYS (STAGE_KEYS, the flow
-    // gate's own list): the bench's bookkeeping (title, result,
-    // runStatus, provenance) is not a wire field and never compiled
-    for (const key of Object.keys(row)) {
-      if (key === 'expected' || WIRE_STAGE_KEYS.includes(key)) continue
-      delete row[key]
-    }
-    // `expected` is a compile-only field and must be a record: the
-    // contract carries whatever the source held, so a junk value
-    // ('nope', an array) is DROPPED here rather than compiled
-    if (typeof from['expected'] === 'object' && from['expected'] !== null && !Array.isArray(from['expected'])) {
-      row['expected'] = from['expected']
-    } else {
-      delete row['expected']
-    }
-    return row
-  })
-}
-
+// (liveBenchRows + projectStages moved to @melite/contracts/benchStage
+// 2026-10-31 — see the import head. The law comments moved with them.)
 
 // ── THE FIRST-DOOR WIRE GRAMMAR (slice 5, the agent-flow rework,
 // 2026-11-12) ────────────────────────────────────────────────────
@@ -622,7 +798,7 @@ export function projectStages(stages: unknown): Record<string, unknown>[] {
 type CardDefSeat = {
   schema?: unknown;
   schemaCarrier?: unknown;
-  flowKinds?: { inputs?: Record<string, string>; legacyAliases?: Record<string, string> };
+  flowKinds?: { inputs?: Record<string, string>; legacyAliases?: Record<string, string>; aliasSeats?: Record<string, string> };
 };
 
 /** The card's walkable schema carrier (plain schemas carry the dict;
@@ -742,10 +918,81 @@ function craftParams(
  *  derivations key). */
 function deriveParams(
   def: unknown, params: Record<string, unknown>,
+  held?: Record<string, unknown>,
 ): { params: Record<string, unknown>; derived: Array<Record<string, unknown>> } {
   const coerced = coerceArrayLanes(def, params)
   const crafted = craftParams(def, coerced.params)
-  return { params: crafted.params, derived: [...coerced.derived, ...crafted.derived] }
+  const folded = legacyAliasFold(def, crafted.params, held)
+  return { params: folded.params, derived: [...coerced.derived, ...crafted.derived, ...folded.derived] }
+}
+
+/** THE ONE-SPELLING WRITE (operator 2026-11-14: "I told you ONE
+ *  BENCH, but the agent and user have different input parameters"):
+ *  a legacy input alias the agent states (image1 on image-edit,
+ *  image_name on the h3 video card) composes — the lanes merge it
+ *  engine-side — but the user's drill renders the CANONICAL seat
+ *  and read the row BLANK: the agent had attached the image, the
+ *  user's input square was empty. The write stores the STATE, not
+ *  the wire's spelling (deriveParams' own law): the fold merges
+ *  alias values into the canonical seat exactly as the compose lane
+ *  would (declared order, blanks dropped, a stated canonical WINS —
+ *  judged against the MERGED row, `held` under the patch, so an
+ *  alias stated over a row that already holds the canonical seat
+ *  folds away instead of overwriting the user's attach), NULLS the
+ *  folded alias keys (the merge-patch unset — the stored row
+ *  carries one channel, never two spellings side by side), and
+ *  echoes an applied_derivations line so the agent sees the seat
+ *  its next patch should state. Spells ride untouched: the run's
+ *  spell gate and rewrite both recurse list seats.
+ *  @param def the card definition (its flowKinds declare the law).
+ *  @param params the crafted params bag (a patch delta, or a whole
+ *  row's params at load/add_stage — held undefined then: the bag IS
+ *  the row).
+ *  @param held the stage row's current params (patch arm only —
+ *  the merge the door will land). */
+function legacyAliasFold(
+  def: unknown, params: Record<string, unknown>,
+  held?: Record<string, unknown>,
+): { params: Record<string, unknown>; derived: Array<Record<string, unknown>> } {
+  const fk = def !== null && typeof def === 'object'
+    ? (def as CardDefSeat).flowKinds : undefined
+  if (fk === undefined || fk === null) return { params, derived: [] }
+  // THE SEAT MAP IS THE FOLD'S DOMAIN (legacyAliases' values are
+  // KINDS, never seat names — only aliasSeats names the merge)
+  const aliasKeys = Object.keys(fk.aliasSeats ?? {})
+  if (aliasKeys.every((k) => !(k in params))) return { params, derived: [] }
+  // the merged row the door will land: held under patch (a null in
+  // the patch UNSETS its key — the merge-patch law), else the bag
+  const view: Record<string, unknown> = { ...(held ?? {}), ...params }
+  for (const [k, v] of Object.entries(params)) if (v === null) delete view[k]
+  const folded = foldLegacyAliases(fk, view)
+  // the WRITE BAG is the delta: canonical seats the fold changed,
+  // alias keys nulled out of the stored row
+  const bag: Record<string, unknown> = { ...params }
+  const derived: Array<Record<string, unknown>> = []
+  const seats = [...new Set(Object.values(fk.aliasSeats ?? {}))]
+  for (const seat of seats) {
+    const before = seat in view ? view[seat] : undefined
+    if (JSON.stringify(folded[seat]) !== JSON.stringify(before)) {
+      bag[seat] = folded[seat] ?? null
+      derived.push({
+        param: seat,
+        from: before ?? null,
+        to: folded[seat] ?? null,
+        rule: 'legacy-alias-fold — the card\'s canonical input seat (the drill renders this spelling; the legacy alias still composes but renders nowhere)',
+      })
+    }
+  }
+  for (const alias of aliasKeys) {
+    // patch semantics: the null UNSETS the doc's stale spelling at
+    // the merge; whole-row semantics (load/add_stage): the minted
+    // row simply never carries it
+    if (alias in view) {
+      if (held === undefined) delete bag[alias]
+      else bag[alias] = null
+    }
+  }
+  return { params: bag, derived }
 }
 
 /** The card's declared wiring lanes — the canonical ports plus the
@@ -762,16 +1009,33 @@ function lanesOf(def: unknown): { canonical: string[]; legacy: string[] } | unde
 /** Refuse a wiring lane the card does not declare, naming the lanes it
  *  does — never the silent-accept class (an undeclared channel is fed
  *  by nothing the run's kind pass knows, so the stage renders
- *  text-only). Returns undefined when every key is declared, the
- *  inputs bag is absent, or the card carries no lane law. */
+ *  text-only). THE EXPECTED-KIND CURE (friction F32, 2026-11-03): a
+ *  lane the card does not port is LAWFUL when the same call declares
+ *  its expected kind (expected {lane: kind} — the card doc's own
+ *  documented shape, e.g. the h3-timeline soundtrack wires
+ *  {"line1": "audio"}): the kind pass then judges the channel by its
+ *  declared kind, exactly the pass the run layer's $spell resolution
+ *  rides (runsStart's inputNames). A custom lane with NO declared
+ *  kind keeps the refusal — that is the text-only class.
+ *  Returns undefined when every key is lawful, the inputs bag is
+ *  absent, or the card carries no lane law.
+ *  @param card the stage's card id (the refusal names it)
+ *  @param inputs the wiring bag under judge
+ *  @param def the card definition (its declared lanes)
+ *  @param expected the same call's expected-kind map (add_stage's
+ *  arg, the stage row's own key at load, the bench row's key at
+ *  rewire) */
 function unknownLaneRefusal(
-  card: string, inputs: unknown, def: unknown,
+  card: string, inputs: unknown, def: unknown, expected?: unknown,
 ): { error: string; error_kind: string; allowed_lanes: string[] } | undefined {
   if (inputs === null || typeof inputs !== 'object' || Array.isArray(inputs)) return undefined
   const lanes = lanesOf(def)
   if (lanes === undefined) return undefined
   const known = new Set([...lanes.canonical, ...lanes.legacy])
-  const bad = Object.keys(inputs as Record<string, unknown>).filter((k) => !known.has(k))
+  const kinds = expected !== null && typeof expected === 'object' && !Array.isArray(expected)
+    ? expected as Record<string, unknown>
+    : {}
+  const bad = Object.keys(inputs as Record<string, unknown>).filter((k) => !known.has(k) && typeof kinds[k] !== 'string')
   if (bad.length === 0) return undefined
   const list = lanes.canonical.length > 0 ? lanes.canonical.join(', ') : '(none declared)'
   return {
@@ -779,7 +1043,9 @@ function unknownLaneRefusal(
       + (bad.length === 1 ? ' is' : ' are') + ' not a port of card ' + JSON.stringify(card)
       + ' — the declared lanes: ' + list
       + (lanes.legacy.length > 0 ? ' (legacy: ' + lanes.legacy.join(', ') + ')' : '')
-      + '. Wire one of those: an undeclared lane would be fed by nothing the run\'s kind pass knows, and the stage would render text-only.',
+      + '. Wire one of those, or declare the lane\'s expected kind (expected {'
+      + bad.map((k) => JSON.stringify(k) + ': "kind"}').join(', ')
+      + ') — a declared custom channel is judged by its own kind (the $spell soundtrack shape); an undeclared lane with no kind would be fed by nothing the run\'s kind pass knows, and the stage would render text-only.',
     error_kind: 'unknown-lane',
     allowed_lanes: lanes.canonical,
   }
@@ -871,7 +1137,7 @@ async function cardDocOf(
 
 export function meliteConstruct(
   estate: Estate,
-  opts: { headless?: boolean } = {},
+  opts: { delegated?: boolean } = {},
 ): ToolDefinition {
   // SLICE 4b — THE JUST-IN-TIME CARD DOC (operator 2026-11-12): the
   // landing carries the card's own agent doc inline as refinement
@@ -897,13 +1163,14 @@ export function meliteConstruct(
     name: 'melite_construct',
     description:
       'Author THE shared bench — one working flow the user sees live in the cards tab and edits alongside you. '
-      // THE INTERFACE LAW (2026-09-13): name the run door the agent
-      // actually has — melite_flow only exists headless. The browser
-      // agent is the LIVE CO-EDITOR of the flow state (compose it,
-      // keep editing it as the user asks — the bench is the shared
-      // state), never its executor: runs start at the user's Run
-      // press. Say the contract, never a phantom verb.
-      + (opts.headless === true
+      // THE COPY LAW (2026-09-13): name the run door the agent
+      // actually has — melite_flow only exists when the lane's
+      // delegation is ON. The compose-only agent is the LIVE CO-EDITOR
+      // of the flow state (compose it, keep editing it as the user
+      // asks — the bench is the shared state), never its executor:
+      // runs start at the user's Run press. Say the contract, never a
+      // phantom verb.
+      + (opts.delegated === true
         ? 'This never executes (melite_flow runs what is here; the user presses Run). '
         : 'You compose the flow and edit its state here, live with the user — runs start at the user\'s Run press, never yours. ')
       + 'Verbs: read (the state — '
@@ -916,9 +1183,9 @@ export function meliteConstruct(
       + 'inputs?, expected?, outputs?} (inputs wire PRIOR STAGES through the card\'s declared ports, never files: '
       + 'inputs {image1: {stage: "s_0", output: "default"}} AND params {image1: "$image1"} — the $spell is the CHANNEL REFERENCE ONLY: it resolves at run time to that wired stage output or a request initial the USER attaches at the Run press, nothing else; for a REAL FILE on disk use its asset path from melite_view, never a $spell; to chain '
       + 'the last generation, bind its stage, never hunt its artifact on disk; kinds derive from the card\'s ports — '
-      + 'state expected only to override, outputs only for custom channels) | remove_stage {stage} | clear (EVERY stage out in one rev; undo restores all — the cure when the bench itself is the wound) | floor {stage?} (THE GPU ECONOMY VERB: clamps every resolution-group param to the card\'s DECLARED minimum — one stage when {stage} names one, every stage when absent; floors derive live off the card\'s own schema, never hand-baked numbers, every write is voiced {param, from, to}, absent params are SET to the floor (defaults are not assumed minimal), values at/below it stay untouched, and a card declaring no resolution group says so honestly) | rewire {stage, input, from?} (from is {stage, output} | '
+      + 'state expected only to override, outputs only for custom channels) | remove_stage {stage} | clear (EVERY stage out in one rev; undo restores all — the cure when the bench itself is the wound) | floor {stage?} (THE GPU ECONOMY VERB: clamps every resolution-group param to the card\'s DECLARED minimum — one stage when {stage} names one, every stage when absent; floors derive live off the card\'s own schema, never hand-baked numbers, every write is voiced {param, from, to}, absent params are SET to the floor (defaults are not assumed minimal), values at/below it stay untouched, a card declaring no resolution group says so honestly, and the whole walk lands as ONE write — a refusal anywhere leaves the bench byte-identical) | rewire {stage, input, from?} (from is {stage, output} | '
       + '{initial} — same law: stage bindings, never paths) | undo {n?, author?} | validate (compile '
-      + "check, no GPU). Mutations take expect_rev from your last read — or omit it: the tool fills the fresh rev itself (one bounded read) and a moved bench still refuses 409 with current_rev, re-read, re-apply. No ids anywhere: the bench is the one shared state.",
+      + "check, no GPU). Mutations take expect_rev from your last read — or omit it: the tool fills the fresh rev itself (one bounded read). A STATED rev asserts the state you saw: a bench that moved under it refuses 409 with current_rev — re-read and re-apply, it never lands silently. An omitted rev rebases once behind a fill race. No ids anywhere: the bench is the one shared state.",
     parameters: {
       verb: {
         type: 'string',
@@ -929,6 +1196,12 @@ export function meliteConstruct(
       stage: { type: 'string', description: 'patch/remove_stage/rewire: the stage id.' },
       card: { type: 'string', description: 'add_stage: the card id (display + provenance hint).' },
       engine: { type: 'string', description: 'add_stage: engine id (default comfyui).' },
+      model: {
+        type: 'string',
+        description: 'add_stage: the family seat for cards whose family rides params.model (image-edit, music). '
+          + 'The mint folds it into params.model when the bag omits it; omitted, a family-carrying card takes its '
+          + 'first-declared family (boarded[0] — the same default the cards tab seeds). A params.model already stated is THE seat.',
+      },
       params: {
         type: 'object', additionalProperties: true,
         description: 'patch (merge onto the stage) | add_stage | load single-stage shorthand. '
@@ -973,10 +1246,11 @@ export function meliteConstruct(
             description: { type: 'string', description: 'What the stage produces.' },
             params: { type: 'object', additionalProperties: true, description: 'Stage params (open — the card/engine owns the keys).' },
             inputs: { type: 'object', additionalProperties: true, description: '{input: {stage, output} | {initial}} wiring.' },
+            expected: { type: 'object', additionalProperties: true, description: 'Expected kinds {input: Kind} — the hand-written declaration that makes a CUSTOM lane (a name the card does not port) lawful: the kind pass judges the channel by its declared kind (the $spell soundtrack shape, e.g. {line1: "audio"}).' },
             outputs: { type: 'object', additionalProperties: true, description: 'Custom output channels {name: Kind}.' },
           },
         },
-        description: 'load: the full replacement [{id?, engine?, card?, params?, inputs?, outputs?}].',
+        description: 'load: the full replacement [{id?, engine?, card?, params?, inputs?, expected?, outputs?}].',
       },
       intent: { type: 'string', description: 'load: what this bench produces.' },
       overwrite: {
@@ -985,7 +1259,7 @@ export function meliteConstruct(
       },
       n: { type: 'number', description: 'undo: how many entries (default 1).' },
       author: { type: 'string', description: 'undo: "agent" (default) | "user" — whose entries to revert.' },
-      expect_rev: { type: 'number', description: 'CAS: the rev from your last read. Optional on non-destructive mutations — omitted, the tool reads the fresh rev itself (one bounded read); supply it to assert the state you saw.' },
+      expect_rev: { type: 'number', description: 'CAS: the rev from your last read. Optional on non-destructive mutations — omitted, the tool reads the fresh rev itself (one bounded read). Supply it to ASSERT the state you saw: a bench that moved under a stated rev refuses 409 with current_rev (re-read, re-apply) — it never lands silently.' },
     },
     presentCall,
     output: {
@@ -1248,7 +1522,7 @@ export function meliteConstruct(
       const verb = typeof a.verb === 'string' ? a.verb : 'read'
       // The conversation wins (the one-flow law rides the agent's own
       // session); an explicit bench key applies only to unattributed
-      // seats (headless, scripts) that carry no agent.
+      // seats (scripts) that carry no agent.
       const agentBench = benchKeyOfExec(exec as { agent?: { id?: unknown } })
       const bench = agentBench !== DEFAULT_BENCH ? agentBench : benchKeyOf(a)
       const signal = exec.signal
@@ -1280,15 +1554,53 @@ export function meliteConstruct(
         if (verb === 'read') {
           const b = await readBench(estate, bench, signal)
           const enriched = await withLastRun(estate, b, signal)
+          // SLICE E — THE LEGACY MARKER'S CURE VOICE (F60b, the
+          // flows-are-compositions audit): a card-less ref_flow row
+          // renders as the honest '?' tile (client-side) and
+          // composes nowhere (the write doors refuse the shape) —
+          // but the READ is the agent's eyes on the bench, and it
+          // NAMES the row and its cures, never leaves a silent '?'
+          // for the operator to archaeology. undo rides FIRST when
+          // the history holds a non-reverted load entry (the serve
+          // projection strips the inverse payload by design — a
+          // load entry is the door's own proof it carries one, and
+          // the undo verb answers for whatever it holds); it rewinds
+          // to the bench the retired press replaced. remove_stage
+          // always (drops the row alone).
+          const stagesRaw: unknown = enriched.stages
+          const liveRows: Array<Record<string, unknown>> = Array.isArray(stagesRaw)
+            ? stagesRaw.filter((s): s is Record<string, unknown> =>
+                typeof s === 'object' && s !== null)
+            : []
+          const legacyMarker = liveRows.find((s) =>
+            typeof s['ref_flow'] === 'string' && s['ref_flow'] !== '')
+          const logRaw: unknown = b['log']
+          const logRows: Array<Record<string, unknown>> = Array.isArray(logRaw)
+            ? logRaw.filter((e): e is Record<string, unknown> =>
+                typeof e === 'object' && e !== null)
+            : []
+          const undoable = logRows.some((e) => e['kind'] === 'load' && e['reverted'] !== true)
           return out({
             rev: b.rev, intent: b.intent, stages: enriched.stages, log: b.log,
             ...(enriched.runs !== null ? { runs: enriched.runs } : {}),
+            ...(legacyMarker !== undefined ? {
+              legacy_flow_marker: {
+                stage: legacyMarker['id'], flow: legacyMarker['ref_flow'],
+                note: 'a retired melite_flow press landed this marker (the bench holds cards only — the flow runs through its own start door, never a bench pass)',
+                cure: (undoable
+                  ? 'melite_construct undo restores the bench the press replaced; '
+                  : '')
+                  + 'melite_construct remove_stage ' + String(legacyMarker['id'])
+                  + ' drops the row alone',
+              },
+            } : {}),
             hint: 'mutate with expect_rev=' + String(b.rev),
           })
         }
         if (verb === 'validate') {
           const b = await readBench(estate, bench, signal)
-          const stages = projectStages(b.stages)
+          // GAPS-9: only LIVE rows judge (see liveBenchRows).
+          const stages = projectStages(liveBenchRows(b.stages))
           if (stages.length === 0) return out({ rev: b.rev, compiles: false, note: 'bench is empty' })
           // THE TOOL DOES ITS OWN BOOKKEEPING (2026-09-21): the
           // validate door demands a flow id — this arm supplies it
@@ -1305,7 +1617,14 @@ export function meliteConstruct(
             intent !== '' && FLOW_ID_RE.test(intent) ? intent : 'bench'
           const r = await estate.runsValidate(
             { flow_inline: { id: flowId, stages } }, signal, 20000) as Record<string, unknown>
-          return out({ rev: b.rev, compiles: r['ok'] === true || r['valid'] === true, report: r })
+          const compiles = r['ok'] === true || r['valid'] === true
+          // F28: on a refusal the answer names the burning stage — the
+          // same solo fan-out the verdict door walks (additive: the
+          // green answer keeps its exact shape, zero extra door calls).
+          return out({
+            rev: b.rev, compiles, report: r,
+            ...(compiles ? {} : { stage_verdicts: await soloStageVerdicts(estate, flowId, stages, signal) }),
+          })
         }
         if (verb === 'load') {
           const rawStages = Array.isArray(a.stages) ? a.stages : []
@@ -1330,7 +1649,7 @@ export function meliteConstruct(
             const card = typeof row['card'] === 'string' ? row['card'] : ''
             const def = card !== '' ? defs?.get(card) : undefined
             if (def !== undefined) {
-              const laneRefusal = unknownLaneRefusal(card, row['inputs'], def)
+              const laneRefusal = unknownLaneRefusal(card, row['inputs'], def, row['expected'])
               if (laneRefusal !== undefined) return refuse({ ...laneRefusal, stage: card })
               if (isRecordArg(row['params'])) {
                 const derived = deriveParams(def, row['params'])
@@ -1339,6 +1658,28 @@ export function meliteConstruct(
               }
             }
             stages.push(row)
+          }
+          // THE COMPILE VERDICT rides every load that lands stages —
+          // the wholesale replace is the strongest write on the bench.
+          // NO MINT ON REFUSAL (F14/F26's law at the replace door):
+          // the gate composes the REPLACEMENT (exactly the rows the
+          // door will store) BEFORE benchEnsure, and a refusal answers
+          // here — the bench keeps its prior state, nothing to undo.
+          // The write itself is CAS-strict (load never rebases), so a
+          // landed replace IS the validated projection — the pre
+          // verdict rides the answer as the landed verdict.
+          const compile = stages.length > 0
+            ? await verdictOfStages(estate, a.intent, projectStages(stages), signal)
+            : undefined
+          if (compile !== undefined && compile['compile_ok'] === false) {
+            return refuse({
+              error: compile['compile_error'],
+              error_kind: 'compile-refused',
+              ...(compile['remedy'] !== undefined ? { remedy: compile['remedy'] as JsonValue } : {}),
+              // F28: the refusal names its stage — the fan-out already
+              // ran inside the verdict; the refuse carries it.
+              ...(compile['stage_verdicts'] !== undefined ? { stage_verdicts: compile['stage_verdicts'] as JsonValue } : {}),
+            })
           }
           const r = await estate.benchEnsure(
             {
@@ -1360,8 +1701,11 @@ export function meliteConstruct(
           })
           // THE COMPILE VERDICT rides every load that lands stages —
           // the wholesale replace is the strongest write on the bench;
-          // its answer must say whether what it landed compiles.
-          const compile = stages.length > 0 ? await compileVerdictOf(estate, bench, signal) : undefined
+          // its answer must say whether what it landed compiles. The
+          // pre-write gate above already composed the replacement, and
+          // a landed replace IS that projection (the write is
+          // CAS-strict — load never rebases), so the pre verdict rides
+          // as the landed verdict; no second compose of the same rows.
           return out({ rev: r.rev, stages: r.stages, ...(spells.length > 0 ? { spells } : {}), ...(appliedDerivations.length > 0 ? { applied_derivations: appliedDerivations } : {}), ...(compile !== undefined ? { ...compile } : {}), ...landingOf(compile) })
         }
         if (verb === 'patch') {
@@ -1372,6 +1716,7 @@ export function meliteConstruct(
           // below writes, so it adds no cross-bench state).
           let wiredInputs: unknown
           let stageCard = ''
+          let heldParams: Record<string, unknown> | undefined
           // the spell read doubles as the AUTO-REV fill when the
           // caller brought no rev — one bounded read serves both
           // (the fill never adds a second read on this path)
@@ -1381,6 +1726,12 @@ export function meliteConstruct(
             const rows = projectStages(b.stages)
             wiredInputs = inputsOfStageRow(rows, a.stage)
             stageCard = cardOfStageRow(rows, a.stage)
+            // the row's held params — the alias fold judges the
+            // canonical-wins law against the MERGED row this patch
+            // will land, never the patch bag alone
+            const row = rows.find((entry) => entry['stage'] === a.stage || entry['id'] === a.stage)
+            const rp = row === undefined ? undefined : row['params']
+            if (typeof rp === 'object' && rp !== null && !Array.isArray(rp)) heldParams = rp as Record<string, unknown>
             if (rev0 === undefined && typeof b.rev === 'number') rev0 = b.rev
           }
           // SLICE 5 — THE FIRST-DOOR GRAMMAR on a merge: the card's
@@ -1393,13 +1744,17 @@ export function meliteConstruct(
             const defs = await loadCardDefs()
             const def = defs.get(stageCard)
             if (def !== undefined) {
-              const derived = deriveParams(def, params)
+              const derived = deriveParams(def, params, heldParams)
               params = derived.params
               appliedDerivations = derived.derived
             }
           }
           const r = await postBenchVerb(estate, bench, 'patch',
-            { stage: a.stage, params, expect_rev: rev0 }, signal)
+            { stage: a.stage, params, expect_rev: rev0 }, signal,
+            // the rev here is the caller's word when stated; the
+            // spell-read fill (rev0 from the bench read) is the
+            // tool's own — the rebase follows the caller's word
+            { autoRev: !(a.expect_rev !== undefined && a.expect_rev !== null) })
           const spellLines = spellVoiceOf(a.params, wiredInputs)
           // THE STALENESS VOICE (the silent no-op cure): the door
           // answers stale:true when the patch changed params and
@@ -1444,21 +1799,61 @@ export function meliteConstruct(
           // lanes) and judges the wiring lanes BEFORE the write, so
           // the bench stores the state the run will actually admit.
           const card = typeof a.card === 'string' ? a.card : ''
-          let params = a.params
+          let params: Record<string, unknown> | undefined = isRecordArg(a.params) ? a.params : undefined
           let appliedDerivations: Array<Record<string, unknown>> = []
           if (card !== '') {
             const defs = await loadCardDefs()
             const def = defs.get(card)
             if (def !== undefined) {
-              const laneRefusal = unknownLaneRefusal(card, a.inputs, def)
+              const laneRefusal = unknownLaneRefusal(card, a.inputs, def, a.expected)
               if (laneRefusal !== undefined) return refuse(laneRefusal)
               if (isRecordArg(params)) {
                 const derived = deriveParams(def, params)
                 params = derived.params
                 appliedDerivations = derived.derived
               }
+              // THE MINT CARRIES THE SEAT (F27): the family seat rides
+              // the mint, never drops — a stated top-level `model`
+              // folds into params.model, a family-carrying card with
+              // no stated seat takes its first-declared family; both
+              // echo an applied_derivations line (see familySeatCarry).
+              const seat = familySeatCarry(a.model, params, def)
+              params = seat.params
+              appliedDerivations = [...appliedDerivations, ...seat.derived]
             }
           }
+          // THE PRE-MINT GATE (F14/F26, qa8 s_15 + GAPS-15 — the
+          // ghost-stage law): the write below used to land BEFORE the
+          // compile verdict ran, so a refused compose still LANDED the
+          // illegal row and the ghost blocked every later whole-bench
+          // compile/validate. NO MINT ON REFUSAL: the gate composes
+          // the PROJECTION (the live rows + this candidate, through
+          // the door's own normalization) on the SAME validate door
+          // the validate verb walks, and a refusal answers HERE — the
+          // bench is never written, so there is nothing to roll back.
+          const b0 = await readBench(estate, bench, signal)
+          const live = liveBenchRows(b0['stages'])
+          const candidate: Record<string, unknown> = {
+            id: projectedStageId(b0['stages']),
+            card,
+            ...(typeof a.engine === 'string' && a.engine !== '' ? { engine: a.engine } : {}),
+            ...(params !== undefined ? { params } : {}),
+            ...(a.inputs !== undefined ? { inputs: a.inputs } : {}),
+            ...(isRecordArg(a.expected) ? { expected: a.expected } : {}),
+            ...(isRecordArg(a.outputs) ? { outputs: a.outputs } : {}),
+          }
+          const premint = await verdictOfStages(
+            estate, b0['intent'], projectStages(Array.isArray(live) ? [...live, candidate] : [candidate]), signal)
+          if (premint !== undefined && premint['compile_ok'] === false) {
+            return refuse({
+              error: premint['compile_error'],
+              error_kind: 'compile-refused',
+              ...(premint['remedy'] !== undefined ? { remedy: premint['remedy'] as JsonValue } : {}),
+              // F28: the refusal names its stage (see the load door above).
+              ...(premint['stage_verdicts'] !== undefined ? { stage_verdicts: premint['stage_verdicts'] as JsonValue } : {}),
+            })
+          }
+          const revStated = a.expect_rev !== undefined && a.expect_rev !== null
           const r = await postBenchVerb(estate, bench, 'add_stage',
             {
               card: a.card,
@@ -1476,8 +1871,9 @@ export function meliteConstruct(
               // this verb never does (the F6 remnant, 2026-09-21).
               ...(isRecordArg(a.expected) ? { expected: a.expected } : {}),
               ...(isRecordArg(a.outputs) ? { outputs: a.outputs } : {}),
-              expect_rev: a.expect_rev,
-            }, signal)
+              expect_rev: revStated ? a.expect_rev
+                : (typeof b0['rev'] === 'number' ? b0['rev'] : a.expect_rev),
+            }, signal, { autoRev: !revStated })
           // THE SPELL VOICE rides the verb that MINTS the stage: the
           // call's own inputs are the wired truth here, no extra read.
           // (The voice reads the CALLER's params, not the coerced bag:
@@ -1486,11 +1882,19 @@ export function meliteConstruct(
           const spellLines = spellVoiceOf(a.params, a.inputs)
           // THE COMPILE VERDICT rides every add_stage (session 7a82's
           // autopsy: a params-only add minted the steps-25 class
-          // unwitnessed — the verdict rode wiring mutations only;
-          // now every minted stage composes, the familyless and
-          // envelope classes both speak at LANDING, never at the
-          // operator's press)
-          const compile = await compileVerdictOf(estate, bench, signal)
+          // unwitnessed). The pre-mint gate already composed the
+          // projection; when the write landed exactly on the state
+          // that was judged (first attempt — the landed rev IS the
+          // validated rev + 1), that verdict IS the landed verdict and
+          // re-walking the door would be a second compose of the same
+          // truth. A write that REBASED (the one-retry rebase behind a
+          // fill race) landed on a bench the gate never saw — the
+          // LANDED bench composes, and its refusal keeps the
+          // landed_not_compiling voice honest.
+          const landedValidated = premint !== undefined
+            && typeof b0['rev'] === 'number'
+            && r['rev'] === (b0['rev'] as number) + 1
+          const compile = landedValidated ? premint : await compileVerdictOf(estate, bench, signal)
           // slice 4b: the card's own doc rides the landing (deduped)
           const doc = typeof a.card === 'string' && a.card !== ''
             ? await cardDocOf(estate, a.card, sentDocs, signal)
@@ -1539,79 +1943,176 @@ export function meliteConstruct(
           // card that widens or narrows its resolution knobs is
           // followed without a tool change. Never a hand-baked
           // name list, never a baked number.
-          const b = await readBench(estate, bench, signal)
-          const rows = projectStages(b.stages)
-          if (rows.length === 0) return out({ error: 'the bench holds no stages — nothing to floor' })
-          let targets = rows
-          if (typeof a.stage === 'string' && a.stage !== '') {
-            targets = rows.filter((row) => row['id'] === a.stage)
-            if (targets.length === 0) {
-              return out({ error: `stage ${a.stage} is not on the bench — read names the live ids` })
-            }
+          //
+          // THE ONE-WRITE WALK (the U5 residual's cure): the walk
+          // PLANS every stage's floors first, then lands the whole
+          // plan through ONE whole-bench write — the ensure/load
+          // door (CAS, the overwrite gate, the admission seat) judges
+          // the ENTIRE replacement before anything stores. A refusal
+          // anywhere in the plan leaves the bench byte-identical —
+          // rev, rows and log — where the old stage-by-stage patch
+          // walk had already landed the earlier stages when a later
+          // one refused (a refusal that edited the bench it refused
+          // to finish). The write is CAS-held on the rev the walk
+          // read; a TOOL-filled rev (the caller stated none) rebases
+          // ONCE behind a concurrent move, re-planning off the fresh
+          // rows (the floors are state-dependent: ABSENT = SET). A
+          // STATED expect_rev is an assertion — it refuses loud, it
+          // never rebases (the stated-hold law, postBenchVerb's own
+          // comment).
+          const readRows = async (): Promise<{ rev: unknown; rawRows: Array<Record<string, unknown>> }> => {
+            const bb = await readBench(estate, bench, signal)
+            // THE VALIDATED ROW WALK (anti-sniff V4: validate, never
+            // cast): the bench doc is durable-plane JSON — each stage
+            // row must prove object-ness before it joins the walk.
+            const rawRows = Array.isArray(bb['stages'])
+              ? bb['stages'].flatMap((s): Array<Record<string, unknown>> =>
+                  typeof s === 'object' && s !== null && !Array.isArray(s) ? [s as Record<string, unknown>] : [])
+              : []
+            return { rev: bb['rev'], rawRows }
+          }
+          const first = await readRows()
+          if (first.rawRows.length === 0) return out({ error: 'the bench holds no stages — nothing to floor' })
+          if (typeof a.stage === 'string' && a.stage !== ''
+            && !first.rawRows.some((row) => String(row['id'] ?? '') === a.stage)) {
+            return out({ error: `stage ${a.stage} is not on the bench — read names the live ids` })
           }
           const defs = await loadCardDefs()
-          let rev: unknown = typeof b.rev === 'number' ? b.rev : a.expect_rev
-          const stages: Array<Record<string, unknown>> = []
-          for (const row of targets) {
-            const stageId = typeof row['id'] === 'string' ? row['id'] : ''
-            const card = typeof row['card'] === 'string' ? row['card'] : ''
-            const def = defs.get(card)
-            // the carrier law (card-definition N4): plain schemas
-            // carry the walkable dict themselves; hand-written
-            // normalizers carry the inner schemastery object at
-            // schemaCarrier.
-            const carrier = def?.schemaCarrier ?? def?.schema
-            const dict = carrier?.dict ?? {}
-            const floors: Record<string, number> = {}
-            for (const [name, node] of Object.entries(dict)) {
-              // THE CARRIER LAW'S WALK HALF: schemastery nodes are
-              // CALLABLES with fields (functions, not objects) — an
-              // object-type guard here refused every node and the
-              // verb floored nothing; guard null/undefined only and
-              // let emitKnob/extraOf judge the shape.
-              if (node === null || node === undefined) continue
-              const ex = extraOf(node as { meta?: Record<string, unknown> }) as Record<string, unknown>
-              if (ex['group'] !== 'resolution') continue
-              const knob = emitKnob(node as never) as Record<string, unknown>
-              if (knob['type'] !== 'number' && knob['type'] !== 'integer') continue
-              if (typeof knob['minimum'] !== 'number') continue
-              floors[name] = knob['minimum']
-            }
-            const floorEntries = Object.entries(floors)
-            if (floorEntries.length === 0) {
-              stages.push({ stage: stageId, card, floored: [], note: 'declares no resolution group — nothing to floor' })
-              continue
-            }
-            const params = (typeof row['params'] === 'object' && row['params'] !== null && !Array.isArray(row['params']))
-              ? row['params'] as Record<string, unknown>
-              : {}
-            const patch: Record<string, number> = {}
-            const floored: Array<Record<string, unknown>> = []
-            for (const [name, min] of floorEntries) {
-              const cur = params[name]
-              // ABSENT = SET (the default is not assumed minimal —
-              // the whole point of the verb); ABOVE = clamp; at or
-              // below = untouched (idempotent, honest voice).
-              if (cur === undefined) {
-                patch[name] = min
-                floored.push({ param: name, from: '(default)', to: min })
-              } else if (typeof cur === 'number' && cur > min) {
-                patch[name] = min
-                floored.push({ param: name, from: cur, to: min })
-              } else if (typeof cur !== 'number') {
-                floored.push({ param: name, from: cur, note: 'not a number — left untouched, the card coerces its own wire' })
-              }
-            }
-            if (Object.keys(patch).length === 0) {
-              stages.push({ stage: stageId, card, floored: [], note: 'already at or below every declared floor' })
-              continue
-            }
-            const r = await postBenchVerb(estate, bench, 'patch',
-              { stage: stageId, params: patch, expect_rev: rev }, signal)
-            rev = r.rev
-            stages.push({ stage: stageId, card, floored })
+          // THE PLAN (pure over the rows it is handed, so the rebase
+          // re-plans identically): every raw row re-lands — only the
+          // floored params differ — and the read view's `resolved`
+          // display bag (the GET door's withResolvedStages
+          // computation) never stores.
+          // THE VOICING SHAPE (anti-sniff V4: the rows this walk
+          // mints are typed here, so the idempotence gate reads the
+          // member, never an array cast).
+          type FloorVoice = {
+            stage: string
+            card: string
+            floored: Array<Record<string, unknown>>
+            note?: string
           }
-          return out({ rev, stages, note: 'floors ride the cards\' own declared resolution minimums — compose still validates every write' })
+          const planOf = (rawRows: Array<Record<string, unknown>>): {
+            replacement: Array<Record<string, unknown>>
+            voicing: Array<FloorVoice>
+          } => {
+            const targets = (typeof a.stage === 'string' && a.stage !== '')
+              ? rawRows.filter((row) => String(row['id'] ?? '') === a.stage)
+              : rawRows
+            const targeted = new Set<object>(targets)
+            const replacement: Array<Record<string, unknown>> = []
+            const voicing: Array<FloorVoice> = []
+            for (const row of rawRows) {
+              const view = { ...row }
+              delete view['resolved']
+              if (!targeted.has(row)) {
+                replacement.push(view)
+                continue
+              }
+              const stageId = typeof row['id'] === 'string' ? row['id'] : ''
+              const card = typeof row['card'] === 'string' ? row['card'] : ''
+              if (stageId === '') {
+                voicing.push({ stage: '', card, floored: [], note: 'carries no id — not addressable, left untouched' })
+                replacement.push(view)
+                continue
+              }
+              const def = defs.get(card)
+              // the carrier law (card-definition N4): plain schemas
+              // carry the walkable dict themselves; hand-written
+              // normalizers carry the inner schemastery object at
+              // schemaCarrier.
+              const carrier = def?.schemaCarrier ?? def?.schema
+              const dict = carrier?.dict ?? {}
+              const floors: Record<string, number> = {}
+              for (const [name, node] of Object.entries(dict)) {
+                // THE CARRIER LAW'S WALK HALF: schemastery nodes are
+                // CALLABLES with fields (functions, not objects) — an
+                // object-type guard here refused every node and the
+                // verb floored nothing; guard null/undefined only and
+                // let emitKnob/extraOf judge the shape.
+                if (node === null || node === undefined) continue
+                const ex = extraOf(node as { meta?: Record<string, unknown> }) as Record<string, unknown>
+                if (ex['group'] !== 'resolution') continue
+                const knob = emitKnob(node as never) as Record<string, unknown>
+                if (knob['type'] !== 'number' && knob['type'] !== 'integer') continue
+                if (typeof knob['minimum'] !== 'number') continue
+                floors[name] = knob['minimum']
+              }
+              const floorEntries = Object.entries(floors)
+              if (floorEntries.length === 0) {
+                voicing.push({ stage: stageId, card, floored: [], note: 'declares no resolution group — nothing to floor' })
+                replacement.push(view)
+                continue
+              }
+              const params = (typeof row['params'] === 'object' && row['params'] !== null && !Array.isArray(row['params']))
+                ? row['params'] as Record<string, unknown>
+                : {}
+              const patch: Record<string, number> = {}
+              const floored: Array<Record<string, unknown>> = []
+              for (const [name, min] of floorEntries) {
+                const cur = params[name]
+                // ABSENT = SET (the default is not assumed minimal —
+                // the whole point of the verb); ABOVE = clamp; at or
+                // below = untouched (idempotent, honest voice).
+                if (cur === undefined) {
+                  patch[name] = min
+                  floored.push({ param: name, from: '(default)', to: min })
+                } else if (typeof cur === 'number' && cur > min) {
+                  patch[name] = min
+                  floored.push({ param: name, from: cur, to: min })
+                } else if (typeof cur !== 'number') {
+                  floored.push({ param: name, from: cur, note: 'not a number — left untouched, the card coerces its own wire' })
+                }
+              }
+              if (Object.keys(patch).length === 0) {
+                voicing.push({ stage: stageId, card, floored: [], note: 'already at or below every declared floor' })
+                replacement.push(view)
+                continue
+              }
+              view['params'] = { ...params, ...patch }
+              replacement.push(view)
+              voicing.push({ stage: stageId, card, floored })
+            }
+            return { replacement, voicing }
+          }
+          // THE STATED-HOLD SPLIT: a caller expect_rev is the CAS
+          // assertion and never rebases; the walk's own read fills
+          // the hold otherwise and may rebase once.
+          const stated = a.expect_rev !== undefined && a.expect_rev !== null
+          const attempt = async (rev: unknown, rawRows: Array<Record<string, unknown>>) => {
+            const { replacement, voicing } = planOf(rawRows)
+            // THE IDEMPOTENCE GATE: a plan that floors nothing writes
+            // nothing — an already-minimal bench keeps its rev and
+            // its log (the verb's own no-op law, voiced honestly).
+            const flooredAnything = voicing.some((v) => v.floored.length > 0)
+            if (!flooredAnything) return { r: undefined, voicing }
+            const r = await estate.benchEnsure(
+              { session: bench, stages: replacement, overwrite: true, expect_rev: rev }, signal, 15000,
+            ) as Record<string, unknown>
+            return { r, voicing }
+          }
+          let r: Record<string, unknown> | undefined
+          let voicing: Array<FloorVoice>
+          try {
+            ({ r, voicing } = await attempt(stated ? a.expect_rev : first.rev, first.rawRows))
+          } catch (e) {
+            if (stated || !isCasConflict(e)) throw e
+            // THE ONE REBASE: the bench moved between the walk's read
+            // and its write. Re-read, re-plan off the fresh rows (a
+            // concurrent write may have stated a knob the plan was
+            // about to set), re-write once. A second conflict
+            // surfaces — two racers in one verb walk is a verdict,
+            // not a loop.
+            const fresh = await readRows()
+            if (fresh.rawRows.length === 0) throw e
+            ;({ r, voicing } = await attempt(
+              typeof fresh.rev === 'number' ? fresh.rev : undefined, fresh.rawRows,
+            ))
+          }
+          if (r === undefined) {
+            return out({ rev: first.rev, stages: voicing, note: 'already at or below every declared floor — nothing to write' })
+          }
+          return out({ rev: r.rev, stages: voicing, note: 'floors ride the cards\' own declared resolution minimums — the whole walk lands as one write, so a refusal anywhere leaves the bench untouched' })
         }
         if (verb === 'rewire') {
           // SLICE 5 — THE LANE LAW AT THE REWIRE DOOR: the input name
@@ -1624,7 +2125,14 @@ export function meliteConstruct(
             if (card !== '') {
               const def = (await loadCardDefs()).get(card)
               if (def !== undefined) {
-                const laneRefusal = unknownLaneRefusal(card, { [a.input]: true }, def)
+                // the row's OWN expected kinds ride the judge (F32):
+                // a custom channel lawfully declared at add/load may
+                // re-wire without re-declaring — the bench row is the
+                // declaration's home
+                const rowExpected = (Array.isArray(b.stages)
+                  ? (b.stages as Array<Record<string, unknown>>).find((r) => r['id'] === a.stage)
+                  : undefined)
+                const laneRefusal = unknownLaneRefusal(card, { [a.input]: true }, def, rowExpected?.['expected'])
                 if (laneRefusal !== undefined) return refuse({ ...laneRefusal, stage: a.stage })
               }
             }

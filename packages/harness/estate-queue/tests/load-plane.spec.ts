@@ -26,7 +26,7 @@ import {
   toolRowFor,
 } from "../src/loadPlane.ts";
 import { toolBaseRows } from "../src/toolProjection.ts";
-import { linkedStage, FlowsSeatService, seedFlowsSeat } from "../src/flowsData.ts";
+import { linkedStage, FlowsSeatService, seedFlowsSeat, initialKindGloss } from "../src/flowsData.ts";
 import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import { Context } from "@deepseek-ai/cordis";
 
@@ -525,11 +525,67 @@ describe("loadFlow", () => {
     }
   });
 
+  // ── F57 (operator 2026-11-13: "single-stage flow initial keys are
+  // UNDOCUMENTED — natural keys fail with internal errors") — the
+  // load bundle names the flow's initial seats (validators by kind,
+  // the required roster, the derived key order) so the OPEN face
+  // teaches the spell stems before a natural-key press (image,
+  // mesh) meets the seam. Real-roster walker, never a frozen list.
+  // RE-PINNED with the glosses (the anny-params typed-array seat,
+  // F57's owed half): the bundle carries each kind's SHAPE beside
+  // the kind, derived once — bake_params names the dialect doc and
+  // its OBJECT spelling so the 139-float estimated transport is
+  // taught, never hand-typed as a string.
+  it("F57: every flow bundle carries its initial seats — required first, kinds + glosses verbatim", () => {
+    const seat = seedFlowsSeat();
+    for (const name of seat.names()) {
+      const row = seat.get(name)!;
+      const required = row.requiredInitials ?? [];
+      const optional = Object.keys(row.initialValidators).filter((k) => !required.includes(k));
+      const glosses: Record<string, string> = {};
+      for (const [k, kind] of Object.entries(row.initialValidators)) glosses[k] = initialKindGloss(kind);
+      const bundle = loadFlow(REPO, name);
+      assert.deepEqual(
+        bundle["initials"],
+        { validators: { ...row.initialValidators }, required: [...required], keys: [...required, ...optional], glosses },
+        `${name}: the bundle names the row's initial seats`,
+      );
+    }
+    // THE F57 SPELLS, verbatim — the seats the natural keys missed
+    // (extended: the gloss rides beside the kind)
+    const a = loadFlow(REPO, "anny-hmr-estimator");
+    assert.deepEqual(a["initials"], {
+      validators: { photo: "photo" },
+      required: [],
+      keys: ["photo"],
+      glosses: { photo: initialKindGloss("photo") },
+    });
+    const c = loadFlow(REPO, "craft-loop");
+    assert.deepEqual(c["initials"], {
+      validators: { agent_prompt: "brief", command: "json", max_iterations: "number" },
+      required: ["agent_prompt", "command"],
+      keys: ["agent_prompt", "command", "max_iterations"],
+      glosses: {
+        agent_prompt: initialKindGloss("brief"),
+        command: initialKindGloss("json"),
+        max_iterations: initialKindGloss("number"),
+      },
+    });
+    // THE TYPED-ARRAY SEAT'S SPELL: anny-params' gloss names the
+    // dialect doc law AND the OBJECT transport — the shape taught
+    // at the bundle, one derivation deep
+    const ap = loadFlow(REPO, "anny-params");
+    const apGloss = (ap["initials"] as { glosses: Record<string, string> }).glosses["params_json"];
+    assert.match(apGloss, /scale: number\[139\] \(estimated\)/);
+    assert.match(apGloss, /send the doc as a JSON OBJECT, never a hand-typed string/);
+  });
+
   it("tooled flows serve the overlay; skill refs resolve with lines", () => {
-    const t = loadFlow(REPO, "audio-native-tts");
-    assert.equal((t["signature"] as { name: string }).name, "speak");
-    assert.match(String(t["digest"]), /^[0-9a-f]{16}$/);
+    // (the audio-native-tts signature probe retired with the wrapper
+    // row, 2026-11-14 — image-upscale carries both halves of the arm)
     const u = loadFlow(REPO, "image-upscale");
+    assert.equal((u["signature"] as { name: string }).name, "image_upscale");
+    assert.match(String(u["digest"]), /^[0-9a-f]{16}$/);
     const uSkills = u["skills"] as Array<{ id?: unknown }>;
     assert.ok(uSkills.some((l) => l.id === "card:image-gen"));
     assert.deepEqual(u["refs"], [

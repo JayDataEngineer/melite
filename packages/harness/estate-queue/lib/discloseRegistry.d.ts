@@ -25,6 +25,11 @@ export interface FlowSummary {
     readonly description: string;
     readonly stages: number;
     readonly skillRefs: readonly string[];
+    /** The flow's initial KEYS (F57, 2026-11-13: the spell-stem seats
+     *  the flow door binds — photo, params_json — named at DISCOVERY,
+     *  derived from the registry row, so the error text is never the
+     *  only teacher). */
+    readonly initials: readonly string[];
 }
 /** The search surface a card def offers (the def itself satisfies
  *  this — structural, no import of the engine service). boarded is
