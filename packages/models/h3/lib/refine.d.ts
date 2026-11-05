@@ -87,73 +87,6 @@ export declare function renderH3RefineWindow(entry: Record<string, unknown>, p: 
  * @returns the window's SaveVideo passthrough (the bag carrier's
  * N=1 delegate returns the same handle; statement callers ignore it) */
 export declare function renderH3Refine(entry: Record<string, unknown>, p: Record<string, unknown>, facts: H3Facts, g: GraphBuilder, runId: string): OutputHandle;
-/** THE BAG CARRIER (GAPS-19, 2026-11-01 plan): N stated entries ARE N
- *  windows of ONE film — the film tail's own tiling, entry-driven.
- *  N=1 delegates to the single-window arm byte-identically (no
- *  boundary, no concat — the sequential-press law: press, judge,
- *  press stays lawful and byte-cheap). N≥2 composes one
- *  `renderH3RefineWindow` body per entry, ordered by the film's
- *  unload boundary chain (`chainSaveBoundaries`) and assembled
- *  IN-GRAPH by the file join (`concatSavedFilms`) at
- *  `<runId>/refine` — the F24 loop's own tail, now entry-driven
- *  instead of count-driven. No new engine surface, no harness media,
- *  no ffmpeg.
- *
- *  THE BAG LAWS (admission-enforced continuity, the film path's own
- *  property restated for entries — all refusals at compose, zero GPU):
- *  1. ONE FILM PER BAG — every entry's source_clip names the SAME
- *     staged leaf; the tiling joins windows of one timeline, so a
- *     two-source join refuses loud (a second source is a second card).
- *  2. NO GAPS, NO FULL OVERLAP — in stated order, entry k≥1 satisfies
- *     `0 ≤ prevSkip + prevCap − skip < prevCap`: consecutive windows
- *     overlap (the walk's own minus-a-second-or-two law) but never
- *     leave a hole (a gap silently drops source seconds) and never
- *     start at or before the previous window (out of order — the
- *     compose never silently sorts).
- *  3. THE CEILING — more than MAX_COMPOSED_WINDOWS entries refuses
- *     (the extend solver's own window ceiling).
- *  Per-entry seats stay per-entry: each entry carries its own
- *  refine_prompt (required — no doc-level fallback) and may pin its
- *  own denoise/steps/seed/clip_seconds/start_seconds/mode/scale;
- *  renderH3RefineWindow's existing per-window validation (REQUIRED_
- *  SEATS, denoise < 1, the 141 f ceiling) judges each window unchanged.
- *
- *  THE CARRY IS THE FILM'S OWN SEAM NODE (round 27, operator order:
- *  "ZERO DIFFERENCE BETWEEN THE CONTEXT CARRY FROM THE NORMAL GENS
- *  AND THE REFINE GENS"): a carried bag mounts
- *  MiniMaxH3FiniteLatentContinuation on every join with the film's
- *  seats, and each window's joint AV target is built by the estate's
- *  one source→nested-AV constructor (SolidMask →
- *  FantasticVideoEditLatent → ContexMaskedTarget, the
- *  extend/repair/swap spine) — never a refine-only carry, never an
- *  alpha blend. The carried head is trimmed by the film's finalize
- *  node and the tail is the plain file concat, the film's own join.
- *
- * @param bag the refine mod's bound entries, stated film order
- * @param p the walked doc params (the family plane every window rides)
- * @param facts the family's lane facts (unet off the DECL row)
- * @param g the run's graph builder
- * @param runId the run tree's id (window + film prefixes ride it)
- * @returns the terminal SaveVideo passthrough — the assembled film
- * at `<runId>/refine` (N=1: the single window's own save) */
-/** THE CARRY STAND-DOWN (F3-14, operator burn 2026-11-05 — two
- *  presses, both died the same way): the engine path that would carry
- *  a refine film's own continuation between windows is DEAD — window
- *  0 renders and bills, then window 1 dies at its handoff with
- *  `ValueError: Drift-Control AV packed mask does not match its audio
- *  stream` (the Drift-Control mask state splits the packed mask by
- *  the install-time stream shapes, drift_control_av.py:159, and a
- *  continuation-carried latent's audio prefix no longer lands; the
- *  node is MinimaxH3LatentUpscaler3DRefineHandoff). The door refuses
- *  the carried shape instead of billing a partial; the hard cut
- *  (overlap_frames 0, or abutting starts) is the lawful press today.
- *  The engine cure is owed (ROADMAP F3-14): seed the mask state from
- *  the sampling latent, or strip the foreign denoise-mask patch in
- *  the handoff. Removing this refusal IS the toggle that re-arms the
- *  carry walk.
- * @param what the carried shape the press stated, in frames
- * @returns the refusal sentence (the caller throws it) */
-export declare function refineCarryStanddown(what: string): string;
 /** THE CARRY'S TOKEN LAW (F62, 2026-11-14): the H3 VAE maps frames to
  *  latent tokens non-linearly — 2 tokens cover the first 5 frames,
  *  then every 5 further tokens cover 17 frames (the timeline
@@ -185,48 +118,6 @@ export declare const lawfulCarryStart: (prev: {
     cap: number;
     skip: number;
 }) => number | null;
-/** THE CARRY FACE — N windows of ONE film, each join riding the
- *  FILM'S OWN SEAM NODE (round 27; operator order: "ZERO DIFFERENCE
- *  BETWEEN THE CONTEXT CARRY FROM THE NORMAL GENS AND THE REFINE
- *  GENS"). Every window composes the single-press body (joint AV
- *  target → [MiniMaxH3FiniteLatentContinuation] → the 2x handoff →
- *  decode → head-trim → SaveVideo); window k's continuation receives
- *  window k−1's joint target as `previous_latent` with the film's
- *  seats (iteration, the carried overlap, continue_audio_latent true,
- *  the model + sigmas the handoff samples with), and the film tail is
- *  the film's own join — the finalize head-trim per window, then the
- *  plain file concat ordered by the unload boundary chain. No
- *  crossfade, no list-seat copy, no refine-only carry: the same node,
- *  the same overlap, the same audio release, the same trim.
- *
- *  PER-ENTRY CONDITIONING IS LAWFUL: each window composes its own
- *  CLIPTextEncode/RandomNoise/BasicScheduler from ITS entry, so a bag
- *  of different prompts refines window by window (the film's own
- *  freedom). Only the tiling seats must agree — they set the member
- *  geometry and one film joins one shape.
- * @param entries the bag's entries, film order (one per window)
- * @param p the walked doc params
- * @param facts the family's lane facts
- * @param g the run's graph builder
- * @param windows each window's cap + skip, film order (≥ 2)
- * @param carries each join's carried overlap in frames (one per join)
- * @param runId the run tree's id (member + film prefixes ride it)
- * @returns the assembled film's SaveVideo passthrough */
-/** THE CARRY LAW, judged without emitting (the stand-down and the
- *  carrier share one judge): the entries tile the stated windows one
- *  per window, every join is token-exact, each window passes its own
- *  seat/ceiling door, and the tiling seats (mode + scale) agree across
- *  the film. Called by `renderH3RefineCarry` before its walk and by
- *  the bag/loop before the F3-14 stand-down, so a malformed shape
- *  keeps its own better voice and the stand-down owns only lawful
- *  carries.
- * @param entries the film's entries, film order (one per window)
- * @param windows each window's cap + skip, film order (≥ 2)
- * @param carries each join's carried overlap in frames (one per join) */
-export declare function assertRefineCarryLawful(entries: ReadonlyArray<Record<string, unknown>>, windows: ReadonlyArray<{
-    cap: number;
-    skip: number;
-}>, carries: readonly number[]): void;
 export declare function renderH3RefineCarry(entries: ReadonlyArray<Record<string, unknown>>, p: Record<string, unknown>, facts: H3Facts, g: GraphBuilder, windows: ReadonlyArray<{
     cap: number;
     skip: number;

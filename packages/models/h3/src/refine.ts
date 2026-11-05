@@ -505,7 +505,7 @@ export function renderH3Refine(
  *  carry walk.
  * @param what the carried shape the press stated, in frames
  * @returns the refusal sentence (the caller throws it) */
-export function refineCarryStanddown(what: string): string {
+function refineCarryStanddown(what: string): string {
   return `h3-timeline refine: ${what} would carry the film's own continuation between windows — and that carry is DEAD in the engine today (F3-14, operator burn 2026-11-05): the carried window dies at its handoff with "ValueError: Drift-Control AV packed mask does not match its audio stream" (the Drift-Control mask state splits the packed mask by the install-time stream shapes, drift_control_av.py:159, and a continuation-carried latent's audio prefix no longer lands; the node is MinimaxH3LatentUpscaler3DRefineHandoff). Window 0 renders and bills BEFORE that failure, so the door refuses the carry shape instead of billing a partial. The hard cut serves today: state overlap_frames 0 (the auto-tile) or start the next window at the previous window's end (the bag) — the plain concat of independent windows, no continuation. The carried refine is owed the engine cure (ROADMAP F3-14).`
 }
 
@@ -604,7 +604,7 @@ const refineTilingDiff = (a: Record<string, unknown>, b: Record<string, unknown>
  * @param entries the film's entries, film order (one per window)
  * @param windows each window's cap + skip, film order (≥ 2)
  * @param carries each join's carried overlap in frames (one per join) */
-export function assertRefineCarryLawful(
+function assertRefineCarryLawful(
   entries: ReadonlyArray<Record<string, unknown>>,
   windows: ReadonlyArray<{ cap: number; skip: number }>,
   carries: readonly number[],
