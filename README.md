@@ -55,8 +55,13 @@ verbatim.
 Seat Melite into a DSH profile — the official DSH way, one command:
 
 ```sh
-dsh plugin --profile melite add "github:JayDataEngineer/melite#main"
+dsh plugin --profile melite add "github:JayDataEngineer/melite#v0.2.0-alpha"
 ```
+
+Installs are pinned to the release tag — they never move on their own.
+To upgrade, run the same command with the newer tag, then restart the
+runner. (Releases are cut as `v*` tags with minted asset bundles;
+`#main` tracks the unreviewed tip and is not the install door.)
 
 An estate job server exists as a separate profile (`estate`); one-shot headless agents
 are DSH's own surface (`dsh headless "task brief"`), not a melite profile.
@@ -66,7 +71,7 @@ are DSH's own surface (`dsh headless "task brief"`), not a melite profile.
 1. Seat — the official DSH way, one command:
 
 ```sh
-dsh plugin --profile melite add "github:JayDataEngineer/melite#main"
+dsh plugin --profile melite add "github:JayDataEngineer/melite#v0.2.0-alpha"
 ```
 
 2. Boot:
