@@ -182,28 +182,42 @@ export function applyAllowlist (words, allowlist = ALLOWLIST) {
 
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
+/** The alternation chunk cap. MEASURED CLIFF (2026-11-05, the CI
+ *  240s-timeout burn): V8 compiles a unicode case-insensitive
+ *  lookbehind alternation through its fast path only while the
+ *  alternation stays small — on Node 22 (V8 12.4) a 5221-entry union
+ *  regex scanned the 35.8 MB authored tree for ~2000 s (the CI unit
+ *  tier red), while the SAME words split into ≤2048-entry regexes
+ *  scanned it in single-digit seconds; Node 24 shows no such cliff.
+ *  Every compiled matcher therefore partitions its words into chunks
+ *  of at most this many entries — never one giant alternation. */
+export const MATCHER_CHUNK = 1024
+
 /**
- * Compile one attributed list into a unicode word-boundary matcher.
+ * Compile one attributed list into unicode word-boundary matchers,
+ * partitioned into chunks of at most MATCHER_CHUNK entries (the
+ * measured V8 cliff above — chunking is semantics-neutral: the chunks
+ * together match exactly what the single alternation matched).
  * @param {{ name: string, words: string[] }} list
- * @returns {{ name: string, re: RegExp, count: number } | null}
+ * @returns {{ name: string, res: RegExp[], count: number } | null}
  */
 export function compileMatcher (list) {
   const kept = applyAllowlist(list.words)
   if (kept.length === 0) return null
-  const body = kept.map(escapeRe).join('|')
-  return {
-    name: list.name,
-    re: new RegExp(`(?<![\\p{L}\\p{N}_])(?:${body})(?![\\p{L}\\p{N}_])`, 'giu'),
-    count: kept.length,
+  const res = []
+  for (let i = 0; i < kept.length; i += MATCHER_CHUNK) {
+    const body = kept.slice(i, i + MATCHER_CHUNK).map(escapeRe).join('|')
+    res.push(new RegExp(`(?<![\\p{L}\\p{N}_])(?:${body})(?![\\p{L}\\p{N}_])`, 'giu'))
   }
+  return { name: list.name, res, count: kept.length }
 }
 
-/** All matchers, in attribution order, plus `any` (the union regex —
- *  a superset of every list, so the per-line prefilter can never hide
- *  a hit) and `index` (lowercased entry → first list in load order):
- *  attribution becomes a map lookup instead of 31 regex passes over
- *  the same line — the difference between minutes and hours on
- *  multi-megabyte minified lines. */
+/** All matchers, in attribution order, plus `any` (the union's chunk
+ *  regexes — together a superset of every list, so the per-line
+ *  prefilter can never hide a hit) and `index` (lowercased entry →
+ *  first list in load order): attribution becomes a map lookup
+ *  instead of 31 regex passes over the same line — the difference
+ *  between minutes and hours on multi-megabyte minified lines. */
 export function buildMatchers () {
   const lists = sourceLists()
   const matchers = lists.map(compileMatcher).filter(Boolean)
@@ -215,7 +229,7 @@ export function buildMatchers () {
   }
   const unionWords = [...new Set(lists.flatMap((l) => l.words))]
   const union = compileMatcher({ name: 'any', words: unionWords })
-  return { matchers, any: union.re, index }
+  return { matchers, any: union.res, index }
 }
 
 /**
@@ -224,7 +238,7 @@ export function buildMatchers () {
  * map when the bundle carries one, else the per-list regex loop (the
  * wall's synthetic bundles).
  * @param {string} text the file/blob bytes as utf8
- * @param {{ matchers?: { name: string, re: RegExp }[], any: RegExp, index?: Map<string, string> }} matchers
+ * @param {{ matchers?: { name: string, res: RegExp[] }[], any: RegExp[], index?: Map<string, string> }} matchers
  * @returns {{ line: number, word: string, list: string }[]} hits
  */
 export function scanText (text, matchers) {
@@ -233,31 +247,39 @@ export function scanText (text, matchers) {
   const { matchers: lists, any, index } = matchers
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]
-    any.lastIndex = 0
-    if (!any.test(line)) continue
+    let prefilter = false
+    for (const re of any) {
+      re.lastIndex = 0
+      if (re.test(line)) { prefilter = true; break }
+    }
+    if (!prefilter) continue
     const seen = new Set()
     if (index) {
-      any.lastIndex = 0
-      let match
-      while ((match = any.exec(line)) !== null) {
-        const key = match[0].toLowerCase()
-        if (!seen.has(key) && index.has(key)) {
-          seen.add(key)
-          hits.push({ line: i + 1, word: match[0], list: index.get(key) })
+      for (const re of any) {
+        re.lastIndex = 0
+        let match
+        while ((match = re.exec(line)) !== null) {
+          const key = match[0].toLowerCase()
+          if (!seen.has(key) && index.has(key)) {
+            seen.add(key)
+            hits.push({ line: i + 1, word: match[0], list: index.get(key) })
+          }
+          if (match[0].length === 0) re.lastIndex++ // zero-width guard
         }
-        if (match[0].length === 0) any.lastIndex++ // zero-width guard
       }
     } else {
       for (const m of lists) {
-        m.re.lastIndex = 0
-        let match
-        while ((match = m.re.exec(line)) !== null) {
-          const key = match[0].toLowerCase()
-          if (!seen.has(key)) {
-            seen.add(key)
-            hits.push({ line: i + 1, word: match[0], list: m.name })
+        for (const re of m.res) {
+          re.lastIndex = 0
+          let match
+          while ((match = re.exec(line)) !== null) {
+            const key = match[0].toLowerCase()
+            if (!seen.has(key)) {
+              seen.add(key)
+              hits.push({ line: i + 1, word: match[0], list: m.name })
+            }
+            if (match[0].length === 0) re.lastIndex++ // zero-width guard
           }
-          if (match[0].length === 0) m.re.lastIndex++ // zero-width guard
         }
       }
     }
@@ -313,7 +335,7 @@ function collectFiles (absDir, rel, out) {
  * file lives under root, absolutely otherwise.
  * @param {string} root scan root (the checkout)
  * @param {string[]} paths files/directories
- * @param {{ matchers: { name: string, re: RegExp }[], any: RegExp }} [matchers]
+ * @param {{ matchers: { name: string, res: RegExp[] }[], any: RegExp[] }} [matchers]
  * @returns {{ file: string, line: number, word: string, list: string }[]}
  */
 export function scanPaths (root, paths, matchers = buildMatchers()) {
@@ -358,7 +380,7 @@ export function scanPaths (root, paths, matchers = buildMatchers()) {
  * under the BY-PATH law (repoMode false — the built faces are the
  * publish faces). Entry names report as <tarball>!<entry>.
  * @param {string} tarPath packed .tgz
- * @param {{ matchers: { name: string, re: RegExp }[], any: RegExp }} [matchers]
+ * @param {{ matchers: { name: string, res: RegExp[] }[], any: RegExp[] }} [matchers]
  * @returns {{ file: string, line: number, word: string, list: string }[]}
  */
 export function scanTarball (tarPath, matchers = buildMatchers()) {
@@ -444,7 +466,7 @@ export function commitMessages (root, shas) {
  * ships).
  * @param {string} root repo root
  * @param {string} range a git rev-range or 'all'
- * @param {{ matchers: { name: string, re: RegExp }[], any: RegExp }} [matchers]
+ * @param {{ matchers: { name: string, res: RegExp[] }[], any: RegExp[] }} [matchers]
  * @returns {{ hits: { commit: string, file: string, line: number, word: string, list: string }[], commits: number, blobs: number, messages: number }}
  */
 export function scanHistory (root, range, matchers = buildMatchers()) {

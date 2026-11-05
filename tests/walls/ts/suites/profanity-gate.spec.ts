@@ -44,8 +44,9 @@ const gate = req('../../../../tools/profanity-gate.mjs') as {
   sourceLists: () => { name: string, words: string[] }[]
   engineUniverse: () => string[]
   applyAllowlist: (words: string[], allowlist?: { word: string, reason: string }[]) => string[]
-  compileMatcher: (list: { name: string, words: string[] }) => { name: string, re: RegExp } | null
-  buildMatchers: () => { matchers: { name: string, re: RegExp }[], any: RegExp }
+  compileMatcher: (list: { name: string, words: string[] }) => { name: string, res: RegExp[], count: number } | null
+  MATCHER_CHUNK: number
+  buildMatchers: () => { matchers: { name: string, res: RegExp[], count: number }[], any: RegExp[], index: Map<string, string> }
   scanText: (text: string, matchers: unknown) => { line: number, word: string, list: string }[]
   pathExcluded: (path: string, opts?: { repoMode?: boolean }) => boolean
   scanPaths: (root: string, paths: string[], matchers?: unknown) => { file: string, line: number, word: string, list: string }[]
@@ -132,6 +133,55 @@ describe('PRECISION — the boundary law (the header probes, pinned live)', () =
     expect(hits).toHaveLength(2)
     expect(hits[0]).toMatchObject({ line: 1, list: 'leo:en' })
     expect(hits[1]).toMatchObject({ line: 2, list: 'leo:en' })
+  })
+
+  it('THE CHUNK LAW (the 2026-11-05 CI burn): every compiled matcher partitions its words into maximal MATCHER_CHUNK-sized regexes — never one giant alternation', () => {
+    // The measured cliff: on Node 22 (V8 12.4) a 5221-entry unicode
+    // lookbehind alternation scanned the authored tree for ~2000 s
+    // (the CI unit tier's 240 s timeout red); the SAME words in
+    // ≤2048-entry chunks scanned it in seconds. This arm reds the
+    // moment a matcher ships as one un-chunked regex: the packing
+    // identity (ceil(count / CHUNK) regexes) breaks first at the
+    // union — 5221 words in 1 regex instead of 6.
+    const bundle = gate.buildMatchers()
+    const chunk = gate.MATCHER_CHUNK
+    expect(Number.isInteger(chunk) && chunk > 0 && chunk <= 2048).toBe(true)
+    const packings = [
+      ...bundle.matchers.map((m) => `${m.name}: ${m.count} words → ${m.res.length} regex(es)`),
+      `any: ${bundle.matchers.reduce((n, m) => n + m.count, 0)}+ words → ${bundle.any.length} regex(es)`,
+    ]
+    for (const m of bundle.matchers) {
+      expect(m.res.length, `${m.name} rides maximal ${chunk}-entry chunks (${packings.join('; ')})`)
+        .toBe(Math.ceil(m.count / chunk))
+    }
+    // the union is the every-line prefilter — the cliff's exact seat.
+    // Its word count is the allowlisted universe; it cannot pack into
+    // fewer than ceil(universe / chunk) regexes without dropping
+    // words (the coverage arm below owns that half).
+    const universe = [...new Set(lists.flatMap((l) => l.words))]
+      .filter((w) => !allowlisted.has(w.toLowerCase()))
+    expect(bundle.any.length, `the union's ${universe.length}-word universe rides maximal ${chunk}-entry chunks`)
+      .toBe(Math.ceil(universe.length / chunk))
+  })
+
+  it('THE CHUNK COVERAGE: chunking loses no words — every allowlisted-surviving universe entry still fires on its own line', () => {
+    // A chunking bug that silently drops a partition boundary would
+    // un-curse the gate with a green face. One body, every surviving
+    // word on its own line, through the REAL scanText door: every
+    // line must FIRE. The hit may name a SHORTER overlapping entry
+    // (the lists carry leet variants where one entry is a proper
+    // prefix of another; leftmost-match reports the first) —
+    // attribution identity is not the law, FIRING is: a silent line
+    // is a word the gate can no longer see.
+    const bundle = gate.buildMatchers()
+    const universe = [...new Set(lists.flatMap((l) => l.words))]
+      .filter((w) => !allowlisted.has(w.toLowerCase()))
+    const hits = gate.scanText(universe.join('\n'), bundle)
+    const firedLines = new Set(hits.map((h) => h.line))
+    const missing = universe
+      .map((w, i) => (firedLines.has(i + 1) ? null : `line ${i + 1}: ${w}`))
+      .filter((s): s is string => s !== null)
+    expect(missing, `every universe word fires through the chunked union (${missing.length} silent lines)`).toEqual([])
   })
 
   it('LEET LIMIT (documented, never silent): obfuscation is NOT caught', () => {
@@ -375,7 +425,8 @@ describe('PATH + ALLOWLIST LAW', () => {
     const banned = gate.ALLOWLIST[0].word
     const m = gate.compileMatcher({ name: 'fx', words: [banned, keeper] })
     expect(m).not.toBeNull()
-    const bundle = { matchers: [m], any: gate.compileMatcher({ name: 'any', words: [banned, keeper] })?.re as RegExp }
+    const anyMatcher = gate.compileMatcher({ name: 'any', words: [banned, keeper] })
+    const bundle = { matchers: [m], any: anyMatcher?.res ?? [] }
     expect(gate.scanText(`${banned} and ${keeper}\n`, bundle))
       .toEqual([{ line: 1, word: keeper, list: 'fx' }])
   })
