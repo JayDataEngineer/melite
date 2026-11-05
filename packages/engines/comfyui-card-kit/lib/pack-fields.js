@@ -101,11 +101,43 @@ export const IPAdapterFields = z.object({
         .extra('extra', bag({ wtype: 'ip_adapters', group: 'ip_adapter', zone: 'mods', default: null, order: 3 })),
 });
 // ── MASK (the MaskMod): the region-modality contract ──
+// THE INPAINT DENOISE DEFAULT (F7, the qa8 burn 2026-11-01): ONE
+// home for the region detailer's rework strength. The served default
+// 0.5 was a silent near-copy — the requested edit did not land and
+// the run looked clean. The default now reworks the crop FULLY (the
+// edit lands); a caller who wants structure kept states an explicit
+// lower mask_denoise. The seats that read THIS const: the z default
+// below, lanes-image's two detailer arms + the crop_stitch-only gate
+// (the const is the gate's neutral), and the image-edit AGENT.md law
+// — one truth, no parallel defaults.
+export const MASK_DENOISE_DEFAULT = 1;
 export const MaskFields = z.object({
-    mask: z.any().description('Region Mask')
+    // THE BAG SEAT (the D11 edit-suite burn, 2026-11-04 — the
+    // silent-drop cure): this `mask` key declares the BAG itself (the
+    // top-level rider the compose gate admits — `mask: [{ input_mask,
+    // ... }]`), NEVER a field inside an entry. An entry stating its
+    // own 'mask' key reaches no node — the exact silent drop the edit
+    // suite proved (a source photo named there composed a fresh
+    // generation while the run reported done) — so
+    // refuseRegionEntryFields refuses it loud at every region door.
+    mask: z.any().description('Mask Bag')
         .extra('extra', bag({
         wtype: 'mask', group: 'mask', zone: 'mods', order: -1,
-        tooltip: 'Add the mask mod, then drop an RGBA PNG whose alpha channel marks the region.',
+        tooltip: 'The mask mod bag — ONE entry: { input_image?, input_mask, mask_mode, mask_* }. No inner "mask" field exists: the painted region rides input_mask (an RGBA PNG path); the base to inpaint on rides input_image (a photograph); to edit a photo by instruction use the image-edit card.',
+    })),
+    // THE BASE HALF OF THE PAIR (operator 2026-11-15, the Impact Pack
+    // law): DetailerForEach takes TWO inputs — `image` (the base to
+    // inpaint on) + `segs` (the region). The mod had a seat for the
+    // region only, which is WHY the D11 suite stuffed a photograph
+    // into a dead field. input_image IS that missing base seat: state
+    // it (a photograph path) + a region (input_mask or a detector)
+    // and the detailer reworks the PHOTO's region — no generation
+    // composes. Unstated, the base is the lane's own render (the
+    // generation detailer face).
+    input_image: z.string().role('path').description('Region Base Image')
+        .extra('extra', bag({
+        wtype: 'image', group: 'input', zone: 'inputs', order: -2, width: 1, columns: 3,
+        tooltip: 'The base to inpaint on (a photograph). With a region stated (input_mask or a detector) the detailer reworks THAT image\'s region — no generation composes. Unstated: the base is the render itself.',
     })),
     input_mask: z.string().role('path').description('Region Mask')
         .extra('extra', bag({
@@ -146,8 +178,8 @@ export const MaskFields = z.object({
         .extra('extra', bag({ wtype: 'boolean', group: 'mask', zone: 'mods', order: 7, width: 1, tooltip: 'Work OUTSIDE the painted region instead.' })),
     mask_detail_size: z.number().min(64).max(16384).step(8).default(512).description('Region Detail Size')
         .extra('extra', bag({ wtype: 'number', group: 'mask', zone: 'mods', order: 8, width: 1, tooltip: 'Working size the region detailer scales each region toward (DetailerForEach guide_size with bbox sizing, capped by the canonical max 1024).' })),
-    mask_denoise: z.number().min(0.05).max(1).step(0.05).default(0.5).description('Region Denoise')
-        .extra('extra', bag({ wtype: 'number', group: 'mask', zone: 'mods', order: 9, width: 1, tooltip: 'How strongly the region is reworked (DetailerForEach denoise): 0.5 keeps structure, 1 fully rewrites the crop.' })),
+    mask_denoise: z.number().min(0.05).max(1).step(0.05).default(MASK_DENOISE_DEFAULT).description('Region Denoise')
+        .extra('extra', bag({ wtype: 'number', group: 'mask', zone: 'mods', order: 9, width: 1, tooltip: 'How strongly the region is reworked (DetailerForEach denoise): ' + MASK_DENOISE_DEFAULT + ' fully rewrites the crop — the default, so the requested edit lands; lower it explicitly only to keep more of the original pixels.' })),
 });
 // ── QVOICE (the qvoice pack): a saved persona artifact — the
 // .qvoice file (the qvoice_save mod exports them) + the clone
@@ -209,6 +241,19 @@ const fieldKeys = (fields) => Object.keys(fields.dict ?? {});
 export const LORAS_RIDERS = fieldKeys(LorasFields);
 /** The mask pack's rider keys (region-modality lanes). */
 export const MASK_RIDERS = fieldKeys(MaskFields);
+/** THE REGION ENTRY VOCABULARY (the D11 burn's silent-drop cure):
+ *  the keys ONE mask-bag entry may lawfully carry — every declared
+ *  mask_* knob plus the painted-mask seat, plus mask_detector_
+ *  threshold (image-edit's own rider beside MASK_RIDERS). The bag
+ *  key 'mask' itself is NOT entry vocabulary (it declares the bag,
+ *  never a field inside an entry); refuseRegionEntryFields (lanes-
+ *  image) refuses every other key loud, so a stated field that
+ *  reaches no node can never compose silently again. */
+export const REGION_ENTRY_FIELDS = [
+    'input_image', 'input_mask', 'mask_mode', 'mask_detector', 'mask_detector_threshold',
+    'mask_context_pad', 'mask_grow', 'mask_feather', 'mask_threshold',
+    'mask_invert', 'mask_detail_size', 'mask_denoise',
+];
 /** The qvoice pack's rider keys (voice-lock load lanes). */
 export const QVOICE_RIDERS = fieldKeys(QvoiceFields);
 /** The qvoice_save pack's rider keys (voice export lanes). */

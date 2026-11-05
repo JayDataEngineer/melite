@@ -21,14 +21,21 @@
 import { randomUUID } from "node:crypto";
 import { Service } from "@deepseek-ai/cordis";
 /** The hard circuit breaker (never a tunable — a law). */
-import { normalizeCraftStageParams, normalizeCraftCommand, CRAFT_MAX_ITERATIONS_HARD_CAP } from "./params.js";
+import { normalizeCraftStageParams, normalizeCraftCommand, resolveCraftSpells, CRAFT_MAX_ITERATIONS_HARD_CAP } from "./params.js";
 export { CRAFT_MAX_ITERATIONS_HARD_CAP };
 export const craftLoopExecutor = (engines, critic) => {
     return {
-        async executeStages(rows, runDir, _inputNames, options) {
+        async executeStages(rows, runDir, _inputNames, options, initials) {
             const outcomes = [];
             for (const row of rows) {
-                const p = row.params;
+                // THE $SPELL FOLD (F58): a flow-driven stage's declared
+                // initials ride as top-level $name params; the run's request
+                // initials (the executor contract's fifth argument) resolve
+                // them BEFORE the contract gate — the gate then judges the
+                // resolved brief/command/number, never a stranger's literal.
+                // An unresolved spell omits the key (the optional-initial
+                // law; requireds are the START door's + the gate's own).
+                const p = resolveCraftSpells(row.params, initials);
                 // THE CONTRACT GATE (stroke 69): ONE declaration validates
                 // the wire (params.ts — the same object the served form
                 // serializes; the four fields' LOUD messages preserved).
@@ -145,7 +152,16 @@ export const llmCritic = (llm, attachments, route) => {
             const newest = input.artifacts[input.artifacts.length - 1];
             if (newest !== undefined && /\.(png|jpe?g|webp|gif)$/i.test(newest)) {
                 const { readFile } = await import("node:fs/promises");
-                const bytes = await readFile(`${input.runDir}/${newest}`);
+                const { isAbsolute } = await import("node:path");
+                // F59 (run-51d9db9c3b33, 2026-11-14): the executor returns
+                // ABSOLUTE dest paths (comfyui-outputs joins runDir itself),
+                // so joining runDir onto them doubled the root —
+                // `<runRoot>/<abs-path>` ENOENT after the GPU was already
+                // spent. The runRel law (estate-queue runsTypes.ts:228):
+                // never re-root an absolute artifact; a relative one rides
+                // its run dir.
+                const capturePath = isAbsolute(newest) ? newest : `${input.runDir}/${newest}`;
+                const bytes = await readFile(capturePath);
                 // the image regex above guarantees a dot — split().pop() is
                 // always the extension here (a `?? default` arm would be
                 // unreachable defensive code; the coverage gate is right).

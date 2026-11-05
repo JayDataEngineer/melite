@@ -102,7 +102,10 @@ describe("the bench/subscribe stream remote", () => {
       { draft_id: "bench-main", session: "main", rev: 4, intent: null, stages: [{ id: "s_1" }], log: [] },
     ];
     // the receiver: a bare object with the get arm the generator calls
-    const fake = { get: async (): Promise<Row> => rows.shift() ?? rows[0]! };
+    const fake = {
+      get: async (): Promise<Row> => rows.shift() ?? rows[0]!,
+      seatOf: (): { session: string; lineage: readonly string[] | undefined } => ({ session: "main", lineage: undefined }),
+    };
     const gen = BenchRemoteService.prototype.subscribe.call(
       fake as never,
       "main",
@@ -128,7 +131,10 @@ describe("the bench/subscribe stream remote", () => {
       { draft_id: "bench-main", session: "main", rev: 5, intent: null, stages: [], log: [] },
       { draft_id: "bench-main", session: "main", rev: 6, intent: null, stages: [{ id: "s_1" }], log: [] },
     ];
-    const fake = { get: async (): Promise<Row> => rows.shift() ?? rows[0]! };
+    const fake = {
+      get: async (): Promise<Row> => rows.shift() ?? rows[0]!,
+      seatOf: (): { session: string; lineage: readonly string[] | undefined } => ({ session: "main", lineage: undefined }),
+    };
     const gen = BenchRemoteService.prototype.subscribe.call(
       fake as never,
       "main",
@@ -151,6 +157,7 @@ describe("the bench/subscribe stream remote", () => {
     const controller = new AbortController();
     const fake = {
       get: async (): Promise<Row> => ({ draft_id: "bench-main", session: "main", rev: 2, intent: null, stages: [], log: [] }),
+      seatOf: (): { session: string; lineage: readonly string[] | undefined } => ({ session: "main", lineage: undefined }),
     };
     const gen = BenchRemoteService.prototype.subscribe.call(
       fake as never,
@@ -170,6 +177,7 @@ describe("the bench/subscribe stream remote", () => {
     const controller = new AbortController();
     const fake = {
       get: async (): Promise<Row> => ({ draft_id: "bench-main", session: "main", rev: 5, intent: null, stages: [], log: [] }),
+      seatOf: (): { session: string; lineage: readonly string[] | undefined } => ({ session: "main", lineage: undefined }),
     };
     const gen = BenchRemoteService.prototype.subscribe.call(
       fake as never,
@@ -209,6 +217,7 @@ describe("the bench/subscribe stream remote", () => {
     const controller = new AbortController();
     const fake = {
       get: async (): Promise<Row> => ({ draft_id: "bench-main", session: "main", rev: 1, intent: null, stages: [], log: [] }),
+      seatOf: (): { session: string; lineage: readonly string[] | undefined } => ({ session: "main", lineage: undefined }),
     };
     const gen = BenchRemoteService.prototype.subscribe.call(
       fake as never,

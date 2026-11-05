@@ -12,8 +12,8 @@
  * never ride the wire.
  */
 import type { DocAudioClip, LayerA } from "./docModel.ts"
-import { LEGACY_LAYERA_KEY, mergeDocLayers, stemToClip } from "./docModel.ts"
-import { deriveWindowFamily, normalizeDeclaredRefs, T4_ONLY_KEYS } from '@melite/models-h3/timelineContract'
+import { LEGACY_LAYERA_KEY, stemToClip } from "./docModel.ts"
+import { normalizeDeclaredRefs } from '@melite/models-h3/timelineContract'
 import { parseFilmMixClips } from '@melite/models-h3/filmMix'
 
 /** Card-level ref lists hydrate to arrays; absent/empty stays absent
@@ -257,6 +257,7 @@ export function hydrateLayerA(rawDoc: Record<string, unknown> | undefined): Laye
           })
       : undefined,
     variant: optStr("variant"),
+    quant: optStr("quant"),
     model: optStr("model"),
     // audio_stem: kept for round-trip serialization of legacy docs; it is
     // NO LONGER a user-facing control. When a doc has audio_stem but no
@@ -322,7 +323,7 @@ export function hydrateLayerA(rawDoc: Record<string, unknown> | undefined): Laye
  *  here but the hand universe missed it — a base-carried length
  *  survived every save, never deletable). */
 const LAYERA_EMIT_LOOP_KEYS = [
-  "fps", "variant", "shift_video", "shift_audio", "steps", "denoise", "width", "height", "length",
+  "fps", "variant", "quant", "shift_video", "shift_audio", "steps", "denoise", "width", "height", "length",
   "sampler_name", "sched_name",
   "sla_sparsity", "sla_block_size",
   "sla_min_seq_len", "sla_dense_last_steps",
@@ -478,20 +479,12 @@ export function serializeLayerA(a: LayerA, base?: Record<string, unknown>): Reco
       }
     }
   }
-  // THE FAMILY-AWARE EMIT LAW (B1, journey-closure 2026-11-06): the
-  // doc's derived family (base + this state, defined-wins — the same
-  // merge the rail's omitFields gate and the reseat heal read) owns
-  // the lane. A derived-t4r doc OMITS every T4_ONLY member: the
-  // always-emit booleans, the true-gated stamps, every state-derived
-  // value — new T4 states die here, never composed, never refused.
-  // ONE OWNER PER KEY: the serializer states nothing, and a
-  // base-carried stamp the state explicitly cleared still rides the
-  // merge-patch null ONCE (out[k] === null survives below) — the
-  // bench's null-delete settles it and the key is gone. Never both
-  // (no value beside its own delete), never neither (no stranded
-  // stamp the walk would refuse).
-  if (deriveWindowFamily(mergeDocLayers(base, a as unknown as Record<string, unknown>)) === "t4r") {
-    for (const k of T4_ONLY_KEYS) if (out[k] !== null) delete out[k]
-  }
+  // THE LANE-LAW RETIREMENT (2026-11-15): the family-aware emit
+  // block is gone. It used to OMIT every T4_ONLY member from a
+  // derived-t4r doc so the walk's dead-key gate never saw one —
+  // that omission is exactly what discarded the operator's finish
+  // knobs when a guide re-derived the lane. The t4r arm now mounts
+  // the post chain (actions.ts), so the serializer states every
+  // key the state holds, on every lane, and the run fires it.
   return out
 }

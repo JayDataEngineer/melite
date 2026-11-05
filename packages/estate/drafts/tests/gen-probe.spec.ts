@@ -15,7 +15,12 @@ test('decorated probe with logs', async () => {
     { draft_id: 'bench-main', session: 'main', rev: 3, intent: null, stages: [], log: [] },
     { draft_id: 'bench-main', session: 'main', rev: 4, intent: null, stages: [], log: [] },
   ]
-  const fake = { get: async (): Promise<unknown> => { console.log('GET called'); return rows.shift() ?? rows[0] } }
+  const fake = {
+    get: async (): Promise<unknown> => { console.log('GET called'); return rows.shift() ?? rows[0] },
+    // the generator consumes the writer-seat surface (the one-seat
+    // re-seat, audit 2026-10-31): the fake names its own seat
+    seatOf: (): { session: string; lineage: readonly string[] | undefined } => ({ session: 'main', lineage: undefined }),
+  }
   const gen = (BenchRemoteService.prototype as never as { subscribe: (this: unknown, s: string, sig: AbortSignal) => AsyncGenerator<unknown> }).subscribe.call(
     fake, 'main', controller.signal)
   const first = await gen.next()

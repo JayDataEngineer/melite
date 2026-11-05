@@ -146,46 +146,48 @@ describe("the no-op law at the real seat", () => {
 // send → op append → retraction) is live. Each arm reds when the
 // commit-seam reseat is toggled out — the flip arms then save the
 // stamped doc unchanged and the walk refuses it.
-describe("B2 — the flip writer (the commit unstamps the residue in the same gesture)", () => {
-  // the Final-Cut-stamped t4_open doc: one text call (no guide), the
-  // post stamps legal on that lane — the flip arm's exact base
+describe("B2 — the flip writer, RETIRED (2026-11-15): the commit keeps every stated stamp; only the gesture's own plane rides", () => {
+  // the finish-stamped t4_open doc: one text call (no guide), the
+  // post stamps stated — the flip arm's exact base
   const stampedOpen = {
     calls: [{ text: "a", start_frame: 0, end_frame: 48 }],
     seed: 7, sr_switch: true, second_pass_enabled: true,
   }
 
-  it("THE FLIP: a pin added to a stamped doc rides the keyframes AND the stamps' deletes in ONE write", () => {
+  it("THE FLIP: a pin added to a stamped doc rides the keyframes in ONE write — and the stamps are never deleted", () => {
     const s = seat(stampedOpen)
     act(() => { s.updateKeyframes((prev) => [...prev, { image: "anchor.png", frame: 0 }]) })
     expect(s.sent.length).toBe(1)
     const p = s.sent[0]!
     // the gesture's own plane rides
     expect(p.keyframes).toEqual([{ image: "anchor.png", frame: 0 }])
-    // the reseat: both base stamps ride their merge-patch null — the
-    // saved doc reads clean at the bench (the delete is the null)
-    expect(p.sr_switch).toBeNull()
-    expect(p.second_pass_enabled).toBeNull()
-    // the shown layer cleared in the SAME gesture (the reseat op is
-    // live): the dead rail reads OFF, never a stated-value lie
-    expect(s.layerA().sr_switch).toBe(false)
-    expect(s.layerA().second_pass_enabled).toBe(false)
+    // THE RETIREMENT: the flip writes NO delete over the base stamps —
+    // the lane fires them, so the operator's state stands untouched
+    expect(p).not.toHaveProperty("sr_switch")
+    expect(p).not.toHaveProperty("second_pass_enabled")
+    // and the shown layer keeps reading the stamps ON
+    expect(s.layerA().sr_switch).toBe(true)
+    expect(s.layerA().second_pass_enabled).toBe(true)
   })
 
-  it("the layerA-channel flip unstamps inside its own single write (ref_images stated on a stamped doc)", () => {
+  it("the layerA-channel flip inside its own single write never touches the stamps (ref_images stated on a stamped doc)", () => {
     const s = seat(stampedOpen)
     act(() => { s.setLayerAKey("ref_images", ["runs/r1/anchor.png"]) })
     expect(s.sent.length).toBe(1)
     const p = s.sent[0]!
     expect(p.ref_images).toEqual(["runs/r1/anchor.png"])
-    expect(p.sr_switch).toBeNull()
-    expect(p.second_pass_enabled).toBeNull()
-    expect(s.layerA().sr_switch).toBe(false)
+    // the layerA-channel carries the called layer WHOLE: the stamps
+    // ride AS VALUES (never a delete) and the door fires them
+    expect(p.sr_switch).toBe(true)
+    expect(p.second_pass_enabled).toBe(true)
+    expect(s.layerA().sr_switch).toBe(true)
   })
 
-  it("the burn's own gesture: a call deleted from a stamped two-call film unstamps in the same write", () => {
-    // the D8 brick verbatim: the film legally carried its stamps on
-    // t4_chain; deleting the second call derives t4r (the remaining
-    // call guides) — the deletion's OWN onSave carries the deletes
+  it("the burn's own gesture: a call deleted from a stamped two-call film keeps the stamps in the same write", () => {
+    // the old D8 brick verbatim: the film legally carried its stamps
+    // on t4_chain; deleting the second call derives t4r (the remaining
+    // call guides). Pre-cure the deletion's own onSave carried the
+    // deletes; the lane fires the stamps now, so the write keeps them.
     const s = seat({
       calls: [
         { text: "a", start_frame: 0, end_frame: 48, image: "anchor.png" },
@@ -200,12 +202,16 @@ describe("B2 — the flip writer (the commit unstamps the residue in the same ge
     // own law, walled in doc-calls; the guide survives it)
     expect((p.calls as Array<{ image?: string }>).length).toBe(1)
     expect((p.calls as Array<{ image?: string }>)[0]!.image).toBe("anchor.png")
-    expect(p.sr_switch).toBeNull()
-    expect(p.second_pass_enabled).toBeNull()
-    expect(s.layerA().sr_switch).toBe(false)
+    // the calls-channel write carries the called layer whole: the
+    // stamps ride AS VALUES — the flip never deletes them
+    expect(p.sr_switch === true || p.sr_switch === undefined).toBe(true)
+    expect(p.second_pass_enabled === true || p.second_pass_enabled === undefined).toBe(true)
+    expect(p.sr_switch).not.toBeNull()
+    expect(p.second_pass_enabled).not.toBeNull()
+    expect(s.layerA().sr_switch).toBe(true)
   })
 
-  it("a non-t4r commit never touches the post rail (t4_chain keeps its stamps)", () => {
+  it("every commit keeps the post rail whatever lane the doc derives (t4_chain keeps its stamps)", () => {
     const s = seat({
       calls: [
         { text: "a", start_frame: 0, end_frame: 48 },
@@ -216,18 +222,22 @@ describe("B2 — the flip writer (the commit unstamps the residue in the same ge
     act(() => { s.setLayerAKey("seed", 9) })
     const p = s.sent[s.sent.length - 1]!
     expect(p.seed).toBe(9)
-    // the stamps ride AS VALUES — the lane honors them; no delete
+    // the stamps ride AS VALUES — no delete, on any lane
     expect(p.sr_switch).toBe(true)
     expect(p.second_pass_enabled).toBe(true)
   })
 
-  it("the no-churn law: a commit on a clean t4r doc states nothing beyond the gesture", () => {
-    // a guided call derives t4r; the base never stamped — the
-    // unstating is output-invariant, so no residue keys ride
+  it("the no-churn law: a commit on a clean doc states the gesture plus the hydrate's always-emit poles — and NEVER a null", () => {
+    // a guided call derives t4r; the base never stamped — nothing to
+    // delete, and the layer the spine hands the pane carries its
+    // always-emit poles (the view seat), which ride as real values
     const s = seat({ calls: [{ text: "a", start_frame: 0, end_frame: 48, image: "anchor.png" }], seed: 7 })
     act(() => { s.setLayerAKey("seed", 9) })
     const p = s.sent[s.sent.length - 1]!
-    expect(Object.keys(p).sort()).toEqual(["seed", "sla_disable_fp16_accum", "sla_protect_audio", "sla_stabilize_motion"])
+    expect(Object.keys(p).sort()).toEqual([
+      "interpolate_enabled", "seed", "sharpen_enabled",
+      "sla_disable_fp16_accum", "sla_protect_audio", "sla_stabilize_motion",
+    ])
     expect(Object.values(p).every((v) => v !== null)).toBe(true)
   })
 
@@ -265,18 +275,21 @@ describe("B2 — the flip writer (the commit unstamps the residue in the same ge
     expect(mounted.result.current.layerA.sr_switch).toBe(true)
   })
 
-  it("a live layerA op is superseded by the flip's reseat op — the edit survives, the stamp dies", () => {
+  it("a live layerA op and the flip's own write both land — the edit survives and the stamp stays ON", () => {
     const s = seat(stampedOpen)
     act(() => { s.setLayerAKey("fps", 30) })
     expect(s.layerA().fps).toBe(30)
     expect(s.layerA().sr_switch).toBe(true)
-    // the pin flips the one-call doc to t4r: the reseat op (max seq)
-    // wins the layer plane carrying the fps edit WITH the unstating
+    // the pin flips the one-call doc to t4r: the keyframes write is
+    // the gesture's own plane, and the live fps edit still stands
     act(() => { s.updateKeyframes((prev) => [...prev, { image: "anchor.png", frame: 0 }]) })
     expect(s.layerA().fps).toBe(30)
-    expect(s.layerA().sr_switch).toBe(false)
-    // the reseat's door record carries the edit AND the delete
-    const layerWrite = s.sent.find((p) => p.fps === 30 && p.sr_switch === null)
-    expect(layerWrite).toBeDefined()
-  })
-})
+    expect(s.layerA().sr_switch).toBe(true)
+    // BOTH writes exist, and neither deletes a stamp
+    const fpsWrite = s.sent.find((p) => p.fps === 30)
+    expect(fpsWrite).toBeDefined()
+    const flipWrite = s.sent.find((p) => Array.isArray(p.keyframes))
+    expect(flipWrite).toBeDefined()
+    expect(flipWrite).not.toHaveProperty("sr_switch")
+    expect(flipWrite).not.toHaveProperty("second_pass_enabled")
+  })})

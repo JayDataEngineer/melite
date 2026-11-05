@@ -6,18 +6,15 @@ genre: video
 
 # Repair (region repair) — SPEC
 
-> STATUS: LANDED 2026-11-12 (the third edit bag). The emission composes
+> The emission composes
 > per the family renderer (`models/h3` chainEdit.ts): VHS window load →
 > SAM3 text-tracking mask → grow → the masked-edit chain on the family's
 > own model + lora plane → decode → the run-scoped film terminal. Prose
 > never overrides the loaded bundle: the fields below are quoted off the
 > card's served repair kind.
 >
-> VERIFIED LIVE 2026-10-30 against a real GPU render (run
-> run-7492bb0d9f57-8b4b87f8 — a 141 f window = 5.875 s rendered
-> window-only at 1312×736, 48 kHz, exactly the authored span) and
-> against the tree's skill-coverage batch (receipt
-> `contracts/receipts/2026-11-13-cards-bag-skills-coverage.md`).
+> Live-proven on the GPU lane: a 141 f window = 5.875 s rendered
+> window-only at 1312×736, 48 kHz, exactly the authored span.
 > NOT yet verified live: the grow-0 seam test and a multi-window repair
 > of one film — treat those as unproven until they are pressed.
 
@@ -41,11 +38,14 @@ It is NOT:
 - **a fresh generation** — the source clip anchors the frame and the
   soundtrack; nothing from a prior generation re-enters.
 
-One door per doc: ANY two armed mod bags REFUSE loud naming both —
+One door per doc: ANY two of the SIX armed mod bags REFUSE loud naming both —
 the fifteen pairs are replace↔repair, replace↔extend, repair↔extend,
 replace↔reshoot, repair↔reshoot, extend↔reshoot, replace↔refine,
 repair↔refine, extend↔refine, reshoot↔refine, replace↔upscale,
 repair↔upscale, extend↔upscale, refine↔upscale, reshoot↔upscale.
+THE LORA BAG IS NOT AN ARM: `loras` is the SEVENTH bag and it
+COEXISTS with any armed arm — it never disarms a pair (the lora
+plane rides every arm; only the six arm bags refuse).
 The repair branch returns before the film action, so an armed repair
 beside any other arm would be silently dropped. Pick one and empty the
 others. (Armed = the bag is PRESENT and non-empty; an absent or empty

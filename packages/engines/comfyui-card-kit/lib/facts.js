@@ -40,6 +40,28 @@ export function requireText(raw, key, label) {
     }
     return value;
 }
+/** THE STATED-PRESET TEST (qa8 F31 — the exclusivity rest): the
+ *  engine service's defaults merge (comfyui-cordis service.compose)
+ *  fills the lane's `defaults.voice` into every doc before the tts
+ *  judges run — the fill is the lane's REST, and it must not count
+ *  as a stated preset in the one-voice exclusivity checks (the
+ *  burn: a caller who never stated `voice` was refused with
+ *  "params 'voice' and 'qvoice' fire together"). The preset is
+ *  stated when the doc names a speaker AND that name differs from
+ *  the lane's own default; an explicit pick OF the default preset
+ *  is indistinguishable from the compile's own write and rides (the
+ *  derived-stamp release trade). One implementation, all three tts
+ *  judge seats — the card's save path, the card's preset+qvoice
+ *  gate, and the family's speak action.
+ * @param doc the gated doc (post-merge at the service door)
+ * @param model the resolved facts row (its defaults ARE the rest)
+ * @returns true when `voice` names a speaker the lane did not fill */
+export function voicePresetStated(doc, model) {
+    const stated = doc['voice'];
+    if (typeof stated !== 'string' || stated === '' || stated === 'none')
+        return false;
+    return stated !== model.defaults['voice'];
+}
 /** Parse the diffusion-lane core: the four requireText model slots, the
  *  node-literal whitelist gate, and the optional sampling_shift number
  *  check. The refusal prose is the families' pinned form (the specs

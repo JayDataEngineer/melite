@@ -61,7 +61,15 @@ function bandDb(path: string, from: number, dur: number): number {
   return Number(m[1]);
 }
 
-describe("the stitch proof, LIVE (engine run)", { timeout: 2_100_000 }, () => {
+// THE CEILING (the GPU live-receipt campaign, 2026-11-01 §3
+// film-stitch): same render class as film-run — a 115-node film
+// graph submits clean and renders for real, legitimately longer than
+// the old 35-minute ceiling on this GPU (the campaign stopped the
+// chain after film-run's third timed-out attempt rather than re-burn
+// the shared engine on the same deterministic outcome). 60 minutes,
+// suite-level (the vitest describe option), this suite + film-run
+// only.
+describe("the stitch proof, LIVE (engine run)", { timeout: 3_600_000 }, () => {
   it.skipIf(!RUN || !ENGINE_FREE)("one continuous shot across 3 extend seams → a film that carries", async () => {
     const def = (await loadCardDefs()).get("h3-timeline")!;
     const g = new GraphBuilder();

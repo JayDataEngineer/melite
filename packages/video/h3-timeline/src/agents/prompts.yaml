@@ -1,5 +1,5 @@
 # The lane's render-time prompt framing — AUTHORED STEERING, loaded as
-# a declaration (the operator ruling, 2026-09-04: instructions live in
+# a declaration (instructions live in
 # the agents surface; the emitter is mechanics and NEVER authors
 # prompts). Each window's prompt at render time = preamble + the call's
 # text as composed. Verified by rendered films — do not "improve":

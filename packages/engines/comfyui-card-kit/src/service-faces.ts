@@ -137,6 +137,15 @@ export interface ComfyUIServiceFace {
   setObjectInfo(objectInfo: Record<string, unknown> | null): void
   setWeightPresent(fn: ((relativePath: string, name: string) => boolean) | null): void
   compose(cardId: string, modelId: string | null, params: unknown, runId: string, estate?: ComposeEstate): PromptGraph
+  /** The loras filenames registered flavors already name (the tray's
+   *  dedup read — a dropped file a declared row owns serves under
+   *  the declared row, never twice). Derived from the live flavor
+   *  registrations, never a hand list. */
+  lorasKnownFilenames(): ReadonlySet<string>
+  /** The families carrying a loras flavor (the tray's boarding read —
+   *  the interlock law: the tray registers no family that does not
+   *  already board the pack). Derived from the live registrations. */
+  lorasBoardingFamilies(): readonly string[]
 }
 
 /** The registry face a family plugin's apply(ctx) sees as

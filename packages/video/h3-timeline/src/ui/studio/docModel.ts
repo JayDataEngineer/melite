@@ -341,11 +341,14 @@ export interface LayerA {
   refine_denoise?: number
   /** THE LATENT-UPSCALE ROUTE (SOTA plan Phase P2): the second-pass
    * sub-gate + its learned weight. off (absent) = the legacy
-   * full-geometry pass; latent_2x = pass 1 renders the distilled
-   * quarter, the pack's handoff doubles the latent in-band before
-   * the second pass. Film-level (never per-call — the route owns
-   * the whole run's geometry, like the master). Serialized only
-   * under second_pass_enabled (the refine-seat precedent). */
+   * full-geometry pass; latent_2x = pass 1 renders the stated
+   * geometry and the pack's handoff doubles the latent 2× in-band
+   * before the second pass — the render lands at 2× the stated grid
+   * (the old half-grid stamp rendered base tier; burn
+   * run-eb098020a6d0 convicted it, 2026-11-01). Film-level (never
+   * per-call — the route owns the whole run's geometry, like the
+   * master). Serialized only under second_pass_enabled (the
+   * refine-seat precedent). */
   upscale_route?: "off" | "latent_2x"
   upscale_model?: string
   /** R2V COMBO "match"|"max" — NOT a number (numbers fail node validation). */
@@ -389,6 +392,18 @@ export interface LayerA {
    * seat, or the panel lies about what the doc carries. */
   duck_depth_db?: number
   variant?: string
+  /** THE QUANT AXIS STAMP (the Quant group's cell key — the same
+   *  class as fps and attention_backend: served, rendered, writable,
+   *  never carried). The Quant axis pick stamps the cell's quant
+   *  (axisStampOf: row.quant), and the VARIANT pick's below-axis
+   *  reseed stamps it too — until this seat existed both writes died
+   *  at serializeLayerA's vocabulary and the canonical no-op law
+   *  swallowed them whole (no op, no write, no voice), stranding the
+   *  timeline default's stamp under a switched variant as a face
+   *  refused-row forever. The compose door already admits the key
+   *  (card.ts's strict-resolve rider list); the run plane's cell
+   *  selection is the ROADMAP's owed reader. */
+  quant?: string
   /** The MODEL key (Layer A selector): the family atom "h3" —
    *  the lanes retired their own route spellings with the
    *  operator's 2026-11-02 recipe rework ("1 model, 1 variant, 1

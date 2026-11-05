@@ -85,7 +85,11 @@ const bounded = (kind: Kind): FieldRow[] =>
 
 describe("every served mod bag has a skill leaf an agent can read", () => {
   it("ARM 1 — the roster is DERIVED from the card, and each armed kind resolves to ONE leaf", () => {
-    const armed = kinds.filter((k) => k.max_stack === 1).map((k) => k.param_key!);
+    // GAPS-19: a door is every armed kind except the co-arming adapter
+    // bag (loras rides WITH a door, it is not one) — the refine door
+    // now stacks its windows, so the roster follows the kind, never
+    // the stack ceiling.
+    const armed = kinds.filter((k) => k.kind !== "loras").map((k) => k.param_key!);
     expect(armed.sort()).toEqual([
       "extend", "refine", "repair", "replace", "reshoot", "upscale",
     ]);
@@ -164,7 +168,7 @@ describe("every served mod bag has a skill leaf an agent can read", () => {
     // Judge the DERIVED pair list off the card's own armed bags, so a
     // seventh arm kind cannot land without the leaf naming its pairs.
     const md = readSkill("swap");
-    const armed = kinds.filter((k) => k.max_stack === 1).map((k) => k.param_key!);
+    const armed = kinds.filter((k) => k.kind !== "loras").map((k) => k.param_key!);
     expect(armed.length).toBe(6);
     const cap = (w: string): string => w[0]!.toUpperCase() + w.slice(1);
     const canonical = (a: string, b: string): string => [a, b].sort().join("↔");
@@ -187,21 +191,21 @@ describe("every served mod bag has a skill leaf an agent can read", () => {
     expect(md).toMatch(/empty `loras` to disarm/i);
   });
 
-  it("ARM 5 — THE STAMP LAW: each new leaf carries a dated VERIFIED line, a receipt that EXISTS, and its unproven half", () => {
+  it("ARM 5 — THE STAMP LAW: each new leaf names what is live-proven, its unproven half, and cites no archaeology", () => {
     for (const name of ["repair", "upscale", "loras"]) {
       const md = readSkill(name);
-      assert.match(md, /VERIFIED LIVE \d{4}-\d{2}-\d{2} against/,
-        `${name}/SKILL.md carries the canonical VERIFIED LIVE stamp`);
-      const stamp = /VERIFIED (?:LIVE )?(\d{4}-\d{2}-\d{2}) against ([\s\S]*?)(?=\n\n)/.exec(md);
-      assert.ok(stamp, `${name}/SKILL.md carries a dated VERIFIED line`);
-      const receipt = /receipts\/[a-z0-9-]+\.md/.exec(stamp![2]!);
-      assert.ok(receipt, `${name}/SKILL.md's stamp names a receipt under dev_docs/contracts/receipts/`);
-      assert.ok(existsSync(join(ROOT, "dev_docs", "contracts", receipt![0]!)),
-        `the named receipt exists: ${receipt![0]}`);
-      assert.match(stamp![2]!, /NOT yet verified live/i,
+      assert.match(md, /Live-proven/,
+        `${name}/SKILL.md names what is live-proven in plain present-tense law`);
+      assert.match(md, /NOT yet (?:proven|verified) live/i,
         `${name}/SKILL.md names what is STILL unproven — never a blanket claim`);
-      const runId = /run-[0-9a-f]{12}-[0-9a-f]{8}/.exec(md);
-      assert.ok(runId, `${name}/SKILL.md cites the live run id its stamp stands on`);
+      // Served copy carries no history archaeology: no dated verification
+      // stamp, no receipt path, no run id — dev_docs owns that material.
+      assert.doesNotMatch(md, /VERIFIED LIVE \d{4}-\d{2}-\d{2}/,
+        `${name}/SKILL.md carries no dated VERIFIED LIVE stamp`);
+      assert.doesNotMatch(md, /receipts\/[a-z0-9-]+\.md/,
+        `${name}/SKILL.md cites no receipt path`);
+      assert.doesNotMatch(md, /run-[0-9a-f]{8,}/,
+        `${name}/SKILL.md cites no run id`);
     }
   });
 
@@ -227,11 +231,22 @@ describe("every served mod bag has a skill leaf an agent can read", () => {
     // round 8 measured the pop as STRUCTURAL: a crossfade cannot make
     // two independent denoise realisations agree, so the doc must not
     // sell the splice as a cure (the operator: "POPS DO NOT WORK").
-    assert.match(refine, /this splice is\s+NOT a cure for the pop/i,
-      "refine/SKILL.md refuses to sell the crossfade as a pop cure");
+    // (F61 re-pin, 2026-11-14: the splice became the IN-GRAPH blend
+    // join — the honest voice followed the new sentence)
+    // (FRICTION F26 re-pin, 2026-11-03: the blend fallback itself was
+    // the ghost — a crossfade of two independent renders is a DOUBLE
+    // EXPOSURE, not a soft step, and the door now REFUSES an off-grid
+    // carry instead of mounting it; the LAW is still: never sell the
+    // splice as a cure)
+    assert.match(refine, /a blend of\s+two INDEPENDENT renders is\s+a DOUBLE EXPOSURE \(the ghost\),\s+not a soft step and not a cure for\s+the pop/i,
+      "refine/SKILL.md names the crossfade as the ghost, never as a pop cure");
+    assert.match(refine, /off-grid carry refuses at compose|REFUSES at compose/,
+      "refine/SKILL.md states the refusal that retires the blend fallback");
+    assert.match(refine, /the carried span is BIT-IDENTICAL[\s\S]{0,220}the audio seam keeps its soft step/i,
+      "refine/SKILL.md states the carry face's honest limits — exact video, soft audio, live-press judgement owed");
     assert.match(refine, /Δ8\.86–9\.80[\s\S]{0,200}Δ4\.3/,
       "refine/SKILL.md carries the measured seam delta against the adjacent-frame delta");
-    assert.match(refine, /ONE 90 f window \(3\.75 s\)[\s\S]{0,80}a single window is seam-free/,
+    assert.match(refine, /ONE\s+90 f window \(3\.75 s\)[\s\S]{0,80}a single window is seam-free/,
       "refine/SKILL.md names the seam-free posture (one window)");
 
     const repair = readSkill("repair");
@@ -277,20 +292,45 @@ describe("every served mod bag has a skill leaf an agent can read", () => {
     assert.match(loras, /## Worked stacks/, "the loras leaf carries worked stacks");
     assert.match(loras, /params\.loras = \[/, "the stacks bind through params.loras");
     assert.match(loras, /SETTLED/, "the leaf names the default-seat decision as SETTLED");
-    assert.match(loras, /h3_lightx2v_turbo/, "the leaf names the default row id");
+    assert.match(loras, /h3_silver_dareties/, "the leaf names the default row id (the silveroxides merge, 2026-11-01)");
     assert.match(loras, /DARE-TIES/, "the leaf names the merge the row is");
     assert.match(loras, /ghost chip/i,
       "the leaf teaches the no-bag face: the default renders as ONE ghost chip");
     assert.match(loras, /Relying on the default is safe/i,
       "the leaf lets an agent rely on the default instead of hedging");
-    // F23's open half: the upscale door refuses cleanly, and the leaf
-    // says nothing writes checkpoints today — never a promise.
+    // F23's open half — RE-AIMED 2026-11-01 (the battery residual
+    // cures): the F23-era literal "nothing in the tree WRITES
+    // per-scene revisions" went stale when the write side it described
+    // LANDED (the chain-store write batch — the engine
+    // checkpoints every chain-spine run and the estate stamps
+    // chain_store on the run row); the leaf was re-served to that
+    // truth in the same move while the wall kept judging the old
+    // absence. The open half the wall actually guards moved with it:
+    // the door refuses cleanly past validation (the leaf states the
+    // refusal law) and the END-TO-END upscaled render is
+    // still unverified. The re-aim pins exactly that — the unproven
+    // render and the refusal law — never a settled promise.
     const upscale = readSkill("upscale");
-    assert.match(upscale, /DEAD PAST THE DOOR/,
-      "the upscale leaf says the door dies past its validation");
-    assert.match(upscale, /nothing in the tree WRITES per-scene[\s>]+revisions/i,
-      "the upscale leaf names the missing writer");
+    assert.match(upscale, /THE DOOR REFUSES CLEANLY PAST VALIDATION/,
+      "the upscale leaf says the door refuses cleanly past its validation");
+    assert.match(upscale, /NOT yet verified live: an END-TO-END upscaled render/,
+      "the upscale leaf names the open half: the loop's own render is unproven");
     assert.match(upscale, /Do not promise an upscale/,
       "the upscale leaf forbids the promise");
+  });
+
+  it("ARM 10 — every card-local arm leaf carries the loras seventh-bag exemption (no false universal anywhere)", () => {
+    // The one-door law binds only the SIX armed mod bags; `loras`
+    // is the SEVENTH bag and COEXISTS with every arm. An arm leaf
+    // that keeps the contiguous "ANY two armed mod bags" wording
+    // teaches an agent to refuse a legal loras-plus-arm press.
+    for (const leaf of ["repair", "swap", "reshoot", "refine", "upscale"]) {
+      const md = readSkill(leaf);
+      expect(md).not.toMatch(/ANY two armed mod bags/i);
+      expect(md).toMatch(/SIX arm/i);
+      expect(md).toMatch(/THE LORA BAG IS NOT AN ARM/);
+      expect(md).toMatch(/SEVENTH bag/);
+      expect(md).toMatch(/COEXISTS/);
+    }
   });
 });

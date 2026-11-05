@@ -4,7 +4,7 @@
  *
  * Owns: the preview-body input subcard state derivations (slot resolve,
  * wire resolution, manual attach, file picks), the skin load (neutral +
- * character import + body-to-somax convert queue), the motion NPZ load +
+ * character import + rig auto-convert queue through the card door), the motion NPZ load +
  * chunked precompute, playback space key, tile-thumbnail capture, and the
  * stage background image (multi-source attach + THREE background push).
  *
@@ -75,8 +75,17 @@ export function useMotionMedia({
   // drop / WIRE to an upstream 3D card. A slot is EITHER wired OR manually
   // attached — never both (the SlotGrid contract): attach writes the param
   // AND unwires; wire writes the graph edge AND clears the param.
+  // THE SETTLE-COMMIT, NARROWED (2026-11-15, the roaming-dom-flake
+  // cure): the first wrap (whole state pair) was retired — the GLB
+  // drop path has a SECOND writer inside one tick (the convert
+  // notice), and a +0ms re-commit re-asserted the stale notice null
+  // over it. The NARROWED shape re-commits ONLY the body URL setter
+  // (its sole other writer is the param-keyed hydrate effect, which
+  // round-trips the same value — no clobber window). Evidence:
+  // dev_docs/audits/journey/roaming-dom-flake-2026-11-15.md.
   const setBodyGlb = useCallback((url: string | null) => {
     setBodyGlbState(url)
+    setTimeout(() => { setBodyGlbState(url) }, 0)
     setBodyNotice(null)
     onSave(url ? { [MOTION_PREVIEW_GLB_PARAM]: url } : { [MOTION_PREVIEW_GLB_PARAM]: "" })
   }, [onSave, setBodyGlbState, setBodyNotice])
@@ -124,8 +133,7 @@ export function useMotionMedia({
   // slot keeps params null — the wire branch above carries it).
   const previewParam = stage.params?.[MOTION_PREVIEW_GLB_PARAM]
   useEffect(() => {
-    const v = previewParam
-    setBodyGlbState(typeof v === "string" && v.length > 0 ? v : null)
+    setBodyGlbState(typeof previewParam === "string" && previewParam.length > 0 ? previewParam : null)
     setBodyNotice(null)
     // PARAM-CHANGE-KEYED (motion-journey CURE-3, 2026-11-06): the
     // once-per-stage.id hydration left an EXTERNAL param write (the
@@ -155,13 +163,24 @@ export function useMotionMedia({
           setBodyNotice(
             `Body isn't SOMAX-rigged — converting through the queue… (${e.message})`)
           try {
+            // THE CARD DOOR (flows-are-compositions, 2026-11-14): the
+            // body-to-somax wrapper row is retired — a one-card "flow"
+            // was a wrapper, and the bench holds cards. The same lane
+            // presses the rig CARD through the model door: gem-soma's
+            // auto mode is the SOMA-77 template transfer the wrapper
+            // staged (mesh in, preserve_texture, SOMAX rig out).
             const result = await runCompiledGeneration(
-              { flow: "body-to-somax", glb: bodySrc },
+              {
+                model: 'gem-soma',
+                mesh_glb: bodySrc,
+                mode: 'auto',
+                preserve_texture: true,
+              },
               abortController.signal,
             )
             const rigged = result.urls.find(isMeshUrl) ?? null
             if (rigged === null) {
-              throw new Error(`body-to-somax run ${result.runId} produced no rigged GLB`)
+              throw new Error(`rig auto-convert run ${result.runId} produced no rigged GLB`)
             }
             const converted = await loadGlbSkin(rigged)
             if (cancelled) return

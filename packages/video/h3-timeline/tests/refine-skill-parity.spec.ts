@@ -17,10 +17,11 @@
 // numbers (the 90 f green default, the 141 f OOM ceiling) are the
 // CODE's constants, converted and stated, never a hand-typed
 // recollection; every one of the fifteen one-door pairs is named;
-// and the doc carries a dated VERIFIED stamp naming a receipt that
-// exists, plus what is still unproven.
+// and the doc names what is live-proven and what is still unproven
+// without citing any history archaeology (no dated stamp, receipt
+// path, or run id in served copy).
 import "../../../../tests/helpers/boot-models.ts";
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { beforeAll, describe, expect, it } from "vitest";
@@ -30,10 +31,10 @@ import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import {
   REFINE_2X_OOM_FRAMES, REFINE_DEFAULT_CLIP_SECONDS,
 } from "../../../models/h3/src/refine.ts";
+import { MAX_COMPOSED_WINDOWS } from "../../../models/h3/src/timelineContract.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SKILLS = join(HERE, "..", "src", "agents", "skills");
-const ROOT = join(HERE, "..", "..", "..", "..");
 const readSkill = (name: string): string =>
   readFileSync(join(SKILLS, name, "SKILL.md"), "utf-8");
 
@@ -131,8 +132,13 @@ describe("the refine skill's dial table agrees with the code's own homes", () =>
   });
 
   it("ARM 4 — the skill names ALL FIFTEEN one-door pairs, derived from the card's armed kinds", () => {
+    // GAPS-19: the door roster is no longer "max_stack === 1" — the
+    // refine door stacks its windows (max_stack 32) while staying ONE
+    // door. A door is every armed kind except the co-arming adapter
+    // bag (loras rides WITH a door, it is not one), so the derivation
+    // follows the kind, not the stack ceiling.
     const kinds = ((def as unknown as { mods?: Array<Record<string, unknown>> }).mods ?? [])
-      .filter((k) => typeof k.param_key === "string" && k.max_stack === 1)
+      .filter((k) => typeof k.param_key === "string" && k.kind !== "loras")
       .map((k) => String(k.param_key));
     expect(kinds.sort()).toEqual(["extend", "refine", "repair", "replace", "reshoot", "upscale"]);
     const md = readSkill("refine");
@@ -199,17 +205,49 @@ describe("the refine skill's dial table agrees with the code's own homes", () =>
       "the served seat names the door that does carry context");
   });
 
-  it("THE STAMP LAW: the skill carries its verified-against line, names a receipt that EXISTS, and says what is still unproven", () => {
+  it("GAPS-19 — the doc states the TILING design, and the walk is the declared alternative, never the design", () => {
+    // THE PLAN'S RISK 6: the reword must keep parity green and the
+    // numbers code-derived. The served bag ceiling is the code's own
+    // MAX_COMPOSED_WINDOWS, and the doc's multi-entry sentence derives
+    // from it — a ceiling move reds the prose instead of rotting it.
     const md = readSkill("refine");
-    assert.match(md, /VERIFIED LIVE \d{4}-\d{2}-\d{2} against/,
-      "refine/SKILL.md carries the canonical VERIFIED LIVE stamp (the F2 one-format law)");
-    const stamp = /VERIFIED (?:LIVE )?(\d{4}-\d{2}-\d{2}) against ([\s\S]*?)(?=\n\n)/.exec(md);
-    assert.ok(stamp, "refine/SKILL.md carries a dated VERIFIED line");
-    const receipt = /receipts\/[a-z0-9-]+\.md/.exec(stamp![2]!);
-    assert.ok(receipt, "the stamp names a receipt under dev_docs/contracts/receipts/");
-    const receiptPath = join(ROOT, "dev_docs", "contracts", receipt![0]!);
-    assert.ok(existsSync(receiptPath), `the named receipt exists: ${receipt![0]}`);
-    assert.match(stamp![2]!, /NOT yet verified live/i,
-      "the stamp names what is STILL unproven — never a blanket 'verified live' over an unrendered window path");
+    const servedStack = refineKind.max_stack;
+    assert.equal(servedStack, MAX_COMPOSED_WINDOWS,
+      "the served refine bag stacks to the composed-window ceiling");
+    // THE DESIGN: one press tiles the film — the bag takes multiple
+    // window entries (the frontmatter description is the contract)
+    assert.match(md, /multiple window entries/,
+      "the doc states the bag takes multiple window entries");
+    assert.match(md, /one press tiles the film/i,
+      "the doc states the design: one press tiles the film");
+    // the STOPGAP claim is gone — the doc no longer teaches the gap
+    expect(md).not.toMatch(/the bag is max_stack 1/i);
+    expect(md).not.toMatch(/DECLARED STOPGAP/);
+    expect(md).not.toMatch(/the splice must be agent-side/i);
+    // THE WALK STAYS, RE-HEADED: per-window judgment between presses is
+    // a lawful posture, so the doc keeps it under its declared heading
+    assert.match(md, /DECLARED ALTERNATIVE/i,
+      "the walk sections are re-headed as the declared alternative");
+    assert.match(md, /judge each window before pressing the next/i,
+      "the F36 posture survives: judge each window before pressing the next");
+    // and the N face is stated with the ceiling from the constants
+    assert.ok(md.includes(`up to ${String(MAX_COMPOSED_WINDOWS)} window entries`),
+      `the doc states the ${String(MAX_COMPOSED_WINDOWS)}-entry ceiling from MAX_COMPOSED_WINDOWS`);
+  });
+
+  it("THE STAMP LAW: the skill names what is live-proven, says what is still unproven, and cites no archaeology", () => {
+    const md = readSkill("refine");
+    assert.match(md, /Live-proven on the GPU lane/,
+      "refine/SKILL.md names what is live-proven in plain present-tense law");
+    assert.match(md, /NOT yet proven live/i,
+      "refine/SKILL.md names what is STILL unproven — never a blanket 'verified live' over an unrendered window path");
+    // Served copy carries no history archaeology: no dated verification
+    // stamp, no receipt path, no run id — dev_docs owns that material.
+    assert.doesNotMatch(md, /VERIFIED LIVE \d{4}-\d{2}-\d{2}/,
+      "refine/SKILL.md carries no dated VERIFIED LIVE stamp");
+    assert.doesNotMatch(md, /receipts\/[a-z0-9-]+\.md/,
+      "refine/SKILL.md cites no receipt path");
+    assert.doesNotMatch(md, /run-[0-9a-f]{8,}/,
+      "refine/SKILL.md cites no run id");
   });
 });

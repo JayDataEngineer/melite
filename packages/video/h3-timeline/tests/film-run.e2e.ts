@@ -47,7 +47,19 @@ beforeAll(async () => {
   assert.ok(model, "family facts row serves");
 });
 
-describe("the film tail, LIVE (engine run)", { timeout: 2_100_000 }, () => {
+// THE CEILING (the GPU live-receipt campaign, 2026-11-01 §3
+// film-run): a full three-window film composes a 115-node graph that
+// SUBMITS clean and the engine RENDERS for real — the render is
+// simply longer than the old 35-minute ceiling on this GPU (every
+// attempt burned 30+ min and timed out mid-render; the estate's own
+// occupancy estimate for a film press is 40–60 min). 60 minutes is
+// the honest seat: above the real render, still bounded. This is the
+// SUITE-level timeout (the vitest describe option) — film-run and
+// film-stitch only; every other suite keeps the tier's 120 s.
+// OPERATOR-SIDE: a full film press occupies the shared engine 30+
+// min per attempt (×3 with the e2e tier's retry: 2) — schedule the
+// shared engine accordingly; a skip is NOT a pass (tests/README).
+describe("the film tail, LIVE (engine run)", { timeout: 3_600_000 }, () => {
   it.skipIf(!RUN || !ENGINE_FREE)("3 windows + seam-crossing dialogue + music bed → one mp4", async () => {
     const def = (await loadCardDefs()).get("h3-timeline")!;
     const g = new GraphBuilder();

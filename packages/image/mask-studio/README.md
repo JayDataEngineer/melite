@@ -11,6 +11,7 @@ kind: package-library
 
 - `./paint-canvas` — `PaintLeafCanvas`, the brush canvas a paint mod leaf embeds. Strokes render on a transparent overlay so the saved PNG's alpha IS the stroke shape — the `LoadImageMask` lane reads exactly that alpha; the view fits at 640. Committed strokes report live through `onChange`, and a paint-over seeds from the existing payload. A commit-gate ref mirror keeps pointerup from committing a blank payload.
 - `./bbox-canvas` — `BboxLeafCanvas`, the rectangle canvas a bbox mod leaf embeds. The drawn box reports image-pixel coordinates (naturals, not view pixels), stays clearable (`onChange(null)`), and still takes a rectangle over the blank fitted 1024 canvas when no image is staged.
+- `./orbit-canvas` — `OrbitLeafCanvas`, the camera-pose orb a reshoot mod leaf embeds (a 1:1 port of CrossViewWarp's static-pose gizmo). The orb and the orbit/tilt/dolly dials write the same draft seats — one truth, two views; no keyframes.
 - `.` — `paintInk.ts`, the shared leaf data (the stroke ink constants), importable under plain Node with no React.
 - `./package.json` — the manifest.
 

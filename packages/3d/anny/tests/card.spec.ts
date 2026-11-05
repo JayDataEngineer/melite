@@ -5,7 +5,12 @@
 // VERB, so no SAM ingest arm exists; the 11 identity dims bake
 // through AnnyParamsToGlb when no GLB rides; the 254-morph sculpt
 // panel rides the pin vocabulary as SPARSE local_changes; the
-// native figure rides the served preview.figure claim.
+// native figure rides the served preview.figure claim. The
+// turnaround render tail died with the blender lane (2026-11-01):
+// the CompositeCharacter bake is the card's terminal, no SaveImage
+// rides, and the render knobs (resolution/framing/focal_length/
+// samples/transparent) left the schema — undeclared keys pass
+// inert.
 import "../../../../tests/helpers/boot-models.ts";
 import { describe, it, beforeAll } from "vitest";
 import { dirname, join } from "node:path";
@@ -24,13 +29,6 @@ import { resolveCardFlowOutputs } from '@melite/comfyui-cordis'
 
 const DUMMY_MODEL = { id: "", family: "anny", card: "", defaults: {}, lane_inputs: {}, card_knobs: [], variants: [], variant_groups: [], outputs: [] } as never;
 
-/** The anny family's own floor calibration (the DECL defaults row)
- *  — stated EXPLICITLY here because these specs drive the RAW card
- *  compose with a DUMMY model row: no cascade, no walk fill (the
- *  dual-floor cure, 2026-11-02 — the card schema stamps no
- *  defaults; the family floor owns the fresh-card prefill). */
-const FLOORS = { resolution: 768, framing: 1.2, focal_length: 50, samples: 64 }
-
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
   "..", "..", "..", "..",
@@ -48,7 +46,7 @@ beforeAll(async () => {
 describe("the anny compose gate", () => {
   it("NO body_glb bakes the neutral body (a GLB is never required)", () => {
     const g = new GraphBuilder();
-    def.compose(def.schema({ ...FLOORS }), DUMMY_MODEL, g, "r1");
+    def.compose(def.schema({}), DUMMY_MODEL, g, "r1");
     const graph = g.toJSON();
     const bake = graph["AnnyParamsToGlb.0"];
     assert.ok(bake, "the bake node rides when no GLB is attached");
@@ -70,38 +68,26 @@ describe("the anny compose gate", () => {
     assert.equal(ok.gender, 1);
   });
 
-  it("THE SCHEMA GATE: an out-of-envelope resolution refuses loud at compose (declared 256–2048), never composes", () => {
+  it("THE TURNAROUND KNOBS ARE RETIRED: the render rows left the envelope (the blender lane died 2026-11-01), a stale draft refuses loud", () => {
+    // admission is the declared surface — the retired knobs are no
+    // longer declared, so a stale saved draft carrying them refuses
+    // at the same gate a typo would (compose's gatedResolve, the
+    // undeclared-param refusal).
     assert.throws(
-      () => def.compose({ resolution: 5000 }, DUMMY_MODEL, new GraphBuilder(), "r_oob"),
-      /resolution|5000|between|range/i,
+      () => def.compose(
+        def.schema({ resolution: 5000, framing: 9, transparent: "false" } as Record<string, unknown>),
+        DUMMY_MODEL, new GraphBuilder(), "r_retired",
+      ),
+      /undeclared param.*resolution|resolution.*undeclared|got undeclared param/i,
     );
-  });
-
-  it("THE SCHEMA GATE: a wrong-typed resolution refuses loud at compose", () => {
-    assert.throws(
-      () => def.compose({ resolution: "huge" }, DUMMY_MODEL, new GraphBuilder(), "r_type"),
-      /resolution|huge/i,
-    );
-  });
-
-  it("THE ONE-OWNER FLOOR: an unstated resolution REFUSES at raw compose — the family cascade owns it", () => {
-    // The dual-floor cure (2026-11-02): the schema stamps no
-    // resolution default. The estate compose door stamps the anny
-    // family's 768; the RAW compose (this spec's seat, a DUMMY
-    // model row with no cascade) refuses loud on the absent floor —
-    // never silently clamps.
     const g = new GraphBuilder();
-    assert.throws(() => def.compose({}, DUMMY_MODEL, g, "r_def"),
-      /resolution = undefined: a positive number is required/);
-    const g2 = new GraphBuilder();
-    def.compose({ ...FLOORS }, DUMMY_MODEL, g2, "r_def");
-    assert.equal(g2.toJSON()["RayRenderGLBViews.0"].inputs.resolution, 768,
-      "an explicit 768 (the family's calibration) rides verbatim");
+    def.compose(def.schema({}), DUMMY_MODEL, g, "r_retired");
+    assert.equal(Object.keys(g.toJSON()).find((k) => k.startsWith("RayRenderGLBViews")), undefined, "no renderer answers — the bake is the terminal");
   });
 
   it("authored sliders carry into the bake vector (dim order = the served labels)", () => {
     const g = new GraphBuilder();
-    def.compose(def.schema({ ...FLOORS, muscle: 0.9, height: 0.2 }), DUMMY_MODEL, g, "r1");
+    def.compose(def.schema({ muscle: 0.9, height: 0.2 }), DUMMY_MODEL, g, "r1");
     const doc = JSON.parse(g.toJSON()["AnnyParamsToGlb.0"].inputs.params_json as string) as { phenotype: number[] };
     // gender/age/muscle/weight/height/... → muscle idx 2, height idx 4
     assert.equal(doc.phenotype[2], 0.9);
@@ -111,27 +97,27 @@ describe("the anny compose gate", () => {
 
   it("an attached GLB renders as-is (no bake node)", () => {
     const g = new GraphBuilder();
-    def.compose(def.schema({ ...FLOORS, body_glb: "/m/anny-base-body.glb", resolution: 512 }), DUMMY_MODEL, g, "r1");
+    def.compose(def.schema({ body_glb: "/m/anny-base-body.glb" }), DUMMY_MODEL, g, "r1");
     const graph = g.toJSON();
     assert.equal(graph["PrimitiveString.0"].inputs.value, "/m/anny-base-body.glb");
     assert.ok(graph["CompositeCharacter.0"], "the composite node rides the body path");
     assert.equal(graph["AnnyParamsToGlb.0"], undefined, "no bake when a GLB rides");
-    assert.ok(
-      Object.keys(graph).some((k) => k.startsWith("RayRenderGLBViews")),
-      "the turnaround views node is emitted",
+    assert.equal(
+      Object.keys(graph).find((k) => k.startsWith("RayRenderGLBViews")), undefined,
+      "the turnaround views node is gone with the blender lane",
     );
   });
 
   it("an all-whitespace body_glb still bakes (whitespace is emptiness, never a refusal)", () => {
     const g = new GraphBuilder();
-    def.compose(def.schema({ ...FLOORS, body_glb: "   " }), DUMMY_MODEL, g, "r1");
+    def.compose(def.schema({ body_glb: "   " }), DUMMY_MODEL, g, "r1");
     assert.ok(g.toJSON()["AnnyParamsToGlb.0"], "whitespace falls to the bake arm");
   });
 
   it("NO SAM arm exists anywhere (photo→body is the hmr-estimate verb)", () => {
     const g = new GraphBuilder();
     def.compose(
-      def.schema({ ...FLOORS, body_glb: "/m/body.glb", transparent: "false" } as Record<string, unknown>),
+      def.schema({ body_glb: "/m/body.glb" }),
       DUMMY_MODEL, g, "r1",
     );
     const graph = g.toJSON();
@@ -153,7 +139,7 @@ describe("the anny compose gate", () => {
 
   it("(l) a stated body_image IS the body: the estimator chain mounts, person_index FIXED at 0, no bake, no attach", () => {
     const g = new GraphBuilder();
-    def.compose(def.schema({ ...FLOORS, body_image: "/photos/person.png" } as Record<string, unknown>), DUMMY_MODEL, g, "r1");
+    def.compose(def.schema({ body_image: "/photos/person.png" } as Record<string, unknown>), DUMMY_MODEL, g, "r1");
     const graph = g.toJSON();
     const load = graph["LoadImage.0"];
     assert.ok(load, "the photo rides a LoadImage ingest");
@@ -169,7 +155,7 @@ describe("the anny compose gate", () => {
   it("(l) precedence is stated ONCE and ordered: image > glb > bake — both stated rides the estimate, the GLB waits", () => {
     const g = new GraphBuilder();
     def.compose(
-      def.schema({ ...FLOORS, body_image: "/photos/person.png", body_glb: "/m/anny-base-body.glb" } as Record<string, unknown>),
+      def.schema({ body_image: "/photos/person.png", body_glb: "/m/anny-base-body.glb" } as Record<string, unknown>),
       DUMMY_MODEL, g, "r1",
     );
     const graph = g.toJSON();
@@ -180,18 +166,18 @@ describe("the anny compose gate", () => {
 
   it("(l) whitespace image is emptiness: the fall runs glb > bake, never a phantom ingest", () => {
     const g1 = new GraphBuilder();
-    def.compose(def.schema({ ...FLOORS, body_image: "   ", body_glb: "/m/body.glb" } as Record<string, unknown>), DUMMY_MODEL, g1, "r1");
+    def.compose(def.schema({ body_image: "   ", body_glb: "/m/body.glb" } as Record<string, unknown>), DUMMY_MODEL, g1, "r1");
     const withGlb = g1.toJSON();
     assert.equal(withGlb["LoadImage.0"], undefined, "whitespace image mounts no ingest");
     assert.ok(withGlb["PrimitiveString.0"], "the GLB arm takes the seat");
     const g2 = new GraphBuilder();
-    def.compose(def.schema({ ...FLOORS, body_image: "   " } as Record<string, unknown>), DUMMY_MODEL, g2, "r1");
+    def.compose(def.schema({ body_image: "   " } as Record<string, unknown>), DUMMY_MODEL, g2, "r1");
     assert.ok(g2.toJSON()["AnnyParamsToGlb.0"], "empty image + empty GLB still bakes from the sliders (stroke 89's never-required law holds)");
   });
 
   it("finalize is the anny strip (identity on the empty strip table)", () => {
     const g = new GraphBuilder();
-    def.compose(def.schema({ ...FLOORS, body_glb: "/m/body.glb" }), DUMMY_MODEL, g, "r1");
+    def.compose(def.schema({ body_glb: "/m/body.glb" }), DUMMY_MODEL, g, "r1");
     assert.deepEqual(def.finalize?.(g.toJSON()), g.toJSON(), "nothing strips");
   });
 
@@ -213,7 +199,7 @@ describe("the anny compose gate", () => {
   it("changed morphs ride the bake as SPARSE local_changes; untouched ones never ship", () => {
     const g = new GraphBuilder();
     const label = ANNY_MORPH_LABELS[0];
-    def.compose(def.schema({ ...FLOORS, [label]: 1.5 } as Record<string, unknown>), DUMMY_MODEL, g, "r1");
+    def.compose(def.schema({ [label]: 1.5 } as Record<string, unknown>), DUMMY_MODEL, g, "r1");
     const doc = JSON.parse(g.toJSON()["AnnyParamsToGlb.0"].inputs.params_json as string) as {
       phenotype: number[]; local_changes?: Record<string, number>;
     };
@@ -222,19 +208,19 @@ describe("the anny compose gate", () => {
 
   it("the neutral bake carries NO local_changes key (absent = the engine's own 0)", () => {
     const g = new GraphBuilder();
-    def.compose(def.schema({ ...FLOORS }), DUMMY_MODEL, g, "r1");
+    def.compose(def.schema({}), DUMMY_MODEL, g, "r1");
     const doc = JSON.parse(g.toJSON()["AnnyParamsToGlb.0"].inputs.params_json as string) as { local_changes?: unknown };
     assert.deepEqual(doc.local_changes, {}, "the authored dialect always carries the required object");
   });
 
-  it("declares the mesh input, the (l) image input, and a representative turnaround image output", () => {
+  it("declares the mesh input, the (l) image input, and the mesh bake output (the SaveImage tail died with the blender lane)", () => {
     assert.deepEqual(def.flowKinds.inputs, { body_glb: "mesh", body_image: "image" });
-    assert.deepEqual(def.flowKinds.outputs, { default: "image" });
+    assert.deepEqual(def.flowKinds.outputs, { default: "mesh" });
     const g = new GraphBuilder();
-    def.compose(def.schema({ ...FLOORS }), DUMMY_MODEL, g, "flow");
+    def.compose(def.schema({}), DUMMY_MODEL, g, "flow");
     assert.deepEqual(resolveCardFlowOutputs(def, {}, g.toJSON()), {
-      outputs: { default: "image" },
-      outputNodes: { default: "SaveImage.0" },
+      outputs: { default: "mesh" },
+      outputNodes: { default: "CompositeCharacter.0" },
     });
   });
 
@@ -283,9 +269,10 @@ describe("the anny compose gate", () => {
 // EVERY facts row this card serves: (1) the row's OWNING FAMILY
 // holds an ACTION_BINDINGS row — no address silently rides the
 // legacy lane while its siblings compose the declared segment; (2)
-// the row composes ITS OWN declared segment — the turnaround
-// renders the 8 views. The declared fallback (a family-less row)
-// rides the legacy lane in the open, never a silent second copy.
+// the row composes ITS OWN declared segment — the composite bake is
+// the terminal (no SaveImage tail since the blender lane died).
+// The declared fallback (a family-less row) rides the legacy lane in
+// the open, never a silent second copy.
 describe("THE EVERY-ADDRESS WALL — every served address composes its own declared segment", () => {
   const rows = Object.values(facts.models).filter((m) => m.card === "anny");
 
@@ -300,17 +287,21 @@ describe("THE EVERY-ADDRESS WALL — every served address composes its own decla
         `family '${row.family ?? row.id}' holds no ACTION_BINDINGS row — address '${row.id}' would silently ride the legacy lane`,
       );
       const g = new GraphBuilder();
-      def.compose(def.schema({ ...FLOORS }), row, g, `wall_${row.id}`);
+      def.compose(def.schema({}), row, g, `wall_${row.id}`);
       const graph = g.toJSON() as Record<string, { class_type: string }>;
-      const views = Object.values(graph).filter((n) => n.class_type === "SaveImage");
-      assert.equal(views.length, 8, "the declared segment renders the 8-view turnaround sheet");
+      const saves = Object.values(graph).filter((n) => n.class_type === "SaveImage");
+      assert.equal(saves.length, 0, "no SaveImage tail rides (the blender lane died 2026-11-01)");
+      assert.ok(
+        Object.values(graph).some((n) => n.class_type === "CompositeCharacter"),
+        "the declared segment terminates in the composite bake",
+      );
     });
   }
 
   it("THE DECLARED FALLBACK: a row with no owning family REFUSES — the card never guesses a lane", () => {
     const row = { ...rows[0]!, id: "synthetic-anny", family: undefined };
     assert.throws(
-      () => def.compose(def.schema({ ...FLOORS }), row as never, new GraphBuilder(), "wall_fallback"),
+      () => def.compose(def.schema({}), row as never, new GraphBuilder(), "wall_fallback"),
       /no declared action for family 'synthetic-anny' on the anny card — every boarded family \(anny\)/,
     );
   });

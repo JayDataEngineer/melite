@@ -1,14 +1,12 @@
 ---
 name: refine
-description: "Second-pass refine on the h3-timeline: seat a source clip plus one window (start + length) and a refine prompt on the refine mod bag; the RefineHandoff applies a 2x learned latent upscale and a low-denoise H3 pass to THAT WINDOW, decoding to <run>/refine. A long film is refined window by window (ARCHITECTURE GAP, GAPS-19: the bag is max_stack 1 while the film path composes multi-window in-graph — the walk is a DECLARED STOPGAP, not the design; the splice must be agent-side until the bag takes multiple window entries). Mod-bag door — NOT a re-render and NOT the upscale arm."
+description: "Second-pass refine on the h3-timeline: seat a source clip plus one window (start + length) and a refine prompt per entry on the refine mod bag; the RefineHandoff applies a 2x learned latent upscale and a low-denoise H3 pass to THAT WINDOW, decoding to <run>/refine. The bag takes multiple window entries — one press tiles the film (every entry is one refine window over the SAME source clip, consecutive windows overlap by the compose's own arithmetic, and the pass splices them in-graph on the film tiling's save boundaries, up to 32 window entries). One window per press is the DECLARED ALTERNATIVE — judge each window before pressing the next. Mod-bag door — NOT a re-render and NOT the upscale arm."
 genre: video
 ---
 
 # Refine (second-pass detail pass) — SPEC
 
-> STATUS: LANDED 2026-10-30 (the fifth mod bag, F19/F24; WINDOWED
-> 2026-11-13 — the arm used to load the whole staged clip and the 2x
-> handoff OOM'd past the measured ceiling, report §13.2). The
+> The
 > emission composes per the family renderer (`models/h3` refine.ts):
 > VHS window load → VAEEncode + VAEEncodeAudio → ONE
 > MinimaxH3LatentUpscaler3DRefineHandoff (learned 3D-conv latent
@@ -17,30 +15,20 @@ genre: video
 > the loaded bundle: the fields below are quoted off the card's
 > served refine kind.
 >
-> VERIFIED LIVE 2026-10-30 against a real GPU render (run
-> run-3dad106712a8-8b8c7098 — a 56 f clip refined at 2x to
-> 2624×1472, 48 kHz, 190 s end to end) and against the measured
-> capacity sweep (run run-fc1bb9054282-8bace0aa — the 141 f source
-> OOM'd at the handoff with clip_seconds ignored, the burn this
-> window cure closes), receipt
-> `contracts/receipts/2026-10-30-flows-refine-capacity-seats.md`.
-> NOT yet verified live: a WINDOWED pass over a clip longer than one
-> window (the loader's frame_load_cap / skip_first_frames path is
-> wired and walled, never yet rendered on the GPU lane) — treat
-> multi-window film coverage as unproven until a windowed press
-> lands.
->
-> VERIFIED LIVE 2026-11-13 against a WINDOWED press
-> (run-69bfa7fc98f6-8c7db41c — `frame_load_cap` 90 /
+> Live-proven on the GPU lane: a 56 f clip refined at 2x to
+> 2624×1472, 48 kHz, and a WINDOWED press (`frame_load_cap` 90 /
 > `skip_first_frames` 48, 2624×1472, 90 f, 48 kHz): the window really
 > reads only its slice — refined frame 0 matched the SOURCE's frame
 > 48 (Δ8.99 on 0–255) and not its frame 0 (Δ25.81). Also measured,
 > and what step 6 exists for: 90 f @2× is green, 141 f @2× OOM'd, and
 > a 430 f window @1.0 OOM'd too (20.08 GiB allocated, 830 MiB short,
 > node `MinimaxH3LatentUpscaler3DRefineHandoff`) — the WINDOW is the
-> memory unit at every scale. NOT yet proven: a multi-window walk
-> joined end to end; the seam tax in step 6 is measured, the join
-> itself is still the operator's judgement.
+> memory unit at every scale. NOT yet proven live: a multi-window BAG
+> press (the tiling composes in-graph and is walled —
+> `refine-bag.spec.ts` — riding the film tiling's save boundaries and
+> concat; the live GPU press over a multi-entry bag is the operator's
+> runbook). The seam tax in step 6 is measured; the walk's join is
+> still the operator's judgement.
 
 ## What it is (and is NOT)
 
@@ -64,11 +52,14 @@ It is NOT:
 - **the replace/repair/extend arms** — those render a new edit of
   the scene; refine only sharpens what is already there.
 
-One door per doc: ANY two armed mod bags REFUSE loud naming both —
+One door per doc: ANY two of the SIX armed mod bags REFUSE loud naming both —
 the fifteen pairs are replace↔repair, replace↔extend, repair↔extend,
 replace↔reshoot, repair↔reshoot, extend↔reshoot, replace↔refine,
 repair↔refine, extend↔refine, reshoot↔refine, replace↔upscale,
 repair↔upscale, extend↔upscale, refine↔upscale, reshoot↔upscale.
+THE LORA BAG IS NOT AN ARM: `loras` is the SEVENTH bag and it
+COEXISTS with any armed arm — it never disarms a pair (the lora
+plane rides every arm; only the six arm bags refuse).
 The refine branch returns before the film action, so an armed refine
 beside any other arm would be silently dropped. Pick one and empty
 the others. (Armed = the bag is PRESENT and non-empty; an absent or
@@ -81,9 +72,10 @@ before, byte-identical.)
    (`source_clip`) — normally a prior run's harvested film, or the
    source footage you are polishing. It is one file, not a run
    lineage: there is no chain store involved on this arm.
-   THE SOUNDTRACK REQUIREMENT: this arm encodes the window's audio
-   (`VAEEncodeAudio` → the handoff's `audio_latent`), so the source
-   MUST carry an audio track. A silent clip fails inside the loader
+   THE SOUNDTRACK REQUIREMENT: this arm builds the window's joint AV
+   latent (the source frames AND its soundtrack ride
+   `MiniMaxH3FantasticVideoEditLatent` with `keep_audio`), so the
+   source MUST carry an audio track. A silent clip fails inside the loader
    with the engine's own ffmpeg error ("failed to extract audio"),
    not with a card refusal — the card cannot see a file's tracks.
    Every film this estate renders carries 48 kHz sound, so a
@@ -105,10 +97,12 @@ before, byte-identical.)
      soundtrack is trimmed to the same window.
    - `start_seconds` (0–3600, 0) — where the window starts (the
      loader's `skip_first_frames`, seconds × 24). 0 is the clip head.
-     Advance it window by window to walk a longer film.
+     Advance it window by window to walk a longer film — the walk is
+     the DECLARED ALTERNATIVE (step 6); stacking the entries on the
+     bag lets one press tile it.
    A window past 141 f (5.875 s) REFUSES at the compose door before
    the engine runs: 141 f is the measured OOM (it missed by 1.06 GiB
-   with 20.13 GiB already resident, report §13.2), and H3 memory
+   with 20.13 GiB already resident), and H3 memory
    grows with the window, so a wider one cannot fit. THE CEILING IS
    THE WINDOW'S: it applies to EVERY upsizing mode — `scale by
    multiplier` at ≥ 2, and both exact-size modes (`target
@@ -125,6 +119,24 @@ before, byte-identical.)
    the frames that exist (VHS yields `min(cap, available)`), so the
    produced window can be shorter than the number you stated: know
    the clip's length and state both seats from it.
+    THE AUTO-TILE (one entry tiles the film, no hand math):
+    `windows` (1–32, 1) states how many windows this ONE entry
+    covers, and `overlap_frames` (whole frames at or above zero, 22)
+    states the join's carry. The compose derives every window's start
+    (Start seconds + k × (window − overlap)), so a human states a
+    SIZE and a COUNT instead of hand-tiling entries with frame-exact
+    starts. The default overlap 22 is the film's own seam and
+    token-exact, so a default auto-tile with agreeing prompt/dials
+    takes the film's own carry (one continuation per join, the
+    head-trim, the plain concat); any other overlap of 1 or more
+    REFUSES at compose naming the measured carry and the nearest grid rung —
+    the crossfade of two independent renders (the ghost) is not
+    served; 0 walks the hard cut. `windows` above 1 on ANY entry
+    of a MULTI-entry bag refuses — the bag already IS the tiling, so
+    auto-tile lives on a lone entry only. A lone window ignores the
+    overlap seat (no join). The ceiling still judges each derived
+    window (past 141 f refuses naming the numbers), and the overlap
+    must be shorter than the window.
 4. **Set the pass dials.** The entry fields (the card's served ranges,
    tested guidance):
    - `denoise` (0.05–0.5, 0.32) — the partial-denoise strength of the
@@ -146,6 +158,17 @@ before, byte-identical.)
      (20.08 GiB + 830 MiB short). Narrow the window first; go 1.0
      when a specific grid matters, and accept source resolution
      instead of 1472p.
+   - `windows` (1–32, 1) — how many windows this ONE entry tiles
+     (the auto-tile: the compose derives every window's start,
+     so one press covers the film with no hand-tiled entries). 1 is
+     the single-window walk posture.
+   - `overlap_frames` (0+, 22) — the join's carry in whole frames
+     (default 22: the film's own seam and token-exact — the default
+     auto-tile walks the film's continuation). Any other overlap of
+     1 or more refuses (an off-grid carry cannot continue the
+     stream, and a crossfade of two independent renders is the
+     ghost); 0 walks the hard cut. Rides only with `windows` above 1
+     (a lone window has no join) and must be shorter than the window.
 5. **Confirm.** Show the bound clip, the window in words ("from 5.0 s
    for 3.75 s"), the pass dials ("2x, denoise 0.32, 6 steps"), and
    that every other arm is empty.
@@ -155,11 +178,19 @@ before, byte-identical.)
    watcher who isn't there).
 6. **Press.** The user presses Run. Browser/chat agents never
    execute; headless commissions ride `melite_flow` per the maker
-   runbook. A windowed film pass is a LOOP THE OPERATOR DRIVES, and
-   the step is the window length MINUS the 22 f seam overlap — never
-   the window length itself:
+   runbook. The bag takes multiple window entries, so ONE press can
+   tile a long film (the design — up to 32 window entries, one
+   `start_seconds` per entry, same source clip). THE WALK IS THE
+   DECLARED ALTERNATIVE: a windowed film pass driven press by press,
+   where you judge each window before pressing the next — lawful,
+   byte-cheap, and the posture the walk below spells out.
 
-       overlap_frames = 22                    (the measured cure; 0 is a hard cut)
+   ### The walk's loop and splice (the declared alternative, step by step)
+
+   The walk's step is the window length MINUS the 22 f seam overlap —
+   never the window length itself:
+
+       overlap_frames = 22                    (the measured carry; 0 is a hard cut)
        step_frames    = clip_seconds × 24 − overlap_frames
        step_seconds   = step_frames / 24      e.g. 90 − 22 = 68 f = 2.833 s
 
@@ -173,69 +204,98 @@ before, byte-identical.)
    Δ≈9 (measured on a shared 66 f offset; adjacent frames differ by
    Δ≈4.3, so the seam is a soft step, not a pop).
 
-   SPLICE THE WINDOWS AFTERWARDS — it is part of the pass, not an
-   optional extra, and there is NO trim verb to lean on: the carry is
-   consumed by the crossfade, not cut out. Crossfade over the carry,
-   then mux the SOURCE's audio once:
+   SPLICE THE WINDOWS — it is part of the pass, not an optional
+   extra. A carried bag mounts the FILM'S OWN carry on every join:
+   each window builds its joint AV target (the source frames + its
+   own soundtrack), window k≥2 receives window k−1's joint latent
+   through `MiniMaxH3FiniteLatentContinuation` with the film's own
+   seats (iteration, the carried overlap, continue_audio_latent, the
+   model + sigmas the handoff samples with), the handoff re-renders
+   from the provided prefix, and `MiniMaxH3FiniteSegmentFinalize`
+   trims the carried head. The tail is the plain file concat,
+   assembled length = Σ windows − Σ carries, frame-exact. NO hand
+   ffmpeg, no trim verb, nothing to run afterwards: press the bag,
+   judge the join. This is the SAME mechanism a normal generation
+   uses — not a lookalike.
 
-       # per join k (k = 1..n-1): duration ≈ overlap, offset ≈ k × step
-       ffmpeg -i w{k-1}.mp4 -i w{k}.mp4 \
-         -filter_complex "[0:v][1:v]xfade=transition=fade:duration=0.917:offset=<k*2.833>[v]" \
-         -map "[v]" -c:v libx264 -crf 16 -pix_fmt yuv420p joined.mp4
-       # then the soundtrack, once, from the source clip:
-       ffmpeg -i joined.mp4 -i source.mp4 -map 0:v -map 1:a -c:v copy \
-         -c:a aac -b:a 256k -ar 48000 -shortest final.mp4
+   There are exactly TWO joins: a TOKEN-EXACT carry (5, 22, 39 …)
+   walks the film's continuation; a ZERO-carry join is the plain
+   hard cut. Anything else refuses at compose, naming the measured
+   carry, the token grid, and the start that lands 22 f.
 
-   THE SEAM TAX, honestly: a 0.92 s dissolve per join means a 430 f
-   film (six windows) spends ~26 % of its runtime in a blend.
+   THE SEAM, honestly: a 22 f carry means each join re-renders
+   ~0.92 s the previous window already covered, and the finalize
+   drops that span from the member — the film does not replay it and
+   nothing is crossfaded. The previous window's tail is in the
+   model's prefix; the incoming window's head is generated under it.
 
-   AND THE HARDER TRUTH (measured 2026-11-13, round 8): this splice is
-   NOT a cure for the pop. Two windows are two independent denoise
-   realisations of the shared frames — measured Δ8.86–9.80 across the
-   carry against Δ4.3 between adjacent frames inside one window — and
-   a crossfade cannot make the two renders equal. The operator's
-   verdict on the blended result was "POPS DO NOT WORK", and it is
-   correct. The two honest postures are:
+   NO CROSSFADE, EVER: a blend of two INDEPENDENT renders is
+   a DOUBLE EXPOSURE (the ghost),
+   not a soft step and not a cure for
+   the pop — measured Δ8.86–9.80 across the
+   carry against Δ4.3 between adjacent frames inside one window.
+   The crossfade is not served; an off-grid carry
+   refuses at compose instead. The carried span is BIT-IDENTICAL:
+   the finalize drops the incoming window's re-rendered head, so
+   every frame the film emits across the join is the previous
+   window's own decode, never a blend — and
+   the audio seam keeps its soft step.
 
-   - a film that must be seamless: press ONE 90 f window (3.75 s) —
-     a single window is seam-free by construction;
-   - a film longer than one window: the join pops today. The crossfade
-     is a demo of the carry law, never a delivery cure. A true carry
-     (shared latents across the join) is the CHAIN door's job (§ the
-     door cannot carry a run below), and that arm has no writer yet —
-     do not promise it.
+   PER-WINDOW FREEDOM: each entry states its OWN prompt, denoise,
+   steps and seed — the continuation wraps the sampler's model, never
+   the text. Only the member geometry must agree: `mode` and `scale`
+   on every entry of one bag (one film joins one shape). A bag whose
+   entries state different mode/scale refuses, naming both values.
 
-   Judge each window before pressing the next, and judge the splice
+   The live-press judgement (SSIM chain, viewed strips) still belongs
+   to the restart window — press and judge before promising a
+   seam-free delivery.
+
+   The two honest postures stand:
+
+   - a film that must be seamless TODAY on the audio too: press ONE
+     90 f window (3.75 s) — a single window is seam-free by
+     construction;
+   - a film longer than one window: the token-exact carry walks the
+     video seam inside the model itself and the audio seam walks
+     softly; a bag that cannot carry (non-exact overlap,
+     disagreeing seats) is REFUSED — restate the starts on the grid
+     or abut the windows. Do not promise more than the face you
+     mounted.
+
+   Judge each window before pressing the next, and judge the join
    before calling the film done.
 
-## This door restyles pixels; it cannot carry a run (2026-11-13)
+## This door restyles pixels; it cannot carry a run
 
-A saved clip is DECODED PIXELS. The latent that made it — and every
-chunk's context — is gone the moment the film was encoded, so nothing
-in this pass can continue what produced the clip. That is why this
-arm is a RESTYLE, not a second pass:
+A saved clip is DECODED PIXELS. The latent that made it is gone the
+moment the film was encoded, so this pass cannot inherit the ORIGINAL
+sampler's state. That is why the arm is a RESTYLE of the pixels —
+but it is not context-free inside itself:
 
-- There is no "second pass with context" over a file: the handoff
-  receives a fresh `VAEEncode` of the frames. The only metadata that
-  can cross from the source run is its prompt text, and only by being
-  restated (see the style law below).
-- The node that does carry a seam
-  (`MiniMaxH3FiniteLatentContinuation`) needs a JOINT AV latent and
-  only exists inside the execution that produced one; it is not
-  mountable on this seat (law: `refine-loop.spec.ts` ARM 7).
-- A genuine deferred second pass exists as the CHAIN door — the
-  `upscale[]` arm over a saved chain run's checkpoints + manifest,
-  where per-scene prompts and lineage come from the store instead of
-  the pixels. If the ask is "pass 2 with context", the source must be
-  a chain run whose revisions were saved; pick that door, not this
-  one.
+- Every window builds a JOINT AV latent from its own frames +
+  soundtrack, and window k≥2 mounts the film's own
+  `MiniMaxH3FiniteLatentContinuation` over window k−1's joint latent
+  (law: `refine-loop.spec.ts` ARM 7). The carry crosses the joins
+  INSIDE this execution — never from the source run, whose latent
+  does not exist any more.
+- The only metadata that can cross from the source run is its prompt
+  text, and only by being restated (see the style law below).
+- A genuine deferred second pass — one that inherits the source
+  run's sampler state and revision lineage — exists as the CHAIN
+  door: the `upscale[]` arm over a saved chain run's checkpoints +
+  manifest. If the ask is "pass 2 with the original context", the
+  source must be a chain run whose revisions were saved; pick that
+  door, not this one.
 
-Press this door to restyle or sharpen a clip you already have; press
-the chain door for a context-carrying second pass. Never describe a
+There is no "second pass with context" over a file: the file's
+latent is gone, and no door can rebuild it. Press this door to
+restyle or sharpen a clip you already have; press the CHAIN door
+for a context-carrying second pass. Never describe a
 press here as "the second pass" — it re-encodes pixels and nothing
 else survives.
 
-## The prompt is the ONLY style lever (F36, 2026-11-13)
+## The prompt is the ONLY style lever
 
 Nothing else carries. The original prompt, seed, schedule and calls do
 NOT re-enter the pass — so `refine_prompt` alone decides what the
@@ -252,14 +312,13 @@ introduce a new style or a new subject; never let a quality word
 ("clean skin", "photoreal", "realistic") stand where the source's
 medium belongs.
 
-Worked example (the operator's good run, `run-2d2a9db536a1`,
-denoise 0.30):
+Worked example (denoise 0.30):
 
     the same dancing kunoichi, sharper detail, clean hands and
     fingers, glossy 3D anime render style, unchanged pose, motion
     and background
 
-The failure shape, for contrast (`run-3f0c…`, denoise 0.32): "sharper
+The failure shape, for contrast (denoise 0.32): "sharper
 detail, clean skin, unchanged motion" — no medium, no identity, and
 "clean skin" pulled the render photoreal. The window stayed the same
 shot; the STYLE moved. Restate the look, then ask for detail.
@@ -274,7 +333,8 @@ one 90 f window per press is the documented cheap shape. The three
 cures, in the order to try them:
 
 1. **Narrow the window** (default 3.75 s) — 90 f is measured green;
-   walk the film window by window.
+   walk the film window by window (the DECLARED ALTERNATIVE), or
+   stack the bag's window entries and let one press tile it.
 2. **`scale` 1.0** — a same-size refine lifts the ceiling but does
    NOT remove it: the handoff still materialises the whole window's
    latents. Measured: 90 f at 2× green; 141 f at 2× OOM (1.06 GiB

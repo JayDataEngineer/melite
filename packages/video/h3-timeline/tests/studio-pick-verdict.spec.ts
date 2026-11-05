@@ -6,7 +6,9 @@
  */
 import { describe, it } from "vitest"
 import assert from "node:assert/strict"
-import { pickFamilyRefusal, resolvePickVerdictDoc } from "../src/ui/studio/pickVerdict.ts"
+import { resolvePickVerdictDoc } from "../src/ui/studio/pickVerdict.ts"
+import { schema as h3schema } from "@melite/models-h3/schema"
+import { deriveWindowFamily } from "@melite/models-h3/timelineContract"
 
 describe("resolvePickVerdictDoc — the pick judges truth-in-hand", () => {
   it("absent user keys yield to the held row (the sparse shown layer)", () => {
@@ -94,92 +96,55 @@ describe("resolvePickVerdictDoc — the pick judges truth-in-hand", () => {
   })
 })
 
-// ── THE FAMILY CLAUSE (journey-closure B5 — hop 3's first judge) ────
-// The pick gate judges resolvePickVerdictDoc's candidate through the
-// SAME clause the run door's walk enforces (deriveWindowFamily +
-// T4_ONLY_KEYS, @melite/models-h3/timelineContract — ONE spelling;
-// the one-owner ruling lives on pickFamilyRefusal). Pre-fix state
-// (audits/journey/b5-pick-patch-family-clause-2026-10-17.md): both
-// faces green-lit a Final-Cut-stamped keyframe doc while the walk
-// refused it verbatim at the run press.
-describe("pickFamilyRefusal — the pick gate judges the candidate through the walk", () => {
+// ── THE LANE-LAW RETIREMENT (2026-11-15) ────────────────────────────
+// The pick gate's FAMILY CLAUSE (B5, 2026-10-17) used to judge the
+// candidate through T4_ONLY_KEYS and refuse a Final-Cut stamp on a
+// keyframe doc before the write. The t4r arm now mounts the post
+// chain, so that clause is deleted with the dead-key set: the pick
+// verdict keeps the operator's stamps whole and the walk ADMITS the
+// doc it composes. These arms pin the new truth (the burn shape
+// admits and the stamps survive), never a refusal.
+describe("the pick verdict carries the finish stamps to a walk that fires them", () => {
   const KEYFRAME_DOC = {
     keyframes: [{ image: "webp/run1/pin-0.png", frame: 0 }],
     steps: 20,
   }
 
-  it("a Final-Cut stamp on a keyframe doc refuses with the run door's own voice", () => {
-    // the burn: Final Cut saved pre-keyframe (the stamp's own
+  it("the Final-Cut stamp on a keyframe doc survives the verdict whole — no pick path drops lane keys", () => {
+    // the old burn shape: Final Cut saved pre-keyframe (its
     // wire_defaults — second_pass_enabled + sr_switch), the doc
-    // gained a pin, the family re-derived t4r under the stamp
-    assert.equal(
-      pickFamilyRefusal({ ...KEYFRAME_DOC, second_pass_enabled: true, sr_switch: true }),
-      "card 'h3-timeline' refused params: h3_window(t4r): unsanctioned inject keys: second_pass_enabled, sr_switch",
-    )
-  })
-
-  it("the four-key doc refuses naming every key, sorted — the door refusal's verbatim key set", () => {
-    assert.equal(
-      pickFamilyRefusal({
-        ...KEYFRAME_DOC,
-        interpolate_enabled: true,
-        interp_model: "film_net_fp16.safetensors",
-        interp_multiplier: 2,
-        sharpen_enabled: true,
-      }),
-      "card 'h3-timeline' refused params: h3_window(t4r): unsanctioned inject keys: "
-      + "interp_model, interp_multiplier, interpolate_enabled, sharpen_enabled",
-    )
-  })
-
-  it("the reference surface derives t4r too — a stamp over ref_images refuses", () => {
-    assert.match(
-      pickFamilyRefusal({ ...KEYFRAME_DOC, ref_images: "webp/ref.png", sr_switch: true }) ?? "",
-      /unsanctioned inject keys: sr_switch/,
-    )
-  })
-
-  it("a clean t4r doc (keyframes, no post keys) composes on its lane", () => {
-    assert.equal(pickFamilyRefusal(KEYFRAME_DOC), null)
-  })
-
-  it("the same four keys on a t4_open doc compose — the family honors them there", () => {
-    assert.equal(
-      pickFamilyRefusal({ interpolate_enabled: true, interp_model: "m", interp_multiplier: 2, sharpen_enabled: true }),
-      null,
-    )
-  })
-
-  it("the same keys on a t4_chain film compose (multi-call = the film lane)", () => {
-    assert.equal(
-      pickFamilyRefusal({
-        calls: [
-          { text: "a", start_frame: 0, end_frame: 90 },
-          { text: "b", start_frame: 90, end_frame: 180 },
-        ],
-        sr_switch: true,
-        second_pass_enabled: true,
-      }),
-      null,
-    )
-  })
-
-  it("a null-valued key does not refuse — the wire's delete spelling (the merge-patch deletes it before the walk sees it)", () => {
-    assert.equal(pickFamilyRefusal({ ...KEYFRAME_DOC, sr_switch: null }), null)
-  })
-
-  it("THE PICK VERDICT, END TO END: the candidate resolvePickVerdictDoc composes is the doc the clause judges", () => {
-    // held row: the Final-Cut-stamped keyframe doc (drill/agent
-    // writes). The pick: an ordinary Draft re-pick. The verdict doc
-    // — what the run would compose — refuses BEFORE the write.
+    // gained a pin, the family re-derived t4r under the stamp.
     const candidate = resolvePickVerdictDoc(
       { ...KEYFRAME_DOC, second_pass_enabled: true, sr_switch: true },
       {},
       { width: 768, height: 448 },
     )
-    assert.match(
-      pickFamilyRefusal(candidate) ?? "",
-      /h3_window\(t4r\): unsanctioned inject keys: second_pass_enabled, sr_switch/,
+    assert.equal(candidate.second_pass_enabled, true)
+    assert.equal(candidate.sr_switch, true)
+    assert.equal(candidate.width, 768)
+  })
+
+  it("the same candidate is the doc the walk ADMITS on its derived t4r lane", () => {
+    const candidate = resolvePickVerdictDoc(
+      { ...KEYFRAME_DOC, second_pass_enabled: true, sr_switch: true },
+      {},
+      {},
     )
+    const walked = h3schema(candidate)
+    assert.equal(deriveWindowFamily(walked as Record<string, unknown>), "t4r")
+    assert.equal(walked.second_pass_enabled, true)
+    assert.equal(walked.sr_switch, true)
+  })
+
+  it("the four-key finish doc composes on the keyframe lane — the refusal voice is gone", () => {
+    const walked = h3schema({
+      ...KEYFRAME_DOC,
+      loras: [],
+      interpolate_enabled: true,
+      interp_model: "film_net_fp16.safetensors",
+      interp_multiplier: 2,
+      sharpen_enabled: true,
+    })
+    assert.equal(deriveWindowFamily(walked as Record<string, unknown>), "t4r")
   })
 })

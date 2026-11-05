@@ -1,9 +1,11 @@
 import { stripEmptyAutofill } from "./graph.js";
 /** The wired-tensor law (the lanes-image precedent, ported 1:1):
  *  a '$name' value names an upstream stage's wired output — the
-// ── archetype III: the poser turnaround family ──────────────────────
+// ── archetype III: the poser assembly family ────────────────────────
 // Body → assemble (CompositeCharacter / FitProp / SkinApply) → the
-// shared 8-view turnaround tail (blocks/poser-kit renderGLBViews).
+// artifact GLB. The shared 8-view turnaround tail (blocks/poser-kit
+// renderGLBViews) died with the blender lane (2026-11-01) — the
+// assembly node's own output is the lane's terminal.
 // The strip tables stay EMPTY so the pin's autofills ride
 // (the GraphBuilder pin defaults own that behavior).
 
@@ -109,29 +111,28 @@ export function admitMeshLiftShared(p) {
 // goldens in that family's tests/golden/). This arm is deleted; the family is
 // the only home of the lane.
 // THE RIG ARMS ARE FAMILY-OWNED (the kit-arm retirement, 2026-09-30 —
-// closed by the card-system stroke): the rig card's three lanes are the
+// closed by the card-system stroke): the rig card's two lanes are the
 // families' declared actions — transfer-rig's `transfer` (the copy
-// lane), gem-soma's `rig` (the SOMA-77 auto lane), anycreature's
-// `bind` (the species lane). The card's mode knob names the family;
-// every node is composed family-side, each lane pinned to a committed
+// lane) and gem-soma's `rig` (the SOMA-77 auto lane). The species lane
+// died with the blender lane (2026-11-01 — anycreature's `bind` rode
+// RayCreatureRigBridge). The card's mode knob names the family; every
+// node is composed family-side, each lane pinned to a committed
 // golden.
 // ── the rig card's arms (ROADMAP card program P0) ───────────────────
-// "skeleton + weights on this GLB" — three real lanes over the
+// "skeleton + weights on this GLB" — two real lanes over the
 // vendored packs, all path-based (no checkpoints):
 //  · auto   — KimodoExportFBX in its 'apply_weights' action (the
 //             dispatch is INPUT-driven: source_glb without npz_path
 //             → the SOMA-77 template's hand-painted LBS weights
-//             transfer onto the source mesh; file_format 'glb'; the
-//             node IS the output capture — it writes itself).
+//             transfer onto the source mesh; the node writes the
+//             rigged GLB itself — it IS the output capture).
 //  · copy   — transferRigArm verbatim (KimodoTransferWeights +
 //             SaveRiggedModel): GPU KNN weight transfer from a
 //             rigged donor onto the clothed target.
-//  · species — RayCreatureRigBridge: bind a static mesh onto an
-//             anyCreature skeleton (armature + baked idles), the
-//             node writes itself.
-// The fourth lane is GONE, not deferred: skintokens died in the
-// 2026-10-12 operator kill (family, pack, and weights) — the old
-// "until vendored" precondition is unmeetable; three lanes ship.
+// The dead lanes stay dead: skintokens died in the 2026-10-12
+// operator kill (family, pack, and weights); species died with the
+// blender lane (2026-11-01 — RayCreatureRigBridge and the
+// anycreature family are deleted); two lanes ship.
 // ADMITMESHLIFT IS GONE (the kit-arm retirement, 2026-09-30): it existed for the
 // mesh arms, and each mesh family now carries its own copy inside its
 // declared action — the kit's copy had no reader.

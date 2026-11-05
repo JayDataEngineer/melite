@@ -117,6 +117,32 @@ describe("THE AGENT-DOCS WALL (the live law, where agents load it)", () => {
         .not.toMatch(/openjutsu|viggle/i);
     }
   });
+  it("ARM 4 — the served source-less law EQUALS the filmMix throw (derived from the engine source, never a hand copy)", () => {
+    // THE DEPTH LAW: the doc's refusal quote rides the REAL door —
+    // the message is extracted from filmMix.ts's own positioned-row
+    // throw, so a reworded throw or an unquoted doc reds here. A
+    // hand-copied literal would pass while the engine's law drifted.
+    const mixSrc = readFileSync(
+      join(__dirname, "..", "..", "..", "models", "h3", "src", "filmMix.ts"),
+      "utf-8",
+    );
+    const thrown = /throw new Error\(\s*'audio_clips:\s*(a positioned clip row[^']*)'\s*\)/.exec(mixSrc);
+    expect(thrown, "filmMix.ts still throws the positioned source-less row law").not.toBeNull();
+    const lawCore = thrown![1]!.replace(/\s+/g, " ");
+    // the DERIVED served roster (the same walk the viggle arm rides):
+    // every agent doc the card ships, judged for the verbatim law —
+    // wording, not wrapping (markdown reflow is not drift).
+    const walk = (dir: string): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+        e.isDirectory() ? walk(join(dir, e.name)) : [join(dir, e.name)]);
+    const docs = walk(join(ROOT, "agents")).filter((f) => f.endsWith(".md"));
+    expect(docs.length).toBeGreaterThan(5);
+    const carriers = docs.filter((f) => readFileSync(f, "utf-8").replace(/\s+/g, " ").includes(lawCore));
+    expect(
+      carriers.length,
+      `no served agent doc quotes the filmMix source-less law verbatim ("${lawCore}") — the served teaching drifted from the engine's own throw`,
+    ).toBeGreaterThan(0);
+  });
   it("the served params spec (tool.ts) exposes audio_clips with the text obligation — agents can SEE the field", () => {
     // source-text wall: the builder's parameters block is the served
     // spec an agent reads via melite_load; the text obligation and

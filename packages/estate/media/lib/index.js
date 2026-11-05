@@ -33,7 +33,7 @@ var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, 
     done = true;
 };
 import { Remote, RemoteError, TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
-import { contentTypeForArtifact, isEstateSidecarName, mediaVocab, segmentConfined, servableLeaf } from "@melite/contracts/mediaKinds";
+import { ARCHIVED_DIR_NAME, contentTypeForArtifact, isEstateSidecarName, mediaVocab, segmentConfined, servableLeaf } from "@melite/contracts/mediaKinds";
 import { parseRangeHeader } from "@melite/contracts/mediaRange";
 import { LEGACY_RUN_MEDIA_PREFIX, RUN_MEDIA_PREFIX, runMediaPrefixOf, canonicalRunMediaUrl, RUN_ID_RE, } from "@melite/contracts/benchStage";
 /** The roots a media answer searches: the seat's manifest when it
@@ -435,7 +435,15 @@ export async function listMediaAcross(roots, kind) {
         }
         const files = [];
         for (const e of entries) {
+            // THE ARCHIVE TUCK (operator ruling 2026-11-14, item (a)):
+            // archived artifacts rest under `<run>/_archived/` — the dir
+            // is skipped WHOLE (never descended), so tucked files list
+            // nowhere while their bytes survive beside the run. Exact-name
+            // match: the general underscore-dir question (`_thumb/…`) is
+            // not this door's to answer.
             if (e.isDirectory()) {
+                if (e.name === ARCHIVED_DIR_NAME)
+                    continue;
                 walk(root, runId, path.join(dir, e.name), rel === "" ? e.name : `${rel}/${e.name}`, depth + 1);
                 continue;
             }

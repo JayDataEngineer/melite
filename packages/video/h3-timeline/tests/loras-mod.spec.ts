@@ -59,7 +59,7 @@ describe("the LoRA kind (F29 — the bag the compose honors owes a UI seat)", ()
     assert.equal(strength.min, 0);
     assert.equal(strength.max, 2);
     const steps = fields.find((f) => f.name === "steps");
-    assert.ok(steps, "the steps seat exists (0 = the catalog row's designed count)");
+    assert.ok(steps, "the steps seat exists (no served default or floor — omit rides the row's own count)");
   });
 
   it("the rail derives the LoRA row with the entry's own seats, under its own label", () => {

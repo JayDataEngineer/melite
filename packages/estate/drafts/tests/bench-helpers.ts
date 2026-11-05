@@ -34,13 +34,14 @@ export function mintRoot(): string {
   return root;
 }
 
-export async function bootCtx(): Promise<{ ctx: Context; domain: Domain<DraftsDomainSpec> }> {
-  const root = mintRoot();
+/** Boot on an EXPLICIT storage root — the two-boot arms (the corrupt-
+ *  bytes separator: plant through the live handle, reopen a fresh ctx
+ *  over the same tree so the open-time record judgment fires) ride
+ *  this; bootCtx owns the tmp tree, this one does not dispose. */
+export async function bootCtxAt(root: string): Promise<{ ctx: Context; domain: Domain<DraftsDomainSpec> }> {
   mkdirSync(join(root, "storage"), { recursive: true });
   const ctx = new Context();
-  // J12: the storage root rides the seat's config (the retired
-  // MELITE_STATE_ROOT / MELITE_STORAGE_ROOT env seams' call data)
-  new DraftsDomainSeatService(ctx, { storageRoot: join(root, "storage") });
+  new DraftsDomainSeatService(ctx);
   await ctx.plugin(Storage as never, undefined as never); // Storage takes no config; cordis Spread<GetPluginConfig> keeps the config arg positional
   await ctx.plugin(
     { name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as never,
@@ -55,6 +56,10 @@ export async function bootCtx(): Promise<{ ctx: Context; domain: Domain<DraftsDo
   // seam the plugin installs, so no test can pass by skipping the bus.
   installBenchChangeSeam(ctx);
   return { ctx, domain: await openDraftsDomain(ctx) };
+}
+
+export async function bootCtx(): Promise<{ ctx: Context; domain: Domain<DraftsDomainSpec> }> {
+  return bootCtxAt(mintRoot());
 }
 
 export async function boot(): Promise<Domain<DraftsDomainSpec>> {

@@ -7,7 +7,7 @@ import { describe, it, beforeAll } from "vitest";
 import assert from "node:assert/strict";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadCardDefs, ComposeRefusal } from "@melite/comfyui-cordis";
+import { loadCardDefs, ComposeRefusal, resolveCardFlowOutputs } from "@melite/comfyui-cordis";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import { CardDefinition } from '@melite/comfyui-card-kit/card-definition'
@@ -261,6 +261,38 @@ describe("the image-gen compose gate", () => {
     const plain = facts.models[def.boarded[0]!]!;
     def.compose(def.schema({ prompt: "a cat" }), plain, new GraphBuilder(), "r_plain");
     def.compose({ prompt: "a cat", mask_mode: "auto" }, plain, new GraphBuilder(), "r_auto");
+  });
+
+  // THE PAIR LAW (operator 2026-11-15: Impact Pack's detailer takes
+  // image + segs — the mod's missing base-image seat was the D11
+  // gap). The gate judges the pair: a base without its region half
+  // refuses; the lawful pair composes the photo arm.
+  it("THE PAIR: input_image without a region refuses (never a silent plain-generate under a stated base); the lawful pair composes", () => {
+    const model = facts.models["krea-2"]!;
+    assert.ok(model, "the facts serve krea-2 (a region-served lane)");
+    assert.throws(
+      () => def.compose({ prompt: "a cat", mask: [{ input_image: "/v1/assets/photo.png" }], mask_mode: "crop_stitch" }, model, new GraphBuilder(), "r_baseonly"),
+      (e: unknown) =>
+        e instanceof Error && !(e instanceof ComposeRefusal)
+        && /'input_image' fires on the image-gen card/.test(String((e as Error).message))
+        && /needs its region half/.test(String((e as Error).message))
+        && /state input_mask or pick a mask_detector/.test(String((e as Error).message)),
+      "a base without its region would silently plain-generate — the D11 burn's shape from the other side",
+    );
+    // the flat base alone states a region too (statedRegion reads
+    // input_image as a region key) — same refusal, no bag needed
+    assert.throws(
+      () => def.compose({ prompt: "a cat", input_image: "/v1/assets/photo.png" }, model, new GraphBuilder(), "r_baseflat"),
+      /'input_image' fires on the image-gen card .* needs its region half/,
+      "a flat-stated base never slips under the gate",
+    );
+    // THE LAWFUL PAIR composes: the photo arm (the build wall in
+    // krea-2's action.spec pins the graph itself).
+    const g = new GraphBuilder();
+    def.compose({ prompt: "a cat", mask: [{ input_image: "/v1/assets/photo.png", input_mask: "/v1/assets/region.png" }], mask_mode: "crop_stitch" }, model, g, "r_pair");
+    const nodes = Object.values(g.toJSON() as Record<string, { class_type?: string }>).map((n) => String(n.class_type));
+    assert.ok(nodes.includes("LoadImage"), "the base photograph loads");
+    assert.ok(!nodes.includes("KSampler"), "the lawful pair generates nothing (the detailer reworks the photo's region)");
   });
 });
 
@@ -529,5 +561,51 @@ describe("THE REFERENCE SEAT IS THE OWNER LANE'S (c5f03df9 supersedes the 2026-1
     });
     assert.deepEqual(owners, ["qwen-img-21"],
       `the reference seat's declaration drifted: declared by [${owners.join(", ")}], the law names qwen-img-21 alone`);
+  });
+});
+
+describe("THE FLOW PRODUCER BINDINGS (the object-forge producer-law cure: the card declares its real output channel)", () => {
+  it("THE FLOW CONTRACT: the default channel is bound to the one SaveImage every family emits", () => {
+    // The producer-law's declaration door (the mask cure d790eb045's
+    // pattern): the estate's flows stage this card (object-forge's
+    // concept, image-upscale's make) and the merge reads the channel
+    // from THIS row — the row renames it to its flow-plane `image`
+    // (kind-matched, one-to-one), so `concept.image` / `make.image`
+    // resolve in the producer table the start door builds.
+    assert.deepEqual(def.flowKinds.outputs, { default: "image" });
+    const bindings = [...(def.flowOutputBindings ?? [])];
+    assert.equal(bindings.length, 1,
+      "the object-forge producer-law declaration is gone: the image-gen card declares no flowOutputBindings row — " +
+      "the object-forge/image-upscale flow stages fall back to bind-by-construction and the declaration door is unseated");
+    assert.deepEqual(bindings.map((b) => [b.channel, b.node, b.nodeClass]),
+      [["default", "SaveImage.0", "SaveImage"]]);
+    // UN_GUARDED on purpose: every boarded family's t2i action ends in
+    // ONE decodeSave (render-kit decodeSave → SaveImage), so one
+    // unconditional row is the honest shape — the nodeClass gate
+    // refuses loud if a family lane ever renumbers.
+    assert.ok(bindings.every((b) => b.when === undefined), "the row is unguarded — no family branches the emission");
+  });
+
+  it("THE BINDINGS RESOLVE (every boarded family press resolves default → its SaveImage.0)", () => {
+    // THE DERIVED SWEEP, ALL SIX FAMILIES: the flow-pinned presses
+    // (z-image, krea-2) ride the producer-agreement wall's real door;
+    // this arm presses EVERY family the card boards so the explicit
+    // node id is census-proof, not flow-lucky. A family that ever
+    // emits zero or renumbered saves refuses here (the nodeClass
+    // gate's voice), never rebinds silently.
+    for (const id of def.boarded) {
+      const model = facts.models[id]!;
+      assert.ok(model !== undefined && model !== null, `${id}: facts names no model row`);
+      const params = { ...(model.defaults as Record<string, unknown>), prompt: "a small brass compass on a desk" };
+      const g = new GraphBuilder();
+      def.compose(params, model, g, `bind_${id}`);
+      const saves = Object.entries(g.toJSON() as Record<string, { class_type?: unknown }>)
+        .filter(([, n]) => String(n.class_type ?? "").startsWith("Save"));
+      assert.deepEqual(saves.map(([nid, n]) => [nid, n.class_type]), [["SaveImage.0", "SaveImage"]],
+        `${id}: the family press must emit exactly the declared save (the declaration is derived from this output)`);
+      const resolved = resolveCardFlowOutputs(def, params, g.toJSON());
+      assert.deepEqual(resolved.outputs, { default: "image" }, `${id}: the declared channel publishes the image kind`);
+      assert.equal(resolved.outputNodes["default"], "SaveImage.0", `${id}: the default channel names the family's own save`);
+    }
   });
 });

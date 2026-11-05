@@ -17,16 +17,21 @@ import { createElement as h } from "react"
 import { StudioStripPane } from "../src/ui/studio/StudioStripPane.tsx"
 import type { DocCommission } from "../src/ui/studio/commissions.ts"
 import { studioCopy } from "../src/ui/studio/studioCopy.ts"
+import { STARTER_CALLS, type DocCall } from "../src/ui/studio/docModel.ts"
+import { callsToPrompts } from "../src/ui/studio/docCalls.ts"
 
 afterEach(cleanup)
 
 const noop = (): void => {}
 
-function strip(commissions: DocCommission[]) {
+function strip(commissions: DocCommission[], calls: DocCall[] = []) {
   return h(StudioStripPane, {
-    calls: [],
+    calls,
     fps: 24,
-    barPrompts: [],
+    // the lane rows EXACTLY as useDerivedView feeds them: the real
+    // builder over the same calls (barPrompts[i] ↔ calls[i], one row
+    // per call in order — the correspondence the mod-face filter rides)
+    barPrompts: callsToPrompts(calls),
     barLanes: [],
     barAudioClips: [],
     barTotal: 96,
@@ -156,5 +161,155 @@ describe("§9 — the studio strip's commission mapping", () => {
     expect(head, "the bad entry still draws its row").not.toBeNull()
     expect(head.title).toBe(studioCopy.commissionBadEntry("reshoot"))
     expect(head.title).toContain("entry is not an object")
+  })
+})
+
+// ── THE MOD-MODE CALLS FACE (operator 2026-11-14, verbatim: "By using
+// Mod, we enter a special mode, that uses different inputs. But, to the
+// user, there is still the default call in the timeline bar that tells
+// them to describe their video there, when that isn't used at all. And
+// when I do stuff like reshoot, it adds two bars to the timeline as
+// well. It's just sloppy") ────────────────────────────────────────────
+// The strip's calls lane names its calls-readership under an armed
+// commission: replace/repair/extend/refine/upscale compose from the bag
+// alone (never read a call's text — pinned per kind by the mod specs'
+// composed graphs), so under those arms the STARTER placeholder — the
+// studio's own view-state invitation to "describe the action, camera,
+// and mood" — stands down (no clip, the dormant label + hint naming the
+// armed kind); authored prose still paints (doc truth, merely unread).
+// reshoot/loras RIDE the film action and read the call text (reshoot's
+// prompt is "crossview. " + the text), so their lane stays live and is
+// labeled as the run's prompt seat — one lane for the input, one rail
+// row for the commission, each named. The words are the dictionary's.
+const REPLACE: DocCommission = {
+  kind: "replace",
+  seats: [{ key: "source_clip", value: "clips/t1.mp4" }, { key: "prompt", value: "the same person, now indoors" }],
+}
+const STARTER: DocCall = { ...STARTER_CALLS[0]! }
+const AUTHORED: DocCall = { text: "she walks on, the light shifts", start_frame: 0, end_frame: 90 }
+const lorasRow = (id: string): DocCommission => ({
+  kind: "loras",
+  seats: [{ key: "id", value: id }, { key: "strength", value: "0.8" }],
+})
+
+describe("THE MOD-MODE CALLS FACE (2026-11-14 — the default call bar under a mod)", () => {
+  it("ARM F — under a NON-reading arm the starter placeholder paints NOTHING (the reported burn, verbatim)", () => {
+    // the armed doc's view state still carries the starter call (the
+    // hydrate fallback) — exactly the face the operator reported
+    const { container } = render(strip([REPLACE], [STARTER]))
+    expect(container.querySelectorAll("[data-prompt-clip]"))
+      .toHaveLength(0)
+    // the lane NAMES its dormancy: the dictionary's label + hint, the
+    // armed kind's own name on both
+    const head = container.querySelector('[data-lane-head="prompts"]') as HTMLElement
+    expect(head.textContent).toBe(studioCopy.callsDormantLabel("replace"))
+    expect(container.textContent).toContain(studioCopy.callsDormantHint("replace"))
+    // the commission row still paints — the run's real inputs are
+    // named on the rail, never hidden beside the dead invitation
+    expect(container.querySelector('[data-commission-lane="replace"]')).not.toBeNull()
+  })
+
+  it("ARM G — under a NON-reading arm AUTHORED prose still paints (doc truth is never hidden — merely named unread)", () => {
+    const { container } = render(strip([REPLACE], [AUTHORED]))
+    expect(container.querySelectorAll("[data-prompt-clip]")).toHaveLength(1)
+    const head = container.querySelector('[data-lane-head="prompts"]') as HTMLElement
+    expect(head.textContent).toBe(studioCopy.callsDormantLabel("replace"))
+  })
+
+  it("ARM H — under a READING arm (reshoot) the lane stays LIVE and is labelled the run's prompt seat", () => {
+    const { container } = render(strip([RESHOOT], [STARTER]))
+    // the clip paints — this lane's text rides the run, so the starter
+    // view is the authoring invitation, honestly labeled
+    expect(container.querySelectorAll("[data-prompt-clip]")).toHaveLength(1)
+    const head = container.querySelector('[data-lane-head="prompts"]') as HTMLElement
+    expect(head.textContent).toBe(studioCopy.callsPromptSeatLabel("reshoot"))
+    // the commission row paints its own row — two NAMED bars (the
+    // prompt's input lane + the commission), never two mystery bars
+    expect(container.querySelector('[data-commission-lane="reshoot"]')).not.toBeNull()
+  })
+
+  it("ARM I — a READING arm over an EMPTY lane names the prompt seat in the hint (the lane's own words)", () => {
+    const { container } = render(strip([RESHOOT], []))
+    expect(container.querySelectorAll("[data-prompt-clip]")).toHaveLength(0)
+    expect(container.textContent).toContain(studioCopy.callsPromptSeatHint("reshoot"))
+    const head = container.querySelector('[data-lane-head="prompts"]') as HTMLElement
+    expect(head.textContent).toBe(studioCopy.callsPromptSeatLabel("reshoot"))
+  })
+
+  it("ARM J — with NOTHING armed the lane is the plain default face (the film's authoring surface)", () => {
+    const { container } = render(strip([], [STARTER]))
+    expect(container.querySelectorAll("[data-prompt-clip]")).toHaveLength(1)
+    const head = container.querySelector('[data-lane-head="prompts"]') as HTMLElement
+    expect(head.textContent).toBe(studioCopy.callsLabel)
+    // the clip's own paint carries the plain face; the empty hint is
+    // the no-calls face's row (not this arm's — the lane is not empty)
+  })
+
+  it("ARM K — STACKED rows carry entry-qualified ids (two adapters = two addressable rows, no shared identity)", () => {
+    const { container } = render(strip([lorasRow("h3_lightx2v_turbo"), lorasRow("h3_camera_dolly")]))
+    const lanes = [...container.querySelectorAll("[data-commission-lane]")]
+    // the FIRST row keeps the bare kind (every existing selector's
+    // contract); each subsequent row is entry-qualified — unique
+    // React keys and unique addressable lane rows
+    expect(lanes.map((l) => l.getAttribute("data-commission-lane")))
+      .toEqual(["loras", "loras-2"])
+    expect(container.querySelector('[data-lane-head="commission"][data-lane-head-id="loras-2"]'))
+      .not.toBeNull()
+    // both rows name their own adapter (the stacked-bag law: one row
+    // per entry, the operator sees BOTH adapters)
+    expect(container.textContent).toContain("h3_lightx2v_turbo")
+    expect(container.textContent).toContain("h3_camera_dolly")
+  })
+
+  it("ARM L — THE FRAME-OFFSET HALF: an armed extend positions its windows at the FILM's end (stride = windowFrames − carry overlap, the solver's own composition), the axis grows, and every planned window is marked", () => {
+    // barTotal = 96 (the strip harness's own film end). EXTEND: 3 ×
+    // 158f under the solver's 39f carry overlap → stride 119, windows
+    // at 96 / 215 / 334, each 158f, the last ending exactly at
+    // 96 + deliveredFrames 396 = 492 — the spans ARE the composition
+    // the compose door will build, one spelling (windowSpans rides
+    // the contract's own CONTEXT_OVERLAP_FRAMES).
+    const { container } = render(strip([EXTEND]))
+    const segs = [...container.querySelectorAll('[data-commission-segment^="extend-"]')] as HTMLElement[]
+    expect(segs).toHaveLength(3)
+    const lefts = segs.map((s) => parseFloat(s.style.left))
+    const widths = segs.map((s) => parseFloat(s.style.width))
+    // equal stride: left deltas match frameToPx(119) exactly
+    expect(lefts[1]! - lefts[0]!).toBeCloseTo(lefts[2]! - lefts[1]!, 5)
+    // equal widths: every window is 158f
+    expect(widths[0]).toBeCloseTo(widths[1]!, 5)
+    expect(widths[0]).toBeCloseTo(widths[2]!, 5)
+    // width:frame ratio consistency — the stride and the width ride
+    // the SAME frameToPx scale (119/158, no rounding drift)
+    expect((lefts[1]! - lefts[0]!) / widths[0]!).toBeCloseTo(119 / 158, 4)
+    // every window of the armed extension is planned film (starts at
+    // or past the real film's end — dashed, not yet rendered)
+    for (const s of segs) expect(s.getAttribute("data-commission-planned")).toBe("true")
+    // the axis seats the hatched tail: the band starts where the
+    // film ends and the first window starts with it — one tail
+    const band = container.querySelector("[data-planned-band]") as HTMLElement
+    expect(band, "the planned band renders for an armed extend").not.toBeNull()
+    expect(parseFloat(band.style.left)).toBeCloseTo(lefts[0]!, 5)
+  })
+
+  it("ARM M — no geometry armed (reshoot only, or nothing) seats NO planned tail — the bar is byte-identical", () => {
+    const { container: armed } = render(strip([RESHOOT]))
+    expect(armed.querySelectorAll("[data-planned-band]")).toHaveLength(0)
+    const { container: bare } = render(strip([]))
+    expect(bare.querySelectorAll("[data-planned-band]")).toHaveLength(0)
+  })
+
+  it("ARM N — a SINGLE-WINDOW extend positions its one window at the film's end (no stride to state, the tail is one window deep)", () => {
+    const single: DocCommission = {
+      kind: "extend",
+      seats: [{ key: "extend_seconds", value: "5.167" }],
+      geometry: { windows: 1, windowFrames: 124, deliveredFrames: 124 },
+    }
+    const { container } = render(strip([single]))
+    const seg = container.querySelector('[data-commission-segment="extend-0"]') as HTMLElement
+    expect(seg, "the single window positions").not.toBeNull()
+    expect(seg.getAttribute("data-commission-planned")).toBe("true")
+    // window and band share the film-end edge (the 124f tail)
+    const band = container.querySelector("[data-planned-band]") as HTMLElement
+    expect(parseFloat(band.style.left)).toBeCloseTo(parseFloat(seg.style.left), 5)
   })
 })

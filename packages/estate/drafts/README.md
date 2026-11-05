@@ -17,8 +17,7 @@ draft-id law.
 
 - Storage: table `docs` keyed by draft id (`DRAFT_ID_RE`: 1..96 chars of
   `[A-Za-z0-9_-]`, path-safe — the SSOT the queue re-exports).
-  Schema-failing records are backed up and skipped; the global slot holds
-  the one-time legacy-import marker.
+  Schema-failing records are backed up and skipped.
 - Draft docs: six contract keys (`draft_id`, `status`, `createdAt`,
   `completedAt`, `intent`, `stages`) plus caller extras verbatim — the serve
   read is deliberately loose; the write doors are strict.

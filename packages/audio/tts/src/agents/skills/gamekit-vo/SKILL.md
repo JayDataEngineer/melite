@@ -10,7 +10,7 @@ Per-LINE instruct carries only the emotion ("surprised, warming into relief").
 
 ## Casting a voice (the qvoice seats)
 The retired flat door (`export_qvoice: true`) is GONE — the save and load
-ride the tts card's mod bags (022's receipt: the grammar rides melite_load's
+ride the tts card's mod bags (the grammar rides melite_load's
 mods line):
 - **Save**: `save_qvoice: true` (the presence stamp — the mod IS the
   save; no toggle, no knobs) plus `voice_name` (OPTIONAL — the Design

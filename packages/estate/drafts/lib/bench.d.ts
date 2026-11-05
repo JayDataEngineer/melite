@@ -10,6 +10,17 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
         "bench/bad-session": Record<string, never>;
         /** The body failed the bench contract (non-object / unknown keys). */
         "bench/bad-body": Record<string, never>;
+        /** THE PRE-MINT COMPOSE REFUSAL (F14's estate half, 2026-10-31):
+         *  the add-stage door composed the projection (live rows + the
+         *  candidate) through the runs validate seat and it refused —
+         *  the write never happened (no stage, no rev, nothing to roll
+         *  back); the message carries the validate door's own teaching
+         *  refusal. */
+        "bench/compile-refused": {
+            readonly session: string;
+            readonly stage: string;
+            readonly card: string;
+        };
         /** THE MODEL ADMISSION (no-silent-drop law, hour 26 stroke 17):
          *  the stage's model is not offered by the card, or boarded but
          *  not downloaded on this machine — the write refuses with the
@@ -52,6 +63,14 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
         /** No bench doc carries that session. */
         "bench/not-found": {
             readonly session: string;
+        };
+        /** THE ONE-SEAT RE-SEAT's fail-closed voice (the one-seat audit,
+         *  2026-10-31): the caller key is not a conversation generation
+         *  and the host sessions service resolves no parent conversation
+         *  — a delegated lane composes on its parent's bench or not at
+         *  all; a silent birth on the orphan key is the split itself. */
+        "bench/unseated": {
+            readonly caller: string;
         };
         /** No stage of that id sits on the bench. */
         "bench/stage-not-found": {
@@ -134,7 +153,7 @@ interface BenchEntry {
     rev: number;
     at: number;
     author: Author;
-    kind: "patch" | "add_stage" | "add_stages" | "remove_stage" | "archive" | "rewire" | "reorder" | "group" | "ungroup" | "load" | "clear" | "undo";
+    kind: "patch" | "add_stage" | "add_stages" | "remove_stage" | "archive" | "rewire" | "reorder" | "group" | "ungroup" | "load" | "clear" | "undo" | "seed";
     stage?: string;
     summary?: string;
     /** Kind-specific inverse payload (undo applies it). */
@@ -187,9 +206,24 @@ export interface BenchGetRow {
         readonly [key: string]: JsonValue;
     }[];
 }
-export declare function ensureBench(drafts: Domain<DraftsDomainSpec>, body: Record<string, unknown>, admit?: StageAdmission): Promise<BenchEnsureRow>;
+export declare function ensureBench(drafts: Domain<DraftsDomainSpec>, body: Record<string, unknown>, admit?: StageAdmission, lineage?: readonly string[]): Promise<BenchEnsureRow>;
 /** get — one session's bench block as the served row. */
 export declare function getBench(drafts: Domain<DraftsDomainSpec>, session: string): BenchGetRow;
+/** get, seeded — THE READ-PATH INHERITANCE (the one-seat audit's
+ *  tab-first ordering, 2026-10-31: `bench/get` refused not-found and
+ *  subscribe served ZERO, so the tab's first frame after a reload
+ *  was empty until a write — the operator reopens and sees nothing,
+ *  the app-broken-under-green-walls face of the split). On a missing
+ *  bench whose lineage resolves to an ancestor with state, this
+ *  materializes the SAME seed birth the write doors use
+ *  (materializeSeedBirth — one shape, both seats) and serves it; the
+ *  change wire wakes on the put and every later read is the plain
+ *  get. Scoped to `session-` keys: a non-generation caller key is a
+ *  delegated lane the doors RE-SEAT or refuse — it never materializes
+ *  its own doc (that would rebuild the split this audit closed).
+ *  No lineage or no ancestor state → the caller's own not-found
+ *  (the genuinely fresh conversation's law, byte-identical). */
+export declare function getBenchSeeded(drafts: Domain<DraftsDomainSpec>, session: string, lineage: readonly string[] | undefined): Promise<BenchGetRow>;
 /** The patch row: the touched stage + the params keys merged. */
 export interface BenchPatchRow {
     readonly draft_id: DraftId;
@@ -217,7 +251,7 @@ export interface BenchPatchRow {
  *  a landing here destroyed the previous result with no supersede —
  *  under the old every-write-bumps law, so every outcome here also
  *  ticked the rev. Outcomes refuse with the redirect voice. */
-export declare function patchBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>, admit?: StageAdmission, migrate?: LaneMigration, reseat?: FamilyReseat): Promise<BenchPatchRow>;
+export declare function patchBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>, admit?: StageAdmission, migrate?: LaneMigration, reseat?: FamilyReseat, lineage?: readonly string[]): Promise<BenchPatchRow>;
 /** The stage row: the arm's answer (stage id + rev). */
 export interface BenchStageRow {
     readonly draft_id: DraftId;
@@ -249,6 +283,35 @@ export interface BenchStagesRow {
  *  in the injected admission (remote.ts); the domain only carries
  *  the coordinate. */
 export type StageAdmission = (card: string, params: Record<string, unknown>, provenance: unknown) => void;
+/** THE PRE-MINT COMPOSE SEAT (F14's estate half, 2026-10-31): the
+ *  GUI card-press door composes the bench's projection — live rows
+ *  PLUS the candidate — through the runs validate seat BEFORE the
+ *  row lands. A refusal is a VALUE the door refuses loud with (the
+ *  same verdict voice the agent tool's pre-mint gate teaches with);
+ *  an absent seat admits (the registry-less law — every optional
+ *  cross-service judge here drops out when its service is not
+ *  mounted, the benchAdmissionOf precedent). Never throws: the
+ *  verdict folds the seat's own failures into its refusal message
+ *  (the estate cannot certify the projection, so it does not write
+ *  it — no mint on refusal, nothing to roll back).
+ *
+ *  THE INCOMPLETE-DRAFT EXCEPTION (the GUI-add burn, 2026-11-01):
+ *  `incomplete: true` marks the refusal as the authoring-incomplete
+ *  class (an UNSTATED required lane word — tts's `text`). The
+ *  frictionless-authoring ruling (operator 2026-11-11: "you are
+ *  submitting a form, not hacking the mainframe") drops that class
+ *  at every write seat: the add door seeds a card's axes, the words
+ *  are typed in the form the landed stage opens, and the RUN door
+ *  owns the required-word voice. A gate that refused the class here
+ *  made the card UN-ADDABLE from the GUI — text can only be stated
+ *  in a form that only exists once the stage lands. */
+export type PremintCompose = (intent: unknown, projectedStages: Array<Record<string, unknown>>) => Promise<{
+    ok: true;
+} | {
+    ok: false;
+    error: string;
+    incomplete?: boolean;
+}>;
 /** THE LANE MIGRATION SEAT (operator 2026-10-12, the stuck-switch
  *  incident): given the stage's card, the MERGED params view, and
  *  the stored row's params BEFORE the merge, returns the cleaned
@@ -298,7 +361,7 @@ export declare function admitWiring(row: Record<string, unknown>, params: Record
 export declare function toleratedByRow(stages: Array<Record<string, unknown>>, preLive: ReadonlySet<string>): Map<string, Set<string>>;
 /** add_stage — append a card stage with optional wiring (the
  *  runner's input convention rides the row). */
-export declare function addStageBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>, admit?: StageAdmission): Promise<BenchStageRow>;
+export declare function addStageBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>, admit?: StageAdmission, lineage?: readonly string[], compose?: PremintCompose): Promise<BenchStageRow>;
 /** THE BATCH ADD DOOR (the restore law, operator 2026-10-21:
  * "Restoring takes an extreme amount of time"): N stages land as
  * ONE write — one load, one CAS over the whole list, one save, one
@@ -309,7 +372,7 @@ export declare function addStageBench(drafts: Domain<DraftsDomainSpec>, session:
  * admits against the projected live ids), each refusal naming the
  * row's index. EVERY gate passes before the first mutation (the
  * refusal-that-lies law): a refused batch persists nothing. */
-export declare function addStagesBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>, admit?: StageAdmission): Promise<BenchStagesRow>;
+export declare function addStagesBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>, admit?: StageAdmission, lineage?: readonly string[]): Promise<BenchStagesRow>;
 /** reorder — move ONE stage to a new index in the bench's stage order
  *  (the drag-reorder door, 2026-09-11: the old system's reorderRange
  *  gesture; the reborn bench is SSOT so the door exists before the UX
@@ -323,7 +386,7 @@ export declare function addStagesBench(drafts: Domain<DraftsDomainSpec>, session
  *  press and apply cannot silently shift the drop's intent (the I2
  *  rebase-shift); a missing anchor refuses `bench/anchor-gone` —
  *  the re-ask is honest, the silent skew was not. */
-export declare function reorderBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>): Promise<BenchReorderRow>;
+export declare function reorderBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>, lineage?: readonly string[]): Promise<BenchReorderRow>;
 /** The reorder row: the move's coordinates for the caller's optimistic
  *  update (from → to, both POST-splice-clamp). */
 export interface BenchReorderRow {
@@ -340,13 +403,13 @@ export interface BenchReorderRow {
  *  the bench's stage list stays the projection-free truth — the grid
  *  renders the compound as a single tile and ungroup restores the
  *  members at the compound's index. The inverse carries both halves. */
-export declare function groupBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>, admit?: StageAdmission | undefined): Promise<BenchStageRow>;
+export declare function groupBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>, admit?: StageAdmission | undefined, lineage?: readonly string[]): Promise<BenchStageRow>;
 /** ungroup — the compound's door: spill the children back at the
  *  compound's index, in their stored order. */
-export declare function ungroupBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>, admit?: StageAdmission | undefined): Promise<BenchStageRow>;
+export declare function ungroupBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>, admit?: StageAdmission | undefined, lineage?: readonly string[]): Promise<BenchStageRow>;
 /** remove_stage — splice one stage out (the inverse carries row +
  *  index for undo). */
-export declare function removeStageBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>): Promise<BenchStageRow>;
+export declare function removeStageBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>, lineage?: readonly string[]): Promise<BenchStageRow>;
 /** archive — F11 (2026-11-12, the friction report's housekeeping
  *  burn: spent stages re-ran ahead of newer stages, blocking the
  *  queue until manually removed). Sets (or, with off: true, clears)
@@ -358,7 +421,7 @@ export declare function removeStageBench(drafts: Domain<DraftsDomainSpec>, sessi
  *  an input to the row REFUSES the archive, naming the wire — an
  *  archived upstream composes nowhere, the wire would dangle at
  *  run time; unarchive or rewire first. */
-export declare function archiveBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>): Promise<BenchStageRow>;
+export declare function archiveBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>, lineage?: readonly string[]): Promise<BenchStageRow>;
 /** The clear row. */
 export interface BenchClearRow {
     readonly draft_id: DraftId;
@@ -373,7 +436,7 @@ export interface BenchClearRow {
  *  log entry carries the full stages_before inverse (undo restores
  *  everything). The nuclear seat: use it when the bench itself is
  *  the wound. */
-export declare function clearBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>): Promise<BenchClearRow>;
+export declare function clearBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>, lineage?: readonly string[]): Promise<BenchClearRow>;
 /** The rewire row. */
 export interface BenchRewireRow {
     readonly draft_id: DraftId;
@@ -381,10 +444,15 @@ export interface BenchRewireRow {
     readonly rev: number;
     readonly stage: string;
     readonly input: string;
+    /** Present-and-true when the rewire changed what the next run
+     * composes (the done mark cleared — the skip law cannot fold
+     * it). Absent when the rewire was idempotent. The patch door's
+     * own stale voice, same coherence. */
+    readonly stale?: true;
 }
 /** rewire — set or clear one input binding. from:
  *  {stage, output} | {initial: "image"} | absent → clear. */
-export declare function rewireBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>): Promise<BenchRewireRow>;
+export declare function rewireBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>, lineage?: readonly string[]): Promise<BenchRewireRow>;
 /** The undo row: the undone revs + the stages as they stand. */
 export interface BenchUndoRow {
     readonly draft_id: DraftId;
@@ -398,7 +466,7 @@ export interface BenchUndoRow {
  *  newest-first, append ONE undo entry carrying the pre-undo
  *  snapshot. Undo entries are NEVER candidates — a plain undo
  *  walks ACTIONS (targeting them would ping-pong). */
-export declare function undoBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>, admit?: StageAdmission): Promise<BenchUndoRow>;
+export declare function undoBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>, admit?: StageAdmission, lineage?: readonly string[]): Promise<BenchUndoRow>;
 type BenchChangeListener = (session: string) => void;
 /** The event seam this pure domain module reaches the bus through.
  *  `bench.ts` owns no Context (it is the domain layer, not a plugin),

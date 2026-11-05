@@ -41,6 +41,23 @@ export declare function laneStringOf(raw: LaneInputsFacts, key: string): string 
  * @returns the non-empty string at key
  * @throws Error when the key is absent, not a string, or empty */
 export declare function requireText(raw: LaneInputsFacts, key: string, label: string): string;
+/** THE STATED-PRESET TEST (qa8 F31 — the exclusivity rest): the
+ *  engine service's defaults merge (comfyui-cordis service.compose)
+ *  fills the lane's `defaults.voice` into every doc before the tts
+ *  judges run — the fill is the lane's REST, and it must not count
+ *  as a stated preset in the one-voice exclusivity checks (the
+ *  burn: a caller who never stated `voice` was refused with
+ *  "params 'voice' and 'qvoice' fire together"). The preset is
+ *  stated when the doc names a speaker AND that name differs from
+ *  the lane's own default; an explicit pick OF the default preset
+ *  is indistinguishable from the compile's own write and rides (the
+ *  derived-stamp release trade). One implementation, all three tts
+ *  judge seats — the card's save path, the card's preset+qvoice
+ *  gate, and the family's speak action.
+ * @param doc the gated doc (post-merge at the service door)
+ * @param model the resolved facts row (its defaults ARE the rest)
+ * @returns true when `voice` names a speaker the lane did not fill */
+export declare function voicePresetStated(doc: Record<string, unknown>, model: Pick<ModelFacts, 'defaults'>): boolean;
 /** The diffusion-lane facts core every t2i/edit door parses (the J2/J3
  *  consolidation, 2026-10-18): the four model slots every family's
  *  loaders read, the gated node literal the action builds on, and the

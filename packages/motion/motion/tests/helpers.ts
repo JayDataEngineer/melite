@@ -67,7 +67,15 @@ export function jsonResponse(body: unknown, status = 200): Response {
  *  serialization the real lane serves. A declared knob therefore
  *  reaches the rail whether or not any hand list remembers it — the
  *  exact seam that hid cfg_type for the card's whole history while
- *  the old fixture mirrored the omission. */
+ *  the old fixture mirrored the omission.
+ *
+ *  THE AXIS PLANES RIDE THE SAME LAW (the motion recipe-seat cure,
+ *  2026-11-13): variants + variant_groups derive from the REGISTERED
+ *  kimodo DECL — the empty arrays this stub served predate the
+ *  shared ModelAxes seat and mirrored the rail's omission (no Recipe
+ *  rows reached the axes, so the promised-seat arm saw nothing to
+ *  promise). Shape translation only: wire_defaults → defaults, the
+ *  DECL's own rows verbatim otherwise. */
 let motionEnvelope: Promise<unknown> | null = null
 function motionFormEnvelope(): Promise<unknown> {
   motionEnvelope ??= (async () => {
@@ -79,6 +87,39 @@ function motionFormEnvelope(): Promise<unknown> {
     return (def.schema as { toJSON(): unknown }).toJSON()
   })()
   return motionEnvelope
+}
+
+let motionAxes: Promise<{ variants: unknown[], groups: Record<string, unknown> }> | null = null
+function motionFormAxes(): Promise<{ variants: unknown[], groups: Record<string, unknown> }> {
+  motionAxes ??= (async () => {
+    const { DECL } = await import('@melite/models-kimodo')
+    const groups: Record<string, unknown> = {}
+    for (const g of DECL.variant_groups ?? []) groups[g.id] = g
+    // THE DOOR'S CELL-EXPANSION LAW (discovery.ts's variantRow, the
+    // served-face projection): a variant row serves its own group;
+    // every CELL expands into a Quant row stamped owner=<variant id>
+    // (the owner chain — composingRows gates the cell on its variant
+    // being the active one). Derived from the DECL's real structure,
+    // never a hand-copied row list.
+    const variants: unknown[] = []
+    for (const v of DECL.variants) {
+      variants.push({
+        id: v.id, label: v.label, group: v.group,
+        defaults: v.wire_defaults ?? {},
+        route: v.route ?? '', hint: v.hint ?? null,
+        quant: null, owner: '',
+      })
+      for (const c of v.cells) {
+        variants.push({
+          id: c.quant, label: c.label ?? c.quant, group: 'Quant',
+          defaults: {}, route: c.route ?? '', hint: null,
+          quant: c.quant, owner: v.id,
+        })
+      }
+    }
+    return { variants, groups }
+  })()
+  return motionAxes
 }
 
 
@@ -103,12 +144,13 @@ export function stubLoads(opts: {
     // the truth that let cfg_type drop out of the rail for its whole
     // history while the fixture mirrored the omission.
     if (u.includes('/v1/form-spec')) {
+      const axes = await motionFormAxes()
       return jsonResponse({
         form: 'motion',
         schema: await motionFormEnvelope(),
-        variants: [],
+        variants: axes.variants,
         inputs: [],
-        features: { modifiers: [], variant_groups: {} },
+        features: { modifiers: [], variant_groups: axes.groups },
       })
     }
     if (u.includes(SKIN_URL)) {

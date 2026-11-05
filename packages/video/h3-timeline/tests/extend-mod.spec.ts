@@ -20,6 +20,7 @@ import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
+import { LAST_FRAME_BATCH_INDEX } from "@melite/models-h3";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -129,21 +130,25 @@ describe("the extend kind", () => {
 });
 
 describe("the extend emission (the fresh-continuation chain)", () => {
-  it("anchors on the prior clip's LAST FRAME, taken in-graph (negative batch index)", () => {
+  it("anchors on the prior clip's LAST FRAME, taken in-graph (the non-empty tail pick)", () => {
     const walked = def.schema({ extend: [EXTEND_ENTRY()] }) as Record<string, unknown>;
     const g = new GraphBuilder();
     def.compose(walked, model, g, "run_extend_anchor");
     const out = graphOf(g);
     // THE TAIL ANCHOR: the VHS loader carries the whole clip at the
-    // film clock, and ImageFromBatch(batch_index: -1) takes its last
-    // frame — the engine's own negative-index support, no probe.
+    // film clock, and ImageFromBatch at the census's own max index
+    // (LAST_FRAME_BATCH_INDEX) takes its last frame — a positive
+    // out-of-band index the engine clamps onto the final row; the
+    // negative spelling slices t[-1:0] EMPTY on the live estate
+    // (the 2026-11-19 burn — judged in models/h3
+    // extend-join-shape.spec.ts 'THE NON-EMPTY TAIL').
     const vhs = ofClass(out, 'VHS_LoadVideo');
     assert.equal(vhs.length, 1, "one VHS loader seats the prior clip");
     assert.equal(vhs[0][1].inputs.force_rate, 24, "the VHS loader pins the film clock");
     assert.equal(vhs[0][1].inputs.video, 'clips/take.mp4', "the VHS loader reads the staged clip by name");
     const batch = ofClass(out, 'ImageFromBatch');
     assert.equal(batch.length, 1, "one ImageFromBatch takes the tail frame");
-    assert.equal(batch[0][1].inputs.batch_index, -1, "the anchor is the LAST frame (negative index)");
+    assert.equal(batch[0][1].inputs.batch_index, LAST_FRAME_BATCH_INDEX, "the anchor is the LAST frame (the census's own max — the clamp lands the final row, never the empty slice)");
     assert.equal(batch[0][1].inputs.length, 1, "exactly one frame rides the anchor");
     // the anchor rides the plan's picture seat AND the r2v pixel
     // anchor (the ref_image seat) — wires serialize [nodeKey, slot]

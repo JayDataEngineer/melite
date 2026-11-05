@@ -12,14 +12,9 @@
 import type { Context, Plugin } from "@deepseek-ai/cordis";
 import { BenchRemoteService, DraftsRemoteService } from "./remote.js";
 import { DraftsDomainSeatService } from "./store.js";
-import type { DraftsConfig } from "./store.js";
 
 export { BenchRemoteService, DraftsRemoteService, installBenchChangeSeam } from "./remote.js";
-export {
-  resolveStorageRoot,
-  openDraftsDomain,
-} from "./store.js";
-export type { DraftsConfig } from "./store.js";
+export { openDraftsDomain } from "./store.js";
 export { DRAFT_ID_RE, draftIdOk } from "./spec.js";
 export type { CharacterRecord } from "./spec.js";
 export type { BenchChangeSeam } from "./bench.js";
@@ -38,10 +33,10 @@ export type {
 
 export const name = "estate-drafts";
 
-export function apply(ctx: Context, config: DraftsConfig = {}): void {
+export function apply(ctx: Context): void {
   // the domain seat mounts FIRST — the remote services' writers open
   // the drafts domain through it (openDraftsDomain probes this seat)
-  new DraftsDomainSeatService(ctx, config);
+  new DraftsDomainSeatService(ctx);
   new DraftsRemoteService(ctx);
   new BenchRemoteService(ctx);
 }

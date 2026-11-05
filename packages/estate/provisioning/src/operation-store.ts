@@ -259,8 +259,18 @@ export class FileOperationStore implements OperationStorePort {
     const checked = requireOperation(operation);
     const root = await this.prepareRoot();
     const markerPath = join(root, "claims", `${checked.operationId}.json`);
+    // THE MARKER-DIR LAW (the coverage cure, 2026-11-03): the
+    // claims-dir create and the wx marker race are SEPARATE
+    // failures. A recursive mkdir throws only on a corrupt root (a
+    // file at the claims path EEXISTs the create) — that is io,
+    // LOUD, never a lost race. Only the wx marker's own EEXIST is
+    // the rival's marker — refused false.
     try {
       await mkdir(dirname(markerPath), { recursive: true });
+    } catch (error: unknown) {
+      throw new OperationStoreError("io", "Failed to prepare the claim directory", error);
+    }
+    try {
       await writeFile(markerPath, `${JSON.stringify({ claimedBy: checked.detail ?? "", at: Date.now() })}\n`, { flag: "wx", mode: 0o600 });
     } catch (error: unknown) {
       if ((error as NodeJS.ErrnoException).code === "EEXIST") return false;

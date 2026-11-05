@@ -205,20 +205,20 @@ export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model:
  *  emitted tool row carries; the ring's spelling, stated once). */
 export const identity = {
   label: 'Edit Image',
-  description: 'Instruction-driven image editing — the edit_image interface card boarding three LANES: qwen-img-edit-2511 (the dedicated edit checkpoint — lightning/standard cascade), qwen-img-edit-21 (the cached-reference edit lane of the same 2.1 weights as the t2i sibling family), and fibo2-edit (BRIA\'s licensed Fibo 2.0 model, the Comfy-Org repack — one TextEncodeFibo2 encoder conditioning both arms, dev/edit-turbo checkpoint pair, the encoder\'s own trained-size latent). The family names the model, the card names the operation. The surface scopes itself.',
+  description: 'Instruction-driven image editing — the edit_image interface card boarding two served LANES: qwen-img-edit-21 (the default — the cached-reference edit lane of the same 2.1 weights as the t2i sibling family) and fibo2-edit (BRIA\'s licensed Fibo 2.0 model, the Comfy-Org repack — one TextEncodeFibo2 encoder conditioning both arms, dev/edit-turbo checkpoint pair, the encoder\'s own trained-size latent). The family names the model, the card names the operation. The surface scopes itself.',
   genre: 'image',
   icon: 'edit',
   principles: [
-    'ONE ordered input list (the merge, 2026-10-10): input_images — the FIRST image is the one being edited, the rest are references the prompt cites as <image2>, <image3>…; image1/image2/image3/reference_images are hidden legacy aliases merging into the same list (anchor, numbered, then stack) so old drafts recompose byte-stable',
-    'the list capacity rides each lane DECL\'s max_images (2.1: 16 total, fibo2-edit: 16 total, 2511: 3 total — anchor included); a list past the lane cap refuses loudly, never drops quietly',
+    'ONE ordered input list: input_images — the FIRST image is the one being edited, the rest are references the prompt cites as <image2>, <image3>…; image1/image2/image3/reference_images are hidden legacy aliases merging into the same list (anchor, numbered, then stack) so old drafts recompose byte-stable',
+    'the list capacity rides each lane DECL\'s max_images (2.1: 16 total, fibo2-edit: 16 total — anchor included); a list past the lane cap refuses loudly, never drops quietly',
     'Qwen-Image-Edit uses low CFG (flow-matching) — the Guidance Scale slider tops out at 10.0',
     'Without a mask modifier, image editing is whole-image by default; a mask modifier opts into masked-region editing',
     'An input_mask alongside image1 in auto refuses field-named on every lane — state mask_mode crop_stitch for region work',
-    'Masked region (crop_stitch) runs the generic region detailer instead, on ALL THREE lanes (the operator\'s 2.1 rides its cache-wrapped model + encoder conditioning): region → SEGS → DetailerForEach crop/edit/paste — pixels outside the region never change; the region is the painted mask, or pick a detector (person/face/hand) and the Impact chain proposes it',
+    'Masked region (crop_stitch) runs the generic region detailer instead, on both served lanes (2.1 rides its cache-wrapped model + encoder conditioning): region → SEGS → DetailerForEach crop/edit/paste — pixels outside the region never change; the region is the painted mask, or pick a detector (person/face/hand) and the Impact chain proposes it',
     'Region detail rides mask_detail_size (working size) + mask_denoise (rework strength); grow + context pad compose the region halo, feather blends the paste',
     'Mask prep (grow/feather/invert) rides in-graph ahead of the sampler; re-threshold has no node and refuses non-zero',
     'Iterate HERE, not in video — an edit costs seconds, a render minutes; name what changes, state the rest as unchanged',
-    'THE GEOMETRY LAW (the latent law, 2026-11-08 + the resize order, 2026-11-12): every edit lane RUNS at the source\'s own frame — the 2.1 lane samples the encoder\'s anchor-sized latent (any other size shifts the edit, the node\'s own law), 2511 encodes the source outright, fibo2-edit samples its encoder\'s latent at the trained size, and the crop_stitch detailer owns the crop size. The DELIVERABLE may resize: flip Match Input Resolution off and state Width/Height — the finished edit scales (lanczos, post-decode, one artifact) to that size. Match ON + a stated axis refuses field-named with the flip in the voice',
+    'THE GEOMETRY LAW: every edit lane RUNS at the source\'s own frame — the 2.1 lane samples the encoder\'s anchor-sized latent (any other size shifts the edit, the node\'s own law), fibo2-edit samples its encoder\'s latent at the trained size, and the crop_stitch detailer owns the crop size. The DELIVERABLE may resize: flip Match Input Resolution off and state Width/Height — the finished edit scales (lanczos, post-decode, one artifact) to that size. Match ON + a stated axis refuses field-named with the flip in the voice',
     'Previous card outputs ride as artifact URLs (/v1/assets/runs/<run>/<file>); the compose resolves them to data/runs/output/<run>/<file> and stages into the comfy input dir (phase 1 validates on the mounts BEFORE registration)',
   ],
 }
@@ -309,6 +309,18 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
         image2: 'image',
         image3: 'image',
         reference_images: 'image_list',
+      },
+      // THE SEAT MAP (the one-bench burn, 2026-11-14): every legacy
+      // spelling merges into the ONE ordered list — the same law
+      // orderedInputImages performs engine-side, declared here so
+      // the read-side fold (the resolved serve, the construct
+      // write) serves the canonical seat and the user's drill
+      // renders the image the agent attached, never a blank square.
+      aliasSeats: {
+        image1: 'input_images',
+        image2: 'input_images',
+        image3: 'input_images',
+        reference_images: 'input_images',
       },
       outputs: { default: 'image' },
       requiresModel: false,

@@ -63,8 +63,7 @@ The estate's camera knobs, in the order you should reach for them:
    for the bands and the official defaults. The honest ceiling is
    small-to-moderate re-angles and 2.5D parallax. There is NO
    Fun-ControlNet stage and NO inpaint stage in this chain: the holes
-   the warp leaves are pinned raw, never painted (every fill cure
-   painted a second subject and was retired).
+   the warp leaves are pinned raw, never painted.
 5. **Seams — `transition`, the stitch grammar.** The seam system has
    exactly two states: a carried seam (omit `transition` — the
    generation head hands a 22-frame drift-control overlap to the next

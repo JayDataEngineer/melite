@@ -12,8 +12,8 @@
 //   APPEND-ONLY LOG — load appends a revert-carrying entry; history
 //   is never rewritten (patch/undo arms land in later strokes).
 //   AUTHORSHIP — every entry carries author ("agent"|"user").
-import { unwrapItemArrays } from '@melite/comfyui-card-kit';
-import { benchDraftIdOf, BIRTH_STRIP_KEYS, LOAD_CARRY_KEYS, normalizeBenchStage, SELF_NAMED_FAMILIES, stripKeys } from '@melite/contracts/benchStage';
+import { promoteQvoiceBag, unwrapItemArrays } from '@melite/comfyui-card-kit';
+import { benchDraftIdOf, BIRTH_STRIP_KEYS, LOAD_CARRY_KEYS, liveBenchRows, normalizeBenchStage, projectStages, SELF_NAMED_FAMILIES, stripKeys } from '@melite/contracts/benchStage';
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 import { applyOutcomePatch, trailDedupe } from "./trail.js";
 /** Session key gate: same charset family as draft ids, capped so
@@ -36,6 +36,15 @@ function benchIdOf(session) {
 const AUTHORS = ["agent", "user"];
 function authorOk(v) {
     return v === "agent" || v === "user";
+}
+/** The door's writer attribution in one place (the load-path
+ *  inheritance, 2026-10-31: loadBench's seed birth stamps the
+ *  calling door's author, but every door derives it AFTER its
+ *  loadBench call — this helper lets the call site forward the
+ *  attribution without reordering the door). Same default as the
+ *  doors' own derivation ("agent"). */
+function authorOf(body) {
+    return authorOk(body["author"]) ? body["author"] : "agent";
 }
 function isRecord(v) {
     return typeof v === "object" && v !== null && !Array.isArray(v);
@@ -61,6 +70,40 @@ function stagesOf(doc) {
     if (!Array.isArray(stages))
         return [];
     return stages.filter((s) => isRecord(s));
+}
+/** THE SEED-ANCESTOR WALK (the one-seat audit, 2026-10-31, depth
+ *  BLOCKER: the landed inheritance covered only ensureBench's pure
+ *  touch — loadBench's first-write birth (every mutation door) and
+ *  the GUI-first-touch ride never saw it). One walk, every creating
+ *  arm: nearest-first over the caller's lineage, the first ancestor
+ *  generation that owns a bench doc wins. Returned whole so both
+ *  births (ensure's ready/rev-1 shape, loadBench's draft/rev-0
+ *  shape) copy from the same truth. */
+function findSeedAncestor(drafts, lineage) {
+    for (const ancestor of lineage) {
+        if (typeof ancestor !== "string" || !SESSION_RE.test(ancestor))
+            continue;
+        const parent = drafts.table("docs").get(benchIdOf(ancestor));
+        if (parent === undefined)
+            continue;
+        return { ancestor, parentDoc: parent.doc };
+    }
+    return undefined;
+}
+/** THE SEED COPY (same audit): every row verbatim — each row's own
+ *  result is its own truth (the preview continuity the operator
+ *  demanded) — live run states normalized to '' (a fresh generation
+ *  re-observes; a stale 'running' is a lie). Shared by ensureBench
+ *  and loadBench so the two births can never diverge. */
+function seedStagesFrom(parentDoc) {
+    return stagesOf(parentDoc).map((row) => {
+        const copy = { ...row };
+        const live = copy["runStatus"];
+        if (live === "running" || live === "queued" || live === "pending") {
+            copy["runStatus"] = "";
+        }
+        return copy;
+    });
 }
 /** THE SEED RECEIPT (2026-09-21, ledger #41: a concrete seed rode
  *  a wholesale load while the summary said only "load N stages" —
@@ -318,7 +361,7 @@ function syncIntent(doc, before, after) {
         }
     }
 }
-export async function ensureBench(drafts, body, admit) {
+export async function ensureBench(drafts, body, admit, lineage) {
     refuseUnknown(body, ENSURE_KEYS);
     const session = body["session"];
     if (typeof session !== "string" || !SESSION_RE.test(session)) {
@@ -330,6 +373,58 @@ export async function ensureBench(drafts, body, admit) {
         : "agent";
     const rec = drafts.table("docs").get(draftId);
     if (rec === undefined) {
+        // THE GENERATION INHERITANCE (the one-seat audit, 2026-10-31 —
+        // dev_docs/audits/journey/2026-10-31-one-seat-bench-identity.md).
+        // DSH conversations seed NEW session generations (fork/compact
+        // mints session-<new> with parentSession); the bench key rides
+        // the generation id, so every seed orphaned the built state —
+        // the operator's "IT NEVER EVER RELOADS FROM HISTORY" was this
+        // hop, not a transport hop. On a child generation's FIRST touch,
+        // the nearest ancestor generation that owns a bench doc hands
+        // its WHOLE state forward: every row verbatim (each row's own
+        // result is its own truth — the preview continuity the operator
+        // demanded), live run states normalized to '' (a fresh
+        // generation re-observes; a stale 'running' is a lie), one
+        // 'seed' log entry naming the ancestor. No ancestor with state
+        // → the clean birth below, unchanged. GATED on a pure touch
+        // (body.stages undefined): a caller POSTING stages names its own
+        // load explicitly — the load laws govern it, not inheritance.
+        if (lineage !== undefined && lineage.length > 0 && body["stages"] === undefined) {
+            const seed = findSeedAncestor(drafts, lineage);
+            if (seed !== undefined) {
+                const inherited = seedStagesFrom(seed.parentDoc);
+                admitWiringList(inherited, session);
+                const seedEntry = {
+                    rev: 1,
+                    at: Math.floor(Date.now() / 1000),
+                    author,
+                    kind: "seed",
+                    summary: "inherited bench from generation " + seed.ancestor + " | " + inherited.length + " stages",
+                    stage: seed.ancestor,
+                };
+                const seedDoc = {
+                    draft_id: draftId,
+                    intent: typeof body["intent"] === "string" ? body["intent"] : "bench",
+                    stages: inherited,
+                    status: "ready",
+                    createdAt: Date.now(),
+                    completedAt: null,
+                    bench: { rev: 1, log: [seedEntry] },
+                };
+                await drafts.table("docs").put(draftId, {
+                    updated_at: Math.floor(Date.now() / 1000),
+                    doc: seedDoc,
+                });
+                return {
+                    draft_id: draftId,
+                    session,
+                    rev: 1,
+                    intent: seedDoc["intent"],
+                    stages: seedDoc["stages"],
+                    created: true,
+                };
+            }
+        }
         const stagesIn = Array.isArray(body["stages"]) ? body["stages"] : [];
         // THE JUDGE SEES THE STORED ROW — BIRTH TOO (the walls audit,
         // 2026-09-28, found live: the birth arm called admitStages on
@@ -439,6 +534,26 @@ export async function ensureBench(drafts, body, admit) {
         if (prev === undefined)
             continue;
         for (const key of MEMORY_KEYS) {
+            // THE EXPLICIT-NULL CLEAR (D1, the restore-preview recurrence
+            // audit 2026-10-31,
+            // dev_docs/audits/journey/2026-10-31-restore-preview-recurrence.md
+            // F1): a posted row that STATES a memory key as null is a
+            // CLEAR, not silence — the key is deleted here so the doc
+            // never stores a null (the patch door's own RFC 7386 merge
+            // law, remote.ts:1146 — one null law, both transports) and
+            // the fill below never reads the stated null as "absent = fill
+            // me". The cured restore (bench-load.ts's bench_snapshot arm)
+            // posts result: null on the rows whose truth restore leaves
+            // preview-less; against a stripped-ABSENT post this carry
+            // re-attached the doc's own cross-stamp fossil on every
+            // reload-from-history — the reservoir, proven live through
+            // these doors (the audit's R1). An ABSENT key still carries:
+            // absence means the poster is silent, and the stage memory
+            // law above (the 108-test carry set) keeps its fill law.
+            if (row[key] === null) {
+                delete row[key];
+                continue;
+            }
             if (prev[key] !== undefined && row[key] === undefined) {
                 // THE TRAIL HEAL AT CARRY (trail-defect-hunt §6): a memory
                 // carry of history passes through the one-row-per-run dedup —
@@ -559,12 +674,106 @@ export function getBench(drafts, session) {
         })),
     };
 }
-async function loadBench(drafts, session) {
+/** THE SEED BIRTH, ONE WRITER (the one-seat audit, 2026-10-31): the
+ *  load-shape materialization every non-ensure creating arm shares —
+ *  loadBench's first-mutation birth AND the read path's
+ *  read-through (getBenchSeeded). Walks the seed-ancestor walk; the
+ *  first ancestor with a bench doc copies WHOLE forward (rows
+ *  verbatim, live run states normalized, the seed entry stamped rev
+ *  0 — a rev-1 birth would CAS-conflict the first touch's own
+ *  expect_rev: 0). Keeps the LOAD shape: status "draft". Returns
+ *  undefined when no ancestor owns a doc (the caller keeps its own
+ *  birth law). Never called for a doc that already exists. */
+async function materializeSeedBirth(drafts, session, lineage, author) {
+    if (!SESSION_RE.test(session))
+        return undefined;
+    const seed = findSeedAncestor(drafts, lineage);
+    if (seed === undefined)
+        return undefined;
+    const draftId = benchIdOf(session);
+    const inherited = seedStagesFrom(seed.parentDoc);
+    admitWiringList(inherited, session);
+    const bornAt = Math.floor(Date.now() / 1000);
+    const seedEntry = {
+        rev: 0,
+        at: bornAt,
+        author,
+        kind: "seed",
+        summary: "inherited bench from generation " + seed.ancestor + " | " + inherited.length + " stages",
+        stage: seed.ancestor,
+    };
+    const doc0 = {
+        draft_id: draftId,
+        status: "draft",
+        createdAt: bornAt,
+        completedAt: null,
+        intent: "",
+        stages: inherited,
+        bench: { rev: 0, log: [seedEntry] },
+    };
+    await drafts.table("docs").put(draftId, {
+        updated_at: bornAt,
+        doc: doc0,
+    });
+    return drafts.table("docs").get(draftId);
+}
+/** get, seeded — THE READ-PATH INHERITANCE (the one-seat audit's
+ *  tab-first ordering, 2026-10-31: `bench/get` refused not-found and
+ *  subscribe served ZERO, so the tab's first frame after a reload
+ *  was empty until a write — the operator reopens and sees nothing,
+ *  the app-broken-under-green-walls face of the split). On a missing
+ *  bench whose lineage resolves to an ancestor with state, this
+ *  materializes the SAME seed birth the write doors use
+ *  (materializeSeedBirth — one shape, both seats) and serves it; the
+ *  change wire wakes on the put and every later read is the plain
+ *  get. Scoped to `session-` keys: a non-generation caller key is a
+ *  delegated lane the doors RE-SEAT or refuse — it never materializes
+ *  its own doc (that would rebuild the split this audit closed).
+ *  No lineage or no ancestor state → the caller's own not-found
+ *  (the genuinely fresh conversation's law, byte-identical). */
+export async function getBenchSeeded(drafts, session, lineage) {
+    if (lineage !== undefined &&
+        lineage.length > 0 &&
+        session.startsWith("session-")) {
+        const seeded = await materializeSeedBirth(drafts, session, lineage, "user");
+        if (seeded !== undefined)
+            return getBench(drafts, session);
+    }
+    return getBench(drafts, session);
+}
+async function loadBench(drafts, session, birth) {
     if (!SESSION_RE.test(session)) {
         throw new RemoteError("bench/bad-session", "bad session key (want [A-Za-z0-9_-]{1,64})", {});
     }
     const draftId = benchIdOf(session);
     let rec = drafts.table("docs").get(draftId);
+    if (rec === undefined) {
+        // THE LOAD-PATH INHERITANCE (the one-seat audit's depth BLOCKER,
+        // 2026-10-31: the landed inheritance covered only ensureBench's
+        // pure touch — every mutation door births through loadBench, so
+        // the operator's GUI-first-touch on a seeded child (subscribe →
+        // empty → add_stage) birthed the empty doc and defeated the
+        // inheritance permanently, and stated-rev first writes never saw
+        // it). The birth walks the SAME seed-ancestor walk as ensure's
+        // pure touch (findSeedAncestor + seedStagesFrom — the two births
+        // can never diverge) but keeps the LOAD shape: status "draft",
+        // rev 0 (a rev-1 birth would CAS-conflict the first touch's own
+        // expect_rev: 0), the seed entry stamped rev 0, author from the
+        // calling door ("agent" when the door carries none — undo reads
+        // author as a filter, not a writer). The read path (getBench)
+        // never births — a missing bench still refuses bench/not-found,
+        // so subscribe → empty stays empty and the first WRITE inherits.
+        // Restore is exempt by construction: it loads through ensure
+        // WITH stages + overwrite (bench-load.ts), which names its own
+        // load explicitly and never reaches this birth.
+        const lineage = birth?.lineage;
+        if (lineage !== undefined && lineage.length > 0) {
+            const recSeed = await materializeSeedBirth(drafts, session, lineage, birth?.author ?? "agent");
+            if (recSeed !== undefined) {
+                rec = recSeed;
+            }
+        }
+    }
     if (rec === undefined) {
         // THE BIRTH (stroke 46g, the operator's "is this a forever fix?"):
         // a conversation's bench is born at its FIRST write — never a
@@ -644,12 +853,12 @@ const PATCH_KEYS = ["stage", "params", "result", "runStatus", "expect_rev", "aut
  *  a landing here destroyed the previous result with no supersede —
  *  under the old every-write-bumps law, so every outcome here also
  *  ticked the rev. Outcomes refuse with the redirect voice. */
-export async function patchBench(drafts, session, body, admit, migrate, reseat) {
+export async function patchBench(drafts, session, body, admit, migrate, reseat, lineage) {
     refuseUnknown(body, PATCH_KEYS);
     if ("result" in body || "runStatus" in body) {
         throw new RemoteError("bench/bad-body", "run outcomes ride the drafts/patch door (result/runStatus refused on the bench verb — it authors params only)", {});
     }
-    const loaded = await loadBench(drafts, session);
+    const loaded = await loadBench(drafts, session, { lineage, author: authorOf(body) });
     casCheck(loaded.block, body["expect_rev"], session);
     const stageId = body["stage"];
     if (typeof stageId !== "string") {
@@ -720,13 +929,14 @@ export async function patchBench(drafts, session, body, admit, migrate, reseat) 
         // THE REAL WALK, NOT DICT MEMBERSHIP (journey-closure B5,
         // 2026-10-17): the injected admission carries the family judge
         // (remote.ts familyAdmissionOf → the registry's
-        // admitStageFamily → the card's own CardDefinition.admitFamily
-        // clause — h3-timeline's t4r inject-keys walk). For a
-        // family-conditional card this seat now judges exactly what the
-        // run door's walk judges on this merged view — a Final-Cut
-        // stamp on a keyframe doc refuses HERE with the run door's own
-        // voice (bench/family-refusal), one hop earlier — instead of
-        // the dict-membership pass that green-lit it to the run press.
+        // admitStageFamily → an optional card CardDefinition.admitFamily
+        // clause). RETIRED AS A LIVE JUDGE 2026-11-15: h3-timeline's t4r
+        // inject-keys face died when the t4r render arm gained the post
+        // chain — every finish key fires on every lane, so no card
+        // declares a family clause and this seat is an honest no-op. The
+        // machinery stands for a genuine future family clause and still
+        // refuses HERE with the run door's own voice (bench/family-refusal)
+        // when one exists.
         // A JUDGE, NOT A GUARD (the operator's no-blocker ruling,
         // CONTRACTS.md §4-17): the verdict refuses the write; the
         // stored state, the loads and the restore carve keep their own
@@ -864,8 +1074,18 @@ const ADD_KEYS = ["id", "card", "engine", "params", "inputs", "outputs", "expect
  * storage held the wrap (the live bench read showed it verbatim).
  * Every params-bearing WRITE walks the unwrap — the doc stores
  * clean, reads and compose never see the poison, Probe B reads a
- * true array. */
-const wireParams = (v) => (isRecord(v) ? unwrapItemArrays(v) : v);
+ * true array.
+ *
+ * THE FLAT-QVOICE PROMOTION rides the same seat (the F49 cure,
+ * 2026-11-01): a flat `qvoice: "<path>"` press composes but the mods
+ * surface chips only ARRAY-valued params — the take stored voiceless
+ * in the studio's mods bar. The store seat promotes the flat
+ * spelling into the bag the card's own refusal text names
+ * (`qvoice: [{ qvoice, voice_strength }]`), so the chip renders and
+ * toggles; compose reads either spelling. */
+const wireParams = (v) => isRecord(v)
+    ? promoteQvoiceBag(unwrapItemArrays(v))
+    : v;
 /** Admit one RESTORED stage state (the undo arms): the same seat,
  *  NO restored carve — the audit's GAP 6 caught the lie: the comment
  *  claimed no exemption while the call forwarded the very
@@ -937,9 +1157,34 @@ const GROUP_CARD = "group";
  *  normalizeStages' own output, which keeps only records, so a row
  *  here is a record and the members of a compound are its own. */
 function admitStages(admit, stages) {
-    if (admit === undefined || !Array.isArray(stages))
+    /* v8 ignore next -- every seat hands this walk an array: both
+     * callers pass normalizeStages' own output (an array by
+     * construction) and the compound re-entry rides its own
+     * Array.isArray gate, so no door can pass junk here. */
+    if (!Array.isArray(stages))
         return;
     for (const s of stages) {
+        // THE FLOW-ID REFUSAL (operator 2026-11-14, FLOWS ARE
+        // COMPOSITIONS OF CARDS: "THE CARD UI IS MEANT FOR CARDS ONLY,
+        // NOT FOR FLOWS. THE BENCH OF CARDS REPRESENTS A FLOW"): a
+        // `ref_flow` marker — the retired template landing that overwrote
+        // the bench with one flow-named row (F60's "?" tile) — is a flow
+        // id wearing a stage's shape. It refuses HERE, at the write door,
+        // so every bench row is a card row (or a compound): a flow runs
+        // through its own start door, and when a flow lands on the bench
+        // it lands as its CARD stages, never a flow row. The check is
+        // admission-independent — the shape is the crime, not the card.
+        // (Undo's restore walk does not cross this door, by the un-wedge
+        // line: a doc an older door wrote replays as history, and serve
+        // stays tolerant for the same reason — the marker's cure is the
+        // remove door, on the operator's eyes.)
+        const refFlow = s["ref_flow"];
+        if (typeof refFlow === "string" && refFlow !== "") {
+            throw new RemoteError("bench/bad-body", "stage " + JSON.stringify(String(s["id"] ?? "?")) + ": '" + refFlow +
+                "' is a flow, not a card — a flow id never lands as a bench row" +
+                " (the bench holds cards; a flow runs through its own start door)." +
+                " Stage the flow's cards, or drop the marker row.", {});
+        }
         // THE COMPOUND IS NOT A CARD (the bench audit's gap 9,
         // 2026-10-10): groupBench writes a row whose card is the literal
         // "group" and whose members ride in `children` — so loading the
@@ -948,11 +1193,15 @@ function admitStages(admit, stages) {
         // of such a load bricked on the bench's own prior state. The
         // compound is judged by its MEMBERS: the same door each member
         // crossed when it was picked (the compound-no-blind-spot law,
-        // stated on the way back in).
+        // stated on the way back in). The recursion rides ABOVE the
+        // admission guard so the ref_flow law above walks members with
+        // or without a card seat (the compound is no hiding place).
         if (s["card"] === GROUP_CARD && Array.isArray(s["children"])) {
             admitStages(admit, s["children"]);
             continue;
         }
+        if (admit === undefined)
+            continue;
         admitStage(admit, s["card"], s["params"], s["provenance"]);
     }
 }
@@ -1141,9 +1390,9 @@ function admitWiringList(stages, session, tolerate) {
 }
 /** add_stage — append a card stage with optional wiring (the
  *  runner's input convention rides the row). */
-export async function addStageBench(drafts, session, body, admit) {
+export async function addStageBench(drafts, session, body, admit, lineage, compose) {
     refuseUnknown(body, ADD_KEYS);
-    const loadedForAdmit = await loadBench(drafts, session);
+    const loadedForAdmit = await loadBench(drafts, session, { lineage, author: authorOf(body) });
     casCheck(loadedForAdmit.block, body["expect_rev"], session);
     // THE JUDGED VIEW IS THE STORED VIEW (the bench audit's gap 11,
     // 2026-10-10): this arm judged the RAW body and then stored the
@@ -1251,6 +1500,49 @@ export async function addStageBench(drafts, session, body, admit) {
     // adds persisted as s_1/s_2 on the next good write — a refusal
     // that lies). Mutate only after every gate passes.
     admitWiring(row, row["params"], row["inputs"], [...stages.map((r) => String(r["id"] ?? "")), stageId], stageId, session);
+    // THE PRE-MINT COMPOSE GATE (F14's estate half, 2026-10-31 — the
+    // same law the agent tool's add_stage door took: NO MINT ON
+    // REFUSAL). Until here the door judged the row ALONE (model board,
+    // lane words, family clause, wiring phantom set); the bench is a
+    // DOCUMENT, so the last gate judges the projection the run would
+    // actually compose — live rows + this candidate, through the runs
+    // validate seat — and a refusal refuses the WRITE: no stage, no
+    // rev, no landing, nothing to roll back. The candidate is judged
+    // INSIDE the projection (the ghost class: a row that composes
+    // alone but breaks the bench). Restores are exempt by law — the
+    // batch door (addStagesBench) never composes; era archives repair
+    // at admission, never refuse at compile. Ordered LAST: the cheap
+    // structural gates refuse first, the whole-bench compose only
+    // pays for a row that would otherwise land.
+    if (compose !== undefined) {
+        // the tool door's exact order and shape (melite-construct :1604):
+        // LIVE rows first (an archived row's stale params never judge),
+        // the candidate appended inside the projection — never a cast at
+        // the projection seam (the anti-sniff law: projectStages takes
+        // the unknown view as-is). The judged view is the RAW stored view
+        // (loaded.doc["stages"]), the tool door's own read — not the
+        // stagesOf coercion: a doc written behind the domain's back
+        // (non-array stages, the stagesOf header's own scenario) judges
+        // the candidate ALONE, and the Array.isArray else is that doc's
+        // reachable path, not dead symmetry.
+        const live = liveBenchRows(loaded.doc["stages"]);
+        const verdict = await compose(loaded.doc["intent"], projectStages(Array.isArray(live) ? [...live, row] : [row]));
+        // THE INCOMPLETE-DRAFT EXCEPTION (the GUI-add burn, 2026-11-01):
+        // a verdict marked `incomplete` is the authoring-incomplete
+        // class — an UNSTATED required lane word (tts's `text`; the add
+        // door seeds a card's axes, the words are typed in the form the
+        // landed stage opens). The frictionless-authoring ruling
+        // (operator 2026-11-11) drops the class at every WRITE seat; the
+        // run door owns the required-word voice at press. Refusing the
+        // class here made the tts card UN-ADDABLE from the cards tab:
+        // the required word can only be stated where the stage already
+        // is. Every other refusal keeps F14's law verbatim.
+        if (verdict.ok !== true && verdict.incomplete !== true) {
+            throw new RemoteError("bench/compile-refused", "stage " + JSON.stringify(stageId) + " (" + card +
+                ") would not compose: " + verdict.error +
+                " — refused before the write (nothing landed; the bench is unchanged)", { session, stage: stageId, card });
+        }
+    }
     stages.push(row);
     loaded.doc["stages"] = stages;
     // add_stage never syncs the intent (the orphaning law): a pure
@@ -1290,13 +1582,13 @@ const OUTCOME_KEYS = ["result", "runStatus", "health"];
  * admits against the projected live ids), each refusal naming the
  * row's index. EVERY gate passes before the first mutation (the
  * refusal-that-lies law): a refused batch persists nothing. */
-export async function addStagesBench(drafts, session, body, admit) {
+export async function addStagesBench(drafts, session, body, admit, lineage) {
     refuseUnknown(body, ADD_STAGES_KEYS);
     const rawList = body["stages"];
     if (!Array.isArray(rawList) || rawList.length === 0) {
         throw new RemoteError("bench/bad-body", "stages is required — a non-empty array of stage rows (got " + typeof rawList + ")", {});
     }
-    const loaded = await loadBench(drafts, session);
+    const loaded = await loadBench(drafts, session, { lineage, author: authorOf(body) });
     casCheck(loaded.block, body["expect_rev"], session);
     const author = authorOk(body["author"])
         ? body["author"]
@@ -1417,9 +1709,9 @@ const REORDER_KEYS = ["stage", "to", "expect_rev", "author", "after"];
  *  press and apply cannot silently shift the drop's intent (the I2
  *  rebase-shift); a missing anchor refuses `bench/anchor-gone` —
  *  the re-ask is honest, the silent skew was not. */
-export async function reorderBench(drafts, session, body) {
+export async function reorderBench(drafts, session, body, lineage) {
     refuseUnknown(body, REORDER_KEYS);
-    const loaded = await loadBench(drafts, session);
+    const loaded = await loadBench(drafts, session, { lineage, author: authorOf(body) });
     casCheck(loaded.block, body["expect_rev"], session);
     const stageId = body["stage"];
     if (typeof stageId !== "string") {
@@ -1473,9 +1765,9 @@ const GROUP_KEYS = ["stages", "expect_rev", "author"];
  *  the bench's stage list stays the projection-free truth — the grid
  *  renders the compound as a single tile and ungroup restores the
  *  members at the compound's index. The inverse carries both halves. */
-export async function groupBench(drafts, session, body, admit = undefined) {
+export async function groupBench(drafts, session, body, admit = undefined, lineage) {
     refuseUnknown(body, GROUP_KEYS);
-    const loaded = await loadBench(drafts, session);
+    const loaded = await loadBench(drafts, session, { lineage, author: authorOf(body) });
     casCheck(loaded.block, body["expect_rev"], session);
     const idsRaw = body["stages"];
     if (!Array.isArray(idsRaw) || idsRaw.length < 2
@@ -1572,9 +1864,9 @@ export async function groupBench(drafts, session, body, admit = undefined) {
 const UNGROUP_KEYS = ["stage", "expect_rev", "author"];
 /** ungroup — the compound's door: spill the children back at the
  *  compound's index, in their stored order. */
-export async function ungroupBench(drafts, session, body, admit = undefined) {
+export async function ungroupBench(drafts, session, body, admit = undefined, lineage) {
     refuseUnknown(body, UNGROUP_KEYS);
-    const loaded = await loadBench(drafts, session);
+    const loaded = await loadBench(drafts, session, { lineage, author: authorOf(body) });
     casCheck(loaded.block, body["expect_rev"], session);
     const stageId = body["stage"];
     if (typeof stageId !== "string") {
@@ -1627,9 +1919,9 @@ export async function ungroupBench(drafts, session, body, admit = undefined) {
 }
 /** remove_stage — splice one stage out (the inverse carries row +
  *  index for undo). */
-export async function removeStageBench(drafts, session, body) {
+export async function removeStageBench(drafts, session, body, lineage) {
     refuseUnknown(body, REMOVE_KEYS);
-    const loaded = await loadBench(drafts, session);
+    const loaded = await loadBench(drafts, session, { lineage, author: authorOf(body) });
     casCheck(loaded.block, body["expect_rev"], session);
     const stageId = body["stage"];
     if (typeof stageId !== "string") {
@@ -1687,9 +1979,9 @@ const ARCHIVE_KEYS = ["stage", "off", "expect_rev", "author"];
  *  an input to the row REFUSES the archive, naming the wire — an
  *  archived upstream composes nowhere, the wire would dangle at
  *  run time; unarchive or rewire first. */
-export async function archiveBench(drafts, session, body) {
+export async function archiveBench(drafts, session, body, lineage) {
     refuseUnknown(body, ARCHIVE_KEYS);
-    const loaded = await loadBench(drafts, session);
+    const loaded = await loadBench(drafts, session, { lineage, author: authorOf(body) });
     casCheck(loaded.block, body["expect_rev"], session);
     const stageId = body["stage"];
     if (typeof stageId !== "string" || stageId === "") {
@@ -1754,9 +2046,9 @@ const CLEAR_KEYS = ["expect_rev", "author"];
  *  log entry carries the full stages_before inverse (undo restores
  *  everything). The nuclear seat: use it when the bench itself is
  *  the wound. */
-export async function clearBench(drafts, session, body) {
+export async function clearBench(drafts, session, body, lineage) {
     refuseUnknown(body, CLEAR_KEYS);
-    const loaded = await loadBench(drafts, session);
+    const loaded = await loadBench(drafts, session, { lineage, author: authorOf(body) });
     casCheck(loaded.block, body["expect_rev"], session);
     const author = authorOk(body["author"])
         ? body["author"]
@@ -1782,9 +2074,9 @@ export async function clearBench(drafts, session, body) {
 const REWIRE_KEYS = ["stage", "input", "from", "expect_rev", "author"];
 /** rewire — set or clear one input binding. from:
  *  {stage, output} | {initial: "image"} | absent → clear. */
-export async function rewireBench(drafts, session, body) {
+export async function rewireBench(drafts, session, body, lineage) {
     refuseUnknown(body, REWIRE_KEYS);
-    const loaded = await loadBench(drafts, session);
+    const loaded = await loadBench(drafts, session, { lineage, author: authorOf(body) });
     casCheck(loaded.block, body["expect_rev"], session);
     const stageId = body["stage"];
     const input = body["input"];
@@ -1830,7 +2122,23 @@ export async function rewireBench(drafts, session, body) {
     // the row's other pre-broken inputs tolerate so rewiring one
     // wire on a wounded row never wedges.
     toleratedByRow([st], liveIdsOf(stagesOf(loaded.doc))).get(stageId));
+    // THE STALENESS ARM (the patch door's staleness law, wiring half —
+    // qa8 partial sweep P6): a wiring change is a view change — the
+    // next run composes different inputs, so the stage's run memory
+    // is a lie the same way a changed params view is. Clearing
+    // runStatus here is the door maintaining coherence, never a
+    // caller outcome write (the refusal above governs the CALLER's
+    // runStatus key); the result row keeps the last artifact for the
+    // enrichment read. Idempotent restatement keeps the mark (the
+    // canonical compare: no change, no stale).
+    const beforeInputsJson = JSON.stringify(isRecord(st["inputs"]) ? st["inputs"] : {});
     st["inputs"] = inputs;
+    const wiringChanged = beforeInputsJson !== JSON.stringify(inputs);
+    let staleCleared = false;
+    if (wiringChanged && typeof st["runStatus"] === "string" && st["runStatus"] !== "") {
+        delete st["runStatus"];
+        staleCleared = true;
+    }
     const inverse = { stage: stageId, input };
     if (before !== undefined)
         inverse["before"] = before;
@@ -1849,6 +2157,7 @@ export async function rewireBench(drafts, session, body) {
         rev: newRev,
         stage: stageId,
         input,
+        ...(staleCleared ? { stale: true } : {}),
     };
 }
 const UNDO_KEYS = ["n", "author", "expect_rev"];
@@ -1857,9 +2166,9 @@ const UNDO_KEYS = ["n", "author", "expect_rev"];
  *  newest-first, append ONE undo entry carrying the pre-undo
  *  snapshot. Undo entries are NEVER candidates — a plain undo
  *  walks ACTIONS (targeting them would ping-pong). */
-export async function undoBench(drafts, session, body, admit) {
+export async function undoBench(drafts, session, body, admit, lineage) {
     refuseUnknown(body, UNDO_KEYS);
-    const loaded = await loadBench(drafts, session);
+    const loaded = await loadBench(drafts, session, { lineage, author: authorOf(body) });
     // THE FENCE IS NOT OPTIONAL (audit W-E2): undo reverts writes —
     // exactly the mutations the CAS law fences. It was the only verb
     // that skipped the check when expect_rev was absent, so an

@@ -55,10 +55,6 @@ export declare const draftsDomainSpec: {
     compatibleVersions: number[];
     layout: "per-record";
     invalidRecords: "backup-and-skip";
-    global: {
-        schema: z.ZodNumber;
-        initial: number;
-    };
     tables: {
         docs: import("@deepseek-ai/dsh-storage-domain").DomainTableSpec<string, {
             updated_at: number;

@@ -15,6 +15,7 @@
     ],
     "types": ["node"],
     "paths": {
+        "@melite/image-mask-studio/orbit-canvas": ["./../../image/mask-studio/src/ui/OrbitLeafCanvas.tsx"],
         "@melite/3d-anny": ["./../../3d/anny/src/index.ts"],
         "@melite/3d-anny/card": ["./../../3d/anny/src/card.ts"],
         "@melite/3d-img-to-mesh": ["./../../3d/img-to-mesh/src/index.ts"],
@@ -121,7 +122,6 @@
         "@melite/models-anima/mods/mask": ["./../../models/anima/mods/mask.ts"],
         "@melite/models-anny": ["./../../models/anny/src/index.ts"],
         "@melite/models-anny/mods/verbs": ["./../../models/anny/mods/verbs.ts"],
-        "@melite/models-anycreature": ["./../../models/anycreature/src/index.ts"],
         "@melite/models-concat": ["./../../models/concat/src/index.ts"],
         "@melite/models-fibo2-edit": ["./../../models/fibo2-edit/src/index.ts"],
         "@melite/models-fibo2-edit/mods/loras": ["./../../models/fibo2-edit/mods/loras.ts"],

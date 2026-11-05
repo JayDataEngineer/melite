@@ -76,6 +76,17 @@ describe('useMotionUndoStack (the hook\'s own laws)', () => {
     m.unmount()
   }, 10000)
 
+  test('ctrl+y on a virgin redo stack is a no-op (the empty guard returns before any capture)', () => {
+    // the guard's own arm: nothing undone means nothing to redo —
+    // the early return fires BEFORE captureSnapshot, so the capture
+    // source is never touched (this arm pins the branch the loaded
+    // pool's ordering used to leave taken-or-not to chance)
+    const m = harness()
+    fireEvent.keyDown(window, { key: 'y', ctrlKey: true })
+    expect(m.restore).toHaveBeenCalledTimes(0)
+    expect(m.capture).toHaveBeenCalledTimes(0)
+  })
+
   test('ctrl+y redoes and ctrl+z undoes; typing in a textarea is never hijacked', () => {
     const m = harness()
     // author a second state through the stack's own door: the
@@ -99,6 +110,36 @@ describe('useMotionUndoStack (the hook\'s own laws)', () => {
     fireEvent.keyDown(input, { key: 'y', ctrlKey: true })
     expect(m.restore).toHaveBeenCalledTimes(2)
     input.remove()
+    m.unmount()
+  }, 10000)
+
+  test('typing in a contentEditable surface is never hijacked either (the guard\'s second disjunct)', () => {
+    // the guard reads TWO lanes: the INPUT/TEXTAREA/SELECT tag test
+    // AND el?.isContentEditable — a rich-text surface (the studio's
+    // prose lanes ride contentEditable) is not a textarea and only
+    // the second disjunct catches it. The undo cluster must leave
+    // it alone exactly as it leaves the textarea alone.
+    const m = harness()
+    const twoPrompts: DocSnapshot = {
+      ...m.doc(),
+      prompts: [...m.doc().prompts, { uuid: 'p1', text: 'second', start_frame: 0, end_frame: 4, color: null }],
+    }
+    m.capture.mockImplementation(() => twoPrompts)
+    m.stack().pushUndo()
+    let restores = 0
+    const rich = document.createElement('div')
+    rich.contentEditable = 'true'
+    document.body.appendChild(rich)
+    fireEvent.keyDown(rich, { key: 'z', ctrlKey: true })
+    expect(m.restore).toHaveBeenCalledTimes(restores)
+    fireEvent.keyDown(rich, { key: 'y', ctrlKey: true })
+    expect(m.restore).toHaveBeenCalledTimes(restores)
+    // and the cluster still works OUTSIDE the rich surface (the
+    // guard refuses only the typing lanes, never the cluster)
+    fireEvent.keyDown(window, { key: 'z', ctrlKey: true })
+    restores += 1
+    expect(m.restore).toHaveBeenCalledTimes(restores)
+    rich.remove()
     m.unmount()
   }, 10000)
 

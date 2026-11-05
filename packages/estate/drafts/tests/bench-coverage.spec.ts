@@ -2,7 +2,7 @@ import { test } from "vitest";
 import assert from "node:assert/strict";
 import type { Domain } from "@deepseek-ai/dsh-storage-domain";
 import type { DraftsDomainSpec } from "../src/spec.js";
-import { ensureBench, getBench, patchBench, addStageBench, removeStageBench, rewireBench } from "../src/bench.ts";
+import { ensureBench, getBench, patchBench, addStageBench, addStagesBench, removeStageBench, rewireBench } from "../src/bench.ts";
 import { boot, seed, codeOf, syncCodeOf } from "./bench-helpers.ts";
 
 // ── coverage arms: the rare-error and default branches ──────────
@@ -224,6 +224,47 @@ test("rewire tolerates a junk params cell when the channel deletes (no spell lef
     (after.stages as Array<{ inputs: unknown }>)[0]?.inputs,
     {},
   );
+});
+
+test("the family reseat's drop rides the patch row (the receipt speaks; the stored view is the reseated one)", async () => {
+  const drafts = await boot();
+  await ensureBench(drafts, { session: "fr", stages: [{ id: "s_0", card: "tts", params: { stamp: "old-lane" } }] });
+  // the flip arrival: the merge carries the old lane's stamp forward;
+  // the reseat drops the stranded carry off the merged view
+  const calls: Array<{ card: string; merged: Record<string, unknown>; prior: Record<string, unknown> }> = [];
+  const row = await patchBench(drafts, "fr", {
+    stage: "s_0", params: { seed: 5 }, expect_rev: 0,
+  }, undefined, undefined, (card, merged, prior) => {
+    calls.push({ card, merged: { ...merged }, prior: { ...prior } });
+    return { params: { seed: 5 }, dropped: ["stamp"] };
+  });
+  assert.deepEqual(row.dropped, ["stamp"], "the drop rides the row — never a silent strip");
+  assert.deepEqual(calls, [{ card: "tts", merged: { stamp: "old-lane", seed: 5 }, prior: { stamp: "old-lane" } }],
+    "the reseat judges the MERGED view against the row's prior params");
+  const after = getBench(drafts, "fr");
+  assert.deepEqual(
+    (after.stages as Array<{ params: unknown }>)[0]?.params,
+    { seed: 5 },
+    "the stored view is the reseated one — the stranded carry is gone",
+  );
+});
+
+test("a batch row's record expected rides the stored row verbatim (a non-record expected never rides)", async () => {
+  const drafts = await boot();
+  const ans = await addStagesBench(drafts, "bexp", {
+    stages: [
+      { card: "hero", params: {}, expected: { default: "image", note: { deep: [1] } } },
+      { card: "hero", params: {}, expected: "junk" },
+    ],
+    expect_rev: 0,
+    author: "user",
+  });
+  assert.equal(ans.stages.length, 2);
+  const after = getBench(drafts, "bexp");
+  const rows = after.stages as Array<Record<string, unknown>>;
+  assert.deepEqual(rows[0]?.["expected"], { default: "image", note: { deep: [1] } },
+    "the record expected lands whole (the single add's own law, batch spelling)");
+  assert.equal("expected" in rows[1]!, false, "a junk expected never rides the row");
 });
 
 // ── THE RESTORE REPAIR (operator law 2026-09-24 — receipt: loading

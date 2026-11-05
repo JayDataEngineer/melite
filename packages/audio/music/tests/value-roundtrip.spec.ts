@@ -27,8 +27,11 @@
 // which landed the mode+lyrics cures BEFORE this wall: the arms below
 // went green first-run over the cured tree, and now witness the cure):
 // B2-mode (was D1: `mode` a dead knob on music3), B2-lyrics (was D2:
-// lyrics unwireable on the flow face, flowsRegistryRows.ts seats
-// :336/:372-375/:386). Arms that hold green are
+// lyrics unwireable on the flow face, cured 821475e43 on the then-live
+// music-native row; the wrapper row retired 2026-11-14 with the
+// flows-are-compositions law and ARM 3's row walk went with it — the
+// lyrics value law rides the CARD face below and the {model:} door).
+// Arms that hold green are
 // marked `// ALREADY GREEN` with the audit verdict they carry — the
 // missing piece there was the WALL (this file now is it), not the
 // carriage. ARM 6 (2026-11-08, SD-6's numerics) is the same class:
@@ -76,7 +79,6 @@ import { DECL as yue2Decl } from "@melite/models-yue2";
 import { CardRegistryService } from "../../../harness/estate-queue/src/cardsRegistry.ts";
 import type {} from "../../../harness/estate-queue/src/service.ts";
 import { FlowsSeatService } from "../../../harness/estate-queue/src/flowsData.ts";
-import { MUSIC_NATIVE } from "../../../harness/estate-queue/src/flowsRegistryRows.ts";
 import { installLaneStoreOverlay, restoreLaneStoreOverlay } from "../../../../tests/helpers/lane-store-overlay.ts";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 
@@ -410,19 +412,21 @@ describe("ARM 2 — the stated mode answers at its consumer or refuses loud (B2-
   });
 });
 
-// ── ARM 3 — THE LYRICS ARM (B2-lyrics; the audit's D2, CURED 821475e43) ─
-// The flow face: the audit's SD-4 — lyrics WERE absent from the
-// MUSIC_NATIVE row's stage inputs+params, from the compose_music tool
-// properties, and from the overlays, while the card ITSELF declares
-// lyrics a flow input
-// (card.ts:77 flowKinds.inputs = {prompt: 'text', lyrics: 'text'})
-// and the DECLs list lyrics a served param. A caller that stated
-// lyrics on the flow face had NO seat: the value was unwireable, and
-// the composed graph rode lyrics "" — INSTRUMENTAL — with no error
+// ── ARM 3 — THE LYRICS ARM (B2-lyrics; the audit's D2, CURED 821475e43;
+// the FLOW-face half retired 2026-11-14 with the music-native wrapper
+// row — the flows-are-compositions law) ─
+// The history: lyrics WERE absent from the music-native row's stage
+// inputs+params, from the compose_music tool properties, and from the
+// overlays, while the card ITSELF declares lyrics a flow input
+// (card.ts:77 flowKinds.inputs = {prompt: 'text', lyrics: 'text'}) and
+// the DECLs list lyrics a served param. A caller that stated lyrics on
+// the flow face had NO seat: the value was unwireable, and the
+// composed graph rode lyrics "" — INSTRUMENTAL — with no error
 // anywhere. THE BURN'S OWN SHAPE: stated in, silently different out.
-// THE CURE (821475e43): the lyrics seat rides flowsRegistryRows.ts —
-// the stage params literal (:336), the compose_music tool property
-// (:372-375), and the overlay stamp (:386).
+// The cure (821475e43) wired the row; the wrapper's retirement moved
+// the law to the CARD face — the control below witnesses it, the
+// {model:} door drives it, and 4b's corruption proof reds on its
+// matcher.
 describe("ARM 3 — stated lyrics reach the graph on the flow face (B2-lyrics, D2)", () => {
   // The truth roster, derived (never hand-listed): the keys the card
   // itself declares flow-carryable (def.flowKinds.inputs) must each
@@ -431,66 +435,12 @@ describe("ARM 3 — stated lyrics reach the graph on the flow face (B2-lyrics, D
   // the row's tool properties, or stamped by an overlay. Any declared
   // flow input missing from all three seats is UNWIREABLE: no caller
   // shape can carry it to the compose.
-  it("every flow input the card declares is statable on the music-native flow row (CURED 821475e43: was RED — lyrics)", () => {
-    const row = MUSIC_NATIVE.stages.find((s) => s.id === "music")!;
-    assert.ok(row !== undefined && row.card === "music", "the registry serves the music card stage");
-    const declared = Object.keys(def.flowKinds.inputs);
-    assert.ok(declared.includes("prompt") && declared.includes("lyrics"),
-      "the card declares prompt+lyrics its flow inputs (card.ts:77) — the roster drifted if not");
-    const statable = new Set<string>([
-      ...Object.keys(row.params), // the stage's own param seats
-      ...Object.keys(MUSIC_NATIVE.tool?.properties ?? {}), // the tool's offered properties
-      ...(MUSIC_NATIVE.tool?.overlays ?? []).map((o) => o.param), // the overlays' stamped params
-    ]);
-    const unwireable = declared.filter((k) => !statable.has(k));
-    assert.deepEqual(
-      unwireable, [],
-      "FLOW-SURFACE VALUE ARM (hop [1]/[3] — SD-4, CURED 821475e43): the card declares these flow inputs, and the " +
-      "music-native row used to give them NO seat — not in stage params, not in tool properties, not in the " +
-      "overlays (was flowsRegistryRows.ts:322-367; now params :336, tool property :372-375, overlay :386): " + JSON.stringify(unwireable) +
-      ". A caller stating them WAS silently unwired — lyrics rode \"\" (instrumental) with no error. " +
-      "The cure wired the row (params/inputs + tool property + overlay).",
-    );
-  });
-
-  it("the stated lyrics, sent the way the doors carry them, land at the text-encode's lyrics input (CURED 821475e43: was RED TODAY)", () => {
-    // THE DOOR'S OWN DERIVATION, from the real row: the stage params
-    // map is what the compose receives — $initials substituted (the
-    // spell law, runsStart's ghost sweep / rewriteSpells seat) and
-    // the tool overlays stamped from the call body (loadPlane's
-    // signature projection → the flow params overlay's stamps). The
-    // caller states prompt + lyrics + duration; the row answers how
-    // many of those survive into compose.
-    const row = MUSIC_NATIVE.stages.find((s) => s.id === "music")!;
-    const body: Record<string, unknown> = { prompt: PROMPT, lyrics: LYRICS, duration: 150 };
-    const initials: Record<string, unknown> = { prompt: PROMPT, lyrics: LYRICS };
-    const params: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(row.params)) {
-      params[k] = typeof v === "string" && v.startsWith("$")
-        ? (initials[v.slice(1)] ?? v)
-        : v;
-    }
-    for (const ov of MUSIC_NATIVE.tool?.overlays ?? []) {
-      if (ov.stage === row.id && body[ov.param] !== undefined) {
-        params[ov.path[0]!] = body[ov.param];
-      }
-    }
-    // The stage names its model (row params: model "music3") — the
-    // same facts row the {model:} door would resolve.
-    const fam = String(params["model"] ?? "");
-    assert.equal(fam, "music3", "the row composes the music3 family (the audit's own seat)");
-    const graph = composeCard(params, facts.models[fam]!, RUN_CARD);
-    // THE CONSUMER: the MiniMax encode's `lyrics` input — what the
-    // engine will sing. Stated lyrics in, instrumental out is the burn.
-    assertValueAtConsumer(graph, MUSIC3_TEXT_ENCODE, "lyrics", LYRICS,
-      "lyrics (stated through the flow face)");
-  });
-
-  it("CONTROL — the card face carries lyrics today (the drop is the FLOW face, not the card)", () => {
+  it("CONTROL — the card face carries lyrics (the flow face retired with the music-native row)", () => {
     // ALREADY GREEN (the audit's §2.2 lyrics row: [1]–[4] verbatim,
     // walled — card.spec.ts:67 pins the encode's lyrics input). This
-    // control keeps the flow-face reds honest: the card seam is not
-    // the accused, the row is.
+    // control is the lyrics law's live seat since the wrapper row's
+    // retirement (2026-11-14): the card seam carries stated lyrics to
+    // the encode — the {model:} door composes this face.
     const graph = composeCard({ prompt: PROMPT, lyrics: LYRICS, seed: 17 }, music3, RUN_CARD);
     assertValueAtConsumer(graph, MUSIC3_TEXT_ENCODE, "lyrics", LYRICS, "lyrics (card face control)");
   });
@@ -536,7 +486,7 @@ describe("ARM 4 — corruption through the compose step reds the value arms (the
     );
   });
 
-  it("4b: emptying the lyrics inside compose reds ARM 3's card control (the instrumental drop class)", () => {
+  it("4b: emptying the lyrics inside compose reds the card-face lyrics arm (the instrumental drop class)", () => {
     corrupting(
       music3Decl.id,
       (p) => ({ ...p, lyrics: "" }), // THE DROP CLASS: stated → ""

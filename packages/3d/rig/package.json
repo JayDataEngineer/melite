@@ -3,7 +3,7 @@
   "private": true,
   "license": "AGPL-3.0-or-later",
   "type": "module",
-  "description": "Rigging card that puts a skeleton and weights on a GLB through three engine-native lanes — auto SOMA-77 weights, donor copy, and anyCreature species bridge.",
+  "description": "Rigging card that puts a skeleton and weights on a GLB through two engine-native lanes — auto SOMA-77 weights and donor copy.",
   "exports": {
     ".": {
       "types": "./lib/index.d.ts",
@@ -27,7 +27,6 @@
     "@deepseek-ai/schemastery": "^3.18.5",
     "@melite/comfyui-card-kit": "workspace:*",
     "@melite/contracts": "workspace:*",
-    "@melite/models-anycreature": "workspace:*",
     "@melite/models-gem-soma": "workspace:*",
     "@melite/models-transfer-rig": "workspace:*"
   },

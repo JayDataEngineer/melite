@@ -119,6 +119,53 @@ describe("filmstrip (the last run's windows)", () => {
     assert.deepEqual(names, ["video_w0_main", "video_w12_main", "odd-clip.mp4"])
   })
 
+  // THE RESHOOT HERO (2026-11-15 burn, live shape verbatim from
+  // run-bb1ce19bd192 / bench s_65): the reshoot's product saves
+  // under the WINDOW spelling (h3_t4_w1_00001_) while the engine
+  // re-saves the SOURCE CLIP beside it under the estate's dedup
+  // stamp (`__e80f2bcec264`) — the stamp breaks the window regex,
+  // so the name-only law crowned the ORIGINAL (the stamped twin)
+  // the final cut while the estate's url pointed at the RESHOOT
+  // (byte-proven on the lane: hero 1.8MB md5 680130dedad3, twin
+  // 5.9MB md5 ad7a7a85aba6 == the source clip's bytes). The
+  // estate's hero pointer must win.
+  it("reshoot: the estate hero pointer is the final cut — never the dedup-stamped source copy", () => {
+    const { result } = view({
+      stage: stageWith({
+        url: "https://r/run-bb1ce19bd192/h3-film/SaveVideo.0_h3_t4_w1_00001_.mp4",
+        artifacts: {
+          "h3-film/SaveVideo.0_h3_t4_w1_00001_.mp4": "https://r/run-bb1ce19bd192/h3-film/SaveVideo.0_h3_t4_w1_00001_.mp4",
+          "h3-film/SaveImage.1_reshoot_orbit_00001_.png": "https://r/run-bb1ce19bd192/h3-film/SaveImage.1_reshoot_orbit_00001_.png",
+          "h3-film/SaveImage.0_reshoot_warp_00001_.png": "https://r/run-bb1ce19bd192/h3-film/SaveImage.0_reshoot_warp_00001_.png",
+          "h3-film/SaveVideo.0_h3_t4_w1_00001__e80f2bcec264.mp4": "https://r/run-bb1ce19bd192/h3-film/SaveVideo.0_h3_t4_w1_00001__e80f2bcec264.mp4",
+        },
+        assetUrls: [
+          "https://r/run-bb1ce19bd192/h3-film/SaveVideo.0_h3_t4_w1_00001_.mp4",
+          "https://r/run-bb1ce19bd192/h3-film/SaveImage.1_reshoot_orbit_00001_.png",
+          "https://r/run-bb1ce19bd192/h3-film/SaveImage.0_reshoot_warp_00001_.png",
+          "https://r/run-bb1ce19bd192/h3-film/SaveVideo.0_h3_t4_w1_00001__e80f2bcec264.mp4",
+        ],
+      }),
+    })
+    assert.equal(
+      result.current.filmstrip.final,
+      "https://r/run-bb1ce19bd192/h3-film/SaveVideo.0_h3_t4_w1_00001_.mp4",
+    )
+    // the indexed window is the reshoot (window 1); the flat-list
+    // union law then tiles the gallery's every remaining entry
+    // (the two reshoot probe pngs + the stamped source copy) — clip
+    // loss can never hide, and the twin stays WALKABLE, never the hero
+    assert.deepEqual(
+      result.current.filmstrip.windows.map((w) => w.name),
+      [
+        "h3-film/SaveVideo.0_h3_t4_w1_00001_.mp4",
+        "SaveImage.1_reshoot_orbit_00001_.png",
+        "SaveImage.0_reshoot_warp_00001_.png",
+        "SaveVideo.0_h3_t4_w1_00001__e80f2bcec264.mp4",
+      ],
+    )
+  })
+
   it("a bare stage degrades to empty windows + null final (never a crash)", () => {
     const { result } = view({ stage: stageWith(undefined) })
     assert.deepEqual(result.current.filmstrip.windows, [])

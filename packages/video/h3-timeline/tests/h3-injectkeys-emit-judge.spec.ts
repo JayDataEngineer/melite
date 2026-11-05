@@ -1,34 +1,16 @@
 /**
- * h3-injectkeys-emit-judge.spec.ts — THE EMIT-SIDE JUDGE ARM (ERROR
- * g/h, audit §3 SD-3 "the emit-dialect vs presence-gate" + §7 P3's
- * family-judge half). Method: dev_docs/THE_JOURNEY_LAW.md §4 Q10
- * (judge the hop where the burn lives) — this arm rides hops [2]→[4]:
- * the studio serializer's EMIT (docHydrate.ts serializeLayerA) → the
- * stored arrival → the REAL t4r clause (the same walk
- * packages/models/h3/src/schema.ts:573-601 runs; the card's
- * admitFamily face and the run door are its other seats).
- *
- * THE INVARIANT: a doc the studio's own serializer emitted must
- * compose clean on the lane it ARRIVES on — and the estate must own
- * the emit→arrival transition: either the emit side re-derives the
- * family at every arrival (reseat), or the arrival's flip gesture
- * refuses. Today the emit side honors the clause ONLY when it derives
- * t4r at EMIT time (B1's strip, docHydrate.ts:437-439, inside studio
- * commits — useShownDoc.ts:20-28 is the writer's only jurisdiction);
- * a family flip that lands BETWEEN commits (an agent patch, a tool
- * write, a settlement strand — useShownDoc.ts:226-231 names the
- * honest edge) re-derives the lane under a LEGAL emit and the walk
- * refuses LIVE. That is SD-3: the always-emit booleans
- * (docHydrate.ts:336-337) and the true-gated masters (docHydrate.ts:
- * 354-372) speak the EMIT dialect, the walk judges PRESENCE on the
- * arrival (schema.ts:573-577), and no single owner decides the legal
- * key set at the seam outside studio commits.
- *
- * THE PRE-REGISTERED RED (today's tree): a legal t4_open emit (every
- * boolean it carries was sanctioned on ITS lane) settles under a
- * non-studio keyframe pin and refuses at the real door with the
- * operator's verbatim spine; and the serializer's ALWAYS-EMIT poles
- * (false, unstated by anyone) alone poison the same arrival.
+ * h3-injectkeys-emit-judge.spec.ts — THE EMIT-SIDE JUDGE ARM
+ * (retired lane law, 2026-11-15). The original arm rode hops [2]→[4]
+ * of the operator's burn: a studio-emitted doc (the always-emit
+ * booleans + the true-gated masters, docHydrate.ts serializeLayerA)
+ * settled under a non-studio keyframe pin, re-derived t4r, and the
+ * real walk refused the presence of keys that had been legal on the
+ * emit's own lane (SD-3 / ERROR g/h). The 2026-11-15 cure went to
+ * the ROOT: the t4r render arm now mounts the post chain
+ * (actions.ts), so the finish keys are honored on EVERY lane and no
+ * arrival refuses them. These arms pin the new truth: the emit →
+ * flip → arrival transition LANDS COMPOSING and KEEPS every stamp;
+ * the settlement seat drops nothing because nothing is lane-dead.
  */
 import { assertHermeticRode } from "../../../../tests/helpers/hermetic-engine.ts"
 import "../../../../tests/helpers/boot-models.ts"
@@ -43,10 +25,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { serializeLayerA, hydrateLayerA } from "../src/ui/studio/docHydrate.ts"
 import { schema as h3schemaFn } from "@melite/models-h3/schema"
-import { deriveWindowFamily, FAMILY_LAW } from "@melite/models-h3/timelineContract"
-import { reseatDeadKeys } from "@melite/contracts/familyLane"
-
-const REFUSAL_SPINE = /h3_window\(t4r\): unsanctioned inject keys: /
+import { deriveWindowFamily } from "@melite/models-h3/timelineContract"
 
 /** THE BENCH MERGE-PATCH LAW (drafts door, bench.ts:969-985 — per
  *  key, null deletes), SETTLED THROUGH THE FAMILY RESEAT (the ERROR
@@ -65,10 +44,9 @@ function settleRaw(base: Record<string, unknown>, saved: Record<string, unknown>
   return settled
 }
 function settle(base: Record<string, unknown>, saved: Record<string, unknown>): Record<string, unknown> {
-  // run seat: the doc itself is the history (nothing is authored at
-  // a run press) — the carry line drops the whole stranded strand.
-  const settled = settleRaw(base, saved)
-  return reseatDeadKeys(FAMILY_LAW, settled, settled).params
+  // the bench merge-patch: the whole store, nothing dropped — no key
+  // is lane-dead since the 2026-11-15 retirement.
+  return settleRaw(base, saved)
 }
 
 describe("THE EMIT-SIDE JUDGE ARM (SD-3 — a studio-emitted doc composes clean on the lane it arrives on)", () => {
@@ -115,21 +93,17 @@ describe("THE EMIT-SIDE JUDGE ARM (SD-3 — a studio-emitted doc composes clean 
     ).resolves.toBeDefined()
   })
 
-  it("THE SD-3 TRANSITION (ERROR g): the legal emit settles under a non-studio keyframe pin and the ARRIVAL LANDS COMPOSING — the settlement seat owns the flip", async () => {
+  it("THE SD-3 TRANSITION (retired): the legal emit settles under a non-studio keyframe pin and the ARRIVAL LANDS COMPOSING with every stamp KEPT", async () => {
     const out = legalEmit()
     // THE FLIP, outside any studio commit: the pin rides a params
-    // patch (agent patch / tool write spelling — the exact keys the
-    // write carries), settled by the bench merge-patch onto the
-    // emitted doc. No studio writer (useShownDoc's flip writer is
-    // jurisdiction-bound to studio commits) re-runs the emit law —
-    // the SETTLEMENT seat does (the family reseat, drafts doors).
+    // patch (agent patch / tool write spelling), settled by the
+    // bench merge-patch onto the emitted doc.
     const raw = settleRaw(out, { keyframes: [{ image: "anchor.png", frame: 0 }] })
     const arrival = settle(out, { keyframes: [{ image: "anchor.png", frame: 0 }] })
     expect(deriveWindowFamily(arrival), "the flip flipped the derived family").toBe("t4r")
     // THE INVARIANT THE ARM EXISTS FOR: the transition lands a
-    // composing doc — the settlement reseated the emit's stamps for
-    // the new lane (the reseat receipt below names them; the no-mute
-    // companion proves the door never lost its teeth).
+    // composing doc AND keeps the operator's stamps — nothing is
+    // reseated because nothing is lane-dead.
     let refused: string | null = null
     try {
       h3schemaFn(arrival)
@@ -138,32 +112,23 @@ describe("THE EMIT-SIDE JUDGE ARM (SD-3 — a studio-emitted doc composes clean 
     }
     const doorRefused = await svc.phase1Card({ ...arrival, card: "h3-timeline", model: "h3" }, "h3")
       .then(() => null, (e: unknown) => (e instanceof Error ? e.message : String(e)))
-    const clean = refused === null && doorRefused === null
-    expect(clean, `ERROR g/h (SD-3): the LEGAL emit (t4_open, every stamp sanctioned on its own lane) arrives t4r and REFUSES — walk: ${String(refused)} — door: ${String(doorRefused)} — the settlement seat (the family reseat) did not own the flip`).toBe(true)
-    // THE RESEAT RECEIPT (the cure's own voice, never silent): the
-    // arrival carries NONE of the carried stamps — the spine dropped
-    // exactly the burn's four (sorted), and the RAW merged view (what
-    // a seat without the reseat would land) still walks into the
-    // operator's spine.
-    const dropped = reseatDeadKeys(FAMILY_LAW, raw, raw).dropped
-    expect(dropped, "the reseat names exactly what it dropped (sorted)").toEqual(
-      ["interpolate_enabled", "second_pass_enabled", "sharpen_enabled", "sr_switch"],
-    )
-    for (const k of dropped) {
-      expect(arrival, `the arrival no longer carries '${k}'`).not.toHaveProperty(k)
+    expect(
+      refused === null && doorRefused === null,
+      `the LEGAL emit (t4_open) arrives t4r and must COMPOSE — walk: ${String(refused)} — door: ${String(doorRefused)}`,
+    ).toBe(true)
+    // the receipt: the arrival carries the four stamps verbatim (the
+    // walk fires them on the t4r arm; nothing is dropped).
+    for (const k of ["interpolate_enabled", "second_pass_enabled", "sharpen_enabled", "sr_switch"] as const) {
+      expect(arrival, `the arrival keeps '${k}'`).toHaveProperty(k)
     }
-    // THE NO-MUTE COMPANION (never silenced): the door still refuses
-    // the RAW view in the operator's own words — the reseat at the
-    // settlement never muted the walk.
-    expect(() => h3schemaFn(raw), "the raw merged view still refuses with the spine")
-      .toThrow(REFUSAL_SPINE)
-  })
+    // the RAW merged view is the same doc (no settlement seat exists):
+    expect(h3schemaFn(raw), "the raw merged view composes too").toBeDefined()
+  });
 
-  it("THE ALWAYS-EMIT FALSE POLES: the serializer's unstated poles alone cannot poison the settled arrival — the reseat owns them at the flip", async () => {
+  it("THE ALWAYS-EMIT FALSE POLES: the serializer's unstated poles ride the settled arrival and compose — false is a value the t4r arm honors", async () => {
     // A doc that NEVER carried a post boolean — the hydrate materializes
     // false poles, and serializeLayerA emits them UNCONDITIONALLY
-    // (docHydrate.ts:336-337: `sharpen_enabled: a.sharpen_enabled === true`
-    // — false is a VALUE, and presence is the walk's crime).
+    // (docHydrate.ts: `sharpen_enabled: a.sharpen_enabled === true`).
     const sparse = { seed: 7, steps: 12, fps: 24 }
     const out = serializeLayerA(hydrateLayerA(sparse) as never)
     expect(out.sharpen_enabled).toBe(false)
@@ -171,11 +136,9 @@ describe("THE EMIT-SIDE JUDGE ARM (SD-3 — a studio-emitted doc composes clean 
     // The emit is legal on its own open lane…
     expect(deriveWindowFamily(out)).toBe("t4_open")
     expect(() => h3schemaFn(out)).not.toThrow()
-    // …and the settled arrival lands clean: the poles nobody authored
-    // are PRESENCE to the walk, so the settlement seat drops them with
-    // the rest of the family-dead carry (the cure owns the exact
-    // ERROR h face — an arrival flip can no longer weaponize booleans
-    // no gesture authored).
+    // …and the settled arrival lands clean: the false poles are the
+    // arm's own OFF gates, not poison — the t4r compose honors them
+    // and builds no post node from them.
     const arrival = settle(out, { keyframes: [{ image: "anchor.png", frame: 0 }] })
     let refused: string | null = null
     try {
@@ -183,9 +146,8 @@ describe("THE EMIT-SIDE JUDGE ARM (SD-3 — a studio-emitted doc composes clean 
     } catch (e) {
       refused = e instanceof Error ? e.message : String(e)
     }
-    const clean = refused === null
-    expect(clean, `ERROR h (SD-3): the settled arrival still refuses — ${String(refused)} — the settlement seat (the family reseat) did not own the unstated poles`).toBe(true)
-    expect(arrival, "the poles nobody authored do not ride the arrival").not.toHaveProperty("sharpen_enabled")
-    expect(arrival, "the poles nobody authored do not ride the arrival").not.toHaveProperty("interpolate_enabled")
-  })
+    expect(refused, `the settled arrival composes — ${String(refused)}`).toBeNull()
+    expect(arrival, "the poles ride (the operator's state is never stripped)").toHaveProperty("sharpen_enabled")
+    expect(arrival, "the poles ride (the operator's state is never stripped)").toHaveProperty("interpolate_enabled")
+  });
 })

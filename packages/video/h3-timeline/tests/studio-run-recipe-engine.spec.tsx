@@ -27,6 +27,7 @@ import "../../../../tests/helpers/boot-models.ts"
 import { carrier, BOARDED, VARIANT_ADDRESSES } from "../src/card.ts"
 import { bindEstateRemote, unbindEstateRemote } from '@melite/card-base/client'
 import type { LayerA } from "../src/ui/studio/docModel.ts"
+import { projectDoc } from "../src/ui/studio/pendingOps.ts"
 
 function envelope(): unknown {
   const num = (description: string, dflt: number, meta2: Record<string, unknown> = {}, extra: Record<string, unknown> = {}) => ({
@@ -503,52 +504,41 @@ describe("THE COMPOSE GATE at the studio rail (law C — the schema is never thr
     cleanup()
   })
 
-  it("THE FAMILY CLAUSE SETTLES (B5 → h¹, hop 3's first judge): a Final-Cut stamp on a keyframe doc no longer bricks at the pick gate — the gate reseats the family-dead strand with its named voice and the pick LANDS; the run door's clause keeps its teeth downstream (the estate walk refuses a WRITTEN strand)", async () => {
+  it("the Final Cut stamp on a keyframe doc NEVER bricks the pick (retired lane law, 2026-11-15): the pick lands, the stamps ride AS VALUES, and no gate face speaks", async () => {
     serve()
-    // THE BURN: Final Cut saved pre-keyframe (its own wire_defaults —
-    // second_pass_enabled + sr_switch), the doc gained a pin, the
-    // family re-derived t4r under the stamp. Pre-B5 the gate
-    // green-lit every pick over this doc; B5 refused it — and h¹
-    // found the refusal's own brick: the strand rode a hidden tab,
-    // no write could carry the reseat, "fix the stated value" pointed
-    // at a surface that does not render. The settlement law (h¹):
-    // a refusal whose dead weight is ONLY the family-dead strand is
-    // stranded state asking to settle — the gate reseats (the
-    // estate's ONE spelling, reseatFamilyDead), lands the pick, and
-    // NAMES what it cleared. Removing the settlement clause reds this
-    // arm (the pick refuses again — the toggle-proof).
-    const { doc } = engine(
-      { fps: 24, steps: 20 },
-      {
-        base: {
-          keyframes: [{ image: "webp/run1/pin-0.png", frame: 0 }],
-          second_pass_enabled: true,
-          sr_switch: true,
-          width: 800,
-          height: 600,
-        } as never,
-      },
-    )
+    // THE MINTED BURN: the Final Cut row saved pre-keyframe (its own
+    // wire_defaults — second_pass_enabled + sr_switch), the doc then
+    // gained a pin. Under the retired lane law the t4r family
+    // refused the stamps at the walk, the card admission and the
+    // pick gate; since the cure the t4r arm mounts the post chain,
+    // so the doc is lawful and the pick must land with its stamps
+    // intact — never a reseat, never a settlement voice.
+    // the SHOWN layer is the saved doc: the Final Cut stamps and the
+    // pin ride the layer itself (the storage the pick writes over)
+    const { doc } = engine({
+      fps: 24, steps: 20,
+      keyframes: [{ image: "webp/run1/pin-0.png", frame: 0 }],
+      second_pass_enabled: true,
+      sr_switch: true,
+      width: 800,
+      height: 600,
+    })
     const pick = await screen.findByLabelText("Recipe")
     fireEvent.click(pick)
     fireEvent.click(screen.getByRole("menuitem", { name: /Draft 02MP/ }))
-    // the pick LANDED: the strand died (unstated — the base's own
-    // stamps settle through the serializer's null-ride) and the
-    // recipe stamp rode whole (the atomic pick law).
     const after = doc() as Record<string, unknown>
-    assert.equal(after.second_pass_enabled, undefined,
-      "the settled strand: second_pass_enabled unstated, never deferred")
-    assert.equal(after.sr_switch, undefined,
-      "the settled strand: sr_switch unstated, never deferred")
-    assert.notDeepEqual(after, { fps: 24, steps: 20 },
-      `the pick landed — the strand never refused it (doc: ${JSON.stringify(after)})`)
-    const face = await screen.findByRole("alert")
-    assert.match(face.textContent ?? "", /THE COMPOSE GATE SETTLED/,
-      "the gate NAMES the settlement — voiced, never silent")
-    assert.match(face.textContent ?? "", /second_pass_enabled, sr_switch/,
-      "the settlement names the cleared keys (the reseat's sorted spelling)")
-    assert.doesNotMatch(face.textContent ?? "", /REFUSED/,
-      "a settled pick is never spoken as a refusal")
+    // the pick LANDED whole (the atomic pick law) and the finish
+    // stamps survive it as VALUES — the known bug's exact shape
+    assert.equal(after.width, 768)
+    assert.equal(after.height, 448)
+    assert.equal(after.second_pass_enabled, true,
+      "the Final Cut stamp survives the pick — the finish chain fires on this doc")
+    assert.equal(after.sr_switch, true,
+      "the Final Cut stamp survives the pick — the finish chain fires on this doc")
+    // NO FACE AT ALL: no refusal, no settlement (there is nothing to
+    // settle — the stamps are lawful on the lane the pin derives)
+    assert.equal(document.body.querySelector('[role="alert"]'), null,
+      "the pick over a Final-Cut keyframe doc raises no gate face")
     cleanup()
   })
 })
@@ -618,18 +608,20 @@ describe("the pick judges truth-in-hand — the collapse", () => {
 
 
 
-// ── THE FAMILY GATE (D8, 2026-11-06 — the t4r lane serves no post
-// chain) ─────────────────────────────────────────────────────────
-// The live brick: the rail rendered the second-pass switches on a
-// doc that derived t4r (one guided call), the operator flipped
-// them / picked Final Cut, and the compose refused the whole card
-// ("unsanctioned inject keys: sr_switch" — the SECOND-PASS SWITCH
-// DOES NOT SWITCH shape, and the pick's residue then bricked every
-// later compose). The rail derives the family from the SAME seats
-// the walk reads (deriveWindowFamily, the contract face) and stops
-// RENDERING what the family cannot honor; films (t4_chain) and
-// open single windows (t4_open) keep the finishing rail.
-describe("RunRecipeEngine: the t4r family gate (omitFields)", () => {
+// ── THE FAMILY GATE, RETIRED (2026-11-15 — every lane serves the
+// finishing rail) ────────────────────────────────────────────────
+// The old brick: the rail rendered the second-pass switches on a doc
+// that derived t4r (one guided call), the operator flipped them or
+// picked Final Cut, and the compose refused the whole card. The 2026-
+// 11-15 cure hoisted the image-space post chain ABOVE the family
+// branch in renderH3Window: the t4r arm now mounts SeedVR2 / sharpen
+// / interpolate exactly as the else arm does, so a t4r doc carrying
+// those stamps composes and fires them. The rail therefore stops
+// omitting on the reference lane — a t4r-derived doc renders the
+// finishing rail, the flip lands, and only the film-only knob
+// (duck_depth_db, read solely by the multi-window mix) keeps its
+// single-window omission.
+describe("RunRecipeEngine: the finishing rail on every family (the retired t4r gate)", () => {
   // the card's REAL served envelope (schemastery's own toJSON — the
   // exact value discovery.ts:911 hands the panel)
   let realEnvelope: unknown
@@ -663,59 +655,99 @@ describe("RunRecipeEngine: the t4r family gate (omitFields)", () => {
   ] }
   const openBase = { width: 800, height: 600, calls: [{ start_frame: 0, end_frame: 90 }] }
 
-  it("a t4r-derived doc renders NO second-pass row — the rail never offers what the walk refuses", async () => {
+  it("a t4r-derived doc renders the second-pass rail and a flip on it lands — the reference lane fires the chain now", async () => {
     serveT4()
+    const keys: [string, unknown][] = []
     render(
       <RunRecipeEngine
         base={t4rBase as never}
-        layerA={{} as unknown as LayerA}
+        layerA={{ second_pass_enabled: true, sharpen_enabled: true } as unknown as LayerA}
+        setLayerAKey={(k, v) => { keys.push([k as string, v]) }}
+        setLayerA={() => {}}
+        refArtifacts={[]}
+      />,
+    )
+    await screen.findByText("Width")
+    // THE GROUP TAB IS THE PRESENCE PROOF: the panel only mounts rows
+    // behind its own tab, so the tab's existence plus an open row is
+    // what a dead gate cannot fake.
+    const tab = await screen.findByRole("tab", { name: /second/i })
+    fireEvent.click(tab)
+    assert.notEqual(await screen.findByText("Super-Res (SeedVR2)"), null,
+      "the t4r rail serves the upscaler row — the run mounts the chain there")
+    assert.notEqual(screen.queryByText("Sharpen Method"), null,
+      "the t4r rail serves the sharpen row")
+    // THE FLIP LANDS: the master row toggles as one key write (never a
+    // gate face, never a reseat) — the stamp the operator states is
+    // the stamp the doc carries to the door.
+    const panel = screen.getByRole("tabpanel")
+    const master = within(panel).getByRole("switch", { name: /Second pass/i })
+    assert.equal(master.getAttribute("aria-checked"), "true",
+      "the master renders ON from the stated doc — the rail reads the stamp, never an internal pole")
+    fireEvent.click(master)
+    assert.deepEqual(keys.at(-1), ["second_pass_enabled", false],
+      "the master flip writes the stated value on a t4r doc")
+    assert.equal(document.body.querySelector("[data-compose-gate]"), null,
+      "a flip never raises the compose gate on the reference lane")
+  })
+
+  it("THE PHANTOM-POLE LAW (the 'UI never matches' burn, 2026-11-14): the HYDRATED layer — what the spine hands this pane — carries no gate face on a clean t4r row, and the rail it renders is the FIRING one", async () => {
+    // THE LIVE RECEIPT (probe-timeline-truth.log, the operator's
+    // bench s_12): a clean agent film (image/ref-locked — the
+    // agent's STANDARD shape, zero post keys stated) drilled with
+    // THE COMPOSE GATE REFUSED naming sharpen_enabled,
+    // interpolate_enabled, sr_switch, second_pass_enabled — keys
+    // the row NEVER stated. The run door composed the same doc
+    // clean (the t4r arm now mounts the post chain, so the
+    // hydrated poles fire there instead of being refused). THE
+    // MECHANISM: this arm rides the REAL spine seat — component's
+    // projectDoc(row).layerA, the hydrate's always-emit masters —
+    // over the REAL agent row and pins ZERO gate face plus the
+    // finishing tab (the poles are lawful, not withheld).
+    serveT4()
+    // THE AGENT ROW (the s_12 shape): image-locked call + ref_images
+    // — derives t4r; no post key stated anywhere
+    const row: Record<string, unknown> = {
+      model: "h3",
+      width: 800, height: 600, seed: 5522,
+      calls: [{ start_frame: 0, end_frame: 90, text: "perches on the rooftop ridge", image: "data:image/png;base64,AAA" }],
+      ref_images: ["/melite-media/runs/r8/ref.png"],
+    }
+    for (const k of ["sharpen_enabled", "interpolate_enabled", "sr_switch", "second_pass_enabled"]) {
+      assert.equal(row[k], undefined, `the premise: ${k} is never stated on the row`)
+    }
+    // THE REAL SEAT: the layer the spine hands the pane — the
+    // hydrate's projection of the clean row (component.tsx:354)
+    const hydrated = projectDoc(row).layerA
+    assert.equal(hydrated.second_pass_enabled, false,
+      "the hydrate emits the master as a real pole (the view seat)")
+    render(
+      <RunRecipeEngine
+        base={row as never}
+        layerA={hydrated}
         setLayerAKey={() => {}}
         setLayerA={() => {}}
         refArtifacts={[]}
       />,
     )
-    // the surface settles on a row that exists in BOTH worlds
-    // (Width never filters — the gate speaks only the T4
-    // vocabulary); the judges below are then single synchronous
-    // queries, never retry loops
     await screen.findByText("Width")
-    // on a t4r doc the second_pass group loses EVERY member row, so
-    // the group grammar renders no tab for it at all (one surviving
-    // group renders tab-less) — the tab face is the strong presence
-    // proof: a row-absence query alone would pass with the gate
-    // dead behind an unopened panel
-    assert.equal(screen.queryByRole("tab", { name: /second/i }), null,
-      "the second-pass group has no tab on a t4r doc — every one of its fields was filtered")
-    // THE TAB FACE (the strong face: an unopened group's panel rows
-    // mount nowhere, so row-absence alone would pass with the gate
-    // dead — the GROUP TAB is the presence proof)
-    assert.equal(screen.queryByRole("tab", { name: /second/i }), null,
-      "the second-pass group has no tab on a t4r doc — every one of its fields was filtered")
-    // and with the whole group gone, its rows ride no panel either
-    assert.equal(screen.queryByText("Super-Res (SeedVR2)"), null)
-    assert.equal(screen.queryByText("Sharpen method"), null)
-    // THE DEAD-LETTER MASTERS (audit 3f0b7c1a layera-globals #3):
-    // the three masters that OWN the leaves above and the attention
-    // backend were NOT in the gate, and each is read only inside the
-    // non-t4r branch of the compose — on a t4r doc they rendered
-    // (the group kept members, so its tab kept rendering) while the
-    // run landed them in no node. The real served envelope is what
-    // makes these queries load-bearing: with the hand fixture the
-    // masters were absent from the wire already.
-    for (const label of ["Second pass", "FSR Sharpening", "FILM Interpolation", "Attention backend"]) {
-      assert.equal(screen.queryByText(label), null,
-        `${label} renders on no t4r doc — the run cannot honor it`)
-    }
+    const gate = document.body.querySelector("[data-compose-gate]")
+    assert.equal(gate, null,
+      "a clean t4r doc carries ZERO gate violations — the hydrate's view poles are never stated truth (got: "
+      + (gate?.textContent ?? "") + ")")
+    // AND THE POLE FIRES: the finishing tab rides (the t4r arm mounts
+    // the chain, so a pole at false is an honest "no post", not a
+    // refusal) — toggle the master on and the group opens
+    assert.notEqual(await screen.findByRole("tab", { name: /second/i }), null)
   })
 
-  it("THE RECIPE-ROW GATE fires on the row's OWN stamp (the Final Cut burn): a recipe stamping a t4r-dead key is not offered on the t4r lane", async () => {
-    // the 2026-11-06 coverage sweep found the row gate's closure
-    // never called by any fixture: the t4r tests served no
-    // Recipe-group rows, so omitRecipeRow judged nothing — a gate
-    // with no firing arm is the tautology seat LAW 3/ENFORCEMENT
-    // exists to catch. This arm serves the burn itself (a Final Cut
-    // row stamping sr_switch) plus a clean sibling (geometry only):
-    // the dead-stamped pill is withheld, the clean one still rides.
+  it("THE RECIPE-ROW GATE keeps only its film-only tooth: Final Cut is OFFERED on a t4r doc; a row stamping duck_depth_db is withheld", async () => {
+    // The old gate withheld every row whose stamp touched a t4r-dead
+    // key — the Final Cut burn. The retirement deletes that half (the
+    // t4r arm fires the stamp), but the FILM-ONLY half keeps teeth:
+    // duck_depth_db is read solely by the multi-window mix, so a
+    // single-window doc whose row stamps it would carry a knob the
+    // run never reads. The served spec carries one row of each kind.
     vi.stubGlobal("fetch", () => Promise.resolve(new Response(JSON.stringify({
       form: "h3-timeline",
       features: { variant_groups: { Variant: { label: "Variant" }, Recipe: { label: "Recipe" } } },
@@ -723,7 +755,9 @@ describe("RunRecipeEngine: the t4r family gate (omitFields)", () => {
       variants: [
         { id: "h3", label: "Standard", group: "Variant", defaults: {}, route: "h3-timeline", hint: null, engine: "comfyui", quant: null, vram_peak_gb: null, owner: "" },
         { id: "final_cut", label: "Final Cut", group: "Recipe",
-          defaults: { sr_switch: true, sr_resolution: 2 }, route: "", hint: null, engine: "comfyui", quant: null, vram_peak_gb: null, owner: "" },
+          defaults: { sr_switch: true, sr_resolution: 1080 }, route: "", hint: null, engine: "comfyui", quant: null, vram_peak_gb: null, owner: "" },
+        { id: "film_mix", label: "Film Mix", group: "Recipe",
+          defaults: { duck_depth_db: -18 }, route: "", hint: null, engine: "comfyui", quant: null, vram_peak_gb: null, owner: "" },
         { id: "draft_02mp", label: "Draft 02MP", group: "Recipe",
           defaults: { width: 768, height: 448 }, route: "", hint: null, engine: "comfyui", quant: null, vram_peak_gb: null, owner: "" },
       ],
@@ -738,17 +772,20 @@ describe("RunRecipeEngine: the t4r family gate (omitFields)", () => {
       />,
     )
     await screen.findByText("Width")
-    // the pills ride the Recipe select's own menu (the generic seam
-    // seats them): open it, then the DEAD-stamped row is gone from
-    // the menu while the clean sibling still offers
     fireEvent.click(await screen.findByLabelText("Recipe"))
-    assert.equal(screen.queryByRole("menuitem", { name: "Final Cut" }), null,
-      "the sr_switch-stamped recipe is not offered on a t4r doc — the walk would refuse the stamp")
+    // THE OFFERED LEG (the cure): the Final Cut row's sr_switch stamp
+    // is lawful on a t4r doc — the pill rides.
+    assert.notEqual(screen.queryByRole("menuitem", { name: "Final Cut" }), null,
+      "the sr_switch-stamped recipe IS offered on a t4r doc — its stamp fires the chain now")
+    // THE WITHHELD LEG (the surviving tooth): the film-only stamp is
+    // a single-window dead letter — the pill is gone.
+    assert.equal(screen.queryByRole("menuitem", { name: "Film Mix" }), null,
+      "the duck_depth_db-stamped recipe is not offered on a single-window doc — the mix never reads it")
     assert.notEqual(screen.queryByRole("menuitem", { name: "Draft 02MP" }), null,
-      "a clean geometry-only recipe still rides — the gate refuses the dead vocabulary, not the whole Recipe group")
+      "a clean geometry-only recipe still rides — the gate judges stamps, not the whole Recipe group")
   })
 
-  it("films and open windows keep the finishing rail (the gate is the t4r lane's, not the knobs')", async () => {
+  it("EVERY family keeps the finishing rail — films, open windows AND t4r (the retired gate)", async () => {
     serveT4()
     // the leaves carry their declared visible_when (the real envelope
     // is now what the panel reads): the master gates the group, and
@@ -772,7 +809,7 @@ describe("RunRecipeEngine: the t4r family gate (omitFields)", () => {
     assert.notEqual(await screen.findByText("Super-Res (SeedVR2)"), null)
     assert.notEqual(screen.queryByText("Sharpen Method"), null)
     unmount()
-    render(
+    const { unmount: unmount2 } = render(
       <RunRecipeEngine
         base={openBase as never}
         layerA={rail}
@@ -784,6 +821,24 @@ describe("RunRecipeEngine: the t4r family gate (omitFields)", () => {
     const tab2 = await screen.findByRole("tab", { name: /second/i })
     fireEvent.click(tab2)
     assert.notEqual(await screen.findByText("Super-Res (SeedVR2)"), null)
+    unmount2()
+    // THE T4R LEG (the retirement's judge): the reference lane is
+    // the lane the burn hit, and it now serves the same rail — the
+    // presence proof is the tab plus an opened row, not a comment
+    const r3 = render(
+      <RunRecipeEngine
+        base={t4rBase as never}
+        layerA={rail}
+        setLayerAKey={() => {}}
+        setLayerA={() => {}}
+        refArtifacts={[]}
+      />,
+    )
+    const tab3 = await screen.findByRole("tab", { name: /second/i })
+    fireEvent.click(tab3)
+    assert.notEqual(await screen.findByText("Super-Res (SeedVR2)"), null,
+      "t4r serves the upscaler row — the lane fires the chain")
+    r3.unmount()
   })
 
   // THE FILM-ONLY KNOB (2026-10-16, audit 3f0b7c1a ui-truth-gap #4):

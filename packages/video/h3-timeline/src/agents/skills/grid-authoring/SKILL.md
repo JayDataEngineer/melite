@@ -19,8 +19,7 @@ a FIRST or CUT window's authored span must be `22 + 17k` (e.g. 22, 39, 56,
 73, … 124), and a CARRIED window's span must be `17k` (its 22-frame seam is
 the generation head the previous window carries). Both are the same engine
 grid, both refuse at the compose door with the nearest legal value named,
-and there is no snapping path that silently accepts an off-grid span —
-the old separate-path behavior was closed 2026-09-25.
+and there is no snapping path that silently accepts an off-grid span.
 
 THE CAP: `GRID_MAX_FRAMES = 362` (22 + 17 × 20) — the largest single window.
 A longer film is joined from uniform windows under the 39 f context overlap,

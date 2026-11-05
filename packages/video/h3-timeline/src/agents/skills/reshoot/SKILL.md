@@ -6,9 +6,7 @@ genre: video
 
 # Reshoot (camera re-shoot) — SPEC
 
-> STATUS: LANDED (feature 024; fourth-mod-bag law §8, 2026-11-12;
-> REWORKED 2026-11-13 onto the OFFICIAL chain — Comfy-Org's
-> comfy-reshoot reference app). The chain composes per the family
+> The chain composes per the family
 > renderer (`models/h3` reshoot.ts): core LoadVideo →
 > CrossViewPrepareClip (24 fps + H3 grid snap) → MoGe metric
 > geometry → ONE CrossViewWarp; the prepared clip rides the r2v
@@ -17,7 +15,10 @@ genre: video
 > window's model. Prose never overrides the loaded bundle: the
 > fields below are quoted off the card's served reshoot kind.
 >
-> VERIFIED LIVE 2026-11-12 against the compose door + the bag surface (run run-e7a5182d153c-88fd3236 — orbit and dolly dials composed live; that run rode the predecessor depth chain, since superseded by the official rework) and 2026-10-30 against the Comfy-Org reference graph, receipt `contracts/receipts/2026-11-13-cards-h3-reshoot-official.md` — the current authority. NOT yet verified live: a rendered re-shoot on the GPU lane — treat the chain's visual output as unproven until the post-cure press lands.
+> Live-proven at the compose door + the bag surface (orbit and dolly
+> dials composed live). NOT yet verified live: a rendered re-shoot on
+> the GPU lane — treat the chain's visual output as unproven until a
+> render press lands.
 
 ## What it is (and is NOT)
 
@@ -28,7 +29,12 @@ METRIC depth with intrinsics, CrossViewWarp reprojects it under the
 new camera pose, the warp guides H3 through its native
 reference+guide seats while the original clip anchors
 appearance/identity, and the CrossView LoRA makes the model follow
-the moved view.
+the moved view. ITS UNIT IS THE FILM'S WINDOWS: the patch rides
+every generation window the doc declares (applyH3Reshoot is a
+model-patch seat on each window's model pre-scheduler), so a long
+reshoot is NEVER one long call — break the film into its tiled
+windows (the timeline's own window/seam rules) and the reshoot
+carries each window's seams.
 
 It is NOT:
 - **a fresh regen** — re-rolling the same shot is a new seed on an
@@ -38,11 +44,14 @@ It is NOT:
   calls, windows, and audio compose exactly as before, every window's
   model stack just renders from the moved camera.
 
-One door per doc: ANY two armed mod bags REFUSE loud naming both —
+One door per doc: ANY two of the SIX armed mod bags REFUSE loud naming both —
 the fifteen pairs are replace↔repair, replace↔extend, repair↔extend,
 replace↔reshoot, repair↔reshoot, extend↔reshoot, replace↔refine,
 repair↔refine, extend↔refine, reshoot↔refine, replace↔upscale,
 repair↔upscale, extend↔upscale, refine↔upscale, reshoot↔upscale.
+THE LORA BAG IS NOT AN ARM: `loras` is the SEVENTH bag and it
+COEXISTS with any armed arm — it never disarms a pair (the lora
+plane rides every arm; only the six arm bags refuse).
 The three edit branches, the refine branch, and the upscale branch
 each return before the film action, so an armed reshoot under any of
 them would be silently dropped; two edit arms would race for one
@@ -81,7 +90,7 @@ as before, byte-identical.)
    - `strength` (0.8–1, 0.8) — the CrossView LoRA's strength, the
      official tested band; the field admits NOTHING below 0.8
      (under-band the warp is followed less and the model's own prior
-     rebuilds the frame — the F33 anime drift, qa8 GAPS-18); push
+     rebuilds the frame — the anime drift); push
      toward 1 when the shot ignores the camera move.
    - `depth_ratio` (1.5–1000, 6) — scene depth: 2.5–4
      close-up faces, 4–8 mid shots, 8–16 deep/wide scenes.
@@ -101,9 +110,7 @@ as before, byte-identical.)
    RAW warp — magenta disocclusions and all — pins through
    `MiniMaxH3AddGuide` at frame 0 as the geometric prior, the
    PREPARED source clip is `ref_videos.ref_video_0` as the
-   appearance/identity prior, and nothing fills the holes. Three
-   "fill the holes" cures landed before the reference graph was read;
-   all three painted a second subject and all three are retired.
+   appearance/identity prior, and nothing fills the holes.
 4. **Confirm.** Show the bound clip, the camera intent in words
    ("orbit 30° right, dolly to 0.8"), and that replace is empty.
    THE LANE CLAUSE: that wait is chat-lane law — on a headless

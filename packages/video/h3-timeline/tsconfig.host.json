@@ -18,6 +18,7 @@
           "node"
       ],
       "paths": {
+        "@melite/image-mask-studio/orbit-canvas": ["./../../image/mask-studio/src/ui/OrbitLeafCanvas.tsx"],
         "@deepseek-ai/cordis-plugin-timer": ["./../../../vendor/cordis_plugins/timer/src/index.ts"],
         "@melite/video-frames": ["./../frames/src/index.ts"],
         "@melite/video-frames/card": ["./../frames/src/card.ts"],
@@ -168,7 +169,6 @@
         "@melite/models-anima": ["./../../models/anima/src/index.ts"],
         "@melite/models-anny": ["./../../models/anny/src/index.ts"],
         "@melite/models-anny/mods/verbs": ["./../../models/anny/mods/verbs.ts"],
-        "@melite/models-anycreature": ["./../../models/anycreature/src/index.ts"],
         "@melite/models-concat": ["./../../models/concat/src/index.ts"],
         "@melite/models-fit": ["./../../models/fit/src/index.ts"],
         "@melite/models-florence2": ["./../../models/florence2/src/index.ts"],

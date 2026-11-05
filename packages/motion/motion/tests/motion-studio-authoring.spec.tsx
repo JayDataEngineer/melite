@@ -499,16 +499,46 @@ describe('timeline (prompts + keyframes)', () => {
     // red-flaked 'drag did not land' under load). 1000px clears a
     // frame at ANY fit by construction.
     fireEvent.pointerDown(clip, { clientX: 10, button: 0 })
+    // (2026-11-01, the load-race cure) the pointerdown ONLY arms the
+    // session (dragRef.current is set synchronously in the React prop);
+    // the window move/up handlers attach in a PASSIVE effect — React's
+    // behind-a-promise cleanup, FIRST to starve under fleet load (the
+    // arm before this wait dispatched straight past them: "drag did
+    // not land", and the failing run's captured clip still carried the
+    // armed drag ring — startDrag ran, the window handlers never did).
+    // THE ARMED RING IS THE SYNC GATE: pointerdown sets dragId, whose
+    // setDragId REQUIRES a new render — and React force-flushes queued
+    // passive commits before any follow-up render work (react-dom-client
+    // `do flushPendingEffects(); while (pendingEffectsStatus …)` at
+    // commit). Once the ring is painted, the move/up listeners ARE
+    // attached. A real browser never needs this: no input sneaks
+    // between a commit and its passive flush — only a synthetic
+    // fireEvent dispatched from a timer callback can.
+    await vi.waitFor(() => {
+      if (!document.body.querySelector('[data-prompt-clip] [data-prompt-edge]')) throw new Error('clip not settled yet')
+      // the armed ring: startDrag's setDragId sets the clipMoving module
+      // class — the CSS-modules hash differs per build, so match the
+      // stable tail ("clipmoving", case-folded) rather than the hash.
+      const moving = [...document.body.querySelectorAll('[data-prompt-clip]')]
+        .some((c) => String((c as HTMLElement).className).toLowerCase().includes('clipmoving'))
+      if (!moving) throw new Error('drag session not armed yet')
+    }, { timeout: LOADED_WAIT() / 3 })
     fireEvent.pointerMove(window, { clientX: 1010 })
     fireEvent.pointerUp(window, { clientX: 1010 })
+    // (wave 2 of the FLAKE-3 ladder, 2026-10-31) the two settles ride
+    // the lane's LOADED_WAIT budget — LOADED_WAIT()/3 is 10s scoped
+    // (byte-identical to the old fixed arm) and 20s under the loaded
+    // coverage pool, where the shared dom loop starved the drag commit
+    // past 10s twice while every scoped run stayed green. The stall is
+    // scheduler starvation, never a slower claim.
     await vi.waitFor(() => {
       if (clip.style.left === '0px' || clip.style.left === '') throw new Error('drag did not land')
-    }, { timeout: 10000 })
+    }, { timeout: LOADED_WAIT() / 3 })
     // THE LATE SETTLE: the npz's T=4 arrives AFTER authoring
     releaseNpz()
     await vi.waitFor(() => {
       if (!document.body.textContent!.includes('30 fps · 4f')) throw new Error('npz not settled yet')
-    }, { timeout: 10000 })
+    }, { timeout: LOADED_WAIT() / 3 })
     await new Promise((r) => setTimeout(r, 150))
     const after = document.body.querySelector('[data-prompt-clip]') as HTMLElement
     // GUARDED: the authored start (frame 1) survives — px > 0 at any fit.

@@ -99,7 +99,17 @@ export interface ProjectedDoc {
 export function projectDoc(params: Record<string, unknown> | undefined): ProjectedDoc {
   return {
     calls: hydrateCalls({ calls: params?.calls, beats: params?.beats }),
-    keyframes: hydrateKeyframes(params?.keyframes),
+    keyframes: hydrateKeyframes(
+      params?.keyframes,
+      // THE ANCHOR UNION (the timeline-visibility cure, 2026-11-13):
+      // the compose's own precedence over the three admitted guide
+      // spellings (schema.ts's guide walk + actions.ts's anchor read:
+      // p.image ?? p.image_name ?? p.ref_image, a frame-0 pin lifting
+      // OVER the anchor) — the projection shows the same seat the
+      // compose seats, so an agent-authored anchor lands VISIBLE on
+      // the timeline card's keyframes lane.
+      params?.image ?? params?.image_name ?? params?.ref_image,
+    ),
     layerA: hydrateLayerA(params),
   }
 }

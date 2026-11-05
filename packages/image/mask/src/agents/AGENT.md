@@ -99,6 +99,6 @@ stringified JSON blob):
   primary; `export_boxes` per entry ORs the draw).
 
 The interactive canvases ride the mod popups EMBEDDED (paint on
-`draw`, the region rectangle on BOTH detector kinds — stroke 95).
-The studio card RETIRED at parity (2026-09-16, CONTRACT D) — this
+`draw`, the region rectangle on BOTH detector kinds).
+The studio card is retired — this
 card composes AND owns the mask surface.

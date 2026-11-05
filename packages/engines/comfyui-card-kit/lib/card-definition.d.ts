@@ -196,8 +196,24 @@ export interface CardDefinition {
          *  graphs keep validating, but NO face offers it: never a
          *  form row, never a picker seat, never a tool param. The
          *  alias must still exist in the schema carrier (the same
-         *  loud gate as inputs) so compose can read it. */
+         *  loud gate as inputs) so compose can read it.
+         *  THE SEAT MAP (2026-11-14, the operator's burn: "I told you
+         *  ONE BENCH, but the agent and user have different input
+         *  parameters"): legacyAliases' VALUES are KINDS, never seat
+         *  names — which canonical seat an alias merges into is a
+         *  fact only the card knows (image-edit's numbered slots
+         *  merge into input_images; h3's guide spelling into image).
+         *  A card that declares aliasSeats folds its aliases at every
+         *  READ-side seat (the resolved serve, the construct write) —
+         *  the same merge its compose lane performs, so the user's
+         *  form renders the canonical seat the agent's alias actually
+         *  feeds, never a blank square for an attached image.
+         *  Absent: no fold (the alias composes but no face derives
+         *  it). Every alias key named here must ride legacyAliases
+         *  too — the seat map narrows the fold, never widens the
+         *  lattice. */
         legacyAliases?: Record<string, string>;
+        aliasSeats?: Record<string, string>;
     };
     flowOutputBindings?: readonly CardFlowOutputBinding[];
     /** THE DECLARED HERO (the mask hero defect, 2026-10-09): the
@@ -213,16 +229,16 @@ export interface CardDefinition {
     primaryFile?: string;
     /** THE FAMILY ADMISSION (journey-closure B5, 2026-10-17 — hop 3's
      *  first judge, the write doors' arm of the walk): a
-     *  family-conditional card declares the clause its compose schema
-     *  refuses over a DERIVED family. The bench write doors (the
-     *  drafts admission the registry serves) ask it on the MERGED
-     *  params view — the params the next run would compose — and
-     *  refuse loud with the returned voice (the run door's own
-     *  clause, one hop earlier). Optional: a card without a family
-     *  contract declares nothing and every view passes (the no-op
-     *  law). The clause rides the card's own contract module (h3:
-     *  @melite/models-h3/timelineContract — the same spelling the
-     *  compose schema's walk enforces), never a copy.
+     *  family-conditional card may declare a clause its compose schema
+     *  refuses over a DERIVED family, asked by the bench write doors on
+     *  the MERGED params view. NO LIVE CARD DECLARES ONE after the
+     *  2026-11-15 lane-dead-letter retirement: h3-timeline's t4r
+     *  inject-keys face was deleted when the t4r render arm gained the
+     *  post chain (a key a lane cannot honor means the RENDERER is
+     *  incomplete — cure the renderer, never refuse a lawful doc; the
+     *  family-law declaration judge bans a non-empty deadKeys at boot).
+     *  The seat remains for a genuine future family clause, always
+     *  riding the card's own contract module, never a copy.
      *
      *  A JUDGE, NOT A GUARD (the operator's no-blocker ruling,
      *  CONTRACTS.md §4-17): the refusal speaks at the write door and

@@ -13,7 +13,7 @@ import { EyeAlt as Eye, EyeOff, Move, PersonStanding, RotateCcw, Target } from '
 import {
   Button, IconDownloadOutlineRegular, IconLinkOutlineRegular, IconRefreshOutlineRegular,
 } from '@deepseek-ai/dsh-client-ui-primitives'
-import { SectionLabel, SpecPanel, panelSectionsOf } from "@melite/card-base/client"
+import { SectionLabel, SpecPanel, panelSectionsOf, ModelAxes } from "@melite/card-base/client"
 import { InputSquare, MESH_SQUARE_ACCEPT, isMeshUrl } from '@melite/card-base/client'
 import { SourceRow, fetchMediaLibrary } from '@melite/card-base/client'
 import type { CardStage } from "@melite/contracts"
@@ -46,6 +46,11 @@ export interface MotionRailProps {
   kimodoError: React.ComponentProps<typeof SpecPanel>["error"]
   paramValues: React.ComponentProps<typeof SpecPanel>["values"]
   onParamEdit: React.ComponentProps<typeof SpecPanel>["onEdit"]
+  /** THE AXIS SEAT'S WHOLE-PATCH WRITE (the atomic pick law): the
+   * shared ModelAxes pick lands as ONE multi-key write — the host's
+   * own save seat, never a per-key loop (the recipe half-switch
+   * class). */
+  onAxisPick: (patch: Record<string, unknown>) => void
   exportOpen: boolean
   setExportOpen: React.Dispatch<React.SetStateAction<boolean>>
   bgImage: string | null
@@ -70,7 +75,7 @@ export function MotionRail({
   effectiveNpz, showSkeleton, setShowSkeleton, inPlace, setInPlace,
   editMode, toggleEdit, fullbodyKfAtFrame, frameIdx, stampConstraintAtFrame,
   editableJoints, handleRepose, reposing, keptEdit, discardKeptEdit,
-  kimodoSpec, kimodoError, paramValues, onParamEdit,
+  kimodoSpec, kimodoError, paramValues, onParamEdit, onAxisPick,
   exportOpen, setExportOpen, bgImage, handleBgFile, setBg,
   bodySrc, bodyWired, bodyWiredUpstream, bodyWiredUrl, handleBodyFile,
   toast, attachBody, onWireSlot, bodySlotIdx, onSave, stage,
@@ -190,6 +195,23 @@ export function MotionRail({
      two columns — the panel is not a half-width track (the
      scrollbar cure). */}
  <div className={s.railPanel} data-testid="mo-rail-panel">
+ {/* THE SHARED AXIS SEAT (the motion recipe-seat cure, 2026-11-13):
+     the DECL serves Variant/Quant/Recipe groups — the same shared
+     ModelAxes every generic drill rides, seated at the panel's head
+     so the served recipes (draft/polished stamp diffusion_steps)
+     are reachable BY HAND. Before this seat the rows lived on the
+     wire with no gesture that could reach them (the sweep's
+     promised-seat catch: "a promised seat that never renders is a
+     product finding, never a skip"). The pick lands as ONE
+     whole-doc write through the host's save seat. */}
+ {kimodoSpec != null && (
+   <ModelAxes
+     spec={kimodoSpec}
+     value={paramValues}
+     onSet={onParamEdit}
+     onPick={onAxisPick}
+   />
+ )}
  <SpecPanel
    model="kimodo"
    spec={kimodoSpec}

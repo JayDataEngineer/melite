@@ -2,6 +2,7 @@ import { laneBlank, judgeLaneRelations, laneSurfaceOf } from '@melite/contracts/
 import z from '@deepseek-ai/schemastery';
 import { declaredAction, qvoiceUse, instantiateAction, finalizeTts } from '@melite/comfyui-card-kit';
 import { DECL as qwen3TtsDecl, PRESET_SPEAKERS, variantRoute, cellRoute, laneTopologyOf as ttsLaneTopologyOf } from '@melite/models-qwen3-tts';
+import { voicePresetStated } from '@melite/comfyui-card-kit/facts';
 import { vocabulary } from '@melite/comfyui-card-kit/vocab';
 import { bag } from '@melite/contracts/extraKeys';
 import { seedExtra } from '@melite/comfyui-card-kit/fields';
@@ -35,7 +36,7 @@ export const schema = z.object({
     // The wire half already landed (the B7 stamp skip); this is the
     // panel half. An explicit both-stated write still refuses loud at
     // compose (the B2 arm below) — the hide is a face, never the law.
-    voice: vocabulary([...PRESET_SPEAKERS]).description("Preset Speaker").extra('extra', bag({ order: null, visible_when: 'qvoice=null', tooltip: "One of the 9 built-in CustomVoice speakers (Ryan, Vivian, …). CustomVoice HAS no non-speaker (operator 2026-11-12, told ten times): the picker rests on Ryan until you choose another — 'none' fired nothing and its run refused at the engine. A loaded .qvoice owns the timbre and never reads this row. The other models take no speaker: Base clones yours, VoiceDesign designs one", wtype: 'select' })),
+    voice: vocabulary([...PRESET_SPEAKERS]).description("Preset Speaker").extra('extra', bag({ order: null, visible_when: 'qvoice=null', tooltip: "One of the 9 built-in CustomVoice speakers (Ryan, Vivian, …). CustomVoice has no non-speaker option: the picker rests on Ryan until you choose another — 'none' fired nothing and its run refused at the engine. A loaded .qvoice owns the timbre and never reads this row. The other models take no speaker: Base clones yours, VoiceDesign designs one", wtype: 'select' })),
     // THE TASK-NAMED LABEL LAW (operator 2026-09-23: "they are
     // SPECIFIC TASKS, not INSTRUCT"): every instruction-ish row is
     // labeled by the TASK it performs on its lane, never the upstream
@@ -210,7 +211,14 @@ export function registerCard(ctx, comfy) {
             // resolves voices (the resolved set — resolveCardFlowOutputs
             // — is what the stage carries; the static record declares
             // the union).
-            outputs: { default: 'audio', voices: 'voice' },
+            // F48's one-word cure (2026-11-14): voices declares the LIST
+            // kind. The channel feeds the film's ref_audios conditioning
+            // wire, whose receiving port declares audio_list — `voice`
+            // was a kind no wire door carries (KIND_VOCAB refuses it at
+            // the inline gate, and the card-contradiction sweep refuses
+            // every other spelling against the DECL), so the tts→film
+            // wire was unkindable at every door.
+            outputs: { default: 'audio', voices: 'audio_list' },
             requiresModel: true,
         },
         flowOutputBindings: [
@@ -332,7 +340,16 @@ export function registerCard(ctx, comfy) {
                 // its own .qvoice), a description saves a DESIGN — and the
                 // off-source params that perform nothing beside either.
                 const refStated = !blank(doc.ref_audio);
-                const presetStated = typeof doc.voice === 'string' && doc.voice !== 'none' && doc.voice !== '';
+                // THE STATED-PRESET TEST (F31): the service's defaults merge
+                // fills the lane's rest before this judge runs — the fill is
+                // not a stated preset in the pair exclusivity refusals
+                // (voicePresetStated, one implementation across all three
+                // tts judge seats). The SOURCE test keeps the raw value: the
+                // lane's fill PERFORMS (a fresh card rests on a real speaker
+                // — the save renders it), so the nothing-stated demand still
+                // counts it as a voice source.
+                const presetStated = voicePresetStated(doc, model);
+                const presetSource = typeof doc.voice === 'string' && doc.voice !== 'none' && doc.voice !== '';
                 if (refStated && presetStated) {
                     throw new Error("params 'voice' and 'ref_audio' fire together on the tts card (ONE voice performs — the run's own law; the save persists it)");
                 }
@@ -342,7 +359,7 @@ export function registerCard(ctx, comfy) {
                 if (refStated && !blank(doc.design_prompt)) {
                     throw new Error("params 'design_prompt' and 'ref_audio' fire together on the tts card (ONE voice performs — the run's own law; the save persists it)");
                 }
-                if (!refStated && !presetStated) {
+                if (!refStated && !presetSource) {
                     const missing = ['design_prompt'].filter((k) => blank(doc[k]));
                     if (missing.length > 0) {
                         throw new Error("required Design param(s) " + missing.map((k) => "'" + k + "'").join(' + ') + " missing or empty on the tts card (the save persists whatever the run renders — state a Preset Speaker, a reference clip, or describe who speaks; the run's own one-voice law)");
@@ -424,9 +441,9 @@ export function registerCard(ctx, comfy) {
             // performs: refuse loud, naming both seats and the cure. (The
             // overlay no longer STAMPS a preset beside a qvoice — the B7
             // skip at stampCardOverlay; this guards the user's own
-            // explicit both-stated write.)
-            if (qvoiceStated(doc)
-                && typeof doc.voice === 'string' && doc.voice !== '' && doc.voice !== 'none') {
+            // explicit both-stated write.) THE STATED-PRESET TEST (F31):
+            // the lane's defaults fill is the rest, never a stated preset.
+            if (qvoiceStated(doc) && voicePresetStated(doc, model)) {
                 throw new Error("params 'voice' and 'qvoice' fire together on the tts card (ONE voice performs — the saved persona rides the qvoice mod bag and the engine's clone branch carries no speaker; drop the preset or the .qvoice)");
             }
             // THE DECLARED ACTION (the atom vocabulary, stroke 3): the

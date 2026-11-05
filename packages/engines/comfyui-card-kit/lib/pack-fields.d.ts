@@ -32,10 +32,12 @@ export interface IPAdapterShape {
     }>;
 }
 export declare const IPAdapterFields: Schema<IPAdapterShape>;
+export declare const MASK_DENOISE_DEFAULT = 1;
 export declare const MaskFields: z<Schemastery.ObjectS<NoInfer<{
     mask: z<any, any, "plain">;
+    input_image: z<string, string, "plain">;
     input_mask: z<string, string, "plain">;
-    mask_mode: z<"auto" | "full_frame" | "crop_stitch", "auto" | "full_frame" | "crop_stitch", "defined">;
+    mask_mode: z<"auto" | "crop_stitch" | "full_frame", "auto" | "crop_stitch" | "full_frame", "defined">;
     mask_detector: z<"person" | "face" | "hand" | "off", "person" | "face" | "hand" | "off", "defined">;
     mask_context_pad: z<number, number, "defined">;
     mask_grow: z<number, number, "defined">;
@@ -46,8 +48,9 @@ export declare const MaskFields: z<Schemastery.ObjectS<NoInfer<{
     mask_denoise: z<number, number, "defined">;
 }>>, Schemastery.ObjectT<NoInfer<{
     mask: z<any, any, "plain">;
+    input_image: z<string, string, "plain">;
     input_mask: z<string, string, "plain">;
-    mask_mode: z<"auto" | "full_frame" | "crop_stitch", "auto" | "full_frame" | "crop_stitch", "defined">;
+    mask_mode: z<"auto" | "crop_stitch" | "full_frame", "auto" | "crop_stitch" | "full_frame", "defined">;
     mask_detector: z<"person" | "face" | "hand" | "off", "person" | "face" | "hand" | "off", "defined">;
     mask_context_pad: z<number, number, "defined">;
     mask_grow: z<number, number, "defined">;
@@ -75,6 +78,15 @@ export declare const QvoiceSaveFields: z<Schemastery.ObjectS<NoInfer<{
 export declare const LORAS_RIDERS: readonly string[];
 /** The mask pack's rider keys (region-modality lanes). */
 export declare const MASK_RIDERS: readonly string[];
+/** THE REGION ENTRY VOCABULARY (the D11 burn's silent-drop cure):
+ *  the keys ONE mask-bag entry may lawfully carry — every declared
+ *  mask_* knob plus the painted-mask seat, plus mask_detector_
+ *  threshold (image-edit's own rider beside MASK_RIDERS). The bag
+ *  key 'mask' itself is NOT entry vocabulary (it declares the bag,
+ *  never a field inside an entry); refuseRegionEntryFields (lanes-
+ *  image) refuses every other key loud, so a stated field that
+ *  reaches no node can never compose silently again. */
+export declare const REGION_ENTRY_FIELDS: readonly string[];
 /** The qvoice pack's rider keys (voice-lock load lanes). */
 export declare const QVOICE_RIDERS: readonly string[];
 /** The qvoice_save pack's rider keys (voice export lanes). */

@@ -28,14 +28,19 @@
  * durable row and holds no state of its own.
  */
 import {
-  assertGridLength, GRID_MAX_FRAMES, solveWindowComposition, type WindowComposition,
+  assertGridLength, CONTEXT_OVERLAP_FRAMES, GRID_MAX_FRAMES, solveWindowComposition, type WindowComposition,
 } from '@melite/models-h3/timelineContract'
+import { STARTER_CALLS } from './docModel.ts'
 
 /** Every mod bag the rail projects, in the card's own declaration
  *  order. The LoRAs joined on 2026-10-30 (F29): the bag reached the
  *  graph but no rail row existed, so the operator could not see the
- *  adapters at all — a bag the compose honors must have a row. */
-export const COMMISSION_KINDS = ['replace', 'repair', 'extend', 'reshoot', 'loras'] as const
+ *  adapters at all — a bag the compose honors must have a row.
+ *  refine + upscale joined on 2026-10-31 (audit
+ *  2026-10-31-modpress-row-face): five of seven declared kinds had
+ *  no row, so a refine/upscale-only row drew an EMPTY rail — its
+ *  whole authored truth invisible beside the starter lie. */
+export const COMMISSION_KINDS = ['replace', 'repair', 'extend', 'refine', 'upscale', 'reshoot', 'loras'] as const
 export type CommissionKind = (typeof COMMISSION_KINDS)[number]
 
 /** One entry seat as the rail names it: the key the compose reads and
@@ -49,6 +54,27 @@ export interface CommissionSeat {
 /** The window composition an extend commission will build (drawn on
  *  the lane so N chained windows are visible, §9's own multiply). */
 export type CommissionGeometry = WindowComposition
+
+/** One positioned window's placement in bar space (the frame-offset
+ *  segments' tenant data, 2026-11-03): window k of a uniform
+ *  composition starts k*(windowFrames − overlap) frames past the
+ *  composition's own start — the overlap is the carry seam, the same
+ *  constant the solver composed with (one spelling, the contract's
+ *  own default).
+ *  @param geometry the composition the door will build
+ *  @param startAt the composition's first frame in bar space (the
+ *  film's end for an extend — the extension appends)
+ *  @returns one span per window, film order */
+export function windowSpans(
+  geometry: CommissionGeometry,
+  startAt: number,
+): Array<{ start: number, frames: number }> {
+  const stride = geometry.windowFrames - CONTEXT_OVERLAP_FRAMES
+  return Array.from({ length: geometry.windows }, (_v, k) => ({
+    start: startAt + k * stride,
+    frames: geometry.windowFrames,
+  }))
+}
 
 /** A malformed arm the run door refuses: the bag is present but is
  *  not an array, or its entry is not an object. The rail draws the
@@ -165,12 +191,15 @@ export function deriveCommissions(params: Record<string, unknown> | undefined): 
       continue
     }
     if (bag.length === 0) continue
-    // THE STACKED BAG (F29, 2026-10-30): the LoRA arm stacks rows
-    // (max_stack 4 — the distill adapter + the camera adapter), so it
-    // projects ONE ROW PER ENTRY. Naming only bag[0] would hide the
-    // second adapter, which is exactly the invisibility the operator
-    // reported; every other bag is one-entry by its own max_stack.
-    if (kind === 'loras') {
+    // THE STACKED BAGS (F29, 2026-10-30; GAPS-19, 2026-11-01): a
+    // multi-entry kind projects ONE ROW PER ENTRY. `loras` stacks to
+    // the family catalog (max_stack 4 — the distill adapter + the
+    // camera adapter) and `refine` stacks to the composed-window
+    // ceiling (each entry IS one refine window, max_stack 32), so
+    // naming only bag[0] would hide the second adapter / the second
+    // window — exactly the invisibility the operator reported on the
+    // loras face. Every other bag is one-entry by its own max_stack.
+    if (kind === 'loras' || kind === 'refine') {
       for (const row of bag) {
         const stacked = bagEntry([row])
         out.push(stacked === undefined
@@ -193,4 +222,57 @@ export function deriveCommissions(params: Record<string, unknown> | undefined): 
     out.push(commission)
   }
   return out
+}
+
+/** THE CALLS-READING KINDS (the mod-mode calls report, operator
+ *  2026-11-14): the kinds whose film action READS the calls text —
+ *  reshoot and loras ride the film action (reshoot's prompt is
+ *  `"crossview. " + <call text>`), so the calls lane IS their run's
+ *  prompt seat. Every other kind (replace, repair, extend, refine,
+ *  upscale) composes from the bag entry alone and never reads a
+ *  call's text — under those arms the calls lane is dormant. */
+export const CALLS_READING_KINDS = ['reshoot', 'loras'] as const
+
+/** What the strip's calls lane IS under the doc's armed commissions
+ *  (the honest face the 2026-11-14 report demanded — the lane may
+ *  never tell the operator to "describe their video" into a seat the
+ *  armed run will not read):
+ *  - `plain` — nothing armed: the calls lane is the film's authoring
+ *    surface, the default face.
+ *  - `prompt` — a calls-reading kind is armed: the lane's text rides
+ *    the run (the prompt seat), so the lane stays live and is
+ *    labeled as the run's prompt.
+ *  - `dormant` — only non-reading kinds are armed: the run composes
+ *    from the bag alone, so the starter placeholder stands down (the
+ *    lane's hint names the armed kind) and authored prose stays
+ *    visible as doc truth the run simply does not read. */
+export type CallsLaneFace =
+  | { face: 'plain' }
+  | { face: 'dormant'; kind: CommissionKind }
+  | { face: 'prompt'; kind: CommissionKind }
+
+/** Derive the calls lane's face from the armed commissions. A reader
+ *  wins over any non-reader armed beside it (the run reads calls if
+ *  ANY armed action does); with no reader armed the lane is dormant
+ *  under the FIRST armed row's kind (the commission the hint names).
+ * @param commissions the derived armed rows (deriveCommissions)
+ * @returns the lane's face */
+export function callsLaneFace(commissions: DocCommission[]): CallsLaneFace {
+  if (commissions.length === 0) return { face: 'plain' }
+  const reader = commissions.find((c) =>
+    (CALLS_READING_KINDS as readonly string[]).includes(c.kind))
+  if (reader !== undefined) return { face: 'prompt', kind: reader.kind }
+  const first = commissions[0]!
+  return { face: 'dormant', kind: first.kind }
+}
+
+/** Whether a call's text is the studio's own starter placeholder
+ *  verbatim (trimmed) — the one text the dormant face stands down:
+ *  the placeholder is VIEW state inviting prose, never operator
+ *  content, so under a non-reading arm painting it is the exact
+ *  "describe their video … when that isn't used at all" lie.
+ * @param text the call's text
+ * @returns true only for the verbatim starter placeholder */
+export function isStarterCallText(text: string): boolean {
+  return text.trim() === STARTER_CALLS[0]!.text
 }

@@ -7,7 +7,7 @@ import { describe, it, beforeAll } from "vitest";
 import assert from "node:assert/strict";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadCardDefs } from "@melite/comfyui-cordis";
+import { loadCardDefs, resolveCardFlowOutputs } from "@melite/comfyui-cordis";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
@@ -352,18 +352,62 @@ describe("the mask card declaration (stroke 95 — the two-bars law)", () => {
     assert.equal(def.primaryFile, "mask_combined", "mask_combined leads the stage gallery; the manifest/crops/figures follow");
   });
 
-  it("THE FLOW CONTRACT (the mask→edit seat's upstream half): seg out, no silent producer", () => {
+  it("THE FLOW CONTRACT (the mask→edit seat's upstream half): seg out, bound to the product", () => {
     // The mask card feeds image-edit's input_mask seat (kind seg)
-    // from input_image — but declares NO flowOutputBindings: the
-    // lane emits multiple/variable-order SaveImage nodes
-    // (combined + exports + manifests), so no stable single
-    // producer exists to bind. The merge refuses a multi-save
-    // producer LOUD (ambiguous-producers voice) instead of
-    // silently binding the wrong save — tensor wiring waits on a
-    // future explicit producer mechanism, never a quiet guess.
+    // from input_image — and declares flowOutputBindings (GAPS-16/F3:
+    // the producer-law cure): the lane emits multiple/variable-order
+    // SaveImage nodes (combined first, then figures/exports/union,
+    // the box manifest last), so the channel rides TWO complementary
+    // when-guarded rows (the rig precedent): a sam2-primary press
+    // binds SaveImage.1 (the instance-crops save precedes the
+    // combined one), every other press binds SaveImage.0. No press
+    // binds twice or zero times, and the nodeClass gate refuses loud
+    // if the lane ever renumbers — the merge never guesses.
     assert.deepEqual(def.flowKinds.inputs, { input_image: "image" });
     assert.deepEqual(def.flowKinds.outputs, { default: "seg" });
-    assert.equal(def.flowOutputBindings, undefined, "no bindings — the producer is ambiguous by construction, never silently bound");
+    const bindings = [...(def.flowOutputBindings ?? [])];
+    assert.equal(bindings.length, 2, "one channel, per-arm producers — exactly two complementary rows");
+    assert.deepEqual(bindings.map((b) => b.channel), ["default", "default"]);
+    assert.deepEqual(bindings.map((b) => [b.node, b.nodeClass]),
+      [["SaveImage.1", "SaveImage"], ["SaveImage.0", "SaveImage"]]);
+    const fires = (params: Record<string, unknown>): boolean[] =>
+      bindings.map((b) => b.when === undefined || b.when(params));
+    // the guards partition exactly: row two is row one's negation
+    assert.deepEqual(fires({}), [false, true], "a sourceless doc falls to the SaveImage.0 row (compose refuses it upstream, never the bindings)");
+    assert.deepEqual(fires({ sam3: [{ prompt: "person" }] }), [false, true]);
+    assert.deepEqual(fires({ sam2: [{ labels: "person" }] }), [true, false], "the sam2 primary's crops save precedes the combined one");
+    assert.deepEqual(fires({ sam3: [{ prompt: "person" }], sam2: [{ labels: "face" }] }), [false, true], "sam3[0] is the primary whenever the sam3 bag is non-empty");
+    assert.deepEqual(fires({ draw: [{ payload: "/m/p.png" }] }), [false, true], "the paint-only press saves combined first");
+  });
+
+  it("THE BINDINGS RESOLVE TO THE PRODUCT (every arm's default channel names its mask_combined save)", () => {
+    // The resolution proof: for each representative press, the
+    // default channel resolves to the SaveImage whose prefix ends
+    // with mask_combined — never the crops, the figures, the union,
+    // or the manifest. The trailing saves ride AFTER the product in
+    // every arm, so the declaration is arm-proof, not arm-lucky.
+    const combinedId = (g: GraphBuilder): string => {
+      const entries = Object.entries(g.toJSON()) as Array<[string, Row]>;
+      const hits = entries.filter(([, n]) =>
+        n["class_type"] === "SaveImage" && String((n["inputs"] as Row)?.["filename_prefix"] ?? "").endsWith("/mask_combined"));
+      assert.equal(hits.length, 1, `exactly one mask_combined save, saw ${hits.map(([id]) => id).join(",")}`);
+      return hits[0]![0];
+    };
+    const check = (params: Record<string, unknown>, runId: string): void => {
+      const g = new GraphBuilder();
+      def.compose({ input_image: "/m/pic.png", ...params }, DUMMY, g, runId);
+      const resolved = resolveCardFlowOutputs(def, { input_image: "/m/pic.png", ...params }, g.toJSON());
+      assert.deepEqual(resolved.outputs, { default: "seg" });
+      assert.equal(resolved.outputNodes["default"], combinedId(g),
+        `the default channel names the mask_combined save (${runId})`);
+    };
+    check({ sam3: [{ prompt: "person" }] }, "bind_dp");
+    check({ sam3: [{ prompt: "person", export_boxes: true }] }, "bind_manifest");
+    check({ sam2: [{ labels: "person" }] }, "bind_sam2");
+    check({ sam2: [{ labels: "person", figures: "1,2" }] }, "bind_figures");
+    check({ sam3: [{ prompt: "person" }], sam2: [{ labels: "face" }] }, "bind_export");
+    check({ draw: [{ payload: "/m/p.png" }] }, "bind_paint");
+    check({ sam3: [{ prompt: "person" }], draw: [{ payload: "/m/p.png" }, { payload: "/m/q.png" }] }, "bind_union");
   });
 
   it("THE ARM WEIGHTS (the silent-truncation law, 2026-10-09): the run's touched provision rows — an unused arm names nothing", () => {

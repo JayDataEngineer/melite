@@ -287,6 +287,28 @@ export const studioCopy = {
   laneBlockedMessage: "reference audio is wired on a call — the dialogue / music / SFX lanes are LOCKED (the clips and the audio inputs are mutually exclusive; clear the call's Ref audios to place clips)",
   /** The bar's calls lane label. */
   callsLabel: "Calls",
+  /** ── THE MOD-MODE CALLS FACES (operator 2026-11-14: "there is
+   *  still the default call in the timeline bar that tells them to
+   *  describe their video there, when that isn't used at all") — the
+   *  lane names its calls-readership under an armed commission, so
+   *  the default invitation never lies about the armed run. */
+  /** The calls lane head under a NON-reading armed commission (the
+   *  run composes from the bag alone — the lane is not read). */
+  callsDormantLabel: (kind: string): string =>
+    `Calls — dormant under ${studioCopy.commissionKindLabel(kind)}`,
+  /** The calls lane's empty hint under a NON-reading armed
+   *  commission: why the starter stood down (the armed commission
+   *  owns this run's inputs). */
+  callsDormantHint: (kind: string): string =>
+    `${studioCopy.commissionKindLabel(kind)} is armed — this run composes from the mod's own inputs and does not read this lane (disarm the mod to author the film here)`,
+  /** The calls lane head under a READING armed commission (reshoot,
+   *  loras): the lane's text rides the run. */
+  callsPromptSeatLabel: (kind: string): string =>
+    `Calls — the ${studioCopy.commissionKindLabel(kind)} run's prompt`,
+  /** The calls lane's empty hint under a READING armed commission:
+   *  describe the shot here — this text IS the run's prompt. */
+  callsPromptSeatHint: (kind: string): string =>
+    `${studioCopy.commissionKindLabel(kind)} is armed — describe the shot here: this lane's text is the run's prompt`,
   /** ── THE COMMISSION RAIL (§9's mod projection) ────────────────────
    *  One row per ARMED mod bag. The kind's face is the operator's own
    *  word for the door; the seats line names what the entry states;

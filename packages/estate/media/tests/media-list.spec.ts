@@ -189,3 +189,24 @@ test('listMediaAcross: test-output rows union with output rows across roots', as
     await rm(mk, { recursive: true, force: true })
   }
 })
+
+// THE TUCKED SKIP (mass-archive law, operator ruling 2026-11-14
+// item (a)): the archive tuck rests files under the run's
+// `_archived/` dir — the filesystem is the ledger, so the media
+// walk must skip EXACTLY that dir, or every listing re-inflates the
+// grid the tuck just swept. A live file merely NAMED `…_archived…`
+// still lists (exact-dir match, never a substring sweep).
+test('listMedia: the _archived/ dir never lists; a live …_archived… name still does', async () => {
+  const tuckRoot = await mkdtemp(join(tmpdir(), 'melite-media-x-tuck-'))
+  try {
+    await mkdir(join(tuckRoot, 'output', 'run-0abc8-tuck', '_archived'), { recursive: true })
+    await writeFile(join(tuckRoot, 'output', 'run-0abc8-tuck', 'live.png'), 'x')
+    await writeFile(join(tuckRoot, 'output', 'run-0abc8-tuck', '_archived', 'old.png'), 'y')
+    await writeFile(join(tuckRoot, 'output', 'run-0abc8-tuck', 'still_archived.png'), 'z')
+    const { count, items } = await listMedia(tuckRoot, 'all')
+    expect(count).toBe(2)
+    expect(items.map((i) => i.name).sort()).toEqual(['live.png', 'still_archived.png'])
+  } finally {
+    await rm(tuckRoot, { recursive: true, force: true })
+  }
+})

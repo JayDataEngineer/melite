@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { Context } from "@deepseek-ai/cordis";
 import type { Domain } from "@deepseek-ai/dsh-storage-domain";
 import type { DraftsDomainSpec } from "../src/spec.js";
-import { ensureBench } from "../src/bench.ts";
+import { ensureBench, getBench, addStagesBench } from "../src/bench.ts";
 import { BenchRemoteService, DraftsRemoteService } from "../src/remote.ts";
 import { sig, bootCtx, seed } from "./bench-helpers.ts";
 import { draftIdOf } from "@melite/contracts/benchStage";
@@ -282,4 +282,29 @@ test("unresolvable params ride un-resolved (no key, never null)", async () => {
   fakeRegistry(ctx);
   const doc = await new DraftsRemoteService(ctx).get(draftIdOf("ghost-draft"), sig);
   assert.ok(!("resolved" in ((doc["stages"] as Array<Record<string, unknown>>)[0] as object)));
+});
+
+// ── the batch door's outcome gate (the terminal outcome builder's
+//    row: a result is an object or the batch refuses, named at the
+//    row — the trail applier's face is never a scalar) ─────────────
+
+test("a non-object outcome.result refuses bench/bad-body at the row, and the batch persists nothing", async () => {
+  const { domain } = await bootCtx();
+  await ensureBench(domain, { session: "main", stages: [{ id: "s_0", card: "hero", params: {} }] });
+  const refused = await addStagesBench(domain, "main", {
+    stages: [{ card: "hero", params: {}, outcome: { result: "not-an-object" } }],
+    expect_rev: 0,
+  }).then(
+    () => null,
+    (e: unknown) => e,
+  );
+  expect(refused).not.toBeNull();
+  expect(String((refused as { code?: string }).code)).toBe("bench/bad-body");
+  expect(String((refused as { message?: string }).message)).toBe(
+    "stage 0 of the batch: outcome.result must be an object (the terminal outcome builder's row)",
+  );
+  // the refusal-that-lies law: nothing landed
+  const doc = getBench(domain, "main");
+  expect(doc.rev).toBe(0);
+  expect((doc.stages as Array<Record<string, unknown>>)).toHaveLength(1);
 });

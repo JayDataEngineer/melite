@@ -98,6 +98,19 @@ window as required by the loaded contract. The card owns the final mix and
 ducking; do not invent a film-wide bed parameter or an out-of-band ffmpeg
 step.
 
+**Saying nothing about voices is not the same as asking for silence.** H3
+invents speech wherever the audio does not account for it — a window that never
+mentions voices returns with muttered lines or whole sentences in a synthetic
+voice, and a later window can restate an earlier line in the wrong register.
+Every window with no spoken audio MUST carry its own explicit negation in
+`text` ("no dialogue", "silence, no dialogue", "no spoken words"); one negation
+per silent window, never a single sentence at the top of the film, because
+`text` conditions its own window only. A window that DOES carry a line names
+the speaker and the exact words and carries no negation beside them. Check this
+window by window on the compiled prompts before pressing — the engine fills the
+gap enthusiastically, and the mistake only shows up as a stranger talking over
+your film.
+
 ## References
 
 Use the declared `ref_images`, `ref_videos`, and `ref_audios` fields when the

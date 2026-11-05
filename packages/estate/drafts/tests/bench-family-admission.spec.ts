@@ -2,11 +2,12 @@
 // doors (journey-closure B5, 2026-10-17 — hop 3's first judge).
 //
 // The patch door's admission claims to judge "the params the NEXT
-// run would compose" (bench.ts, the merged-view seat). Pre-B5 that
-// claim was dict membership (the model board + the lane surface):
-// a Final-Cut stamp on a keyframe doc — the merged view derives t4r
-// under the stamp — green-lit every write door and the RUN press was
-// the first judge. The cure rides the injected admission's third
+// run would compose" (bench.ts, the merged-view seat). The firing
+// example is the SURVIVING conditional class: a film-only letter
+// (duck_depth_db) on a single-window keyframe doc — the merged view
+// derives t4r, where the walk refuses it. (The old t4r inject-keys
+// example is retired: the 2026-11-15 chain hoist made those stamps
+// lawful, so the stub below speaks the letter's voice instead.) The cure rides the injected admission's third
 // judge: remote.ts familyAdmissionOf → the registry's
 // admitStageFamily → the card's own CardDefinition.admitFamily
 // clause (the run door's walk clause, ONE contract spelling). The
@@ -29,19 +30,27 @@ import { boot, codeOf } from "./bench-helpers.ts";
 
 // The resolver stub: the family clause a family-conditional card
 // declares. The VERDICT VOICE here is the walk's verbatim refusal —
-// the same string the real h3 face returns (walled verbatim against
-// the REAL walk in h3-timeline's card.spec.ts).
+// the same string the real h3 face returns for the surviving
+// conditional class (the film-only letter, walled verbatim against
+// the REAL walk in the h3 walls). The old t4r inject-keys class is
+// RETIRED (2026-11-15): the t4r arm mounts the post chain, so the
+// mechanism's firing example moves to the letter that still refuses.
 const FAMILY_RESOLVER = {
   resolveStageParams: (): null => null,
   admitStageFamily: (card: string, params: Record<string, unknown>): { ok: true } | { ok: false; error: string } => {
     void card;
-    const stamps = ["second_pass_enabled", "sr_switch"].filter((k) => params[k] !== undefined);
-    const keyed = params["keyframes"] as unknown[] | undefined;
-    if (Array.isArray(keyed) && keyed.length > 0 && stamps.length > 0) {
+    const filmLetter = params["duck_depth_db"] !== undefined;
+    const calls = params["calls"] as unknown[] | undefined;
+    const multiWindow = Array.isArray(calls) && calls.length > 1;
+    if (filmLetter && !multiWindow) {
       return {
         ok: false,
-        error: "card 'h3-timeline' refused params: h3_window(t4r): unsanctioned inject keys: "
-          + stamps.sort().join(", "),
+        // ONE SPELLING mirror (2026-11-03): the real clause carries
+        // the walk's own voice; this stub mirrors it verbatim.
+        error: "card 'h3-timeline' refused params: h3_window(t4r): film-only inject keys: duck_depth_db"
+          + " — the mix-desk knob is read only inside the multi-window film boundary"
+          + " (computeFilmMix); the repair is one gesture: state the second window"
+          + " or null the named key at the patch door",
       };
     }
     return { ok: true };
@@ -53,32 +62,38 @@ function ctxWithResolver(resolver: unknown): CtxLike {
   return { get: (name: string): unknown => (name === "cardRegistry" ? resolver : undefined) };
 }
 
-// THE FINAL-CUT-STAMPED KEYFRAME DOC (the burn: Final Cut saved
-// pre-keyframe; the doc gained a pin; the merged view derives t4r
-// under the stamp).
+// THE LETTER-CARRYING KEYFRAME DOC (the surviving conditional class:
+// a single-window keyframe doc carrying the film-only knob — the
+// merged view derives t4r, where the walk refuses the letter).
 const STAMPED_ROW = {
   keyframes: [{ image: "webp/run1/pin-0.png", frame: 0 }],
-  second_pass_enabled: true,
-  sr_switch: true,
+  duck_depth_db: -14,
   steps: 20,
 };
 
 describe("familyAdmissionOf — the write doors' arm of the walk", () => {
-  test("a Final-Cut stamp on a keyframe doc refuses with the run door's own voice (bench/family-refusal)", () => {
+  test("a film-only letter on a keyframe doc refuses with the run door's own voice (bench/family-refusal)", () => {
     const admit = familyAdmissionOf(ctxWithResolver(FAMILY_RESOLVER) as never);
     assert.ok(admit !== undefined);
     assert.throws(
       () => admit("h3-timeline", { ...STAMPED_ROW }, undefined),
       (e: unknown) => e instanceof RemoteError
         && e.code === "bench/family-refusal"
-        && e.message === "card 'h3-timeline' refused params: h3_window(t4r): unsanctioned inject keys: second_pass_enabled, sr_switch",
+        && e.message.startsWith("card 'h3-timeline' refused params: h3_window(t4r): film-only inject keys: duck_depth_db — ")
+        && e.message.includes("null the named key at the patch door"),
     );
   });
 
   test("a film-shaped view passes (the family honors the stamps on its own lane)", () => {
     const admit = familyAdmissionOf(ctxWithResolver(FAMILY_RESOLVER) as never);
     assert.ok(admit !== undefined);
-    admit("h3-timeline", { calls: [{ text: "a", start_frame: 0, end_frame: 90 }], sr_switch: true }, undefined);
+    admit("h3-timeline", {
+      calls: [
+        { text: "a", start_frame: 0, end_frame: 90 },
+        { text: "b", start_frame: 90, end_frame: 158 },
+      ],
+      duck_depth_db: -14,
+    }, undefined);
   });
 
   test("a RESTORED row rides the carve — the archive loads; the run teaches", () => {
@@ -126,12 +141,12 @@ describe("benchAdmissionOf — the composed trio (model, lane, family)", () => {
       admitStageFamily: FAMILY_RESOLVER.admitStageFamily,
     }) as never);
     assert.ok(admit !== undefined);
-    assert.throws(() => admit("h3-timeline", { ...STAMPED_ROW }, undefined), /bench\/family-refusal|unsanctioned/);
+    assert.throws(() => admit("h3-timeline", { ...STAMPED_ROW }, undefined), /bench\/family-refusal|film-only/);
   });
 });
 
 describe("THE PATCH DOOR judges the family (bench.ts's merged-view admission seat)", () => {
-  test("a patch onto a Final-Cut-stamped keyframe row refuses bench/family-refusal — the row never lands the poison", async () => {
+  test("a patch onto a letter-carrying keyframe row refuses bench/family-refusal — the row never lands the poison", async () => {
     const drafts = await boot();
     await ensureBench(drafts, { session: "s" });
     // the row: the STAMPED KEYFRAME doc already stored (a pre-law
@@ -147,24 +162,24 @@ describe("THE PATCH DOOR judges the family (bench.ts's merged-view admission sea
       await codeOf(patchBench(drafts, "s", {
         stage: row.stage, params: { width: 1344 }, expect_rev: 1,
       }, familyAdmissionOf(ctxWithResolver(FAMILY_RESOLVER) as never) ?? undefined)),
-      /^bench\/family-refusal\|card 'h3-timeline' refused params: h3_window\(t4r\): unsanctioned inject keys: second_pass_enabled, sr_switch$/,
+      /^bench\/family-refusal\|card 'h3-timeline' refused params: h3_window\(t4r\): film-only inject keys: duck_depth_db — /,
     );
     // the verdict refused the WRITE, never the STATE: the row keeps
     // its pre-patch params, editable (the no-blocker ruling)
     const after = getBench(drafts, "s");
     const stageRow = (after.stages as Array<Record<string, unknown>>).find((r) => r["id"] === row.stage);
     assert.deepEqual(stageRow?.["params"], STAMPED_ROW, "the refused patch landed nothing");
-    // THE CURE IS EXPRESSIBLE AT THE SAME DOOR: unsetting the stamp
+    // THE CURE IS EXPRESSIBLE AT THE SAME DOOR: unsetting the letter
     // (the merge-patch null delete) lands — the doc the next run
-    // composes no longer derives t4r under a stamp
+    // composes no longer carries the single-window dead letter
     const cured = await patchBench(drafts, "s", {
-      stage: row.stage, params: { second_pass_enabled: null, sr_switch: null, width: 1344 }, expect_rev: 1,
+      stage: row.stage, params: { duck_depth_db: null, width: 1344 }, expect_rev: 1,
     }, familyAdmissionOf(ctxWithResolver(FAMILY_RESOLVER) as never) ?? undefined);
     assert.equal(cured.rev, 2);
     const curedRow = (getBench(drafts, "s").stages as Array<Record<string, unknown>>).find((r) => r["id"] === row.stage);
     assert.deepEqual(curedRow?.["params"], {
       keyframes: STAMPED_ROW.keyframes, steps: 20, width: 1344,
-    }, "the stamps deleted; the doc composes on its lane");
+    }, "the letter deleted; the doc composes on its lane");
   });
 
   test("a patch onto a FILM-shaped row lands — the clause is family-conditional, not a blanket ban", async () => {
@@ -172,7 +187,13 @@ describe("THE PATCH DOOR judges the family (bench.ts's merged-view admission sea
     await ensureBench(drafts, { session: "s" });
     const row = await addStageBench(drafts, "s", {
       card: "h3-timeline",
-      params: { calls: [{ text: "a", start_frame: 0, end_frame: 90 }], sr_switch: true },
+      params: {
+        calls: [
+          { text: "a", start_frame: 0, end_frame: 90 },
+          { text: "b", start_frame: 90, end_frame: 158 },
+        ],
+        duck_depth_db: -14,
+      },
       expect_rev: 0,
     }, familyAdmissionOf(ctxWithResolver(FAMILY_RESOLVER) as never) ?? undefined);
     const patched = await patchBench(drafts, "s", {

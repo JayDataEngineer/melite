@@ -53,6 +53,22 @@ export declare function orderedInputImages(p: Record<string, unknown>): string[]
  *  Refs past cap - 1 refuse LOUD on every lane (2511: 2, 2.1: 15);
  *  the lane re-pins the same ceiling for direct callers. An absent
  *  model refuses (the old law — direct lane callers pin it). */
+/** THE REGION ENTRY-VOCABULARY DOOR (the D11 edit-suite burn,
+ *  2026-11-04): a mask-bag entry may state ONLY the declared region
+ *  vocabulary (REGION_ENTRY_FIELDS — the painted-mask seat, the
+ *  mode, the detector, the knobs). Every other key refuses LOUD:
+ *  the burn's shape was an entry stating its own 'mask' field (a
+ *  source photo) — the field reached no node, the image-gen card
+ *  composed a fresh generation, and the run reported done: the
+ *  silent-drop class. ONE spelling shared by the edit gate below,
+ *  the image-gen serve gate and statedRegion (so the build arms can
+ *  never read a doc the gates refused), with a voice that teaches
+ *  both lawful seats: the painted region rides input_mask, a
+ *  photograph rides the EDIT card's anchor.
+ *
+ * @param entry the single mask-bag entry (already shaped object).
+ */
+export declare function refuseRegionEntryFields(entry: Record<string, unknown>): void;
 export declare function refuseImageEditFiring(p: Record<string, unknown>, model?: ModelFacts): void;
 /** THE DELIVERABLE-SIZE REFUSAL (the ground-truth cure,
  * 2026-11-12): the size law as its throwing door — the firing gate
@@ -101,6 +117,10 @@ export interface StatedRegion {
     mode: string;
     merged: Record<string, unknown>;
     maskPath: string;
+    /** THE BASE HALF of the Impact Pack pair (DetailerForEach takes
+     *  image + segs): the photograph to inpaint on, '' = the lane's
+     *  own render is the base. */
+    basePath: string;
     detector: string;
 }
 export declare function statedRegion(doc: Record<string, unknown>): StatedRegion | null;

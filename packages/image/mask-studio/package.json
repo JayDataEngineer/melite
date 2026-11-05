@@ -17,6 +17,10 @@
     "./bbox-canvas": {
       "types": "./lib/ui/BboxLeafCanvas.d.ts",
       "default": "./lib/ui/BboxLeafCanvas.js"
+    },
+    "./orbit-canvas": {
+      "types": "./lib/ui/OrbitLeafCanvas.d.ts",
+      "default": "./lib/ui/OrbitLeafCanvas.js"
     }
   },
   "scripts": {

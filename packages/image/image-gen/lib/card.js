@@ -120,7 +120,7 @@ export const identity = {
         'Sampler and scheduler option lists resolve from the ONE vocabulary (media.comfyui.sampler_vocab) — never hand-copied',
         'A preset fills untouched fields; values you have set win',
         'Mods are model-level declarations: every boarded family boards loras (krea-2 applies on Turbo and trains on Raw; row-less families take user files until first-party adapters exist)',
-        'Mask prep (grow/feather/threshold/invert) and outpaint pads are applied host-side before the run — no silent param drops',
+        'Region knobs compose as graph nodes (grow/pad as the SEGS dilation, invert as InvertMask, feather/denoise inside the detailer) — every stated knob fires, and a bag field outside the region vocabulary refuses loud (no silent param drops)',
     ],
 };
 const schemaFn = callableSchema(schema);
@@ -193,6 +193,22 @@ export function registerCard(ctx, comfy) {
             outputs: { default: 'image' },
             requiresModel: true,
         },
+        // THE FLOW PRODUCER BINDINGS (the object-forge producer-law cure,
+        // 2026-11-01 owed → landed: the mask cure d790eb045's pattern).
+        // Every boarded family's t2i action ends in ONE decodeSave
+        // (render-kit.ts:52 — VAEDecode → SaveImage), so every press this
+        // card composes emits exactly one `SaveImage.0` — derived from the
+        // real compose output (all six families probed: anima, flux-klein,
+        // krea-2, moss-image, qwen-img-21, z-image → 1 save each), never
+        // guessed. The declaration seats the flow drives (object-forge's
+        // concept, image-upscale's make) on the producer-law's declaration
+        // door: the channel feeds resolveCardFlowOutputs, the row renames
+        // it to its flow-plane `image` (kind-matched, one-to-one), and the
+        // nodeClass gate refuses loud if a family lane ever renumbers —
+        // never a silent rebind.
+        flowOutputBindings: [
+            { channel: 'default', node: 'SaveImage.0', nodeClass: 'SaveImage' },
+        ],
         schema: schemaFn,
         compose(p, model, g, runId) {
             // THE SCHEMA GATE (the audio-trio admission precedent — the
@@ -228,6 +244,15 @@ export function registerCard(ctx, comfy) {
                 throw new Error(`'${region.key}' fires on the image-gen card (the region arm serves krea-2 + qwen-img-21 — the region vocabulary composes on the image-edit card and the served gen lanes; this family builds no region arm yet) — refusing instead of silently plain-generating`);
             }
             if (region !== null) {
+                // THE PAIR LAW (the Impact Pack pair, operator 2026-11-15:
+                // DetailerForEach takes image + segs — the mod's base seat
+                // is input_image, its region half is input_mask or a
+                // detector): a base without its region would silently
+                // plain-generate — the D11 burn's exact shape from the
+                // other side.
+                if (region.basePath !== '' && regionSourceKind(region) === null) {
+                    throw new Error(`'input_image' fires on the image-gen card (the base to inpaint on needs its region half — state input_mask or pick a mask_detector; the detailer takes image + region, never the base alone) — refusing instead of silently plain-generating`);
+                }
                 if (regionSourceKind(region) === null) {
                     throw new Error(`'${region.key}' fires on the image-gen card (crop_stitch needs a region — state input_mask or pick a detector) — refusing instead of silently plain-generating`);
                 }

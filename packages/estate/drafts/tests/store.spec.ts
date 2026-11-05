@@ -1,50 +1,26 @@
 // store.spec.ts — the drafts store's own laws, unit-grain: the loud
-// no-facility refusal, the one-time legacy import (corrupt rows skip,
-// non-objects skip, missing draft_id stamps the filename, pre-seeded
-// docs never overwrite), the per-facility open cache, and the
-// failed-open purge (a rejected open clears the slot — the retry
-// re-attempts).
+// no-facility refusal, the per-facility open cache, the open-time
+// replayed-refusal heal, and the failed-open purge (a rejected open
+// clears the slot — the retry re-attempts).
 //
 // The facility fake registers the way the real one does —
 // ctx.provide("storageDomain", plainObject) (dsh-storage-domain's own
 // seam) — NOT a Service subclass: cordis exposes Service subclasses
 // through per-access scoped proxies (unstable identity), while provided
 // objects keep theirs, and the store's WeakMap keys on that identity.
-import { onTestFinished, test } from "vitest";
+import { test } from "vitest";
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import { Context } from "@deepseek-ai/cordis";
 import type { Domain } from "@deepseek-ai/dsh-storage-domain";
 import { openDraftsDomain } from "../src/store.ts";
 import type { DraftsDomainSpec } from "../src/spec.js";
 import { DraftsDomainSeatService } from "../src/store.ts";
 
-// TMP OWNERSHIP (stroke 13): every minted tree is disposed with its
-// test — see tests/global-sweep.ts for the tree-wide net.
-/** Mint a tree owned by the CURRENT test (disposed with it). */
-function mintRoot(): string {
-  const root = mkdtempSync(join(tmpdir(), "drafts-store-"));
-  onTestFinished(() => rmSync(root, { recursive: true, force: true }));
-  return root;
-}
-
-/** The minimal domain face the store touches: the epoch marker + the
- * docs table (the spec's own shape — no more, no fake extra). */
+/** The minimal domain face the store touches: the docs table (the
+ *  spec's own shape — no more, no fake extra). */
 class FakeDomain {
-  markerValue = 0;
-  markerSetAt: number | null = null;
   docs = new Map<string, unknown>();
   puts: { id: string; row: unknown }[] = [];
-  global = {
-    get: (): number => this.markerValue,
-    set: (v: number): Promise<void> => {
-      this.markerValue = v;
-      this.markerSetAt = v;
-      return Promise.resolve();
-    },
-  };
   table(name: string): FakeDomain {
     assert.equal(name, "docs", "the store reads the docs table only");
     return this;
@@ -88,28 +64,9 @@ function mountFacility(ctx: Context): FakeFacility {
   return facility;
 }
 
-function legacyRoot(files: Record<string, string>): string {
-  const root = mintRoot();
-  mkdirSync(join(root, "drafts"), { recursive: true });
-  mkdirSync(join(root, "storage"), { recursive: true });
-  for (const [name, body] of Object.entries(files)) {
-    writeFileSync(join(root, "drafts", name), body);
-  }
-  return root;
-}
-
-/** The seat's config for a minted root (J12: the storage root is
- *  call data on the seat — the MELITE_STATE_ROOT / MELITE_STORAGE_ROOT
- *  env seam retired; the config is as owned as the tree it names,
- *  and nothing leaks across tests). */
-function env(root: string): { storageRoot: string } {
-  return { storageRoot: join(root, "storage") };
-}
-
 test("no storage facility mounted: the loud earliest refusal", async () => {
   const ctx = new Context();
-  const root = mintRoot();
-  new DraftsDomainSeatService(ctx, env(root));
+  new DraftsDomainSeatService(ctx);
   await assert.rejects(
     () => openDraftsDomain(ctx),
     /storage domain facility not mounted/,
@@ -129,87 +86,18 @@ test("no seat mounted: the open refuses LOUD (never a silent undefined domain)",
   );
 });
 
-test("the one-time legacy import: good rows land, corrupt and non-object rows skip", async () => {
-  const legacy = {
-    "d_good.json": JSON.stringify({ intent: "keep me" }),
-    "corrupt.json": "{not json",
-    "arr.json": "[1,2]",
-    "d_noname.json": JSON.stringify({ note: "no draft_id here" }),
-    "notes.txt": "not a draft row",
-    "d_pre.json": JSON.stringify({ intent: "already inside" }),
-  };
-  const root = legacyRoot(legacy);
-  // THE BYTES AS FOUND, read BEFORE the import runs — the comparison
-  // below is against what the tree held, not against what the import
-  // rewrote it into
-  const legacyBytes: Record<string, string> = Object.fromEntries(
-    Object.keys(legacy).map((name) => [name, readFileSync(join(root, "drafts", name), "utf8")]),
-  );
-  env(root);
+test("the same facility reuses the open (the cache hits)", async () => {
   const ctx = new Context();
-  new DraftsDomainSeatService(ctx, env(root));
-  const facility = mountFacility(ctx);
-  // d_pre is ALREADY in the domain — the import never overwrites it
-  // (its legacy file is skipped), and non-.json files never import.
-  facility.domain.docs.set("d_pre", { seeded: true });
-  const drafts = (await openDraftsDomain(ctx)) as unknown as FakeDomain;
-  assert.equal(facility.opens, 1, "one open");
-  // The epoch stamp landed — the import ran exactly once.
-  assert.notEqual(drafts.markerSetAt, null);
-  // d_good imported; d_noname stamped with its filename.
-  const ids = drafts.puts.map((p) => p.id).sort();
-  assert.deepEqual(ids, ["d_good", "d_noname"]);
-  const noname = drafts.puts.find((p) => p.id === "d_noname")!.row as {
-    updated_at: number;
-    doc: { draft_id: string; note: string };
-  };
-  assert.equal(noname.doc.draft_id, "d_noname", "filename stamps the missing id");
-  // corrupt.json / arr.json skipped loudly-silently (evidence on disk,
-  // never truth); d_pre untouched (no put row for it).
-  assert.equal(drafts.puts.some((p) => p.id === "d_pre"), false);
-  // EVIDENCE, NEVER TRUTH (store.ts:10-11): the import READS the
-  // legacy tree and writes only the domain — the files themselves are
-  // left exactly as they were, byte for byte, and none is moved
-  // aside. (Every legacy row above, imported or skipped, keeps its
-  // bytes; d_pre's file was never even read.)
-  for (const name of ["d_good.json", "d_noname.json", "corrupt.json", "arr.json", "notes.txt"]) {
-    assert.deepEqual(
-      readFileSync(join(root, "drafts", name), "utf8"),
-      legacyBytes[name],
-      name + " is untouched by the import",
-    );
-  }
-});
-
-test("same facility + same root reuses the open; a foreign root refuses", async () => {
-  const root = legacyRoot({});
-  env(root);
-  const ctx = new Context();
-  new DraftsDomainSeatService(ctx, env(root));
+  new DraftsDomainSeatService(ctx);
   const facility = mountFacility(ctx);
   await openDraftsDomain(ctx);
   await openDraftsDomain(ctx);
   assert.equal(facility.opens, 1, "cache hit — no re-open");
-  // A foreign root on the same facility (J12): the seat's config is
-  // immutable per boot, so the drifting-mid-process root that the old
-  // env seam made reachable is no longer constructible — a second
-  // seat with a foreign config opens its OWN root, never
-  // cross-writing the first's units.
-  const foreignCtx = new Context();
-  new DraftsDomainSeatService(foreignCtx, { storageRoot: join(root, "elsewhere") });
-  (foreignCtx as unknown as Record<string, unknown>)["storageDomain"] = undefined;
-  foreignCtx.provide("storageDomain", facility);
-  const foreignSeat = foreignCtx.get("meliteDraftsDomain") as unknown as { open: () => Promise<unknown> };
-  const foreignHandle = await foreignSeat.open();
-  assert.ok(foreignHandle !== undefined, "the foreign root opens its own handle");
-  assert.equal(facility.opens, 2, "a foreign root is its own open — the first root's handle is untouched");
 });
 
 test("a rejected open purges the cache: the retry re-attempts", async () => {
-  const root = legacyRoot({});
-  env(root);
   const ctx = new Context();
-  new DraftsDomainSeatService(ctx, env(root));
+  new DraftsDomainSeatService(ctx);
   const facility = mountFacility(ctx);
   facility.failFirstOpen = true;
   await assert.rejects(
@@ -222,29 +110,13 @@ test("a rejected open purges the cache: the retry re-attempts", async () => {
   assert.ok(drafts, "the retry returned the domain");
 });
 
-test("a pre-stamped epoch skips the import entirely (a wiped unit never re-imports ghosts)", async () => {
-  const root = legacyRoot({ "d_ghost.json": JSON.stringify({ intent: "frozen" }) });
-  env(root);
-  const ctx = new Context();
-  new DraftsDomainSeatService(ctx, env(root));
-  const facility = mountFacility(ctx);
-  // A previous boot stamped the epoch — the legacy tree is evidence,
-  // never truth, so this open imports NOTHING.
-  facility.domain.markerValue = 1;
-  const drafts = (await openDraftsDomain(ctx)) as unknown as FakeDomain;
-  assert.equal(drafts.puts.length, 0, "no legacy row touched");
-});
-
 test("the open HEALS a poisoned row: an unstated-required refusal never stays a terminal failure", async () => {
   // THE REPLAYED-REFUSAL ROW (2026-09-14 carry, cured 2026-10-18):
   // the old carry wrote the refusal for a word not yet typed onto
   // the stage row as runStatus 'failed' — every later drill open
   // replayed it. The open rewrites the row to the never-ran face.
-  const root = mintRoot();
-  mkdirSync(join(root, "storage"), { recursive: true });
-  env(root);
   const ctx = new Context();
-  new DraftsDomainSeatService(ctx, env(root));
+  new DraftsDomainSeatService(ctx);
   const facility = mountFacility(ctx);
   facility.domain.docs.set("bench-s1", {
     updated_at: 100,
@@ -273,12 +145,48 @@ test("the open HEALS a poisoned row: an unstated-required refusal never stays a 
   assert.equal(drafts.puts.length, 1, "exactly the one poisoned doc rewritten");
 });
 
-test("the open heals the 'error' word too, and leaves a stated-wrong failure untouched", async () => {
-  const root = mintRoot();
-  mkdirSync(join(root, "storage"), { recursive: true });
-  env(root);
+test("the heal skips the persisted-boundary degenerates (a durable row that is not a bench shape never crashes the open)", async () => {
+  // THE PERSISTED BOUNDARY (store.ts:33-49): the domain holds
+  // durable JSON, not typed rows — the heal walks it defensively and
+  // every degenerate arm SKIPS (no crash, no put). Tonight's battery
+  // debt: the arms never fired in any suite, so the file rode below
+  // its floor while the healthy arms greened.
   const ctx = new Context();
-  new DraftsDomainSeatService(ctx, env(root));
+  new DraftsDomainSeatService(ctx);
+  const facility = mountFacility(ctx);
+  const docs = facility.domain.docs;
+  // a record that is not an object (the 36:69 else arm)
+  docs.set("bench-x", 7 as unknown as never);
+  // a record whose doc is absent (the 37 if-true arm)
+  docs.set("bench-y", { updated_at: 1 } as never);
+  // a doc whose stages is not an array (the 38:61 else arm)
+  docs.set("bench-z", {
+    updated_at: 1,
+    doc: { draft_id: "bench-z", stages: "nope" },
+  } as never);
+  // a stages row that is not an object (the 41 if-true arm)
+  docs.set("bench-w", {
+    updated_at: 1,
+    doc: {
+      draft_id: "bench-w",
+      stages: [
+        "a bare string stage",
+        { id: "s_0", runStatus: "failed", result: "a non-object result" },
+      ],
+    },
+  } as never);
+  const drafts = (await openDraftsDomain(ctx)) as unknown as FakeDomain;
+  // the one WALKABLE row (result non-object, the 49:13 else arm)
+  // carries no readable refusal — it stays verbatim, nothing healed
+  const w = (drafts.docs.get("bench-w") as { doc: { stages: Array<Record<string, unknown>> } })
+    .doc.stages[1] as Record<string, unknown>;
+  assert.equal(w["runStatus"], "failed", "a result that is not an object carries no refusal to heal");
+  assert.equal(drafts.puts.length, 0, "no degenerate row ever touched disk");
+});
+
+test("the open heals the 'error' word too, and leaves a stated-wrong failure untouched", async () => {
+  const ctx = new Context();
+  new DraftsDomainSeatService(ctx);
   const facility = mountFacility(ctx);
   facility.domain.docs.set("bench-a", {
     updated_at: 100,
@@ -309,11 +217,8 @@ test("the open heals the 'error' word too, and leaves a stated-wrong failure unt
 });
 
 test("a MIXED carry (the stem joined with a stated-wrong half) never heals (the client-plane audit cure, 2026-10-18)", async () => {
-  const root = mintRoot();
-  mkdirSync(join(root, "storage"), { recursive: true });
-  env(root);
   const ctx = new Context();
-  new DraftsDomainSeatService(ctx, env(root));
+  new DraftsDomainSeatService(ctx);
   const facility = mountFacility(ctx);
   facility.domain.docs.set("bench-mixed", {
     updated_at: 100,
@@ -340,38 +245,21 @@ test("a MIXED carry (the stem joined with a stated-wrong half) never heals (the 
   assert.equal(drafts.puts.length, 0, "the mixed doc never touched disk");
 });
 
-test("a root with no legacy drafts dir imports nothing, cleanly", async () => {
-  const root = mintRoot();
-  mkdirSync(join(root, "storage"), { recursive: true });
-  env(root);
-  const ctx = new Context();
-  new DraftsDomainSeatService(ctx, env(root));
-  const facility = mountFacility(ctx);
-  const drafts = (await openDraftsDomain(ctx)) as unknown as FakeDomain;
-  assert.equal(drafts.puts.length, 0, "no dir, no rows");
-  assert.notEqual(drafts.markerSetAt, null, "the epoch still stamps");
-});
-
 // THE RE-MOUNT LAW (incident
 // dev_docs/audits/journey/2026-10-23-drafts-domain-wedge.md): the
 // reserving fake models the REAL facility — a second open of a held
 // name throws 'already open', and only Domain.close() frees it.
-// The lenient fake above stays untouched: the foreign-root arm
-// opens two handles on one facility by design (config isolation,
-// not facility multiplexing).
+// The lenient fake above stays untouched: the store's open cache and
+// the heal arms judge storage mechanics, not the reservation.
 class ReservingDomain extends FakeDomain {
   closed = 0;
-  failStamp = false;
+  failPut = false;
   constructor(private readonly releaseName: () => void) {
     super();
-    const inner = this.global;
-    this.global = {
-      get: inner.get,
-      set: async (v: number): Promise<void> => {
-        if (this.failStamp) throw new Error("storage/junit-stamp-fails");
-        await inner.set(v);
-      },
-    };
+  }
+  override put(id: string, row: unknown): Promise<void> {
+    if (this.failPut) return Promise.reject(new Error("storage/junit-put-fails"));
+    return super.put(id, row);
   }
   async close(): Promise<void> {
     this.closed += 1;
@@ -403,10 +291,8 @@ function mountReservingFacility(ctx: Context): {
 }
 
 test("seat unload closes its domains: a re-mounted seat re-opens (the 2026-10-23 wedge)", async () => {
-  const root = mintRoot();
-  mkdirSync(join(root, "storage"), { recursive: true });
   const ctxA = new Context();
-  new DraftsDomainSeatService(ctxA, { storageRoot: join(root, "storage") });
+  new DraftsDomainSeatService(ctxA);
   const rec = mountReservingFacility(ctxA);
   const first = await openDraftsDomain(ctxA);
   assert.ok(first !== undefined);
@@ -416,7 +302,7 @@ test("seat unload closes its domains: a re-mounted seat re-opens (the 2026-10-23
   assert.equal(rec.domain.closed, 1, "unload closed the handle");
   assert.equal(rec.held(), false, "the reservation freed");
   const ctxB = new Context();
-  new DraftsDomainSeatService(ctxB, { storageRoot: join(root, "storage") });
+  new DraftsDomainSeatService(ctxB);
   ctxB.provide("storageDomain", rec.facility);
   const second = await openDraftsDomain(ctxB);
   assert.ok(second !== undefined, "the re-mounted seat opens");
@@ -424,16 +310,35 @@ test("seat unload closes its domains: a re-mounted seat re-opens (the 2026-10-23
 });
 
 test("a post-open failure closes the handle: the retry re-opens (never 'already open')", async () => {
-  const root = mintRoot();
-  mkdirSync(join(root, "storage"), { recursive: true });
   const ctx = new Context();
-  new DraftsDomainSeatService(ctx, { storageRoot: join(root, "storage") });
+  new DraftsDomainSeatService(ctx);
   const rec = mountReservingFacility(ctx);
-  rec.domain.failStamp = true;
-  await assert.rejects(() => openDraftsDomain(ctx), /storage\/junit-stamp-fails/);
+  // The open's post-open work is the replayed-refusal heal — its
+  // write is the failure the purge must survive.
+  rec.domain.docs.set("bench-s1", {
+    updated_at: 100,
+    doc: {
+      draft_id: "bench-s1", status: "live", createdAt: 1, completedAt: null,
+      intent: "bench",
+      stages: [
+        {
+          id: "s_0",
+          runStatus: "failed",
+          result: {
+            error:
+              "card_compose phase 1: lane 'krea-2/turbo' refuses the state: " +
+              "this lane requires 'prompt' — 'prompt' is not stated — " +
+              "every image lane states WHAT the picture is — write the prompt",
+          },
+        },
+      ],
+    },
+  });
+  rec.domain.failPut = true;
+  await assert.rejects(() => openDraftsDomain(ctx), /storage\/junit-put-fails/);
   assert.equal(rec.domain.closed, 1, "the failed open's handle closed");
   assert.equal(rec.held(), false, "the name freed for the retry");
-  rec.domain.failStamp = false;
+  rec.domain.failPut = false;
   const retry = await openDraftsDomain(ctx);
   assert.ok(retry !== undefined, "the retry opens against the freed name");
   assert.equal(rec.opens(), 2, "slot purged AND name freed — the retry is a real re-open");

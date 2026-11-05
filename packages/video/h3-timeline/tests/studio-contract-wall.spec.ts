@@ -28,7 +28,7 @@ import { useShownDoc } from "../src/ui/studio/useShownDoc.ts"
 import { CALL_KNOB_KEYS, mergeDocLayers } from "../src/ui/studio/docModel.ts"
 import { film } from "@melite/models-h3/actions"
 import { schema as h3schemaFn } from "@melite/models-h3/schema"
-import { T4_ONLY_KEYS, deriveWindowFamily } from "@melite/models-h3/timelineContract"
+import { deriveWindowFamily } from "@melite/models-h3/timelineContract"
 import { DECL as h3Decl } from "@melite/models-h3"
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph"
 import { instantiateAction } from "@melite/comfyui-card-kit"
@@ -42,7 +42,7 @@ import type {} from "../../../../packages/harness/estate-queue/src/service.ts"
 import { CardRegistryService } from "../../../../packages/harness/estate-queue/src/cardsRegistry.ts"
 import { installLaneStoreOverlay, restoreLaneStoreOverlay } from "../../../../tests/helpers/lane-store-overlay.ts"
 import { formSpecArm } from "../../../../packages/harness/melite-tools/src/discovery.ts"
-import { omitT4RecipeRow } from "../src/ui/studio/omitT4Recipe.ts"
+import { omitFilmRecipeRow } from "../src/ui/studio/omitLaneRecipe.ts"
 import { mkdtempSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
@@ -91,7 +91,7 @@ const DECLARED = new Set(Object.keys(
  * 2026-10-27: a card doc key — card.ts's own list owns it, a STATED
  * clock round-trips, an absent one never pins). Each is a deliberate
  * admission, listed once here, never a wildcard. */
-const ADMITS = new Set(["loras", "audio_clips", "audio_stem", "fps"])
+const ADMITS = new Set(["loras", "audio_clips", "audio_stem", "fps", "quant"])
 
 const LAYER_A_ALL_KEYS: string[] = [
   "seed", "shift_video", "shift_audio", "steps", "denoise", "width", "height",
@@ -111,6 +111,10 @@ const LAYER_A_ALL_KEYS: string[] = [
   "ref_image_size", "model", "audio_stem", "loras", "audio_clips",
   "ref_images", "ref_videos", "ref_audios", "ref_mods",
   "ref_video_trims", "duck_depth_db",
+  // THE QUANT AXIS STAMP (the dead-click cure): the Quant group's
+  // cell key — admitted (not declared: the axis stamps ride the
+  // family's variant cells, the bench door's own admits list).
+  "quant",
   // THE BAKE'S STATED DIALS (study §5/§7.2; value-arms ARMs 13/14)
   "refmod_mode", "refmod_pool", "refmod_identity", "refmod_save",
 ]
@@ -131,6 +135,13 @@ function populatedMax(): Record<string, unknown> {
     // the bake's stated dials: the non-default members (mode Full,
     // pool 32, identity 1000) and save's false pole (absent = on)
     else if (key === "refmod_mode") populated[key] = "Full Reference"
+    // THE QUANT AXIS STAMP (the dead-click cure, 2026-11-13): the
+    // singularity cell's stamp — a REAL offered id, never the
+    // timeline default's int8 (which would pass presence by
+    // coincidence with the seeding). Absent this seat the pick died
+    // at the serializer's vocabulary and this wall stayed green —
+    // the second-pass class, walled at neither depth.
+    else if (key === "quant") populated[key] = "int8_pruned"
     else if (key === "refmod_pool") populated[key] = 32
     else if (key === "refmod_identity") populated[key] = 1000
     else if (key === "refmod_save") populated[key] = false
@@ -239,30 +250,26 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
     // 10-15 — both depths shallower than the save). The law is
     // two-directional: every populated non-default key MUST appear in
     // the emitted doc, by name.
-    // FAMILY-CONDITIONAL (B1, journey-closure 2026-11-06):
-    // populatedMax carries the declared ref surface, so it derives
-    // t4r — the lane that wires no post chain — and the family-aware
-    // emit law OMITS every T4_ONLY member there. The skip below is
-    // never vacuous: the family is asserted t4r first, and the
-    // omission itself is asserted key by key after.
+    // FAMILY-NEUTRAL SINCE 2026-11-15 (the lane-law retirement):
+    // populatedMax carries the declared ref surface and derives t4r,
+    // and the emit law no longer strips anything there — the t4r arm
+    // mounts the post chain, so a finish key the UI states is a key
+    // the doc carries and the run fires. THE EXACT-STRENGTH HALF is
+    // therefore unconditional: every populated non-default key MUST
+    // appear in the emitted doc, by name.
     const family = deriveWindowFamily(populated)
     expect(family).toBe("t4r")
     for (const key of Object.keys(populated)) {
       if (key === "seed" || key === "preset") continue // seed rides as the base row; preset is the dead key by law
-      if ((T4_ONLY_KEYS as readonly string[]).includes(key)) continue // family-dead on this lane — asserted absent below
       expect(
         key in out,
         `populate set "${key}" but serializeLayerA DROPPED it — a key the UI can state and the doc never carries is the silent-drop class (the operator's burn)`,
       ).toBe(true)
     }
-    // THE T4 ABSENCE RECEIPT at the save depth: every family-dead
-    // member is omitted on the derived-t4r doc (never a re-stated
-    // value — the walk would refuse it)
-    for (const k of T4_ONLY_KEYS as readonly string[]) {
-      expect(
-        !(k in out) || (out as Record<string, unknown>)[k] === null,
-        `derived-t4r doc states "${k}" — the family-aware emit law omits it`,
-      ).toBe(true)
+    // THE FINISH RECEIPT at the save depth: the t4r doc carries its
+    // stated finish stamps (the 2026-11-15 cure — never an omission).
+    for (const k of ["second_pass_enabled", "sr_switch", "sharpen_enabled", "interpolate_enabled"] as const) {
+      expect(out[k], `derived-t4r doc carries its stated "${k}"`).toBe(populated[k])
     }
     // THE SECOND-PASS RECEIPT at the save depth moves to the lane
     // that honors it: the same maximal doc WITHOUT the ref surface
@@ -448,8 +455,11 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
       "the DECL's non-serializer seats are exactly the other doc planes — a new seat outside the universe re-pins this pin",
     ).toEqual(["calls", "document", "keyframes"])
     // the lane coordinates: the studio writes them into the doc, they
-    // never stage as params (the §4 strip law)
-    const coords = new Set(["model", "variant"])
+    // never stage as params (the §4 strip law). quant joined variant
+    // at the dead-click cure (2026-11-13): the Quant axis's cell
+    // stamp — a coordinate the compose's rider list admits, never a
+    // staged knob (the run-plane cell reader is the ROADMAP's owed).
+    const coords = new Set(["model", "variant", "quant"])
     const undeclared = [...LAYERA_KEY_UNIVERSE].filter((k) => !writes.has(k) && !coords.has(k)).sort()
     expect(undeclared, "serialized studio keys with no DECL writes seat and no named exemption — the A7 drift class").toEqual([
       "duck_depth_db", // the FILM_ONLY rider; the walk's sibling clause owns its lane gate
@@ -483,10 +493,17 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
   // the real walk + film action — the positive proof beside the Final
   // Cut refusal arm below (which proves the walk still refuses a
   // hand-stamped T4 key).
-  it("derived-t4r serialization omits every T4_ONLY member and composes green (the emit law's positive proof)", () => {
+  // THE FINISH-STAMP EMIT LAW (retired lane law, 2026-11-15): the
+  // serializer states every finish stamp the operator holds, on every
+  // lane, and the serialized output composes GREEN through the real
+  // walk + film action — the t4r arm mounts the post chain, so the
+  // stamps it used to be stripped of now fire there. The one-owner
+  // delete ride survives where it belongs: a base-carried stamp the
+  // state explicitly cleared rides the merge-patch null ONCE.
+  it("derived-t4r serialization carries every finish stamp and composes green (the retirement's positive proof)", () => {
     const t4rCalls = [{ text: "the courier steps in", start_frame: 0, end_frame: 90, image: "anchor.png" }]
     const base = { seed: 1, calls: t4rCalls, sr_switch: true, second_pass_enabled: true }
-    // every T4 pole stated: masters, switches, methods, models, targets
+    // every finish pole stated: masters, switches, methods, models, targets
     const stamped = { ...hydrateLayerA(base as never),
       second_pass_enabled: true, sharpen_enabled: true, interpolate_enabled: true,
       sharpen_method: "rcas" as const, sharpen_strength: 0.5, sharpen_radius: 2, sharpen_threshold: 0.1, sharpen_iterations: 1,
@@ -494,26 +511,30 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
       sr_switch: true, sr_model: "seedvr2_ema_3b_fp16.safetensors" as const, sr_resolution: 1080,
       attention_backend: "pytorch attention" as never,
     }
-    const saved = serializeLayerA(stamped, base)
-    for (const k of T4_ONLY_KEYS as readonly string[]) {
-      expect(
-        !(k in saved) || (saved as Record<string, unknown>)[k] === null,
-        `derived-t4r doc states "${k}" — the walk would refuse it`,
-      ).toBe(true)
-    }
+    const saved = serializeLayerA(stamped, base) as Record<string, unknown>
+    // THE RECEIPT: every stated finish stamp rides the saved doc.
+    expect(saved.second_pass_enabled).toBe(true)
+    expect(saved.sr_switch).toBe(true)
+    expect(saved.sharpen_enabled).toBe(true)
+    expect(saved.interpolate_enabled).toBe(true)
+    expect(saved.interp_multiplier).toBe(2)
+    expect(saved.sr_resolution).toBe(1080)
     // the genuinely non-T4 truth rides: the seed, the geometry, the clock
     expect(saved.seed).toBe(1)
-    // the serialized output composes GREEN through the real door —
+    // the serialized output composes AND fires through the real door —
     // walk the serializer's own output with the doc's guided call
     const g = new GraphBuilder()
     expect(() => instantiateAction(
       film,
       h3schemaFn({ ...saved, calls: t4rCalls }),
-      WINDOW_MODEL, g, "run_serializer_t4r_green",
+      WINDOW_MODEL, g, "run_serializer_t4r_fires",
     )).not.toThrow()
+    const classes = new Set(Object.values(g.toJSON() as Record<string, { class_type: string }>).map((n) => n.class_type))
+    for (const c of ["SeedVR2VideoUpscaler", "ImageSharpenKJ", "FrameInterpolate"]) {
+      expect(classes.has(c), `${c} fires from the serializer's own saved doc`).toBe(true)
+    }
     // and the one-owner delete: a base-carried stamp the state
-    // explicitly cleared rides the merge-patch null ONCE (never a
-    // re-stated value, never dropped — the heal's gesture lands here)
+    // explicitly cleared rides the merge-patch null ONCE
     const cleared = serializeLayerA(
       { ...hydrateLayerA(base as never), sr_switch: undefined, second_pass_enabled: undefined }, base)
     expect(cleared.sr_switch).toBe(null)
@@ -579,35 +600,17 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
         ...(residue ? { sr_switch: undefined, second_pass_enabled: undefined } : {}),
       }
       const saved = serializeLayerA(state as never, base) as Record<string, unknown>
-      if (family === "t4r") {
-        // THE STRICT EMIT LAW AT THE PAYLOAD DEPTH: no T4_ONLY member
-        // rides as a value; a member rides ONLY as the delete-ride
-        // null (and only the residue the state cleared)
-        for (const k of T4_ONLY_KEYS as readonly string[]) {
-          expect(
-            saved[k] === undefined || saved[k] === null,
-            `${family}: the studio's own emit states "${k}" (${String(saved[k])}) — the walk refuses it on the reference lane`,
-          ).toBe(true)
-        }
-        expect(saved.sr_switch).toBe(null)
-        expect(saved.second_pass_enabled).toBe(null)
-      } else {
-        // the sanctioned lanes keep their post chain: the same stamps
-        // ride AS VALUES (the law is conditional, never a blanket omit)
-        expect(saved.second_pass_enabled).toBe(true)
-        expect(saved.sr_switch).toBe(true)
-      }
+      // EVERY LANE keeps its finish chain now: the stamps ride AS
+      // VALUES (or, where the state cleared a base residue, as the
+      // delete-ride null — the one-owner law, never both).
+      expect(saved.second_pass_enabled === true || saved.second_pass_enabled === null).toBe(true)
+      expect(saved.sr_switch === true || saved.sr_switch === null).toBe(true)
       // THE BENCH SETTLEMENT (bench.ts's merge-patch, verbatim law:
       // per key, null deletes) — the view the run press actually reads
       const settled: Record<string, unknown> = { ...base }
       for (const [k, v] of Object.entries(saved)) {
         if (v === null) delete settled[k]
         else settled[k] = v
-      }
-      if (family === "t4r") {
-        for (const k of T4_ONLY_KEYS as readonly string[]) {
-          expect(k in settled, `${family}: "${k}" survived the settlement — the door would refuse it`).toBe(false)
-        }
       }
       // THE REAL DOOR: prepareCardParams → board → admission → lane
       // gates → the card's own walk → compose. The refusal this arm
@@ -635,16 +638,11 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
   // the strand the toggled-out world saves) refuses loud with the
   // operator's verbatim brick. The cure makes the GESTURE legal; it
   // never silences the door.
-  it("the flip writer: a pin added to a Final-Cut-stamped doc commits a composing saved doc in the same gesture; the pre-settle strand still refuses loud", async () => {
+  it("the flip gesture: a pin added to a Final-Cut-stamped doc commits a composing saved doc KEEPING the stamps (retired lane law, 2026-11-15)", async () => {
     expect(svc, "the estate boot rode — the flip arm runs against the real registry").toBeDefined()
     // the base: a compose-legal t4_open doc legally carrying the
-    // Final Cut post stamps (the bounds mirror the R2 arm's probe —
-    // junk geometry would refuse on bounds, not on family) — AND the
-    // two always-emit poles the studio's own first save writes into
-    // the stored base (serializeLayerA emits sharpen_enabled/
-    // interpolate_enabled unconditionally; E2's real-roundtrip ride
-    // proved the wall's copy without them judged a shape the real
-    // bench never holds — THE JOURNEY/DEPTH class)
+    // Final Cut post stamps AND the two always-emit poles the
+    // studio's own first save writes into the stored base.
     const base: Record<string, unknown> = {
       seed: 7, width: 768, height: 448, steps: 12,
       second_pass_enabled: true, sr_switch: true,
@@ -652,15 +650,15 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
       calls: [{ text: "the harbour holds its breath", start_frame: 0, end_frame: 90 }],
     }
     expect(deriveWindowFamily(base)).toBe("t4_open")
-    // THE PIN, pre-reseat: base + the keyframe pin derives t4r with
-    // the stamps standing — the strand a run reads before the
-    // reseat settles. It refuses loud (the walk's own voice).
+    // THE PIN: base + the keyframe pin derives t4r with the stamps
+    // standing — the doc a run reads now COMPOSES (the door honors
+    // the stamps the gesture carried).
     const strand = { ...base, keyframes: [{ image: "anchor.png", frame: 0 }] }
     expect(deriveWindowFamily(strand)).toBe("t4r")
     await expect(
       svc.phase1Card({ ...strand, card: "h3-timeline", model: "h3" }, "h3"),
-      "the pre-settle strand must refuse loud — silencing this is the dishonest cure",
-    ).rejects.toThrow(/unsanctioned inject keys/)
+      "the pinned strand composes at the real door",
+    ).resolves.toBeDefined()
     // THE FLIP GESTURE through the real commit seam: add the keyframe
     // pin (only the DOOR is a spy — the seat is live)
     const sent: Array<Record<string, unknown>> = []
@@ -673,25 +671,26 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
     })
     expect(sent.length, "the flip gesture sent exactly one door write").toBe(1)
     const payload = sent[0]!
-    // the SAME gesture carried the stamps' deletes (the merge-patch
-    // nulls) beside the pin — the reseat in the same onSave
+    // the SAME gesture carries the pin — and writes NOTHING over the
+    // stored stamps (no reseat exists to null them; the arrival
+    // fires them from the base row).
     expect(payload.keyframes).toEqual([{ image: "anchor.png", frame: 0 }])
-    expect(payload.sr_switch, "the flip's write must null the base stamp (the commit-seam reseat)").toBeNull()
-    expect(payload.second_pass_enabled).toBeNull()
+    expect(payload, "the gesture never deletes a base stamp").not.toHaveProperty("sr_switch")
+    expect(payload, "the gesture never deletes a base stamp").not.toHaveProperty("second_pass_enabled")
     // THE BENCH SETTLEMENT (the merge-patch law, per key null deletes)
-    const settled: Record<string, unknown> = { ...base }
+    const settled: Record<string, unknown> = { ...base, keyframes: payload.keyframes as unknown[] }
     for (const [k, v] of Object.entries(payload)) {
       if (v === null) delete settled[k]
       else settled[k] = v
     }
     expect(deriveWindowFamily(settled)).toBe("t4r")
-    for (const k of T4_ONLY_KEYS as readonly string[]) {
-      expect(k in settled, `B2: "${k}" survived the flip settlement — the saved doc would refuse`).toBe(false)
+    for (const k of ["second_pass_enabled", "sr_switch"] as const) {
+      expect(settled[k], `B2: "${k}" survives the flip settlement (the operator's state is never stripped)`).toBe(true)
     }
-    // THE SAVED DOC COMPOSES: the settlement rides the real door
+    // THE SAVED DOC COMPOSES: the settled doc rides the real door
     await expect(
       svc.phase1Card({ ...settled, card: "h3-timeline", model: "h3" }, "h3"),
-      "the flip's settled saved doc refuses at the real door — the commit-seam reseat did not land",
+      "the flip's settled saved doc refuses at the real door — the stamps must fire, not strand",
     ).resolves.toBeDefined()
   })
 
@@ -703,9 +702,9 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
   // refusing, this reds), and the STUDIO stops offering the row
   // (the omitRecipeRow gate — if the gate ever stops filtering,
   // this reds). A pick can never land what the compose refuses.
-  it("the Final Cut stamp refuses at the t4r door (unsanctioned sr_switch) — pinned beside the studio's row gate", async () => {
+  it("the Final Cut stamp COMPOSES at the t4r door and fires the chain — and the studio's row gate offers it (retired lane law, 2026-11-15)", async () => {
     // the door's truth: a derived-t4r doc carrying the Final Cut
-    // stamp's second_pass rail REFUSES at the walk
+    // stamp's second_pass rail composes AND builds the post chain
     const g = new GraphBuilder()
     let refused: string | null = null
     try {
@@ -722,39 +721,28 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
     } catch (e) {
       refused = e instanceof Error ? e.message : String(e)
     }
-    expect(refused).not.toBe(null)
-    expect(String(refused)).toMatch(/unsanctioned inject keys/)
-    // THE NEGATIVE CONTROL (B1, journey-closure 2026-11-06 — the
-    // hand literal retired): the studio's OWN row gate, driven by
-    // the REAL served spec (formSpecArm — the exact body
-    // /v1/form-spec?model=h3 serves) over the DECL's own Final Cut
-    // row, omits the row on the reference lane. The gate judges the
-    // row's stamp (never a hand id list): if the recipe ever drops
-    // its sr_switch stamp, the gate's verdict flips and this reds —
-    // the arm follows the DECL through the predicate, never a frozen
-    // literal.
+    expect(refused, `the Final Cut t4r pick composes — ${String(refused)}`).toBe(null)
+    const classes = new Set(Object.values(g.toJSON() as Record<string, { class_type: string }>).map((n) => n.class_type))
+    expect(classes.has("SeedVR2VideoUpscaler"), "the pick's sr_switch fires the upscaler on t4r").toBe(true)
+    // THE ROW GATE (the film-only half): driven by the REAL served
+    // spec over the DECL's own Final Cut row — the row is OFFERED on
+    // the reference lane (its stamps are lawful there now); a
+    // spec-less render omits nothing; a row with no film-only stamp
+    // stays offered.
     const spec = await formSpecArm("h3")
     expect(spec, "the served form spec resolved (h3 boards the timeline card)").not.toBeNull()
-    // the row AS SERVED — the exact object the studio's pill gate
-    // judges (the served variant row carries the FULL stamp:
-    // resolver knobs ∪ wire payloads)
     const servedRow = (spec as { variants?: Array<{ id: string }> }).variants
       ?.find((r) => r.id === "final")
     expect(servedRow, "the served spec carries the Final Cut variant row").not.toBeUndefined()
     expect(
-      omitT4RecipeRow(spec, servedRow),
-      "the studio's row gate offers the Final Cut row on the reference lane — the pick would land what the walk refuses",
-    ).toBe(true)
-    // the gate's OTHER faces, same served truth: a spec-less render
-    // omits nothing (the caller's guard owns the lane condition —
-    // the predicate never derefs a null it would never judge), and a
-    // row whose stamp carries no family-dead key stays offered (the
-    // filter is the stamp's judgment, never a blanket omit).
-    expect(omitT4RecipeRow(null, servedRow)).toBe(false)
+      omitFilmRecipeRow(spec, servedRow),
+      "the studio's row gate withholds the Final Cut row on the reference lane — its stamp is lawful now",
+    ).toBe(false)
+    expect(omitFilmRecipeRow(null, servedRow)).toBe(false)
     const cleanRow = (spec as { variants?: Array<{ id: string }> }).variants
-      ?.find((r) => r.id !== "final" && !omitT4RecipeRow(spec, r))
-    expect(cleanRow, "the served spec carries a family-legal variant row").not.toBeUndefined()
-    expect(omitT4RecipeRow(spec, cleanRow)).toBe(false)
+      ?.find((r) => r.id !== "final" && !omitFilmRecipeRow(spec, r))
+    expect(cleanRow, "the served spec carries a film-legal variant row").not.toBeUndefined()
+    expect(omitFilmRecipeRow(spec, cleanRow)).toBe(false)
   })
 
   // THE SERVED-SURFACE LAW (2026-10-16, journey audit 89d325c0
@@ -773,15 +761,10 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
   it("every SERVED schema row is carried by a serializer or a named exemption (no orphan rows)", () => {
     const carried = serializeLayerA(hydrateLayerA(populatedMax() as never))
     const emitted = new Set(Object.keys(carried))
-    // FAMILY-CONDITIONAL (B1, journey-closure 2026-11-06):
-    // populatedMax derives t4r, where the emit law omits every T4_ONLY
-    // member — so the T4 lane's own rows are judged against the same
-    // maximal doc WITHOUT the ref surface (t4_open, where the lane
-    // honors them). A served row with NO family-legal carrier is the
-    // orphan class, wherever it hides.
-    const openPopulated = populatedMax()
-    for (const k of ["ref_images", "ref_videos", "ref_audios", "ref_mods"]) delete openPopulated[k]
-    const openEmitted = new Set(Object.keys(serializeLayerA(hydrateLayerA(openPopulated as never))))
+    // FAMILY-NEUTRAL (the 2026-11-15 retirement): the emit law no
+    // longer strips a finish key on any lane, so the maximal doc's
+    // emitted set is the one carrier — a served row with NO carrier
+    // is the orphan class, wherever it hides.
     // EXEMPTIONS, each with its law: rows the card declares but the
     // studio never authors on the Layer-A face.
     const EXEMPT = new Set([
@@ -799,10 +782,7 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
     ])
     for (const key of SURFACE) {
       if (EXEMPT.has(key)) continue
-      // T4_ONLY rows ride the t4_open carrier (their family-legal
-      // lane); every other served row rides the t4r carrier — or the
-      // call-knob plane, which this arm already trusts.
-      const carrier = (T4_ONLY_KEYS as readonly string[]).includes(key) ? openEmitted : emitted
+      const carrier = emitted
       expect(
         carrier.has(key) || CALL_KNOB_KEYS.has(key),
         `served schema row "${key}" is carried by NO serializer — not serializeLayerA, not the call-knob plane, not exempt. This is the served-never-carried class: the panel renders it, writes die at save (the duck_depth_db / ref_video_trims burn, audit 89d325c0)`,

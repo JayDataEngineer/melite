@@ -266,6 +266,71 @@ describe("file operation store", () => {
 
 });
 
+describe("operation-store claim compare-and-swap arms (the coverage cure, 2026-11-03)", () => {
+  // The file CAS moved into the store with the 2026-10-23 two-seat
+  // race and the memory CAS rode along unarmed — the coverage gate
+  // caught both (operation-store branches 92.30 vs the 92.31 floor).
+  // These arms ride the REAL store doors, no mocks.
+  test("the in-memory CAS lands on the expected state and refuses moved or missing rows", async () => {
+    const store = new InMemoryOperationStore();
+    const row = operation({ state: "requested", detail: "seat A" });
+    await store.save(row);
+    assert.equal(await store.saveIfState({ ...row, state: "acquiring" }, "requested"), true);
+    assert.equal((await store.load(row.operationId))?.state, "acquiring");
+    assert.equal((await store.load(row.operationId))?.detail, "seat A");
+    // a claim on the moved row is refused — the winner's stamp survives
+    assert.equal(await store.saveIfState({ ...row, state: "acquiring", detail: "seat B" }, "requested"), false);
+    assert.equal((await store.load(row.operationId))?.detail, "seat A");
+    // a claim on a never-stored row is refused
+    assert.equal(
+      await store.saveIfState(operation({ operationId: "ghost", state: "acquiring" }), "requested"),
+      false,
+    );
+  });
+
+  test("the file CAS stamps a detail-less claim with the empty claimant, never 'undefined'", async () => {
+    const storeRoot = root();
+    const store = new FileOperationStore(storeRoot);
+    const row = operation({ state: "requested", detail: undefined });
+    await store.save(row);
+    assert.equal(await store.saveIfState({ ...row, state: "acquiring" }, "requested"), true);
+    const marker = JSON.parse(
+      readFileSync(join(storeRoot, "claims", `${row.operationId}.json`), "utf8"),
+    ) as { claimedBy: unknown };
+    assert.equal(marker.claimedBy, "");
+  });
+
+  test("the file CAS refuses a claim on a never-stored row (the marker outlives nothing)", async () => {
+    const storeRoot = root();
+    const store = new FileOperationStore(storeRoot);
+    assert.equal(
+      await store.saveIfState(operation({ operationId: "ghost", state: "acquiring" }), "requested"),
+      false,
+    );
+  });
+
+  test("the file CAS throws loud on a corrupt row record", async () => {
+    const storeRoot = root();
+    const store = new FileOperationStore(storeRoot);
+    const row = operation({ state: "requested" });
+    await store.save(row);
+    writeFileSync(recordPath(storeRoot, row.operationId), "{bad");
+    await rejectsCode(store.saveIfState({ ...row, state: "acquiring" }, "requested"), "invalid-record");
+  });
+
+  test("the file CAS throws io when the marker cannot be created (a non-rival failure)", async () => {
+    const storeRoot = root();
+    const store = new FileOperationStore(storeRoot);
+    // a FILE at the claims path is not a rival losing the race —
+    // the claims-dir create fails ENOTDIR and the CAS throws io
+    // (an existing directory at the marker path reads as EEXIST,
+    // a lost race — refused false, never loud)
+    const blocked = operation({ operationId: "blocked", state: "requested" });
+    writeFileSync(join(storeRoot, "claims"), "not-a-dir");
+    await rejectsCode(store.saveIfState({ ...blocked, state: "acquiring" }, "requested"), "io");
+  });
+});
+
 describe("operation-store list (audit E3 boot rehydrate)", () => {
   test("the in-memory store enumerates every row as an isolated copy", async () => {
     const store = new InMemoryOperationStore();

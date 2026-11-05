@@ -69,22 +69,20 @@ async function bootCtx(): Promise<{ ctx: Context; domain: Domain<DraftsDomainSpe
   // The typed `bench.changed` seam (the hand-roll row 1.2): this file
   // boots its own Context rather than the shared helper, so it
   // installs the same seam the plugin installs.
-  new DraftsDomainSeatService(ctx, { storageRoot: join(root, "storage") });
+  new DraftsDomainSeatService(ctx);
   installBenchChangeSeam(ctx);
   return { ctx, domain: await openDraftsDomain(ctx) };
 }
 
-/** A fresh Context carrying the domain seat (remote services open
- *  the drafts domain through it). */
 /** A fresh Context carrying the domain seat, rooted at its OWN minted
- *  tree (J12 call data — the retired env seam's default never reaches
- *  the repo's real storage; the tree is owned by the calling test). */
+ *  tree (the json backend's root never reaches the repo's real
+ *  storage; the tree is owned by the calling test). */
 function seatCtx(): Context {
   const root = mkdtempSync(join(tmpdir(), "remote-seat-"));
   onTestFinished(() => rmSync(root, { recursive: true, force: true }));
   mkdirSync(join(root, "storage"), { recursive: true });
   const ctx = new Context();
-  new DraftsDomainSeatService(ctx, { storageRoot: join(root, "storage") });
+  new DraftsDomainSeatService(ctx);
   return ctx;
 }
 
@@ -1537,6 +1535,7 @@ describe("the bench/subscribe stream remote: zero-state and rethrow arms", () =>
         }
         return born;
       },
+      seatOf: (): { session: string; lineage: readonly string[] | undefined } => ({ session: "main", lineage: undefined }),
     };
     const gen = BenchRemoteService.prototype.subscribe.call(
       fake as never,
@@ -1573,6 +1572,7 @@ describe("the bench/subscribe stream remote: zero-state and rethrow arms", () =>
       get: async (): Promise<Row> => {
         throw new RemoteError("bench/store-failed", "storage domain facility not mounted", {});
       },
+      seatOf: (): { session: string; lineage: readonly string[] | undefined } => ({ session: "main", lineage: undefined }),
     };
     const gen = BenchRemoteService.prototype.subscribe.call(
       fake as never,
@@ -1589,6 +1589,7 @@ describe("the bench/subscribe stream remote: zero-state and rethrow arms", () =>
       get: async (): Promise<Row> => {
         throw new Error("seat boom");
       },
+      seatOf: (): { session: string; lineage: readonly string[] | undefined } => ({ session: "main", lineage: undefined }),
     };
     const gen = BenchRemoteService.prototype.subscribe.call(
       fake as never,
@@ -1606,6 +1607,7 @@ describe("the bench/subscribe stream remote: zero-state and rethrow arms", () =>
         calls.push("get");
         return { draft_id: "bench-main", session: "main", rev: 1, intent: null, stages: [], log: [] };
       },
+      seatOf: (): { session: string; lineage: readonly string[] | undefined } => ({ session: "main", lineage: undefined }),
     };
     const gen = BenchRemoteService.prototype.subscribe.call(
       fake as never,

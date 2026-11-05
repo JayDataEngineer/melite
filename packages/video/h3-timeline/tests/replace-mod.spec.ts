@@ -19,6 +19,8 @@ import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
+import { H3_DEFAULT_LORA_ID } from "../../../models/h3/src/actions.ts";
+import { H3_LORA_ROWS } from "../../../models/h3/mods/loras.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -198,7 +200,11 @@ describe("the replace kind", () => {
     const ltx = ofClass(out, 'LTX_lora_loader');
     assert.ok(ltx.length > 0, "the swap composes LTX_lora_loader (the family lora plane)");
     const absentBag = JSON.parse(String(ltx[0][1].inputs.stack_data)) as Array<{ lora: string }>;
-    assert.equal(absentBag[0].lora, 'h3/minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors',
+    // the default FILE derives from the catalog row the family
+    // resolver names (the tautology law: a hand-copied filename rots
+    // on the next default move — this one did, 2026-11-01)
+    const defaultFile = H3_LORA_ROWS.find((r) => r.id === H3_DEFAULT_LORA_ID)!.filename;
+    assert.equal(absentBag[0].lora, defaultFile,
       "an absent loras bag rides the family default row (the film's own default, one owner)");
     assert.equal(ofClass(out, 'LoraLoaderModelOnly').length, 0,
       "no fixed accelerator row rides (the reference's DMAD chain is NOT adopted)");

@@ -22,4 +22,5 @@ export declare const QVOICE_BANK_ROOT = "/mnt/data/models/audio/voices";
  */
 export declare function resolveQvoicePath(ref: string): string;
 export declare function qvoiceUse(p: Record<string, unknown>): QVoiceUse | undefined;
+export declare function promoteQvoiceBag(p: Record<string, unknown>): Record<string, unknown>;
 //# sourceMappingURL=lanes-audio.d.ts.map

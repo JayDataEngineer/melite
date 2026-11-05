@@ -45,6 +45,17 @@ const labelsOf = (e, key) => {
     }
     return [...IMPACT_CLASSES].filter((c) => words.includes(c)).join(',');
 };
+/** THE BAG READ the flowOutputBindings guards ride (the rig
+ *  precedent's when-shape): a mod bag is non-empty when it is an
+ *  array carrying entries. The guards read the CARD bags — the
+ *  params the resolve seat hands the bindings — never the lane's
+ *  computed primary flags. bagOf refuses non-arrays at compose, so
+ *  a non-array bag never reaches a binding with a composed graph;
+ *  absence reads empty (the paint-only lane). */
+const nonEmptyBag = (params, key) => {
+    const v = params[key];
+    return Array.isArray(v) && v.length > 0;
+};
 /** THE ARM WEIGHTS (the silent-truncation law, 2026-10-09): which
  *  provision rows THIS merged params set touches. A sam3 bag names
  *  the SAM3 checkpoint; each sam2 entry names sam2 + its labels'
@@ -354,6 +365,36 @@ export function apply(ctx) {
             outputs: { default: 'seg' },
             requiresModel: false,
         },
+        // THE FLOW PRODUCER BINDINGS (GAPS-16/F3, the producer-law
+        // cure): every flow wire naming the mask stage's default
+        // channel resolves against the REAL product — mask_combined,
+        // the save the primary anchors first. The lane's emit order is
+        // arm-dependent (a sam2 primary's per-instance crops SaveImage
+        // precedes the combined save; the figure/export/union/manifest
+        // saves all trail it), so the channel rides TWO complementary
+        // rows in the estate's when-guarded shape (the rig precedent:
+        // one channel, per-arm producers): a sam2-primary press binds
+        // SaveImage.1, every other press binds SaveImage.0. The guards
+        // read the CARD bags (primary is sam3[0] whenever the sam3 bag
+        // is non-empty — bagOf's own order, card.ts:494) — never the
+        // lane's computed flags — and they partition exactly (row two
+        // is row one's negation, so no press binds twice or zero
+        // times). The nodeClass gate refuses loud if the lane ever
+        // renumbers, never a silent rebind.
+        flowOutputBindings: [
+            {
+                channel: 'default',
+                node: 'SaveImage.1',
+                nodeClass: 'SaveImage',
+                when: (params) => !nonEmptyBag(params, 'sam3') && nonEmptyBag(params, 'sam2'),
+            },
+            {
+                channel: 'default',
+                node: 'SaveImage.0',
+                nodeClass: 'SaveImage',
+                when: (params) => nonEmptyBag(params, 'sam3') || !nonEmptyBag(params, 'sam2'),
+            },
+        ],
         // THE MOD-OWNED NAMES ride admits (the compose door's explicit-
         // params overlay — the three bags; every knob lives INSIDE a
         // bag entry, never flat on the doc).

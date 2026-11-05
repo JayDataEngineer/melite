@@ -43,7 +43,7 @@ async function boot(): Promise<{ root: string; domain: Domain<DraftsDomainSpec> 
     { name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as never,
     { backend: "json" } as never,
   );
-  new DraftsDomainSeatService(ctx, { storageRoot: join(root, "storage") });
+  new DraftsDomainSeatService(ctx);
   return { root, domain: await openDraftsDomain(ctx) };
 }
 
@@ -101,7 +101,7 @@ test("a schema-failing character row writes, then the reopen skips it (invalidRe
       { name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as never,
       { backend: "json" } as never,
     );
-    new DraftsDomainSeatService(ctx, { storageRoot: join(root, "storage") });
+    new DraftsDomainSeatService(ctx);
     const domain = await openDraftsDomain(ctx);
     // the domain put does not zod-validate (the remote write doors
     // own strictness) — the invalid-record contract fires at open
@@ -119,7 +119,7 @@ test("a schema-failing character row writes, then the reopen skips it (invalidRe
     { name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as never,
     { backend: "json" } as never,
   );
-  new DraftsDomainSeatService(ctx2, { storageRoot: join(root, "storage") });
+  new DraftsDomainSeatService(ctx2);
   const reopened = await openDraftsDomain(ctx2);
   assert.equal(reopened.table("characters").get("bad-row"), undefined,
     "the schema-failing row reads as absent after reopen (backup-and-skip — never a brick)");
@@ -156,7 +156,7 @@ test("a v1-stamped record document still reads (compatibleVersions: the join kee
     { name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as never,
     { backend: "json" } as never,
   );
-  new DraftsDomainSeatService(ctx, { storageRoot: join(root, "storage") });
+  new DraftsDomainSeatService(ctx);
   const domain = await openDraftsDomain(ctx);
   assert.ok(domain.table("docs").get("old-draft") !== undefined,
     "the v1-stamped record reads through compatibleVersions — no migration, no brick");

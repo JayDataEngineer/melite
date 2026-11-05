@@ -123,11 +123,71 @@ test("undo(rewire) restores the before-binding, then removes an added one", asyn
   assert.equal("image" in st.inputs, false);
 });
 
+test("undo(clear) restores every stage with its params (clear keeps the stages_before inverse)", async () => {
+  // qa8 T2 unwedge-law: clear is the nuclear seat — one entry, the
+  // full stages_before inverse — and THIS wall (the registry spec)
+  // judged only the crafted-junk tolerance, never the lawful happy
+  // path (the happy path lived in bench-unwedge.spec, outside the
+  // row's wall). An inverse-less clear would launder here: undo
+  // would restore nothing and stay green.
+  const drafts = await boot();
+  await ensureBench(drafts, {
+    session: "s",
+    stages: [
+      { id: "a", params: { steps: 4 } },
+      { id: "b", params: { steps: 6 } },
+    ],
+  });
+  const cleared = await clearBench(drafts, "s", { expect_rev: 0 });
+  assert.equal(
+    (getBench(drafts, "s").stages as Array<unknown>).length, 0,
+    "clear empties the bench",
+  );
+  const undone = await undoBench(drafts, "s", { n: 1, expect_rev: cleared.rev });
+  assert.deepEqual(undone.undone, [cleared.rev]);
+  const doc = getBench(drafts, "s");
+  const ids = (doc.stages as Array<{ id: string }>).map((x) => x.id);
+  assert.deepEqual(ids, ["a", "b"], "undo(clear) restores every stage, order intact");
+  const a = (doc.stages as Array<{ id: string; params: Record<string, unknown> }>).find((x) => x.id === "a")!;
+  assert.deepEqual(a.params, { steps: 4 }, "the restore carries params, not bare ids");
+});
+
+test("a rewire that changes the wiring invalidates the stage's done mark (the patch staleness law's wiring half)", async () => {
+  // The patch door clears runStatus when the params view changes
+  // (bench-mutations: the silent no-op cure) — a rewired stage's
+  // inputs are the same view the next run composes, so the same
+  // skip-done law would fold a rewired-but-done stage with no run
+  // minted. An idempotent rewire keeps the mark (the same law's
+  // inverse: no change, no stale).
+  const drafts = await boot();
+  await seed(drafts, "rw-stale", {
+    stages: [
+      { id: "a", params: { image: "$image" }, runStatus: "done", result: { run_id: "r-1" } },
+      { id: "b" },
+    ],
+  });
+  await rewireBench(drafts, "rw-stale", { stage: "a", input: "image", from: { stage: "b", output: "default" }, expect_rev: 0 });
+  let st = (getBench(drafts, "rw-stale").stages as Array<Record<string, unknown>>).find((x) => x["id"] === "a")!;
+  assert.equal(st["runStatus"], undefined, "a wiring change clears the done mark — the skip law cannot fold it");
+  // the artifact memory stands (the invalidation owns the SKIP
+  // decision, never history — the patch door's own split).
+  assert.deepEqual(st["result"], { run_id: "r-1" });
+  // idempotent: the same binding restated keeps a done mark.
+  await seed(drafts, "rw-idem", {
+    stages: [
+      { id: "a", params: { image: "$image" }, inputs: { image: { stage: "b", output: "default" } }, runStatus: "done" },
+      { id: "b" },
+    ],
+  });
+  await rewireBench(drafts, "rw-idem", { stage: "a", input: "image", from: { stage: "b", output: "default" }, expect_rev: 0 });
+  st = (getBench(drafts, "rw-idem").stages as Array<Record<string, unknown>>).find((x) => x["id"] === "a")!;
+  assert.equal(st["runStatus"], "done", "no change, no stale — the mark stands");
+});
+
 test("undo(load) restores the pre-load snapshot", async () => {
   const drafts = await boot();
   await ensureBench(drafts, { session: "s", stages: [{ id: "a" }, { id: "b" }] });
-  await ensureBench(drafts, { session: "s", stages: [{ id: "z" }], expect_rev: 0, overwrite: true });
-  await undoBench(drafts, "s", { n: 1, expect_rev: 1 });
+  await ensureBench(drafts, { session: "s", stages: [{ id: "z" }], expect_rev: 0, overwrite: true });  await undoBench(drafts, "s", { n: 1, expect_rev: 1 });
   const doc = getBench(drafts, "s");
   assert.deepEqual(
     (doc.stages as Array<{ id: string }>).map((x) => x.id),

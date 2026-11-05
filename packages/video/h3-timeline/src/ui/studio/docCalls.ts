@@ -256,26 +256,51 @@ export function hydrateCalls(raw: { calls?: unknown; beats?: unknown }): DocCall
  *  rows drop with a LOUD warn (the pin channel is image pins only;
  *  a clip/audio diamond never had a compose meaning — the last_frame
  *  precedent: named, never silent). Sorted by frame (the plan
- *  vocabulary is sorted pins — hydrateCalls' own law). */
-export function hydrateKeyframes(raw: unknown): DocKeyframe[] {
-  if (!Array.isArray(raw)) return []
+ *  vocabulary is sorted pins — hydrateCalls' own law).
+ *
+ * THE ANCHOR SEAT'S UI LEG (the timeline-visibility cure, 2026-11-13):
+ * `anchor` is the doc-level anchor shorthand the compose reads —
+ * `p.image ?? p.image_name ?? p.ref_image` (schema.ts admits all three
+ * guide spellings; the agent docs teach `params.image` as "the frame-0
+ * shorthand for the same rail"). The shorthand and a frame-0 pin are
+ * ONE SEAT: the any-frame setup law lifts a frame-0 row onto the
+ * anchor and seats the anchor when no row overrides it. The projection
+ * used to read only the pin spelling, so an agent-authored anchor
+ * composed while the timeline card showed nothing — the
+ * authored-but-not-shown split. When the pins hold no frame-0 row, the
+ * anchor rides the lane as the frame-0 pin it already is. View-side
+ * only: no write fires until an operator gesture, and a gesture
+ * materializes the pin under the compose's own precedence (a frame-0
+ * row overrides the anchor at the lift), so the shown lane never
+ * disagrees with what composes.
+ *
+ * @param raw the persisted `keyframes` array (any legacy spelling).
+ * @param anchor the doc-level anchor shorthand value (undefined =
+ *   the doc states no anchor; a non-string rides as none). */
+export function hydrateKeyframes(raw: unknown, anchor?: unknown): DocKeyframe[] {
   const out: DocKeyframe[] = []
-  for (const k of raw) {
-    if (typeof k !== "object" || k === null) continue
-    const r = k as Record<string, unknown>
-    const frame = Number(r.frame)
-    if (!Number.isFinite(frame)) continue
-    const kind = typeof r.kind === "string" && r.kind !== "" ? r.kind : "image"
-    const legacySource = typeof r.source === "string" ? r.source : ""
-    const image = typeof r.image === "string" ? r.image : legacySource
-    if (kind !== "image") {
-      console.warn(
-        `VideoTimelineStudio: keyframe at frame ${Math.round(frame)} carried kind "${kind}" — dropped; ` +
-          `the pin channel is image pins (a ${kind} diamond had no compose meaning)`,
-      )
-      continue
+  if (Array.isArray(raw)) {
+    for (const k of raw) {
+      if (typeof k !== "object" || k === null) continue
+      const r = k as Record<string, unknown>
+      const frame = Number(r.frame)
+      if (!Number.isFinite(frame)) continue
+      const kind = typeof r.kind === "string" && r.kind !== "" ? r.kind : "image"
+      const legacySource = typeof r.source === "string" ? r.source : ""
+      const image = typeof r.image === "string" ? r.image : legacySource
+      if (kind !== "image") {
+        console.warn(
+          `VideoTimelineStudio: keyframe at frame ${Math.round(frame)} carried kind "${kind}" — dropped; ` +
+            `the pin channel is image pins (a ${kind} diamond had no compose meaning)`,
+        )
+        continue
+      }
+      out.push({ image, frame: Math.round(frame) })
     }
-    out.push({ image, frame: Math.round(frame) })
+  }
+  const anchorOccupied = out.some((k) => k.frame === 0)
+  if (!anchorOccupied && typeof anchor === "string" && anchor.trim() !== "") {
+    out.push({ image: anchor.trim(), frame: 0 })
   }
   return out.sort((a, b) => a.frame - b.frame)
 }

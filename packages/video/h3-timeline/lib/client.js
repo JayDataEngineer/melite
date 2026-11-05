@@ -678,6 +678,24 @@ window.__ModuleLoader__.load({
 			laneBlockedMessage: "reference audio is wired on a call — the dialogue / music / SFX lanes are LOCKED (the clips and the audio inputs are mutually exclusive; clear the call's Ref audios to place clips)",
 			/** The bar's calls lane label. */
 			callsLabel: "Calls",
+			/** ── THE MOD-MODE CALLS FACES (operator 2026-11-14: "there is
+			*  still the default call in the timeline bar that tells them to
+			*  describe their video there, when that isn't used at all") — the
+			*  lane names its calls-readership under an armed commission, so
+			*  the default invitation never lies about the armed run. */
+			/** The calls lane head under a NON-reading armed commission (the
+			*  run composes from the bag alone — the lane is not read). */
+			callsDormantLabel: (kind) => `Calls — dormant under ${studioCopy.commissionKindLabel(kind)}`,
+			/** The calls lane's empty hint under a NON-reading armed
+			*  commission: why the starter stood down (the armed commission
+			*  owns this run's inputs). */
+			callsDormantHint: (kind) => `${studioCopy.commissionKindLabel(kind)} is armed — this run composes from the mod's own inputs and does not read this lane (disarm the mod to author the film here)`,
+			/** The calls lane head under a READING armed commission (reshoot,
+			*  loras): the lane's text rides the run. */
+			callsPromptSeatLabel: (kind) => `Calls — the ${studioCopy.commissionKindLabel(kind)} run's prompt`,
+			/** The calls lane's empty hint under a READING armed commission:
+			*  describe the shot here — this text IS the run's prompt. */
+			callsPromptSeatHint: (kind) => `${studioCopy.commissionKindLabel(kind)} is armed — describe the shot here: this lane's text is the run's prompt`,
 			/** ── THE COMMISSION RAIL (§9's mod projection) ────────────────────
 			*  One row per ARMED mod bag. The kind's face is the operator's own
 			*  word for the door; the seats line names what the entry states;
@@ -815,7 +833,7 @@ window.__ModuleLoader__.load({
 		*  split family waiting to burn).
 		*  @param v the stated value
 		*  @returns true when the value states something */
-		function familyKeyPresent$1(v) {
+		function familyKeyPresent(v) {
 			if (v === null || v === void 0) return false;
 			if (typeof v === "string") return v.trim() !== "";
 			if (Array.isArray(v)) return v.length > 0;
@@ -831,13 +849,13 @@ window.__ModuleLoader__.load({
 		*  @param doc the doc-shaped params (calls/keyframes/ref surface).
 		*  @returns the derived lane id ('' only for an empty law — a shape
 		*    the declaration judge refuses at boot). */
-		function deriveFamilyLane$1(law, doc) {
+		function deriveFamilyLane(law, doc) {
 			const calls = Array.isArray(doc["calls"]) ? doc["calls"] : [];
 			for (const lane of law.lanes) {
 				if (lane.minCalls === void 0 && lane.guideKeys === void 0 && lane.callGuideKeys === void 0) return lane.lane;
 				if (lane.minCalls !== void 0 && calls.length >= lane.minCalls) return lane.lane;
-				if (lane.guideKeys?.some((k) => familyKeyPresent$1(doc[k]))) return lane.lane;
-				if (lane.callGuideKeys?.some((k) => calls.some((c) => familyKeyPresent$1(c?.[k])))) return lane.lane;
+				if (lane.guideKeys?.some((k) => familyKeyPresent(doc[k]))) return lane.lane;
+				if (lane.callGuideKeys?.some((k) => calls.some((c) => familyKeyPresent(c?.[k])))) return lane.lane;
 			}
 			return law.lanes[law.lanes.length - 1]?.lane ?? "";
 		}
@@ -857,8 +875,8 @@ window.__ModuleLoader__.load({
 		*  @param prior the stored row's params BEFORE the merge.
 		*  @returns the cleaned view (a NEW record when keys dropped; the
 		*    input reference otherwise) + the dropped key names. */
-		function reseatDeadKeys$1(law, doc, prior) {
-			const lane = deriveFamilyLane$1(law, doc);
+		function reseatDeadKeys(law, doc, prior) {
+			const lane = deriveFamilyLane(law, doc);
 			const dead = law.deadKeys[lane];
 			if (dead === void 0 || dead.length === 0) return {
 				params: doc,
@@ -889,42 +907,27 @@ window.__ModuleLoader__.load({
 		function transitionOverlap(transition) {
 			return transition === "cut" ? 0 : 22;
 		}
-		/** (2026-11-06, the family-reseat cure) the post-pass knobs the t4r
-		*  lane cannot honor — its renderer wires NO post chain (the graph
-		*  goes straight to CreateVideo), so the schema walk REFUSES these
-		*  keys on a derived-t4r doc rather than silently dropping them (the
-		*  no-silent-resolution law). Shared with the studio so its rail and
-		*  its heal judge the SAME set the walk refuses.
-		*
-		*  THE DEAD-LETTER MASTERS (2026-10-16, audit 3f0b7c1a layera-globals
-		*  #3): the twelve leaves above are gated, but the three MASTERS that
-		*  own them — second_pass_enabled, sharpen_enabled, interpolate_enabled
-		*  — and attention_backend were not, and each is read ONLY inside the
-		*  non-t4r branch of the compose (actions.ts: second_pass_enabled at
-		*  the post gate, the two leaves in the post chain, attention_backend
-		*  at the chunked ModelAttentionBackend). On a t4r doc they rendered,
-		*  persisted, composed LEGAL, and landed in NO node: a switch the user
-		*  sees ON while the run ignores it — the exact silent-drop the twelve
-		*  leaves are gated against, one level up. Joined here so the field
-		*  gate, the row gate and the reseat heal judge them together. */
-		const T4_ONLY_KEYS = [
-			"sharpen_switch",
-			"sharpen_method",
-			"sharpen_strength",
-			"sharpen_radius",
-			"sharpen_threshold",
-			"sharpen_iterations",
-			"interp_switch",
-			"interp_multiplier",
-			"interp_model",
-			"sr_switch",
-			"sr_model",
-			"sr_resolution",
-			"second_pass_enabled",
-			"sharpen_enabled",
-			"interpolate_enabled",
-			"attention_backend"
-		];
+		/** THE LANE-LAW RETIREMENT (2026-11-15, the operator's gate-11 burn:
+		*  "WHY DO I SEE THIS BUG … I. NEVER. WANT. TO SEE. THE TESTS GO ALL
+		*  GREEN. AND THIS ERROR TO EVER APPEAR AGAIN") — THE DEAD-KEY LAW IS
+		*  GONE. This module used to export `T4_ONLY_KEYS` (the 26 post-pass
+		*  keys a derived-t4r doc was REFUSED for stating) and
+		*  `t4rInjectRefusal` (the voiced spine every door spoke), because
+		*  the t4r render arm wired NO post chain: it went straight from the
+		*  decode to CreateVideo, so a doc that stated a finish knob composed
+		*  it into no node. Keeping the operator's lawful state had required
+		*  the studio to strip the keys, the rail to hide the fields, the
+		*  recipe rows to withhold Final Cut, and every write door to refuse
+		*  the stranded residue — four courts enforcing an engine omission.
+		*  The engine now mounts the chain on every arm (actions.ts
+		*  renderH3Window: the post block sits ABOVE the family branch; the
+		*  t4r mux consumes its output), so EVERY one of those keys fires on
+		*  EVERY lane and NO lane refuses any key: FAMILY_LAW.deadKeys is
+		*  empty, and the second-pass group renders wherever the doc derives.
+		*  A future key that genuinely cannot fire on a lane must be cured by
+		*  making it fire (or by the FILM_ONLY gate's precedent: a walk gate
+		*  whose repair is a different doc shape, never a lane's dead letter).
+		*/
 		/** The knobs only the FILM shape can honor (2026-10-16, audit
 		*  3f0b7c1a ui-truth-gap #4; the walk leg closed B6,
 		*  timeline-calls-burn §CURES-OWED 5). `duck_depth_db` is read in
@@ -951,8 +954,9 @@ window.__ModuleLoader__.load({
 		*  the walk read seats the data did not name). The lanes spell
 		*  deriveWindowFamily's own derivation as data (minCalls →
 		*  t4_chain, guideKeys → t4r, the trailing lane is the
-		*  fallthrough); deadKeys names the keys whose PRESENCE each lane
-		*  refuses. `guideKeys` reads the doc level (the keyframe pin
+		*  fallthrough); deadKeys would name keys a lane's renderer could
+		*  not honor (empty for h3 since the 2026-11-15 retirement — the
+		*  post chain mounts on every arm). `guideKeys` reads the doc level (the keyframe pin
 		*  channel, the last_frame string, the ref surface, the doc-level
 		*  guide aliases — presence, never count: a non-empty-after-trim
 		*  string or a non-empty array), `callGuideKeys` reads inside each
@@ -988,7 +992,7 @@ window.__ModuleLoader__.load({
 				},
 				{ lane: "t4_open" }
 			],
-			deadKeys: { t4r: T4_ONLY_KEYS }
+			deadKeys: {}
 		};
 		/** THE FAMILY-RESEAT MATH — DEAD SPINE, one spelling (the one-seat
 		*  migration, 2026-11-12): the settlement math lives in
@@ -1010,7 +1014,7 @@ window.__ModuleLoader__.load({
 		*  @param raw the doc-shaped record (calls/keyframes/ref surface)
 		*  @returns the derived window family */
 		function deriveWindowFamily(raw) {
-			return deriveFamilyLane$1(FAMILY_LAW, raw);
+			return deriveFamilyLane(FAMILY_LAW, raw);
 		}
 		function gridSnap(length) {
 			const k = Math.round((length - 22) / 17);
@@ -1749,8 +1753,8 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:packages/web-kit/timeline/src/timeline/timeline.module.css.mjs
-		const css = ".t2WLSa_root{user-select:none;display:flex}.t2WLSa_gutter{border-right:1px solid var(--dsw-alias-border-l2);flex-direction:column;flex:none;display:flex}.t2WLSa_zoomRow{border-bottom:1px solid var(--dsw-alias-border-l2);justify-content:center;align-items:center;gap:2px;display:flex}.t2WLSa_zoomBtn{width:20px;height:20px;color:var(--dsw-alias-label-secondary);font-size:inherit;cursor:pointer;background:0 0;border:none;border-radius:4px;justify-content:center;align-items:center;padding:0;line-height:1;display:inline-flex}.t2WLSa_zoomBtn:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-brand-primary)}.t2WLSa_zoomBtn svg{width:14px;height:14px}.t2WLSa_zoomPct{min-width:32px;height:auto;color:var(--dsw-alias-label-secondary);text-align:center;font-variant-numeric:tabular-nums;cursor:pointer;background:0 0;border:none;border-radius:4px;padding:0 2px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px}.t2WLSa_zoomPct:hover{color:var(--dsw-alias-brand-primary)}.t2WLSa_laneHeadShell{border-bottom:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);align-items:center;gap:6px;padding:0 8px;display:flex}.t2WLSa_laneHeadShell:last-child{border-bottom:0}.t2WLSa_laneHeadShell>svg{width:14px;height:14px;color:var(--dsw-alias-brand-primary);flex:none}.t2WLSa_laneHeadShell[data-lane-head=audio]>svg{width:12px;height:12px;color:var(--dsw-alias-state-business-primary)}.t2WLSa_gutterLabel{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:10px;font-weight:500;overflow:hidden}.t2WLSa_detachBtn{width:16px;height:16px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:4px;flex:none;justify-content:center;align-items:center;margin-left:auto;padding:0;display:inline-flex}.t2WLSa_detachBtn:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.t2WLSa_detachBtn svg{width:10px;height:10px}.t2WLSa_uploadBtn{width:16px;height:16px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:4px;flex:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.t2WLSa_uploadBtn:hover{background:color-mix(in srgb, var(--dsw-alias-label-tertiary) 14%, transparent);color:var(--dsw-alias-label-primary)}.t2WLSa_uploadBtn svg{width:10px;height:10px}.t2WLSa_laneDot{border-radius:9999px;flex:none;width:6px;height:6px}.t2WLSa_contentWrap{flex:1;min-width:0;position:relative}.t2WLSa_scroller{scrollbar-width:thin;scrollbar-color:var(--dsw-alias-border-l3) transparent;height:100%;overflow:auto hidden}.t2WLSa_scroller::-webkit-scrollbar{height:8px}.t2WLSa_scroller::-webkit-scrollbar-track{background:0 0}.t2WLSa_scroller::-webkit-scrollbar-thumb{background:var(--dsw-alias-border-l2);border-radius:4px}.t2WLSa_content{position:relative}.t2WLSa_ruler{border-bottom:1px solid var(--dsw-alias-border-l2);position:relative}.t2WLSa_tick{position:absolute;top:0;bottom:0}.t2WLSa_tickLine{background:var(--dsw-alias-border-l2);width:1px;height:100%}.t2WLSa_tickLabel{color:var(--dsw-alias-label-tertiary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1;position:absolute;top:2px;left:4px}.t2WLSa_timecode{z-index:10;font-variant-numeric:tabular-nums;height:100%;color:var(--dsw-alias-brand-primary);align-items:center;padding-left:6px;padding-right:8px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1;display:flex;position:sticky;left:0}.t2WLSa_promptsLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_canAdd{cursor:copy}.t2WLSa_emptyCenter{justify-content:center;align-items:center;display:flex;position:absolute;inset:0}.t2WLSa_emptyHint{color:var(--dsw-alias-label-tertiary);font-size:10px}.t2WLSa_promptClip{touch-action:none;cursor:grab;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;position:absolute;top:4px;bottom:4px;overflow:hidden}.t2WLSa_promptClip:hover{border-color:var(--dsw-alias-border-l4)}.t2WLSa_clipSelected{z-index:30;border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);border-width:0}.t2WLSa_clipSelected:hover{border-color:var(--dsw-alias-brand-primary)}.t2WLSa_clipMoving{z-index:30;cursor:grabbing;border:1px solid var(--dsw-alias-brand-primary);box-shadow:0 20px 25px -5px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent), 0 8px 10px -6px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent), 0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 70%, transparent)}.t2WLSa_edgeL{z-index:30;touch-action:none;cursor:ew-resize;justify-content:center;align-items:center;width:12px;display:flex;position:absolute;top:0;bottom:0;left:0}.t2WLSa_edgeL:hover{background:var(--dsw-alias-interactive-bg-hover)}.t2WLSa_edgeDead{cursor:default;opacity:.35}.t2WLSa_edgeDead:hover{background:0 0}.t2WLSa_gripPill{background:color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);border-radius:9999px;width:3px;height:20px}.t2WLSa_promptClip:hover .t2WLSa_gripPill{background:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent)}.t2WLSa_seamDot{z-index:35;border-radius:9999px;width:8px;height:8px;position:absolute;top:0;left:0;transform:translate(-50%,-50%)}.t2WLSa_edgeR{z-index:30;touch-action:none;cursor:ew-resize;justify-content:center;align-items:center;width:12px;display:flex;position:absolute;top:16px;bottom:0;right:0}.t2WLSa_edgeR:hover{background:var(--dsw-alias-interactive-bg-hover)}.t2WLSa_edgeWide{width:16px}.t2WLSa_gripPillR{background:color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);border-radius:9999px;width:3px;height:20px}.t2WLSa_gripPillBright{background:color-mix(in srgb, var(--dsw-alias-label-primary) 45%, transparent)}.t2WLSa_promptClip:hover .t2WLSa_gripPillR{background:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent)}.t2WLSa_promptClip:hover .t2WLSa_gripPillBright{background:color-mix(in srgb, var(--dsw-alias-label-primary) 80%, transparent)}.t2WLSa_clipEditor{background:color-mix(in srgb, var(--dsw-alias-bg-base) 60%, transparent);height:24px;box-shadow:0 0 0 1px color-mix(in srgb, var(--dsw-alias-brand-primary) 50%, transparent);pointer-events:auto;border:none;border-radius:4px;align-items:center;padding:0 6px;display:inline-flex;position:absolute;top:50%;left:8px;right:8px;transform:translateY(-50%)}.t2WLSa_clipEditor input{width:100%;min-width:0;height:100%;color:var(--dsw-alias-label-primary);background:0 0;border:none;outline:none;flex:1;padding:0;font-size:11px;line-height:1.5}.t2WLSa_clipEditor input::placeholder{color:var(--dsw-alias-label-tertiary)}.t2WLSa_previewWrap{z-index:10;pointer-events:none;position:absolute;inset:0;overflow:hidden}.t2WLSa_previewVideo{object-fit:cover;opacity:.6;width:100%;height:100%;position:absolute;inset:0}.t2WLSa_scrim{background:linear-gradient(to top, color-mix(in srgb, var(--dsw-alias-bg-base) 85%, transparent), color-mix(in srgb, var(--dsw-alias-bg-base) 45%, transparent) 50%, color-mix(in srgb, var(--dsw-alias-bg-base) 10%, transparent));position:absolute;inset:0}.t2WLSa_clipTextCol{z-index:20;flex-direction:column;gap:2px;padding:0 12px 6px;display:flex;position:absolute;bottom:0;left:0;right:0}.t2WLSa_clipTextStack{z-index:10;pointer-events:none;flex-direction:column;justify-content:center;gap:2px;padding:0 12px;display:flex;position:absolute;inset:0}.t2WLSa_clipTitle{text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:500;overflow:hidden}.t2WLSa_clipEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.t2WLSa_clipDur{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:10px}.t2WLSa_knobDot{z-index:20;background:var(--dsw-alias-brand-primary);width:6px;height:6px;box-shadow:0 0 6px color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);pointer-events:none;border-radius:9999px;position:absolute;top:4px;right:6px}.t2WLSa_refAudioBadge{z-index:20;width:10px;height:10px;color:var(--dsw-alias-state-business-primary);pointer-events:none;position:absolute;top:12px;right:4px}.t2WLSa_refBadge{z-index:20;pointer-events:none;align-items:center;gap:1px;display:flex;position:absolute;top:22px;right:2px}.t2WLSa_refBadge svg{width:8px;height:8px;color:var(--dsw-alias-state-success-primary)}.t2WLSa_refCount{color:var(--dsw-alias-state-success-primary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:8px;line-height:1}.t2WLSa_promptDelete{z-index:40;background:var(--dsw-alias-state-error-primary);opacity:0;cursor:pointer;border:none;border-radius:9999px;justify-content:center;align-items:center;width:16px;height:16px;padding:0;display:inline-flex;position:absolute;top:4px;right:4px}.t2WLSa_promptDelete:hover{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary))}.t2WLSa_promptClip:hover .t2WLSa_promptDelete{opacity:1}.t2WLSa_promptDelete svg{width:8px;height:8px;color:var(--dsw-alias-label-primary)}.t2WLSa_beatsLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_beatsAdd{cursor:crosshair}.t2WLSa_beatsEmpty{align-items:center;padding-left:12px;display:flex;position:absolute;inset:0}.t2WLSa_hintLine{color:var(--dsw-alias-label-tertiary);font-size:10px}.t2WLSa_beatClip{border:1px solid var(--dsw-alias-border-l2);cursor:pointer;border-radius:6px;position:absolute;top:4px;bottom:4px;overflow:hidden}.t2WLSa_beatClip:hover{border-color:var(--dsw-alias-border-l4)}.t2WLSa_beatSelected{z-index:30;border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent)}.t2WLSa_beatSelected:hover{border-color:var(--dsw-alias-brand-primary)}.t2WLSa_beatLabel{color:var(--dsw-alias-label-secondary);pointer-events:none;align-items:center;padding:0 6px;font-size:10px;line-height:1.25;display:flex;position:absolute;inset:0}.t2WLSa_truncate{text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.t2WLSa_beatEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.t2WLSa_audioLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_audioClip{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);cursor:grab;touch-action:none;border-radius:2px;position:absolute;top:2px;bottom:2px;overflow:hidden}.t2WLSa_audioClip:active{cursor:grabbing}.t2WLSa_audioCard{border-radius:6px;top:3px;bottom:3px}.t2WLSa_audioCardIcon{pointer-events:none;display:flex;position:absolute;top:50%;left:5px;transform:translateY(-50%)}.t2WLSa_audioCardIcon svg{width:13px;height:13px}.t2WLSa_audioCard .t2WLSa_audioClipLabel{flex-direction:column;justify-content:center;align-items:flex-start;gap:1px;font-size:10px;display:flex;left:23px;right:4px}.t2WLSa_audioCard .t2WLSa_audioTime{margin-left:0}.t2WLSa_gainFill{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);pointer-events:none;position:absolute;bottom:0;left:0;right:0}.t2WLSa_audioClipLabel{text-overflow:ellipsis;white-space:nowrap;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-primary));pointer-events:none;align-items:center;padding:0 4px;font-size:9px;line-height:1;display:flex;position:absolute;inset:0;overflow:hidden}.t2WLSa_audioName{text-overflow:ellipsis;white-space:nowrap;font-weight:500;overflow:hidden}.t2WLSa_audioTime{font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 50%, var(--dsw-alias-label-tertiary));flex:none;margin-left:4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.t2WLSa_audioClipDelete{background:color-mix(in srgb, var(--dsw-alias-bg-base) 40%, transparent);width:14px;height:14px;color:var(--dsw-alias-label-tertiary);cursor:pointer;border:none;border-radius:0 0 0 4px;justify-content:center;align-items:center;padding:0;display:none;position:absolute;top:0;right:0}.t2WLSa_audioClipDelete:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.t2WLSa_audioClip:hover .t2WLSa_audioClipDelete{display:flex}.t2WLSa_audioClipDelete svg{width:8px;height:8px}.t2WLSa_audioSlice{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 15%, transparent);border-radius:2px;position:absolute;top:2px;bottom:2px;overflow:hidden}.t2WLSa_sliceLabel{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-secondary));pointer-events:none;justify-content:center;align-items:center;padding:0 4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:9px;display:flex;position:absolute;inset:0;overflow:hidden}.t2WLSa_audioDrop{border:1px dashed color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);pointer-events:none;border-radius:4px;justify-content:center;align-items:center;display:flex;position:absolute;inset:2px 4px}.t2WLSa_dropHint{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);padding:0 8px;font-size:9px;overflow:hidden}.t2WLSa_kfLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_kfLane:last-child{border-bottom:0}.t2WLSa_kfLane[data-kf-cards=true]{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 3%, transparent)}.t2WLSa_kfDropWell{border:1px dashed color-mix(in srgb, var(--dsw-alias-label-tertiary) 25%, transparent);pointer-events:none;border-radius:4px;justify-content:center;align-items:center;display:flex;position:absolute;inset:2px 4px}.t2WLSa_kfWrap{position:absolute;top:0;bottom:0}.t2WLSa_kfBtn{cursor:grab;background:0 0;border:none;justify-content:center;align-items:center;width:16px;height:16px;padding:0;display:flex;position:absolute;top:50%;left:0;transform:translate(-50%,-50%)}.t2WLSa_kfBtn:active{cursor:grabbing;transform:translate(-50%)}.t2WLSa_kfDiamond{width:10px;height:10px;box-shadow:0 0 0 1px var(--dsw-alias-border-l4);border:1px solid;display:block;transform:rotate(45deg)}.t2WLSa_kfMoving{transform:rotate(45deg)scale(1.25)}.t2WLSa_kfDelete{z-index:10;background:var(--dsw-alias-state-error-primary);opacity:0;cursor:pointer;border:none;border-radius:9999px;justify-content:center;align-items:center;width:14px;height:14px;padding:0;display:inline-flex;position:absolute;top:0;left:6px}.t2WLSa_kfDelete:hover{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary))}.t2WLSa_kfWrap:hover .t2WLSa_kfDelete{opacity:1}.t2WLSa_kfDelete svg{width:8px;height:8px;color:var(--dsw-alias-label-primary)}.t2WLSa_playhead{z-index:40;pointer-events:auto;position:absolute;top:0;bottom:0}.t2WLSa_playheadCap{border:1px solid var(--dsw-alias-border-l4);pointer-events:auto;cursor:grab;touch-action:none;border-radius:9999px;width:8px;height:8px;position:absolute;top:0;left:50%;transform:translate(-50%)}.t2WLSa_playheadCap:active{cursor:grabbing}.t2WLSa_playheadCap:before{content:\"\";border-radius:9999px;position:absolute;inset:-5px}.t2WLSa_miniBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);width:20px;height:20px;color:var(--dsw-alias-brand-primary);cursor:pointer;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0;font-size:13px;line-height:1;display:inline-flex}.t2WLSa_miniBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent)}.t2WLSa_miniFitBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);height:20px;color:var(--dsw-alias-brand-primary);cursor:pointer;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0 6px;font-size:10px;font-weight:600;display:inline-flex}.t2WLSa_miniFitBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent)}.t2WLSa_scrubBar{align-items:center;gap:8px;width:100%;display:flex}.t2WLSa_scrubToggle{cursor:pointer;background:0 0;border:none;flex:none;padding:4px 2px;font-size:11px;line-height:1}.t2WLSa_scrubTrack{cursor:pointer;touch-action:none;flex:1;min-width:0;height:18px;position:relative}.t2WLSa_scrubFill{background:var(--dsw-alias-interactive-bg-active);border-radius:2px;height:4px;position:absolute;top:7px;left:0}.t2WLSa_scrubHead{background:var(--dsw-alias-label-primary);border-radius:1px;width:2px;height:10px;margin-left:-1px;position:absolute;top:4px}.t2WLSa_scrubReadout{color:var(--dsw-alias-label-secondary);white-space:nowrap;flex:none;font-size:11px}.t2WLSa_commissionHead{align-items:center;gap:6px;padding:0 8px;display:flex;overflow:hidden}.t2WLSa_commissionKind{letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;text-overflow:ellipsis;font-size:10px;font-weight:600;overflow:hidden}.t2WLSa_commissionLane{width:100%;position:relative}.t2WLSa_commissionSpan{border-left:3px solid var(--dsw-alias-brand-primary);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 12%, transparent);border-radius:4px;align-items:center;gap:4px;padding:0 6px;display:flex;position:absolute;top:3px;bottom:3px;left:0;overflow:hidden}.t2WLSa_commissionWindows .t2WLSa_commissionSegment{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 14%, transparent);border-radius:3px;flex:1 1 0;min-width:0;padding:1px 4px}.t2WLSa_commissionSegment{color:var(--dsw-alias-label-secondary);white-space:nowrap;text-overflow:ellipsis;font-variant-numeric:tabular-nums;font-size:10px;line-height:1.5;overflow:hidden}";
-		const tagId = "@melite/video-h3-timeline/timeline.module.css@4f42746b";
+		const css = ".t2WLSa_root{user-select:none;display:flex}.t2WLSa_gutter{border-right:1px solid var(--dsw-alias-border-l2);flex-direction:column;flex:none;display:flex}.t2WLSa_zoomRow{border-bottom:1px solid var(--dsw-alias-border-l2);justify-content:center;align-items:center;gap:2px;display:flex}.t2WLSa_zoomBtn{width:20px;height:20px;color:var(--dsw-alias-label-secondary);font-size:inherit;cursor:pointer;background:0 0;border:none;border-radius:4px;justify-content:center;align-items:center;padding:0;line-height:1;display:inline-flex}.t2WLSa_zoomBtn:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-brand-primary)}.t2WLSa_zoomBtn svg{width:14px;height:14px}.t2WLSa_zoomPct{min-width:32px;height:auto;color:var(--dsw-alias-label-secondary);text-align:center;font-variant-numeric:tabular-nums;cursor:pointer;background:0 0;border:none;border-radius:4px;padding:0 2px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px}.t2WLSa_zoomPct:hover{color:var(--dsw-alias-brand-primary)}.t2WLSa_laneHeadShell{border-bottom:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);align-items:center;gap:6px;padding:0 8px;display:flex}.t2WLSa_laneHeadShell:last-child{border-bottom:0}.t2WLSa_laneHeadShell>svg{width:14px;height:14px;color:var(--dsw-alias-brand-primary);flex:none}.t2WLSa_laneHeadShell[data-lane-head=audio]>svg{width:12px;height:12px;color:var(--dsw-alias-state-business-primary)}.t2WLSa_gutterLabel{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:10px;font-weight:500;overflow:hidden}.t2WLSa_detachBtn{width:16px;height:16px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:4px;flex:none;justify-content:center;align-items:center;margin-left:auto;padding:0;display:inline-flex}.t2WLSa_detachBtn:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.t2WLSa_detachBtn svg{width:10px;height:10px}.t2WLSa_uploadBtn{width:16px;height:16px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:4px;flex:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.t2WLSa_uploadBtn:hover{background:color-mix(in srgb, var(--dsw-alias-label-tertiary) 14%, transparent);color:var(--dsw-alias-label-primary)}.t2WLSa_uploadBtn svg{width:10px;height:10px}.t2WLSa_laneDot{border-radius:9999px;flex:none;width:6px;height:6px}.t2WLSa_contentWrap{flex:1;min-width:0;position:relative}.t2WLSa_scroller{scrollbar-width:thin;scrollbar-color:var(--dsw-alias-border-l3) transparent;height:100%;overflow:auto hidden}.t2WLSa_scroller::-webkit-scrollbar{height:8px}.t2WLSa_scroller::-webkit-scrollbar-track{background:0 0}.t2WLSa_scroller::-webkit-scrollbar-thumb{background:var(--dsw-alias-border-l2);border-radius:4px}.t2WLSa_content{position:relative}.t2WLSa_plannedBand{pointer-events:none;background:repeating-linear-gradient(45deg, transparent, transparent 6px, color-mix(in srgb, var(--dsw-alias-label-secondary) 10%, transparent) 6px, color-mix(in srgb, var(--dsw-alias-label-secondary) 10%, transparent) 8px);border-left:1px dashed var(--dsw-alias-border-l2);position:absolute;top:0;bottom:0}.t2WLSa_ruler{border-bottom:1px solid var(--dsw-alias-border-l2);position:relative}.t2WLSa_tick{position:absolute;top:0;bottom:0}.t2WLSa_tickLine{background:var(--dsw-alias-border-l2);width:1px;height:100%}.t2WLSa_tickLabel{color:var(--dsw-alias-label-tertiary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1;position:absolute;top:2px;left:4px}.t2WLSa_timecode{z-index:10;font-variant-numeric:tabular-nums;height:100%;color:var(--dsw-alias-brand-primary);align-items:center;padding-left:6px;padding-right:8px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1;display:flex;position:sticky;left:0}.t2WLSa_promptsLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_canAdd{cursor:copy}.t2WLSa_emptyCenter{justify-content:center;align-items:center;display:flex;position:absolute;inset:0}.t2WLSa_emptyHint{color:var(--dsw-alias-label-tertiary);font-size:10px}.t2WLSa_promptClip{touch-action:none;cursor:grab;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;position:absolute;top:4px;bottom:4px;overflow:hidden}.t2WLSa_promptClip:hover{border-color:var(--dsw-alias-border-l4)}.t2WLSa_clipSelected{z-index:30;border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);border-width:0}.t2WLSa_clipSelected:hover{border-color:var(--dsw-alias-brand-primary)}.t2WLSa_clipMoving{z-index:30;cursor:grabbing;border:1px solid var(--dsw-alias-brand-primary);box-shadow:0 20px 25px -5px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent), 0 8px 10px -6px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent), 0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 70%, transparent)}.t2WLSa_edgeL{z-index:30;touch-action:none;cursor:ew-resize;justify-content:center;align-items:center;width:12px;display:flex;position:absolute;top:0;bottom:0;left:0}.t2WLSa_edgeL:hover{background:var(--dsw-alias-interactive-bg-hover)}.t2WLSa_edgeDead{cursor:default;opacity:.35}.t2WLSa_edgeDead:hover{background:0 0}.t2WLSa_gripPill{background:color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);border-radius:9999px;width:3px;height:20px}.t2WLSa_promptClip:hover .t2WLSa_gripPill{background:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent)}.t2WLSa_seamDot{z-index:35;border-radius:9999px;width:8px;height:8px;position:absolute;top:0;left:0;transform:translate(-50%,-50%)}.t2WLSa_edgeR{z-index:30;touch-action:none;cursor:ew-resize;justify-content:center;align-items:center;width:12px;display:flex;position:absolute;top:16px;bottom:0;right:0}.t2WLSa_edgeR:hover{background:var(--dsw-alias-interactive-bg-hover)}.t2WLSa_edgeWide{width:16px}.t2WLSa_gripPillR{background:color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);border-radius:9999px;width:3px;height:20px}.t2WLSa_gripPillBright{background:color-mix(in srgb, var(--dsw-alias-label-primary) 45%, transparent)}.t2WLSa_promptClip:hover .t2WLSa_gripPillR{background:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent)}.t2WLSa_promptClip:hover .t2WLSa_gripPillBright{background:color-mix(in srgb, var(--dsw-alias-label-primary) 80%, transparent)}.t2WLSa_clipEditor{background:color-mix(in srgb, var(--dsw-alias-bg-base) 60%, transparent);height:24px;box-shadow:0 0 0 1px color-mix(in srgb, var(--dsw-alias-brand-primary) 50%, transparent);pointer-events:auto;border:none;border-radius:4px;align-items:center;padding:0 6px;display:inline-flex;position:absolute;top:50%;left:8px;right:8px;transform:translateY(-50%)}.t2WLSa_clipEditor input{width:100%;min-width:0;height:100%;color:var(--dsw-alias-label-primary);background:0 0;border:none;outline:none;flex:1;padding:0;font-size:11px;line-height:1.5}.t2WLSa_clipEditor input::placeholder{color:var(--dsw-alias-label-tertiary)}.t2WLSa_previewWrap{z-index:10;pointer-events:none;position:absolute;inset:0;overflow:hidden}.t2WLSa_previewVideo{object-fit:cover;opacity:.6;width:100%;height:100%;position:absolute;inset:0}.t2WLSa_scrim{background:linear-gradient(to top, color-mix(in srgb, var(--dsw-alias-bg-base) 85%, transparent), color-mix(in srgb, var(--dsw-alias-bg-base) 45%, transparent) 50%, color-mix(in srgb, var(--dsw-alias-bg-base) 10%, transparent));position:absolute;inset:0}.t2WLSa_clipTextCol{z-index:20;flex-direction:column;gap:2px;padding:0 12px 6px;display:flex;position:absolute;bottom:0;left:0;right:0}.t2WLSa_clipTextStack{z-index:10;pointer-events:none;flex-direction:column;justify-content:center;gap:2px;padding:0 12px;display:flex;position:absolute;inset:0}.t2WLSa_clipTitle{text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:500;overflow:hidden}.t2WLSa_clipEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.t2WLSa_clipDur{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:10px}.t2WLSa_knobDot{z-index:20;background:var(--dsw-alias-brand-primary);width:6px;height:6px;box-shadow:0 0 6px color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);pointer-events:none;border-radius:9999px;position:absolute;top:4px;right:6px}.t2WLSa_refAudioBadge{z-index:20;width:10px;height:10px;color:var(--dsw-alias-state-business-primary);pointer-events:none;position:absolute;top:12px;right:4px}.t2WLSa_refBadge{z-index:20;pointer-events:none;align-items:center;gap:1px;display:flex;position:absolute;top:22px;right:2px}.t2WLSa_refBadge svg{width:8px;height:8px;color:var(--dsw-alias-state-success-primary)}.t2WLSa_refCount{color:var(--dsw-alias-state-success-primary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:8px;line-height:1}.t2WLSa_promptDelete{z-index:40;background:var(--dsw-alias-state-error-primary);opacity:0;cursor:pointer;border:none;border-radius:9999px;justify-content:center;align-items:center;width:16px;height:16px;padding:0;display:inline-flex;position:absolute;top:4px;right:4px}.t2WLSa_promptDelete:hover{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary))}.t2WLSa_promptClip:hover .t2WLSa_promptDelete{opacity:1}.t2WLSa_promptDelete svg{width:8px;height:8px;color:var(--dsw-alias-label-primary)}.t2WLSa_beatsLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_beatsAdd{cursor:crosshair}.t2WLSa_beatsEmpty{align-items:center;padding-left:12px;display:flex;position:absolute;inset:0}.t2WLSa_hintLine{color:var(--dsw-alias-label-tertiary);font-size:10px}.t2WLSa_beatClip{border:1px solid var(--dsw-alias-border-l2);cursor:pointer;border-radius:6px;position:absolute;top:4px;bottom:4px;overflow:hidden}.t2WLSa_beatClip:hover{border-color:var(--dsw-alias-border-l4)}.t2WLSa_beatSelected{z-index:30;border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent)}.t2WLSa_beatSelected:hover{border-color:var(--dsw-alias-brand-primary)}.t2WLSa_beatLabel{color:var(--dsw-alias-label-secondary);pointer-events:none;align-items:center;padding:0 6px;font-size:10px;line-height:1.25;display:flex;position:absolute;inset:0}.t2WLSa_truncate{text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.t2WLSa_beatEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.t2WLSa_audioLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_audioClip{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);cursor:grab;touch-action:none;border-radius:2px;position:absolute;top:2px;bottom:2px;overflow:hidden}.t2WLSa_audioClip:active{cursor:grabbing}.t2WLSa_audioCard{border-radius:6px;top:3px;bottom:3px}.t2WLSa_audioCardIcon{pointer-events:none;display:flex;position:absolute;top:50%;left:5px;transform:translateY(-50%)}.t2WLSa_audioCardIcon svg{width:13px;height:13px}.t2WLSa_audioCard .t2WLSa_audioClipLabel{flex-direction:column;justify-content:center;align-items:flex-start;gap:1px;font-size:10px;display:flex;left:23px;right:4px}.t2WLSa_audioCard .t2WLSa_audioTime{margin-left:0}.t2WLSa_gainFill{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);pointer-events:none;position:absolute;bottom:0;left:0;right:0}.t2WLSa_audioClipLabel{text-overflow:ellipsis;white-space:nowrap;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-primary));pointer-events:none;align-items:center;padding:0 4px;font-size:9px;line-height:1;display:flex;position:absolute;inset:0;overflow:hidden}.t2WLSa_audioName{text-overflow:ellipsis;white-space:nowrap;font-weight:500;overflow:hidden}.t2WLSa_audioTime{font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 50%, var(--dsw-alias-label-tertiary));flex:none;margin-left:4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.t2WLSa_audioClipDelete{background:color-mix(in srgb, var(--dsw-alias-bg-base) 40%, transparent);width:14px;height:14px;color:var(--dsw-alias-label-tertiary);cursor:pointer;border:none;border-radius:0 0 0 4px;justify-content:center;align-items:center;padding:0;display:none;position:absolute;top:0;right:0}.t2WLSa_audioClipDelete:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.t2WLSa_audioClip:hover .t2WLSa_audioClipDelete{display:flex}.t2WLSa_audioClipDelete svg{width:8px;height:8px}.t2WLSa_audioSlice{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 15%, transparent);border-radius:2px;position:absolute;top:2px;bottom:2px;overflow:hidden}.t2WLSa_sliceLabel{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-secondary));pointer-events:none;justify-content:center;align-items:center;padding:0 4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:9px;display:flex;position:absolute;inset:0;overflow:hidden}.t2WLSa_audioDrop{border:1px dashed color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);pointer-events:none;border-radius:4px;justify-content:center;align-items:center;display:flex;position:absolute;inset:2px 4px}.t2WLSa_dropHint{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);padding:0 8px;font-size:9px;overflow:hidden}.t2WLSa_kfLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_kfLane:last-child{border-bottom:0}.t2WLSa_kfLane[data-kf-cards=true]{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 3%, transparent)}.t2WLSa_kfDropWell{border:1px dashed color-mix(in srgb, var(--dsw-alias-label-tertiary) 25%, transparent);pointer-events:none;border-radius:4px;justify-content:center;align-items:center;display:flex;position:absolute;inset:2px 4px}.t2WLSa_kfWrap{position:absolute;top:0;bottom:0}.t2WLSa_kfBtn{cursor:grab;background:0 0;border:none;justify-content:center;align-items:center;width:16px;height:16px;padding:0;display:flex;position:absolute;top:50%;left:0;transform:translate(-50%,-50%)}.t2WLSa_kfBtn:active{cursor:grabbing;transform:translate(-50%)}.t2WLSa_kfDiamond{width:10px;height:10px;box-shadow:0 0 0 1px var(--dsw-alias-border-l4);border:1px solid;display:block;transform:rotate(45deg)}.t2WLSa_kfMoving{transform:rotate(45deg)scale(1.25)}.t2WLSa_kfDelete{z-index:10;background:var(--dsw-alias-state-error-primary);opacity:0;cursor:pointer;border:none;border-radius:9999px;justify-content:center;align-items:center;width:14px;height:14px;padding:0;display:inline-flex;position:absolute;top:0;left:6px}.t2WLSa_kfDelete:hover{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary))}.t2WLSa_kfWrap:hover .t2WLSa_kfDelete{opacity:1}.t2WLSa_kfDelete svg{width:8px;height:8px;color:var(--dsw-alias-label-primary)}.t2WLSa_playhead{z-index:40;pointer-events:auto;position:absolute;top:0;bottom:0}.t2WLSa_playheadCap{border:1px solid var(--dsw-alias-border-l4);pointer-events:auto;cursor:grab;touch-action:none;border-radius:9999px;width:8px;height:8px;position:absolute;top:0;left:50%;transform:translate(-50%)}.t2WLSa_playheadCap:active{cursor:grabbing}.t2WLSa_playheadCap:before{content:\"\";border-radius:9999px;position:absolute;inset:-5px}.t2WLSa_miniBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);width:20px;height:20px;color:var(--dsw-alias-brand-primary);cursor:pointer;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0;font-size:13px;line-height:1;display:inline-flex}.t2WLSa_miniBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent)}.t2WLSa_miniFitBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);height:20px;color:var(--dsw-alias-brand-primary);cursor:pointer;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0 6px;font-size:10px;font-weight:600;display:inline-flex}.t2WLSa_miniFitBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent)}.t2WLSa_scrubBar{align-items:center;gap:8px;width:100%;display:flex}.t2WLSa_scrubToggle{cursor:pointer;background:0 0;border:none;flex:none;padding:4px 2px;font-size:11px;line-height:1}.t2WLSa_scrubTrack{cursor:pointer;touch-action:none;flex:1;min-width:0;height:18px;position:relative}.t2WLSa_scrubFill{background:var(--dsw-alias-interactive-bg-active);border-radius:2px;height:4px;position:absolute;top:7px;left:0}.t2WLSa_scrubHead{background:var(--dsw-alias-label-primary);border-radius:1px;width:2px;height:10px;margin-left:-1px;position:absolute;top:4px}.t2WLSa_scrubReadout{color:var(--dsw-alias-label-secondary);white-space:nowrap;flex:none;font-size:11px}.t2WLSa_commissionHead{align-items:center;gap:6px;padding:0 8px;display:flex;overflow:hidden}.t2WLSa_commissionKind{letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;text-overflow:ellipsis;font-size:10px;font-weight:600;overflow:hidden}.t2WLSa_commissionLane{width:100%;position:relative}.t2WLSa_commissionSpan{border-left:3px solid var(--dsw-alias-brand-primary);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 12%, transparent);border-radius:4px;align-items:center;gap:4px;padding:0 6px;display:flex;position:absolute;top:3px;bottom:3px;left:0;overflow:hidden}.t2WLSa_commissionWindows .t2WLSa_commissionSegment{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 14%, transparent);border-radius:3px;flex:1 1 0;min-width:0;padding:1px 4px}.t2WLSa_commissionSpanBody{padding:0;display:block}.t2WLSa_commissionSegmentPos{border-left:2px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 55%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 14%, transparent);z-index:1;border-radius:3px;align-items:center;padding:1px 4px;display:flex;position:absolute;top:3px;bottom:3px}.t2WLSa_commissionSegmentPos[data-commission-planned=true]{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 7%, transparent);border-left-style:dashed}.t2WLSa_commissionSegment{color:var(--dsw-alias-label-secondary);white-space:nowrap;text-overflow:ellipsis;font-variant-numeric:tabular-nums;font-size:10px;line-height:1.5;overflow:hidden}";
+		const tagId = "@melite/video-h3-timeline/timeline.module.css@3883872";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/video-h3-timeline";
@@ -1789,7 +1793,9 @@ window.__ModuleLoader__.load({
 			"commissionKind": "t2WLSa_commissionKind",
 			"commissionLane": "t2WLSa_commissionLane",
 			"commissionSegment": "t2WLSa_commissionSegment",
+			"commissionSegmentPos": "t2WLSa_commissionSegmentPos",
 			"commissionSpan": "t2WLSa_commissionSpan",
+			"commissionSpanBody": "t2WLSa_commissionSpanBody",
 			"commissionWindows": "t2WLSa_commissionWindows",
 			"content": "t2WLSa_content",
 			"contentWrap": "t2WLSa_contentWrap",
@@ -1820,6 +1826,7 @@ window.__ModuleLoader__.load({
 			"laneHeadShell": "t2WLSa_laneHeadShell",
 			"miniBtn": "t2WLSa_miniBtn",
 			"miniFitBtn": "t2WLSa_miniFitBtn",
+			"plannedBand": "t2WLSa_plannedBand",
 			"playhead": "t2WLSa_playhead",
 			"playheadCap": "t2WLSa_playheadCap",
 			"previewVideo": "t2WLSa_previewVideo",
@@ -2017,28 +2024,40 @@ window.__ModuleLoader__.load({
 		*  commission covers, drawn in bar space.
 		*  @param props.row the commission
 		*  @param props.frameToPx the bar's own frame→pixel scale
-		*  @param props.totalFrames the doc's length (the single-span width)
+		*  @param props.totalFrames the doc's length (the single-span width,
+		*  and the planned-tail boundary for positioned segments)
 		*/
 		function CommissionLane(props) {
 			const { row, frameToPx, totalFrames } = props;
 			const segments = row.segments !== void 0 && row.segments.length > 0 ? row.segments : [row.detail ?? row.label];
 			const width = Math.max(2, frameToPx(totalFrames) - frameToPx(0));
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+			const spans = row.segmentSpans;
+			const positioned = spans !== void 0 && spans.length === segments.length;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: timeline_module_css_default.commissionLane,
 				"data-commission-lane": row.id,
 				style: { height: 30 },
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-					className: clsx(timeline_module_css_default.commissionSpan, segments.length > 1 && timeline_module_css_default.commissionWindows),
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+					className: clsx(timeline_module_css_default.commissionSpan, segments.length > 1 && timeline_module_css_default.commissionWindows, positioned && timeline_module_css_default.commissionSpanBody),
 					style: {
 						width,
 						...row.accent ? { borderLeftColor: row.accent } : {}
 					},
-					children: segments.map((segment, i) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+					children: positioned ? null : segments.map((segment, i) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 						className: timeline_module_css_default.commissionSegment,
 						"data-commission-segment": `${row.id}-${String(i)}`,
 						children: segment
 					}, `${row.id}-${String(i)}`))
-				})
+				}), positioned ? spans.map((sp, i) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+					className: clsx(timeline_module_css_default.commissionSegment, timeline_module_css_default.commissionSegmentPos),
+					"data-commission-segment": `${row.id}-${String(i)}`,
+					"data-commission-planned": sp.start >= totalFrames ? "true" : void 0,
+					style: {
+						left: frameToPx(sp.start),
+						width: Math.max(2, frameToPx(sp.start + sp.frames) - frameToPx(sp.start))
+					},
+					children: segments[i]
+				}, `${row.id}-pos-${String(i)}`)) : null]
 			});
 		}
 		//#endregion
@@ -2934,17 +2953,19 @@ window.__ModuleLoader__.load({
 		const PLAYHEAD = "var(--dsw-alias-brand-primary)";
 		/** Unified background for the timeline bar and its sticky timecode chip. */
 		const BAR_BG = "var(--dsw-alias-bg-layer-1)";
-		function MotionTimelineBar({ prompts, keyframes, frameIdx, onFrameChange, onScrubStart, onScrubEnd, totalFrames, fps, initialSeconds, onKeyframeAdd, onKeyframeMove, onKeyframeDelete, onPromptUpdate, onPromptMove, onPromptResize, onPromptDelete, onExtend, tracks = MOTION_TIMELINE_TRACKS, promptsLabel = timelineCopy.lanePrompts, laneHint = timelineCopy.laneHintDefault, packed = false, emptyPromptsHint = timelineCopy.emptyPromptsHint, promptsHeight = 36, beats, beatsLabel = timelineCopy.laneBeats, beatsHeight = 26, beatsHint = timelineCopy.beatsHintDefault, onBeatAdd, onPromptAdd, previews, selectedId = null, onSelect, audioLayers, onAudioDrop, onAudioDropAt, onAudioFileDrop, onAudioClipMove, onAudioClipDelete, onAudioLaneActivate, onAudioDetach, onTrackAdd, audioClipCards = false, kfLaneCards = false, commissions, className, style, theme }) {
+		function MotionTimelineBar({ prompts, keyframes, frameIdx, onFrameChange, onScrubStart, onScrubEnd, totalFrames, fps, initialSeconds, onKeyframeAdd, onKeyframeMove, onKeyframeDelete, onPromptUpdate, onPromptMove, onPromptResize, onPromptDelete, onExtend, tracks = MOTION_TIMELINE_TRACKS, promptsLabel = timelineCopy.lanePrompts, laneHint = timelineCopy.laneHintDefault, packed = false, emptyPromptsHint = timelineCopy.emptyPromptsHint, promptsHeight = 36, beats, beatsLabel = timelineCopy.laneBeats, beatsHeight = 26, beatsHint = timelineCopy.beatsHintDefault, onBeatAdd, onPromptAdd, previews, selectedId = null, onSelect, audioLayers, onAudioDrop, onAudioDropAt, onAudioFileDrop, onAudioClipMove, onAudioClipDelete, onAudioLaneActivate, onAudioDetach, onTrackAdd, audioClipCards = false, kfLaneCards = false, commissions, plannedFrames, className, style, theme }) {
 			const barBg = theme?.barBg ?? BAR_BG;
 			const playhead = theme?.playhead ?? PLAYHEAD;
 			const scrollRef = (0, react.useRef)(null);
+			const axisFrames = totalFrames + Math.max(0, plannedFrames ?? 0);
 			const scale = useTimelineScale({
 				scrollRef,
 				frameIdx,
-				totalFrames,
+				totalFrames: axisFrames,
 				fps,
 				initialSeconds
 			});
+			const frameChange = plannedFrames !== void 0 && plannedFrames > 0 ? (f) => onFrameChange(Math.min(f, totalFrames)) : onFrameChange;
 			const drag = useTimelineDragSession({
 				T1: scale.T1,
 				effPpf: scale.effPpf,
@@ -2958,7 +2979,7 @@ window.__ModuleLoader__.load({
 				packed,
 				xToFrame: scale.xToFrame,
 				keepTailVisible: scale.keepTailVisible,
-				onFrameChange,
+				onFrameChange: frameChange,
 				onScrubStart,
 				onScrubEnd,
 				onSelect,
@@ -2968,7 +2989,7 @@ window.__ModuleLoader__.load({
 				onExtend,
 				onAudioClipMove
 			});
-			const { ticks, stepSec } = buildTicks(scale.contentW, scale.effPpf, totalFrames, fps);
+			const { ticks, stepSec } = buildTicks(scale.contentW, scale.effPpf, axisFrames, fps);
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				"data-testid": "motion-timeline-bar",
 				className: clsx(timeline_module_css_default.root, className),
@@ -2998,6 +3019,15 @@ window.__ModuleLoader__.load({
 					suppressClickRef: drag.suppressClickRef,
 					onSelect,
 					children: [
+						plannedFrames !== void 0 && plannedFrames > 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+							"data-planned-band": "",
+							className: timeline_module_css_default.plannedBand,
+							style: {
+								left: scale.frameToPx(totalFrames),
+								width: Math.max(0, scale.contentW - scale.frameToPx(totalFrames))
+							},
+							"aria-hidden": "true"
+						}) : null,
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(TimelineRuler, {
 							ticks,
 							stepSec,
@@ -3168,77 +3198,6 @@ window.__ModuleLoader__.load({
 			});
 		});
 		(0, react.createContext)({ useGui: (selector) => selector({ theme: { dark_mode: true } }) });
-		//#endregion
-		//#region ../../web-kit/contracts/src/familyLane.ts
-		/** A key is present for the family derivation when it states
-		*  something: null/undefined/blank/empty-array are absence. The
-		*  presence grammar every family judge shares — the derivation,
-		*  the drop math, and the client mirror's refusal clause read the
-		*  same seats the same way (a private spelling elsewhere is a
-		*  split family waiting to burn).
-		*  @param v the stated value
-		*  @returns true when the value states something */
-		function familyKeyPresent(v) {
-			if (v === null || v === void 0) return false;
-			if (typeof v === "string") return v.trim() !== "";
-			if (Array.isArray(v)) return v.length > 0;
-			return true;
-		}
-		/** Derive the doc's family lane, generic over the declared law data
-		*  (the DECL's own law, pinned to the family's derivation module by
-		*  the contract wall): lanes in declared order, first match wins —
-		*  minCalls against the calls length, guideKeys at the doc level,
-		*  callGuideKeys inside each calls row; a lane with no qualifiers is
-		*  the fallthrough. No match = the last declared lane.
-		*  @param law the family's declared lane law.
-		*  @param doc the doc-shaped params (calls/keyframes/ref surface).
-		*  @returns the derived lane id ('' only for an empty law — a shape
-		*    the declaration judge refuses at boot). */
-		function deriveFamilyLane(law, doc) {
-			const calls = Array.isArray(doc["calls"]) ? doc["calls"] : [];
-			for (const lane of law.lanes) {
-				if (lane.minCalls === void 0 && lane.guideKeys === void 0 && lane.callGuideKeys === void 0) return lane.lane;
-				if (lane.minCalls !== void 0 && calls.length >= lane.minCalls) return lane.lane;
-				if (lane.guideKeys?.some((k) => familyKeyPresent(doc[k]))) return lane.lane;
-				if (lane.callGuideKeys?.some((k) => calls.some((c) => familyKeyPresent(c?.[k])))) return lane.lane;
-			}
-			return law.lanes[law.lanes.length - 1]?.lane ?? "";
-		}
-		/** THE RESEAT DROP (the one seat's math — h3's reseatFamilyDead
-		*  spine, generalized over the declaration): when the MERGED doc's
-		*  derived lane refuses keys the law names dead, every dead key the
-		*  doc states that the PRIOR row also stated is stale carry the
-		*  family flip stranded — it drops before the judges and the store,
-		*  so the row that lands is the row the next run composes. THE
-		*  CARRY LINE (2026-11-11): a dead key the merged doc holds only
-		*  because THIS write states it is authored, stands untouched, and
-		*  the write door's family judge refuses it in the run door's own
-		*  voice — the drop is never a launderer. A doc whose lane honors
-		*  every stated key rides unchanged (dropped: []).
-		*  @param law the family's declared lane law.
-		*  @param doc the MERGED params view the write door would judge.
-		*  @param prior the stored row's params BEFORE the merge.
-		*  @returns the cleaned view (a NEW record when keys dropped; the
-		*    input reference otherwise) + the dropped key names. */
-		function reseatDeadKeys(law, doc, prior) {
-			const lane = deriveFamilyLane(law, doc);
-			const dead = law.deadKeys[lane];
-			if (dead === void 0 || dead.length === 0) return {
-				params: doc,
-				dropped: []
-			};
-			const dropped = dead.filter((k) => Object.prototype.hasOwnProperty.call(doc, k) && Object.prototype.hasOwnProperty.call(prior, k)).sort();
-			if (dropped.length === 0) return {
-				params: doc,
-				dropped: []
-			};
-			const reseated = { ...doc };
-			for (const k of dropped) delete reseated[k];
-			return {
-				params: reseated,
-				dropped
-			};
-		}
 		//#endregion
 		//#region ../../../@deepseek-ai/dsh-util-values/lib/index.js
 		function isWhitespace(c) {
@@ -4536,6 +4495,224 @@ window.__ModuleLoader__.load({
 			return out;
 		}
 		//#endregion
+		//#region src/ui/studio/commissions.ts
+		/**
+		* commissions.ts — THE STUDIO'S MOD PROJECTION (§9 of the multiwindow
+		* unification audit, 2026-11-12).
+		*
+		* THE BURN it answers (operator, live lane: "the UI that displays the
+		* timeline and all the separate clips isn't updating. It looks
+		* default, despite the AI agent using the card to string together
+		* multiple clips with a mod"): the doc carried the commission, the
+		* compose honored it, and the lane rendered as if nothing was armed —
+		* the journey's UI hop was unwalled.
+		*
+		* THE LAW: a mod bag is ARMED when it is a non-empty ARRAY — the
+		* card's own predicate (`Array.isArray && length > 0`); an absent bag
+		* or an explicit empty array is the unused arm (the film composes and
+		* renders byte-identically). This module derives what an armed bag
+		* COMMISSIONS — kind, the seats its entry names, and, for the extend,
+		* the window composition it will build — for the rail to draw. A
+		* present NON-array or a non-object entry is armed-and-doomed at the
+		* run door, so it draws a refusal row instead of a clean lane (the
+		* burn class inverted: a doc that will refuse must never look fine).
+		* It READS; it never writes, never defaults a seat, and never invents
+		* a commission the doc does not carry.
+		*
+		* WHY A DERIVATION AND NOT A MIRROR: the bags live outside `LayerA`
+		* and outside the studio's three write channels (calls, keyframes,
+		* layerA). They are the agent's commissions, preserved across
+		* open→save by the bench's merge-patch — so the rail projects the
+		* durable row and holds no state of its own.
+		*/
+		/** Every mod bag the rail projects, in the card's own declaration
+		*  order. The LoRAs joined on 2026-10-30 (F29): the bag reached the
+		*  graph but no rail row existed, so the operator could not see the
+		*  adapters at all — a bag the compose honors must have a row.
+		*  refine + upscale joined on 2026-10-31 (audit
+		*  2026-10-31-modpress-row-face): five of seven declared kinds had
+		*  no row, so a refine/upscale-only row drew an EMPTY rail — its
+		*  whole authored truth invisible beside the starter lie. */
+		const COMMISSION_KINDS = [
+			"replace",
+			"repair",
+			"extend",
+			"refine",
+			"upscale",
+			"reshoot",
+			"loras"
+		];
+		/** One positioned window's placement in bar space (the frame-offset
+		*  segments' tenant data, 2026-11-03): window k of a uniform
+		*  composition starts k*(windowFrames − overlap) frames past the
+		*  composition's own start — the overlap is the carry seam, the same
+		*  constant the solver composed with (one spelling, the contract's
+		*  own default).
+		*  @param geometry the composition the door will build
+		*  @param startAt the composition's first frame in bar space (the
+		*  film's end for an extend — the extension appends)
+		*  @returns one span per window, film order */
+		function windowSpans(geometry, startAt) {
+			const stride = geometry.windowFrames - 39;
+			return Array.from({ length: geometry.windows }, (_v, k) => ({
+				start: startAt + k * stride,
+				frames: geometry.windowFrames
+			}));
+		}
+		/** The frames-per-second the composition's seconds readout divides by
+		*  (the film clock — the solver's own divisor). */
+		const FILM_FPS = 24;
+		/** Read one NON-EMPTY bag's single entry. The ARM predicate is the
+		*  card's own (non-empty array, whatever the entry's shape); this
+		*  helper only types an object entry, so a non-object entry stays
+		*  armed and the caller marks it `bad-entry`.
+		* @param bag the armed bag (the caller has already proven array + non-empty)
+		* @returns the first entry when it is an object, else undefined */
+		function bagEntry(bag) {
+			const entry = bag[0];
+			return typeof entry === "object" && entry !== null && !Array.isArray(entry) ? entry : void 0;
+		}
+		/** The seats an entry states, in the entry's own key order: strings
+		*  verbatim, finite numbers stringified, booleans only when true
+		*  (an unstated dial and a stated-false dial compose identically, so
+		*  only the stated positive is news to the operator). Nested objects
+		*  are skipped — a commission's seats are scalar by the bag law.
+		* @param entry the bag's first entry
+		* @returns the named seats */
+		function seatsOf(entry) {
+			const out = [];
+			for (const [key, value] of Object.entries(entry)) if (typeof value === "string") {
+				const trimmed = value.trim();
+				if (trimmed !== "") out.push({
+					key,
+					value: trimmed
+				});
+			} else if (typeof value === "number" && Number.isFinite(value)) out.push({
+				key,
+				value: String(value)
+			});
+			else if (value === true) out.push({
+				key,
+				value: "true"
+			});
+			return out;
+		}
+		/** THE COMPOSITION PROJECTION (extend only): the same solver the
+		*  compose door runs, so the rail draws the windows the run will
+		*  actually build. A stated extension the solver refuses is NOT
+		*  silently hidden — the rail shows the refusal as the commission's
+		*  own note, so the operator sees the armed-and-doomed doc before
+		*  pressing Run rather than a lane that looks fine.
+		* @param entry the extend bag's first entry
+		* @returns the composition, or the refusal's voice */
+		function geometryOf(entry) {
+			const seconds = entry.extend_seconds;
+			if (typeof seconds !== "number" || !Number.isFinite(seconds)) return {};
+			const frames = Math.round(seconds * FILM_FPS);
+			if (frames <= 0) return {};
+			try {
+				if (frames <= 362) return { geometry: {
+					windows: 1,
+					windowFrames: assertGridLength(frames, "h3-timeline extend"),
+					deliveredFrames: frames
+				} };
+				return { geometry: solveWindowComposition(frames, "h3-timeline extend") };
+			} catch (err) {
+				return { refusal: err instanceof Error ? err.message : String(err) };
+			}
+		}
+		/** Derive the doc's armed commissions, in the card's bag order.
+		*  Disarmed bags contribute nothing — the rail's empty state is the
+		*  honest "no commission" lane, never a placeholder row.
+		* @param params the durable bench row (the doc's own params)
+		* @returns one row per armed mod bag */
+		function deriveCommissions(params) {
+			const out = [];
+			for (const kind of COMMISSION_KINDS) {
+				const bag = params?.[kind];
+				if (bag === void 0) continue;
+				if (!Array.isArray(bag)) {
+					out.push({
+						kind,
+						seats: [],
+						note: "malformed"
+					});
+					continue;
+				}
+				if (bag.length === 0) continue;
+				if (kind === "loras" || kind === "refine") {
+					for (const row of bag) {
+						const stacked = bagEntry([row]);
+						out.push(stacked === void 0 ? {
+							kind,
+							seats: [],
+							note: "bad-entry"
+						} : {
+							kind,
+							seats: seatsOf(stacked)
+						});
+					}
+					continue;
+				}
+				const entry = bagEntry(bag);
+				if (entry === void 0) {
+					out.push({
+						kind,
+						seats: [],
+						note: "bad-entry"
+					});
+					continue;
+				}
+				const commission = {
+					kind,
+					seats: seatsOf(entry)
+				};
+				if (kind === "extend") {
+					const { geometry, refusal } = geometryOf(entry);
+					if (geometry !== void 0) commission.geometry = geometry;
+					if (refusal !== void 0) commission.refusal = refusal;
+				}
+				out.push(commission);
+			}
+			return out;
+		}
+		/** THE CALLS-READING KINDS (the mod-mode calls report, operator
+		*  2026-11-14): the kinds whose film action READS the calls text —
+		*  reshoot and loras ride the film action (reshoot's prompt is
+		*  `"crossview. " + <call text>`), so the calls lane IS their run's
+		*  prompt seat. Every other kind (replace, repair, extend, refine,
+		*  upscale) composes from the bag entry alone and never reads a
+		*  call's text — under those arms the calls lane is dormant. */
+		const CALLS_READING_KINDS = ["reshoot", "loras"];
+		/** Derive the calls lane's face from the armed commissions. A reader
+		*  wins over any non-reader armed beside it (the run reads calls if
+		*  ANY armed action does); with no reader armed the lane is dormant
+		*  under the FIRST armed row's kind (the commission the hint names).
+		* @param commissions the derived armed rows (deriveCommissions)
+		* @returns the lane's face */
+		function callsLaneFace(commissions) {
+			if (commissions.length === 0) return { face: "plain" };
+			const reader = commissions.find((c) => CALLS_READING_KINDS.includes(c.kind));
+			if (reader !== void 0) return {
+				face: "prompt",
+				kind: reader.kind
+			};
+			return {
+				face: "dormant",
+				kind: commissions[0].kind
+			};
+		}
+		/** Whether a call's text is the studio's own starter placeholder
+		*  verbatim (trimmed) — the one text the dormant face stands down:
+		*  the placeholder is VIEW state inviting prose, never operator
+		*  content, so under a non-reading arm painting it is the exact
+		*  "describe their video … when that isn't used at all" lie.
+		* @param text the call's text
+		* @returns true only for the verbatim starter placeholder */
+		function isStarterCallText(text) {
+			return text.trim() === STARTER_CALLS[0].text;
+		}
+		//#endregion
 		//#region src/ui/studio/docGrid.ts
 		/**
 		* docGrid.ts — THE AUTHORING GRID (studio side, 2026-09-25).
@@ -4831,18 +5008,26 @@ window.__ModuleLoader__.load({
 			const openTrackAdd = (_trackUuid, anchor) => {
 				kfAddSquare(kfAddField)?.verbs.onPick?.(anchor);
 			};
+			const seenKinds = /* @__PURE__ */ new Map();
+			const plannedFrames = commissions.find((c) => c.geometry !== void 0)?.geometry?.deliveredFrames;
 			const commissionRows = commissions.map((c) => {
+				const nth = seenKinds.get(c.kind) ?? 0;
+				seenKinds.set(c.kind, nth + 1);
 				const detail = studioCopy.commissionSeats(c.seats);
 				const segments = c.geometry !== void 0 ? Array.from({ length: c.geometry.windows }, (_v, i) => studioCopy.commissionWindowSegment(i, c.geometry.windowFrames)) : void 0;
+				const segmentSpans = c.geometry !== void 0 ? windowSpans(c.geometry, barTotal) : void 0;
 				const geometryLine = c.geometry !== void 0 ? studioCopy.commissionGeometry(c.geometry) : void 0;
 				return {
-					id: c.kind,
+					id: nth === 0 ? c.kind : `${c.kind}-${nth + 1}`,
 					label: studioCopy.commissionKindLabel(c.kind),
 					detail: [detail, geometryLine].filter((x) => x !== void 0 && x !== "").join(studioCopy.commissionDetailJoin),
 					segments,
+					segmentSpans,
 					title: c.refusal ?? (c.note === "malformed" ? studioCopy.commissionMalformed(c.kind) : c.note === "bad-entry" ? studioCopy.commissionBadEntry(c.kind) : studioCopy.commissionRowTitle(c.kind))
 				};
 			});
+			const callsFace = callsLaneFace(commissions);
+			const shownPrompts = callsFace.face === "dormant" ? barPrompts.filter((_p, i) => !(calls[i] !== void 0 && isStarterCallText(calls[i].text ?? ""))) : barPrompts;
 			const kfChips = barLanes.map((k, i) => {
 				const docFrame = keyframes[i]?.frame;
 				const verdict = typeof docFrame === "number" ? pinDropVerdict(calls, docFrame) : null;
@@ -4897,10 +5082,11 @@ window.__ModuleLoader__.load({
 						children: kfErr
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(MotionTimelineBar, {
-						prompts: barPrompts,
+						prompts: shownPrompts,
 						keyframes: kfChips,
 						frameIdx,
 						totalFrames: barTotal,
+						plannedFrames,
 						fps: barFps,
 						initialSeconds: 10,
 						onFrameChange: handleBarFrame,
@@ -4916,12 +5102,12 @@ window.__ModuleLoader__.load({
 						onExtend: (newTotal) => handleExtend(docFromFilm(newTotal)),
 						tracks: VIDEO_TIMELINE_TRACKS.map((t) => ({ ...t })),
 						packed: true,
-						promptsLabel: studioCopy.callsLabel,
+						promptsLabel: callsFace.face === "dormant" ? studioCopy.callsDormantLabel(callsFace.kind) : callsFace.face === "prompt" ? studioCopy.callsPromptSeatLabel(callsFace.kind) : studioCopy.callsLabel,
 						commissions: commissionRows,
 						laneHint: studioCopy.keyframeLaneHint,
-						emptyPromptsHint: studioCopy.stripEmptyPromptsHint,
+						emptyPromptsHint: callsFace.face === "dormant" ? studioCopy.callsDormantHint(callsFace.kind) : callsFace.face === "prompt" ? studioCopy.callsPromptSeatHint(callsFace.kind) : studioCopy.stripEmptyPromptsHint,
 						promptsHeight: 64,
-						onPromptAdd: (frame) => addCallAt(docFromFilm(frame)),
+						onPromptAdd: callsFace.face === "dormant" ? void 0 : (frame) => addCallAt(docFromFilm(frame)),
 						previews: callPreviews,
 						selectedId: selectedBarId,
 						onSelect: handleTimelineSelect,
@@ -5034,108 +5220,43 @@ window.__ModuleLoader__.load({
 			for (const k of Object.keys(user)) if (user[k] !== void 0) stated[k] = user[k];
 			return (0, _melite_card_base_client.composeCandidateDoc)(held, stated, frame);
 		}
-		/** THE FAMILY CLAUSE (journey-closure B5 — hop 3's first judge, the
-		*  pick gate's arm of the walk): the candidate doc is judged through
-		*  the SAME clause the run door's walk enforces — deriveWindowFamily
-		*  over the candidate, and on a derived-t4r doc every STATED
-		*  T4_ONLY key refuses with the walk's own voice. ONE OWNER (the
-		*  mirror discipline's ruling, recorded for the journey audit): the
-		*  clause lives HERE, not in card-base's composeValidate, because
-		*  the clause must ride the REAL walk — @melite/models-h3/
-		*  timelineContract — and card-base's mirror seam is @melite/
-		*  contracts (the floor's shared judges, laneRelations); the h3
-		*  family walk is the DECL's own law, not a floor law, so the
-		*  generic gate would need either a web→models dependency (a
-		*  layering inversion) or a second spelling of the walk in the
-		*  floor (the two-vocabulary disease). This package already rides
-		*  the contract everywhere the family is judged (docHydrate's B1
-		*  emit law, RunRecipeEngine's rail gate, the reseat heal) — the
-		*  pick gate joins them on the same import, and the bench door's
-		*  admitFamily face (card.ts) rides the same contract, so pick
-		*  gate, patch door and walk cannot spell two truths.
-		*
-		*  THE SIBLING OWNERS (what this judge is NOT): B1's emit law
-		*  (docHydrate.ts serializeLayerA) owns the SAVE — on a derived-t4r
-		*  doc it omits every T4_ONLY member and rides a base-carried
-		*  stamp's delete-null once; the walk owns the RUN. This judge owns
-		*  the PICK VERDICT — the composition truth (held row under shown
-		*  state under the pick), the doc the door would judge. A
-		*  base-carried stamp the state still holds rides every seat of
-		*  that composition (the serializer states nothing about it — B1's
-		*  one-owner-per-key law), so a refusal here is exactly the run
-		*  door's verdict, one hop earlier; the emit law's omission of a
-		*  state-stated key is the save's own gesture and never re-lands a
-		*  value the walk would see. A null-valued key does not refuse: the
-		*  null is the wire's delete spelling (composeCandidateDoc drops a
-		*  frame null; the bench's merge-patch deletes it) — the run never
-		*  composes it.
-		*
-		*  @param doc the pick verdict's candidate doc
-		*  @returns the door's own refusal voice, or null when the candidate
-		*  composes on its derived lane */
-		function pickFamilyRefusal(doc) {
-			if (deriveWindowFamily(doc) !== "t4r") return null;
-			const stated = Object.keys(doc).filter((k) => T4_ONLY_KEYS.includes(k) && doc[k] !== null).sort();
-			if (stated.length === 0) return null;
-			return "card 'h3-timeline' refused params: h3_window(t4r): unsanctioned inject keys: " + stated.join(", ");
-		}
 		//#endregion
-		//#region src/ui/studio/omitT4Recipe.ts
+		//#region src/ui/studio/omitLaneRecipe.ts
 		/**
-		* THE ROW GATE (2026-10-16, the Final Cut brick — audit 0be61df8
-		* F1): the field gate stops serving the t4r-dead KNOBS, but the
-		* recipe PILLS need their own judge — h3's Final Cut row stamps
-		* sr_switch, a one-call guided doc derives t4r, and the walk refuses
-		* the stamp ('unsanctioned inject keys: sr_switch'): the pick would
-		* land, and every later run would brick. Judged on the ROW'S OWN
-		* stamp (never a hand id list): a recipe whose pick stamp intersects
-		* the family-dead keys is not offered on that lane. The lane
-		* condition (t4r) stays at the caller — this is the row judgment
-		* only, so the contract wall can drive the served spec + the DECL's
-		* own rows through it (the J4 negative control).
+		* THE FILM-ONLY ROW GATE (2026-11-15, the lane-law retirement's
+		* residue; originally the row half of the Final-Cut brick cure,
+		* 2026-10-16, audit 0be61df8 F1). The t4r half of that cure is dead:
+		* the t4r arm now mounts the post chain, so a Final Cut stamp
+		* (sr_switch / second_pass_enabled / upscale_route) lands and fires
+		* on a keyframe doc. What survives is the FILM shape's own knob:
+		* duck_depth_db is read only inside the multi-window film boundary
+		* (computeFilmMix), so a single-window doc whose row stamps it would
+		* carry a knob the run never reads — the walk refuses it at the run
+		* door, and this row judge withholds the pill one hop earlier.
+		* Judged on the row's OWN stamp (never a hand id list), one spelling
+		* with the walk's FILM_ONLY gate.
 		*
 		* @param spec the served form spec (the same doc the pick composes
 		*   against at the compose gate); `null` never omits — the caller's
 		*   spec-null render hands the gate to CardForm only when spec'd.
 		* @param row the recipe row (a FormVariantRow from the DECL).
-		* @returns true when the row's stamp intersects T4_ONLY ∪ FILM_ONLY
-		*   (the film-only keys are legal on a chain, so only the t4r lane
-		*   consults this gate — a t4r doc cannot honor either set).
+		* @returns true when the row's stamp intersects FILM_ONLY_KEYS.
 		*/
-		function omitT4RecipeRow(spec, row) {
+		function omitFilmRecipeRow(spec, row) {
 			if (spec === null) return false;
 			const stamp = (0, _melite_card_base_client.axisPickPatch)(spec, row, {});
-			return Object.keys(stamp).some((k) => T4_ONLY_KEYS.includes(k) || FILM_ONLY_KEYS.includes(k));
+			return Object.keys(stamp).some((k) => FILM_ONLY_KEYS.includes(k));
 		}
-		/**
-		* THE GATE-DEAD OMIT (the ERROR h cure, 2026-11-08): a field whose
-		* own visibility gate NAMES a family-dead key is never served on the
-		* lane that refuses that key — its presence gate is a key the lane
-		* cannot honor, so the face would render (or hide) on STATED state
-		* nobody can see or unset once the master row omits: the operator's
-		* burn ("the second-pass option DISAPPEARS from the UI randomly").
-		* The refine_* quartet rides visible_when `second_pass_enabled`
-		* (T4_ONLY) while surviving the name filter — the orphan face. One
-		* rule, every gate-dead member: presence is a pure function of the
-		* LANE, never of invisible state.
+		/** THE FIELDS the single-window lanes must not serve (one spelling
+		*  with the walk's FILM_ONLY gate): `duck_depth_db` is read only
+		*  inside the multi-window film boundary, so a t4r or t4_open rail
+		*  omits it; the walk refuses it loud if a doc states it anyway.
 		*
-		* The key extractor reads the visibility grammar's left-hand sides
-		* only ("key=value" guards, &-ANDed, one guard's value may be a
-		* |-set — the read-only half of fieldVisible's interpreter; this
-		* judgment never re-implements the guard SEMANTICS, it only asks
-		* WHICH keys the gate names).
-		*
-		* @param spec the served form spec (the fields' visible_when is the
-		*   declaration's own grammar); `null` never omits (the spec-null
-		*   render never hands the gate out).
 		* @param name the field name the omit predicate is judging.
-		* @returns true when the field's visible_when names any T4_ONLY key.
+		* @returns true when the field is film-only.
 		*/
-		function omitT4GateDead(spec, name) {
-			if (spec === null) return false;
-			const field = (0, _melite_card_base_client.fieldsOf)(spec).find((f) => f.name === name);
-			if (field === void 0 || field.visible_when === void 0 || field.visible_when === "") return false;
-			return field.visible_when.split("&").map((guard) => guard.trim().split(/[=<>!]/)[0] ?? "").some((k) => T4_ONLY_KEYS.includes(k));
+		function omitFilmOnlyField(name) {
+			return FILM_ONLY_KEYS.includes(name);
 		}
 		//#endregion
 		//#region src/ui/studio/RunRecipeEngine.tsx
@@ -5167,8 +5288,8 @@ window.__ModuleLoader__.load({
 		function RunRecipeEngine({ base, layerA, setLayerAKey, setLayerA, refArtifacts }) {
 			const { spec, edit, resolved } = (0, _melite_card_base_client.useResolvedForm)("h3-timeline", layerA, setLayerAKey, base);
 			const family = (0, react.useMemo)(() => deriveWindowFamily(mergeDocLayers(base, layerA)), [base, layerA]);
-			const omitT4 = family === "t4r" ? (name) => T4_ONLY_KEYS.includes(name) || FILM_ONLY_KEYS.includes(name) || omitT4GateDead(spec, name) : family === "t4_chain" ? void 0 : (name) => FILM_ONLY_KEYS.includes(name);
-			const omitT4Recipe = family === "t4r" && spec !== null ? (row) => omitT4RecipeRow(spec, row) : void 0;
+			const omitDead = family === "t4_chain" ? void 0 : (name) => omitFilmOnlyField(name);
+			const omitRecipe = family !== "t4_chain" && spec !== null ? (row) => omitFilmRecipeRow(spec, row) : void 0;
 			const wire = {
 				candidates: refArtifacts.map((a) => ({
 					id: a.name,
@@ -5210,35 +5331,14 @@ window.__ModuleLoader__.load({
 					user: layerA,
 					base,
 					omitInputRail: true,
-					omitFields: omitT4,
-					omitRecipeRow: omitT4Recipe,
+					omitFields: omitDead,
+					omitRecipeRow: omitRecipe,
 					onSet: edit,
 					onUnset: (n) => setLayerAKey(n, void 0),
 					onPick: (patch) => {
-						const held = base ?? {};
-						const candidate = resolvePickVerdictDoc(held, layerA, patch);
+						const candidate = resolvePickVerdictDoc(base ?? {}, layerA, patch);
 						const violations = (0, _melite_card_base_client.composeValidate)(spec, candidate);
-						const family = pickFamilyRefusal(candidate);
-						if (family !== null) violations.push({ message: "card_compose: " + family });
 						if (violations.length > 0) {
-							const priorView = resolvePickVerdictDoc(held, layerA, {});
-							const reseated = reseatDeadKeys(FAMILY_LAW, candidate, priorView);
-							if (reseated.dropped.length > 0) {
-								const recheck = (0, _melite_card_base_client.composeValidate)(spec, reseated.params);
-								const reFam = pickFamilyRefusal(reseated.params);
-								if (reFam !== null) recheck.push({ message: "card_compose: " + reFam });
-								if (recheck.length === 0) {
-									setLayerA((prev) => {
-										const next = { ...prev };
-										for (const k of reseated.dropped) next[k] = void 0;
-										for (const [k, v] of Object.entries(patch)) if ((0, _melite_card_base_client.axisUnset)(k, v, spec)) next[k] = void 0;
-										else next[k] = v;
-										return next;
-									});
-									setGateFace(studioCopy.gateSettled(reseated.dropped));
-									return;
-								}
-							}
 							setGateFace("THE COMPOSE GATE REFUSED — " + violations[0].message + " — the write never left the studio. Fix the stated value, or pick a different route.");
 							return;
 						}
@@ -6534,6 +6634,7 @@ window.__ModuleLoader__.load({
 					};
 				}) : void 0,
 				variant: optStr("variant"),
+				quant: optStr("quant"),
 				model: optStr("model"),
 				audio_stem: optStr("audio_stem"),
 				audio_clips: (() => {
@@ -6580,6 +6681,7 @@ window.__ModuleLoader__.load({
 		const LAYERA_EMIT_LOOP_KEYS = [
 			"fps",
 			"variant",
+			"quant",
 			"shift_video",
 			"shift_audio",
 			"steps",
@@ -6689,9 +6791,6 @@ window.__ModuleLoader__.load({
 				const cleared = (k, v) => k === "sla_enabled" ? v === void 0 || v === true : v === void 0 || v === "" || v === false || Array.isArray(v) && v.length === 0;
 				const state = a;
 				for (const k of Object.keys(base)) if (LAYERA_KEY_UNIVERSE.has(k) && !(k in out) && base[k] !== void 0 && base[k] !== null && cleared(k, state[k])) out[k] = null;
-			}
-			if (deriveWindowFamily(mergeDocLayers(base, a)) === "t4r") {
-				for (const k of T4_ONLY_KEYS) if (out[k] !== null) delete out[k];
 			}
 			return out;
 		}
@@ -6834,11 +6933,30 @@ window.__ModuleLoader__.load({
 		*  rows drop with a LOUD warn (the pin channel is image pins only;
 		*  a clip/audio diamond never had a compose meaning — the last_frame
 		*  precedent: named, never silent). Sorted by frame (the plan
-		*  vocabulary is sorted pins — hydrateCalls' own law). */
-		function hydrateKeyframes(raw) {
-			if (!Array.isArray(raw)) return [];
+		*  vocabulary is sorted pins — hydrateCalls' own law).
+		*
+		* THE ANCHOR SEAT'S UI LEG (the timeline-visibility cure, 2026-11-13):
+		* `anchor` is the doc-level anchor shorthand the compose reads —
+		* `p.image ?? p.image_name ?? p.ref_image` (schema.ts admits all three
+		* guide spellings; the agent docs teach `params.image` as "the frame-0
+		* shorthand for the same rail"). The shorthand and a frame-0 pin are
+		* ONE SEAT: the any-frame setup law lifts a frame-0 row onto the
+		* anchor and seats the anchor when no row overrides it. The projection
+		* used to read only the pin spelling, so an agent-authored anchor
+		* composed while the timeline card showed nothing — the
+		* authored-but-not-shown split. When the pins hold no frame-0 row, the
+		* anchor rides the lane as the frame-0 pin it already is. View-side
+		* only: no write fires until an operator gesture, and a gesture
+		* materializes the pin under the compose's own precedence (a frame-0
+		* row overrides the anchor at the lift), so the shown lane never
+		* disagrees with what composes.
+		*
+		* @param raw the persisted `keyframes` array (any legacy spelling).
+		* @param anchor the doc-level anchor shorthand value (undefined =
+		*   the doc states no anchor; a non-string rides as none). */
+		function hydrateKeyframes(raw, anchor) {
 			const out = [];
-			for (const k of raw) {
+			if (Array.isArray(raw)) for (const k of raw) {
 				if (typeof k !== "object" || k === null) continue;
 				const r = k;
 				const frame = Number(r.frame);
@@ -6855,6 +6973,10 @@ window.__ModuleLoader__.load({
 					frame: Math.round(frame)
 				});
 			}
+			if (!out.some((k) => k.frame === 0) && typeof anchor === "string" && anchor.trim() !== "") out.push({
+				image: anchor.trim(),
+				frame: 0
+			});
 			return out.sort((a, b) => a.frame - b.frame);
 		}
 		/** The keyframes channel's persisted shape (the sorted-write law,
@@ -7013,7 +7135,7 @@ window.__ModuleLoader__.load({
 					calls: params?.calls,
 					beats: params?.beats
 				}),
-				keyframes: hydrateKeyframes(params?.keyframes),
+				keyframes: hydrateKeyframes(params?.keyframes, params?.image ?? params?.image_name ?? params?.ref_image),
 				layerA: hydrateLayerA(params)
 			};
 		}
@@ -7092,56 +7214,18 @@ window.__ModuleLoader__.load({
 		* The view-sync thirds (playhead clamp, selection scroll/guard)
 		* live in useStudioViewSync — no save, no guards.
 		*
-		* THE FLIP WRITER (B2, journey-closure 2026-11-06): commit is
-		* family-aware — the D8 reseat's ONE owner (useFamilyReseatHeal is
-		* deleted with this change, its mount effect dissolved into the
-		* gesture). Any commit whose post-gesture doc derives t4r unstamps
-		* the T4_ONLY residue in the SAME onSave: the serializer's delete
-		* ride nulls each base-carried stamp (B1's one-owner law — the
-		* serializer omits the value side, the commit carries the delete
-		* side) and the appended layer-A op clears the shown poles. See the
-		* commit body for the full contract.
+		* THE LANE-LAW RETIREMENT (2026-11-15, the operator's gate-11 burn):
+		* the old FLIP WRITER (B2, 2026-11-06) unstamped T4_ONLY residue
+		* from any commit whose post-gesture doc derived t4r — the writer
+		* that silently discarded the operator's finish knobs under a guide
+		* flip. The t4r arm now mounts the post chain, no key is lane-dead,
+		* and the writer is DELETED: a commit stores exactly the state the
+		* operator sees. There is no family-conditional commit path left.
 		*/
 		function channelPayload(channel, value) {
 			if (channel === "calls") return { calls: value };
 			if (channel === "keyframes") return { keyframes: value };
 			return value;
-		}
-		/** THE FLIP WRITER's unstating payload (B2, journey-closure
-		* 2026-11-06): the layer with every T4_ONLY member unstated,
-		* serialized against the post-gesture base — the door record whose
-		* canonical digest differs from the layer's own serialization
-		* exactly when a base-carried stamp gains its delete-ride null (B1's
-		* gate deletes the value side; only the unstated state can ride the
-		* null). The base is the RAW params under the gesture's structural
-		* planes (calls/keyframes view arrays overlaid) — never the full
-		* shown view: the delete ride reads base KEYS, and the hydrate's own
-		* false poles (sharpen_enabled: false on a doc that never carried
-		* the key) would read as stamps and null themselves — phantom
-		* deletes. The gate still sees the gesture's planes: serializeLayerA
-		* derives the family over mergeDocLayers(base, a), and `calls`/
-		* `keyframes` — overlaid here — plus the layer's own ref surface (in
-		* `a`) give it the post-gesture truth; serialized against the raw
-		* params alone the always-emit poles would ride false in the SAME
-		* onSave and the saved doc would refuse on them (the flip arm's
-		* verdict).
-		*
-		* @param layer the post-gesture layer A (shown state, gesture included)
-		* @param structBase the persisted raw under the gesture's calls/keyframes
-		* @returns the unstated plane's door record, or null when the
-		*  unstating states nothing (no base stamps; the hydrate's false
-		*  poles serialize identically) — the no-churn law, the gesture
-		*  rides alone */
-		function unstatedLayerA(layer, structBase) {
-			const cured = { ...layer };
-			for (const k of T4_ONLY_KEYS) cured[k] = void 0;
-			const payload = serializeLayerA(cured, structBase);
-			for (const k of T4_ONLY_KEYS) {
-				const carried = structBase[k];
-				if (carried !== void 0 && carried !== null) payload[k] = null;
-			}
-			if (canonicalJson(payload) === canonicalJson(serializeLayerA(layer, structBase))) return null;
-			return payload;
 		}
 		function useShownDoc(stage, onSave) {
 			const projected = (0, react.useMemo)(() => projectDoc(stage.params), [canonicalJson(stage.params)]);
@@ -7170,7 +7254,7 @@ window.__ModuleLoader__.load({
 			const starterOwed = rawList === null && corruptCallsField({
 				calls: params?.calls,
 				beats: params?.beats
-			}) === null;
+			}) === null && deriveCommissions(params).length === 0;
 			(0, react.useEffect)(() => {
 				if (starterOwed) {
 					const payload = serializeCalls(projectedRef.current.calls);
@@ -7194,25 +7278,10 @@ window.__ModuleLoader__.load({
 				setOps(opsRef.current);
 			}
 			const commit = (channel, serialize, getShown) => (u) => {
-				const shownBefore = overlayDoc(projectedRef.current, liveOps(projectedRef.current, opsRef.current));
-				const prev = getShown(shownBefore);
-				const next = typeof u === "function" ? u(prev) : u;
-				let payload = serialize(next);
+				const prev = getShown(overlayDoc(projectedRef.current, liveOps(projectedRef.current, opsRef.current)));
+				let payload = serialize(typeof u === "function" ? u(prev) : u);
 				if (canonicalJson(payload) === canonicalJson(serialize(prev))) return;
-				const layerNow = channel === "layerA" ? next : shownBefore.layerA;
-				const gesturePlanes = {
-					calls: channel === "calls" ? next : shownBefore.calls,
-					keyframes: channel === "keyframes" ? next : shownBefore.keyframes
-				};
-				const reseat = deriveWindowFamily(mergeDocLayers(baseRef.current, {
-					...layerNow,
-					...gesturePlanes
-				})) === "t4r" ? unstatedLayerA(layerNow, mergeDocLayers(baseRef.current, gesturePlanes)) : null;
-				if (reseat !== null && channel === "layerA") payload = reseat;
-				const answer = onSave({
-					...channelPayload(channel, payload),
-					...reseat !== null && channel !== "layerA" ? reseat : {}
-				});
+				const answer = onSave(channelPayload(channel, payload));
 				if (answer === false) return;
 				const op = {
 					channel,
@@ -7220,28 +7289,14 @@ window.__ModuleLoader__.load({
 					seq: seqRef.current++
 				};
 				const seq = op.seq;
-				const reseatOp = reseat !== null && channel !== "layerA" ? {
-					channel: "layerA",
-					value: reseat,
-					seq: seqRef.current++
-				} : void 0;
-				const reseatSeq = reseatOp?.seq;
-				let kept = opsRef.current.filter((o) => o.channel !== channel);
-				if (reseatOp !== void 0) kept = kept.filter((o) => o.channel !== "layerA");
-				opsRef.current = reseatOp !== void 0 ? [
-					...kept,
-					op,
-					reseatOp
-				] : [...kept, op];
+				const kept = opsRef.current.filter((o) => o.channel !== channel);
+				opsRef.current = [...kept, op];
 				setOps(opsRef.current);
-				if (answer instanceof Promise) {
-					const seqs = reseatSeq === void 0 ? [seq] : [seq, reseatSeq];
-					answer.then((landed) => {
-						if (landed === false) for (const s of seqs) dropOp(s);
-					}, () => {
-						for (const s of seqs) dropOp(s);
-					});
-				}
+				if (answer instanceof Promise) answer.then((landed) => {
+					if (landed === false) dropOp(seq);
+				}, () => {
+					dropOp(seq);
+				});
 			};
 			const updateCalls = (0, react.useMemo)(() => commit("calls", serializeCalls, (d) => d.calls), [onSave]);
 			const updateKeyframes = (0, react.useMemo)(() => commit("keyframes", serializeKeyframes, (d) => d.keyframes), [onSave]);
@@ -10050,7 +10105,10 @@ window.__ModuleLoader__.load({
 		}));
 		//#endregion
 		//#region ../../web-kit/contracts/lib/FlowTypes.js
-		var init_FlowTypes = __esmMin((() => {}));
+		var FLOW_ID_RE;
+		var init_FlowTypes = __esmMin((() => {
+			FLOW_ID_RE = /^[a-z_][a-z0-9_-]*$/;
+		}));
 		//#endregion
 		//#region ../../web-kit/contracts/lib/benchResult.js
 		/** benchResult.ts — THE BENCH STAGE RESULT CONTRACT (the operator's
@@ -10993,6 +11051,51 @@ window.__ModuleLoader__.load({
 			}
 			return out;
 		}
+		/**
+		* THE LIVE-ROWS FILTER (GAPS-9, the archived-compile burn: an
+		* archived stale draft's params blocked every future bench-wide
+		* compile). F11 rests archived rows on the RUN faces — the COMPILE
+		* faces rest them too. projectStages strips the archived FLAG (it
+		* is not a wire key) but keeps the ROW, so a spent row's stale
+		* params judged bench-wide. Compile callers filter here FIRST:
+		* only LIVE rows judge. (Read/spell/floor/rewire keep the full
+		* view — they report or touch addressed rows, never judge.)
+		*
+		* Moved to the contract (2026-10-31, F14's estate half): the
+		* projection had ONE writer while only the agent tool composed —
+		* the estate's add-stage gate composes the same view, so the
+		* projection is the contract's now (the audit's Rule 1 law: a
+		* second writer means the same bench reads as a different
+		* document depending on which door projected it).
+		*/
+		function liveBenchRows(stages) {
+			if (!Array.isArray(stages)) return stages;
+			return stages.filter((s) => !(typeof s === "object" && s !== null && !Array.isArray(s) && s["archived"] === true));
+		}
+		/**
+		* Project bench stage rows onto the flow_inline wire contract
+		* (the doors forbid provenance/runStatus/result/title as extras —
+		* they strip; `card` RIDES (STAGE_KEYS admit it) because the
+		* kinds pass derives input kinds from the card's own flowKinds —
+		* stripping it manufactured phantom "wired but untyped" refusals
+		* on correctly-wired card stages; engine defaults comfyui).
+		*/
+		function projectStages(stages) {
+			if (!Array.isArray(stages)) return [];
+			const source = stages.filter((s) => typeof s === "object" && s !== null && !Array.isArray(s));
+			return normalizeBenchStages(source).map((row, i) => {
+				const from = source[i];
+				row["id"] = String(from["id"] ?? "");
+				if (typeof from["id"] === "string" && from["id"] !== "") row["id"] = from["id"];
+				for (const key of Object.keys(row)) {
+					if (key === "expected" || WIRE_STAGE_KEYS.includes(key)) continue;
+					delete row[key];
+				}
+				if (typeof from["expected"] === "object" && from["expected"] !== null && !Array.isArray(from["expected"])) row["expected"] = from["expected"];
+				else delete row["expected"];
+				return row;
+			});
+		}
 		/** Sanitize one candidate id onto a legal bench session key —
 		* 'main' for anything the grammar refuses. THE ONE SPELLING of the
 		* routing decision (the li-ay stroke, 2026-10-11): the decision
@@ -11007,6 +11110,30 @@ window.__ModuleLoader__.load({
 		* sanitize — not four. */
 		function benchSessionOf(id) {
 			return typeof id === "string" && SESSION_RE.test(id) ? id : "main";
+		}
+		/** Carry one candidate key onto the key the bench doors take — the
+		*  delegated-seat spelling rides VERBATIM, everything else sanitizes
+		*  (benchSessionOf). THE ONE SPELLING of the carry decision (the
+		*  one-seat law's client half, 2026-10-31): the construct tool
+		*  forwards a delegated lane's bench key as `delegate:<key>` (the
+		*  benchKeyOfExec mint), and the estate door re-seats it (drafts
+		*  seatOf) — but the ':' is outside SESSION_RE, so a seat that
+		*  sanitized first silently routed a delegated card to 'main', the
+		*  delegation split alive on the link channel (found by the
+		*  construct-flow-link snapshot replay). The carry lives HERE, beside
+		*  the sanitize it wraps: a seat that re-spelled `SESSION_RE.test`
+		*  over the slice would be a second decision body over the same
+		*  grammar — the exact drift the li-ay stroke killed. Narrow by
+		*  construction: only `delegate:` + a grammar-legal inner key
+		*  carries; junk (`delegate:`, `delegate:not@a/key`, the
+		*  near-miss `delegated:…`) falls to the sanitize like every
+		*  other non-key. */
+		function carriedBenchKey(key) {
+			if (typeof key === "string" && key.startsWith("delegate:")) {
+				const inner = key.slice(9);
+				if (SESSION_RE.test(inner)) return key;
+			}
+			return benchSessionOf(key);
 		}
 		/** THE PARSE-EDGE / TEST MINT: brand a draft id read off the wire or
 		*  disk (route the typeof-guarded value through here at the door
@@ -11148,6 +11275,7 @@ window.__ModuleLoader__.load({
 			EXTRA_KEYS: () => EXTRA_KEYS,
 			EXTRA_KEY_SET: () => EXTRA_KEY_SET,
 			FLF_MODES: () => FLF_MODES,
+			FLOW_ID_RE: () => FLOW_ID_RE,
 			LEGACY_RUN_MEDIA_PREFIX: () => LEGACY_RUN_MEDIA_PREFIX,
 			LOAD_CARRY_KEYS: () => LOAD_CARRY_KEYS,
 			MEDIA_SET: () => MEDIA_SET,
@@ -11179,14 +11307,15 @@ window.__ModuleLoader__.load({
 			benchSessionOf: () => benchSessionOf,
 			canonicalRunMediaUrl: () => canonicalRunMediaUrl,
 			cardResultFromRecord: () => cardResultFromRecord,
+			carriedBenchKey: () => carriedBenchKey,
 			cellArtifactCoordinates: () => cellArtifactCoordinates,
 			cnEntriesOf: () => cnEntriesOf,
 			crossRootOrder: () => crossRootOrder,
-			deriveFamilyLane: () => deriveFamilyLane$1,
+			deriveFamilyLane: () => deriveFamilyLane,
 			draftIdOf: () => draftIdOf,
 			dropAuthoringIncomplete: () => dropAuthoringIncomplete,
 			extraOf: () => extraOf,
-			familyKeyPresent: () => familyKeyPresent$1,
+			familyKeyPresent: () => familyKeyPresent,
 			hasModifierCapability: () => hasModifierCapability,
 			healRunMediaPaths: () => healRunMediaPaths,
 			isDataUrl: () => isDataUrl,
@@ -11211,6 +11340,7 @@ window.__ModuleLoader__.load({
 			laneStaleCarry: () => laneStaleCarry,
 			laneSurfaceOf: () => laneSurfaceOf,
 			laneTogetherClosure: () => laneTogetherClosure,
+			liveBenchRows: () => liveBenchRows,
 			loraAdaptersOf: () => loraAdaptersOf,
 			loraIdOf: () => loraIdOf,
 			loraLabel: () => loraLabel,
@@ -11227,8 +11357,9 @@ window.__ModuleLoader__.load({
 			normalizeSegmentStatus: () => normalizeSegmentStatus,
 			offeredPool: () => offeredPool,
 			projectStageView: () => projectStageView,
+			projectStages: () => projectStages,
 			projectUpstreamStages: () => projectUpstreamStages,
-			reseatDeadKeys: () => reseatDeadKeys$1,
+			reseatDeadKeys: () => reseatDeadKeys,
 			resolveCellRow: () => resolveCellRow,
 			resolveVariantRow: () => resolveVariantRow,
 			rootsManifest: () => rootsManifest,
@@ -16693,171 +16824,57 @@ window.__ModuleLoader__.load({
 			]);
 		}
 		//#endregion
-		//#region src/ui/studio/commissions.ts
-		/**
-		* commissions.ts — THE STUDIO'S MOD PROJECTION (§9 of the multiwindow
-		* unification audit, 2026-11-12).
-		*
-		* THE BURN it answers (operator, live lane: "the UI that displays the
-		* timeline and all the separate clips isn't updating. It looks
-		* default, despite the AI agent using the card to string together
-		* multiple clips with a mod"): the doc carried the commission, the
-		* compose honored it, and the lane rendered as if nothing was armed —
-		* the journey's UI hop was unwalled.
-		*
-		* THE LAW: a mod bag is ARMED when it is a non-empty ARRAY — the
-		* card's own predicate (`Array.isArray && length > 0`); an absent bag
-		* or an explicit empty array is the unused arm (the film composes and
-		* renders byte-identically). This module derives what an armed bag
-		* COMMISSIONS — kind, the seats its entry names, and, for the extend,
-		* the window composition it will build — for the rail to draw. A
-		* present NON-array or a non-object entry is armed-and-doomed at the
-		* run door, so it draws a refusal row instead of a clean lane (the
-		* burn class inverted: a doc that will refuse must never look fine).
-		* It READS; it never writes, never defaults a seat, and never invents
-		* a commission the doc does not carry.
-		*
-		* WHY A DERIVATION AND NOT A MIRROR: the bags live outside `LayerA`
-		* and outside the studio's three write channels (calls, keyframes,
-		* layerA). They are the agent's commissions, preserved across
-		* open→save by the bench's merge-patch — so the rail projects the
-		* durable row and holds no state of its own.
-		*/
-		/** Every mod bag the rail projects, in the card's own declaration
-		*  order. The LoRAs joined on 2026-10-30 (F29): the bag reached the
-		*  graph but no rail row existed, so the operator could not see the
-		*  adapters at all — a bag the compose honors must have a row. */
-		const COMMISSION_KINDS = [
-			"replace",
-			"repair",
-			"extend",
-			"reshoot",
-			"loras"
-		];
-		/** The frames-per-second the composition's seconds readout divides by
-		*  (the film clock — the solver's own divisor). */
-		const FILM_FPS = 24;
-		/** Read one NON-EMPTY bag's single entry. The ARM predicate is the
-		*  card's own (non-empty array, whatever the entry's shape); this
-		*  helper only types an object entry, so a non-object entry stays
-		*  armed and the caller marks it `bad-entry`.
-		* @param bag the armed bag (the caller has already proven array + non-empty)
-		* @returns the first entry when it is an object, else undefined */
-		function bagEntry(bag) {
-			const entry = bag[0];
-			return typeof entry === "object" && entry !== null && !Array.isArray(entry) ? entry : void 0;
-		}
-		/** The seats an entry states, in the entry's own key order: strings
-		*  verbatim, finite numbers stringified, booleans only when true
-		*  (an unstated dial and a stated-false dial compose identically, so
-		*  only the stated positive is news to the operator). Nested objects
-		*  are skipped — a commission's seats are scalar by the bag law.
-		* @param entry the bag's first entry
-		* @returns the named seats */
-		function seatsOf(entry) {
-			const out = [];
-			for (const [key, value] of Object.entries(entry)) if (typeof value === "string") {
-				const trimmed = value.trim();
-				if (trimmed !== "") out.push({
-					key,
-					value: trimmed
-				});
-			} else if (typeof value === "number" && Number.isFinite(value)) out.push({
-				key,
-				value: String(value)
-			});
-			else if (value === true) out.push({
-				key,
-				value: "true"
-			});
-			return out;
-		}
-		/** THE COMPOSITION PROJECTION (extend only): the same solver the
-		*  compose door runs, so the rail draws the windows the run will
-		*  actually build. A stated extension the solver refuses is NOT
-		*  silently hidden — the rail shows the refusal as the commission's
-		*  own note, so the operator sees the armed-and-doomed doc before
-		*  pressing Run rather than a lane that looks fine.
-		* @param entry the extend bag's first entry
-		* @returns the composition, or the refusal's voice */
-		function geometryOf(entry) {
-			const seconds = entry.extend_seconds;
-			if (typeof seconds !== "number" || !Number.isFinite(seconds)) return {};
-			const frames = Math.round(seconds * FILM_FPS);
-			if (frames <= 0) return {};
-			try {
-				if (frames <= 362) return { geometry: {
-					windows: 1,
-					windowFrames: assertGridLength(frames, "h3-timeline extend"),
-					deliveredFrames: frames
-				} };
-				return { geometry: solveWindowComposition(frames, "h3-timeline extend") };
-			} catch (err) {
-				return { refusal: err instanceof Error ? err.message : String(err) };
-			}
-		}
-		/** Derive the doc's armed commissions, in the card's bag order.
-		*  Disarmed bags contribute nothing — the rail's empty state is the
-		*  honest "no commission" lane, never a placeholder row.
-		* @param params the durable bench row (the doc's own params)
-		* @returns one row per armed mod bag */
-		function deriveCommissions(params) {
-			const out = [];
-			for (const kind of COMMISSION_KINDS) {
-				const bag = params?.[kind];
-				if (bag === void 0) continue;
-				if (!Array.isArray(bag)) {
-					out.push({
-						kind,
-						seats: [],
-						note: "malformed"
-					});
-					continue;
-				}
-				if (bag.length === 0) continue;
-				if (kind === "loras") {
-					for (const row of bag) {
-						const stacked = bagEntry([row]);
-						out.push(stacked === void 0 ? {
-							kind,
-							seats: [],
-							note: "bad-entry"
-						} : {
-							kind,
-							seats: seatsOf(stacked)
-						});
-					}
-					continue;
-				}
-				const entry = bagEntry(bag);
-				if (entry === void 0) {
-					out.push({
-						kind,
-						seats: [],
-						note: "bad-entry"
-					});
-					continue;
-				}
-				const commission = {
-					kind,
-					seats: seatsOf(entry)
-				};
-				if (kind === "extend") {
-					const { geometry, refusal } = geometryOf(entry);
-					if (geometry !== void 0) commission.geometry = geometry;
-					if (refusal !== void 0) commission.refusal = refusal;
-				}
-				out.push(commission);
-			}
-			return out;
-		}
-		//#endregion
 		//#region src/ui/studio/useDerivedView.ts
 		/**
 		* h3-timeline studio split (2026-09-06) — PURE MOVE from
 		* ui/studio/component.tsx. No behavior change: headers/footers are new,
 		* every logic line is verbatim from the monolith (source range noted).
 		*/
+		/** The filmstrip derivation — PURE, so the wall that judges the
+		*  reshoot hero rides the same function the hook renders (never a
+		*  copy of the tiers). One caller: the memo below.
+		* @param res the stage's result (the estate's normalized CardResult)
+		* @returns the window tiles plus the final cut */
+		function filmstripOf(res) {
+			const arts = res?.artifacts ?? {};
+			const urls = Array.isArray(res?.assetUrls) ? res.assetUrls : [];
+			const stagedEcho = (n) => /__[0-9a-f]{12}\.[A-Za-z0-9]+$/.test(n);
+			const windowIndexOf = (n) => {
+				const legacy = /^video_w(\d+)_/.exec(n);
+				if (legacy !== null) return Number(legacy[1]);
+				const real = /(?:^|[/_])h3_t4_w(\d+)_\d+_\.mp4$/.exec(n);
+				if (real !== null) return Number(real[1]);
+				return null;
+			};
+			const windows = Object.keys(arts).filter((n) => windowIndexOf(n) !== null && !n.endsWith("_last_frame") && !n.includes("_seam") && !n.includes("_prev")).filter((n) => typeof arts[n] === "string" && arts[n] !== "").sort((a, b) => {
+				return windowIndexOf(a) - windowIndexOf(b);
+			}).map((name) => ({
+				name,
+				url: arts[name]
+			}));
+			if (urls.length > 1) {
+				const have = new Set(windows.map((w) => w.url));
+				for (let i = 1; i < urls.length; i++) {
+					const u = urls[i];
+					if (!u || have.has(u)) continue;
+					have.add(u);
+					const m = /window(\d+)_video/.exec(u);
+					windows.push({
+						name: m ? `video_w${m[1]}_main` : u.split("/").pop(),
+						url: u
+					});
+				}
+			}
+			const filmName = Object.keys(arts).find((n) => !stagedEcho(n) && /(?:^|[/_])h3_t4_film_\d+_\.mp4$/.test(n));
+			const filmUrl = filmName !== void 0 && typeof arts[filmName] === "string" && arts[filmName] !== "" ? arts[filmName] : "";
+			const heroUrl = typeof res?.url === "string" && res.url !== "" && !stagedEcho(res.url) ? res.url : "";
+			const namedVideo = Object.entries(arts).find(([name, url]) => typeof url === "string" && url !== "" && refGenreOf(name, url) === "video" && !stagedEcho(name) && !/(?:^|[/_])h3_t4_w\d+_\d+_\.mp4$/i.test(name) && !/^video_w\d+_/.test(name))?.[1];
+			const flatVideo = urls.find((url) => refGenreOf("", url) === "video" && !stagedEcho(url) && !/(?:^|[/_])h3_t4_w\d+_\d+_\.mp4$/i.test(url) && !/(?:^|\/)video_w\d+_/.test(url));
+			return {
+				windows,
+				final: filmUrl !== "" ? filmUrl : heroUrl !== "" && refGenreOf("", heroUrl) === "video" ? heroUrl : typeof namedVideo === "string" ? namedVideo : flatVideo ?? null
+			};
+		}
 		/** Upstream vocabulary, filmstrip, bar-space memos (tenant §10).
 		*  Verbatim lines 2474–2628. */
 		function useDerivedView(args) {
@@ -16912,45 +16929,7 @@ window.__ModuleLoader__.load({
 				}
 				return out;
 			}, [upstreams]);
-			const filmstrip = (0, react.useMemo)(() => {
-				const res = stage.result;
-				const arts = res?.artifacts ?? {};
-				const urls = Array.isArray(res?.assetUrls) ? res.assetUrls : [];
-				const windowIndexOf = (n) => {
-					const legacy = /^video_w(\d+)_/.exec(n);
-					if (legacy !== null) return Number(legacy[1]);
-					const real = /(?:^|[/_])h3_t4_w(\d+)_\d+_\.mp4$/.exec(n);
-					if (real !== null) return Number(real[1]);
-					return null;
-				};
-				const windows = Object.keys(arts).filter((n) => windowIndexOf(n) !== null && !n.endsWith("_last_frame") && !n.includes("_seam") && !n.includes("_prev")).filter((n) => typeof arts[n] === "string" && arts[n] !== "").sort((a, b) => {
-					return windowIndexOf(a) - windowIndexOf(b);
-				}).map((name) => ({
-					name,
-					url: arts[name]
-				}));
-				if (urls.length > 1) {
-					const have = new Set(windows.map((w) => w.url));
-					for (let i = 1; i < urls.length; i++) {
-						const u = urls[i];
-						if (!u || have.has(u)) continue;
-						have.add(u);
-						const m = /window(\d+)_video/.exec(u);
-						windows.push({
-							name: m ? `video_w${m[1]}_main` : u.split("/").pop(),
-							url: u
-						});
-					}
-				}
-				const filmName = Object.keys(arts).find((n) => /(?:^|[/_])h3_t4_film_\d+_\.mp4$/.test(n));
-				const filmUrl = filmName !== void 0 && typeof arts[filmName] === "string" && arts[filmName] !== "" ? arts[filmName] : "";
-				const namedVideo = Object.entries(arts).find(([name, url]) => typeof url === "string" && url !== "" && refGenreOf(name, url) === "video" && !/(?:^|[/_])h3_t4_w\d+_\d+_\.mp4$/i.test(name) && !/^video_w\d+_/.test(name))?.[1];
-				const flatVideo = urls.find((url) => refGenreOf("", url) === "video" && !/(?:^|[/_])h3_t4_w\d+_\d+_\.mp4$/i.test(url) && !/(?:^|\/)video_w\d+_/.test(url));
-				return {
-					windows,
-					final: filmUrl !== "" ? filmUrl : typeof namedVideo === "string" ? namedVideo : flatVideo ?? null
-				};
-			}, [stage.result]);
+			const filmstrip = (0, react.useMemo)(() => filmstripOf(stage.result), [stage.result]);
 			const prompts = (0, react.useMemo)(() => callsToPrompts(calls, layerA.fps), [calls, layerA.fps]);
 			const lanes = (0, react.useMemo)(() => {
 				const ls = keyframesToLanes(keyframes);

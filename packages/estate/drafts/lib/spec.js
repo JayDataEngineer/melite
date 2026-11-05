@@ -5,8 +5,6 @@
 // holds — no b64u here), one record per draft (large, sparse,
 // individually disposable), schema-failing records backed up and
 // skipped by the facility (`invalidRecords: 'backup-and-skip'`).
-// The global slot is the one-time legacy-import marker: 0 until the
-// legacy drafts tree has been imported, the import epoch (ms) after.
 //
 // THE SECOND TABLE (audit 004/C2, 2026-10-22): `characters` — the
 // character bundle (ordered reference paths + a locked description),
@@ -78,7 +76,6 @@ export const draftsDomainSpec = defineDomain({
     compatibleVersions: [1],
     layout: "per-record",
     invalidRecords: "backup-and-skip",
-    global: { schema: z.number().int(), initial: 0 },
     tables: {
         docs: domainTable(DraftRecordSchema),
         characters: domainTable(CharacterRecordSchema),

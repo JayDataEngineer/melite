@@ -6,6 +6,7 @@ import { loadTextPair, decodeSave, stackLoras, stackControlNets, scaleDeliverabl
 import { fireLoras, fireControlNets, refuseIPAdapterFiring } from './mods/guard.ts'
 import { mintSeed } from './graph-helpers.ts'
 import { IMPACT_DETECTORS } from './impact.ts'
+import { MASK_DENOISE_DEFAULT, REGION_ENTRY_FIELDS } from './pack-fields.ts'
 
 // ── archetype I: the image-diffuse family ───────────────────────────
 // Loader chain → lora stack → text pair → controlnet stack → latent
@@ -140,6 +141,31 @@ export function orderedInputImages(p: Record<string, unknown>): string[] {
  *  Refs past cap - 1 refuse LOUD on every lane (2511: 2, 2.1: 15);
  *  the lane re-pins the same ceiling for direct callers. An absent
  *  model refuses (the old law — direct lane callers pin it). */
+/** THE REGION ENTRY-VOCABULARY DOOR (the D11 edit-suite burn,
+ *  2026-11-04): a mask-bag entry may state ONLY the declared region
+ *  vocabulary (REGION_ENTRY_FIELDS — the painted-mask seat, the
+ *  mode, the detector, the knobs). Every other key refuses LOUD:
+ *  the burn's shape was an entry stating its own 'mask' field (a
+ *  source photo) — the field reached no node, the image-gen card
+ *  composed a fresh generation, and the run reported done: the
+ *  silent-drop class. ONE spelling shared by the edit gate below,
+ *  the image-gen serve gate and statedRegion (so the build arms can
+ *  never read a doc the gates refused), with a voice that teaches
+ *  both lawful seats: the painted region rides input_mask, a
+ *  photograph rides the EDIT card's anchor.
+ *
+ * @param entry the single mask-bag entry (already shaped object).
+ */
+export function refuseRegionEntryFields(entry: Record<string, unknown>): void {
+  for (const k of Object.keys(entry)) {
+    if (REGION_ENTRY_FIELDS.includes(k)) continue
+    if (k === 'mask') {
+      throw new Error(`'mask' fires on the mask bag (the entry states its own 'mask' field — that field reaches no node: the bag KEY is the mod, an entry carries input_image/input_mask + the mask_* knobs) — the painted region rides input_mask (an RGBA PNG path whose alpha marks the region); the base photograph to inpaint on rides input_image (or the image-edit card's anchor image1), never a mask field`)
+    }
+    throw new Error(`'${k}' fires on the mask bag (unknown region field — the entry vocabulary is ${REGION_ENTRY_FIELDS.join(', ')})`)
+  }
+}
+
 export function refuseImageEditFiring(p: Record<string, unknown>, model?: ModelFacts): void {
   // THE BLANK LAW IS THE CONTRACT'S (the design audit's Q4: this copy
   // had no object rule at all, so `input_mask: {}` read STATED here
@@ -163,13 +189,29 @@ export function refuseImageEditFiring(p: Record<string, unknown>, model?: ModelF
   const bagEntry = bagN === 1 && typeof (p.mask as Array<unknown>)[0] === 'object' && (p.mask as Array<unknown>)[0] !== null
     ? (p.mask as Array<Record<string, unknown>>)[0]!
     : {}
+  // THE ENTRY-VOCABULARY LAW (the D11 edit-suite burn, 2026-11-04 —
+  // the silent-drop cure): a bag entry stating a key outside the
+  // declared region vocabulary reaches no node — the burn's exact
+  // shape (a source photo stated as the entry's 'mask' field on the
+  // image-gen card composed a fresh generation while the run
+  // reported done). The door refuses LOUD, teaching both cures: the
+  // painted region rides input_mask, a photograph rides the EDIT
+  // card's anchor.
+  refuseRegionEntryFields(bagEntry)
   // the bag merges UNDER flat params (explicit flat keys win) — the
   // gate and the builder read the same merged region row.
   const region: Record<string, unknown> = { ...p }
   for (const [k, v] of Object.entries(bagEntry)) {
     if (region[k] === undefined) region[k] = v
   }
-  const bagMask = (region.input_mask ?? '') as string
+  const bagMask = (region.input_mask ?? '') as string;
+  // THE BASE-SEAT LAW (the Impact Pack pair, 2026-11-15): the edit
+  // card's base to inpaint on is its OWN anchor (the input image —
+  // image1). input_image is the IMAGE-GEN region mod's base seat;
+  // stating it here would be a second base the graph never reads.
+  const bagBase = (region.input_image ?? '') as string;
+  fire('input_image', bagBase.trim() !== '',
+    'the edit card\'s base is its own input image (image1) — input_image is the image-gen region mod\'s base seat (the photograph to detail); this card already has its anchor')
   // a single-entry bag's region counts (the arm merges it); an empty
   // bag states nothing — the force flag must not pass on an empty bag
   // and then silently plain-edit.
@@ -179,7 +221,7 @@ export function refuseImageEditFiring(p: Record<string, unknown>, model?: ModelF
   const detector = (region.mask_detector ?? 'off') as string
   const detectorThreshold = (region.mask_detector_threshold ?? 0.5) as number
   const detailSize = (region.mask_detail_size ?? 512) as number
-  const denoise = (region.mask_denoise ?? 0.5) as number
+  const denoise = (region.mask_denoise ?? MASK_DENOISE_DEFAULT) as number
   fire('mask_mode', effectiveMode !== 'auto' && effectiveMode !== 'crop_stitch', `unknown region mode '${mode}' — choose auto or crop_stitch`)
   fire('mask_detector', detector !== 'off' && detector !== 'person' && detector !== 'face' && detector !== 'hand', `unknown region detector '${detector}' — pick off/person/face/hand`)
   // THE REGION LAW (2026-11-12, the inline-inpaint retirement): NO lane
@@ -187,9 +229,11 @@ export function refuseImageEditFiring(p: Record<string, unknown>, model?: ModelF
   // with its pack. auto+mask refuses field-named on EVERY lane, and
   // the voice teaches the fix: state mask_mode crop_stitch (the
   // region detailer — crop, edit, paste; pixels outside the region
-  // never change). A wider canvas is NOT a masked edit: pad the
-  // anchor and instruct the edit (the pad-and-instruct recipe in the
-  // zooms skill) — no outpaint knobs exist on any door.
+  // never change). A wider canvas is NOT a masked edit: the size
+  // law's own door below owns it — on qwen-img-edit-2.1 a stated
+  // pair renders the wider canvas NATIVELY (the outpaint path
+  // itself, the D11 proof 2026-11-04), on 2511/fibo2 it resizes the
+  // deliverable (their outpaint stays pad-and-instruct).
   fire('input_mask', maskStated && effectiveMode === 'auto',
     'no edit lane inpaints in place (inline inpainting is retired) — for a region state mask_mode crop_stitch (the region detailer)')
   // THE DELIVERABLE-SIZE LAW (the resize order, 2026-11-12): the
@@ -207,7 +251,7 @@ export function refuseImageEditFiring(p: Record<string, unknown>, model?: ModelF
     fire('mask_detector', detector !== 'off', 'detectors ride crop_stitch only — set mask_mode crop_stitch or back the detector to off')
     fire('mask_detector_threshold', detectorThreshold !== 0.5, 'the detector threshold rides crop_stitch only — set mask_mode crop_stitch or back it to 0.5')
     fire('mask_detail_size', detailSize !== 512, 'the detail size rides crop_stitch only — set mask_mode crop_stitch or back it to 512')
-    fire('mask_denoise', denoise !== 0.5, 'the region denoise rides crop_stitch only — set mask_mode crop_stitch or back it to 0.5')
+    fire('mask_denoise', denoise !== MASK_DENOISE_DEFAULT, 'the region denoise rides crop_stitch only — set mask_mode crop_stitch or back it to ' + MASK_DENOISE_DEFAULT)
     fire('mask_context_pad', ((region.mask_context_pad ?? 64) as number) !== 64, 'context padding rides crop_stitch only — set mask_mode crop_stitch or back it to 64')
     fire('mask_threshold', ((region.mask_threshold ?? 0) as number) !== 0, 'no core node re-binarizes — the soft feathered falloff rides as-is')
   }
@@ -265,6 +309,10 @@ export interface StatedRegion {
   mode: string;
   merged: Record<string, unknown>;
   maskPath: string;
+  /** THE BASE HALF of the Impact Pack pair (DetailerForEach takes
+   *  image + segs): the photograph to inpaint on, '' = the lane's
+   *  own render is the base. */
+  basePath: string;
   detector: string;
 }
 export function statedRegion(doc: Record<string, unknown>): StatedRegion | null {
@@ -273,7 +321,13 @@ export function statedRegion(doc: Record<string, unknown>): StatedRegion | null 
   const bagFirst = bagLen === 1 ? (rawBag as unknown[])[0] : null;
   const bagObj = typeof bagFirst === 'object' && bagFirst !== null
     ? (bagFirst as Record<string, unknown>)
-    : null;
+    : null
+  // THE ENTRY-VOCABULARY LAW (the D11 burn — same door as the edit
+  // gate, ONE spelling): the gen builds read this function directly
+  // (krea-2 / qwen-img-21 t2i), so the refusal lives HERE too — a
+  // bag entry key outside the declared region vocabulary can never
+  // reach a build arm, on any card, at any door.
+  if (bagObj !== null) refuseRegionEntryFields(bagObj);
   const merged: Record<string, unknown> = { ...doc };
   if (bagObj) {
     for (const [k, v] of Object.entries(bagObj)) {
@@ -283,7 +337,7 @@ export function statedRegion(doc: Record<string, unknown>): StatedRegion | null 
   const flatMask = typeof merged['input_mask'] === 'string' && (merged['input_mask'] as string).trim() !== '';
   const detector = typeof merged['mask_detector'] === 'string' ? (merged['mask_detector'] as string) : 'off';
   const detectorStated = detector !== '' && detector !== 'off';
-  const flatKnobs = ['mask_mode', 'mask_context_pad', 'mask_grow', 'mask_feather',
+  const flatKnobs = ['input_image', 'mask_mode', 'mask_context_pad', 'mask_grow', 'mask_feather',
     'mask_threshold', 'mask_invert', 'mask_detail_size', 'mask_denoise'] as const;
   const flatStated = flatKnobs.find((k) => {
     const v = merged[k];
@@ -297,6 +351,7 @@ export function statedRegion(doc: Record<string, unknown>): StatedRegion | null 
     mode: rawMode === 'full_frame' ? 'auto' : rawMode,
     merged,
     maskPath: typeof merged['input_mask'] === 'string' ? (merged['input_mask'] as string).trim() : '',
+    basePath: typeof merged['input_image'] === 'string' ? (merged['input_image'] as string).trim() : '',
     detector,
   };
 }
@@ -381,7 +436,7 @@ export function detailerSave(
     seed: io.seed, steps: p.steps, cfg: p.cfg,
     sampler_name: laneSampler(p), scheduler: laneScheduler(p),
     positive: io.positive, negative: io.negative,
-    denoise: (region.mask_denoise ?? 0.5) as number, feather: (region.mask_feather ?? 8) as number,
+    denoise: (region.mask_denoise ?? MASK_DENOISE_DEFAULT) as number, feather: (region.mask_feather ?? 8) as number,
     noise_mask: true, force_inpaint: true, wildcard: '', cycle: 1,
   }).out()
   return g.node('SaveImage', { images: scaleDeliverable(g, detailed, size), filename_prefix: `${runId}/edit` })
@@ -405,7 +460,7 @@ export function genDetailerSave(
     seed: io.seed, steps: p.steps, cfg: p.cfg,
     sampler_name: laneSampler(p), scheduler: laneScheduler(p),
     positive: io.positive, negative: io.negative,
-    denoise: (region.mask_denoise ?? 0.5) as number, feather: (region.mask_feather ?? 8) as number,
+    denoise: (region.mask_denoise ?? MASK_DENOISE_DEFAULT) as number, feather: (region.mask_feather ?? 8) as number,
     noise_mask: true, force_inpaint: true, wildcard: '', cycle: 1,
   }).out()
   return g.node('SaveImage', { images: detailed, filename_prefix: `${runId}/gen` })

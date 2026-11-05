@@ -35,8 +35,10 @@ import {
 } from "../../../engines/comfyui-cordis/src/models/models.ts"
 import { solveWindowComposition } from "@melite/models-h3/timelineContract"
 import {
-  COMMISSION_KINDS, deriveCommissions, type CommissionKind,
+  CALLS_READING_KINDS, COMMISSION_KINDS, callsLaneFace, deriveCommissions,
+  isStarterCallText, type CommissionKind,
 } from "../src/ui/studio/commissions.ts"
+import { STARTER_CALLS } from "../src/ui/studio/docModel.ts"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..")
 let def: CardDefinition
@@ -68,6 +70,11 @@ const REPLACE = { source_clip: "clips/take1.mp4", prompt: "the same person, now 
 const REPAIR = { source_clip: "clips/take2.mp4", mask: "clips/mask.png", denoise: 0.32 }
 const EXTEND = { source_clip: "clips/take3.mp4", extend_prompt: "she walks on", extend_seconds: 16.5 }
 const RESHOOT = { source_clip: "clips/take4.mp4", orbit: 30, dolly: 0.8 }
+// 2026-10-31 (audit 2026-10-31-modpress-row-face): refine + upscale
+// bags ride the rail too — five of seven declared kinds had no row, so
+// a mod-only row drew an empty rail and the operator saw nothing
+const REFINE = { source_clip: "clips/take5.mp4", denoise: 0.32, scale: 2 }
+const UPSCALE = { source_clip: "clips/take6.mp4", denoise: 0.24, segment_crf: 18 }
 // F29 (2026-10-30): the LoRA bag reaches the graph, so the rail owes it a
 // row — the operator could not see the adapters at all before this
 const LORAS = { id: "h3_lightx2v_turbo", strength: 0.8 }
@@ -88,7 +95,7 @@ describe("§9 — the studio's mod projection (the commission derivation)", () =
 
   it("ARM 2 — each armed bag derives exactly one row, carrying its entry's seats", () => {
     for (const kind of COMMISSION_KINDS) {
-      const entry = { replace: REPLACE, repair: REPAIR, extend: EXTEND, reshoot: RESHOOT, loras: LORAS }[kind]
+      const entry = { replace: REPLACE, repair: REPAIR, extend: EXTEND, refine: REFINE, upscale: UPSCALE, reshoot: RESHOOT, loras: LORAS }[kind]
       const rows = deriveCommissions({ [kind]: [entry] })
       expect(rows, `${kind}: one armed bag is one row`).toHaveLength(1)
       expect(rows[0]!.kind).toBe(kind)
@@ -104,12 +111,15 @@ describe("§9 — the studio's mod projection (the commission derivation)", () =
 
   it("ARM 3 — the row order follows the card's bag order (one deterministic rail)", () => {
     const rows = deriveCommissions({
-      reshoot: [RESHOOT], extend: [EXTEND], repair: [REPAIR], replace: [REPLACE], loras: [LORAS],
+      reshoot: [RESHOOT], extend: [EXTEND], repair: [REPAIR], replace: [REPLACE],
+      refine: [REFINE], upscale: [UPSCALE], loras: [LORAS],
     })
     expect(rows.map((r) => r.kind)).toEqual([...COMMISSION_KINDS])
     // the kinds constant IS the card's declaration order (the rail's own
-    // reading order is a contract, not an accident of object keys)
-    expect([...COMMISSION_KINDS]).toEqual(["replace", "repair", "extend", "reshoot", "loras"])
+    // reading order is a contract, not an accident of object keys); refine
+    // + upscale joined 2026-10-31 (modpress-row-face): the quality mods
+    // seat between extend and reshoot
+    expect([...COMMISSION_KINDS]).toEqual(["replace", "repair", "extend", "refine", "upscale", "reshoot", "loras"])
   })
 
   it("ARM 4 — the extend row draws the SAME composition the compose door builds (one solver, two consumers)", () => {
@@ -249,11 +259,73 @@ describe("§9 — the studio's mod projection (the commission derivation)", () =
 
   it("ARM 8 — every kind is derivable from a real card-shaped entry (no kind is a stub)", () => {
     const entries: Record<CommissionKind, Record<string, unknown>> = {
-      replace: REPLACE, repair: REPAIR, extend: EXTEND, reshoot: RESHOOT, loras: LORAS,
+      replace: REPLACE, repair: REPAIR, extend: EXTEND, refine: REFINE, upscale: UPSCALE, reshoot: RESHOOT, loras: LORAS,
     }
     for (const kind of COMMISSION_KINDS) {
       const rows = deriveCommissions({ [kind]: [entries[kind]] })
       expect(rows[0]!.seats.length, `${kind} names at least one seat`).toBeGreaterThan(0)
     }
+  })
+})
+
+// ── THE MOD-MODE CALLS FACE (operator 2026-11-14) — the derivation the
+// strip's calls lane renders from. THE READERSHIP TABLE is not a new
+// opinion: each kind's own mod spec pins its compose against the real
+// door — replace/repair/extend/refine/upscale compose from the bag
+// entry alone (their graphs never read a call's text), while reshoot
+// and loras RIDE the film action (reshoot's prompt is
+// "crossview. " + the call text) — this wall pins the DERIVED table
+// the lane renders: every reading kind faces `prompt`, every
+// non-reading armed doc faces `dormant`, nothing armed faces `plain`.
+describe("THE MOD-MODE CALLS FACE (2026-11-14 — the lane's calls-readership)", () => {
+  it("ARM R1 — the readership table: every reading kind faces prompt, every non-reading kind faces dormant", () => {
+    for (const kind of COMMISSION_KINDS) {
+      const entries: Record<CommissionKind, Record<string, unknown>> = {
+        replace: REPLACE, repair: REPAIR, extend: EXTEND, refine: REFINE,
+        upscale: UPSCALE, reshoot: RESHOOT, loras: LORAS,
+      }
+      const face = callsLaneFace(deriveCommissions({ [kind]: [entries[kind]] }))
+      const reads = (CALLS_READING_KINDS as readonly string[]).includes(kind)
+      expect(face, `${kind}: the lane names its readership`).toEqual(
+        reads ? { face: "prompt", kind } : { face: "dormant", kind },
+      )
+    }
+  })
+
+  it("ARM R2 — a reader armed BESIDE non-readers wins (the run reads calls if ANY armed action does)", () => {
+    const face = callsLaneFace(deriveCommissions({
+      replace: [REPLACE], loras: [LORAS],
+    }))
+    expect(face).toEqual({ face: "prompt", kind: "loras" })
+  })
+
+  it("ARM R3 — nothing armed faces plain (absent AND explicit-empty bags alike — the arm is presence)", () => {
+    expect(callsLaneFace([])).toEqual({ face: "plain" })
+    expect(callsLaneFace(deriveCommissions({ reshoot: [], replace: [] })))
+      .toEqual({ face: "plain" })
+  })
+
+  it("ARM R4 — the starter predicate: the verbatim placeholder (whitespace-padded included), never authored prose", () => {
+    const starterText = STARTER_CALLS[0]!.text!
+    expect(isStarterCallText(starterText)).toBe(true)
+    expect(isStarterCallText(`  ${starterText}  `)).toBe(true)
+    // authored prose, the empty string, and a single word of the
+    // placeholder are all NOT the placeholder
+    expect(isStarterCallText("she walks on")).toBe(false)
+    expect(isStarterCallText("")).toBe(false)
+    expect(isStarterCallText("A single shot")).toBe(false)
+  })
+
+  it("ARM R5 — a stacked bag's bad entry stays armed-and-refused per entry (the bad-entry side of the stack split)", () => {
+    // a loras stack with one array entry + one good adapter: the bad
+    // entry draws its own bad-entry row, the good entry its seats row
+    expect(deriveCommissions({ loras: [[], LORAS] })).toEqual([
+      { kind: "loras", seats: [], note: "bad-entry" },
+      { kind: "loras", seats: [{ key: "id", value: "h3_lightx2v_turbo" }, { key: "strength", value: "0.8" }] },
+    ])
+    // the refine stack's bad entry takes the same side
+    expect(deriveCommissions({ refine: [null] })).toEqual([
+      { kind: "refine", seats: [], note: "bad-entry" },
+    ])
   })
 })

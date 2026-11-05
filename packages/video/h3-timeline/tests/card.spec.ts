@@ -10,6 +10,7 @@ import assert from "node:assert/strict";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
+import { deriveWindowFamily } from "@melite/models-h3/timelineContract";
 import { loadCardDefs, resolveCardFlowOutputs } from "@melite/comfyui-cordis";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
@@ -205,8 +206,8 @@ describe("the h3-timeline compose gate", () => {
     const out = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
     const sharpen = Object.values(out).find((n) => n.class_type === "ImageSharpenKJ");
     assert.ok(sharpen, "sharpen_enabled composes the RCAS node");
-    const grouped = sharpen.inputs["method"] as Record<string, unknown>;
-    assert.equal(grouped["strength"], 0.3, "the explicit leaf patches the grouped dict");
+    assert.equal(sharpen.inputs["method"], "rcas", "the default method rides the base wire");
+    assert.equal(sharpen.inputs["method.strength"], 0.3, "the explicit leaf patches the dotted wire");
   });
 
   it("schema: variant derivation voices every family arm", () => {
@@ -377,119 +378,79 @@ describe("THE EVERY-ADDRESS WALL — every served address composes through the f
   });
 });
 
-// ── THE FAMILY ADMISSION (journey-closure B5 — the write doors' arm
-// of the walk) ──────────────────────────────────────────────────────
-// The card's own CardDefinition.admitFamily face states the EXACT
-// clause the compose walk enforces at the run door (schema.ts's t4r
-// gate, deriveWindowFamily + T4_ONLY_KEYS — one contract module, no
-// copy). The registry serves it to the bench write doors
-// (admitStageFamily → remote.ts familyAdmissionOf), so a Final-Cut
-// stamp on a keyframe doc refuses at the patch door in the run
-// door's own voice, one hop earlier. THE ONE-OWNER RULING (client
-// twin in pickVerdict.ts): the clause lives family-side because it
-// must ride the REAL walk's own exports; card-base's mirror seam is
-// the contracts floor and the walk is not a floor law.
-describe("the family admission — CardDefinition.admitFamily (B5)", () => {
+// ── THE LANE-LAW RETIREMENT (2026-11-15) ───────────────────────────
+// The card's CardDefinition.admitFamily face (B5, the write doors'
+// arm of the walk) is DELETED with the t4r dead-key set: the t4r
+// render arm now mounts the post chain, so no finish key is
+// lane-dead and there is nothing to refuse one hop early. The walk
+// (def.schema) is the one truth these arms judge — the burn shape
+// ADMITS with its stamps intact, on every derived lane.
+describe("the family admission face is retired — the walk admits the finish keys", () => {
   const KEYFRAME_DOC = {
     keyframes: [{ image: "webp/run1/pin-0.png", frame: 0 }],
     steps: 20,
+    loras: [],
   };
 
-  it("a Final-Cut stamp on a keyframe doc refuses with the run door's own voice", () => {
-    assert.deepEqual(
-      def.admitFamily!({ ...KEYFRAME_DOC, second_pass_enabled: true, sr_switch: true }),
-      {
-        ok: false,
-        error: "card 'h3-timeline' refused params: h3_window(t4r): unsanctioned inject keys: second_pass_enabled, sr_switch",
-      },
-    );
+  it("the card declares no admitFamily face — no write-door dead-letter exists", () => {
+    assert.equal(def.admitFamily, undefined);
   });
 
-  it("the four-key keyframe doc refuses naming every stated key, sorted", () => {
-    const verdict = def.admitFamily!({
+  it("the Final-Cut stamp on a keyframe doc walks and keeps its stamps", () => {
+    const walked = def.schema!({ ...KEYFRAME_DOC, second_pass_enabled: true, sr_switch: true });
+    assert.equal(deriveWindowFamily(walked as Record<string, unknown>), "t4r");
+    assert.equal(walked.second_pass_enabled, true);
+    assert.equal(walked.sr_switch, true);
+  });
+
+  it("the four-key finish doc walks (the exact refusal shape now admits)", () => {
+    const walked = def.schema!({
       ...KEYFRAME_DOC,
       interpolate_enabled: true,
       interp_model: "film_net_fp16.safetensors",
       interp_multiplier: 2,
       sharpen_enabled: true,
     });
-    assert.equal(verdict.ok, false);
-    assert.match(
-      verdict.ok ? "" : verdict.error,
-      /h3_window\(t4r\): unsanctioned inject keys: interp_model, interp_multiplier, interpolate_enabled, sharpen_enabled/,
-    );
+    assert.equal(deriveWindowFamily(walked as Record<string, unknown>), "t4r");
+    assert.equal(walked.interpolate_enabled, true);
+    assert.equal(walked.sharpen_enabled, true);
   });
 
-  it("a clean keyframe doc (t4r, no post keys) passes", () => {
-    assert.deepEqual(def.admitFamily!(KEYFRAME_DOC), { ok: true });
+  it("the reference surface derives t4r under a finish stamp and still walks", () => {
+    const walked = def.schema!({ ...KEYFRAME_DOC, ref_images: ["webp/ref.png"], sr_switch: true });
+    assert.equal(deriveWindowFamily(walked as Record<string, unknown>), "t4r");
+    assert.equal(walked.sr_switch, true);
   });
 
-  it("the same stamps on a t4_open doc pass (the family honors them there)", () => {
-    assert.deepEqual(
-      def.admitFamily!({ steps: 20, second_pass_enabled: true, sr_switch: true }),
-      { ok: true },
-    );
+  it("a clean keyframe doc (t4r, no post keys) walks", () => {
+    assert.equal(deriveWindowFamily(def.schema!(KEYFRAME_DOC) as Record<string, unknown>), "t4r");
   });
 
-  it("the same stamps on a t4_chain film pass (multi-call = the film lane)", () => {
-    assert.deepEqual(
-      def.admitFamily!({
-        calls: [
-          { text: "a", start_frame: 0, end_frame: 90 },
-          { text: "b", start_frame: 90, end_frame: 180 },
-        ],
-        sr_switch: true,
-        second_pass_enabled: true,
-      }),
-      { ok: true },
-    );
+  it("the same stamps on a t4_open doc walk", () => {
+    const walked = def.schema!({ steps: 20, second_pass_enabled: true, sr_switch: true });
+    assert.equal(deriveWindowFamily(walked as Record<string, unknown>), "t4_open");
   });
 
-  it("the clause AGREES with the walk: every doc the admission refuses, the run door's walk refuses verbatim", () => {
-    // the mirror discipline's own arm — the face judges the same
-    // truth the walk judges (the walk here is the REAL schema()):
-    const stamped = { ...KEYFRAME_DOC, second_pass_enabled: true, sr_switch: true };
-    const verdict = def.admitFamily!(stamped);
-    assert.equal(verdict.ok, false);
-    // the walk throws its BARE clause + the honest tail (B8: the run
-    // door's refusal names the writer and the one-gesture repair);
-    // the service phase wraps `card '<id>' refused params:` around
-    // it — the admission's error carries the WRAPPED voice (what the
-    // write doors say), and its bare clause must ride the walk's
-    // message VERBATIM as the prefix (the spine is one truth; the
-    // run door alone extends it with the honest tail)
-    const bare = verdict.ok ? "" : verdict.error.slice("card 'h3-timeline' refused params: ".length);
-    assert.throws(
-      () => def.schema!(stamped),
-      (e: unknown) => e instanceof Error && verdict.ok === false && e.message.startsWith(bare),
-    );
-    assert.match(verdict.error, /^card 'h3-timeline' refused params: h3_window\(t4r\): unsanctioned inject keys: /);
-    const film = {
+  it("the same stamps on a t4_chain film walk", () => {
+    const walked = def.schema!({
       calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
       length: 124,
       sr_switch: true,
-    };
-    assert.deepEqual(def.admitFamily!(film), { ok: true });
-    // and the walk composes it (no refusal the admission missed):
-    def.schema!(film);
+      second_pass_enabled: true,
+    });
+    assert.equal(deriveWindowFamily(walked as Record<string, unknown>), "t4_chain");
   });
 
-  it("null-carried dead keys are UNSTATED at the write door (THE ONE NULL LAW reaches admitFamily)", () => {
-    // the rejourney's §3.8: admitFamily's Object.keys presence grammar
-    // counted null-carried keys as stated while the gate (familyLaw)
-    // and the walk (schema.ts:531 stated-and-valued explicit) read
-    // null absent — the same doc the write door refused with the F1
-    // spine, the run door admitted clean. null ≡ absent at every
-    // arrival door, no exceptions.
-    assert.deepEqual(
-      def.admitFamily!({
-        ...KEYFRAME_DOC,
-        interpolate_enabled: null,
-        second_pass_enabled: null,
-        sharpen_enabled: null,
-        sr_switch: null,
-      }),
-      { ok: true },
-    );
+  it("null-carried finish keys stay UNSTATED at the walk (THE ONE NULL LAW survives the retirement)", () => {
+    const walked = def.schema!({
+      ...KEYFRAME_DOC,
+      interpolate_enabled: null,
+      second_pass_enabled: null,
+      sharpen_enabled: null,
+      sr_switch: null,
+    });
+    // the walk's stated-and-valued grammar: null never counts as stated,
+    // so the family derivation and every gate read the doc as un-stamped.
+    assert.equal(deriveWindowFamily(walked as Record<string, unknown>), "t4r");
   });
 });

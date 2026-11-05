@@ -6,11 +6,7 @@ genre: video
 
 # Second pass (the post chain behind one switch) — SPEC
 
-> STATUS: LANDED as code 2026-09-17 (the honest-boolean / engine-truth
-> stroke); this SKILL.md is NEW 2026-11-13 (friction report §14.2: the
-> agent surface had NO doc for the master, so an agent set
-> `sharpen_strength` and got a silent no-op).
-> VERIFIED against the tree's own truth: the group, bands and defaults
+> The group, bands and defaults
 > below are read off `packages/models/h3/src/schema.ts` (`paramSchema`),
 > and the composition arms that fire on them live in
 > `packages/models/h3/tests/value-roundtrip.spec.ts` (ARM 4 mounts the
@@ -46,7 +42,7 @@ close.
 
 | param | band / default | meaning |
 | --- | --- | --- |
-| `sharpen_enabled` | boolean, false | arms the sharpening pass; needs the master |
+| `sharpen_enabled` | boolean, false | **ARMED — the emission composes the served V3 combo shape (method on the base wire, option children on dotted wires). Gate OFF carries the stated leaf while routing the plain pass.** |
 | `sharpen_method` | select, **rcas** | `rcas` \| `adaptive_usm` \| `high_pass` \| `deconvolution` — the kernel |
 | `sharpen_strength` | 0–1, step 0.05, **0.3** | 0.3 = natural, 0.5 = crisp, 0.0 = off |
 | `sharpen_radius` | 0.5–5, step 0.5, **no default** | the kernel radius; rides `adaptive_usm`/`high_pass`/`deconvolution` only |
@@ -73,7 +69,7 @@ it is not free.
 | param | band / default | meaning |
 | --- | --- | --- |
 | `sr_switch` | boolean, false | arms SeedVR2; needs the master |
-| `sr_resolution` | 720–2160, step 360, **1080** | the output HEIGHT in px |
+| `sr_resolution` | 768–2160, step 24, **1080** | the output HEIGHT in px |
 | `sr_model` | `seedvr2_ema_3b_fp16.safetensors` \| `seedvr2_ema_3b_fp8_e4m3fn.safetensors` | fp16 3B default; fp8 is the leaner 3B |
 
 A closed file surface: an off-set value fails at the schema door, never as
@@ -101,11 +97,28 @@ different doors.
 
 | param | band / default | meaning |
 | --- | --- | --- |
-| `upscale_route` | `off` \| `latent_2x`, **off** | off = the second pass works at full size; `latent_2x` = pass 1 renders at half size and the learned upscaler doubles the latent in-band |
+| `upscale_route` | `off` \| `latent_2x`, **off** | off = the render stays at the stated size; `latent_2x` = pass 1 renders the stated size and the learned upscaler doubles the latent in-band — **the render lands at 2× the stated size** — a SUB-GATE of the master: stating it without `second_pass_enabled: true` REFUSES at the walk |
 | `upscale_model` | select, **`minimax_h3_latent_upscaler_3d_bf16.safetensors`** | the one learned 3D-conv checkpoint the estate runs (a single-member closed surface) |
 
-`latent_2x` is the memory lever: half-size pass 1 plus an in-band latent
-upscale. It is NOT the same as `scale` on the refine bag and NOT the
+`latent_2x` is a SUB-GATE of the master, never a standalone route — the
+route stated alone arms no node and renders the plain base-tier pass.
+The compose door's route-master gate REFUSES a master-less route
+LOUD at the walk: `h3_window(<variant>): upscale_route 'latent_2x' fires
+nothing without its master — the latent handoff
+(MinimaxH3LatentUpscaler3DRefineHandoff) composes only behind
+second_pass_enabled=true ... Arm the master beside the route, or turn the
+route off`. The operator answers the refusal one of two ways: arm
+`second_pass_enabled: true` BESIDE the route — the wired pair composes the
+handoff — or set the route back to `off`.
+**The route is a real 2x**: armed behind its master, pass 1 renders the
+stated grid and the handoff doubles in-band — a 1344×768 window lands at
+2688×1536. The doubling costs pass-2 sampling at the doubled grid — keep
+window lengths modest on the 24 GB lane.
+The route (and every other finish key) is lane-blind: the t4r arm mounts
+the same post chain as the film and open arms, so a keyframe-pinned doc stating the pair composes and
+fires the handoff. There is no per-lane dead letter left to reseat or null
+— the studio's rail and the walk agree on every lane.
+It is NOT the same as `scale` on the refine bag and NOT the
 `upscale` mod arm (that one resumes a prior chain run's latents).
 
 ## How to compose it
@@ -130,9 +143,9 @@ upscale. It is NOT the same as `scale` on the refine bag and NOT the
 - **The rider's two dials** — an unstated strength/steps rides the row.
   Deviating from the row is a real decision; say it out loud in the
   confirm step.
-- **`upscale_route: latent_2x`** — pass 1 composes at half size by
-  design (the sub-gate halves the r2v head); do not also demand a
-  full-size pass-1 grid.
+- **`upscale_route: latent_2x`** — the render lands at **2× the stated
+  size** (the sub-gate doubles the latent in-band); the second pass samples
+  at that doubled grid, so long windows cost real VRAM.
 
 ## Companion surfaces
 

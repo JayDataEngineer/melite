@@ -69,6 +69,47 @@ function plainObject(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
 }
 
+/** THE $SPELL RESOLUTION (F58, 2026-11-02 — the craft-loop flow
+ * binding): a flow-driven craft stage carries its declared initials
+ * as TOP-LEVEL `"$name"` params (the registry row's binding:
+ * `agent_prompt: "$agent_prompt"`, `command: "$command"`,
+ * `max_iterations: "$max_iterations"`); the run's request initials
+ * ride the executor's fifth argument (EngineExecutor's own law —
+ * "the values a stage's `$spell` params resolve against at merge").
+ * This fold runs BEFORE the contract gate, so the gate sees the
+ * resolved values: a brief arrives as prose, a command as its
+ * {engine, params} object, a max_iterations as the NUMBER the
+ * caller sent (a digit-string folds NEVER — the initial door
+ * refused that shape before the run registered).
+ * AN UNRESOLVED $spell OMITS THE KEY — never a throw, never a
+ * literal: an optional initial the caller omitted (max_iterations)
+ * is ABSENT from the run's initials record, and the honest ride is
+ * the engine's own default law. The loud refusals live at the two
+ * doors that own them: the START door refuses absent required
+ * initials before the run registers (requiredInitials), and the
+ * contract gate below refuses an absent agent_prompt/command with
+ * its own voice — so a row that typo'd a REQUIRED spell reds the
+ * gate, and the registry-row wall pins the exact binding (a typo'd
+ * row reds the wall before any run). Nested values never rewrite: a
+ * craft act's params are the critic's literal tool arguments. */
+export function resolveCraftSpells(
+  params: Record<string, unknown>,
+  initials: Readonly<Record<string, unknown>> | undefined,
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(params)) {
+    if (typeof v === "string" && v.startsWith("$") && v.length > 1) {
+      const name: string = v.slice(1);
+      if (initials !== undefined && name in initials) {
+        out[k] = initials[name];
+      }
+      continue;
+    }
+    out[k] = v;
+  }
+  return out;
+}
+
 /** THE GATE (the executor consumes this — one spelling of the
  * wire). Accepts the canonical object OR the form's JSON string
  * for `command` (a textarea carries text; the gate folds it). */

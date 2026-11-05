@@ -201,6 +201,19 @@ export function cloneSegment(p: Record<string, unknown>, model: ModelFacts, g: G
   return saveAudio(g, synth.out(), `${runId}/tts`)
 }
 
+/** THE MINT NAME (the name law's one source — qa8 F30): the
+ * segment's voice file name is the stated voice_name when the mod's
+ * popup stated one; unstated ('' or absent) falls to the mint
+ * `voice-<runId>` (unique per save). The mint basename IS the
+ * consumer address — the export's copy searches this name and the
+ * consumer's `qvoice: '<name>'` resolves `<voices-root>/<name>.qvoice`
+ * — so every segment seat asks this one helper, never its own
+ * string. */
+function mintVoiceName(p: Record<string, unknown>, runId: string): string {
+  const stated = typeof p.voice_name === 'string' ? p.voice_name.trim() : ''
+  return stated !== '' ? stated : `voice-${runId}`
+}
+
 /** The export segment: the studio's export_lite on the persona
  *  description — the .qvoice persists into the run's own tree (One
  *  copy node after the sample). THE NAME LAW (the named-presence
@@ -216,8 +229,7 @@ export function exportSegment(p: Record<string, unknown>, model: ModelFacts, g: 
   assertModUse(model, 'qvoice_save')
   const seed = mintSeed(p)
   const loaded = loadAudiocore(g, model)
-  const stated = typeof p.voice_name === 'string' ? p.voice_name.trim() : ''
-  const name = stated !== '' ? stated : `voice-${runId}`
+  const name = mintVoiceName(p, runId)
   // THE ONE-SOURCE LAW (the qvoice boolean law, operator 2026-10-22:
   // "save the embeddings to media" from ANY lane): the save persists
   // ONE voice — the stated reference saves the CLONE (no design
@@ -302,7 +314,7 @@ export function designPreviewSegment(p: Record<string, unknown>, model: ModelFac
     ...AUDIACORE_STUDIO_AUTOFILL,
     model: loaded,
     mode: 'export_lite',
-    name: `voice-${runId}`,
+    name: mintVoiceName(p, runId),
     instruct: p.design_prompt.trim(),
     sample_text: p.text,
     temperature: p.temperature,

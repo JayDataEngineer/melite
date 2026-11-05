@@ -155,6 +155,25 @@ describe('THE RAIL SEAT PARITY (the motion-params journey audit)', () => {
     expect(ghosts, `rendered rows no declaration backs: ${ghosts.join(', ')}`).toEqual([])
   })
 
+  it('THE PROMISED AXIS SEAT renders — the DECL-served Recipe rows are reachable BY HAND (the motion recipe-seat cure)', async () => {
+    // The sweep's promised-seat catch (2026-11-13): the kimodo DECL
+    // serves stamped Recipe rows (draft/polished stamp
+    // diffusion_steps) and a Quant group, yet the rail's whole face
+    // was hand-owned — no shared ModelAxes, no recipe trigger, no
+    // axis seat: rows that lived on the wire with no gesture that
+    // could reach them. The cure seats the SHARED ModelAxes at the
+    // panel head; this arm pins the seat through the real registered
+    // spec (the mount's own fetch), never a fixture.
+    stubLoads()
+    mountEditor()
+    await vi.waitFor(() => {
+      if (document.body.querySelector('[data-recipe-select]') === null) {
+        throw new Error('the recipe trigger never rendered — the DECL serves stamped Recipe rows (draft/polished) with no hand-reachable seat')
+      }
+    }, { timeout: 10000 })
+    expect(document.body.querySelector('[data-axis="Quant"]'), 'the Quant axis seat renders (the DECL serves the group)').not.toBeNull()
+  })
+
   it('the params panel spans the rail grid — never a half-width tool-button track', () => {
     // The scrollbar's structural cause (the audit's F1): SpecPanel
     // rendered as an ordinary child of .railGrid's 2-column tool

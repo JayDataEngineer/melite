@@ -1,6 +1,6 @@
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
-import { craftParams, craftFormDoc, normalizeCraftStageParams, normalizeCraftCommand, CRAFT_MAX_ITERATIONS_HARD_CAP } from "../src/params.ts";
+import { craftParams, craftFormDoc, normalizeCraftStageParams, normalizeCraftCommand, resolveCraftSpells, CRAFT_MAX_ITERATIONS_HARD_CAP } from "../src/params.ts";
 
 const W = "craft stage \"s\"";
 
@@ -78,5 +78,54 @@ describe("craftFormDoc (the served form IS the contract)", () => {
     assert.equal(doc["engine"], "craft");
     assert.deepEqual(doc["families"], []);
     assert.deepEqual((doc["features"] as { modifiers: unknown[] }).modifiers, []);
+  });
+});
+
+describe("resolveCraftSpells (F58 2026-11-02 — the flow door's $spell fold)", () => {
+  // THE CRAFT-LOOP BINDING (FAILURES F58): the registry row binds its
+  // three dials as top-level $name params; the run's request initials
+  // ride the executor's fifth argument (the EngineExecutor law) and
+  // THIS fold resolves them BEFORE the contract gate. A wall that
+  // walks only the gate would miss the whole seam — FAILURES pressed
+  // craft-loop with a real body and the loop never saw one dial.
+
+  it("resolves top-level $spells verbatim (brief prose, command object, NUMBER); literals ride untouched", () => {
+    const command = { engine: "comfyui", params: { workflow: { seed: "$notaspell" } } };
+    const out = resolveCraftSpells(
+      {
+        agent_prompt: "$agent_prompt",
+        command: "$command",
+        max_iterations: "$max_iterations",
+        model: "p/m",
+      },
+      { agent_prompt: "a red cube on white, 3/4 view", command, max_iterations: 40 },
+    );
+    assert.equal(out["agent_prompt"], "a red cube on white, 3/4 view");
+    assert.deepEqual(out["command"], command);
+    assert.equal(out["max_iterations"], 40);
+    assert.equal(typeof out["max_iterations"], "number", "the NUMBER rides — never a stringified stranger");
+    assert.equal(out["model"], "p/m", "a non-spell literal rides verbatim");
+    // NESTED values never rewrite: "$notaspell" inside the command's
+    // workflow is the critic's literal tool argument, not a spell
+    const nested = (out["command"] as { params: { workflow: Record<string, unknown> } }).params.workflow;
+    assert.equal(nested["seed"], "$notaspell");
+  });
+
+  it("an unresolved $spell OMITS the key — the optional-initial law, never a throw, never a literal", () => {
+    // max_iterations is the OPTIONAL dial: a caller who omits it
+    // sends no initial, and the honest ride is the engine's own
+    // default law (the gate defaults the cap) — not a refusal
+    assert.deepEqual(
+      resolveCraftSpells({ agent_prompt: "b", max_iterations: "$max_iterations" }, { agent_prompt: "b" }),
+      { agent_prompt: "b" },
+    );
+    // no initials at all (a direct engine-verb stage): every spell
+    // omits, literals keep
+    assert.deepEqual(resolveCraftSpells({ model: "m", command: "$command" }, undefined), { model: "m" });
+    // a bare "$" is a literal, not a spell (length > 1 is the grammar)
+    assert.deepEqual(resolveCraftSpells({ prefix: "$" }, {}), { prefix: "$" });
+    // the loud chain this omits rely on: a typo'd REQUIRED spell keys
+    // out and the contract gate refuses with its own voice — pinned
+    // by the craft-engine executor arm
   });
 });

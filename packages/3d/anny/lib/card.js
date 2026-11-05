@@ -1,7 +1,6 @@
 import z from '@deepseek-ai/schemastery';
 import { declaredAction, finalizeAnny, instantiateAction } from '@melite/comfyui-card-kit';
 import { DECL as annyDecl } from '@melite/models-anny';
-import { vocabulary } from '@melite/comfyui-card-kit/vocab';
 import { ANNY_MORPH_LABELS, ANNY_MORPH_RANGE, ANNY_MORPH_DEFAULT } from '@melite/comfyui-card-kit/morphs';
 import { bag } from '@melite/contracts/extraKeys';
 import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission';
@@ -34,13 +33,6 @@ const schema = z.object({
         z.number().description(label).default(ANNY_MORPH_DEFAULT).min(ANNY_MORPH_RANGE[0]).max(ANNY_MORPH_RANGE[1])
             .extra('extra', bag({ order: 1000 + i, group: "morph", width: 1, wtype: 'slider', columns: 2, tooltip: `Morph ${i + 1}/254 — ${label} (${ANNY_MORPH_RANGE[0]}..${ANNY_MORPH_RANGE[1]}, neutral 0; the poser's local-changes vocabulary).` })),
     ])),
-    resolution: z.number().description("View resolution").min(256).max(2048).step(64).extra('extra', bag({ order: 0, group: "turnaround", width: 1, tooltip: "Pixel size of each turnaround view." })),
-    framing: z.number().description("Framing").min(1).max(3).step(0.05).extra('extra', bag({ order: 1, group: "turnaround", width: 1, tooltip: "Camera distance factor — larger frames the whole body looser." })),
-    focal_length: z.number().description("Focal length (mm)").min(10).max(400).step(1).extra('extra', bag({ order: 2, group: "turnaround", width: 1, tooltip: "Lens focal length — lower = wider perspective.", wtype: 'slider' })),
-    samples: z.number().description("Samples").min(1).max(4096).step(1).extra('extra', bag({ order: 3, group: "turnaround", width: 1, tooltip: "Render samples per view — more = cleaner but slower.", wtype: 'number' })),
-    // bool or the Select's "true"/"false" wire string (the loose anny
-    // law coerces in compose — python step-doc: str(x) != "false")
-    transparent: vocabulary(["true", "false"]).description("Background").extra('extra', bag({ order: 4, group: "turnaround", width: 1, tooltip: "Transparent turnaround background (for compositing into sheets).", wtype: 'select' })),
 });
 const schemaFn = callableSchema(schema);
 export const inject = ['comfyui'];
@@ -48,7 +40,7 @@ export const inject = ['comfyui'];
 // identity ring; the card owns its label/description/genre/icon).
 export const identity = {
     label: 'Anny',
-    description: 'Author a character body — 11 identity sliders (or attach a GLB, or load a preset), then render the 8-view turnaround sheet.',
+    description: 'Author a character body — 11 identity sliders (or attach a GLB, or load a preset), then bake the body GLB.',
     genre: '3d',
     icon: 'person',
 };
@@ -84,11 +76,13 @@ export function apply(ctx) {
             // registry's validation path admits image inputs through the
             // media lane (the estimator's LoadImage reads a photo path)
             inputs: { body_glb: 'mesh', body_image: 'image' },
-            outputs: { default: 'image' },
+            outputs: { default: 'mesh' },
             requiresModel: false,
         },
+        // The assembly bake is the terminal (the SaveImage turnaround tail
+        // died with the blender lane, 2026-11-01).
         flowOutputBindings: [
-            { channel: 'default', node: 'SaveImage.0', nodeClass: 'SaveImage' },
+            { channel: 'default', node: 'CompositeCharacter.0', nodeClass: 'CompositeCharacter' },
         ],
         requires: ['melite-poser-nodes', 'melite-kimodo-nodes'],
         schema: schemaFn,
@@ -96,11 +90,11 @@ export function apply(ctx) {
             // THE SCHEMA GATE (the audio-trio admission precedent — the
             // card's own declaration validates the last hop into the
             // engine): schemastery walk enforces declared types + bounds
-            // (a resolution=5000 draft refuses LOUD here, never composes
-            // — declared 256..2048; identity dims cap at 1, morphs at
-            // their pin range), fills defaults, passes undeclared keys
-            // through inert. The composer's reads below are reads of the
-            // GATED doc.
+            // (identity dims cap at 1, morphs at their pin range — an
+            // out-of-range draft refuses LOUD here, never composes),
+            // fills defaults, and refuses undeclared keys loud (a stale
+            // draft carrying a retired turnaround knob dies here). The
+            // composer's reads below are reads of the GATED doc.
             const doc = gatedResolve('anny', schemaFn, ['model'], p);
             const bound = ACTION_BINDINGS[model.family ?? model.id];
             if (bound)

@@ -254,3 +254,51 @@ describe("P6 — the stage-switch flash frame (every render's face, not just the
     expect(seen[mark]).toBe(42)
   })
 })
+
+// ── THE MOD-MODE STARTER GATE (operator 2026-11-14: "By using Mod, we
+// enter a special mode, that uses different inputs. But, to the user,
+// there is still the default call in the timeline bar that tells them
+// to describe their video there, when that isn't used at all. And when
+// I do stuff like reshoot, it adds two bars to the timeline as well.")
+// A doc with an ARMED mod bag never persists the starter: under a
+// non-reading arm the placeholder is dead text the run will not read
+// (the strip's calls lane stands it down — StudioStripPane's mod-face
+// arms); under a reading arm (reshoot) booking it would silently
+// render "crossview. A single shot — describe the action, camera, and
+// mood." where an authored prompt belongs. The doc stays calls-less;
+// the run door's textless refusal stays the loud backstop. A DISARMED
+// doc keeps the starter — the authoring invitation is honest there.
+describe("THE MOD-MODE STARTER GATE (2026-11-14 — no placeholder under an armed mod)", () => {
+  // card-shaped entries (the commission rail's own fixture vocabulary)
+  const REPLACE_ENTRY = { source_clip: "clips/take1.mp4", prompt: "the same person, now indoors" }
+  const RESHOOT_ENTRY = { source_clip: "clips/t4.mp4", orbit: 30, dolly: 0.8 }
+
+  it("an armed NON-reading mod + a void doc NEVER persists the starter (dead text under the arm)", () => {
+    const s = seat({ replace: [REPLACE_ENTRY] })
+    expect(s.sent.length).toBe(0)
+    // the view still shows the starter fallback (the authoring surface
+    // the strip's dormant face stands down) — but nothing BOOKS
+    expect(s.result.current.calls.length).toBe(1)
+  })
+
+  it("an armed READING mod (reshoot) + a void doc NEVER persists the starter (no silent placeholder prompt)", () => {
+    const s = seat({ reshoot: [RESHOOT_ENTRY] })
+    expect(s.sent.length).toBe(0)
+  })
+
+  it("an explicit EMPTY bag is DISARMED — the void doc still persists the starter (the gate is the arm predicate)", () => {
+    const s = seat({ replace: [] })
+    expect(s.sent.length).toBe(1)
+    expect(Object.keys(s.sent[0]!)).toEqual(["calls"])
+  })
+
+  it("a stage switch from an armed-void stage to a clean stage persists the CLEAN stage's starter (the gate reads the doc, never sticky state)", () => {
+    const s = seat({ replace: [REPLACE_ENTRY] }, "armed")
+    expect(s.sent.length).toBe(0)
+    s.switchTo({}, "clean")
+    // the clean stage owes its own starter — the armed stage's gate
+    // never leaks across the switch
+    expect(s.sent.length).toBe(1)
+    expect(Object.keys(s.sent[0]!)).toEqual(["calls"])
+  })
+})

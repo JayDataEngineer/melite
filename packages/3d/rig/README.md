@@ -1,5 +1,5 @@
 ---
-description: Rigging card that puts a skeleton and weights on a GLB through three engine-native lanes — auto SOMA-77 weights, donor copy, and anyCreature species bridge.
+description: Rigging card that puts a skeleton and weights on a GLB through two engine-native lanes — auto SOMA-77 weights and donor copy.
 kind: package-library
 ---
 
@@ -9,7 +9,7 @@ kind: package-library
 
 ## Contract
 
-- `./card` — the card definition with three modes, dispatched per family (`transfer-rig`, `gem-soma`, `anycreature`). `auto` uses `KimodoExportFBX` with `apply_weights` — template weights from the SOMA-77 skeleton in `melite-autorig-nodes`. `copy` runs `KimodoTransferWeights` plus `SaveRiggedModel`, moving weights from `donor_glb` to the target. `species` uses the `RayCreatureRigBridge` (`melite-poser-nodes`) onto the anyCreature skeleton, with `height_ratio`, `max_influences`, and `strip_body`. Shared knobs: `mesh_glb` (required), `file_format` (`glb` or `fbx` — fbx is the Unity-facing path), `preserve_texture`, and `decimate_ratio`. The card also re-exports the validate-rig report helpers.
+- `./card` — the card definition with two modes, dispatched per family (`transfer-rig`, `gem-soma`). `auto` uses `KimodoExportFBX` with `apply_weights` — template weights from the SOMA-77 skeleton in `melite-autorig-nodes`; the node writes the rigged GLB itself, so `mesh_glb` (required) and `preserve_texture` are the auto lane's whole surface. `copy` runs `KimodoTransferWeights` plus `SaveRiggedModel`, moving weights from `donor_glb` to the target. (The `species` lane — `RayCreatureRigBridge` over the anyCreature skeleton — died with the blender lane, 2026-11-01, and the `@melite/models-anycreature` family behind it is deleted; the `file_format` fbx door and `decimate_ratio` died in the same removal.) The card also re-exports the validate-rig report helpers.
 - `./validate-rig-report` — `parseValidateRigOutput`, `validateRigReport`, and `ValidateRigOutputError`, with the `ValidateRigJson`, `ValidateRigViolation` (severity `CRITICAL` or `WARNING`), and `ValidateRigOutput` (`passed`, `violations`, `stats`) types. The same names re-export from the card module.
 - `.` — the row-mounted host face; it registers nothing.
 - `./package.json` — the manifest.
@@ -34,5 +34,5 @@ independent — nothing here appends to or reshapes a session cache.
 
 ## Known Limitations and Deferred Work
 
-- **The fourth lane is dead, not deferred** — skintokens died in the 2026-10-12 operator kill; the card ships auto/copy/species, period.
+- **The dead lanes stay dead** — skintokens died in the 2026-10-12 operator kill; the species lane died with the blender lane (2026-11-01, operator: melite carries no blender); the card ships auto/copy, period.
 - **fbx is the engine-facing export** — GLB is the interchange default; fbx exists for Unity import and is not validated further here.

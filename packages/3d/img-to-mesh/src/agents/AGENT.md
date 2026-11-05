@@ -27,9 +27,12 @@ families board one surface):
 
 ## The knobs
 
-- `input_image` (REQUIRED for trellis2-native + pixal3d): one clear
-  object, tight framing. No text prompt — the image IS the
-  conditioning.
+- `input_image` (REQUIRED for trellis2-native + pixal3d): ONE clear
+  figure or object — a single subject filling the frame, tight
+  framing. NEVER a multi-view sheet, contact grid, or composite with
+  several figures (e.g. a 4-view character turnaround): the lift
+  produces a fused/broken mesh. Extract or crop ONE view first, then
+  lift that. No text prompt — the image IS the conditioning.
 - `rigged_glb` + `target_glb` (REQUIRED for transfer-rig): the
   SOMA-rigged donor + the clothed target.
 - `resolution`: 1024 standard / 1536 hero (the 1536 route stamps the

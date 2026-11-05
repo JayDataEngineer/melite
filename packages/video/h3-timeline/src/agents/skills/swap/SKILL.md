@@ -1,29 +1,36 @@
 ---
 name: swap
-description: "Person-swap on the h3-timeline: stage clip+still through the R0 cards, bind the replace mod seats, confirm with the user, user presses Run. The emission is LANDED — the swap composes the masked-edit chain on the family's own model + lora plane."
+description: "Person-swap on the h3-timeline: stage clip+still through the R0 cards, bind the replace mod seats, confirm with the user, user presses Run. The emission composes the masked-edit chain on the family's own model + lora plane."
 genre: video
 ---
 
 # Swap (person-swap) — SPEC
 
-> STATUS: LANDED 2026-10-28 (R9). The R0 cards, the replace MOD, and
-> the swap EMISSION are in. The chain composes per the upstream
+> The chain composes per the upstream
 > reference map (`simple.api.json`, faces re-verified against the
-> live /object_info after the operator's press). Prose never
+> live /object_info). Prose never
 > overrides `card.ts` or the loaded bundle: the entry fields below
 > are quoted off the declared kind.
 
 ## What it is
 
 A person-swap: source clip + identity still in, same clip with the
-person replaced out. Single-clip (R1). Multi-clip rides the timeline's
-existing windows + continuation later — never a ported ChainLoop.
+person replaced out. ONE PRESS, TILED WINDOWS — never one long
+generation: the plan head slices the WHOLE source into
+per-generation clips (`clip_seconds` is each window's budget, the
+engine's own "Longest clip per H3 generation" — never the total),
+each clip repeats `overlap_frames` from the previous one (the seam
+carry), and the chain joins the windows itself (latent carry +
+ChainAssemble at `<runId>/swap`). A 60 s source at the 6 s default
+is ~10 windows in one press. BREAK IT UP: state the window budget
+for the source's length and let the tiling carry the seams — do not
+hunt for a way to make one long call; the seam control IS the arm's
+own seats. A sub-range swap rides `trim` first (the flow's stage 1).
 
 One-to-one with the upstream reference (`simple.api.json`): still +
 mannequin condition the reference, source slice + mask gate the edit
-latent. THE MODEL + LORA PLANE IS THE ESTATE'S OWN (operator law,
-2026-10-28, verbatim: "WE SAID KEEP OUR CURRENT LORA SETUP FOR
-NOW"): facts.unet + the SLA/lowvram/chunked chain + LTX_lora_loader
+latent. THE MODEL + LORA PLANE IS THE ESTATE'S
+OWN: facts.unet + the SLA/lowvram/chunked chain + LTX_lora_loader
 with the lora mod bag (absent bag = the family default row) — the
 reference's DMAD/LoraLoaderModelOnly chain is NOT adopted, and the
 wall refuses it. No in-graph describers (the agent composes prompt +
@@ -58,7 +65,7 @@ engine-side from the entry scalars.
      seats)
    - plan scalars: `roles`, `seed` (0), `steps` (6),
      `clip_seconds` (6), `overlap_frames` (39), `resolution` ('736p')
-   - Seat faces (picker law, 2026-10-28): `still`/`mask` are image
+   - Seat faces (picker law): `still`/`mask` are image
      squares; `source_clip`/`mannequin` are video pickers (media
      hint); `resolution` is a select over the plan's five tiers.
 3. **Confirm.** Show the bound values — roles (who is swapped onto
@@ -74,6 +81,13 @@ engine-side from the entry scalars.
 
 ## Laws
 
+- BREAK IT UP, NEVER ONE LONG CALL: every mod on this card is
+  windowed — the swap's unit is the generation window
+  (`clip_seconds`), the seams ride the plan's own overlap carry,
+  and a long source is N windows joined by the chain, not a longer
+  generation. There is nothing to "make one long call" WITH: the
+  engine's generation ceiling IS the window budget, and the seam
+  control (overlap_frames) exists precisely so the windows join.
 - REF vs REFMOD: mannequin and still are reference conditioning
   inputs (entry media seats). Baked adapter mods are a different
   door. Never conflate.

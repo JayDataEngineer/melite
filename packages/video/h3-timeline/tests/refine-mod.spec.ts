@@ -21,10 +21,12 @@ import { loadCardDefs, resolveCardFlowOutputs } from "@melite/comfyui-cordis";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
+import { deriveCommissions } from "../src/ui/studio/commissions.ts";
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
 import { REFINE_2X_OOM_FRAMES, REFINE_DEFAULT_CLIP_SECONDS, refineArmed } from "../../../models/h3/src/refine.ts";
+import { MAX_COMPOSED_WINDOWS, SEAM_OVERLAP_FRAMES } from "../../../models/h3/src/timelineContract.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -48,6 +50,8 @@ const graphOf = (g: GraphBuilder): Record<string, Node> =>
   g.toJSON() as Record<string, Node>;
 const ofClass = (out: Record<string, Node>, cls: string): [string, Node][] =>
   Object.entries(out).filter(([, n]) => n.class_type === cls);
+const refOf = (v: unknown): string => (Array.isArray(v) ? String(v[0]) : String(v));
+const nodeOf = (out: Record<string, Node>, ref: unknown): Node => out[refOf(ref)]!;
 
 // The refine-only classes (the handoff + the split-stream audio
 // encode — zero of these may ever appear in a disarmed film graph:
@@ -73,7 +77,7 @@ describe("the refine kind (the fifth mod bag)", () => {
     assert.ok(refine, "the h3-timeline card serves the refine kind on the modifiers channel");
     assert.equal(refine.param_key, 'refine', "the bag rides param_key 'refine'");
     assert.equal(refine.schema_key, 'refine', "the kind stamps its own catalog name (the mod-liveness ARM 3 attribution)");
-    assert.equal(refine.max_stack, 1, "one refine per doc (max_stack 1)");
+    assert.equal(refine.max_stack, MAX_COMPOSED_WINDOWS, "the bag stacks to the film's composed-window ceiling (GAPS-19: the entries ARE the windows, the same window count that caps one extend press caps one refine press)");
     assert.deepEqual(refine.requires, [
       'ComfyUI-VideoHelperSuite',
       'ComfyUI-KJNodes',
@@ -90,7 +94,26 @@ describe("the refine kind (the fifth mod bag)", () => {
       // THE CAPACITY SEATS (F24, 2026-10-30): the node's own sizing
       // mode + multiplier — a ≤1x pass fits clips the 2x OOMs
       'mode', 'scale',
+      // THE AUTO-TILE (F67, 2026-11-15 — the operator: "the AI can
+      // make windows, but the human operator can't"): one entry
+      // tiles ITSELF — a SIZE and a COUNT instead of hand-tiled
+      // entries with frame-exact starts
+      'windows', 'overlap_frames',
     ], "exactly the refine seats — no mask seat (no masked edit), no keep_audio (the soundtrack is the source's own, fixed)");
+  });
+
+  it("THE AUTO-TILE SEATS (F67): windows defaults to the single-window walk, overlap to the film's own token-exact seam", () => {
+    const refine = kind();
+    assert.ok(refine, "the refine kind serves");
+    const fields = ((refine as { fields?: Array<Record<string, unknown>> }).fields ?? []);
+    const windows = fields.find((f) => f.name === 'windows');
+    const overlap = fields.find((f) => f.name === 'overlap_frames');
+    assert.ok(windows !== undefined && overlap !== undefined, "both auto-tile seats serve");
+    assert.equal(windows.default, 1, "windows defaults to the single-window walk posture");
+    assert.equal(windows.min, 1, "windows never tiles zero");
+    assert.equal(windows.max, MAX_COMPOSED_WINDOWS, "windows tiles at most the composed-window ceiling (the bag's own max_stack)");
+    assert.equal(overlap.default, SEAM_OVERLAP_FRAMES, "overlap defaults to the film's own seam (DERIVED from the family contract — never a hand-typed 22)");
+    assert.equal(overlap.min, 0, "a zero overlap is the lawful hard-cut walk");
   });
 
   it("is admitted on the card door — the stated bag is not an undeclared param", () => {
@@ -112,7 +135,11 @@ describe("the refine kind (the fifth mod bag)", () => {
     }
   });
 
-  it("a two-entry bag refuses LOUD — max_stack 1 is never a silent first-wins", () => {
+  it("THE ONE-FILM LAW (GAPS-19): a bag naming TWO staged leaves refuses LOUD — the tiling joins windows of one timeline", () => {
+    // The historic two-entry refusal (the silent-drop class, max_stack
+    // 1) re-aimed by the same fixture: two entries are now LEGAL —
+    // windows of ONE film — so the crime this arm judges is the mixed
+    // source, not the second entry.
     const walked = def.schema({
       calls: [{ text: 'a slow push in', start_frame: 0, end_frame: 56 }], length: 56,
       refine: [REFINE_ENTRY(), { ...REFINE_ENTRY(), source_clip: 'other.mp4' }],
@@ -120,9 +147,162 @@ describe("the refine kind (the fifth mod bag)", () => {
     const g = new GraphBuilder();
     assert.throws(
       () => def.compose(walked, model, g, 'run_rfmod_two'),
-      /h3-timeline refine: the refine bag carries 2 entries — max_stack is 1, so every entry after the first would be silently dropped/,
-      'the second entry refuses naming the silent-drop class',
+      /ONE FILM PER BAG: a multi-entry refine tiles windows of ONE staged leaf into one film/,
+      'a two-source join refuses naming the one-film law',
     );
+  });
+
+  it("THE STACK GUARD'S OWN ARM (GAPS-19): a bag past the composed-window ceiling refuses at the card door", () => {
+    const walked = def.schema({
+      calls: [{ text: 'a slow push in', start_frame: 0, end_frame: 56 }], length: 56,
+      refine: Array.from({ length: MAX_COMPOSED_WINDOWS + 1 }, () => REFINE_ENTRY()),
+    }) as Record<string, unknown>;
+    const g = new GraphBuilder();
+    assert.throws(
+      () => def.compose(walked, model, g, 'run_rfmod_stack'),
+      new RegExp(`max_stack is the film's composed-window ceiling \\(${MAX_COMPOSED_WINDOWS} windows\\)`),
+      'the ceiling fires at the door on its own arm, never downstream',
+    );
+  });
+
+  it("THE SEQUENTIAL-PRESS LAW at the card door (GAPS-19): a ONE-entry bag composes the single-window emission — no boundary, no concat, no finalize", () => {
+    const walked = def.schema({
+      calls: [{ text: 'a slow push in', start_frame: 0, end_frame: 56 }], length: 56,
+      refine: [REFINE_ENTRY()],
+    }) as Record<string, unknown>;
+    const g = new GraphBuilder();
+    def.compose(walked, model, g, 'run_rfmod_one');
+    const out = graphOf(g);
+    assert.equal(ofClass(out, 'SaveVideo').length, 1, 'one save — the window itself, no per-window saves');
+    assert.equal(String(ofClass(out, 'SaveVideo')[0]![1].inputs['filename_prefix']), 'run_rfmod_one/refine', 'at the arm\'s own prefix');
+    assert.equal(ofClass(out, 'MeliteUnload').length, 0, 'no boundary — the single window orders nothing');
+    assert.equal(ofClass(out, 'MeliteConcatVideos').length, 0, 'no concat — one window joins nothing');
+    assert.equal(ofClass(out, 'MiniMaxH3FiniteSegmentFinalize').length, 0, 'no carried head on the first window');
+    assert.equal(ofClass(out, 'MiniMaxH3FiniteLatentContinuation').length, 0, 'no carry node on the refine path');
+  });
+
+  it("THE TILING PARITY (GAPS-19, plan §3 Arm 1): a 2-entry bag through the card door rides the film path's own 2-window tiling skeleton", () => {
+    // THE FILM PATH (the proven skeleton): one press, two windows,
+    // per-window saves, the boundary chain, the in-graph concat.
+    const filmG = new GraphBuilder();
+    def.compose(def.schema({
+      calls: [
+        { text: 'a slow push in', start_frame: 0, end_frame: 56 },
+        { text: 'then a turn', start_frame: 56, end_frame: 124 },
+      ],
+      length: 124,
+    }) as Record<string, unknown>, model, filmG, 'run_rfmod_film2');
+    const film = graphOf(filmG);
+    // THE REFINE BAG (this cure): two entries of ONE staged leaf —
+    // 90 f windows, the second starting 68 f in (the carried overlap
+    // derives to 0 + 90 − 68 = 22 f, the film's own token-exact seam;
+    // an off-grid carry refuses — FRICTION F26).
+    const bagG = new GraphBuilder();
+    def.compose(def.schema({
+      calls: [{ text: 'a slow push in', start_frame: 0, end_frame: 56 }], length: 56,
+      refine: [REFINE_ENTRY(), { ...REFINE_ENTRY(), start_seconds: 68 / 24 }],
+    }) as Record<string, unknown>, model, bagG, 'run_rfmod_bag2');
+    const bag = graphOf(bagG);
+
+    // THE SHARED SKELETON, property by property, both paths:
+    for (const [out, wins, terminal] of [
+      [film, ['run_rfmod_film2/h3_t4_w1', 'run_rfmod_film2/h3_t4_w2'], 'run_rfmod_film2/h3_t4_film'],
+      [bag, ['run_rfmod_bag2/refine_w0', 'run_rfmod_bag2/refine_w1'], 'run_rfmod_bag2/refine'],
+    ] as Array<[ReturnType<typeof graphOf>, string[], string]>) {
+      const saves = ofClass(out, 'SaveVideo').map(([, n]) => String(n.inputs['filename_prefix']));
+      assert.deepEqual([...saves].sort(), [terminal, ...wins].sort(),
+        `N window saves + the one terminal: ${terminal}`);
+      const boundaries = ofClass(out, 'MeliteUnload');
+      assert.equal(boundaries.length, wins.length,
+        `one unload boundary per window (${terminal})`);
+      // THE JOIN FACE IS IDENTICAL (round 27, operator order: "ZERO
+      // DIFFERENCE BETWEEN THE CONTEXT CARRY FROM THE NORMAL GENS AND
+      // THE REFINE GENS"): both paths hard-concat the saved members;
+      // the carry itself rode the latent continuation inside each
+      // window, never a file blend.
+      const concats = ofClass(out, 'MeliteConcatVideos');
+      assert.equal(concats.length, 1, `the plain concat joins the files (${terminal})`);
+      assert.equal(concats[0]![1].inputs['videos'], wins.join(','),
+        `the join consumes the N window prefixes in film order (${terminal})`);
+      assert.equal(ofClass(out, 'MeliteOverlapJoinVideos').length, 0,
+        `no crossfade on either path (${terminal})`);
+      assert.equal(ofClass(out, 'MiniMaxH3FiniteLatentContinuation').length, 1,
+        `one continuation at the one carried join (${terminal})`);
+      assert.equal(ofClass(out, 'MiniMaxH3FiniteSegmentFinalize').length, 1,
+        `one head-trim on the one carried window (${terminal})`);
+      if (!terminal.includes('h3_t4_film')) {
+        assert.equal(ofClass(out, 'MiniMaxH3ContexMaskedTarget').length, wins.length,
+          `the refine builds one joint AV target per window (${terminal})`);
+      }
+      assert.equal(ofClass(out, 'CreateVideo').length, wins.length + 1,
+        `N window containers + the film container (${terminal})`);
+      const terminalSave = ofClass(out, 'SaveVideo').find(([, n]) => n.inputs['filename_prefix'] === terminal)!;
+      assert.equal(nodeOf(out, terminalSave[1].inputs['video']).class_type, 'CreateVideo',
+        `the terminal muxes the joined film (${terminal})`);
+    }
+    // NO DIVERGENCE LEFT IN THE CARRY ITSELF: both paths mount the
+    // same node with the same seats — the round-27 cure. (What each
+    // path carries differs by what it HAS: the film carries its own
+    // sampled latent, the refine its joint target — the base grid
+    // both ways, which is the F44 law.)
+    for (const [out, label] of [[film, 'film'], [bag, 'refine']] as Array<[ReturnType<typeof graphOf>, string]>) {
+      const cont = ofClass(out, 'MiniMaxH3FiniteLatentContinuation')[0]!;
+      assert.equal(cont[1].inputs['overlap_frames'], 22, `${label}: the 22 f seam`);
+      assert.equal(cont[1].inputs['continue_audio_latent'], true, `${label}: the soundtrack takes the same release`);
+      assert.equal(cont[1].inputs['iteration'], 1, `${label}: the join is window 1`);
+      assert.notEqual(cont[1].inputs['previous_latent'], undefined, `${label}: previous_latent is wired`);
+      assert.equal(ofClass(out, 'MiniMaxH3FiniteSegmentFinalize').length, 1,
+        `${label}: the carried window trims its head`);
+    }
+    // the boundary chain's transitive closure orders every save on
+    // BOTH paths (the same judge the family arm walks)
+    const chainsOrderEverySave = (out: ReturnType<typeof graphOf>, wins: string[]): void => {
+      const boundaries = ofClass(out, 'MeliteUnload');
+      const finalBoundary = boundaries[boundaries.length - 1]!;
+      // (F61) the join node follows the path: concat on the film
+      // tail, the overlap blend on the refine bag
+      const joinNode = ofClass(out, 'MeliteConcatVideos')[0] ?? ofClass(out, 'MeliteOverlapJoinVideos')[0]!;
+      assert.equal(refOf(joinNode[1].inputs['after']), finalBoundary[0],
+        'the join waits on the FINAL boundary token');
+      for (const [, b] of boundaries) {
+        const saveNode = nodeOf(out, b.inputs['video']);
+        assert.equal(saveNode.class_type, 'SaveVideo', 'each boundary consumes its own window save');
+        assert.ok(wins.includes(String(saveNode.inputs['filename_prefix'])), 'the boundary map covers the window set');
+      }
+    };
+    chainsOrderEverySave(film, ['run_rfmod_film2/h3_t4_w1', 'run_rfmod_film2/h3_t4_w2']);
+    chainsOrderEverySave(bag, ['run_rfmod_bag2/refine_w0', 'run_rfmod_bag2/refine_w1']);
+    // THE REFINEMENT-SIDE SEATS: one handoff per window (each member
+    // re-renders under its carry), the derived 22 f seam, the film's
+    // finalize on the carried window and the plain concat tail.
+    assert.equal(ofClass(bag, 'MinimaxH3LatentUpscaler3DRefineHandoff').length, 2,
+      'one handoff per window — the carry binds each member\'s sampler');
+    assert.equal(ofClass(bag, 'MiniMaxH3FiniteSegmentFinalize').length, 1,
+      'the carried window trims its head; the seam never replays');
+    const bagLoads = ofClass(bag, 'VHS_LoadVideo').map(([, n]) => [n.inputs['frame_load_cap'], n.inputs['skip_first_frames']]);
+    assert.deepEqual(bagLoads, [[90, 0], [90, 68]], 'each entry IS one window: its own cap and skip at the film clock');
+  });
+
+
+  it("THE RAIL PROJECTS ONE ROW PER WINDOW (GAPS-19, the F29 precedent): a stacked refine bag shows every entry, never just the first", () => {
+    // THE INVISIBILITY CLASS (the loras burn, generalized): a rail
+    // that names bag[0] hides the second window — the operator sees
+    // one commission where the run will tile two.
+    const rows = deriveCommissions({ refine: [
+      REFINE_ENTRY(),
+      { ...REFINE_ENTRY(), start_seconds: 2.5, refine_prompt: 'the tail, sharper' },
+    ] });
+    assert.equal(rows.length, 2, 'one row per window entry');
+    // the head omits its origin (rides the window's own 0 start); the
+    // tail states 2.5s — each row carries the seats its entry stated
+    assert.deepEqual(rows[0]!.seats.map((s) => s.key).sort(), ['refine_prompt', 'source_clip']);
+    assert.equal(rows[1]!.seats.find((s) => s.key === 'start_seconds')!.value, '2.5',
+      'the tail row carries its own window origin');
+    assert.deepEqual(rows.map((r) => r.seats.find((s) => s.key === 'refine_prompt')!.value),
+      ['the same scene, sharper fabric weave and cleaner edges', 'the tail, sharper'],
+      'each row carries its own prompt');
+    // the one-entry bag stays one row (the sequential-press face)
+    assert.equal(deriveCommissions({ refine: [REFINE_ENTRY()] }).length, 1, 'one entry is one row');
   });
 
   it("the arm predicate is bag presence — armed only on a non-empty array", () => {
@@ -175,9 +355,23 @@ describe("the refine kind (the fifth mod bag)", () => {
     assert.equal(loaders.length, 1, 'exactly one shared VHS loader');
     assert.equal(loaders[0]![1].inputs['video'], 'swap_film_v1.mp4', 'the loader reads the staged source clip');
     assert.equal(loaders[0]![1].inputs['force_rate'], 24, 'the film clock, never a private cadence');
-    // the split-stream encode: video + audio latents.
-    assert.equal(ofClass(out, 'VAEEncode').length, 1, 'the frames encode to the video latent');
-    assert.equal(ofClass(out, 'VAEEncodeAudio').length, 1, 'the soundtrack encodes to the audio latent');
+    // THE JOINT AV TARGET (round 27): the estate's one source→nested-AV
+    // constructor — white mask → FantasticVideoEditLatent (source frames
+    // + source audio, keep_audio) → ContexMaskedTarget. It replaces the
+    // split VAEEncode pair the handoff used to receive, because the
+    // FILM'S OWN MiniMaxH3FiniteLatentContinuation (a joint-AV node) must
+    // be able to carry the window.
+    assert.equal(ofClass(out, 'GetImageSizeAndCount').length, 1, 'one size probe sizes the mask');
+    assert.equal(ofClass(out, 'SolidMask').length, 1, 'one everywhere-generate mask');
+    const edit = ofClass(out, 'MiniMaxH3FantasticVideoEditLatent');
+    assert.equal(edit.length, 1, 'the frames + soundtrack encode through the joint edit latent');
+    assert.equal(edit[0]![1].inputs['keep_audio'], true, 'the source soundtrack is held, never re-generated');
+    assert.equal(nodeOf(out, edit[0]![1].inputs['images']).class_type, 'VHS_LoadVideo', 'the edit latent reads the windowed FRAMES');
+    assert.deepEqual(edit[0]![1].inputs['audio'], [loaders[0]![0], 2], 'the edit latent reads the loader\'s windowed AUDIO slot');
+    const targets = ofClass(out, 'MiniMaxH3ContexMaskedTarget');
+    assert.equal(targets.length, 1, 'the masked target is the handoff\'s joint latent');
+    assert.deepEqual(targets[0]![1].inputs['mask'], [ofClass(out, 'SolidMask')[0]![0], 0],
+      'its mask seat is a LINK (F10 — a bare handle dies at reshape)');
     const cond = ofClass(out, 'CLIPTextEncode');
     assert.ok(cond.some(([, n]) => n.inputs['text'] === 'the same scene, sharper fabric weave and cleaner edges'), 'the refine prompt rides the positive seat');
     // THE HANDOFF (the one-variant law): single node, 2x, locked
@@ -280,15 +474,18 @@ describe("the refine kind (the fifth mod bag)", () => {
     assert.equal(loader.inputs['frame_load_cap'], Math.round(2.33 * 24), 'the window is the loader\'s cap (56 f)');
     assert.equal(loader.inputs['skip_first_frames'], Math.round(1.5 * 24), 'the window start is the loader\'s skip (36 f)');
     assert.equal(loader.inputs['select_every_nth'], 1, 'VHS audio duration = cap × tft × nth: nth 1 is the window law');
-    const enc = ofClass(out, 'VAEEncodeAudio');
-    assert.equal(enc.length, 1, 'the soundtrack encodes once');
-    const [encId, encNode] = enc[0]!;
-    assert.deepEqual(encNode.inputs['audio'], [loaderId, 2], 'the audio encode reads the loader\'s AUDIO slot, never its frames');
+    const edit = ofClass(out, 'MiniMaxH3FantasticVideoEditLatent');
+    assert.equal(edit.length, 1, 'the window encodes once, as ONE joint AV latent');
+    assert.equal(nodeOf(out, edit[0]![1].inputs['images']).class_type, 'VHS_LoadVideo', 'the frames seat reads the loader');
+    assert.deepEqual(edit[0]![1].inputs['audio'], [loaderId, 2], 'the audio seat reads the loader\'s AUDIO slot, never its frames');
     const hands = ofClass(out, 'MinimaxH3LatentUpscaler3DRefineHandoff');
     assert.equal(hands.length, 1);
-    assert.deepEqual(hands[0]![1].inputs['audio_latent'], [encId, 0], 'the handoff\'s audio_latent is the WINDOWED soundtrack\'s encode');
-    const venc = ofClass(out, 'VAEEncode')[0]!;
-    assert.deepEqual(hands[0]![1].inputs['latent'], [venc[0], 0], 'and its video latent is the windowed frames\' encode — the split-stream law, both wires on one window');
+    const target = ofClass(out, 'MiniMaxH3ContexMaskedTarget')[0]!;
+    assert.deepEqual(hands[0]![1].inputs['latent'], [target[0], 0], 'the handoff\'s latent is the window\'s JOINT masked target');
+    assert.equal(hands[0]![1].inputs['audio_latent'], undefined,
+      'no split audio_latent — a joint-AV latent rides one wire (the continuation can only carry that shape)');
+    assert.equal(ofClass(out, 'VAEEncode').length, 0, 'no split video encode on the refine path');
+    assert.equal(ofClass(out, 'VAEEncodeAudio').length, 0, 'no split audio encode on the refine path');
   });
 
   it("THE CEILING IS THE WINDOW'S (refine-window audit C1): a target-dimensions or megapixels window past the measured frame ceiling refuses loud — only a same-size multiplier pass is exempt", () => {
@@ -357,19 +554,34 @@ describe("the refine kind (the fifth mod bag)", () => {
   });
 
   it("an armed refine resolves its default output to the refine SaveVideo", () => {
-    const walked = def.schema({
-      calls: [{ text: 'a slow push in', start_frame: 0, end_frame: 56 }], length: 56,
-      refine: [REFINE_ENTRY()],
-    }) as Record<string, unknown>;
-    const g = new GraphBuilder();
-    def.compose(walked, model, g, 'run_rfmod_out');
-    const flow = resolveCardFlowOutputs(def, walked, graphOf(g));
+    const compose = (refine: Record<string, unknown>[], runId: string) => {
+      const walked = def.schema({
+        calls: [{ text: 'a slow push in', start_frame: 0, end_frame: 56 }], length: 56,
+        refine,
+      }) as Record<string, unknown>;
+      const g = new GraphBuilder();
+      def.compose(walked, model, g, runId);
+      return { walked, g };
+    };
+    // THE ONE-ENTRY FACE (unchanged by the carrier): the window save
+    // IS the terminal.
+    const one = compose([REFINE_ENTRY()], 'run_rfmod_out');
+    const flow = resolveCardFlowOutputs(def, one.walked, graphOf(one.g));
     assert.deepEqual(flow.outputs, { default: 'video' }, 'the refine still serves the video channel');
-    const out = graphOf(g);
+    const out = graphOf(one.g);
     const node = out[flow.outputNodes.default!];
     assert.ok(node, 'the resolved output node exists in the composed graph');
     assert.equal(node.class_type, 'SaveVideo', 'the armed refine resolves to a SaveVideo');
     assert.equal(node.inputs.filename_prefix, 'run_rfmod_out/refine', 'the refine terminal, never a film save');
+    // THE N FACE (GAPS-19): the resolved output is the JOINED film's
+    // terminal — never a window save.
+    const two = compose([REFINE_ENTRY(), { ...REFINE_ENTRY(), start_seconds: 68 / 24 }], 'run_rfmod_out_n');
+    const flow2 = resolveCardFlowOutputs(def, two.walked, graphOf(two.g));
+    const out2 = graphOf(two.g);
+    const node2 = out2[flow2.outputNodes.default!];
+    assert.ok(node2, 'the N-face resolved output node exists');
+    assert.equal(node2.class_type, 'SaveVideo', 'the tiled refine resolves to a SaveVideo');
+    assert.equal(node2.inputs.filename_prefix, 'run_rfmod_out_n/refine', 'the ASSEMBLED film terminal, never a window save (refine_w*)');
   });
 
   it("every cross-arm pair refuses LOUD naming the silently-dropped arm", () => {

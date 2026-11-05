@@ -3,7 +3,7 @@
 // the estate test law; the live lane fires the same shapes.
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Context, Service } from "@deepseek-ai/cordis";
@@ -170,6 +170,102 @@ describe("craftLoopExecutor (the loop law)", () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
+  it("F58: the flow-door binding rides — $spell stage params resolve against the run's request initials", async () => {
+    // THE LIVE JOURNEY ARM (FAILURES F58, 2026-11-02): the registry
+    // row's stage carries {agent_prompt: "$agent_prompt", command:
+    // "$command", max_iterations: "$max_iterations"}; the start door
+    // extracts the flow's declared initials from the body and the
+    // seat submits them as the executor's FIFTH argument. This arm
+    // rides exactly that shape: spell-carrying params + initials →
+    // the gate sees the resolved values, the act fires with the
+    // real command, the critic judges the real brief.
+    const dir = tmp();
+    const engines = new FakeEngines(dir);
+    const seenPrompts: string[] = [];
+    const critic: CraftCritic = {
+      critique: async (input: { prompt: string }) => {
+        seenPrompts.push(input.prompt);
+        return { verdict: "done", note: "matches the brief" };
+      },
+    };
+    const command = { engine: "fake", params: { n: 1 } };
+    await craftLoopExecutor(engines, critic).executeStages(
+      [stage({
+        agent_prompt: "$agent_prompt",
+        command: "$command",
+        max_iterations: "$max_iterations",
+      })],
+      dir,
+      {},
+      runOpts(),
+      { agent_prompt: "a red cube on white", command, max_iterations: 40 },
+    );
+    // the act fired with the RESOLVED command (the object, verbatim)
+    assert.equal(engines.acts.length, 1);
+    assert.deepEqual(engines.acts[0], command);
+    assert.deepEqual(seenPrompts, ["a red cube on white"]);
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("F58: the typed ride is verbatim — the NUMBER passes the gate; a stringified number REFUSES at the gate", async () => {
+    const dir = tmp();
+    const engines = new FakeEngines(dir);
+    const critic = new ScriptedCritic([{ verdict: "done", note: "ok" }]);
+    const spellStage = stage({
+      agent_prompt: "$agent_prompt",
+      command: "$command",
+      max_iterations: "$max_iterations",
+    });
+    // 40 the NUMBER: the gate accepts it (the fold never stringifies)
+    await craftLoopExecutor(engines, critic).executeStages(
+      [spellStage], dir, {}, runOpts(),
+      { agent_prompt: "p", command: { engine: "fake", params: {} }, max_iterations: 40 },
+    );
+    assert.equal(engines.acts.length, 1);
+    // "40" the STRING (a caller the initial door already refused —
+    // the belt): rides verbatim to the gate and refuses LOUD there,
+    // proving the fold passes values through with no silent coercion
+    await assert.rejects(
+      craftLoopExecutor(engines, critic).executeStages(
+        [spellStage], dir, {}, runOpts(),
+        { agent_prompt: "p", command: { engine: "fake", params: {} }, max_iterations: "40" },
+      ),
+      /'max_iterations' must be a positive integer/,
+    );
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("F58: an omitted optional initial omits the key (the engine defaults it); a typo'd REQUIRED spell refuses at the gate LOUD", async () => {
+    const dir = tmp();
+    const engines = new FakeEngines(dir);
+    const critic = new ScriptedCritic([{ verdict: "done", note: "ok" }]);
+    // no max_iterations initial: the key omits, the gate's own
+    // default law rules (no refusal, the loop runs)
+    await craftLoopExecutor(engines, critic).executeStages(
+      [stage({ agent_prompt: "$agent_prompt", command: "$command", max_iterations: "$max_iterations" })],
+      dir,
+      {},
+      runOpts(),
+      { agent_prompt: "p", command: { engine: "fake", params: {} } },
+    );
+    assert.equal(engines.acts.length, 1);
+    // a row that typo'd the REQUIRED brief spell ("$agent_promt"):
+    // the key omits and the contract gate refuses with its own
+    // voice — the documented loud chain (the registry-row wall pins
+    // the true spelling, so the typo never lands)
+    await assert.rejects(
+      craftLoopExecutor(engines, critic).executeStages(
+        [stage({ agent_prompt: "$agent_promt", command: "$command" })],
+        dir,
+        {},
+        runOpts(),
+        { agent_prompt: "p", command: { engine: "fake", params: {} } },
+      ),
+      /'agent_prompt' \(the brief\) is required/,
+    );
+    rmSync(dir, { recursive: true, force: true });
+  });
+
   it("the stop press aborts LOUD between iterations; a bad refine verdict is loud", async () => {
     const dir = tmp();
     const engines = new FakeEngines(dir);
@@ -330,6 +426,40 @@ describe("llmCritic (the real critic's law, against seam fakes)", () => {
     const content = ((llm.messages[0] as unknown as { content: { type: string }[] }[])[0]).content;
     assert.deepEqual(content.map((b) => b.type), ["text", "image"]);
     rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("F59 — an ABSOLUTE artifact path (the executor's return shape) reads as-is, never re-rooted under runDir", async () => {
+    // run-51d9db9c3b33: the act's executor returned the capture as an
+    // absolute dest (comfyui-outputs joins the run dir itself) and the
+    // critic joined runDir onto it — `<runRoot>/<abs>` ENOENT with the
+    // GPU already spent. The runRel law: an absolute artifact is never
+    // re-rooted; only a relative one rides its run dir.
+    const dir = tmp();
+    const nested = join(dir, "loop#0");
+    mkdirSync(nested, { recursive: true });
+    const abs = join(nested, "SaveImage.0_shot_00001_.png");
+    writeFileSync(abs, "PNG");
+    const other = tmp(); // a runDir that does NOT contain the artifact
+    const llm = makeLlm(['{"verdict":"done","note":"ok"}']);
+    const saved: unknown[] = [];
+    const attachments: CraftAttachmentsSeam = {
+      saveImage: async (input) => {
+        saved.push(input);
+        return { attachmentId: "att-1", mediaType: input.mediaType, bytes: 3, width: 4, height: 4 };
+      },
+    };
+    const verdict = await llmCritic(llm, attachments, { provider: "p", model: "m" }).critique({
+      iteration: 0,
+      prompt: "brief",
+      command: { engine: "fake", params: {} },
+      artifacts: [abs],
+      runDir: other,
+      signal: new AbortController().signal,
+    });
+    assert.deepEqual(verdict, { verdict: "done", note: "ok" });
+    assert.equal(saved.length, 1, "the absolute capture attached — no doubled-root ENOENT");
+    rmSync(dir, { recursive: true, force: true });
+    rmSync(other, { recursive: true, force: true });
   });
 
   it("refuses a non-image route LOUD and a no-JSON answer LOUD", async () => {

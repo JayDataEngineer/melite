@@ -6,7 +6,6 @@ genre: video
 
 # Upscale (deferred whole-film 2x) — SPEC
 
-> STATUS: LANDED 2026-11-12 (the sixth mod bag, the F19 deferred loop).
 > The emission composes the upstream Context-Loop family verbatim
 > (`models/h3` chainUpscale.ts): CheckpointManager with a BARE chain-run
 > name → UpscaleAdapter → UpscaleCurrent → ReferenceConditioning → the
@@ -17,28 +16,34 @@ genre: video
 > overrides the loaded bundle: the fields below are quoted off the card's
 > served upscale kind.
 >
-> VERIFIED LIVE 2026-11-13 against the execute door and the engine's own
-> validation (run run-10100e3da0e2-8c6108ab — the prompt VALIDATED and
-> SUBMITTED: round 5's `required_input_missing input_name: "mode.scale"`
-> is gone) and against the tree's skill-coverage batch (receipt
-> `contracts/receipts/2026-11-13-cards-bag-skills-coverage.md`).
+> Live-proven at the execute door: the prompt VALIDATES and SUBMITS
+> (the engine's own validation passes — no
+> `required_input_missing input_name: "mode.scale"` at the door).
 > NOT yet verified live: an END-TO-END upscaled render — no reachable run
 > carries chain checkpoints yet (every film so far is single-pass), so
 > the loop's own output is unproven until a chain-route film is pressed
 > and this arm re-presses on top of it.
 >
-> DOOR STATUS 2026-11-13 — DEAD PAST THE DOOR, with the receipt: the
-> press that validated (run-10100e3da0e2-8c6108ab) then died INSIDE the
-> graph at `MiniMaxH3ChainCheckpointManager` with
-> `json.decoder.JSONDecodeError: Expecting value: line 1 column 1
-> (char 0)` — the node read a selection file the estate never wrote.
-> Round 8 made the door REFUSE cleanly instead of submitting into that
-> burn, which is right — but nothing in the tree WRITES per-scene
-> revisions yet, so no press can succeed today. The cure is the chain
-> store's write side (save a chain run with revisions and reachable
-> manifest), not this doc. Do not promise an upscale until a store
-> entry exists; check the run's own artifacts for a manifest before
-> binding.
+> THE DOOR REFUSES CLEANLY PAST VALIDATION: the render path dies
+> INSIDE the graph at `MiniMaxH3ChainCheckpointManager` — the node
+> reads a selection file the estate never wrote — so the door refuses
+> instead of submitting into that dead graph.
+> Do not promise an upscale: the render itself is unproven and the
+> door refuses past validation — name the open state, never sell the
+> pass.
+>
+> THE WRITE SIDE IS LIVE: the ENGINE writes the per-scene revisions on every chain-spine run
+> (swap/repair/extend checkpoint each scene), and the estate now stamps
+> WHICH store on the run row — a completed chain run's stage
+> `result_outputs` carries `chain_store` {run_name, scenes, end_clip}.
+> The START DOOR resolves an upscale `chain_run` bound by ESTATE RUN ID
+> through that stamp (the run row, never the store, answers "was this a
+> chain run"), and a store-name binding passes straight through. THE
+> PLAIN-FILM LAW: a single-pass film run left NO chain store — its
+> windows join by file and no scene latents survive — so a film run id
+> refuses at the start door naming exactly that. Bind a swap/repair/
+> extend run's id or its store name; never promise an upscale over a
+> plain film.
 
 ## What it is (and is NOT)
 
@@ -60,11 +65,14 @@ It is NOT:
 - **a staged-file door** — there is no clip to stage: the entry names a
   RUN, and the engine's chain store is the only truth for what exists.
 
-One door per doc: ANY two armed mod bags REFUSE loud naming both —
+One door per doc: ANY two of the SIX armed mod bags REFUSE loud naming both —
 the fifteen pairs are replace↔repair, replace↔extend, repair↔extend,
 replace↔reshoot, repair↔reshoot, extend↔reshoot, replace↔refine,
 repair↔refine, extend↔refine, reshoot↔refine, replace↔upscale,
 repair↔upscale, extend↔upscale, refine↔upscale, reshoot↔upscale.
+THE LORA BAG IS NOT AN ARM: `loras` is the SEVENTH bag and it
+COEXISTS with any armed arm — it never disarms a pair (the lora
+plane rides every arm; only the six arm bags refuse).
 The upscale branch returns before the film action, so an armed upscale
 beside any other arm would be silently dropped. Pick one and empty the
 others. (Armed = the bag is PRESENT and non-empty; an absent or empty
@@ -74,11 +82,19 @@ byte-identical.)
 ## The flow (bind, confirm, press)
 
 1. **Find a chain run.** The source must be a run that pressed with the
-   CHAIN route and therefore left per-scene checkpoints. A single-pass
-   film leaves none, and the door refuses clearly when the store has no
-   scene revisions for the name (it names the run, the scene, and this
-   cure — the old failure was a raw JSON decode crash inside the engine
-   three nodes in).
+   CHAIN route and therefore left per-scene checkpoints — swap, repair
+   and extend runs do; read the run row's stage `result_outputs`
+   `chain_store` ({run_name, scenes, end_clip}): a chain run carries
+   it, a plain film does not. Bind the entry by the ESTATE RUN ID
+   (`run-…`) — the start door resolves it through that stamp — or by
+   the store name (`swap_…`) directly, which passes through untouched.
+   THE PLAIN-FILM LAW: a single-pass film's windows join by file and
+   no scene latents survive, so a film run id refuses at the START
+   door — "left no chain store — plain films don't checkpoint" — never
+   as a typo-reading unknown-run 404 at the execute door. (A store
+   name the store does not hold still refuses at the execute door,
+   naming the live runs — the store is the only existence truth for
+   spellings.)
 2. **Arm and bind.** Seat ONE entry on the `upscale` mod bag:
    `params.upscale = [entry]` — never flat. `chain_run` is required: a
    present-but-blank entry refuses LOUD naming the seat.
@@ -116,8 +132,8 @@ key `mode.scale`. The refine arm mounts a DIFFERENT node
 (`MinimaxH3LatentUpscaler3DRefineHandoff`, a plain combo with a
 top-level `scale`). The two spellings are never interchangeable: the
 dotted key on the flat node, or the flat key on the dynamic node, ends
-in `required_input_missing` before a single pixel moves. That is what
-the F23 burn was, and the composers now own one spelling each.
+in `required_input_missing` before a single pixel moves. The
+composers own one spelling each.
 
 ## Companion surfaces
 

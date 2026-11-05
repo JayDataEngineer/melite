@@ -16,13 +16,22 @@ IS that press — melite_flow executes there).
 Iterate ONLY at **`duration: 30`**; render the final at `duration: 90–120`
 once the caption is locked (no `preset` knob exists — duration is the
 draft/final lever; the caption itself rides `params.prompt`).
-**LENGTH LIVES IN `params.lyrics`, not duration** (operator 2026-11-12):
-duration is a CEILING — the model ends the song when its plan ends.
-Instrumentals need a sequential section-tag roadmap in `lyrics`
-(`[intro]` / `[instrumental]` / `[solo]` blocks, one per line,
-~20-40s each — repeat blocks to target length; an empty box wraps
-~35s), plus "Strictly instrumental. No vocals, no choir, no humming"
-in the caption so extended blocks stay voiceless.
+**LENGTH LIVES IN `params.lyrics`, not duration**: duration is a LEVER for
+sung songs (the plan fills toward the cap) — but an INSTRUMENTAL has no
+words to carry the clock, so the section tags ARE the roadmap and the
+model stops when they run out (blank or lone `[instrumental]` wraps
+~20-35s no matter the duration). Long-form formula:
+- 8-12 structural tags, one per line, NOTHING on the line or under the
+  tags (`[intro]` / `[instrumental]` / `[interlude]` / `[solo]` /
+  `[break]` / `[build up]` / `[outro]`) — ~20-40s per movement, repeat
+  to target length.
+- Vocal Details carries the disarm directive: "Instrumental track — no
+  vocals. Strictly non-vocal composition without background humming,
+  chops, or synthesized vocal pads."
+- Arrangement names lead/rhythm instruments PER SECTION so the take
+  doesn't loop or cut short.
+- `duration` rides at the max you'll allow — cap only, the roadmap
+  decides.
 Variations = same caption, new seeds.
 
 ## Gotcha
@@ -30,4 +39,5 @@ The status endpoint may list NO artifacts while the FLAC lands in the run dir -
 trust disk (`ls data/runs/<run_id>/`).
 
 ## Deliver
-FLAC -> `data/delivery/unity/audio/music/`, manifest row appended.
+FLAC in the run output dir — hand the artifact path to the asker
+(the destination is the caller's product, not this skill's).

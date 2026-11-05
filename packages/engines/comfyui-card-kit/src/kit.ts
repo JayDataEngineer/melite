@@ -48,6 +48,7 @@ export {
   IMAGE_EDIT_STRIP,
   finalizeImageEdit,
   refuseImageEditFiring,
+  refuseRegionEntryFields,
   refuseDeliverableSize,
   editRefs,
   orderedInputImages,
@@ -63,8 +64,9 @@ export {
   laneScheduler,
 } from './lanes-image.ts'
 export type { TensorRef, StatedRegion } from './lanes-image.ts'
+export { foldLegacyAliases, type FoldKinds } from './alias-fold.ts'
 export type { ActionBinding } from './facts.ts'
-export { qvoiceUse, type QVoiceUse } from './lanes-audio.ts'
+export { qvoiceUse, promoteQvoiceBag, type QVoiceUse } from './lanes-audio.ts'
 export {
   ANNY_STRIP,
   finalizeAnny,
@@ -105,14 +107,9 @@ export {
   saveAudio,
   laneStr,
 } from './blocks/audio-kit.ts'
-// the 3D render blocks (the poser turnaround consensus: one place per
-// multi-node shape, so the anny/fit/skin families compose the sheet
-// instead of hand-rolling the node chain).
-export {
-  renderGLBViews,
-  renderGLBViewsNode,
-  positive,
-} from './blocks/poser-kit.ts'
+// the 3D block face: the row guard the schemas pin. (The 8-view
+// turnaround renderers died with the blender lane, 2026-11-01.)
+export { positive } from './blocks/poser-kit.ts'
 // lanes.spec.ts names the StripTable type off the kit face (the lanes'
 // strip tables are StripTable-typed) — re-exported as a type, erased at runtime.
 export type { StripTable } from './graph.ts'

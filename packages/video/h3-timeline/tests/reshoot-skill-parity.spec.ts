@@ -15,7 +15,7 @@
 // card refuses (five bags → ten unordered pairs), derived from the card's
 // own armed kinds rather than a hand list.
 import "../../../../tests/helpers/boot-models.ts";
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { beforeAll, describe, expect, it } from "vitest";
@@ -96,11 +96,13 @@ describe("the re-shoot skill's dial table agrees with the code's own homes", () 
   });
 
   it("ARM 3 — both bag skills name ALL FIFTEEN one-door pairs, derived from the card's armed kinds", () => {
-    // the armed bags are the card's own list (param_key + max_stack 1);
+    // the armed bags are the card's own list — a door is every armed
+    // kind except the co-arming adapter bag (GAPS-19: the refine door
+    // stacks windows, so the roster follows the kind, not the ceiling);
     // six kinds → fifteen unordered pairs, so a seventh bag forces both
     // docs to state its six new pairs
     const kinds = ((def as unknown as { mods?: Array<Record<string, unknown>> }).mods ?? [])
-      .filter((k) => typeof k.param_key === "string" && k.max_stack === 1)
+      .filter((k) => typeof k.param_key === "string" && k.kind !== "loras")
       .map((k) => String(k.param_key));
     expect(kinds.sort()).toEqual(["extend", "refine", "repair", "replace", "reshoot", "upscale"]);
     const pairs: string[] = [];
@@ -118,28 +120,38 @@ describe("the re-shoot skill's dial table agrees with the code's own homes", () 
       }
       assert.match(md, /one door per doc/i, `${skill}/SKILL.md states the law`);
     }
+    // Friction-report doc nit (item 10): the reshoot leaf used to teach the
+    // false universal ("ANY two armed mod bags REFUSE"), while `loras` is the
+    // seventh bag and coexists with every arm. The pairs above are the six-arm
+    // law; this arm pins the exemption in words.
+    const reshootMd = readSkill("reshoot");
+    assert.doesNotMatch(reshootMd, /ANY two armed mod bags/i,
+      "reshoot/SKILL.md must not teach the false universal — loras is exempt");
+    assert.match(reshootMd, /THE LORA BAG IS NOT AN ARM/i,
+      "reshoot/SKILL.md names the lora-bag exemption");
+    assert.match(reshootMd, /SEVENTH bag/i,
+      "reshoot/SKILL.md names loras as the seventh bag");
+    assert.match(reshootMd, /COEXISTS/i,
+      "reshoot/SKILL.md states that loras coexists with any armed arm");
   });
 
-  it("THE STAMP LAW (F2, 2026-11-12): the re-shoot skill carries its verified-against line, and the receipt it names EXISTS on disk", () => {
-    // F2's burn (h3-timeline friction report): the skill taught a dead
-    // flat surface for a whole feature cycle because nothing tied the
-    // prose to a dated verification. The stamp is the cheap check: a
-    // VERIFIED LIVE line naming its evidence (the F2 sweep's one
-    // format everywhere — LIVE + date + receipt + run id), and the
-    // receipt it cites is a real file — a moved/deleted receipt reds
-    // rather than rots.
+  it("THE STAMP LAW: the re-shoot skill names what is live-proven, its unproven half, and cites no archaeology", () => {
+    // The served skill states its verification posture as plain
+    // present-tense law: what the door has proven, and what is STILL
+    // unproven (the honest half — never a blanket claim over an
+    // unrendered chain). Served copy carries no history archaeology:
+    // no dated stamp, no receipt path, no run id — dev_docs owns that
+    // material.
     const md = readSkill("reshoot");
-    assert.match(md, /VERIFIED LIVE \d{4}-\d{2}-\d{2} against/,
-      "reshoot/SKILL.md carries the canonical VERIFIED LIVE stamp (the F2 one-format law)");
-    const stamp = /VERIFIED (?:LIVE )?(\d{4}-\d{2}-\d{2}) against ([\s\S]*?)(?=\n\n)/.exec(md);
-    assert.ok(stamp, "reshoot/SKILL.md carries a dated VERIFIED line (the doc-stamp law)");
-    assert.match(stamp![1]!, /^2026-/, "the stamp is dated");
-    const receipt = /receipts\/[a-z0-9-]+\.md/.exec(stamp![2]!);
-    assert.ok(receipt, "the stamp names a receipt under dev_docs/contracts/receipts/");
-    const root = join(HERE, "..", "..", "..", "..");
-    const receiptPath = join(root, "dev_docs", "contracts", receipt![0]!);
-    assert.ok(existsSync(receiptPath), `the named receipt exists: ${receipt![0]}`);
-    assert.match(stamp![2]!, /NOT yet verified live/i,
-      "the stamp names what is STILL unproven (the honest half — never a blanket 'verified live' over an unrendered chain)");
+    assert.match(md, /Live-proven at the compose door/,
+      "reshoot/SKILL.md names what is live-proven in plain present-tense law");
+    assert.match(md, /NOT yet verified live/i,
+      "reshoot/SKILL.md names what is STILL unproven (the honest half — never a blanket 'verified live' over an unrendered chain)");
+    assert.doesNotMatch(md, /VERIFIED LIVE \d{4}-\d{2}-\d{2}/,
+      "reshoot/SKILL.md carries no dated VERIFIED LIVE stamp");
+    assert.doesNotMatch(md, /receipts\/[a-z0-9-]+\.md/,
+      "reshoot/SKILL.md cites no receipt path");
+    assert.doesNotMatch(md, /run-[0-9a-f]{8,}/,
+      "reshoot/SKILL.md cites no run id");
   });
 });

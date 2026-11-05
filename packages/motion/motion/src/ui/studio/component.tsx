@@ -346,6 +346,7 @@ export function MotionCardEditor({
           reposing={reposing} keptEdit={keptEdit} discardKeptEdit={discardKeptEdit}
           kimodoSpec={kimodoSpec} kimodoError={kimodoError}
           paramValues={paramValues} onParamEdit={onParamEdit}
+          onAxisPick={onSave}
           exportOpen={exportOpen} setExportOpen={setExportOpen}
           bgImage={bgImage} handleBgFile={handleBgFile} setBg={setBg}
           bodySrc={bodySrc} bodyWired={bodyWired} bodyWiredUpstream={bodyWiredUpstream}

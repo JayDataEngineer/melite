@@ -33,16 +33,16 @@ export { collapsePromptSpace } from "./craft.js";
 export { mintSeed, voiceLockSeed } from "./graph-helpers.js";
 export { declaredAction, instantiateAction } from "./action.js";
 export { IMPACT_DETECTOR_IDS, IMPACT_DETECTORS, IMPACT_DETECTOR_PROVISIONS, IMPACT_PACKS, impactArmNames, impactDetector, } from "./impact.js";
-export { IMAGE_EDIT_STRIP, finalizeImageEdit, refuseImageEditFiring, refuseDeliverableSize, editRefs, orderedInputImages, editImageCap, regionSegs, statedRegion, regionSourceKind, detailerSave, genDetailerSave, deliverableSizeOf, isSpell, laneSampler, laneScheduler, } from "./lanes-image.js";
-export { qvoiceUse } from "./lanes-audio.js";
+export { IMAGE_EDIT_STRIP, finalizeImageEdit, refuseImageEditFiring, refuseRegionEntryFields, refuseDeliverableSize, editRefs, orderedInputImages, editImageCap, regionSegs, statedRegion, regionSourceKind, detailerSave, genDetailerSave, deliverableSizeOf, isSpell, laneSampler, laneScheduler, } from "./lanes-image.js";
+export { foldLegacyAliases } from "./alias-fold.js";
+export { qvoiceUse, promoteQvoiceBag } from "./lanes-audio.js";
 export { ANNY_STRIP, finalizeAnny, MOTION_STRIP, finalizeMotion, MESH_RESOLUTIONS, MESH_BG_MODES, MESH_PIXAL_FOVS, MESH_BAKE_SIZES, MESH_ATLAS_SIZES, MESH_AO_SIZES, MESH_NORMAL_SIZES, admitMeshLiftShared, } from "./lanes-3d.js";
 export { TAGGER_STRIP, finalizeTagger, finalizeMask, TAGGER_CAPTION_TASKS, TAGGER_CAPTION_TYPES, TAGGER_CAPTION_LENGTHS, TAGGER_EXTRA_OPTIONS, taggerSaveText, parseWeightlessFacts, assertTagInput, } from "./lanes-image-tools.js";
 // the audio render blocks (the atom-vocabulary stroke 3: family
 // actions port the audiocore segments on the SAME calibrated pins
 // and loaders — one owner, the lanes stay as byte-oracles).
 export { AUDIACORE_TTS_AUTOFILL, AUDIACORE_STUDIO_AUTOFILL, TTS_STRIP, finalizeTts, loadAudiocore, saveAudio, laneStr, } from "./blocks/audio-kit.js";
-// the 3D render blocks (the poser turnaround consensus: one place per
-// multi-node shape, so the anny/fit/skin families compose the sheet
-// instead of hand-rolling the node chain).
-export { renderGLBViews, renderGLBViewsNode, positive, } from "./blocks/poser-kit.js";
+// the 3D block face: the row guard the schemas pin. (The 8-view
+// turnaround renderers died with the blender lane, 2026-11-01.)
+export { positive } from "./blocks/poser-kit.js";
 //# sourceMappingURL=kit.js.map

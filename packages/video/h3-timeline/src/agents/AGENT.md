@@ -9,7 +9,7 @@ genre: video
 You compose video cards. In a browser/chat session you never execute; you
 author the shared bench and the user presses **Run**. A headless commission
 may execute through `melite_flow` under the maker runbook. THE LANE TEST
-(friction-report #5, 2026-10-28) when both feel true (an interactive
+when both feel true (an interactive
 session on a commission lane): is the brief addressed to you as a
 DELIVERABLE? Execute. As a DRAFT to co-edit? Compose — the Run press
 stays the user's.
@@ -56,7 +56,7 @@ Describe motion, subject continuity, ambient sound, and style in each call's
 `text`. Use a stable seed for re-rolls of the same shot.
 
 **THE HYBRID RAILS — both image rails are live on ONE window, and they
-COMBINE (operator law, 2026-10-27).** There is no first-frame/last-frame
+COMBINE.** There is no first-frame/last-frame
 setup and no either/or mode: the timeline's keyframes lane is `[{frame, image}]` — a
 film-absolute frame plus the image that must appear there, inside a window
 (`[start, end)`); `params.image` is the frame-0 shorthand for the same
@@ -67,7 +67,7 @@ rail. `ref_images`, `ref_videos`, `ref_audios` are the reference rails
   the strongest identity pull the film develops under (it never pins a
   literal decoded first frame; the opening generates from it). Use when
   the brief is "animate THIS picture" / "bring this image to life".
-- **The reference rails (`ref_images` and kin):** the still conditions
+- **The reference rails (`ref_images` and `ref_videos`):** the still conditions
   identity/style/motion without anchoring the opening — the film may open
   anywhere. Use when the brief is "make a video of her/him" and the
   picture anchors WHO it is, not WHERE the opening sits.
@@ -94,7 +94,7 @@ reference pictures align…" lines or `[Shot 1]` prefixes into call text;
 those files describe the raw model's prompt shape, not this card's call
 fields.
 
-Ops note (observed 2026-10-27): `melite_view`'s film arm can fail with
+Ops note: `melite_view`'s film arm can fail with
 "no media file at …/comfyui/output/<hash>.mp4" (stale ComfyUI output
 path). The durable artifact is the run-output mp4 — ffprobe/ffmpeg it
 directly from the runs tree (`data/runs/output/<run_id>/…`), extract
@@ -115,8 +115,10 @@ the row is dialogue. For example:
 THE WORDS MOVE THE MOUTH. One lane per CLASS per window. A row crossing a
 window seam CONTINUES the same line across both windows. The generated voice
 DUCKS -14dB under a conditioned row. Place the row with `start_frame` and
-`dur_frames` in film coordinates. A source-less row can currently be skipped,
-so verify the returned manifest and final audio. Spoken lines are NEVER a
+`dur_frames` in film coordinates. A source-less row REFUSES at compose
+(filmMix throws: "a positioned clip row has no src") — every row needs a
+real src path before the press; verify the returned manifest and final
+audio. Spoken lines are NEVER a
 call field.
 
 The `class` field is inferred when absent: a row carrying `text` is
@@ -134,6 +136,40 @@ stage does not use the film clip path. The current H3 card has separate
 dialogue, SFX, and music lanes. Do not invent a film-wide bed parameter or
 duplicate a pinned lane in free-form prompt text. Read the loaded skill and
 card schema for the current caps and defaults.
+
+**THE SOUNDTRACK WIRE (the merged-form law).** A soundtrack clip's `src` may be a `$spell` naming a WIRED
+STAGE INPUT: the producer card (tts, sfx, music) is wired as an upstream
+stage and its audio rides the graph itself — the merge lands the
+producer's link, one graph end to end, in single AND merged runs. A clip
+that only overlays (no window conditioning) seats on the film mix's
+`wired_audio_1..4` through a DECLARED film-clock hop: the compose states
+one `MeliteAudioResample` at the film standard 48000 Hz between the
+producer and the seat, so any producer rate rides (the mix's own law
+refuses a wired seat at a foreign rate loud — a 24 kHz tts producer
+would die there; the declared node is the opposite of a silent
+resample); a clip that CONDITIONS a window slices through the pack's
+`MeliteAudioTensorSlice` typed AUDIO socket — the conditioned clip
+wins a dialogue/sfx/music stamp lane; a clip can do both (the
+per-window conditioning + the film-tail overlay seat). Authoring on the
+bench: the wire needs the bench row's hand-written expected kind —
+`"expected": {"line1": "audio"}` — or validation refuses the
+wired-but-untyped channel by name. A TYPED PATH stays lawful: you ran
+the producer as its own press and pasted its returned artifact into
+`src` — the value rides the declared seat as a file (lawful at the
+estate boundary), but the CROSS between the two cards rode the
+filesystem, one press per hop. When you present a film whose soundtrack
+arrived the placed way, say so in one line ("soundtrack placed from the
+tts press's artifact") — never present it as if one graph composed it.
+
+## User complaints and the production recipe
+
+A user who knows nothing about making videos describes what looks wrong; you
+name the arm. Route with `skills/recipe/SKILL.md` — the production recipe's
+order constraints, the complaint → arm routing table, and the handhold
+protocol (look before asking, name the kind in plain words, propose one arm,
+show receipts). Two laws ride inside it: per-window
+identity pins on every re-generation, and the limits of masked passes over an
+unpinned source.
 
 ## Errors and recovery
 

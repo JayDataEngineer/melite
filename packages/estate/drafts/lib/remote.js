@@ -32,9 +32,10 @@ var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, 
     if (target) Object.defineProperty(target, contextIn.name, descriptor);
     done = true;
 };
-import { Remote, RemoteError, TypertRemoteService, } from "@deepseek-ai/dsh-typert-protocol";
+import { Remote, RemoteError, TypertRemoteService, remoteErrorOf, } from "@deepseek-ai/dsh-typert-protocol";
 import { admitWiring, benchBlockOf, strippedForAdmission, toleratedByRow } from "./bench.js";
 import { STAGE_PATCH_KEYS, RESTORED_PROVENANCE_SPELLING } from "@melite/contracts/benchStage";
+import { FLOW_ID_RE } from "@melite/contracts";
 import { segmentConfined } from "@melite/contracts/mediaKinds";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -42,7 +43,7 @@ export { STAGE_PATCH_KEYS };
 import { unwrapItemArrays } from "@melite/comfyui-card-kit";
 import { openDraftsDomain } from "./store.js";
 import { DRAFT_ID_RE } from "./spec.js";
-import { addStageBench, addStagesBench, ensureBench, notifyBenchChange, notifyBenchDocWrite, onBenchChange, clearBenchChangeSeam, setBenchChangeSeam, archiveBench, getBench, groupBench, patchBench, clearBench, removeStageBench, reorderBench, rewireBench, undoBench, ungroupBench, } from "./bench.js";
+import { addStageBench, addStagesBench, ensureBench, notifyBenchChange, notifyBenchDocWrite, onBenchChange, clearBenchChangeSeam, setBenchChangeSeam, archiveBench, getBench, getBenchSeeded, groupBench, patchBench, clearBench, removeStageBench, reorderBench, rewireBench, undoBench, ungroupBench, } from "./bench.js";
 import { benchDraftIdOf, draftIdOf } from "@melite/contracts/benchStage";
 /** Install the typed bench event seam on a Context: `bench.ts`
  *  (the pure domain module) emits and subscribes through it.
@@ -354,19 +355,21 @@ export function familyReseatOf(ctx) {
     return reg.reseatStageFamily.bind(reg);
 }
 /** THE FAMILY ADMISSION SEAT (journey-closure B5, 2026-10-17 — hop
- *  3's first judge): the registry judges the card's OWN family
- *  clause (CardDefinition.admitFamily — the same clause the run
- *  door's compose walk enforces, riding the card's contract module)
- *  over the merged stage params. A Final-Cut stamp on a keyframe doc
- *  refuses at the write door with the run door's own voice
- *  (bench/family-refusal) instead of green-lighting to the run
- *  press — the patch door's "the params the NEXT run would compose"
- *  claim, made true for family-conditional cards. The SAME restore
- *  carve the lane admission rides (the server-set marker, never a
- *  caller's claim): the archive loads, the run teaches. Returns
- *  undefined when the registry seat offers no family seam
- *  (registry-less lanes, pre-B5 registries). Exported for the wall,
- *  the laneAdmissionOf precedent. */
+ *  3's first judge): the registry judges an OPTIONAL card family
+ *  clause (CardDefinition.admitFamily) over the merged stage params,
+ *  so a patch that would land a family-illegal doc refuses at the
+ *  write door with the run door's own voice (bench/family-refusal)
+ *  instead of green-lighting to the run press. NO LIVE CARD declares
+ *  a clause after the 2026-11-15 lane-dead-letter retirement
+ *  (h3-timeline's t4r inject-keys face was deleted when the t4r arm
+ *  gained the post chain — every finish key fires on every lane, and
+ *  a non-empty DECL deadKeys is banned at boot), so the seam is an
+ *  honest no-op for today's cards; the mechanism stands for a genuine
+ *  future family clause. The SAME restore carve the lane admission
+ *  rides (the server-set marker, never a caller's claim): the archive
+ *  loads, the run teaches. Returns undefined when the registry seat
+ *  offers no family seam (registry-less lanes, pre-B5 registries).
+ *  Exported for the wall, the laneAdmissionOf precedent. */
 export function familyAdmissionOf(ctx) {
     const reg = resolverOf(ctx);
     if (reg === null || reg.admitStageFamily === undefined)
@@ -378,6 +381,78 @@ export function familyAdmissionOf(ctx) {
         const verdict = reg.admitStageFamily(card, params);
         if (!verdict.ok) {
             throw new RemoteError("bench/family-refusal", verdict.error, { card });
+        }
+    };
+}
+/** THE PRE-MINT COMPOSE VERDICT SEAT (F14's estate half,
+ *  2026-10-31): the add-stage door's whole-bench judge. Resolves the
+ *  runs service LAZILY — ctx.get("runs", false), the resolverOf
+ *  precedent — because the dependency edge points down (the runs
+ *  registry statically injects the drafts remote; a static inject
+ *  here would be a cycle the planner cannot seat). An absent seat
+ *  admits: the registry-less law every optional judge here rides
+ *  (an isolated drafts rig judges nothing it cannot compose).
+ *
+ *  The verdict mirrors the agent tool's verdictOfStages
+ *  (melite-construct.ts:211) clause for clause — same
+ *  flow_inline {id, stages} body, same ok/valid read, same
+ *  free-text-intent fallback through FLOW_ID_RE (the contract's
+ *  one spelling) — so a projection one door composes the other
+ *  composes too. Every failure folds into the refusal message
+ *  (never a throw, never a silent admit): the estate cannot
+ *  certify the projection, so it does not write it. Exported for
+ *  the wall, the benchAdmissionOf precedent. */
+export function composeVerdictOf(ctx, signal) {
+    let seat;
+    try {
+        seat = ctx.get("runs", false);
+    }
+    catch {
+        return undefined;
+    }
+    if (seat === null || seat === undefined || typeof seat !== "object")
+        return undefined;
+    const validate = seat.validate;
+    if (typeof validate !== "function")
+        return undefined;
+    return async (intent, stages) => {
+        if (stages.length === 0)
+            return { ok: true };
+        const flowId = typeof intent === "string" && intent !== "" && FLOW_ID_RE.test(intent) ? intent : "bench";
+        try {
+            const r = await seat
+                .validate({ flow_inline: { id: flowId, stages } }, signal);
+            const row = (r ?? {});
+            if (row["ok"] === true || row["valid"] === true)
+                return { ok: true };
+            const error = typeof row["error"] === "string"
+                ? row["error"]
+                : JSON.stringify(row);
+            return { ok: false, error };
+        }
+        catch (e) {
+            // the gate's refusal IS the verdict (the teaching voice rides it)
+            // — EXCEPT the authoring-incomplete class (the frictionless-
+            // authoring ruling, operator 2026-11-11): an UNSTATED required
+            // word is bench state under construction, and every WRITE seat
+            // drops the class — the run door keeps its voice. Discrimination
+            // is by code, never instanceof (the RemoteError class's own
+            // law); the flag hands the class to the pre-mint gate, which
+            // admits the write (bench.ts's gate owns that branch).
+            const refusal = remoteErrorOf(e);
+            const message = refusal !== undefined
+                ? refusal.message
+                : e instanceof Error ? e.message : String(e);
+            // THE CODE'S DECLARING HOME IS THE CONSUMER (estate-queue's
+            // module augmentation owns the runs/* rows; drafts cannot
+            // import the union without inverting the dependency). The
+            // WIRE VALUE is the contract — compared as the string it
+            // crosses the boundary as, the same value the runs error-code
+            // table spells and the client discriminates.
+            if (refusal !== undefined && refusal.code === "runs/card-compose-incomplete") {
+                return { ok: false, error: message, incomplete: true };
+            }
+            return { ok: false, error: message };
         }
     };
 }
@@ -1121,6 +1196,11 @@ let BenchRemoteService = (() => {
          *  it). */
         async *subscribe(sessionKey, signal) {
             signal.throwIfAborted();
+            // THE WRITER SEAT (the one-seat re-seat): the stream watches and
+            // serves the writer seat's key — a delegated lane's writes notify
+            // the re-seated session, so the watch must compare the same key
+            // or the stream sleeps past every change.
+            sessionKey = this.seatOf(sessionKey).session;
             for (;;) {
                 // SUBSCRIBE BEFORE READ (audit S-S3, 2026-10-22): the change
                 // watch attaches BEFORE the read, not after the yield. A write
@@ -1213,6 +1293,9 @@ let BenchRemoteService = (() => {
          *  wraps as bench/store-failed. */
         async get(session, signal) {
             signal.throwIfAborted();
+            // THE WRITER SEAT (the one-seat re-seat): a delegated lane reads
+            // its parent conversation's bench — the one seat, both faces.
+            const seat = this.seatOf(session);
             let drafts;
             try {
                 drafts = await openDraftsDomain(this.ctx);
@@ -1220,8 +1303,101 @@ let BenchRemoteService = (() => {
             catch (error) {
                 throw new RemoteError("bench/store-failed", thrownMessage(error), {}, { cause: error });
             }
-            const row = getBench(drafts, session);
+            // THE READ-PATH INHERITANCE (the tab-first ordering, audit §8.1):
+            // a missing bench whose lineage carries state seeds forward and
+            // serves it — the tab's first frame after a reload carries the
+            // built state with no write and no client change. A genuinely
+            // fresh key keeps bench/not-found byte-identical.
+            let row;
+            try {
+                row = getBench(drafts, seat.session);
+            }
+            catch (error) {
+                if (error instanceof RemoteError &&
+                    error.code === "bench/not-found") {
+                    row = await getBenchSeeded(drafts, seat.session, seat.lineage);
+                }
+                else {
+                    throw error;
+                }
+            }
             return { ...row, stages: withResolvedStages(this.ctx, row.stages) };
+        }
+        /** THE GENERATION CHAIN (the one-seat audit, 2026-10-31 —
+         *  dev_docs/audits/journey/2026-10-31-one-seat-bench-identity.md):
+         *  DSH conversations seed new session generations (the child's
+         *  header carries parentSession); the bench key rides the
+         *  generation id, so a seed orphaned the built state. This walker
+         *  hands ensureBench the caller's ancestor chain (nearest-first,
+         *  depth-capped, cycle-safe) and the inheritance arm copies the
+         *  nearest ancestor's bench forward on first touch. The sessions
+         *  service is HOST data probed like every optional seat
+         *  (ctx.get(name, false)); lanes without it — pure unit boots —
+         *  carry no lineage and keep the clean-birth law.
+         *  @param session the caller's generation key (any shape; a
+         *    non-string resolves no chain).
+         *  @returns the ancestor session keys nearest-first, or undefined
+         *    when no host session service or no parent chain exists. */
+        benchLineageOf(session) {
+            if (typeof session !== "string" || session === "")
+                return undefined;
+            const sessions = this.ctx.get("sessions", false);
+            if (sessions === undefined || typeof sessions.get !== "function") {
+                return undefined;
+            }
+            const chain = [];
+            let current = session;
+            for (let depth = 0; depth < 8; depth += 1) {
+                // THE DELEGATED LANE'S SPELLING (the one-seat re-seat, audit
+                // 2026-10-31 §8.2): a subagent's agent.id is a bare uuid while
+                // its session record may key WITH the generation prefix — the
+                // walker probes both, the caller's spelling first.
+                let record = sessions.get(current);
+                if ((record === undefined || record === null) && !current.startsWith("session-")) {
+                    record = sessions.get("session-" + current);
+                }
+                if (record === undefined || record === null)
+                    break;
+                const header = record.header;
+                const parent = header
+                    ?.parentSession;
+                if (typeof parent !== "string" ||
+                    parent === "" ||
+                    parent === current ||
+                    chain.includes(parent))
+                    break;
+                chain.push(parent);
+                current = parent;
+            }
+            return chain.length > 0 ? chain : undefined;
+        }
+        /** THE WRITER SEAT (the one-seat audit §8.2's caller-side re-seat,
+         *  2026-10-31): one derivation every bench door rides. Three seat
+         *  shapes: a `delegate:<id>` key is the tool-forwarded DELEGATED
+         *  lane — the writer seat is its PARENT conversation's CURRENT
+         *  generation (lineage[0], the doc the tab watches; the prefix is
+         *  the delegation signal benchKeyOfExec stamps — never a
+         *  bench-<uuid> no tab reads), refusing loud when the host
+         *  sessions service resolves no parent. A `session-` key IS the
+         *  conversation generation — it writes its own bench (inheritance
+         *  seeds it on first touch). ANY other key is the genuinely
+         *  unattributed seat's own (main, a script's explicit key) — the
+         *  fallback the audit leaves alive, no walk, no refusal.
+         *  @returns the writer session key + the lineage for its seed
+         *    birth (undefined once re-seated: the parent bench exists, no
+         *    second walk). */
+        seatOf(session) {
+            if (session.startsWith("delegate:")) {
+                const lineage = this.benchLineageOf(session.slice("delegate:".length));
+                if (lineage === undefined || lineage.length === 0) {
+                    throw new RemoteError("bench/unseated", "melite cannot seat this lane: the delegated caller key resolves no parent conversation in the host sessions service (the ONE-SEAT law, audit 2026-10-31-one-seat-bench-identity) — a delegated lane composes on its parent conversation's bench", { caller: session });
+                }
+                return { session: lineage[0], lineage: undefined };
+            }
+            if (session.startsWith("session-")) {
+                return { session, lineage: this.benchLineageOf(session) };
+            }
+            return { session, lineage: undefined };
         }
         /** The in-process API the adapter above delegates to. */
         async ensure(doc, signal) {
@@ -1236,11 +1412,18 @@ let BenchRemoteService = (() => {
             catch (error) {
                 throw new RemoteError("bench/store-failed", thrownMessage(error), {}, { cause: error });
             }
-            const session = typeof doc["session"] === "string" ? doc["session"] : "";
-            const row = await withBenchWrite(benchDraftIdOf(session), () => ensureBench(drafts, doc, benchAdmissionOf(this.ctx)));
+            const rawSession = typeof doc["session"] === "string" ? doc["session"] : "";
+            // THE WRITER SEAT (the one-seat re-seat, audit §8.2): a delegated
+            // lane's bare uuid writes the PARENT conversation's bench — the
+            // door body is re-keyed before the door sees it, so the row, the
+            // log, and the change wire all name the one seat.
+            const seat = this.seatOf(rawSession);
+            const doorBody = seat.session !== rawSession ? { ...doc, session: seat.session } : doc;
+            const session = seat.session;
+            const row = await withBenchWrite(benchDraftIdOf(session), () => ensureBench(drafts, doorBody, benchAdmissionOf(this.ctx), seat.lineage));
             // ensureBench gates doc.session as a valid key before this line —
             // the row's own session can never differ here (no dead fallback).
-            notifyBenchChange(String(doc["session"]));
+            notifyBenchChange(session);
             return row;
         }
         /** Endpoint `bench/patch` — params merge (+result/runStatus) with
@@ -1265,9 +1448,11 @@ let BenchRemoteService = (() => {
          *  function`, measured live on run-9dacc8612feb). */
         async archive(session, doc, signal) {
             signal.throwIfAborted();
+            const seat = this.seatOf(session);
+            session = seat.session;
             return withBenchWrite(benchDraftIdOf(session), async () => {
                 const drafts = await this.open(signal);
-                const row = await archiveBench(drafts, session, doc);
+                const row = await archiveBench(drafts, session, doc, seat.lineage);
                 notifyBenchChange(session);
                 return row;
             });
@@ -1297,9 +1482,11 @@ let BenchRemoteService = (() => {
          *  drag-reorder door, 2026-09-11). */
         async remoteExportReorder(sessionKey, doc, signal) {
             signal.throwIfAborted();
+            const seat = this.seatOf(sessionKey);
+            sessionKey = seat.session;
             return withBenchWrite(benchDraftIdOf(sessionKey), async () => {
                 const drafts = await this.open(signal);
-                const row = await reorderBench(drafts, sessionKey, doc);
+                const row = await reorderBench(drafts, sessionKey, doc, seat.lineage);
                 notifyBenchChange(sessionKey);
                 return row;
             });
@@ -1308,9 +1495,11 @@ let BenchRemoteService = (() => {
          *  (the Group Cards sub-view's door, 2026-09-11). */
         async remoteExportGroup(sessionKey, doc, signal) {
             signal.throwIfAborted();
+            const seat = this.seatOf(sessionKey);
+            sessionKey = seat.session;
             return withBenchWrite(benchDraftIdOf(sessionKey), async () => {
                 const drafts = await this.open(signal);
-                const row = await groupBench(drafts, sessionKey, doc, benchAdmissionOf(this.ctx));
+                const row = await groupBench(drafts, sessionKey, doc, benchAdmissionOf(this.ctx), seat.lineage);
                 notifyBenchChange(sessionKey);
                 return row;
             });
@@ -1318,9 +1507,11 @@ let BenchRemoteService = (() => {
         /** Endpoint `bench/ungroup` — spill a compound's children back. */
         async remoteExportUngroup(sessionKey, doc, signal) {
             signal.throwIfAborted();
+            const seat = this.seatOf(sessionKey);
+            sessionKey = seat.session;
             return withBenchWrite(benchDraftIdOf(sessionKey), async () => {
                 const drafts = await this.open(signal);
-                const row = await ungroupBench(drafts, sessionKey, doc, benchAdmissionOf(this.ctx));
+                const row = await ungroupBench(drafts, sessionKey, doc, benchAdmissionOf(this.ctx), seat.lineage);
                 notifyBenchChange(sessionKey);
                 return row;
             });
@@ -1343,18 +1534,26 @@ let BenchRemoteService = (() => {
         }
         async patch(session, doc, signal) {
             signal.throwIfAborted();
+            const seat = this.seatOf(session);
+            session = seat.session;
             return withBenchWrite(benchDraftIdOf(session), async () => {
                 const drafts = await this.open(signal);
-                const row = await patchBench(drafts, session, doc, benchAdmissionOf(this.ctx), laneMigrationOf(this.ctx), familyReseatOf(this.ctx));
+                const row = await patchBench(drafts, session, doc, benchAdmissionOf(this.ctx), laneMigrationOf(this.ctx), familyReseatOf(this.ctx), seat.lineage);
                 notifyBenchChange(session);
                 return row;
             });
         }
         async addStage(session, doc, signal) {
             signal.throwIfAborted();
+            const seat = this.seatOf(session);
+            session = seat.session;
             return withBenchWrite(benchDraftIdOf(session), async () => {
                 const drafts = await this.open(signal);
-                const row = await addStageBench(drafts, session, doc, benchAdmissionOf(this.ctx));
+                // F14's estate half: the GUI card press composes BEFORE the
+                // mint (the tool door's own law, one hop upstream). The seat
+                // is resolved per-press (an app that mounts no runs service
+                // admits; the registry-less law).
+                const row = await addStageBench(drafts, session, doc, benchAdmissionOf(this.ctx), seat.lineage, composeVerdictOf(this.ctx, signal));
                 notifyBenchChange(session);
                 return row;
             });
@@ -1364,45 +1563,55 @@ let BenchRemoteService = (() => {
          * server-side. */
         async addStages(session, doc, signal) {
             signal.throwIfAborted();
+            const seat = this.seatOf(session);
+            session = seat.session;
             return withBenchWrite(benchDraftIdOf(session), async () => {
                 const drafts = await this.open(signal);
-                const row = await addStagesBench(drafts, session, doc, benchAdmissionOf(this.ctx));
+                const row = await addStagesBench(drafts, session, doc, benchAdmissionOf(this.ctx), seat.lineage);
                 notifyBenchChange(session);
                 return row;
             });
         }
         async removeStage(session, doc, signal) {
             signal.throwIfAborted();
+            const seat = this.seatOf(session);
+            session = seat.session;
             return withBenchWrite(benchDraftIdOf(session), async () => {
                 const drafts = await this.open(signal);
-                const row = await removeStageBench(drafts, session, doc);
+                const row = await removeStageBench(drafts, session, doc, seat.lineage);
                 notifyBenchChange(session);
                 return row;
             });
         }
         async clear(session, doc, signal) {
             signal.throwIfAborted();
+            const seat = this.seatOf(session);
+            session = seat.session;
             return withBenchWrite(benchDraftIdOf(session), async () => {
                 const drafts = await this.open(signal);
-                const row = await clearBench(drafts, session, doc);
+                const row = await clearBench(drafts, session, doc, seat.lineage);
                 notifyBenchChange(session);
                 return row;
             });
         }
         async rewire(session, doc, signal) {
             signal.throwIfAborted();
+            const seat = this.seatOf(session);
+            session = seat.session;
             return withBenchWrite(benchDraftIdOf(session), async () => {
                 const drafts = await this.open(signal);
-                const row = await rewireBench(drafts, session, doc);
+                const row = await rewireBench(drafts, session, doc, seat.lineage);
                 notifyBenchChange(session);
                 return row;
             });
         }
         async undo(session, doc, signal) {
             signal.throwIfAborted();
+            const seat = this.seatOf(session);
+            session = seat.session;
             return withBenchWrite(benchDraftIdOf(session), async () => {
                 const drafts = await this.open(signal);
-                const row = await undoBench(drafts, session, doc, benchAdmissionOf(this.ctx));
+                const row = await undoBench(drafts, session, doc, benchAdmissionOf(this.ctx), seat.lineage);
                 notifyBenchChange(session);
                 return row;
             });

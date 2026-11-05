@@ -24,7 +24,7 @@
 // package BUILDS (tsc, the drafts recipe); the route stays plain.
 import type { Context } from "@deepseek-ai/cordis";
 import { Remote, RemoteError, TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
-import { contentTypeForArtifact, isEstateSidecarName, mediaVocab, segmentConfined, servableLeaf } from "@melite/contracts/mediaKinds";
+import { ARCHIVED_DIR_NAME, contentTypeForArtifact, isEstateSidecarName, mediaVocab, segmentConfined, servableLeaf } from "@melite/contracts/mediaKinds";
 import { parseRangeHeader } from "@melite/contracts/mediaRange";
 import {
   LEGACY_RUN_MEDIA_PREFIX,
@@ -473,7 +473,17 @@ export async function listMediaAcross(roots: readonly string[], kind: string): P
     try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
     const files: Array<{ name: string; t: number }> = [];
     for (const e of entries) {
-      if (e.isDirectory()) { walk(root, runId, path.join(dir, e.name), rel === "" ? e.name : `${rel}/${e.name}`, depth + 1); continue; }
+      // THE ARCHIVE TUCK (operator ruling 2026-11-14, item (a)):
+      // archived artifacts rest under `<run>/_archived/` — the dir
+      // is skipped WHOLE (never descended), so tucked files list
+      // nowhere while their bytes survive beside the run. Exact-name
+      // match: the general underscore-dir question (`_thumb/…`) is
+      // not this door's to answer.
+      if (e.isDirectory()) {
+        if (e.name === ARCHIVED_DIR_NAME) continue;
+        walk(root, runId, path.join(dir, e.name), rel === "" ? e.name : `${rel}/${e.name}`, depth + 1);
+        continue;
+      }
       if (!e.isFile()) continue;
       // THE SIDECAR LAW (the text-kind stroke, 2026-10-24): the
       // harness's own bookkeeping (_request.json, _flow.json) is

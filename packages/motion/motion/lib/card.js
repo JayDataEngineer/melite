@@ -107,7 +107,12 @@ export function registerCard(ctx, comfy) {
             // declared rider (UI-only — no ACTION_BINDINGS read consumes
             // it, so it never reaches the serialized graph; the card.spec
             // hop-5 arm pins that half).
-            const doc = gatedResolve('motion', schemaFn, ['model', 'motion_bg_image'], p);
+            // THE AXIS COORDINATE RIDERS (the motion recipe-seat cure,
+            // 2026-11-13 — h3's rider law): the DECL serves Variant/Quant/
+            // Recipe groups, the shared ModelAxes seat now stamps them, and
+            // the coordinates ride as RIDERS — never staged knobs (the A7
+            // coords law), never bricked into untyped params at this walk.
+            const doc = gatedResolve('motion', schemaFn, ['model', 'motion_bg_image', 'variant', 'quant'], p);
             if (!doc.prompt || !doc.prompt.trim()) {
                 throw new Error("required param 'prompt' missing on the motion card — the motion lane generates FROM a text prompt");
             }

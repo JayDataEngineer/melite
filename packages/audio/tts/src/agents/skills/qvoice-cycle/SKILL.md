@@ -6,8 +6,6 @@ genre: audio
 
 # The voice-lock cycle
 
-> VERIFIED LIVE 2026-11-12 against receipt `contracts/receipts/2026-11-12-cards-tts-qvoice-cycle-skill.md` (runs run-7ff0c865a624-871abb91 save + run-8591a6002407-876c85d0 perform — the two-artifact save, the locked-identity perform, the byte-identical PCM re-render run-e172061d383e-876d9b23, and the measured emotion ladder through run-03104187538c-877eea98, with the post-fix wire proven clean on run-d0f67aab33b4-891adb3e).
-
 A character is made ONCE and performed MANY times. Phase A builds the
 voice from a description and saves it as a `.qvoice`. Phase B performs
 that file under an emotion instruct. The `.qvoice` owns WHO; the
@@ -16,14 +14,12 @@ render — and the persona/preset pairing rule live in AGENT.md and
 melite-voice; this skill owns the CYCLE: what lands where, in which
 grammar, and what each refusal is telling you.)
 
-## THE ADDRESS LAW (read this first — the trap is cured, know it anyway)
+## THE ADDRESS LAW (read this first)
 
 `qwen3-tts` is the FAMILY and it is ALSO the 0.6B CustomVoice cell's
-route name — historically, stating the family bought the small cell
-(which declares **no `style_instruction`**) while every doc promised
-the 1.7B. That trap is FIXED at the resolver: the family head now
-resolves the **1.7B** cell (pool-first), and reaching the 0.6B cell
-REQUIRES a stated `quant: "0_6b"`. Safe spellings today:
+route name. The family head resolves the **1.7B** cell (pool-first),
+and reaching the 0.6B cell REQUIRES a stated `quant: "0_6b"`. Safe
+spellings:
 
 | half | `params.model` | `variant` | resolves to |
 |---|---|---|---|
@@ -80,6 +76,15 @@ THE BARE-PATH GRAMMAR (the qvoice mod bag accepts three spellings):
 - a one-element array of the same — `"qvoice": ["hecate-01"]`
 - a row with the lock strength — `"qvoice": [{ "qvoice": "hecate-01",
   "voice_strength": 1 }]` (omit `voice_strength` to leave the default)
+- **Leave `voice_strength` at 1 by default** — it is not an identity
+  scale; varying it re-rolls the delivery (pacing and phrasing change
+  wholesale) rather than deepening or softening the voice.
+- **Sticky voices need headroom.** The strength is an identity/emotion
+  balance: a highly distinctive persona grips the delivery harder, and
+  a strong emotion instruct gets through only when the identity pull is
+  LOWERED. If a strong emotion reads flat on a distinctive voice, drop
+  the strength below 1 and re-take; plain personas usually need no
+  move. The right value is per-voice — audition it.
 
 THE NAME MAPPING (one knob, two engine pins): the card's
 `style_instruction` knob maps to the engine's `instruct` on every
@@ -112,7 +117,9 @@ Direction is honoured faithfully — write the delivery physically
 
 | refusal | cure |
 |---|---|
-| `params 'voice' and 'qvoice' fire together` | ONE voice performs — drop the preset or the `.qvoice` |
+| `params 'voice' and 'qvoice' fire together` | ONE voice performs — the lane's DEFAULT preset counts as fired even when you never stated `voice`: state **`voice: null`** alongside qvoice. Dropping "the preset" is impossible when you stated none. |
+| `$.voice expected "ryan" | "serena" | …` | the `voice` seat takes the NINE PRESETS ONLY — a saved persona never rides it. Ride the persona in the **qvoice MOD BAG**: `qvoice: [{ qvoice: "kunoichi_v3", voice_strength: 1 }]` — the bag is what the studio's mods bar renders, so the operator sees the take and the strength handle. A bare-string `qvoice` also composes but stays invisible in the studio; prefer the bag. Either way state `voice: null` beside it. |
+| save writes `voice-run-<runid>.qvoice` | The export lands `<voice_name>.qvoice` at `/mnt/data/models/audio/voices/` and the run receipt prints the deliverable path. No hand-copy. |
 | `'style_instruction' fires nothing on this lane` | the resolved cell has no instruction control — the 0.6B cell (or a lane mismatch); check the address law above |
 | `'design_prompt' missing or empty` | Phase A requires the description — state it |
 | `preview_voice: not a .qvoice file` | the path is not a saved persona (check the magic bytes) |

@@ -6,23 +6,16 @@ genre: video
 
 # LoRAs (the model adapters this film stacks) — SPEC
 
-> STATUS: LANDED 2026-10-28 (the operator's lora law, verbatim: "WE SAID
-> KEEP OUR CURRENT LORA SETUP FOR NOW"), surfaced in the studio
-> 2026-10-30 (friction F29 — "I can't see or change the LORA at all").
 > The bag rides `h3LoraStackOf` into `LTX_lora_loader` (mode minimax,
 > `stack_data`) on the family plane, the same plane every masked-edit
 > seat and the film render ride. Prose never overrides the loaded
 > bundle: the fields below are quoted off the card's served loras kind.
 >
-> VERIFIED LIVE 2026-11-13 against the graph door (run
-> run-d84acf548c10-8bc37e11 — patching `loras:[{id:'h3_lightx2v_turbo',
-> strength:1}]` moved the composed distill seat 0.6 → 1 in the
-> `LTX_lora_loader` stack), against the RENDER door (run
-> run-22a28feb87b2-8ec66e55 — a film rendered under strength 1.0, the
-> composed seat `"str": 1` verbatim; run run-0366561964fc-8ecbe3ab —
-> `steps` OMITTED rides the row's count 8) and against the tree's
-> skill-coverage batch (receipt
-> `contracts/receipts/2026-11-13-cards-bag-skills-coverage.md`).
+> Live-proven on both doors: the graph door — patching
+> `loras:[{id:'h3_lightx2v_turbo', strength:1}]` moves the composed
+> distill seat 0.6 → 1 in the `LTX_lora_loader` stack — and the RENDER
+> door (a film rendered under strength 1.0, the composed seat
+> `"str": 1` verbatim; `steps` OMITTED rides the row's count 8).
 > NOT yet verified live: a MULTI-ROW stack (2–4 rows) rendered under
 > one film — single-row renders are proven, the deeper stack is owed.
 
@@ -56,15 +49,16 @@ It is NOT:
 2. **Arm and bind.** Seat entries on the `loras` mod bag:
    `params.loras = [entry, …]` (max_stack 4 — a stack, not one row).
    Each entry states:
-   - `id` (select, 'h3_lightx2v_turbo') — the adapter by its catalog
+   - `id` (select, 'h3_silver_dareties') — the adapter by its catalog
      id; the options ARE the family catalog (`H3_LORA_ROWS`), and the
      render loads the id verbatim (the provisioner downloads that file).
-   - `strength` (0–2, 0.6) — the adapter weight.
-   - `steps` (0–50, 0) — the step count to marry; the SERVED band
-     prints default 0, but THE DOOR REFUSES 0 ("outside the row's
-     declared domain [4, 8]"): OMIT the key and the row's own count
-     rides — see THE STEPS LAW below before stating any number.
-3. **Confirm.** Show each stacked row in words ("turbo at 0.6, 6 steps"
+   - `strength` (0–2, 0.8) — the adapter weight.
+   - `steps` (≤50, omit) — the step count to marry; the served face
+      states NO default and NO floor (the row's domain owns both):
+      OMIT the key and the row's own count rides — see THE STEPS LAW
+      below before stating any number.
+3. **Confirm.** Show each stacked row in words ("the Silveroxides
+   DARE-TIES Merge at 0.8, 8 steps"
    / "CrossView warp at 0.8") and whether the default row is in play.
    THE LANE CLAUSE: that wait is chat-lane law — on a headless
    commission the brief IS the confirmation (state the values in the
@@ -75,41 +69,57 @@ It is NOT:
 
 ## Worked stacks (the shapes that ship)
 
-The speed row alone (the shape most film presses carry today — the
-composed seat is 0.6 in every measured good film):
+The default row alone (the shape most film presses carry — an EMPTY
+bag is the same thing: the family default rides):
 
     params.loras = [
-      { id: 'h3_lightx2v_turbo', strength: 0.6 },
+      { id: 'h3_silver_dareties', strength: 0.8 },
     ]
 
 Speed + accuracy together (two rows, stack order is load order):
 
     params.loras = [
-      { id: 'h3_lightx2v_turbo', strength: 0.6 },
+      { id: 'h3_silver_dareties', strength: 0.8 },
       { id: 'h3_acc8_fl2va', strength: 0.5 },
     ]
 
-THE STEPS LAW (measured live 2026-11-13, run-22a28feb87b2 and
-run-0366561964fc): OMIT `steps` — the entry then rides the catalog
-row's own step count (the turbo row composes 8). STATING 0 REFUSES at
-the compose door ("outside the row's declared domain [4, 8] — the row's
-own dial") even though the served field band reads 0–50 with default 0:
-the band is the widget's, the row domain is the door's, and the door
-wins. State a number only inside the row's domain, when the schedule
-must bend.
+THE STEPS LAW (the face prints no 0 default and
+no 0 floor): OMIT `steps` — the entry then rides the catalog row's own
+step count (the silver merge row composes 8). A STATED count outside the row's
+declared domain REFUSES at the compose door ("outside the row's declared
+domain [4, 8] — the row's own dial"): the served face carries only the
+widget ceiling (max 50) while the row domain owns the floor and the
+default, and the door wins. State a number only inside the row's
+domain, when the schedule must bend.
 
-## The default seat — SETTLED (F34b closed 2026-11-13; operator re-confirmed 2026-10-31)
+## The default seat — SETTLED (the silveroxides merge)
 
-An EMPTY bag applies the merged DARE-TIES row: `h3_lightx2v_turbo` —
-silveroxides' LightX2V turbo 4-to-8-step × DARE-TIES v4 step600 merge
-(768p), catalog strength 0.6, married 8 steps. That row IS the
+An EMPTY bag applies the SILVEROXIDES MERGE: `h3_silver_dareties` —
+silveroxides' OFFICIAL DARE-TIES merge
+(`silver_official_releases/minimax_h3_fl2v_turbo_silver_dareties_comfy_pruned_v2.safetensors`,
+the v2 attention-config build — his README: no attention backend
+patcher needed), catalog strength 0.8, married 8 steps (designed
+6–8, usable to 4). SILVEROXIDES IS THE MERGE, LIGHTX2V IS NOT: the
+default chip reads "Silveroxides DARE-TIES Merge". The row IS the
 absent-bag default (`H3_DEFAULT_LORA_ID`), the file the engine serves
-(`h3/minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors`),
+(`h3/minimax_h3_fl2v_turbo_silver_dareties_comfy_pruned_v2.safetensors`),
 and every fresh card is born with it (the recipe trio stamps it,
-selection only). Relying on the default is safe: state a row only to
+selection only). The old default's file — silveroxides' EXPERIMENTAL
+LightX2V-turbo × dareties row (`h3_lightx2v_turbo`, labelled
+"silveroxides experimental") — stays a PICK, never the default.
+Relying on the default is safe: state a row only to
 deviate, and record in the run what the graph composed when you deviate.
 
-## A card with no bag shows the DEFAULT chip (F34 cured)
+## A card with no bag shows the DEFAULT chip
+
+Rows compose as `{id, strength}` against the SERVED catalog — raw
+filenames refuse (`unknown-lora ... the entry carries neither 'name' nor
+'id'`, and the gate lists the served rows). The catalog is narrower than
+the engine's lora dir: a file present on the engine but without a catalog
+row is unreachable by spelling — it needs a catalog row first. A two-row
+stack (e.g. `{h3_turbo8_v1, 0.9}` + `{h3_taomate_3step, 0.5}`) composes
+and renders clean. Companion rail law: `ref_audios[]` rows are BARE PATH
+STRINGS — object rows refuse with a shape error.
 
 An agent-authored card that never wrote a `loras` entry renders the
 family default as ONE ghost chip — the card serves the resolved
@@ -129,6 +139,6 @@ emission walls pin the single seat.
 
 - `reshoot` NEEDS the CrossView row on every window's model — a re-shoot
   whose stack drops it stops following the moved camera;
-- the studio rail surfaces one row per stacked entry (the F29 cure), so
+- the studio rail surfaces one row per stacked entry, so
   what you state here is what the operator sees;
 - `video-timeline` composes the film this bag renders under.

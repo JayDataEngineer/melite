@@ -1,58 +1,21 @@
 // @contract models-h3-flip-settlement
 /**
  * h3-injectkeys-second-pass-visibility.spec.tsx — THE SECOND-PASS
- * VISIBILITY ARM (ERROR item h, audit §3 SD-7/SD-3). The operator's
- * burn: "the second-pass option DISAPPEARS from the UI randomly (on/
- * off with no reason) — invisible state rot."
- *
- * THE PINNED MECHANISM (this arm's probe census, 2026-11-08): the
- * served second_pass group carries NINETEEN members; sixteen are
- * T4_ONLY_KEYS, but refine_lora, refine_strength and refine_steps are
- * NOT — and all three declare visible_when riding second_pass_enabled.
- * The t4r omit gate (omitDead, RunRecipeEngine.tsx:108-113) filters by
- * T4_ONLY_KEYS alone, so the trio survives the omit and the GROUP
- * survives with them. The tab's presence is therefore decided by the
- * STALE STATED GATE in the shown layer: state second_pass_enabled:true
- * and the "Second Pass" tab resurrects (as an ORPHAN face — its own
- * master row is T4_ONLY and omitted, so the option renders with no
- * off switch); leave it unstated and the group is empty and the tab
- * vanishes. Same lane, opposite verdicts — the "random" disappearance
- * is the stale boolean nobody can see.
+ * VISIBILITY ARM (ERROR items g/h, retired lane law 2026-11-15). The
+ * operator's burns: the second-pass option "DISAPPEARS from the UI
+ * randomly (on/off with no reason)" while the compose gate refused the
+ * very fields that vanished.
  *
  * THE INVARIANT (journey law §2 hop [1], the UI seat): the option's
- * presence is a PURE function of the lane's sanctioned shape — never
- * of a stale stated gate. On a lane whose omit law owns no post chain,
- * EITHER the surface never renders OR it renders with its own master
- * gate row (the row a hand can unset); an orphan face while the stale
- * booleans still ride the layer toward the compose door is the rot
- * (the same strand ERROR g refuses live: "unsanctioned inject keys:
- * interpolate_enabled, second_pass_enabled, sharpen_enabled, sr_switch").
- *
- * THE HOP THE ARM RIDES: [1] the REAL studio rail (RunRecipeEngine —
- * the generic CardForm seam) rendering the REAL served spec
- * (formSpecArm over the booted estate — no fixture envelope), the
- * family derived through the component's own
- * deriveWindowFamily(mergeDocLayers(base, layerA)) seat.
- *
- * THE PRE-REGISTERED REDS (today's tree):
- *   THE FLIP — the family flips to t4r under the stated layer: the tab
- *   renders WITHOUT its master gate row (T4_ONLY-omitted) while no
- *   write drops the stale booleans — hidden-but-stated rot at the
- *   render hop (RunRecipeEngine.tsx:108-113; the survivors are the
- *   served refine_* trio, timelineContract.ts:80).
- *   DETERMINISM — the same t4r lane answers present WITH the stale
- *   stated gate and absent WITHOUT it: presence is a function of
- *   invisible state, the operator's exact burn.
- *   THE PICK SETTLES — the variant pick on a stranded holding LANDS:
- *   the gate reseats the family-dead strand (the estate's one
- *   spelling, reseatFamilyDead) with its named voice; a four-key
- *   gang refusal is never the answer to a one-parameter switch (the
- *   operator: "it should literally just be replacing a model file
- *   and that's it"). The brick it replaces: the pick gate judged the
- *   stranded HOLDINGS pre-write and refused — the reseat math one
- *   door away was unreachable, the doc bricked ("it got stuck").
- *   THE TEETH — a refusal that is NOT the family-dead strand still
- *   refuses: the settlement never launders an illegal pick.
+ * presence is a PURE function of the doc's derived family and the
+ * operator's stated gates — never of invisible state, and a surface
+ * that RENDERS a field never refuses its value one door later. Since
+ * the 2026-11-15 retirement the t4r arm mounts the post chain
+ * (actions.ts), so the Second Pass group renders on EVERY lane, its
+ * master gate row renders with it, and the same values compose at the
+ * door. These arms ride the REAL studio rail (RunRecipeEngine — the
+ * generic CardForm seam) over the REAL served spec (formSpecArm over
+ * the booted estate).
  */
 import { beforeAll, describe, expect, it, afterAll, vi } from "vitest"
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react"
@@ -71,7 +34,7 @@ import type { LayerA } from "../src/ui/studio/docModel.ts"
 import { mergeDocLayers } from "../src/ui/studio/docModel.ts"
 import { RunRecipeEngine } from "../src/ui/studio/RunRecipeEngine.tsx"
 import { deriveWindowFamily } from "@melite/models-h3/timelineContract"
-import { pickFamilyRefusal } from "../src/ui/studio/pickVerdict.ts"
+import { schema as h3schemaFn } from "@melite/models-h3/schema"
 
 /** THE BURN'S FOUR, in the operator's sorted spelling. */
 const FOUR = ["interpolate_enabled", "second_pass_enabled", "sharpen_enabled", "sr_switch"] as const
@@ -237,7 +200,7 @@ describe("THE SECOND-PASS VISIBILITY ARM (ERROR h — presence is a pure functio
     ).toBe(true)
   })
 
-  it("THE FLIP (red): the family flips under the stated option — the surface renders only with its own master gate, or never; an orphan face while the stale booleans ride is the rot", async () => {
+  it("THE FLIP (green since 2026-11-15): the family flips under the stated option and the surface renders the group WITH its master gate — the stamps keep riding and the door fires them", async () => {
     serve(); bind()
     const mounted = mount(openBase(), statedLayerA())
     const before = await optionFace()
@@ -255,21 +218,15 @@ describe("THE SECOND-PASS VISIBILITY ARM (ERROR h — presence is a pure functio
     }) && remounted.writes.every(([k]) => !FOUR.includes(k as (typeof FOUR)[number]))
     cleanup()
     unbindEstateRemote(); vi.unstubAllGlobals()
-    // THE LAW: on the t4r lane the surface either never renders, or
-    // renders WITH its master gate row (a face a hand can unset).
-    // Today: the tab resurrects as an ORPHAN — the trio's visible_when
-    // rides the stale stated gate while the master row is T4_ONLY-
-    // omitted, and no write drops the booleans (writes[]) — they ride
-    // to the next commit where the compose door refuses them (ERROR g).
-    expect(after.tab === false || after.masterRow,
-      `ERROR h (hidden-but-stated, render hop): the t4r flip renders the Second Pass tab WITHOUT its master gate row — ` +
-      `the omit gate (RunRecipeEngine.tsx:108-113) filters T4_ONLY_KEYS alone, so the served refine_* trio ` +
-      `(refine_lora/refine_strength/refine_steps — group second_pass, NOT in T4_ONLY_KEYS, timelineContract.ts:80) ` +
-      `survives the omit and the group tab resurrects on the STALE stated gate, while the stale booleans still ride ` +
-      `the layer (writes: ${JSON.stringify(remounted.writes)}). The operator sees an option with no off switch; ` +
-      `the compose door refuses it live (the ERROR g strand).`,
-    ).toBe(true)
-    void staleStillRides
+    // THE LAW: the t4r lane renders the group WITH its master gate row
+    // (a face a hand can unset) and nothing drops the stated filters.
+    expect(after.tab && after.masterRow,
+      `the t4r flip renders the Second Pass group WITH its master gate row — presence is lane-truth, never a stale ` +
+      `boolean (writes: ${JSON.stringify(remounted.writes)})`).toBe(true)
+    expect(staleStillRides, "the stated stamps ride the shown layer (the flip writes nothing over them)").toBe(true)
+    // and the same doc composes at the real walk (the door fires the
+    // fields the surface renders)
+    expect(() => h3schemaFn(mergeDocLayers(flippedBase(), statedLayerA() as unknown as Record<string, unknown>))).not.toThrow()
   })
 
   it("DETERMINISM (the 'randomly' face, red): the same lane answers the same presence regardless of a stale stated gate — presence is a function of the lane, never of invisible state", async () => {
@@ -330,32 +287,31 @@ describe("THE SECOND-PASS VISIBILITY ARM (ERROR h — presence is a pure functio
     return document.querySelector("[data-gate-face]")?.textContent ?? ""
   }
 
-  it("THE PICK SETTLES (red): the variant pick on a stranded t4r holding LANDS — the gate reseats the family-dead strand with its named voice; a four-key gang refusal is never the answer to a one-parameter switch", async () => {
+  it("THE PICK LANDS (green since 2026-11-15): the variant pick on a stamped t4r holding lands and the stamps keep riding — the gate never speaks a lane dead-letter", async () => {
     serve(); bind()
     const mounted = mount(flippedBase(), statedLayerA())
-    await tabPresent() // the stranded era settled: the tab hidden, the four stated
+    await tabPresent()
     const row = await pickSingularity(served)
     const layer = mounted.layer() as unknown as Record<string, unknown>
     const face = gateFace()
-    // THE SETTLEMENT'S FOUR FACES:
-    const settledDead = FOUR.every((k) => layer[k] === undefined)
     const landed = layer[axisKey("Variant")] === row.id
-    const voiceSettles = /settled/i.test(face) && FOUR.every((k) => face.includes(k))
+    const stampsKept = FOUR.every((k) => layer[k] === statedLayerA()[k as keyof LayerA])
     const voiceNeverRefuses = !/refused/i.test(face)
     cleanup()
     unbindEstateRemote(); vi.unstubAllGlobals()
-    // the next run composes — the window clause is silent on the
-    // settled truth (the reseat's own judge, the estate's ONE spelling)
+    // the next run composes — the whole holding (stamps + pick) is
+    // the doc the walk admits.
     const composed = mergeDocLayers(flippedBase(), mounted.layer())
-    expect(pickFamilyRefusal(composed as unknown as Record<string, unknown>), "the settled holding composes clean — the strand is dead, not deferred").toBeNull()
-    expect(settledDead && landed, `h¹ (the flip-settlement law, the pick hop): the variant pick on a stranded t4r holding ` +
-      `REFUSED with the four-key gang ("unsanctioned inject keys") and the pick never landed — the gate judged the ` +
-      `stranded HOLDINGS pre-write, while the settlement math (reseatFamilyDead) sat one door away, unreachable ` +
-      `behind its own refusal. The doc bricked: the tab owning the values was hidden, no write could carry the ` +
-      `reseat, "Fix the stated value" pointed at a surface that does not render. A one-parameter switch must land: ` +
-      `(settled dead keys: ${settledDead}, pick landed: ${landed}, layer: ${JSON.stringify(FOUR.map((k) => [k, layer[k]]))})`).toBe(true)
-    expect(voiceSettles && voiceNeverRefuses, `h¹ (the WHY voice): the gate face must NAME the settlement — the cleared ` +
-      `keys and the lane that refuses them — never a bare refusal and never silence (face: "${face}")`).toBe(true)
+    let refused: string | null = null
+    try {
+      h3schemaFn(composed)
+    } catch (e) {
+      refused = e instanceof Error ? e.message : String(e)
+    }
+    expect(refused, `the picked holding composes at the walk — ${String(refused)}`).toBeNull()
+    expect(landed && stampsKept, `the variant pick lands and the finish stamps keep riding — the operator's ` +
+      `one-parameter switch never becomes a four-key refusal (landed: ${landed}, stamps kept: ${JSON.stringify(FOUR.map((k) => [k, layer[k]]))})`).toBe(true)
+    expect(voiceNeverRefuses, `the gate face never speaks a dead-letter refusal (face: "${face}")`).toBe(true)
   })
 
   it("THE MIRROR SPEAKS TRUE (red): the studio-owned document surface never refuses at the client mirror — the estate sanctions decl.studio.writes, so a mirror that flags calls/keyframes on a film doc is a lying mirror (it blocks every settlement and every pick on any real doc)", async () => {

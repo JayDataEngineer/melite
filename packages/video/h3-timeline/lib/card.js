@@ -1,4 +1,4 @@
-import { DECL as h3Decl, h3DefaultLoraEntry, REFINE_2X_OOM_FRAMES, REFINE_DEFAULT_CLIP_SECONDS } from '@melite/models-h3';
+import { DECL as h3Decl, h3DefaultLoraEntry, MAX_COMPOSED_WINDOWS, REFINE_2X_OOM_FRAMES, REFINE_DEFAULT_CLIP_SECONDS, REFINE_DEFAULT_OVERLAP_FRAMES } from '@melite/models-h3';
 import { H3_LORA_ROWS } from '@melite/models-h3/mods/loras';
 import { JSON_ARRAY_PARAMS, coerceWireBoolean, paramSchema, schema, } from '@melite/models-h3/schema';
 import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission';
@@ -7,13 +7,12 @@ import { finalizeH3 } from '@melite/models-h3';
 import { renderH3Swap } from '@melite/models-h3';
 import { renderH3Repair } from '@melite/models-h3';
 import { renderH3Extend } from '@melite/models-h3';
-import { renderH3Refine } from '@melite/models-h3';
+import { renderH3RefineBag } from '@melite/models-h3';
 import { renderH3ChainUpscale } from '@melite/models-h3';
 import { reshootArmed } from '@melite/models-h3';
 import { parseH3Facts } from '@melite/models-h3/actions';
 import { assertOverlayGated } from '@melite/models-h3';
 export { assertCarriedSpanGrid, assertGridLength, assertSpanGrid, gridSnap } from '@melite/models-h3/timelineContract';
-import { deriveWindowFamily, T4_ONLY_KEYS } from '@melite/models-h3/timelineContract';
 export { carrier, JSON_ARRAY_PARAMS, schema } from '@melite/models-h3/schema';
 // THE CARRIER'S CALLABLE FACE — ONE cast serving the compose strict
 // resolve's judge: schemastery schemas are callable (Schema.resolve)
@@ -51,8 +50,14 @@ export const BOARDED = [h3Decl.id];
 export const VARIANT_ADDRESSES = ['h3-timeline', 'h3-singularity'];
 /** THE REPLACE KIND (the swap-parity build, 2026-10-28): the
  *  card-declared modifier kind carrying the upstream swap seats —
- *  ONE entry per doc (max_stack 1, ordered — a swap is one render,
- *  never a stack). The media seats arrive as staged artifact names
+ *  ONE entry per doc (max_stack 1, ordered — a swap is ONE PRESS,
+ *  never a stack of entries). THE PRESS TILES (operator 2026-11-14:
+ *  "EVERY MOD MUST BE ABLE TO BE BROKEN UP"): the plan node slices
+ *  the WHOLE source into per-generation clips — clip_seconds is the
+ *  engine's own "Longest clip per H3 generation" (the census word,
+ *  never the total), overlap_frames the carry each clip repeats —
+ *  so one press over a long source is N engine-sided windows with
+ *  latent carry, joined by the chain's own assemble. The media seats arrive as staged artifact names
  *  (the controlnet clip/mask channel precedent: a pipeline-wired
  *  name, never bytes); the plan scalars mirror the reference
  *  H3OneClickSwapPlan operating point (clip_seconds 6, overlap 39,
@@ -92,9 +97,9 @@ const LORAS_MOD = {
     default_entry: h3DefaultLoraEntry(),
     section: 'LoRAs — the family adapters this film stacks on its model seat (the acceleration/distill row and the CrossView camera row). Every entry states the catalog id and the strength; unstated steps and sigma shift marry from the catalog row. Film runs leave this arm empty (the card default row still applies).',
     fields: [
-        { name: 'id', label: 'LoRA', type: 'select', default: 'h3_lightx2v_turbo', options: H3_LORA_ROWS.map((row) => ({ value: row.id, label: row.label })), tooltip: 'The adapter, by its catalog id — the family file the provisioner downloads; the render loads this id verbatim.' },
-        { name: 'strength', label: 'Strength', type: 'number', default: 0.6, min: 0, max: 2, step: 0.05, tooltip: 'Adapter weight. Each row has a designed point (the distill rows run 0.6–1, the refiner 0.35); the render only reads the number you state.' },
-        { name: 'steps', label: 'Steps', type: 'number', default: 0, min: 0, max: 50, step: 1, tooltip: 'The step count to marry (0 = the catalog row\'s designed count — a distill adapter is married to its steps, never free).' },
+        { name: 'id', label: 'LoRA', type: 'select', default: 'h3_silver_dareties', options: H3_LORA_ROWS.map((row) => ({ value: row.id, label: row.label })), tooltip: 'The adapter, by its catalog id — the family file the provisioner downloads; the render loads this id verbatim.' },
+        { name: 'strength', label: 'Strength', type: 'number', default: 0.8, min: 0, max: 2, step: 0.05, tooltip: 'Adapter weight. Each row has a designed point (the default merge row 0.8, the distill rows 0.6–1, the refiner 0.35); the render only reads the number you state.' },
+        { name: 'steps', label: 'Steps', type: 'number', max: 50, step: 1, tooltip: 'The step count to marry — OMIT the key and the catalog row\'s own count rides (the row domain owns the floor and the default; the door refuses any stated count outside the row\'s declared domain). State a number only inside the row\'s domain, when the schedule must bend.' },
     ],
 };
 const REPLACE_MOD = {
@@ -113,7 +118,7 @@ const REPLACE_MOD = {
         'ComfyUI-MiniMaxH3-Context-Loop',
         'ComfyUI-Fantastic-MiniMaxH3-PromptBuilder',
     ],
-    section: 'Swap — replace the person in the source clip (upstream openjutsu recipe: still + mannequin + mask masked-edit). Film runs leave this arm empty.',
+    section: 'Swap — replace the person in the source clip (upstream openjutsu recipe: still + mannequin + mask masked-edit). ONE PRESS TILES A LONG SOURCE: the plan slices the whole clip into per-generation windows (Clip seconds is each window\'s budget, never the total; Overlap frames is the seam carry between them) and the chain joins the windows itself — never one long generation. Film runs leave this arm empty.',
     fields: [
         // The seat TYPES are the picker law (operator, live lane
         // 2026-10-28: "media seats as FREEFORM TEXT when NOT ALL SHOULD
@@ -129,8 +134,8 @@ const REPLACE_MOD = {
         { name: 'roles', label: 'Roles', type: 'text', default: '', tooltip: 'Which person to replace (the plan roles seat; empty = the detected lead).' },
         { name: 'seed', label: 'Plan seed', type: 'number', default: 0, min: 0, max: 4294967295, step: 1, tooltip: 'The chain plan base_seed (the reference runs 0; the sampler seed stays the doc seed).' },
         { name: 'steps', label: 'Plan steps', type: 'number', default: 6, min: 1, max: 30, step: 1, tooltip: 'The chain plan default_steps (reference 6; the sampler steps stay the doc marriage).' },
-        { name: 'clip_seconds', label: 'Clip seconds', type: 'number', default: 6, min: 2.5, max: 15, step: 0.1, tooltip: 'The plan clip_seconds (reference 6) — the plan node\'s own widget band [2.5, 15] is the law; anything else 400s at submit.' },
-        { name: 'overlap_frames', label: 'Overlap frames', type: 'number', default: 39, min: 22, max: 56, step: 17, tooltip: 'The plan overlap_frames (reference 39; the R1 single clip carries it through the plan head) — the engine combo is exactly [22, 39, 56] (step 17 from 22).' },
+        { name: 'clip_seconds', label: 'Clip seconds', type: 'number', default: 6, min: 2.5, max: 15, step: 0.1, tooltip: 'The engine\'s own "Longest clip per H3 generation" (the census word, reference 6) — EACH generation window\'s budget, never the total: a source longer than this tiles into N windows the chain itself joins. The plan node\'s widget band [2.5, 15] is the law; anything else 400s at submit.' },
+        { name: 'overlap_frames', label: 'Overlap frames', type: 'number', default: 39, min: 22, max: 56, step: 17, tooltip: 'The engine\'s own "Frames each clip repeats from the previous clip" (reference 39) — the seam carry between the generation windows of a tiled long source. The engine combo is exactly [22, 39, 56] (step 17 from 22).' },
         { name: 'resolution', label: 'Plan resolution', type: 'select', default: '736p', options: [
                 { value: '480p', label: '480p — quick preview' },
                 { value: '576p', label: '576p' },
@@ -201,7 +206,8 @@ const REPAIR_MOD = {
             ], tooltip: "The plan resolution tier (reference '736p')." },
     ],
 };
-/** THE EXTEND KIND (the extend-video flow's arm, report
+/** THE EXTEND KIND (the card's own arm — the retired extend-video
+ *  wrapper flow staged it, report
  *  dev_docs/audits/features/extend-video-flow-2026-11-12.md): MORE
  *  SECONDS appended to a prior clip — a fresh continuation anchored
  *  on the prior clip's last frame (taken in-graph, negative batch
@@ -249,22 +255,30 @@ const EXTEND_MOD = {
     ],
 };
 /** THE REFINE KIND (the fifth mod bag): a standalone SECOND pass
- *  over a staged source clip — the H3 latent-upscale refine chain's
- *  minimal emission (models/h3 renderH3Refine). The report-named
+ *  over staged source clips — the H3 latent-upscale refine chain's
+ *  minimal emission (models/h3 renderH3RefineBag). The report-named
  *  second-pass stack (MinimaxH3LatentUpscaler3D, the RefineHandoff
  *  with its sampler/sigmas seats, the ChainUpscale loop family,
  *  SeedVR2 3B, the LTX 2.3 upscalers) exists engine-side with no
  *  card surface; this arm is the first door: the handoff node (2x
  *  learned upscale + the low-sigma refinement pass, one node) over
- *  the clip's own frames + soundtrack. ONE entry per doc
- *  (max_stack 1). ONE variant path: scale 2.0, lock_audio, bf16 —
- *  the entry carries only the refine seats (source_clip,
- *  refine_prompt, denoise, steps, seed, clip_seconds); the model
- *  plane stays family-owned. The deferred ChainUpscale LOOP (prior-
- *  run lineage, recursive expand, no estate requeue driver) is the
- *  named follow-up, never this arm. Emission ends in the refine
- *  SaveVideo (the extend terminal's own file law — no
- *  ChainAssemble: a refine has no loop lineage to assemble). */
+ *  the clip's own frames + soundtrack. THE MULTI-ENTRY LAW (GAPS-19,
+ *  2026-11-01): the bag stacks to the film's composed-window ceiling
+ *  and the entries ARE the windows — one press tiles the film
+ *  through the family carrier (one refine window per entry, joined
+ *  IN-GRAPH at <runId>/refine; the continuity laws — one film per
+ *  bag, no gaps, no full overlap — are the family renderer's, so
+ *  every door judges them identically). The declared alternative
+ *  stays lawful and byte-cheap: ONE entry composes the single-window
+ *  emission exactly, so the walk posture (press, judge, press) is a
+ *  per-window judgment, never a workaround. ONE variant path: scale
+ *  2.0, lock_audio, bf16 — the entry carries only the refine seats
+ *  (source_clip, refine_prompt, denoise, steps, seed, clip_seconds,
+ *  start_seconds); the model plane stays family-owned. The deferred
+ *  ChainUpscale LOOP (prior-run lineage, recursive expand, no estate
+ *  requeue driver) is the named follow-up, never this arm. Emission
+ *  ends in the refine SaveVideo (the extend terminal's own file law
+ *  — no ChainAssemble: a refine has no loop lineage to assemble). */
 const REFINE_MOD = {
     kind: 'refine',
     label: 'Refine',
@@ -272,7 +286,12 @@ const REFINE_MOD = {
     schema_key: 'refine',
     category: 'ordered',
     cardinality: 'list',
-    max_stack: 1,
+    // THE MULTI-ENTRY STACK LAW (GAPS-19, 2026-11-01): the bag's
+    // ceiling is the film's composed-window ceiling (the extend
+    // solver's own constant) — the entries ARE the windows, so the
+    // same window count that caps one extend press caps one refine
+    // press. Derived, never a hand-typed number.
+    max_stack: MAX_COMPOSED_WINDOWS,
     requires: [
         'ComfyUI-VideoHelperSuite',
         'ComfyUI-KJNodes',
@@ -285,7 +304,12 @@ const REFINE_MOD = {
     // film clock, and the OOM point is REFINE_2X_OOM_FRAMES — both
     // imported from the model package that owns the refusal, so a
     // ceiling move can never leave the served card lying about it.
-    section: `Refine — a standalone second pass over ONE WINDOW of a source clip: 2x learned latent upscale + the low-sigma H3 refinement pass in one node (the film handoff's own spelling), decoded and saved as one film. The window is what the 2x memory ceiling allows (${String(REFINE_DEFAULT_CLIP_SECONDS * 24)} f measured green, ${String(REFINE_2X_OOM_FRAMES)} f OOM) — a longer film is refined window by window, each run moving Start seconds forward. The soundtrack is the window's own, always. Film runs leave this arm empty.`,
+    // THE WALK IS THE DECLARED ALTERNATIVE (GAPS-19): the bag tiles
+    // the film in one press; the walk sentence names the per-window
+    // judgment, not a workaround — the one-entry bag composes the
+    // single-window emission byte-identically (the sequential-press
+    // law).
+    section: `Refine — a standalone second pass over staged source clips: 2x learned latent upscale + the low-sigma H3 refinement pass in one node (the film handoff's own spelling), decoded and saved as one film. The bag takes MULTIPLE window entries — one press tiles the film: each entry IS one window (its own Source clip, Refine prompt, and window seats), entries tile ONE staged leaf in order, and the run assembles the windows into one <runId>/refine film. The window is what the 2x memory ceiling allows (${String(REFINE_DEFAULT_CLIP_SECONDS * 24)} f measured green, ${String(REFINE_2X_OOM_FRAMES)} f OOM) and the bag carries at most ${String(MAX_COMPOSED_WINDOWS)} window entries. The declared alternative stays lawful: refine one window per press — judge each window before pressing the next (Start seconds stepped forward). One entry with Windows above 1 tiles itself (window size + count + overlap seats — the card does the frame math, no hand-tiled entries needed). The soundtrack is the window's own, always. Film runs leave this arm empty.`,
     fields: [
         // The seat TYPES (the picker law, the siblings' own): the video
         // seat is `file` + media 'video'; the prompt seat is text
@@ -299,7 +323,7 @@ const REFINE_MOD = {
         // constants — refine-window audit D1: the served card must never
         // carry a hand-typed copy of a measured ceiling)
         { name: 'clip_seconds', label: 'Window seconds', type: 'number', default: REFINE_DEFAULT_CLIP_SECONDS, min: 0.5, max: 60, step: 0.25, tooltip: `How much of the clip this pass refines, from the window start: ${String(REFINE_DEFAULT_CLIP_SECONDS)} s = ${String(REFINE_DEFAULT_CLIP_SECONDS * 24)} f at 24 fps, the widest window measured green at 2x (2688×1536). The pass reads only this window, so a long film is covered by advancing Start seconds — and any upsizing window past ${(REFINE_2X_OOM_FRAMES / 24).toFixed(2)} s (${String(REFINE_2X_OOM_FRAMES)} f) is refused: that is where the measured OOM sits (the ceiling is the window's; only a same-size 1x pass reads wider). A window must also START inside the clip: a Start past the last frame yields no frames, and a window longer than what remains is quietly shortened.` },
-        { name: 'start_seconds', label: 'Start seconds', type: 'number', default: 0, min: 0, max: 3600, step: 0.25, tooltip: 'Where this window starts in the source clip (0 = the first frame). Each run refines one window; step it by your window seconds (minus a second or two of overlap) to walk a longer film, re-running the same entry with only this seat moved. The last window starts at (clip length − window length): a start past the final frame lands no frames and the engine refuses.' },
+        { name: 'start_seconds', label: 'Start seconds', type: 'number', default: 0, min: 0, max: 3600, step: 0.25, tooltip: 'Where this window starts in the source clip (0 = the first frame). Each entry refines one window; step consecutive entries so each join lands on the token grid 5, 22, 39 … frames (the film\u2019s own seam is 22 f: start the next window 22 f before this one ends, e.g. window seconds 3.75 s and Start 0 / 2.83 s) so one press tiles a longer film — the carrier derives the carried overlap and mounts the film\u2019s own continuation per join, and a gap, an out-of-order window, or an off-grid carry refuses at the door naming the exact start that lands 22 f. The declared alternative: one entry per press, this seat stepped forward each time. The last window starts inside the clip: a start past the final frame lands no frames and the door refuses in words.' },
         // THE CAPACITY SEATS (the F24 burn, 2026-10-30): the 2x handoff
         // OOMs past the measured 141 f, and the node itself serves an
         // exact-size mode — a ≤1x pass fits. Both seats ride the node's
@@ -311,6 +335,19 @@ const REFINE_MOD = {
                 { value: 'megapixels', label: 'Megapixels (the node\'s own budget)' },
             ], tooltip: 'How the handoff sizes the pass: a multiplier (default 2x), exact target width/height (1280x704), or a megapixel budget. The node\'s own options, verbatim.' },
         { name: 'scale', label: 'Upscale scale', type: 'number', default: 2, min: 1, max: 4, step: 0.05, tooltip: 'The multiplier mode\'s scale. 1.0 is the capacity cure — a same-size refine (no latent upscale) fits clips the 2x pass OOMs; the refinement pass still runs.' },
+        // THE AUTO-TILE (F67, 2026-11-15 — the operator: "the AI can make
+        // windows, but the human operator can't"): one entry tiles ITSELF
+        // — the card works out every window's start from the window size
+        // (Window seconds), this count, and the overlap below, so a human
+        // states a SIZE and a COUNT instead of hand-tiling N entries with
+        // frame-exact starts the 0.25-step dials cannot reach. 1 keeps the
+        // single-window walk posture (judge each window before pressing
+        // the next); hand-tiled entries stay for mixed-seat bags.
+        { name: 'windows', label: 'Windows', type: 'number', default: 1, min: 1, max: MAX_COMPOSED_WINDOWS, step: 1, tooltip: 'How many windows this ONE entry tiles (the auto-tile: window k starts at Start seconds + k × (window − overlap), so one press covers Windows × (window − overlap) + overlap frames). 1 is the single-window walk. A windows seat above 1 on ANY entry of a multi-entry bag refuses — the bag already IS the tiling.' },
+        // (the default is DERIVED from the family contract's own seam —
+        // refine-window audit D1: the served card never carries a
+        // hand-typed copy of a measured constant)
+        { name: 'overlap_frames', label: 'Overlap (frames)', type: 'number', default: REFINE_DEFAULT_OVERLAP_FRAMES, min: 0, step: 1, tooltip: 'How many frames each window re-covers from the previous one (the join\u2019s carry, in whole frames — the card works out every window\u2019s start from window size minus this). 22 is the film\u2019s own seam and token-exact: a token-exact carry (5, 22, 39 \u2026) hands each window the previous window\u2019s latent through the same continuation a normal generation uses, and the join trims the carried head \u2014 video and audio stay continuous; any other overlap of 1 or more is refused (the only other join is 0 — the abutting hard cut): a crossfade of two independent renders is a double exposure, not a soft step, so it is never mounted. Rides only with Windows above 1 (a lone window has no join); must be shorter than the window.' },
     ],
 };
 /** THE RESHOOT KIND (the fourth mod bag — the §8 unification,
@@ -333,6 +370,14 @@ const RESHOOT_MOD = {
     category: 'ordered',
     cardinality: 'list',
     max_stack: 1,
+    // THE ORBIT ORB (2026-11-15 — the operator: "it already existed
+    // as the output, build it for the input"): the leaf seats the
+    // EMBEDDED camera-pose orb above the field stack (upstream
+    // crossview_orbit.js's static-pose gizmo, ported 1:1 — sphere +
+    // trained-band zones + the blue camera handle). The orb and the
+    // orbit/tilt/dolly dials write the SAME draft seats (ONE TRUTH);
+    // absent host degrades to the three number dials.
+    leaf_face: 'orbit-canvas',
     // THE OFFICIAL REWORK (2026-11-13): the pack provision is the
     // CrossViewWarp pack ONLY — the chain's other nodes are engine
     // core (LoadVideo, LoadMoGeModel/MoGeInference, the MiniMaxH3
@@ -386,9 +431,11 @@ const UPSCALE_MOD = {
     section: 'Upscale — a whole-film deferred 2x pass over a prior chain run (swap/repair/extend/refine runs leave their checkpointed scenes in the engine\'s chain store): each scene resumes its lineage, upscales through the learned 3D latent upscaler, and re-renders at low denoise; the pass assembles at <runId>/upscale. Name the run; a blank prompt reuses its own scene prompts. Film runs leave this arm empty.',
     fields: [
         // The seat TYPES (the picker law, the siblings' own): the run
-        // name is freeform text (an engine-side store directory, not a
-        // staged file); the prompt seat is text; the dials are numbers.
-        { name: 'chain_run', label: 'Chain run', type: 'text', default: '', tooltip: 'The prior chain run to resume (the engine-side h3_chains run name — a swap/repair/extend run\'s own name, as the film\'s run rows spell it). Each scene\'s newest checkpoint revision is resolved at the execute door; an unknown name refuses loud naming the live runs.' },
+        // name is a LIVE PICKER over the estate's chain-store runs (the
+        // leaf serves the labeled rows; 'Advanced — paste a run id' is
+        // the explicit free-text fallback); the prompt seat is text; the
+        // dials are numbers.
+        { name: 'chain_run', label: 'Chain run', type: 'chain-run', default: '', tooltip: 'The run whose checkpointed scenes this pass resumes — pick from the live list; Advanced accepts an id the list does not hold.' },
         { name: 'prompt', label: 'Pass-2 prompt', type: 'text', default: '', tooltip: 'What the upscaled frames should hold (agent-composed, user-confirmed). Blank reuses the source run\'s own per-scene prompts — the documented posture for a pure resolution pass.' },
         { name: 'denoise', label: 'Denoise', type: 'number', default: 0.24, min: 0.05, max: 0.5, step: 0.01, tooltip: 'The partial-denoise strength of the pass-2 re-render (the recipe\'s own window is 0.24; lower = subtler). 1 or more is refused — an upscale is never a re-render (that is a reshoot, and the reshoot door exists).' },
         { name: 'steps', label: 'Pass-2 steps', type: 'number', default: 20, min: 1, max: 30, step: 1, tooltip: 'The pass-2 schedule steps (the recipe runs 20; the sampler stays res_multistep, the loop family\'s own spelling).' },
@@ -427,10 +474,27 @@ export const ACTION_BINDINGS = {
                 throw new Error(`h3-timeline ${key}: the ${key} bag carries ${bag.length} entries — max_stack is 1, so every entry after the first would be silently dropped. Keep exactly one ${noun} entry.`);
             }
         };
+        // THE REFINE STACK GUARD (GAPS-19): the refine kind is the ONE
+        // multi-entry bag — its ceiling is the film's composed-window
+        // ceiling (served on the kind as max_stack). The guard keeps the
+        // array law (a non-array bag is present-but-entryless) and the
+        // ceiling; the CONTINUITY laws — one film per bag, no gaps, no
+        // full overlap — live in the family carrier (renderH3RefineBag),
+        // so the card door and any future door judge them identically.
+        const refineStackBag = (key, bag) => {
+            if (bag === undefined)
+                return;
+            if (!Array.isArray(bag)) {
+                throw new Error(`h3-timeline ${key}: the ${key} bag is present but carries no entry — state ${key} window entries as an array or omit the arm`);
+            }
+            if (bag.length > MAX_COMPOSED_WINDOWS) {
+                throw new Error(`h3-timeline ${key}: the ${key} bag carries ${bag.length} entries — max_stack is the film's composed-window ceiling (${MAX_COMPOSED_WINDOWS} windows)`);
+            }
+        };
         const raw = p.replace;
         const rep = p.repair;
         const ext = p.extend;
-        // THE REFINE BAG (the fifth arm) rides the same guard.
+        // THE REFINE BAG (the fifth arm) rides the stack guard.
         const ref = p.refine;
         // THE RESHOOT BAG (the fourth arm, §8) rides the same guard.
         const rsh = p.reshoot;
@@ -439,7 +503,7 @@ export const ACTION_BINDINGS = {
         oneEntryBag('replace', raw, 'swap');
         oneEntryBag('repair', rep, 'repair');
         oneEntryBag('extend', ext, 'extend');
-        oneEntryBag('refine', ref, 'refine');
+        refineStackBag('refine', ref);
         oneEntryBag('reshoot', rsh, 'reshoot');
         oneEntryBag('upscale', ups, 'upscale');
         const replaceArmed = Array.isArray(raw) && raw.length > 0;
@@ -539,7 +603,11 @@ export const ACTION_BINDINGS = {
             if (reshootArmed(p)) {
                 throw new Error('h3-timeline: Refine and Reshoot are both armed — the refine branch never enters the film action, so an armed reshoot would be silently dropped. Pick one door: empty the Refine arm for a reshoot, or empty the Reshoot arm for a refine.');
             }
-            renderH3Refine(ref[0], p, parseH3Facts(model.lane_inputs), g, runId);
+            // THE BAG DISPATCH (GAPS-19): the WHOLE bag rides the family
+            // carrier — N entries tile one film, N=1 composes the
+            // single-window emission byte-identically. Never bag[0] here:
+            // first-wins is the silent-drop class this door exists to kill.
+            renderH3RefineBag(ref, p, parseH3Facts(model.lane_inputs), g, runId);
             return;
         }
         if (upscaleBagArmed) {
@@ -605,7 +673,7 @@ export function registerCard(ctx, comfy) {
         // live, naming every seat the rails law needs. Served in the
         // load digest through the existing craft seat (zero derivation).
         craft: {
-            promptHint: 'one continuous action line per shot — the card frames each shot at render (no "shot 1:" prefixes, no first-frame/last-frame language; pin frames on the timeline\'s keyframes lane). Two image rails, both live, combinable: the anchor (image / the keyframes lane) pins the opening AND conditions identity while reference rails (ref_images and kin) stack after it — both rails ride one window.',
+            promptHint: 'one continuous action line per shot — the card frames each shot at render (no "shot 1:" prefixes, no first-frame/last-frame language; pin frames on the timeline\'s keyframes lane). Two reference rails, both live, combinable: the anchor (image / the keyframes lane) pins the opening AND conditions identity while the loose rails (ref_images and ref_videos) stack after it — both rails ride one window.',
         },
         identity,
         // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen
@@ -646,6 +714,13 @@ export function registerCard(ctx, comfy) {
                 // replace/repair/extend clips ride; no standalone rail slot.)
             },
             legacyAliases: { image_name: 'image' },
+            // THE SEAT MAP (the one-bench burn, 2026-11-14): the guide
+            // spelling feeds the rail's First-frame seat — the same
+            // precedence the schema derivation reads (image before
+            // image_name), declared so the read-side fold serves the
+            // canonical seat and the timeline renders the frame the
+            // agent attached, never a blank square.
+            aliasSeats: { image_name: 'image' },
             outputs: { default: 'video' },
             requiresModel: false,
         },
@@ -747,34 +822,17 @@ export function registerCard(ctx, comfy) {
         // the emitter carrier (this card's schema is the hand-written
         // normalizer — params_schema walks the declared object's .dict)
         schemaCarrier: paramSchema,
-        // THE FAMILY ADMISSION (B5 — the write doors' arm of the walk):
-        // the EXACT clause the compose schema's walk enforces at the run
-        // door (schema.ts's t4r gate), stated on the card so the bench
-        // write doors can speak it one hop earlier — a Final-Cut stamp
-        // on a keyframe doc refuses at the patch door in the run door's
-        // own voice instead of green-lighting to the run press. ONE
-        // SPELLING: deriveWindowFamily + T4_ONLY_KEYS ride the same
-        // contract module the walk, the studio rail, the B1 emit law and
-        // the pick gate (pickVerdict.ts) judge with — no copy, no drift.
-        // Explicit keys mirror the walk verbatim (stated-and-valued —
-        // THE ONE NULL LAW: schema.ts:531 reads null as UNSTATED, and so
-        // does this face; the bench doors' merge-patch deletes nulls
-        // upstream, so the view this face judges is null-free in
-        // practice, and a null that arrives anyway is unstated too). A JUDGE, NOT A GUARD (the
-        // operator's no-blocker ruling): the verdict speaks at the write
-        // door; the stored state keeps its own law.
-        admitFamily(params) {
-            if (deriveWindowFamily(params) !== "t4r")
-                return { ok: true };
-            const explicit = new Set(Object.keys(params).filter((k) => params[k] !== null));
-            const bad = T4_ONLY_KEYS.filter((k) => explicit.has(k)).sort();
-            if (bad.length === 0)
-                return { ok: true };
-            return {
-                ok: false,
-                error: `card 'h3-timeline' refused params: h3_window(t4r): unsanctioned inject keys: ${bad.join(", ")}`,
-            };
-        },
+        // THE FAMILY ADMISSION FACE IS GONE (2026-11-15, the lane-law
+        // retirement — the operator's gate-11 burn: the compose gate
+        // refused a lawful Final-Cut doc with four unactionable lines).
+        // The t4r render arm now mounts the post chain (actions.ts), so
+        // no finish key is lane-dead and there is nothing for this card
+        // to refuse one hop early. The generic registry seat
+        // (cardsRegistry.admitStageFamily) stays optional for any future
+        // card that declares a real family clause; h3 declares none.
+        // Do not resurrect a lane dead-letter here — cure the renderer
+        // and let the walk's own shape gates (route-master, film-only,
+        // guide seats) judge the doc.
         // THE DERIVED-FAMILY LANE AXIS (the one-seat migration,
         // 2026-11-12): the family's lanes and dead keys declare on the
         // MODEL DECL (this package's index.ts serves the contract

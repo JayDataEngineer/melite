@@ -4,7 +4,7 @@
  * every logic line is verbatim from the monolith (source range noted).
  */
 import { useMemo, useState } from "react"
-import type { CardStage } from "@melite/contracts"
+import type { CardResult, CardStage } from "@melite/contracts"
 import { isImageUrl } from "@melite/card-base/client"
 import { PROMPT_COLORS } from "@melite-plugin/timeline/ui/timeline"
 import type { DocCall, DocKeyframe, LayerA } from "./docModel.ts"
@@ -17,6 +17,121 @@ import { deriveCommissions, type DocCommission } from "./commissions.ts"
 
 type FilmMap = ReturnType<typeof useFilmAudio>["filmMap"]
 type FilmFromDoc = ReturnType<typeof useFilmAudio>["filmFromDoc"]
+
+/** The filmstrip derivation — PURE, so the wall that judges the
+ *  reshoot hero rides the same function the hook renders (never a
+ *  copy of the tiers). One caller: the memo below.
+ * @param res the stage's result (the estate's normalized CardResult)
+ * @returns the window tiles plus the final cut */
+export function filmstripOf(res: CardResult | null | undefined): {
+  windows: Array<{ name: string; url: string }>
+  final: string | null
+} {
+  const arts = res?.artifacts ?? {}
+  const urls = Array.isArray(res?.assetUrls) ? res.assetUrls : []
+  // THE CONSUMABLE ECHO (the 2026-11-15 re-shoot burn, client half):
+  // the upload plane stages a file under `<basename>_<sha1[0,12]>`
+  // (comfyui-upload.ts's content-address law) — the DOUBLE underscore
+  // is its signature (`SaveVideo.2_h3_t4_film_00001__8d4dbd6e2b22.mp4`,
+  // base ends in `_`), and no engine save ever carries it. A stamped
+  // name is therefore a file the run CONSUMED, never its product; the
+  // estate's harvest used to publish the LoadVideo preview row as an
+  // artifact (cured in comfyui-outputs.ts), and the tiers below then
+  // crowned the re-shoot's SOURCE clip the final cut. Stored results
+  // from before that cure still carry the echo, so the tiers refuse
+  // the shape on their own — a crown never rides a consumable.
+  const stagedEcho = (n: string): boolean => /__[0-9a-f]{12}\.[A-Za-z0-9]+$/.test(n)
+  // both eras, one matcher: video_w<k>_… (legacy) | h3_t4_w<k>_<n>_.mp4 (real)
+  // F14 (2026-11-12): the real saves ride `<runId>/h3_t4_w<k>`, so
+  // the run row key may carry a leading run path or harvest nodeId
+  // segment before the canonical stem — both eras match.
+  const windowIndexOf = (n: string): number | null => {
+    const legacy = /^video_w(\d+)_/.exec(n)
+    if (legacy !== null) return Number(legacy[1])
+    const real = /(?:^|[/_])h3_t4_w(\d+)_\d+_\.mp4$/.exec(n)
+    if (real !== null) return Number(real[1])
+    return null
+  }
+  const windows = Object.keys(arts)
+    .filter((n) => windowIndexOf(n) !== null && !n.endsWith("_last_frame") && !n.includes("_seam") && !n.includes("_prev"))
+    // no-fake-data guard (2026-08-31): a placeholder artifact with an
+    // EMPTY url must never become a tile — an empty src renders a
+    // broken video player. Absence of a url = absence of a window.
+    .filter((n) => typeof arts[n] === "string" && arts[n] !== "")
+    .sort((a, b) => {
+      // (both indexes parsed non-null in the filter above — no
+      // fallback arms.)
+      return windowIndexOf(a)! - windowIndexOf(b)!
+    })
+    .map((name) => ({ name, url: arts[name]! }))
+  // FLAT-LIST FALLBACK (2026-08-30 "only shows the first clip"): the
+  // windows were built ONLY from the named artifact map — a snapshot
+  // whose artifacts were stripped (older bundle eras, degraded stores)
+  // rendered ONE final-cut tile and the windows vanished even though
+  // assetUrls (the FLAT list, stitch first) carried every
+  // clip. Union: every flat-list entry beyond [0] that the artifact
+  // map didn't already provide joins as a window tile. Clip loss can
+  // no longer hide behind a missing artifact name.
+  if (urls.length > 1) {
+    const have = new Set(windows.map((w) => w.url))
+    for (let i = 1; i < urls.length; i++) {
+      const u = urls[i]!
+      if (!u || have.has(u)) continue
+      have.add(u)
+      const m = /window(\d+)_video/.exec(u)
+      // (u is truthy here, so split("/") is non-empty and pop() is
+      // defined — no `??` fallback arm.)
+      windows.push({ name: m ? `video_w${m[1]}_main` : u.split("/").pop()!, url: u })
+    }
+  }
+  // THE HERO (same defect, the hero arm): the engine film leads by
+  // NAME (filmLead.ts's regex, mirrored here for the browser bundle)
+  // — the legacy 'video' key and the flat list trail it. A run whose
+  // gallery carries the film can never preview a window as the cut.
+  const filmName = Object.keys(arts).find((n): boolean => !stagedEcho(n) && /(?:^|[/_])h3_t4_film_\d+_\.mp4$/.test(n))
+  const filmUrl = filmName !== undefined && typeof arts[filmName] === "string" && arts[filmName] !== ""
+    ? arts[filmName] as string : ""
+  // THE ESTATE HERO POINTER (the reshoot burn, 2026-11-15, the
+  // operator: "the video preview seems to show the original
+  // video"): the estate's result.url is the run's OWN product by
+  // contract — the executor leads it (the semantic output first,
+  // the engine-film law, the declared primary) and
+  // terminalOutcomeOf carries it as THE hero of the artifact map.
+  // A re-shoot's product saves under the WINDOW spelling
+  // (h3_t4_w1) beside the run's own source echo — the source clip
+  // published as an artifact under the upload's `__<12hex>` name
+  // (the harvest's product-law defect, cured in
+  // comfyui-outputs.ts, still stored on pre-cure runs). That stamp
+  // BREAKS the window regex, so the name tiers below classified the
+  // re-shoot as a window and crowned the SOURCE COPY (the original
+  // video) the final cut. The pointer outranks every name shape;
+  // the engine-film name stays first (an in-graph assembly is the
+  // cut by its own law) and both refuse the echo shape.
+  const heroUrl = typeof res?.url === "string" && res.url !== "" && !stagedEcho(res.url) ? res.url : ""
+  const namedVideo = Object.entries(arts).find(([name, url]) =>
+    typeof url === "string" && url !== "" && refGenreOf(name, url) === "video"
+    && !stagedEcho(name)
+    && !/(?:^|[/_])h3_t4_w\d+_\d+_\.mp4$/i.test(name) && !/^video_w\d+_/.test(name),
+  )?.[1]
+  const flatVideo = urls.find((url) =>
+    refGenreOf("", url) === "video"
+    && !stagedEcho(url)
+    && !/(?:^|[/_])h3_t4_w\d+_\d+_\.mp4$/i.test(url)
+    && !/(?:^|\/)video_w\d+_/.test(url),
+  )
+  return {
+    windows,
+    // THE HERO TIERS: engine film name → the estate's hero pointer
+    // → the named-video tier → the flat list. The pointer tier is
+    // the reshoot cure (see heroUrl above); the name tiers stay
+    // for shapes the pointer cannot serve (no url, non-video url).
+    final: filmUrl !== ""
+      ? filmUrl
+      : heroUrl !== "" && refGenreOf("", heroUrl) === "video"
+        ? heroUrl
+        : typeof namedVideo === "string" ? namedVideo : flatVideo ?? null,
+  }
+}
 
 /** Upstream vocabulary, filmstrip, bar-space memos (tenant §10).
  *  Verbatim lines 2474–2628. */
@@ -108,74 +223,7 @@ export function useDerivedView(args: {
   // The legacy video / video_w<k>_main names belong to an older engine
   // era and stay as a second spelling — but the REAL names are the
   // contract this face is tested against (fixture from run-b664de5e4155).
-  const filmstrip = useMemo(() => {
-    const res = stage.result
-    const arts = res?.artifacts ?? {}
-    const urls = Array.isArray(res?.assetUrls) ? res.assetUrls : []
-    // both eras, one matcher: video_w<k>_… (legacy) | h3_t4_w<k>_<n>_.mp4 (real)
-    // F14 (2026-11-12): the real saves ride `<runId>/h3_t4_w<k>`, so
-    // the run row key may carry a leading run path or harvest nodeId
-    // segment before the canonical stem — both eras match.
-    const windowIndexOf = (n: string): number | null => {
-      const legacy = /^video_w(\d+)_/.exec(n)
-      if (legacy !== null) return Number(legacy[1])
-      const real = /(?:^|[/_])h3_t4_w(\d+)_\d+_\.mp4$/.exec(n)
-      if (real !== null) return Number(real[1])
-      return null
-    }
-    const windows = Object.keys(arts)
-      .filter((n) => windowIndexOf(n) !== null && !n.endsWith("_last_frame") && !n.includes("_seam") && !n.includes("_prev"))
-      // no-fake-data guard (2026-08-31): a placeholder artifact with an
-      // EMPTY url must never become a tile — an empty src renders a
-      // broken video player. Absence of a url = absence of a window.
-      .filter((n) => typeof arts[n] === "string" && arts[n] !== "")
-      .sort((a, b) => {
-        // (both indexes parsed non-null in the filter above — no
-        // fallback arms.)
-        return windowIndexOf(a)! - windowIndexOf(b)!
-      })
-      .map((name) => ({ name, url: arts[name]! }))
-    // FLAT-LIST FALLBACK (2026-08-30 "only shows the first clip"): the
-    // windows were built ONLY from the named artifact map — a snapshot
-    // whose artifacts were stripped (older bundle eras, degraded stores)
-    // rendered ONE final-cut tile and the windows vanished even though
-    // assetUrls (the FLAT list, stitch first) carried every
-    // clip. Union: every flat-list entry beyond [0] that the artifact
-    // map didn't already provide joins as a window tile. Clip loss can
-    // no longer hide behind a missing artifact name.
-    if (urls.length > 1) {
-      const have = new Set(windows.map((w) => w.url))
-      for (let i = 1; i < urls.length; i++) {
-        const u = urls[i]!
-        if (!u || have.has(u)) continue
-        have.add(u)
-        const m = /window(\d+)_video/.exec(u)
-        // (u is truthy here, so split("/") is non-empty and pop() is
-        // defined — no `??` fallback arm.)
-        windows.push({ name: m ? `video_w${m[1]}_main` : u.split("/").pop()!, url: u })
-      }
-    }
-    // THE HERO (same defect, the hero arm): the engine film leads by
-    // NAME (filmLead.ts's regex, mirrored here for the browser bundle)
-    // — the legacy 'video' key and the flat list trail it. A run whose
-    // gallery carries the film can never preview a window as the cut.
-    const filmName = Object.keys(arts).find((n): boolean => /(?:^|[/_])h3_t4_film_\d+_\.mp4$/.test(n))
-    const filmUrl = filmName !== undefined && typeof arts[filmName] === "string" && arts[filmName] !== ""
-      ? arts[filmName] as string : ""
-    const namedVideo = Object.entries(arts).find(([name, url]) =>
-      typeof url === "string" && url !== "" && refGenreOf(name, url) === "video"
-      && !/(?:^|[/_])h3_t4_w\d+_\d+_\.mp4$/i.test(name) && !/^video_w\d+_/.test(name),
-    )?.[1]
-    const flatVideo = urls.find((url) =>
-      refGenreOf("", url) === "video"
-      && !/(?:^|[/_])h3_t4_w\d+_\d+_\.mp4$/i.test(url)
-      && !/(?:^|\/)video_w\d+_/.test(url),
-    )
-    return {
-      windows,
-      final: filmUrl !== "" ? filmUrl : typeof namedVideo === "string" ? namedVideo : flatVideo ?? null,
-    }
-  }, [stage.result])
+  const filmstrip = useMemo(() => filmstripOf(stage.result), [stage.result])
 
   // (fps is optional on Layer A since the pin law (R2) — the clock
   // fallback owns itself inside callsToPrompts; the derived `fps`

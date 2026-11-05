@@ -182,38 +182,40 @@ describe("the schema gate arms", () => {
     assert.deepEqual(layout("shift_audio"), { order: 6, group: "sampling", columns: 2, width: 1, zone: "params", wtype: "number" });
   });
 
-  it("t4r openers refuse the post-ladder leaves", () => {
-    assert.throws(
-      () => def.schema({ variant: "t4r", calls: [SHOT()], sharpen_switch: true }),
-      /h3_window\(t4r\): unsanctioned inject keys: sharpen_switch/,
-    );
+  it("t4r openers CARRY the post-ladder leaves — the lane mounts the chain (the 2026-11-15 retirement)", () => {
+    // THE CURE'S OWN RECEIPT: the walk used to refuse the leaves on a
+    // derived-t4r doc because the render arm mounted no post chain.
+    // The chain is hoisted above the family branch, so the walk
+    // admits them AND the compose fires them — judged together here.
+    const walked = def.schema({
+      variant: "t4r", calls: [SHOT({ image: "anchor.png" })],
+      second_pass_enabled: true, sharpen_enabled: true, sharpen_method: "rcas",
+    }) as Record<string, unknown>;
+    assert.equal(walked.variant, "t4r");
+    assert.equal(walked.sharpen_enabled, true);
+    assert.equal(walked.sharpen_method, "rcas");
+    const g = new GraphBuilder();
+    def.compose(walked, model, g, "run_t4r_leaves");
+    assert.equal(ofClass(graphOf(g), "ImageSharpenKJ").length, 1,
+      "the walked t4r doc's sharpen leaf FIRES — the refusal it replaced was hiding this node");
   });
 
-  // THE D8 GUARD (2026-11-06 — the live brick: a film legally
-  // stamped sr_switch lost a call, derived t4r, and every compose
-  // refused). The walk keeps refusing the post rail on the guided
-  // lane — LOUD, naming the key — while the rail's family gate and
-  // the commit seam's flip writer (useShownDoc — B2's one owner,
-  // the mount heal dissolved into it) keep the UI from ever
-  // WRITING one there. The refusal is the last line, not the first.
-  it("t4r openers refuse the second-pass rail by its live spelling — sr_switch", () => {
-    assert.throws(
-      () => def.schema({ variant: "t4r", calls: [SHOT()], sr_switch: true }),
-      /h3_window\(t4r\): unsanctioned inject keys: sr_switch/,
-    );
-  });
-
-  it("t4_chain and t4_open docs carry the same stamp legally (the refusal is the guided lane's alone)", () => {
-    const chain = def.schema({
-      variant: "t4_chain",
-      calls: [SHOT(), SHOT({ start_frame: 56, end_frame: 112 })],
-      sr_switch: true, sr_resolution: 1080,
-    });
-    assert.equal(chain.variant, "t4_chain");
-    assert.equal(chain.sr_switch, true);
-    const open = def.schema({ variant: "t4_open", calls: [SHOT()], sr_switch: true });
-    assert.equal(open.variant, "t4_open");
-    assert.equal(open.sr_switch, true);
+  // THE D8 GUARD, INVERTED (2026-11-15): the old law kept refusing the
+  // post rail on the guided lane; the lane now mounts it. A film
+  // legally stamped sr_switch that loses a call and derives t4r keeps
+  // its stamp, composes, and super-res fires.
+  it("t4r openers CARRY the second-pass rail by its live spelling — sr_switch", () => {
+    const walked = def.schema({
+      variant: "t4r", calls: [SHOT({ image: "anchor.png" })],
+      second_pass_enabled: true, sr_switch: true, sr_resolution: 1080,
+    }) as Record<string, unknown>;
+    assert.equal(walked.variant, "t4r");
+    assert.equal(walked.sr_switch, true);
+    const g = new GraphBuilder();
+    def.compose(walked, model, g, "run_t4r_sr");
+    const up = ofClass(graphOf(g), "SeedVR2VideoUpscaler");
+    assert.equal(up.length, 1, "the t4r doc's super-res FIRES");
+    assert.equal(up[0]![1].inputs["resolution"], 1080);
   });
 
   it("the chaining rail vocabulary is retired — ctx rides inert, motion_* is gone outright", () => {
@@ -273,6 +275,137 @@ describe("the merged film (the drift-control seam, automatic)", () => {
     const patched = w2Guiders.find(([, n]) => Array.isArray(n.inputs.model)
       && (n.inputs.model as [string, number])[0] === cont[0]![0]);
     assert.ok(patched, "window 2's guider carries the drift-controlled model");
+  });
+
+  it("THE SEAM CURRENCY (F44, 2026-11-14 — operator: \"the window-2 crash is structurally certain\"): an upscale film's continuation anchors on pass 1's BASE-rate latent — never the handoff's 2× output", () => {
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({
+        calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+        second_pass_enabled: true, upscale_route: "latent_2x",
+      }),
+      model, g, "run_seam_currency_upscale",
+    );
+    const out = graphOf(g);
+    // the arm really mounted: BOTH windows took the handoff
+    for (const scope of ["window1_", "window2_"]) {
+      assert.equal(
+        scoped(out, scope, "MinimaxH3LatentUpscaler3DRefineHandoff").length, 1,
+        `${scope} mounts the latent-upscale handoff`);
+    }
+    const cont = scoped(out, "window2_", "MiniMaxH3FiniteLatentContinuation");
+    assert.equal(cont.length, 1, "window 2 still chains");
+    const w1Sampled = scoped(out, "window1_", "SamplerCustomAdvanced")[0]!;
+    const w1Handoff = scoped(out, "window1_", "MinimaxH3LatentUpscaler3DRefineHandoff")[0]!;
+    // the anchor IS pass 1's sampler output…
+    assert.deepEqual(cont[0]![1].inputs.previous_latent, [w1Sampled[0], 0],
+      "the seam anchors on the BASE-rate sampled latent");
+    // …and provably NOT the 2× handoff latent (the shape-refused
+    // graph this wall exists to refuse)
+    assert.notDeepEqual(cont[0]![1].inputs.previous_latent, [w1Handoff[0], 0],
+      "the 2× handoff output never crosses the seam");
+    // the DELIVERED half is untouched: the decode still rides the
+    // handoff's upscaled latent (the render keeps its 2× landing)
+    const w1Dec = scoped(out, "window1_", "VAEDecode")[0]!;
+    assert.deepEqual(w1Dec[1].inputs.samples, [w1Handoff[0], 0],
+      "the decode rides the handoff's 2× latent");
+  });
+
+  it("THE CHAINED-TEXTURE HALF (F44): a rider-only film's seam still anchors on the REFINED latent — same rate, the polish crosses", () => {
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({
+        calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+        second_pass_enabled: true, refine_lora: "h3_silver_dareties",
+      }),
+      model, g, "run_seam_currency_rider",
+    );
+    const out = graphOf(g);
+    // no upscale on this arm — the handoff never mounts
+    assert.equal(ofClass(out, "MinimaxH3LatentUpscaler3DRefineHandoff").length, 0,
+      "the rider-only arm stays rider-only");
+    const samplers = scoped(out, "window1_", "SamplerCustomAdvanced");
+    assert.equal(samplers.length, 2, "pass 1 + the refine rider's closing pass");
+    const cont = scoped(out, "window2_", "MiniMaxH3FiniteLatentContinuation");
+    assert.equal(cont.length, 1, "window 2 chains");
+    // latOut after the refine block IS the refined sampler's output —
+    // the seam carries the polished texture at the same rate
+    assert.deepEqual(cont[0]![1].inputs.previous_latent, [samplers[1]![0], 0],
+      "the seam carries the REFINED latent (the chained-texture law)");
+  });
+
+  it("THE THREE-WINDOW UPSCALE CHAIN (F44): every carried seam anchors on its own previous window's BASE-rate latent — the 2× handoff never crosses any seam", () => {
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({
+        calls: [
+          SHOT(),
+          SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 }),
+          SHOT({ text: "and a return", start_frame: 124, end_frame: 277 }),
+        ],
+        second_pass_enabled: true, upscale_route: "latent_2x",
+      }),
+      model, g, "run_seam_currency_chain",
+    );
+    const out = graphOf(g);
+    // all three windows take the handoff (the route is armed everywhere)
+    for (const scope of ["window1_", "window2_", "window3_"]) {
+      assert.equal(
+        scoped(out, scope, "MinimaxH3LatentUpscaler3DRefineHandoff").length, 1,
+        `${scope} mounts the latent-upscale handoff`);
+    }
+    // every carried window chains on its IMMEDIATELY PREVIOUS
+    // window's pass-1 sampler — the accumulation walks the film at
+    // the base rate, never the handoff's doubled latent
+    for (const [scope, prev] of [["window2_", "window1_"], ["window3_", "window2_"]] as const) {
+      const cont = scoped(out, scope, "MiniMaxH3FiniteLatentContinuation");
+      assert.equal(cont.length, 1, `${scope} chains`);
+      const prevSampled = scoped(out, prev, "SamplerCustomAdvanced")[0]!;
+      const prevHandoff = scoped(out, prev, "MinimaxH3LatentUpscaler3DRefineHandoff")[0]!;
+      assert.deepEqual(cont[0]![1].inputs.previous_latent, [prevSampled[0], 0],
+        `${scope} anchors on ${prev}'s BASE-rate sampled latent`);
+      assert.notDeepEqual(cont[0]![1].inputs.previous_latent, [prevHandoff[0], 0],
+        `the 2× handoff output never crosses the ${prev}→${scope} seam`);
+    }
+  });
+
+  it("THE BOTH-MOUNTED WINDOW (F44): handoff AND refine rider on one film — the seam takes pass 1's FIRST sampler, never the refined one", () => {
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({
+        calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+        second_pass_enabled: true, upscale_route: "latent_2x", refine_lora: "h3_silver_dareties",
+      }),
+      model, g, "run_seam_currency_both",
+    );
+    const out = graphOf(g);
+    // both limbs really mounted on each window
+    for (const scope of ["window1_", "window2_"]) {
+      assert.equal(
+        scoped(out, scope, "MinimaxH3LatentUpscaler3DRefineHandoff").length, 1,
+        `${scope} mounts the latent-upscale handoff`);
+    }
+    const w1Samplers = scoped(out, "window1_", "SamplerCustomAdvanced");
+    assert.equal(w1Samplers.length, 2, "window 1 rides pass 1 + the refine rider's closing pass");
+    const cont = scoped(out, "window2_", "MiniMaxH3FiniteLatentContinuation");
+    assert.equal(cont.length, 1, "window 2 chains");
+    // the seam is the FIRST sampler (pass 1, base rate) — with BOTH
+    // limbs mounted the refined latent is also base-rate, so the
+    // rate alone cannot decide this arm: the SEAT does. The refined
+    // latent would carry the rider's texture AND the handoff's 2×
+    // on the upscale arm; the law names pass 1.
+    assert.deepEqual(cont[0]![1].inputs.previous_latent, [w1Samplers[0]![0], 0],
+      "the seam carries pass 1's own sampled latent");
+    assert.notDeepEqual(cont[0]![1].inputs.previous_latent, [w1Samplers[1]![0], 0],
+      "the refined (post-rider) latent never crosses the seam");
+    // the delivered half rides the handoff's 2× latent through the
+    // rider's decode — the upscaled landing is untouched
+    const w1Handoff = scoped(out, "window1_", "MinimaxH3LatentUpscaler3DRefineHandoff")[0]!;
+    const w1Dec = scoped(out, "window1_", "VAEDecode")[0]!;
+    assert.deepEqual(w1Dec[1].inputs.samples, [w1Samplers[1]![0], 0],
+      "the decode rides the refined pass's output");
+    assert.notDeepEqual(w1Dec[1].inputs.samples, [w1Handoff[0], 0],
+      "and the rider sat above the handoff (the chain is handoff → rider → decode)");
   });
 
   it("the seam's overlap leaves the window's own clip (finalize); with clips the film still joins on disk (windows only)", () => {

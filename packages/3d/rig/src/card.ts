@@ -2,9 +2,8 @@ import type {} from '@melite/comfyui-card-kit/service-faces'
 // Tier 3 — the rig card (ROADMAP card program P0, 2026-09-21):
 // "skeleton + weights on this GLB". Engine-native surface (the
 // quad-remesh shape — no checkpoints ride: the SOMA-77 template's
-// hand-painted weights SHIP in the autorig pack, the species
-// skeletons in anyCreature GLBs the caller brings). Three lanes,
-// one mode knob:
+// hand-painted weights SHIP in the autorig pack). Two lanes, one
+// mode knob:
 //
 //   auto    KimodoExportFBX (action 'apply_weights' by the node's
 //           own input dispatch: source_glb without npz_path) — the
@@ -12,30 +11,26 @@ import type {} from '@melite/comfyui-card-kit/service-faces'
 //   copy    KimodoTransferWeights + SaveRiggedModel (the live
 //           transfer-rig arm verbatim — the rig-copy promoted from
 //           its buried seat as img-to-mesh's third family).
-//   species RayCreatureRigBridge — bind the mesh onto an anyCreature
-//           template skeleton (armature + baked idles).
 //
-// The skintokens/TokenRig lane never landed — the family died in
+// The species lane died with the blender lane (operator
+// 2026-11-01: melite carries no blender) — RayCreatureRigBridge and
+// the @melite/models-anycreature family behind it are deleted. The
+// skintokens/TokenRig lane never landed — the family died in
 // the 2026-10-12 operator kill before the external ComfyUI-SkinToken
 // pack was vendored (LAW 2: no borrowed gears, no dead lanes).
 //
-// NODE CONTRACTS (vendor/, both packs local + always installed):
-//  · melite-autorig-nodes/nodes.py — KimodoExportFBX (REQUIRED
-//    rigged_path rides empty on the auto arm; file_format glb|fbx
-//    (the card's file_format knob — glb default, fbx for Unity);
-//    preserve_texture True keeps the source textures, False strips
-//    to flat SOMA-blue; decimate_ratio 0=off, Collapse mode
-//    preserves skin weights), KimodoTransferWeights + SaveRiggedModel.
-//  · melite-poser-nodes/nodes.py — RayCreatureRigBridge
-//    (height_ratio fraction of the creature bind height;
-//    max_influences nearest segments; strip_body exports only the
-//    bound mesh).
+// NODE CONTRACT (vendor/, both packs local + always installed):
+//  · melite-autorig-nodes/nodes.py — KimodoExportFBX (the node
+//    writes the rigged GLB itself: source_glb + preserve_texture —
+//    True keeps the source textures, False strips to flat
+//    SOMA-blue; the file_format glb|fbx knob and decimate_ratio
+//    died with the blender lane — GLB is the only output format),
+//    KimodoTransferWeights + SaveRiggedModel.
 import type { Context } from '@melite/comfyui-card-kit/card-definition'
 import z from '@deepseek-ai/schemastery'
 import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit'
-import { DECL as transferRigDecl, transfer as transferRigAction } from '@melite/models-transfer-rig'
-import { DECL as gemSomaDecl, rig as somaRigAction } from '@melite/models-gem-soma'
-import { DECL as anycreatureDecl, bind as speciesBindAction } from '@melite/models-anycreature'
+import { DECL as transferRigDecl } from '@melite/models-transfer-rig'
+import { DECL as gemSomaDecl } from '@melite/models-gem-soma'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { bag } from '@melite/contracts/extraKeys'
@@ -44,7 +39,7 @@ import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission
 export { parseValidateRigOutput, validateRigReport, ValidateRigOutputError } from './validateRigReport.ts'
 export type { ValidateRigJson, ValidateRigOutput, ValidateRigViolation } from './validateRigReport.ts'
 
-const RIG_MODES = ['auto', 'copy', 'species'] as const
+const RIG_MODES = ['auto', 'copy'] as const
 
 const schema = z.object({
   // The mesh to rig — required at compose (bare z.string() is the
@@ -52,21 +47,12 @@ const schema = z.object({
   // compose). wtype 'mesh' boards the base's mesh field atom
   // (primitive ③ — picker + inline GlbStagePreview thumb).
   mesh_glb: z.string().role('path').description("Mesh to rig").extra('extra', bag({ order: 0, tooltip: "The static GLB that receives skeleton + weights (TRELLIS/anny/quad output, or any import).", required: true, wtype: 'mesh' })),
-  mode: vocabulary(RIG_MODES).default('auto').description("Rig mode").extra('extra', bag({ order: 1, wtype: 'select', tooltip: "auto: SOMA-77 humanoid template weights. copy: transfer the donor GLB's rig. species: bind onto an anyCreature skeleton." })),
+  mode: vocabulary(RIG_MODES).default('auto').description("Rig mode").extra('extra', bag({ order: 1, wtype: 'select', tooltip: "auto: SOMA-77 humanoid template weights. copy: transfer the donor GLB's rig." })),
   // copy lane's donor — the rigged GLB whose skeleton + weights copy
   // onto the target (the same pair the buried transfer-rig arm took).
   donor_glb: z.string().role('path').description("Rigged donor GLB").extra('extra', bag({ order: 2, wtype: 'mesh', visible_when: 'mode=copy', tooltip: "copy mode: the rigged GLB whose skeleton + weights transfer (SOMA-rigged clean mesh — JOINTS_0/WEIGHTS_0 + armature)." })),
-  // species lane's template — an anyCreature GLB (armature + baked
-  // idle/move anims); the caller brings it from the anycreature lane.
-  creature_glb: z.string().role('path').description("Creature template GLB").extra('extra', bag({ order: 3, wtype: 'mesh', visible_when: 'mode=species', tooltip: "species mode: the anyCreature GLB whose skeleton (with baked idles) the mesh binds onto." })),
-  // auto-lane knobs (KimodoExportFBX, its 'SOMAX standalone mode').
-  preserve_texture: z.boolean().default(true).description("Preserve texture").extra('extra', bag({ order: 4, visible_when: 'mode=auto', tooltip: "auto mode: keep the source mesh's textures. Off strips to flat SOMA-blue for texturing later." })),
-  decimate_ratio: z.number().min(0).max(1).default(0).description("Decimate ratio").extra('extra', bag({ order: 5, visible_when: 'mode=auto', tooltip: "0 = off (the rig default). Collapse-mode decimation preserves skin weights; 0.2 ≈ -70% file size." })),
-  file_format: vocabulary(['glb', 'fbx']).default('glb').description("File format").extra('extra', bag({ order: 6, visible_when: 'mode=auto', tooltip: "auto mode: glb for web viewing, fbx for Unity import (the conversion runs through headless Blender).", wtype: 'select' })),
-  // species-lane knobs (RayCreatureRigBridge).
-  height_ratio: z.number().min(0.05).max(10).default(1).description("Height ratio").extra('extra', bag({ order: 7, visible_when: 'mode=species', tooltip: "species mode: mesh height as a fraction of the creature bind-pose height." })),
-  max_influences: z.number().min(1).max(8).default(3).description("Max influences").extra('extra', bag({ order: 8, visible_when: 'mode=species', tooltip: "species mode: max bone influences per vertex (nearest segments win)." })),
-  strip_body: z.boolean().default(true).description("Strip body").extra('extra', bag({ order: 9, visible_when: 'mode=species', tooltip: "species mode: delete the creature body meshes, export only the bound mesh." })),
+  // auto-lane knob (KimodoExportFBX, its 'SOMAX standalone mode').
+  preserve_texture: z.boolean().default(true).description("Preserve texture").extra('extra', bag({ order: 3, visible_when: 'mode=auto', tooltip: "auto mode: keep the source mesh's textures. Off strips to flat SOMA-blue for texturing later." })),
 })
 
 const schemaFn = callableSchema(schema)
@@ -81,7 +67,6 @@ export const identity = {
   principles: [
     'auto rigs humanoids with the SOMA-77 template (anatomically correct weights)',
     'copy transfers a rigged donor onto a clothed target (textures preserved)',
-    'species binds onto an anyCreature skeleton with baked idles',
     'rig BEFORE texture-touching passes so weights ride the final topology',
   ],
 }
@@ -91,24 +76,21 @@ export function apply(ctx: Context): void {
     id: 'rig',
     skeleton: 'rig',
     // BOARDED IS EMPTY BY LAW (the family-coverage cure's final
-    // shape, 2026-10-12): this card's three mode families are all
-    // tool atoms consumed by lane, not pickable offers. gem-soma +
-    // anycreature are unoffered (weightless — the compose seat's
-    // routes map refuses their ids; boarding them fired arm 3's
-    // "no model unit" red, the proof that unoffered atoms never
-    // board); their binding is the import above — the wall's
-    // consumer grep finds the family ids in this file's src.
-    // transfer-rig (copy lane) is boarded on its owning card,
-    // img-to-mesh (one family, one card — service.ts's
-    // family-taken refusal names the law). Anycreature reached the
-    // wall's dead list only because it lacked its unoffered flag —
-    // cured family-side, not card-side.
+    // shape, 2026-10-12): this card's mode families are all tool
+    // atoms consumed by lane, not pickable offers. gem-soma is
+    // unoffered (weightless — the compose seat's routes map refuses
+    // its id; boarding it fired arm 3's "no model unit" red, the
+    // proof that unoffered atoms never board); its binding is the
+    // import above — the wall's consumer grep finds the family id
+    // in this file's src. transfer-rig (copy lane) is boarded on
+    // its owning card, img-to-mesh (one family, one card —
+    // service.ts's family-taken refusal names the law).
     boarded: [],
     tags: ['3d', 'rig', 'skinning'],
     identity,
     sidebar: { key: '3d', order: 15 },
     flowKinds: {
-      inputs: { mesh_glb: 'mesh', donor_glb: 'mesh', creature_glb: 'mesh' },
+      inputs: { mesh_glb: 'mesh', donor_glb: 'mesh' },
       outputs: { default: 'mesh' },
       requiresModel: false,
     },
@@ -148,30 +130,18 @@ export function apply(ctx: Context): void {
         }
         // THE DECLARED SEGMENT (the atom vocabulary, stroke 2): the
         // card's mode knob names the family; the family composes the
-        // lane. Nothing below authors a node — the three arms moved to
-        // the families that own them (transfer-rig, gem-soma,
-        // anycreature), each pinned to a committed golden.
+        // lane. Nothing below authors a node — the two arms moved to
+        // the families that own them (transfer-rig, gem-soma), each
+        // pinned to a committed golden.
         const action = declaredAction(transferRigDecl, 'transfer')
         const row: ModelFacts = { id: transferRigDecl.id, family: transferRigDecl.id, card: 'rig', defaults: {}, lane_inputs: {}, variants: [], variant_groups: [], outputs: [], mods: [] }
         instantiateAction(action, { rigged_glb: donor, target_glb: mesh } as never, row, g, runId)
         return
       }
-      if (mode === 'species') {
-        const creature = String(doc.creature_glb || '')
-        if (!creature.trim()) {
-          throw new Error(
-            `required param 'creature_glb' (Creature template GLB) missing on the rig card's species lane — the species bind needs both the creature template and the mesh`,
-          )
-        }
-        const action = declaredAction(anycreatureDecl, 'bind')
-        const row: ModelFacts = { id: anycreatureDecl.id, family: anycreatureDecl.id, card: 'rig', defaults: {}, lane_inputs: {}, variants: [], variant_groups: [], outputs: [], mods: [] }
-        instantiateAction(action, { creature_glb: creature, mesh_glb: mesh, height_ratio: doc.height_ratio, max_influences: doc.max_influences, strip_body: doc.strip_body } as never, row, g, runId)
-        return
-      }
       // auto — the SOMA-77 template's own weights
       const action = declaredAction(gemSomaDecl, 'rig')
       const row: ModelFacts = { id: gemSomaDecl.id, family: gemSomaDecl.id, card: 'rig', defaults: {}, lane_inputs: {}, variants: [], variant_groups: [], outputs: [], mods: [] }
-      instantiateAction(action, { mesh_glb: mesh, preserve_texture: doc.preserve_texture, decimate_ratio: doc.decimate_ratio, file_format: doc.file_format } as never, row, g, runId)
+      instantiateAction(action, { mesh_glb: mesh, preserve_texture: doc.preserve_texture } as never, row, g, runId)
     },
   }))
 }

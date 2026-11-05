@@ -19,6 +19,7 @@ import s from "./studio.module.css"
 import { VIDEO_TIMELINE_TRACKS } from "./docModel.ts"
 import type { DocCall, DocKeyframe, LayerA, SetLayerAKey } from "./docModel.ts"
 import type { DocCommission } from "./commissions.ts"
+import { callsLaneFace, isStarterCallText, windowSpans } from "./commissions.ts"
 import type { CommissionRow } from "@melite-plugin/timeline/ui/timeline"
 import { pinDropVerdict } from "./docGrid.ts"
 import { studioCopy } from "./studioCopy.ts"
@@ -253,26 +254,68 @@ export function StudioStripPane({
   // becomes its N window segments (the operator finally sees the
   // windows an agent strung together); a doomed composition shows the
   // compose door's own refusal voice instead of a lane that looks fine.
+  // (THE STACKED-ID LAW, 2026-11-14) the stacked kinds (loras,
+  // refine) project ONE ROW PER ENTRY, and every row rode the bare
+  // kind as its id — two adapters armed drew two rail rows sharing one
+  // React key and one data-commission-lane value. The FIRST row of
+  // each kind keeps the bare id (every existing selector's contract);
+  // each subsequent row is entry-qualified (`loras-2`) — unique keys,
+  // addressable rows.
+  const seenKinds = new Map<string, number>()
+  // THE PLANNED TAIL (the frame-offset segments, 2026-11-03): the
+  // armed extend's delivered frames extend the bar's AXIS (the hatched
+  // band beyond the film's end) and its windows position at their
+  // frame offsets — window k at filmEnd + k*(windowFrames − overlap),
+  // the carry seam visible. The geometry-derived rows only; a doomed
+  // composition (refusal voice) seats no tail it will never build.
+  const planned = commissions.find((c) => c.geometry !== undefined)
+  const plannedFrames = planned?.geometry?.deliveredFrames
   const commissionRows: CommissionRow[] = commissions.map((c) => {
+    const nth = seenKinds.get(c.kind) ?? 0
+    seenKinds.set(c.kind, nth + 1)
     const detail = studioCopy.commissionSeats(c.seats)
     const segments = c.geometry !== undefined
       ? Array.from({ length: c.geometry.windows }, (_v, i) =>
           studioCopy.commissionWindowSegment(i, c.geometry!.windowFrames))
       : undefined
+    const segmentSpans = c.geometry !== undefined
+      ? windowSpans(c.geometry, barTotal)
+      : undefined
     const geometryLine = c.geometry !== undefined
       ? studioCopy.commissionGeometry(c.geometry)
       : undefined
     return {
-      id: c.kind,
+      id: nth === 0 ? c.kind : `${c.kind}-${nth + 1}`,
       label: studioCopy.commissionKindLabel(c.kind),
       detail: [detail, geometryLine].filter((x): x is string => x !== undefined && x !== "").join(studioCopy.commissionDetailJoin),
       segments,
+      segmentSpans,
       title: c.refusal
         ?? (c.note === "malformed" ? studioCopy.commissionMalformed(c.kind)
           : c.note === "bad-entry" ? studioCopy.commissionBadEntry(c.kind)
             : studioCopy.commissionRowTitle(c.kind)),
     }
   })
+
+  // ── THE MOD-MODE CALLS FACE (operator 2026-11-14: "there is still
+  // the default call in the timeline bar that tells them to describe
+  // their video there, when that isn't used at all") ────────────────
+  // The lane names its calls-readership: under a NON-reading armed
+  // commission the starter placeholder stands down (it is view state
+  // inviting prose the armed run will never read — the exact lie the
+  // report names) and the add door closes (no dead-text authoring);
+  // authored prose still paints — it is doc truth, merely unread by
+  // this run, and hiding operator content is not this lane's call.
+  // Under a READING commission (reshoot, loras) the lane stays fully
+  // live and is labeled as the run's prompt seat. The words are the
+  // dictionary's; the kit stays tenant-dumb (label + hint props).
+  const callsFace = callsLaneFace(commissions)
+  // The bar row's text is the clip-header composite (clipHeader wraps
+  // the call's prose), so the placeholder judges its SOURCE call —
+  // barPrompts[i] ↔ calls[i], one row per call in order.
+  const shownPrompts = callsFace.face === "dormant"
+    ? barPrompts.filter((_p, i) => !(calls[i] !== undefined && isStarterCallText(calls[i]!.text ?? "")))
+    : barPrompts
 
   const kfChips = barLanes.map((k, i) => {
     const docFrame = keyframes[i]?.frame
@@ -353,10 +396,11 @@ export function StudioStripPane({
         <div data-testid="tl-strip-kf-error" className={s.fileErr} role="alert">{kfErr}</div>
       )}
     <MotionTimelineBar
-      prompts={barPrompts}
+      prompts={shownPrompts}
       keyframes={kfChips}
       frameIdx={frameIdx}
       totalFrames={barTotal}
+      plannedFrames={plannedFrames}
       fps={barFps}
       initialSeconds={10}
       onFrameChange={handleBarFrame}
@@ -392,14 +436,28 @@ export function StudioStripPane({
       // its track objects — the module static must never be poisoned)
       tracks={VIDEO_TIMELINE_TRACKS.map((t) => ({ ...t }))}
       packed
-      promptsLabel={studioCopy.callsLabel}
+      // (THE MOD-MODE CALLS FACE) the head + hint name the lane's
+      // calls-readership under an armed commission — the dictionary's
+      // words, the kit's existing props, no kit change.
+      promptsLabel={callsFace.face === "dormant" ? studioCopy.callsDormantLabel(callsFace.kind)
+        : callsFace.face === "prompt" ? studioCopy.callsPromptSeatLabel(callsFace.kind)
+          : studioCopy.callsLabel}
       commissions={commissionRows}
       // (F11, 2026-11-05) the strip's two hints are the dictionary's —
-      // the pane feeds the atoms, it owns no literals.
+      // the pane feeds the atoms, it owns no literals. Under an armed
+      // commission the hint is the face's own (why the starter stood
+      // down / why this lane's text is the run's prompt).
       laneHint={studioCopy.keyframeLaneHint}
-      emptyPromptsHint={studioCopy.stripEmptyPromptsHint}
+      emptyPromptsHint={callsFace.face === "dormant" ? studioCopy.callsDormantHint(callsFace.kind)
+        : callsFace.face === "prompt" ? studioCopy.callsPromptSeatHint(callsFace.kind)
+          : studioCopy.stripEmptyPromptsHint}
       promptsHeight={64}
-      onPromptAdd={(frame) => addCallAt(docFromFilm(frame))}
+      // (THE MOD-MODE CALLS FACE) under a NON-reading armed commission
+      // the double-click add stands down — a new call authored into the
+      // dormant lane is dead text the armed run will never read. The
+      // plain and prompt faces keep the add door (the film's authoring
+      // surface / the run's prompt seat).
+      onPromptAdd={callsFace.face === "dormant" ? undefined : (frame) => addCallAt(docFromFilm(frame))}
       previews={callPreviews}
       selectedId={selectedBarId}
       onSelect={handleTimelineSelect}

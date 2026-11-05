@@ -77,6 +77,34 @@ Do not send retired `context`, seam-keyframe, `bed_audio`, or other undeclared
 fields. Top-level unknown fields are refused; some per-call compatibility keys
 may be retained, so do not use them to add behavior.
 
+Do not send retired `context`, seam-keyframe, `bed_audio`, or other undeclared
+fields. Top-level unknown fields are refused; some per-call compatibility keys
+may be retained, so do not use them to add behavior.
+
+## Identity anchoring — the character sheet
+
+People in a multi-window film drift unless every generation window carries the
+same identity reference. The estate's anchor is a CHARACTER SHEET made with the
+image-edit card's design-sheet skill (`image-edit` card,
+`model:qwen-img-edit-21:design-sheet` — one reference frame in, a production
+sheet out with turnaround, expressions, and detail tiles; a plain subject can
+use the cheaper four-panel `character-sheet` skill instead). Then attach the
+sheet to the GEN WINDOWS through the keyframes lane — `keyframes:
+[{frame, image}]` with FILM-absolute frames:
+
+- ONE PIN INSIDE EVERY WINDOW'S SPAN, all pointing at the same sheet. A
+  3-window film gets three pins (e.g. frames 10, 60, 120). The compose maps
+  each pin into its covering window's graph (window-first-frame pins become
+  that window's anchor; interior pins ride AddGuide).
+- `params.image` is NOT enough: it is the frame-0 shorthand and anchors WINDOW
+  1 ONLY. `ref_images` rails also ride one window. The per-window pin lane is
+  the only mechanism that reaches every window.
+- The same sheet is the identity seat downstream: it feeds `replace[]`'s
+  `still` seat (the swap's R2V reference) — see `skills/recipe/SKILL.md` for
+  the production order and the limits of masked passes over an unpinned source
+  (the mannequin silhouette carries the source's shapes, so
+  anchor the sheet at GENERATION time, not only at swap time).
+
 ## Audio and references
 
 THE BED IS GONE: there is no film-wide bed parameter. Generate dialogue first,
@@ -88,6 +116,19 @@ row with no `src` is REFUSED at the compose door (`filmMix.ts`: "a positioned
 clip row has no src — the film mix cannot place a source-less row"), so bind a
 staged or returned asset before you place it; an unpositioned row is a
 statement about the film's own audio, never a placeholder.
+
+**NO SPOKEN LINE IS NOT SILENCE — say "no dialogue" in the window that has
+none.** H3 fills any silence the audio does not account for: a window whose
+`text` never mentions voices comes back with muttered or fully voiced lines in
+a synthetic voice, and a later window may restate an earlier line in a
+stranger's voice. So EVERY window carrying no spoken audio MUST negate it in
+its OWN `text` — "no dialogue", "silence, no dialogue", "no spoken words". One
+negation per silent window, not one sentence at the top of the film: `text` is
+per-window conditioning, so three silent windows need three negations. Windows
+that DO carry a line name the speaker and the exact words instead, and never
+add "no dialogue" beside them. Treat a missing negation as a defect equal to
+dropped frames — verify it window by window on the compiled prompts before
+pressing, because the engine will silently invent the voices otherwise.
 
 Use only the declared reference fields (`ref_images`, `ref_videos`,
 `ref_audios`, or the first/last-frame lanes) when they serve the task. A

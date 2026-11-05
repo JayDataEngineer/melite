@@ -133,13 +133,31 @@ describe('background + body slot (drops / picks / wire)', () => {
     expect(touched).toBe(false)
   })
 
-  test('slot asset-drop of a GLB attaches, detach clears', { timeout: LOADED_WAIT() * 6 }, async () => {
+  test('slot asset-drop of a GLB attaches, detach clears', { timeout: LOADED_WAIT() * 16 }, async () => {
     await mountedNoRun()
     fireEvent.drop(slotSquare(), { dataTransfer: assetTransfer('https://host/slot.glb') })
     await vi.waitFor(() => {
-      if (!document.body.querySelector('[aria-label="Detach preview_glb"]')) throw new Error('no detach yet')
-      // stroke 83: the GLB drop path stalls past 10s under full-suite parallel load (the fetch rides the shared dom loop); 30s still tripped under the 2026-09-17 full gate — 90s kept the evidence point load-robust until the 2026-10-23 green-triple gate (flake-slowness-wave3) starved the dom loop past 180s. The multiple doubles again — the stall is scheduler starvation, never a slower claim.
-    }, { timeout: LOADED_WAIT() * 6 })
+      if (!document.body.querySelector('[aria-label="Detach preview_glb"]')) {
+        // THE POOL-HANG EVIDENCE SEAT (2026-11-02): three full-gate
+        // runs starved this arm past 480s/480s/960s while every scoped
+        // run seated it in ~10s AND the file's 22 siblings ran in ~8s
+        // under the same pool — the worker's loop was alive, so the
+        // detach never painted: a lost update, not scheduling. The
+        // refusal names the body's actual state so the next pool hang
+        // reports WHERE the drop chain died instead of a content-free
+        // 'no detach yet'. The wait itself sits at x8 (evidence in 8
+        // min); the test budget x16 covers a hang elsewhere in the arm.
+        const slot = document.body.querySelector('[data-motion-body] [data-slot-square]')
+        const held = document.body.querySelector('[data-slot-label]')
+        throw new Error(
+          'no detach yet — slot ' + (slot ? 'present' : 'ABSENT') +
+          ', rail ' + (document.body.querySelector('[data-motion-body]') ? 'present' : 'ABSENT') +
+          ', slot text ' + JSON.stringify((slot?.textContent ?? '').slice(0, 40)) +
+          (held ? ', label ' + JSON.stringify(held.textContent ?? '') : '') +
+          ', toasts ' + JSON.stringify(useToastStore.getState().toasts.map((t) => t.message).slice(0, 3)),
+        )
+      }
+    }, { timeout: LOADED_WAIT() * 8 })
     fireEvent.click(document.body.querySelector('[aria-label="Detach preview_glb"]') as HTMLButtonElement)
     await vi.waitFor(() => {
       if (document.body.querySelector('[aria-label="Detach preview_glb"]')) throw new Error('detach did not clear yet')
@@ -379,7 +397,7 @@ describe('preview body (attach / convert / fall back)', () => {
     expect(document.body.textContent).toContain('No motion yet')
   }, 30000)
 
-  test('conversion delegates the exact flow body and abort signal to the shared runner', async () => {
+  test('conversion delegates the exact card-door body and abort signal to the shared runner', async () => {
     stubLoads({ bodies: { 'bare.glb': 'glb' } })
     const runCompiledGeneration = vi.fn(async (
       _body: Record<string, unknown>,
@@ -397,9 +415,14 @@ describe('preview body (attach / convert / fall back)', () => {
     await vi.waitFor(() => {
       expect(runCompiledGeneration).toHaveBeenCalledTimes(1)
     }, { timeout: LOADED_WAIT() * 2 / 3 })
+    // THE CARD DOOR (flows-are-compositions, 2026-11-14): the
+    // body-to-somax wrapper row is retired; the same lane presses the
+    // rig card through the model door (gem-soma auto = SOMA-77).
     expect(runCompiledGeneration.mock.calls[0]?.[0]).toEqual({
-      flow: 'body-to-somax',
-      glb: 'https://host/bare.glb',
+      model: 'gem-soma',
+      mesh_glb: 'https://host/bare.glb',
+      mode: 'auto',
+      preserve_texture: true,
     })
     expect(runCompiledGeneration.mock.calls[0]?.[1]).toBeInstanceOf(AbortSignal)
   })

@@ -77,6 +77,55 @@ function qvoiceRow(value, fallbackStrength) {
 export function qvoiceUse(p) {
     return qvoiceRow(p['qvoice'], p['voice_strength']);
 }
+/** THE FLAT-QVOICE PROMOTION (the F49 cure, 2026-11-01): the flat
+ * spelling `qvoice: "<path>"` composes — {@link qvoiceUse} reads it —
+ * but the mods surface chips only ARRAY-valued params, so a flat
+ * press left the take voiceless in the studio's mods bar with no way
+ * to see or toggle the voice. Promotion rewrites the flat spelling
+ * into the bag the card's own refusal text names,
+ * `qvoice: [{ qvoice: <path>, voice_strength: <stated ?? 1> }]`, at
+ * the params WRITE seat — storage holds bag shape, the chip renders,
+ * compose reads either spelling. A stated top-level `voice_strength`
+ * (number or numeric string in 0–2) FOLDS into the row and leaves the
+ * top level — the row is the single source of truth; anything else
+ * promotes as 1. A transport-flattened one-string array
+ * (`["<path>"]`, the unwrapped `{item:[…]}` shape) promotes the same
+ * way. Bags pass through untouched; no qvoice, no rewrite.
+ *
+ * @param p the stage params about to be stored
+ * @returns the params with `qvoice` in bag shape (a new object when
+ *          promotion fired, the input record otherwise) */
+/** The promotion writer's total strength fold: a stated top-level
+ *  `voice_strength` in 0–2 (number or numeric string) is the row's
+ *  strength; EVERY other spelling folds to 1 — the writer is total
+ *  (junk is stored as the neutral 1, never thrown; admission owns
+ *  refusals). The numeric-string arm parses through the same
+ *  QVOICE_NUMBER gate the admission door reads.
+ * @param stated the params' top-level voice_strength, any spelling
+ * @returns the row strength (the stated value in 0–2, else 1) */
+function foldStrength(stated) {
+    const n = typeof stated === 'number' ? stated
+        : typeof stated === 'string' && QVOICE_NUMBER.test(stated.trim()) ? Number(stated.trim())
+            : Number.NaN;
+    return Number.isFinite(n) && n >= 0 && n <= 2 ? n : 1;
+}
+export function promoteQvoiceBag(p) {
+    const value = p['qvoice'];
+    let flat;
+    if (typeof value === 'string') {
+        flat = value.trim() || undefined;
+    }
+    else if (Array.isArray(value) && value.length === 1 && typeof value[0] === 'string') {
+        flat = value[0].trim() || undefined;
+    }
+    if (!flat)
+        return p;
+    const strength = foldStrength(p['voice_strength']);
+    const rest = { ...p };
+    delete rest['voice_strength'];
+    rest['qvoice'] = [{ qvoice: flat, voice_strength: strength }];
+    return rest;
+}
 // TTST1 IS FAMILY-OWNED (the kit-arm retirement, 2026-09-30): the qwen3-tts
 // family composes its own lane in its declared action (pinned to committed
 // goldens in that family's tests/golden/). This arm is deleted; the family is

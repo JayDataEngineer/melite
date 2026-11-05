@@ -1,9 +1,11 @@
 import type { PromptGraph, StripTable } from './graph.js';
 /** The wired-tensor law (the lanes-image precedent, ported 1:1):
  *  a '$name' value names an upstream stage's wired output — the
-// ── archetype III: the poser turnaround family ──────────────────────
+// ── archetype III: the poser assembly family ────────────────────────
 // Body → assemble (CompositeCharacter / FitProp / SkinApply) → the
-// shared 8-view turnaround tail (blocks/poser-kit renderGLBViews).
+// artifact GLB. The shared 8-view turnaround tail (blocks/poser-kit
+// renderGLBViews) died with the blender lane (2026-11-01) — the
+// assembly node's own output is the lane's terminal.
 // The strip tables stay EMPTY so the pin's autofills ride
 // (the GraphBuilder pin defaults own that behavior).
 

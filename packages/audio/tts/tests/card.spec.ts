@@ -140,7 +140,10 @@ describe("the tts compose gate", () => {
     // static union declares both; the resolved set per run picks by
     // the SAVE QVOICE boolean (the qvoice boolean law, operator
     // 2026-10-22: a save-on run resolves voices, a plain run default).
-    assert.deepEqual(def.flowKinds.outputs, { default: "audio", voices: "voice" });
+    // voices declares the LIST kind (F48's one-word cure, 2026-11-14):
+    // the channel feeds the film's audio_list conditioning port, and
+    // `voice` was a kind no wire door carries.
+    assert.deepEqual(def.flowKinds.outputs, { default: "audio", voices: "audio_list" });
     assert.equal(def.flowOutputBindings?.[0]?.channel, "default");
     assert.equal(def.flowOutputBindings?.[0]?.node, "SaveAudio.0");
     assert.equal(def.flowOutputBindings?.[0]?.nodeClass, "SaveAudio");
@@ -908,13 +911,28 @@ describe("the empty-string strip (B1: the wire carries what composed, nothing el
   });
 
   it("THE PRESET+QVOICE CONFLICT (B2): both stated refuses loud — the clone branch carries no speaker, one voice performs", () => {
+    // THE STATED PRESET (F31): a stated pick of a NON-rest speaker —
+    // the lane's own default fill ('ryan') is the rest and rides
+    // beside a .qvoice (the service's merge wrote it, never the
+    // caller); 'vivian' is the caller's own word and refuses.
     assert.throws(
       () => def.compose(
-        def.schema({ text: "sample", voice: "ryan", qvoice: [{ qvoice: "/v/ann.qvoice", voice_strength: 1 }] }),
+        def.schema({ text: "sample", voice: "vivian", qvoice: [{ qvoice: "/v/ann.qvoice", voice_strength: 1 }] }),
         ttsModel, new GraphBuilder(), "run_b2",
       ),
       /params 'voice' and 'qvoice' fire together on the tts card \(ONE voice performs — the saved persona rides the qvoice mod bag and the engine's clone branch carries no speaker; drop the preset or the \.qvoice\)/,
     );
+    // THE F31 REST: the lane's default fill beside a .qvoice is not
+    // a stated preset — the persona performs (the failure's exact
+    // shape: the caller never stated `voice`)
+    const gRest = new GraphBuilder();
+    def.compose(
+      def.schema({ text: "sample", voice: "ryan", qvoice: [{ qvoice: "/v/ann.qvoice", voice_strength: 1 }] }),
+      ttsModel, gRest, "run_b2_rest",
+    );
+    const studioRest = Object.values(gRest.toJSON() as Record<string, { class_type: string }>)
+      .find((n) => n.class_type === "AudiocoreVoiceStudio");
+    assert.ok(studioRest, "the lane's rest rides beside the persona (the fill is not a stated preset)");
     // the persona ALONE composes green (the .qvoice performs)
     const g = new GraphBuilder();
     def.compose(

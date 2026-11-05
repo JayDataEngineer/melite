@@ -1,17 +1,6 @@
 import { Service, type Context } from "@deepseek-ai/cordis";
 import type { Domain } from "@deepseek-ai/dsh-storage-domain";
 import type { DraftsDomainSpec } from "./spec.js";
-/** The drafts plugin's config (J12: the retired
- *  MELITE_STORAGE_ROOT / MELITE_STATE_ROOT env seams' config
- *  twin — the unit-file root the json backend hangs under,
- *  named at the composition site, never read from the env). */
-export interface DraftsConfig {
-    /** The storage unit-file root (`<stateRoot>/storage` at the
-     *  composition site); default `data/runs/storage`. */
-    storageRoot?: string;
-}
-/** The json backend's unit-file root. */
-export declare function resolveStorageRoot(config?: Readonly<DraftsConfig>): string;
 /** The fiber-scoped seat owning the drafts domain handles (id
  *  `meliteDraftsDomain` — the estate-seat prefix law, cf.
  *  skillRegistry.ts:20-28): one instance per mounting fiber, so the
@@ -31,13 +20,11 @@ export declare class DraftsDomainSeatService extends Service {
      *  Domain.close() only, and the WeakMap above cannot be
      *  enumerated at teardown — so live handles ride this set. */
     private opened;
-    constructor(ctx: Context, config?: Readonly<DraftsConfig>);
-    /** The composition site's named storage root (J12: config —
-     *  the retired env seam's twin). */
-    readonly config: Readonly<DraftsConfig>;
-    /** Open (or reuse) the drafts domain for this process's storage
-     *  root. Throws LOUD when the host provides no storage facility —
-     *  misconfiguration fails at the earliest resolvable point.
+    constructor(ctx: Context);
+    /** Open (or reuse) the drafts domain through the host's storage
+     *  facility. Throws LOUD when the host provides no storage
+     *  facility — misconfiguration fails at the earliest resolvable
+     *  point.
      *  @returns the ready domain handle (cached per facility). */
     open(): Promise<Domain<DraftsDomainSpec>>;
 }

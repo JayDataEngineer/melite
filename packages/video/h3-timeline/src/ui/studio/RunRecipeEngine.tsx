@@ -24,17 +24,16 @@
  */
 import { CardForm, ControlRow, SectionLabel, SpecAtom, useResolvedForm, type SquareWire } from "@melite/card-base/client"
 import { axisUnset, composeValidate } from '@melite/card-base/client'
-import { resolvePickVerdictDoc, pickFamilyRefusal } from "./pickVerdict.ts"
+import { resolvePickVerdictDoc } from "./pickVerdict.ts"
 import { fetchMediaLibrary } from '@melite/card-base/client'
 import { type Dispatch, type SetStateAction, useMemo, useState } from "react"
 import s from "./studio.module.css"
 import { DOC_FPS_DEFAULT } from '@melite/models-h3/timelineContract'
-import { FAMILY_LAW, FILM_ONLY_KEYS, T4_ONLY_KEYS, deriveWindowFamily } from "@melite/models-h3/timelineContract"
-import { reseatDeadKeys } from "@melite/contracts/familyLane"
+import { deriveWindowFamily } from "@melite/models-h3/timelineContract"
 import type { LayerA, SetLayerAKey } from "./docModel.ts"
 import { mergeDocLayers } from "./docModel.ts"
 import { parseSpecNumber } from "./docGrid.ts"
-import { omitT4GateDead, omitT4RecipeRow } from "./omitT4Recipe.ts"
+import { omitFilmOnlyField, omitFilmRecipeRow } from "./omitLaneRecipe.ts"
 import { studioCopy } from "./studioCopy.ts"
 
 /** Layer A rail: Recipe (clock) + Engine (H3 sampling) + geometry. */
@@ -82,61 +81,35 @@ export function RunRecipeEngine({
   // shape; loadMedia = the one media-library fetch. CardForm's input
   // rail hands BOTH to every SourceRow — absent, From media is the
   // honest-empty modal (the break this wire closes).
-  // THE FAMILY GATE (2026-11-06, the family-reseat cure — the live
-  // brick: "card 'h3-timeline' refused params: h3_window(t4r):
-  // unsanctioned inject keys: sr_switch"). The t4r lane wires NO
-  // post chain — the walk refuses the twelve T4_ONLY knobs on a
-  // doc that derived t4r, so a rail that RENDERS them offers a
-  // switch whose every flip refuses the compose (the "second-pass
-  // switch does not switch" shape) and a Final Cut pill that
-  // bricks the card. The rail derives the family from the SAME
-  // seats the walk reads (one spelling: deriveWindowFamily, the
-  // contract face) and stops serving what the family cannot
-  // honor. Defined-wins merge — an undefined layer key never
-  // erases the base's seats mid-derivation.
+  // THE FAMILY DERIVATION (2026-11-15, the lane-law retirement): the
+  // rail and the walk read the same derivation (deriveWindowFamily);
+  // the only family-conditional rail judgment left is the film-only
+  // knob below. The old t4r gate is gone because the t4r arm mounts
+  // the post chain — the fields it used to hide now fire.
   const family = useMemo(
     () => deriveWindowFamily(mergeDocLayers(base, layerA as unknown as Record<string, unknown>)),
     [base, layerA],
   )
-  // THE DEAD-ROW GATE (2026-10-16): the t4r lane's whole post-pass
-  // vocabulary (T4_ONLY_KEYS — the twelve leaves plus the masters that
-  // own them and the attention backend) AND the film-only knobs
-  // (FILM_ONLY_KEYS: duck_depth_db is read only inside the multi-window
-  // film boundary, so a single-window doc composes it into no node).
-  // One predicate, one derivation (the same family spelling the walk
-  // and the reseat heal read) — a row the run cannot honor is never
-  // served. THE GATE-DEAD ARM (the ERROR h cure, 2026-11-08): a
-  // field whose visible_when NAMES a family-dead key omits with the
-  // key — the refine_* quartet rode visible_when second_pass_enabled
-  // while surviving the name filter, so the Second Pass tab
-  // resurrected on the STALE stated gate as an orphan face (the
-  // master row T4_ONLY-omitted, no off switch). Presence is a pure
-  // function of the lane (omitT4GateDead, one spelling with the row
-  // gate in omitT4Recipe.ts).
-  const omitDead = family === "t4r"
-    ? (name: string): boolean => (T4_ONLY_KEYS as readonly string[]).includes(name)
-      || (FILM_ONLY_KEYS as readonly string[]).includes(name)
-      || omitT4GateDead(spec, name)
-    : family === "t4_chain"
-      ? undefined
-      : (name: string): boolean => (FILM_ONLY_KEYS as readonly string[]).includes(name)
-  const omitT4 = omitDead
-  // THE ROW GATE (2026-10-16, the Final Cut brick — audit 0be61df8
-  // F1): the field gate above stopped serving the twelve t4r-dead
-  // KNOBS, but the recipe PILLS stayed ungated — h3's Final Cut row
-  // stamps sr_switch, a one-call guided doc derives t4r, and the
-  // walk refuses the stamp ('unsanctioned inject keys: sr_switch'):
-  // the pick landed, every later run bricked. Judged on the row's
-  // OWN stamp (never a hand id list): any recipe whose stamp
-  // intersects the family-dead keys is not offered on that lane.
-  // (spec !== null in the guard narrows the const binding — the
-  // gate is only ever handed to CardForm inside the spec'd render,
-  // so it can never deref a null it would never judge). The row
-  // judgment itself lives in omitT4Recipe.ts, ONE spelling the
-  // contract wall drives against the served spec + the DECL's own
-  // rows (the J4 negative control).
-  const omitT4Recipe = family === "t4r" && spec !== null
-    ? (row: unknown): boolean => omitT4RecipeRow(spec, row)
+  // THE DEAD-ROW GATE — FILM-ONLY ONLY (2026-11-15, the lane-law
+  // retirement: the t4r dead-letter set is gone, the post chain
+  // mounts on every arm, so the second-pass vocabulary renders
+  // wherever the doc derives). What still cannot fire on a
+  // single-window doc is the film-only knob (FILM_ONLY_KEYS:
+  // duck_depth_db is read only inside the multi-window film
+  // boundary), so a t4r/t4_open rail omits exactly that set; the
+  // walk refuses the same key at the run door.
+  const omitDead = family === "t4_chain"
+    ? undefined
+    : (name: string): boolean => omitFilmOnlyField(name)
+  // THE ROW GATE — the film-only half survives (2026-11-15): a
+  // recipe whose stamp intersects FILM_ONLY_KEYS would still compose
+  // a knob the single-window run cannot honor (the walk refuses it),
+  // so the row is not offered on those lanes. The old t4r half (the
+  // Final Cut brick: its sr_switch stamp refused on a keyframe doc)
+  // is gone with the lane law — Final Cut now lands on a t4r doc and
+  // the chain fires.
+  const omitRecipe = family !== "t4_chain" && spec !== null
+    ? (row: unknown): boolean => omitFilmRecipeRow(spec, row)
     : undefined
   const wire: SquareWire = {
     candidates: refArtifacts.map((a) => ({ id: a.name, label: a.name, url: a.url })),
@@ -197,8 +170,8 @@ export function RunRecipeEngine({
           // lane, the D-M-E audio lanes, the clips row, the call
           // editor's reference bundles. Knobs and axes only.
           omitInputRail
-          omitFields={omitT4}
-          omitRecipeRow={omitT4Recipe}
+          omitFields={omitDead}
+          omitRecipeRow={omitRecipe}
           onSet={edit}
           onUnset={(n) => setLayerAKey(n as keyof LayerA, undefined)}
           // THE ATOMIC PICK LAW (the same arm the bench drill seats):
@@ -228,67 +201,10 @@ export function RunRecipeEngine({
               patch,
             )
             const violations = composeValidate(spec, candidate)
-            // THE FAMILY CLAUSE (B5 — hop 3's first judge): the same
-            // candidate judged through the walk's family clause
-            // (pickVerdict.ts owns it; the one-owner ruling lives
-            // there). The verdict doc is what the run composes — a
-            // Final-Cut stamp on a keyframe doc refuses HERE, in the
-            // door's own voice, before the write and before the run
-            // press. The client frame stays phase-less (the door adds
-            // the phase prefix); the gate face speaks the clause
-            // verbatim like every other refused pick.
-            const family = pickFamilyRefusal(candidate)
-            if (family !== null) violations.push({ message: "card_compose: " + family })
+            // (the lane-law retirement, 2026-11-15: no family-dead
+            // clause remains — a post key never refuses a pick; the
+            // walk's shape gates judge the run itself.)
             if (violations.length > 0) {
-              // THE SETTLEMENT CLAUSE (h¹ — the flip-settlement law):
-              // a refusal whose dead weight is ONLY the family-dead
-              // strand is not a refusal — it is stranded state asking
-              // to settle. The family can flip under carried stamps
-              // with no field write authoring it (the keyframes pin);
-              // the owning surface hides on the new lane, so no hand
-              // can "fix the stated value" — the gang refusal bricks
-              // the doc (the live burn: the four keys stranded under
-              // a hidden tab until the pick gate refused them). Ask
-              // the estate's ONE settlement spelling: reseat the
-              // candidate, re-judge. Clean → the pick LANDS on the
-              // reseated holdings, the dropped keys unstated (the
-              // base's own stamps settle through the serializer's
-              // null-ride), and the face NAMES the settlement —
-              // voiced, never silent, never a bare refusal. Anything
-              // the reseat does not clear keeps the full refusal: the
-              // gate's teeth stay (the settlement never launders an
-              // illegal pick).
-              // THE CARRY LINE (2026-11-11): the settlement drops
-              // the DOC'S OWN stranded stamps — everything the stage
-              // held before the pick (base + the shown layerA, the
-              // operator's earlier keystrokes). A T4-only key the
-              // pick's OWN patch authors stands for the family
-              // clause to refuse — the settlement never launders a
-              // write.
-              const priorView = resolvePickVerdictDoc(
-                held,
-                layerA as unknown as Record<string, unknown>,
-                {},
-              )
-              const reseated = reseatDeadKeys(FAMILY_LAW, candidate, priorView)
-              if (reseated.dropped.length > 0) {
-                const recheck = composeValidate(spec, reseated.params)
-                const reFam = pickFamilyRefusal(reseated.params)
-                if (reFam !== null) recheck.push({ message: "card_compose: " + reFam })
-                if (recheck.length === 0) {
-                  setLayerA((prev) => {
-                    const next: Record<string, unknown> = { ...prev }
-                    for (const k of reseated.dropped) next[k] = undefined
-                    for (const [k, v] of Object.entries(patch)) {
-                      if (axisUnset(k, v, spec)) next[k] = undefined
-                      else next[k] = v
-                    }
-                    return next as unknown as LayerA
-                  })
-                  setGateFace(studioCopy.gateSettled(reseated.dropped))
-                  return
-                }
-              }
               setGateFace(
                 'THE COMPOSE GATE REFUSED — ' + violations[0].message
                   + ' — the write never left the studio. Fix the stated value, or pick a different route.',

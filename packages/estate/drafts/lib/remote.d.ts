@@ -1,5 +1,6 @@
 import type { Context } from "@deepseek-ai/cordis";
 import { TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
+import { type PremintCompose } from "./bench.js";
 import { STAGE_PATCH_KEYS, type StagePatchKey } from "@melite/contracts/benchStage";
 export { STAGE_PATCH_KEYS, type StagePatchKey };
 import { type LaneMigration, type FamilyReseat } from "./bench.js";
@@ -223,20 +224,41 @@ export declare function laneMigrationOf(ctx: Context): LaneMigration | undefined
  *  familyAdmissionOf precedent. */
 export declare function familyReseatOf(ctx: Context): FamilyReseat | undefined;
 /** THE FAMILY ADMISSION SEAT (journey-closure B5, 2026-10-17 — hop
- *  3's first judge): the registry judges the card's OWN family
- *  clause (CardDefinition.admitFamily — the same clause the run
- *  door's compose walk enforces, riding the card's contract module)
- *  over the merged stage params. A Final-Cut stamp on a keyframe doc
- *  refuses at the write door with the run door's own voice
- *  (bench/family-refusal) instead of green-lighting to the run
- *  press — the patch door's "the params the NEXT run would compose"
- *  claim, made true for family-conditional cards. The SAME restore
- *  carve the lane admission rides (the server-set marker, never a
- *  caller's claim): the archive loads, the run teaches. Returns
- *  undefined when the registry seat offers no family seam
- *  (registry-less lanes, pre-B5 registries). Exported for the wall,
- *  the laneAdmissionOf precedent. */
+ *  3's first judge): the registry judges an OPTIONAL card family
+ *  clause (CardDefinition.admitFamily) over the merged stage params,
+ *  so a patch that would land a family-illegal doc refuses at the
+ *  write door with the run door's own voice (bench/family-refusal)
+ *  instead of green-lighting to the run press. NO LIVE CARD declares
+ *  a clause after the 2026-11-15 lane-dead-letter retirement
+ *  (h3-timeline's t4r inject-keys face was deleted when the t4r arm
+ *  gained the post chain — every finish key fires on every lane, and
+ *  a non-empty DECL deadKeys is banned at boot), so the seam is an
+ *  honest no-op for today's cards; the mechanism stands for a genuine
+ *  future family clause. The SAME restore carve the lane admission
+ *  rides (the server-set marker, never a caller's claim): the archive
+ *  loads, the run teaches. Returns undefined when the registry seat
+ *  offers no family seam (registry-less lanes, pre-B5 registries).
+ *  Exported for the wall, the laneAdmissionOf precedent. */
 export declare function familyAdmissionOf(ctx: Context): ((card: string, params: Record<string, unknown>, provenance: unknown) => void) | undefined;
+/** THE PRE-MINT COMPOSE VERDICT SEAT (F14's estate half,
+ *  2026-10-31): the add-stage door's whole-bench judge. Resolves the
+ *  runs service LAZILY — ctx.get("runs", false), the resolverOf
+ *  precedent — because the dependency edge points down (the runs
+ *  registry statically injects the drafts remote; a static inject
+ *  here would be a cycle the planner cannot seat). An absent seat
+ *  admits: the registry-less law every optional judge here rides
+ *  (an isolated drafts rig judges nothing it cannot compose).
+ *
+ *  The verdict mirrors the agent tool's verdictOfStages
+ *  (melite-construct.ts:211) clause for clause — same
+ *  flow_inline {id, stages} body, same ok/valid read, same
+ *  free-text-intent fallback through FLOW_ID_RE (the contract's
+ *  one spelling) — so a projection one door composes the other
+ *  composes too. Every failure folds into the refusal message
+ *  (never a throw, never a silent admit): the estate cannot
+ *  certify the projection, so it does not write it. Exported for
+ *  the wall, the benchAdmissionOf precedent. */
+export declare function composeVerdictOf(ctx: Context, signal: AbortSignal): PremintCompose | undefined;
 /** THE BENCH-WRITE ADMISSION, COMPOSED (2026-10-10): the model
  *  admission (board + repair law) THEN the lane admission (the
  *  DECL's surface + relation words — fix shape 3) THEN the family
@@ -341,6 +363,38 @@ export declare class BenchRemoteService extends TypertRemoteService {
      *  bench failures pass through untouched; only the open itself
      *  wraps as bench/store-failed. */
     get(session: string, signal: AbortSignal): Promise<BenchGetRow>;
+    /** THE GENERATION CHAIN (the one-seat audit, 2026-10-31 —
+     *  dev_docs/audits/journey/2026-10-31-one-seat-bench-identity.md):
+     *  DSH conversations seed new session generations (the child's
+     *  header carries parentSession); the bench key rides the
+     *  generation id, so a seed orphaned the built state. This walker
+     *  hands ensureBench the caller's ancestor chain (nearest-first,
+     *  depth-capped, cycle-safe) and the inheritance arm copies the
+     *  nearest ancestor's bench forward on first touch. The sessions
+     *  service is HOST data probed like every optional seat
+     *  (ctx.get(name, false)); lanes without it — pure unit boots —
+     *  carry no lineage and keep the clean-birth law.
+     *  @param session the caller's generation key (any shape; a
+     *    non-string resolves no chain).
+     *  @returns the ancestor session keys nearest-first, or undefined
+     *    when no host session service or no parent chain exists. */
+    private benchLineageOf;
+    /** THE WRITER SEAT (the one-seat audit §8.2's caller-side re-seat,
+     *  2026-10-31): one derivation every bench door rides. Three seat
+     *  shapes: a `delegate:<id>` key is the tool-forwarded DELEGATED
+     *  lane — the writer seat is its PARENT conversation's CURRENT
+     *  generation (lineage[0], the doc the tab watches; the prefix is
+     *  the delegation signal benchKeyOfExec stamps — never a
+     *  bench-<uuid> no tab reads), refusing loud when the host
+     *  sessions service resolves no parent. A `session-` key IS the
+     *  conversation generation — it writes its own bench (inheritance
+     *  seeds it on first touch). ANY other key is the genuinely
+     *  unattributed seat's own (main, a script's explicit key) — the
+     *  fallback the audit leaves alive, no walk, no refusal.
+     *  @returns the writer session key + the lineage for its seed
+     *    birth (undefined once re-seated: the parent bench exists, no
+     *    second walk). */
+    private seatOf;
     /** The in-process API the adapter above delegates to. */
     ensure(doc: BenchDoc, signal: AbortSignal): Promise<BenchEnsureRow>;
     /** Endpoint `bench/patch` — params merge (+result/runStatus) with

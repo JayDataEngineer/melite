@@ -26,7 +26,7 @@ it from `params.model`; omit it and the default route's packs decide).
 The one family is `qwen3-tts`; its flavor/size routes are addresses,
 not families. A mod field refused as `unknown param(s)` means the
 required family was not selected: state the family (`params.model:
-"qwen3-tts"` for `voice_name`/`design_prompt`) and the field rides
+"qwen3-tts"` for `design_prompt`) and the field rides
 top-level beside the knobs. `melite_load`'s mod advertisement lists
 fields from the DECL across families — it does not select one; the
 call does.
@@ -94,8 +94,17 @@ every line of the character is the same voice under any direction.
   FLAC file bytes — the container carries per-run metadata, so
   byte-different FLACs can be the identical render.
 - voice_strength is the identity intensity: 1 = the saved voice as
-  designed, below 1 pulls toward neutral, above 1 exaggerates. Leave
-  1 unless the lock feels weak — then 1.2–1.4, not more.
+  designed, below 1 pulls toward the voices bank's neutral voice,
+  above 1 exaggerates (steered = neutral + (emb - neutral) *
+  strength — the PCA-style identity axis, never a raw embedding
+  rescale). 1.0 rides BIT-IDENTICAL (the lock holds). At any other
+  value the talker's code stream re-samples — the take is a NEW
+  performance of the same text in a shifted voice (the engine's
+  sampling truth: the speaker embedding
+  conditions the codec prefill, so any audible strength move re-rolls
+  prosody and timing). Leave 1 unless the lock feels weak — then
+  1.2–1.4, not more, and expect the line's read to differ
+  take-to-take.
 - The clone lanes load the LARGEST local checkpoint (1.7B first,
   0.6B fallback). If a voice sounds thin, check the engine log for
   which variant loaded — placing the 1.7B dirs upgrades the lock.
@@ -106,8 +115,7 @@ every line of the character is the same voice under any direction.
   bench (`patch` / `rewire` to refine). The flow is live in the user's
   cards tab; keep editing it there as the user asks.
 - Run: THE USER'S Run press on the card — never yours.
-  THE LANE LAW (maker-lane receipt, 2026-09-24; lane-test rider,
-  friction-report #5, 2026-10-28): when both lanes feel true, the
+  THE LANE LAW: when both lanes feel true, the
   LANE TEST decides — is the brief addressed to you as a
   DELIVERABLE? Execute. As a DRAFT to co-edit? Compose. That is
   the CHAT session's law; on a HEADLESS commission lane (the

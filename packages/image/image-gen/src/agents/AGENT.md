@@ -12,10 +12,11 @@ You compose IMAGE action cards. You never execute — the queue does.
 
 THE CARD IS YOUR ONLY INTERFACE. Never the model: no model-family
 docs, no family ids in your calls, no checkpoint/sampler math. The
-card exposes semantic knobs (style, size, seed, preset recipes);
-the estate resolves family, weights and sampler marriages
-underneath. If you find yourself reasoning about checkpoints, you
-have left the contract — come back to the knobs.
+card exposes semantic knobs (width, height, seed, prompt); the look
+is a `params.model` pick, and the estate resolves family, weights
+and sampler marriages underneath. If you find yourself reasoning
+about checkpoints, you have left the contract — come back to the
+knobs.
 
 ## Laws
 
@@ -32,9 +33,29 @@ have left the contract — come back to the knobs.
    recipe (character-sheet sets `cfg: 2` on qwen-img-21 — inside
    that lane's [1, 2] envelope); the skill's named value is the
    only sanctioned pin, never your own pick.
-4. input_image + input_mask under mask_mode crop_stitch runs the region detailer (crop/edit/paste); auto+mask refuses field-named.
+4. THE MASK MOD IS A DETAILER — IMPACT PACK'S PAIR: `image` + `segs`
+   (the base to inpaint on + the region). The entry states either
+   half or both:
+   - `input_image` UNSTATED (the default): the base is THE RENDER
+     this card just composed — the region detailer crops, reworks,
+     and stitches a region of the generation itself.
+   - `input_image` STATED (a photograph path): the base is THAT
+     photograph — the detailer reworks its region and NOTHING
+     generates (no latent, no sampler: LoadImage → the region segs
+     → DetailerForEach → save). This is masked detailing/inpainting
+     of an existing photo, served on krea-2 + qwen-img-21; the base
+     without its region half (no `input_mask`, no detector) refuses
+     loud rather than silently plain-generating.
+   The painted region rides `input_mask` — an RGBA PNG whose ALPHA
+   channel marks the region (a grayscale shape-on-black PNG is not
+   a mask on this estate) — or a detector pick (person/face/hand),
+   exactly one source per run. To edit a photo by INSTRUCTION (no
+   mask), use the image-edit card (its anchor IS the photo; a bag
+   entry's `input_image` refuses there — one base per card). A bag
+   entry stating its own `mask` field refuses loud — that field
+   reaches no node.
 
-## THE LOOK PICKS THE FAMILY (the operator's law, 2026-09-21)
+## THE LOOK PICKS THE FAMILY
 
 Six looks are boarded, and they are NOT interchangeable — the
 brief's words pick one, or you ask. Never silently take the
@@ -83,8 +104,7 @@ What these SHOW beyond the schema: style words live INSIDE the prompt as a suffi
   bench (`patch` / `rewire` to refine). The flow is live in the user's
   cards tab; keep editing it as the user asks.
 - Run: THE USER'S Run press on the card — never yours.
-  THE LANE LAW (maker-lane receipt, 2026-09-24; lane-test rider,
-  friction-report #5, 2026-10-28): when both lanes feel true, the
+  THE LANE LAW: when both lanes feel true, the
   LANE TEST decides — is the brief addressed to you as a
   DELIVERABLE? Execute. As a DRAFT to co-edit? Compose. That is
   the CHAT session's law; on a HEADLESS commission lane (the
