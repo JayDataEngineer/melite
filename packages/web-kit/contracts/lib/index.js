@@ -8,6 +8,7 @@ export * from "./benchResult.js";
 export * from "./card.js";
 export * from "./character.js";
 export * from "./loraTypes.js";
+export * from "./loraExtensions.js";
 export * from "./mediaTypes.js";
 export * from "./modifierFaces.js";
 export * from "./modifierSubcards.js";

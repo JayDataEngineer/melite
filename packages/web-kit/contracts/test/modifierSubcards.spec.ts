@@ -223,12 +223,18 @@ describe("subcardsFromParams / loraLabel / subcardCount", () => {
     });
   });
 
-  it("loraLabel strips dirs and known extensions, keeps the rest", () => {
+  it("loraLabel strips dirs and every registered extension, keeps the rest", () => {
     assert.equal(loraLabel("dir/style.safetensors"), "style");
     assert.equal(loraLabel("pose.pt"), "pose");
     assert.equal(loraLabel("body.ckpt"), "body");
+    // the F3 cure: the registered roster universe (.bin/.gguf included)
+    // strips — a tray-served label never carries its extension
+    assert.equal(loraLabel("weird.bin"), "weird");
+    assert.equal(loraLabel("merged.gguf"), "merged");
     assert.equal(loraLabel("plain"), "plain");
-    assert.equal(loraLabel("weird.bin"), "weird.bin");
+    // an UNREGISTERED suffix is the name itself (the strip is the SSOT
+    // list, never a generic extension eater)
+    assert.equal(loraLabel("readme.md"), "readme.md");
     assert.equal(loraLabel("no-slash"), "no-slash");
   });
 

@@ -14,6 +14,7 @@
 // Drag-reorder rewrites the array; the composed ComfyUI graph follows (rule-2).
 // Families, GPU, and the wire NEVER change.
 import { assertNever } from "@deepseek-ai/dsh-util-values"
+import { LORA_EXTENSION_SUFFIX_RE } from "./loraExtensions.ts"
 import type { LoRAEntry } from "./loraTypes.ts"
 import type { ModifierFieldSpec, ModifierKindSpec, ModifierOptionSpec } from "./wireTypes.ts"
 export type { ModifierFieldSpec, ModifierKindSpec, ModifierOptionSpec }
@@ -233,7 +234,9 @@ export function loraLabel(name: string): string {
  // here — the `?? name` fallback this replaces could never fire (proven
  // dead 2026-09-12; behavior identical for every input).
  const base = name.split("/").pop() as string
- return base.replace(/\.(safetensors|pt|ckpt)$/, "")
+ // the suffix set rides the SSOT (loraExtensions.ts — lora audit F3):
+ // every extension the roster registers strips, `.bin`/`.gguf` included.
+ return base.replace(LORA_EXTENSION_SUFFIX_RE, "")
 }
 
 /** Total subcard count on a card — the collapsed-tile "+N" hint. */
