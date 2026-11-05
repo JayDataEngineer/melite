@@ -5053,6 +5053,7 @@ window.__ModuleLoader__.load({
 			const gapPin = keyframes.some((k) => pinDropVerdict(calls, k.frame) === null);
 			const refusalFace = laneErr ?? (gapPin ? studioCopy.gapRefusal : null);
 			const refuseCallsEdit = () => {
+				if (callsFace.face !== "dormant") return;
 				setLaneErr(studioCopy.callsDormantHint(callsFace.kind));
 			};
 			const barFps = filmMap?.fps ?? fps;

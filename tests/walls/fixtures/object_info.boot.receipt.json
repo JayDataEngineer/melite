@@ -1,5 +1,5 @@
 {
- "derived_at": "2026-11-04T23:04:35.516Z",
+ "derived_at": "2026-11-05T06:46:08.229Z",
  "tool": "scripts/regen-node-vocab.mjs --boot",
  "source": {
   "path": "data/tmp/object_info_prod.json",
@@ -10,23 +10,45 @@
  },
  "bootstrap_seed": {
   "path": "tests/walls/fixtures/object_info.boot.bootstrap.json",
-  "sha256": "7003aad7aefbf330b1720bdef76a49ac75ac0bb3e205485ac31fd67192a97121",
-  "rows": 75
+  "sha256": "2f354b61b2557ae7767c6ffc025714aefc80bbe8bbe12c607ec781f1aa97f000",
+  "rows": 97
  },
  "derivation": {
   "facts_path": "packages/engines/comfyui-cordis/data/model-facts.json",
   "addressed_class_count": 94,
-  "bootstrap_class_count": 75,
-  "fixture_class_count": 169,
+  "bootstrap_class_count": 97,
+  "fixture_class_count": 190,
   "rows_probed": 31,
   "refused_rows": 0
  },
  "delta": {
   "added": [],
-  "pruned": [
-   "SkipLayerGuidanceDiTSimple"
+  "pruned": [],
+  "updated": [
+   "AudiocoreFamilyInfo",
+   "AudiocoreMusic",
+   "AudiocoreVoiceEmbedding",
+   "DisableNoise",
+   "H3ConditioningSyncFromLatents",
+   "ImageConcatMulti",
+   "MeliteLoudness",
+   "MeliteQVoiceCopy",
+   "MiniMaxH3ChainAssemble",
+   "MiniMaxH3ChainCheckpointManager",
+   "MiniMaxH3ChainCurrent",
+   "MiniMaxH3ChainPass2Prepare",
+   "MiniMaxH3ChainUpscaleAdapter",
+   "MiniMaxH3ChainUpscaleCurrent",
+   "MiniMaxH3ChainUpscaleLoopEnd",
+   "MiniMaxH3ChainUpscaleReferenceConditioning",
+   "MiniMaxH3ChainUpscaleSegmentSave",
+   "MiniMaxH3ContexMaskGridPreview",
+   "MiniMaxH3ContexMaskedTarget",
+   "MinimaxH3LatentUpscaler3D",
+   "MinimaxH3LatentUpscaler3DProvider",
+   "MinimaxH3LatentUpscalerNode2D",
+   "UnloadAudiocoreModel"
   ],
-  "updated": [],
-  "reordered_keys": 28
+  "reordered_keys": 0
  }
 }

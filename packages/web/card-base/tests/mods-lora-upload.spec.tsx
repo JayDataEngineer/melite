@@ -40,7 +40,7 @@ const LORA = {
 const LORA_SERVED = {
   ...LORA,
   options: [
-    ...LORA.options as Array<Record<string, unknown>>,
+    ...(LORA.options as unknown as Array<Record<string, unknown>>),
     { value: 'h3/op-pick.safetensors', label: 'op-pick', defaults: { strength: 0.8 } },
   ],
 } as unknown as ModifierKind

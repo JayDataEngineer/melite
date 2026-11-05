@@ -354,7 +354,12 @@ export function StudioStripPane({
   // under a dormant face the strip's four per-call edit doors answer
   // this, never the write: the dead-text law the add door already
   // carries, in the shared refusal slot, the dictionary's own voice.
-  const refuseCallsEdit = () => { setLaneErr(studioCopy.callsDormantHint(callsFace.kind)) }
+  // (The four doors call this ONLY under a dormant face — the guard
+  // narrows the union for the kind the hint names.)
+  const refuseCallsEdit = () => {
+    if (callsFace.face !== 'dormant') return
+    setLaneErr(studioCopy.callsDormantHint(callsFace.kind))
+  }
   // (D3, operator 2026-11-06: "calls bar only goes to 5.5s vs film
   // 'Final cut 9.06s · frame 145/162'") — the meta line rides the
   // SAME truth the bar axis below rides: the FILM's frames + fps

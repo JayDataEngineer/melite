@@ -42,7 +42,7 @@ function door(): {
 const specNow = (): string => document.querySelector('[data-testid="probe"]')!.getAttribute('data-spec')!
 const errorNow = (): string => document.querySelector('[data-testid="probe"]')!.getAttribute('data-error')!
 
-function Probe({ model, refreshRef }: { model: string, refreshRef?: { current: (() => Promise<void>) | null } }) {
+function Probe({ model, refreshRef }: { model: string, refreshRef?: { current: (() => Promise<void>) | null | undefined } }) {
   const { spec, error, refresh } = useFormSpec(model)
   if (refreshRef !== undefined) refreshRef.current = refresh
   return h('div', {
@@ -62,13 +62,16 @@ test('REFRESH NEVER BLANKS: the standing spec serves through the in-flight refre
     // the refresh flight parks unresolved — the whole assertion
     // window runs with the refresh IN FLIGHT (the call is never
     // awaited: awaiting a parked door would deadlock the test)
-    let release: (() => void) | null = null
+    // (the box, not a let: TS narrows a let to its null
+    // initializer — the assignment hides in the queued closure —
+    // so a direct optional call reads never)
+    const releaseBox = { current: null as (() => void) | null }
     d.queue.push(() => new Promise((resolve) => {
-      release = () => { resolve(new Response(JSON.stringify(docOf('h3', 'second')), { status: 200 })) }
+      releaseBox.current = () => { resolve(new Response(JSON.stringify(docOf('h3', 'second')), { status: 200 })) }
     }))
     const flight = refreshRef.current?.() ?? Promise.resolve()
     expect(specNow()).toBe('first') // never null mid-flight
-    release?.()
+    releaseBox.current?.()
     await flight
     await waitFor(() => { expect(specNow()).toBe('second') })
   } finally { d.restore() }
@@ -97,15 +100,16 @@ test('A SUPERSEDED FLIGHT never lands: the later refresh owns the spec', async (
     await waitFor(() => { expect(specNow()).toBe('mount') })
     // flight A parks; flight B answers fast; A answers LAST with a
     // stale doc — B's spec must survive A's late landing attempt
-    let releaseA: (() => void) | null = null
+    // (the box idiom — a let narrows to never at the optional call)
+    const releaseBoxA = { current: null as (() => void) | null }
     d.queue.push(() => new Promise((resolve) => {
-      releaseA = () => { resolve(new Response(JSON.stringify(docOf('h3', 'stale-A')), { status: 200 })) }
+      releaseBoxA.current = () => { resolve(new Response(JSON.stringify(docOf('h3', 'stale-A')), { status: 200 })) }
     }))
     d.queue.push(async () => new Response(JSON.stringify(docOf('h3', 'fresh-B')), { status: 200 }))
     const flightA = refreshRef.current?.() ?? Promise.resolve() // A parks
     await refreshRef.current?.() // B lands fresh-B
     await waitFor(() => { expect(specNow()).toBe('fresh-B') })
-    releaseA?.()
+    releaseBoxA.current?.()
     // act flushes A's late .then AND React's commit — without it the
     // assertion races the renderer and passes before a stale
     // setSpec ever paints (the flake-green this arm once carried)

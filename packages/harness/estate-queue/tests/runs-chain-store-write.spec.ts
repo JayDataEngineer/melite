@@ -34,6 +34,12 @@
  * the base URL, the weight-presence read; the no-cheat wall's own
  * posture). The run row seeds the same live map liveRun reads.
  */
+// THE ENGINE METADATA SEAM (the header's own named fake, now wired:
+// the 2026-11-15 audio plane grew the h3 card's `requires` past what
+// the live bench engine seats, so a compose against the REAL engine
+// refused on melite-audio-nodes the wall never judged — the FIRST
+// import hermeticizes the file onto the tracked boot double).
+import { assertHermeticRode } from "../../../../tests/helpers/hermetic-engine.ts";
 import { describe, it, afterEach, beforeAll, vi } from "vitest";
 import assert from "node:assert/strict";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -92,6 +98,8 @@ beforeAll(async () => {
   };
   const cards = new CardRegistryService(ctx as unknown as Context);
   await cards.prime();
+  // no decorative mocks: the boot double actually answered the prime
+  assertHermeticRode();
   await loadCardDefs();
   (ctx as unknown as { cardRegistry: unknown }).cardRegistry = cards;
   composeOnceFake.mockImplementation(

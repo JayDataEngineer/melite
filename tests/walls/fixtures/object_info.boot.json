@@ -108,6 +108,161 @@
   "python_module": "comfy_extras.nodes_mesh_postprocess",
   "search_aliases": null
  },
+ "AudiocoreFamilyInfo": {
+  "category": "audio/audiocore",
+  "description": "",
+  "display_name": "Audiocore Family Info",
+  "has_intermediate_output": false,
+  "input": {
+   "optional": {
+    "model": [
+     "AUDIOCORE_MODEL"
+    ]
+   },
+   "required": {}
+  },
+  "input_order": {
+   "optional": [
+    "model"
+   ],
+   "required": []
+  },
+  "is_input_list": false,
+  "name": "AudiocoreFamilyInfo",
+  "output": [
+   "STRING"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "info"
+  ],
+  "output_node": true,
+  "python_module": "custom_nodes.melite-audio-nodes",
+  "search_aliases": []
+ },
+ "AudiocoreMusic": {
+  "category": "audio/audiocore",
+  "description": "",
+  "display_name": "Audiocore Music",
+  "has_intermediate_output": false,
+  "input": {
+   "optional": {
+    "duration": [
+     "FLOAT",
+     {
+      "default": 30,
+      "max": 300,
+      "min": 1,
+      "step": 1
+     }
+    ],
+    "guidance_scale": [
+     "FLOAT",
+     {
+      "default": 7,
+      "max": 10,
+      "min": 0.1,
+      "step": 0.1,
+      "tooltip": "Diffusion CFG. turbo ignores this (distilled); base/SFT use it. 7.0 = ACE-Step default. \u22641.0 disables CFG."
+     }
+    ],
+    "lm_cfg_scale": [
+     "FLOAT",
+     {
+      "default": 2,
+      "max": 10,
+      "min": 0,
+      "step": 0.1
+     }
+    ],
+    "lyrics": [
+     "STRING",
+     {
+      "default": "",
+      "multiline": true
+     }
+    ],
+    "n_diffusion_steps": [
+     "INT",
+     {
+      "default": 0,
+      "max": 200,
+      "min": 0
+     }
+    ],
+    "seed": [
+     "INT",
+     {
+      "default": 0,
+      "max": 2147483647,
+      "min": 0
+     }
+    ],
+    "temperature": [
+     "FLOAT",
+     {
+      "default": 0.85,
+      "max": 2,
+      "min": 0,
+      "step": 0.05
+     }
+    ],
+    "top_p": [
+     "FLOAT",
+     {
+      "default": 0.9,
+      "max": 1,
+      "min": 0,
+      "step": 0.01
+     }
+    ]
+   },
+   "required": {
+    "model": [
+     "AUDIOCORE_MODEL"
+    ],
+    "prompt": [
+     "STRING",
+     {
+      "default": "lo-fi ambient piano",
+      "multiline": true
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "optional": [
+    "lyrics",
+    "duration",
+    "seed",
+    "guidance_scale",
+    "n_diffusion_steps",
+    "temperature",
+    "top_p",
+    "lm_cfg_scale"
+   ],
+   "required": [
+    "model",
+    "prompt"
+   ]
+  },
+  "is_input_list": false,
+  "name": "AudiocoreMusic",
+  "output": [
+   "AUDIO"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "audio"
+  ],
+  "output_node": false,
+  "python_module": "custom_nodes.melite-audio-nodes",
+  "search_aliases": []
+ },
  "AudiocoreTTS": {
   "category": "audio/audiocore",
   "description": "",
@@ -318,6 +473,46 @@
   ],
   "output_name": [
    "audio"
+  ],
+  "output_node": false,
+  "python_module": "custom_nodes.melite-audio-nodes",
+  "search_aliases": []
+ },
+ "AudiocoreVoiceEmbedding": {
+  "category": "audio/audiocore",
+  "description": "",
+  "display_name": "Audiocore Voice Embedding",
+  "has_intermediate_output": false,
+  "input": {
+   "required": {
+    "model": [
+     "AUDIOCORE_MODEL"
+    ],
+    "wav_path": [
+     "STRING",
+     {
+      "default": "",
+      "placeholder": "/path/to/voice.wav"
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "model",
+    "wav_path"
+   ]
+  },
+  "is_input_list": false,
+  "name": "AudiocoreVoiceEmbedding",
+  "output": [
+   "AUDIOCORE_EMBEDDING"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "embedding"
   ],
   "output_node": false,
   "python_module": "custom_nodes.melite-audio-nodes",
@@ -2624,6 +2819,44 @@
   "python_module": "custom_nodes.ComfyUI-Impact-Pack",
   "search_aliases": []
  },
+ "DisableNoise": {
+  "api_node": false,
+  "category": "model/sampling/noise",
+  "deprecated": false,
+  "description": "",
+  "dev_only": false,
+  "display_name": null,
+  "essentials_category": null,
+  "experimental": false,
+  "has_intermediate_output": false,
+  "input": {
+   "required": {}
+  },
+  "input_order": {
+   "required": []
+  },
+  "is_input_list": false,
+  "name": "DisableNoise",
+  "output": [
+   "NOISE"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_matchtypes": null,
+  "output_name": [
+   "NOISE"
+  ],
+  "output_node": false,
+  "output_tooltips": [
+   null
+  ],
+  "price_badge": null,
+  "python_module": "comfy_extras.nodes_custom_sampler",
+  "search_aliases": [
+   "zero noise"
+  ]
+ },
  "DownloadAndLoadFlorence2Model": {
   "category": "Florence2",
   "description": "",
@@ -3973,6 +4206,107 @@
   "python_module": "custom_nodes.Comfyui-PlagueKind-Nodes",
   "search_aliases": null
  },
+ "H3ConditioningSyncFromLatents": {
+  "category": "conditioning/minimax/context_loop/upscale",
+  "description": "",
+  "display_name": "H3 Conditioning Sync From Latents",
+  "has_intermediate_output": false,
+  "input": {
+   "optional": {
+    "negative": [
+     "CONDITIONING",
+     {
+      "tooltip": "Optional negative conditioning. Use the returned negative when rebuilding a CFG Guider."
+     }
+    ]
+   },
+   "required": {
+    "method": [
+     "COMBO",
+     {
+      "default": "bilinear",
+      "options": [],
+      "tooltip": "Spatial interpolation used for match-sized picture refs, eligible video refs, and keyframe latents. Max pictures, time, and audio are unchanged."
+     }
+    ],
+    "motion_ref_mode": [
+     "COMBO",
+     {
+      "default": "conditioning_policy",
+      "options": [],
+      "tooltip": "conditioning_policy automatically follows Upscale Reference Conditioning. Explicit modes are available for standalone/A-B use."
+     }
+    ],
+    "original_latent": [
+     "LATENT",
+     {
+      "tooltip": "Original-resolution 24-channel H3 video latent whose conditioning will be synchronized. Its time may differ from a de-rope target."
+     }
+    ],
+    "positive": [
+     "CONDITIONING",
+     {
+      "tooltip": "Original H3 conditioning containing minimax_refs and/or minimax_keyframes. Cached max pictures remain at their core-defined geometry."
+     }
+    ],
+    "upscaled_latent": [
+     "LATENT",
+     {
+      "tooltip": "Upscaled 24-channel H3 video latent. Its exact X/Y scale drives the conditioning resize; a dilated de-rope time axis is supported."
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "optional": [
+    "negative"
+   ],
+   "required": [
+    "original_latent",
+    "upscaled_latent",
+    "positive",
+    "method",
+    "motion_ref_mode"
+   ]
+  },
+  "is_input_list": false,
+  "name": "H3ConditioningSyncFromLatents",
+  "output": [
+   "CONDITIONING",
+   "CONDITIONING",
+   "INT",
+   "INT",
+   "FLOAT",
+   "FLOAT"
+  ],
+  "output_is_list": [
+   false,
+   false,
+   false,
+   false,
+   false,
+   false
+  ],
+  "output_name": [
+   "positive",
+   "negative",
+   "width",
+   "height",
+   "scale_x",
+   "scale_y"
+  ],
+  "output_node": false,
+  "output_tooltips": [
+   "Positive conditioning with visual refs/keyframes synchronized to the upscaled latent.",
+   "Negative conditioning synchronized by the same scale, when connected.",
+   "Upscaled video width in pixels.",
+   "Upscaled video height in pixels.",
+   "Exact horizontal latent scale.",
+   "Exact vertical latent scale."
+  ],
+  "python_module": "custom_nodes.ComfyUI-MiniMaxH3-Context-Loop",
+  "search_aliases": []
+ },
  "H3OneClickSwapPlan": {
   "category": "conditioning/minimax/context_loop",
   "description": "",
@@ -4318,6 +4652,91 @@
   ],
   "price_badge": null,
   "python_module": "custom_nodes.Comfyui-PlagueKind-Nodes",
+  "search_aliases": null
+ },
+ "ImageConcatMulti": {
+  "api_node": false,
+  "category": "KJNodes/image",
+  "deprecated": false,
+  "description": "",
+  "dev_only": false,
+  "display_name": "Image Concatenate Multi",
+  "essentials_category": null,
+  "experimental": false,
+  "has_intermediate_output": false,
+  "input": {
+   "optional": {
+    "image_2": [
+     "IMAGE,MASK",
+     {}
+    ]
+   },
+   "required": {
+    "direction": [
+     "COMBO",
+     {
+      "default": "right",
+      "multiselect": false,
+      "options": []
+     }
+    ],
+    "image_1": [
+     "COMFY_MATCHTYPE_V3",
+     {
+      "template": {
+       "allowed_types": "IMAGE,MASK",
+       "template_id": "multi_image_or_mask"
+      }
+     }
+    ],
+    "inputcount": [
+     "INT",
+     {
+      "default": 2,
+      "max": 1000,
+      "min": 2,
+      "step": 1
+     }
+    ],
+    "match_image_size": [
+     "BOOLEAN",
+     {
+      "default": false
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "optional": [
+    "image_2"
+   ],
+   "required": [
+    "inputcount",
+    "image_1",
+    "direction",
+    "match_image_size"
+   ]
+  },
+  "is_input_list": false,
+  "name": "ImageConcatMulti",
+  "output": [
+   "COMFY_MATCHTYPE_V3"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_matchtypes": [
+   "multi_image_or_mask"
+  ],
+  "output_name": [
+   "output"
+  ],
+  "output_node": false,
+  "output_tooltips": [
+   null
+  ],
+  "price_badge": null,
+  "python_module": "custom_nodes.ComfyUI-KJNodes",
   "search_aliases": null
  },
  "ImageCrop": {
@@ -7284,6 +7703,1164 @@
   "python_module": "comfy_extras.nodes_minimax_h3",
   "search_aliases": null
  },
+ "MiniMaxH3ChainAssemble": {
+  "category": "conditioning/minimax/context_loop",
+  "description": "",
+  "display_name": "MiniMax H3 Context Loop Assemble",
+  "has_intermediate_output": false,
+  "input": {
+   "optional": {
+    "blend_schedule": [
+     "STRING",
+     {
+      "default": "plan",
+      "tooltip": "Assembly-only visual blend schedule. 'plan' uses the Plan's global value. A list such as 5,30 applies 5 frames at the first boundary and 30 at every later boundary. The final value repeats; extra values are ignored by a shorter partial manifest. This never reruns diffusion."
+     }
+    ],
+    "blend_video_vae": [
+     "VAE",
+     {
+      "tooltip": "Optional recovery-only MiniMax H3 video VAE. Connect the original VAE when blend_schedule requests more overlap than the saved blend MP4 retained. Assemble then re-decodes the existing checkpoint; it does not sample or regenerate the scene."
+     }
+    ],
+    "boundary_tone_match": [
+     "COMBO",
+     {
+      "default": "off",
+      "options": [],
+      "tooltip": "Optional assembly-only boundary correction. auto compares the protected overlap with the first generated frames, detects a coherent exposure/contrast step, and applies a small capped tone curve only after that step. Accepted corrections are carried through later overlaps so they do not create a new seam. This never reruns diffusion."
+     }
+    ],
+    "color_stabilization": [
+     "COMBO",
+     {
+      "default": "off",
+      "options": [],
+      "tooltip": "Optional assembly-only temporal grade. scene_1_anchor measures the first scene as a fixed color reference, applies no new change at a join, then gently ramps a capped exposure/saturation correction over 72 frames. It uses one assembly encode, never blends pixels for color, and does not affect motion or audio sync. Off preserves the existing stream-copy/blend behavior."
+     }
+    ],
+    "copy_to_output": [
+     "BOOLEAN",
+     {
+      "default": false,
+      "tooltip": "Also copy the completed MP4 out of the chain folder into the regular ComfyUI output tree."
+     }
+    ],
+    "delete_checkpoints_after_assembly": [
+     "BOOLEAN",
+     {
+      "default": false,
+      "tooltip": "Permanently delete this completed manifest's checkpoint payloads after the final video and requested output copies are saved. Keeps videos, prompts, metadata and checkpoints shared with other saved branches. Skips partial exports. Deleted checkpoints cannot be used for resume, latent upscale or checkpoint-based reassembly. Leave OFF if further processing is planned."
+     }
+    ],
+    "generated_audio_join": [
+     "COMBO",
+     {
+      "default": "av_overlap",
+      "options": [],
+      "tooltip": "av_overlap preserves normal AV boundary ownership (default). delivered_only concatenates each saved scene's trimmed audio, ignoring regenerated overlaps from third-party audio refiners. Recovery only: may leave hard audio cuts. Does not change timing, source audio, checkpoints or sampling."
+     }
+    ],
+    "output_subfolder": [
+     "STRING",
+     {
+      "default": "",
+      "tooltip": "Relative folder for the optional output copy. Empty means the output root. Nested folders and date tokens such as renders/%date:yyyy-MM-dd% are supported; the filename widget above still sets the MP4 name."
+     }
+    ],
+    "source_timeline": [
+     "H3_SOURCE_TIMELINE",
+     {
+      "tooltip": "Source-audio route. Usually this can be left unconnected because the manifest contains its path-backed recovery descriptor."
+     }
+    ]
+   },
+   "required": {
+    "audio_bitrate": [
+     "INT",
+     {
+      "default": 256,
+      "max": 512,
+      "min": 64,
+      "tooltip": "AAC bitrate in kilobits per second for the final mux. It does not re-encode the saved H.264 video segments."
+     }
+    ],
+    "audio_source": [
+     "COMBO",
+     {
+      "default": "plan",
+      "options": [],
+      "tooltip": "Keep plan for automatic audio: generated assembles checkpointed H3 sound, source recovers the track supplied once upstream, and none makes a silent MP4. The other choices are explicit assembly overrides."
+     }
+    ],
+    "filename": [
+     "STRING",
+     {
+      "default": "final",
+      "tooltip": "Final MP4 basename inside this chain's output folder. The .mp4 extension is added automatically. Supports date tokens such as %date:yyyy-MM-dd%. Existing files are preserved by adding _001, _002, and so on."
+     }
+    ],
+    "manifest": [
+     "H3_CHAIN_MANIFEST",
+     {
+      "tooltip": "Complete or partial source/upscale manifest from Loop End or Manifest Load. Assembles the saved contiguous scenes; later unfinished scenes are not required. Its format selects the correct verified segments and canonical final folder automatically."
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "optional": [
+    "copy_to_output",
+    "output_subfolder",
+    "blend_schedule",
+    "boundary_tone_match",
+    "color_stabilization",
+    "source_timeline",
+    "blend_video_vae",
+    "delete_checkpoints_after_assembly",
+    "generated_audio_join"
+   ],
+   "required": [
+    "manifest",
+    "audio_source",
+    "filename",
+    "audio_bitrate"
+   ]
+  },
+  "is_input_list": false,
+  "name": "MiniMaxH3ChainAssemble",
+  "output": [
+   "STRING"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "video_path"
+  ],
+  "output_node": true,
+  "output_tooltips": [
+   "Absolute path of the assembled final MP4."
+  ],
+  "python_module": "custom_nodes.ComfyUI-MiniMaxH3-Context-Loop",
+  "search_aliases": []
+ },
+ "MiniMaxH3ChainCheckpointManager": {
+  "category": "conditioning/minimax/context_loop",
+  "description": "",
+  "display_name": "MiniMax H3 Checkpoint Manager",
+  "has_intermediate_output": false,
+  "input": {
+   "optional": {
+    "plan": [
+     "H3_CHAIN_PLAN",
+     {
+      "tooltip": "Connect the editable H3 Chain Plan when you want Load selected branch to restore that Plan. It is not required for checkpoint inspection, deletion, or deferred upscaling."
+     }
+    ]
+   },
+   "required": {
+    "selection_json": [
+     "STRING",
+     {
+      "default": "",
+      "tooltip": "Hidden serialized run and revision lineage maintained by the Checkpoint Manager browser."
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "optional": [
+    "plan"
+   ],
+   "required": [
+    "selection_json"
+   ]
+  },
+  "is_input_list": false,
+  "name": "MiniMaxH3ChainCheckpointManager",
+  "output": [
+   "H3_CHAIN_MANIFEST"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "selected_manifest"
+  ],
+  "output_node": false,
+  "output_tooltips": [
+   "The selected checkpoint lineage as a verified manifest. A partial generated lineage is valid even when the saved Plan contains later scenes. Use branch locally pins this output in the workflow without changing the project's active branch. Selected chapter only excludes earlier chapters while keeping original scene numbers and timing. Use DeRoPE branch locally substitutes verified recovered latents; unsaved processing scenes use their selected originals. Connect to Checkpoint Upscale Adapter; no source Plan connection is required."
+  ],
+  "python_module": "custom_nodes.ComfyUI-MiniMaxH3-Context-Loop",
+  "search_aliases": []
+ },
+ "MiniMaxH3ChainCurrent": {
+  "category": "conditioning/minimax/context_loop",
+  "description": "",
+  "display_name": "MiniMax H3 Context Loop Current Shot",
+  "has_intermediate_output": false,
+  "input": {
+   "optional": {
+    "align_audio_reference": [
+     "BOOLEAN",
+     {
+      "default": false,
+      "tooltip": "Experimental. Cap only source_audio_slice 5ms below H3's rounded 40 Hz target-audio boundary. For 362 frames this changes 15.083333s to 15.070s while retaining 603 reference steps and a short padded tail. Shorter slices are unchanged. The full source track used by Assemble is never modified."
+     }
+    ]
+   },
+   "required": {
+    "state": [
+     "H3_CHAIN_STATE",
+     {
+      "tooltip": "Current state from H3 Chain Loop Start."
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "optional": [
+    "align_audio_reference"
+   ],
+   "required": [
+    "state"
+   ]
+  },
+  "is_input_list": false,
+  "name": "MiniMaxH3ChainCurrent",
+  "output": [
+   "H3_CHAIN_STATE",
+   "INT",
+   "INT",
+   "STRING",
+   "STRING",
+   "INT",
+   "INT",
+   "INT",
+   "INT",
+   "INT",
+   "FLOAT",
+   "FLOAT",
+   "AUDIO",
+   "STRING",
+   "INT"
+  ],
+  "output_is_list": [
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false
+  ],
+  "output_name": [
+   "state",
+   "clip_index",
+   "clip_count",
+   "shot_id",
+   "prompt",
+   "noise_seed",
+   "length",
+   "steps",
+   "width",
+   "height",
+   "audio_start",
+   "audio_duration",
+   "source_audio_slice",
+   "status",
+   "video_blend_frames"
+  ],
+  "output_node": false,
+  "output_tooltips": [
+   "Unchanged current state for Chain Context, Segment Save, Review, and Loop End.",
+   "One-based scene number currently being generated.",
+   "Total scenes in the plan.",
+   "Stable scene identifier used in checkpoints and status messages.",
+   "Shared prompt followed by the current scene prompt. Connect to the stock H3 conditioning node's prompt input.",
+   "Resolved unsigned 64-bit seed for the current scene. Connect to the sampler noise seed.",
+   "H3-valid RAW frame count, including the repeated head overlap on continuations. Connect to the stock H3 conditioning node's length.",
+   "Resolved sampler steps for this scene.",
+   "Resolved chapter generation width; connect to H3 conditioning.",
+   "Resolved chapter generation height; connect to H3 conditioning.",
+   "Start time in seconds of this scene's extension-track window. For an imported-video scene 1, its separate context lead precedes this time.",
+   "Raw conditioning-audio duration in seconds, including any imported scene 1 context lead.",
+   "Current source-audio window for a separate Ref2VA Audio reference. It is frame-exact normally, or capped to the target H3 audio grid when alignment is enabled. It is empty when Source reference=off, including when Lock source audio carries the full window privately in state.",
+   "Current scene timing, delivered frames, source window, and seed.",
+   "Legacy resolved blend integer. New 0.5 workflows connect Current Shot state to Loop Trim state, which resolves scene overrides internally. This output remains for older workflows and diagnostics."
+  ],
+  "python_module": "custom_nodes.ComfyUI-MiniMaxH3-Context-Loop",
+  "search_aliases": []
+ },
+ "MiniMaxH3ChainPass2Prepare": {
+  "category": "conditioning/minimax/context_loop/upscale",
+  "description": "",
+  "display_name": "MiniMax H3 Pass-2 AV Prepare",
+  "has_intermediate_output": false,
+  "input": {
+   "optional": {
+    "state": [
+     "H3_CHAIN_UPSCALE_STATE",
+     {
+      "tooltip": "Current Upscale state. When the source scene uses Drift-Control AV, its previous HQ latent tail replaces and protects the pass-2 prefix."
+     }
+    ]
+   },
+   "required": {
+    "model": [
+     "MODEL",
+     {
+      "tooltip": "The exact pass-2 H3 model after LoRA and sigma-shift patches."
+     }
+    ],
+    "noise": [
+     "NOISE",
+     {
+      "tooltip": "Pass-2 random noise. Only the video member is generated; audio stays at the saved x0."
+     }
+    ],
+    "sigmas": [
+     "SIGMAS",
+     {
+      "tooltip": "Pass-2 sigma schedule. Its first sigma is used for NestedTensor-safe CONST re-noise."
+     }
+    ],
+    "source_audio": [
+     "LATENT",
+     {
+      "tooltip": "Untouched 32-channel audio latent from H3 Upscale Current Scene."
+     }
+    ],
+    "upscaled_video": [
+     "LATENT",
+     {
+      "tooltip": "24-channel clean H3 video latent emitted by LBH's 2D/3D latent upscaler."
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "optional": [
+    "state"
+   ],
+   "required": [
+    "upscaled_video",
+    "source_audio",
+    "model",
+    "noise",
+    "sigmas"
+   ]
+  },
+  "is_input_list": false,
+  "name": "MiniMaxH3ChainPass2Prepare",
+  "output": [
+   "LATENT",
+   "INT",
+   "INT",
+   "STRING"
+  ],
+  "output_is_list": [
+   false,
+   false,
+   false,
+   false
+  ],
+  "output_name": [
+   "latent",
+   "width",
+   "height",
+   "status"
+  ],
+  "output_node": false,
+  "output_tooltips": [
+   "Joint H3 AV latent ready for Sampler Custom Advanced with Disable Noise; video is re-noised and audio is masked clean.",
+   "Exact output pixel width inferred from the upscaled latent.",
+   "Exact output pixel height inferred from the upscaled latent.",
+   "Verified stream geometry, audio lock, and sigma start."
+  ],
+  "python_module": "custom_nodes.ComfyUI-MiniMaxH3-Context-Loop",
+  "search_aliases": []
+ },
+ "MiniMaxH3ChainUpscaleAdapter": {
+  "category": "conditioning/minimax/context_loop/upscale",
+  "description": "",
+  "display_name": "MiniMax H3 Checkpoint Upscale Adapter",
+  "has_intermediate_output": false,
+  "input": {
+   "hidden": {
+    "initial_state": [
+     "H3_CHAIN_UPSCALE_STATE"
+    ]
+   },
+   "optional": {
+    "start_mode": [
+     "COMBO",
+     {
+      "default": "resume",
+      "options": [],
+      "tooltip": "resume verifies earlier saved HQ scenes in this pass. fresh_range processes only start_clip through end_clip, without requiring earlier HQ outputs. Original scene numbers and source audio are retained; any initial Drift-Control prefix uses the saved source latent. Earlier takes are kept. To continue a cancelled fresh range, select resume and its next unfinished scene."
+     }
+    ]
+   },
+   "required": {
+    "backend": [
+     "COMBO",
+     {
+      "default": "h3_latent",
+      "options": [],
+      "tooltip": "Backend label for this child recipe. pixel is an experimental IMAGE-only pass: it does not require or splice Drift-Control HQ latents. Other backends retain latent continuity checks."
+     }
+    ],
+    "end_clip": [
+     "INT",
+     {
+      "default": 0,
+      "max": 128,
+      "min": 0,
+      "tooltip": "Last scene to upscale; 0 means the final source scene."
+     }
+    ],
+    "profile": [
+     "STRING",
+     {
+      "default": "h3_2x",
+      "tooltip": "Child output folder under this run's upscaled directory."
+     }
+    ],
+    "recipe_json": [
+     "STRING",
+     {
+      "default": "{}",
+      "multiline": true,
+      "tooltip": "Advanced, provenance-only backend/model/sigma settings, hidden by default. The visible graph remains authoritative."
+     }
+    ],
+    "save_latent": [
+     "BOOLEAN",
+     {
+      "default": false,
+      "tooltip": "Persist the HQ sampler latent in each child checkpoint. Off still saves assembly/audio and any compact Drift-Control context needed for standalone merge and resume."
+     }
+    ],
+    "segment_crf": [
+     "INT",
+     {
+      "default": 18,
+      "max": 51,
+      "min": 0,
+      "tooltip": "H.264 quality for persisted HQ scene segments."
+     }
+    ],
+    "source_manifest": [
+     "H3_CHAIN_MANIFEST",
+     {
+      "tooltip": "Verified lineage emitted by Checkpoint Manager. Selected final-cut ALTs supply picture and conditioning; original audio and generation ancestry are preserved. It may stop before later ungenerated Plan scenes; no source Plan is needed."
+     }
+    ],
+    "start_clip": [
+     "INT",
+     {
+      "default": 1,
+      "max": 128,
+      "min": 1,
+      "tooltip": "Original scene number to start or resume. 1 starts at the first selected scene (also for chapter-only input). fresh_range needs no earlier HQ outputs; resume verifies the saved HQ prefix of this pass."
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "hidden": [
+    "initial_state"
+   ],
+   "optional": [
+    "start_mode"
+   ],
+   "required": [
+    "source_manifest",
+    "profile",
+    "backend",
+    "recipe_json",
+    "start_clip",
+    "end_clip",
+    "save_latent",
+    "segment_crf"
+   ]
+  },
+  "is_input_list": false,
+  "name": "MiniMaxH3ChainUpscaleAdapter",
+  "output": [
+   "H3_CHAIN_UPSCALE_FLOW",
+   "H3_CHAIN_UPSCALE_STATE",
+   "H3_CHAIN_MANIFEST",
+   "STRING"
+  ],
+  "output_is_list": [
+   false,
+   false,
+   false,
+   false
+  ],
+  "output_name": [
+   "flow",
+   "state",
+   "source_manifest",
+   "status"
+  ],
+  "output_node": false,
+  "output_tooltips": [
+   "Raw recursive-loop link; connect it directly to Upscale Loop End.",
+   "Current child-run state for Upscale Current Scene.",
+   "Verified manifest of the selected generated checkpoint lineage.",
+   "Selected profile, scene range, backend label, and latent-save policy."
+  ],
+  "python_module": "custom_nodes.ComfyUI-MiniMaxH3-Context-Loop",
+  "search_aliases": []
+ },
+ "MiniMaxH3ChainUpscaleCurrent": {
+  "category": "conditioning/minimax/context_loop/upscale",
+  "description": "",
+  "display_name": "MiniMax H3 Upscale Current Scene",
+  "has_intermediate_output": false,
+  "input": {
+   "required": {
+    "state": [
+     "H3_CHAIN_UPSCALE_STATE",
+     {
+      "tooltip": "Current child-run state from Upscale Adapter."
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "state"
+   ]
+  },
+  "is_input_list": false,
+  "name": "MiniMaxH3ChainUpscaleCurrent",
+  "output": [
+   "H3_CHAIN_UPSCALE_STATE",
+   "LATENT",
+   "LATENT",
+   "LATENT",
+   "INT",
+   "INT",
+   "STRING",
+   "INT",
+   "INT",
+   "INT",
+   "INT",
+   "INT",
+   "INT",
+   "AUDIO",
+   "IMAGE",
+   "LATENT",
+   "STRING"
+  ],
+  "output_is_list": [
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false
+  ],
+  "output_name": [
+   "state",
+   "source_latent",
+   "source_video_latent",
+   "source_audio_latent",
+   "clip_index",
+   "clip_count",
+   "prompt",
+   "width",
+   "height",
+   "seed",
+   "trim_frames",
+   "raw_frames",
+   "delivered_frames",
+   "source_audio",
+   "previous_upscaled_frames",
+   "previous_upscaled_latent",
+   "status"
+  ],
+  "output_node": false,
+  "output_tooltips": [
+   "Unchanged current child-run state for Segment Save and Loop End.",
+   "Verified joint H3 video/audio x0 for combined learned upscalers.",
+   "Verified 24-channel H3 video x0 for video-only upscalers.",
+   "Original H3 audio latent to preserve when recombining a refined video.",
+   "One-based source scene index.",
+   "Scene count for reference schedules: selected parent branch count, or original Plan count for chapter-only input (not chapter length).",
+   "Exact saved prompt for this source scene.",
+   "Parent generation width used to rebuild H3 pass-2 conditioning.",
+   "Parent generation height used to rebuild H3 pass-2 conditioning.",
+   "Saved parent scene seed, suitable for deterministic pass-2 noise.",
+   "Repeated raw head frames that Segment Save removes after refinement.",
+   "Expected raw frame count before the repeated head is removed.",
+   "Expected delivered frame count after trimming.",
+   "Decoded delivered parent audio, when the checkpoint contains it.",
+   "Prior scene's delivered HQ context frames for backend continuity.",
+   "Prior scene's transient HQ latent, when Loop End received one.",
+   "Source scene, selected x0 route, and exact frame contract."
+  ],
+  "python_module": "custom_nodes.ComfyUI-MiniMaxH3-Context-Loop",
+  "search_aliases": []
+ },
+ "MiniMaxH3ChainUpscaleLoopEnd": {
+  "category": "conditioning/minimax/context_loop/upscale",
+  "description": "",
+  "display_name": "MiniMax H3 Upscale Loop End",
+  "has_intermediate_output": false,
+  "input": {
+   "hidden": {
+    "dynprompt": "DYNPROMPT",
+    "unique_id": "UNIQUE_ID"
+   },
+   "optional": {
+    "upscaled_latent": [
+     "LATENT",
+     {
+      "lazy": true,
+      "tooltip": "Optional transient HQ carry for the next scene. It is independent of save_latent."
+     }
+    ]
+   },
+   "required": {
+    "flow": [
+     "H3_CHAIN_UPSCALE_FLOW",
+     {
+      "lazy": true,
+      "rawLink": true,
+      "tooltip": "Connect directly from Upscale Adapter; this raw link defines the recursive child-loop body."
+     }
+    ],
+    "images": [
+     "IMAGE",
+     {
+      "lazy": true,
+      "tooltip": "Same RAW HQ frames sent to Upscale Segment Save."
+     }
+    ],
+    "segment": [
+     "H3_CHAIN_UPSCALE_SEGMENT",
+     {
+      "lazy": true,
+      "tooltip": "Persisted HQ scene record from Upscale Segment Save."
+     }
+    ],
+    "state": [
+     "H3_CHAIN_UPSCALE_STATE",
+     {
+      "lazy": true,
+      "tooltip": "Current child-run state from Upscale Current Scene."
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "hidden": [
+    "dynprompt",
+    "unique_id"
+   ],
+   "optional": [
+    "upscaled_latent"
+   ],
+   "required": [
+    "flow",
+    "state",
+    "images",
+    "segment"
+   ]
+  },
+  "is_input_list": false,
+  "name": "MiniMaxH3ChainUpscaleLoopEnd",
+  "output": [
+   "H3_CHAIN_MANIFEST",
+   "STRING",
+   "IMAGE",
+   "LATENT"
+  ],
+  "output_is_list": [
+   false,
+   false,
+   false,
+   false
+  ],
+  "output_name": [
+   "manifest",
+   "manifest_json",
+   "last_context_frames",
+   "last_context_latent"
+  ],
+  "output_node": false,
+  "output_tooltips": [
+   "Complete verified child manifest for H3 Chain Assemble, or a partial manifest.",
+   "Readable JSON form of the emitted child manifest.",
+   "Delivered HQ tail retained from the last processed scene.",
+   "Transient HQ latent retained from the last processed scene, if connected."
+  ],
+  "python_module": "custom_nodes.ComfyUI-MiniMaxH3-Context-Loop",
+  "search_aliases": []
+ },
+ "MiniMaxH3ChainUpscaleReferenceConditioning": {
+  "category": "conditioning/minimax/context_loop/upscale",
+  "description": "",
+  "display_name": "MiniMax H3 Upscale Reference Conditioning",
+  "has_intermediate_output": false,
+  "input": {
+   "optional": {
+    "audio_vae": [
+     "VAE",
+     {
+      "tooltip": "MiniMax H3 audio VAE. It is needed only when the connected override registry activates standalone or paired reference audio."
+     }
+    ],
+    "override_ref_image_size": [
+     "COMBO",
+     {
+      "default": "inherit",
+      "options": [],
+      "tooltip": "Picture sizing for cached, rebuilt, or connected refs. inherit preserves the saved match/max policy. Reconstruction defaults to max when no saved policy is available. match/max explicitly overrides it. Changing cached sizing requires video_vae."
+     }
+    ],
+    "override_reference_policy": [
+     "COMBO",
+     {
+      "default": "strict",
+      "options": [],
+      "tooltip": "Prompt/tag validation for connected pass-2 Tagged refs."
+     }
+    ],
+    "override_semantic_anchor_mode": [
+     "COMBO",
+     {
+      "default": "inherit",
+      "options": [],
+      "tooltip": "Semantic-anchor presentation: timestamped video or picture storyboard, as in Tagged Scene Options. Explicit changes rebuild both presentation and prompt labels. Use a new upscale profile when changing this setting."
+     }
+    ],
+    "override_semantic_anchor_size": [
+     "COMBO",
+     {
+      "default": "inherit",
+      "options": [],
+      "tooltip": "Qwen semantic-anchor size, separate from native picture sizing. inherit keeps saved settings (or a connected anchor bundle). An explicit size rebuilds cached anchors from verified source media; source keeps their original size. Use a new upscale profile when changing this setting."
+     }
+    ],
+    "prompt_override": [
+     "STRING",
+     {
+      "default": "",
+      "multiline": true,
+      "tooltip": "Optional pass-2 text prompt. Blank reuses the exact compiled generation prompt. Use a concise appearance/detail prompt to avoid repeating source motion or camera instructions."
+     }
+    ],
+    "tagged_references": [
+     "H3_TAGGED_REFERENCES",
+     {
+      "tooltip": "Optional pass-2 Tagged Ref line from Upscale Reference + Prompt Override. When connected, it replaces the cached reference payload and is compiled with prompt_override."
+     }
+    ],
+    "target_video_latent": [
+     "LATENT",
+     {
+      "tooltip": "Actual 24-channel pass-2 video latent. When connected with video_vae, match-sized picture refs and their Qwen presentation are rebuilt for its exact H3 canvas."
+     }
+    ],
+    "video_vae": [
+     "VAE",
+     {
+      "tooltip": "Original MiniMax H3 video VAE used to re-encode match-sized picture references at the pass-2 canvas. Never use the audio VAE."
+     }
+    ]
+   },
+   "required": {
+    "clip": [
+     "CLIP",
+     {
+      "tooltip": "MiniMax H3 text encoder used to rebuild the cached Ref2VA presentation at pass 2."
+     }
+    ],
+    "missing_cache": [
+     "COMBO",
+     {
+      "default": "text_only",
+      "options": [],
+      "tooltip": "Missing caches are first rebuilt from saved reference identities and archived media, using the connected VAEs. If recovery is unavailable, text_only falls back to text; error reports the missing source or VAE without dropping refs."
+     }
+    ],
+    "motion_ref_mode": [
+     "COMBO",
+     {
+      "default": "exclude_video_keep_audio",
+      "options": [],
+      "tooltip": "Pass-2 motion-reference policy. The default removes both native video-ref latents and their Qwen presentation, while keeping paired audio."
+     }
+    ],
+    "state": [
+     "H3_CHAIN_UPSCALE_STATE",
+     {
+      "tooltip": "Current Upscale state. The node uses only the selected source branch, scene, prompt, and generation fingerprint to discover refs."
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "optional": [
+    "target_video_latent",
+    "video_vae",
+    "prompt_override",
+    "tagged_references",
+    "audio_vae",
+    "override_ref_image_size",
+    "override_reference_policy",
+    "override_semantic_anchor_size",
+    "override_semantic_anchor_mode"
+   ],
+   "required": [
+    "state",
+    "clip",
+    "missing_cache",
+    "motion_ref_mode"
+   ]
+  },
+  "is_input_list": false,
+  "name": "MiniMaxH3ChainUpscaleReferenceConditioning",
+  "output": [
+   "CONDITIONING",
+   "STRING",
+   "BOOLEAN",
+   "STRING"
+  ],
+  "output_is_list": [
+   false,
+   false,
+   false,
+   false
+  ],
+  "output_name": [
+   "positive",
+   "compiled_prompt",
+   "reference_cache_used",
+   "status"
+  ],
+  "output_node": false,
+  "output_tooltips": [
+   "Pass-2 H3 conditioning rebuilt from cached or explicitly connected Ref2VA media. Match pictures remain canvas-aware and motion video follows motion_ref_mode.",
+   "Prompt actually encoded for pass 2: custom override, exact cached compiled prompt, or saved source prompt.",
+   "True only when the automatic cache was used; connected live refs report False even though their conditioning is active.",
+   "Scene-local cache lookup result and fingerprint summary."
+  ],
+  "python_module": "custom_nodes.ComfyUI-MiniMaxH3-Context-Loop",
+  "search_aliases": []
+ },
+ "MiniMaxH3ChainUpscaleSegmentSave": {
+  "category": "conditioning/minimax/context_loop/upscale",
+  "description": "",
+  "display_name": "MiniMax H3 Upscale Segment Save",
+  "has_intermediate_output": false,
+  "input": {
+   "hidden": {
+    "dynprompt": "DYNPROMPT",
+    "unique_id": "UNIQUE_ID"
+   },
+   "optional": {
+    "recovered_audio": [
+     "AUDIO",
+     {
+      "tooltip": "Optional RAW-clock audio from H3 Audio Recover. When connected, Segment Save applies the source scene's saved audio trim mode and replaces the source checkpoint audio."
+     }
+    ],
+    "upscaled_latent": [
+     "LATENT",
+     {
+      "tooltip": "Final HQ latent. Required when save_latent is enabled and whenever a following Drift-Control scene needs its compact HQ context tail."
+     }
+    ]
+   },
+   "required": {
+    "images": [
+     "IMAGE",
+     {
+      "tooltip": "Decoded HQ RAW scene frames, including the source scene's repeated head. This node trims it exactly."
+     }
+    ],
+    "state": [
+     "H3_CHAIN_UPSCALE_STATE",
+     {
+      "tooltip": "Current child-run state from Upscale Current Scene."
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "hidden": [
+    "dynprompt",
+    "unique_id"
+   ],
+   "optional": [
+    "upscaled_latent",
+    "recovered_audio"
+   ],
+   "required": [
+    "state",
+    "images"
+   ]
+  },
+  "is_input_list": false,
+  "name": "MiniMaxH3ChainUpscaleSegmentSave",
+  "output": [
+   "H3_CHAIN_UPSCALE_SEGMENT",
+   "STRING"
+  ],
+  "output_is_list": [
+   false,
+   false
+  ],
+  "output_name": [
+   "segment",
+   "status"
+  ],
+  "output_node": true,
+  "output_tooltips": [
+   "Verified HQ scene record for Upscale Loop End.",
+   "Saved scene path, dimensions, and HQ latent persistence result."
+  ],
+  "python_module": "custom_nodes.ComfyUI-MiniMaxH3-Context-Loop",
+  "search_aliases": []
+ },
+ "MiniMaxH3ContexMaskGridPreview": {
+  "category": "conditioning/minimax/context_loop/masking",
+  "description": "",
+  "display_name": "MiniMax H3 Masking \u00b7 Grid Preview",
+  "has_intermediate_output": false,
+  "input": {
+   "optional": {
+    "mask_meaning": [
+     "COMBO",
+     {
+      "default": "white = generate",
+      "options": [],
+      "tooltip": "Use the same white-pixel convention here and on Apply Target Mask. The overlay always shows the effective generation region."
+     }
+    ]
+   },
+   "required": {
+    "cell_adjust": [
+     "INT",
+     {
+      "default": 0,
+      "max": 8,
+      "min": -8,
+      "step": 1,
+      "tooltip": "Grow or shrink by complete 32x32 H3 cells."
+     }
+    ],
+    "cell_selection": [
+     "COMBO",
+     {
+      "default": "runtime exact (latent max)",
+      "options": [],
+      "tooltip": "Runtime exact matches H3 latent reduction. Coverage modes provide deliberate conservative or strict alternatives."
+     }
+    ],
+    "image": [
+     "IMAGE",
+     {
+      "tooltip": "Exact resized H3 canvas used by the video VAE. Width and height must be divisible by 32."
+     }
+    ],
+    "mask": [
+     "MASK",
+     {
+      "tooltip": "Static or tracked ComfyUI mask interpreted using mask_meaning."
+     }
+    ],
+    "overlay_opacity": [
+     "FLOAT",
+     {
+      "default": 0.38,
+      "max": 1,
+      "min": 0,
+      "step": 0.01,
+      "tooltip": "Opacity of the orange snapped-generation overlay in grid_preview."
+     }
+    ],
+    "preview_frame": [
+     "INT",
+     {
+      "default": 0,
+      "max": 10000,
+      "min": 0,
+      "step": 1,
+      "tooltip": "Frame displayed by grid_preview. The snapped MASK output still contains the complete batch."
+     }
+    ],
+    "show_grid": [
+     "BOOLEAN",
+     {
+      "default": true,
+      "tooltip": "Draw the effective 32x32 H3 source-pixel cell grid over the preview."
+     }
+    ],
+    "show_source_outline": [
+     "BOOLEAN",
+     {
+      "default": true,
+      "tooltip": "Outline the original unsnapped mask so its difference from the effective mask is visible."
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "optional": [
+    "mask_meaning"
+   ],
+   "required": [
+    "image",
+    "mask",
+    "cell_selection",
+    "cell_adjust",
+    "preview_frame",
+    "overlay_opacity",
+    "show_grid",
+    "show_source_outline"
+   ]
+  },
+  "is_input_list": false,
+  "name": "MiniMaxH3ContexMaskGridPreview",
+  "output": [
+   "MASK",
+   "IMAGE",
+   "STRING"
+  ],
+  "output_is_list": [
+   false,
+   false,
+   false
+  ],
+  "output_name": [
+   "snapped_mask",
+   "grid_preview",
+   "grid_info"
+  ],
+  "output_node": false,
+  "output_tooltips": [
+   "Complete mask batch snapped to H3's effective causal 32x32 source-pixel cells, using the selected white-pixel convention.",
+   "Selected source frame with the snapped mask and optional grid or source outline overlaid.",
+   "Summary of the selected frame, grid dimensions, and snapped-mask coverage."
+  ],
+  "python_module": "custom_nodes.ComfyUI-MiniMaxH3-Context-Loop",
+  "search_aliases": []
+ },
+ "MiniMaxH3ContexMaskedTarget": {
+  "category": "conditioning/minimax/context_loop/masking",
+  "description": "",
+  "display_name": "MiniMax H3 Masking \u00b7 Apply Target Mask",
+  "has_intermediate_output": false,
+  "input": {
+   "optional": {
+    "audio_mask": [
+     "MASK",
+     {
+      "tooltip": "Used only by custom audio mask. Spatial dimensions are reduced; white time regions generate and black regions remain protected."
+     }
+    ],
+    "mask_conversion": [
+     "COMBO",
+     {
+      "default": "H3 exact (causal/token max)",
+      "options": [],
+      "tooltip": "H3 exact maps pixel masks with the video VAE's causal 1/4/4/4/4 frame groups and 2x2 latent-token max coverage."
+     }
+    ]
+   },
+   "required": {
+    "audio_mode": [
+     "COMBO",
+     {
+      "default": "preserve source audio",
+      "options": [],
+      "tooltip": "Preserve or generate all source audio, map the video mask onto time, or use the optional custom audio mask."
+     }
+    ],
+    "mask": [
+     "MASK",
+     {
+      "tooltip": "Static or per-frame video-space mask. It is mapped to H3's causal video-latent frames and 2x2 latent-token cells. Exact mode accepts one static mask or one mask per source frame."
+     }
+    ],
+    "mask_meaning": [
+     "COMBO",
+     {
+      "default": "white = generate",
+      "options": [],
+      "tooltip": "Choose whether white pixels regenerate or remain protected."
+     }
+    ],
+    "target_latent": [
+     "LATENT",
+     {
+      "tooltip": "Joint source video/audio latent used as the actual H3 target. Known regions are preserved from this latent; do not add the same source again merely as a video reference."
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "optional": [
+    "audio_mask",
+    "mask_conversion"
+   ],
+   "required": [
+    "target_latent",
+    "mask",
+    "mask_meaning",
+    "audio_mode"
+   ]
+  },
+  "is_input_list": false,
+  "name": "MiniMaxH3ContexMaskedTarget",
+  "output": [
+   "LATENT",
+   "STRING"
+  ],
+  "output_is_list": [
+   false,
+   false
+  ],
+  "output_name": [
+   "masked_target",
+   "mask_info"
+  ],
+  "output_node": false,
+  "output_tooltips": [
+   "Copy of target_latent carrying the composed H3 video and audio denoise mask.",
+   "Summary of the latent dimensions and generated percentages for each stream."
+  ],
+  "python_module": "custom_nodes.ComfyUI-MiniMaxH3-Context-Loop",
+  "search_aliases": []
+ },
  "MiniMaxH3FiniteLatentContinuation": {
   "api_node": false,
   "category": "MiniMax H3/Internal",
@@ -9535,6 +11112,237 @@
   "python_module": "comfy_extras.nodes_minimax_music",
   "search_aliases": null
  },
+ "MinimaxH3LatentUpscaler3D": {
+  "api_node": false,
+  "category": "video/MinimaxH3",
+  "deprecated": false,
+  "description": "",
+  "dev_only": false,
+  "display_name": "Minimax H3 Latent Upscaler (3D)",
+  "essentials_category": null,
+  "experimental": false,
+  "has_intermediate_output": false,
+  "input": {
+   "required": {
+    "align": [
+     "INT",
+     {
+      "default": 32,
+      "max": 512,
+      "min": 1,
+      "step": 1,
+      "tooltip": "Pixel-space alignment. Both output axes are placed on a grid compatible with this value and the H3 16x VAE grid."
+     }
+    ],
+    "device": [
+     "COMBO",
+     {
+      "default": "cuda",
+      "multiselect": false,
+      "options": []
+     }
+    ],
+    "keep_proportion": [
+     "BOOLEAN",
+     {
+      "default": true,
+      "tooltip": "Preserve the source aspect ratio as closely as the requested alignment grid allows."
+     }
+    ],
+    "latent": [
+     "*",
+     {
+      "tooltip": "Input latent (image or video)."
+     }
+    ],
+    "mode": [
+     "COMFY_DYNAMICCOMBO_V3",
+     {
+      "options": [
+       {
+        "inputs": {
+         "required": {
+          "scale": [
+           "FLOAT",
+           {
+            "default": 2,
+            "max": 4,
+            "min": 1,
+            "step": 0.05
+           }
+          ]
+         }
+        },
+        "key": "scale by multiplier"
+       },
+       {
+        "inputs": {
+         "required": {
+          "height": [
+           "INT",
+           {
+            "default": 704,
+            "max": 4096,
+            "min": 64,
+            "step": 8
+           }
+          ],
+          "width": [
+           "INT",
+           {
+            "default": 1280,
+            "max": 4096,
+            "min": 64,
+            "step": 8
+           }
+          ]
+         }
+        },
+        "key": "target dimensions"
+       },
+       {
+        "inputs": {
+         "required": {
+          "megapixels": [
+           "FLOAT",
+           {
+            "default": 1,
+            "max": 8,
+            "min": 0.1,
+            "step": 0.1
+           }
+          ]
+         }
+        },
+        "key": "megapixels"
+       }
+      ],
+      "tooltip": "How the target size is computed."
+     }
+    ],
+    "model_name": [
+     "COMBO",
+     {
+      "multiselect": false,
+      "options": [],
+      "tooltip": "Minimax H3 upscale model."
+     }
+    ],
+    "offload_after_upscale": [
+     "BOOLEAN",
+     {
+      "default": false,
+      "tooltip": "Move the cached learned upscaler to CPU after inference to free VRAM. Leave off for faster repeated runs when VRAM is available."
+     }
+    ],
+    "precision": [
+     "COMBO",
+     {
+      "default": "fp16",
+      "multiselect": false,
+      "options": []
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "latent",
+    "model_name",
+    "mode",
+    "align",
+    "keep_proportion",
+    "device",
+    "precision",
+    "offload_after_upscale"
+   ]
+  },
+  "is_input_list": false,
+  "name": "MinimaxH3LatentUpscaler3D",
+  "output": [
+   "*"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_matchtypes": null,
+  "output_name": [
+   "latent"
+  ],
+  "output_node": false,
+  "output_tooltips": [
+   "Upscaled latent."
+  ],
+  "price_badge": null,
+  "python_module": "custom_nodes.Comfyui_Minimax_h3_latent_Upscaler-Plus",
+  "search_aliases": [
+   "minimax",
+   "h3",
+   "latent",
+   "upscale",
+   "3d"
+  ]
+ },
+ "MinimaxH3LatentUpscaler3DProvider": {
+  "category": "video/MinimaxH3",
+  "description": "",
+  "display_name": "MiniMax H3 Latent Upscaler Provider (3D) [Experimental]",
+  "has_intermediate_output": false,
+  "input": {
+   "required": {
+    "device": [
+     "COMBO",
+     {
+      "default": "cuda",
+      "options": []
+     }
+    ],
+    "model_name": [
+     "COMBO",
+     {
+      "default": "minimax_h3_latent_upscaler_3d_bf16.safetensors",
+      "options": []
+     }
+    ],
+    "offload_after_upscale": [
+     "BOOLEAN",
+     {
+      "default": false,
+      "tooltip": "Move the cached learned upscaler to CPU after each handoff. Leave off for repeated chunks/runs when VRAM is available."
+     }
+    ],
+    "precision": [
+     "COMBO",
+     {
+      "default": "bf16",
+      "options": []
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "model_name",
+    "device",
+    "precision",
+    "offload_after_upscale"
+   ]
+  },
+  "is_input_list": false,
+  "name": "MinimaxH3LatentUpscaler3DProvider",
+  "output": [
+   "H3_LATENT_UPSCALER"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "learned_upscaler"
+  ],
+  "output_node": false,
+  "python_module": "custom_nodes.Comfyui_Minimax_h3_latent_Upscaler-Plus",
+  "search_aliases": []
+ },
  "MinimaxH3LatentUpscaler3DRefineHandoff": {
   "category": "video/MinimaxH3",
   "description": "",
@@ -9730,6 +11538,71 @@
   ],
   "output_name": [
    "latent"
+  ],
+  "output_node": false,
+  "python_module": "custom_nodes.Comfyui_Minimax_h3_latent_Upscaler-Plus",
+  "search_aliases": []
+ },
+ "MinimaxH3LatentUpscalerNode2D": {
+  "category": "video/MinimaxH3",
+  "description": "",
+  "display_name": "Minimax H3 Latent Upscaler (2D)",
+  "has_intermediate_output": false,
+  "input": {
+   "required": {
+    "device": [
+     "COMBO",
+     {
+      "default": "cuda",
+      "options": []
+     }
+    ],
+    "latent": [
+     "LATENT"
+    ],
+    "model_name": [
+     "COMBO",
+     {
+      "options": []
+     }
+    ],
+    "precision": [
+     "COMBO",
+     {
+      "default": "fp32",
+      "options": []
+     }
+    ],
+    "scale": [
+     "FLOAT",
+     {
+      "default": 2,
+      "max": 4,
+      "min": 1,
+      "step": 0.1
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "latent",
+    "model_name",
+    "scale",
+    "device",
+    "precision"
+   ]
+  },
+  "is_input_list": false,
+  "name": "MinimaxH3LatentUpscalerNode2D",
+  "output": [
+   "LATENT"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_name": [
+   "LATENT"
   ],
   "output_node": false,
   "python_module": "custom_nodes.Comfyui_Minimax_h3_latent_Upscaler-Plus",
@@ -14325,6 +16198,32 @@
   ],
   "output_node": false,
   "python_module": "custom_nodes.Comfyui-PlagueKind-Nodes",
+  "search_aliases": []
+ },
+ "UnloadAudiocoreModel": {
+  "category": "audio/audiocore",
+  "description": "",
+  "display_name": "Unload Audiocore Model",
+  "has_intermediate_output": false,
+  "input": {
+   "required": {
+    "model": [
+     "AUDIOCORE_MODEL"
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "model"
+   ]
+  },
+  "is_input_list": false,
+  "name": "UnloadAudiocoreModel",
+  "output": [],
+  "output_is_list": [],
+  "output_name": [],
+  "output_node": false,
+  "python_module": "custom_nodes.melite-audio-nodes",
   "search_aliases": []
  },
  "UnwrapMesh": {
