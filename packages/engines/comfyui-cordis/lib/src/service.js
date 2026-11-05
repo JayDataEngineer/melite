@@ -935,6 +935,16 @@ export class ComfyUIService extends Service {
                     }
                 }
                 const strength = stated ?? row.default_strength ?? 1.0;
+                // THE PER-USE DOMAIN (lora audit F4, 2026-11-15): the ROW
+                // default is banded 0–2 at both write doors, yet a per-pick
+                // strength typed at the leaf dial rode compose unchecked — a
+                // pick could state 9 and run at 9x while its own row default
+                // 2.5 was refused at the door. Same band, same refusal law as
+                // the controlnet arm: refuse LOUD, never clamp.
+                if (stated !== undefined
+                    && (typeof stated !== 'number' || !Number.isFinite(stated) || stated < 0 || stated > 2)) {
+                    throw new ComposeRefusal('lora-strength-range', `card '${cardId}' lora '${id}' strength = ${String(stated)}: a number in [0, 2] is required (the pack's band — the row default is judged by the same band at the write doors)`);
+                }
                 // THE MARRIED SHIFT STAMP (SOTA limb 2, the steps stamp's
                 // heir): the row's own sigma-shift grid rides the resolved
                 // entry when the row declares one and the entry states

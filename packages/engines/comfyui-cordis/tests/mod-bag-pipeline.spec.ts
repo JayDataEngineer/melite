@@ -92,6 +92,30 @@ describe("THE MOD-BAG PIPELINE (studio bag → service door → loader stack)", 
     );
   });
 
+  it("A PER-USE STRENGTH OUTSIDE [0, 2] REFUSES at compose (lora audit F4) — the row default's own band, never a clamp", () => {
+    // The row default was banded at both write doors while the per-pick
+    // value rode unchecked: a pick could state 9 and run at 9x. The
+    // service door now judges the stated value with the same band, and
+    // a lawful stated value still composes.
+    for (const strength of [9, -0.5, Number.NaN]) {
+      assert.throws(
+        () => svc.compose(H3_CARD, H3_MODEL, {
+          calls: [{ text: "x", start_frame: 0, end_frame: 90 }],
+          loras: [{ id: "h3_lightx2v_turbo", strength }],
+        }, "wall_strength"),
+        /lora-strength-range|a number in \[0, 2\] is required/,
+      );
+    }
+    const graph = svc.compose(H3_CARD, H3_MODEL, {
+      calls: [{ text: "x", start_frame: 0, end_frame: 90 }],
+      loras: [{ id: "h3_lightx2v_turbo", strength: 0.5 }],
+    }, "wall_strength_ok") as Graph
+    assert.ok(
+      stackRows(graph).flat().some((r) => r.str === 0.5),
+      "a lawful per-use strength rides the loader row verbatim",
+    )
+  })
+
   it("AN UNKNOWN ID REFUSES LOUD at the service door — never a silent plain run", () => {
     assert.throws(
       () => svc.compose(H3_CARD, H3_MODEL, {
