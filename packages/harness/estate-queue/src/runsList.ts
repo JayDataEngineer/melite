@@ -416,8 +416,14 @@ export function runDirHasMedia(runDir: string): boolean {
 // Keeping the image-era refusal would drop every completed model run from the restore port (runs/list) — and with it runs/list adoption (fetchLatestRunForDraft) — so the row gate admits "model" alongside the triple.
 
 const RUN_ID_RE: RegExp = /^run-[A-Za-z0-9_.@-]+$/;
-// NOT runsTypes.ts's exported RUN_STATUSES: this set is the list-side vocabulary (adds success/unknown, drops queued/stopping — the C-contract fold runsRegistry owns).
+// NOT runsTypes.ts's exported RUN_STATUSES: this set is the list-side
+// vocabulary (adds success/unknown, drops stopping — the C-contract fold
+// runsRegistry owns). W-12 (2026-11-05) adds queued: a non-terminal
+// sidecar word serves VERBATIM on the row (the read never folds queued
+// into a terminal word, and refusing the row would vanish a queued run
+// from the very face that must show it — the burn's neighbor defect).
 const RUN_STATUS: ReadonlySet<string> = new Set([
+  "queued",
   "running",
   "completed",
   "failed",
@@ -719,11 +725,14 @@ function scanRunsRoot(stateRoot: string): RunsEnt[] {
 }
 
 /** The per-run card build (the file-era row law, intact): sidecar
- *  byte-scan → zombie override → user-surface skip → orphan-draft
- *  clearing → runRowOrNull. Null = skipped (never stored, never
- *  served — the count still counts the dir). The drafts probe is
- *  ASYNC (the drafts remote's birth-certificate face — the legacy
- *  drafts/<id>.json stat died with the drafts-door migration;
+ *  byte-scan → verbatim status carry (W-12, 2026-11-05: the read-time
+ *  zombie override is dead — a non-terminal sidecar word serves
+ *  queued/running until the settle rewrites the sidecar; zombies are
+ *  the boot sweep's, never a disk-only guess) → user-surface skip →
+ *  orphan-draft clearing → runRowOrNull. Null = skipped (never
+ *  stored, never served — the count still counts the dir). The drafts
+ *  probe is ASYNC (the drafts remote's birth-certificate face — the
+ *  legacy drafts/<id>.json stat died with the drafts-door migration;
  *  orphans lose their draft link, never the row). */
 // (D6, second half) the ROW build was the other per-open cost:
 // every listed row re-read its sidecar, re-walked its artifacts
@@ -791,9 +800,15 @@ async function buildRunCard(
       16,
     );
     if (foundStatus) {
+      // THE VERBATIM READ (W-12, 2026-11-05): a non-terminal sidecar
+      // word (queued/running) carries VERBATIM until the settle
+      // rewrites the sidecar — the read never stamps a terminal word
+      // on a non-terminal run. The burn: a queue-window read served
+      // "failed" (the old disk-only zombie override) while run_status
+      // said "completed" — the artifact was real. Zombies are the
+      // boot sweep's (queueSweep.bootSweep), not a read-time guess.
+      // "error" stays the one lawful normalization (terminal word).
       status = rawStatus === "error" ? "failed" : rawStatus;
-      // read-time zombie override (sweep=False: report only, D1).
-      if (status === "running") status = "failed";
     } else {
       status = "unknown";
     }

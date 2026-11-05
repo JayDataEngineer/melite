@@ -425,8 +425,14 @@ export function runDirHasMedia(runDir) {
 // The estate's own emitter half (runArtifacts in this file) counts "model" rows as listable media, mediaKinds.ts carries the galleryModel set, and the img-to-mesh lane is the first producer of model-only runs.
 // Keeping the image-era refusal would drop every completed model run from the restore port (runs/list) — and with it runs/list adoption (fetchLatestRunForDraft) — so the row gate admits "model" alongside the triple.
 const RUN_ID_RE = /^run-[A-Za-z0-9_.@-]+$/;
-// NOT runsTypes.ts's exported RUN_STATUSES: this set is the list-side vocabulary (adds success/unknown, drops queued/stopping — the C-contract fold runsRegistry owns).
+// NOT runsTypes.ts's exported RUN_STATUSES: this set is the list-side
+// vocabulary (adds success/unknown, drops stopping — the C-contract fold
+// runsRegistry owns). W-12 (2026-11-05) adds queued: a non-terminal
+// sidecar word serves VERBATIM on the row (the read never folds queued
+// into a terminal word, and refusing the row would vanish a queued run
+// from the very face that must show it — the burn's neighbor defect).
 const RUN_STATUS = new Set([
+    "queued",
     "running",
     "completed",
     "failed",
@@ -674,10 +680,15 @@ async function buildRunCard(outputRoot, ent, hasDraft) {
         // found-ness matters: absent key -> "unknown" (served); present-but-empty -> "" (gate-skipped).
         const [foundStatus, rawStatus] = sidecarStrFound(rawBytes, "status", 16);
         if (foundStatus) {
+            // THE VERBATIM READ (W-12, 2026-11-05): a non-terminal sidecar
+            // word (queued/running) carries VERBATIM until the settle
+            // rewrites the sidecar — the read never stamps a terminal word
+            // on a non-terminal run. The burn: a queue-window read served
+            // "failed" (the old disk-only zombie override) while run_status
+            // said "completed" — the artifact was real. Zombies are the
+            // boot sweep's (queueSweep.bootSweep), not a read-time guess.
+            // "error" stays the one lawful normalization (terminal word).
             status = rawStatus === "error" ? "failed" : rawStatus;
-            // read-time zombie override (sweep=False: report only, D1).
-            if (status === "running")
-                status = "failed";
         }
         else {
             status = "unknown";

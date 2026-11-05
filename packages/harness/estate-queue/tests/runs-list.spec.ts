@@ -457,10 +457,13 @@ describe("runRowOrNull gates", () => {
     draft_id: "bench-main",
     ...over,
   });
-  it("refuses ids, statuses, stamps and artifact rows (queued never lists)", () => {
+  it("refuses ids, statuses, stamps and artifact rows (W-12: queued now LISTS verbatim)", () => {
     assert.ok(runRowOrNull(row()) !== null);
     assert.equal(runRowOrNull(row({ run_id: "x" })), null);
-    assert.equal(runRowOrNull(row({ status: "queued" })), null);
+    // THE VERBATIM READ (W-12, 2026-11-05): a queued sidecar word is a
+    // lawful row word — the gate admits it so the queued run serves
+    // verbatim instead of vanishing from the face that must show it.
+    assert.ok(runRowOrNull(row({ status: "queued" })) !== null);
     assert.equal(runRowOrNull(row({ status: "weird" })), null);
     assert.equal(runRowOrNull(row({ created_at: -1 })), null);
     assert.equal(runRowOrNull(row({ created_at: 1.5 })), null);
@@ -533,7 +536,7 @@ describe("listRuns envelope", () => {
     };
     put("run-good", sidecar(), true);
     put("run-nofile", null, false);
-    put("run-zombie", sidecar({ status: "running", created: 50, created_at: undefined, seed: undefined }), false);
+    put("run-active", sidecar({ status: "running", created: 50, created_at: undefined, seed: undefined }), false);
     put("run-err", sidecar({ status: "error", created: 60, created_at: 60 }), false);
     put("run-nostatus", "{}", false);
     put("run-empty-status", sidecar({ status: "" }), false);
@@ -727,7 +730,7 @@ describe("listRuns envelope", () => {
     // both were non-media and the tie broke by scan order.
     assert.deepEqual(
       runs.map((r) => r["run_id"]),
-      ["run-lane", "run-good", "run-err", "run-zombie", "run-nostatus", "run-nofile"],
+      ["run-lane", "run-good", "run-err", "run-active", "run-nostatus", "run-nofile"],
     );
     const lane = runs[0] as Record<string, unknown>;
     assert.equal(lane["test"], true);
@@ -745,10 +748,14 @@ describe("listRuns envelope", () => {
     const err = runs[2] as Record<string, unknown>;
     assert.equal(err["status"], "failed");
     assert.equal(err["created_at"], 60);
-    const zombie = runs[3] as Record<string, unknown>;
-    assert.equal(zombie["status"], "failed");
-    assert.equal(zombie["created_at"], 50);
-    assert.deepEqual(zombie["params"], { seed: -1 });
+    // THE VERBATIM READ (W-12, 2026-11-05): a running sidecar row
+    // serves "running" — the read never stamps a terminal word on a
+    // non-terminal run (the old zombie override served "failed" here).
+    const active = runs[3] as Record<string, unknown>;
+    assert.equal(active["status"], "running",
+      "a running sidecar reads running verbatim — never the terminal 'failed'");
+    assert.equal(active["created_at"], 50);
+    assert.deepEqual(active["params"], { seed: -1 });
     const nofile = runs[5] as Record<string, unknown>;
     // (no sidecar file at all reads the "success" default — only a
     // present-but-keyless sidecar reads "unknown".)
@@ -861,6 +868,74 @@ describe("listRuns envelope", () => {
     const { runs } = await listRuns(state, 10, async () => true);
     assert.equal(runs.length, 1);
     assert.deepEqual((runs[0] as Record<string, unknown>)["artifacts"], []);
+  });
+});
+
+describe("THE VERBATIM READ (W-12, 2026-11-05): a non-terminal sidecar word never serves a terminal word", () => {
+  // THE BURN (FRICTION_3 :469, verbatim): a bench read ~1 s after a
+  // [queued] press showed `last_run run-936922a1d3fd-abdf75fd (failed)`
+  // while run_status on the same id said `completed`; a re-read flipped
+  // the bench to `(completed)`. The old disk-only zombie override
+  // (buildRunCard: `if (status === "running") status = "failed"`)
+  // stamped every non-terminal sidecar row with the terminal word.
+  // THE LAW: the row carries queued/running VERBATIM until the settle
+  // rewrites the sidecar; zombies are the boot sweep's
+  // (queueSweep.bootSweep), never a read-time guess. "error" is the
+  // one lawful normalization (a terminal word → the row's failed).
+  const plant = (state: string, run: string, status: string): string => {
+    const dir = join(state, "output", run);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, "_flow.json"),
+      JSON.stringify({ status, pipeline: "flow_inline", draft_id: "d1", seed: 7, created_at: 100 }),
+    );
+    return dir;
+  };
+  const rowOf = async (state: string, run: string): Promise<Record<string, unknown>> => {
+    const { runs } = await listRuns(state, 10, async () => true);
+    const row = runs.find((r) => r["run_id"] === run) as Record<string, unknown> | undefined;
+    assert.ok(row, `the ${run} row is served (a non-terminal run never vanishes from the face)`);
+    return row;
+  };
+
+  it("a QUEUED sidecar row reads queued verbatim — never the terminal 'failed'", async () => {
+    const state = tmp();
+    plant(state, "run-queued-live", "queued");
+    const row = await rowOf(state, "run-queued-live");
+    assert.equal(row["status"], "queued",
+      "a queued run serves its own word; the read must not fold it to a terminal word");
+  });
+
+  it("a RUNNING sidecar row reads running verbatim — never the terminal 'failed' (the burn shape)", async () => {
+    const state = tmp();
+    plant(state, "run-running-live", "running");
+    const row = await rowOf(state, "run-running-live");
+    assert.equal(row["status"], "running",
+      "a queue-window read serves 'running' — the old override received 'failed' here (the burn's row face)");
+  });
+
+  it("the settle flip: the same id's sidecar settling completed re-reads completed (the cache cannot pin the stale word)", async () => {
+    const state = tmp();
+    const dir = plant(state, "run-settles", "running");
+    assert.equal((await rowOf(state, "run-settles"))["status"], "running");
+    // the settle door's own shape: the sidecar REWRITE (queueSidecar's
+    // write) bumps the _flow.json mtime — the row cache's key — so the
+    // settled word busts the cache and re-reads fresh.
+    await new Promise((r) => setTimeout(r, 20));
+    writeFileSync(
+      join(dir, "_flow.json"),
+      JSON.stringify({ status: "completed", pipeline: "flow_inline", draft_id: "d1", seed: 7, created_at: 100 }),
+    );
+    assert.equal((await rowOf(state, "run-settles"))["status"], "completed",
+      "a settled run serves its settled word — the mtime-keyed cache never pins the pre-settle word");
+  });
+
+  it("the error→failed normalization stays (the one lawful terminal fold)", async () => {
+    const state = tmp();
+    plant(state, "run-err-still", "error");
+    const row = await rowOf(state, "run-err-still");
+    assert.equal(row["status"], "failed",
+      "a terminal 'error' sidecar word maps to the row's 'failed' — unchanged by W-12");
   });
 });
 
