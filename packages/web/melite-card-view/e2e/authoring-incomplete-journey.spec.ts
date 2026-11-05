@@ -52,6 +52,16 @@ test('the textless tts add LANDS, the press voices the words, typing cures (the 
   }, undefined, { timeout: 20_000 }).then((v) => v.jsonValue(), () => '')
   expect(sessionKey, 'no open conversation key on the host').not.toEqual('')
 
+  // THE COLD-HOME ENSURE (CI, 2026-11-05): on a fresh home the shell
+  // MINTS the current session but nothing has seated its bench yet —
+  // the first bench/get red "no such bench" on every cold boot (CI's
+  // tracked seed; the dev lane reused a standing host whose bench
+  // already existed, so this arm never ran cold locally). ensure is
+  // idempotent: absent creates, present lands — never a fake shape.
+  // Same law as the settled-wall spec's own seat (the bench the face
+  // watches is ENSURED, never assumed).
+  await callBench(page, 'bench/ensure', { doc: { session: sessionKey } })
+
   // clear every stage: the add must be judged on a clean bench, and
   // the expect_rev arithmetic must be honest
   let cursor = 0

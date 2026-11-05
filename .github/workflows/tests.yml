@@ -20,7 +20,14 @@ jobs:
   unit:
     name: unit (vitest, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
+    # HONEST BUDGET (CI, 2026-11-05): 30m never once held — ubuntu's
+    # leg was cancelled at the wall in every run (the suite needs
+    # >30m on a shared 3-4-core runner; the dev machine that verified
+    # the battery locally is neither shared nor cold). 60m is the
+    # measured-class budget, not a number picked to hide a hang: a
+    # real hang still reds here, it just stops being cancelled
+    # mid-suite into a log nobody can read.
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -46,6 +53,10 @@ jobs:
       - name: "Build (battery order law: build-plane first, then walls)"
         run: pnpm run build
       - name: Lib sync (a fresh build reproduces the committed lib/)
+        # bash on EVERY leg (CI, 2026-11-05): windows defaults `run`
+        # to pwsh and the POSIX test below died at parse — "Missing
+        # '(' after 'if'" — before judging a single byte of drift.
+        shell: bash
         run: |
           # GT-06 (the round-5 gate audit): git diff is BLIND to
           # untracked files — a build emitting a brand-new lib path
@@ -156,7 +167,14 @@ jobs:
   coverage:
     name: coverage gate (per-file 100%)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # HONEST BUDGET (CI, 2026-11-05): the instrumented run measures
+    # the whole estate — it burned 26m before its own threshold
+    # verdict in the Nov-4 run and was cancelled at the 30m wall in
+    # the Nov-5 one, leaving no readable report. 45m lets the gate
+    # FINISH and name its debts; the debts themselves are real
+    # (runsExecute/discovery/melite-view/media-probe under their
+    # pinned thresholds) and are owed tests, not minutes.
+    timeout-minutes: 45
     # Cruft row 2: the tier runs in the typecheck job; the coverage
     # gate measures src coverage and never needed the tsc sweep.
     env:
@@ -195,6 +213,10 @@ jobs:
       - name: Build (expected tier's built arms run against real output)
         run: pnpm run build
       - name: Lib sync (a fresh build reproduces the committed lib/)
+        # explicit bash (CI, 2026-11-05): this leg runs ubuntu today,
+        # but the unit job's twin copy red a whole OS leg under pwsh
+        # — parallel values carry their shell explicitly.
+        shell: bash
         run: |
           # GT-06 (the round-5 gate audit): git diff is BLIND to
           # untracked files — a build emitting a brand-new lib path

@@ -23,13 +23,15 @@ import { assertHermeticRode } from "../../../helpers/hermetic-engine.ts";
 // import order matters — boot-models first.
 import "../../../helpers/boot-models.ts";
 import { describe, expect, it, beforeAll, afterAll } from "vitest";
-import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import { Context } from "@deepseek-ai/cordis";
 import { FlowsSeatService } from "../../../../packages/harness/estate-queue/src/flowsData.ts";
 import { CardRegistryService } from "../../../../packages/harness/estate-queue/src/cardsRegistry.ts";
 import { installLaneStoreOverlay, restoreLaneStoreOverlay } from "../../../helpers/lane-store-overlay.ts";
+import { materializeLaneWeights } from "../../../helpers/lane-store-materialize.ts";
+import { getModel } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
 
 let door: CardRegistryService;
 
@@ -44,14 +46,14 @@ beforeAll(async () => {
   await door.prime();
   assertHermeticRode();
   const storeRoot = installLaneStoreOverlay();
-  // THE FP16 SEAT (audit 014 C5): the atom's body is provisioned but
-  // not yet on this machine's disk — materialized inside the hermetic
-  // temp root the overlay's own way (existence only).
-  const fp16 = join(storeRoot, "data", "runtime", "comfyui", "models", "diffusion_models", "minimax_music3_dit_fp16.safetensors");
-  if (!existsSync(fp16)) {
-    mkdirSync(dirname(fp16), { recursive: true });
-    writeFileSync(fp16, "");
-  }
+  // THE DECL-DERIVED STORE SEAT (CI, 2026-11-05): the hand-named fp16
+  // touch below drifted — the int8 fold seated the int8 text encoder
+  // on the family row and every store-less machine (CI) went red at
+  // the door while this dev machine (store present) stayed green.
+  // The materializer walks the DECL's OWN rows (provisions + every
+  // family/variant/cell lane_input), so the hermetic store carries
+  // exactly what any compose of this family can demand.
+  materializeLaneWeights(storeRoot, getModel("music3"));
 }, 120_000);
 
 afterAll(() => {

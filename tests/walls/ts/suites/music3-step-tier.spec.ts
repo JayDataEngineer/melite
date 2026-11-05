@@ -23,7 +23,7 @@ import { assertHermeticRode } from "../../../helpers/hermetic-engine.ts";
 // import order matters — boot-models first.
 import "../../../helpers/boot-models.ts";
 import { describe, expect, it, beforeAll, afterAll } from "vitest";
-import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -31,6 +31,7 @@ import { Context } from "@deepseek-ai/cordis";
 import { FlowsSeatService } from "../../../../packages/harness/estate-queue/src/flowsData.ts";
 import { CardRegistryService } from "../../../../packages/harness/estate-queue/src/cardsRegistry.ts";
 import { installLaneStoreOverlay, restoreLaneStoreOverlay } from "../../../helpers/lane-store-overlay.ts";
+import { materializeLaneWeights } from "../../../helpers/lane-store-materialize.ts";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import {
@@ -63,15 +64,13 @@ beforeAll(async () => {
   await door.prime();
   assertHermeticRode();
   const storeRoot = installLaneStoreOverlay();
-  // THE FP16 SEAT (audit 014 C5): the atom's body is provisioned but
-  // not yet on this machine's disk — the overlay mirrors the store,
-  // so the hermetic temp root materializes the provisioned row the
-  // overlay's own way (existence only; no run loads these bytes).
-  const fp16 = join(storeRoot, "data", "runtime", "comfyui", "models", "diffusion_models", "minimax_music3_dit_fp16.safetensors");
-  if (!existsSync(fp16)) {
-    mkdirSync(dirname(fp16), { recursive: true });
-    writeFileSync(fp16, "");
-  }
+  // THE DECL-DERIVED STORE SEAT (CI, 2026-11-05 — same drift class as
+  // the seed-mint wall): the hand-named fp16 touch missed every other
+  // declared weight (the int8 fold's text encoder red every
+  // store-less CI machine while this dev machine's store stayed
+  // green). The materializer walks the DECL's OWN rows so the
+  // hermetic store carries what any compose can demand.
+  materializeLaneWeights(storeRoot, getModel("music3"));
 }, 120_000);
 
 afterAll(() => {
