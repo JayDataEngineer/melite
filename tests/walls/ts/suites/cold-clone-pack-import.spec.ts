@@ -239,7 +239,11 @@ describe("THE COLD-CLONE PACK WALL (every published pack imports from its own cl
       }
     }
     expect(sins, "sys.path mutations reaching outside the pack (absolute or the vendor walk) — a cold install never has that layout").toEqual([]);
-  });
+    // Cold clones of every manifest repo ride the network: 25–39s
+    // observed on CI runners — the 30s default timed out the first
+    // attempt while the retry passed. The budget states the worst
+    // honest wall-clock, never the average.
+  }, 120_000);
 
   it.skipIf(!NUMPY_PRESENT)("melite-kimodo-nodes registers from a bare clone with kimodo UNRESOLVED — the never-raise law, zero path probing (skipped when the host python lacks numpy — CI: the pack's import chain requires it)", () => {
     const clone = coldClone("melite-kimodo-nodes");
