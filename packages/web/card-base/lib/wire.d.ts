@@ -109,11 +109,15 @@ export interface LoraUploadAnswer {
  * @param file - the browser File the operator picked or dropped.
  * @param opts - the family shelf id (REQUIRED — one family = the
  *  shelf law's `<loras>/<family>/` placement; absent refuses before
- *  any byte is spent) and the operator's default strength (banded
- *  0–2 at the door; absent = 1).
+ *  any byte is spent), the operator's default strength (banded
+ *  0–2 at the door; absent = 1), and the operator's RENAMED file
+ *  name (the add-lora menu's rename field: the door seats the row
+ *  under this one-segment filename, so the rename is a real re-key,
+ *  never a display alias over the original bytes' name).
  * @returns the seated row's combo name + defaults. */
 export declare function uploadLoraDoor(file: File, opts: {
     families?: string;
     strength?: number;
+    name?: string;
 }): Promise<LoraUploadAnswer>;
 //# sourceMappingURL=wire.d.ts.map

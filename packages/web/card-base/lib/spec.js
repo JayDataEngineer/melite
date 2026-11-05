@@ -132,9 +132,21 @@ export function modOwnedFields(spec) {
     return owned;
 }
 /** Is this kind an OPTION kind (lora-shaped: served catalog rows) —
- *  as opposed to a FIELD kind (mask-shaped: its own param fields)? */
+ *  as opposed to a FIELD kind (mask-shaped: its own param fields)?
+ *
+ *  THE DECLARED ENTRY WINS THE EMPTY ROSTER (2026-11-15, the
+ *  operator's Fibo LoRA burn: "The Fibo lora is freeform text").
+ *  The element SHAPE is the declaration: a kind served
+ *  `entry:'option'` is a catalog pick + the scalar + the row's own
+ *  steps whether or not the roster currently carries rows. Judging by
+ *  `options.length` alone flipped an empty-roster kind into the FIELD
+ *  leaf, which derived the envelope's root dict as fields and rendered
+ *  the BAG PARAM ITSELF as a freeform input — the operator typed at a
+ *  box the compose door refuses (`unknown-lora`). An empty roster is a
+ *  roster STATE (upload the first row from the leaf's own upload seat,
+ *  then the refreshed spec carries it), never a different control. */
 export function isOptionKind(k) {
-    return (k.options ?? []).length > 0;
+    return k.entry === 'option' || (k.options ?? []).length > 0;
 }
 /** THE HYBRID TEST (the served entry mode — never the kind name):
  *  catalog rows AND bag-element entry fields. */

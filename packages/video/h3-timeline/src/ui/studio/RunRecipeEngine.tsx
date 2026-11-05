@@ -124,8 +124,8 @@ export function RunRecipeEngine({
     // revalidate: the picker serves the new id in the SAME session.
     ...(spec !== null
       ? {
-          uploadLora: (file: File, opts: { strength?: number }) =>
-            uploadLoraDoor(file, { families: resolveFamilyKey(spec), strength: opts.strength }),
+          uploadLora: (file: File, opts: { strength?: number, name?: string }) =>
+            uploadLoraDoor(file, { families: resolveFamilyKey(spec), ...opts }),
           refreshSpec: refresh,
         }
       : {}),

@@ -165,6 +165,7 @@ export interface SquareWire {
      *  one. */
     uploadLora?: (file: File, opts: {
         strength?: number;
+        name?: string;
     }) => Promise<{
         /** the seated combo name '<family>/<file>' — the bag entry's id */
         id: string;

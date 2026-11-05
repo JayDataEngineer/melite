@@ -1097,9 +1097,10 @@ function ModLeaf(props: {
   loadChainRuns?: (signal: AbortSignal) => Promise<ChainRunCandidate[]>
   /** THE LORA UPLOAD SOURCE (2026-11-15): the host's estate
    *  transport with its own family resolution; absent → the
-   *  OPTION-kind leaf renders no upload affordance (the degrade
-   *  law). */
-  uploadLora?: (file: File, opts: { strength?: number }) => Promise<{
+   *  OPTION-kind leaf renders no add-lora menu (the degrade law).
+   *  `name` is the add-lora menu's RENAME (the door seats the row
+   *  under it); absent = the picked file's own name. */
+  uploadLora?: (file: File, opts: { strength?: number, name?: string }) => Promise<{
     id: string
     default_strength?: number
     row_seated: boolean
@@ -1124,23 +1125,62 @@ function ModLeaf(props: {
   const { leaf, onDraft, onSave, onDelete, leafError } = props
   const k = leaf.kind
   const hidden = props.hideFields
-  // THE HAND-UPLOAD GESTURE (2026-11-15, the operator's feature: "add
-  // a button to upload a LORA and setting default strength — an
-  // alternative to the AI doing it via upload"): the file rides the
-  // host's wire (the door POSTs raw octet-stream bytes and seats the
-  // row itself — LAND = SEATED, no restart); the answer's combo name
-  // IS the bag id (never a hand-spelled one); the stale-while-
-  // revalidate refresh re-serves the picker so the row is pickable in
-  // the SAME session. Absent wire = no affordance at all (the
-  // degrade law, below).
+  // THE HAND-UPLOAD MENU (2026-11-15, the operator's layout order:
+  // "the strength and the lora picker ... on the same row. I also
+  // need the 'add lora' gated behind the button next to apply. That
+  // way, it is a seperate menu, with a back button and you can
+  // upload, rename, and set default strength, then hit apply."):
+  // the pick face owns ONE row (picker + strength); the upload is
+  // its OWN pane inside the same leaf — file, rename, default
+  // strength — entered from the add-lora button beside Apply and
+  // left by Back (discarding the pending file) or Apply (uploading
+  // it and re-opening the pick face with the new row seated). The
+  // file rides the host's wire (the door POSTs raw octet-stream
+  // bytes and seats the row itself — LAND = SEATED, no restart);
+  // the answer's combo name IS the bag id (never a hand-spelled
+  // one); the stale-while-revalidate refresh re-serves the picker so
+  // the row is pickable in the SAME session. Absent wire = no
+  // add-lora button at all (the degrade law, below).
+  const [leafPane, setLeafPane] = useState<'pick' | 'upload'>('pick')
+  const [pendingFile, setPendingFile] = useState<File | null>(null)
+  const [uploadName, setUploadName] = useState('')
   const [uploadStrength, setUploadStrength] = useState('')
   const [uploadBusy, setUploadBusy] = useState(false)
-  const runUpload = (file: File): void => {
+  /** the picked file's own suffix — a stem rename keeps it (the
+   *  door's one-segment filename IS the seated row's id). */
+  const uploadExt = (): string =>
+    pendingFile === null ? '' : (/\.[A-Za-z0-9]+$/.exec(pendingFile.name)?.[0] ?? '')
+  /** the menu's file pick: DEFERRED — nothing rides the wire until
+   *  Apply (the rename + default strength are authored first). */
+  const pickUpload = (file: File): void => {
+    setPendingFile(file)
+    setUploadName(file.name)
+    props.onError(null)
+  }
+  /** Back: leave the upload pane empty-handed — the pending file is
+   *  discarded, never silently half-committed. */
+  const leaveUpload = (): void => {
+    setLeafPane('pick')
+    setPendingFile(null)
+    setUploadName('')
+    setUploadStrength('')
+  }
+  const applyUpload = (): void => {
     const wire = props.uploadLora
-    if (wire === undefined || uploadBusy) return
+    if (wire === undefined || uploadBusy || pendingFile === null) return
     setUploadBusy(true)
     const n = Number(uploadStrength)
-    void wire(file, { ...(uploadStrength !== '' && Number.isFinite(n) ? { strength: n } : {}) })
+    const ext = uploadExt()
+    const typed = uploadName.trim()
+    const stem = typed === '' ? pendingFile.name : typed
+    // THE RENAME KEEPS THE EXTENSION: the door seats the row under
+    // this filename, so a typed stem rides the picked file's suffix
+    // (typing the suffix too is idempotent, never doubled).
+    const name = ext === '' || stem.toLowerCase().endsWith(ext.toLowerCase()) ? stem : stem + ext
+    void wire(pendingFile, {
+      ...(uploadStrength !== '' && Number.isFinite(n) ? { strength: n } : {}),
+      ...(name !== pendingFile.name ? { name } : {}),
+    })
       .then(async (answer) => {
         if (answer.row_seated) {
           // the seated combo name is the id the bag commits; blank
@@ -1150,6 +1190,12 @@ function ModLeaf(props: {
           onDraft.setDraftStrength('')
           props.onError(null)
           if (props.refreshSpec !== undefined) await props.refreshSpec()
+          // the pick face re-opens with the new row seated — the
+          // operator never hunts for the menu they just left
+          setLeafPane('pick')
+          setPendingFile(null)
+          setUploadName('')
+          setUploadStrength('')
         } else {
           props.onError(answer.refusal ?? chromeCopy.loraUploadRefusedNote)
         }
@@ -1205,8 +1251,17 @@ function ModLeaf(props: {
       ? { ...onDraft.draftParams, bbox_x: -1, bbox_y: -1, bbox_w: -1, bbox_h: -1 }
       : { ...onDraft.draftParams, bbox_x: Math.round(b.x), bbox_y: Math.round(b.y), bbox_w: Math.round(b.width), bbox_h: Math.round(b.height) })
   }
+  // THE BAG IS THE SEAT, NEVER A FIELD (2026-11-15, the operator's
+  // Fibo LoRA burn): the envelope's root dict carries the bag param
+  // itself (`loras`, `mask`) beside the entry's own knobs. The leaf
+  // EDITS that bag — rendering it as a row asked the operator to type
+  // the whole bag as text ("The Fibo lora is freeform text"), and the
+  // compose door refuses every such literal (`unknown-lora`). Excluded
+  // by IDENTITY against the served param_key, never by a kind name: a
+  // bag container is a bag container on every pack.
   const leafFields: SpecField[] = (k.fields ?? []).filter((f) =>
-    !(hidden?.has(f.name) ?? false) && !(facePresent && f.faceOwned === true))
+    f.name !== k.param_key
+    && !(hidden?.has(f.name) ?? false) && !(facePresent && f.faceOwned === true))
   // THE CONDITIONAL-REQUIRED STAR (2026-10-12, the sam3 prompt law):
   // the leaf's captions hand-roll — the star paints HERE too, judged
   // against the draft's own sibling values (the same fieldRequired
@@ -1231,6 +1286,11 @@ function ModLeaf(props: {
       ...(props.loadMedia !== undefined ? { loadMedia: props.loadMedia } : {}),
     },
   )
+  // THE KIND GATE, READ ONCE (the option leaf's own branch AND the
+  // actions row's add-lora button judge the SAME answer — a second
+  // read would re-judge a catalog the estate may withdraw mid-render;
+  // the vanishing-rows arms count this read).
+  const optionKind = isOptionKind(k)
   return h('div', { className: css.modLeaf },
     leafError !== null ? h('p', { className: css.modLeafError }, leafError) : null,
     isHybridKind(k)
@@ -1302,71 +1362,123 @@ function ModLeaf(props: {
             }),
           own.wireMenu,
         )
-      : isOptionKind(k)
-      ? h('div', { className: css.modLeafFields },
-          // THE CATALOG SELECT binds the row id in BOTH modes (the
-          // hybrid leaf's own symmetry; F4's repair path, 2026-10-31):
-          // a keyless legacy row re-keys by picking a served row, a
-          // drifted id stays VISIBLE, marked unregistered, and the
-          // save follows the select (never a silent blank).
-          // S7i: same idiom, same rows — the hybrid leaf's picker is
-          // the construct seat's twin (F4's symmetry)
-          h('div', { className: css.modField },
-            h('span', null, k.label),
-            h(SpecMenuSelect, {
-              label: k.label,
-              value: onDraft.draftOption,
-              rows: catalogRows(k, onDraft.draftOption),
-              onPick: (id: string) => { onDraft.setDraftOption(id) },
-            }),
-          ),
-          h('label', { className: css.modField },
-            'Strength',
-            h(Input, {
-              type: 'number',
-              step: '0.05',
-              value: onDraft.draftStrength,
-              placeholder: chromeCopy.rowDefaultPlaceholder,
-              onChange: (e: { target: { value: string } }) => { onDraft.setDraftStrength(e.target.value) },
-            }),
-          ),
-          // THE HAND-UPLOAD ROW (2026-11-15, the operator's feature):
-          // the catalog never being the whole world — a lora the
-          // operator already HAS on their machine uploads from the
-          // leaf itself (the Manager sidebar's gesture, seated where
-          // the bag is authored). The wire is host-injected; absent
-          // host = no row (the degrade law — never a hidden fetch).
-          // The pick face IS the square (InputSquare owns the hidden
-          // picker AND OS drops — the F4 law: no hand-rolled file
-          // input beside the square); the dial seats the ROW's
-          // default strength (0–2, blank = the door's 1); per-use
-          // strength stays the dial above.
-          props.uploadLora !== undefined
-            ? h('div', {
-                className: css.modField,
-                'data-testid': 'mod-lora-upload',
-                title: chromeCopy.loraUploadHint,
-              },
-              h(InputSquare, {
-                label: chromeCopy.loraUploadVerb,
-                onFile: runUpload,
-                accept: '.safetensors,.ckpt,.pt,.bin,.gguf',
-                disabled: uploadBusy,
-              }),
-              h(Input, {
-                type: 'number',
-                step: '0.05',
-                min: '0',
-                max: '2',
-                'aria-label': chromeCopy.loraUploadStrengthLabel,
-                title: chromeCopy.loraUploadStrengthTitle,
-                placeholder: chromeCopy.loraUploadStrengthPlaceholder,
-                value: uploadStrength,
-                disabled: uploadBusy,
-                onChange: (e: { target: { value: string } }) => { setUploadStrength(e.target.value) },
-              }),
+      : optionKind
+      ? (() => {
+          const pickRows = catalogRows(k, onDraft.draftOption)
+          // the empty roster is the PICKER's state, never a second
+          // control: catalogRows carries the placeholder alone when
+          // the catalog serves nothing
+          const emptyRoster = pickRows.length === 1
+          // ── THE ADD-LORA PANE (the operator's layout order,
+          // 2026-11-15: "'add lora' gated behind the button next to
+          // apply. That way, it is a seperate menu, with a back
+          // button and you can upload, rename, and set default
+          // strength, then hit apply") — the bag's pick face stays
+          // one compact row; the upload is a deliberate MENU entered
+          // from the actions row and left by Back / Apply. The file
+          // is DEFERRED here: nothing rides the wire until Apply.
+          if (leafPane === 'upload') {
+            return h('div', { className: css.modLeafFields, 'data-leaf-pane': 'upload' },
+              h('div', { className: css.modFieldPair },
+                h('div', {
+                  className: css.modField,
+                  'data-testid': 'mod-lora-upload',
+                  title: chromeCopy.loraUploadHint,
+                },
+                h(InputSquare, {
+                  label: chromeCopy.loraUploadVerb,
+                  onFile: pickUpload,
+                  accept: '.safetensors,.ckpt,.pt,.bin,.gguf',
+                  disabled: uploadBusy,
+                }),
+                pendingFile !== null
+                  ? h('span', { className: css.modLeafHint, 'data-upload-picked': pendingFile.name }, pendingFile.name)
+                  : null,
+                ),
+                h('label', { className: css.modField },
+                  chromeCopy.loraUploadStrengthLabel,
+                  h(Input, {
+                    type: 'number',
+                    step: '0.05',
+                    min: '0',
+                    max: '2',
+                    'aria-label': chromeCopy.loraUploadStrengthLabel,
+                    title: chromeCopy.loraUploadStrengthTitle,
+                    placeholder: chromeCopy.loraUploadStrengthPlaceholder,
+                    value: uploadStrength,
+                    disabled: uploadBusy,
+                    onChange: (e: { target: { value: string } }) => { setUploadStrength(e.target.value) },
+                  }),
+                ),
+              ),
+              // THE RENAME: the file's name on the engine's shelf —
+              // the id the picker commits after the upload. A text
+              // box is the RIGHT seat HERE (naming your own file is
+              // authoring, not catalog selection — the pick face
+              // stays picker-only, the operator's LoRA law above).
+              h('label', { className: css.modField },
+                chromeCopy.loraNameLabel,
+                h(Input, {
+                  type: 'text',
+                  'aria-label': chromeCopy.loraNameLabel,
+                  placeholder: chromeCopy.loraNamePlaceholder,
+                  value: uploadName,
+                  disabled: uploadBusy || pendingFile === null,
+                  onChange: (e: { target: { value: string } }) => { setUploadName(e.target.value) },
+                }),
+              ),
             )
-            : null,
+          }
+          // ── THE PICK PANE — ONE ROW (the operator's order: "I need
+          // the strength and the lora picker to be on the same row"):
+          // the catalog IS the seat (the picker never becomes a text
+          // box, empty roster included — the Fibo burn's cure), the
+          // dial beside it is the use's strength.
+          return h('div', { className: css.modLeafFields, 'data-leaf-pane': 'pick' },
+            // THE ONE-ROW SEAT: the bag is authored in one glance —
+            // the picker takes the width, the strength dial keeps its
+            // intrinsic width.
+            h('div', { className: css.modFieldPair },
+              // THE CATALOG SELECT binds the row id in BOTH modes (the
+              // hybrid leaf's own symmetry; F4's repair path, 2026-10-31):
+              // a keyless legacy row re-keys by picking a served row, a
+              // drifted id stays VISIBLE, marked unregistered, and the
+              // save follows the select (never a silent blank).
+              // S7i: same idiom, same rows — the hybrid leaf's picker is
+              // the construct seat's twin (F4's symmetry)
+              //
+              // THE EMPTY ROSTER IS STILL THE PICKER (2026-11-15, the
+              // operator's Fibo LoRA burn — "I think the trigger is when
+              // it has 0 loras available"): with no rows served the seat
+              // renders the picker's OWN empty face alone, never a
+              // freeform box. The face names the state; the pick stays
+              // impossible until a row exists, which is the truth (the
+              // compose door refuses any unseated name). The add-lora
+              // menu beside Apply is where a row comes from.
+              h('div', { className: css.modField },
+                h('span', null, k.label),
+                h(SpecMenuSelect, {
+                  label: k.label,
+                  value: onDraft.draftOption,
+                  rows: pickRows,
+                  ...(emptyRoster ? { face: chromeCopy.optionRosterEmptyFace } : {}),
+                  onPick: (id: string) => { onDraft.setDraftOption(id) },
+                }),
+              ),
+              h('label', { className: css.modField },
+                'Strength',
+                h(Input, {
+                  type: 'number',
+                  step: '0.05',
+                  value: onDraft.draftStrength,
+                  placeholder: chromeCopy.rowDefaultPlaceholder,
+                  onChange: (e: { target: { value: string } }) => { onDraft.setDraftStrength(e.target.value) },
+                }),
+              ),
+            ),
+            emptyRoster
+              ? h('p', { className: css.modHint, 'data-mod-roster-empty': k.param_key }, chromeCopy.optionRosterEmptyHint)
+              : null,
           // STEPS APPLIED (2026-09-18, the operator's plaguekind
           // law): option kinds whose served rows carry a distill
           // step count render the row here — one lora for four
@@ -1406,7 +1518,8 @@ function ModLeaf(props: {
               )
               })()
             : null,
-        )
+          )
+        })()
       : // THE ACTION-CARD SPLIT (the operator's 2026-10-08 law: the
         // leaf is "based on the action card package, instead of one
         // long vertical stack" — the SAME grammar as CardDrill's
@@ -1571,10 +1684,32 @@ function ModLeaf(props: {
         )]
       : []),
     h('div', { className: css.modLeafActions },
-      h(Button, { variant: 'primary', onClick: onSave }, leaf.mode === 'create' ? 'Add' : 'Save'),
-      leaf.mode === 'edit'
-        ? h(Button, { variant: 'ghost', onClick: onDelete }, 'Remove')
-        : null,
+      // ── THE ADD-LORA MENU'S OWN ACTION PAIR (the operator's layout
+      // order, 2026-11-15: the upload menu carries "a back button"
+      // and the operator "hit[s] apply"): Back discards the pending
+      // file; Apply is the commit — disabled until a file is picked
+      // (nothing to upload otherwise).
+      optionKind && props.uploadLora !== undefined && leafPane === 'upload'
+        ? [h(Button, { key: 'back', variant: 'ghost', onClick: leaveUpload }, chromeCopy.loraBackButton),
+            h(Button, {
+              key: 'apply-upload',
+              variant: 'primary',
+              onClick: applyUpload,
+              ...(pendingFile === null || uploadBusy ? { disabled: true } : {}),
+            }, chromeCopy.loraApplyButton)]
+        : [
+            h(Button, { key: 'save', variant: 'primary', onClick: onSave }, leaf.mode === 'create' ? 'Add' : 'Save'),
+            leaf.mode === 'edit'
+              ? h(Button, { key: 'remove', variant: 'ghost', onClick: onDelete }, 'Remove')
+              : null,
+            // THE ADD-LORA DOOR (the operator's order: "'add lora'
+            // gated behind the button next to apply"): the upload is
+            // its own menu — this button opens it, the pick face
+            // never carries the file square inline.
+            optionKind && props.uploadLora !== undefined
+              ? h(Button, { key: 'add-lora', variant: 'ghost', onClick: () => { setLeafPane('upload') } }, chromeCopy.loraAddButton)
+              : null,
+          ],
     ),
   )
 }

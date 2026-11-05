@@ -1370,8 +1370,8 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     loadChainRuns: fetchChainRunCandidates,
     ...(spec !== null
       ? {
-          uploadLora: (file: File, opts: { strength?: number }) =>
-            uploadLoraDoor(file, { families: resolveFamilyKey(spec), strength: opts.strength }),
+          uploadLora: (file: File, opts: { strength?: number, name?: string }) =>
+            uploadLoraDoor(file, { families: resolveFamilyKey(spec), ...opts }),
           refreshSpec: async (): Promise<void> => {
             const held = specRef.current
             if (held === null) return

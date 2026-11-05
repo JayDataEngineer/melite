@@ -266,12 +266,15 @@ export interface LoraUploadAnswer {
  * @param file - the browser File the operator picked or dropped.
  * @param opts - the family shelf id (REQUIRED — one family = the
  *  shelf law's `<loras>/<family>/` placement; absent refuses before
- *  any byte is spent) and the operator's default strength (banded
- *  0–2 at the door; absent = 1).
+ *  any byte is spent), the operator's default strength (banded
+ *  0–2 at the door; absent = 1), and the operator's RENAMED file
+ *  name (the add-lora menu's rename field: the door seats the row
+ *  under this one-segment filename, so the rename is a real re-key,
+ *  never a display alias over the original bytes' name).
  * @returns the seated row's combo name + defaults. */
 export async function uploadLoraDoor(
   file: File,
-  opts: { families?: string, strength?: number },
+  opts: { families?: string, strength?: number, name?: string },
 ): Promise<LoraUploadAnswer> {
   // THE FAMILY IS REQUIRED (the completeness audit's fail-fast,
   // 2026-11-15): an absent family would ride the door's FLAT arm —
@@ -282,7 +285,11 @@ export async function uploadLoraDoor(
   if (opts.families === undefined || opts.families === '') {
     throw new Error('upload refused: the host must pass the card\'s family (families is empty — the row would never seat)')
   }
-  const qs = new URLSearchParams({ filename: file.name, families: opts.families })
+  // THE RENAMED FILENAME RIDES THE DOOR'S OWN PARAM (the add-lora
+  // menu's rename field): `filename` is the row's seat law on the
+  // door, so a rename is a re-key of the id itself — the bytes keep
+  // their content, the row is served under the typed name.
+  const qs = new URLSearchParams({ filename: opts.name ?? file.name, families: opts.families })
   if (opts.strength !== undefined) qs.set('strength', String(opts.strength))
   const res = await fetch('/v1/uploads/lora?' + qs.toString(), {
     method: 'POST',

@@ -21254,7 +21254,7 @@ window.__ModuleLoader__.load({
 				...spec !== null ? {
 					uploadLora: (file, opts) => (0, _melite_card_base_client.uploadLoraDoor)(file, {
 						families: (0, _melite_card_base_client.resolveFamilyKey)(spec),
-						strength: opts.strength
+						...opts
 					}),
 					refreshSpec: async () => {
 						const held = specRef.current;

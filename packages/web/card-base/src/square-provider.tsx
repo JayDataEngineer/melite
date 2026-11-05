@@ -498,7 +498,7 @@ export interface SquareWire {
    *  hidden fetch). The answer carries the SEATED combo name — the
    *  bag entry's id is always the door's name, never a hand-spelled
    *  one. */
-  uploadLora?: (file: File, opts: { strength?: number }) => Promise<{
+  uploadLora?: (file: File, opts: { strength?: number, name?: string }) => Promise<{
     /** the seated combo name '<family>/<file>' — the bag entry's id */
     id: string
     default_strength?: number

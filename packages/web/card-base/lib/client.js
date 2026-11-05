@@ -9457,6 +9457,35 @@ window.__ModuleLoader__.load({
 			*  Toast's inline action seat — the press retires the toast now,
 			*  ahead of its auto-retire clock. */
 			dismissToast: "Dismiss",
+			/** Option-kind picker's EMPTY-ROSTER face (2026-11-15, the
+			*  operator's Fibo LoRA burn: an empty roster rendered a freeform
+			*  text box instead of the picker). The seat states the state and
+			*  points at the upload seat beside it — never a typing box. */
+			optionRosterEmptyFace: "None seated yet",
+			/** Option-kind picker's empty-roster hint, under the face: where a
+			*  row comes from (the add-lora menu beside Apply; the engine's own
+			*  shelf). */
+			optionRosterEmptyHint: "This card has no entries to pick from yet — press Add LoRA beside Apply to upload one and it seats here without a restart. A typed name is never accepted: the run refuses a LoRA the engine does not have.",
+			/** The add-lora menu's door (2026-11-15, the operator's layout
+			*  order: the upload sits behind a button NEXT TO Apply, so the
+			*  bag's pick face stays one compact row and the upload is a
+			*  deliberate menu of its own). */
+			loraAddButton: "Add LoRA…",
+			/** The add-lora menu's back action: leave the upload pane without
+			*  uploading (the pending file is discarded, never silently
+			*  half-committed). */
+			loraBackButton: "Back",
+			/** The add-lora menu's commit action: upload the picked file with
+			*  the typed name + default strength, then re-open the pick face. */
+			loraApplyButton: "Apply",
+			/** The add-lora menu's rename field: the file's name on the
+			*  engine's shelf — the id the picker commits after the upload. */
+			loraNameLabel: "Name",
+			/** Rename field's placeholder: the picked file's own name. */
+			loraNamePlaceholder: "the picked file’s name",
+			/** Rename field's hover law: what the name becomes (the row id)
+			*  and that the picked file's extension rides it. */
+			loraNameHint: "The name the uploaded row seats under — this becomes the id the picker commits. The picked file’s extension always rides it.",
 			/** Lora hand-upload verb (2026-11-15, the operator's feature): the
 			*  mods-plane ghost row that opens the OS file dialog. */
 			loraUploadVerb: "Upload a LoRA…",
@@ -9608,9 +9637,21 @@ window.__ModuleLoader__.load({
 			return owned;
 		}
 		/** Is this kind an OPTION kind (lora-shaped: served catalog rows) —
-		*  as opposed to a FIELD kind (mask-shaped: its own param fields)? */
+		*  as opposed to a FIELD kind (mask-shaped: its own param fields)?
+		*
+		*  THE DECLARED ENTRY WINS THE EMPTY ROSTER (2026-11-15, the
+		*  operator's Fibo LoRA burn: "The Fibo lora is freeform text").
+		*  The element SHAPE is the declaration: a kind served
+		*  `entry:'option'` is a catalog pick + the scalar + the row's own
+		*  steps whether or not the roster currently carries rows. Judging by
+		*  `options.length` alone flipped an empty-roster kind into the FIELD
+		*  leaf, which derived the envelope's root dict as fields and rendered
+		*  the BAG PARAM ITSELF as a freeform input — the operator typed at a
+		*  box the compose door refuses (`unknown-lora`). An empty roster is a
+		*  roster STATE (upload the first row from the leaf's own upload seat,
+		*  then the refreshed spec carries it), never a different control. */
 		function isOptionKind(k) {
-			return (k.options ?? []).length > 0;
+			return k.entry === "option" || (k.options ?? []).length > 0;
 		}
 		/** THE HYBRID TEST (the served entry mode — never the kind name):
 		*  catalog rows AND bag-element entry fields. */
@@ -11152,8 +11193,8 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:packages/web/card-base/src/card.module.css.mjs
-		const css$4 = ".emezXW_specForm :where(input,textarea,select,button){box-sizing:border-box}.emezXW_specForm{flex-direction:column;gap:12px;display:flex}.emezXW_specGroup{flex-direction:column;gap:8px;display:flex}.emezXW_modelAxes{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;display:grid}.emezXW_modelAxes .emezXW_specGroupTitle{grid-column:1/-1;margin-bottom:0}.emezXW_modelAxes>.emezXW_specHint{grid-column:1/-1}.emezXW_axesPair{grid-column:1/-1;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start;gap:10px;display:grid}.emezXW_axesPair>*{min-width:0}.emezXW_specGroupTitle{color:var(--dsw-alias-label-secondary);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.emezXW_specField{flex-direction:column;gap:6px;display:flex}.emezXW_specFieldKey{color:var(--dsw-alias-label-secondary);align-items:center;min-height:20px;font-size:12px;display:flex}.emezXW_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.emezXW_specHint{color:var(--dsw-alias-label-secondary);font-size:11px}.emezXW_laneWarn{border-top:1px solid var(--dsw-alias-state-critical,#e5484d);border-bottom:1px solid var(--dsw-alias-state-critical,#e5484d);color:var(--dsw-alias-state-critical,#e5484d);margin:0;padding:6px 0;font-size:11px;line-height:1.5}.emezXW_laneWarn p{margin:0}.emezXW_specInfo{border:1px solid var(--dsw-alias-label-secondary);width:12px;height:12px;color:var(--dsw-alias-label-secondary);cursor:help;vertical-align:middle;user-select:none;border-radius:50%;flex:none;justify-content:center;align-items:center;margin-left:5px;font-family:Georgia,Times New Roman,serif;font-size:9px;font-style:italic;line-height:1;display:inline-flex}.emezXW_specFieldHead{justify-content:space-between;align-items:center;gap:6px;display:flex}.emezXW_specDice{width:20px;height:20px;color:var(--dsw-alias-label-secondary);cursor:pointer;opacity:.65;background:0 0;border:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.emezXW_specDice:hover{opacity:1}.emezXW_specDiceOn{color:var(--dsw-alias-accent-primary,#4a7dbd);opacity:1}select option{color:canvastext;background:canvas}.emezXW_specSelect{color-scheme:light;background:var(--dsw-alias-interactive-bg-hover);border:.5px solid var(--dsw-alias-border-l2);box-sizing:border-box;color:inherit;font:inherit;text-overflow:ellipsis;white-space:nowrap;border-radius:6px;width:100%;min-width:0;padding:5px 8px;font-size:13px;display:block;overflow:hidden}.emezXW_specSelectText{text-overflow:ellipsis;white-space:nowrap;min-width:0;display:block;overflow:hidden}.emezXW_specSelectStatic{cursor:default;justify-content:center;display:flex}.emezXW_specSliderRow{align-items:center;gap:8px;display:flex}.emezXW_specSlider{accent-color:var(--dsw-alias-accent,#3b82f6);flex:1}.emezXW_specSliderInput{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;width:7ch;min-width:6ch;font-size:12px}.emezXW_specSliderValue{color:var(--dsw-alias-label-secondary);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.emezXW_specSliderZero{color:var(--dsw-alias-label-secondary);white-space:nowrap;text-overflow:ellipsis;max-width:22ch;font-size:11px;overflow:hidden}.emezXW_specTextarea{background:var(--dsw-alias-interactive-bg-hover);border:.5px solid var(--dsw-alias-border-l2);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.emezXW_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.emezXW_squareOff{opacity:.5;pointer-events:none}.emezXW_squareBox{border:.5px solid var(--dsw-alias-border-l2);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.emezXW_squareOver{border-color:var(--dsw-alias-border-l3);box-shadow:0 0 0 2px var(--dsw-alias-border-l1)}.emezXW_squareThumb{object-fit:cover;width:100%;height:100%}.emezXW_squareMesh{pointer-events:none;position:absolute;inset:0}.emezXW_squareGlyph{color:var(--dsw-alias-label-tertiary)}.emezXW_squareEmptyIcon{align-items:center;display:flex}.emezXW_squareHeld{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;max-width:100%;font-size:9px;overflow:hidden}.emezXW_squareActions{pointer-events:none;justify-content:flex-end;align-items:flex-end;padding:4px;display:flex;position:absolute;inset:0}.emezXW_squareActions>*{pointer-events:auto}.emezXW_squarePick{background:var(--dsw-alias-interactive-bg-hover-solid);border:.5px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;border-radius:999px;justify-content:center;align-items:center;width:22px;height:22px;padding:0;display:flex;position:absolute;top:4px;left:4px}.emezXW_squareBadge{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;max-width:100%;font-size:10px;line-height:17px;overflow:hidden}.emezXW_squareX{background:var(--dsw-alias-interactive-bg-hover-solid);border:.5px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.emezXW_squareLabel{color:var(--dsw-alias-label-primary);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.emezXW_squareMetric{color:var(--dsw-alias-label-tertiary);font-size:10px;line-height:17px}.emezXW_squareFileInput{display:none}.emezXW_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.emezXW_modHead{align-items:baseline;gap:8px;display:flex}.emezXW_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.emezXW_modHint{opacity:.45;font-size:9px}.emezXW_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.emezXW_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.emezXW_modTile:active{cursor:grabbing}.emezXW_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.emezXW_modTileStrength{opacity:.55;font-size:9px}.emezXW_modTileSteps{opacity:.55;font-variant-numeric:tabular-nums;font-size:9px}.emezXW_modAddSquare{border:1px dashed var(--dsw-alias-border-l3);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out), background-color var(--ds-transition-duration) var(--ds-ease-in-out);background:0 0;border-radius:8px;justify-content:center;align-items:center;width:64px;display:flex}.emezXW_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4);opacity:1}.emezXW_tileDragging{opacity:.5}.emezXW_modTileRecipe{cursor:default;border-style:dashed}.emezXW_modTileRecipe .emezXW_modTileStrength:after{content:\" · recipe\"}.emezXW_specChips{flex-wrap:wrap;gap:4px;display:flex}.emezXW_modLeafModal{width:min(760px,100vw - 32px);max-height:min(80vh,760px);overflow-y:auto}.emezXW_modLeafSplit{grid-template-columns:minmax(0,7fr) minmax(240px,5fr);align-items:start;gap:12px;display:grid}.emezXW_modLeafStage{min-width:0}.emezXW_modStageCaption{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}@media (width<=720px){.emezXW_modLeafSplit{grid-template-columns:minmax(0,1fr)}}.emezXW_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.emezXW_modLeafFields{gap:8px;display:grid}.emezXW_modLeafActions{gap:8px;display:flex}.emezXW_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.emezXW_modLeafError{color:#e06c5f;margin:0;font-size:11px}.emezXW_modLeafHint{opacity:.65;font-size:11px}.emezXW_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.emezXW_pickRow{display:block}.emezXW_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out), background-color var(--ds-transition-duration) var(--ds-ease-in-out);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.emezXW_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.emezXW_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.emezXW_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.emezXW_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.emezXW_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.emezXW_sourceRow{flex-direction:column;display:flex}.emezXW_sourceRowErr{color:#e06c5f;word-break:break-word;margin:2px 0 0;font-size:11px}.emezXW_sourceRowBusy{color:var(--dsw-alias-label-secondary);word-break:break-word;margin:2px 0 0;font-size:11px}.emezXW_specSlotRow{flex-wrap:wrap;align-items:flex-start;gap:8px;display:flex}.emezXW_specGrid{align-items:start;gap:8px;display:grid}.emezXW_specSlotCell{flex-direction:column;gap:4px;display:flex}.emezXW_inputRail{gap:10px}.emezXW_specStack{flex-direction:column;gap:6px;display:flex}[data-stack-add] .emezXW_squareBox{border-style:dashed}.emezXW_sz14{flex:none;width:14px;height:14px}.emezXW_wireDialog{width:min(448px,100vw - 32px);max-height:60vh;overflow-y:auto}.emezXW_wireUnwire{text-align:left;cursor:pointer;border:0;border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);width:100%;color:var(--dsw-alias-state-error-primary);background:0 0;align-items:center;gap:8px;padding:8px 12px;font-size:11px;display:flex}.emezXW_wireUnwire:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.emezXW_wireList{margin:0;padding:0;list-style:none}.emezXW_wireList>li+li{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent)}.emezXW_wireEmpty{color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);padding:12px;font-size:11px}.emezXW_wireOption{text-align:left;cursor:pointer;width:100%;color:var(--dsw-alias-label-primary);background:0 0;border:0;align-items:center;gap:8px;padding:8px 12px;display:flex}.emezXW_wireOption:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.emezXW_wireSelected{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent)}.emezXW_wireIdx{font-variant-numeric:tabular-nums;background:color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;font-size:9px;font-weight:700;display:flex}.emezXW_wireThumb{object-fit:cover;border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);border-radius:4px;flex:none;width:32px;height:32px}.emezXW_wireThumbFallback{border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;display:flex}.emezXW_wireMeta{flex:1;min-width:0}.emezXW_wireTitle{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-primary);font-size:11px;font-weight:500;overflow:hidden}.emezXW_wireOut{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);margin-left:4px;font-size:9px}.emezXW_wireSub{text-overflow:ellipsis;white-space:nowrap;font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);font-size:9px;overflow:hidden}.emezXW_wiredTag{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);color:var(--dsw-alias-brand-primary);border-radius:4px;flex:none;padding:2px 6px;font-size:9px;font-weight:600}.emezXW_specLinkBtn{font:inherit;cursor:pointer;color:var(--dsw-alias-state-business-primary);background:0 0;border:none;padding:0;text-decoration:underline}.emezXW_specLinkBtn:disabled{cursor:default;color:var(--dsw-alias-label-tertiary);text-decoration:none}.emezXW_specGrid :where(input,select){width:100%}.emezXW_tipAnchor{display:inline-flex}.emezXW_tipFill{display:block}.emezXW_ctlRow,.emezXW_ctlRowSm{color:var(--dsw-alias-label-secondary);justify-content:space-between;align-items:center;gap:8px;font-size:10px;display:flex}.emezXW_ctlRow select,.emezXW_ctlRowSm select{font-size:10px}.emezXW_sectionLabel{justify-content:space-between;align-items:baseline;gap:8px;display:flex}.emezXW_sectionLabelText{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.emezXW_sectionLabelTail{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.emezXW_emptyPane,.emezXW_emptyOverlay{text-align:center;flex-direction:column;justify-content:center;align-items:center;gap:6px;display:flex}.emezXW_emptyPane{box-sizing:border-box;width:100%;height:100%;padding:24px 0}.emezXW_emptyOverlay{pointer-events:none;padding:24px;position:absolute;inset:0}.emezXW_emptyTitle{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px;font-weight:500}.emezXW_emptyHint{color:var(--dsw-alias-label-tertiary);max-width:25rem;margin:0;font-size:10px;line-height:1.6}.emezXW_paneHeaderPreview{flex:none;align-items:baseline;gap:6px;padding-bottom:6px;display:flex}.emezXW_paneHeaderStrip{border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);align-items:center;gap:8px;padding:4px 10px;display:flex}.emezXW_paneTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:10px;font-weight:600}.emezXW_paneMeta{color:var(--dsw-alias-label-tertiary);font-size:9px}.emezXW_paneMetaNum{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.emezXW_paneHint{color:var(--dsw-alias-label-tertiary);margin-left:auto;font-size:9px}.emezXW_paneShell{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);border-radius:6px;flex:none;overflow:hidden}@keyframes emezXW_panePulse{0%,to{opacity:1}50%{opacity:.45}}.emezXW_skeleton{background:color-mix(in srgb, var(--dsw-alias-label-secondary) 22%, transparent);border-radius:6px;animation:1.6s ease-in-out infinite emezXW_panePulse}.emezXW_pickSearch{margin:0 0 8px}.emezXW_pickSearchInput{background:var(--dsw-alias-interactive-bg-default,transparent);border:1px solid var(--dsw-alias-border-l2);box-sizing:border-box;color:var(--dsw-alias-label-primary);border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.emezXW_pickSearchInput:focus{border-color:var(--dsw-alias-border-l4);outline:none}";
-		const tagId$4 = "@melite/card-base/card.module.css@4ce55dbc";
+		const css$4 = ".emezXW_specForm :where(input,textarea,select,button){box-sizing:border-box}.emezXW_specForm{flex-direction:column;gap:12px;display:flex}.emezXW_specGroup{flex-direction:column;gap:8px;display:flex}.emezXW_modelAxes{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;display:grid}.emezXW_modelAxes .emezXW_specGroupTitle{grid-column:1/-1;margin-bottom:0}.emezXW_modelAxes>.emezXW_specHint{grid-column:1/-1}.emezXW_axesPair{grid-column:1/-1;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start;gap:10px;display:grid}.emezXW_axesPair>*{min-width:0}.emezXW_specGroupTitle{color:var(--dsw-alias-label-secondary);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.emezXW_specField{flex-direction:column;gap:6px;display:flex}.emezXW_specFieldKey{color:var(--dsw-alias-label-secondary);align-items:center;min-height:20px;font-size:12px;display:flex}.emezXW_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.emezXW_specHint{color:var(--dsw-alias-label-secondary);font-size:11px}.emezXW_laneWarn{border-top:1px solid var(--dsw-alias-state-critical,#e5484d);border-bottom:1px solid var(--dsw-alias-state-critical,#e5484d);color:var(--dsw-alias-state-critical,#e5484d);margin:0;padding:6px 0;font-size:11px;line-height:1.5}.emezXW_laneWarn p{margin:0}.emezXW_specInfo{border:1px solid var(--dsw-alias-label-secondary);width:12px;height:12px;color:var(--dsw-alias-label-secondary);cursor:help;vertical-align:middle;user-select:none;border-radius:50%;flex:none;justify-content:center;align-items:center;margin-left:5px;font-family:Georgia,Times New Roman,serif;font-size:9px;font-style:italic;line-height:1;display:inline-flex}.emezXW_specFieldHead{justify-content:space-between;align-items:center;gap:6px;display:flex}.emezXW_specDice{width:20px;height:20px;color:var(--dsw-alias-label-secondary);cursor:pointer;opacity:.65;background:0 0;border:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.emezXW_specDice:hover{opacity:1}.emezXW_specDiceOn{color:var(--dsw-alias-accent-primary,#4a7dbd);opacity:1}select option{color:canvastext;background:canvas}.emezXW_specSelect{color-scheme:light;background:var(--dsw-alias-interactive-bg-hover);border:.5px solid var(--dsw-alias-border-l2);box-sizing:border-box;color:inherit;font:inherit;text-overflow:ellipsis;white-space:nowrap;border-radius:6px;width:100%;min-width:0;padding:5px 8px;font-size:13px;display:block;overflow:hidden}.emezXW_specSelectText{text-overflow:ellipsis;white-space:nowrap;min-width:0;display:block;overflow:hidden}.emezXW_specSelectStatic{cursor:default;justify-content:center;display:flex}.emezXW_specSliderRow{align-items:center;gap:8px;display:flex}.emezXW_specSlider{accent-color:var(--dsw-alias-accent,#3b82f6);flex:1}.emezXW_specSliderInput{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;width:7ch;min-width:6ch;font-size:12px}.emezXW_specSliderValue{color:var(--dsw-alias-label-secondary);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.emezXW_specSliderZero{color:var(--dsw-alias-label-secondary);white-space:nowrap;text-overflow:ellipsis;max-width:22ch;font-size:11px;overflow:hidden}.emezXW_specTextarea{background:var(--dsw-alias-interactive-bg-hover);border:.5px solid var(--dsw-alias-border-l2);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.emezXW_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.emezXW_squareOff{opacity:.5;pointer-events:none}.emezXW_squareBox{border:.5px solid var(--dsw-alias-border-l2);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.emezXW_squareOver{border-color:var(--dsw-alias-border-l3);box-shadow:0 0 0 2px var(--dsw-alias-border-l1)}.emezXW_squareThumb{object-fit:cover;width:100%;height:100%}.emezXW_squareMesh{pointer-events:none;position:absolute;inset:0}.emezXW_squareGlyph{color:var(--dsw-alias-label-tertiary)}.emezXW_squareEmptyIcon{align-items:center;display:flex}.emezXW_squareHeld{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;max-width:100%;font-size:9px;overflow:hidden}.emezXW_squareActions{pointer-events:none;justify-content:flex-end;align-items:flex-end;padding:4px;display:flex;position:absolute;inset:0}.emezXW_squareActions>*{pointer-events:auto}.emezXW_squarePick{background:var(--dsw-alias-interactive-bg-hover-solid);border:.5px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;border-radius:999px;justify-content:center;align-items:center;width:22px;height:22px;padding:0;display:flex;position:absolute;top:4px;left:4px}.emezXW_squareBadge{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;max-width:100%;font-size:10px;line-height:17px;overflow:hidden}.emezXW_squareX{background:var(--dsw-alias-interactive-bg-hover-solid);border:.5px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.emezXW_squareLabel{color:var(--dsw-alias-label-primary);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.emezXW_squareMetric{color:var(--dsw-alias-label-tertiary);font-size:10px;line-height:17px}.emezXW_squareFileInput{display:none}.emezXW_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.emezXW_modHead{align-items:baseline;gap:8px;display:flex}.emezXW_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.emezXW_modHint{opacity:.45;font-size:9px}.emezXW_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.emezXW_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.emezXW_modTile:active{cursor:grabbing}.emezXW_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.emezXW_modTileStrength{opacity:.55;font-size:9px}.emezXW_modTileSteps{opacity:.55;font-variant-numeric:tabular-nums;font-size:9px}.emezXW_modAddSquare{border:1px dashed var(--dsw-alias-border-l3);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out), background-color var(--ds-transition-duration) var(--ds-ease-in-out);background:0 0;border-radius:8px;justify-content:center;align-items:center;width:64px;display:flex}.emezXW_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4);opacity:1}.emezXW_tileDragging{opacity:.5}.emezXW_modTileRecipe{cursor:default;border-style:dashed}.emezXW_modTileRecipe .emezXW_modTileStrength:after{content:\" · recipe\"}.emezXW_specChips{flex-wrap:wrap;gap:4px;display:flex}.emezXW_modLeafModal{width:min(760px,100vw - 32px);max-height:min(80vh,760px);overflow-y:auto}.emezXW_modLeafSplit{grid-template-columns:minmax(0,7fr) minmax(240px,5fr);align-items:start;gap:12px;display:grid}.emezXW_modLeafStage{min-width:0}.emezXW_modStageCaption{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}@media (width<=720px){.emezXW_modLeafSplit{grid-template-columns:minmax(0,1fr)}}.emezXW_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.emezXW_modLeafFields{gap:8px;display:grid}.emezXW_modLeafActions{gap:8px;display:flex}.emezXW_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.emezXW_modFieldPair{align-items:flex-end;gap:8px;display:flex}.emezXW_modFieldPair>.emezXW_modField{flex:1;min-width:0}.emezXW_modFieldPair>.emezXW_modField:last-child{flex:0 0 96px}.emezXW_modLeafError{color:#e06c5f;margin:0;font-size:11px}.emezXW_modLeafHint{opacity:.65;font-size:11px}.emezXW_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.emezXW_pickRow{display:block}.emezXW_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out), background-color var(--ds-transition-duration) var(--ds-ease-in-out);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.emezXW_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.emezXW_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.emezXW_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.emezXW_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.emezXW_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.emezXW_sourceRow{flex-direction:column;display:flex}.emezXW_sourceRowErr{color:#e06c5f;word-break:break-word;margin:2px 0 0;font-size:11px}.emezXW_sourceRowBusy{color:var(--dsw-alias-label-secondary);word-break:break-word;margin:2px 0 0;font-size:11px}.emezXW_specSlotRow{flex-wrap:wrap;align-items:flex-start;gap:8px;display:flex}.emezXW_specGrid{align-items:start;gap:8px;display:grid}.emezXW_specSlotCell{flex-direction:column;gap:4px;display:flex}.emezXW_inputRail{gap:10px}.emezXW_specStack{flex-direction:column;gap:6px;display:flex}[data-stack-add] .emezXW_squareBox{border-style:dashed}.emezXW_sz14{flex:none;width:14px;height:14px}.emezXW_wireDialog{width:min(448px,100vw - 32px);max-height:60vh;overflow-y:auto}.emezXW_wireUnwire{text-align:left;cursor:pointer;border:0;border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);width:100%;color:var(--dsw-alias-state-error-primary);background:0 0;align-items:center;gap:8px;padding:8px 12px;font-size:11px;display:flex}.emezXW_wireUnwire:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.emezXW_wireList{margin:0;padding:0;list-style:none}.emezXW_wireList>li+li{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent)}.emezXW_wireEmpty{color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);padding:12px;font-size:11px}.emezXW_wireOption{text-align:left;cursor:pointer;width:100%;color:var(--dsw-alias-label-primary);background:0 0;border:0;align-items:center;gap:8px;padding:8px 12px;display:flex}.emezXW_wireOption:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.emezXW_wireSelected{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent)}.emezXW_wireIdx{font-variant-numeric:tabular-nums;background:color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;font-size:9px;font-weight:700;display:flex}.emezXW_wireThumb{object-fit:cover;border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);border-radius:4px;flex:none;width:32px;height:32px}.emezXW_wireThumbFallback{border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;display:flex}.emezXW_wireMeta{flex:1;min-width:0}.emezXW_wireTitle{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-primary);font-size:11px;font-weight:500;overflow:hidden}.emezXW_wireOut{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);margin-left:4px;font-size:9px}.emezXW_wireSub{text-overflow:ellipsis;white-space:nowrap;font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);font-size:9px;overflow:hidden}.emezXW_wiredTag{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);color:var(--dsw-alias-brand-primary);border-radius:4px;flex:none;padding:2px 6px;font-size:9px;font-weight:600}.emezXW_specLinkBtn{font:inherit;cursor:pointer;color:var(--dsw-alias-state-business-primary);background:0 0;border:none;padding:0;text-decoration:underline}.emezXW_specLinkBtn:disabled{cursor:default;color:var(--dsw-alias-label-tertiary);text-decoration:none}.emezXW_specGrid :where(input,select){width:100%}.emezXW_tipAnchor{display:inline-flex}.emezXW_tipFill{display:block}.emezXW_ctlRow,.emezXW_ctlRowSm{color:var(--dsw-alias-label-secondary);justify-content:space-between;align-items:center;gap:8px;font-size:10px;display:flex}.emezXW_ctlRow select,.emezXW_ctlRowSm select{font-size:10px}.emezXW_sectionLabel{justify-content:space-between;align-items:baseline;gap:8px;display:flex}.emezXW_sectionLabelText{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.emezXW_sectionLabelTail{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.emezXW_emptyPane,.emezXW_emptyOverlay{text-align:center;flex-direction:column;justify-content:center;align-items:center;gap:6px;display:flex}.emezXW_emptyPane{box-sizing:border-box;width:100%;height:100%;padding:24px 0}.emezXW_emptyOverlay{pointer-events:none;padding:24px;position:absolute;inset:0}.emezXW_emptyTitle{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px;font-weight:500}.emezXW_emptyHint{color:var(--dsw-alias-label-tertiary);max-width:25rem;margin:0;font-size:10px;line-height:1.6}.emezXW_paneHeaderPreview{flex:none;align-items:baseline;gap:6px;padding-bottom:6px;display:flex}.emezXW_paneHeaderStrip{border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);align-items:center;gap:8px;padding:4px 10px;display:flex}.emezXW_paneTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:10px;font-weight:600}.emezXW_paneMeta{color:var(--dsw-alias-label-tertiary);font-size:9px}.emezXW_paneMetaNum{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.emezXW_paneHint{color:var(--dsw-alias-label-tertiary);margin-left:auto;font-size:9px}.emezXW_paneShell{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);border-radius:6px;flex:none;overflow:hidden}@keyframes emezXW_panePulse{0%,to{opacity:1}50%{opacity:.45}}.emezXW_skeleton{background:color-mix(in srgb, var(--dsw-alias-label-secondary) 22%, transparent);border-radius:6px;animation:1.6s ease-in-out infinite emezXW_panePulse}.emezXW_pickSearch{margin:0 0 8px}.emezXW_pickSearchInput{background:var(--dsw-alias-interactive-bg-default,transparent);border:1px solid var(--dsw-alias-border-l2);box-sizing:border-box;color:var(--dsw-alias-label-primary);border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.emezXW_pickSearchInput:focus{border-color:var(--dsw-alias-border-l4);outline:none}";
+		const tagId$4 = "@melite/card-base/card.module.css@a7a94ef8";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$4) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/card-base";
@@ -11173,6 +11214,7 @@ window.__ModuleLoader__.load({
 			"laneWarn": "emezXW_laneWarn",
 			"modAddSquare": "emezXW_modAddSquare",
 			"modField": "emezXW_modField",
+			"modFieldPair": "emezXW_modFieldPair",
 			"modHead": "emezXW_modHead",
 			"modHint": "emezXW_modHint",
 			"modLeaf": "emezXW_modLeaf",
@@ -13869,13 +13911,16 @@ window.__ModuleLoader__.load({
 		* @param file - the browser File the operator picked or dropped.
 		* @param opts - the family shelf id (REQUIRED — one family = the
 		*  shelf law's `<loras>/<family>/` placement; absent refuses before
-		*  any byte is spent) and the operator's default strength (banded
-		*  0–2 at the door; absent = 1).
+		*  any byte is spent), the operator's default strength (banded
+		*  0–2 at the door; absent = 1), and the operator's RENAMED file
+		*  name (the add-lora menu's rename field: the door seats the row
+		*  under this one-segment filename, so the rename is a real re-key,
+		*  never a display alias over the original bytes' name).
 		* @returns the seated row's combo name + defaults. */
 		async function uploadLoraDoor(file, opts) {
 			if (opts.families === void 0 || opts.families === "") throw new Error("upload refused: the host must pass the card's family (families is empty — the row would never seat)");
 			const qs = new URLSearchParams({
-				filename: file.name,
+				filename: opts.name ?? file.name,
 				families: opts.families
 			});
 			if (opts.strength !== void 0) qs.set("strength", String(opts.strength));
@@ -16346,19 +16391,51 @@ window.__ModuleLoader__.load({
 			const { leaf, onDraft, onSave, onDelete, leafError } = props;
 			const k = leaf.kind;
 			const hidden = props.hideFields;
+			const [leafPane, setLeafPane] = (0, react.useState)("pick");
+			const [pendingFile, setPendingFile] = (0, react.useState)(null);
+			const [uploadName, setUploadName] = (0, react.useState)("");
 			const [uploadStrength, setUploadStrength] = (0, react.useState)("");
 			const [uploadBusy, setUploadBusy] = (0, react.useState)(false);
-			const runUpload = (file) => {
+			/** the picked file's own suffix — a stem rename keeps it (the
+			*  door's one-segment filename IS the seated row's id). */
+			const uploadExt = () => pendingFile === null ? "" : /\.[A-Za-z0-9]+$/.exec(pendingFile.name)?.[0] ?? "";
+			/** the menu's file pick: DEFERRED — nothing rides the wire until
+			*  Apply (the rename + default strength are authored first). */
+			const pickUpload = (file) => {
+				setPendingFile(file);
+				setUploadName(file.name);
+				props.onError(null);
+			};
+			/** Back: leave the upload pane empty-handed — the pending file is
+			*  discarded, never silently half-committed. */
+			const leaveUpload = () => {
+				setLeafPane("pick");
+				setPendingFile(null);
+				setUploadName("");
+				setUploadStrength("");
+			};
+			const applyUpload = () => {
 				const wire = props.uploadLora;
-				if (wire === void 0 || uploadBusy) return;
+				if (wire === void 0 || uploadBusy || pendingFile === null) return;
 				setUploadBusy(true);
 				const n = Number(uploadStrength);
-				wire(file, { ...uploadStrength !== "" && Number.isFinite(n) ? { strength: n } : {} }).then(async (answer) => {
+				const ext = uploadExt();
+				const typed = uploadName.trim();
+				const stem = typed === "" ? pendingFile.name : typed;
+				const name = ext === "" || stem.toLowerCase().endsWith(ext.toLowerCase()) ? stem : stem + ext;
+				wire(pendingFile, {
+					...uploadStrength !== "" && Number.isFinite(n) ? { strength: n } : {},
+					...name !== pendingFile.name ? { name } : {}
+				}).then(async (answer) => {
 					if (answer.row_seated) {
 						onDraft.setDraftOption(answer.id);
 						onDraft.setDraftStrength("");
 						props.onError(null);
 						if (props.refreshSpec !== void 0) await props.refreshSpec();
+						setLeafPane("pick");
+						setPendingFile(null);
+						setUploadName("");
+						setUploadStrength("");
 					} else props.onError(answer.refusal ?? chromeCopy.loraUploadRefusedNote);
 				}).catch((e) => {
 					props.onError(rejectionVoice(e));
@@ -16411,7 +16488,7 @@ window.__ModuleLoader__.load({
 					bbox_h: Math.round(b.height)
 				});
 			};
-			const leafFields = (k.fields ?? []).filter((f) => !(hidden?.has(f.name) ?? false) && !(facePresent && f.faceOwned === true));
+			const leafFields = (k.fields ?? []).filter((f) => f.name !== k.param_key && !(hidden?.has(f.name) ?? false) && !(facePresent && f.faceOwned === true));
 			const leafStar = (f) => fieldRequired(f, onDraft.draftParams) ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null;
 			const own = useSquareProvider((name, v) => {
 				onDraft.setDraftParams({
@@ -16423,6 +16500,7 @@ window.__ModuleLoader__.load({
 				...props.candidatesFor !== void 0 ? { candidatesFor: props.candidatesFor } : {},
 				...props.loadMedia !== void 0 ? { loadMedia: props.loadMedia } : {}
 			});
+			const optionKind = isOptionKind(k);
 			return (0, react.createElement)("div", { className: card_module_css_default.modLeaf }, leafError !== null ? (0, react.createElement)("p", { className: card_module_css_default.modLeafError }, leafError) : null, isHybridKind(k) ? (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, (0, react.createElement)("div", { className: card_module_css_default.modField }, (0, react.createElement)("span", null, k.label), (0, react.createElement)(SpecMenuSelect, {
 				label: k.label,
 				value: onDraft.draftOption,
@@ -16460,69 +16538,96 @@ window.__ModuleLoader__.load({
 					key: f.name,
 					className: card_module_css_default.modField
 				}, caption, atom);
-			}), own.wireMenu) : isOptionKind(k) ? (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, (0, react.createElement)("div", { className: card_module_css_default.modField }, (0, react.createElement)("span", null, k.label), (0, react.createElement)(SpecMenuSelect, {
-				label: k.label,
-				value: onDraft.draftOption,
-				rows: catalogRows(k, onDraft.draftOption),
-				onPick: (id) => {
-					onDraft.setDraftOption(id);
-				}
-			})), (0, react.createElement)("label", { className: card_module_css_default.modField }, "Strength", (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
-				type: "number",
-				step: "0.05",
-				value: onDraft.draftStrength,
-				placeholder: chromeCopy.rowDefaultPlaceholder,
-				onChange: (e) => {
-					onDraft.setDraftStrength(e.target.value);
-				}
-			})), props.uploadLora !== void 0 ? (0, react.createElement)("div", {
-				className: card_module_css_default.modField,
-				"data-testid": "mod-lora-upload",
-				title: chromeCopy.loraUploadHint
-			}, (0, react.createElement)(InputSquare, {
-				label: chromeCopy.loraUploadVerb,
-				onFile: runUpload,
-				accept: ".safetensors,.ckpt,.pt,.bin,.gguf",
-				disabled: uploadBusy
-			}), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
-				type: "number",
-				step: "0.05",
-				min: "0",
-				max: "2",
-				"aria-label": chromeCopy.loraUploadStrengthLabel,
-				title: chromeCopy.loraUploadStrengthTitle,
-				placeholder: chromeCopy.loraUploadStrengthPlaceholder,
-				value: uploadStrength,
-				disabled: uploadBusy,
-				onChange: (e) => {
-					setUploadStrength(e.target.value);
-				}
-			})) : null, (k.options ?? []).some((o) => typeof o.defaults?.steps === "number") ? (() => {
-				const rowOpts = k.options ?? [];
-				const activeRow = rowOpts.find((o) => o.value === onDraft.draftOption) ?? rowOpts[0];
-				const rMin = activeRow?.defaults?.steps_min;
-				const rMax = activeRow?.defaults?.steps_max;
-				const rangeText = typeof rMin === "number" && typeof rMax === "number" && rMin !== rMax ? chromeCopy.stepsRange({
-					min: rMin,
-					max: rMax
-				}) : typeof activeRow?.defaults?.steps === "number" ? chromeCopy.fixedAtSteps({ steps: activeRow.defaults.steps }) : "";
-				return (0, react.createElement)("label", { className: card_module_css_default.modField }, chromeCopy.stepsAppliedLabel + rangeText, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
-					"aria-label": chromeCopy.stepsAppliedLabel,
+			}), own.wireMenu) : optionKind ? (() => {
+				const pickRows = catalogRows(k, onDraft.draftOption);
+				const emptyRoster = pickRows.length === 1;
+				if (leafPane === "upload") return (0, react.createElement)("div", {
+					className: card_module_css_default.modLeafFields,
+					"data-leaf-pane": "upload"
+				}, (0, react.createElement)("div", { className: card_module_css_default.modFieldPair }, (0, react.createElement)("div", {
+					className: card_module_css_default.modField,
+					"data-testid": "mod-lora-upload",
+					title: chromeCopy.loraUploadHint
+				}, (0, react.createElement)(InputSquare, {
+					label: chromeCopy.loraUploadVerb,
+					onFile: pickUpload,
+					accept: ".safetensors,.ckpt,.pt,.bin,.gguf",
+					disabled: uploadBusy
+				}), pendingFile !== null ? (0, react.createElement)("span", {
+					className: card_module_css_default.modLeafHint,
+					"data-upload-picked": pendingFile.name
+				}, pendingFile.name) : null), (0, react.createElement)("label", { className: card_module_css_default.modField }, chromeCopy.loraUploadStrengthLabel, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
 					type: "number",
-					step: "1",
-					min: typeof rMin === "number" ? String(rMin) : void 0,
-					max: typeof rMax === "number" ? String(rMax) : void 0,
-					value: onDraft.draftSteps,
-					placeholder: String(activeRow?.defaults?.steps ?? ""),
-					title: typeof rMin === "number" && typeof rMax === "number" && rMin !== rMax ? chromeCopy.adapterRangeTitle({
+					step: "0.05",
+					min: "0",
+					max: "2",
+					"aria-label": chromeCopy.loraUploadStrengthLabel,
+					title: chromeCopy.loraUploadStrengthTitle,
+					placeholder: chromeCopy.loraUploadStrengthPlaceholder,
+					value: uploadStrength,
+					disabled: uploadBusy,
+					onChange: (e) => {
+						setUploadStrength(e.target.value);
+					}
+				}))), (0, react.createElement)("label", { className: card_module_css_default.modField }, chromeCopy.loraNameLabel, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+					type: "text",
+					"aria-label": chromeCopy.loraNameLabel,
+					placeholder: chromeCopy.loraNamePlaceholder,
+					value: uploadName,
+					disabled: uploadBusy || pendingFile === null,
+					onChange: (e) => {
+						setUploadName(e.target.value);
+					}
+				})));
+				return (0, react.createElement)("div", {
+					className: card_module_css_default.modLeafFields,
+					"data-leaf-pane": "pick"
+				}, (0, react.createElement)("div", { className: card_module_css_default.modFieldPair }, (0, react.createElement)("div", { className: card_module_css_default.modField }, (0, react.createElement)("span", null, k.label), (0, react.createElement)(SpecMenuSelect, {
+					label: k.label,
+					value: onDraft.draftOption,
+					rows: pickRows,
+					...emptyRoster ? { face: chromeCopy.optionRosterEmptyFace } : {},
+					onPick: (id) => {
+						onDraft.setDraftOption(id);
+					}
+				})), (0, react.createElement)("label", { className: card_module_css_default.modField }, "Strength", (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+					type: "number",
+					step: "0.05",
+					value: onDraft.draftStrength,
+					placeholder: chromeCopy.rowDefaultPlaceholder,
+					onChange: (e) => {
+						onDraft.setDraftStrength(e.target.value);
+					}
+				}))), emptyRoster ? (0, react.createElement)("p", {
+					className: card_module_css_default.modHint,
+					"data-mod-roster-empty": k.param_key
+				}, chromeCopy.optionRosterEmptyHint) : null, (k.options ?? []).some((o) => typeof o.defaults?.steps === "number") ? (() => {
+					const rowOpts = k.options ?? [];
+					const activeRow = rowOpts.find((o) => o.value === onDraft.draftOption) ?? rowOpts[0];
+					const rMin = activeRow?.defaults?.steps_min;
+					const rMax = activeRow?.defaults?.steps_max;
+					const rangeText = typeof rMin === "number" && typeof rMax === "number" && rMin !== rMax ? chromeCopy.stepsRange({
 						min: rMin,
 						max: rMax
-					}) : chromeCopy.distillStepsTitle,
-					onChange: (e) => {
-						onDraft.setDraftSteps(e.target.value);
-					}
-				}));
-			})() : null) : bboxCanvas || paintField !== void 0 || orbitCanvas ? (0, react.createElement)("div", { className: card_module_css_default.modLeafSplit }, (0, react.createElement)("div", {
+					}) : typeof activeRow?.defaults?.steps === "number" ? chromeCopy.fixedAtSteps({ steps: activeRow.defaults.steps }) : "";
+					return (0, react.createElement)("label", { className: card_module_css_default.modField }, chromeCopy.stepsAppliedLabel + rangeText, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+						"aria-label": chromeCopy.stepsAppliedLabel,
+						type: "number",
+						step: "1",
+						min: typeof rMin === "number" ? String(rMin) : void 0,
+						max: typeof rMax === "number" ? String(rMax) : void 0,
+						value: onDraft.draftSteps,
+						placeholder: String(activeRow?.defaults?.steps ?? ""),
+						title: typeof rMin === "number" && typeof rMax === "number" && rMin !== rMax ? chromeCopy.adapterRangeTitle({
+							min: rMin,
+							max: rMax
+						}) : chromeCopy.distillStepsTitle,
+						onChange: (e) => {
+							onDraft.setDraftSteps(e.target.value);
+						}
+					}));
+				})() : null);
+			})() : bboxCanvas || paintField !== void 0 || orbitCanvas ? (0, react.createElement)("div", { className: card_module_css_default.modLeafSplit }, (0, react.createElement)("div", {
 				className: card_module_css_default.modLeafStage,
 				"data-leaf-stage": bboxCanvas ? "bbox" : orbitCanvas ? "orbit" : "paint"
 			}, bboxCanvas && props.bboxFace !== void 0 ? (0, react.createElement)("div", {
@@ -16628,13 +16733,34 @@ window.__ModuleLoader__.load({
 				onEdit: (name, v) => {
 					props.kindScalars.onCommit(f, name, v);
 				}
-			}))))] : [], (0, react.createElement)("div", { className: card_module_css_default.modLeafActions }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-				variant: "primary",
-				onClick: onSave
-			}, leaf.mode === "create" ? "Add" : "Save"), leaf.mode === "edit" ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+			}))))] : [], (0, react.createElement)("div", { className: card_module_css_default.modLeafActions }, optionKind && props.uploadLora !== void 0 && leafPane === "upload" ? [(0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				key: "back",
 				variant: "ghost",
-				onClick: onDelete
-			}, "Remove") : null));
+				onClick: leaveUpload
+			}, chromeCopy.loraBackButton), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				key: "apply-upload",
+				variant: "primary",
+				onClick: applyUpload,
+				...pendingFile === null || uploadBusy ? { disabled: true } : {}
+			}, chromeCopy.loraApplyButton)] : [
+				(0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+					key: "save",
+					variant: "primary",
+					onClick: onSave
+				}, leaf.mode === "create" ? "Add" : "Save"),
+				leaf.mode === "edit" ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+					key: "remove",
+					variant: "ghost",
+					onClick: onDelete
+				}, "Remove") : null,
+				optionKind && props.uploadLora !== void 0 ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+					key: "add-lora",
+					variant: "ghost",
+					onClick: () => {
+						setLeafPane("upload");
+					}
+				}, chromeCopy.loraAddButton) : null
+			]));
 		}
 		/** One mod tile (the original, verbatim: useSortable + click to
 		*  edit + strength to 2 decimals). */

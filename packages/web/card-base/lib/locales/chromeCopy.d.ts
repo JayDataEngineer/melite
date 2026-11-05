@@ -222,6 +222,35 @@ export declare const chromeCopy: {
      *  Toast's inline action seat — the press retires the toast now,
      *  ahead of its auto-retire clock. */
     readonly dismissToast: "Dismiss";
+    /** Option-kind picker's EMPTY-ROSTER face (2026-11-15, the
+     *  operator's Fibo LoRA burn: an empty roster rendered a freeform
+     *  text box instead of the picker). The seat states the state and
+     *  points at the upload seat beside it — never a typing box. */
+    readonly optionRosterEmptyFace: "None seated yet";
+    /** Option-kind picker's empty-roster hint, under the face: where a
+     *  row comes from (the add-lora menu beside Apply; the engine's own
+     *  shelf). */
+    readonly optionRosterEmptyHint: "This card has no entries to pick from yet — press Add LoRA beside Apply to upload one and it seats here without a restart. A typed name is never accepted: the run refuses a LoRA the engine does not have.";
+    /** The add-lora menu's door (2026-11-15, the operator's layout
+     *  order: the upload sits behind a button NEXT TO Apply, so the
+     *  bag's pick face stays one compact row and the upload is a
+     *  deliberate menu of its own). */
+    readonly loraAddButton: "Add LoRA…";
+    /** The add-lora menu's back action: leave the upload pane without
+     *  uploading (the pending file is discarded, never silently
+     *  half-committed). */
+    readonly loraBackButton: "Back";
+    /** The add-lora menu's commit action: upload the picked file with
+     *  the typed name + default strength, then re-open the pick face. */
+    readonly loraApplyButton: "Apply";
+    /** The add-lora menu's rename field: the file's name on the
+     *  engine's shelf — the id the picker commits after the upload. */
+    readonly loraNameLabel: "Name";
+    /** Rename field's placeholder: the picked file's own name. */
+    readonly loraNamePlaceholder: "the picked file’s name";
+    /** Rename field's hover law: what the name becomes (the row id)
+     *  and that the picked file's extension rides it. */
+    readonly loraNameHint: "The name the uploaded row seats under — this becomes the id the picker commits. The picked file’s extension always rides it.";
     /** Lora hand-upload verb (2026-11-15, the operator's feature): the
      *  mods-plane ghost row that opens the OS file dialog. */
     readonly loraUploadVerb: "Upload a LoRA…";

@@ -375,6 +375,13 @@ select option {
 .modLeafFields { display: grid; gap: 8px; }
 .modLeafActions { display: flex; gap: 8px; }
 .modField { display: flex; flex-direction: column; gap: 4px; font-size: 11px; }
+/* THE ONE-ROW SEAT (2026-11-15, the operator's layout order: "the
+ * strength and the lora picker ... on the same row"): two fields share
+ * a row — the picker takes the width, the strength dial keeps its
+ * intrinsic width; both bottoms align so the inputs line up. */
+.modFieldPair { display: flex; gap: 8px; align-items: flex-end; }
+.modFieldPair > .modField { flex: 1; min-width: 0; }
+.modFieldPair > .modField:last-child { flex: 0 0 96px; }
 .modLeafError { margin: 0; font-size: 11px; color: #e06c5f; }
 .modLeafHint { font-size: 11px; opacity: .65; }
 

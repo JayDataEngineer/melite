@@ -63,6 +63,14 @@ import { mcpFormDoc } from '@melite/engine-mcp/formDoc'
  *  single-source law without a second declaration). */
 type McpToolRows = Parameters<typeof mcpFormDoc>[0]['tools']
 
+/** THE MODIFIER-PACK GRAMMAR, re-served (2026-11-15, the operator's
+ *  LoRA-select law: "there is no reason we can't have a red if any
+ *  lora mod across the entire melite system renders as freeform
+ *  text"). The WEB wall that renders every lora seat needs the SAME
+ *  table this door's form-spec serve reads — one table, two
+ *  consumers, never a copy (discovery.ts's own doctrine, 022). */
+export { MODIFIER_PACKS } from './discovery.ts'
+
 export const inject = ['webServer', 'llm', 'tools']
 
 /** Door config — same spelling as the tool plane's. */

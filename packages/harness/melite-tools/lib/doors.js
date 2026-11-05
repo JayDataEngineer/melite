@@ -19,6 +19,13 @@ import { craftFormDoc } from '@melite/engine-craft';
 // schemastery-only — the barrel pulls mcp-engine's dsh-llm/dsh-tools
 // d.ts into rolldown's declaration walk and the emit dies.
 import { mcpFormDoc } from '@melite/engine-mcp/formDoc';
+/** THE MODIFIER-PACK GRAMMAR, re-served (2026-11-15, the operator's
+ *  LoRA-select law: "there is no reason we can't have a red if any
+ *  lora mod across the entire melite system renders as freeform
+ *  text"). The WEB wall that renders every lora seat needs the SAME
+ *  table this door's form-spec serve reads — one table, two
+ *  consumers, never a copy (discovery.ts's own doctrine, 022). */
+export { MODIFIER_PACKS } from "./discovery.js";
 export const inject = ['webServer', 'llm', 'tools'];
 /** The shipped default: the operator's named card model. */
 export const DEFAULT_ENHANCE_PREFERENCE = 'muse-spark-1.3-contributor';
