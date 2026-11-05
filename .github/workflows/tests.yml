@@ -9,13 +9,16 @@ on:
 permissions:
   contents: read
 
-# THE PORTABILITY SEAT (2026-09-25): the unit battery runs on all three
-# runner families. That is only possible because the media probe is
-# TypeScript — `melite_view` reads a container's boxes in-repo
-# (packages/harness/melite-tools/src/tools/mp4Probe.ts) instead of
-# shelling out to ffprobe, so the suite declares no host binary and no
-# Linux-only package. If a future change reintroduces a subprocess, this
-# matrix is what catches it.
+# THE PORTABILITY SEAT (2026-09-25; recut 2026-11-05): macOS and Windows
+# judge the PUBLISHED SURFACE — the packages this repo ships to npm/GitHub
+# for DSH consumers (`packages/*/*/tests`, `packages/*/*/test`). The
+# repo-internal walls tier (tests/walls/ts/suites) asserts against
+# Linux-coupled repo/engine/submodule trees and self-skips loudly where a
+# host cannot judge it; running it on every OS produced only that skip
+# noise and reds (2026-11-05 tip: 24/24 suite failures were walls, zero
+# package specs). Ubuntu keeps the full battery. If a future change
+# reintroduces a host binary into a PUBLISHED package, the macOS/Windows
+# package legs still catch it.
 jobs:
   unit:
     name: unit (vitest, ${{ matrix.os }})
@@ -74,8 +77,26 @@ jobs:
             echo "$UNTRACKED"
             exit 1
           fi
-      - name: Unit
+      # THE PUBLISHED-SURFACE SPLIT (2026-11-05, operator order: "why
+      # do we test against different systems?"). The 2026-09-25
+      # portability seat ran the WHOLE battery — walls included — on
+      # all three OSes to catch a reintroduced host binary. The
+      # evidence says it caught something else: on the 2026-11-05 tip
+      # all 24 failing suites were tests/walls/ts/suites/* (zero
+      # package specs), i.e. the repo-internal walls tier asserting
+      # against Linux-coupled repo/engine/submodule trees. The walls
+      # tier's own law is keyless self-skip when the host cannot
+      # judge it — which hollowed the canary exactly where it was
+      # supposed to fire. The portable product is the 76 packages
+      # published to npm/GitHub (the DSH consumer surface); those are
+      # what macOS/Windows judge. Ubuntu keeps the full battery, walls
+      # included, where they are judgeable.
+      - name: Unit (full battery)
+        if: matrix.os == 'ubuntu-latest'
         run: pnpm run test
+      - name: Unit (published surface — portability seat)
+        if: matrix.os != 'ubuntu-latest'
+        run: node node_modules/vitest/dist/cli.js run packages/
 
   # THE TYPECHECK SEAT (cruft row 2): one ubuntu job owns the whole
   # typecheck wall — the src net (every packages/* tsconfig, tsc
