@@ -55,6 +55,34 @@ function metaRecordOf(value: unknown): Record<string, unknown> | undefined {
   return Object.keys(record).length > 0 ? record : undefined
 }
 
+/** The restored run's produced-names census (the h3 history-load
+ *  audit's cure 5, upstream-linked slots): the sidecar's
+ *  flow.artifacts paths, media-only (mediaKindOf is the only
+ *  classifier on this plane), keyed by run-relative tail (runTailOf's
+ *  one grammar) → the gallery route. A restored row that LOST its
+ *  result (the explicit-null clear) still names what the run
+ *  produced, so a ctx-key reference to an upstream stage's product
+ *  resolves after the reload (useFilmAudio's index floor). Name-only:
+ *  no hero url, no assetUrls — the map rides the ROW, never a result,
+ *  so no restored face renders tiles off it (the tiles-remain-mid-run
+ *  law) and a cleared face stays the EmptyState face. */
+function censusMapOf(flow: Record<string, unknown> | null): Record<string, string> | undefined {
+  const arts = flow?.['artifacts']
+  if (!Array.isArray(arts)) return undefined
+  const route = (tail: string): string => '/infer-gallery/artifact?path=' + encodeURIComponent(tail)
+  const map: Record<string, string> = {}
+  for (const a of arts) {
+    // renderable products only — the text kind (json/txt sidecars) is
+    // not a slot a downstream card resolves
+    const kind = typeof a === 'string' ? mediaKindOf(a) : undefined
+    if (kind === undefined || kind === 'text') continue
+    const tail = runTailOf(a)
+    if (tail === undefined || map[tail] !== undefined) continue
+    map[tail] = route(tail)
+  }
+  return Object.keys(map).length > 0 ? map : undefined
+}
+
 /** The bench tab's address for one session (cross-plugin contract,
  * the estate-artifact pattern: client bundles cannot import across
  * plugins, so the form is restated with its definition site named —
@@ -480,6 +508,18 @@ export async function loadRunOntoBench(runId: string, deps: BenchLoadDeps): Prom
           const skippedRaw: unknown = (side as Record<string, unknown>)['skipped_stages']
           const skipped: unknown[] = Array.isArray(skippedRaw) ? skippedRaw : []
           const isSkipped = skipped.some((k) => k === st['id'])
+          // THE RESTORED CENSUS RIDES EVERY ROW (the h3 history-load
+          // audit's cure 5, upstream-linked slots): the run's
+          // produced-names map stamps each restored row — the KEPT
+          // rows and the CLEARED ones alike — so an upstream slot the
+          // restore cleared (result: null, the D1 law) still names
+          // what its stage produced and a downstream ctx-key
+          // reference resolves after the reload (useFilmAudio's index
+          // floor reads it off the projected metadata). Cleared rows
+          // keep result: null — the census is row-level truth, never
+          // a synthesized result.
+          const census = censusMapOf(flow)
+          if (census !== undefined) st['run_artifacts'] = census
           if (!isSkipped) {
             const own = resultOfStage(sideRowFor(st['id'], i), String((side as Record<string, unknown>)['run_id'] ?? ''))
             if (own !== undefined) st['result'] = own

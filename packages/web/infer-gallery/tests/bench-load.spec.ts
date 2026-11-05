@@ -446,7 +446,13 @@ describe('loadRunOntoBench — the run record wins', () => {
     // result: null, the estate carry's clear key, never a stripped
     // absence — absence reads "fill me" and the doc's own memory
     // re-attaches, the reservoir.)
-    expect(stages[2]).toEqual({ id: 's_2', card: 'skipped-card', provenance: 'restored', result: null })
+    // (re-pin for cure 5, the h3 history-load audit) the restored
+    // census rides EVERY row — the skipped one too — but it is
+    // row-level truth: the result stays the explicit null.
+    expect(stages[2]).toEqual({
+      id: 's_2', card: 'skipped-card', provenance: 'restored', result: null,
+      run_artifacts: { 'run-0f1e2d-r1/out.png': '/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/out.png') },
+    })
     expect(String(ensuredBody(calls).intent).length).toBeLessThanOrEqual(77)
   })
 
@@ -687,6 +693,69 @@ describe('loadRunOntoBench — the run record wins', () => {
     expect(d2.errors).toEqual([])
     const row2 = (ensuredBody(ambiguous.calls).stages as Array<Record<string, unknown>>)[0]!
     expect((row2['result'] as Record<string, unknown>)['metadata']).toBeUndefined()
+  })
+
+  it('THE RESTORED CENSUS RIDES EVERY ROW (the h3 history-load audit cure 5, upstream-linked slots) — the run\'s produced-names map stamps kept and cleared rows alike; a cleared row never synthesizes a result', async () => {
+    // The upstream-linked slots burn: a downstream stage's ctx-key
+    // reference names an UPSTREAM stage's product ("tagger/frame..."),
+    // but the restore CLEARS that upstream's result (the explicit-null
+    // law) — after the reload the name resolves to nothing and the
+    // slot renders empty. The wand now stamps the sidecar's
+    // flow.artifacts census (media-only, run-tail → gallery route,
+    // censusMapOf) on EVERY restored row, so the names survive on the
+    // row even where the result is null. Toggle: reverting the census
+    // stamp (bench-load.ts `if (census !== undefined)
+    // st['run_artifacts'] = census`) reds this arm.
+    const side = {
+      run_id: 'run-0f1e2d-cens1',
+      flow: {
+        artifacts: [
+          '/data/run-0f1e2d-cens1/h3-film/SaveVideo.2_h3_t4_film_00001_.mp4',
+          '/data/run-0f1e2d-cens1/tagger/frame_00001_.png',
+          '/data/run-0f1e2d-cens1/h3-film/plan.json',
+        ],
+        bench_snapshot: {
+          stages: [
+            { id: 's_1', card: 'h3-timeline' },
+            { id: 's_6', card: 'tagger' },
+            { id: 's_17', card: 'h3-timeline' },
+          ],
+          intent: 'the census bench',
+        },
+        stages: [
+          {
+            id: 'h3-film', bench_stage_id: 's_17', name: 'h3-film', index: 0, status: 'completed',
+            url: 'h3-film/SaveVideo.2_h3_t4_film_00001_.mp4',
+            gallery: [{ name: 'h3-film/SaveVideo.2_h3_t4_film_00001_.mp4' }],
+            outputs: {}, expected: {},
+          },
+        ],
+      },
+    }
+    const { calls } = stubFetch(runWith(side))
+    const d = deps('s1')
+    await loadRunOntoBench('run-0f1e2d-cens1', d)
+    expect(d.errors).toEqual([])
+    const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
+    const route = (tail: string): string => '/infer-gallery/artifact?path=' + encodeURIComponent(tail)
+    const census = {
+      'run-0f1e2d-cens1/h3-film/SaveVideo.2_h3_t4_film_00001_.mp4': route('run-0f1e2d-cens1/h3-film/SaveVideo.2_h3_t4_film_00001_.mp4'),
+      'run-0f1e2d-cens1/tagger/frame_00001_.png': route('run-0f1e2d-cens1/tagger/frame_00001_.png'),
+    }
+    // EVERY restored row carries the produced-names census — the kept
+    // row and the cleared ones alike (an upstream slot resolves even
+    // where the restore cleared the product). plan.json is not media:
+    // the census names PRODUCTS, never sidecars.
+    for (const st of stages) {
+      expect(st['run_artifacts']).toEqual(census)
+    }
+    // the kept row keeps its own result; the cleared rows keep the
+    // explicit null — the census is ROW-level truth, never a
+    // synthesized result (tiles are the mid-run-only face)
+    expect(stages[2]).toMatchObject({ id: 's_17', result: { run_id: 'run-0f1e2d-cens1' } })
+    for (const st of [stages[0]!, stages[1]!]) {
+      expect(st['result']).toBeNull()
+    }
   })
 
   it('THE LEGACY FLOOR (the D6 law\'s surviving arm): a sidecar with NO stage rows shares the run-level hero — no per-stage truth exists to honor', async () => {

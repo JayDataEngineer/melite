@@ -313,4 +313,52 @@ describe("the loaded-history face (the wand-restored result renders the persiste
     assert.equal(rows[0]!.runId, "run-87986cb0fc0d")
     assert.equal(rows[0]!.video, history[0]!.video)
   })
+
+  it("THE RESTORED CENSUS (the audit cure 5, upstream-linked slots): a cleared row's produced-names map rides the projected metadata — never the tiles", () => {
+    // The restore CLEARS an upstream stage (result: null, the D1 law)
+    // but stamps the run's produced-names census on the row
+    // (bench-load.ts censusMapOf). The projection folds it into
+    // CardResult METADATA — never the artifacts map — so the cleared
+    // face stays the EmptyState face (filmstripOf reads
+    // artifacts/assetUrls/url only) while useFilmAudio's index floor
+    // still resolves the names. Toggle: the census fold in
+    // projection.ts harvestResult — reverting it reds the metadata
+    // assertion.
+    const route = (tail: string): string => "/infer-gallery/artifact?path=" + encodeURIComponent(tail)
+    const census = {
+      "run-0f1e2d-cens1/tagger/frame_00001_.png": route("run-0f1e2d-cens1/tagger/frame_00001_.png"),
+      "run-0f1e2d-cens1/h3-film/SaveVideo.2_h3_t4_film_00001_.mp4": route("run-0f1e2d-cens1/h3-film/SaveVideo.2_h3_t4_film_00001_.mp4"),
+    }
+    const { stage } = projectH3StageViewProps({
+      stageId: "s_6",
+      cardName: "tagger",
+      row: { params: {}, result: null, run_artifacts: census },
+      runStatus: "completed",
+      onPatch: () => {},
+      onRun: () => {},
+      upstream: [],
+    } as never)
+    assert.deepEqual(stage.result?.metadata?.run_artifacts, census, "the produced-names census reaches the projected metadata 1:1")
+    assert.equal(Object.keys(stage.result?.artifacts ?? {}).length, 0, "the census never mints artifacts")
+    const filmstrip = filmstripOf(stage.result)
+    assert.equal(filmstrip.final, null, "a cleared row renders no hero off the census")
+    assert.equal(filmstrip.windows.length, 0, "tiles are MID-RUN evidence only — the census cannot tile a restored face")
+  })
+
+  it("THE RESTORED CENSUS, the live shape: a row the wand stamped no census on folds nothing", () => {
+    // a LIVE row (mid-run, never restored) carries no run_artifacts —
+    // the fold must not synthesize an empty census into its metadata
+    // (the doc never fabricates).
+    const tail = "run-c80a8afa5a28-a9ccdde4/h3-film/SaveVideo.2_h3_t4_film_00001_.mp4"
+    const { stage } = projectH3StageViewProps({
+      stageId: "s_0",
+      cardName: "h3-timeline",
+      row: { params: {}, result: { run_id: "run-c80a8afa5a28-a9ccdde4", url: route(tail), artifacts: { [tail]: route(tail) } } },
+      runStatus: "running",
+      onPatch: () => {},
+      onRun: () => {},
+      upstream: [],
+    } as never)
+    assert.equal(stage.result?.metadata?.run_artifacts, undefined, "no census in, no census out")
+  })
 })

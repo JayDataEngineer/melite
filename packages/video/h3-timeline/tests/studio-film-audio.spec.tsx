@@ -138,6 +138,39 @@ describe("artifactIndex + audioSrcUrl (the drop honesty)", () => {
     expect(result.current.refArtifacts.length).toBe(2)
   })
 
+  it("THE RESTORED CENSUS FLOOR (the h3 history-load audit cure 5, upstream-linked slots): a cleared row's run_artifacts resolves what its artifacts map lost — live artifacts still win", () => {
+    // The restore cleared this upstream (the projected face carries
+    // empty artifacts + the run's produced-names census in metadata —
+    // bench-load.ts censusMapOf → projection.ts harvestResult). The
+    // census is the LOWEST index tier: it fills only names the own +
+    // upstream artifacts both miss. Toggle: the censusFill block in
+    // useFilmAudio.ts — reverting it reds the resolution assertion.
+    const route = (tail: string): string => "/infer-gallery/artifact?path=" + encodeURIComponent(tail)
+    const census = {
+      "run-0f1e2d-cens1/tagger/frame_00001_.png": route("run-0f1e2d-cens1/tagger/frame_00001_.png"),
+      pic: route("run-0f1e2d-cens1/other/pic.png"), // collides with OWN's live pic
+      junk: "", // empty never indexes
+      num: 42, // non-string never indexes
+    }
+    const CLEARED = stageWith({ artifacts: {}, metadata: { run_artifacts: census } })
+    const { result } = harness({ stage: OWN, upstreams: [CLEARED, UP] })
+    assert.equal(
+      result.current.artifactIndex.byName.get("run-0f1e2d-cens1/tagger/frame_00001_.png"),
+      route("run-0f1e2d-cens1/tagger/frame_00001_.png"),
+      "the cleared upstream's produced name resolves through the census floor",
+    )
+    assert.equal(result.current.artifactIndex.byUrl.get(route("run-0f1e2d-cens1/tagger/frame_00001_.png")), "run-0f1e2d-cens1/tagger/frame_00001_.png")
+    // live artifacts win the collision — the census never overwrites
+    assert.equal(result.current.artifactIndex.byName.get("pic"), "https://x/p.png")
+    assert.ok(!result.current.artifactIndex.byName.has("junk"))
+    assert.ok(!result.current.artifactIndex.byName.has("num"))
+    // the CURRENT stage's own census floors the same way (a restored
+    // cleared stage still names its own run's products)
+    const ownCleared = stageWith({ artifacts: {}, metadata: { run_artifacts: census } })
+    const solo = harness({ stage: ownCleared })
+    assert.ok(solo.result.current.artifactIndex.byName.has("run-0f1e2d-cens1/tagger/frame_00001_.png"))
+  })
+
   it("audioSrcUrl: data: rides itself; names resolve; unknown is null (mixer skips)", () => {
     const { result } = harness({ stage: OWN })
     assert.equal(result.current.audioSrcUrl("data:audio/mp3;base64,AA"), "data:audio/mp3;base64,AA")

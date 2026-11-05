@@ -1945,6 +1945,31 @@ window.__ModuleLoader__.load({
 			const record = value;
 			return Object.keys(record).length > 0 ? record : void 0;
 		}
+		/** The restored run's produced-names census (the h3 history-load
+		*  audit's cure 5, upstream-linked slots): the sidecar's
+		*  flow.artifacts paths, media-only (mediaKindOf is the only
+		*  classifier on this plane), keyed by run-relative tail (runTailOf's
+		*  one grammar) → the gallery route. A restored row that LOST its
+		*  result (the explicit-null clear) still names what the run
+		*  produced, so a ctx-key reference to an upstream stage's product
+		*  resolves after the reload (useFilmAudio's index floor). Name-only:
+		*  no hero url, no assetUrls — the map rides the ROW, never a result,
+		*  so no restored face renders tiles off it (the tiles-remain-mid-run
+		*  law) and a cleared face stays the EmptyState face. */
+		function censusMapOf(flow) {
+			const arts = flow?.["artifacts"];
+			if (!Array.isArray(arts)) return void 0;
+			const route = (tail) => "/infer-gallery/artifact?path=" + encodeURIComponent(tail);
+			const map = {};
+			for (const a of arts) {
+				const kind = typeof a === "string" ? mediaKindOf(a) : void 0;
+				if (kind === void 0 || kind === "text") continue;
+				const tail = runTailOf$1(a);
+				if (tail === void 0 || map[tail] !== void 0) continue;
+				map[tail] = route(tail);
+			}
+			return Object.keys(map).length > 0 ? map : void 0;
+		}
 		/** The bench tab's address for one session (cross-plugin contract,
 		* the estate-artifact pattern: client bundles cannot import across
 		* plugins, so the form is restated with its definition site named —
@@ -2173,7 +2198,10 @@ window.__ModuleLoader__.load({
 							const sideStages = Array.isArray(rawSideStages) ? rawSideStages.filter((s) => typeof s === "object" && s !== null && !Array.isArray(s)) : [];
 							const sideRowFor = (benchId, index) => sideStages.find((s) => s["bench_stage_id"] === benchId) ?? sideStages.find((s) => s["id"] === benchId) ?? (sideStages.length === bsStages.length ? sideStages[index] : void 0);
 							const skippedRaw = side["skipped_stages"];
-							if (!(Array.isArray(skippedRaw) ? skippedRaw : []).some((k) => k === st["id"])) {
+							const isSkipped = (Array.isArray(skippedRaw) ? skippedRaw : []).some((k) => k === st["id"]);
+							const census = censusMapOf(flow);
+							if (census !== void 0) st["run_artifacts"] = census;
+							if (!isSkipped) {
 								const own = resultOfStage(sideRowFor(st["id"], i), String(side["run_id"] ?? ""));
 								if (own !== void 0) st["result"] = own;
 								else if (sideStages.length === 0 && result !== void 0) st["result"] = result;
@@ -6604,7 +6632,7 @@ window.__ModuleLoader__.load({
 		var init_loraTypes = __esmMin((() => {}));
 		//#endregion
 		//#region ../../web-kit/contracts/lib/loraExtensions.js
-		var LORA_EXTENSIONS, LORA_ACCEPT;
+		var LORA_EXTENSIONS, LORA_ACCEPT, LORA_EXTENSION_SUFFIX_RE;
 		var init_loraExtensions = __esmMin((() => {
 			LORA_EXTENSIONS = [
 				".safetensors",
@@ -6614,6 +6642,7 @@ window.__ModuleLoader__.load({
 				".gguf"
 			];
 			LORA_ACCEPT = LORA_EXTENSIONS.join(",");
+			LORA_EXTENSION_SUFFIX_RE = new RegExp("\\.(?:" + LORA_EXTENSIONS.map((e) => e.slice(1).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")$");
 		}));
 		//#endregion
 		//#region ../../web-kit/contracts/lib/mediaTypes.js
@@ -7311,7 +7340,7 @@ window.__ModuleLoader__.load({
 		}
 		/** Human label for a LoRA entry (file base name, extension stripped). */
 		function loraLabel(name) {
-			return name.split("/").pop().replace(/\.(safetensors|pt|ckpt)$/, "");
+			return name.split("/").pop().replace(LORA_EXTENSION_SUFFIX_RE, "");
 		}
 		/** Total subcard count on a card — the collapsed-tile "+N" hint. */
 		function subcardCount(params) {
@@ -7495,6 +7524,7 @@ window.__ModuleLoader__.load({
 		var NO_CN_SCHEMA, _cnIdCounter;
 		var init_modifierSubcards = __esmMin((() => {
 			init_lib$2();
+			init_loraExtensions();
 			NO_CN_SCHEMA = {
 				type: "",
 				label: ""
@@ -8303,6 +8333,7 @@ window.__ModuleLoader__.load({
 			LOAD_CARRY_KEYS: () => LOAD_CARRY_KEYS,
 			LORA_ACCEPT: () => LORA_ACCEPT,
 			LORA_EXTENSIONS: () => LORA_EXTENSIONS,
+			LORA_EXTENSION_SUFFIX_RE: () => LORA_EXTENSION_SUFFIX_RE,
 			MEDIA_SET: () => MEDIA_SET,
 			NO_CN_SCHEMA: () => NO_CN_SCHEMA,
 			PROVENANCE_VALUES: () => PROVENANCE_VALUES,

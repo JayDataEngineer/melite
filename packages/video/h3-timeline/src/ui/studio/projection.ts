@@ -170,6 +170,18 @@ function harvestResult(
     ...(base?.metadata ?? {}),
     ...recordOf(rawMetadata),
   }
+  // THE RESTORED CENSUS (the h3 history-load audit's cure 5,
+  // upstream-linked slots): the wand stamps the run's produced-names
+  // map on every restored row (bench-load.ts censusMapOf — run-tail →
+  // gallery route, name-only) and it folds into the projected
+  // METADATA, never the artifacts map: filmstripOf reads
+  // artifacts/assetUrls/url only, so the census can never mint window
+  // tiles on a restored face (the tiles-remain-mid-run-only law) — a
+  // CLEARED row (result: null) keeps its EmptyState face while its
+  // metadata still carries the names useFilmAudio's index floor
+  // resolves. A live row carries no run_artifacts and folds nothing.
+  const census = recordOf(row['run_artifacts'])
+  if (Object.keys(census).length > 0) metadata['run_artifacts'] = census
   const history = historyRows(row, result, metadata)
   if (history.length > 0) metadata['history'] = history
   // THE ESTATE HERO POINTER rides (the loaded-history starvation burn,

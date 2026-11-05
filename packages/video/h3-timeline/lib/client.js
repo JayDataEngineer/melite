@@ -3208,6 +3208,29 @@ window.__ModuleLoader__.load({
 		});
 		(0, react.createContext)({ useGui: (selector) => selector({ theme: { dark_mode: true } }) });
 		//#endregion
+		//#region ../../web-kit/contracts/src/loraExtensions.ts
+		/** THE LORA EXTENSION SSOT — the one allowlist's tier-agnostic home.
+		*
+		*  History: the list lived in @melite/comfyui-cordis/user-loras and the
+		*  engine seats consumed it from there (lora audit F1, commit
+		*  038fd6a40). The browser seats could not: that module reads node:fs,
+		*  and a client bundle may not inline it. @melite/contracts is a
+		*  declared dependency of card-base, melite-card-deck AND
+		*  comfyui-cordis, so the literal moved here — one initializer on the
+		*  tree — and the engine seam re-exports it verbatim (userLoras.ts),
+		*  keeping the F1 law: the rows-file validator, the tray scan, the OS
+		*  file dialogs and the field copy all judge the same file universe
+		*  (lora audit F2, 2026-11-15). */
+		const LORA_EXTENSIONS$1 = [
+			".safetensors",
+			".ckpt",
+			".pt",
+			".bin",
+			".gguf"
+		];
+		LORA_EXTENSIONS$1.join(",");
+		new RegExp("\\.(?:" + LORA_EXTENSIONS$1.map((e) => e.slice(1).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")$");
+		//#endregion
 		//#region ../../../@deepseek-ai/dsh-util-values/lib/index.js
 		function isWhitespace(c) {
 			return c === " " || c === "\n" || c === "\r" || c === "	";
@@ -4015,6 +4038,8 @@ window.__ModuleLoader__.load({
 				...base?.metadata ?? {},
 				...recordOf$1(rawMetadata)
 			};
+			const census = recordOf$1(row["run_artifacts"]);
+			if (Object.keys(census).length > 0) metadata["run_artifacts"] = census;
 			const history = historyRows(row, result, metadata);
 			if (history.length > 0) metadata["history"] = history;
 			const heroUrl = typeof result["url"] === "string" && result["url"].trim() !== "" ? result["url"] : base?.url;
@@ -7647,6 +7672,16 @@ window.__ModuleLoader__.load({
 						byUrl.set(url, name);
 					}
 				}
+				const censusFill = (census) => {
+					if (!census || typeof census !== "object" || Array.isArray(census)) return;
+					for (const [name, url] of Object.entries(census)) {
+						if (typeof url !== "string" || !url || byName.has(name) || byUrl.has(url)) continue;
+						byName.set(name, url);
+						byUrl.set(url, name);
+					}
+				};
+				censusFill(stage.result?.metadata?.run_artifacts);
+				for (const u of upstreams ?? []) censusFill(u.result?.metadata?.run_artifacts);
 				return {
 					byName,
 					byUrl
@@ -10321,6 +10356,20 @@ window.__ModuleLoader__.load({
 		//#region ../../web-kit/contracts/lib/loraTypes.js
 		var init_loraTypes = __esmMin((() => {}));
 		//#endregion
+		//#region ../../web-kit/contracts/lib/loraExtensions.js
+		var LORA_EXTENSIONS, LORA_ACCEPT, LORA_EXTENSION_SUFFIX_RE;
+		var init_loraExtensions = __esmMin((() => {
+			LORA_EXTENSIONS = [
+				".safetensors",
+				".ckpt",
+				".pt",
+				".bin",
+				".gguf"
+			];
+			LORA_ACCEPT = LORA_EXTENSIONS.join(",");
+			LORA_EXTENSION_SUFFIX_RE = new RegExp("\\.(?:" + LORA_EXTENSIONS.map((e) => e.slice(1).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")$");
+		}));
+		//#endregion
 		//#region ../../web-kit/contracts/lib/mediaTypes.js
 		var init_mediaTypes = __esmMin((() => {}));
 		//#endregion
@@ -10387,7 +10436,7 @@ window.__ModuleLoader__.load({
 		}
 		/** Human label for a LoRA entry (file base name, extension stripped). */
 		function loraLabel(name) {
-			return name.split("/").pop().replace(/\.(safetensors|pt|ckpt)$/, "");
+			return name.split("/").pop().replace(LORA_EXTENSION_SUFFIX_RE, "");
 		}
 		/** Total subcard count on a card — the collapsed-tile "+N" hint. */
 		function subcardCount(params) {
@@ -10571,6 +10620,7 @@ window.__ModuleLoader__.load({
 		var NO_CN_SCHEMA, _cnIdCounter;
 		var init_modifierSubcards = __esmMin((() => {
 			init_lib$2();
+			init_loraExtensions();
 			NO_CN_SCHEMA = {
 				type: "",
 				label: ""
@@ -11377,6 +11427,9 @@ window.__ModuleLoader__.load({
 			FLOW_ID_RE: () => FLOW_ID_RE,
 			LEGACY_RUN_MEDIA_PREFIX: () => LEGACY_RUN_MEDIA_PREFIX,
 			LOAD_CARRY_KEYS: () => LOAD_CARRY_KEYS,
+			LORA_ACCEPT: () => LORA_ACCEPT,
+			LORA_EXTENSIONS: () => LORA_EXTENSIONS,
+			LORA_EXTENSION_SUFFIX_RE: () => LORA_EXTENSION_SUFFIX_RE,
 			MEDIA_SET: () => MEDIA_SET,
 			NO_CN_SCHEMA: () => NO_CN_SCHEMA,
 			PROVENANCE_VALUES: () => PROVENANCE_VALUES,
@@ -11489,6 +11542,7 @@ window.__ModuleLoader__.load({
 			init_card();
 			init_character();
 			init_loraTypes();
+			init_loraExtensions();
 			init_mediaTypes();
 			init_modifierFaces();
 			init_modifierSubcards();

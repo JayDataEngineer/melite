@@ -117,6 +117,25 @@ export function useFilmAudio(args: {
         }
       }
     }
+    // THE RESTORED CENSUS FLOOR (the h3 history-load audit's cure 5,
+    // upstream-linked slots): a RESTORED row's result can be the
+    // explicit null clear — its artifacts map is empty, but the wand
+    // stamped the run's produced-names census on every restored row
+    // (bench-load.ts censusMapOf) and the projection carries it at
+    // metadata.run_artifacts. The census is the LOWEST tier: it fills
+    // only names and urls the own + upstream artifacts both miss (a
+    // live artifact beats the census — the census names what the run
+    // produced; the artifacts name what THIS face renders).
+    const censusFill = (census: unknown): void => {
+      if (!census || typeof census !== "object" || Array.isArray(census)) return
+      for (const [name, url] of Object.entries(census as Record<string, unknown>)) {
+        if (typeof url !== "string" || !url || byName.has(name) || byUrl.has(url)) continue
+        byName.set(name, url)
+        byUrl.set(url, name)
+      }
+    }
+    censusFill(stage.result?.metadata?.run_artifacts)
+    for (const u of upstreams ?? []) censusFill(u.result?.metadata?.run_artifacts)
     return { byName, byUrl }
   }, [upstreams, stage.result])
 
