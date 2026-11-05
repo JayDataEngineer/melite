@@ -4,7 +4,7 @@
 // model defaults <- served stamps <- user (PRESENCE is the
 // override mark, never the value); the variant/quant axes reseed
 // on every pick so no run composes an impossible coordinate.
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
 import { resolveValueLayered } from '../src/use-resolved.ts'
 import { coerceFieldEdit } from '../src/spec.ts'
 
@@ -443,6 +443,23 @@ test('THE MOD BAG LAW (operator 2026-10-16: "MODS (LIKE LORAS) ARE PER MODEL. IF
   // mod kind)
   const patch = modelSwitchPatch(spec, 'other')
   expect(patch['loras']).toBeNull()
+})
+
+test('THE UNSET MARK IS CONSUMED SILENTLY (console-audit cure, 2026-11-15): a switch verb\'s null deletes at the seed and warns nobody', () => {
+  // THE OPERATOR'S CONSOLE: every reconcile re-seeded a doc whose
+  // switch-verb nulls (steps/cfg/loras/mask) armed the delete marker,
+  // and the seed warned about consuming its OWN expected marker.
+  const spec = doc()
+  const warned: unknown[][] = []
+  const spy = vi.spyOn(console, 'warn').mockImplementation((...args: unknown[]) => { warned.push(args) })
+  try {
+    const seeded = seedUser(spec, { model: 'krea-2', steps: null, cfg: null, loras: null, mask: null })
+    expect(seeded).not.toHaveProperty('steps')
+    expect(seeded).not.toHaveProperty('cfg')
+    expect(seeded).not.toHaveProperty('loras')
+    expect(seeded).not.toHaveProperty('mask')
+    expect(warned).toEqual([])
+  } finally { spy.mockRestore() }
 })
 
 test('THE MODEL-SWITCH JOURNEY: a departed family\'s axis ids are ghosts — the arrival seed drops them (the 2026-10-16 lock)', () => {

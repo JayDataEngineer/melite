@@ -1808,7 +1808,10 @@ export function seedUser(spec, held) {
     // by a door that reads presence, not value.
     for (const k of Object.keys(out)) {
         if (out[k] === null) {
-            console.warn(`card-base: seedUser consumed the unset mark on held '${k}' — a null user value is the switch verbs' delete marker; the holding drops the key.`);
+            // THE MARK IS EXPECTED (console-audit cure, 2026-11-15): a
+            // switch verb's null is the normal arming of this seat, on
+            // every reconcile — a debug row, never a warning.
+            console.debug(`card-base: seedUser consumed the unset mark on held '${k}' — a null user value is the switch verbs' delete marker; the holding drops the key.`);
             delete out[k];
         }
     }

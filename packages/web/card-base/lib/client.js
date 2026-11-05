@@ -1665,7 +1665,8 @@ window.__ModuleLoader__.load({
 		*  time … you are submitting a form, not hacking the mainframe"):
 		*  the ONE function every write-side gate calls after the strict
 		*  judge — it drops the authoring-incomplete class (the
-		*  unstated-required word, a together half, an either_or half).
+		*  unstated-required word, a together half, an either_or half, and
+		*  the DELIVERABLE-SIZE half).
 		*  The registry's write doors AND the form's inline gate BOTH drop
 		*  through THIS function — attempt 12 (2026-11-11) was exactly this
 		*  drift: the door filtered, the form's own copy of the judgment
@@ -1673,10 +1674,18 @@ window.__ModuleLoader__.load({
 		*  was green because the walls drove the door, not the form. One
 		*  spelling; a second copy of this class test anywhere is the
 		*  multiple-seat disease.
+		*  THE SIZE HALF (2026-11-15, the operator's image-edit burn: width
+		*  2024 typed, height still empty, and the bench refused the
+		*  keystroke with "state both width and height" — so NEITHER axis
+		*  ever landed and the run refused a card the studio showed filled):
+		*  writing a form is sequential, so a stated size pair is only ever
+		*  admissibly half-typed. The write seat admits the half; the run
+		*  seat still refuses it (judgeDeliverableSize rides the strict
+		*  judge there).
 		* @param violations the strict judge's violations (any seat)
 		* @returns the violations a write-side gate may voice */
 		function dropAuthoringIncomplete$1(violations) {
-			return violations.filter((v) => !isUnstatedRequiredVoice$1(v.message) && !isTogetherHalfVoice$1(v.message) && !isEitherOrHalfVoice$1(v.message));
+			return violations.filter((v) => !isUnstatedRequiredVoice$1(v.message) && !isTogetherHalfVoice$1(v.message) && !isEitherOrHalfVoice$1(v.message) && !isDeliverableHalfVoice$1(v.message));
 		}
 		/** The together-half class test: the sentence names a together group
 		*  whose members are not all stated yet.
@@ -1691,6 +1700,18 @@ window.__ModuleLoader__.load({
 		* @returns true when the sentence is the either_or-half voice */
 		function isEitherOrHalfVoice$1(text) {
 			return text.includes(EITHER_OR_HALF_STEM$1);
+		}
+		/** The deliverable-size half's sentence stem (judgeDeliverableSize's
+		*  first law): match_input_resolution is OFF and exactly one axis is
+		*  stated. THE WRITE SEAT ADMITS THIS CLASS (the frictionless-authoring
+		*  ruling, extended 2026-11-15): the pair can only be typed one key at
+		*  a time, so judging each keystroke as a malformed deliverable made
+		*  the pair UNWRITABLE and the card unrunnable. The RUN seat keeps the
+		*  strict judgment — a half pair never composes.
+		* @param text the refusal sentence to classify
+		* @returns true when the sentence is the deliverable-size half voice */
+		function isDeliverableHalfVoice$1(text) {
+			return text.includes(DELIVERABLE_HALF_STEM$1);
 		}
 		/** The heal's stricter twin: the text is the unstated-required class
 		* AND NOTHING ELSE. A composite refusal (the judge joins multiple
@@ -2263,7 +2284,7 @@ window.__ModuleLoader__.load({
 				}))
 			}));
 		}
-		var RELATION_WORDS, quote$1, UNSTATED_REQUIRED_STEM$1, TOGETHER_HALF_STEM$1, EITHER_OR_HALF_STEM$1, statedOf$1, visibleRows$1, visibleCells$1, knownIds$1, knownQuants$1;
+		var RELATION_WORDS, quote$1, UNSTATED_REQUIRED_STEM$1, TOGETHER_HALF_STEM$1, EITHER_OR_HALF_STEM$1, DELIVERABLE_HALF_STEM$1, statedOf$1, visibleRows$1, visibleCells$1, knownIds$1, knownQuants$1;
 		var init_laneRelations = __esmMin((() => {
 			RELATION_WORDS = {
 				requires: true,
@@ -2277,6 +2298,7 @@ window.__ModuleLoader__.load({
 			UNSTATED_REQUIRED_STEM$1 = "this lane requires ";
 			TOGETHER_HALF_STEM$1 = " ride together on this lane (state all or none)";
 			EITHER_OR_HALF_STEM$1 = " — the stated combination completes none of them";
+			DELIVERABLE_HALF_STEM$1 = "state both width and height";
 			statedOf$1 = (stated) => typeof stated === "string" ? stated : null;
 			visibleRows$1 = (variants) => variants.filter((v) => v.hide_from_dropdown !== true);
 			visibleCells$1 = (cells) => cells.filter((c) => c.hide_from_dropdown !== true);
@@ -4221,6 +4243,7 @@ window.__ModuleLoader__.load({
 			hasModifierCapability: () => hasModifierCapability,
 			healRunMediaPaths: () => healRunMediaPaths,
 			isDataUrl: () => isDataUrl,
+			isDeliverableHalfVoice: () => isDeliverableHalfVoice$1,
 			isEitherOrHalfVoice: () => isEitherOrHalfVoice$1,
 			isLiveRunStatus: () => isLiveRunStatus$1,
 			isProvenance: () => isProvenance,
@@ -10747,7 +10770,7 @@ window.__ModuleLoader__.load({
 				}
 			}
 			for (const k of Object.keys(out)) if (out[k] === null) {
-				console.warn(`card-base: seedUser consumed the unset mark on held '${k}' — a null user value is the switch verbs' delete marker; the holding drops the key.`);
+				console.debug(`card-base: seedUser consumed the unset mark on held '${k}' — a null user value is the switch verbs' delete marker; the holding drops the key.`);
 				delete out[k];
 			}
 			return out;
