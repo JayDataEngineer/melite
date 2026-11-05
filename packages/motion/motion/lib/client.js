@@ -3532,11 +3532,13 @@ window.__ModuleLoader__.load({
 			}
 			const assetUrls = stringsOf$1(result["assetUrls"]);
 			const metadata = recordOf$1(result["metadata"]);
-			if (Object.keys(artifacts).length === 0 && assetUrls.length === 0) return null;
+			const heroUrl = nonEmptyString$1(result["url"]);
+			if (heroUrl === "" && Object.keys(artifacts).length === 0 && assetUrls.length === 0) return null;
 			return {
 				artifacts,
 				assetUrls,
 				metadata,
+				...heroUrl === "" ? {} : { url: heroUrl },
 				...typeof result["durationSec"] === "number" ? { durationSec: result["durationSec"] } : {},
 				...galleryOf$1(result["gallery"]) === void 0 ? {} : { gallery: galleryOf$1(result["gallery"]) },
 				...previewsOf$1(result["motionPreviews"]) === void 0 ? {} : { motionPreviews: previewsOf$1(result["motionPreviews"]) }
@@ -8724,11 +8726,13 @@ window.__ModuleLoader__.load({
 			}
 			const assetUrls = stringsOf(result["assetUrls"]);
 			const metadata = recordOf(result["metadata"]);
-			if (Object.keys(artifacts).length === 0 && assetUrls.length === 0) return null;
+			const heroUrl = nonEmptyString(result["url"]);
+			if (heroUrl === "" && Object.keys(artifacts).length === 0 && assetUrls.length === 0) return null;
 			return {
 				artifacts,
 				assetUrls,
 				metadata,
+				...heroUrl === "" ? {} : { url: heroUrl },
 				...typeof result["durationSec"] === "number" ? { durationSec: result["durationSec"] } : {},
 				...galleryOf(result["gallery"]) === void 0 ? {} : { gallery: galleryOf(result["gallery"]) },
 				...previewsOf(result["motionPreviews"]) === void 0 ? {} : { motionPreviews: previewsOf(result["motionPreviews"]) }
