@@ -872,7 +872,7 @@ describe('melite_view audio — the §33 gap-6 observe arm (fakes for the engine
     // success path; fakes pin the refusals below
     const audio = join(root, 'output', 'run-a0d10-tone')
     mkdirSync(audio, { recursive: true })
-    copyFileSync(new URL('./fixtures/tone-05s.wav', import.meta.url), join(audio, 'line.wav'))
+    copyFileSync(new URL('../../../../tests/fixtures/tone-05s.wav', import.meta.url), join(audio, 'line.wav'))
   })
 
   test('an audio-only run serves the probe verdict + waveform sheet; the run tree stays untouched', async () => {
@@ -939,7 +939,7 @@ describe('melite_view audio — the §33 gap-6 observe arm (fakes for the engine
     const mixed = join(root, 'output', 'run-b1e5d-mix2')
     mkdirSync(mixed, { recursive: true })
     writeFileSync(join(mixed, 'portrait.png'), PNG_BYTES)
-    copyFileSync(new URL('./fixtures/tone-05s.wav', import.meta.url), join(mixed, 'line.flac'))
+    copyFileSync(new URL('../../../../tests/fixtures/tone-05s.wav', import.meta.url), join(mixed, 'line.flac'))
     const { ctx } = fakeCtx()
     const tool = meliteView(ctx, fakeAudioProc())
     const out = await tool.execute({ run_id: 'run-b1e5d-mix2', artifact: 'line.flac' }, visualExec as never) as ViewedImageValue
@@ -1269,7 +1269,7 @@ describe('melite_view vocabularies — the SSOT fold (dry-reaudit N4, 2026-11-12
     // mints .qvoice, and the hand-copied audio set missed it — the
     // drift this fold cures (wav bytes under the bank's name: the
     // probe reads bytes, never extensions)
-    copyFileSync(new URL('./fixtures/tone-05s.wav', import.meta.url), join(run, 'voice.qvoice'))
+    copyFileSync(new URL('../../../../tests/fixtures/tone-05s.wav', import.meta.url), join(run, 'voice.qvoice'))
   })
 
   test('a named .qvoice is a named clip — the audio arm observes it, not the image walk (the qvoice drift cure)', async () => {
