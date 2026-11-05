@@ -16478,28 +16478,13 @@ window.__ModuleLoader__.load({
 			})), props.uploadLora !== void 0 ? (0, react.createElement)("div", {
 				className: card_module_css_default.modField,
 				"data-testid": "mod-lora-upload",
-				onDragOver: (e) => {
-					e.preventDefault();
-				},
-				onDrop: (e) => {
-					e.preventDefault();
-					const file = e.dataTransfer.files[0];
-					if (file !== null && file !== void 0) runUpload(file);
-				}
-			}, (0, react.createElement)("label", {
-				title: chromeCopy.loraUploadHint,
-				"data-testid": "mod-lora-upload-verb"
-			}, chromeCopy.loraUploadVerb, (0, react.createElement)("input", {
-				type: "file",
+				title: chromeCopy.loraUploadHint
+			}, (0, react.createElement)(InputSquare, {
+				label: chromeCopy.loraUploadVerb,
+				onFile: runUpload,
 				accept: ".safetensors,.ckpt,.pt,.bin,.gguf",
-				style: { display: "none" },
-				disabled: uploadBusy,
-				onChange: (e) => {
-					const file = e.target.files?.[0];
-					if (file !== null && file !== void 0) runUpload(file);
-					e.target.value = "";
-				}
-			})), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+				disabled: uploadBusy
+			}), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
 				type: "number",
 				step: "0.05",
 				min: "0",

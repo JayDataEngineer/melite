@@ -175,9 +175,7 @@ export function parseCardsBlock(block: ToolCallBlockView): {
             // THE FOUR-TAKE FACE (cure 2, 2026-11-15): the row's own
             // artifact set rides to the strip (absent on pre-cure
             // rows — the lead alone renders, the old shape).
-            artifacts: Array.isArray(r['artifacts'])
-              ? (r['artifacts'] as unknown[]).filter((u): u is string => typeof u === 'string' && u !== '')
-              : [],
+            artifacts: stringSetOf(r, 'artifacts'),
           }]
         })
       }
@@ -199,9 +197,7 @@ export function parseCardsBlock(block: ToolCallBlockView): {
             status: typeof r['status'] === 'string' ? r['status'] : '',
             runId: typeof r['run_id'] === 'string' ? r['run_id'] : '',
             url: typeof r['url'] === 'string' ? r['url'] : '',
-            artifacts: Array.isArray(r['artifacts'])
-              ? (r['artifacts'] as unknown[]).filter((u): u is string => typeof u === 'string' && u !== '')
-              : [],
+            artifacts: stringSetOf(r, 'artifacts'),
           }]
         })
       }
@@ -226,6 +222,20 @@ export function parseCardsBlock(block: ToolCallBlockView): {
     }
   }
   return { draftId, runId, flowName, model, malformedArgs, settled, isError: block.isError === true, previews, frozenRows, frozenIntent }
+}
+
+/**
+ * A persisted row's string-array field (the artifact set), read by
+ * validation: a field that is not an array of non-empty strings reads
+ * empty — the key was never served, never a cast.
+ *
+ * @param row - the persisted row.
+ * @param key - the field name.
+ * @returns the validated string set.
+ */
+function stringSetOf(row: Record<string, unknown>, key: string): string[] {
+  const v = row[key]
+  return Array.isArray(v) ? v.filter((u): u is string => typeof u === 'string' && u !== '') : []
 }
 
 /** Draft doc + live run status (all doors in draft.ts; the live tail

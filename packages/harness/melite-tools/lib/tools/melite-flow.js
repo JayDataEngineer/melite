@@ -214,6 +214,18 @@ const OBSERVE_MAX_MS = 900_000;
 function wireBool(v) {
     return v === true || v === 'true';
 }
+/**
+ * The pass row's artifact set — the media-spelled urls the observer
+ * rewrote (lead first). A field that is not an array of non-empty
+ * strings reads empty: the key was never served, never a cast.
+ *
+ * @param row - the pass row as persisted.
+ * @returns the validated url set, lead first.
+ */
+function assetUrlsOf(row) {
+    const urls = row['asset_urls'];
+    return Array.isArray(urls) ? urls.filter((u) => typeof u === 'string' && u !== '') : [];
+}
 async function startRun(estate, body, signal) {
     let res;
     try {
@@ -1447,10 +1459,7 @@ export function meliteFlow(estate) {
                         ? {
                             previews: v.pass
                                 .filter((p) => typeof p['url'] === 'string' && p['url'] !== '')
-                                .map((p) => ({
-                                stage: typeof p['stage'] === 'string' ? p['stage'] : '?',
-                                url: String(p['url']),
-                                status: typeof p['status'] === 'string' ? p['status'] : 'done',
+                                .map((p) => {
                                 // THE FOUR-TAKE FACE (the stale-two-run audit, cure 2,
                                 // 2026-11-15): the row's own artifact SET rides — the
                                 // media-spelled urls the observer rewrote (the lead
@@ -1458,12 +1467,14 @@ export function meliteFlow(estate) {
                                 // all-visible law); before this key it froze the LEAD
                                 // url alone and the run's other takes never reached
                                 // the thread.
-                                ...(Array.isArray(p['asset_urls'])
-                                    ? p['asset_urls'].some((u) => typeof u === 'string' && u !== '')
-                                        ? { artifacts: p['asset_urls'].filter((u) => typeof u === 'string' && u !== '') }
-                                        : {}
-                                    : {}),
-                            })),
+                                const urls = assetUrlsOf(p);
+                                return {
+                                    stage: typeof p['stage'] === 'string' ? p['stage'] : '?',
+                                    url: String(p['url']),
+                                    status: typeof p['status'] === 'string' ? p['status'] : 'done',
+                                    ...(urls.length > 0 ? { artifacts: urls } : {}),
+                                };
+                            }),
                             // THE DISCRIMINATOR (the stale-two-run audit, cure 1,
                             // 2026-11-15): the pass rows THEMSELVES freeze here —
                             // every stage of THAT call's press with its settle-time
@@ -1489,11 +1500,9 @@ export function meliteFlow(estate) {
                                     row['run_id'] = p['run_id'];
                                 if (typeof p['url'] === 'string' && p['url'] !== '')
                                     row['url'] = p['url'];
-                                if (Array.isArray(p['asset_urls'])) {
-                                    const arts = p['asset_urls'].filter((u) => typeof u === 'string' && u !== '');
-                                    if (arts.length > 0)
-                                        row['artifacts'] = arts;
-                                }
+                                const arts = assetUrlsOf(p);
+                                if (arts.length > 0)
+                                    row['artifacts'] = arts;
                                 return row;
                             }),
                         }

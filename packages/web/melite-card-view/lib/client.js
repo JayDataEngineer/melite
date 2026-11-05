@@ -7866,7 +7866,7 @@ window.__ModuleLoader__.load({
 							stage: r["stage"],
 							url: r["url"],
 							status: typeof r["status"] === "string" ? r["status"] : "",
-							artifacts: Array.isArray(r["artifacts"]) ? r["artifacts"].filter((u) => typeof u === "string" && u !== "") : []
+							artifacts: stringSetOf(r, "artifacts")
 						}];
 					});
 					const metaRows = meta["rows"];
@@ -7880,7 +7880,7 @@ window.__ModuleLoader__.load({
 							status: typeof r["status"] === "string" ? r["status"] : "",
 							runId: typeof r["run_id"] === "string" ? r["run_id"] : "",
 							url: typeof r["url"] === "string" ? r["url"] : "",
-							artifacts: Array.isArray(r["artifacts"]) ? r["artifacts"].filter((u) => typeof u === "string" && u !== "") : []
+							artifacts: stringSetOf(r, "artifacts")
 						}];
 					});
 					const metaIntent = meta["intent"];
@@ -7914,6 +7914,19 @@ window.__ModuleLoader__.load({
 				frozenRows,
 				frozenIntent
 			};
+		}
+		/**
+		* A persisted row's string-array field (the artifact set), read by
+		* validation: a field that is not an array of non-empty strings reads
+		* empty — the key was never served, never a cast.
+		*
+		* @param row - the persisted row.
+		* @param key - the field name.
+		* @returns the validated string set.
+		*/
+		function stringSetOf(row, key) {
+			const v = row[key];
+			return Array.isArray(v) ? v.filter((u) => typeof u === "string" && u !== "") : [];
 		}
 		/** Draft doc + live run status (all doors in draft.ts; the live tail
 		*  rides the run resource's frames — cards-resource.ts). */

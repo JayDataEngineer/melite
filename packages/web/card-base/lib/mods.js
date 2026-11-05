@@ -45,6 +45,7 @@ import { useSquareProvider } from "./form.js";
 import { coerceFieldEdit, fieldRequired, isHybridKind, isOptionKind, optionKeyOf, scalarKeyOf, titleCaseId } from "./spec.js";
 import { modCommitWrite } from '@melite/contracts/formSpec';
 import { SpecMenuSelect } from "./atoms.js";
+import { InputSquare } from "./square.js";
 import { Tip } from "./layout.js";
 import { rejectionVoice } from "./rejection-voice.js";
 /** THE CATALOG PICKER ROWS (S7i): ghost '— pick —', served rows
@@ -1170,33 +1171,22 @@ function ModLeaf(props) {
             // leaf itself (the Manager sidebar's gesture, seated where
             // the bag is authored). The wire is host-injected; absent
             // host = no row (the degrade law — never a hidden fetch).
-            // The dial seats the ROW's default strength (0–2, blank =
-            // the door's 1); per-use strength stays the dial above.
+            // The pick face IS the square (InputSquare owns the hidden
+            // picker AND OS drops — the F4 law: no hand-rolled file
+            // input beside the square); the dial seats the ROW's
+            // default strength (0–2, blank = the door's 1); per-use
+            // strength stays the dial above.
             props.uploadLora !== undefined
                 ? h('div', {
                     className: css.modField,
                     'data-testid': 'mod-lora-upload',
-                    onDragOver: (e) => { e.preventDefault(); },
-                    onDrop: (e) => {
-                        e.preventDefault();
-                        const file = e.dataTransfer.files[0];
-                        if (file !== null && file !== undefined)
-                            runUpload(file);
-                    },
-                }, h('label', { title: chromeCopy.loraUploadHint, 'data-testid': 'mod-lora-upload-verb' }, chromeCopy.loraUploadVerb, h('input', {
-                    type: 'file',
+                    title: chromeCopy.loraUploadHint,
+                }, h(InputSquare, {
+                    label: chromeCopy.loraUploadVerb,
+                    onFile: runUpload,
                     accept: '.safetensors,.ckpt,.pt,.bin,.gguf',
-                    style: { display: 'none' },
                     disabled: uploadBusy,
-                    onChange: (e) => {
-                        const file = e.target.files?.[0];
-                        if (file !== null && file !== undefined)
-                            runUpload(file);
-                        // re-picking the SAME file must re-fire (the
-                        // input holds its last value otherwise)
-                        e.target.value = '';
-                    },
-                })), h(Input, {
+                }), h(Input, {
                     type: 'number',
                     step: '0.05',
                     min: '0',
