@@ -116,11 +116,15 @@ describe("the drill's form seat (the operator's own face)", () => {
 
 describe("the add-card picker seat", () => {
   test("the picker mounts the cards skeleton until the catalog answers", async () => {
-    let answerCatalog: ((doc: unknown) => void) | null = null;
+    // THE HOLDER (not a bare let): the assignment lands inside the
+    // fetch stub's closure, and CFA keeps a bare let's `= null`
+    // initializer narrowing at the outer call site (TS2349) — a
+    // property read widens to the declared type, the honest shape.
+    const held: { answerCatalog?: (doc: unknown) => void } = {};
     vi.stubGlobal("fetch", async (url: unknown): Promise<Response> => {
       const path = String(url);
       if (path.includes("/v1/model-catalog")) {
-        const doc = await new Promise<unknown>((resolve) => { answerCatalog = resolve; });
+        const doc = await new Promise<unknown>((resolve) => { held.answerCatalog = resolve; });
         return new Response(JSON.stringify(doc), { status: 200, headers: { "content-type": "application/json" } });
       }
       throw new Error("door on the fetch lane: " + path);
@@ -137,7 +141,9 @@ describe("the add-card picker seat", () => {
       return el;
     }, { timeout: 4000 });
     expect(skel.getAttribute("aria-busy")).toBe("true");
-    answerCatalog?.({ cards: { "image-gen": { families: ["krea-2"] } } });
+    const answer = held.answerCatalog;
+    if (answer === undefined) throw new Error("the catalog door never parked — the picker never fetched");
+    answer({ cards: { "image-gen": { families: ["krea-2"] } } });
     await waitFor(() => {
       if (document.querySelector('[data-testid="add-cards-skeleton"]') !== null) throw new Error("picker skeleton never stood down");
     }, { timeout: 4000 });
@@ -151,8 +157,10 @@ describe("the chat flow card's doc seat", () => {
     // the exact frame the operator called out. The block carries no
     // persisted rows (a card that pressed nothing), so the hydrated
     // face renders no strip — the stand-down judges the seat, not rows.
-    let openDoc: (() => void) | null = null;
-    const gate = new Promise<void>((resolve) => { openDoc = resolve; });
+    // THE HOLDER (same CFA law as the picker arm above): the gate's
+    // resolve is stored on a property, never a narrowed bare let.
+    const held: { openDoc?: () => void } = {};
+    const gate = new Promise<void>((resolve) => { held.openDoc = resolve; });
     fakes = mountEstateFakes({
       draftStages: [{ id: "s_0", title: "film", kind: "generation", status: "success", params: {}, result: {} }],
       draftBenchRev: 1,
@@ -170,7 +178,9 @@ describe("the chat flow card's doc seat", () => {
     }, { timeout: 4000 });
     expect(skel.getAttribute("aria-busy")).toBe("true");
     expect(document.body.textContent ?? "", "no ellipsis literal in the loading face").not.toContain("cards…");
-    openDoc?.();
+    const open = held.openDoc;
+    if (open === undefined) throw new Error("the drafts/get gate never parked");
+    open();
     await waitFor(() => {
       if (document.querySelector('[data-testid="add-cards-skeleton"]') !== null) throw new Error("flow card skeleton never stood down");
     }, { timeout: 4000 });

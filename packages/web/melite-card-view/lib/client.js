@@ -6185,57 +6185,66 @@ window.__ModuleLoader__.load({
 		/** The drill's params rail while the form-spec hydrates: label +
 		* control pairs, the shape CardForm renders once the spec lands. */
 		function FormSkeleton() {
-			return (0, react.createElement)(Skel, { seat: "stage-form" }, () => [
-				(0, react.createElement)("div", {
-					key: "f0",
-					className: card_module_css_default.skRow
-				}, (0, react.createElement)("div", { className: card_module_css_default.skLine + " " + card_module_css_default.skLabel }), (0, react.createElement)("div", { className: card_module_css_default.skLine + " " + card_module_css_default.skShort })),
-				(0, react.createElement)("div", {
-					key: "f1",
-					className: card_module_css_default.skRow
-				}, (0, react.createElement)("div", { className: card_module_css_default.skLine + " " + card_module_css_default.skLabel }), (0, react.createElement)("div", { className: card_module_css_default.skLine + " " + card_module_css_default.skShort })),
-				(0, react.createElement)("div", {
-					key: "f2",
-					className: card_module_css_default.skLine + " " + card_module_css_default.skWide
-				}),
-				(0, react.createElement)("div", {
-					key: "f3",
-					className: card_module_css_default.skLine + " " + card_module_css_default.skShort
-				})
-			]);
+			return (0, react.createElement)(Skel, {
+				seat: "stage-form",
+				children: () => [
+					(0, react.createElement)("div", {
+						key: "f0",
+						className: card_module_css_default.skRow
+					}, (0, react.createElement)("div", { className: card_module_css_default.skLine + " " + card_module_css_default.skLabel }), (0, react.createElement)("div", { className: card_module_css_default.skLine + " " + card_module_css_default.skShort })),
+					(0, react.createElement)("div", {
+						key: "f1",
+						className: card_module_css_default.skRow
+					}, (0, react.createElement)("div", { className: card_module_css_default.skLine + " " + card_module_css_default.skLabel }), (0, react.createElement)("div", { className: card_module_css_default.skLine + " " + card_module_css_default.skShort })),
+					(0, react.createElement)("div", {
+						key: "f2",
+						className: card_module_css_default.skLine + " " + card_module_css_default.skWide
+					}),
+					(0, react.createElement)("div", {
+						key: "f3",
+						className: card_module_css_default.skLine + " " + card_module_css_default.skShort
+					})
+				]
+			});
 		}
 		/** The add-card picker while the model catalog hydrates: a genre
 		* title line, then card-row lines. */
 		function CardsSkeleton() {
-			return (0, react.createElement)(Skel, { seat: "add-cards" }, () => [
-				(0, react.createElement)("div", {
-					key: "t",
-					className: card_module_css_default.skLine + " " + card_module_css_default.skLabel
-				}),
-				(0, react.createElement)("div", {
-					key: "c0",
-					className: card_module_css_default.skLine
-				}),
-				(0, react.createElement)("div", {
-					key: "c1",
-					className: card_module_css_default.skLine
-				}),
-				(0, react.createElement)("div", {
-					key: "c2",
-					className: card_module_css_default.skLine + " " + card_module_css_default.skWide
-				})
-			]);
+			return (0, react.createElement)(Skel, {
+				seat: "add-cards",
+				children: () => [
+					(0, react.createElement)("div", {
+						key: "t",
+						className: card_module_css_default.skLine + " " + card_module_css_default.skLabel
+					}),
+					(0, react.createElement)("div", {
+						key: "c0",
+						className: card_module_css_default.skLine
+					}),
+					(0, react.createElement)("div", {
+						key: "c1",
+						className: card_module_css_default.skLine
+					}),
+					(0, react.createElement)("div", {
+						key: "c2",
+						className: card_module_css_default.skLine + " " + card_module_css_default.skWide
+					})
+				]
+			});
 		}
 		/** The tab body while the bench doc hydrates: a pair of tile-height
 		* rows over a block — the grid it becomes. */
 		function BenchSkeleton() {
-			return (0, react.createElement)(Skel, { seat: "bench" }, () => [(0, react.createElement)("div", {
-				key: "r",
-				className: card_module_css_default.skRow
-			}, (0, react.createElement)("div", { className: card_module_css_default.skLine + " " + card_module_css_default.skTile }), (0, react.createElement)("div", { className: card_module_css_default.skLine + " " + card_module_css_default.skTile })), (0, react.createElement)("div", {
-				key: "b",
-				className: card_module_css_default.skBlock
-			})]);
+			return (0, react.createElement)(Skel, {
+				seat: "bench",
+				children: () => [(0, react.createElement)("div", {
+					key: "r",
+					className: card_module_css_default.skRow
+				}, (0, react.createElement)("div", { className: card_module_css_default.skLine + " " + card_module_css_default.skTile }), (0, react.createElement)("div", { className: card_module_css_default.skLine + " " + card_module_css_default.skTile })), (0, react.createElement)("div", {
+					key: "b",
+					className: card_module_css_default.skBlock
+				})]
+			});
 		}
 		//#endregion
 		//#region ../../vendor/typert-protocol/src/remote-error.ts

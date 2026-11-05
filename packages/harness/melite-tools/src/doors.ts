@@ -409,7 +409,13 @@ const poserEngineCall = (
   }
   sdkClient(base).fetchApi(arm.enginePath + search, {
     method: body === null ? 'GET' : 'POST',
-    body: body ?? undefined,
+    // THE PLAIN-VIEW BODY (2026-11-05, the card-base test-tier
+    // typecheck): fetchApi takes RequestInit — body: BodyInit — and
+    // Buffer<ArrayBufferLike> is not BodyInit under the DOM lib
+    // (the SDK's own host config never saw it; a DOM-typed consumer
+    // did). The copy into a plain ArrayBuffer-backed view is the
+    // wire-identical value with the type the door declares.
+    body: body === null ? undefined : new Uint8Array(body),
     headers: { 'content-type': contentType },
     signal: AbortSignal.timeout(arm.timeoutMs),
   })

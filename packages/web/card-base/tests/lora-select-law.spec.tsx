@@ -36,6 +36,7 @@
 //  - drop the `f.name !== k.param_key` filter in the leaf's
 //    leafFields → the BAG-NEVER-A-FIELD arm reds (the mask kind's
 //    "Mask Bag" text input returns).
+/// <reference types="vite/client" />
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { createElement as h } from 'react'
 import { readdirSync } from 'node:fs'

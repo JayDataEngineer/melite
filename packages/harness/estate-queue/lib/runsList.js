@@ -544,6 +544,10 @@ function runsFilterServes(row, filter) {
         return false;
     if (filter.benchStageId !== undefined) {
         const ids = row["stage_ids"];
+        // THE NARROW IS THE GUARD (2026-11-05, the anti-sniff wall):
+        // Array.isArray narrows unknown to any[] — the membership test
+        // needs no cast, and a cast here would mint a new as-unknown
+        // site the census refuses.
         if (!Array.isArray(ids) || !ids.includes(filter.benchStageId))
             return false;
     }

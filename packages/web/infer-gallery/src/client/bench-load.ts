@@ -518,7 +518,7 @@ export async function loadRunOntoBench(runId: string, deps: BenchLoadDeps): Prom
           // floor reads it off the projected metadata). Cleared rows
           // keep result: null — the census is row-level truth, never
           // a synthesized result.
-          const census = censusMapOf(flow)
+          const census = censusMapOf(flow as Record<string, unknown> | null)
           if (census !== undefined) st['run_artifacts'] = census
           if (!isSkipped) {
             const own = resultOfStage(sideRowFor(st['id'], i), String((side as Record<string, unknown>)['run_id'] ?? ''))

@@ -599,7 +599,11 @@ function runsFilterServes(
   if (filter.draftId !== undefined && row["draft_id"] !== filter.draftId) return false;
   if (filter.benchStageId !== undefined) {
     const ids: unknown = row["stage_ids"];
-    if (!Array.isArray(ids) || !(ids as unknown[]).includes(filter.benchStageId)) return false;
+    // THE NARROW IS THE GUARD (2026-11-05, the anti-sniff wall):
+    // Array.isArray narrows unknown to any[] — the membership test
+    // needs no cast, and a cast here would mint a new as-unknown
+    // site the census refuses.
+    if (!Array.isArray(ids) || !ids.includes(filter.benchStageId)) return false;
   }
   return true;
 }

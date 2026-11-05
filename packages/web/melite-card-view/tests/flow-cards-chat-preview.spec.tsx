@@ -87,7 +87,6 @@ describe("NO MEDIA IN THE MAIN CHAT — the thread's chat cards mount zero media
       },
     }) }));
     // the frozen rows still render (the press's own face is text rows)
-    await screen.findBySelectorAll ?? null;
     await waitForRows(container, 's_vid');
     expect(mediaMounts(container),
       "previews in meta mount NOTHING — no hero, no strip, no thumb").toBe(0);
