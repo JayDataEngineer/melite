@@ -84,7 +84,10 @@ export function isTextName(name: string): boolean {
 }
 
 /** Walk one run directory for its text rows (pure over the tree, the
- *  media list arm's shape: depth-bounded, mtime-newest first, capped). */
+ *  media list arm's shape: depth-bounded, byte-order sorted, capped —
+ *  the sort pins the row order platform-independently, so every voice
+ *  built from the rows (miss, ambiguous-refusal) names them in ONE
+ *  order on every lane). */
 export async function listRunText(runDir: string): Promise<TextRow[]> {
   const rows: TextRow[] = []
   const walk = async (dir: string, rel: string, depth: number): Promise<void> => {
@@ -122,7 +125,7 @@ export async function listRunText(runDir: string): Promise<TextRow[]> {
     }
   }
   await walk(runDir, '', 1)
-  return rows
+  return rows.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : /* v8 ignore next */ 0))
 }
 
 /** The first manifest root holding the run's directory wins (own

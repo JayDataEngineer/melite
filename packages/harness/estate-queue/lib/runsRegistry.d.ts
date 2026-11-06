@@ -110,8 +110,6 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
         };
     }
 }
-/** The refusal codes this remote serves, folded to the
- *  protocol's vocabulary — a literal table, no dynamic key. */
 export declare function enrichDiskRow(row: Record<string, unknown>): Record<string, unknown>;
 /** THE SIDECAR READER (2026-10-17): one run dir → a read(name)
  *  closure. Absent sidecars are the COMMON case (a run validates

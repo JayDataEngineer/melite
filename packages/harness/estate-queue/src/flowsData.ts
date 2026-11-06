@@ -19,7 +19,7 @@
 // Erasable-syntax TS only (node --experimental-strip-types).
 import { isFile } from "./skillFs.ts"
 import { CARD_PLANE_ENGINE, LEGACY_RUN_MEDIA_PREFIX, RUN_MEDIA_PREFIX } from "@melite/contracts/benchStage";
-import { join, resolve } from "node:path";
+import { isAbsolute, join, resolve } from "node:path";
 import { mediaVocab } from "./mediaKinds.ts";
 import { validateBakeParams } from "./bakeParams.ts";
 
@@ -763,7 +763,11 @@ export function initialFileCandidates(raw: string, roots: InitialsRoots): string
     ]) {
       cands.push(join(root, rel));
     }
-  } else if (raw.startsWith("/")) {
+  } else if (isAbsolute(raw)) {
+    // (isAbsolute, not startsWith("/"): a native absolute path
+    // carries backslashes on win32 and fell into the relative
+    // branch — resolve()d twice into a doubled candidate. On posix
+    // the two spellings coincide.)
     cands.push(raw);
   } else {
     cands.push(resolve(roots.repoRoot, raw));

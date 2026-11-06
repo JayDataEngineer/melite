@@ -19,7 +19,7 @@
 // or the gallery's artifact face (/infer-gallery/artifact?path=
 // — the same tail the guard and the engine stage).
 import { isFile } from "./skillFs.ts"
-import { join, relative, resolve, sep } from "node:path";
+import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { ASSET_RUNS_PREFIX, MEDIA_RUNS_PREFIX, galleryTail } from "./runsSourceEcho.ts";
 import { segmentConfined } from "@melite/contracts/mediaKinds";
 import { searchedVoice } from "./rootsManifest.ts";
@@ -115,10 +115,15 @@ export function resolveArtifactFile(ref: string, outRoot: string): string {
       rel.push(dec);
     }
     cand = join(outRoot, rel.join("/"));
-  } else if (raw.includes("/") && !raw.startsWith("/")) {
-    cand = join(outRoot, raw);
-  } else if (raw.startsWith("/")) {
+  } else if (isAbsolute(raw)) {
+    // isAbsolute, not startsWith("/"): a Windows-harvested ref is
+    // drive-rooted — the posix-only gate misfiled it as a bare name
+    // (the drive-join cure, 2026-11-17). An absolute path is its own
+    // candidate on either platform; the runs-relative face below
+    // keeps its wire spelling.
     cand = raw;
+  } else if (raw.includes("/")) {
+    cand = join(outRoot, raw);
   } else {
     throw new Error(
       "artifact ref is a bare " +
@@ -133,14 +138,19 @@ export function resolveArtifactFile(ref: string, outRoot: string): string {
   const absCand: string = resolve(cand);
   const absRoot: string = resolve(outRoot);
   const relToRoot: string = relative(absRoot, absCand);
-  if (relToRoot === ".." || relToRoot.startsWith(".." + sep)) {
+  // isAbsolute(relToRoot): relative() cannot cross a Windows drive —
+  // a candidate on another drive comes back ABSOLUTE, and the old
+  // ".."-only test passed it as inside (the drive-join cure,
+  // 2026-11-17). Posix relative() never returns absolute, so the
+  // added disjunct is inert there.
+  if (isAbsolute(relToRoot) || relToRoot === ".." || relToRoot.startsWith(".." + sep)) {
     throw new Error("artifact ref escapes the output root: " + JSON.stringify(raw));
   }
   if (!isFile(absCand)) {
     // The run id rides the ref's own first segment for every
     // prefix-URL, gallery-URL and runs-relative shape; an absolute
     // path carries no run, so "?" names that absence.
-    const run: string = prefix !== null || gallery !== null || (raw.includes("/") && !raw.startsWith("/"))
+    const run: string = prefix !== null || gallery !== null || (raw.includes("/") && !isAbsolute(raw))
       ? (prefix !== null ? raw.slice(prefix.length) : gallery !== null ? (gallery as string) : raw).split("/", 2)[0] as string // split yields >= 1
       : "?";
     throw new Error(

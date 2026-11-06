@@ -15,7 +15,7 @@
 // fixtures (fixture seed + fixture sentinel files, never the real
 // 7.4G tree; symlink creation against tmp dirs is fine).
 import { existsSync, lstatSync, mkdirSync, readFileSync, readlinkSync, symlinkSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, isAbsolute, join, resolve } from "node:path";
 import { loadEndpointConfig } from "@melite/comfyui-cordis";
 /** One sentinel's safe join: a sentinel escaping its home (.. or
  *  empty) is a declaration bug — false, never a filesystem escape. */
@@ -80,7 +80,10 @@ export function engineOutputDir(root) {
     if (typeof raw !== "string" || raw.trim() === "")
         return join(root, "output");
     const v = raw.trim();
-    return v.startsWith("/") ? v : join(root, v);
+    // (isAbsolute, not startsWith("/"): a win32-absolute output_dir
+    // carries a drive prefix and was resolved INTO the engine tree,
+    // putting the walk-up inside it)
+    return isAbsolute(v) ? v : join(root, v);
 }
 /** THE G3 LANES.ENV LEG (runtime-leg-cure audit G3): the endpoint's
  *  additive `lanes_env_file` key names the env file the lane unit is

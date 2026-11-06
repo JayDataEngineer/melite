@@ -42,7 +42,7 @@ import { segmentConfined, servableLeaf } from "@melite/contracts/mediaKinds";
 // enums, import type for types, .ts specifiers for relative imports.
 import { LEGACY_RUN_MEDIA_PREFIX, RUN_MEDIA_PREFIX, RUN_ID_RE } from "@melite/contracts/benchStage";
 import { statSync } from "node:fs";
-import { join } from "node:path";
+import { isAbsolute, join } from "node:path";
 /** The serving prefixes the estate owns (comfyui-upload's
  *  MEDIA/ASSET_ROUTE_PREFIX twins — detection is case-insensitive
  *  like the engine's; the sliced tail keeps its case). */
@@ -121,7 +121,10 @@ function detectFace(t) {
     const tail = galleryTail(t);
     if (tail !== null)
         return { face: "run", rest: tail, decoded: true };
-    if (t.startsWith("/"))
+    // (isAbsolute, not startsWith("/"): a win32-absolute disk path
+    // carries a drive prefix and misfiled as prose — no "/" anywhere —
+    // so staging refused it "not a source pointer")
+    if (isAbsolute(t))
         return { face: "abs", rest: t, decoded: false };
     // ONE SEGMENT LAW (li-aq.3, the design audit's L10): the old
     // `t.includes("..")` substring ban refused a LEGAL name the engine
@@ -310,7 +313,7 @@ export function resolveSourceRefs(refs, roots, cwd = process.cwd(), selfRunId = 
             // THE CWD FALL-THROUGH (the stager's own order — a tail the
             // trees miss still stages from the lane's cwd, so the guard
             // honors it too; same process, same cwd, no drift).
-            if (file === "" && !parsed.url.trim().startsWith("/")) {
+            if (file === "" && !isAbsolute(parsed.url.trim())) {
                 const cand = join(cwd, parsed.rel);
                 if (isFile(cand))
                     file = cand;

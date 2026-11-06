@@ -14,7 +14,7 @@
 // PROCESS on globalThis so the estate's re-apply churn (fresh
 // module instances every ~21s) can never reset it.
 import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 
 /** One bench stage's picks — the card it composes and the model it
  *  names (the model is unstated unless explicitly put in params). */
@@ -50,6 +50,25 @@ export function benchDir(storageRoot?: string): string {
   // default matches the store's own default so a config-free
   // caller and the store resolve the SAME tree.
   return join(storageRoot ?? benchStorageRoot(), "drafts", "docs");
+}
+
+/** Through-a-file probe: true when some existing prefix of `p` is a
+ *  FILE — `p` can never resolve to a directory. The errno taxonomy
+ *  splits by platform here (ENOTDIR on posix, ENOENT on Windows), so
+ *  the roster catch consults this instead of trusting the code alone:
+ *  a blocked roster is never the tolerated absence on any lane. */
+function blockedByFileAncestor(p: string): boolean {
+  let cur: string = p;
+  for (;;) {
+    try {
+      return statSync(cur).isFile();
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code !== "ENOENT") return false;
+    }
+    const parent: string = dirname(cur);
+    if (parent === cur) return false;
+    cur = parent;
+  }
 }
 
 /** The bench storage root — ONE symmetric seam (race-class audit
@@ -94,8 +113,12 @@ export function benchPicksSync(storageRoot?: string): StagePick[] {
     // the roster dir may not exist yet (first bench, nothing
     // persisted) or may be unreadable — both mean "no picks to
     // list", the function's own empty answer, never a crash of a
-    // census/read path that must degrade to nothing
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+    // census/read path that must degrade to nothing.
+    // ENOENT taxonomy split (windows-portability): a through-a-FILE
+    // roster path reports ENOENT on Windows (ENOTDIR on posix) — a
+    // blocked roster is never the tolerated absence on any lane.
+    const code = (error as NodeJS.ErrnoException).code;
+    if (code !== "ENOENT" || blockedByFileAncestor(dir)) {
       console.error("[benchPicksSync] roster read failed:", error);
     }
     return [];

@@ -101,6 +101,12 @@ const manage = (doc: unknown, ctx?: ManageCtx): Promise<[number, { ok: boolean; 
     [number, { ok: boolean; detail: string; action: string; state?: string; data?: unknown }]
   >;
 
+// No systemd/journal on Windows: the census consult (systemctl) and
+// the journal tails (journalctl) ride #!/bin/sh fake bins on PATH
+// that cannot execute there — every arm consulting them is gated on
+// this, while the pure-parse arms judge on every lane.
+const WIN_NO_SYSTEMD = process.platform === "win32";
+
 interface StatusData {
   state: string;
   engine_unit: {
@@ -132,7 +138,7 @@ afterEach(() => {
 });
 
 describe("the status truth — the census consult (D3-02 / R-2)", () => {
-  it("a reachable engine inside a restart/oom loop reads degraded, never up (the F3-09 green lie)", async () => {
+  it.skipIf(WIN_NO_SYSTEMD)("a reachable engine inside a restart/oom loop reads degraded, never up (the F3-09 green lie)", async () => {
     mkRoot();
     fakeBin({
       systemctl: { out: DEGRADED_SHOW, code: 0 },
@@ -164,7 +170,7 @@ describe("the status truth — the census consult (D3-02 / R-2)", () => {
     assert.match(String(data.engine_unit.note), /2\.33 s = 56 f/);
   });
 
-  it("W-4 — a restart-only degradation names the restart loop, never the oom lever", async () => {
+  it.skipIf(WIN_NO_SYSTEMD)("W-4 — a restart-only degradation names the restart loop, never the oom lever", async () => {
     mkRoot();
     fakeBin({
       systemctl: { out: "NRestarts=3\nExecMainStatus=0\nExecMainCode=n/a\n", code: 0 },
@@ -197,7 +203,7 @@ describe("the status truth — the census consult (D3-02 / R-2)", () => {
     assert.match(String(data.engine_unit.note), /cannot answer/);
   });
 
-  it("a dead engine inside the loop names WHY — the down voice carries the census words", async () => {
+  it.skipIf(WIN_NO_SYSTEMD)("a dead engine inside the loop names WHY — the down voice carries the census words", async () => {
     mkRoot();
     fakeBin({
       systemctl: { out: DEGRADED_SHOW, code: 0 },
@@ -213,7 +219,7 @@ describe("the status truth — the census consult (D3-02 / R-2)", () => {
     assert.match(env.detail, /restarts 3, last exit 9\/KILL/);
   });
 
-  it("a settled census keeps the plain up voice — no cry-wolf degradation", async () => {
+  it.skipIf(WIN_NO_SYSTEMD)("a settled census keeps the plain up voice — no cry-wolf degradation", async () => {
     mkRoot();
     fakeBin({
       systemctl: { out: SETTLED_SHOW, code: 0 },
@@ -239,8 +245,9 @@ describe("the status truth — the census consult (D3-02 / R-2)", () => {
 // the row (no invented 0/0 pair, no invented restart count), and a
 // journal tail that cannot be read is NAMED — never silent oom
 // evidence, never a merged claim. Same real exec seam (fake bins on
-// PATH), same status door as the consult walls above.
-describe("the census's unset words and silent journal — noise is never dressed as data", () => {
+// PATH), same status door as the consult walls above. Every arm
+// here consults the census or the journal — win-gated as a block.
+describe.skipIf(WIN_NO_SYSTEMD)("the census's unset words and silent journal — noise is never dressed as data", () => {
   it("a settled unit whose journal tail cannot be read names the absence — oom silence is never invented", async () => {
     mkRoot();
     fakeBin({
@@ -341,7 +348,7 @@ describe("the census's unset words and silent journal — noise is never dressed
   });
 });
 
-describe("the logs truth — the source stamp (D3-02 / R-2)", () => {
+describe.skipIf(WIN_NO_SYSTEMD)("the logs truth — the source stamp (D3-02 / R-2)", () => {
   const appLog = (): string => join(ROOT, "data", "runtime", "comfyui", "user", "comfyui_8289.log");
 
   it("wrapper-only tails are named as the unit's capture with a STALE app-log verdict — never as application output", async () => {

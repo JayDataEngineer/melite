@@ -11,7 +11,7 @@ import { isEstateSidecarName, mediaKindOf } from "./mediaKinds.ts"
 // RemoteError with the runs/* codes declared HERE (the producing
 // package, next to the throws).
 import { CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX } from "@melite/contracts/benchStage";
-import { join, relative } from "node:path";
+import { isAbsolute, join, relative, sep } from "node:path";
 import { Service } from "@deepseek-ai/cordis";
 import type { Context } from "@deepseek-ai/cordis";
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
@@ -204,6 +204,11 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
 
 
 
+// THE WIRE TAIL IS POSIX (the drive-join cure, 2026-11-17): every
+// served artifact tail normalizes at the mint — a native separator
+// never rides a url or gallery name.
+const wireTail = (tail: string): string => tail.split(sep).join('/')
+
 export function enrichDiskRow(row: Record<string, unknown>): Record<string, unknown> {
   const stages = Array.isArray(row['stages']) ? row['stages'] : []
   const artifacts = Array.isArray(row['artifacts'])
@@ -235,7 +240,22 @@ export function enrichDiskRow(row: Record<string, unknown>): Record<string, unkn
   const relative = (value: string): string => {
     const marker = `/${runId}/`
     const at = value.lastIndexOf(marker)
-    return at >= 0 ? value.slice(at + marker.length) : value.replace(/^\/+/, '')
+    if (at >= 0) return wireTail(value.slice(at + marker.length))
+    // THE DRIVE-JOIN SEGMENT HUNT (2026-11-17): Windows-harvested
+    // artifacts bound the run-id segment with backslashes (often
+    // mixed with posix tails stored earlier) — the posix marker
+    // never matches there and the absolute rode the wire raw. On a
+    // Windows-rooted value, hunt the segment bounded by either
+    // separator; a posix value is never drive- or UNC-rooted, so it
+    // keeps the old miss path byte-for-byte.
+    if (!/^(?:[A-Za-z]:[\\/]|\\\\)/u.test(value)) return value.replace(/^\/+/, '')
+    const seg = (c: string | undefined): boolean => c === '/' || c === '\\'
+    for (let at = value.lastIndexOf(runId); at > 0; at = value.lastIndexOf(runId, at - 1)) {
+      if (seg(value[at - 1]) && seg(value[at + runId.length])) {
+        return wireTail(value.slice(at + runId.length + 1))
+      }
+    }
+    return value.replace(/^\/+/, '')
   }
   // ONE VOCABULARY (the li-ay stroke): this private regex was the
   // hero's ONLY media law — it carried avif|m4v|avi the contract's
@@ -2788,8 +2808,13 @@ export class RunsRuntimeService extends Service {
       // the receipt printed a path that exists nowhere. Relativize
       // off the RUN DIR: the join restores exactly <run-id>/<rel>.
       artifacts: [...run.artifacts].map((a: string): string =>
-        a.startsWith("/")
-          ? [run.runId, relative(join(outRootFor(this.ctx.queue.stateRoot, run.testFlag), run.runId), a)].join("/")
+        // isAbsolute, not startsWith("/"): a Windows-harvested
+        // artifact is drive-rooted — the posix-only gate served it
+        // raw (the drive-join cure, 2026-11-17). The relativized
+        // tail re-spells to posix: the wire face never carries a
+        // native separator.
+        isAbsolute(a)
+          ? [run.runId, wireTail(relative(join(outRootFor(this.ctx.queue.stateRoot, run.testFlag), run.runId), a))].join("/")
           : a,
       ),
       error: run.error,

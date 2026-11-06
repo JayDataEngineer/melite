@@ -99,7 +99,9 @@ describe("the manage plane — the LoRA doors (the Manager sidebar's own vocabul
     assert.equal(res.ok, true);
     const data = res.data as Record<string, unknown>;
     assert.deepEqual(data["engine_loras"], OBJECT_INFO);
-    assert.equal(data["install_dir"], "/models/loras");
+    // join-derived from the endpoint's model_base_path — the fs join
+    // is sep-aware, so the pin follows (posix stays "/models/loras").
+    assert.equal(data["install_dir"], join("/models", "loras"));
     if (prevRows === undefined) delete process.env["MELITE_USER_LORAS"];
     else process.env["MELITE_USER_LORAS"] = prevRows;
     // the rows file is read from the declared path (absent here = the

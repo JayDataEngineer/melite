@@ -268,7 +268,10 @@ describe("mediaCandidates", () => {
     assert.deepEqual(rels, ["A.mp3", "b.png", "plain", "gen/x.png"]);
   });
 
-  it("an unreadable root lists nothing; an unreadable sub is skipped", () => {
+  // Windows: chmod mode bits are ignored (admin runner) — see above.
+  // The chmod-free missing-root refusal rides the lane-independent
+  // arm below.
+  it.skipIf(process.platform === "win32")("an unreadable root lists nothing; an unreadable sub is skipped", () => {
     const root = tmp();
     assert.deepEqual(mediaCandidates(join(root, "missing")), []);
     mkdirSync(join(root, "sub"));
@@ -279,6 +282,13 @@ describe("mediaCandidates", () => {
     } finally {
       chmodSync(join(root, "sub"), 0o755);
     }
+  });
+
+  it("a missing root lists nothing (the chmod-free half — lane-independent)", () => {
+    // The portable half of the arm above: no chmod involved, so this
+    // judges on every lane including Windows.
+    const root = tmp();
+    assert.deepEqual(mediaCandidates(join(root, "missing")), []);
   });
 });
 
@@ -419,7 +429,8 @@ describe("runDirHasMedia", () => {
     assert.equal(runDirHasMedia(join(root, "missing")), false);
   });
 
-  it("an unreadable sub never fails the scan", () => {
+  // Windows: chmod mode bits are ignored (admin runner) — see above.
+  it.skipIf(process.platform === "win32")("an unreadable sub never fails the scan", () => {
     const root = tmp();
     writeFileSync(join(root, "plain"), "f");
     mkdirSync(join(root, "sub"));
@@ -1294,7 +1305,8 @@ describe("runArchivedArtifacts — the tucked walk's own edges", () => {
     assert.deepEqual(arts.map((a) => a["name"]), ["old.png"]);
   });
 
-  it("an unreadable tucked subdir is skipped, never a throw", () => {
+  // Windows: chmod mode bits are ignored (admin runner) — see above.
+  it.skipIf(process.platform === "win32")("an unreadable tucked subdir is skipped, never a throw", () => {
     const dir = tuckDir();
     mkdirSync(join(dir, "_archived", "sub"), { recursive: true });
     writeFileSync(join(dir, "_archived", "sub", "x.png"), "x");

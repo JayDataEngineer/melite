@@ -216,7 +216,9 @@ describe("resolveSourceRefs", () => {
         /resolve nowhere/.test(e.message) &&
         e.message.includes("gone.png") &&
         e.message.includes("gone.flac") &&
-        e.message.includes(root),
+        // the voice JSON-stringifies the roots array — match that
+        // spelling (a win32 root's backslashes are escaped in it)
+        e.message.includes(JSON.stringify(root)),
     );
   });
 

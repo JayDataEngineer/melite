@@ -2,7 +2,7 @@
 // skillPlane.ts): tool properties, flow declarations, doc/spawn
 // rows, engine/model/card/flow rows — module truth over paths.
 import { readdirSync } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { DIR_ID_ALIASES, isDir, isFile, subdirs, readText, stem } from "./skillFs.js";
 import { authoredSkillDoc } from "./skillAuthored.js";
 import { frontmatter, gateSkill } from "./skillFrontmatter.js";
@@ -116,8 +116,9 @@ export function readDoc(path, sid, scope, genre, card, model) {
     if (text === null)
         return null;
     const fm = frontmatter(text);
-    // (split never yields [] — pop is always a string here)
-    const leaf = path.split("/").pop();
+    // (basename: the doc path is a native fs path — a posix split
+    // pins the leaf wrong on win32, where the separator is "\")
+    const leaf = basename(path);
     const gated = gateSkill(sid, fm.name !== "" ? fm.name : stem(leaf), 
     // SERVED WHOLE (operator 2026-11-12: "qwen 21 can accept very
     // long prompts and skills — that is intentional"): the authored
@@ -378,9 +379,10 @@ export function cardUnitDirs(engine, repo) {
     // owner is comfyui-cordis (factsPath in cardsRegistry.ts hardcodes it;
     // packages/engines/comfyui/src/ holds only action_cards tenants, it is
     // never itself an engine entry).
-    // (split never yields [] — pop is always a string here; dir names
-    // are unique so the equal arm never fires)
-    if (engine.split("/").pop() !== "comfyui-cordis")
+    // (basename: engine is a native fs path — a posix split never
+    // matches on win32, so the owner-engine gate misfired and the
+    // domains walk came back empty there)
+    if (basename(engine) !== "comfyui-cordis")
         return out.sort((a, b) => (a.cname < b.cname ? -1 : a.cname > b.cname ? 1 : /* v8 ignore next */ 0));
     for (const genre of ["3d", "audio", "image", "motion", "video"]) {
         const droot = join(repo, "packages", genre);

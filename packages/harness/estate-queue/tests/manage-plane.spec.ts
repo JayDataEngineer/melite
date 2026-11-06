@@ -567,7 +567,21 @@ describe("hStatus", () => {
       const [rcode, renv] = await manage({ action: "restart" });
       assert.equal(rcode, 409);
       assert.match(String(renv.detail), /run-mystery \(state unreadable: EISDIR\)/);
-      // and an unreadable EXTRA root is named, not swallowed
+    } finally {
+      rmRoot();
+    }
+  });
+
+  // The ENOTDIR half of the arm above: an unreadable EXTRA root is
+  // named with its errno, not swallowed. Split out because the errno
+  // taxonomy is posix-only — on Windows the same file-as-root scan
+  // surfaces a different code (ENOENT-silence), so this half cannot
+  // judge there. The EISDIR half above runs on every lane.
+  it.skipIf(process.platform === "win32")("FAIL-CLOSED: an unreadable extra root is named with its errno (the ENOTDIR half — posix errno taxonomy)", async () => {
+    mkRoot();
+    try {
+      // an unreadable EXTRA root is named, not swallowed
+      mkdirSync(join(ROOT, "data", "runs"), { recursive: true });
       const rootAsFile = join(ROOT, "data", "runs-as-file");
       writeFileSync(rootAsFile, "not a directory");
       EXTRAS = [rootAsFile];
@@ -686,7 +700,9 @@ describe("lifecycle guard + orchestration", () => {
     }
   });
 
-  it("stop/launch ride systemctl (ok + failed + missing)", async () => {
+  // No systemd on Windows: stop/launch shell out to systemctl via a
+  // #!/bin/sh fake bin on PATH that cannot execute there.
+  it.skipIf(process.platform === "win32")("stop/launch ride systemctl (ok + failed + missing)", async () => {
     mkRoot();
     try {
       fakeBin({ systemctl: { out: "", code: 0 } });
@@ -747,7 +763,9 @@ describe("lifecycle guard + orchestration", () => {
 });
 
 describe("hLifecycle cancellation", () => {
-  it("cancels an in-flight systemctl action", async () => {
+  // No systemd on Windows — see above: the in-flight systemctl call
+  // is a #!/bin/sh fake that cannot execute there.
+  it.skipIf(process.platform === "win32")("cancels an in-flight systemctl action", async () => {
     mkRoot();
     const bin = mkdtempSync(join(tmpdir(), "manage-cancel-"));
     try {
@@ -770,7 +788,10 @@ describe("hLifecycle cancellation", () => {
 });
 
 describe("hLogs", () => {
-  it("tails the journal (clamped), stamps the source, and degrades without it", async () => {
+  // No journal on Windows: the tail shells out to journalctl via a
+  // #!/bin/sh fake bin on PATH that cannot execute there. The
+  // no-journal degrade half rides the lane-independent arm below.
+  it.skipIf(process.platform === "win32")("tails the journal (clamped), stamps the source, and degrades without it", async () => {
     mkRoot();
     try {
       fakeBin({ journalctl: { out: "l1\n\nl2\n", code: 0 } });
@@ -781,6 +802,21 @@ describe("hLogs", () => {
       const data = env.data as { source: { kind: string; unit: string }; app_log: Record<string, unknown>; lines: string[] };
       assert.equal(data.source.kind, "journal");
       assert.deepEqual(data.lines, ["l1", "l2"]);
+      process.env.PATH = mkdtempSync(join(tmpdir(), "emptybin-"));
+      const [c2, e2] = await manage({ action: "logs" });
+      assert.equal(c2, 503);
+      assert.match(e2.detail, /need the estate deployment's journal/);
+    } finally {
+      rmRoot();
+    }
+  });
+
+  it("no journal on PATH degrades loud (the portable degrade half — lane-independent)", async () => {
+    // The portable half of the arm above: no fake bin involved, so
+    // this judges on every lane including Windows (where the
+    // journal-tail half is skipped).
+    mkRoot();
+    try {
       process.env.PATH = mkdtempSync(join(tmpdir(), "emptybin-"));
       const [c2, e2] = await manage({ action: "logs" });
       assert.equal(c2, 503);
@@ -1949,11 +1985,8 @@ describe("residual arms", () => {
         relativePath: "checkpoints",
         filename: "m.bin",
       }]);
-      fakeBin({ systemctl: { out: "", code: 0 } });
-      route(() => json({}));
-      const [c2, e2] = await manage({ action: "stop" });
-      assert.equal(c2, 200);
-      assert.match(e2.detail, /stop issued/);
+      // The stop half rides the win-gated arm below (it shells out
+      // to systemctl); download + install judge on every lane.
       fakeProvisioning.plans.set(resourceKey(extensionRef("c1")), extensionPlan("c1"));
       fakeProvisioning.plans.set(resourceKey(extensionRef("pack")), extensionPlan("pack"));
        const [c3, e3] = await manage({ action: "install_extension", nodes: ["c1", "pack", "ghost"] });
@@ -1968,6 +2001,21 @@ describe("residual arms", () => {
       const [c5, e5] = await manage({ action: "install_extension", nodes: ["3.0"] });
       assert.equal(c5, 404);
       assert.match(e5.detail, /extension is not declared: 3\.0/);
+    } finally {
+      rmRoot();
+    }
+  });
+
+  // No systemd on Windows: stop shells out to systemctl via a
+  // #!/bin/sh fake bin on PATH that cannot execute there.
+  it.skipIf(process.platform === "win32")("a bare stop issues via systemctl (the residual arm's stop half)", async () => {
+    mkRoot();
+    try {
+      fakeBin({ systemctl: { out: "", code: 0 } });
+      route(() => json({}));
+      const [c2, e2] = await manage({ action: "stop" });
+      assert.equal(c2, 200);
+      assert.match(e2.detail, /stop issued/);
     } finally {
       rmRoot();
     }

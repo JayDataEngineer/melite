@@ -2,7 +2,7 @@
 // skillPlane.ts): tool properties, flow declarations, doc/spawn
 // rows, engine/model/card/flow rows — module truth over paths.
 import { readdirSync } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { DIR_ID_ALIASES, isDir, isFile, subdirs, readText, stem } from "./skillFs.ts";
 import { authoredSkillDoc } from "./skillAuthored.ts";
 import { frontmatter, gateSkill } from "./skillFrontmatter.ts";
@@ -158,8 +158,9 @@ export function readDoc(
   const text: string | null = readText(path);
   if (text === null) return null;
   const fm: { name: string; description: string } = frontmatter(text);
-  // (split never yields [] — pop is always a string here)
-  const leaf: string = path.split("/").pop() as string;
+  // (basename: the doc path is a native fs path — a posix split
+  // pins the leaf wrong on win32, where the separator is "\")
+  const leaf: string = basename(path);
   const gated: SkillRow = gateSkill(
     sid,
     fm.name !== "" ? fm.name : stem(leaf),
@@ -476,9 +477,10 @@ export function cardUnitDirs(engine: string, repo: string): { genre: string; cna
   // owner is comfyui-cordis (factsPath in cardsRegistry.ts hardcodes it;
   // packages/engines/comfyui/src/ holds only action_cards tenants, it is
   // never itself an engine entry).
-  // (split never yields [] — pop is always a string here; dir names
-  // are unique so the equal arm never fires)
-  if ((engine.split("/").pop() as string) !== "comfyui-cordis") return out.sort((a, b) => (a.cname < b.cname ? -1 : a.cname > b.cname ? 1 : /* v8 ignore next */ 0));
+  // (basename: engine is a native fs path — a posix split never
+  // matches on win32, so the owner-engine gate misfired and the
+  // domains walk came back empty there)
+  if (basename(engine) !== "comfyui-cordis") return out.sort((a, b) => (a.cname < b.cname ? -1 : a.cname > b.cname ? 1 : /* v8 ignore next */ 0));
   for (const genre of ["3d", "audio", "image", "motion", "video"]) {
     const droot = join(repo, "packages", genre);
     if (!isDir(droot)) continue;

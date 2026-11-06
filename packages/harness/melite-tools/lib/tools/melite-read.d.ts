@@ -19,7 +19,10 @@ export declare function assertRunId(runId: string): void;
 /** Is this name a text row by extension? */
 export declare function isTextName(name: string): boolean;
 /** Walk one run directory for its text rows (pure over the tree, the
- *  media list arm's shape: depth-bounded, mtime-newest first, capped). */
+ *  media list arm's shape: depth-bounded, byte-order sorted, capped —
+ *  the sort pins the row order platform-independently, so every voice
+ *  built from the rows (miss, ambiguous-refusal) names them in ONE
+ *  order on every lane). */
 export declare function listRunText(runDir: string): Promise<TextRow[]>;
 type ReadResult = {
     runId: string;

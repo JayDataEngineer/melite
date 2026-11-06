@@ -771,8 +771,12 @@ describe("registerCompiledRun", () => {
   // Root bypasses permission bits, and a `return` on that path records
   // a PASS — the wall's own "never a silent skip" contract held only in
   // a comment (audit 2026-10-13). Declared skip now, so a root runner
-  // reports SKIPPED rather than a false green.
-  it.skipIf(typeof process.geteuid === "function" && process.geteuid() === 0)(
+  // reports SKIPPED rather than a false green. Windows joins the skip:
+  // chmod mode bits are ignored (admin runner), so the EACCES refusal
+  // never fires there either.
+  it.skipIf(
+    (typeof process.geteuid === "function" && process.geteuid() === 0) || process.platform === "win32",
+  )(
     "an unwritable state root throws LOUD (a refusal contract, never a silent skip)",
     async () => {
       // registerCompiledRun raw-throws the node fs Error (the write's

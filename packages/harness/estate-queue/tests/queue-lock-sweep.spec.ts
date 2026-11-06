@@ -49,7 +49,9 @@ describe("the lock plane's tail arms", () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
-  it("a read-only root after a dead-pid collision refuses the steal", () => {
+  // Windows: chmod mode bits are ignored (admin runner) — the
+  // read-only root still steals, so this refusal never fires here.
+  it.skipIf(process.platform === "win32")("a read-only root after a dead-pid collision refuses the steal", () => {
     const root = mkdtempSync(join(tmpdir(), "melite-lockr-"));
     try {
       writeFileSync(join(root, "gateway.lock"), String(2 ** 31 - 1));
@@ -65,7 +67,8 @@ describe("the lock plane's tail arms", () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
-  it("an unwritable runs root with no stale lock steals into EACCES and the note names the root's mode", () => {
+  // Windows: chmod mode bits are ignored (admin runner) — see above.
+  it.skipIf(process.platform === "win32")("an unwritable runs root with no stale lock steals into EACCES and the note names the root's mode", () => {
     const root = mkdtempSync(join(tmpdir(), "melite-locke-"));
     try {
       const runs = join(root, "runs");
@@ -86,7 +89,10 @@ describe("the lock plane's tail arms", () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
-  it("releaseLock: absent file, foreign holder, and read-only unlink all refuse", () => {
+  // Windows: chmod mode bits are ignored (admin runner) — the
+  // read-only unlink still frees, so the third refusal never fires.
+  // The chmod-free refusals ride the lane-independent arm below.
+  it.skipIf(process.platform === "win32")("releaseLock: absent file, foreign holder, and read-only unlink all refuse", () => {
     const root = mkdtempSync(join(tmpdir(), "melite-lockrel-"));
     try {
       assert.equal(releaseLock(root, 444444), false, "absent lock refuses");
@@ -99,6 +105,21 @@ describe("the lock plane's tail arms", () => {
       assert.equal(releaseLock(root, 444444), true, "the owner frees its own");
     } finally {
       chmodSync(root, 0o755);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+  it("releaseLock: the chmod-free refusals (absent file, foreign holder) — lane-independent", () => {
+    // The portable half of the arm above: no chmod involved, so this
+    // judges on every lane including Windows (where the read-only
+    // unlink half is skipped).
+    const root = mkdtempSync(join(tmpdir(), "melite-lockrel-portable-"));
+    try {
+      assert.equal(releaseLock(root, 444444), false, "absent lock refuses");
+      writeFileSync(join(root, "gateway.lock"), String(555555));
+      assert.equal(releaseLock(root, 444444), false, "a foreign pid never frees another's lock");
+      writeFileSync(join(root, "gateway.lock"), String(444444));
+      assert.equal(releaseLock(root, 444444), true, "the owner frees its own");
+    } finally {
       rmSync(root, { recursive: true, force: true });
     }
   });

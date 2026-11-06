@@ -19,7 +19,7 @@
 // Erasable-syntax TS only (node --experimental-strip-types).
 import { isFile } from "./skillFs.js";
 import { CARD_PLANE_ENGINE, LEGACY_RUN_MEDIA_PREFIX, RUN_MEDIA_PREFIX } from "@melite/contracts/benchStage";
-import { join, resolve } from "node:path";
+import { isAbsolute, join, resolve } from "node:path";
 import { mediaVocab } from "./mediaKinds.js";
 import { validateBakeParams } from "./bakeParams.js";
 /** A flow's initial KEYS as disclosure serves them (F57, operator
@@ -517,7 +517,11 @@ export function initialFileCandidates(raw, roots) {
             cands.push(join(root, rel));
         }
     }
-    else if (raw.startsWith("/")) {
+    else if (isAbsolute(raw)) {
+        // (isAbsolute, not startsWith("/"): a native absolute path
+        // carries backslashes on win32 and fell into the relative
+        // branch — resolve()d twice into a doubled candidate. On posix
+        // the two spellings coincide.)
         cands.push(raw);
     }
     else {

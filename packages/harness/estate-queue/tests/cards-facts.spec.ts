@@ -1,6 +1,7 @@
 // cards-facts.spec.ts — the decl projection's every arm (pure:
 // crafted defs + facts in, rows out) + the frozen facts path.
 import { describe, it, expect } from "vitest";
+import { sep } from "node:path";
 import { factsPath, deriveDecls } from "../src/cardsFacts.ts";
 import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import type { ModelFactsRow } from "../src/cardsFacts.ts";
@@ -26,7 +27,9 @@ describe("factsPath (the frozen data path)", () => {
   });
 });
 
-const joinSep = (parts: string[]): string => parts.join("/");
+// Sep-aware: factsPath() is a native fs path, so the pinned fragment
+// must join with the platform separator (posix "/" pins red on win32).
+const joinSep = (parts: string[]): string => parts.join(sep);
 
 describe("deriveDecls (defs + facts -> rows)", () => {
   it("projects skeleton, board, schema knob surface, admits, spells", () => {

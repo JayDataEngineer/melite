@@ -123,9 +123,11 @@ describe("benchPicksSync — the live seat's law", () => {
       errors.some((a) => String(a[0]).includes("[benchPicksSync] roster read failed:")),
       `the roster failure must voice itself: ${JSON.stringify(errors.map((a) => String(a[0])))}`,
     );
+    // The voiced cause carries the platform's errno word: ENOTDIR on
+    // posix, ENOENT on Windows (the through-a-file taxonomy split).
     assert.ok(
-      errors.some((a) => (a[1] as NodeJS.ErrnoException)?.code === "ENOTDIR"),
-      "the voiced failure carries the ENOTDIR cause",
+      errors.some((a) => ["ENOTDIR", "ENOENT"].includes((a[1] as NodeJS.ErrnoException)?.code ?? "")),
+      "the voiced failure carries the cause",
     );
   });
 });
