@@ -129,7 +129,7 @@ extensions:
   # Prior pin 63649245 (dead upstream 2026-11-15: xmarre force-pushed
   # past it; the comfyui-push-gate's live probe caught it); prior pin
   # e26faa9 (2026-11-14, the F62 close-out re-pin).
-  ref: b0f73789b063733e9569fed63470bed6071ba64f
+  ref: fdf7f56bab0eb9e5ffbf1aa402a246dd440178c3
   required: true
   desc: >-
     H3 learned-latent upscale pack (the SOTA plan's P2 pick over

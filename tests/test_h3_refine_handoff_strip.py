@@ -122,6 +122,55 @@ class ForeignDriftControlState:
         return denoise_mask
 
 
+class ForeignSelfLiftState:
+    """The SECOND burn class (2026-11-16, Handoff.1, 21 nodes in): the
+    Drift-Control apply-model wrapper calls its own mask split
+    DIRECTLY on the self-lift pass — a path that never rides the
+    popped denoise_mask_function. The upstream self-lift armed the
+    state (selflift_base_mask + the enlarged video_shape), the shared
+    state survived the model clone, and the SECOND window's handoff
+    died with the same ValueError the first cure pinned. Mirrors
+    drift_control_av.py's wrapper verbatim: _update_masks slices the
+    packed mask at prod(video_shape[1:]) and demands the audio tail
+    equal prod(audio_shape)."""
+
+    WRAPPER_KEY = "minimax_h3_timeline_drift_control_av"
+    APPLY_MODEL = "apply_model"
+
+
+    def __init__(self, video_shape, audio_shape, enlarged_video_shape):
+        self.video_shape = enlarged_video_shape
+        self.audio_shape = audio_shape
+        self.install_video_elements = math.prod(video_shape[1:])
+        self.wrapper_calls = 0
+        # configure_selflift_stage arms the packed base mask from the
+        # INSTALL-time streams — sized for the window, never the
+        # enlarged refinement grid.
+        self.selflift_base_mask = torch.ones(
+            (1, 1, self.install_video_elements + math.prod(audio_shape))
+        )
+
+    def apply_model_wrapper(self, executor, *args, **kwargs):
+        self.wrapper_calls += 1
+        if self.selflift_base_mask is not None:
+            sigma = args[1] if len(args) > 1 else kwargs.get("t")
+            # _update_masks, selflift branch: video is sliced by the
+            # ENLARGED video_shape, the audio tail is whatever
+            # remains — and the remainder no longer matches.
+            video_elements = math.prod(self.video_shape[1:])
+            audio = self.selflift_base_mask[..., video_elements:]
+            if int(audio.numel()) != math.prod(self.audio_shape):
+                raise ValueError(
+                    "Drift-Control AV packed mask does not match its audio stream"
+                )
+        return executor(*args, **kwargs)
+
+
+# The strip body's reference to the pack's module constant (one
+# spelling law: the director pack's key literal appears exactly once).
+_DRIFT_CONTROL_WRAPPER_KEY_REF = "_DRIFT_CONTROL_WRAPPER_KEY"
+
+
 class FakeNoise:
     seed = 123
 
@@ -131,11 +180,23 @@ class FakeNoise:
 
 
 class FakeModelPatcher:
-    def __init__(self, model_options=None):
+    def __init__(self, model_options=None, wrappers=None):
         self.model_options = copy.deepcopy(model_options or {})
+        # Mirror the engine's ModelPatcher wrapper store
+        # (model_patcher.py:370, clone copies per-key at :477).
+        self.wrappers = copy.deepcopy(wrappers or {})
 
     def clone(self):
-        return FakeModelPatcher(self.model_options)
+        return FakeModelPatcher(self.model_options, self.wrappers)
+
+    def add_wrapper_with_key(self, wrapper_type, key, wrapper):
+        self.wrappers.setdefault(wrapper_type, {}).setdefault(key, []).append(wrapper)
+
+    def remove_wrappers_with_key(self, wrapper_type, key):
+        self.wrappers.get(wrapper_type, {}).pop(key, None)
+
+    def get_wrappers(self, wrapper_type, key):
+        return list(self.wrappers.get(wrapper_type, {}).get(key, []))
 
 
 class FakeGuider:
@@ -171,6 +232,12 @@ class FakeGuider:
                  math.prod(video.shape[1:]) + math.prod(audio.shape))
             )
             fn(sigmas[0] if getattr(sigmas, "ndim", 0) else sigmas, packed)
+        # Real ComfyUI runs every APPLY_MODEL wrapper around the model
+        # call each step (the executor chain) — the seat the second
+        # burn class rides, independent of the mask function above.
+        for wrapper in self.model.get_wrappers("apply_model",
+                                               ForeignSelfLiftState.WRAPPER_KEY):
+            wrapper(lambda *a, **kw: None, torch.zeros(1), t=sigmas[0])
         noise_video, noise_audio = noise.unbind()
         return FakeNested([video + noise_video, audio + noise_audio])
 
@@ -245,6 +312,36 @@ def test_the_strip_lives_in_the_handoff_before_the_guider():
     )
 
 
+def test_the_strip_is_complete_both_seats():
+    """SOURCE LAW, the second burn (2026-11-16): popping the mask
+    FUNCTION alone leaves the patch's apply-model wrapper live — and
+    the wrapper splits its own packed mask on the self-lift path,
+    with no ride through the popped function. The strip must remove
+    the WRAPPER (keyed by the director pack's one spelling) and the
+    shared state handle too, or the second window's handoff dies
+    with the first burn's ValueError."""
+    src = MODULE_PATH.read_text()
+    start = src.find("def _strip_foreign_denoise_mask_patch(")
+    end = src.find("\ndef ", start + 1)
+    assert start != -1 and end != -1, "the strip helper vanished"
+    body = src[start:end]
+    assert 'pop("denoise_mask_function"' in body, (
+        "the strip must drop the mask function seat"
+    )
+    assert 'remove("apply_model"' in body, (
+        "the wrapper removal must key the APPLY_MODEL wrapper type "
+        "(WrappersMP.APPLY_MODEL's own value, spelled literally)"
+    )
+    assert body.count(_DRIFT_CONTROL_WRAPPER_KEY_REF) >= 2, (
+        "the strip body must key the removal and the state-handle pop "
+        "by the drift-control wrapper key constant"
+    )
+    assert src.count(f'"{ForeignSelfLiftState.WRAPPER_KEY}"') == 1, (
+        "the director pack's wrapper key is spelled exactly ONCE in "
+        "the pack (the module constant) — never duplicated inline"
+    )
+
+
 @needs_torch
 def test_the_strip_judged_live_at_the_pass_that_burned(monkeypatch):
     """THE CATCH-BEFORE-LIVE ARM, cure half: a MODEL carrying a
@@ -294,3 +391,52 @@ def test_the_strip_is_identity_on_ordinary_models():
     assert refine._strip_foreign_denoise_mask_patch(clean) is clean
     bare = object()
     assert refine._strip_foreign_denoise_mask_patch(bare) is bare
+
+
+@needs_torch
+def test_the_second_window_never_inherits_a_selflift_armed_wrapper(monkeypatch):
+    """THE CATCH-BEFORE-LIVE ARM, second burn (2026-11-16, the live
+    press at Handoff.1, 21 nodes executed first): the upstream
+    self-lift armed the Drift-Control state, the wrapper (not the
+    popped function) splits the packed mask on the ENLARGED grid, and
+    the second window's handoff died with the first burn's
+    ValueError. The strip must remove the wrapper seat on the clone —
+    sampling completes, the original keeps its wrapper for every
+    other graph consumer."""
+    install_fake_comfy(monkeypatch)
+    refine = _refine()
+    state = ForeignSelfLiftState(WINDOW_VIDEO, AUDIO, REFINE_VIDEO)
+    model = FakeModelPatcher()
+    model.add_wrapper_with_key(
+        ForeignSelfLiftState.APPLY_MODEL,
+        ForeignSelfLiftState.WRAPPER_KEY,
+        state.apply_model_wrapper,
+    )
+
+    out = refine.run_h3_refinement(
+        make_joint(),
+        model=model,
+        positive=[[torch.ones(1), {}]],
+        negative=None,
+        noise=FakeNoise(),
+        sampler=object(),
+        sigmas=torch.tensor([0.25, 0.1, 0.0]),
+        cfg=1.0,
+        lock_audio=False,
+    )
+
+    video, audio = out["samples"].unbind()
+    assert torch.all(video == 3.0), "sampling completed — the burn never fired"
+    assert torch.all(audio == 6.0)
+    assert state.wrapper_calls == 0, (
+        "the self-lift-armed wrapper never fired against the enlarged grid"
+    )
+    guider_model = FakeGuider.last.model
+    assert guider_model.get_wrappers(
+        ForeignSelfLiftState.APPLY_MODEL, ForeignSelfLiftState.WRAPPER_KEY
+    ) == [], "the clone carries no drift-control apply-model wrapper"
+    assert len(model.get_wrappers(
+        ForeignSelfLiftState.APPLY_MODEL, ForeignSelfLiftState.WRAPPER_KEY
+    )) == 1, (
+        "the ORIGINAL model keeps its wrapper for every other graph consumer"
+    )
