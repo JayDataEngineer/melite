@@ -16,7 +16,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { COVERAGE_BASELINE } from "../../../../scripts/coverage-baseline.ts";
+import { COVERAGE_BASELINE, COVERAGE_BASELINE_UNSEATED, effectiveBaseline } from "../../../../scripts/coverage-baseline.ts";
 
 const ROOT = join(__dirname, "..", "..", "..", "..");
 
@@ -2716,6 +2716,90 @@ import { emptyTableVerdict } from "../../../../scripts/coverage-rows-tripwire.mj
 // package.json's test:coverage) refuses the lying faces; these arms
 // hold it to its own law and hold the config to the no-negation rule.
 // Registry: gates-coverage-rows-tripwire.
+describe("THE UNSEATED OVERLAY (two seat faces, one gate — the 2026-11-16 margin-debt cure)", () => {
+  // Registry: gates-coverage-baseline. The store-seated design (the
+  // 2026-11-05 guard) seats the real-weights arms dev-side; CI pools
+  // carry no model store, so those describes skip and the
+  // machine-state conditional arms take their absent branches. The
+  // seated floors above would redden CI structurally — forever, on
+  // every push — so scripts/coverage-baseline.ts carries a SECOND
+  // table (COVERAGE_BASELINE_UNSEATED) that vitest.config rides on
+  // top of the base exactly when the store is absent. These arms hold
+  // the overlay to its own law; the base table's ratchet above stays
+  // the seated battery's law, untouched.
+  it("face purity: the seated battery judges the base table verbatim; an unseated pool judges base with the overlay replacing its rows wholesale", () => {
+    expect(effectiveBaseline(true), "the seated face must never see an overlay floor").toEqual(COVERAGE_BASELINE);
+    expect(effectiveBaseline(false), "the unseated face is exactly the base with overlay rows replaced")
+      .toEqual({ ...COVERAGE_BASELINE, ...COVERAGE_BASELINE_UNSEATED });
+  });
+  it("no orphans: every overlay row re-floors a file the base already judges", () => {
+    for (const key of Object.keys(COVERAGE_BASELINE_UNSEATED)) {
+      assert(
+      COVERAGE_BASELINE[key] !== undefined, `overlay row ${key} has no base row — the overlay may re-floor a judged file, never seat a new one`);
+    }
+  });
+  it("relief only, null parity: an overlay floor never exceeds its base floor, and null-ness must agree per metric", () => {
+    for (const [key, row] of Object.entries(COVERAGE_BASELINE_UNSEATED)) {
+      const base = COVERAGE_BASELINE[key]!;
+      for (const metric of ["statements", "branches", "functions", "lines"] as const) {
+        const overlayFloor = row[metric];
+        const baseFloor = base[metric];
+        assert(
+      overlayFloor === null || baseFloor === null ? overlayFloor === baseFloor : overlayFloor <= baseFloor,
+          `${key} ${metric}: the unseated face cannot cover more than the seated face (overlay ${String(overlayFloor)} vs base ${String(baseFloor)})`,
+        );
+      }
+    }
+  });
+  it("the integer-margin law: a RELIEVED floor is a whole number; an unrelieved metric travels at its base floor verbatim", () => {
+    // Unseated faces jitter with the CI pool (service.ts branches
+    // measured 91.84 then 91.75 across two runs); a fractional floor
+    // pinned at one observation flaps on the next. A relieved metric
+    // (one whose unseated face sits below its seated floor) is the
+    // INTEGER FLOOR of the minimum observed face: jitter stays green,
+    // a real regression crosses the integer and reds. A metric the
+    // unseated pool still covers at or above its seated floor rides
+    // the base floor unchanged — the overlay re-floors only what the
+    // seat changes, and every other value stays argued by the seated
+    // ratchet above.
+    for (const [key, row] of Object.entries(COVERAGE_BASELINE_UNSEATED)) {
+      const base = COVERAGE_BASELINE[key]!;
+      for (const metric of ["statements", "branches", "functions", "lines"] as const) {
+        const floor = row[metric];
+        const baseFloor = base[metric];
+        if (floor === null || baseFloor === null) continue;
+        assert(
+      floor === baseFloor || Number.isInteger(floor),
+          `${key} ${metric}: ${floor} — a relieved unseated floor is a whole-number fence, never an at-the-face pin; an unrelieved one travels at base (${String(baseFloor)})`,
+        );
+      }
+    }
+  });
+  it("the overlay ratchets like the base: no unseated floor moves DOWN against HEAD", (ctx) => {
+    const prev = execFileSyncSafe(["git", "show", "HEAD:scripts/coverage-baseline.ts"]);
+    if (prev === null) {
+      ctx.skip(true, "no git history available — overlay monotonicity unproven here");
+      return;
+    }
+    const start = prev.indexOf("COVERAGE_BASELINE_UNSEATED");
+    if (start === -1) return; // the overlay is NEW in this landing — nothing to compare
+    const overlaySource = prev.slice(start);
+    const before = parseRows(overlaySource);
+    for (const [key, row] of Object.entries(COVERAGE_BASELINE_UNSEATED)) {
+      const was = before[key];
+      if (was === undefined) continue; // a new overlay row cannot move down
+      for (const metric of ["statements", "branches", "functions", "lines"] as const) {
+        const now = row[metric];
+        if (now === null || was[metric] === null) continue;
+        assert(
+      now >= (was[metric] as number),
+          `${key} ${metric} moved down from ${String(was[metric])} to ${String(now)} — re-seat an unseated face only UPWARD, or argue the drop`,
+        );
+      }
+    }
+  });
+});
+
 describe("THE COVERAGE EMPTY-TABLE TRIPWIRE (no rows is a loud failure, never a silent 0% pass)", () => {
   it("refuses the missing-summary face — a run that skipped its report", () => {
     const verdict = emptyTableVerdict(false, null);

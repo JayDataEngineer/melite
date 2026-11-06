@@ -986,3 +986,78 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web/viewer/src/client/index.ts': { statements: 97.92, branches: 95, functions: 87.5, lines: 97.44 },
   '**/packages/web/viewer/src/index.ts': { statements: 96.97, branches: 91.67, functions: 87.5, lines: 96.3 },
 }
+
+// THE UNSEATED OVERLAY (the coverage-track margin debt's cure,
+// 2026-11-16). The store-seated design (tests/helpers/
+// estate-store-seat.ts, the 2026-11-05 CI cure) seats the
+// real-weights arms on dev machines only: CI carries no model store
+// and no endpoint overlay, so every ESTATE_STORE_SEATED describe
+// skips and the machine-state conditional arms (loras-tray-law's
+// existsSync branches, the engine-seat faces) take their absent
+// branches. Those skips are LAWFUL — the arms judge real weights
+// where the store lives — but the floors above are pinned at the
+// SEATED battery face, so the CI gate reds on files whose deep
+// coverage is dev-side only: structurally, forever, on every push.
+//
+// THE CURE IS TWO FACES, NOT LOWER FLOORS: the seated table stands
+// untouched (the dev battery's razor ratchet keeps its law — a
+// seated-side drop still reds the pre-push battery), and this
+// overlay carries the UNSEATED face for exactly the files whose
+// unseated measurement sits below their seated floor. vitest.config
+// picks the face through effectiveBaseline(ESTATE_STORE_SEATED).
+//
+// THE UNSEATED FLOOR LAW (the margin): unseated faces float with
+// pool jitter (service.ts branches measured 91.84 then 91.75 across
+// two CI runs; runsExecute crossed three floors on the second), so
+// an at-the-face pin flaps. Each floor below is the INTEGER FLOOR of
+// the minimum observed face — a fence one point under the measured
+// truth: jitter stays green, a real regression (any drop past one
+// point) still reds. Faces were measured twice on CI (runs
+// 42212221988 at 93f0ab927 and 42214757413 at 8a2d172e3) and once
+// in a clean unseated worktree battery at b80e7b744; the receipt
+// lives in dev_docs/contracts/receipts/.
+//
+// THE POPULATION LAW: the row set is the union of files observed
+// below their seated floors across those measurements. The
+// population floats — a file hovering above its floor can cross on a
+// later pool — and the gate itself is the tripwire: a crossing reds
+// CI, and the cure is seating that file's row here at its own
+// measured face, never lowering a seated floor.
+export const COVERAGE_BASELINE_UNSEATED: Record<string, {
+  statements: CoverageFloor
+  branches: CoverageFloor
+  functions: CoverageFloor
+  lines: CoverageFloor
+}> = {
+  // faces: the observed unseated minima below each seated floor —
+  // CI runs 42212221988 (93f0ab927) and 42214757413 (8a2d172e3),
+  // plus the unseated worktree battery at b80e7b744 (68 machine-
+  // state wall failures there — vendor submodules absent in a fresh
+  // worktree — do not move these files' faces; the deterministic
+  // skip-driven gaps reproduce CI's numbers exactly).
+  '**/packages/estate/provisioning/src/service.ts': { statements: 95.66, branches: 91, functions: 94.89, lines: 97.1 },
+  '**/packages/harness/estate-queue/src/cardsRegistry.ts': { statements: 81, branches: 72, functions: 89, lines: 84 },
+  '**/packages/harness/estate-queue/src/runtimeProvision.ts': { statements: 88.89, branches: 92, functions: 88.24, lines: 88.31 },
+  // runsExecute: only the CI faces red (the worktree battery passed
+  // all four — its pool covered the file higher); the floors ride
+  // the CI-observed minima, the pool that judges them.
+  '**/packages/harness/estate-queue/src/runsExecute.ts': { statements: 97, branches: 94, functions: 96, lines: 98.86 },
+  // trayLoras: the loras-tray wall's conditional arms take their
+  // absent-branch faces where the runtime tree does not stand.
+  '**/packages/engines/comfyui-cordis/src/mods/trayLoras.ts': { statements: 81, branches: 62, functions: 57, lines: 86 },
+  '**/packages/harness/melite-tools/src/discovery.ts': { statements: 99.75, branches: 99, functions: 100, lines: 99.7 },
+}
+
+/**
+ * The gate's effective floor table for one seat face: the seated
+ * battery judges the baseline as pinned; an unseated pool (CI) judges
+ * the baseline with the unseated overlay riding on top — overlay rows
+ * REPLACE their base row wholesale, metrics and all.
+ *
+ * @param seated true where the estate's model store is seated (the
+ *   dev battery); false on CI pools and bare clones.
+ * @returns the per-glob floor table vitest thresholds consume.
+ */
+export const effectiveBaseline = (
+  seated: boolean,
+): typeof COVERAGE_BASELINE => (seated ? COVERAGE_BASELINE : { ...COVERAGE_BASELINE, ...COVERAGE_BASELINE_UNSEATED })

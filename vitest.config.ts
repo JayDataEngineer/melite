@@ -3,7 +3,8 @@ import { tmpdir } from 'node:os'
 import { realpathSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
-import { COVERAGE_BASELINE } from './scripts/coverage-baseline.ts'
+import { effectiveBaseline } from './scripts/coverage-baseline.ts'
+import { ESTATE_STORE_SEATED } from './tests/helpers/estate-store-seat.ts'
 import {
   PROXY_SETUP,
   resolutionFacade,
@@ -801,7 +802,16 @@ export default defineConfig({
         // EXCLUDED from the istanbul spread and judged by the regen's
         // classification law instead (a null floor whose metric
         // later carries >0 paths refuses the regen).
-        ...Object.fromEntries(Object.entries(COVERAGE_BASELINE).map(([glob, row]) => [
+        //
+        // THE SEAT FACE (2026-11-16): the floors ride
+        // effectiveBaseline(ESTATE_STORE_SEATED) — the dev battery
+        // judges the pinned seated table; a store-absent pool (CI)
+        // judges the same table with the unseated overlay riding on
+        // top, because the store-seated arms (the 2026-11-05 guard
+        // design) fire only where the estate's model store lives.
+        // The overlay's law lives with its table in
+        // scripts/coverage-baseline.ts.
+        ...Object.fromEntries(Object.entries(effectiveBaseline(ESTATE_STORE_SEATED)).map(([glob, row]) => [
           glob,
           Object.fromEntries(Object.entries(row).filter(([, floor]) => floor !== null)),
         ])),
