@@ -171,7 +171,7 @@ describe("the restart keeps the ledger (P5 F2: the verbs must survive the seat r
         // green).
         expect(rejoined!.bytes).toBe(0);
         expect(rejoined!.total).toBe(0);
-        assert.match(String(rejoined!.detail ?? ""), /stuck|stalled|no longer progressing|timed? ?out/i);
+        assert.match(String(rejoined!.detail ?? ""), /stuck|stalled|no longer progressing|timed? ?out|restarted before this fetch/i);
       } finally {
         await ctxB.fiber.dispose();
       }

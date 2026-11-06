@@ -6,7 +6,7 @@
 // gap: mechanics live in the card, craft must live where agents load
 // it (AGENT.md, the skills, the served params spec).
 import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, sep} from "node:path";
 import { describe, expect, it } from "vitest";
 
 const ROOT = join(__dirname, "..", "src");
@@ -111,7 +111,7 @@ describe("THE AGENT-DOCS WALL (the live law, where agents load it)", () => {
         e.isDirectory() ? walk(join(dir, e.name)) : [join(dir, e.name)]);
     const docs = walk(join(ROOT, "agents"));
     expect(docs.length).toBeGreaterThan(5);
-    expect(docs.some((f) => f.endsWith("skills/cinemadir/SKILL.md")), "the walk reaches the skill bodies").toBe(true);
+    expect(docs.some((f) => f.split(sep).join("/").endsWith("skills/cinemadir/SKILL.md")), "the walk reaches the skill bodies").toBe(true);
     for (const f of docs) {
       expect(readFileSync(f, "utf-8"), `dead viggle route in ${f}`)
         .not.toMatch(/openjutsu|viggle/i);

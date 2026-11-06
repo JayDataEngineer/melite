@@ -82,6 +82,22 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { onTestFinished } from "vitest";
+
+/** A bounded-retry rm for the wall's state homes (the provisioner-boot
+ * idiom): the runs seat's writes can trail the test's own lifetime by a
+ * beat on a loaded CI pool — rmdir then hits ENOTEMPTY and the WALL's
+ * verdict drowns in a teardown flake. Never silent: foreign errnos
+ * throw, retries are bounded. */
+const rmState = (dir: string): void => {
+  onTestFinished(async () => {
+    for (let attempt = 0; ; attempt++) {
+      try { rmSync(dir, { recursive: true, force: true }); return } catch (err) {
+        if (attempt >= 4 || !["EBUSY", "ENOTEMPTY", "EPERM"].includes((err as NodeJS.ErrnoException).code ?? "")) throw err
+        await new Promise((r) => setTimeout(r, 250))
+      }
+    }
+  })
+}
 import assert from "node:assert/strict";
 import { Context, Service } from "@deepseek-ai/cordis";
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
@@ -146,7 +162,7 @@ interface Rig {
 
 const rig = (doc: SynthDoc): Rig => {
   const state = mkdtempSync(join(tmpdir(), "runs-graph-receipt-"));
-  onTestFinished(() => rmSync(state, { recursive: true, force: true }));
+  rmState(state);
   const ctx = new Context();
   new FlowsSeatService(ctx);
   const core = new QueueCore();
@@ -283,7 +299,7 @@ const realMusicReceipt = async (
   const ctx = new Context();
   new FlowsSeatService(ctx);
   const state = mkdtempSync(join(tmpdir(), "runs-graph-receipt-arme-"));
-  onTestFinished(() => rmSync(state, { recursive: true, force: true }));
+  rmState(state);
   (ctx as unknown as { queue: unknown }).queue = { stateRoot: state, stateRoots: [state] };
   const door = new CardRegistryService(ctx);
   await door.prime();
@@ -437,7 +453,7 @@ describe("runs-graph-receipt (the served-graph receipt, purge P1)", () => {
       const ctx = new Context();
       new FlowsSeatService(ctx);
       const state = mkdtempSync(join(tmpdir(), "runs-graph-receipt-nosrc-"));
-      onTestFinished(() => rmSync(state, { recursive: true, force: true }));
+      rmState(state);
       (ctx as unknown as { queue: unknown }).queue = { stateRoot: state, stateRoots: [state] };
       const door = new CardRegistryService(ctx);
       await door.prime();
@@ -482,7 +498,7 @@ describe("runs-graph-receipt (the served-graph receipt, purge P1)", () => {
     const ctx = new Context();
     new FlowsSeatService(ctx);
     const state = mkdtempSync(join(tmpdir(), "runs-graph-receipt-armf-"));
-    onTestFinished(() => rmSync(state, { recursive: true, force: true }));
+    rmState(state);
     (ctx as unknown as { queue: unknown }).queue = { stateRoot: state, stateRoots: [state] };
     const door = new CardRegistryService(ctx);
     await door.prime();
@@ -551,7 +567,7 @@ describe("runs-graph-receipt (the served-graph receipt, purge P1)", () => {
     const ctx = new Context();
     new FlowsSeatService(ctx);
     const state = mkdtempSync(join(tmpdir(), "runs-graph-receipt-armg-"));
-    onTestFinished(() => rmSync(state, { recursive: true, force: true }));
+    rmState(state);
     (ctx as unknown as { queue: unknown }).queue = { stateRoot: state, stateRoots: [state] };
     const door = new CardRegistryService(ctx);
     await door.prime();
@@ -666,7 +682,7 @@ describe("runs-graph-receipt — THE DROPPED-KNOB ALLOWABILITY LAW (F3-04)", () 
     const ctx = new Context();
     new FlowsSeatService(ctx);
     const state = mkdtempSync(join(tmpdir(), "runs-graph-receipt-armj-"));
-    onTestFinished(() => rmSync(state, { recursive: true, force: true }));
+    rmState(state);
     (ctx as unknown as { queue: unknown }).queue = { stateRoot: state, stateRoots: [state] };
     const door = new CardRegistryService(ctx);
     await door.prime();

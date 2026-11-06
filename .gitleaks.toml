@@ -66,6 +66,11 @@
       # e2e seeds and receipts: the base64 1x1 PNG header and engine
       # path literals.
       '''tests/e2e/''',
+      # the hermetic-anchor portability spec: synthetic windows
+      # file:/// URL literals (the exact CI burn shape). The slash
+      # class is the path itself; reshaping them shorter would kill
+      # the arm's depth — it must ride the real doubled-drive shape.
+      '''tests/unit/hermetic-engine-path\.spec\.ts$''',
       # wall suites and fixtures: bench path literals, boot-receipt
       # sha256 census rows, tsconfig path tables.
       '''tests/walls/''',

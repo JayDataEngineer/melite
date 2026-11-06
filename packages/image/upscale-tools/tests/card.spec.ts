@@ -1,7 +1,7 @@
 import "../../../../tests/helpers/boot-models.ts";
 import { describe, it, beforeAll } from "vitest";
 import assert from "node:assert/strict";
-import { dirname, join } from "node:path";
+import { dirname, join, sep} from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadCardDefs } from "@melite/comfyui-cordis";
 import { upscale } from "@melite/models-seedvr2-ema";
@@ -70,7 +70,7 @@ describe("the upscale-tools compose gate", () => {
       { stateRoots: [root] },
     );
     const json = JSON.stringify(g.toJSON());
-    assert.ok(json.includes(join(root, "output", "run-x", "out.png")), "the ref rides rewritten to the runs root");
+    assert.ok(json.includes(join(root, "output", "run-x", "out.png").split(sep).join("/")), "the ref rides rewritten to the runs root");
   });
 
   it("THE SCHEMA GATE: an out-of-envelope batch_size refuses loud (declared 1–16), never composes", () => {
