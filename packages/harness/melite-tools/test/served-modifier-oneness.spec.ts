@@ -73,13 +73,16 @@ describe("the served modifier list carries one row per bag", () => {
       "the curated row's catalog is the family's own H3_LORA_ROWS (both distill rows ride)");
   });
 
-  it("ARM 3 — the other six bags still serve exactly one row each (the dedupe is parceled, not a blanket drop)", () => {
-    for (const key of ["replace", "repair", "extend", "refine", "reshoot", "upscale"]) {
+  it("ARM 3 — the other seven bags still serve exactly one row each (the dedupe is parceled, not a blanket drop)", () => {
+    // Repinned 7 → 8 rows (2026-11-15, the h3 edit door, stage 2b):
+    // the card's EIGHTH bag (edit — the video-edit matrix dial seat)
+    // serves its own curated row beside the seven ARM bags.
+    for (const key of ["replace", "repair", "extend", "refine", "reshoot", "upscale", "edit"]) {
       const rows = mods.filter((m) => m.param_key === key);
       assert.equal(rows.length, 1, `${key} serves exactly one row`);
       assert.ok((rows[0]!.fields ?? []).length > 0, `${key}'s curated fields survive the dedupe`);
     }
-    expect(mods.length, "seven bags, seven rows").toBe(7);
+    expect(mods.length, "eight bags, eight rows").toBe(8);
   });
 
   // THE AGENT FACE (friction report §14.7b — F34's other half,

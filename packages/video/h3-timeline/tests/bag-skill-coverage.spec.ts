@@ -91,7 +91,7 @@ describe("every served mod bag has a skill leaf an agent can read", () => {
     // the stack ceiling.
     const armed = kinds.filter((k) => k.kind !== "loras").map((k) => k.param_key!);
     expect(armed.sort()).toEqual([
-      "extend", "refine", "repair", "replace", "reshoot", "upscale",
+      "edit", "extend", "refine", "repair", "replace", "reshoot", "upscale",
     ]);
     for (const key of armed) {
       const seat = LEAF_SEAT[key];
@@ -106,6 +106,27 @@ describe("every served mod bag has a skill leaf an agent can read", () => {
     assert.equal(loras.max_stack, 4, "loras is the multi-entry bag, so it has its own leaf");
     assert.ok(existsSync(join(SKILLS, "loras", "SKILL.md")),
       "the loras bag carries its own leaf (the F29 'I can't see or change the LORA' cure)");
+  });
+
+  it("ARM 2a — the edit door's every bounded dial quotes the card's OWN band and default (the matrix leaf)", () => {
+    // The timeline rework's stage 2b (2026-11-15): the edit bag is
+    // the eighth kind and its leaf teaches the whole matrix — the
+    // same dial-line law as repair's, judged off the served kind.
+    const kind = kinds.find((k) => k.param_key === "edit")!;
+    assert.ok(kind, "the card serves the edit kind");
+    const md = readSkill("edit");
+    const rows = bounded(kind);
+    expect(rows.length, "the edit kind serves bounded dials to judge").toBeGreaterThan(6);
+    for (const row of rows) {
+      const line = dialLine(md, row.name);
+      assert.ok(line !== null, `edit/SKILL.md states the ${row.name} band`);
+      assert.deepEqual(bandOf(line!.band), [row.min, row.max],
+        `edit/SKILL.md's ${row.name} band ${line!.band} == the served [${row.min}, ${row.max}]`);
+      assert.equal(line!.def, row.default,
+        `edit/SKILL.md's ${row.name} default ${line!.def} == the served ${String(row.default)}`);
+    }
+    assert.match(md, /One door per doc/,
+      "the doc states the one-door law it is subject to");
   });
 
   it("ARM 2 — repair's every bounded dial quotes the card's OWN band and default", () => {
@@ -169,11 +190,11 @@ describe("every served mod bag has a skill leaf an agent can read", () => {
     // seventh arm kind cannot land without the leaf naming its pairs.
     const md = readSkill("swap");
     const armed = kinds.filter((k) => k.kind !== "loras").map((k) => k.param_key!);
-    expect(armed.length).toBe(6);
+    expect(armed.length).toBe(7);
     const cap = (w: string): string => w[0]!.toUpperCase() + w.slice(1);
     const canonical = (a: string, b: string): string => [a, b].sort().join("↔");
     const pairs = armed.flatMap((a, i) => armed.slice(i + 1).map((b) => canonical(cap(a), cap(b))));
-    expect(pairs.length).toBe(15);
+    expect(pairs.length).toBe(21);
     // the doc's OWN pair spellings, order-normalized (the leaf lists
     // Reshoot↔Refine where the derivation says Refine↔Reshoot)
     const stated = new Set([...md.matchAll(/([A-Z][a-z]+)↔([A-Z][a-z]+)/g)]
@@ -181,11 +202,11 @@ describe("every served mod bag has a skill leaf an agent can read", () => {
     for (const pair of pairs) {
       expect(stated.has(pair), `swap/SKILL.md names the ${pair} refusal`).toBe(true);
     }
-    expect(stated.size, "no pair the card does not refuse is taught").toBe(15);
+    expect(stated.size, "no pair the card does not refuse is taught").toBe(21);
     // never the false universal again
     expect(md).not.toMatch(/ANY two armed mod bags/i);
     // and the coexistence half: loras is named as the seventh bag
-    expect(md).toMatch(/SEVENTH bag/i);
+    expect(md).toMatch(/EIGHTH bag/i);
     expect(md).toMatch(/COEXISTS/i);
     expect(md).toMatch(/THE LORA BAG IS NOT AN ARM/);
     expect(md).toMatch(/empty `loras` to disarm/i);
@@ -338,16 +359,16 @@ describe("every served mod bag has a skill leaf an agent can read", () => {
   });
 
   it("ARM 10 — every card-local arm leaf carries the loras seventh-bag exemption (no false universal anywhere)", () => {
-    // The one-door law binds only the SIX armed mod bags; `loras`
-    // is the SEVENTH bag and COEXISTS with every arm. An arm leaf
+    // The one-door law binds only the SEVEN armed mod bags; `loras`
+    // is the EIGHTH bag and COEXISTS with every arm. An arm leaf
     // that keeps the contiguous "ANY two armed mod bags" wording
     // teaches an agent to refuse a legal loras-plus-arm press.
     for (const leaf of ["repair", "swap", "reshoot", "refine", "upscale"]) {
       const md = readSkill(leaf);
       expect(md).not.toMatch(/ANY two armed mod bags/i);
-      expect(md).toMatch(/SIX arm/i);
+      expect(md).toMatch(/SEVEN arm/i);
       expect(md).toMatch(/THE LORA BAG IS NOT AN ARM/);
-      expect(md).toMatch(/SEVENTH bag/);
+      expect(md).toMatch(/EIGHTH bag/);
       expect(md).toMatch(/COEXISTS/);
     }
   });

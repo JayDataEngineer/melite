@@ -99,8 +99,8 @@ engine-side from the entry scalars.
   non-empty bag; an empty/absent bag renders the film byte-identical
   (pinned by the replace-mod spec). A bound arm with an empty seat
   is refused loud naming the seat.
-- ONE DOOR PER DOC: the SIX arm bags are mutually exclusive — any
-  two of them armed REFUSE loud naming both. The 15 pairs:
+- ONE DOOR PER DOC: the SEVEN arm bags are mutually exclusive — any
+  two of them armed REFUSE loud naming both. The 21 pairs:
   Replace↔Reshoot, Repair↔Reshoot, Extend↔Reshoot (each edit
   branch returns before the film action, so the reshoot would be
   silently dropped), Replace↔Refine / Repair↔Refine /
@@ -109,14 +109,18 @@ engine-side from the entry scalars.
   Replace↔Upscale / Repair↔Upscale / Extend↔Upscale /
   Refine↔Upscale / Reshoot↔Upscale (the upscale branch — the
   whole-film deferred 2x loop over a prior chain run — also returns
-  before the film action), and
+  before the film action),
   Replace↔Repair / Replace↔Extend / Repair↔Extend (two edit arms
-  would race for one emission). Empty the other arms; the refusals
-  are pinned by the replace-mod, extend-mod, and upscale-mod specs.
-- THE LORA BAG IS NOT AN ARM: `loras` is the SEVENTH bag and it
+  would race for one emission), and the edit-matrix door's six:
+  Edit↔Replace / Edit↔Repair / Edit↔Extend / Edit↔Refine /
+  Edit↔Upscale / Edit↔Reshoot (the edit bag states the whole
+  matrix, so its cell is stated there, never beside a sibling
+  door). Empty the other arms; the refusals are pinned by the
+  replace-mod, extend-mod, and upscale-mod specs.
+- THE LORA BAG IS NOT AN ARM: `loras` is the EIGHTH bag and it
   COEXISTS with any armed arm — every arm renders under the lora
   plane (the swap included, per the law above). Never tell a user to
-  empty `loras` to disarm a pair; only the six arm bags refuse.
+  empty `loras` to disarm a pair; only the seven arm bags refuse.
 - State only parameters the loaded bundles declare. Entry field
   names above are quoted off `card.ts` (`REPLACE_MOD`); re-verify
   against the kind after any card edit.

@@ -61,12 +61,14 @@ It is NOT:
 - **the replace/repair/extend arms** — those render a new edit of
   the scene; refine only sharpens what is already there.
 
-One door per doc: ANY two of the SIX armed mod bags REFUSE loud naming both —
-the fifteen pairs are replace↔repair, replace↔extend, repair↔extend,
+One door per doc: ANY two of the SEVEN armed mod bags REFUSE loud naming both —
+the twenty-one pairs are replace↔repair, replace↔extend, repair↔extend,
 replace↔reshoot, repair↔reshoot, extend↔reshoot, replace↔refine,
 repair↔refine, extend↔refine, reshoot↔refine, replace↔upscale,
-repair↔upscale, extend↔upscale, refine↔upscale, reshoot↔upscale.
-THE LORA BAG IS NOT AN ARM: `loras` is the SEVENTH bag and it
+repair↔upscale, extend↔upscale, refine↔upscale, reshoot↔upscale,
+plus the edit-matrix door: edit↔replace, edit↔repair, edit↔extend,
+edit↔refine, edit↔upscale, edit↔reshoot.
+THE LORA BAG IS NOT AN ARM: `loras` is the EIGHTH bag and it
 COEXISTS with any armed arm — it never disarms a pair (the lora
 plane rides every arm; only the six arm bags refuse).
 The refine branch returns before the film action, so an armed refine

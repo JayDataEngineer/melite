@@ -65,12 +65,12 @@ It is NOT:
 - **a staged-file door** — there is no clip to stage: the entry names a
   RUN, and the engine's chain store is the only truth for what exists.
 
-One door per doc: ANY two of the SIX armed mod bags REFUSE loud naming both —
+One door per doc: ANY two of the SEVEN armed mod bags REFUSE loud naming both —
 the fifteen pairs are replace↔repair, replace↔extend, repair↔extend,
 replace↔reshoot, repair↔reshoot, extend↔reshoot, replace↔refine,
 repair↔refine, extend↔refine, reshoot↔refine, replace↔upscale,
 repair↔upscale, extend↔upscale, refine↔upscale, reshoot↔upscale.
-THE LORA BAG IS NOT AN ARM: `loras` is the SEVENTH bag and it
+THE LORA BAG IS NOT AN ARM: `loras` is the EIGHTH bag and it
 COEXISTS with any armed arm — it never disarms a pair (the lora
 plane rides every arm; only the six arm bags refuse).
 The upscale branch returns before the film action, so an armed upscale

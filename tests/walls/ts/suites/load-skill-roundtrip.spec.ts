@@ -161,12 +161,14 @@ interface SkillLine { id?: string }
 // delivery-recipe SKILL (skills/recipe/, the QA session's authorized
 // landing) joined the card's skill lines; its id round-tripped 200
 // with a body in the arm above before this repin.
-const EXPECTED_CARD_SKILLS = 53;
 // 56 → 53 (2026-11-15, the 2511 retirement): the retired family's
 // served agents tree (prompt-enhance + pose-iteration skills + the
 // family AGENT doc's line) is deleted — a hidden lane teaches
-// nothing. Every remaining advertised id round-tripped 200 with a
-// body in the arm above before this repin (the census's own law).
+// nothing. Repinned 53 → 54 (2026-11-15, the h3 edit door, stage
+// 2b): the timeline card's EIGHTH bag carries its own skill leaf
+// (skills/edit/, the video-edit dial grammar); its id round-tripped
+// 200 with a body in the arm above before this repin.
+const EXPECTED_CARD_SKILLS = 54;
 // 8 → 11 (2026-10-11): object-forge's skillRefs — image-gen +
 // img-to-mesh card lines and z-image's prompt-enhance ride the flow
 // bundle (card:quad-remesh resolves null — the card ships no agent

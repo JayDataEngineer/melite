@@ -41,6 +41,8 @@ import { renderH3Swap } from '@melite/models-h3'
 import { renderH3Repair } from '@melite/models-h3'
 import { renderH3Extend } from '@melite/models-h3'
 import { renderH3RefineBag } from '@melite/models-h3'
+import { renderH3Edit } from '@melite/models-h3'
+import type { EditMaskDial, EditReferenceDial } from '@melite/models-h3'
 import { renderH3ChainUpscale } from '@melite/models-h3'
 import { reshootArmed } from '@melite/models-h3'
 import { parseH3Facts } from '@melite/models-h3/actions'
@@ -497,10 +499,85 @@ const UPSCALE_MOD: DeclaredModifierKind = {
   ],
 }
 
+/** THE EDIT KIND (the timeline rework's stage 2b, 2026-11-15;
+ *  operator order: "do the rework of the timeline mods according
+ *  to your judgment"): ONE video-edit bag whose dials state the
+ *  cell of the mask × reference × denoise matrix directly — the
+ *  seven peer bags were seven FIXED cells of that matrix, and
+ *  this door serves the whole grid. The legacy doors stay frozen
+ *  byte-pinned (their suites, their docs); every cell through
+ *  THIS door rides the family's matrix seat (models/h3
+ *  renderH3Edit) on the one chain spine + the one constructor.
+ *  THE DIALS: Mask source (per-frame SAM3 region — N7's cure,
+ *  first-class with grow/blur/detection tuning seats, N8's — /
+ *  whole frame / one staged PNG, resized to the chain's geometry
+ *  in-graph, F3-16 defect 1's cure), Reference (the source's own
+ *  self / a still + mannequin pair), and Denoise (0.05–1). The
+ *  safety law is the door's own: the identity boil (whole-frame ×
+ *  self × >= 0.8, F3-17) and the partial audio drop refuse loud.
+ *  Continuation and no-reference are NOT matrix cells — extend's
+ *  and refine's own doors serve them (the refusal names them). */
+const EDIT_MOD: DeclaredModifierKind = {
+  kind: 'edit',
+  label: 'Video edit',
+  param_key: 'edit',
+  schema_key: 'edit',
+  category: 'ordered',
+  cardinality: 'list',
+  max_stack: 1,
+  requires: [
+    'ComfyUI-VideoHelperSuite',
+    'ComfyUI-MiniMaxH3-Context-Loop',
+    'ComfyUI-Fantastic-MiniMaxH3-PromptBuilder',
+    'ComfyUI-KJNodes',
+    'comfyui-h3-oneclick-swap',
+  ],
+  section: 'Video edit — ONE bag, the whole edit matrix: state the MASK (a per-frame SAM3 region with tuning seats, the whole frame, or one staged PNG resized to the chain), the IDENTITY ANCHORS (the source itself, or a still + mannequin pair), and the DENOISE pole (partial holds the unmasked region and its sound; 1 re-renders the masked side whole). A continuation is the Extend door; a no-reference second pass is the Refine door; a new camera is the Reshoot door — each refuses here naming its door. Film runs leave this arm empty.',
+  fields: [
+    // The seat TYPES (the picker law, the siblings' own): video
+    // seats are `file` + media 'video'; image seats claim the
+    // image square; the two prompt seats are text
+    // (agent-composed, user-confirmed).
+    { name: 'source_clip', label: 'Source clip', type: 'file', media: 'video', default: '', tooltip: 'The clip the edit rides. Binds ONE staged leaf: the VHS window loader + the core LoadVideo both read it by staged name, and the timeline reads it back off the native VIDEO wire.' },
+    { name: 'edit_prompt', label: 'Edit prompt', type: 'text', default: '', tooltip: 'The edit action text — what the masked region or frame should become (agent-composed, user-confirmed; rides the reference-video prompt seat — no in-graph describer ever rewrites your words).' },
+    { name: 'mask_source', label: 'Mask source', type: 'select', default: 'region', options: [
+      { value: 'region', label: 'Region — per-frame SAM3 track' },
+      { value: 'whole-frame', label: 'Whole frame — nothing held' },
+      { value: 'static-png', label: 'Static PNG — one staged mask' },
+    ], tooltip: 'WHERE the edit lands: a per-frame SAM3 track of a free-text region (the per-frame door — a moving subject stays masked frame by frame), the whole frame (an all-white mask, nothing held), or ONE staged PNG (the track run\'s pixel-max union is the recommended bridge — the chain resizes it to its own geometry, so the file\'s own shape never matters).' },
+    { name: 'region_prompt', label: 'Region prompt', type: 'text', default: '', tooltip: 'The free-text SAM3 detection target naming the region — "hands", "a person", "a face" are param VALUES, never card kinds. The mask tracks every matching object frame by frame. RIDES ONLY the region mask source (refuses empty there).' },
+    { name: 'mask', label: 'Mask PNG', type: 'image', default: '', tooltip: 'ONE staged PNG under the static-png mask source — the track run\'s pixel-max UNION is recommended (per-frame motion is the region source\'s own door). The chain decodes it off the red channel and RESIZES it to the plan geometry in-graph: the file\'s own resolution never has to match the clip.' },
+    { name: 'mask_grow', label: 'Mask grow px', type: 'number', default: 16, min: 0, max: 96, step: 1, tooltip: 'Pixels the mask grows before the edit (seam ring protection; 0 edits exactly the detected region — the grow-0 seam test). Thin structures (handles, caps) lost to a coarse track grow here first — the tuning seat the coarse-mask burn asked for.' },
+    { name: 'mask_blur', label: 'Mask blur px', type: 'number', default: 0, min: 0, max: 48, step: 1, tooltip: 'Edge softness of the grown mask (blur radius): 0 is a hard edge, a few px feathers the boundary into the hold — the second tuning seat the coarse-mask burn asked for.' },
+    { name: 'detection_threshold', label: 'Detection threshold', type: 'number', default: 0.5, min: 0, max: 1, step: 0.01, tooltip: 'The SAM3 text-detection score threshold (lower finds more objects, noisier masks; higher only the confident ones).' },
+    { name: 'reference', label: 'Identity anchors', type: 'select', default: 'self', options: [
+      { value: 'self', label: 'Source clip itself — repair posture' },
+      { value: 'still+mannequin', label: 'Still + mannequin — swap posture' },
+    ], tooltip: 'WHO the edit keeps: the source clip on its own reference seat (the identity anchor is the person already in the frame — zero new pixels), or a replacement still + the track run\'s mannequin video (the still anchors appearance, the mannequin carries motion; the still must show the person WEARING the target — a garment alone hallucinates the uncovered body, the outfit-swap burn).' },
+    { name: 'still', label: 'Replacement still', type: 'image', default: '', tooltip: 'The replacement still under the still+mannequin anchors (the R2V ref_images seat + the plan\'s geometry anchor — the person wearing the target look).' },
+    { name: 'mannequin', label: 'Mannequin video', type: 'file', media: 'video', default: '', tooltip: 'The mannequin video from the track-card run under the still+mannequin anchors (the R2V ref_videos seat — motion the still cannot carry).' },
+    { name: 'denoise', label: 'Denoise', type: 'number', default: 0.32, min: 0.05, max: 1, step: 0.01, tooltip: 'The edit pole: partial (0.05–0.5 is the repair window) holds the unmasked region AND its sound; 1 re-renders the masked side whole (the keep_audio dial rides only here). Whole-frame × self at >= 0.8 is the identity boil and refuses — anchor the identity or use the reshoot door.' },
+    { name: 'keep_audio', label: 'Keep source audio', type: 'boolean', default: true, tooltip: 'ON: the source soundtrack rides the edit unchanged. OFF (full denoise only): the soundtrack is generated fresh with the edit — a partial pass never drops it (the hold is the point).' },
+    { name: 'window_start', label: 'Window start (frames)', type: 'number', default: 0, min: 0, max: 100000, step: 1, tooltip: 'Frames (at the film clock, 24 fps) to skip before the edit window — 0 starts at the clip head.' },
+    { name: 'window_length', label: 'Window length (frames)', type: 'number', default: 0, min: 0, max: 100000, step: 1, tooltip: 'Frames in the edit window — 0 runs to the end of the clip. A stated length must land on the engine grid 22+17k (56, 73, 90, 107, 124, 141…; off-grid refuses naming the nearest legal value) because the plan snap and the tracked mask must cut the same frames.' },
+    { name: 'seed', label: 'Plan seed', type: 'number', default: 0, min: 0, max: 4294967295, step: 1, tooltip: 'The chain plan base_seed (the reference runs 0; the sampler seed stays the doc seed).' },
+    { name: 'steps', label: 'Plan steps', type: 'number', default: 6, min: 1, max: 30, step: 1, tooltip: 'The chain plan default_steps (reference 6; the sampler steps stay the doc marriage).' },
+    { name: 'clip_seconds', label: 'Clip seconds', type: 'number', default: 6, min: 2.5, max: 15, step: 0.1, tooltip: 'The plan clip_seconds (reference 6) — the render budget the window is cut within; the plan node\'s own widget band [2.5, 15] is the law.' },
+    { name: 'overlap_frames', label: 'Overlap frames', type: 'number', default: 39, min: 22, max: 56, step: 17, tooltip: 'The plan overlap_frames (reference 39) — the engine combo is exactly [22, 39, 56].' },
+    { name: 'resolution', label: 'Plan resolution', type: 'select', default: '736p', options: [
+      { value: '480p', label: '480p — quick preview' },
+      { value: '576p', label: '576p' },
+      { value: '736p', label: '736p — reference default' },
+      { value: '768p', label: '768p' },
+      { value: '1080p', label: '1080p — ~2.5× slower, needs much more memory' },
+    ], tooltip: "The plan resolution tier (reference '736p')." },
+  ],
+}
+
 /** THE CARD-DECLARED KINDS (one roster, two readers: the served
  *  mods row below and the declared-band judge's walk). */
 const DECLARED_MOD_KINDS: readonly DeclaredModifierKind[] = [
-  REPLACE_MOD, REPAIR_MOD, EXTEND_MOD, REFINE_MOD, RESHOOT_MOD, UPSCALE_MOD, LORAS_MOD,
+  REPLACE_MOD, REPAIR_MOD, EXTEND_MOD, REFINE_MOD, RESHOOT_MOD, UPSCALE_MOD, EDIT_MOD, LORAS_MOD,
 ]
 
 /** THE DECLARED-BAND JUDGE (F3-07, R-P3-18): a number seat's DECLARED
@@ -682,6 +759,33 @@ export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model:
     if (refineBagArmed && upscaleBagArmed) {
       throw new Error('h3-timeline: Refine and Upscale are both armed — one door per doc (the upscale branch never enters the film action; two armed bags would race for one emission). Empty the Refine arm for an upscale, or the Upscale arm for a refine (an upscale needs a prior chain run; a refine needs a staged clip).')
     }
+    const editBag = p.edit as Array<Record<string, unknown>> | undefined
+    const editArmed = Array.isArray(editBag) && editBag.length > 0
+    if (editArmed) {
+      const editDoors: Array<[string, boolean, string]> = [
+        ['Replace', replaceArmed, 'the replace arm'],
+        ['Repair', repairArmed, 'the repair arm'],
+        ['Extend', extendArmed, 'the extend arm'],
+        ['Refine', refineBagArmed, 'the refine arm'],
+        ['Upscale', upscaleBagArmed, 'the upscale arm'],
+      ]
+      for (const [name, armed, arm] of editDoors) {
+        if (armed) {
+          throw new Error(`h3-timeline: Video edit and ${name} are both armed — one door per doc (both would race for one emission; the edit bag states the whole matrix, so state the cell there). Empty ${arm} for a video edit, or the edit arm for a ${name.toLowerCase()}.`)
+        }
+      }
+      if (reshootArmed(p)) {
+        throw new Error('h3-timeline: Video edit and Reshoot are both armed — the edit branch never enters the film action, so an armed reshoot would be silently dropped. Pick one door: empty the edit arm for a reshoot, or empty the Reshoot arm for a video edit.')
+      }
+    }
+    // THE EDIT DOOR'S ONE-DOOR EDGES (stage 2b): one bag, the whole
+    // matrix — and its refusals sit BEFORE every dispatch branch
+    // (the split-brain lesson's sharpest edge: a refusal after a
+    // sibling's dispatch is dead code, and the silent drop the
+    // one-door law kills). The edit branch returns before the film
+    // action exactly as its siblings do, so it races every armed
+    // door plus the reshoot — each pair its own firing arm, each
+    // naming the door to empty.
     if (replaceArmed) {
       // THE MUTUAL REFUSAL (operator, live lane 2026-10-28: "IS
       // RESHOOT SUPPOSED TO BE IN THE CARD ITSELF OR JUST IN THE
@@ -733,6 +837,41 @@ export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model:
         throw new Error('h3-timeline: Upscale and Reshoot are both armed — the upscale branch never enters the film action, so an armed reshoot would be silently dropped. Pick one door: empty the Upscale arm for a reshoot, or empty the Reshoot arm for an upscale.')
       }
       renderH3ChainUpscale(ups[0] as Record<string, unknown>, p, parseH3Facts(model.lane_inputs), g, runId)
+      return
+    }
+    const editBagRef = p.edit as Array<Record<string, unknown>> | undefined
+    const editDispatchArmed = Array.isArray(editBagRef) && editBagRef.length > 0
+    // THE EDIT DISPATCH (stage 2b): the dial resolution — the
+    // entry's seats become the matrix seat's own dial values (the
+    // mask source: region carries its tuning seats, the static PNG
+    // its file, the whole frame needs nothing; the identity
+    // anchors: self, or the still + mannequin pair). renderH3Edit
+    // owns every band law from here (the declared-band judge
+    // walked the entry's numbers already; the matrix seat refuses
+    // the empty dials and the safety cells).
+    if (editDispatchArmed) {
+      const entry = editBagRef[0] as Record<string, unknown>
+      const maskSource = typeof entry.mask_source === 'string' ? entry.mask_source : 'region'
+      const mask: EditMaskDial = maskSource === 'static-png'
+        ? { source: 'static-png', image: typeof entry.mask === 'string' ? entry.mask : '' }
+        : maskSource === 'whole-frame'
+          ? { source: 'whole-frame' }
+          : {
+              source: 'region',
+              prompt: typeof entry.region_prompt === 'string' ? entry.region_prompt : '',
+              grow: typeof entry.mask_grow === 'number' ? entry.mask_grow : 16,
+              blur: typeof entry.mask_blur === 'number' ? entry.mask_blur : 0,
+              detectionThreshold: typeof entry.detection_threshold === 'number' ? entry.detection_threshold : 0.5,
+            }
+      const referenceMode = typeof entry.reference === 'string' ? entry.reference : 'self'
+      const reference: EditReferenceDial = referenceMode === 'still+mannequin'
+        ? {
+            mode: 'still+mannequin',
+            still: typeof entry.still === 'string' ? entry.still : '',
+            mannequin: typeof entry.mannequin === 'string' ? entry.mannequin : '',
+          }
+        : { mode: 'self' }
+      renderH3Edit(entry, mask, reference, p, parseH3Facts(model.lane_inputs), g, runId)
       return
     }
     instantiateAction(declaredAction(h3Decl, 'film'), p, model, g, runId)
@@ -911,7 +1050,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
     // produce. A doc carrying it now refuses LOUD at the door
     // ('unknown-param') instead of riding as an inert rider; seedUser
     // already deletes it on drill-open (the dead-layer law).
-    admits: ['ctx_*', 'extend', 'fps_seconds', 'image_name', 'k', 'noise_seed', 'quant', 'ref_image_size', 'refine', 'repair', 'replace', 'reshoot', 'sla_*', 'upscale', 'variant'],
+    admits: ['ctx_*', 'edit', 'extend', 'fps_seconds', 'image_name', 'k', 'noise_seed', 'quant', 'ref_image_size', 'refine', 'repair', 'replace', 'reshoot', 'sla_*', 'upscale', 'variant'],
     // THE CARD-DECLARED KINDS (CONTRACT A — served VERBATIM on the
     // features.modifiers channel): the swap + repair + extend arms.
     // The mask card's sam3/sam2/draw precedent — one kind per arm,
@@ -1012,7 +1151,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
       // loud here, which is the dead-layer law working.
       p = gatedResolve('h3-timeline', schemaFn, [
         'calls', 'audio_clips', 'keyframes', 'fps', 'audio_stem', 'document', 'loras',
-        'refs', 'replace', 'repair', 'extend', 'reshoot', 'variant', 'quant', 'refine', 'upscale', 'model', '__steps_pinned', '__shift_pinned', 'ctx_*',
+        'refs', 'replace', 'repair', 'extend', 'edit', 'reshoot', 'variant', 'quant', 'refine', 'upscale', 'model', '__steps_pinned', '__shift_pinned', 'ctx_*',
       ], gateInput)
       // THE SINGLE-CALL LIFT runs FIRST (the guard below reads the
       // lifted anchor): a one-call doc's row IS the window — its

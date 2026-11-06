@@ -104,12 +104,12 @@ describe("the re-shoot skill's dial table agrees with the code's own homes", () 
     const kinds = ((def as unknown as { mods?: Array<Record<string, unknown>> }).mods ?? [])
       .filter((k) => typeof k.param_key === "string" && k.kind !== "loras")
       .map((k) => String(k.param_key));
-    expect(kinds.sort()).toEqual(["extend", "refine", "repair", "replace", "reshoot", "upscale"]);
+    expect(kinds.sort()).toEqual(["edit", "extend", "refine", "repair", "replace", "reshoot", "upscale"]);
     const pairs: string[] = [];
     for (let i = 0; i < kinds.length; i++) {
       for (let j = i + 1; j < kinds.length; j++) pairs.push(`${kinds[i]}↔${kinds[j]}`);
     }
-    expect(pairs).toHaveLength(15);
+    expect(pairs).toHaveLength(21);
     for (const skill of ["reshoot", "swap"]) {
       const md = readSkill(skill);
       const lower = md.toLowerCase();
@@ -129,7 +129,7 @@ describe("the re-shoot skill's dial table agrees with the code's own homes", () 
       "reshoot/SKILL.md must not teach the false universal — loras is exempt");
     assert.match(reshootMd, /THE LORA BAG IS NOT AN ARM/i,
       "reshoot/SKILL.md names the lora-bag exemption");
-    assert.match(reshootMd, /SEVENTH bag/i,
+    assert.match(reshootMd, /EIGHTH bag/i,
       "reshoot/SKILL.md names loras as the seventh bag");
     assert.match(reshootMd, /COEXISTS/i,
       "reshoot/SKILL.md states that loras coexists with any armed arm");
