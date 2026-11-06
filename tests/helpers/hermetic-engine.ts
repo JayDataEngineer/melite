@@ -53,20 +53,30 @@
  *    second barrel registration would fight this helper's.
  */
 import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { deepEqual, ok } from 'node:assert/strict'
 import { vi } from 'vitest'
 
 // The dom lane's global URL is happy-dom's: `new URL(rel, a file://
 // base)` resolves to an http: URL there, and node:fs refuses any
 // non-file scheme (ERR_INVALID_URL_SCHEME) — the boot double could
-// never load in a dom-lane spec. import.meta.url stays a plain
-// file:// STRING in every lane, so the fixture anchors by string
-// arithmetic, never through the environment's URL class.
-const DOC_PATH = resolve(
-  decodeURIComponent(import.meta.url).slice('file://'.length, import.meta.url.lastIndexOf('/') + 1),
-  '../walls/fixtures/object_info.boot.json',
-)
+// never load in a dom-lane spec. So the fixture anchors off the
+// import.meta.url STRING, never through the lane's URL class — but
+// the ANCHORING itself rides node:url's fileURLToPath (a node
+// internal on primordials, never the lane global), not hand string
+// arithmetic. The hand slice ('file://'.length … lastIndexOf('/'))
+// minted `/D:/…` on Windows and resolve() doubled the drive into
+// `D:\D:\…` — every downstream compose refused closed with ENOENT
+// on windows CI while every posix lane stayed green (the 2026-11-06
+// windows-portability triage class #1, ~32 tests).
+/** The boot-double path anchored at the CALLER's module URL (the
+ *  helper's own call site passes import.meta.url). Exported so the
+ *  path wall judges the derivation, not just its survivors. */
+export function hermeticDocPathFor(fileUrl: string): string {
+  return resolve(dirname(fileURLToPath(fileUrl)), '../walls/fixtures/object_info.boot.json')
+}
+const DOC_PATH = hermeticDocPathFor(import.meta.url)
 
 const seat = vi.hoisted(() => ({ fetches: 0, doc: null as Record<string, unknown> | null }))
 
