@@ -116,6 +116,7 @@ import { ACTION_BINDINGS as H3_BINDINGS } from "../../../../packages/video/h3-ti
 import { DECL as music3Decl } from "@melite/models-music3";
 import { DECL as h3Decl } from "@melite/models-h3";
 import { installLaneStoreOverlay, restoreLaneStoreOverlay } from "../../../helpers/lane-store-overlay.ts";
+import { LOADED_WAIT } from "../../../helpers/loaded-wait.ts";
 import { FlowsSeatService } from "../../../../packages/harness/estate-queue/src/flowsData.ts";
 import { RunsRuntimeService } from "../../../../packages/harness/estate-queue/src/runsRegistry.ts";
 import { outRootFor } from "../../../../packages/harness/estate-queue/src/queueLock.ts";
@@ -260,7 +261,7 @@ class ReceiptEngine extends ComfyUIHostService {
 
 /** Drive the bench door: {test, draft_id} over a bench doc → the
  *  bench run composes, registers, the pump runs it, settle lands. */
-const runBench = async (doc: SynthDoc): Promise<{ run: RunRecord; sidecar: Record<string, unknown>; state: string }> => {
+const runBench = async (doc: SynthDoc): Promise<{ run: RunRecord; dir: string; sidecar: Record<string, unknown>; state: string }> => {
   const { svc, core, state } = rig(doc);
   new ReceiptEngine(ctxOf(svc));
   const sig = new AbortController().signal;
@@ -269,7 +270,27 @@ const runBench = async (doc: SynthDoc): Promise<{ run: RunRecord; sidecar: Recor
   assert.equal(run.status, "completed", "the run settles completed: " + String(run.error));
   const dir = join(outRootFor(state, true), answer.run_id);
   const sidecar = JSON.parse(readFileSync(join(dir, "_flow.json"), "utf8")) as Record<string, unknown>;
-  return { run, sidecar, state };
+  return { run, dir, sidecar, state };
+};
+
+/** ARM d's disk-settle gate (the WALL B4 law): `settleWait` returns
+ *  on the IN-MEMORY status flip, but the stamp this arm judges is
+ *  carried by the settle's SIDECAR REWRITE — an eventually-landed
+ *  disk write that can trail the flip by a beat on a loaded CI pool
+ *  (run 42234004503, ubuntu: prompt_id undefined on a complete
+ *  receipt). The arm re-reads `_flow.json` until the stamp lands,
+ *  bounded by the shared settle budget; starving the budget throws
+ *  LOUD rather than judging the pre-stamp frame. */
+const stampedReceipt = async (dir: string): Promise<Record<string, unknown>> => {
+  const deadline = Date.now() + LOADED_WAIT();
+  for (;;) {
+    const receipt = JSON.parse(readFileSync(join(dir, "_flow.json"), "utf8"))["graph_receipt"] as Record<string, unknown>;
+    if (receipt !== undefined && receipt["prompt_id"] !== undefined) return receipt;
+    if (Date.now() >= deadline) {
+      throw new Error("the execute stamp never reached the sidecar: " + JSON.stringify(receipt));
+    }
+    await new Promise((r) => setTimeout(r, 50));
+  }
 };
 
 const ctxOf = (svc: RunsRuntimeService): Context =>
@@ -383,9 +404,8 @@ describe("runs-graph-receipt (the served-graph receipt, purge P1)", () => {
   });
 
   it("ARM d — THE EXECUTE STAMP: after the pump claimed and ran, the settled receipt carries the engine's prompt_id", async () => {
-    const { sidecar } = await runBench({ prompt: "the courier steps in", steps: 12, guidance: 3.5 });
-    const receipt = sidecar["graph_receipt"] as Record<string, unknown>;
-    assert.ok(receipt !== undefined, "the receipt exists (arm a's cure)");
+    const { dir } = await runBench({ prompt: "the courier steps in", steps: 12, guidance: 3.5 });
+    const receipt = await stampedReceipt(dir);
     assert.equal(
       receipt["prompt_id"],
       "receipt-prompt-0001",
