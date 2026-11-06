@@ -227,9 +227,6 @@
   "@melite/estate-provisioning": [
     "./packages/estate/provisioning/src/index.ts"
   ],
-  "@melite/estate-provisioning/types": [
-    "./packages/estate/provisioning/src/types.ts"
-  ],
   "@melite/estate-provisioning/contracts": [
     "./packages/estate/provisioning/src/contracts.ts"
   ],
