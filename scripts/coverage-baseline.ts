@@ -332,6 +332,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/harness/estate-queue/src/cardsArmError.ts': { statements: 93.33, branches: 90, functions: 66.67, lines: 90 },
   '**/packages/harness/estate-queue/src/cardsCompose.ts': { statements: 98.8, branches: 98.41, functions: 93.75, lines: 98.7 },
   '**/packages/harness/estate-queue/src/cardsDangling.ts': { statements: 97.59, branches: 98.51, functions: 83.33, lines: 97.44 },
+  '**/packages/harness/estate-queue/src/cardsDroppable.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/harness/estate-queue/src/cardsFacts.ts': { statements: 97.06, branches: 96.88, functions: 83.33, lines: 96.15 },
   '**/packages/harness/estate-queue/src/cardsLanes.ts': { statements: 98.8, branches: 90.63, functions: 96.97, lines: 99.26 },
   // measured over the full coverage gate (2026-11-10, the cell-fold
