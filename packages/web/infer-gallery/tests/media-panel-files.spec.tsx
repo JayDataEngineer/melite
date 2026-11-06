@@ -73,6 +73,15 @@ describe('decodeBrowse — the wire guard', () => {
     expect(page.total).toBe(0)
     expect(page.nextCursor).toBe(null)
   })
+  it('a null body and foreign-typed optionals fall to the empty walk, never a crash', () => {
+    // the (json ?? {}) arm: a dead upstream answering null still
+    // decodes to the empty page
+    expect(decodeBrowse(null)).toEqual({ path: '', entries: [], total: 0, nextCursor: null })
+    // foreign-typed size/mtime drop their optional fields (the wire
+    // guard never mints a string where a number belongs)
+    const page = decodeBrowse({ path: '', entries: [{ name: 'a.mp4', kind: 'file', size: 'big', mtime: 'yesterday' }] })
+    expect(page.entries).toEqual([{ name: 'a.mp4', kind: 'file' }])
+  })
 })
 
 describe('the files face — the disk walk behind the runs window', () => {

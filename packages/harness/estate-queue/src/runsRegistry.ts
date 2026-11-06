@@ -248,7 +248,7 @@ export function enrichDiskRow(row: Record<string, unknown>): Record<string, unkn
     // Windows-rooted value, hunt the segment bounded by either
     // separator; a posix value is never drive- or UNC-rooted, so it
     // keeps the old miss path byte-for-byte.
-    if (!/^(?:[A-Za-z]:[\\/]|\\\\)/u.test(value)) return value.replace(/^\/+/, '')
+    if (!/^(?:[A-Za-z]:[\\/]|[\\/]{2}[^\\/])/u.test(value)) return value.replace(/^\/+/, '')
     const seg = (c: string | undefined): boolean => c === '/' || c === '\\'
     for (let at = value.lastIndexOf(runId); at > 0; at = value.lastIndexOf(runId, at - 1)) {
       if (seg(value[at - 1]) && seg(value[at + runId.length])) {

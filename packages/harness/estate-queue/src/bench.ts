@@ -63,9 +63,11 @@ function blockedByFileAncestor(p: string): boolean {
     try {
       return statSync(cur).isFile();
     } catch (e) {
+      /* v8 ignore next 1 -- windows-only reach: inside the ENOENT climb a foreign errno (EACCES on a locked ancestor) answers "not blocked", never crashes the roster read; posix hands foreign errnos to the outer catch before this helper runs */
       if ((e as NodeJS.ErrnoException).code !== "ENOENT") return false;
     }
     const parent: string = dirname(cur);
+    /* v8 ignore next 2 -- windows-only reach: the climb exhausts at a drive/UNC root (stat of a bare drive letter throws); posix always resolves a dir before the root stop */
     if (parent === cur) return false;
     cur = parent;
   }
