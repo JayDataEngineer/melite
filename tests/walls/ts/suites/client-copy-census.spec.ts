@@ -594,7 +594,13 @@ const PINS: Record<string, number> = {
   // gates-gallery-mass-archive pins the wording); localizing forks
   // the door's identity per locale. Next dictionary pass owns only
   // sidebar chrome (galleryCopy), never these wire voices.
-  'packages/web/infer-gallery/src': 36,
+  // 36→39 (2026-11-06, the browse face): the disk-walk door's three
+  // voices join the same wire-voice class above — cross-host 502 (the
+  // browse face walks this tree's own disk), forbidden_path (browse
+  // route only walks run-relative directories), no_artifact (no such
+  // run directory). Machine codes travel beside them; the client
+  // banners ride galleryCopy (browseFailed), never these literals.
+  'packages/web/infer-gallery/src': 39,
   // action_cards: 0 — the pose stage, motion poster/viewer and poster
   // shell ride actionCopy.ts.
   'packages/engines/comfyui/src/action_cards': 0,

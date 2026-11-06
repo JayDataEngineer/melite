@@ -17,7 +17,7 @@
  */
 import * as React from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Modal, Pill } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, FileTypeIcon, Modal, Pill } from '@deepseek-ai/dsh-client-ui-primitives'
 import { MediaDrilldown } from '../drilldown.tsx'
 import { loadDraftOntoBench, loadRunOntoBench } from './bench-load.ts'
 import { artifactNameOf, artifactPathOfUrl, archiveArtifact, archiveArtifacts, deleteArtifact, deleteArtifacts, renameArtifact, restoreArtifact, restoreArtifacts } from './artifact-ops.ts'
@@ -1666,22 +1666,27 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
 
       {tab === 'files' && (
         <div data-infer-media-files="1" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {/* THE BREADCRUMB: the walk's own path, every hop clickable
-              back to the root (every run dir on disk). */}
-          <div data-infer-files-crumbs="1" style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap', fontSize: 12 }}>
-            <button
+          {/* THE BREADCRUMB: the walk's own path, every hop a
+              catalog ghost Button (a navigation verb — the chrome
+              canon's atom seat, never a hand-rolled <button>). */}
+          <div data-infer-files-crumbs="1" style={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', fontSize: 12 }}>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => { setDirPath('') }}
               aria-label={galleryCopy.crumbRoot}
-              style={{ border: 'none', background: 'none', color: dirPath === '' ? labelPrimary1 : labelSecondary2, fontWeight: dirPath === '' ? 700 : 400, cursor: 'pointer', padding: 0, fontFamily: 'inherit', fontSize: 12 }}
-            >{galleryCopy.crumbRoot}</button>
+              style={{ padding: '2px 6px', fontSize: 12, fontWeight: dirPath === '' ? 700 : 400, color: dirPath === '' ? labelPrimary1 : labelSecondary2 }}
+            >{galleryCopy.crumbRoot}</Button>
             {dirPath !== '' && dirPath.split('/').map((seg, i, arr) => (
-              <span key={arr.slice(0, i + 1).join('/')} style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+              <span key={arr.slice(0, i + 1).join('/')} style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                 <span style={{ color: labelSecondary2 }}>/</span>
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => { setDirPath(arr.slice(0, i + 1).join('/')) }}
                   aria-label={seg}
-                  style={{ border: 'none', background: 'none', color: i === arr.length - 1 ? labelPrimary1 : labelSecondary2, fontWeight: i === arr.length - 1 ? 700 : 400, cursor: 'pointer', padding: 0, fontFamily: 'inherit', fontSize: 12 }}
-                >{seg}</button>
+                  style={{ padding: '2px 6px', fontSize: 12, fontWeight: i === arr.length - 1 ? 700 : 400, color: i === arr.length - 1 ? labelPrimary1 : labelSecondary2 }}
+                >{seg}</Button>
               </span>
             ))}
           </div>
@@ -1694,6 +1699,15 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
               ? <Empty>{galleryCopy.browseEmpty}</Empty>
               : (
                 <>
+                  {/* THE ROWS (c-1 NO ATOM, the FlowCards argument): a
+                      list row that NAVIGATES (dir) or opens the
+                      LIGHTBOX (media) is the row→modal interaction —
+                      DisclosureRow is inline expansion, a different
+                      interaction; no shipped atom covers it. Two
+                      hand-rolled seats, argued here and pinned in the
+                      chrome canon; the file-kind glyphs are the
+                      catalog's FileTypeIcon (path classification),
+                      never a second glyph table. */}
                   {browse.entries.map((e) => {
                     const childPath = dirPath === '' ? e.name : dirPath + '/' + e.name
                     const rowStyle: React.CSSProperties = {
@@ -1711,7 +1725,7 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                           aria-label={galleryCopy.folderAria({ name: e.name })}
                           style={rowStyle}
                         >
-                          <span style={{ fontSize: 15, lineHeight: 0, color: stateBusinessPrimary }}>▸</span>
+                          <span style={{ fontSize: 15, lineHeight: 0, display: 'flex' }}><FileTypeIcon kind="folder" size={16} /></span>
                           <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.name}</span>
                           <span style={{ fontSize: 10, color: labelSecondary2 }}>{timeLabel((e.mtime ?? 0) / 1000)}</span>
                         </button>
@@ -1732,7 +1746,7 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                           aria-label={galleryCopy.fileAria({ name: e.name })}
                           style={rowStyle}
                         >
-                          <span style={{ fontSize: 15, lineHeight: 0, color: textTertiary2, display: 'flex' }}><Glyph kind="text" size={16} /></span>
+                          <span style={{ fontSize: 15, lineHeight: 0, display: 'flex' }}><FileTypeIcon path={e.name} size={16} /></span>
                           <span style={{ flex: 1, minWidth: 0, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.name}</span>
                           <span style={{ fontSize: 10, color: labelSecondary2 }}>{typeof e.size === 'number' ? Math.ceil(e.size / 1024) + ' KB' : ''}</span>
                         </a>
@@ -1746,7 +1760,7 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                         aria-label={galleryCopy.fileAria({ name: e.name })}
                         style={rowStyle}
                       >
-                        <span style={{ fontSize: 15, lineHeight: 0, color: textTertiary2, display: 'flex' }}><Glyph kind={kind} size={16} /></span>
+                        <span style={{ fontSize: 15, lineHeight: 0, display: 'flex' }}><FileTypeIcon path={e.name} size={16} /></span>
                         <span style={{ flex: 1, minWidth: 0, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.name}</span>
                         <span style={{ fontSize: 10, color: labelSecondary2 }}>{[timeLabel((e.mtime ?? 0) / 1000), typeof e.size === 'number' ? Math.ceil(e.size / 1024) + ' KB' : ''].filter(Boolean).join(' · ')}</span>
                       </button>

@@ -421,7 +421,14 @@ const HAND_ROLLED_CHROME_PIN: Record<string, number> = {
   'packages/web/melite-card-view/src': 8,
   'packages/web/melite-card-deck/src': 2,
   'packages/web/melite-run-wire/src': 0,
-  'packages/web/infer-gallery/src': 2,
+  // 2→4 at S6i (2026-11-06, the files face): the two NEW seats are
+  // the disk-walk rows — dir row (row→navigate) and media file row
+  // (row→lightbox), the SAME c-1 NO ATOM class FlowCards argued (a
+  // list row that opens another face; DisclosureRow is inline
+  // expansion, a different interaction). The face's other chrome
+  // rides catalog atoms (crumb hops = Button ghost sm, file glyphs =
+  // FileTypeIcon); the native-door row is an <a>, not chrome.
+  'packages/web/infer-gallery/src': 4,
   'packages/web-kit/timeline/src': 0,
   'packages/engines/comfyui/src/action_cards/src': 2,
 }
@@ -568,7 +575,14 @@ describe('THE UI-PATTERN CENSUS (the playbook wall)', () => {
     'packages/video/h3-timeline/src/ui': 12,
     'packages/web/card-base/src': 23,
     'packages/web/melite-card-view/src': 12,
-    'packages/web/infer-gallery/src': 2,
+    // 2→4 at S6i (2026-11-06, the files face): the two NEW seats are
+  // the disk-walk rows — dir row (row→navigate) and media file row
+  // (row→lightbox), the SAME c-1 NO ATOM class FlowCards argued (a
+  // list row that opens another face; DisclosureRow is inline
+  // expansion, a different interaction). The face's other chrome
+  // rides catalog atoms (crumb hops = Button ghost sm, file glyphs =
+  // FileTypeIcon); the native-door row is an <a>, not chrome.
+  'packages/web/infer-gallery/src': 4,
     'packages/web-kit/timeline/src': 5,
   }
 

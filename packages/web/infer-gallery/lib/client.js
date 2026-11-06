@@ -4386,50 +4386,46 @@ window.__ModuleLoader__.load({
 								"data-infer-files-crumbs": "1",
 								style: {
 									display: "flex",
-									gap: 4,
+									gap: 2,
 									alignItems: "center",
 									flexWrap: "wrap",
 									fontSize: 12
 								},
-								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									variant: "ghost",
+									size: "sm",
 									onClick: () => {
 										setDirPath("");
 									},
 									"aria-label": galleryCopy.crumbRoot,
 									style: {
-										border: "none",
-										background: "none",
-										color: dirPath === "" ? "var(--dsw-alias-label-primary, rgb(226,232,240))" : "var(--dsw-alias-label-secondary, rgba(148,163,184,0.9))",
+										padding: "2px 6px",
+										fontSize: 12,
 										fontWeight: dirPath === "" ? 700 : 400,
-										cursor: "pointer",
-										padding: 0,
-										fontFamily: "inherit",
-										fontSize: 12
+										color: dirPath === "" ? "var(--dsw-alias-label-primary, rgb(226,232,240))" : "var(--dsw-alias-label-secondary, rgba(148,163,184,0.9))"
 									},
 									children: galleryCopy.crumbRoot
 								}), dirPath !== "" && dirPath.split("/").map((seg, i, arr) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 									style: {
 										display: "flex",
-										gap: 4,
+										gap: 2,
 										alignItems: "center"
 									},
 									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 										style: { color: "var(--dsw-alias-label-secondary, rgba(148,163,184,0.9))" },
 										children: "/"
-									}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+									}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+										variant: "ghost",
+										size: "sm",
 										onClick: () => {
 											setDirPath(arr.slice(0, i + 1).join("/"));
 										},
 										"aria-label": seg,
 										style: {
-											border: "none",
-											background: "none",
-											color: i === arr.length - 1 ? "var(--dsw-alias-label-primary, rgb(226,232,240))" : "var(--dsw-alias-label-secondary, rgba(148,163,184,0.9))",
+											padding: "2px 6px",
+											fontSize: 12,
 											fontWeight: i === arr.length - 1 ? 700 : 400,
-											cursor: "pointer",
-											padding: 0,
-											fontFamily: "inherit",
-											fontSize: 12
+											color: i === arr.length - 1 ? "var(--dsw-alias-label-primary, rgb(226,232,240))" : "var(--dsw-alias-label-secondary, rgba(148,163,184,0.9))"
 										},
 										children: seg
 									})]
@@ -4464,9 +4460,12 @@ window.__ModuleLoader__.load({
 											style: {
 												fontSize: 15,
 												lineHeight: 0,
-												color: "var(--dsw-alias-state-business-primary, rgb(147,197,253))"
+												display: "flex"
 											},
-											children: "▸"
+											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.FileTypeIcon, {
+												kind: "folder",
+												size: 16
+											})
 										}),
 										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 											style: {
@@ -4489,8 +4488,7 @@ window.__ModuleLoader__.load({
 										})
 									]
 								}, childPath);
-								const kind = kindOfName(e.name);
-								if (kind === null) return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("a", {
+								if (kindOfName(e.name) === null) return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("a", {
 									"data-file": childPath,
 									href: "/infer-gallery/artifact?path=" + encodeURIComponent(childPath),
 									target: "_blank",
@@ -4502,11 +4500,10 @@ window.__ModuleLoader__.load({
 											style: {
 												fontSize: 15,
 												lineHeight: 0,
-												color: "var(--dsw-alias-text-tertiary, rgba(148,163,184,0.75))",
 												display: "flex"
 											},
-											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Glyph, {
-												kind: "text",
+											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.FileTypeIcon, {
+												path: e.name,
 												size: 16
 											})
 										}),
@@ -4542,11 +4539,10 @@ window.__ModuleLoader__.load({
 											style: {
 												fontSize: 15,
 												lineHeight: 0,
-												color: "var(--dsw-alias-text-tertiary, rgba(148,163,184,0.75))",
 												display: "flex"
 											},
-											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Glyph, {
-												kind,
+											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.FileTypeIcon, {
+												path: e.name,
 												size: 16
 											})
 										}),
