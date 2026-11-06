@@ -423,6 +423,54 @@ describe("runs-graph-receipt (the served-graph receipt, purge P1)", () => {
     // future gate-tightening row, not this wall's law to enshrine.)
   });
 
+  // ── THE NO-SRC ROW RE-PROBE (F3-06, R-P3-16 — the friction log's
+  // closing probe): the source-less refusal existed at the parse leaf
+  // (filmMix.ts, armed in film-mix.spec.ts) but the row had to be
+  // proven dead at the REAL COMPOSE DOOR too — any path that still
+  // admits is a phantom row the run performs without saying so (the
+  // {gain:0.5} burn: green run, silent no-op). The arm drives the
+  // real h3 film door (phase1Card + phase2Card, the ARM-f rig's
+  // shape) and closes the row: both source-less shapes refuse at the
+  // compose in the leaf's own voice, the lawful src row composes.
+  it("THE NO-SRC ROW RE-PROBE (F3-06): a film body whose audio_clips row carries no src refuses AT THE COMPOSE DOOR in the row's own voice — the leaf's law composes nowhere else", async () => {
+    const phase2Film = async (audioClips: unknown): Promise<unknown> => {
+      const ctx = new Context();
+      new FlowsSeatService(ctx);
+      const state = mkdtempSync(join(tmpdir(), "runs-graph-receipt-nosrc-"));
+      onTestFinished(() => rmSync(state, { recursive: true, force: true }));
+      (ctx as unknown as { queue: unknown }).queue = { stateRoot: state, stateRoots: [state] };
+      const door = new CardRegistryService(ctx);
+      await door.prime();
+      installLaneStoreOverlay();
+      try {
+        const body = {
+          model: "h3",
+          width: 768, height: 448, steps: 8,
+          calls: [
+            { text: "a slow push in", start_frame: 0, end_frame: 56 },
+            { text: "then a turn", start_frame: 56, end_frame: 124 },
+          ],
+          length: 124,
+          audio_clips: audioClips,
+        };
+        const p1 = await door.phase1Card(body, "h3");
+        return door.phase2Card(p1, "nosrc_reprobe");
+      } finally {
+        restoreLaneStoreOverlay();
+      }
+    };
+    // THE BURN SHAPE (a stated, source-less row — the silent no-op
+    // that performed nothing on a green run)
+    await assert.rejects(phase2Film([{ gain: 0.5 }]), /a clip row has no src — the film mix cannot mix a source-less row; state src or drop the row/);
+    // THE POSITIONED SHAPE (a placed seat with no source — a lost
+    // take, not junk)
+    await assert.rejects(phase2Film([{ id: "take-2", start_frame: 24, dur_frames: 48 }]), /a positioned clip row has no src — the film mix cannot place a source-less row/);
+    // THE CONTROL: a lawful src row composes green (the door refuses
+    // only the source-less class — never the clips lane itself)
+    const composed = await phase2Film([{ src: "bells.flac", start_frame: 24 }]) as { graph: unknown };
+    assert.ok(composed.graph !== undefined, "the lawful src row composed a graph");
+  });
+
   // ── THE BAKE'S PRICE RIG (arm f's h3 twin of the arm-e rig): the
   // REAL h3 door, the stated bake dials at NON-DEFAULT poles, the
   // refmod image as a run-level ref_mods entry. `corrupt` rewrites
@@ -581,5 +629,82 @@ describe("runs-graph-receipt (the served-graph receipt, purge P1)", () => {
       stages.every((s) => s["verdict"] === "complete") ? "complete" : "partial",
       "the run verdict is the AND of its stages: " + JSON.stringify(receipt),
     );
+  });
+});
+
+// ── THE DROPPED-KNOB ALLOWABILITY LAW (F3-04, 2026-11-15) ──
+// The receipt admits params can fall out of compilation; this law
+// judges WHICH falls are ALLOWED. Arms (i)/(j) import beside the
+// ARM-e imports above: the declaration leaf + the real registry
+// roster the sweep rides.
+import { CARD_DROPPABLE, unjustifiedDropped } from "../../../../packages/harness/estate-queue/src/cardsDroppable.ts";
+import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
+
+describe("runs-graph-receipt — THE DROPPED-KNOB ALLOWABILITY LAW (F3-04)", () => {
+  it("ARM i — THE RIG-P0-15 SHAPE: a declared router drop is justified; the same drop undeclared, or a stray key beside it, is the unjustified drop this law reds on", () => {
+    const rigReceipt = {
+      nodes: 2,
+      populated: ["mode", "source_glb"],
+      carried: ["source_glb"],
+      dropped: ["mode"],
+      verdict: "partial" as const,
+    };
+    assert.deepEqual(unjustifiedDropped(rigReceipt, "rig"), [],
+      "the rig's mode drop carries its declared reason (the lane router) — justified, never a finding");
+    assert.deepEqual(unjustifiedDropped(rigReceipt, "anny"), ["mode"],
+      "the SAME drop on a card that declares it not — the silent fall-out-of-compilation the law exists to red");
+    const stray = { ...rigReceipt, dropped: ["mode", "preserve_texture"] };
+    assert.deepEqual(unjustifiedDropped(stray, "rig"), ["preserve_texture"],
+      "an undeclared key beside a declared one reds on its own — the allowlist never launders a batch");
+  });
+
+  it("ARM j — THE DECLARATION SWEEP: every CARD_DROPPABLE entry names a card the registry serves and a knob that card serves, with a reason", async () => {
+    // D1: the declaration can never drift off the served surface —
+    // a row for a dead card, or a knob the card stopped serving,
+    // reds here (the ARM-e rig: the real CardRegistryService over
+    // the hermetic engine + the models boot).
+    const ctx = new Context();
+    new FlowsSeatService(ctx);
+    const state = mkdtempSync(join(tmpdir(), "runs-graph-receipt-armj-"));
+    onTestFinished(() => rmSync(state, { recursive: true, force: true }));
+    (ctx as unknown as { queue: unknown }).queue = { stateRoot: state, stateRoots: [state] };
+    const door = new CardRegistryService(ctx);
+    await door.prime();
+    installLaneStoreOverlay();
+    try {
+      const defs = door.defsSync() as Map<string, CardDefinition>;
+      const offenders: string[] = [];
+      for (const [card, knobs] of Object.entries(CARD_DROPPABLE)) {
+        const def = defs.get(card);
+        if (def === undefined) {
+          offenders.push(`CARD_DROPPABLE declares card '${card}' but the registry serves no such card`);
+          continue;
+        }
+        const dict = def.schema.dict;
+        if (dict === undefined) {
+          offenders.push(`card '${card}' carries no schema dict — the declaration is unjudgeable against the served surface`);
+          continue;
+        }
+        // THE SERVED SURFACE (D1): the schema's knobs ∪ the def's
+        // admission extras ∪ the model gate's own demanded key —
+        // `params.model` is REQUIRED on every model card
+        // (runsValidateStages: requiresModel !== false demands it),
+        // so it is served BY LAW even though no schema spells it.
+        const served = new Set<string>([...Object.keys(dict), ...(def.admits ?? [])]);
+        if (def.requiresModel !== false) served.add("model");
+        for (const [knob, reason] of Object.entries(knobs)) {
+          if (!served.has(knob)) offenders.push(`CARD_DROPPABLE['${card}'] declares knob '${knob}' the card does not serve (neither schema knob, admit row, nor the model gate's own key)`);
+          if (reason.trim() === "") offenders.push(`CARD_DROPPABLE['${card}']['${knob}'] carries no reason — a drop without its why is a finding, not an allowlist entry`);
+        }
+      }
+      assert.deepEqual(offenders, [], "every declared droppable rides the served surface with its reason: " + offenders.join("; "));
+      // THE FRICTION'S OWN SHAPE, JUDGED: the rig card serves a mode
+      // knob (the sweep proved it) and the receipt that dropped it
+      // is justified TODAY — toggle the declaration out and ARM i
+      // reds on the RIG-P0-15 shape.
+      assert.ok("mode" in (defs.get("rig")?.schema.dict ?? {}), "the rig card serves the mode knob the burn dropped");
+    } finally {
+      restoreLaneStoreOverlay();
+    }
   });
 });
