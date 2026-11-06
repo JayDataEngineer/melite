@@ -1715,26 +1715,13 @@ export class CardRegistryService extends Service {
             // write seat, in the same voice the run door speaks.
             if (e instanceof EnvelopeRefusal)
                 return { message: e.message, incomplete: false };
-            // THE EMPTY-SELECTION LAW (2026-10-10, the operator's live
-            // bench: 'bench stage "s_0": card_compose phase 1: unknown
-            // quant "" for model "z-image" variant "turbo" (known: int8)')
-            // — a stated EMPTY variant/quant/model is not a selection, it
-            // is an authoring surface's unchosen control written as a
-            // value. The run door refuses it, so admitting it here is the
-            // false admit the parity law forbids (the envelope GAP-1
-            // shape, one axis over). Refuse HERE, in the run door's own
-            // voice — one spelling, both seats. A stated WRONG selection
-            // still passes (the tolerance below: repairable, the run
-            // names it); an ABSENT one still passes (compose defaults
-            // it). The form's own half of the law: seedAxisValues omits
-            // an empty axis key (card-base/src/spec.ts) so the GUI never
-            // authors the empty string in the first place.
-            if (e instanceof CardArmError &&
-                (params["variant"] === "" || params["quant"] === "" || params["model"] === "")) {
-                return { message: e.message, incomplete: false };
-            }
-            // selection/dangling failures keep the run door's voice —
-            // this seat judges only the DECL's own words
+            // THE EMPTY-SELECTION LAW lives FIRST-CLASS above the prepare
+            // (the 2026-11-10 no-default-voice ripple): a stated EMPTY
+            // variant/quant/model never reaches this catch — the loop
+            // refuses it before prepare runs, so the conversion arm this
+            // catch used to carry was dead code and is deleted. A stated
+            // WRONG selection keeps the run door's voice — this seat
+            // judges only the DECL's own words.
             return null;
         }
         // THE UNDECLARED-KEY GATE, family side (a key no card declares

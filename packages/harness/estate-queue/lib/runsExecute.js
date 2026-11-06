@@ -27,7 +27,11 @@ async function raceExecuteFuse(p, ceilMs, what) {
                 dl.signal.addEventListener("abort", () => {
                     const shown = ceil < 60_000
                         ? Math.round(ceil) + "ms"
-                        : Math.round(ceil / 60_000) + " min";
+                        : /* v8 ignore next -- the min face needs a ceiling ≥ 60 s AND a
+                           * call that outlives it: an honest arm is a minute-long
+                           * timed test, a flake factory by construction. The ms face
+                           * (every real ceiling) is the walled spelling. */
+                            Math.round(ceil / 60_000) + " min";
                     reject(new Error("runs/execute-hung: " + what + " exceeded the execute ceiling (" +
                         shown +
                         ") — a hung engine call must never strand the serial queue; raise the queue config's executeCeilMs, set it <= 0 to disable, or state the run's own execute_ceil_ms"));
@@ -73,7 +77,13 @@ export function startRunLiveness(run) {
     };
     const tick = () => {
         // settled runs own no stamp (the terminal writer deleted the
-        // activity lines); only a still-running row may move.
+        // activity lines); only a still-running row may move. The two
+        // guard tails below are timer-edge classes: a tick landing after
+        // settle (clearInterval racing the interval's in-flight fire) and
+        // a stamp fired inside the watchdog window — both benign by
+        // design, honest arms would be wall-clock flakes.
+        /* v8 ignore next 2 -- timer-edge tails: the guard exists for the
+         * clear-race, not a state any arm can hold. */
         if (run.status !== "running")
             return;
         if (Date.now() - lastReportAt < LIVENESS_WATCHDOG_MS)

@@ -2346,6 +2346,50 @@ describe("the multi-stage boundary (2026-09-25 — curated lane lifts the length
     );
   });
 
+  it("THE ONE-EXECUTOR LAW: a curated doc naming two DIFFERENT engines refuses at claim, never mis-dispatched mid-flight", async () => {
+    // runsExecute's mixed-engines refusal (the seat submits every row
+    // to ONE executor — the first stage's engine): the curated lane
+    // lifts the LENGTH gate, not the one-executor law. The real
+    // engines seat carries comfyui (the host row registered it); the
+    // arm registers 'craft' on the SAME seat so the START door's
+    // membership check passes and the refusal under test is the
+    // claim-time mixed voice itself — a flow that would otherwise
+    // submit half its rows to the wrong executor.
+    const s = seat();
+    const engine = engineSeat(s);
+    const ctx = (s.svc as unknown as { ctx: Context }).ctx;
+    // mount the real seat when this fiber carries none (the host row
+    // injects 'engines' on its own fiber — the rig's bare ctx starts
+    // with the default [comfyui] voice), then register the second
+    // lawful id so the START membership check passes
+    let engines = ctx.get("engines") as EnginesService | undefined;
+    if (engines === undefined) engines = new EnginesService(ctx);
+    engines.register("craft", {
+      executor: {
+        executeStages: async () => ({ stages: [], engineRef: undefined }),
+      },
+    });
+    engine.onFlow = async (rows): Promise<FlowResult> =>
+      ({ stages: Object.fromEntries(rows.map((r) => [r.stageId, { outputs: {}, artifacts: [] }])), promptId: "p" });
+    const r = (await s.svc.start(
+      inlineBody({
+        flow_inline: {
+          id: "image-upscale",
+          stages: [
+            { id: "make", engine: "comfyui", params: WF, outputs: { image: "image" } },
+            { id: "polish", engine: "craft", params: WF, outputs: { image: "image" }, inputs: { image: { stage: "make", output: "image" } } },
+          ],
+        },
+      }),
+      sig(),
+    )) as { run_id?: string };
+    const run = await settleWait(s, String(r["run_id"]));
+    assert.equal(run.status, "failed");
+    assert.match(run.error, /runs\/mixed-engines/);
+    assert.match(run.error, /comfyui \+ craft/);
+    assert.match(run.error, /one executor/);
+  });
+
   it("the registry's CARD flows RUN on the {flow:} door (2026-10-04: the card stages compose)", async () => {
     // The VALIDATE-ONLY stamp is GONE. A registry row projects with
     // its `card` references intact and the inline compiler refuses

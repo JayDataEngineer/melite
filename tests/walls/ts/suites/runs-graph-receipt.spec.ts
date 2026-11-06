@@ -413,6 +413,47 @@ describe("runs-graph-receipt (the served-graph receipt, purge P1)", () => {
     );
   });
 
+  it("ARM d2 — THE STAMP'S TOLERANCE: a run with no receipt stamps nothing, and a non-string prompt id never reaches the receipt", async () => {
+    // Guard 1 (the receipt-less run): an INLINE envelope carries no
+    // card compose, so registerCompiledRun stamped nothing — the
+    // execute's stamp folds onto nothing and the run still settles
+    // clean (the guard's own law, not a skip).
+    const bare = rig({ prompt: "the courier steps in", steps: 12, guidance: 3.5 });
+    // the engine seat must be registered for the pump to execute —
+    // the construction IS the registration (cordis service ctor).
+    new ReceiptEngine(ctxOf(bare.svc));
+    const inline = await bare.svc.start(
+      {
+        test: true,
+        flow_inline: {
+          id: "x",
+          stages: [{
+            id: "s",
+            engine: "comfyui",
+            params: { workflow: { "1": { class_type: "UNETLoader", inputs: {} } } },
+            outputs: { out: "image" },
+          }],
+        },
+      } as Parameters<typeof bare.svc.start>[0],
+      new AbortController().signal,
+    ) as { run_id: string };
+    const bareRun = await settleWait(bare.core, inline.run_id);
+    assert.equal(bareRun.status, "completed", "the receipt-less inline run settles clean: " + String(bareRun.error));
+    assert.equal(bareRun.graphReceipt, undefined, "no compose, no receipt — the stamp had nothing to fold");
+
+    // Guard 2 (the non-string id): the engine minted no prompt id —
+    // the composed run's queue-time receipt survives the execute
+    // WITHOUT a prompt_id rather than stamping a non-string.
+    const ridged = rig({ prompt: "the courier steps in", steps: 12, guidance: 3.5 });
+    const engineSilent = new ReceiptEngine(ctxOf(ridged.svc));
+    engineSilent.promptId = undefined as unknown as string;
+    const answer2 = (await ridged.svc.start({ test: true, draft_id: "d1" }, new AbortController().signal)) as { run_id: string };
+    const silentRun = await settleWait(ridged.core, answer2.run_id);
+    assert.equal(silentRun.status, "completed", "the silent-id run settles clean: " + String(silentRun.error));
+    assert.ok(silentRun.graphReceipt !== undefined, "the queue-time receipt stands");
+    assert.equal(silentRun.graphReceipt?.["prompt_id"], undefined, "a non-string id never reaches the receipt");
+  });
+
   it("ARM e — THE REAL-BUILD TOGGLE: the real music3 door carries the stated prompt (control); the unwired caption names prompt in dropped (carriage twin); the truly-absent caption refuses loud naming caption (toggle face, documented below)", async () => {
     // THE AUDIT'S SPECIFIED TOGGLE (P1 recon gap A): arm (b)
     // synthesizes its drop through a fake compose — this arm drives
