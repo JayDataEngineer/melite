@@ -36,7 +36,7 @@ extensions:
     # model_info cache needed (UnboundLocalError on every live load).
     # 1e7848f4 re-pin 2026-11-13 (press block): cure 3 — the variant dir walks the DECL
     # home's tail (the direct door's root/variant join missed the provisioned kimodo level).
-    ref: 1e7848f473f8aea7ec63547d9627d8b26ac21076
+    ref: d6d0351fef61f9665db690e941af64e22d86bd58
     required: false
     desc: >-
       Image -> Anny (all-age parametric human model), both engines:

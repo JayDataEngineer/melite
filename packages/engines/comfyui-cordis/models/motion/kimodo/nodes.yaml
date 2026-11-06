@@ -25,7 +25,7 @@ extensions:
     # _apply_network_patches :396 (the static verification never loaded live).
     # 1e7848f4 re-pin 2026-11-13 (press block): cure 3 — the variant dir walks the DECL
     # home's tail (the direct door's root/variant join missed the provisioned kimodo level).
-    ref: 1e7848f473f8aea7ec63547d9627d8b26ac21076
+    ref: d6d0351fef61f9665db690e941af64e22d86bd58
     required: true
     desc: KimodoLoader + KimodoTextToPose (the NVIDIA-package wrap — THE kimodo implementation) — text to SOMA-77 motion NPZ.
     # 2026-09-08 (red-closure lane): pip restated identical to the 3d

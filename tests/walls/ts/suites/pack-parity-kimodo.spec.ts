@@ -60,17 +60,28 @@ describe("pack-parity-kimodo — THE KIMODO LIBRARY BOUND (D3-06: declared + ass
       "the registry door pins the hub beside it").toBe(true);
   });
 
-  it("the pack ASSERTS the python env AT IMPORT — assert_transformers_bound fires before the nodes import, and the refusal names the burn's own kwarg", () => {
+  it("the pack ASSERTS the python env AT IMPORT — assert_transformers_bound rides the ARMED lane, before the nodes import, and the refusal names the burn's own kwarg", () => {
     const init = read("__init__.py");
     expect(init, "__init__.py exists").not.toBeNull();
     const body = init as string;
     // Judge the ACTIVE call — a commented spell never counts (the
-    // audiocore toggle-proof's own lesson, 2026-11-12).
-    const assertIdx = body.indexOf("\nassert_transformers_bound()");
+    // audiocore toggle-proof's own lesson, 2026-11-12). The call is
+    // gated on the armed lane (kimodo importable) — the
+    // cold-clone-pack-import law reconciliation (D3-06): a bare
+    // clone with kimodo UNRESOLVED must soft-register (a raise at
+    // import drops the whole pack from ComfyUI — the failure lands
+    // at KimodoLoader.load with its breadcrumb), while a drifted
+    // env that CAN arm refuses at boot. The kwarg drift kills
+    // MID-RUN exactly when the lane can run.
+    const gateIdx = body.indexOf("if _KIMODO_SOURCE is not None:");
+    const assertIdx = body.indexOf("\n    assert_transformers_bound()");
     const importIdx = body.indexOf("from .nodes import");
-    expect(assertIdx, "__init__.py calls assert_transformers_bound() as a statement").toBeGreaterThan(-1);
+    const exceptIdx = body.indexOf("_KIMODO_SOURCE = None");
+    expect(gateIdx, "__init__.py gates the assert on the armed lane (_KIMODO_SOURCE is not None)").toBeGreaterThan(-1);
+    expect(assertIdx, "__init__.py calls assert_transformers_bound() as a live statement inside the gate").toBeGreaterThan(-1);
     expect(importIdx, "__init__.py imports the nodes").toBeGreaterThan(-1);
     expect(assertIdx, "the assert fires BEFORE the nodes import — a drifted env refuses the whole pack at boot, never a dead lane on press").toBeLessThan(importIdx);
+    expect(gateIdx, "the gate rides AFTER the kimodo bootstrap's except leg — the register-anyway law owns the unarmed clone").toBeGreaterThan(exceptIdx);
     const env = read("env_assert.py");
     expect(env, "env_assert.py exists").not.toBeNull();
     // The refusal carries the burn's own text so the maker greps the

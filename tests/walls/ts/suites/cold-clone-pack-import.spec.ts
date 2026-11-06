@@ -286,12 +286,19 @@ print(json.dumps({
     }
   });
 
-  it.skipIf(!NUMPY_PRESENT)("melite-kimodo-nodes resolves kimodo from the pip leg alone (a stub on PYTHONPATH = the requirements.txt install; skipped when the host python lacks numpy — CI: the pack's import chain requires it)", () => {
+  it.skipIf(!NUMPY_PRESENT)("melite-kimodo-nodes resolves kimodo from the pip leg alone (a stub on PYTHONPATH = the requirements.txt install — kimodo module + the pinned transformers metadata, D3-06; skipped when the host python lacks numpy — CI: the pack's import chain requires it)", () => {
     const clone = coldClone("melite-kimodo-nodes");
     const stubRoot = mkdtempSync(join(tmpdir(), "kimbodo-stub-"));
     try {
       mkdirSync(join(stubRoot, "kimodo"));
       writeFileSync(join(stubRoot, "kimodo", "__init__.py"), 'value = "pip-leg"\n');
+      // The pip leg's requirements.txt now pins transformers==5.20.2
+      // (D3-06); the armed lane's boot assert reads
+      // importlib.metadata, so the stub carries the pinned dist too —
+      // the fiction is the post-install env the requirements build.
+      mkdirSync(join(stubRoot, "transformers-5.20.2.dist-info"));
+      writeFileSync(join(stubRoot, "transformers-5.20.2.dist-info", "METADATA"),
+        "Metadata-Version: 2.1\nName: transformers\nVersion: 5.20.2\n");
       const r = spawnSync(pythonBin(), ["-c", `
 import importlib.util, json, sys
 before = set(sys.path)

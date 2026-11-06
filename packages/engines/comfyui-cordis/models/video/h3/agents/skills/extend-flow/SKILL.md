@@ -51,7 +51,7 @@ its final pose.
 The anchor is an IMAGE REFERENCE, not a pixel lock. The continuation
 is a fresh window at full denoise, so its first frame is a NEW pose,
 not the frame it was handed. The join size follows SEED CONTINUITY —
-measured on the film plane (0–255 scale, 24 fps):
+measured on the film plane (0–255 scale, the schema fps default):
 
     adjacent frames inside a window   : Δ1.0–1.3
     same-seed extend, butt-join       : Δ3.1

@@ -11,7 +11,7 @@
   {
     "name": "melite-kimodo-nodes",
     "url": "https://github.com/JayDataEngineer/melite-kimodo-nodes",
-    "ref": "1e7848f473f8aea7ec63547d9627d8b26ac21076",
+    "ref": "d6d0351fef61f9665db690e941af64e22d86bd58",
     "required": false,
     "desc": "Image -> Anny (all-age parametric human model), both engines: MultiHMR2ImageToAnny wraps naver/multi-hmr2 (regression, in-process, VRAM-tracked via melite_model_base) — multi-person Anny params (.pkl world param) + meshes (.glb) + optional render. AnnyFitOptimize wraps naver/anny-fit (camera-space optimization, out-of-process over ANNYFIT_SRC) — preprocess (detect+ViTPose+ camera+densekp+VLM+MultiHMR init) -> optimize -> refined params (.npz) + before/after renders. NAVER non-commercial licenses on both upstreams; Anny itself Apache 2.0.",
     "pip": [
