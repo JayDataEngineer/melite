@@ -37,6 +37,22 @@ const RUN_DIR = RUN_ID_RE;
  *  answered 400 here — the doors disagreed on the same artifact).
  *  `.`/`..` refuse at the grammar; realpath containment re-checks
  *  at the read. */
+/** The BROWSE grammar: the runs root itself (''), a bare run dir
+ *  ('run-<id>'), or a run-relative directory path — every segment
+ *  after the run id confined exactly like the serve door. */
+function isRunRelativeDir(target) {
+    if (target === '')
+        return true;
+    const slash = target.indexOf('/');
+    if (slash < 0)
+        return RUN_DIR.test(target);
+    if (!RUN_DIR.test(target.slice(0, slash)))
+        return false;
+    const rest = target.slice(slash + 1);
+    if (rest.length === 0)
+        return true;
+    return rest.split('/').every(segmentConfined);
+}
 function isRunRelative(target) {
     // the SHAPE half (well-formed, run-relative, no escape) — the
     // SERVABLE half is the contract's predicate (servableLeaf,
@@ -850,6 +866,123 @@ export function apply(ctx, config = {}) {
             }
         },
     }), 'infer-gallery: /infer-gallery/artifact-restore route');
+    /* THE BROWSE FACE (operator order, 2026-11-16: "no file browser …
+     * media browsing cuts off, only keeps the last 500"). The runs
+     * LIST rides the queue seat's 500-row window (the runs-window
+     * law — an interactive-read convenience, rows evict past 500),
+     * so every run older than the window became unreachable from the
+     * UI while its bytes sat alive on disk ("effectively lost in
+     * nested folders"). This door browses the RUNS OUTPUT TREES
+     * THEMSELVES — readdir on disk, first-tree-wins per the §23
+     * manifest order — one directory level per call, cursor-paginated
+     * with an honest total: never a silent cap, never the registry
+     * window. The grammar and privacy laws mirror the serve doors:
+     * run-relative confined segments only, `_`-prefixed names (the
+     * private records + `_archived` — "archive hides from LISTINGS")
+     * stay unlisted, files pass the contract's servableLeaf. */
+    ctx.effect(() => ctx.webServer.register({
+        kind: 'exact',
+        path: '/infer-gallery/browse',
+        handler: async (req, res) => {
+            try {
+                // Cross-host has no upstream listing API to relay — the
+                // browse face is a DISK walk; refusing loud beats a
+                // synthesized foreign listing (nothing absorbs).
+                if (gatewayUrl !== '') {
+                    fail(res, 502, 'gateway_browse_unavailable', { message: 'the browse face walks this tree\'s own disk — cross-host needs the owning DSH\'s UI', gateway: gatewayUrl });
+                    return;
+                }
+                const url = new URL(req.url ?? '/', 'http://infer-gallery.invalid');
+                const target = url.searchParams.get('path') ?? '';
+                if (!isRunRelativeDir(target)) {
+                    fail(res, 400, 'forbidden_path', { message: 'browse route only walks run-relative directories (run-<id>/…), or the empty path for the runs root', path: target });
+                    return;
+                }
+                const cursor = Math.max(0, Number(url.searchParams.get('cursor') ?? '0') | 0);
+                const asked = Number(url.searchParams.get('limit') ?? '200') | 0;
+                const limit = Math.min(500, Math.max(1, Number.isFinite(asked) && asked > 0 ? asked : 200));
+                const fs = await import('node:fs/promises');
+                const path = await import('node:path');
+                const trees = flowTrees();
+                const seen = new Set();
+                const entries = [];
+                if (target === '') {
+                    // THE ROOT: every run dir on disk, newest-first — the
+                    // no-loss law (a run absent from the queue window still
+                    // lists; the seat is never consulted).
+                    for (const tree of trees) {
+                        let dirents;
+                        try {
+                            dirents = await fs.readdir(tree, { withFileTypes: true });
+                        }
+                        catch {
+                            continue; // a tree that is not there holds nothing
+                        }
+                        for (const d of dirents) {
+                            if (!d.isDirectory() || !RUN_DIR.test(d.name) || seen.has(d.name))
+                                continue;
+                            seen.add(d.name);
+                            const { mtimeMs } = await fs.stat(path.join(tree, d.name));
+                            entries.push({ name: d.name, kind: 'dir', mtime: mtimeMs });
+                        }
+                    }
+                    entries.sort((a, b) => (b.mtime ?? 0) - (a.mtime ?? 0) || (a.name < b.name ? -1 : 1));
+                }
+                else {
+                    // ONE RUN DIRECTORY: first tree holding it wins (the
+                    // resolveRunTarget order law); children list one level.
+                    let foundDir = false;
+                    for (const tree of trees) {
+                        const root = path.resolve(tree);
+                        const full = path.resolve(root, target);
+                        if (full !== root && !full.startsWith(root + path.sep))
+                            continue;
+                        let dirents;
+                        try {
+                            dirents = await fs.readdir(full, { withFileTypes: true });
+                        }
+                        catch {
+                            continue; // not in this tree
+                        }
+                        foundDir = true;
+                        for (const d of dirents) {
+                            if (d.name.startsWith('_'))
+                                continue;
+                            if (d.isDirectory()) {
+                                entries.push({ name: d.name, kind: 'dir' });
+                            }
+                            else if (d.isFile() && servableLeaf(d.name)) {
+                                const st = await fs.stat(path.join(full, d.name));
+                                entries.push({ name: d.name, kind: 'file', size: st.size, mtime: st.mtimeMs });
+                            }
+                        }
+                        break; // first tree holding the dir owns the listing
+                    }
+                    if (!foundDir) {
+                        fail(res, 404, 'no_artifact', { message: 'no such run directory', path: target });
+                        return;
+                    }
+                    entries.sort((a, b) => (a.kind === b.kind ? (a.name < b.name ? -1 : 1) : (a.kind === 'dir' ? -1 : 1)));
+                }
+                const page = entries.slice(cursor, cursor + limit);
+                const body = JSON.stringify({
+                    path: target,
+                    entries: page,
+                    total: entries.length,
+                    // THE NO-SILENT-CAP LAW: more rows always name their
+                    // cursor — the client can walk the whole tree.
+                    nextCursor: cursor + limit < entries.length ? cursor + limit : null,
+                });
+                res.writeHead(200, { ...JSON_HEADERS, 'content-length': String(Buffer.byteLength(body)) });
+                res.end(Buffer.from(body));
+            }
+            catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                ctx.logger.warn('infer-gallery: browse failed: %s', message);
+                fail(res, 502, 'browse_unreadable', { message });
+            }
+        },
+    }), 'infer-gallery: /infer-gallery/browse route');
 }
 /** Cross-host upstream answered an error status (its body rides). */
 class GalleryUpstreamError extends Error {

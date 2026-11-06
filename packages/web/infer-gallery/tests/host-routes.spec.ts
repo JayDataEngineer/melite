@@ -122,7 +122,7 @@ function writeSidecar(runId: string, flow: string, request?: string): void {
 }
 
 describe('registration + posture log', () => {
-  it('registers the eight exact doors and logs the in-tree posture by default', () => {
+  it('registers the nine exact doors and logs the in-tree posture by default', () => {
     const ctx = mount()
     expect(ctx.routes.map((r) => r.path).sort()).toEqual([
       '/infer-gallery/artifact',
@@ -130,6 +130,7 @@ describe('registration + posture log', () => {
       '/infer-gallery/artifact-delete',
       '/infer-gallery/artifact-rename',
       '/infer-gallery/artifact-restore',
+      '/infer-gallery/browse',
       '/infer-gallery/drafts',
       '/infer-gallery/flow',
       '/infer-gallery/runs',
@@ -1074,5 +1075,99 @@ describe('the run-file doors across roots (the §23 manifest)', () => {
     } finally {
       rmSync(maker, { recursive: true, force: true })
     }
+  })
+})
+
+describe('GET /infer-gallery/browse (the file-browser face, 2026-11-16)', () => {
+  // THE OPERATOR BURN: the runs list rides the queue seat's 500-row
+  // window, so older runs' media was unreachable while its bytes
+  // lived on disk ("effectively lost in nested folders"). These arms
+  // pin the browse face's laws: DISK truth (no seat consulted),
+  // cursor pagination (never a silent cap), the serve doors'
+  // confinement + privacy family, and the loud misses.
+  it('the root lists EVERY run dir on disk — no seat, no registry window, nothing lost', async () => {
+    for (const id of ['run-aaaa-1', 'run-bbbb-2', 'run-cccc-3']) {
+      mkdirSync(join(flowDir, id), { recursive: true })
+      writeFileSync(join(flowDir, id, 'out.png'), 'x')
+    }
+    const ctx = mount({ flowDir }) // NO queue seat at all
+    const saw = await hit(ctx, '/infer-gallery/browse', '/infer-gallery/browse')
+    expect(saw.status).toBe(200)
+    const body = json(saw) as { entries: { name: string; kind: string }[]; total: number; nextCursor: number | null }
+    expect(body.entries.map((e) => e.name).sort()).toEqual(['run-aaaa-1', 'run-bbbb-2', 'run-cccc-3'])
+    expect(body.entries.every((e) => e.kind === 'dir')).toBe(true)
+    expect(body.total).toBe(3)
+    expect(body.nextCursor).toBe(null)
+  })
+
+  it('pagination walks the WHOLE directory via nextCursor — never a silent cap', async () => {
+    mkdirSync(join(flowDir, 'run-abcd-1'), { recursive: true })
+    for (const n of ['a.png', 'b.png', 'c.png', 'd.png', 'e.png']) {
+      writeFileSync(join(flowDir, 'run-abcd-1', n), 'x')
+    }
+    const ctx = mount({ flowDir })
+    const names: string[] = []
+    let cursor = 0
+    let pages = 0
+    for (;;) {
+      const saw = await hit(ctx, '/infer-gallery/browse', `/infer-gallery/browse?path=run-abcd-1&limit=2${cursor > 0 ? `&cursor=${cursor}` : ''}`)
+      expect(saw.status).toBe(200)
+      const body = json(saw) as { entries: { name: string }[]; total: number; nextCursor: number | null }
+      expect(body.total).toBe(5)
+      names.push(...body.entries.map((e) => e.name))
+      pages += 1
+      if (body.nextCursor === null) break
+      cursor = body.nextCursor
+    }
+    expect(pages).toBe(3)
+    expect(names.sort()).toEqual(['a.png', 'b.png', 'c.png', 'd.png', 'e.png'])
+  })
+
+  it('confinement + privacy: escapes and absolutes refuse; sidecars and _archived stay unlisted', async () => {
+    mkdirSync(join(flowDir, 'run-c0de-1', '_archived'), { recursive: true })
+    writeFileSync(join(flowDir, 'run-c0de-1', 'live.mp4'), 'x')
+    writeFileSync(join(flowDir, 'run-c0de-1', '_flow.json'), '{}')
+    writeFileSync(join(flowDir, 'run-c0de-1', '_archived', 'tucked.png'), 'x')
+    const ctx = mount({ flowDir })
+    for (const bad of ['..', '/etc', 'run-c0de-1/../../x', 'C:\\evil']) {
+      const saw = await hit(ctx, '/infer-gallery/browse', `/infer-gallery/browse?path=${encodeURIComponent(bad)}`)
+      expect(saw.status, `path=${bad}`).toBe(400)
+    }
+    const saw = await hit(ctx, '/infer-gallery/browse', '/infer-gallery/browse?path=run-c0de-1')
+    expect(saw.status).toBe(200)
+    const body = json(saw) as { entries: { name: string; kind: string; size?: number; mtime?: number }[] }
+    expect(body.entries).toHaveLength(1)
+    expect(body.entries[0]!.name).toBe('live.mp4')
+    expect(body.entries[0]!.kind).toBe('file')
+    expect(typeof body.entries[0]!.size).toBe('number')
+    expect(typeof body.entries[0]!.mtime).toBe('number')
+  })
+
+  it('subdirectories list as kind dir beside their files', async () => {
+    mkdirSync(join(flowDir, 'run-feed-1', 'nested'), { recursive: true })
+    writeFileSync(join(flowDir, 'run-feed-1', 'nested', 'deep.png'), 'x')
+    writeFileSync(join(flowDir, 'run-feed-1', 'top.png'), 'x')
+    const ctx = mount({ flowDir })
+    const saw = await hit(ctx, '/infer-gallery/browse', '/infer-gallery/browse?path=run-feed-1')
+    const body = json(saw) as { entries: { name: string; kind: string }[] }
+    expect(body.entries).toEqual([
+      { name: 'nested', kind: 'dir' },
+      { name: 'top.png', kind: 'file', size: 1, mtime: expect.any(Number) },
+    ])
+    const deep = await hit(ctx, '/infer-gallery/browse', '/infer-gallery/browse?path=run-feed-1%2Fnested')
+    expect((json(deep) as { entries: { name: string }[] }).entries.map((e) => e.name)).toEqual(['deep.png'])
+  })
+
+  it('a missing run dir answers 404 loud', async () => {
+    const ctx = mount({ flowDir })
+    const saw = await hit(ctx, '/infer-gallery/browse', '/infer-gallery/browse?path=run-dead-9')
+    expect(saw.status).toBe(404)
+  })
+
+  it('cross-host (gatewayUrl pinned) answers the loud 502, never a synthesized listing', async () => {
+    const ctx = mount({ flowDir, gatewayUrl: 'https://owner.example' })
+    const saw = await hit(ctx, '/infer-gallery/browse', '/infer-gallery/browse')
+    expect(saw.status).toBe(502)
+    expect(saw.body.toString('utf8')).toContain('gateway_browse_unavailable')
   })
 })
