@@ -45,6 +45,8 @@ import { LOADED_WAIT } from "../../../../tests/helpers/loaded-wait.ts";
 import { FileOperationStore, ProvisioningService } from "../src/index.ts";
 import type {
   ArtifactWriterPort,
+  OperationStorePort,
+  ProvisionOperation,
   ProvisionPlan,
   ProvisioningConfig,
   ResourceRef,
@@ -338,6 +340,25 @@ describe("the provisioning active face (the acceptance law + the no-re-mint law)
     }));
     const originalId = await first.startWeightAcquire(ref());
     await untilSettled(first, originalId);
+    // THE DURABLE FLUSH GATE (the macOS CI flake, run 42216984860):
+    // the settle's store save rides the ASYNC write chain, and a
+    // context dispose under a loaded pool can beat the flush — the
+    // second seat's rehydrate sweep then lists an EMPTY store, the
+    // poll deadline exits, and the accept lawfully mints once (the
+    // racing-the-seed blessing). The arm polls the STORE ITSELF (a
+    // side reader on the same root) until the settled row stands on
+    // disk; the restart now deterministically seeds, and the dedupe
+    // face this wall judges is the only face that can fire.
+    const flushReader = new FileOperationStore(storeRoot);
+    const flushDeadline = Date.now() + LOADED_WAIT();
+    for (;;) {
+      const stored = await flushReader.load(originalId);
+      if (stored !== null && stored.finishedAt !== undefined) break;
+      if (Date.now() >= flushDeadline) {
+        throw new Error("the settled row never flushed to the store — the write chain starved past LOADED_WAIT");
+      }
+      await new Promise((resolve) => { setTimeout(resolve, 10); });
+    }
     await firstContext.fiber.dispose();
     contexts.splice(contexts.indexOf(firstContext), 1);
 
