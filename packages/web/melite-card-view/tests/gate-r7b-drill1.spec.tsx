@@ -382,10 +382,19 @@ describe("the owners' foreign voices — remove and ungroup fall back loud", () 
     // the throw as the row's lastError before the rejection reaches
     // this catch, so the row owns the words the face shows.
     // Thrown-verb settlement: 15s/30s (flake-slowness-wave2).
-    const face = await screen.findByTestId("stage-write-face", {}, { timeout: LOADED_WAIT() });
-    expect(face.textContent).toContain("THE WRITE DID NOT LAND");
-    expect(face.textContent).toContain("wire down");
-    expect(face.textContent).toContain("unlanded keys: input_image");
+    // THE SETTLED-FRAME JUDGE (macOS CI, run 42225615506): the face
+    // mounts in its in-flight voice ("unlanded keys: none recorded
+    // yet") BEFORE the throw settles onto the row — findByTestId
+    // resolves on existence and read that first frame under the
+    // loaded pool. The arm waits for the SETTLED voice (prefix + the
+    // door's reason + the unlanded key) inside the same budget; the
+    // in-flight frame is the product's own honest intermediate.
+    await waitFor(() => {
+      const face = screen.getByTestId("stage-write-face");
+      expect(face.textContent).toContain("THE WRITE DID NOT LAND");
+      expect(face.textContent).toContain("wire down");
+      expect(face.textContent).toContain("unlanded keys: input_image");
+    }, { timeout: LOADED_WAIT() });
   })
 
   test("wire gives a foreign refusal its own words (the row carries the verbatim string)", { timeout: LOADED_WAIT() }, async () => {
@@ -402,10 +411,13 @@ describe("the owners' foreign voices — remove and ungroup fall back loud", () 
     // budget lost the settlement race under the full gate's loaded
     // pool — this site rides the FULL budget, the helper's own
     // deliberately-longer multiple for one site that needs it.
-    const face = await screen.findByTestId("stage-write-face", {}, { timeout: LOADED_WAIT() });
-    expect(face.textContent).toContain("THE WRITE DID NOT LAND");
-    expect(face.textContent).toContain("foreign");
-    expect(face.textContent).toContain("unlanded keys: input_image");
+    // the settled-frame judge, the same race as the Error arm above
+    await waitFor(() => {
+      const face = screen.getByTestId("stage-write-face");
+      expect(face.textContent).toContain("THE WRITE DID NOT LAND");
+      expect(face.textContent).toContain("foreign");
+      expect(face.textContent).toContain("unlanded keys: input_image");
+    }, { timeout: LOADED_WAIT() });
   })
 
   test("a foreign remove throw voices its own words (never a throw past the gesture)", { timeout: LOADED_WAIT() }, async () => {
