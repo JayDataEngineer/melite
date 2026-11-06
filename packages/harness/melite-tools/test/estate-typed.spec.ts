@@ -79,6 +79,7 @@ const ROWS: LaneRow[] = [
   { seat: 'runs', method: 'start', call: (e) => e.runsStart({}, SIG, 250), seatArgs: [{}, SIG] },
   { seat: 'runs', method: 'status', call: (e) => e.runsStatus('r1', true, SIG, 250), seatArgs: ['r1', SIG, true] },
   { seat: 'runs', method: 'stop', call: (e) => e.runsStop('r1', SIG, 250), seatArgs: ['r1', SIG] },
+  { seat: 'runs', method: 'attribute', call: (e) => e.runsAttribute('r_miss', 'missed', SIG, 250), seatArgs: ['r_miss', 'missed', SIG] },
   { seat: 'runs', method: 'list', call: (e) => e.runsList('100', SIG, 250), seatArgs: ['100', SIG] },
   { seat: 'disclose', method: 'discover', call: (e) => e.discover('all', '', '', SIG, 250) },
   { seat: 'disclose', method: 'contracts', call: (e) => e.flowsContracts(SIG, 250) },

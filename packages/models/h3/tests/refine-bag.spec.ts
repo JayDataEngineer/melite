@@ -28,6 +28,13 @@
 //     and stays byte-identical to the walk emission.
 //   ARM B23 — the auto-tile's own seats refuse LOUD: a fractional or
 //     out-of-range windows, a fractional or negative overlap.
+//   ARM B26 — THE ORIGIN SEATS REFUSE LOUD on BOTH doors the origin
+//     owner serves: a length that books no frames and a start before
+//     the first frame refuse identically at the single-window arm and
+//     in the bag's own origins walk, naming the design window.
+//   ARM B27 — the stand-down names EVERY carried join: a three-window
+//     carried bag refuses in the plural, all spans listed, before any
+//     node.
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
@@ -814,5 +821,64 @@ describe("the refine bag carrier (GAPS-19: N entries tile ONE film)", () => {
       /overlap 22 f against a 12 f window — a carried overlap shorter than the window is the only walk that advances/,
       "window ≤ overlap refuses — the step must advance",
     );
+  });
+
+  it("ARM B26 — THE ORIGIN SEATS REFUSE LOUD: a length that books no frames and a start before the first frame refuse on BOTH doors the origin owner serves", () => {
+    // refineWindowOrigin is ONE owner for the single-window arm and
+    // the bag carrier, so a stated length/start judges identically
+    // whichever door binds it — and the refusal teaches the design
+    // window (W-7: 2.33 s = 56 f), never a bare number.
+    // the length: 0 s books no frames at the film clock
+    const singleClip = new GraphBuilder();
+    assert.throws(
+      () => renderH3RefineBag([entry({ clip_seconds: 0 })], {}, facts, singleClip, "run-b26-single-clip"),
+      /h3-timeline refine: clip_seconds 0 — a refine window needs frames .*the design window is 2\.33 s = 56 f/,
+      "the single-window arm refuses a length that books no frames, naming the design window",
+    );
+    assert.deepEqual(walk(singleClip), {}, "the refusal lands BEFORE any node");
+    const bagClip = new GraphBuilder();
+    assert.throws(
+      () => renderH3RefineBag(
+        [entry(), entry({ clip_seconds: 0, start_seconds: 2 })], {}, facts, bagClip, "run-b26-bag-clip",
+      ),
+      /h3-timeline refine: clip_seconds 0 — a refine window needs frames/,
+      "the bag's own origins walk judges the second entry's stated length identically",
+    );
+    assert.deepEqual(walk(bagClip), {}, "no node emitted");
+    // the start: before the clip's first frame
+    const singleStart = new GraphBuilder();
+    assert.throws(
+      () => renderH3RefineBag([entry({ start_seconds: -1 })], {}, facts, singleStart, "run-b26-single-start"),
+      /h3-timeline refine: start_seconds -1 — a window starts at or after the clip's first frame/,
+      "the single-window arm refuses a start before the clip's first frame",
+    );
+    assert.deepEqual(walk(singleStart), {}, "no node emitted");
+    const bagStart = new GraphBuilder();
+    assert.throws(
+      () => renderH3RefineBag(
+        [entry(), entry({ start_seconds: -1 })], {}, facts, bagStart, "run-b26-bag-start",
+      ),
+      /h3-timeline refine: start_seconds -1 — a window starts at or after the clip's first frame/,
+      "the bag's origins walk refuses the negative start before any join judgment",
+    );
+    assert.deepEqual(walk(bagStart), {}, "no node emitted");
+  });
+
+  it("ARM B27 — THE STAND-DOWN NAMES EVERY CARRIED JOIN: a three-window carried bag refuses in the plural, before any node", () => {
+    // ARM B2 judges the singular voice (one join); a hand-tiled
+    // three-window bag states TWO carried joins — both token-exact, so
+    // neither the grid nor the carry guards speaks first — and the
+    // stand-down lists both spans in one refusal, still before a
+    // single node is emitted.
+    const g = new GraphBuilder();
+    assert.throws(
+      () => renderH3RefineBag(
+        [entry(), entry({ start_seconds: 26 / 24 }), entry({ start_seconds: 52 / 24 })],
+        {}, facts, g, "run-b27",
+      ),
+      /the carried joins \(window 0→1 carries 22 f, window 1→2 carries 22 f\) would carry the film's own continuation between windows — and that carry is DEAD in the engine today \(F3-14/,
+      "every carried join is named — the plural voice, all spans listed",
+    );
+    assert.deepEqual(walk(g), {}, "the refusal lands BEFORE any node — no partial emission to bill");
   });
 });

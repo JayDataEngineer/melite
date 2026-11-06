@@ -74,7 +74,7 @@ describe("the refine carry stand-down (F3-14)", () => {
     assert.throws(
       () => def.compose(def.schema(body([
         REFINE_ENTRY(),
-        { ...REFINE_ENTRY(), start_seconds: 68 / 24 },
+        { ...REFINE_ENTRY(), start_seconds: 34 / 24 },
       ])) as Record<string, unknown>, model, g, "run_standdown_bag2"),
       (e: unknown) => {
         const message = String((e as Error).message);
@@ -88,7 +88,7 @@ describe("the refine carry stand-down (F3-14)", () => {
         assert.match(message, /overlap_frames 0/, "the refusal names the hard-cut cure");
         assert.match(message, /ROADMAP F3-14/, "the refusal names where the engine cure is owed");
         assert.match(message, /window 0→1 carries 22 f/,
-          "the refusal names the derived carry (0 + 90 − 68 = 22 f)");
+          "the refusal names the derived carry (0 + 56 − 34 = 22 f)");
         return true;
       },
       "the carried bag refuses in words",
@@ -116,12 +116,13 @@ describe("the refine carry stand-down (F3-14)", () => {
   });
 
   it("ARM 3 — THE HARD-CUT CURE SERVES TODAY: abutting entries (carry 0) and a zero-overlap loop compose with no continuation", () => {
-    // 90 f windows; the second starts at frame 90 — 0 + 90 − 90 = 0 f
-    // carry, the plain concat of two independent windows.
+    // 56 f windows (the 2.33 s design default); the second starts at
+    // frame 56 — 0 + 56 − 56 = 0 f carry, the plain concat of two
+    // independent windows.
     const bagG = new GraphBuilder();
     def.compose(def.schema(body([
       REFINE_ENTRY(),
-      { ...REFINE_ENTRY(), start_seconds: 90 / 24 },
+      { ...REFINE_ENTRY(), start_seconds: 56 / 24 },
     ])) as Record<string, unknown>, model, bagG, "run_standdown_abut");
     const bag = graphOf(bagG);
     assert.equal(ofClass(bag, "MiniMaxH3FiniteLatentContinuation").length, 0,
@@ -147,8 +148,8 @@ describe("the refine carry stand-down (F3-14)", () => {
   });
 
   it("ARM 4 — THE STAND-DOWN IS THE LAST JUDGMENT: an off-grid carry still hears the grid refusal (its own better voice), never the stand-down", () => {
-    // start 1.5 s = 36 f → carry 90 − 36 = 54 f… off the 5/22/39/56 grid?
-    // 54 lands between 39 and 56 — the off-grid arm owns it.
+    // start 1.5 s = 36 f → carry 56 − 36 = 20 f… off the 5/22/39/56
+    // grid? 20 lands between 5 and 22 — the off-grid arm owns it.
     assert.throws(
       () => def.compose(def.schema(body([
         REFINE_ENTRY(),
@@ -168,7 +169,7 @@ describe("the refine carry stand-down (F3-14)", () => {
     };
     assert.throws(
       () => renderH3RefineBag(
-        [REFINE_ENTRY(), { ...REFINE_ENTRY(), start_seconds: 68 / 24 }],
+        [REFINE_ENTRY(), { ...REFINE_ENTRY(), start_seconds: 34 / 24 }],
         {}, carrierFacts, new GraphBuilder(), "run_standdown_carrier",
       ),
       ENGINE_FAILURE,

@@ -332,6 +332,41 @@ test('UPLOAD BUSY: a second Apply inside the flight fires ONE wire call — the 
   expect(uploadLora).toHaveBeenCalledTimes(1)
 })
 
+test('UPLOAD IN-FLIGHT PRESS: applyUpload\'s own single-flight guard refuses the pressed handler — one wire call', async () => {
+  let release: ((value: { id: string, row_seated: boolean }) => void) = () => {}
+  const uploadLora = vi.fn().mockImplementation(() => new Promise((resolve) => { release = resolve }))
+  const refreshSpec = vi.fn().mockResolvedValue(undefined)
+  openLeaf({ uploadLora, refreshSpec })
+  openCreate()
+  openAddLora()
+  answerUploadInput(new File(['%MEL'], 'x.safetensors'))
+  applyUploadPane()
+  expect(uploadLora).toHaveBeenCalledTimes(1)
+  // The flight is open. The disabled Apply is the FIRST gate — no
+  // delivery reaches a pressed seat here (happy-dom swallows the
+  // dispatch; React consults the vDOM disabled prop), so the UPLOAD
+  // BUSY arm's double press lands on the DOM gate alone. The guard
+  // INSIDE applyUpload is the SECOND gate — the pressed handler's
+  // own — staged the gate-r7b-door way: the committed onClick off the
+  // seat's __reactProps$ (the props object React's dispatcher itself
+  // reads) invokes the real handler with uploadBusy true. It must
+  // drop before any second wire call, and the flight still lands
+  // seated.
+  const apply = screen.getByRole('button', { name: chromeCopy.loraApplyButton })
+  expect((apply as HTMLButtonElement).disabled).toBe(true)
+  const propsKey = Object.keys(apply).find((k) => k.startsWith('__reactProps$'))
+  if (propsKey === undefined) throw new Error('react props missing on the apply seat')
+  const committedClick = (apply as unknown as Record<string, { onClick?: () => void }>)[propsKey]?.onClick
+  if (committedClick === undefined) throw new Error('committed onClick missing on the apply seat')
+  committedClick()
+  expect(uploadLora).toHaveBeenCalledTimes(1)
+  release({ id: 'h3/x.safetensors', row_seated: true })
+  await waitFor(() => { expect(refreshSpec).toHaveBeenCalledTimes(1) })
+  // the seated reset still ran — the refused press left no state behind
+  expect(document.querySelector('[data-testid="mod-lora-upload"]')).toBeNull()
+  expect(uploadLora).toHaveBeenCalledTimes(1)
+})
+
 test('UPLOAD NO-EXTENSION: an extensionless file rides NO rename key — the name is the file\'s own', async () => {
   const uploadLora = vi.fn().mockResolvedValue({ id: 'h3/checkpoint', row_seated: true })
   const refreshSpec = vi.fn().mockResolvedValue(undefined)

@@ -239,6 +239,26 @@ describe("the repair kind", () => {
     // and an absent bag are the unused arm
   });
 
+  it("THE WALK JUDGES VALUES, NEVER SHAPES (F3-07's entry-class arm): a null, a bare string, and a nested-array entry ride past the judge — and the first real entry behind them still binds its band naming its own index", () => {
+    // The judge is the only door an entry's VALUES ever meet (the
+    // estate admission judges bag KEYS, the mods-schema gate the
+    // declared rows' shape), but its walk reads number seats off
+    // object entries alone. An entry with no readable values is
+    // nobody's offender here: every malformed class steps over
+    // silently, and the walk keeps its place, so the real out-of-band
+    // tune three slots in still refuses loud naming ITS entry index.
+    assert.throws(
+      () => judgeDeclaredBands({ repair: [null, "hands", [["nested"]], { denoise: 0.9 }] }),
+      /repair entry 3: 'denoise': 0.9 is outside this seat's declared band 0.05–0.5/,
+      "the malformed heads were stepped over and the entry index stayed with the real entry",
+    );
+    // each malformed class alone passes silent — the walk never dies on entry shape
+    judgeDeclaredBands({ repair: [null] });
+    judgeDeclaredBands({ repair: ["a bare string"] });
+    judgeDeclaredBands({ repair: [["nested"]] });
+    judgeDeclaredBands({ loras: [null, { id: "h3_silver_dareties", strength: 1 }] });
+  });
+
   it("a bound arm composes the masked second-pass chain on the family's own plane", () => {
     const walked = def.schema({ repair: [REPAIR_ENTRY()] }) as Record<string, unknown>;
     const g = new GraphBuilder();
