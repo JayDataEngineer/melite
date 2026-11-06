@@ -17,7 +17,16 @@ export function joinBaseOnce(root, base) {
         return root;
     if (root === "" || root === ".")
         return b;
-    if (root === b || root.endsWith("/" + b) || root.endsWith("\\" + b))
+    // WIN32-PORTABILITY (2026-11-06, the windows catalog-null class):
+    // the tracked base rides posix seps ("image-gen/comfyui" — checked
+    // into git, identical on every os) while a machine's read_root
+    // rides native seps ("...\\image-gen\\comfyui" on Windows). The
+    // raw endsWith never matched across the seam, so a base-inclusive
+    // root double-appended and the model resolved nowhere (null).
+    // Compare separator-blind: one spelling of the tail, never two.
+    const tail = "/" + b.replace(/\\/g, "/");
+    const owned = root.replace(/\\/g, "/");
+    if (owned === b.replace(/\\/g, "/") || owned.endsWith(tail))
         return root;
     return join(root, b);
 }

@@ -12,6 +12,7 @@ import {
   resolveCatalogArtifact, resolveArtifactRows,
   runtimeModelsRoot, checkModelPresent, checkModelPathPresent, findModelPresent, findModelPathPresent,
 } from "../src/catalog.ts";
+import { joinBaseOnce } from "../src/configOverlay.ts";
 import type { ModelDecl } from '@melite/comfyui-card-kit/model-contract';
 
 /** Mint a tree owned by the CURRENT test (disposed with it). */
@@ -451,6 +452,55 @@ describe("root-config inheritance (read_root law)", () => {
       assert.equal(
         findModelPresent("checkpoints", "p.safetensors", root, {} as never),
         join(root, "old-store/image-gen/comfyui/checkpoints/p.safetensors"),
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+  it("THE MERGE LAW rides separator-blind: a backslashed base-inclusive root never double-appends a posix base", () => {
+    // THE WINDOWS NULL (2026-11-06): the tracked base rides posix
+    // ("image-gen/comfyui", git-checked, every os) while a machine's
+    // read_root rides native seps. The raw endsWith never matched
+    // across the seam — joinBaseOnce stacked the base and
+    // findModelPresent answered null. These shapes are literal CI
+    // spellings, judgeable on every lane (pure string law, no fs).
+    assert.equal(
+      joinBaseOnce("C:\\m\\old-store\\image-gen\\comfyui", "image-gen/comfyui"),
+      "C:\\m\\old-store\\image-gen\\comfyui",
+    );
+    assert.equal(
+      joinBaseOnce("/m/old-store/image-gen/comfyui", "image-gen/comfyui"),
+      "/m/old-store/image-gen/comfyui",
+    );
+    // ...and a root WITHOUT the tail still appends exactly once.
+    assert.equal(
+      joinBaseOnce("C:\\m\\old-store", "image-gen/comfyui"),
+      join("C:\\m\\old-store", "image-gen/comfyui"),
+    );
+  });
+  it.skipIf(process.platform !== "win32")("THE MERGE LAW, backslashed machine root through the door: findModelPresent answers the file, never null", () => {
+    // The end-to-end twin of the arm above, WINDOWS-ONLY by
+    // construction: backslashed spellings name nothing on posix
+    // lanes (a "\\tmp" root is a relative literal there), so the
+    // real door only answers where the separators are real. The
+    // pure-string arm above judges the law on every lane; this one
+    // judges the fs behavior on the burning lane.
+    const root = mkdtempSync(join(tmpdir(), "melite-cat-win-"));
+    try {
+      mkdirSync(join(root, "old-store", "image-gen", "comfyui", "checkpoints"), { recursive: true });
+      writeFileSync(join(root, "old-store", "image-gen", "comfyui", "checkpoints", "p.safetensors"), "x");
+      const winRoot: string = root.replace(/\//g, "\\");
+      writeFileSync(join(root, "inference.config.json"), JSON.stringify({
+        models: { read_root: "data/models" },
+        engines: { comfyui: { base: "image-gen/comfyui" } },
+      }));
+      mkdirSync(join(root, "data"), { recursive: true });
+      writeFileSync(join(root, "data", "inference.local.json"), JSON.stringify({
+        models: { read_root: join(winRoot, "old-store", "image-gen", "comfyui") },
+      }));
+      assert.equal(
+        findModelPresent("checkpoints", "p.safetensors", root, {} as never),
+        join(root, "old-store", "image-gen", "comfyui", "checkpoints", "p.safetensors"),
       );
     } finally {
       rmSync(root, { recursive: true, force: true });
