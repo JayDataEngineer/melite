@@ -27,6 +27,7 @@ export declare function observeAndAttribute(estate: Estate, draftId: DraftId, st
     asset_urls: string[];
     host_paths: string[];
     stamp_note?: string;
+    attribution?: string;
 }>;
 export declare function meliteFlow(estate: Estate): ToolDefinition;
 //# sourceMappingURL=melite-flow.d.ts.map

@@ -1119,4 +1119,22 @@ describe('comfy_manage render — the engine truth rows (D3-02 / R-2)', () => {
       assert.ok(!quiet.includes('reason:'), 'no cause line rides a quiet shape: ' + JSON.stringify(data))
     }
   })
+
+  // W-4 (2026-11-15, degraded-with-cause): the probe half landed in
+  // manage-plane-status-truth (the note names its causes); this is
+  // the TEACHING half — an agent reading the tool description before
+  // pressing status must know how to read a degraded verdict and
+  // what the maker's lever under memory pressure is, without
+  // pressing first and parsing prose after.
+  describe('comfy_manage description — the degraded reading is taught at the door (W-4)', () => {
+    test('the description carries THE DEGRADED READING: causes named, memory-pressure lever stated in window terms', () => {
+      const text = String(comfyManage(fakeEstate([]) as unknown as Estate).description ?? '')
+      assert.ok(text.includes('THE DEGRADED READING (status)'),
+        'the reading is taught where the agent looks first')
+      assert.match(text, /restart loop[\s\S]*SIGKILL[\s\S]*kernel oom/,
+        'the three causes the note can name are taught')
+      assert.match(text, /smaller windows \(the refine[\s\S]*design window is 2\.33 s = 56 f\)/,
+        'the memory-pressure lever is stated in window terms — the operator\'s OOM ruling')
+    })
+  })
 })

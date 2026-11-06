@@ -265,6 +265,10 @@ export function sidecarDoc(args) {
         ...(args.loudness !== undefined ? { loudness: args.loudness } : {}),
         ...(args.voiceFreshness !== undefined ? { voice_freshness: args.voiceFreshness } : {}),
         ...(args.replaySuspect === true ? { replay_suspect: true } : {}),
+        // THE ATTRIBUTION MARKER (D3-07): rides the identity prefix —
+        // the list row's 8191-byte window must reach it so a missed
+        // stamp is visible even when the payload before it is bulky.
+        ...(args.attribution !== undefined && args.attribution !== "" ? { attribution: args.attribution } : {}),
         error: args.error !== "" ? JSON.stringify(args.error).slice(0, 20000) : "",
         stages: args.stages,
         skipped_stages: [...args.skippedStages],

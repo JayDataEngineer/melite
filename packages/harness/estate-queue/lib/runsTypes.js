@@ -256,6 +256,9 @@ function sidecarFacesOf(run) {
         // THE REPLAY VERDICT rides every rewrite too (D11 — a disk row
         // keeps what the executor's tap witnessed).
         replaySuspect: run.replaySuspect,
+        // THE ATTRIBUTION MARKER rides every rewrite too (D3-07 — a
+        // disk row keeps the stamp-miss the tab never showed).
+        attribution: run.attribution,
     };
 }
 /** The claim persist (the commission wedge landing, 2026-10-03):
@@ -280,6 +283,26 @@ export async function claimPersist(run) {
     }
     catch {
         /* the sidecar must never take the claim down (settlePersist law) */
+    }
+}
+/** THE ATTRIBUTION PERSIST (F3 D3-07, the 15 s bound's third burn):
+ *  the runs registry's attribute door rewrites the run's
+ *  _flow.json the moment it marks a stamp-miss — the marker must
+ *  survive a registry reload (the status door's disk fallback
+ *  spreads this row) and outlive the wedged bench plane that
+ *  dropped the stamp. Best-effort by the claim/settle law: the
+ *  in-memory row is the truth, a persist failure never blocks the
+ *  mark. No ledger row: the ledger carries dispositions, and the
+ *  stamp's own miss voice is the press receipt's job.
+ * @param run the marked row (the caller already set
+ *  run.attribution in memory).
+ * @returns when the write completed or self-swallowed its fault. */
+export async function attributionPersist(run) {
+    try {
+        await writeJsonAtomic(join(run.dir, "_flow.json"), sidecarDoc(sidecarFacesOf(run)));
+    }
+    catch {
+        /* the sidecar must never take the mark down (claimPersist law) */
     }
 }
 /** The synthesized log tail (door-verbatim port: the retired

@@ -32,6 +32,7 @@ import { fetchEngineMem, filmLoadOf, filmMemoryWarn } from "./filmMemoryWarn.js"
 import { searchedVoice } from "./rootsManifest.js";
 import { newRunId, outRootFor, pipelineOf, strictBodyCheck, planResurrect, bootSweep, appendLedger, refusal, walkSubmitEnvelope } from "./queue.js";
 import { graphReceiptOf, graphReceiptStageOf } from "./queueSidecar.js";
+import { attributionPersist } from "./runsTypes.js";
 import { sweepRunIds } from "./queueCore.js";
 import { cardRefusal, toRemoteError, refusePreview } from "./runsRefusalVoices.js";
 import { lifecycleInFlight } from "./lifecycleLatch.js";
@@ -2511,6 +2512,11 @@ export class RunsRuntimeService extends Service {
             // fallback spreads the sidecar row, which carries it).
             // Absent on inline runs (no card composed).
             ...(run.graphReceipt !== undefined ? { graph_receipt: run.graphReceipt } : {}),
+            // THE ATTRIBUTION MARKER, SERVED (D3-07, same law: a missed
+            // stamp-back rides the live row — additive, same spelling as
+            // the sidecar; absent means the stamp landed or was never
+            // owed).
+            ...(run.attribution !== undefined && run.attribution !== "" ? { attribution: run.attribution } : {}),
             // THE CARD SNAPSHOT, SERVED (the F27 burn, 2026-10-30): the
             // exact card + authoring body that ran rides the live row —
             // restore rebuilds the recipe from THIS, never from the
@@ -2655,6 +2661,35 @@ export class RunsRuntimeService extends Service {
             /* no seat: the worker's stop check converges the state */
         }
         return { run_id: runId, status: "stopping" };
+    }
+    /** THE ATTRIBUTION DOOR (F3 D3-07, the 15 s bound's third burn —
+     *  RIG s_94: a green run whose cards-tab stamp died at the bench
+     *  plane's bound). The stamp-back's bounded retry lives client-side
+     *  (melite-flow); when every take dies, THIS door carries the miss
+     *  on the run row — a different plane than the wedged drafts
+     *  PATCH, so the fact lands even when the stamp could not. The
+     *  status door and the press receipt then answer "completed — NOT
+     *  shown on the tab (stamp missed; re-stamp)" instead of a bare
+     *  done. Idempotent: a re-stamp that landed clears it
+     *  (value "" unstamps), the persist is best-effort by the
+     *  claim/settle law, and the change rides notifyRunChanged so the
+     *  tab's poller re-fires on the truth. */
+    async attribute(runId, value, signal) {
+        signal.throwIfAborted();
+        const run = this.liveRun(runId);
+        if (run === undefined) {
+            // the same miss voice as stop: the door names the trees it
+            // searched, never a bare unknown.
+            throw new RemoteError("runs/run-unknown", "unknown run_id " + JSON.stringify(runId) + " " +
+                searchedVoice(this.ctx.queue.stateRoots), { runId });
+        }
+        if (value === "")
+            delete run.attribution;
+        else
+            run.attribution = value;
+        notifyRunChanged(runId);
+        await attributionPersist(run);
+        return { run_id: runId, attribution: run.attribution ?? "" };
     }
     /** The live map (the queue seat's core registry — rich rows). */
     liveRun(runId) {

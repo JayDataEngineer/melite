@@ -374,6 +374,19 @@ export declare class RunsRuntimeService extends Service {
     private chainStoreNameOf;
     status(runId: string, signal: AbortSignal, includeLog?: boolean): Promise<Record<string, unknown>>;
     stop(runId: string, signal: AbortSignal): Promise<Record<string, unknown>>;
+    /** THE ATTRIBUTION DOOR (F3 D3-07, the 15 s bound's third burn —
+     *  RIG s_94: a green run whose cards-tab stamp died at the bench
+     *  plane's bound). The stamp-back's bounded retry lives client-side
+     *  (melite-flow); when every take dies, THIS door carries the miss
+     *  on the run row — a different plane than the wedged drafts
+     *  PATCH, so the fact lands even when the stamp could not. The
+     *  status door and the press receipt then answer "completed — NOT
+     *  shown on the tab (stamp missed; re-stamp)" instead of a bare
+     *  done. Idempotent: a re-stamp that landed clears it
+     *  (value "" unstamps), the persist is best-effort by the
+     *  claim/settle law, and the change rides notifyRunChanged so the
+     *  tab's poller re-fires on the truth. */
+    attribute(runId: string, value: string, signal: AbortSignal): Promise<Record<string, unknown>>;
     /** The live map (the queue seat's core registry — rich rows). */
     private liveRun;
     /** THE SETTLED-TRUTH RESYNC (the stuck-run cure, 2026-11-09): a

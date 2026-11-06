@@ -366,7 +366,25 @@ export async function engineUnitCensus(mctx: ManageCtx): Promise<EngineUnitCensu
   const degraded = (Number.isFinite(restarts) && restarts >= DEGRADE_RESTART_FLOOR)
     || (Number.isFinite(exitStatus) && exitStatus === KILL_SIGNAL)
     || (oomKills !== undefined && oomKills > 0);
-  if (degraded) row.verdict = "degraded";
-  if (journalNote !== undefined) row.note = journalNote;
+  if (degraded) {
+    row.verdict = "degraded";
+    // W-4 (2026-11-15, degraded-with-cause): the verdict names the
+    // laws that fired and what they mean — a bare "degraded" left
+    // the reader to cross-join restarts/exit/oom themselves (the
+    // burn: "still degraded: restarts 3, oom-kill 4 while serving").
+    // Kernel oom evidence adds the memory-pressure reading and the
+    // maker's lever: smaller windows (the refine design window is
+    // 2.33 s = 56 f — the operator's OOM ruling).
+    const causes: string[] = [];
+    if (Number.isFinite(restarts) && restarts >= DEGRADE_RESTART_FLOOR) causes.push("the restart loop (>= " + DEGRADE_RESTART_FLOOR + ")");
+    if (Number.isFinite(exitStatus) && exitStatus === KILL_SIGNAL) causes.push("a SIGKILL last exit");
+    const oom = oomKills !== undefined && oomKills > 0;
+    if (oom) causes.push("kernel oom evidence");
+    row.note = "degraded by " + causes.join(" and ")
+      + (oom
+        ? " — the engine died under memory pressure and systemd restarted it; the maker's lever is smaller windows (the refine design window is 2.33 s = 56 f)"
+        : " — systemd restarted the engine; read the journal tail for the death cause");
+  }
+  if (journalNote !== undefined) row.note = row.note === undefined ? journalNote : row.note + " (" + journalNote + ")";
   return row;
 }

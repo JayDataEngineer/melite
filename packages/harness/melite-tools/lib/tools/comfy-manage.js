@@ -426,7 +426,9 @@ export function comfyManage(estate) {
             + 'composes (the human\'s operator_confirmed gates it like every external fetch; the answer carries the combo name and the seated row); '
             + 'refmods_list (the engine\'s own '
             + 'MiniMaxH3RefModsLoader mod combos off /object_info — the refmod picker\'s candidate feed, read-only); preflight — THE SETUP READ (call it FIRST on a fresh lane): one named list of every setup miss (engine reachable, Manager present, required declared packs landed, store root on disk, extra-model wiring visible), each miss naming the door that closes it — never discover them as mid-run burns; settle_stale (retire the never-settled sidecar claims the status face names — operator gesture, the guard stays fail-closed) and provision_runtime (link the engine tree\'s data/runtime/<name> to the repo seed — the run-rescue banner\'s own door, runtime NAME only); restart, stop, launch, update '
-            + '(target comfy), switch_version, free. INFRA UPKEEP only — it '
+            + '(target comfy), switch_version, free. THE DEGRADED READING (status): a degraded engine_unit verdict names its causes (the restart loop, '
+            + 'a SIGKILL last exit, kernel oom evidence) in its note, and under memory pressure the maker\'s lever is smaller windows (the refine '
+            + 'design window is 2.33 s = 56 f). INFRA UPKEEP only — it '
             + 'never runs inference, and lifecycle actions are refused while runs are '
             + 'active (stop them or pass force).',
         // ParameterSchemaSpec grammar: the map IS the implicit object root

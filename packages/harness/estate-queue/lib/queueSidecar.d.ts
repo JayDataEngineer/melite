@@ -240,6 +240,11 @@ export declare function sidecarDoc(args: {
      *  folded zero engine events before settlement — one spelling on
      *  disk and on the wire (`replay_suspect`). Absent unless suspect. */
     replaySuspect?: boolean;
+    /** THE ATTRIBUTION MARKER (F3 D3-07, 2026-11-15): 'missed' when
+     *  the bench-plane stamp-back died at its bound after the run
+     *  settled — one spelling on disk and on the wire
+     *  (`attribution`). Absent while the stamp landed. */
+    attribution?: string;
 }): Record<string, unknown>;
 /** The door name the run started with (_pipeline_of 2111-2119:
  *  exactly one of flow | flow_inline | model — the sidecar's

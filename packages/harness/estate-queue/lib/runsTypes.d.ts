@@ -86,6 +86,16 @@ export interface RunRecord {
      *  replay through THIS stamp — no second mint beside the live
      *  original. Absent on runs pressed without a key. */
     pressKey?: string;
+    /** THE ATTRIBUTION MARKER (F3 D3-07, the 15 s bound's third
+     *  burn): 'missed' when the bench-plane stamp-back died at its
+     *  bound AFTER the run settled — the run row, not the wedged
+     *  draft door, carries the fact so run_status and the press
+     *  receipt can say "completed — NOT shown on the tab" instead of
+     *  a bare done. Written by the runs attribute door (the live-run
+     *  registry plane, never the bench plane that died); a landed
+     *  re-stamp clears it. Absent on runs whose stamp landed (or was
+     *  never owed). */
+    attribution?: string;
     /** THE CARD SNAPSHOT (stroke 45): the exact card + body that ran
      *  ({card, params}) — the wand restores from this, never from the
      *  living bench. Stamped at registration, carried through settle
@@ -249,6 +259,19 @@ export declare function settlePersist(run: RunRecord, stateRoot: string): Promis
  *  'running' in memory).
  * @returns when the write completed or self-swallowed its fault. */
 export declare function claimPersist(run: RunRecord): Promise<void>;
+/** THE ATTRIBUTION PERSIST (F3 D3-07, the 15 s bound's third burn):
+ *  the runs registry's attribute door rewrites the run's
+ *  _flow.json the moment it marks a stamp-miss — the marker must
+ *  survive a registry reload (the status door's disk fallback
+ *  spreads this row) and outlive the wedged bench plane that
+ *  dropped the stamp. Best-effort by the claim/settle law: the
+ *  in-memory row is the truth, a persist failure never blocks the
+ *  mark. No ledger row: the ledger carries dispositions, and the
+ *  stamp's own miss voice is the press receipt's job.
+ * @param run the marked row (the caller already set
+ *  run.attribution in memory).
+ * @returns when the write completed or self-swallowed its fault. */
+export declare function attributionPersist(run: RunRecord): Promise<void>;
 /** The synthesized log tail (door-verbatim port: the retired
  *  oracle's status voice, synthesized from the live row). */
 export declare function runLogTail(obj: {

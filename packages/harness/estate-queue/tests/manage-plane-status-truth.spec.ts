@@ -155,6 +155,29 @@ describe("the status truth — the census consult (D3-02 / R-2)", () => {
     assert.equal(data.engine_unit.last_exit_at, "Tue 2026-11-04 17:35:12 UTC");
     assert.equal(data.engine_unit.oom_kills, 2);
     assert.equal(data.engine_unit.verdict, "degraded");
+    // W-4 (2026-11-15, degraded-with-cause): the verdict NAMES its
+    // cause and the maker's lever — never a bare "degraded" the
+    // reader must cross-join themselves (the burn: "still degraded:
+    // restarts 3, oom-kill 4 while serving").
+    assert.match(String(data.engine_unit.note), /degraded by the restart loop \(>= 2\) and a SIGKILL last exit and kernel oom evidence/);
+    assert.match(String(data.engine_unit.note), /memory pressure/);
+    assert.match(String(data.engine_unit.note), /2\.33 s = 56 f/);
+  });
+
+  it("W-4 — a restart-only degradation names the restart loop, never the oom lever", async () => {
+    mkRoot();
+    fakeBin({
+      systemctl: { out: "NRestarts=3\nExecMainStatus=0\nExecMainCode=n/a\n", code: 0 },
+      journalctl: { out: "INFO: engine ready\nINFO: loaded krea-2\n", code: 0 },
+    });
+    routeEngineUp();
+    const [_code, env] = await manage({ action: "status" });
+    const data = env.data as unknown as StatusData;
+    assert.equal(data.engine_unit.verdict, "degraded");
+    assert.match(String(data.engine_unit.note), /degraded by the restart loop \(>= 2\)/);
+    assert.match(String(data.engine_unit.note), /journal tail/);
+    assert.doesNotMatch(String(data.engine_unit.note), /memory pressure/);
+    assert.doesNotMatch(String(data.engine_unit.note), /2\.33 s = 56 f/);
   });
 
   it("an unanswerable census is honest absence — the answer never invents a degradation", async () => {
@@ -205,6 +228,9 @@ describe("the status truth — the census consult (D3-02 / R-2)", () => {
     assert.equal(data.engine_unit.known, true);
     assert.equal(data.engine_unit.restarts, 0);
     assert.equal(data.engine_unit.verdict, "settled");
+    // W-4: health stays SILENT — the cause note is the degraded
+    // verdict's own voice, never noise on a settled row.
+    assert.equal(data.engine_unit.note, undefined);
   });
 });
 
