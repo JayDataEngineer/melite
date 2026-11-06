@@ -106,11 +106,21 @@ const ModKind = z.object({
   schema_key: z.string(),
   // THE GHOST DEFAULT (F34's chip half, 2026-11-13 — the operator:
   // "the main speed lora does not show up"): the family's resolved
-  // absent-bag row. The compose door rides exactly this row when the
-  // operator states no list, so the face shows ONE chip for it while
-  // the bag is ABSENT. An explicit `[]` stays the operator's off.
-  // Resolved by the family, never hand-typed by the card.
+  // absent-bag row. The compose door rides exactly this row when
+  // the operator states no list, so the face shows ONE chip for it
+  // while the bag is ABSENT. An explicit `[]` stays the operator's
+  // off. Resolved by the family, never hand-typed by the card.
   default_entry: z.object({ id: z.string(), strength: z.number(), steps: z.number() }),
+  // THE PRESET CHIPS (the timeline rework stage 3, 2026-11-15):
+  // named starting cells over the kind's ONE schema — the patch's
+  // keys and value types are judged against the kind's own fields
+  // below (checkPresets), never trusted from the declaration.
+  presets: z.array(z.object({
+    id: z.string(),
+    label: z.string(),
+    tooltip: z.string(),
+    patch: z.dict(z.any()),
+  })),
 });
 
 /** The field types the wire carries; each demands its own
@@ -179,6 +189,77 @@ export function validateDeclaredMods(cardId: string, mods: readonly DeclaredModi
     }
     for (const f of [...(mod.fields ?? []), ...(mod.kindFields ?? [])] as Array<Record<string, unknown>>) {
       checkField(where, f);
+    }
+    checkPresets(where, mod, row);
+  }
+}
+
+/** THE PRESET LAW (the timeline rework stage 3): a preset chip is a
+ *  starting cell over the kind's OWN schema — every patch key names
+ *  a declared field of the kind (fields ∪ kindFields), every value
+ *  carries that field's declared wire type, and a select's value
+ *  rides its served options (a preset may not invent vocabulary);
+ *  ids are unique per kind. A patch touching anything else is drift
+ *  at the registration door, the same law checkField serves. */
+function checkPresets(where: string, mod: DeclaredModifierKind, row: Record<string, unknown>): void {
+  // NO undefined guard: the strict resolve DEFAULT-FILLS presets to
+  // [] on a bare row (probed live — a presets-less kind arrives as
+  // presets:[]), so the undefined arm is dead; an empty array
+  // simply walks zero rows.
+  const presets = row["presets"] as Array<Record<string, unknown>>;
+  const fields = [...(mod.fields ?? []), ...(mod.kindFields ?? [])] as Array<Record<string, unknown>>;
+  const byName = new Map(fields.map((f) => [String(f["name"]), f]));
+  const seen = new Set<string>();
+  for (const preset of presets) {
+    const pid = String(preset["id"]);
+    // THE PATCH-TRUTH LAW: schemastery's resolve DEFAULT-FILLS an
+    // absent patch to {} (probed live — a declared {id,label} row
+    // arrives here as patch:{}), so a row the author wrote without
+    // a patch would silently ride as a no-op chip. The zod face
+    // cannot catch it (the fill happens before checkPresets sees
+    // the row); the walk itself must: a carried row whose patch
+    // was FILLED (not authored) refuses loud. We detect the fill
+    // by reading the AUTHOR'S row — resolve gives us only kept
+    // keys, so the law rides the original: presets[i].patch.
+    // THE AUTHOR'S ROW: resolve default-fills patch to {} (the
+    // patch-truth law below), so the authored row is the only
+    // honest witness of what the author wrote. `authored` is
+    // always an array here — the strict resolve above FILLED the
+    // presets array (a bare row arrives as presets:[]); the
+    // non-array spelling never reaches this walk (the resolve's
+    // own "$.presets expected array" refusal fires first, probed
+    // live). The index alignment rides resolve's ORDER-PRESERVING
+    // fill: kept rows carry over the authored order one-to-one.
+    const authored = mod.presets as Array<Record<string, unknown>> | undefined;
+    const authoredPatch = authored === undefined ? undefined : authored[presets.indexOf(preset)]?.["patch"];
+    if (authoredPatch === undefined || authoredPatch === null || typeof authoredPatch !== "object" || Array.isArray(authoredPatch)) {
+      throw new Error(`${where}: preset '${pid}' carries no patch object — a cell that dials nothing is drift (each row: id + label + a patch over the kind's OWN fields)`);
+    }
+    if (seen.has(pid)) {
+      throw new Error(`${where}: preset '${pid}' is declared twice — ids are unique per kind`);
+    }
+    seen.add(pid);
+    // NO patch fallback: a FILLED patch{} is an empty object and
+    // the keys loop walks zero keys — the patch-truth law above
+    // already refused the authored-absent row.
+    const patch = preset["patch"] as Record<string, unknown>;
+    for (const key of Object.keys(patch)) {
+      const field = byName.get(key);
+      if (field === undefined) {
+        throw new Error(`${where}: preset '${pid}' patches '${key}' — not a declared field of this kind (a preset is a starting cell over the kind's OWN schema, never a second vocabulary)`);
+      }
+      const want = FIELD_TYPES[String(field["type"])];
+      if (typeofDefault(patch[key]) !== want) {
+        throw new Error(`${where}: preset '${pid}' patches '${key}' with ${typeofDefault(patch[key])} — the field declares ${want} (the type-truth law)`);
+      }
+      if (field["type"] === "select") {
+        // NO options fallback: checkField refuses an option-less
+        // select before this walk runs — options always arrives.
+        const values = (field["options"] as Array<Record<string, unknown>>).map((o) => String(o["value"]));
+        if (!values.includes(String(patch[key]))) {
+          throw new Error(`${where}: preset '${pid}' patches '${key}' to '${String(patch[key])}' — not a served option (a preset may not invent vocabulary)`);
+        }
+      }
     }
   }
 }

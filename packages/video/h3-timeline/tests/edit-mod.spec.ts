@@ -189,4 +189,88 @@ describe("the edit bag's door (stage 2b: one bag, the whole matrix)", () => {
       /edit_prompt.*names no action/,
     );
   });
+
+  it("THE UNSTATED SEATS FALL TO THEIR DEFAULTS (mask_source region, self, 16/0/0.5)", () => {
+    const { mask_source, reference, mask_grow, mask_blur, detection_threshold, ...bare } = EDIT_ENTRY();
+    assert.ok(
+      mask_source !== undefined && reference !== undefined
+        && mask_grow !== undefined && mask_blur !== undefined && detection_threshold !== undefined,
+      "the arm stages its premise honestly: the factory seats every dial the entry then drops",
+    );
+    const walked = def.schema({ edit: [bare] }) as Record<string, unknown>;
+    const g = new GraphBuilder();
+    def.compose(walked, model, g, "run_edit_defaults");
+    const out = graphOf(g);
+    const track = ofClass(out, "SAM3_VideoTrack");
+    assert.equal(track.length, 1, "the unstated mask_source falls to region — the tracker composes");
+    assert.equal(track[0]![1].inputs.detection_threshold, 0.5,
+      "the unstated detection_threshold falls to 0.5");
+    const grow = ofClass(out, "GrowMaskWithBlur");
+    assert.equal(grow.length, 1, "the region dial grows the tracked mask");
+    assert.equal(grow[0]![1].inputs.expand, 16, "the unstated mask_grow falls to 16");
+    assert.equal(grow[0]![1].inputs.blur_radius, 0, "the unstated mask_blur falls to 0");
+    assert.equal(ofClass(out, "ImageToMask").length, 0,
+      "the default is region, never the static PNG — no red-channel conversion");
+  });
+
+  it("an entry naming no region refuses through the door (the empty dial surfaces)", () => {
+    const { region_prompt, mask_grow, mask_blur, detection_threshold, ...noTarget } = EDIT_ENTRY();
+    assert.ok(region_prompt !== undefined, "the arm stages its premise honestly: the factory names a target the entry then drops");
+    const walked = def.schema({ edit: [noTarget] }) as Record<string, unknown>;
+    assert.throws(
+      () => def.compose(walked, model, new GraphBuilder(), "run_edit_notarget"),
+      /the region mask dial names no target/,
+      "the door surfaces the matrix seat's empty-dial law — defaults never invent the detection target",
+    );
+  });
+
+  it("a static-png entry naming no image refuses through the door", () => {
+    const walked = def.schema({
+      edit: [{ ...EDIT_ENTRY(), mask_source: "static-png", region_prompt: undefined, mask: undefined }],
+    }) as Record<string, unknown>;
+    assert.throws(
+      () => def.compose(walked, model, new GraphBuilder(), "run_edit_noimage"),
+      /the static-png mask dial names no image/,
+      "the door surfaces the matrix seat's imageless-PNG law",
+    );
+  });
+
+  it("a still+mannequin entry missing the still refuses through the door", () => {
+    const walked = def.schema({
+      edit: [{
+        ...EDIT_ENTRY(), reference: "still+mannequin",
+        still: undefined, mannequin: "mannequins/pose.png",
+      }],
+    }) as Record<string, unknown>;
+    assert.throws(
+      () => def.compose(walked, model, new GraphBuilder(), "run_edit_nostill"),
+      /the still\+mannequin reference dial needs both seats bound/,
+      "the door surfaces the matrix seat's half-pair law (still missing)",
+    );
+  });
+
+  it("a still+mannequin entry missing the mannequin refuses through the door", () => {
+    const walked = def.schema({
+      edit: [{
+        ...EDIT_ENTRY(), reference: "still+mannequin",
+        still: "stills/face.png", mannequin: undefined,
+      }],
+    }) as Record<string, unknown>;
+    assert.throws(
+      () => def.compose(walked, model, new GraphBuilder(), "run_edit_nomann"),
+      /the still\+mannequin reference dial needs both seats bound/,
+      "the door surfaces the matrix seat's half-pair law (mannequin missing)",
+    );
+  });
+
+  it("an explicitly empty edit bag composes the clean film (the dispatch checks length)", () => {
+    const walked = def.schema({ edit: [] }) as Record<string, unknown>;
+    const g = new GraphBuilder();
+    def.compose(walked, model, g, "run_edit_emptybag");
+    const out = graphOf(g);
+    for (const cls of EDIT_CLASSES) {
+      assert.equal(ofClass(out, cls).length, 0, `the [] film composes no ${cls}`);
+    }
+    assert.ok(ofClass(out, "SaveVideo").length > 0, "the [] film still delivers its SaveVideo");
+  });
 });

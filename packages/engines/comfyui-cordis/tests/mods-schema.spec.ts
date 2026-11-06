@@ -120,4 +120,88 @@ describe("the declared mod-kind schema gate (registerCard's third door)", () => 
   it("requires rides the gate (a string pack row passes — the sam2 arm's declaration)", () => {
     validateDeclaredMods("c", [base({ requires: ["comfyui-impact-pack", "comfyui-impact-subpack"] })]);
   });
+
+  // ── THE PRESET LAW (the timeline rework stage 3): a preset chip
+  // is a starting cell over the kind's OWN schema. The wire face's
+  // own guards live here — the door's teeth on every axis — while
+  // the estate's real five cells (h3 edit) prove the serving face
+  // in edit-presets.spec.ts. ──
+  const presetFields = (): Array<Record<string, unknown>> => [
+    { name: "mask_source", label: "Mask source", type: "select", default: "region", options: [{ value: "region", label: "Region" }, { value: "whole-frame", label: "Whole frame" }] },
+    { name: "denoise", label: "Denoise", type: "number", default: 0.32, min: 0.05, max: 1, step: 0.01 },
+  ];
+
+  it("a preset-carrying kind passes clean, and a bare kind skips the walk (the carrying face admits)", () => {
+    // the bare face: the strict resolve FILLS presets:[] (probed
+    // live — schemastery default-fills the array), so a bare kind
+    // walks zero rows and passes clean
+    validateDeclaredMods("c", [base({ fields: presetFields() })]);
+    // presets present → the walk's carrying path
+    validateDeclaredMods("c", [base({
+      fields: presetFields(),
+      presets: [{ id: "repair", label: "Repair a region", tooltip: "the fast cell", patch: { mask_source: "region", denoise: 0.32 } }],
+    })]);
+  });
+
+  it("a preset patching an undeclared key refuses (a preset is never a second vocabulary)", () => {
+    assert.throws(
+      () => validateDeclaredMods("c", [base({ fields: presetFields(), presets: [{ id: "x", label: "X", patch: { not_a_field: 1 } }] })]),
+      /patches 'not_a_field' — not a declared field of this kind/,
+    );
+  });
+
+  it("a preset patching an unserved select value refuses (no invented vocabulary)", () => {
+    assert.throws(
+      () => validateDeclaredMods("c", [base({ fields: presetFields(), presets: [{ id: "x", label: "X", patch: { mask_source: "quantum" } }] })]),
+      /patches 'mask_source' to 'quantum' — not a served option/,
+    );
+  });
+
+  it("a preset patching a mistyped value refuses (the type-truth law reaches the patches)", () => {
+    assert.throws(
+      () => validateDeclaredMods("c", [base({ fields: presetFields(), presets: [{ id: "x", label: "X", patch: { denoise: "loud" } }] })]),
+      /patches 'denoise' with string — the field declares number/,
+    );
+  });
+
+  it("a repeated preset id refuses (ids are unique per kind)", () => {
+    assert.throws(
+      () => validateDeclaredMods("c", [base({
+        fields: presetFields(),
+        presets: [
+          { id: "same", label: "One", patch: { denoise: 0.3 } },
+          { id: "same", label: "Two", patch: { denoise: 0.4 } },
+        ],
+      })]),
+      /preset 'same' is declared twice/,
+    );
+  });
+
+  it("a patchless preset row refuses loud (the patch-truth law — schemastery default-fills an absent patch to {}, probed live; the walk reads the author's row and refuses the fill)", () => {
+    assert.throws(
+      () => validateDeclaredMods("c", [base({
+        fields: presetFields(),
+        presets: [{ id: "x", label: "X" }],
+      })]),
+      /preset 'x' carries no patch object — a cell that dials nothing is drift/,
+    );
+    // the null spelling refuses through the same law (the authored
+    // witness is null — the patch-truth walk refuses it before any
+    // zod fill could mask it)
+    assert.throws(
+      () => validateDeclaredMods("c", [base({
+        fields: presetFields(),
+        presets: [{ id: "x", label: "X", patch: null }],
+      })]),
+      /carries no patch object/,
+    );
+  });
+
+  it("an empty presets array admits at this door (the discovery guard owns its refusal — a form-spec half-face never serves)", () => {
+    // the registration door carries no empty-array law: the row
+    // schema-resolves clean and the walk loops zero times. The
+    // discovery projection refuses it (discovery-mods-merge.spec,
+    // THE PRESET WIRE GUARD) — two doors, two laws, no gap.
+    validateDeclaredMods("c", [base({ fields: presetFields(), presets: [] })]);
+  });
 });

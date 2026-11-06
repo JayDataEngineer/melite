@@ -772,14 +772,41 @@ export function ModifiersSection(props) {
     // DndContexts are renderless — layout stays one flex-wrap line.
     h('div', { className: css.modRow, 'data-subcard-row': 'flow' }, kinds.map((k) => {
         const entries = entriesOf(k);
+        // THE PRESET CHIPS (the timeline rework stage 3): named
+        // starting cells over the kind's ONE schema — the retired
+        // bag names' cells ride here as buttons. An EMPTY bag → the
+        // chip CREATES the single entry (field defaults seeded, the
+        // patch applied); a seated bag → the chip patches entry 0 (a
+        // MERGE — staged files stay, every dial stays movable after
+        // the press; the compose door never reads preset ids).
+        const presetRow = (k.presets ?? []).length > 0
+            ? h('div', { key: k.param_key + ':presets', className: css.modPresetRow, 'data-testid': 'cb-mod-preset-row' }, k.presets.map((p) => h(Tip, {
+                key: p.id,
+                tip: p.tooltip ?? p.label,
+                children: h('span', { 'data-testid': 'cb-mod-preset-' + p.id }, h(Button, {
+                    variant: 'ghost',
+                    onClick: () => {
+                        if (entries.length === 0) {
+                            commit(k, [{ ...fieldDefaults(k), ...p.patch }]);
+                        }
+                        else {
+                            const next = [...entries];
+                            next[0] = { ...entries[0], ...p.patch };
+                            commit(k, next);
+                        }
+                    },
+                }, p.label)),
+            })))
+            : null;
         if (entries.length === 0)
-            return null;
+            return presetRow !== null ? [presetRow] : null;
         const ordered = isOrdered(k);
         // THE IDENTITY MINT (debt 24): one function owns the id
         // grammar — the drop resolver reads the same ids, so the
         // pair the drag means is derivable from any later bag.
         const tileIds = modTileIds(k, entries);
         return [
+            ...(presetRow !== null ? [presetRow] : []),
             ...entries.map((entry, i) => {
                 // THE CATALOG KEY (the served option_key — the hybrid
                 // type, the option id; field kinds carry none and fall

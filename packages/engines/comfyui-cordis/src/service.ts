@@ -208,6 +208,12 @@ export interface DeclaredModifierKind {
    *  door really seeds. Served verbatim; absent = an absent bag
    *  renders nothing (the honest-empty kinds: replace, repair). */
   default_entry?: { id: string; strength: number; steps: number }
+  /** THE PRESET CHIPS (the timeline rework stage 3, 2026-11-15):
+   *  named starting cells over the kind's ONE schema — every patch
+   *  key a declared field, every value its wire type, every select
+   *  value a served option (judged at the registration door,
+   *  checkPresets). Served verbatim; absent = no chip row. */
+  presets?: readonly { id: string; label: string; tooltip?: string; patch: Readonly<Record<string, string | number | boolean>> }[]
 }
 
 export function resolveCardFlowOutputs(

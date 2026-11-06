@@ -107,6 +107,13 @@ export interface DeclaredModifierKind {
    *  so the declarer stamps its own kind name. Served verbatim;
    *  absent = unattributed (the wall reds the lane). */
   schema_key?: string
+  /** THE PRESET CHIPS (the timeline rework stage 3, 2026-11-15):
+   *  named starting cells over the ONE schema — each patch touches
+   *  only this kind's own declared fields (the registration door
+   *  validateDeclaredMods refuses any other key or a mistyped
+   *  value), the chip face merges it onto the bag's single entry.
+   *  Served verbatim like every declared row; absent = no chips. */
+  presets?: readonly { id: string; label: string; tooltip?: string; patch: Readonly<Record<string, string | number | boolean>> }[]
 }
 
 /** The carrier dict shape (shared with the no-cheat door). */

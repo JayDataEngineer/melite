@@ -285,6 +285,58 @@ describe("refreshCardDefs (the #39 hot re-projection)", () => {
     assert.ok(!svc.cardIds().includes("wall-drifted-card"), "reverted");
     assert.ok(refreshCardDefs().has("image-gen"), "the projection is clean again");
   }, 240000);
+
+  it("a preset-carrying card registers through the REAL door (the mod-kind gate's third-door walk rides registration)", async () => {
+    await loadCardDefs();
+    const svc = theService();
+    // THE THIRD-DOOR RIDE (stage 3): registerCard calls
+    // validateDeclaredMods(def.id, def.mods) — the preset law's
+    // carrying path (a presets-bearing kind walks checkPresets)
+    // rides the registration door itself, not a direct call.
+    const off = svc.registerCard({
+      id: "wall-preset-card",
+      skeleton: "generate",
+      boarded: [],
+      tags: ["image"],
+      identity: { label: "Wall Preset Card", description: "the preset registration arm", genre: "image" },
+      sidebar: { key: "image", order: 999, hidden: true },
+      schema: (value: unknown) => value as Record<string, unknown>,
+      flowKinds: { inputs: {}, outputs: { default: "image" }, requiresModel: false },
+      mods: [{
+        kind: "edit", label: "Edit", param_key: "edit", cardinality: "list",
+        fields: [{ name: "denoise", label: "Denoise", type: "number", default: 0.32, min: 0.05, max: 1, step: 0.01 }],
+        presets: [{ id: "repair", label: "Repair", patch: { denoise: 0.32 } }],
+      }],
+      compose(): void { throw new Error("never composed") },
+    } as never);
+    try {
+      assert.ok(svc.cardIds().includes("wall-preset-card"), "the preset-carrying card registers clean");
+    } finally {
+      off();
+    }
+    // and a DRIFTED preset refuses the SAME door (the law is the
+    // registration's, never the caller's good faith)
+    assert.throws(
+      () => svc.registerCard({
+        id: "wall-preset-drift",
+        skeleton: "generate",
+        boarded: [],
+        tags: ["image"],
+        identity: { label: "Drift", description: "d", genre: "image" },
+        sidebar: { key: "image", order: 999, hidden: true },
+        schema: (value: unknown) => value as Record<string, unknown>,
+        flowKinds: { inputs: {}, outputs: { default: "image" }, requiresModel: false },
+        mods: [{
+          kind: "edit", label: "Edit", param_key: "edit", cardinality: "list",
+          fields: [{ name: "denoise", label: "Denoise", type: "number", default: 0.32, min: 0.05, max: 1, step: 0.01 }],
+          presets: [{ id: "x", label: "X", patch: { not_a_field: 1 } }],
+        }],
+        compose(): void { throw new Error("never composed") },
+      } as never),
+      /patches 'not_a_field' — not a declared field/,
+    );
+    assert.ok(!svc.cardIds().includes("wall-preset-drift"), "the drifted card never lands");
+  }, 240000);
 });
 
 describe("theService (the boot gate)", () => {

@@ -26,6 +26,17 @@ mask), WHO it keeps (the identity anchors), and HOW HARD it re-renders
 doors were seven FIXED cells of this matrix; each stays frozen
 byte-pinned for its own docs, and the free cells compose here.
 
+THE NAMED CELLS (stage 3): the card serves five preset chips over
+this one schema — `repair-region` (region × self × 0.32, sound held),
+`identity-swap` (region × still+mannequin × 1, the masked side
+re-rendered whole), `outfit-change` (region × still+mannequin × 0.55,
+appearance anchored, motion riding through), `whole-frame-restyle`
+(whole-frame × self × 0.6, under the boil floor), and
+`static-mask-pass` (static-png × self × 0.32). A chip is a STARTING
+cell, never a second door: state the cell's dials on the entry (the
+GUI chip and your entry compose identically — the wire is the bag,
+preset ids never ride it).
+
 It is NOT:
 - **a continuation** — more seconds appended to a prior clip is the
   `extend` door (its composition solver and forced entry seam are its

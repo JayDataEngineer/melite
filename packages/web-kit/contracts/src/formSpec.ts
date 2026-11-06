@@ -214,6 +214,15 @@ export interface ModifierKind {
    *  verbatim; the compose door enforces them only when the kind's
    *  bag is non-empty (an unused arm never blocks a run). */
   requires?: readonly string[]
+  /** THE PRESET CHIPS (the timeline rework stage 3, 2026-11-15):
+   *  named starting cells for a one-bag kind — each patch touches
+   *  ONLY the kind's own declared fields (the registration door
+   *  refuses any other key or a mistyped value), and the chip
+   *  applies it to the bag's single entry (merging over the draft,
+   *  never replacing staged files). A preset is a CLIENT affordance
+   *  over the ONE schema: the wire stays the bag, the compose door
+   *  never reads preset ids. Served verbatim; absent = no chips. */
+  presets?: readonly ModifierPreset[]
   /** THE GHOST DEFAULT (F34's chip half, 2026-11-13): the family's own
    *  ABSENT-BAG resolution, as a resolved entry row (`{id, strength,
    *  steps}` — the shape the bag takes). A card kind that carries this
@@ -250,6 +259,18 @@ export function modCommitWrite(
   entry: Record<string, unknown>,
 ): Record<string, unknown> {
   return kind.flat === true ? { ...entry } : { [kind.param_key]: [entry] }
+}
+
+/** One preset chip (ModifierKind.presets): a named starting cell —
+ *  `patch` touches only the kind's own declared fields, values in
+ *  the field's declared wire type (string | number | boolean; the
+ *  registration door refuses anything else). The id is the chip's
+ *  stable name (unique per kind); the label is its face. */
+export interface ModifierPreset {
+  id: string
+  label: string
+  tooltip?: string
+  patch: Readonly<Record<string, string | number | boolean>>
 }
 
 /** One served catalog row (the discovery options projection — the

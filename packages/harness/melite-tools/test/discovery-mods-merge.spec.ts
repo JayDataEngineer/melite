@@ -147,6 +147,39 @@ describe('specBody — the one-bag-one-row serve (F34 synthetic arms)', () => {
     )
   })
 
+  test('THE PRESET WIRE GUARD (stage 3): a malformed presets row refuses the whole form-spec — never a half-rendered chip', () => {
+    reset()
+    const base = {
+      kind: 'edit', label: 'Edit', param_key: 'edit', cardinality: 'list',
+      fields: [{ name: 'denoise', label: 'Denoise', type: 'number', default: 0.3, min: 0.05, max: 1, step: 0.01 }],
+      schema_key: 'edit',
+    } as DeclaredModifierKind
+    // an EMPTY array is malformed (a carrying kind states its cells)
+    assert.throws(
+      () => serve({ identity: { label: 'Syn', genre: 'video' }, mods: [{ ...base, presets: [] } as DeclaredModifierKind] }),
+      /declares malformed presets on mod kind 'edit'/,
+    )
+    // a row without a patch object (the forgery is the point — the
+    // type system correctly refuses a patchless row, so the cast
+    // rides unknown; the runtime guard must refuse it too)
+    assert.throws(
+      () => serve({ identity: { label: 'Syn', genre: 'video' }, mods: [{ ...base, presets: [{ id: 'x', label: 'X' }] } as unknown as DeclaredModifierKind] }),
+      /malformed presets/,
+    )
+    // a well-formed row serves VERBATIM (patch keys are the
+    // registration door's law, engine-side — the wire trusts it)
+    const doc = serve({
+      identity: { label: 'Syn', genre: 'video' },
+      mods: [{ ...base, presets: [{ id: 'repair', label: 'Repair', patch: { denoise: 0.3 } }] } as DeclaredModifierKind],
+    })
+    const served = modifiersOf(doc).find((k) => k.param_key === 'edit')
+    assert.deepEqual(
+      (served as unknown as { presets?: Array<{ id: string }> }).presets,
+      [{ id: 'repair', label: 'Repair', patch: { denoise: 0.3 } }],
+      'the preset cells ride the wire verbatim',
+    )
+  })
+
   test('a kind attributing itself to the pack the family boards serves the live catalog off the pack row', () => {
     // THE CATALOG MIRROR's out-face: the kind stores its bag under its
     // OWN param_key (no collision — the pack row rides `out`) and

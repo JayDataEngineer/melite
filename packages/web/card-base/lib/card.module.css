@@ -360,6 +360,12 @@ select option {
  * color law: aliases with fallbacks, no literals). */
 .specChips { display: flex; flex-wrap: wrap; gap: 4px; }
 
+/* THE PRESET CHIP ROW (the timeline rework stage 3): named starting
+ * cells over a kind's ONE schema, one row of DSH Button chips above
+ * the kind's tiles. Layout only — the buttons carry their own theme
+ * faces (the chip token law: no literal fills on this plane). */
+.modPresetRow { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 6px; }
+
 .modLeafModal { width: min(760px, calc(100vw - 32px)); max-height: min(80vh, 760px); overflow-y: auto; }
 
 /* THE ACTION-CARD SPLIT (CardDrill's grammar: preview LEFT, knobs

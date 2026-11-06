@@ -572,6 +572,23 @@ const EDIT_MOD: DeclaredModifierKind = {
       { value: '1080p', label: '1080p — ~2.5× slower, needs much more memory' },
     ], tooltip: "The plan resolution tier (reference '736p')." },
   ],
+  // THE PRESET CHIPS (stage 3): the retired bag NAMES live on as
+  // starting cells over this ONE schema — each chip is a named
+  // matrix cell (mask source × identity anchors × denoise pole)
+  // the registration door judges against the fields above (a
+  // preset may not invent vocabulary or patch an undeclared seat).
+  // The chip face merges the patch onto the single entry; every
+  // dial stays movable after the press. The four doors that are
+  // NOT edit-matrix cells (Extend, Refine, Reshoot, Upscale) keep
+  // their own bags — the edit door itself refuses those cells
+  // naming their doors.
+  presets: [
+    { id: 'repair-region', label: 'Repair a region', tooltip: 'The repair posture: a per-frame SAM3 track of the named region, identity anchored to the source itself, partial denoise holding everything outside the mask — and its sound.', patch: { mask_source: 'region', reference: 'self', denoise: 0.32, keep_audio: true } },
+    { id: 'identity-swap', label: 'Identity swap', tooltip: 'The swap posture: the region tracked frame by frame, identity carried by a replacement still + the track run\'s mannequin video, full denoise re-rendering the masked side whole.', patch: { mask_source: 'region', reference: 'still+mannequin', denoise: 1 } },
+    { id: 'outfit-change', label: 'Outfit change', tooltip: 'The garment posture: region + still+mannequin at partial denoise — the still anchors the new outfit\'s appearance while the source motion rides through; push denoise toward 1 to re-render the garment whole.', patch: { mask_source: 'region', reference: 'still+mannequin', denoise: 0.55, keep_audio: true } },
+    { id: 'whole-frame-restyle', label: 'Whole-frame restyle', tooltip: 'Nothing held: the whole frame re-renders at partial denoise anchored to the source itself — stay under 0.8 (the identity-boil floor refuses beyond it on this anchor).', patch: { mask_source: 'whole-frame', reference: 'self', denoise: 0.6 } },
+    { id: 'static-mask-pass', label: 'Static mask pass', tooltip: 'One staged PNG names the edit area (the track run\'s pixel-max union is the recommended bridge); the chain resizes it to its own geometry in-graph.', patch: { mask_source: 'static-png', reference: 'self', denoise: 0.32, keep_audio: true } },
+  ],
 }
 
 /** THE CARD-DECLARED KINDS (one roster, two readers: the served
