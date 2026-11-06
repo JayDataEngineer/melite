@@ -725,3 +725,191 @@ describe('melite_flow bench — the press census + the rev-confirm landing admis
     assert.equal(fake.calls.filter((c) => c.lane === 'runsStart').length, 1, 'the press ran normally')
   })
 })
+
+// THE BRANCH-EDGE BURN (scope C, 2026-11-19): every stop face spreads
+// the bench's settle-time intent and the pressed stage — the per-stage
+// press rides them through every refusal voice, and a failed pass
+// carries the DEDUPED host set. Arms pinned to the exact spread faces
+// the coverage reporter named.
+describe('melite_flow bench — the stop faces carry the intent + the pressed stage (the branch-edge burn)', () => {
+  const INTENT = 'the gauntlet film'
+
+  /** An intent-bearing bench with the given stage rows. */
+  const intentBenchWith = (stages: Array<Record<string, unknown>>) => ({
+    draft_id: 'd_intent', rev: 4, intent: INTENT, stages,
+  })
+
+  /** A per-stage press over the given lanes. */
+  const runStage = async (
+    stage: string,
+    handlers: Array<(lane: string, args: unknown[]) => { status: number; body: unknown } | undefined>,
+  ): Promise<Record<string, unknown>> => {
+    const fake = fakeEstateStatus(handlers)
+    const tool = meliteFlow(fake.estate)
+    return await tool.execute({ stage }, fakeExec(AbortSignal.timeout(8000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+  }
+
+  test('the retired-marker stop carries the intent + the pressed stage', async () => {
+    const out = await runStage('s_0', [
+      (lane: string) => {
+        if (lane === 'benchGet') return { status: 200, body: intentBenchWith([{ id: 's_0', params: {}, ref_flow: 'my-flow' }]) }
+        return undefined
+      },
+    ])
+    assert.equal(out.status, 'stopped')
+    assert.equal(out.intent, INTENT, 'the bench intent at settle rides the refusal receipt')
+    assert.equal(out.stage, 's_0', 'the pressed row rides its own stop')
+    assert.match(String(out.error), /stage s_0 is the "my-flow" flow template reference/)
+  })
+
+  test('the no-card stop carries the intent + the pressed stage', async () => {
+    const out = await runStage('s_0', [
+      (lane: string) => {
+        if (lane === 'benchGet') return { status: 200, body: intentBenchWith([{ id: 's_0', params: {} }]) }
+        return undefined
+      },
+    ])
+    assert.equal(out.status, 'stopped')
+    assert.equal(out.intent, INTENT)
+    assert.equal(out.stage, 's_0')
+    assert.match(String(out.error), /stage s_0 names no card — nothing to compose/)
+  })
+
+  test('the not-a-stage-wire stop carries the intent + the pressed stage', async () => {
+    const out = await runStage('s_0', [
+      (lane: string) => {
+        if (lane === 'benchGet') {
+          return { status: 200, body: intentBenchWith([
+            { id: 's_0', card: 'image-gen', params: { model: 'anima' }, inputs: { img: { output: 'default' } } },
+          ]) }
+        }
+        return undefined
+      },
+    ])
+    assert.equal(out.status, 'stopped')
+    assert.equal(out.intent, INTENT)
+    assert.equal(out.stage, 's_0')
+    assert.match(String(out.error), /input "img" is neither \{stage, output\} nor a resolvable binding/)
+  })
+
+  test('the no-output-upstream stop carries the intent + the pressed stage', async () => {
+    const out = await runStage('s_1', [
+      (lane: string) => {
+        if (lane === 'benchGet') {
+          return { status: 200, body: intentBenchWith([
+            { id: 's_0', card: 'image-gen', runStatus: 'done', params: { model: 'anima' }, result: null },
+            { id: 's_1', card: 'image-edit', params: { model: 'qwen-img-edit-21', image1: '$image1' },
+              inputs: { image1: { stage: 's_0', output: 'default' } } },
+          ]) }
+        }
+        return undefined
+      },
+    ])
+    assert.equal(out.status, 'stopped')
+    assert.equal(out.intent, INTENT)
+    assert.equal(out.stage, 's_1')
+    assert.match(String(out.error), /input "image1" is wired to stage "s_0" which has no output yet/)
+  })
+
+  test('a refused start stops the per-stage press carrying the intent + the pressed stage — nothing pressed', async () => {
+    const out = await runStage('s_0', [
+      (lane: string) => {
+        if (lane === 'benchGet') {
+          return { status: 200, body: intentBenchWith([{ id: 's_0', card: 'image-gen', params: { model: 'anima' } }]) }
+        }
+        if (lane === 'runsStart') return { status: 200, body: { run_id: '', error: 'the queue refused the start' } }
+        return undefined
+      },
+    ])
+    assert.equal(out.status, 'stopped')
+    assert.equal(out.stoppedAt, 's_0')
+    assert.equal(out.intent, INTENT)
+    assert.equal(out.stage, 's_0')
+    assert.equal(out.error, 'the queue refused the start')
+    assert.deepEqual(out.pressed, ['s_0'], 'the census names the press the refusal refused — the attempt is the receipt')
+  })
+
+  test('a thrown start stops the per-stage press carrying the intent + the pressed stage', async () => {
+    const out = await runStage('s_0', [
+      (lane: string) => {
+        if (lane === 'benchGet') {
+          return { status: 200, body: intentBenchWith([{ id: 's_0', card: 'image-gen', params: { model: 'anima' } }]) }
+        }
+        if (lane === 'runsStart') throw 'queue died'
+        return undefined
+      },
+    ])
+    assert.equal(out.status, 'stopped')
+    assert.equal(out.stoppedAt, 's_0')
+    assert.equal(out.intent, INTENT)
+    assert.equal(out.stage, 's_0')
+    assert.match(String(out.error), /stage s_0 \(image-gen\) threw \(a transport or resolution error/)
+  })
+
+  test('a per-stage press that outlives the budget returns pending carrying the intent + the pressed stage', async () => {
+    // the fake clock owns time — a wall-clock timeout signal would
+    // fire inside the 900s advance (the melite-flow pending arm's law)
+    vi.useFakeTimers()
+    try {
+      const fake = fakeEstateStatus([
+        (lane: string) => {
+          if (lane === 'benchGet') {
+            return { status: 200, body: intentBenchWith([{ id: 's_0', card: 'image-gen', params: { model: 'anima' } }]) }
+          }
+          if (lane === 'runsStart') return { status: 202, body: { run_id: 'r_slow', status: 'queued' } }
+          if (lane === 'runsStatus') return { status: 200, body: { status: 'running', stages: [] } }
+          if (lane === 'draftsStagePatch') return { status: 200, body: { delivered: true } }
+          return undefined
+        },
+      ])
+      const tool = meliteFlow(fake.estate)
+      const exec = fakeExec(new AbortController().signal, { agent: { id: 'session-chat7' } })
+      const runP = tool.execute({ stage: 's_0' }, exec) as Promise<Record<string, unknown>>
+      await vi.advanceTimersByTimeAsync(900_100)
+      const out = await runP
+      assert.equal(out.status, 'pending', 'a live run is pending, never failed')
+      assert.equal(out.stoppedAt, 's_0')
+      assert.equal(out.run_id, 'r_slow')
+      assert.equal(out.intent, INTENT, 'the settle-time intent rides the pending receipt')
+      assert.equal(out.stage, 's_0', 'the pressed row rides the pending receipt')
+      assert.ok(!('error' in out), 'a pending receipt is not a refusal')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  test('a failed pass carries the DEDUPED host set — two rows naming one absolute file print it once', async () => {
+    // the absolute url rides verbatim as its own host path (no run
+    // root joins), so two settled rows CAN name the same file — the
+    // collector dedupes, and the intent rides the failure receipt.
+    const fake = fakeEstateStatus([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'benchGet') {
+          return { status: 200, body: intentBenchWith([
+            { id: 's_0', card: 'image-gen', params: { model: 'anima' } },
+            { id: 's_1', card: 'image-gen', params: { model: 'anima' } },
+            { id: 's_2', card: 'image-gen', params: { model: 'anima' } },
+          ]) }
+        }
+        if (lane === 'runsStart') {
+          const id = (args[0] as Record<string, unknown>)['bench_stage_id']
+          if (id === 's_2') throw 'queue died on the third'
+          return { status: 202, body: { run_id: id === 's_0' ? 'r_a' : 'r_b', status: 'queued' } }
+        }
+        if (lane === 'runsStatus') {
+          const rid = args[0]
+          return { status: 200, body: { status: 'completed', stages: [{ id: rid === 'r_a' ? 's_0' : 's_1', url: '/abs/clip.mp4' }] } }
+        }
+        if (lane === 'draftsStagePatch') return { status: 200, body: { delivered: true } }
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(fake.estate)
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(8000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.status, 'stopped')
+    assert.equal(out.stoppedAt, 's_2')
+    assert.equal(out.intent, INTENT, 'the intent rides even a failed press')
+    assert.deepEqual(out.host_paths, ['/abs/clip.mp4'],
+      'the absolute host path prints once — the second row\u2019s duplicate is dropped')
+  })
+})

@@ -1033,4 +1033,90 @@ describe('comfy_manage render — the engine truth rows (D3-02 / R-2)', () => {
     assert.match(out, /Main process exited, code=killed, status=9\/KILL/)
     assert.match(out, /Failed with result 'oom-kill'\./)
   })
+
+  // THE BRANCH-EDGE BURN (scope C, 2026-11-19): the census carries
+  // only its PRESENT truth — an absent count says nothing, a zero oom
+  // count is silence, an unnamed exit code still names the exit — and
+  // the poll render names a settled op's cause.
+  test('a partial engine_unit census carries only its present fields — zero oom is silence, the note rides', () => {
+    const tool = comfyManage(stubEstate())
+    const out = text(tool, {
+      ok: true,
+      action: 'status',
+      detail: 'server degraded',
+      data: {
+        state: 'degraded',
+        engine_unit: {
+          known: true,
+          unit: 'estate-comfyui.service',
+          verdict: 'degraded',
+          last_exit_status: 9,
+          last_exit_at: 'Tue 2026-11-04 17:35:12 UTC',
+          oom_kills: 0,
+          note: 'exit words read from the journal',
+        },
+      },
+    })
+    assert.match(out, /engine unit estate-comfyui\.service: degraded — last exit 9\/status · at Tue 2026-11-04 17:35:12 UTC · exit words read from the journal/,
+      'no restarts word, the unnamed exit code falls back to status, the note rides')
+    assert.doesNotMatch(out, /restarts/, 'a census that counted nothing says nothing')
+    assert.doesNotMatch(out, /oom-kill lines \d/, 'a zero oom count is silence, never a zero claim')
+  })
+
+  test('a census with no truth fields renders the bare verdict — no dash suffix', () => {
+    const tool = comfyManage(stubEstate())
+    const out = text(tool, {
+      ok: true,
+      action: 'status',
+      detail: 'server up',
+      data: {
+        state: 'up',
+        engine_unit: { known: true, unit: 'estate-comfyui.service', verdict: 'unknown' },
+      },
+    })
+    assert.match(out, /engine unit estate-comfyui\.service: unknown/)
+    assert.doesNotMatch(out, /unknown — /, 'no carried truth, no dash — the verdict stands alone')
+  })
+
+  test('the preflight render answers green on a payload with no misses and no rows', () => {
+    const tool = comfyManage(stubEstate())
+    const out = text(tool, {
+      ok: true,
+      action: 'preflight',
+      detail: '0 axis(es) checked, all green',
+    })
+    assert.match(out, /no misses — every axis green/)
+    assert.ok(!out.includes('MISS '), 'no misses array, no MISS lines')
+    assert.equal(out.split('\n').length, 2, 'the action line and the green line — nothing else renders')
+  })
+
+  test('the poll render names a settled op\u2019s cause; every quiet shape stays quiet', () => {
+    const tool = comfyManage(stubEstate())
+    const reason = text(tool, {
+      ok: true,
+      action: 'acquire_weight',
+      detail: 'acquire_weight op-1',
+      state: 'failed',
+      operation_id: 'op-1',
+      bytes: 1024,
+      total: 4096,
+      data: { detail: 'the mirror refused shard 3' },
+    })
+    assert.match(reason, /progress: 1024\/4096 bytes/)
+    assert.match(reason, /reason: the mirror refused shard 3/, 'the envelope\u2019s data.detail is the poll\u2019s why')
+
+    // each quiet shape names nothing: absent data, null data, a
+    // non-object data, an empty nested detail, a nested detail the
+    // head line already said
+    for (const data of [undefined, null, 'flat', { detail: '' }, { detail: 'restarted' }]) {
+      const quiet = text(tool, {
+        ok: true,
+        action: 'restart',
+        detail: 'restarted',
+        state: 'active',
+        ...(data === undefined ? {} : { data }),
+      })
+      assert.ok(!quiet.includes('reason:'), 'no cause line rides a quiet shape: ' + JSON.stringify(data))
+    }
+  })
 })

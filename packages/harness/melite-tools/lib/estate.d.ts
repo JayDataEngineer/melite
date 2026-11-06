@@ -82,6 +82,11 @@ export interface Estate {
     runsStart(doc: unknown, signal: AbortSignal, timeoutMs?: number): Promise<unknown>;
     runsStatus(runId: string, includeLog: boolean, signal: AbortSignal, timeoutMs?: number): Promise<unknown>;
     runsStop(runId: string, signal: AbortSignal, timeoutMs?: number): Promise<unknown>;
+    /** THE ATTRIBUTION MARK (F3 D3-07): write the stamp-back's
+     *  final-miss fact onto the run row ('missed'; '' clears) through
+     *  the runs plane — the plane the status door serves, never the
+     *  bench plane whose bound killed the stamp. */
+    runsAttribute(runId: string, value: string, signal: AbortSignal, timeoutMs?: number): Promise<unknown>;
     runsList(limit: string, signal: AbortSignal, timeoutMs?: number): Promise<unknown>;
     /** The disclosure seat: discover over both planes, the flow
      *  contracts. Sync seats — the bound still races their answer. */

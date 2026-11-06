@@ -544,6 +544,11 @@ export function makeEstate(ctx) {
         runsStart: (doc, signal, timeoutMs) => estateLane(ctx, 'POST /v1/flows/start', RUNS_LANE, (s) => s.runs === undefined ? undefined : s.runs.start(doc, signal), signal, timeoutMs),
         runsStatus: (runId, includeLog, signal, timeoutMs) => estateLane(ctx, `GET /v1/flows/status/${encodeURIComponent(runId)}`, RUNS_LANE, (s) => s.runs === undefined ? undefined : s.runs.status(runId, signal, includeLog), signal, timeoutMs),
         runsStop: (runId, signal, timeoutMs) => estateLane(ctx, `POST /v1/flows/stop/${encodeURIComponent(runId)}`, RUNS_LANE, (s) => s.runs === undefined ? undefined : s.runs.stop(runId, signal), signal, timeoutMs),
+        // THE ATTRIBUTION DOOR (F3 D3-07): the stamp-back's final-miss
+        // mark rides the runs plane — never the bench plane whose bound
+        // killed the stamp — so the run row carries the miss even when
+        // the drafts PATCH could not. Same seat the status door reads.
+        runsAttribute: (runId, value, signal, timeoutMs) => estateLane(ctx, `POST /v1/flows/attribution/${encodeURIComponent(runId)}`, RUNS_LANE, (s) => s.runs === undefined ? undefined : s.runs.attribute(runId, value, signal), signal, timeoutMs),
         runsList: (limit, signal, timeoutMs) => estateLane(ctx, `GET /v1/flows/runs?limit=${encodeURIComponent(limit)}`, RUNS_LANE, (s) => s.runs === undefined ? undefined : s.runs.list(limit, signal), signal, timeoutMs),
         discover: (lookup, q, tags, signal, timeoutMs) => estateLane(ctx, 'GET /v1/discover', DISCLOSE_LANE, (s) => s.disclose === undefined ? undefined : s.disclose.discover(lookup, q, tags), signal, timeoutMs),
         flowsContracts: lane('GET /v1/flows', DISCLOSE_LANE, (s) => s.disclose === undefined ? undefined : s.disclose.contracts()),

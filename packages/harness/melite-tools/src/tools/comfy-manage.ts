@@ -384,12 +384,15 @@ export function comfyManage(estate: Estate): ToolDefinition {
   // not change) now reads against the gated face. execute validation
   // (ToolArgsError/INVALID_ARGS) is unaffected.
   const presentCall: (args: unknown) => ToolCallView = (args) => {
-    const a = (typeof args === "object" && args !== null ? args : {}) as { action?: unknown };
+    // the gate owns the invalid face (defineTool validation): args is
+    // a schema-valid object here and `action` is required — no
+    // fallback exists to cover (§7 P7).
+    const a = args as { action: string };
     return {
       card: 'generic',
-      title: `ComfyUI ${String(a.action ?? '?')}`,
+      title: `ComfyUI ${a.action}`,
       kind: 'execute',
-      rawInput: String(a.action ?? '?'),
+      rawInput: a.action,
     };
   };
   // Ledger row 8 (2026-09-10): defineTool wraps the literal — the

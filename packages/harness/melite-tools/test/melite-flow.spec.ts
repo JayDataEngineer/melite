@@ -3304,3 +3304,140 @@ describe('W-2 — the stale downstream skip (the input_runs snapshot law)', () =
     assert.equal((second.out.pass as Array<Record<string, unknown>>)[1]!['skipped'], 'done')
   })
 })
+
+// THE BRANCH-EDGE BURN (scope C, 2026-11-19): the CAS birth faces'
+// rev-less read, the card-mode start refusal, the flow press's
+// non-Error edges, and the render/meta junk-tolerant replay faces —
+// arms pinned to the exact uncovered records the reporter named.
+describe('melite_flow — the branch-edge arms (CAS births, start refusals, flow edges, replay junk)', () => {
+  test('a bench read without a rev births without expect_rev — the CAS read learned nothing to hold', async () => {
+    const seen = mockEstate([
+      (lane: string) => {
+        if (lane === 'benchGet') return { status: 200, body: { session: 'main', stages: [], log: [] } }
+        if (lane === 'benchEnsure') return { status: 200, body: { draft_id: 'd9' } }
+        if (lane === 'runsStart') return { status: 202, body: { run_id: 'r9', status: 'queued' } }
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({ card: 'image-gen', model: 'm1' }, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.run_id, 'r9')
+    const ensured = decodeJsonBody(seen.calls.find((c) => c.lane === 'benchEnsure')!.args)
+    assert.equal('expect_rev' in ensured, false, 'a rev-less read holds no rev — the birth arm rides bare')
+  })
+
+  test('a card-mode bench/not-found is the birth arm — no expect_rev, the ensure fires, the run presses', async () => {
+    const seen = mockEstate([
+      (lane: string) => {
+        if (lane === 'benchGet') throw new RemoteError('bench/not-found', 'no such bench', { session: 'main' })
+        if (lane === 'benchEnsure') return { status: 200, body: { draft_id: 'd9' } }
+        if (lane === 'runsStart') return { status: 202, body: { run_id: 'r9', status: 'queued' } }
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({ card: 'image-gen', model: 'm1' }, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.run_id, 'r9', 'the birth arm composed and pressed — not-found is an empty bench, never a refusal')
+    const ensured = decodeJsonBody(seen.calls.find((c) => c.lane === 'benchEnsure')!.args)
+    assert.equal('expect_rev' in ensured, false, 'the birth carries no rev to hold')
+    assert.equal(seen.calls[0]!.lane, 'benchGet', 'the CAS read rode first and birthed')
+    assert.equal(seen.calls.some((c) => c.lane === 'benchEnsure'), true, 'the birth ensure fired')
+    assert.equal(seen.calls.some((c) => c.lane === 'runsStart'), true, 'the run pressed')
+  })
+
+  test('a card start the queue REFUSED surfaces the refusal text — never an empty-error success', async () => {
+    // THE EMPTY-ERROR TRAP's named face: the start answer carries a
+    // NON-empty error — only non-empty refuses, and the refusal text
+    // is the receipt.
+    const seen = mockEstate([
+      (lane: string) => {
+        if (lane === 'benchGet') return { status: 200, body: { session: 'main', rev: 0, stages: [], log: [] } }
+        if (lane === 'benchEnsure') return { status: 200, body: { draft_id: 'd9' } }
+        if (lane === 'runsStart') return { status: 200, body: { error: 'the queue refused the start' } }
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({ card: 'image-gen', model: 'm1' }, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.error, 'the queue refused the start')
+    assert.equal(out.run_id, undefined, 'no run id rides a refused start')
+    assert.equal(seen.calls.filter((c) => c.lane === 'runsStatus').length, 0, 'the observer never polls a refused start')
+    assert.equal(seen.calls.filter((c) => c.lane === 'draftsStagePatch').length, 0, 'no stamp fires for a run that never minted')
+  })
+
+  test('a flow load refusal that is not an Error values String(e) — a bare string names itself', async () => {
+    const seen = mockEstate([
+      (lane: string) => {
+        if (lane === 'loadCard') throw 'the flow plane died'
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({ flow: 'foo' }, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.mode, 'flow')
+    assert.equal(out.error, 'the flow plane died', 'String(throw) — never "[object Object]"')
+    assert.deepEqual(seen.calls.map((c) => c.lane), ['loadCard'], 'a dead read must not half-land')
+  })
+
+  test('a landing whose CAS ensure throws a bare string names the string', async () => {
+    const seen = mockEstate([
+      flowLoad(UP_ROWS),
+      (lane: string) => {
+        if (lane === 'benchGet') return { status: 200, body: { session: 'bench-session-chat7', rev: 3, stages: [], log: [] } }
+        if (lane === 'benchEnsure') throw 'bench lane died'
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({ flow: 'foo' }, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.mode, 'flow')
+    assert.equal(out.error, 'bench lane died', 'the bare transport throw rides verbatim')
+    assert.deepEqual(seen.calls.map((c) => c.lane), ['loadCard', 'benchGet', 'benchEnsure'],
+      'the refusal precedes the run press')
+  })
+
+  test('a card-less flow start refusal carries NO draft — the flow-doc exemption face', async () => {
+    // no bench_stages in the bundle → nothing materializes → a
+    // refused start rides no draft id (the flow-doc exemption's
+    // refusal face).
+    const seen = mockEstate([
+      flowLoad(undefined),
+      (lane: string) => {
+        if (lane === 'runsStart') return { status: 200, body: { error: 'the flow door refused' } }
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({ flow: 'foo' }, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.mode, 'flow')
+    assert.equal(out.error, 'the flow door refused')
+    assert.equal('draft_id' in out, false, 'no bench ever materialized — no draft id rides the refusal')
+    assert.deepEqual(seen.calls.map((c) => c.lane), ['loadCard', 'runsStart'])
+  })
+
+  test('the render keeps a legacy empty host set quiet; the frozen faces read junk rows without throwing', () => {
+    const tool = meliteFlow(fakeEstate({}).estate)
+    // a persisted receipt from an older tool version may carry an
+    // EMPTY host set — the replay render prints no host block for it
+    const hostQuiet = (tool.output.render({ bench: true } as never, {
+      mode: 'bench', target: 'd-legacy @ rev 1', status: 'done', host_paths: [],
+      pass: [],
+    } as never) as Array<{ text?: string }>).map((p) => p.text ?? '').join('\n')
+    assert.ok(!hostQuiet.includes('artifacts on host'), 'an empty persisted host set prints no host block')
+    // replay hands the frozen faces rows persisted by OLDER tool
+    // versions — junk-typed fields fall back, never throw
+    const meta = tool.output.presentationMeta!({ bench: true } as never, {
+      mode: 'bench', target: 'd-legacy @ rev 1', status: 'stopped',
+      pass: [
+        { url: '/runs/lead.mp4', status: 9, stage: 7 },
+        { card: 42, thrown: '' },
+      ],
+    } as never) as Record<string, unknown>
+    assert.deepEqual(meta['previews'], [{ stage: '?', url: '/runs/lead.mp4', status: 'done' }],
+      'a legacy row\u2019s junk stage/status fall back — the strip renders the mint it names')
+    assert.deepEqual(meta['rows'], [
+      { stage: '?', card: '', status: '', url: '/runs/lead.mp4' },
+      { stage: '?', card: '', status: '' },
+    ], 'junk rows freeze with their honest empties — no fabricated verdict')
+  })
+})

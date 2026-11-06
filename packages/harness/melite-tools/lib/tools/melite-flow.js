@@ -1287,7 +1287,10 @@ export function meliteFlow(estate) {
     // not change) now reads against the gated face. execute validation
     // (ToolArgsError/INVALID_ARGS) is unaffected.
     const presentCall = (args) => {
-        const a = (args ?? {});
+        // the gate owns the junk face (defineTool validation — null,
+        // strings, and mistyped keys refuse there): args is a schema-valid
+        // object here, every top-level key optional (§7 P7).
+        const a = args;
         const target = typeof a.card === 'string' && a.card !== '' ? a.card
             : typeof a.flow === 'string' && a.flow !== '' ? a.flow
                 : typeof a.stage === 'string' && a.stage !== '' ? `stage ${a.stage}`
@@ -1447,6 +1450,7 @@ export function meliteFlow(estate) {
                         + (Array.isArray(p['host_paths']) && p['host_paths'].length > 0
                             ? ' (host: ' + p['host_paths'].join(', ') + ')' : '')).join('\n')
                     : '';
+                const hostPaths = v.host_paths;
                 return [{
                         type: 'text',
                         // THE FLOW PRESS'S DRAFT FACE (the flows-are-compositions
@@ -1476,10 +1480,11 @@ export function meliteFlow(estate) {
                             // THE RUN CONTRACT'S HOST FACE (F7): every path the
                             // maker's shell can open, in run_status's resolving-root
                             // voice — the media urls above are the browser's
-                            // channel, these are the filesystem's.
-                            + (Array.isArray(v.host_paths) && (v.host_paths ?? []).length > 0
+                            // channel, these are the filesystem's. An array can never
+                            // be nullish, so no ?? fallback exists to cover.
+                            + (Array.isArray(hostPaths) && hostPaths.length > 0
                                 ? '\nartifacts on host (rooted at the estate output tree, not your cwd): '
-                                    + (v.host_paths).join('\n  ')
+                                    + hostPaths.join('\n  ')
                                 : ''),
                     }];
             },
@@ -1643,16 +1648,15 @@ export function meliteFlow(estate) {
                         flow: a.flow, params: bag, test, bench,
                     }, exec.signal));
                 }
-                if (hasCard) {
-                    return jsonClean(await runSingle(estate, {
-                        card: a.card,
-                        model: typeof a.model === 'string' ? a.model : '',
-                        prompt: typeof a.prompt === 'string' ? a.prompt : undefined,
-                        params: bag, test, bench,
-                    }, exec.signal));
-                }
-                /* v8 ignore next -- the exactly-one gate above guarantees one arm matched; every arm returns */
-                throw new Error('unreachable: exactly-one composition gate passed with no matching arm');
+                // the exactly-one gate above leaves only {card} here — the
+                // three prior arms returned (exactly-one is enforced above,
+                // never the schema; 2026-09-12).
+                return jsonClean(await runSingle(estate, {
+                    card: a.card,
+                    model: typeof a.model === 'string' ? a.model : '',
+                    prompt: typeof a.prompt === 'string' ? a.prompt : undefined,
+                    params: bag, test, bench,
+                }, exec.signal));
             }
             catch (e) {
                 const re = remoteErrorOf(e);
