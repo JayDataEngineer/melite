@@ -421,6 +421,11 @@ export function sidecarDoc(args: {
    *  folded zero engine events before settlement — one spelling on
    *  disk and on the wire (`replay_suspect`). Absent unless suspect. */
   replaySuspect?: boolean;
+  /** THE ATTRIBUTION MARKER (F3 D3-07, 2026-11-15): 'missed' when
+   *  the bench-plane stamp-back died at its bound after the run
+   *  settled — one spelling on disk and on the wire
+   *  (`attribution`). Absent while the stamp landed. */
+  attribution?: string;
 }): Record<string, unknown> {
   return {
     // IDENTITY KEYS FIRST (stroke 82): buildRunCard and the listRuns
@@ -473,6 +478,10 @@ export function sidecarDoc(args: {
     ...(args.loudness !== undefined ? { loudness: args.loudness } : {}),
     ...(args.voiceFreshness !== undefined ? { voice_freshness: args.voiceFreshness } : {}),
     ...(args.replaySuspect === true ? { replay_suspect: true } : {}),
+    // THE ATTRIBUTION MARKER (D3-07): rides the identity prefix —
+    // the list row's 8191-byte window must reach it so a missed
+    // stamp is visible even when the payload before it is bulky.
+    ...(args.attribution !== undefined && args.attribution !== "" ? { attribution: args.attribution } : {}),
     error:
       args.error !== "" ? JSON.stringify(args.error).slice(0, 20000) : "",
     stages: args.stages,

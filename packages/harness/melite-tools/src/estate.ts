@@ -126,6 +126,9 @@ interface Seats {
     start(doc: unknown, signal: AbortSignal): Promise<unknown>
     status(runId: string, signal: AbortSignal, includeLog?: boolean): Promise<unknown>
     stop(runId: string, signal: AbortSignal): Promise<unknown>
+    /** THE ATTRIBUTION MARK (F3 D3-07): the runs plane's write door
+     *  for the stamp-back's final miss ('' clears). */
+    attribute(runId: string, value: string, signal: AbortSignal): Promise<unknown>
     list(rawLimit: string, signal: AbortSignal): Promise<unknown>
     validate(doc: unknown, signal: AbortSignal): Promise<unknown>
   }
@@ -701,6 +704,11 @@ export interface Estate {
   runsStart(doc: unknown, signal: AbortSignal, timeoutMs?: number): Promise<unknown>
   runsStatus(runId: string, includeLog: boolean, signal: AbortSignal, timeoutMs?: number): Promise<unknown>
   runsStop(runId: string, signal: AbortSignal, timeoutMs?: number): Promise<unknown>
+  /** THE ATTRIBUTION MARK (F3 D3-07): write the stamp-back's
+   *  final-miss fact onto the run row ('missed'; '' clears) through
+   *  the runs plane — the plane the status door serves, never the
+   *  bench plane whose bound killed the stamp. */
+  runsAttribute(runId: string, value: string, signal: AbortSignal, timeoutMs?: number): Promise<unknown>
   runsList(limit: string, signal: AbortSignal, timeoutMs?: number): Promise<unknown>
   /** The disclosure seat: discover over both planes, the flow
    *  contracts. Sync seats — the bound still races their answer. */
@@ -831,6 +839,14 @@ export function makeEstate(ctx: EstateHost): Estate {
     runsStop: (runId, signal, timeoutMs) =>
       estateLane(ctx, `POST /v1/flows/stop/${encodeURIComponent(runId)}`, RUNS_LANE,
         (s) => s.runs === undefined ? undefined : s.runs.stop(runId, signal),
+        signal, timeoutMs),
+    // THE ATTRIBUTION DOOR (F3 D3-07): the stamp-back's final-miss
+    // mark rides the runs plane — never the bench plane whose bound
+    // killed the stamp — so the run row carries the miss even when
+    // the drafts PATCH could not. Same seat the status door reads.
+    runsAttribute: (runId, value, signal, timeoutMs) =>
+      estateLane(ctx, `POST /v1/flows/attribution/${encodeURIComponent(runId)}`, RUNS_LANE,
+        (s) => s.runs === undefined ? undefined : s.runs.attribute(runId, value, signal),
         signal, timeoutMs),
     runsList: (limit, signal, timeoutMs) =>
       estateLane(ctx, `GET /v1/flows/runs?limit=${encodeURIComponent(limit)}`, RUNS_LANE,

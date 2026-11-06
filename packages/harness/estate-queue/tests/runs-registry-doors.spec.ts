@@ -1478,6 +1478,36 @@ describe("status + stop", () => {
     assert.equal((await remote(() => s.svc.stop("run-x", sig()))).code, "runs/run-unknown");
   });
 
+  it("THE ATTRIBUTION DOOR (D3-07): a stamp-miss mark rides the live row, the status door, AND the durable sidecar — and a landed re-stamp clears it", async () => {
+    const s = seat();
+    // the run dir must exist for the persist (the registration seat
+    // normally creates it; this arm mints the row directly)
+    const id = live(s, { runId: "run-attr", status: "completed" });
+    mkdirSync(join(s.state, "output", "run-attr"), { recursive: true });
+    // the miss mark: the stamp-back died at its bound on the bench
+    // plane — the RUNS plane carries the fact instead
+    const marked = await s.svc.attribute(id, "missed", sig());
+    assert.equal(marked["attribution"], "missed", "the door answers the mark it set");
+    const got = await s.svc.status(id, sig());
+    assert.equal(got["attribution"], "missed",
+      "status answers the miss — run_status can say 'completed — NOT shown on the tab', never a bare done");
+    // THE DURABLE HALF: the sidecar carries the mark (the identity
+    // prefix), so a registry reload serves the miss from disk
+    const disk = JSON.parse(readFileSync(join(s.state, "output", "run-attr", "_flow.json"), "utf8")) as Record<string, unknown>;
+    assert.equal(disk["attribution"], "missed", "the durable row keeps the miss the tab never showed");
+    // THE CLEAR (a landed re-stamp): value '' unstamps — the row and
+    // the disk both drop the key, never a stale miss after a re-stamp
+    await s.svc.attribute(id, "", sig());
+    const cleared = await s.svc.status(id, sig());
+    assert.equal("attribution" in cleared, false, "a landed re-stamp clears the mark");
+    const diskCleared = JSON.parse(readFileSync(join(s.state, "output", "run-attr", "_flow.json"), "utf8")) as Record<string, unknown>;
+    assert.equal("attribution" in diskCleared, false, "the durable row drops the mark with it");
+    // the unknown-run refusal speaks the door's own voice (the same
+    // searched-trees law as stop)
+    assert.equal((await remote(() => s.svc.attribute("run-x", "missed", sig()))).code, "runs/run-unknown");
+    await assert.rejects(s.svc.attribute(id, "missed", dead()));
+  });
+
   it("status serves source and export stamps while empty stamps stay absent", async () => {
     const s = seat();
     const id = live(s, {

@@ -3441,3 +3441,105 @@ describe('melite_flow — the branch-edge arms (CAS births, start refusals, flow
     ], 'junk rows freeze with their honest empties — no fabricated verdict')
   })
 })
+
+// ── THE STAMP-BACK CONFIRMATION (F3 D3-07, the 15 s bound's third
+// burn — F2 D-07 → D3-05 → s_94): a green run whose stamp died when
+// the drafts PATCH outlived its bound ONCE. The stamp now takes
+// bounded retries (STAMP_TAKES=3, each with its own fresh bound), and
+// only a door dead on EVERY take demotes the run row to
+// attribution: missed — written through the RUNS plane, never the
+// wedged bench plane, so the durable sidecar and every later receipt
+// answer "completed — NOT shown on the tab" instead of a bare done.
+describe('melite_flow — THE STAMP-BACK CONFIRMATION (D3-07: bounded retry + the run-row miss mark)', () => {
+  test('THE RETRY ARM — a transient-bound stamp-back (first take dies, second lands) leaves NO miss: exactly two takes, no stamp_note, no attribution mark, runsAttribute never touched', async () => {
+    let patches = 0
+    const seen = mockEstate([
+      (lane: string) => {
+        if (lane === 'runsStatus') {
+          return { status: 200, body: { status: 'completed', stages: [{ id: 's_0', url: '/runs/a.mp4' }] } }
+        }
+        if (lane === 'draftsStagePatch') {
+          patches += 1
+          if (patches === 1) {
+            // the transient wedge: one PATCH outliving its bound —
+            // the transport dies, the estate itself stays alive
+            throw new Error('patch outlived its bound')
+          }
+          return { status: 200, body: { delivered: true } }
+        }
+        return undefined
+      },
+    ])
+    const out = await observeAndAttribute(seen.request, draftIdOf('d_retry'), 's_0', 'run-retry', new AbortController().signal, false, 40, 0)
+    assert.equal(out.status, 'done', 'the run itself succeeded — the stamp is bookkeeping, never the run')
+    assert.equal(patches, 2, 'exactly two takes: the first died transient, the second landed')
+    assert.equal(out.stamp_note, undefined, 'a landed retry leaves no miss voice')
+    assert.equal(out.attribution, undefined, 'a landed retry never marks the run row')
+    assert.ok(!seen.calls.some((c) => c.lane === 'runsAttribute'),
+      'the runs plane is never touched when the stamp lands')
+  })
+
+  test('THE FINAL-MISS ARM — a stamp dead on EVERY take (three takes) writes attribution: missed ONCE through the RUNS plane, the miss voice names the failure, the returned row carries the mark', async () => {
+    let patches = 0
+    const marks: Array<unknown[]> = []
+    const seen = mockEstate([
+      (lane: string, args: unknown[]) => {
+        if (lane === 'runsStatus') {
+          return { status: 200, body: { status: 'completed', stages: [{ id: 's_0', url: '/runs/a.mp4' }] } }
+        }
+        if (lane === 'draftsStagePatch') {
+          patches += 1
+          throw new Error('seat is gone')
+        }
+        if (lane === 'runsAttribute') {
+          marks.push(args)
+          return { status: 200, body: { ok: true } }
+        }
+        return undefined
+      },
+    ])
+    const out = await observeAndAttribute(seen.request, draftIdOf('d_final'), 's_0', 'run-final', new AbortController().signal, false, 40, 0)
+    assert.equal(out.status, 'done', 'the run itself succeeded — the miss is the stamp, never the run')
+    assert.equal(patches, 3, 'every take died: the full STAMP_TAKES budget spent')
+    assert.ok(out.stamp_note !== undefined && out.stamp_note.includes('seat is gone'),
+      'the final take\'s own miss voice rides the note: ' + JSON.stringify(out.stamp_note))
+    assert.equal(out.attribution, 'missed', 'the returned row mirrors the run-row mark')
+    assert.equal(marks.length, 1, 'the mark is written exactly once, through the runs plane')
+    assert.equal(marks[0]![0], 'run-final', 'the mark names the run')
+    assert.equal(marks[0]![1], 'missed', 'the mark is the missed attribution')
+  })
+
+  test('THE CROSS-CALL RENDER FACE — a pass row marked attribution: missed (no stamp_note: a later receipt reading the durable row) prints STAMP MISSED + the re-stamp lever; the unmarked twin stays bare', async () => {
+    // the durable face: stamp_note lives in the call that missed;
+    // attribution: missed lives on the RUN ROW. A later render
+    // reading the row (the note long aged out) must still voice the
+    // miss — the maker reads the render, not the payload.
+    const seen = mockEstate([
+      (lane: string) => {
+        if (lane === 'benchGet') {
+          return { status: 200, body: { draft_id: 'd_marked', rev: 1, stages: [
+            { id: 's_0', card: 'tts', params: {} },
+            { id: 's_1', card: 'tts', params: {} },
+          ] } }
+        }
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(seen.request)
+    const payload = {
+      pass: [
+        { stage: 's_0', card: 'tts', run_id: 'run-marked', status: 'done', attribution: 'missed' },
+        { stage: 's_1', card: 'tts', run_id: 'run-clean', status: 'done' },
+      ],
+    }
+    const text = (tool.output.render({ bench: true }, payload as never) as Array<{ text?: string }>)
+      .map((p) => p?.text ?? '').join('\n')
+    const marked = text.split('\n').find((l) => l.includes('run-marked')) ?? ''
+    const clean = text.split('\n').find((l) => l.includes('run-clean')) ?? ''
+    assert.ok(marked.includes('STAMP MISSED'), 'the marked row says the stamp missed: ' + marked)
+    assert.ok(marked.includes('attribution marked missed on the run row'),
+      'the face names the durable mark, not a note: ' + marked)
+    assert.ok(marked.includes('re-stamp to show it'), 'the face carries the re-stamp lever: ' + marked)
+    assert.ok(!clean.includes('STAMP MISSED'), 'the unmarked twin stays bare: ' + clean)
+  })
+})

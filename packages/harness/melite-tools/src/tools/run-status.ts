@@ -163,7 +163,8 @@ export function runStatus(estate: Estate): ToolDefinition {
           run_id?: string; status?: string; stages?: Array<{ status?: string }>;
           artifacts?: unknown[]; error?: string; queue_position?: number;
           planned_stages?: Array<{ id?: string }>; card?: string; run_age_s?: number;
-          wait_expired?: boolean; waited_s?: number; export_name?: string; export_path?: string; variant?: string; test?: boolean
+          wait_expired?: boolean; waited_s?: number; export_name?: string; export_path?: string; variant?: string; test?: boolean;
+          attribution?: string
         }
         if (v && v.error) {
           return [{ type: 'text', text: 'run ' + String(v.run_id ?? '?') + ' ' + String(v.status ?? '?') + ' — ' + v.error }]
@@ -305,6 +306,16 @@ export function runStatus(estate: Estate): ToolDefinition {
           && typeof fresh.reused_existing === 'boolean' && typeof fresh.voice_file === 'string'
           ? ` · voice ${fresh.voice_file}${fresh.reused_existing ? ' (REUSED — a stale name won; mint a fresh one)' : ' (fresh mint)'}`
           : ''
+        // THE STAMP-MISS VOICE (F3 D3-07, the 15 s bound's third
+        // burn): a COMPLETED run whose cards-tab stamp died at the
+        // bench plane answers bare "completed" no longer — the run
+        // row's attribution mark names the miss and the lever
+        // (artifacts are fine, only the stamp died; re-stamp to
+        // show it). The teacher the runbook owes: a green run
+        // missing from the cards tab reads HERE, never as silence.
+        const missVoice = terminal && v.attribution === 'missed'
+          ? ' — NOT shown on the user\u2019s cards tab (stamp missed; artifacts are fine — re-stamp to show it)'
+          : ''
         return [{
           type: 'text',
           text: 'run ' + String(v.run_id ?? '?') + ' ' + String(v.status ?? '?') + pos
@@ -316,7 +327,7 @@ export function runStatus(estate: Estate): ToolDefinition {
             // another wait; waited_s proves the single call absorbed the poll.
             + (v.wait_expired ? ' · wait expired (budget spent, not terminal — wait again)' : '')
             + (typeof v.waited_s === 'number' ? ' · waited ' + v.waited_s + 's' : '')
-            + variantVoice + loudVoice + freshVoice
+            + variantVoice + loudVoice + freshVoice + missVoice
             + stageVoice + artVoice + exportVoice,
         }]
       },

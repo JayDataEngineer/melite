@@ -32,7 +32,7 @@ export function fakeEstate(lanes: Record<string, FakeLane>): FakeEstate {
   const names = [
     'draftsList', 'draftsGet', 'draftsStagePatch', 'cardCompose',
     'benchGet', 'benchEnsure', 'benchVerb',
-    'runsValidate', 'runsStart', 'runsStatus', 'runsStop', 'runsList',
+    'runsValidate', 'runsStart', 'runsStatus', 'runsStop', 'runsAttribute', 'runsList',
     'discover', 'flowsContracts', 'manageAct', 'skillsIndex', 'skillRead', 'skillWrite',
     'loadCard', 'ledgerTail',
   ] as const
@@ -85,7 +85,7 @@ export function fakeEstateStatus(
   const names = [
     'draftsList', 'draftsGet', 'draftsStagePatch', 'cardCompose',
     'benchGet', 'benchEnsure', 'benchVerb',
-    'runsValidate', 'runsStart', 'runsStatus', 'runsStop', 'runsList',
+    'runsValidate', 'runsStart', 'runsStatus', 'runsStop', 'runsAttribute', 'runsList',
     'discover', 'flowsContracts', 'manageAct', 'skillsIndex', 'skillRead',
     'loadCard', 'ledgerTail',
   ] as const
@@ -106,7 +106,7 @@ export function fakeEstateRecorded(
   const names = [
     'draftsList', 'draftsGet', 'draftsStagePatch', 'cardCompose',
     'benchGet', 'benchEnsure', 'benchVerb',
-    'runsValidate', 'runsStart', 'runsStatus', 'runsStop', 'runsList',
+    'runsValidate', 'runsStart', 'runsStatus', 'runsStop', 'runsAttribute', 'runsList',
     'discover', 'flowsContracts', 'manageAct', 'skillsIndex', 'skillRead',
     'loadCard', 'ledgerTail',
   ] as const

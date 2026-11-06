@@ -375,6 +375,30 @@ describe('run_status render — the human line', () => {
     )
   })
 
+  test('THE STAMP-MISS VOICE (D3-07, the 15 s bound\'s third burn): a completed run whose attribution mark says missed answers "NOT shown on the tab" with the re-stamp lever — never a bare done', () => {
+    const tool = runStatus(stubEstate())
+    const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
+    // the burn's own shape (s_94): green run, dead stamp — the row
+    // carries the miss the tab never showed
+    assert.equal(
+      text({ run_id: 'run-s94', status: 'completed', stages: [{ id: 's_94', status: 'completed' }], artifacts: ['run-s94/a.mp4'], attribution: 'missed' }),
+      'run run-s94 completed — 1/1 stage(s) · 1 artifact(s) — NOT shown on the user\u2019s cards tab (stamp missed; artifacts are fine — re-stamp to show it)\n'
+        + 'stages: s_94:completed\n'
+        + 'artifacts (rooted at the estate output tree, not your cwd): output/run-s94/a.mp4',
+    )
+    // the unmarked twin stays bare: a landed stamp never hears the voice
+    assert.equal(
+      text({ run_id: 'run-ok', status: 'completed', stages: [{ id: 's_0', status: 'completed' }], artifacts: [] }),
+      'run run-ok completed — 1/1 stage(s)\nstages: s_0:completed',
+    )
+    // a LIVE row never voices the miss (the stamp has not been owed
+    // yet — attribution rides terminal rows only)
+    assert.equal(
+      text({ run_id: 'run-live', status: 'running', stages: [{ status: 'running' }], attribution: 'missed' }),
+      'run run-live running — 0/1 stage(s)',
+    )
+  })
+
   test('THE CHANNEL DOOR (commission 020): a terminal row voices its declared output channels', () => {
     const tool = runStatus(stubEstate())
     const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''

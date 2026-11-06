@@ -115,6 +115,17 @@ const DRAFT_TIMEOUT_MS = 15_000
  *  family's WAIT_MAX_S=300 — above every legitimate render
  *  observed, short enough to free a wedged transcript. */
 const OBSERVE_MAX_MS = 900_000
+/** THE STAMP-BACK TAKES (F3 D3-07, the 15 s bound's third burn —
+ *  F2 D-07 → D3-05 → s_94): the terminal attribution PATCH takes
+ *  this many swipes at the drafts door, each with its own fresh
+ *  DRAFT_TIMEOUT_MS bound and a 1.2 s beat between takes. The burn
+ *  was a TRANSIENT wedge (one PATCH outliving its bound while the
+ *  estate itself stayed alive) — a single-take stamp turns a
+ *  transient into a permanently invisible green run. Three takes
+ *  span a wedged beat; only a door dead three times in a row is
+ *  dead, and that final miss rides the run row
+ *  (attribution: missed) instead. */
+const STAMP_TAKES = 3
 
 interface StartResult {
   run_id?: unknown
@@ -649,7 +660,8 @@ async function runBench(
       ...(outcome.artifacts.length > 0 ? { artifacts: outcome.artifacts } : {}),
       ...(outcome.asset_urls.length > 0 ? { asset_urls: outcome.asset_urls } : {}),
       ...(outcome.host_paths.length > 0 ? { host_paths: outcome.host_paths } : {}),
-      ...(outcome.stamp_note !== undefined ? { stamp_note: outcome.stamp_note } : {}) })
+      ...(outcome.stamp_note !== undefined ? { stamp_note: outcome.stamp_note } : {}),
+      ...(outcome.attribution !== undefined ? { attribution: outcome.attribution } : {}) })
     if (outcome.status === 'queued') {
       // THE PENDING RECEIPT (the commission wedge, 2026-10-03): the
       // observation budget spent on a run that is still live — the
@@ -813,7 +825,7 @@ export async function observeAndAttribute(
   // Lands inside the terminal result dict so the row's next skip test
   // can compare it against the upstream identities as they stand then.
   inputRuns?: Record<string, string>,
-): Promise<{ status: string; url: string; artifacts: string[]; asset_urls: string[]; host_paths: string[]; stamp_note?: string }> {
+): Promise<{ status: string; url: string; artifacts: string[]; asset_urls: string[]; host_paths: string[]; stamp_note?: string; attribution?: string }> {
   const deadline = Date.now() + budgetMs
   let lastLive = ''
   // THE LOUD MISS (the no-feedback defect, 2026-10-22): the operator
@@ -920,15 +932,45 @@ export async function observeAndAttribute(
       // The stamp is BOOKKEEPING for the run but FEEDBACK for the
       // watching user (the cards tab adopts foreign runs off these
       // very rows) — a miss answers loud, never silence.
-      try {
-        const ans = await estate.draftsStagePatch(draftId, stageId, { runStatus: terminal, result }, signal, DRAFT_TIMEOUT_MS) as { delivered?: unknown; reason?: unknown }
-        if (ans !== null && typeof ans === 'object' && ans['delivered'] === false) {
-          noteMiss('refused', typeof ans['reason'] === 'string' && ans['reason'] !== '' ? ans['reason'] : 'not delivered')
-        } else {
-          stampNote = undefined
+      // THE BOUNDED RETRY (F3 D3-07, the 15 s bound's third burn —
+      // s_94: a green run whose stamp died when the drafts PATCH
+      // outlived its bound ONCE): the terminal stamp takes up to
+      // STAMP_TAKES swipes at the door, each with its own fresh
+      // bound and a beat between — a wedged beat is transient, and
+      // one dead take must not eat the tab's row. Only when EVERY
+      // take dies does the miss voice ride (and the run row gets
+      // its attribution: missed mark below).
+      let landed = false
+      for (let take = 1; take <= STAMP_TAKES && !landed; take++) {
+        try {
+          const ans = await estate.draftsStagePatch(draftId, stageId, { runStatus: terminal, result }, signal, DRAFT_TIMEOUT_MS) as { delivered?: unknown; reason?: unknown }
+          if (ans !== null && typeof ans === 'object' && ans['delivered'] === false) {
+            noteMiss('refused', typeof ans['reason'] === 'string' && ans['reason'] !== '' ? ans['reason'] : 'not delivered')
+          } else {
+            stampNote = undefined
+            landed = true
+            break
+          }
+        } catch (e) {
+          noteMiss('failed', e instanceof Error ? e.message : String(e))
         }
-      } catch (e) {
-        noteMiss('failed', e instanceof Error ? e.message : String(e))
+        if (take < STAMP_TAKES) await sleepAbort(1200, signal)
+      }
+      if (!landed) {
+        // THE RUN-ROW MARK (D3-07's second half): the stamp is dead
+        // on the bench plane — carry the miss on the RUN row through
+        // the runs plane instead, so run_status and every later
+        // press receipt answer "completed — NOT shown on the tab"
+        // instead of a bare done. Best-effort and SILENT by design:
+        // the stamp_note above already voices the stamp's own miss
+        // for this call, and the mark serves a different consumer
+        // (the run row) — a dead mark door must not rewrite the
+        // stamp's voice with a second failure's text.
+        try {
+          await estate.runsAttribute(runId, 'missed', signal, TIMEOUT_MS)
+        } catch {
+          /* the note already voices the miss; the mark was best-effort */
+        }
       }
       // THE FOUR-TAKE FACE (the stale-two-run audit, cure 2,
       // 2026-11-15): the SET rides the outcome in the BROWSER
@@ -937,7 +979,13 @@ export async function observeAndAttribute(
       // ordering law). The pass row's `artifacts` key stays the raw
       // wire spelling (its own wall pins it); `asset_urls` is the
       // chat face's set.
-      return { status: terminal, url, artifacts: arts, asset_urls: assetUrls, host_paths: hostPaths, ...(stampNote !== undefined ? { stamp_note: stampNote } : {}) }
+      return { status: terminal, url, artifacts: arts, asset_urls: assetUrls, host_paths: hostPaths,
+        ...(stampNote !== undefined ? { stamp_note: stampNote } : {}),
+        // THE FINAL-MISS MARK (D3-07): every stamp take died — the
+        // run row carries attribution: missed (best-effort write
+        // above) and the returned row mirrors it so the press
+        // receipt and any caller can branch on the face.
+        ...(!landed ? { attribution: 'missed' as const } : {}) }
     }
     // the queue-feedback stamp, classified by the fold (queued or
     // still-waiting stamps queued; 'live'/'stopping' stamp running).
@@ -1457,9 +1505,14 @@ export function meliteFlow(estate: Estate): ToolDefinition {
             // that never landed means the watching user's cards tab
             // paints NOTHING for this row — the maker must see that
             // and say so, not report a run the user cannot find.
+            // D3-07: the face fires on the run-row mark too (the
+            // retry's final miss rides attribution — cross-call
+            // receipts still see it when the note aged out).
             + (typeof p['stamp_note'] === 'string' && p['stamp_note'] !== ''
-              ? ' — STAMP MISSED (' + p['stamp_note'] + '): the user\u2019s cards tab will NOT show this run'
-              : '')
+              ? ' — STAMP MISSED (' + p['stamp_note'] + '): the user\u2019s cards tab will NOT show this run; re-stamp to show it'
+              : p['attribution'] === 'missed'
+                ? ' — STAMP MISSED (attribution marked missed on the run row): the user\u2019s cards tab will NOT show this run; re-stamp to show it'
+                : '')
             // F18 — THE CROSS-REGIME JOIN ADMISSION face: a row that
             // joined the film regime to a mismatched mod tier prints
             // the admission in the row prose (the maker reads the
