@@ -1335,7 +1335,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1749,
+						"line": 1753,
 						"column": 9
 					}
 				},
@@ -1402,7 +1402,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1761,
+						"line": 1765,
 						"column": 9
 					}
 				},
@@ -1466,7 +1466,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1794,
+						"line": 1798,
 						"column": 9
 					}
 				},
@@ -1530,7 +1530,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1817,
+						"line": 1821,
 						"column": 9
 					}
 				},
@@ -1564,7 +1564,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1569,
+						"line": 1573,
 						"column": 9
 					}
 				},
@@ -1598,7 +1598,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1459,
+						"line": 1463,
 						"column": 9
 					}
 				},
@@ -1662,7 +1662,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1857,
+						"line": 1861,
 						"column": 9
 					}
 				},
@@ -1741,7 +1741,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1739,
+						"line": 1743,
 						"column": 9
 					}
 				},
@@ -1805,7 +1805,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1804,
+						"line": 1808,
 						"column": 9
 					}
 				},
@@ -1873,7 +1873,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1838,
+						"line": 1842,
 						"column": 9
 					}
 				},
@@ -1944,7 +1944,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1827,
+						"line": 1831,
 						"column": 9
 					}
 				},
@@ -1978,7 +1978,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1477,
+						"line": 1481,
 						"column": 10
 					}
 				},
@@ -2027,7 +2027,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1893,
+						"line": 1897,
 						"column": 9
 					}
 				},
@@ -2091,7 +2091,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1875,
+						"line": 1879,
 						"column": 9
 					}
 				},
@@ -2133,7 +2133,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 863,
+						"line": 867,
 						"column": 9
 					}
 				},
@@ -2167,7 +2167,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 848,
+						"line": 852,
 						"column": 9
 					}
 				},
@@ -2210,7 +2210,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 840,
+						"line": 844,
 						"column": 9
 					}
 				},
@@ -2319,7 +2319,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 986,
+						"line": 990,
 						"column": 9
 					}
 				}
@@ -18120,7 +18120,35 @@ window.__ModuleLoader__.load({
 			/** The cancel verb's accessible name in the rename flow. */
 			cancelRenameAria: "Cancel rename",
 			/** The lightbox's escape hint. */
-			escHint: "Esc or click the mask to close"
+			escHint: "Esc or click the mask to close",
+			/** The files tab label (the disk-truth browse face — a plain label:
+			* the count is the walk's honest total, known only after fetch). */
+			tabFiles: "Files",
+			/** The breadcrumb's root crumb (every run dir on disk). */
+			crumbRoot: "All runs",
+			/** The browse face's empty voice. */
+			browseEmpty: "no folders on disk",
+			/** The browse face's loading voice. */
+			browseLoading: "loading folders…",
+			/** The browse face's failure banner. */
+			browseFailed: (p) => `browse failed — ${p.error}`,
+			/** The browse face's next-page verb (the walk continues while the
+			*  cursor rides — never a silent cap). */
+			moreAction: "More",
+			/** A directory row's accessible name. */
+			folderAria: (p) => `Open folder ${p.name}`,
+			/** A file row's accessible name. */
+			fileAria: (p) => `Open ${p.name}`,
+			/** The preview-size dial's label. */
+			sizeLabel: "Size",
+			/** The preview-size dial's small setting. */
+			sizeS: "S",
+			/** The preview-size dial's medium setting. */
+			sizeM: "M",
+			/** The preview-size dial's large setting. */
+			sizeL: "L",
+			/** The page-size dial's label. */
+			perPageLabel: "Per page"
 		};
 		//#endregion
 		//#region ../infer-gallery/src/client/ui.tokens.ts
