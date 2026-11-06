@@ -367,9 +367,10 @@ describe("the writer's adopt/append arms (the resume valve, unit-face)", () => {
     const newer = seedStorePart(store, "file.bin.part-newer02", FULL.subarray(0, 20));
     const oversized = seedStorePart(store, "file.bin.part-oversize", FULL);
     const now = Date.now();
-    utimesSync(older, now - 2_000, now - 2_000);
-    utimesSync(newer, now - 1_000, now - 1_000);
-    utimesSync(oversized, now, now); // newest, but a full-size part is not a resume candidate
+    // numeric atime/mtime is EINVAL on win32 — Date objects on every lane
+    utimesSync(older, new Date(now - 2_000), new Date(now - 2_000));
+    utimesSync(newer, new Date(now - 1_000), new Date(now - 1_000));
+    utimesSync(oversized, new Date(now), new Date(now)); // newest, but a full-size part is not a resume candidate
     const result = await writeVerifiedArtifact({
       root: store,
       relativePath: "file.bin",

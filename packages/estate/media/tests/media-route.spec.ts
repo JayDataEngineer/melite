@@ -893,19 +893,19 @@ describe("the media remote", () => {
   });
 });
 
-/** Root bypasses permission bits, so chmod walls cannot bite there. */
+/** Root bypasses permission bits, and win32 ignores mode bits
+ *  (admin runner) — chmod walls cannot bite on either seat. */
 function isRoot(): boolean {
   return (
     typeof process.geteuid === "function" && process.geteuid() === 0
   );
 }
 
+/** The unreadable-file wall is seated only where chmod can bite. */
+const UNREADABLE_WALL_SEATED = !isRoot() && process.platform !== "win32";
+
 describe("stroke-82 walls: unreadable / raced files refuse 404 + ended", () => {
-  test("a file that exists but is unreadable (chmod 000) is a 404 with res ended", async () => {
-    if (isRoot()) {
-      console.warn("unreadable-file wall skipped: running as root");
-      return;
-    }
+  test.skipIf(!UNREADABLE_WALL_SEATED)("a file that exists but is unreadable (chmod 000) is a 404 with res ended (skipped where chmod cannot bite — root, or win32 where mode bits are ignored)", async () => {
     const root = mintRoot();
     const dir = seedRun(root, "run-aaa1-x", { "locked.png": "SECRET" });
     const file = join(dir, "locked.png");

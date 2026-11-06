@@ -338,21 +338,27 @@ describe("installUserLora — a COPY of the operator's own file, never a fetch",
   });
 
   it("THE ATOMIC LANDING (audit I-E4, 2026-10-22): a failed write leaves no part file and no final name; a landed write leaves no part file either", () => {
-    // The failure leg: the loras dir exists as a READ-ONLY directory,
-    // so mkdirSync no-ops and the write itself throws EACCES — the
-    // door must answer ok:false AND leave nothing behind (no
-    // truncated final file, no stray .part-*).
-    const dir = join(root, "ro-loras");
-    mkdirSync(dir);
-    chmodSync(dir, 0o555);
-    try {
-      const out = installUserLoraBuffer("torn.safetensors", new TextEncoder().encode("weights"), dir);
-      expect(out.ok).toBe(false);
-      expect(out).toMatchObject({ reason: expect.stringMatching(/writing into .* failed/u) });
-      expect(existsSync(join(dir, "torn.safetensors"))).toBe(false);
-      expect(readdirSync(dir).filter((f) => f.includes(".part-"))).toEqual([]);
-    } finally {
-      chmodSync(dir, 0o755);
+    // WINDOWS-PORTABILITY (win32): the runner is admin and Windows
+    // ignores mode bits — a chmod-555 dir still accepts the write, so
+    // the EACCES failure leg cannot fire there. Posix-only leg; the
+    // success legs below run on every lane.
+    if (process.platform !== "win32") {
+      // The failure leg: the loras dir exists as a READ-ONLY directory,
+      // so mkdirSync no-ops and the write itself throws EACCES — the
+      // door must answer ok:false AND leave nothing behind (no
+      // truncated final file, no stray .part-*).
+      const dir = join(root, "ro-loras");
+      mkdirSync(dir);
+      chmodSync(dir, 0o555);
+      try {
+        const out = installUserLoraBuffer("torn.safetensors", new TextEncoder().encode("weights"), dir);
+        expect(out.ok).toBe(false);
+        expect(out).toMatchObject({ reason: expect.stringMatching(/writing into .* failed/u) });
+        expect(existsSync(join(dir, "torn.safetensors"))).toBe(false);
+        expect(readdirSync(dir).filter((f) => f.includes(".part-"))).toEqual([]);
+      } finally {
+        chmodSync(dir, 0o755);
+      }
     }
     // The success leg: the final name carries the bytes and the part
     // file is gone — rename, not a copy that could tear.

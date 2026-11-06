@@ -18,7 +18,7 @@ import { admitWiring, benchBlockOf, strippedForAdmission, toleratedByRow, type B
 import { STAGE_PATCH_KEYS, type StagePatchKey, RESTORED_PROVENANCE_SPELLING } from "@melite/contracts/benchStage";
 import { FLOW_ID_RE } from "@melite/contracts";
 import { segmentConfined } from "@melite/contracts/mediaKinds";
-import { dirname, join, resolve } from "node:path";
+import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 export { STAGE_PATCH_KEYS, type StagePatchKey };
 import { unwrapItemArrays } from "@melite/comfyui-card-kit";
@@ -477,7 +477,11 @@ function inputTreeRoot(): string {
  *  @returns the currency path, or the value verbatim when it is
  *  not a convertible host path. */
 async function hostPathToCurrency(value: string): Promise<string> {
-  if (!value.startsWith("/") || !CURRENCY_EXT.test(value)) return value;
+  // WINDOWS-PORTABILITY: a host-absolute path is isAbsolute, never
+  // startsWith("/") — posix literals (/home/…/foo.png) and win32
+  // drives (C:\…) both board; the stored currency stays posix
+  // data/input/<name> on every lane (the preview door's grammar).
+  if (!isAbsolute(value) || !CURRENCY_EXT.test(value)) return value;
   const path = await import("node:path");
   const name = path.basename(value);
   if (name.includes("/") || name.includes("\\") || !segmentConfined(name)) return value;

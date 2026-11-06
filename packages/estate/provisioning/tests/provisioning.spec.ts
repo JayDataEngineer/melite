@@ -960,7 +960,9 @@ describe("verifyOperation re-admit (moss-image burn)", () => {
     const item = verified.items[0];
     assert.equal(item.state, "active");
     assert.equal(item.integrity, "size-checked");
-    assert.match(item.path ?? "", /checkpoints\/one\.bin$/);
+    // the re-admitted path rides the store join — either separator
+    // (posix / vs win32 \) is the same provision layout
+    assert.match(item.path ?? "", /checkpoints[/\\]one\.bin$/);
     assert.match(item.detail ?? "", /re-admitted by disk truth/);
     assert.match(item.detail ?? "", /op-stall/, "the re-admit names the settled operation");
   });

@@ -492,7 +492,7 @@ describe("artifact source and landing behavior", () => {
     }), "invalid-path");
   });
 
-  test("rejects lstat failures", async () => {
+  test.skipIf(process.platform === "win32")("rejects lstat failures (skipped on win32: mode bits are ignored and the admin runner still writes through chmod 0 — the traversal refusal cannot fire)", async () => {
     const store = root();
     const blocked = join(store, "blocked");
     mkdirSync(blocked);

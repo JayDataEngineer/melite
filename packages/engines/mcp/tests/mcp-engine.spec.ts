@@ -9,7 +9,7 @@ import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { isAbsolute, join } from "node:path";
 import { Context, Service } from "@deepseek-ai/cordis";
 import { enginesContract, type EnginesService } from "@melite/engine-contract";
 import {
@@ -83,8 +83,9 @@ describe("mcpExecutor (the wire law)", () => {
     tools.execute = async (input) => {
       tools.calls.push(input);
       const out = (input.arguments as { out: string }).out;
-      // the "tool" honors the ABSOLUTE path it was handed
-      const abs = out.startsWith("/") ? out : "/not-the-run-dir/" + out;
+      // the "tool" honors the ABSOLUTE path it was handed — absolute
+      // is isAbsolute, never startsWith("/") (win32 drives are absolute)
+      const abs = isAbsolute(out) ? out : "/not-the-run-dir/" + out;
       writeFileSync(abs, "PNG");
       return { isError: false, value: {}, content: [{ type: "text", text: "rendered" }] };
     };

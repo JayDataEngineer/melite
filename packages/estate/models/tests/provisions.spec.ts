@@ -348,7 +348,9 @@ describe("loadStoreRoot (the config-file plane)", () => {
       },
     );
     try {
-      assert.equal(loadStoreRoot(dir), "/d/eng");
+      // the source joins (node:path join is correct for fs paths) —
+      // the wall pins the JOIN, never a posix literal
+      assert.equal(loadStoreRoot(dir), join("/d", "eng"));
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -414,7 +416,9 @@ describe("loadStoreRoot (the config-file plane)", () => {
           engines: { comfyui: { base: "eng" } },
         }),
       );
-      assert.equal(loadStoreRoot(dir), "/do/eng");
+      // the source joins (node:path join is correct for fs paths) —
+      // the wall pins the JOIN, never a posix literal
+      assert.equal(loadStoreRoot(dir), join("/do", "eng"));
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -454,7 +458,9 @@ describe("loadStoreRoot (the config-file plane)", () => {
       },
     );
     try {
-      assert.equal(loadStoreRoot(dir), "/d/e");
+      // the source joins (node:path join is correct for fs paths) —
+      // the wall pins the JOIN, never a posix literal
+      assert.equal(loadStoreRoot(dir), join("/d", "e"));
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -613,13 +619,17 @@ describe("provisionsForFamily (the live table)", () => {
 
 describe("resolveDest + sha256OfFile", () => {
   test("joins the DECL place (the provision layout)", () => {
+    // the source joins (node:path join is correct for fs paths) —
+    // the wall pins the JOIN, never a posix literal
     assert.equal(
       resolveDest(LIVE_STORE, "somaskel77", "skin_standard.npz"),
-      `${LIVE_STORE}/somaskel77/skin_standard.npz`,
+      join(LIVE_STORE, "somaskel77", "skin_standard.npz"),
     );
   });
   test("an empty folder serves the root", () => {
-    assert.equal(resolveDest("/r", "", "f.npz"), "/r/f.npz");
+    // the source joins (node:path join is correct for fs paths) —
+    // the wall pins the JOIN, never a posix literal
+    assert.equal(resolveDest("/r", "", "f.npz"), join("/r", "f.npz"));
   });
   test("a hostile folder refuses LOUD", () => {
     try {
@@ -676,7 +686,7 @@ describe("THE SINGLE-OPEN LAW (round-13 audits U-E1..U-E8)", () => {
     }
   });
 
-  test("a symlink at the dest refuses (never the linked bytes)", async () => {
+  test.skipIf(process.platform === "win32")("a symlink at the dest refuses (never the linked bytes) (skipped on win32: O_NOFOLLOW is unsupported there — the flag is 0 and the open follows the link, so the refusal cannot fire)", async () => {
     // U-E4: openSync follows symlinks — a link someone placed at
     // the dest served whatever it pointed at. O_NOFOLLOW refuses.
     const root = tmpRoot();

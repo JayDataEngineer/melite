@@ -13,7 +13,7 @@ import { afterEach, describe, test } from "vitest";
 import assert from "node:assert/strict";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, sep } from "node:path";
 import { Context } from "@deepseek-ai/cordis";
 import { ProvisioningService } from "../src/index.ts";
 import { hfTreeEntries, snapshotDest, snapshotFilesForPatterns, snapshotTotalForEntries, snapshotTreePresent, snapshotTreeUrl, type SnapshotFetch, type SnapshotTreeEntry } from "../src/snapshot.ts";
@@ -124,6 +124,11 @@ async function awaitSettled(service: ProvisioningService, id: string): Promise<s
 }
 
 describe("the snapshot pure helpers (one spelling, both faces)", () => {
+  // The pure helper hands the probe NATIVE fs paths (join), so this
+  // fake normalizes before its posix-keyed lookup — the probe
+  // contract is a presence predicate over any spelling, never a
+  // posix literal.
+  const setProbe = (paths: Set<string>) => (p: string): boolean => paths.has(p.split(sep).join("/"));
   test("snapshotDest trims to folder/name and tolerates slash noise", () => {
     assert.equal(snapshotDest("qwen3-tts/hf", "tree"), "qwen3-tts/hf/tree");
     assert.equal(snapshotDest("/qwen3-tts/hf/", "tree"), "qwen3-tts/hf/tree");
@@ -146,7 +151,7 @@ describe("the snapshot pure helpers (one spelling, both faces)", () => {
     // unshaped repo: model.safetensors is the anchor
     const unsharded = new Set(["a/config.json", "a/model.safetensors"]);
     assert.deepEqual(
-      snapshotTreePresent((p) => unsharded.has(p), "a", ["config.json", "model.safetensors"]),
+      snapshotTreePresent(setProbe(unsharded), "a", ["config.json", "model.safetensors"]),
       { present: true, missing: [] },
     );
     // THE JOYCAPTION LAW (2026-10-21): a sharded tree carries
@@ -160,14 +165,14 @@ describe("the snapshot pure helpers (one spelling, both faces)", () => {
       "b/model-00002-of-00004.safetensors",
     ]);
     assert.equal(
-      snapshotTreePresent((p) => sharded.has(p), "b", [
+      snapshotTreePresent(setProbe(sharded), "b", [
         "config.json", "model.safetensors.index.json",
         "model-00001-of-00004.safetensors", "model-00002-of-00004.safetensors",
       ]).present,
       true,
     );
     // partial tree: the missing exact files are the refusal's voice
-    const partial = snapshotTreePresent((p) => sharded.has(p), "b", [
+    const partial = snapshotTreePresent(setProbe(sharded), "b", [
       "config.json", "model.safetensors.index.json",
       "model-00001-of-00004.safetensors", "model-00002-of-00004.safetensors",
       "preprocessor_config.json",
@@ -175,7 +180,7 @@ describe("the snapshot pure helpers (one spelling, both faces)", () => {
     assert.equal(partial.present, false);
     assert.deepEqual(partial.missing, ["preprocessor_config.json"]);
     // configs only, no weights anchor: absent
-    const configOnly = snapshotTreePresent((p) => sharded.has(p), "b", ["config.json", "README.md"]);
+    const configOnly = snapshotTreePresent(setProbe(sharded), "b", ["config.json", "README.md"]);
     assert.equal(configOnly.present, false);
   });
 

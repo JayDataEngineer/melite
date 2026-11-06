@@ -16,7 +16,7 @@
 // install, zero config) is the journey-depth proof above it.
 import { describe, it, expect } from "vitest";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { isAbsolute, join } from "node:path";
 import { coldInstallRoots } from "../src/index.ts";
 
 const DATA_HOME = join(homedir(), ".local", "share", "melite");
@@ -50,11 +50,13 @@ describe("coldInstallRoots — the cold profile boots with zero config", () => {
   });
 
   it("every resolved root is ABSOLUTE — an unpinned boot is never satisfied with a cwd-relative guess", () => {
+    // (isAbsolute, not startsWith("/"): the derivation rides
+    // node:path join — a win32-absolute root opens with a drive)
     for (const config of [{}, { repoRoot: "/opt/checkout" }, { stateRoot: "/srv/runs" }] as const) {
       const roots = coldInstallRoots(config);
-      expect(roots.stateRoot.startsWith("/"), JSON.stringify(config)).toBe(true);
+      expect(isAbsolute(roots.stateRoot), JSON.stringify(config)).toBe(true);
       if (roots.storeRoot !== undefined) {
-        expect(roots.storeRoot.startsWith("/"), JSON.stringify(config)).toBe(true);
+        expect(isAbsolute(roots.storeRoot), JSON.stringify(config)).toBe(true);
       }
     }
   });
@@ -88,7 +90,11 @@ describe("coldInstallRoots — the cold profile boots with zero config", () => {
     }
   });
 
-  it("a relative HOME refuses LOUD rather than pinning a relative cold root (cold-boot audit F3)", () => {
+  // Windows: os.homedir() reads USERPROFILE there and never honors
+  // the HOME env this arm pins — the relative-home refusal cannot be
+  // exercised on that lane (the derivation law itself is judged by
+  // the arms above on every lane).
+  it.skipIf(process.platform === "win32")("a relative HOME refuses LOUD rather than pinning a relative cold root (cold-boot audit F3)", () => {
     const saved = process.env["HOME"];
     try {
       process.env["HOME"] = "";
