@@ -16,15 +16,23 @@ import type {
 } from "@deepseek-ai/dsh-subprocess";
 import { ComfyUiManagerHttpClient, type ProvisionPlanItem } from "@melite/estate-provisioning";
 import { loadExtensionsYaml } from "@melite/comfyui-cordis/provisioning-manifest";
+import { invalidateObjectInfo, resolveEngineBaseUrl } from "@melite/comfyui-cordis";
 import type { ModelDecl } from "@melite/comfyui-card-kit/model-contract";
 
 const sdkClientMock = vi.hoisted(() => vi.fn());
+// The census-read seam (N9's unified cache): the estate's inspector
+// dials through liveObjectInfo now, so the rig's once-mocks for the
+// census path intercept HERE — the same mocked-root seam sdkClient
+// rides (the transport's internal client is not reachable from this
+// side of the package boundary, by design).
+const liveObjectInfoMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@melite/comfyui-cordis", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@melite/comfyui-cordis")>();
   return {
     ...actual,
     sdkClient: (...args: Parameters<typeof actual.sdkClient>) => sdkClientMock(...args) ?? actual.sdkClient(...args),
+    liveObjectInfo: (...args: Parameters<typeof actual.liveObjectInfo>) => liveObjectInfoMock(...args) ?? actual.liveObjectInfo(...args),
   };
 });
 
@@ -732,6 +740,33 @@ describe.sequential("estate provisioning composition paths", () => {
     assert.equal(mounted.state.calls.filter((path) => path.startsWith("/object_info")).length, 1);
   });
 
+  test("THE RESTART DROP CONVERGES THE CENSUS (FRICTION_3 N9): the restart door's invalidateObjectInfo makes the next inspector read re-fetch /object_info", async () => {
+    vi.resetModules();
+    const freshComposition = (await import("../src/provisioning.ts")).default;
+    const mounted = await mount({
+      plugin: freshComposition,
+      extensions: "extensions:\n  - name: demo\n    url: https://example.invalid/demo.git\n",
+    });
+    // the pre-restart reads: the doc caches, the second read costs no dial
+    const first = await mounted.ctx.provisioning.inspect({ kind: "extension", id: "demo" });
+    const cached = await mounted.ctx.provisioning.inspect({ kind: "extension", id: "demo" });
+    assert.equal(first.state, "active");
+    assert.equal(cached.state, "active");
+    assert.equal(mounted.state.calls.filter((path) => path.startsWith("/object_info")).length, 1,
+      "the unified census cache must serve the second read from the doc (one dial per boot)");
+    // THE RESTART DOOR'S OWN DROP (managePlane hRestart's finally —
+    // invalidateObjectInfo at resolveEngineBaseUrl's key): the
+    // engine re-imported its packs under the reboot and the next
+    // census read must see the FRESH node set, never the
+    // pre-restart doc the estate used to serve for process life
+    // (the stale-memo burn behind N9's "now worse")
+    invalidateObjectInfo(resolveEngineBaseUrl());
+    const after = await mounted.ctx.provisioning.inspect({ kind: "extension", id: "demo" });
+    assert.equal(after.state, "active");
+    assert.equal(mounted.state.calls.filter((path) => path.startsWith("/object_info")).length, 2,
+      "the drop must make the next census read re-fetch — a restart's fresh node set has to reach the inspector or a restart_required row can never lift");
+  });
+
   test("the REAL readiness backoff resolves and cancels (the rig stubs it everywhere else)", async () => {
     // li-bg's rig stub made every mount instant — and the real body
     // lost its coverage (the floor fell after the baseline). This
@@ -802,7 +837,7 @@ describe.sequential("estate provisioning composition paths", () => {
   test("object-info preserves non-Error rejection detail", async () => {
     vi.resetModules();
     const freshComposition = (await import("../src/provisioning.ts")).default;
-    sdkClientMock.mockImplementationOnce(() => ({ fetchApi: async () => { throw "raw-object-info-error"; } }));
+    liveObjectInfoMock.mockImplementationOnce(async () => { throw "raw-object-info-error"; });
     const mounted = await mount({
       plugin: freshComposition,
       extensions: "extensions:\n  - name: raw-error\n    url: https://example.invalid/raw-error.git\n",

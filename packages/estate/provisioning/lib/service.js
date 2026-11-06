@@ -806,8 +806,9 @@ export class ProvisioningService extends Service {
      *  items — a stalled snapshot whose tree landed during the stall
      *  tail is the burn's exact mechanism. The re-admit admits every
      *  FETCH kind (model + snapshot), each through inspect()'s own
-     *  presence probe for that kind; extension rows stay out (their
-     *  settle is manager-side, not bytes-on-disk). */
+     *  presence probe for that kind; extension rows verify against
+     *  the LIVE ENGINE, never the disk — the boot-satisfied lift
+     *  (FRICTION_3 N9, 2026-11-13) in the loop below owns them. */
     async verifyOperation(operation) {
         const failedFetchItems = operation.items.filter((item) => (item.kind === "model" || item.kind === "snapshot") && item.state === "failed");
         const plan = failedFetchItems.length === 0
@@ -816,7 +817,39 @@ export class ProvisioningService extends Service {
         const items = [];
         let missing = false;
         let reAdmitted = false;
+        let lifted = false;
         for (const item of operation.items) {
+            // THE BOOT-SATISFIED LIFT (FRICTION_3 N9, 2026-11-13): a
+            // settled extension row wearing restart_required is a PROMISE
+            // the prescribed engine restart fulfils — but nothing ever
+            // re-checked the promise, so the row (and the face's
+            // next_action: restart) survived every restart the operator
+            // performed, commanding reboots of a healthy engine forever.
+            // The disk is not this row's truth (the re-admit arm's law);
+            // the live engine census is: the inspector's /object_info
+            // read. active → the item lifts, naming the landed restart; a
+            // failed row lifts on the same census (the engine serving the
+            // pack's nodes outranks a dead Manager verdict — the re-admit
+            // arm's extension half). Every other answer keeps the settled
+            // row VERBATIM: inactive (the restart is still owed), a throw
+            // or no inspector (no evidence — a lift is never invented),
+            // and the unverifiable flag rides inactive's arm already.
+            if (item.kind === "extension"
+                && (item.state === "restart_required" || item.state === "failed")
+                && this.inspector !== undefined) {
+                const census = await this.inspector.inspect(operation.ref).catch(() => null);
+                if (census !== null && census.active) {
+                    lifted = true;
+                    items.push({
+                        ...item,
+                        state: "active",
+                        detail: "the live engine serves this pack's nodes — the restart the row prescribed has landed; the row now serves the engine",
+                    });
+                    continue;
+                }
+                items.push(item);
+                continue;
+            }
             const healed = plan === undefined || (item.kind !== "model" && item.kind !== "snapshot") || item.state !== "failed"
                 ? null
                 : await this.reAdmitFailedItem(operation, item, plan);
@@ -869,7 +902,7 @@ export class ProvisioningService extends Service {
                     operation.operationId + " landed bytes that no longer exist; run the download again",
             });
         }
-        if (!missing && !reAdmitted)
+        if (!missing && !reAdmitted && !lifted)
             return operation;
         const state = missing
             ? "absent"

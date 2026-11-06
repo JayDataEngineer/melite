@@ -143,7 +143,14 @@ export function resolveEngineBaseUrl() {
     if (env !== "")
         return env.replace(/\/+$/, "");
     const cfg = loadEndpointConfig();
-    const url = String(cfg["url"] ?? "").replace(/\/+$/, "");
+    // A non-string url row is a malformed config, never a coerced
+    // one: String(42) once became "42" and died as "Invalid URL" a
+    // dial away from the config that caused it (the endpoint-refusal
+    // burn, FRICTION_3 N9's rig). The strict read refuses
+    // not-configured AT THE CONFIG — the same law the estate's
+    // stringValue spells.
+    const raw = cfg["url"];
+    const url = (typeof raw === "string" ? raw : "").replace(/\/+$/, "");
     if (url === "")
         throw new ComfyError(NO_ENDPOINT_MESSAGE);
     return url;

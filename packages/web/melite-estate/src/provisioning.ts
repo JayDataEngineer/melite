@@ -18,13 +18,14 @@ import {
   type ResourceRef,
 } from "@melite/estate-provisioning";
 import {
+  liveObjectInfo,
   loadEndpointConfig,
   loadFacts,
   modelsService,
   packageRoot,
+  resolveEngineBaseUrl,
   resolveRepoRoot,
   runtimeModelsRoot,
-  sdkClient,
 } from "@melite/comfyui-cordis";
 import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import type { ModelDecl, ProvisionRow } from "@melite/comfyui-card-kit/model-contract";
@@ -543,30 +544,42 @@ export function idleDialFetch(dialMs: number): (url: string, signal?: AbortSigna
   };
 }
 const INSPECT_DOWN_MEMO_MS = 30_000;
-const nodeDefsDocs = new Map<string, Record<string, unknown>>();
 let nodeDefsDownUntil = 0;
 let nodeDefsDownDetail = "";
 
-async function nodeDefsDoc(url: string, signal?: AbortSignal): Promise<Record<string, unknown>> {
-  const hit = nodeDefsDocs.get(url);
-  if (hit !== undefined) return hit;
+/** THE ONE CENSUS CACHE (FRICTION_3 N9, 2026-11-13): the inspector
+ *  reads /object_info through the SDK's liveObjectInfo — the SAME
+ *  per-engine cache the card registry's prime and every compose
+ *  read ride, and the SAME key the manage plane's restart door
+ *  drops (invalidateObjectInfo at the reboot's finally). The
+ *  estate's own process-life doc map is DELETED: it was a second
+ *  spelling of the truth whose entry outlived every engine
+ *  restart, so a restarted engine's fresh node set never reached
+ *  the census and a restart_required row could never lift (N9's
+ *  "now worse"). The down memo stays estate-side (the SDK throws
+ *  per miss, and 19 sequential census rows against a down engine
+ *  must cost one bounded dial, never 19); a successful read clears
+ *  it — an answering engine is recovery, not a memo to outlive. A
+ *  CONFIG refusal resolves OUTSIDE the try: no-endpoint and
+ *  malformed-url refusals are misconfiguration, not an unreachable
+ *  engine — they throw fresh on every read and never arm the memo
+ *  (a 30s memo on a config error would poison every later census in
+ *  the process). The dial bound rides liveObjectInfo's own boundMs
+ *  (the getNodeDefs call carries no signal; the SDK races it). */
+async function nodeDefsDoc(signal?: AbortSignal): Promise<Record<string, unknown>> {
+  const server = resolveEngineBaseUrl();
   if (Date.now() < nodeDefsDownUntil) {
     throw new Error(`engine node-defs unreachable (dial memo): ${nodeDefsDownDetail}`);
   }
-  const bounded = signal === undefined
-    ? AbortSignal.timeout(INSPECT_DIAL_MS)
-    : AbortSignal.any([signal, AbortSignal.timeout(INSPECT_DIAL_MS)]);
-  let doc: Record<string, unknown>;
   try {
-    const res = await sdkClient(url).fetchApi("/object_info", { signal: bounded });
-    doc = await res.json() as Record<string, unknown>;
+    const doc = await liveObjectInfo(server, signal, INSPECT_DIAL_MS);
+    nodeDefsDownUntil = 0;
+    return doc;
   } catch (error: unknown) {
     nodeDefsDownUntil = Date.now() + INSPECT_DOWN_MEMO_MS;
     nodeDefsDownDetail = error instanceof Error ? error.message.slice(0, 160) : String(error);
     throw error;
   }
-  nodeDefsDocs.set(url, doc);
-  return doc;
 }
 
 function lazyInspector(): {
@@ -575,9 +588,7 @@ function lazyInspector(): {
   return {
     inspect: async (ref, signal): Promise<{ active: boolean; nodeTypes: readonly string[]; detail?: string }> => {
       if (signal?.aborted === true) throw new Error("inspection cancelled");
-      const url = endpointUrl();
-      if (url === "") throw new Error("ComfyUI endpoint URL is not configured");
-      const doc = await nodeDefsDoc(url, signal);
+      const doc = await nodeDefsDoc(signal);
       const nodeTypes = Object.keys(doc);
       if (ref.kind === "model") return { active: false, nodeTypes };
       const facts = loadFacts(extensionFactsPath(), {

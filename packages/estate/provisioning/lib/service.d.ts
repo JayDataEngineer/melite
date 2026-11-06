@@ -167,8 +167,9 @@ export declare class ProvisioningService extends Service implements Provisioning
      *  items — a stalled snapshot whose tree landed during the stall
      *  tail is the burn's exact mechanism. The re-admit admits every
      *  FETCH kind (model + snapshot), each through inspect()'s own
-     *  presence probe for that kind; extension rows stay out (their
-     *  settle is manager-side, not bytes-on-disk). */
+     *  presence probe for that kind; extension rows verify against
+     *  the LIVE ENGINE, never the disk — the boot-satisfied lift
+     *  (FRICTION_3 N9, 2026-11-13) in the loop below owns them. */
     verifyOperation(operation: ProvisionOperation): Promise<ProvisionOperation>;
     /** THE RE-ADMIT CHECK (the moss-image burn, audit 2026-11-12): one
      *  failed model item's DECL counterpart, verified against the disk
