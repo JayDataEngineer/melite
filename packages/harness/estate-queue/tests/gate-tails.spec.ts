@@ -803,6 +803,88 @@ describe("the params overlay's positive arms (round-22 compose audit Q5d)", () =
   });
 });
 
+// N1 (2026-11-06) — the declared-twin arms: the overlay's verbatim
+// (choices-null) twin pass and its refusal paths, driven directly so
+// every branch of the twin block carries a judge (the per-file
+// coverage floor law: new law arrives with its arms, never a floor
+// cut).
+describe("the params overlay's declared twin (N1)", () => {
+  const row = (over: Partial<Record<string, unknown>> = {}): Record<string, unknown> => ({
+    id: "gen",
+    card: "image-gen",
+    family: "",
+    params: {},
+    ...over,
+  });
+  const decls = {
+    "image-gen": { schemaNames: ["prompt", "seed"], admits: [], boarded: [] },
+    // the polish seat admits seed (the image-upscale twin shape) and
+    // nothing the make seat lacks — the admit-check arms use caption.
+    "caption-gen": { schemaNames: ["seed"], admits: [], boarded: [] },
+  };
+  const twin = (over: Partial<Record<string, unknown>> = {}): Record<string, unknown> => ({
+    param: "seed", stage: "make", path: ["seed"], choices: null, ...over,
+  });
+
+  it("a verbatim twin pins its param on EVERY listed stage", () => {
+    const a = row({ id: "make" });
+    const b = row({ id: "polish", card: "caption-gen" });
+    applyFlowParamsOverride("twinflow", [a, b], { seed: 73070 }, decls as never, "", [
+      { param: "seed", stage: "make", path: ["seed"], choices: null },
+      { param: "seed", stage: "polish", path: ["seed"], choices: null },
+    ] as never);
+    expect(a.params).toEqual({ seed: 73070 });
+    expect(b.params).toEqual({ seed: 73070 });
+  });
+
+  it("a twin naming a stage the flow does not hold refuses naming the stage", () => {
+    const a = row();
+    expect(() =>
+      applyFlowParamsOverride("twinflow", [a], { seed: 1 }, decls as never, "", [
+        twin({ stage: "ghost" }),
+      ] as never),
+    ).toThrow(/declares a seed overlay on stage "ghost".*no such stage/s);
+  });
+
+  it("a twin naming a param the stage's card does not admit refuses naming the card", () => {
+    const a = row({ id: "make" });
+    expect(() =>
+      applyFlowParamsOverride("twinflow", [a], { caption: "hi" }, decls as never, "", [
+        twin({ param: "caption", stage: "make" }),
+      ] as never),
+    ).toThrow(/"image-gen" does not admit param "caption".*declared overlay names it anyway/s);
+  });
+
+  it("a multi-segment twin path walks (creating) the nested containers", () => {
+    const a = row({ id: "make", params: { workflow: { steps: 4 } } });
+    applyFlowParamsOverride("twinflow", [a], { seed: 7 }, decls as never, "", [
+      twin({ path: ["workflow", "sampler", "seed"] }),
+    ] as never);
+    expect(a.params).toEqual({ workflow: { steps: 4, sampler: { seed: 7 } } });
+  });
+
+  it("a choices-mapped twin falls through to the generic scan (unchanged law)", () => {
+    const a = row({ id: "make" });
+    applyFlowParamsOverride("twinflow", [a], { seed: 7 }, decls as never, "", [
+      twin({ choices: { "7": "seven" } }),
+    ] as never);
+    expect(a.params).toEqual({ seed: 7 });
+  });
+
+  it("a row whose own params is junk gets a fresh container under the stamp", () => {
+    const a = row({ id: "make", params: "junk" });
+    applyFlowParamsOverride("twinflow", [a], { seed: 7 }, decls as never, "");
+    expect(a.params).toEqual({ seed: 7 });
+  });
+
+  it("a non-object params body refuses the door's own voice (the shape gate)", () => {
+    const a = row();
+    expect(() =>
+      applyFlowParamsOverride("twinflow", [a], "seed=7", decls as never, ""),
+    ).toThrow(/flow params must be an object.*got "seed=7"/s);
+  });
+});
+
 describe("the overlay's atom fold (round-22 compose audit Q3a)", () => {
   it("the request's model seat scopes outright — even a multi-family card", () => {
     expect(overlayAtomFor(["fam-a", "fam-b"], "qwen3-tts")).toBe("qwen3-tts");
