@@ -20945,18 +20945,7 @@ window.__ModuleLoader__.load({
 					for (const k of Object.keys(nullsM)) delete nextUserM[k];
 					Object.assign(nextUserM, landedM);
 					const refusedM = composeGateRefusal(spec, stage.params, nextUserM, frameM);
-					/* istanbul ignore if -- defense arm, provably unfireable
-					(coverage disposition 2026-11-06): composeGateRefusal
-					refuses a model re-point only when the departing spec's
-					model is absent/empty, and the form-spec door emits
-					`model ?? null` — never ''. Kept so the re-point stays
-					refusal-gated if the door's emission drifts. THE
-					FRICTIONLESS-AUTHORING BOUNDARY: this block is the ATOMIC
-					PICK's own marriage-before-the-wire judgment (a lane
-					switch, its own registry row and arms) — every AUTHORING
-					write (typing, slot, unset, sweep) lands with the pending
-					face instead; only this discrete re-target still refuses
-					in place. */
+					/* v8 ignore next */
 					if (refusedM !== null) {
 						setWriteFace(refusedM);
 						return;
