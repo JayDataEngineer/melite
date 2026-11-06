@@ -1,0 +1,289 @@
+/** THE VIDEO-EDIT MATRIX SEAT (the timeline rework's stage 2a,
+ * 2026-11-15; operator order: "do the rework of the timeline mods
+ * according to your judgment"). The seven peer bags were seven
+ * FIXED cells of one matrix — mask source × reference
+ * conditioning × denoise pole. The presets stay (each pinned
+ * byte-exact by its own suite: swap, repair, extend, refine); THIS
+ * renderer serves the FREE cells the presets never composed — a
+ * staged mask over a self-anchored partial pass, a tracked region
+ * under new identity anchors, a whole-frame restyle — all on the
+ * ONE chain spine (renderMaskedEditChain) and the ONE constructor
+ * (contexMaskedTarget, the stage-1 seam). The mask dial is
+ * first-class per-frame where the region source tracks (N7's cure:
+ * the static single-PNG union is one dial value, never the only
+ * door), and the region dial's tuning seats (grow, blur,
+ * detection_threshold) are the N8 cure — thin structures tune at
+ * the door, not by hand.
+ *
+ * THE SAFETY LAW (F3-17's fold-in, the bag-name safety as
+ * validation): a near-full denoise (>= 0.8) with NO identity
+ * anchor (self reference) over the WHOLE frame is the identity
+ * boil the friction audit named — refuse, naming the anchor dial
+ * and the reshoot door. A partial pass that drops the source
+ * audio is incoherent (the hold is the point) — refuse. A staged
+ * PNG mask feeds the chain SCALED to the chain's own geometry
+ * (F3-16 defect 1's cure: the track card emits masks at the
+ * track's resolution — 576×1008 against a 768×1344 film — and an
+ * unscaled mask seat is a silent 0.75 scale the operator had to
+ * correct by hand; the seat resizes in-graph, never trusts the
+ * PNG's own shape). */
+import type { GraphBuilder, OutputHandle } from '@melite/comfyui-card-kit/graph'
+import type { H3Facts } from './actions.js'
+import { contexMaskedTarget, loadVideo, renderMaskedEditChain } from './chainEdit.js'
+import { assertGridLength } from './timelineContract.js'
+
+/** SAM3's checkpoint row — repair.ts's own spelling (the family's
+ * one tracked-mask door; the card's constant cites the same file). */
+const SAM3_CKPT = 'sam3.1_multiplex_fp16.safetensors'
+
+/** The near-full-denoise floor of the identity-safety refusal. */
+export const EDIT_IDENTITY_BOIL_FLOOR = 0.8
+
+/** THE MASK DIAL — where the edit happens.
+ * `static-png`: ONE staged PNG (the track run's pixel-max union is
+ * the recommended bridge — per-frame motion is the region dial's
+ * own door, N7). `region`: the free-text SAM3 per-frame track
+ * (repair's own chain, tuning seats exposed — N8). `whole-frame`:
+ * the all-white SolidMask (extend's spelling — nothing held). */
+export type EditMaskDial =
+  | { readonly source: 'static-png'; readonly image: string }
+  | {
+      readonly source: 'region'
+      readonly prompt: string
+      readonly grow: number
+      readonly blur: number
+      readonly detectionThreshold: number
+    }
+  | { readonly source: 'whole-frame' }
+
+/** THE REFERENCE DIAL — the identity anchors the r2v rides.
+ * `still+mannequin`: swap's pair (the still anchors appearance, the
+ * mannequin carries motion). `self`: repair's posture (the source
+ * clip on its own ref_video seat — the identity anchor of a repair
+ * is the person already in the frame). The continuation and
+ * no-reference poles are NOT free cells: continuation is extend's
+ * own law set (the composition solver + the forced AddGuide seam —
+ * renderH3Extend), no-reference partial is the refine bag's own
+ * body class (renderH3RefineBag); both refuse here naming their
+ * doors, never a silent re-route. */
+export type EditReferenceDial =
+  | { readonly mode: 'still+mannequin'; readonly still: string; readonly mannequin: string }
+  | { readonly mode: 'self' }
+
+const str = (p: Record<string, unknown>, k: string): string =>
+  typeof p[k] === 'string' ? (p[k] as string) : ''
+
+const num = (p: Record<string, unknown>, k: string, d: number): number =>
+  typeof p[k] === 'number' ? (p[k] as number) : d
+
+/** THE VIDEO-EDIT MATRIX RENDERER: composes one free cell of the
+ * mask × reference × denoise matrix on the family's one chain
+ * spine. Validates the safety law, derives the dial's own mask and
+ * anchors, and hands a body that rides contexMaskedTarget — the
+ * stage-1 seam, never a hand-rolled pair.
+ * @param entry the edit entry's own seats (edit_prompt, denoise,
+ * keep_audio, seed, steps, clip_seconds, overlap_frames,
+ * resolution, window_start, window_length, mask_grow, mask_blur,
+ * detection_threshold — the card's one bag)
+ * @param mask the mask dial's resolved value
+ * @param reference the reference dial's resolved value
+ * @param p the walked doc params (the lora mod bag + SLA/shift
+ * knobs — the family plane this edit renders under)
+ * @param facts the family's lane facts (unet off the DECL row)
+ * @param g the run's graph builder
+ * @param runId the run tree's id (the assemble filename rides it)
+ * @throws refuses the identity boil (whole-frame × self × denoise
+ * >= 0.8), the incoherent audio drop (partial denoise ×
+ * keep_audio false), the off-grid stated window, and the negative
+ * window seats — each loud, each naming the dial to state */
+export function renderH3Edit(
+  entry: Record<string, unknown>,
+  mask: EditMaskDial,
+  reference: EditReferenceDial,
+  p: Record<string, unknown>,
+  facts: H3Facts,
+  g: GraphBuilder,
+  runId: string,
+): void {
+  const prompt = str(entry, 'edit_prompt')
+  if (prompt.trim() === '') {
+    throw new Error(
+      `h3-timeline edit: 'edit_prompt' names no action — the edit needs its text (what the masked region or frame should become; agent-composed, user-confirmed)`,
+    )
+  }
+  const denoise = num(entry, 'denoise', 1)
+  if (!(denoise > 0 && denoise <= 1)) {
+    throw new Error(
+      `h3-timeline edit: denoise ${denoise} — the pole lives (0, 1] (partial holds the unmasked region, 1 re-renders the masked one whole); state the dial inside the band`,
+    )
+  }
+  const keepAudio = entry.keep_audio !== false
+  // THE IDENTITY BOIL (F3-17's fold): near-full denoise, no anchor
+  // but the source itself, nothing held — that is a style boil with
+  // the subject's own prior as its only identity, and the friction
+  // audit watched it break identity while reading as an
+  // improvement. Name the two lawful doors, refuse the cell.
+  if (mask.source === 'whole-frame' && reference.mode === 'self' && denoise >= EDIT_IDENTITY_BOIL_FLOOR) {
+    throw new Error(
+      `h3-timeline edit: whole-frame × self reference × denoise ${denoise} — the identity boil (a near-full re-render whose only identity anchor is the source's own prior drifts the subject while reading as an improvement, the F3-17 burn). Anchor it (reference still+mannequin) or use the reshoot door for a true re-render`,
+    )
+  }
+  // THE AUDIO HOLD: a partial pass holds the unmasked region — and
+  // the soundtrack is the hold's other half. Dropping it is never a
+  // coherent cell; the full pole dials it.
+  if (denoise < 1 && !keepAudio) {
+    throw new Error(
+      `h3-timeline edit: denoise ${denoise} with keep_audio off — a partial pass holds the unmasked region and its sound (the hold is the point); generated audio rides only the full-denoise pole (state denoise 1 to drop the source soundtrack)`,
+    )
+  }
+  const windowStart = num(entry, 'window_start', 0)
+  const windowLength = num(entry, 'window_length', 0)
+  if (windowStart < 0 || windowLength < 0) {
+    throw new Error(
+      `h3-timeline edit: window_start ${windowStart} / window_length ${windowLength} — a window seat never goes negative (frames at the film clock, 24 fps; 0/0 is the whole clip)`,
+    )
+  }
+  if (windowLength > 0) assertGridLength(Math.round(windowLength), 'h3-timeline edit window_length')
+  if (mask.source === 'static-png' && mask.image.trim() === '') {
+    throw new Error(
+      `h3-timeline edit: the static-png mask dial names no image — bind ONE staged PNG (the track run's pixel-max union is the recommended bridge); per-frame motion is the region dial's own door`,
+    )
+  }
+  if (mask.source === 'region' && mask.prompt.trim() === '') {
+    throw new Error(
+      `h3-timeline edit: the region mask dial names no target — state the free-text SAM3 detection prompt ("hands", "a person", "a face")`,
+    )
+  }
+  if (reference.mode === 'still+mannequin' && (reference.still.trim() === '' || reference.mannequin.trim() === '')) {
+    throw new Error(
+      `h3-timeline edit: the still+mannequin reference dial needs both seats bound (the still anchors appearance, the mannequin carries motion); a self-anchored edit states the self reference`,
+    )
+  }
+
+  // ── the staged media: the window loader (cap + skip on one VHS
+  // seat — frames and audio stay in sync) ──
+  const sourceClip = str(entry, 'source_clip')
+  if (sourceClip.trim() === '') {
+    throw new Error(
+      `h3-timeline edit: 'source_clip' names no media — the edit rides a staged clip (ONE leaf: the VHS window loader + the core LoadVideo read it by staged name)`,
+    )
+  }
+  const [srcFrames, srcAudio] = loadVideo(g, sourceClip, Math.round(windowLength), Math.round(windowStart))
+
+  // ── the mask dial's own derivation (outside the body, the
+  // presets' posture: repair's SAM3 chain, swap's staged PNG) ──
+  let regionMasks: OutputHandle | undefined
+  if (mask.source === 'region') {
+    const scaled = g.node('ImageScaleToMaxDimension', {
+      image: srcFrames, upscale_method: 'area', largest_size: 1008,
+    }).out(0)
+    const sam = g.node('CheckpointLoaderSimple', { ckpt_name: SAM3_CKPT })
+    const regionCond = g.node('CLIPTextEncode', {
+      text: mask.prompt, clip: sam.out(1),
+    }).out(0)
+    const track = g.node('SAM3_VideoTrack', {
+      images: scaled, model: sam.out(0), conditioning: regionCond,
+      detection_threshold: mask.detectionThreshold,
+      max_objects: 0, detect_interval: 1,
+    }).out(0)
+    regionMasks = g.node('SAM3_TrackToMask', {
+      track_data: track, object_indices: '',
+    }).out(0)
+  }
+
+  // ── the reference dial's own media + the plan's geometry anchor
+  // (picture_1: the still when the still anchors identity, the
+  // window's own first frame when the source does — repair's
+  // truthful-anchor posture) ──
+  const stillImg = reference.mode === 'still+mannequin'
+    ? g.node('LoadImage', { image: reference.still }).out(0)
+    : undefined
+  const [mannequin] = reference.mode === 'still+mannequin'
+    ? loadVideo(g, reference.mannequin)
+    : [undefined]
+  // the plan's geometry anchor: the still when the still anchors
+  // identity, the window's own first frame when the source does
+  // (repair's truthful-anchor posture) — exactly ONE anchor node is
+  // created; a graph seat never serializes an unused node
+  const anchorFrame = stillImg === undefined
+    ? g.node('ImageFromBatch', {
+        image: srcFrames, batch_index: 0, length: 1,
+      }).out(0)
+    : stillImg
+
+  renderMaskedEditChain(g, {
+    p, facts,
+    clipSeconds: num(entry, 'clip_seconds', 6),
+    overlapFrames: num(entry, 'overlap_frames', 39),
+    resolution: str(entry, 'resolution') || '736p',
+    seed: num(entry, 'seed', 0),
+    steps: num(entry, 'steps', 6),
+    roles: '',
+    sourceClip,
+    windowStart,
+    picture1: anchorFrame,
+    srcFrames, srcAudio,
+    // the ignored literal fallback — the plan node's SOURCE-SLICED
+    // shots ride plan_json_input (the swap/repair semantics)
+    planJson: JSON.stringify({ shots: [{ id: 'edit', prompt }] }),
+    planFromSource: true,
+    denoise,
+    assemble: {
+      audioSource: keepAudio ? 'source' : 'generated',
+      filename: `${runId}/edit`,
+    },
+    body: ({ cur, clip, vaeVideo, vaeAudio, mutedChainAudio, sliceAudio }) => {
+      // ── the reference dial's r2v: the anchors the conditioning
+      // rides (swap's pair, or repair's self seat) ──
+      const r2v = g.node('MiniMaxH3ReferenceToVideo', {
+        prompt,
+        width: cur.out(8), height: cur.out(9), length: cur.out(6),
+        ref_image_size: 'match',
+        clip, vae: vaeVideo, audio_vae: vaeAudio,
+        ...(reference.mode === 'still+mannequin'
+          ? {
+              'ref_images.ref_image_0': stillImg as OutputHandle,
+              'ref_videos.ref_video_0': mannequin as OutputHandle,
+            }
+          : { 'ref_videos.ref_video_0': srcFrames }),
+        'ref_video_audios.ref_video_audio_0': mutedChainAudio,
+      })
+      const slice = g.node('H3SourceSlice', {
+        source_fps: 24, crop: 'center',
+        state: cur.out(0), latent: r2v.out(1),
+        audio_vae: vaeAudio, source_frames: srcFrames, source_audio: sliceAudio,
+      })
+      // ── the mask dial, in-body: the per-scene slice + grow the
+      // region tracks demand, the SCALED staged PNG (F3-16 defect
+      // 1), or the all-white SolidMask ──
+      let editMask: OutputHandle
+      if (mask.source === 'region') {
+        const sceneMask = g.node('MiniMaxH3ContexLoopMaskSlice', {
+          state: cur.out(0), mask: regionMasks as OutputHandle, source_fps: 24,
+        })
+        editMask = g.node('GrowMaskWithBlur', {
+          mask: sceneMask.out(0), expand: mask.grow,
+          tapered_corners: true, blur_radius: mask.blur,
+        }).out(0)
+      } else if (mask.source === 'static-png') {
+        // THE GEOMETRY CURE (F3-16 defect 1): the staged PNG's own
+        // shape is the TRACK's shape, not the chain's — resize to
+        // the plan geometry in-graph, never trust the file.
+        const raw = g.node('LoadImage', { image: mask.image }).out(0)
+        const channel = g.node('ImageToMask', { image: raw, channel: 'red' }).out(0)
+        editMask = g.node('ImageResize', {
+          image: channel, width: cur.out(8), height: cur.out(9),
+          upscale_method: 'bilinear', keep_proportion: false, crop: 'disabled',
+        }).out(0)
+      } else {
+        editMask = g.node('SolidMask', {
+          value: 1, width: cur.out(8), height: cur.out(9),
+        }).out(0)
+      }
+      const target = contexMaskedTarget(g, { vaeVideo, vaeAudio }, {
+        frames: slice.out(0), audio: slice.out(1), mask: editMask, keepAudio,
+      })
+      return { conditioning: r2v.out(0), targetLatent: target }
+    },
+  })
+}

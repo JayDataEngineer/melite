@@ -85,7 +85,7 @@ describe("the source→nested-AV pair is spelled once and every rider routes thr
     )
   })
 
-  it("the rider census is exactly {swap, repair, extend, refine} — a seat leaving the seam reds", () => {
+  it("the rider census is exactly {edit, swap, repair, extend, refine} — a seat leaving the seam reds", () => {
     const riders = SRC_FILES.filter((f) => {
       const code = codeOf(f)
       // the definition itself (`export const contexMaskedTarget =`)
@@ -95,7 +95,7 @@ describe("the source→nested-AV pair is spelled once and every rider routes thr
     }).sort()
     assert.deepEqual(
       riders,
-      ["extend.ts", "refine.ts", "repair.ts", "swap.ts"],
+      ["edit.ts", "extend.ts", "refine.ts", "repair.ts", "swap.ts"],
       "a masked-edit seat stopped routing through the one constructor (or a new rider arrived without joining the census) — every source→nested-AV target composes at contexMaskedTarget",
     )
   })

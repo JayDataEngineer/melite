@@ -61,14 +61,15 @@ export const loadVideo = (
  *  every masked-edit seat composes — MiniMaxH3FantasticVideoEditLatent
  *  (grow 0, the plane's VAEs, the mask over the frames) →
  *  MiniMaxH3ContexMaskedTarget (white = generate, the audio mode the
- *  keepAudio dial spells, H3 exact conversion). Swap, repair, extend
- *  (the chain seats, in their bodies) and refine (its joint AV
- *  target) all ride THIS one spelling — four hand-rolled copies
- *  existed before (the audits' "one mechanism, seven names" root);
- *  a fifth (the video-edit bag's dials) must compose here too, never
- *  beside. The MASK is the caller's own (a static PNG seat, a grown
- *  blur mask, an all-white SolidMask sized to the loader) — the mask
- *  SOURCE is a dial, the edit+target pair is the mechanism.
+ *  keepAudio dial spells, H3 exact conversion). Swap, repair,
+ *  extend, refine (its joint AV target) and the video-edit matrix
+ *  (edit.ts, the stage-2a free cells) all ride THIS one spelling —
+ *  four hand-rolled copies existed before (the audits' "one
+ *  mechanism, seven names" root); a sixth rider composes here too,
+ *  never beside. The MASK is the caller's own (a static PNG seat, a
+ *  grown blur mask, an all-white SolidMask sized to the loader) —
+ *  the mask SOURCE is a dial, the edit+target pair is the
+ *  mechanism.
  * @param g the run's graph builder
  * @param plane the plane's two VAE seats
  * @param source the frames + soundtrack the latent nests, the mask
