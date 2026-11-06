@@ -53,12 +53,13 @@ export type EditMaskDial = {
  * `still+mannequin`: swap's pair (the still anchors appearance, the
  * mannequin carries motion). `self`: repair's posture (the source
  * clip on its own ref_video seat — the identity anchor of a repair
- * is the person already in the frame). The continuation and
- * no-reference poles are NOT free cells: continuation is extend's
- * own law set (the composition solver + the forced AddGuide seam —
- * renderH3Extend), no-reference partial is the refine bag's own
- * body class (renderH3RefineBag); both refuse here naming their
- * doors, never a silent re-route. */
+ * is the person already in the frame). The continuation pole is
+ * NOT a free cell yet (extend's composition-solver law set —
+ * renderH3Extend; it refuses here naming its door until its
+ * posture lands on this dial set). The no-reference second pass
+ * IS a free cell since the fourth dial landed: the refine posture
+ * composes as whole-frame × self × partial denoise × refine on —
+ * the learned handoff riding THIS chain's own latents. */
 export type EditReferenceDial = {
     readonly mode: 'still+mannequin';
     readonly still: string;

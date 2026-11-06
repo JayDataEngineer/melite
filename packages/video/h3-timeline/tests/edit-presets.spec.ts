@@ -74,11 +74,11 @@ const STAGED: Record<string, Record<string, unknown>> = {
 };
 
 describe("the edit bag's preset chips (stage 3: named cells over the ONE schema)", () => {
-  it("THE SERVED CELLS: five named cells, every patch key a declared field, every value the field's own type and vocabulary", () => {
+  it("THE SERVED CELLS: six named cells, every patch key a declared field, every value the field's own type and vocabulary", () => {
     const { fields, presets } = editKind();
     assert.deepEqual(presets.map((p) => p.id), [
-      "repair-region", "identity-swap", "outfit-change", "whole-frame-restyle", "static-mask-pass",
-    ], "the retired names live on as the five cells");
+      "repair-region", "identity-swap", "outfit-change", "whole-frame-restyle", "refine-2x", "static-mask-pass",
+    ], "the retired names live on as the cells, the refine posture sixth (the fourth dial's own cell)");
     const byName = new Map(fields.map((f) => [String(f["name"]), f]));
     for (const p of presets) {
       assert.ok(typeof p.label === "string" && p.label !== "", `preset ${p.id} carries a label`);

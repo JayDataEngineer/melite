@@ -1,6 +1,6 @@
 ---
 name: edit
-description: "The video-edit matrix on the h3-timeline: ONE bag whose dials state the cell — mask source (per-frame SAM3 region, whole frame, or one staged PNG resized in-graph), identity anchors (the source itself, or a still + mannequin pair), and the denoise pole. The seven legacy doors stay (each pinned byte-exact); this door serves the whole grid on the family's one matrix seat. NOT a continuation (Extend), NOT a no-reference pass (Refine), NOT a new camera (Reshoot)."
+description: "The video-edit matrix on the h3-timeline: ONE bag whose dials state the cell — mask source (per-frame SAM3 region, whole frame, or one staged PNG resized in-graph), identity anchors (the source itself, or a still + mannequin pair), and the denoise pole. The seven legacy doors stay (each pinned byte-exact); this door serves the whole grid on the family's one matrix seat. NOT a continuation (Extend), NOT a new camera (Reshoot) — the learned refine pass is the fourth dial ON this door (refine on + scale)."
 genre: video
 ---
 
@@ -92,6 +92,16 @@ It is NOT:
    - `keep_audio` (boolean, true) — ON rides the source soundtrack
      unchanged; OFF (full denoise only) generates fresh — a partial
      pass never drops it.
+   - `refine` (boolean, false) — THE FOURTH DIAL, the refine switch:
+     ON adds the learned second pass to THIS chain — the 3D-conv
+     latent upscale + low-sigma refine ride the edit's OWN latents
+     (same run, no re-encode of a saved clip). Partial denoise only;
+     blank mask + partial + refine on = the classic refine posture.
+   - `scale` (1–4, 2) — rides only the refine pass (inert when off):
+     the learned upscaler's multiplier. 1 is the same-size sharpening
+     pass (the capacity cure); 2 the classic second pass — a >=2x
+     window past the measured 141 f OOM REFUSES naming both cures
+     (cut window_length / clip_seconds, or drop under 2).
    - `window_start` (0–100000, 0) — frames at the film clock (24 fps)
      to skip before the edit window.
    - `window_length` (0–100000, 0) — frames in the window; 0 runs to

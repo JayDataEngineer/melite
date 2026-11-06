@@ -305,16 +305,42 @@ export function renderMaskedEditChain(g, seat) {
         vae: vaeVideo, latent: targetLatent, audio_vae: vaeAudio,
     });
     // ── the sampler tail (the denoise pole is the seat's one knob:
-    // full 1 fresh — swap/extend; partial refine — the repair's law) ──
-    const sample = g.node('SamplerCustomAdvanced', {
-        noise: g.node('RandomNoise', { noise_seed: cur.out(5) }).out(0),
-        guider: g.node('BasicGuider', { model: sigmaModel, conditioning: ctx.out(0) }).out(0),
-        sampler: samplerSel,
-        sigmas: g.node('BasicScheduler', {
-            scheduler: 'simple', steps: cur.out(7), denoise: seat.denoise, model: sigmaModel,
-        }).out(0),
-        latent_image: ctx.out(3),
-    }).out(0);
+    // full 1 fresh — swap/extend; partial refine — the repair's law).
+    // THE UPSCALE DIAL (the fourth dial): refine on swaps the tail
+    // for the learned RefineHandoff — the SAME latent (ctx.out(3)),
+    // the SAME conditioning (ctx.out(0)), the same noise/sampler/
+    // sigmas; the node upscales the joint-AV latent and runs the
+    // low-sigma pass internally (refine.ts's own wiring, riding the
+    // chain's LIVE latents). Downstream seats consume the same
+    // sampled-latent seam — segments still checkpoint (the chain
+    // store that writes the revisions a deferred upscale reads). ──
+    const sample = seat.upscale === undefined
+        ? g.node('SamplerCustomAdvanced', {
+            noise: g.node('RandomNoise', { noise_seed: cur.out(5) }).out(0),
+            guider: g.node('BasicGuider', { model: sigmaModel, conditioning: ctx.out(0) }).out(0),
+            sampler: samplerSel,
+            sigmas: g.node('BasicScheduler', {
+                scheduler: 'simple', steps: cur.out(7), denoise: seat.denoise, model: sigmaModel,
+            }).out(0),
+            latent_image: ctx.out(3),
+        }).out(0)
+        : g.node('MinimaxH3LatentUpscaler3DRefineHandoff', {
+            latent: ctx.out(3),
+            noise: g.node('RandomNoise', { noise_seed: cur.out(5) }).out(0),
+            sampler: samplerSel,
+            sigmas: g.node('BasicScheduler', {
+                scheduler: 'simple', steps: cur.out(7), denoise: seat.denoise, model: sigmaModel,
+            }).out(0),
+            model: sigmaModel,
+            positive: ctx.out(0),
+            model_name: seat.upscale.modelName,
+            mode: seat.upscale.mode,
+            scale: seat.upscale.scale,
+            width: 1280, height: 704, megapixels: 1,
+            keep_proportion: true, align: 32,
+            lock_audio: true, cfg: 1.0, device: 'cuda', precision: 'bf16',
+            offload_after_upscale: false,
+        }).out(0);
     const decoded = g.node('VAEDecode', { samples: sample, vae: vaeVideo }).out(0);
     const decodedAudio = g.node('VAEDecodeAudio', { samples: sample, vae: vaeAudio }).out(0);
     const trimmed = g.node('MiniMaxH3LoopTrim', {

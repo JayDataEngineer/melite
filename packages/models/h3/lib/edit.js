@@ -1,4 +1,5 @@
 import { contexMaskedTarget, loadVideo, renderMaskedEditChain } from './chainEdit.js';
+import { REFINE_2X_OOM_FRAMES, REFINE_UPSCALE_MODEL } from './refine.js';
 import { assertGridLength } from './timelineContract.js';
 /** SAM3's checkpoint row — repair.ts's own spelling (the family's
  * one tracked-mask door; the card's constant cites the same file). */
@@ -58,6 +59,33 @@ export function renderH3Edit(entry, mask, reference, p, facts, g, runId) {
     }
     if (windowLength > 0)
         assertGridLength(Math.round(windowLength), 'h3-timeline edit window_length');
+    // ── THE UPSCALE DIAL (the fourth dial — FRICTION_3's DESIGN
+    // PROPOSAL: "I flip a switch for refine, it opens up a submenu
+    // for scaling"): refine ON adds the learned second pass to THIS
+    // chain — the handoff rides the edit's own latents (the same-run
+    // pass, never the saved-clip re-encode). Two laws ride the
+    // switch renderer-side: partial denoise only (a full-noise sigma
+    // discards the learned upscaled latent and the vendored node
+    // throws), and the >=2x OOM ceiling with its two cures — the
+    // multiplier band itself is the walk's declared-band judge
+    // (F3-07's landed law: the declaration binds, not the tooltip),
+    // never re-judged where the card door cannot reach a second
+    // opinion.
+    // `scale` is INERT when refine is off (resolve default-fills it —
+    // the default-fill burn's law: presence is never authorship). ──
+    const refineOn = entry.refine === true;
+    const scale = num(entry, 'scale', 2);
+    if (refineOn) {
+        if (denoise >= 1) {
+            throw new Error(`h3-timeline edit: denoise ${denoise} with the refine pass on — a second pass is a refine, never a re-render (a full-noise sigma discards the learned upscaled latent and the vendored node throws); state the partial window (0.05–0.5) or leave refine off`);
+        }
+        const windowFrames = windowLength > 0
+            ? Math.round(windowLength)
+            : Math.round(num(entry, 'clip_seconds', 6) * 24);
+        if (scale >= 2 && windowFrames > REFINE_2X_OOM_FRAMES) {
+            throw new Error(`h3-timeline edit: a ${windowFrames} f window at refine ${scale}x is TOO LONG — the 2x pass was measured OOM at ${REFINE_2X_OOM_FRAMES} f (H3 memory grows with the window; whichever sizing mode upsizes, a window that dies is a window too long). Cut the window (window_length / clip_seconds) or lower scale below 2 for a same-size pass`);
+        }
+    }
     if (mask.source === 'static-png' && mask.image.trim() === '') {
         throw new Error(`h3-timeline edit: the static-png mask dial names no image — bind ONE staged PNG (the track run's pixel-max union is the recommended bridge); per-frame motion is the region dial's own door`);
     }
@@ -130,6 +158,9 @@ export function renderH3Edit(entry, mask, reference, p, facts, g, runId) {
         planJson: JSON.stringify({ shots: [{ id: 'edit', prompt }] }),
         planFromSource: true,
         denoise,
+        ...(refineOn
+            ? { upscale: { mode: 'scale by multiplier', scale, modelName: REFINE_UPSCALE_MODEL } }
+            : {}),
         assemble: {
             audioSource: keepAudio ? 'source' : 'generated',
             filename: `${runId}/edit`,

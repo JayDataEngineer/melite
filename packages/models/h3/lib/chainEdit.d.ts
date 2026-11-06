@@ -172,6 +172,18 @@ export interface MaskedChainSeat {
     /** the scheduler denoise: 1 fresh (swap/extend), partial refine
      * (repair — its own law refuses >= 1 at the seat's door). */
     readonly denoise: number;
+    /** THE UPSCALE DIAL (the fourth dial — the collapse's refine
+     *  switch, FRICTION_3's DESIGN PROPOSAL): present = the chain's
+     *  sampler tail becomes the learned RefineHandoff (the 3D-conv
+     *  latent upscale + the low-sigma refine pass in one node) over
+     *  the chain's OWN latents — the same-run second pass, never the
+     *  saved-clip re-encode; absent = the plain SamplerCustomAdvanced
+     *  tail, byte-identical to the pre-dial emission. */
+    readonly upscale?: {
+        readonly mode: string;
+        readonly scale: number;
+        readonly modelName: string;
+    };
     /** the seat's masked-edit body. */
     readonly body: ChainBody;
     /** the ChainAssemble terminal, or null (file-join posture). */
