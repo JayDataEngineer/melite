@@ -1135,6 +1135,92 @@ describe.skipIf(!ESTATE_STORE_SEATED)("phase1Card + phase2Card (the two phases, 
       rmSync(root, { recursive: true, force: true });
     }
   });
+  it("THE WINDOW BELT'S UNJUDGEABLE ARMS (friction F3-08, the belt's last shapes): a refine source that resolves nowhere, junk containers on both window seats, and a trim start that is no finite number ride the belt — the probe refuses only a positive reading", async () => {
+    // The belt's posture is the window cure's own contract (the F36
+    // sibling arms above): the probe judges only what it can SEE and
+    // READ. A source the estate roots and the compose spellings
+    // cannot resolve is the run door's voice; a readable file the
+    // container parser refuses is the engine's; a start_seconds that
+    // is no finite number reads as the zero origin (the window's own
+    // guard, the same sentence the unstated-start arm rides on the
+    // refine seat). Each arm asserts the seat never speaks the window
+    // sentence for its shape.
+    const dir = mkdtempSync(join(tmpdir(), "window-belt-"));
+    const junk = join(dir, "junk.bin");
+    writeFileSync(junk, "this is not a media container");
+    // 90 frames at the film clock — a real, readable, timed clip for
+    // the unreadable-start arm (the shape is the START, not the clip)
+    const timed = join(dir, "timed.mp4");
+    writeFileSync(timed, craftTimedMp4(928, 1344, 90));
+    const noRefineVoice = async (bagBody: Record<string, unknown>): Promise<void> => {
+      try {
+        await svc.phase1Card(bagBody, "h3-timeline");
+      } catch (e: unknown) {
+        expect(String((e as Error).message)).not.toMatch(/refine window starts/);
+      }
+    };
+    const noTrimVoice = async (trimBody: Record<string, unknown>): Promise<void> => {
+      try {
+        await svc.phase1Card(trimBody, "trim");
+      } catch (e: unknown) {
+        expect(String((e as Error).message)).not.toMatch(/trim window starts/);
+      }
+    };
+    try {
+      // a produced spelling the estate roots and the compose
+      // spellings cannot resolve: the walk answers null and the
+      // refine seat rides
+      await noRefineVoice({
+        prompt: "a yard at dusk",
+        refine: [
+          { source_clip: "run-deadbeef-gones/gen/f308-belt-miss.mp4", refine_prompt: "sharpen the leaves", start_seconds: 99 },
+        ],
+      });
+      // a readable file no container parser claims, on the refine seat
+      await noRefineVoice({
+        prompt: "a yard at dusk",
+        refine: [{ source_clip: junk, refine_prompt: "sharpen the leaves", start_seconds: 99 }],
+      });
+      // the same junk on the trim seat
+      await noTrimVoice({ card: "trim", clip: junk, start_seconds: 99, end_seconds: -1 });
+      // a start the film clock cannot read reads as zero — the belt,
+      // never an invented refusal
+      await noTrimVoice({ card: "trim", clip: timed, start_seconds: NaN, end_seconds: -1 });
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+  it("THE WINDOW REFUSAL'S FRAME-ONLY SENTENCE (friction F3-08): a clip whose container names a frame count but no movie clock refuses past the tail naming the count alone — both window seats speak the length they can prove", async () => {
+    // The burn sentence names "the probed length". A container can
+    // carry the sample table (the stts count — the loader's own skip
+    // arithmetic) without a movie header (no mvhd — no duration): the
+    // probe still answers a positive frame count, so past-the-tail
+    // still refuses on both seats — and the sentence names exactly
+    // the count, never a duration it cannot prove.
+    const dir = mkdtempSync(join(tmpdir(), "window-frames-"));
+    // 48 frames named by the sample table, no movie clock
+    const framed = join(dir, "framed.mp4");
+    writeFileSync(framed, craftFramedMp4(928, 1344, 48));
+    try {
+      // THE REFINE SEAT: start 99s over a 48-frame clip — skip 2376
+      await expect(
+        svc.phase1Card(
+          { prompt: "a yard at dusk", refine: [{ source_clip: framed, refine_prompt: "sharpen the leaves", start_seconds: 99 }] },
+          "h3-timeline",
+        ),
+      ).rejects.toThrow(
+        /the refine window starts at 99s \(skip 2376 frames at the film clock\) but ".*framed\.mp4" carries 48 frame\(s\) — the loader's skip_first_frames runs past the clip's end/,
+      );
+      // THE TRIM SEAT: the same container, the trim card's own words
+      await expect(
+        svc.phase1Card({ card: "trim", clip: framed, start_seconds: 99, end_seconds: -1 }, "trim"),
+      ).rejects.toThrow(
+        /the trim window starts at 99s \(skip 2376 frames at the trim card's 24 fps\) but ".*framed\.mp4" carries 48 frame\(s\) — the loader's skip_first_frames runs past the clip's last frame/,
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
   it("THE BAG GUARD'S TAIL ARMS (the silent-source belt skips what it cannot judge): junk entries, clip-less entries, dead leaves, directory leaves, and unnamed containers ride to the run door's own voice — never this probe's", async () => {
     // The belt judges only what it can name: an entry that is not an
     // object, an entry without a source_clip, a leaf that resolves
@@ -1720,6 +1806,55 @@ function craftTimedMp4(width: number, height: number, frames: number): Buffer {
   return Buffer.concat([
     box("ftyp", ftyp),
     box("moov", Buffer.concat([box("mvhd", mvhd), box("trak", trak), strak])),
+  ]);
+}
+
+/** A frame-counted container with NO movie clock for the window
+ *  refusal's sentence arms: the timed shape above minus the mvhd —
+ *  the frame count lives in the sample table (stbl/stts, one
+ *  count/delta pair; the count IS the frame count the loader skips
+ *  by) and the movie header is absent, so the probe answers frames
+ *  and NO duration. The sound track rides (the silent-source door
+ *  runs first on the refine seat and would otherwise speak). Pure
+ *  bytes, hermetic. */
+function craftFramedMp4(width: number, height: number, frames: number): Buffer {
+  const box = (type: string, body: Buffer): Buffer => {
+    const head = Buffer.alloc(8);
+    head.writeUInt32BE(body.length + 8, 0);
+    head.write(type, 4, "ascii");
+    return Buffer.concat([head, body]);
+  };
+  const tkhd = Buffer.alloc(84);
+  tkhd.writeUInt32BE(0, 0);
+  tkhd.writeUInt32BE(width << 16, 76);
+  tkhd.writeUInt32BE(height << 16, 80);
+  const hdlr = Buffer.alloc(24);
+  hdlr.write("vide", 8, "ascii");
+  const stsdHead = Buffer.alloc(8);
+  stsdHead.writeUInt32BE(1, 4); // one sample entry
+  const avc1 = Buffer.alloc(28); // reserved(6) + dri(2) + reserved(16)
+  avc1.writeUInt16BE(width, 24); // the visual entry's width
+  avc1.writeUInt16BE(height, 26); // and height
+  const stts = Buffer.alloc(16);
+  stts.writeUInt32BE(1, 4); // one count/delta entry
+  stts.writeUInt32BE(frames, 8); // the count IS the frame count
+  stts.writeUInt32BE(1, 12); // one tick per frame
+  const stbl = box("stbl", Buffer.concat([
+    box("stsd", Buffer.concat([stsdHead, box("avc1", avc1)])),
+    box("stts", stts),
+  ]));
+  const mdia = box("mdia", Buffer.concat([box("hdlr", hdlr), box("minf", stbl)]));
+  const trak = box("trak", Buffer.concat([box("tkhd", tkhd), mdia]));
+  const shdlr = Buffer.alloc(24);
+  shdlr.write("soun", 8, "ascii");
+  const strak = box("trak", box("mdia", box("hdlr", shdlr)));
+  const ftyp = Buffer.alloc(8);
+  ftyp.write("isom", 4, "ascii");
+  // NO mvhd in the moov: the container names its frame count and no
+  // duration — the probe answers exactly that
+  return Buffer.concat([
+    box("ftyp", ftyp),
+    box("moov", Buffer.concat([trak, strak])),
   ]);
 }
 

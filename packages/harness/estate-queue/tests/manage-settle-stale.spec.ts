@@ -1,6 +1,6 @@
 import { describe, it, afterEach } from "vitest";
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync, utimesSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync, utimesSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { dispatchManage } from "../src/managePlane.ts";
@@ -145,6 +145,131 @@ describe("the settle_stale action (tts NEW-2: pre-rebuild claims retire by opera
       const [, env] = await run({ action: "free" });
       assert.equal(env.ok, false);
       assert.match(env.detail, /settle_stale/, "the refusal voices the retire action");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+      root = "";
+    }
+  });
+});
+
+// ── the walk's honest skips (the settle sweep's own rows, riding the
+// same settle_stale door): a row the sweep cannot retire is either
+// SILENTLY left (it never claimed a live word) or NAMED (it claimed
+// one and cannot be parsed or rewritten — fail-closed, exactly like
+// the census still reads it). Every arm drives the real door against
+// real files; nothing is mocked.
+describe("the settle walk's honest skips — silently left when the row never claimed live, named when it did", () => {
+  it("a non-run entry in the output tree is never touched nor named — the walk rides the run- prefix only", async () => {
+    root = mkdtempSync(join(tmpdir(), "settle-nonrun-"));
+    try {
+      mkdirSync(join(root, "output", "scratch"), { recursive: true });
+      writeFileSync(join(root, "output", "NOTES.txt"), "operator notes\n");
+      globalThis.fetch = (async () => queueJson([], [])) as unknown as typeof fetch;
+      const [code, env] = await run({ action: "settle_stale" });
+      assert.equal(code, 200);
+      assert.deepEqual((env.data as Record<string, unknown>)["settled"], []);
+      assert.deepEqual((env.data as Record<string, unknown>)["skipped"], []);
+      assert.equal(
+        readFileSync(join(root, "output", "NOTES.txt"), "utf8"),
+        "operator notes\n",
+        "a non-run entry is untouched",
+      );
+      assert.deepEqual(activeRuns([root]), [], "the census never counts it either");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+      root = "";
+    }
+  });
+
+  it("a run dir with no sidecar has nothing to settle — absent state is honestly inactive on both planes", async () => {
+    root = mkdtempSync(join(tmpdir(), "settle-ghost-"));
+    try {
+      mkdirSync(join(root, "output", "run-ghost"), { recursive: true });
+      writeFileSync(join(root, "output", "run-ghost", "artifact.png"), "bytes");
+      globalThis.fetch = (async () => queueJson([], [])) as unknown as typeof fetch;
+      const [code, env] = await run({ action: "settle_stale" });
+      assert.equal(code, 200);
+      assert.deepEqual((env.data as Record<string, unknown>)["settled"], []);
+      assert.deepEqual((env.data as Record<string, unknown>)["skipped"], []);
+      assert.deepEqual(activeRuns([root]), [], "the census agrees: no state file, nothing to protect");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+      root = "";
+    }
+  });
+
+  it("a row that already reads stopped is historical on its face — the settle leaves it and names nothing", async () => {
+    root = mkdtempSync(join(tmpdir(), "settle-stopped-"));
+    try {
+      plantSidecar("run-plain", "stopped", Date.now() - 3_600_000);
+      globalThis.fetch = (async () => queueJson([], [])) as unknown as typeof fetch;
+      const [code, env] = await run({ action: "settle_stale" });
+      assert.equal(code, 200);
+      assert.deepEqual((env.data as Record<string, unknown>)["settled"], []);
+      assert.deepEqual(
+        (env.data as Record<string, unknown>)["skipped"],
+        [],
+        "a row with no live word needs no retirement naming",
+      );
+      assert.equal(readStatus("run-plain"), "stopped", "the historical row is untouched");
+      assert.deepEqual(activeRuns([root]), [], "the census reads the same word: not live");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+      root = "";
+    }
+  });
+
+  it("an unparseable row is named and left active — a live word over an unreadable row is never silently dropped", async () => {
+    root = mkdtempSync(join(tmpdir(), "settle-torn-"));
+    try {
+      const torn = join(root, "output", "run-torn");
+      const shape = join(root, "output", "run-shape");
+      mkdirSync(torn, { recursive: true });
+      mkdirSync(shape, { recursive: true });
+      const tornRaw = '{"status":"queued",';
+      writeFileSync(join(torn, "_flow.json"), tornRaw);
+      const shapeRaw = '[{"status":"running"}]';
+      writeFileSync(join(shape, "_flow.json"), shapeRaw);
+      const old = new Date(Date.now() - 3_600_000);
+      utimesSync(join(torn, "_flow.json"), old, old);
+      utimesSync(join(shape, "_flow.json"), old, old);
+      globalThis.fetch = (async () => queueJson([], [])) as unknown as typeof fetch;
+      const [code, env] = await run({ action: "settle_stale" });
+      assert.equal(code, 200);
+      assert.deepEqual((env.data as Record<string, unknown>)["settled"], []);
+      assert.deepEqual(
+        (env.data as Record<string, unknown>)["skipped"],
+        ["run-shape (sidecar unparseable — left active)", "run-torn (sidecar unparseable — left active)"],
+        "both unparseable rows are named (sorted), never dropped",
+      );
+      assert.equal(readFileSync(join(torn, "_flow.json"), "utf8"), tornRaw, "the torn row is left byte-identical");
+      assert.equal(readFileSync(join(shape, "_flow.json"), "utf8"), shapeRaw, "the shaped row is left byte-identical");
+      assert.deepEqual(
+        activeRuns([root]),
+        ["run-shape", "run-torn"],
+        "the census reads the same live words — fail-closed on both planes",
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+      root = "";
+    }
+  });
+
+  it("a rewrite the volume refuses is named and the row is left byte-identical", async () => {
+    root = mkdtempSync(join(tmpdir(), "settle-rewrite-"));
+    try {
+      plantSidecar("run-old", "running", Date.now() - 3_600_000);
+      chmodSync(join(root, "output", "run-old", "_flow.json"), 0o444);
+      globalThis.fetch = (async () => queueJson([], [])) as unknown as typeof fetch;
+      const [code, env] = await run({ action: "settle_stale" });
+      assert.equal(code, 200);
+      assert.deepEqual((env.data as Record<string, unknown>)["settled"], []);
+      assert.deepEqual(
+        (env.data as Record<string, unknown>)["skipped"],
+        ["run-old (rewrite failed)"],
+        "the refused rewrite is named, never silent",
+      );
+      assert.equal(readStatus("run-old"), "running", "the row is left exactly as it was read");
     } finally {
       rmSync(root, { recursive: true, force: true });
       root = "";

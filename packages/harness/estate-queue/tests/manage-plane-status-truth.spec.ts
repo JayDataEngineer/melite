@@ -234,6 +234,113 @@ describe("the status truth — the census consult (D3-02 / R-2)", () => {
   });
 });
 
+// ── the census's unset words and silent journal (the unset-enum
+// law's other half): a property systemd did not print stays ABSENT on
+// the row (no invented 0/0 pair, no invented restart count), and a
+// journal tail that cannot be read is NAMED — never silent oom
+// evidence, never a merged claim. Same real exec seam (fake bins on
+// PATH), same status door as the consult walls above.
+describe("the census's unset words and silent journal — noise is never dressed as data", () => {
+  it("a settled unit whose journal tail cannot be read names the absence — oom silence is never invented", async () => {
+    mkRoot();
+    fakeBin({
+      systemctl: { out: SETTLED_SHOW, code: 0 },
+      journalctl: { err: "Failed to connect to bus", code: 1 },
+    });
+    routeEngineUp();
+    const [code, env] = await manage({ action: "status" });
+    assert.equal(code, 200);
+    assert.equal(env.state, "up", "a silent journal is absence, not degradation");
+    assert.equal(env.detail, "server up");
+    const data = env.data as unknown as StatusData;
+    assert.equal(data.engine_unit.known, true);
+    assert.equal(data.engine_unit.verdict, "settled");
+    assert.equal(data.engine_unit.oom_kills, undefined, "a journal that cannot answer leaves the oom count ABSENT, not zero");
+    assert.match(String(data.engine_unit.note), /the journal tail could not be read for oom lines/);
+    assert.match(String(data.engine_unit.note), /Command failed: journalctl/);
+    assert.doesNotMatch(String(data.engine_unit.note), /degraded/);
+  });
+
+  it("a degraded unit with a silent journal appends the absence to the cause note — the two words never merge into one claim", async () => {
+    mkRoot();
+    fakeBin({
+      systemctl: { out: DEGRADED_SHOW, code: 0 },
+      journalctl: { err: "Failed to connect to bus", code: 1 },
+    });
+    routeEngineUp();
+    const [code, env] = await manage({ action: "status" });
+    assert.equal(code, 200);
+    assert.equal(env.state, "degraded");
+    const data = env.data as unknown as StatusData;
+    assert.equal(data.engine_unit.verdict, "degraded");
+    assert.match(
+      String(data.engine_unit.note),
+      /degraded by the restart loop \(>= 2\) and a SIGKILL last exit — systemd restarted the engine; read the journal tail for the death cause \(the journal tail could not be read for oom lines/,
+    );
+    assert.equal(data.engine_unit.oom_kills, undefined, "the degraded row carries no invented oom count either");
+  });
+
+  it("THE UNSET-ENUM LAW — an exit code word with no status number carries the code alone, never a 0/0 pair", async () => {
+    mkRoot();
+    fakeBin({
+      systemctl: { out: "ExecMainCode=exited\n", code: 0 },
+      journalctl: { out: "INFO: engine ready\n", code: 0 },
+    });
+    routeEngineUp();
+    const [code, env] = await manage({ action: "status" });
+    assert.equal(code, 200);
+    assert.equal(env.state, "up", "absent words alone never degrade");
+    const data = env.data as unknown as StatusData;
+    assert.equal(data.engine_unit.known, true);
+    assert.equal(data.engine_unit.restarts, undefined, "no restart word — no invented restart count");
+    assert.equal(data.engine_unit.last_exit_code, "exited");
+    assert.equal(data.engine_unit.last_exit_status, undefined, "a word-form code with no status number carries the code alone");
+    assert.equal(data.engine_unit.oom_kills, 0, "the journal answered clean — the count is carried as zero, honestly");
+    assert.equal(data.engine_unit.verdict, "settled");
+    assert.equal(data.engine_unit.note, undefined);
+  });
+
+  it("a restart counter with no exit words settles without exit noise", async () => {
+    mkRoot();
+    fakeBin({
+      systemctl: { out: "NRestarts=1\n", code: 0 },
+      journalctl: { out: "INFO: engine ready\n", code: 0 },
+    });
+    routeEngineUp();
+    const [code, env] = await manage({ action: "status" });
+    assert.equal(code, 200);
+    assert.equal(env.state, "up");
+    const data = env.data as unknown as StatusData;
+    assert.equal(data.engine_unit.known, true);
+    assert.equal(data.engine_unit.restarts, 1);
+    assert.equal(data.engine_unit.last_exit_code, undefined, "no exit word — no exit code invented");
+    assert.equal(data.engine_unit.last_exit_status, undefined);
+    assert.equal(data.engine_unit.verdict, "settled");
+    assert.equal(data.engine_unit.note, undefined);
+  });
+
+  it("a SIGKILL last exit degrades on its own — below the restart floor the loop cause is not claimed", async () => {
+    mkRoot();
+    fakeBin({
+      systemctl: { out: "NRestarts=1\nExecMainStatus=9\nExecMainCode=killed\n", code: 0 },
+      journalctl: { out: "INFO: engine ready\nINFO: loaded krea-2\n", code: 0 },
+    });
+    routeEngineUp();
+    const [code, env] = await manage({ action: "status" });
+    assert.equal(code, 200);
+    assert.equal(env.state, "degraded");
+    assert.match(env.detail, /server degraded \(restarts 1, last exit 9\/KILL/);
+    const data = env.data as unknown as StatusData;
+    assert.equal(data.engine_unit.verdict, "degraded");
+    assert.match(
+      String(data.engine_unit.note),
+      /degraded by a SIGKILL last exit — systemd restarted the engine; read the journal tail for the death cause/,
+    );
+    assert.doesNotMatch(String(data.engine_unit.note), /restart loop/, "one restart never claims the loop law");
+    assert.doesNotMatch(String(data.engine_unit.note), /memory pressure/, "a clean journal never claims the oom lever");
+  });
+});
+
 describe("the logs truth — the source stamp (D3-02 / R-2)", () => {
   const appLog = (): string => join(ROOT, "data", "runtime", "comfyui", "user", "comfyui_8289.log");
 

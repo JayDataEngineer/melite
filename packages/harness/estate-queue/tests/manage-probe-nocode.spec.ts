@@ -9,7 +9,7 @@
 // targeted throws), pinned to a private state root so the walk
 // reads only this fixture's tree.
 import { describe, it, expect, vi } from "vitest";
-import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -23,7 +23,7 @@ const seat = vi.hoisted(() => {
   return {
     stateRoot,
     outputRoot: join(stateRoot, "output"),
-    throwAt: { readdir: "", readSidecar: "" },
+    throwAt: { readdir: "", readSidecar: "", statSidecar: "" },
   };
 });
 
@@ -44,10 +44,16 @@ vi.mock("node:fs", async (importOriginal) => {
       }
       return (realFs.readFileSync as (p: string, ...rest: unknown[]) => string)(p, ...rest);
     },
+    statSync: (p: string, ...rest: unknown[]) => {
+      if (throwAt.statSidecar !== "" && p === throwAt.statSidecar) {
+        throw new Error("weird volume error on stat — no errno attached");
+      }
+      return (realFs.statSync as unknown as (p: string, ...rest: unknown[]) => import("node:fs").Stats)(p, ...rest);
+    },
   };
 });
 
-const { activeRuns } = await import("../src/manageProbe.ts");
+const { activeRuns, settleStaleClaims } = await import("../src/manageProbe.ts");
 
 // the walk's roots arrive as call data (J12: the queue seat's
 // stateRoots manifest — no env seam) — pinned to this fixture so
@@ -118,5 +124,30 @@ describe("engineQueueView — the caller abort rethrows, the probe failure folds
     } finally {
       globalThis.fetch = realFetch;
     }
+  });
+});
+
+// ── settleStaleClaims rides the same seam as the census: a sidecar
+// whose stat fails AFTER the read succeeded cannot be aged, so the
+// sweep names it "(stat unreadable)" and leaves it active — exactly
+// like the census still reads it. Real fs cannot produce this seat
+// (a file this user can read always stats); it is the fs-shim /
+// network-volume shape the targeted throws above model.
+describe("settleStaleClaims — a sidecar that reads but cannot stat is named and left active", () => {
+  it("a stat failure after a successful read names the row and settles nothing", () => {
+    const runDir = join(seat.outputRoot, "run-stat");
+    mkdirSync(runDir, { recursive: true });
+    const sidecar = join(runDir, "_flow.json");
+    writeFileSync(sidecar, JSON.stringify({ status: "running" }), "utf8");
+    seat.throwAt.statSidecar = sidecar;
+    try {
+      const outcome = settleStaleClaims([seat.stateRoot], (name) => name === "run-stat");
+      expect(outcome.settled, "a row that cannot be aged is never rewritten").toEqual([]);
+      expect(outcome.skipped).toEqual(["run-stat (stat unreadable)"]);
+    } finally {
+      seat.throwAt.statSidecar = "";
+    }
+    expect(readFileSync(sidecar, "utf8")).toContain('"running"');
+    expect(activeRuns([seat.stateRoot]), "the census still reads it ACTIVE — fail-closed on both planes").toContain("run-stat");
   });
 });
