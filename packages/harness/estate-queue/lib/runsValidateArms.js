@@ -71,9 +71,17 @@ export async function validate(doc, signal, ctx) {
             // gate gets the same first refusal from both doors, never
             // params-voice here and stages-voice at start (or the
             // reverse).
+            if (body["seed"] !== undefined) {
+                throw new RemoteError("runs/invalid-request", "flow " + JSON.stringify(name) + " carries a top-level " +
+                    JSON.stringify("seed") + " — a {flow:} press reads card " +
+                    "knobs from params, so a top-level seed reaches no stage. " +
+                    "State it inside params ({seed: N}) to pin every stage " +
+                    "this flow's tool overlay names; the flow's initials " +
+                    "stay top-level.", { loc: "params" });
+            }
             const overrideRaw = body["params"];
             if (overrideRaw !== undefined) {
-                applyFlowParamsOverride(name, expanded.stages, overrideRaw, overlayDecls(ctx.cardRegistry), String(body["model"] ?? ""));
+                applyFlowParamsOverride(name, expanded.stages, overrideRaw, overlayDecls(ctx.cardRegistry), String(body["model"] ?? ""), decl.tool?.overlays ?? []);
             }
             // The same compile-time gate at validate (REBUILD-21).
             const badInitial = registryInitialsError(expanded, body, {

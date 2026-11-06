@@ -1268,11 +1268,28 @@ a, signal) {
     // A read refusal (unknown flow, an authoring throw) names itself
     // BEFORE any bench write or run press — no half-landing.
     let benchRows;
+    // THE INITIALS SPLIT (N1, 2026-11-15 — the flow door's seed never
+    // reached the sampler): the bundle's initials.validators own the
+    // top-level seat names (prompt, photo, …) — everything else the
+    // caller states is a card knob and rides nested under params, the
+    // one spelling the named-flow door reads. The old splat spread
+    // every knob top-level, where the door never looks: seed died
+    // there while _request.json carried it like a promise, and both
+    // stages minted fresh. Without the bundle's validator seat the
+    // split cannot tell initials from knobs — legacy splat, and the
+    // door's top-level-seed refusal names the fix instead of a
+    // silent mint.
+    let initialKeys;
     try {
         const bundle = await estate.loadCard('flow', flow, signal, DRAFT_TIMEOUT_MS);
         const rawRows = bundle['bench_stages'];
         if (Array.isArray(rawRows) && rawRows.length > 0) {
             benchRows = rawRows.filter((r) => typeof r === 'object' && r !== null && !Array.isArray(r));
+        }
+        const initials = bundle['initials'];
+        if (initials !== undefined && initials !== null && typeof initials === 'object' && !Array.isArray(initials) &&
+            initials.validators !== undefined && initials.validators !== null && typeof initials.validators === 'object' && !Array.isArray(initials.validators)) {
+            initialKeys = new Set(Object.keys(initials.validators));
         }
     }
     catch (e) {
@@ -1297,8 +1314,26 @@ a, signal) {
             return { mode: 'flow', target: flow, error: e instanceof Error ? e.message : String(e) };
         }
     }
+    // THE SPLIT PRESS (N1's other half): initials stay top-level
+    // (the initialValidators gate reads body keys), knobs ride nested
+    // params (the overlay door's one spelling) — so params.seed pins
+    // every stage the row's tool overlay names.
+    const top = {};
+    const knobs = {};
+    if (initialKeys === undefined) {
+        Object.assign(top, overrides);
+    }
+    else {
+        for (const [k, v] of Object.entries(overrides)) {
+            if (initialKeys.has(k))
+                top[k] = v;
+            else
+                knobs[k] = v;
+        }
+    }
     const started = await startRun(estate, {
-        ...overrides,
+        ...top,
+        ...(Object.keys(knobs).length > 0 ? { params: knobs } : {}),
         flow,
         test: wireBool(a.test),
         // the bench draft rides when the flow materialized (the CARD

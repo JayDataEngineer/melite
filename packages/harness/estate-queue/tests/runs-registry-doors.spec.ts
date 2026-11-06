@@ -2579,6 +2579,85 @@ describe("the multi-stage boundary (2026-09-25 — curated lane lifts the length
       );
     });
 
+    it("N1 — the declared twin pins BOTH stages: a flat params.seed stamps make + polish, so the stated seed reaches both samplers", async () => {
+      // N1 (2026-11-15): the flow door's seed never reached the
+      // sampler — same flow, same seed, randomized takes. The row
+      // declares the twin (tool.overlays seed → make + seed →
+      // polish); the flat shape now stamps BOTH through the
+      // declared semantic instead of refusing as ambiguous, on the
+      // real image-upscale row with both cards admitting seed.
+      const { s, bodies } = phase1SeesDecls({
+        "image-gen": { admits: [], schemaNames: ["prompt", "seed", "model"] },
+        "upscale-tools": { admits: [], schemaNames: ["seed", "resolution"] },
+      });
+      const r = (await s.svc.start(
+        { draft_id: "d1", test: false, flow: "image-upscale", params: { seed: 73070 } },
+        sig(),
+      )) as { run_id?: string };
+      await settleWait(s, String(r["run_id"]));
+      const byCard = Object.fromEntries(bodies.map((b) => [String(b["card"]), b]));
+      assert.equal(
+        (byCard["image-gen"] as Record<string, unknown>)["seed"], 73070,
+        "the make stage carries the stated seed — the take reproduces",
+      );
+      assert.equal(
+        (byCard["upscale-tools"] as Record<string, unknown>)["seed"], 73070,
+        "the polish stage carries the same stated seed — no per-stage mint",
+      );
+    });
+
+    it("N1 — a top-level seed on a {flow:} press refuses LOUD naming params, never mints behind the dead knob", async () => {
+      // N1's other half: _request.json carried seed: 73070 at the
+      // top while both stages minted fresh — the knob died silently
+      // wearing a promise. The door refuses before any run
+      // registers, with the corrected spelling.
+      const { s } = phase1SeesDecls({
+        "image-gen": { admits: [], schemaNames: ["prompt", "seed", "model"] },
+        "upscale-tools": { admits: [], schemaNames: ["seed", "resolution"] },
+      });
+      const err = await remote(() =>
+        s.svc.start(
+          { draft_id: "d1", test: false, flow: "image-upscale", seed: 73070 },
+          sig(),
+        ),
+      );
+      assert.match(err.message, /top-level.*"seed"/s);
+      assert.match(err.message, /inside params \(\{seed: N\}\)/);
+    });
+
+    it("N1 shared law — validate rides the same twin: a flat params.seed passes the overlay, a top-level seed refuses", async () => {
+      // F1 shared law: both doors ride applyFlowParamsOverride at
+      // the same seam, so both must agree on the twin. Validate
+      // with the flat seed must NOT hear ambiguous; with the
+      // top-level seed it must hear the params spelling.
+      // validate runs the card gate too, so its seat carries
+      // BOTH the admission rows (the overlay's read) and the defs
+      // (the gate's read) — same flow, same seed, same twin.
+      const defs = new Map([
+        ["image-gen", { requiresModel: false, schema: (p: unknown): unknown => p }],
+        ["upscale-tools", { requiresModel: false, schema: (p: unknown): unknown => p }],
+      ]);
+      const v = seat({
+        cardDecls: (): unknown => ({
+          "image-gen": { boarded: ["m1"], schemaNames: ["prompt", "seed", "model"] },
+          "upscale-tools": { boarded: ["m1"], schemaNames: ["seed", "resolution"] },
+        }),
+        defsSync: (): unknown => defs,
+      });
+      const ok = await v.svc.validate(
+        { draft_id: "d1", test: false, flow: "image-upscale", params: { seed: 73070 } },
+        sig(),
+      );
+      assert.equal((ok as { status?: unknown; ok?: unknown })["ok"] ?? true, true);
+      const err = await remote(() =>
+        v.svc.validate(
+          { draft_id: "d1", test: false, flow: "image-upscale", seed: 73070 },
+          sig(),
+        ),
+      );
+      assert.match(err.message, /top-level.*"seed"/s);
+    });
+
     it("a flat key two stages admit refuses AMBIGUOUS before any run registers", async () => {
       const { s } = phase1SeesBodies({
         "image-gen": ["file_format"],

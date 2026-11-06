@@ -2133,6 +2133,24 @@ export class RunsRuntimeService extends Service {
       // the flow door. The overlay law is SHARED (round-21 flows
       // audit F1): applyFlowParamsOverride below, the same helper the
       // validate door rides.
+      // THE TOP-LEVEL SEED IS A DEAD LETTER (N1, 2026-11-15):
+      // a {flow:} press reads card knobs from params — a seed at
+      // the top lands in NO stage (every stage mints fresh) while
+      // _request.json carries it like a promise, so the flow cannot
+      // reproduce. Refuse LOUD with the corrected spelling, never
+      // mint behind a knob that died silently.
+      if (body["seed"] !== undefined) {
+        throw new RemoteError(
+          "runs/invalid-request",
+          "flow " + JSON.stringify(name) + " carries a top-level " +
+            JSON.stringify("seed") + " — a {flow:} press reads card " +
+            "knobs from params, so a top-level seed reaches no stage. " +
+            "State it inside params ({seed: N}) to pin every stage " +
+            "this flow's tool overlay names; the flow's initials " +
+            "stay top-level.",
+          { loc: "params" },
+        );
+      }
       const overrideRaw: unknown = body["params"];
       if (overrideRaw !== undefined) {
         applyFlowParamsOverride(
@@ -2141,6 +2159,7 @@ export class RunsRuntimeService extends Service {
           overrideRaw,
           overlayDecls(this.ctx.cardRegistry as CardRegistryService),
           String(body["model"] ?? ""),
+          decl.tool?.overlays ?? [],
         );
         const rest: Record<string, unknown> = { ...body };
         delete rest["params"];

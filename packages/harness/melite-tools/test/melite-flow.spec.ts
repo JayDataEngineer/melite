@@ -869,7 +869,7 @@ describe('melite_flow L4 — the test flag rides every mode', () => {
     assert.equal(out.materialized, undefined)
   })
 
-  test('template: test:true + params ride the start', async () => {
+  test('template: test:true + params ride the start — SPLIT (N1: knobs nest under params, the door reads them there)', async () => {
     const seen = mockEstate([flowLoad(UP_ROWS), okBenchWith('bench-session-chat7'), startOk('r0')])
     const tool = meliteFlow(seen.request)
     await tool.execute(
@@ -880,10 +880,30 @@ describe('melite_flow L4 — the test flag rides every mode', () => {
     assert.equal(posts.length, 1)
     const body = decodeJsonBody(posts[0]!.args)
     assert.equal(body.test, true)
-    assert.equal(body.seed, 42)
-    assert.equal(body.steps, 8)
+    // N1 (2026-11-15): the old splat spread every knob top-level,
+    // where the named-flow door never looks — seed died there while
+    // _request.json carried it like a promise. Knobs now ride nested
+    // params (the overlay door's one spelling); no knob leaks top.
+    assert.deepEqual(body.params, { seed: 42, steps: 8 })
+    assert.equal('seed' in body, false, 'no top-level seed — the dead letter is gone')
+    assert.equal('steps' in body, false)
     // the flow is still EXPLICITLY named (QUEUE LANE LAW) — test is
     // a side flag, never a substitute for the named flow
+    assert.equal(body.flow, 'bar')
+  })
+
+  test('template: initials stay top-level while knobs nest (N1 — the prompt rides the initialValidators seat)', async () => {
+    const seen = mockEstate([flowLoad(UP_ROWS), okBenchWith('bench-session-chat7'), startOk('r0')])
+    const tool = meliteFlow(seen.request)
+    await tool.execute(
+      { flow: 'bar', params: { prompt: 'a slow push in', seed: 73070 }, test: true },
+      fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } }),
+    )
+    const posts = seen.calls.filter((s) => s.lane === 'runsStart')
+    assert.equal(posts.length, 1)
+    const body = decodeJsonBody(posts[0]!.args)
+    assert.equal(body.prompt, 'a slow push in', 'the initial stays top-level — the initialValidators gate reads body keys')
+    assert.deepEqual(body.params, { seed: 73070 }, 'the knob nests — the overlay door reads params')
     assert.equal(body.flow, 'bar')
   })
 
@@ -1413,14 +1433,21 @@ const UP_ROWS = [
 
 /** The load face of a flow: bench_stages present (a card-stage flow —
  *  materializes) or absent (family/engine flow — the run-door face). */
-function flowLoad(rows?: Array<Record<string, unknown>>) {
+function flowLoad(rows?: Array<Record<string, unknown>>, initials?: Record<string, unknown>) {
   return (lane: string, _args: unknown[]) => {
     if (lane === 'loadCard') {
       return {
         status: 200,
         body: rows === undefined
           ? { name: 'foo', kind: 'flow', stages: [{ id: 'go', family: 'anny', action: 'estimate_photo', card: '' }] }
-          : { name: 'foo', kind: 'flow', stages: [{ id: 'make', card: 'image-gen' }, { id: 'polish', card: 'upscale-tools' }], bench_stages: rows },
+          : {
+              name: 'foo', kind: 'flow',
+              stages: [{ id: 'make', card: 'image-gen' }, { id: 'polish', card: 'upscale-tools' }],
+              bench_stages: rows,
+              // the initials seat the split press reads (image-upscale
+              // shape: prompt is the initial, knobs are not)
+              initials: { validators: initials ?? { prompt: 'text' }, required: ['prompt'], keys: Object.keys(initials ?? { prompt: 'text' }), glosses: {} },
+            },
       }
     }
     return undefined

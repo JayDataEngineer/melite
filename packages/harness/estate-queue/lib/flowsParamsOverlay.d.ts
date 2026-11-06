@@ -1,4 +1,5 @@
 import type { CardRegistryService } from "./cardsRegistry.js";
+import type { RegistryToolOverlay } from "./flowsData.js";
 /**
  * The overlay's mod-fold scoping decision (round-22 compose audit
  * Q3a): which family scopes the absorbed mod surface for a stage's
@@ -50,6 +51,12 @@ export declare function overlayDecls(cardRegistry: Pick<CardRegistryService, "ca
  * @param fam the request's family seat (`body.model`, "" when the
  *   request names none) — scopes the absorbed mod surface to the
  *   owning atom, the same fold compose and variant judge with
+ * @param toolOverlays the flow row's declared tool overlays — a
+ *   verbatim (choices-null) overlay pins its flat param on EVERY
+ *   listed stage (image-upscale's twin make+polish seed), the
+ *   declared semantic the generic single-target scan would refuse
+ *   as ambiguous. Choices-mapped overlays fall through to the
+ *   generic scan (today's law, unchanged).
  */
-export declare function applyFlowParamsOverride(flowName: string, stages: ReadonlyArray<unknown>, overrideRaw: unknown, decls: ReturnType<CardRegistryService["cardDecls"]>, fam: string): void;
+export declare function applyFlowParamsOverride(flowName: string, stages: ReadonlyArray<unknown>, overrideRaw: unknown, decls: ReturnType<CardRegistryService["cardDecls"]>, fam: string, toolOverlays?: readonly RegistryToolOverlay[]): void;
 //# sourceMappingURL=flowsParamsOverlay.d.ts.map

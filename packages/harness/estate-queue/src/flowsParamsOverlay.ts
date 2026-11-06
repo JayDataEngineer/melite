@@ -5,6 +5,7 @@ import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 import { owningAtom, theService } from "@melite/comfyui-cordis";
 import { cardAdmits } from "./cardsCompose.ts";
 import type { CardRegistryService } from "./cardsRegistry.ts";
+import type { RegistryToolOverlay } from "./flowsData.ts";
 
 /**
  * The overlay's mod-fold scoping decision (round-22 compose audit
@@ -75,6 +76,12 @@ export function overlayDecls(
  * @param fam the request's family seat (`body.model`, "" when the
  *   request names none) — scopes the absorbed mod surface to the
  *   owning atom, the same fold compose and variant judge with
+ * @param toolOverlays the flow row's declared tool overlays — a
+ *   verbatim (choices-null) overlay pins its flat param on EVERY
+ *   listed stage (image-upscale's twin make+polish seed), the
+ *   declared semantic the generic single-target scan would refuse
+ *   as ambiguous. Choices-mapped overlays fall through to the
+ *   generic scan (today's law, unchanged).
  */
 export function applyFlowParamsOverride(
   flowName: string,
@@ -82,6 +89,7 @@ export function applyFlowParamsOverride(
   overrideRaw: unknown,
   decls: ReturnType<CardRegistryService["cardDecls"]>,
   fam: string,
+  toolOverlays: readonly RegistryToolOverlay[] = [],
 ): void {
   if (typeof overrideRaw !== "object" || overrideRaw === null || Array.isArray(overrideRaw)) {
     throw new RemoteError(
@@ -202,6 +210,50 @@ export function applyFlowParamsOverride(
           );
         }
         paramsOf(target)[pk] = pv;
+      }
+      continue;
+    }
+    // THE DECLARED TWIN (N1, 2026-11-15 — the flow cannot
+    // reproduce): a verbatim tool overlay pins its flat param on
+    // every listed stage BEFORE the single-target scan runs, so a
+    // declared twin (image-upscale's seed → make + polish) stamps
+    // both and the stated seed reaches both samplers. The admission
+    // scan below never sees the key (consumed here); a listed stage
+    // that admits nothing, or a stage id the row does not name, is a
+    // broken declaration and refuses LOUD — never a silent half-pin.
+    const twins = toolOverlays.filter(
+      (o) => o.param === key && o.choices === null,
+    );
+    if (twins.length > 0) {
+      for (const o of twins) {
+        const target = stageRows.find((r) => r["id"] === o.stage);
+        if (target === undefined) {
+          throw new RemoteError(
+            "runs/invalid-request",
+            "flow " + flowName + " declares a seed overlay on stage " +
+              JSON.stringify(o.stage) + " — no such stage " +
+              "(stages: " + stageRows.map((r) => JSON.stringify(r["id"])).join(", ") + ")",
+            { loc: "params" },
+          );
+        }
+        if (!admitsParam(target, key)) {
+          throw new RemoteError(
+            "runs/invalid-request",
+            "card " + JSON.stringify(target["card"]) +
+              " does not admit param " + JSON.stringify(key) +
+              " — the flow's declared overlay names it anyway (admitted: " +
+              JSON.stringify(admitOf(target)) + ")",
+            { loc: "params" },
+          );
+        }
+        let at = paramsOf(target);
+        for (const seg of o.path.slice(0, -1)) {
+          if (typeof at[seg] !== "object" || at[seg] === null || Array.isArray(at[seg])) {
+            at[seg] = {};
+          }
+          at = at[seg] as Record<string, unknown>;
+        }
+        at[o.path[o.path.length - 1] as string] = value;
       }
       continue;
     }
