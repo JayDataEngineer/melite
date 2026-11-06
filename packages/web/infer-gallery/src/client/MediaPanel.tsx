@@ -43,7 +43,7 @@ interface TabInfo {
     readonly actions: { openResource(address: string): void }
   }
 }
-import { decodeRuns, decodeDrafts } from './decode.ts'
+import { decodeRuns, decodeDrafts, decodeBrowse, type BrowseEntry, type BrowsePage } from './decode.ts'
 import { draftIdOf, type DraftId } from '@melite/contracts/benchStage'
 import type { RunArtifact, GalleryRunRow } from './decode.ts'
 import { useFeed } from './useFeed.ts'
@@ -134,8 +134,32 @@ const FRAME_DUMP = /(^|_)\d{3,}_?\.png$/i
  *  grid mounts one page of tiles — each video tile holds a
  *  metadata-preload element, so a full 500-run window at once is the
  *  sidebar's heaviest surface. The drilldown's prev/next still walks
- *  the WHOLE filtered list (its siblings stay `shown`). */
-const PAGE_SIZE = 60
+ *  the WHOLE filtered list (its siblings stay `shown`).
+ *  THE VIEW DIALS (operator 2026-11-16, "change the size of the
+ *  previews to something bigger, and set the pagination per page"):
+ *  the page size is an OPERATOR SETTING (30/60/120 — 60 the default
+ *  this face always had), persisted beside the tile size below. */
+const PAGE_CHOICES = [30, 60, 120] as const
+const DEFAULT_PAGE_SIZE = 60
+
+/** THE TILE SIZE DIAL (operator 2026-11-16): the grid's minmax column
+ *  width — S is the face's native 148, M and L widen the previews.
+ *  Both dials persist in localStorage (a setting survives the tab;
+ *  the useFeed cache's own seat) and refuse foreign stored values. */
+const TILE_W = { s: 148, m: 220, l: 320 } as const
+type TileSize = keyof typeof TILE_W
+
+/** Read one persisted dial — a foreign or absent value falls to the
+ *  default (never a poisoned layout from a stale key). */
+function readDial<T extends string | number>(key: string, allowed: readonly T[], fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key)
+    const hit = allowed.find((a) => String(a) === raw)
+    return hit ?? fallback
+  } catch {
+    return fallback
+  }
+}
 
 /* FILENAME CONTRACTS with the render lanes — declared once, used by name
  * (the Sep-6 audit's F5: magic stems and suffix regexes restated at every
@@ -543,7 +567,7 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
   const [cat, setCat] = useState<Cat>('all')
   const [search, setSearch] = useState('')
   const [preview, setPreview] = useState<MediaItem | null>(null)
-  const [tab, setTab] = useState<'artifacts' | 'flows'>('artifacts')
+  const [tab, setTab] = useState<'artifacts' | 'flows' | 'files'>('artifacts')
   /* THE SORT CONTROL (operator 2026-09-23): the archive is the
    * operator's record — Newest is the default scan, Oldest and A–Z
    * are the two reorderings the date wall made necessary. Applies to
@@ -622,7 +646,11 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
   /* PAGINATION (operator 2026-10-22): the grid renders one page; a
    * filter/sort/tab change re-anchors the scan to its first page. */
   const [page, setPage] = useState(0)
-  useEffect(() => { setPage(0) }, [cat, search, sort, tab, showArchived])
+  /* THE VIEW DIALS (operator 2026-11-16): tile size + page size,
+   * persisted — the operator's grid, the operator's scale. */
+  const [tileSize, setTileSize] = useState<TileSize>(() => readDial('infer-media-tile', ['s', 'm', 'l'] as const, 's'))
+  const [pageSize, setPageSize] = useState<number>(() => readDial('infer-media-page', PAGE_CHOICES, DEFAULT_PAGE_SIZE))
+  useEffect(() => { setPage(0) }, [cat, search, sort, tab, showArchived, pageSize])
   /* The tab's own navigation face (the standard hook every tab body
    * receives). Hook-count law: the prop is stable per mount, so the
    * conditional call keeps one hook order for the panel's lifetime. */
@@ -637,6 +665,106 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
     open(estateArtifactAddress(item.url))
   }
   const load = runsFeed.reload
+
+  /* THE FILES FACE (operator 2026-11-16, "no file browser… keeps only
+   * the last 500, all the other media effectively lost in nested
+   * folders"): a third tab over GET /infer-gallery/browse — the DISK
+   * truth behind the runs window. Every run dir on disk lists at the
+   * root regardless of the queue seat's 500-row eviction window; one
+   * directory level per call, cursor-paginated with an honest total
+   * (the More verb continues the walk while a cursor rides — never a
+   * silent cap). This is a PATH-KEYED fetch, not a feed: useFeed owns
+   * one static URL, the walk's URL changes with every hop. */
+  const [dirPath, setDirPath] = useState('')
+  const [browse, setBrowse] = useState<BrowsePage | null>(null)
+  const [browseLoading, setBrowseLoading] = useState(false)
+  const [browseError, setBrowseError] = useState('')
+  const [browseNonce, setBrowseNonce] = useState(0)
+
+  const loadBrowse = (cursor: number): void => {
+    setBrowseLoading(true)
+    setBrowseError('')
+    const q = '/infer-gallery/browse?path=' + encodeURIComponent(dirPath) + (cursor > 0 ? '&cursor=' + String(cursor) : '')
+    void fetch(q)
+      .then(async (res: Response): Promise<BrowsePage> => {
+        if (!res.ok) throw new Error('HTTP ' + String(res.status))
+        return decodeBrowse(await res.json().catch((): null => null))
+      })
+      .then((page: BrowsePage) => {
+        // a never-stale walk: the host echoes the walked path — a
+        // late resolve from an abandoned hop (the operator clicked
+        // deeper before the slower answer landed) is DISCARDED, never
+        // painted over the new hop
+        if (page.path !== dirPath) return
+        // cursor 0 REPLACES (a fresh hop); a cursor page APPENDS (the
+        // walk continues one honest level at a time)
+        setBrowse((was) => cursor === 0 || was === null || was.path !== page.path
+          ? page
+          : { ...page, entries: [...was.entries, ...page.entries] })
+      })
+      .catch((e: unknown) => {
+        setBrowseError(e instanceof Error ? e.message : String(e))
+      })
+      .finally(() => { setBrowseLoading(false) })
+  }
+
+  useEffect(() => {
+    if (tab !== 'files') return
+    loadBrowse(0)
+    // dirPath is the walk's key (every hop re-roots the listing);
+    // browseNonce is the face's own refresh verb
+  }, [tab, dirPath, browseNonce])
+
+  /** Extension classify for browse names (the flatten classifier rides
+   *  RunArtifact rows; a bare name has no row — the SAME SSOT regexes,
+   *  never a second spelling of the ext tables). */
+  const kindOfName = (name: string): Kind | null => {
+    for (const kind of KIND_ORDER) {
+      if (KIND_RE[kind].test(name)) return kind
+    }
+    return null
+  }
+
+  /** A browse file maps onto the panel's own MediaItem currency — the
+   *  SAME lightbox, walk and mutation doors as the artifacts face (the
+   *  artifact route serves nested run-relative paths; the drilldown's
+   *  verbs ride artifactPathOfUrl verbatim). runId is the path's first
+   *  segment: nested files still name their run. */
+  const browseItemOf = (entry: BrowseEntry): MediaItem => {
+    const childPath = dirPath === '' ? entry.name : dirPath + '/' + entry.name
+    const url = '/infer-gallery/artifact?path=' + encodeURIComponent(childPath)
+    const kind = kindOfName(entry.name) ?? 'text'
+    const slash = childPath.indexOf('/')
+    return {
+      id: url,
+      kind,
+      url,
+      face: url,
+      poster: kind === 'image' ? url : '',
+      segment: false,
+      head: '"' + childPath + '"',
+      final: false,
+      runId: slash > 0 ? childPath.slice(0, slash) : '',
+      draftId: draftIdOf(''),
+      time: timeLabel((entry.mtime ?? 0) / 1000),
+      file: entry.name,
+      created: (entry.mtime ?? 0) / 1000,
+      archived: false,
+    }
+  }
+
+  /** The dir's media files in listed order — the lightbox's prev/next
+   *  walks exactly what the rows show (the walk-arrows law). */
+  const browseMediaItems = useMemo(
+    () => browse === null
+      ? []
+      : browse.entries
+          .filter((e) => e.kind === 'file' && kindOfName(e.name) !== null)
+          .map((e) => browseItemOf(e)),
+    // dirPath rides the deps: browseItemOf mints urls from it, and a
+    // hop must re-mint even before the new page lands
+    [browse, dirPath],
+  )
 
   /** THE WAND (hunk 4, 2026-09-10; restore arm 2026-09-11;
    *  RUN-FIRST law, the media-sidebar audit 2026-09-22): "recover
@@ -837,12 +965,12 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
     else if (sort === 'name') out.sort((a, b) => a.file.localeCompare(b.file))
     return out
   }, [items, cat, search, sort, showArchived])
-  const pageCount = Math.max(1, Math.ceil(shown.length / PAGE_SIZE))
+  const pageCount = Math.max(1, Math.ceil(shown.length / pageSize))
   // shown shrinking (a delete, a filter) must never strand the scan
   // past the last page.
   const safePage = Math.min(page, pageCount - 1)
   const pageItems = useMemo(
-    () => shown.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE),
+    () => shown.slice(safePage * pageSize, (safePage + 1) * pageSize),
     [shown, safePage],
   )
   /* THE VERB SUBSETS (mass-archive law): one selection, three verbs —
@@ -1078,17 +1206,22 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
             the handrolled chips — DSH ships no segmented atom and the
             wrapper's only job was that look. */}
         <span style={{ display: 'flex', gap: 4 }}>
-          {(['flows', 'artifacts'] as const).map((t) => (
+          {(['flows', 'artifacts', 'files'] as const).map((t) => (
             <Pill
               key={t}
               active={tab === t}
               onClick={() => { setTab(t) }}
-            >{t === 'flows' ? galleryCopy.tabFlows({ count: drafts.length }) : galleryCopy.tabArtifacts({ count: liveItems.length })}</Pill>
+            >{t === 'flows' ? galleryCopy.tabFlows({ count: drafts.length }) : t === 'artifacts' ? galleryCopy.tabArtifacts({ count: liveItems.length }) : galleryCopy.tabFiles}</Pill>
           ))}
         </span>
         {/* SORT (operator 2026-09-23): three Pills in the DSH chrome —
             Newest (default scan), Oldest, A–Z by file. Rides `shown`,
             so the drilldown prev/next walk the same order. */}
+        {/* SORT + SEARCH stay on the artifacts/flows faces (they
+            filter the runs feed); the files face owns the disk walk —
+            its filters would lie about a total the walk serves. */}
+        {tab !== 'files' && (
+          <>
         <span style={{ display: 'flex', gap: 4 }}>
           {([['new', galleryCopy.sortNewest], ['old', galleryCopy.sortOldest], ['name', galleryCopy.sortAlpha]] as const).map(([m, label]) => (
             <Pill
@@ -1098,6 +1231,37 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
             >{label}</Pill>
           ))}
         </span>
+        {/* THE VIEW DIALS (operator 2026-11-16): preview size + page
+            size over the artifacts grid — persisted dials, DSH Pills
+            for the chrome. The page dial re-anchors the scan to its
+            first page (a wider page must never strand the scan past
+            the last page). */}
+        {tab === 'artifacts' && (
+          <span style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+            <span style={{ fontSize: 11, color: labelSecondary2 }}>{galleryCopy.sizeLabel}</span>
+            {(['s', 'm', 'l'] as const).map((sz) => (
+              <Pill
+                key={sz}
+                active={tileSize === sz}
+                onClick={() => {
+                  setTileSize(sz)
+                  try { localStorage.setItem('infer-media-tile', sz) } catch { /* a refused store keeps the session dial */ }
+                }}
+              >{sz === 's' ? galleryCopy.sizeS : sz === 'm' ? galleryCopy.sizeM : galleryCopy.sizeL}</Pill>
+            ))}
+            <span style={{ fontSize: 11, color: labelSecondary2, marginLeft: 6 }}>{galleryCopy.perPageLabel}</span>
+            {PAGE_CHOICES.map((n) => (
+              <Pill
+                key={n}
+                active={pageSize === n}
+                onClick={() => {
+                  setPageSize(n)
+                  try { localStorage.setItem('infer-media-page', String(n)) } catch { /* a refused store keeps the session dial */ }
+                }}
+              >{String(n)}</Pill>
+            ))}
+          </span>
+        )}
         {/* SELECT (operator 2026-10-22): multi-select over the ARTIFACTS
             grid — hidden on the flows face, where a selection means
             nothing. Leaving the mode clears the selection; the
@@ -1166,9 +1330,17 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
           </>
         )}
         <SearchInput value={search} onChange={setSearch} placeholder={galleryCopy.searchPlaceholder} />
-        <RefreshButton loading={loading} onClick={load} />
+          </>
+        )}
+        {/* On the files face the refresh verb re-walks the disk (the
+            runs feed's reload would repaint a window the browse face
+            deliberately walks past). */}
+        <RefreshButton loading={tab === 'files' ? browseLoading : loading} onClick={() => { if (tab === 'files') setBrowseNonce((n) => n + 1); else load() }} />
       </div>
 
+      {/* THE KIND CHIPS stay on the artifacts face — they count the
+          runs feed's live tiles, never the disk walk. */}
+      {tab === 'artifacts' && (
       <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
         {chip('all', galleryCopy.chipAll)}{KIND_ORDER.map((k) => chip(k, KIND_LABEL[k]))}
         {/* THE TUCKED TOGGLE (mass-archive law): the archived face
@@ -1184,6 +1356,7 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
             )
           : null}
       </div>
+      )}
 
       {tab === 'flows'
         ? (<>
@@ -1239,7 +1412,7 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                 ))}
               </div>}
           </>)
-        : <FeedErrors errors={gatewayErrors} />}
+        : tab === 'artifacts' ? <FeedErrors errors={gatewayErrors} /> : null}
       {tab === 'artifacts' && deleteNote !== ''
         ? <ErrorBanner>{deleteNote}</ErrorBanner>
         : null}
@@ -1270,7 +1443,7 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                     data-infer-media-grid="1"
                     onPointerUp={() => { dragSelecting.current = false; dragAnchorId.current = null }}
                     onPointerCancel={() => { dragSelecting.current = false; dragAnchorId.current = null }}
-                    style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(148px, 1fr))', gap: 10, touchAction: 'pan-y', userSelect: selectMode ? 'none' : undefined }}
+                    style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${String(TILE_W[tileSize])}px, 1fr))`, gap: 10, touchAction: 'pan-y', userSelect: selectMode ? 'none' : undefined }}
                   >
                     {pageItems.map((it) => (
                       <button
@@ -1491,12 +1664,117 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                 </>
               ))}
 
+      {tab === 'files' && (
+        <div data-infer-media-files="1" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {/* THE BREADCRUMB: the walk's own path, every hop clickable
+              back to the root (every run dir on disk). */}
+          <div data-infer-files-crumbs="1" style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap', fontSize: 12 }}>
+            <button
+              onClick={() => { setDirPath('') }}
+              aria-label={galleryCopy.crumbRoot}
+              style={{ border: 'none', background: 'none', color: dirPath === '' ? labelPrimary1 : labelSecondary2, fontWeight: dirPath === '' ? 700 : 400, cursor: 'pointer', padding: 0, fontFamily: 'inherit', fontSize: 12 }}
+            >{galleryCopy.crumbRoot}</button>
+            {dirPath !== '' && dirPath.split('/').map((seg, i, arr) => (
+              <span key={arr.slice(0, i + 1).join('/')} style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                <span style={{ color: labelSecondary2 }}>/</span>
+                <button
+                  onClick={() => { setDirPath(arr.slice(0, i + 1).join('/')) }}
+                  aria-label={seg}
+                  style={{ border: 'none', background: 'none', color: i === arr.length - 1 ? labelPrimary1 : labelSecondary2, fontWeight: i === arr.length - 1 ? 700 : 400, cursor: 'pointer', padding: 0, fontFamily: 'inherit', fontSize: 12 }}
+                >{seg}</button>
+              </span>
+            ))}
+          </div>
+          {browseError !== ''
+            ? <ErrorBanner>{galleryCopy.browseFailed({ error: browseError })}</ErrorBanner>
+            : null}
+          {browseLoading && browse === null
+            ? <Empty>{galleryCopy.browseLoading}</Empty>
+            : browse === null || browse.entries.length === 0
+              ? <Empty>{galleryCopy.browseEmpty}</Empty>
+              : (
+                <>
+                  {browse.entries.map((e) => {
+                    const childPath = dirPath === '' ? e.name : dirPath + '/' + e.name
+                    const rowStyle: React.CSSProperties = {
+                      display: 'flex', alignItems: 'center', gap: 10, textAlign: 'left',
+                      border: '1px solid ' + borderL2, borderRadius: 10, padding: '8px 12px',
+                      background: gradientStage, cursor: 'pointer',
+                      color: labelPrimary1, fontFamily: 'inherit', textDecoration: 'none',
+                    }
+                    if (e.kind === 'dir') {
+                      return (
+                        <button
+                          key={childPath}
+                          data-dir={childPath}
+                          onClick={() => { setDirPath(childPath) }}
+                          aria-label={galleryCopy.folderAria({ name: e.name })}
+                          style={rowStyle}
+                        >
+                          <span style={{ fontSize: 15, lineHeight: 0, color: stateBusinessPrimary }}>▸</span>
+                          <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.name}</span>
+                          <span style={{ fontSize: 10, color: labelSecondary2 }}>{timeLabel((e.mtime ?? 0) / 1000)}</span>
+                        </button>
+                      )
+                    }
+                    const kind = kindOfName(e.name)
+                    // a media kind opens THE SAME lightbox (walk + verbs);
+                    // anything else rides the native door — a new tab,
+                    // never a dead row
+                    if (kind === null) {
+                      return (
+                        <a
+                          key={childPath}
+                          data-file={childPath}
+                          href={'/infer-gallery/artifact?path=' + encodeURIComponent(childPath)}
+                          target="_blank"
+                          rel="noreferrer"
+                          aria-label={galleryCopy.fileAria({ name: e.name })}
+                          style={rowStyle}
+                        >
+                          <span style={{ fontSize: 15, lineHeight: 0, color: textTertiary2, display: 'flex' }}><Glyph kind="text" size={16} /></span>
+                          <span style={{ flex: 1, minWidth: 0, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.name}</span>
+                          <span style={{ fontSize: 10, color: labelSecondary2 }}>{typeof e.size === 'number' ? Math.ceil(e.size / 1024) + ' KB' : ''}</span>
+                        </a>
+                      )
+                    }
+                    return (
+                      <button
+                        key={childPath}
+                        data-file={childPath}
+                        onClick={() => { setPreview(browseItemOf(e)) }}
+                        aria-label={galleryCopy.fileAria({ name: e.name })}
+                        style={rowStyle}
+                      >
+                        <span style={{ fontSize: 15, lineHeight: 0, color: textTertiary2, display: 'flex' }}><Glyph kind={kind} size={16} /></span>
+                        <span style={{ flex: 1, minWidth: 0, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.name}</span>
+                        <span style={{ fontSize: 10, color: labelSecondary2 }}>{[timeLabel((e.mtime ?? 0) / 1000), typeof e.size === 'number' ? Math.ceil(e.size / 1024) + ' KB' : ''].filter(Boolean).join(' · ')}</span>
+                      </button>
+                    )
+                  })}
+                  {/* THE HONEST TOTAL outlives the walk: the count
+                      names what the walk has shown of what disk holds
+                      — before, during and after the cursor. The verb
+                      rides only while a cursor remains. */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
+                    {browse.nextCursor !== null && (
+                      <Pill active={false} aria-busy={browseLoading} onClick={() => { if (!browseLoading) loadBrowse(browse.nextCursor ?? 0) }}>{galleryCopy.moreAction}</Pill>
+                    )}
+                    <span data-infer-files-count="1" style={{ fontSize: 11, color: labelPrimary3 }}>
+                      {String(browse.entries.length)} / {String(browse.total)}
+                    </span>
+                  </div>
+                </>
+              )}
+        </div>
+      )}
+
       {preview !== null
         ? <Overlay
           item={preview}
           onClose={() => { setPreview(null) }}
           openArtifact={openArtifact}
-          siblings={shown}
+          siblings={tab === 'files' ? browseMediaItems : shown}
           onNavigate={(next) => { setPreview(next) }}
           onDelete={deleteItem}
           onRename={renameItem}

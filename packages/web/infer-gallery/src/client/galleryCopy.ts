@@ -212,4 +212,32 @@ export const galleryCopy = {
   cancelRenameAria: "Cancel rename",
   /** The lightbox's escape hint. */
   escHint: "Esc or click the mask to close",
+  /** The files tab label (the disk-truth browse face — a plain label:
+   * the count is the walk's honest total, known only after fetch). */
+  tabFiles: "Files",
+  /** The breadcrumb's root crumb (every run dir on disk). */
+  crumbRoot: "All runs",
+  /** The browse face's empty voice. */
+  browseEmpty: "no folders on disk",
+  /** The browse face's loading voice. */
+  browseLoading: "loading folders…",
+  /** The browse face's failure banner. */
+  browseFailed: (p: { error: string }): string => `browse failed — ${p.error}`,
+  /** The browse face's next-page verb (the walk continues while the
+   *  cursor rides — never a silent cap). */
+  moreAction: "More",
+  /** A directory row's accessible name. */
+  folderAria: (p: { name: string }): string => `Open folder ${p.name}`,
+  /** A file row's accessible name. */
+  fileAria: (p: { name: string }): string => `Open ${p.name}`,
+  /** The preview-size dial's label. */
+  sizeLabel: "Size",
+  /** The preview-size dial's small setting. */
+  sizeS: "S",
+  /** The preview-size dial's medium setting. */
+  sizeM: "M",
+  /** The preview-size dial's large setting. */
+  sizeL: "L",
+  /** The page-size dial's label. */
+  perPageLabel: "Per page",
 } as const;

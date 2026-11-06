@@ -111,3 +111,50 @@ export function decodeDrafts(json: unknown): DraftsFeed {
   }
   return { drafts, errors }
 }
+
+/** One browse-face row — the disk truth behind the runs window (the
+ *  browse route walks the output trees directly; a run dir the
+ *  queue's 500-row eviction window dropped still lists here). */
+export interface BrowseEntry {
+  name: string
+  kind: 'dir' | 'file'
+  size?: number
+  /** ms since epoch (the route serves stat mtimeMs). */
+  mtime?: number
+}
+
+/** One browse answer — one directory level, cursor-paginated with an
+ *  honest total (nextCursor null means the walk is complete, never a
+ *  silent cap). */
+export interface BrowsePage {
+  path: string
+  entries: BrowseEntry[]
+  total: number
+  nextCursor: number | null
+}
+
+export function decodeBrowse(json: unknown): BrowsePage {
+  const d = (json ?? {}) as { path?: unknown; entries?: unknown; total?: unknown; nextCursor?: unknown }
+  /* the runs law, mirrored: a row without a name or with a foreign
+   * kind is unrenderable — dropped here (the wire guard), never
+   * pushed as a partial that paints an empty face over a malformed
+   * answer */
+  const entries: BrowseEntry[] = []
+  for (const raw of row<unknown>(d.entries)) {
+    const e = (raw ?? {}) as { name?: unknown; kind?: unknown; size?: unknown; mtime?: unknown }
+    if (typeof e.name !== 'string' || e.name === '') continue
+    if (e.kind !== 'dir' && e.kind !== 'file') continue
+    entries.push({
+      name: e.name,
+      kind: e.kind,
+      ...(typeof e.size === 'number' ? { size: e.size } : {}),
+      ...(typeof e.mtime === 'number' ? { mtime: e.mtime } : {}),
+    })
+  }
+  return {
+    path: typeof d.path === 'string' ? d.path : '',
+    entries,
+    total: typeof d.total === 'number' ? d.total : entries.length,
+    nextCursor: typeof d.nextCursor === 'number' ? d.nextCursor : null,
+  }
+}

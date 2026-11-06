@@ -676,7 +676,35 @@ window.__ModuleLoader__.load({
 			/** The cancel verb's accessible name in the rename flow. */
 			cancelRenameAria: "Cancel rename",
 			/** The lightbox's escape hint. */
-			escHint: "Esc or click the mask to close"
+			escHint: "Esc or click the mask to close",
+			/** The files tab label (the disk-truth browse face — a plain label:
+			* the count is the walk's honest total, known only after fetch). */
+			tabFiles: "Files",
+			/** The breadcrumb's root crumb (every run dir on disk). */
+			crumbRoot: "All runs",
+			/** The browse face's empty voice. */
+			browseEmpty: "no folders on disk",
+			/** The browse face's loading voice. */
+			browseLoading: "loading folders…",
+			/** The browse face's failure banner. */
+			browseFailed: (p) => `browse failed — ${p.error}`,
+			/** The browse face's next-page verb (the walk continues while the
+			*  cursor rides — never a silent cap). */
+			moreAction: "More",
+			/** A directory row's accessible name. */
+			folderAria: (p) => `Open folder ${p.name}`,
+			/** A file row's accessible name. */
+			fileAria: (p) => `Open ${p.name}`,
+			/** The preview-size dial's label. */
+			sizeLabel: "Size",
+			/** The preview-size dial's small setting. */
+			sizeS: "S",
+			/** The preview-size dial's medium setting. */
+			sizeM: "M",
+			/** The preview-size dial's large setting. */
+			sizeL: "L",
+			/** The page-size dial's label. */
+			perPageLabel: "Per page"
 		};
 		//#endregion
 		//#region src/client/ui.tokens.ts
@@ -2318,6 +2346,27 @@ window.__ModuleLoader__.load({
 				errors
 			};
 		}
+		function decodeBrowse(json) {
+			const d = json ?? {};
+			const entries = [];
+			for (const raw of row(d.entries)) {
+				const e = raw ?? {};
+				if (typeof e.name !== "string" || e.name === "") continue;
+				if (e.kind !== "dir" && e.kind !== "file") continue;
+				entries.push({
+					name: e.name,
+					kind: e.kind,
+					...typeof e.size === "number" ? { size: e.size } : {},
+					...typeof e.mtime === "number" ? { mtime: e.mtime } : {}
+				});
+			}
+			return {
+				path: typeof d.path === "string" ? d.path : "",
+				entries,
+				total: typeof d.total === "number" ? d.total : entries.length,
+				nextCursor: typeof d.nextCursor === "number" ? d.nextCursor : null
+			};
+		}
 		//#endregion
 		//#region src/client/useFeed.ts
 		/**
@@ -2777,8 +2826,36 @@ window.__ModuleLoader__.load({
 		*  grid mounts one page of tiles — each video tile holds a
 		*  metadata-preload element, so a full 500-run window at once is the
 		*  sidebar's heaviest surface. The drilldown's prev/next still walks
-		*  the WHOLE filtered list (its siblings stay `shown`). */
-		const PAGE_SIZE = 60;
+		*  the WHOLE filtered list (its siblings stay `shown`).
+		*  THE VIEW DIALS (operator 2026-11-16, "change the size of the
+		*  previews to something bigger, and set the pagination per page"):
+		*  the page size is an OPERATOR SETTING (30/60/120 — 60 the default
+		*  this face always had), persisted beside the tile size below. */
+		const PAGE_CHOICES = [
+			30,
+			60,
+			120
+		];
+		const DEFAULT_PAGE_SIZE = 60;
+		/** THE TILE SIZE DIAL (operator 2026-11-16): the grid's minmax column
+		*  width — S is the face's native 148, M and L widen the previews.
+		*  Both dials persist in localStorage (a setting survives the tab;
+		*  the useFeed cache's own seat) and refuse foreign stored values. */
+		const TILE_W = {
+			s: 148,
+			m: 220,
+			l: 320
+		};
+		/** Read one persisted dial — a foreign or absent value falls to the
+		*  default (never a poisoned layout from a stale key). */
+		function readDial(key, allowed, fallback) {
+			try {
+				const raw = localStorage.getItem(key);
+				return allowed.find((a) => String(a) === raw) ?? fallback;
+			} catch {
+				return fallback;
+			}
+		}
 		/** Concatenated film = video WITHOUT a per-window suffix; window films
 		*  carry it. THE REAL SPELLING (live proof, BRIEF4 2026-09-23):
 		*  `<stem>_w<idx>_<seq>_.mp4` — the sequence rides a TRAILING
@@ -3255,6 +3332,12 @@ window.__ModuleLoader__.load({
 			const draftInflight = (0, react.useRef)(/* @__PURE__ */ new Set());
 			const [deleteNote, setDeleteNote] = (0, react.useState)("");
 			const [page, setPage] = (0, react.useState)(0);
+			const [tileSize, setTileSize] = (0, react.useState)(() => readDial("infer-media-tile", [
+				"s",
+				"m",
+				"l"
+			], "s"));
+			const [pageSize, setPageSize] = (0, react.useState)(() => readDial("infer-media-page", PAGE_CHOICES, DEFAULT_PAGE_SIZE));
 			(0, react.useEffect)(() => {
 				setPage(0);
 			}, [
@@ -3262,7 +3345,8 @@ window.__ModuleLoader__.load({
 				search,
 				sort,
 				tab,
-				showArchived
+				showArchived,
+				pageSize
 			]);
 			const tabInfo = useTabInfo !== void 0 ? useTabInfo() : void 0;
 			/** Open one 3D artifact as the estate-artifact resource (ModelView). */
@@ -3275,6 +3359,75 @@ window.__ModuleLoader__.load({
 				open(estateArtifactAddress(item.url));
 			};
 			const load = runsFeed.reload;
+			const [dirPath, setDirPath] = (0, react.useState)("");
+			const [browse, setBrowse] = (0, react.useState)(null);
+			const [browseLoading, setBrowseLoading] = (0, react.useState)(false);
+			const [browseError, setBrowseError] = (0, react.useState)("");
+			const [browseNonce, setBrowseNonce] = (0, react.useState)(0);
+			const loadBrowse = (cursor) => {
+				setBrowseLoading(true);
+				setBrowseError("");
+				const q = "/infer-gallery/browse?path=" + encodeURIComponent(dirPath) + (cursor > 0 ? "&cursor=" + String(cursor) : "");
+				fetch(q).then(async (res) => {
+					if (!res.ok) throw new Error("HTTP " + String(res.status));
+					return decodeBrowse(await res.json().catch(() => null));
+				}).then((page) => {
+					if (page.path !== dirPath) return;
+					setBrowse((was) => cursor === 0 || was === null || was.path !== page.path ? page : {
+						...page,
+						entries: [...was.entries, ...page.entries]
+					});
+				}).catch((e) => {
+					setBrowseError(e instanceof Error ? e.message : String(e));
+				}).finally(() => {
+					setBrowseLoading(false);
+				});
+			};
+			(0, react.useEffect)(() => {
+				if (tab !== "files") return;
+				loadBrowse(0);
+			}, [
+				tab,
+				dirPath,
+				browseNonce
+			]);
+			/** Extension classify for browse names (the flatten classifier rides
+			*  RunArtifact rows; a bare name has no row — the SAME SSOT regexes,
+			*  never a second spelling of the ext tables). */
+			const kindOfName = (name) => {
+				for (const kind of KIND_ORDER) if (KIND_RE[kind].test(name)) return kind;
+				return null;
+			};
+			/** A browse file maps onto the panel's own MediaItem currency — the
+			*  SAME lightbox, walk and mutation doors as the artifacts face (the
+			*  artifact route serves nested run-relative paths; the drilldown's
+			*  verbs ride artifactPathOfUrl verbatim). runId is the path's first
+			*  segment: nested files still name their run. */
+			const browseItemOf = (entry) => {
+				const childPath = dirPath === "" ? entry.name : dirPath + "/" + entry.name;
+				const url = "/infer-gallery/artifact?path=" + encodeURIComponent(childPath);
+				const kind = kindOfName(entry.name) ?? "text";
+				const slash = childPath.indexOf("/");
+				return {
+					id: url,
+					kind,
+					url,
+					face: url,
+					poster: kind === "image" ? url : "",
+					segment: false,
+					head: "\"" + childPath + "\"",
+					final: false,
+					runId: slash > 0 ? childPath.slice(0, slash) : "",
+					draftId: draftIdOf$1(""),
+					time: timeLabel((entry.mtime ?? 0) / 1e3),
+					file: entry.name,
+					created: (entry.mtime ?? 0) / 1e3,
+					archived: false
+				};
+			};
+			/** The dir's media files in listed order — the lightbox's prev/next
+			*  walks exactly what the rows show (the walk-arrows law). */
+			const browseMediaItems = (0, react.useMemo)(() => browse === null ? [] : browse.entries.filter((e) => e.kind === "file" && kindOfName(e.name) !== null).map((e) => browseItemOf(e)), [browse, dirPath]);
 			/** THE WAND (hunk 4, 2026-09-10; restore arm 2026-09-11;
 			*  RUN-FIRST law, the media-sidebar audit 2026-09-22): "recover
 			*  the cards that made this media" restores the run's workflow onto
@@ -3449,9 +3602,9 @@ window.__ModuleLoader__.load({
 				sort,
 				showArchived
 			]);
-			const pageCount = Math.max(1, Math.ceil(shown.length / PAGE_SIZE));
+			const pageCount = Math.max(1, Math.ceil(shown.length / pageSize));
 			const safePage = Math.min(page, pageCount - 1);
-			const pageItems = (0, react.useMemo)(() => shown.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE), [shown, safePage]);
+			const pageItems = (0, react.useMemo)(() => shown.slice(safePage * pageSize, (safePage + 1) * pageSize), [shown, safePage]);
 			const selectedLive = (0, react.useMemo)(() => items.filter((it) => selected.has(it.id) && !it.archived), [items, selected]);
 			const selectedTucked = (0, react.useMemo)(() => items.filter((it) => selected.has(it.id) && it.archived), [items, selected]);
 			const toggleSelect = (it) => {
@@ -3649,122 +3802,179 @@ window.__ModuleLoader__.load({
 									display: "flex",
 									gap: 4
 								},
-								children: ["flows", "artifacts"].map((t) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
+								children: [
+									"flows",
+									"artifacts",
+									"files"
+								].map((t) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
 									active: tab === t,
 									onClick: () => {
 										setTab(t);
 									},
-									children: t === "flows" ? galleryCopy.tabFlows({ count: drafts.length }) : galleryCopy.tabArtifacts({ count: liveItems.length })
+									children: t === "flows" ? galleryCopy.tabFlows({ count: drafts.length }) : t === "artifacts" ? galleryCopy.tabArtifacts({ count: liveItems.length }) : galleryCopy.tabFiles
 								}, t))
 							}),
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								style: {
-									display: "flex",
-									gap: 4
-								},
-								children: [
-									["new", galleryCopy.sortNewest],
-									["old", galleryCopy.sortOldest],
-									["name", galleryCopy.sortAlpha]
-								].map(([m, label]) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
-									active: sort === m,
-									onClick: () => {
-										setSort(m);
+							tab !== "files" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									style: {
+										display: "flex",
+										gap: 4
 									},
-									children: label
-								}, m))
-							}),
-							tab === "artifacts" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
-								active: selectMode,
-								onClick: () => {
-									if (selectMode) {
-										setSelected(/* @__PURE__ */ new Set());
-										setDeleteArmed(false);
-										setArchiveArmed(false);
-										setRestoreArmed(false);
-										setSelectMode(false);
-										return;
-									}
-									setSelectMode(true);
-								},
-								children: galleryCopy.selectAction
-							}), selectMode && selected.size > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-								style: {
-									display: "flex",
-									gap: 6,
-									alignItems: "center"
-								},
-								children: [
-									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-										style: {
-											fontSize: 12,
-											color: "var(--dsw-alias-label-primary, rgba(226,232,240,0.85))"
-										},
-										children: galleryCopy.selectedCount({ count: selected.size })
-									}),
-									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
-										active: false,
+									children: [
+										["new", galleryCopy.sortNewest],
+										["old", galleryCopy.sortOldest],
+										["name", galleryCopy.sortAlpha]
+									].map(([m, label]) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
+										active: sort === m,
 										onClick: () => {
+											setSort(m);
+										},
+										children: label
+									}, m))
+								}),
+								tab === "artifacts" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+									style: {
+										display: "flex",
+										gap: 4,
+										alignItems: "center"
+									},
+									children: [
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											style: {
+												fontSize: 11,
+												color: "var(--dsw-alias-label-secondary, rgba(148,163,184,0.9))"
+											},
+											children: galleryCopy.sizeLabel
+										}),
+										[
+											"s",
+											"m",
+											"l"
+										].map((sz) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
+											active: tileSize === sz,
+											onClick: () => {
+												setTileSize(sz);
+												try {
+													localStorage.setItem("infer-media-tile", sz);
+												} catch {}
+											},
+											children: sz === "s" ? galleryCopy.sizeS : sz === "m" ? galleryCopy.sizeM : galleryCopy.sizeL
+										}, sz)),
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											style: {
+												fontSize: 11,
+												color: "var(--dsw-alias-label-secondary, rgba(148,163,184,0.9))",
+												marginLeft: 6
+											},
+											children: galleryCopy.perPageLabel
+										}),
+										PAGE_CHOICES.map((n) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
+											active: pageSize === n,
+											onClick: () => {
+												setPageSize(n);
+												try {
+													localStorage.setItem("infer-media-page", String(n));
+												} catch {}
+											},
+											children: String(n)
+										}, n))
+									]
+								}),
+								tab === "artifacts" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
+									active: selectMode,
+									onClick: () => {
+										if (selectMode) {
 											setSelected(/* @__PURE__ */ new Set());
 											setDeleteArmed(false);
 											setArchiveArmed(false);
 											setRestoreArmed(false);
-										},
-										children: galleryCopy.clearAction
-									}),
-									selectedLive.length > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
-										active: archiveArmed,
-										"aria-busy": archiving,
-										onClick: () => {
-											if (archiving) return;
-											if (!archiveArmed) {
-												setArchiveArmed(true);
-												return;
-											}
-											archiveSelected();
-										},
-										children: archiveArmed ? galleryCopy.confirmArchive({ count: selectedLive.length }) : galleryCopy.archiveSelected
-									}),
-									selectedLive.length > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
-										active: deleteArmed,
-										"aria-busy": deleting,
-										onClick: () => {
-											if (deleting) return;
-											if (!deleteArmed) {
-												setDeleteArmed(true);
-												return;
-											}
-											deleteSelected();
-										},
-										children: deleteArmed ? galleryCopy.confirmDelete({ count: selectedLive.length }) : galleryCopy.deleteSelected
-									}),
-									selectedTucked.length > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
-										active: restoreArmed,
-										"aria-busy": archiving,
-										onClick: () => {
-											if (archiving) return;
-											if (!restoreArmed) {
-												setRestoreArmed(true);
-												return;
-											}
-											restoreSelected();
-										},
-										children: restoreArmed ? galleryCopy.confirmRestore({ count: selectedTucked.length }) : galleryCopy.restoreSelected
-									})
-								]
-							})] }),
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(SearchInput, {
-								value: search,
-								onChange: setSearch,
-								placeholder: galleryCopy.searchPlaceholder
-							}),
+											setSelectMode(false);
+											return;
+										}
+										setSelectMode(true);
+									},
+									children: galleryCopy.selectAction
+								}), selectMode && selected.size > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+									style: {
+										display: "flex",
+										gap: 6,
+										alignItems: "center"
+									},
+									children: [
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											style: {
+												fontSize: 12,
+												color: "var(--dsw-alias-label-primary, rgba(226,232,240,0.85))"
+											},
+											children: galleryCopy.selectedCount({ count: selected.size })
+										}),
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
+											active: false,
+											onClick: () => {
+												setSelected(/* @__PURE__ */ new Set());
+												setDeleteArmed(false);
+												setArchiveArmed(false);
+												setRestoreArmed(false);
+											},
+											children: galleryCopy.clearAction
+										}),
+										selectedLive.length > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
+											active: archiveArmed,
+											"aria-busy": archiving,
+											onClick: () => {
+												if (archiving) return;
+												if (!archiveArmed) {
+													setArchiveArmed(true);
+													return;
+												}
+												archiveSelected();
+											},
+											children: archiveArmed ? galleryCopy.confirmArchive({ count: selectedLive.length }) : galleryCopy.archiveSelected
+										}),
+										selectedLive.length > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
+											active: deleteArmed,
+											"aria-busy": deleting,
+											onClick: () => {
+												if (deleting) return;
+												if (!deleteArmed) {
+													setDeleteArmed(true);
+													return;
+												}
+												deleteSelected();
+											},
+											children: deleteArmed ? galleryCopy.confirmDelete({ count: selectedLive.length }) : galleryCopy.deleteSelected
+										}),
+										selectedTucked.length > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
+											active: restoreArmed,
+											"aria-busy": archiving,
+											onClick: () => {
+												if (archiving) return;
+												if (!restoreArmed) {
+													setRestoreArmed(true);
+													return;
+												}
+												restoreSelected();
+											},
+											children: restoreArmed ? galleryCopy.confirmRestore({ count: selectedTucked.length }) : galleryCopy.restoreSelected
+										})
+									]
+								})] }),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(SearchInput, {
+									value: search,
+									onChange: setSearch,
+									placeholder: galleryCopy.searchPlaceholder
+								})
+							] }),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RefreshButton, {
-								loading,
-								onClick: load
+								loading: tab === "files" ? browseLoading : loading,
+								onClick: () => {
+									if (tab === "files") setBrowseNonce((n) => n + 1);
+									else load();
+								}
 							})
 						]
 					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					tab === "artifacts" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 						style: {
 							display: "flex",
 							gap: 6,
@@ -3899,7 +4109,7 @@ window.__ModuleLoader__.load({
 								]
 							}, d.draft_id ?? Math.random()))
 						})
-					] }) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(FeedErrors, { errors: gatewayErrors }),
+					] }) : tab === "artifacts" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(FeedErrors, { errors: gatewayErrors }) : null,
 					tab === "artifacts" && deleteNote !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ErrorBanner, { children: deleteNote }) : null,
 					tab === "artifacts" && uiError !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ErrorBanner, { children: galleryCopy.openFailed({ error: uiError }) }) : null,
 					tab === "artifacts" && feedError !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ErrorBanner, { children: galleryCopy.feedFailed({ error: feedError }) }) : null,
@@ -3915,7 +4125,7 @@ window.__ModuleLoader__.load({
 						},
 						style: {
 							display: "grid",
-							gridTemplateColumns: "repeat(auto-fill, minmax(148px, 1fr))",
+							gridTemplateColumns: `repeat(auto-fill, minmax(${String(TILE_W[tileSize])}px, 1fr))`,
 							gap: 10,
 							touchAction: "pan-y",
 							userSelect: selectMode ? "none" : void 0
@@ -4164,13 +4374,238 @@ window.__ModuleLoader__.load({
 							})
 						]
 					})] })),
+					tab === "files" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						"data-infer-media-files": "1",
+						style: {
+							display: "flex",
+							flexDirection: "column",
+							gap: 6
+						},
+						children: [
+							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+								"data-infer-files-crumbs": "1",
+								style: {
+									display: "flex",
+									gap: 4,
+									alignItems: "center",
+									flexWrap: "wrap",
+									fontSize: 12
+								},
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+									onClick: () => {
+										setDirPath("");
+									},
+									"aria-label": galleryCopy.crumbRoot,
+									style: {
+										border: "none",
+										background: "none",
+										color: dirPath === "" ? "var(--dsw-alias-label-primary, rgb(226,232,240))" : "var(--dsw-alias-label-secondary, rgba(148,163,184,0.9))",
+										fontWeight: dirPath === "" ? 700 : 400,
+										cursor: "pointer",
+										padding: 0,
+										fontFamily: "inherit",
+										fontSize: 12
+									},
+									children: galleryCopy.crumbRoot
+								}), dirPath !== "" && dirPath.split("/").map((seg, i, arr) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+									style: {
+										display: "flex",
+										gap: 4,
+										alignItems: "center"
+									},
+									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+										style: { color: "var(--dsw-alias-label-secondary, rgba(148,163,184,0.9))" },
+										children: "/"
+									}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+										onClick: () => {
+											setDirPath(arr.slice(0, i + 1).join("/"));
+										},
+										"aria-label": seg,
+										style: {
+											border: "none",
+											background: "none",
+											color: i === arr.length - 1 ? "var(--dsw-alias-label-primary, rgb(226,232,240))" : "var(--dsw-alias-label-secondary, rgba(148,163,184,0.9))",
+											fontWeight: i === arr.length - 1 ? 700 : 400,
+											cursor: "pointer",
+											padding: 0,
+											fontFamily: "inherit",
+											fontSize: 12
+										},
+										children: seg
+									})]
+								}, arr.slice(0, i + 1).join("/")))]
+							}),
+							browseError !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ErrorBanner, { children: galleryCopy.browseFailed({ error: browseError }) }) : null,
+							browseLoading && browse === null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, { children: galleryCopy.browseLoading }) : browse === null || browse.entries.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, { children: galleryCopy.browseEmpty }) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [browse.entries.map((e) => {
+								const childPath = dirPath === "" ? e.name : dirPath + "/" + e.name;
+								const rowStyle = {
+									display: "flex",
+									alignItems: "center",
+									gap: 10,
+									textAlign: "left",
+									border: "1px solid var(--dsw-alias-border-l2, rgba(148,163,184,0.25))",
+									borderRadius: 10,
+									padding: "8px 12px",
+									background: gradientStage,
+									cursor: "pointer",
+									color: "var(--dsw-alias-label-primary, rgb(226,232,240))",
+									fontFamily: "inherit",
+									textDecoration: "none"
+								};
+								if (e.kind === "dir") return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
+									"data-dir": childPath,
+									onClick: () => {
+										setDirPath(childPath);
+									},
+									"aria-label": galleryCopy.folderAria({ name: e.name }),
+									style: rowStyle,
+									children: [
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											style: {
+												fontSize: 15,
+												lineHeight: 0,
+												color: "var(--dsw-alias-state-business-primary, rgb(147,197,253))"
+											},
+											children: "▸"
+										}),
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											style: {
+												flex: 1,
+												minWidth: 0,
+												fontSize: 13,
+												fontWeight: 600,
+												overflow: "hidden",
+												textOverflow: "ellipsis",
+												whiteSpace: "nowrap"
+											},
+											children: e.name
+										}),
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											style: {
+												fontSize: 10,
+												color: "var(--dsw-alias-label-secondary, rgba(148,163,184,0.9))"
+											},
+											children: timeLabel((e.mtime ?? 0) / 1e3)
+										})
+									]
+								}, childPath);
+								const kind = kindOfName(e.name);
+								if (kind === null) return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("a", {
+									"data-file": childPath,
+									href: "/infer-gallery/artifact?path=" + encodeURIComponent(childPath),
+									target: "_blank",
+									rel: "noreferrer",
+									"aria-label": galleryCopy.fileAria({ name: e.name }),
+									style: rowStyle,
+									children: [
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											style: {
+												fontSize: 15,
+												lineHeight: 0,
+												color: "var(--dsw-alias-text-tertiary, rgba(148,163,184,0.75))",
+												display: "flex"
+											},
+											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Glyph, {
+												kind: "text",
+												size: 16
+											})
+										}),
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											style: {
+												flex: 1,
+												minWidth: 0,
+												fontSize: 13,
+												overflow: "hidden",
+												textOverflow: "ellipsis",
+												whiteSpace: "nowrap"
+											},
+											children: e.name
+										}),
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											style: {
+												fontSize: 10,
+												color: "var(--dsw-alias-label-secondary, rgba(148,163,184,0.9))"
+											},
+											children: typeof e.size === "number" ? Math.ceil(e.size / 1024) + " KB" : ""
+										})
+									]
+								}, childPath);
+								return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
+									"data-file": childPath,
+									onClick: () => {
+										setPreview(browseItemOf(e));
+									},
+									"aria-label": galleryCopy.fileAria({ name: e.name }),
+									style: rowStyle,
+									children: [
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											style: {
+												fontSize: 15,
+												lineHeight: 0,
+												color: "var(--dsw-alias-text-tertiary, rgba(148,163,184,0.75))",
+												display: "flex"
+											},
+											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Glyph, {
+												kind,
+												size: 16
+											})
+										}),
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											style: {
+												flex: 1,
+												minWidth: 0,
+												fontSize: 13,
+												overflow: "hidden",
+												textOverflow: "ellipsis",
+												whiteSpace: "nowrap"
+											},
+											children: e.name
+										}),
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											style: {
+												fontSize: 10,
+												color: "var(--dsw-alias-label-secondary, rgba(148,163,184,0.9))"
+											},
+											children: [timeLabel((e.mtime ?? 0) / 1e3), typeof e.size === "number" ? Math.ceil(e.size / 1024) + " KB" : ""].filter(Boolean).join(" · ")
+										})
+									]
+								}, childPath);
+							}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+								style: {
+									display: "flex",
+									alignItems: "center",
+									gap: 6,
+									justifyContent: "center"
+								},
+								children: [browse.nextCursor !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
+									active: false,
+									"aria-busy": browseLoading,
+									onClick: () => {
+										if (!browseLoading) loadBrowse(browse.nextCursor ?? 0);
+									},
+									children: galleryCopy.moreAction
+								}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+									"data-infer-files-count": "1",
+									style: {
+										fontSize: 11,
+										color: "var(--dsw-alias-label-primary, rgba(226,232,240,0.92))"
+									},
+									children: [
+										String(browse.entries.length),
+										" / ",
+										String(browse.total)
+									]
+								})]
+							})] })
+						]
+					}),
 					preview !== null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Overlay, {
 						item: preview,
 						onClose: () => {
 							setPreview(null);
 						},
 						openArtifact,
-						siblings: shown,
+						siblings: tab === "files" ? browseMediaItems : shown,
 						onNavigate: (next) => {
 							setPreview(next);
 						},
