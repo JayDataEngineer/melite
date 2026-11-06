@@ -470,3 +470,73 @@ test('uploadLoraDoor POSTs octet-stream with filename+families+strength and proj
     globalThis.fetch = real
   }
 })
+
+// THE DOOR'S ANSWER FACES (the same law, the refusals): a non-ok
+// answer speaks the door's own error field; a refusal body that is
+// not JSON falls to the HTTP status; a 200 whose body names no row
+// refuses loud; and an answer that names the row only through its
+// filename still seats it — with the door's own soft refusal riding
+// verbatim and no strength key invented.
+
+test('uploadLoraDoor voices the door\'s error field on a refused upload', async () => {
+  const real = globalThis.fetch
+  globalThis.fetch = (async () =>
+    new Response(JSON.stringify({ error: 'the families shelf refuses this write' }), { status: 422 })) as typeof fetch
+  try {
+    const file = new File(['%MEL'], 'x.safetensors')
+    await expect(uploadLoraDoor(file, { families: 'h3' }))
+      .rejects.toThrow('upload refused: the families shelf refuses this write')
+  } finally {
+    globalThis.fetch = real
+  }
+})
+
+test('uploadLoraDoor falls to the HTTP status when the refusal body is not JSON', async () => {
+  const real = globalThis.fetch
+  globalThis.fetch = (async () => new Response('gateway timeout', { status: 503 })) as typeof fetch
+  try {
+    const file = new File(['%MEL'], 'x.safetensors')
+    await expect(uploadLoraDoor(file, { families: 'h3' }))
+      .rejects.toThrow('upload refused: HTTP 503')
+  } finally {
+    globalThis.fetch = real
+  }
+})
+
+test('uploadLoraDoor refuses loud when the answer carries no row name', async () => {
+  const real = globalThis.fetch
+  // the body parses but is not a record — every name probe falls
+  // through and the transport must refuse, never seat an empty id
+  globalThis.fetch = (async () => new Response('null', { status: 200 })) as typeof fetch
+  try {
+    const file = new File(['%MEL'], 'x.safetensors')
+    await expect(uploadLoraDoor(file, { families: 'h3' }))
+      .rejects.toThrow('the lora door answered without a row name')
+  } finally {
+    globalThis.fetch = real
+  }
+})
+
+test('uploadLoraDoor seats a filename-only answer with the door\'s soft refusal riding verbatim', async () => {
+  const real = globalThis.fetch
+  globalThis.fetch = (async () =>
+    new Response(JSON.stringify({
+      filename: 'h3/named.safetensors',
+      row_seated: true,
+      row_refusal: 'the shelf debounced this row',
+    }), { status: 200 })) as typeof fetch
+  try {
+    const file = new File(['%MEL'], 'named.safetensors')
+    const answer = await uploadLoraDoor(file, { families: 'h3' })
+    expect(answer).toEqual({
+      id: 'h3/named.safetensors',
+      row_seated: true,
+      refusal: 'the shelf debounced this row',
+    })
+    // the answer declared no default — the transport must not
+    // invent a strength key for the caller's seed law to misread
+    expect('default_strength' in answer).toBe(false)
+  } finally {
+    globalThis.fetch = real
+  }
+})

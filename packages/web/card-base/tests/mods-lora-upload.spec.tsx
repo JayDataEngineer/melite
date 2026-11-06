@@ -307,3 +307,95 @@ test('SAVE REFUSES THE HAND-SPELL: a drifted id edits loud — the refusal rende
   expect(screen.getByText('‘ghost-type’ is not a served ControlNet row — pick from the catalog, never hand-spell.')).not.toBeNull()
   expect(onEdit).not.toHaveBeenCalled()
 })
+
+// ── THE UPLOAD PANE'S GUARD FACES — each on its own firing path
+// (LAW 4): the single-flight guard (a double Apply never
+// double-spends), the extensionless file (no rename key is
+// invented), the cleared rename field (the picked file's own name
+// rides), the voiceless refusal (the standing note speaks), the
+// thrown wire (the rejection voice + the pane re-arms), and the
+// absent refresh (the seated reset needs no re-serve). ──
+
+test('UPLOAD BUSY: a second Apply inside the flight fires ONE wire call — the pane never double-spends', async () => {
+  let release: ((value: { id: string, row_seated: boolean }) => void) = () => {}
+  const uploadLora = vi.fn().mockImplementation(() => new Promise((resolve) => { release = resolve }))
+  const refreshSpec = vi.fn().mockResolvedValue(undefined)
+  openLeaf({ uploadLora, refreshSpec })
+  openCreate()
+  openAddLora()
+  answerUploadInput(new File(['%MEL'], 'x.safetensors'))
+  applyUploadPane()
+  applyUploadPane() // the double press — the flight is still open
+  expect(uploadLora).toHaveBeenCalledTimes(1)
+  release({ id: 'h3/x.safetensors', row_seated: true })
+  await waitFor(() => { expect(refreshSpec).toHaveBeenCalledTimes(1) })
+  expect(uploadLora).toHaveBeenCalledTimes(1)
+})
+
+test('UPLOAD NO-EXTENSION: an extensionless file rides NO rename key — the name is the file\'s own', async () => {
+  const uploadLora = vi.fn().mockResolvedValue({ id: 'h3/checkpoint', row_seated: true })
+  const refreshSpec = vi.fn().mockResolvedValue(undefined)
+  openLeaf({ uploadLora, refreshSpec })
+  openCreate()
+  openAddLora()
+  answerUploadInput(new File(['%MEL'], 'checkpoint'))
+  applyUploadPane()
+  await waitFor(() => { expect(uploadLora).toHaveBeenCalledTimes(1) })
+  const [, opts] = uploadLora.mock.calls[0] as [File, { name?: string }]
+  expect(opts).toEqual({})
+})
+
+test('UPLOAD CLEARED NAME: emptying the rename field restores the picked file\'s own name — no rename key rides', async () => {
+  const uploadLora = vi.fn().mockResolvedValue({ id: 'h3/x.safetensors', row_seated: true })
+  const refreshSpec = vi.fn().mockResolvedValue(undefined)
+  openLeaf({ uploadLora, refreshSpec })
+  openCreate()
+  openAddLora()
+  answerUploadInput(new File(['%MEL'], 'x.safetensors'))
+  fireEvent.change(screen.getByLabelText(chromeCopy.loraNameLabel), { target: { value: '' } })
+  applyUploadPane()
+  await waitFor(() => { expect(uploadLora).toHaveBeenCalledTimes(1) })
+  const [, opts] = uploadLora.mock.calls[0] as [File, { name?: string }]
+  expect(opts).toEqual({})
+})
+
+test('UPLOAD VOICELESS REFUSAL: a refusal without a voice renders the standing note — never silence', async () => {
+  const uploadLora = vi.fn().mockResolvedValue({ id: '', row_seated: false })
+  const refreshSpec = vi.fn()
+  openLeaf({ uploadLora, refreshSpec })
+  openCreate()
+  openAddLora()
+  answerUploadInput(new File(['%MEL'], 'y.safetensors'))
+  applyUploadPane()
+  await waitFor(() => { expect(screen.getByText(chromeCopy.loraUploadRefusedNote)).not.toBeNull() })
+  expect(refreshSpec).not.toHaveBeenCalled()
+})
+
+test('UPLOAD CRASH: a thrown wire voices the rejection and the pane re-arms — Apply returns for the retry', async () => {
+  const uploadLora = vi.fn().mockRejectedValue(new Error('socket died mid-upload'))
+  const refreshSpec = vi.fn()
+  openLeaf({ uploadLora, refreshSpec })
+  openCreate()
+  openAddLora()
+  answerUploadInput(new File(['%MEL'], 'x.safetensors'))
+  applyUploadPane()
+  await waitFor(() => { expect(screen.getByText('socket died mid-upload')).not.toBeNull() })
+  expect(refreshSpec).not.toHaveBeenCalled()
+  // the busy flag cleared in the finally: the pending file still
+  // sits and Apply is armed again for the retry
+  const apply = screen.getByRole('button', { name: chromeCopy.loraApplyButton }) as HTMLButtonElement
+  expect(apply.disabled).toBe(false)
+})
+
+test('UPLOAD WITHOUT REFRESH: absent refreshSpec still resets the pane — the seated row lands without a re-serve', async () => {
+  const uploadLora = vi.fn().mockResolvedValue({ id: 'h3/x.safetensors', row_seated: true })
+  openLeaf({ uploadLora })
+  openCreate()
+  openAddLora()
+  answerUploadInput(new File(['%MEL'], 'x.safetensors'))
+  applyUploadPane()
+  await waitFor(() => { expect(uploadLora).toHaveBeenCalledTimes(1) })
+  // the pick face is back (the seated reset ran) and no error rides
+  expect(document.querySelector('[data-testid="mod-lora-upload"]')).toBeNull()
+  expect(screen.queryByText(chromeCopy.loraUploadRefusedNote)).toBeNull()
+})

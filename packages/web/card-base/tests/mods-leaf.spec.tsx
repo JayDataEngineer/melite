@@ -1451,3 +1451,23 @@ test('THE PAINT FACE + CHAIN RUN: with the lane the split-stack picker binds the
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   expect(onEdit).toHaveBeenCalledWith('masks', [expect.objectContaining({ chain_run: 'run-abc' })])
 })
+
+// ── THE RETIRED-KIND SEAT (the upload refresh's flip side): a
+// re-serve that DROPS the open kind must not eat the operator's
+// gesture — the leaf renders and saves against its own last serve
+// (mods.tsx saveLeaf's live-kind fallback; the render rides the
+// same fallback). ──
+
+test('THE RETIRED KIND SAVES AGAINST ITS LAST SERVE: a re-serve without the open kind keeps the leaf alive and the commit lands', () => {
+  const { onEdit, onPatch, rerender } = openLeaf({ kinds: [LORA], values: {} })
+  openCreate('LoRA')
+  pickCatalog(() => screen.getByLabelText('LoRA'), 'Detail')
+  // the next serve carries a DIFFERENT kind — LoRA is retired; the
+  // open leaf survives (leaf state, not a kinds lookup)
+  rerender(h(ModifiersSection, {
+    kinds: [CONTROL], values: {}, onEdit, onPatch,
+  }))
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+  expect(onEdit).toHaveBeenCalledWith('loras', [{ id: 'detail', strength: 0.8 }])
+  expect(onPatch).toHaveBeenCalledWith({ loras: [{ id: 'detail', strength: 0.8 }] })
+})

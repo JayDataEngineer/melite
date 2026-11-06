@@ -315,6 +315,53 @@ describe('loadDraftOntoBench — the CAS load', () => {
     expect(d.opened).toEqual([])
     expect(d.errors).toEqual(['could not read that card (HTTP 200)'])
   })
+
+  // ── THE LOAD'S GUARD FACES (the coverage arms): a stale gesture's
+  // abort rides every door call it makes, and junk rows in a served
+  // draft pass the strip untouched — the load lands the doc
+  // verbatim, never a coerced one. ──
+
+  it('a stale gesture rides its own abort signal on every door call', async () => {
+    const { calls } = stubFetch((url) => {
+      if (url.startsWith('/v1/flows/drafts/')) return json(DRAFT)
+      if (url.startsWith('/v1/bench/ensure')) return json({ ok: true })
+      return json({ error: 'no bench' }, 404)
+    })
+    const d = deps('s1')
+    d.signal = new AbortController().signal
+    await loadDraftOntoBench(D1, d)
+    expect(d.errors).toEqual([])
+    // all three doors the load walks carry the caller's signal
+    for (const door of ['/v1/flows/drafts/', '/v1/bench/', '/v1/bench/ensure']) {
+      const call = calls.find((c) => c.url.startsWith(door))
+      expect(call, door).toBeDefined()
+      expect(call?.init?.signal).toBe(d.signal)
+    }
+  })
+
+  it('junk rows in a served draft pass the strip untouched — the load rides the doc verbatim', async () => {
+    const DOC = { stages: ['junk-row', null, { id: 's_0', engine: 'comfyui', result: { old: true } }], intent: 'mixed doc' }
+    const { calls } = stubFetch((url) => {
+      if (url.startsWith('/v1/flows/drafts/')) return json(DOC)
+      if (url.startsWith('/v1/bench/ensure')) return json({ ok: true })
+      return json({ error: 'no bench' }, 404)
+    })
+    const d = deps('s1')
+    await loadDraftOntoBench(D1, d)
+    expect(d.errors).toEqual([])
+    const body = JSON.parse(String(calls.find((c) => c.url === '/v1/bench/ensure')?.init?.body)) as Record<string, unknown>
+    const stages = body.stages as Array<unknown>
+    expect(stages).toHaveLength(3)
+    // the non-object rows carry nothing strippable and ride as-served;
+    // the object row lost its stale result memory — the contract's
+    // keys never ride the reload, whatever else the row holds
+    expect(stages[0]).toBe('junk-row')
+    expect(stages[1]).toBeNull()
+    expect(stages[2]).toMatchObject({ id: 's_0' })
+    for (const k of RESTORE_STRIP_KEYS) {
+      expect(stages[2]).not.toHaveProperty(k)
+    }
+  })
 })
 
 describe('loadRunOntoBench — the run record wins', () => {
@@ -1349,5 +1396,140 @@ describe('loadRunOntoBench — the run record wins', () => {
     const e = deps('s1')
     await loadRunOntoBench('r1', e)
     expect(e.errors).toEqual(['bench load failed — bare string failure'])
+  })
+
+  // ── THE PREVIEW BUILDERS' GUARD FACES (the h3 history-load audit's
+  // leftover edges): the settled-meta single-owner law, the census's
+  // media-only run-tail grammar, the preview-less sidecar rows, the
+  // index-tier join for sidecars predating row ids, and the stale
+  // gesture's signal riding the sidecar door. ──
+
+  it('THE SETTLED META: the stage row\'s own metadata rides verbatim; an EMPTY bag borrows nothing', async () => {
+    const route = (tail: string): string => '/infer-gallery/artifact?path=' + encodeURIComponent(tail)
+    const side = {
+      run_id: 'run-0f1e2d-r1',
+      flow: {
+        artifacts: ['/data/run-0f1e2d-r1/out.png'],
+        bench_snapshot: { stages: [{ id: 's_0', card: 'image-gen' }, { id: 's_1', card: 'image-gen' }], intent: 'x' },
+        stages: [
+          { id: 's_0', url: 's_0/a.png', gallery: [], result_metadata: {} },
+          { id: 's_1', url: 's_1/b.png', gallery: [], result_metadata: { film: { probe: 'the film map' } } },
+        ],
+      },
+    }
+    const { calls } = stubFetch(runWith(side))
+    const d = deps('s1')
+    await loadRunOntoBench('r1', d)
+    expect(d.errors).toEqual([])
+    const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
+    // the empty bag is absence, never a metadata face (one truth:
+    // a list, a null, a scalar, an EMPTY object all refuse)
+    expect(stages[0]?.result).toMatchObject({ run_id: 'run-0f1e2d-r1', url: route('run-0f1e2d-r1/s_0/a.png') })
+    expect('metadata' in (stages[0]?.result as Record<string, unknown>)).toBe(false)
+    expect(stages[1]?.result).toMatchObject({ url: route('run-0f1e2d-r1/s_1/b.png'), metadata: { film: { probe: 'the film map' } } })
+  })
+
+  it('THE CENSUS IS MEDIA-ONLY, RUN-TAIL-KEYED: no artifacts, junk shapes, or tail-less names leave no census to stamp', async () => {
+    const mkSide = (artifacts: unknown): unknown => ({
+      run_id: 'run-0f1e2d-r1',
+      flow: {
+        ...(artifacts !== null ? { artifacts } : {}),
+        bench_snapshot: { stages: [{ id: 's_0', card: 'image-gen' }, { id: 's_1', card: 'image-gen' }], intent: 'x' },
+        stages: [
+          { id: 's_0', url: 's_0/a.png', gallery: [] },
+          { id: 's_1', url: 's_1/b.png', gallery: [] },
+        ],
+      },
+    })
+    for (const artifacts of [null, [42, 'noise.png']] as Array<unknown>) {
+      const { calls } = stubFetch(runWith(mkSide(artifacts)))
+      const d = deps('s1')
+      await loadRunOntoBench('r1', d)
+      expect(d.errors).toEqual([])
+      const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
+      expect(stages).toHaveLength(2)
+      expect(stages[0]).toMatchObject({ id: 's_0', provenance: 'restored' })
+      // the stages' own products still ride; the run census never does
+      expect('run_artifacts' in stages[0]!).toBe(false)
+      expect('run_artifacts' in stages[1]!).toBe(false)
+    }
+  })
+
+  it('THE PREVIEW-LESS ROWS: junk url/gallery shapes restore explicit nulls — and a names-only row paints its first name', async () => {
+    const route = (tail: string): string => '/infer-gallery/artifact?path=' + encodeURIComponent(tail)
+    const side = {
+      run_id: 'run-0f1e2d-r1',
+      flow: {
+        artifacts: ['/data/run-0f1e2d-r1/out.png'],
+        bench_snapshot: {
+          stages: [{ id: 's_0', card: 'image-gen' }, { id: 's_1', card: 'image-gen' }, { id: 's_2', card: 'image-gen' }],
+          intent: 'x',
+        },
+        stages: [
+          // no url, gallery not an array — nothing servable
+          { id: 's_0', url: '', gallery: 'not-an-array' },
+          // no url, only junk names: empty bag, empty name, no media kind
+          { id: 's_1', url: '', gallery: [{}, { name: '' }, { name: 'blob' }] },
+          // no url but one served media name — the name IS the hero
+          { id: 's_2', url: '', gallery: [{ name: 's_2/c.png' }] },
+        ],
+      },
+    }
+    const { calls } = stubFetch(runWith(side))
+    const d = deps('s1')
+    await loadRunOntoBench('r1', d)
+    expect(d.errors).toEqual([])
+    const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
+    expect(stages[0]?.result).toBeNull()
+    expect(stages[1]?.result).toBeNull()
+    expect(stages[2]?.result).toMatchObject({
+      run_id: 'run-0f1e2d-r1',
+      url: route('run-0f1e2d-r1/s_2/c.png'),
+      artifacts: { 'run-0f1e2d-r1/s_2/c.png': route('run-0f1e2d-r1/s_2/c.png') },
+    })
+  })
+
+  it('THE INDEX-TIER JOIN: sidecar rows predating ids join by order — each stage paints ITS OWN row\'s product', async () => {
+    const route = (tail: string): string => '/infer-gallery/artifact?path=' + encodeURIComponent(tail)
+    const side = {
+      run_id: 'run-0f1e2d-r1',
+      flow: {
+        artifacts: ['/data/run-0f1e2d-r1/out.png'],
+        bench_snapshot: { stages: [{ id: 's_0', card: 'image-gen' }, { id: 's_1', card: 'image-gen' }], intent: 'x' },
+        // pre-bench_stage_id rows: no id, no bench_stage_id — order is
+        // the only join the sidecar offers, and it must not swap them
+        stages: [
+          { url: 's_0/a.png', gallery: [] },
+          { url: 's_1/b.png', gallery: [] },
+        ],
+      },
+    }
+    const { calls } = stubFetch(runWith(side))
+    const d = deps('s1')
+    await loadRunOntoBench('r1', d)
+    expect(d.errors).toEqual([])
+    const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
+    expect(stages[0]?.result).toMatchObject({ url: route('run-0f1e2d-r1/s_0/a.png') })
+    expect(stages[1]?.result).toMatchObject({ url: route('run-0f1e2d-r1/s_1/b.png') })
+  })
+
+  it('a stale gesture\'s signal rides the run arm\'s sidecar door', async () => {
+    const side = {
+      run_id: 'r1',
+      flow: {
+        card_snapshot: { card: 'image-gen', params: { prompt: 'ran prompt' } },
+        bench_snapshot: { stages: [{ id: 's_0', card: 'image-gen' }], intent: 'x' },
+      },
+    }
+    const { calls } = stubFetch(runWith(side))
+    const d = deps('s1')
+    d.signal = new AbortController().signal
+    await loadRunOntoBench('r1', d)
+    expect(d.errors).toEqual([])
+    for (const door of ['/infer-gallery/flow', '/v1/bench/', '/v1/bench/ensure']) {
+      const call = calls.find((c) => c.url.startsWith(door))
+      expect(call, door).toBeDefined()
+      expect(call?.init?.signal).toBe(d.signal)
+    }
   })
 })

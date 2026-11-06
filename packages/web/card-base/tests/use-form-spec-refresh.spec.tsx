@@ -131,3 +131,82 @@ test('the mount flight still blanks on id change (refresh never widened the arri
     await waitFor(() => { expect(specNow()).toBe('qwendoc') })
   } finally { d.restore() }
 })
+
+// THE EMPTY-ID FACES (the guard arms): '' names no family — the
+// mount never fires and a refresh call is a no-op; the door stays
+// silent and no error face ever mounts.
+
+test('AN EMPTY ID mounts nothing: no flight fires, no error rides', async () => {
+  const d = door()
+  try {
+    render(h(Probe, { model: '' }))
+    // a settled tick with no queued handler would reject loudly —
+    // silence proves the mount guard refused before the door
+    await act(async () => {})
+    expect(d.seen).toEqual([])
+    expect(specNow()).toBe('null')
+    expect(errorNow()).toBe('')
+  } finally { d.restore() }
+})
+
+test('A REFRESH WITH NO ID is a no-op: the door is never touched', async () => {
+  const d = door()
+  try {
+    const refreshRef = { current: null as (() => Promise<void>) | null }
+    render(h(Probe, { model: '', refreshRef }))
+    await refreshRef.current?.()
+    expect(d.seen).toEqual([])
+    expect(specNow()).toBe('null')
+    expect(errorNow()).toBe('')
+  } finally { d.restore() }
+})
+
+// THE SUPERSEDED-REFUSAL FACES (the orphan law on the catch half):
+// a flight that lost the token never lands its REJECTION either —
+// not the mount flight's, not a refresh's. The standing spec and
+// the standing error face stay exactly as the newest flight left
+// them.
+
+test('A SUPERSEDED MOUNT never lands its rejection: the later refresh owns the face', async () => {
+  const d = door()
+  try {
+    // the mount flight parks; the refresh answers; the mount then
+    // REJECTS last — its error must orphan, never paint
+    const releaseBox = { current: null as (() => void) | null }
+    d.queue.push(() => new Promise((_resolve, reject) => {
+      releaseBox.current = () => { reject(new Error('the superseded mount rejects last')) }
+    }))
+    const refreshRef = { current: null as (() => Promise<void>) | null }
+    render(h(Probe, { model: 'h3', refreshRef }))
+    d.queue.push(async () => new Response(JSON.stringify(docOf('h3', 'fresh')), { status: 200 }))
+    await refreshRef.current?.()
+    await waitFor(() => { expect(specNow()).toBe('fresh') })
+    releaseBox.current?.()
+    await act(async () => {})
+    expect(specNow()).toBe('fresh')
+    expect(errorNow()).toBe('')
+  } finally { d.restore() }
+})
+
+test('A SUPERSEDED REFUSAL never lands: a rejected stale refresh leaves the face untouched', async () => {
+  const d = door()
+  try {
+    d.queue.push(async () => new Response(JSON.stringify(docOf('h3', 'standing')), { status: 200 }))
+    const refreshRef = { current: null as (() => Promise<void>) | null }
+    render(h(Probe, { model: 'h3', refreshRef }))
+    await waitFor(() => { expect(specNow()).toBe('standing') })
+    // refresh A parks; refresh B lands; A rejects LAST
+    const releaseBoxA = { current: null as (() => void) | null }
+    d.queue.push(() => new Promise((_resolve, reject) => {
+      releaseBoxA.current = () => { reject(new Error('the stale refresh rejects last')) }
+    }))
+    d.queue.push(async () => new Response(JSON.stringify(docOf('h3', 'fresh-B')), { status: 200 }))
+    const flightA = refreshRef.current?.() ?? Promise.resolve()
+    await refreshRef.current?.()
+    await waitFor(() => { expect(specNow()).toBe('fresh-B') })
+    releaseBoxA.current?.()
+    await act(async () => { await flightA })
+    expect(specNow()).toBe('fresh-B')
+    expect(errorNow()).toBe('')
+  } finally { d.restore() }
+})

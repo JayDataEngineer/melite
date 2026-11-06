@@ -509,6 +509,20 @@ test('THE FLAT READ: a flat kind with no declared fields seats no entry — noth
   expect(document.querySelector('[data-subcard-add="mod"]')).not.toBeNull()
 })
 
+// THE FIELD-LESS FLAT ADD (the presence guards' own face): a flat
+// kind with NO declared fields is neither a presence kind nor a
+// named-presence kind — the add opens the plain create leaf and
+// commits nothing by itself (no stamp, no popup, no knob wall).
+test('THE FIELD-LESS FLAT ADD: the plain leaf opens, nothing auto-commits', () => {
+  const { onEdit, onPatch } = openSection({ kinds: [FLAT_BARE], values: {} })
+  fireEvent.click(document.querySelector('[data-subcard-add="mod"]') as HTMLElement)
+  fireEvent.click(screen.getByRole('menuitem', { name: FLAT_BARE.label }))
+  // the leaf is up; the presence stamps never fired
+  expect(onPatch).not.toHaveBeenCalled()
+  expect(onEdit).not.toHaveBeenCalled()
+  expect(screen.getByRole('button', { name: 'Add' })).not.toBeNull()
+})
+
 const SCALAR_BARE = {
   kind: 'bare', label: 'Bare', param_key: 'bare', cardinality: 'scalar',
 } as unknown as ModifierKind

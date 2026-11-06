@@ -105,6 +105,7 @@ function mountBench(stages: BenchStageView[], estate?: EstateOpts, specDoc?: Rec
     draftBenchRev: 1,
     throws: estate?.throws,
     patchFailures: estate?.patchFailures,
+    ...(estate?.patchGate !== undefined ? { patchGate: estate.patchGate } : {}),
   });
   render(h(CardsTab, {
     useTabInfo: () => ({ tab: {
@@ -2526,6 +2527,32 @@ describe("the reopen carry drop (a saved doc resolved to a lane its stated keys 
         expect(String(row[1])).toContain("reopen heal refused");
       }, { timeout: 8000 });
       await awaitWriteSettled();
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  test("the heal refusal after an UNMOUNT warns nowhere — the dead gesture owns no console (the alive guard's quiet arm)", async () => {
+    // the flip half of the refused-heal law: the drill is gone when
+    // the heal's answer lands, so the catch must stay silent — no
+    // warn, no crash, the write ledger still settles the flight.
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const gates: Array<() => void> = [];
+    try {
+      mountBench(
+        [stage({ model: "qwen3-tts", variant: "small", persona: "gritty host" })],
+        {
+          patchFailures: [{ reason: "reopen heal refused" }],
+          patchGate: () => new Promise<void>((resolve) => { gates.push(resolve) }),
+        },
+        lanesSpecDoc(),
+      );
+      await openDrill();
+      // the heal write is in flight (parked at the gate); the drill dies
+      cleanup();
+      for (const open of gates) open();
+      await awaitWriteSettled();
+      expect(warnSpy.mock.calls.filter((c) => String(c[0]).includes("reopen carry drop refused"))).toEqual([]);
     } finally {
       warnSpy.mockRestore();
     }

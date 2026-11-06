@@ -15,6 +15,7 @@ import { resetStageWrites, stageWriteState } from "../src/client/draft.ts";
 import { StageDrill } from "../src/client/stage-drill.tsx";
 import type { StageViewOwnerProps } from "../src/client/types.ts";
 import { chromeCopy } from "../src/chromeCopy.ts";
+import { chromeCopy as baseChrome } from "../../card-base/src/locales/chromeCopy.ts";
 import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
 import { draftIdOf } from "@melite/contracts/benchStage";
 
@@ -251,3 +252,337 @@ describe("stage-drill coverage-gap arms (the gate's honest seats)", () => {
     assert.ok(!prog.textContent?.includes("100%"), "never a run-wide 100% on a live row");
   });
 });
+
+// ── THE DRILL'S LORA WIRE (the hand-upload seam the drill itself
+// wires, 2026-11-15): the host transport rides the SERVED spec's own
+// family, the refresh is stale-while-revalidate through the drill's
+// own setSpec, and a refresh that loses the seq fence never lands
+// the departed family's doc. Each arm rides the REAL leaf (add
+// square → LoRAs leaf → Add LoRA… → pane → Apply), never a synthetic
+// poke at the wire object. ──
+
+const LORA_KIND = {
+  kind: "lora", label: "LoRAs", param_key: "loras", cardinality: "list",
+  entry: "option", option_key: "id",
+  options: [{ value: "seeded-row", label: "Seeded" }],
+};
+
+function drillMount(stageParams: Record<string, unknown>, capture?: { bound: () => void }): void {
+  const s = stage(stageParams);
+  render(h(StageDrill, {
+    stage: s,
+    bench: { kind: "bench", draftId: draftIdOf("bench-p"), rev: 1, log: [], stages: [s], sessionKey: "main" },
+    running: false,
+    onRun: () => {}, onStop: () => {}, onClose: () => {}, onRemoved: () => {},
+    onPatchParams: () => {},
+    bindRun: capture === undefined ? undefined : (r: () => void) => { capture.bound = r; },
+    renderStageView: (_o: StageViewOwnerProps, fallback: ReturnType<typeof h>) => fallback,
+  } as never));
+}
+
+async function driveUploadPane(): Promise<void> {
+  await screen.findByLabelText("Prompt", {}, { timeout: 8000 });
+  fireEvent.click(document.querySelector('[data-subcard-add="mod"]') as HTMLElement);
+  fireEvent.click(screen.getByRole("menuitem", { name: "LoRAs" }));
+  fireEvent.click(screen.getByRole("button", { name: baseChrome.loraAddButton }));
+  const row = document.querySelector('[data-testid="mod-lora-upload"]');
+  assert.ok(row, "the upload pane renders the square");
+  const inp = row!.querySelector('input[type="file"]');
+  assert.ok(inp instanceof HTMLInputElement, "the hidden file input rides the square");
+  Object.defineProperty(inp, "files", { value: [new File(["%MEL"], "op-pick.safetensors")], configurable: true });
+  fireEvent.change(inp);
+  fireEvent.click(screen.getByRole("button", { name: baseChrome.loraApplyButton }));
+}
+
+test("THE DRILL'S LORA WIRE: Apply POSTs the served spec's own family shelf and the refresh re-serves through the drill's setSpec", async () => {
+  const loraUrls: string[] = [];
+  const specUrls: string[] = [];
+  const DOC_A = {
+    form: "image-gen", genre: "image", engine: "comfyui", model: "fam-lora",
+    schema: schemaEnvelope({
+      prompt: { type: "string", meta: { description: "Prompt", extra: { wtype: "textarea" } } },
+    }),
+    features: { modifiers: [LORA_KIND] },
+  };
+  // the REFRESHED serve declares one more knob — its label appears
+  // only if the refresh landed through the drill's own setSpec
+  const DOC_R = {
+    ...DOC_A,
+    schema: schemaEnvelope({
+      prompt: { type: "string", meta: { description: "Prompt", extra: { wtype: "textarea" } } },
+      prompt_two: { type: "string", meta: { description: "Prompt Two" } },
+    }),
+    features: { modifiers: [LORA_KIND] },
+  };
+  vi.stubGlobal("fetch", (input: unknown): Promise<Response> => {
+    const path = String(input);
+    if (path.includes("/v1/uploads/lora")) {
+      loraUrls.push(path);
+      return Promise.resolve(new Response(
+        JSON.stringify({ row: { id: "lora/op-pick.safetensors", default_strength: 0.8 }, row_seated: true }),
+        { headers: { "content-type": "application/json" } },
+      ));
+    }
+    if (path.includes("/v1/form-spec")) {
+      specUrls.push(path);
+      return Promise.resolve(new Response(JSON.stringify(specUrls.length === 1 ? DOC_A : DOC_R), {
+        status: 200, headers: { "content-type": "application/json" },
+      }));
+    }
+    if (path.includes("/v1/forms")) {
+      return Promise.resolve(new Response(JSON.stringify({}), { status: 200, headers: { "content-type": "application/json" } }));
+    }
+    if (path.includes("/v1/model-catalog")) {
+      return Promise.resolve(new Response(JSON.stringify({ cards: {} }), { status: 200, headers: { "content-type": "application/json" } }));
+    }
+    return Promise.reject(new Error("unexpected door on the fetch lane: " + path));
+  });
+  mountEstateFakes({});
+  drillMount({ model: "fam-lora", prompt: "seed" });
+  await driveUploadPane();
+  await waitFor(() => assert.equal(loraUrls.length, 1, "the upload POST rode the drill's own transport"));
+  assert.match(loraUrls[0]!, /families=fam-lora/, "the family shelf rides the SERVED spec's own model");
+  assert.match(loraUrls[0]!, /filename=op-pick\.safetensors/);
+  // THE STALE-WHILE-REVALIDATE: the refresh re-fetched the SAME
+  // family after the seat, and the swapped doc serves in-session
+  await waitFor(() => assert.equal(specUrls.length, 2, "the refresh re-fetched the served spec"));
+  assert.match(specUrls[1]!, /model=fam-lora/, "the refresh re-keys off the standing doc's own family");
+  await waitFor(() => {
+    assert.ok(screen.getByLabelText("Prompt Two"), "the refreshed serve paints through the drill's setSpec");
+  });
+  assert.equal(document.querySelector('[data-leaf-pane="upload"]'), null, "the pick face re-opened after the seat");
+});
+
+test("THE DRILL'S SEQ FENCE: a refresh settling inside a re-key's commit window never lands the departed family's doc", async () => {
+  const loraUrls: string[] = [];
+  const FROM = "fam-a";
+  const TO = "fam-b";
+  const kindDoc = (): Record<string, unknown> => ({
+    form: "image-gen", genre: "image", engine: "comfyui",
+    schema: schemaEnvelope({
+      prompt: { type: "string", meta: { description: "Prompt", extra: { wtype: "textarea" } } },
+      model: { consts: [FROM, TO], meta: { description: "Serving family", default: FROM, extra: { wtype: "select" } } },
+    }),
+    variants: [{ id: "v", label: "V", group: "Variant", defaults: {}, route: FROM }],
+    params: ["prompt", "model"],
+    families: [{ id: FROM, present: true }, { id: TO, present: true }],
+    features: { modifiers: [LORA_KIND] },
+  });
+  const docA = { ...kindDoc(), model: FROM };
+  // the parked refresh answers the DEPARTED family with a marker
+  // knob — its label is the landed-stale proof the fence must kill
+  const docStale = {
+    ...docA,
+    schema: schemaEnvelope({
+      prompt: { type: "string", meta: { description: "Prompt", extra: { wtype: "textarea" } } },
+      model: { consts: [FROM, TO], meta: { description: "Serving family", default: FROM, extra: { wtype: "select" } } },
+      stale_marker: { type: "string", meta: { description: "Stale Marker" } },
+    }),
+    features: { modifiers: [LORA_KIND] },
+  };
+  const docB = {
+    ...kindDoc(),
+    model: TO,
+    schema: schemaEnvelope({
+      prompt: { type: "string", meta: { description: "Prompt", extra: { wtype: "textarea" } } },
+      model: { consts: [FROM, TO], meta: { description: "Serving family", default: TO, extra: { wtype: "select" } } },
+      fresh_marker: { type: "string", meta: { description: "Marker B" } },
+    }),
+  };
+  let releaseStale: (() => void) | null = null;
+  let specCalls = 0;
+  vi.stubGlobal("fetch", (input: unknown): Promise<Response> => {
+    const path = String(input);
+    if (path.includes("/v1/uploads/lora")) {
+      loraUrls.push(path);
+      return Promise.resolve(new Response(
+        JSON.stringify({ row: { id: "lora/x.safetensors" }, row_seated: true }),
+        { headers: { "content-type": "application/json" } },
+      ));
+    }
+    if (path.includes("/v1/form-spec")) {
+      specCalls += 1;
+      // call 1: fam-a arrival; call 2: the refresh — PARKED; call 3+: fam-b arrival
+      if (specCalls === 2) {
+        return new Promise<Response>((resolve) => {
+          releaseStale = () => resolve(new Response(JSON.stringify(docStale), { status: 200, headers: { "content-type": "application/json" } }));
+        });
+      }
+      const doc = path.includes("model=fam-b") ? docB : docA;
+      return Promise.resolve(new Response(JSON.stringify(doc), { status: 200, headers: { "content-type": "application/json" } }));
+    }
+    if (path.includes("/v1/forms")) {
+      return Promise.resolve(new Response(JSON.stringify({}), { status: 200, headers: { "content-type": "application/json" } }));
+    }
+    if (path.includes("/v1/model-catalog")) {
+      return Promise.resolve(new Response(JSON.stringify({ cards: {} }), { status: 200, headers: { "content-type": "application/json" } }));
+    }
+    return Promise.reject(new Error("unexpected door on the fetch lane: " + path));
+  });
+  mountEstateFakes({});
+  drillMount({ model: FROM, prompt: "seed" });
+  await driveUploadPane();
+  await waitFor(() => assert.equal(loraUrls.length, 1, "the upload rode the door"));
+  await waitFor(() => assert.ok(releaseStale !== null, "the refresh flight is parked"));
+  // the leaf closes; the operator re-keys the family while the
+  // refresh is still owed
+  fireEvent.click(screen.getByRole("button", { name: baseChrome.leafCloseLabel }));
+  const knob = await screen.findByLabelText("Serving family", {}, { timeout: 8000 });
+  fireEvent.click(knob);
+  fireEvent.click(screen.getByRole("menuitem", { name: "Fam B" }));
+  // fam-b's arrival lands; the refresh is still parked
+  await waitFor(() => {
+    assert.ok(screen.queryByLabelText("Marker B"), "the re-keyed family's doc serves");
+  });
+  releaseStale!();
+  await waitFor(() => {
+    assert.equal(screen.queryByLabelText("Stale Marker"), null, "the departed family's refresh never lands");
+  });
+  assert.ok(screen.queryByLabelText("Marker B"), "the re-keyed doc still holds the face");
+});
+
+test("THE DRILL'S ARRIVAL NEVER PAINTS AFTER THE GESTURE DIES: an unmount inside the arrival window orphans the answer (the alive guard)", async () => {
+  let releaseArrival: (() => void) | null = null;
+  vi.stubGlobal("fetch", (input: unknown): Promise<Response> => {
+    const path = String(input);
+    if (path.includes("/v1/form-spec")) {
+      return new Promise<Response>((resolve) => {
+        releaseArrival = () => resolve(new Response(JSON.stringify({
+          form: "image-gen", genre: "image", engine: "comfyui", model: "fam-late",
+          schema: schemaEnvelope({ prompt: { type: "string", meta: { description: "Prompt", extra: { wtype: "textarea" } } } }),
+        }), { status: 200, headers: { "content-type": "application/json" } }));
+      });
+    }
+    if (path.includes("/v1/forms")) {
+      return Promise.resolve(new Response(JSON.stringify({}), { status: 200, headers: { "content-type": "application/json" } }));
+    }
+    if (path.includes("/v1/model-catalog")) {
+      return Promise.resolve(new Response(JSON.stringify({ cards: {} }), { status: 200, headers: { "content-type": "application/json" } }));
+    }
+    return Promise.reject(new Error("unexpected door on the fetch lane: " + path));
+  });
+  mountEstateFakes({});
+  drillMount({ model: "fam-late", prompt: "seed" });
+  // the gesture dies while the arrival is still owed
+  cleanup();
+  releaseArrival!();
+  await new Promise((r) => setTimeout(r, 20));
+  assert.equal(screen.queryByLabelText("Prompt"), null, "the orphaned arrival paints nothing");
+});
+
+test("THE DRILL'S ARRIVAL FENCE: a refresh claimed inside an open arrival window keeps the fence — the landing arrival never clears the newer claim (the seq fence, arrival half)", async () => {
+  const FROM = "fam-a";
+  const TO = "fam-b";
+  const docFor = (model: string, marker: string): Record<string, unknown> => ({
+    form: "image-gen", genre: "image", engine: "comfyui", model,
+    schema: schemaEnvelope({
+      prompt: { type: "string", meta: { description: "Prompt", extra: { wtype: "textarea" } } },
+      model: { consts: [FROM, TO], meta: { description: "Serving family", default: model, extra: { wtype: "select" } } },
+      marker: { type: "string", meta: { description: marker } },
+    }),
+    variants: [{ id: "v", label: "V", group: "Variant", defaults: {}, route: model }],
+    params: ["prompt", "model"],
+    families: [{ id: FROM, present: true }, { id: TO, present: true }],
+    features: { modifiers: [LORA_KIND] },
+  });
+  const releaseArrival = { fire: (): void => { throw new Error("fam-b's arrival never parked"); } };
+  const releaseLora = { fire: (): void => { throw new Error("the LoRA POST never parked"); } };
+  const releaseRefresh = { fire: (): void => { throw new Error("the refresh never parked"); } };
+  let calls = 0;
+  const loraUrls: string[] = [];
+  vi.stubGlobal("fetch", (input: unknown): Promise<Response> => {
+    const path = String(input);
+    if (path.includes("/v1/uploads/lora")) {
+      loraUrls.push(path);
+      return new Promise<Response>((resolve) => {
+        releaseLora.fire = () => resolve(new Response(
+          JSON.stringify({ row: { id: "lora/x.safetensors" }, row_seated: true }),
+          { headers: { "content-type": "application/json" } },
+        ));
+      });
+    }
+    if (path.includes("/v1/form-spec")) {
+      calls += 1;
+      // call 1: fam-a's arrival (lands); call 2: fam-b's arrival after
+      // the re-key (PARKED); call 3: the departed family's refresh
+      // from the still-open leaf's seat (PARKED)
+      if (calls >= 2) {
+        const doc = calls === 2 ? docFor(TO, "Marker B") : docFor(FROM, "Marker A");
+        const slot = calls === 2 ? releaseArrival : releaseRefresh;
+        return new Promise<Response>((resolve) => {
+          slot.fire = () => resolve(new Response(JSON.stringify(doc), { status: 200, headers: { "content-type": "application/json" } }));
+        });
+      }
+      return Promise.resolve(new Response(JSON.stringify(docFor(FROM, "Marker A")), { status: 200, headers: { "content-type": "application/json" } }));
+    }
+    if (path.includes("/v1/forms")) {
+      return Promise.resolve(new Response(JSON.stringify({}), { status: 200, headers: { "content-type": "application/json" } }));
+    }
+    if (path.includes("/v1/model-catalog")) {
+      return Promise.resolve(new Response(JSON.stringify({ cards: {} }), { status: 200, headers: { "content-type": "application/json" } }));
+    }
+    return Promise.reject(new Error("unexpected door on the fetch lane: " + path));
+  });
+  mountEstateFakes({});
+  const run = { bound: (): void => { throw new Error("the drill never bound the host's run verb"); } };
+  drillMount({ model: FROM, prompt: "seed" }, run);
+  await screen.findByLabelText("Marker A", {}, { timeout: 8000 });
+  // the mod leaf opens against the standing doc; the upload parks
+  // mid-flight BEFORE any re-key exists yet
+  fireEvent.click(document.querySelector('[data-subcard-add="mod"]') as HTMLElement);
+  fireEvent.click(screen.getByRole("menuitem", { name: "LoRAs" }));
+  fireEvent.click(screen.getByRole("button", { name: baseChrome.loraAddButton }));
+  const row = document.querySelector('[data-testid="mod-lora-upload"]');
+  assert.ok(row, "the upload pane renders the square");
+  const inp = row!.querySelector('input[type="file"]');
+  assert.ok(inp instanceof HTMLInputElement, "the hidden file input rides the square");
+  Object.defineProperty(inp, "files", { value: [new File(["%MEL"], "x.safetensors")], configurable: true });
+  fireEvent.change(inp);
+  fireEvent.click(screen.getByRole("button", { name: baseChrome.loraApplyButton }));
+  await waitFor(() => assert.equal(loraUrls.length, 1, "the upload POST rode the door"));
+  // THE RE-KEY VIA THE KNOB (the only arm that moves the model key):
+  // fam-b's arrival parks while the leaf still holds the parked
+  // upload — the commit window is OPEN, fam-a's doc still renders
+  const knob = await screen.findByLabelText("Serving family", {}, { timeout: 8000 });
+  fireEvent.click(knob);
+  fireEvent.click(screen.getByRole("menuitem", { name: "Fam B" }));
+  await waitFor(() => assert.equal(calls, 2, "the re-keyed family's arrival parked inside the window"));
+  // Seating the upload invokes the leaf's refresh — it parks and
+  // OVERWRITES the pending row with its own newer seq (the departure
+  // race, 2026-11-15)
+  releaseLora.fire();
+  await waitFor(() => assert.equal(calls, 3, "the refresh keyed the standing doc's own family inside the window"));
+  // A RUN INSIDE THE WINDOW fences on the refresh's claim — the press
+  // stands down naming the family the answer is owed for
+  run.bound();
+  await waitFor(() => {
+    assert.match(stripText() ?? "", /the fam-a spec is still settling/, "the run fences on the refresh's newer claim");
+  });
+  // the PARKED ARRIVAL lands last: the fence branch must NOT clear
+  // the refresh's newer claim (the missed half), and fam-b still paints
+  releaseArrival.fire();
+  await waitFor(() => {
+    assert.ok(screen.queryByLabelText("Marker B"), "the re-keyed family's doc lands");
+  });
+  // the arrival retires the ERROR FACE (error-is-not-a-latch) but the
+  // pending CLAIM must survive its landing — a fresh press re-voices
+  // the fence naming the family the refresh's answer is still owed for
+  assert.doesNotMatch(stripText() ?? "", /still settling/, "the arrival retires the face, never the claim");
+  run.bound();
+  await waitFor(() => {
+    assert.match(stripText() ?? "", /the fam-a spec is still settling/, "the landing arrival never cleared the newer claim — the fence re-voices it");
+  });
+  // the refresh settles; its own finally clears the claim and the
+  // press runs clean — no latch, the fence stands down at the settle
+  releaseRefresh.fire();
+  await new Promise((r) => setTimeout(r, 30));
+  run.bound();
+  await waitFor(() => {
+    assert.equal((stripText() ?? "").includes("still settling"), false, "the fence stands down once the refresh answers");
+  }, { timeout: 8000 });
+});
+
+
+function stripText(): string | null {
+  return document.querySelector('[data-testid="stage-error-strip"]')?.textContent ?? null;
+}
