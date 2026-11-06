@@ -69,6 +69,9 @@
       # wall suites and fixtures: bench path literals, boot-receipt
       # sha256 census rows, tsconfig path tables.
       '''tests/walls/''',
+      # the estate pytest seat (repo-root tests/test_*.py): engine
+      # node class names quoted verbatim in burn walls.
+      '''tests/test_[a-z0-9_]+\.py$''',
       # vendored extension submodules: the gitlink entry IS the pin
       # SHA — the ref itself, never a key.
       '''vendor/comfyui_extensions/''',
