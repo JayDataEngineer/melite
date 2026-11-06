@@ -237,8 +237,8 @@ describe("the refine skill's dial table agrees with the code's own homes", () =>
     // must teach the carry AND the cure instead of the old refusal.
     assert.match(md, /multiple window entries/,
       "the doc states the bag takes multiple window entries");
-    assert.match(md, /F3-14 CURED 2026-11-15/,
-      "the doc names the F3-14 cure and its date");
+    assert.match(md, /F3-14 cured/,
+      "the doc names the F3-14 cure (dateless — the provenance ban wall owns stamps)");
     assert.match(md, /CARRIED/i,
       "the doc teaches the carried face as a lawful tiling");
     assert.match(md, /ABUTTING/i,

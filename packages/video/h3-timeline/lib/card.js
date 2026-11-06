@@ -268,7 +268,7 @@ const EXTEND_MOD = {
  *  family carrier (one refine window per entry, joined IN-GRAPH at
  *  <runId>/refine; the continuity laws — one film per bag, no gaps,
  *  no full overlap — are the family renderer's, so every door judges
- *  them identically). THE CARRY IS SERVED (F3-14 cured 2026-11-15):
+ *  them identically). THE CARRY IS SERVED (F3-14 cured):
  *  a carried join (overlap ≥ 1 f) mounts the film's own continuation
  *  through the same in-graph carry — the cure sits at the refine
  *  handoff, which clone-strips the foreign Drift-Control patch
