@@ -279,41 +279,50 @@ export function useSquareProvider(onEdit, wire) {
                 ? t('flowDescription', { kindSuffix: req.kind !== 'all' ? ' (' + req.kind + ')' : '' })
                 : t('mediaDescription', { kindSuffix: req.kind !== 'all' ? ' (' + req.kind + ')' : '' }),
             closeLabel: t('closePicker'),
-        }, q !== '' && rawCandidates.length > 0 && candidates.length === 0
-            // THE NO-MATCH FACE (2026-11-12): a filtered-empty list is
-            // the query's own result, never "nothing to pick" — the
-            // operator would read a healthy library as empty.
-            ? h('p', { className: css.pickEmpty }, t('noMatchFor', { query: pickQuery.trim() }))
-            : candidates.length === 0
-                // THE EMPTY LAW (S7 class-4 residue, 2026-11-05): the picker's
-                // empty face rides EmptyState (layout.tsx) — the DSH
-                // empty-state shape (WorkspaceBrowser.tsx:266-280), the same
-                // component the stage previews speak; the copy stays the
-                // locale's (loading / the door's refusal / nothing to pick).
-                ? h(EmptyState, {
-                    variant: 'bare', className: css.pickEmpty,
-                    title: modalAt.mode === 'media' && mediaRows === null
-                        ? t('loading')
-                        // the door REFUSED — say so. An empty list that is really
-                        // a refusal is how the mesh picker stayed mysteriously
-                        // empty for a release (the mesh/model kind mismatch).
-                        : mediaErr !== null
-                            ? t('mediaUnavailable', { reason: mediaErr })
-                            : t('nothingToPick'),
-                })
-                : h(Fragment, null, h('div', { className: css.pickSearch }, h('input', {
-                    // ARGUED RAW SEAT (the row-face class, S7j): no search
-                    // atom in the ui-primitives catalog; DSH's own picker
-                    // dialogs ride the native input (WorkspaceBrowser's
-                    // filter row) — same grammar as the OS picker's own
-                    // find field.
-                    type: 'search',
-                    className: css.pickSearchInput,
-                    value: pickQuery,
-                    placeholder: t('searchPlaceholder'),
-                    'aria-label': t('searchPlaceholder'),
-                    onChange: (e) => { setPickQuery(e.target.value); },
-                })), h('ul', { className: css.pickList }, candidates.map((c) => h('li', { key: c.id, className: css.pickRow }, h('button', {
+        }, 
+        // THE EMPTY LAW (S7 class-4 residue, 2026-11-05): the picker's
+        // empty face rides EmptyState (layout.tsx) — the DSH
+        // empty-state shape (WorkspaceBrowser.tsx:266-280), the same
+        // component the stage previews speak; the copy stays the
+        // locale's (loading / the door's refusal / nothing to pick).
+        rawCandidates.length === 0
+            ? h(EmptyState, {
+                variant: 'bare', className: css.pickEmpty,
+                title: modalAt.mode === 'media' && mediaRows === null
+                    ? t('loading')
+                    // the door REFUSED — say so. An empty list that is really
+                    // a refusal is how the mesh picker stayed mysteriously
+                    // empty for a release (the mesh/model kind mismatch).
+                    : mediaErr !== null
+                        ? t('mediaUnavailable', { reason: mediaErr })
+                        : t('nothingToPick'),
+            })
+            : h(Fragment, null, 
+            // THE SEARCH SEAT NEVER UNMOUNTS while a library is listed
+            // (2026-11-15 stuck-picker burn: the no-match face used to
+            // REPLACE the whole body, input included — typing a query
+            // that emptied the list removed the box, so the operator
+            // could neither keep typing nor backspace: the picker was
+            // stuck until closed. The no-match line now rides BELOW the
+            // input, the query's own result face, never a body swap.)
+            h('div', { className: css.pickSearch }, h('input', {
+                // ARGUED RAW SEAT (the row-face class, S7j): no search
+                // atom in the ui-primitives catalog; DSH's own picker
+                // dialogs ride the native input (WorkspaceBrowser's
+                // filter row) — same grammar as the OS picker's own
+                // find field.
+                type: 'search',
+                className: css.pickSearchInput,
+                value: pickQuery,
+                placeholder: t('searchPlaceholder'),
+                'aria-label': t('searchPlaceholder'),
+                onChange: (e) => { setPickQuery(e.target.value); },
+            })), candidates.length === 0
+                // THE NO-MATCH FACE (2026-11-12): a filtered-empty list is
+                // the query's own result, never "nothing to pick" — the
+                // operator would read a healthy library as empty.
+                ? h('p', { className: css.pickEmpty }, t('noMatchFor', { query: pickQuery.trim() }))
+                : h('ul', { className: css.pickList }, candidates.map((c) => h('li', { key: c.id, className: css.pickRow }, h('button', {
                     // ARGUED RAW SEAT (S7j, the row-face class): a
                     // full-width selection row carrying a thumb — DSH's
                     // own lists type row buttons raw + module css

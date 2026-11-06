@@ -322,6 +322,16 @@ test('FROM MEDIA: the search narrows rows by label; no-match is the query\u2019s
     fireEvent.change(box, { target: { value: 'no-such-clip' } })
     expect(screen.queryAllByTestId('source-pick-row').length).toBe(0)
     expect(screen.getByText(/no match for \u201cno-such-clip\u201d/)).not.toBeNull()
+    // THE STUCK-PICKER CURE (2026-11-15 burn: "type 'from media', it
+    // bugs out and gets stuck"): the no-match face used to REPLACE
+    // the modal body, search input included \u2014 the query that
+    // emptied the list also removed the box, so the operator could
+    // neither keep typing nor backspace. The input SURVIVES the
+    // no-match state and clearing the query restores the rows.
+    const survivor = screen.queryByLabelText('Search by name')
+    expect(survivor).not.toBeNull()
+    fireEvent.change(survivor!, { target: { value: '' } })
+    expect((await screen.findAllByTestId('source-pick-row')).length).toBe(2)
   } finally {
     unbindEstateRemote()
   }

@@ -271,18 +271,12 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
         : t('mediaDescription', { kindSuffix: req.kind !== 'all' ? ' (' + req.kind + ')' : '' }),
       closeLabel: t('closePicker'),
     },
-      q !== '' && rawCandidates.length > 0 && candidates.length === 0
-        // THE NO-MATCH FACE (2026-11-12): a filtered-empty list is
-        // the query's own result, never "nothing to pick" — the
-        // operator would read a healthy library as empty.
-        ? h('p', { className: css.pickEmpty },
-            t('noMatchFor', { query: pickQuery.trim() }))
-        : candidates.length === 0
-        // THE EMPTY LAW (S7 class-4 residue, 2026-11-05): the picker's
-        // empty face rides EmptyState (layout.tsx) — the DSH
-        // empty-state shape (WorkspaceBrowser.tsx:266-280), the same
-        // component the stage previews speak; the copy stays the
-        // locale's (loading / the door's refusal / nothing to pick).
+      // THE EMPTY LAW (S7 class-4 residue, 2026-11-05): the picker's
+      // empty face rides EmptyState (layout.tsx) — the DSH
+      // empty-state shape (WorkspaceBrowser.tsx:266-280), the same
+      // component the stage previews speak; the copy stays the
+      // locale's (loading / the door's refusal / nothing to pick).
+      rawCandidates.length === 0
         ? h(EmptyState, {
             variant: 'bare', className: css.pickEmpty,
             title: modalAt.mode === 'media' && mediaRows === null
@@ -295,6 +289,13 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
                 : t('nothingToPick'),
           })
         : h(Fragment, null,
+          // THE SEARCH SEAT NEVER UNMOUNTS while a library is listed
+          // (2026-11-15 stuck-picker burn: the no-match face used to
+          // REPLACE the whole body, input included — typing a query
+          // that emptied the list removed the box, so the operator
+          // could neither keep typing nor backspace: the picker was
+          // stuck until closed. The no-match line now rides BELOW the
+          // input, the query's own result face, never a body swap.)
           h('div', { className: css.pickSearch },
             h('input', {
               // ARGUED RAW SEAT (the row-face class, S7j): no search
@@ -309,7 +310,13 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
               'aria-label': t('searchPlaceholder'),
               onChange: (e: { target: { value: string } }): void => { setPickQuery(e.target.value) },
             })),
-          h('ul', { className: css.pickList },
+          candidates.length === 0
+            // THE NO-MATCH FACE (2026-11-12): a filtered-empty list is
+            // the query's own result, never "nothing to pick" — the
+            // operator would read a healthy library as empty.
+            ? h('p', { className: css.pickEmpty },
+                t('noMatchFor', { query: pickQuery.trim() }))
+            : h('ul', { className: css.pickList },
             candidates.map((c) => h('li', { key: c.id, className: css.pickRow },
               h('button', {
                 // ARGUED RAW SEAT (S7j, the row-face class): a

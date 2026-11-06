@@ -14279,7 +14279,7 @@ window.__ModuleLoader__.load({
 					title: modalAt.mode === "flow" ? t("fromFlow") : t("fromMedia"),
 					description: modalAt.mode === "flow" ? t("flowDescription", { kindSuffix: req.kind !== "all" ? " (" + req.kind + ")" : "" }) : t("mediaDescription", { kindSuffix: req.kind !== "all" ? " (" + req.kind + ")" : "" }),
 					closeLabel: t("closePicker")
-				}, q !== "" && rawCandidates.length > 0 && candidates.length === 0 ? (0, react.createElement)("p", { className: card_module_css_default.pickEmpty }, t("noMatchFor", { query: pickQuery.trim() })) : candidates.length === 0 ? (0, react.createElement)(EmptyState, {
+				}, rawCandidates.length === 0 ? (0, react.createElement)(EmptyState, {
 					variant: "bare",
 					className: card_module_css_default.pickEmpty,
 					title: modalAt.mode === "media" && mediaRows === null ? t("loading") : mediaErr !== null ? t("mediaUnavailable", { reason: mediaErr }) : t("nothingToPick")
@@ -14292,7 +14292,7 @@ window.__ModuleLoader__.load({
 					onChange: (e) => {
 						setPickQuery(e.target.value);
 					}
-				})), (0, react.createElement)("ul", { className: card_module_css_default.pickList }, candidates.map((c) => (0, react.createElement)("li", {
+				})), candidates.length === 0 ? (0, react.createElement)("p", { className: card_module_css_default.pickEmpty }, t("noMatchFor", { query: pickQuery.trim() })) : (0, react.createElement)("ul", { className: card_module_css_default.pickList }, candidates.map((c) => (0, react.createElement)("li", {
 					key: c.id,
 					className: card_module_css_default.pickRow
 				}, (0, react.createElement)("button", {
