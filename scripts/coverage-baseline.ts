@@ -136,6 +136,10 @@ export const COVERAGE_BASELINE: Record<string, {
   // drives every branch (both refusal seats, the grid door, all three
   // pairwise one-door edges, the empty-bag guard, the emission)
   '**/packages/models/h3/src/chainEdit.ts': { statements: 98.44, branches: 95.45, functions: 85.71, lines: 98.36 },
+  // the video-edit matrix seat (timeline rework stage 2a): 98.18 /
+  // 98.27 / 100 / 98.14 measured over edit-matrix.spec.ts — every
+  // dial's emission, both poles, and every refusal arm its own path
+  '**/packages/models/h3/src/edit.ts': { statements: 98.18, branches: 98.27, functions: 100, lines: 98.14 },
   '**/packages/models/h3/src/extend.ts': { statements: 97.78, branches: 95, functions: 80, lines: 97.73 },
   '**/packages/models/h3/src/repair.ts': { statements: 97.37, branches: 94.44, functions: 75, lines: 97.3 },
   '**/packages/models/h3/src/swap.ts': { statements: 95.83, branches: 92.86, functions: 75, lines: 95.83 },

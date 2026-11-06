@@ -701,7 +701,10 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // SSOT moved to web-kit/contracts (lora audit F2), and its built emit
   // packages/web-kit/contracts/lib/loraExtensions.js is the 636th
   // tracked .js — the engine seam re-exports it, so the lib rides.
-  const LIB_CENSUS_PIN = 636;
+  // Repinned 636 -> 637 (2026-11-15, deliberate): the video-edit matrix
+  // seat (timeline rework stage 2a) emits packages/models/h3/lib/edit.js
+  // — the 637th tracked .js.
+  const LIB_CENSUS_PIN = 637;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {
