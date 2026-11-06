@@ -395,7 +395,7 @@ const REFINE_MOD: DeclaredModifierKind = {
     // frame-exact starts the 0.25-step dials cannot reach. 1 keeps the
     // single-window walk posture (judge each window before pressing
     // the next); hand-tiled entries stay for mixed-seat bags.
-    { name: 'windows', label: 'Windows', type: 'number', default: 1, min: 1, max: MAX_COMPOSED_WINDOWS, step: 1, tooltip: 'How many windows this ONE entry tiles (the auto-tile: window k starts at Start seconds + k × (window − overlap), so one press covers Windows × (window − overlap) + overlap frames). 1 is the single-window walk. The default Overlap 22 rides the film’s own carried seam; Overlap 0 gives the abutting hard cut. Both compose. A windows seat above 1 on ANY entry of a multi-entry bag refuses — the bag already IS the tiling.' },
+    { name: 'windows', label: 'Windows', type: 'number', default: 1, min: 1, max: MAX_COMPOSED_WINDOWS, step: 1, tooltip: 'How many windows this ONE entry tiles (the auto-tile: window k starts at Start seconds + k × (window − overlap), so one press covers Windows × (window − overlap) + overlap frames). 1 is the single-window walk. The default Overlap 22 rides the film’s own carried seam; Overlap 0 gives the abutting hard cut. Both run. A windows seat above 1 on ANY entry of a multi-entry bag refuses — the bag already IS the tiling.' },
     // (the default is DERIVED from the family contract's own seam —
     // refine-window audit D1: the served card never carries a
     // hand-typed copy of a measured constant)

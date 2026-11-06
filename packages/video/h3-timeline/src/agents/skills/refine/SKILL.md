@@ -1,6 +1,6 @@
 ---
 name: refine
-description: "Second-pass refine on the h3-timeline: seat a source clip plus one window (start + length) and a refine prompt per entry on the refine mod bag; the RefineHandoff applies a 2x learned latent upscale and a low-denoise H3 pass to THAT WINDOW, decoding to <run>/refine. The bag takes multiple window entries: carried starts (overlap 22 f, the film’s own token-exact seam) or ABUTTING starts (0 overlap, the plain concat, up to 32 window entries) — both tile lawfully (F3-14 CURED 2026-11-15: the refine handoff clone-strips the foreign Drift-Control patch before its guider, so the packed mask always matches its audio stream). One window per press is the DECLARED ALTERNATIVE — judge each window before pressing the next. Mod-bag door — NOT a re-render and NOT the upscale arm."
+description: "Second-pass refine on the h3-timeline: seat a source clip plus one window (start + length) and a refine prompt per entry on the refine mod bag; the RefineHandoff applies a 2x learned latent upscale and a low-denoise H3 pass to THAT WINDOW, decoding to <run>/refine. The bag takes multiple window entries: carried starts (overlap 22 f, the film’s own token-exact seam) or ABUTTING starts (0 overlap, the plain concat, up to 32 window entries) — both tile lawfully (F3-14 cured: the refine handoff clone-strips the foreign Drift-Control patch before its guider, so the packed mask always matches its audio stream). One window per press is the DECLARED ALTERNATIVE — judge each window before pressing the next. Mod-bag door — NOT a re-render and NOT the upscale arm."
 genre: video
 ---
 
@@ -23,7 +23,7 @@ genre: video
 > and what step 6 exists for: 90 f @2× is green, 141 f @2× OOM'd, and
 > a 430 f window @1.0 OOM'd too (20.08 GiB allocated, 830 MiB short,
 > node `MinimaxH3LatentUpscaler3DRefineHandoff`) — the WINDOW is the
-> memory unit at every scale. BURNED live (F3-14), then CURED (2026-11-15): the
+> memory unit at every scale. BURNED live (F3-14), then cured: the
 > carried multi-window bag used to die at window 1's handoff with
 > `ValueError: Drift-Control AV packed mask does not match its audio
 > stream`, after window 0 billed and saved. The cure sits in the pack
@@ -120,7 +120,7 @@ before, byte-identical.)
    the engine runs: 141 f is the measured OOM (it missed by 1.06 GiB
    with 20.13 GiB already resident), and H3 memory grows with the
    window — that is the whole story. THERE IS NO OOM MYSTERY
-   (operator 2026-11-15: "There is no OOM error — we have the CARRY
+   (operator ruling: "There is no OOM error — we have the CARRY
    CONTEXT, so the OOM is just the WINDOWS BEING TOO LONG"): the
    window is just too long, in EVERY upsizing mode — `scale by
    multiplier` at ≥ 2, and both exact-size modes (`target
@@ -185,7 +185,7 @@ before, byte-identical.)
      0 is the abutting hard cut (the
      plain concat, no carried continuation). 22 is the film's own
      seam and token-exact, and the carried continuation it mounts is
-     SERVED (F3-14 cured 2026-11-15: the refine handoff clone-strips
+     SERVED (F3-14 cured: the refine handoff clone-strips
      the foreign Drift-Control patch before its guider, so the
      packed mask always matches its audio stream). Any other overlap
      refuses — off-grid carries name the exact frame. Rides only with `windows` above 1 (a lone window has
@@ -303,7 +303,7 @@ but it is not context-free inside itself:
   soundtrack, and the carried face mounts the film's own
   `MiniMaxH3FiniteLatentContinuation` over window k−1's joint latent
   (the harness the stand-down holds: `refine-loop.spec.ts` ARM 3b).
-  That carry is SERVED (F3-14 cured 2026-11-15: the refine handoff
+  That carry is SERVED (F3-14 cured: the refine handoff
   clone-strips the foreign Drift-Control patch before its guider, so
   the packed mask always matches its audio stream) and both doors
   compose it. Either way the carry would
