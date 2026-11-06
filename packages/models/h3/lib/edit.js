@@ -1,4 +1,5 @@
 import { contexMaskedTarget, loadVideo, renderMaskedEditChain } from './chainEdit.js';
+import { renderH3Extend } from './extend.js';
 import { REFINE_2X_OOM_FRAMES, REFINE_UPSCALE_MODEL } from './refine.js';
 import { assertGridLength } from './timelineContract.js';
 /** SAM3's checkpoint row — repair.ts's own spelling (the family's
@@ -43,6 +44,36 @@ export function renderH3Edit(entry, mask, reference, p, facts, g, runId) {
     // the subject's own prior as its only identity, and the friction
     // audit watched it break identity while reading as an
     // improvement. Name the two lawful doors, refuse the cell.
+    // ── THE CONTINUATION DIAL (slice 2 of the collapse — the doc's
+    // collapse map: "extend = mask=whole-frame + continuation policy,
+    // not a separate arm"): continuation ON delegates to the
+    // continuation seat — fresh full-denoise seconds appended to the
+    // prior's last frame (the forced AddGuide seam), joined into one
+    // film. Four posture laws refuse loud before the delegation ──
+    if (entry.continuation === true) {
+        if (mask.source !== 'whole-frame') {
+            throw new Error(`h3-timeline edit: a masked continuation (mask_source '${mask.source}') — extended seconds are NEW content, nothing is held; the continuation rides the blank mask (mask_source whole-frame)`);
+        }
+        if (reference.mode !== 'self') {
+            throw new Error(`h3-timeline edit: an anchored continuation (reference '${reference.mode}') — the continuation's anchors are the prior's own (its last frame as the pixel anchor, the whole clip as the motion identity); reference stays self`);
+        }
+        if (denoise !== 1) {
+            throw new Error(`h3-timeline edit: denoise ${denoise} under a continuation — extended seconds generate FRESH at full denoise (a partial pass would hold pixels that do not exist yet); state denoise 1 or leave continuation off`);
+        }
+        if (entry.refine === true) {
+            throw new Error(`h3-timeline edit: the refine pass under a continuation — the continuation's tail is fresh generation (full noise); a full-noise refine discards the learned latent (the same law that refuses denoise 1 under the switch). Leave refine off`);
+        }
+        renderH3Extend({
+            source_clip: str(entry, 'source_clip'),
+            extend_prompt: prompt,
+            extend_seconds: num(entry, 'extend_seconds', 2.33),
+            seed: num(entry, 'seed', 0),
+            steps: num(entry, 'steps', 6),
+            resolution: str(entry, 'resolution') || '736p',
+            overlap_frames: num(entry, 'overlap_frames', 39),
+        }, p, facts, g, runId);
+        return;
+    }
     if (mask.source === 'whole-frame' && reference.mode === 'self' && denoise >= EDIT_IDENTITY_BOIL_FLOOR) {
         throw new Error(`h3-timeline edit: whole-frame × self reference × denoise ${denoise} — the identity boil (a near-full re-render whose only identity anchor is the source's own prior drifts the subject while reading as an improvement, the F3-17 burn). Anchor it (reference still+mannequin) or use the reshoot door for a true re-render`);
     }

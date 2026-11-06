@@ -532,7 +532,7 @@ const EDIT_MOD: DeclaredModifierKind = {
     'ComfyUI-KJNodes',
     'comfyui-h3-oneclick-swap',
   ],
-  section: 'Video edit — ONE bag, the whole edit matrix: state the MASK (a per-frame SAM3 region with tuning seats, the whole frame, or one staged PNG resized to the chain), the IDENTITY ANCHORS (the source itself, or a still + mannequin pair), the DENOISE pole (partial holds the unmasked region and its sound; 1 re-renders the masked side whole), and the REFINE switch (the learned second pass rides this chain\'s own latents, same run). A continuation is the Extend door; a new camera is the Reshoot door — each refuses here naming its door. The classic refine posture composes here: blank mask + partial denoise + refine on. Film runs leave this arm empty.',
+  section: 'Video edit — ONE bag, the whole edit matrix: state the MASK (a per-frame SAM3 region with tuning seats, the whole frame, or one staged PNG resized to the chain), the IDENTITY ANCHORS (the source itself, or a still + mannequin pair), the DENOISE pole (partial holds the unmasked region and its sound; 1 re-renders the masked side whole), and the REFINE switch (the learned second pass rides this chain\'s own latents, same run). A continuation is a posture of this door (continuation ON: fresh seconds appended at full denoise, joined into one film); a new camera is the Reshoot door — it refuses here naming its door. The classic refine posture composes here: blank mask + partial denoise + refine on. Film runs leave this arm empty.',
   fields: [
     // The seat TYPES (the picker law, the siblings' own): video
     // seats are `file` + media 'video'; image seats claim the
@@ -560,6 +560,8 @@ const EDIT_MOD: DeclaredModifierKind = {
     { name: 'keep_audio', label: 'Keep source audio', type: 'boolean', default: true, tooltip: 'ON: the source soundtrack rides the edit unchanged. OFF (full denoise only): the soundtrack is generated fresh with the edit — a partial pass never drops it (the hold is the point).' },
     { name: 'refine', label: 'Refine pass', type: 'boolean', default: false, tooltip: "THE FOURTH DIAL — the refine switch: ON adds the learned second pass to THIS chain (the 3D-conv latent upscale + the low-sigma refine pass ride the edit's OWN latents — same run, no re-encode of a saved clip; partial denoise only). Blank mask + partial denoise + refine on = the classic refine posture." },
     { name: 'scale', label: 'Refine scale', type: 'number', default: 2, min: 1, max: 4, step: 0.05, tooltip: "RIDES ONLY the refine pass (inert when refine is off): the learned upscaler's multiplier — 1 is the same-size sharpening pass (the capacity cure), 2 the classic second pass. A >=2x window past the measured OOM (141 f) refuses naming both cures." },
+    { name: 'continuation', label: 'Continuation', type: 'boolean', default: false, tooltip: "THE CONTINUATION SWITCH: ON turns this edit into an EXTEND — fresh full-denoise seconds appended to the source's last frame (the forced seam: anything new develops from it frame by frame, never appears whole), joined with the prior into one film. Rides the blank mask + self anchors + denoise 1 (each refused loud otherwise)." },
+    { name: 'extend_seconds', label: 'Extend seconds', type: 'number', default: 2.33, min: 0.91, max: 432.29, step: 0.01, tooltip: 'RIDES ONLY the continuation (inert when off): seconds appended — a single window lands on the engine grid at 24fps (22+17k frames; 2.33s = 56f, 15.08s = 362f the largest single window); above 362f the door joins N uniform windows under the 39f context overlap, exact delivery or a refusal naming the neighbors (ceiling 432.29s).' },
     { name: 'window_start', label: 'Window start (frames)', type: 'number', default: 0, min: 0, max: 100000, step: 1, tooltip: 'Frames (at the film clock, 24 fps) to skip before the edit window — 0 starts at the clip head.' },
     { name: 'window_length', label: 'Window length (frames)', type: 'number', default: 0, min: 0, max: 100000, step: 1, tooltip: 'Frames in the edit window — 0 runs to the end of the clip. A stated length must land on the engine grid 22+17k (56, 73, 90, 107, 124, 141…; off-grid refuses naming the nearest legal value) because the plan snap and the tracked mask must cut the same frames.' },
     { name: 'seed', label: 'Plan seed', type: 'number', default: 0, min: 0, max: 4294967295, step: 1, tooltip: 'The chain plan base_seed (the reference runs 0; the sampler seed stays the doc seed).' },
@@ -582,16 +584,18 @@ const EDIT_MOD: DeclaredModifierKind = {
   // The chip face merges the patch onto the single entry; every
   // dial stays movable after the press. The refine/upscale
   // postures ARE matrix cells since the fourth dial landed (the
-  // refine switch + scale serve them on this door); the doors
-  // that stay out are Extend (until its continuation posture
-  // lands on this dial set) and Reshoot (forever — a different
-  // chain, MoGe depth + CrossView, not a mask/denoise variation).
+  // refine switch + scale serve them on this door) and the
+  // continuation posture is slice 2's dial (continuation +
+  // extend_seconds); the one door that stays out forever is
+  // Reshoot (a different chain, MoGe depth + CrossView — not a
+  // mask/denoise variation).
   presets: [
     { id: 'repair-region', label: 'Repair a region', tooltip: 'The repair posture: a per-frame SAM3 track of the named region, identity anchored to the source itself, partial denoise holding everything outside the mask — and its sound.', patch: { mask_source: 'region', reference: 'self', denoise: 0.32, keep_audio: true } },
     { id: 'identity-swap', label: 'Identity swap', tooltip: 'The swap posture: the region tracked frame by frame, identity carried by a replacement still + the track run\'s mannequin video, full denoise re-rendering the masked side whole.', patch: { mask_source: 'region', reference: 'still+mannequin', denoise: 1 } },
     { id: 'outfit-change', label: 'Outfit change', tooltip: 'The garment posture: region + still+mannequin at partial denoise — the still anchors the new outfit\'s appearance while the source motion rides through; push denoise toward 1 to re-render the garment whole.', patch: { mask_source: 'region', reference: 'still+mannequin', denoise: 0.55, keep_audio: true } },
     { id: 'whole-frame-restyle', label: 'Whole-frame restyle', tooltip: 'Nothing held: the whole frame re-renders at partial denoise anchored to the source itself — stay under 0.8 (the identity-boil floor refuses beyond it on this anchor).', patch: { mask_source: 'whole-frame', reference: 'self', denoise: 0.6 } },
     { id: 'refine-2x', label: 'Refine 2x', tooltip: "The second-pass posture: blank mask (the whole frame), self-anchored, partial denoise at the design window (2.5 s — a >=2x window past the measured 141 f OOM refuses) — and the refine switch ON at 2x: the learned upscale rides the edit's own latents in the same run.", patch: { mask_source: 'whole-frame', reference: 'self', denoise: 0.32, refine: true, scale: 2, clip_seconds: 2.5, keep_audio: true } },
+    { id: 'extend-continuation', label: 'Extend', tooltip: "The continuation posture: blank mask, self-anchored, full denoise — fresh seconds appended to the source's last frame (the forced seam) and joined with the prior into one film; state extend_seconds.", patch: { continuation: true, mask_source: 'whole-frame', reference: 'self', denoise: 1 } },
     { id: 'static-mask-pass', label: 'Static mask pass', tooltip: 'One staged PNG names the edit area (the track run\'s pixel-max union is the recommended bridge); the chain resizes it to its own geometry in-graph.', patch: { mask_source: 'static-png', reference: 'self', denoise: 0.32, keep_audio: true } },
   ],
 }

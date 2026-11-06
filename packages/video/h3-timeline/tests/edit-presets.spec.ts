@@ -74,11 +74,11 @@ const STAGED: Record<string, Record<string, unknown>> = {
 };
 
 describe("the edit bag's preset chips (stage 3: named cells over the ONE schema)", () => {
-  it("THE SERVED CELLS: six named cells, every patch key a declared field, every value the field's own type and vocabulary", () => {
+  it("THE SERVED CELLS: seven named cells, every patch key a declared field, every value the field's own type and vocabulary", () => {
     const { fields, presets } = editKind();
     assert.deepEqual(presets.map((p) => p.id), [
-      "repair-region", "identity-swap", "outfit-change", "whole-frame-restyle", "refine-2x", "static-mask-pass",
-    ], "the retired names live on as the cells, the refine posture sixth (the fourth dial's own cell)");
+      "repair-region", "identity-swap", "outfit-change", "whole-frame-restyle", "refine-2x", "extend-continuation", "static-mask-pass",
+    ], "the retired names live on as the cells — the refine posture sixth (the fourth dial), the continuation seventh (slice 2's dial)");
     const byName = new Map(fields.map((f) => [String(f["name"]), f]));
     for (const p of presets) {
       assert.ok(typeof p.label === "string" && p.label !== "", `preset ${p.id} carries a label`);
@@ -113,8 +113,16 @@ describe("the edit bag's preset chips (stage 3: named cells over the ONE schema)
       const g = new GraphBuilder();
       def.compose(walked, model, g, "run_preset_" + p.id);
       const out = graphOf(g);
-      assert.equal(ofClass(out, "MiniMaxH3ChainAssemble").length, 1, `preset ${p.id} composes one assemble terminal`);
-      assert.ok(ofClass(out, "MiniMaxH3FantasticVideoEditLatent").length > 0, `preset ${p.id} composes the edit latent`);
+      if (p.patch["continuation"] === true) {
+        // the continuation posture's single window joins BY FILE
+        // (the raw boundary the latent carry cannot cross) — the
+        // one-film join grammar serves instead of ChainAssemble.
+        assert.ok(JSON.stringify(out).includes("extend_film"), `preset ${p.id} composes the joined-film grammar`);
+        assert.ok(ofClass(out, "MiniMaxH3AddGuide").length > 0, `preset ${p.id} composes the forced seam`);
+      } else {
+        assert.equal(ofClass(out, "MiniMaxH3ChainAssemble").length, 1, `preset ${p.id} composes one assemble terminal`);
+        assert.ok(ofClass(out, "MiniMaxH3FantasticVideoEditLatent").length > 0, `preset ${p.id} composes the edit latent`);
+      }
     }
   });
 
@@ -123,7 +131,13 @@ describe("the edit bag's preset chips (stage 3: named cells over the ONE schema)
     for (const p of presets) {
       const boil = p.patch["mask_source"] === "whole-frame"
         && p.patch["reference"] === "self"
-        && typeof p.patch["denoise"] === "number" && (p.patch["denoise"] as number) >= 0.8;
+        && typeof p.patch["denoise"] === "number" && (p.patch["denoise"] as number) >= 0.8
+        // THE CONTINUATION CARVE-OUT (slice 2): the boil law's premise
+        // is a RE-RENDER of existing frames with no anchor; a
+        // continuation never re-renders the prior — fresh seconds
+        // are seam-anchored and joined after. The cell is lawful
+        // only as the continuation posture it patches itself to be.
+        && p.patch["continuation"] !== true;
       assert.equal(boil, false, `preset ${p.id} is not the identity-boil cell (F3-17)`);
     }
   });

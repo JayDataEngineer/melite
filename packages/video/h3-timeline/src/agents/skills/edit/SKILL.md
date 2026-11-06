@@ -1,6 +1,6 @@
 ---
 name: edit
-description: "The video-edit matrix on the h3-timeline: ONE bag whose dials state the cell — mask source (per-frame SAM3 region, whole frame, or one staged PNG resized in-graph), identity anchors (the source itself, or a still + mannequin pair), and the denoise pole. The seven legacy doors stay (each pinned byte-exact); this door serves the whole grid on the family's one matrix seat. NOT a continuation (Extend), NOT a new camera (Reshoot) — the learned refine pass is the fourth dial ON this door (refine on + scale)."
+description: "The video-edit matrix on the h3-timeline: ONE bag whose dials state the cell — mask source (per-frame SAM3 region, whole frame, or one staged PNG resized in-graph), identity anchors (the source itself, or a still + mannequin pair), and the denoise pole. The seven legacy doors stay (each pinned byte-exact); this door serves the whole grid on the family's one matrix seat. NOT a new camera (Reshoot) — the refine pass (refine + scale) and the continuation (continuation + extend_seconds) are dials ON this door."
 genre: video
 ---
 
@@ -102,6 +102,17 @@ It is NOT:
      pass (the capacity cure); 2 the classic second pass — a >=2x
      window past the measured 141 f OOM REFUSES naming both cures
      (cut window_length / clip_seconds, or drop under 2).
+   - `continuation` (boolean, false) — THE CONTINUATION SWITCH: ON
+     turns the edit into an EXTEND — fresh full-denoise seconds
+     appended to the source's last frame (the forced seam), joined
+     with the prior into one film. Rides blank mask + self anchors +
+     denoise 1; every other cell REFUSES loud.
+   - `extend_seconds` (0.91–432.29, 2.33) — rides only the
+     continuation (inert when off): seconds appended. A single
+     window lands on the engine grid 22+17k (2.33s = 56f, 15.08s =
+     362f the largest); beyond it N uniform windows join under the
+     39f context overlap, exact delivery or a refusal naming the
+     neighbors (ceiling 432.29s).
    - `window_start` (0–100000, 0) — frames at the film clock (24 fps)
      to skip before the edit window.
    - `window_length` (0–100000, 0) — frames in the window; 0 runs to
