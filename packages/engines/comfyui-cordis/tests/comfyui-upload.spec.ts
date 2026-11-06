@@ -864,8 +864,9 @@ describe("uploadReferenced F17 (one media-seat law — the silent enum-400 burn)
       slice: { class_type: "MeliteAudioSlice", inputs: { audio: "sfx_boom.wav" } },
     }, undefined).catch((e: Error) => e);
     expect(err).toBeInstanceOf(Error);
-    expect(err.message).toMatch(/media input stages nowhere \(sfx_boom\.wav\).*\/view not served \(non-2xx with an empty body\)/s);
-    expect(err.message).not.toMatch(/SyntaxError/);
+    const message = (err as Error).message;
+    expect(message).toMatch(/media input stages nowhere \(sfx_boom\.wav\).*\/view not served \(non-2xx with an empty body\)/s);
+    expect(message).not.toMatch(/SyntaxError/);
   });
   it("non-stageable tails never probe (the ext gate is their own verbatim door)", async () => {
     const before = probeGets;

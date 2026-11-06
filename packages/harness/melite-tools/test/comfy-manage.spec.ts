@@ -1128,7 +1128,7 @@ describe('comfy_manage render — the engine truth rows (D3-02 / R-2)', () => {
   // pressing first and parsing prose after.
   describe('comfy_manage description — the degraded reading is taught at the door (W-4)', () => {
     test('the description carries THE DEGRADED READING: causes named, memory-pressure lever stated in window terms', () => {
-      const text = String(comfyManage(fakeEstate([]) as unknown as Estate).description ?? '')
+      const text = String(comfyManage(fakeEstate({}).estate as unknown as Estate).description ?? '')
       assert.ok(text.includes('THE DEGRADED READING (status)'),
         'the reading is taught where the agent looks first')
       assert.match(text, /restart loop[\s\S]*SIGKILL[\s\S]*kernel oom/,
