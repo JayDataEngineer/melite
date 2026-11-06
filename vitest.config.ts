@@ -90,13 +90,29 @@ const BOOT_BUDGET = {
   hookTimeout: 30_000 * BOOT_POOL_STRETCH,
 } as const;
 
+// WIN32-PORTABILITY (2026-11-06, the windows 37-ReferenceError
+// class): vitest matches include/exclude against forward-slash paths
+// on EVERY os (pathe relative + tinyglobby/fdir —
+// matchesTestGlob's relativeId is posix even on win32). An absolute
+// row minted by path.join carries backslashes on Windows and matches
+// NOTHING there: the dom/deck/gallery projects found zero files
+// while the node lane claimed their browser-global specs and died
+// (addEventListener/document is not defined). The working relative
+// include rows prove the shape that matches on all three OSes — so
+// every spec-TREE row stays root-relative posix, derived here from
+// the absolute anchors (single source; the anchors keep serving fs
+// consumers). A row that is absolute is a wall violation (the
+// tree-portability wall judges exactly this).
+const treeRow = (abs: string): string =>
+  path.relative(import.meta.dirname, abs).replace(/\\/g, '/')
+
 const DECK = rootPath('packages/web/melite-card-deck')
 const CARD_VIEW = rootPath('packages/web/melite-card-view')
 const THREE_CLIENT = rootPath('packages/web/three-client')
 const GALLERY = rootPath('packages/web/infer-gallery')
 
 // The dom-lane clients' spec trees (partitioned out of the node lane).
-const DOM_SPEC_TREES = [
+export const DOM_SPEC_TREES = [
   `${CARD_VIEW}/tests/**/*.spec.{ts,tsx}`,
   `${GALLERY}/tests/**/*.spec.{ts,tsx}`,
   // the viewer client half's specs (the run-card claim + its frames
@@ -134,9 +150,9 @@ const DOM_SPEC_TREES = [
   // rides the dom lane beside it; the package's other specs are
   // plain .ts and stay in the node lane via test/**/*.spec.ts).
   `${rootPath('packages/web-kit/timeline')}/test/**/*.spec.tsx`,
-]
+].map(treeRow)
 // The gallery's own tree — React 18, the universe the DSH shell hosts.
-const GALLERY_SPEC_TREES = [`${GALLERY}/tests/**/*.spec.{ts,tsx}`]
+export const GALLERY_SPEC_TREES = [`${GALLERY}/tests/**/*.spec.{ts,tsx}`].map(treeRow)
 // The deck's own trees — React 18.3.1, the universe the DSH shell hosts
 // for this client (its vitest.config pins jsdom + no aliases: pnpm
 // isolation supplies the single React). Riding `dom` would force the
@@ -144,10 +160,7 @@ const GALLERY_SPEC_TREES = [`${GALLERY}/tests/**/*.spec.{ts,tsx}`]
 // built by 19 rendered by 18), so the deck gets its own universe like
 // the gallery. The deck's specs live under test/ (singular — the
 // item-8 verifier caught the old plural glob collecting nothing).
-const DECK_SPEC_TREES = [
-  `${DECK}/test/**/*.spec.{ts,tsx}`,
-  `${DECK}/src/client/__tests__/**/*.spec.{ts,tsx}`,
-]
+export const DECK_SPEC_TREES = [`${DECK}/test/**/*.spec.{ts,tsx}`].map(treeRow)
 const DOM19_SPEC_TREES = DOM_SPEC_TREES.filter((t) => !GALLERY_SPEC_TREES.includes(t))
 
 // THE /TMP OWNERSHIP NET (stroke 13, 2026-09-14): suites mkdtemp
