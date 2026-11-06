@@ -8,7 +8,7 @@ import { execFileSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { Context } from "@deepseek-ai/cordis";
 import {
   ComfyError, ComfyUIHostService, activeCount, comfyuiHostProvider,
@@ -182,7 +182,7 @@ describe("endpoint config (the SSOT read)", () => {
     const out = execFileSync("node", ["-e",
       "import(process.argv[1]).then(m => process.stdout.write(JSON.stringify([" +
       "m.endpointConfigPath(), m.endpointSeedPath(), Object.keys(m.loadEndpointConfig()).length > 0])))",
-      join(install, "lib", "src", "comfyui-config.js")], { encoding: "utf8", env: childEnv });
+      pathToFileURL(join(install, "lib", "src", "comfyui-config.js")).href], { encoding: "utf8", env: childEnv });
     const [writeTarget, seedPath, seedServes]: [string, string, boolean] = JSON.parse(out) as [string, string, boolean];
     // Compare realpaths, not spellings: on macOS the child's file://
     // import resolves through the /var → /private/var symlink and

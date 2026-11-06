@@ -209,7 +209,9 @@ export function loadExtensionsYaml(path: string): ExtRow[] {
 export function pluginIdFor(rel: string): string {
   // owner id = the plugin path between packages/ and the first
   // models|nodes segment (extension_lane.find_nodes_yaml).
-  const parts = rel.split("/");
+  // Sep-agnostic: the walk builds rel with join (backslashes on
+  // Windows), while checked-in spellings use forward slashes.
+  const parts = rel.split(/[/\\]/u);
   const at = parts.indexOf("packages");
   const tail = parts.slice(at + 1);
   const cut = tail.findIndex((p) => p === "models" || p === "nodes");
@@ -236,7 +238,7 @@ export function findNodesYaml(repo: string): Array<[string, string]> {
       if (e.d) { walk(p); continue; }
       if (e.n !== "extensions.yaml" && e.n !== "nodes.yaml") continue;
       const rel = p.slice(repo.length + 1);
-      const seg = rel.split("/");
+      const seg = rel.split(/[/\\]/u);
       const tail = seg.slice(seg.indexOf("packages") + 1);
       const isExt = tail.length >= 2 && tail[tail.length - 2] === "nodes" &&
         (tail[tail.length - 3] === "nodes" || e.n === "extensions.yaml");

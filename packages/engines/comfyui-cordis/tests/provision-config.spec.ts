@@ -8,7 +8,7 @@
 // (the fresh-clone probe's pass-6 receipt).
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
-import { join, relative } from "node:path";
+import { join, relative, sep } from "node:path";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 const nodeFs = { existsSync, mkdtempSync, readdirSync, writeFileSync };
@@ -111,7 +111,7 @@ describe("anchorDir (explicit overrides anchor like the root config)", () => {
     // anchored to the SAME absolute: the pointer never dangles
     const abs = anchorDir("data/models/image-gen");
     const written = relative(repo(), abs);
-    assert.ok(abs.startsWith(repo() + "/"));
+    assert.ok(abs.startsWith(repo() + sep));
     assert.equal(anchorDir(written), abs);
   });
 });

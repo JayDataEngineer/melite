@@ -6,6 +6,7 @@
 // default, the active-map lifecycle, and the non-object outputs
 // degrade to {}.
 import { describe, it, expect, vi } from "vitest";
+import { join } from "node:path";
 
 vi.mock("../src/comfyui-transport.ts", () => ({
   withBound: (work: () => Promise<unknown>) => work(),
@@ -24,7 +25,7 @@ vi.mock("../src/comfyui-outputs.ts", () => ({
   // THE HARVEST SPELLING (outputs-stroke): merge rides
   // fetchOutputArtifacts (records with .path), not fetchOutputs.
   fetchOutputArtifacts: async (_c: unknown, dir: unknown) => [
-    { nodeId: "save", path: String(dir) + "/out.png", kind: "images" },
+    { nodeId: "save", path: join(String(dir), "out.png"), kind: "images" },
   ],
   mapHistoryEntry: () => ({ kind: "completed" }),
   normalizeTimeoutS: (v: unknown) => (typeof v === "number" && v > 0 ? v : 2400),
@@ -171,8 +172,8 @@ describe("executeFlow (the merged submit)", () => {
     );
     expect(r.promptId).toBe("p-9");
     expect(Object.keys(r.stages)).toEqual(["gen", "up"]);
-    expect(r.stages["gen"]?.artifacts).toEqual(["/tmp/run-merge/gen/out.png"]);
-    expect(r.stages["up"]?.artifacts).toEqual(["/tmp/run-merge/up/out.png"]);
+    expect(r.stages["gen"]?.artifacts).toEqual([join("/tmp/run-merge", "gen", "out.png")]);
+    expect(r.stages["up"]?.artifacts).toEqual([join("/tmp/run-merge", "up", "out.png")]);
     expect(closed).toBe(true);
   });
   it("a synchronous throw from the progress tap still closes the client (audit M-S8 — the tap sits inside the fence)", async () => {
@@ -198,7 +199,7 @@ describe("executeFlow (the merged submit)", () => {
     outputsShape = "flat";
     try {
       const r = await executeFlow(rows, "/tmp/run-flat", { up: { src: "gen.image" } }, {});
-      expect(r.stages["gen"]?.artifacts).toEqual(["/tmp/run-flat/gen/out.png"]);
+      expect(r.stages["gen"]?.artifacts).toEqual([join("/tmp/run-flat", "gen", "out.png")]);
     } finally {
       outputsShape = "staged";
     }

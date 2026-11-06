@@ -6,7 +6,7 @@ import { randomBytes } from "node:crypto";
 import { readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { createHash } from "node:crypto";
-import { basename, dirname, join } from "node:path";
+import { basename, dirname, isAbsolute, join } from "node:path";
 // The subpath (never the package index — the service's plain-ESM
 // loader cannot link the index's extensionless sibling exports;
 // rootsManifest.ts itself imports nothing).
@@ -545,7 +545,7 @@ export async function uploadReferenced(client, wf, opts) {
         // like data/input/x.png ride there — unchanged law). The same
         // cross-roots trees serve (the maker's '<run>/<rel>' chained
         // input stages from its own tree on the user's lane).
-        if (opts?.runsRoot !== undefined && !p.startsWith("/") && p.includes("/") && p.split("/").every((seg) => segmentConfined(seg))) {
+        if (opts?.runsRoot !== undefined && !isAbsolute(p) && p.includes("/") && p.split("/").every((seg) => segmentConfined(seg))) {
             let hit = null;
             for (const tree of candidateTrees(opts.runsRoot, opts.stateRoots)) {
                 const c = join(tree, p);
@@ -560,7 +560,7 @@ export async function uploadReferenced(client, wf, opts) {
                 return seen[hit];
             }
         }
-        const cand = p.startsWith("/") ? p : join(process.cwd(), p);
+        const cand = isAbsolute(p) ? p : join(process.cwd(), p);
         if (!isFile(cand)) {
             // THE ENGINE-BIRTH POINTER ARM (2026-10-28 — the
             // preview-after-harvest burn): nine graphs died on nodes
@@ -573,7 +573,7 @@ export async function uploadReferenced(client, wf, opts) {
             // the extension), search the cross-roots run trees for any
             // run holding the artifact, stage the found copy, and refuse
             // LOUD on a total miss — never a verbatim ride.
-            if (p.startsWith("/") && /\/output\/[^/]+$/.test(p)) {
+            if (isAbsolute(p) && /[/\\]output[/\\][^/\\]+$/.test(p)) {
                 const leaf = basename(p);
                 // the ext gate above already proved a stageable tail. The
                 // engine's collision suffix is ONE underscore + 8-16 hex
@@ -674,7 +674,7 @@ export async function uploadReferenced(client, wf, opts) {
                     // of a bare "stages nowhere".
                     let runsVoice = "";
                     const segs = p.split("/");
-                    if (opts?.runsRoot !== undefined && !p.startsWith("/") && p.includes("/") && segs.every((s) => segmentConfined(s))) {
+                    if (opts?.runsRoot !== undefined && !isAbsolute(p) && p.includes("/") && segs.every((s) => segmentConfined(s))) {
                         const head = segs[0];
                         const trees = candidateTrees(opts.runsRoot, opts.stateRoots);
                         const stem = head.slice(0, 12);

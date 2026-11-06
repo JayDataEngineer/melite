@@ -8,7 +8,7 @@
 import { afterAll, beforeAll, describe, it, expect } from "vitest";
 import { mkdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import {
   viewTimeoutMs,
   fetchOutputArtifacts,
@@ -28,7 +28,7 @@ const DIR = join(tmpdir(), "melite-outputs-" + process.pid);
 beforeAll(() => mkdirSync(DIR, { recursive: true }));
 afterAll(() => rmSync(DIR, { recursive: true, force: true }));
 
-const fileOf = (p: string): string => p.split("/").pop() ?? "";
+const fileOf = (p: string): string => basename(p);
 
 const clientWith = (
   serve: (filename: string) => { body: string; ct: string } | { bytes: Uint8Array; ct: string } | null,

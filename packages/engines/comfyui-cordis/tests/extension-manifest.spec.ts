@@ -112,7 +112,7 @@ describe("Impact extension declaration SSOT", () => {
       assert.equal(matches.length, 1,
         `${name} must have one declaration, found ${matches.map(({ path }) => path).join(", ") || "none"}`);
       assert.equal(matches[0]?.row.name, name);
-      assert.equal(matches[0]?.path, "packages/image/mask/nodes/extensions.yaml");
+      assert.equal(matches[0]?.path, join("packages", "image", "mask", "nodes", "extensions.yaml"));
     }
   });
 

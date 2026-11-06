@@ -390,7 +390,7 @@ describe("uploadReferenced (the staging walk)", () => {
     // a true miss names BOTH searched trees (the NAME-THE-ROOT law)
     await expect(uploadReferenced(fakeClient(), {
       n: { class_type: "X", inputs: { v: "/v1/assets/runs/run-ghost/none.png" } },
-    }, { runsRoot: ROOT, stateRoots: [OTHER_STATE] })).rejects.toThrow(/not found[\s\S]*searched [^\n]*maker-state\/output/);
+    }, { runsRoot: ROOT, stateRoots: [OTHER_STATE] })).rejects.toThrow(/not found[\s\S]*searched [^\n]*maker-state[/\\]output/);
   });
   it("candidateTrees: own output root leads, manifest roots' output/ follow, dedup keeps first", () => {
     const own = join(DIR, "own", "output");
