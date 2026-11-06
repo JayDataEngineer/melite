@@ -115,6 +115,22 @@ describe('run_status execute — the run monitor', () => {
     assert.deepEqual(seen[0], { lane: 'runsStatus', args: ['r/1', false, exec.signal, 15_000] })
   })
 
+  test('THE EXACT-STRING LAW (W-11, friction3 line 88): a long failure error rides the row WHOLE — never a ledger-style cut', async () => {
+    // "run_status carries the full one; on failures, go to
+    // run_status first" — the ledger echoes at 400 chars, this
+    // door is the operator's full-text read. A slice anywhere in
+    // the projection reds here.
+    const long = "ComfyError: ComfyUI run failed: TypeError: create_causal_mask() got an unexpected keyword argument 'input_embeds'. Did you mean 'inputs_embeds'? " + 'at motion::KimodoTextToPose.0 '.repeat(30)
+    assert.ok(long.length > 400)
+    const { estate } = mockEstate(() => ({
+      run_id: 'r/9', status: 'failed', error: long,
+      stages: [{ id: 's_0', status: 'failed', error: long }],
+    }))
+    const tool = runStatus(estate)
+    const out = await tool.execute({ runId: 'r/9' }, exec) as Record<string, unknown>
+    assert.equal(out.error, long)
+  })
+
   test('a sparse row falls back honestly (unknown / [] / 0, no error key)', async () => {
     const { estate } = mockEstate(() => ({}))
     const tool = runStatus(estate)

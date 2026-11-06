@@ -824,6 +824,49 @@ describe("uploadReferenced F17 (one media-seat law — the silent enum-400 burn)
     }, undefined)).rejects.toThrow(/media input stages nowhere/);
     expect(probeGets).toBe(before + 1);
   });
+  it("W-11 — a dead runs-relative name names the searched trees and the nearby runs (never a bare miss)", async () => {
+    // the friction's dead-source face: run-deadbeef0000/nope.mp4.
+    // The voice must carry WHERE the runs-relative arm looked (the
+    // same searchedVoice the sibling arms speak) and what it holds
+    // nearby, so a typo'd run id is debuggable at the door.
+    mkdirSync(join(ROOT, "run-deadbeef0001", "edit"), { recursive: true });
+    writeFileSync(join(ROOT, "run-deadbeef0001", "edit", "ok.mp4"), "mp4");
+    await expect(uploadReferenced(fakeClient(), {
+      n: { class_type: "X", inputs: { v: "run-deadbeef0000/nope.mp4" } },
+    }, { runsRoot: ROOT })).rejects.toThrow(
+      /media input stages nowhere \(run-deadbeef0000\/nope\.mp4\).*the runs trees hold no run 'run-deadbeef0000' \(searched [^)]*\) \(nearby runs: run-deadbeef0001\)/s,
+    );
+  });
+  it("W-11 — an HttpError throw speaks the status (the resolved branch's own voice)", async () => {
+    const httpThrow = fakeClient({
+      fetchApi: async (_url: string, init: RequestInit) => {
+        if (init?.method === "GET") {
+          const e = new Error("Endpoint Bad Request (404 Not Found)") as Error & { status: number };
+          e.name = "HttpError";
+          e.status = 404;
+          throw e;
+        }
+        return new Response(JSON.stringify({ name: "x.png" }), { status: 200 });
+      },
+    });
+    await expect(uploadReferenced(httpThrow, {
+      slice: { class_type: "MeliteAudioSlice", inputs: { audio: "gone_take2.wav" } },
+    }, undefined)).rejects.toThrow(/media input stages nowhere \(gone_take2\.wav\).*\/view status 404/s);
+  });
+  it("W-11 — the empty-body parse throw speaks domain, never the leaked SyntaxError class", async () => {
+    const parseThrow = fakeClient({
+      fetchApi: async (_url: string, init: RequestInit) => {
+        if (init?.method === "GET") throw new SyntaxError("Unexpected end of JSON input");
+        return new Response(JSON.stringify({ name: "x.png" }), { status: 200 });
+      },
+    });
+    const err = await uploadReferenced(parseThrow, {
+      slice: { class_type: "MeliteAudioSlice", inputs: { audio: "sfx_boom.wav" } },
+    }, undefined).catch((e: Error) => e);
+    expect(err).toBeInstanceOf(Error);
+    expect(err.message).toMatch(/media input stages nowhere \(sfx_boom\.wav\).*\/view not served \(non-2xx with an empty body\)/s);
+    expect(err.message).not.toMatch(/SyntaxError/);
+  });
   it("non-stageable tails never probe (the ext gate is their own verbatim door)", async () => {
     const before = probeGets;
     const { graph } = await uploadReferenced(fakeClient(), {

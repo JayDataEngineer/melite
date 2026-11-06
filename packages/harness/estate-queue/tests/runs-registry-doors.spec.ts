@@ -1530,6 +1530,20 @@ describe("status + stop", () => {
     assert.match(String(logged["log_tail"]), /run: queued/);
   });
 
+  it("THE EXACT-STRING LAW, SERVED (W-11, friction3 line 88): the status row's error is byte-equal to run.error — never a ledger-style cut", async () => {
+    // the ledger echoes the refusal at 400 chars (documented cap);
+    // run_status's row is the operator's full-text door ("on
+    // failures, go to run_status first"). The served row copies
+    // run.error verbatim — this arm reds the day a slice sneaks
+    // between the record and the door.
+    const s = seat();
+    const long = "ComfyError: ComfyUI run failed: TypeError: create_causal_mask() got an unexpected keyword argument 'input_embeds'. Did you mean 'inputs_embeds'? " + "at motion::KimodoTextToPose.0 ".repeat(30);
+    assert.ok(long.length > 400);
+    const id = live(s, { status: "failed", error: long, stages: [{ id: "s", name: "s", index: 0, status: "failed", outputs: {}, expected: {} }] });
+    const got = await s.svc.status(id, sig());
+    assert.equal(got["error"], long);
+  });
+
   it("THE COMPOSE ECHO, SERVED (the audit's C): a film run's status carries compose_echo; a non-film run omits the key", async () => {
     const echo = { seam: "carry,cut", calls: 2, benchRev: 17 };
     const filmed = seat();

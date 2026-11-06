@@ -86,4 +86,19 @@ describe('the thrown-value fold (F38)', () => {
       expect(errText(v)).not.toContain('[object Object]')
     }
   })
+
+  test('the EXACT-string law (W-11, friction3): a long terminal error rides WHOLE — never a ledger-style cut', () => {
+    // friction3 line 88: the ledger truncates ("create_causal_…"),
+    // run_status carries the full one — "on failures, go to
+    // run_status first". errText is where the run's error column
+    // is born; a slice anywhere here would quietly demote the
+    // run_status row to the ledger's 400-char echo. A message
+    // past every known cap (ledger 400, managePreflight 200) must
+    // survive byte-for-byte.
+    const long = 'ComfyError: ComfyUI run failed: TypeError: create_causal_mask() got an unexpected keyword argument ' + "'input_embeds'".padEnd(520, ' ')
+    const out = errText(new Error(long))
+    expect(out).toBe('Error: ' + long)
+    expect(out.endsWith(long)).toBe(true)
+    expect(out.length).toBe(long.length + 'Error: '.length)
+  })
 })

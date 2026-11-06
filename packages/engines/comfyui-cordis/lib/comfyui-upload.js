@@ -623,8 +623,9 @@ export async function uploadReferenced(client, wf, opts) {
             // files through). The client's fetchApi THROWS on any
             // non-2xx, and ComfyUI's 404 body is empty so the throw
             // surfaces as a JSON parse error, not a status — the probe
-            // therefore rides ONLY on a resolved 200 and reports the raw
-            // verdict in the refusal voice (never guesses staged).
+            // therefore rides ONLY on a resolved 200 and reports a
+            // DOMAIN verdict in the refusal voice (never guesses
+            // staged; W-11 retired the raw error-class leak).
             if (!(p in probedInput)) {
                 let verdict = "";
                 try {
@@ -641,11 +642,62 @@ export async function uploadReferenced(client, wf, opts) {
                     }
                 }
                 catch (e) {
-                    verdict = "probe refused (" + (e instanceof Error ? e.name : String(e)) + ")";
+                    // W-11 (2026-11-15, the probe-verdict leak): the verdict
+                    // speaks domain, never client internals. fetchApi reads a
+                    // non-2xx answer as JSON so it can throw its HttpError —
+                    // ComfyUI's /view 404 body is EMPTY, so the JSON read
+                    // rejects first and the throw surfaced here as a bare
+                    // "SyntaxError": an internal class name carrying no
+                    // meaning at this door. An error carrying a status speaks
+                    // the resolved branch's own voice; a SyntaxError IS that
+                    // empty-body read; anything else (a network TypeError)
+                    // means the door never answered — refused, naming the
+                    // class, and never staged either way.
+                    const status = typeof e === "object" && e !== null ? e.status : undefined;
+                    if (typeof status === "number") {
+                        verdict = "status " + status;
+                    }
+                    else if (e instanceof Error && e.name === "SyntaxError") {
+                        verdict = "not served (non-2xx with an empty body)";
+                    }
+                    else {
+                        verdict = "probe refused (" + (e instanceof Error ? e.name : String(e)) + ")";
+                    }
                 }
                 probedInput[p] = verdict === "staged";
                 if (!probedInput[p]) {
-                    throw new ComfyError("media input stages nowhere (" + p + ") — no arm resolved it and the engine input dir does not serve that name (/view " + verdict + "); use an absolute host path that exists, a '<run>/<file>' runs-relative name, an estate/gallery artifact URL, an http(s) URL, or a name already staged in the engine input dir");
+                    // W-11 (the dead-source voice): a runs-relative miss
+                    // names the trees the arm searched and the nearby runs
+                    // they hold — the same searchedVoice every sibling arm
+                    // speaks (estate, gallery, engine-output pointer), so a
+                    // typo'd run id stays debuggable at this door too instead
+                    // of a bare "stages nowhere".
+                    let runsVoice = "";
+                    const segs = p.split("/");
+                    if (opts?.runsRoot !== undefined && !p.startsWith("/") && p.includes("/") && segs.every((s) => segmentConfined(s))) {
+                        const head = segs[0];
+                        const trees = candidateTrees(opts.runsRoot, opts.stateRoots);
+                        const stem = head.slice(0, 12);
+                        const near = [];
+                        if (stem.length >= 8) {
+                            for (const tree of trees) {
+                                let names;
+                                try {
+                                    names = readdirSync(tree);
+                                }
+                                catch {
+                                    continue;
+                                }
+                                for (const n of names) {
+                                    if (n !== head && n.startsWith(stem) && !near.includes(n) && near.length < 4)
+                                        near.push(n);
+                                }
+                            }
+                        }
+                        runsVoice = "; the runs trees hold no run '" + head + "' " + searchedVoice(trees)
+                            + (near.length > 0 ? " (nearby runs: " + near.join(", ") + ")" : "");
+                    }
+                    throw new ComfyError("media input stages nowhere (" + p + ") — no arm resolved it and the engine input dir does not serve that name (/view " + verdict + ")" + runsVoice + "; use an absolute host path that exists, a '<run>/<file>' runs-relative name, an estate/gallery artifact URL, an http(s) URL, or a name already staged in the engine input dir");
                 }
             }
             return v;
