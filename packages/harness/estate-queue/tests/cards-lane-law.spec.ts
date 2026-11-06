@@ -2213,6 +2213,30 @@ describe("THE SWITCH WEDGES (operator 2026-11-05 — REAL registry, REAL 2511/21
     // own voice, exactly as before this seat changed)
     expect(migrated).toBe(next);
   });
+
+  it("a prior the facts do not know at all stands aside (the tolerance law's own shape)", () => {
+    // A stored row addressing a fully retired mid: prepareCardParams
+    // refuses "no model unit", the catch finds no facts row under the
+    // retired id, and the seat stands aside exactly as before — the
+    // merged view passes through untouched and the admission judges
+    // it with its own voice. (The retired id names no live unit by
+    // construction: the law is the unknown-prior shape, not the id.)
+    const prior: Record<string, unknown> = {
+      model: "qwen-img-edit-2511-retired",
+      variant: "standard",
+      quant: "int8",
+      prompt: "turn the sky crimson at dusk",
+    };
+    const next = { ...EDIT_21 };
+    const migrated = svc.laneMigrate("image-edit", next, prior);
+    expect(migrated).toBe(next);
+  });
+
+  it("an unknown card reseats to null (the family seat never throws)", () => {
+    // reseatStageFamily's contract: a card no def declares has no
+    // family to derive — the seat answers null, never a refusal.
+    expect(svc.reseatStageFamily("no-such-card", {}, {})).toBeNull();
+  });
 });
 
 describe("the hermetic engine (the gate-37 flake cure: no live socket on the boot path)", () => {

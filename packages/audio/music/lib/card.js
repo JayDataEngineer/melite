@@ -71,6 +71,16 @@ export function registerCard(ctx, comfy) {
         },
         // stock-only card: the MiniMax + YuE2 nodes ride upstream core
         // (comfy_extras.nodes_minimax_music / nodes_yue2); no requires.
+        // THE MODEL ADMISSION (F3-04, 2026-11-15): compose resolves the
+        // doc through gatedResolve('music', schemaFn, ['model'], p) —
+        // the model row id is admitted BEYOND the schema knobs (the
+        // card's own lane branch reads it; flowKinds.requiresModel:
+        // false only lifts the flow-stage demand). Declared here so
+        // the registry's admission surface (cardsFacts: def.admits)
+        // matches what the compose door actually serves — the
+        // dropped-knob sweep (runs-graph-receipt ARM j) reds on the
+        // gap this row used to be.
+        admits: ['model'],
         schema: schemaFn,
         compose(p, model, g, runId) {
             // THE SCHEMA GATE (the h3 admission precedent — the card's
