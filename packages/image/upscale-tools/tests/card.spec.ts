@@ -1,7 +1,7 @@
 import "../../../../tests/helpers/boot-models.ts";
 import { describe, it, beforeAll } from "vitest";
 import assert from "node:assert/strict";
-import { dirname, join, sep} from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadCardDefs } from "@melite/comfyui-cordis";
 import { upscale } from "@melite/models-seedvr2-ema";
@@ -70,7 +70,14 @@ describe("the upscale-tools compose gate", () => {
       { stateRoots: [root] },
     );
     const json = JSON.stringify(g.toJSON());
-    assert.ok(json.includes(join(root, "output", "run-x", "out.png").split(sep).join("/")), "the ref rides rewritten to the runs root");
+    // THE PORTABLE JUDGE (windows, run 42216984860): the rewritten
+    // ref rides the OS-native separators, and the JSON TEXT escapes
+    // every backslash — an includes() of the raw native path (or a
+    // posix-normalized one) matches NEITHER on windows. Compare the
+    // JSON-escaped spelling: stringify the expected path and strip
+    // the quotes, exactly what the serializer embeds.
+    const expected = JSON.stringify(join(root, "output", "run-x", "out.png")).slice(1, -1);
+    assert.ok(json.includes(expected), `the ref rides rewritten to the runs root (${expected} vs ${json})`);
   });
 
   it("THE SCHEMA GATE: an out-of-envelope batch_size refuses loud (declared 1–16), never composes", () => {

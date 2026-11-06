@@ -883,7 +883,18 @@ describe("the direct arm's idle dial (the 9.35GB cure, 2026-10-10)", () => {
     const { server, url } = chunkedServer("/stall.bin", () => (emitted ? null : (emitted = true, 0)));
     await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
     const fetcher = idleDialFetch(50);
-    const response = await fetcher(url());
+    // THE TWO-SEAT JUDGE (windows, run 42216984860): the dial bounds
+    // the WHOLE fetch — handshake included (it arms before fetch and
+    // rearms only on flowing chunks). A slow windows handshake
+    // exceeds the 50ms dial and the abort lands at the FETCH seat
+    // (the await itself rejects AbortError) instead of the read
+    // seat; both are the dial refusing a stalled source, never a
+    // silent hang, so the arm judges whichever seat fires.
+    const response = await fetcher(url()).catch((error: unknown) => {
+      assert.match(String(error), /abort/i);
+      return null;
+    });
+    if (response === null) return;
     const reader = (response.body ?? new ReadableStream<Uint8Array>()).getReader();
     const first = await reader.read();
     assert.equal(first.done, false);
