@@ -35,7 +35,19 @@ import types
 from pathlib import Path
 
 import pytest
-import torch
+
+# THE CI SEAT LAW (the cold-clone wall's precedent): the estate's CI
+# python interpreter carries no engine stack — torch's absence is not
+# this wall's law (the law is the strip's seat and the burn's
+# arithmetic). The live-rig arms skip LOUD naming the missing module;
+# the source-law arm judges everywhere, torch or no torch.
+TORCH_PRESENT = importlib.util.find_spec("torch") is not None
+needs_torch = pytest.mark.skipif(
+    not TORCH_PRESENT,
+    reason="torch absent on this seat (CI) — the live-rig arms judge where the engine stack lives",
+)
+if TORCH_PRESENT:
+    import torch
 
 NODES_DIR = (
     Path(__file__).resolve().parents[1]
@@ -51,11 +63,23 @@ if PACKAGE not in sys.modules:
     _pkg = types.ModuleType(PACKAGE)
     _pkg.__path__ = [str(NODES_DIR)]
     sys.modules[PACKAGE] = _pkg
-_SPEC = importlib.util.spec_from_file_location(f"{PACKAGE}.refine", MODULE_PATH)
-assert _SPEC and _SPEC.loader
-refine = importlib.util.module_from_spec(_SPEC)
-sys.modules[_SPEC.name] = refine
-_SPEC.loader.exec_module(refine)
+# LAZY LOAD: the vendored refinement imports torch at module scope
+# (it is an engine node), so the module load itself waits for the
+# arms that exec it — the source-law arm reads the file as TEXT and
+# needs no interpreter stack at all.
+_REFINE = None
+
+
+def _refine():
+    global _REFINE
+    if _REFINE is None:
+        _spec = importlib.util.spec_from_file_location(f"{PACKAGE}.refine", MODULE_PATH)
+        assert _spec and _spec.loader
+        module = importlib.util.module_from_spec(_spec)
+        sys.modules[_spec.name] = module
+        _spec.loader.exec_module(module)
+        _REFINE = module
+    return _REFINE
 
 # The enlarged refinement grid (the handoff's learned latent) and the
 # carried window's own grid — the two shapes whose mismatch is the burn.
@@ -180,6 +204,7 @@ def make_joint():
     }
 
 
+@needs_torch
 def test_the_burn_arithmetic_is_pinned_in_the_engines_own_voice():
     """THE CATCH-BEFORE-LIVE ARM, class half: a mask state seeded for
     the carried window's streams splits the ENLARGED refinement grid's
@@ -220,6 +245,7 @@ def test_the_strip_lives_in_the_handoff_before_the_guider():
     )
 
 
+@needs_torch
 def test_the_strip_judged_live_at_the_pass_that_burned(monkeypatch):
     """THE CATCH-BEFORE-LIVE ARM, cure half: a MODEL carrying a
     foreign dynamic denoise-mask function enters the refinement, the
@@ -227,6 +253,7 @@ def test_the_strip_judged_live_at_the_pass_that_burned(monkeypatch):
     enlarged grid, sampling completes, and the original MODEL keeps
     its patch for every other graph consumer."""
     install_fake_comfy(monkeypatch)
+    refine = _refine()
     state = ForeignDriftControlState(WINDOW_VIDEO, AUDIO)
     model = FakeModelPatcher(model_options={"denoise_mask_function": state})
 
@@ -258,9 +285,11 @@ def test_the_strip_judged_live_at_the_pass_that_burned(monkeypatch):
     )
 
 
+@needs_torch
 def test_the_strip_is_identity_on_ordinary_models():
     """A MODEL with no dynamic denoise-mask patch rides untouched —
     the strip is a no-op for every ordinary refinement."""
+    refine = _refine()
     clean = FakeModelPatcher()
     assert refine._strip_foreign_denoise_mask_patch(clean) is clean
     bare = object()

@@ -202,6 +202,15 @@ jobs:
       MELITE_TIER_DELEGATED: "1"
     steps:
       - uses: actions/checkout@v4
+        with:
+          # THE VENDORED-TREE LAW: the coverage gate's concurrent
+          # walls pool judges the vendored packs' bytes (cold-clone
+          # archives, the blender-lane pack sweep) — a submodule-less
+          # checkout serves empty vendor dirs and those walls red
+          # with "expected 0 to be greater than 100" while the same
+          # tree is green wherever submodules materialize. Every
+          # seat that judges vendor bytes fetches vendor bytes.
+          submodules: recursive
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
