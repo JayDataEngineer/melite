@@ -1,28 +1,30 @@
 // @contract cards-h3-refine-carry-standdown
-// @melite/video-h3-timeline — THE REFINE CARRY STAND-DOWN (F3-14,
-// operator burn 2026-11-05). The compose mounts the film's own
-// continuation across refine window joins correctly
-// (renderH3RefineCarry is the round-27 "ZERO DIFFERENCE" seat), but
-// the engine path that carries it DIES: the carried window's handoff
-// raises
+// @melite/video-h3-timeline — THE REFINE CARRY, RE-ARMED (F3-14
+// engine cure, operator order 2026-11-15: "THIS APP CANNOT EVER GO
+// ALL GREEN WHILE THIS IS STILL BROKEN"). History: the carried
+// refine died MID-BILL at MinimaxH3LatentUpscaler3DRefineHandoff —
 //   ValueError: Drift-Control AV packed mask does not match its audio stream
-// at MinimaxH3LatentUpscaler3DRefineHandoff — the timeline-director's
-// Drift-Control mask state is seeded from the streams arriving at the
-// install site (drift_control_av.py:262-264) and every sampling step
+// (the timeline-director's Drift-Control mask state is seeded from
+// the streams arriving at the install site, and every sampling step
 // splits the packed denoise mask into exactly prod(video_shape[1:])
-// video elements plus prod(audio_shape) (drift_control_av.py:159); a
-// continuation-carried latent carries a video AND an audio prefix, so
-// the split no longer lands. Window 0 renders (90 f, 2560×1472, a
-// true 2×) and BILLS before window 1 dies — so this wall pins the
-// door's stand-down: the carried shape REFUSES in words, before a
-// single node is emitted, and the zero-carry hard cut (the press that
-// works today) still composes. The refusal sentence names the exact
-// engine failure and the cure; the carried refine is owed the engine
-// fix (ROADMAP F3-14), and the carrier's own shape stays tested where
-// it is reachable (packages/models/h3 refine-bag ARM B11/B12).
+// video elements plus prod(audio_shape); the refinement's enlarged
+// grid no longer splits that way). The door stood the carry down
+// while the engine was lethal. The cure (the roadmap's own named
+// route): the vendored handoff CLONE-STRIPS any foreign dynamic
+// denoise-mask patch before its guider samples — the estate python
+// wall tests/test_h3_refine_handoff_strip.py judges that cure live,
+// pins the burn's verbatim ValueError, and reds if the strip leaves
+// the pass. THIS wall pins the door: the carried bag and the carried
+// auto-tile COMPOSE through the film's own continuation
+// (MiniMaxH3FiniteLatentContinuation, one per join, over the
+// predecessor's joint target — the round-27 "ZERO DIFFERENCE" seat),
+// the hard cut still serves, the off-grid carry still hears the grid
+// refusal, the choke point is the family carrier, and the engine rig
+// rides green beside the door that arms it.
 import "../../../../tests/helpers/boot-models.ts";
 import { beforeAll, describe, it } from "vitest";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
@@ -39,6 +41,19 @@ const FACTS_PATH = join(
   "packages", "engines", "comfyui-cordis", "data", "model-facts.json",
 );
 const facts = loadFacts(FACTS_PATH, { getModel, registryIds, registryModel });
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
+const ENGINE_RIG = join(ROOT, "tests", "test_h3_refine_handoff_strip.py");
+/** The walls tier runs on boxes whose python may lack pytest (CI runs
+ * the rig in its own pytest seat); locally and on the battery the
+ * exec arm judges it live. */
+const PYTEST_PRESENT = (() => {
+  try {
+    return spawnSync("python3", ["-m", "pytest", "--version"], { encoding: "utf8" }).status === 0;
+  } catch {
+    return false;
+  }
+})();
 
 let def: CardDefinition;
 let model: ModelFacts;
@@ -65,57 +80,51 @@ const body = (refine: Array<Record<string, unknown>>): Record<string, unknown> =
   refine,
 });
 
-/** The exact engine failure every carried press would hit at window 1. */
-const ENGINE_FAILURE = /ValueError: Drift-Control AV packed mask does not match its audio stream/;
-
-describe("the refine carry stand-down (F3-14)", () => {
-  it("ARM 1 — a carried two-entry bag REFUSES at the card door, naming the exact engine failure and the cure, before any node", () => {
+describe("the refine carry, re-armed (F3-14 engine cure)", () => {
+  it("ARM 1 — a carried two-entry bag COMPOSES: one continuation over the predecessor's joint target, saves, and the one terminal film", () => {
     const g = new GraphBuilder();
-    assert.throws(
-      () => def.compose(def.schema(body([
-        REFINE_ENTRY(),
-        { ...REFINE_ENTRY(), start_seconds: 34 / 24 },
-      ])) as Record<string, unknown>, model, g, "run_standdown_bag2"),
-      (e: unknown) => {
-        const message = String((e as Error).message);
-        assert.match(message, ENGINE_FAILURE,
-          "the refusal quotes the engine's exact ValueError");
-        assert.match(message, /MinimaxH3LatentUpscaler3DRefineHandoff/,
-          "the refusal names the node that dies");
-        assert.match(message, /drift_control_av\.py:159/,
-          "the refusal names the split seat");
-        assert.match(message, /F3-14/, "the refusal carries the finding id");
-        assert.match(message, /overlap_frames 0/, "the refusal names the hard-cut cure");
-        assert.match(message, /ROADMAP F3-14/, "the refusal names where the engine cure is owed");
-        assert.match(message, /window 0→1 carries 22 f/,
-          "the refusal names the derived carry (0 + 56 − 34 = 22 f)");
-        return true;
-      },
-      "the carried bag refuses in words",
+    def.compose(def.schema(body([
+      REFINE_ENTRY(),
+      { ...REFINE_ENTRY(), start_seconds: 34 / 24 },
+    ])) as Record<string, unknown>, model, g, "run_carry_bag2");
+    const out = graphOf(g);
+    // The stand-down is LIFTED: this compose used to refuse before a
+    // single node. If the refusal ever returns, this census reds.
+    const conts = ofClass(out, "MiniMaxH3FiniteLatentContinuation");
+    assert.equal(conts.length, 1, "one continuation per carried join — the carry is live");
+    const targets = ofClass(out, "MiniMaxH3ContexMaskedTarget");
+    assert.equal(targets.length, 2, "one joint target per window");
+    const prevRef = Array.isArray(conts[0]![1].inputs.previous_latent)
+      ? String((conts[0]![1].inputs.previous_latent as unknown[])[0])
+      : String(conts[0]![1].inputs.previous_latent);
+    assert.equal(out[prevRef]!.class_type, "MiniMaxH3ContexMaskedTarget",
+      "the carried join rides the predecessor's joint target");
+    assert.equal(ofClass(out, "VHS_LoadVideo").length, 2, "two windows, two loaders");
+    assert.deepEqual(
+      ofClass(out, "SaveVideo").map(([, n]) => String(n.inputs["filename_prefix"])).sort(),
+      ["run_carry_bag2/refine", "run_carry_bag2/refine_w0", "run_carry_bag2/refine_w1"].sort(),
+      "two members + the one terminal film",
     );
-    assert.deepEqual(graphOf(g), {},
-      "zero nodes emitted — the refusal precedes every save, so nothing can bill");
+    assert.equal(ofClass(out, "MeliteConcatVideos").length, 1,
+      "the plain file concat assembles the carried film");
   });
 
-  it("ARM 2 — the auto-tile's carried loop REFUSES with its own seats (windows, overlap, join count)", () => {
+  it("ARM 2 — the auto-tile's carried loop COMPOSES with its own arithmetic (window 0 fresh, every k≥1 window carrying the loop's overlap)", () => {
     const g = new GraphBuilder();
-    assert.throws(
-      () => def.compose(def.schema(body([{ ...REFINE_ENTRY(), windows: 2 }])) as Record<string, unknown>,
-        model, g, "run_standdown_tile2"),
-      (e: unknown) => {
-        const message = String((e as Error).message);
-        assert.match(message, /a 2-window loop at a 22 f overlap \(1 carried join\)/,
-          "the loop's own arithmetic is named");
-        assert.match(message, ENGINE_FAILURE);
-        assert.match(message, /F3-14/);
-        return true;
-      },
-      "the carried auto-tile refuses",
-    );
-    assert.deepEqual(graphOf(g), {}, "zero nodes emitted");
+    def.compose(def.schema(body([{ ...REFINE_ENTRY(), windows: 2 }])) as Record<string, unknown>,
+      model, g, "run_carry_tile2");
+    const out = graphOf(g);
+    const conts = ofClass(out, "MiniMaxH3FiniteLatentContinuation");
+    assert.equal(conts.length, 1, "a 2-window loop at a 22 f overlap mounts one carried join");
+    assert.equal(Number(conts[0]![1].inputs.overlap_frames), 22,
+      "the continuation carries the loop's own overlap (the film's seam)");
+    assert.equal(ofClass(out, "VHS_LoadVideo").length, 2, "two windows, two loaders");
+    const skips = ofClass(out, "VHS_LoadVideo").map(([, n]) => n.inputs.skip_first_frames);
+    assert.deepEqual(skips, [0, 34], "window 1 starts one step in (56 − 22 = 34 f)");
+    assert.equal(ofClass(out, "MeliteConcatVideos").length, 1, "the carried film assembles");
   });
 
-  it("ARM 3 — THE HARD-CUT CURE SERVES TODAY: abutting entries (carry 0) and a zero-overlap loop compose with no continuation", () => {
+  it("ARM 3 — THE HARD CUT STILL SERVES: abutting entries (carry 0) and a zero-overlap loop compose with no continuation", () => {
     // 56 f windows (the 2.33 s design default); the second starts at
     // frame 56 — 0 + 56 − 56 = 0 f carry, the plain concat of two
     // independent windows.
@@ -123,7 +132,7 @@ describe("the refine carry stand-down (F3-14)", () => {
     def.compose(def.schema(body([
       REFINE_ENTRY(),
       { ...REFINE_ENTRY(), start_seconds: 56 / 24 },
-    ])) as Record<string, unknown>, model, bagG, "run_standdown_abut");
+    ])) as Record<string, unknown>, model, bagG, "run_carry_abut");
     const bag = graphOf(bagG);
     assert.equal(ofClass(bag, "MiniMaxH3FiniteLatentContinuation").length, 0,
       "a zero carry mounts no continuation");
@@ -134,46 +143,57 @@ describe("the refine carry stand-down (F3-14)", () => {
       "the plain file concat joins the abutting windows");
     assert.deepEqual(
       ofClass(bag, "SaveVideo").map(([, n]) => String(n.inputs["filename_prefix"])).sort(),
-      ["run_standdown_abut/refine", "run_standdown_abut/refine_w0", "run_standdown_abut/refine_w1"].sort(),
+      ["run_carry_abut/refine", "run_carry_abut/refine_w0", "run_carry_abut/refine_w1"].sort(),
       "two members + the one terminal film",
     );
 
     const loopG = new GraphBuilder();
     def.compose(def.schema(body([{ ...REFINE_ENTRY(), windows: 2, overlap_frames: 0 }])) as Record<string, unknown>,
-      model, loopG, "run_standdown_tile0");
+      model, loopG, "run_carry_tile0");
     const loop = graphOf(loopG);
     assert.equal(ofClass(loop, "MiniMaxH3FiniteLatentContinuation").length, 0,
       "the zero-overlap auto-tile never mounts the carry");
     assert.equal(ofClass(loop, "MeliteConcatVideos").length, 1, "it joins through the plain concat");
   });
 
-  it("ARM 4 — THE STAND-DOWN IS THE LAST JUDGMENT: an off-grid carry still hears the grid refusal (its own better voice), never the stand-down", () => {
-    // start 1.5 s = 36 f → carry 56 − 36 = 20 f… off the 5/22/39/56
-    // grid? 20 lands between 5 and 22 — the off-grid arm owns it.
+  it("ARM 4 — THE GRID JUDGMENT KEEPS ITS OWN VOICE: an off-grid carry still hears the token-grid refusal", () => {
+    // start 1.5 s = 36 f → carry 56 − 36 = 20 f, off the 5/22/39/56
+    // token grid — the off-grid arm owns it, cured engine or not.
     assert.throws(
       () => def.compose(def.schema(body([
         REFINE_ENTRY(),
         { ...REFINE_ENTRY(), start_seconds: 1.5 },
-      ])) as Record<string, unknown>, model, new GraphBuilder(), "run_standdown_offgrid"),
+      ])) as Record<string, unknown>, model, new GraphBuilder(), "run_carry_offgrid"),
       /not token-exact/,
-      "the grid judgment keeps its own voice — the stand-down never swallows a better refusal",
+      "the grid judgment keeps its own voice — the ghost is never a fallback",
     );
   });
 
-  it("ARM 5 — the CHOKE POINT is the family carrier, not a card-only patch: a direct carried bag refuses with the same sentence", () => {
+  it("ARM 5 — the CHOKE POINT is the family carrier, not a card-only patch: a direct carried bag composes the same continuation", () => {
     const carrierFacts = {
       unet: "minimax_h3_t2v_bf16.safetensors",
       clip: "clip.safetensors",
       vae_video: "vae_video.safetensors",
       vae_audio: "vae_audio.safetensors",
     };
-    assert.throws(
-      () => renderH3RefineBag(
-        [REFINE_ENTRY(), { ...REFINE_ENTRY(), start_seconds: 34 / 24 }],
-        {}, carrierFacts, new GraphBuilder(), "run_standdown_carrier",
-      ),
-      ENGINE_FAILURE,
-      "every caller of the carrier hears the stand-down",
+    const g = new GraphBuilder();
+    renderH3RefineBag(
+      [REFINE_ENTRY(), { ...REFINE_ENTRY(), start_seconds: 34 / 24 }],
+      {}, carrierFacts, g, "run_carry_carrier",
     );
+    assert.equal(ofClass(graphOf(g), "MiniMaxH3FiniteLatentContinuation").length, 1,
+      "every caller of the carrier composes the carried join");
   });
+
+  it.skipIf(!PYTEST_PRESENT)(
+    "ARM 6 — THE ENGINE RIG RIDES GREEN BESIDE THE DOOR THAT ARMS IT: the handoff strip wall passes (the estate never arms a carry its engine cannot survive)",
+    () => {
+      const r = spawnSync(
+        "python3", ["-m", "pytest", ENGINE_RIG, "-q"],
+        { encoding: "utf8", cwd: ROOT, timeout: 300_000 },
+      );
+      assert.equal(r.status, 0,
+        `the engine handoff rig must be green for the door to arm the carry:\n${r.stdout ?? ""}${r.stderr ?? ""}`);
+    },
+  );
 });

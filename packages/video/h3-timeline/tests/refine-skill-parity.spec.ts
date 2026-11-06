@@ -232,18 +232,18 @@ describe("the refine skill's dial table agrees with the code's own homes", () =>
     assert.equal(servedStack, MAX_COMPOSED_WINDOWS,
       "the served refine bag stacks to the composed-window ceiling");
     // THE DESIGN: the bag takes multiple window entries, and the
-    // MULTI-WINDOW PRESS IS THE ABUTTING HARD CUT — the carried join
-    // is dead in the engine (F3-14) and refused at the door, so the
-    // doc must name the burn instead of promising the carried tile.
+    // MULTI-WINDOW PRESS IS BACK — the carried join is SERVED
+    // (F3-14 cured 2026-11-15 at the refine handoff), so the doc
+    // must teach the carry AND the cure instead of the old refusal.
     assert.match(md, /multiple window entries/,
       "the doc states the bag takes multiple window entries");
-    assert.match(md, /F3-14/,
-      "the doc names the F3-14 stand-down");
-    assert.match(md, /DEAD in the engine today/i,
-      "the doc states the carried join is dead in the engine");
+    assert.match(md, /F3-14 CURED 2026-11-15/,
+      "the doc names the F3-14 cure and its date");
+    assert.match(md, /CARRIED/i,
+      "the doc teaches the carried face as a lawful tiling");
     assert.match(md, /ABUTTING/i,
-      "the doc states the lawful multi-window press: the abutting hard cut");
-    expect(md).not.toMatch(/one press tiles the film/i);
+      "the doc states the abutting hard cut as the other lawful tiling");
+    expect(md).not.toMatch(/DEAD in the engine today/i);
     // the STOPGAP claim is gone — the doc no longer teaches the gap
     expect(md).not.toMatch(/the bag is max_stack 1/i);
     expect(md).not.toMatch(/DECLARED STOPGAP/);

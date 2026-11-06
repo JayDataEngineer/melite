@@ -5,13 +5,16 @@ import type { H3Facts } from './actions.js';
  *  seat carries this same single option — one file, one spelling, no
  *  hand-spelled alternatives). */
 export declare const REFINE_UPSCALE_MODEL = "minimax_h3_latent_upscaler_3d_bf16.safetensors";
-/** The 2x pass's measured memory ceiling, in frames at the film clock
+/** The 2x pass's measured too-long line, in frames at the film clock
  *  (24 fps). The friction report's §12.2/§13.2 sweep on the operator's
  *  box: 56 f and 90 f pass at 2x (2688×1536, 48 kHz); 141 f OOMs,
  *  needing 1.06 GiB more with 20.13 GiB already resident. H3's memory
- *  grows monotonically with the window, so a window past the measured
- *  OOM point cannot fit at this variant — the door refuses it by name
- *  instead of burning a render to find out. */
+ *  grows monotonically with the window, so there is no OOM mystery
+ *  and no ceiling to press (operator 2026-11-15: "There is no OOM
+ *  error — we have the CARRY CONTEXT, so the OOM is just the WINDOWS
+ *  BEING TOO LONG"): a window past this point is just too long, and
+ *  the door refuses it by name instead of burning a render to find
+ *  out. */
 export declare const REFINE_2X_OOM_FRAMES = 141;
 /** The refine window's default length in seconds — 2.33 s at 24 fps
  *  rounds to 56 f, the 2 s class's rung of the engine's 22+17k token
@@ -19,21 +22,19 @@ export declare const REFINE_2X_OOM_FRAMES = 141;
  *  joined by the context carry (FRICTION_3 W-7, operator: "for the
  *  refine flow it is two seconds, not five bro. That is the POINT of
  *  the context carry"): the carry is what makes a short window
- *  seamless, so the design never needs the workaround's wide window.
- *  90 f measured GREEN at 2x is the hard-cut workaround's wide
- *  window — fewer seams while the carry is dead (F3-14) — never the
- *  design. A default that OOMs is the F24 burn: the arm used to load
+ *  seamless, so the design never needs a wider window at all. A default that OOMs is the F24 burn: the arm used to load
  *  the WHOLE staged clip, so any film longer than ~4 s died at this
  *  variant. */
 export declare const REFINE_DEFAULT_CLIP_SECONDS = 2.33;
 /** The hard-cut workaround's wide window, in frames — 90 f measured
- *  GREEN at 2x on the operator's box (2688×1536, 48 kHz). While the
- *  context carry is dead (F3-14) a carried tile refuses, so a film
- *  tiles as abutting hard cuts and wider windows mean fewer seams —
- *  that is the only reason this number exists. It teaches the
- *  workaround's history, never the design: NO door reads it (the
- *  default above is the design window), and served copy cites it only
- *  beside the design window it is not. */
+ *  GREEN at 2x on the operator's box (2688×1536, 48 kHz). It existed
+ *  for ONE reason: while the carry was dead, wider windows meant
+ *  fewer hard-cut seams. The carry is served now (F3-14 cured,
+ *  2026-11-15), so the fewer-seams frame is retired — there is no
+ *  wide-window advice to give, a too-long window is just too long.
+ *  The constant stays as the measured-green datapoint (history), and
+ *  the export stays because the parity walls pin the number: NO door
+ *  reads it and no served copy offers it as a choice. */
 export declare const REFINE_WORKAROUND_WIDE_FRAMES = 90;
 /** The refine auto-tile's default carried overlap, in frames at the
  *  film clock — the film's own seam (SEAM_OVERLAP_FRAMES), which is
@@ -104,6 +105,68 @@ export declare function renderH3RefineWindow(entry: Record<string, unknown>, p: 
  * @returns the window's SaveVideo passthrough (the bag carrier's
  * N=1 delegate returns the same handle; statement callers ignore it) */
 export declare function renderH3Refine(entry: Record<string, unknown>, p: Record<string, unknown>, facts: H3Facts, g: GraphBuilder, runId: string): OutputHandle;
+/** THE BAG CARRIER (GAPS-19, 2026-11-01 plan): N stated entries ARE N
+ *  windows of ONE film — the film tail's own tiling, entry-driven.
+ *  N=1 delegates to the single-window arm byte-identically (no
+ *  boundary, no concat — the sequential-press law: press, judge,
+ *  press stays lawful and byte-cheap). N≥2 composes one
+ *  `renderH3RefineWindow` body per entry, ordered by the film's
+ *  unload boundary chain (`chainSaveBoundaries`) and assembled
+ *  IN-GRAPH by the file join (`concatSavedFilms`) at
+ *  `<runId>/refine` — the F24 loop's own tail, now entry-driven
+ *  instead of count-driven. No new engine surface, no harness media,
+ *  no ffmpeg.
+ *
+ *  THE BAG LAWS (admission-enforced continuity, the film path's own
+ *  property restated for entries — all refusals at compose, zero GPU):
+ *  1. ONE FILM PER BAG — every entry's source_clip names the SAME
+ *     staged leaf; the tiling joins windows of one timeline, so a
+ *     two-source join refuses loud (a second source is a second card).
+ *  2. NO GAPS, NO FULL OVERLAP — in stated order, entry k≥1 satisfies
+ *     `0 ≤ prevSkip + prevCap − skip < prevCap`: consecutive windows
+ *     overlap (the walk's own minus-a-second-or-two law) but never
+ *     leave a hole (a gap silently drops source seconds) and never
+ *     start at or before the previous window (out of order — the
+ *     compose never silently sorts).
+ *  3. THE CEILING — more than MAX_COMPOSED_WINDOWS entries refuses
+ *     (the extend solver's own window ceiling).
+ *  Per-entry seats stay per-entry: each entry carries its own
+ *  refine_prompt (required — no doc-level fallback) and may pin its
+ *  own denoise/steps/seed/clip_seconds/start_seconds/mode/scale;
+ *  renderH3RefineWindow's existing per-window validation (REQUIRED_
+ *  SEATS, denoise < 1, the 141 f ceiling) judges each window unchanged.
+ *
+ *  THE CARRY IS THE FILM'S OWN SEAM NODE (round 27, operator order:
+ *  "ZERO DIFFERENCE BETWEEN THE CONTEXT CARRY FROM THE NORMAL GENS
+ *  AND THE REFINE GENS"): a carried bag mounts
+ *  MiniMaxH3FiniteLatentContinuation on every join with the film's
+ *  seats, and each window's joint AV target is built by the estate's
+ *  one source→nested-AV constructor (SolidMask →
+ *  FantasticVideoEditLatent → ContexMaskedTarget, the
+ *  extend/repair/swap spine) — never a refine-only carry, never an
+ *  alpha blend. The carried head is trimmed by the film's finalize
+ *  node and the tail is the plain file concat, the film's own join.
+ *
+ * @param bag the refine mod's bound entries, stated film order
+ * @param p the walked doc params (the family plane every window rides)
+ * @param facts the family's lane facts (unet off the DECL row)
+ * @param g the run's graph builder
+ * @param runId the run tree's id (window + film prefixes ride it)
+ * @returns the terminal SaveVideo passthrough — the assembled film
+ * at `<runId>/refine` (N=1: the single window's own save) */
+/** THE CARRY RE-ARM (F3-14 engine cure, 2026-11-15, operator order):
+ *  the carried refine is LIVE again. The engine death the stand-down
+ *  refused (window 1 dying at its handoff with `ValueError:
+ *  Drift-Control AV packed mask does not match its audio stream`) is
+ *  cured at the handoff that burned: the vendored
+ *  MinimaxH3LatentUpscaler3DRefineHandoff clone-strips any foreign
+ *  dynamic denoise-mask patch (the Drift-Control AV function seeded
+ *  for the carried window's streams) before its guider samples the
+ *  enlarged grid — the estate python wall
+ *  tests/test_h3_refine_handoff_strip.py judges the cure live, pins
+ *  the burn's verbatim ValueError, and reds if the strip ever leaves
+ *  the pass. The shape judges (token-exact carries, one film, no
+ *  gaps, the 141 f ceiling) stay law. */
 /** THE CARRY'S TOKEN LAW (F62, 2026-11-14): the H3 VAE maps frames to
  *  latent tokens non-linearly — 2 tokens cover the first 5 frames,
  *  then every 5 further tokens cover 17 frames (the timeline

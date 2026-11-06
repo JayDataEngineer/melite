@@ -112,14 +112,17 @@ describe("the refine loop (F24: one press walks the film)", () => {
   // previous_latent = window k−1's joint latent), the film's finalize
   // trims the carried head, and the tail is the plain file concat. No
   // crossfade, no list execution.
-  it("ARM 3 — THE CARRY STAND-DOWN (F3-14): a carried loop REFUSES at the door, naming the engine failure, before any node", () => {
+  it("ARM 3 — THE CARRY, RE-ARMED (F3-14 engine cure, 2026-11-15): a carried loop COMPOSES through the film's own continuation", () => {
     const g = new GraphBuilder();
-    assert.throws(
-      () => renderH3RefineWindows(entry, {}, facts, g, "run-two", { windows: 2, overlapFrames: 22 }),
-      /a 2-window loop at a 22 f overlap \(1 carried join\) would carry the film's own continuation between windows — and that carry is DEAD in the engine today \(F3-14/,
-      "the carried loop refuses at the door, never billing window 0",
-    );
-    assert.deepEqual(walk(g), {}, "no node emitted — the refusal lands before the loop builds anything");
+    const out = renderH3RefineWindows(entry, {}, facts, g, "run-two", { windows: 2, overlapFrames: 22 });
+    assert.ok(out, "the carried loop composes — the stand-down is lifted");
+    const nodes = walk(g);
+    const conts = ofClass(nodes, "MiniMaxH3FiniteLatentContinuation");
+    assert.equal(conts.length, 1, "one continuation per carried join");
+    assert.equal(Number(conts[0]![1].inputs.overlap_frames), 22,
+      "the continuation carries the loop's own overlap — the film's seam");
+    assert.equal(ofClass(nodes, "VHS_LoadVideo").length, 2, "two windows, two loaders");
+    assert.equal(ofClass(nodes, "MeliteConcatVideos").length, 1, "the carried film assembles");
   });
 
   it("ARM 3b — the carrier's own shape (the harness the engine cure re-wires): the film's continuation per join, the head-trim, the concat", () => {
@@ -220,15 +223,15 @@ describe("the refine loop (F24: one press walks the film)", () => {
     assert.equal(filmMuxes.length, 1, "the assembled container rides the concat's own 48 kHz leg — no second resample");
   });
 
-  it("ARM 5 — the ceiling belongs to the WINDOW: a past-OOM window refuses, the loop does not multiply it", () => {
+  it("ARM 5 — a too-long window refuses by name: there is no OOM mystery, the loop does not multiply it", () => {
     const overSeconds = (REFINE_2X_OOM_FRAMES + 17) / FPS;
     const seat: RefineWindowSeat = {
       cap: Math.round(overSeconds * FPS), skip: 0, overlapFrames: 0, prefix: "x/w0",
     };
     assert.throws(
       () => renderH3RefineWindow(entry, {}, facts, new GraphBuilder(), seat),
-      /the ceiling belongs to the WINDOW/,
-      "a wide window refuses at the same door the arm uses",
+      /is TOO LONG — the 2x pass was measured OOM/,
+      "a too-long window refuses at the same door the arm uses, named as too long",
     );
     // and the capacity cure still exempts a same-size pass at the SAME window
     const sameSize = { ...entry, scale: 1 };
@@ -238,9 +241,9 @@ describe("the refine loop (F24: one press walks the film)", () => {
     );
   });
 
-  it("ARM 7 — THE THREE-WINDOW CARRY STAND-DOWN: the loop refuses, naming every carried join it would mount", () => {
+  it("ARM 7 — THE THREE-WINDOW CARRY MOUNTS BOTH JOINS: the loop composes one continuation per join, window-to-window", () => {
     // ROUND 27 (operator order: "ZERO DIFFERENCE BETWEEN THE CONTEXT
-    // CARRY FROM THE NORMAL GENS AND THE REFINE GENS"): the refine
+    // CARRY FROM THE NORMAL GENS AND THE REFINED GENS"): the refine
     // mounts the SAME MiniMaxH3FiniteLatentContinuation the film
     // mounts — iteration, overlap_frames, continue_audio_latent true,
     // the model + sigmas the sampler samples with, previous_latent =
@@ -248,12 +251,13 @@ describe("the refine loop (F24: one press walks the film)", () => {
     // (carry_prefix_frames + MeliteCollectLatents) was a refine-only
     // divergence and is retired with this arm.
     const g = new GraphBuilder();
-    assert.throws(
-      () => renderH3RefineWindows(entry, {}, facts, g, "run-carry", { windows: 3, overlapFrames: 22 }),
-      /\(2 carried joins\) would carry the film's own continuation between windows/,
-      "windows 1 and 2 would carry — the door refuses both joins by name",
-    );
-    assert.deepEqual(walk(g), {}, "no node emitted");
+    const out = renderH3RefineWindows(entry, {}, facts, g, "run-carry", { windows: 3, overlapFrames: 22 });
+    assert.ok(out, "the three-window carried loop composes");
+    const nodes = walk(g);
+    const conts = ofClass(nodes, "MiniMaxH3FiniteLatentContinuation");
+    assert.equal(conts.length, 2, "windows 1 and 2 both carry — one continuation per join");
+    assert.equal(ofClass(nodes, "VHS_LoadVideo").length, 3, "three windows, three loaders");
+    assert.equal(ofClass(nodes, "MeliteConcatVideos").length, 1, "the one terminal film");
   });
 
   it("ARM 8 — a NON-token-exact overlap REFUSES (the crossfade of two independent renders is the ghost)", () => {

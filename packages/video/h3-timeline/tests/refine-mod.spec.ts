@@ -193,24 +193,23 @@ describe("the refine kind (the fifth mod bag)", () => {
       length: 124,
     }) as Record<string, unknown>, model, filmG, 'run_rfmod_film2');
     const film = graphOf(filmG);
-    // THE REFINE BAG (the F3-14 stand-down): two entries of ONE staged
-    // leaf — 56 f design windows, the second starting 34 f in, the
-    // carried overlap deriving to 0 + 56 − 34 = 22 f, the film's own
-    // token-exact seam. The compose mounts that carry correctly, but
-    // the engine dies at window 1's handoff, so the CARD DOOR refuses
-    // the shape before a node exists — the parity this arm judges is
-    // the film path's own skeleton plus the refine door's exact voice.
+    // THE REFINE BAG (the F3-14 cure, re-armed): two entries of ONE
+    // staged leaf — 56 f design windows, the second starting 34 f in,
+    // the carried overlap deriving to 0 + 56 − 34 = 22 f, the film's
+    // own token-exact seam. The engine cure (the handoff strips the
+    // foreign Drift-Control patch before its second pass) lets the
+    // CARD DOOR mount that carry exactly like the film path does —
+    // the parity this arm judges is the same skeleton, both doors.
     const bagG = new GraphBuilder();
-    assert.throws(
-      () => def.compose(def.schema({
-        calls: [{ text: 'a slow push in', start_frame: 0, end_frame: 56 }], length: 56,
-        refine: [REFINE_ENTRY(), { ...REFINE_ENTRY(), start_seconds: 34 / 24 }],
-      }) as Record<string, unknown>, model, bagG, 'run_rfmod_bag2'),
-      /the carried join \(window 0→1 carries 22 f\) would carry the film's own continuation between windows — and that carry is DEAD in the engine today \(F3-14/,
-      'the card door refuses the carried tiling, naming the engine failure and the hard-cut cure',
-    );
-    assert.deepEqual(graphOf(bagG), {},
-      'no node emitted — the refusal precedes every save, so nothing can bill');
+    def.compose(def.schema({
+      calls: [{ text: 'a slow push in', start_frame: 0, end_frame: 56 }], length: 56,
+      refine: [REFINE_ENTRY(), { ...REFINE_ENTRY(), start_seconds: 34 / 24 }],
+    }) as Record<string, unknown>, model, bagG, 'run_rfmod_bag2');
+    const bag = graphOf(bagG);
+    assert.equal(ofClass(bag, 'MiniMaxH3FiniteLatentContinuation').length, 1,
+      'the card door mounts the carried join — the cure serves both doors');
+    assert.equal(ofClass(bag, 'MeliteConcatVideos').length, 1,
+      'the carried refine film assembles through the plain concat');
 
     // THE FILM PATH'S OWN SKELETON still holds (the carry it mounts is
     // the normal gen's, which the engine serves):
@@ -409,10 +408,10 @@ describe("the refine kind (the fifth mod bag)", () => {
       [{ ...REFINE_ENTRY(), start_seconds: -1 },
         /'start_seconds': -1 is outside this seat's declared band 0–3600 — the declaration binds, not the tooltip/],
       [{ ...REFINE_ENTRY(), clip_seconds: 6 },
-        /a 144 f window at 2x — the 2x pass was measured OOM at 141 f.*design is the ~2 s window/],
+        /a 144 f window at 2x is TOO LONG — the 2x pass was measured OOM at 141 f.*design is the ~2 s window/],
     ] as Array<[Record<string, unknown>, RegExp]>) {
       assert.throws(() => def.compose(walk(entry), model, new GraphBuilder(), 'run_rfmod_window_guard'), re,
-        'the window guard names the measured ceiling, never a silent OOM');
+        'the window guard names the window TOO LONG at the measured line, never a silent OOM');
     }
     // the same window at the same-size pass sizes its own: no refusal
     const same = walk({ ...REFINE_ENTRY(), clip_seconds: 6, scale: 1 });
@@ -550,15 +549,16 @@ describe("the refine kind (the fifth mod bag)", () => {
     assert.ok(node, 'the resolved output node exists in the composed graph');
     assert.equal(node.class_type, 'SaveVideo', 'the armed refine resolves to a SaveVideo');
     assert.equal(node.inputs.filename_prefix, 'run_rfmod_out/refine', 'the refine terminal, never a film save');
-    // THE N FACE (GAPS-19): a carried bag used to resolve the JOINED
-    // film's terminal (never a window save) — but the carried join is
-    // DEAD in the engine (F3-14), so the card door refuses the shape
-    // before any node (the stand-down wall owns the sentence).
-    assert.throws(
-      () => compose([REFINE_ENTRY(), { ...REFINE_ENTRY(), start_seconds: 34 / 24 }], 'run_rfmod_out_n'),
-      /Drift-Control AV packed mask does not match its audio stream/,
-      'the tiled refine refuses at the card door instead of billing window 0',
-    );
+    // THE N FACE (GAPS-19, re-armed): a carried bag resolves the
+    // JOINED film's terminal (never a window save) — the carried join
+    // composes again (F3-14 cured at the handoff), so the N-entry
+    // terminal is the one film the concat assembles.
+    const nG = compose([REFINE_ENTRY(), { ...REFINE_ENTRY(), start_seconds: 34 / 24 }], 'run_rfmod_out_n');
+    const nFlow = resolveCardFlowOutputs(def, nG.walked, graphOf(nG.g));
+    const nNode = graphOf(nG.g)[nFlow.outputNodes.default!];
+    assert.equal(nNode.class_type, 'SaveVideo', 'the N-face resolves to a SaveVideo');
+    assert.equal(nNode.inputs.filename_prefix, 'run_rfmod_out_n/refine',
+      'the joined film terminal, never a window save');
   });
 
   it("every cross-arm pair refuses LOUD naming the silently-dropped arm", () => {

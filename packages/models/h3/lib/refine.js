@@ -5,13 +5,16 @@ import { DOC_FPS_DEFAULT, MAX_COMPOSED_WINDOWS, SEAM_OVERLAP_FRAMES } from './ti
  *  seat carries this same single option — one file, one spelling, no
  *  hand-spelled alternatives). */
 export const REFINE_UPSCALE_MODEL = 'minimax_h3_latent_upscaler_3d_bf16.safetensors';
-/** The 2x pass's measured memory ceiling, in frames at the film clock
+/** The 2x pass's measured too-long line, in frames at the film clock
  *  (24 fps). The friction report's §12.2/§13.2 sweep on the operator's
  *  box: 56 f and 90 f pass at 2x (2688×1536, 48 kHz); 141 f OOMs,
  *  needing 1.06 GiB more with 20.13 GiB already resident. H3's memory
- *  grows monotonically with the window, so a window past the measured
- *  OOM point cannot fit at this variant — the door refuses it by name
- *  instead of burning a render to find out. */
+ *  grows monotonically with the window, so there is no OOM mystery
+ *  and no ceiling to press (operator 2026-11-15: "There is no OOM
+ *  error — we have the CARRY CONTEXT, so the OOM is just the WINDOWS
+ *  BEING TOO LONG"): a window past this point is just too long, and
+ *  the door refuses it by name instead of burning a render to find
+ *  out. */
 export const REFINE_2X_OOM_FRAMES = 141;
 /** The refine window's default length in seconds — 2.33 s at 24 fps
  *  rounds to 56 f, the 2 s class's rung of the engine's 22+17k token
@@ -19,21 +22,19 @@ export const REFINE_2X_OOM_FRAMES = 141;
  *  joined by the context carry (FRICTION_3 W-7, operator: "for the
  *  refine flow it is two seconds, not five bro. That is the POINT of
  *  the context carry"): the carry is what makes a short window
- *  seamless, so the design never needs the workaround's wide window.
- *  90 f measured GREEN at 2x is the hard-cut workaround's wide
- *  window — fewer seams while the carry is dead (F3-14) — never the
- *  design. A default that OOMs is the F24 burn: the arm used to load
+ *  seamless, so the design never needs a wider window at all. A default that OOMs is the F24 burn: the arm used to load
  *  the WHOLE staged clip, so any film longer than ~4 s died at this
  *  variant. */
 export const REFINE_DEFAULT_CLIP_SECONDS = 2.33;
 /** The hard-cut workaround's wide window, in frames — 90 f measured
- *  GREEN at 2x on the operator's box (2688×1536, 48 kHz). While the
- *  context carry is dead (F3-14) a carried tile refuses, so a film
- *  tiles as abutting hard cuts and wider windows mean fewer seams —
- *  that is the only reason this number exists. It teaches the
- *  workaround's history, never the design: NO door reads it (the
- *  default above is the design window), and served copy cites it only
- *  beside the design window it is not. */
+ *  GREEN at 2x on the operator's box (2688×1536, 48 kHz). It existed
+ *  for ONE reason: while the carry was dead, wider windows meant
+ *  fewer hard-cut seams. The carry is served now (F3-14 cured,
+ *  2026-11-15), so the fewer-seams frame is retired — there is no
+ *  wide-window advice to give, a too-long window is just too long.
+ *  The constant stays as the measured-green datapoint (history), and
+ *  the export stays because the parity walls pin the number: NO door
+ *  reads it and no served copy offers it as a choice. */
 export const REFINE_WORKAROUND_WIDE_FRAMES = 90;
 /** The refine auto-tile's default carried overlap, in frames at the
  *  film clock — the film's own seam (SEAM_OVERLAP_FRAMES), which is
@@ -103,7 +104,7 @@ const judgeRefineWindow = (cap, dials) => {
     const sameSize = dials.upMode === 'scale by multiplier' && dials.upScale < 2;
     if (!sameSize && cap > REFINE_2X_OOM_FRAMES) {
         const named = dials.upMode === 'scale by multiplier' ? `${dials.upScale}x` : dials.upMode;
-        throw new Error(`h3-timeline refine: a ${cap} f window at ${named} — the 2x pass was measured OOM at ${REFINE_2X_OOM_FRAMES} f (2688×1536, 48 kHz; H3 memory grows with the window, so a wider window cannot fit — the ceiling belongs to the WINDOW, whichever sizing mode upsizes). The design is the ~2 s window (${REFINE_DEFAULT_CLIP_SECONDS} s = ${Math.round(REFINE_DEFAULT_CLIP_SECONDS * 24)} f, the 2 s class's rung of the 22+17k token grid) tiled window by window and joined by the context carry — the carry is what makes a short window seamless, so the design never needs a wider window (the carry waits on the engine cure, ROADMAP F3-14; until it lands, abut the design windows with the hard cut). Cut clip_seconds to ${REFINE_DEFAULT_CLIP_SECONDS} s or less and cover the rest window by window, or lower scale to 1 for a same-size pass`);
+        throw new Error(`h3-timeline refine: a ${cap} f window at ${named} is TOO LONG — the 2x pass was measured OOM at ${REFINE_2X_OOM_FRAMES} f (2688×1536, 48 kHz; H3 memory grows with the window, and that is the whole story: there is no OOM mystery and no ceiling to press, whichever sizing mode upsizes, a window that dies is just a window too long). The design is the ~2 s window (${REFINE_DEFAULT_CLIP_SECONDS} s = ${Math.round(REFINE_DEFAULT_CLIP_SECONDS * 24)} f, the 2 s class's rung of the 22+17k token grid) tiled window by window and joined by the context carry — the carry is what makes a short window seamless (the carry is served, ROADMAP F3-14 cured), so no film ever needs a wider window. Cut clip_seconds to ${REFINE_DEFAULT_CLIP_SECONDS} s or less and let the carry tile the rest, or lower scale to 1 for a same-size pass`);
     }
 };
 /** THE JOINT AV TARGET — the estate's one source→nested-AV
@@ -346,26 +347,19 @@ export function renderH3Refine(entry, p, facts, g, runId) {
  * @param runId the run tree's id (window + film prefixes ride it)
  * @returns the terminal SaveVideo passthrough — the assembled film
  * at `<runId>/refine` (N=1: the single window's own save) */
-/** THE CARRY STAND-DOWN (F3-14, operator burn 2026-11-05 — two
- *  presses, both died the same way): the engine path that would carry
- *  a refine film's own continuation between windows is DEAD — window
- *  0 renders and bills, then window 1 dies at its handoff with
- *  `ValueError: Drift-Control AV packed mask does not match its audio
- *  stream` (the Drift-Control mask state splits the packed mask by
- *  the install-time stream shapes, drift_control_av.py:159, and a
- *  continuation-carried latent's audio prefix no longer lands; the
- *  node is MinimaxH3LatentUpscaler3DRefineHandoff). The door refuses
- *  the carried shape instead of billing a partial; the hard cut
- *  (overlap_frames 0, or abutting starts) is the lawful press today.
- *  The engine cure is owed (ROADMAP F3-14): seed the mask state from
- *  the sampling latent, or strip the foreign denoise-mask patch in
- *  the handoff. Removing this refusal IS the toggle that re-arms the
- *  carry walk.
- * @param what the carried shape the press stated, in frames
- * @returns the refusal sentence (the caller throws it) */
-function refineCarryStanddown(what) {
-    return `h3-timeline refine: ${what} would carry the film's own continuation between windows — and that carry is DEAD in the engine today (F3-14, operator burn 2026-11-05): the carried window dies at its handoff with "ValueError: Drift-Control AV packed mask does not match its audio stream" (the Drift-Control mask state splits the packed mask by the install-time stream shapes, drift_control_av.py:159, and a continuation-carried latent's audio prefix no longer lands; the node is MinimaxH3LatentUpscaler3DRefineHandoff). Window 0 renders and bills BEFORE that failure, so the door refuses the carry shape instead of billing a partial. The hard cut serves today: state overlap_frames 0 (the auto-tile) or start the next window at the previous window's end (the bag) — the plain concat of independent windows, no continuation. The carried refine is owed the engine cure (ROADMAP F3-14).`;
-}
+/** THE CARRY RE-ARM (F3-14 engine cure, 2026-11-15, operator order):
+ *  the carried refine is LIVE again. The engine death the stand-down
+ *  refused (window 1 dying at its handoff with `ValueError:
+ *  Drift-Control AV packed mask does not match its audio stream`) is
+ *  cured at the handoff that burned: the vendored
+ *  MinimaxH3LatentUpscaler3DRefineHandoff clone-strips any foreign
+ *  dynamic denoise-mask patch (the Drift-Control AV function seeded
+ *  for the carried window's streams) before its guider samples the
+ *  enlarged grid — the estate python wall
+ *  tests/test_h3_refine_handoff_strip.py judges the cure live, pins
+ *  the burn's verbatim ValueError, and reds if the strip ever leaves
+ *  the pass. The shape judges (token-exact carries, one film, no
+ *  gaps, the 141 f ceiling) stay law. */
 /** THE CARRY'S TOKEN LAW (F62, 2026-11-14): the H3 VAE maps frames to
  *  latent tokens non-linearly — 2 tokens cover the first 5 frames,
  *  then every 5 further tokens cover 17 frames (the timeline
@@ -643,16 +637,18 @@ export function renderH3RefineBag(bag, p, facts, g, runId) {
                 ? `This window is too short for any carried join — state zero carry (abut the windows) or one entry with windows above 1.`
                 : `State window ${offGrid + 1} at frame ${lawful} (${(lawful / clockFps).toFixed(3)} s) for a 22 f carry — the film's own seam — (the nearest rung above the measured span is ${rung} f), or make the join zero-carry (start window ${offGrid + 1} at frame ${prev.skip + prev.cap}, the hard cut).`}`);
         }
-        // THE CARRY STAND-DOWN (F3-14): the shape above is exactly the
-        // engine path that dies at window 1's handoff. Judge the shape
-        // first (a malformed bag keeps its own better voice), then refuse
-        // before a single node is emitted (the wall asserts g stays
-        // empty), so the press never bills window 0.
+        // THE CARRY STAND-DOWN IS LIFTED (F3-14 engine cure, 2026-11-15,
+        // operator order "the app cannot ever go all green while this is
+        // still broken"): the refinement pass now strips the foreign
+        // dynamic denoise-mask patch at the handoff that burned (the
+        // vendored MinimaxH3LatentUpscaler3DRefineHandoff clone-strips
+        // the Drift-Control AV function before its guider samples — the
+        // estate python wall tests/test_h3_refine_handoff_strip.py judges
+        // the cure live and pins the burn's verbatim ValueError). The
+        // shape judges above stay law; the carried bag rides the round-27
+        // carry walk (the "ZERO DIFFERENCE" seat).
         assertRefineCarryLawful(bag, origins, originsCarries);
-        const spans = originsCarries
-            .map((carry, k) => `window ${k}→${k + 1} carries ${carry} f`)
-            .join(', ');
-        throw new Error(refineCarryStanddown(`the carried join${originsCarries.length === 1 ? '' : 's'} (${spans})`));
+        return renderH3RefineCarry(bag, p, facts, g, origins, originsCarries, runId);
     }
     const prefixes = [];
     const saves = [];
@@ -741,12 +737,13 @@ export function renderH3RefineWindows(entry, p, facts, g, runId, loop) {
         }));
         const carries = new Array(loop.windows - 1).fill(loop.overlapFrames);
         const entries = new Array(loop.windows).fill(entry);
-        // THE CARRY STAND-DOWN (F3-14): the carried joins die at window
-        // 1's handoff in the engine today; refuse before a node is
-        // emitted. The zero-overlap loop (the hard cut) never reaches here.
+        // THE CARRY STAND-DOWN IS LIFTED (F3-14 engine cure, 2026-11-15):
+        // the handoff strips the foreign Drift-Control patch before its
+        // second pass (tests/test_h3_refine_handoff_strip.py judges the
+        // cure live); the loop's carried joins ride the same round-27
+        // carry walk as the bag's.
         assertRefineCarryLawful(entries, windows, carries);
-        const joins = loop.windows - 1;
-        throw new Error(refineCarryStanddown(`a ${loop.windows}-window loop at a ${loop.overlapFrames} f overlap (${joins} carried join${joins === 1 ? '' : 's'})`));
+        return renderH3RefineCarry(entries, p, facts, g, windows, carries, runId);
     }
     for (let k = 0; k < loop.windows; k += 1) {
         const prefix = `${runId}/refine_w${k}`;
