@@ -13,6 +13,37 @@ import type { H3Facts } from './actions.js';
  * @param skipFirstFrames the window's start (repair skips here)
  * @returns [frames, audio] — the loader's slots 0 and 2 */
 export declare const loadVideo: (g: GraphBuilder, path: string, frameLoadCap?: number, skipFirstFrames?: number) => OutputHandle[];
+/** THE SOURCE→NESTED-AV TARGET CONSTRUCTOR (the timeline rework's
+ *  stage-1 seam, 2026-11-15; operator order: "do the rework of the
+ *  timeline mods according to your judgment"): the two-node pair
+ *  every masked-edit seat composes — MiniMaxH3FantasticVideoEditLatent
+ *  (grow 0, the plane's VAEs, the mask over the frames) →
+ *  MiniMaxH3ContexMaskedTarget (white = generate, the audio mode the
+ *  keepAudio dial spells, H3 exact conversion). Swap, repair, extend
+ *  (the chain seats, in their bodies) and refine (its joint AV
+ *  target) all ride THIS one spelling — four hand-rolled copies
+ *  existed before (the audits' "one mechanism, seven names" root);
+ *  a fifth (the video-edit bag's dials) must compose here too, never
+ *  beside. The MASK is the caller's own (a static PNG seat, a grown
+ *  blur mask, an all-white SolidMask sized to the loader) — the mask
+ *  SOURCE is a dial, the edit+target pair is the mechanism.
+ * @param g the run's graph builder
+ * @param plane the plane's two VAE seats
+ * @param source the frames + soundtrack the latent nests, the mask
+ *  over them, and the keepAudio dial (true: the source's soundtrack
+ *  rides the joint latent's audio stream; false: every window's
+ *  audio is generated)
+ * @returns the nested video+audio target latent the seat's sampler
+ *  rides */
+export declare const contexMaskedTarget: (g: GraphBuilder, plane: {
+    vaeVideo: OutputHandle;
+    vaeAudio: OutputHandle;
+}, source: {
+    frames: OutputHandle;
+    audio: OutputHandle;
+    mask: OutputHandle;
+    keepAudio: boolean;
+}) => OutputHandle;
 export declare const RESOLUTION_SHORT_EDGE: Readonly<Record<string, number>>;
 /** The engine's plan_clips shape math, ported (ext lines 270-273):
  * scale the source by shortEdge/min(w,h), snap both edges to 32

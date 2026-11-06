@@ -55,6 +55,49 @@ export const loadVideo = (
   return [n.out(0), n.out(2)]
 }
 
+/** THE SOURCE→NESTED-AV TARGET CONSTRUCTOR (the timeline rework's
+ *  stage-1 seam, 2026-11-15; operator order: "do the rework of the
+ *  timeline mods according to your judgment"): the two-node pair
+ *  every masked-edit seat composes — MiniMaxH3FantasticVideoEditLatent
+ *  (grow 0, the plane's VAEs, the mask over the frames) →
+ *  MiniMaxH3ContexMaskedTarget (white = generate, the audio mode the
+ *  keepAudio dial spells, H3 exact conversion). Swap, repair, extend
+ *  (the chain seats, in their bodies) and refine (its joint AV
+ *  target) all ride THIS one spelling — four hand-rolled copies
+ *  existed before (the audits' "one mechanism, seven names" root);
+ *  a fifth (the video-edit bag's dials) must compose here too, never
+ *  beside. The MASK is the caller's own (a static PNG seat, a grown
+ *  blur mask, an all-white SolidMask sized to the loader) — the mask
+ *  SOURCE is a dial, the edit+target pair is the mechanism.
+ * @param g the run's graph builder
+ * @param plane the plane's two VAE seats
+ * @param source the frames + soundtrack the latent nests, the mask
+ *  over them, and the keepAudio dial (true: the source's soundtrack
+ *  rides the joint latent's audio stream; false: every window's
+ *  audio is generated)
+ * @returns the nested video+audio target latent the seat's sampler
+ *  rides */
+export const contexMaskedTarget = (
+  g: GraphBuilder,
+  plane: { vaeVideo: OutputHandle; vaeAudio: OutputHandle },
+  source: {
+    frames: OutputHandle; audio: OutputHandle;
+    mask: OutputHandle; keepAudio: boolean;
+  },
+): OutputHandle => {
+  const edit = g.node('MiniMaxH3FantasticVideoEditLatent', {
+    grow: 0, keep_audio: source.keepAudio, megapixels: 0,
+    vae: plane.vaeVideo, images: source.frames, mask: source.mask,
+    audio_vae: plane.vaeAudio, audio: source.audio,
+  }).out(0)
+  return g.node('MiniMaxH3ContexMaskedTarget', {
+    mask_meaning: 'white = generate',
+    audio_mode: source.keepAudio ? 'preserve source audio' : 'generate all audio',
+    mask_conversion: 'H3 exact (causal/token max)',
+    target_latent: edit, mask: source.mask,
+  }).out(0)
+}
+
 // ── F18 — THE CROSS-REGIME ADMISSION (2026-11-12) ──────────────────
 // Two resolution regimes live in one family: the FILM path renders
 // at the doc's own width/height (schema defaults 1344×768), the mod

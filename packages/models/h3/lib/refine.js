@@ -1,5 +1,5 @@
 import { chainSaveBoundaries, concatSavedFilms, filmJoinAudio } from './actions.js';
-import { h3MaskedEditPlane, loadVideo } from './chainEdit.js';
+import { contexMaskedTarget, h3MaskedEditPlane, loadVideo } from './chainEdit.js';
 import { DOC_FPS_DEFAULT, MAX_COMPOSED_WINDOWS, SEAM_OVERLAP_FRAMES } from './timelineContract.js';
 /** The learned 3D-conv upscale weights (the schema's upscale_model
  *  seat carries this same single option — one file, one spelling, no
@@ -108,14 +108,15 @@ const judgeRefineWindow = (cap, dials) => {
     }
 };
 /** THE JOINT AV TARGET — the estate's one source→nested-AV
- *  constructor, the same three nodes the extend/repair/swap spine
- *  rides (the all-white SolidMask → MiniMaxH3FantasticVideoEditLatent
- *  → MiniMaxH3ContexMaskedTarget). White means "every frame is
- *  editable" (nothing is held; a refine re-renders the window at its
- *  own denoise) and `keep_audio` carries the window's soundtrack into
- *  the joint latent, so the audio stream every downstream node reads
- *  is the source's own. The mask's size comes from the loader's
- *  frames (GetImageSizeAndCount), never from a hand-typed resolution.
+ *  constructor rider: the SolidMask (all-white, sized from the
+ *  loader's frames via GetImageSizeAndCount — never a hand-typed
+ *  resolution) feeds the shared `contexMaskedTarget` seat every
+ *  masked-edit chain rides (chainEdit.ts, the timeline rework's
+ *  stage-1 seam). White means "every frame is editable" (nothing
+ *  is held; a refine re-renders the window at its own denoise) and
+ *  `keep_audio` carries the window's soundtrack into the joint
+ *  latent, so the audio stream every downstream node reads is the
+ *  source's own.
  * @param g the run's graph builder
  * @param plane the plane's two VAE seats
  * @param frames the window's loaded frames
@@ -126,17 +127,9 @@ const refineJointTarget = (g, plane, frames, audio) => {
     const whiteMask = g.node('SolidMask', {
         value: 1, width: size.out(1), height: size.out(2),
     }).out(0);
-    const edit = g.node('MiniMaxH3FantasticVideoEditLatent', {
-        grow: 0, keep_audio: true, megapixels: 0,
-        vae: plane.vaeVideo, images: frames, mask: whiteMask,
-        audio_vae: plane.vaeAudio, audio,
-    }).out(0);
-    return g.node('MiniMaxH3ContexMaskedTarget', {
-        mask_meaning: 'white = generate',
-        audio_mode: 'preserve source audio',
-        mask_conversion: 'H3 exact (causal/token max)',
-        target_latent: edit, mask: whiteMask,
-    }).out(0);
+    return contexMaskedTarget(g, plane, {
+        frames, audio, mask: whiteMask, keepAudio: true,
+    });
 };
 /** THE WINDOW BODY — one refine window, whichever door composed it:
  *  joint AV target → (carry) → the 2x handoff → decode → (head-trim).

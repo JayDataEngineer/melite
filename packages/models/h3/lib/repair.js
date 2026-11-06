@@ -1,4 +1,4 @@
-import { loadVideo, renderMaskedEditChain } from './chainEdit.js';
+import { contexMaskedTarget, loadVideo, renderMaskedEditChain } from './chainEdit.js';
 import { assertGridLength } from './timelineContract.js';
 /** The SAM3 checkpoint the mask family declares + hash-pins
  * (packages/models/mask/src/index.ts — auto-provisioned; the track
@@ -146,17 +146,9 @@ export function renderH3Repair(entry, p, facts, g, runId) {
                 state: cur.out(0), latent: r2v.out(1),
                 audio_vae: vaeAudio, source_frames: srcFrames, source_audio: sliceAudio,
             });
-            const edit = g.node('MiniMaxH3FantasticVideoEditLatent', {
-                grow: 0, keep_audio: true, megapixels: 0,
-                vae: vaeVideo, images: slice.out(0), mask: grown,
-                audio_vae: vaeAudio, audio: slice.out(1),
-            }).out(0);
-            const target = g.node('MiniMaxH3ContexMaskedTarget', {
-                mask_meaning: 'white = generate',
-                audio_mode: 'preserve source audio',
-                mask_conversion: 'H3 exact (causal/token max)',
-                target_latent: edit, mask: grown,
-            }).out(0);
+            const target = contexMaskedTarget(g, { vaeVideo, vaeAudio }, {
+                frames: slice.out(0), audio: slice.out(1), mask: grown, keepAudio: true,
+            });
             return { conditioning: r2v.out(0), targetLatent: target };
         },
     });

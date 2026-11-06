@@ -1,7 +1,7 @@
 import { chainSaveBoundaries, concatSavedFilms, filmJoinAudio } from './actions.js';
 import { assertGridLength, solveWindowComposition, CONTEXT_OVERLAP_FRAMES, GRID_MAX_FRAMES, } from './timelineContract.js';
 export { solveWindowComposition } from './timelineContract.js';
-import { loadVideo, renderMaskedEditChain } from './chainEdit.js';
+import { contexMaskedTarget, loadVideo, renderMaskedEditChain } from './chainEdit.js';
 /** The tail-frame picker's index: the boot census's OWN max for
  * ImageFromBatch.batch_index (16384 today — the wall derives it from
  * tests/walls/fixtures/object_info.boot.json, never a frozen literal).
@@ -124,17 +124,9 @@ export function renderH3Extend(entry, p, facts, g, runId) {
                 state: cur.out(0), latent: r2v.out(1),
                 audio_vae: vaeAudio, source_frames: priorFrames, source_audio: sliceAudio,
             });
-            const edit = g.node('MiniMaxH3FantasticVideoEditLatent', {
-                grow: 0, keep_audio: false, megapixels: 0,
-                vae: vaeVideo, images: slice.out(0), mask: whiteMask,
-                audio_vae: vaeAudio, audio: slice.out(1),
-            }).out(0);
-            const target = g.node('MiniMaxH3ContexMaskedTarget', {
-                mask_meaning: 'white = generate',
-                audio_mode: 'generate all audio',
-                mask_conversion: 'H3 exact (causal/token max)',
-                target_latent: edit, mask: whiteMask,
-            }).out(0);
+            const target = contexMaskedTarget(g, { vaeVideo, vaeAudio }, {
+                frames: slice.out(0), audio: slice.out(1), mask: whiteMask, keepAudio: false,
+            });
             // ── THE FORCED SEAM (operator's cure, 2026-11-19): the r2v
             // ref_image ride above is a SOFT prior — the model is free to
             // introduce new content in the appended clip's FIRST frame, and
