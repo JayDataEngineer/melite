@@ -1,6 +1,6 @@
 ---
 name: edit
-description: "The video-edit matrix on the h3-timeline: ONE bag whose dials state the cell — mask source (per-frame SAM3 region, whole frame, or one staged PNG resized in-graph), identity anchors (the source itself, or a still + mannequin pair), and the denoise pole. The seven legacy doors stay (each pinned byte-exact); this door serves the whole grid on the family's one matrix seat. NOT a new camera (Reshoot) — the refine pass (refine + scale) and the continuation (continuation + extend_seconds) are dials ON this door."
+description: "The video-edit matrix on the h3-timeline: ONE bag whose dials state the cell — mask source (per-frame SAM3 region, whole frame, or one staged PNG resized in-graph), identity anchors (the source itself, or a still + mannequin pair), and the denoise pole. The seven legacy doors stay (each pinned byte-exact); this door serves the whole grid on the family's one matrix seat. NOT a new camera (Reshoot) — the refine pass (refine + scale), the continuation (continuation + extend_seconds), and the deferred 2x upscale of a prior chain run (chain_run) are dials ON this door."
 genre: video
 ---
 
@@ -113,6 +113,20 @@ It is NOT:
      362f the largest); beyond it N uniform windows join under the
      39f context overlap, exact delivery or a refusal naming the
      neighbors (ceiling 432.29s).
+   - `chain_run` (text, "") — THE UPSCALE POSTURE'S ARMING SEAT:
+     the engine-side run name of a PRIOR chain run. Stating it
+     turns the edit into the DEFERRED 2x second pass — the run's
+     checkpointed scenes resume scene by scene through the requeue
+     loop (CheckpointManager → UpscaleAdapter → … →
+     UpscaleLoopEnd), a DIFFERENT mechanism than the refine switch
+     (same-run handoff): one door, the SOURCE names which. The
+     execute door resolves the name to the newest per-scene
+     lineage; unknown names refuse loud THERE. Recipe pass-2
+     window: denoise 0.24, steps 20; a BLANK edit_prompt is lawful
+     (the run's own scene prompts serve). Refine and continuation
+     REFUSE under this posture — one second-pass mechanism, one
+     source posture. Mask, anchor, and window dials are inert
+     here (no clip rides).
    - `window_start` (0–100000, 0) — frames at the film clock (24 fps)
      to skip before the edit window.
    - `window_length` (0–100000, 0) — frames in the window; 0 runs to

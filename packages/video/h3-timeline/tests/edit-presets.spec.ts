@@ -77,8 +77,8 @@ describe("the edit bag's preset chips (stage 3: named cells over the ONE schema)
   it("THE SERVED CELLS: seven named cells, every patch key a declared field, every value the field's own type and vocabulary", () => {
     const { fields, presets } = editKind();
     assert.deepEqual(presets.map((p) => p.id), [
-      "repair-region", "identity-swap", "outfit-change", "whole-frame-restyle", "refine-2x", "extend-continuation", "static-mask-pass",
-    ], "the retired names live on as the cells — the refine posture sixth (the fourth dial), the continuation seventh (slice 2's dial)");
+      "repair-region", "identity-swap", "outfit-change", "whole-frame-restyle", "refine-2x", "extend-continuation", "upscale-2x", "static-mask-pass",
+    ], "the retired names live on as the cells — the refine posture sixth (the fourth dial), the continuation seventh (slice 2's dial), the deferred upscale eighth (slice 3's posture)");
     const byName = new Map(fields.map((f) => [String(f["name"]), f]));
     for (const p of presets) {
       assert.ok(typeof p.label === "string" && p.label !== "", `preset ${p.id} carries a label`);
@@ -119,6 +119,14 @@ describe("the edit bag's preset chips (stage 3: named cells over the ONE schema)
         // one-film join grammar serves instead of ChainAssemble.
         assert.ok(JSON.stringify(out).includes("extend_film"), `preset ${p.id} composes the joined-film grammar`);
         assert.ok(ofClass(out, "MiniMaxH3AddGuide").length > 0, `preset ${p.id} composes the forced seam`);
+      } else if (typeof p.patch["chain_run"] === "string" && p.patch["chain_run"] !== "") {
+        // the upscale posture's cell composes the REQUEUE LOOP
+        // family (slice 3): the checkpoint head + the assemble
+        // tail, no masked-edit latent — the loop is the other
+        // mechanism the one door serves.
+        assert.ok(ofClass(out, "MiniMaxH3ChainCheckpointManager").length > 0, `preset ${p.id} composes the checkpoint head`);
+        assert.ok(ofClass(out, "MiniMaxH3ChainAssemble").length > 0, `preset ${p.id} composes the assemble tail`);
+        assert.equal(ofClass(out, "MiniMaxH3FantasticVideoEditLatent").length, 0, `preset ${p.id} composes no matrix latent — the loop family serves`);
       } else {
         assert.equal(ofClass(out, "MiniMaxH3ChainAssemble").length, 1, `preset ${p.id} composes one assemble terminal`);
         assert.ok(ofClass(out, "MiniMaxH3FantasticVideoEditLatent").length > 0, `preset ${p.id} composes the edit latent`);

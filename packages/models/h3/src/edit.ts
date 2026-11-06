@@ -30,6 +30,7 @@
 import type { GraphBuilder, OutputHandle } from '@melite/comfyui-card-kit/graph'
 import type { H3Facts } from './actions.js'
 import { contexMaskedTarget, loadVideo, renderMaskedEditChain } from './chainEdit.js'
+import { renderH3ChainUpscale } from './chainUpscale.js'
 import { renderH3Extend } from './extend.js'
 import { REFINE_2X_OOM_FRAMES, REFINE_UPSCALE_MODEL } from './refine.js'
 import { assertGridLength } from './timelineContract.js'
@@ -110,7 +111,13 @@ export function renderH3Edit(
   runId: string,
 ): void {
   const prompt = str(entry, 'edit_prompt')
-  if (prompt.trim() === '') {
+  // THE UPSCALE CARVE-OUT: under the loop posture (chain_run
+  // stated) a blank prompt is lawful — the second pass reuses the
+  // SOURCE RUN'S own per-scene prompts (the conditioning node's
+  // documented posture); a bound prompt overrides every scene's
+  // pass-2 text.
+  const chainRun = str(entry, 'chain_run')
+  if (prompt.trim() === '' && chainRun.trim() === '') {
     throw new Error(
       `h3-timeline edit: 'edit_prompt' names no action — the edit needs its text (what the masked region or frame should become; agent-composed, user-confirmed)`,
     )
@@ -127,6 +134,38 @@ export function renderH3Edit(
   // the subject's own prior as its only identity, and the friction
   // audit watched it break identity while reading as an
   // improvement. Name the two lawful doors, refuse the cell.
+  // ── THE UPSCALE POSTURE (slice 3 of the collapse — the doc's
+  // collapse map: "upscale = source: prior run + scale 2x"): a
+  // stated chain_run seats the door into the DEFERRED second pass
+  // — the prior chain run's checkpointed scenes resumed scene by
+  // scene through the requeue loop (CheckpointManager →
+  // UpscaleAdapter → … → UpscaleLoopEnd), a DIFFERENT mechanism
+  // than the refine switch's same-run handoff (the doc's
+  // "duplicate 2x" resolved: one door, the SOURCE names which).
+  // The clip dials (mask, anchors, window) are inert here — the
+  // loop has no masked target and no source clip; denoise rides
+  // the pass-2 window (the loop's own law refuses >= 1 below).
+  // ──
+  if (chainRun.trim() !== '') {
+    if (entry.refine === true) {
+      throw new Error(
+        `h3-timeline edit: the refine switch under an upscale — two second-pass mechanisms (the switch arms the same-run handoff on THIS chain, the upscale resumes a PRIOR run's checkpointed scenes; the doc's duplicate-2x resolved into ONE door). Leave refine off`,
+      )
+    }
+    if (entry.continuation === true) {
+      throw new Error(
+        `h3-timeline edit: a continuation under an upscale — the continuation generates FRESH seconds off a source clip, the upscale resumes a PRIOR run's checkpointed scenes (no clip rides); state one posture`,
+      )
+    }
+    renderH3ChainUpscale({
+      chain_run: chainRun,
+      denoise,
+      steps: num(entry, 'steps', 20),
+      segment_crf: num(entry, 'segment_crf', 18),
+      prompt,
+    }, p, facts, g, runId)
+    return
+  }
   // ── THE CONTINUATION DIAL (slice 2 of the collapse — the doc's
   // collapse map: "extend = mask=whole-frame + continuation policy,
   // not a separate arm"): continuation ON delegates to the
