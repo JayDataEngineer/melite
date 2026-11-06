@@ -107,6 +107,15 @@ Rules that keep seams invisible:
 - Camera: each window continues the previous camera move at its start.
   Start a new camera move mid-window, not at the seam.
 
+## The canvas bucket
+
+The film plane snaps the canvas to a model bucket on EVERY arm that
+reads a source clip — repair, replace and extend all re-seat the
+canvas: a 1344×768 source lands as 1280×736, a 696×1008 source lands
+as 736×1056. Aspect is held to ~0.6 %; the exact source canvas is NOT
+preserved. Downstream join or source-mix math that assumes the
+source's own pixel grid must budget the ~5 % resize.
+
 ## Audio continuity (the hard part)
 
 Each window renders its own audio. Sound must EVOLVE, not restart:
@@ -120,6 +129,14 @@ Each window renders its own audio. Sound must EVOLVE, not restart:
 - Music: if you use `non_diegetic_music`, repeat the same music
   description in every window — it regenerates per window, so describe
   the TRACK (instrumentation, tempo), not the moment.
+- A negation in the soundscape binds the class it names, and ONLY that
+  class: "no dialogue" suppresses SPEECH while the ambient bed still
+  renders — a "no dialogue" window lands with full ambience and no
+  speech. The clause is expectation-setting, not a defect: say what
+  the bed SHOULD carry instead of leaning on "no X" to sculpt it. The
+  asymmetry is lane-local — on the krea-2 image lane prose negations
+  bind nothing at all (that lane's negative prompt seat owns them);
+  never carry one lane's negation law across lanes.
 - A joined film needs audio in EVERY window (the concat is audio-bearing);
   the lane muxes per window by default.
 

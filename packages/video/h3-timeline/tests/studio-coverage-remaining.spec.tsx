@@ -239,6 +239,49 @@ describe("StudioStripPane lane picker", () => {
     await openMedia("music")
     await screen.findByText("nothing to pick yet")
   })
+
+  // THE ESTATE'S OWN MEDIA AT THE LANE DOOR (operator 2026-11-05: "I
+  // CAN'T EVEN USE AN IMAGE FROM MEDIA" — the lane doors ride the
+  // same commit spine as the buckets): a run-media URL in EITHER
+  // served spelling is legal currency — it commits in its canonical
+  // live spelling (the ONE-spelling law, refUtils' estateMediaChip),
+  // never the foreign refusal, never the raw https form.
+  it("estate run-media picks commit in their canonical live spelling at the lane door — the legacy form heals", async () => {
+    const { rec, view } = renderStrip({
+      artifactIndex: { byUrl: new Map([
+        ["/melite-media/runs/r9/gen/bed.flac", "bed.flac"],
+        ["https://host/v1/assets/runs/r9/line.mp3", "line.mp3"],
+      ]) },
+    })
+    await openFlow("music")
+    fireEvent.click(rowWith("bed.flac"))
+    await openFlow("dialogue")
+    fireEvent.click(rowWith("line.mp3"))
+    assert.deepEqual(rec.addedClip, [
+      // the live prefix rides canonical (already the one spelling)
+      ["/melite-media/runs/r9/gen/bed.flac", "/melite-media/runs/r9/gen/bed.flac", 0, "music"],
+      // the legacy gateway spelling HEALS to the live prefix
+      ["/melite-media/runs/r9/line.mp3", "/melite-media/runs/r9/line.mp3", 0, "dialogue"],
+    ])
+    assert.equal(screen.queryByTestId("tl-strip-file-error"), null, "the estate's own media never refuses")
+    view.unmount()
+  })
+
+  // THE WIRE LAW AT THE LANE DOOR (the same law the buckets' commit
+  // chips ride): a bare name is not a URL — the estate re-resolves
+  // names at the run, so the pick rides VERBATIM (the artifact
+  // index's label fallback: the index has no such URL, the name is
+  // the clip's label and its src).
+  it("a bare-name media row rides verbatim — the estate re-resolves names, never a foreign refusal", async () => {
+    mediaBinding([{ url: "voice.wav", name: "voice.wav" }])
+    const { rec, view } = renderStrip()
+    await openMedia("sfx")
+    await screen.findAllByTestId("source-pick-row")
+    fireEvent.click(rowWith("voice.wav"))
+    assert.deepEqual(rec.addedClip, [["voice.wav", "voice.wav", 0, "sfx"]])
+    assert.equal(screen.queryByTestId("tl-strip-file-error"), null, "a bare name never refuses")
+    view.unmount()
+  })
 })
 
 describe("StudioStripPane lane mapping and detach", () => {

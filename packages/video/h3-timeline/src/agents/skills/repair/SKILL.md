@@ -129,6 +129,15 @@ failure, not a style choice. Start at `mask_grow` 0 and grow (16 is
 the served default, 96 the ceiling) only when the mask clips the
 feature.
 
+THE HOLD FLOOR: "held" means held to the turbo re-grade floor, never
+to zero. The masked pass re-encodes the whole frame, so unchanged
+regions still shift by a small global re-grade — the floor measures
+at Δ≈5 mean, p95 15–17 on the 0–255 scale. A held background inside
+that floor is a PASS; movement beyond it (mask bleed, a lighting
+shift) is the failure the hold law names. The repaired region should
+clear the floor by 2–3× when the fix landed — a hands region
+measured Δ8–10 against background cells at Δ2–5 on the same press.
+
 THE REGION IS THE PROMPT: `region_prompt` is what the detector tracks
 ("hands", "the left forearm", "her face") — it is NOT the edit
 instruction. `repair_prompt` says what the region should become. A

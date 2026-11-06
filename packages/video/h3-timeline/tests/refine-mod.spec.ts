@@ -25,7 +25,7 @@ import { deriveCommissions } from "../src/ui/studio/commissions.ts";
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
-import { REFINE_2X_OOM_FRAMES, REFINE_DEFAULT_CLIP_SECONDS, refineArmed } from "../../../models/h3/src/refine.ts";
+import { REFINE_2X_OOM_FRAMES, REFINE_DEFAULT_CLIP_SECONDS, REFINE_WORKAROUND_WIDE_FRAMES, refineArmed } from "../../../models/h3/src/refine.ts";
 import { MAX_COMPOSED_WINDOWS, SEAM_OVERLAP_FRAMES } from "../../../models/h3/src/timelineContract.ts";
 
 const FACTS_PATH = join(
@@ -194,8 +194,8 @@ describe("the refine kind (the fifth mod bag)", () => {
     }) as Record<string, unknown>, model, filmG, 'run_rfmod_film2');
     const film = graphOf(filmG);
     // THE REFINE BAG (the F3-14 stand-down): two entries of ONE staged
-    // leaf — 90 f windows, the second starting 68 f in, the carried
-    // overlap deriving to 0 + 90 − 68 = 22 f, the film's own
+    // leaf — 56 f design windows, the second starting 34 f in, the
+    // carried overlap deriving to 0 + 56 − 34 = 22 f, the film's own
     // token-exact seam. The compose mounts that carry correctly, but
     // the engine dies at window 1's handoff, so the CARD DOOR refuses
     // the shape before a node exists — the parity this arm judges is
@@ -204,7 +204,7 @@ describe("the refine kind (the fifth mod bag)", () => {
     assert.throws(
       () => def.compose(def.schema({
         calls: [{ text: 'a slow push in', start_frame: 0, end_frame: 56 }], length: 56,
-        refine: [REFINE_ENTRY(), { ...REFINE_ENTRY(), start_seconds: 68 / 24 }],
+        refine: [REFINE_ENTRY(), { ...REFINE_ENTRY(), start_seconds: 34 / 24 }],
       }) as Record<string, unknown>, model, bagG, 'run_rfmod_bag2'),
       /the carried join \(window 0→1 carries 22 f\) would carry the film's own continuation between windows — and that carry is DEAD in the engine today \(F3-14/,
       'the card door refuses the carried tiling, naming the engine failure and the hard-cut cure',
@@ -376,14 +376,14 @@ describe("the refine kind (the fifth mod bag)", () => {
       def.compose(walked, model, g, runId);
       return graphOf(g);
     };
-    // the shipped default: 3.75 s = 90 f, from the first frame
+    // the shipped default: 2.33 s = 56 f (the design window), from the first frame
     const dflt = compose1(REFINE_ENTRY(), 'run_rfmod_window_default');
     const ld = ofClass(dflt, 'VHS_LoadVideo')[0]![1].inputs;
-    assert.equal(ld['frame_load_cap'], 90, 'the default window is 90 f (3.75 s at the film clock) — the widest measured-green 2x window, never 0 (the whole clip)');
+    assert.equal(ld['frame_load_cap'], 56, 'the default window is 56 f (2.33 s at the film clock) — the DESIGN window (the 2 s class rung), never 0 (the whole clip)');
     assert.equal(ld['skip_first_frames'], 0, 'the default window starts at the clip head');
     const prev = ofClass(dflt, 'ModelPreviewOverrideKJ');
     assert.equal(prev.length, 1, 'the plane still carries its preview override');
-    assert.equal(prev[0]![1].inputs['preview_frames'], 90, 'the preview budget frames the same window the pass reads');
+    assert.equal(prev[0]![1].inputs['preview_frames'], 56, 'the preview budget frames the same window the pass reads');
     // a moved window: 2 s from 5 s
     const moved = compose1({ ...REFINE_ENTRY(), clip_seconds: 2, start_seconds: 5 }, 'run_rfmod_window_moved');
     const ld2 = ofClass(moved, 'VHS_LoadVideo')[0]![1].inputs;
@@ -409,7 +409,7 @@ describe("the refine kind (the fifth mod bag)", () => {
       [{ ...REFINE_ENTRY(), start_seconds: -1 },
         /'start_seconds': -1 is outside this seat's declared band 0–3600 — the declaration binds, not the tooltip/],
       [{ ...REFINE_ENTRY(), clip_seconds: 6 },
-        /a 144 f window at 2x — the 2x pass was measured OOM at 141 f and green at 90 f/],
+        /a 144 f window at 2x — the 2x pass was measured OOM at 141 f.*design is the ~2 s window/],
     ] as Array<[Record<string, unknown>, RegExp]>) {
       assert.throws(() => def.compose(walk(entry), model, new GraphBuilder(), 'run_rfmod_window_guard'), re,
         'the window guard names the measured ceiling, never a silent OOM');
@@ -508,18 +508,26 @@ describe("the refine kind (the fifth mod bag)", () => {
     // arm would notice, because tooltips had no judge anywhere. The
     // cure is derivation (card.ts interpolates the constants) and this
     // arm judges it: the served numbers equal the exported ones.
+    // W-7: the taught window is the DESIGN (the composed-window truth
+    // is frames — Math.round(seconds × 24) — so the arm derives the
+    // same way and the served face names the rung, never the
+    // workaround's wide window as the law).
     const kind = (def.mods ?? []).find((m) => m.param_key === 'refine');
     assert.ok(kind, 'the card declares the refine bag');
-    const green = String(REFINE_DEFAULT_CLIP_SECONDS * 24);
+    const design = String(Math.round(REFINE_DEFAULT_CLIP_SECONDS * 24));
+    const wide = String(REFINE_WORKAROUND_WIDE_FRAMES);
     const ceiling = String(REFINE_2X_OOM_FRAMES);
+    assert.equal(design, '56', 'the design default composes the 2 s class rung (W-7)');
     type SeatRow = { name: string; tooltip?: string; default?: unknown };
     const clip = ((kind!.fields ?? []) as SeatRow[]).find((f) => f.name === 'clip_seconds');
-    assert.ok(clip?.tooltip?.includes(`${green} f`), `the served tooltip names the green window derived from the constant (${green} f)`);
+    assert.ok(clip?.tooltip?.includes(`${design} f`), `the served tooltip names the design window derived from the constant (${design} f)`);
     assert.ok(clip?.tooltip?.includes(`${ceiling} f`), `and the OOM ceiling derived from the constant (${ceiling} f)`);
+    assert.ok(clip?.tooltip?.includes(`${wide} f`), `and the workaround's wide window is cited as history, derived (${wide} f)`);
     assert.equal(typeof clip?.default, 'number');
     assert.equal(clip!.default, REFINE_DEFAULT_CLIP_SECONDS, 'the served default IS the constant');
-    assert.ok(kind!.section?.includes(`${green} f`) && kind!.section?.includes(`${ceiling} f`),
-      'the section states the same measured pair');
+    assert.ok(kind!.section?.includes(`${design} f`) && kind!.section?.includes(`${ceiling} f`),
+      'the section states the design window and the ceiling');
+    assert.match(kind!.section ?? '', /DESIGN window/i, 'the section teaches the design, never the workaround as law');
   });
 
   it("an armed refine resolves its default output to the refine SaveVideo", () => {
@@ -547,7 +555,7 @@ describe("the refine kind (the fifth mod bag)", () => {
     // DEAD in the engine (F3-14), so the card door refuses the shape
     // before any node (the stand-down wall owns the sentence).
     assert.throws(
-      () => compose([REFINE_ENTRY(), { ...REFINE_ENTRY(), start_seconds: 68 / 24 }], 'run_rfmod_out_n'),
+      () => compose([REFINE_ENTRY(), { ...REFINE_ENTRY(), start_seconds: 34 / 24 }], 'run_rfmod_out_n'),
       /Drift-Control AV packed mask does not match its audio stream/,
       'the tiled refine refuses at the card door instead of billing window 0',
     );

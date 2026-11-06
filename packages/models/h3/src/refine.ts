@@ -87,11 +87,29 @@ export const REFINE_UPSCALE_MODEL = 'minimax_h3_latent_upscaler_3d_bf16.safetens
  *  instead of burning a render to find out. */
 export const REFINE_2X_OOM_FRAMES = 141
 
-/** The refine window's default length in seconds — 90 f at 24 fps, the
- *  widest window the sweep measured GREEN at 2x. A default that OOMs is
- *  the F24 burn: the arm used to load the WHOLE staged clip, so any
- *  film longer than ~4 s died at this variant. */
-export const REFINE_DEFAULT_CLIP_SECONDS = 3.75
+/** The refine window's default length in seconds — 2.33 s at 24 fps
+ *  rounds to 56 f, the 2 s class's rung of the engine's 22+17k token
+ *  grid (5, 22, 39, 56, 73, 90 …). The design is the ~2 s window
+ *  joined by the context carry (FRICTION_3 W-7, operator: "for the
+ *  refine flow it is two seconds, not five bro. That is the POINT of
+ *  the context carry"): the carry is what makes a short window
+ *  seamless, so the design never needs the workaround's wide window.
+ *  90 f measured GREEN at 2x is the hard-cut workaround's wide
+ *  window — fewer seams while the carry is dead (F3-14) — never the
+ *  design. A default that OOMs is the F24 burn: the arm used to load
+ *  the WHOLE staged clip, so any film longer than ~4 s died at this
+ *  variant. */
+export const REFINE_DEFAULT_CLIP_SECONDS = 2.33
+
+/** The hard-cut workaround's wide window, in frames — 90 f measured
+ *  GREEN at 2x on the operator's box (2688×1536, 48 kHz). While the
+ *  context carry is dead (F3-14) a carried tile refuses, so a film
+ *  tiles as abutting hard cuts and wider windows mean fewer seams —
+ *  that is the only reason this number exists. It teaches the
+ *  workaround's history, never the design: NO door reads it (the
+ *  default above is the design window), and served copy cites it only
+ *  beside the design window it is not. */
+export const REFINE_WORKAROUND_WIDE_FRAMES = 90
 
 /** The refine auto-tile's default carried overlap, in frames at the
  *  film clock — the film's own seam (SEAM_OVERLAP_FRAMES), which is
@@ -201,7 +219,7 @@ const judgeRefineWindow = (cap: number, dials: { upMode: string; upScale: number
   if (!sameSize && cap > REFINE_2X_OOM_FRAMES) {
     const named = dials.upMode === 'scale by multiplier' ? `${dials.upScale}x` : dials.upMode
     throw new Error(
-      `h3-timeline refine: a ${cap} f window at ${named} — the 2x pass was measured OOM at ${REFINE_2X_OOM_FRAMES} f and green at ${REFINE_DEFAULT_CLIP_SECONDS * 24} f (2688×1536, 48 kHz; H3 memory grows with the window, so a wider window cannot fit — the ceiling belongs to the WINDOW, whichever sizing mode upsizes). Cut clip_seconds to ${(REFINE_2X_OOM_FRAMES / 24).toFixed(2)} s or less and cover the rest window by window, or lower scale to 1 for a same-size pass`,
+      `h3-timeline refine: a ${cap} f window at ${named} — the 2x pass was measured OOM at ${REFINE_2X_OOM_FRAMES} f (2688×1536, 48 kHz; H3 memory grows with the window, so a wider window cannot fit — the ceiling belongs to the WINDOW, whichever sizing mode upsizes). The design is the ~2 s window (${REFINE_DEFAULT_CLIP_SECONDS} s = ${Math.round(REFINE_DEFAULT_CLIP_SECONDS * 24)} f, the 2 s class's rung of the 22+17k token grid) tiled window by window and joined by the context carry — the carry is what makes a short window seamless, so the design never needs a wider window (the carry waits on the engine cure, ROADMAP F3-14; until it lands, abut the design windows with the hard cut). Cut clip_seconds to ${REFINE_DEFAULT_CLIP_SECONDS} s or less and cover the rest window by window, or lower scale to 1 for a same-size pass`,
     )
   }
 }
@@ -374,7 +392,7 @@ export function renderH3RefineWindow(
 ): OutputHandle {
   if (!Number.isInteger(seat.cap) || seat.cap < 1) {
     throw new Error(
-      `h3-timeline refine: a ${seat.cap} f window — a refine window needs frames (the loop's cap is the loader's frame_load_cap at 24 fps; the safe default is ${REFINE_DEFAULT_CLIP_SECONDS} s = 90 f)`,
+      `h3-timeline refine: a ${seat.cap} f window — a refine window needs frames (the loop's cap is the loader's frame_load_cap at 24 fps; the design window is ${REFINE_DEFAULT_CLIP_SECONDS} s = ${Math.round(REFINE_DEFAULT_CLIP_SECONDS * 24)} f, the 2 s class's rung — the carry-joined window, not the widest-green workaround)`,
     )
   }
   if (!Number.isInteger(seat.skip) || seat.skip < 0) {
@@ -397,7 +415,7 @@ function refineWindowOrigin(entry: Record<string, unknown>): { cap: number; skip
   const startSeconds = num(entry, 'start_seconds', 0)
   if (!(clipSeconds > 0)) {
     throw new Error(
-      `h3-timeline refine: clip_seconds ${clipSeconds} — a refine window needs frames (the seat is the loader's frame_load_cap: seconds × 24 at the film clock; the safe default is ${REFINE_DEFAULT_CLIP_SECONDS} s = 90 f)`,
+      `h3-timeline refine: clip_seconds ${clipSeconds} — a refine window needs frames (the seat is the loader's frame_load_cap: seconds × 24 at the film clock; the design window is ${REFINE_DEFAULT_CLIP_SECONDS} s = ${Math.round(REFINE_DEFAULT_CLIP_SECONDS * 24)} f, the 2 s class's rung — the carry-joined window, not the widest-green workaround)`,
     )
   }
   if (!(startSeconds >= 0)) {
@@ -919,7 +937,7 @@ export function renderH3RefineWindows(
   const clipSeconds = num(entry, 'clip_seconds', REFINE_DEFAULT_CLIP_SECONDS)
   if (!(clipSeconds > 0)) {
     throw new Error(
-      `h3-timeline refine: clip_seconds ${clipSeconds} — a refine window needs frames (the seat is the loader's frame_load_cap: seconds × 24 at the film clock; the safe default is ${REFINE_DEFAULT_CLIP_SECONDS} s = 90 f)`,
+      `h3-timeline refine: clip_seconds ${clipSeconds} — a refine window needs frames (the seat is the loader's frame_load_cap: seconds × 24 at the film clock; the design window is ${REFINE_DEFAULT_CLIP_SECONDS} s = ${Math.round(REFINE_DEFAULT_CLIP_SECONDS * 24)} f, the 2 s class's rung — the carry-joined window, not the widest-green workaround)`,
     )
   }
   const startFrames = Math.round(num(entry, 'start_seconds', 0) * 24)

@@ -94,10 +94,14 @@ before, byte-identical.)
    never silently disarms.
 3. **Set the window.** The pass refines ONE WINDOW of the clip, and
    the window is what keeps the 2x pass inside the card's memory:
-   - `clip_seconds` (0.5–60, 3.75) — how much of the clip this pass
-     reads, from the window start. 3.75 s = 90 f at 24 fps, the
-     widest window the operator's box measured GREEN at 2x
-     (2688×1536, 48 kHz). It is the loader's `frame_load_cap`
+   - `clip_seconds` (0.5–60, 2.33) — how much of the clip this pass
+     reads, from the window start. 2.33 s = 56 f at 24 fps, the DESIGN
+     window: the 2 s class's rung of the engine's 22+17k token grid
+     (5, 22, 39, 56, 73, 90 …) — the carry-joined window the context
+     carry makes seamless, so the design never needs a wider window.
+     90 f measured GREEN at 2x is the hard-cut workaround's wide
+     window (fewer seams while the carry is dead, F3-14 — never the
+     design). It is the loader's `frame_load_cap`
      (seconds × 24), so the pass really reads only that much; the
      soundtrack is trimmed to the same window.
    - `start_seconds` (0–3600, 0) — where the window starts (the
@@ -179,7 +183,7 @@ before, byte-identical.)
      cure lands. Rides only with `windows` above 1 (a lone window has
      no join) and must be shorter than the window.
 5. **Confirm.** Show the bound clip, the window in words ("from 5.0 s
-   for 3.75 s"), the pass dials ("2x, denoise 0.32, 6 steps"), and
+   for 2.33 s"), the pass dials ("2x, denoise 0.32, 6 steps"), and
    that every other arm is empty.
    THE LANE CLAUSE: that wait is chat-lane law — on a headless
    commission the brief IS the confirmation (state the values in the
@@ -198,19 +202,19 @@ before, byte-identical.)
    ### The walk's loop and splice (the declared alternative, step by step)
 
    The walk's step is the FULL window length: the windows ABUT, and
-   every seam is a hard cut. At the 3.75 s window (90 f):
+   every seam is a hard cut. At the 2.33 s design window (56 f):
 
        overlap_frames = 0                     (the hard cut; a carried join refuses today, F3-14)
-       step_frames    = clip_seconds × 24      e.g. 90 f = 3.75 s
+       step_frames    = clip_seconds × 24      e.g. 56 f = 2.33 s
        step_seconds   = step_frames / 24
 
-   A 430 f clip at that window is five presses at `start_seconds`
-   0 / 3.75 / 7.50 / 11.25 / 15.00 (the last one starts at clip length
-   − window length, per THE WALK BOUND). The 22 f carry step
-   (90 − 22 = 68 f = 2.83 s) belongs to the carried face: it composes
-   (the soft seam below), but it is DEAD in the engine today (F3-14)
-   and refused at the door — do not plan a press around it until the
-   engine cure lands.
+   A 430 f clip at that window is eight presses at `start_seconds`
+   0 / 2.33 / 4.67 / 7.00 / 9.33 / 11.67 / 14.00 / 15.58 (the last one
+   starts at clip length − window length, per THE WALK BOUND). The
+   22 f carry step (56 − 22 = 34 f = 1.42 s) belongs to the carried
+   face: it composes (the soft seam below), but it is
+   DEAD in the engine today (F3-14) and refused at the door — do not
+   plan a press around it until the engine cure lands.
 
    SPLICE THE WINDOWS — it is part of the pass, not an optional
    extra. The composed carrier still builds the film's own carry:
@@ -266,7 +270,7 @@ before, byte-identical.)
    The two honest postures stand:
 
    - a film that must be seamless TODAY on the audio too: press ONE
-     90 f window (3.75 s) — a single window is seam-free by
+     56 f window (2.33 s) — a single window is seam-free by
      construction;
    - a film longer than one window: tile it with ABUTTING windows
      (0 overlap — the hard cut, the plain concat) or press window by
@@ -345,13 +349,15 @@ The 2x pass pays nearly the full first-pass resource bill on every
 run: the resident model stack (UNET int8, the qwen3vl CLIP, two
 VAEs, SLA, LoRA) is ~20 GiB of the card, and each window reloads it.
 That is why this arm is window-driven rather than a whole-film loop:
-one 90 f window per press is the documented cheap shape. The three
+one 56 f window per press is the documented cheap shape. The three
 cures, in the order to try them:
 
-1. **Narrow the window** (default 3.75 s) — 90 f is measured green;
-   walk the film window by window (the DECLARED ALTERNATIVE), or
-   stack the bag's window entries at ABUTTING starts and let one press
-   tile it (the hard cut; a carried join is refused today — F3-14).
+1. **Narrow the window** (default 2.33 s) — 56 f is the design
+   window (the 2 s class's rung; 90 f measured green is the
+   hard-cut workaround's wide window, never the design); walk the
+   film window by window (the DECLARED ALTERNATIVE), or stack the
+   bag's window entries at ABUTTING starts and let one press tile it
+   (the hard cut; a carried join is refused today — F3-14).
 2. **`scale` 1.0** — a same-size refine lifts the ceiling but does
    NOT remove it: the handoff still materialises the whole window's
    latents. Measured: 90 f at 2× green; 141 f at 2× OOM (1.06 GiB

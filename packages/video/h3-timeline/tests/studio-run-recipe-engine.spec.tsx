@@ -17,7 +17,7 @@ import { beforeAll, describe, it, vi } from "vitest"
 import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react"
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react"
 import { DOC_FPS_DEFAULT } from '@melite/models-h3/timelineContract'
 import { RunRecipeEngine } from "../src/ui/studio/RunRecipeEngine.tsx"
 import { schemaEnvelope } from "@melite/card-base/client"
@@ -26,6 +26,10 @@ import { loadCardDefs } from "@melite/comfyui-cordis"
 import "../../../../tests/helpers/boot-models.ts"
 import { carrier, BOARDED, VARIANT_ADDRESSES } from "../src/card.ts"
 import { bindEstateRemote, unbindEstateRemote } from '@melite/card-base/client'
+// the upload leaf's faces (the dictionary owns the words — never a
+// hand-spelled copy in the arms; the deep source import follows the
+// phantom-key-journey-rider precedent, the barrel does not re-export)
+import { chromeCopy } from "../../../../packages/web/card-base/src/locales/chromeCopy.ts"
 import type { LayerA } from "../src/ui/studio/docModel.ts"
 import { projectDoc } from "../src/ui/studio/pendingOps.ts"
 
@@ -878,5 +882,129 @@ describe("RunRecipeEngine: the finishing rail on every family (the retired t4r g
         `${label}: the mix-desk knob composes nothing on a single window`)
       r.unmount()
     }
+  })
+})
+
+// THE LORA HAND-UPLOAD (2026-11-15, the operator's feature: "add a
+// button to upload a LORA and setting default strength"): the rail
+// injects the upload transport + the same-session spec refresh into
+// CardForm's wire. The wall rides the REAL gesture — the leaf's
+// upload menu, the deferred file pick, Apply — and judges the door's
+// own POST (the derived family shelf, the filename, the dialed
+// strength) plus the stale-while-revalidate refresh. Mocking the
+// wire itself would prove nothing: the transport IS the contract.
+describe("THE LORA HAND-UPLOAD rides the rail's wire (the operator's 2026-11-15 feature)", () => {
+  /** Serve the base envelope with the family's model key and the
+   *  loras kind (the pack's option grammar — specModifiers' spelling).
+   *  The upload door's fetch is answered SEPARATELY so the arm reads
+   *  the door's real request URL off the stub. */
+  function serveLoraUpload(): { loraUrls: string[]; specFetches: () => number } {
+    let specFetches = 0
+    const loraUrls: string[] = []
+    vi.stubGlobal("fetch", (input: unknown) => {
+      const url = typeof input === "string" ? input : String((input as { url: string }).url)
+      if (url.includes("/v1/uploads/lora")) {
+        loraUrls.push(url)
+        return Promise.resolve(new Response(
+          JSON.stringify({ row: { id: "h3/op-pick.safetensors", default_strength: 0.8 }, row_seated: true }),
+          { headers: { "content-type": "application/json" } },
+        ))
+      }
+      specFetches++
+      const base = envelope() as Record<string, unknown>
+      return Promise.resolve(new Response(JSON.stringify({
+        ...base,
+        // the family shelf the rail derives (resolveFamilyKey reads
+        // the served spec's model)
+        model: "h3-timeline",
+        features: {
+          ...(base.features as Record<string, unknown>),
+          modifiers: [{
+            kind: "lora", label: "LoRAs", param_key: "loras", cardinality: "list",
+            entry: "option", option_key: "id",
+            options: [{ value: "h3_silver_dareties", label: "Silver" }],
+          }],
+        },
+      }), { headers: { "content-type": "application/json" } }))
+    })
+    return { loraUrls, specFetches: () => specFetches }
+  }
+
+  it("Apply POSTs through the door with the DERIVED family shelf, and the refresh re-serves in the same session", async () => {
+    const { loraUrls, specFetches } = serveLoraUpload()
+    const { keys } = engine({})
+    await screen.findByLabelText("Recipe")
+    // the bag's add face → the LoRAs leaf → the upload menu (the
+    // operator's gated menu: pick face, then Add LoRA…, then the pane)
+    fireEvent.click(document.querySelector('[data-subcard-add="mod"]')!)
+    fireEvent.click(screen.getByRole("menuitem", { name: "LoRAs" }))
+    fireEvent.click(screen.getByRole("button", { name: chromeCopy.loraAddButton }))
+    // the pane's square owns the hidden input (the deferred pick);
+    // dial the default strength, then Apply
+    const row = document.querySelector('[data-testid="mod-lora-upload"]')
+    assert.ok(row, "the upload pane renders the square")
+    const inp = row!.querySelector('input[type="file"]')
+    assert.ok(inp instanceof HTMLInputElement, "the hidden file input rides the square")
+    Object.defineProperty(inp, "files", { value: [new File(["%MEL"], "op-pick.safetensors")], configurable: true })
+    fireEvent.change(inp)
+    fireEvent.change(screen.getByLabelText(chromeCopy.loraUploadStrengthLabel), { target: { value: "0.6" } })
+    const specsBefore = specFetches()
+    fireEvent.click(screen.getByRole("button", { name: chromeCopy.loraApplyButton }))
+    // the door's OWN transport rode: the URL names the family the
+    // rail DERIVED off the served spec (the host owns the transport
+    // AND the family shelf), the operator's filename, the dialed
+    // strength
+    await waitFor(() => assert.equal(loraUrls.length, 1, "the upload POST rode the door"))
+    assert.match(loraUrls[0]!, /families=h3-timeline/, "the family shelf derivation rides the wire")
+    assert.match(loraUrls[0]!, /filename=op-pick\.safetensors/)
+    assert.match(loraUrls[0]!, /strength=0\.6/)
+    // THE SAME-SESSION SERVE: the refresh re-fetched the served spec
+    // AFTER the upload (stale-while-revalidate) — the seated row
+    // serves without a remount
+    await waitFor(() => assert.ok(specFetches() > specsBefore, "the refresh re-fetched the served spec"))
+    assert.equal(document.querySelector('[data-leaf-pane="upload"]'), null, "the pick face re-opened")
+    // the door SEATS the row; the bag's wire never hears the file —
+    // the pick is the operator's next gesture (the per-key verb and
+    // the whole-doc commit both stay silent)
+    assert.deepEqual(keys, [])
+    cleanup()
+  })
+})
+
+// THE EMPTY-SELECTION PICK at the pick commit (the axisUnset law,
+// card-base 2026-10-10): a served row whose stamp carries the ''
+// clear — born when a model switch cleared an axis to '' — must land
+// the axis UNSTATED, never a stated empty string (the door's own
+// voice: "a stated empty selection is not a choice"). The rail's
+// whole-doc commit rides the same pure judge the drill's write does.
+describe("THE EMPTY-SELECTION PICK unstamps the axis (the axisUnset law at the rail's pick commit)", () => {
+  function serveCleared(): void {
+    const base = envelope() as Record<string, unknown>
+    vi.stubGlobal("fetch", () =>
+      Promise.resolve(new Response(JSON.stringify({
+        ...base,
+        variants: [
+          ...(base.variants as unknown[]),
+          // the cleared stamp: the '' axis carry the law unstamps
+          { id: "cleared", label: "Cleared", group: "Recipe", defaults: { variant: "" }, route: "", hint: null, engine: "comfyui", quant: null, vram_peak_gb: null, owner: "" },
+        ],
+      }), { headers: { "content-type": "application/json" } })))
+  }
+
+  it("a Recipe row carrying the '' clear lands the axis UNSTATED — the key never rides a stated empty", async () => {
+    serveCleared()
+    const { keys, doc } = engine({ fps: 24, variant: "h3" })
+    const pick = await screen.findByLabelText("Recipe")
+    // THE MENU PICK (S7e)
+    fireEvent.click(pick)
+    fireEvent.click(screen.getByRole("menuitem", { name: /Cleared/ }))
+    // the pick committed atomically (the per-key verb silent) and the
+    // '' clear left the axis UNSTATED — undefined in the doc, never a
+    // held empty string (the else arm would read '' here)
+    assert.deepEqual(keys, [])
+    assert.equal(doc().variant, undefined, "the '' clear unstamps the axis — never a stated empty rides")
+    assert.equal(document.body.querySelector('[role="alert"]'), null, "a legal clear never raises the gate face")
+    assert.equal(doc().fps, 24, "the rest of the doc survives the pick")
+    cleanup()
   })
 })

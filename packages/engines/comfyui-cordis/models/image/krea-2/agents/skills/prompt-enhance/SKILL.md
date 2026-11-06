@@ -15,6 +15,7 @@ krea-2: &krea2_enhance
     - "Krea 2 uses CONTINUOUS DESCRIPTIVE PROSE — not comma-separated tags"
     - "Aim for 60-150 words — long, detailed, vivid descriptions produce the best results"
     - "Negative prompts ARE used — always include one with quality degraders (blurry, low quality, distorted, watermark)"
+    - "Prose negations BIND NOTHING on this lane — 'no watermark' written inside the descriptive prose does not suppress it; every suppression belongs in the negative prompt seat, and the prose spends its words on what you DO want"
     - "Strong photorealism, fine detail, and composition — lean into cinematic lighting and material textures"
     - "Structure: subject identity → physical description → clothing/textures → environment → lighting/mood → camera/composition"
     - "Be specific and concrete — name garments, materials, light sources, lens choices"

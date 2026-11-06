@@ -13,11 +13,28 @@ export declare const REFINE_UPSCALE_MODEL = "minimax_h3_latent_upscaler_3d_bf16.
  *  OOM point cannot fit at this variant — the door refuses it by name
  *  instead of burning a render to find out. */
 export declare const REFINE_2X_OOM_FRAMES = 141;
-/** The refine window's default length in seconds — 90 f at 24 fps, the
- *  widest window the sweep measured GREEN at 2x. A default that OOMs is
- *  the F24 burn: the arm used to load the WHOLE staged clip, so any
- *  film longer than ~4 s died at this variant. */
-export declare const REFINE_DEFAULT_CLIP_SECONDS = 3.75;
+/** The refine window's default length in seconds — 2.33 s at 24 fps
+ *  rounds to 56 f, the 2 s class's rung of the engine's 22+17k token
+ *  grid (5, 22, 39, 56, 73, 90 …). The design is the ~2 s window
+ *  joined by the context carry (FRICTION_3 W-7, operator: "for the
+ *  refine flow it is two seconds, not five bro. That is the POINT of
+ *  the context carry"): the carry is what makes a short window
+ *  seamless, so the design never needs the workaround's wide window.
+ *  90 f measured GREEN at 2x is the hard-cut workaround's wide
+ *  window — fewer seams while the carry is dead (F3-14) — never the
+ *  design. A default that OOMs is the F24 burn: the arm used to load
+ *  the WHOLE staged clip, so any film longer than ~4 s died at this
+ *  variant. */
+export declare const REFINE_DEFAULT_CLIP_SECONDS = 2.33;
+/** The hard-cut workaround's wide window, in frames — 90 f measured
+ *  GREEN at 2x on the operator's box (2688×1536, 48 kHz). While the
+ *  context carry is dead (F3-14) a carried tile refuses, so a film
+ *  tiles as abutting hard cuts and wider windows mean fewer seams —
+ *  that is the only reason this number exists. It teaches the
+ *  workaround's history, never the design: NO door reads it (the
+ *  default above is the design window), and served copy cites it only
+ *  beside the design window it is not. */
+export declare const REFINE_WORKAROUND_WIDE_FRAMES = 90;
 /** The refine auto-tile's default carried overlap, in frames at the
  *  film clock — the film's own seam (SEAM_OVERLAP_FRAMES), which is
  *  also token-exact (5, 22, 39 …), so the default auto-tile takes the

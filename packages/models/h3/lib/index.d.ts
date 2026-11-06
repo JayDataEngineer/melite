@@ -6,7 +6,7 @@ export { finalizeH3, H3_T4_STRIP } from "./finalize.js";
 export { renderH3Swap } from "./swap.js";
 export { renderH3Repair } from "./repair.js";
 export { renderH3Extend, LAST_FRAME_BATCH_INDEX } from "./extend.js";
-export { refineArmed, renderH3Refine, renderH3RefineBag, renderH3RefineCarry, renderH3RefineWindow, renderH3RefineWindows, refineWindowCount, refineWindowStarts, tokenExactCarry, nextTokenExact, lawfulCarryStart, REFINE_UPSCALE_MODEL, REFINE_2X_OOM_FRAMES, REFINE_DEFAULT_CLIP_SECONDS, REFINE_DEFAULT_OVERLAP_FRAMES } from "./refine.js";
+export { refineArmed, renderH3Refine, renderH3RefineBag, renderH3RefineCarry, renderH3RefineWindow, renderH3RefineWindows, refineWindowCount, refineWindowStarts, tokenExactCarry, nextTokenExact, lawfulCarryStart, REFINE_UPSCALE_MODEL, REFINE_2X_OOM_FRAMES, REFINE_DEFAULT_CLIP_SECONDS, REFINE_DEFAULT_OVERLAP_FRAMES, REFINE_WORKAROUND_WIDE_FRAMES } from "./refine.js";
 export { refinePlaneSchema, REFINE_PLANE_KEYS } from "./schema.js";
 export { MAX_COMPOSED_WINDOWS, SEAM_OVERLAP_FRAMES } from "./timelineContract.js";
 export type { RefineWindowSeat } from "./refine.js";

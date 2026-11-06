@@ -50,16 +50,19 @@ its final pose.
 
 The anchor is an IMAGE REFERENCE, not a pixel lock. The continuation
 is a fresh window at full denoise, so its first frame is a NEW pose,
-not the frame it was handed. Measured on a 430 f clip extended by
-3.75 s (`x0` 430 f + `x1` 90 f, 1312×736):
+not the frame it was handed. The join size follows SEED CONTINUITY —
+measured on the film plane (0–255 scale, 24 fps):
 
-    adjacent frames inside the source : Δ2.8–4.1   (0–255 scale)
-    source last frame → extension[0]  : Δ24.8
+    adjacent frames inside a window   : Δ1.0–1.3
+    same-seed extend, butt-join       : Δ3.1
+    chained extend (fresh seed)       : Δ1.7
+    prompt names a NEW action         : Δ≈35
 
-Eight times the adjacent-frame noise — a visible step at the join.
-The flip side is real and should be said too: character, wardrobe,
-studio, lighting and style all hold across the seam; what moves is the
-moment.
+Keep `seed` at the source film's seed and the butt-join lands at a
+SOFT step — two to three times the interior noise, not a hard wall
+(an anchor-only join with differing seeds measures a ≈25 Δ band).
+What still holds across the seam: character, wardrobe, studio,
+lighting and style; what moves is the moment.
 
 So: **extend continues the STORY, not the MOTION.** Tell the operator
 that in the confirmation, and judge the boundary frames before calling
@@ -69,9 +72,9 @@ anchor frame as the window's first frame (a mask/hold shape) or
 carrying the prior latent, and neither is wired on this arm.
 
 A prompt that names a NEW action ("she looks up and speaks") moves the
-subject at the seam far more than the anchor does — measured Δ≈35 vs
-Δ25 on the same fixture. Write `extend_prompt` as a continuation of
-the same action.
+subject at the seam far more than the anchor does — the biggest term
+in the table above. Write `extend_prompt` as a continuation of the
+same action.
 
 ## What lands
 
@@ -86,3 +89,7 @@ extended film is itself a stageable clip: chained extends feed
 `extend_film` back as the next call's `source_clip` (the
 timeline-craft skill owns the drift-control law for long chains —
 overlap is the engine's own seam machinery, never a hand-set knob).
+The canvas snaps to the model bucket on this arm too: a source off
+the bucket lands re-seated (1344x768 -> 1280x736; aspect held to
+~0.6 %) — budget the ~5 % resize in any join math downstream.
+

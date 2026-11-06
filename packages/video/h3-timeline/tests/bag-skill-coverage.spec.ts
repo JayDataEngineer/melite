@@ -226,8 +226,8 @@ describe("every served mod bag has a skill leaf an agent can read", () => {
       "refine/SKILL.md states the walk step is the full window (the abutting hard cut)");
     assert.match(refine, /overlap_frames = 0\b/,
       "refine/SKILL.md pins overlap_frames 0 as the lawful walk");
-    assert.match(refine, /0 \/ 3\.75 \/ 7\.50/,
-      "refine/SKILL.md walks start_seconds at the abutting clock");
+    assert.match(refine, /0 \/ 2\.33 \/ 4\.67/,
+      "refine/SKILL.md walks start_seconds at the abutting clock (the 2.33 s design window)");
     assert.match(refine, /22 f carry step[\s\S]{0,120}DEAD in the engine today \(F3-14\)/,
       "refine/SKILL.md names the 22 f carry step as the refused face, never the recipe");
     assert.match(refine, /430 f window @1\.0 OOM/i,
@@ -252,8 +252,8 @@ describe("every served mod bag has a skill leaf an agent can read", () => {
       "refine/SKILL.md states the carry face's honest limits — exact video, soft audio, live-press judgement owed");
     assert.match(refine, /Δ8\.86–9\.80[\s\S]{0,200}Δ4\.3/,
       "refine/SKILL.md carries the measured seam delta against the adjacent-frame delta");
-    assert.match(refine, /ONE\s+90 f window \(3\.75 s\)[\s\S]{0,80}a single window is seam-free/,
-      "refine/SKILL.md names the seam-free posture (one window)");
+    assert.match(refine, /ONE\s+56 f window \(2\.33 s\)[\s\S]{0,80}a single window is seam-free/,
+      "refine/SKILL.md names the seam-free posture (one design window)");
 
     const repair = readSkill("repair");
     const recipe = /## Worked recipe/.exec(repair);
@@ -274,16 +274,27 @@ describe("every served mod bag has a skill leaf an agent can read", () => {
   it("ARM 8 — the extend leaf states the measured SEAM LAW (an anchor is not a pixel lock)", () => {
     // Extend does not pop the way refine does — its continuation is
     // generated across the boundary — but the anchor is an IMAGE
-    // reference, not a pixel lock: measured Δ24.8 from the source's
-    // last frame to extension[0] against Δ2.8–4.1 between adjacent
-    // frames. The leaf must say so before the press, or an agent sells
-    // a seamless join the arm cannot make.
+    // reference, not a pixel lock. (JOIN-LAW re-pin: the first
+    // measurement pinned a Δ24.8 butt-join; the seed-continuity
+    // probes collapsed that band ~8× — the join size follows the
+    // SEED, and the leaf must teach the bands it now measures:
+    // interior Δ1.0–1.3, same-seed butt-join Δ3.1, a chained extend
+    // at a fresh seed Δ1.7, and an action-naming prompt at Δ≈35 —
+    // the prompt is the biggest term, not the anchor.)
     const md = readFileSync(join(ROOT, LEAF_SEAT["extend"]!.path), "utf-8");
     assert.match(md, /IMAGE REFERENCE, not a pixel lock/,
       "the extend leaf names what the anchor is");
-    assert.match(md, /Δ24\.8/, "the extend leaf carries the measured join step");
-    assert.match(md, /Δ2\.8–4\.1/, "the extend leaf carries the in-source adjacent delta it is measured against");
-    assert.match(md, /visible step at the join|step at the join/i,
+    assert.match(md, /adjacent frames inside a window\s+: Δ1\.0–1\.3/,
+      "the extend leaf carries the interior adjacent-frame delta");
+    assert.match(md, /same-seed extend, butt-join\s+: Δ3\.1/,
+      "the extend leaf carries the measured same-seed join step");
+    assert.match(md, /chained extend \(fresh seed\)\s+: Δ1\.7/,
+      "the extend leaf carries the chained-extend join step");
+    assert.match(md, /Δ≈35/,
+      "the extend leaf carries the action-naming prompt cost");
+    assert.match(md, /SEED CONTINUITY/,
+      "the extend leaf names the law the join size follows");
+    assert.match(md, /SOFT step/i,
       "the extend leaf states the verdict in words");
   });
 

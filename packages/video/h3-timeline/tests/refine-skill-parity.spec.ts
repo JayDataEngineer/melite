@@ -14,7 +14,7 @@
 // THE LAW: every bounded dial the card serves appears in the
 // SKILL.md table with the SAME band and default; the select seat
 // states the same default the card serves; the window's measured
-// numbers (the 90 f green default, the 141 f OOM ceiling) are the
+// numbers (the 56 f design default, the 141 f OOM ceiling) are the
 // CODE's constants, converted and stated, never a hand-typed
 // recollection; every one of the fifteen one-door pairs is named;
 // and the doc names what is live-proven and what is still unproven
@@ -29,7 +29,7 @@ import assert from "node:assert/strict";
 import { loadCardDefs } from "@melite/comfyui-cordis";
 import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import {
-  REFINE_2X_OOM_FRAMES, REFINE_DEFAULT_CLIP_SECONDS,
+  REFINE_2X_OOM_FRAMES, REFINE_DEFAULT_CLIP_SECONDS, REFINE_WORKAROUND_WIDE_FRAMES,
 } from "../../../models/h3/src/refine.ts";
 import { MAX_COMPOSED_WINDOWS } from "../../../models/h3/src/timelineContract.ts";
 
@@ -112,19 +112,35 @@ describe("the refine skill's dial table agrees with the code's own homes", () =>
     // F24: the doc states the measured sweep's numbers; the numbers
     // come from the renderer's own exports, so a ceiling move reds
     // the prose instead of rotting it (the F2 stamp law's cheap half).
+    // W-7: the taught window is the DESIGN — the ~2 s carry-joined
+    // window (the 2 s class's rung), never the workaround's wide
+    // window as law.
     const md = readSkill("refine");
     const defaultFrames = Math.round(REFINE_DEFAULT_CLIP_SECONDS * 24);
-    assert.equal(defaultFrames, 90, "the default window is the measured-GREEN 90 f");
+    assert.equal(defaultFrames, 56, "the default window is the DESIGN 56 f (the 2 s class's rung)");
     assert.equal(REFINE_2X_OOM_FRAMES, 141, "the ceiling is the measured-OOM 141 f");
+    assert.equal(REFINE_WORKAROUND_WIDE_FRAMES, 90, "the workaround's wide window stays the measured-green 90 f (history, never the design)");
     const ceilingSeconds = REFINE_2X_OOM_FRAMES / 24;
     assert.match(md, new RegExp(`\`clip_seconds\` \\([^)]*${String(REFINE_DEFAULT_CLIP_SECONDS)}\\)`),
       "the dial line's default is the code's REFINE_DEFAULT_CLIP_SECONDS");
     assert.ok(md.includes(`${defaultFrames} f`),
-      `the doc states the ${defaultFrames} f default window`);
+      `the doc states the ${defaultFrames} f design window`);
+    assert.ok(md.includes(`${REFINE_WORKAROUND_WIDE_FRAMES} f`),
+      `the doc cites the ${REFINE_WORKAROUND_WIDE_FRAMES} f workaround window as history, never as the design`);
     assert.ok(md.includes(`${REFINE_2X_OOM_FRAMES} f`),
       `the doc states the ${REFINE_2X_OOM_FRAMES} f measured OOM ceiling`);
     assert.ok(md.includes(ceilingSeconds.toFixed(3)),
       `the doc states the refuse point as seconds too (${ceilingSeconds.toFixed(3)} s)`);
+    assert.match(md, /DESIGN window/i,
+      "the doc teaches the design window, never the workaround as law");
+    assert.match(md, /2 s class/,
+      "the doc names the 2 s class the default window belongs to");
+    assert.match(md, /22\+17k/,
+      "the doc names the engine's token grid, so the ~2 s window's rung is stated, never guessed");
+    assert.match(md, /workaround's wide window/,
+      "the doc frames 90 f as the hard-cut workaround's history");
+    // the workaround's default number (3.75) is gone from the doc
+    expect(md).not.toMatch(/3\.75/);
     assert.match(md, /frame_load_cap/, "the doc names the loader seat the window rides");
     assert.match(md, /skip_first_frames/, "the doc names the loader seat the start rides");
     assert.match(md, /trimmed to the same window|soundtrack is trimmed/i,

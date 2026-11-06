@@ -501,6 +501,32 @@ describe("THE SERVABLE DECLARED FACE (the operator's broken-images burn, 2026-11
     h.unmount()
   })
 
+  // THE PREVIEW'S SRC CHAIN (the lightbox's own fallback order — the
+  // thumb's serve, the declared serve, the raw value): an OPEN
+  // preview never blanks when the thumb dies underneath — the chip
+  // flips to its honest held face while the lightbox keeps the
+  // declared serve. (The chain's last fallback — the RAW url behind
+  // a declined serve — has no live path: the chip is keyed on its
+  // url, so a serve decline remounts it and an open preview never
+  // survives the swap. The fallback is defensive, not a behavior.)
+  it("a thumb that DIES mid-preview keeps the lightbox on the declared serve — the preview never blanks", async () => {
+    const h = renderDeclared(["https://u/dying.png"])
+    const chip = h.container.querySelector('[data-testid="tl-declared-ref"]')!
+    fireEvent.click(chip.querySelector("button")!)
+    await screen.findByRole("dialog")
+    // the wire death: the thumb's <img> errors while the preview is
+    // open (the arm at the bottom of this describe rides the same
+    // gesture on a closed chip)
+    fireEvent.error(chip.querySelector("img")!)
+    // the chip flips to the honest held face (no <img>) — but the
+    // OPEN preview stays, still painting the declared serve
+    await waitFor(() => assert.equal(chip.querySelector("img"), null, "the dead src leaves the chip"))
+    const dialog = screen.getByRole("dialog")
+    assert.equal(dialog.querySelector("img")!.getAttribute("src"), "https://u/dying.png",
+      "the open preview keeps the declared serve (the src chain's middle fallback)")
+    h.unmount()
+  })
+
   it("a servable src that DIES on the wire flips to the held face through onError", () => {
     const h = renderDeclared(["https://u/dead.png"])
     const chip = h.container.querySelector('[data-testid="tl-declared-ref"]')!

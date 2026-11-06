@@ -361,12 +361,12 @@ describe("the refine loop (F24: one press walks the film)", () => {
 });
 
 describe("the window renderer's whole-frame seat refusals (the loop's loader seats are whole frame counts)", () => {
-  it("a window cap that is not a whole positive frame count refuses at the door, naming the count and the safe default", () => {
+  it("a window cap that is not a whole positive frame count refuses at the door, naming the count and the design window", () => {
     assert.throws(
       () => renderH3RefineWindow(entry, {}, facts, new GraphBuilder(), {
         cap: 0, skip: 0, overlapFrames: 0, prefix: "run-bad-cap/refine",
       }),
-      /a 0 f window — a refine window needs frames .* the safe default is 3\.75 s = 90 f/,
+      /a 0 f window — a refine window needs frames .* the design window is 2\.33 s = 56 f/,
     );
     assert.throws(
       () => renderH3RefineWindow(entry, {}, facts, new GraphBuilder(), {

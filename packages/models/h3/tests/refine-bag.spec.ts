@@ -40,6 +40,7 @@ import {
   renderH3RefineCarry,
   nextTokenExact,
   lawfulCarryStart,
+  tokenExactCarry,
 } from "../src/index.ts";
 
 const FPS = 24;
@@ -188,7 +189,8 @@ describe("the refine bag carrier (GAPS-19: N entries tile ONE film)", () => {
     assert.equal(ofClass(nodes, "MeliteUnload").length, MAX_COMPOSED_WINDOWS,
       "one boundary per window even at the ceiling (the memory law holds at scale)");
     assert.equal(REFINE_2X_OOM_FRAMES, 141, "and the per-window ceiling stays the measured 141 f");
-    assert.equal(Math.round(REFINE_DEFAULT_CLIP_SECONDS * FPS), 90, "the default window stays the measured-green 90 f");
+    assert.equal(Math.round(REFINE_DEFAULT_CLIP_SECONDS * FPS), 56, "the default window is the DESIGN 56 f (the 2 s class's rung — W-7: the door teaches the carry-joined design, not the widest-green workaround)");
+    assert.equal(tokenExactCarry(Math.round(REFINE_DEFAULT_CLIP_SECONDS * FPS)), true, "the design default lands on the engine's 22+17k token grid, so the default window can carry");
   });
 
   it("ARM B6 — PER-ENTRY SEATS STAY PER-ENTRY: on the abutting concat face dials ride verbatim per row, a missing seat refuses at the window's own door", () => {
@@ -234,6 +236,30 @@ describe("the refine bag carrier (GAPS-19: N entries tile ONE film)", () => {
       /a 144 f window at 2x — the 2x pass was measured OOM at 141 f/,
       "the ceiling belongs to the WINDOW, whichever door composed it",
     );
+  });
+
+  it("ARM B7b — W-7: the ceiling refusal teaches the DESIGN window, never the workaround's numbers", () => {
+    // FRICTION_3 W-7 (operator: "for the refine flow it is two
+    // seconds, not five bro"): the door taught the hard-cut
+    // workaround's numbers (90 f green default, cut to 5.88 s) as the
+    // law. The design is the ~2 s window joined by the context carry,
+    // so the refusal names the design window and never the 5.88 s
+    // workaround number.
+    let voice = "";
+    try {
+      renderH3RefineBag(
+        [entry(), entry({ start_seconds: 26 / 24, clip_seconds: 6 })], {}, facts, new GraphBuilder(), "run-b7b",
+      );
+    } catch (e) {
+      voice = (e as Error).message;
+    }
+    assert.match(voice, /a 144 f window at 2x — the 2x pass was measured OOM at 141 f/,
+      "the refusal still fires at the measured ceiling");
+    assert.match(voice,
+      /design is the ~2 s window \(2\.33 s = 56 f, the 2 s class's rung of the 22\+17k token grid\)/,
+      "the refusal teaches the carry-joined design window by name and rung");
+    assert.ok(!voice.includes("5.88"),
+      "the workaround's cut-to number is gone from the door's voice");
   });
 
   it("ARM B8 — THE EMPTY BAG REFUSES LOUD: no windows is a compose-wiring bug, never a doc to fix", () => {
