@@ -24,8 +24,8 @@ describe('the hermetic anchor (windows class #1)', () => {
       import.meta.url,
       // the exact windows shape that burned CI (file:///D:/…):
       // the old slice minted `/D:/…` here and resolve doubled it.
-      'file:///D:/a/melite/melite/tests/helpers/hermetic-engine.ts',
-      'file:///C:/Users/RUNNER~1/work/x/tests/helpers/hermetic-engine.ts',
+      'file:///D:/repo/tests/helpers/hermetic-engine.ts',
+      'file:///C:/Users/runner/work/repo/tests/helpers/hermetic-engine.ts',
     ]) {
       const p = hermeticDocPathFor(url)
       expect(p).not.toMatch(/[A-Za-z]:[\\/].*[A-Za-z]:[\\/]/)
