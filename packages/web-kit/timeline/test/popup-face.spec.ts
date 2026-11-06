@@ -114,6 +114,6 @@ test('the popup law has ONE owner, and every select site pins the scheme', () =>
     }
   }
   expect(owners.length, `the option rule must be declared exactly ONCE (found ${owners.length}: ${owners.join(', ')})`).toBe(1)
-  expect(owners[0] ?? '').toContain('packages/web/card-base/')
+  expect((owners[0] ?? '').replace(/\\/g, '/')).toContain('packages/web/card-base/')
   expect(missingScheme, `select sites missing the scheme:\n${missingScheme.join('\n')}`).toEqual([])
 })
