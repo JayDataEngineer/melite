@@ -111,7 +111,7 @@ extensions:
     re-render. Pip: nothing beyond the ComfyUI base env
     (torch/safetensors/numpy/Pillow are core-provided).
 - name: Comfyui_Minimax_h3_latent_Upscaler-Plus
-  url: https://github.com/xmarre/Comfyui_Minimax_h3_latent_Upscaler-Plus
+  url: https://github.com/JayDataEngineer/Comfyui_Minimax_h3_latent_Upscaler-Plus
   # 6364924 re-pin 2026-11-15 (F65): the refine handoff's parse call
   # unwraps carry_prefix_frames through _value_at before the CSV parse —
   # INPUT_IS_LIST wraps EVERY input as a list, so the node's own default
@@ -129,7 +129,7 @@ extensions:
   # Prior pin 63649245 (dead upstream 2026-11-15: xmarre force-pushed
   # past it; the comfyui-push-gate's live probe caught it); prior pin
   # e26faa9 (2026-11-14, the F62 close-out re-pin).
-  ref: fc58fb80246bc58383929d21e78f54cf87d6507a
+  ref: b0f73789b063733e9569fed63470bed6071ba64f
   required: true
   desc: >-
     H3 learned-latent upscale pack (the SOTA plan's P2 pick over
