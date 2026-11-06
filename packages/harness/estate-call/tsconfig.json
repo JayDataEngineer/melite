@@ -80,7 +80,6 @@
         "@melite/audio-tts/tool": ["./../../audio/tts/src/tool.ts"],
         "@melite/estate-models": ["./../../estate/models/src/index.ts"],
         "@melite/estate-provisioning": ["./../../estate/provisioning/src/index.ts"],
-        "@melite/estate-provisioning/types": ["./../../estate/provisioning/src/types.ts"],
         "@melite/estate-call": ["./src/estateCall.ts"],
         "@melite/estate-call/cardTool": ["./src/cardTool.ts"],
         "@melite/estate-call/executorHarness": ["./src/executorHarness.ts"],

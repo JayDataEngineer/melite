@@ -120,7 +120,6 @@
         "@melite/estate-media/types": ["./../../estate/media/src/types.ts"],
         "@melite/estate-models": ["./../../estate/models/src/index.ts"],
         "@melite/estate-provisioning": ["./../../estate/provisioning/src/index.ts"],
-        "@melite/estate-provisioning/types": ["./../../estate/provisioning/src/types.ts"],
         "@melite/estate-runs": ["./../../estate/runs/src/index.ts"],
         "@melite/estate-runs/types": ["./../../estate/runs/src/types.ts"],
         "@melite/estate-call": ["./../../harness/estate-call/src/estateCall.ts"],

@@ -111,7 +111,6 @@
         "@melite/estate-media/remote": ["./../../estate/media/src/typert.remote-client.d.ts"],
         "@melite/estate-models": ["./../../estate/models/src/index.ts"],
         "@melite/estate-provisioning": ["./../../estate/provisioning/src/index.ts"],
-        "@melite/estate-provisioning/types": ["./../../estate/provisioning/src/types.ts"],
         "@melite/estate-runs": ["./../../estate/runs/src/index.ts"],
         "@melite/estate-runs/remote": ["./../../estate/runs/src/typert.remote-client.d.ts"],
         "@melite/estate-runs/types": ["./../../estate/runs/src/types.ts"],
