@@ -1198,14 +1198,12 @@ export function meliteConstruct(
       + 'Verbs: read (the state — '
       + 'start here before patch/rewire/remove_stage (verbs that address an existing stage need its state); add_stage needs NO prior read — it mints its own id and grows the bench; a stage that has run carries last_run {run_id, status, artifacts} — null + runs '
       + '{checked, total, matched} when the draft has no run in the window; view a run_id with melite_view, '
-      + 'chain it with {stage, output}) | load (replace stages wholesale — DESTRUCTIVE on THE CONVERSATION\'S '
-      + 'SHARED BENCH: this is the bench the user watches in their cards tab, and overwrite:true replaces whatever '
-      + 'was there — load a throwaway TEST/scratch flow only when replacing is the intent, never to "try" a shape; '
-      + 'refused on a non-empty bench unless overwrite:true confirms it; prefer add_stage to grow the bench) | patch {stage, params} | archive/unarchive {stage} (the F11 spent-stage mark: the row stays with its result, every run face skips it) | add_stage {card, params?, '
+      + 'chain it with {stage, output}) | load (replace stages wholesale — the prior bench is one undo away, and every run already taken keeps its outputs and its stage list, restorable from the media tab; '
+      + 'refused on a non-empty bench unless overwrite:true confirms the replacement; prefer add_stage to grow the bench) | patch {stage, params} | archive/unarchive {stage} (archive keeps the row with its result, every run face skips it; unarchive restores it) | add_stage {card, params?, '
       + 'inputs?, expected?, outputs?} (inputs wire PRIOR STAGES through the card\'s declared ports, never files: '
       + 'inputs {image1: {stage: "s_0", output: "default"}} AND params {image1: "$image1"} — the $spell is the CHANNEL REFERENCE ONLY: it resolves at run time to that wired stage output or a request initial the USER attaches at the Run press, nothing else; for a REAL FILE on disk use its asset path from melite_view, never a $spell; to chain '
       + 'the last generation, bind its stage, never hunt its artifact on disk; kinds derive from the card\'s ports — '
-      + 'state expected only to override, outputs only for custom channels) | remove_stage {stage} | clear (EVERY stage out in one rev; undo restores all — the cure when the bench itself is the wound) | floor {stage?} (THE GPU ECONOMY VERB: clamps every resolution-group param to the card\'s DECLARED minimum — one stage when {stage} names one, every stage when absent; floors derive live off the card\'s own schema, never hand-baked numbers, every write is voiced {param, from, to}, absent params are SET to the floor (defaults are not assumed minimal), values at/below it stay untouched, a card declaring no resolution group says so honestly, and the whole walk lands as ONE write — a refusal anywhere leaves the bench byte-identical) | rewire {stage, input, from?} (from is {stage, output} | '
+      + 'state expected only to override, outputs only for custom channels) | remove_stage {stage} | clear (EVERY stage out in one rev; undo restores all) | floor {stage?} (clamps every resolution-group param to the card\'s DECLARED minimum — one stage when {stage} names one, every stage when absent; floors derive live off the card\'s own schema, never hand-baked numbers; every write is voiced {param, from, to}; absent params are SET to the floor (defaults are not assumed minimal); values at/below it stay untouched; a card declaring no resolution group says so; and the whole walk lands as ONE write — a refusal anywhere leaves the bench unchanged) | rewire {stage, input, from?} (from is {stage, output} | '
       + '{initial} — same law: stage bindings, never paths) | undo {n?, author?} | validate (compile '
       + "check, no GPU). Mutations take expect_rev from your last read — or omit it: the tool fills the fresh rev itself (one bounded read). A STATED rev asserts the state you saw: a bench that moved under it refuses 409 with current_rev — re-read and re-apply, it never lands silently. An omitted rev rebases once behind a fill race. No ids anywhere: the bench is the one shared state.",
     parameters: {
@@ -1213,7 +1211,7 @@ export function meliteConstruct(
         type: 'string',
         required: true,
         enum: [...CONSTRUCT_VERBS],
-        description: 'REQUIRED — the schema refuses a call without it, and no payload ever derives one (a WRITE is never guessed; slice 5, the agent-flow rework). ' + CONSTRUCT_VERBS.join(' | ') + '.',
+        description: 'REQUIRED — the schema refuses a call without it, and no payload ever derives one (a WRITE is never guessed). ' + CONSTRUCT_VERBS.join(' | ') + '.',
       },
       stage: { type: 'string', description: 'patch/remove_stage/rewire: the stage id.' },
       card: { type: 'string', description: 'add_stage: the card id (display + provenance hint).' },
@@ -1227,7 +1225,7 @@ export function meliteConstruct(
       params: {
         type: 'object', additionalProperties: true,
         description: 'patch (merge onto the stage) | add_stage | load single-stage shorthand. '
-          + 'A null value UNSETS its key (the drafts door\'s JSON Merge Patch law, both doors one law since 2026-09-24 — '
+          + 'A null value UNSETS its key (the drafts door\'s JSON Merge Patch law — '
           + 'patch {voice_name: null} clears it; no remove_stage dance). '
           + 'MODEL SWITCH LAW: a stage\'s variant/quant belong to its model — switching the model seat (the stage\'s top-level `model`; tts-family cards read it from params.model — the loaded card doc names its seat) without '
           + 'co-stating the new family\'s variant (melite_load names each family\'s variants) composes a refusal '
@@ -1295,11 +1293,11 @@ export function meliteConstruct(
           error: { type: 'string', description: 'Refusal text (ok: false).' },
           landing: {
             type: 'string',
-            description: 'The write\'s landing state (slice 5): landed_and_compiling | landed_not_compiling (the stage is ON the bench; the compile refusal rides below) | ambiguous_no_write (the write is UNPROVEN — re-read before retrying). Absent when the verb wrote no stage.',
+            description: 'The write\'s landing state: landed_and_compiling | landed_not_compiling (the stage is ON the bench; the compile refusal rides below) | ambiguous_no_write (the write is UNPROVEN — re-read before retrying). Absent when the verb wrote no stage.',
           },
           applied_derivations: {
             type: 'array',
-            description: 'Every value the door DERIVED before writing ({param, from, to, rule}) — the agent sees the state the bench actually stores (slice 5\'s first-door wire grammar: array-lane restores and the card\'s own craft spelling).',
+            description: 'Every value the door DERIVED before writing ({param, from, to, rule}) — the agent sees the state the bench actually stores.',
           },
           remedy: {
             type: 'object', additionalProperties: true,
