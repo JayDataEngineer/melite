@@ -905,8 +905,19 @@ test('the real-usage combination sweep — derived roster, 1:1 gestures, zero si
         // rides the same coordinate.
         const landed = await sweepAxis(page, group, tag, combo.model?.id ?? row.card)
         if (landed !== null) axisPicks[group.toLowerCase()] = landed
-        const ghosts = await ghostKnobs(page, combo.model?.id ?? row.card)
-        expect(ghosts, `${tag}: ghost knobs after the ${group} sweep (the P4 class — the UI did not follow the arrival)`).toEqual([])
+        // THE GHOST VERDICT IS POLLED, never instant (the image-edit
+        // ghost settle, owed 2026-11-15 — the same law the model
+        // switch's ghost census got, bcb6f2571): the axis face poll
+        // inside sweepAxis can pass on the picked row while the
+        // spec-driven unmount of the departed lane's seats (the
+        // image-edit Recipe seat) still rides the refetch — a real
+        // P4 ghost still fails, at the timeout, with the same
+        // verdict; an async settle greens without weakening the law.
+        const sweepFamily = combo.model?.id ?? row.card
+        await expect.poll(async () => await ghostKnobs(page, sweepFamily), {
+          timeout: 10_000,
+          message: `${tag}: ghost knobs after the ${group} sweep (the P4 class — the UI did not follow the arrival)`,
+        }).toEqual([])
       }
 
       // ASSERT CLASS (a) — arm 4, THE WRITE FACE (the 2026-11-16
