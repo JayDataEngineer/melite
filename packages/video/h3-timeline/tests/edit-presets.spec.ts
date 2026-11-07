@@ -239,14 +239,16 @@ describe("the edit bag's preset chips (stage 3: named cells over the ONE schema)
     assert.equal(vw("mannequin"), "reference=still+mannequin", "the mannequin rides the swap anchors");
     assert.equal(vw("refine"), "chain_run=null", "the refine switch stands down under the upscale posture");
     assert.equal(vw("continuation"), "chain_run=null", "the continuation switch stands down under the upscale posture");
-    // THE WIRE: the served body carries EVERY declaration verbatim -
-    // the GUI's submenus ride the served spec, never a client guess.
-    // (F4, the front-end evasion audit 2026-11-07) this walk judged
-    // ONE of the eleven guards (scale) while the registry narrated
-    // "the wire serves them"; the served walk is the SAME loop over
-    // the SAME eleven names now, so a projection that strips
-    // visible_when from the mod-kind fields reds eleven arms, not
-    // one - the silent-shrink class stays dead.
+    assert.equal(vw("segment_crf"), "chain_run!=null", "the HQ segment quality rides the upscale posture (B-2's twelfth guard)");
+    // THE DERIVED CENSUS (the modsystem wall-coverage audit 2026-11-16,
+    // the census-lie finding): the walk below rode a hand-listed eleven
+    // while the kind declared TWELVE — segment_crf (chain_run!=null,
+    // card.ts B-2) red nothing when stripped. The loop is DERIVED now:
+    // every field of the edit kind that declares visible_when must be
+    // served verbatim — a thirteenth guard reds by name, and a
+    // projection that strips visible_when reds one arm per guard.
+    // (F4, the front-end evasion audit 2026-11-07) the silent-shrink
+    // class stays dead.
     const body = specBody(theService(), await loadCardDefs(), {
       card: "h3-timeline", service: "h3-timeline", model: "h3-timeline",
     });
@@ -254,20 +256,11 @@ describe("the edit bag's preset chips (stage 3: named cells over the ONE schema)
     const servedFields = ((served as unknown as { fields?: Array<Record<string, unknown>> }).fields ?? []);
     const servedVw = (name: string): string | undefined =>
       (servedFields.find((f) => f.name === name) as { visible_when?: string } | undefined)?.visible_when;
-    for (const [name, want] of [
-      ["scale", vw("scale")],
-      ["extend_seconds", vw("extend_seconds")],
-      ["region_prompt", vw("region_prompt")],
-      ["detection_threshold", vw("detection_threshold")],
-      ["mask", vw("mask")],
-      ["mask_grow", vw("mask_grow")],
-      ["mask_blur", vw("mask_blur")],
-      ["still", vw("still")],
-      ["mannequin", vw("mannequin")],
-      ["refine", vw("refine")],
-      ["continuation", vw("continuation")],
-    ] as Array<[string, string | undefined]>) {
-      assert.equal(servedVw(name), want, `the wire serves the '${name}' submenu law verbatim`);
+    const guards = fields.filter((f) => (f as { visible_when?: string }).visible_when !== undefined);
+    assert.ok(guards.length >= 12, `the edit kind declares its guards (found ${guards.length}, the floor is the twelve of B-2)`);
+    for (const f of guards) {
+      assert.equal(servedVw(f.name), (f as { visible_when?: string }).visible_when,
+        `the wire serves the '${f.name}' submenu law verbatim`);
     }
   });
 
