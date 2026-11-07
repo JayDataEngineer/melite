@@ -13996,11 +13996,13 @@ window.__ModuleLoader__.load({
 		* vocabulary. Unknown extensions ride ('' matches every seat: the
 		* artifact's content truth is the door's, never the picker's). */
 		function urlKindOf(url) {
-			const u = url.toLowerCase();
-			if (/\.(mp4|webm|mov|mkv|avi|m4v)(\?|$)/.test(u)) return "video";
-			if (/\.(png|jpe?g|webp|gif|bmp)(\?|$)/.test(u)) return "image";
-			if (/\.(glb|gltf)(\?|$)/.test(u)) return "mesh";
-			return "";
+			const withoutQuery = url.split(/[?#]/, 1)[0];
+			switch (mediaKindOf(withoutQuery)) {
+				case "video": return "video";
+				case "image": return "image";
+				case "model": return "mesh";
+				default: return "";
+			}
 		}
 		/** THE SEAT'S FILE-KIND LAW (the modleaf-add journey audit,
 		* 2026-11-16 — the drop seam had NO judge): the OS dialog's accept
@@ -14018,6 +14020,27 @@ window.__ModuleLoader__.load({
 			if (fileKind === "" || fileKind === seatKind) return null;
 			return t("kindRefusal", {
 				name: file.name,
+				seatKind,
+				fileKind
+			});
+		}
+		/** THE SEAT'S ASSET-KIND LAW (the same journey audit's (b) debt,
+		*  2026-11-16): a dragged asset row (the media bar / a run row)
+		* carries a URL, not a File — it entered onAsset with NO judge and a
+		* wrong-kind URL landed AS THE VALUE. Same derivation as the file
+		* door (seatFileKindOf × the estate's vocabulary), same refusal
+		* face, one dictionary key. An unknown extension rides — the from-
+		* flow law verbatim: the artifact's content truth is the door's.
+		* @param f the slot-shaped field being offered the URL
+		* @param url the offered asset URL (drag payload or picker row)
+		* @returns null when the kind matches; the refusal sentence otherwise */
+		function assetKindRefusal(f, url) {
+			const seatKind = seatFileKindOf(f);
+			if (seatKind === "all") return null;
+			const fileKind = urlKindOf(url);
+			if (fileKind === "" || fileKind === seatKind) return null;
+			return t("kindRefusal", {
+				name: url.slice(url.lastIndexOf("/") + 1),
 				seatKind,
 				fileKind
 			});
@@ -14138,6 +14161,14 @@ window.__ModuleLoader__.load({
 							onFile(f, file);
 						},
 						onAsset: (url) => {
+							const refusal = assetKindRefusal(f, url);
+							if (refusal !== null) {
+								setUploadErr((m) => ({
+									...m,
+									[f.name]: refusal
+								}));
+								return;
+							}
 							setUploadErr((m) => {
 								const n = { ...m };
 								delete n[f.name];
@@ -14263,7 +14294,16 @@ window.__ModuleLoader__.load({
 				};
 				const pick = (url) => {
 					setModalAt(null);
-					if (url !== "") onEdit(f.name, url);
+					if (url === "") return;
+					const refusal = assetKindRefusal(f, url);
+					if (refusal !== null) {
+						setUploadErr((m) => ({
+							...m,
+							[f.name]: refusal
+						}));
+						return;
+					}
+					onEdit(f.name, url);
 				};
 				const fallback = (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
 					open: true,
@@ -19308,6 +19348,7 @@ window.__ModuleLoader__.load({
 		exports.applyWireframe = applyWireframe;
 		exports.armEstateRemoteLazyBind = armEstateRemoteLazyBind;
 		exports.assertFormSpecDoc = assertFormSpecDoc;
+		exports.assetKindRefusal = assetKindRefusal;
 		exports.attachedImageOf = attachedImageOf;
 		exports.attachedMeshOf = attachedMeshOf;
 		exports.autoFitToHeight = autoFitToHeight;

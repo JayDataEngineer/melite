@@ -23,6 +23,17 @@ export declare function urlKindOf(url: string): 'video' | 'image' | 'mesh' | '';
  * @param file the offered file (OS dialog or drop)
  * @returns null when the kind matches; the refusal sentence otherwise */
 export declare function fileKindRefusal(f: SpecField, file: File): string | null;
+/** THE SEAT'S ASSET-KIND LAW (the same journey audit's (b) debt,
+ *  2026-11-16): a dragged asset row (the media bar / a run row)
+ * carries a URL, not a File — it entered onAsset with NO judge and a
+ * wrong-kind URL landed AS THE VALUE. Same derivation as the file
+ * door (seatFileKindOf × the estate's vocabulary), same refusal
+ * face, one dictionary key. An unknown extension rides — the from-
+ * flow law verbatim: the artifact's content truth is the door's.
+ * @param f the slot-shaped field being offered the URL
+ * @param url the offered asset URL (drag payload or picker row)
+ * @returns null when the kind matches; the refusal sentence otherwise */
+export declare function assetKindRefusal(f: SpecField, url: string): string | null;
 /** THE OS-DIALOG ACCEPT, derived per field (primitive ③): mesh rows
  *  offer the GLB pair; video-hinted rows offer the video formats
  *  (the same media hint the picker rides); everything else keeps

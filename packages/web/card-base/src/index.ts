@@ -41,7 +41,7 @@ export * from './spec.ts'
 // wire threads — one derivation for the OS accept, the drop judge,
 // and candidatesFor. Selective re-export (not the barrel's *): the
 // provider's hook stays internal to the trio.
-export { fileKindRefusal, seatFileKindOf, urlKindOf } from './square-provider.tsx'
+export { assetKindRefusal, fileKindRefusal, seatFileKindOf, urlKindOf } from './square-provider.tsx'
 export * from './rejection-voice.ts'
 export * from './layout.tsx'
 export { WirePickerModal, type WirePickerModalProps } from './wirePicker.tsx'

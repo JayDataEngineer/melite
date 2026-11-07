@@ -18,7 +18,7 @@ import "../../../../tests/helpers/boot-models.ts";
 import { describe, expect, it, vi } from "vitest";
 import assert from "node:assert/strict";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { ModifiersSection, fileKindRefusal, seatFileKindOf, urlKindOf } from "@melite/card-base/client";
+import { ModifiersSection, ASSET_DRAG_MIME, assetKindRefusal, fileKindRefusal, seatFileKindOf, urlKindOf } from "@melite/card-base/client";
 import { specBody } from "../../../harness/melite-tools/src/discovery.ts";
 import { loadCardDefs } from "@melite/comfyui-cordis";
 import { theService } from "@melite/comfyui-cordis";
@@ -45,6 +45,30 @@ describe("the seat's media-kind discipline (the drop judge + the from-flow filte
     assert.equal(urlKindOf("runs/r1/frames/f.png"), "image");
     assert.equal(urlKindOf("runs/r1/meshes/m.glb"), "mesh");
     assert.equal(urlKindOf("runs/r1/blobs/b.bin"), "", "unknown extensions ride");
+    // THE ESTATE'S OWN VOCABULARY, NO PRIVATE REGEX (the (c) debt):
+    // svg and avif were images to mediaVocab and '' to the private
+    // extension list — an avif artifact was INVISIBLE to an image
+    // seat's from-flow rows. Every gallery extra classifies through
+    // the one classifier now.
+    assert.equal(urlKindOf("runs/r1/img/a.avif"), "image", "avif is an image to the estate");
+    assert.equal(urlKindOf("runs/r1/img/i.svg"), "image", "svg is an image to the estate");
+    assert.equal(urlKindOf("runs/r1/img/b.bmp"), "image", "bmp is an image to the estate");
+    assert.equal(urlKindOf("runs/r1/clips/take.mkv"), "video", "the matroska container is a video");
+    assert.equal(urlKindOf("runs/r1/clips/take.m4v"), "video");
+    assert.equal(urlKindOf("runs/r1/clips/take.avi"), "video");
+    assert.equal(urlKindOf("runs/r1/audio/vo.mp3"), "", "audio rides (the door owns content truth)");
+    assert.equal(urlKindOf("runs/r1/clips/clip.mp4?tok=1"), "video", "query strips before the classifier");
+    assert.equal(urlKindOf("runs/r1/tags/tags.txt"), "", "text rides");
+    // the URL judge is the file judge's twin (the (b) debt): a keyed
+    // seat refuses a wrong-kind URL with the same sentence shape
+    assert.equal(assetKindRefusal(imgSeat, "runs/r1/clips/take.mp4") !== null, true,
+      "the image seat refuses a dragged .mp4 row");
+    assert.equal(assetKindRefusal(imgSeat, "runs/r1/frames/mask.png"), null,
+      "the image seat takes a dragged .png row");
+    assert.equal(assetKindRefusal({ name: "any", type: "file" } as never, "runs/r1/clips/take.mp4"), null,
+      "the unhinted seat takes any dragged row (the library law)");
+    assert.equal(assetKindRefusal(imgSeat, "runs/r1/blobs/b.bin"), null,
+      "an unknown-extension row rides (the door owns content truth)");
     assert.equal(seatFileKindOf({ name: "s", type: "file", media: "video" } as never), "video");
     assert.equal(seatFileKindOf({ name: "s", type: "file" } as never), "all");
   });
@@ -140,5 +164,132 @@ describe("the seat's media-kind discipline (the drop judge + the from-flow filte
       "the image seat is never offered the staged .mp4 — the audit's exact burn");
     assert.deepEqual(candidatesFor({ type: "file" }).map((c) => c.id), ["clip.mp4", "frame.png", "mesh.glb"],
       "the unhinted seat keeps the whole library");
+  });
+
+  // THE (b) DEBT — the dragged asset row (URL payload, not a File):
+  // it entered onAsset with NO judge and a wrong-kind URL landed AS
+  // THE VALUE. Same law as the file door, same refusal face.
+  it("ARM 4 — THE DRAGGED ASSET REFUSES BY KIND ON THE REAL LEAF: a .mp4 row dropped on the mask seat never lands", async () => {
+    const body = specBody(theService(), await loadCardDefs(), {
+      card: "h3-timeline", service: "h3-timeline", model: "h3-timeline",
+    });
+    const kinds = ((body.features as Record<string, unknown> | undefined)?.modifiers ?? []) as never[];
+    vi.stubGlobal("fetch", (url: unknown) => {
+      const u = typeof url === "string" ? url : String((url as { url?: string })?.url ?? "")
+      if (u.startsWith("/v1/form-spec")) {
+        return Promise.resolve(new Response(JSON.stringify(body), { headers: { "content-type": "application/json" } }))
+      }
+      return Promise.resolve(new Response(JSON.stringify({ error: "no door" }), { status: 404 }))
+    });
+    const edits: Array<[string, unknown]> = [];
+    render(
+      <ModifiersSection
+        kinds={kinds}
+        values={{}}
+        onEdit={(n, v) => { edits.push([n, v]) }}
+        onPatch={() => {}}
+        candidates={[]}
+        loadMedia={() => Promise.resolve([])}
+      />,
+    );
+    fireEvent.click(document.querySelector('[data-subcard-add="mod"]') as Element)
+    fireEvent.click(await screen.findByText("Video edit"))
+    fireEvent.click(await screen.findByRole("button", { name: "Static mask pass" }))
+    await screen.findByRole("button", { name: "Add" })
+    const maskSeat = (): HTMLElement | undefined =>
+      Array.from(document.querySelectorAll<HTMLElement>("[data-slot-square]"))
+        .find((s) => (s.getAttribute("aria-label") ?? "").toLowerCase().includes("mask"))
+    assert.ok(maskSeat() !== undefined, "the static-mask leaf carries the image (mask) seat")
+    const editsBefore = edits.length
+    // THE WRONG KIND: a run row's .mp4 payload dropped on the image seat
+    fireEvent.drop(maskSeat() as Element, {
+      dataTransfer: {
+        getData: (mime: string) => mime === ASSET_DRAG_MIME ? JSON.stringify({ url: "runs/r1/clips/take.mp4" }) : "",
+        files: [],
+      },
+    })
+    await waitFor(() => {
+      const face = document.querySelector('[data-slot-error="mask"]')
+      assert.ok(face !== null, "the dragged-row refusal face renders under the mask seat")
+      assert.ok((face.textContent ?? "").includes("take.mp4 is a video file"),
+        `the refusal names the dragged artifact and its kind — got: ${String(face.textContent)}`)
+    })
+    assert.equal(edits.length, editsBefore, "the wrong-kind dragged row NEVER lands as a value")
+    // THE RIGHT KIND RIDES: the same drag with a .png payload commits
+    // — the seat's held-value face carries the URL (the leaf drafts
+    // internally, so the SEAT's own face is the observable)
+    fireEvent.drop(maskSeat() as Element, {
+      dataTransfer: {
+        getData: (mime: string) => mime === ASSET_DRAG_MIME ? JSON.stringify({ url: "runs/r1/frames/mask.png" }) : "",
+        files: [],
+      },
+    })
+    await waitFor(() => assert.ok(
+      (maskSeat()?.textContent ?? "").includes("runs/r1/frames/mask.png"),
+      "the right-kind dragged row lands on the mask seat"))
+  });
+
+  // EVERY DOOR (the journey's done-when): a card that threads NO
+  // candidatesFor serves the picker the RAW candidate list — the
+  // pick door answers the same law the drag and file doors answer.
+  it("ARM 5 — THE PICKER DOOR: an unfiltered candidate list never lands a wrong-kind row on a keyed seat", async () => {
+    const body = specBody(theService(), await loadCardDefs(), {
+      card: "h3-timeline", service: "h3-timeline", model: "h3-timeline",
+    });
+    const kinds = ((body.features as Record<string, unknown> | undefined)?.modifiers ?? []) as never[];
+    vi.stubGlobal("fetch", (url: unknown) => {
+      const u = typeof url === "string" ? url : String((url as { url?: string })?.url ?? "")
+      if (u.startsWith("/v1/form-spec")) {
+        return Promise.resolve(new Response(JSON.stringify(body), { headers: { "content-type": "application/json" } }))
+      }
+      return Promise.resolve(new Response(JSON.stringify({ error: "no door" }), { status: 404 }))
+    });
+    const edits: Array<[string, unknown]> = [];
+    render(
+      <ModifiersSection
+        kinds={kinds}
+        values={{}}
+        onEdit={(n, v) => { edits.push([n, v]) }}
+        onPatch={() => {}}
+        // NO candidatesFor: the raw rows, exactly the unfiltered card
+        candidates={[
+          { id: "take.mp4", label: "take.mp4", url: "runs/r1/clips/take.mp4" },
+          { id: "mask.png", label: "mask.png", url: "runs/r1/frames/mask.png" },
+        ]}
+        loadMedia={() => Promise.resolve([])}
+      />,
+    );
+    fireEvent.click(document.querySelector('[data-subcard-add="mod"]') as Element)
+    fireEvent.click(await screen.findByText("Video edit"))
+    fireEvent.click(await screen.findByRole("button", { name: "Static mask pass" }))
+    await screen.findByRole("button", { name: "Add" })
+    const maskSeat = (): HTMLElement | undefined =>
+      Array.from(document.querySelectorAll<HTMLElement>("[data-slot-square]"))
+        .find((s) => (s.getAttribute("aria-label") ?? "").toLowerCase().includes("mask"))
+    assert.ok(maskSeat() !== undefined, "the static-mask leaf carries the image (mask) seat")
+    fireEvent.click(maskSeat() as Element)
+    fireEvent.click(await screen.findByText("From flow"))
+    const editsBefore = edits.length
+    // THE WRONG KIND: the raw list offers the .mp4 row; clicking it refuses
+    const wrongRow = (await screen.findAllByTestId("source-pick-row"))
+      .find((r) => (r.textContent ?? "").includes("take.mp4"))
+    assert.ok(wrongRow !== undefined, "the unfiltered list offers the .mp4 row")
+    fireEvent.click(wrongRow)
+    await waitFor(() => {
+      const face = document.querySelector('[data-slot-error="mask"]')
+      assert.ok(face !== null && (face.textContent ?? "").includes("take.mp4 is a video file"),
+        `the pick refusal renders under the mask seat — got: ${String(face?.textContent ?? null)}`)
+    })
+    assert.equal(edits.length, editsBefore, "the wrong-kind pick NEVER lands as a value")
+    // THE RIGHT KIND RIDES: re-open and pick the .png row
+    fireEvent.click(maskSeat() as Element)
+    fireEvent.click(await screen.findByText("From flow"))
+    const rows = await screen.findAllByTestId("source-pick-row")
+    const pngRow = rows.find((r) => (r.textContent ?? "").includes("mask.png"))
+    assert.ok(pngRow !== undefined, "the right-kind row is offered")
+    fireEvent.click(pngRow)
+    await waitFor(() => assert.ok(
+      (maskSeat()?.textContent ?? "").includes("runs/r1/frames/mask.png"),
+      "the right-kind pick lands on the mask seat"))
   });
 });

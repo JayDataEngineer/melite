@@ -4,6 +4,7 @@ import { createElement as h, Fragment, useCallback, useEffect, useRef, useState 
 import { Menu, Modal } from '@deepseek-ai/dsh-client-ui-primitives';
 import { DEFAULT_SQUARE_ACCEPT, MESH_SQUARE_ACCEPT, VIDEO_SQUARE_ACCEPT, isImageUrl, isVideoUrl, } from "./square.js";
 import { readAsDataURL } from "./chrome.js";
+import { mediaKindOf } from '@melite/contracts/mediaKinds';
 import { uploadInputFile } from "./wire.js";
 import { rejectionVoice } from "./rejection-voice.js";
 import { t } from "./locales/square.js";
@@ -48,14 +49,18 @@ export function seatFileKindOf(f) {
  * vocabulary. Unknown extensions ride ('' matches every seat: the
  * artifact's content truth is the door's, never the picker's). */
 export function urlKindOf(url) {
-    const u = url.toLowerCase();
-    if (/\.(mp4|webm|mov|mkv|avi|m4v)(\?|$)/.test(u))
-        return 'video';
-    if (/\.(png|jpe?g|webp|gif|bmp)(\?|$)/.test(u))
-        return 'image';
-    if (/\.(glb|gltf)(\?|$)/.test(u))
-        return 'mesh';
-    return '';
+    // THE ESTATE'S OWN VOCABULARY (2026-11-16: the private extension
+    // regex had already drifted — svg and avif were images to the
+    // estate and '' to the picker, so an avif artifact was INVISIBLE
+    // to an image seat's from-flow rows). Query and fragment strip
+    // like every other vocabulary seat.
+    const withoutQuery = url.split(/[?#]/, 1)[0];
+    switch (mediaKindOf(withoutQuery)) {
+        case 'video': return 'video';
+        case 'image': return 'image';
+        case 'model': return 'mesh';
+        default: return '';
+    }
 }
 /** THE SEAT'S FILE-KIND LAW (the modleaf-add journey audit,
  * 2026-11-16 — the drop seam had NO judge): the OS dialog's accept
@@ -79,6 +84,26 @@ export function fileKindRefusal(f, file) {
     if (fileKind === '' || fileKind === seatKind)
         return null;
     return t('kindRefusal', { name: file.name, seatKind, fileKind });
+}
+/** THE SEAT'S ASSET-KIND LAW (the same journey audit's (b) debt,
+ *  2026-11-16): a dragged asset row (the media bar / a run row)
+ * carries a URL, not a File — it entered onAsset with NO judge and a
+ * wrong-kind URL landed AS THE VALUE. Same derivation as the file
+ * door (seatFileKindOf × the estate's vocabulary), same refusal
+ * face, one dictionary key. An unknown extension rides — the from-
+ * flow law verbatim: the artifact's content truth is the door's.
+ * @param f the slot-shaped field being offered the URL
+ * @param url the offered asset URL (drag payload or picker row)
+ * @returns null when the kind matches; the refusal sentence otherwise */
+export function assetKindRefusal(f, url) {
+    const seatKind = seatFileKindOf(f);
+    if (seatKind === 'all')
+        return null;
+    const fileKind = urlKindOf(url);
+    if (fileKind === '' || fileKind === seatKind)
+        return null;
+    const leaf = url.slice(url.lastIndexOf('/') + 1);
+    return t('kindRefusal', { name: leaf, seatKind, fileKind });
 }
 /** THE OS-DIALOG ACCEPT, derived per field (primitive ③): mesh rows
  *  offer the GLB pair; video-hinted rows offer the video formats
@@ -220,6 +245,14 @@ export function useSquareProvider(onEdit, wire) {
                 },
                 onFile: (file) => { void onFile(f, file); },
                 onAsset: (url) => {
+                    // THE ASSET-KIND JUDGE (assetKindRefusal): the drag's URL
+                    // answers the same law the file door answers — a wrong-kind
+                    // URL refuses into the face, never lands as the value.
+                    const refusal = assetKindRefusal(f, url);
+                    if (refusal !== null) {
+                        setUploadErr((m) => ({ ...m, [f.name]: refusal }));
+                        return;
+                    }
                     setUploadErr((m) => { const n = { ...m }; delete n[f.name]; return n; });
                     onEdit(f.name, url);
                 },
@@ -326,8 +359,19 @@ export function useSquareProvider(onEdit, wire) {
         const req = { mode: modalAt.mode, kind: mediaKindForField(f), field: f, candidates };
         const pick = (url) => {
             setModalAt(null);
-            if (url !== '')
-                onEdit(f.name, url);
+            if (url === '')
+                return;
+            // EVERY DOOR ANSWERS THE SAME LAW (the journey's done-when):
+            // the picker's rows are kind-filtered when the card threads
+            // candidatesFor, but an unfiltered candidate list (or a library
+            // row of a drifted kind) never lands as a value either — the
+            // refusal face, same as the drag and the file door.
+            const refusal = assetKindRefusal(f, url);
+            if (refusal !== null) {
+                setUploadErr((m) => ({ ...m, [f.name]: refusal }));
+                return;
+            }
+            onEdit(f.name, url);
         };
         const fallback = h(Modal, {
             open: true,
