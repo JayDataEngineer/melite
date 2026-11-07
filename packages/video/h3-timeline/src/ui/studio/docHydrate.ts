@@ -399,8 +399,12 @@ export function serializeLayerA(a: LayerA, base?: Record<string, unknown>): Reco
     sharpen_enabled: a.sharpen_enabled === true,
     interpolate_enabled: a.interpolate_enabled === true,
   }
+  // one typed record view for the roster-driven reads below (the
+  // anti-sniff law: one adjudicated cast at the seat, never one per
+  // loop — the rosters are string-keyed by contract)
+  const aRecord = a as unknown as Record<string, unknown>
   for (const k of LAYERA_EMIT_LOOP_KEYS) {
-    const v = (a as unknown as Record<string, unknown>)[k]
+    const v = aRecord[k]
     if (v !== undefined && v !== "") out[k] = v
   }
   // THE MOD BAGS RIDE AS STATED — DERIVED from the one roster
@@ -418,7 +422,7 @@ export function serializeLayerA(a: LayerA, base?: Record<string, unknown>): Reco
   // the write whole: no op, no save, no voice, the leaf already
   // closed.)
   for (const k of STUDIO_MOD_BAG_KEYS) {
-    const v = (a as unknown as Record<string, unknown>)[k]
+    const v = aRecord[k]
     if (v !== undefined) out[k] = v
   }
   // Super-Res rides only when ON (absent = off — the family default);

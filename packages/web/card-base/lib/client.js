@@ -16423,26 +16423,10 @@ window.__ModuleLoader__.load({
 				"data-subcard-row": "flow"
 			}, kinds.map((k) => {
 				const entries = entriesOf(k);
-				const presetRow = (k.presets ?? []).length > 0 ? (0, react.createElement)("div", {
-					key: k.param_key + ":presets",
-					className: card_module_css_default.modPresetRow,
-					"data-testid": "cb-mod-preset-row"
-				}, k.presets.map((p) => (0, react.createElement)(Tip, {
-					key: p.id,
-					tip: p.tooltip ?? p.label,
-					children: (0, react.createElement)("span", { "data-testid": "cb-mod-preset-" + p.id }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-						variant: "ghost",
-						"aria-pressed": leaf !== null && leaf.kind === k && leaf.preset === p.id,
-						onClick: () => {
-							if (entries.length === 0) openCreate(k, p.patch, p.id);
-							else openEdit(k, 0, p.patch, p.id);
-						}
-					}, p.label))
-				}))) : null;
-				if (entries.length === 0) return presetRow !== null ? [presetRow] : null;
+				if (entries.length === 0) return null;
 				const ordered = isOrdered(k);
 				const tileIds = modTileIds(k, entries);
-				return [...presetRow !== null ? [presetRow] : [], ...entries.map((entry, i) => {
+				return [...entries.map((entry, i) => {
 					const id = typeof entry[optionKeyOf(k)] === "string" ? entry[optionKeyOf(k)] : "";
 					const option = optionOf(k, id);
 					const scalar = scalarKeyOf(k);
@@ -16862,7 +16846,7 @@ window.__ModuleLoader__.load({
 				return (0, react.createElement)("div", {
 					className: card_module_css_default.modLeafFields,
 					"data-leaf-pane": "pick"
-				}, (0, react.createElement)("div", { className: card_module_css_default.modFieldPair }, (0, react.createElement)("div", { className: card_module_css_default.modField }, (0, react.createElement)("span", null, k.label), (0, react.createElement)(SpecMenuSelect, {
+				}, presetSwitches, (0, react.createElement)("div", { className: card_module_css_default.modFieldPair }, (0, react.createElement)("div", { className: card_module_css_default.modField }, (0, react.createElement)("span", null, k.label), (0, react.createElement)(SpecMenuSelect, {
 					label: k.label,
 					value: onDraft.draftOption,
 					rows: pickRows,

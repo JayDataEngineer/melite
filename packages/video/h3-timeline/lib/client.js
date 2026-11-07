@@ -5418,13 +5418,13 @@ window.__ModuleLoader__.load({
 					url: a.url
 				})),
 				candidatesFor: (f) => {
-					const want = seatFileKindOf(f);
+					const want = (0, _melite_card_base_client.seatFileKindOf)(f);
 					if (want === "all") return refArtifacts.map((a) => ({
 						id: a.name,
 						label: a.name,
 						url: a.url
 					}));
-					return refArtifacts.filter((a) => urlKindOf(a.url) === want).map((a) => ({
+					return refArtifacts.filter((a) => (0, _melite_card_base_client.urlKindOf)(a.url) === want).map((a) => ({
 						id: a.name,
 						label: a.name,
 						url: a.url
@@ -6889,12 +6889,13 @@ window.__ModuleLoader__.load({
 				sharpen_enabled: a.sharpen_enabled === true,
 				interpolate_enabled: a.interpolate_enabled === true
 			};
+			const aRecord = a;
 			for (const k of LAYERA_EMIT_LOOP_KEYS) {
-				const v = a[k];
+				const v = aRecord[k];
 				if (v !== void 0 && v !== "") out[k] = v;
 			}
 			for (const k of STUDIO_MOD_BAG_KEYS) {
-				const v = a[k];
+				const v = aRecord[k];
 				if (v !== void 0) out[k] = v;
 			}
 			if (a.sr_switch === true) {

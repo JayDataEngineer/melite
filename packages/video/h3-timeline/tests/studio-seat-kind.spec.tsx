@@ -39,7 +39,7 @@ describe("the seat's media-kind discipline (the drop judge + the from-flow filte
     // the unhinted file seat takes everything (the library law)
     assert.equal(fileKindRefusal({ name: "any", type: "file" } as never, VIDEO_FILE), null);
     // an untyped file rides (the door owns content truth)
-    assert.equal(fileKindRefusal(imgSeat, new File([1], "x.glb")), null);
+    assert.equal(fileKindRefusal(imgSeat, new File([new Uint8Array([1])], "x.glb")), null);
     // the URL vocabulary matches the seat vocabulary
     assert.equal(urlKindOf("runs/r1/clips/clip.mp4"), "video");
     assert.equal(urlKindOf("runs/r1/frames/f.png"), "image");
@@ -75,11 +75,17 @@ describe("the seat's media-kind discipline (the drop judge + the from-flow filte
         loadMedia={() => Promise.resolve([])}
       />,
     );
-    // open the edit leaf via the STATIC MASK preset (slice-5 face):
-    // its posture carries BOTH seats — the video-hinted source clip
-    // and the staged PNG mask (the image seat the judge must guard)
-    const chip = await screen.findByRole("button", { name: "Static mask pass" })
-    fireEvent.click(chip)
+    // open the edit leaf through THE ONE DOOR (+ box → kind picker),
+    // then the STATIC MASK posture switch INSIDE the leaf (the outer
+    // chip row is deleted, 2026-11-16): its posture carries BOTH seats
+    // — the video-hinted source clip and the staged PNG mask (the
+    // image seat the judge must guard)
+    const plusBox = document.querySelector('[data-subcard-add="mod"]')
+    assert.ok(plusBox, "the + box must render")
+    fireEvent.click(plusBox as Element)
+    fireEvent.click(await screen.findByText("Video edit"))
+    const posture = await screen.findByRole("button", { name: "Static mask pass" })
+    fireEvent.click(posture)
     await screen.findByRole("button", { name: "Add" })
     const squares = Array.from(document.querySelectorAll<HTMLElement>("[data-slot-square]"))
     assert.ok(squares.length >= 2, `the static-mask leaf renders both seats (found ${squares.length})`)

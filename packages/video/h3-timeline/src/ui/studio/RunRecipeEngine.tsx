@@ -22,7 +22,7 @@
  * row outside the generic seam's grid grammar; the Width/Height
  * injects own geometry, one surface).
  */
-import { CardForm, ControlRow, SectionLabel, SpecAtom, useResolvedForm, uploadLoraDoor, resolveFamilyKey, type SquareWire } from "@melite/card-base/client"
+import { CardForm, ControlRow, SectionLabel, SpecAtom, useResolvedForm, uploadLoraDoor, resolveFamilyKey, seatFileKindOf, urlKindOf, type SquareWire } from "@melite/card-base/client"
 import { axisUnset, composeValidate } from '@melite/card-base/client'
 import { resolvePickVerdictDoc } from "./pickVerdict.ts"
 import { fetchMediaLibrary } from '@melite/card-base/client'

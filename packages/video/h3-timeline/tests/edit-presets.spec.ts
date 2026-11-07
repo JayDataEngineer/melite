@@ -259,8 +259,9 @@ describe("the edit bag's preset chips (stage 3: named cells over the ONE schema)
     const guards = fields.filter((f) => (f as { visible_when?: string }).visible_when !== undefined);
     assert.ok(guards.length >= 12, `the edit kind declares its guards (found ${guards.length}, the floor is the twelve of B-2)`);
     for (const f of guards) {
-      assert.equal(servedVw(f.name), (f as { visible_when?: string }).visible_when,
-        `the wire serves the '${f.name}' submenu law verbatim`);
+      const name = (f as { name?: string }).name ?? ""
+      assert.equal(servedVw(name), (f as { visible_when?: string }).visible_when,
+        `the wire serves the '${name}' submenu law verbatim`)
     }
   });
 

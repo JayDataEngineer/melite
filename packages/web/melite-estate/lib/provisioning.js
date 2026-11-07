@@ -127,12 +127,13 @@ function laneBasename(path) {
  *  scalar members and registerFamily refuses every unknown or
  *  nested key at the door, so the old dict/array depth-recursion
  *  was unreachable under its only feeder and is deleted (the
- *  audit-2026-10-13 dead-code law).
+ *  audit-2026-10-13 dead-code law). The record itself is typed, not
+ *  guarded, for the same reason: the only feeder is the spread-fold
+ *  literal at the call site — the wall's own walker keeps its
+ *  guarded recursion because it walks ARBITRARY decl docs.
  *  @param value the folded lane-inputs record (family + variant + cell)
  *  @param into the basename set the walk fills */
 function collectModelPaths(value, into) {
-    if (value === null || typeof value !== "object" || Array.isArray(value))
-        return;
     for (const [k, v] of Object.entries(value)) {
         if (k === "model_path" && typeof v === "string" && v.trim() !== "") {
             into.add(laneBasename(v.trim()));

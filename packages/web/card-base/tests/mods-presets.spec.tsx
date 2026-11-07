@@ -1,15 +1,18 @@
 // @vitest-environment happy-dom
 // mods-presets.spec.tsx — THE MASTER MODAL (the collapse's slice 5,
-// 2026-11-16): a preset-carrying kind's chips are DOORS INTO THE ONE
-// LEAF, never a second editor — the press OPENS the modal seeded with
-// the named cell (field defaults + the entry overlay + the patch, the
-// merge law: staged files stay, the cell's dials move), the preset
-// switches ride INSIDE the modal's head (a press re-stages the same
-// way, the pressed cell paints), the riding fields declare their
-// submenus through the one visible_when grammar, and the save is the
-// operator's own press. The registration law that judges the patches
-// lives engine-side (edit-presets.spec.ts, validateDeclaredMods);
-// this wall owns the FACE.
+// 2026-11-16; rebuilt under the ONE-DOOR law same day): a declared
+// preset is a STARTING CELL INSIDE the one leaf — the posture
+// switches ride the modal's head (a press stages the named cell over
+// the draft: field defaults + the entry overlay + the patch, the
+// merge law — staged files stay, the cell's dials move), the riding
+// fields declare their submenus through the one visible_when
+// grammar, and the save is the operator's own press. THE ENTRY is
+// the system's own door: the plus box and the kind picker for a new
+// entry, the seated entry's own tile for an edit — the chip row that
+// once shadowed these doors is deleted (mods-one-door.spec.tsx owns
+// that law). The registration law that judges the patches lives
+// engine-side (edit-presets.spec.ts, validateDeclaredMods); this
+// wall owns the FACE.
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { createElement as h } from 'react'
 import { afterEach, expect, test, vi } from 'vitest'
@@ -42,23 +45,27 @@ const EDIT = {
   ],
 } as unknown as ModifierKind
 
-function chip(id: string): HTMLElement {
-  return document.querySelector(`[data-testid="cb-mod-preset-${id}"]`) as HTMLElement
+/** THE ONE-DOOR ENTRY for a new entry: the plus box opens the kind
+ *  picker, the kind's own label opens the leaf (the Loras grammar —
+ *  no chip row exists). */
+function openLeafViaPicker(kindLabel: string): void {
+  const add = document.querySelector('[data-subcard-add="mod"]') as HTMLElement
+  expect(add, 'the plus box renders').toBeTruthy()
+  fireEvent.click(add)
+  fireEvent.click(screen.getByText(kindLabel))
 }
 
-// THE PRESS (the span-click burn): the DSH Button owns the press —
-// a click on the wrapping span never reaches its onClick (the
-// button swallows the wrapper's bubble), so the wall presses the
-// button itself, the same door the user's pointer lands on.
-function press(id: string): void {
-  const button = chip(id).querySelector('button')
-  expect(button, `the ${id} chip renders a pressable button`).toBeTruthy()
-  fireEvent.click(button as HTMLElement)
+/** THE ONE-DOOR ENTRY for a seated entry: its own tile opens the
+ *  leaf in EDIT mode on that entry (the operator's press door). */
+function openSeatedLeafViaTile(index: number): void {
+  const tiles = document.querySelectorAll('[data-mod-tile]')
+  expect(tiles.length, 'the seated entry renders its tile').toBeGreaterThan(index)
+  fireEvent.click(tiles[index] as HTMLElement)
 }
 
+/** A posture press INSIDE the leaf — the span carries the id, the
+ *  DSH Button owns the press (the span-click burn). */
 function leafSwitch(id: string): HTMLElement {
-  // the span carries the id, the DSH Button owns the press (the
-  // span-click burn - same law as the outer chip's own press)
   const span = document.querySelector(`[data-leaf-preset="${id}"]`) as HTMLElement
   const button = span.querySelector('button')
   expect(button, `the ${id} switch renders a pressable button`).toBeTruthy()
@@ -76,14 +83,15 @@ function denoiseInput(): HTMLInputElement {
   return modal().getByLabelText('Denoise', { selector: 'input[type="number"]' }) as HTMLInputElement
 }
 
-test('THE CHIP OPENS THE MASTER MODAL (never an instant commit) — the pressed cell paints, Add commits the seeded draft', () => {
+test('THE PICKER OPENS THE MASTER MODAL (never an instant commit) — the posture press paints, Add commits the seeded draft', () => {
   const onEdit = vi.fn()
   render(h(ModifiersSection, { kinds: [EDIT], values: {}, onEdit, onPatch: undefined }))
-  press('identity-swap')
-  // NO commit rode the press — the modal is the door, the save is
+  openLeafViaPicker('Video edit')
+  // NO commit rode the door — the modal is the door, the save is
   // the operator's own press (the one-interface law)
   expect(onEdit).not.toHaveBeenCalled()
-  // the modal opened with the cell staged: the switches ride inside
+  // the posture press stages the cell: the switches ride inside
+  fireEvent.click(leafSwitch('identity-swap'))
   expect(leafSwitch('repair-region')).toBeTruthy()
   expect(leafSwitch('identity-swap').getAttribute('aria-pressed')).toBe('true')
   expect(denoiseInput().value).toBe('1')
@@ -96,21 +104,21 @@ test('THE CHIP OPENS THE MASTER MODAL (never an instant commit) — the pressed 
   expect(bag[0]).toMatchObject({ mask_source: 'region', reference: 'still+mannequin', denoise: 1, still: '' })
 })
 
-test('a SEATED bag\'s chip opens the modal on the merge (staged files stay), and an in-modal switch re-stages the same way', () => {
+test('a SEATED bag opens the modal on the merge via its tile (staged files stay), and an in-modal switch re-stages the same way', () => {
   const onEdit = vi.fn()
   render(h(ModifiersSection, {
     kinds: [EDIT],
     values: { edit: [{ mask_source: 'region', reference: 'self', denoise: 0.32, still: 'stills/girl.png' }] },
     onEdit, onPatch: undefined,
   }))
-  press('identity-swap')
-  // the modal opened on EDIT (the entry stays the entry), the patch
-  // staged over the seed, the still untouched in the draft
+  openSeatedLeafViaTile(0)
+  // the modal opened on EDIT (the entry stays the entry); the posture
+  // press stages over the seed, the still untouched in the draft
+  fireEvent.click(leafSwitch('identity-swap'))
   expect(leafSwitch('identity-swap').getAttribute('aria-pressed')).toBe('true')
   expect(denoiseInput().value).toBe('1')
   // an in-modal switch re-stages: the repair cell moves the dials
-  // back through the SAME merge law (the outer chip and the inner
-  // switch are one law, two doors)
+  // back through the SAME merge law (every posture press is one law)
   fireEvent.click(leafSwitch('repair-region'))
   expect(leafSwitch('repair-region').getAttribute('aria-pressed')).toBe('true')
   expect(leafSwitch('identity-swap').getAttribute('aria-pressed')).not.toBe('true')
@@ -129,7 +137,7 @@ test('a SEATED bag\'s chip opens the modal on the merge (staged files stay), and
 // now: the patch's option/scalar seats open their own drafts, the
 // cell's remaining dials ride the params, and the switches row
 // renders inside the hybrid leaf too.
-test("(F2) ONE LAW, ALL THREE SHAPES — a HYBRID kind's chip seeds the modal: the option/scalar seats open their drafts, the cell's dials ride the params", () => {
+test("(F2) ONE LAW, ALL THREE SHAPES — a HYBRID kind's posture seeds the modal: the option/scalar seats open their drafts, the cell's dials ride the params", () => {
   const onEdit = vi.fn()
   const HYBRID = {
     kind: 'controlnet', label: 'ControlNet', param_key: 'controlnets', cardinality: 'multi',
@@ -152,9 +160,10 @@ test("(F2) ONE LAW, ALL THREE SHAPES — a HYBRID kind's chip seeds the modal: t
     values: { controlnets: [{ type: 'canny', strength: 0.9, cond: 'hard edges' }] },
     onEdit, onPatch: undefined,
   }))
-  press('soft-depth')
+  openSeatedLeafViaTile(0)
   // the modal opened ON THE MERGE and the switches ride the hybrid
-  // leaf too (the chips are the kind's OWN cells)
+  // leaf too (the postures are the kind's OWN cells)
+  fireEvent.click(leafSwitch('soft-depth'))
   expect(leafSwitch('soft-depth').getAttribute('aria-pressed')).toBe('true')
   // the scalar seat routed into ITS draft (0.9 → the cell's 0.35)
   expect((modal().getByLabelText('Strength', { selector: 'input' }) as HTMLInputElement).value).toBe('0.35')
@@ -171,8 +180,9 @@ test("(F2) ONE LAW, ALL THREE SHAPES — a HYBRID kind's chip seeds the modal: t
 test('THE NAMED SUBMENU — the scale row rides the refine switch (visible_when judged on the live draft)', () => {
   const onEdit = vi.fn()
   render(h(ModifiersSection, { kinds: [EDIT], values: {}, onEdit, onPatch: undefined }))
+  openLeafViaPicker('Video edit')
   // off: the riding field is absent from the open modal
-  press('repair-region')
+  fireEvent.click(leafSwitch('repair-region'))
   expect(modal().queryByLabelText('Refine scale', { selector: 'input[type="number"]' })).toBe(null)
   // a switch onto the refine cell re-seats the row in the SAME open
   // modal — the submenu opens under its switch, never a second editor
@@ -184,22 +194,24 @@ test('THE NAMED SUBMENU — the scale row rides the refine switch (visible_when 
 test('a manual dial edit un-paints the named cell (the draft has left the matrix)', () => {
   const onEdit = vi.fn()
   render(h(ModifiersSection, { kinds: [EDIT], values: {}, onEdit, onPatch: undefined }))
-  press('identity-swap')
+  openLeafViaPicker('Video edit')
+  fireEvent.click(leafSwitch('identity-swap'))
   expect(leafSwitch('identity-swap').getAttribute('aria-pressed')).toBe('true')
   fireEvent.change(denoiseInput(), { target: { value: '0.7' } })
   expect(leafSwitch('identity-swap').getAttribute('aria-pressed')).not.toBe('true')
 })
 
-test('a preset-less kind renders NO chip row (the empty bag stays hidden — the law before stage 3)', () => {
+test('a preset-less kind renders NO posture switches (the empty bag stays hidden)', () => {
   const bare = { ...EDIT, presets: undefined } as unknown as ModifierKind
   render(h(ModifiersSection, { kinds: [bare], values: {}, onEdit: vi.fn(), onPatch: undefined }))
   expect(document.querySelector('[data-testid="cb-mod-preset-row"]')).toBe(null)
+  expect(document.querySelector('[data-leaf-presets]')).toBe(null)
   expect(screen.queryByText('Repair a region')).toBe(null)
 })
 
 // ── THE OPTION SHAPE'S OWN ROUTER ARM (the F2 law's third shape):
 // a served-catalog kind whose cell names the router's three seats
-// (id/strength/steps). The seated bag's chip opens the leaf on the
+// (id/strength/steps). The seated bag's tile opens the leaf on the
 // merge — the option-kind branch of routePresetPatch, the branch the
 // field/hybrid walls never reach. ──
 const OPTION_PRESET = {
@@ -224,12 +236,11 @@ function seatOptionBag(): { onEdit: ReturnType<typeof vi.fn> } {
   return { onEdit }
 }
 
-test("(F2, the option shape) a SEATED bag's chip seeds the leaf on the merge: the three seats route into their drafts and the save carries them", () => {
+test("(F2, the option shape) a SEATED bag's posture seeds the leaf on the merge: the three seats route into their drafts and the save carries them", () => {
   const { onEdit } = seatOptionBag()
-  press('turbo-6')
-  // the modal opened on EDIT (the seated entry stays the entry); the
-  // pick pane is the option shape's ONE-ROW seat (no switch row here —
-  // the chips opened it)
+  openSeatedLeafViaTile(0)
+  fireEvent.click(leafSwitch('turbo-6'))
+  // the modal opened on EDIT (the seated entry stays the entry)
   expect(screen.getByRole('dialog')).toBeTruthy()
   // the id seat routed into the catalog draft — the picker names the
   // PATCHED row, never the seated one
@@ -248,7 +259,8 @@ test("(F2, the option shape) a SEATED bag's chip seeds the leaf on the merge: th
 
 test('(F2, the option shape) a patch that names only one seat: the un-named drafts keep the seated entry\'s own row and dial, the named seat moves', () => {
   const { onEdit } = seatOptionBag()
-  press('steps-6')
+  openSeatedLeafViaTile(0)
+  fireEvent.click(leafSwitch('steps-6'))
   expect(screen.getByRole('dialog')).toBeTruthy()
   // no id/strength seats in the patch — the seated entry's own pick
   // and dial ride (the seed the router never overrode)
@@ -264,7 +276,8 @@ test('(F2, the option shape) a patch that names only one seat: the un-named draf
 test('the painted cell re-pressed: the no-op un-paints with the manual-edit law and holds the staged dials (the switch is a door, never a toggle)', () => {
   const onEdit = vi.fn()
   render(h(ModifiersSection, { kinds: [EDIT], values: {}, onEdit, onPatch: undefined }))
-  press('identity-swap')
+  openLeafViaPicker('Video edit')
+  fireEvent.click(leafSwitch('identity-swap'))
   expect(leafSwitch('identity-swap').getAttribute('aria-pressed')).toBe('true')
   expect(denoiseInput().value).toBe('1')
   // THE RE-PRESS on the already-painted seat: onPresetPick's guard is

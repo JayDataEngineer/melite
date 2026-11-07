@@ -901,46 +901,22 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
     h('div', { className: css.modRow, 'data-subcard-row': 'flow' },
       kinds.map((k) => {
         const entries = entriesOf(k)
-        // THE PRESET CHIPS (the timeline rework stage 3): named
-        // starting cells over the kind's ONE schema — the retired
-        // bag names' cells ride here as buttons. An EMPTY bag → the
-        // chip CREATES the single entry (field defaults seeded, the
-        // patch applied); a seated bag → the chip patches entry 0 (a
-        // MERGE — staged files stay, every dial stays movable after
-        // the press; the compose door never reads preset ids).
-        const presetRow = (k.presets ?? []).length > 0
-          ? h('div', { key: k.param_key + ':presets', className: css.modPresetRow, 'data-testid': 'cb-mod-preset-row' },
-              k.presets!.map((p) =>
-                h(Tip, {
-                  key: p.id,
-                  tip: p.tooltip ?? p.label,
-                  children: h('span', { 'data-testid': 'cb-mod-preset-' + p.id },
-                    h(Button, {
-                      variant: 'ghost',
-                      'aria-pressed': leaf !== null && leaf.kind === k && leaf.preset === p.id,
-                      onClick: () => {
-                        // SLICE 5 (the master modal): the press OPENS
-                        // the leaf seeded with the cell - the dials
-                        // move where the operator sees them; the save
-                        // is the operator's own press (the instant
-                        // commit died with the one-interface law).
-                        if (entries.length === 0) {
-                          openCreate(k, p.patch, p.id)
-                        } else {
-                          openEdit(k, 0, p.patch, p.id)
-                        }
-                      },
-                    }, p.label)),
-                })))
-          : null
-        if (entries.length === 0) return presetRow !== null ? [presetRow] : null
+        // ONE DOOR (operator, 2026-11-16: "collapse the mods into
+        // one"): a declared preset is a STARTING CELL INSIDE the leaf
+        // (the posture switches, slice 5) — the chip row that once
+        // rendered here was a second entry surface around the kind
+        // picker, born as back-compat for the retired bag spellings.
+        // It is deleted: the plus box is the only door, the grammar
+        // every kind rides (Loras prove it). The retired spellings
+        // are compose-door translation for pre-collapse documents —
+        // not UI, rendered nowhere.
+        if (entries.length === 0) return null
         const ordered = isOrdered(k)
         // THE IDENTITY MINT (debt 24): one function owns the id
         // grammar — the drop resolver reads the same ids, so the
         // pair the drag means is derivable from any later bag.
         const tileIds = modTileIds(k, entries)
         return [
-          ...(presetRow !== null ? [presetRow] : []),
           ...entries.map((entry, i) => {
               // THE CATALOG KEY (the served option_key — the hybrid
               // type, the option id; field kinds carry none and fall
@@ -1613,6 +1589,12 @@ function ModLeaf(props: {
           // box, empty roster included — the Fibo burn's cure), the
           // dial beside it is the use's strength.
           return h('div', { className: css.modLeafFields, 'data-leaf-pane': 'pick' },
+            // THE POSTURE SWITCHES (the one-door law, 2026-11-16): the
+            // option shape rides the SAME posture seat as the field and
+            // hybrid leaves — the named cells ride the modal's head for
+            // every kind shape (the outer chips are gone; this row is
+            // the only posture door, and it renders for all three).
+            presetSwitches,
             // THE ONE-ROW SEAT: the bag is authored in one glance —
             // the picker takes the width, the strength dial keeps its
             // intrinsic width.

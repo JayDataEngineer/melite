@@ -23,7 +23,7 @@
 import "../../../../tests/helpers/boot-models.ts";
 import { describe, expect, it, vi } from "vitest";
 import assert from "node:assert/strict";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { VideoTimelineStudio } from "../src/ui/studio/component.tsx";
 import { serializeLayerA, LAYERA_KEY_UNIVERSE, hydrateLayerA } from "../src/ui/studio/docHydrate.ts";
 import { specBody } from "../../../harness/melite-tools/src/discovery.ts";
@@ -42,17 +42,20 @@ async function serveReal(): Promise<Record<string, unknown>> {
   const body = specBody(theService(), await loadCardDefs(), {
     card: "h3-timeline", service: "h3-timeline", model: "h3-timeline",
   })
+  // the served JSON, read back as the wire record (the same parse the
+  // browser side performs — the spec type is the EMIT side)
+  const wire = JSON.parse(JSON.stringify(body)) as Record<string, unknown>
   vi.stubGlobal("fetch", (url: unknown) => {
     if (typeof url === "string" && url.startsWith("/v1/form-spec")) {
       return Promise.resolve(new Response(
-        JSON.stringify(body),
+        JSON.stringify(wire),
         { headers: { "content-type": "application/json" } },
       ))
     }
     return Promise.resolve(new Response(JSON.stringify({ error: "no door" }), { status: 404 })
     )
   })
-  return body as Record<string, unknown>
+  return wire
 }
 
 function mountStudio(saved: Array<Record<string, unknown>>): void {
@@ -74,14 +77,25 @@ function mountStudio(saved: Array<Record<string, unknown>>): void {
 }
 
 describe("the mod bag's write journey (the dead Add)", () => {
-  it("ARM A — THE PRESS LANDS: chip → leaf → Add → the bench door receives the edit bag", async () => {
+  it("ARM A — THE PRESS LANDS: + box → picker → leaf posture switch → Add → the bench door receives the edit bag", async () => {
     await serveReal()
     const saved: Array<Record<string, unknown>> = []
     mountStudio(saved)
-    // the slice-5 face: the chips render in the rail; one press opens
-    // the one leaf in create mode.
-    const chip = await screen.findByRole("button", { name: "Repair a region" })
-    fireEvent.click(chip)
+    // THE ONE DOOR (2026-11-16): the mod system's entry is the +
+    // square and the kind picker — the outer chip row is deleted.
+    // The posture press is the SAME gesture, seated INSIDE the leaf.
+    const plusBox = await waitFor(
+      () => {
+        const el = document.querySelector('[data-subcard-add="mod"]')
+        assert.ok(el, "the + box must render")
+        return el
+      },
+      { timeout: 3000 },
+    )
+    fireEvent.click(plusBox)
+    fireEvent.click(await screen.findByText("Video edit"))
+    const posture = await screen.findByRole("button", { name: "Repair a region" })
+    fireEvent.click(posture)
     const add = await screen.findByRole("button", { name: "Add" })
     fireEvent.click(add)
     // THE LAW: the press states the bag — SOME payload carries the
