@@ -188,6 +188,34 @@ describe("the declared mod-kind schema gate (registerCard's third door)", () => 
     );
   });
 
+  // (F2 residue, the front-end audit's verification pass 2026-11-07)
+  // a TRUE option kind renders and saves its three entry seats only;
+  // a patch naming anything else would ride the draft INVISIBLE.
+  it("an option-kind preset patches its entry seats only (id, strength, steps - the face renders nothing else)", () => {
+    assert.throws(
+      () => validateDeclaredMods("c", [base({
+        entry: "option",
+        options: [{ value: "depth", label: "Depth" }],
+        fields: presetFields(),
+        presets: [{ id: "x", label: "X", patch: { mask_source: "region" } }],
+      })]),
+      /patches 'mask_source' — an option-kind cell patches its entry seats only \(id, strength, steps\)/,
+    );
+    // the three entry seats pass clean (the kind DECLARES its own
+    // seats — the patch names declared fields that are all the
+    // face renders)
+    validateDeclaredMods("c", [base({
+      entry: "option",
+      options: [{ value: "depth", label: "Depth" }],
+      fields: [
+        { name: "id", label: "Row", type: "text", default: "" },
+        { name: "strength", label: "Strength", type: "number", default: 1, min: 0, max: 2, step: 0.01 },
+        { name: "steps", label: "Steps", type: "number", default: 8, min: 1, max: 40, step: 1 },
+      ],
+      presets: [{ id: "y", label: "Y", patch: { id: "depth", strength: 0.8, steps: 6 } }],
+    })]);
+  });
+
   it("a repeated preset id refuses (ids are unique per kind)", () => {
     assert.throws(
       () => validateDeclaredMods("c", [base({

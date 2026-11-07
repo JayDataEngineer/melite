@@ -118,6 +118,37 @@ describe("every served mod bag has a skill leaf an agent can read", () => {
     }
   });
 
+  it("ARM 1b — the edit leaf's CHIP CENSUS is derived from the served kind (every preset id the card declares is taught, and the door law states the true doors)", () => {
+    // (the back-end audit's verification pass 2026-11-07, residual
+    // debt) the leaf's prose law sections (NAMED CELLS / It is NOT /
+    // It IS) were cured in content but content-UNJUDGED — a future
+    // re-rot rides served with no red. The census is DERIVED off
+    // def.mods now: a chip the card declares that the leaf forgets
+    // reds by name, and the door-law lines are pinned to the true
+    // doors (reshoot the only NOT; continuation/refine/upscale the
+    // dials).
+    const kind = kinds.find((k) => k.param_key === "edit")!;
+    const presets = (kind as unknown as { presets?: Array<{ id: string }> }).presets ?? [];
+    assert.ok(presets.length > 0, "the edit kind carries preset chips");
+    const md = readSkill("edit");
+    for (const chip of presets) {
+      assert.ok(md.includes(`\`${chip.id}\``),
+        `edit/SKILL.md teaches the '${chip.id}' chip (the served cell census is derived, never hand-counted)`);
+    }
+    // THE DOOR LAW: only Reshoot stays out; the three postures that
+    // read like doors are dials ON this one
+    const isNot = md.slice(md.indexOf("It is NOT"), md.indexOf("It IS"));
+    assert.ok(isNot.includes("reshoot"), "the NOT section names the one true other door");
+    for (const retired of ["extend", "refine", "upscale", "repair", "replace"]) {
+      assert.ok(!/`/.test(retired) && !isNot.includes(`\`${retired}\``),
+        `the NOT section no longer calls '${retired}' a second door (the collapse's own law)`);
+    }
+    const isIs = md.slice(md.indexOf("It IS"), md.indexOf("## The flow"));
+    for (const dial of ["continuation", "refine", "chain_run"]) {
+      assert.ok(isIs.includes(`\`${dial}\``), `the IS section names the '${dial}' dial`);
+    }
+  });
+
   it("ARM 2a — the edit door's every bounded dial quotes the card's OWN band and default (the matrix leaf)", () => {
     // The timeline rework's stage 2b (2026-11-15): the edit bag is
     // the eighth kind and its leaf teaches the whole matrix — the

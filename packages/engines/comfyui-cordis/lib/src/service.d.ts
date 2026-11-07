@@ -1,9 +1,9 @@
-import { ComfyUIWiringService, type WiringInputSpec } from './wiringWall.ts';
+import { ComfyUIWiringService, type WiringInputSpec } from './wiringWall.js';
 export { ComposeRefusal } from '@melite/comfyui-card-kit/errors';
 import { Context, Service } from '@deepseek-ai/cordis';
 import type { PromptGraph } from '@melite/comfyui-card-kit/graph';
 import type { FactsFile } from '@melite/comfyui-card-kit/facts';
-export { resolveControlNetEntry } from "./serviceMods.ts";
+export { resolveControlNetEntry } from "./serviceMods.js";
 import type { LoraRowDecl, AbsorbedMod, VerbRegistration, FlavorRegistration } from '@melite/comfyui-card-kit/service-faces';
 import type { CardDefinition, ComposeEstate } from '@melite/comfyui-card-kit/card-definition';
 import type { PackContract } from "@melite/comfyui-card-kit/pack-fields";

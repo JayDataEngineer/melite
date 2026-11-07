@@ -235,6 +235,20 @@ function checkPresets(where, mod, row) {
         // the keys loop walks zero keys — the patch-truth law above
         // already refused the authored-absent row.
         const patch = preset["patch"];
+        // (F2 residue, the front-end audit's verification pass 2026-11-07)
+        // THE OPTION-KIND SEAT LAW: a TRUE option kind (entry 'option')
+        // renders and saves exactly its three entry seats (id, strength,
+        // steps) — a patch naming any other key would pass the field
+        // walk and ride the draft INVISIBLE (the leaf never renders it,
+        // the save never commits it). Refused here: the face's seats are
+        // the vocabulary, never more.
+        if (row["entry"] === "option") {
+            for (const key of Object.keys(patch)) {
+                if (key !== "id" && key !== "strength" && key !== "steps") {
+                    throw new Error(`${where}: preset '${pid}' patches '${key}' — an option-kind cell patches its entry seats only (id, strength, steps); the face renders nothing else`);
+                }
+            }
+        }
         for (const key of Object.keys(patch)) {
             const field = byName.get(key);
             if (field === undefined) {
