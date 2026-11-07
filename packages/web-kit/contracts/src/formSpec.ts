@@ -415,6 +415,20 @@ export interface FormSpecDoc {
    *  Served verbatim off the DECL; absent when the DECL declares no
    *  studio (the mirror judges as before — never a guess). */
   studio_writes?: ReadonlyArray<string>
+  /** THE CARD'S CONTRACT ADMISSION ROW (the pre-collapse doc law,
+   * 2026-11-16 — the operator burn: "the video cards from before
+   * with mods are broken"): the card's declared `admits` extras,
+   * served VERBATIM off the CardDefinition — the same list the
+   * estate's admission predicate (cardAdmits, cardsFacts.ts) reads
+   * at the write door, including retired compose-through bag names
+   * (h3's replace/repair/extend/refine/upscale, translated into the
+   * one edit bag at compose) and `prefix*` glob rows. The client
+   * compose mirror sanctions every name on it with the same glob law
+   * — without this row the mirror banners a legacy doc the door
+   * admits and every pre-collapse card opens "broken". Absent = the
+   * card declares no admission extras (the mirror judges as before —
+   * never a guess). */
+  admits?: ReadonlyArray<string>
   /** THE FAMILY-CONDITIONAL KEY LAW (the ERROR g/h cure, 2026-11-08):
    *  the DECL's window-family law in the SERVED spelling — lanes
    *  derived from the doc's own shape (ordered; first match wins, the

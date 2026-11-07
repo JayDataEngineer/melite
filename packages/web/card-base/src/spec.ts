@@ -2269,6 +2269,8 @@ export function composeValidate(
     const surface = resolved ?? legacy
     if (surface !== null) {
       const declared = new Set<string>(surface)
+      // the contract-admits glob prefixes (see the sanction below)
+      const prefixes: string[] = []
       for (const g of axisGroups(spec)) declared.add(axisKey(g))
       declared.add('model')
       // THE STUDIO-OWNED SURFACE (h¹, the mirror-truth cure): the
@@ -2289,6 +2291,23 @@ export function composeValidate(
       // BUILDS the mod's lane is the compose door's firing voice,
       // never this clause's undeclared-surface voice.
       for (const k of modOwnedFields(spec)) declared.add(k)
+      // THE CONTRACT-ADMITS SANCTION (the pre-collapse doc law,
+      // 2026-11-16 — the operator burn: "the video cards from before
+      // with mods are broken"): the card's `admits` row is the write
+      // door's own surface (cardAdmits, cardsFacts.ts — the same
+      // predicate compose/start/variant-stamp ride, glob rows and
+      // all), served verbatim on the spec. The mirror sanctions the
+      // same names or it banners a doc the door admits — the burn: a
+      // pre-collapse doc's legacy bag (replace/repair/extend/refine/
+      // upscale) opened every old card with "fires nothing on this
+      // lane" while the estate admitted the row and the compose door
+      // translated the bag into the one edit entry (compose-through).
+      // The estate's glob law rides verbatim (a trailing * admits
+      // every key under the prefix) — one spelling, both doors.
+      for (const a of spec.admits ?? []) {
+        if (a.endsWith('*')) prefixes.push(a.slice(0, -1))
+        else declared.add(a)
+      }
       // THE DELIVERABLE-SIZE LAW (the resize order, operator
       // 2026-11-12): the edit lanes surface the deliverable pair,
       // so the surface sanction above already owns it — no carve.
@@ -2299,7 +2318,7 @@ export function composeValidate(
       // pair still refuses, with the flip).
       const servesDeliverableSwitch = fieldsOf(spec).some((f) => f.name === 'match_input_resolution')
       for (const k of Object.keys(doc)) {
-        if (k === 'model' || declared.has(k)) continue
+        if (k === 'model' || declared.has(k) || prefixes.some((p) => k.startsWith(p))) continue
         out.push({
           message: 'card_compose: field \'' + k + '\' fires nothing on this lane — the served surface (' + (spec.model ?? '') + ') does not declare it; the estate admission gate refuses the same key field-named at the write door.',
           field: k,

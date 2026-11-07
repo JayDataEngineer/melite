@@ -11059,13 +11059,16 @@ window.__ModuleLoader__.load({
 				const surface = resolved ?? legacy;
 				if (surface !== null) {
 					const declared = new Set(surface);
+					const prefixes = [];
 					for (const g of axisGroups(spec)) declared.add(axisKey(g));
 					declared.add("model");
 					for (const k of spec.studio_writes ?? []) declared.add(k);
 					for (const k of modOwnedFields(spec)) declared.add(k);
+					for (const a of spec.admits ?? []) if (a.endsWith("*")) prefixes.push(a.slice(0, -1));
+					else declared.add(a);
 					const servesDeliverableSwitch = fieldsOf(spec).some((f) => f.name === "match_input_resolution");
 					for (const k of Object.keys(doc)) {
-						if (k === "model" || declared.has(k)) continue;
+						if (k === "model" || declared.has(k) || prefixes.some((p) => k.startsWith(p))) continue;
 						out.push({
 							message: "card_compose: field '" + k + "' fires nothing on this lane — the served surface (" + (spec.model ?? "") + ") does not declare it; the estate admission gate refuses the same key field-named at the write door.",
 							field: k
