@@ -222,4 +222,70 @@ describe("the from-flow kind filter (the real thread, not the copy — seat-kind
     assert.ok(face.includes("clip.mp4"), "the video artifact is offered to the video seat")
     assert.ok(!face.includes("mask.png"), "the staged image never rides the video seat")
   })
+
+  // THE J1 DEBT (the plan's per-kind loop): the press was verified for
+  // ONE kind — a save-path break in Reshoot or Loras reds NOTHING.
+  // This arm derives its roster from the SERVED spec (never a
+  // hand-list): every mod kind, fresh real mount, through THE ONE
+  // DOOR to its own minimal commit, and the bag must land under its
+  // own param_key AND render its tile (a serializer regression that
+  // drops the face while keeping the write reds here).
+  it("ARM G — THE PER-KIND PRESS LOOP: every served kind lands its bag under its own param_key and renders its tile", async () => {
+    const body = await serveReal()
+    const kinds = ((body.features as Record<string, unknown> | undefined)?.modifiers ?? []) as Array<{
+      kind: string; param_key: string; label: string;
+      options?: Array<{ value: string; label: string }>;
+      presets?: Array<{ id: string; label: string }>;
+    }>
+    assert.ok(kinds.length > 0, "the served spec offers mod kinds")
+    const { cleanup } = await import("@testing-library/react")
+    for (const k of kinds) {
+      const saved: Array<Record<string, unknown>> = []
+      mountStudio(saved)
+      fireEvent.click(await waitFor(() => {
+        const el = document.querySelector('[data-subcard-add="mod"]')
+        assert.ok(el, `${k.label}: the + box must render`)
+        return el
+      }, { timeout: 3000 }))
+      fireEvent.click(await screen.findByText(k.label))
+      // PRESENCE KINDS commit at the picker press (no leaf ever
+      // opens — the add IS the statement); leaf kinds carry the Add.
+      const add = await screen.findAllByRole("button", { name: "Add" }).then(
+        (els) => els[0] ?? null,
+        () => null,
+      )
+      if (add !== null) {
+        // THE CATALOG SEAT (hybrid/option kinds refuse a bare Add —
+        // "Pick one from the served rows"): pick the first served row
+        // through the leaf's own select, derived from the spec
+        const trigger = screen.queryAllByRole("button", { name: k.label })[0] ?? null
+        if (trigger !== null && (k.options ?? []).length > 0) {
+          fireEvent.click(trigger)
+          const first = (k.options ?? [])[0]
+          fireEvent.click(await screen.findByRole("menuitem", { name: first.label }))
+        }
+        // THE POSTURE SWITCH (preset-carrying kinds seed the draft
+        // through the first posture — the same press the operator makes)
+        const presets = document.querySelector("[data-leaf-presets]")
+        if (presets !== null) {
+          const firstPreset = presets.querySelector("[data-leaf-preset] button")
+          if (firstPreset !== null) fireEvent.click(firstPreset)
+        }
+        fireEvent.click(add)
+      }
+      // THE BAG under its OWN param_key (the write hop the audit's
+      // burn died at)
+      await waitFor(() => assert.ok(
+        saved.some((p) => Array.isArray(p[k.param_key])),
+        `${k.label}: the press must land the bag under '${k.param_key}' — got: ${JSON.stringify(saved)}`,
+      ), { timeout: 3000 })
+      // THE TILE (the serializer's face: the write staying green while
+      // the tile vanishes is this arm's own burn)
+      await waitFor(() => assert.ok(
+        document.querySelector(`[data-mod-tile^="${k.param_key}#"]`) !== null,
+        `${k.label}: the tile must render under '${k.param_key}#' after the press`,
+      ), { timeout: 3000 })
+      cleanup()
+    }
+  })
 })
