@@ -150,7 +150,7 @@ describe("the edit action — byte-stability (the compatibility law)", () => {
         text_encoder: "qwen3vl_8b_bf16.safetensors",
       },
     };
-    const facts = parseEditFacts(merged.lane_inputs);
+    const facts = parseEditFacts(merged.lane_inputs, merged);
     assert.equal(facts.unet, "qwen_image_2.1_bf16.safetensors");
     const action = new GraphBuilder({});
     instantiateAction(edit, PARAMS, merged, action, "probe-bf16");
@@ -223,25 +223,25 @@ describe("the edit action — byte-stability (the compatibility law)", () => {
 describe("the edit facts door (closed-set drift refuses loud)", () => {
   it("a drifted encoder class refuses — never a silent topology route", () => {
     assert.throws(
-      () => parseEditFacts({ ...FACTS.lane_inputs, text_encode_node: "TextEncodeQwenImageEditPlus" }),
+      () => parseEditFacts({ ...FACTS.lane_inputs, text_encode_node: "TextEncodeQwenImageEditPlus" }, FACTS),
       /text_encode_node.*TextEncodeQwenImage21/,
     );
   });
 
   it("a missing weight string refuses field-named", () => {
     assert.throws(
-      () => parseEditFacts({ ...FACTS.lane_inputs, vae: undefined }),
+      () => parseEditFacts({ ...FACTS.lane_inputs, vae: undefined }, FACTS),
       /lane_inputs\.vae.*non-empty string/,
     );
   });
 
   it("a degenerate max_images refuses", () => {
     assert.throws(
-      () => parseEditFacts({ ...FACTS.lane_inputs, max_images: 0 }),
+      () => parseEditFacts({ ...FACTS.lane_inputs, max_images: 0 }, FACTS),
       /lane_inputs\.max_images.*number ≥ 1/,
     );
     assert.throws(
-      () => parseEditFacts({ ...FACTS.lane_inputs, max_images: "16" }),
+      () => parseEditFacts({ ...FACTS.lane_inputs, max_images: "16" }, FACTS),
       /lane_inputs\.max_images.*number ≥ 1/,
     );
   });

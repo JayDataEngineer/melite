@@ -11,7 +11,7 @@ import { mintSeed } from "./graph-helpers.js";
  *  @param runId the run id (the save prefix namespace)
  *  @returns the terminal handle (the save node's output) */
 export function instantiateAction(action, p, model, g, runId) {
-    const facts = action.facts(model.lane_inputs);
+    const facts = action.facts(model.lane_inputs, model);
     const doc = { ...p };
     for (const spec of action.params) {
         if (spec.rule === "seed-sentinel") {

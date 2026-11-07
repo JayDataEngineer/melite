@@ -493,7 +493,13 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
         // re-serves forever. null is the merge-patch delete
         // spelling: onEdit drops the client key, the patch carries
         // the null the bench turns into a key delete.
-        for (const f of k.fields ?? []) { onEdit(f.name, undefined); flatWrite[f.name] = null }
+        // (fields is declared at this write, provably: both flat
+        // remove gestures — the presence tile's open-removes and
+        // deleteLeaf's seat filter — require a stated entry, and a
+        // stated entry requires declared fields; a fields-undefined
+        // flat kind states nothing, renders no tile, and deleteLeaf
+        // refuses before commit.)
+        for (const f of k.fields!) { onEdit(f.name, undefined); flatWrite[f.name] = null }
       }
       onPatch?.(flatWrite)
       return
@@ -522,7 +528,10 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
   const presenceKind = (k: ModifierKind): boolean =>
     k.flat === true
     && (k.fields ?? []).length > 0
-    && (k.fields ?? []).every((f) => f.type === 'boolean')
+    // the length guard above proved fields declared and non-empty —
+    // the every reads the declared array (a guard reorder re-arms a
+    // fallback here)
+    && k.fields!.every((f) => f.type === 'boolean')
   const namedPresenceKind = (k: ModifierKind): boolean => {
     const fields = k.fields ?? []
     return k.flat === true
@@ -531,14 +540,18 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
       && fields.every((f) => f.type === 'boolean' || f.type === 'text')
   }
   const namedFieldOf = (k: ModifierKind): SpecField => {
-    const f = (k.fields ?? []).find((x) => x.type === 'text')
     // namedPresenceKind guards every caller (the render and the
-    // stamp both branch on it first); the fallback is unreachable.
-    return f ?? (k.fields ?? [])[0]
+    // stamp both branch on it first): fields is declared and the one
+    // served text row exists — the fences state that contract (a
+    // namedFieldOf call reachable without the judge re-arms them).
+    return k.fields!.find((x) => x.type === 'text')!
   }
   const presenceStamp = (k: ModifierKind): Record<string, unknown> => {
     const stamp: Record<string, unknown> = {}
-    for (const f of k.fields ?? []) stamp[f.name] = true
+    // both stamp callers (the presence add and namedPresenceStamp)
+    // branch on presenceKind/namedPresenceKind first — fields is
+    // declared wherever this loop evaluates
+    for (const f of k.fields!) stamp[f.name] = true
     return stamp
   }
   const namedPresenceStamp = (k: ModifierKind, name: string): Record<string, unknown> => ({
@@ -1116,7 +1129,7 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
           },
           value: namedLeaf.name === '' ? undefined : namedLeaf.name,
           placeholder: chromeCopy.namedPresencePlaceholder,
-          onEdit: (_, v) => { setNamedLeaf({ kind: namedLeaf.kind, name: typeof v === 'string' ? v : '' }) },
+          onEdit: (_, v) => { setNamedLeaf({ kind: namedLeaf.kind, name: typeof v === 'string' ? v : /* v8 ignore next -- the '' fallback is a type fence: this atom is SpecAtom's raw-string text seat, whose only edit channel is the DOM input's onChange handing e.target.value (a string, by the DOM contract); a second atom type at this popup seat would re-arm it */ '' }) },
         }),
         h('div', { className: css.modLeafActions },
           h(Button, {
@@ -1162,6 +1175,7 @@ function routePresetPatch(
   } else if (isOptionKind(k)) {
     takeString('id', drafts.setOption)
     takeNumber('strength', drafts.setStrength)
+    /* v8 ignore else -- the implicit skip is a type fence: every option-branch caller of routePresetPatch passes setSteps (openCreate's seed, this edit seat, the preset switch's press all wire the third draft), so the guard is always true where the option branch evaluates; a routePresetPatch call that omits setSteps on an option kind would re-arm the path */
     if (drafts.setSteps !== undefined) takeNumber('steps', drafts.setSteps)
   }
   return cell
@@ -1265,7 +1279,7 @@ function ModLeaf(props: {
   /** the picked file's own suffix — a stem rename keeps it (the
    *  door's one-segment filename IS the seated row's id). */
   const uploadExt = (): string =>
-    pendingFile === null ? '' : (/\.[A-Za-z0-9]+$/.exec(pendingFile.name)?.[0] ?? '')
+    pendingFile === null ? /* v8 ignore next -- the '' fallback is a type fence: applyUpload is the sole reader of this suffix and its own guard refuses a null pendingFile before the call (uploadBusy/pendingFile === null early return), so the state is always a picked file here; a second suffix reader over a cleared seat would re-arm it */ '' : (/\.[A-Za-z0-9]+$/.exec(pendingFile.name)?.[0] ?? '')
   /** the menu's file pick: DEFERRED — nothing rides the wire until
    *  Apply (the rename + default strength are authored first). */
   const pickUpload = (file: File): void => {
@@ -1394,9 +1408,10 @@ function ModLeaf(props: {
   // law the outer chip opened with (staged files stay, the cell's
   // dials move), and the pressed cell paints. This row is the one
   // door's face; the outer chips only ever OPEN here.
-  const presetSwitches = (k.presets ?? []).length > 0 && props.onPresetPick !== undefined
+  const leafPresets = k.presets ?? []
+  const presetSwitches = leafPresets.length > 0 && props.onPresetPick !== undefined
     ? h('div', { className: css.modPresetRow, 'data-leaf-presets': k.param_key },
-        (k.presets ?? []).map((p) =>
+        leafPresets.map((p) =>
           // (the span carries the test id - the DSH Button's typed
           // props admit no data-* seats; the outer chip row's own law)
           h('span', { key: p.id, 'data-leaf-preset': p.id },

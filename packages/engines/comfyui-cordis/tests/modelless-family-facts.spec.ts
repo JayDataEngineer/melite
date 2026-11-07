@@ -189,14 +189,18 @@ describe("THE SILENT-PASS WALL — the model-less compose arm resolves the singl
   it("ARM 3 — the splice's source: every walked family's declared actions parse the DECL's own lane_inputs, and a parse that refuses an empty row OWES the row", () => {
     for (const { family, decl } of rosterRows()) {
       const row = { ...(decl.lane_inputs ?? {}) };
+      // THE DECLARED FACE (the registration gate's exact second seat):
+      // the erased facts seam reads (raw, model) and the gate hands
+      // the DECL's own declared row — the walk presses the same shape.
+      const declared = { lane_inputs: decl.lane_inputs ?? {}, variants: decl.variants };
       for (const action of decl.actions ?? []) {
-        action.facts(row);
+        action.facts(row, declared);
         // THE INTERLOCK DIRECTION: a facts parse that cannot take an
         // empty row (the sfx/h3 class) is only servable model-less
         // because the splice feeds the DECL's row — the family MUST
         // declare one, or the card-unit press starves again
         try {
-          action.facts({});
+          action.facts({}, declared);
         } catch {
           assert.ok(
             Object.keys(row).length > 0,

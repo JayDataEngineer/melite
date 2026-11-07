@@ -10,6 +10,22 @@ import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { DECL, family, coat } from "../src/index.ts";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
+import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
+
+// the resolved model row the coat composes against — one literal,
+// handed to the facts door AND the build (the vacuous door ignores
+// it; the explicit arg keeps the two-param facts seam honest).
+const MODEL: ModelFacts = {
+  id: "skin",
+  card: "",
+  family: "skin",
+  defaults: {},
+  lane_inputs: {},
+  variants: [],
+  variant_groups: [],
+  outputs: [],
+  mods: [],
+};
 
 describe("THE COAT CI GOLDEN (models-hop56 wave-2: the e2e receipt promoted to a unit judge)", () => {
   it("the composed coat graph pins the verb's fixed vocabulary at the named nodes (SkinPack/SkinSidecar/SkinApply), the stated body at the graft", () => {
@@ -75,17 +91,8 @@ describe("the skin model plugin (the whole model, one package)", () => {
     const g = new GraphBuilder();
     const out = coat.build({
       p: { body: "$body" },
-      facts: coat.facts({}),
-      model: {
-        id: "skin",
-        card: "",
-        family: "skin",
-        defaults: {},
-        lane_inputs: {},
-        variants: [],
-        variant_groups: [],
-        outputs: [],
-      },
+      facts: coat.facts({}, MODEL),
+      model: MODEL,
       g,
       runId: "",
     });

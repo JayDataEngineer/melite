@@ -443,7 +443,17 @@ export interface DeclaredAction {
      *  resolved model row may dispatch it (a flow naming it refuses
      *  at compose, before any node builds). */
     readonly laneIndependent?: boolean;
-    readonly facts: (raw: Record<string, unknown>) => unknown;
+    /** The facts door, ERASED for the DECL seam. The concrete spec
+     *  reads (raw, ModelFacts); the registration gate hands the DECL's
+     *  own declared face ({ lane_inputs, variants }) as the second
+     *  seat so the typed lane reader refuses an undeclared key at
+     *  boot. METHOD spelling on purpose: a property-typed field would
+     *  demand strict contravariance (the erased param assignable to
+     *  every concrete spec's ModelFacts param — unsatisfiable while
+     *  the registration gate passes the DECL row); the method's
+     *  bivariance keeps the erasure expressible and the concrete side
+     *  fully typed. Same trust as the build row below. */
+    facts(raw: Record<string, unknown>, model: unknown): unknown;
     readonly build: (...args: never[]) => unknown;
 }
 /** A family's declared tool runtime (E2-2 Piece A): the provisioned

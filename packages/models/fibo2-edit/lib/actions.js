@@ -1,20 +1,26 @@
 import { loadTextPair, decodeSave, stackLoras, orderedInputImages, regionSegs, detailerSave, isSpell, laneSampler, laneScheduler, deliverableSizeOf, refuseDeliverableSize } from "@melite/comfyui-card-kit";
 import { fireLoras } from "@melite/comfyui-card-kit/guard";
-import { parseDiffusionLaneFacts, parseEditCap } from "@melite/comfyui-card-kit/facts";
+import { laneInputsReader, parseDiffusionLaneFacts, parseEditCap } from "@melite/comfyui-card-kit/facts";
 import { EDIT_DIFFUSION_BOUNDS, diffusionParamRows } from "@melite/comfyui-card-kit/paramRows";
 /** The edit facts door: the resolved lane_inputs parsed into the
  *  closed shape. A drifted encoder class refuses here, never
  *  silently routes to another lane's topology. `max_images` is the
  *  node's own truth (16 total, anchor included) and floors at 1 —
- *  a degenerate cap is a DECL bug.
+ *  a degenerate cap is a DECL bug. Every read rides the typed lane
+ *  reader built off the resolved row — a key the DECL never
+ *  declared refuses loud.
  *  @param raw the resolved lane_inputs (family ⊕ variant)
+ *  @param model the resolved model row (its lane_inputs ∪ every
+ *   variant's own is the DECL's declared key set)
  *  @returns the typed facts the segment factory reads */
-export function parseEditFacts(raw) {
+export function parseEditFacts(raw, model) {
     // The checks + refusal prose live in the kit (J3 consolidation,
-    // 2026-10-18); this door projects the parsed core + the edit cap
-    // into the family's own typed shape (B4).
-    const f = parseDiffusionLaneFacts(raw, "fibo2-edit edit", { key: "text_encode_node", node: "TextEncodeFibo2" }, false);
-    return { unet: f.unet, text_encoder: f.text_encoder, vae: f.vae, clip_type: f.clip_type, text_encode_node: f.node, max_images: parseEditCap(raw, "fibo2-edit edit") };
+    // 2026-10-18); this door reads through the typed lane reader
+    // (stroke 1's reader half) and projects the parsed core + the
+    // edit cap into the family's own typed shape (B4).
+    const lane = laneInputsReader(model, raw, "fibo2-edit edit");
+    const f = parseDiffusionLaneFacts(lane, "fibo2-edit edit", { key: "text_encode_node", node: "TextEncodeFibo2" }, false);
+    return { unet: f.unet, text_encoder: f.text_encoder, vae: f.vae, clip_type: f.clip_type, text_encode_node: f.node, max_images: parseEditCap(lane, "fibo2-edit edit") };
 }
 /** The edit action: the Fibo 2.0 lane — loaders → lora stack → text
  *  pair → per-slot LoadImage anchors → TextEncodeFibo2 (the vae seat

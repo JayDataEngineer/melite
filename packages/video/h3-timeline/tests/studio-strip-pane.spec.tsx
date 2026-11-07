@@ -14,7 +14,7 @@ import { studioCopy } from "../src/ui/studio/studioCopy.ts"
 import { bindEstateRemote, unbindEstateRemote } from "@melite/card-base/client"
 import { callsToPrompts } from "../src/ui/studio/docCalls.ts"
 import type { DocCommission } from "../src/ui/studio/commissions.ts"
-import type { DocCall } from "../src/ui/studio/docModel.ts"
+import { STARTER_CALLS, type DocCall } from "../src/ui/studio/docModel.ts"
 import { repoRoot } from "./repo-root.ts"
 
 // happy-dom returns zero rects (no layout) — the bar's ClientX→frame
@@ -944,6 +944,46 @@ describe("THE SEAM CHIP — the tenant's cut choice", () => {
     fireEvent.click(chip.querySelector("button") ?? chip)
     // cut → carried (the default chain); the call index, never the id
     assert.deepEqual(rec.seam, [[1, "extend"]])
+  })
+
+  // (the EXPLICIT carried half — the toggle's other landing) a call
+  // whose transition states "extend" (the stitching law's own value,
+  // distinct from the absent default) reads as carried, and the
+  // chip's press lands the "cut" write through the same doc channel.
+  it("an explicitly carried seam toggles to cut through the doc write (the absent-or-extend reading lands the cut)", () => {
+    const CARRIED: DocCall[] = [
+      { text: "a", start_frame: 0, end_frame: 90 },
+      { text: "b", start_frame: 90, end_frame: 175, transition: "extend" },
+    ]
+    const { rec } = strip({ calls: CARRIED, barPrompts: callsToPrompts(CARRIED) })
+    const chip = document.querySelector('[data-seam-toggle="call-1"]') as HTMLElement
+    assert.equal(chip.getAttribute("data-seam-state"), "carried",
+      "the explicit extend carries the carried face, never the cut glyph")
+    fireEvent.click(chip.querySelector("button") ?? chip)
+    // carried → cut (the toggle's other half); the call index, never the id
+    assert.deepEqual(rec.seam, [[1, "cut"]])
+  })
+
+  // THE TEXT-LESS CALL (the dormant filter's other arm): a call whose
+  // text seat never stated is type-legal doc truth (DocCall.text is
+  // optional) — under a dormant face the placeholder judge reads the
+  // call's ABSENT text through the ?? backstop and the row STAYS
+  // ("" is not the starter placeholder; hiding operator content is
+  // not this lane's call). The starter row beside it stands down —
+  // both outcomes of the one filter, pinned in one wall.
+  it("under a DORMANT face a text-less call stays painted (an absent text reads through the backstop, never as the placeholder) while the starter row stands down", () => {
+    const calls = [
+      { start_frame: 0, end_frame: 90 },
+      { text: "she walks on, the light shifts", start_frame: 90, end_frame: 175 },
+      { text: STARTER_CALLS[0]!.text, start_frame: 175, end_frame: 260 },
+    ] as DocCall[]
+    strip({ calls, barPrompts: callsToPrompts(calls), commissions: [EDIT] })
+    assert.ok(document.querySelector('[data-prompt-clip="call-0"]'),
+      "the text-less call is doc truth — the dormant filter's ?? backstop keeps the row shown")
+    assert.ok(document.querySelector('[data-prompt-clip="call-1"]'),
+      "authored prose stays painted under a dormant face (doc truth, merely unread)")
+    assert.equal(document.querySelector('[data-prompt-clip="call-2"]'), null,
+      "the starter placeholder stands down under a dormant face (view state, never content)")
   })
 
 })

@@ -1,20 +1,26 @@
 import { loadTextPair, decodeSave, stackLoras, stackControlNets } from "@melite/comfyui-card-kit";
 import { fireLoras, fireControlNets, refuseIPAdapterFiring } from "@melite/comfyui-card-kit/guard";
-import { parseDiffusionLaneFacts } from "@melite/comfyui-card-kit/facts";
+import { laneInputsReader, parseDiffusionLaneFacts } from "@melite/comfyui-card-kit/facts";
 import { diffusionParamRows } from "@melite/comfyui-card-kit/paramRows";
 import { checkAnimaPromptTags } from "./promptTags.js";
 /** The t2i facts door: the resolved lane_inputs parsed into the
  *  closed shape. A drifted latent class refuses here, never
  *  silently routes to another topology. `sampling_shift: 0` is
  *  present-and-inert (truthiness keeps the AuraFlow node out —
- *  the resolved row spells 0, the segment builds nothing).
+ *  the resolved row spells 0, the segment builds nothing). Every
+ *  read rides the typed lane reader built off the resolved row —
+ *  a key the DECL never declared refuses loud.
  *  @param raw the resolved lane_inputs (family ⊕ variant)
+ *  @param model the resolved model row (its lane_inputs ∪ every
+ *   variant's own is the DECL's declared key set)
  *  @returns the typed facts the segment factory reads */
-export function parseT2IFacts(raw) {
+export function parseT2IFacts(raw, model) {
     // The checks + refusal prose live in the kit (J2 consolidation,
-    // 2026-10-18); this door projects the parsed core into the
+    // 2026-10-18); this door reads through the typed lane reader
+    // (stroke 1's reader half) and projects the parsed core into the
     // family's own typed shape (the self-containment contract, B4).
-    const f = parseDiffusionLaneFacts(raw, "anima t2i", { key: "latent_node", node: "EmptyLatentImage" });
+    const lane = laneInputsReader(model, raw, "anima t2i");
+    const f = parseDiffusionLaneFacts(lane, "anima t2i", { key: "latent_node", node: "EmptyLatentImage" });
     return { unet: f.unet, text_encoder: f.text_encoder, vae: f.vae, clip_type: f.clip_type, latent_node: f.node, sampling_shift: f.sampling_shift };
 }
 /** The text-to-image action: the stock diffuse topology — CLIP

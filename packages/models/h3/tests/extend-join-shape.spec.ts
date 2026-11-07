@@ -263,4 +263,35 @@ describe("THE NON-EMPTY TAIL (the 2026-11-19 live burn: \"Extend is completely b
       }
     }
   });
+
+  it("THE SEAT LAW refuses an unbound seat naming both seats (the coverage-arm law, 2026-11-07)", () => {
+    // an extend needs BOTH seats bound — the source clip is the
+    // join's prior member and the prompt is the extension's own
+    // text; a blank either is a doc the render would compose as a
+    // silent half (an extension with no text, a join with no
+    // prior), so the door refuses loud naming the seat.
+    assert.throws(
+      () => composeExtend({ source_clip: "" }, "run_no_source"),
+      /extend: 'source_clip' names no media.*an extend needs both seats bound \(source_clip, extend_prompt\)/s,
+      "a blank source_clip refuses naming both seats",
+    );
+    assert.throws(
+      () => composeExtend({ extend_prompt: " " }, "run_no_prompt"),
+      /extend: 'extend_prompt' names no media.*an extend needs both seats bound \(source_clip, extend_prompt\)/s,
+      "a whitespace prompt refuses naming both seats",
+    );
+  });
+
+  it("THE MULTI-WINDOW OVERLAP LAW refuses a knob ≠ 39 under a solved composition (MED-1's own arm)", () => {
+    // the solver ALWAYS carries the policy's 39f carry; the knob
+    // feeds only the single-window plan head. A multi-window extend
+    // under a stated 38 would compose exact-DELIVERY numbers the
+    // chain stitches at a different carry — the exactness guarantee
+    // breaks silently, so the door refuses loud naming the policy.
+    assert.throws(
+      () => composeExtend({ extend_seconds: 379 / 24, overlap_frames: 38 }, "run_overlap_38"),
+      /overlap_frames 38 — the multi-window composition law carries the policy's 39f context overlap.*re-state overlap_frames 39/s,
+      "a multi-window extend under a 38f knob refuses naming the policy's 39",
+    );
+  });
 });

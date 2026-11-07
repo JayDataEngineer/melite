@@ -130,7 +130,7 @@ describe("the edit action — byte-stability (the compatibility law)", () => {
         unet: "qwen_image_edit_2511_fp8_e4m3fn_scaled_lightning_comfyui_4steps_v1.0.safetensors",
       },
     };
-    const facts = parseEditFacts(merged.lane_inputs);
+    const facts = parseEditFacts(merged.lane_inputs, merged);
     assert.equal(facts.unet, "qwen_image_edit_2511_fp8_e4m3fn_scaled_lightning_comfyui_4steps_v1.0.safetensors");
     const action = new GraphBuilder({});
     instantiateAction(edit, { ...PARAMS, steps: 4, cfg: 1 }, merged, action, "probe-lw");
@@ -284,25 +284,25 @@ describe("the edit action — byte-stability (the compatibility law)", () => {
 describe("the edit facts door (closed-set drift refuses loud)", () => {
   it("a drifted encoder class refuses — the 2.1 key never routes this family's weights", () => {
     assert.throws(
-      () => parseEditFacts({ ...FACTS.lane_inputs, text_encode_node: "TextEncodeQwenImage21" }),
+      () => parseEditFacts({ ...FACTS.lane_inputs, text_encode_node: "TextEncodeQwenImage21" }, FACTS),
       /text_encode_node.*TextEncodeQwenImageEditPlus/,
     );
   });
 
   it("a missing weight string refuses field-named", () => {
     assert.throws(
-      () => parseEditFacts({ ...FACTS.lane_inputs, text_encoder: undefined }),
+      () => parseEditFacts({ ...FACTS.lane_inputs, text_encoder: undefined }, FACTS),
       /lane_inputs\.text_encoder.*non-empty string/,
     );
   });
 
   it("a degenerate max_images refuses", () => {
     assert.throws(
-      () => parseEditFacts({ ...FACTS.lane_inputs, max_images: 0 }),
+      () => parseEditFacts({ ...FACTS.lane_inputs, max_images: 0 }, FACTS),
       /lane_inputs\.max_images.*number ≥ 1/,
     );
     assert.throws(
-      () => parseEditFacts({ ...FACTS.lane_inputs, max_images: "3" }),
+      () => parseEditFacts({ ...FACTS.lane_inputs, max_images: "3" }, FACTS),
       /lane_inputs\.max_images.*number ≥ 1/,
     );
   });

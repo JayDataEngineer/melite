@@ -26,6 +26,7 @@ import { loadCardDefs } from "@melite/comfyui-cordis";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
+import { judgeDeclaredBands } from "../src/card.ts";
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
@@ -154,5 +155,56 @@ describe("the fourth dial — the refine switch on the one edit bag (the collaps
     });
     const handoffs = ofClass(out, "MinimaxH3LatentUpscaler3DRefineHandoff");
     assert.equal(handoffs.length, 1, "the preset posture reaches the learned pass");
+  });
+
+  it("THE BAND JUDGE'S OWN GUARDS (the coverage-arm law, 2026-11-07): a malformed bag entry never reaches a band verdict, and the reshoot carve-out holds", () => {
+    // the judge walks the DECLARED kinds' bags entry by entry; an
+    // entry that is not a plain object (an array, a null) carries
+    // no stated seats, so the band walk CONTINUES past it — the
+    // dispatch's own laws own that shape downstream, never a band
+    // misfire on a shape the seats cannot state. The reshoot kind
+    // never reaches the walk at all (ARM 3's carve-out: its camera
+    // door judges with a richer voice).
+    assert.doesNotThrow(() => judgeDeclaredBands({ edit: [[]] }),
+      "an array entry skips the band walk (no seats to state)");
+    assert.doesNotThrow(() => judgeDeclaredBands({ edit: [null] }),
+      "a null entry skips the band walk");
+    assert.doesNotThrow(() => judgeDeclaredBands({ reshoot: [{ orbit: 9999, tilt: 9999 }] }),
+      "the reshoot carve-out holds — its camera door owns the voice, whatever the numbers");
+  });
+
+  it("THE ONE-ENTRY LAW refuses a present-but-non-array bag at the binding's own door (max_stack 1's other half)", () => {
+    // a bag that is present but carries no entry shape (a string, a
+    // bare null-ish scalar) is neither the unused arm (absent) nor
+    // the explicit off ([]) — it is a doc the bag reader would
+    // quietly misread, so the binding refuses loud naming the bag.
+    const walked = def.schema({}) as Record<string, unknown>;
+    assert.throws(
+      () => {
+        const g = new GraphBuilder();
+        def.compose({ ...walked, reshoot: "a string is not a bag" }, model, g, "run_bad_bag");
+      },
+      /the reshoot bag is present but carries no entry — state exactly one reshoot entry \(max_stack 1\) or omit the arm/,
+      "a non-array reshoot bag refuses naming the bag and the max_stack law",
+    );
+  });
+
+  it("THE ONE-ENTRY LAW refuses a bag of two entries — the silent-drop class max_stack kills", () => {
+    // two armed entries would have the bag reader quietly take the
+    // first and drop the second — the refusal names the count so the
+    // doc states one posture, not two (the law that underwrote the
+    // fifteen pairwise alias edges the collapse deleted).
+    const walked = def.schema({}) as Record<string, unknown>;
+    assert.throws(
+      () => {
+        const g = new GraphBuilder();
+        def.compose(
+          { ...walked, reshoot: [{ orbit: 12, tilt: 6 }, { orbit: 30, tilt: 9 }] },
+          model, g, "run_two_bag",
+        );
+      },
+      /the reshoot bag carries 2 entries — max_stack is 1, so every entry after the first would be silently dropped\. Keep exactly one reshoot entry\./,
+      "a two-entry reshoot bag refuses naming the count and the drop it prevents",
+    );
   });
 });

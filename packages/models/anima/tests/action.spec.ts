@@ -105,21 +105,21 @@ describe("the t2i action — byte-stability (the compatibility law)", () => {
 describe("the t2i facts door (closed-set drift refuses loud)", () => {
   it("a drifted latent class refuses — never a silent topology route", () => {
     assert.throws(
-      () => parseT2IFacts({ ...FACTS.lane_inputs, latent_node: "EmptySD3LatentImage" }),
+      () => parseT2IFacts({ ...FACTS.lane_inputs, latent_node: "EmptySD3LatentImage" }, FACTS),
       /latent_node.*EmptyLatentImage/,
     );
   });
 
   it("a missing weight string refuses field-named", () => {
     assert.throws(
-      () => parseT2IFacts({ ...FACTS.lane_inputs, unet: undefined }),
+      () => parseT2IFacts({ ...FACTS.lane_inputs, unet: undefined }, FACTS),
       /lane_inputs\.unet.*non-empty string/,
     );
   });
 
   it("a non-number sampling_shift refuses", () => {
     assert.throws(
-      () => parseT2IFacts({ ...FACTS.lane_inputs, sampling_shift: "0" }),
+      () => parseT2IFacts({ ...FACTS.lane_inputs, sampling_shift: "0" }, FACTS),
       /lane_inputs\.sampling_shift.*a number is required/,
     );
   });

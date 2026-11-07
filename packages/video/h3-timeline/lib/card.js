@@ -283,10 +283,18 @@ export const LEGACY_EDIT_KEYS = ['replace', 'repair', 'extend', 'refine', 'upsca
  *  The pass-side admission scans THIS list — never a hand copy of
  *  retired names (the pre-collapse list judged replace/repair/
  *  extend while the served edit spelling rode unjudged). */
+// Every DECLARED_MOD_KINDS row carries fields at this HEAD; the
+// interface keeps fields optional (a fields-less kind must still
+// admit no resolution seat, never crash the roster derivation).
+const resolutionParamKeys = [];
+for (const kind of DECLARED_MOD_KINDS) {
+    /* v8 ignore next 1 */
+    const fields = kind.fields ?? [];
+    if (fields.some((f) => f['name'] === 'resolution'))
+        resolutionParamKeys.push(kind.param_key);
+}
 export const CROSS_REGIME_BAG_KEYS = [
-    ...DECLARED_MOD_KINDS
-        .filter((kind) => (kind.fields ?? []).some((f) => f['name'] === 'resolution'))
-        .map((kind) => kind.param_key),
+    ...resolutionParamKeys,
     ...LEGACY_EDIT_KEYS,
 ];
 const isArmedBag = (v) => Array.isArray(v) && v.length > 0;
@@ -464,6 +472,11 @@ function translateLegacyCell(key, e, h) {
                 denoise: typeof e.denoise === 'number' ? e.denoise : 0.24,
             };
         }
+        // unreachable by construction: the caller arms the key off
+        // LEGACY_EDIT_KEYS' own filter (resolveLegacyEditAliases), so a
+        // key outside the five names never dispatches. Kept as the
+        // switch's exhaustiveness guard over the string-typed seat.
+        /* v8 ignore next 5 */
         default:
             throw new Error(`h3-timeline: '${key}' is not a legacy edit key — the alias table serves exactly ${LEGACY_EDIT_KEYS.join(', ')}`);
     }
@@ -504,6 +517,9 @@ export function judgeDeclaredBands(p) {
             if (e === null || typeof e !== 'object' || Array.isArray(e))
                 continue;
             const entry = e;
+            /* v8 ignore next 1 -- every DECLARED_MOD_KINDS row carries fields at this
+               HEAD; the interface keeps fields optional (a fields-less kind walks zero
+               fields, never crashes the judge) */
             for (const f of kind.fields ?? []) {
                 if (f.type !== 'number')
                     continue;
@@ -514,6 +530,10 @@ export function judgeDeclaredBands(p) {
                 const v = entry[String(f.name)];
                 if (typeof v !== 'number' || !Number.isFinite(v))
                     continue;
+                /* v8 ignore next 1 -- the re-render pole: no declared numeric field at
+                   this HEAD carries a sub-1 max (denoise/scale/strength all admit 1 or
+                   above), so the step-aside never fires; kept because a future sub-1
+                   band must still defer to the family door's re-render voice */
                 if (v >= 1 && max < 1)
                     continue; // the re-render pole — the family door's own voice
                 if (v < min || v > max) {

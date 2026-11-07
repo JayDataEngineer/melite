@@ -40,6 +40,54 @@ export function requireText(raw, key, label) {
     }
     return value;
 }
+/** The DECL's declared lane keys: the family base ∪ every variant's
+ *  own lane_inputs — the same union the registration lane-homes wall
+ *  judges (comfyui-cordis service.ts slots derivation) — derived here
+ *  off the FACTS ROW (the row carries both the family lane_inputs and
+ *  each variant's own), so a reader needs no registry read.
+ * @param model the resolved facts row (its lane_inputs and variants)
+ * @returns the declared key set, base ∪ variants, read-only */
+export function declaredLaneKeys(model) {
+    const keys = new Set(Object.keys(model.lane_inputs));
+    for (const v of model.variants) {
+        for (const key of Object.keys(v.lane_inputs ?? {}))
+            keys.add(key);
+    }
+    return keys;
+}
+/** Build the typed lane-facts reader over one resolved row. The
+ *  declared set derives ONCE off the model row; every read then
+ *  judges against it. The refusals fire on read, never at build.
+ *  @param model the resolved facts row — its lane_inputs ∪ every
+ *   variant's own IS the declared key set
+ *  @param raw the resolved lane_inputs (family ⊕ variant) the reads serve
+ *  @param label the refusing door's name (family + action), message-prefixed
+ *  @returns the reader over raw */
+export function laneInputsReader(model, raw, label) {
+    const declared = declaredLaneKeys(model);
+    const get = (key) => {
+        if (!declared.has(key)) {
+            throw new Error(`${label}: lane_inputs.${key} — the DECL never declared this key`);
+        }
+        return raw[key];
+    };
+    return {
+        get,
+        stringOf: (key) => {
+            const value = get(key);
+            return typeof value === 'string' && value !== '' ? value : undefined;
+        },
+        requireText: (key, label) => {
+            // the undeclared refusal fires FIRST (get's own) — a drifted
+            // spelling never reads as the non-empty-string refusal
+            const value = get(key);
+            if (typeof value !== 'string' || value === '') {
+                throw new Error(`${label}: lane_inputs.${key} = ${JSON.stringify(value)} — a non-empty string is required`);
+            }
+            return value;
+        },
+    };
+}
 /** THE STATED-PRESET TEST (qa8 F31 — the exclusivity rest): the
  *  engine service's defaults merge (comfyui-cordis service.compose)
  *  fills the lane's `defaults.voice` into every doc before the tts
@@ -65,24 +113,28 @@ export function voicePresetStated(doc, model) {
 /** Parse the diffusion-lane core: the four requireText model slots, the
  *  node-literal whitelist gate, and the optional sampling_shift number
  *  check. The refusal prose is the families' pinned form (the specs
- *  assert the family-tagged prefix + these tails).
- * @param raw the resolved lane_inputs (family ⊕ variant)
+ *  assert the family-tagged prefix + these tails). Every read rides
+ *  the typed lane reader — a key the DECL never declared refuses with
+ *  the reader's own refusal, before any slot prose.
+ * @param reader the typed lane reader (the DECL's declared key set +
+ *  the resolved row it serves)
  * @param label the refusing door's name (family + action), message-prefixed
  * @param gate the facts key holding the node literal + the one allowed value
  * @param shift false to skip the sampling_shift check (edit doors carry none)
  * @returns the core facts; families project into their own typed shape
- * @throws Error when a model slot is missing, the node literal is not the
- *  whitelisted value, or sampling_shift is present but not a number */
-export function parseDiffusionLaneFacts(raw, label, gate, shift = true) {
-    const text = (key) => requireText(raw, key, label);
-    const node = raw[gate.key];
+ * @throws Error when a key is outside the DECL's declared set, a model
+ *  slot is missing, the node literal is not the whitelisted value, or
+ *  sampling_shift is present but not a number */
+export function parseDiffusionLaneFacts(reader, label, gate, shift = true) {
+    const text = (key) => reader.requireText(key, label);
+    const node = reader.get(gate.key);
     // !== refusal below proves node === gate.node; the returns carry
     // gate.node itself (already the literal type — no cast).
     if (node !== gate.node) {
         throw new Error(`${label}: lane_inputs.${gate.key} = ${JSON.stringify(node)} — the action builds on ${gate.node}`);
     }
     if (shift) {
-        const value = raw.sampling_shift;
+        const value = reader.get('sampling_shift');
         if (value !== undefined && typeof value !== 'number') {
             throw new Error(`${label}: lane_inputs.sampling_shift = ${JSON.stringify(value)} — a number is required`);
         }
@@ -104,12 +156,16 @@ export function parseDiffusionLaneFacts(raw, label, gate, shift = true) {
     };
 }
 /** The edit door's max_images floor: a finite number ≥ 1, floored.
- *  @param raw the resolved lane_inputs (family ⊕ variant)
+ *  The read rides the typed lane reader — an undeclared max_images
+ *  refuses with the reader's own refusal, before the floor prose.
+ *  @param reader the typed lane reader (the DECL's declared key set +
+ *   the resolved row it serves)
  *  @param label the refusing door's name (family + action), message-prefixed
- *  @returns Math.floor(raw.max_images)
- *  @throws Error when max_images is absent, non-finite, or < 1 */
-export function parseEditCap(raw, label) {
-    const cap = raw.max_images;
+ *  @returns Math.floor of the cap at max_images
+ *  @throws Error when the key is outside the DECL's declared set, or
+ *   max_images is absent, non-finite, or < 1 */
+export function parseEditCap(reader, label) {
+    const cap = reader.get('max_images');
     if (typeof cap !== 'number' || !Number.isFinite(cap) || cap < 1) {
         throw new Error(`${label}: lane_inputs.max_images = ${JSON.stringify(cap)} — a number ≥ 1 is required`);
     }

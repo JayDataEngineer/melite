@@ -57,6 +57,7 @@ import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import { getModel, registryIds, registryModel } from "../../../engines/comfyui-cordis/src/models/models.ts";
 import { H3_LORA_ROWS } from "@melite/models-h3/mods/loras";
 import { film } from "../src/actions.ts";
+import { h3MaskedEditPlane } from "../src/chainEdit.ts";
 import { DECL } from "../src/index.ts";
 import { instantiateAction } from "@melite/comfyui-card-kit";
 
@@ -801,6 +802,61 @@ describe("the h3 class knobs ride VERBATIM to their consumers (P0 witness extens
     }, "h3_value_arm15_off");
     assertValueAtConsumer(off, "H3SLAAttention", "reference_protection", false, "sla_reference_protection (Off)");
     assert.equal(switchCarrying(graph, "H3SLAAttention").switch, true, "sla_enabled owns the attention switch");
+  });
+
+  it("ARM 15b — the switch's other two shapes: sla_enabled:false and a stated sla_switch both pin the literal (no PrimitiveBoolean minted)", () => {
+    // (the coverage-arm law, 2026-11-07: the plane's selector is a
+    // three-shape seat — the minted PrimitiveBoolean (both knobs
+    // absent), the pinned true of an EXPLICITLY disabled SLA, and a
+    // stated sla_switch boolean riding verbatim. A wiring that
+    // minted the primitive under every doc would still pass ARM 15;
+    // these arms pin the literal shapes at the PLANE's own seat —
+    // the film walk's gated doc reshapes knobs before the plane
+    // sees them (the default-fill), so the selector's own law is
+    // judged where it lives, the deep-import drive the lib specs
+    // ride for the same reason.)
+    const plane = (p: Record<string, unknown>): Record<string, { class_type: string; inputs: Record<string, unknown> }> => {
+      const g = new GraphBuilder();
+      h3MaskedEditPlane(g, p, {
+        unet: "minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors",
+        clip: "qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
+        vae_video: "minimax_h3_video_vae_int8_convrot.safetensors",
+        vae_audio: "minimax_h3_audio_vae_fp32.safetensors",
+      }, 6);
+      return g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+    };
+    const selectorOf = (o: Record<string, { class_type: string; inputs: Record<string, unknown> }>): unknown => {
+      const sw = Object.values(o).filter((n) => n.class_type === "ComfySwitchNode");
+      assert.equal(sw.length, 1, "one switch on the plane");
+      return sw[0]!.inputs.switch;
+    };
+    // the unset doc: the minted PrimitiveBoolean owns the seat (a
+    // WIRE selector, never a literal — the film default's shape).
+    const unset = plane({});
+    assert.ok(
+      Object.values(unset).some((n) => n.class_type === "PrimitiveBoolean"),
+      "the unset doc mints the PrimitiveBoolean selector",
+    );
+    // an EXPLICITLY disabled SLA: the pinned literal true.
+    const off = plane({ sla_enabled: false });
+    assert.equal(selectorOf(off), true, "sla_enabled:false pins the switch's literal true (no primitive in flight)");
+    assert.ok(
+      !Object.values(off).some((n) => n.class_type === "PrimitiveBoolean"),
+      "an explicitly disabled SLA never mints the PrimitiveBoolean selector",
+    );
+    // a stated sla_switch: the boolean rides verbatim, both poles.
+    const on = plane({ sla_switch: true });
+    assert.equal(selectorOf(on), true, "a stated sla_switch true rides the selector verbatim (the boolean, never a mint)");
+    assert.ok(
+      !Object.values(on).some((n) => n.class_type === "PrimitiveBoolean"),
+      "a stated sla_switch owns the seat — the PrimitiveBoolean is the unset doc's own shape",
+    );
+    const onFalse = plane({ sla_switch: false });
+    assert.equal(selectorOf(onFalse), false, "a stated sla_switch false rides verbatim too (the literal, never the mint's default)");
+    assert.ok(
+      !Object.values(onFalse).some((n) => n.class_type === "PrimitiveBoolean"),
+      "the false pole is the caller's own — no primitive",
+    );
   });
 
   it("ARM 16 — attention_backend verbatim at ModelAttentionBackend (the non-SLA arm's backend)", async () => {

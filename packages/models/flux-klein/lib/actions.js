@@ -1,16 +1,21 @@
 import { loadTextPair, decodeSave, stackLoras } from "@melite/comfyui-card-kit";
 import { fireLoras, refuseIPAdapterFiring } from "@melite/comfyui-card-kit/guard";
 import { diffusionParamRows } from "@melite/comfyui-card-kit/paramRows";
-import { parseDiffusionLaneFacts } from "@melite/comfyui-card-kit/facts";
+import { laneInputsReader, parseDiffusionLaneFacts } from "@melite/comfyui-card-kit/facts";
 /** The t2i facts door: the resolved lane_inputs parsed into the
  *  closed shape. An unknown encoder class refuses here, never
- *  silently routes to a stock lane.
+ *  silently routes to a stock lane. Every read rides the typed
+ *  lane reader built off the resolved row — a key the DECL never
+ *  declared refuses loud.
  *  @param raw the resolved lane_inputs (family ⊕ variant)
+ *  @param model the resolved model row (its lane_inputs ∪ every
+ *   variant's own is the DECL's declared key set)
  *  @returns the typed facts the segment factory reads */
-export function parseT2IFacts(raw) {
+export function parseT2IFacts(raw, model) {
     // shift=false: this lane declares no sampling_shift (the scheduler
     // node owns the empirical shift), so the door skips its check.
-    const f = parseDiffusionLaneFacts(raw, "flux-klein t2i", { key: "text_encode_node", node: "CLIPTextEncode" }, false);
+    const lane = laneInputsReader(model, raw, "flux-klein t2i");
+    const f = parseDiffusionLaneFacts(lane, "flux-klein t2i", { key: "text_encode_node", node: "CLIPTextEncode" }, false);
     return {
         unet: f.unet,
         text_encoder: f.text_encoder,

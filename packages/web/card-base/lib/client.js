@@ -16020,7 +16020,7 @@ window.__ModuleLoader__.load({
 				if (k.flat === true) {
 					const flatWrite = modCommitWrite(k, next[next.length - 1] ?? {});
 					for (const name of Object.keys(flatWrite)) onEdit(name, flatWrite[name]);
-					if (next.length === 0) for (const f of k.fields ?? []) {
+					if (next.length === 0) for (const f of k.fields) {
 						onEdit(f.name, void 0);
 						flatWrite[f.name] = null;
 					}
@@ -16031,17 +16031,17 @@ window.__ModuleLoader__.load({
 				onPatch?.({ [k.param_key]: next });
 			};
 			const addable = kinds.filter((k) => k.cardinality !== "scalar");
-			const presenceKind = (k) => k.flat === true && (k.fields ?? []).length > 0 && (k.fields ?? []).every((f) => f.type === "boolean");
+			const presenceKind = (k) => k.flat === true && (k.fields ?? []).length > 0 && k.fields.every((f) => f.type === "boolean");
 			const namedPresenceKind = (k) => {
 				const fields = k.fields ?? [];
 				return k.flat === true && fields.filter((f) => f.type === "text").length === 1 && fields.some((f) => f.type === "boolean") && fields.every((f) => f.type === "boolean" || f.type === "text");
 			};
 			const namedFieldOf = (k) => {
-				return (k.fields ?? []).find((x) => x.type === "text") ?? (k.fields ?? [])[0];
+				return k.fields.find((x) => x.type === "text");
 			};
 			const presenceStamp = (k) => {
 				const stamp = {};
-				for (const f of k.fields ?? []) stamp[f.name] = true;
+				for (const f of k.fields) stamp[f.name] = true;
 				return stamp;
 			};
 			const namedPresenceStamp = (k, name) => ({
@@ -16519,7 +16519,7 @@ window.__ModuleLoader__.load({
 				onEdit: (_, v) => {
 					setNamedLeaf({
 						kind: namedLeaf.kind,
-						name: typeof v === "string" ? v : ""
+						name: typeof v === "string" ? v : /* v8 ignore next -- the '' fallback is a type fence: this atom is SpecAtom's raw-string text seat, whose only edit channel is the DOM input's onChange handing e.target.value (a string, by the DOM contract); a second atom type at this popup seat would re-arm it */ ""
 					});
 				}
 			}), (0, react.createElement)("div", { className: card_module_css_default.modLeafActions }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
@@ -16564,6 +16564,7 @@ window.__ModuleLoader__.load({
 			} else if (isOptionKind(k)) {
 				takeString("id", drafts.setOption);
 				takeNumber("strength", drafts.setStrength);
+				/* v8 ignore else -- the implicit skip is a type fence: every option-branch caller of routePresetPatch passes setSteps (openCreate's seed, this edit seat, the preset switch's press all wire the third draft), so the guard is always true where the option branch evaluates; a routePresetPatch call that omits setSteps on an option kind would re-arm the path */
 				if (drafts.setSteps !== void 0) takeNumber("steps", drafts.setSteps);
 			}
 			return cell;
@@ -16582,7 +16583,7 @@ window.__ModuleLoader__.load({
 			const [uploadBusy, setUploadBusy] = (0, react.useState)(false);
 			/** the picked file's own suffix — a stem rename keeps it (the
 			*  door's one-segment filename IS the seated row's id). */
-			const uploadExt = () => pendingFile === null ? "" : /\.[A-Za-z0-9]+$/.exec(pendingFile.name)?.[0] ?? "";
+			const uploadExt = () => pendingFile === null ? /* v8 ignore next -- the '' fallback is a type fence: applyUpload is the sole reader of this suffix and its own guard refuses a null pendingFile before the call (uploadBusy/pendingFile === null early return), so the state is always a picked file here; a second suffix reader over a cleared seat would re-arm it */ "" : /\.[A-Za-z0-9]+$/.exec(pendingFile.name)?.[0] ?? "";
 			/** the menu's file pick: DEFERRED — nothing rides the wire until
 			*  Apply (the rename + default strength are authored first). */
 			const pickUpload = (file) => {
@@ -16673,10 +16674,11 @@ window.__ModuleLoader__.load({
 				});
 			};
 			const leafFields = (k.fields ?? []).filter((f) => f.name !== k.param_key && !(hidden?.has(f.name) ?? false) && !(facePresent && f.faceOwned === true) && fieldVisible(f, onDraft.draftParams));
-			const presetSwitches = (k.presets ?? []).length > 0 && props.onPresetPick !== void 0 ? (0, react.createElement)("div", {
+			const leafPresets = k.presets ?? [];
+			const presetSwitches = leafPresets.length > 0 && props.onPresetPick !== void 0 ? (0, react.createElement)("div", {
 				className: card_module_css_default.modPresetRow,
 				"data-leaf-presets": k.param_key
-			}, (k.presets ?? []).map((p) => (0, react.createElement)("span", {
+			}, leafPresets.map((p) => (0, react.createElement)("span", {
 				key: p.id,
 				"data-leaf-preset": p.id
 			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {

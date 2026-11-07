@@ -139,40 +139,40 @@ describe("the t2i facts door (closed-set drift refuses loud)", () => {
       ...FACTS.lane_inputs,
       unet: "qwen_image_2.1_bf16.safetensors",
       text_encoder: "qwen3vl_8b_bf16.safetensors",
-    });
+    }, FACTS);
     assert.equal(facts.unet, "qwen_image_2.1_bf16.safetensors");
     assert.equal(facts.text_encode_node, "TextEncodeQwenImage21");
   });
 
   it("a shift-less facts row parses green (the shift stays optional)", () => {
-    const facts = parseT2IFacts({ ...FACTS.lane_inputs, sampling_shift: undefined });
+    const facts = parseT2IFacts({ ...FACTS.lane_inputs, sampling_shift: undefined }, FACTS);
     assert.equal(facts.sampling_shift, undefined);
   });
 
   it("an unknown encoder class refuses — never a silent stock-lane route", () => {
     assert.throws(
-      () => parseT2IFacts({ ...FACTS.lane_inputs, text_encode_node: "CLIPTextEncode" }),
+      () => parseT2IFacts({ ...FACTS.lane_inputs, text_encode_node: "CLIPTextEncode" }, FACTS),
       /text_encode_node.*TextEncodeQwenImage21/,
     );
   });
 
   it("a missing weight string refuses field-named", () => {
     assert.throws(
-      () => parseT2IFacts({ ...FACTS.lane_inputs, unet: undefined }),
+      () => parseT2IFacts({ ...FACTS.lane_inputs, unet: undefined }, FACTS),
       /lane_inputs\.unet.*non-empty string/,
     );
   });
 
   it("an empty weight string refuses (the blank arm)", () => {
     assert.throws(
-      () => parseT2IFacts({ ...FACTS.lane_inputs, vae: "" }),
+      () => parseT2IFacts({ ...FACTS.lane_inputs, vae: "" }, FACTS),
       /lane_inputs\.vae.*non-empty string/,
     );
   });
 
   it("a non-number sampling_shift refuses", () => {
     assert.throws(
-      () => parseT2IFacts({ ...FACTS.lane_inputs, sampling_shift: "3" }),
+      () => parseT2IFacts({ ...FACTS.lane_inputs, sampling_shift: "3" }, FACTS),
       /lane_inputs\.sampling_shift.*a number is required/,
     );
   });

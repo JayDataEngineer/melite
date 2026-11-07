@@ -362,6 +362,7 @@ export function StudioStripPane({
   // (The four doors call this ONLY under a dormant face — the guard
   // narrows the union for the kind the hint names.)
   const refuseCallsEdit = () => {
+    /* v8 ignore if -- the non-dormant return is a type fence: every caller wires this handler ONLY under callsFace.face === 'dormant' (the four edit doors' ternaries above; the seam chip passes undefined there), so the union is already narrowed when the body runs and this branch cannot fire — a fifth edit door wired on a non-dormant face would re-arm it */
     if (callsFace.face !== 'dormant') return
     setLaneErr(studioCopy.callsDormantHint(callsFace.kind))
   }
@@ -498,6 +499,7 @@ export function StudioStripPane({
           ? undefined
           : (id: string) => {
               const idx = barPrompts.findIndex((p) => p.uuid === id)
+              /* v8 ignore else -- the idx < 0 skip is a type fence: the kit renders a seam chip only for rows of the prompts array it was handed, and the chip arms only where shownPrompts is the unfiltered barPrompts (the dormant face's filter carries no chip — onSeamToggle is undefined there), so every uuid through this door is a barPrompts row; a face that filters prompts while keeping the chip armed would re-arm it */
               if (idx >= 0) setCallTransition(idx, calls[idx]?.transition === "cut" ? "extend" : "cut")
             }
       }

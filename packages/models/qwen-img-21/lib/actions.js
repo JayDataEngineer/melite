@@ -1,17 +1,25 @@
 import { loadTextPair, decodeSave, stackLoras, isSpell, statedRegion, regionSegs, genDetailerSave } from "@melite/comfyui-card-kit";
 import { fireLoras, refuseIPAdapterFiring } from "@melite/comfyui-card-kit/guard";
 import { diffusionParamRows } from "@melite/comfyui-card-kit/paramRows";
-import { parseDiffusionLaneFacts } from "@melite/comfyui-card-kit/facts";
+import { laneInputsReader, parseDiffusionLaneFacts } from "@melite/comfyui-card-kit/facts";
 /** The t2i facts door: the resolved lane_inputs parsed into the
  *  closed shape. An unknown encoder class refuses here, never
- *  silently routes to a stock lane.
- *  @param raw the resolved lane_inputs (family ⊕ variant)
+ *  silently routes to a stock lane. Every read rides the typed
+ *  lane reader built off the resolved row — a key the DECL never
+ *  declared refuses loud.
+ *  @param raw the resolved lane_inputs (family ⊕ variant ⊕ cell)
+ *  @param model the resolved model row (its lane_inputs ∪ every
+ *   variant's own is the DECL's declared key set)
  *  @returns the typed facts the segment factory reads */
-export function parseT2IFacts(raw) {
+export function parseT2IFacts(raw, model) {
     // The checks + refusal prose live in the kit (J2 consolidation,
-    // 2026-10-18); this door projects the parsed core into the
+    // 2026-10-18); this door reads through the typed lane reader
+    // (stroke 1's reader half) and projects the parsed core into the
     // family's own typed shape (the self-containment contract, B4).
-    const f = parseDiffusionLaneFacts(raw, "qwen-img-21 t2i", { key: "text_encode_node", node: "TextEncodeQwenImage21" });
+    // The cell merges (tier weights re-spell unet/text_encoder) ride:
+    // both keys are declared at the base.
+    const lane = laneInputsReader(model, raw, "qwen-img-21 t2i");
+    const f = parseDiffusionLaneFacts(lane, "qwen-img-21 t2i", { key: "text_encode_node", node: "TextEncodeQwenImage21" });
     return {
         unet: f.unet,
         text_encoder: f.text_encoder,

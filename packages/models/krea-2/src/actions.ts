@@ -14,7 +14,7 @@ import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
 import { loadTextPair, decodeSave, stackLoras, stackControlNets, statedRegion, regionSegs, genDetailerSave } from "@melite/comfyui-card-kit";
 import { fireLoras, fireControlNets, refuseIPAdapterFiring } from "@melite/comfyui-card-kit/guard";
 import type { OutputHandle } from "@melite/comfyui-card-kit/graph";
-import { parseDiffusionLaneFacts, type LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
+import { laneInputsReader, parseDiffusionLaneFacts, type LaneInputsFacts, type ModelFacts } from "@melite/comfyui-card-kit/facts";
 import { diffusionParamRows } from "@melite/comfyui-card-kit/paramRows";
 
 /** The closed facts shape the t2i segment reads. `latent_node` is
@@ -48,14 +48,20 @@ export type T2IParams = {
  *  closed shape. A drifted latent class refuses here, never
  *  silently routes to another topology. `sampling_shift: 0` is
  *  present-and-inert (truthiness keeps the AuraFlow node out —
- *  the resolved row spells 0, the segment builds nothing).
+ *  the resolved row spells 0, the segment builds nothing). Every
+ *  read rides the typed lane reader built off the resolved row —
+ *  a key the DECL never declared refuses loud.
  *  @param raw the resolved lane_inputs (family ⊕ variant)
+ *  @param model the resolved model row (its lane_inputs ∪ every
+ *   variant's own is the DECL's declared key set)
  *  @returns the typed facts the segment factory reads */
-export function parseT2IFacts(raw: LaneInputsFacts): T2IFacts {
+export function parseT2IFacts(raw: LaneInputsFacts, model: ModelFacts): T2IFacts {
   // The checks + refusal prose live in the kit (J2 consolidation,
-  // 2026-10-18); this door projects the parsed core into the
+  // 2026-10-18); this door reads through the typed lane reader
+  // (stroke 1's reader half) and projects the parsed core into the
   // family's own typed shape (the self-containment contract, B4).
-  const f = parseDiffusionLaneFacts(raw, "krea-2 t2i", { key: "latent_node", node: "EmptySD3LatentImage" });
+  const lane = laneInputsReader(model, raw, "krea-2 t2i");
+  const f = parseDiffusionLaneFacts(lane, "krea-2 t2i", { key: "latent_node", node: "EmptySD3LatentImage" });
   return { unet: f.unet, text_encoder: f.text_encoder, vae: f.vae, clip_type: f.clip_type, latent_node: f.node, sampling_shift: f.sampling_shift };
 }
 

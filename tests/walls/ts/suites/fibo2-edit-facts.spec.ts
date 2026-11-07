@@ -44,7 +44,7 @@ import { fileURLToPath } from "node:url";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { DECL, edit, parseEditFacts } from "@melite/models-fibo2-edit";
 import { getModel } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
-import type { LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
+import type { LaneInputsFacts, ModelFacts } from "@melite/comfyui-card-kit/facts";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
 const HF = "https://huggingface.co/Comfy-Org/Fibo-2.0/resolve/main";
@@ -72,8 +72,21 @@ const TEXT_ENCODER_BF16: ArtifactRow = { file: "text_encoders/qwen3vl_4b_bf16.sa
 const TEXT_ENCODER_INT8_KNOWN: ArtifactRow = { file: "text_encoders/qwen3vl_4b_int8_convrot.safetensors", sha256: "32de113cbf8282b02cbff0794b637b9d6676da09314a1db5a30bcea9bf4ee01c", size_bytes: 4858559240 };
 const VAE: ArtifactRow = { file: "vae/flux2-vae.safetensors", sha256: "868fe7b343cc8f3a19dbcfcafbc3d5f888802be3f89bd81b65b3621a066ce8f3", size_bytes: 336211292 };
 
+// The minimal model row the facts door's typed lane reader derives
+// its declared key set from (stroke 1's reader half) — the same
+// fixture shape the family spec rides.
+const ROW: ModelFacts = {
+  id: DECL.id,
+  card: "image-edit",
+  defaults: {},
+  lane_inputs: DECL.lane_inputs as LaneInputsFacts,
+  variants: [],
+  variant_groups: [],
+  outputs: [],
+};
+
 /** The DECL facts the arms read. */
-const lane = parseEditFacts(DECL.lane_inputs as LaneInputsFacts);
+const lane = parseEditFacts(DECL.lane_inputs as LaneInputsFacts, ROW);
 const variants = DECL.variants ?? [];
 const groups = ((DECL.variant_groups ?? []) as Array<{ id: string }>).map((g) => g.id);
 

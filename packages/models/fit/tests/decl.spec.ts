@@ -10,6 +10,22 @@ import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { DECL, family, seat } from "../src/index.ts";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
+import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
+
+// the resolved model row the seat composes against — one literal,
+// handed to the facts door AND the build (the vacuous door ignores
+// it; the explicit arg keeps the two-param facts seam honest).
+const MODEL: ModelFacts = {
+  id: "fit",
+  card: "",
+  family: "fit",
+  defaults: {},
+  lane_inputs: {},
+  variants: [],
+  variant_groups: [],
+  outputs: [],
+  mods: [],
+};
 
 describe("the fit model plugin (the whole model, one package)", () => {
   it("is a plugin: named family export, inject ['models'], apply registers", () => {
@@ -47,18 +63,8 @@ describe("the fit model plugin (the whole model, one package)", () => {
     const g = new GraphBuilder();
     const out = seat.build({
       p: { body: "$body", prop: "$prop", bone: "hand_r" },
-      facts: seat.facts({}),
-      model: {
-        id: "fit",
-        card: "",
-        family: "fit",
-        defaults: {},
-        lane_inputs: {},
-        variants: [],
-        variant_groups: [],
-        outputs: [],
-        mods: [],
-      },
+      facts: seat.facts({}, MODEL),
+      model: MODEL,
       g,
       runId: "",
     } as never);
@@ -83,11 +89,8 @@ describe("the fit model plugin (the whole model, one package)", () => {
     const g = new GraphBuilder();
     seat.build({
       p: { body: "$body", prop: "$prop", bone: "hand_r" },
-      facts: seat.facts({}),
-      model: {
-        id: "fit", card: "", family: "fit", defaults: {}, lane_inputs: {},
-        variants: [], variant_groups: [], outputs: [], mods: [],
-      },
+      facts: seat.facts({}, MODEL),
+      model: MODEL,
       g,
       runId: "",
     } as never);
@@ -114,18 +117,8 @@ describe("the fit model plugin (the whole model, one package)", () => {
       () =>
         seat.build({
           p: { body: "$body", prop: "$prop", bone: "  " },
-          facts: seat.facts({}),
-          model: {
-            id: "fit",
-            card: "",
-            family: "fit",
-            defaults: {},
-            lane_inputs: {},
-            variants: [],
-            variant_groups: [],
-            outputs: [],
-            mods: [],
-          },
+          facts: seat.facts({}, MODEL),
+          model: MODEL,
           g,
           runId: "",
         } as never),

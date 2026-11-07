@@ -18,7 +18,7 @@ import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
 import { loadTextPair, decodeSave, stackLoras, orderedInputImages, regionSegs, detailerSave, isSpell, laneSampler, laneScheduler, deliverableSizeOf, refuseDeliverableSize, type TensorRef } from "@melite/comfyui-card-kit";
 import { fireLoras } from "@melite/comfyui-card-kit/guard";
 import type { OutputHandle } from "@melite/comfyui-card-kit/graph";
-import { parseDiffusionLaneFacts, parseEditCap, type LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
+import { laneInputsReader, parseDiffusionLaneFacts, parseEditCap, type LaneInputsFacts, type ModelFacts } from "@melite/comfyui-card-kit/facts";
 import { EDIT_DIFFUSION_BOUNDS, diffusionParamRows } from "@melite/comfyui-card-kit/paramRows";
 
 /** The closed facts shape the 2511 edit segment reads. */
@@ -41,14 +41,20 @@ export type EditParams = Record<string, unknown>;
  *  family's row) refuses here — the legacy lane's silent else-branch
  *  would have built this lane on wrong weights. `max_images` is the
  *  stock node's own truth (image1/2/3 — 3 total) and floors at 1.
+ *  Every read rides the typed lane reader built off the resolved
+ *  row — a key the DECL never declared refuses loud.
  *  @param raw the resolved lane_inputs (family ⊕ variant)
+ *  @param model the resolved model row (its lane_inputs ∪ every
+ *   variant's own is the DECL's declared key set)
  *  @returns the typed facts the segment factory reads */
-export function parseEditFacts(raw: LaneInputsFacts): EditFacts {
+export function parseEditFacts(raw: LaneInputsFacts, model: ModelFacts): EditFacts {
   // The checks + refusal prose live in the kit (J3 consolidation,
-  // 2026-10-18); this door projects the parsed core + the edit cap
-  // into the family's own typed shape (B4).
-  const f = parseDiffusionLaneFacts(raw, "qwen-img-edit-2511 edit", { key: "text_encode_node", node: "TextEncodeQwenImageEditPlus" }, false);
-  return { unet: f.unet, text_encoder: f.text_encoder, vae: f.vae, clip_type: f.clip_type, text_encode_node: f.node, max_images: parseEditCap(raw, "qwen-img-edit-2511 edit") };
+  // 2026-10-18); this door reads through the typed lane reader
+  // (stroke 1's reader half) and projects the parsed core + the
+  // edit cap into the family's own typed shape (B4).
+  const lane = laneInputsReader(model, raw, "qwen-img-edit-2511 edit");
+  const f = parseDiffusionLaneFacts(lane, "qwen-img-edit-2511 edit", { key: "text_encode_node", node: "TextEncodeQwenImageEditPlus" }, false);
+  return { unet: f.unet, text_encoder: f.text_encoder, vae: f.vae, clip_type: f.clip_type, text_encode_node: f.node, max_images: parseEditCap(lane, "qwen-img-edit-2511 edit") };
 }
 
 /** The edit action: the anchored instruction-edit lane — loaders →

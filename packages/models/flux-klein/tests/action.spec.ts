@@ -97,7 +97,7 @@ describe("the t2i action — the official FLUX.2 Klein 4B template topology", ()
 
   it("a facts row with a drifted encoder refuses at the door (the DECL states it)", () => {
     assert.throws(
-      () => parseT2IFacts({ ...FACTS.lane_inputs, text_encode_node: "TextEncodeQwenImage21" }),
+      () => parseT2IFacts({ ...FACTS.lane_inputs, text_encode_node: "TextEncodeQwenImage21" }, FACTS),
       /flux-klein t2i: lane_inputs\.text_encode_node = "TextEncodeQwenImage21" — the action builds on CLIPTextEncode/,
     );
   });

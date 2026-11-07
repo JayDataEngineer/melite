@@ -12,12 +12,14 @@
 // this family boards the pack, it never spells the nodes).
 // Creation order IS node-id order (the recipe law). The
 // lane_inputs keys this segment never reads (texture_vae,
-// clip_vision, … the GAP-7 blanks) ride unvalidated.
+// clip_vision, … the GAP-7 blanks) still skip the value checks, but
+// their KEY SPELLING rides the typed lane reader's declared-set wall
+// — a key the DECL never declared refuses at the door.
 import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
 import { loadTextPair, decodeSave, stackLoras, stackControlNets } from "@melite/comfyui-card-kit";
 import { fireLoras, fireControlNets, refuseIPAdapterFiring } from "@melite/comfyui-card-kit/guard";
 import type { OutputHandle } from "@melite/comfyui-card-kit/graph";
-import { parseDiffusionLaneFacts, type LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
+import { laneInputsReader, parseDiffusionLaneFacts, type LaneInputsFacts, type ModelFacts } from "@melite/comfyui-card-kit/facts";
 import { diffusionParamRows } from "@melite/comfyui-card-kit/paramRows";
 
 /** The closed facts shape the t2i segment reads. `latent_node` is
@@ -49,14 +51,20 @@ export type T2IParams = {
 
 /** The t2i facts door: the resolved lane_inputs parsed into the
  *  closed shape. A drifted latent class refuses here, never
- *  silently routes to another topology.
+ *  silently routes to another topology. Every read rides the typed
+ *  lane reader built off the resolved row — a key the DECL never
+ *  declared refuses loud.
  *  @param raw the resolved lane_inputs (family ⊕ variant)
+ *  @param model the resolved model row (its lane_inputs ∪ every
+ *   variant's own is the DECL's declared key set)
  *  @returns the typed facts the segment factory reads */
-export function parseT2IFacts(raw: LaneInputsFacts): T2IFacts {
+export function parseT2IFacts(raw: LaneInputsFacts, model: ModelFacts): T2IFacts {
   // The checks + refusal prose live in the kit (J2 consolidation,
-  // 2026-10-18); this door projects the parsed core into the
+  // 2026-10-18); this door reads through the typed lane reader
+  // (stroke 1's reader half) and projects the parsed core into the
   // family's own typed shape (the self-containment contract, B4).
-  const f = parseDiffusionLaneFacts(raw, "z-image t2i", { key: "latent_node", node: "EmptySD3LatentImage" });
+  const lane = laneInputsReader(model, raw, "z-image t2i");
+  const f = parseDiffusionLaneFacts(lane, "z-image t2i", { key: "latent_node", node: "EmptySD3LatentImage" });
   return { unet: f.unet, text_encoder: f.text_encoder, vae: f.vae, clip_type: f.clip_type, latent_node: f.node, sampling_shift: f.sampling_shift };
 }
 

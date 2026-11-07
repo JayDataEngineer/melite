@@ -19,12 +19,9 @@ import type { LaneInputsFacts, ModelFacts } from "@melite/comfyui-card-kit/facts
 import { DECL, edit, parseEditFacts } from "../src/index.ts";
 import type { EditFacts } from "../src/index.ts";
 
-const FACTS: EditFacts = parseEditFacts(DECL.lane_inputs as LaneInputsFacts);
-assert.equal(FACTS.text_encode_node, "TextEncodeFibo2");
-assert.equal(FACTS.max_images, 16);
-
 // The registry row face the model feed hands compose (the same
-// minimal shape anima's fixture rides).
+// minimal shape anima's fixture rides). Built FIRST: the facts door
+// derives the typed lane reader's declared key set off it.
 const MODEL: ModelFacts = {
   id: DECL.id,
   card: "image-edit",
@@ -35,6 +32,10 @@ const MODEL: ModelFacts = {
   variant_groups: [],
   outputs: [],
 };
+
+const FACTS: EditFacts = parseEditFacts(DECL.lane_inputs as LaneInputsFacts, MODEL);
+assert.equal(FACTS.text_encode_node, "TextEncodeFibo2");
+assert.equal(FACTS.max_images, 16);
 
 const PARAMS = {
   input_images: ["anchor.png", "reference.png"],

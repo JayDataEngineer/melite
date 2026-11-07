@@ -61,6 +61,50 @@ describe("renderH3Swap as a library (the bypass face)", () => {
       /'still' names no media/,
     );
   });
+
+  it("carries a stated resolution tier and roles text verbatim at the plan head (the coverage-arm law, 2026-11-07)", () => {
+    // both seats are OPTIONAL strings on the entry ('' falls to the
+    // declared default tier / no roles row); a stated pair rides the
+    // plan node's own inputs verbatim — a wiring that dropped either
+    // would compose the default tier under a doc that stated another
+    // (the F34 shape-true class, at the swap's own head).
+    const g = new GraphBuilder();
+    renderH3Swap(
+      { ...ENTRY(), resolution: "1080p", roles: "the detective, the witness" },
+      {}, FACTS, g, "run_lib_tier",
+    );
+    const out = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+    const plan = Object.entries(out).find(([, n]) => n.class_type === "H3OneClickSwapPlan");
+    assert.ok(plan, "the plan head composes");
+    assert.equal(plan[1]!.inputs.resolution, "1080p", "a stated tier rides the plan verbatim");
+    assert.equal(plan[1]!.inputs.roles, "the detective, the witness", "a stated roles row rides the plan verbatim");
+  });
+
+  it("keep_audio:false composes the generated soundtrack at the assemble (both audio seats spell the dial)", () => {
+    const g = new GraphBuilder();
+    renderH3Swap({ ...ENTRY(), keep_audio: false }, {}, FACTS, g, "run_lib_gen_audio");
+    const out = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+    const assemble = Object.entries(out).filter(([, n]) => n.class_type === "MiniMaxH3ChainAssemble");
+    assert.equal(assemble.length, 1, "one assemble terminal");
+    assert.equal(
+      assemble[0]![1].inputs.audio_source, "generated",
+      "keep_audio:false spells the generated pole at the assemble's own seat (the default composes 'source')",
+    );
+  });
+
+  it("carries stated numeric seats verbatim (steps + seed ride the chain plan's own literals; unstated they default)", () => {
+    // num()'s stated arm: an entry that states steps/seed as numbers
+    // must carry them onto MiniMaxH3ChainPlanModern verbatim — a
+    // reader that dropped the stated value would compose the
+    // declared defaults (6/0) under a doc that stated another.
+    const g = new GraphBuilder();
+    renderH3Swap({ ...ENTRY(), steps: 9, seed: 4242 }, {}, FACTS, g, "run_lib_numeric");
+    const out = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+    const chainPlan = Object.entries(out).find(([, n]) => n.class_type === "MiniMaxH3ChainPlanModern");
+    assert.ok(chainPlan, "the chain plan composes");
+    assert.equal(chainPlan[1]!.inputs.default_steps, 9, "a stated steps count rides the plan literal (default 6)");
+    assert.equal(chainPlan[1]!.inputs.base_seed, 4242, "a stated seed rides the plan literal (default 0)");
+  });
 });
 
 describe("THE TILING LAW (operator 2026-11-14: \"EVERY MOD MUST BE ABLE TO BE BROKEN UP\")", () => {

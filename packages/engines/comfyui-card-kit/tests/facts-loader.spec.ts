@@ -10,10 +10,13 @@ import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  laneInputsReader,
   loadFacts,
   parseDiffusionLaneFacts,
   parseEditCap,
   requireText,
+  type LaneInputsReader,
+  type ModelFacts,
 } from "../src/facts.ts";
 import { assertModUse } from "../src/mods/guard.ts";
 
@@ -235,6 +238,25 @@ describe("requireText (the facts door's one string extractor)", () => {
   });
 });
 
+// THE DECLARED SET the reader-based parse arms ride: the DECL
+// declares every key the door reads; the raw rows under test mutate
+// and delete VALUES — the declared spellings never move, so each
+// refusal stays the pinned non-empty-string/whitelist/number one.
+const DECLARED: Pick<ModelFacts, "lane_inputs" | "variants"> = {
+  lane_inputs: {
+    unet: "u.safetensors",
+    text_encoder: "t.safetensors",
+    vae: "v.safetensors",
+    clip_type: "qwen_image",
+    latent_node: "EmptySD3LatentImage",
+    sampling_shift: 0.5,
+    max_images: 16,
+  },
+  variants: [],
+};
+const laneOf = (raw: Record<string, unknown>): LaneInputsReader =>
+  laneInputsReader(DECLARED, raw, "fam act");
+
 describe("parseDiffusionLaneFacts (the diffusion-lane facts core's shared gates)", () => {
   const gate = { key: "latent_node", node: "EmptySD3LatentImage" } as const;
   const lane = {
@@ -247,7 +269,7 @@ describe("parseDiffusionLaneFacts (the diffusion-lane facts core's shared gates)
   };
 
   it("parses the four model slots and carries the gated node literal + the declared shift", () => {
-    assert.deepEqual(parseDiffusionLaneFacts(lane, "fam act", gate), {
+    assert.deepEqual(parseDiffusionLaneFacts(laneOf(lane), "fam act", gate), {
       unet: "u.safetensors",
       text_encoder: "t.safetensors",
       vae: "v.safetensors",
@@ -259,20 +281,20 @@ describe("parseDiffusionLaneFacts (the diffusion-lane facts core's shared gates)
 
   it("refuses a node literal outside the whitelist, naming the literal the action builds on", () => {
     assert.throws(
-      () => parseDiffusionLaneFacts({ ...lane, latent_node: "EmptyLatentImage" }, "fam act", gate),
+      () => parseDiffusionLaneFacts(laneOf({ ...lane, latent_node: "EmptyLatentImage" }), "fam act", gate),
       /^Error: fam act: lane_inputs\.latent_node = "EmptyLatentImage" — the action builds on EmptySD3LatentImage$/,
     );
   });
 
   it("refuses a present-but-non-number sampling_shift", () => {
     assert.throws(
-      () => parseDiffusionLaneFacts({ ...lane, sampling_shift: "4" }, "fam act", gate),
+      () => parseDiffusionLaneFacts(laneOf({ ...lane, sampling_shift: "4" }), "fam act", gate),
       /^Error: fam act: lane_inputs\.sampling_shift = "4" — a number is required$/,
     );
   });
 
   it("shift: false (the edit doors) skips the shift check — the core carries no shift key", () => {
-    const facts = parseDiffusionLaneFacts({ ...lane, sampling_shift: undefined }, "fam act", gate, false);
+    const facts = parseDiffusionLaneFacts(laneOf({ ...lane, sampling_shift: undefined }), "fam act", gate, false);
     assert.equal("sampling_shift" in facts, false, "an edit core carries no shift key");
     assert.equal(facts.node, "EmptySD3LatentImage");
   });
@@ -280,7 +302,7 @@ describe("parseDiffusionLaneFacts (the diffusion-lane facts core's shared gates)
 
 describe("parseEditCap (the edit door's max_images floor)", () => {
   it("floors a fractional cap to the integer count", () => {
-    assert.equal(parseEditCap({ max_images: 2.7 }, "fam act"), 2);
+    assert.equal(parseEditCap(laneOf({ max_images: 2.7 }), "fam act"), 2);
   });
   it("refuses an absent, non-number, non-finite, or sub-1 cap with the door's own label", () => {
     const cases: [Record<string, unknown>, string][] = [
@@ -291,7 +313,7 @@ describe("parseEditCap (the edit door's max_images floor)", () => {
     ];
     for (const [raw, shown] of cases) {
       assert.throws(
-        () => parseEditCap(raw, "fam act"),
+        () => parseEditCap(laneOf(raw), "fam act"),
         new RegExp("^Error: fam act: lane_inputs\\.max_images = " + shown + " — a number ≥ 1 is required$"),
       );
     }

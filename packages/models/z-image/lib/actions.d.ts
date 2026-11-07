@@ -1,5 +1,5 @@
 import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
-import { type LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
+import { type LaneInputsFacts, type ModelFacts } from "@melite/comfyui-card-kit/facts";
 /** The closed facts shape the t2i segment reads. `latent_node` is
  *  the latent class as a TYPE: this action builds the SD3-shaped
  *  latent, and anything else at the door is drift, not a route. */
@@ -27,10 +27,14 @@ export type T2IParams = {
 };
 /** The t2i facts door: the resolved lane_inputs parsed into the
  *  closed shape. A drifted latent class refuses here, never
- *  silently routes to another topology.
+ *  silently routes to another topology. Every read rides the typed
+ *  lane reader built off the resolved row — a key the DECL never
+ *  declared refuses loud.
  *  @param raw the resolved lane_inputs (family ⊕ variant)
+ *  @param model the resolved model row (its lane_inputs ∪ every
+ *   variant's own is the DECL's declared key set)
  *  @returns the typed facts the segment factory reads */
-export declare function parseT2IFacts(raw: LaneInputsFacts): T2IFacts;
+export declare function parseT2IFacts(raw: LaneInputsFacts, model: ModelFacts): T2IFacts;
 /** The text-to-image action: the stock diffuse topology with the
  *  AuraFlow wrap ON (the resolved row spells shift 3) and the
  *  controlnet stack FIRED — fired picks wrap the LoRA'd model

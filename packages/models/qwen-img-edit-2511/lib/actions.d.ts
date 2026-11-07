@@ -1,5 +1,5 @@
 import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
-import { type LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
+import { type LaneInputsFacts, type ModelFacts } from "@melite/comfyui-card-kit/facts";
 /** The closed facts shape the 2511 edit segment reads. */
 export type EditFacts = {
     readonly unet: string;
@@ -18,9 +18,13 @@ export type EditParams = Record<string, unknown>;
  *  family's row) refuses here — the legacy lane's silent else-branch
  *  would have built this lane on wrong weights. `max_images` is the
  *  stock node's own truth (image1/2/3 — 3 total) and floors at 1.
+ *  Every read rides the typed lane reader built off the resolved
+ *  row — a key the DECL never declared refuses loud.
  *  @param raw the resolved lane_inputs (family ⊕ variant)
+ *  @param model the resolved model row (its lane_inputs ∪ every
+ *   variant's own is the DECL's declared key set)
  *  @returns the typed facts the segment factory reads */
-export declare function parseEditFacts(raw: LaneInputsFacts): EditFacts;
+export declare function parseEditFacts(raw: LaneInputsFacts, model: ModelFacts): EditFacts;
 /** The edit action: the anchored instruction-edit lane — loaders →
  *  lora stack → text pair → per-slot LoadImage anchors →
  *  TextEncodeQwenImageEditPlus pair (refs on the stock node's native

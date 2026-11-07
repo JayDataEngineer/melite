@@ -5153,6 +5153,7 @@ window.__ModuleLoader__.load({
 			const gapPin = keyframes.some((k) => pinDropVerdict(calls, k.frame) === null);
 			const refusalFace = laneErr ?? (gapPin ? studioCopy.gapRefusal : null);
 			const refuseCallsEdit = () => {
+				/* v8 ignore if -- the non-dormant return is a type fence: every caller wires this handler ONLY under callsFace.face === 'dormant' (the four edit doors' ternaries above; the seam chip passes undefined there), so the union is already narrowed when the body runs and this branch cannot fire — a fifth edit door wired on a non-dormant face would re-arm it */
 				if (callsFace.face !== "dormant") return;
 				setLaneErr(studioCopy.callsDormantHint(callsFace.kind));
 			};
@@ -5225,6 +5226,7 @@ window.__ModuleLoader__.load({
 						onPromptAdd: callsFace.face === "dormant" ? void 0 : (frame) => addCallAt(docFromFilm(frame)),
 						onSeamToggle: callsFace.face === "dormant" ? void 0 : (id) => {
 							const idx = barPrompts.findIndex((p) => p.uuid === id);
+							/* v8 ignore else -- the idx < 0 skip is a type fence: the kit renders a seam chip only for rows of the prompts array it was handed, and the chip arms only where shownPrompts is the unfiltered barPrompts (the dormant face's filter carries no chip — onSeamToggle is undefined there), so every uuid through this door is a barPrompts row; a face that filters prompts while keeping the chip armed would re-arm it */
 							if (idx >= 0) setCallTransition(idx, calls[idx]?.transition === "cut" ? "extend" : "cut");
 						},
 						previews: callPreviews,

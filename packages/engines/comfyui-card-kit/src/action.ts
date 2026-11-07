@@ -27,7 +27,11 @@ export interface ComfyActionContext<P, F> {
 /** The atom's offer on the ComfyUI engine. `facts` is the family
  *  door: the raw resolved lane_inputs (family ⊕ variant) parsed into
  *  the closed shape the factory reads — an off-set member (an
- *  unknown text_encode_node) refuses at instantiate. `vramBudgetMb`
+ *  unknown text_encode_node) refuses at instantiate. The second seat
+ *  is the resolved model row: the typed lane reader (facts.ts,
+ *  stroke 1's reader half) derives the DECL's declared lane-key set
+ *  off it and refuses a key the DECL never declared, instead of
+ *  reading a drifted spelling as a silent undefined. `vramBudgetMb`
  *  is the atom's RUN contract, not a graph param: the MiB of free
  *  VRAM the engine must prove before this action's graph submits
  *  (the "Comfyui should prevent oom" law, 2026-10-23 — actions whose
@@ -35,7 +39,7 @@ export interface ComfyActionContext<P, F> {
  *  need; the execute door gates on it, freeing engine cache or
  *  refusing loud, never a mid-run OOM). Absent = no gate. */
 export interface ComfyActionSpec<P, F> extends ActionSpec<ComfyActionContext<P, F>, OutputHandle> {
-  readonly facts: (raw: LaneInputsFacts) => F;
+  readonly facts: (raw: LaneInputsFacts, model: ModelFacts) => F;
   readonly vramBudgetMb?: number;
 }
 
@@ -57,7 +61,7 @@ export function instantiateAction<P, F>(
   g: GraphBuilder,
   runId: string,
 ): OutputHandle {
-  const facts = action.facts(model.lane_inputs);
+  const facts = action.facts(model.lane_inputs, model);
   const doc: Record<string, unknown> = { ...p };
   for (const spec of action.params) {
     if (spec.rule === "seed-sentinel") {
@@ -90,7 +94,15 @@ interface DeclaresActions {
     }>;
     readonly laneIndependent?: boolean;
     readonly vramBudgetMb?: number;
-    readonly facts: (raw: Record<string, unknown>) => unknown;
+    // the erased model seat (the typed lane reader's declared-set
+    // source): the concrete spec takes ModelFacts; the registration
+    // gate hands the DECL's own declared face ({ lane_inputs,
+    // variants }). METHOD spelling on purpose — a property field
+    // demands strict contravariance, unsatisfiable across the two
+    // callers; the method's bivariance keeps the erasure
+    // expressible (the same trust the declaredAction cast below
+    // carries). Never read beyond those two members.
+    facts(raw: Record<string, unknown>, model: unknown): unknown;
     readonly build: (...args: never[]) => unknown;
   }>;
 }

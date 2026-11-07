@@ -1,7 +1,7 @@
 import { loadTextPair, decodeSave, stackLoras } from "@melite/comfyui-card-kit";
 import { fireLoras, refuseIPAdapterFiring } from "@melite/comfyui-card-kit/guard";
 import { diffusionParamRows } from "@melite/comfyui-card-kit/paramRows";
-import { parseDiffusionLaneFacts } from "@melite/comfyui-card-kit/facts";
+import { laneInputsReader, parseDiffusionLaneFacts } from "@melite/comfyui-card-kit/facts";
 /** The Comfy-Org template's exposed negative-box default (verbatim,
  *  the 2026-11-04 artifact burn): the lane encodes a REAL negative on
  *  every compose — the template never zero-outs, and a zeroed
@@ -10,13 +10,18 @@ import { parseDiffusionLaneFacts } from "@melite/comfyui-card-kit/facts";
 const TEMPLATE_NEGATIVE = "nsfw, worst quality, bad anatomy, watermark, jpeg artifact";
 /** The t2i facts door: the resolved lane_inputs parsed into the
  *  closed shape. An unknown encoder class refuses here, never
- *  silently routes to a stock lane.
+ *  silently routes to a stock lane. Every read rides the typed
+ *  lane reader built off the resolved row — a key the DECL never
+ *  declared refuses loud.
  *  @param raw the resolved lane_inputs (family ⊕ variant ⊕ cell)
+ *  @param model the resolved model row (its lane_inputs ∪ every
+ *   variant's own is the DECL's declared key set)
  *  @returns the typed facts the segment factory reads */
-export function parseT2IFacts(raw) {
+export function parseT2IFacts(raw, model) {
     // shift defaults true: this lane DECLARES its sampling_shift
     // (5.0), and a non-numeric drift refuses at the door.
-    const f = parseDiffusionLaneFacts(raw, "moss-image t2i", { key: "text_encode_node", node: "CLIPTextEncode" });
+    const lane = laneInputsReader(model, raw, "moss-image t2i");
+    const f = parseDiffusionLaneFacts(lane, "moss-image t2i", { key: "text_encode_node", node: "CLIPTextEncode" });
     return {
         unet: f.unet,
         text_encoder: f.text_encoder,

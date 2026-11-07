@@ -42,6 +42,7 @@ import {
   MAX_COMPOSED_WINDOWS,
   REFINE_2X_OOM_FRAMES,
   REFINE_DEFAULT_CLIP_SECONDS,
+  refineArmed,
   renderH3Refine,
   renderH3RefineBag,
   renderH3RefineCarry,
@@ -885,5 +886,33 @@ describe("the refine bag carrier (GAPS-19: N entries tile ONE film)", () => {
       "one joint target per window");
     assert.equal(ofClass(nodes, "VHS_LoadVideo").length, 3, "three windows, three loaders");
     assert.equal(ofClass(nodes, "MeliteConcatVideos").length, 1, "the one terminal film");
+  });
+
+  it("the arm predicate is bag presence (the same law as the replace/repair/extend arms — the coverage-arm law, 2026-11-07)", () => {
+    // a commission is armed when its bag is a NON-EMPTY ARRAY: an
+    // absent or empty bag leaves the compose byte-stable on the
+    // film path (the card's own gating). The predicate is exported
+    // because the card door and the collapse's compose-through both
+    // read it — this is its own firing arm.
+    assert.equal(refineArmed({}), false, "an absent bag never arms");
+    assert.equal(refineArmed({ refine: [] }), false, "an empty bag is the explicit off — never armed");
+    assert.equal(refineArmed({ refine: [entry()] }), true, "a non-empty bag arms the commission");
+  });
+
+  it("THE SEAT LAW refuses an unbound seat naming both seats (a refine rides no empty seat)", () => {
+    // both seats bound is the reshoot idiom the refine shares: the
+    // source clip is the window's own prior and the prompt is the
+    // pass's text; a blank either composes a silent half, so the
+    // window's own door refuses loud naming the seat.
+    assert.throws(
+      () => renderH3Refine(entry({ source_clip: "" }), {}, facts, new GraphBuilder(), "run-seat-src"),
+      /refine: 'source_clip' names no media.*a refine needs both seats bound/s,
+      "a blank source_clip refuses naming both seats",
+    );
+    assert.throws(
+      () => renderH3Refine(entry({ refine_prompt: " " }), {}, facts, new GraphBuilder(), "run-seat-prm"),
+      /refine: 'refine_prompt' names no media.*a refine needs both seats bound/s,
+      "a whitespace prompt refuses naming both seats",
+    );
   });
 });

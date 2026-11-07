@@ -15,6 +15,7 @@ import { createElement as h } from 'react'
 import { afterEach, expect, test, vi } from 'vitest'
 import type { ModifierKind } from '../src/spec.ts'
 import { ModifiersSection } from '../src/mods.tsx'
+import { chromeCopy } from '../src/locales/chromeCopy.ts'
 
 afterEach(cleanup)
 
@@ -194,4 +195,88 @@ test('a preset-less kind renders NO chip row (the empty bag stays hidden — the
   render(h(ModifiersSection, { kinds: [bare], values: {}, onEdit: vi.fn(), onPatch: undefined }))
   expect(document.querySelector('[data-testid="cb-mod-preset-row"]')).toBe(null)
   expect(screen.queryByText('Repair a region')).toBe(null)
+})
+
+// ── THE OPTION SHAPE'S OWN ROUTER ARM (the F2 law's third shape):
+// a served-catalog kind whose cell names the router's three seats
+// (id/strength/steps). The seated bag's chip opens the leaf on the
+// merge — the option-kind branch of routePresetPatch, the branch the
+// field/hybrid walls never reach. ──
+const OPTION_PRESET = {
+  kind: 'lora', label: 'LoRA', param_key: 'loras', cardinality: 'multi',
+  options: [
+    { value: 'p1', label: 'Plain', defaults: { strength: 0.5, steps: 4 } },
+    { value: 'p2', label: 'Turbo', defaults: { strength: 0.8, steps: 8 } },
+  ],
+  presets: [
+    { id: 'turbo-6', label: 'Turbo 6', patch: { id: 'p2', strength: 0.75, steps: 6, note: 'staged note' } },
+    { id: 'steps-6', label: 'Steps 6', patch: { steps: 6 } },
+  ],
+} as unknown as ModifierKind
+
+function seatOptionBag(): { onEdit: ReturnType<typeof vi.fn> } {
+  const onEdit = vi.fn()
+  render(h(ModifiersSection, {
+    kinds: [OPTION_PRESET],
+    values: { loras: [{ id: 'p1', strength: 0.5, steps: 4 }] },
+    onEdit, onPatch: undefined,
+  }))
+  return { onEdit }
+}
+
+test("(F2, the option shape) a SEATED bag's chip seeds the leaf on the merge: the three seats route into their drafts and the save carries them", () => {
+  const { onEdit } = seatOptionBag()
+  press('turbo-6')
+  // the modal opened on EDIT (the seated entry stays the entry); the
+  // pick pane is the option shape's ONE-ROW seat (no switch row here —
+  // the chips opened it)
+  expect(screen.getByRole('dialog')).toBeTruthy()
+  // the id seat routed into the catalog draft — the picker names the
+  // PATCHED row, never the seated one
+  expect(modal().getByLabelText('LoRA').textContent).toBe('Turbo')
+  // the strength seat routed into its dial (the seated 0.5 → the cell's 0.75)
+  expect((modal().getByLabelText('Strength', { selector: 'input' }) as HTMLInputElement).value).toBe('0.75')
+  // the steps seat routed into its dial (the seated 4 → the cell's 6)
+  expect((modal().getByLabelText(chromeCopy.stepsAppliedLabel, { selector: 'input' }) as HTMLInputElement).value).toBe('6')
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+  expect(onEdit).toHaveBeenCalledTimes(1)
+  const [, bag] = onEdit.mock.calls[0] as [string, Array<Record<string, unknown>>]
+  // the save carries the routed seats — never the seated entry's stale values
+  expect(bag).toHaveLength(1)
+  expect(bag[0]).toMatchObject({ id: 'p2', strength: 0.75, steps: 6 })
+})
+
+test('(F2, the option shape) a patch that names only one seat: the un-named drafts keep the seated entry\'s own row and dial, the named seat moves', () => {
+  const { onEdit } = seatOptionBag()
+  press('steps-6')
+  expect(screen.getByRole('dialog')).toBeTruthy()
+  // no id/strength seats in the patch — the seated entry's own pick
+  // and dial ride (the seed the router never overrode)
+  expect(modal().getByLabelText('LoRA').textContent).toBe('Plain')
+  expect((modal().getByLabelText('Strength', { selector: 'input' }) as HTMLInputElement).value).toBe('0.5')
+  // the one named seat routed (the seated 4 → the cell's 6)
+  expect((modal().getByLabelText(chromeCopy.stepsAppliedLabel, { selector: 'input' }) as HTMLInputElement).value).toBe('6')
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+  const [, bag] = onEdit.mock.calls[0] as [string, Array<Record<string, unknown>>]
+  expect(bag[0]).toMatchObject({ id: 'p1', strength: 0.5, steps: 6 })
+})
+
+test('the painted cell re-pressed: the no-op un-paints with the manual-edit law and holds the staged dials (the switch is a door, never a toggle)', () => {
+  const onEdit = vi.fn()
+  render(h(ModifiersSection, { kinds: [EDIT], values: {}, onEdit, onPatch: undefined }))
+  press('identity-swap')
+  expect(leafSwitch('identity-swap').getAttribute('aria-pressed')).toBe('true')
+  expect(denoiseInput().value).toBe('1')
+  // THE RE-PRESS on the already-painted seat: onPresetPick's guard is
+  // the no-op arm — it declines the re-paint (the seat IS the cell),
+  // and the draftParams wrapper's un-paint STANDS: the cell drops its
+  // paint exactly like a manual dial edit, while the staged dials hold
+  fireEvent.click(leafSwitch('identity-swap'))
+  expect(leafSwitch('identity-swap').getAttribute('aria-pressed')).not.toBe('true')
+  expect(denoiseInput().value).toBe('1')
+  // and the save still carries the cell — the staged draft survived
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+  expect(onEdit).toHaveBeenCalledTimes(1)
+  const [, bag] = onEdit.mock.calls[0] as [string, Array<Record<string, unknown>>]
+  expect(bag[0]).toMatchObject({ mask_source: 'region', reference: 'still+mannequin', denoise: 1 })
 })

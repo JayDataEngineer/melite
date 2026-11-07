@@ -96,10 +96,17 @@ describe("the t2i action — the official MOSS-Image template topology", () => {
     // spells connections as [nodeId, outputIndex] handles)
     assert.equal(shiftNodes.length === 1 && Object.values(graph).some((n) => n.class_type === "KSampler" && JSON.stringify(n.inputs.model) === JSON.stringify(["ModelSamplingAuraFlow.0", 0])), true, "the sampler samples through the shift wrap, no SLG patch between");
     // the inert spelling (the door's optional-shift contract): a
-    // resolved row carrying no sampling_shift composes the bare unet
+    // resolved row carrying no sampling_shift VALUE composes the
+    // bare unet. The key stays DECLARED (the variant carries it —
+    // the qwen3-tts per-variant precedent) so the typed lane reader
+    // refuses only UNDECLARED keys, never a declared-but-absent one.
     const bare = new GraphBuilder({});
     const { sampling_shift: _omitted, ...noShift } = FACTS.lane_inputs as Record<string, unknown>;
-    instantiateAction(t2i, PARAMS, { ...FACTS, lane_inputs: noShift } as ModelFacts, bare, "probe-no-shift");
+    instantiateAction(t2i, PARAMS, {
+      ...FACTS,
+      lane_inputs: noShift,
+      variants: [{ id: "shift", label: "Shift", group: "g", route: "", resolver_defaults: {}, defaults: {}, cells: [], lane_inputs: { sampling_shift: 5.0 } }],
+    } as ModelFacts, bare, "probe-no-shift");
     assert.equal(nodesOf(bare, "ModelSamplingAuraFlow"), 0, "no declared shift, no wrap");
     const bareSampler = Object.values(graphOf(bare)).find((n) => n.class_type === "KSampler");
     assert.deepEqual(bareSampler?.inputs.model, ["UNETLoader.0", 0], "no declared shift, the sampler rides the raw unet (still no SLG patch)");
@@ -133,7 +140,7 @@ describe("the t2i action — the official MOSS-Image template topology", () => {
 
   it("a facts row with a drifted encoder refuses at the door (the DECL states it)", () => {
     assert.throws(
-      () => parseT2IFacts({ ...FACTS.lane_inputs, text_encode_node: "TextEncodeQwenImage21" }),
+      () => parseT2IFacts({ ...FACTS.lane_inputs, text_encode_node: "TextEncodeQwenImage21" }, FACTS),
       /moss-image t2i: lane_inputs\.text_encode_node = "TextEncodeQwenImage21" — the action builds on CLIPTextEncode/,
     );
   });

@@ -290,15 +290,21 @@ function validateDecl(decl) {
     // drifted cell lane_input booted green (QWEN CELL-FOLD,
     // 2026-11-10).
     if (decl.actions !== undefined) {
+        // THE DECLARED FACE (the typed lane reader's registration seat,
+        // stroke 1's reader half): the door's second arg — base ∪ every
+        // variant's lane_inputs, the same union the lane-homes wall
+        // judges above — so the reader refuses a key the DECL never
+        // declared HERE, at boot, in the door's own voice.
+        const declared = { lane_inputs: decl.lane_inputs ?? {}, variants: decl.variants };
         for (const action of decl.actions) {
             // spread of undefined yields {} — a door may face an empty
             // row only when the family omits lane_inputs entirely
-            action.facts({ ...decl.lane_inputs });
+            action.facts({ ...decl.lane_inputs }, declared);
             for (const v of decl.variants) {
                 const vmerge = { ...decl.lane_inputs, ...v.lane_inputs };
-                action.facts(vmerge);
+                action.facts(vmerge, declared);
                 for (const c of v.cells ?? []) {
-                    action.facts({ ...vmerge, ...c.lane_inputs });
+                    action.facts({ ...vmerge, ...c.lane_inputs }, declared);
                 }
             }
         }

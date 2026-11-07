@@ -1,5 +1,5 @@
 import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
-import { type LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
+import { type LaneInputsFacts, type ModelFacts } from "@melite/comfyui-card-kit/facts";
 /** The closed facts shape the Fibo 2.0 edit segment reads. */
 export type EditFacts = {
     readonly unet: string;
@@ -17,10 +17,14 @@ export type EditParams = Record<string, unknown>;
  *  closed shape. A drifted encoder class refuses here, never
  *  silently routes to another lane's topology. `max_images` is the
  *  node's own truth (16 total, anchor included) and floors at 1 —
- *  a degenerate cap is a DECL bug.
+ *  a degenerate cap is a DECL bug. Every read rides the typed lane
+ *  reader built off the resolved row — a key the DECL never
+ *  declared refuses loud.
  *  @param raw the resolved lane_inputs (family ⊕ variant)
+ *  @param model the resolved model row (its lane_inputs ∪ every
+ *   variant's own is the DECL's declared key set)
  *  @returns the typed facts the segment factory reads */
-export declare function parseEditFacts(raw: LaneInputsFacts): EditFacts;
+export declare function parseEditFacts(raw: LaneInputsFacts, model: ModelFacts): EditFacts;
 /** The edit action: the Fibo 2.0 lane — loaders → lora stack → text
  *  pair → per-slot LoadImage anchors → TextEncodeFibo2 (the vae seat
  *  connected: reference latents splice into BOTH conditionings; an

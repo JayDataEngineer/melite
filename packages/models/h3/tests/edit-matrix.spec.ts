@@ -244,4 +244,38 @@ describe("renderH3Edit — the video-edit matrix on the one spine (stage 2a)", (
       /source_clip.*names no media/,
     );
   });
+
+  it("THE DENOISE BAND refuses both shores naming the pole's own band (the coverage-arm law, 2026-11-07)", () => {
+    // the pole's band is (0, 1] — 0 is the no-op shore (a stated dial
+    // that changes nothing is a lie the door refuses), >1 is the
+    // unreachable shore. Both refuse in the band's OWN voice, never
+    // the boil's (0.9 × pair composes above — the boil is a MATRIX
+    // law, the band is the pole's).
+    for (const denoise of [0, 1.5]) {
+      const g = new GraphBuilder();
+      assert.throws(
+        () => renderH3Edit({ ...ENTRY(), denoise }, STATIC_PNG, PAIR, {}, FACTS, g, "run_band"),
+        /denoise \d+(\.\d+)? — the pole lives \(0, 1\]/,
+        `denoise ${String(denoise)} must refuse naming the pole's band`,
+      );
+    }
+  });
+
+  it("THE UPSCALE POSTURE rides the loop's own denoise default when the doc states none (the placement cut's verbatim-or-absent law)", () => {
+    // chain_run stated, denoise ABSENT: the edit door passes NO
+    // denoise to the loop — the 0.24 default rides inside, never a
+    // re-stated 1 from the matrix above (the loop's law refuses a
+    // STATED 1 itself). The arm pins the loop's presence and the
+    // scheduler's own default, judging the shape the omission
+    // composes.
+    const g = new GraphBuilder();
+    const entry = { ...ENTRY(), chain_run: "swap_0154b9ae9c" };
+    delete (entry as Record<string, unknown>)["denoise"];
+    renderH3Edit(entry, STATIC_PNG, SELF, {}, FACTS, g, "run_upscale_default");
+    const o = out(g);
+    assert.ok(ofClass(o, "MiniMaxH3ChainCheckpointManager").length > 0, "the deferred second pass composes the checkpoint loop");
+    const sched = ofClass(o, "BasicScheduler");
+    assert.equal(sched.length, 1, "one scheduler on the loop's own spine");
+    assert.equal(sched[0]![1].inputs.denoise, 0.24, "an absent denoise rides the loop's declared 0.24 default — never the matrix's re-stated 1");
+  });
 });
