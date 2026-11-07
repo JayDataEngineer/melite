@@ -11028,19 +11028,46 @@ window.__ModuleLoader__.load({
 		*  @param held the SAVED doc the drill opened.
 		*  @returns the null-patch for the dead carried keys ({} when the
 		*    doc is already stateable on its resolved lane). */
+		/** THE ADMITTED-KEY FOLD (the pre-collapse reopen cure, 2026-11-16):
+		*  the declared set BOTH judges of a saved doc derive — the compose
+		*  mirror (composeValidate) and the reopen heal
+		*  (dropStaleReopenCarry) — so one spelling sanctions a key at both
+		*  seats: the resolved lane surface, the transport's model key, the
+		*  DECL's studio writes, the card-declared mod fields, and the
+		*  contract `admits` row with the estate's glob law (a trailing *
+		*  admits every key under the prefix). Before this fold the heal
+		*  judged the doc with a narrower set than the mirror and nulled the
+		*  legacy bags the verdict sanctioned — one silent merge-patch
+		*  delete per reopen (the 2026-11-16 timeline audit's data-loss
+		*  finding: the operator's saved mod VANISHED at open).
+		*  @param spec the doc's served form-spec.
+		*  @param surface the doc's RESOLVED lane surface (or the legacy
+		*    params projection when the family declares no lanes block).
+		*  @returns the exact-name set and the glob prefixes. */
+		function admittedKeys(spec, surface) {
+			const declared = new Set(surface);
+			const prefixes = [];
+			for (const g of axisGroups(spec)) declared.add(axisKey(g));
+			declared.add("model");
+			for (const k of spec.studio_writes ?? []) declared.add(k);
+			for (const k of modOwnedFields(spec)) declared.add(k);
+			for (const a of spec.admits ?? []) if (a.endsWith("*")) prefixes.push(a.slice(0, -1));
+			else declared.add(a);
+			return {
+				declared,
+				prefixes
+			};
+		}
 		function dropStaleReopenCarry(spec, held) {
 			const out = {};
 			if (held === void 0) return out;
 			const surface = resolvedLaneSurface(spec, held);
 			if (surface === null) return out;
 			const axisKeys = new Set(axisGroups(spec).map((g) => axisKey(g)));
-			const modKeys = modOwnedFields(spec);
-			const studioKeys = new Set(spec.studio_writes ?? []);
+			const { declared, prefixes } = admittedKeys(spec, surface);
 			for (const [k, v] of Object.entries(held)) {
-				if (k === "model" || k === "variant" || k === "quant" || axisKeys.has(k)) continue;
-				if (modKeys.has(k)) continue;
-				if (studioKeys.has(k)) continue;
-				if (surface.includes(k)) continue;
+				if (k === "variant" || k === "quant" || axisKeys.has(k)) continue;
+				if (declared.has(k) || prefixes.some((p) => k.startsWith(p))) continue;
 				if (laneBlank(v)) continue;
 				out[k] = null;
 			}
@@ -11058,14 +11085,7 @@ window.__ModuleLoader__.load({
 				const legacy = resolved === null && spec.lanes === void 0 && Array.isArray(spec.params) ? spec.params : null;
 				const surface = resolved ?? legacy;
 				if (surface !== null) {
-					const declared = new Set(surface);
-					const prefixes = [];
-					for (const g of axisGroups(spec)) declared.add(axisKey(g));
-					declared.add("model");
-					for (const k of spec.studio_writes ?? []) declared.add(k);
-					for (const k of modOwnedFields(spec)) declared.add(k);
-					for (const a of spec.admits ?? []) if (a.endsWith("*")) prefixes.push(a.slice(0, -1));
-					else declared.add(a);
+					const { declared, prefixes } = admittedKeys(spec, surface);
 					const servesDeliverableSwitch = fieldsOf(spec).some((f) => f.name === "match_input_resolution");
 					for (const k of Object.keys(doc)) {
 						if (k === "model" || declared.has(k) || prefixes.some((p) => k.startsWith(p))) continue;

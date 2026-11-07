@@ -692,6 +692,7 @@ window.__ModuleLoader__.load({
 			*  the geometry line names the windows the extend will build. */
 			commissionKindLabel: (kind) => {
 				switch (kind) {
+					case "edit": return "Video edit";
 					case "replace": return "Replace";
 					case "repair": return "Repair";
 					case "extend": return "Extend";
@@ -4643,8 +4644,17 @@ window.__ModuleLoader__.load({
 		*  refine + upscale joined on 2026-10-31 (audit
 		*  2026-10-31-modpress-row-face): five of seven declared kinds had
 		*  no row, so a refine/upscale-only row drew an EMPTY rail — its
-		*  whole authored truth invisible beside the starter lie. */
+		*  whole authored truth invisible beside the starter lie.
+		*  `edit` joined on 2026-11-16 (THE READ-LIST COLLAPSE, the one-door
+		*  law's UI half): `edit` is the CANONICAL bag — the spelling the
+		*  one door's Add writes and the compose door reads. The legacy five
+		*  after it are the door's translation for old documents; they ride
+		*  the read list only so a legacy doc's armed bags still draw their
+		*  rows (§9's law: a bag the compose honors must have a row) — the
+		*  canonical bag rides FIRST because it is the one the current door
+		*  authors. */
 		const COMMISSION_KINDS = [
+			"edit",
 			"replace",
 			"repair",
 			"extend",

@@ -322,15 +322,16 @@ describe('the strike note — the named heal at the drill seat', () => {
 // the departure nulls land IN the arrival write, one CAS, never a
 // second write the arrival must race.
 describe('THE PICK⇄STRIKE LOST UPDATE (2026-11-15 sweep) — the departure rides the pick\'s own write', () => {
-  test('the pick of Base over a voicedesign doc carries the strike\'s nulls in the SAME frame; the doc names the pick', async () => {
+  test('the pick of Base over a voicedesign doc carries the strike\'s nulls in the SAME frame; the doc names the pick (admitted keys survive)', async () => {
     const spec = await formSpecArm('qwen3-tts')
     expect(spec, 'the served qwen3-tts spec resolves').not.toBeNull()
     stubKreaFetch(spec as FormSpecDoc)
     // THE PRE-PICK DOC: the saved bench holds the voicedesign lane's
     // stamps — design_prompt (the lane's own param, the axis-carry
     // law's to drop) and the family-default mode stamp (off EVERY
-    // lane's params surface — the strike's banner key, reachable by
-    // no axis-carry law, only the strike's judge)
+    // lane's params surface — but ON the card's `admits` row, so the
+    // 2026-11-16 admitted-key fold sanctions it: the door admits the
+    // key, the strike never does)
     const stageRow: Record<string, unknown> = {
       id: 's_0', card: 'qwen3-tts', engine: 'comfyui',
       params: { model: 'qwen3-tts', variant: 'voicedesign', mode: 'tts', design_prompt: 'warm', text: 'hello there' },
@@ -365,18 +366,23 @@ describe('THE PICK⇄STRIKE LOST UPDATE (2026-11-15 sweep) — the departure rid
     const patchParams = (): Array<Record<string, unknown>> => fakes!.calls
       .filter((c) => c.method === 'drafts/patch')
       .map((c) => ((c.args as { patch?: { params?: Record<string, unknown> } }).patch?.params) ?? {})
-    // PICK + STRIKE IN ONE WRITE: the marriage frame carries the
-    // arrival (variant base) AND BOTH departures — the lane's own
-    // param (design_prompt, the axis-carry law) and the strike's
-    // banner key (mode, no lane's surface) — the same frame, the
-    // same CAS
+    // PICK + STRIKE IN ONE WRITE (re-pinned to the admitted-key law,
+    // 2026-11-16): the marriage frame carries the arrival (variant
+    // base) and the departed lane's own param (design_prompt, the
+    // axis-carry law). `mode` NO LONGER RIDES — the qwen3-tts card's
+    // own `admits` row carries it (the estate write door admits the
+    // key), so the strike's judge — the same admittedKeys fold as the
+    // reopen heal and the mirror — sanctions it at all three seats:
+    // striking an admitted key was the pre-cure behavior (the
+    // 2026-11-16 timeline audit's finding class).
     await waitFor(() => {
       const marriage = patchParams()
-        .find((p) => p['variant'] === 'base' && p['design_prompt'] === null && p['mode'] === null)
-      expect(marriage, 'pick + strike in ONE write: variant base + design_prompt null + mode null').toBeDefined()
+        .find((p) => p['variant'] === 'base' && p['design_prompt'] === null)
+      expect(marriage, 'pick + strike in ONE write: variant base + design_prompt null (mode stays — the door admits it)').toBeDefined()
+      expect(marriage?.['mode'], 'the admitted key is never struck (one spelling, both doors)').toBeUndefined()
     }, { timeout: 8000 })
     const frames = patchParams()
-    const marriageIdx = frames.findIndex((p) => p['variant'] === 'base' && p['design_prompt'] === null && p['mode'] === null)
+    const marriageIdx = frames.findIndex((p) => p['variant'] === 'base' && p['design_prompt'] === null)
     // NEVER THE SECOND CAS: after the pick's own write, no frame
     // re-carries the departed variant (the pre-pick doc's overwrite
     // — the lost-update class), and the strike key never rides a
@@ -384,15 +390,18 @@ describe('THE PICK⇄STRIKE LOST UPDATE (2026-11-15 sweep) — the departure rid
     const after = frames.slice(marriageIdx + 1)
     expect(after.filter((p) => p['variant'] === 'voicedesign'),
       'no write re-carries the departed variant after the pick').toEqual([])
-    expect(after.filter((p) => p['mode'] === null && p['variant'] !== 'base'),
+    expect(after.filter((p) => p['design_prompt'] === null && p['variant'] !== 'base'),
       'the strike never rides a frame of its own behind the pick (no second CAS)').toEqual([])
+    expect(after.filter((p) => p['mode'] === null),
+      'the admitted key is never nulled behind the pick either').toEqual([])
     // THE DOC NAMES THE PICK: the applied draft row carries the
-    // arrival with both departures gone (null-or-deleted on the wire)
+    // arrival with the departed param gone (null-or-deleted on the
+    // wire) and the admitted key preserved verbatim
     await waitFor(() => {
       const params = (stageRow['params'] ?? {}) as Record<string, unknown>
       expect(params['variant'], 'the served doc names the pick').toBe('base')
-      expect(params['mode'] == null, 'the strike\'s banner key left the doc with the pick\'s own write').toBe(true)
-      expect(params['design_prompt'] == null, 'the departed lane\'s param left the doc with the same write').toBe(true)
+      expect(params['mode'], 'the admitted key survives the pick (the door admits it — the client never strikes what the door admits)').toBe('tts')
+      expect(params['design_prompt'] == null, 'the departed lane\'s param left the doc with the pick\'s own write').toBe(true)
     }, { timeout: 8000 })
     // and the FACE settles on the pick (the sweep's own assertion
     // face — a pick that does not land is a silent drop)

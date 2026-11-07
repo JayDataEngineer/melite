@@ -74,6 +74,16 @@ const RESHOOT: DocCommission = {
   kind: "reshoot",
   seats: [{ key: "source_clip", value: "clips/t4.mp4" }, { key: "orbit", value: "30" }],
 }
+// THE READ-LIST COLLAPSE (2026-11-16): the canonical bag's own render
+// hop — an `edit` commission draws its row with the operator's word.
+const EDIT: DocCommission = {
+  kind: "edit",
+  seats: [
+    { key: "source_clip", value: "clips/t7.mp4" }, { key: "edit_prompt", value: "make it night" },
+    { key: "mask_source", value: "region" }, { key: "region_prompt", value: "a person" },
+    { key: "denoise", value: "0.55" },
+  ],
+}
 const EXTEND: DocCommission = {
   kind: "extend",
   seats: [{ key: "source_clip", value: "clips/t3.mp4" }, { key: "extend_seconds", value: "16.5" }],
@@ -97,6 +107,18 @@ describe("§9 — the studio strip's commission mapping", () => {
     // wall pins those per tree)
     expect(head.title).toBe(studioCopy.commissionRowTitle("reshoot"))
     expect(lane.getAttribute("title")).toBeNull()
+  })
+
+  it("ARM 2e — the CANONICAL bag renders: an armed edit commission draws its row under the operator's word (the read-list collapse's UI hop)", () => {
+    const { container } = render(strip([EDIT]))
+    const lane = container.querySelector('[data-commission-lane="edit"]') as HTMLElement
+    expect(lane, "the edit commission draws its row").not.toBeNull()
+    const head = container.querySelector('[data-lane-head="commission"][data-lane-head-id="edit"]') as HTMLElement
+    expect(head.textContent).toContain("Video edit")
+    expect(head.title).toBe(studioCopy.commissionRowTitle("edit"))
+    const seg = container.querySelector('[data-commission-segment="edit-0"]') as HTMLElement
+    expect(seg.textContent).toBe(studioCopy.commissionSeats(EDIT.seats))
+    expect(seg.textContent).toContain("edit_prompt make it night")
   })
 
   it("ARM 3 — the seats line names every seat the bag states (the operator reads what the compose reads)", () => {

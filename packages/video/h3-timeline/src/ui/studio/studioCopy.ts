@@ -305,6 +305,10 @@ export const studioCopy = {
    *  the geometry line names the windows the extend will build. */
   commissionKindLabel: (kind: string): string => {
     switch (kind) {
+      // THE CANONICAL BAG'S OWN WORD (2026-11-16, the read-list
+      // collapse): the edit door's label is the card's served kind
+      // label — never the bare kind id.
+      case "edit": return "Video edit"
       case "replace": return "Replace"
       case "repair": return "Repair"
       case "extend": return "Extend"

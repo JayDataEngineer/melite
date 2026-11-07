@@ -39,6 +39,7 @@ import {
   isStarterCallText, type CommissionKind,
 } from "../src/ui/studio/commissions.ts"
 import { STARTER_CALLS } from "../src/ui/studio/docModel.ts"
+import { studioCopy } from "../src/ui/studio/studioCopy.ts"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..")
 let def: CardDefinition
@@ -95,7 +96,7 @@ describe("§9 — the studio's mod projection (the commission derivation)", () =
 
   it("ARM 2 — each armed bag derives exactly one row, carrying its entry's seats", () => {
     for (const kind of COMMISSION_KINDS) {
-      const entry = { replace: REPLACE, repair: REPAIR, extend: EXTEND, refine: REFINE, upscale: UPSCALE, reshoot: RESHOOT, loras: LORAS }[kind]
+      const entry = { edit: EDIT, replace: REPLACE, repair: REPAIR, extend: EXTEND, refine: REFINE, upscale: UPSCALE, reshoot: RESHOOT, loras: LORAS }[kind]
       const rows = deriveCommissions({ [kind]: [entry] })
       expect(rows, `${kind}: one armed bag is one row`).toHaveLength(1)
       expect(rows[0]!.kind).toBe(kind)
@@ -111,15 +112,17 @@ describe("§9 — the studio's mod projection (the commission derivation)", () =
 
   it("ARM 3 — the row order follows the card's bag order (one deterministic rail)", () => {
     const rows = deriveCommissions({
-      reshoot: [RESHOOT], extend: [EXTEND], repair: [REPAIR], replace: [REPLACE],
+      edit: [EDIT], reshoot: [RESHOOT], extend: [EXTEND], repair: [REPAIR], replace: [REPLACE],
       refine: [REFINE], upscale: [UPSCALE], loras: [LORAS],
     })
     expect(rows.map((r) => r.kind)).toEqual([...COMMISSION_KINDS])
     // the kinds constant IS the card's declaration order (the rail's own
     // reading order is a contract, not an accident of object keys); refine
     // + upscale joined 2026-10-31 (modpress-row-face): the quality mods
-    // seat between extend and reshoot
-    expect([...COMMISSION_KINDS]).toEqual(["replace", "repair", "extend", "refine", "upscale", "reshoot", "loras"])
+    // seat between extend and reshoot; `edit` seats FIRST (2026-11-16,
+    // the read-list collapse): the canonical bag leads, the legacy five
+    // are its translation
+    expect([...COMMISSION_KINDS]).toEqual(["edit", "replace", "repair", "extend", "refine", "upscale", "reshoot", "loras"])
   })
 
   it("ARM 4 — the extend row draws the SAME composition the compose door builds (one solver, two consumers)", () => {
@@ -259,7 +262,7 @@ describe("§9 — the studio's mod projection (the commission derivation)", () =
 
   it("ARM 8 — every kind is derivable from a real card-shaped entry (no kind is a stub)", () => {
     const entries: Record<CommissionKind, Record<string, unknown>> = {
-      replace: REPLACE, repair: REPAIR, extend: EXTEND, refine: REFINE, upscale: UPSCALE, reshoot: RESHOOT, loras: LORAS,
+      edit: EDIT, replace: REPLACE, repair: REPAIR, extend: EXTEND, refine: REFINE, upscale: UPSCALE, reshoot: RESHOOT, loras: LORAS,
     }
     for (const kind of COMMISSION_KINDS) {
       const rows = deriveCommissions({ [kind]: [entries[kind]] })
@@ -281,7 +284,7 @@ describe("THE MOD-MODE CALLS FACE (2026-11-14 — the lane's calls-readership)",
   it("ARM R1 — the readership table: every reading kind faces prompt, every non-reading kind faces dormant", () => {
     for (const kind of COMMISSION_KINDS) {
       const entries: Record<CommissionKind, Record<string, unknown>> = {
-        replace: REPLACE, repair: REPAIR, extend: EXTEND, refine: REFINE,
+        edit: EDIT, replace: REPLACE, repair: REPAIR, extend: EXTEND, refine: REFINE,
         upscale: UPSCALE, reshoot: RESHOOT, loras: LORAS,
       }
       const face = callsLaneFace(deriveCommissions({ [kind]: [entries[kind]] }))
@@ -327,5 +330,52 @@ describe("THE MOD-MODE CALLS FACE (2026-11-14 — the lane's calls-readership)",
     expect(deriveCommissions({ refine: [null] })).toEqual([
       { kind: "refine", seats: [], note: "bad-entry" },
     ])
+  })
+})
+
+// THE READ-LIST COLLAPSE (2026-11-16, the one-door law's UI half): the
+// canonical bag is `edit` — the spelling the one door's Add writes and
+// the compose door reads (the legacy five are translation at the door
+// for old documents, never UI). A read list without it is the strip
+// blind to the bag the CURRENT door authors: the doc carries the
+// commission, the compose builds it, and the rail renders default —
+// §9's own burn, back through the front door.
+const EDIT = {
+  source_clip: "clips/take7.mp4", edit_prompt: "make it night",
+  mask_source: "region", region_prompt: "a person", denoise: 0.55,
+}
+
+describe("THE READ-LIST COLLAPSE (2026-11-16 — the canonical bag rides the rail)", () => {
+  it("ARM E1 — an armed `edit` bag derives its row: the canonical spelling is read, named, and seated", () => {
+    const rows = deriveCommissions({ edit: [EDIT] })
+    expect(rows, "the canonical bag is not blind to the rail").toHaveLength(1)
+    expect(rows[0]!.kind).toBe("edit")
+    expect(rows[0]!.seats.map((s) => s.key).sort()).toEqual(Object.keys(EDIT).sort())
+    const seats = new Map(rows[0]!.seats.map((s) => [s.key, s.value]))
+    expect(seats.get("edit_prompt")).toBe("make it night")
+    expect(seats.get("denoise")).toBe("0.55")
+  })
+
+  it("ARM E2 — the label face is the operator's word for the door ('Video edit'), never the bare kind id", () => {
+    expect(studioCopy.commissionKindLabel("edit")).toBe("Video edit")
+  })
+
+  it("ARM E3 — edit composes from its own bag (edit_prompt rides the entry): the calls lane stands down under it, never paints the starter over authored prose", () => {
+    const face = callsLaneFace(deriveCommissions({ edit: [EDIT] }))
+    expect(face).toEqual({ face: "dormant", kind: "edit" })
+    // the dormant face's own words name the edit door (the label face,
+    // not the raw id)
+    expect(studioCopy.callsDormantLabel(face.kind)).toContain("Video edit")
+  })
+
+  it("ARM E4 — the hard edges hold for edit too: malformed and bad-entry bags draw the armed-and-refused row", () => {
+    expect(deriveCommissions({ edit: "clips/take7.mp4" } as never)).toEqual([
+      { kind: "edit", seats: [], note: "malformed" },
+    ])
+    expect(deriveCommissions({ edit: [null] })).toEqual([
+      { kind: "edit", seats: [], note: "bad-entry" },
+    ])
+    // the unused arm stays surface: an empty edit bag is NO row
+    expect(deriveCommissions({ edit: [] })).toEqual([])
   })
 })

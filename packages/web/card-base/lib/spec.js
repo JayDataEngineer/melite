@@ -2106,6 +2106,40 @@ function resolvedLaneSurface(spec, doc) {
  *  @param held the SAVED doc the drill opened.
  *  @returns the null-patch for the dead carried keys ({} when the
  *    doc is already stateable on its resolved lane). */
+/** THE ADMITTED-KEY FOLD (the pre-collapse reopen cure, 2026-11-16):
+ *  the declared set BOTH judges of a saved doc derive — the compose
+ *  mirror (composeValidate) and the reopen heal
+ *  (dropStaleReopenCarry) — so one spelling sanctions a key at both
+ *  seats: the resolved lane surface, the transport's model key, the
+ *  DECL's studio writes, the card-declared mod fields, and the
+ *  contract `admits` row with the estate's glob law (a trailing *
+ *  admits every key under the prefix). Before this fold the heal
+ *  judged the doc with a narrower set than the mirror and nulled the
+ *  legacy bags the verdict sanctioned — one silent merge-patch
+ *  delete per reopen (the 2026-11-16 timeline audit's data-loss
+ *  finding: the operator's saved mod VANISHED at open).
+ *  @param spec the doc's served form-spec.
+ *  @param surface the doc's RESOLVED lane surface (or the legacy
+ *    params projection when the family declares no lanes block).
+ *  @returns the exact-name set and the glob prefixes. */
+function admittedKeys(spec, surface) {
+    const declared = new Set(surface);
+    const prefixes = [];
+    for (const g of axisGroups(spec))
+        declared.add(axisKey(g));
+    declared.add('model');
+    for (const k of spec.studio_writes ?? [])
+        declared.add(k);
+    for (const k of modOwnedFields(spec))
+        declared.add(k);
+    for (const a of spec.admits ?? []) {
+        if (a.endsWith('*'))
+            prefixes.push(a.slice(0, -1));
+        else
+            declared.add(a);
+    }
+    return { declared, prefixes };
+}
 export function dropStaleReopenCarry(spec, held) {
     const out = {};
     if (held === undefined)
@@ -2114,7 +2148,14 @@ export function dropStaleReopenCarry(spec, held) {
     if (surface === null)
         return out;
     const axisKeys = new Set(axisGroups(spec).map((g) => axisKey(g)));
-    const modKeys = modOwnedFields(spec);
+    // THE ADMITTED-KEY FOLD (the pre-collapse reopen cure, 2026-11-16):
+    // the mirror's own declared set — surface, transport, studio
+    // writes, mod fields, and the contract `admits` row with its glob
+    // law — is THIS heal's sanction too. The heal once judged a
+    // narrower set and nulled the legacy compose-through bags the
+    // mirror sanctioned (a null is the merge-patch delete): the saved
+    // mod vanished at every fresh open. One spelling, both judges.
+    const { declared, prefixes } = admittedKeys(spec, surface);
     // THE STUDIO-OWNED SANCTION (the reopen-clobber cure, 2026-11-12):
     // the compose mirror already sanctions the DECL's studio.writes
     // (the h¹ mirror-truth cure — composeValidate's declared set) and
@@ -2126,8 +2167,10 @@ export function dropStaleReopenCarry(spec, held) {
     // never a form knob) one silent null write at drill open, and the
     // studio's starter law then re-authored a fresh doc over the
     // hole. A key the DECL declares studio-owned is sanctioned exactly
-    // as the mirror sanctions it — one truth, three seats.
-    const studioKeys = new Set(spec.studio_writes ?? []);
+    // as the mirror sanctions it — one truth, three seats. The fold
+    // above carries the studio writes, the mod fields, and the surface
+    // beside the admits row — the individual seats below keep only the
+    // transport keys the fold does not spell ('variant', 'quant').
     // THE DELIVERABLE PAIR NEEDS NO CARVE (the resize order, operator
     // 2026-11-12): the edit lanes surface width/height beside the
     // toggle, so a persisted Match-OFF pair is sanctioned surface —
@@ -2135,13 +2178,9 @@ export function dropStaleReopenCarry(spec, held) {
     // pair is kept too (surfaced) and the form gate voices the flip
     // — the write/run doors refuse that state field-named.
     for (const [k, v] of Object.entries(held)) {
-        if (k === 'model' || k === 'variant' || k === 'quant' || axisKeys.has(k))
+        if (k === 'variant' || k === 'quant' || axisKeys.has(k))
             continue;
-        if (modKeys.has(k))
-            continue;
-        if (studioKeys.has(k))
-            continue;
-        if (surface.includes(k))
+        if (declared.has(k) || prefixes.some((p) => k.startsWith(p)))
             continue;
         if (laneBlank(v))
             continue;
@@ -2198,51 +2237,28 @@ export function composeValidate(spec, doc) {
             : null;
         const surface = resolved ?? legacy;
         if (surface !== null) {
-            const declared = new Set(surface);
-            // the contract-admits glob prefixes (see the sanction below)
-            const prefixes = [];
-            for (const g of axisGroups(spec))
-                declared.add(axisKey(g));
-            declared.add('model');
-            // THE STUDIO-OWNED SURFACE (h¹, the mirror-truth cure): the
-            // estate's write door sanctions the DECL's studio.writes beside
-            // params — the mirror sanctions the same set or it refuses the
-            // studio's own document plane (calls + keyframes on every real
-            // film doc), a lie that blocked every pick and every
-            // flip-settlement recheck.
-            for (const k of spec.studio_writes ?? [])
-                declared.add(k);
-            // THE MOD-SURFACE SANCTION (E2-11, the operator's burn — its
-            // verbatim voice lives in the ERRORS_2 ledger): a key a card-declared mod kind owns — its
-            // param_key bag plus its envelope's field names — is DECLARED
-            // surface, exactly like a schema knob. The mirror refused the
-            // mask mod's own bag as "field 'mask' … the served surface
-            // does not declare it": a lie (the family boards the pack; the
-            // estate's admission gate sanctions the same names via the
-            // absorbed-mod interlock, cardsCompose.ts). Whether the plane
-            // BUILDS the mod's lane is the compose door's firing voice,
-            // never this clause's undeclared-surface voice.
-            for (const k of modOwnedFields(spec))
-                declared.add(k);
-            // THE CONTRACT-ADMITS SANCTION (the pre-collapse doc law,
-            // 2026-11-16 — the operator burn: "the video cards from before
-            // with mods are broken"): the card's `admits` row is the write
-            // door's own surface (cardAdmits, cardsFacts.ts — the same
-            // predicate compose/start/variant-stamp ride, glob rows and
-            // all), served verbatim on the spec. The mirror sanctions the
-            // same names or it banners a doc the door admits — the burn: a
-            // pre-collapse doc's legacy bag (replace/repair/extend/refine/
-            // upscale) opened every old card with "fires nothing on this
-            // lane" while the estate admitted the row and the compose door
+            // THE DECLARED SET (one spelling, both judges — the
+            // pre-collapse reopen cure, 2026-11-16): the same
+            // admittedKeys fold the reopen heal sanctions by. The seats
+            // the fold composes: the resolved surface, the axis keys, the
+            // transport's model key, the studio-owned writes (h¹, the
+            // mirror-truth cure — the estate door sanctions the same
+            // names), the mod-surface sanction (E2-11: a card-declared mod
+            // kind's param_key bag plus its envelope's field names), and
+            // the CONTRACT-ADMITS sanction (the pre-collapse doc law,
+            // 2026-11-16): the card's `admits` row is the write door's own
+            // surface (cardAdmits, cardsFacts.ts — the same predicate
+            // compose/start/variant-stamp ride, glob rows and all), served
+            // verbatim on the spec. The mirror sanctions the same names or
+            // it banners a doc the door admits — the burn: a pre-collapse
+            // doc's legacy bag (replace/repair/extend/refine/upscale)
+            // opened every old card with "fires nothing on this lane"
+            // while the estate admitted the row and the compose door
             // translated the bag into the one edit entry (compose-through).
             // The estate's glob law rides verbatim (a trailing * admits
-            // every key under the prefix) — one spelling, both doors.
-            for (const a of spec.admits ?? []) {
-                if (a.endsWith('*'))
-                    prefixes.push(a.slice(0, -1));
-                else
-                    declared.add(a);
-            }
+            // every key under the prefix) — one spelling, both doors, and
+            // since the same fold seats the reopen heal: both JUDGES.
+            const { declared, prefixes } = admittedKeys(spec, surface);
             // THE DELIVERABLE-SIZE LAW (the resize order, operator
             // 2026-11-12): the edit lanes surface the deliverable pair,
             // so the surface sanction above already owns it — no carve.
