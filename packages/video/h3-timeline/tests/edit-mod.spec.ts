@@ -144,7 +144,7 @@ describe("the edit bag's door (stage 2b: one bag, the whole matrix)", () => {
       const walked = def.schema({ edit: [EDIT_ENTRY()], ...sibling }) as Record<string, unknown>;
       assert.throws(
         () => def.compose(walked, model, new GraphBuilder(), "run_edit_race"),
-        new RegExp(`Video edit and ${name.charAt(0).toUpperCase() + name.slice(1)} are both armed`),
+        new RegExp(`Video edit and ${name} are both armed`),
         `edit + ${name} refuses loud naming both doors (BEFORE the ${name} dispatch — never a silent drop)`,
       );
     }

@@ -46,11 +46,6 @@ export function renderH3Edit(entry, mask, reference, p, facts, g, runId) {
         throw new Error(`h3-timeline edit: denoise ${denoise} — the pole lives (0, 1] (partial holds the unmasked region, 1 re-renders the masked one whole); state the dial inside the band`);
     }
     const keepAudio = entry.keep_audio !== false;
-    // THE IDENTITY BOIL (F3-17's fold): near-full denoise, no anchor
-    // but the source itself, nothing held — that is a style boil with
-    // the subject's own prior as its only identity, and the friction
-    // audit watched it break identity while reading as an
-    // improvement. Name the two lawful doors, refuse the cell.
     // ── THE UPSCALE POSTURE (slice 3 of the collapse — the doc's
     // collapse map: "upscale = source: prior run + scale 2x"): a
     // stated chain_run seats the door into the DEFERRED second pass
@@ -72,7 +67,13 @@ export function renderH3Edit(entry, mask, reference, p, facts, g, runId) {
         }
         renderH3ChainUpscale({
             chain_run: chainRun,
-            denoise,
+            // the loop owns the denoise law on its posture (the
+            // placement cut: verbatim-or-absent — undefined rides
+            // the 0.24 default inside, a STATED 1 refuses loud at
+            // the loop's own law, never at a matrix law above)
+            ...(typeof entry.denoise === 'number'
+                ? { denoise: entry.denoise }
+                : {}),
             steps: num(entry, 'steps', 20),
             segment_crf: num(entry, 'segment_crf', 18),
             prompt,
@@ -109,6 +110,26 @@ export function renderH3Edit(entry, mask, reference, p, facts, g, runId) {
         }, p, facts, g, runId);
         return;
     }
+    // THE REFINE FULL-NOISE LAW (hoisted above the boil by the
+    // placement law — slice 4: the specific refusal owns the cell it
+    // names; under the refine switch the full-noise sigma law fires,
+    // never the general boil beside it).
+    if (entry.refine === true && denoise >= 1) {
+        throw new Error(`h3-timeline edit: denoise ${denoise} with the refine pass on — a second pass is a refine, never a re-render (a full-noise sigma discards the learned upscaled latent and the vendored node throws); state the partial window (0.05–0.5) or leave refine off`);
+    }
+    // THE UNGUIDED FULL RENDER (the doc's one deliberate loss,
+    // re-authored as validation — slice 4): a MASKED full-denoise
+    // pass anchored to nothing but the source is the identity-swap
+    // cell with its anchors unstated — the arm-name safety the peer
+    // bags carried, stated as the parameter law that replaces it.
+    if (denoise >= 1 && mask.source !== 'whole-frame' && reference.mode === 'self') {
+        throw new Error(`h3-timeline edit: denoise ${denoise} on the self anchor with a mask — an unguided full re-render of the masked region (the identity-swap cell with its anchors unstated; the subject drifts with no replacement identity to hold). State reference still+mannequin (the swap posture) or the partial window (denoise < 1, the repair posture)`);
+    }
+    // THE IDENTITY BOIL (F3-17's fold): near-full denoise, no anchor
+    // but the source itself, nothing held — that is a style boil with
+    // the subject's own prior as its only identity, and the friction
+    // audit watched it break identity while reading as an
+    // improvement. Name the two lawful doors, refuse the cell.
     if (mask.source === 'whole-frame' && reference.mode === 'self' && denoise >= EDIT_IDENTITY_BOIL_FLOOR) {
         throw new Error(`h3-timeline edit: whole-frame × self reference × denoise ${denoise} — the identity boil (a near-full re-render whose only identity anchor is the source's own prior drifts the subject while reading as an improvement, the F3-17 burn). Anchor it (reference still+mannequin) or use the reshoot door for a true re-render`);
     }
@@ -142,9 +163,6 @@ export function renderH3Edit(entry, mask, reference, p, facts, g, runId) {
     const refineOn = entry.refine === true;
     const scale = num(entry, 'scale', 2);
     if (refineOn) {
-        if (denoise >= 1) {
-            throw new Error(`h3-timeline edit: denoise ${denoise} with the refine pass on — a second pass is a refine, never a re-render (a full-noise sigma discards the learned upscaled latent and the vendored node throws); state the partial window (0.05–0.5) or leave refine off`);
-        }
         const windowFrames = windowLength > 0
             ? Math.round(windowLength)
             : Math.round(num(entry, 'clip_seconds', 6) * 24);

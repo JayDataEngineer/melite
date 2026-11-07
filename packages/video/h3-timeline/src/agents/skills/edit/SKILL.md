@@ -97,6 +97,8 @@ It is NOT:
      latent upscale + low-sigma refine ride the edit's OWN latents
      (same run, no re-encode of a saved clip). Partial denoise only;
      blank mask + partial + refine on = the classic refine posture.
+     The design window is 56 f (2.33s = 56f); a 2x window past the
+     measured 141 f OOM refuses.
    - `scale` (1–4, 2) — rides only the refine pass (inert when off):
      the learned upscaler's multiplier. 1 is the same-size sharpening
      pass (the capacity cure); 2 the classic second pass — a >=2x

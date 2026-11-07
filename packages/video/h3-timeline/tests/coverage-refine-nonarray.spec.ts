@@ -43,7 +43,7 @@ describe("the refine stack guard's own arm (card.ts refineStackBag)", () => {
     }) as Record<string, unknown>;
     assert.throws(
       () => def.compose(walked, model, new GraphBuilder(), "run_rfmod_nonarray"),
-      /refine bag is present but carries no entry — state refine window entries as an array or omit the arm/,
+      /refine bag is present but carries no entry — state exactly one refine entry/,
       "the refine stack guard refuses a non-array bag naming the window-entries law (the replace/repair/extend precedent, now the refine guard's own firing arm)",
     );
   });

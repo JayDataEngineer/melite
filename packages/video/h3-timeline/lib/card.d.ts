@@ -16,6 +16,23 @@ export { carrier, JSON_ARRAY_PARAMS, schema } from '@melite/models-h3/schema';
  *  family's own DECL, and with it the lane's files. */
 export declare const BOARDED: string[];
 export declare const VARIANT_ADDRESSES: string[];
+/** Which edit posture a walked doc rides — the ONE law the flow
+ * output bindings and the compose door both read (one truth home):
+ * 'film' nothing armed; 'inchain' the masked-edit matrix cells
+ * (mask postures, the refine dial, the chain_run loop — every
+ * posture whose terminal is the chain assemble); 'join' the
+ * continuation posture (the joined-film SaveVideo, the file-boundary
+ * grammar); 'reshoot' the different chain that stays its own door. */
+export declare function editPosture(p: Record<string, unknown>): 'film' | 'inchain' | 'join' | 'reshoot';
+/** THE ALIAS RESOLVER: runs at the compose door BEFORE the bag
+ * guards — a doc carrying legacy keys resolves into the edit bag
+ * (the translation table below), the legacy keys leave the doc,
+ * and the dispatch below sees ONE bag. Two legacy keys, or a
+ * legacy key beside an armed edit bag, refuse loud (one door per
+ * doc — the pair-refusal matrix's ONE surviving law, now stated
+ * as parameter validation over the one bag). Seats with no dial
+ * refuse loud naming the edit spelling. */
+export declare function resolveLegacyEditAliases(p: Record<string, unknown>): Record<string, unknown>;
 /** THE DECLARED-BAND JUDGE (F3-07, R-P3-18): a number seat's DECLARED
  *  band binds at the compose door. Every armed bag entry's stated
  *  numeric field is judged against its declared min/max — the

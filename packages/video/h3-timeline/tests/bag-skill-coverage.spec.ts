@@ -84,15 +84,9 @@ const bounded = (kind: Kind): FieldRow[] =>
   );
 
 describe("every served mod bag has a skill leaf an agent can read", () => {
-  it("ARM 1 — the roster is DERIVED from the card, and each armed kind resolves to ONE leaf", () => {
-    // GAPS-19: a door is every armed kind except the co-arming adapter
-    // bag (loras rides WITH a door, it is not one) — the refine door
-    // now stacks its windows, so the roster follows the kind, never
-    // the stack ceiling.
+  it("ARM 1 — the roster is DERIVED from the card's three kinds; each armed kind has ONE leaf, and every legacy spelling keeps an ALIAS leaf", () => {
     const armed = kinds.filter((k) => k.kind !== "loras").map((k) => k.param_key!);
-    expect(armed.sort()).toEqual([
-      "edit", "extend", "refine", "repair", "replace", "reshoot", "upscale",
-    ]);
+    expect(armed.sort()).toEqual(["edit", "reshoot"]);
     for (const key of armed) {
       const seat = LEAF_SEAT[key];
       const path = seat?.path ?? join("packages/video/h3-timeline/src/agents/skills", key, "SKILL.md");
@@ -106,6 +100,20 @@ describe("every served mod bag has a skill leaf an agent can read", () => {
     assert.equal(loras.max_stack, 4, "loras is the multi-entry bag, so it has its own leaf");
     assert.ok(existsSync(join(SKILLS, "loras", "SKILL.md")),
       "the loras bag carries its own leaf (the F29 'I can't see or change the LORA' cure)");
+    // THE COLLAPSE (slice 4): the five legacy keys are still ACCEPTED
+    // parameters (old docs keep composing), so each keeps a leaf that
+    // sends an agent at the ONE edit bag instead of the retired door.
+    for (const legacy of ["replace", "repair", "extend", "refine", "upscale"]) {
+      const seat = LEAF_SEAT[legacy] ?? {
+        path: join("packages/video/h3-timeline/src/agents/skills", legacy, "SKILL.md"),
+        binds: legacy,
+      };
+      assert.ok(existsSync(join(ROOT, seat.path)),
+        `the legacy ${legacy} spelling keeps its alias leaf: ${seat.path}`);
+      const md = readFileSync(join(ROOT, seat.path), "utf-8");
+      assert.match(md, /PRESET CELL/, `${seat.path} names the collapse`);
+      assert.match(md, /params\.edit/, `${seat.path} binds the ONE edit bag`);
+    }
   });
 
   it("ARM 2a — the edit door's every bounded dial quotes the card's OWN band and default (the matrix leaf)", () => {
@@ -129,38 +137,35 @@ describe("every served mod bag has a skill leaf an agent can read", () => {
       "the doc states the one-door law it is subject to");
   });
 
-  it("ARM 2 — repair's every bounded dial quotes the card's OWN band and default", () => {
-    const kind = kinds.find((k) => k.param_key === "repair")!;
+  it("ARM 2 — the repair ALIAS leaf quotes the edit bag's own band and the arm's declared default", () => {
+    const kind = kinds.find((k) => k.param_key === "edit")!;
     const md = readSkill("repair");
-    const rows = bounded(kind);
-    expect(rows.length, "the repair kind serves bounded dials to judge").toBeGreaterThan(6);
-    for (const row of rows) {
-      const line = dialLine(md, row.name);
-      assert.ok(line !== null, `repair/SKILL.md states the ${row.name} band`);
-      assert.deepEqual(bandOf(line!.band), [row.min, row.max],
-        `repair/SKILL.md's ${row.name} band ${line!.band} == the served [${row.min}, ${row.max}]`);
-      assert.equal(line!.def, row.default,
-        `repair/SKILL.md's ${row.name} default ${line!.def} == the served ${String(row.default)}`);
-    }
-    assert.match(md, /One door per doc/,
-      "the doc states the one-door law it is subject to");
+    const denoise = (kind.fields ?? []).find((f) => f.name === "denoise")!;
+    const line = dialLine(md, "denoise");
+    assert.ok(line !== null, "repair/SKILL.md states the denoise dial line");
+    assert.deepEqual(bandOf(line!.band), [denoise.min, denoise.max],
+      "the alias leaf quotes the SERVED edit bag's band (0.05–1), never the retired arm's 0.05–0.5");
+    assert.equal(line!.def, 0.32, "the retired arm's declared default rides the banner");
+    assert.match(md, /mask_source: "region"/, "the translation's mask dial is stated");
+    assert.match(md, /reference: "self"/, "the translation's anchor is stated");
+    assert.match(md, /one entry per/i, "the doc states the one-entry law");
   });
 
-  it("ARM 3 — upscale's every bounded dial quotes the card's OWN band and default, and names the bare run name law", () => {
-    const kind = kinds.find((k) => k.param_key === "upscale")!;
+  it("ARM 3 — the upscale ALIAS leaf quotes the edit band, the pass-2 default, and the bare run name law", () => {
+    const kind = kinds.find((k) => k.param_key === "edit")!;
     const md = readSkill("upscale");
-    for (const row of bounded(kind)) {
-      const line = dialLine(md, row.name);
-      assert.ok(line !== null, `upscale/SKILL.md states the ${row.name} band`);
-      assert.deepEqual(bandOf(line!.band), [row.min, row.max],
-        `upscale/SKILL.md's ${row.name} band ${line!.band} == the served [${row.min}, ${row.max}]`);
-      assert.equal(line!.def, row.default,
-        `upscale/SKILL.md's ${row.name} default ${line!.def} == the served ${String(row.default)}`);
-    }
+    const denoise = (kind.fields ?? []).find((f) => f.name === "denoise")!;
+    const line = dialLine(md, "denoise");
+    assert.ok(line !== null, "upscale/SKILL.md states the denoise dial line");
+    assert.deepEqual(bandOf(line!.band), [denoise.min, denoise.max],
+      "the alias leaf quotes the SERVED edit bag's band (0.05–1)");
+    assert.equal(line!.def, 0.24, "the pass-2 recipe's declared default rides the banner");
     assert.match(md, /bare run name/i,
       "the doc states the execute door resolves the bare name (F6: never hand-author a scene suffix)");
     assert.match(md, /mode\.scale/,
       "the doc names the dotted child key the engine validates (round 5's burn)");
+    assert.match(md, /chain_run/, "the arming seat is named");
+    assert.match(md, /params\.edit/, "the doc binds the ONE edit bag");
   });
 
   it("ARM 4 — loras documents its stack ceiling and both bounded dials from the card", () => {
@@ -182,31 +187,25 @@ describe("every served mod bag has a skill leaf an agent can read", () => {
       "the doc quotes the served default adapter id verbatim");
   });
 
-  it("ARM 6 — the swap leaf states the SIX-arm exclusivity as the 15 DERIVED pairs, and that loras coexists", () => {
-    // The doc said "ANY two armed mod bags REFUSE loud" — false as a
-    // universal: `loras` is the SEVENTH bag and rides inside every arm
-    // (the swap's own law above says the lora plane is the doc's).
-    // Judge the DERIVED pair list off the card's own armed bags, so a
-    // seventh arm kind cannot land without the leaf naming its pairs.
+  it("ARM 6 — the swap leaf states the alias law: the ONE real pair, the five preset cells, and that loras coexists", () => {
     const md = readSkill("swap");
     const armed = kinds.filter((k) => k.kind !== "loras").map((k) => k.param_key!);
-    expect(armed.length).toBe(7);
+    expect(armed.length).toBe(2);
     const cap = (w: string): string => w[0]!.toUpperCase() + w.slice(1);
     const canonical = (a: string, b: string): string => [a, b].sort().join("↔");
     const pairs = armed.flatMap((a, i) => armed.slice(i + 1).map((b) => canonical(cap(a), cap(b))));
-    expect(pairs.length).toBe(21);
-    // the doc's OWN pair spellings, order-normalized (the leaf lists
-    // Reshoot↔Refine where the derivation says Refine↔Reshoot)
+    expect(pairs.length).toBe(1);
+    // the doc's OWN pair spellings, order-normalized
     const stated = new Set([...md.matchAll(/([A-Z][a-z]+)↔([A-Z][a-z]+)/g)]
       .map((m) => canonical(m[1]!, m[2]!)));
-    for (const pair of pairs) {
-      expect(stated.has(pair), `swap/SKILL.md names the ${pair} refusal`).toBe(true);
+    assert.deepEqual([...stated], pairs, "the leaf names exactly the one live pair (Edit↔Reshoot)");
+    // the five legacy names are PRESET CELLS, never doors
+    for (const legacy of ["replace", "repair", "extend", "refine", "upscale"]) {
+      assert.match(md, new RegExp(legacy, "i"), `swap/SKILL.md names the ${legacy} alias spelling`);
     }
-    expect(stated.size, "no pair the card does not refuse is taught").toBe(21);
     // never the false universal again
     expect(md).not.toMatch(/ANY two armed mod bags/i);
-    // and the coexistence half: loras is named as the seventh bag
-    expect(md).toMatch(/EIGHTH bag/i);
+    // and the coexistence half: loras is not an arm
     expect(md).toMatch(/COEXISTS/i);
     expect(md).toMatch(/THE LORA BAG IS NOT AN ARM/);
     expect(md).toMatch(/empty `loras` to disarm/i);
@@ -358,18 +357,19 @@ describe("every served mod bag has a skill leaf an agent can read", () => {
       "the upscale leaf forbids the promise");
   });
 
-  it("ARM 10 — every card-local arm leaf carries the loras seventh-bag exemption (no false universal anywhere)", () => {
-    // The one-door law binds only the SEVEN armed mod bags; `loras`
-    // is the EIGHTH bag and COEXISTS with every arm. An arm leaf
-    // that keeps the contiguous "ANY two armed mod bags" wording
-    // teaches an agent to refuse a legal loras-plus-arm press.
+  it("ARM 10 — every card-local arm leaf keeps the lora exemption, never the false universal, and the legacy leaves name the collapse", () => {
+    // The one-door law binds the ONE edit bag and the reshoot door;
+    // `loras` is the co-arming adapter bag and COEXISTS with every
+    // arm. A leaf that keeps the contiguous "ANY two armed mod bags"
+    // wording teaches an agent to refuse a legal loras-plus-arm
+    // press, and a legacy leaf that still calls its dead key a door
+    // sends the agent at a removed surface.
     for (const leaf of ["repair", "swap", "reshoot", "refine", "upscale"]) {
       const md = readSkill(leaf);
       expect(md).not.toMatch(/ANY two armed mod bags/i);
-      expect(md).toMatch(/SEVEN arm/i);
       expect(md).toMatch(/THE LORA BAG IS NOT AN ARM/);
-      expect(md).toMatch(/EIGHTH bag/);
-      expect(md).toMatch(/COEXISTS/);
+      expect(md).toMatch(/COEXISTS/i);
+      if (leaf !== "reshoot") expect(md).toMatch(/PRESET CELL/);
     }
   });
 });

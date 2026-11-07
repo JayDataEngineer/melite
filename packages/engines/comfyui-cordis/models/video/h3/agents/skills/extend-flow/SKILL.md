@@ -3,6 +3,13 @@ name: extend-flow
 description: Extend a clip with more seconds — when the take is RIGHT and the story needs MORE of it. The continuation anchors on the prior clip's last frame (taken in-graph), generates fresh motion and sound at full denoise, and joins prior + new into one film. Use instead of re-rolling when the existing content should be kept, not fixed.
 ---
 
+> THE COLLAPSE — THE `extend` NAME IS A PRESET CELL, NOT A DOOR. This
+> leaf documents the LEGACY spelling so old docs keep composing: state
+> the cell on the ONE Video edit bag (`params.edit`).
+> `extend: [{...}]` resolves to `edit: [{ continuation: true,
+> mask_source: "whole-frame", reference: "self", denoise: 1 }]` — the
+> joined continuation. New docs state the edit bag directly.
+
 # Extend Flow
 
 ## The decision

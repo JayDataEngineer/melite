@@ -1,15 +1,10 @@
-import { DECL as h3Decl, h3DefaultLoraEntry, MAX_COMPOSED_WINDOWS, REFINE_2X_OOM_FRAMES, REFINE_DEFAULT_CLIP_SECONDS, REFINE_DEFAULT_OVERLAP_FRAMES, REFINE_WORKAROUND_WIDE_FRAMES } from '@melite/models-h3';
+import { DECL as h3Decl, h3DefaultLoraEntry, REFINE_DEFAULT_CLIP_SECONDS } from '@melite/models-h3';
 import { H3_LORA_ROWS } from '@melite/models-h3/mods/loras';
 import { JSON_ARRAY_PARAMS, coerceWireBoolean, paramSchema, schema, } from '@melite/models-h3/schema';
 import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission';
 import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit';
 import { finalizeH3 } from '@melite/models-h3';
-import { renderH3Swap } from '@melite/models-h3';
-import { renderH3Repair } from '@melite/models-h3';
-import { renderH3Extend } from '@melite/models-h3';
-import { renderH3RefineBag } from '@melite/models-h3';
 import { renderH3Edit } from '@melite/models-h3';
-import { renderH3ChainUpscale } from '@melite/models-h3';
 import { reshootArmed } from '@melite/models-h3';
 import { parseH3Facts } from '@melite/models-h3/actions';
 import { assertOverlayGated } from '@melite/models-h3';
@@ -103,261 +98,6 @@ const LORAS_MOD = {
         { name: 'steps', label: 'Steps', type: 'number', max: 50, step: 1, tooltip: 'The step count to marry — OMIT the key and the catalog row\'s own count rides (the row domain owns the floor and the default; the door refuses any stated count outside the row\'s declared domain). State a number only inside the row\'s domain, when the schedule must bend.' },
     ],
 };
-const REPLACE_MOD = {
-    kind: 'replace',
-    label: 'Replace',
-    param_key: 'replace',
-    schema_key: 'replace',
-    // THE MENU ATTRIBUTION (the mod-liveness ARM 3 law, 2026-10-28):
-    // the kind stamps its own name as its catalog — the card IS the
-    // catalog (no pack envelope derives it). Served verbatim.
-    category: 'ordered',
-    cardinality: 'list',
-    max_stack: 1,
-    requires: [
-        'comfyui-h3-oneclick-swap',
-        'ComfyUI-MiniMaxH3-Context-Loop',
-        'ComfyUI-Fantastic-MiniMaxH3-PromptBuilder',
-    ],
-    section: 'Swap — replace the person in the source clip (upstream openjutsu recipe: still + mannequin + mask masked-edit). ONE PRESS TILES A LONG SOURCE: the plan slices the whole clip into per-generation windows (Clip seconds is each window\'s budget, never the total; Overlap frames is the seam carry between them) and the chain joins the windows itself — never one long generation. Film runs leave this arm empty.',
-    fields: [
-        // The seat TYPES are the picker law (operator, live lane
-        // 2026-10-28: "media seats as FREEFORM TEXT when NOT ALL SHOULD
-        // BE"): image seats claim the image square; video seats are
-        // `file` + media 'video' (the video library + the video OS
-        // accept); resolution is a select over the plan's own tiers.
-        { name: 'source_clip', label: 'Source clip', type: 'file', media: 'video', default: '', tooltip: 'The source video whose person is replaced. Binds ONE staged leaf: the VHS slice loader + the core LoadVideo both read it by staged name, and the timeline reads it back off the native VIDEO wire (friction-report #4 — its video_path string rides along staged but unread).' },
-        { name: 'still', label: 'Replacement still', type: 'image', default: '', tooltip: 'The replacement still (the R2V ref_images LoadImage + the plan picture_1).' },
-        { name: 'mannequin', label: 'Mannequin video', type: 'file', media: 'video', default: '', tooltip: 'The mannequin video from the track-card run (the R2V ref_videos H3GreyMannequins output).' },
-        { name: 'mask', label: 'Person mask', type: 'image', default: '', tooltip: 'ONE staged PNG (no per-frame mask sequence is wired): bind a single representative from the track-card run — the pixel-max UNION of its grown per-frame masks is recommended. Per-frame motion rides the mannequin video (reference GrowMaskWithBlur expand 40). A folder path never rides this seat — bind one file.' },
-        { name: 'swap_prompt', label: 'Swap prompt', type: 'text', default: '', tooltip: 'The swap action text — agent-composed, user-confirmed. It feeds the reference-to-video prompt seat DIRECTLY: the swap composes no in-graph prompter (no LLM/describer node ever rewrites your words).' },
-        { name: 'keep_audio', label: 'Keep source audio', type: 'boolean', default: true, tooltip: 'ON: the source clip\'s audio rides the swap unchanged (the reference posture — preserve source audio, assemble from source). OFF: the soundtrack is generated fresh with the swap (generate all audio, assemble generated).' },
-        { name: 'roles', label: 'Roles', type: 'text', default: '', tooltip: 'Which person to replace (the plan roles seat; empty = the detected lead).' },
-        { name: 'seed', label: 'Plan seed', type: 'number', default: 0, min: 0, max: 4294967295, step: 1, tooltip: 'The chain plan base_seed (the reference runs 0; the sampler seed stays the doc seed).' },
-        { name: 'steps', label: 'Plan steps', type: 'number', default: 6, min: 1, max: 30, step: 1, tooltip: 'The chain plan default_steps (reference 6; the sampler steps stay the doc marriage).' },
-        { name: 'clip_seconds', label: 'Clip seconds', type: 'number', default: 6, min: 2.5, max: 15, step: 0.1, tooltip: 'The engine\'s own "Longest clip per H3 generation" (the census word, reference 6) — EACH generation window\'s budget, never the total: a source longer than this tiles into N windows the chain itself joins. The plan node\'s widget band [2.5, 15] is the law; anything else 400s at submit.' },
-        { name: 'overlap_frames', label: 'Overlap frames', type: 'number', default: 39, min: 22, max: 56, step: 17, tooltip: 'The engine\'s own "Frames each clip repeats from the previous clip" (reference 39) — the seam carry between the generation windows of a tiled long source. The engine combo is exactly [22, 39, 56] (step 17 from 22).' },
-        { name: 'resolution', label: 'Plan resolution', type: 'select', default: '736p', options: [
-                { value: '480p', label: '480p — quick preview' },
-                { value: '576p', label: '576p' },
-                { value: '736p', label: '736p — reference default' },
-                { value: '768p', label: '768p' },
-                { value: '1080p', label: '1080p — ~2.5× slower, needs much more memory' },
-            ], tooltip: "The plan resolution tier (reference '736p')." },
-    ],
-};
-/** THE REPAIR KIND (Tier A, operator order 2026-11-12: "Okay do it
- *  all" — hands, maybe the body): a masked SECOND pass over a region
- *  of the source clip. ONE entry per doc (max_stack 1). The region
- *  is a FREE-TEXT SAM3 detection prompt — "hands", "a person", "a
- *  face" are param VALUES (the region-agnostic law: no
- *  card-per-region, ever). The mask is composed INLINE from engine
- *  core nodes (SAM3_VideoTrack + SAM3_TrackToMask over the window
- *  frames — per-frame, better than the swap's staged single-PNG
- *  union), so no mask seat and no track-card handoff exists on this
- *  arm. The pass re-renders ONLY the masked region at partial
- *  denoise (default 0.32; >= 1 refuses loud at the compose door —
- *  the refine window law, actions.ts's refine arm the precedent):
- *  the source clip rides its own reference seat as the identity
- *  anchor. Zero new pixel positions — small-in-frame hands cannot
- *  gain detail here (that is crop-scale Tier B, blocked on the
- *  unvendored producer). Audio is the source's own, always. The
- *  packs ride the kind's `requires` (presence-gated: an unused arm
- *  never blocks a film run). Emission seat: the family's
- *  renderH3Repair — the same chain spine + lora plane the swap
- *  rides, ending in MiniMaxH3ChainAssemble. */
-const REPAIR_MOD = {
-    kind: 'repair',
-    label: 'Repair',
-    param_key: 'repair',
-    schema_key: 'repair',
-    category: 'ordered',
-    cardinality: 'list',
-    max_stack: 1,
-    requires: [
-        'ComfyUI-VideoHelperSuite',
-        'ComfyUI-MiniMaxH3-Context-Loop',
-        'ComfyUI-Fantastic-MiniMaxH3-PromptBuilder',
-        'ComfyUI-KJNodes',
-        'comfyui-h3-oneclick-swap',
-    ],
-    section: 'Repair — re-render a region of the source clip (hands, body, face) with a per-frame SAM3 mask at partial denoise. The rest of the frame and the audio are held. Film runs leave this arm empty. ONE WINDOW PER DOC: a longer film is one press per window at the 68 f step, each repaired window replacing its own slot — this arm emits a window, never a re-assembled film.',
-    fields: [
-        // The seat TYPES (the picker law, the replace arm's own): video
-        // seats are `file` + media 'video'; the two prompt seats are
-        // text (agent-composed, user-confirmed).
-        { name: 'source_clip', label: 'Source clip', type: 'file', media: 'video', default: '', tooltip: 'The clip whose region is repaired. Binds ONE staged leaf: the VHS window loader + the core LoadVideo both read it by staged name, and the timeline reads it back off the native VIDEO wire.' },
-        { name: 'repair_prompt', label: 'Repair prompt', type: 'text', default: '', tooltip: 'The repair action text — what the masked region should become (agent-composed, user-confirmed; rides the reference-video prompt seat).' },
-        { name: 'region_prompt', label: 'Region prompt', type: 'text', default: '', tooltip: 'The free-text SAM3 detection target naming the region — "hands", "a person", "a face". The mask tracks every matching object frame by frame and grows by mask_grow px.' },
-        { name: 'denoise', label: 'Denoise', type: 'number', default: 0.32, min: 0.05, max: 0.5, step: 0.01, tooltip: 'The partial-denoise strength of the masked pass (the refine window is 0.30–0.35; lower = subtler). The declared band 0.05–0.5 binds on every run: outside it refuses loud. 1 or more is the reshoot pole — a repair is a refine, never a re-render.' },
-        { name: 'mask_grow', label: 'Mask grow px', type: 'number', default: 16, min: 0, max: 96, step: 1, tooltip: 'Pixels the tracked mask grows before the edit (seam ring protection; 0 repairs exactly the detected region — the grow-0 seam test).' },
-        { name: 'detection_threshold', label: 'Detection threshold', type: 'number', default: 0.5, min: 0, max: 1, step: 0.01, tooltip: 'The SAM3 text-detection score threshold (lower finds more objects, noisier masks).' },
-        { name: 'window_start', label: 'Window start (frames)', type: 'number', default: 0, min: 0, max: 100000, step: 1, tooltip: 'Frames (at the film clock, 24 fps) to skip before the repair window — 0 starts at the clip head.' },
-        { name: 'window_length', label: 'Window length (frames)', type: 'number', default: 0, min: 0, max: 100000, step: 1, tooltip: 'Frames in the repair window — 0 runs to the end of the clip (the whole-clip posture). A stated length must land on the engine grid 22+17k (56, 73, 90, 107, 124, 141…; off-grid refuses naming the nearest legal value) because the plan snap and the tracked mask must cut the same frames. clip_seconds still caps the render budget.' },
-        { name: 'seed', label: 'Plan seed', type: 'number', default: 0, min: 0, max: 4294967295, step: 1, tooltip: 'The chain plan base_seed (the reference runs 0; the sampler seed stays the doc seed).' },
-        { name: 'steps', label: 'Plan steps', type: 'number', default: 6, min: 1, max: 30, step: 1, tooltip: 'The chain plan default_steps (reference 6; the sampler steps stay the doc marriage).' },
-        { name: 'clip_seconds', label: 'Clip seconds', type: 'number', default: 6, min: 2.5, max: 15, step: 0.1, tooltip: 'The plan clip_seconds (reference 6) — the render budget the window is cut within; the plan node\'s own widget band [2.5, 15] is the law.' },
-        { name: 'overlap_frames', label: 'Overlap frames', type: 'number', default: 39, min: 22, max: 56, step: 17, tooltip: 'The plan overlap_frames (reference 39) — the engine combo is exactly [22, 39, 56].' },
-        { name: 'resolution', label: 'Plan resolution', type: 'select', default: '736p', options: [
-                { value: '480p', label: '480p — quick preview' },
-                { value: '576p', label: '576p' },
-                { value: '736p', label: '736p — reference default' },
-                { value: '768p', label: '768p' },
-                { value: '1080p', label: '1080p — ~2.5× slower, needs much more memory' },
-            ], tooltip: "The plan resolution tier (reference '736p')." },
-    ],
-};
-/** THE EXTEND KIND (the card's own arm — the retired extend-video
- *  wrapper flow staged it, report
- *  dev_docs/audits/features/extend-video-flow-2026-11-12.md): MORE
- *  SECONDS appended to a prior clip — a fresh continuation anchored
- *  on the prior clip's last frame (taken in-graph, negative batch
- *  index), rendered at FULL denoise under an all-white mask (new
- *  content, nothing held — the repair's opposite pole), joined to
- *  the prior by the film tail's own file law (both parts save at
- *  SaveVideo prefixes; MeliteConcatVideos decodes them back
- *  strictly after every save). ONE entry per doc (max_stack 1).
- *  Emission seat: the family's renderH3Extend — the same chain
- *  spine + lora plane the swap and repair ride, ending in the
- *  joined-film SaveVideo. */
-const EXTEND_MOD = {
-    kind: 'extend',
-    label: 'Extend',
-    param_key: 'extend',
-    schema_key: 'extend',
-    category: 'ordered',
-    cardinality: 'list',
-    max_stack: 1,
-    requires: [
-        'ComfyUI-VideoHelperSuite',
-        'ComfyUI-MiniMaxH3-Context-Loop',
-        'ComfyUI-Fantastic-MiniMaxH3-PromptBuilder',
-        'comfyui-h3-oneclick-swap',
-        'melite-utility-nodes',
-    ],
-    section: 'Extend — append fresh seconds to a prior clip (a continuation anchored on its last frame, full denoise, joined into one film). The extension generates new motion and sound; the prior is never re-edited. Film runs leave this arm empty.',
-    fields: [
-        // The seat TYPES (the picker law, the replace arm's own): video
-        // seats are `file` + media 'video'; the prompt seat is text
-        // (agent-composed, user-confirmed).
-        { name: 'source_clip', label: 'Source clip', type: 'file', media: 'video', default: '', tooltip: 'The clip whose seconds are extended. Binds ONE staged leaf: the VHS loader + the core LoadVideo both read it by staged name, and the timeline reads it back off the native VIDEO wire.' },
-        { name: 'extend_prompt', label: 'Extend prompt', type: 'text', default: '', tooltip: 'The continuation text — MOTION and SOUND for the appended seconds, picking up exactly where the clip ends (agent-composed, user-confirmed; rides the reference-video prompt seat).' },
-        { name: 'extend_seconds', label: 'Extend seconds', type: 'number', default: 2.33, min: 0.91, max: 432.29, step: 0.01, tooltip: 'Seconds appended — must add up exactly: a single window lands on the engine grid at 24fps (22+17k frames, refuse loud otherwise; landable: 0.92s = 22f (the grid floor), 2.33s = 56f, 3.75s = 90f, 5.17s = 124f, 15.08s = 362f — the largest single window); above 362f the door joins N uniform 22+17k windows under the 39f context overlap, exact delivery or a refusal naming the neighbors (ceiling 32 windows = 432.29s).' },
-        { name: 'seed', label: 'Plan seed', type: 'number', default: 0, min: 0, max: 4294967295, step: 1, tooltip: 'The chain plan base_seed (the reference runs 0; the sampler seed stays the doc seed).' },
-        { name: 'steps', label: 'Plan steps', type: 'number', default: 6, min: 1, max: 30, step: 1, tooltip: 'The chain plan default_steps (reference 6; the sampler steps stay the doc marriage).' },
-        { name: 'overlap_frames', label: 'Overlap frames', type: 'number', default: 39, min: 22, max: 56, step: 17, tooltip: 'The plan overlap_frames (reference 39; in-run-only — the join itself is the film tail file law). The multi-window composition law carries exactly 39: a multi-window extend under another value refuses loud (every law-home pins 39).' },
-        { name: 'resolution', label: 'Plan resolution', type: 'select', default: '736p', options: [
-                { value: '480p', label: '480p — quick preview' },
-                { value: '576p', label: '576p' },
-                { value: '736p', label: '736p — reference default' },
-                { value: '768p', label: '768p' },
-                { value: '1080p', label: '1080p — ~2.5× slower, needs much more memory' },
-            ], tooltip: "The plan resolution tier (reference '736p')." },
-    ],
-};
-/** THE REFINE KIND (the fifth mod bag): a standalone SECOND pass
- *  over staged source clips — the H3 latent-upscale refine chain's
- *  minimal emission (models/h3 renderH3RefineBag). The report-named
- *  second-pass stack (MinimaxH3LatentUpscaler3D, the RefineHandoff
- *  with its sampler/sigmas seats, the ChainUpscale loop family,
- *  SeedVR2 3B, the LTX 2.3 upscalers) exists engine-side with no
- *  card surface; this arm is the first door: the handoff node (2x
- *  learned upscale + the low-sigma refinement pass, one node) over
- *  the clip's own frames + soundtrack. THE MULTI-ENTRY LAW (GAPS-19,
- *  2026-11-01): the bag stacks to the film's composed-window ceiling
- *  and the entries ARE the windows — the windows tile through the
- *  family carrier (one refine window per entry, joined IN-GRAPH at
- *  <runId>/refine; the continuity laws — one film per bag, no gaps,
- *  no full overlap — are the family renderer's, so every door judges
- *  them identically). THE CARRY IS SERVED (F3-14 cured):
- *  a carried join (overlap ≥ 1 f) mounts the film's own continuation
- *  through the same in-graph carry — the cure sits at the refine
- *  handoff, which clone-strips the foreign Drift-Control patch
- *  before its guider so the packed mask always matches its audio
- *  stream. ABUTTING entries (a zero-carry join, the plain concat)
- *  stay lawful; the carried shape is the design default. The declared
- *  alternative stays lawful and byte-cheap: ONE entry composes the
- *  single-window emission exactly, so the walk posture (press, judge,
- *  press) is a per-window judgment, never a workaround. ONE variant
- *  path: scale 2.0, lock_audio, bf16 — the entry carries only the
- *  refine seats (source_clip, refine_prompt, denoise, steps, seed,
- *  clip_seconds, start_seconds); the model plane stays family-owned.
- *  The deferred ChainUpscale LOOP (prior-run lineage, recursive
- *  expand, no estate requeue driver) is the named follow-up, never
- *  this arm. Emission ends in the refine SaveVideo (the extend
- *  terminal's own file law — no ChainAssemble: a refine has no loop
- *  lineage to assemble). */
-const REFINE_MOD = {
-    kind: 'refine',
-    label: 'Refine',
-    param_key: 'refine',
-    schema_key: 'refine',
-    category: 'ordered',
-    cardinality: 'list',
-    // THE MULTI-ENTRY STACK LAW (GAPS-19, 2026-11-01): the bag's
-    // ceiling is the film's composed-window ceiling (the extend
-    // solver's own constant) — the entries ARE the windows, so the
-    // same window count that caps one extend press caps one refine
-    // press. Derived, never a hand-typed number.
-    max_stack: MAX_COMPOSED_WINDOWS,
-    requires: [
-        'ComfyUI-VideoHelperSuite',
-        'ComfyUI-KJNodes',
-        'ComfyUI-MiniMaxH3Mod',
-        'Comfyui_Minimax_h3_latent_Upscaler-Plus',
-        'melite-utility-nodes',
-    ],
-    // THE MEASURED NUMBERS ARE DERIVED (refine-window audit D1): the
-    // window the ceiling allows is REFINE_DEFAULT_CLIP_SECONDS at the
-    // film clock, and the OOM point is REFINE_2X_OOM_FRAMES — both
-    // imported from the model package that owns the refusal, so a
-    // ceiling move can never leave the served card lying about it.
-    // THE WALK IS THE DECLARED ALTERNATIVE (GAPS-19): the bag tiles
-    // the film in one press; the walk sentence names the per-window
-    // judgment, not a workaround — the one-entry bag composes the
-    // single-window emission byte-identically (the sequential-press
-    // law).
-    section: `Refine — a standalone second pass over staged source clips: 2x learned latent upscale + the low-sigma H3 refinement pass in one node (the film handoff's own spelling), decoded and saved as one film. The bag takes MULTIPLE window entries — each entry IS one window (its own Source clip, Refine prompt, and window seats), the entries cover ONE staged leaf in order, and the run assembles the windows into one <runId>/refine film. THE CARRY IS SERVED (F3-14 cured at the handoff): a carried join — consecutive windows overlapping by 1 f or more — mounts the film's own continuation, the token-exact seam, exactly like the plain gen's tiling (the cure: the refine's second pass strips the foreign Drift-Control patch before its guider). The abutting bag stays lawful too: start each window at the previous window's end (a zero-carry join, the plain concat, hard cuts at every seam). One entry with Windows above 1 tiles the same way — the default 22 overlap rides the carry. THE DESIGN WINDOW is the ~2 s window (${String(Math.round(REFINE_DEFAULT_CLIP_SECONDS * 24))} f, the 2 s class's rung of the 22+17k token grid) — the carry-joined window, the one the context carry makes seamless, so the design never needs a wider window (the carry is served, ROADMAP F3-14 cured). There is no wide-window frame and no ceiling to press: a window past ${String(REFINE_2X_OOM_FRAMES)} f (the measured OOM) is just TOO LONG — cut to the design rung and let the carry tile (${String(REFINE_WORKAROUND_WIDE_FRAMES)} f is the hard-cut era's measured-green datapoint, history only). The bag carries at most ${String(MAX_COMPOSED_WINDOWS)} window entries. The declared alternative stays lawful: refine one window per press — judge each window before pressing the next (Start seconds stepped forward). The soundtrack is the window's own, always. Film runs leave this arm empty.`,
-    fields: [
-        // The seat TYPES (the picker law, the siblings' own): the video
-        // seat is `file` + media 'video'; the prompt seat is text
-        // (agent-composed, user-confirmed); the dials are numbers.
-        { name: 'source_clip', label: 'Source clip', type: 'file', media: 'video', default: '', tooltip: 'The clip whose frames the second pass refines. Binds ONE staged leaf: the VHS loader reads it by staged name at the film clock, and the encode seats read its frames + soundtrack.' },
-        { name: 'refine_prompt', label: 'Refine prompt', type: 'text', default: '', tooltip: 'The refine text — what the upscaled frames should hold (agent-composed, user-confirmed; rides the CLIPTextEncode positive seat — the node refuses without model + positive). THE PROMPT IS THE ONLY STYLE LEVER: nothing from the source prompt, seed or schedule carries, so restate the source\'s own look (the medium and the identity anchors) beside the quality asks — a generic quality-only prompt silently restyles the shot. This door RESTYLES decoded pixels and carries no lineage — a saved clip has no latent left, so a true context-carrying second pass is the chain 2-pass door, never this one.' },
-        { name: 'denoise', label: 'Denoise', type: 'number', default: 0.32, min: 0.05, max: 0.5, step: 0.01, tooltip: 'The partial-denoise strength of the refinement pass (the refine window is 0.30–0.35; lower = subtler). The declared band 0.05–0.5 binds on every run: outside it refuses loud. 1 or more is the re-render pole — a refine is never a re-render (the handoff\'s sigmas law: 0 <= sigmas[0] < 1).' },
-        { name: 'steps', label: 'Refine steps', type: 'number', default: 6, min: 1, max: 30, step: 1, tooltip: 'The refinement schedule steps (the low-sigma second pass; the sampler steps stay the doc marriage).' },
-        { name: 'seed', label: 'Refine seed', type: 'number', default: 0, min: 0, max: 4294967295, step: 1, tooltip: 'The refinement noise seed (0 runs the reference posture).' },
-        // (the numbers are DERIVED from the model package's exported
-        // constants — refine-window audit D1: the served card must never
-        // carry a hand-typed copy of a measured ceiling)
-        { name: 'clip_seconds', label: 'Window seconds', type: 'number', default: REFINE_DEFAULT_CLIP_SECONDS, min: 0.5, max: 60, step: 0.25, tooltip: `How much of the clip this pass refines, from the window start: ${String(REFINE_DEFAULT_CLIP_SECONDS)} s = ${String(Math.round(REFINE_DEFAULT_CLIP_SECONDS * 24))} f at 24 fps, the DESIGN window (the 2 s class's rung of the 22+17k token grid — the carry-joined window the context carry makes seamless, so the design never needs a wider window; the carry is served, ROADMAP F3-14 cured). The pass reads only this window, so a long film is covered by advancing Start seconds — and any upsizing window past ${(REFINE_2X_OOM_FRAMES / 24).toFixed(2)} s (${String(REFINE_2X_OOM_FRAMES)} f) is refused as TOO LONG: that is where the measured OOM sits, and with the carry served the cure is always the same — cut to the design rung and let the carry tile (only a same-size 1x pass reads wider). ${String(REFINE_WORKAROUND_WIDE_FRAMES)} f measured green is the hard-cut era's datapoint, history only — never advice. A window must also START inside the clip: a Start past the last frame yields no frames, and a window longer than what remains is quietly shortened.` },
-        { name: 'start_seconds', label: 'Start seconds', type: 'number', default: 0, min: 0, max: 3600, step: 0.25, tooltip: `Where this window starts in the source clip (0 = the first frame). Each entry refines one window. Two lawful tilings: CARRIED — start the next window inside the previous one (window seconds ${String(REFINE_DEFAULT_CLIP_SECONDS)} s \u2192 Start 0 / ${String(REFINE_DEFAULT_CLIP_SECONDS - REFINE_DEFAULT_OVERLAP_FRAMES / 24)} s) so the join mounts the film\u2019s own token-exact continuation (F3-14 cured at the handoff); or ABUTTING — start each window at the previous window\u2019s end (Start 0 / ${String(REFINE_DEFAULT_CLIP_SECONDS)} s), the plain concat, hard cuts. A gap, an out-of-order window, or an off-grid carry also refuses, naming the exact frame. The declared alternative: one entry per press, this seat stepped forward each time. The last window starts inside the clip: a start past the final frame lands no frames and the door refuses in words.` },
-        // THE CAPACITY SEATS (the F24 burn, 2026-10-30): the 2x handoff
-        // OOMs past the measured 141 f, and the node itself serves an
-        // exact-size mode — a ≤1x pass fits. Both seats ride the node's
-        // own declared domain (mode enum, scale [1, 4]); the default is
-        // the shipped 2x so every existing doc composes byte-identically.
-        { name: 'mode', label: 'Upscale mode', type: 'select', default: 'scale by multiplier', options: [
-                { value: 'scale by multiplier', label: 'Scale by multiplier (the shipped 2x)' },
-                { value: 'target dimensions', label: 'Target dimensions (1280x704)' },
-                { value: 'megapixels', label: 'Megapixels (the node\'s own budget)' },
-            ], tooltip: 'How the handoff sizes the pass: a multiplier (default 2x), exact target width/height (1280x704), or a megapixel budget. The node\'s own options, verbatim.' },
-        { name: 'scale', label: 'Upscale scale', type: 'number', default: 2, min: 1, max: 4, step: 0.05, tooltip: 'The multiplier mode\'s scale. 1.0 is the capacity cure — a same-size refine (no latent upscale) fits clips the 2x pass OOMs; the refinement pass still runs.' },
-        // THE AUTO-TILE (F67, 2026-11-15 — the operator: "the AI can make
-        // windows, but the human operator can't"): one entry tiles ITSELF
-        // — the card works out every window's start from the window size
-        // (Window seconds), this count, and the overlap below, so a human
-        // states a SIZE and a COUNT instead of hand-tiling N entries with
-        // frame-exact starts the 0.25-step dials cannot reach. 1 keeps the
-        // single-window walk posture (judge each window before pressing
-        // the next); hand-tiled entries stay for mixed-seat bags.
-        { name: 'windows', label: 'Windows', type: 'number', default: 1, min: 1, max: MAX_COMPOSED_WINDOWS, step: 1, tooltip: 'How many windows this ONE entry tiles (the auto-tile: window k starts at Start seconds + k × (window − overlap), so one press covers Windows × (window − overlap) + overlap frames). 1 is the single-window walk. The default Overlap 22 rides the film’s own carried seam; Overlap 0 gives the abutting hard cut. Both run. A windows seat above 1 on ANY entry of a multi-entry bag refuses — the bag already IS the tiling.' },
-        // (the default is DERIVED from the family contract's own seam —
-        // refine-window audit D1: the served card never carries a
-        // hand-typed copy of a measured constant)
-        { name: 'overlap_frames', label: 'Overlap (frames)', type: 'number', default: REFINE_DEFAULT_OVERLAP_FRAMES, min: 0, step: 1, tooltip: 'How many frames each window re-covers from the previous one (the join\u2019s carry, in whole frames — the card works out every window\u2019s start from window size minus this). 0 is the abutting hard cut (the plain concat, no carried continuation); 22 is the film\u2019s own seam, token-exact — it mounts the film\u2019s continuation, and that carry is SERVED (F3-14 cured: the refine\u2019s handoff strips the foreign Drift-Control patch before its second pass, so the packed mask always matches its audio stream). Any other overlap still refuses — off-grid carries name the exact frame. Rides only with Windows above 1 (a lone window has no join); must be shorter than the window.' },
-    ],
-};
 /** THE RESHOOT KIND (the fourth mod bag — the §8 unification,
  * 2026-11-12): re-render the same scene from a NEW camera. The
  * commission the flat knob group could never state: one bag entry
@@ -410,44 +150,6 @@ const RESHOOT_MOD = {
         { name: 'depth_ratio', label: 'Scene depth', type: 'number', default: 6, min: 1.5, max: 1000, step: 0.5, tooltip: 'How deep the scene is (far/near ratio). 2.5–4 for close-up faces, 4–8 for mid shots, 8–16 for deep or wide scenes.' },
         { name: 'smooth_depth', label: 'Smooth depth', type: 'boolean', default: false, tooltip: 'Smooth the depth edges before warping. Turn on when the re-shot frames show speckle holes — trades a little sharpness for cleaner hole edges.' },
         { name: 'invert_depth', label: 'Invert depth', type: 'boolean', default: false, tooltip: 'Flip the depth polarity (near ↔ far). Leave off; turn on only if the re-shot renders inside-out — background moving like foreground, or the subject caving in.' },
-    ],
-};
-/** THE UPSCALE KIND (the sixth mod bag — the F19 deferred loop,
- * 2026-11-12): a whole-film 2x second pass over a PRIOR chain run.
- *  The commission the refine arm could never state: the loop roots at
- *  the run's checkpointed lineage (CheckpointManager-verified, scene
- *  by scene through the upstream Upscale family), not a staged clip.
- *  The bag names the run; the per-scene revisions resolve at the
- *  execute door against the engine's own chain store (the vendored
- *  listing route — a miss refuses loud naming the live runs). ONE
- *  entry per doc (max_stack 1), the same admission plane and
- *  one-door law as its five siblings. Emission ends in
- *  ChainAssemble at <runId>/upscale (the estate's film law). */
-const UPSCALE_MOD = {
-    kind: 'upscale',
-    label: 'Upscale',
-    param_key: 'upscale',
-    schema_key: 'upscale',
-    category: 'ordered',
-    cardinality: 'list',
-    max_stack: 1,
-    requires: [
-        'ComfyUI-MiniMaxH3-Context-Loop',
-        'Comfyui_Minimax_h3_latent_Upscaler-Plus',
-        'melite-utility-nodes',
-    ],
-    section: 'Upscale — a whole-film deferred 2x pass over a prior chain run (swap/repair/extend/refine runs leave their checkpointed scenes in the engine\'s chain store): each scene resumes its lineage, upscales through the learned 3D latent upscaler, and re-renders at low denoise; the pass assembles at <runId>/upscale. Name the run; a blank prompt reuses its own scene prompts. Film runs leave this arm empty.',
-    fields: [
-        // The seat TYPES (the picker law, the siblings' own): the run
-        // name is a LIVE PICKER over the estate's chain-store runs (the
-        // leaf serves the labeled rows; 'Advanced — paste a run id' is
-        // the explicit free-text fallback); the prompt seat is text; the
-        // dials are numbers.
-        { name: 'chain_run', label: 'Chain run', type: 'chain-run', default: '', tooltip: 'The run whose checkpointed scenes this pass resumes — pick from the live list; Advanced accepts an id the list does not hold.' },
-        { name: 'prompt', label: 'Pass-2 prompt', type: 'text', default: '', tooltip: 'What the upscaled frames should hold (agent-composed, user-confirmed). Blank reuses the source run\'s own per-scene prompts — the documented posture for a pure resolution pass.' },
-        { name: 'denoise', label: 'Denoise', type: 'number', default: 0.24, min: 0.05, max: 0.5, step: 0.01, tooltip: 'The partial-denoise strength of the pass-2 re-render (the recipe\'s own window is 0.24; lower = subtler). The declared band 0.05–0.5 binds on every run: outside it refuses loud. 1 or more is the reshoot pole — an upscale is never a re-render (that is a reshoot, and the reshoot door exists).' },
-        { name: 'steps', label: 'Pass-2 steps', type: 'number', default: 20, min: 1, max: 30, step: 1, tooltip: 'The pass-2 schedule steps (the recipe runs 20; the sampler stays res_multistep, the loop family\'s own spelling).' },
-        { name: 'segment_crf', label: 'Segment CRF', type: 'number', default: 18, min: 0, max: 51, step: 1, tooltip: 'The H.264 quality of the persisted HQ scene segments (the adapter\'s own seat; 18 is its default).' },
     ],
 };
 /** THE EDIT KIND (the timeline rework's stage 2b, 2026-11-15;
@@ -510,12 +212,12 @@ const EDIT_MOD = {
         { name: 'denoise', label: 'Denoise', type: 'number', default: 0.32, min: 0.05, max: 1, step: 0.01, tooltip: 'The edit pole: partial (0.05–0.5 is the repair window) holds the unmasked region AND its sound; 1 re-renders the masked side whole (the keep_audio dial rides only here). Whole-frame × self at >= 0.8 is the identity boil and refuses — anchor the identity or use the reshoot door.' },
         { name: 'keep_audio', label: 'Keep source audio', type: 'boolean', default: true, tooltip: 'ON: the source soundtrack rides the edit unchanged. OFF (full denoise only): the soundtrack is generated fresh with the edit — a partial pass never drops it (the hold is the point).' },
         { name: 'refine', label: 'Refine pass', type: 'boolean', default: false, tooltip: "THE FOURTH DIAL — the refine switch: ON adds the learned second pass to THIS chain (the 3D-conv latent upscale + the low-sigma refine pass ride the edit's OWN latents — same run, no re-encode of a saved clip; partial denoise only). Blank mask + partial denoise + refine on = the classic refine posture." },
-        { name: 'scale', label: 'Refine scale', type: 'number', default: 2, min: 1, max: 4, step: 0.05, tooltip: "RIDES ONLY the refine pass (inert when refine is off): the learned upscaler's multiplier — 1 is the same-size sharpening pass (the capacity cure), 2 the classic second pass. A >=2x window past the measured OOM (141 f) refuses naming both cures." },
+        { name: 'scale', label: 'Refine scale', type: 'number', default: 2, min: 1, max: 4, step: 0.05, tooltip: "RIDES ONLY the refine pass (inert when refine is off): the learned upscaler's multiplier — 1 is the same-size sharpening pass (the capacity cure), 2 the classic second pass. A >=2x window past the measured OOM (5.875 s = 141f) refuses naming both cures." },
         { name: 'continuation', label: 'Continuation', type: 'boolean', default: false, tooltip: "THE CONTINUATION SWITCH: ON turns this edit into an EXTEND — fresh full-denoise seconds appended to the source's last frame (the forced seam: anything new develops from it frame by frame, never appears whole), joined with the prior into one film. Rides the blank mask + self anchors + denoise 1 (each refused loud otherwise)." },
         { name: 'extend_seconds', label: 'Extend seconds', type: 'number', default: 2.33, min: 0.91, max: 432.29, step: 0.01, tooltip: 'RIDES ONLY the continuation (inert when off): seconds appended — a single window lands on the engine grid at 24fps (22+17k frames; 2.33s = 56f, 15.08s = 362f the largest single window); above 362f the door joins N uniform windows under the 39f context overlap, exact delivery or a refusal naming the neighbors (ceiling 432.29s).' },
         { name: 'chain_run', label: 'Prior chain run', type: 'text', default: '', tooltip: "THE UPSCALE POSTURE'S ARMING SEAT (inert when empty): the engine-side run name of a PRIOR chain run (its h3_chains store directory) — stating it turns this edit into the DEFERRED 2x second pass, resuming the run's checkpointed scenes scene by scene through the requeue loop. Resolved to the newest per-scene lineage at the execute door; an unknown run refuses loud there. The recipe's pass-2 window: denoise 0.24, steps 20 (blank prompt reuses the run's own scene prompts). Refine and continuation refuse under this posture — one second-pass mechanism." },
         { name: 'window_start', label: 'Window start (frames)', type: 'number', default: 0, min: 0, max: 100000, step: 1, tooltip: 'Frames (at the film clock, 24 fps) to skip before the edit window — 0 starts at the clip head.' },
-        { name: 'window_length', label: 'Window length (frames)', type: 'number', default: 0, min: 0, max: 100000, step: 1, tooltip: 'Frames in the edit window — 0 runs to the end of the clip. A stated length must land on the engine grid 22+17k (56, 73, 90, 107, 124, 141…; off-grid refuses naming the nearest legal value) because the plan snap and the tracked mask must cut the same frames.' },
+        { name: 'window_length', label: 'Window length (frames)', type: 'number', default: 0, min: 0, max: 100000, step: 1, tooltip: 'Frames in the edit window — 0 runs to the end of the clip. A stated length must land on the engine grid 22+17k (56, 73, 90, 107, 124, 141…; off-grid refuses naming the nearest legal value) because the plan snap and the tracked mask must cut the same frames. The design window is 2.33 s = 56f (the 2 s class rung).' },
         { name: 'seed', label: 'Plan seed', type: 'number', default: 0, min: 0, max: 4294967295, step: 1, tooltip: 'The chain plan base_seed (the reference runs 0; the sampler seed stays the doc seed).' },
         { name: 'steps', label: 'Plan steps', type: 'number', default: 6, min: 1, max: 30, step: 1, tooltip: 'The chain plan default_steps (reference 6; the sampler steps stay the doc marriage).' },
         { name: 'clip_seconds', label: 'Clip seconds', type: 'number', default: 6, min: 2.5, max: 15, step: 0.1, tooltip: 'The plan clip_seconds (reference 6) — the render budget the window is cut within; the plan node\'s own widget band [2.5, 15] is the law.' },
@@ -555,8 +257,174 @@ const EDIT_MOD = {
 /** THE CARD-DECLARED KINDS (one roster, two readers: the served
  *  mods row below and the declared-band judge's walk). */
 const DECLARED_MOD_KINDS = [
-    REPLACE_MOD, REPAIR_MOD, EXTEND_MOD, REFINE_MOD, RESHOOT_MOD, UPSCALE_MOD, EDIT_MOD, LORAS_MOD,
+    RESHOOT_MOD, EDIT_MOD, LORAS_MOD,
 ];
+/** THE LEGACY EDIT ALIASES (slice 4 of the FRICTION_3 collapse —
+ * THE DELETION): the five peer bags left the DECLARED roster (the
+ * served face is edit + reshoot + loras; the operator 2026-11-06:
+ * "REPAIR AND REPLACE ARE THE FUCKING SAME OPERATION! REPAIR JUST
+ * USES THE ORIGINAL"). The names live on as the edit door's preset
+ * cells; a legacy doc (a saved bench, an old session, a pressed
+ * chip from before the collapse) resolves into the ONE bag at the
+ * compose door — compose-through, never a frozen peer: the
+ * translation states the dial cell the name always named, every
+ * translatable seat rides verbatim, and a seat no dial serves
+ * REFUSES LOUD (never the silent drop). */
+const LEGACY_EDIT_KEYS = ['replace', 'repair', 'extend', 'refine', 'upscale'];
+const isArmedBag = (v) => Array.isArray(v) && v.length > 0;
+/** Which edit posture a walked doc rides — the ONE law the flow
+ * output bindings and the compose door both read (one truth home):
+ * 'film' nothing armed; 'inchain' the masked-edit matrix cells
+ * (mask postures, the refine dial, the chain_run loop — every
+ * posture whose terminal is the chain assemble); 'join' the
+ * continuation posture (the joined-film SaveVideo, the file-boundary
+ * grammar); 'reshoot' the different chain that stays its own door. */
+export function editPosture(p) {
+    if (isArmedBag(p.reshoot))
+        return 'reshoot';
+    // legacy keys resolve through the same posture logic the compose
+    // door's alias table states (a legacy refine doc is an edit
+    // refine-dial cell; a legacy extend doc is a continuation)
+    if (isArmedBag(p.edit))
+        return editEntryPosture(p.edit[0]);
+    if (isArmedBag(p.extend))
+        return 'join';
+    if (isArmedBag(p.replace) || isArmedBag(p.repair) || isArmedBag(p.refine) || isArmedBag(p.upscale))
+        return 'inchain';
+    return 'film';
+}
+const editEntryPosture = (e) => e !== undefined && e.continuation === true ? 'join' : 'inchain';
+/** THE ALIAS RESOLVER: runs at the compose door BEFORE the bag
+ * guards — a doc carrying legacy keys resolves into the edit bag
+ * (the translation table below), the legacy keys leave the doc,
+ * and the dispatch below sees ONE bag. Two legacy keys, or a
+ * legacy key beside an armed edit bag, refuse loud (one door per
+ * doc — the pair-refusal matrix's ONE surviving law, now stated
+ * as parameter validation over the one bag). Seats with no dial
+ * refuse loud naming the edit spelling. */
+export function resolveLegacyEditAliases(p) {
+    // A legacy bag is an ARRAY or a refusal: the peer law the bags
+    // always carried (an ABSENT or EMPTY bag is the unused arm and the
+    // film stays byte-stable; a non-array is present-but-entryless and
+    // refuses loud). The empty arm is DROPPED, not refused — a doc
+    // written with `replace: []` predates the collapse and must keep
+    // composing its film.
+    const out0 = { ...p };
+    for (const k of LEGACY_EDIT_KEYS) {
+        const v = p[k];
+        if (v === undefined)
+            continue;
+        if (!Array.isArray(v)) {
+            throw new Error(`h3-timeline ${k}: the ${k} bag is present but carries no entry — state exactly one ${k} entry (the name is a preset cell of the edit bag) or omit the arm`);
+        }
+        if (v.length === 0)
+            delete out0[k];
+    }
+    p = out0;
+    const armed = LEGACY_EDIT_KEYS.filter((k) => isArmedBag(p[k]));
+    if (armed.length === 0)
+        return p;
+    if (armed.length > 1) {
+        throw new Error(`h3-timeline: ${armed.join(' and ')} are both armed — one door per doc (the names are preset cells of the ONE edit bag: it states the whole mask × anchors × denoise matrix; state the cell there). Empty every arm but the one posture you want`);
+    }
+    if (isArmedBag(p.edit)) {
+        throw new Error(`h3-timeline: Video edit and ${armed[0]} are both armed — one door per doc (${armed[0]} is a preset cell of the edit bag, not a second door). Empty one arm`);
+    }
+    const key = armed[0];
+    const bag = p[key];
+    if (bag.length > 1) {
+        throw new Error(key === 'refine'
+            ? `h3-timeline: refine carries ${bag.length} entries — the bag N-entry tiling is not a dial cell (the carried join is dead in the engine, F3-14; the edit door composes ONE window at the 2x design window 2.5 s). State one window per doc`
+            : `h3-timeline: ${key} carries ${bag.length} entries — one entry per arm (the name resolves into ONE edit entry; every entry after the first would be silently dropped)`);
+    }
+    const e = bag[0];
+    const entry = translateLegacyEntry(key, e);
+    const out = { ...p };
+    for (const k of LEGACY_EDIT_KEYS)
+        delete out[k];
+    out.edit = [entry];
+    return out;
+}
+const seatStr = (e, k) => typeof e[k] === 'string' ? e[k] : '';
+/** The per-name translation: the dial cell the name always named
+ * (FRICTION_3's collapse map), every translatable seat verbatim. */
+function translateLegacyEntry(key, e) {
+    const pass = (...keys) => {
+        const o = {};
+        for (const k of keys)
+            if (e[k] !== undefined)
+                o[k] = e[k];
+        return o;
+    };
+    const refuseSeat = (seat, why) => {
+        if (e[seat] !== undefined && e[seat] !== '' && !(typeof e[seat] === 'number' && e[seat] === 0)) {
+            throw new Error(`h3-timeline: the ${key} arm's '${seat}' seat rides no edit dial — ${why}. Restate the doc on the edit bag (its preset cell '${key}' is the same posture)`);
+        }
+    };
+    switch (key) {
+        case 'replace':
+            refuseSeat('roles', 'the edit door carries no cast-roles rail; name the cast inside edit_prompt');
+            return {
+                ...pass('source_clip', 'still', 'mannequin', 'mask', 'keep_audio', 'seed', 'steps', 'clip_seconds', 'overlap_frames', 'resolution'),
+                edit_prompt: seatStr(e, 'swap_prompt'),
+                mask_source: 'static-png',
+                reference: 'still+mannequin',
+                denoise: 1,
+            };
+        case 'repair':
+            return {
+                ...pass('source_clip', 'region_prompt', 'mask_grow', 'detection_threshold', 'denoise', 'window_start', 'window_length', 'seed', 'steps', 'clip_seconds', 'overlap_frames', 'resolution'),
+                edit_prompt: seatStr(e, 'repair_prompt'),
+                mask_source: 'region',
+                reference: 'self',
+                // the arm's own declared default (the deleted kind filled it at
+                // the walk): absence is never authorship, and the edit door's
+                // 1-default is the re-render pole this cell never was
+                denoise: typeof e.denoise === 'number' ? e.denoise : 0.32,
+            };
+        case 'extend':
+            return {
+                ...pass('source_clip', 'extend_seconds', 'seed', 'steps', 'overlap_frames', 'resolution'),
+                edit_prompt: seatStr(e, 'extend_prompt'),
+                continuation: true,
+                mask_source: 'whole-frame',
+                reference: 'self',
+                denoise: 1,
+            };
+        case 'refine':
+            refuseSeat('mode', 'the edit door refine dial is the same-run handoff (scale 1-4), never the bag mode spelling');
+            refuseSeat('windows', 'one window per edit entry (the bag N-entry tiling is not a dial cell)');
+            refuseSeat('start_seconds', 'state the window in frames on the edit door (window_start)');
+            return {
+                ...pass('source_clip', 'denoise', 'steps', 'seed', 'overlap_frames', 'scale'),
+                edit_prompt: seatStr(e, 'refine_prompt'),
+                mask_source: 'whole-frame',
+                reference: 'self',
+                // The arm's WINDOW is seconds on the old seat and frames on
+                // the edit bag (window_length); the edit bag's clip_seconds
+                // is the engine PLAN budget (band 2.5–15), never this
+                // window. Absence rides the arm's declared design default.
+                window_length: Math.round((typeof e.clip_seconds === 'number' ? e.clip_seconds : REFINE_DEFAULT_CLIP_SECONDS) * 24),
+                // the arm's own declared denoise default (see the repair cell)
+                denoise: typeof e.denoise === 'number' ? e.denoise : 0.32,
+                refine: true,
+            };
+        case 'upscale': {
+            const run = seatStr(e, 'chain_run').trim();
+            if (run === '') {
+                throw new Error("h3-timeline: the upscale arm states no chain_run — the deferred second pass resumes a PRIOR run's checkpointed scenes; with no run there is nothing to second-pass. State the run name (the edit bag's chain_run seat is the same posture)");
+            }
+            return {
+                ...pass('chain_run', 'denoise', 'steps', 'segment_crf'),
+                edit_prompt: seatStr(e, 'prompt'),
+                // the arm's own declared default (the pass-2 recipe window)
+                denoise: typeof e.denoise === 'number' ? e.denoise : 0.24,
+            };
+        }
+        default:
+            throw new Error(`h3-timeline: '${key}' is not a legacy edit key — the alias table serves exactly ${LEGACY_EDIT_KEYS.join(', ')}`);
+    }
+}
 /** THE DECLARED-BAND JUDGE (F3-07, R-P3-18): a number seat's DECLARED
  *  band binds at the compose door. Every armed bag entry's stated
  *  numeric field is judged against its declared min/max — the
@@ -644,185 +512,26 @@ export const ACTION_BINDINGS = {
                 throw new Error(`h3-timeline ${key}: the ${key} bag carries ${bag.length} entries — max_stack is 1, so every entry after the first would be silently dropped. Keep exactly one ${noun} entry.`);
             }
         };
-        // THE REFINE STACK GUARD (GAPS-19): the refine kind is the ONE
-        // multi-entry bag — its ceiling is the film's composed-window
-        // ceiling (served on the kind as max_stack). The guard keeps the
-        // array law (a non-array bag is present-but-entryless) and the
-        // ceiling; the CONTINUITY laws — one film per bag, no gaps, no
-        // full overlap — live in the family carrier (renderH3RefineBag),
-        // so the card door and any future door judge them identically.
-        const refineStackBag = (key, bag) => {
-            if (bag === undefined)
-                return;
-            if (!Array.isArray(bag)) {
-                throw new Error(`h3-timeline ${key}: the ${key} bag is present but carries no entry — state ${key} window entries as an array or omit the arm`);
-            }
-            if (bag.length > MAX_COMPOSED_WINDOWS) {
-                throw new Error(`h3-timeline ${key}: the ${key} bag carries ${bag.length} entries — max_stack is the film's composed-window ceiling (${MAX_COMPOSED_WINDOWS} windows)`);
-            }
-        };
-        const raw = p.replace;
-        const rep = p.repair;
-        const ext = p.extend;
-        // THE REFINE BAG (the fifth arm) rides the stack guard.
-        const ref = p.refine;
-        // THE RESHOOT BAG (the fourth arm, §8) rides the same guard.
-        const rsh = p.reshoot;
-        // THE UPSCALE BAG (the sixth arm, F19) rides the same guard.
-        const ups = p.upscale;
-        oneEntryBag('replace', raw, 'swap');
-        oneEntryBag('repair', rep, 'repair');
-        oneEntryBag('extend', ext, 'extend');
-        refineStackBag('refine', ref);
-        oneEntryBag('reshoot', rsh, 'reshoot');
-        oneEntryBag('upscale', ups, 'upscale');
+        // THE LEGACY ALIAS RESOLUTION (slice 4 — THE DELETION): a doc
+        // carrying a legacy key (a saved bench, an old session, a chip
+        // pressed before the collapse) resolves into the edit bag HERE,
+        // before any guard or judge — the translation states the dial
+        // cell the name always named, the untranslatable seats refuse
+        // loud, and everything below sees ONE bag. THE PAIR-REFUSAL
+        // MATRIX DIED WITH THE PEERS: two armed names refuse inside the
+        // resolver as parameter validation over the one bag (one door,
+        // one entry, one posture) — fifteen pairwise edges collapsed
+        // into the one law that always underwrote them.
+        p = resolveLegacyEditAliases(p);
+        const editBagRef = p.edit;
+        oneEntryBag('edit', editBagRef, 'edit');
+        oneEntryBag('reshoot', p.reshoot, 'reshoot');
         // THE DECLARED-BAND JUDGE (F3-07, R-P3-18): every armed entry's
         // stated numeric fields bind their declared min/max at this door
-        // — the value-judge the estate admission and the mods-schema gate
-        // never run. Rides BEFORE any dispatch (film, swap, repair,
-        // extend, refine, upscale all pass through here).
+        // — the translated entries judge against the edit kind's own
+        // bands (the legacy kinds left the roster with their bags; the
+        // judge walks the DECLARED list, never a frozen literal).
         judgeDeclaredBands(p);
-        const replaceArmed = Array.isArray(raw) && raw.length > 0;
-        const repairArmed = Array.isArray(rep) && rep.length > 0;
-        const extendArmed = Array.isArray(ext) && ext.length > 0;
-        // THE REFINE CHECK (the fifth arm) rides the same aliased
-        // boolean as its siblings — the alias narrows `ref` for the
-        // branch below (the imported refineArmed(p) predicate states
-        // the same truth for outside callers; inside compose the
-        // sibling pattern is what the compiler narrows).
-        // THE REPLACE↔REPAIR REFUSAL (the one-door-per-doc law's second
-        // edge, 2026-11-12): both arms render through the same chain
-        // spine and the same sampler tail — two armed bags would race
-        // for one emission. Refuse loud, never a quiet first-wins.
-        if (replaceArmed && repairArmed) {
-            throw new Error('h3-timeline: Replace and Repair are both armed — one door per doc (both ride the same masked-edit spine; two armed bags would race for one emission). Empty the Replace arm for a repair, or the Repair arm for a swap.');
-        }
-        // THE EXTEND PAIRWISE REFUSALS (the one-door law's third edge —
-        // each pair its own firing arm, the split-brain lesson): extend
-        // rides the same chain spine, so it races replace and repair
-        // the same way, and its branch also returns before the film
-        // action, so an armed reshoot under it would be silently
-        // dropped.
-        if (replaceArmed && extendArmed) {
-            throw new Error('h3-timeline: Replace and Extend are both armed — one door per doc (both ride the same masked-edit spine; two armed bags would race for one emission). Empty the Replace arm for an extension, or the Extend arm for a swap.');
-        }
-        if (repairArmed && extendArmed) {
-            throw new Error('h3-timeline: Repair and Extend are both armed — one door per doc (both ride the same masked-edit spine; two armed bags would race for one emission). Empty the Repair arm for an extension, or the Extend arm for a repair.');
-        }
-        const refineBagArmed = Array.isArray(ref) && ref.length > 0;
-        // THE REFINE PAIRWISE REFUSALS (the one-door law's fourth edge —
-        // each pair its own firing arm, the split-brain lesson): the
-        // refine branch returns before the film action, so it races the
-        // three edit arms the same way, and an armed reshoot under it
-        // would be silently dropped.
-        if (replaceArmed && refineBagArmed) {
-            throw new Error('h3-timeline: Replace and Refine are both armed — one door per doc (the refine branch never enters the film action; two armed bags would race for one emission). Empty the Replace arm for a refine, or the Refine arm for a swap.');
-        }
-        if (repairArmed && refineBagArmed) {
-            throw new Error('h3-timeline: Repair and Refine are both armed — one door per doc (the refine branch never enters the film action; two armed bags would race for one emission). Empty the Repair arm for a refine, or the Refine arm for a repair.');
-        }
-        if (extendArmed && refineBagArmed) {
-            throw new Error('h3-timeline: Extend and Refine are both armed — one door per doc (the refine branch never enters the film action; two armed bags would race for one emission). Empty the Extend arm for a refine, or the Refine arm for an extension.');
-        }
-        const upscaleBagArmed = Array.isArray(ups) && ups.length > 0;
-        // THE UPSCALE PAIRWISE REFUSALS (the one-door law's fifth edge —
-        // each pair its own firing arm, the split-brain lesson): the
-        // upscale branch also returns before the film action, so it races
-        // the three edit arms and refine the same way, and an armed
-        // reshoot under it would be silently dropped.
-        if (replaceArmed && upscaleBagArmed) {
-            throw new Error('h3-timeline: Replace and Upscale are both armed — one door per doc (the upscale branch never enters the film action; two armed bags would race for one emission). Empty the Replace arm for an upscale, or the Upscale arm for a swap.');
-        }
-        if (repairArmed && upscaleBagArmed) {
-            throw new Error('h3-timeline: Repair and Upscale are both armed — one door per doc (the upscale branch never enters the film action; two armed bags would race for one emission). Empty the Repair arm for an upscale, or the Upscale arm for a repair.');
-        }
-        if (extendArmed && upscaleBagArmed) {
-            throw new Error('h3-timeline: Extend and Upscale are both armed — one door per doc (the upscale branch never enters the film action; two armed bags would race for one emission). Empty the Extend arm for an upscale, or the Upscale arm for an extension.');
-        }
-        if (refineBagArmed && upscaleBagArmed) {
-            throw new Error('h3-timeline: Refine and Upscale are both armed — one door per doc (the upscale branch never enters the film action; two armed bags would race for one emission). Empty the Refine arm for an upscale, or the Upscale arm for a refine (an upscale needs a prior chain run; a refine needs a staged clip).');
-        }
-        const editBag = p.edit;
-        const editArmed = Array.isArray(editBag) && editBag.length > 0;
-        if (editArmed) {
-            const editDoors = [
-                ['Replace', replaceArmed, 'the replace arm'],
-                ['Repair', repairArmed, 'the repair arm'],
-                ['Extend', extendArmed, 'the extend arm'],
-                ['Refine', refineBagArmed, 'the refine arm'],
-                ['Upscale', upscaleBagArmed, 'the upscale arm'],
-            ];
-            for (const [name, armed, arm] of editDoors) {
-                if (armed) {
-                    throw new Error(`h3-timeline: Video edit and ${name} are both armed — one door per doc (both would race for one emission; the edit bag states the whole matrix, so state the cell there). Empty ${arm} for a video edit, or the edit arm for a ${name.toLowerCase()}.`);
-                }
-            }
-            if (reshootArmed(p)) {
-                throw new Error('h3-timeline: Video edit and Reshoot are both armed — the edit branch never enters the film action, so an armed reshoot would be silently dropped. Pick one door: empty the edit arm for a reshoot, or empty the Reshoot arm for a video edit.');
-            }
-        }
-        // THE EDIT DOOR'S ONE-DOOR EDGES (stage 2b): one bag, the whole
-        // matrix — and its refusals sit BEFORE every dispatch branch
-        // (the split-brain lesson's sharpest edge: a refusal after a
-        // sibling's dispatch is dead code, and the silent drop the
-        // one-door law kills). The edit branch returns before the film
-        // action exactly as its siblings do, so it races every armed
-        // door plus the reshoot — each pair its own firing arm, each
-        // naming the door to empty.
-        if (replaceArmed) {
-            // THE MUTUAL REFUSAL (operator, live lane 2026-10-28: "IS
-            // RESHOOT SUPPOSED TO BE IN THE CARD ITSELF OR JUST IN THE
-            // MODS, THEY WILL CONFLICT"): this branch returns before the
-            // film action, so an armed reshoot under a swap would be
-            // silently dropped. One door per doc — refuse loud, never a
-            // quiet half-run.
-            if (reshootArmed(p)) {
-                throw new Error('h3-timeline: Replace and Reshoot are both armed — the swap branch never enters the film action, so an armed reshoot would be silently dropped. Pick one door: empty the Replace arm for a reshoot, or empty the Reshoot arm for a swap.');
-            }
-            renderH3Swap(raw[0], p, parseH3Facts(model.lane_inputs), g, runId);
-            return;
-        }
-        if (repairArmed) {
-            // The same reshoot refusal, mirrored (the repair branch also
-            // returns before the film action).
-            if (reshootArmed(p)) {
-                throw new Error('h3-timeline: Repair and Reshoot are both armed — the repair branch never enters the film action, so an armed reshoot would be silently dropped. Pick one door: empty the Repair arm for a reshoot, or empty the Reshoot arm for a repair.');
-            }
-            renderH3Repair(rep[0], p, parseH3Facts(model.lane_inputs), g, runId);
-            return;
-        }
-        if (extendArmed) {
-            // The same reshoot refusal, third edge (the extend branch also
-            // returns before the film action).
-            if (reshootArmed(p)) {
-                throw new Error('h3-timeline: Extend and Reshoot are both armed — the extend branch never enters the film action, so an armed reshoot would be silently dropped. Pick one door: empty the Extend arm for a reshoot, or empty the Reshoot arm for an extension.');
-            }
-            renderH3Extend(ext[0], p, parseH3Facts(model.lane_inputs), g, runId);
-            return;
-        }
-        if (refineBagArmed) {
-            // The same reshoot refusal, fourth edge (the refine branch also
-            // returns before the film action).
-            if (reshootArmed(p)) {
-                throw new Error('h3-timeline: Refine and Reshoot are both armed — the refine branch never enters the film action, so an armed reshoot would be silently dropped. Pick one door: empty the Refine arm for a reshoot, or empty the Reshoot arm for a refine.');
-            }
-            // THE BAG DISPATCH (GAPS-19): the WHOLE bag rides the family
-            // carrier — N entries tile one film, N=1 composes the
-            // single-window emission byte-identically. Never bag[0] here:
-            // first-wins is the silent-drop class this door exists to kill.
-            renderH3RefineBag(ref, p, parseH3Facts(model.lane_inputs), g, runId);
-            return;
-        }
-        if (upscaleBagArmed) {
-            // The same reshoot refusal, fifth edge (the upscale branch also
-            // returns before the film action).
-            if (reshootArmed(p)) {
-                throw new Error('h3-timeline: Upscale and Reshoot are both armed — the upscale branch never enters the film action, so an armed reshoot would be silently dropped. Pick one door: empty the Upscale arm for a reshoot, or empty the Reshoot arm for an upscale.');
-            }
-            renderH3ChainUpscale(ups[0], p, parseH3Facts(model.lane_inputs), g, runId);
-            return;
-        }
-        const editBagRef = p.edit;
         const editDispatchArmed = Array.isArray(editBagRef) && editBagRef.length > 0;
         // THE EDIT DISPATCH (stage 2b): the dial resolution — the
         // entry's seats become the matrix seat's own dial values (the
@@ -833,6 +542,13 @@ export const ACTION_BINDINGS = {
         // walked the entry's numbers already; the matrix seat refuses
         // the empty dials and the safety cells).
         if (editDispatchArmed) {
+            // THE RESHOOT EDGE (the one pair that survives — a different
+            // CHAIN, not a dial cell): the edit branch returns before the
+            // film action, so an armed reshoot under it would be silently
+            // dropped. One door per doc.
+            if (reshootArmed(p)) {
+                throw new Error('h3-timeline: Video edit and Reshoot are both armed — the edit branch never enters the film action, so an armed reshoot would be silently dropped. Pick one door: empty the edit arm for a reshoot, or empty the Reshoot arm for a video edit.');
+            }
             const entry = editBagRef[0];
             const maskSource = typeof entry.mask_source === 'string' ? entry.mask_source : 'region';
             const mask = maskSource === 'static-png'
@@ -967,49 +683,43 @@ export function registerCard(ctx, comfy) {
                 channel: 'default',
                 node: '*',
                 nodeClass: 'SaveVideo',
-                // the REFINE arm's own emission is a SaveVideo too (the
-                // extend-terminal posture) — but the LAST-of-class scan needs
-                // the refine save to be the armed refine's, never a film
-                // save, so the default edge yields when refine is armed and
-                // the refine edge below names it.
-                when: (p) => !((Array.isArray(p.replace) && p.replace.length > 0) || (Array.isArray(p.repair) && p.repair.length > 0) || (Array.isArray(p.extend) && p.extend.length > 0) || (Array.isArray(p.refine) && p.refine.length > 0) || (Array.isArray(p.upscale) && p.upscale.length > 0)),
+                // THE FILM EDGE: the pure film's terminal is its own save —
+                // every edit posture (direct or through a legacy alias)
+                // yields to the posture edges below.
+                when: (p) => editPosture(p) === 'film',
             },
             {
+                // THE IN-CHAIN EDGE: every masked-edit matrix cell — mask
+                // postures, the refine dial, the chain_run loop — terminates
+                // in the chain assemble (the estate's film law). Covers the
+                // legacy replace/repair/refine/upscale docs verbatim (their
+                // aliases resolve to these cells) and the edit arm itself
+                // (stage 2a's gap: the edit door never had its own binding —
+                // the default SaveVideo edge could never resolve its graph).
                 channel: 'default',
                 node: '*',
                 nodeClass: 'MiniMaxH3ChainAssemble',
-                when: (p) => (Array.isArray(p.replace) && p.replace.length > 0) || (Array.isArray(p.repair) && p.repair.length > 0),
+                when: (p) => editPosture(p) === 'inchain',
             },
             {
-                // THE EXTEND ARM: the extension's terminal is the joined-film
-                // SaveVideo (the film tail's own file law — no ChainAssemble:
-                // its `_final.mp4` name is not a prefix the concat can glob).
+                // THE JOIN EDGE: the continuation posture's terminal is the
+                // joined-film SaveVideo (the file-boundary grammar — the raw
+                // boundary the latent carry cannot cross joins by file).
                 // The '*' scan picks the LAST SaveVideo in creation order —
-                // the joined film is created after its two part-saves.
+                // the joined film is created after its part-saves.
                 channel: 'default',
                 node: '*',
                 nodeClass: 'SaveVideo',
-                when: (p) => Array.isArray(p.extend) && p.extend.length > 0,
+                when: (p) => editPosture(p) === 'join',
             },
             {
-                // THE REFINE ARM: the refinement's terminal is its own
-                // single SaveVideo (`<runId>/refine` — the extend terminal's
-                // file law, no ChainAssemble: a refine has no loop lineage to
-                // assemble). The only SaveVideo in the graph, so the '*'
-                // scan resolves it.
+                // THE RESHOOT EDGE: the different chain stays its own door,
+                // and its terminal is the film tail's own SaveVideo (the
+                // augmentation, never a chain assemble).
                 channel: 'default',
                 node: '*',
                 nodeClass: 'SaveVideo',
-                when: (p) => Array.isArray(p.refine) && p.refine.length > 0,
-            },
-            {
-                // THE UPSCALE ARM (F19): the deferred 2x loop's terminal is
-                // its ChainAssemble (`<runId>/upscale`, copy_to_output) — the
-                // only assemble in the graph, so the '*' scan resolves it.
-                channel: 'default',
-                node: '*',
-                nodeClass: 'MiniMaxH3ChainAssemble',
-                when: (p) => Array.isArray(p.upscale) && p.upscale.length > 0,
+                when: (p) => editPosture(p) === 'reshoot',
             },
         ],
         // ADMISSION EXTRAS (the class-attr half verbatim: the

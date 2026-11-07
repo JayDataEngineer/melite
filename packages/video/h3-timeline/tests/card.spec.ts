@@ -57,38 +57,49 @@ describe("the h3-timeline compose gate", () => {
     // no ChainAssemble: its `_final.mp4` name is not a prefix the
     // concat can glob) vs refine (the second-pass SaveVideo) vs
     // upscale (the deferred loop's ChainAssemble at <runId>/upscale).
-    assert.equal(bindings.length, 5, "five conditional doors: film vs swap/repair vs extend vs refine vs upscale");
+    // FOUR posture doors (the collapse, slices 4/5): film
+    // (SaveVideo) vs the in-chain matrix (ChainAssemble) vs the
+    // continuation (the joined-film SaveVideo) vs the reshoot chain
+    // (its own film-tail SaveVideo). The five legacy names ride
+    // editPosture's alias law — one door, not seven.
+    assert.equal(bindings.length, 4, "four posture doors: film vs in-chain vs continuation vs reshoot");
     const film = bindings.find((b) => b.nodeClass === "SaveVideo" && b.when!({}));
-    const swap = bindings.find((b) => b.nodeClass === "MiniMaxH3ChainAssemble" && b.when!({ replace: [{ source_clip: "c" }] }));
-    const extend = bindings.find((b) => b.nodeClass === "SaveVideo" && b.when!({ extend: [{ source_clip: "c" }] }));
-    const refine = bindings.find((b) => b.nodeClass === "SaveVideo" && b.when!({ refine: [{ source_clip: "c" }] }));
-    const upscale = bindings.find((b) => b.nodeClass === "MiniMaxH3ChainAssemble" && b.when!({ upscale: [{ chain_run: "r" }] }));
+    const inchain = bindings.find((b) => b.nodeClass === "MiniMaxH3ChainAssemble" && b.when!({ edit: [{ mask_source: "whole-frame" }] }));
+    const join = bindings.find((b) => b.nodeClass === "SaveVideo" && b.when!({ edit: [{ continuation: true }] }));
+    const reshoot = bindings.find((b) => b.nodeClass === "SaveVideo" && b.when!({ reshoot: [{ source_clip: "c" }] }));
     assert.ok(film?.when, "the film door is conditional");
-    assert.ok(swap?.when, "the swap door is conditional");
-    assert.ok(extend?.when, "the extend door is conditional");
-    assert.ok(refine?.when, "the refine door is conditional");
-    assert.ok(upscale?.when, "the upscale door is conditional");
+    assert.ok(inchain?.when, "the in-chain door is conditional");
+    assert.ok(join?.when, "the continuation door is conditional");
+    assert.ok(reshoot?.when, "the reshoot door is conditional");
     assert.equal(film.when!({}), true, "empty params ride the film door");
-    assert.equal(film.when!({ replace: [{ source_clip: "c" }] }), false, "an armed bag leaves the film door");
-    assert.equal(film.when!({ extend: [{ source_clip: "c" }] }), false, "an armed extend bag leaves the film door");
-    assert.equal(film.when!({ refine: [{ source_clip: "c" }] }), false, "an armed refine bag leaves the film door");
-    assert.equal(film.when!({ upscale: [{ chain_run: "r" }] }), false, "an armed upscale bag leaves the film door");
-    assert.equal(swap.when!({}), false, "empty params leave the swap door");
-    assert.equal(swap.when!({ replace: [{ source_clip: "c" }] }), true, "an armed bag rides the swap door");
-    assert.equal(swap.when!({ extend: [{ source_clip: "c" }] }), false, "an armed extend bag never rides the swap door");
-    assert.equal(swap.when!({ refine: [{ source_clip: "c" }] }), false, "an armed refine bag never rides the swap door");
-    assert.equal(extend.when!({}), false, "empty params leave the extend door");
-    assert.equal(extend.when!({ extend: [{ source_clip: "c" }] }), true, "an armed extend bag rides the extend door");
-    assert.equal(extend.when!({ replace: [{ source_clip: "c" }] }), false, "an armed replace bag never rides the extend door");
-    assert.equal(extend.when!({ refine: [{ source_clip: "c" }] }), false, "an armed refine bag never rides the extend door");
-    assert.equal(refine.when!({}), false, "empty params leave the refine door");
-    assert.equal(refine.when!({ refine: [{ source_clip: "c" }] }), true, "an armed refine bag rides the refine door");
-    assert.equal(refine.when!({ replace: [{ source_clip: "c" }] }), false, "an armed replace bag never rides the refine door");
-    assert.equal(refine.when!({ extend: [{ source_clip: "c" }] }), false, "an armed extend bag never rides the refine door");
-    assert.equal(upscale.when!({}), false, "empty params leave the upscale door");
-    assert.equal(upscale.when!({ upscale: [{ chain_run: "r" }] }), true, "an armed upscale bag rides the upscale door");
-    assert.equal(upscale.when!({ replace: [{ source_clip: "c" }] }), false, "an armed replace bag never rides the upscale door (the two assemble doors are disjoint)");
-    assert.equal(swap.when!({ upscale: [{ chain_run: "r" }] }), false, "an armed upscale bag never rides the swap door (the two assemble doors are disjoint)");
+    for (const armed of [
+      { edit: [{ mask_source: "whole-frame" }] },
+      { edit: [{ continuation: true }] },
+      { replace: [{ source_clip: "c" }] },
+      { repair: [{ source_clip: "c" }] },
+      { refine: [{ source_clip: "c" }] },
+      { upscale: [{ chain_run: "r" }] },
+      { reshoot: [{ source_clip: "c" }] },
+    ]) {
+      assert.equal(film.when!(armed), false, `an armed doc leaves the film door (${Object.keys(armed)[0]})`);
+    }
+    // THE ALIAS LAW rides the SAME posture edges: a legacy
+    // replace/repair/refine/upscale doc is the in-chain cell; a
+    // legacy extend doc is the continuation
+    for (const legacy of [
+      { replace: [{ source_clip: "c" }] },
+      { repair: [{ source_clip: "c" }] },
+      { refine: [{ source_clip: "c" }] },
+      { upscale: [{ chain_run: "r" }] },
+    ]) {
+      assert.equal(inchain.when!(legacy), true, `legacy ${Object.keys(legacy)[0]} rides the in-chain edge`);
+    }
+    assert.equal(inchain.when!({ edit: [{ continuation: true }] }), false, "the continuation leaves the in-chain edge");
+    assert.equal(join.when!({ extend: [{ source_clip: "c" }] }), true, "legacy extend rides the join edge");
+    assert.equal(join.when!({ edit: [{ continuation: true }] }), true, "the continuation switch rides the join edge");
+    assert.equal(join.when!({ edit: [{ mask_source: "whole-frame" }] }), false, "a plain matrix cell never rides the join edge");
+    assert.equal(reshoot.when!({ reshoot: [{ source_clip: "c" }] }), true, "an armed reshoot rides its own film tail");
+    assert.equal(reshoot.when!({ edit: [{ mask_source: "whole-frame" }] }), false, "an edit cell never rides the reshoot edge");
     // SLICE 1: keyframes joined the JSON row contract (the any-frame
     // pin bus) — the census grows WITH the behavior, and the new
     // container refusal is judged in the same arm.

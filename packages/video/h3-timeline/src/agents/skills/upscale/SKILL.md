@@ -1,8 +1,16 @@
 ---
 name: upscale
-description: "Whole-film 2x upscale on the h3-timeline: name a PRIOR CHAIN RUN on the upscale mod bag; every scene resumes its checkpointed lineage, upscales through the learned 3D latent upscaler, re-renders at low denoise, and the pass assembles at <runId>/upscale. Mod-bag door — NOT the refine arm and NOT a re-render."
+description: "Whole-film 2x upscale on the h3-timeline — the LEGACY `upscale` spelling of the one Video edit bag (a preset cell: chain_run names a PRIOR chain run; every scene resumes its checkpointed lineage, upscales through the learned 3D latent upscaler, re-renders at low denoise, assembles at <runId>/upscale). Old upscale docs still resolve; new docs state params.edit with chain_run."
 genre: video
 ---
+
+> THE COLLAPSE — THIS NAME IS A PRESET CELL, NOT A DOOR. This leaf
+> documents the LEGACY spelling so old docs keep composing: state the
+> cell on the ONE Video edit bag (`params.edit`).
+> `upscale: [{ chain_run }]` resolves to `edit: [{ chain_run,
+> denoise: 0.24 }]` — `chain_run` is the arming seat, the bare run name
+> (the execute door resolves the per-scene lineage; `mode.scale` stays
+> the engine's own validated child key). New docs state the edit bag.
 
 # Upscale (deferred whole-film 2x) — SPEC
 
@@ -65,17 +73,14 @@ It is NOT:
 - **a staged-file door** — there is no clip to stage: the entry names a
   RUN, and the engine's chain store is the only truth for what exists.
 
-One door per doc: ANY two of the SEVEN armed mod bags REFUSE loud naming both —
-the fifteen pairs are replace↔repair, replace↔extend, repair↔extend,
-replace↔reshoot, repair↔reshoot, extend↔reshoot, replace↔refine,
-repair↔refine, extend↔refine, reshoot↔refine, replace↔upscale,
-repair↔upscale, extend↔upscale, refine↔upscale, reshoot↔upscale.
-THE LORA BAG IS NOT AN ARM: `loras` is the EIGHTH bag and it
-COEXISTS with any armed arm — it never disarms a pair (the lora
-plane rides every arm; only the six arm bags refuse).
-The upscale branch returns before the film action, so an armed upscale
-beside any other arm would be silently dropped. Pick one and empty the
-others. (Armed = the bag is PRESENT and non-empty; an absent or empty
+ONE DOOR PER DOC: the legacy names are PRESET CELLS of the ONE Video
+edit bag — each resolves into `params.edit`, and a doc arming two of
+them (or a legacy name beside an armed `edit` bag) REFUSES loud naming
+both: one emission, never a silent winner. THE LORA BAG IS NOT AN ARM:
+`loras` is the co-arming adapter bag and it COEXISTS with any armed
+arm — it never disarms a pair (the lora plane rides every arm). The
+upscale branch is the edit bag's chain_run posture now, so state it
+there. (Armed = the bag is PRESENT and non-empty; an absent or empty
 `upscale` bag is an unused arm — the film composes exactly as before,
 byte-identical.)
 
@@ -105,7 +110,7 @@ byte-identical.)
    - `prompt` (text) — the pass-2 text; blank reuses the source run's
      own per-scene prompts (the documented posture for a pure
      resolution pass).
-   - `denoise` (0.05–0.5, 0.24) — the pass-2 partial denoise (the
+   - `denoise` (0.05–1, 0.24) — the edit bag's band (the pass-2 partial window is 0.05–0.5); the
      recipe's own 0.24; lower is subtler). 1 or more refuses.
    - `steps` (1–30, 20) — the pass-2 schedule steps (the recipe runs
      20; the sampler stays res_multistep, the loop family's own

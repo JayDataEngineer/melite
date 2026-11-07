@@ -1,8 +1,16 @@
 ---
 name: swap
-description: "Person-swap on the h3-timeline: stage clip+still through the R0 cards, bind the replace mod seats, confirm with the user, user presses Run. The emission composes the masked-edit chain on the family's own model + lora plane."
+description: "Person-swap on the h3-timeline — the LEGACY `replace` spelling of the one Video edit bag (a preset cell: mask + still+mannequin anchors + full denoise). Old replace docs still resolve; new docs state params.edit. The emission composes the masked-edit chain on the family's own model + lora plane."
 genre: video
 ---
+
+> THE COLLAPSE — THIS NAME IS A PRESET CELL, NOT A DOOR. The operator's
+> ruling: repair and replace are the same operation; repair just uses
+> the original. This leaf documents the LEGACY spelling so old docs keep
+> composing: state the cell on the ONE Video edit bag (`params.edit`).
+> `replace: [{...}]` resolves to `edit: [{ mask_source: "static-png",
+> reference: "still+mannequin", denoise: 1, ... }]` node for node — one
+> entry per doc. New docs state the edit bag directly.
 
 # Swap (person-swap) — SPEC
 
@@ -99,28 +107,18 @@ engine-side from the entry scalars.
   non-empty bag; an empty/absent bag renders the film byte-identical
   (pinned by the replace-mod spec). A bound arm with an empty seat
   is refused loud naming the seat.
-- ONE DOOR PER DOC: the SEVEN arm bags are mutually exclusive — any
-  two of them armed REFUSE loud naming both. The 21 pairs:
-  Replace↔Reshoot, Repair↔Reshoot, Extend↔Reshoot (each edit
-  branch returns before the film action, so the reshoot would be
-  silently dropped), Replace↔Refine / Repair↔Refine /
-  Extend↔Refine / Reshoot↔Refine (the refine branch returns before
-  the film action, so the reshoot would be silently dropped),
-  Replace↔Upscale / Repair↔Upscale / Extend↔Upscale /
-  Refine↔Upscale / Reshoot↔Upscale (the upscale branch — the
-  whole-film deferred 2x loop over a prior chain run — also returns
-  before the film action),
-  Replace↔Repair / Replace↔Extend / Repair↔Extend (two edit arms
-  would race for one emission), and the edit-matrix door's six:
-  Edit↔Replace / Edit↔Repair / Edit↔Extend / Edit↔Refine /
-  Edit↔Upscale / Edit↔Reshoot (the edit bag states the whole
-  matrix, so its cell is stated there, never beside a sibling
-  door). Empty the other arms; the refusals are pinned by the
-  replace-mod, extend-mod, and upscale-mod specs.
-- THE LORA BAG IS NOT AN ARM: `loras` is the EIGHTH bag and it
-  COEXISTS with any armed arm — every arm renders under the lora
-  plane (the swap included, per the law above). Never tell a user to
-  empty `loras` to disarm a pair; only the seven arm bags refuse.
+- ONE DOOR PER DOC: the legacy names are PRESET CELLS of the ONE
+  Video edit bag, not doors. The one live kind pair is Edit↔Reshoot;
+  the other edges are Edit↔legacy-name and legacy↔legacy, the alias
+  law below. Each resolves into `params.edit` — a doc
+  arming two of them, or a legacy name beside an armed `edit` bag,
+  REFUSES loud naming both (one emission, never a silent winner).
+  Empty every arm but the one posture you want. Pinned by
+  replace-mod, repair-mod, extend-mod, refine-mod, upscale-mod.
+- THE LORA BAG IS NOT AN ARM: `loras` is the co-arming adapter bag
+  and it COEXISTS with any armed arm — every arm renders under the
+  lora plane (the swap included, per the law above). Never tell a
+  user to empty `loras` to disarm a pair.
 - State only parameters the loaded bundles declare. Entry field
   names above are quoted off `card.ts` (`REPLACE_MOD`); re-verify
   against the kind after any card edit.

@@ -1,8 +1,17 @@
 ---
 name: repair
-description: "Region repair on the h3-timeline: seat a source clip plus a repair prompt and a region prompt on the repair mod bag; a per-frame SAM3 mask tracks the named region, the masked region re-renders at partial denoise, and the rest of the frame plus the audio is held. Mod-bag door — NOT a re-render and NOT the replace swap."
+description: "Region repair on the h3-timeline — the LEGACY `repair` spelling of the one Video edit bag (a preset cell: per-frame SAM3 region mask + self anchors + partial denoise; the rest of the frame and its audio are held). Old repair docs still resolve; new docs state params.edit with mask_source region."
 genre: video
 ---
+
+> THE COLLAPSE — THIS NAME IS A PRESET CELL, NOT A DOOR. The operator's
+> ruling: repair and replace are the same operation; repair just uses
+> the original. This leaf documents the LEGACY spelling so old docs keep
+> composing: state the cell on the ONE Video edit bag (`params.edit`).
+> `repair: [{...}]` resolves to `edit: [{ mask_source: "region",
+> reference: "self", denoise: 0.32 }]` node for node (the arm's declared
+> default 0.32; the edit bag's denoise band is 0.05–1) — one entry per
+> doc. New docs state the edit bag directly.
 
 # Repair (region repair) — SPEC
 
@@ -38,17 +47,14 @@ It is NOT:
 - **a fresh generation** — the source clip anchors the frame and the
   soundtrack; nothing from a prior generation re-enters.
 
-One door per doc: ANY two of the SEVEN armed mod bags REFUSE loud naming both —
-the fifteen pairs are replace↔repair, replace↔extend, repair↔extend,
-replace↔reshoot, repair↔reshoot, extend↔reshoot, replace↔refine,
-repair↔refine, extend↔refine, reshoot↔refine, replace↔upscale,
-repair↔upscale, extend↔upscale, refine↔upscale, reshoot↔upscale.
-THE LORA BAG IS NOT AN ARM: `loras` is the EIGHTH bag and it
-COEXISTS with any armed arm — it never disarms a pair (the lora
-plane rides every arm; only the six arm bags refuse).
-The repair branch returns before the film action, so an armed repair
-beside any other arm would be silently dropped. Pick one and empty the
-others. (Armed = the bag is PRESENT and non-empty; an absent or empty
+ONE DOOR PER DOC: the legacy names are PRESET CELLS of the ONE Video
+edit bag — each resolves into `params.edit`, and a doc arming two of
+them (or a legacy name beside an armed `edit` bag) REFUSES loud naming
+both: one emission, never a silent winner. THE LORA BAG IS NOT AN ARM:
+`loras` is the co-arming adapter bag and it COEXISTS with any armed
+arm — it never disarms a pair (the lora plane rides every arm). The
+repair branch is the edit bag's masked-partial cell now, so state it
+there. (Armed = the bag is PRESENT and non-empty; an absent or empty
 `repair` bag is an unused arm — the film composes exactly as before,
 byte-identical.)
 
@@ -66,7 +72,7 @@ byte-identical.)
    "a face"). The mask tracks every matching object per frame; it is
    not a painted mask and there is no mask seat.
 4. **Set the dials.** The entry fields (the card's served ranges):
-   - `denoise` (0.05–0.5, 0.32) — the masked pass's partial denoise;
+   - `denoise` (0.05–1, 0.32) — the edit bag's band (the masked pass's partial window is 0.05–0.5);
      the refine window is 0.30–0.35, lower is subtler. 1 or more
      refuses (a repair is a refine, never a re-render).
    - `mask_grow` (0–96, 16) — pixels the tracked mask grows before the

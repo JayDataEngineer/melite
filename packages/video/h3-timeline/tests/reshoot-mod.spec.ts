@@ -247,11 +247,11 @@ describe("the reshoot kind (the fourth mod bag, official rework)", () => {
     assert.equal(node.class_type, "SaveVideo", "the armed reshoot resolves to the film tail's SaveVideo (the augmentation's own terminal)");
   });
 
-  it("an armed bag under each of the three edit arms refuses LOUD naming the conflict (one door per doc)", () => {
+  it("an armed legacy name beside reshoot refuses through the ONE door (the alias law)", () => {
     const edges: Array<[string, Record<string, unknown>, RegExp]> = [
-      ['replace', { replace: [{ source_clip: 'c.mp4', swap_prompt: 'x' }] }, /Replace and Reshoot are both armed — the swap branch never enters the film action.*empty the Reshoot arm for a swap/],
-      ['repair', { repair: [{ source_clip: 'c.mp4', repair_prompt: 'x', region_prompt: 'hands' }] }, /Repair and Reshoot are both armed — the repair branch never enters the film action.*empty the Reshoot arm for a repair/],
-      ['extend', { extend: [{ source_clip: 'c.mp4', extend_prompt: 'x', extend_seconds: 3.75 }] }, /Extend and Reshoot are both armed — the extend branch never enters the film action.*empty the Reshoot arm for an extension/],
+      ['replace', { replace: [{ source_clip: 'c.mp4', swap_prompt: 'x' }] }, /Video edit and Reshoot are both armed.*empty the Reshoot arm for a video edit/],
+      ['repair', { repair: [{ source_clip: 'c.mp4', repair_prompt: 'x', region_prompt: 'hands' }] }, /Video edit and Reshoot are both armed.*empty the Reshoot arm for a video edit/],
+      ['extend', { extend: [{ source_clip: 'c.mp4', extend_prompt: 'x', extend_seconds: 3.75 }] }, /Video edit and Reshoot are both armed.*empty the Reshoot arm for a video edit/],
     ];
     for (const [name, arm, re] of edges) {
       const walked = def.schema({

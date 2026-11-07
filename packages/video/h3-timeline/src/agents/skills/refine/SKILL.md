@@ -1,8 +1,18 @@
 ---
 name: refine
-description: "Second-pass refine on the h3-timeline: seat a source clip plus one window (start + length) and a refine prompt per entry on the refine mod bag; the RefineHandoff applies a 2x learned latent upscale and a low-denoise H3 pass to THAT WINDOW, decoding to <run>/refine. The bag takes multiple window entries: carried starts (overlap 22 f, the film’s own token-exact seam) or ABUTTING starts (0 overlap, the plain concat, up to 32 window entries) — both tile lawfully (F3-14 cured: the refine handoff clone-strips the foreign Drift-Control patch before its guider, so the packed mask always matches its audio stream). One window per press is the DECLARED ALTERNATIVE — judge each window before pressing the next. Mod-bag door — NOT a re-render and NOT the upscale arm."
+description: "Second-pass refine on the h3-timeline — the LEGACY `refine` spelling of the one Video edit bag (a preset cell: the refine switch ON adds the learned 2x handoff riding the edit’s own latents, same run, partial denoise only). Old refine docs still resolve to ONE window on params.edit; the retired multi-entry tiling refuses. Not a re-render and not the upscale posture."
 genre: video
 ---
+
+> THE COLLAPSE — THIS NAME IS A PRESET CELL, NOT A DOOR. The operator's
+> ruling: refine is just flipping a knob that slightly changes some
+> nodes. This leaf documents the LEGACY spelling so old docs keep
+> composing: state the cell on the ONE Video edit bag (`params.edit`).
+> `refine: [{...}]` resolves to `edit: [{ refine: true, mask_source:
+> "whole-frame", reference: "self", denoise: 0.32 }]` — ONE window per
+> doc. The multi-entry tiling below is the RETIRED refine arm and
+> refuses at this card today: name the window's start and length on the
+> edit bag instead. New docs state the edit bag directly.
 
 # Refine (second-pass detail pass) — SPEC
 
@@ -61,21 +71,16 @@ It is NOT:
 - **the replace/repair/extend arms** — those render a new edit of
   the scene; refine only sharpens what is already there.
 
-One door per doc: ANY two of the SEVEN armed mod bags REFUSE loud naming both —
-the twenty-one pairs are replace↔repair, replace↔extend, repair↔extend,
-replace↔reshoot, repair↔reshoot, extend↔reshoot, replace↔refine,
-repair↔refine, extend↔refine, reshoot↔refine, replace↔upscale,
-repair↔upscale, extend↔upscale, refine↔upscale, reshoot↔upscale,
-plus the edit-matrix door: edit↔replace, edit↔repair, edit↔extend,
-edit↔refine, edit↔upscale, edit↔reshoot.
-THE LORA BAG IS NOT AN ARM: `loras` is the EIGHTH bag and it
-COEXISTS with any armed arm — it never disarms a pair (the lora
-plane rides every arm; only the six arm bags refuse).
-The refine branch returns before the film action, so an armed refine
-beside any other arm would be silently dropped. Pick one and empty
-the others. (Armed = the bag is PRESENT and non-empty; an absent or
-empty `refine` bag is an unused arm — the film composes exactly as
-before, byte-identical.)
+ONE DOOR PER DOC: the legacy names are PRESET CELLS of the ONE Video
+edit bag — each resolves into `params.edit`, and a doc arming two of
+them (or a legacy name beside an armed `edit` bag) REFUSES loud naming
+both: one emission, never a silent winner. THE LORA BAG IS NOT AN ARM:
+`loras` is the co-arming adapter bag and it COEXISTS with any armed
+arm — it never disarms a pair (the lora plane rides every arm). The
+refine branch is the edit bag's refine switch now, so state it there.
+(Armed = the bag is PRESENT and non-empty; an absent or empty `refine`
+bag is an unused arm — the film composes exactly as before,
+byte-identical.)
 
 ## The flow (bind, confirm, press)
 
@@ -159,7 +164,7 @@ before, byte-identical.)
     overlap must be shorter than the window.
 4. **Set the pass dials.** The entry fields (the card's served ranges,
    tested guidance):
-   - `denoise` (0.05–0.5, 0.32) — the partial-denoise strength of the
+   - `denoise` (0.05–1, 0.32) — the edit bag's band (the partial window is 0.05–0.5); the
      refinement pass; the researched window is 0.30–0.35, lower is
      subtler. 1 or more refuses — a refine is never a re-render (the
      handoff's sigmas law: 0 <= sigmas[0] < 1).

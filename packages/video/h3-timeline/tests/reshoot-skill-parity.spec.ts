@@ -95,7 +95,7 @@ describe("the re-shoot skill's dial table agrees with the code's own homes", () 
     }
   });
 
-  it("ARM 3 — both bag skills name ALL FIFTEEN one-door pairs, derived from the card's armed kinds", () => {
+  it("ARM 3 — both bag skills name the ONE surviving pair and the five alias names, derived from the card's armed kinds", () => {
     // the armed bags are the card's own list — a door is every armed
     // kind except the co-arming adapter bag (GAPS-19: the refine door
     // stacks windows, so the roster follows the kind, not the ceiling);
@@ -104,12 +104,21 @@ describe("the re-shoot skill's dial table agrees with the code's own homes", () 
     const kinds = ((def as unknown as { mods?: Array<Record<string, unknown>> }).mods ?? [])
       .filter((k) => typeof k.param_key === "string" && k.kind !== "loras")
       .map((k) => String(k.param_key));
-    expect(kinds.sort()).toEqual(["edit", "extend", "refine", "repair", "replace", "reshoot", "upscale"]);
+    expect(kinds.sort()).toEqual(["edit", "reshoot"]);
     const pairs: string[] = [];
     for (let i = 0; i < kinds.length; i++) {
       for (let j = i + 1; j < kinds.length; j++) pairs.push(`${kinds[i]}↔${kinds[j]}`);
     }
-    expect(pairs).toHaveLength(21);
+    expect(pairs).toHaveLength(1);
+    // the five legacy names are preset cells of the edit bag — a leaf
+    // that still teaches them as doors would send an agent at a
+    // removed surface, so both leaves name the alias law
+    for (const legacy of ["replace", "repair", "extend", "refine", "upscale"]) {
+      for (const skill of ["reshoot", "swap"]) {
+        assert.match(readSkill(skill), new RegExp(legacy),
+          `${skill}/SKILL.md names the ${legacy} alias spelling`);
+      }
+    }
     for (const skill of ["reshoot", "swap"]) {
       const md = readSkill(skill);
       const lower = md.toLowerCase();

@@ -74,7 +74,7 @@ const STAGED: Record<string, Record<string, unknown>> = {
 };
 
 describe("the edit bag's preset chips (stage 3: named cells over the ONE schema)", () => {
-  it("THE SERVED CELLS: seven named cells, every patch key a declared field, every value the field's own type and vocabulary", () => {
+  it("THE SERVED CELLS: eight named cells, every patch key a declared field, every value the field's own type and vocabulary", () => {
     const { fields, presets } = editKind();
     assert.deepEqual(presets.map((p) => p.id), [
       "repair-region", "identity-swap", "outfit-change", "whole-frame-restyle", "refine-2x", "extend-continuation", "upscale-2x", "static-mask-pass",

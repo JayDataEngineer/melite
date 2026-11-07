@@ -14,13 +14,16 @@
 // denoise-mask patch before its guider samples — the estate python
 // wall tests/test_h3_refine_handoff_strip.py judges that cure live,
 // pins the burn's verbatim ValueError, and reds if the strip leaves
-// the pass. THIS wall pins the door: the carried bag and the carried
-// auto-tile COMPOSE through the film's own continuation
+// the pass. THIS wall pins the ENGINE carry at its true home: the
+// carried bag COMPOSES through the film's own continuation
 // (MiniMaxH3FiniteLatentContinuation, one per join, over the
 // predecessor's joint target — the round-27 "ZERO DIFFERENCE" seat),
-// the hard cut still serves, the off-grid carry still hears the grid
-// refusal, the choke point is the family carrier, and the engine rig
-// rides green beside the door that arms it.
+// the off-grid carry still hears the grid refusal, the choke point is
+// the family carrier, and the engine rig rides green. Since THE
+// COLLAPSE (slice 4) the CARD door arms ONE window per doc: the
+// multi-entry tiling and the auto-tile seat refuse loud, which the
+// first arms below now judge (the tiling resolves into the edit bag's
+// one cell; the carry is not a card surface).
 import "../../../../tests/helpers/boot-models.ts";
 import { beforeAll, describe, it } from "vitest";
 import assert from "node:assert/strict";
@@ -80,90 +83,49 @@ const body = (refine: Array<Record<string, unknown>>): Record<string, unknown> =
   refine,
 });
 
-describe("the refine carry, re-armed (F3-14 engine cure)", () => {
-  it("ARM 1 — a carried two-entry bag COMPOSES: one continuation over the predecessor's joint target, saves, and the one terminal film", () => {
-    const g = new GraphBuilder();
-    def.compose(def.schema(body([
-      REFINE_ENTRY(),
-      { ...REFINE_ENTRY(), start_seconds: 34 / 24 },
-    ])) as Record<string, unknown>, model, g, "run_carry_bag2");
-    const out = graphOf(g);
-    // The stand-down is LIFTED: this compose used to refuse before a
-    // single node. If the refusal ever returns, this census reds.
-    const conts = ofClass(out, "MiniMaxH3FiniteLatentContinuation");
-    assert.equal(conts.length, 1, "one continuation per carried join — the carry is live");
-    const targets = ofClass(out, "MiniMaxH3ContexMaskedTarget");
-    assert.equal(targets.length, 2, "one joint target per window");
-    const prevRef = Array.isArray(conts[0]![1].inputs.previous_latent)
-      ? String((conts[0]![1].inputs.previous_latent as unknown[])[0])
-      : String(conts[0]![1].inputs.previous_latent);
-    assert.equal(out[prevRef]!.class_type, "MiniMaxH3ContexMaskedTarget",
-      "the carried join rides the predecessor's joint target");
-    assert.equal(ofClass(out, "VHS_LoadVideo").length, 2, "two windows, two loaders");
-    assert.deepEqual(
-      ofClass(out, "SaveVideo").map(([, n]) => String(n.inputs["filename_prefix"])).sort(),
-      ["run_carry_bag2/refine", "run_carry_bag2/refine_w0", "run_carry_bag2/refine_w1"].sort(),
-      "two members + the one terminal film",
-    );
-    assert.equal(ofClass(out, "MeliteConcatVideos").length, 1,
-      "the plain file concat assembles the carried film");
-  });
-
-  it("ARM 2 — the auto-tile's carried loop COMPOSES with its own arithmetic (window 0 fresh, every k≥1 window carrying the loop's overlap)", () => {
-    const g = new GraphBuilder();
-    def.compose(def.schema(body([{ ...REFINE_ENTRY(), windows: 2 }])) as Record<string, unknown>,
-      model, g, "run_carry_tile2");
-    const out = graphOf(g);
-    const conts = ofClass(out, "MiniMaxH3FiniteLatentContinuation");
-    assert.equal(conts.length, 1, "a 2-window loop at a 22 f overlap mounts one carried join");
-    assert.equal(Number(conts[0]![1].inputs.overlap_frames), 22,
-      "the continuation carries the loop's own overlap (the film's seam)");
-    assert.equal(ofClass(out, "VHS_LoadVideo").length, 2, "two windows, two loaders");
-    const skips = ofClass(out, "VHS_LoadVideo").map(([, n]) => n.inputs.skip_first_frames);
-    assert.deepEqual(skips, [0, 34], "window 1 starts one step in (56 − 22 = 34 f)");
-    assert.equal(ofClass(out, "MeliteConcatVideos").length, 1, "the carried film assembles");
-  });
-
-  it("ARM 3 — THE HARD CUT STILL SERVES: abutting entries (carry 0) and a zero-overlap loop compose with no continuation", () => {
-    // 56 f windows (the 2.33 s design default); the second starts at
-    // frame 56 — 0 + 56 − 56 = 0 f carry, the plain concat of two
-    // independent windows.
-    const bagG = new GraphBuilder();
-    def.compose(def.schema(body([
-      REFINE_ENTRY(),
-      { ...REFINE_ENTRY(), start_seconds: 56 / 24 },
-    ])) as Record<string, unknown>, model, bagG, "run_carry_abut");
-    const bag = graphOf(bagG);
-    assert.equal(ofClass(bag, "MiniMaxH3FiniteLatentContinuation").length, 0,
-      "a zero carry mounts no continuation");
-    assert.equal(ofClass(bag, "MiniMaxH3FiniteSegmentFinalize").length, 0,
-      "nothing carried, nothing trimmed");
-    assert.equal(ofClass(bag, "VHS_LoadVideo").length, 2, "two independent windows");
-    assert.equal(ofClass(bag, "MeliteConcatVideos").length, 1,
-      "the plain file concat joins the abutting windows");
-    assert.deepEqual(
-      ofClass(bag, "SaveVideo").map(([, n]) => String(n.inputs["filename_prefix"])).sort(),
-      ["run_carry_abut/refine", "run_carry_abut/refine_w0", "run_carry_abut/refine_w1"].sort(),
-      "two members + the one terminal film",
-    );
-
-    const loopG = new GraphBuilder();
-    def.compose(def.schema(body([{ ...REFINE_ENTRY(), windows: 2, overlap_frames: 0 }])) as Record<string, unknown>,
-      model, loopG, "run_carry_tile0");
-    const loop = graphOf(loopG);
-    assert.equal(ofClass(loop, "MiniMaxH3FiniteLatentContinuation").length, 0,
-      "the zero-overlap auto-tile never mounts the carry");
-    assert.equal(ofClass(loop, "MeliteConcatVideos").length, 1, "it joins through the plain concat");
-  });
-
-  it("ARM 4 — THE GRID JUDGMENT KEEPS ITS OWN VOICE: an off-grid carry still hears the token-grid refusal", () => {
-    // start 1.5 s = 36 f → carry 56 − 36 = 20 f, off the 5/22/39/56
-    // token grid — the off-grid arm owns it, cured engine or not.
+describe("the refine carry after the collapse (the card is one window; the engine keeps the carry)", () => {
+  it("ARM 1 — the CARD door refuses a multi-entry refine bag: one window per doc, the tiling names the edit bag", () => {
     assert.throws(
       () => def.compose(def.schema(body([
         REFINE_ENTRY(),
-        { ...REFINE_ENTRY(), start_seconds: 1.5 },
-      ])) as Record<string, unknown>, model, new GraphBuilder(), "run_carry_offgrid"),
+        { ...REFINE_ENTRY(), start_seconds: 34 / 24 },
+      ])) as Record<string, unknown>, model, new GraphBuilder(), "run_carry_bag2"),
+      /refine carries 2 entries — the bag N-entry tiling is not a dial cell/,
+      "the retired tiling refuses loud and names the one-window law",
+    );
+  });
+
+  it("ARM 2 — the CARD door refuses the auto-tile seat: windows rides no edit dial", () => {
+    assert.throws(
+      () => def.compose(def.schema(body([{ ...REFINE_ENTRY(), windows: 2 }])) as Record<string, unknown>,
+        model, new GraphBuilder(), "run_carry_tile2"),
+      /refine arm's 'windows' seat rides no edit dial/,
+      "the auto-tile is not a dial the one bag carries",
+    );
+  });
+
+  it("ARM 3 — a ONE-window legacy refine doc composes through the one door: the learned handoff, no carry", () => {
+    const g = new GraphBuilder();
+    def.compose(def.schema(body([REFINE_ENTRY()])) as Record<string, unknown>, model, g, "run_carry_one");
+    const out = graphOf(g);
+    assert.equal(ofClass(out, "MinimaxH3LatentUpscaler3DRefineHandoff").length, 1,
+      "the learned handoff serves the one-window cell");
+    assert.equal(ofClass(out, "MiniMaxH3FiniteLatentContinuation").length, 0,
+      "one window has no join, so no carried continuation rides");
+  });
+
+  it("ARM 4 — THE GRID JUDGMENT KEEPS ITS OWN VOICE at the engine carrier: an off-grid carry still refuses", () => {
+    const carrierFacts = {
+      unet: "minimax_h3_t2v_bf16.safetensors",
+      clip: "clip.safetensors",
+      vae_video: "vae_video.safetensors",
+      vae_audio: "vae_audio.safetensors",
+    };
+    assert.throws(
+      () => renderH3RefineBag(
+        [REFINE_ENTRY(), { ...REFINE_ENTRY(), start_seconds: 1.5 }],
+        {}, carrierFacts, new GraphBuilder(), "run_carry_offgrid",
+      ),
       /not token-exact/,
       "the grid judgment keeps its own voice — the ghost is never a fallback",
     );

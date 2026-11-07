@@ -145,9 +145,12 @@ describe("renderH3Edit — the video-edit matrix on the one spine (stage 2a)", (
   });
 
   it("THE DENOISE POLE: the scheduler carries the stated dial, both poles", () => {
-    for (const denoise of [0.32, 1]) {
+    // the partial pole rides the self anchor; the FULL pole is the
+    // swap posture (masked + still+mannequin) — masked × self × 1 is
+    // the unguided re-render the door refuses in its own voice
+    for (const [denoise, ref] of [[0.32, SELF], [1, PAIR]] as const) {
       const g = new GraphBuilder();
-      renderH3Edit({ ...ENTRY(), denoise }, STATIC_PNG, SELF, {}, FACTS, g, "run_pole");
+      renderH3Edit({ ...ENTRY(), denoise }, STATIC_PNG, ref, {}, FACTS, g, "run_pole");
       const o = out(g);
       const sched = ofClass(o, "BasicScheduler");
       assert.equal(sched.length, 1, "one scheduler");
@@ -157,7 +160,7 @@ describe("renderH3Edit — the video-edit matrix on the one spine (stage 2a)", (
 
   it("THE CONSTRUCTOR SEAT: keepAudio spells both audio seats through contexMaskedTarget", () => {
     const g = new GraphBuilder();
-    renderH3Edit({ ...ENTRY(), denoise: 1, keep_audio: false }, STATIC_PNG, SELF, {}, FACTS, g, "run_audio");
+    renderH3Edit({ ...ENTRY(), denoise: 1, keep_audio: false }, STATIC_PNG, PAIR, {}, FACTS, g, "run_audio");
     const o = out(g);
     const edit = ofClass(o, "MiniMaxH3FantasticVideoEditLatent");
     assert.equal(edit.length, 1);

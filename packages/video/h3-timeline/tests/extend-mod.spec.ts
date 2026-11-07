@@ -1,26 +1,23 @@
-// @melite/video-h3-timeline — the extend arm rows (the repair arm's
-// own harness): drives the registered card's own doors — def.mods for
-// the served kind, def.compose for the branch. The kind is served
-// verbatim with the arm-gated packs, the film path is byte-identical
-// with the arm empty, and a bound arm refuses LOUD on every law edge
-// (missing seat, the three pairwise one-door refusals, the off-grid
-// length) while complete seats compose the fresh-continuation chain
-// ending in the joined-film SaveVideo. Every row asserts served
-// truth or refusal text — never expect(true).
+// @melite/video-h3-timeline — THE EXTEND NAME (slice 4 of the
+// collapse: THE DELETION). The name left the DECLARED roster and
+// lives on as the edit bag's CONTINUATION posture: blank mask, self
+// anchors, full denoise, the forced seam, the joined film. The
+// suite drives the card's own doors and pins the surviving laws the
+// extend arm always carried (the seam, the grid, the solver's
+// refusal voice) through the alias.
 import "../../../../tests/helpers/boot-models.ts";
 import { beforeAll, describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
-import { loadCardDefs, resolveCardFlowOutputs } from "@melite/comfyui-cordis";
+import { loadCardDefs } from "@melite/comfyui-cordis";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
-import { LAST_FRAME_BATCH_INDEX } from "@melite/models-h3";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -45,402 +42,94 @@ const graphOf = (g: GraphBuilder): Record<string, Node> =>
 const ofClass = (out: Record<string, Node>, cls: string): [string, Node][] =>
   Object.entries(out).filter(([, n]) => n.class_type === cls);
 
-// The extend-only classes (zero of these may ever appear in a film
-// graph — the fresh-continuation window and the file join are this
-// arm's alone; the shared chain tail pins inside the emission row,
-// never absent here).
-const EXTEND_CLASSES = [
-  'ImageFromBatch',
-  'SolidMask',
-  'MeliteConcatVideos',
-];
+const compose = (doc: Record<string, unknown>, runId: string): Record<string, Node> => {
+  const walked = def.schema(doc) as Record<string, unknown>;
+  const g = new GraphBuilder();
+  def.compose(walked, model, g, runId);
+  return graphOf(g);
+};
 
 const EXTEND_ENTRY = (): Record<string, unknown> => ({
-  source_clip: 'clips/take.mp4',
-  extend_prompt: 'the dancer keeps spinning as the tempo lifts, the crowd clapping along',
-  extend_seconds: 2.33,
-  seed: 0,
+  source_clip: "clips/take.mp4",
+  extend_prompt: "she keeps walking toward the door, the door opens",
+  extend_seconds: 3.75,
 });
 
-describe("the extend kind", () => {
-  it("is served verbatim with the arm-gated packs", () => {
-    const kinds = (def as { mods?: Array<Record<string, unknown>> }).mods ?? [];
-    const extend = kinds.find((k) => k.kind === 'extend');
-    assert.ok(extend, "the h3-timeline card serves the extend kind on the modifiers channel");
-    assert.equal(extend.param_key, 'extend', "the bag rides param_key 'extend'");
-    assert.equal(extend.max_stack, 1, "one extend per doc (max_stack 1)");
-    assert.equal(extend.schema_key, 'extend', "the kind stamps its own catalog name (the mod-liveness ARM 3 attribution)");
-    assert.deepEqual(extend.requires, [
-      'ComfyUI-VideoHelperSuite',
-      'ComfyUI-MiniMaxH3-Context-Loop',
-      'ComfyUI-Fantastic-MiniMaxH3-PromptBuilder',
-      'comfyui-h3-oneclick-swap',
-      'melite-utility-nodes',
-    ], "the kind's arm packs: the VHS loader, the chain, the prompt builder, the slice's home pack, and the file join");
-    const fields = (extend.fields as Array<{ name: string }>).map((f) => f.name);
-    assert.ok(fields.includes('source_clip'), "the prior-clip seat is declared");
-    assert.ok(fields.includes('extend_prompt'), "the continuation seat is declared");
-    assert.ok(fields.includes('extend_seconds'), "the length seat is declared");
-    assert.ok(fields.includes('seed'), "the plan seed is declared");
-  });
-
-  it("an empty extend bag composes the film path byte-identically (an unused arm never reshapes a film graph)", () => {
-    const shot = { text: 'a slow push in', start_frame: 0, end_frame: 56 };
-    const bare = def.schema({ calls: [shot], length: 56 }) as Record<string, unknown>;
-    const withBag = def.schema({ calls: [shot], length: 56, extend: [] }) as Record<string, unknown>;
-    const g1 = new GraphBuilder();
-    def.compose(bare, model, g1, "run_film_bare");
-    const g2 = new GraphBuilder();
-    def.compose(withBag, model, g2, "run_film_bare"); // F14: same runId — the byte-identical arm judges the extend bag, not the run namespace
-    assert.deepEqual(graphOf(g2), graphOf(g1), "the empty extend bag leaves the film graph byte-identical");
-    for (const cls of EXTEND_CLASSES) {
-      assert.equal(ofClass(graphOf(g1), cls).length, 0, `a film graph carries zero ${cls}`);
-    }
-  });
-
-  it("a present-but-empty bag refuses loud (never a quiet film)", () => {
-    const walked = def.schema({ extend: {} }) as Record<string, unknown>;
-    assert.throws(
-      () => def.compose(walked, model, new GraphBuilder(), "run_extend_empty_bag"),
-      /extend bag is present but carries no entry/,
-    );
-  });
-
-  it("a bound arm with a missing seat refuses naming the seat", () => {
-    const entry = EXTEND_ENTRY();
-    delete entry.source_clip;
-    const walked = def.schema({ extend: [entry] }) as Record<string, unknown>;
-    assert.throws(
-      () => def.compose(walked, model, new GraphBuilder(), "run_extend_missing_seat"),
-      /'source_clip' names no media.*an extend needs both seats bound/s,
-      "the armed extend with no prior clip refuses loud naming the seat (the reshoot idiom — never a silent half-build)",
-    );
-  });
-
-  it("the missing-prompt refusal names the prompt seat", () => {
-    const entry = EXTEND_ENTRY();
-    delete entry.extend_prompt;
-    const walked = def.schema({ extend: [entry] }) as Record<string, unknown>;
-    assert.throws(
-      () => def.compose(walked, model, new GraphBuilder(), "run_extend_noprompt"),
-      /'extend_prompt' names no media.*MOTION\+SOUND for the appended seconds/s,
-      "the continuation seat is the authored action — MOTION+SOUND for the appended seconds",
-    );
-  });
+const EDIT_EQUIVALENT = (): Record<string, unknown> => ({
+  source_clip: "clips/take.mp4",
+  edit_prompt: "she keeps walking toward the door, the door opens",
+  continuation: true,
+  mask_source: "whole-frame",
+  reference: "self",
+  denoise: 1,
+  extend_seconds: 3.75,
 });
 
-describe("the extend emission (the fresh-continuation chain)", () => {
-  it("anchors on the prior clip's LAST FRAME, taken in-graph (the non-empty tail pick)", () => {
-    const walked = def.schema({ extend: [EXTEND_ENTRY()] }) as Record<string, unknown>;
-    const g = new GraphBuilder();
-    def.compose(walked, model, g, "run_extend_anchor");
-    const out = graphOf(g);
-    // THE TAIL ANCHOR: the VHS loader carries the whole clip at the
-    // film clock, and ImageFromBatch at the census's own max index
-    // (LAST_FRAME_BATCH_INDEX) takes its last frame — a positive
-    // out-of-band index the engine clamps onto the final row; the
-    // negative spelling slices t[-1:0] EMPTY on the live estate
-    // (the 2026-11-19 burn — judged in models/h3
-    // extend-join-shape.spec.ts 'THE NON-EMPTY TAIL').
-    const vhs = ofClass(out, 'VHS_LoadVideo');
-    assert.equal(vhs.length, 1, "one VHS loader seats the prior clip");
-    assert.equal(vhs[0][1].inputs.force_rate, 24, "the VHS loader pins the film clock");
-    assert.equal(vhs[0][1].inputs.video, 'clips/take.mp4', "the VHS loader reads the staged clip by name");
-    const batch = ofClass(out, 'ImageFromBatch');
-    assert.equal(batch.length, 1, "one ImageFromBatch takes the tail frame");
-    assert.equal(batch[0][1].inputs.batch_index, LAST_FRAME_BATCH_INDEX, "the anchor is the LAST frame (the census's own max — the clamp lands the final row, never the empty slice)");
-    assert.equal(batch[0][1].inputs.length, 1, "exactly one frame rides the anchor");
-    // the anchor rides the plan's picture seat AND the r2v pixel
-    // anchor (the ref_image seat) — wires serialize [nodeKey, slot]
-    const plan = ofClass(out, 'H3OneClickSwapPlan')[0]!;
-    assert.deepEqual(plan[1].inputs.picture_1, [batch[0][0], 0], "the plan's picture_1 IS the last frame");
-    const r2v = ofClass(out, 'MiniMaxH3ReferenceToVideo')[0]!;
-    assert.deepEqual(r2v[1].inputs['ref_images.ref_image_0'], [batch[0][0], 0], "the r2v pixel anchor IS the last frame");
-    assert.deepEqual(r2v[1].inputs['ref_videos.ref_video_0'], [vhs[0][0], 0], "the whole clip rides the motion-identity seat");
+describe("the Extend name — the continuation posture of the one edit bag (the collapse, slice 4)", () => {
+  it("THE NAME LEFT THE ROSTER: no extend peer bag is served", () => {
+    const kinds = ((def as { mods?: Array<Record<string, unknown>> }).mods ?? []).map((k) => k.kind);
+    assert.deepEqual(kinds, ["reshoot", "edit", "loras"], "the survivor roster");
+    assert.equal(kinds.includes("extend"), false);
   });
 
-  it("generates FRESH under an all-white mask at full denoise (nothing held)", () => {
-    const walked = def.schema({ extend: [EXTEND_ENTRY()] }) as Record<string, unknown>;
-    const g = new GraphBuilder();
-    def.compose(walked, model, g, "run_extend_fresh");
-    const out = graphOf(g);
-    const mask = ofClass(out, 'SolidMask');
-    assert.equal(mask.length, 1, "one SolidMask seats the everywhere-generate mask");
-    assert.equal(mask[0][1].inputs.value, 1, "the mask is all white (generate everywhere)");
-    assert.ok(typeof mask[0][1].inputs.width !== 'number' && mask[0][1].inputs.width !== undefined,
-      "the mask's width rides the chain's own geometry wire, never a hand literal");
-    // F10 (2026-11-12): a mask SEAT takes an output LINK `[key, slot]`
-    // — a bare node handle serializes `{"id": ...}` and the engine
-    // dies at reshape. BOTH mask seats (the edit latent and the
-    // context target) must ride the SolidMask's slot-0 link.
-    const editNode = ofClass(out, 'MiniMaxH3FantasticVideoEditLatent')[0]!;
-    assert.deepEqual(editNode[1].inputs.mask, [mask[0][0], 0],
-      "the edit latent's mask seat is a LINK [key, 0] — never a bare handle dict");
-    const target = ofClass(out, 'MiniMaxH3ContexMaskedTarget')[0]!;
-    assert.deepEqual(target[1].inputs.mask, [mask[0][0], 0],
-      "the context target's mask seat is a LINK [key, 0] — never a bare handle dict");
-    assert.equal(target[1].inputs.mask_meaning, 'white = generate', "white = generate (the fresh pole)");
-    assert.equal(target[1].inputs.audio_mode, 'generate all audio', "the extension's seconds carry fresh audio");
-    const sched = ofClass(out, 'BasicScheduler')[0]!;
-    assert.equal(sched[1].inputs.denoise, 1, "full denoise — an extension generates, it never refines");
+  it("THE NAME STILL COMPOSES: the forced seam + the joined film through the one door", () => {
+    const out = compose({ extend: [EXTEND_ENTRY()] }, "run_extend_alias");
+    const guides = ofClass(out, "MiniMaxH3AddGuide");
+    assert.equal(guides.length, 1, "the forced seam pins the prior's last frame");
+    assert.equal(guides[0][1].inputs.frame_idx, 0, "the seam lands at the first appended frame");
+    assert.match(JSON.stringify(out), /extend_film/, "the join delivers the one-film grammar");
   });
 
-  it("joins prior + new through the film tail's file law (prefix saves, chained boundaries, no ChainAssemble)", () => {
-    const walked = def.schema({ extend: [EXTEND_ENTRY()] }) as Record<string, unknown>;
-    const g = new GraphBuilder();
-    def.compose(walked, model, g, "runx");
-    const out = graphOf(g);
-    const saves = ofClass(out, 'SaveVideo');
-    assert.equal(saves.length, 3, "three saves: prior re-save, new window, joined film");
-    const prefixes = saves.map(([, n]) => n.inputs.filename_prefix).sort();
-    assert.deepEqual(prefixes, ['runx/extend_film', 'runx/x0', 'runx/x1'], "the parts save at output-dir prefixes; the film lands under the run id");
-    const concat = ofClass(out, 'MeliteConcatVideos');
-    assert.equal(concat.length, 1, "one concat joins the saved FILES");
-    assert.equal(concat[0][1].inputs.videos, 'runx/x0,runx/x1', "prior first, new window second — film order");
-    assert.ok(concat[0][1].inputs.after !== undefined, "the concat waits on the boundary chain (the ordering proof)");
-    const boundaries = ofClass(out, 'MeliteUnload');
-    assert.equal(boundaries.length, 2, "one boundary per save, token-chained");
-    // the boundary chain: one boundary's after wires the other's token
-    const tokens = new Set(boundaries.map(([, n]) => n.inputs.after).filter((v) => v !== undefined));
-    assert.equal(tokens.size, 1, "exactly one boundary chains onto the other — the concat's token depends on BOTH saves transitively");
-    assert.equal(ofClass(out, 'MiniMaxH3ChainAssemble').length, 0,
-      "no ChainAssemble terminal — its `_final.mp4` name is not a prefix the concat can glob (the join grammar this estate owns)");
-    // F12 (2026-11-12): the join's RATE LAW — MeliteConcatVideos
-    // refuses members whose audio rates differ (the H3 sound VAE
-    // emits 32 kHz, demuxed film rides 48 kHz; the first extend
-    // press died exactly there). EVERY audio leg feeding a join
-    // CreateVideo passes MeliteAudioResample at the film rate 48000.
-    const resamples = ofClass(out, 'MeliteAudioResample');
-    assert.equal(resamples.length, 2, "one resample per join leg (x0's prior audio, x1's generated sound)");
-    for (const [, n] of resamples) {
-      assert.equal(n.inputs.sample_rate, 48000, "the resample states the film rate — 48000, the one-home law");
-    }
-    const creates = ofClass(out, 'CreateVideo');
-    // the third CreateVideo is the concat tail's own container mux
-    // (audio = the concat's decoded stream — same-rate by
-    // construction); the TWO part legs must each ride a resample.
-    const resampleKeys = new Set(resamples.map(([k]) => k));
-    const riding = creates.filter(([, n]) => {
-      const seat = n.inputs.audio;
-      return Array.isArray(seat) && seat.length === 2 && resampleKeys.has(seat[0] as string);
-    });
-    assert.equal(riding.length, 2,
-      `exactly the two part-mux CreateVideos ride resample links (saw ${riding.length} of ${creates.length})`);
+  it("THE TRANSLATION IS THE CELL: the alias graph deep-equals the stated continuation entry", () => {
+    const viaAlias = compose({ extend: [EXTEND_ENTRY()] }, "run_extend_equiv");
+    const viaEdit = compose({ edit: [EDIT_EQUIVALENT()] }, "run_extend_equiv");
+    assert.deepEqual(viaAlias, viaEdit, "blank mask + self anchors + full denoise: the same posture, node for node");
   });
 
-  it("refuses off-grid extend_seconds LOUD (never a silent snap)", () => {
-    const walked = def.schema({
-      extend: [{ ...EXTEND_ENTRY(), extend_seconds: 3.0 }],
-    }) as Record<string, unknown>;
-    const g = new GraphBuilder();
-    assert.throws(
-      () => def.compose(walked, model, g, "run_extend_offgrid"),
-      /length 72f is off-grid — the engine renders 22\+17k frames in \[22,362\]/,
-      "3.0s = 72f is off-grid; the door names the grid and refuses",
+  it("leaves the film byte-identical with the arm absent", () => {
+    const out = compose({}, "run_extend_empty");
+    assert.equal(ofClass(out, "MiniMaxH3AddGuide").length, 0, "the empty-arm film composes no forced seam");
+    assert.equal(JSON.stringify(out).includes("extend_film"), false, "no join vocabulary on the film path");
+    assert.ok(ofClass(out, "SaveVideo").length > 0, "the film still delivers");
+  });
+
+  it("an EMPTY legacy bag is the unused arm", () => {
+    assert.deepEqual(
+      compose({ extend: [] }, "run_extend_empty_bag"),
+      compose({}, "run_extend_empty_bag"),
+      "an empty array still composes the film",
     );
   });
 
-  it("feeds the plan node a value inside its OWN widget band while the true window length rides the chain's duration seat (the works-audit F1 cure)", () => {
-    // The plan node's live object_info bounds clip_seconds to
-    // [2.5, 15.0]; the grid rungs run 0.917s–15.083s, so an unclamped
-    // feed built graphs the engine REFUSED at submit (the card's own
-    // 2.33s default extend died there). The feed clamps into the
-    // band; the exact window length rides default_duration_seconds
-    // (bounds 0.1–149.7 — every rung legal).
-    const walked = def.schema({ extend: [EXTEND_ENTRY()] }) as Record<string, unknown>;
-    const g = new GraphBuilder();
-    def.compose(walked, model, g, "run_extend_grid");
-    const out = graphOf(g);
-    const plan = ofClass(out, 'H3OneClickSwapPlan')[0]!;
-    assert.equal(plan[1].inputs.clip_seconds, 2.5, "the 2.333s window's plan feed clamps UP to the node's own 2.5 floor");
-    const chainPlan = ofClass(out, 'MiniMaxH3ChainPlanModern')[0]!;
-    assert.equal(chainPlan[1].inputs.default_duration_seconds, 56 / 24, "the TRUE window length (2.333s = 56f) rides the chain's duration seat unclamped");
-  });
-
-  it("EVERY grid rung's plan feed lands inside the plan node's [2.5, 15.0] band (the engine never 400s a composed extend)", () => {
-    // 22+17k ∈ [22,362]: the three rungs under the floor (22/39/56f)
-    // and the one over the ceiling (362f) are the rungs the unclamped
-    // feed used to kill at submit.
-    for (let frames = 22; frames <= 362; frames += 17) {
-      const walked = def.schema({
-        extend: [{ ...EXTEND_ENTRY(), extend_seconds: frames / 24 }],
-      }) as Record<string, unknown>;
-      const g = new GraphBuilder();
-      def.compose(walked, model, g, `run_rung_${frames}`);
-      const out = graphOf(g);
-      const plan = ofClass(out, 'H3OneClickSwapPlan')[0]!;
-      const feed = plan[1].inputs.clip_seconds as number;
-      assert.ok(feed >= 2.5 && feed <= 15.0, `rung ${frames}f: plan feed ${feed}s inside the node's own band`);
-      const chainPlan = ofClass(out, 'MiniMaxH3ChainPlanModern')[0]!;
-      assert.equal(chainPlan[1].inputs.default_duration_seconds, frames / 24, `rung ${frames}f: the true length rides the duration seat`);
-    }
-  });
-
-  it("refuses a multi-window extend under overlap_frames ≠ 39 LOUD (the seam law pins 39 — the dsh-docs MED-1 cure)", () => {
-    // 379f composes as 2×209−39 EXACTLY — but only under the policy's
-    // 39f overlap. A knob of 40 must refuse, never compose seam math
-    // the chain then stitches at a different carry.
-    const walked = def.schema({
-      extend: [{ ...EXTEND_ENTRY(), extend_seconds: 379 / 24, overlap_frames: 40 }],
-    }) as Record<string, unknown>;
-    const g = new GraphBuilder();
+  it("a continuation with NO prompt refuses at the edit door's prompt law", () => {
+    const { extend_prompt: _p, ...noPrompt } = EXTEND_ENTRY();
     assert.throws(
-      () => def.compose(walked, model, g, "run_extend_overlap"),
-      /overlap_frames 40 — the multi-window composition law carries the policy's 39f context overlap/,
-      "a multi-window extend under a ≠39 knob refuses, naming the 39f law",
-    );
-    // the lawful 39 still composes: 2 windows of 209f.
-    const lawful = def.schema({
-      extend: [{ ...EXTEND_ENTRY(), extend_seconds: 379 / 24 }],
-    }) as Record<string, unknown>;
-    const g2 = new GraphBuilder();
-    def.compose(lawful, model, g2, "run_extend_overlap_lawful");
-    const out2 = graphOf(g2);
-    const chainPlan = ofClass(out2, 'MiniMaxH3ChainPlanModern')[0]!;
-    assert.equal(chainPlan[1].inputs.default_duration_seconds, 209 / 24, "the 2-window composition carries 209f windows (2×209−39 = 379 exactly)");
-  });
-
-  it("an armed extend resolves its default output to the LAST SaveVideo (the joined film)", () => {
-    const walked = def.schema({ extend: [EXTEND_ENTRY()] }) as Record<string, unknown>;
-    const g = new GraphBuilder();
-    def.compose(walked, model, g, "run_extend_flow_output");
-    const out = graphOf(g);
-    const flow = resolveCardFlowOutputs(def, walked, out);
-    assert.deepEqual(flow.outputs, { default: "video" }, "the extend still serves the video channel");
-    const node = out[flow.outputNodes.default!];
-    assert.ok(node, "the resolved output node exists in the composed graph");
-    assert.equal(node.class_type, "SaveVideo", "the armed extend resolves to the joined-film SaveVideo");
-    assert.equal(node.inputs.filename_prefix, "run_extend_flow_output/extend_film", "the film, never a part-save");
-  });
-});
-
-describe("the one-door-per-doc law (extend's three pairwise edges)", () => {
-  // Each pair refuses LOUD with its OWN voice — the split-brain
-  // lesson: one shared arm can mask another pair's silent drop.
-  it("extend + replace refuses, naming both arms", () => {
-    const walked = def.schema({
-      replace: [{ source_clip: 'a.mp4', still: 's.png', swap_prompt: 'x' }],
-      extend: [EXTEND_ENTRY()],
-    }) as Record<string, unknown>;
-    const g = new GraphBuilder();
-    assert.throws(
-      () => def.compose(walked, model, g, "run_door_ex"),
-      /Replace and Extend are both armed — one door per doc \(both ride the same masked-edit spine; two armed bags would race for one emission\)/,
+      () => compose({ extend: [noPrompt] }, "run_extend_no_prompt"),
+      /'edit_prompt' names no action/,
     );
   });
 
-  it("extend + repair refuses, naming both arms", () => {
-    const walked = def.schema({
-      repair: [{ source_clip: 'a.mp4', repair_prompt: 'x', region_prompt: 'hands' }],
-      extend: [EXTEND_ENTRY()],
-    }) as Record<string, unknown>;
-    const g = new GraphBuilder();
+  it("an OFF-GRID extension still refuses through the solver, naming its neighbors", () => {
     assert.throws(
-      () => def.compose(walked, model, g, "run_door_er"),
-      /Repair and Extend are both armed — one door per doc/,
+      () => compose({ extend: [{ ...EXTEND_ENTRY(), extend_seconds: 20 }] }, "run_extend_offgrid"),
+      /composes nowhere exactly/,
     );
   });
 
-  it("extend + reshoot refuses, naming the silently-dropped arm", () => {
-    const walked = def.schema({
-      extend: [EXTEND_ENTRY()],
-      reshoot: [{ source_clip: 'sources/take3.mp4' }],
-    }) as Record<string, unknown>;
-    const g = new GraphBuilder();
+  it("ONE DOOR: extend beside an armed edit bag refuses", () => {
     assert.throws(
-      () => def.compose(walked, model, g, "run_door_es"),
-      /Extend and Reshoot are both armed — the extend branch never enters the film action/,
+      () => compose({ extend: [EXTEND_ENTRY()], edit: [EDIT_EQUIVALENT()] }, "run_extend_race"),
+      /Video edit and extend are both armed/,
     );
   });
-});
 
-describe("the plan-input cure (the seat's own shots, never a source re-slice)", () => {
-  // THE BUG (the unification survey, design §3): H3OneClickSwapPlan
-  // SLICES its source by clip_seconds and a non-empty plan_json_input
-  // OVERRIDES the literal — wiring it on extend would re-render the
-  // PRIOR's own timeline, never a continuation. The literal rules;
-  // the plan node contributes geometry only. Toggle-out red-proof:
-  // re-wire plan_json_input on the extend seat and both arms red.
-  it("single window: ChainPlanModern carries NO plan_json_input — the one literal continuation shot rules", () => {
-    const walked = def.schema({ extend: [EXTEND_ENTRY()] }) as Record<string, unknown>;
-    const g = new GraphBuilder();
-    def.compose(walked, model, g, "run_cure_single");
-    const out = graphOf(g);
-    const chainPlan = ofClass(out, 'MiniMaxH3ChainPlanModern')[0]!;
-    assert.ok(chainPlan, "the chain plan serves");
-    assert.equal(chainPlan[1].inputs.plan_json_input, undefined,
-      "plan_json_input stays UNWIRED — the plan node's source slicing is the swap's semantics, never a continuation's");
-    const plan = JSON.parse(chainPlan[1].inputs.plan_json as string) as { shots: Array<{ id: string; prompt: string }> };
-    assert.equal(plan.shots.length, 1, "one literal shot");
-    assert.equal(plan.shots[0]!.id, 'extend-1', "the shot is the extension's own");
-    assert.equal(plan.shots[0]!.prompt, EXTEND_ENTRY().extend_prompt, "the shot carries the continuation prompt verbatim");
-  });
-
-  it("multi window: the literal carries one shot per composed window", () => {
-    const walked = def.schema({
-      extend: [{ ...EXTEND_ENTRY(), extend_seconds: 379 / 24 }],
-    }) as Record<string, unknown>;
-    const g = new GraphBuilder();
-    def.compose(walked, model, g, "run_cure_multi");
-    const out = graphOf(g);
-    const chainPlan = ofClass(out, 'MiniMaxH3ChainPlanModern')[0]!;
-    assert.equal(chainPlan[1].inputs.plan_json_input, undefined,
-      "multi-window keeps the literal ruling too — N shots, never a source slice");
-    const plan = JSON.parse(chainPlan[1].inputs.plan_json as string) as { shots: Array<{ id: string }> };
-    assert.deepEqual(plan.shots.map((s) => s.id), ['extend-1', 'extend-2'],
-      "379f composes exactly 2 windows: two literal continuation shots");
-  });
-});
-
-describe("multi-window extend (the latent-carry assembly)", () => {
-  it("composes 379f exactly as 2 windows of 209f under the 39f carry, assembling in-chain then appending to the prior by file", () => {
-    const walked = def.schema({
-      extend: [{ ...EXTEND_ENTRY(), extend_seconds: 379 / 24 }],
-    }) as Record<string, unknown>;
-    const g = new GraphBuilder();
-    def.compose(walked, model, g, "runmw");
-    const out = graphOf(g);
-    // THE LATENT-CARRY LAW: N ≥ 2 windows assemble IN-CHAIN —
-    // ChainAssemble owns the seams under the policy's overlap; the
-    // assembled film then joins the raw prior BY FILE (the initial
-    // boundary is the exception: a raw prior has no latents).
-    const assemble = ofClass(out, 'MiniMaxH3ChainAssemble');
-    assert.equal(assemble.length, 1, "one in-chain assembly composes the N windows");
-    assert.equal(assemble[0][1].inputs.filename, 'runmw/extend_chain', "the assembled extension lands under the run id");
-    assert.equal(assemble[0][1].inputs.audio_source, 'generated', "fresh content assembles the checkpointed H3 sound");
-    const loopEnd = ofClass(out, 'MiniMaxH3ChainLoopEnd')[0]!;
-    assert.deepEqual(assemble[0][1].inputs.manifest, [loopEnd[0], 0],
-      "the assembly consumes the LoopEnd manifest — it fires only at true completion");
-    // THE COMPOSE JOIN: prior re-muxed at x0, the assembled film
-    // rides the concat's append seat (the exact wired path — the
-    // DAG itself proves the assembly completed before the join).
-    const saves = ofClass(out, 'SaveVideo');
-    assert.equal(saves.length, 2, "two saves only: the prior re-mux and the joined film (the windows ride checkpoints, not SaveVideo)");
-    const prefixes = saves.map(([, n]) => n.inputs.filename_prefix).sort();
-    assert.deepEqual(prefixes, ['runmw/extend_film', 'runmw/x0'], "the prior re-muxes at x0; the film is the deliverable");
-    const concat = ofClass(out, 'MeliteConcatVideos')[0]!;
-    assert.equal(concat[1].inputs.videos, 'runmw/x0', "the prior is the sole prefix member");
-    assert.deepEqual(concat[1].inputs.append, [assemble[0][0], 0],
-      "the assembled extension appends LAST — ChainAssemble's video_path, wired");
-    const boundaries = ofClass(out, 'MeliteUnload');
-    assert.equal(boundaries.length, 1, "one boundary for the one prefix member (the append is DAG-proven, never boundary-proven)");
-    const created = ofClass(out, 'CreateVideo');
-    assert.equal(created.length, 2, "two container muxes: the prior re-mux (fps 24) and the join's own deliverable mux");
-    assert.ok(created.some(([, n]) => n.inputs.fps === 24),
-      "the prior re-mux pins the film clock (the extension arrives as a finished file)");
-    const sched = ofClass(out, 'BasicScheduler')[0]!;
-    assert.equal(sched[1].inputs.denoise, 1, "every window generates fresh — full denoise, nothing held");
-  });
-
-  it("refuses uncomposable stated frames, naming both neighbors (never a silent snap)", () => {
-    const walked = def.schema({
-      extend: [{ ...EXTEND_ENTRY(), extend_seconds: 20.0 }],
-    }) as Record<string, unknown>;
-    const g = new GraphBuilder();
+  it("ONE DOOR PER DOC: extend beside upscale refuses", () => {
     assert.throws(
-      () => def.compose(walked, model, g, "run_mw_refuse"),
-      /stated 480f composes nowhere exactly.*nearest: 5 windows of 124f deliver 464f.*nearest: 2 windows of 260f deliver 481f/s,
-      "20.0s = 480f lands nowhere; the door names the max-under (5×124−156=464f) and min-over (2×260−39=481f) compositions for re-statement",
+      () => compose({
+        extend: [EXTEND_ENTRY()],
+        upscale: [{ chain_run: "run_prior" }],
+      }, "run_extend_pair"),
+      /extend and upscale are both armed — one door per doc/,
     );
   });
 });
