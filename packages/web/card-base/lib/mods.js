@@ -787,7 +787,18 @@ export function ModifiersSection(props) {
     // (standalone entries each own their output; order is void).
     const isOrdered = (k) => k.category !== 'standalone';
     const anyOrdered = kinds.some(isOrdered);
-    return h('section', { className: css.modSection, 'data-subcard-grid': 'on', 'data-testid': 'cb-mods-section' }, h('div', { className: css.modHead }, h('span', { className: css.modTitle }, chromeCopy.modifiersTitle), h('span', { className: css.modHint }, anyOrdered ? 'drag to set apply order' : 'each entry is its own output (standalone)')), leafError !== null && leaf === null
+    // THE HINT NAMES THE PRESENT AFFORDANCE (the 2026-11-16 operator
+    // friction: "a modifiers section that does nothing above the mod
+    // slots"): the drag hint rides the FIRST ordered ENTRY, never the
+    // category alone — an empty section (preset chips and the add
+    // square, nothing draggable) must not voice a drag that does not
+    // exist. The standalone hint stays categorical: it explains why no
+    // drag will EVER come, the honest word at any count.
+    const anyOrderedTile = kinds.some((k) => isOrdered(k) && entriesOf(k).length > 0);
+    const hint = !anyOrdered
+        ? 'each entry is its own output (standalone)'
+        : anyOrderedTile ? 'drag to set apply order' : null;
+    return h('section', { className: css.modSection, 'data-subcard-grid': 'on', 'data-testid': 'cb-mods-section' }, h('div', { className: css.modHead }, h('span', { className: css.modTitle }, chromeCopy.modifiersTitle), hint !== null ? h('span', { className: css.modHint }, hint) : null), leafError !== null && leaf === null
         ? h('p', { className: css.modLeafError }, leafError)
         : null, 
     // THE MOD-KIND KNOB LAW (E2-7, the operator's burn: a ControlNet

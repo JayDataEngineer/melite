@@ -65,10 +65,22 @@ test('NO KINDS, NO SECTION (never an empty modifiers block)', () => {
 })
 
 test('THE CHROME: one flowing row — title, hint, and the add square when addable kinds ride', () => {
-  openSection({ kinds: [LORA] })
+  openSection({ kinds: [LORA], values: { loras: [{ id: 'detail' }] } })
   expect(screen.getByText('Modifiers')).not.toBeNull()
   expect(screen.getByText('drag to set apply order')).not.toBeNull()
   expect(document.querySelector('[data-subcard-add="mod"]')).not.toBeNull()
+})
+
+test('THE HINT NAMES THE PRESENT AFFORDANCE (the 2026-11-16 operator friction: "a modifiers section that does nothing above the mod slots") — an EMPTY section never voices the drag hint', () => {
+  // the burn shape verbatim: ordered kinds served, ZERO entries —
+  // the preset chips and the add square render, but nothing is
+  // draggable, and a hint naming a drag that does not exist reads
+  // as a dead section head above the chips. The drag hint rides
+  // the FIRST ordered tile, never the category alone.
+  openSection({ kinds: [LORA] })
+  expect(screen.queryByText('drag to set apply order')).toBeNull()
+  expect(screen.getByText('Modifiers'), 'the section head still names the plane').not.toBeNull()
+  expect(document.querySelector('[data-subcard-add="mod"]'), 'the add square still rides').not.toBeNull()
 })
 
 test('THE ADD GRAMMAR: the square seats the kind menu; picking a kind opens its create leaf', () => {

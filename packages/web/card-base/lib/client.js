@@ -16329,11 +16329,13 @@ window.__ModuleLoader__.load({
 			};
 			const isOrdered = (k) => k.category !== "standalone";
 			const anyOrdered = kinds.some(isOrdered);
+			const anyOrderedTile = kinds.some((k) => isOrdered(k) && entriesOf(k).length > 0);
+			const hint = !anyOrdered ? "each entry is its own output (standalone)" : anyOrderedTile ? "drag to set apply order" : null;
 			return (0, react.createElement)("section", {
 				className: card_module_css_default.modSection,
 				"data-subcard-grid": "on",
 				"data-testid": "cb-mods-section"
-			}, (0, react.createElement)("div", { className: card_module_css_default.modHead }, (0, react.createElement)("span", { className: card_module_css_default.modTitle }, chromeCopy.modifiersTitle), (0, react.createElement)("span", { className: card_module_css_default.modHint }, anyOrdered ? "drag to set apply order" : "each entry is its own output (standalone)")), leafError !== null && leaf === null ? (0, react.createElement)("p", { className: card_module_css_default.modLeafError }, leafError) : null, ...kinds.filter((k) => k.cardinality === "scalar" && (k.kindFields ?? []).length > 0).map((k) => (0, react.createElement)("div", {
+			}, (0, react.createElement)("div", { className: card_module_css_default.modHead }, (0, react.createElement)("span", { className: card_module_css_default.modTitle }, chromeCopy.modifiersTitle), hint !== null ? (0, react.createElement)("span", { className: card_module_css_default.modHint }, hint) : null), leafError !== null && leaf === null ? (0, react.createElement)("p", { className: card_module_css_default.modLeafError }, leafError) : null, ...kinds.filter((k) => k.cardinality === "scalar" && (k.kindFields ?? []).length > 0).map((k) => (0, react.createElement)("div", {
 				key: k.param_key + ":kind",
 				className: card_module_css_default.modLeafFields
 			}, k.kindFields.map((f) => (0, react.createElement)("label", {
