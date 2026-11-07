@@ -138,3 +138,88 @@ describe("the mod bag's write journey (the dead Add)", () => {
       "the cure seats the DECLARED mod bags — never an anything-goes pass-through")
   })
 })
+
+describe("the from-flow kind filter (the real thread, not the copy — seat-kind F1's demanded reshape)", () => {
+  // each seat gets its own fresh mount: the picker's open replaces
+  // the leaf's square subtree, so one arm cannot walk two doors
+  const openMaskPicker = async (): Promise<HTMLElement> => {
+    const plusBox = await waitFor(() => {
+      const el = document.querySelector('[data-subcard-add="mod"]')
+      assert.ok(el, "the + box must render")
+      return el
+    }, { timeout: 3000 })
+    fireEvent.click(plusBox)
+    fireEvent.click(await screen.findByText("Video edit"))
+    fireEvent.click(await screen.findByRole("button", { name: "Static mask pass" }))
+    const maskSeat = await waitFor(() => {
+      const sq = Array.from(document.querySelectorAll<HTMLElement>("[data-slot-square]"))
+        .find((s) => (s.getAttribute("aria-label") ?? "").includes("Mask PNG"))
+      assert.ok(sq, "the static-mask leaf carries the Mask PNG seat")
+      return sq
+    }, { timeout: 3000 })
+    fireEvent.click(maskSeat)
+    fireEvent.click(await screen.findByRole("menuitem", { name: "From flow" }))
+    const sub = await screen.findByText("The other stages’ latest outputs (image)")
+    const dlg = sub.closest("[role='dialog']")
+    assert.ok(dlg, "the from-flow picker dialog renders")
+    return dlg as HTMLElement
+  }
+
+  it("ARM E — THE MASK SEAT OFFERS ONLY ITS KIND: a staged .png rides, a staged .mp4 never does", async () => {
+    await serveReal()
+    render(
+      <VideoTimelineStudio
+        stageId="s_4" cardName="h3-timeline"
+        row={{ id: "s_4", card: "h3-timeline", title: "H3 Timeline", params: TWO }}
+        runStatus="" onPatch={() => {}} onRun={() => {}}
+        onStop={() => {}} onRemove={() => {}} onSurface={() => {}}
+        upstream={[
+          { id: "u1", title: "mask.png", url: "/melite-media/runs/r9/img/mask.png" },
+          { id: "u2", title: "clip.mp4", url: "/melite-media/runs/r9/vid/clip.mp4" },
+        ]}
+        runId={null}
+      />,
+    )
+    const dialog = await openMaskPicker()
+    const face = dialog.textContent ?? ""
+    assert.ok(face.includes("mask.png"), "the image artifact is offered to the image seat")
+    assert.ok(!face.includes("clip.mp4"), "the staged video is NEVER offered to the image seat — the thread filters by the seat's file kind")
+  })
+
+  it("ARM F — THE VIDEO SEAT KEEPS ITS OWN KIND: the .mp4 rides, the .png never does", async () => {
+    await serveReal()
+    render(
+      <VideoTimelineStudio
+        stageId="s_4" cardName="h3-timeline"
+        row={{ id: "s_4", card: "h3-timeline", title: "H3 Timeline", params: TWO }}
+        runStatus="" onPatch={() => {}} onRun={() => {}}
+        onStop={() => {}} onRemove={() => {}} onSurface={() => {}}
+        upstream={[
+          { id: "u1", title: "mask.png", url: "/melite-media/runs/r9/img/mask.png" },
+          { id: "u2", title: "clip.mp4", url: "/melite-media/runs/r9/vid/clip.mp4" },
+        ]}
+        runId={null}
+      />,
+    )
+    const plusBox = await waitFor(() => {
+      const el = document.querySelector('[data-subcard-add="mod"]')
+      assert.ok(el, "the + box must render")
+      return el
+    }, { timeout: 3000 })
+    fireEvent.click(plusBox)
+    fireEvent.click(await screen.findByText("Video edit"))
+    await screen.findByRole("button", { name: "Repair a region" })
+    const clipSeat = await waitFor(() => {
+      const sq = Array.from(document.querySelectorAll<HTMLElement>("[data-slot-square]"))
+        .find((s) => (s.getAttribute("aria-label") ?? "").includes("Source clip"))
+      assert.ok(sq, "the edit leaf carries the Source clip seat")
+      return sq
+    }, { timeout: 3000 })
+    fireEvent.click(clipSeat)
+    fireEvent.click(await screen.findByRole("menuitem", { name: "From flow" }))
+    const dialog = (await screen.findByText(/latest outputs/i)).closest("[role='dialog']") as HTMLElement
+    const face = dialog.textContent ?? ""
+    assert.ok(face.includes("clip.mp4"), "the video artifact is offered to the video seat")
+    assert.ok(!face.includes("mask.png"), "the staged image never rides the video seat")
+  })
+})

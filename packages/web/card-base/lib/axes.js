@@ -282,7 +282,7 @@ export function ModelAxes({ spec, value, user, pickHeld = user, onSet, onPick, o
     const restGroups = variantAxis !== undefined ? groups.filter((g) => g !== variantAxis) : groups;
     return h('section', { className: `${css.specGroup} ${css.modelAxes}`, 'data-model-axes': '1' }, h('h4', { className: css.specGroupTitle }, chromeCopy.modelLabel), variantField !== null
         ? h('div', { className: css.axesPair, 'data-axes-pair': 'Model+Variant' }, modelField, variantField)
-        : modelField, 
+        : modelField,
     // THE DOWNLOAD PROMPT (stroke 18): the held model is boarded
     // but its weights are not on the machine — ask the user, never
     // block the pick. The button is the gesture; the manage door
@@ -306,9 +306,9 @@ export function ModelAxes({ spec, value, user, pickHeld = user, onSet, onPick, o
             : dlState === 'busy' ? chromeCopy.requestingWord
                 : dlState === 'queued' ? chromeCopy.downloadQueuedNote
                     : chromeCopy.downloadFailedNote))
-        : null, 
+        : null,
     // the axes below the pair (Quant, …) keep the grid's flow.
-    restGroups.map((g) => axisField(g)), 
+    restGroups.map((g) => axisField(g)),
     // THE FACE JUDGES THE DOC THE PICK JUDGES (2026-11-08, the
     // combinations-sweep live catch on image-edit): the pick derives
     // its departed-key nulls against pickHeld (base under user — the

@@ -449,7 +449,7 @@ export function ModifiersSection(props) {
     // cell's dials ride the draft where the operator SEES them move
     // (the instant commit died with the collapse's one-interface
     // law: the chip is a door into the modal, never a second editor).
-    const openCreate = (k, patch, presetId) => {
+    const openCreate = (k) => {
         const entries = entriesOf(k);
         if (k.max_stack !== undefined && entries.length >= k.max_stack) {
             setLeafError(k.label + ' stack limit reached (' + String(k.max_stack) + ') — remove one to add another.');
@@ -470,13 +470,15 @@ export function ModifiersSection(props) {
         setDraftOption('');
         setDraftStrength('');
         setDraftSteps('');
-        // (F2) create seeds through the SAME seat router as edit — the
-        // patch applies on every kind shape, never only the field kinds
-        setDraftParams(patch === undefined ? fieldDefaults(k) : { ...fieldDefaults(k), ...routePresetPatch(k, patch, { setOption: setDraftOption, setStrength: setDraftStrength, setSteps: setDraftSteps }) });
+        // (the chip-corpse params are gone with the one door: the only
+        // callers that ever passed a patch/preset were the deleted outer
+        // chips; the in-leaf posture switch routes its patch at its own
+        // press, never through the open)
+        setDraftParams(fieldDefaults(k));
         setLeafError(null);
-        setLeaf({ mode: 'create', kind: k, index: -1, ...(presetId !== undefined ? { preset: presetId } : {}) });
+        setLeaf({ mode: 'create', kind: k, index: -1 });
     };
-    const openEdit = (k, index, patch, presetId) => {
+    const openEdit = (k, index) => {
         // (the entry-undefined guard was deleted: tiles map 1:1 over this
         // same entriesOf(k) array in the same render — the clicked index
         // is always in range. No caller can observe the undefined state.)
@@ -495,11 +497,8 @@ export function ModifiersSection(props) {
                 if (entry[f.name] !== undefined)
                     params[f.name] = coerceFieldEdit(f, entry[f.name]);
             }
-            // (F2) the patch rides the SAME routing on every shape — a
-            // hybrid preset's option/scalar seats open their own drafts,
-            // the cell's dials ride the params
-            if (patch !== undefined)
-                Object.assign(params, routePresetPatch(k, patch, { setOption: setDraftOption, setStrength: setDraftStrength }));
+            // (the chip-corpse patch overlay died with the one door: the
+            // in-leaf switch routes its patch at its own press)
             setDraftParams(params);
         }
         else if (isOptionKind(k)) {
@@ -512,14 +511,6 @@ export function ModifiersSection(props) {
             const strength = typeof entry['strength'] === 'number' ? entry['strength'] : undefined;
             setDraftStrength(strength !== undefined ? String(strength) : '');
             setDraftSteps(typeof entry['steps'] === 'number' ? String(entry['steps']) : '');
-            // (F2) the option shape honors the patch too: its three seats
-            // open their drafts; any remaining keys ride the params
-            // remainder (never a silent drop at the seed)
-            if (patch !== undefined) {
-                const cell = routePresetPatch(k, patch, { setOption: setDraftOption, setStrength: setDraftStrength, setSteps: setDraftSteps });
-                if (Object.keys(cell).length > 0)
-                    setDraftParams(cell);
-            }
         }
         else {
             // THE DISPLAY-IS-THE-COMMIT LAW (the YOLO-classes fix): the
@@ -538,11 +529,6 @@ export function ModifiersSection(props) {
                 if (entry[f.name] !== undefined)
                     params[f.name] = coerceFieldEdit(f, entry[f.name]);
             }
-            // THE PRESET OVERLAY rides the seed's tail (the merge law the
-            // instant chip pressed: staged files stay, the patch's dials
-            // move) - now visible in the open form before any save.
-            if (patch !== undefined)
-                Object.assign(params, patch);
             setDraftParams(params);
         }
         setLeafError(null);
@@ -554,7 +540,7 @@ export function ModifiersSection(props) {
         // the key select, the scalar dial, the steps row (option
         // kinds), and the kind's own fields (hybrids) — everything
         // else is ride-through, confirmed at save.
-        const seat = { mode: 'edit', kind: k, index, ref: entry, content: JSON.stringify(entry), ...(presetId !== undefined ? { preset: presetId } : {}) };
+        const seat = { mode: 'edit', kind: k, index, ref: entry, content: JSON.stringify(entry) };
         const owned = new Set([optionKeyOf(k), scalarKeyOf(k)]);
         if (isHybridKind(k)) {
             seat.key = { field: optionKeyOf(k), value: typeof entry[optionKeyOf(k)] === 'string' ? entry[optionKeyOf(k)] : '' };
@@ -1082,7 +1068,7 @@ function routePresetPatch(k, patch, drafts) {
     else if (isOptionKind(k)) {
         takeString('id', drafts.setOption);
         takeNumber('strength', drafts.setStrength);
-        /* v8 ignore else -- the implicit skip is a type fence: every option-branch caller of routePresetPatch passes setSteps (openCreate's seed, this edit seat, the preset switch's press all wire the third draft), so the guard is always true where the option branch evaluates; a routePresetPatch call that omits setSteps on an option kind would re-arm the path */
+        /* v8 ignore else -- the implicit skip is a type fence: the preset switch's press (the one live routePresetPatch caller) always passes setSteps, so the guard is always true where the option branch evaluates; a routePresetPatch call that omits setSteps on an option kind would re-arm the path */
         if (drafts.setSteps !== undefined)
             takeNumber('steps', drafts.setSteps);
     }

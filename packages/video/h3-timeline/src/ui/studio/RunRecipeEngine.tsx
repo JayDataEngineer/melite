@@ -122,6 +122,7 @@ export function RunRecipeEngine({
     // keep every artifact, unknown extensions ride).
     candidatesFor: (f) => {
       const want = seatFileKindOf(f)
+      /* v8 ignore next -- the library law, unarmed today: 'all' is an UNHINTED file seat (square-provider's seatFileKindOf), and every file seat the h3 card ships is hinted (source_clip/mannequin video, mask/still image); the branch keeps the seat law whole for the first unhinted seat the card declares */
       if (want === 'all') return refArtifacts.map((a) => ({ id: a.name, label: a.name, url: a.url }))
       return refArtifacts
         .filter((a) => urlKindOf(a.url) === want)
@@ -176,6 +177,7 @@ export function RunRecipeEngine({
           // value the walk fills and the mix divides by.
           value={(resolved.fps ?? DOC_FPS_DEFAULT) as number}
           onEdit={(_, v) => {
+            /* v8 ignore next -- a type fence, never a UI path: the boolean atom is the only onEdit caller that fires non-strings (atoms.tsx onChange(next: boolean)), and fps renders the number seat whose every face fires strings */
             if (typeof v !== "string") return
             const n = parseSpecNumber(v)
             if (n !== undefined && n > 0) setLayerAKey("fps", n)

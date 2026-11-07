@@ -200,6 +200,35 @@ describe('THE BASE STRIKE (audits 018 C4 + 016 C5) — the departed base stamp n
     const { strikes } = struckView(spec as FormSpecDoc, user, base)
     expect(strikes, 'no row named after the strike means no strike').toEqual([])
   })
+
+  test('THE USER-RESTATED GHOST never strikes — authorship is the (a) loop\'s own gate, not a purge', async () => {
+    const spec = await formSpecArm('qwen3-tts')
+    expect(spec, 'the served qwen3-tts spec resolves').not.toBeNull()
+    // the 016 C5 shape with ONE difference: the user's own map
+    // states the departed seat's value. A dead-carry key the hand
+    // restated is the hand's word — the strike serves the author,
+    // never the purge: 'voice' stays on the base plane and in the
+    // resolved view
+    const user: SpecValues = { variant: 'voicedesign', design_prompt: 'warm', quant: '1_7b', voice: 'ryan' }
+    const base: SpecValues = { variant: 'customvoice', voice: 'ryan', style_instruction: 'y', quant: '1_7b' }
+    const strike = strikeDeadLaneStamps(spec as FormSpecDoc, user, base)
+    expect(strike.strikes, 'the restated seat never strikes (style_instruction — stated by nobody — still does)').toEqual(['style_instruction'])
+    expect(strike.base.voice, 'the hand\'s word holds the base plane').toBe('ryan')
+  })
+
+  test('THE HEAL\'S VERDICT YIELDS AUTHORSHIP — a deAuthored restatement strikes anyway (the 2026-11-15 tts hop law)', async () => {
+    const spec = await formSpecArm('qwen3-tts')
+    expect(spec, 'the served qwen3-tts spec resolves').not.toBeNull()
+    // the same shape, one ledger entry different: the open heal
+    // already wrote voice null (the drill's droppedRef ledger), so
+    // the seed's stale copy in the user map is NOT a hand's word —
+    // the strike obeys the heal's verdict and clears the seat
+    const user: SpecValues = { variant: 'voicedesign', design_prompt: 'warm', quant: '1_7b', voice: 'ryan' }
+    const base: SpecValues = { variant: 'customvoice', voice: 'ryan', style_instruction: 'y', quant: '1_7b' }
+    const strike = strikeDeadLaneStamps(spec as FormSpecDoc, user, base, new Set(['voice']))
+    expect(strike.strikes, 'the heal-ledger seat strikes despite the user copy').toEqual(['voice', 'style_instruction'])
+    expect('voice' in strike.base, 'the heal\'s verdict holds — the stale copy never resurrects the seat').toBe(false)
+  })
 })
 
 // ── THE STRIKE NOTE (the named heal, dismissible) ─────────────────

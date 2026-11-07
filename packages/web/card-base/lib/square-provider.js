@@ -337,7 +337,7 @@ export function useSquareProvider(onEdit, wire) {
                 ? t('flowDescription', { kindSuffix: req.kind !== 'all' ? ' (' + req.kind + ')' : '' })
                 : t('mediaDescription', { kindSuffix: req.kind !== 'all' ? ' (' + req.kind + ')' : '' }),
             closeLabel: t('closePicker'),
-        }, 
+        },
         // THE EMPTY LAW (S7 class-4 residue, 2026-11-05): the picker's
         // empty face rides EmptyState (layout.tsx) — the DSH
         // empty-state shape (WorkspaceBrowser.tsx:266-280), the same
@@ -355,7 +355,7 @@ export function useSquareProvider(onEdit, wire) {
                         ? t('mediaUnavailable', { reason: mediaErr })
                         : t('nothingToPick'),
             })
-            : h(Fragment, null, 
+            : h(Fragment, null,
             // THE SEARCH SEAT NEVER UNMOUNTS while a library is listed
             // (2026-11-15 stuck-picker burn: the no-match face used to
             // REPLACE the whole body, input included — typing a query
@@ -389,7 +389,7 @@ export function useSquareProvider(onEdit, wire) {
                     className: css.pickBtn,
                     'data-testid': 'source-pick-row',
                     onClick: () => { pick(c.url); },
-                }, 
+                },
                 // THE VIDEO PREVIEW SEAT (2026-11-12, the operator's
                 // burn: "VIDEOS HAVE NO IMAGE PREVIEWS" — a video row
                 // was a letter glyph): a video URL renders the same

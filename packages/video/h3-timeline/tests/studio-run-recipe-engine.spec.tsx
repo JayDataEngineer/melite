@@ -423,6 +423,23 @@ describe("THE ATOMIC PICK LAW at the studio rail (2026-09-29)", () => {
     assert.equal("recipe" in doc() ? doc().recipe : undefined, undefined, "no recipe key persists — the stamp is the truth")
     cleanup()
   })
+
+  it("a pick on a BASE-LESS mount still lands — the hand-off-less pane (stage.params absent) composes against an empty held row", async () => {
+    serve()
+    // component.tsx passes base={stage.params ?? undefined}: a stage
+    // with no settled params mounts the pane WITHOUT a base — the
+    // pick verdict's held row falls to the empty map and the pick
+    // still lands its whole stamp (never a crash on the undefined
+    // hand-off, never a refusal that only exists because no base
+    // ever arrived)
+    const { keys, doc } = engine({}, { base: undefined as never })
+    const pick = await screen.findByLabelText("Recipe")
+    fireEvent.click(pick)
+    fireEvent.click(screen.getByRole("menuitem", { name: /Draft 02MP/ }))
+    assert.deepEqual(keys, [], "the per-key verb never carries a pick")
+    assert.equal(doc().width, 768, "the pick lands its whole stamp against the empty held row")
+    cleanup()
+  })
 })
 
 describe("THE COMPOSE GATE at the studio rail (law C — the schema is never thrown away)", () => {

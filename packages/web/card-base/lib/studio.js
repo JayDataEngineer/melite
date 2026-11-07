@@ -247,7 +247,7 @@ export function DeclarativeStudio(props) {
         ? h('p', { className: css.groupNote }, 'loading the declared knob surface…')
         : h(StudioShell, {
             // LEFT — the params rail (the declared knob surface)
-            params: h('div', { className: css.studioRail }, 
+            params: h('div', { className: css.studioRail },
             // THE FAMILY AXIS (the schema-contract cure, 2026-10-18):
             // the served spec's families arm is the card's declared
             // model menu — the SAME shared ModelAxes the generic form
@@ -310,9 +310,9 @@ export function DeclarativeStudio(props) {
                     });
                     seat.now(patch);
                 },
-            }), 
+            }),
             // CardForm renders each group's title itself — no duplicate.
-            declaration.expose.map((g) => h('section', { key: g, className: css.studioGroup }, 
+            declaration.expose.map((g) => h('section', { key: g, className: css.studioGroup },
             // the group title the old SpecForm delegation rendered (the
             // view's component is CardForm today) — the
             // studio owns its partition now, so it owns the heading too

@@ -130,6 +130,11 @@ describe("grouping mode — selection replaces chrome and reorder", () => {
     fireEvent.keyDown(key, { key: " " });
     expect(spies.onToggleSelect, "Space toggles selection too — the button contract's other half").toHaveBeenCalledTimes(2);
     expect(spies.onOpen).not.toHaveBeenCalled();
+    // the guard itself: any other key is a no-op — the tile never
+    // swallows unknown verbs into a toggle or an open
+    fireEvent.keyDown(key, { key: "a" });
+    expect(spies.onToggleSelect).toHaveBeenCalledTimes(2);
+    expect(spies.onOpen).not.toHaveBeenCalled();
   });
 
   test("an unselected tile checks empty and still toggles", () => {

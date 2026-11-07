@@ -207,6 +207,24 @@ export declare function resolveFamilyKey(spec: FormSpecDoc): string | undefined;
  * families-scoped to the served family). Memoize at the caller for
  * hot loops — the walk is pure. */
 export declare function fieldsOf(spec: FormSpecDoc): SpecField[];
+/** THE MOD-BAG KEYS (the per-model law's truth seat, operator
+ *  2026-10-16: "MODS (LIKE LORAS) ARE PER MODEL"): the envelope
+ *  root's ARRAY-node names — mod currency, however the field's
+ *  wtype presents. Presentation types lie (a bare lora bag projects
+ *  'loras', a mod list projects 'image_list'); the NODE is the
+ *  truth. Nulls ride modelSwitchPatch's cross-model arm: the bag
+ *  dies with its model, never seeds the arrival. */
+/** THE IMAGE-SUBJECT KEYS (operator, 2026-10-21: "When I switch
+ *  image edit models in the Image Edit card, the input images drop,
+ *  and I have to re put in the image edit model. I want it to not
+ *  drop the image"): a schema-declared array whose wtype is
+ *  image_list is the edit's SUBJECT (input_images, the reference
+ *  anchors) — the photo being edited, model-agnostic. It is NOT mod
+ *  currency: the mods (loras, ref_mods) ride features.modifiers and
+ *  die with their model ("keeping the lora on makes zero sense");
+ *  the subject survives every switch — the same edit, another model.
+ *  Pure companion of bagKeysOf's walk, one ref shape, one law. */
+export declare function imageSubjectKeysOf(spec: FormSpecDoc): Set<string>;
 /** THE LAYERED RESOLUTION — the engine's compose cascade mirrored
  * client-side (stroke 34 — the card-recipe layer is dead): schema
  * defaults <- model defaults <- SERVED STAMPS <- user. The form

@@ -5429,6 +5429,7 @@ window.__ModuleLoader__.load({
 				})),
 				candidatesFor: (f) => {
 					const want = (0, _melite_card_base_client.seatFileKindOf)(f);
+					/* v8 ignore next -- the library law, unarmed today: 'all' is an UNHINTED file seat (square-provider's seatFileKindOf), and every file seat the h3 card ships is hinted (source_clip/mannequin video, mask/still image); the branch keeps the seat law whole for the first unhinted seat the card declares */
 					if (want === "all") return refArtifacts.map((a) => ({
 						id: a.name,
 						label: a.name,
@@ -5471,6 +5472,7 @@ window.__ModuleLoader__.load({
 						},
 						value: resolved.fps ?? 24,
 						onEdit: (_, v) => {
+							/* v8 ignore next -- a type fence, never a UI path: the boolean atom is the only onEdit caller that fires non-strings (atoms.tsx onChange(next: boolean)), and fps renders the number seat whose every face fires strings */
 							if (typeof v !== "string") return;
 							const n = parseSpecNumber(v);
 							if (n !== void 0 && n > 0) setLayerAKey("fps", n);

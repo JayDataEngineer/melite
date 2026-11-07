@@ -586,7 +586,7 @@ export function fieldsOf(spec: FormSpecDoc): SpecField[] {
  *  die with their model ("keeping the lora on makes zero sense");
  *  the subject survives every switch — the same edit, another model.
  *  Pure companion of bagKeysOf's walk, one ref shape, one law. */
-function imageSubjectKeysOf(spec: FormSpecDoc): Set<string> {
+export function imageSubjectKeysOf(spec: FormSpecDoc): Set<string> {
   const env = spec.schema
   if (env == null) return new Set()
   const root = env.refs[env.uid]

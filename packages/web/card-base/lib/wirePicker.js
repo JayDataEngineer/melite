@@ -30,7 +30,7 @@ export function WirePickerModal({ slot, priorStages, currentId, currentOutput, o
                                 : [{ outputName: null, thumb: u.result?.assetUrls[0], label: t('primaryOutput') }];
                             return rows.map((row, ri) => {
                                 const selected = u.id === currentId && (currentOutput ?? null) === (row.outputName ?? null);
-                                return (_jsx("li", { children: _jsxs("button", { type: "button", 
+                                return (_jsx("li", { children: _jsxs("button", { type: "button",
                                         // ARGUED RAW SEAT (S7j, the row-face class): the
                                         // selection row (idx + thumb + meta + tag) is a
                                         // list face, not a verb pill — the ChangedFiles

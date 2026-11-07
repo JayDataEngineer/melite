@@ -9,7 +9,7 @@
 // @contract cards-mods-one-door
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { createElement as h } from 'react'
-import { afterEach, expect, test, vi } from 'vitest'
+import { afterEach, describe, expect, test, vi } from 'vitest'
 import type { ModifierKind } from '../src/spec.ts'
 import { ModifiersSection } from '../src/mods.tsx'
 

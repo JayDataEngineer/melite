@@ -14,6 +14,7 @@ import {
   isOptionKind,
   kindScalarFieldsOfEnvelope,
   modOwnedFields,
+  imageSubjectKeysOf,
   optionKeyOf,
   resolveFamilyKey,
   scalarKeyOf,
@@ -523,4 +524,34 @@ describe('THE UNSET-FACE LAW: composeUnset / unsetFaceLabel / unsetFaceTip', () 
     expect(unsetFaceTip(f, (v) => (v === 'true' ? 'on' : v === 'false' ? 'off' : v)))
       .toBe('unset — the engine composes off (the schema\'s default)')
   })
+})
+
+test('modOwnedFields: a main-dict name whose ref id is MISSING stays owned — the release walk tolerates the dead pointer', () => {
+  // the main schema's dict names 'ghost' → ref id 9, but refs carries
+  // no 9 (a schema hand-trimmed upstream, a forward-compat carve): the
+  // release walk continues past the dead pointer instead of throwing —
+  // and the name it could not inspect is NEVER released (the safe
+  // default for a mod-owned field is owned)
+  const spec = {
+    form: 'x',
+    features: { modifiers: [{ kind: 'photo', label: 'P', param_key: 'ghost', cardinality: 'multi' }] },
+    schema: { uid: 0, refs: { 0: { type: 'object', dict: { ghost: 9 } } } },
+  } as unknown as FormSpecDoc
+  expect([...modOwnedFields(spec)]).toEqual(['ghost'])
+})
+
+test('imageSubjectKeysOf: the rootless and the DICTLESS envelope each fold an empty subject set (never a throw) — the positive control beside them', () => {
+  // env.uid naming a ref the envelope does not carry, and a root
+  // that carries no dict: both dead-pointer shapes the subject fold
+  // must tolerate with an EMPTY set — a model switch across either
+  // shape nulls every bag (nothing is subject-exempt), and the fold
+  // never throws on the trim. The control pins the live path the
+  // tolerance guards: an image_list array node IS a subject.
+  const rootless = { form: 'x', schema: { uid: 7, refs: {} } } as unknown as FormSpecDoc
+  const dictless = { form: 'x', schema: { uid: 0, refs: { 0: { type: 'object' } } } } as unknown as FormSpecDoc
+  expect([...imageSubjectKeysOf(rootless)]).toEqual([])
+  expect([...imageSubjectKeysOf(dictless)]).toEqual([])
+  const live = schemaEnvelope({ input_images: { type: 'array', meta: { description: 'Subject', extra: { wtype: 'image_list' } } } })
+  const liveSpec = { form: 'x', schema: live } as unknown as FormSpecDoc
+  expect([...imageSubjectKeysOf(liveSpec)]).toEqual(['input_images'])
 })

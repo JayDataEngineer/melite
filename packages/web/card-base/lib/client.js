@@ -16149,7 +16149,7 @@ window.__ModuleLoader__.load({
 				}
 				return out;
 			};
-			const openCreate = (k, patch, presetId) => {
+			const openCreate = (k) => {
 				const entries = entriesOf(k);
 				if (k.max_stack !== void 0 && entries.length >= k.max_stack) {
 					setLeafError(k.label + " stack limit reached (" + String(k.max_stack) + ") — remove one to add another.");
@@ -16169,23 +16169,15 @@ window.__ModuleLoader__.load({
 				setDraftOption("");
 				setDraftStrength("");
 				setDraftSteps("");
-				setDraftParams(patch === void 0 ? fieldDefaults(k) : {
-					...fieldDefaults(k),
-					...routePresetPatch(k, patch, {
-						setOption: setDraftOption,
-						setStrength: setDraftStrength,
-						setSteps: setDraftSteps
-					})
-				});
+				setDraftParams(fieldDefaults(k));
 				setLeafError(null);
 				setLeaf({
 					mode: "create",
 					kind: k,
-					index: -1,
-					...presetId !== void 0 ? { preset: presetId } : {}
+					index: -1
 				});
 			};
-			const openEdit = (k, index, patch, presetId) => {
+			const openEdit = (k, index) => {
 				const entry = entriesOf(k)[index];
 				if (isHybridKind(k)) {
 					const key = optionKeyOf(k);
@@ -16195,31 +16187,18 @@ window.__ModuleLoader__.load({
 					setDraftStrength(strength !== void 0 ? String(strength) : "");
 					const params = {};
 					for (const f of hybridFields(k, seated)) if (entry[f.name] !== void 0) params[f.name] = coerceFieldEdit(f, entry[f.name]);
-					if (patch !== void 0) Object.assign(params, routePresetPatch(k, patch, {
-						setOption: setDraftOption,
-						setStrength: setDraftStrength
-					}));
 					setDraftParams(params);
 				} else if (isOptionKind(k)) {
 					setDraftOption(typeof entry["id"] === "string" ? entry["id"] : "");
 					const strength = typeof entry["strength"] === "number" ? entry["strength"] : void 0;
 					setDraftStrength(strength !== void 0 ? String(strength) : "");
 					setDraftSteps(typeof entry["steps"] === "number" ? String(entry["steps"]) : "");
-					if (patch !== void 0) {
-						const cell = routePresetPatch(k, patch, {
-							setOption: setDraftOption,
-							setStrength: setDraftStrength,
-							setSteps: setDraftSteps
-						});
-						if (Object.keys(cell).length > 0) setDraftParams(cell);
-					}
 				} else {
 					const params = { ...fieldDefaults(k) };
 					for (const f of k.fields ?? []) {
 						if (seated?.has(f.name) ?? false) continue;
 						if (entry[f.name] !== void 0) params[f.name] = coerceFieldEdit(f, entry[f.name]);
 					}
-					if (patch !== void 0) Object.assign(params, patch);
 					setDraftParams(params);
 				}
 				setLeafError(null);
@@ -16228,8 +16207,7 @@ window.__ModuleLoader__.load({
 					kind: k,
 					index,
 					ref: entry,
-					content: JSON.stringify(entry),
-					...presetId !== void 0 ? { preset: presetId } : {}
+					content: JSON.stringify(entry)
 				};
 				const owned = /* @__PURE__ */ new Set([optionKeyOf(k), scalarKeyOf(k)]);
 				if (isHybridKind(k)) {
@@ -16641,7 +16619,7 @@ window.__ModuleLoader__.load({
 			} else if (isOptionKind(k)) {
 				takeString("id", drafts.setOption);
 				takeNumber("strength", drafts.setStrength);
-				/* v8 ignore else -- the implicit skip is a type fence: every option-branch caller of routePresetPatch passes setSteps (openCreate's seed, this edit seat, the preset switch's press all wire the third draft), so the guard is always true where the option branch evaluates; a routePresetPatch call that omits setSteps on an option kind would re-arm the path */
+				/* v8 ignore else -- the implicit skip is a type fence: the preset switch's press (the one live routePresetPatch caller) always passes setSteps, so the guard is always true where the option branch evaluates; a routePresetPatch call that omits setSteps on an option kind would re-arm the path */
 				if (drafts.setSteps !== void 0) takeNumber("steps", drafts.setSteps);
 			}
 			return cell;
@@ -19380,6 +19358,7 @@ window.__ModuleLoader__.load({
 		exports.getSnapshot = getSnapshot;
 		exports.groupFields = groupFields;
 		exports.heatColor = heatColor;
+		exports.imageSubjectKeysOf = imageSubjectKeysOf;
 		exports.inject = inject;
 		exports.inputEdgeOf = inputEdgeOf;
 		exports.isCasConflict = isCasConflict;

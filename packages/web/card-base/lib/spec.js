@@ -503,7 +503,7 @@ export function fieldsOf(spec) {
  *  die with their model ("keeping the lora on makes zero sense");
  *  the subject survives every switch — the same edit, another model.
  *  Pure companion of bagKeysOf's walk, one ref shape, one law. */
-function imageSubjectKeysOf(spec) {
+export function imageSubjectKeysOf(spec) {
     const env = spec.schema;
     if (env == null)
         return new Set();
