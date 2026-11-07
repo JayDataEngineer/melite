@@ -927,6 +927,42 @@ describe.skipIf(!ESTATE_STORE_SEATED)("phase1Card + phase2Card (the two phases, 
       expect(String((e as Error).message)).not.toMatch(/has no audio track/);
     }
   });
+  it("THE LIVE BAG'S OWN VOICE (the collapse, slice 4 follow-up): the edit arm is sound-carrying too — its silent source refuses naming the edit lane, while the upscale posture (chain_run stated) reads no source sound and stays silent", async () => {
+    // The deletion moved the one live door to `edit`; the belt still
+    // listed only the five legacy spellings, so a hand-authored edit
+    // bag over a silent source passed the door and died mid-render.
+    const dir = mkdtempSync(join(tmpdir(), "silent-edit-"));
+    const silent = join(dir, "silent-edit.mp4");
+    writeFileSync(silent, craftMinimalMp4(928, 1344));
+    const withSound = join(dir, "sound-edit.mp4");
+    writeFileSync(withSound, craftMinimalMp4(928, 1344, true));
+    const editBody = (clip: string): Record<string, unknown> => ({
+      prompt: "a yard at dusk",
+      edit: [{ source_clip: clip, edit_prompt: "clean the leaves", mask_source: "region", region_prompt: "leaves", denoise: 0.32 }],
+    });
+    await expect(svc.phase1Card(editBody(silent), "h3-timeline")).rejects.toThrow(
+      /the edit pass carries the source clip's soundtrack, and ".*silent-edit\.mp4" has no audio track/,
+    );
+    const ok: Record<string, unknown> = editBody(withSound);
+    await svc.phase1Card(ok, "h3-timeline").catch(() => undefined);
+    try {
+      await svc.phase1Card(editBody(withSound), "h3-timeline");
+    } catch (e: unknown) {
+      expect(String((e as Error).message)).not.toMatch(/has no audio track/);
+    }
+    // the upscale posture resumes a prior run and never reads this
+    // clip's soundtrack — the same silent file hears no such voice
+    const upscale: Record<string, unknown> = {
+      prompt: "a yard at dusk",
+      edit: [{ source_clip: silent, chain_run: "chain-a", denoise: 0.24 }],
+    };
+    await svc.phase1Card(upscale, "h3-timeline").catch(() => undefined);
+    try {
+      await svc.phase1Card(upscale, "h3-timeline");
+    } catch (e: unknown) {
+      expect(String((e as Error).message)).not.toMatch(/has no audio track/);
+    }
+  });
   it("THE REFINE WINDOW RANGE REFUSAL (qa8 F36): a window whose start_seconds runs past its source clip's end refuses at the door in words — never the VHS buffer crash mid-run", async () => {
     // The burn: chaining a refined output with start_seconds past its
     // end crashed VHS (`both buffer length (0) and count (-1) must

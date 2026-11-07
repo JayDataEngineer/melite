@@ -308,8 +308,20 @@ function stampClipGeometry(body, admits) {
  *  soundtrack (each composes a VHS [frames, audio] load and feeds
  *  the sound VAE — replace swaps the cast, repair cleans it, extend
  *  continues it, refine upscales it; the reshoot bag is absent on
- *  purpose, its card states the soundtrack does not carry over). */
-const H3_SOUND_CARRYING_BAGS = ["replace", "repair", "extend", "refine"];
+ *  purpose, its card states the soundtrack does not carry over).
+ *  THE COLLAPSE: `edit` is the live door and its masked lanes carry
+ *  the source soundtrack too; the five legacy spellings stay listed
+ *  because a pre-collapse doc still arms them (each resolves to the
+ *  same edit cell). The upscale posture is absent like the old
+ *  upscale bag: it resumes a prior run, never the source's sound. */
+const H3_SOUND_CARRYING_BAGS = ["replace", "repair", "extend", "refine", "edit"];
+/** An edit entry stating a chain_run composes the upscale posture
+ *  (the prior run's checkpointed scenes resumed) and reads no source
+ *  clip; the belt never speaks for it. */
+function resumesPriorRun(entry) {
+    const chain = entry["chain_run"];
+    return typeof chain === "string" && chain.trim() !== "";
+}
 /** Resolve a bag source to a readable file: absolute, repo-relative
  *  (the compose's own staged-leaf posture), else the estate input
  *  index by basename. */
@@ -379,7 +391,10 @@ function refuseSilentSource(card, params) {
         for (const entry of bag) {
             if (entry === null || typeof entry !== "object" || Array.isArray(entry))
                 continue;
-            const leaf = entry["source_clip"];
+            const row = entry;
+            if (lane === "edit" && resumesPriorRun(row))
+                continue;
+            const leaf = row["source_clip"];
             if (typeof leaf !== "string" || leaf.trim() === "")
                 continue;
             const bytes = bagSourceBytes(leaf.trim());
