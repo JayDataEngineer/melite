@@ -283,7 +283,9 @@ describe.skipIf(!REGISTRY_PRESENT)('THE REGISTRY WALL (every law accounted, ever
     // the grammar must actually find homes — an arm that judges zero
     // tokens is the vacuous-green class (debt: a registry of prose)
     expect(judged, 'truth_home paths judged').toBeGreaterThan(200)
-  })
+  }, 120000) // 809 rows x fs walk (glob arms walk the tree) — the 30s
+  // default dies under the three-lane walker load (timed out green at
+  // 9/9 in isolation; the budget matches the walk, not the load)
 })
 
 // THE SKIP-SENTINEL (C-M10, the permanent-skip-is-a-permanent-hole

@@ -154,6 +154,7 @@ print('registry-tolerant=' + str(ROPE_INIT_FUNCTIONS['default'] is m._tolerant_d
       expect(out).toMatch(/refuse=.*stated speaker preset/);
       expect(out).toContain("registry-tolerant=True");
     },
+    240000, // the py() budget, declared at the it() (ARM 3's lesson)
   );
 
   it.skipIf(!venvPresent)(
@@ -182,5 +183,10 @@ except AttributeError as ex:
       // the arm judges the production failure, not a strawman.
       expect(out).toContain("stock-burns=AttributeError");
     },
+    // py() budgets 240s for the venv call (torch + a real MimiConfig
+    // import); the it() must declare the same budget or vitest's 30s
+    // default kills the arm mid-probe — a flaky gate nobody trusts
+    // (the arm passed at 61s in isolation, under machine load slower).
+    240000,
   );
 });
