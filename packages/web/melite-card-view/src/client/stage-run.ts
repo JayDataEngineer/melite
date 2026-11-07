@@ -279,7 +279,11 @@ export function describePass(res: PassResult): string {
   const parts: string[] = []
   parts.push(ran.length > 0 ? 'ran ' + ran.join(', ') : 'ran nothing')
   if (skipped.length > 0) {
-    const why = res.outcomes.find((o) => o.out === 'skipped')?.why ?? ''
+    // the guard guarantees the find (skipped ids come from the same
+    // outcomes) — the `!` is the file's own presence idiom
+    // (`stopped[0]!` below); a `?.`/`??` pair here was unreachable
+    // defense the coverage gate rightly refused to bless.
+    const why = res.outcomes.find((o) => o.out === 'skipped')!.why
     parts.push('skipped ' + skipped.join(', ') + (why !== '' ? ' (' + why + ')' : ''))
   }
   if (stopped.length > 0) {

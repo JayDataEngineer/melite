@@ -26,6 +26,7 @@ import { mountEstateFakes } from './estate-harness.ts'
 import { unbindEstateRemote } from '@melite/card-base/client'
 import { resetStageWrites } from '../src/client/draft.ts'
 import { CardsTab } from '../src/client/CardsTab.tsx'
+import type { BenchStageView, CardsBenchValue } from '../src/client/cards-resource.ts'
 import { draftIdOf } from '@melite/contracts/benchStage'
 import { formSpecArm } from '../../../../packages/harness/melite-tools/src/discovery.ts'
 
@@ -41,7 +42,7 @@ const LEGACY_PARAMS: Record<string, unknown> = {
 interface EstateCallShape { method: string; args: Record<string, unknown> }
 
 async function openLegacyDrill(): Promise<EstateCallShape[]> {
-  const spec = await formSpecArm('h3-timeline') as Record<string, unknown>
+  const spec = await formSpecArm('h3-timeline')
   const estate = mountEstateFakes({
     benchDoc: {
       session: 's1', rev: 7, log: [],
@@ -73,9 +74,9 @@ async function openLegacyDrill(): Promise<EstateCallShape[]> {
       draftId: draftIdOf('bench-s1'),
       sessionKey: 's1',
       rev: 7,
-      stages: [{ id: 's_0', card: 'h3-timeline', title: 'pre-collapse film', engine: 'comfyui', params: { ...LEGACY_PARAMS } }],
+      stages: [{ id: 's_0', card: 'h3-timeline', title: 'pre-collapse film', engine: 'comfyui', params: { ...LEGACY_PARAMS } }] satisfies BenchStageView[],
       log: [],
-    } }),
+    } satisfies CardsBenchValue }),
   }))
   // open the drill on the stage tile (the zoom contract: the tile's
   // inner button morphs into the shared drill)

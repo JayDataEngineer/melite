@@ -8867,7 +8867,7 @@ window.__ModuleLoader__.load({
 			const parts = [];
 			parts.push(ran.length > 0 ? "ran " + ran.join(", ") : "ran nothing");
 			if (skipped.length > 0) {
-				const why = res.outcomes.find((o) => o.out === "skipped")?.why ?? "";
+				const why = res.outcomes.find((o) => o.out === "skipped").why;
 				parts.push("skipped " + skipped.join(", ") + (why !== "" ? " (" + why + ")" : ""));
 			}
 			if (stopped.length > 0) {
@@ -17517,7 +17517,7 @@ window.__ModuleLoader__.load({
 		*       summary line (title · engine) + the live status dot.
 		*  Image-anchored overlays (the status dot) live INSIDE the preview
 		*  cell so their anchors ride the artifact's corner. Click = the
-		
+
 /** The sortable tile wrapper — the old grid's SortableCardWrap
 		*  pattern: the li is the drag unit, transform/transition ride the
 		*  wrapper, the shared-element layoutId stays INSIDE (the morph
@@ -21347,8 +21347,7 @@ window.__ModuleLoader__.load({
 					refreshSpec: async () => {
 						const held = specRef.current;
 						if (held === null) return;
-						const family = typeof held.model === "string" && held.model !== "" ? held.model : null;
-						if (family === null) return;
+						const family = held.model;
 						const seq = specFetchSeqRef.current += 1;
 						pendingSpecRef.current = {
 							family,

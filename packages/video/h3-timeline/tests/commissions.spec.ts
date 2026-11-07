@@ -363,6 +363,7 @@ describe("THE READ-LIST COLLAPSE (2026-11-16 — the canonical bag rides the rai
   it("ARM E3 — edit composes from its own bag (edit_prompt rides the entry): the calls lane stands down under it, never paints the starter over authored prose", () => {
     const face = callsLaneFace(deriveCommissions({ edit: [EDIT] }))
     expect(face).toEqual({ face: "dormant", kind: "edit" })
+    if (face.face !== 'dormant') throw new Error(`expected the dormant face, got ${face.face}`)
     // the dormant face's own words name the edit door (the label face,
     // not the raw id)
     expect(studioCopy.callsDormantLabel(face.kind)).toContain("Video edit")

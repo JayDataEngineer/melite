@@ -1418,11 +1418,17 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
           refreshSpec: async (): Promise<void> => {
             const held = specRef.current
             if (held === null) return
-            // the standing doc's own family is the refetch key — a
-            // model-less doc (the type admits it) has nothing to
-            // refresh, mirroring the arrival effect's empty guard
-            const family = typeof held.model === 'string' && held.model !== '' ? held.model : null
-            if (family === null) return
+            // the standing doc's own family is the refetch key. No
+            // model-less guard here (the 2026-11-16 coverage cure):
+            // the ONLY caller is the upload leaf's post-seat
+            // revalidate, and the seat itself keyed this SAME doc's
+            // family shelf — uploadLoraDoor refuses an empty
+            // families key before any byte is spent, so a seat
+            // implies the model. The `!` is the file's own presence
+            // idiom (`stopped[0]!` in stage-run); a future caller
+            // that breaks the implication meets the door's own
+            // refusal, which the catch below already survives.
+            const family = held.model!
             // THE SEQ FENCE (the completeness audit's land-blocker,
             // 2026-11-15): the model-guard alone raced the commit —
             // specRef trails setSpec by one commit, so a refresh

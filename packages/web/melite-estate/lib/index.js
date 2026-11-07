@@ -483,7 +483,11 @@ export function coldInstallRoots(config) {
     const dataHome = join(home, ".local", "share", "melite");
     const cold = namedRepo === undefined;
     return {
-        stateRoot: namedState ?? (cold ? join(dataHome, "runs") : join(namedRepo ?? "", "data", "runs")),
+        // `namedRepo!` — cold false implies the repo is named (cold IS
+        // `namedRepo === undefined`), the same guaranteed-presence idiom
+        // as stage-run's `stopped[0]!`; the `?? ""` it replaces was an
+        // unreachable right branch the coverage gate rightly refused.
+        stateRoot: namedState ?? (cold ? join(dataHome, "runs") : join(namedRepo, "data", "runs")),
         storeRoot: namedStore ?? (cold ? join(dataHome, "store") : undefined),
     };
 }
@@ -591,13 +595,13 @@ export async function apply(ctx, config = {}) {
             ctx.plugin(row, { agentRoute: config.agentRoute });
             continue;
         }
-        // rows may carry their own config face — ctx.plugin's second
-        // argument is the row's declared config, passed through verbatim
-        const rowConfig = row.config;
-        if (rowConfig !== undefined) {
-            ctx.plugin(row, rowConfig);
-            continue;
-        }
+        // every remaining row mounts bare (the 2026-11-16 coverage cure):
+        // the generic `row.config` pass-through this loop used to carry
+        // had NO producer — the estate's rows are this file's own static
+        // array and none declares a config face — dead code the
+        // per-file-100% gate rightly refused to bless. A row that ever
+        // needs per-row config takes a named arm above, like the
+        // mcp/craft/agent rows.
         ctx.plugin(row);
     }
     // THE SETTLE GATE (2026-10-23, the silent-green lane wedge): the

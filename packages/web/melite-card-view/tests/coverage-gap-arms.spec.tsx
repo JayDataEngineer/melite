@@ -586,3 +586,53 @@ test("THE DRILL'S ARRIVAL FENCE: a refresh claimed inside an open arrival window
 function stripText(): string | null {
   return document.querySelector('[data-testid="stage-error-strip"]')?.textContent ?? null;
 }
+
+test("THE MODEL-LESS SEAT REFUSAL (the 1425 seat's honest law): a standing doc with no family shelf refuses the upload BEFORE any byte and never revalidates", async () => {
+  const loraUrls: string[] = [];
+  const specUrls: string[] = [];
+  // a model-LESS served doc — the type admits it (model?: string);
+  // resolveFamilyKey reads '' → undefined, and uploadLoraDoor's
+  // fail-fast refuses before the POST. The drill's refreshSpec
+  // carries no model guard of its own (the caller implies the
+  // family): this arm pins the door where that implication is
+  // enforced — a seat can never happen without the shelf.
+  const DOC_M = {
+    form: "image-gen", genre: "image", engine: "comfyui", model: "",
+    schema: schemaEnvelope({
+      prompt: { type: "string", meta: { description: "Prompt", extra: { wtype: "textarea" } } },
+    }),
+    features: { modifiers: [LORA_KIND] },
+  };
+  vi.stubGlobal("fetch", (input: unknown): Promise<Response> => {
+    const path = String(input);
+    if (path.includes("/v1/uploads/lora")) {
+      loraUrls.push(path);
+      return Promise.resolve(new Response(
+        JSON.stringify({ row: { id: "lora/op-pick.safetensors", default_strength: 0.8 }, row_seated: true }),
+        { headers: { "content-type": "application/json" } },
+      ));
+    }
+    if (path.includes("/v1/form-spec")) {
+      specUrls.push(path);
+      return Promise.resolve(new Response(JSON.stringify(DOC_M), {
+        status: 200, headers: { "content-type": "application/json" } },
+      ));
+    }
+    if (path.includes("/v1/forms")) {
+      return Promise.resolve(new Response(JSON.stringify({}), { status: 200, headers: { "content-type": "application/json" } }));
+    }
+    if (path.includes("/v1/model-catalog")) {
+      return Promise.resolve(new Response(JSON.stringify({ cards: {} }), { status: 200, headers: { "content-type": "application/json" } }));
+    }
+    return Promise.reject(new Error("unexpected door on the fetch lane: " + path));
+  });
+  mountEstateFakes({});
+  drillMount({ prompt: "seed" });
+  await driveUploadPane();
+  // the refusal fired BEFORE the transport: no byte was spent, no
+  // row was seated, and the post-seat revalidate never ran — the
+  // one spec fetch is the arrival's own
+  await new Promise((r) => setTimeout(r, 120));
+  assert.equal(loraUrls.length, 0, "a model-less doc keys no family shelf — the upload refuses before any POST");
+  assert.equal(specUrls.length, 1, "no seat, no refresh: the standing spec is the arrival's own serve");
+});
