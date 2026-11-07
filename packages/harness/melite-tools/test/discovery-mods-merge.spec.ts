@@ -147,7 +147,7 @@ describe('specBody — the one-bag-one-row serve (F34 synthetic arms)', () => {
     )
   })
 
-  test('THE PRESET WIRE GUARD (stage 3): a malformed presets row refuses the whole form-spec — never a half-rendered chip', () => {
+  test('THE SECTION WIRE GUARD (§0.8): a malformed sections row refuses the whole form-spec — never a half-rendered checkbox', () => {
     reset()
     const base = {
       kind: 'edit', label: 'Edit', param_key: 'edit', cardinality: 'list',
@@ -156,25 +156,25 @@ describe('specBody — the one-bag-one-row serve (F34 synthetic arms)', () => {
     } as DeclaredModifierKind
     // an EMPTY array is malformed (a carrying kind states its cells)
     assert.throws(
-      () => serve({ identity: { label: 'Syn', genre: 'video' }, mods: [{ ...base, presets: [] } as DeclaredModifierKind] }),
-      /declares malformed presets on mod kind 'edit'/,
+      () => serve({ identity: { label: 'Syn', genre: 'video' }, mods: [{ ...base, sections: [] } as DeclaredModifierKind] }),
+      /declares malformed sections on mod kind 'edit'/,
     )
     // a row without a patch object (the forgery is the point — the
     // type system correctly refuses a patchless row, so the cast
     // rides unknown; the runtime guard must refuse it too)
     assert.throws(
-      () => serve({ identity: { label: 'Syn', genre: 'video' }, mods: [{ ...base, presets: [{ id: 'x', label: 'X' }] } as unknown as DeclaredModifierKind] }),
-      /malformed presets/,
+      () => serve({ identity: { label: 'Syn', genre: 'video' }, mods: [{ ...base, sections: [{ id: 'x', label: 'X' }] } as unknown as DeclaredModifierKind] }),
+      /malformed sections/,
     )
     // a well-formed row serves VERBATIM (patch keys are the
     // registration door's law, engine-side — the wire trusts it)
     const doc = serve({
       identity: { label: 'Syn', genre: 'video' },
-      mods: [{ ...base, presets: [{ id: 'repair', label: 'Repair', patch: { denoise: 0.3 } }] } as DeclaredModifierKind],
+      mods: [{ ...base, sections: [{ id: 'repair', label: 'Repair', patch: { denoise: 0.3 } }] } as DeclaredModifierKind],
     })
     const served = modifiersOf(doc).find((k) => k.param_key === 'edit')
     assert.deepEqual(
-      (served as unknown as { presets?: Array<{ id: string }> }).presets,
+      (served as unknown as { sections?: Array<{ id: string }> }).sections,
       [{ id: 'repair', label: 'Repair', patch: { denoise: 0.3 } }],
       'the preset cells ride the wire verbatim',
     )

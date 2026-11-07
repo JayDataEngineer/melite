@@ -1,9 +1,9 @@
-import { ComfyUIWiringService, type WiringInputSpec } from './wiringWall.js';
+import { ComfyUIWiringService, type WiringInputSpec } from './wiringWall.ts';
 export { ComposeRefusal } from '@melite/comfyui-card-kit/errors';
 import { Context, Service } from '@deepseek-ai/cordis';
 import type { PromptGraph } from '@melite/comfyui-card-kit/graph';
 import type { FactsFile } from '@melite/comfyui-card-kit/facts';
-export { resolveControlNetEntry } from "./serviceMods.js";
+export { resolveControlNetEntry } from "./serviceMods.ts";
 import type { LoraRowDecl, AbsorbedMod, VerbRegistration, FlavorRegistration } from '@melite/comfyui-card-kit/service-faces';
 import type { CardDefinition, ComposeEstate } from '@melite/comfyui-card-kit/card-definition';
 import type { PackContract } from "@melite/comfyui-card-kit/pack-fields";
@@ -77,11 +77,12 @@ export interface DeclaredModifierKind {
         steps: number;
     };
     /** THE PRESET CHIPS (the timeline rework stage 3, 2026-11-15):
-     *  named starting cells over the kind's ONE schema — every patch
-     *  key a declared field, every value its wire type, every select
-     *  value a served option (judged at the registration door,
-     *  checkPresets). Served verbatim; absent = no chip row. */
-    presets?: readonly {
+    /** THE MODIFIER SECTIONS (operator 2026-11-16, §0.8 THE FLOW
+     *  MODEL): checkable stages over the kind's ONE schema — every
+     *  patch key a declared field, every value its wire type, every
+     *  select value a served option (judged at the registration
+     *  door, checkSections). Served verbatim; absent = no sections. */
+    sections?: readonly {
         id: string;
         label: string;
         tooltip?: string;

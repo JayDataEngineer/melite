@@ -128,12 +128,12 @@ describe("every served mod bag has a skill leaf an agent can read", () => {
     // doors (reshoot the only NOT; continuation/refine/upscale the
     // dials).
     const kind = kinds.find((k) => k.param_key === "edit")!;
-    const presets = (kind as unknown as { presets?: Array<{ id: string }> }).presets ?? [];
-    assert.ok(presets.length > 0, "the edit kind carries preset chips");
+    const sections = (kind as unknown as { sections?: Array<{ id: string }> }).sections ?? [];
+    assert.ok(sections.length > 0, "the edit kind carries modifier sections");
     const md = readSkill("edit");
-    for (const chip of presets) {
-      assert.ok(md.includes(`\`${chip.id}\``),
-        `edit/SKILL.md teaches the '${chip.id}' chip (the served cell census is derived, never hand-counted)`);
+    for (const section of sections) {
+      assert.ok(md.includes(`\`${section.id}\``),
+        `edit/SKILL.md teaches the '${section.id}' section (the served section census is derived, never hand-counted)`);
     }
     // THE DOOR LAW: only Reshoot stays out; the three postures that
     // read like doors are dials ON this one

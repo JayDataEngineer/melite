@@ -214,18 +214,21 @@ export interface ModifierKind {
    *  verbatim; the compose door enforces them only when the kind's
    *  bag is non-empty (an unused arm never blocks a run). */
   requires?: readonly string[]
-  /** THE PRESET CHIPS (the timeline rework stage 3, 2026-11-15):
-   *  named starting cells for a one-bag kind — each patch touches
-   *  ONLY the kind's own declared fields (the registration door
-   *  refuses any other key or a mistyped value), and the chip
-   *  OPENS THE ONE LEAF seeded with the cell (the master modal,
-   *  2026-11-16: the chip is a door into the modal, never a second
-   *  editor - the patch merges over the seed, staged files stay,
-   *  and the save is the operator's own press). A preset is a
-   *  CLIENT affordance over the ONE schema: the wire stays the bag,
-   *  the compose door never reads preset ids. Served verbatim;
-   *  absent = no chips. */
-  presets?: readonly ModifierPreset[]
+  /** THE MODIFIER SECTIONS (operator, 2026-11-16 §0.8 THE FLOW
+   *  MODEL: "It is a flow. We have a source video. Then we have
+   *  modifiers on top of it. So it flows down a chain"): each kind
+   *  declares its CHECKABLE modifier stages — a checkbox + its
+   *  ingredient slots on the leaf's face. Checking a section seeds
+   *  its `patch` over the draft (staged files stay; hand-set values
+   *  a later check overwrites are last-writer-wins); unchecking
+   *  strips ONLY the values still equal to the seed (hand-moved
+   *  dials stay). Sections COMPOSE: every checked box is a delta
+   *  row on the ONE bag — the §-1 law, "check upscale, check
+   *  repair, provide the mask, boom" — never a combined route. A
+   *  section is a CLIENT affordance over the ONE schema: the wire
+   *  stays the bag, the compose door never reads section ids.
+   *  Served verbatim; absent = the kind carries no sections. */
+  sections?: readonly ModifierSection[]
   /** THE GHOST DEFAULT (F34's chip half, 2026-11-13): the family's own
    *  ABSENT-BAG resolution, as a resolved entry row (`{id, strength,
    *  steps}` — the shape the bag takes). A card kind that carries this
@@ -264,12 +267,13 @@ export function modCommitWrite(
   return kind.flat === true ? { ...entry } : { [kind.param_key]: [entry] }
 }
 
-/** One preset chip (ModifierKind.presets): a named starting cell —
- *  `patch` touches only the kind's own declared fields, values in
- *  the field's declared wire type (string | number | boolean; the
- *  registration door refuses anything else). The id is the chip's
- *  stable name (unique per kind); the label is its face. */
-export interface ModifierPreset {
+/** One modifier section (ModifierKind.sections): a checkable stage
+ *  on the flow face — `patch` seeds only the kind's own declared
+ *  fields, values in the field's declared wire type (string |
+ *  number | boolean; the registration door refuses anything else).
+ *  The id is the section's stable name (unique per kind); the
+ *  label is its checkbox's face. */
+export interface ModifierSection {
   id: string
   label: string
   tooltip?: string

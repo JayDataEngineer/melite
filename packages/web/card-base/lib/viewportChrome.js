@@ -3,7 +3,7 @@ import { cx } from "./chrome.js";
 import { STAGE_BACKGROUND_DARK } from "./stage3d.js";
 import styles from "./viewportChrome.module.css";
 export function ViewportFrame({ children, label, empty, className, style, ...props }) {
-    return (_jsxs("div", { "data-slot": "viewport-frame", "aria-label": label, className: cx(styles.frame, className),
+    return (_jsxs("div", { "data-slot": "viewport-frame", "aria-label": label, className: cx(styles.frame, className), 
         // The stage colour reaches CSS through this property (the sheets
         // never spell the hex); a caller's own properties still win.
         // React's CSSProperties declares no custom-property index, so

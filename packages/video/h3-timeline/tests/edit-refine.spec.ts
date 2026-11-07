@@ -11,10 +11,10 @@
 // default path staying byte-clean of the dial vocabulary (the
 // default-fill burn's law: resolve fills scale:2 on EVERY entry —
 // presence is never authorship, so inertness is the wall, not a
-// refusal), and the refine-2x preset cell composing through the
+// refusal), and the refine-2x section cell composing through the
 // door at its own design window. The chain spine's own emission
-// laws live in models/h3 edit-matrix.spec.ts; the preset-chip wire
-// in edit-presets.spec.ts. No @contract marker: package-local law,
+// laws live in models/h3 edit-matrix.spec.ts; the section-chip wire
+// in edit-sections.spec.ts. No @contract marker: package-local law,
 // prose header (the registry row owns the door law).
 import "../../../../tests/helpers/boot-models.ts";
 import { beforeAll, describe, it } from "vitest";
@@ -139,7 +139,7 @@ describe("the fourth dial — the refine switch on the one edit bag (the collaps
     );
   });
 
-  it("the refine-2x preset cell composes through the door at its own design window", () => {
+  it("the refine-2x section cell composes through the door at its own design window", () => {
     // the chip's patch over the entry defaults — exactly what a
     // chip press lands on an empty bag
     const out = compose({
@@ -154,7 +154,7 @@ describe("the fourth dial — the refine switch on the one edit bag (the collaps
       keep_audio: true,
     });
     const handoffs = ofClass(out, "MinimaxH3LatentUpscaler3DRefineHandoff");
-    assert.equal(handoffs.length, 1, "the preset posture reaches the learned pass");
+    assert.equal(handoffs.length, 1, "the section posture reaches the learned pass");
   });
 
   it("THE BAND JUDGE'S OWN GUARDS (the coverage-arm law, 2026-11-07): a malformed bag entry never reaches a band verdict, and the reshoot carve-out holds", () => {

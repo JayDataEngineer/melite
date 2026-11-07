@@ -111,11 +111,12 @@ const ModKind = z.object({
   // while the bag is ABSENT. An explicit `[]` stays the operator's
   // off. Resolved by the family, never hand-typed by the card.
   default_entry: z.object({ id: z.string(), strength: z.number(), steps: z.number() }),
-  // THE PRESET CHIPS (the timeline rework stage 3, 2026-11-15):
-  // named starting cells over the kind's ONE schema — the patch's
-  // keys and value types are judged against the kind's own fields
-  // below (checkPresets), never trusted from the declaration.
-  presets: z.array(z.object({
+  // THE MODIFIER SECTIONS (operator 2026-11-16, §0.8 THE FLOW
+  // MODEL): checkable stages over the kind's ONE schema — the
+  // patch's keys and value types are judged against the kind's own
+  // fields below (checkSections), never trusted from the
+  // declaration.
+  sections: z.array(z.object({
     id: z.string(),
     label: z.string(),
     tooltip: z.string(),
@@ -190,28 +191,28 @@ export function validateDeclaredMods(cardId: string, mods: readonly DeclaredModi
     for (const f of [...(mod.fields ?? []), ...(mod.kindFields ?? [])] as Array<Record<string, unknown>>) {
       checkField(where, f);
     }
-    checkPresets(where, mod, row);
+    checkSections(where, mod, row);
   }
 }
 
-/** THE PRESET LAW (the timeline rework stage 3): a preset chip is a
- *  starting cell over the kind's OWN schema — every patch key names
+/** THE SECTION LAW (operator 2026-11-16, §0.8): a section is a
+ *  checkable stage over the kind's OWN schema — every patch key names
  *  a declared field of the kind (fields ∪ kindFields), every value
  *  carries that field's declared wire type, and a select's value
- *  rides its served options (a preset may not invent vocabulary);
+ *  rides its served options (a section may not invent vocabulary);
  *  ids are unique per kind. A patch touching anything else is drift
  *  at the registration door, the same law checkField serves. */
-function checkPresets(where: string, mod: DeclaredModifierKind, row: Record<string, unknown>): void {
-  // NO undefined guard: the strict resolve DEFAULT-FILLS presets to
-  // [] on a bare row (probed live — a presets-less kind arrives as
-  // presets:[]), so the undefined arm is dead; an empty array
+function checkSections(where: string, mod: DeclaredModifierKind, row: Record<string, unknown>): void {
+  // NO undefined guard: the strict resolve DEFAULT-FILLS sections to
+  // [] on a bare row (probed live — a sections-less kind arrives as
+  // sections:[]), so the undefined arm is dead; an empty array
   // simply walks zero rows.
-  const presets = row["presets"] as Array<Record<string, unknown>>;
+  const sections = row["sections"] as Array<Record<string, unknown>>;
   const fields = [...(mod.fields ?? []), ...(mod.kindFields ?? [])] as Array<Record<string, unknown>>;
   const byName = new Map(fields.map((f) => [String(f["name"]), f]));
   const seen = new Set<string>();
-  for (const preset of presets) {
-    const pid = String(preset["id"]);
+  for (const section of sections) {
+    const pid = String(section["id"]);
     // THE PATCH-TRUTH LAW: schemastery's resolve DEFAULT-FILLS an
     // absent patch to {} (probed live — a declared {id,label} row
     // arrives here as patch:{}), so a row the author wrote without
@@ -220,29 +221,29 @@ function checkPresets(where: string, mod: DeclaredModifierKind, row: Record<stri
     // the row); the walk itself must: a carried row whose patch
     // was FILLED (not authored) refuses loud. We detect the fill
     // by reading the AUTHOR'S row — resolve gives us only kept
-    // keys, so the law rides the original: presets[i].patch.
+    // keys, so the law rides the original: sections[i].patch.
     // THE AUTHOR'S ROW: resolve default-fills patch to {} (the
     // patch-truth law below), so the authored row is the only
     // honest witness of what the author wrote. `authored` is
     // always an array here — the strict resolve above FILLED the
-    // presets array (a bare row arrives as presets:[]); the
+    // sections array (a bare row arrives as sections:[]); the
     // non-array spelling never reaches this walk (the resolve's
-    // own "$.presets expected array" refusal fires first, probed
+    // own "$.sections expected array" refusal fires first, probed
     // live). The index alignment rides resolve's ORDER-PRESERVING
     // fill: kept rows carry over the authored order one-to-one.
-    const authored = mod.presets as Array<Record<string, unknown>> | undefined;
-    const authoredPatch = authored === undefined ? undefined : authored[presets.indexOf(preset)]?.["patch"];
+    const authored = mod.sections as Array<Record<string, unknown>> | undefined;
+    const authoredPatch = authored === undefined ? undefined : authored[sections.indexOf(section)]?.["patch"];
     if (authoredPatch === undefined || authoredPatch === null || typeof authoredPatch !== "object" || Array.isArray(authoredPatch)) {
-      throw new Error(`${where}: preset '${pid}' carries no patch object — a cell that dials nothing is drift (each row: id + label + a patch over the kind's OWN fields)`);
+      throw new Error(`${where}: section '${pid}' carries no patch object — a section that dials nothing is drift (each row: id + label + a patch over the kind's OWN fields)`);
     }
     if (seen.has(pid)) {
-      throw new Error(`${where}: preset '${pid}' is declared twice — ids are unique per kind`);
+      throw new Error(`${where}: section '${pid}' is declared twice — ids are unique per kind`);
     }
     seen.add(pid);
     // NO patch fallback: a FILLED patch{} is an empty object and
     // the keys loop walks zero keys — the patch-truth law above
     // already refused the authored-absent row.
-    const patch = preset["patch"] as Record<string, unknown>;
+    const patch = section["patch"] as Record<string, unknown>;
     // (F2 residue, the front-end audit's verification pass 2026-11-07)
     // THE OPTION-KIND SEAT LAW: a TRUE option kind (entry 'option')
     // renders and saves exactly its three entry seats (id, strength,
@@ -253,18 +254,18 @@ function checkPresets(where: string, mod: DeclaredModifierKind, row: Record<stri
     if (row["entry"] === "option") {
       for (const key of Object.keys(patch)) {
         if (key !== "id" && key !== "strength" && key !== "steps") {
-          throw new Error(`${where}: preset '${pid}' patches '${key}' — an option-kind cell patches its entry seats only (id, strength, steps); the face renders nothing else`);
+          throw new Error(`${where}: section '${pid}' patches '${key}' — an option-kind section patches its entry seats only (id, strength, steps); the face renders nothing else`);
         }
       }
     }
     for (const key of Object.keys(patch)) {
       const field = byName.get(key);
       if (field === undefined) {
-        throw new Error(`${where}: preset '${pid}' patches '${key}' — not a declared field of this kind (a preset is a starting cell over the kind's OWN schema, never a second vocabulary)`);
+        throw new Error(`${where}: section '${pid}' patches '${key}' — not a declared field of this kind (a section is a stage over the kind's OWN schema, never a second vocabulary)`);
       }
       const want = FIELD_TYPES[String(field["type"])];
       if (typeofDefault(patch[key]) !== want) {
-        throw new Error(`${where}: preset '${pid}' patches '${key}' with ${typeofDefault(patch[key])} — the field declares ${want} (the type-truth law)`);
+        throw new Error(`${where}: section '${pid}' patches '${key}' with ${typeofDefault(patch[key])} — the field declares ${want} (the type-truth law)`);
       }
       // (F3, the front-end evasion audit 2026-11-07) THE STAGED-FILE
       // LAW: a cell dials the matrix, it never stages files. A patch
@@ -274,14 +275,14 @@ function checkPresets(where: string, mod: DeclaredModifierKind, row: Record<stri
       // plain Object.assign). Refused here at the registration door:
       // the file seats are the operator's hands, never a chip's.
       if (field["type"] === "image" || field["type"] === "file") {
-        throw new Error(`${where}: preset '${pid}' patches '${key}' — a staged-file seat (type ${String(field["type"])}): a cell dials the matrix, it never stages files (the operator's staged files survive every chip press)`);
+        throw new Error(`${where}: section '${pid}' patches '${key}' — a staged-file seat (type ${String(field["type"])}): a cell dials the matrix, it never stages files (the operator's staged files survive every chip press)`);
       }
       if (field["type"] === "select") {
         // NO options fallback: checkField refuses an option-less
         // select before this walk runs — options always arrives.
         const values = (field["options"] as Array<Record<string, unknown>>).map((o) => String(o["value"]));
         if (!values.includes(String(patch[key]))) {
-          throw new Error(`${where}: preset '${pid}' patches '${key}' to '${String(patch[key])}' — not a served option (a preset may not invent vocabulary)`);
+          throw new Error(`${where}: section '${pid}' patches '${key}' to '${String(patch[key])}' — not a served option (a section may not invent vocabulary)`);
         }
       }
     }

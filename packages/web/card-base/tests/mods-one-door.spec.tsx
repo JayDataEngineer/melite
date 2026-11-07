@@ -2,7 +2,7 @@
 // mods-one-door.spec.tsx — THE ONE-DOOR LAW (operator, 2026-11-16:
 // "collapse the mods into one"): the mod system has ONE entry — the
 // plus square and the kind picker, the grammar every kind rides
-// (Loras prove it). A declared preset is a STARTING CELL INSIDE the
+// (Loras prove it). A declared section is a STARTING CELL INSIDE the
 // leaf (the posture switches, slice 5), never a chip row outside it.
 // The retired bag spellings are compose-door translation for
 // pre-collapse documents — they are not UI and render nowhere.
@@ -15,15 +15,15 @@ import { ModifiersSection } from '../src/mods.tsx'
 
 afterEach(cleanup)
 
-/** A FIELD kind carrying presets — the h3 edit kind's shape (one
+/** A FIELD kind carrying sections — the h3 edit kind's shape (one
  *  schema, named starting cells). The Loras grammar: options, no
- *  presets, nothing but the plus box. */
+ *  sections, nothing but the plus box. */
 const EDIT = {
   kind: 'edit', label: 'Edit region', param_key: 'edit', cardinality: 'multi',
   fields: [
     { name: 'mask_source', type: 'text', label: 'Mask source' },
   ],
-  presets: [
+  sections: [
     { id: 'region', label: 'Repair a region', patch: { mask_source: 'region' } },
     { id: 'static-png', label: 'Static mask pass', patch: { mask_source: 'static-png' } },
   ],
@@ -47,26 +47,26 @@ function openSection(kinds: ModifierKind[]) {
 const plusBox = (): HTMLElement =>
   document.querySelector('[data-subcard-add="mod"]') as HTMLElement
 const chipRow = (): HTMLElement | null =>
-  document.querySelector('[data-testid="cb-mod-preset-row"]')
+  document.querySelector('[data-testid="cb-mod-section-row"]')
 const leafSwitches = (): HTMLElement | null =>
-  document.querySelector('[data-leaf-presets]')
+  document.querySelector('[data-mod-sections]')
 
 describe('THE ONE-DOOR LAW — one mod system, one entry (the plus box, like Loras)', () => {
-  test('ARM 1 — presets render NO chip row outside the leaf: the section face is the plus box and the tiles, nothing else', () => {
+  test('ARM 1 — sections render NO chip row outside the leaf: the section face is the plus box and the tiles, nothing else', () => {
     openSection([EDIT])
-    // the door exists for every kind, presets or none
+    // the door exists for every kind, sections or none
     expect(plusBox()).not.toBeNull()
-    // the violation the operator named: the preset chip row — the
+    // the violation the operator named: the section chip row — the
     // retired bag spellings riding as buttons OUTSIDE the leaf. This
     // arm is RED until the row is deleted.
-    expect(chipRow(), 'the preset chip row must not render — the + box is the only door').toBeNull()
+    expect(chipRow(), 'the section chip row must not render — the + box is the only door').toBeNull()
   })
 
-  test('ARM 2 — a preset-carrying kind enters through the PICKER, and its postures live INSIDE the leaf', async () => {
+  test('ARM 2 — a section-carrying kind enters through the PICKER, and its postures live INSIDE the leaf', async () => {
     openSection([EDIT])
     fireEvent.click(plusBox())
     // the kind picker menu (portal): every declared kind, one label —
-    // the preset kind rides the SAME item list as Loras, no shortcut
+    // the section kind rides the SAME item list as Loras, no shortcut
     const item = await screen.findByText('Edit region')
     fireEvent.click(item)
     // the leaf opens with the posture switches INSIDE it (slice 5's
@@ -83,7 +83,7 @@ describe('THE ONE-DOOR LAW — one mod system, one entry (the plus box, like Lor
     expect(chipRow()).toBeNull()
   })
 
-  test('ARM 3 — the Loras grammar unchanged: options kind, no presets anywhere, enters through the picker', () => {
+  test('ARM 3 — the Loras grammar unchanged: options kind, no sections anywhere, enters through the picker', () => {
     openSection([LORA])
     expect(plusBox()).not.toBeNull()
     expect(chipRow()).toBeNull()

@@ -60,7 +60,7 @@ export function SourceRow(props) {
         // the PLUS face the slot could not detach from.
         value: shown,
         ...(host.verbs),
-    }),
+    }), 
     // THE UPLOADING FACE (2026-10-28): the attempt voices its own
     // filename UNDER the square in the neutral color — a busy
     // square is never mute, and never danger-colored (in flight is
@@ -77,7 +77,7 @@ export function SourceRow(props) {
             title: host.busy ?? host.busyVoice,
             role: 'status',
         }, host.busyVoice)
-        : null,
+        : null, 
     // THE REFUSAL FACE (2026-10-24): a failed upload's voice renders
     // UNDER the square in the danger color — it NEVER enters the
     // value seam, so it can never land in the input stack as a
@@ -120,7 +120,7 @@ export function SpecMenuSelect(props) {
                 ? { title: props.title ?? props.face ?? current?.label }
                 : {}),
             onClick: () => { setOpen(!open); },
-        },
+        }, 
         // THE FACE'S OWN CLAMP (operator 2026-11, defect 2: "pills /
         // badges for the dropdown buttons OVERFLOWS when the contents
         // are too long, instead of just being cut off"): the label rides
@@ -285,7 +285,7 @@ export function SpecSliderAtom({ f, value, onEdit, envelope }) {
             onEdit(f.name, raw);
         },
         'aria-label': f.label,
-    }),
+    }), 
     // THE ZERO-LAW CHIP (cure D, 2026-10-28): a held 0 whose
     // declaration's tooltip states a "0 = …" law SHOWS the law on
     // the face — the openjutsu burn: Width/Height 0 (inherit the
@@ -334,7 +334,7 @@ export function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder
             ...(hideSquareLabel === true ? { ariaLabel: f.label !== '' ? f.label : f.name } : {}),
             value: shown,
             ...square.verbs,
-        }),
+        }), 
         // THE ATTEMPT + REFUSAL FACES (the seat-kind judge's law, the
         // modleaf-add journey audit 2026-11-16): a square that carries
         // the provider's verbs carries its FACES too — SourceRow's own

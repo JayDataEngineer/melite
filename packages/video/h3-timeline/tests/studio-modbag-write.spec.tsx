@@ -94,8 +94,12 @@ describe("the mod bag's write journey (the dead Add)", () => {
     )
     fireEvent.click(plusBox)
     fireEvent.click(await screen.findByText("Video edit"))
-    const posture = await screen.findByRole("button", { name: "Repair a region" })
-    fireEvent.click(posture)
+    const repair = await waitFor(() => {
+      const el = document.querySelector<HTMLInputElement>('[data-mod-section="repair-region"] input')
+      assert.ok(el, "the Repair section checkbox must render (§0.8's flow face)")
+      return el
+    }, { timeout: 3000 })
+    fireEvent.click(repair)
     const add = await screen.findByRole("button", { name: "Add" })
     fireEvent.click(add)
     // THE LAW: the press states the bag — SOME payload carries the
@@ -150,7 +154,12 @@ describe("the from-flow kind filter (the real thread, not the copy — seat-kind
     }, { timeout: 3000 })
     fireEvent.click(plusBox)
     fireEvent.click(await screen.findByText("Video edit"))
-    fireEvent.click(await screen.findByRole("button", { name: "Static mask pass" }))
+    // (§0.7 merged the static-mask pill into Repair's mask slot —
+    // the static read is now a DIAL MOVE: check Repair, then turn
+    // the Mask source dial to the staged-PNG option)
+    fireEvent.click(document.querySelector<HTMLInputElement>('[data-mod-section="repair-region"] input')!)
+    fireEvent.click(await screen.findByRole("button", { name: "Mask source" }))
+    fireEvent.click(await screen.findByRole("menuitem", { name: /Static PNG/i }))
     const maskSeat = await waitFor(() => {
       const sq = Array.from(document.querySelectorAll<HTMLElement>("[data-slot-square]"))
         .find((s) => (s.getAttribute("aria-label") ?? "").includes("Mask PNG"))
@@ -208,7 +217,8 @@ describe("the from-flow kind filter (the real thread, not the copy — seat-kind
     }, { timeout: 3000 })
     fireEvent.click(plusBox)
     fireEvent.click(await screen.findByText("Video edit"))
-    await screen.findByRole("button", { name: "Repair a region" })
+    await waitFor(() => assert.ok(document.querySelector('[data-mod-section="repair-region"]'),
+      "the Repair section renders (checked or not — the leaf is open)"), { timeout: 3000 })
     const clipSeat = await waitFor(() => {
       const sq = Array.from(document.querySelectorAll<HTMLElement>("[data-slot-square]"))
         .find((s) => (s.getAttribute("aria-label") ?? "").includes("Source clip"))
@@ -235,7 +245,7 @@ describe("the from-flow kind filter (the real thread, not the copy — seat-kind
     const kinds = ((body.features as Record<string, unknown> | undefined)?.modifiers ?? []) as Array<{
       kind: string; param_key: string; label: string;
       options?: Array<{ value: string; label: string }>;
-      presets?: Array<{ id: string; label: string }>;
+      sections?: Array<{ id: string; label: string }>;
     }>
     assert.ok(kinds.length > 0, "the served spec offers mod kinds")
     const { cleanup } = await import("@testing-library/react")
@@ -264,11 +274,11 @@ describe("the from-flow kind filter (the real thread, not the copy — seat-kind
           const first = (k.options ?? [])[0]
           fireEvent.click(await screen.findByRole("menuitem", { name: first.label }))
         }
-        // THE POSTURE SWITCH (preset-carrying kinds seed the draft
+        // THE POSTURE SWITCH (section-carrying kinds seed the draft
         // through the first posture — the same press the operator makes)
-        const presets = document.querySelector("[data-leaf-presets]")
-        if (presets !== null) {
-          const firstPreset = presets.querySelector("[data-leaf-preset] button")
+        const sections = document.querySelector("[data-mod-sections]")
+        if (sections !== null) {
+          const firstPreset = sections.querySelector("[data-mod-section] input")
           if (firstPreset !== null) fireEvent.click(firstPreset)
         }
         fireEvent.click(add)

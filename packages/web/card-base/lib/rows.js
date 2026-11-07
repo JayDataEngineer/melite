@@ -51,7 +51,7 @@ export function SeedDice({ random, onToggle }) {
             'aria-pressed': random,
             'aria-label': chromeCopy.seedDiceAria,
             onClick: onToggle,
-        }, h('svg', { width: 14, height: 14, viewBox: '0 0 16 16', fill: 'none', xmlns: 'http://www.w3.org/2000/svg', 'aria-hidden': 'true' }, h('rect', { x: 1.4, y: 1.4, width: 13.2, height: 13.2, rx: 3.2, stroke: 'currentColor', strokeWidth: 1.3 }),
+        }, h('svg', { width: 14, height: 14, viewBox: '0 0 16 16', fill: 'none', xmlns: 'http://www.w3.org/2000/svg', 'aria-hidden': 'true' }, h('rect', { x: 1.4, y: 1.4, width: 13.2, height: 13.2, rx: 3.2, stroke: 'currentColor', strokeWidth: 1.3 }), 
         // the 5-pip face: 4 corners + center — filled when random,
         // hollow when fixed (one glyph, the pip fill IS the state)
         h('circle', { cx: 5, cy: 5, r: 1.35, ...(random ? { fill: 'currentColor' } : { stroke: 'currentColor', strokeWidth: 1 }) }), h('circle', { cx: 11, cy: 5, r: 1.35, ...(random ? { fill: 'currentColor' } : { stroke: 'currentColor', strokeWidth: 1 }) }), h('circle', { cx: 8, cy: 8, r: 1.35, ...(random ? { fill: 'currentColor' } : { stroke: 'currentColor', strokeWidth: 1 }) }), h('circle', { cx: 5, cy: 11, r: 1.35, ...(random ? { fill: 'currentColor' } : { stroke: 'currentColor', strokeWidth: 1 }) }), h('circle', { cx: 11, cy: 11, r: 1.35, ...(random ? { fill: 'currentColor' } : { stroke: 'currentColor', strokeWidth: 1 }) }))),

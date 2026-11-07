@@ -819,19 +819,20 @@ function specModifiers(
     // absent-bag row rides verbatim — the client renders ONE chip for it
     // while the bag is absent, because the compose door really rides it.
     if (k.default_entry !== undefined) entry.default_entry = k.default_entry
-    // THE PRESET CHIPS (the timeline rework stage 3): served
-    // verbatim after a shape guard — each row is {id, label,
-    // tooltip?, patch} (the registration door already judged the
-    // patch against the kind's own fields; this guard refuses a
-    // malformed row rather than serving a half-rendered chip).
-    if (k.presets !== undefined) {
-      if (!Array.isArray(k.presets) || k.presets.length === 0 || k.presets.some((p) =>
+    // THE MODIFIER SECTIONS (operator 2026-11-16, §0.8 THE FLOW
+    // MODEL): served verbatim after a shape guard — each row is
+    // {id, label, tooltip?, patch} (the registration door already
+    // judged the patch against the kind's own fields; this guard
+    // refuses a malformed row rather than serving a half-rendered
+    // checkbox).
+    if (k.sections !== undefined) {
+      if (!Array.isArray(k.sections) || k.sections.length === 0 || k.sections.some((p) =>
         typeof p !== 'object' || p === null || typeof p.id !== 'string' || p.id === '' ||
         typeof p.label !== 'string' || p.label === '' ||
         typeof p.patch !== 'object' || p.patch === null || Array.isArray(p.patch))) {
-        throw new Error(`form-spec: card '${card}' declares malformed presets on mod kind '${k.kind}' (each row: non-empty id + label + a patch object) — ${JSON.stringify(k.presets).slice(0, 120)}`)
+        throw new Error(`form-spec: card '${card}' declares malformed sections on mod kind '${k.kind}' (each row: non-empty id + label + a patch object) — ${JSON.stringify(k.sections).slice(0, 120)}`)
       }
-      entry.presets = k.presets
+      entry.sections = k.sections
     }
     // THE MENU ATTRIBUTION (the mod-liveness ARM 3 law, 2026-10-28,
     // the swap build): the card-declared kind stamps its own

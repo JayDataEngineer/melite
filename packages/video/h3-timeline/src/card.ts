@@ -283,26 +283,29 @@ const EDIT_MOD: DeclaredModifierKind = {
   ],
   // THE PRESET CHIPS (stage 3): the retired bag NAMES live on as
   // starting cells over this ONE schema — each chip is a named
-  // matrix cell (mask source × identity anchors × denoise pole)
-  // the registration door judges against the fields above (a
-  // preset may not invent vocabulary or patch an undeclared seat).
-  // The chip face merges the patch onto the single entry; every
-  // dial stays movable after the press. The refine/upscale
-  // postures ARE matrix cells since the fourth dial landed (the
-  // refine switch + scale serve them on this door) and the
-  // continuation posture is slice 2's dial (continuation +
-  // extend_seconds); the one door that stays out forever is
-  // Reshoot (a different chain, MoGe depth + CrossView — not a
-  // mask/denoise variation).
-  presets: [
-    { id: 'repair-region', label: 'Repair a region', tooltip: 'The repair posture: a per-frame SAM3 track of the named region, identity anchored to the source itself, partial denoise holding everything outside the mask — and its sound.', patch: { mask_source: 'region', reference: 'self', denoise: 0.32, keep_audio: true } },
-    { id: 'identity-swap', label: 'Identity swap', tooltip: 'The swap posture: the region tracked frame by frame, identity carried by a replacement still + the track run\'s mannequin video, full denoise re-rendering the masked side whole.', patch: { mask_source: 'region', reference: 'still+mannequin', denoise: 1 } },
-    { id: 'outfit-change', label: 'Outfit change', tooltip: 'The garment posture: region + still+mannequin at partial denoise — the still anchors the new outfit\'s appearance while the source motion rides through; push denoise toward 1 to re-render the garment whole.', patch: { mask_source: 'region', reference: 'still+mannequin', denoise: 0.55, keep_audio: true } },
+  // THE MODIFIER SECTIONS (operator 2026-11-16, §0.8 THE FLOW
+  // MODEL — "check the box, behind the scenes the special nodes
+  // are used"): each row is a CHECKABLE stage on the source video.
+  // The patch is a matrix cell (mask source × identity anchors ×
+  // denoise pole) the registration door judges against the fields
+  // above (a section may not invent vocabulary or patch an
+  // undeclared seat). A check seeds its dials onto the single
+  // entry (uncheck strips seed-only values, hand-moved dials
+  // stay); checked sections COMPOSE into the one bag — repair +
+  // upscale in the same run is two checkboxes, never a combined
+  // route. The refine/upscale sections are matrix cells since the
+  // fourth dial landed (the refine switch + scale serve them on
+  // this door) and the continuation section is slice 2's dial
+  // (continuation + extend_seconds); the one modifier that stays
+  // its own door is Reshoot (a different chain, MoGe depth +
+  // CrossView — not a mask/denoise variation).
+  sections: [
+    { id: 'repair-region', label: 'Repair', tooltip: 'The repair section: identity anchored to the source itself, partial denoise holding everything outside the mask — and its sound. The mask slot chooses the how: a per-frame SAM3 track of the named region (the default seed) or one staged PNG (the static read — the chain resizes it to its own geometry in-graph).', patch: { mask_source: 'region', reference: 'self', denoise: 0.32, keep_audio: true } },
+    { id: 'identity-swap', label: 'Swap', tooltip: 'The swap section (one, per §0.7 — clothing vs identity is prompt words, never two pills): the region tracked frame by frame, identity carried by a replacement still + the track run\'s mannequin video; denoise seeds 1 (full re-render of the masked side) — push toward 0.55 to keep source motion riding through (the garment read).', patch: { mask_source: 'region', reference: 'still+mannequin', denoise: 1 } },
     { id: 'whole-frame-restyle', label: 'Whole-frame restyle', tooltip: 'Nothing held: the whole frame re-renders at partial denoise anchored to the source itself — stay under 0.8 (the identity-boil floor refuses beyond it on this anchor).', patch: { mask_source: 'whole-frame', reference: 'self', denoise: 0.6 } },
     { id: 'refine-2x', label: 'Refine 2x', tooltip: "The second-pass posture: blank mask (the whole frame), self-anchored, partial denoise at the design window (2.5 s — a >=2x window past the measured 141 f OOM refuses) — and the refine switch ON at 2x: the learned upscale rides the edit's own latents in the same run.", patch: { mask_source: 'whole-frame', reference: 'self', denoise: 0.32, refine: true, scale: 2, clip_seconds: 2.5, keep_audio: true } },
     { id: 'extend-continuation', label: 'Extend', tooltip: "The continuation posture: blank mask, self-anchored, full denoise — fresh seconds appended to the source's last frame (the forced seam) and joined with the prior into one film; state extend_seconds.", patch: { continuation: true, mask_source: 'whole-frame', reference: 'self', denoise: 1 } },
     { id: 'upscale-2x', label: 'Upscale prior run 2x', tooltip: "The deferred second pass: state chain_run — the prior chain run's checkpointed scenes resume scene by scene through the requeue loop at the recipe's pass-2 window (denoise 0.24, steps 20; a blank prompt reuses the run's own scene prompts). Rebind the placeholder to your run's engine-side name; an unknown name refuses loud at the execute door.", patch: { chain_run: 'prior-chain-run-name', denoise: 0.24, steps: 20 } },
-    { id: 'static-mask-pass', label: 'Static mask pass', tooltip: 'One staged PNG names the edit area (the track run\'s pixel-max union is the recommended bridge); the chain resizes it to its own geometry in-graph.', patch: { mask_source: 'static-png', reference: 'self', denoise: 0.32, keep_audio: true } },
   ],
 }
 

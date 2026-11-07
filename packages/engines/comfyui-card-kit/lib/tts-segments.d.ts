@@ -1,5 +1,5 @@
-import type { GraphBuilder, NodeRef } from './graph.js';
-import type { ModelFacts, LaneInputsFacts } from './facts.js';
+import type { GraphBuilder, NodeRef } from './graph.ts';
+import type { ModelFacts, LaneInputsFacts } from './facts.ts';
 import type { ParamSpec } from '@melite/engine-contract/vocabulary';
 /** The closed facts shape the tts segments read (model_path: the
  *  audiocore load key — the ONE engine-general member the families

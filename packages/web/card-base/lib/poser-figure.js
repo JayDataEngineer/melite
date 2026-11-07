@@ -268,7 +268,7 @@ export function PoserFigureStage({ identityModel, identityCoeffs, localChanges, 
         // framing was dragged before the stage mounted) applies at
         // mount — not only on the next drag.
     }, [framing, focalLength, hasDoc]);
-    return h('div', { className: s.stagePreview, 'data-viewport': label ?? 'poser-figure' },
+    return h('div', { className: s.stagePreview, 'data-viewport': label ?? 'poser-figure' }, 
     // THE BODY-STAYS LAW: a failure with a doc in hand overlays the
     // banner on the STILL-MOUNTED canvas (the drag never kills the
     // body); the full failed face shows only when nothing renders.

@@ -2,11 +2,11 @@
 // 2026-11-15). The retired bag NAMES live on as starting cells over
 // the ONE edit schema: each chip is a named matrix cell (mask source
 // × identity anchors × denoise pole) the REGISTRATION door judges
-// against the kind's own fields — a preset may not patch an
+// against the kind's own fields — a section may not patch an
 // undeclared seat, invent select vocabulary, mistype a value, or
 // repeat an id. This spec fires on three doors: the served row (the
 // boot itself is the judge — validateDeclaredMods refuses drift at
-// registration), the compose door (every preset cell composes the
+// registration), the compose door (every section cell composes the
 // matrix emission with its required seats staged), and the
 // registration law's own arms (a forged kind reds each refusal
 // class). The bag door's laws live in edit-mod.spec.ts; the matrix
@@ -55,70 +55,66 @@ const ofClass = (out: Record<string, Node>, cls: string): [string, Node][] =>
 type Preset = { id: string; label: string; tooltip?: string; patch: Record<string, unknown> };
 
 /** The served edit kind (the registration door already judged it). */
-const editKind = (): { fields: Array<Record<string, unknown>>; presets: Preset[] } => {
+const editKind = (): { fields: Array<Record<string, unknown>>; sections: Preset[] } => {
   const kind = (def.mods ?? []).find((k) => k.kind === "edit");
   assert.ok(kind, "the card declares the edit kind");
-  const presets = (kind as unknown as { presets?: Preset[] }).presets;
-  assert.ok(Array.isArray(presets) && presets.length > 0, "the edit kind carries preset chips");
-  return { fields: (kind.fields ?? []) as Array<Record<string, unknown>>, presets: presets! };
+  const sections = (kind as unknown as { sections?: Preset[] }).sections;
+  assert.ok(Array.isArray(sections) && sections.length > 0, "the edit kind carries section chips");
+  return { fields: (kind.fields ?? []) as Array<Record<string, unknown>>, sections: sections! };
 };
 
-/** The seats a CELL needs staged beside its patch (the preset starts
+/** The seats a CELL needs staged beside its patch (the section starts
  *  the cell; the operator still stages the files it names). */
 const STAGED: Record<string, Record<string, unknown>> = {
   "identity-swap": { still: "stills/girl.png", mannequin: "clips/mannequin.mp4", region_prompt: "the person" },
-  "outfit-change": { still: "stills/girl.png", mannequin: "clips/mannequin.mp4", region_prompt: "the outfit" },
-  "static-mask-pass": { mask: "masks/union.png" },
   "repair-region": { region_prompt: "hands" },
   "whole-frame-restyle": {},
 };
 
-describe("the edit bag's preset chips (stage 3: named cells over the ONE schema)", () => {
-  it("THE SERVED CELLS: eight named cells, every patch key a declared field, every value the field's own type and vocabulary", () => {
-    const { fields, presets } = editKind();
-    assert.deepEqual(presets.map((p) => p.id), [
-      "repair-region", "identity-swap", "outfit-change", "whole-frame-restyle", "refine-2x", "extend-continuation", "upscale-2x", "static-mask-pass",
-    ], "the retired names live on as the cells — the refine posture sixth (the fourth dial), the continuation seventh (slice 2's dial), the deferred upscale eighth (slice 3's posture)");
+describe("the edit bag's section chips (stage 3: named cells over the ONE schema)", () => {
+  it("THE SERVED SECTIONS: six checkable stages (§0.7 merged the swaps and the mask variants — one section per modifier, the variant is a dial), every patch key a declared field, every value the field's own type and vocabulary", () => {
+    const { fields, sections } = editKind();
+    assert.deepEqual(sections.map((p) => p.id), [
+      "repair-region", "identity-swap", "whole-frame-restyle", "refine-2x", "extend-continuation", "upscale-2x",
+    ], "the flow face's stages — Repair, Swap (one — clothing vs identity is prompt words, §0.7), Restyle, Refine, Extend, Upscale; the static mask is Repair's mask-slot value, not a second section");
     // (F7, the front-end evasion audit 2026-11-07) ids and JS types
     // pin NOTHING of the cell's meaning: which denoise pole, which
     // scale, which keep_audio IS the operator-facing cell. The
     // patches are pinned VALUE-VERBATIM here — a 0.32→0.40 drift
     // on repair-region reds this arm by name (the registration door
     // type-checks; this is the only seat that judges the payload).
-    assert.deepEqual(presets.map((p) => p.patch), [
+    assert.deepEqual(sections.map((p) => p.patch), [
       { mask_source: "region", reference: "self", denoise: 0.32, keep_audio: true },
       { mask_source: "region", reference: "still+mannequin", denoise: 1 },
-      { mask_source: "region", reference: "still+mannequin", denoise: 0.55, keep_audio: true },
       { mask_source: "whole-frame", reference: "self", denoise: 0.6 },
       { mask_source: "whole-frame", reference: "self", denoise: 0.32, refine: true, scale: 2, clip_seconds: 2.5, keep_audio: true },
       { continuation: true, mask_source: "whole-frame", reference: "self", denoise: 1 },
       { chain_run: "prior-chain-run-name", denoise: 0.24, steps: 20 },
-      { mask_source: "static-png", reference: "self", denoise: 0.32, keep_audio: true },
-    ], "each named cell's payload, verbatim — the pole, the scale, the sound seat are the cell");
+    ], "each section's payload, verbatim — the pole, the scale, the sound seat are the section");
     const byName = new Map(fields.map((f) => [String(f["name"]), f]));
-    for (const p of presets) {
-      assert.ok(typeof p.label === "string" && p.label !== "", `preset ${p.id} carries a label`);
-      assert.ok(Object.keys(p.patch).length > 0, `preset ${p.id} patches at least one dial`);
+    for (const p of sections) {
+      assert.ok(typeof p.label === "string" && p.label !== "", `section ${p.id} carries a label`);
+      assert.ok(Object.keys(p.patch).length > 0, `section ${p.id} patches at least one dial`);
       for (const key of Object.keys(p.patch)) {
         const field = byName.get(key);
-        assert.ok(field !== undefined, `preset ${p.id} patches '${key}' — a declared field of the edit kind`);
+        assert.ok(field !== undefined, `section ${p.id} patches '${key}' — a declared field of the edit kind`);
         if (field!["type"] === "select") {
           const values = ((field!["options"] as Array<Record<string, unknown>>) ?? []).map((o) => String(o["value"]));
-          assert.ok(values.includes(String(p.patch[key])), `preset ${p.id}'s '${key}' rides a served option`);
+          assert.ok(values.includes(String(p.patch[key])), `section ${p.id}'s '${key}' rides a served option`);
         }
         if (field!["type"] === "number") {
-          assert.equal(typeof p.patch[key], "number", `preset ${p.id}'s '${key}' is a number (the field's wire type)`);
+          assert.equal(typeof p.patch[key], "number", `section ${p.id}'s '${key}' is a number (the field's wire type)`);
         }
         if (field!["type"] === "boolean") {
-          assert.equal(typeof p.patch[key], "boolean", `preset ${p.id}'s '${key}' is a boolean (the field's wire type)`);
+          assert.equal(typeof p.patch[key], "boolean", `section ${p.id}'s '${key}' is a boolean (the field's wire type)`);
         }
       }
     }
   });
 
-  it("EVERY CELL COMPOSES: each preset patch rides the card's own compose door to the matrix emission", () => {
-    const { presets } = editKind();
-    for (const p of presets) {
+  it("EVERY CELL COMPOSES: each section patch rides the card's own compose door to the matrix emission", () => {
+    const { sections } = editKind();
+    for (const p of sections) {
       const entry = {
         source_clip: "clips/take.mp4",
         edit_prompt: "the edit the cell names",
@@ -127,32 +123,32 @@ describe("the edit bag's preset chips (stage 3: named cells over the ONE schema)
       };
       const walked = def.schema({ edit: [entry] }) as Record<string, unknown>;
       const g = new GraphBuilder();
-      def.compose(walked, model, g, "run_preset_" + p.id);
+      def.compose(walked, model, g, "run_section_" + p.id);
       const out = graphOf(g);
       if (p.patch["continuation"] === true) {
         // the continuation posture's single window joins BY FILE
         // (the raw boundary the latent carry cannot cross) — the
         // one-film join grammar serves instead of ChainAssemble.
-        assert.ok(JSON.stringify(out).includes("extend_film"), `preset ${p.id} composes the joined-film grammar`);
-        assert.ok(ofClass(out, "MiniMaxH3AddGuide").length > 0, `preset ${p.id} composes the forced seam`);
+        assert.ok(JSON.stringify(out).includes("extend_film"), `section ${p.id} composes the joined-film grammar`);
+        assert.ok(ofClass(out, "MiniMaxH3AddGuide").length > 0, `section ${p.id} composes the forced seam`);
       } else if (typeof p.patch["chain_run"] === "string" && p.patch["chain_run"] !== "") {
         // the upscale posture's cell composes the REQUEUE LOOP
         // family (slice 3): the checkpoint head + the assemble
         // tail, no masked-edit latent — the loop is the other
         // mechanism the one door serves.
-        assert.ok(ofClass(out, "MiniMaxH3ChainCheckpointManager").length > 0, `preset ${p.id} composes the checkpoint head`);
-        assert.ok(ofClass(out, "MiniMaxH3ChainAssemble").length > 0, `preset ${p.id} composes the assemble tail`);
-        assert.equal(ofClass(out, "MiniMaxH3FantasticVideoEditLatent").length, 0, `preset ${p.id} composes no matrix latent — the loop family serves`);
+        assert.ok(ofClass(out, "MiniMaxH3ChainCheckpointManager").length > 0, `section ${p.id} composes the checkpoint head`);
+        assert.ok(ofClass(out, "MiniMaxH3ChainAssemble").length > 0, `section ${p.id} composes the assemble tail`);
+        assert.equal(ofClass(out, "MiniMaxH3FantasticVideoEditLatent").length, 0, `section ${p.id} composes no matrix latent — the loop family serves`);
       } else {
-        assert.equal(ofClass(out, "MiniMaxH3ChainAssemble").length, 1, `preset ${p.id} composes one assemble terminal`);
-        assert.ok(ofClass(out, "MiniMaxH3FantasticVideoEditLatent").length > 0, `preset ${p.id} composes the edit latent`);
+        assert.equal(ofClass(out, "MiniMaxH3ChainAssemble").length, 1, `section ${p.id} composes one assemble terminal`);
+        assert.ok(ofClass(out, "MiniMaxH3FantasticVideoEditLatent").length > 0, `section ${p.id} composes the edit latent`);
       }
     }
   });
 
-  it("NO CELL IS A REFUSAL CELL: no preset lands on the matrix seat's refused cells (the boil, the off-grid window)", () => {
-    const { presets } = editKind();
-    for (const p of presets) {
+  it("NO CELL IS A REFUSAL CELL: no section lands on the matrix seat's refused cells (the boil, the off-grid window)", () => {
+    const { sections } = editKind();
+    for (const p of sections) {
       const boil = p.patch["mask_source"] === "whole-frame"
         && p.patch["reference"] === "self"
         && typeof p.patch["denoise"] === "number" && (p.patch["denoise"] as number) >= 0.8
@@ -162,7 +158,7 @@ describe("the edit bag's preset chips (stage 3: named cells over the ONE schema)
         // are seam-anchored and joined after. The cell is lawful
         // only as the continuation posture it patches itself to be.
         && p.patch["continuation"] !== true;
-      assert.equal(boil, false, `preset ${p.id} is not the identity-boil cell (F3-17)`);
+      assert.equal(boil, false, `section ${p.id} is not the identity-boil cell (F3-17)`);
     }
   });
 
@@ -170,7 +166,7 @@ describe("the edit bag's preset chips (stage 3: named cells over the ONE schema)
     const { fields } = editKind();
     const kind = {
       kind: "forged", label: "Forged", param_key: "forged", cardinality: "list",
-      fields, presets: [{ id: "drift", label: "Drift", patch: { not_a_field: "x" } }],
+      fields, sections: [{ id: "drift", label: "Drift", patch: { not_a_field: "x" } }],
     };
     assert.throws(() => validateDeclaredMods("forged-card", [kind as never]), /patches 'not_a_field' — not a declared field/);
   });
@@ -179,7 +175,7 @@ describe("the edit bag's preset chips (stage 3: named cells over the ONE schema)
     const { fields } = editKind();
     const kind = {
       kind: "forged", label: "Forged", param_key: "forged", cardinality: "list",
-      fields, presets: [{ id: "drift", label: "Drift", patch: { mask_source: "quantum" } }],
+      fields, sections: [{ id: "drift", label: "Drift", patch: { mask_source: "quantum" } }],
     };
     assert.throws(() => validateDeclaredMods("forged-card", [kind as never]), /not a served option/);
   });
@@ -188,20 +184,20 @@ describe("the edit bag's preset chips (stage 3: named cells over the ONE schema)
     const { fields } = editKind();
     const kind = {
       kind: "forged", label: "Forged", param_key: "forged", cardinality: "list",
-      fields, presets: [{ id: "drift", label: "Drift", patch: { denoise: "loud" } }],
+      fields, sections: [{ id: "drift", label: "Drift", patch: { denoise: "loud" } }],
     };
     assert.throws(() => validateDeclaredMods("forged-card", [kind as never]), /with string — the field declares number/);
   });
 
-  it("THE REGISTRATION LAW FIRES — a preset-carrying kind resolves clean (the door admits the carrying face itself)", () => {
-    const { fields, presets } = editKind();
+  it("THE REGISTRATION LAW FIRES — a section-carrying kind resolves clean (the door admits the carrying face itself)", () => {
+    const { fields, sections } = editKind();
     const kind = {
       kind: "forged", label: "Forged", param_key: "forged", cardinality: "list",
-      fields, presets,
+      fields, sections,
     };
     // the true face — the door's carrying path, never a refusal
     assert.doesNotThrow(() => validateDeclaredMods("forged-card", [kind as never]));
-    // and a presets-free kind never enters the walk (the bare face)
+    // and a sections-free kind never enters the walk (the bare face)
     const bare = { kind: "forged2", label: "Bare", param_key: "forged2", cardinality: "list", fields };
     assert.doesNotThrow(() => validateDeclaredMods("forged-card", [bare as never]));
   });
@@ -210,12 +206,12 @@ describe("the edit bag's preset chips (stage 3: named cells over the ONE schema)
     const { fields } = editKind();
     const kind = {
       kind: "forged", label: "Forged", param_key: "forged", cardinality: "list",
-      fields, presets: [
+      fields, sections: [
         { id: "same", label: "One", patch: { denoise: 0.3 } },
         { id: "same", label: "Two", patch: { denoise: 0.4 } },
       ],
     };
-    assert.throws(() => validateDeclaredMods("forged-card", [kind as never]), /preset 'same' is declared twice/);
+    assert.throws(() => validateDeclaredMods("forged-card", [kind as never]), /section 'same' is declared twice/);
   });
 
   it("THE RIDING FIELDS DECLARE THEIR SUBMENUS (slice 5, the master modal): every rides-only seat states its master through the one visible_when grammar, and the wire serves it", async () => {
@@ -265,15 +261,15 @@ describe("the edit bag's preset chips (stage 3: named cells over the ONE schema)
     }
   });
 
-  it("THE WIRE: the form-spec body serves the edit presets verbatim (the chips the GUI renders ride the same cells)", async () => {
+  it("THE WIRE: the form-spec body serves the edit sections verbatim (the chips the GUI renders ride the same cells)", async () => {
     const body = specBody(theService(), await loadCardDefs(), {
       card: "h3-timeline", service: "h3-timeline", model: "h3-timeline",
     });
     const served = (body.features?.modifiers ?? []).find((k) => k.param_key === "edit");
     assert.ok(served, "the form-spec serves the edit kind");
-    const presets = (served as unknown as { presets?: Preset[] }).presets;
-    assert.ok(Array.isArray(presets), "the wire carries the preset cells");
-    assert.deepEqual(presets!.map((p) => p.id), editKind().presets.map((p) => p.id),
+    const sections = (served as unknown as { sections?: Preset[] }).sections;
+    assert.ok(Array.isArray(sections), "the wire carries the section cells");
+    assert.deepEqual(sections!.map((p) => p.id), editKind().sections.map((p) => p.id),
       "the served cells are the declared cells, verbatim");
   });
 });

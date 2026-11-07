@@ -321,7 +321,7 @@ export function VideoStagePreview(props) {
             'aria-pressed': a.url === faceUrl,
             title: a.name + (a.url === faceUrl ? chromeCopy.filmViewingSuffix : chromeCopy.filmPreviewSuffix),
             onClick: (e) => { e.stopPropagation(); setFaceUrl(a.url !== faceUrl ? a.url : null); },
-        },
+        }, 
         // THE URL-KIND THUMB (same burn as the hero's: a PNG in a
         // <video> seat paints nothing — the thumb renders the
         // artifact's own kind, image arm first, video arm for

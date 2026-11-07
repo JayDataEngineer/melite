@@ -10,8 +10,8 @@
 // default path stays byte-clean of the continuation vocabulary
 // (resolve default-fills extend_seconds on every entry — presence
 // is never authorship; inertness is the law). The continuation
-// seat's own emission laws live in the extend suite; the preset
-// cells in edit-presets.spec.ts. No @contract marker:
+// seat's own emission laws live in the extend suite; the section
+// cells in edit-sections.spec.ts. No @contract marker:
 // package-local law, prose header (the registry row owns the law).
 import "../../../../tests/helpers/boot-models.ts";
 import { beforeAll, describe, it } from "vitest";

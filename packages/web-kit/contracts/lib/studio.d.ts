@@ -1,7 +1,7 @@
 /** studio.ts — the tenant props contract (E1): the ENTIRE interface a
  * card body sees. stage + running in; onSave/onRun/onWireSlot/
  * onSaveToMedia out. */
-import type { CardStage } from "./card.js";
+import type { CardStage } from "./card.ts";
 export interface StudioTenantProps {
     stage: CardStage;
     /** True while this card's run is active. */

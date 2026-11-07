@@ -27,22 +27,26 @@ were FIXED cells of this matrix; their names still compose (the
 door translates a legacy doc into its cell at the compose door,
 never a frozen peer), and the free cells compose here.
 
-THE NAMED CELLS (stage 3): the card serves EIGHT preset chips over
-this one schema — `repair-region` (region × self × 0.32, sound held),
+THE MODIFIER SECTIONS (§0.8 THE FLOW MODEL, 2026-11-16: "It is a
+flow. Check the box, behind the scenes the special nodes are
+used"): the card serves SIX checkable sections over this one schema
+— `repair-region` (region × self × 0.32, sound held; the mask slot
+chooses the how — the SAM3 region track or one staged PNG, the
+static read is the MASK DIAL's value, never a second section),
 `identity-swap` (region × still+mannequin × 1, the masked side
-re-rendered whole), `outfit-change` (region × still+mannequin × 0.55,
-appearance anchored, motion riding through), `whole-frame-restyle`
-(whole-frame × self × 0.6, under the boil floor),
-`refine-2x` (whole-frame × self × 0.32 with the refine switch ON at
-2x, the learned upscale riding this edit's own latents in the same
-run), `extend-continuation` (whole-frame × self × 1, fresh seconds
-past the forced seam, state extend_seconds), `upscale-2x` (the
-deferred second pass of a PRIOR chain run: state chain_run, the
-recipe's pass-2 window serves), and `static-mask-pass` (static-png
-× self × 0.32). A chip is a STARTING
-cell, never a second door: state the cell's dials on the entry (the
-GUI chip and your entry compose identically — the wire is the bag,
-preset ids never ride it).
+re-rendered whole — ONE section for both reads: clothing vs
+identity is PROMPT WORDS, never two pills; push denoise toward 0.55
+to keep source motion riding through),
+`whole-frame-restyle` (whole-frame × self × 0.6, under the boil
+floor), `refine-2x` (whole-frame × self × 0.32 with the refine
+switch ON at 2x, the learned upscale riding this edit's own latents
+in the same run), `extend-continuation` (whole-frame × self × 1,
+fresh seconds past the forced seam, state extend_seconds), and
+`upscale-2x` (the deferred second pass of a PRIOR chain run: state
+chain_run, the recipe's pass-2 window serves). Checking a box seeds
+its dials; checked boxes COMPOSE into the one bag (repair + upscale
+in the same run is two checkboxes, never a combined route). The
+wire is the bag — section ids never ride it.
 
 It is NOT:
 - **a new camera** — that is `reshoot`, a different chain (MoGe +

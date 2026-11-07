@@ -100,16 +100,16 @@ describe("the seat's media-kind discipline (the drop judge + the from-flow filte
       />,
     );
     // open the edit leaf through THE ONE DOOR (+ box → kind picker),
-    // then the STATIC MASK posture switch INSIDE the leaf (the outer
-    // chip row is deleted, 2026-11-16): its posture carries BOTH seats
-    // — the video-hinted source clip and the staged PNG mask (the
-    // image seat the judge must guard)
+    // then the static-mask read via §0.8's flow face: check the
+    // Repair section and turn the Mask source dial to the staged
+    // PNG (the static read is the mask slot's value, never a pill)
     const plusBox = document.querySelector('[data-subcard-add="mod"]')
     assert.ok(plusBox, "the + box must render")
     fireEvent.click(plusBox as Element)
     fireEvent.click(await screen.findByText("Video edit"))
-    const posture = await screen.findByRole("button", { name: "Static mask pass" })
-    fireEvent.click(posture)
+    fireEvent.click(document.querySelector<HTMLInputElement>('[data-mod-section="repair-region"] input')!)
+    fireEvent.click(await screen.findByRole("button", { name: "Mask source" }))
+    fireEvent.click(await screen.findByRole("menuitem", { name: /Static PNG/i }))
     await screen.findByRole("button", { name: "Add" })
     const squares = Array.from(document.querySelectorAll<HTMLElement>("[data-slot-square]"))
     assert.ok(squares.length >= 2, `the static-mask leaf renders both seats (found ${squares.length})`)
@@ -194,7 +194,9 @@ describe("the seat's media-kind discipline (the drop judge + the from-flow filte
     );
     fireEvent.click(document.querySelector('[data-subcard-add="mod"]') as Element)
     fireEvent.click(await screen.findByText("Video edit"))
-    fireEvent.click(await screen.findByRole("button", { name: "Static mask pass" }))
+    fireEvent.click(document.querySelector<HTMLInputElement>('[data-mod-section="repair-region"] input')!)
+    fireEvent.click(await screen.findByRole("button", { name: "Mask source" }))
+    fireEvent.click(await screen.findByRole("menuitem", { name: /Static PNG/i }))
     await screen.findByRole("button", { name: "Add" })
     const maskSeat = (): HTMLElement | undefined =>
       Array.from(document.querySelectorAll<HTMLElement>("[data-slot-square]"))
@@ -261,7 +263,9 @@ describe("the seat's media-kind discipline (the drop judge + the from-flow filte
     );
     fireEvent.click(document.querySelector('[data-subcard-add="mod"]') as Element)
     fireEvent.click(await screen.findByText("Video edit"))
-    fireEvent.click(await screen.findByRole("button", { name: "Static mask pass" }))
+    fireEvent.click(document.querySelector<HTMLInputElement>('[data-mod-section="repair-region"] input')!)
+    fireEvent.click(await screen.findByRole("button", { name: "Mask source" }))
+    fireEvent.click(await screen.findByRole("menuitem", { name: /Static PNG/i }))
     await screen.findByRole("button", { name: "Add" })
     const maskSeat = (): HTMLElement | undefined =>
       Array.from(document.querySelectorAll<HTMLElement>("[data-slot-square]"))

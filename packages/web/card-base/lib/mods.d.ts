@@ -39,8 +39,8 @@
  */
 import { createElement as h } from 'react';
 import type { ReactElement } from 'react';
-import { type ModifierKind, type SpecField, type SpecValues } from './spec.js';
-import type { ChainRunCandidate } from './runs-policy.js';
+import { type ModifierKind, type SpecField, type SpecValues } from './spec.ts';
+import type { ChainRunCandidate } from './runs-policy.ts';
 export type { PaintCanvasFaceProps, BboxCanvasFaceProps, OrbitCanvasFaceProps } from '@melite/contracts';
 import type { BboxCanvasFaceProps, OrbitCanvasFaceProps, PaintCanvasFaceProps } from '@melite/contracts';
 export type BboxFaceComponent = (props: BboxCanvasFaceProps) => ReactElement;
@@ -162,11 +162,14 @@ export interface LeafSeat {
      *  must still match the open-time snapshot or the candidate is
      *  a stranger (F1/F2/G1). */
     owned?: ReadonlySet<string>;
-    /** THE MASTER MODAL'S PRESET SEAT (slice 5, 2026-11-16): the id
-     *  of the preset the modal opened on (or switched to) - paints
-     *  the modal's own switch row. A manual dial edit clears it (the
-     *  draft has left the named cell); save never reads it. */
-    preset?: string;
+    /** THE MODAL'S CHECKED SECTIONS (operator 2026-11-16, §0.8 THE
+     *  FLOW MODEL): the ids of the modifier sections whose boxes are
+     *  checked — intent, not paint: a hand-moved dial does NOT
+     *  uncheck its section (the checkbox says "apply this modifier";
+     *  the seed already ran). Checking seeds the patch; unchecking
+     *  strips only values still equal to the seed. Save never reads
+     *  it — the bag is the truth. */
+    sections?: ReadonlyArray<string>;
 }
 /** IDENTITY-MINTED TILE IDS (debt 24's cure, reusing the leaf's
  * tier law): `<param_key>#<content-tag>.<occurrence>` — content

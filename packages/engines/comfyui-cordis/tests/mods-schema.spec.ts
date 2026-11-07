@@ -121,31 +121,31 @@ describe("the declared mod-kind schema gate (registerCard's third door)", () => 
     validateDeclaredMods("c", [base({ requires: ["comfyui-impact-pack", "comfyui-impact-subpack"] })]);
   });
 
-  // ── THE PRESET LAW (the timeline rework stage 3): a preset chip
+  // ── THE PRESET LAW (the timeline rework stage 3): a section chip
   // is a starting cell over the kind's OWN schema. The wire face's
   // own guards live here — the door's teeth on every axis — while
   // the estate's real five cells (h3 edit) prove the serving face
-  // in edit-presets.spec.ts. ──
-  const presetFields = (): Array<Record<string, unknown>> => [
+  // in edit-sections.spec.ts. ──
+  const sectionFields = (): Array<Record<string, unknown>> => [
     { name: "mask_source", label: "Mask source", type: "select", default: "region", options: [{ value: "region", label: "Region" }, { value: "whole-frame", label: "Whole frame" }] },
     { name: "denoise", label: "Denoise", type: "number", default: 0.32, min: 0.05, max: 1, step: 0.01 },
   ];
 
-  it("a preset-carrying kind passes clean, and a bare kind skips the walk (the carrying face admits)", () => {
-    // the bare face: the strict resolve FILLS presets:[] (probed
+  it("a section-carrying kind passes clean, and a bare kind skips the walk (the carrying face admits)", () => {
+    // the bare face: the strict resolve FILLS sections:[] (probed
     // live — schemastery default-fills the array), so a bare kind
     // walks zero rows and passes clean
-    validateDeclaredMods("c", [base({ fields: presetFields() })]);
-    // presets present → the walk's carrying path
+    validateDeclaredMods("c", [base({ fields: sectionFields() })]);
+    // sections present → the walk's carrying path
     validateDeclaredMods("c", [base({
-      fields: presetFields(),
-      presets: [{ id: "repair", label: "Repair a region", tooltip: "the fast cell", patch: { mask_source: "region", denoise: 0.32 } }],
+      fields: sectionFields(),
+      sections: [{ id: "repair", label: "Repair a region", tooltip: "the fast cell", patch: { mask_source: "region", denoise: 0.32 } }],
     })]);
   });
 
-  it("a preset patching an undeclared key refuses (a preset is never a second vocabulary)", () => {
+  it("a section patching an undeclared key refuses (a section is never a second vocabulary)", () => {
     assert.throws(
-      () => validateDeclaredMods("c", [base({ fields: presetFields(), presets: [{ id: "x", label: "X", patch: { not_a_field: 1 } }] })]),
+      () => validateDeclaredMods("c", [base({ fields: sectionFields(), sections: [{ id: "x", label: "X", patch: { not_a_field: 1 } }] })]),
       /patches 'not_a_field' — not a declared field of this kind/,
     );
   });
@@ -157,33 +157,33 @@ describe("the declared mod-kind schema gate (registerCard's third door)", () => 
   // operator's staged file on every seated-bag chip press. The
   // registration door refuses it now — the arm fires on the real
   // validateDeclaredMods door.
-  it("a preset patching a staged-file seat refuses (a cell dials the matrix, it never stages files)", () => {
+  it("a section patching a staged-file seat refuses (a cell dials the matrix, it never stages files)", () => {
     assert.throws(
       () => validateDeclaredMods("c", [base({
-        fields: [...presetFields(), { name: "mask", label: "Mask", type: "image", default: "" }],
-        presets: [{ id: "x", label: "X", patch: { mask: "masks/track-union.png" } }],
+        fields: [...sectionFields(), { name: "mask", label: "Mask", type: "image", default: "" }],
+        sections: [{ id: "x", label: "X", patch: { mask: "masks/track-union.png" } }],
       })]),
       /patches 'mask' — a staged-file seat \(type image\): a cell dials the matrix, it never stages files/,
     );
     assert.throws(
       () => validateDeclaredMods("c", [base({
-        fields: [...presetFields(), { name: "clip", label: "Clip", type: "file", default: "" }],
-        presets: [{ id: "y", label: "Y", patch: { clip: "clips/a.mp4" } }],
+        fields: [...sectionFields(), { name: "clip", label: "Clip", type: "file", default: "" }],
+        sections: [{ id: "y", label: "Y", patch: { clip: "clips/a.mp4" } }],
       })]),
       /patches 'clip' — a staged-file seat \(type file\)/,
     );
   });
 
-  it("a preset patching an unserved select value refuses (no invented vocabulary)", () => {
+  it("a section patching an unserved select value refuses (no invented vocabulary)", () => {
     assert.throws(
-      () => validateDeclaredMods("c", [base({ fields: presetFields(), presets: [{ id: "x", label: "X", patch: { mask_source: "quantum" } }] })]),
+      () => validateDeclaredMods("c", [base({ fields: sectionFields(), sections: [{ id: "x", label: "X", patch: { mask_source: "quantum" } }] })]),
       /patches 'mask_source' to 'quantum' — not a served option/,
     );
   });
 
-  it("a preset patching a mistyped value refuses (the type-truth law reaches the patches)", () => {
+  it("a section patching a mistyped value refuses (the type-truth law reaches the patches)", () => {
     assert.throws(
-      () => validateDeclaredMods("c", [base({ fields: presetFields(), presets: [{ id: "x", label: "X", patch: { denoise: "loud" } }] })]),
+      () => validateDeclaredMods("c", [base({ fields: sectionFields(), sections: [{ id: "x", label: "X", patch: { denoise: "loud" } }] })]),
       /patches 'denoise' with string — the field declares number/,
     );
   });
@@ -191,15 +191,15 @@ describe("the declared mod-kind schema gate (registerCard's third door)", () => 
   // (F2 residue, the front-end audit's verification pass 2026-11-07)
   // a TRUE option kind renders and saves its three entry seats only;
   // a patch naming anything else would ride the draft INVISIBLE.
-  it("an option-kind preset patches its entry seats only (id, strength, steps - the face renders nothing else)", () => {
+  it("an option-kind section patches its entry seats only (id, strength, steps - the face renders nothing else)", () => {
     assert.throws(
       () => validateDeclaredMods("c", [base({
         entry: "option",
         options: [{ value: "depth", label: "Depth" }],
-        fields: presetFields(),
-        presets: [{ id: "x", label: "X", patch: { mask_source: "region" } }],
+        fields: sectionFields(),
+        sections: [{ id: "x", label: "X", patch: { mask_source: "region" } }],
       })]),
-      /patches 'mask_source' — an option-kind cell patches its entry seats only \(id, strength, steps\)/,
+      /patches 'mask_source' — an option-kind section patches its entry seats only \(id, strength, steps\)/,
     );
     // the three entry seats pass clean (the kind DECLARES its own
     // seats — the patch names declared fields that are all the
@@ -212,48 +212,48 @@ describe("the declared mod-kind schema gate (registerCard's third door)", () => 
         { name: "strength", label: "Strength", type: "number", default: 1, min: 0, max: 2, step: 0.01 },
         { name: "steps", label: "Steps", type: "number", default: 8, min: 1, max: 40, step: 1 },
       ],
-      presets: [{ id: "y", label: "Y", patch: { id: "depth", strength: 0.8, steps: 6 } }],
+      sections: [{ id: "y", label: "Y", patch: { id: "depth", strength: 0.8, steps: 6 } }],
     })]);
   });
 
-  it("a repeated preset id refuses (ids are unique per kind)", () => {
+  it("a repeated section id refuses (ids are unique per kind)", () => {
     assert.throws(
       () => validateDeclaredMods("c", [base({
-        fields: presetFields(),
-        presets: [
+        fields: sectionFields(),
+        sections: [
           { id: "same", label: "One", patch: { denoise: 0.3 } },
           { id: "same", label: "Two", patch: { denoise: 0.4 } },
         ],
       })]),
-      /preset 'same' is declared twice/,
+      /section 'same' is declared twice/,
     );
   });
 
-  it("a patchless preset row refuses loud (the patch-truth law — schemastery default-fills an absent patch to {}, probed live; the walk reads the author's row and refuses the fill)", () => {
+  it("a patchless section row refuses loud (the patch-truth law — schemastery default-fills an absent patch to {}, probed live; the walk reads the author's row and refuses the fill)", () => {
     assert.throws(
       () => validateDeclaredMods("c", [base({
-        fields: presetFields(),
-        presets: [{ id: "x", label: "X" }],
+        fields: sectionFields(),
+        sections: [{ id: "x", label: "X" }],
       })]),
-      /preset 'x' carries no patch object — a cell that dials nothing is drift/,
+      /section 'x' carries no patch object — a section that dials nothing is drift/,
     );
     // the null spelling refuses through the same law (the authored
     // witness is null — the patch-truth walk refuses it before any
     // zod fill could mask it)
     assert.throws(
       () => validateDeclaredMods("c", [base({
-        fields: presetFields(),
-        presets: [{ id: "x", label: "X", patch: null }],
+        fields: sectionFields(),
+        sections: [{ id: "x", label: "X", patch: null }],
       })]),
       /carries no patch object/,
     );
   });
 
-  it("an empty presets array admits at this door (the discovery guard owns its refusal — a form-spec half-face never serves)", () => {
+  it("an empty sections array admits at this door (the discovery guard owns its refusal — a form-spec half-face never serves)", () => {
     // the registration door carries no empty-array law: the row
     // schema-resolves clean and the walk loops zero times. The
     // discovery projection refuses it (discovery-mods-merge.spec,
     // THE PRESET WIRE GUARD) — two doors, two laws, no gap.
-    validateDeclaredMods("c", [base({ fields: presetFields(), presets: [] })]);
+    validateDeclaredMods("c", [base({ fields: sectionFields(), sections: [] })]);
   });
 });

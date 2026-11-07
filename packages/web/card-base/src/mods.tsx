@@ -272,11 +272,14 @@ export interface LeafSeat {
    *  must still match the open-time snapshot or the candidate is
    *  a stranger (F1/F2/G1). */
   owned?: ReadonlySet<string>
-  /** THE MASTER MODAL'S PRESET SEAT (slice 5, 2026-11-16): the id
-   *  of the preset the modal opened on (or switched to) - paints
-   *  the modal's own switch row. A manual dial edit clears it (the
-   *  draft has left the named cell); save never reads it. */
-  preset?: string
+  /** THE MODAL'S CHECKED SECTIONS (operator 2026-11-16, §0.8 THE
+   *  FLOW MODEL): the ids of the modifier sections whose boxes are
+   *  checked — intent, not paint: a hand-moved dial does NOT
+   *  uncheck its section (the checkbox says "apply this modifier";
+   *  the seed already ran). Checking seeds the patch; unchecking
+   *  strips only values still equal to the seed. Save never reads
+   *  it — the bag is the truth. */
+  sections?: ReadonlyArray<string>
 }
 
 /** The ride-through projection of an entry: everything the modal
@@ -571,9 +574,9 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
     return out
   }
 
-  // THE MASTER-MODAL PRESET OVERLAY (slice 5, 2026-11-16): the
-  // chip's press OPENS the leaf seeded with the preset - the named
-  // cell's dials ride the draft where the operator SEES them move
+  // THE MASTER-MODAL SECTION OVERLAY (§0.8, 2026-11-16): the
+  // plus box OPENS the leaf unseeded — the sections start
+  // unchecked, the operator checks the modifiers they want
   // (the instant commit died with the collapse's one-interface
   // law: the chip is a door into the modal, never a second editor).
   const openCreate = (k: ModifierKind): void => {
@@ -598,9 +601,9 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
     setDraftStrength('')
     setDraftSteps('')
     // (the chip-corpse params are gone with the one door: the only
-    // callers that ever passed a patch/preset were the deleted outer
-    // chips; the in-leaf posture switch routes its patch at its own
-    // press, never through the open)
+    // callers that ever passed a patch/section were the deleted outer
+    // chips; the in-leaf section checkbox routes its patch at its own
+    // check, never through the open)
     setDraftParams(fieldDefaults(k))
     setLeafError(null)
     setLeaf({ mode: 'create', kind: k, index: -1 })
@@ -844,7 +847,7 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
   // THE HINT NAMES THE PRESENT AFFORDANCE (the 2026-11-16 operator
   // friction: "a modifiers section that does nothing above the mod
   // slots"): the drag hint rides the FIRST ordered ENTRY, never the
-  // category alone — an empty section (preset chips and the add
+  // category alone — an empty section (checkboxes and the add
   // square, nothing draggable) must not voice a drag that does not
   // exist. The standalone hint stays categorical: it explains why no
   // drag will EVER come, the honest word at any count.
@@ -891,8 +894,8 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
       kinds.map((k) => {
         const entries = entriesOf(k)
         // ONE DOOR (operator, 2026-11-16: "collapse the mods into
-        // one"): a declared preset is a STARTING CELL INSIDE the leaf
-        // (the posture switches, slice 5) — the chip row that once
+        // one"): a declared section is a CHECKBOX INSIDE the leaf
+        // (the flow face, §0.8) — the chip row that once
         // rendered here was a second entry surface around the kind
         // picker, born as back-compat for the retired bag spellings.
         // It is deleted: the plus box is the only door, the grammar
@@ -1052,20 +1055,35 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
       className: css.modLeafModal,
     },
       h(ModLeaf, { leaf: { ...leaf, kind: live }, values, hideFields: seated,
-        // THE PRESET PAINT'S OWN CLEAR (the master modal): a manual
-        // dial edit leaves the named cell - the seat's preset id
-        // clears with the first hand-moved dial (the switch row's
-        // own press re-paints through onPresetPick AFTER this
-        // wrapper runs, so the pressed cell stays painted).
+        // THE SECTION TOGGLE (operator 2026-11-16, §0.8): check
+        // seeds the section's patch over the draft (staged files
+        // stay — the seed never removes a hand value, last-writer
+        // wins on shared dials); uncheck strips ONLY the keys
+        // still equal to the seed — a hand-moved dial survives its
+        // section's uncheck. A manual dial edit does NOT touch the
+        // checkboxes (intent, not paint — the §0.5 cell-paint law
+        // died with the pills).
         onDraft: {
           setDraftOption, setDraftStrength, setDraftSteps,
           draftOption, draftStrength, draftParams, draftSteps,
-          setDraftParams: (v: SpecValues) => {
-            setDraftParams(v)
-            if (leaf.preset !== undefined) setLeaf({ ...leaf, preset: undefined })
-          },
+          setDraftParams,
         },
-        onPresetPick: (id: string) => { if (leaf.preset !== id) setLeaf({ ...leaf, preset: id }) }, onError: setLeafError, onSave: saveLeaf, onDelete: deleteLeaf, leafError, paintFace: props.paintFace, bboxFace: props.bboxFace, ...(props.orbitFace !== undefined ? { orbitFace: props.orbitFace } : {}), paintReferenceValue: typeof props.paintReference === 'string' ? String(values[props.paintReference] ?? '') : '', ...(props.loadMedia !== undefined ? { loadMedia: props.loadMedia } : {}),
+        onSectionToggle: (id: string) => {
+          const def = (live.sections ?? []).find((s) => s.id === id)
+          if (def === undefined) return
+          const checked = leaf.sections ?? []
+          if (checked.includes(id)) {
+            const next: SpecValues = { ...draftParams }
+            for (const [key, v] of Object.entries(def.patch)) {
+              if (next[key] === v) delete next[key]
+            }
+            setDraftParams(next)
+            setLeaf({ ...leaf, sections: checked.filter((s) => s !== id) })
+          } else {
+            setDraftParams({ ...draftParams, ...routeSectionPatch(live, def.patch, { setOption: setDraftOption, setStrength: setDraftStrength, setSteps: setDraftSteps }) })
+            setLeaf({ ...leaf, sections: [...checked, id] })
+          }
+        }, onError: setLeafError, onSave: saveLeaf, onDelete: deleteLeaf, leafError, paintFace: props.paintFace, bboxFace: props.bboxFace, ...(props.orbitFace !== undefined ? { orbitFace: props.orbitFace } : {}), paintReferenceValue: typeof props.paintReference === 'string' ? String(values[props.paintReference] ?? '') : '', ...(props.loadMedia !== undefined ? { loadMedia: props.loadMedia } : {}),
         ...(props.loadChainRuns !== undefined ? { loadChainRuns: props.loadChainRuns } : {}),
         ...(props.uploadLora !== undefined ? { uploadLora: props.uploadLora } : {}),
         ...(props.refreshSpec !== undefined ? { refreshSpec: props.refreshSpec } : {}),
@@ -1131,9 +1149,9 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
  *  never in params), and everything else rides the params object.
  *  Returns the params remainder — the caller seeds or merges it.
  *  Before this, the patch applied ONLY on the field-kind shapes: a
- *  lawful hybrid-kind preset was a dead chip (registration admitted
- *  it, the face dropped it silently). */
-function routePresetPatch(
+ *  lawful hybrid-kind section was a dead checkbox (registration
+ *  admitted it, the face dropped it silently). */
+function routeSectionPatch(
   k: ModifierKind, patch: SpecValues,
   drafts: { setOption: (v: string) => void; setStrength: (v: string) => void; setSteps?: (v: string) => void },
 ): SpecValues {
@@ -1150,7 +1168,7 @@ function routePresetPatch(
   } else if (isOptionKind(k)) {
     takeString('id', drafts.setOption)
     takeNumber('strength', drafts.setStrength)
-    /* v8 ignore else -- the implicit skip is a type fence: the preset switch's press (the one live routePresetPatch caller) always passes setSteps, so the guard is always true where the option branch evaluates; a routePresetPatch call that omits setSteps on an option kind would re-arm the path */
+    /* v8 ignore else -- the implicit skip is a type fence: the section check (the one live routeSectionPatch caller) always passes setSteps, so the guard is always true where the option branch evaluates; a routeSectionPatch call that omits setSteps on an option kind would re-arm the path */
     if (drafts.setSteps !== undefined) takeNumber('steps', drafts.setSteps)
   }
   return cell
@@ -1177,12 +1195,12 @@ function ModLeaf(props: {
   onSave: () => void
   onDelete: () => void
   leafError: string | null
-  /** THE PRESET SWITCH PICK (the master modal, slice 5): paints the
-   *  pressed named cell on the leaf seat AFTER the restage lands on
-   *  the draft (the parent's setDraftParams wrapper clears the paint
-   *  first - the same wrapper that un-paints on a manual dial edit).
-   *  Absent = the kind carries no preset switches (the degrade law). */
-  onPresetPick?: (id: string) => void
+  /** THE SECTION TOGGLE (operator 2026-11-16, §0.8 THE FLOW
+   *  MODEL): the parent's checkbox law — check seeds the section's
+   *  patch (the parent merges over the draft); uncheck strips the
+   *  seed-only keys in the parent. Absent = the kind carries no
+   *  sections (the degrade law). */
+  onSectionToggle?: (id: string) => void
   /** THE PAINT FACE (leaf_face kinds): the host's brush canvas —
    *  EMBEDDED at the top of the leaf (absent host = no canvas, the
    *  square holds — graceful). */
@@ -1377,29 +1395,31 @@ function ModLeaf(props: {
     // editor. Hidden values stay graph-neutral (compose judges the
     // inert law; the save keeps whatever the draft carried).
     && fieldVisible(f, onDraft.draftParams))
-  // THE PRESET SWITCHES (the collapse's slice 5: the preset switches
-  // inside it): the named matrix cells ride the modal's own head as
-  // switches - a press re-stages the draft through the SAME merge
-  // law the outer chip opened with (staged files stay, the cell's
-  // dials move), and the pressed cell paints. This row is the one
-  // door's face; the outer chips only ever OPEN here.
-  const leafPresets = k.presets ?? []
-  const presetSwitches = leafPresets.length > 0 && props.onPresetPick !== undefined
-    ? h('div', { className: css.modPresetRow, 'data-leaf-presets': k.param_key },
-        leafPresets.map((p) =>
-          // (the span carries the test id - the DSH Button's typed
-          // props admit no data-* seats; the outer chip row's own law)
-          h('span', { key: p.id, 'data-leaf-preset': p.id },
-            h(Button, {
-              variant: 'ghost',
-              'aria-pressed': leaf.preset === p.id,
-              onClick: () => {
-                // (F2) the switch press rides the SAME seat router
-                // as the open — one law, all three shapes
-                onDraft.setDraftParams({ ...onDraft.draftParams, ...routePresetPatch(k, p.patch, { setOption: onDraft.setDraftOption, setStrength: onDraft.setDraftStrength, setSteps: onDraft.setDraftSteps }) })
-                props.onPresetPick!(p.id)
-              },
-            }, p.label))))
+  // THE MODIFIER SECTIONS (operator 2026-11-16, §0.8 THE FLOW
+  // MODEL — "check the box, behind the scenes the special nodes
+  // are used"): the kind's checkable stages ride the modal's own
+  // head as CHECKBOXES — the flow face. Check = the parent seeds
+  // the section's patch over the draft; uncheck = the parent
+  // strips the seed-only keys; the slots below the row are the
+  // checked sections' ingredients (the video mask, the reference
+  // still). NO NAMED PILLS anywhere (§0.7): the pills' names died
+  // with the two swap rows and the static-mask duplicate — one
+  // section per modifier, the variant is a dial.
+  const leafSections = k.sections ?? []
+  const sectionRow = leafSections.length > 0 && props.onSectionToggle !== undefined
+    ? h('div', { className: css.modSectionRow, 'data-mod-sections': k.param_key },
+        leafSections.map((s) =>
+          h('label', { key: s.id, className: css.modSection, 'data-mod-section': s.id },
+            h('input', {
+              type: 'checkbox',
+              'aria-label': s.label,
+              checked: (leaf.sections ?? []).includes(s.id),
+              onChange: () => { props.onSectionToggle!(s.id) },
+            }),
+            // (the class-4 tip law: hover prose rides the estate Tip,
+            // never a bare native title — the same channel the add
+            // square's hint rides)
+            h(Tip, { tip: s.tooltip ?? s.label, children: h('span', { className: css.modSectionLabel }, s.label) }))))
     : null
   // THE CONDITIONAL-REQUIRED STAR (2026-10-12, the sam3 prompt law):
   // the leaf's captions hand-roll — the star paints HERE too, judged
@@ -1434,10 +1454,10 @@ function ModLeaf(props: {
     leafError !== null ? h('p', { className: css.modLeafError }, leafError) : null,
     isHybridKind(k)
       ? h('div', { className: css.modLeafFields },
-          // (F2) the preset switches ride the hybrid arm too — the
-          // chips are the kind's OWN cells, and the patch now routes
-          // into this shape's drafts (one door, every shape)
-          presetSwitches,
+          // (F2) the section checkboxes ride the hybrid arm too —
+          // the sections are the kind's OWN stages, and the patch
+          // routes into this shape's drafts (one door, every shape)
+          sectionRow,
           // THE HYBRID LEAF (the retired subcard, 1:1): the catalog
           // select binds option_key in BOTH modes (a type switch
           // re-stamps model/preprocessor on save); the bag element's
@@ -1583,7 +1603,7 @@ function ModLeaf(props: {
             // hybrid leaves — the named cells ride the modal's head for
             // every kind shape (the outer chips are gone; this row is
             // the only posture door, and it renders for all three).
-            presetSwitches,
+            sectionRow,
             // THE ONE-ROW SEAT: the bag is authored in one glance —
             // the picker takes the width, the strength dial keeps its
             // intrinsic width.
@@ -1713,7 +1733,7 @@ function ModLeaf(props: {
                 : null,
             ),
             h('div', { className: css.modLeafFields },
-              presetSwitches,
+              sectionRow,
               // THE SECTION CAPTION (2026-10-08, the operator's
               // demand — "SAM2 AND SAM3 DON'T HAVE BBOX FILTER"):
               // the kind's declared one-line name for what the
@@ -1768,7 +1788,7 @@ function ModLeaf(props: {
               own.wireMenu,
             ))
         : h('div', { className: css.modLeafFields },
-          presetSwitches,
+          sectionRow,
           // THE EMBEDDED CANVAS (stroke 95, the faceless-fallback
           // shape): a canvas the kind declares but the host did not
           // deliver can never mount — this arm renders the plain

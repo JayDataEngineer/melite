@@ -17517,7 +17517,7 @@ window.__ModuleLoader__.load({
 		*       summary line (title · engine) + the live status dot.
 		*  Image-anchored overlays (the status dot) live INSIDE the preview
 		*  cell so their anchors ride the artifact's corner. Click = the
-
+		
 /** The sortable tile wrapper — the old grid's SortableCardWrap
 		*  pattern: the li is the drag unit, transform/transition ride the
 		*  wrapper, the shared-element layoutId stays INSIDE (the morph

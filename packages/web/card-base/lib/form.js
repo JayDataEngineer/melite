@@ -345,7 +345,7 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
             : f.media === 'audio' ? 'audio/*'
                 : f.media === 'mod' ? 'image/png,image/jpeg,image/webp,video/*,audio/*'
                     : undefined;
-        return h('div', { key: 'stack-' + f.name, className: css.specStack, 'data-input-stack': f.name, 'data-stack-count': String(entries.length), ...(over ? { 'data-stack-over': String(cap) } : {}) }, h('div', { className: css.modHead, 'data-stack-head': f.name, title: f.tooltip !== undefined && f.tooltip !== '' ? f.tooltip : undefined }, h('span', { className: css.modTitle }, f.label), h('span', { className: css.modHint, ...(over ? { style: { color: 'var(--dsh-danger, #f44)' } } : {}) }, `${String(entries.length)}${cap !== undefined ? ' / ' + String(cap) : ''}${f.media !== undefined && f.media !== '' ? ' · ' + f.media : ''}`)),
+        return h('div', { key: 'stack-' + f.name, className: css.specStack, 'data-input-stack': f.name, 'data-stack-count': String(entries.length), ...(over ? { 'data-stack-over': String(cap) } : {}) }, h('div', { className: css.modHead, 'data-stack-head': f.name, title: f.tooltip !== undefined && f.tooltip !== '' ? f.tooltip : undefined }, h('span', { className: css.modTitle }, f.label), h('span', { className: css.modHint, ...(over ? { style: { color: 'var(--dsh-danger, #f44)' } } : {}) }, `${String(entries.length)}${cap !== undefined ? ' / ' + String(cap) : ''}${f.media !== undefined && f.media !== '' ? ' · ' + f.media : ''}`)), 
         // THE OVER-CAP REFUSAL, INLINE (the schema-contract law: the
         // form states what the compose door would refuse — a draft
         // that ARRIVES past the lane's cap renders the law under the
@@ -400,23 +400,23 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
     };
     return h('div', { className: css.specForm }, shownGateViolations.length > 0
         ? h('div', { className: css.laneWarn, 'data-compose-gate': String(shownGateViolations.length), role: 'alert' }, h('p', { style: { fontWeight: 700 } }, 'THE COMPOSE GATE REFUSED THIS DOC — the card will not render an impossible contract. Fix the stated value, or reset the row.'), shownGateViolations.map((v, i) => h('p', { key: 'gate-' + String(i) }, v.message)))
-        : null,
+        : null, 
     // LANE REFUSALS SEAT WITH THE FORM'S REFUSAL SURFACE (the admission
     // voice never renders inside the parameter flow — a bare sibling
     // after the axes grid reads as the Recipe row's value).
     laneWarns.length > 0
         ? h('div', { className: css.laneWarn, 'data-lane-warn': String(laneWarns.length), role: 'alert' }, laneWarns.map((v, i) => h('p', { key: 'lane-' + String(i) }, v.message)))
-        : null,
+        : null, 
     // THE AXES ride the user layer through the same edit seam (their
     // picks are ordinary sets; the resolved value passes along).
-    h(PackPrompt, { spec, onInstallPack }),
+    h(PackPrompt, { spec, onInstallPack }), 
     // THE COMPOSABILITY CURE (2026-11-06, the model/quant/variant/
     // recipe swap failure): the pick patches judge the SHOWN doc —
     // base under user, the exact shape composeCandidateDoc gives the
     // door — so a base-held departed key derives its null-write from
     // the truth the run merges (held=user alone never saw it).
     h(ModelAxes, { spec, value, user, pickHeld: composeCandidateDoc(base ?? {}, user, {}), onSet: edit, onPick, onDownloadModel, omitRecipeRow }), (railFields.length > 0 || stackFields.length > 0) && omitInputRail !== true
-        ? h('section', { className: css.specGroup + ' ' + css.inputRail, 'data-input-rail': '1' },
+        ? h('section', { className: css.specGroup + ' ' + css.inputRail, 'data-input-rail': '1' }, 
         // THE SECTION HEAD (#37, the Modifiers symmetry): the input
         // zone names itself like the mod zone does — one grammar,
         // head-above then the flowing rows.
@@ -527,11 +527,11 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
             // THE TABLIST'S PANEL (the SegmentedTabs contract: the tab
             // links its label to a caller-owned panel) — id + labelledby
             // ride the same domId the tabs seed, submenu seats only.
-            ...(submenu ? { role: 'tabpanel', id: `${domId}-panel-${g.group ?? 'general'}`, 'aria-labelledby': `${domId}-tab-${g.group ?? 'general'}` } : {}) },
+            ...(submenu ? { role: 'tabpanel', id: `${domId}-panel-${g.group ?? 'general'}`, 'aria-labelledby': `${domId}-tab-${g.group ?? 'general'}` } : {}) }, 
         // THE SUBMENU NAMES THE PANEL: when the tab rail carries the
         // group's title, the panel repeats nothing (the DRY law).
         g.group !== null && !submenu ? h('h4', { className: css.specGroupTitle }, titleCaseId(g.group)) : null, h('div', { className: css.specGrid, style: { gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))` } }, children));
-    }),
+    }), 
     // THE MOD SYSTEM — rendered by the constructor itself: every
     // surface (stage drill, add drill, studios) obeys, none wires it.
     modKinds.length > 0

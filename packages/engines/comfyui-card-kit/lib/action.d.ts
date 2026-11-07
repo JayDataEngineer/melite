@@ -1,6 +1,6 @@
 import type { ActionSpec } from "@melite/engine-contract/vocabulary";
-import type { GraphBuilder, OutputHandle } from "./graph.js";
-import type { LaneInputsFacts, ModelFacts } from "./facts.js";
+import type { GraphBuilder, OutputHandle } from "./graph.ts";
+import type { LaneInputsFacts, ModelFacts } from "./facts.ts";
 /** The context the interpreter hands a segment factory: the gated
  *  params doc (typed by the action — a same-process typed boundary),
  *  the family's typed engine facts, the resolved model row (the mod

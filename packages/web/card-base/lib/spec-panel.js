@@ -48,7 +48,7 @@ export function SpecPanel({ model, sections, values, onEdit, spec: specProp, err
             className: css.specGroup,
             role: 'alert',
             'data-testid': 'spec-panel-error',
-        },
+        }, 
         // THE PANE GRAMMAR (S7 class-4 residue, 2026-11-05): a group
         // title renders a real heading element with the group-title
         // class — the reference's own section heads are h3/h4 with
@@ -70,7 +70,7 @@ export function SpecPanel({ model, sections, values, onEdit, spec: specProp, err
         className: css.specGroup,
         key: sec.title,
         ...(sec.testid !== undefined ? { 'data-testid': sec.testid } : {}),
-    },
+    }, 
     // THE PANE GRAMMAR (see the error arm): a real heading element.
     h('h4', { className: css.specGroupTitle }, sec.title), sec.rows.map((row) => {
         const f = byName.get(row.name);
