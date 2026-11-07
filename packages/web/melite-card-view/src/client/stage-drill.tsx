@@ -633,7 +633,13 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
           // — silent (no face, no error: the heal is not user
           // authorship), and the dropped keys join the seed-drop
           // ledger so a Run pressed before the door answers still
-          // nulls them at its own flush.
+          // nulls them at its own flush. THE HEAL DE-AUTHORS (the
+          // 2026-11-15 sweep's tts hop): a ledger key is the drill's
+          // own verdict, never operator authorship — the user map
+          // may still carry the healed value (the seed's copy), and
+          // the pick's strike fold reads this ledger so the heal's
+          // carry-over rides the arrival's own frame (onPick)
+          // instead of resurrecting against the pick at the mirror.
           const reopenDrop = dropStaleReopenCarry(doc, held)
           for (const k of Object.keys(reopenDrop)) droppedRef.current.add(k)
           if (Object.keys(reopenDrop).length > 0) {
@@ -1031,6 +1037,34 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     const nextUser: SpecValues = { ...user }
     for (const k of Object.keys(nulls)) delete nextUser[k]
     Object.assign(nextUser, landed)
+    // THE STRIKE RIDES THE PICK (the 2026-11-15 combination sweep's
+    // lost-update cure, the tts hop): the departure the strike
+    // voices — base-held stamps the POST-PICK resolved lane no
+    // longer serves — lands IN the pick's own frame, one CAS. The
+    // sweep caught the other shape: the pick of Base wrote, the
+    // strike of mode (a family-default stamp no lane's params
+    // surface serves, unreachable by the axis-carry law) rode a
+    // second CAS built off the pre-pick doc, and the pick's write
+    // was the casualty — the doc kept the departed variant under a
+    // face that named the pick. The strike's OWN judge (the
+    // read-side law this drill already renders) over the post-pick
+    // candidate — never a second spelling of the law; a key the
+    // frame already carries (the axis-carry nulls) is its verdict.
+    // THE HEAL'S CARRY-OVER rides the same fold (droppedRef — the
+    // de-author set): the open heal's null write left its key in
+    // the user map as the seed's stale copy, and that copy
+    // resurrects against the pick's candidate at the mirror — the
+    // whole frame refused field-named, the pick a silent drop. The
+    // strike's authorship law yields to the heal's own verdict.
+    const strikeRide = strikeDeadLaneStamps(spec, nextUser,
+      typeof stage.resolved === 'object' && stage.resolved !== null && !Array.isArray(stage.resolved)
+        ? stage.resolved as SpecValues : undefined, droppedRef.current)
+    for (const k of strikeRide.strikes) {
+      if (k in frame) continue
+      nulls[k] = null
+      frame[k] = null
+      delete nextUser[k]
+    }
     const refused = composeGateRefusal(spec, stage.params, nextUser, frame)
     // THE FACE TRUTH (the same burn's second half): a REFUSED pick
     // never moves the face. The old order set the user map first, so

@@ -307,3 +307,98 @@ describe('the strike note — the named heal at the drill seat', () => {
     expect(screen.getByTestId('lane-strike-note').textContent).toContain('style_instruction')
   })
 });
+
+// ── THE PICK⇄STRIKE LOST UPDATE (the 2026-11-15 combination sweep's
+//    tts hop — a REAL product race, verbatim: "the Variant axis face
+//    carries the picked row 'Base' (a pick that does not land is a
+//    silent drop) Expected: 'base' Received: 'voicedesign'; Struck
+//    from the resolved lane: mode") ─────────────────────────────────
+// The pick of Base wrote; the departure (the strike of mode — a
+// family-default stamp no lane's params surface serves, unreachable
+// by the axis-carry law) rode a SECOND CAS built off the pre-pick
+// doc, and the pick's write was the casualty: the doc kept the
+// departed variant under a face that named the pick. THE CURE LAW
+// (the row's own shape): the strike rides the pick's own patch —
+// the departure nulls land IN the arrival write, one CAS, never a
+// second write the arrival must race.
+describe('THE PICK⇄STRIKE LOST UPDATE (2026-11-15 sweep) — the departure rides the pick\'s own write', () => {
+  test('the pick of Base over a voicedesign doc carries the strike\'s nulls in the SAME frame; the doc names the pick', async () => {
+    const spec = await formSpecArm('qwen3-tts')
+    expect(spec, 'the served qwen3-tts spec resolves').not.toBeNull()
+    stubKreaFetch(spec as FormSpecDoc)
+    // THE PRE-PICK DOC: the saved bench holds the voicedesign lane's
+    // stamps — design_prompt (the lane's own param, the axis-carry
+    // law's to drop) and the family-default mode stamp (off EVERY
+    // lane's params surface — the strike's banner key, reachable by
+    // no axis-carry law, only the strike's judge)
+    const stageRow: Record<string, unknown> = {
+      id: 's_0', card: 'qwen3-tts', engine: 'comfyui',
+      params: { model: 'qwen3-tts', variant: 'voicedesign', mode: 'tts', design_prompt: 'warm', text: 'hello there' },
+    }
+    const s0 = {
+      ...stageRow,
+      resolved: { variant: 'voicedesign', mode: 'tts', design_prompt: 'warm' },
+      runStatus: '',
+    } as never as BenchStageView
+    fakes = mountEstateFakes({
+      benchDoc: { draft_id: 'bench-p', rev: 1, log: [], stages: [stageRow] },
+      draftStages: [stageRow],
+      draftBenchRev: 1,
+    })
+    render(h(StageDrill, {
+      stage: s0,
+      bench: benchOf([s0 as unknown as BenchStageView]),
+      running: false,
+      onRun: () => {},
+      onStop: () => {},
+      onClose: () => {},
+      onRemoved: () => {},
+      onPatchParams: () => {},
+      renderStageView: (_owner, fallback) => fallback,
+    }))
+    // the form renders on the departed lane (the pre-pick face)
+    const variant = await screen.findByLabelText('Variant', {}, { timeout: 8000 })
+    expect(variant.textContent ?? '').toContain('VoiceDesign')
+    // THE PICK: the operator's gesture — voicedesign → Base
+    fireEvent.click(variant)
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Base' }))
+    const patchParams = (): Array<Record<string, unknown>> => fakes!.calls
+      .filter((c) => c.method === 'drafts/patch')
+      .map((c) => ((c.args as { patch?: { params?: Record<string, unknown> } }).patch?.params) ?? {})
+    // PICK + STRIKE IN ONE WRITE: the marriage frame carries the
+    // arrival (variant base) AND BOTH departures — the lane's own
+    // param (design_prompt, the axis-carry law) and the strike's
+    // banner key (mode, no lane's surface) — the same frame, the
+    // same CAS
+    await waitFor(() => {
+      const marriage = patchParams()
+        .find((p) => p['variant'] === 'base' && p['design_prompt'] === null && p['mode'] === null)
+      expect(marriage, 'pick + strike in ONE write: variant base + design_prompt null + mode null').toBeDefined()
+    }, { timeout: 8000 })
+    const frames = patchParams()
+    const marriageIdx = frames.findIndex((p) => p['variant'] === 'base' && p['design_prompt'] === null && p['mode'] === null)
+    // NEVER THE SECOND CAS: after the pick's own write, no frame
+    // re-carries the departed variant (the pre-pick doc's overwrite
+    // — the lost-update class), and the strike key never rides a
+    // frame of its own behind the arrival
+    const after = frames.slice(marriageIdx + 1)
+    expect(after.filter((p) => p['variant'] === 'voicedesign'),
+      'no write re-carries the departed variant after the pick').toEqual([])
+    expect(after.filter((p) => p['mode'] === null && p['variant'] !== 'base'),
+      'the strike never rides a frame of its own behind the pick (no second CAS)').toEqual([])
+    // THE DOC NAMES THE PICK: the applied draft row carries the
+    // arrival with both departures gone (null-or-deleted on the wire)
+    await waitFor(() => {
+      const params = (stageRow['params'] ?? {}) as Record<string, unknown>
+      expect(params['variant'], 'the served doc names the pick').toBe('base')
+      expect(params['mode'] == null, 'the strike\'s banner key left the doc with the pick\'s own write').toBe(true)
+      expect(params['design_prompt'] == null, 'the departed lane\'s param left the doc with the same write').toBe(true)
+    }, { timeout: 8000 })
+    // and the FACE settles on the pick (the sweep's own assertion
+    // face — a pick that does not land is a silent drop)
+    await waitFor(() => {
+      const face = screen.getByLabelText('Variant')
+      expect(face.textContent ?? '').toContain('Base')
+    }, { timeout: 8000 })
+  })
+});

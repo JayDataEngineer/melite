@@ -58,12 +58,21 @@ const unstated = (v: unknown): boolean => v === undefined || v === null || v ===
 /** Strike the base-held stamps the resolved lane does not serve.
  *  @param spec the stage's served form spec; null (the spec-less
  *  drill) strikes nothing.
- *  @param user the stage's user layer — presence here is authorship.
- *  @param base the served base map; absent strikes nothing. */
+ *  @param user the stage's user layer — presence here is authorship,
+ *  EXCEPT for keys in `deAuthored` (the drill's own heal ledger: a
+ *  key the open heal already wrote null is the drill's verdict, and
+ *  the seed's stale copy in the user map is not a hand's word — the
+ *  2026-11-15 sweep's tts hop, where the resurrected copy refused
+ *  the pick's whole frame at the mirror).
+ *  @param base the served base map; absent strikes nothing.
+ *  @param deAuthored keys the drill's own heal dropped (the
+ *  droppedRef ledger) — authorship yields to the heal's verdict for
+ *  these. Unset (the note's read-side seat) keeps the plain law. */
 export function strikeDeadLaneStamps(
   spec: FormSpecDoc | null,
   user: SpecValues,
   base: SpecValues | undefined,
+  deAuthored?: ReadonlySet<string>,
 ): LaneStrike {
   if (spec === null || base === undefined) return { base: base ?? {}, strikes: [] }
   const out: SpecValues = { ...base }
@@ -74,7 +83,7 @@ export function strikeDeadLaneStamps(
   const resurrected = resolveValue(spec, user, base)
   const dead = dropStaleReopenCarry(spec, resurrected)
   for (const k of Object.keys(dead)) {
-    if (!(k in out) || k in user) continue
+    if (!(k in out) || (k in user && deAuthored?.has(k) !== true)) continue
     delete out[k]
     strikes.push(k)
   }

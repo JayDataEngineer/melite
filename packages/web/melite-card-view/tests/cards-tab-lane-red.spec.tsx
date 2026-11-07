@@ -37,7 +37,12 @@ const servedDoc = {
     style_ref: { type: "string", meta: { description: "Style Ref", extra: { wtype: "text" } } },
   }),
   lanes: {
-    base: ["prompt"],
+    // THE BASE IS THE REAL DECL'S SURFACE (qwen-img-edit-21's params
+    // row serves input_images beside prompt): the reopen heal judges
+    // every stated key against this list at open — a base without
+    // the card's own input field would cast the edit's stated image
+    // as dead carry and null it one silent write.
+    base: ["prompt", "input_images"],
     relations: {
       required: [
         { fields: ["prompt"], cure: "an edit states WHAT to change — write the prompt" },
