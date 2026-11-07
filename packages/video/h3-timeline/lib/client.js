@@ -6734,6 +6734,8 @@ window.__ModuleLoader__.load({
 				variant: optStr("variant"),
 				quant: optStr("quant"),
 				model: optStr("model"),
+				...raw?.edit !== void 0 ? { edit: raw.edit } : {},
+				...raw?.reshoot !== void 0 ? { reshoot: raw.reshoot } : {},
 				audio_stem: optStr("audio_stem"),
 				audio_clips: (() => {
 					const parsed = hydrateAudioClips(raw?.audio_clips);
@@ -6809,14 +6811,34 @@ window.__ModuleLoader__.load({
 			"model",
 			"audio_stem"
 		];
+		/** THE WRITABLE MOD BAGS (the modleaf-add journey audit, 2026-11-16
+		* — the operator's burn: "literally does nothing after I press
+		* add"). The doc-plane bag keys the studio can author — ONE roster
+		* for the emit loop, the delete-ride universe, and the Layer A
+		* seats. The roster is hand-listed HERE only because the client
+		* bundle must not carry the card def (card.ts drags the graph
+		* chains); the studio-modbag-write wall derives the same roster from
+		* the SERVED spec and reds by name the day a served kind lacks its
+		* seat — the roster cannot drift silent. The legacy pre-collapse
+		* spellings (replace/repair/extend/refine/upscale) stay OFF this
+		* list by law: the studio writes the ONE modern key; a legacy bag a
+		* pre-collapse doc carries rides merge-patch preserved and the
+		* compose door translates it (compose-through). */
+		const STUDIO_MOD_BAG_KEYS = [
+			"edit",
+			"reshoot",
+			"loras"
+		];
 		/** The layer-A serializer's whole key universe — DERIVED: the emit
 		*  loop above plus every special-cased emission (the always-emit
 		*  out literal, the pin-equals-default booleans, the conditional
-		*  riders). The DELETE RIDE gates on this set: a base key outside
-		*  the universe (calls, keyframes, document — other doc planes)
-		*  never deletes, whatever the state says. */
+		*  riders) plus the writable mod bags. The DELETE RIDE gates on
+		*  this set: a base key outside the universe (calls, keyframes,
+		*  document — other doc planes) never deletes, whatever the state
+		*  says. */
 		const LAYERA_KEY_UNIVERSE = /* @__PURE__ */ new Set([
 			...LAYERA_EMIT_LOOP_KEYS,
+			...STUDIO_MOD_BAG_KEYS,
 			"seed",
 			"sla_protect_audio",
 			"sla_stabilize_motion",
@@ -6838,7 +6860,6 @@ window.__ModuleLoader__.load({
 			"refmod_identity",
 			"refmod_save",
 			"sla_enabled",
-			"loras",
 			"audio_clips",
 			"ref_images",
 			"ref_videos",
@@ -6859,7 +6880,10 @@ window.__ModuleLoader__.load({
 				const v = a[k];
 				if (v !== void 0 && v !== "") out[k] = v;
 			}
-			if (a.loras !== void 0) out.loras = a.loras;
+			for (const k of STUDIO_MOD_BAG_KEYS) {
+				const v = a[k];
+				if (v !== void 0) out[k] = v;
+			}
 			if (a.sr_switch === true) {
 				out.sr_switch = true;
 				if (a.sr_model != null) out.sr_model = a.sr_model;

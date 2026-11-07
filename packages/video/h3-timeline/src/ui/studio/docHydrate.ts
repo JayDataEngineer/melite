@@ -259,6 +259,13 @@ export function hydrateLayerA(rawDoc: Record<string, unknown> | undefined): Laye
     variant: optStr("variant"),
     quant: optStr("quant"),
     model: optStr("model"),
+    // THE OPERATOR-AUTHORED MOD BAGS hydrate VERBATIM (malformed
+    // rows included — the strip draws its 'malformed' commission row
+    // from the doc; a save that dropped what it cannot parse would
+    // DELETE the bag under the merge-patch). The serializer rides
+    // them back byte-equal; the compose door owns validation.
+    ...(raw?.edit !== undefined ? { edit: raw.edit as Array<Record<string, unknown>> } : {}),
+    ...(raw?.reshoot !== undefined ? { reshoot: raw.reshoot as Array<Record<string, unknown>> } : {}),
     // audio_stem: kept for round-trip serialization of legacy docs; it is
     // NO LONGER a user-facing control. When a doc has audio_stem but no
     // audio_clips, the stem is converted to a positioned clip at frame 0.
@@ -337,14 +344,32 @@ const LAYERA_EMIT_LOOP_KEYS = [
   "ref_image_size", "model", "audio_stem",
 ] as const
 
+/** THE WRITABLE MOD BAGS (the modleaf-add journey audit, 2026-11-16
+ * — the operator's burn: "literally does nothing after I press
+ * add"). The doc-plane bag keys the studio can author — ONE roster
+ * for the emit loop, the delete-ride universe, and the Layer A
+ * seats. The roster is hand-listed HERE only because the client
+ * bundle must not carry the card def (card.ts drags the graph
+ * chains); the studio-modbag-write wall derives the same roster from
+ * the SERVED spec and reds by name the day a served kind lacks its
+ * seat — the roster cannot drift silent. The legacy pre-collapse
+ * spellings (replace/repair/extend/refine/upscale) stay OFF this
+ * list by law: the studio writes the ONE modern key; a legacy bag a
+ * pre-collapse doc carries rides merge-patch preserved and the
+ * compose door translates it (compose-through). */
+const STUDIO_MOD_BAG_KEYS: readonly string[] = ["edit", "reshoot", "loras"]
+
 /** The layer-A serializer's whole key universe — DERIVED: the emit
  *  loop above plus every special-cased emission (the always-emit
  *  out literal, the pin-equals-default booleans, the conditional
- *  riders). The DELETE RIDE gates on this set: a base key outside
- *  the universe (calls, keyframes, document — other doc planes)
- *  never deletes, whatever the state says. */
+ *  riders) plus the writable mod bags. The DELETE RIDE gates on
+ *  this set: a base key outside the universe (calls, keyframes,
+ *  document — other doc planes) never deletes, whatever the state
+ *  says. */
 export const LAYERA_KEY_UNIVERSE: ReadonlySet<string> = new Set([
   ...LAYERA_EMIT_LOOP_KEYS,
+  // the operator-authored mod bags (see STUDIO_MOD_BAG_KEYS above)
+  ...STUDIO_MOD_BAG_KEYS,
   // the always-emit literal + the pin-equals-default booleans
   "seed", "sla_protect_audio", "sla_stabilize_motion", "sla_disable_fp16_accum",
   "sharpen_enabled", "interpolate_enabled",
@@ -359,7 +384,7 @@ export const LAYERA_KEY_UNIVERSE: ReadonlySet<string> = new Set([
   // false-gated save)
   "refmod_mode", "refmod_pool", "refmod_identity", "refmod_save",
   // the false-gated master + the present-when-non-empty riders
-  "sla_enabled", "loras", "audio_clips",
+  "sla_enabled", "audio_clips",
   "ref_images", "ref_videos", "ref_audios", "ref_mods", "ref_video_trims",
 ])
 
@@ -378,15 +403,24 @@ export function serializeLayerA(a: LayerA, base?: Record<string, unknown>): Reco
     const v = (a as unknown as Record<string, unknown>)[k]
     if (v !== undefined && v !== "") out[k] = v
   }
-  // THE LORAS MOD BAG RIDES AS STATED — including the EXPLICIT
-  // EMPTY bag (J1, refs-mods journey audit 2026-10-16: the length
-  // gate made "no loras" unexpressible — a cleared bag serialized
-  // to nothing, the delete ride nulled the key, and the compose
-  // stamped the DMAD default the UI never showed). `loras: []` is
-  // the operator's "no loras" override; ABSENT is unset (the
-  // family default composes). The delete ride skips keys already
-  // in `out`, so [] rides as [] — never as a delete.
-  if (a.loras !== undefined) out.loras = a.loras
+  // THE MOD BAGS RIDE AS STATED — DERIVED from the one roster
+  // (STUDIO_MOD_BAG_KEYS): undefined = absent (the family default
+  // composes), and the EXPLICIT EMPTY bag rides as `[]` — including
+  // the EXPLICIT EMPTY bag (J1, refs-mods journey audit 2026-10-16:
+  // the length gate made "no loras" unexpressible — a cleared bag
+  // serialized to nothing, the delete ride nulled the key, and the
+  // compose stamped the DMAD default the UI never showed). `[]` is
+  // the operator's off override; ABSENT is unset. The delete ride
+  // skips keys already in `out`, so [] rides as [] — never as a
+  // delete. (The modleaf-add journey audit, 2026-11-16: before this
+  // roster the leaf's Add press landed the bag in Layer A state and
+  // the vocabulary stripped it — the canonical no-op law swallowed
+  // the write whole: no op, no save, no voice, the leaf already
+  // closed.)
+  for (const k of STUDIO_MOD_BAG_KEYS) {
+    const v = (a as unknown as Record<string, unknown>)[k]
+    if (v !== undefined) out[k] = v
+  }
   // Super-Res rides only when ON (absent = off — the family default);
   // the model + target resolution ride only when the switch is on.
   if (a.sr_switch === true) {

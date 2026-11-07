@@ -202,21 +202,31 @@ describe("the h3 camera re-shoot wall (the fourth mod bag, official rework)", ()
     );
   });
 
-  it("ARM 3c — the studio hydrate→serialize ride keeps the armed bag and the film graph (the bench merge-patch path)", () => {
+  it("ARM 3c — the studio hydrate→serialize ride keeps the armed bag and the film graph (BOTH write paths are law)", () => {
     // JOURNEY hop 2: the doc that lands on the bench is hydrated into
     // Layer A and serialized back as a merge-patch over the saved
-    // stage.params. The four bags live OUTSIDE LayerA's write
-    // channels, so the patch never states them and the bench's
-    // merge-patch preserves them — an upstream drop would disarm the
-    // commission silently (an absent bag is legal). Judge the real
-    // hydrate + serializer, then compose the round-tripped doc.
-    for (const bag of ["replace", "repair", "extend", "reshoot"]) {
+    // stage.params. TWO paths, both law (the modleaf-add journey
+    // audit, 2026-11-16 — the dead Add): (1) the OPERATOR authors the
+    // modern bags (edit/reshoot) THROUGH the Layer-A serializer — a
+    // declared kind with no writable seat is a press that dies
+    // silently at the canonical no-op law; (2) the AGENT path's
+    // pre-collapse spellings (replace/repair/extend — and any legacy
+    // doc's reshoot too, once hydrated) ride the merge-patch
+    // preserved: the serializer states what the state carries, never
+    // deletes a bag it does not seat. Judge the real hydrate +
+    // serializer, then compose the round-tripped doc.
+    for (const bag of ["replace", "repair", "extend", "refine", "upscale"]) {
       assert.equal(LAYERA_KEY_UNIVERSE.has(bag), false,
-        `${bag} stays outside Layer A's write channels (the bag law's carrier)`);
+        `${bag} stays outside Layer A's write channels — a legacy spelling rides merge-patch preserved; the compose door translates it (compose-through)`);
+    }
+    for (const bag of ["edit", "reshoot"]) {
+      assert.equal(LAYERA_KEY_UNIVERSE.has(bag), true,
+        `${bag} IS a Layer A write channel — the operator's Add press states it through the serializer (the dead-Add cure)`);
     }
     const base = { ...BASE, reshoot: [{ source_clip: "sources/take3.mp4", orbit: 45 }] };
     const patch = serializeLayerA(hydrateLayerA(base), base);
-    assert.equal("reshoot" in patch, false, "the serializer states no bag key — the base bag rides the merge-patch");
+    assert.deepEqual(patch.reshoot, base.reshoot, "the serializer states the seated bag verbatim — the write path and the round-trip are one law");
+    assert.equal("replace" in patch || "repair" in patch || "extend" in patch, false, "the serializer never states a legacy spelling — merge-patch preserves what it does not seat");
     const saved: Record<string, unknown> = { ...base };
     for (const [k, v] of Object.entries(patch)) {
       if (v === null) delete saved[k];

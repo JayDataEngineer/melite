@@ -91,7 +91,7 @@ const DECLARED = new Set(Object.keys(
  * 2026-10-27: a card doc key — card.ts's own list owns it, a STATED
  * clock round-trips, an absent one never pins). Each is a deliberate
  * admission, listed once here, never a wildcard. */
-const ADMITS = new Set(["loras", "audio_clips", "audio_stem", "fps", "quant"])
+const ADMITS = new Set(["loras", "edit", "reshoot", "audio_clips", "audio_stem", "fps", "quant"])
 
 const LAYER_A_ALL_KEYS: string[] = [
   "seed", "shift_video", "shift_audio", "steps", "denoise", "width", "height",
@@ -109,6 +109,10 @@ const LAYER_A_ALL_KEYS: string[] = [
   "interpolate_enabled", "interp_model", "interp_multiplier",
   "sr_switch", "sr_model", "sr_resolution",
   "ref_image_size", "model", "audio_stem", "loras", "audio_clips",
+  // THE OPERATOR-AUTHORED MOD BAGS (the dead-Add cure, 2026-11-16):
+  // writable Layer A seats — the modleaf journey's own wall owns
+  // their write law; here they own their writer-fixture rows.
+  "edit", "reshoot",
   "ref_images", "ref_videos", "ref_audios", "ref_mods",
   "ref_video_trims", "duck_depth_db",
   // THE QUANT AXIS STAMP (the dead-click cure): the Quant group's
@@ -126,6 +130,8 @@ function populatedMax(): Record<string, unknown> {
   const populated: Record<string, unknown> = {}
   for (const key of LAYER_A_ALL_KEYS) {
     if (key === "loras") populated.loras = [{ id: "x", strength: 0.5 }]
+    else if (key === "edit") populated.edit = [{ mask_source: "region", region_prompt: "fix the handle" }]
+    else if (key === "reshoot") populated.reshoot = [{ source_clip: "sources/take3.mp4", orbit: 45 }]
     else if (key === "audio_clips") populated.audio_clips = [{ id: "a", name: "a", src: "data:audio/x", start_frame: 0, dur_frames: 24 }]
     // THE DECLARED REFERENCE SURFACE (2026-09-23): card-level refs
     // populate as the schema holds them (string arrays)

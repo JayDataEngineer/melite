@@ -68,13 +68,20 @@ export const DECL = {
             "refmod_identity",
             "refmod_save",
             "loras",
-            // THE RE-SHOOT GROUP RETIRED from the writes row (the
-            // fourth-mod-bag unification, §8 2026-11-12): the flat knobs
-            // died at the schema and Layer A no longer seats them — the
-            // RESHOOT_MOD bag is authored through the card's mods surface
-            // like replace/repair/extend (none of which ride this row);
-            // the studio projects it (the commission rail) but never
-            // authors it through the Layer-A serializer.
+            // THE OPERATOR-AUTHORED MOD BAGS (the modleaf-add journey
+            // audit, 2026-11-16 — the dead Add): the card's mods surface
+            // LIVES in the studio rail (ModifiersSection), and its only
+            // write path IS the Layer-A serializer — the 2026-11-12
+            // unification retired these seats saying "the studio projects
+            // but never authors the bag", which left the operator's Add
+            // press unwritable on BOTH planes (the serializer's vocabulary
+            // stripped it; this row refused it at the estate door). The
+            // studio now authors the modern bag keys; the legacy
+            // pre-collapse spellings (replace/repair/extend/refine/
+            // upscale) stay off this row by law — they ride the doc
+            // merge-patch preserved and the compose door translates them.
+            "edit",
+            "reshoot",
             "document"
         ],
         "kind": "custom",

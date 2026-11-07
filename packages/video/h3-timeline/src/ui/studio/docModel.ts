@@ -360,6 +360,20 @@ export interface LayerA {
    * APPLIED, 2026-09-18) — the same row shape the Modifiers menu
    * writes and the family's recipe pills stamp (Rule A). */
   loras?: Array<{ id: string, strength?: number, steps?: number }>
+  /** THE OPERATOR-AUTHORED MOD BAGS (the modleaf-add journey audit,
+   * 2026-11-16 — the dead Add): the edit and reshoot kinds' doc-plane
+   * arrays. The 2026-11-12 unification retired Layer A's flat
+   * re-shoot keys saying "the bag rides the doc, preserved by the
+   * bench merge-patch" — true for the AGENT path (the estate writes
+   * params directly), but the OPERATOR's press lands HERE, and a
+   * Layer A key with no serializer seat is a write the canonical
+   * no-op law swallows whole: no op, no save, no voice. The seats
+   * ride docHydrate's STUDIO_MOD_BAG_KEYS roster (judged against the
+   * served spec by the studio-modbag-write wall — a served kind with
+   * no writable seat reds by name). Entries ride verbatim; the
+   * compose door owns their validation. */
+  edit?: Array<Record<string, unknown>>
+  reshoot?: Array<Record<string, unknown>>
   /** THE DECLARED REFERENCE SURFACE (2026-09-23, the operator: the
    * agent-persisted card-level refs showed NOWHERE in the studio):
    * card-level ref_images/ref_videos/ref_audios — the compose merges
