@@ -875,7 +875,17 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
     // produce. A doc carrying it now refuses LOUD at the door
     // ('unknown-param') instead of riding as an inert rider; seedUser
     // already deletes it on drill-open (the dead-layer law).
-    admits: ['ctx_*', 'edit', 'extend', 'fps_seconds', 'image_name', 'k', 'noise_seed', 'quant', 'ref_image_size', 'refine', 'repair', 'replace', 'reshoot', 'sla_*', 'upscale', 'variant'],
+    // `last_frame` JOINED THIS LIST (2026-11-16, the two-door parity
+    // cure, audit client-mirror §4): the FL2VA end-anchor wiring slot
+    // (wired as an INPUTS image slot at the flowKinds row below) rides
+    // the schema carrier, so the WRITE DOOR admits any doc carrying
+    // it — while no h3 lane serves it (the flow writes the slot; the
+    // lane never reads a rider), so the compose MIRROR bannered it
+    // 'fires nothing on this lane' on every doc the door sanctioned:
+    // the two doors disagreed by name. cards-mirror-door-parity reds
+    // on exactly that drift; the admission declares the truth — wire
+    // vocabulary the door sanctions, never lane vocabulary.
+    admits: ['ctx_*', 'edit', 'extend', 'fps_seconds', 'image_name', 'k', 'last_frame', 'noise_seed', 'quant', 'ref_image_size', 'refine', 'repair', 'replace', 'reshoot', 'sla_*', 'upscale', 'variant'],
     // THE CARD-DECLARED KINDS (CONTRACT A — served VERBATIM on the
     // features.modifiers channel): the swap + repair + extend arms.
     // The mask card's sam3/sam2/draw precedent — one kind per arm,
