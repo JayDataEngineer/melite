@@ -41,14 +41,14 @@ const LEGACY_PARAMS: Record<string, unknown> = {
 
 interface EstateCallShape { method: string; args: Record<string, unknown> }
 
-async function openLegacyDrill(): Promise<EstateCallShape[]> {
+async function openLegacyDrill(params: Record<string, unknown> = LEGACY_PARAMS): Promise<EstateCallShape[]> {
   const spec = await formSpecArm('h3-timeline')
   const estate = mountEstateFakes({
     benchDoc: {
       session: 's1', rev: 7, log: [],
-      stages: [{ id: 's_0', card: 'h3-timeline', title: 'pre-collapse film', engine: 'comfyui', params: { ...LEGACY_PARAMS } }],
+      stages: [{ id: 's_0', card: 'h3-timeline', title: 'pre-collapse film', engine: 'comfyui', params: { ...params } }],
     },
-    draftStages: [{ id: 's_0', card: 'h3-timeline', title: 'pre-collapse film', engine: 'comfyui', params: { ...LEGACY_PARAMS } }],
+    draftStages: [{ id: 's_0', card: 'h3-timeline', title: 'pre-collapse film', engine: 'comfyui', params: { ...params } }],
   })
   vi.stubGlobal('fetch', (async (url: unknown): Promise<Response> => {
     const path = String(url)
@@ -74,7 +74,7 @@ async function openLegacyDrill(): Promise<EstateCallShape[]> {
       draftId: draftIdOf('bench-s1'),
       sessionKey: 's1',
       rev: 7,
-      stages: [{ id: 's_0', card: 'h3-timeline', title: 'pre-collapse film', engine: 'comfyui', params: { ...LEGACY_PARAMS } }] satisfies BenchStageView[],
+      stages: [{ id: 's_0', card: 'h3-timeline', title: 'pre-collapse film', engine: 'comfyui', params: { ...params } }] satisfies BenchStageView[],
       log: [],
     } satisfies CardsBenchValue }),
   }))
@@ -140,5 +140,23 @@ describe('THE PRE-COLLAPSE REOPEN PRESERVE (the heal sanctions what the door adm
       const doc = { model: 'h3-timeline', steps: 6, ...bag } as never
       expect(dropStaleReopenCarry(spec, doc), `the ${name} is compose-through — the heal must not judge it dead carry (the mirror sanctions the same key)`).toEqual({})
     }
+  })
+
+  // ARM 3 (the plan's J4 render-face debt): no arm had ever mounted a
+  // drill over a legacy doc and looked at what the operator SEES — the
+  // header's second half was a promise with no arm. The admitted
+  // legacy doc renders CLEAN: no lane-red strip, no "fires nothing on
+  // this lane" banner — the door sanctions the bag and the face must
+  // not contradict the door (the two-door parity burn's exact read).
+  // (The strip's own TEETH — a lane-dead field bannered — are the
+  // mirror wall's arms: cards-mirror-door-parity ARM 2/3 fire there.
+  // The form's inline gate judges spec FIELDS; a non-field param key
+  // is not its class.)
+  test('ARM 3 — THE RENDER FACE: the admitted legacy doc reopens through the real drill with NO lane-red strip', async () => {
+    await openLegacyDrill()
+    const strip = document.querySelector('[data-lane-warn]')
+    expect(strip, 'an admits-sanctioned legacy doc must NOT banner (the header\'s second half, now an arm)').toBeNull()
+    const gate = document.querySelector('[data-compose-gate]')
+    expect(gate, 'and the compose gate stays quiet for the same doc').toBeNull()
   })
 })
