@@ -59,6 +59,7 @@ export function StudioStripPane({
   layerA, refAudiosBlocked, addAudioClip, takeAudioFile, moveAudioClip, deleteAudioClip,
   updateAudioClip,
   setLayerAKey, artifactIndex, docFromFilm, keyframes, addKeyframeWithImage, enterKfView, enterAudioView,
+  setCallTransition,
 }: {
   calls: DocCall[]
   fps: number
@@ -105,6 +106,10 @@ export function StudioStripPane({
    *  verb — the track head's add door commits BOTH in one write
    *  (the same law the rail subview's add door rides). */
   addKeyframeWithImage: (image: string, frame: number) => string
+  /** THE SEAM (the collapse's cuts, 2026-11-16): the strip's own
+   *  seam chip writes the call's transition — the add-call surface is
+   *  the one home for the cut choice (the rail select retired). */
+  setCallTransition: (i: number, t: "extend" | "cut") => void
   /** THE SUBVIEW DOOR (defect B): opens the rail's standalone
    *  keyframes editor — the strip head's one keyframes verb. */
   enterKfView: () => void
@@ -480,6 +485,21 @@ export function StudioStripPane({
       // plain and prompt faces keep the add door (the film's authoring
       // surface / the run's prompt seat).
       onPromptAdd={callsFace.face === "dormant" ? undefined : (frame) => addCallAt(docFromFilm(frame))}
+      // THE SEAM CHIP (the collapse's cuts): the row's uuid resolves to
+      // its call through barPrompts (barPrompts[i] ↔ calls[i], one row
+      // per call) — never the lane's render index, which a dormant-face
+      // starter filter can shift. Click toggles carried ⇄ cut. Under a
+      // DORMANT face the chip stands down with the other four edit
+      // doors (a cut authored into a lane the armed run never reads is
+      // dead authoring — the mod-mode calls face's own law).
+      onSeamToggle={
+        callsFace.face === "dormant"
+          ? undefined
+          : (id: string) => {
+              const idx = barPrompts.findIndex((p) => p.uuid === id)
+              if (idx >= 0) setCallTransition(idx, calls[idx]?.transition === "cut" ? "extend" : "cut")
+            }
+      }
       previews={callPreviews}
       selectedId={selectedBarId}
       onSelect={handleTimelineSelect}

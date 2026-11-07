@@ -200,18 +200,20 @@ describe("span + guides", () => {
     assert.deepEqual(calls.spans, [[0, "start", 12], [0, "end", 60]])
   })
 
-  it("THE ANCHOR-SLOT FACE IS DEAD (operator 2026-11-05: keyframes own anchors) — no first-frame square, no slot-1 language; the seam still writes", async () => {
+  it("THE ANCHOR-SLOT FACE IS DEAD (operator 2026-11-05: keyframes own anchors) — no first-frame square, no slot-1 language, and no seam face either (the strip chip is the one door)", async () => {
     const { d, calls } = deps()
     render(<CallCard c={{ ...BASE, image: "still-a" }} i={1} deps={d} />)
     assert.equal(screen.queryByLabelText("anchor ref · slot 1 source"), null, "no anchor square")
     assert.equal(screen.queryByTestId("tl-first-frame"), null, "no first-frame slot")
     assert.equal(screen.queryByTestId("tl-anchor-truth"), null, "no anchor-truth prose")
-    fireEvent.click(screen.getByLabelText("Call 1 seam mode"))
-    fireEvent.click(screen.getByRole("menuitem", { name: /^Carried/ }))
-    assert.deepEqual(calls.trans, [[1, "extend"]])
+    // (re-pin 2026-11-16, the collapse's cuts) the card's seam select
+    // retired — the write lives on the STRIP chip (studio-strip-pane's
+    // seam arms own the write channel); the card carries no join face
+    assert.equal(screen.queryByLabelText("Call 1 seam mode"), null, "no seam select on the card")
+    assert.deepEqual(calls.trans, [])
   })
 
-  it("bus order + the picker filter (images \u2192 videos \u2192 audios \u2192 seam; audio/video files not grayed out)", () => {
+  it("bus order + the picker filter (images \u2192 videos \u2192 audios; audio/video files not grayed out)", () => {
     const { d } = deps()
     render(<CallCard c={{ ...BASE }} i={1} deps={d} />)
     // the lanes render in the BUNDLE'S OWN wire order: images, videos, audios
@@ -220,10 +222,10 @@ describe("span + guides", () => {
     const files = buckets.map((b) => b.querySelector("input[type=file]")!.getAttribute("accept"))
     assert.deepEqual(files, ["image/png,image/jpeg,image/webp", "video/*", "audio/*"],
       "each lane's OS picker accepts its own MIME family (the two-audio fix)")
-    // the seam rides AFTER the bus — the call's join, never a lane between lanes
-    const seam = screen.getByLabelText("Call 1 seam mode")
-    assert.ok(buckets[2].compareDocumentPosition(seam) & Node.DOCUMENT_POSITION_FOLLOWING,
-      "the audios lane precedes the seam in the DOM")
+    // (re-pin 2026-11-16) the bus is the card's last lane — the seam
+    // face died with the strip chip (the call's join is authored at
+    // the boundary on the strip, never in a lane between lanes)
+    assert.equal(screen.queryByLabelText("Call 1 seam mode"), null, "no seam lane after the bus")
   })
 
   it("THE GUIDE SLOTS ARE DEAD FACES (operator 2026-11-05: clip guide / audio guide — WHAT IS THAT THERE FOR?) — no clip/audio squares; conditioning rides the timeline's own lanes", () => {
@@ -358,16 +360,14 @@ describe("identity refs + knob fold", () => {
     // seam is automatic; the first call simply has nothing to carry)
   })
 
-  it("later calls own the live seam select (cut is the one authored fact)", () => {
+  it("the seam face is gone from the card — cut is authored at the strip boundary (the collapse's cuts, 2026-11-16)", () => {
     const { d, calls } = deps()
     render(<CallCard c={BASE} i={1} deps={d} />)
-    // S7h: the seam select rides the DSH Menu — absent transition
-    // displays the carried face (the option's titled prose)
-    const mode = screen.getByLabelText("Call 1 seam mode") as HTMLButtonElement
-    assert.match(mode.textContent ?? "", /^Carried/, "absent transition displays carried")
-    fireEvent.click(mode)
-    fireEvent.click(screen.getByRole("menuitem", { name: /^Cut/ }))
-    assert.deepEqual(calls.trans, [[1, "cut"]])
+    // the select died with the subcard: the strip chip (paint from the
+    // doc, click to toggle) is the one door — the card's join prose is
+    // nothing, and the deps' write channel stays untouched here
+    assert.equal(screen.queryByLabelText("Call 1 seam mode"), null, "no select")
+    assert.equal(calls.trans.length, 0, "no write fires from the card")
     assert.deepEqual(calls.prevs, [])
   })
 })

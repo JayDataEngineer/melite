@@ -8,7 +8,7 @@
  */
 import { describe, it } from "vitest"
 import assert from "node:assert/strict"
-import { readFileSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 
 const STUDIO = join(import.meta.dirname, "..", "src", "ui", "studio")
@@ -16,7 +16,7 @@ const read = (name: string): string => readFileSync(join(STUDIO, name), "utf8")
 
 describe("SOURCE — the datalist hand-roll is dead, the grammar rides", () => {
   it("no <datalist> and no list= binding anywhere in the studio", () => {
-    for (const seat of ["CallCard.tsx", "CallCardsPanel.tsx", "CallFrameSubcard.tsx"]) {
+    for (const seat of ["CallCard.tsx", "CallCardsPanel.tsx"]) {
       const text = read(seat)
       assert.ok(!text.includes("<datalist"), `${seat} hand-rolls no datalist`)
       assert.ok(!text.includes('list="tl-kf-sources"'), `${seat} binds no datalist`)
@@ -36,27 +36,27 @@ describe("SOURCE — the datalist hand-roll is dead, the grammar rides", () => {
     assert.ok(!card.includes("<GuideSlot"), "the slot hand-roll stays dead")
   })
 
-  it("the subcard is SeamControls only; every pick/upload law is the shared SourceRow law", () => {
-    // (re-pin 2026-11-06, 6e20a7546) the grammar moved: the subcard
-    // owns NO slots — FirstFrameSlot/GuideSlot died with the keyframe
-    // epoch; the SourceRow grammar owns every pick/upload/refusal law
-    // the slots used to hand-roll.
-    const sub = read("CallFrameSubcard.tsx")
-    assert.ok(sub.includes("export function SeamControls"), "SeamControls is the subcard's face")
-    assert.ok(!sub.includes("<SourceRow"), "the subcard renders NO pick grammar — the card owns every SourceRow seat")
-    assert.ok(!sub.includes("refUtils"), "the subcard imports no upload/refusal law — the card owns them")
-    assert.ok(!sub.includes("refUploadError"), "no upload gate face in the subcard")
-    assert.ok(!sub.includes("export function GuideSlot"), "GuideSlot stays dead")
-    assert.ok(!sub.includes("export function FirstFrameSlot"), "FirstFrameSlot stays dead")
+  it("the seam subcard is DEAD — the strip's seam chip is the one door; every pick/upload law is the shared SourceRow law", () => {
+    // (re-pin 2026-11-16, the collapse's cuts) the rail's SeamControls
+    // select retired: the seam is authored on the strip at the add-call
+    // surface (the seam chip), and the subcard file is gone with it.
+    // (re-pin 2026-11-06, 6e20a7546) the subcard owned NO slots —
+    // FirstFrameSlot/GuideSlot died with the keyframe epoch; the
+    // SourceRow grammar owns every pick/upload/refusal law the slots
+    // used to hand-roll.
+    assert.ok(!existsSync(join(STUDIO, "CallFrameSubcard.tsx")), "the subcard file is gone")
+    const card = read("CallCard.tsx")
+    assert.ok(!card.includes("SeamControls"), "the rail renders no seam select — one home")
     // the shared upload/refusal law lives in refUtils.ts (one home);
     // the pickers that seat it are the PANEL (kf subview) + the STRIP
     // PANE — the card rides FOREIGN_URL_REFUSAL at its chip commit.
     const panel = read("CallCardsPanel.tsx")
     assert.ok(panel.includes("refUploadError("), "the upload gate is the shared law (the panel's pickers)")
     assert.ok(panel.includes("FOREIGN_URL_REFUSAL"), "the foreign-URL refusal is the one literal")
-    const card = read("CallCard.tsx")
     assert.ok(card.includes("FOREIGN_URL_REFUSAL"), "the card's chip commit refuses foreign URLs")
-    assert.ok(!sub.includes("20 * 1024 * 1024"), "no seat-local size cap survives")
+    const pane = read("StudioStripPane.tsx")
+    assert.ok(pane.includes("onSeamToggle"), "the strip furnishes the seam chip")
+    assert.ok(pane.includes("setCallTransition"), "the chip writes the call's transition")
   })
 
   it("the kf source seat rides the subview's picker grammar — ONE spelling with the strip lane door (the lane-add parity law)", () => {

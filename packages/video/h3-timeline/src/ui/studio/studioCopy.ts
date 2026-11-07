@@ -47,10 +47,6 @@ export const studioCopy = {
   /** The mods path door's placeholder (the wire's example path). */
   /** The mods path door's accessible name. */
   /** The anchor slot's square caption (the bus's slot 1). */
-  /** The seam picker's carried option. */
-  seamCarried: "carried — drift-control chain",
-  /** The seam picker's cut option. */
-  seamCut: "cut — independent window",
   /** The strip pane's head. */
   timelineTitle: "Timeline",
   /** The preview pane's head. */
@@ -62,8 +58,6 @@ export const studioCopy = {
   backToGlobalTip: "Back to the run's global parameters — or click any empty spot in the timeline",
   audioSubTitle: "Audio",
   audioSubHint: "positioned clips · per-lane wiring",
-  /** The seam picker's hover law (how carried vs cut join). */
-  seamHelp: "How this call joins the previous one: carried continues the previous window's latent through drift control (schedule-matched carry, soft audio release — seamless across the seam); cut is an independent window, a true butt",
   /** The prompt lane's enhance action. */
   enhanceAction: "Rewrite this call's prompt in H3 cinematic style",
   /** The prompt lane's empty-state placeholder (and its refusal hint). */
@@ -236,10 +230,6 @@ export const studioCopy = {
   previewCutMeta: (index: number, count: number): string => `cut ${String(index + 1)} / ${String(count)}`,
   /** A guide square's accessible name. */
   callGuideSlotLabel: (callIndex: number, kind: "clip" | "audio"): string => `Call ${callIndex} ${kind} guide`,
-  /** The seam row's head. */
-  seamWord: "seam",
-  /** The seam picker's field label. */
-  seamModeLabel: (callIndex: number): string => `Call ${callIndex} seam mode`,
   /** The recipe group's head. */
   /** The clips row's head. */
   clipsTitle: "Clips",

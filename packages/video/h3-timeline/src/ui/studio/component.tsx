@@ -424,6 +424,7 @@ export function VideoTimelineStudio(owner: StageViewOwnerProps) {
             handlePromptDelete={handlePromptDelete}
             handleExtend={mut.handleExtend}
             addCallAt={mut.addCallAt}
+            setCallTransition={mut.setCallTransition}
             handleTimelineSelect={view.handleTimelineSelect}
             layerA={layerA}
             refAudiosBlocked={derived.refAudiosPresent}

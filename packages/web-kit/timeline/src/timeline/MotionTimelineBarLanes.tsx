@@ -35,6 +35,13 @@ export interface TimelinePromptsLaneProps {
   playhead: string
   onPromptUpdate: (id: string, text: string) => void
   onPromptDelete: (id: string) => void
+  /** THE SEAM CHIP (the collapse's cuts, 2026-11-16): opt-in
+   *  click-to-toggle on every non-first boundary — carried (the
+   *  latent tail continues; the default) vs cut (overlap 0, nothing
+   *  carries). The id is the row's own uuid (the tenant resolves it
+   *  to its call index; the lane never assumes 1:1 after a face
+   *  filter). Absent → the read-only extend dot, byte-identical. */
+  onSeamToggle?: (id: string) => void
 }
 
 /** Draggable/resizable prompt clips (bar line 994). */
@@ -43,7 +50,7 @@ export function TimelinePromptsLane(props: TimelinePromptsLaneProps) {
     prompts, fps, promptsHeight, emptyPromptsHint, onPromptAdd, dragId,
     lastPromptRef, firstPromptRef, selectedId, previews,
     frameToPx, frameAt, startDrag, playhead,
-    onPromptUpdate, onPromptDelete,
+    onPromptUpdate, onPromptDelete, onSeamToggle,
   } = props
   // Inline prompt editor: the clip being edited + its local text.
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -161,7 +168,26 @@ export function TimelinePromptsLane(props: TimelinePromptsLaneProps) {
                   cut chains motion (extend) or breaks it (cut).
                   Extend = cyan dot (matches brand/playhead).
                   Cut = no extra glyph — the default, unmarked. */}
-              {p.seam === "extend" && !isFirst && (
+              {!isFirst && onSeamToggle !== undefined && (
+                <button
+                  type="button"
+                  data-seam-toggle={p.uuid}
+                  data-seam-state={p.seam === "cut" ? "cut" : "carried"}
+                  className={cn(css.seamChip, p.seam === "cut" ? css.seamChipCut : css.seamChipCarried)}
+                  style={p.seam === "cut" ? undefined : { borderColor: playhead, color: playhead }}
+                  title={p.seam === "cut" ? timelineCopy.seamCutTitle : timelineCopy.seamCarriedTitle}
+                  aria-label={timelineCopy.seamToggleAria({ state: p.seam === "cut" ? "cut" : "carried" })}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onDoubleClick={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onSeamToggle(p.uuid)
+                  }}
+                >
+                  <span aria-hidden>{p.seam === "cut" ? "✕" : "→"}</span>
+                </button>
+              )}
+              {!isFirst && onSeamToggle === undefined && p.seam === "extend" && (
                 <div
                   className={css.seamDot}
                   style={{ background: playhead, boxShadow: `0 0 4px ${playhead}` }}

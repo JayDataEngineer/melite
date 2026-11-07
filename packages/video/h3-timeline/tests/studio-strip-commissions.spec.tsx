@@ -359,8 +359,10 @@ describe("THE MOD-MODE CALLS FACE (2026-11-14 — the default call bar under a m
     fireEvent.pointerMove(window, { clientX: 170 })
     fireEvent.pointerUp(window, { clientX: 170 })
 
-    // DELETE: the ✕ button
-    fireEvent.click(clips[1]!.querySelector("button")!)
+    // DELETE: the ✕ button (by its accessible name — the seam chip
+    // is a second lawful button inside a non-first clip now)
+    const del = clips[1]!.querySelector('[aria-label^="Delete this prompt card"]')!
+    fireEvent.click(del)
 
     expect(spies.update, "retexting a call the armed run never reads refuses").not.toHaveBeenCalled()
     expect(spies.move, "moving a dormant call refuses").not.toHaveBeenCalled()
@@ -377,7 +379,7 @@ describe("THE MOD-MODE CALLS FACE (2026-11-14 — the default call bar under a m
     // broken wire)
     const plain = render(strip([], [AUTHORED, second], overrides))
     const plainClips = [...plain.container.querySelectorAll("[data-prompt-clip]")] as HTMLElement[]
-    fireEvent.click(plainClips[1]!.querySelector("button")!)
+    fireEvent.click(plainClips[1]!.querySelector('[aria-label^="Delete this prompt card"]')!)
     expect(spies.del, "the plain face's delete door still writes").toHaveBeenCalledTimes(1)
   })
 })

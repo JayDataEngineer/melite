@@ -16,7 +16,6 @@ import type { DocCall } from "./docModel.ts"
 import type { GuideKind } from "./docModel.ts"
 import { readAsDataURL } from '@melite/card-base/client'
 import { SourceRow } from '@melite/card-base/client'
-import { SeamControls } from "./CallFrameSubcard.tsx"
 import { CallCardPrompt } from "./CallCardPrompt.tsx"
 import { FOREIGN_URL_REFUSAL, REF_UPLOAD_SPEC, declaredServableUrl, declaredShortName, displaySource, estateMediaChip } from "./refUtils.ts"
 import { parseFrameEdit } from "./docGrid.ts"
@@ -890,15 +889,6 @@ export function CallCard({
             const kept = normalizeDeclaredRefs(layerA?.ref_mods).filter((p) => p !== path)
             setLayerAKey("ref_mods", kept.length ? kept : undefined)
           }}
-        />
-        {/* THE SEAM — the call's join (carried vs cut; the carry
-            itself is automatic — drift control, never authored). LAST
-            ROW under the bus, after every lane: the seam is the
-            call's join, never a lane between lanes. */}
-        <SeamControls
-          callIndex={i}
-          transition={c.transition}
-          onTransition={(t) => setCallTransition(i, t)}
         />
       </div>
     </div>

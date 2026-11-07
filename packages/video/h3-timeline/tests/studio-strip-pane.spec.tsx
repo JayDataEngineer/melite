@@ -12,6 +12,8 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { StudioStripPane } from "../src/ui/studio/StudioStripPane.tsx"
 import { studioCopy } from "../src/ui/studio/studioCopy.ts"
 import { bindEstateRemote, unbindEstateRemote } from "@melite/card-base/client"
+import { callsToPrompts } from "../src/ui/studio/docCalls.ts"
+import type { DocCommission } from "../src/ui/studio/commissions.ts"
 import { repoRoot } from "./repo-root.ts"
 
 // happy-dom returns zero rects (no layout) — the bar's ClientX→frame
@@ -43,7 +45,7 @@ function strip(over?: Record<string, unknown>) {
   audioDoor: [] as string[],
     promptUpdate: [], promptMove: [], promptResize: [], promptDel: [],
     extend: [], addCall: [], select: [], addedClip: [], taken: [],
-    movedClip: [], delClip: [], keys: [],
+    movedClip: [], delClip: [], keys: [], seam: [],
   }
   const els = render(
     <StudioStripPane
@@ -71,6 +73,7 @@ function strip(over?: Record<string, unknown>) {
       handlePromptDelete={(id) => { rec.promptDel.push([id]) }}
       handleExtend={(n) => { rec.extend.push([n]) }}
       addCallAt={(f) => { rec.addCall.push([f]) }}
+      setCallTransition={(i, t) => { rec.seam.push([i, t]) }}
       handleTimelineSelect={(id) => { rec.select.push([id]) }}
       layerA={{ audio_stem: "https://u/bed.mp3" } as never}
       addAudioClip={(n, s, at) => { rec.addedClip.push([n, s, at]) }}
@@ -899,4 +902,39 @@ describe("the Music row (drops land positioned; foreign writes nothing)", () => 
     fireEvent.click(screen.getByLabelText("Detach Music"))
     assert.deepEqual(rec.keys, [["audio_clips", undefined], ["audio_stem", undefined]])
   })
+})
+
+// THE SEAM CHIP (the collapse's cuts, 2026-11-16) — the TENANT half:
+// the strip's add-call surface is the one home for the cut choice. The
+// chip's uuid resolves to the call through barPrompts (barPrompts[i] ↔
+// calls[i]), so a dormant face that filters the starter row never
+// shifts the write onto the wrong call.
+describe("THE SEAM CHIP — the tenant's cut choice", () => {
+  const CUT: DocCall[] = [
+    { text: "a", start_frame: 0, end_frame: 90 },
+    { text: "b", start_frame: 90, end_frame: 175, transition: "cut" },
+  ]
+  const EDIT: DocCommission = { kind: "edit", seats: [{ key: "source_clip", value: "clips/a.mp4" }] }
+  const AUTHORED: DocCall = { text: "she walks on, the light shifts", start_frame: 0, end_frame: 90 }
+
+  it("under a DORMANT face the chip stands down with the other four edit doors — a cut authored into a lane the armed run never reads is dead authoring", () => {
+    const calls = [AUTHORED, { text: "b", start_frame: 90, end_frame: 175, transition: "cut" }] as DocCall[]
+    const { rec } = strip({ calls, barPrompts: callsToPrompts(calls), commissions: [EDIT] })
+    assert.equal(document.querySelectorAll("[data-seam-toggle]").length, 0,
+      "the chip is the fifth edit door — the mod-mode calls face's law owns it too")
+    assert.deepEqual(rec.seam, [])
+  })
+
+  it("a carried seam toggles to cut through the doc write (the uuid, never the render index)", () => {
+    const { rec } = strip({ calls: CUT, barPrompts: callsToPrompts(CUT) })
+    const chips = document.querySelectorAll("[data-seam-toggle]")
+    assert.equal(chips.length, 1, "call 0 has no join before it — only the boundary chip")
+    const chip = chips[0] as HTMLElement
+    assert.equal(chip.getAttribute("data-seam-toggle"), "call-1")
+    assert.equal(chip.getAttribute("data-seam-state"), "cut")
+    fireEvent.click(chip)
+    // cut → carried (the default chain); the call index, never the id
+    assert.deepEqual(rec.seam, [[1, "extend"]])
+  })
+
 })

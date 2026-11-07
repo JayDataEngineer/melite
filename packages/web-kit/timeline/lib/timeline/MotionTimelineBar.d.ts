@@ -109,6 +109,10 @@ export interface MotionTimelineBarProps {
      *  clicks stay inert (the motion card's clips float in slack; its
      *  Add button still carves). */
     onPromptAdd?: (frame: number) => void;
+    /** THE SEAM CHIP (the collapse's cuts, 2026-11-16): the tenant
+     *  resolves the row's uuid to its call and toggles carried vs cut.
+     *  Absent → the read-only extend dot (the motion card's own bar). */
+    onSeamToggle?: (id: string) => void;
     /** prompt uuid → video URL: the window render shown INSIDE the call
      *  clip (first frame at rest, plays on hover — NLE strip behavior).
      *  Best-effort mapping: window index ↔ call index (1:1 unless a
@@ -254,5 +258,5 @@ export { LaneHead } from "./LaneHead.js";
 export type { LaneHeadProps } from "./LaneHead.js";
 export { TimelineAudioLanes, TimelineBeatsLane, TimelineKeyframeLanes, TimelinePromptsLane } from "./MotionTimelineBarLanes.js";
 export type { TimelineAudioLanesProps, TimelineBeatsLaneProps, TimelineKeyframeLanesProps, TimelinePromptsLaneProps } from "./MotionTimelineBarLanes.js";
-export declare function MotionTimelineBar({ prompts, keyframes, frameIdx, onFrameChange, onScrubStart, onScrubEnd, totalFrames, fps, initialSeconds, onKeyframeAdd, onKeyframeMove, onKeyframeDelete, onPromptUpdate, onPromptMove, onPromptResize, onPromptDelete, onExtend, tracks, promptsLabel, laneHint, packed, emptyPromptsHint, promptsHeight, beats, beatsLabel, beatsHeight, beatsHint, onBeatAdd, onPromptAdd, previews, selectedId, onSelect, audioLayers, onAudioDrop, onAudioDropAt, onAudioFileDrop, onAudioClipMove, onAudioClipDelete, onAudioLaneActivate, onAudioDetach, onTrackAdd, audioClipCards, kfLaneCards, commissions, plannedFrames, className, style, theme, }: MotionTimelineBarProps): import("react").JSX.Element;
+export declare function MotionTimelineBar({ prompts, keyframes, frameIdx, onFrameChange, onScrubStart, onScrubEnd, totalFrames, fps, initialSeconds, onKeyframeAdd, onKeyframeMove, onKeyframeDelete, onPromptUpdate, onPromptMove, onPromptResize, onPromptDelete, onExtend, tracks, promptsLabel, laneHint, packed, emptyPromptsHint, promptsHeight, beats, beatsLabel, beatsHeight, beatsHint, onBeatAdd, onPromptAdd, onSeamToggle, previews, selectedId, onSelect, audioLayers, onAudioDrop, onAudioDropAt, onAudioFileDrop, onAudioClipMove, onAudioClipDelete, onAudioLaneActivate, onAudioDetach, onTrackAdd, audioClipCards, kfLaneCards, commissions, plannedFrames, className, style, theme, }: MotionTimelineBarProps): import("react").JSX.Element;
 //# sourceMappingURL=MotionTimelineBar.d.ts.map

@@ -184,6 +184,10 @@ export interface MotionTimelineBarProps {
    *  clicks stay inert (the motion card's clips float in slack; its
    *  Add button still carves). */
   onPromptAdd?: (frame: number) => void
+  /** THE SEAM CHIP (the collapse's cuts, 2026-11-16): the tenant
+   *  resolves the row's uuid to its call and toggles carried vs cut.
+   *  Absent → the read-only extend dot (the motion card's own bar). */
+  onSeamToggle?: (id: string) => void
   /** prompt uuid → video URL: the window render shown INSIDE the call
    *  clip (first frame at rest, plays on hover — NLE strip behavior).
    *  Best-effort mapping: window index ↔ call index (1:1 unless a
@@ -367,6 +371,7 @@ export function MotionTimelineBar({
   beatsHint = timelineCopy.beatsHintDefault,
   onBeatAdd,
   onPromptAdd,
+  onSeamToggle,
   previews,
   selectedId = null,
   onSelect,
@@ -452,6 +457,7 @@ export function MotionTimelineBar({
           lastPromptRef={drag.lastPromptRef} firstPromptRef={drag.firstPromptRef}
           frameToPx={scale.frameToPx} frameAt={scale.frameAt} startDrag={drag.startDrag} playhead={playhead}
           onPromptUpdate={onPromptUpdate} onPromptDelete={onPromptDelete}
+          onSeamToggle={onSeamToggle}
         />
         {commissions?.map((row) => (
           <CommissionLane

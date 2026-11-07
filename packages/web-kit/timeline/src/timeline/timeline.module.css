@@ -345,6 +345,33 @@
   background: color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);
 }
 
+/* THE SEAM CHIP (the collapse's cuts): click-to-toggle at the clip's
+   left join. Carried = the accent border (the latent tail continues);
+   cut = dashed, unlit (nothing carries). */
+.seamChip {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 40;
+  height: 14px;
+  min-width: 14px;
+  transform: translate(-50%, -50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  border: 1px solid var(--dsw-alias-line-2);
+  border-radius: 9999px;
+  background: var(--dsw-alias-bg-layer-1);
+  color: var(--dsw-alias-label-primary);
+  font-size: 9px;
+  line-height: 1;
+  cursor: pointer;
+}
+.seamChip:hover { filter: brightness(1.25); }
+.seamChipCarried { box-shadow: 0 0 4px currentColor; }
+.seamChipCut { border-style: dashed; opacity: 0.8; }
+
 /* Seam indicator (extend glyph at the clip's left join). */
 .seamDot {
   position: absolute;

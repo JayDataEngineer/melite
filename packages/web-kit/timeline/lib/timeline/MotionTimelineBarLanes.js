@@ -16,7 +16,7 @@ import { useState } from "react";
 import { timelineCopy } from "../timelineCopy.js";
 /** Draggable/resizable prompt clips (bar line 994). */
 export function TimelinePromptsLane(props) {
-    const { prompts, fps, promptsHeight, emptyPromptsHint, onPromptAdd, dragId, lastPromptRef, firstPromptRef, selectedId, previews, frameToPx, frameAt, startDrag, playhead, onPromptUpdate, onPromptDelete, } = props;
+    const { prompts, fps, promptsHeight, emptyPromptsHint, onPromptAdd, dragId, lastPromptRef, firstPromptRef, selectedId, previews, frameToPx, frameAt, startDrag, playhead, onPromptUpdate, onPromptDelete, onSeamToggle, } = props;
     // Inline prompt editor: the clip being edited + its local text.
     const [editingId, setEditingId] = useState(null);
     const [editText, setEditText] = useState("");
@@ -89,7 +89,10 @@ export function TimelinePromptsLane(props) {
                                             startF: p.start_frame,
                                             endF: p.end_frame,
                                             moved: false,
-                                        }), children: _jsx("div", { className: css.gripPill }) }), p.seam === "extend" && !isFirst && (_jsx("div", { className: css.seamDot, style: { background: playhead, boxShadow: `0 0 4px ${playhead}` }, title: timelineCopy.seamExtendTitle })), _jsx(Tip, { tip: isLast
+                                        }), children: _jsx("div", { className: css.gripPill }) }), !isFirst && onSeamToggle !== undefined && (_jsx("button", { type: "button", "data-seam-toggle": p.uuid, "data-seam-state": p.seam === "cut" ? "cut" : "carried", className: cn(css.seamChip, p.seam === "cut" ? css.seamChipCut : css.seamChipCarried), style: p.seam === "cut" ? undefined : { borderColor: playhead, color: playhead }, title: p.seam === "cut" ? timelineCopy.seamCutTitle : timelineCopy.seamCarriedTitle, "aria-label": timelineCopy.seamToggleAria({ state: p.seam === "cut" ? "cut" : "carried" }), onPointerDown: (e) => e.stopPropagation(), onDoubleClick: (e) => e.stopPropagation(), onClick: (e) => {
+                                        e.stopPropagation();
+                                        onSeamToggle(p.uuid);
+                                    }, children: _jsx("span", { "aria-hidden": true, children: p.seam === "cut" ? "✕" : "→" }) })), !isFirst && onSeamToggle === undefined && p.seam === "extend" && (_jsx("div", { className: css.seamDot, style: { background: playhead, boxShadow: `0 0 4px ${playhead}` }, title: timelineCopy.seamExtendTitle })), _jsx(Tip, { tip: isLast
                                         ? "PULL to extend the motion — the timeline + duration grow as you drag"
                                         : "Drag to resize this card", children: _jsx("div", { "data-prompt-edge": "r", className: cn(css.edgeR, isLast && css.edgeWide), onPointerDown: (e) => startDrag(e, {
                                             kind: "prompt-r",

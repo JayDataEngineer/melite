@@ -75,6 +75,16 @@ export const timelineCopy = {
   firstCallTitle: "First call — nothing before it to trim into",
   /** The extend-seam dot's hover title. */
   seamExtendTitle: "extend — latent tail carries across this seam",
+  /** THE SEAM CHIP (the collapse's cuts): the call boundary is
+   *  click-to-toggle between carried and cut. Carried is the default
+   *  (the drift-control latent tail at the film's seam); cut is the
+   *  explicit overlap-0 arm — nothing carries. */
+  seamCarriedTitle: "carried — the latent tail continues across this seam; click to cut it",
+  /** The cut seam chip's hover title. */
+  seamCutTitle: "cut — this call starts fresh; nothing carries across this seam; click to carry it",
+  /** The seam chip's accessible name. */
+  seamToggleAria: (p: { state: "carried" | "cut" }): string =>
+    `Seam ${p.state} — click to ${p.state === "cut" ? "carry" : "cut"} it`,
   /** The clip editor's placeholder. */
   promptPlaceholder: "Enter prompt…",
   /** A clip's face when its prompt text is empty. */

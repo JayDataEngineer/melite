@@ -92,7 +92,7 @@ describe("SOURCE — the copy dictionary owns the static faces", () => {
     }
   })
 
-  it("CENSUS — the dictionary is non-empty, every entry consumed, count pinned at 102", () => {
+  it("CENSUS — the dictionary is non-empty, every entry consumed, count pinned at 99", () => {
     // THE CENSUS (the 2026-11-02 docs-plane finding H5): a
     // dictionary nobody reads is a locale theater — every entry
     // must be consumed by at least one presentation seat (a dead
@@ -154,7 +154,12 @@ describe("SOURCE — the copy dictionary owns the static faces", () => {
     // = commissionDetailJoin (the seats↔geometry separator, moved out
     // of the pane's literal); its sibling faces commissionMalformed /
     // commissionBadEntry ride as functions, outside this count.
-    assert.equal(ids.length, 103, `the dictionary holds 103 copy ids (found ${ids.length}) — re-pin this wall when copy is added or removed`)
+    // RE-PIN 2026-11-16 (the collapse's cuts): 103 → 99. −4 flat ids =
+    // seamCarried + seamCut + seamHelp + seamWord — the rail's seam
+    // select died (the STRIP CHIP at the boundary is the one door; its
+    // words live in the KIT's timelineCopy, tenant-fed); the function
+    // face seamModeLabel rode outside this count by construction.
+    assert.equal(ids.length, 99, `the dictionary holds 99 copy ids (found ${ids.length}) — re-pin this wall when copy is added or removed`)
     // RE-PIN 2026-10-16 (the square-grammar residue): 102 → 101.
     // removePack died with the strip Button (187eaf607 deleted the
     // verb; SourceRow's onEdit("") owns the detach) — a fossil id

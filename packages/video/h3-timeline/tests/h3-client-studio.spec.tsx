@@ -162,24 +162,16 @@ describe('H3TimelineStudio (the card-package tenant, mounted)', () => {
       },
     })
     render(h(H3TimelineStudio, p))
-    // select the SECOND call (the seam control renders for i>0) —
-    // through the bar's clip (the one door, 2026-11-05)
-    const card = await waitFor(() => {
-      const el = document.querySelector('[data-prompt-clip="call-1"]') as HTMLElement | null
-      if (el === null) throw new Error('no second bar clip yet')
+    // (re-pin 2026-11-16, the collapse's cuts) the rail's seam select
+    // retired — the STRIP CHIP at the boundary is the one door. The
+    // chip paints from the doc (cut) and its click writes the toggle.
+    const chip = await waitFor(() => {
+      const el = document.querySelector('[data-seam-toggle="call-1"]') as HTMLButtonElement | null
+      if (el === null) throw new Error('no seam chip yet')
       return el
     })
-    fireEvent.pointerDown(card, { button: 0, clientX: 120 })
-    fireEvent.pointerUp(document.body, { clientX: 120 })
-    const mode = await waitFor(() => {
-      const el = screen.queryByLabelText('Call 1 seam mode') as HTMLButtonElement | null
-      if (el === null) throw new Error('no seam control yet')
-      return el
-    })
-    // S7h: the seam select rides the DSH Menu (titled prose faces)
-    expect(mode.textContent ?? '').toMatch(/^Cut/)
-    fireEvent.click(mode)
-    fireEvent.click(screen.getByRole('menuitem', { name: /^Carried/ }))
+    expect(chip.getAttribute('data-seam-state')).toBe('cut')
+    fireEvent.click(chip)
     const patch = await waitFor(() => {
       const hit = (p.onPatch as ReturnType<typeof vi.fn>).mock.calls
         .map((c) => c[0] as Record<string, unknown>)
