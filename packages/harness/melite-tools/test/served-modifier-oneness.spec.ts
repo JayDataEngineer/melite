@@ -73,16 +73,23 @@ describe("the served modifier list carries one row per bag", () => {
       "the curated row's catalog is the family's own H3_LORA_ROWS (both distill rows ride)");
   });
 
-  it("ARM 3 — the other seven bags still serve exactly one row each (the dedupe is parceled, not a blanket drop)", () => {
-    // Repinned 7 → 8 rows (2026-11-15, the h3 edit door, stage 2b):
-    // the card's EIGHTH bag (edit — the video-edit matrix dial seat)
-    // serves its own curated row beside the seven ARM bags.
-    for (const key of ["replace", "repair", "extend", "refine", "reshoot", "upscale", "edit"]) {
+  it("ARM 3 — the DECLARED roster is the whole served face (the collapse's DELETION, slice 4)", () => {
+    // Repinned 8 → 3 rows (2026-11-07, the FRICTION_3 collapse slice 4
+    // at 799de2338): the five peer names left the DECLARED roster —
+    // the served face is edit + reshoot + loras, and the legacy names
+    // live on as TRANSLATION cells (compose-through at the door, never
+    // a served row of their own).
+    for (const key of ["edit", "reshoot", "loras"]) {
       const rows = mods.filter((m) => m.param_key === key);
       assert.equal(rows.length, 1, `${key} serves exactly one row`);
       assert.ok((rows[0]!.fields ?? []).length > 0, `${key}'s curated fields survive the dedupe`);
     }
-    expect(mods.length, "eight bags, eight rows").toBe(8);
+    const legacy = ["replace", "repair", "extend", "refine", "upscale"];
+    const served = new Set(mods.map((m) => m.param_key));
+    for (const key of legacy) {
+      assert.ok(!served.has(key), `${key} is translation-only — no served row (the alias law)`);
+    }
+    expect(mods.length, "three declared bags, three rows").toBe(3);
   });
 
   // THE AGENT FACE (friction report §14.7b — F34's other half,

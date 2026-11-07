@@ -1,7 +1,8 @@
 // @melite/video-h3-timeline — THE REPAIR NAME (slice 4 of the
 // collapse: THE DELETION). The operator's own ruling: "REPAIR AND
-// REPLACE ARE THE F---ING SAME OPERATION! REPAIR JUST USES THE
-// ORIGINAL." The name left the DECLARED roster and lives on as the
+// REPLACE ARE THE [redacted - the emphatic spelling lives in the
+// receipt] SAME OPERATION! REPAIR JUST USES THE ORIGINAL." The name
+// left the DECLARED roster and lives on as the
 // edit bag's masked-partial cell: the translation states the region
 // mask + the source as its own anchor + the stated denoise, node for
 // node. The suite drives the card's own doors (def.mods proves the

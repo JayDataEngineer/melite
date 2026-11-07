@@ -171,7 +171,9 @@ describe('H3TimelineStudio (the card-package tenant, mounted)', () => {
       return el
     })
     expect(chip.getAttribute('data-seam-state')).toBe('cut')
-    fireEvent.click(chip)
+    // the wrapper carries the data seat; the catalog Button inside
+    // owns the click (chrome canon — no hand-rolled seats)
+    fireEvent.click(chip.querySelector('button') ?? chip)
     const patch = await waitFor(() => {
       const hit = (p.onPatch as ReturnType<typeof vi.fn>).mock.calls
         .map((c) => c[0] as Record<string, unknown>)

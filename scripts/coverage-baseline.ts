@@ -666,7 +666,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/video/h3-timeline/src/ui/studio/CallCard.tsx': { statements: 98.84, branches: 95.51, functions: 97.06, lines: 99.24 },
   '**/packages/video/h3-timeline/src/ui/studio/CallCardPrompt.tsx': { statements: 83.33, branches: 93.75, functions: 83.33, lines: 80 },
   '**/packages/video/h3-timeline/src/ui/studio/CallCardsPanel.tsx': { statements: 96.67, branches: 93.75, functions: 94.74, lines: 97.87 },
-  '**/packages/video/h3-timeline/src/ui/studio/CallFrameSubcard.tsx': { statements: 50, branches: 83.33, functions: 50, lines: 50 },
+  // (row deleted at edf864af4: CallFrameSubcard.tsx left with its face)
   '**/packages/video/h3-timeline/src/ui/studio/RunRecipeEngine.tsx': { statements: 90.91, branches: 84.62, functions: 90.91, lines: 97.92 },
   '**/packages/video/h3-timeline/src/ui/studio/RunRefsClips.tsx': { statements: 92.31, branches: 86.36, functions: 87.5, lines: 91.67 },
   '**/packages/video/h3-timeline/src/ui/studio/StudioPreview.tsx': { statements: 88.89, branches: 97.14, functions: 80, lines: 87.5 },

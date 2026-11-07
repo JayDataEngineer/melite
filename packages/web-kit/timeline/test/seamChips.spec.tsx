@@ -55,12 +55,17 @@ describe("THE SEAM CHIP — the cut choice rides the add-call surface", () => {
     // the row's own state paints the chip: cut vs carried
     expect(chips[0]!.getAttribute("data-seam-state")).toBe("cut")
     expect(chips[1]!.getAttribute("data-seam-state")).toBe("carried")
-    // the words are the dictionary's
-    expect(chips[0]!.getAttribute("title")).toBe(timelineCopy.seamCutTitle)
-    expect(chips[1]!.getAttribute("title")).toBe(timelineCopy.seamCarriedTitle)
-    expect(chips[0]!.getAttribute("aria-label")).toBe(timelineCopy.seamToggleAria({ state: "cut" }))
+    // the hover words ride the estate Tip (a lazy bubble — the words
+    // live in the dictionary, never a native title attr on the seat),
+    // and the real button's accessible name spells the same law
+    expect(chips[0]!.querySelector("button")!.getAttribute("aria-label")).toBe(
+      timelineCopy.seamToggleAria({ state: "cut" }),
+    )
+    expect(chips[0]!.querySelector("button")!.getAttribute("title")).toBeNull()
+    expect(timelineCopy.seamCutTitle).toMatch(/^cut — this call starts fresh/)
+    expect(timelineCopy.seamCarriedTitle).toMatch(/^carried — the latent tail continues/)
     // a click writes the seam through — the row's uuid, never an index
-    fireEvent.click(chips[1]!)
+    fireEvent.click(chips[1]!.querySelector("button")!)
     expect(onSeamToggle).toHaveBeenCalledWith("call-2")
   })
 
@@ -81,7 +86,7 @@ describe("THE SEAM CHIP — the cut choice rides the add-call surface", () => {
     expect(container.querySelector("input")).toBeNull()
     // and a pointer gesture on the chip toggles once, never drags
     fireEvent.pointerDown(chip, { clientX: 100 })
-    fireEvent.click(chip)
+    fireEvent.click(chip.querySelector("button")!)
     expect(onSeamToggle).toHaveBeenCalledTimes(1)
   })
 })

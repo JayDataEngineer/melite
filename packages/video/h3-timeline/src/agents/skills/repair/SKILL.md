@@ -1,199 +1,43 @@
 ---
 name: repair
-description: "Region repair on the h3-timeline — the LEGACY `repair` spelling of the one Video edit bag (a preset cell: per-frame SAM3 region mask + self anchors + partial denoise; the rest of the frame and its audio are held). Old repair docs still resolve; new docs state params.edit with mask_source region."
+description: "Region repair — the LEGACY `repair` spelling of the one Video edit bag (a preset cell: per-frame SAM3 region mask + self anchors + partial denoise; the rest of the frame and its audio are held). Old repair docs still resolve; new docs state params.edit with mask_source region."
 genre: video
 ---
 
-> THE COLLAPSE — THIS NAME IS A PRESET CELL, NOT A DOOR. The operator's
-> ruling: repair and replace are the same operation; repair just uses
-> the original. This leaf documents the LEGACY spelling so old docs keep
-> composing: state the cell on the ONE Video edit bag (`params.edit`).
-> `repair: [{...}]` resolves to `edit: [{ mask_source: "region",
-> reference: "self", denoise: 0.32 }]` node for node (the arm's declared
-> default 0.32; the edit bag's denoise band is 0.05–1) — one entry per
-> doc. New docs state the edit bag directly.
+> THE COLLAPSE — THIS NAME IS A PRESET CELL, NOT A DOOR. The
+> operator's ruling: repair and replace are the same operation;
+> repair just uses the original. This leaf documents the LEGACY
+> spelling so old docs keep composing: state the cell on the ONE
+> Video edit bag (`params.edit`). `repair: [{...}]` resolves to
+> `edit: [{ mask_source: "region", reference: "self", denoise: 0.32 }]`
+> node for node (the arm's declared default 0.32; the edit bag's
+> denoise band is 0.05–1) — one entry per doc. New docs state the
+> edit bag directly.
 
-# Repair (region repair) — SPEC
+## The pair + arm laws (ONE door per doc)
 
-> The emission composes
-> per the family renderer (`models/h3` chainEdit.ts): VHS window load →
-> SAM3 text-tracking mask → grow → the masked-edit chain on the family's
-> own model + lora plane → decode → the run-scoped film terminal. Prose
-> never overrides the loaded bundle: the fields below are quoted off the
-> card's served repair kind.
->
-> Live-proven on the GPU lane: a 141 f window = 5.875 s rendered
-> window-only at 1312×736, 48 kHz, exactly the authored span.
-> NOT yet verified live: the grow-0 seam test and a multi-window repair
-> of one film — treat those as unproven until they are pressed.
+- ONE DOOR PER DOC: the legacy names - replace, repair, extend,
+  refine, upscale - are PRESET CELLS of the ONE Video edit bag, not
+  doors. A doc arming two of them, or a legacy name beside an armed
+  `edit` bag, REFUSES loud naming both. Empty every arm but the one
+  posture you want.
+- THE LORA BAG IS NOT AN ARM: `loras` is the co-arming adapter bag
+  and it COEXISTS with any armed arm - never tell a user to empty
+  `loras` to disarm a pair.
 
-## What it is (and is NOT)
+## The cell, as it composes today
 
-A repair re-renders a REGION of a clip you already have: a text-named
-region ("hands", "a face") is tracked frame by frame, the tracked mask
-grows by `mask_grow` pixels of seam ring, and only that masked area is
-re-rendered at partial denoise. Everything outside the mask — and the
-audio — is held from the source.
+- `denoise` (0.05–1, 0.32) — the partial pole holds everything
+  outside the tracked mask, and the source's audio with it.
+- `mask_source: "region"` + `reference: "self"` — the translation's
+  own dials; the free cells around them (whole-frame, static-png,
+  still+mannequin) compose on the same bag.
+- The full dial table, the named preset chips, the seam and window
+  laws live in ONE place: the `edit` skill. Read that leaf — every
+  number there is quoted off the served card.
 
-It is NOT:
-- **a re-render** — denoise stays inside the refinement window
-  (0.05–0.50); 1 or more refuses, because a full-noise pass is a
-  reshoot and the reshoot door exists;
-- **the replace swap** — replace swaps a whole person from staged
-  identity art (its own branch and terminal); repair fixes a part of
-  the existing frame;
-- **the refine arm** — refine is unmasked: it sharpens the WHOLE
-  window; repair is scoped by the tracked mask;
-- **a fresh generation** — the source clip anchors the frame and the
-  soundtrack; nothing from a prior generation re-enters.
-
-ONE DOOR PER DOC: the legacy names are PRESET CELLS of the ONE Video
-edit bag — each resolves into `params.edit`, and a doc arming two of
-them (or a legacy name beside an armed `edit` bag) REFUSES loud naming
-both: one emission, never a silent winner. THE LORA BAG IS NOT AN ARM:
-`loras` is the co-arming adapter bag and it COEXISTS with any armed
-arm — it never disarms a pair (the lora plane rides every arm). The
-repair branch is the edit bag's masked-partial cell now, so state it
-there. (Armed = the bag is PRESENT and non-empty; an absent or empty
-`repair` bag is an unused arm — the film composes exactly as before,
-byte-identical.)
-
-## The flow (bind, confirm, press)
-
-1. **Get the clip.** A repair reads ONE staged video leaf by name
-   (`source_clip`) — the footage with the region you want fixed.
-2. **Arm and bind.** Seat ONE entry on the `repair` mod bag:
-   `params.repair = [entry]` — never flat (a flat `repair_clip` beside
-   the doc refuses as unknown param(s)). `source_clip`,
-   `repair_prompt` and `region_prompt` are required: an empty entry
-   refuses LOUD naming the seat.
-3. **Name the region.** `region_prompt` is the SAM3 detection target —
-   the words you would say looking at the frame ("hands", "a person",
-   "a face"). The mask tracks every matching object per frame; it is
-   not a painted mask and there is no mask seat.
-4. **Set the dials.** The entry fields (the card's served ranges):
-   - `denoise` (0.05–1, 0.32) — the edit bag's band (the masked pass's partial window is 0.05–0.5);
-     the refine window is 0.30–0.35, lower is subtler. 1 or more
-     refuses (a repair is a refine, never a re-render).
-   - `mask_grow` (0–96, 16) — pixels the tracked mask grows before the
-     edit: the seam ring. 0 repairs exactly the detected region (the
-     grow-0 seam test) and is the sharpest, least forgiving setting.
-   - `detection_threshold` (0–1, 0.5) — the SAM3 score threshold;
-     lower finds more objects with noisier masks.
-   - `window_start` (0–100000, 0) — frames at the film clock (24 fps)
-     to skip before the repair window; 0 starts at the clip head.
-   - `window_length` (0–100000, 0) — frames in the window; 0 runs to
-     the end of the clip (the whole-clip posture). `clip_seconds`
-     still caps the render budget.
-   - `clip_seconds` (2.5–15, 6) — the plan's own render budget; its
-     widget band [2.5, 15] is the law.
-   - `overlap_frames` (22–56, step 17, 39) — the plan's window
-     overlap; the engine's combo is exactly [22, 39, 56].
-   - `resolution` (select, '736p') — the plan's resolution tier:
-     480p quick preview, 576p, 736p (the reference default), 768p,
-     1080p (~2.5× slower and much more memory).
-   - `seed` (0–4294967295, 0) — the chain plan's `base_seed`; the
-     sampler seed stays the doc seed.
-   - `steps` (1–30, 6) — the chain plan's `default_steps`; the sampler
-     steps stay the doc marriage.
-5. **Confirm.** Show the bound clip, the region in words ("the hands,
-   grown 16 px"), the window in frames, and that every other arm is
-   empty.
-   THE LANE CLAUSE: that wait is chat-lane law — on a headless
-   commission the brief IS the confirmation (state the values in the
-   run record, then execute; never stall a commission waiting for a
-   watcher who isn't there).
-6. **Press.** The user presses Run. Browser/chat agents never
-   execute; headless commissions ride `melite_flow` per the maker
-   runbook.
-
-## The recipe's laws (read these before the two shapes below)
-
-A hand fix on a staged clip: track the hands, re-render only the mask,
-hold everything else.
-
-    params.repair = [{
-      source_clip:        'prior_film.mp4',   // staged leaf; MUST carry audio
-      repair_prompt:      'clean hands, natural fingers, the rest unchanged',
-      region_prompt:      'hands',            // what SAM3 tracks, per frame
-      denoise:            0.32,               // the 0.30–0.35 window
-      mask_grow:          0,                  // grow-0 first: sharpest seam
-      detection_threshold: 0.5,
-      window_start:       0,                  // frames at the 24 fps clock
-      window_length:      90,
-      clip_seconds:       6,
-      overlap_frames:     39,
-      resolution:         '736p',
-      seed:               0,
-      steps:              6,
-    }])
-
-THE HOLD LAW: everything outside the tracked mask is HELD — the frame
-around the region and the entire soundtrack. An output where the
-background moves, the lighting shifts or the audio changes is a
-failure, not a style choice. Start at `mask_grow` 0 and grow (16 is
-the served default, 96 the ceiling) only when the mask clips the
-feature.
-
-THE HOLD FLOOR: "held" means held to the turbo re-grade floor, never
-to zero. The masked pass re-encodes the whole frame, so unchanged
-regions still shift by a small global re-grade — the floor measures
-at Δ≈5 mean, p95 15–17 on the 0–255 scale. A held background inside
-that floor is a PASS; movement beyond it (mask bleed, a lighting
-shift) is the failure the hold law names. The repaired region should
-clear the floor by 2–3× when the fix landed — a hands region
-measured Δ8–10 against background cells at Δ2–5 on the same press.
-
-THE REGION IS THE PROMPT: `region_prompt` is what the detector tracks
-("hands", "the left forearm", "her face") — it is NOT the edit
-instruction. `repair_prompt` says what the region should become. A
-region the detector cannot find yields an empty mask and a pass that
-changes nothing; judge the mask before judging the pixels.
-
-## Worked recipe (two real shapes)
-
-**A. One region in a short clip — the default press.** Source
-`demo_clip.mp4` (6.0 s = 144 f, 24 fps). The hands are wrong from 3.2 s.
-Seat one repair entry and nothing else:
-
-```
-params.repair = [{
-  source_clip: "demo_clip.mp4",
-  repair_prompt: "natural hands, five fingers, no extra digits",
-  region_prompt: "hands",
-  denoise: 0.32, mask_grow: 16, detection_threshold: 0.5,
-  window_start: 77, window_length: 90, clip_seconds: 3.75,
-  overlap_frames: 22, resolution: "736p", seed: 0, steps: 6
-}]
-```
-
-`window_start` 77 = 3.21 s, so the window covers 3.21–6.96 s — the whole
-end of the clip, one press, no splice. Everything outside the tracked
-mask (and the audio) is held from the source. 90 f at 736p is the green
-window; do not widen it to "just get the start of the clip too" —
-`window_start: 0` with 144 f is two windows and two presses.
-
-**B. A region on a composed film — the splice-aware press.** The film
-was built from 90 f windows at step 68 f (`start_seconds` 0 / 2.833 /
-5.667 …), so seams sit at 3.75 s, 6.583 s, … To fix the hands in the
-window that starts at 2.833 s, use that window's own numbers:
-
-```
-window_start: 68, window_length: 90, clip_seconds: 3.75, overlap_frames: 22
-```
-
-The repaired run returns ONE 90 f clip; it replaces the same slot in the
-assembly. This door does not splice: re-join with the same 22 f overlap
-the film was built with (or trim the overlap in an editor) — never weld a
-repair window onto a different step, the seam drifts by the difference.
-A region that straddles a seam needs the window on both sides; press them
-in order and keep each window's own `window_start`.
-
-## Companion surfaces
-
-- `refine` sharpens the whole window after a repair lands — the
-  repair fixes the region, the refine tightens the detail.
-- `swap` (replace) is the OTHER person-shaped door: it swaps a whole
-  person from identity art; repair never reads identity art.
-- `video-timeline` composes films; a repair is its own run with its
-  own terminal.
+Live-proven: the legacy spelling's translation into the edit cell is
+walled suite-side (the alias resolves node for node, one entry per
+doc). NOT yet verified live: a GPU render pressed through this alias
+leaf's own example — the edit door's lane proof is the one that
+counts.

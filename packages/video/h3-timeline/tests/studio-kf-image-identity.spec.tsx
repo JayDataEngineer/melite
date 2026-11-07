@@ -165,6 +165,7 @@ function openStripDoor(): { added: [string, number][]; unmount: () => void } {
       addKeyframeWithImage={(image, frame) => { added.push([image, frame]); return "k77" }}
       enterKfView={() => {}}
       enterAudioView={() => {}}
+      setCallTransition={() => {}}
     />,
   )
   return { added, unmount: () => els.unmount() }

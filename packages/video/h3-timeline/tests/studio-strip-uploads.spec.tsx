@@ -69,6 +69,7 @@ function strip(over?: Record<string, unknown>) {
       keyframes: [] as never,
       enterKfView: () => {},
       enterAudioView: () => {},
+      setCallTransition: () => {},
       ...over,
   }
   const els = render(<StudioStripPane {...props} />)

@@ -259,7 +259,7 @@
 /* THE POPUP LAW (stroke 84): any module styling a select pins
  * color-scheme: light — the closed popup renders dark-on-light
  * deterministic, never host-theme roulette. */
-.knobGrid select, .seamRow > select { color-scheme: light; }
+.knobGrid select { color-scheme: light; }
 
 /* ── CallCardPrompt ─────────────────────────────────────── */
 .beatsWrap { display: flex; flex-direction: column; gap: 4px; }
@@ -320,11 +320,6 @@
 .promptBoxEmpty:focus { border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 70%, transparent); }
 
 .fileErr { font-size: 8px; line-height: 1.25; color: var(--dsw-alias-state-error-primary); }
-.seamRow { display: flex; align-items: center; gap: 4px; font-size: 10px; line-height: 1.25; color: var(--dsw-alias-label-secondary); }
-/* The seam select's longest option (~28 chars) sizes the box past the
- * rail — cap it at its cell. */
-.seamRow > select { min-width: 0; max-width: 100%; }
-.seamLabel { flex: none; text-transform: uppercase; letter-spacing: 0.06em; color: var(--dsw-alias-label-secondary); }
 
 /* ── RefPickerRow ───────────────────────────────────────── */
 .refRow { display: flex; flex-direction: column; gap: 2px; }

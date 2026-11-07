@@ -262,8 +262,9 @@ const DECLARED_MOD_KINDS = [
 /** THE LEGACY EDIT ALIASES (slice 4 of the FRICTION_3 collapse —
  * THE DELETION): the five peer bags left the DECLARED roster (the
  * served face is edit + reshoot + loras; the operator 2026-11-06:
- * "REPAIR AND REPLACE ARE THE FUCKING SAME OPERATION! REPAIR JUST
- * USES THE ORIGINAL"). The names live on as the edit door's preset
+ * "REPAIR AND REPLACE ARE THE [redacted - the emphatic spelling lives
+ * in the receipt] SAME OPERATION! REPAIR JUST USES THE ORIGINAL"). The
+ * names live on as the edit door's preset
  * cells; a legacy doc (a saved bench, an old session, a pressed
  * chip from before the collapse) resolves into the ONE bag at the
  * compose door — compose-through, never a frozen peer: the
@@ -334,7 +335,7 @@ export function resolveLegacyEditAliases(p) {
     const bag = p[key];
     if (bag.length > 1) {
         throw new Error(key === 'refine'
-            ? `h3-timeline: refine carries ${bag.length} entries — the bag N-entry tiling is not a dial cell (the carried join is dead in the engine, F3-14; the edit door composes ONE window at the 2x design window 2.5 s). State one window per doc`
+            ? `h3-timeline: refine carries ${bag.length} entries — the bag N-entry tiling is not a dial cell (the carried join is dead at the engine (F3-14); the edit door composes ONE window at the 2x design window 2.5 s). State one window per doc`
             : `h3-timeline: ${key} carries ${bag.length} entries — one entry per arm (the name resolves into ONE edit entry; every entry after the first would be silently dropped)`);
     }
     const e = bag[0];

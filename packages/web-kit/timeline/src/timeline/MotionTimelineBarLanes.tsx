@@ -169,23 +169,28 @@ export function TimelinePromptsLane(props: TimelinePromptsLaneProps) {
                   Extend = cyan dot (matches brand/playhead).
                   Cut = no extra glyph — the default, unmarked. */}
               {!isFirst && onSeamToggle !== undefined && (
-                <button
-                  type="button"
+                <span
                   data-seam-toggle={p.uuid}
                   data-seam-state={p.seam === "cut" ? "cut" : "carried"}
-                  className={cn(css.seamChip, p.seam === "cut" ? css.seamChipCut : css.seamChipCarried)}
-                  style={p.seam === "cut" ? undefined : { borderColor: playhead, color: playhead }}
-                  title={p.seam === "cut" ? timelineCopy.seamCutTitle : timelineCopy.seamCarriedTitle}
-                  aria-label={timelineCopy.seamToggleAria({ state: p.seam === "cut" ? "cut" : "carried" })}
                   onPointerDown={(e) => e.stopPropagation()}
                   onDoubleClick={(e) => e.stopPropagation()}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onSeamToggle(p.uuid)
-                  }}
                 >
-                  <span aria-hidden>{p.seam === "cut" ? "✕" : "→"}</span>
-                </button>
+                  <Tip tip={p.seam === "cut" ? timelineCopy.seamCutTitle : timelineCopy.seamCarriedTitle}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={cn(css.seamChip, p.seam === "cut" ? css.seamChipCut : css.seamChipCarried)}
+                      style={p.seam === "cut" ? undefined : { borderColor: playhead, color: playhead }}
+                      aria-label={timelineCopy.seamToggleAria({ state: p.seam === "cut" ? "cut" : "carried" })}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onSeamToggle(p.uuid)
+                      }}
+                    >
+                      <span aria-hidden>{p.seam === "cut" ? "✕" : "→"}</span>
+                    </Button>
+                  </Tip>
+                </span>
               )}
               {!isFirst && onSeamToggle === undefined && p.seam === "extend" && (
                 <div

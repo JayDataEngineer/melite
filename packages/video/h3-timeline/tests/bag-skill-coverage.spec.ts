@@ -229,67 +229,53 @@ describe("every served mod bag has a skill leaf an agent can read", () => {
     }
   });
 
-  it("ARM 7 — the two dial docs whose numbers misled carry the MEASURED law, not a recipe-free promise", () => {
-    // The friction report's speed findings: refine taught "step = the
-    // window length" (zero overlap, a hard cut at every seam) and read
-    // scale 1.0 as a whole-clip capacity cure (430 f at 1.0 measured
-    // OOM); repair shipped every dial with NO worked press, so an
-    // agent had to invent its window numbers. Both are now law.
-    const refine = readSkill("refine");
-    // (F3-14 re-pin #2, 2026-11-15: the carry is CURED at the handoff
-    // — the refine strips the foreign Drift-Control patch before its
-    // guider — so the carried join composes through both doors again.
-    // The WALK stays the full-window step (it judges per window), but
-    // the 22 f carry step is now the SERVED face the doc must teach,
-    // with the cure named. The old assert pinned the refusal; keeping
-    // it after the cure would teach a dead law.)
-    assert.match(refine, /step is the\s+FULL window length/,
-      "refine/SKILL.md states the walk step is the full window (the per-window judgment)");
-    assert.match(refine, /overlap_frames = 0\b/,
-      "refine/SKILL.md pins overlap_frames 0 as the lawful walk step (the hard cut)");
-    assert.match(refine, /0 \/ 2\.33 \/ 4\.67/,
-      "refine/SKILL.md walks start_seconds at the abutting clock (the 2.33 s design window)");
-    assert.match(refine, /22 f carry step[\s\S]{0,160}SERVED \(F3-14\s+cured\)/,
-      "refine/SKILL.md teaches the 22 f carry step as the served face, naming the cure");
-    assert.match(refine, /430 f window @1\.0 OOM/i,
-      "refine/SKILL.md carries the measured 430 f-at-1.0 OOM");
-    assert.match(refine, /NO trim verb/i,
-      "refine/SKILL.md names the missing trim seat instead of implying one");
-    // round 8 measured the pop as STRUCTURAL: a crossfade cannot make
-    // two independent denoise realisations agree, so the doc must not
-    // sell the splice as a cure (the operator: "POPS DO NOT WORK").
-    // (F61 re-pin, 2026-11-14: the splice became the IN-GRAPH blend
-    // join — the honest voice followed the new sentence)
-    // (FRICTION F26 re-pin, 2026-11-03: the blend fallback itself was
-    // the ghost — a crossfade of two independent renders is a DOUBLE
-    // EXPOSURE, not a soft step, and the door now REFUSES an off-grid
-    // carry instead of mounting it; the LAW is still: never sell the
-    // splice as a cure)
-    assert.match(refine, /a blend of\s+two INDEPENDENT renders is\s+a DOUBLE EXPOSURE \(the ghost\),\s+not a soft step and not a cure for\s+the pop/i,
-      "refine/SKILL.md names the crossfade as the ghost, never as a pop cure");
-    assert.match(refine, /off-grid carry refuses at compose|REFUSES at compose/,
-      "refine/SKILL.md states the refusal that retires the blend fallback");
-    assert.match(refine, /the carried span is BIT-IDENTICAL[\s\S]{0,220}the audio seam keeps its soft step/i,
-      "refine/SKILL.md states the carry face's honest limits — exact video, soft audio, live-press judgement owed");
-    assert.match(refine, /Δ8\.86–9\.80[\s\S]{0,200}Δ4\.3/,
-      "refine/SKILL.md carries the measured seam delta against the adjacent-frame delta");
-    assert.match(refine, /ONE\s+56 f window \(2\.33 s\)[\s\S]{0,80}a single window is seam-free/,
-      "refine/SKILL.md names the seam-free posture (one design window)");
-
-    const repair = readSkill("repair");
-    const recipe = /## Worked recipe/.exec(repair);
-    assert.ok(recipe, "repair/SKILL.md carries a worked recipe section");
-    const section = repair.slice(recipe!.index);
-    assert.match(section, /params\.repair = \[\{/,
-      "the recipe binds through params.repair (never a flat key)");
+  it("ARM 7 — the measured craft lives in the ONE edit leaf (the skills collapse, 2026-11-16): the seam law, the worked recipe, and the OOM ceilings", () => {
+    // RE-PIN (the collapse's skills pass): the five legacy leaves are
+    // THIN ALIASES now - a PRESET CELL banner, the translation, and a
+    // pointer - because they all serve the SAME interface. The
+    // measured law they each carried (the friction report's speed
+    // findings) moved HOME to the edit leaf: the retired multi-window
+    // refine walk died with the tiling it taught (ONE window per doc,
+    // the parity wall's own law), and its teaching must not survive
+    // as a dead door's recipe.
+    const edit = readSkill("edit");
+    // NO CROSSFADE (the pop is structural): a blend of two
+    // independent renders is a double exposure, never a soft step.
+    assert.match(edit, /a blend of\s+two INDEPENDENT renders is\s+a DOUBLE EXPOSURE \(the ghost\),\s+not a soft step and not a cure for\s+the pop/i,
+      "edit/SKILL.md names the crossfade as the ghost, never as a pop cure");
+    assert.match(edit, /\u03948\.86\u20139\.80[\s\S]{0,200}\u03944\.3/,
+      "edit/SKILL.md carries the measured seam delta against the adjacent-frame delta");
+    assert.match(edit, /off-grid carry REFUSES at compose/,
+      "edit/SKILL.md states the refusal that retires the blend fallback");
+    assert.match(edit, /the carried span is BIT-IDENTICAL[\s\S]{0,220}the audio seam keeps its soft step/i,
+      "edit/SKILL.md states the carry face's honest limits - exact video, soft audio");
+    assert.match(edit, /ONE\s+56 f window \(2\.33 s\)[\s\S]{0,80}a single window is seam-free/,
+      "edit/SKILL.md names the seam-free posture (one design window)");
+    assert.match(edit, /430 f window @1\.0 OOM/i,
+      "edit/SKILL.md carries the measured 430 f-at-1.0 OOM beside the 141 f @2x");
+    // THE WORKED RECIPE binds the ONE bag (the repair leaf's recipe
+    // moved home when the leaf collapsed to its alias banner).
+    const recipe = /## Worked recipe/.exec(edit);
+    assert.ok(recipe, "edit/SKILL.md carries a worked recipe section");
+    const section = edit.slice(recipe!.index);
+    assert.match(section, /params\.edit = \[\{/,
+      "the recipe binds through params.edit (the ONE bag, never a legacy spelling)");
     const starts = [...section.matchAll(/window_start:\s*(\d+)/g)].map((m) => Number(m[1]));
     assert.ok(starts.length >= 2, "the recipe shows BOTH shapes (a whole-clip press and a splice-aware press)");
     assert.ok(starts.includes(68) && starts.includes(77),
-      "the splice-aware recipe rides the SAME 68 f step the refine walk teaches (window 90, overlap 22)");
+      "the splice-aware recipe rides the SAME 68 f step the film walk teaches (window 90, overlap 22)");
     assert.match(section, /replaces the same slot|same slot in the\s+assembly/i,
-      "the recipe says the repaired window drops back into its slot");
-    assert.match(section, /never weld a\s+repair window onto a different step/i,
+      "the recipe says the edited window drops back into its slot");
+    assert.match(section, /never weld an?\s+(?:edit|repair) window onto a different step/i,
       "the recipe forbids the seam drift");
+    // and the thin alias leaves POINT at the one home - an agent
+    // reading a legacy spelling is never left holding a retired
+    // recipe of its own.
+    for (const leaf of ["repair", "refine", "upscale", "swap"]) {
+      const md = readSkill(leaf);
+      assert.match(md, /ONE place: the `edit` skill/,
+        `${leaf}/SKILL.md points at the ONE interface home`);
+    }
   });
 
   it("ARM 8 — the extend leaf states the measured SEAM LAW (an anchor is not a pixel lock)", () => {

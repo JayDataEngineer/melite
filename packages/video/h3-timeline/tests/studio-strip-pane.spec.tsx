@@ -14,6 +14,7 @@ import { studioCopy } from "../src/ui/studio/studioCopy.ts"
 import { bindEstateRemote, unbindEstateRemote } from "@melite/card-base/client"
 import { callsToPrompts } from "../src/ui/studio/docCalls.ts"
 import type { DocCommission } from "../src/ui/studio/commissions.ts"
+import type { DocCall } from "../src/ui/studio/docModel.ts"
 import { repoRoot } from "./repo-root.ts"
 
 // happy-dom returns zero rects (no layout) — the bar's ClientX→frame
@@ -256,9 +257,8 @@ if (!/\.knobGrid [^{]*\{[^}]*minmax\(0, ?1fr\)/.test(css)) {
 if (!/\.cardSpan [^{]*\{[^}]*text-overflow: ellipsis/.test(css)) {
   throw new Error("THE SPAN FORCES: .cardSpan must ellipsize (full text already in title) — flex:none + a 45-char readout forces every card head past the rail");
 }
-if (!/\.seamRow > select [^{]*\{[^}]*max-width: 100%/.test(css)) {
-  throw new Error("THE SEAM FORCES: .seamRow > select must cap at max-width: 100% — the longest option sizes the box past the rail");
-}
+// (the seam select's cap rule retired at edf864af4 — the subcard
+// that carried it is gone; the strip chip needs no select cap)
 if (!/\.spanRow input [^{]*\{[^}]*max-width: 100%/.test(css)) {
   throw new Error("THE FRAMES FORCE: .spanRow input must cap at max-width: 100% — native number inputs carry ~170px intrinsic width each");
 }
@@ -914,7 +914,9 @@ describe("THE SEAM CHIP — the tenant's cut choice", () => {
     { text: "a", start_frame: 0, end_frame: 90 },
     { text: "b", start_frame: 90, end_frame: 175, transition: "cut" },
   ]
-  const EDIT: DocCommission = { kind: "edit", seats: [{ key: "source_clip", value: "clips/a.mp4" }] }
+  // the rail projects the LEGACY kinds (alias law: the edit bag
+  // arrives as one of the five names, never a bare "edit")
+  const EDIT: DocCommission = { kind: "replace", seats: [{ key: "source_clip", value: "clips/a.mp4" }] }
   const AUTHORED: DocCall = { text: "she walks on, the light shifts", start_frame: 0, end_frame: 90 }
 
   it("under a DORMANT face the chip stands down with the other four edit doors — a cut authored into a lane the armed run never reads is dead authoring", () => {
@@ -932,7 +934,7 @@ describe("THE SEAM CHIP — the tenant's cut choice", () => {
     const chip = chips[0] as HTMLElement
     assert.equal(chip.getAttribute("data-seam-toggle"), "call-1")
     assert.equal(chip.getAttribute("data-seam-state"), "cut")
-    fireEvent.click(chip)
+    fireEvent.click(chip.querySelector("button") ?? chip)
     // cut → carried (the default chain); the call index, never the id
     assert.deepEqual(rec.seam, [[1, "extend"]])
   })

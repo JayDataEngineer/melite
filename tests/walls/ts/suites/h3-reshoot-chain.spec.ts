@@ -192,10 +192,13 @@ describe("the h3 camera re-shoot wall (the fourth mod bag, official rework)", ()
       /reshoot bag carries 2 entries — max_stack is 1.*Keep exactly one reshoot entry/,
       "the second entry would be silently dropped; refuse loud instead",
     );
-    // the four bags share the guard: the swap arm names its own noun
+    // the four bags share the guard: the collapse unified the edit
+    // side's refusal (slice 4 — every alias resolves into ONE edit
+    // entry; the wording names the bag by its own key), while the
+    // reshoot arm above keeps its own door and noun
     assert.throws(
       () => compose({ ...BASE, replace: [{ source_clip: "c.mp4", swap_prompt: "x" }, { source_clip: "c.mp4" }] }),
-      /replace bag carries 2 entries — max_stack is 1.*Keep exactly one swap entry/,
+      /replace carries 2 entries — one entry per arm.*silently dropped/,
     );
   });
 

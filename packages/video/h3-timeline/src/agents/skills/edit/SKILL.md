@@ -149,6 +149,70 @@ It is NOT:
    hands, grown 16 px, blurred 0"), the anchors, the pole, and that
    every other arm is empty.
 
+
+## Worked recipe (two real shapes)
+
+**A. One region in a short clip - the default press.** Source
+`demo_clip.mp4` (6.0 s = 144 f, 24 fps). The hands are wrong from
+3.2 s. Seat one edit entry and nothing else:
+
+```
+params.edit = [{
+  source_clip: "demo_clip.mp4",
+  edit_prompt: "natural hands, five fingers, no extra digits",
+  region_prompt: "hands",
+  mask_source: "region", reference: "self",
+  denoise: 0.32, keep_audio: true, mask_grow: 16, detection_threshold: 0.5,
+  window_start: 77, window_length: 90, clip_seconds: 3.75,
+  overlap_frames: 22, resolution: "736p", seed: 0, steps: 6
+}]
+```
+
+`window_start` 77 = 3.21 s, so the window covers 3.21-6.96 s - the
+whole end of the clip, one press, no splice. Everything outside the
+tracked mask (and the audio) is held from the source. 90 f at 736p
+is the green window; do not widen it to "just get the start of the
+clip too" - `window_start: 0` with 144 f is two windows and two
+presses.
+
+**B. A region on a composed film - the splice-aware press.** The
+film was built from 90 f windows at step 68 f (`start_seconds`
+0 / 2.833 / 5.667 ...), so seams sit at 3.75 s, 6.583 s, ... To fix
+the hands in the window that starts at 2.833 s, use that window's
+own numbers:
+
+```
+window_start: 68, window_length: 90, clip_seconds: 3.75, overlap_frames: 22
+```
+
+The edit run returns ONE 90 f clip; it replaces the same slot in the
+assembly. This door does not splice: re-join with the same 22 f
+overlap the film was built with (or trim the overlap in an editor) -
+never weld an edit window onto a different step, the seam drifts by
+the difference. A region that straddles a seam needs the window on
+both sides; press them in order and keep each window's own
+`window_start`.
+
+## The seam craft (measured, one home)
+
+- NO CROSSFADE, EVER: a blend of two INDEPENDENT renders is
+  a DOUBLE EXPOSURE (the ghost), not a soft step and not a cure for
+  the pop - measured Δ8.86–9.80 across the carry against Δ4.3
+  between adjacent frames inside one window. The crossfade is not
+  served; an off-grid carry REFUSES at compose instead.
+- The carried span is BIT-IDENTICAL: the finalize drops the incoming
+  window's re-rendered head, so every frame the film emits across
+  the join is the previous window's own decode, never a blend - and
+  the audio seam keeps its soft step.
+- The honest postures: a film that must be seamless TODAY on the
+  audio too presses ONE 56 f window (2.33 s) — a single window is seam-free
+  by construction; a longer film tiles or presses window
+  by window. Judge each window before pressing the next, and judge
+  the join before calling the film done.
+- The measured OOM ceilings: 141 f @2x (the refine handoff), and a
+  430 f window @1.0 OOM'd too (20.08 GiB allocated, 830 MiB short) -
+  budget the window, never widen it on hope.
+
 ## One door per doc
 
 The edit arm races every other armed door — replace, repair, extend,

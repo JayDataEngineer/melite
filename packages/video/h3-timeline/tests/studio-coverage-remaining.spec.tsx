@@ -112,6 +112,7 @@ function makeStripProps(rec: StripRecord, over: Partial<StripProps> = {}): Strip
     addKeyframeWithImage: () => "k",
     enterKfView: () => {},
     enterAudioView: () => {},
+    setCallTransition: () => {},
   }
   return { ...props, ...over }
 }

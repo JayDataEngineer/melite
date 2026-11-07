@@ -101,6 +101,7 @@ function strip(over?: Record<string, unknown>) {
       addKeyframeWithImage={(image, frame) => { rec.kfWithImage.push([image, frame]); return "k77" }}
       enterKfView={() => { rec.kfDoor.push(0) }}
       enterAudioView={(id) => { rec.audioDoor.push(id) }}
+      setCallTransition={() => {}}
       {...over}
     />,
   )
