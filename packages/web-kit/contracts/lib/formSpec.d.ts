@@ -216,10 +216,13 @@ export interface ModifierKind {
      *  named starting cells for a one-bag kind — each patch touches
      *  ONLY the kind's own declared fields (the registration door
      *  refuses any other key or a mistyped value), and the chip
-     *  applies it to the bag's single entry (merging over the draft,
-     *  never replacing staged files). A preset is a CLIENT affordance
-     *  over the ONE schema: the wire stays the bag, the compose door
-     *  never reads preset ids. Served verbatim; absent = no chips. */
+     *  OPENS THE ONE LEAF seeded with the cell (the master modal,
+     *  2026-11-16: the chip is a door into the modal, never a second
+     *  editor - the patch merges over the seed, staged files stay,
+     *  and the save is the operator's own press). A preset is a
+     *  CLIENT affordance over the ONE schema: the wire stays the bag,
+     *  the compose door never reads preset ids. Served verbatim;
+     *  absent = no chips. */
     presets?: readonly ModifierPreset[];
     /** THE GHOST DEFAULT (F34's chip half, 2026-11-13): the family's own
      *  ABSENT-BAG resolution, as a resolved entry row (`{id, strength,

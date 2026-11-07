@@ -202,6 +202,38 @@ describe("the edit bag's preset chips (stage 3: named cells over the ONE schema)
     assert.throws(() => validateDeclaredMods("forged-card", [kind as never]), /preset 'same' is declared twice/);
   });
 
+  it("THE RIDING FIELDS DECLARE THEIR SUBMENUS (slice 5, the master modal): every rides-only seat states its master through the one visible_when grammar, and the wire serves it", async () => {
+    // THE OPERATOR'S NAMED ASK (the collapse's slice 5): "the refine
+    // switch opening the scale submenu" - the GUI hides nothing by
+    // hand; each riding field declares the switch that opens it, and
+    // the leaf interprets the same grammar every card face already
+    // does. The blank-mask law rides the same seat: the region/static
+    // mask fields stand down under whole-frame (nothing is held).
+    const { fields } = editKind();
+    const vw = (name: string): string | undefined =>
+      (fields.find((f) => f.name === name) as { visible_when?: string } | undefined)?.visible_when;
+    assert.equal(vw("scale"), "refine=true", "the named submenu: scale opens under the refine switch");
+    assert.equal(vw("extend_seconds"), "continuation=true", "the extend seat opens under the continuation switch");
+    assert.equal(vw("region_prompt"), "mask_source=region", "the SAM3 prompt rides the region source");
+    assert.equal(vw("detection_threshold"), "mask_source=region", "the detection threshold rides the region source");
+    assert.equal(vw("mask"), "mask_source=static-png", "the staged PNG rides the static source");
+    assert.equal(vw("mask_grow"), "mask_source!=whole-frame", "mask tuning rides any real mask");
+    assert.equal(vw("mask_blur"), "mask_source!=whole-frame", "same law as the grow");
+    assert.equal(vw("still"), "reference=still+mannequin", "the still rides the swap anchors");
+    assert.equal(vw("mannequin"), "reference=still+mannequin", "the mannequin rides the swap anchors");
+    assert.equal(vw("refine"), "chain_run=null", "the refine switch stands down under the upscale posture");
+    assert.equal(vw("continuation"), "chain_run=null", "the continuation switch stands down under the upscale posture");
+    // THE WIRE: the served body carries the declarations verbatim -
+    // the GUI's submenus ride the served spec, never a client guess
+    const body = specBody(theService(), await loadCardDefs(), {
+      card: "h3-timeline", service: "h3-timeline", model: "h3-timeline",
+    });
+    const served = (body.features?.modifiers ?? []).find((k) => k.param_key === "edit");
+    const servedScale = ((served as unknown as { fields?: Array<Record<string, unknown>> }).fields ?? [])
+      .find((f) => f.name === "scale") as { visible_when?: string } | undefined;
+    assert.equal(servedScale?.visible_when, "refine=true", "the wire serves the scale submenu law");
+  });
+
   it("THE WIRE: the form-spec body serves the edit presets verbatim (the chips the GUI renders ride the same cells)", async () => {
     const body = specBody(theService(), await loadCardDefs(), {
       card: "h3-timeline", service: "h3-timeline", model: "h3-timeline",

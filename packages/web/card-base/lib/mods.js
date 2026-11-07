@@ -42,7 +42,7 @@ import { Button, IconPlusOutlineRegular, Input, Menu, Modal } from '@deepseek-ai
 import css from './card.module.css';
 import { SpecAtom } from "./form.js";
 import { useSquareProvider } from "./form.js";
-import { coerceFieldEdit, fieldRequired, isHybridKind, isOptionKind, optionKeyOf, scalarKeyOf, titleCaseId } from "./spec.js";
+import { coerceFieldEdit, fieldRequired, fieldVisible, isHybridKind, isOptionKind, optionKeyOf, scalarKeyOf, titleCaseId } from "./spec.js";
 import { modCommitWrite } from '@melite/contracts/formSpec';
 import { LORA_ACCEPT } from '@melite/contracts/loraExtensions';
 import { SpecMenuSelect } from "./atoms.js";
@@ -431,7 +431,12 @@ export function ModifiersSection(props) {
         }
         return out;
     };
-    const openCreate = (k) => {
+    // THE MASTER-MODAL PRESET OVERLAY (slice 5, 2026-11-16): the
+    // chip's press OPENS the leaf seeded with the preset - the named
+    // cell's dials ride the draft where the operator SEES them move
+    // (the instant commit died with the collapse's one-interface
+    // law: the chip is a door into the modal, never a second editor).
+    const openCreate = (k, patch, presetId) => {
         const entries = entriesOf(k);
         if (k.max_stack !== undefined && entries.length >= k.max_stack) {
             setLeafError(k.label + ' stack limit reached (' + String(k.max_stack) + ') — remove one to add another.');
@@ -452,11 +457,11 @@ export function ModifiersSection(props) {
         setDraftOption('');
         setDraftStrength('');
         setDraftSteps('');
-        setDraftParams(fieldDefaults(k));
+        setDraftParams(patch === undefined ? fieldDefaults(k) : { ...fieldDefaults(k), ...patch });
         setLeafError(null);
-        setLeaf({ mode: 'create', kind: k, index: -1 });
+        setLeaf({ mode: 'create', kind: k, index: -1, ...(presetId !== undefined ? { preset: presetId } : {}) });
     };
-    const openEdit = (k, index) => {
+    const openEdit = (k, index, patch, presetId) => {
         // (the entry-undefined guard was deleted: tiles map 1:1 over this
         // same entriesOf(k) array in the same render — the clicked index
         // is always in range. No caller can observe the undefined state.)
@@ -505,6 +510,11 @@ export function ModifiersSection(props) {
                 if (entry[f.name] !== undefined)
                     params[f.name] = coerceFieldEdit(f, entry[f.name]);
             }
+            // THE PRESET OVERLAY rides the seed's tail (the merge law the
+            // instant chip pressed: staged files stay, the patch's dials
+            // move) - now visible in the open form before any save.
+            if (patch !== undefined)
+                Object.assign(params, patch);
             setDraftParams(params);
         }
         setLeafError(null);
@@ -516,7 +526,7 @@ export function ModifiersSection(props) {
         // the key select, the scalar dial, the steps row (option
         // kinds), and the kind's own fields (hybrids) — everything
         // else is ride-through, confirmed at save.
-        const seat = { mode: 'edit', kind: k, index, ref: entry, content: JSON.stringify(entry) };
+        const seat = { mode: 'edit', kind: k, index, ref: entry, content: JSON.stringify(entry), ...(presetId !== undefined ? { preset: presetId } : {}) };
         const owned = new Set([optionKeyOf(k), scalarKeyOf(k)]);
         if (isHybridKind(k)) {
             seat.key = { field: optionKeyOf(k), value: typeof entry[optionKeyOf(k)] === 'string' ? entry[optionKeyOf(k)] : '' };
@@ -785,14 +795,18 @@ export function ModifiersSection(props) {
                 tip: p.tooltip ?? p.label,
                 children: h('span', { 'data-testid': 'cb-mod-preset-' + p.id }, h(Button, {
                     variant: 'ghost',
+                    'aria-pressed': leaf !== null && leaf.kind === k && leaf.preset === p.id,
                     onClick: () => {
+                        // SLICE 5 (the master modal): the press OPENS
+                        // the leaf seeded with the cell - the dials
+                        // move where the operator sees them; the save
+                        // is the operator's own press (the instant
+                        // commit died with the one-interface law).
                         if (entries.length === 0) {
-                            commit(k, [{ ...fieldDefaults(k), ...p.patch }]);
+                            openCreate(k, p.patch, p.id);
                         }
                         else {
-                            const next = [...entries];
-                            next[0] = { ...entries[0], ...p.patch };
-                            commit(k, next);
+                            openEdit(k, 0, p.patch, p.id);
                         }
                     },
                 }, p.label)),
@@ -956,7 +970,23 @@ export function ModifiersSection(props) {
             title: leaf.mode === 'create' ? chromeCopy.leafCreateTitle({ kindLabel: live.label }) : chromeCopy.leafEditTitle({ kindLabel: live.label }),
             closeLabel: chromeCopy.leafCloseLabel,
             className: css.modLeafModal,
-        }, h(ModLeaf, { leaf: { ...leaf, kind: live }, values, hideFields: seated, onDraft: { setDraftOption, setDraftStrength, setDraftParams, setDraftSteps, draftOption, draftStrength, draftParams, draftSteps }, onError: setLeafError, onSave: saveLeaf, onDelete: deleteLeaf, leafError, paintFace: props.paintFace, bboxFace: props.bboxFace, ...(props.orbitFace !== undefined ? { orbitFace: props.orbitFace } : {}), paintReferenceValue: typeof props.paintReference === 'string' ? String(values[props.paintReference] ?? '') : '', ...(props.loadMedia !== undefined ? { loadMedia: props.loadMedia } : {}),
+        }, h(ModLeaf, { leaf: { ...leaf, kind: live }, values, hideFields: seated,
+            // THE PRESET PAINT'S OWN CLEAR (the master modal): a manual
+            // dial edit leaves the named cell - the seat's preset id
+            // clears with the first hand-moved dial (the switch row's
+            // own press re-paints through onPresetPick AFTER this
+            // wrapper runs, so the pressed cell stays painted).
+            onDraft: {
+                setDraftOption, setDraftStrength, setDraftSteps,
+                draftOption, draftStrength, draftParams, draftSteps,
+                setDraftParams: (v) => {
+                    setDraftParams(v);
+                    if (leaf.preset !== undefined)
+                        setLeaf({ ...leaf, preset: undefined });
+                },
+            },
+            onPresetPick: (id) => { if (leaf.preset !== id)
+                setLeaf({ ...leaf, preset: id }); }, onError: setLeafError, onSave: saveLeaf, onDelete: deleteLeaf, leafError, paintFace: props.paintFace, bboxFace: props.bboxFace, ...(props.orbitFace !== undefined ? { orbitFace: props.orbitFace } : {}), paintReferenceValue: typeof props.paintReference === 'string' ? String(values[props.paintReference] ?? '') : '', ...(props.loadMedia !== undefined ? { loadMedia: props.loadMedia } : {}),
             ...(props.loadChainRuns !== undefined ? { loadChainRuns: props.loadChainRuns } : {}),
             ...(props.uploadLora !== undefined ? { uploadLora: props.uploadLora } : {}),
             ...(props.refreshSpec !== undefined ? { refreshSpec: props.refreshSpec } : {}),
@@ -1148,7 +1178,36 @@ function ModLeaf(props) {
     // by IDENTITY against the served param_key, never by a kind name: a
     // bag container is a bag container on every pack.
     const leafFields = (k.fields ?? []).filter((f) => f.name !== k.param_key
-        && !(hidden?.has(f.name) ?? false) && !(facePresent && f.faceOwned === true));
+        && !(hidden?.has(f.name) ?? false) && !(facePresent && f.faceOwned === true)
+        // THE MASTER MODAL'S SUBMENUS (slice 5, 2026-11-16): the riding
+        // fields - scale under the refine switch, extend_seconds under
+        // the continuation, the mask fields under their own source -
+        // declare their visibility through the ONE grammar every card
+        // face already interprets (fieldVisible, spec.ts:707); the leaf
+        // is the last face to adopt it. The draft is the judge: a switch
+        // flip re-seats the row in the SAME open modal, never a second
+        // editor. Hidden values stay graph-neutral (compose judges the
+        // inert law; the save keeps whatever the draft carried).
+        && fieldVisible(f, onDraft.draftParams));
+    // THE PRESET SWITCHES (the collapse's slice 5: the preset switches
+    // inside it): the named matrix cells ride the modal's own head as
+    // switches - a press re-stages the draft through the SAME merge
+    // law the outer chip opened with (staged files stay, the cell's
+    // dials move), and the pressed cell paints. This row is the one
+    // door's face; the outer chips only ever OPEN here.
+    const presetSwitches = (k.presets ?? []).length > 0 && props.onPresetPick !== undefined
+        ? h('div', { className: css.modPresetRow, 'data-leaf-presets': k.param_key }, (k.presets ?? []).map((p) => 
+        // (the span carries the test id - the DSH Button's typed
+        // props admit no data-* seats; the outer chip row's own law)
+        h('span', { key: p.id, 'data-leaf-preset': p.id }, h(Button, {
+            variant: 'ghost',
+            'aria-pressed': leaf.preset === p.id,
+            onClick: () => {
+                onDraft.setDraftParams({ ...onDraft.draftParams, ...p.patch });
+                props.onPresetPick(p.id);
+            },
+        }, p.label))))
+        : null;
     // THE CONDITIONAL-REQUIRED STAR (2026-10-12, the sam3 prompt law):
     // the leaf's captions hand-roll — the star paints HERE too, judged
     // against the draft's own sibling values (the same fieldRequired
@@ -1398,7 +1457,7 @@ function ModLeaf(props) {
                             value: draftPose(),
                             onChange: (pose) => { onDraft.setDraftParams({ ...onDraft.draftParams, orbit: pose.orbit, tilt: pose.tilt, dolly: pose.dolly }); },
                         }))
-                        : null), h('div', { className: css.modLeafFields }, 
+                        : null), h('div', { className: css.modLeafFields }, presetSwitches, 
                     // THE SECTION CAPTION (2026-10-08, the operator's
                     // demand — "SAM2 AND SAM3 DON'T HAVE BBOX FILTER"):
                     // the kind's declared one-line name for what the
@@ -1442,7 +1501,7 @@ function ModLeaf(props) {
                             ? h('div', { className: css.modField }, h('span', { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name, leafStar(f)), atom)
                             : h('label', { className: css.modField }, f.label ?? f.name, leafStar(f), atom);
                     })())), own.wireMenu))
-                    : h('div', { className: css.modLeafFields }, 
+                    : h('div', { className: css.modLeafFields }, presetSwitches, 
                     // THE EMBEDDED CANVAS (stroke 95, the faceless-fallback
                     // shape): a canvas the kind declares but the host did not
                     // deliver can never mount — this arm renders the plain

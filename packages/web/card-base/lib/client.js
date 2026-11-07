@@ -16055,7 +16055,7 @@ window.__ModuleLoader__.load({
 				}
 				return out;
 			};
-			const openCreate = (k) => {
+			const openCreate = (k, patch, presetId) => {
 				const entries = entriesOf(k);
 				if (k.max_stack !== void 0 && entries.length >= k.max_stack) {
 					setLeafError(k.label + " stack limit reached (" + String(k.max_stack) + ") — remove one to add another.");
@@ -16075,15 +16075,19 @@ window.__ModuleLoader__.load({
 				setDraftOption("");
 				setDraftStrength("");
 				setDraftSteps("");
-				setDraftParams(fieldDefaults(k));
+				setDraftParams(patch === void 0 ? fieldDefaults(k) : {
+					...fieldDefaults(k),
+					...patch
+				});
 				setLeafError(null);
 				setLeaf({
 					mode: "create",
 					kind: k,
-					index: -1
+					index: -1,
+					...presetId !== void 0 ? { preset: presetId } : {}
 				});
 			};
-			const openEdit = (k, index) => {
+			const openEdit = (k, index, patch, presetId) => {
 				const entry = entriesOf(k)[index];
 				if (isHybridKind(k)) {
 					const key = optionKeyOf(k);
@@ -16105,6 +16109,7 @@ window.__ModuleLoader__.load({
 						if (seated?.has(f.name) ?? false) continue;
 						if (entry[f.name] !== void 0) params[f.name] = coerceFieldEdit(f, entry[f.name]);
 					}
+					if (patch !== void 0) Object.assign(params, patch);
 					setDraftParams(params);
 				}
 				setLeafError(null);
@@ -16113,7 +16118,8 @@ window.__ModuleLoader__.load({
 					kind: k,
 					index,
 					ref: entry,
-					content: JSON.stringify(entry)
+					content: JSON.stringify(entry),
+					...presetId !== void 0 ? { preset: presetId } : {}
 				};
 				const owned = /* @__PURE__ */ new Set([optionKeyOf(k), scalarKeyOf(k)]);
 				if (isHybridKind(k)) {
@@ -16334,19 +16340,10 @@ window.__ModuleLoader__.load({
 					tip: p.tooltip ?? p.label,
 					children: (0, react.createElement)("span", { "data-testid": "cb-mod-preset-" + p.id }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 						variant: "ghost",
+						"aria-pressed": leaf !== null && leaf.kind === k && leaf.preset === p.id,
 						onClick: () => {
-							if (entries.length === 0) commit(k, [{
-								...fieldDefaults(k),
-								...p.patch
-							}]);
-							else {
-								const next = [...entries];
-								next[0] = {
-									...entries[0],
-									...p.patch
-								};
-								commit(k, next);
-							}
+							if (entries.length === 0) openCreate(k, p.patch, p.id);
+							else openEdit(k, 0, p.patch, p.id);
 						}
 					}, p.label))
 				}))) : null;
@@ -16444,12 +16441,24 @@ window.__ModuleLoader__.load({
 					onDraft: {
 						setDraftOption,
 						setDraftStrength,
-						setDraftParams,
 						setDraftSteps,
 						draftOption,
 						draftStrength,
 						draftParams,
-						draftSteps
+						draftSteps,
+						setDraftParams: (v) => {
+							setDraftParams(v);
+							if (leaf.preset !== void 0) setLeaf({
+								...leaf,
+								preset: void 0
+							});
+						}
+					},
+					onPresetPick: (id) => {
+						if (leaf.preset !== id) setLeaf({
+							...leaf,
+							preset: id
+						});
 					},
 					onError: setLeafError,
 					onSave: saveLeaf,
@@ -16611,7 +16620,24 @@ window.__ModuleLoader__.load({
 					bbox_h: Math.round(b.height)
 				});
 			};
-			const leafFields = (k.fields ?? []).filter((f) => f.name !== k.param_key && !(hidden?.has(f.name) ?? false) && !(facePresent && f.faceOwned === true));
+			const leafFields = (k.fields ?? []).filter((f) => f.name !== k.param_key && !(hidden?.has(f.name) ?? false) && !(facePresent && f.faceOwned === true) && fieldVisible(f, onDraft.draftParams));
+			const presetSwitches = (k.presets ?? []).length > 0 && props.onPresetPick !== void 0 ? (0, react.createElement)("div", {
+				className: card_module_css_default.modPresetRow,
+				"data-leaf-presets": k.param_key
+			}, (k.presets ?? []).map((p) => (0, react.createElement)("span", {
+				key: p.id,
+				"data-leaf-preset": p.id
+			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				variant: "ghost",
+				"aria-pressed": leaf.preset === p.id,
+				onClick: () => {
+					onDraft.setDraftParams({
+						...onDraft.draftParams,
+						...p.patch
+					});
+					props.onPresetPick(p.id);
+				}
+			}, p.label)))) : null;
 			const leafStar = (f) => fieldRequired(f, onDraft.draftParams) ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null;
 			const own = useSquareProvider((name, v) => {
 				onDraft.setDraftParams({
@@ -16788,7 +16814,7 @@ window.__ModuleLoader__.load({
 						dolly: pose.dolly
 					});
 				}
-			})) : null), (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, k.section !== void 0 ? (0, react.createElement)("div", {
+			})) : null), (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, presetSwitches, k.section !== void 0 ? (0, react.createElement)("div", {
 				className: card_module_css_default.modStageCaption,
 				"data-stage-caption": "filter"
 			}, k.section) : null, leafFields.map((f) => (0, react.createElement)("div", { key: f.name }, (() => {
@@ -16816,7 +16842,7 @@ window.__ModuleLoader__.load({
 					...sq !== void 0 ? { square: sq } : {}
 				});
 				return sq !== void 0 ? (0, react.createElement)("div", { className: card_module_css_default.modField }, (0, react.createElement)("span", { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name, leafStar(f)), atom) : (0, react.createElement)("label", { className: card_module_css_default.modField }, f.label ?? f.name, leafStar(f), atom);
-			})())), own.wireMenu)) : (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, k.section !== void 0 ? (0, react.createElement)("div", {
+			})())), own.wireMenu)) : (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, presetSwitches, k.section !== void 0 ? (0, react.createElement)("div", {
 				className: card_module_css_default.modStageCaption,
 				"data-stage-caption": "filter"
 			}, k.section) : null, leafFields.map((f) => (0, react.createElement)("div", { key: f.name }, (() => {

@@ -81,8 +81,11 @@ function bindChainRuns(): void {
 async function upscaleKind(): Promise<ModifierKind> {
   const def = (await loadCardDefs()).get('h3-timeline')
   assert.ok(def, 'the composition root serves the h3-timeline card')
-  const k = (def.mods ?? []).find((m) => m.kind === 'upscale')
-  assert.ok(k, 'the h3-timeline card declares the upscale mod kind')
+  // RE-PIN (the collapse's slice 4): the five bag names left
+  // DECLARED_MOD_KINDS - the chain-run seat rides the ONE edit
+  // kind's chain_run dial (the upscale POSTURE, never a peer kind).
+  const k = (def.mods ?? []).find((m) => m.kind === 'edit')
+  assert.ok(k, 'the h3-timeline card declares the edit mod kind')
   return k as unknown as ModifierKind
 }
 
@@ -96,7 +99,7 @@ function openLeaf(props: Partial<Parameters<typeof ModifiersSection>[0]> = {}) {
 test('ARM 1 — THE DECLARATION: the card declares a chain-run picker seat with one short line', async () => {
   const k = await upscaleKind()
   const field = (k.fields ?? []).find((f) => f.name === 'chain_run')
-  assert.ok(field, 'the upscale kind declares the chain_run field')
+  assert.ok(field, 'the edit kind declares the chain_run field')
   // THE PICKER LAW: the field's type NAMES the live seat. The bare
   // text spelling is the toggle's own red — this assertion is the
   // wall's firing edge.
@@ -112,7 +115,7 @@ test('ARM 2 — THE FACE: the leaf serves the LIVE labeled rows and binds the pi
   const k = await upscaleKind()
   const { onEdit } = openLeaf({ kinds: [k], values: {}, loadChainRuns: fetchChainRunCandidates })
   fireEvent.click(document.querySelector('[data-subcard-add="mod"]') as HTMLElement)
-  fireEvent.click(screen.getByRole('menuitem', { name: 'Upscale' }))
+  fireEvent.click(screen.getByRole('menuitem', { name: 'Video edit' }))
   // The load lands before the menu opens (the seat renders its state;
   // the wall awaits the fact, never a sleep).
   await waitFor(() => {
@@ -121,7 +124,7 @@ test('ARM 2 — THE FACE: the leaf serves the LIVE labeled rows and binds the pi
   // THE HUMAN-LABELED ROWS: run id + lane + what it resumes (the
   // scene count the stamp itself reports) — served rows, never a
   // fabricated list. The plain film is NOT a row.
-  fireEvent.click(screen.getByRole('button', { name: 'Chain run' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Prior chain run' }))
   expect(screen.getByRole('menuitem', { name: 'run-5d9e144a4667 — repair, 4 scenes' })).not.toBeNull()
   expect(screen.getByRole('menuitem', { name: 'run-2aa2bb2cc333 — swap, 2 scenes' })).not.toBeNull()
   expect(screen.queryByRole('menuitem', { name: /run-plain-film-1/ })).toBeNull()
@@ -137,7 +140,7 @@ test('ARM 2 — THE FACE: the leaf serves the LIVE labeled rows and binds the pi
   fireEvent.click(screen.getByRole('button', { name: 'Add' }))
   expect(onEdit).toHaveBeenCalled()
   const [key, bag] = onEdit.mock.calls[0] as [string, Array<Record<string, unknown>>]
-  expect(key).toBe('upscale')
+  expect(key).toBe('edit')
   expect(bag[0]?.['chain_run']).toBe('run-5d9e144a4667')
 })
 
@@ -147,14 +150,14 @@ test('ARM 3 — THE DEGRADE: no runs lane (or a failed load) renders the plain t
   // own degrade law (absent host = the plain inputs hold).
   const absent = openLeaf({ kinds: [k], values: {} })
   fireEvent.click(document.querySelector('[data-subcard-add="mod"]') as HTMLElement)
-  fireEvent.click(screen.getByRole('menuitem', { name: 'Upscale' }))
-  const input = screen.getByLabelText('Chain run') as HTMLInputElement
+  fireEvent.click(screen.getByRole('menuitem', { name: 'Video edit' }))
+  const input = screen.getByLabelText('Prior chain run') as HTMLInputElement
   assert.equal(input.tagName, 'INPUT')
   expect(screen.queryByLabelText('Advanced — paste a run id')).toBeNull()
   fireEvent.change(input, { target: { value: 'swap_1111' } })
   fireEvent.click(screen.getByRole('button', { name: 'Add' }))
   const [key, bag] = absent.onEdit.mock.calls[0] as [string, Array<Record<string, unknown>>]
-  expect(key).toBe('upscale')
+  expect(key).toBe('edit')
   expect(bag[0]?.['chain_run']).toBe('swap_1111')
   cleanup()
 
@@ -163,16 +166,16 @@ test('ARM 3 — THE DEGRADE: no runs lane (or a failed load) renders the plain t
   const failed = async (): Promise<never> => { throw new Error('connection reset') }
   const broken = openLeaf({ kinds: [k], values: {}, loadChainRuns: failed })
   fireEvent.click(document.querySelector('[data-subcard-add="mod"]') as HTMLElement)
-  fireEvent.click(screen.getByRole('menuitem', { name: 'Upscale' }))
+  fireEvent.click(screen.getByRole('menuitem', { name: 'Video edit' }))
   await waitFor(() => {
     expect(document.querySelector('[data-chain-run-picker="chain_run"]')?.getAttribute('data-chain-runs-loaded')).toBe('failed')
   })
-  const fallback = screen.getByLabelText('Chain run') as HTMLInputElement
+  const fallback = screen.getByLabelText('Prior chain run') as HTMLInputElement
   assert.equal(fallback.tagName, 'INPUT')
   fireEvent.change(fallback, { target: { value: 'swap_2222' } })
   fireEvent.click(screen.getByRole('button', { name: 'Add' }))
   const [bkey, bbag] = broken.onEdit.mock.calls[0] as [string, Array<Record<string, unknown>>]
-  expect(bkey).toBe('upscale')
+  expect(bkey).toBe('edit')
   expect(bbag[0]?.['chain_run']).toBe('swap_2222')
 })
 
@@ -187,7 +190,7 @@ test('ARM 4 — THE SUPERSEDED FLIGHT: an aborted load is cleanup, never an erro
   const late = (): Promise<never> => new Promise((_resolve, reject) => { reject1 = reject })
   const first = render(h(ModifiersSection, { kinds: [k], values: {}, onEdit, onPatch, loadChainRuns: late }))
   fireEvent.click(document.querySelector('[data-subcard-add="mod"]') as HTMLElement)
-  fireEvent.click(screen.getByRole('menuitem', { name: 'Upscale' }))
+  fireEvent.click(screen.getByRole('menuitem', { name: 'Video edit' }))
   const seat = () => document.querySelector('[data-chain-run-picker="chain_run"]')
   expect(seat()?.getAttribute('data-chain-runs-loaded')).toBe('false')
   // the host re-serves the lane (a new loader identity) — flight 1 aborts by design
