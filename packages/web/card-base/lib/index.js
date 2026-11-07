@@ -36,6 +36,12 @@
  */
 export * from "./abortable.js";
 export * from "./spec.js";
+// THE SEAT-KIND LAW (the drop judge + the from-flow filter, the
+// modleaf-add journey audit 2026-11-16): the helpers every tenant
+// wire threads — one derivation for the OS accept, the drop judge,
+// and candidatesFor. Selective re-export (not the barrel's *): the
+// provider's hook stays internal to the trio.
+export { fileKindRefusal, seatFileKindOf, urlKindOf } from "./square-provider.js";
 export * from "./rejection-voice.js";
 export * from "./layout.js";
 export { WirePickerModal } from "./wirePicker.js";

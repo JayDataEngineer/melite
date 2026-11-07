@@ -327,14 +327,37 @@ export function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder
         // square's held face carries it, and the ✕ stays armed. The old
         // null+metric pair painted the PLUS on a full slot with no way
         // out.
-        return h(InputSquare, {
+        return h('div', { className: css.sourceRow, 'data-source-row': f.name }, h(InputSquare, {
             label: hideSquareLabel === true ? '' : (f.label !== '' ? f.label : f.name),
             // the aria seat stays even under the hidden caption (the
             // SourceRow idiom: readers keep the name, sighted get one)
             ...(hideSquareLabel === true ? { ariaLabel: f.label !== '' ? f.label : f.name } : {}),
             value: shown,
             ...square.verbs,
-        });
+        }), 
+        // THE ATTEMPT + REFUSAL FACES (the seat-kind judge's law, the
+        // modleaf-add journey audit 2026-11-16): a square that carries
+        // the provider's verbs carries its FACES too — SourceRow's own
+        // pair, verbatim (busy = the neutral in-flight line under the
+        // square, error = the danger-colored refusal). Before this,
+        // the mod leaf's seats fired the judge but rendered NOTHING:
+        // a wrong-kind drop refused SILENTLY — the exact burn the
+        // judge exists to end.
+        typeof square.busyVoice === 'string' && square.busyVoice !== ''
+            ? h('p', {
+                className: css.sourceRowBusy,
+                'data-slot-busy': f.name,
+                title: square.busy ?? square.busyVoice,
+                role: 'status',
+            }, square.busyVoice)
+            : null, typeof square.error === 'string' && square.error !== ''
+            ? h('p', {
+                className: css.sourceRowErr,
+                'data-slot-error': f.name,
+                title: square.error,
+                role: 'alert',
+            }, square.error)
+            : null);
     }
     // THE MULTI-SELECT CHIPS (the YOLO-classes law, 2026-10-08 — the
     // operator's verdict: a detector-owned vocabulary is NEVER a

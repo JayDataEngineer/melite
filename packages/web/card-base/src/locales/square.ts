@@ -76,6 +76,13 @@ export const squareCopy = {
    *  old mute face (empty string, rendered as nothing) read as a
    *  dead square (the operator's upload-lag burn). */
   uploading: (p: { name: string }): string => 'uploading ' + p.name + '\u2026',
+  /** The drop-kind refusal (the modleaf-add journey audit, 2026-11-16):
+   *  "a video File dropped on the IMAGE seat reaches onFile
+   *  unrefused" — the OS dialog's accept is a soft filter the drop
+   *  path bypasses; the seat's own kind law refuses loud into the
+   *  refusal face (never a value, never a silent drop). */
+  kindRefusal: (p: { name: string, seatKind: string, fileKind: string }): string =>
+    p.name + ' is a ' + p.fileKind + ' file \u2014 this seat takes ' + p.seatKind + ' files',
 }
 
 /** The dictionary's key union — the typed `t` seat's domain. */

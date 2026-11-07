@@ -4,6 +4,25 @@ import { createElement as h } from 'react';
 import { type InputSquareVerbs } from './square.js';
 import { type SpecField } from './spec.js';
 import type { ChainRunCandidate } from './runs-policy.js';
+/** THE SEAT'S FILE KIND — one derivation for the OS accept, the
+ * drop-kind judge, and the from-flow candidates filter (never three
+ * spellings): mesh seats take mesh, video-hinted seats take video,
+ * image seats take the image triad; an unhinted file seat takes
+ * EVERYTHING ('all' — the library law). */
+export declare function seatFileKindOf(f: SpecField): 'image' | 'video' | 'mesh' | 'all';
+/** A candidate URL's kind by extension — the from-flow filter's own
+ * vocabulary. Unknown extensions ride ('' matches every seat: the
+ * artifact's content truth is the door's, never the picker's). */
+export declare function urlKindOf(url: string): 'video' | 'image' | 'mesh' | '';
+/** THE SEAT'S FILE-KIND LAW (the modleaf-add journey audit,
+ * 2026-11-16 — the drop seam had NO judge): the OS dialog's accept
+ * is a SOFT filter the drag-drop path bypasses; this law refuses
+ * loud at onFile (both doors route through it), into the refusal
+ * face — never a value, never a silent drop.
+ * @param f the slot-shaped field being offered the file
+ * @param file the offered file (OS dialog or drop)
+ * @returns null when the kind matches; the refusal sentence otherwise */
+export declare function fileKindRefusal(f: SpecField, file: File): string | null;
 /** THE OS-DIALOG ACCEPT, derived per field (primitive ③): mesh rows
  *  offer the GLB pair; video-hinted rows offer the video formats
  *  (the same media hint the picker rides); everything else keeps

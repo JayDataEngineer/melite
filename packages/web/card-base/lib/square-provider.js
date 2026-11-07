@@ -30,6 +30,56 @@ function mediaKindForField(f) {
         return 'video';
     return 'all';
 }
+/** THE SEAT'S FILE KIND — one derivation for the OS accept, the
+ * drop-kind judge, and the from-flow candidates filter (never three
+ * spellings): mesh seats take mesh, video-hinted seats take video,
+ * image seats take the image triad; an unhinted file seat takes
+ * EVERYTHING ('all' — the library law). */
+export function seatFileKindOf(f) {
+    if (f.type === 'mesh')
+        return 'mesh';
+    if (f.type === 'image')
+        return 'image';
+    if (f.media === 'video')
+        return 'video';
+    return 'all';
+}
+/** A candidate URL's kind by extension — the from-flow filter's own
+ * vocabulary. Unknown extensions ride ('' matches every seat: the
+ * artifact's content truth is the door's, never the picker's). */
+export function urlKindOf(url) {
+    const u = url.toLowerCase();
+    if (/\.(mp4|webm|mov|mkv|avi|m4v)(\?|$)/.test(u))
+        return 'video';
+    if (/\.(png|jpe?g|webp|gif|bmp)(\?|$)/.test(u))
+        return 'image';
+    if (/\.(glb|gltf)(\?|$)/.test(u))
+        return 'mesh';
+    return '';
+}
+/** THE SEAT'S FILE-KIND LAW (the modleaf-add journey audit,
+ * 2026-11-16 — the drop seam had NO judge): the OS dialog's accept
+ * is a SOFT filter the drag-drop path bypasses; this law refuses
+ * loud at onFile (both doors route through it), into the refusal
+ * face — never a value, never a silent drop.
+ * @param f the slot-shaped field being offered the file
+ * @param file the offered file (OS dialog or drop)
+ * @returns null when the kind matches; the refusal sentence otherwise */
+export function fileKindRefusal(f, file) {
+    const seatKind = seatFileKindOf(f);
+    if (seatKind === 'all')
+        return null;
+    const type = file.type;
+    const fileKind = type.startsWith('video/') ? 'video'
+        : type.startsWith('image/') ? 'image'
+            : type.startsWith('model/') ? 'mesh' : '';
+    // an untyped file (empty MIME, common for .glb and exotic locals)
+    // rides — the door's own validation owns the content truth; this
+    // law judges only what the type system states.
+    if (fileKind === '' || fileKind === seatKind)
+        return null;
+    return t('kindRefusal', { name: file.name, seatKind, fileKind });
+}
 /** THE OS-DIALOG ACCEPT, derived per field (primitive ③): mesh rows
  *  offer the GLB pair; video-hinted rows offer the video formats
  *  (the same media hint the picker rides); everything else keeps
@@ -96,6 +146,14 @@ export function useSquareProvider(onEdit, wire) {
     // on failure, deleted on success).
     const [uploadBusy, setUploadBusy] = useState({});
     const onFile = useCallback(async (f, file) => {
+        // THE DROP-KIND JUDGE (2026-11-16, see fileKindRefusal): both
+        // doors (OS dialog + drop) route here; a wrong-kind file refuses
+        // into the seat's refusal face and never reaches a door.
+        const refusal = fileKindRefusal(f, file);
+        if (refusal !== null) {
+            setUploadErr((m) => ({ ...m, [f.name]: refusal }));
+            return;
+        }
         if (wire.onFile !== undefined) {
             wire.onFile(file);
             return;

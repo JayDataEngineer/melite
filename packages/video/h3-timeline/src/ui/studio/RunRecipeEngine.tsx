@@ -113,6 +113,20 @@ export function RunRecipeEngine({
     : undefined
   const wire: SquareWire = {
     candidates: refArtifacts.map((a) => ({ id: a.name, label: a.name, url: a.url })),
+    // THE FROM-FLOW KIND FILTER (the modleaf-add journey audit,
+    // 2026-11-16: "From-flow on the studio rail is UNFILTERED — the
+    // staged .mp4 was OFFERED to an image seat"): the picker's own
+    // candidatesFor seam, threaded at last — the rows a seat offers
+    // match the seat's file kind (the same one derivation the OS
+    // accept and the drop judge ride, seatFileKindOf; 'all' seats
+    // keep every artifact, unknown extensions ride).
+    candidatesFor: (f) => {
+      const want = seatFileKindOf(f)
+      if (want === 'all') return refArtifacts.map((a) => ({ id: a.name, label: a.name, url: a.url }))
+      return refArtifacts
+        .filter((a) => urlKindOf(a.url) === want)
+        .map((a) => ({ id: a.name, label: a.name, url: a.url }))
+    },
     loadMedia: fetchMediaLibrary,
     // THE LORA HAND-UPLOAD (2026-11-15, the operator's feature: "add
     // a button to upload a LORA and setting default strength — an

@@ -5417,6 +5417,19 @@ window.__ModuleLoader__.load({
 					label: a.name,
 					url: a.url
 				})),
+				candidatesFor: (f) => {
+					const want = seatFileKindOf(f);
+					if (want === "all") return refArtifacts.map((a) => ({
+						id: a.name,
+						label: a.name,
+						url: a.url
+					}));
+					return refArtifacts.filter((a) => urlKindOf(a.url) === want).map((a) => ({
+						id: a.name,
+						label: a.name,
+						url: a.url
+					}));
+				},
 				loadMedia: _melite_card_base_client.fetchMediaLibrary,
 				...spec !== null ? {
 					uploadLora: (file, opts) => (0, _melite_card_base_client.uploadLoraDoor)(file, {

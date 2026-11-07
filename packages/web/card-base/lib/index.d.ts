@@ -36,6 +36,7 @@
  */
 export * from './abortable.js';
 export * from './spec.js';
+export { fileKindRefusal, seatFileKindOf, urlKindOf } from './square-provider.js';
 export * from './rejection-voice.js';
 export * from './layout.js';
 export { WirePickerModal, type WirePickerModalProps } from './wirePicker.js';

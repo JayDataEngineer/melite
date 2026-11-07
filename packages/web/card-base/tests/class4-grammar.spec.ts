@@ -220,7 +220,11 @@ describe('THE S7 CLASS-4 WALL · card-base · TIP GRAMMAR', () => {
     //    TrajectoryTable.tsx:1174,1265 `title={attachment.name}` on
     //    truncation spans): atoms.tsx:76 error text + :78 uploading
     //    filename (the 2026-10-28 uploading face — the long clip name
-    //    truncates under the square, same idiom), preview.tsx:208
+    //    truncates under the square, same idiom), + the SpecAtom
+    //    square's OWN pair (the seat-kind judge's faces, 2026-11-16:
+    //    the mod leaf's seats render the provider's busy/refusal
+    //    under the square — the same two titles SourceRow carries,
+    //    on the leaf's seats), preview.tsx:208
     //    dead artifact / :237 history names / :257 strip filename /
     //    :309 film thumb name, square.tsx:233 held raw value,
     //    mods.tsx:799,938,969 caption labels.
@@ -242,7 +246,7 @@ describe('THE S7 CLASS-4 WALL · card-base · TIP GRAMMAR', () => {
     //    wave, 2026-11-05: a family count of ONE is a STATED face —
     //    the static select carries the row's own label, titled, the
     //    truncation class): axes.tsx.
-    expect(seatsIn(seats, 'atoms.tsx', 'element'), 'atoms.tsx').toBe(3)
+    expect(seatsIn(seats, 'atoms.tsx', 'element'), 'atoms.tsx').toBe(5)
     expect(seatsIn(seats, 'axes.tsx', 'element'), 'axes.tsx').toBe(1)
     expect(seatsIn(seats, 'form.tsx', 'element'), 'form.tsx').toBe(5)
     expect(seatsIn(seats, 'mods.tsx', 'element'), 'mods.tsx').toBe(5)
