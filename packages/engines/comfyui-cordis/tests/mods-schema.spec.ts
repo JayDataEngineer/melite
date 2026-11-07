@@ -150,6 +150,30 @@ describe("the declared mod-kind schema gate (registerCard's third door)", () => 
     );
   });
 
+  // (F3, the front-end evasion audit 2026-11-07) the merge law's
+  // file half was narrated everywhere ("staged files stay") and
+  // judged nowhere: a file-seat patch key is type-lawful (image and
+  // file are both string wire types) and would clobber the
+  // operator's staged file on every seated-bag chip press. The
+  // registration door refuses it now — the arm fires on the real
+  // validateDeclaredMods door.
+  it("a preset patching a staged-file seat refuses (a cell dials the matrix, it never stages files)", () => {
+    assert.throws(
+      () => validateDeclaredMods("c", [base({
+        fields: [...presetFields(), { name: "mask", label: "Mask", type: "image", default: "" }],
+        presets: [{ id: "x", label: "X", patch: { mask: "masks/track-union.png" } }],
+      })]),
+      /patches 'mask' — a staged-file seat \(type image\): a cell dials the matrix, it never stages files/,
+    );
+    assert.throws(
+      () => validateDeclaredMods("c", [base({
+        fields: [...presetFields(), { name: "clip", label: "Clip", type: "file", default: "" }],
+        presets: [{ id: "y", label: "Y", patch: { clip: "clips/a.mp4" } }],
+      })]),
+      /patches 'clip' — a staged-file seat \(type file\)/,
+    );
+  });
+
   it("a preset patching an unserved select value refuses (no invented vocabulary)", () => {
     assert.throws(
       () => validateDeclaredMods("c", [base({ fields: presetFields(), presets: [{ id: "x", label: "X", patch: { mask_source: "quantum" } }] })]),

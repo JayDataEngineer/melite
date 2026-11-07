@@ -18,6 +18,7 @@ import { fileURLToPath } from "node:url";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { loadCardDefs, resolveCardFlowOutputs } from "@melite/comfyui-cordis";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
+import { CROSS_REGIME_BAG_KEYS } from "@melite/video-h3-timeline/card";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import {
@@ -142,9 +143,15 @@ describe("the reshoot kind (the fourth mod bag, official rework)", () => {
   });
 
   it("admits names the bag (the commission rides the same admission plane as its siblings)", () => {
+    // (B-4, the back-end evasion audit 2026-11-07) the roster the
+    // arm walked was a four-name hand list — refine and upscale
+    // (served LEGACY names the door translates every day) were
+    // unjudged. The roster is DERIVED now: the same exported
+    // constant the admission plane scans, so a name added there
+    // walks here without a hand edit.
     const admits = (def as { admits?: string[] }).admits ?? [];
-    for (const seat of ['replace', 'repair', 'extend', 'reshoot']) {
-      assert.ok(admits.includes(seat), `admits carries '${seat}' — the five bags share one plane`);
+    for (const seat of CROSS_REGIME_BAG_KEYS) {
+      assert.ok(admits.includes(seat), `admits carries '${seat}' — the bags share one plane`);
     }
   });
 

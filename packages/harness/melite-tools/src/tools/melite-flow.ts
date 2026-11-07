@@ -54,6 +54,7 @@ import { loadCardDefs } from '@melite/comfyui-cordis'
 import { boardedMap, resolveSpecKeyForTool } from '../discovery.ts'
 import { isTerminalStatus, statusOf, statusOrPendingOf } from '@melite/contracts/stageView'
 import { admitCrossRegimeJoin } from '@melite/models-h3'
+import { CROSS_REGIME_BAG_KEYS } from '@melite/video-h3-timeline/card'
 
 /** The row's model (the QUEUE LANE LAW, agent-side): the row's
  *  params may name `model` explicitly; otherwise the card id
@@ -79,16 +80,20 @@ async function modelForCard(card: string, params: Record<string, unknown>): Prom
 }
 
 /** F18 — the cross-regime join admission, pass-side seat: for an
- * h3-timeline stage carrying an armed mod bag (replace/repair/
- * extend) with a plan tier, answer the family's own admission text
- * (models/h3 chainEdit.ts — the engine's tier math, cited) when the
- * tier would render a different shape than the doc's film regime
- * (width/height knobs, the film path's own defaults 1344×768);
- * null otherwise (no armed bag, a shape-true tier, or another
- * card — the admission never speaks outside its family). */
+ * h3-timeline stage carrying an armed mod bag whose kind declares a
+ * plan tier (the served edit bag and the legacy aliases that
+ * translate into it) with a stated resolution, answer the family's
+ * own admission text (models/h3 chainEdit.ts — the engine's tier
+ * math, cited) when the tier would render a different shape than
+ * the doc's film regime (width/height knobs, the film path's own
+ * defaults 1344×768); null otherwise (no armed bag, a shape-true
+ * tier, or another card — the admission never speaks outside its
+ * family). The roster is DERIVED from the card's own declaration
+ * (CROSS_REGIME_BAG_KEYS — the back-end evasion audit B-1): the
+ * pre-collapse hand list retired with the names it scanned. */
 function crossRegimeAdmissionOf(card: string, params: Record<string, unknown>): string | null {
   if (card !== 'h3-timeline') return null
-  const bag = ['replace', 'repair', 'extend']
+  const bag = CROSS_REGIME_BAG_KEYS
     .map((k) => params[k])
     .find((v): v is Array<Record<string, unknown>> =>
       Array.isArray(v) && v.length > 0 && typeof v[0] === 'object' && v[0] !== null)

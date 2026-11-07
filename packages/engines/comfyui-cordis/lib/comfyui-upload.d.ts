@@ -1,5 +1,5 @@
 import type { Client } from "@stable-canvas/comfyui-client";
-import type { EngineJson } from "./comfyui-types.js";
+import type { EngineJson } from "./comfyui-types.ts";
 /** §23 CROSS-ROOTS TREES for the chained-input arms: the run trees
  *  a '<run>/<rel>' tail may resolve under — the own output root
  *  first (the caller's runsRoot — own writes win), then every

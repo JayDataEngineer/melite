@@ -29,7 +29,9 @@ const ROOT = join(HERE, "..", "..", "..", "..");
 const readSkill = (name: string): string =>
   readFileSync(join(SKILLS, name, "SKILL.md"), "utf-8");
 
-/** The two armed bags whose leaf is not at `<param_key>/SKILL.md`:
+/** The LEGACY spellings whose alias leaf is not at
+ *  `<name>/SKILL.md` in this package (post-collapse none of them is
+ *  an armed bag; the roster is edit/reshoot/loras):
  *  `extend` rides the family's extend-flow bundle (served from the
  *  engine's models plane), and `replace`'s seat is served under the
  *  `swap` id — the leaf is `swap/SKILL.md` and it binds
@@ -350,12 +352,14 @@ describe("every served mod bag has a skill leaf an agent can read", () => {
     // wording teaches an agent to refuse a legal loras-plus-arm
     // press, and a legacy leaf that still calls its dead key a door
     // sends the agent at a removed surface.
-    for (const leaf of ["repair", "swap", "reshoot", "refine", "upscale"]) {
-      const md = readSkill(leaf);
+    const familyExtend = readFileSync(join(ROOT, LEAF_SEAT.extend.path), "utf-8");
+    for (const md of ["repair", "swap", "reshoot", "refine", "upscale"].map(readSkill).concat(familyExtend)) {
       expect(md).not.toMatch(/ANY two armed mod bags/i);
-      expect(md).toMatch(/THE LORA BAG IS NOT AN ARM/);
-      expect(md).toMatch(/COEXISTS/i);
-      if (leaf !== "reshoot") expect(md).toMatch(/PRESET CELL/);
+      if (md !== readSkill("reshoot")) {
+        expect(md).toMatch(/THE LORA BAG IS NOT AN ARM/);
+        expect(md).toMatch(/COEXISTS/i);
+        expect(md).toMatch(/PRESET CELL/);
+      }
     }
   });
 });

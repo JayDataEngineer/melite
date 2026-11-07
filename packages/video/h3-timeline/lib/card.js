@@ -168,8 +168,12 @@ const RESHOOT_MOD = {
  *  self / a still + mannequin pair), and Denoise (0.05–1). The
  *  safety law is the door's own: the identity boil (whole-frame ×
  *  self × >= 0.8, F3-17) and the partial audio drop refuse loud.
- *  Continuation and no-reference are NOT matrix cells — extend's
- *  and refine's own doors serve them (the refusal names them). */
+ *  Continuation (continuation + extend_seconds), the
+ *  no-reference second pass (refine + scale), and the deferred
+ *  upscale of a prior run (chain_run) ARE cells on this door —
+ *  dials of the bag, served by their own preset chips; the one
+ *  door this family refuses to fold is Reshoot (a different
+ *  chain, never a mask/denoise variation). */
 const EDIT_MOD = {
     kind: 'edit',
     label: 'Video edit',
@@ -216,6 +220,7 @@ const EDIT_MOD = {
         { name: 'continuation', label: 'Continuation', type: 'boolean', default: false, visible_when: 'chain_run=null', tooltip: "THE CONTINUATION SWITCH: ON turns this edit into an EXTEND — fresh full-denoise seconds appended to the source's last frame (the forced seam: anything new develops from it frame by frame, never appears whole), joined with the prior into one film. Rides the blank mask + self anchors + denoise 1 (each refused loud otherwise)." },
         { name: 'extend_seconds', label: 'Extend seconds', type: 'number', default: 2.33, visible_when: 'continuation=true', min: 0.91, max: 432.29, step: 0.01, tooltip: 'RIDES ONLY the continuation (inert when off): seconds appended — a single window lands on the engine grid at 24fps (22+17k frames; 2.33s = 56f, 15.08s = 362f the largest single window); above 362f the door joins N uniform windows under the 39f context overlap, exact delivery or a refusal naming the neighbors (ceiling 432.29s).' },
         { name: 'chain_run', label: 'Prior chain run', type: 'chain-run', default: '', tooltip: "THE UPSCALE POSTURE'S SEAT: the prior chain run resumed as the deferred 2x pass (denoise 0.24, steps 20); empty = a fresh edit." },
+        { name: 'segment_crf', label: 'Segment CRF', type: 'number', default: 18, min: 0, max: 51, step: 1, visible_when: 'chain_run!=null', tooltip: 'The H.264 quality of the persisted HQ scene segments the resumed run re-encodes (the adapter\'s own seat; 18 is its default). Rides only the upscale posture — a fresh edit never states it.' },
         { name: 'window_start', label: 'Window start (frames)', type: 'number', default: 0, min: 0, max: 100000, step: 1, tooltip: 'Frames (at the film clock, 24 fps) to skip before the edit window — 0 starts at the clip head.' },
         { name: 'window_length', label: 'Window length (frames)', type: 'number', default: 0, min: 0, max: 100000, step: 1, tooltip: 'Frames in the edit window — 0 runs to the end of the clip. A stated length must land on the engine grid 22+17k (56, 73, 90, 107, 124, 141…; off-grid refuses naming the nearest legal value) because the plan snap and the tracked mask must cut the same frames. The design window is 2.33 s = 56f (the 2 s class rung).' },
         { name: 'seed', label: 'Plan seed', type: 'number', default: 0, min: 0, max: 4294967295, step: 1, tooltip: 'The chain plan base_seed (the reference runs 0; the sampler seed stays the doc seed).' },
@@ -271,7 +276,19 @@ const DECLARED_MOD_KINDS = [
  * translation states the dial cell the name always named, every
  * translatable seat rides verbatim, and a seat no dial serves
  * REFUSES LOUD (never the silent drop). */
-const LEGACY_EDIT_KEYS = ['replace', 'repair', 'extend', 'refine', 'upscale'];
+export const LEGACY_EDIT_KEYS = ['replace', 'repair', 'extend', 'refine', 'upscale'];
+/** F18's cross-regime bag roster, DERIVED (the back-end evasion
+ *  audit B-1, 2026-11-07): every declared kind whose fields carry a
+ *  resolution seat, plus the legacy aliases that translate into one.
+ *  The pass-side admission scans THIS list — never a hand copy of
+ *  retired names (the pre-collapse list judged replace/repair/
+ *  extend while the served edit spelling rode unjudged). */
+export const CROSS_REGIME_BAG_KEYS = [
+    ...DECLARED_MOD_KINDS
+        .filter((kind) => (kind.fields ?? []).some((f) => f['name'] === 'resolution'))
+        .map((kind) => kind.param_key),
+    ...LEGACY_EDIT_KEYS,
+];
 const isArmedBag = (v) => Array.isArray(v) && v.length > 0;
 /** Which edit posture a walked doc rides — the ONE law the flow
  * output bindings and the compose door both read (one truth home):
@@ -283,15 +300,17 @@ const isArmedBag = (v) => Array.isArray(v) && v.length > 0;
 export function editPosture(p) {
     if (isArmedBag(p.reshoot))
         return 'reshoot';
-    // legacy keys resolve through the same posture logic the compose
-    // door's alias table states (a legacy refine doc is an edit
-    // refine-dial cell; a legacy extend doc is a continuation)
-    if (isArmedBag(p.edit))
-        return editEntryPosture(p.edit[0]);
-    if (isArmedBag(p.extend))
-        return 'join';
-    if (isArmedBag(p.replace) || isArmedBag(p.repair) || isArmedBag(p.refine) || isArmedBag(p.upscale))
-        return 'inchain';
+    // (B-7, the back-end evasion audit 2026-11-07) resolve-then-posture:
+    // the legacy names ride the SAME translation the compose door runs
+    // (resolveLegacyEditAliases → the ONE edit entry), then the one
+    // entry's own posture decides — never a second hand-copy of the
+    // alias table. A translation flip here without the resolver's own
+    // flip is structurally impossible: the resolver IS the derivation
+    // (card.spec's legacy edge arms bind it — flip the extend
+    // translation and the join arm reds).
+    const resolved = resolveLegacyEditAliases(p);
+    if (isArmedBag(resolved.edit))
+        return editEntryPosture(resolved.edit[0]);
     return 'film';
 }
 const editEntryPosture = (e) => e !== undefined && e.continuation === true ? 'join' : 'inchain';
@@ -350,24 +369,47 @@ const seatStr = (e, k) => typeof e[k] === 'string' ? e[k] : '';
 /** The per-name translation: the dial cell the name always named
  * (FRICTION_3's collapse map), every translatable seat verbatim. */
 function translateLegacyEntry(key, e) {
+    // (B-3, the back-end evasion audit 2026-11-07) the refusal was a
+    // four-seat enumeration; the law is DERIVED now: every seat the
+    // translation consumes is recorded, and the closing sweep refuses
+    // any STATED legacy key the translation never consumed — an
+    // unstated seat is never silently dropped, whatever its name.
+    const consumed = new Set();
     const pass = (...keys) => {
         const o = {};
-        for (const k of keys)
+        for (const k of keys) {
+            consumed.add(k);
             if (e[k] !== undefined)
                 o[k] = e[k];
+        }
         return o;
     };
+    /** A seat the translation READS without passing verbatim (a
+     *  rename's source, a translated unit) — consumed, never swept. */
+    const take = (...keys) => { for (const k of keys)
+        consumed.add(k); };
     const refuseSeat = (seat, why) => {
+        consumed.add(seat);
         if (e[seat] !== undefined && e[seat] !== '' && !(typeof e[seat] === 'number' && e[seat] === 0)) {
             throw new Error(`h3-timeline: the ${key} arm's '${seat}' seat rides no edit dial — ${why}. Restate the doc on the edit bag (its preset cell '${key}' is the same posture)`);
         }
     };
+    const out = translateLegacyCell(key, e, { pass, take, refuseSeat, seatStr });
+    for (const k of Object.keys(e)) {
+        if (!consumed.has(k)) {
+            throw new Error(`h3-timeline: the ${key} arm's '${k}' seat rides no edit dial — the translation consumed every seat the old kind served. Restate the doc on the edit bag (its preset cell '${key}' is the same posture)`);
+        }
+    }
+    return out;
+}
+function translateLegacyCell(key, e, h) {
+    const { pass, take, refuseSeat, seatStr } = h;
     switch (key) {
         case 'replace':
             refuseSeat('roles', 'the edit door carries no cast-roles rail; name the cast inside edit_prompt');
             return {
                 ...pass('source_clip', 'still', 'mannequin', 'mask', 'keep_audio', 'seed', 'steps', 'clip_seconds', 'overlap_frames', 'resolution'),
-                edit_prompt: seatStr(e, 'swap_prompt'),
+                edit_prompt: (take('swap_prompt'), seatStr(e, 'swap_prompt')),
                 mask_source: 'static-png',
                 reference: 'still+mannequin',
                 denoise: 1,
@@ -375,7 +417,7 @@ function translateLegacyEntry(key, e) {
         case 'repair':
             return {
                 ...pass('source_clip', 'region_prompt', 'mask_grow', 'detection_threshold', 'denoise', 'window_start', 'window_length', 'seed', 'steps', 'clip_seconds', 'overlap_frames', 'resolution'),
-                edit_prompt: seatStr(e, 'repair_prompt'),
+                edit_prompt: (take('repair_prompt'), seatStr(e, 'repair_prompt')),
                 mask_source: 'region',
                 reference: 'self',
                 // the arm's own declared default (the deleted kind filled it at
@@ -386,7 +428,7 @@ function translateLegacyEntry(key, e) {
         case 'extend':
             return {
                 ...pass('source_clip', 'extend_seconds', 'seed', 'steps', 'overlap_frames', 'resolution'),
-                edit_prompt: seatStr(e, 'extend_prompt'),
+                edit_prompt: (take('extend_prompt'), seatStr(e, 'extend_prompt')),
                 continuation: true,
                 mask_source: 'whole-frame',
                 reference: 'self',
@@ -398,14 +440,14 @@ function translateLegacyEntry(key, e) {
             refuseSeat('start_seconds', 'state the window in frames on the edit door (window_start)');
             return {
                 ...pass('source_clip', 'denoise', 'steps', 'seed', 'overlap_frames', 'scale'),
-                edit_prompt: seatStr(e, 'refine_prompt'),
+                edit_prompt: (take('refine_prompt'), seatStr(e, 'refine_prompt')),
                 mask_source: 'whole-frame',
                 reference: 'self',
                 // The arm's WINDOW is seconds on the old seat and frames on
                 // the edit bag (window_length); the edit bag's clip_seconds
                 // is the engine PLAN budget (band 2.5–15), never this
                 // window. Absence rides the arm's declared design default.
-                window_length: Math.round((typeof e.clip_seconds === 'number' ? e.clip_seconds : REFINE_DEFAULT_CLIP_SECONDS) * 24),
+                window_length: Math.round((take('clip_seconds'), typeof e.clip_seconds === 'number' ? e.clip_seconds : REFINE_DEFAULT_CLIP_SECONDS) * 24),
                 // the arm's own declared denoise default (see the repair cell)
                 denoise: typeof e.denoise === 'number' ? e.denoise : 0.32,
                 refine: true,
@@ -417,7 +459,7 @@ function translateLegacyEntry(key, e) {
             }
             return {
                 ...pass('chain_run', 'denoise', 'steps', 'segment_crf'),
-                edit_prompt: seatStr(e, 'prompt'),
+                edit_prompt: (take('prompt'), seatStr(e, 'prompt')),
                 // the arm's own declared default (the pass-2 recipe window)
                 denoise: typeof e.denoise === 'number' ? e.denoise : 0.24,
             };

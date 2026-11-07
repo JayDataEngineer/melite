@@ -12,20 +12,29 @@ description: Extend a clip with more seconds — when the take is RIGHT and the 
 
 # Extend Flow
 
+> THE LORA BAG IS NOT AN ARM: the loras adapter bag coexists with
+> every arm (extend included) — never refuse a legal loras-plus-arm
+> press.
+
 ## The decision
 
 Extend when the clip's take is right and the story needs more of it.
 Re-roll (same seed, new prompt) when the take itself is wrong — an
 extension continues content, it never corrects it. A masked fix of a
-region is the repair door; a person swap is the replace door; one door
-per doc.
+region is the repair cell; a person swap is the identity-swap cell —
+both are preset cells of the ONE Video edit bag, never second doors.
 
 ## The drive
 
-One card, one bag: bench the h3-timeline card with the `extend` arm
+One card, one bag: bench the h3-timeline card and seat the
+continuation cell on the ONE Video edit bag
 (`melite_construct add_stage` card "h3-timeline", the seats below in
-`params.extend[0]` — the card is the door) and the run starts at
-the user's Run press. The seats:
+`params.edit[0]` with `continuation: true`, `mask_source:
+"whole-frame"`, `reference: "self"`, `denoise: 1` — the card is
+the door) and the run starts at the user's Run press. A legacy doc
+carrying the seats in `params.extend[0]` still composes (the door
+translates the spelling into this cell at the compose door); state
+the edit bag directly in new docs. The seats:
 
 - `source_clip` — the prior clip, a stageable video. An earlier run's
   artifact URL lands (`/melite-media/runs/<run_id>/<file>.mp4`).

@@ -79,6 +79,22 @@ describe("the edit bag's preset chips (stage 3: named cells over the ONE schema)
     assert.deepEqual(presets.map((p) => p.id), [
       "repair-region", "identity-swap", "outfit-change", "whole-frame-restyle", "refine-2x", "extend-continuation", "upscale-2x", "static-mask-pass",
     ], "the retired names live on as the cells — the refine posture sixth (the fourth dial), the continuation seventh (slice 2's dial), the deferred upscale eighth (slice 3's posture)");
+    // (F7, the front-end evasion audit 2026-11-07) ids and JS types
+    // pin NOTHING of the cell's meaning: which denoise pole, which
+    // scale, which keep_audio IS the operator-facing cell. The
+    // patches are pinned VALUE-VERBATIM here — a 0.32→0.40 drift
+    // on repair-region reds this arm by name (the registration door
+    // type-checks; this is the only seat that judges the payload).
+    assert.deepEqual(presets.map((p) => p.patch), [
+      { mask_source: "region", reference: "self", denoise: 0.32, keep_audio: true },
+      { mask_source: "region", reference: "still+mannequin", denoise: 1 },
+      { mask_source: "region", reference: "still+mannequin", denoise: 0.55, keep_audio: true },
+      { mask_source: "whole-frame", reference: "self", denoise: 0.6 },
+      { mask_source: "whole-frame", reference: "self", denoise: 0.32, refine: true, scale: 2, clip_seconds: 2.5, keep_audio: true },
+      { continuation: true, mask_source: "whole-frame", reference: "self", denoise: 1 },
+      { chain_run: "prior-chain-run-name", denoise: 0.24, steps: 20 },
+      { mask_source: "static-png", reference: "self", denoise: 0.32, keep_audio: true },
+    ], "each named cell's payload, verbatim — the pole, the scale, the sound seat are the cell");
     const byName = new Map(fields.map((f) => [String(f["name"]), f]));
     for (const p of presets) {
       assert.ok(typeof p.label === "string" && p.label !== "", `preset ${p.id} carries a label`);
@@ -223,15 +239,36 @@ describe("the edit bag's preset chips (stage 3: named cells over the ONE schema)
     assert.equal(vw("mannequin"), "reference=still+mannequin", "the mannequin rides the swap anchors");
     assert.equal(vw("refine"), "chain_run=null", "the refine switch stands down under the upscale posture");
     assert.equal(vw("continuation"), "chain_run=null", "the continuation switch stands down under the upscale posture");
-    // THE WIRE: the served body carries the declarations verbatim -
-    // the GUI's submenus ride the served spec, never a client guess
+    // THE WIRE: the served body carries EVERY declaration verbatim -
+    // the GUI's submenus ride the served spec, never a client guess.
+    // (F4, the front-end evasion audit 2026-11-07) this walk judged
+    // ONE of the eleven guards (scale) while the registry narrated
+    // "the wire serves them"; the served walk is the SAME loop over
+    // the SAME eleven names now, so a projection that strips
+    // visible_when from the mod-kind fields reds eleven arms, not
+    // one - the silent-shrink class stays dead.
     const body = specBody(theService(), await loadCardDefs(), {
       card: "h3-timeline", service: "h3-timeline", model: "h3-timeline",
     });
     const served = (body.features?.modifiers ?? []).find((k) => k.param_key === "edit");
-    const servedScale = ((served as unknown as { fields?: Array<Record<string, unknown>> }).fields ?? [])
-      .find((f) => f.name === "scale") as { visible_when?: string } | undefined;
-    assert.equal(servedScale?.visible_when, "refine=true", "the wire serves the scale submenu law");
+    const servedFields = ((served as unknown as { fields?: Array<Record<string, unknown>> }).fields ?? []);
+    const servedVw = (name: string): string | undefined =>
+      (servedFields.find((f) => f.name === name) as { visible_when?: string } | undefined)?.visible_when;
+    for (const [name, want] of [
+      ["scale", vw("scale")],
+      ["extend_seconds", vw("extend_seconds")],
+      ["region_prompt", vw("region_prompt")],
+      ["detection_threshold", vw("detection_threshold")],
+      ["mask", vw("mask")],
+      ["mask_grow", vw("mask_grow")],
+      ["mask_blur", vw("mask_blur")],
+      ["still", vw("still")],
+      ["mannequin", vw("mannequin")],
+      ["refine", vw("refine")],
+      ["continuation", vw("continuation")],
+    ] as Array<[string, string | undefined]>) {
+      assert.equal(servedVw(name), want, `the wire serves the '${name}' submenu law verbatim`);
+    }
   });
 
   it("THE WIRE: the form-spec body serves the edit presets verbatim (the chips the GUI renders ride the same cells)", async () => {

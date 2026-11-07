@@ -121,6 +121,52 @@ test('a SEATED bag\'s chip opens the modal on the merge (staged files stay), and
   expect(bag[0]).toMatchObject({ mask_source: 'region', reference: 'self', denoise: 0.32, still: 'stills/girl.png' })
 })
 
+// (F2, the front-end evasion audit 2026-11-07) the preset contract
+// was narrated for EVERY kind but seeded only for field kinds: a
+// lawful hybrid-kind preset opened a dead modal — no dial moved, no
+// switch row rendered, green everywhere. ONE law, all three shapes
+// now: the patch's option/scalar seats open their own drafts, the
+// cell's remaining dials ride the params, and the switches row
+// renders inside the hybrid leaf too.
+test("(F2) ONE LAW, ALL THREE SHAPES — a HYBRID kind's chip seeds the modal: the option/scalar seats open their drafts, the cell's dials ride the params", () => {
+  const onEdit = vi.fn()
+  const HYBRID = {
+    kind: 'controlnet', label: 'ControlNet', param_key: 'controlnets', cardinality: 'multi',
+    entry: 'hybrid', option_key: 'type', scalar_key: 'strength',
+    options: [
+      { value: 'depth', label: 'Depth', model: 'm-depth', preprocessor: 'p-depth', defaults: { strength: 0.5 } },
+      { value: 'canny', label: 'Canny', model: 'm-canny', preprocessor: 'p-canny' },
+    ],
+    fields: [
+      { name: 'type', type: 'text', label: 'Type' },
+      { name: 'strength', type: 'number', label: 'Strength' },
+      { name: 'cond', type: 'text', label: 'Conditioning' },
+    ],
+    presets: [
+      { id: 'soft-depth', label: 'Soft depth', patch: { type: 'depth', strength: 0.35, cond: 'soft edges' } },
+    ],
+  } as unknown as ModifierKind
+  render(h(ModifiersSection, {
+    kinds: [HYBRID],
+    values: { controlnets: [{ type: 'canny', strength: 0.9, cond: 'hard edges' }] },
+    onEdit, onPatch: undefined,
+  }))
+  press('soft-depth')
+  // the modal opened ON THE MERGE and the switches ride the hybrid
+  // leaf too (the chips are the kind's OWN cells)
+  expect(leafSwitch('soft-depth').getAttribute('aria-pressed')).toBe('true')
+  // the scalar seat routed into ITS draft (0.9 → the cell's 0.35)
+  expect((modal().getByLabelText('Strength', { selector: 'input' }) as HTMLInputElement).value).toBe('0.35')
+  // the cell's remaining dial rode the params, visible in the draft
+  expect((modal().getByLabelText('Conditioning', { selector: 'input' }) as HTMLInputElement).value).toBe('soft edges')
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+  expect(onEdit).toHaveBeenCalledTimes(1)
+  const [, bag] = onEdit.mock.calls[0] as [string, Array<Record<string, unknown>>]
+  // the save carries the CELL: the option seat, the scalar seat, and
+  // the conditioned dial — never the seated entry's stale values
+  expect(bag[0]).toMatchObject({ type: 'depth', strength: 0.35, cond: 'soft edges' })
+})
+
 test('THE NAMED SUBMENU — the scale row rides the refine switch (visible_when judged on the live draft)', () => {
   const onEdit = vi.fn()
   render(h(ModifiersSection, { kinds: [EDIT], values: {}, onEdit, onPatch: undefined }))

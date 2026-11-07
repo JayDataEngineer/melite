@@ -244,6 +244,16 @@ function checkPresets(where, mod, row) {
             if (typeofDefault(patch[key]) !== want) {
                 throw new Error(`${where}: preset '${pid}' patches '${key}' with ${typeofDefault(patch[key])} — the field declares ${want} (the type-truth law)`);
             }
+            // (F3, the front-end evasion audit 2026-11-07) THE STAGED-FILE
+            // LAW: a cell dials the matrix, it never stages files. A patch
+            // naming an image/file seat is TYPE-LAWFUL (both are string
+            // wire types) and would silently CLOBBER the operator's staged
+            // file on every seated-bag chip press (the client merge is a
+            // plain Object.assign). Refused here at the registration door:
+            // the file seats are the operator's hands, never a chip's.
+            if (field["type"] === "image" || field["type"] === "file") {
+                throw new Error(`${where}: preset '${pid}' patches '${key}' — a staged-file seat (type ${String(field["type"])}): a cell dials the matrix, it never stages files (the operator's staged files survive every chip press)`);
+            }
             if (field["type"] === "select") {
                 // NO options fallback: checkField refuses an option-less
                 // select before this walk runs — options always arrives.

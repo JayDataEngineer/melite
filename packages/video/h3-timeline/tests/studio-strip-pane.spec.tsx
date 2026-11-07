@@ -927,7 +927,14 @@ describe("THE SEAM CHIP — the tenant's cut choice", () => {
     assert.deepEqual(rec.seam, [])
   })
 
-  it("a carried seam toggles to cut through the doc write (the uuid, never the render index)", () => {
+  // (F1, the front-end evasion audit 2026-11-07) the former title
+  // claimed "the uuid, never the render index" over a two-row
+  // UNfiltered bar — a state in which the two spellings are
+  // indistinguishable (and unreachable-through-filtering besides: the
+  // chip stands down under the dormant face). What IS judged: the
+  // uuid pass-through and the WRITE — the click lands on the right
+  // call's doc row through the real channel.
+  it("a carried seam toggles to cut through the doc write (the uuid channel lands the write on the right call)", () => {
     const { rec } = strip({ calls: CUT, barPrompts: callsToPrompts(CUT) })
     const chips = document.querySelectorAll("[data-seam-toggle]")
     assert.equal(chips.length, 1, "call 0 has no join before it — only the boundary chip")

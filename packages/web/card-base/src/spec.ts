@@ -700,8 +700,11 @@ export function resolveValue(spec: FormSpecDoc, user: SpecValues, base?: SpecVal
  * one guard's value may be a `|`-SET ("key=a|b" = key ∈ {a,b}).
  * (The ONE schema grammar — a field declares its own visibility;
  * the walker interprets, cards never hand-rolled predicates.) A
- * field with no visible_when always shows. Unknown guard keys:
- * show (never hide on a typo). Examples:
+ * field with no visible_when always shows. (F5, the front-end
+ * evasion audit 2026-11-07) a guard whose key is ABSENT from the
+ * values never matches a non-null want — the field HIDES (the
+ * fail-safe spec-matrix.spec.ts pins; spell guard keys exactly).
+ * Examples:
  *   "sharpen_enabled=true"
  *   "sharpen_enabled=true&sharpen_method=adaptive_usm|high_pass" */
 export function fieldVisible(f: SpecField, values: SpecValues): boolean {

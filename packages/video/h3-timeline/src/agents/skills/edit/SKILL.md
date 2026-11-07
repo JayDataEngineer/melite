@@ -1,6 +1,6 @@
 ---
 name: edit
-description: "The video-edit matrix on the h3-timeline: ONE bag whose dials state the cell — mask source (per-frame SAM3 region, whole frame, or one staged PNG resized in-graph), identity anchors (the source itself, or a still + mannequin pair), and the denoise pole. The seven legacy doors stay (each pinned byte-exact); this door serves the whole grid on the family's one matrix seat. NOT a new camera (Reshoot) — the refine pass (refine + scale), the continuation (continuation + extend_seconds), and the deferred 2x upscale of a prior chain run (chain_run) are dials ON this door."
+description: "The video-edit matrix on the h3-timeline: ONE bag whose dials state the cell — mask source (per-frame SAM3 region, whole frame, or one staged PNG resized in-graph), identity anchors (the source itself, or a still + mannequin pair), and the denoise pole. The five legacy edit names (replace, repair, extend, refine, upscale) do not stay as doors: a doc stating one composes through to its cell here, and an unstated dial refuses loud (never a silent drop). NOT a new camera (Reshoot) — the refine pass (refine + scale), the continuation (continuation + extend_seconds), and the deferred 2x upscale of a prior chain run (chain_run) are dials ON this door."
 genre: video
 ---
 
@@ -22,29 +22,41 @@ genre: video
 
 One bag, the whole edit matrix: you state WHERE the edit lands (the
 mask), WHO it keeps (the identity anchors), and HOW HARD it re-renders
-(the denoise pole) — the door composes the cell. The seven legacy
-doors were seven FIXED cells of this matrix; each stays frozen
-byte-pinned for its own docs, and the free cells compose here.
+(the denoise pole) — the door composes the cell. Five legacy doors
+were FIXED cells of this matrix; their names still compose (the
+door translates a legacy doc into its cell at the compose door,
+never a frozen peer), and the free cells compose here.
 
-THE NAMED CELLS (stage 3): the card serves five preset chips over
+THE NAMED CELLS (stage 3): the card serves EIGHT preset chips over
 this one schema — `repair-region` (region × self × 0.32, sound held),
 `identity-swap` (region × still+mannequin × 1, the masked side
 re-rendered whole), `outfit-change` (region × still+mannequin × 0.55,
 appearance anchored, motion riding through), `whole-frame-restyle`
-(whole-frame × self × 0.6, under the boil floor), and
-`static-mask-pass` (static-png × self × 0.32). A chip is a STARTING
+(whole-frame × self × 0.6, under the boil floor),
+`refine-2x` (whole-frame × self × 0.32 with the refine switch ON at
+2x, the learned upscale riding this edit's own latents in the same
+run), `extend-continuation` (whole-frame × self × 1, fresh seconds
+past the forced seam, state extend_seconds), `upscale-2x` (the
+deferred second pass of a PRIOR chain run: state chain_run, the
+recipe's pass-2 window serves), and `static-mask-pass` (static-png
+× self × 0.32). A chip is a STARTING
 cell, never a second door: state the cell's dials on the entry (the
 GUI chip and your entry compose identically — the wire is the bag,
 preset ids never ride it).
 
 It is NOT:
-- **a continuation** — more seconds appended to a prior clip is the
-  `extend` door (its composition solver and forced entry seam are its
-  own laws); this door refuses a continuation cell naming that door.
-- **a no-reference second pass** — the `refine` bag's own body class
-  (the 2x handoff) serves it; naming it here refuses the same way.
 - **a new camera** — that is `reshoot`, a different chain (MoGe +
-  CrossView), never a masked edit.
+  CrossView), never a masked edit. It is the ONE door this family
+  refuses to fold: not a cell of the mask × anchors × denoise
+  matrix.
+
+It IS (the postures that read like doors but are DIALS here): a
+continuation (`continuation` + `extend_seconds`, the forced seam
+appends fresh full-denoise seconds), a no-reference second pass
+(`refine` + `scale`, the learned upscale riding this edit's own
+latents in the same run), and a deferred 2x upscale of a PRIOR run
+(`chain_run`, the checkpointed scenes resume through the requeue
+loop — a different mechanism than the refine switch).
 
 ## The flow (bind, confirm, press)
 
@@ -129,6 +141,10 @@ It is NOT:
      REFUSE under this posture — one second-pass mechanism, one
      source posture. Mask, anchor, and window dials are inert
      here (no clip rides).
+   - `segment_crf` (0–51, 18) — the H.264 quality of the persisted
+     HQ scene segments the resumed run re-encodes (the adapter's
+     own seat; 18 is its default). Rides ONLY the upscale posture —
+     a fresh edit never states it.
    - `window_start` (0–100000, 0) — frames at the film clock (24 fps)
      to skip before the edit window.
    - `window_length` (0–100000, 0) — frames in the window; 0 runs to

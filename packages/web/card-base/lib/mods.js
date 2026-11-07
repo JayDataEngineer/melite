@@ -457,7 +457,9 @@ export function ModifiersSection(props) {
         setDraftOption('');
         setDraftStrength('');
         setDraftSteps('');
-        setDraftParams(patch === undefined ? fieldDefaults(k) : { ...fieldDefaults(k), ...patch });
+        // (F2) create seeds through the SAME seat router as edit — the
+        // patch applies on every kind shape, never only the field kinds
+        setDraftParams(patch === undefined ? fieldDefaults(k) : { ...fieldDefaults(k), ...routePresetPatch(k, patch, { setOption: setDraftOption, setStrength: setDraftStrength, setSteps: setDraftSteps }) });
         setLeafError(null);
         setLeaf({ mode: 'create', kind: k, index: -1, ...(presetId !== undefined ? { preset: presetId } : {}) });
     };
@@ -480,6 +482,11 @@ export function ModifiersSection(props) {
                 if (entry[f.name] !== undefined)
                     params[f.name] = coerceFieldEdit(f, entry[f.name]);
             }
+            // (F2) the patch rides the SAME routing on every shape — a
+            // hybrid preset's option/scalar seats open their own drafts,
+            // the cell's dials ride the params
+            if (patch !== undefined)
+                Object.assign(params, routePresetPatch(k, patch, { setOption: setDraftOption, setStrength: setDraftStrength }));
             setDraftParams(params);
         }
         else if (isOptionKind(k)) {
@@ -492,6 +499,14 @@ export function ModifiersSection(props) {
             const strength = typeof entry['strength'] === 'number' ? entry['strength'] : undefined;
             setDraftStrength(strength !== undefined ? String(strength) : '');
             setDraftSteps(typeof entry['steps'] === 'number' ? String(entry['steps']) : '');
+            // (F2) the option shape honors the patch too: its three seats
+            // open their drafts; any remaining keys ride the params
+            // remainder (never a silent drop at the seed)
+            if (patch !== undefined) {
+                const cell = routePresetPatch(k, patch, { setOption: setDraftOption, setStrength: setDraftStrength, setSteps: setDraftSteps });
+                if (Object.keys(cell).length > 0)
+                    setDraftParams(cell);
+            }
         }
         else {
             // THE DISPLAY-IS-THE-COMMIT LAW (the YOLO-classes fix): the
@@ -1035,6 +1050,41 @@ export function ModifiersSection(props) {
         },
     }, chromeCopy.namedPresenceCreate)))) : null);
 }
+/** (F2, the front-end evasion audit 2026-11-07) THE PRESET SEAT
+ *  ROUTER — one law, all three kind shapes: the patch's seats ride
+ *  the drafts they own (a hybrid kind's option/scalar seats and an
+ *  option kind's id/strength/steps seats live in their own drafts,
+ *  never in params), and everything else rides the params object.
+ *  Returns the params remainder — the caller seeds or merges it.
+ *  Before this, the patch applied ONLY on the field-kind shapes: a
+ *  lawful hybrid-kind preset was a dead chip (registration admitted
+ *  it, the face dropped it silently). */
+function routePresetPatch(k, patch, drafts) {
+    const cell = { ...patch };
+    const takeString = (seat, set) => {
+        if (typeof cell[seat] === 'string') {
+            set(cell[seat]);
+            delete cell[seat];
+        }
+    };
+    const takeNumber = (seat, set) => {
+        if (typeof cell[seat] === 'number') {
+            set(String(cell[seat]));
+            delete cell[seat];
+        }
+    };
+    if (isHybridKind(k)) {
+        takeString(optionKeyOf(k), drafts.setOption);
+        takeNumber(scalarKeyOf(k), drafts.setStrength);
+    }
+    else if (isOptionKind(k)) {
+        takeString('id', drafts.setOption);
+        takeNumber('strength', drafts.setStrength);
+        if (drafts.setSteps !== undefined)
+            takeNumber('steps', drafts.setSteps);
+    }
+    return cell;
+}
 /** THE LEAF BODY — split so the FIELD-kind editor gets its own
  *  square provider (the construction law: an image input constructs
  *  the square automatically, even inside a mod leaf). */
@@ -1203,7 +1253,9 @@ function ModLeaf(props) {
             variant: 'ghost',
             'aria-pressed': leaf.preset === p.id,
             onClick: () => {
-                onDraft.setDraftParams({ ...onDraft.draftParams, ...p.patch });
+                // (F2) the switch press rides the SAME seat router
+                // as the open — one law, all three shapes
+                onDraft.setDraftParams({ ...onDraft.draftParams, ...routePresetPatch(k, p.patch, { setOption: onDraft.setDraftOption, setStrength: onDraft.setDraftStrength, setSteps: onDraft.setDraftSteps }) });
                 props.onPresetPick(p.id);
             },
         }, p.label))))
@@ -1236,6 +1288,10 @@ function ModLeaf(props) {
     const optionKind = isOptionKind(k);
     return h('div', { className: css.modLeaf }, leafError !== null ? h('p', { className: css.modLeafError }, leafError) : null, isHybridKind(k)
         ? h('div', { className: css.modLeafFields }, 
+        // (F2) the preset switches ride the hybrid arm too — the
+        // chips are the kind's OWN cells, and the patch now routes
+        // into this shape's drafts (one door, every shape)
+        presetSwitches, 
         // THE HYBRID LEAF (the retired subcard, 1:1): the catalog
         // select binds option_key in BOTH modes (a type switch
         // re-stamps model/preprocessor on save); the bag element's

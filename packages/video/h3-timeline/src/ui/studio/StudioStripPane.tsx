@@ -485,13 +485,14 @@ export function StudioStripPane({
       // plain and prompt faces keep the add door (the film's authoring
       // surface / the run's prompt seat).
       onPromptAdd={callsFace.face === "dormant" ? undefined : (frame) => addCallAt(docFromFilm(frame))}
-      // THE SEAM CHIP (the collapse's cuts): the row's uuid resolves to
-      // its call through barPrompts (barPrompts[i] ↔ calls[i], one row
-      // per call) — never the lane's render index, which a dormant-face
-      // starter filter can shift. Click toggles carried ⇄ cut. Under a
-      // DORMANT face the chip stands down with the other four edit
-      // doors (a cut authored into a lane the armed run never reads is
-      // dead authoring — the mod-mode calls face's own law).
+      // THE SEAM CHIP (the collapse's cuts): the kit hands the tenant
+      // the row's uuid ONLY; the write resolves it to its call and
+      // lands on the doc (setCallTransition — the judged channel).
+      // Click toggles carried ⇄ cut. Under a DORMANT face the chip
+      // stands down with the other four edit doors (a cut authored
+      // into a lane the armed run never reads is dead authoring —
+      // the mod-mode calls face's own law; the wall asserts the chip
+      // is ABSENT there, so no filtered-face write path exists).
       onSeamToggle={
         callsFace.face === "dormant"
           ? undefined

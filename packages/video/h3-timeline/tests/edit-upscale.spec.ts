@@ -146,4 +146,32 @@ describe("the upscale posture — the deferred second pass on the one edit bag (
     assert.equal(ups.length, 1, "the learned 2x serves (ONE variant path)");
     assert.equal(ups[0][1].inputs["mode.scale"], 2, "scale 2x — the doc's posture spelling");
   });
+
+  // (B-2, the back-end evasion audit 2026-11-07) segment_crf was a
+  // pass-through with no declared dial: the band judge skipped it,
+  // the served face could not state it, and 9999 composed green —
+  // the ride law and the refusal law colliding unseen. The dial is
+  // DECLARED now (band 0–51, visible only under chain_run): the
+  // judge walks it, and both spellings — the served edit entry AND
+  // the legacy upscale through translation — refuse out-of-band.
+  it("segment_crf is a DECLARED posture dial: in-band rides to the adapter, out-of-band refuses on BOTH spellings", () => {
+    const out = compose({ ...UP_ENTRY(), segment_crf: 22 });
+    const adapter = ofClass(out, "MiniMaxH3ChainUpscaleAdapter");
+    assert.equal(adapter.length, 1, "the adapter serves the stated CRF");
+    assert.equal(adapter[0][1].inputs.segment_crf, 22, "the stated CRF rides verbatim (the ride law)");
+    assert.throws(
+      () => compose({ ...UP_ENTRY(), segment_crf: 9999 }),
+      /segment_crf/,
+      "the declared band refuses a wild CRF on the served spelling",
+    );
+    const walked = def.schema({
+      upscale: [{ chain_run: "run-1d3540406726", segment_crf: 9999 }],
+    }) as Record<string, unknown>;
+    const g = new GraphBuilder();
+    assert.throws(
+      () => def.compose(walked, model, g, "run_legacy_crf"),
+      /segment_crf/,
+      "the legacy upscale translation lands the SAME declared dial — the band judge walks the translated entry too",
+    );
+  });
 });

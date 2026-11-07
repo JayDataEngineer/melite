@@ -1195,6 +1195,43 @@ describe('melite_flow tile contract — the chat hydrates from the render', () =
       'the render PRINTS the admission in the row prose — the maker reads the render')
   })
 
+  // (B-1, the back-end evasion audit 2026-11-07) the pre-collapse
+  // scan judged replace/repair/extend only — the SERVED edit
+  // spelling (same resolution seat, same plan tier) rode with NO
+  // admission while every F18 arm stayed green on retired names.
+  // This arm rides the served spelling; the scan is DERIVED from
+  // the card's own declaration (CROSS_REGIME_BAG_KEYS).
+  test('F18: the SERVED edit-bag spelling admits too — the roster is derived, never a hand list of retired names', async () => {
+    const seen = mockEstate([
+      (lane: string, _args: unknown[]) => {
+        if (lane === 'benchGet') {
+          return { status: 200, body: { draft_id: 'd_f18_edit', rev: 1, stages: [
+            { id: 's_0', card: 'h3-timeline', params: {
+              width: 1344, height: 768,
+              edit: [{ source_clip: 'film_a', edit_prompt: 'fix the seam', resolution: '736p' }],
+            } },
+          ] } }
+        }
+        if (lane === 'runsStart') return { status: 202, body: { run_id: 'r_f18_edit', status: 'queued' } }
+        if (lane === 'runsStatus') {
+          return { status: 200, body: { status: 'completed', stages: [
+            { id: 's_0', url: '/runs/film_edit.mp4' },
+          ] } }
+        }
+        if (lane === 'draftsStagePatch') return { status: 200, body: { delivered: true } }
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(6000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.status, 'done', 'the admission NEVER refuses — the run completes')
+    const pass = out.pass as Array<Record<string, unknown>>
+    const warning = String(pass[0]!['warning'] ?? '')
+    assert.ok(warning.startsWith('h3-timeline: CROSS-REGIME JOIN'),
+      'the SERVED spelling carries the same admission: ' + JSON.stringify(pass[0]))
+    assert.ok(warning.includes("tier '736p' renders 1280×736"), 'the derived mod shape names the tier')
+  })
+
   test('F18: the shape-true tier stays SILENT — a reconciled join never nags, other cards never speak', async () => {
     const seen = mockEstate([
       (lane: string, _args: unknown[]) => {

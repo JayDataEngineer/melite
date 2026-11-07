@@ -10053,8 +10053,11 @@ window.__ModuleLoader__.load({
 		* one guard's value may be a `|`-SET ("key=a|b" = key ∈ {a,b}).
 		* (The ONE schema grammar — a field declares its own visibility;
 		* the walker interprets, cards never hand-rolled predicates.) A
-		* field with no visible_when always shows. Unknown guard keys:
-		* show (never hide on a typo). Examples:
+		* field with no visible_when always shows. (F5, the front-end
+		* evasion audit 2026-11-07) a guard whose key is ABSENT from the
+		* values never matches a non-null want — the field HIDES (the
+		* fail-safe spec-matrix.spec.ts pins; spell guard keys exactly).
+		* Examples:
 		*   "sharpen_enabled=true"
 		*   "sharpen_enabled=true&sharpen_method=adaptive_usm|high_pass" */
 		function fieldVisible(f, values) {
@@ -16077,7 +16080,11 @@ window.__ModuleLoader__.load({
 				setDraftSteps("");
 				setDraftParams(patch === void 0 ? fieldDefaults(k) : {
 					...fieldDefaults(k),
-					...patch
+					...routePresetPatch(k, patch, {
+						setOption: setDraftOption,
+						setStrength: setDraftStrength,
+						setSteps: setDraftSteps
+					})
 				});
 				setLeafError(null);
 				setLeaf({
@@ -16097,12 +16104,24 @@ window.__ModuleLoader__.load({
 					setDraftStrength(strength !== void 0 ? String(strength) : "");
 					const params = {};
 					for (const f of hybridFields(k, seated)) if (entry[f.name] !== void 0) params[f.name] = coerceFieldEdit(f, entry[f.name]);
+					if (patch !== void 0) Object.assign(params, routePresetPatch(k, patch, {
+						setOption: setDraftOption,
+						setStrength: setDraftStrength
+					}));
 					setDraftParams(params);
 				} else if (isOptionKind(k)) {
 					setDraftOption(typeof entry["id"] === "string" ? entry["id"] : "");
 					const strength = typeof entry["strength"] === "number" ? entry["strength"] : void 0;
 					setDraftStrength(strength !== void 0 ? String(strength) : "");
 					setDraftSteps(typeof entry["steps"] === "number" ? String(entry["steps"]) : "");
+					if (patch !== void 0) {
+						const cell = routePresetPatch(k, patch, {
+							setOption: setDraftOption,
+							setStrength: setDraftStrength,
+							setSteps: setDraftSteps
+						});
+						if (Object.keys(cell).length > 0) setDraftParams(cell);
+					}
 				} else {
 					const params = { ...fieldDefaults(k) };
 					for (const f of k.fields ?? []) {
@@ -16516,6 +16535,39 @@ window.__ModuleLoader__.load({
 				}
 			}, chromeCopy.namedPresenceCreate)))) : null);
 		}
+		/** (F2, the front-end evasion audit 2026-11-07) THE PRESET SEAT
+		*  ROUTER — one law, all three kind shapes: the patch's seats ride
+		*  the drafts they own (a hybrid kind's option/scalar seats and an
+		*  option kind's id/strength/steps seats live in their own drafts,
+		*  never in params), and everything else rides the params object.
+		*  Returns the params remainder — the caller seeds or merges it.
+		*  Before this, the patch applied ONLY on the field-kind shapes: a
+		*  lawful hybrid-kind preset was a dead chip (registration admitted
+		*  it, the face dropped it silently). */
+		function routePresetPatch(k, patch, drafts) {
+			const cell = { ...patch };
+			const takeString = (seat, set) => {
+				if (typeof cell[seat] === "string") {
+					set(cell[seat]);
+					delete cell[seat];
+				}
+			};
+			const takeNumber = (seat, set) => {
+				if (typeof cell[seat] === "number") {
+					set(String(cell[seat]));
+					delete cell[seat];
+				}
+			};
+			if (isHybridKind(k)) {
+				takeString(optionKeyOf(k), drafts.setOption);
+				takeNumber(scalarKeyOf(k), drafts.setStrength);
+			} else if (isOptionKind(k)) {
+				takeString("id", drafts.setOption);
+				takeNumber("strength", drafts.setStrength);
+				if (drafts.setSteps !== void 0) takeNumber("steps", drafts.setSteps);
+			}
+			return cell;
+		}
 		/** THE LEAF BODY — split so the FIELD-kind editor gets its own
 		*  square provider (the construction law: an image input constructs
 		*  the square automatically, even inside a mod leaf). */
@@ -16633,7 +16685,11 @@ window.__ModuleLoader__.load({
 				onClick: () => {
 					onDraft.setDraftParams({
 						...onDraft.draftParams,
-						...p.patch
+						...routePresetPatch(k, p.patch, {
+							setOption: onDraft.setDraftOption,
+							setStrength: onDraft.setDraftStrength,
+							setSteps: onDraft.setDraftSteps
+						})
 					});
 					props.onPresetPick(p.id);
 				}
@@ -16650,7 +16706,7 @@ window.__ModuleLoader__.load({
 				...props.loadMedia !== void 0 ? { loadMedia: props.loadMedia } : {}
 			});
 			const optionKind = isOptionKind(k);
-			return (0, react.createElement)("div", { className: card_module_css_default.modLeaf }, leafError !== null ? (0, react.createElement)("p", { className: card_module_css_default.modLeafError }, leafError) : null, isHybridKind(k) ? (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, (0, react.createElement)("div", { className: card_module_css_default.modField }, (0, react.createElement)("span", null, k.label), (0, react.createElement)(SpecMenuSelect, {
+			return (0, react.createElement)("div", { className: card_module_css_default.modLeaf }, leafError !== null ? (0, react.createElement)("p", { className: card_module_css_default.modLeafError }, leafError) : null, isHybridKind(k) ? (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, presetSwitches, (0, react.createElement)("div", { className: card_module_css_default.modField }, (0, react.createElement)("span", null, k.label), (0, react.createElement)(SpecMenuSelect, {
 				label: k.label,
 				value: onDraft.draftOption,
 				rows: catalogRows(k, onDraft.draftOption),

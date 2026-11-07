@@ -16,6 +16,26 @@ export { carrier, JSON_ARRAY_PARAMS, schema } from '@melite/models-h3/schema';
  *  family's own DECL, and with it the lane's files. */
 export declare const BOARDED: string[];
 export declare const VARIANT_ADDRESSES: string[];
+/** THE LEGACY EDIT ALIASES (slice 4 of the FRICTION_3 collapse —
+ * THE DELETION): the five peer bags left the DECLARED roster (the
+ * served face is edit + reshoot + loras; the operator 2026-11-06:
+ * "REPAIR AND REPLACE ARE THE [redacted - the emphatic spelling lives
+ * in the receipt] SAME OPERATION! REPAIR JUST USES THE ORIGINAL"). The
+ * names live on as the edit door's preset
+ * cells; a legacy doc (a saved bench, an old session, a pressed
+ * chip from before the collapse) resolves into the ONE bag at the
+ * compose door — compose-through, never a frozen peer: the
+ * translation states the dial cell the name always named, every
+ * translatable seat rides verbatim, and a seat no dial serves
+ * REFUSES LOUD (never the silent drop). */
+export declare const LEGACY_EDIT_KEYS: readonly ["replace", "repair", "extend", "refine", "upscale"];
+/** F18's cross-regime bag roster, DERIVED (the back-end evasion
+ *  audit B-1, 2026-11-07): every declared kind whose fields carry a
+ *  resolution seat, plus the legacy aliases that translate into one.
+ *  The pass-side admission scans THIS list — never a hand copy of
+ *  retired names (the pre-collapse list judged replace/repair/
+ *  extend while the served edit spelling rode unjudged). */
+export declare const CROSS_REGIME_BAG_KEYS: readonly string[];
 /** Which edit posture a walked doc rides — the ONE law the flow
  * output bindings and the compose door both read (one truth home):
  * 'film' nothing armed; 'inchain' the masked-edit matrix cells

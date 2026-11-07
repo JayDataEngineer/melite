@@ -16,6 +16,7 @@ import { fileURLToPath } from "node:url";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { loadCardDefs } from "@melite/comfyui-cordis";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
+import { LEGACY_EDIT_KEYS } from "@melite/video-h3-timeline/card";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import {
@@ -138,6 +139,36 @@ describe("the Replace name — a preset cell of the one edit bag (the collapse, 
     assert.throws(
       () => compose({ replace: [{ ...REPLACE_ENTRY(), roles: "hero: alice" }] }, "run_replace_roles"),
       /the replace arm's 'roles' seat rides no edit dial/,
+    );
+  });
+
+  // (B-8, the back-end evasion audit 2026-11-07) the multi-entry
+  // refusal had arms on 2 of the 5 legacy names — the other three
+  // could rot silently. The arm walks the DERIVED roster: every
+  // name the door admits, one loop, no hand list.
+  it("a TWO-ENTRY bag refuses under EVERY legacy name — the arm walks the derived roster", () => {
+    for (const k of LEGACY_EDIT_KEYS) {
+      assert.throws(
+        () => compose({ [k]: [{ source_clip: "clips/a.mp4" }, { source_clip: "clips/b.mp4" }] } as Record<string, unknown>, `run_two_${k}`),
+        new RegExp(`${k} carries 2 entries`),
+        `the ${k} name refuses a second entry`,
+      );
+    }
+  });
+
+  // (B-3, the back-end evasion audit 2026-11-07) the refusal was a
+  // four-seat enumeration — any OTHER unstated key dropped silently.
+  // The sweep is DERIVED now: a stated key the translation never
+  // consumed refuses BY NAME, whatever the key is (the enumeration
+  // cannot rot again).
+  it("the untranslatable-seat refusal is DERIVED: a stated key outside the translation's consumed set refuses BY NAME", () => {
+    assert.throws(
+      () => compose({ replace: [{ ...REPLACE_ENTRY(), noise_seed: 777 }] }, "run_replace_noise"),
+      /the replace arm's 'noise_seed' seat rides no edit dial/,
+    );
+    assert.throws(
+      () => compose({ repair: [{ source_clip: "clips/a.mp4", repair_prompt: "fix", flavor: "warm" }] }, "run_repair_flavor"),
+      /the repair arm's 'flavor' seat rides no edit dial/,
     );
   });
 

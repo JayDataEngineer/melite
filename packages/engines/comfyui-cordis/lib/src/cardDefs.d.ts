@@ -1,5 +1,5 @@
 import { Context } from '@deepseek-ai/cordis';
-import { ComfyUIService } from './service.js';
+import { ComfyUIService } from './service.ts';
 import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition';
 import type { ProvisionRow } from '@melite/comfyui-card-kit/model-contract';
 /** Test seam: drop the process-global card-defs cell. Production
