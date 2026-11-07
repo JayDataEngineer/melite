@@ -410,4 +410,71 @@ describe('THE PICK⇄STRIKE LOST UPDATE (2026-11-15 sweep) — the departure rid
       expect(face.textContent ?? '').toContain('Base')
     }, { timeout: 8000 })
   })
+
+  test('THE STRIKE RIDES THE PICK OUT OF FRAME (the 1063 seat): a base-held ghost the arrival never seeds rides the pick\'s OWN patch as its null — never a second CAS', async () => {
+    const spec = await formSpecArm('qwen3-tts')
+    expect(spec, 'the served qwen3-tts spec resolves').not.toBeNull()
+    stubKreaFetch(spec as FormSpecDoc)
+    // THE PRE-PICK DOC: the author map (params) is a lawful Base doc;
+    // the BASE layer (resolved — the last run's stamp plane) carries
+    // `recipe: 'turbo'`, dead vocabulary on this card: no lane
+    // declares it, no cell seeds it, no pick's frame ever names it.
+    // The reopen heal drops it from the AUTHOR plane at open (the
+    // same verb the strike judges with); the base layer underneath
+    // still holds the stamp, and ONLY the strike can retire it — the
+    // drill must fold its null into the pick's own atomic write
+    const stageRow: Record<string, unknown> = {
+      id: 's_0', card: 'qwen3-tts', engine: 'comfyui',
+      params: { model: 'qwen3-tts', variant: 'base', mode: 'tts', text: 'hello there' },
+    }
+    const s0 = {
+      ...stageRow,
+      resolved: { variant: 'base', mode: 'tts', text: 'hello there', recipe: 'turbo' },
+      runStatus: '',
+    } as never as BenchStageView
+    fakes = mountEstateFakes({
+      benchDoc: { draft_id: 'bench-p', rev: 1, log: [], stages: [stageRow] },
+      draftStages: [stageRow],
+      draftBenchRev: 1,
+    })
+    render(h(StageDrill, {
+      stage: s0,
+      bench: benchOf([s0 as unknown as BenchStageView]),
+      running: false,
+      onRun: () => {},
+      onStop: () => {},
+      onClose: () => {},
+      onRemoved: () => {},
+      onPatchParams: () => {},
+      renderStageView: (_owner, fallback) => fallback,
+    }))
+    const variant = await screen.findByLabelText('Variant', {}, { timeout: 8000 })
+    // THE PICK: base → voicedesign — the arrival seeds the lane's own
+    // fields; `recipe` rides none of them
+    fireEvent.click(variant)
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'VoiceDesign' }))
+    const patchParams = (): Array<Record<string, unknown>> => fakes!.calls
+      .filter((c) => c.method === 'drafts/patch')
+      .map((c) => ((c.args as { patch?: { params?: Record<string, unknown> } }).patch?.params) ?? {})
+    // THE STRIKE IN THE PICK'S OWN FRAME: the ghost's null rides the
+    // SAME atomic write as the arrival — one CAS, the strike never
+    // waits behind the pick (the lost-update law's own seat)
+    await waitFor(() => {
+      const marriage = patchParams()
+        .find((p) => p['variant'] === 'voicedesign' && p['recipe'] === null)
+      expect(marriage, 'pick + out-of-frame strike in ONE write: variant voicedesign + the ghost\'s null').toBeDefined()
+    }, { timeout: 8000 })
+    // NEVER THE SECOND CAS: the ghost's null never rides a frame of
+    // its own behind the pick
+    const frames = patchParams()
+    const marriageIdx = frames.findIndex((p) => p['variant'] === 'voicedesign' && p['recipe'] === null)
+    const after = frames.slice(marriageIdx + 1)
+    expect(after.filter((p) => p['recipe'] === null && p['variant'] !== 'voicedesign'),
+      'the out-of-frame strike never rides a frame of its own (no second CAS)').toEqual([])
+    // THE DOC NAMES THE PICK
+    await waitFor(() => {
+      const params = (stageRow['params'] ?? {}) as Record<string, unknown>
+      expect(params['variant'], 'the served doc names the pick').toBe('voicedesign')
+    }, { timeout: 8000 })
+  })
 });

@@ -475,6 +475,12 @@ describe('live door arms', () => {
     assert.equal(spec['service'], 'qwen3-tts')
     assert.equal(spec['model'], 'qwen3-tts')
     assert.deepEqual(Object.keys(spec).sort(), [
+      // THE CONTRACT ADMITS ROW (the pre-collapse doc law, 2026-11-16):
+      // the served doc carries the card contract's own admits list —
+      // the compose mirror AND the reopen heal both read this one
+      // spelling (admittedKeys in card-base spec.ts), so a saved
+      // doc's admitted rider survives a fresh open.
+      'admits',
       'contract',
       'engine',
       'enhance_prompt',
@@ -512,6 +518,10 @@ describe('live door arms', () => {
       'stage_view',
       'variants',
     ])
+    // the admits row rides VERBATIM (tts's own contract): the
+    // marriage-arm law — a pick of Base preserves `mode`, `qvoice`
+    // rides the voice lane — pinned by lane-strike-carryover
+    assert.deepEqual(spec['admits'], ['mode', 'qvoice'])
     // THE ENVELOPE (the parameter audit): the schema is the card's
     // own toJSON — uid + refs; flat rows never ride
     const env = spec['schema'] as { uid?: unknown; refs?: unknown }

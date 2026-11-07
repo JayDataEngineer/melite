@@ -21345,9 +21345,7 @@ window.__ModuleLoader__.load({
 						...opts
 					}),
 					refreshSpec: async () => {
-						const held = specRef.current;
-						if (held === null) return;
-						const family = held.model;
+						const family = spec.model;
 						const seq = specFetchSeqRef.current += 1;
 						pendingSpecRef.current = {
 							family,

@@ -115,6 +115,23 @@ describe("grouping mode — selection replaces chrome and reorder", () => {
     expect(spies.onOpen).not.toHaveBeenCalled();
   });
 
+  test("the keyboard keeps the button's whole contract in grouping: Enter and Space toggle, the drill never opens", () => {
+    // the tile is a role=button DIV (the content-model cure) — the
+    // div must keep the button's ENTIRE contract, and grouping mode
+    // routes the keyboard verb through the SAME selection door as
+    // the click: an operator who tabs into the grid and presses
+    // Enter toggles exactly like a mouse
+    const spies = mountTile(benchRow(stage()), { grouping: true, selected: false });
+    const key = innerButton(tileLi("s_0"));
+    fireEvent.keyDown(key, { key: "Enter" });
+    expect(spies.onToggleSelect, "Enter toggles selection").toHaveBeenCalledTimes(1);
+    expect(spies.onToggleSelect).toHaveBeenCalledWith("s_0");
+    expect(spies.onOpen, "the drill never opens from a grouping keypress").not.toHaveBeenCalled();
+    fireEvent.keyDown(key, { key: " " });
+    expect(spies.onToggleSelect, "Space toggles selection too — the button contract's other half").toHaveBeenCalledTimes(2);
+    expect(spies.onOpen).not.toHaveBeenCalled();
+  });
+
   test("an unselected tile checks empty and still toggles", () => {
     const spies = mountTile(benchRow(stage()), { grouping: true, selected: false });
     const li = tileLi("s_0");
@@ -128,8 +145,7 @@ describe("grouping mode — selection replaces chrome and reorder", () => {
     expect(screen.queryByTestId("tile-run")).toBeNull();
     expect(screen.queryByTestId("tile-stop")).toBeNull();
     fireEvent.click(innerButton(tileLi("s_0")));
-    expect(spies.onToggleSelect).toHaveBeenCalledWith("s_0");
-    expect(spies.onOpen).not.toHaveBeenCalled();
+    expect(spies.onToggleSelect).toHaveBeenCalledWith("s_0");    expect(spies.onOpen).not.toHaveBeenCalled();
   });
 
   test("outside grouping the tile is draggable and opens on click", () => {
