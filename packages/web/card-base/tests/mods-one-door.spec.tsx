@@ -62,23 +62,23 @@ describe('THE ONE-DOOR LAW — one mod system, one entry (the plus box, like Lor
     expect(chipRow(), 'the section chip row must not render — the + box is the only door').toBeNull()
   })
 
-  test('ARM 2 — a section-carrying kind enters through the PICKER, and its postures live INSIDE the leaf', async () => {
+  test('ARM 2 — a section-carrying kind enters through the PICKER, and the leaf serves its FIELD GRAMMAR (the 2026-11-08 re-rule: no posture layer inside either)', async () => {
     openSection([EDIT])
     fireEvent.click(plusBox())
     // the kind picker menu (portal): every declared kind, one label —
     // the section kind rides the SAME item list as Loras, no shortcut
     const item = await screen.findByText('Edit region')
     fireEvent.click(item)
-    // the leaf opens with the posture switches INSIDE it (slice 5's
-    // own seat) — named starting cells are leaf postures, not strip
-    // chips
-    const switches = await waitFor(() => {
-      const el = leafSwitches()
-      expect(el).not.toBeNull()
-      return el as HTMLElement
-    })
-    expect(switches.textContent).toContain('Repair a region')
-    expect(switches.textContent).toContain('Static mask pass')
+    // the leaf opens on the kind's OWN seats — the field grammar the
+    // estate serves for every kind. The §0.8 posture switches died
+    // with the checkbox face (operator 2026-11-08: invented UI over
+    // the grammar); the named cells are engine-side, never rendered.
+    await waitFor(() => { expect(screen.getByRole('dialog')).toBeTruthy() })
+    const dlg = screen.getByRole('dialog')
+    expect(dlg.textContent).toContain('Mask source')
+    expect(leafSwitches()).toBeNull()
+    expect(dlg.textContent).not.toContain('Repair a region')
+    expect(dlg.textContent).not.toContain('Static mask pass')
     // and the OUTSIDE face still carries no chip row
     expect(chipRow()).toBeNull()
   })

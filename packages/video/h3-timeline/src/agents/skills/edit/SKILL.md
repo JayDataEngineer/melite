@@ -27,26 +27,32 @@ were FIXED cells of this matrix; their names still compose (the
 door translates a legacy doc into its cell at the compose door,
 never a frozen peer), and the free cells compose here.
 
-THE MODIFIER SECTIONS (§0.8 the flow model — one verb, checkable
-stages over one schema; the box is the intent, the wire is the bag):
-the card serves SIX checkable sections over this one schema
-— `repair-region` (region × self × 0.32, sound held; the mask slot
-chooses the how — the SAM3 region track or one staged PNG, the
-static read is the MASK DIAL's value, never a second section),
-`identity-swap` (region × still+mannequin × 1, the masked side
-re-rendered whole — ONE section for both reads: clothing vs
-identity is PROMPT WORDS, never two pills; push denoise toward 0.55
-to keep source motion riding through),
-`whole-frame-restyle` (whole-frame × self × 0.6, under the boil
-floor), `refine-2x` (whole-frame × self × 0.32 with the refine
-switch ON at 2x, the learned upscale riding this edit's own latents
-in the same run), `extend-continuation` (whole-frame × self × 1,
-fresh seconds past the forced seam, state extend_seconds), and
-`upscale-2x` (the deferred second pass of a PRIOR chain run: state
-chain_run, the recipe's pass-2 window serves). Checking a box seeds
-its dials; checked boxes COMPOSE into the one bag (repair + upscale
-in the same run is two checkboxes, never a combined route). The
-wire is the bag — section ids never ride it.
+THE EDIT BAG'S STARTING CELLS (§0.8's flow model, re-ruled
+2026-11-08: the cells are DIAL VALUES an agent stages into the one
+bag — the UI face is the four-axes field grammar itself, no
+checkbox layer; a cell never renders). The six named cells over
+this one schema: `repair-region` (region × self × 0.32, sound held;
+the mask slot chooses the how — the SAM3 region track or one staged
+PNG, the static read is the MASK DIAL's value, never a second
+cell), `identity-swap` (region × still+mannequin × 1, the masked
+side re-rendered whole — ONE cell for both reads: clothing vs
+identity is PROMPT WORDS, never two; push denoise toward 0.55 to
+keep source motion riding through), `whole-frame-restyle`
+(whole-frame × self × 0.6, under the boil floor), `refine-2x`
+(whole-frame × self × 0.32 with the refine switch ON at 2x, the
+learned upscale riding this edit's own latents in the same run),
+`extend-continuation` (whole-frame × self × 1, fresh seconds past
+the forced seam, state extend_seconds), and `upscale-2x` (the
+deferred second pass of a PRIOR chain run: state chain_run, the
+recipe's pass-2 window serves). A cell stages its dials into the
+bag; cells COMPOSE — repair + upscale in the same run is both
+cells' dials in the one bag, never a combined route. The wire is
+the bag — cell ids never ride it. The user states the same matrix
+through the bag's own seats: the Mask source menu (region /
+whole-frame / static-png opens the staged-PNG MASK SLOT), the
+Identity anchors menu (still+mannequin opens the still + mannequin
+slots), the Denoise pole, the Refine switch (opens scale), the
+Continuation switch (opens extend_seconds).
 
 It is NOT:
 - **a new camera** — that is `reshoot`, a different chain (MoGe +

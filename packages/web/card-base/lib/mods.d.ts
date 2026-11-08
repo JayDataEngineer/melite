@@ -162,14 +162,6 @@ export interface LeafSeat {
      *  must still match the open-time snapshot or the candidate is
      *  a stranger (F1/F2/G1). */
     owned?: ReadonlySet<string>;
-    /** THE MODAL'S CHECKED SECTIONS (operator 2026-11-16, §0.8 THE
-     *  FLOW MODEL): the ids of the modifier sections whose boxes are
-     *  checked — intent, not paint: a hand-moved dial does NOT
-     *  uncheck its section (the checkbox says "apply this modifier";
-     *  the seed already ran). Checking seeds the patch; unchecking
-     *  strips only values still equal to the seed. Save never reads
-     *  it — the bag is the truth. */
-    sections?: ReadonlyArray<string>;
 }
 /** IDENTITY-MINTED TILE IDS (debt 24's cure, reusing the leaf's
  * tier law): `<param_key>#<content-tag>.<occurrence>` — content

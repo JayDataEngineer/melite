@@ -107,7 +107,6 @@ describe("the seat's media-kind discipline (the drop judge + the from-flow filte
     assert.ok(plusBox, "the + box must render")
     fireEvent.click(plusBox as Element)
     fireEvent.click(await screen.findByText("Video edit"))
-    fireEvent.click(document.querySelector<HTMLInputElement>('[data-mod-section="repair-region"] input')!)
     fireEvent.click(await screen.findByRole("button", { name: "Mask source" }))
     fireEvent.click(await screen.findByRole("menuitem", { name: /Static PNG/i }))
     await screen.findByRole("button", { name: "Add" })
@@ -194,7 +193,6 @@ describe("the seat's media-kind discipline (the drop judge + the from-flow filte
     );
     fireEvent.click(document.querySelector('[data-subcard-add="mod"]') as Element)
     fireEvent.click(await screen.findByText("Video edit"))
-    fireEvent.click(document.querySelector<HTMLInputElement>('[data-mod-section="repair-region"] input')!)
     fireEvent.click(await screen.findByRole("button", { name: "Mask source" }))
     fireEvent.click(await screen.findByRole("menuitem", { name: /Static PNG/i }))
     await screen.findByRole("button", { name: "Add" })
@@ -263,7 +261,6 @@ describe("the seat's media-kind discipline (the drop judge + the from-flow filte
     );
     fireEvent.click(document.querySelector('[data-subcard-add="mod"]') as Element)
     fireEvent.click(await screen.findByText("Video edit"))
-    fireEvent.click(document.querySelector<HTMLInputElement>('[data-mod-section="repair-region"] input')!)
     fireEvent.click(await screen.findByRole("button", { name: "Mask source" }))
     fireEvent.click(await screen.findByRole("menuitem", { name: /Static PNG/i }))
     await screen.findByRole("button", { name: "Add" })

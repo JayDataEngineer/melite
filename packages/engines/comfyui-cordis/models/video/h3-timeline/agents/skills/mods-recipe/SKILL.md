@@ -33,8 +33,11 @@ the one bag — section ids never ride it.
   state chain_run; the run resumes its checkpointed scenes at
   denoise 0.24, steps 20.
 
-Sections COMPOSE: repair + upscale in the same run is two
-checkboxes, never a combined route.
+Cells COMPOSE: repair + upscale in the same run is both cells'
+dials in the one bag, never a combined route. (2026-11-08 re-rule:
+the cells are dial values an agent stages — the UI face is the
+bag's own field grammar, the four axes' dynamic seats; no checkbox
+layer renders.)
 
 ## The ingredient slots and their kinds
 
@@ -85,9 +88,11 @@ legal halves REFUSES — lengthen it first.
 ## The press journey
 
 The plus box opens the kind picker; the kind's own tile reopens
-the seated entry. Inside: the source clip, the checkable
-sections, the ingredient slots their dials open, the dials
-themselves, and the prompt box (agent-composed, user-confirmed —
+the seated entry. Inside: the source clip, the bag's own field
+grammar (the mask-source menu opening the region seats or the
+staged-PNG mask slot, the anchors menu opening the still +
+mannequin slots, the refine and continuation switches opening
+their seats), and the prompt box (agent-composed, user-confirmed —
 no in-graph describer rewrites your words). Add commits the
 draft; the run starts at the user's Run press.
 

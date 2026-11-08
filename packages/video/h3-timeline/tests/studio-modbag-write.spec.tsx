@@ -77,13 +77,15 @@ function mountStudio(saved: Array<Record<string, unknown>>): void {
 }
 
 describe("the mod bag's write journey (the dead Add)", () => {
-  it("ARM A — THE PRESS LANDS: + box → picker → leaf posture switch → Add → the bench door receives the edit bag", async () => {
+  it("ARM A — THE PRESS LANDS: + box → picker → the bag's own field grammar → Add → the bench door receives the edit bag", async () => {
     await serveReal()
     const saved: Array<Record<string, unknown>> = []
     mountStudio(saved)
     // THE ONE DOOR (2026-11-16): the mod system's entry is the +
     // square and the kind picker — the outer chip row is deleted.
-    // The posture press is the SAME gesture, seated INSIDE the leaf.
+    // (2026-11-08 re-rule) the leaf's face is the kind's OWN field
+    // grammar — the §0.8 posture switch is gone; the press states
+    // the matrix through the seats themselves.
     const plusBox = await waitFor(
       () => {
         const el = document.querySelector('[data-subcard-add="mod"]')
@@ -94,12 +96,20 @@ describe("the mod bag's write journey (the dead Add)", () => {
     )
     fireEvent.click(plusBox)
     fireEvent.click(await screen.findByText("Video edit"))
-    const repair = await waitFor(() => {
-      const el = document.querySelector<HTMLInputElement>('[data-mod-section="repair-region"] input')
-      assert.ok(el, "the Repair section checkbox must render (§0.8's flow face)")
-      return el
+    // the bag's own seats render — the axes of the operator's
+    // ruling, stated directly (no posture layer anywhere)
+    const maskMenu = await waitFor(() => {
+      const dlg = screen.getByRole("dialog")
+      const btn = Array.from(dlg.querySelectorAll("button")).find((b) => b.getAttribute("aria-label") === "Mask source")
+      assert.ok(btn, "the Mask source menu trigger must render (the bag's first axis)")
+      return btn
     }, { timeout: 3000 })
-    fireEvent.click(repair)
+    assert.ok(!document.querySelector('[data-mod-sections]'), "no posture layer renders (the 2026-11-08 re-rule)")
+    fireEvent.click(maskMenu)
+    const regionRow = (await screen.findAllByRole("menuitem"))
+      .find((n) => n.textContent?.toLowerCase().startsWith("region"))
+    assert.ok(regionRow, "the Region mask row serves")
+    fireEvent.click(regionRow)
     const add = await screen.findByRole("button", { name: "Add" })
     fireEvent.click(add)
     // THE LAW: the press states the bag — SOME payload carries the
@@ -154,10 +164,6 @@ describe("the from-flow kind filter (the real thread, not the copy — seat-kind
     }, { timeout: 3000 })
     fireEvent.click(plusBox)
     fireEvent.click(await screen.findByText("Video edit"))
-    // (§0.7 merged the static-mask pill into Repair's mask slot —
-    // the static read is now a DIAL MOVE: check Repair, then turn
-    // the Mask source dial to the staged-PNG option)
-    fireEvent.click(document.querySelector<HTMLInputElement>('[data-mod-section="repair-region"] input')!)
     fireEvent.click(await screen.findByRole("button", { name: "Mask source" }))
     fireEvent.click(await screen.findByRole("menuitem", { name: /Static PNG/i }))
     const maskSeat = await waitFor(() => {
@@ -217,8 +223,6 @@ describe("the from-flow kind filter (the real thread, not the copy — seat-kind
     }, { timeout: 3000 })
     fireEvent.click(plusBox)
     fireEvent.click(await screen.findByText("Video edit"))
-    await waitFor(() => assert.ok(document.querySelector('[data-mod-section="repair-region"]'),
-      "the Repair section renders (checked or not — the leaf is open)"), { timeout: 3000 })
     const clipSeat = await waitFor(() => {
       const sq = Array.from(document.querySelectorAll<HTMLElement>("[data-slot-square]"))
         .find((s) => (s.getAttribute("aria-label") ?? "").includes("Source clip"))
@@ -274,13 +278,9 @@ describe("the from-flow kind filter (the real thread, not the copy — seat-kind
           const first = (k.options ?? [])[0]
           fireEvent.click(await screen.findByRole("menuitem", { name: first.label }))
         }
-        // THE POSTURE SWITCH (section-carrying kinds seed the draft
-        // through the first posture — the same press the operator makes)
-        const sections = document.querySelector("[data-mod-sections]")
-        if (sections !== null) {
-          const firstPreset = sections.querySelector("[data-mod-section] input")
-          if (firstPreset !== null) fireEvent.click(firstPreset)
-        }
+        // (2026-11-08 re-rule) no posture layer renders — the
+        // field-kind bag commits on its declared defaults through
+        // the same Add press the operator makes
         fireEvent.click(add)
       }
       // THE BAG under its OWN param_key (the write hop the audit's
