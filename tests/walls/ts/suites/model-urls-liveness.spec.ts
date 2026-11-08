@@ -28,7 +28,13 @@ const OFFLINE = process.env["MELITE_WALLS_OFFLINE"] === "1";
 async function probe(
   url: string,
 ): Promise<{ status: number; length: number | null }> {
-  const res = await fetch(url, { method: "GET", headers: { range: "bytes=0-0" }, redirect: "follow" });
+  // A per-request cap (15 s, 2026-11-16): a stalled upstream socket
+  // is NOT a verdict — without the cap one hung range GET burns the
+  // suite's whole 120 s budget and the arm dies as "timed out"
+  // naming nothing. With the cap the stall surfaces as a named dead
+  // entry (the same law as TC_POOL=3: a wall that destabilises the
+  // suite is not a wall).
+  const res = await fetch(url, { method: "GET", headers: { range: "bytes=0-0" }, redirect: "follow", signal: AbortSignal.timeout(15_000) });
   const cr = res.headers.get("content-range");
   if (cr !== null) {
     const total = Number.parseInt(cr.split("/")[1] ?? "", 10);
@@ -80,7 +86,13 @@ describe.skipIf(OFFLINE)("THE URL-LIVENESS GATE (every declared download answers
   // The pinned files the node loads (config + weights) must answer
   // a keyless ranged GET at the pinned revision.
   // Same offline law as the URL arm: MELITE_WALLS_OFFLINE=1 skips.
-  it("every pinned snapshot file is live at its pinned revision", async () => {
+  // 300 s (2026-11-16): this arm walks 152 pinned files SEQUENTIALLY
+  // (range GETs, keyed by declaration order). Solo it finishes in
+  // ~40 s; inside the full tier, 220 sibling suites compete for the
+  // wire and the walk tripled past the describe's 120 s — a budget
+  // miss, not a dead pin (every file answers under a 15 s cap). The
+  // arm owns a wider clock rather than destabilising the tier.
+  it("every pinned snapshot file is live at its pinned revision", { timeout: 300_000 }, async () => {
     // Registry ids, never route views: a route view re-carries its
     // family's rows, so a model-ids walk counts one declaration
     // three times.

@@ -707,7 +707,11 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // Repinned 637 -> 638 (2026-11-16, deliberate): §0.4's SECOND_PASS
   // seat emits packages/models/h3/lib/secondPass.js — the 638th
   // tracked .js (the shared gate module the four call sites read).
-  const LIB_CENSUS_PIN = 638;
+  // Repinned 638 -> 644 (2026-11-16, deliberate): queue 11's form cure
+  // seats the light emit leaf packages/video/h3-timeline/lib/ui/v2vFace.js
+  // (the ./v2v-face host-delivery face); its tsc dependency closure
+  // emits the pure plane beside it — six tracked .js in all.
+  const LIB_CENSUS_PIN = 644;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {
