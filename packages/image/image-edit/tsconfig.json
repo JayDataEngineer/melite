@@ -2,6 +2,7 @@
   "compilerOptions": {
     "noEmitOnError": true,
       "paths": {
+        "@melite/models-h3/secondPass": ["./../../models/h3/src/secondPass.ts"],
         "@melite/contracts/loraExtensions": ["./../../web-kit/contracts/src/loraExtensions.ts"],
         "@melite/image-mask-studio/orbit-canvas": ["./../mask-studio/src/ui/OrbitLeafCanvas.tsx"],
         "@melite/video-frames": ["./../../video/frames/src/index.ts"],

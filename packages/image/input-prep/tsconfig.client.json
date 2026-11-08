@@ -18,6 +18,7 @@
           "node"
       ],
       "paths": {
+        "@melite/models-h3/secondPass": ["./../../models/h3/src/secondPass.ts"],
         "@melite/contracts/loraExtensions": ["./../../web-kit/contracts/src/loraExtensions.ts"],
         "@melite/image-mask-studio/orbit-canvas": ["./../mask-studio/src/ui/OrbitLeafCanvas.tsx"],
         "@deepseek-ai/cordis-plugin-timer": ["./../../../vendor/cordis_plugins/timer/src/index.ts"],

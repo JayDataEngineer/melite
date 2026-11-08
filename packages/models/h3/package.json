@@ -18,6 +18,10 @@
       "types": "./lib/timelineContract.d.ts",
       "default": "./lib/timelineContract.js"
     },
+    "./secondPass": {
+      "types": "./lib/secondPass.d.ts",
+      "default": "./lib/secondPass.js"
+    },
     "./filmMix": {
       "types": "./lib/filmMix.d.ts",
       "default": "./lib/filmMix.js"

@@ -135,6 +135,7 @@
       "@melite/models-h3": ["./packages/models/h3/src/index.ts"],
       "@melite/models-h3/mods/loras": ["./packages/models/h3/mods/loras.ts"],
       "@melite/models-h3/timelineContract": ["./packages/models/h3/src/timelineContract.ts"],
+      "@melite/models-h3/secondPass": ["./packages/models/h3/src/secondPass.ts"],
       "@melite/models-h3/filmMix": ["./packages/models/h3/src/filmMix.ts"],
       "@melite/models-h3/actions": ["./packages/models/h3/src/actions.ts"],
       "@melite/models-h3/schema": ["./packages/models/h3/src/schema.ts"],

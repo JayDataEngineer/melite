@@ -33,6 +33,7 @@ import { contexMaskedTarget, loadVideo, renderMaskedEditChain } from './chainEdi
 import { renderH3ChainUpscale } from './chainUpscale.js'
 import { renderH3Extend } from './extend.js'
 import { REFINE_2X_OOM_FRAMES, REFINE_UPSCALE_MODEL } from './refine.js'
+import { FULL_NOISE_REASON, fullNoiseClause, refuseCompetingSecondPass } from './secondPass.js'
 import { assertGridLength } from './timelineContract.js'
 
 /** SAM3's checkpoint row — repair.ts's own spelling (the family's
@@ -142,11 +143,11 @@ export function renderH3Edit(
   // the pass-2 window (the loop's own law refuses >= 1 below).
   // ──
   if (chainRun.trim() !== '') {
-    if (entry.refine === true) {
-      throw new Error(
-        `h3-timeline edit: the refine switch under an upscale — two second-pass mechanisms (the switch arms the same-run handoff on THIS chain, the upscale resumes a PRIOR run's checkpointed scenes; the doc's duplicate-2x resolved into ONE door). Leave refine off`,
-      )
-    }
+    // THE ONE-SEAT LAW (the shared second-pass gate): the switch
+    // and the stated run are two arms of ONE seat — the shared
+    // refusal names it (secondPass.ts owns the law; this door
+    // owns the voice).
+    refuseCompetingSecondPass({ refine: entry.refine === true, chain_run: chainRun }, 'h3-timeline edit')
     if (entry.continuation === true) {
       throw new Error(
         `h3-timeline edit: a continuation under an upscale — the continuation generates FRESH seconds off a source clip, the upscale resumes a PRIOR run's checkpointed scenes (no clip rides); state one posture`,
@@ -208,10 +209,12 @@ export function renderH3Edit(
   // THE REFINE FULL-NOISE LAW (hoisted above the boil by the
   // placement law — slice 4: the specific refusal owns the cell it
   // names; under the refine switch the full-noise sigma law fires,
-  // never the general boil beside it).
+  // never the general boil beside it). The clause and reason ride
+  // the shared second-pass gate (secondPass.ts) — every arm of the
+  // seat refuses the same pole in its own word.
   if (entry.refine === true && denoise >= 1) {
     throw new Error(
-      `h3-timeline edit: denoise ${denoise} with the refine pass on — a second pass is a refine, never a re-render (a full-noise sigma discards the learned upscaled latent and the vendored node throws); state the partial window (0.05–0.5) or leave refine off`,
+      `h3-timeline edit: denoise ${denoise} with the refine pass on — ${fullNoiseClause('refine')} (${FULL_NOISE_REASON} and the vendored node throws); state the partial window (0.05–0.5) or leave refine off`,
     )
   }
   // THE UNGUIDED FULL RENDER (the doc's one deliberate loss,

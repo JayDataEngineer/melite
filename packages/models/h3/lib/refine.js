@@ -1,5 +1,6 @@
 import { chainSaveBoundaries, concatSavedFilms, filmJoinAudio } from './actions.js';
 import { contexMaskedTarget, h3MaskedEditPlane, loadVideo } from './chainEdit.js';
+import { FULL_NOISE_REASON, fullNoiseClause } from './secondPass.js';
 import { DOC_FPS_DEFAULT, MAX_COMPOSED_WINDOWS, SEAM_OVERLAP_FRAMES } from './timelineContract.js';
 /** The learned 3D-conv upscale weights (the schema's upscale_model
  *  seat carries this same single option — one file, one spelling, no
@@ -69,8 +70,10 @@ export function refineArmed(p) {
  *  or above 1: a second pass is a refine, never a re-render) */
 const refineDials = (entry) => {
     const denoise = num(entry, 'denoise', 0.32);
+    // THE SHARED FULL-NOISE LAW (secondPass.ts): the clause and the
+    // reason are the seat's own — this door names its window.
     if (denoise >= 1) {
-        throw new Error(`h3-timeline refine: denoise ${denoise} >= 1 — a second pass is a refine, never a re-render (the partial-denoise window is 0.05–0.50; a full-noise sigma discards the learned upscaled latent and the vendored node throws — that is a reshoot, and the reshoot door exists)`);
+        throw new Error(`h3-timeline refine: denoise ${denoise} >= 1 — ${fullNoiseClause('refine')} (the partial-denoise window is 0.05–0.50; ${FULL_NOISE_REASON} and the vendored node throws — that is a reshoot, and the reshoot door exists)`);
     }
     return {
         denoise,

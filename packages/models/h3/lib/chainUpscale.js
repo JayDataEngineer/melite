@@ -1,5 +1,6 @@
 import { h3MaskedEditPlane } from './chainEdit.js';
 import { REFINE_UPSCALE_MODEL } from './refine.js';
+import { FULL_NOISE_REASON, fullNoiseClause } from './secondPass.js';
 /** The upscale entry's required seats (the reshoot idiom: an armed
  *  doc with an empty seat refuses loud naming the seat). */
 const REQUIRED_SEATS = [
@@ -39,8 +40,10 @@ export function renderH3ChainUpscale(entry, p, facts, g, runId) {
         }
     }
     const denoise = num(entry, 'denoise', 0.24);
+    // THE SHARED FULL-NOISE LAW (secondPass.ts): the clause and the
+    // reason are the seat's own — this door names its window.
     if (denoise >= 1) {
-        throw new Error(`h3-timeline upscale: denoise ${denoise} >= 1 — a second pass is an upscale, never a re-render (the recipe's pass-2 window is 0.24; a full-noise sigma discards the learned upscaled latent — that is a reshoot, and the reshoot door exists)`);
+        throw new Error(`h3-timeline upscale: denoise ${denoise} >= 1 — ${fullNoiseClause('upscale')} (the recipe's pass-2 window is 0.24; ${FULL_NOISE_REASON} — that is a reshoot, and the reshoot door exists)`);
     }
     const steps = num(entry, 'steps', 20);
     const segmentCrf = num(entry, 'segment_crf', 18);

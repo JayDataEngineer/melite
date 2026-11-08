@@ -374,6 +374,9 @@
   "@melite/models-h3/timelineContract": [
     "./packages/models/h3/src/timelineContract.ts"
   ],
+  "@melite/models-h3/secondPass": [
+    "./packages/models/h3/src/secondPass.ts"
+  ],
   "@melite/models-h3/filmMix": [
     "./packages/models/h3/src/filmMix.ts"
   ],

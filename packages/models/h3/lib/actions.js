@@ -5,6 +5,7 @@ import { assertKeyframeRowShape, FAMILIES, paramSchema, wireList, H3_RECOMMENDED
 import { H3_LORA_ROWS } from '@melite/models-h3/mods/loras';
 import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from '@melite/comfyui-card-kit/vocab';
 import { computeFilmMix, parseFilmMixClips, spanOverlap, stanzaSecs } from './filmMix.js';
+import { SECOND_PASS_WINDOW } from './secondPass.js';
 import { DOC_FPS_DEFAULT, GRID_REMAINDER, GRID_STEP_FRAMES, IMAGE_BUS_SLOTS, REF_CAPS, assertGridLength, assertSpanGrid, bookSeconds, imageReferenceCap, isGridLength, isMediaRef, spanStanzaFrames, transitionOverlap } from './timelineContract.js';
 import { applyH3ReshootCond, applyH3ReshootModel, buildH3Reshoot, reshootArmed, reshootPrompt, } from './reshoot.js';
 // THE ABSENT-BAG DEFAULT (h3-a, 2026-10-12; bytedance DMAD row
@@ -186,8 +187,10 @@ function resolveRefineSeat(p) {
 // borrowed verbatim by the arm.
 function resolveStage2Denoise(p) {
     const denoise = p.refine_denoise ?? REFINE_DENOISE_DEFAULT;
-    if (!(denoise >= 0.05 && denoise <= 1)) {
-        throw new Error(`h3 action: refine_denoise ${String(p.refine_denoise)} falls outside the refinement window [0.05, 1] — 1 is the full-denoise taomate mechanic, 0.30–0.35 the SOTA refinement window; a dead or over-terminal second pass never composes`);
+    // THE SHARED WINDOW (secondPass.ts): the bounds are the seat's
+    // own — this door keeps its taomate voice.
+    if (!(denoise >= SECOND_PASS_WINDOW[0] && denoise <= SECOND_PASS_WINDOW[1])) {
+        throw new Error(`h3 action: refine_denoise ${String(p.refine_denoise)} falls outside the refinement window [${SECOND_PASS_WINDOW.join(', ')}] — 1 is the full-denoise taomate mechanic, 0.30–0.35 the SOTA refinement window; a dead or over-terminal second pass never composes`);
     }
     return denoise;
 }
