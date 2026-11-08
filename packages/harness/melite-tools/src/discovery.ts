@@ -1230,11 +1230,15 @@ export function specBody(
     ...(decl?.studio?.writes !== undefined ? { studio_writes: decl.studio.writes } : {}),
     // THE CARD'S CONTRACT ADMISSION ROW (the pre-collapse doc law,
     // 2026-11-16): the card's declared admits extras, served verbatim
-    // — the SAME list cardAdmits (cardsFacts.ts) reads at the write
-    // door, so the client mirror sanctions what the door admits
-    // (retired compose-through bag names + prefix* globs). Without
-    // this row the mirror banners every pre-collapse h3 doc as a
-    // lane refusal the estate itself would have admitted.
+    // — the row the write door's cardAdmits (cardsFacts.ts) reads as
+    // its FIRST disjunct before unioning boarded studio.writes (the
+    // mirror sanctions those through the studio rows above), so the
+    // client mirror sanctions what the door admits. The two
+    // spellings agree by the cards-mirror-door-parity wall's ADMITS
+    // UNION arm — a judged agreement, never an assumed identity
+    // (client-mirror §6.1). Without this row the mirror banners
+    // every pre-collapse h3 doc as a lane refusal the estate itself
+    // would have admitted.
     ...(def.admits !== undefined && def.admits.length > 0 ? { admits: def.admits } : {}),
     // THE CARD'S STUDIO DECLARATION (2026-11-09, the fallback
     // extermination): derived from the card package's own client

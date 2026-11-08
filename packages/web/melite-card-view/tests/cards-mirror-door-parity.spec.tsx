@@ -110,4 +110,37 @@ describe('THE TWO-DOOR PARITY LAW (door-admitted ⊆ mirror-sanctioned, the lane
     expect(on.filter((x) => x.field === 'design_prompt'),
       'design_prompt on the voicedesign lane passes clean (variant-scoped, not drift)').toEqual([])
   })
+
+  test('ARM 4 — THE ADMITS UNION: every key the write door unions in (def.admits ∪ boarded studio.writes) is sanctioned at the mirror (client-mirror §6.1)', async () => {
+    // The door's cardAdmits (cardsFacts.ts) unions the card's
+    // declared admits row with EVERY boarded family's
+    // facts.studio.writes; the mirror's discovery serves the card's
+    // own rows (admits verbatim + the card's studio.writes). The
+    // two spellings are not one list — their agreement is judged,
+    // never assumed (the audit's finding: the comment claimed an
+    // identity the code does not carry). Today no boarded family
+    // writes beyond the card row (17 cards, union == row); the day
+    // one does, this sweep reds by name until the mirror serves it.
+    const decls = deriveDecls(await loadCardDefs(), {})
+    const offenders: string[] = []
+    for (const [id, decl] of Object.entries(decls)) {
+      const union: readonly string[] = decl.admits
+      if (union.length === 0) continue
+      let spec: FormSpecDoc | null
+      try {
+        spec = (await formSpecArm(id)) as FormSpecDoc | null
+      } catch {
+        continue
+      }
+      if (spec === null || spec.model === undefined || spec.model === '') continue
+      for (const k of union) {
+        const v = composeValidate(spec, { model: spec.model, [k]: 'x' } as SpecValues)
+        if (v.some((x) => x.field === k && x.message.includes('fires nothing on this lane'))) {
+          offenders.push(`${id}: ${k}`)
+        }
+      }
+    }
+    expect(offenders,
+      'keys the write door admits through its union (a boarded family\'s studio.writes the card\'s own admits row never declared) that the compose mirror banners — serve the union at discovery or declare the key on the card row; then this wall keeps them agreed (client-mirror §6.1)').toEqual([])
+  })
 })
