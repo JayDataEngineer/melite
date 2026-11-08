@@ -227,6 +227,24 @@ export const studioCopy = {
    * the stock append is an ADD the face bars (the operator: "This
    * section would no longer allow people to add clips"). */
   splitEmptyRefusal: "nothing to cut — the video-to-video face adds no clips; a cut needs an existing clip",
+  /** (queue 11 reopened, the FORM seat) the video2video leaf face's
+   *  own words — the windows list + the split-by-timestamp seat the
+   *  operator named ("NO WINDOWS IN THE FORM!"): the same copy law
+   *  as the strip head's atoms, this dictionary's own census. */
+  /** (queue 11 reopened) the windows list's row label — a
+   *  parameterized face (W-index + the span's seconds + the seam +
+   *  the text), riding OUTSIDE the flat single-line census by
+   *  construction. */
+  v2vWindowRow: (index: number, startSec: string, endSec: string, seam: string, text: string): string =>
+    `W${index} · ${startSec}s–${endSec}s${seam === "" ? "" : ` · ${seam}`}${text === "" ? "" : ` · ${text}`}`,
+  v2vFormHead: "Windows — the video-to-video spans this edit composes",
+  v2vFormHint: "each window is one span of the run; the split seat below cuts one in two",
+  v2vFormSplitLabel: "Split at (seconds)",
+  v2vFormSplitTip: "the timestamp to split at — 2 splits the containing window at 2s (snapped to the authoring lattice)",
+  v2vFormSplitPlaceholder: "at sec",
+  v2vFormCutAria: "Split the window",
+  v2vFormRefusal: "state a timestamp first — the form splits at the seconds you name, or the window is too short to halve",
+  v2vFormEmptyNote: "no windows yet — the timeline strip's calls section owns the spans; this list reads them",
   /** (C6, the imageless pin) a PENDING pin's chip faces — the
    *  double-click authors the frame first; the image rides only
    *  through the picker doors. Until it does, the chip NAMES its

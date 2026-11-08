@@ -55,7 +55,7 @@ export { PackPrompt, ModelAxes, RecipePills } from "./axes.js";
  *  over the USER layer (the settings law: presence IS the override
  *  mark, the reset chip removes it). The constructor OWNS the square
  *  provider (no call site wires it, no call site can forget it). */
-export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, orbitFace, paintReference, omitInputRail, omitFields, omitRecipeRow, mutedViolations }) {
+export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, orbitFace, v2vFace, paintReference, omitInputRail, omitFields, omitRecipeRow, mutedViolations }) {
     // DERIVED, ALWAYS FRESH (the layered law): fields walk the schema
     // envelope (families-scoped); the resolved value layers defaults
     // <- model defaults <- recipe <- user — exactly what a run
@@ -541,6 +541,7 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
             ...(paintFace !== undefined ? { paintFace } : {}),
             ...(bboxFace !== undefined ? { bboxFace } : {}),
             ...(orbitFace !== undefined ? { orbitFace } : {}),
+            ...(v2vFace !== undefined ? { v2vFace } : {}),
             ...(paintReference !== undefined ? { paintReference } : {}),
             ...(wire?.loadMedia !== undefined ? { loadMedia: wire.loadMedia } : {}),
             // THE CHAIN-RUN PICKER LAW (the upscale leaf): the live

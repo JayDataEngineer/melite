@@ -527,6 +527,9 @@
   "@melite/video-h3-timeline/card": [
     "./packages/video/h3-timeline/src/card.ts"
   ],
+  "@melite/video-h3-timeline/v2v-face": [
+    "./packages/video/h3-timeline/src/ui/v2vFace.ts"
+  ],
   "@melite/video-h3-timeline/tool": [
     "./packages/video/h3-timeline/src/tool.ts"
   ],

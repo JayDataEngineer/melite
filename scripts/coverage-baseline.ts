@@ -672,6 +672,13 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/video/h3-timeline/src/ui/studio/RunRefsClips.tsx': { statements: 92.31, branches: 86.36, functions: 87.5, lines: 91.67 },
   '**/packages/video/h3-timeline/src/ui/studio/StudioPreview.tsx': { statements: 88.89, branches: 97.14, functions: 80, lines: 87.5 },
   '**/packages/video/h3-timeline/src/ui/studio/StudioStripPane.tsx': { statements: 97.86, branches: 98.08, functions: 97.92, lines: 99.07 },
+  '**/packages/video/h3-timeline/src/ui/studio/V2vLeafFace.tsx': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
+  '**/packages/video/h3-timeline/src/ui/studio/v2vSplit.ts': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
+  // the host-delivery re-export leaf: a pure `export {} from` — the
+  // coverage plane carries the module with total 0 on every metric
+  // (the tenant's dom walls ride it through tsconfig paths), so the
+  // honest floor is the null spelling, never a vacuous 100.
+  '**/packages/video/h3-timeline/src/ui/v2vFace.ts': { statements: null, branches: null, functions: null, lines: null },
   '**/packages/video/h3-timeline/src/ui/studio/component.tsx': { statements: 98.04, branches: 86.96, functions: 90.91, lines: 97.78 },
   '**/packages/video/h3-timeline/src/ui/studio/docCalls.ts': { statements: 99.47, branches: 99.62, functions: 95, lines: 99.35 },
   '**/packages/video/h3-timeline/src/ui/studio/docGrid.ts': { statements: 98.25, branches: 97.37, functions: 93.33, lines: 97.96 },

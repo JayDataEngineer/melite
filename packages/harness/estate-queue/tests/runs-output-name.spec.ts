@@ -50,7 +50,7 @@ class FakeEngine extends ComfyUIHostService {
 /** The hero rig's fixture shape, with the stage params spelled by
  *  the caller (the output_name seat rides run.params[i], the same
  *  bag the composed row carries — index-aligned with stages). */
-const runWithParams = (params: Array<Record<string, unknown>>): RunRecord => ({
+const runWithParams = (params: Record<string, EngineJson>[]): RunRecord => ({
   runId: "run-outname-00000000-0000000" as RunId,
   status: "queued",
   stages: [{ id: "s", name: "s", index: 0, status: "pending", outputs: {}, expected: {} }],
@@ -123,7 +123,7 @@ describe("THE OUTPUT-LABEL MINT (queue 12 — the settle seam)", () => {
       (ctx as unknown as { queue: unknown }).queue = { stateRoots: [] as string[] };
       const engine = new FakeEngine(ctx);
       engine.onFlow = async () => twoArtifacts();
-      const params: Record<string, unknown> = { workflow: { "1": { class_type: "X", inputs: {} } } };
+      const params: Record<string, EngineJson> = { workflow: { "1": { class_type: "X", inputs: {} } } };
       if (bad !== undefined) params["output_name"] = bad;
       const run = runWithParams([params]);
       await runOne(run, ctx, () => undefined);
@@ -140,7 +140,7 @@ describe("THE OUTPUT-LABEL MINT (queue 12 — the settle seam)", () => {
       (ctx as unknown as { queue: unknown }).queue = { stateRoots: [] as string[] };
       const engine = new FakeEngine(ctx);
       engine.onFlow = async () => twoArtifacts();
-      const params: Record<string, unknown> = { workflow: { "1": { class_type: "X", inputs: {} } } };
+      const params: Record<string, EngineJson> = { workflow: { "1": { class_type: "X", inputs: {} } } };
       if (outputName !== undefined) params["output_name"] = outputName;
       const run = runWithParams([params]);
       await runOne(run, ctx, () => undefined);

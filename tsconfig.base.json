@@ -186,6 +186,7 @@
       "@melite/video-h3-timeline": ["./packages/video/h3-timeline/src/index.ts"],
       "@melite/video-h3-timeline/client": ["./packages/video/h3-timeline/src/client/index.ts"],
       "@melite/video-h3-timeline/card": ["./packages/video/h3-timeline/src/card.ts"],
+      "@melite/video-h3-timeline/v2v-face": ["./packages/video/h3-timeline/src/ui/v2vFace.ts"],
       "@melite/video-h3-timeline/tool": ["./packages/video/h3-timeline/src/tool.ts"],
       "@melite/video-track": ["./packages/video/track/src/index.ts"],
       "@melite/video-track/card": ["./packages/video/track/src/card.ts"],

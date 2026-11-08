@@ -1,3 +1,3 @@
-export { modelsFamiliesProvider as default, modelsProvider } from "../models/service.ts";
-export { modelsCensusGate } from "../models/census.ts";
+export { modelsFamiliesProvider as default, modelsProvider } from "../models/service.js";
+export { modelsCensusGate } from "../models/census.js";
 //# sourceMappingURL=catalog-registry.d.ts.map

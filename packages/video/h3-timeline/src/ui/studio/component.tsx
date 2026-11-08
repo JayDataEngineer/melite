@@ -360,6 +360,12 @@ export function VideoTimelineStudio(owner: StageViewOwnerProps) {
             setLayerAKey={doc.setLayerAKey}
             setLayerA={doc.updateLayerA}
             refArtifacts={audio.refArtifacts}
+            // THE V2V DOC PLANE (queue 11 reopened): the leaf form's
+            // windows face reads/writes the DOC's calls — NEVER the
+            // layerA params plane (calls is outside LAYERA_KEY_UNIVERSE
+            // by law; the strip's cut doors ride this same doc plane).
+            v2vDoc={{ calls, fps }}
+            onV2vCalls={doc.updateCalls}
           />
           {/* RunAdvancedPanels is DEAD (the generic-seam law): CardForm
            * above already renders every SLA leaf, every post leaf, and

@@ -189,7 +189,14 @@ describe("SOURCE — the copy dictionary owns the static faces", () => {
     // (the v2v press with zero windows — "This section would no
     // longer allow people to add clips" needed its own words; the
     // too-short splitRefusal would lie about an empty doc).
-    assert.equal(ids.length, 120, `the dictionary holds 120 copy ids (found ${ids.length}) — re-pin this wall when copy is added or removed`)
+    // RE-PIN 2026-11-08 (machine clock, queue 11 REOPENED — the
+    // operator's form correction): 120 → 128. +8 flat ids = the
+    // v2vForm* family (Head/Hint/SplitLabel/SplitTip/SplitPlaceholder/
+    // CutAria/Refusal/EmptyNote) — the leaf form's own windows face
+    // ("NO WINDOWS IN THE FORM!"): the popup lists the windows and
+    // carries its own split-by-timestamp seat, the same vocabulary
+    // the strip head serves (one dictionary, two doors).
+    assert.equal(ids.length, 128, `the dictionary holds 128 copy ids (found ${ids.length}) — re-pin this wall when copy is added or removed`)
     // RE-PIN 2026-10-16 (the square-grammar residue): 102 → 101.
     // removePack died with the strip Button (187eaf607 deleted the
     // verb; SourceRow's onEdit("") owns the detach) — a fossil id

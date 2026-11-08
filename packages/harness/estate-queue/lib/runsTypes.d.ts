@@ -1,7 +1,7 @@
 import type { EngineJson } from "@melite/comfyui-cordis";
 import type { DraftId } from "@melite/contracts/benchStage";
-import type { GraphReceipt, GraphRow } from "./queue.ts";
-import type { RunId } from "./queueCore.ts";
+import type { GraphReceipt, GraphRow } from "./queue.js";
+import type { RunId } from "./queueCore.js";
 /** Stage statuses — the run worker's vocabulary (inherited from the retired oracle). */
 export type RunStatus = "queued" | "running" | "completed" | "failed" | "stopped" | "stopping";
 /** The run-status vocabulary as a runtime set — the type's twin, for

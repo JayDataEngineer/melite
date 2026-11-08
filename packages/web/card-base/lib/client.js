@@ -15483,7 +15483,7 @@ window.__ModuleLoader__.load({
 		*  over the USER layer (the settings law: presence IS the override
 		*  mark, the reset chip removes it). The constructor OWNS the square
 		*  provider (no call site wires it, no call site can forget it). */
-		function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, orbitFace, paintReference, omitInputRail, omitFields, omitRecipeRow, mutedViolations }) {
+		function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, orbitFace, v2vFace, paintReference, omitInputRail, omitFields, omitRecipeRow, mutedViolations }) {
 			const fields = omitFields !== void 0 ? fieldsOf(spec).filter((f) => !omitFields(f.name)) : fieldsOf(spec);
 			const value = resolveValue(spec, user, base);
 			const fieldByName = new Map(fields.map((f) => [f.name, f]));
@@ -15775,6 +15775,7 @@ window.__ModuleLoader__.load({
 				...paintFace !== void 0 ? { paintFace } : {},
 				...bboxFace !== void 0 ? { bboxFace } : {},
 				...orbitFace !== void 0 ? { orbitFace } : {},
+				...v2vFace !== void 0 ? { v2vFace } : {},
 				...paintReference !== void 0 ? { paintReference } : {},
 				...wire?.loadMedia !== void 0 ? { loadMedia: wire.loadMedia } : {},
 				...wire?.loadChainRuns !== void 0 ? { loadChainRuns: wire.loadChainRuns } : {},
@@ -16140,6 +16141,10 @@ window.__ModuleLoader__.load({
 				if (typeof rowDefault === "number") return rowDefault;
 				const field = (k.fields ?? []).find((f) => f.name === scalar);
 				return typeof field?.default === "number" ? field.default : .7;
+			};
+			const commitEnvelope = (name, v) => {
+				onEdit(name, v);
+				onPatch?.({ [name]: v });
 			};
 			const commitScalar = (f, name, v) => {
 				const coerced = coerceFieldEdit(f, v);
@@ -16568,6 +16573,8 @@ window.__ModuleLoader__.load({
 					paintFace: props.paintFace,
 					bboxFace: props.bboxFace,
 					...props.orbitFace !== void 0 ? { orbitFace: props.orbitFace } : {},
+					...props.v2vFace !== void 0 ? { v2vFace: props.v2vFace } : {},
+					v2vCommit: commitEnvelope,
 					paintReferenceValue: typeof props.paintReference === "string" ? String(values[props.paintReference] ?? "") : "",
 					...props.loadMedia !== void 0 ? { loadMedia: props.loadMedia } : {},
 					...props.loadChainRuns !== void 0 ? { loadChainRuns: props.loadChainRuns } : {},
@@ -16679,6 +16686,7 @@ window.__ModuleLoader__.load({
 			const bboxCanvas = props.bboxFace !== void 0 && k.leaf_face === "bbox-canvas";
 			const paintField = props.paintFace !== void 0 && k.leaf_face === "paint-canvas" ? (k.fields ?? []).find((f) => f.type === "image" || f.wtype === "image") : void 0;
 			const orbitCanvas = props.orbitFace !== void 0 && k.leaf_face === "orbit-canvas";
+			const v2vWindows = props.v2vFace !== void 0 && props.v2vCommit !== void 0 && k.leaf_face === "v2v-windows";
 			const draftPose = () => {
 				const num = (v, fb) => typeof v === "number" && Number.isFinite(v) ? v : fb;
 				const fieldDefault = (name, fb) => {
@@ -16860,9 +16868,9 @@ window.__ModuleLoader__.load({
 						}
 					}));
 				})() : null);
-			})() : bboxCanvas || paintField !== void 0 || orbitCanvas ? (0, react.createElement)("div", { className: card_module_css_default.modLeafSplit }, (0, react.createElement)("div", {
+			})() : bboxCanvas || paintField !== void 0 || orbitCanvas || v2vWindows ? (0, react.createElement)("div", { className: card_module_css_default.modLeafSplit }, (0, react.createElement)("div", {
 				className: card_module_css_default.modLeafStage,
-				"data-leaf-stage": bboxCanvas ? "bbox" : orbitCanvas ? "orbit" : "paint"
+				"data-leaf-stage": bboxCanvas ? "bbox" : orbitCanvas ? "orbit" : v2vWindows ? "v2v" : "paint"
 			}, bboxCanvas && props.bboxFace !== void 0 ? (0, react.createElement)("div", {
 				className: card_module_css_default.modStageCaption,
 				"data-stage-caption": "region"
@@ -16897,6 +16905,17 @@ window.__ModuleLoader__.load({
 						tilt: pose.tilt,
 						dolly: pose.dolly
 					});
+				}
+			})) : null, v2vWindows && props.v2vFace !== void 0 && props.v2vCommit !== void 0 ? (0, react.createElement)("div", {
+				className: card_module_css_default.modField,
+				"data-leaf-canvas": "v2v"
+			}, (0, react.createElement)(props.v2vFace, {
+				value: {
+					calls: Array.isArray(props.values.calls) ? props.values.calls : [],
+					fps: typeof props.values.fps === "number" && Number.isFinite(props.values.fps) ? props.values.fps : 24
+				},
+				onChange: (calls) => {
+					props.v2vCommit("calls", calls);
 				}
 			})) : null), (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, k.section !== void 0 ? (0, react.createElement)("div", {
 				className: card_module_css_default.modStageCaption,

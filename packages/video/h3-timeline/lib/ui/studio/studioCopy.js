@@ -1,0 +1,469 @@
+/**
+ * studioCopy.ts — THE STUDIO COPY DICTIONARY (the rail-law audit's
+ * H8, 2026-10-31). Client UI copy is locale-owned (the estate's
+ * decision, mirrored from card-base's square.ts): presentation code
+ * owns no copy literals; it consumes them here through the typed
+ * seat. A second locale plugs into this dictionary without touching
+ * a single studio component.
+ *
+ * THE BOUND: static user-visible FACES live here (labels, titles,
+ * placeholders, aria names). Computed LAW WORDINGS — a hover title
+ * that narrates its lane's own rule with live numbers ("3 claimed —
+ * the loader holds 8 slots…") — are one-of-a-kind per seat and ride
+ * the seat; the dictionary would only rename them, not own them.
+ * The refusal/error literals that EVERY seat shares live in
+ * refUtils (FOREIGN_URL_REFUSAL, REF_READ_ERROR) — one law, one
+ * home, not two.
+ */
+/** The typed dictionary. Keys are stable copy ids. */
+// v8 ignore next -- exercised key-by-key by the copy wall's census arm
+export const studioCopy = {
+    /** Image-bus label (terse face law, 2026-11-05: the anchor-slot
+     *  prose died with the anchor face — the cap tail carries the
+     *  count; labels are faces, prose lives in hint seats). */
+    imagesBusLabel: "Images",
+    /** THE SETTLEMENT VOICE (h¹, the flip-settlement law): the pick
+     *  gate reseated the family-dead strand to land the pick — it
+     *  names the cleared keys and the lane that refuses them. A
+     *  settlement is VOICED, never silent and never a bare refusal:
+     *  the silent strand was the bricked-doc burn (the four keys
+     *  stranded under a hidden tab until the pick gate gang-refused). */
+    gateSettled(dropped) {
+        return "THE COMPOSE GATE SETTLED — cleared " + dropped.join(", ")
+            + ": the reference lane (t4r) doesn't sanction them. The pick landed.";
+    },
+    /** Ref-videos lane label (terse, symmetric with the sister lanes). */
+    refVideos: "Videos",
+    /** Ref-audios lane label (terse, symmetric with the sister lanes). */
+    refAudios: "Audios",
+    /** Ref-mods lane label (engine-side packs). */
+    refMods: "Ref mods",
+    // refModsHint died 2026-11-08 (ERRORS e): it was plan text — "any
+    // media rides — images, videos, audio (the system bakes the pack);
+    // pre-baked .safetensors stems ride the engine listing" — under the
+    // Ref mods label. The bucket's square grammar names its own
+    // currency; the operator: people will know that already or not
+    // care. Census re-pin: 102 → 101 (studio-copy census arm).
+    /** The mods path door's placeholder (the wire's example path). */
+    /** The mods path door's accessible name. */
+    /** The anchor slot's square caption (the bus's slot 1). */
+    /** The strip pane's head. */
+    timelineTitle: "Timeline",
+    /** The preview pane's head. */
+    previewTitle: "Preview",
+    /** The preview's empty state (the run order, in one line). */
+    previewEmpty: "No render yet — author the calls below, then Run.",
+    /** Focused mode's back door. */
+    backToGlobal: "Back to global parameters",
+    backToGlobalTip: "Back to the run's global parameters — or click any empty spot in the timeline",
+    audioSubTitle: "Audio",
+    audioSubHint: "positioned clips · per-lane wiring",
+    /** The prompt lane's enhance action. */
+    enhanceAction: "Rewrite this call's prompt in H3 cinematic style",
+    /** The prompt lane's empty-state placeholder (and its refusal hint). */
+    promptPlaceholder: "describe the action, camera, and mood for this call — empty calls refuse the plan",
+    /** The recipe engine's frame-rate seat. */
+    fps: "FPS",
+    /** (operator 2026-11-05) the GENERAL head — the studio-owned
+     *  clock rides here above the generic knobs (fps is a doc
+     *  control, not a card param; CardForm cannot seat it). */
+    generalTitle: "General",
+    /** (operator 2026-11-05: "THE FPS DIDN'T GET MOVED TO THE GENERAL
+     *  knobs below it. */
+    /** The refs-clips lane's per-clip removal. */
+    removeClip: "remove the clip",
+    /** The declared chip's card tag (the inherit arm's marker). */
+    declaredCardTag: "card",
+    /** The bucket door-guard's stand-down default (a pinned window owns its audio). */
+    pinnedStanddown: "pinned window — this input stands down",
+    /** The bus-count tail's pinned dot. */
+    countPinnedTail: " · pinned",
+    /** The bus-count tail's override dot (the refs bus lanes' replace law). */
+    countOverridesTail: " · overrides",
+    /** The bus-count tail's merge dot (the mods seat's merge law, G7 2026-11-08: the call's chips ride WITH the card mods). */
+    countMergedTail: " · merged",
+    /** The declared chip's hover law (card-level defaults ride until a stated lane replaces them). */
+    declaredChipTitle: (url) => `card-level default — rides this window while the call states no chips of its own (a stated lane replaces it; edit via the card params)\n${url}`,
+    /** The mods bucket's declared chip hover (the merge law: the card mods ride every window; a call's chips merge with them). */
+    modDeclaredChipTitle: (url) => `card-level mod — rides every window; a call's own chips merge with it (the compose dedupes by value)\n${url}`,
+    /** The declared mod chip's detach verb (G7's writer seat, 2026-11-09: the run-level lane is authored by the studio — the press writes the DOC verb). The detach button's accessible name. */
+    modDeclaredRemoveTitle: (url) => `detach ${url} — the run's declared mod lane drops this card-level pack`,
+    /** The mod chip's hover law (the any-media seat: media bakes, stems reuse). */
+    modChipTitle: (chip) => `refmod seat — media bakes into a pack at the run (the system handles the conversion); .safetensors stems reuse the engine's loader\n${chip}`,
+    /** The call head shared by the focused card and the compact row (one face, two seats). */
+    modelCallHead: (index) => `#${index} · Model call ${index + 1}`,
+    /** The card header's span readout (frames, span seconds, seam-carried delivery). */
+    spanReadout: (start, end, spanSec, deliveredSec) => `frames ${start}–${end} · span ${spanSec}s → delivered ${deliveredSec}s`,
+    /** The knob badge (per-call override count). */
+    knobTag: (count) => `${count} knob${count === 1 ? "" : "s"}`,
+    /** The call Delete button's accessible name. */
+    deleteCallAria: (index) => `Delete call ${index}`,
+    /** The call Delete button's visible verb. */
+    deleteAction: "Delete",
+    /** The span row's head. */
+    spanWord: "Span",
+    /** The span start field's label. */
+    callStartLabel: (index) => `Call ${index} start frame`,
+    /** The span end field's label. */
+    callEndLabel: (index) => `Call ${index} end frame`,
+    /** The span row's ripple note. */
+    spanNote: "the frame where this call ends — the next call starts there",
+    /** The reference bundle's head. */
+    refsHead: "Reference bundle (this call)",
+    /** THE CONTEXT-CARRY MODES (the window editor's seam seat, spelled
+     *  whole — three states, one seat; the strip's chip stays the
+     *  quick cut toggle, this modal owns the full vocabulary). */
+    seamModeHead: "Context carry (the seam into this call)",
+    seamModeStock: "Stock",
+    seamModeCarry: "Carry",
+    seamModeCarryKeyframe: "Carry + keyframe",
+    seamModeStockTip: "stock — no context carry: this window renders independent, a true butt against the last (rarely used, the escape hatch)",
+    seamModeCarryTip: "carry — the latent tail continues across the seam at the proven 22-frame overlap (the default)",
+    seamModeCarryKeyframeTip: "carry + keyframe — the latent tail carries AND the previous window's final frame is pinned as this window's first frame (more consistent shots)",
+    seamModeAria: "Context carry mode",
+    /** The image lane's add-row verb. */
+    addRefImage: "+ image",
+    /** The add-row faces, one per lane (symmetric law, 2026-11-05). */
+    addRefVideo: "+ video",
+    addRefAudio: "+ audio",
+    /** The knob fold's head. */
+    knobsHead: "Call knobs",
+    /** A knob row's accessible name. */
+    callKnobAria: (index, knob) => `Call ${index} knob: ${knob}`,
+    /** The data-URL chip's slot label. */
+    uploadChipLabel: (slot) => `upload ${slot}`,
+    /** (D2) The thumb's accessible name — opens the DSH lightbox. */
+    imagePreviewAria: (name) => `preview ${name}`,
+    /** (D2) ImageLightbox's dialog name — locale-owned copy for the
+     *  DSH primitive's own labels, never hardcoded at the seat. */
+    imagePreviewDialog: "image preview",
+    /** (D2) ImageLightbox's close-control label. */
+    imagePreviewClose: "close preview",
+    /** The prompt lane's head. */
+    promptHead: "the prompt this call sends to H3",
+    /** The enhance button's accessible name. */
+    enhanceCallPromptLabel: (index) => `Enhance call ${index} prompt`,
+    /** The enhance button's in-flight face. */
+    enhancingNow: "enhancing…",
+    /** The enhance button's rest face. */
+    enhanceStyleAction: "✨ H3 style",
+    /** The undo-enhance button's accessible name. */
+    undoEnhanceCallPromptLabel: (index) => `Undo enhance call ${index} prompt`,
+    /** The undo-enhance button's visible verb. */
+    undoAction: "↩ undo",
+    /** The prompt textarea's accessible name. */
+    callPromptAria: (index) => `Call ${index} prompt`,
+    /** The rail's head in global mode. */
+    /** The rail's hint (rows, prompts, guides, the compiler's cut law). */
+    /** The focused mode's back action. */
+    globalAction: "Global",
+    /** The compact row's empty-prompt face. */
+    /** A duration in whole seconds with its unit (call rows, keyframe times). */
+    secondsLabel: (value) => `${value}s`,
+    /** The keyframes panel's head (operator 2026-11-05: keyframes ARE
+     *  the surface — never "legacy", never an escape hatch). */
+    keyframesTitle: "Keyframes",
+    /** The keyframes panel's hint: the pin contract, terse. */
+    keyframesHint: "image pins — endpoint pins anchor the window's first/last frame",
+    /** A keyframe row's frame field label. */
+    keyframeFrameLabel: (index) => `Keyframe ${index} frame`,
+    /** A keyframe row's pick icon accessible name (defect B, operator
+     *  2026-11-06: the rows work like the audio upload inputs — an icon
+     *  that opens the source picker, never an image square). */
+    kfRowPickAria: (index) => `Keyframe ${index} source`,
+    /** A keyframe row's Delete button accessible name. */
+    deleteKeyframeAria: (index) => `Delete keyframe ${index}`,
+    /** A keyframe row's Delete tooltip (the pin channel has one kind). */
+    deleteKeyframeTip: "Delete this keyframe",
+    /** The strip head's door into the keyframes subview (defect B,
+     *  operator 2026-11-06: the keyframe editor is its OWN standalone
+     *  submenu — the door rides the strip head, named for the subview). */
+    keyframesDoor: "Keyframes",
+    /** The strip head door's tooltip. */
+    keyframesDoorTip: "Open the keyframes editor",
+    /** The subview's add-door aria — the pin lands at the playhead. */
+    kfAddAria: "Add keyframe at playhead",
+    /** The subview's add-door tooltip: the three doors, named. */
+    kfAddTip: "Pick the pin's image — from flow, from media, or from file; the pin lands at the playhead",
+    /** The subview's empty face — the pin doors, named. */
+    kfEmptyNote: "No pins yet — double-click the keyframes lane, or use the add door beside the title",
+    /** A guide square's label. */
+    guideSlotLabel: (kind) => `${kind} guide`,
+    // ── Phase-0 nativity cures + slice-3 keys (2026-11-05, the dict-first
+    // law: every new literal below is planted BEFORE its consumers land —
+    // audit rows F-B1/F-B2/F-B3/F-B6/F11 in
+    // dev_docs/audits/contracts/nativity-2026-11-05-timeline-card-a.md) ──
+    /** The strip clip's chrome head: index · seconds — prompt text (F-B1;
+     *  consumed at docCalls.ts clip-header; the spanReadout class). */
+    clipHeader: (index, seconds, text) => `C${index + 1} · ${seconds}s — ${text}`,
+    /** The bus-count tail's over-cap arm (F-B2; consumed CallCard ×2). */
+    overCapTail: "over cap",
+    /** The bus-count tail's over-bus arm (F-B2; consumed CallCard). */
+    overBusTail: "over bus",
+    /** The image guide lane's gutter name (F-B3; VIDEO_TIMELINE_TRACKS). */
+    imageGuideLane: "Keyframes",
+    /** A keyframe-lane chip's accessible name (F-B6; slice 3's lane UI). */
+    keyframeLaneChipAria: (frame) => `Image pin at frame ${frame}`,
+    /** A keyframe-lane chip's visible frame readout (F-B6; slice 3). */
+    keyframeFrameReadout: (frame) => `${String(frame)}`,
+    /** The drop hint when a pin will snap to a window boundary (F-B6). */
+    dropSnapHint: "snap to window edge",
+    /** The drop hint when a pin stays interior to its window (F-B6). */
+    dropInteriorHint: "interior guide",
+    /** The strip refusal when a pin lands outside every window (F-B6;
+     *  the plan door's own refusal, surfaced). */
+    gapRefusal: "that frame is outside every call window — pins ride inside a window",
+    /** (§0.5, the window split) the strip refusal when the split finds
+     *  no legal frame (the 22f base / 17f step windows): the grid's
+     *  shortest halves don't fit — the shared laneErr slot's voice. */
+    splitRefusal: "this window is too short to split — its shortest legal halves don't fit; lengthen it first",
+    /** (queue 11 part 2, the empty doc under v2v) the face's own
+     * refusal: the only verb is cutting and there is no window to cut —
+     * the stock append is an ADD the face bars (the operator: "This
+     * section would no longer allow people to add clips"). */
+    splitEmptyRefusal: "nothing to cut — the video-to-video face adds no clips; a cut needs an existing clip",
+    /** (queue 11 reopened, the FORM seat) the video2video leaf face's
+     *  own words — the windows list + the split-by-timestamp seat the
+     *  operator named ("NO WINDOWS IN THE FORM!"): the same copy law
+     *  as the strip head's atoms, this dictionary's own census. */
+    /** (queue 11 reopened) the windows list's row label — a
+     *  parameterized face (W-index + the span's seconds + the seam +
+     *  the text), riding OUTSIDE the flat single-line census by
+     *  construction. */
+    v2vWindowRow: (index, startSec, endSec, seam, text) => `W${index} · ${startSec}s–${endSec}s${seam === "" ? "" : ` · ${seam}`}${text === "" ? "" : ` · ${text}`}`,
+    v2vFormHead: "Windows — the video-to-video spans this edit composes",
+    v2vFormHint: "each window is one span of the run; the split seat below cuts one in two",
+    v2vFormSplitLabel: "Split at (seconds)",
+    v2vFormSplitTip: "the timestamp to split at — 2 splits the containing window at 2s (snapped to the authoring lattice)",
+    v2vFormSplitPlaceholder: "at sec",
+    v2vFormCutAria: "Split the window",
+    v2vFormRefusal: "state a timestamp first — the form splits at the seconds you name, or the window is too short to halve",
+    v2vFormEmptyNote: "no windows yet — the timeline strip's calls section owns the spans; this list reads them",
+    /** (C6, the imageless pin) a PENDING pin's chip faces — the
+     *  double-click authors the frame first; the image rides only
+     *  through the picker doors. Until it does, the chip NAMES its
+     *  state on every face: the row the card cannot compose never
+     *  looks settled (the run door's "image is required" refusal is
+     *  the loud backstop). */
+    keyframePendingAria: (frame) => `Image pin at frame ${frame} — PENDING: no image yet (the run refuses it)`,
+    /** A pending pin's visible readout — the frame plus the state word. */
+    keyframePendingReadout: (frame) => `${frame} · pending`,
+    /** The pending chip's drop hint / tooltip law — the repair and the backstop. */
+    keyframePendingHint: "no image yet — pick one in the keyframes editor; the run door refuses an imageless pin",
+    /** The keyframe lanes' hint when no pins exist (F11; strip prop). */
+    keyframeLaneHint: "double-click a lane to pin an image at that frame",
+    /** The strip's empty-calls hint (F11; strip prop, was a raw literal). */
+    stripEmptyPromptsHint: "No calls — double-click the timeline to add one",
+    /** The preview pane's empty face hint (F11; StudioPreview). */
+    previewEmptyHint: "render a run to see the film",
+    /** The preview pane's frames meta (F11; StudioPreview). */
+    previewFramesMeta: (frames, fps) => `${String(frames)} frames · ${String(fps)} fps`,
+    /** The preview pane's cut meta (F11; StudioPreview). */
+    previewCutMeta: (index, count) => `cut ${String(index + 1)} / ${String(count)}`,
+    /** A guide square's accessible name. */
+    callGuideSlotLabel: (callIndex, kind) => `Call ${callIndex} ${kind} guide`,
+    /** The recipe group's head. */
+    /** The clips row's head. */
+    clipsTitle: "Clips",
+    /** The clips count face (clips present). */
+    clipsCountNote: (count) => `${count} clip${count === 1 ? "" : "s"} on the audio lanes — drag to move, × to remove`,
+    /** The clips count face (no clips yet). */
+    clipsEmptyHint: "none — add from a lane's ⤴ in the timeline, or drop a file on any lane",
+    /** The door-guard hint (clips pin their windows). */
+    clipsGuardHint: "pinned windows own their audio: music clip ⇒ no bed there · dialogue/sfx clip ⇒ ref audios mute there — no accidental overlap",
+    /** The lane inspector's head. */
+    lanesInspectorTitle: "Lanes — words & events",
+    /** The dialogue lane's option face. */
+    laneDialogue: "Dialogue",
+    /** The music lane's option face. */
+    laneMusic: "Music",
+    /** The sfx lane's option face. */
+    laneSfx: "SFX",
+    /** The lane picker's accessible name: the clip's own name leads. */
+    laneSelectLabel: (name) => `${name} lane`,
+    /** The dialogue lane's text placeholder. */
+    dialoguePlaceholder: "the exact spoken words (verbatim, unabridged — they move the mouth)",
+    /** The sfx lane's text placeholder. */
+    sfxPlaceholder: "the event the soundscape times (e.g. a sudden explosion rocks the room)",
+    /** The music lane's text placeholder. */
+    musicPlaceholder: "music description (rides non_diegetic_music)",
+    /** The run-history row's head. */
+    runsTitle: (count) => `Runs (${count})`,
+    /** A run-history chip's visible face (short id + duration). */
+    historyChipLabel: (shortId, duration) => `${shortId} · ${duration}s`,
+    /** The final-cut bar's head. */
+    finalCutTitle: "Final cut",
+    /** The final-cut bar's time readout. */
+    cutTimeLabel: (sec, frame, total) => `${sec}s · frame ${frame}/${total}`,
+    /** The final-cut bar's open action. */
+    openAction: "open",
+    /** A window tile's fallback name word. */
+    windowTileWord: "window",
+    /** The strip's meta line (calls, frames, clock, seconds). */
+    stripMeta: (args) => `${args.calls} call${args.calls === 1 ? "" : "s"} · ${args.frames} fr · ${args.fps} fps · ${args.seconds}s`,
+    /** The strip's hint (one card = one call, edges, extend, knobs dot). */
+    stripHint: "one card = one model call · drag an edge = move the cut · double-click a card = edit it · double-click the ruler or empty lane = add a window · pull the tail = extend · cyan dot = knobs override · click a call = open it in the left panel",
+    /** The lane blocker (reference audio locks the D-M-E lanes). */
+    laneBlockedMessage: "reference audio is wired on a call — the dialogue / music / SFX lanes are LOCKED (the clips and the audio inputs are mutually exclusive; clear the call's Ref audios to place clips)",
+    /** The bar's calls lane label. */
+    callsLabel: "Calls",
+    /** ── THE MOD-MODE CALLS FACES (operator 2026-11-14: "there is
+     *  still the default call in the timeline bar that tells them to
+     *  describe their video there, when that isn't used at all") — the
+     *  lane names its calls-readership under an armed commission, so
+     *  the default invitation never lies about the armed run. */
+    /** The calls lane head under a NON-reading armed commission (the
+     *  run composes from the bag alone — the lane is not read). */
+    callsDormantLabel: (kind) => `Calls — dormant under ${studioCopy.commissionKindLabel(kind)}`,
+    /** The calls lane's empty hint under a NON-reading armed
+     *  commission: why the starter stood down (the armed commission
+     *  owns this run's inputs). */
+    callsDormantHint: (kind) => `${studioCopy.commissionKindLabel(kind)} is armed — this run composes from the mod's own inputs and does not read this lane (disarm the mod to author the film here)`,
+    /** The calls lane head under a READING armed commission (reshoot,
+     *  loras): the lane's text rides the run. */
+    callsPromptSeatLabel: (kind) => `Calls — the ${studioCopy.commissionKindLabel(kind)} run's prompt`,
+    /** The calls lane's empty hint under a READING armed commission:
+     *  describe the shot here — this text IS the run's prompt. */
+    callsPromptSeatHint: (kind) => `${studioCopy.commissionKindLabel(kind)} is armed — describe the shot here: this lane's text is the run's prompt`,
+    /** ── THE VIDEO-TO-VIDEO AND CUTS FACE (queue 11, operator
+     *  2026-11-08, verbatim: "WHEN YOU ADD THE MOD FOR VIDEO TO
+     *  VIDEO, IT CHANGES THE TIMELINE BAR UNDER THE 'CALLS' SECTION
+     *  FOR THE VIDEO TO VIDEO AND CUTS.") — the edit mod's presence
+     *  swaps the calls lane into the cut-authoring face: the windows
+     *  are the video-to-video spans, the ADD CUT door is visible on
+     *  the strip's own head. */
+    /** The calls lane head under the armed edit bag (the windows are
+     *  the run's own video-to-video spans). */
+    callsV2vLabel: "Video-to-video — windows & cuts",
+    /** The calls lane's empty hint under the armed edit bag. */
+    callsV2vHint: "Video edit is armed — each window is one video-to-video span; Add cut divides the window at the playhead into two (a cut seam, never a chain — wherever the playhead sits)",
+    /** The strip head's visible cut door (the queue-11 law: the
+     *  ability to add cuts is a CONTROL on the face, never a hidden
+     *  gesture). */
+    addCutDoor: "Add cut",
+    /** The cut door's tip. */
+    addCutDoorTip: "Cut the window at the playhead into two (cut seam)",
+    /** ── THE TIMESTAMP SPLIT SEAT (queue 11's second block, operator
+     *  2026-11-08: "the video2video form that would allow clips to
+     *  split by timestamp. I.e. split at 2 seconds, with the option
+     *  to select how context is carried.") — the seconds input + the
+     *  carry-mode menu beside the Add cut door. */
+    /** The timestamp input's label. */
+    splitAtLabel: "Split at (seconds)",
+    /** The timestamp input's tip. */
+    splitAtTip: "State a timestamp — the cut lands at that second instead of the playhead",
+    /** The timestamp input's placeholder. */
+    splitAtPlaceholder: "at sec",
+    /** The carry-mode menu's label. */
+    splitCarryLabel: "Context carry across the split",
+    /** The carry-mode menu's tip. */
+    splitCarryTip: "How context carries across the new seam",
+    /** The carry menu's stock row (no carry — the split's default). */
+    splitCarryStock: "Stock — no carry",
+    /** The carry menu's carry row. */
+    splitCarryCarry: "Carry — 22-frame overlap",
+    /** The carry menu's carry+keyframe row. */
+    splitCarryKeyframe: "Carry + keyframe",
+    /** The prose doors' refusal under the v2v face: the edit composes
+     *  from the mod's own prompt seat — the lane's TEXT is not read
+     *  (its windows and cuts are). */
+    callsV2vProseHint: "Video edit composes from the mod's own prompt seat — this lane's windows and cuts are read, its prose is not",
+    /** ── THE COMMISSION RAIL (§9's mod projection) ────────────────────
+     *  One row per ARMED mod bag. The kind's face is the operator's own
+     *  word for the door; the seats line names what the entry states;
+     *  the geometry line names the windows the extend will build. */
+    commissionKindLabel: (kind) => {
+        switch (kind) {
+            // THE CANONICAL BAG'S OWN WORD (2026-11-16, the read-list
+            // collapse): the edit door's label is the card's served kind
+            // label — never the bare kind id.
+            case "edit": return "Video edit";
+            case "replace": return "Replace";
+            case "repair": return "Repair";
+            case "extend": return "Extend";
+            case "reshoot": return "Reshoot";
+            case "loras": return "LoRAs";
+            default: return kind;
+        }
+    },
+    /** A commission's armed row voice (what the row means). */
+    commissionRowTitle: (kind) => `${studioCopy.commissionKindLabel(kind)} is armed — this row is the commission the compose will build (agent-authored; edit the mod bag to change it)`,
+    /** A present bag that is not an entry list: the run door refuses it
+     *  (a bag is an array of exactly one entry), so the row says so. */
+    commissionMalformed: (kind) => `${studioCopy.commissionKindLabel(kind)} bag is present but is not an entry list — the run door refuses this arm (a bag is an array holding exactly one entry)`,
+    /** A bag whose entry is not an object: armed, and the door refuses
+     *  its missing seats — the row says so instead of hiding the arm. */
+    commissionBadEntry: (kind) => `${studioCopy.commissionKindLabel(kind)} bag's entry is not an object — the run door refuses this arm (an entry states the arm's seats)`,
+    /** The seats↔geometry join on a commission row (punctuation owned
+     *  by the dictionary, like the seats' own middle dot). */
+    commissionDetailJoin: " — ",
+    /** The seats line: "source_clip clips/a.mp4 · strength 2". */
+    commissionSeats: (seats) => seats.map((s) => `${s.key} ${s.value}`).join(" · "),
+    /** The composition line: "4 × 243f · 12.730s". */
+    commissionGeometry: (args) => `${args.windows} × ${args.windowFrames}f · ${(args.deliveredFrames / 24).toFixed(3)}s`,
+    /** One window segment's face on the drawn window strip. */
+    commissionWindowSegment: (index, windowFrames) => `w${index + 1} · ${windowFrames}f`,
+    /** The document readout (calls, seconds, guides, knobbed calls). */
+    docReadout: (args) => `${args.calls} call${args.calls === 1 ? "" : "s"} · ${args.seconds}s · ${args.guides} guide${args.guides === 1 ? "" : "s"}${args.knobs > 0 ? ` · ${args.knobs} call${args.knobs === 1 ? "" : "s"} with knobs` : ""}`,
+    /** The unwired-keyframes warning (C6: the studio's gate face names
+     *  the PENDING state before the run — the door's refusal is the
+     *  backstop, named here). */
+    unwiredWarning: (count) => `${count} keyframe source${count === 1 ? "" : "s"} unwired — the pin${count === 1 ? " is" : "s are"} PENDING until an image rides; wire them below or the run door refuses loud ("image is required")`,
+    /** The run fold's head. */
+    runParametersTitle: "Run parameters",
+    /** The run fold's layer note. */
+    runLayerNote: "Layer A — global · calls inherit",
+    /** The Steps knob's face. */
+    knobSteps: "Steps",
+    /** The Denoise knob's face. */
+    knobDenoise: "Denoise",
+    /** The Sampler knob's face. */
+    knobSampler: "Sampler",
+    /** The Scheduler knob's face. */
+    knobScheduler: "Scheduler",
+    /** The Video shift knob's face. */
+    knobShiftVideo: "Video shift",
+    /** The Audio shift knob's face. */
+    knobShiftAudio: "Audio shift",
+    /** The SLA sparsity knob's face. */
+    knobSlaSparsity: "SLA sparsity",
+    /** The SLA block size knob's face. */
+    knobSlaBlockSize: "SLA block size",
+    /** The SLA min seq len knob's face. */
+    knobSlaMinSeqLen: "SLA min seq len",
+    /** The SLA dense last steps knob's face. */
+    knobSlaDenseLastSteps: "SLA dense last steps",
+    /** The SLA protect audio knob's face. */
+    knobSlaProtectAudio: "SLA protect audio",
+    /** The SLA stabilize motion knob's face. */
+    knobSlaStabilizeMotion: "SLA stabilize motion",
+    /** The SLA ref protection knob's face. */
+    knobSlaRefProtection: "SLA ref protection",
+    /** The SLA dense backend knob's face. */
+    knobSlaDenseBackend: "SLA dense backend",
+    /** The SLA dense steps knob's face. */
+    knobSlaDenseSteps: "SLA dense steps",
+    /** The SLA full-prec accum knob's face. */
+    knobSlaFullPrecAccum: "SLA full-prec accum",
+    /** The Sharpen knob's face. */
+    knobSharpen: "Sharpen",
+    /** The Sharpen method knob's face. */
+    knobSharpenMethod: "Sharpen method",
+    /** The Sharpen strength knob's face. */
+    knobSharpenStrength: "Sharpen strength",
+    /** The Sharpen radius knob's face. */
+    knobSharpenRadius: "Sharpen radius",
+    /** The Sharpen noise gate knob's face. */
+    knobSharpenNoiseGate: "Sharpen noise gate",
+    /** The Sharpen iterations knob's face. */
+    knobSharpenIterations: "Sharpen iterations",
+    /** The Interpolate knob's face. */
+    knobInterpolate: "Interpolate",
+    /** The Interp model knob's face. */
+    knobInterpModel: "Interp model",
+    /** The Interp multiplier knob's face. */
+    knobInterpMultiplier: "Interp multiplier",
+    /** The Window length knob's face. */
+    knobWindowLength: "Window length (frames)",
+};
+//# sourceMappingURL=studioCopy.js.map

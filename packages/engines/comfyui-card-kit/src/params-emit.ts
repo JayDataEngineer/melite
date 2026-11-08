@@ -77,7 +77,7 @@ export interface DeclaredModifierKind {
    *  camera-pose orb for orbit-canvas kinds, delivered by the client
    *  plane's orbitFace host (absent host = the number dials hold).
    *  Served verbatim like every declared row. */
-  leaf_face?: 'paint-canvas' | 'bbox-canvas' | 'orbit-canvas'
+  leaf_face?: 'paint-canvas' | 'bbox-canvas' | 'orbit-canvas' | 'v2v-windows'
   /** THE SECTION CAPTION (2026-10-08, the operator's filter demand —
    *  "SAM2 AND SAM3 DON'T HAVE BBOX FILTER"): a one-line caption
    *  the leaf seats ABOVE the field stack, naming what the stack

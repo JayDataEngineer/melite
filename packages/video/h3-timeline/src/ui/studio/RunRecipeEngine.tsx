@@ -23,6 +23,9 @@
  * injects own geometry, one surface).
  */
 import { CardForm, ControlRow, SectionLabel, SpecAtom, useResolvedForm, uploadLoraDoor, resolveFamilyKey, seatFileKindOf, urlKindOf, type SquareWire } from "@melite/card-base/client"
+import { V2vLeafFace } from "./V2vLeafFace.tsx"
+import type { DocCall } from "./docModel.ts"
+import type { V2vWindowsFaceProps } from "@melite/contracts"
 import { axisUnset, composeValidate } from '@melite/card-base/client'
 import { resolvePickVerdictDoc } from "./pickVerdict.ts"
 import { fetchMediaLibrary } from '@melite/card-base/client'
@@ -38,7 +41,7 @@ import { studioCopy } from "./studioCopy.ts"
 
 /** Layer A rail: Recipe (clock) + Engine (H3 sampling) + geometry. */
 export function RunRecipeEngine({
-  base, layerA, setLayerAKey, setLayerA, refArtifacts,
+  base, layerA, setLayerAKey, setLayerA, refArtifacts, v2vDoc, onV2vCalls,
 }: {
   /** The stage's SETTLED BASE layer (audit F2, 2026-11-05: the pane
    *  stops touching `stage` entirely — component.tsx, the spine owner,
@@ -63,6 +66,15 @@ export function RunRecipeEngine({
    * opened onto the honest-empty list; the bench drill always wired
    * this, the studio silently didn't). */
   refArtifacts: Array<{ name: string; url: string }>
+  /** THE V2V DOC PLANE (queue 11 reopened): the leaf form's windows
+   *  face reads the DOC's calls + the film clock — the studio's own
+   *  plane, threaded by the spine owner at ONE boundary (the doc's
+   *  calls never ride layerA: calls is outside LAYERA_KEY_UNIVERSE
+   *  by law, so the generic CardForm values map cannot carry them). */
+  v2vDoc: { calls: DocCall[]; fps: number }
+  /** The doc's whole-array calls write (updateCalls — the same door
+   *  the strip's cut verbs and the mutation updaters ride). */
+  onV2vCalls: (next: DocCall[]) => void
 }) {
   // THE STUDIO SEAM (one shared hook): the served spec, the
   // RESOLVED values (schema defaults <- model defaults <- Layer A —
@@ -149,6 +161,16 @@ export function RunRecipeEngine({
   // writes, and the refusal SAYS so in the door's words — never a
   // silent drop, never a face that blames the operator.
   const [gateFace, setGateFace] = useState<string | null>(null)
+  // THE BOUND FACE (the studio's host law): the generic seam passes
+  // the CardForm values map; the studio's calls live on the DOC
+  // plane, so THIS host binds the doc's own calls + the doc's
+  // whole-array write (the estate's card-view host passes the
+  // UNBOUND component — its row params carry calls directly).
+  const v2vBoundFace = (p: V2vWindowsFaceProps) =>
+    <V2vLeafFace
+      value={{ calls: v2vDoc.calls, fps: v2vDoc.fps }}
+      onChange={(next) => { onV2vCalls(next as DocCall[]) }}
+    />
   return (
     <>
       {gateFace !== null ? (
@@ -203,6 +225,12 @@ export function RunRecipeEngine({
           omitInputRail
           omitFields={omitDead}
           omitRecipeRow={omitRecipe}
+          // THE V2V WINDOWS FACE (queue 11 reopened, the operator's
+          // correction — "NO WINDOWS IN THE FORM!"): the edit leaf's
+          // own windows + split-by-timestamp seat. The studio's
+          // CardForm mount is the card's OWN door; the estate's card
+          // view hosts the same component through its stage drill.
+          v2vFace={v2vBoundFace}
           onSet={edit}
           onUnset={(n) => setLayerAKey(n as keyof LayerA, undefined)}
           // THE ATOMIC PICK LAW (the same arm the bench drill seats):

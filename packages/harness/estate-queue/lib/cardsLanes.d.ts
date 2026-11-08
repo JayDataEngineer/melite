@@ -1,5 +1,5 @@
 import type { ModelDecl } from "@melite/comfyui-card-kit/model-contract";
-import { CardArmError } from "./cardsArmError.ts";
+import { CardArmError } from "./cardsArmError.js";
 /** lane_inputs keys that name FILES the stock loaders read, mapped
  * to their ComfyUI folder sets (text_encoders folds legacy clip;
  * unet folds diffusion_models; loras is the LoraLoaderModelOnly

@@ -1,11 +1,11 @@
 import type { EngineJson } from '@melite/comfyui-cordis';
 import type { Context } from '@deepseek-ai/cordis';
 import type { ImageAttachmentRef, ImageMediaType } from '@deepseek-ai/dsh-attachment';
-import type { ProbedStream } from './mp4Probe.ts';
-import type { MeshSummary } from './glbSummary.ts';
+import type { ProbedStream } from './mp4Probe.js';
+import type { MeshSummary } from './glbSummary.js';
 import type { MediaListRow } from '@melite/estate-media';
-import type { VisionQuestionKind, VisionRoute } from './vision-route.ts';
-import type { ToolDefinition } from '../types.ts';
+import type { VisionQuestionKind, VisionRoute } from './vision-route.js';
+import type { ToolDefinition } from '../types.js';
 /** Identify the media type declared by a supported image signature. */
 export declare function sniffImageMediaType(data: Uint8Array): ImageMediaType | undefined;
 /** Map a path to its declared image media type by extension. */

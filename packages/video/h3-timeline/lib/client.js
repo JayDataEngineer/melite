@@ -622,6 +622,23 @@ window.__ModuleLoader__.load({
 			* the stock append is an ADD the face bars (the operator: "This
 			* section would no longer allow people to add clips"). */
 			splitEmptyRefusal: "nothing to cut — the video-to-video face adds no clips; a cut needs an existing clip",
+			/** (queue 11 reopened, the FORM seat) the video2video leaf face's
+			*  own words — the windows list + the split-by-timestamp seat the
+			*  operator named ("NO WINDOWS IN THE FORM!"): the same copy law
+			*  as the strip head's atoms, this dictionary's own census. */
+			/** (queue 11 reopened) the windows list's row label — a
+			*  parameterized face (W-index + the span's seconds + the seam +
+			*  the text), riding OUTSIDE the flat single-line census by
+			*  construction. */
+			v2vWindowRow: (index, startSec, endSec, seam, text) => `W${index} · ${startSec}s–${endSec}s${seam === "" ? "" : ` · ${seam}`}${text === "" ? "" : ` · ${text}`}`,
+			v2vFormHead: "Windows — the video-to-video spans this edit composes",
+			v2vFormHint: "each window is one span of the run; the split seat below cuts one in two",
+			v2vFormSplitLabel: "Split at (seconds)",
+			v2vFormSplitTip: "the timestamp to split at — 2 splits the containing window at 2s (snapped to the authoring lattice)",
+			v2vFormSplitPlaceholder: "at sec",
+			v2vFormCutAria: "Split the window",
+			v2vFormRefusal: "state a timestamp first — the form splits at the seconds you name, or the window is too short to halve",
+			v2vFormEmptyNote: "no windows yet — the timeline strip's calls section owns the spans; this list reads them",
 			/** (C6, the imageless pin) a PENDING pin's chip faces — the
 			*  double-click authors the frame first; the image rides only
 			*  through the picker doors. Until it does, the chip NAMES its
@@ -4900,24 +4917,29 @@ window.__ModuleLoader__.load({
 		*  upscale) composes from the bag entry alone and never reads a
 		*  call's text — under those arms the calls lane is dormant. */
 		const CALLS_READING_KINDS = ["reshoot", "loras"];
-		/** Derive the calls lane's face from the armed commissions. A reader
-		*  wins over any non-reader armed beside it (the run reads calls if
-		*  ANY armed action does); the edit bag then wins the v2v face (its
-		*  windows are the run's own spans — the cut-authoring lane); with
-		*  neither, the lane is dormant under the FIRST armed row's kind
-		*  (the commission the hint names).
+		/** Derive the calls lane's face from the armed commissions. THE
+		*  EDIT BAG WINS UNCONDITIONALLY (queue 11 reopened 2026-11-08: the
+		*  operator's real doc — edit + loras both armed — still drew the
+		*  plain prompt face; their law carries no precedence clause:
+		*  "WHEN YOU ADD THE MOD FOR VIDEO TO VIDEO, IT CHANGES THE TIMELINE
+		*  BAR UNDER THE 'CALLS' SECTION", full stop). A reader beside the
+		*  edit bag changes nothing the operator can see: the section IS
+		*  the video-to-video face. With no edit armed, the prior law
+		*  stands: a reader wins the prompt face (the run reads calls if
+		*  any armed action does); with neither, the lane is dormant under
+		*  the FIRST armed row's kind (the commission the hint names).
 		* @param commissions the derived armed rows (deriveCommissions)
 		* @returns the lane's face */
 		function callsLaneFace(commissions) {
+			if (commissions.find((c) => c.kind === "edit") !== void 0) return {
+				face: "v2v",
+				kind: "edit"
+			};
 			if (commissions.length === 0) return { face: "plain" };
 			const reader = commissions.find((c) => CALLS_READING_KINDS.includes(c.kind));
 			if (reader !== void 0) return {
 				face: "prompt",
 				kind: reader.kind
-			};
-			if (commissions.find((c) => c.kind === "edit") !== void 0) return {
-				face: "v2v",
-				kind: "edit"
 			};
 			return {
 				face: "dormant",
@@ -5529,6 +5551,234 @@ window.__ModuleLoader__.load({
 			})] });
 		}
 		//#endregion
+		//#region src/ui/studio/v2vSplit.ts
+		/** v2vSplit.ts — THE PURE SPLIT LAW (queue 11's form seat, operator
+		* 2026-11-08 reopened: "the video2video form that would allow clips
+		* to split by timestamp … with the option to select how context is
+		* carried"). ONE law, two doors: the strip head's door rides the
+		* studio's mutation updaters (useCallMutations — addCallAt's splice
+		* + setCallTransition's reframe, walled by
+		* studio-v2v-cut-door.spec.tsx); the LEAF FORM's face rides THIS
+		* pure function. The two must agree byte-for-byte — the parity arm
+		* in the form's wall judges the same fixture through both doors
+		* (the orb's one-truth law: ONE truth, two views of one draft).
+		*
+		* The law itself is §0.5's split + §0.9's reframe, verbatim from
+		* the mutation: the gesture frame snaps to the authoring lattice
+		* (22+17k), one window becomes its own two halves (text, refs and
+		* knobs carry whole into both; the seam the split births states
+		* CUT), everything downstream rebases by the 22f cut price, and a
+		* selected carry mode re-frames the NEW seam (the right half's end
+		* and the next window's start move together — the tiling holds). A
+		* gesture with no legal split frame REFUSES (null): the doc keeps
+		* its identity, exactly as the mutation's onRefuse path does. */
+		/** Split the doc's calls at a gesture frame with a selected carry.
+		* @param calls the doc's own windows (the row's calls param)
+		* @param gestureFrame the frame the split is asked at (doc space)
+		* @param carry the seam state the NEW split births after the stock
+		* cut ("cut" keeps the split's own default seam)
+		* @returns the next calls array, or null when no legal split exists
+		* (a window too short to halve, or an empty doc — the refusal the
+		* caller's own voice names) */
+		function splitCallsAt(calls, gestureFrame, carry) {
+			if (calls.length === 0) return null;
+			const i = calls.findIndex((c) => gestureFrame > c.start_frame && gestureFrame < c.end_frame);
+			if (i < 0) {
+				const target = calls.find((c) => gestureFrame === c.start_frame) ?? calls[calls.length - 1];
+				return splitCallsAt(calls, Math.round((target.start_frame + target.end_frame) / 2), carry);
+			}
+			const cur = calls[i];
+			const split = snapSplitFrame(cur.start_frame, cur.end_frame, isCarriedShape(i, cur), true, gestureFrame);
+			if (split === null) return null;
+			const rightEnd = reflowSeamSpan({
+				...cur,
+				start_frame: split,
+				transition: "extend"
+			}, i + 1, "cut");
+			const next = [...calls];
+			next[i] = {
+				...cur,
+				end_frame: split
+			};
+			next.splice(i + 1, 0, {
+				...cur,
+				start_frame: split,
+				end_frame: rightEnd,
+				transition: "cut"
+			});
+			const delta = rightEnd - cur.end_frame;
+			for (let j = i + 2; j < next.length; j++) next[j] = {
+				...next[j],
+				start_frame: next[j].start_frame + delta,
+				end_frame: next[j].end_frame + delta
+			};
+			if (carry !== "cut") {
+				const seam = { ...next[i + 1] };
+				const end = reflowSeamSpan(seam, i + 1, carry);
+				next[i + 1] = {
+					...seam,
+					transition: carry,
+					end_frame: end
+				};
+				if (i + 1 < next.length - 1) next[i + 2] = {
+					...next[i + 2],
+					start_frame: end
+				};
+			}
+			return next;
+		}
+		//#endregion
+		//#region src/ui/studio/V2vLeafFace.tsx
+		/** V2vLeafFace.tsx — THE VIDEO2VIDEO FORM'S WINDOWS FACE (queue 11
+		*  reopened, operator 2026-11-08: "Doesn't have a cut here. … NO
+		*  WINDOWS IN THE FORM!" — their correction of my strip-head-only
+		*  reading: the leaf form CARRIES the windows and the
+		*  split-by-timestamp seat "with the option to select how context
+		*  is carried").
+		*
+		*  THE SEAM: the paint/bbox/orbit law (stroke 95 — the mod popup
+		*  CARRIES the visual preview): the host (the estate's card view)
+		*  delivers this component through card-base's `v2vFace` prop; the
+		*  edit kind's DECL seats `leaf_face: 'v2v-windows'`; the leaf
+		*  embeds the face above its field stack. The face reads the ROW's
+		*  calls (the same windows the timeline strip draws under the
+		*  swapped calls section — ONE truth, two views of one draft) and
+		*  commits the next array through the envelope channel (v2vCommit
+		*  → onEdit + onPatch on `calls`).
+		*
+		*  THE LAW is v2vSplit.ts's pure split — the SAME lattice snap and
+		*  carry reframe the strip head's mutation updaters ride; the
+		*  parity arm in the form's wall (leaf-v2v-face.spec.tsx) judges
+		*  both doors against one fixture. */
+		/** The carry menu's three rows — the §0.9 vocabulary, the same
+		*  labels the strip head's carry menu serves (one dictionary). */
+		const CARRY_ROWS = [
+			{
+				id: "cut",
+				label: studioCopy.splitCarryStock
+			},
+			{
+				id: "extend",
+				label: studioCopy.splitCarryCarry
+			},
+			{
+				id: "carry+keyframe",
+				label: studioCopy.splitCarryKeyframe
+			}
+		];
+		/** the carry's own label (the three-row universe is closed — a
+		*  Record, never a find-with-fallback that can reach nothing). */
+		const CARRY_LABEL = {
+			cut: studioCopy.splitCarryStock,
+			extend: studioCopy.splitCarryCarry,
+			"carry+keyframe": studioCopy.splitCarryKeyframe
+		};
+		/** The windows face itself: the spans list + the split seat. */
+		function V2vLeafFace(props) {
+			const [splitAtSec, setSplitAtSec] = (0, react.useState)("");
+			const [carry, setCarry] = (0, react.useState)("cut");
+			const [menuOpen, setMenuOpen] = (0, react.useState)(false);
+			const [refusal, setRefusal] = (0, react.useState)(null);
+			const calls = props.value.calls;
+			const secs = (frames) => (frames / (props.value.fps || 24)).toFixed(2);
+			const press = () => {
+				const stated = Number(splitAtSec);
+				if (splitAtSec.trim() === "" || !Number.isFinite(stated) || stated < 0) {
+					setRefusal(studioCopy.v2vFormRefusal);
+					return;
+				}
+				const next = splitCallsAt(calls, Math.round(stated * (props.value.fps || 24)), carry);
+				if (next === null) {
+					setRefusal(studioCopy.v2vFormRefusal);
+					return;
+				}
+				setRefusal(null);
+				props.onChange(next);
+			};
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				"data-v2v-face": "windows",
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						"data-v2v-head": true,
+						children: studioCopy.v2vFormHead
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						"data-v2v-hint": true,
+						children: studioCopy.v2vFormHint
+					}),
+					calls.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						"data-v2v-empty": true,
+						children: studioCopy.v2vFormEmptyNote
+					}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ol", {
+						"data-v2v-windows": true,
+						children: calls.map((c, i) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("li", {
+							"data-v2v-window": i,
+							children: studioCopy.v2vWindowRow(i + 1, secs(c.start_frame), secs(c.end_frame), i > 0 ? c.transition ?? "cut" : "", c.text ?? "")
+						}, i))
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						"data-v2v-split-seat": true,
+						children: [
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+								type: "number",
+								min: 0,
+								step: .1,
+								"data-testid": "v2v-split-at",
+								"aria-label": studioCopy.v2vFormSplitLabel,
+								title: studioCopy.v2vFormSplitTip,
+								placeholder: studioCopy.v2vFormSplitPlaceholder,
+								value: splitAtSec,
+								onInput: (e) => {
+									setSplitAtSec(e.target.value);
+								},
+								onChange: (e) => {
+									setSplitAtSec(e.target.value);
+								}
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Menu, {
+								open: menuOpen,
+								onClose: () => {
+									setMenuOpen(false);
+								},
+								compact: true,
+								portal: true,
+								items: CARRY_ROWS,
+								selectedId: carry,
+								onSelect: (id) => {
+									setMenuOpen(false);
+									setCarry(id);
+								},
+								anchor: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									variant: "outline",
+									size: "sm",
+									"data-testid": "v2v-split-carry",
+									"aria-label": studioCopy.splitCarryLabel,
+									title: studioCopy.splitCarryTip,
+									onClick: () => {
+										setMenuOpen(!menuOpen);
+									},
+									children: CARRY_LABEL[carry]
+								})
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+								variant: "primary",
+								size: "sm",
+								"data-testid": "v2v-split-cut",
+								"aria-label": studioCopy.v2vFormCutAria,
+								title: studioCopy.v2vFormSplitTip,
+								onClick: press,
+								children: studioCopy.v2vFormCutAria
+							})
+						]
+					}),
+					refusal !== null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						"data-v2v-refusal": true,
+						children: refusal
+					}) : null
+				]
+			});
+		}
+		//#endregion
 		//#region src/ui/studio/pickVerdict.ts
 		/**
 		* pickVerdict — the recipe/axis pick's truth-in-hand law (the
@@ -5631,7 +5881,7 @@ window.__ModuleLoader__.load({
 		* injects own geometry, one surface).
 		*/
 		/** Layer A rail: Recipe (clock) + Engine (H3 sampling) + geometry. */
-		function RunRecipeEngine({ base, layerA, setLayerAKey, setLayerA, refArtifacts }) {
+		function RunRecipeEngine({ base, layerA, setLayerAKey, setLayerA, refArtifacts, v2vDoc, onV2vCalls }) {
 			const { spec, edit, resolved, refresh } = (0, _melite_card_base_client.useResolvedForm)("h3-timeline", layerA, setLayerAKey, base);
 			const family = (0, react.useMemo)(() => deriveWindowFamily(mergeDocLayers(base, layerA)), [base, layerA]);
 			const omitDead = family === "t4_chain" ? void 0 : (name) => omitFilmOnlyField(name);
@@ -5666,6 +5916,15 @@ window.__ModuleLoader__.load({
 				} : {}
 			};
 			const [gateFace, setGateFace] = (0, react.useState)(null);
+			const v2vBoundFace = (p) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(V2vLeafFace, {
+				value: {
+					calls: v2vDoc.calls,
+					fps: v2vDoc.fps
+				},
+				onChange: (next) => {
+					onV2vCalls(next);
+				}
+			});
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
 				gateFace !== null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 					role: "alert",
@@ -5701,6 +5960,7 @@ window.__ModuleLoader__.load({
 					omitInputRail: true,
 					omitFields: omitDead,
 					omitRecipeRow: omitRecipe,
+					v2vFace: v2vBoundFace,
 					onSet: edit,
 					onUnset: (n) => setLayerAKey(n, void 0),
 					onPick: (patch) => {
@@ -17744,7 +18004,12 @@ window.__ModuleLoader__.load({
 									layerA,
 									setLayerAKey: doc.setLayerAKey,
 									setLayerA: doc.updateLayerA,
-									refArtifacts: audio.refArtifacts
+									refArtifacts: audio.refArtifacts,
+									v2vDoc: {
+										calls,
+										fps
+									},
+									onV2vCalls: doc.updateCalls
 								})
 							})]
 						})

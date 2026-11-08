@@ -80,6 +80,8 @@ function renderRail(seat: { layerA: LayerA, setLayerA: (updater: unknown) => voi
       setLayerAKey={() => { throw new Error("the studio commits whole docs, never keys") }}
       setLayerA={seat.setLayerA as (u: LayerA | ((p: LayerA) => LayerA)) => void}
       refArtifacts={[]}
+      v2vDoc={{ calls: [], fps: 24 }}
+      onV2vCalls={() => {}}
     />
   )
 }

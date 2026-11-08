@@ -306,6 +306,17 @@ describe("THE MOD-MODE CALLS FACE (2026-11-14 — the lane's calls-readership)",
     expect(face).toEqual({ face: "prompt", kind: "loras" })
   })
 
+  it("ARM R2b — THE EDIT BAG WINS OVER A READER (queue 11 reopened: the operator's live doc carried edit + loras and the lane drew the plain prompt face; their law has no precedence clause — the swap is unconditional)", () => {
+    const face = callsLaneFace(deriveCommissions({
+      edit: [EDIT], loras: [LORAS],
+    }))
+    expect(face).toEqual({ face: "v2v", kind: "edit" })
+    // reshoot (the other reader) disarms nothing either
+    expect(callsLaneFace(deriveCommissions({
+      edit: [EDIT], reshoot: [RESHOOT],
+    }))).toEqual({ face: "v2v", kind: "edit" })
+  })
+
   it("ARM R3 — nothing armed faces plain (absent AND explicit-empty bags alike — the arm is presence)", () => {
     expect(callsLaneFace([])).toEqual({ face: "plain" })
     expect(callsLaneFace(deriveCommissions({ reshoot: [], replace: [] })))

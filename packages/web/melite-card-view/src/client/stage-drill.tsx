@@ -47,6 +47,7 @@ import { createFilmSeam, FilmSeamBar, FilmSeamPlayer } from './filmSeam.tsx'
 import { PaintLeafCanvas } from '@melite/image-mask-studio/paint-canvas'
 import { BboxLeafCanvas } from '@melite/image-mask-studio/bbox-canvas'
 import { OrbitLeafCanvas } from '@melite/image-mask-studio/orbit-canvas'
+import { V2vLeafFace } from '@melite/video-h3-timeline/v2v-face'
 import { cardLlmArg, setCardLlm } from '@melite/catalog'
 import { paramFields, patchStageOutcome, patchStageParamsChained, mediaUrl, stageWriteState, unlandedWriteVoice } from './draft.ts'
 import css from './card.module.css'
@@ -1949,6 +1950,11 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
             // camera-pose orb for orbit-canvas kinds (reshoot) —
             // writes the SAME draft seats as the dials (one truth).
             orbitFace: OrbitLeafCanvas,
+            // THE V2V WINDOWS FACE (queue 11 reopened, 2026-11-08:
+            // "NO WINDOWS IN THE FORM!"): the h3 edit leaf's windows
+            // + split-by-timestamp seat (the card's own UI, the
+            // same delivery law as the paint/bbox/orbit faces).
+            v2vFace: V2vLeafFace,
             paintReference: 'input_image',
           })
         : h('pre', { className: css.mono }, JSON.stringify(held, null, 2)),

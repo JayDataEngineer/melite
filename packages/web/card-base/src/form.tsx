@@ -29,7 +29,7 @@
  */
 import { createElement as h, useId, useState } from 'react'
 import { SegmentedTabs, type SegmentedTab as segTab } from '@deepseek-ai/dsh-client-ui-primitives'
-import { type BboxFaceComponent, ModifiersSection, type OrbitFaceComponent, type PaintFaceComponent } from './mods.tsx'
+import { type BboxFaceComponent, ModifiersSection, type OrbitFaceComponent, type PaintFaceComponent, type V2vFaceComponent } from './mods.tsx'
 import { type FormSpecDoc, type FormVariantRow, type SpecField, type SpecValues, coerceFieldEdit, composeCandidateDoc, entryFieldsOfEnvelope, fieldOnLane, fieldVisible, fieldsOf, fieldsOfEnvelope, groupFields, kindScalarFieldsOfEnvelope, composeValidate, laneViolations, modOwnedFields, offeredVariantOf, resolveFamilyKey, resolveValue, titleCaseId } from './spec.ts'
 import { isUnstatedRequiredVoice } from '@melite/contracts/laneRelations'
 import css from './card.module.css'
@@ -58,7 +58,7 @@ export { PackPrompt, ModelAxes, RecipePills } from './axes.tsx'
  *  over the USER layer (the settings law: presence IS the override
  *  mark, the reset chip removes it). The constructor OWNS the square
  *  provider (no call site wires it, no call site can forget it). */
-export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, orbitFace, paintReference, omitInputRail, omitFields, omitRecipeRow, mutedViolations }: {
+export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, orbitFace, v2vFace, paintReference, omitInputRail, omitFields, omitRecipeRow, mutedViolations }: {
   /** the WHOLE emission (the schema envelope + model/variants) —
    *  REQUIRED now: the fields, the axes, and the mod param rows all
    *  derive from THIS (useFormSpec fetches it). */
@@ -135,6 +135,10 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
    *  three number dials hold. Threaded verbatim into the mod
    *  section. */
   orbitFace?: OrbitFaceComponent
+  /** THE V2V WINDOWS FACE (queue 11 reopened): the host-delivered
+   *  windows + split-by-timestamp seat for v2v-windows leaves —
+   *  absent host = the fields hold (graceful). */
+  v2vFace?: V2vFaceComponent
   /** the card-level image field feeding the brush reference
    *  (mask: 'input_image'). Absent = no verb. */
   paintReference?: string
@@ -672,6 +676,7 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
           ...(paintFace !== undefined ? { paintFace } : {}),
           ...(bboxFace !== undefined ? { bboxFace } : {}),
           ...(orbitFace !== undefined ? { orbitFace } : {}),
+          ...(v2vFace !== undefined ? { v2vFace } : {}),
           ...(paintReference !== undefined ? { paintReference } : {}),
           ...(wire?.loadMedia !== undefined ? { loadMedia: wire.loadMedia } : {}),
           // THE CHAIN-RUN PICKER LAW (the upscale leaf): the live

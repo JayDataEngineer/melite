@@ -73,3 +73,32 @@ export interface OrbitCanvasFaceProps {
    *  double-click reset): the pose the entry carries */
   onChange: (pose: { orbit: number; tilt: number; dolly: number }) => void
 }
+
+/** One window as the v2v face names it (structural — the contract
+ *  carries no card-local types; the fields are the row's own calls
+ *  spelling, optional text/transition included). */
+export interface V2vWindowView {
+  start_frame: number
+  end_frame: number
+  text?: string
+  transition?: string
+}
+
+/** THE V2V WINDOWS FACE (queue 11 reopened 2026-11-08, the
+ *  operator's correction: "NO WINDOWS IN THE FORM!" — the video edit
+ *  leaf CARRIES the windows): the host's windows list + the
+ *  split-by-timestamp seat, EMBEDDED at the top of the leaf popup
+ *  like the paint/bbox/orbit faces. The face reads the ROW's calls
+ *  (the video-to-video spans — the same windows the timeline strip
+ *  draws under the swapped calls section) and commits the NEXT calls
+ *  array through onChange (the split law itself lives in the owning
+ *  card's package — the face component IS the card's UI, delivered
+ *  by the client plane; absent host = no face, the fields hold). */
+export interface V2vWindowsFaceProps {
+  /** the row's current windows + the film clock the timestamp seat
+   *  resolves seconds by */
+  value: { calls: V2vWindowView[]; fps: number }
+  /** a COMMITTED split (the press on the face's own cut verb): the
+   *  next calls array the row carries */
+  onChange: (calls: V2vWindowView[]) => void
+}

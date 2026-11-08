@@ -145,6 +145,28 @@ describe("THE VIDEO-TO-VIDEO AND CUTS FACE (queue 11 — the cut door)", () => {
     const dormant = strip({ commissions: deriveCommissions(UPSACLE_PARAMS) })
     assert.equal(dormant.els.container.querySelector('[data-testid="tl-add-cut"]'), null)
     dormant.els.unmount()
+    // THE OPERATOR'S REAL DOC SHAPE (queue 11 reopened 2026-11-08:
+    // their live DOM carried edit + loras BOTH armed and the lane
+    // still drew the plain prompt face — "Calls — the LoRAs run's
+    // prompt" — because the reader check fired before the edit
+    // check). The edit bag's swap is UNCONDITIONAL: a reader beside
+    // it changes nothing the operator can see.
+    const EDIT_PLUS_LORAS = {
+      edit: [{ edit_prompt: "make it rain" }],
+      loras: [{ id: "h3_silver_dareties" }],
+    }
+    assert.deepEqual(callsLaneFace(deriveCommissions(EDIT_PLUS_LORAS)),
+      { face: "v2v", kind: "edit" },
+      "edit + loras co-armed (the operator's exact doc): the v2v face — no reader-precedence clause exists in the operator's law")
+    const coArmed = strip({ commissions: deriveCommissions(EDIT_PLUS_LORAS) })
+    const coDoor = coArmed.els.container.querySelector('[data-testid="tl-add-cut"]')
+    assert.ok(coDoor instanceof HTMLButtonElement,
+      "the ADD CUT door renders under edit + loras (the reader never disarms the face)")
+    assert.ok(screen.getByText(studioCopy.callsV2vLabel),
+      "the v2v head names the face under the co-armed doc")
+    assert.ok(screen.queryByText("Calls — the LoRAs run's prompt") === null,
+      "the LoRAs prompt label is GONE under the co-armed doc — the section changed like the operator told")
+    coArmed.els.unmount()
   })
 
   it("THE PRESS — the door rides the split verb at the playhead, and a too-short split refuses LOUD (the §0.5 voice)", () => {

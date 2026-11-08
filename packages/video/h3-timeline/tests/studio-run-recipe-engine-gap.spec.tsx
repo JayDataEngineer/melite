@@ -53,6 +53,8 @@ function engine(layerA: Record<string, unknown>) {
           : updater as unknown as Record<string, unknown>
       }}
       refArtifacts={[]}
+      v2vDoc={{ calls: [], fps: 24 }}
+      onV2vCalls={() => {}}
     />,
   )
   return { keys, doc: () => doc }

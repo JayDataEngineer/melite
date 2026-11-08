@@ -228,6 +228,12 @@ const EDIT_MOD: DeclaredModifierKind = {
   category: 'ordered',
   cardinality: 'list',
   max_stack: 1,
+  // THE V2V WINDOWS FACE (queue 11 reopened, operator 2026-11-08:
+  // "NO WINDOWS IN THE FORM!" — the video2video form carries the
+  // windows + the split-by-timestamp seat with the context-carry
+  // option; the timeline strip's swapped calls section is the OTHER
+  // view of the same windows).
+  leaf_face: 'v2v-windows',
   requires: [
     'ComfyUI-VideoHelperSuite',
     'ComfyUI-MiniMaxH3-Context-Loop',

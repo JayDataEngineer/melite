@@ -41,14 +41,22 @@ import { createElement as h } from 'react';
 import type { ReactElement } from 'react';
 import { type ModifierKind, type SpecField, type SpecValues } from './spec.js';
 import type { ChainRunCandidate } from './runs-policy.js';
-export type { PaintCanvasFaceProps, BboxCanvasFaceProps, OrbitCanvasFaceProps } from '@melite/contracts';
-import type { BboxCanvasFaceProps, OrbitCanvasFaceProps, PaintCanvasFaceProps } from '@melite/contracts';
+export type { PaintCanvasFaceProps, BboxCanvasFaceProps, OrbitCanvasFaceProps, V2vWindowsFaceProps, V2vWindowView } from '@melite/contracts';
+import type { BboxCanvasFaceProps, OrbitCanvasFaceProps, PaintCanvasFaceProps, V2vWindowsFaceProps } from '@melite/contracts';
 export type BboxFaceComponent = (props: BboxCanvasFaceProps) => ReactElement;
 /** THE ORBIT FACE (the reshoot orb, 2026-11-15): the host's
  *  camera-pose orb — a component, not an import (card-base stays
  *  atom-generic). Absent host = the orb never renders (the three
  *  number dials hold — graceful by design). */
 export type OrbitFaceComponent = (props: OrbitCanvasFaceProps) => ReactElement;
+/** THE V2V WINDOWS FACE (queue 11 reopened 2026-11-08, the
+ *  operator's correction: "NO WINDOWS IN THE FORM!"): the host's
+ *  windows list + split-by-timestamp seat for v2v-windows kinds —
+ *  a component, not an import (card-base stays atom-generic; the
+ *  face is the CARD's UI, delivered by the client plane like the
+ *  paint/bbox/orbit faces). Absent host = the face never renders
+ *  (the fields hold — graceful by design). */
+export type V2vFaceComponent = (props: V2vWindowsFaceProps) => ReactElement;
 /** THE PAINT FACE (paint-leaf-canvas.md, embedded stroke 95): the
  *  host's brush canvas — a component, not an import (card-base
  *  stays atom-generic; the custom face is the CARD's UI, delivered
@@ -82,6 +90,12 @@ export interface ModifiersSectionProps {
      *  of the leaf popup (absent host = the three number dials
      *  hold). */
     orbitFace?: OrbitFaceComponent;
+    /** THE V2V WINDOWS FACE (queue 11 reopened 2026-11-08, the
+     *  operator: "NO WINDOWS IN THE FORM!"): the host's windows
+     *  list + split-by-timestamp seat for v2v-windows kinds —
+     *  EMBEDDED at the top of the leaf popup (absent host = the
+     *  fields hold). */
+    v2vFace?: V2vFaceComponent;
     /** the card-level image field whose value is the leaf faces'
      *  reference — the brush paints OVER it, the rectangle selects
      *  ON it (mask: 'input_image'). */

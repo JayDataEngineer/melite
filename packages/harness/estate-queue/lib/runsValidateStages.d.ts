@@ -1,5 +1,5 @@
 import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition';
-import type { CardRegistryLike, Flow, FlowStageRow } from "./runsValidateShared.ts";
+import type { CardRegistryLike, Flow, FlowStageRow } from "./runsValidateShared.js";
 export type { FlowStageRow };
 export declare function strictBody(body: Record<string, unknown>): void;
 export declare function buildStageRow(i: number, st: unknown): FlowStageRow;

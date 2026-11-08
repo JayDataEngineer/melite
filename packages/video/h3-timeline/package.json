@@ -13,6 +13,10 @@
       "types": "./lib/card.d.ts",
       "default": "./lib/card.js"
     },
+    "./v2v-face": {
+      "types": "./lib/ui/v2vFace.d.ts",
+      "default": "./lib/ui/v2vFace.js"
+    },
     "./package.json": "./package.json",
     "./tool": {
       "types": "./lib/tool.d.ts",

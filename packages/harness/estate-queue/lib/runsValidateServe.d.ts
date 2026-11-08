@@ -1,4 +1,4 @@
-import type { CardRegistryLike, Flow, FlowsValidateAnswer, GraphNode } from "./runsValidateShared.ts";
+import type { CardRegistryLike, Flow, FlowsValidateAnswer, GraphNode } from "./runsValidateShared.js";
 export declare function prunedFor(flow: Flow, body: Record<string, unknown>, cards?: CardRegistryLike | null): {
     flow: Flow;
     pruned: string[];

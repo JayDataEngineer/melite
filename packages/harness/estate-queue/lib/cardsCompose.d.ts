@@ -1,16 +1,16 @@
-import { cardAdmits } from "./cardsFacts.ts";
+import { cardAdmits } from "./cardsFacts.js";
 export { cardAdmits };
 import type { FactsReads } from "@melite/comfyui-cordis";
-import type { PreparedCard } from "./cardsRegistry.ts";
-import { type CardDeclRow, type ModelFactsRow } from "./cardsFacts.ts";
+import type { PreparedCard } from "./cardsRegistry.js";
+import { type CardDeclRow, type ModelFactsRow } from "./cardsFacts.js";
 export interface ComposeSeat {
     cardDecls(facts?: Record<string, ModelFactsRow>): Record<string, CardDeclRow>;
-    modelFacts(): Record<string, import("./cardsFacts.ts").ModelFactsRow>;
+    modelFacts(): Record<string, import("./cardsFacts.js").ModelFactsRow>;
     modelMids(): Set<string>;
     objectInfo(): Record<string, unknown> | null;
     primeObjectInfo(): Promise<boolean>;
     readsSync(): FactsReads;
-    resolveCardFamily(mid: string, facts?: Record<string, import("./cardsFacts.ts").ModelFactsRow>): string;
+    resolveCardFamily(mid: string, facts?: Record<string, import("./cardsFacts.js").ModelFactsRow>): string;
     /** THE FAMILY DOOR AT THE COMPOSE SEAT (operator 2026-11-14, the
      *  t4r four-key burn: "the AI MADE A CARD WITH THAT ERROR, AND
      *  RENDERED ANYWAYS"): the card's own admitFamily clause, judged

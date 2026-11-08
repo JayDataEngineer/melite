@@ -162,8 +162,8 @@ import { chromeCopy } from './locales/chromeCopy.ts'
 // change through onChange; the leaf's own Add/Save/Cancel own the
 // commit chrome. The retired modal-shaped verbs (a Paint / Draw
 // box button opening a SECOND modal over the leaf) died.
-export type { PaintCanvasFaceProps, BboxCanvasFaceProps, OrbitCanvasFaceProps } from '@melite/contracts'
-import type { BboxCanvasFaceProps, OrbitCanvasFaceProps, PaintCanvasFaceProps } from '@melite/contracts'
+export type { PaintCanvasFaceProps, BboxCanvasFaceProps, OrbitCanvasFaceProps, V2vWindowsFaceProps, V2vWindowView } from '@melite/contracts'
+import type { BboxCanvasFaceProps, OrbitCanvasFaceProps, PaintCanvasFaceProps, V2vWindowsFaceProps } from '@melite/contracts'
 
 export type BboxFaceComponent = (props: BboxCanvasFaceProps) => ReactElement
 
@@ -172,6 +172,15 @@ export type BboxFaceComponent = (props: BboxCanvasFaceProps) => ReactElement
  *  atom-generic). Absent host = the orb never renders (the three
  *  number dials hold — graceful by design). */
 export type OrbitFaceComponent = (props: OrbitCanvasFaceProps) => ReactElement
+
+/** THE V2V WINDOWS FACE (queue 11 reopened 2026-11-08, the
+ *  operator's correction: "NO WINDOWS IN THE FORM!"): the host's
+ *  windows list + split-by-timestamp seat for v2v-windows kinds —
+ *  a component, not an import (card-base stays atom-generic; the
+ *  face is the CARD's UI, delivered by the client plane like the
+ *  paint/bbox/orbit faces). Absent host = the face never renders
+ *  (the fields hold — graceful by design). */
+export type V2vFaceComponent = (props: V2vWindowsFaceProps) => ReactElement
 
 /** THE PAINT FACE (paint-leaf-canvas.md, embedded stroke 95): the
  *  host's brush canvas — a component, not an import (card-base
@@ -207,6 +216,12 @@ export interface ModifiersSectionProps {
    *  of the leaf popup (absent host = the three number dials
    *  hold). */
   orbitFace?: OrbitFaceComponent
+  /** THE V2V WINDOWS FACE (queue 11 reopened 2026-11-08, the
+   *  operator: "NO WINDOWS IN THE FORM!"): the host's windows
+   *  list + split-by-timestamp seat for v2v-windows kinds —
+   *  EMBEDDED at the top of the leaf popup (absent host = the
+   *  fields hold). */
+  v2vFace?: V2vFaceComponent
   /** the card-level image field whose value is the leaf faces'
    *  reference — the brush paints OVER it, the rectangle selects
    *  ON it (mask: 'input_image'). */
@@ -465,6 +480,15 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
     if (typeof rowDefault === 'number') return rowDefault
     const field = (k.fields ?? []).find((f) => f.name === scalar)
     return typeof field?.default === 'number' ? field.default : 0.7
+  }
+  // THE V2V FACE'S COMMIT (queue 11 reopened): the windows write is
+  // an ENVELOPE-level param (the row's own calls array — never a
+  // field draft), committed like a scalar but RAW (no field
+  // coercion: the face computes the next array under the card's own
+  // split law; this channel only delivers it).
+  const commitEnvelope = (name: string, v: unknown): void => {
+    onEdit(name, v)
+    onPatch?.({ [name]: v })
   }
   const commitScalar = (f: SpecField, name: string, v: unknown): void => {
     const coerced = coerceFieldEdit(f, v)
@@ -1057,7 +1081,7 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
         // posture layer seeds the draft. The named starting cells
         // stay engine-side (registration-judged; the agent lane
         // stages their patches into the bag directly).
-        onError: setLeafError, onSave: saveLeaf, onDelete: deleteLeaf, leafError, paintFace: props.paintFace, bboxFace: props.bboxFace, ...(props.orbitFace !== undefined ? { orbitFace: props.orbitFace } : {}), paintReferenceValue: typeof props.paintReference === 'string' ? String(values[props.paintReference] ?? '') : '', ...(props.loadMedia !== undefined ? { loadMedia: props.loadMedia } : {}),
+        onError: setLeafError, onSave: saveLeaf, onDelete: deleteLeaf, leafError, paintFace: props.paintFace, bboxFace: props.bboxFace, ...(props.orbitFace !== undefined ? { orbitFace: props.orbitFace } : {}), ...(props.v2vFace !== undefined ? { v2vFace: props.v2vFace } : {}), v2vCommit: commitEnvelope, paintReferenceValue: typeof props.paintReference === 'string' ? String(values[props.paintReference] ?? '') : '', ...(props.loadMedia !== undefined ? { loadMedia: props.loadMedia } : {}),
         ...(props.loadChainRuns !== undefined ? { loadChainRuns: props.loadChainRuns } : {}),
         ...(props.uploadLora !== undefined ? { uploadLora: props.uploadLora } : {}),
         ...(props.refreshSpec !== undefined ? { refreshSpec: props.refreshSpec } : {}),
@@ -1147,6 +1171,13 @@ function ModLeaf(props: {
   /** THE ORBIT FACE (the reshoot orb, 2026-11-15): same law —
    *  absent host = the three number dials hold (graceful). */
   orbitFace?: OrbitFaceComponent
+  /** THE V2V WINDOWS FACE (queue 11 reopened 2026-11-08): same law
+   *  — absent host = the fields hold (graceful). */
+  v2vFace?: V2vFaceComponent
+  /** the envelope-level commit the v2v face's splits ride (the
+   *  row's calls array — RAW, no field coercion: the card's own
+   *  face computed the next array under its own split law). */
+  v2vCommit?: (name: string, v: unknown) => void
   paintReferenceValue: string
   /** The host's media source — the leaf's image inputs pick from
    *  the library like a card's. */
@@ -1281,6 +1312,12 @@ function ModLeaf(props: {
   // the SAME orbit/tilt/dolly draft seats the number dials write
   // (ONE TRUTH, two views of one draft), so the dials stay.
   const orbitCanvas = props.orbitFace !== undefined && k.leaf_face === 'orbit-canvas'
+  // THE V2V WINDOWS FACE (queue 11 reopened): the windows list +
+  // split-by-timestamp seat for v2v-windows kinds — EMBEDDED at
+  // the TOP of the leaf (the operator: "NO WINDOWS IN THE FORM!"
+  // — the video2video form carries the windows). ADDITIVE like
+  // the orb: the fields stay, the face rides above them.
+  const v2vWindows = props.v2vFace !== undefined && props.v2vCommit !== undefined && k.leaf_face === 'v2v-windows'
   // the orb's pose read (the draft's own seats, kind defaults as fallback)
   const draftPose = (): { orbit: number; tilt: number; dolly: number } => {
     const num = (v: unknown, fb: number): number =>
@@ -1612,9 +1649,9 @@ function ModLeaf(props: {
         // params-left / preview-right): a face-bearing leaf seats
         // the canvas LEFT and the knobs RIGHT; a faceless leaf keeps
         // the single column (nothing to split around).
-        (bboxCanvas || paintField !== undefined || orbitCanvas)
+        (bboxCanvas || paintField !== undefined || orbitCanvas || v2vWindows)
         ? h('div', { className: css.modLeafSplit },
-            h('div', { className: css.modLeafStage, 'data-leaf-stage': bboxCanvas ? 'bbox' : orbitCanvas ? 'orbit' : 'paint' },
+            h('div', { className: css.modLeafStage, 'data-leaf-stage': bboxCanvas ? 'bbox' : orbitCanvas ? 'orbit' : v2vWindows ? 'v2v' : 'paint' },
               // THE REGION CAPTION (the operator's correction,
               // 2026-10-08: "BBOX IS NOT MANUAL, IT IS AUTOMATED" —
               // Impact Pack's boxes come from the DETECTOR, so this
@@ -1646,6 +1683,19 @@ function ModLeaf(props: {
                     h(props.orbitFace, {
                       value: draftPose(),
                       onChange: (pose: { orbit: number; tilt: number; dolly: number }) => { onDraft.setDraftParams({ ...onDraft.draftParams, orbit: pose.orbit, tilt: pose.tilt, dolly: pose.dolly }) },
+                    }))
+                : null,
+              v2vWindows && props.v2vFace !== undefined && props.v2vCommit !== undefined
+                ? h('div', { className: css.modField, 'data-leaf-canvas': 'v2v' },
+                    h(props.v2vFace, {
+                      // the ROW's own windows + film clock — the
+                      // same calls the timeline strip draws (ONE
+                      // truth, two views of one draft)
+                      value: {
+                        calls: Array.isArray(props.values.calls) ? props.values.calls as V2vWindowsFaceProps['value']['calls'] : [],
+                        fps: typeof props.values.fps === 'number' && Number.isFinite(props.values.fps) ? props.values.fps : 24,
+                      },
+                      onChange: (calls: V2vWindowsFaceProps['value']['calls']) => { props.v2vCommit!('calls', calls) },
                     }))
                 : null,
             ),

@@ -105,6 +105,10 @@ function engine(layerA: Record<string, unknown>, over?: Record<string, unknown>)
       // (F2, 2026-11-05) the pane takes the settled base directly —
       // the stage hand-off lives at component.tsx.
       base={{ width: 800, height: 600 } as never}
+      // THE V2V DOC PLANE (queue 11): the harness feeds the doc
+      // plane the spine threads in the real studio.
+      v2vDoc={{ calls: [], fps: 24 }}
+      onV2vCalls={() => {}}
       layerA={doc as unknown as LayerA}
       setLayerAKey={(k, v) => { keys.push([k as string, v]) }}
       setLayerA={(updater) => {
@@ -364,6 +368,8 @@ describe("geometry (resolved readout + the declared inject rows)", () => {
         setLayerAKey={() => {}}
         setLayerA={() => {}}
         refArtifacts={[]}
+        v2vDoc={{ calls: [], fps: 24 }}
+        onV2vCalls={() => {}}
       />,
     )
     await screen.findByLabelText("Recipe")
@@ -686,6 +692,8 @@ describe("RunRecipeEngine: the finishing rail on every family (the retired t4r g
         setLayerAKey={(k, v) => { keys.push([k as string, v]) }}
         setLayerA={() => {}}
         refArtifacts={[]}
+        v2vDoc={{ calls: [], fps: 24 }}
+        onV2vCalls={() => {}}
       />,
     )
     await screen.findByText("Width")
@@ -749,6 +757,8 @@ describe("RunRecipeEngine: the finishing rail on every family (the retired t4r g
         setLayerAKey={() => {}}
         setLayerA={() => {}}
         refArtifacts={[]}
+        v2vDoc={{ calls: [], fps: 24 }}
+        onV2vCalls={() => {}}
       />,
     )
     await screen.findByText("Width")
@@ -790,6 +800,8 @@ describe("RunRecipeEngine: the finishing rail on every family (the retired t4r g
         setLayerAKey={() => {}}
         setLayerA={() => {}}
         refArtifacts={[]}
+        v2vDoc={{ calls: [], fps: 24 }}
+        onV2vCalls={() => {}}
       />,
     )
     await screen.findByText("Width")
@@ -821,6 +833,8 @@ describe("RunRecipeEngine: the finishing rail on every family (the retired t4r g
         setLayerAKey={() => {}}
         setLayerA={() => {}}
         refArtifacts={[]}
+        v2vDoc={{ calls: [], fps: 24 }}
+        onV2vCalls={() => {}}
       />,
     )
     // the second-pass group rides its own tab (the group grammar) —
@@ -837,6 +851,8 @@ describe("RunRecipeEngine: the finishing rail on every family (the retired t4r g
         setLayerAKey={() => {}}
         setLayerA={() => {}}
         refArtifacts={[]}
+        v2vDoc={{ calls: [], fps: 24 }}
+        onV2vCalls={() => {}}
       />,
     )
     const tab2 = await screen.findByRole("tab", { name: /second/i })
@@ -853,6 +869,8 @@ describe("RunRecipeEngine: the finishing rail on every family (the retired t4r g
         setLayerAKey={() => {}}
         setLayerA={() => {}}
         refArtifacts={[]}
+        v2vDoc={{ calls: [], fps: 24 }}
+        onV2vCalls={() => {}}
       />,
     )
     const tab3 = await screen.findByRole("tab", { name: /second/i })
@@ -879,6 +897,8 @@ describe("RunRecipeEngine: the finishing rail on every family (the retired t4r g
         setLayerAKey={() => {}}
         setLayerA={() => {}}
         refArtifacts={[]}
+        v2vDoc={{ calls: [], fps: 24 }}
+        onV2vCalls={() => {}}
       />,
     )
     assert.notEqual(await screen.findByText("Duck depth (dB)"), null,
@@ -892,6 +912,8 @@ describe("RunRecipeEngine: the finishing rail on every family (the retired t4r g
           setLayerAKey={() => {}}
           setLayerA={() => {}}
           refArtifacts={[]}
+          v2vDoc={{ calls: [], fps: 24 }}
+          onV2vCalls={() => {}}
         />,
       )
       await screen.findByText("Width")

@@ -120,6 +120,8 @@ describe("THE SECOND-PASS VISIBILITY ARM (ERROR h — presence is a pure functio
             : updater
         }}
         refArtifacts={[]}
+        v2vDoc={{ calls: [], fps: 24 }}
+        onV2vCalls={() => {}}
       />,
     )
     return { writes, layer: () => doc }

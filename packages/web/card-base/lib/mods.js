@@ -341,6 +341,15 @@ export function ModifiersSection(props) {
         const field = (k.fields ?? []).find((f) => f.name === scalar);
         return typeof field?.default === 'number' ? field.default : 0.7;
     };
+    // THE V2V FACE'S COMMIT (queue 11 reopened): the windows write is
+    // an ENVELOPE-level param (the row's own calls array — never a
+    // field draft), committed like a scalar but RAW (no field
+    // coercion: the face computes the next array under the card's own
+    // split law; this channel only delivers it).
+    const commitEnvelope = (name, v) => {
+        onEdit(name, v);
+        onPatch?.({ [name]: v });
+    };
     const commitScalar = (f, name, v) => {
         const coerced = coerceFieldEdit(f, v);
         onEdit(name, coerced);
@@ -984,7 +993,7 @@ export function ModifiersSection(props) {
             // posture layer seeds the draft. The named starting cells
             // stay engine-side (registration-judged; the agent lane
             // stages their patches into the bag directly).
-            onError: setLeafError, onSave: saveLeaf, onDelete: deleteLeaf, leafError, paintFace: props.paintFace, bboxFace: props.bboxFace, ...(props.orbitFace !== undefined ? { orbitFace: props.orbitFace } : {}), paintReferenceValue: typeof props.paintReference === 'string' ? String(values[props.paintReference] ?? '') : '', ...(props.loadMedia !== undefined ? { loadMedia: props.loadMedia } : {}),
+            onError: setLeafError, onSave: saveLeaf, onDelete: deleteLeaf, leafError, paintFace: props.paintFace, bboxFace: props.bboxFace, ...(props.orbitFace !== undefined ? { orbitFace: props.orbitFace } : {}), ...(props.v2vFace !== undefined ? { v2vFace: props.v2vFace } : {}), v2vCommit: commitEnvelope, paintReferenceValue: typeof props.paintReference === 'string' ? String(values[props.paintReference] ?? '') : '', ...(props.loadMedia !== undefined ? { loadMedia: props.loadMedia } : {}),
             ...(props.loadChainRuns !== undefined ? { loadChainRuns: props.loadChainRuns } : {}),
             ...(props.uploadLora !== undefined ? { uploadLora: props.uploadLora } : {}),
             ...(props.refreshSpec !== undefined ? { refreshSpec: props.refreshSpec } : {}),
@@ -1139,6 +1148,12 @@ function ModLeaf(props) {
     // the SAME orbit/tilt/dolly draft seats the number dials write
     // (ONE TRUTH, two views of one draft), so the dials stay.
     const orbitCanvas = props.orbitFace !== undefined && k.leaf_face === 'orbit-canvas';
+    // THE V2V WINDOWS FACE (queue 11 reopened): the windows list +
+    // split-by-timestamp seat for v2v-windows kinds — EMBEDDED at
+    // the TOP of the leaf (the operator: "NO WINDOWS IN THE FORM!"
+    // — the video2video form carries the windows). ADDITIVE like
+    // the orb: the fields stay, the face rides above them.
+    const v2vWindows = props.v2vFace !== undefined && props.v2vCommit !== undefined && k.leaf_face === 'v2v-windows';
     // the orb's pose read (the draft's own seats, kind defaults as fallback)
     const draftPose = () => {
         const num = (v, fb) => typeof v === 'number' && Number.isFinite(v) ? v : fb;
@@ -1426,8 +1441,8 @@ function ModLeaf(props) {
                 // params-left / preview-right): a face-bearing leaf seats
                 // the canvas LEFT and the knobs RIGHT; a faceless leaf keeps
                 // the single column (nothing to split around).
-                (bboxCanvas || paintField !== undefined || orbitCanvas)
-                    ? h('div', { className: css.modLeafSplit }, h('div', { className: css.modLeafStage, 'data-leaf-stage': bboxCanvas ? 'bbox' : orbitCanvas ? 'orbit' : 'paint' }, 
+                (bboxCanvas || paintField !== undefined || orbitCanvas || v2vWindows)
+                    ? h('div', { className: css.modLeafSplit }, h('div', { className: css.modLeafStage, 'data-leaf-stage': bboxCanvas ? 'bbox' : orbitCanvas ? 'orbit' : v2vWindows ? 'v2v' : 'paint' }, 
                     // THE REGION CAPTION (the operator's correction,
                     // 2026-10-08: "BBOX IS NOT MANUAL, IT IS AUTOMATED" —
                     // Impact Pack's boxes come from the DETECTOR, so this
@@ -1452,6 +1467,17 @@ function ModLeaf(props) {
                         ? h('div', { className: css.modField, 'data-leaf-canvas': 'orbit' }, h(props.orbitFace, {
                             value: draftPose(),
                             onChange: (pose) => { onDraft.setDraftParams({ ...onDraft.draftParams, orbit: pose.orbit, tilt: pose.tilt, dolly: pose.dolly }); },
+                        }))
+                        : null, v2vWindows && props.v2vFace !== undefined && props.v2vCommit !== undefined
+                        ? h('div', { className: css.modField, 'data-leaf-canvas': 'v2v' }, h(props.v2vFace, {
+                            // the ROW's own windows + film clock — the
+                            // same calls the timeline strip draws (ONE
+                            // truth, two views of one draft)
+                            value: {
+                                calls: Array.isArray(props.values.calls) ? props.values.calls : [],
+                                fps: typeof props.values.fps === 'number' && Number.isFinite(props.values.fps) ? props.values.fps : 24,
+                            },
+                            onChange: (calls) => { props.v2vCommit('calls', calls); },
                         }))
                         : null), h('div', { className: css.modLeafFields }, 
                     // THE SECTION CAPTION (2026-10-08, the operator's

@@ -1,9 +1,9 @@
-import { ComfyUIWiringService, type WiringInputSpec } from './wiringWall.ts';
+import { ComfyUIWiringService, type WiringInputSpec } from './wiringWall.js';
 export { ComposeRefusal } from '@melite/comfyui-card-kit/errors';
 import { Context, Service } from '@deepseek-ai/cordis';
 import type { PromptGraph } from '@melite/comfyui-card-kit/graph';
 import type { FactsFile } from '@melite/comfyui-card-kit/facts';
-export { resolveControlNetEntry } from "./serviceMods.ts";
+export { resolveControlNetEntry } from "./serviceMods.js";
 import type { LoraRowDecl, AbsorbedMod, VerbRegistration, FlavorRegistration } from '@melite/comfyui-card-kit/service-faces';
 import type { CardDefinition, ComposeEstate } from '@melite/comfyui-card-kit/card-definition';
 import type { PackContract } from "@melite/comfyui-card-kit/pack-fields";
@@ -50,7 +50,7 @@ export interface DeclaredModifierKind {
      *  camera-pose orb for orbit-canvas kinds, delivered by the client
      *  plane's orbitFace host (absent host = the number dials hold).
      *  Served verbatim like every declared row. */
-    leaf_face?: 'paint-canvas' | 'bbox-canvas' | 'orbit-canvas';
+    leaf_face?: 'paint-canvas' | 'bbox-canvas' | 'orbit-canvas' | 'v2v-windows';
     /** THE SECTION CAPTION (2026-10-08, the operator's filter demand —
      *  "SAM2 AND SAM3 DON'T HAVE BBOX FILTER"): a one-line caption
      *  the leaf seats ABOVE the field stack, naming what the stack

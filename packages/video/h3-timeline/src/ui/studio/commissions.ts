@@ -269,21 +269,26 @@ export type CallsLaneFace =
   | { face: 'prompt'; kind: CommissionKind }
   | { face: 'v2v'; kind: 'edit' }
 
-/** Derive the calls lane's face from the armed commissions. A reader
- *  wins over any non-reader armed beside it (the run reads calls if
- *  ANY armed action does); the edit bag then wins the v2v face (its
- *  windows are the run's own spans — the cut-authoring lane); with
- *  neither, the lane is dormant under the FIRST armed row's kind
- *  (the commission the hint names).
+/** Derive the calls lane's face from the armed commissions. THE
+ *  EDIT BAG WINS UNCONDITIONALLY (queue 11 reopened 2026-11-08: the
+ *  operator's real doc — edit + loras both armed — still drew the
+ *  plain prompt face; their law carries no precedence clause:
+ *  "WHEN YOU ADD THE MOD FOR VIDEO TO VIDEO, IT CHANGES THE TIMELINE
+ *  BAR UNDER THE 'CALLS' SECTION", full stop). A reader beside the
+ *  edit bag changes nothing the operator can see: the section IS
+ *  the video-to-video face. With no edit armed, the prior law
+ *  stands: a reader wins the prompt face (the run reads calls if
+ *  any armed action does); with neither, the lane is dormant under
+ *  the FIRST armed row's kind (the commission the hint names).
  * @param commissions the derived armed rows (deriveCommissions)
  * @returns the lane's face */
 export function callsLaneFace(commissions: DocCommission[]): CallsLaneFace {
+  const edit = commissions.find((c) => c.kind === 'edit')
+  if (edit !== undefined) return { face: 'v2v', kind: 'edit' }
   if (commissions.length === 0) return { face: 'plain' }
   const reader = commissions.find((c) =>
     (CALLS_READING_KINDS as readonly string[]).includes(c.kind))
   if (reader !== undefined) return { face: 'prompt', kind: reader.kind }
-  const edit = commissions.find((c) => c.kind === 'edit')
-  if (edit !== undefined) return { face: 'v2v', kind: 'edit' }
   const first = commissions[0]!
   return { face: 'dormant', kind: first.kind }
 }
