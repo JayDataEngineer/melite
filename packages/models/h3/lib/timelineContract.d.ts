@@ -4,6 +4,13 @@ export declare const GRID_STEP_FRAMES = 17;
 export declare const GRID_MAX_FRAMES = 362;
 export declare const GRID_REMAINDER = 5;
 export declare const IMAGE_BUS_SLOTS = 9;
+/** The family's LAST-FRAME PICK spelling (one home, both readers —
+ *  extend.ts's anchor and the seam's keyframe carry): a positive
+ *  out-of-band batch index the engine clamps onto the clip's FINAL
+ *  row (min(shape−1, index)) under every build; the negative
+ *  spelling slices empty on the live estate and is banned
+ *  family-wide. */
+export declare const LAST_FRAME_BATCH_INDEX = 16384;
 export declare const REF_CAPS: {
     readonly images: 8;
     readonly videos: 3;

@@ -115,6 +115,17 @@ export const studioCopy = {
   spanNote: "the frame where this call ends — the next call starts there",
   /** The reference bundle's head. */
   refsHead: "Reference bundle (this call)",
+  /** THE CONTEXT-CARRY MODES (the window editor's seam seat, spelled
+   *  whole — three states, one seat; the strip's chip stays the
+   *  quick cut toggle, this modal owns the full vocabulary). */
+  seamModeHead: "Context carry (the seam into this call)",
+  seamModeStock: "Stock",
+  seamModeCarry: "Carry",
+  seamModeCarryKeyframe: "Carry + keyframe",
+  seamModeStockTip: "stock — no context carry: this window renders independent, a true butt against the last (rarely used, the escape hatch)",
+  seamModeCarryTip: "carry — the latent tail continues across the seam at the proven 22-frame overlap (the default)",
+  seamModeCarryKeyframeTip: "carry + keyframe — the latent tail carries AND the previous window's final frame is pinned as this window's first frame (more consistent shots)",
+  seamModeAria: "Context carry mode",
   /** The image lane's add-row verb. */
   addRefImage: "+ image",
   /** The add-row faces, one per lane (symmetric law, 2026-11-05). */

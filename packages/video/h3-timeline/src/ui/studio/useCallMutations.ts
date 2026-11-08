@@ -118,7 +118,7 @@ export function useCallMutations(setCalls: Dispatch<SetStateAction<DocCall[]>>, 
    * carry (22f) so the doc stays runnable — the operator's end frame
    * shows the new value; the neighbor's start follows as it always
    * did. A first window carries nothing either way and never moves. */
-  const setCallTransition = (i: number, t: "extend" | "cut") => {
+  const setCallTransition = (i: number, t: "extend" | "cut" | "carry+keyframe") => {
     setCalls((prev) => {
       if (i < 0 || i >= prev.length) return prev
       const call = { ...prev[i]! }

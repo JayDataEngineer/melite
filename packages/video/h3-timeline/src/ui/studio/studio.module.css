@@ -226,6 +226,11 @@
    lanes ride the kit's SectionLabel grammar now; only the OVER state
    color survives as a tail override) */
 .refCountOver { color: var(--dsw-alias-state-warn-primary); }
+/* THE CONTEXT-CARRY MODE SEAT (the window editor's seam face): a
+   row of three mode buttons under the bundle — layout only, the
+   Button atom carries its own face. */
+.seamModeRow { display: flex; align-items: center; gap: 4px; padding: 2px 2px 0; }
+.seamModeBtn { flex: 0 0 auto; }
 .callRefsBody { margin-top: 4px; display: flex; flex-direction: column; gap: 4px; }
 .knobFold { margin-top: 4px; }
 /* The fold header chrome is DisclosureRow's own (pattern campaign

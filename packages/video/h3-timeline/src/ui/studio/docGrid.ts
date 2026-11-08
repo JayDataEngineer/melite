@@ -166,7 +166,7 @@ export function snapSplitFrame(
 /** The seam toggle's re-frame: the 22-frame carry moves from the
  *  generation head to (or from) the authored span. A first window has
  *  no carry either way, so its toggle never moves frames. */
-export function reflowSeamSpan(call: DocCall, index: number, next: "extend" | "cut"): number {
+export function reflowSeamSpan(call: DocCall, index: number, next: "extend" | "cut" | "carry+keyframe"): number {
   const wasCarried = isCarriedShape(index, call)
   const willCarried = isCarriedShape(index, { transition: next })
   if (wasCarried === willCarried) return call.end_frame

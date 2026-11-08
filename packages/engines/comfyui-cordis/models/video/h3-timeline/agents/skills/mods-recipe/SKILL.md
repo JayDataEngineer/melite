@@ -55,7 +55,7 @@ checkboxes, never a combined route.
 
 The mask SOURCE is a dial, not a slot: `region` (a free-text SAM3
 track, per-frame — state region_prompt), `whole-frame`, or
-`static-png` (which opens the mask slot above). The identity
+`static-png` (which opens the mask image above). The identity
 ANCHORS are a dial too: `self`, or `still+mannequin` (which opens
 both slots above). Nothing-or-X is the grammar: a slot stays empty
 until its dial names it, and an empty slot under a dial that needs

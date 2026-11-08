@@ -162,7 +162,14 @@ describe("SOURCE — the copy dictionary owns the static faces", () => {
     // RE-PIN 2026-11-16 (§0.5, the window split): 99 → 100. +1 flat id
     // = splitRefusal (the no-legal-split refusal, the shared laneErr
     // slot's voice).
-    assert.equal(ids.length, 100, `the dictionary holds 100 copy ids (found ${ids.length}) — re-pin this wall when copy is added or removed`)
+    // RE-PIN 2026-11-16 (§0.9, the context-carry modes): 100 → 108.
+    // +8 flat ids = seamModeHead + the three mode labels
+    // (seamModeStock/Carry/CarryKeyframe) + the three mode tips +
+    // seamModeAria — the modal's seam seat names the three-state
+    // vocabulary (stock/carry/carry+keyframe). The strip chip stays
+    // binary (cut↔extend, the KIT's timelineCopy); the third mode is
+    // authored at the call card, this estate's own seat.
+    assert.equal(ids.length, 108, `the dictionary holds 108 copy ids (found ${ids.length}) — re-pin this wall when copy is added or removed`)
     // RE-PIN 2026-10-16 (the square-grammar residue): 102 → 101.
     // removePack died with the strip Button (187eaf607 deleted the
     // verb; SourceRow's onEdit("") owns the detach) — a fossil id

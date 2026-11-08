@@ -77,7 +77,7 @@ export interface CallCardDeps {
   enhanceUndo: Record<string, string>
   setCallSpan: (i: number, which: "start" | "end", frame: number) => void
   setCallGuide: (i: number, kind: GuideKind, source: string) => void
-  setCallTransition: (i: number, t: "extend" | "cut") => void
+  setCallTransition: (i: number, t: "extend" | "cut" | "carry+keyframe") => void
   setCallRefs: (i: number, key: keyof CallRefs, value: string) => void
   setCallKnob: (i: number, key: string, value: number | string | boolean | undefined) => void
   /** THE PIN MAP (door-guard UX arm): call indexes whose windows

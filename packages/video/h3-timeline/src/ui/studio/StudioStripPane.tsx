@@ -111,7 +111,7 @@ export function StudioStripPane({
   /** THE SEAM (the collapse's cuts, 2026-11-16): the strip's own
    *  seam chip writes the call's transition — the add-call surface is
    *  the one home for the cut choice (the rail select retired). */
-  setCallTransition: (i: number, t: "extend" | "cut") => void
+  setCallTransition: (i: number, t: "extend" | "cut" | "carry+keyframe") => void
   /** THE SUBVIEW DOOR (defect B): opens the rail's standalone
    *  keyframes editor — the strip head's one keyframes verb. */
   enterKfView: () => void

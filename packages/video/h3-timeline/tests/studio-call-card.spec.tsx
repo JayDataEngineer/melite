@@ -1007,3 +1007,50 @@ describe("the span note seat (2026-11-05)", () => {
     h.unmount()
   })
 })
+
+describe("THE SEAM MODE SEAT (§0.9, the context-carry vocabulary)", () => {
+  it("first call owns no seam — the seat is absent at i=0, present at i=1", () => {
+    const h0 = render(<CallCard c={BASE} i={0} deps={deps().d} />)
+    assert.ok(!h0.container.querySelector('[data-testid="tl-call-seam-mode"]'),
+      "the first call has no seam into it — no context-carry seat")
+    h0.unmount()
+    const h1 = render(<CallCard c={BASE} i={1} deps={deps().d} />)
+    assert.ok(h1.container.querySelector('[data-testid="tl-call-seam-mode"]'),
+      "every later call names how context carries into it")
+    h1.unmount()
+  })
+
+  it("absent reads carry: the default names Carry pressed, its siblings not", () => {
+    const h = render(<CallCard c={BASE} i={1} deps={deps().d} />)
+    const group = h.container.querySelector('[role="group"][aria-label="Context carry mode"]')!
+    assert.ok(group, "the three-mode group owns its aria name")
+    const pressed = [...group.querySelectorAll("button[aria-pressed=true]")].map((b) => b.textContent)
+    assert.deepEqual(pressed, ["Carry"],
+      "an unstated transition reads carry — the default is the latent chain")
+    h.unmount()
+  })
+
+  it("a stated mode paints its own button pressed (stock and the keyframe carry)", () => {
+    const stock = render(<CallCard c={{ ...BASE, transition: "cut" }} i={1} deps={deps().d} />)
+    const g1 = stock.container.querySelector('[role="group"]')!
+    assert.deepEqual([...g1.querySelectorAll("button[aria-pressed=true]")].map((b) => b.textContent), ["Stock"])
+    stock.unmount()
+    const kf = render(<CallCard c={{ ...BASE, transition: "carry+keyframe" }} i={1} deps={deps().d} />)
+    const g2 = kf.container.querySelector('[role="group"]')!
+    assert.deepEqual([...g2.querySelectorAll("button[aria-pressed=true]")].map((b) => b.textContent), ["Carry + keyframe"])
+    kf.unmount()
+  })
+
+  it("the seat writes through setCallTransition — all three modes, verbatim", () => {
+    const { d, calls } = deps()
+    const h = render(<CallCard c={BASE} i={1} deps={d} />)
+    const group = h.container.querySelector('[role="group"]')!
+    const byLabel = (label: string) =>
+      [...group.querySelectorAll("button")].find((b) => b.textContent === label)!
+    fireEvent.click(byLabel("Stock"))
+    fireEvent.click(byLabel("Carry + keyframe"))
+    assert.deepEqual(calls.trans, [[1, "cut"], [1, "carry+keyframe"]],
+      "the seat speaks the wire vocabulary — stock is the cut, the third mode states itself verbatim")
+    h.unmount()
+  })
+})

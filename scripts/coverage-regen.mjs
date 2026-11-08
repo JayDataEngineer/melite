@@ -108,7 +108,23 @@ function marginFloor(rowsWithPaths, k) {
 }
 
 const faces = summaryPaths.map(faceOf)
-const baseline = readFileSync(baselinePath, 'utf8')
+const wholeBaseline = readFileSync(baselinePath, 'utf8')
+
+// THE TWO-TABLE SHAPE (2026-11-12, the unseated-overlay landing): the
+// baseline file holds TWO tables — the seated base and the
+// COVERAGE_BASELINE_UNSEATED overlay (floors for store-absent pools;
+// its globs DELIBERATELY repeat base rows, replacing them wholesale
+// on the unseated face). A seated-face regen owns the BASE table
+// only: the overlay's pool (CI worktrees without the store) is not
+// among the input faces, so its bytes pass through verbatim — judging
+// overlay floors against seated faces would mint the wrong pool's
+// numbers. The duplicate-row refusal below stays scoped to one
+// table; a cross-table repeat is the overlay's own law, never a
+// double-judged row.
+const OVERLAY_MARK = 'export const COVERAGE_BASELINE_UNSEATED'
+const overlaySplit = wholeBaseline.indexOf(OVERLAY_MARK)
+const baseline = overlaySplit === -1 ? wholeBaseline : wholeBaseline.slice(0, overlaySplit)
+const overlayText = overlaySplit === -1 ? '' : wholeBaseline.slice(overlaySplit)
 
 // Walk every row, compute the fail-sets per face, then judge stability.
 const rows = [...baseline.matchAll(ROW_RE)]
@@ -245,7 +261,11 @@ const out = baseline.replace(ROW_RE, (_whole, pre, st, m1, br, m2, fn, m3, ln, p
 // a crash between the writes.
 const GATED_RE = /\/packages\/[^/]+\/[^/]+\/src\/.*\.(ts|tsx)$/u
 const knownGlobs = new Set(computed.map((c) => c.glob))
-let finalText = out
+// the base table's tail: rows may append in sorted position up to
+// the overlay boundary (or EOF on the one-table shape), never past
+// it into the overlay's own rows.
+const overlayFirstLine = overlayText === '' ? Infinity : overlayText.split('\n')[0]
+let finalText = out + overlayText
 const added = []
 for (const file of faces[0].keys()) {
   if (!GATED_RE.test(file)) continue
@@ -264,6 +284,7 @@ for (const file of faces[0].keys()) {
   const lines = finalText.split('\n')
   let at = lines.length - 1
   for (let i = 0; i < lines.length; i++) {
+    if (lines[i] === overlayFirstLine) { at = i; break }
     const m = lines[i].match(/^  '\*\*\/([^']+)':/)
     if (m !== null && m[1] > glob.slice(3)) { at = i; break }
   }

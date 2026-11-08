@@ -162,7 +162,7 @@ export function hydrateCalls(raw: { calls?: unknown; beats?: unknown }): DocCall
         )
       }
     }
-    if (r.transition === "extend" || r.transition === "cut") {
+    if (r.transition === "extend" || r.transition === "cut" || r.transition === "carry+keyframe") {
       call.transition = r.transition
     }
     const refs: NonNullable<DocCall["refs"]> = {}
@@ -432,7 +432,7 @@ export function serializeCalls(calls: DocCall[]): DocCall[] {
     if (c.last_frame && c.last_frame.trim()) out.last_frame = c.last_frame.trim()
     // first_frame_prev_sec is never written — cut 2026-09-20 (the
     // seam is automatic).
-    if (c.transition === "extend" || c.transition === "cut") out.transition = c.transition
+    if (c.transition === "extend" || c.transition === "cut" || c.transition === "carry+keyframe") out.transition = c.transition
     // Per-call refs: the wire form is the COMMA STRING (the card's
     // wireList law — trimmed entries, empties absent). All four
     // buckets ride: images, videos, audios, mods (video_audios died

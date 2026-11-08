@@ -61,11 +61,17 @@ export interface DocCall {
    *  hops 2 and 5 disagree — an agent-authored anchor composed while
    *  a studio round-trip deleted it (calls-stanza audit (e)). */
   last_frame?: string
-  /** Seam mode into this call: 'extend' (ABSENT = extend — the
-   * drift-control continuation carries the previous window's latent,
-   * automatic at the director's proven 22-frame overlap) or 'cut'
-   * (an independent window, a true butt — nothing carries). */
-  transition?: "extend" | "cut"
+  /** Seam mode into this call — THREE states, one seat (the
+   *  context-carry modes): 'extend' (ABSENT = carry, THE DEFAULT —
+   *  the drift-control continuation carries the previous window's
+   *  latent, automatic at the director's proven 22-frame overlap),
+   *  'cut' (stock — NO context carry: an independent window, a true
+   *  butt, overlap 0; the operator's rarely-used escape), or
+   *  'carry+keyframe' (THE STRONGER carry: extend PLUS the previous
+   *  call's final frame pinned as this call's first frame through
+   *  the guide machinery — more consistent shots; audio carries no
+   *  latent and is honestly out, named in the plan). */
+  transition?: "extend" | "cut" | "carry+keyframe"
   knobs?: BeatKnobs
   /** Per-call identity refs (Ref2VA route): REPLACE the run-level refs
    * for THIS call's windows. Comma-separated source strings in the UI;

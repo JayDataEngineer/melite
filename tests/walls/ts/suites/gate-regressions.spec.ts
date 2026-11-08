@@ -704,7 +704,10 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // Repinned 636 -> 637 (2026-11-15, deliberate): the video-edit matrix
   // seat (timeline rework stage 2a) emits packages/models/h3/lib/edit.js
   // — the 637th tracked .js.
-  const LIB_CENSUS_PIN = 637;
+  // Repinned 637 -> 638 (2026-11-16, deliberate): §0.4's SECOND_PASS
+  // seat emits packages/models/h3/lib/secondPass.js — the 638th
+  // tracked .js (the shared gate module the four call sites read).
+  const LIB_CENSUS_PIN = 638;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {

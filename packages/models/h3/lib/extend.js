@@ -1,6 +1,9 @@
 import { chainSaveBoundaries, concatSavedFilms, filmJoinAudio } from './actions.js';
-import { assertGridLength, solveWindowComposition, CONTEXT_OVERLAP_FRAMES, GRID_MAX_FRAMES, } from './timelineContract.js';
+import { assertGridLength, solveWindowComposition, CONTEXT_OVERLAP_FRAMES, GRID_MAX_FRAMES, LAST_FRAME_BATCH_INDEX, } from './timelineContract.js';
 export { solveWindowComposition } from './timelineContract.js';
+// the last-frame spelling re-exported from its ONE home (timelineContract —
+// actions.ts reads it there too; the public face keeps this name)
+export { LAST_FRAME_BATCH_INDEX } from './timelineContract.js';
 import { contexMaskedTarget, loadVideo, renderMaskedEditChain } from './chainEdit.js';
 /** The tail-frame picker's index: the boot census's OWN max for
  * ImageFromBatch.batch_index (16384 today — the wall derives it from
@@ -9,7 +12,6 @@ import { contexMaskedTarget, loadVideo, renderMaskedEditChain } from './chainEdi
  * (min(shape−1, index)) onto the clip's FINAL row under every build;
  * the negative spelling slices empty on the live estate (the
  * 2026-11-19 burn — clause 1 above) and is banned family-wide. */
-export const LAST_FRAME_BATCH_INDEX = 16384;
 /** The extend entry's required seats (the reshoot/repair idiom: an
  * armed doc with an empty seat refuses loud naming the seat). */
 const REQUIRED_SEATS = [

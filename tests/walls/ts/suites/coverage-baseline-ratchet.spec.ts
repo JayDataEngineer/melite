@@ -382,7 +382,10 @@ const REGEN_2026_10_23_OLD_FLOORS: Record<string, { statements: number, branches
   '**/packages/web/card-base/src/studio.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/infer-gallery/src/client/bench-load.ts': { statements: 100, branches: 96.89, functions: 100, lines: 100 },
   '**/packages/web/infer-gallery/src/client/useFeed.ts': { statements: 97.72, branches: 87.5, functions: 100, lines: 100 },
-  '**/packages/web-kit/timeline/src/timeline/MotionTimelineBarDrag.ts': { statements: 90.07, branches: 74.8, functions: 80.95, lines: 94.87 },
+  // MotionTimelineBarDrag LEFT this table 2026-11-16: the seated
+  // regen re-measured its branches at 75.57 — back above the argued
+  // from face (74.8) — so the cleanup arm demanded the entry leave
+  // in the same landing (the ratchet-back landed).
   '**/packages/web/melite-card-view/src/client/cards-resource.ts': { statements: 99.43, branches: 99.71, functions: 96.51, lines: 99.34 },
   '**/packages/web/melite-card-view/src/client/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/melite-card-view/src/client/run-rescue-core.ts': { statements: 96.66, branches: 97.93, functions: 92.3, lines: 100 },
@@ -447,7 +450,6 @@ const REGEN_2026_10_23_NEW_FLOORS: Record<string, { statements: number, branches
   '**/packages/web/card-base/src/studio.tsx': { statements: 92.7, branches: 95.65, functions: 92.3, lines: 91.02 },
   '**/packages/web/infer-gallery/src/client/bench-load.ts': { statements: 100, branches: 96.26, functions: 100, lines: 100 },
   '**/packages/web/infer-gallery/src/client/useFeed.ts': { statements: 97.05, branches: 87.5, functions: 100, lines: 96.66 },
-  '**/packages/web-kit/timeline/src/timeline/MotionTimelineBarDrag.ts': { statements: 90.07, branches: 73.28, functions: 80.95, lines: 94.87 },
   '**/packages/web/melite-card-view/src/client/cards-resource.ts': { statements: 98.33, branches: 97.39, functions: 93.87, lines: 98.85 },
   '**/packages/web/melite-card-view/src/client/index.ts': { statements: 99.05, branches: 100, functions: 100, lines: 98.91 },
   '**/packages/web/melite-card-view/src/client/run-rescue-core.ts': { statements: 96.66, branches: 95.51, functions: 92.3, lines: 100 },
@@ -1526,6 +1528,45 @@ const LANDED_DEBT2_NEW_FLOORS: Record<string, { statements: number, branches: nu
     '**/packages/web/viewer/src/index.ts': { statements: 96.97, branches: 91.67, functions: 87.5, lines: 96.3 },
 }
 
+// OVERLAY-ARGUED DROPS (2026-11-16, the seated regen raised base
+// floors past pinned unseated faces): the integer-margin law fences
+// every newly-RELIEVED overlay metric at the integer floor of its
+// observed face — a DOWNWARD move against HEAD the overlay
+// monotonicity arm refuses unless argued HERE (the same shape the
+// base table's ARGUED_FLOOR_DROPS gives its own drops). The
+// restored-clause mirror: once the overlay row climbs back to its
+// argued `from` face the entry is void and must go.
+const OVERLAY_ARGUED_DROPS: Record<string, {
+  from: { statements: number, branches: number, functions: number, lines: number },
+  to: { statements: number, branches: number, functions: number, lines: number },
+  roadmapHeading: string,
+  reviewBy: string,
+  reason: string,
+}> = {
+  // The 2026-11-16 seated regen (two stable full-pool faces) minted
+  // K=1 margin floors that raised service.ts's base to
+  // 95.78/92.2/94.92/97.22 and runsExecute.ts's base to
+  // 99.48/96.99/96.88/99.43 — past the overlay's pinned faces.
+  // Riding the new base would plant a CI red on the next
+  // store-absent run (the observed faces sit below it); the fence
+  // keeps the unseated pool honest while the seated ratchet keeps
+  // its raise.
+  "**/packages/estate/provisioning/src/service.ts": {
+    from: { statements: 95.66, branches: 91, functions: 94.89, lines: 97.1 },
+    to: { statements: 95, branches: 91, functions: 94, lines: 97 },
+    roadmapHeading: "The 2026-11-16 seated regen — the unseated overlay re-fenced at the integer floor",
+    reviewBy: "2026-12-16",
+    reason: "the seated two-face regen raised the base floors past the pinned unseated faces; the integer-margin law fences the relieved metrics at the observed face's integer floor — re-measure the store-absent pool and lift the fence before the review date",
+  },
+  "**/packages/harness/estate-queue/src/runsExecute.ts": {
+    from: { statements: 97, branches: 94, functions: 96, lines: 98.86 },
+    to: { statements: 97, branches: 94, functions: 96, lines: 98 },
+    roadmapHeading: "The 2026-11-16 seated regen — the unseated overlay re-fenced at the integer floor",
+    reviewBy: "2026-12-16",
+    reason: "the seated two-face regen raised the base lines floor past the pinned unseated face; the integer-margin law fences the relieved metric at the observed face's integer floor — re-measure the store-absent pool and lift the fence before the review date",
+  },
+}
+
 const ARGUED_FLOOR_DROPS: Record<string, {
   from: { statements: number, branches: number, functions: number, lines: number },
   to: { statements: number, branches: number, functions: number, lines: number },
@@ -2223,9 +2264,12 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     '**/packages/web-kit/timeline/src/timeline/CommissionsRail.tsx',
     '**/packages/web-kit/timeline/src/timeline/MotionTimelineBar.tsx',
     '**/packages/web-kit/timeline/src/timeline/MotionTimelineBarChrome.tsx',
-    '**/packages/web-kit/timeline/src/timeline/MotionTimelineBarDrag.ts',
     '**/packages/web-kit/timeline/src/timeline/motionTimelineState.ts',
-    '**/packages/web-kit/timeline/src/timeline/MotionTimelineBarLanes.tsx',
+    // MotionTimelineBarDrag.ts + MotionTimelineBarLanes.tsx left this
+    // list 2026-11-16 (the seated regen): the two-face mint re-seated
+    // both rows back over their argued from faces (Drag branches
+    // 74.05→75.57; Lanes 70/76.96/66.66/74 → 71.09/78.68/68.75/75), so
+    // the cleanup arm demanded the removals in the same landing.
     '**/packages/web-kit/timeline/src/timeline/MotionTimelineBarLayout.ts',
     '**/packages/web-kit/timeline/src/timeline/MotionTimelineBarScale.ts',
     '**/packages/web-kit/timeline/src/timeline/TimelineScrubBar.tsx',
@@ -2323,7 +2367,10 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     '**/packages/web/melite-card-view/src/client/run-rescue-core.ts',
     '**/packages/web/melite-card-view/src/client/run-rescue.tsx',
     '**/packages/web/melite-card-view/src/client/sortable-tile.tsx',
-    '**/packages/web/melite-card-view/src/client/stage-drill.tsx',
+    // stage-drill.tsx left this list 2026-11-16 (the seated regen):
+    // its row climbed back above the argued from face
+    // (99.47/98.77/99.15/99.78), so the cleanup arm demanded the
+    // removal in the same landing.
     '**/packages/web/melite-card-view/src/client/stage-run.ts',
     '**/packages/web/melite-card-view/src/client/zoomPromotion.ts',
     '**/packages/web/melite-card-view/src/index.ts',
@@ -2409,28 +2456,21 @@ const ARGUED_FLOOR_DROPS: Record<string, {
   // 43/55 vs 44/55 branches) with all tests green, twice at the low
   // face. The row seats at the K=1 mint over the low face:
   // statements 77/88, branches 42/55, lines 68/76; functions kept
-  // (met at the low face exactly).
-  '**/packages/engines/comfyui-cordis/src/comfyui-transport.ts': {
-    from: { statements: 89.77, branches: 78.18, functions: 89.47, lines: 90.79 },
-    to: { statements: 87.5, branches: 76.36, functions: 89.47, lines: 89.47 },
-    roadmapHeading: "The comfyui-transport reconnect-spread flap — re-seated at the K=1 mint over the twice-observed low face",
-    reviewBy: "2026-12-15",
-    reason: "the transport's reconnect arms decide paths by wall-clock under the full pool: two of the round-29 proving runs measured the low face (78/88 statements, 43/55 branches, 69/76 lines) and two the high face (80/88, 44/55, 70/76) with EVERY test green — the round-19 retirement rode a lucky high face. The row seats one path below the low face on the three flapping metrics; functions stays (met at the low face). Lift with deterministic arms or re-measure at calm load before the review date",
-  },
+  // (met at the low face exactly). LEFT 2026-11-16 (the seated
+  // regen): the two-face mint re-measured every metric at its argued
+  // from face exactly (89.77/78.18/89.47/90.79), so the cleanup arm
+  // demanded the removal in the same landing.
   // (round-29 burn, 2026-11-03) MotionTimelineBarDrag re-argued: the
   // round-19 removal rode the calm face; the gate's proving set since
   // measured the branch face as low as 96/131 (73.28) with all tests
   // green — the drag gesture arms decide coverage by event timing
   // under load. The row seats one path below the worst observed
   // branch face: 95/131 = 72.52; the other three metrics held their
-  // floors at every observed face.
-  '**/packages/web-kit/timeline/src/timeline/MotionTimelineBarDrag.ts': {
-    from: { statements: 89.36, branches: 74.81, functions: 76.19, lines: 94.02 },
-    to: { statements: 89.36, branches: 72.52, functions: 76.19, lines: 94.02 },
-    roadmapHeading: "The MotionTimelineBarDrag gesture-timing branch flap — re-seated at the K=1 mint over the worst observed face",
-    reviewBy: "2026-12-15",
-    reason: "the drag gesture arms decide branch coverage by event timing under the loaded pool: the branch face swung 96..99 of 131 across the round-29 proving runs (73.28..75.57) with EVERY test green, and the round-19 cleanup removed the entry off the calm face. Branches seat one path below the worst observed face; statements/functions/lines met their floors at every observed face. Lift with deterministic arms or re-measure at calm load before the review date",
-  },
+  // floors at every observed face. LEFT 2026-11-16 (the seated
+  // regen): the two-face mint re-seated branches at 75.57, exactly
+  // this entry's from face, so the cleanup arm demanded the removal
+  // in the same landing (the load-jitter class keeps its watch in the
+  // roadmap).
   // (round-29 burn, 2026-11-03) melite-estate provisioning.ts: the
   // gate's proving run D measured the view one path down on both
   // counting metrics (234/237 statements, 57/58 functions) with all
@@ -2438,14 +2478,10 @@ const ARGUED_FLOOR_DROPS: Record<string, {
   // load-timing class (the view's lazy arms decide paths by
   // wall-clock). The row seats one path below run D's face on the
   // two flapping metrics; branches/lines met their floors at every
-  // observed face.
-  '**/packages/web/melite-estate/src/provisioning.ts': {
-    from: { statements: 99.11, branches: 98.31, functions: 98.28, lines: 98.99 },
-    to: { statements: 98.31, branches: 98.31, functions: 96.55, lines: 98.99 },
-    roadmapHeading: "The melite-estate provisioning view flap — seated at the K=1 mint over run D's low face",
-    reviewBy: "2026-12-15",
-    reason: "the estate provisioning view's lazy arms decide paths by wall-clock under the loaded pool: proving run D measured 234/237 statements (98.73) and 57/58 functions (98.27) with EVERY test green, while runs E/F/G measured 235/237 and 58/58. The two flapping metrics seat one path below run D's face. Lift with deterministic arms or re-measure at calm load before the review date",
-  },
+  // observed face. LEFT 2026-11-16 (the seated regen): the two-face
+  // mint re-raised every metric back over the argued from face
+  // (99.56/99.4/98.28/99.48 over 99.11/98.31/98.28/98.99), so the
+  // cleanup arm demanded the removal in the same landing.
   // (round-19 burn, 2026-11-15) MotionTimelineBarDrag left here — the
   // regeneration's two same-tree faces measured the calm branch face
   // (74.05) and seated the row exactly at this entry's from face, so
@@ -2775,7 +2811,7 @@ describe("THE UNSEATED OVERLAY (two seat faces, one gate — the 2026-11-16 marg
       }
     }
   });
-  it("the overlay ratchets like the base: no unseated floor moves DOWN against HEAD", (ctx) => {
+  it("the overlay ratchets like the base: no unseated floor moves DOWN against HEAD (an argued fence excepted)", (ctx) => {
     const prev = execFileSyncSafe(["git", "show", "HEAD:scripts/coverage-baseline.ts"]);
     if (prev === null) {
       ctx.skip(true, "no git history available — overlay monotonicity unproven here");
@@ -2788,13 +2824,54 @@ describe("THE UNSEATED OVERLAY (two seat faces, one gate — the 2026-11-16 marg
     for (const [key, row] of Object.entries(COVERAGE_BASELINE_UNSEATED)) {
       const was = before[key];
       if (was === undefined) continue; // a new overlay row cannot move down
+      const argued = OVERLAY_ARGUED_DROPS[key];
       for (const metric of ["statements", "branches", "functions", "lines"] as const) {
         const now = row[metric];
         if (now === null || was[metric] === null) continue;
+        // the argued fence: the integer-margin law forced a
+        // downward re-fence when a seated regen raised the base
+        // past the pinned unseated face. It excuses EXACTLY the
+        // argued transition (was === from, now === to) — anything
+        // else still reds.
+        if (argued !== undefined
+          && (was as Record<string, number>)[metric] === argued.from[metric]
+          && now === argued.to[metric]) continue;
         assert(
       now >= (was[metric] as number),
           `${key} ${metric} moved down from ${String(was[metric])} to ${String(now)} — re-seat an unseated face only UPWARD, or argue the drop`,
         );
+      }
+    }
+  });
+  it("every overlay-argued fence stays argued: the roadmap row exists, the review date is future, and a lifted fence removes the entry", (ctx) => {
+    let roadmap: string;
+    try {
+      roadmap = readFileSync(join(ROOT, "dev_docs", "ROADMAP.md"), "utf8");
+    } catch {
+      ctx.skip(true, "dev_docs/ROADMAP.md is absent (a CI tree without developer-local material) — the citation is unproven here");
+      return;
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    expect(Object.keys(OVERLAY_ARGUED_DROPS).length,
+      "the overlay-argued table is empty — the consult above is dead code; delete the consult with the entry").toBeGreaterThan(0);
+    for (const [key, entry] of Object.entries(OVERLAY_ARGUED_DROPS)) {
+      const row = COVERAGE_BASELINE_UNSEATED[key];
+      expect(row, `${key} has an overlay-argued fence but no overlay row`).toBeDefined();
+      expect(roadmap.includes(entry.roadmapHeading),
+        `${key}'s overlay-argued fence cites roadmap heading ${JSON.stringify(entry.roadmapHeading)}, which does not exist in dev_docs/ROADMAP.md`).toBe(true);
+      expect(entry.reviewBy, `${key}'s reviewBy must be an ISO date`).toMatch(/^\d{4}-\d{2}-\d{2}$/u);
+      expect(entry.reviewBy >= today,
+        `${key}'s overlay-argued fence expired (reviewBy ${entry.reviewBy} < ${today}) — lift the fence or re-argue with fresh evidence`).toBe(true);
+      expect(entry.reason.length, `${key}'s reason carries the evidence`).toBeGreaterThan(20);
+      for (const metric of ["statements", "branches", "functions", "lines"] as const) {
+        expect(entry.to[metric] <= entry.from[metric],
+          `${key} ${metric}: an argued fence cannot have to > from`).toBe(true);
+      }
+      if (row !== undefined) {
+        const lifted = (["statements", "branches", "functions", "lines"] as const)
+          .every((m) => (row as Record<string, number>)[m] >= entry.from[m]);
+        expect(lifted,
+          `${key} climbed back to its argued 'from' face — the fence lifted; remove the OVERLAY_ARGUED_DROPS entry in the same commit`).toBe(false);
       }
     }
   });

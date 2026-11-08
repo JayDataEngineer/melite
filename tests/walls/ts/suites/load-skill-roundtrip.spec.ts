@@ -168,7 +168,11 @@ interface SkillLine { id?: string }
 // 2b): the timeline card's EIGHTH bag carries its own skill leaf
 // (skills/edit/, the video-edit dial grammar); its id round-tripped
 // 200 with a body in the arm above before this repin.
-const EXPECTED_CARD_SKILLS = 54;
+// 54 → 55 (2026-11-16, §0.6 the mods fold): the timeline card's
+// NINTH bag carries its own skill leaf (skills/mods-recipe/, the
+// mask-dial × identity-anchor grammar); its id round-tripped 200
+// with a body in the arm above before this repin.
+const EXPECTED_CARD_SKILLS = 55;
 // 8 → 11 (2026-10-11): object-forge's skillRefs — image-gen +
 // img-to-mesh card lines and z-image's prompt-enhance ride the flow
 // bundle (card:quad-remesh resolves null — the card ships no agent

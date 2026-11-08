@@ -6,7 +6,7 @@ import { H3_LORA_ROWS } from '@melite/models-h3/mods/loras';
 import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from '@melite/comfyui-card-kit/vocab';
 import { computeFilmMix, parseFilmMixClips, spanOverlap, stanzaSecs } from './filmMix.js';
 import { SECOND_PASS_WINDOW } from './secondPass.js';
-import { DOC_FPS_DEFAULT, GRID_REMAINDER, GRID_STEP_FRAMES, IMAGE_BUS_SLOTS, REF_CAPS, assertGridLength, assertSpanGrid, bookSeconds, imageReferenceCap, isGridLength, isMediaRef, spanStanzaFrames, transitionOverlap } from './timelineContract.js';
+import { DOC_FPS_DEFAULT, GRID_REMAINDER, GRID_STEP_FRAMES, IMAGE_BUS_SLOTS, LAST_FRAME_BATCH_INDEX, REF_CAPS, assertGridLength, assertSpanGrid, bookSeconds, imageReferenceCap, isGridLength, isMediaRef, spanStanzaFrames, transitionOverlap } from './timelineContract.js';
 import { applyH3ReshootCond, applyH3ReshootModel, buildH3Reshoot, reshootArmed, reshootPrompt, } from './reshoot.js';
 // THE ABSENT-BAG DEFAULT (h3-a, 2026-10-12; bytedance DMAD row
 // 2026-10-11 → the LightX2V Turbo 8-Step v1.0 row 2026-11-07 → the
@@ -725,7 +725,10 @@ function renderH3Film(p, g, facts, model, runId) {
         // in renderH3Window's family line, never a window that claims
         // t4_open while its chain rides the reference arm).
         const winPins = (p.__keyframe_pins ?? {})[String(k)] ?? [];
-        stanza.variant = (guide !== '' || hasRefs || hasDirectRefs || anyStamp || winPins.length > 0) ? 't4r' : chainLike ? 't4_chain' : 't4_open';
+        // the seam keyframe pin is the same class (an image guide at
+        // frame 0) — the window derives the reference lane with it
+        const seamKeyframe = stanza.__seam_keyframe === true;
+        stanza.variant = (guide !== '' || hasRefs || hasDirectRefs || anyStamp || winPins.length > 0 || seamKeyframe) ? 't4r' : chainLike ? 't4_chain' : 't4_open';
         // the distill's steps apply unless this call's knobs pinned steps
         // — or the DOC did (the __steps_pinned stamp, the walk's own
         // explicit-keys fact; the single-window marriage always consulted
@@ -818,6 +821,14 @@ function renderH3Film(p, g, facts, model, runId) {
         if (i > 0) {
             stanza.__iteration = k - 1;
             stanza.__overlap = overlap;
+            // THE THIRD CARRY MODE (the context-carry modes): a
+            // 'carry+keyframe' seam chains like extend (the overlap
+            // derives the same 22f — transitionOverlap reads only 'cut')
+            // AND stamps the keyframe pin — the renderer's seam block
+            // mounts the previous window's decoded final frame as this
+            // window's first-frame guide (one derivation, no new chain).
+            if (call.transition === 'carry+keyframe')
+                stanza.__seam_keyframe = true;
         }
         if (prev !== undefined)
             stanza.__prev = prev;
@@ -2016,6 +2027,25 @@ function renderH3Window(p, g, facts, model, runId) {
         /* v8 ignore next 1 -- the film loop stamps __overlap on every window k≥2 before the render (the seam block mounts only when it did) */
         const overlap = p.__overlap ?? 0;
         if (prev !== undefined && overlap > 0) {
+            // THE KEYFRAME CARRY (the third carry mode): the continuation
+            // below chains the latent AND the prior window's decoded
+            // FINAL FRAME is pinned as this window's first-frame guide —
+            // extend.ts's own last-frame idiom (ImageFromBatch at the
+            // clamp index, length 1), mounted through the image-pin
+            // grammar (AddGuide at frame_idx 0, the keyframe lane's own
+            // node) BEFORE the continuation wraps the conditioning: the
+            // hard image anchor rides inside the drift-controlled seam.
+            // The window derived t4r for the pin (the loop's variant
+            // line), so the guide chain exists on this arm.
+            if (p.__seam_keyframe === true) {
+                const priorLast = g.node('ImageFromBatch', {
+                    image: prev.vdec, batch_index: LAST_FRAME_BATCH_INDEX, length: 1,
+                }).out(0);
+                cond = g.node('MiniMaxH3AddGuide', {
+                    positive: cond, latent: targetLatent,
+                    frame_idx: 0, vae: vaeVideo, image: priorLast,
+                }).out(0);
+            }
             const cont = g.node('MiniMaxH3FiniteLatentContinuation', {
                 positive: cond, target_latent: targetLatent,
                 iteration, overlap_frames: overlap,

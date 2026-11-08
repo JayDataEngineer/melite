@@ -893,6 +893,41 @@ export function CallCard({
       </div>
     </div>
 
+    {/* THE CONTEXT-CARRY MODE SEAT (the window editor's seam face):
+     * the strip's seam chip is the quick cut toggle; THIS modal owns
+     * the full vocabulary — three states, one seat, spelled whole
+     * (stock / carry / carry+keyframe). Only a non-first call has a
+     * seam to speak of; the seat rides under the bus with the seam's
+     * own law (the seam is the call's join, never a slot). */}
+    {i > 0 && (
+      <div className={s.callRefs} data-testid="tl-call-seam-mode">
+        <SectionLabel>{studioCopy.seamModeHead}</SectionLabel>
+        <div className={s.seamModeRow} role="group" aria-label={studioCopy.seamModeAria}>
+          {([
+            ["cut", studioCopy.seamModeStock, studioCopy.seamModeStockTip],
+            ["extend", studioCopy.seamModeCarry, studioCopy.seamModeCarryTip],
+            ["carry+keyframe", studioCopy.seamModeCarryKeyframe, studioCopy.seamModeCarryKeyframeTip],
+          ] as const).map(([value, label, tip]) => {
+            const active = (c.transition ?? "extend") === value
+            return (
+              <Tip key={value} tip={tip}>
+                <Button
+                  variant={active ? "primary" : "outline"}
+                  size="sm"
+                  className={s.seamModeBtn}
+                  aria-pressed={active}
+                  aria-label={`${studioCopy.seamModeAria}: ${label}`}
+                  onClick={() => setCallTransition(i, value)}
+                >
+                  {label}
+                </Button>
+              </Tip>
+            )
+          })}
+        </div>
+      </div>
+    )}
+
     {/* (operator 2026-11-05: "clip guide / audio guide — WHAT IS
      * THAT THERE FOR???") — the guide slots are
      * DEAD FACES: a clip/audio guide never had a compose meaning in

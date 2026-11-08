@@ -29,6 +29,7 @@ import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition"
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
+import { SEAM_OVERLAP_FRAMES, transitionOverlap } from "@melite/models-h3/timelineContract"
 import { useCallMutations } from "../src/ui/studio/useCallMutations.ts"
 import { serializeCalls } from "../src/ui/studio/docCalls.ts"
 import type { DocCall } from "../src/ui/studio/docModel.ts"
@@ -116,5 +117,34 @@ describe("THE SPLIT'S CUT SEAM (§0.5 — the halves never chain)", () => {
     const g2 = new GraphBuilder()
     def.compose(def.schema({ calls: serializeCalls(extend) }), model, g2, "run_control_extend")
     assert.equal(scoped(graphOf(g2), "window2_", "MiniMaxH3FiniteLatentContinuation").length, 1)
+  })
+
+  it("THE STOCK ARM (the context-carry vocabulary): stock IS the cut — no carry, no keyframe pin; the vocabulary maps at the compose door", () => {
+    // THE THREE-MODE LAW: stock = cut (no context carry), carry =
+    // extend/absent (the default latent chain), carry+keyframe = the
+    // stronger carry (its own wall judges the pin). transitionOverlap
+    // is the vocabulary's one reader at the compose door.
+    const stock: DocCall[] = [
+      { text: "a", start_frame: 0, end_frame: 56 },
+      { text: "a", start_frame: 56, end_frame: 146, transition: "cut" },
+    ]
+    const g = new GraphBuilder()
+    def.compose(def.schema({ calls: serializeCalls(stock) }), model, g, "run_stock_mode")
+    const out = graphOf(g)
+    assert.equal(scoped(out, "window2_", "MiniMaxH3FiniteLatentContinuation").length, 0,
+      "stock carries nothing — the continuation never mounts")
+    // stock mounts NO keyframe machinery either: the seam pin is the
+    // third mode's own mount, foreign to a stock window
+    assert.equal(scoped(out, "window2_", "ImageFromBatch").length, 0,
+      "stock pins no final frame — the keyframe carry is the third mode's own mount")
+    assert.equal(scoped(out, "window2_", "MiniMaxH3AddGuide").length, 0,
+      "stock guides nothing into the seam")
+    // the vocabulary's overlap law: cut reads 0, extend and the
+    // keyframe carry read the proven 22 (the third mode CHAINS like
+    // extend — transitionOverlap reads only 'cut')
+    assert.equal(transitionOverlap("cut"), 0)
+    assert.equal(transitionOverlap("extend"), SEAM_OVERLAP_FRAMES)
+    assert.equal(transitionOverlap("carry+keyframe"), SEAM_OVERLAP_FRAMES)
+    assert.equal(transitionOverlap(undefined), SEAM_OVERLAP_FRAMES)
   })
 })
