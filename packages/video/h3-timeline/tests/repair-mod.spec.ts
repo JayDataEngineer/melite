@@ -3,12 +3,15 @@
 // REPLACE ARE THE [redacted - the emphatic spelling lives in the
 // receipt] SAME OPERATION! REPAIR JUST USES THE ORIGINAL." The name
 // left the DECLARED roster and lives on as the
-// edit bag's masked-partial cell: the translation states the region
-// mask + the source as its own anchor + the stated denoise, node for
-// node. The suite drives the card's own doors (def.mods proves the
-// name is gone; def.compose proves the doc still composes) and pins
-// the SURVIVING laws that used to be the repair arm's: the region
-// target, the unguided full-render refusal, the declared band.
+// edit bag's masked-partial cell: the translation states the
+// RECEIVED static mask (P0-2, defect board row 2 — "repair receives
+// a mask and errors without one") + the source as its own anchor +
+// the stated denoise, node for node. The suite drives the card's own
+// doors (def.mods proves the name is gone; def.compose proves the
+// doc still composes) and pins the SURVIVING laws: the unguided
+// full-render refusal, the declared band, the one-door matrix. The
+// mask-required + prose-demotion arms live in
+// repair-receives-mask.spec.ts (the contract's own wall).
 import "../../../../tests/helpers/boot-models.ts";
 import { beforeAll, describe, it } from "vitest";
 import assert from "node:assert/strict";
@@ -56,14 +59,14 @@ const compose = (doc: Record<string, unknown>, runId: string): Record<string, No
 const REPAIR_ENTRY = (): Record<string, unknown> => ({
   source_clip: "clips/take.mp4",
   repair_prompt: "the same hands, five clean fingers, gripping the cup",
-  region_prompt: "hands",
+  mask: "masks/hands_union.png",
 });
 
 const EDIT_EQUIVALENT = (): Record<string, unknown> => ({
   source_clip: "clips/take.mp4",
+  mask: "masks/hands_union.png",
   edit_prompt: "the same hands, five clean fingers, gripping the cup",
-  mask_source: "region",
-  region_prompt: "hands",
+  mask_source: "static-png",
   reference: "self",
   // the arm's declared default, stated: absence is not authorship
   denoise: 0.32,
@@ -76,11 +79,10 @@ describe("the Repair name — the masked-partial cell of the one edit bag (the c
     assert.equal(kinds.includes("repair"), false);
   });
 
-  it("THE NAME STILL COMPOSES: the region mask chain rides the one door", () => {
+  it("THE NAME STILL COMPOSES: the RECEIVED static mask rides the one door", () => {
     const out = compose({ repair: [REPAIR_ENTRY()] }, "run_repair_alias");
-    for (const cls of ["SAM3_VideoTrack", "SAM3_TrackToMask", "GrowMaskWithBlur"]) {
-      assert.ok(ofClass(out, cls).length > 0, `the repair alias composes ${cls} (the per-frame region track)`);
-    }
+    assert.equal(ofClass(out, "ImageToMask").length, 1, "the received PNG decodes once (the static mask)");
+    assert.equal(ofClass(out, "SAM3_VideoTrack").length, 0, "no prose manufacture rides the repair alias (P0-2)");
     assert.equal(ofClass(out, "MiniMaxH3ChainAssemble").length, 1, "the chain assemble terminates the emission");
   });
 
@@ -92,7 +94,7 @@ describe("the Repair name — the masked-partial cell of the one edit bag (the c
 
   it("leaves the film byte-identical with the arm absent", () => {
     const out = compose({}, "run_repair_empty");
-    for (const cls of ["SAM3_VideoTrack", "MiniMaxH3ContexMaskedTarget"]) {
+    for (const cls of ["ImageToMask", "MiniMaxH3ContexMaskedTarget"]) {
       assert.equal(ofClass(out, cls).length, 0, `the empty-arm film composes no ${cls}`);
     }
     assert.ok(ofClass(out, "SaveVideo").length > 0, "the film still delivers");
@@ -106,11 +108,11 @@ describe("the Repair name — the masked-partial cell of the one edit bag (the c
     );
   });
 
-  it("a repair with NO region target refuses at the region law (never a whole-frame silent repair)", () => {
-    const { region_prompt: _r, ...noRegion } = REPAIR_ENTRY();
+  it("P0-2: the prose door is DEAD at this cell — a stated region_prompt rides no dial (the sweep's own law)", () => {
     assert.throws(
-      () => compose({ repair: [noRegion] }, "run_repair_no_region"),
-      /the region mask dial names no target/,
+      () => compose({ repair: [{ ...REPAIR_ENTRY(), region_prompt: "hands" }] }, "run_repair_prose"),
+      /'region_prompt' seat rides no edit dial/,
+      "the mask-less manufacture that let run-e79f3b304e4b repair from prose is gone",
     );
   });
 

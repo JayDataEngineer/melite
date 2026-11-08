@@ -76,7 +76,7 @@ describe("the h3-timeline compose gate", () => {
       { edit: [{ mask_source: "whole-frame" }] },
       { edit: [{ continuation: true }] },
       { replace: [{ source_clip: "c" }] },
-      { repair: [{ source_clip: "c" }] },
+      { repair: [{ source_clip: "c", mask: "m.png" }] },
       { refine: [{ source_clip: "c" }] },
       { upscale: [{ chain_run: "r" }] },
       { reshoot: [{ source_clip: "c" }] },
@@ -88,7 +88,7 @@ describe("the h3-timeline compose gate", () => {
     // legacy extend doc is the continuation
     for (const legacy of [
       { replace: [{ source_clip: "c" }] },
-      { repair: [{ source_clip: "c" }] },
+      { repair: [{ source_clip: "c", mask: "m.png" }] },
       { refine: [{ source_clip: "c" }] },
       { upscale: [{ chain_run: "r" }] },
     ]) {

@@ -260,7 +260,7 @@ const EDIT_MOD = {
     // its own door is Reshoot (a different chain, MoGe depth +
     // CrossView — not a mask/denoise variation).
     sections: [
-        { id: 'repair-region', label: 'Repair', tooltip: 'The repair section: identity anchored to the source itself, partial denoise holding everything outside the mask — and its sound. The mask slot chooses the how: a per-frame SAM3 track of the named region (the default seed) or one staged PNG (the static read — the chain resizes it to its own geometry in-graph).', patch: { mask_source: 'region', reference: 'self', denoise: 0.32, keep_audio: true } },
+        { id: 'repair-region', label: 'Repair', tooltip: 'The repair section: identity anchored to the source itself, partial denoise holding everything outside the mask — and its sound. The mask is RECEIVED: one staged PNG (the track run\u2019s pixel-max union is the recommended bridge; the chain resizes it to its own geometry in-graph) — the repair refuses without one.', patch: { mask_source: 'static-png', reference: 'self', denoise: 0.32, keep_audio: true } },
         { id: 'identity-swap', label: 'Swap', tooltip: 'The swap section (one, per §0.7 — clothing vs identity is prompt words, never two pills): the region tracked frame by frame, identity carried by a replacement still + the track run\'s mannequin video; denoise seeds 1 (full re-render of the masked side) — push toward 0.55 to keep source motion riding through (the garment read).', patch: { mask_source: 'region', reference: 'still+mannequin', denoise: 1 } },
         { id: 'whole-frame-restyle', label: 'Whole-frame restyle', tooltip: 'Nothing held: the whole frame re-renders at partial denoise anchored to the source itself — stay under 0.8 (the identity-boil floor refuses beyond it on this anchor).', patch: { mask_source: 'whole-frame', reference: 'self', denoise: 0.6 } },
         { id: 'refine-2x', label: 'Refine 2x', tooltip: "The second-pass posture: blank mask (the whole frame), self-anchored, partial denoise at the design window (2.5 s — a >=2x window past the measured 141 f OOM refuses) — and the refine switch ON at 2x: the learned upscale rides the edit's own latents in the same run.", patch: { mask_source: 'whole-frame', reference: 'self', denoise: 0.32, refine: true, scale: 2, clip_seconds: 2.5, keep_audio: true } },
@@ -432,10 +432,20 @@ function translateLegacyCell(key, e, h) {
                 denoise: 1,
             };
         case 'repair':
+            // P0-2 (defect board row 2, the operator's contract: "repair
+            // receives a mask and errors without one"): the repair arm
+            // RECEIVES one staged PNG — prose (region_prompt) no longer
+            // manufactures a repair's mask, and the SAM3 tuning seats
+            // (mask_grow/mask_blur/detection_threshold) ride no static
+            // dial: the recommended bridge (the track run's pixel-max
+            // union) arrives already grown. The refusal names the field.
+            if (seatStr(e, 'mask').trim() === '') {
+                throw new Error(`h3-timeline: the repair arm's 'mask' seat names no media — a repair RECEIVES a mask (ONE staged PNG; the track run's pixel-max union is the recommended bridge) and refuses without one; prose (region_prompt) no longer manufactures a repair's mask (the operator's contract, defect board row 2)`);
+            }
             return {
-                ...pass('source_clip', 'region_prompt', 'mask_grow', 'detection_threshold', 'denoise', 'window_start', 'window_length', 'seed', 'steps', 'clip_seconds', 'overlap_frames', 'resolution'),
+                ...pass('source_clip', 'mask', 'denoise', 'window_start', 'window_length', 'seed', 'steps', 'clip_seconds', 'overlap_frames', 'resolution'),
                 edit_prompt: (take('repair_prompt'), seatStr(e, 'repair_prompt')),
-                mask_source: 'region',
+                mask_source: 'static-png',
                 reference: 'self',
                 // the arm's own declared default (the deleted kind filled it at
                 // the walk): absence is never authorship, and the edit door's

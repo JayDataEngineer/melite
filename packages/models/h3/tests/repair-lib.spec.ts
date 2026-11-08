@@ -2,10 +2,14 @@
 // swap-lib precedent, friction-report #6: the renderer-as-library
 // property is what makes direct-drive safe). Guards: the barrel
 // exports renderH3Repair; a minimal entry composes the masked
-// second-pass chain ending in MiniMaxH3ChainAssemble; the inline
-// SAM3 mask chain is present and region-prompted; the partial
-// denoise law refuses at >= 1; an empty seat refuses naming the
-// seat; the window seats stamp both loaders.
+// second-pass chain ending in MiniMaxH3ChainAssemble; THE MASK IS
+// RECEIVED (P0-2, defect board row 2 — the operator's contract
+// "repair receives a mask and errors without one"): one staged PNG
+// rides LoadImage → ImageToMask → ImageResize at the plan geometry,
+// the inline SAM3 prose manufacture is DEAD (stated region_prompt
+// manufactures nothing), the mask-less repair refuses naming
+// 'mask'; the partial denoise law refuses at >= 1; the window
+// seats stamp both loaders.
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
@@ -22,7 +26,7 @@ const FACTS: H3Facts = {
 const ENTRY = (): Record<string, unknown> => ({
   source_clip: "clips/take.mp4",
   repair_prompt: "the same hands, five clean fingers, gripping the cup",
-  region_prompt: "hands",
+  mask: "masks/hands_union.png",
 });
 
 type Node = { class_type: string; inputs: Record<string, unknown> };
@@ -44,67 +48,66 @@ describe("renderH3Repair as a library (the bypass face)", () => {
       "a repair is a visual second pass — the soundtrack is the source's own, always");
   });
 
-  it("composes the inline per-frame SAM3 mask chain, region-prompted (zero staged mask artifacts)", () => {
+  it("P0-2 THE RECEIVED MASK: one staged PNG rides LoadImage → ImageToMask(red) → ImageResize at the plan geometry (F3-16's law, never trust the file's shape)", () => {
     const g = new GraphBuilder();
-    renderH3Repair(ENTRY(), {}, FACTS, g, "run_lib_sam3");
+    renderH3Repair(ENTRY(), {}, FACTS, g, "run_lib_mask");
     const o = out(g);
-    const ckpt = ofClass(o, "CheckpointLoaderSimple");
-    assert.equal(ckpt.length, 1, "one SAM3 checkpoint loader");
-    assert.equal(ckpt[0]![1].inputs.ckpt_name, "sam3.1_multiplex_fp16.safetensors",
-      "the mask family's own declared + hash-pinned SAM3 weights");
-    const enc = ofClass(o, "CLIPTextEncode");
-    assert.equal(enc.length, 1, "one region conditioning encode");
-    assert.equal(enc[0]![1].inputs.text, "hands", "the region prompt is the free-text detection target");
-    const track = ofClass(o, "SAM3_VideoTrack");
-    assert.equal(track.length, 1, "one native video track over the window frames");
-    assert.equal(track[0]![1].inputs.max_objects, 0, "all objects tracked — the union IS the region (region-agnostic law)");
-    const toMask = ofClass(o, "SAM3_TrackToMask");
-    assert.equal(toMask.length, 1, "one track-to-mask decoder");
-    assert.equal(toMask[0]![1].inputs.object_indices, "", "empty indices = the union of every tracked object");
-    const grow = ofClass(o, "GrowMaskWithBlur");
-    assert.equal(grow.length, 1, "one grow seat before the edit");
-    assert.equal(grow[0]![1].inputs.expand, 16, "the default grow (seam ring protection)");
-    // THE SWAP-DELTAS: no staged mask artifacts ride a repair.
-    assert.equal(ofClass(o, "LoadImage").length, 0, "no LoadImage — the mask is inline, never a staged PNG");
-    assert.equal(ofClass(o, "ImageToMask").length, 0, "no ImageToMask — the swap's staged-mask decoder never appears");
-  });
-
-  // F7 — THE PER-SCENE MASK SLICE (whole-clip parity, 2026-11-12):
-  // the plan head segments engine-side and the loop drives the
-  // scenes, so the tracked mask TIMELINE must be sliced to the
-  // current scene's interval before the grow — never fed whole to
-  // every scene (the F7 burn's mask leg).
-  it("F7: the tracked mask timeline is SLICED per scene before the grow — whole-clip parity", () => {
-    const g = new GraphBuilder();
-    renderH3Repair(ENTRY(), {}, FACTS, g, "run_lib_slice");
-    const o = out(g);
-    const slice = ofClass(o, "MiniMaxH3ContexLoopMaskSlice");
-    assert.equal(slice.length, 1, "one loop mask slice — the tracked stack never feeds a scene whole");
-    const toMask = ofClass(o, "SAM3_TrackToMask");
-    assert.equal(toMask.length, 1);
-    assert.deepEqual(slice[0]![1].inputs.mask, [toMask[0]![0], 0],
-      "the slice reads the RAW tracked timeline (pre-grow), per the extension's own posture: slice, then Grow Mask");
-    // the slice rides the loop's CURRENT-SHOT state — the same state
-    // wire the source slice consumes (scene-locked, never a stale copy)
-    const srcSlice = ofClass(o, "H3SourceSlice");
-    assert.equal(srcSlice.length, 1);
-    assert.deepEqual(slice[0]![1].inputs.state, srcSlice[0]![1].inputs.state,
-      "the mask slice and the source slice answer ONE state — one scene clock");
-    assert.equal(slice[0]![1].inputs.source_fps, 24, "the film clock");
-    // the grow derives from the SLICE, and the edit + target consume
-    // the grown slice (the whole-stack wire is dead)
-    const grow = ofClass(o, "GrowMaskWithBlur");
-    assert.equal(grow.length, 1);
-    assert.deepEqual(grow[0]![1].inputs.mask, [slice[0]![0], 0],
-      "grow follows the slice — each scene grows its own interval");
+    const load = ofClass(o, "LoadImage");
+    assert.equal(load.length, 1, "one mask LoadImage — the repair RECEIVES its mask");
+    assert.equal(load[0]![1].inputs.image, "masks/hands_union.png", "the staged PNG the entry named");
+    const toMask = ofClass(o, "ImageToMask");
+    assert.equal(toMask.length, 1, "one staged-mask decoder (red channel)");
+    assert.equal(toMask[0]![1].inputs.channel, "red", "the red channel IS the mask (the swap's own law)");
+    assert.deepEqual(toMask[0]![1].inputs.image, [load[0]![0], 0], "the decoder reads the received PNG");
+    const resize = ofClass(o, "ImageResize");
+    assert.equal(resize.length, 1, "one geometry resize — the PNG's shape is the TRACK's shape, not the chain's");
+    assert.deepEqual(resize[0]![1].inputs.image, [toMask[0]![0], 0], "the resize reads the decoded mask");
+    const w = resize[0]![1].inputs.width as [string, number];
+    const h = resize[0]![1].inputs.height as [string, number];
+    assert.ok(Array.isArray(w) && w[1] === 8, "width is a loop-state wire (slot 8) — the plan geometry, never a literal");
+    assert.ok(Array.isArray(h) && h[1] === 9, "height is a loop-state wire (slot 9) — the plan geometry, never a literal");
+    // the edit latent + masked target consume the RESIZED mask — the
+    // received mask's own pixels, at the chain's own geometry
     const edit = ofClass(o, "MiniMaxH3FantasticVideoEditLatent");
     assert.equal(edit.length, 1);
-    assert.deepEqual(edit[0]![1].inputs.mask, [grow[0]![0], 0],
-      "the edit latent masks with the scene's grown slice, never the whole timeline");
+    assert.deepEqual(edit[0]![1].inputs.mask, [resize[0]![0], 0],
+      "the edit latent masks with the resized received mask");
     const target = ofClass(o, "MiniMaxH3ContexMaskedTarget");
     assert.equal(target.length, 1);
-    assert.deepEqual(target[0]![1].inputs.mask, [grow[0]![0], 0],
-      "the masked target carries the same scene slice (mask_meaning's own law)");
+    assert.deepEqual(target[0]![1].inputs.mask, [resize[0]![0], 0],
+      "the masked target carries the same received mask (mask_meaning's own law)");
+  });
+
+  it("P0-2 THE PROSE DEMOTION: stated region_prompt manufactures NOTHING — the SAM3 chain is dead at this seat even when prose rides the entry", () => {
+    const g = new GraphBuilder();
+    // region_prompt stated (the old law's own seat) — the entry
+    // accepts it as inert junk, but NO node manufactures from it
+    renderH3Repair({ ...ENTRY(), region_prompt: "hands", detection_threshold: 0.9, mask_grow: 32 }, {}, FACTS, g, "run_lib_prose");
+    const o = out(g);
+    assert.equal(ofClass(o, "CheckpointLoaderSimple").length, 0, "no SAM3 checkpoint — the prose door died");
+    assert.equal(ofClass(o, "CLIPTextEncode").length, 0, "no region conditioning — prose conditions nothing");
+    assert.equal(ofClass(o, "SAM3_VideoTrack").length, 0, "no video track — nothing is tracked");
+    assert.equal(ofClass(o, "SAM3_TrackToMask").length, 0, "no track-to-mask decoder");
+    assert.equal(ofClass(o, "MiniMaxH3ContexLoopMaskSlice").length, 0, "no per-scene slice — there is no tracked stack to slice");
+    assert.equal(ofClass(o, "GrowMaskWithBlur").length, 0, "no grow — the recommended bridge arrives already grown");
+    // and the received mask still rides
+    assert.equal(ofClass(o, "ImageToMask").length, 1, "the RECEIVED mask composes regardless of stated prose");
+  });
+
+  it("P0-2 THE REFUSE: a repair without a mask errors naming 'mask' (the operator's contract — never a silent whole-frame run)", () => {
+    const entry = ENTRY();
+    delete entry.mask;
+    assert.throws(
+      () => renderH3Repair(entry, {}, FACTS, new GraphBuilder(), "run_lib_nomask"),
+      /'mask' names no media.*a repair needs all three seats bound \(source_clip, repair_prompt, mask\)/s,
+    );
+    const blank = ENTRY();
+    blank.mask = "   ";
+    assert.throws(
+      () => renderH3Repair(blank, {}, FACTS, new GraphBuilder(), "run_lib_blankmask"),
+      /'mask' names no media/,
+      "whitespace is absence — the seat must name media",
+    );
   });
 
   it("rides the source as its own identity anchor (no still, no mannequin)", () => {
@@ -141,12 +144,12 @@ describe("renderH3Repair as a library (the bypass face)", () => {
     );
   });
 
-  it("refuses loud naming the empty seat", () => {
+  it("refuses loud naming an empty text seat (the required-seat law holds for all three)", () => {
     const entry = ENTRY();
-    delete entry.region_prompt;
+    delete entry.repair_prompt;
     assert.throws(
       () => renderH3Repair(entry, {}, FACTS, new GraphBuilder(), "run_lib_missing"),
-      /'region_prompt' names no media/,
+      /'repair_prompt' names no media/,
     );
   });
 

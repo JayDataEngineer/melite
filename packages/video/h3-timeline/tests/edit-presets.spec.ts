@@ -67,7 +67,7 @@ const editKind = (): { fields: Array<Record<string, unknown>>; sections: Preset[
  *  the cell; the operator still stages the files it names). */
 const STAGED: Record<string, Record<string, unknown>> = {
   "identity-swap": { still: "stills/girl.png", mannequin: "clips/mannequin.mp4", region_prompt: "the person" },
-  "repair-region": { region_prompt: "hands" },
+  "repair-region": { mask: "masks/hands_union.png" },
   "whole-frame-restyle": {},
 };
 
@@ -84,7 +84,7 @@ describe("the edit bag's section chips (stage 3: named cells over the ONE schema
     // on repair-region reds this arm by name (the registration door
     // type-checks; this is the only seat that judges the payload).
     assert.deepEqual(sections.map((p) => p.patch), [
-      { mask_source: "region", reference: "self", denoise: 0.32, keep_audio: true },
+      { mask_source: "static-png", reference: "self", denoise: 0.32, keep_audio: true },
       { mask_source: "region", reference: "still+mannequin", denoise: 1 },
       { mask_source: "whole-frame", reference: "self", denoise: 0.6 },
       { mask_source: "whole-frame", reference: "self", denoise: 0.32, refine: true, scale: 2, clip_seconds: 2.5, keep_audio: true },

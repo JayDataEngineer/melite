@@ -1,7 +1,7 @@
 // The h3 family's REPAIR renderer seat (Tier A, operator order
 // 2026-11-12: "Okay do it all" — a masked SECOND pass over a region
 // of the source clip: hands, the body, a face. Region-agnostic by
-// design: the region is a free-text SAM3 detection prompt, never a
+// design: the region rides the RECEIVED mask's own pixels, never a
 // card-per-region).
 //
 // THE REPAIR LAW (three clauses, all operator-seated):
@@ -19,23 +19,24 @@
 //     this door — the same sigmas law that guards the film's refine
 //     seat (full denoise would boil the held region into a new
 //     take; that is a reshoot, and the reshoot door exists).
-//  3. THE MASK IS PER-FRAME, INLINE, NATIVE: SAM3_VideoTrack +
-//     SAM3_TrackToMask (engine core, nodes_sam3.py) over the window
-//     frames, driven by a CLIPTextEncode of the entry's
-//     region_prompt. This is STRICTLY better than the swap's staged
-//     single-PNG union (the estate has no per-frame sequence
-//     primitive — friction-report #3): the mask tracks the region
-//     frame by frame at track time, in-graph, with no R0 handoff.
+//  3. THE MASK IS RECEIVED, NEVER MANUFACTURED (P0-2, defect board
+//     row 2, the operator's contract "repair receives a mask and
+//     errors without one"): ONE staged PNG (the track run's
+//     pixel-max union is the recommended bridge — per-frame motion
+//     was manufactured there, at track time), resized to the plan
+//     geometry in-graph (the edit door's own F3-16 static arm,
+//     verbatim). The inline SAM3 prose door that let a "repair" run
+//     with no mask asset in or out is DEAD at this seat.
 //
 // THE SPINE IS SHARED (the 2026-11-12 unification): every node
 // outside this seat's true deltas is emitted by chainEdit.ts's
 // renderMaskedEditChain. This seat owns: the three required seats,
-// the denoise door, the windowed loader, the inline SAM3 mask, the
-// window's own first frame as the plan anchor, and the partial-
+// the denoise door, the windowed loader, the received static mask,
+// the window's own first frame as the plan anchor, and the partial-
 // denoise pole. The windowed re-slice rides the plan node's derived
 // shots (planFromSource — the window re-slices exactly like the
-// swap's source, which is why the geometry law holds: the SAM3 mask
-// tracks the WINDOW, so window_length must equal one plan clip's
+// swap's source, which is why the geometry law holds: the received
+// mask resizes to the WINDOW's plan geometry, so window_length must equal one plan clip's
 // frames — the loader's cap and the plan's clip_seconds are the one
 // clock).
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
@@ -43,20 +44,17 @@ import type { H3Facts } from './actions.js'
 import { contexMaskedTarget, loadVideo, renderMaskedEditChain, sheetRefSlots } from './chainEdit.js'
 import { assertGridLength } from './timelineContract.js'
 
-/** The SAM3 checkpoint the mask family declares + hash-pins
- * (packages/models/mask/src/index.ts — auto-provisioned; the track
- * card's own SAM3_CKPT constant is the same file). */
-const SAM3_CKPT = 'sam3.1_multiplex_fp16.safetensors'
-
 /** The repair entry's required seats (the reshoot idiom: an armed
- * doc with an empty seat refuses loud naming the seat). Two of the
- * three are text, not staged media — the loop still speaks the one
- * spelling so the refusal names the seat the same way the swap's
- * does. */
+ * doc with an empty seat refuses loud naming the seat). The third
+ * is staged media, not text — P0-2 (defect board row 2, the
+ * operator's contract "repair receives a mask and errors without
+ * one") killed the inline SAM3 manufacture: the mask is RECEIVED as
+ * ONE staged PNG, and the refusal names the seat the same way the
+ * swap's does. */
 const REQUIRED_SEATS = [
   ['source_clip', 'the clip whose region is repaired — ONE staged leaf: the VHS window loader + the core LoadVideo read it by staged name, and the timeline reads it back off the native VIDEO wire'],
   ['repair_prompt', 'the repair action text — what the masked region should become (the R2V prompt seat; agent-composed, user-confirmed)'],
-  ['region_prompt', 'the free-text SAM3 detection target naming the region — "hands", "a person", "a face" are param VALUES, never card kinds (the region-agnostic law)'],
+  ['mask', "ONE staged PNG the repair RECEIVES (the operator's contract, defect board row 2: a repair errors without one) — the track run's pixel-max union is the recommended bridge; the chain resizes it to its own geometry in-graph, prose manufactures nothing"],
 ] as const
 
 const num = (p: Record<string, unknown>, k: string, d: number): number =>
@@ -87,7 +85,7 @@ export function renderH3Repair(
     const v = entry[seat]
     if (typeof v !== 'string' || v.trim() === '') {
       throw new Error(
-        `h3-timeline repair: '${seat}' names no media — ${what}; a repair needs all three seats bound (source_clip, repair_prompt, region_prompt)`,
+        `h3-timeline repair: '${seat}' names no media — ${what}; a repair needs all three seats bound (source_clip, repair_prompt, mask)`,
       )
     }
   }
@@ -122,21 +120,6 @@ export function renderH3Repair(
   // VHS seat, so frames and audio stay in sync) and the inline
   // per-frame SAM3 mask that replaces the swap's staged PNG ──
   const [srcFrames, srcAudio] = loadVideo(g, str(entry, 'source_clip'), Math.round(windowLength), Math.round(windowStart))
-  const scaled = g.node('ImageScaleToMaxDimension', {
-    image: srcFrames, upscale_method: 'area', largest_size: 1008,
-  }).out(0)
-  const sam = g.node('CheckpointLoaderSimple', { ckpt_name: SAM3_CKPT })
-  const regionCond = g.node('CLIPTextEncode', {
-    text: str(entry, 'region_prompt'), clip: sam.out(1),
-  }).out(0)
-  const track = g.node('SAM3_VideoTrack', {
-    images: scaled, model: sam.out(0), conditioning: regionCond,
-    detection_threshold: num(entry, 'detection_threshold', 0.5),
-    max_objects: 0, detect_interval: 1,
-  }).out(0)
-  const regionMasks = g.node('SAM3_TrackToMask', {
-    track_data: track, object_indices: '',
-  }).out(0)
   // picture_1 for the plan head: the window's own first frame. The
   // plan node REQUIRES a picture (its describer vocabulary); the
   // repair's "replacement" is the source's own person, so the
@@ -170,26 +153,19 @@ export function renderH3Repair(
       filename: `${runId}/repair`,
     },
     body: ({ cur, clip, vaeVideo, vaeAudio, mutedChainAudio, sliceAudio, refImages }) => {
-      // ── F7 — THE PER-SCENE MASK SLICE (2026-11-12): whole-clip
-      // parity. The plan head segments the window engine-side (the
-      // swap's own choreography — planFromSource rides the same
-      // seat); the loop drives the scenes; ChainAssemble stitches.
-      // The one wire that never segmented was THE MASK: the tracked
-      // stack (the whole window's timeline) fed every scene whole,
-      // so a multi-scene repair saw rows it did not own (the F7
-      // burn: one oversized shot, the mask leg loop-posture-only).
-      // MiniMaxH3ContexLoopMaskSlice selects the current scene's
-      // interval off the loop state — the tracked mask stack sliced
-      // to each scene's frame range, BEFORE the grow (the
-      // extension's own posture: slice, then Grow Mask). A
-      // single-scene window slices its own whole interval — the
-      // cure is posture-uniform, never a branch. ──
-      const sceneMask = g.node('MiniMaxH3ContexLoopMaskSlice', {
-        state: cur.out(0), mask: regionMasks, source_fps: 24,
-      })
-      const grown = g.node('GrowMaskWithBlur', {
-        mask: sceneMask.out(0), expand: Math.round(num(entry, 'mask_grow', 16)),
-        tapered_corners: true, blur_radius: 0,
+      // ── P0-2 (defect board row 2): the mask is RECEIVED, never
+      // manufactured — the inline SAM3 prose door (and its F7
+      // per-scene slice of a TRACKED stack) died with the contract.
+      // The static arm verbatim (the edit door's own F3-16 cure):
+      // the staged PNG's own shape is the TRACK's shape, not the
+      // chain's — resize to the plan geometry in-graph, never trust
+      // the file. The recommended bridge (the track run's pixel-max
+      // union) arrives already grown; prose manufactures nothing. ──
+      const raw = g.node('LoadImage', { image: str(entry, 'mask') }).out(0)
+      const channel = g.node('ImageToMask', { image: raw, channel: 'red' }).out(0)
+      const editMask = g.node('ImageResize', {
+        image: channel, width: cur.out(8), height: cur.out(9),
+        upscale_method: 'bilinear', keep_proportion: false, crop: 'disabled',
       }).out(0)
       // ── the masked second-pass body: NO still, NO mannequin — the
       // source clip rides its own ref_video seat (the identity
@@ -213,7 +189,7 @@ export function renderH3Repair(
         audio_vae: vaeAudio, source_frames: srcFrames, source_audio: sliceAudio,
       })
       const target = contexMaskedTarget(g, { vaeVideo, vaeAudio }, {
-        frames: slice.out(0), audio: slice.out(1), mask: grown, keepAudio: true,
+        frames: slice.out(0), audio: slice.out(1), mask: editMask, keepAudio: true,
       })
       return { conditioning: r2v.out(0), targetLatent: target }
     },

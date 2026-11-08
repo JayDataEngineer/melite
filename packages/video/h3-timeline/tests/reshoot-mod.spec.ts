@@ -257,7 +257,7 @@ describe("the reshoot kind (the fourth mod bag, official rework)", () => {
   it("an armed legacy name beside reshoot refuses through the ONE door (the alias law)", () => {
     const edges: Array<[string, Record<string, unknown>, RegExp]> = [
       ['replace', { replace: [{ source_clip: 'c.mp4', swap_prompt: 'x' }] }, /Video edit and Reshoot are both armed.*empty the Reshoot arm for a video edit/],
-      ['repair', { repair: [{ source_clip: 'c.mp4', repair_prompt: 'x', region_prompt: 'hands' }] }, /Video edit and Reshoot are both armed.*empty the Reshoot arm for a video edit/],
+      ['repair', { repair: [{ source_clip: 'c.mp4', repair_prompt: 'x', mask: 'masks/hands.png' }] }, /Video edit and Reshoot are both armed.*empty the Reshoot arm for a video edit/],
       ['extend', { extend: [{ source_clip: 'c.mp4', extend_prompt: 'x', extend_seconds: 3.75 }] }, /Video edit and Reshoot are both armed.*empty the Reshoot arm for a video edit/],
     ];
     for (const [name, arm, re] of edges) {

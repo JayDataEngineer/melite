@@ -129,7 +129,7 @@ describe("the Replace name — a preset cell of the one edit bag (the collapse, 
     assert.throws(
       () => compose({
         replace: [REPLACE_ENTRY()],
-        repair: [{ source_clip: "clips/take.mp4", repair_prompt: "clean hands", region_prompt: "hands" }],
+        repair: [{ source_clip: "clips/take.mp4", repair_prompt: "clean hands", mask: "masks/hands.png" }],
       }, "run_replace_pair"),
       /replace and repair are both armed — one door per doc/,
     );
@@ -167,7 +167,7 @@ describe("the Replace name — a preset cell of the one edit bag (the collapse, 
       /the replace arm's 'noise_seed' seat rides no edit dial/,
     );
     assert.throws(
-      () => compose({ repair: [{ source_clip: "clips/a.mp4", repair_prompt: "fix", flavor: "warm" }] }, "run_repair_flavor"),
+      () => compose({ repair: [{ source_clip: "clips/a.mp4", repair_prompt: "fix", mask: "masks/a.png", flavor: "warm" }] }, "run_repair_flavor"),
       /the repair arm's 'flavor' seat rides no edit dial/,
     );
   });

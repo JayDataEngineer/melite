@@ -25,7 +25,7 @@ const FACTS: H3Facts = {
 const REPAIR_ENTRY = (): Record<string, unknown> => ({
   source_clip: "clips/take.mp4",
   repair_prompt: "the same hands, five clean fingers",
-  region_prompt: "hands",
+  mask: "masks/hands_union.png",
 });
 
 type Node = { class_type: string; inputs: Record<string, unknown> };
