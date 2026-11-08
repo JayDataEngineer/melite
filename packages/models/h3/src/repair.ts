@@ -41,7 +41,7 @@
 // clock).
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import type { H3Facts } from './actions.js'
-import { contexMaskedTarget, loadVideo, renderMaskedEditChain, sheetRefSlots } from './chainEdit.js'
+import { contexMaskedTarget, loadVideo, renderMaskedEditChain, resolvePlanTier, sheetRefSlots } from './chainEdit.js'
 import { assertGridLength } from './timelineContract.js'
 
 /** The repair entry's required seats (the reshoot idiom: an armed
@@ -98,7 +98,7 @@ export function renderH3Repair(
   const seed = num(entry, 'seed', 0)
   const steps = num(entry, 'steps', 6)
   const clipSeconds = num(entry, 'clip_seconds', 6)
-  const resolution = str(entry, 'resolution') || '736p'
+  const resolution = resolvePlanTier(entry, p)
   const windowStart = num(entry, 'window_start', 0)
   const windowLength = num(entry, 'window_length', 0)
   // No silent clamps (the no-silent-repair law): a negative window

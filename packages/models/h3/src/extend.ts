@@ -81,7 +81,7 @@ export { solveWindowComposition, type WindowComposition } from './timelineContra
 // the last-frame spelling re-exported from its ONE home (timelineContract —
 // actions.ts reads it there too; the public face keeps this name)
 export { LAST_FRAME_BATCH_INDEX } from './timelineContract.js'
-import { contexMaskedTarget, loadVideo, renderMaskedEditChain, sheetRefSlots } from './chainEdit.js'
+import { contexMaskedTarget, loadVideo, renderMaskedEditChain, resolvePlanTier, sheetRefSlots } from './chainEdit.js'
 
 /** The tail-frame picker's index: the boot census's OWN max for
  * ImageFromBatch.batch_index (16384 today — the wall derives it from
@@ -133,7 +133,7 @@ export function renderH3Extend(
   const seed = num(entry, 'seed', 0)
   const steps = num(entry, 'steps', 6)
   const overlapFrames = num(entry, 'overlap_frames', 39)
-  const resolution = str(entry, 'resolution') || '736p'
+  const resolution = resolvePlanTier(entry, p)
   const statedFrames = Math.round(num(entry, 'extend_seconds', 56 / 24) * 24)
   // THE COMPOSITION DOOR: one window keeps the landed grid law
   // verbatim; beyond it the solver composes N uniform windows and

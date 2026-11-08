@@ -273,3 +273,16 @@ describe("the edit bag's section chips (stage 3: named cells over the ONE schema
       "the served cells are the declared cells, verbatim");
   });
 });
+
+describe("P0-3 — the served resolution field defaults auto (the film's own tier, derived at compose)", () => {
+  it("the edit kind's resolution field: default 'auto', the auto option FIRST (defect board row 3 — an agent never states the source's tier)", () => {
+    const { fields } = editKind();
+    const f = fields.find((x) => x["name"] === "resolution") as Record<string, unknown>;
+    assert.ok(f, "the resolution field serves");
+    assert.equal(f["default"], "auto", "the default derives the film's own pin — never a hardcoded 736p cross-regime join");
+    const options = (f["options"] as Array<Record<string, unknown>>);
+    assert.equal(options[0]!["value"], "auto", "auto is the first choice");
+    assert.ok(String(options[0]!["label"]).includes("film"), "the auto label names what it derives");
+    assert.ok(options.some((o) => o["value"] === "768p" && o["value"] === "768p"), "the explicit tiers still serve for overrides");
+  });
+});

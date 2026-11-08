@@ -1,4 +1,4 @@
-import { contexMaskedTarget, loadVideo, renderMaskedEditChain, sheetRefSlots } from './chainEdit.js';
+import { contexMaskedTarget, loadVideo, renderMaskedEditChain, resolvePlanTier, sheetRefSlots } from './chainEdit.js';
 /** The swap entry's required media + text seats (the reshoot idiom:
  *  an armed doc with an empty seat refuses loud naming the seat). */
 const REQUIRED_SEATS = [
@@ -31,7 +31,7 @@ export function renderH3Swap(entry, p, facts, g, runId) {
     const seed = num(entry, 'seed', 0);
     const steps = num(entry, 'steps', 6);
     const clipSeconds = num(entry, 'clip_seconds', 6);
-    const resolution = str(entry, 'resolution') || '736p';
+    const resolution = resolvePlanTier(entry, p);
     // ── the staged media (the R0 cards' artifacts: the source clip,
     // the still, the track card's mannequin + grown mask) ──
     const [srcFrames, srcAudio] = loadVideo(g, str(entry, 'source_clip'));

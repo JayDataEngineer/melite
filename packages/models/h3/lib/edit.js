@@ -1,4 +1,4 @@
-import { contexMaskedTarget, loadVideo, renderMaskedEditChain, sheetRefSlots } from './chainEdit.js';
+import { contexMaskedTarget, loadVideo, renderMaskedEditChain, resolvePlanTier, sheetRefSlots } from './chainEdit.js';
 import { renderH3ChainUpscale } from './chainUpscale.js';
 import { renderH3Extend } from './extend.js';
 import { REFINE_2X_OOM_FRAMES, REFINE_UPSCALE_MODEL } from './refine.js';
@@ -108,7 +108,7 @@ export function renderH3Edit(entry, mask, reference, p, facts, g, runId) {
             extend_seconds: num(entry, 'extend_seconds', 2.33),
             seed: num(entry, 'seed', 0),
             steps: num(entry, 'steps', 6),
-            resolution: str(entry, 'resolution') || '736p',
+            resolution: resolvePlanTier(entry, p),
             overlap_frames: num(entry, 'overlap_frames', 39),
         }, p, facts, g, runId);
         return;
@@ -234,7 +234,7 @@ export function renderH3Edit(entry, mask, reference, p, facts, g, runId) {
         p, facts,
         clipSeconds: num(entry, 'clip_seconds', 6),
         overlapFrames: num(entry, 'overlap_frames', 39),
-        resolution: str(entry, 'resolution') || '736p',
+        resolution: resolvePlanTier(entry, p),
         seed: num(entry, 'seed', 0),
         steps: num(entry, 'steps', 6),
         roles: '',

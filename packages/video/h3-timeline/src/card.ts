@@ -279,7 +279,8 @@ const EDIT_MOD: DeclaredModifierKind = {
     { name: 'steps', label: 'Plan steps', type: 'number', default: 6, min: 1, max: 30, step: 1, tooltip: 'The chain plan default_steps (reference 6; the sampler steps stay the doc marriage).' },
     { name: 'clip_seconds', label: 'Clip seconds', type: 'number', default: 6, min: 2.5, max: 15, step: 0.1, tooltip: 'The plan clip_seconds (reference 6) — the render budget the window is cut within; the plan node\'s own widget band [2.5, 15] is the law.' },
     { name: 'overlap_frames', label: 'Overlap frames', type: 'number', default: 39, min: 22, max: 56, step: 17, tooltip: 'The plan overlap_frames (reference 39) — the engine combo is exactly [22, 39, 56].' },
-    { name: 'resolution', label: 'Plan resolution', type: 'select', default: '736p', options: [
+    { name: 'resolution', label: 'Plan resolution', type: 'select', default: 'auto', options: [
+      { value: 'auto', label: 'auto — the film\u2019s own tier (derived; never a cross-regime join)' },
       { value: '480p', label: '480p — quick preview' },
       { value: '576p', label: '576p' },
       { value: '736p', label: '736p — reference default' },

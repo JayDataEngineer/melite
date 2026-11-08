@@ -97,7 +97,9 @@ function crossRegimeAdmissionOf(card, params) {
     if (bag === undefined)
         return null;
     const tier = typeof bag[0]['resolution'] === 'string' ? bag[0]['resolution'] : '';
-    if (tier === '')
+    // P0-3: 'auto' derives the film's own pin at compose — shape-true
+    // by construction, nothing to admit
+    if (tier === '' || tier === 'auto')
         return null;
     const width = typeof params['width'] === 'number' ? params['width'] : 1344;
     const height = typeof params['height'] === 'number' ? params['height'] : 768;

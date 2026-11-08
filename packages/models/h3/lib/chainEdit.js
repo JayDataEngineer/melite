@@ -92,6 +92,43 @@ export const planTierShape = (width, height, shortEdge) => {
         height: Math.max(32, Math.round(height * scale / 32) * 32),
     };
 };
+/** P0-3 (defect board row 3, the operator's law: "default the
+ * plan tier to the source clip's own geometry. An agent should
+ * never know the source's tier") — THE TIER-FROM-CLIP PIN: the tier
+ * whose short edge equals the film regime's own short edge
+ * (768p for 1344×768 — the shape-true join), or when no tier
+ * spells it, the NEAREST rung by absolute delta (a tie takes the
+ * smaller edge — never an upscale by default); the admission then
+ * names the short_edge counsel for the residual mismatch.
+ * @param filmWidth the film regime's width (the doc knob)
+ * @param filmHeight the film regime's height (the doc knob)
+ * @returns the tier label the plan node takes */
+export const planTierPinOf = (filmWidth, filmHeight) => {
+    const filmShort = Math.min(filmWidth, filmHeight);
+    const exact = Object.entries(RESOLUTION_SHORT_EDGE).find(([, e]) => e === filmShort)?.[0];
+    if (exact !== undefined)
+        return exact;
+    return Object.keys(RESOLUTION_SHORT_EDGE).reduce((best, k) => {
+        const d = Math.abs(RESOLUTION_SHORT_EDGE[k] - filmShort);
+        const bd = Math.abs(RESOLUTION_SHORT_EDGE[best] - filmShort);
+        return d < bd || (d === bd && RESOLUTION_SHORT_EDGE[k] < RESOLUTION_SHORT_EDGE[best]) ? k : best;
+    }, '736p');
+};
+/** P0-3 — the entry's stated tier VERBATIM, else the film's own
+ * pin: 'auto' (the form's derived default) and absence both derive.
+ * The agent never states a tier unless they mean to override the
+ * film's own geometry.
+ * @param entry the cell's bound entry (resolution seat)
+ * @param p the walked doc params (the film regime's width/height)
+ * @returns the tier label the plan node takes */
+export const resolvePlanTier = (entry, p) => {
+    const stated = typeof entry['resolution'] === 'string' ? entry['resolution'] : '';
+    if (stated !== '' && stated !== 'auto')
+        return stated;
+    const w = typeof p['width'] === 'number' ? p['width'] : 1344;
+    const h = typeof p['height'] === 'number' ? p['height'] : 768;
+    return planTierPinOf(w, h);
+};
 /** THE CROSS-REGIME JOIN ADMISSION: given the film regime's shape
  * (the doc's width/height — the shape this estate's film arm
  * renders and the join appends onto) and the mod bag's tier, answer

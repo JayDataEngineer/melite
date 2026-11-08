@@ -10,7 +10,7 @@
 // render.
 import { describe, expect, it } from 'vitest'
 import {
-  RESOLUTION_SHORT_EDGE, planTierShape, admitCrossRegimeJoin,
+  RESOLUTION_SHORT_EDGE, planTierShape, admitCrossRegimeJoin, planTierPinOf, resolvePlanTier,
 } from '../src/chainEdit.js'
 
 // the FILM regime's declared shape (schema.ts width/height defaults)
@@ -86,5 +86,40 @@ describe('F18 — the cross-regime join admission', () => {
     const text = admitCrossRegimeJoin(768, 1344, '736p')
     expect(text).toBeTruthy()
     expect(text!).toContain("tier '736p' renders 736×1280")
+  })
+})
+
+describe('P0-3 — the tier-from-clip pin (defect board row 3: "an agent should never know the source\'s tier")', () => {
+  it('the film regime\'s own shape pins its exact tier: 1344×768 → 768p (the shape-true join)', () => {
+    expect(planTierPinOf(1344, 768)).toBe('768p')
+  })
+
+  it('portrait pins by the SHORT edge: 768×1344 → 768p', () => {
+    expect(planTierPinOf(768, 1344)).toBe('768p')
+  })
+
+  it('every spelled short edge pins its own tier', () => {
+    expect(planTierPinOf(854, 480)).toBe('480p')
+    expect(planTierPinOf(1024, 576)).toBe('576p')
+    expect(planTierPinOf(1312, 736)).toBe('736p')
+    expect(planTierPinOf(1920, 1080)).toBe('1080p')
+  })
+
+  it('an unspelled short edge takes the NEAREST rung (tie → the smaller, never an upscale by default)', () => {
+    // 544: |544-576|=32 < |544-480|=64 → 576p
+    expect(planTierPinOf(960, 544)).toBe('576p')
+    // 508: |508-480|=28 < |508-576|=68 → 480p
+    expect(planTierPinOf(896, 508)).toBe('480p')
+    // a dead tie 528: 480 and 576 both 48 away → the smaller (480p)
+    expect(planTierPinOf(960, 528)).toBe('480p')
+  })
+
+  it('resolvePlanTier: absence and auto both DERIVE the pin; a stated tier rides VERBATIM (the override the admission still judges)', () => {
+    const p = { width: 1344, height: 768 }
+    expect(resolvePlanTier({}, p)).toBe('768p', 'absence derives')
+    expect(resolvePlanTier({ resolution: '' }, p)).toBe('768p', 'empty derives')
+    expect(resolvePlanTier({ resolution: 'auto' }, p)).toBe('768p', 'auto derives')
+    expect(resolvePlanTier({ resolution: '736p' }, p)).toBe('736p', 'a stated override stays verbatim — the admission owns its warning')
+    expect(resolvePlanTier({}, {})).toBe('768p', 'no doc geometry → the schema-declared film defaults pin')
   })
 })

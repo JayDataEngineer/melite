@@ -99,7 +99,9 @@ function crossRegimeAdmissionOf(card: string, params: Record<string, unknown>): 
       Array.isArray(v) && v.length > 0 && typeof v[0] === 'object' && v[0] !== null)
   if (bag === undefined) return null
   const tier = typeof bag[0]['resolution'] === 'string' ? bag[0]['resolution'] as string : ''
-  if (tier === '') return null
+  // P0-3: 'auto' derives the film's own pin at compose — shape-true
+  // by construction, nothing to admit
+  if (tier === '' || tier === 'auto') return null
   const width = typeof params['width'] === 'number' ? params['width'] as number : 1344
   const height = typeof params['height'] === 'number' ? params['height'] as number : 768
   return admitCrossRegimeJoin(width, height, tier)
