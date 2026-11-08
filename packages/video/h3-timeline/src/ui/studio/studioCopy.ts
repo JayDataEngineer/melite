@@ -222,6 +222,11 @@ export const studioCopy = {
    *  no legal frame (the 22f base / 17f step windows): the grid's
    *  shortest halves don't fit — the shared laneErr slot's voice. */
   splitRefusal: "this window is too short to split — its shortest legal halves don't fit; lengthen it first",
+  /** (queue 11 part 2, the empty doc under v2v) the face's own
+   * refusal: the only verb is cutting and there is no window to cut —
+   * the stock append is an ADD the face bars (the operator: "This
+   * section would no longer allow people to add clips"). */
+  splitEmptyRefusal: "nothing to cut — the video-to-video face adds no clips; a cut needs an existing clip",
   /** (C6, the imageless pin) a PENDING pin's chip faces — the
    *  double-click authors the frame first; the image rides only
    *  through the picker doors. Until it does, the chip NAMES its
@@ -333,6 +338,27 @@ export const studioCopy = {
   addCutDoor: "Add cut",
   /** The cut door's tip. */
   addCutDoorTip: "Cut the window at the playhead into two (cut seam)",
+  /** ── THE TIMESTAMP SPLIT SEAT (queue 11's second block, operator
+   *  2026-11-08: "the video2video form that would allow clips to
+   *  split by timestamp. I.e. split at 2 seconds, with the option
+   *  to select how context is carried.") — the seconds input + the
+   *  carry-mode menu beside the Add cut door. */
+  /** The timestamp input's label. */
+  splitAtLabel: "Split at (seconds)",
+  /** The timestamp input's tip. */
+  splitAtTip: "State a timestamp — the cut lands at that second instead of the playhead",
+  /** The timestamp input's placeholder. */
+  splitAtPlaceholder: "at sec",
+  /** The carry-mode menu's label. */
+  splitCarryLabel: "Context carry across the split",
+  /** The carry-mode menu's tip. */
+  splitCarryTip: "How context carries across the new seam",
+  /** The carry menu's stock row (no carry — the split's default). */
+  splitCarryStock: "Stock — no carry",
+  /** The carry menu's carry row. */
+  splitCarryCarry: "Carry — 22-frame overlap",
+  /** The carry menu's carry+keyframe row. */
+  splitCarryKeyframe: "Carry + keyframe",
   /** The prose doors' refusal under the v2v face: the edit composes
    *  from the mod's own prompt seat — the lane's TEXT is not read
    *  (its windows and cuts are). */

@@ -617,6 +617,11 @@ window.__ModuleLoader__.load({
 			*  no legal frame (the 22f base / 17f step windows): the grid's
 			*  shortest halves don't fit — the shared laneErr slot's voice. */
 			splitRefusal: "this window is too short to split — its shortest legal halves don't fit; lengthen it first",
+			/** (queue 11 part 2, the empty doc under v2v) the face's own
+			* refusal: the only verb is cutting and there is no window to cut —
+			* the stock append is an ADD the face bars (the operator: "This
+			* section would no longer allow people to add clips"). */
+			splitEmptyRefusal: "nothing to cut — the video-to-video face adds no clips; a cut needs an existing clip",
 			/** (C6, the imageless pin) a PENDING pin's chip faces — the
 			*  double-click authors the frame first; the image rides only
 			*  through the picker doors. Until it does, the chip NAMES its
@@ -721,6 +726,27 @@ window.__ModuleLoader__.load({
 			addCutDoor: "Add cut",
 			/** The cut door's tip. */
 			addCutDoorTip: "Cut the window at the playhead into two (cut seam)",
+			/** ── THE TIMESTAMP SPLIT SEAT (queue 11's second block, operator
+			*  2026-11-08: "the video2video form that would allow clips to
+			*  split by timestamp. I.e. split at 2 seconds, with the option
+			*  to select how context is carried.") — the seconds input + the
+			*  carry-mode menu beside the Add cut door. */
+			/** The timestamp input's label. */
+			splitAtLabel: "Split at (seconds)",
+			/** The timestamp input's tip. */
+			splitAtTip: "State a timestamp — the cut lands at that second instead of the playhead",
+			/** The timestamp input's placeholder. */
+			splitAtPlaceholder: "at sec",
+			/** The carry-mode menu's label. */
+			splitCarryLabel: "Context carry across the split",
+			/** The carry-mode menu's tip. */
+			splitCarryTip: "How context carries across the new seam",
+			/** The carry menu's stock row (no carry — the split's default). */
+			splitCarryStock: "Stock — no carry",
+			/** The carry menu's carry row. */
+			splitCarryCarry: "Carry — 22-frame overlap",
+			/** The carry menu's carry+keyframe row. */
+			splitCarryKeyframe: "Carry + keyframe",
 			/** The prose doors' refusal under the v2v face: the edit composes
 			*  from the mod's own prompt seat — the lane's TEXT is not read
 			*  (its windows and cuts are). */
@@ -5251,13 +5277,31 @@ window.__ModuleLoader__.load({
 				if (callsFace.face !== "v2v") return;
 				setLaneErr(studioCopy.callsV2vProseHint);
 			};
-			const addCutAtPlayhead = () => {
-				const at = docFromFilm(frameIdx);
-				const interior = calls.find((c) => at > c.start_frame && at < c.end_frame);
-				const target = interior !== void 0 ? void 0 : calls.find((c) => at === c.start_frame) ?? calls[calls.length - 1];
-				const cutFrame = interior !== void 0 ? at : target !== void 0 ? Math.round((target.start_frame + target.end_frame) / 2) : at;
+			const [splitAtSec, setSplitAtSec] = (0, react.useState)("");
+			const [splitCarry, setSplitCarry] = (0, react.useState)("cut");
+			const [carryMenuOpen, setCarryMenuOpen] = (0, react.useState)(false);
+			const cutWithCarry = (frame, onRefuse) => {
 				setLaneErr(null);
-				addCallAt(cutFrame, () => setLaneErr(studioCopy.splitRefusal));
+				addCallAt(frame, onRefuse);
+				const containingIdx = calls.findIndex((c) => frame > c.start_frame && frame < c.end_frame);
+				if (containingIdx >= 0 && snapSplitFrame(calls[containingIdx].start_frame, calls[containingIdx].end_frame, isCarriedShape(containingIdx, calls[containingIdx]), true, frame) !== null && splitCarry !== "cut") setCallTransition(containingIdx + 1, splitCarry);
+			};
+			const addCutAtPlayhead = () => {
+				if (calls.length === 0) {
+					setLaneErr(studioCopy.splitEmptyRefusal);
+					return;
+				}
+				const stated = Number(splitAtSec);
+				const atStated = splitAtSec.trim() !== "" && Number.isFinite(stated) && stated >= 0 ? Math.round(stated * (filmMap?.fps ?? fps)) : null;
+				const at = atStated !== null ? atStated : docFromFilm(frameIdx);
+				const interior = calls.find((c) => at > c.start_frame && at < c.end_frame);
+				let cutFrame;
+				if (interior !== void 0) cutFrame = at;
+				else {
+					const target = calls.find((c) => at === c.start_frame) ?? calls[calls.length - 1];
+					cutFrame = Math.round((target.start_frame + target.end_frame) / 2);
+				}
+				cutWithCarry(cutFrame, () => setLaneErr(studioCopy.splitRefusal));
 			};
 			const barFps = filmMap?.fps ?? fps;
 			const barSeconds = (barTotal / barFps).toFixed(2);
@@ -5271,16 +5315,74 @@ window.__ModuleLoader__.load({
 				}),
 				hint: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
 					studioCopy.stripHint,
-					callsFace.face === "v2v" && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-						variant: "ghost",
-						size: "sm",
-						"data-testid": "tl-add-cut",
-						"aria-label": studioCopy.addCutDoor,
-						title: studioCopy.addCutDoorTip,
-						className: studio_module_css_default.uploadBtn,
-						onClick: addCutAtPlayhead,
-						children: studioCopy.addCutDoor
-					}),
+					callsFace.face === "v2v" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+							type: "number",
+							min: 0,
+							step: .1,
+							"data-testid": "tl-split-at",
+							"aria-label": studioCopy.splitAtLabel,
+							title: studioCopy.splitAtTip,
+							className: studio_module_css_default.uploadBtn,
+							placeholder: studioCopy.splitAtPlaceholder,
+							value: splitAtSec,
+							onInput: (e) => {
+								setSplitAtSec(e.target.value);
+							},
+							onChange: (e) => {
+								setSplitAtSec(e.target.value);
+							}
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Menu, {
+							open: carryMenuOpen,
+							onClose: () => {
+								setCarryMenuOpen(false);
+							},
+							compact: true,
+							portal: true,
+							items: [
+								{
+									id: "cut",
+									label: studioCopy.splitCarryStock
+								},
+								{
+									id: "extend",
+									label: studioCopy.splitCarryCarry
+								},
+								{
+									id: "carry+keyframe",
+									label: studioCopy.splitCarryKeyframe
+								}
+							],
+							selectedId: splitCarry,
+							onSelect: (id) => {
+								setCarryMenuOpen(false);
+								setSplitCarry(id);
+							},
+							anchor: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+								variant: "outline",
+								size: "sm",
+								"data-testid": "tl-split-carry",
+								"aria-label": studioCopy.splitCarryLabel,
+								title: studioCopy.splitCarryTip,
+								className: studio_module_css_default.uploadBtn,
+								onClick: () => {
+									setCarryMenuOpen(!carryMenuOpen);
+								},
+								children: splitCarry === "cut" ? studioCopy.splitCarryStock : splitCarry === "extend" ? studioCopy.splitCarryCarry : studioCopy.splitCarryKeyframe
+							})
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+							variant: "ghost",
+							size: "sm",
+							"data-testid": "tl-add-cut",
+							"aria-label": studioCopy.addCutDoor,
+							title: studioCopy.addCutDoorTip,
+							className: studio_module_css_default.uploadBtn,
+							onClick: addCutAtPlayhead,
+							children: studioCopy.addCutDoor
+						})
+					] }),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 						variant: "ghost",
 						size: "sm",
@@ -5338,7 +5440,7 @@ window.__ModuleLoader__.load({
 						laneHint: studioCopy.keyframeLaneHint,
 						emptyPromptsHint: callsFace.face === "dormant" ? studioCopy.callsDormantHint(callsFace.kind) : callsFace.face === "v2v" ? studioCopy.callsV2vHint : callsFace.face === "prompt" ? studioCopy.callsPromptSeatHint(callsFace.kind) : studioCopy.stripEmptyPromptsHint,
 						promptsHeight: 64,
-						onPromptAdd: callsFace.face === "dormant" ? void 0 : (frame) => addCallAt(docFromFilm(frame)),
+						onPromptAdd: callsFace.face === "dormant" || callsFace.face === "v2v" ? void 0 : (frame) => addCallAt(docFromFilm(frame)),
 						onSeamToggle: callsFace.face === "dormant" ? void 0 : (id) => {
 							const idx = barPrompts.findIndex((p) => p.uuid === id);
 							/* v8 ignore else -- the idx < 0 skip is a type fence: the kit renders a seam chip only for rows of the prompts array it was handed, and the chip arms only where shownPrompts is the unfiltered barPrompts (the dormant face's filter carries no chip — onSeamToggle is undefined there), so every uuid through this door is a barPrompts row; a face that filters prompts while keeping the chip armed would re-arm it */
@@ -5350,9 +5452,7 @@ window.__ModuleLoader__.load({
 							if (idx < 0) return;
 							const call = calls[idx];
 							if (call === void 0) return;
-							const mid = Math.round((call.start_frame + call.end_frame) / 2);
-							setLaneErr(null);
-							addCallAt(mid, () => setLaneErr(studioCopy.splitRefusal));
+							cutWithCarry(Math.round((call.start_frame + call.end_frame) / 2), () => setLaneErr(studioCopy.splitRefusal));
 						},
 						previews: callPreviews,
 						selectedId: selectedBarId,

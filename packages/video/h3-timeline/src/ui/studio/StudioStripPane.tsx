@@ -9,7 +9,7 @@
  * DOOR in its header: one button, the rail swaps to the editor.
  */
 import { useRef, useState } from "react"
-import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
+import { Button, Input, Menu } from "@deepseek-ai/dsh-client-ui-primitives"
 import { MotionTimelineBar } from "@melite-plugin/timeline/ui/timeline"
 import type { TimelineKeyframe, TimelinePrompt } from "@melite-plugin/timeline/ui/timeline"
 import { useSquareProvider, readAsDataURL, fetchMediaLibrary, PaneHeader, PaneShell } from '@melite/card-base/client'
@@ -21,7 +21,7 @@ import type { DocCall, DocKeyframe, LayerA, SetLayerAKey } from "./docModel.ts"
 import type { DocCommission } from "./commissions.ts"
 import { callsLaneFace, isStarterCallText, windowSpans } from "./commissions.ts"
 import type { CommissionRow } from "@melite-plugin/timeline/ui/timeline"
-import { pinDropVerdict } from "./docGrid.ts"
+import { isCarriedShape, pinDropVerdict, snapSplitFrame } from "./docGrid.ts"
 import { studioCopy } from "./studioCopy.ts"
 
 /** Pinned strip: the bar IS the document (monolith lines 4078–4162).
@@ -377,6 +377,16 @@ export function StudioStripPane({
     if (callsFace.face !== 'v2v') return
     setLaneErr(studioCopy.callsV2vProseHint)
   }
+  // (THE V2V FACE, queue 11's SECOND BLOCK) the TIMESTAMP SPLIT SEAT:
+  // the operator's law — "the video2video form that would allow clips
+  // to split by timestamp. I.e. split at 2 seconds, with the option
+  // to select how context is carried." The seat rides the strip head
+  // beside the Add cut button: a seconds input + the carry-mode menu
+  // (stock / carry / carry+keyframe — the §0.9 states as the split's
+  // own option, the same three the call card's seam seat serves).
+  const [splitAtSec, setSplitAtSec] = useState("")
+  const [splitCarry, setSplitCarry] = useState<"cut" | "extend" | "carry+keyframe">("cut")
+  const [carryMenuOpen, setCarryMenuOpen] = useState(false)
   // (THE V2V FACE, queue 11) the strip's own visible cut door — the
   // operator's law: "THE ABILITY TO ADD CUTS" is a CONTROL on the
   // face, never a hidden gesture. THE PRESS ALWAYS CUTS (the visual
@@ -390,17 +400,57 @@ export function StudioStripPane({
   // write rides §0.5's split law (one window becomes its own two
   // halves, the seam states CUT); a window at its shape's floor
   // refuses LOUD in the shared slot.
-  const addCutAtPlayhead = () => {
-    const at = docFromFilm(frameIdx)
-    const interior = calls.find((c) => at > c.start_frame && at < c.end_frame)
-    const target = interior !== undefined
-      ? undefined
-      : calls.find((c) => at === c.start_frame) ?? calls[calls.length - 1]
-    const cutFrame = interior !== undefined ? at
-      : target !== undefined ? Math.round((target.start_frame + target.end_frame) / 2)
-        : at
+  // THE TIMESTAMP OVERRIDE (queue 11's second block): when the
+  // operator states a timestamp, the cut lands AT that second — the
+  // same resolution law, the stated frame instead of the playhead.
+  // THE CARRY (queue 11's second block): when a carry mode beyond
+  // stock is selected, the new seam re-frames to that mode through
+  // setCallTransition — the §0.9 verb, the same reframe the call
+  // card's seam seat owns. The right half lands at the containing
+  // window's index + 1 (addCallAt's split inserts there); both writes
+  // are functional updaters on the same state, so the reframe sees
+  // the post-split array. The reframe fires ONLY when the split will
+  // land (snapSplitFrame non-null — the same predictor addCallAt
+  // decides by): a refused split leaves the doc whole, and a reframe
+  // against the un-split array would hit the WRONG window. This one
+  // verb serves BOTH cut doors — the strip head's door and the
+  // per-window divide seat (the operator: "allow people to cut in
+  // the middle to split the clips into context carry").
+  const cutWithCarry = (frame: number, onRefuse?: () => void) => {
+    // (the empty doc refuses at the DOOR, before frame resolution —
+    // both callers fence: the door guards calls.length, the divide
+    // guards calls[idx]; this verb only ever sees a windowed doc)
     setLaneErr(null)
-    addCallAt(cutFrame, () => setLaneErr(studioCopy.splitRefusal))
+    addCallAt(frame, onRefuse)
+    const containingIdx = calls.findIndex((c) => frame > c.start_frame && frame < c.end_frame)
+    const willSplit = containingIdx >= 0 && snapSplitFrame(
+      calls[containingIdx]!.start_frame, calls[containingIdx]!.end_frame,
+      isCarriedShape(containingIdx, calls[containingIdx]!), true, frame,
+    ) !== null
+    if (willSplit && splitCarry !== "cut") setCallTransition(containingIdx + 1, splitCarry)
+  }
+  const addCutAtPlayhead = () => {
+    // THE EMPTY DOC REFUSES (the v2v law's own edge): under the face
+    // the ONLY verb is cutting — with no window to cut there is
+    // nothing to add, and the raw append the stock verb falls to is
+    // an ADD the face bars. The refusal rides the shared loud slot.
+    if (calls.length === 0) { setLaneErr(studioCopy.splitEmptyRefusal); return }
+    const stated = Number(splitAtSec)
+    const atStated = splitAtSec.trim() !== "" && Number.isFinite(stated) && stated >= 0
+      ? Math.round(stated * (filmMap?.fps ?? fps))
+      : null
+    const at = atStated !== null ? atStated : docFromFilm(frameIdx)
+    const interior = calls.find((c) => at > c.start_frame && at < c.end_frame)
+    // (the empty-doc guard above holds: the fallback window exists,
+    // and the if-shape lets the narrowing prove it)
+    let cutFrame: number
+    if (interior !== undefined) {
+      cutFrame = at
+    } else {
+      const target = calls.find((c) => at === c.start_frame) ?? calls[calls.length - 1]!
+      cutFrame = Math.round((target.start_frame + target.end_frame) / 2)
+    }
+    cutWithCarry(cutFrame, () => setLaneErr(studioCopy.splitRefusal))
   }
   // (D3, operator 2026-11-06: "calls bar only goes to 5.5s vs film
   // 'Final cut 9.06s · frame 145/162'") — the meta line rides the
@@ -420,21 +470,68 @@ export function StudioStripPane({
       hint={
         <>
           {studioCopy.stripHint}
-          {/* (THE V2V FACE, queue 11) the strip head's visible ADD CUT
-              door — rendered ONLY under the armed edit bag (the
-              operator's law: adding the video-to-video mod changes
-              this section FOR THE VIDEO TO VIDEO AND CUTS). Same dsh
-              Button grammar as the keyframes door beside it. */}
+          {/* (THE V2V FACE, queue 11's SECOND BLOCK) the TIMESTAMP
+              SPLIT SEAT — the operator's law: "the video2video form
+              that would allow clips to split by timestamp. I.e. split
+              at 2 seconds, with the option to select how context is
+              carried." The seat rides the strip head beside the Add
+              cut door: a seconds input + the carry-mode menu. A
+              stated timestamp overrides the playhead; the carry mode
+              re-frames the new seam (stock = the split's default). */}
           {callsFace.face === "v2v" && (
-            <Button variant="ghost" size="sm"
-              data-testid="tl-add-cut"
-              aria-label={studioCopy.addCutDoor}
-              title={studioCopy.addCutDoorTip}
-              className={s.uploadBtn}
-              onClick={addCutAtPlayhead}
-            >
-              {studioCopy.addCutDoor}
-            </Button>
+            <>
+              <Input
+                type="number"
+                min={0}
+                step={0.1}
+                data-testid="tl-split-at"
+                aria-label={studioCopy.splitAtLabel}
+                title={studioCopy.splitAtTip}
+                className={s.uploadBtn}
+                placeholder={studioCopy.splitAtPlaceholder}
+                value={splitAtSec}
+                onInput={(e: unknown) => { setSplitAtSec((e as { target: { value: string } }).target.value) }}
+                onChange={(e: unknown) => { setSplitAtSec((e as { target: { value: string } }).target.value) }}
+              />
+              <Menu
+                open={carryMenuOpen}
+                onClose={() => { setCarryMenuOpen(false) }}
+                compact
+                portal
+                items={[
+                  { id: "cut", label: studioCopy.splitCarryStock },
+                  { id: "extend", label: studioCopy.splitCarryCarry },
+                  { id: "carry+keyframe", label: studioCopy.splitCarryKeyframe },
+                ]}
+                selectedId={splitCarry}
+                onSelect={(id: string) => {
+                  setCarryMenuOpen(false)
+                  setSplitCarry(id as "cut" | "extend" | "carry+keyframe")
+                }}
+                anchor={
+                  <Button variant="outline" size="sm"
+                    data-testid="tl-split-carry"
+                    aria-label={studioCopy.splitCarryLabel}
+                    title={studioCopy.splitCarryTip}
+                    className={s.uploadBtn}
+                    onClick={() => { setCarryMenuOpen(!carryMenuOpen) }}
+                  >
+                    {splitCarry === "cut" ? studioCopy.splitCarryStock
+                      : splitCarry === "extend" ? studioCopy.splitCarryCarry
+                        : studioCopy.splitCarryKeyframe}
+                  </Button>
+                }
+              />
+              <Button variant="ghost" size="sm"
+                data-testid="tl-add-cut"
+                aria-label={studioCopy.addCutDoor}
+                title={studioCopy.addCutDoorTip}
+                className={s.uploadBtn}
+                onClick={addCutAtPlayhead}
+              >
+                {studioCopy.addCutDoor}
+              </Button>
+            </>
           )}
           {/* THE SUBVIEW DOOR (defect B): the strip head's one
               keyframes verb — the rail swaps to the standalone
@@ -547,11 +644,15 @@ export function StudioStripPane({
       // the double-click add stands down — a new call authored into the
       // dormant lane is dead text the armed run will never read. The
       // plain and prompt faces keep the add door (the film's authoring
-      // surface / the run's prompt seat). (THE V2V FACE, queue 11) the
-      // edit bag keeps the add LIVE — a double-click at a frame IS a
-      // cut on the video-to-video face (the ADD CUT button above rides
-      // this same verb at the playhead).
-      onPromptAdd={callsFace.face === "dormant" ? undefined : (frame) => addCallAt(docFromFilm(frame))}
+      // surface / the run's prompt seat). (THE V2V FACE, queue 11's
+      // SECOND BLOCK, operator: "This section would no longer allow
+      // people to add clips, as it would become the shape of the video
+      // to video") the add DIES under v2v exactly as it dies under
+      // dormant — the section is the video-to-video shape, cutting is
+      // the only verb that grows windows.
+      onPromptAdd={callsFace.face === "dormant" || callsFace.face === "v2v"
+        ? undefined
+        : (frame) => addCallAt(docFromFilm(frame))}
       // THE SEAM CHIP (the collapse's cuts): the kit hands the tenant
       // the row's uuid ONLY; the write resolves it to its call and
       // lands on the doc (setCallTransition — the judged channel).
@@ -589,9 +690,15 @@ export function StudioStripPane({
               if (idx < 0) return
               const call = calls[idx]
               if (call === undefined) return
-              const mid = Math.round((call.start_frame + call.end_frame) / 2)
-              setLaneErr(null)
-              addCallAt(mid, () => setLaneErr(studioCopy.splitRefusal))
+              // THE DIVIDE RIDES THE CARRY (queue 11's second block):
+              // "cut in the middle to split the clips into context
+              // carry" — the per-window divide is the same cut verb
+              // as the strip head's door, so the selected carry mode
+              // frames its seam too.
+              cutWithCarry(
+                Math.round((call.start_frame + call.end_frame) / 2),
+                () => setLaneErr(studioCopy.splitRefusal),
+              )
             }
       }
       previews={callPreviews}

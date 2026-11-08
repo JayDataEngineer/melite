@@ -92,7 +92,7 @@ describe("SOURCE — the copy dictionary owns the static faces", () => {
     }
   })
 
-  it("CENSUS — the dictionary is non-empty, every entry consumed, count pinned at 99", () => {
+  it("CENSUS — the dictionary is non-empty, every entry consumed, count pinned at 120", () => {
     // THE CENSUS (the 2026-11-02 docs-plane finding H5): a
     // dictionary nobody reads is a locale theater — every entry
     // must be consumed by at least one presentation seat (a dead
@@ -175,7 +175,21 @@ describe("SOURCE — the copy dictionary owns the static faces", () => {
     // visible ADD CUT door); the face's two long wordings
     // (callsV2vHint, callsV2vProseHint) ride as multi-line string
     // values, outside this single-line count by construction.
-    assert.equal(ids.length, 111, `the dictionary holds 111 copy ids (found ${ids.length}) — re-pin this wall when copy is added or removed`)
+    // RE-PIN 2026-11-08 (machine clock, queue 11 part 3 — the
+    // timestamp split seat): 111 → 119. +8 single-line flat ids =
+    // splitAtLabel + splitAtTip + splitAtPlaceholder (the seconds
+    // input's aria/title/placeholder) + splitCarryLabel +
+    // splitCarryTip + splitCarryStock + splitCarryCarry +
+    // splitCarryKeyframe (the carry menu's anchor + its three mode
+    // rows) — the v2v form's split-by-timestamp seat, the operator's
+    // "split at 2 seconds, with the option to select how context is
+    // carried."
+    // RE-PIN 2026-11-08 (machine clock, queue 11 part 2 — the empty
+    // doc's own voice): 119 → 120. +1 flat id = splitEmptyRefusal
+    // (the v2v press with zero windows — "This section would no
+    // longer allow people to add clips" needed its own words; the
+    // too-short splitRefusal would lie about an empty doc).
+    assert.equal(ids.length, 120, `the dictionary holds 120 copy ids (found ${ids.length}) — re-pin this wall when copy is added or removed`)
     // RE-PIN 2026-10-16 (the square-grammar residue): 102 → 101.
     // removePack died with the strip Button (187eaf607 deleted the
     // verb; SourceRow's onEdit("") owns the detach) — a fossil id

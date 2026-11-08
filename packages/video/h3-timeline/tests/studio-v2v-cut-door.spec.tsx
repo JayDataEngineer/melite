@@ -18,11 +18,22 @@
  * - THE FRESH-TIMELINE DISCOVERABILITY — one long clip + the mod:
  *   the door is visible with no gesture (the one-long-clip violation
  *   is the burn this row cures).
- * - THE DOORS — under v2v every GEOMETRY door is live (seam chip,
- *   split seat, the double-click add); only the prose goes quiet.
+ * - THE DOORS — under v2v the geometry doors live (seam chip, divide
+ *   seat) and THE ADD IS DEAD (the operator's second block: "This
+ *   section would no longer allow people to add clips"); only the
+ *   prose goes quiet.
  * - THE JOURNEY — the real studio: the press lands a two-window doc,
  *   the second half transition "cut" (§0.5's split law, ridden
  *   through the strip's own button).
+ * - THE EMPTY DOC REFUSES — under v2v with zero windows the press
+ *   refuses LOUD (the only verb is cutting; the stock append is an
+ *   ADD the face bars).
+ * - THE DIVIDE RIDES THE CARRY — the per-window divide ("cut in the
+ *   middle to split the clips into context carry") routes the same
+ *   carry-riding verb as the strip head's door.
+ * - THE TIMESTAMP SPLIT + CARRY — the form states 2 seconds + carry:
+ *   the split lands at that timestamp (snapped to the authoring
+ *   lattice) with the selected seam.
  */
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from "vitest"
@@ -184,7 +195,66 @@ describe("THE VIDEO-TO-VIDEO AND CUTS FACE (queue 11 — the cut door)", () => {
     els.unmount()
   })
 
-  it("THE DOORS — under v2v every geometry door is live; only the prose goes quiet", async () => {
+  it("THE EMPTY DOC REFUSES — under v2v with zero windows the press refuses LOUD; no verb fires", () => {
+    const { els, rec } = strip({
+      calls: [] as never,
+      barPrompts: [] as never,
+      barTotal: 0,
+      frameIdx: 0,
+    })
+    fireEvent.click(els.container.querySelector('[data-testid="tl-add-cut"]')!)
+    assert.equal(rec.addCall.length, 0,
+      "no verb fires — under v2v the stock append is an ADD the face bars")
+    assert.ok(els.container.textContent?.includes(studioCopy.splitEmptyRefusal),
+      "the face's own refusal speaks in the shared laneErr slot")
+    els.unmount()
+  })
+
+  it("THE DIVIDE RIDES THE CARRY — the per-window divide ('cut in the middle') routes the same carry-riding verb; the menu's third row + outside dismiss serve", async () => {
+    // ONE long window on the authoring lattice: 107 = 22+17·5 (a
+    // legal cut shape — the mock strip passes calls raw, no hydrate
+    // snap; an off-lattice span like 110 has NO legal split frame
+    // and refuses). The divide cuts its midpoint (round(107/2) = 54).
+    const span107 = { ...P1, end_frame: 107 }
+    const { els, rec } = strip({
+      calls: [{ text: "a", start_frame: 0, end_frame: 107 }] as never,
+      barPrompts: [span107] as never,
+      barTotal: 107,
+      frameIdx: 10,
+    })
+    // select the CARRY+KEYFRAME mode first (the menu's third row —
+    // the divide's seam rides whatever mode the face states)
+    fireEvent.click(els.container.querySelector('[data-testid="tl-split-carry"]')!)
+    const keyframeRow = (await screen.findAllByRole("menuitem"))
+      .find((n) => n.textContent?.toLowerCase().includes("keyframe"))
+    assert.ok(keyframeRow, "the Carry + keyframe row serves in the menu")
+    fireEvent.click(keyframeRow)
+    // the anchor names the selected mode (the third spelling renders)
+    assert.ok(els.container.textContent?.includes(studioCopy.splitCarryKeyframe),
+      "the carry anchor names the selected keyframe mode")
+    // the menu dismisses on an OUTSIDE press (no selection, no leak)
+    fireEvent.click(els.container.querySelector('[data-testid="tl-split-carry"]')!)
+    assert.ok((await screen.findAllByRole("menuitem")).length > 0, "the menu reopens")
+    fireEvent.pointerDown(screen.getByTestId("motion-timeline-ruler"))
+    await waitFor(() => {
+      assert.equal(screen.queryAllByRole("menuitem").length, 0,
+        "an outside press dismisses the carry menu")
+    })
+    // THE DIVIDE: the per-window ✂ under v2v is "cut in the middle
+    // to split the clips into context carry" — the same verb as the
+    // strip head's door, the selected carry framing its seam
+    const divide = els.container.querySelector('[data-split-toggle="p1"] button')
+    assert.ok(divide, "the per-window divide seat renders under v2v")
+    fireEvent.click(divide)
+    assert.equal(rec.addCall.length, 1, "the divide routes the cut verb")
+    assert.equal((rec.addCall[0] as [number])[0], 54,
+      "the divide cuts the containing window's midpoint")
+    assert.deepEqual(rec.seam, [[1, "carry+keyframe"]],
+      "the divide's seam rides the selected carry (the §0.9 reframe)")
+    els.unmount()
+  })
+
+  it("THE DOORS — under v2v the geometry doors live (seam chip, divide seat) and THE ADD IS DEAD; only the prose goes quiet", async () => {
     // TWO windows: a seam chip arms only at a join (call 2+), so the
     // fixture carries the two-window doc the chip lives on
     const { els, rec } = strip({
@@ -197,9 +267,12 @@ describe("THE VIDEO-TO-VIDEO AND CUTS FACE (queue 11 — the cut door)", () => {
       "the seam chip renders under v2v (cut ⇄ extend is the face's own verb)")
     assert.ok(els.container.querySelector("[data-split-toggle]"),
       "the split seat renders under v2v (the divide IS a cut)")
-    // the double-click add stays live (the lane's own cut gesture)
+    // (queue 11's SECOND BLOCK) THE ADD IS DEAD under v2v — the
+    // operator: "This section would no longer allow people to add
+    // clips" — a double-click on the ruler fires NO verb
     fireEvent.doubleClick(screen.getByTestId("motion-timeline-ruler"), { clientX: 100 })
-    assert.equal(rec.addCall.length, 1, "the double-click add routes the verb under v2v")
+    assert.equal(rec.addCall.length, 0,
+      "the double-click add is DEAD under v2v — the section no longer allows adding clips")
     // the prose goes quiet: editing a clip's text refuses LOUD, the write never fires
     const clip = els.container.querySelector('[data-prompt-clip="p1"]')!
     fireEvent.doubleClick(clip)
@@ -275,6 +348,90 @@ describe("THE VIDEO-TO-VIDEO AND CUTS FACE (queue 11 — the cut door)", () => {
       const doc = withCalls[withCalls.length - 1]!.calls
       assert.equal(doc.length, 2, `two windows after the cut — got ${JSON.stringify(doc)}`)
       assert.equal(doc[1]!.transition, "cut", "the second half's seam states CUT")
+    }, { timeout: 4000 })
+  })
+
+  it("THE TIMESTAMP SPLIT + CARRY — the form states 2 seconds + carry: the split lands at that timestamp with the selected seam", async () => {
+    const body = specBody(theService(), await loadCardDefs(), {
+      card: "h3-timeline", service: "h3-timeline", model: "h3-timeline",
+    })
+    const saved: Array<Record<string, unknown>> = []
+    vi.stubGlobal("fetch", (url: unknown) => {
+      const u = typeof url === "string" ? url : String((url as { url?: string })?.url ?? "")
+      if (u.startsWith("/v1/form-spec")) {
+        return Promise.resolve(new Response(JSON.stringify(body), { headers: { "content-type": "application/json" } }))
+      }
+      return Promise.resolve(new Response(JSON.stringify({}), { status: 404 }))
+    })
+    render(
+      <VideoTimelineStudio
+        stageId="s_ts"
+        cardName="h3-timeline"
+        row={{
+          id: "s_ts", card: "h3-timeline", title: "H3 Timeline",
+          params: {
+            edit: [{ edit_prompt: "make it rain" }],
+            // ONE long clip: 0–110 frames at 24fps (~4.58s). Split at
+            // 2s (frame 48) — interior to the window
+            calls: [{ text: "a", start_frame: 0, end_frame: 110 }],
+            fps: 24,
+          },
+        }}
+        runStatus=""
+        onPatch={(p: Record<string, unknown>) => { saved.push(p) }}
+        onRun={() => {}}
+        onStop={() => {}}
+        onRemove={() => {}}
+        onSurface={() => {}}
+        upstream={[]}
+        runId={null}
+      />,
+    )
+    // the timestamp seat + the carry menu render on the v2v face
+    const splitAt = await waitFor(() => {
+      const el = document.querySelector('[data-testid="tl-split-at"]') as HTMLInputElement | null
+      assert.ok(el, "the timestamp input renders on the v2v face")
+      return el
+    }, { timeout: 4000 })
+    const carryMenu = await waitFor(() => {
+      const el = document.querySelector('[data-testid="tl-split-carry"]')
+      assert.ok(el, "the carry-mode menu renders on the v2v face")
+      return el as HTMLElement
+    }, { timeout: 4000 })
+    // state the timestamp: 2 seconds
+    fireEvent.change(splitAt, { target: { value: "2" } })
+    fireEvent.input(splitAt, { target: { value: "2" } })
+    // pick the carry mode: "Carry" (extend — the 22-frame overlap).
+    // The row matcher starts with "carry": the stock row's label
+    // ("Stock — no carry") CONTAINS the word and would match first.
+    fireEvent.click(carryMenu)
+    const carryRow = await screen.findAllByRole("menuitem")
+      .then((items) => items.find((n) => n.textContent?.toLowerCase().startsWith("carry") && !n.textContent?.toLowerCase().includes("keyframe")))
+    assert.ok(carryRow, "the Carry row serves in the menu")
+    fireEvent.click(carryRow)
+    // press the cut
+    const door = await waitFor(() => {
+      const el = document.querySelector('[data-testid="tl-add-cut"]')
+      assert.ok(el, "the Add cut door renders")
+      return el as HTMLElement
+    }, { timeout: 4000 })
+    fireEvent.click(door)
+    // THE LAW: the stated timestamp resolves to its frame (2s × 24fps
+    // = 48) and the split lands at the NEAREST LEGAL lattice point —
+    // the authoring grid (22+17k authored spans; legal split frames
+    // here are 39 and 56; 48 is 8 from 56, 9 from 39 → 56). The §0.5
+    // split law carries; the seam states the SELECTED carry (extend —
+    // the §0.9 reframe, tiling and total preserved).
+    await waitFor(() => {
+      const withCalls = saved.filter((p) => Array.isArray(p.calls)) as Array<{ calls: DocCall[] }>
+      assert.ok(withCalls.length > 0, `the timestamp split must land the calls write — got: ${JSON.stringify(saved)}`)
+      const doc = withCalls[withCalls.length - 1]!.calls
+      assert.equal(doc.length, 2, `two windows after the timestamp split — got ${JSON.stringify(doc)}`)
+      assert.equal(doc[0]!.end_frame, 56,
+        `the first half ends at 56 (2s→frame 48, snapped to the nearest legal 22+17k lattice point) — got end ${doc[0]!.end_frame}`)
+      assert.equal(doc[1]!.start_frame, 56, "the second half starts at the split frame")
+      assert.equal(doc[1]!.transition, "extend",
+        `the second half's seam states the CARRY (extend) — got ${JSON.stringify(doc[1]!.transition)}`)
     }, { timeout: 4000 })
   })
 })
