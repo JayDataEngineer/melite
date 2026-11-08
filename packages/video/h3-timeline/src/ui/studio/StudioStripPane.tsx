@@ -368,6 +368,40 @@ export function StudioStripPane({
     if (callsFace.face !== 'dormant') return
     setLaneErr(studioCopy.callsDormantHint(callsFace.kind))
   }
+  // (THE V2V FACE, queue 11) the PROSE door's refusal under the
+  // armed edit bag: the lane's windows and cuts are the run's own
+  // spans (live), its TEXT is not read — the edit composes from the
+  // mod's own prompt seat. Geometry doors stay LIVE under v2v.
+  const refuseV2vProse = () => {
+    /* v8 ignore if -- the non-v2v return is a type fence: the one prose door wires this handler ONLY under callsFace.face === 'v2v' (its ternary below), so the union is already narrowed when the body runs */
+    if (callsFace.face !== 'v2v') return
+    setLaneErr(studioCopy.callsV2vProseHint)
+  }
+  // (THE V2V FACE, queue 11) the strip's own visible cut door — the
+  // operator's law: "THE ABILITY TO ADD CUTS" is a CONTROL on the
+  // face, never a hidden gesture. THE PRESS ALWAYS CUTS (the visual
+  // audit's critical 2: a fresh doc's playhead sits at frame 0, and
+  // the raw verb's interior-split arm never matches there — the
+  // past-end append arm fired instead, junking an empty window): a
+  // playhead strictly inside a window cuts THERE; a playhead at a
+  // boundary or past the end cuts the window it sits on (the last,
+  // past the end) at its MIDPOINT — the same frame the per-window
+  // split seat cuts when the operator names no interior point. The
+  // write rides §0.5's split law (one window becomes its own two
+  // halves, the seam states CUT); a window at its shape's floor
+  // refuses LOUD in the shared slot.
+  const addCutAtPlayhead = () => {
+    const at = docFromFilm(frameIdx)
+    const interior = calls.find((c) => at > c.start_frame && at < c.end_frame)
+    const target = interior !== undefined
+      ? undefined
+      : calls.find((c) => at === c.start_frame) ?? calls[calls.length - 1]
+    const cutFrame = interior !== undefined ? at
+      : target !== undefined ? Math.round((target.start_frame + target.end_frame) / 2)
+        : at
+    setLaneErr(null)
+    addCallAt(cutFrame, () => setLaneErr(studioCopy.splitRefusal))
+  }
   // (D3, operator 2026-11-06: "calls bar only goes to 5.5s vs film
   // 'Final cut 9.06s · frame 145/162'") — the meta line rides the
   // SAME truth the bar axis below rides: the FILM's frames + fps
@@ -386,6 +420,22 @@ export function StudioStripPane({
       hint={
         <>
           {studioCopy.stripHint}
+          {/* (THE V2V FACE, queue 11) the strip head's visible ADD CUT
+              door — rendered ONLY under the armed edit bag (the
+              operator's law: adding the video-to-video mod changes
+              this section FOR THE VIDEO TO VIDEO AND CUTS). Same dsh
+              Button grammar as the keyframes door beside it. */}
+          {callsFace.face === "v2v" && (
+            <Button variant="ghost" size="sm"
+              data-testid="tl-add-cut"
+              aria-label={studioCopy.addCutDoor}
+              title={studioCopy.addCutDoorTip}
+              className={s.uploadBtn}
+              onClick={addCutAtPlayhead}
+            >
+              {studioCopy.addCutDoor}
+            </Button>
+          )}
           {/* THE SUBVIEW DOOR (defect B): the strip head's one
               keyframes verb — the rail swaps to the standalone
               editor, Layer A/B banned alongside it. */}
@@ -442,7 +492,14 @@ export function StudioStripPane({
       // lawful doc authoring (the three-door accord); this is the
       // operator-posture law and it fires where the operator's
       // gesture enters.
-      onPromptUpdate={callsFace.face === "dormant" ? refuseCallsEdit : handlePromptUpdate}
+      // (THE V2V FACE, queue 11) under the armed edit bag only the
+      // PROSE door refuses: the lane's windows ARE the run's spans,
+      // so every geometry door (move / resize / delete / add / seam /
+      // split) stays live — this lane is the video-to-video and cuts
+      // face, the edit's own authoring surface.
+      onPromptUpdate={callsFace.face === "dormant" ? refuseCallsEdit
+        : callsFace.face === "v2v" ? refuseV2vProse
+          : handlePromptUpdate}
       onPromptMove={callsFace.face === "dormant" ? refuseCallsEdit
         : (id, s, e) => handlePromptMove(id, docFromFilm(s), docFromFilm(e))}
       onPromptResize={callsFace.face === "dormant" ? refuseCallsEdit
@@ -468,10 +525,13 @@ export function StudioStripPane({
       packed
       // (THE MOD-MODE CALLS FACE) the head + hint name the lane's
       // calls-readership under an armed commission — the dictionary's
-      // words, the kit's existing props, no kit change.
+      // words, the kit's existing props, no kit change. (THE V2V
+      // FACE, queue 11) the edit bag's own head: this lane is the
+      // video-to-video and cuts face.
       promptsLabel={callsFace.face === "dormant" ? studioCopy.callsDormantLabel(callsFace.kind)
-        : callsFace.face === "prompt" ? studioCopy.callsPromptSeatLabel(callsFace.kind)
-          : studioCopy.callsLabel}
+        : callsFace.face === "v2v" ? studioCopy.callsV2vLabel
+          : callsFace.face === "prompt" ? studioCopy.callsPromptSeatLabel(callsFace.kind)
+            : studioCopy.callsLabel}
       commissions={commissionRows}
       // (F11, 2026-11-05) the strip's two hints are the dictionary's —
       // the pane feeds the atoms, it owns no literals. Under an armed
@@ -479,14 +539,18 @@ export function StudioStripPane({
       // down / why this lane's text is the run's prompt).
       laneHint={studioCopy.keyframeLaneHint}
       emptyPromptsHint={callsFace.face === "dormant" ? studioCopy.callsDormantHint(callsFace.kind)
-        : callsFace.face === "prompt" ? studioCopy.callsPromptSeatHint(callsFace.kind)
-          : studioCopy.stripEmptyPromptsHint}
+        : callsFace.face === "v2v" ? studioCopy.callsV2vHint
+          : callsFace.face === "prompt" ? studioCopy.callsPromptSeatHint(callsFace.kind)
+            : studioCopy.stripEmptyPromptsHint}
       promptsHeight={64}
       // (THE MOD-MODE CALLS FACE) under a NON-reading armed commission
       // the double-click add stands down — a new call authored into the
       // dormant lane is dead text the armed run will never read. The
       // plain and prompt faces keep the add door (the film's authoring
-      // surface / the run's prompt seat).
+      // surface / the run's prompt seat). (THE V2V FACE, queue 11) the
+      // edit bag keeps the add LIVE — a double-click at a frame IS a
+      // cut on the video-to-video face (the ADD CUT button above rides
+      // this same verb at the playhead).
       onPromptAdd={callsFace.face === "dormant" ? undefined : (frame) => addCallAt(docFromFilm(frame))}
       // THE SEAM CHIP (the collapse's cuts): the kit hands the tenant
       // the row's uuid ONLY; the write resolves it to its call and
@@ -496,6 +560,8 @@ export function StudioStripPane({
       // into a lane the armed run never reads is dead authoring —
       // the mod-mode calls face's own law; the wall asserts the chip
       // is ABSENT there, so no filtered-face write path exists).
+      // (THE V2V FACE, queue 11) the chip is LIVE under the edit bag
+      // — the seam cut⇄extend is the video-to-video face's own verb.
       onSeamToggle={
         callsFace.face === "dormant"
           ? undefined
@@ -511,7 +577,9 @@ export function StudioStripPane({
       // mutation owns the grid law, the identity carry and the cut
       // seam), and a window too short to split refuses LOUD in the
       // shared laneErr slot. Under a DORMANT face the seat stands
-      // down with the other five edit doors (dead authoring).
+      // down with the other five edit doors (dead authoring). (THE
+      // V2V FACE, queue 11) the seat is LIVE under the edit bag —
+      // the divide IS a cut on the video-to-video face.
       onPromptSplit={
         callsFace.face === "dormant"
           ? undefined

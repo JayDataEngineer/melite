@@ -27,10 +27,10 @@ were FIXED cells of this matrix; their names still compose (the
 door translates a legacy doc into its cell at the compose door,
 never a frozen peer), and the free cells compose here.
 
-THE EDIT BAG'S STARTING CELLS (§0.8's flow model, re-ruled
-2026-11-08: the cells are DIAL VALUES an agent stages into the one
-bag — the UI face is the four-axes field grammar itself, no
-checkbox layer; a cell never renders). The six named cells over
+THE EDIT BAG'S STARTING CELLS (§0.8's flow model): the cells are
+DIAL VALUES an agent stages into the one bag — the UI face is the
+four-axes field grammar itself, no checkbox layer; a cell never
+renders. The six named cells over
 this one schema: `repair-region` (region × self × 0.32, sound held;
 the mask slot chooses the how — the SAM3 region track or one staged
 PNG, the static read is the MASK DIAL's value, never a second

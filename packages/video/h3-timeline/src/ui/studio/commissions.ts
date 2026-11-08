@@ -253,16 +253,28 @@ export const CALLS_READING_KINDS = ['reshoot', 'loras'] as const
  *  - `dormant` — only non-reading kinds are armed: the run composes
  *    from the bag alone, so the starter placeholder stands down (the
  *    lane's hint names the armed kind) and authored prose stays
- *    visible as doc truth the run simply does not read. */
+ *    visible as doc truth the run simply does not read.
+ *  - `v2v` — the video-to-video mod (queue 11, operator 2026-11-08:
+ *    "WHEN YOU ADD THE MOD FOR VIDEO TO VIDEO, IT CHANGES THE
+ *    TIMELINE BAR UNDER THE 'CALLS' SECTION FOR THE VIDEO TO VIDEO
+ *    AND CUTS."): the edit bag's presence swaps the calls lane into
+ *    THE VIDEO-TO-VIDEO AND CUTS face — the lane's windows ARE the
+ *    video-to-video spans and every cut door is live (the strip's
+ *    own ADD CUT button, the seam chips, the split seats); only the
+ *    prose goes quiet (the edit composes from the mod's own prompt
+ *    seat, never a call's text). */
 export type CallsLaneFace =
   | { face: 'plain' }
   | { face: 'dormant'; kind: CommissionKind }
   | { face: 'prompt'; kind: CommissionKind }
+  | { face: 'v2v'; kind: 'edit' }
 
 /** Derive the calls lane's face from the armed commissions. A reader
  *  wins over any non-reader armed beside it (the run reads calls if
- *  ANY armed action does); with no reader armed the lane is dormant
- *  under the FIRST armed row's kind (the commission the hint names).
+ *  ANY armed action does); the edit bag then wins the v2v face (its
+ *  windows are the run's own spans — the cut-authoring lane); with
+ *  neither, the lane is dormant under the FIRST armed row's kind
+ *  (the commission the hint names).
  * @param commissions the derived armed rows (deriveCommissions)
  * @returns the lane's face */
 export function callsLaneFace(commissions: DocCommission[]): CallsLaneFace {
@@ -270,6 +282,8 @@ export function callsLaneFace(commissions: DocCommission[]): CallsLaneFace {
   const reader = commissions.find((c) =>
     (CALLS_READING_KINDS as readonly string[]).includes(c.kind))
   if (reader !== undefined) return { face: 'prompt', kind: reader.kind }
+  const edit = commissions.find((c) => c.kind === 'edit')
+  if (edit !== undefined) return { face: 'v2v', kind: 'edit' }
   const first = commissions[0]!
   return { face: 'dormant', kind: first.kind }
 }

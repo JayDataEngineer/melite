@@ -1517,11 +1517,10 @@ function ModLeaf(props: {
           // box, empty roster included — the Fibo burn's cure), the
           // dial beside it is the use's strength.
           return h('div', { className: css.modLeafFields, 'data-leaf-pane': 'pick' },
-            // THE POSTURE SWITCHES (the one-door law, 2026-11-16): the
-            // option shape rides the SAME posture seat as the field and
-            // hybrid leaves — the named cells ride the modal's head for
-            // every kind shape (the outer chips are gone; this row is
-            // the only posture door, and it renders for all three).
+            // (the 2026-11-08 re-rule) the option shape rides the
+            // field-grammar face like every other kind — the catalog
+            // select + the strength dial below ARE the leaf; no
+            // posture switch row renders for any shape.
               // THE ONE-ROW SEAT: the bag is authored in one glance —
             // the picker takes the width, the strength dial keeps its
             // intrinsic width.

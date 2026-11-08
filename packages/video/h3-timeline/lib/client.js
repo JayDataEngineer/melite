@@ -680,7 +680,7 @@ window.__ModuleLoader__.load({
 			/** The strip's meta line (calls, frames, clock, seconds). */
 			stripMeta: (args) => `${args.calls} call${args.calls === 1 ? "" : "s"} · ${args.frames} fr · ${args.fps} fps · ${args.seconds}s`,
 			/** The strip's hint (one card = one call, edges, extend, knobs dot). */
-			stripHint: "one card = one model call · drag an edge = move the cut · double-click = edit · pull the tail = extend · cyan dot = knobs override · click a call = edit it in the left panel",
+			stripHint: "one card = one model call · drag an edge = move the cut · double-click a card = edit it · double-click the ruler or empty lane = add a window · pull the tail = extend · cyan dot = knobs override · click a call = open it in the left panel",
 			/** The lane blocker (reference audio locks the D-M-E lanes). */
 			laneBlockedMessage: "reference audio is wired on a call — the dialogue / music / SFX lanes are LOCKED (the clips and the audio inputs are mutually exclusive; clear the call's Ref audios to place clips)",
 			/** The bar's calls lane label. */
@@ -703,6 +703,28 @@ window.__ModuleLoader__.load({
 			/** The calls lane's empty hint under a READING armed commission:
 			*  describe the shot here — this text IS the run's prompt. */
 			callsPromptSeatHint: (kind) => `${studioCopy.commissionKindLabel(kind)} is armed — describe the shot here: this lane's text is the run's prompt`,
+			/** ── THE VIDEO-TO-VIDEO AND CUTS FACE (queue 11, operator
+			*  2026-11-08, verbatim: "WHEN YOU ADD THE MOD FOR VIDEO TO
+			*  VIDEO, IT CHANGES THE TIMELINE BAR UNDER THE 'CALLS' SECTION
+			*  FOR THE VIDEO TO VIDEO AND CUTS.") — the edit mod's presence
+			*  swaps the calls lane into the cut-authoring face: the windows
+			*  are the video-to-video spans, the ADD CUT door is visible on
+			*  the strip's own head. */
+			/** The calls lane head under the armed edit bag (the windows are
+			*  the run's own video-to-video spans). */
+			callsV2vLabel: "Video-to-video — windows & cuts",
+			/** The calls lane's empty hint under the armed edit bag. */
+			callsV2vHint: "Video edit is armed — each window is one video-to-video span; Add cut divides the window at the playhead into two (a cut seam, never a chain — wherever the playhead sits)",
+			/** The strip head's visible cut door (the queue-11 law: the
+			*  ability to add cuts is a CONTROL on the face, never a hidden
+			*  gesture). */
+			addCutDoor: "Add cut",
+			/** The cut door's tip. */
+			addCutDoorTip: "Cut the window at the playhead into two (cut seam)",
+			/** The prose doors' refusal under the v2v face: the edit composes
+			*  from the mod's own prompt seat — the lane's TEXT is not read
+			*  (its windows and cuts are). */
+			callsV2vProseHint: "Video edit composes from the mod's own prompt seat — this lane's windows and cuts are read, its prose is not",
 			/** ── THE COMMISSION RAIL (§9's mod projection) ────────────────────
 			*  One row per ARMED mod bag. The kind's face is the operator's own
 			*  word for the door; the seats line names what the entry states;
@@ -4854,8 +4876,10 @@ window.__ModuleLoader__.load({
 		const CALLS_READING_KINDS = ["reshoot", "loras"];
 		/** Derive the calls lane's face from the armed commissions. A reader
 		*  wins over any non-reader armed beside it (the run reads calls if
-		*  ANY armed action does); with no reader armed the lane is dormant
-		*  under the FIRST armed row's kind (the commission the hint names).
+		*  ANY armed action does); the edit bag then wins the v2v face (its
+		*  windows are the run's own spans — the cut-authoring lane); with
+		*  neither, the lane is dormant under the FIRST armed row's kind
+		*  (the commission the hint names).
 		* @param commissions the derived armed rows (deriveCommissions)
 		* @returns the lane's face */
 		function callsLaneFace(commissions) {
@@ -4864,6 +4888,10 @@ window.__ModuleLoader__.load({
 			if (reader !== void 0) return {
 				face: "prompt",
 				kind: reader.kind
+			};
+			if (commissions.find((c) => c.kind === "edit") !== void 0) return {
+				face: "v2v",
+				kind: "edit"
 			};
 			return {
 				face: "dormant",
@@ -5218,6 +5246,19 @@ window.__ModuleLoader__.load({
 				if (callsFace.face !== "dormant") return;
 				setLaneErr(studioCopy.callsDormantHint(callsFace.kind));
 			};
+			const refuseV2vProse = () => {
+				/* v8 ignore if -- the non-v2v return is a type fence: the one prose door wires this handler ONLY under callsFace.face === 'v2v' (its ternary below), so the union is already narrowed when the body runs */
+				if (callsFace.face !== "v2v") return;
+				setLaneErr(studioCopy.callsV2vProseHint);
+			};
+			const addCutAtPlayhead = () => {
+				const at = docFromFilm(frameIdx);
+				const interior = calls.find((c) => at > c.start_frame && at < c.end_frame);
+				const target = interior !== void 0 ? void 0 : calls.find((c) => at === c.start_frame) ?? calls[calls.length - 1];
+				const cutFrame = interior !== void 0 ? at : target !== void 0 ? Math.round((target.start_frame + target.end_frame) / 2) : at;
+				setLaneErr(null);
+				addCallAt(cutFrame, () => setLaneErr(studioCopy.splitRefusal));
+			};
 			const barFps = filmMap?.fps ?? fps;
 			const barSeconds = (barTotal / barFps).toFixed(2);
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_melite_card_base_client.PaneShell, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.PaneHeader, {
@@ -5228,16 +5269,29 @@ window.__ModuleLoader__.load({
 					fps: barFps,
 					seconds: barSeconds
 				}),
-				hint: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [studioCopy.stripHint, /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-					variant: "ghost",
-					size: "sm",
-					"data-testid": "tl-keyframes-door",
-					"aria-label": studioCopy.keyframesDoor,
-					title: studioCopy.keyframesDoorTip,
-					className: studio_module_css_default.uploadBtn,
-					onClick: enterKfView,
-					children: studioCopy.keyframesDoor
-				})] })
+				hint: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
+					studioCopy.stripHint,
+					callsFace.face === "v2v" && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+						variant: "ghost",
+						size: "sm",
+						"data-testid": "tl-add-cut",
+						"aria-label": studioCopy.addCutDoor,
+						title: studioCopy.addCutDoorTip,
+						className: studio_module_css_default.uploadBtn,
+						onClick: addCutAtPlayhead,
+						children: studioCopy.addCutDoor
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+						variant: "ghost",
+						size: "sm",
+						"data-testid": "tl-keyframes-door",
+						"aria-label": studioCopy.keyframesDoor,
+						title: studioCopy.keyframesDoorTip,
+						className: studio_module_css_default.uploadBtn,
+						onClick: enterKfView,
+						children: studioCopy.keyframesDoor
+					})
+				] })
 			}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: studio_module_css_default.blockerWrap,
 				children: [
@@ -5272,17 +5326,17 @@ window.__ModuleLoader__.load({
 						onKeyframeMove: (id, frame) => handleKeyframeMove(id, docFromFilm(frame)),
 						onKeyframeDelete: handleKeyframeDelete,
 						onTrackAdd: openTrackAdd,
-						onPromptUpdate: callsFace.face === "dormant" ? refuseCallsEdit : handlePromptUpdate,
+						onPromptUpdate: callsFace.face === "dormant" ? refuseCallsEdit : callsFace.face === "v2v" ? refuseV2vProse : handlePromptUpdate,
 						onPromptMove: callsFace.face === "dormant" ? refuseCallsEdit : (id, s, e) => handlePromptMove(id, docFromFilm(s), docFromFilm(e)),
 						onPromptResize: callsFace.face === "dormant" ? refuseCallsEdit : (id, s, e) => handlePromptResize(id, docFromFilm(s), docFromFilm(e)),
 						onPromptDelete: callsFace.face === "dormant" ? refuseCallsEdit : handlePromptDelete,
 						onExtend: (newTotal) => handleExtend(docFromFilm(newTotal)),
 						tracks: VIDEO_TIMELINE_TRACKS.map((t) => ({ ...t })),
 						packed: true,
-						promptsLabel: callsFace.face === "dormant" ? studioCopy.callsDormantLabel(callsFace.kind) : callsFace.face === "prompt" ? studioCopy.callsPromptSeatLabel(callsFace.kind) : studioCopy.callsLabel,
+						promptsLabel: callsFace.face === "dormant" ? studioCopy.callsDormantLabel(callsFace.kind) : callsFace.face === "v2v" ? studioCopy.callsV2vLabel : callsFace.face === "prompt" ? studioCopy.callsPromptSeatLabel(callsFace.kind) : studioCopy.callsLabel,
 						commissions: commissionRows,
 						laneHint: studioCopy.keyframeLaneHint,
-						emptyPromptsHint: callsFace.face === "dormant" ? studioCopy.callsDormantHint(callsFace.kind) : callsFace.face === "prompt" ? studioCopy.callsPromptSeatHint(callsFace.kind) : studioCopy.stripEmptyPromptsHint,
+						emptyPromptsHint: callsFace.face === "dormant" ? studioCopy.callsDormantHint(callsFace.kind) : callsFace.face === "v2v" ? studioCopy.callsV2vHint : callsFace.face === "prompt" ? studioCopy.callsPromptSeatHint(callsFace.kind) : studioCopy.stripEmptyPromptsHint,
 						promptsHeight: 64,
 						onPromptAdd: callsFace.face === "dormant" ? void 0 : (frame) => addCallAt(docFromFilm(frame)),
 						onSeamToggle: callsFace.face === "dormant" ? void 0 : (id) => {

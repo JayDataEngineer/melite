@@ -34,10 +34,9 @@ the one bag — section ids never ride it.
   denoise 0.24, steps 20.
 
 Cells COMPOSE: repair + upscale in the same run is both cells'
-dials in the one bag, never a combined route. (2026-11-08 re-rule:
-the cells are dial values an agent stages — the UI face is the
-bag's own field grammar, the four axes' dynamic seats; no checkbox
-layer renders.)
+dials in the one bag, never a combined route. The cells are dial
+values an agent stages — the UI face is the bag's own field
+grammar, the four axes' dynamic seats; no checkbox layer renders.
 
 ## The ingredient slots and their kinds
 

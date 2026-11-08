@@ -281,7 +281,7 @@ describe("§9 — the studio's mod projection (the commission derivation)", () =
 // the lane renders: every reading kind faces `prompt`, every
 // non-reading armed doc faces `dormant`, nothing armed faces `plain`.
 describe("THE MOD-MODE CALLS FACE (2026-11-14 — the lane's calls-readership)", () => {
-  it("ARM R1 — the readership table: every reading kind faces prompt, every non-reading kind faces dormant", () => {
+  it("ARM R1 — the readership table: every reading kind faces prompt, edit faces v2v, every other non-reading kind faces dormant", () => {
     for (const kind of COMMISSION_KINDS) {
       const entries: Record<CommissionKind, Record<string, unknown>> = {
         edit: EDIT, replace: REPLACE, repair: REPAIR, extend: EXTEND, refine: REFINE,
@@ -289,9 +289,13 @@ describe("THE MOD-MODE CALLS FACE (2026-11-14 — the lane's calls-readership)",
       }
       const face = callsLaneFace(deriveCommissions({ [kind]: [entries[kind]] }))
       const reads = (CALLS_READING_KINDS as readonly string[]).includes(kind)
-      expect(face, `${kind}: the lane names its readership`).toEqual(
-        reads ? { face: "prompt", kind } : { face: "dormant", kind },
-      )
+      // (queue 11, operator 2026-11-08) the edit bag owns the v2v
+      // face: its windows ARE the run's video-to-video spans — the
+      // cut-authoring lane, live where the others stand down
+      const want = reads ? { face: "prompt", kind }
+        : kind === "edit" ? { face: "v2v", kind: "edit" as const }
+          : { face: "dormant", kind }
+      expect(face, `${kind}: the lane names its readership`).toEqual(want)
     }
   })
 
@@ -360,13 +364,19 @@ describe("THE READ-LIST COLLAPSE (2026-11-16 — the canonical bag rides the rai
     expect(studioCopy.commissionKindLabel("edit")).toBe("Video edit")
   })
 
-  it("ARM E3 — edit composes from its own bag (edit_prompt rides the entry): the calls lane stands down under it, never paints the starter over authored prose", () => {
+  it("ARM E3 — edit composes from its own bag (edit_prompt rides the entry): the calls lane is the V2V face under it — the windows are the run's spans, the prose is not read", () => {
     const face = callsLaneFace(deriveCommissions({ edit: [EDIT] }))
-    expect(face).toEqual({ face: "dormant", kind: "edit" })
-    if (face.face !== 'dormant') throw new Error(`expected the dormant face, got ${face.face}`)
-    // the dormant face's own words name the edit door (the label face,
-    // not the raw id)
-    expect(studioCopy.callsDormantLabel(face.kind)).toContain("Video edit")
+    // (queue 11, operator 2026-11-08) the edit bag no longer stands
+    // the lane down: the timeline bar's CALLS section CHANGES to the
+    // video-to-video and cuts face — the windows live, only the
+    // prose goes quiet
+    expect(face).toEqual({ face: "v2v", kind: "edit" })
+    if (face.face !== 'v2v') throw new Error(`expected the v2v face, got ${face.face}`)
+    expect(studioCopy.callsV2vLabel).toContain("Video-to-video")
+    // the prose hint names the split: windows and cuts are read,
+    // prose is not — the edit composes from the mod's own prompt seat
+    expect(studioCopy.callsV2vProseHint).toContain("its prose is not")
+    expect(studioCopy.addCutDoor).toBe("Add cut")
   })
 
   it("ARM E4 — the hard edges hold for edit too: malformed and bad-entry bags draw the armed-and-refused row", () => {

@@ -287,7 +287,7 @@ export const studioCopy = {
   stripMeta: (args: { calls: number; frames: number; fps: number; seconds: string }): string =>
     `${args.calls} call${args.calls === 1 ? "" : "s"} · ${args.frames} fr · ${args.fps} fps · ${args.seconds}s`,
   /** The strip's hint (one card = one call, edges, extend, knobs dot). */
-  stripHint: "one card = one model call · drag an edge = move the cut · double-click = edit · pull the tail = extend · cyan dot = knobs override · click a call = edit it in the left panel",
+  stripHint: "one card = one model call · drag an edge = move the cut · double-click a card = edit it · double-click the ruler or empty lane = add a window · pull the tail = extend · cyan dot = knobs override · click a call = open it in the left panel",
   /** The lane blocker (reference audio locks the D-M-E lanes). */
   laneBlockedMessage: "reference audio is wired on a call — the dialogue / music / SFX lanes are LOCKED (the clips and the audio inputs are mutually exclusive; clear the call's Ref audios to place clips)",
   /** The bar's calls lane label. */
@@ -314,6 +314,30 @@ export const studioCopy = {
    *  describe the shot here — this text IS the run's prompt. */
   callsPromptSeatHint: (kind: string): string =>
     `${studioCopy.commissionKindLabel(kind)} is armed — describe the shot here: this lane's text is the run's prompt`,
+  /** ── THE VIDEO-TO-VIDEO AND CUTS FACE (queue 11, operator
+   *  2026-11-08, verbatim: "WHEN YOU ADD THE MOD FOR VIDEO TO
+   *  VIDEO, IT CHANGES THE TIMELINE BAR UNDER THE 'CALLS' SECTION
+   *  FOR THE VIDEO TO VIDEO AND CUTS.") — the edit mod's presence
+   *  swaps the calls lane into the cut-authoring face: the windows
+   *  are the video-to-video spans, the ADD CUT door is visible on
+   *  the strip's own head. */
+  /** The calls lane head under the armed edit bag (the windows are
+   *  the run's own video-to-video spans). */
+  callsV2vLabel: "Video-to-video — windows & cuts",
+  /** The calls lane's empty hint under the armed edit bag. */
+  callsV2vHint:
+    "Video edit is armed — each window is one video-to-video span; Add cut divides the window at the playhead into two (a cut seam, never a chain — wherever the playhead sits)",
+  /** The strip head's visible cut door (the queue-11 law: the
+   *  ability to add cuts is a CONTROL on the face, never a hidden
+   *  gesture). */
+  addCutDoor: "Add cut",
+  /** The cut door's tip. */
+  addCutDoorTip: "Cut the window at the playhead into two (cut seam)",
+  /** The prose doors' refusal under the v2v face: the edit composes
+   *  from the mod's own prompt seat — the lane's TEXT is not read
+   *  (its windows and cuts are). */
+  callsV2vProseHint:
+    "Video edit composes from the mod's own prompt seat — this lane's windows and cuts are read, its prose is not",
   /** ── THE COMMISSION RAIL (§9's mod projection) ────────────────────
    *  One row per ARMED mod bag. The kind's face is the operator's own
    *  word for the door; the seats line names what the entry states;

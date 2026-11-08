@@ -169,7 +169,13 @@ describe("SOURCE — the copy dictionary owns the static faces", () => {
     // vocabulary (stock/carry/carry+keyframe). The strip chip stays
     // binary (cut↔extend, the KIT's timelineCopy); the third mode is
     // authored at the call card, this estate's own seat.
-    assert.equal(ids.length, 108, `the dictionary holds 108 copy ids (found ${ids.length}) — re-pin this wall when copy is added or removed`)
+    // RE-PIN 2026-11-08 (machine clock, queue 11 — the v2v face):
+    // 108 → 111. +3 single-line flat ids = callsV2vLabel + addCutDoor
+    // + addCutDoorTip (the video-to-video lane head + the strip's
+    // visible ADD CUT door); the face's two long wordings
+    // (callsV2vHint, callsV2vProseHint) ride as multi-line string
+    // values, outside this single-line count by construction.
+    assert.equal(ids.length, 111, `the dictionary holds 111 copy ids (found ${ids.length}) — re-pin this wall when copy is added or removed`)
     // RE-PIN 2026-10-16 (the square-grammar residue): 102 → 101.
     // removePack died with the strip Button (187eaf607 deleted the
     // verb; SourceRow's onEdit("") owns the detach) — a fossil id
