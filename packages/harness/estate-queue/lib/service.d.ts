@@ -1,7 +1,7 @@
 import { Service } from "@deepseek-ai/cordis";
 import type { Context } from "@deepseek-ai/cordis";
-import { QueueCore } from "./queue.js";
-import type { LedgerTailAnswer } from "./ledgerTail.js";
+import { QueueCore } from "./queue.ts";
+import type { LedgerTailAnswer } from "./ledgerTail.ts";
 /** Provider config: where the estate's run state lives. */
 export interface QueueConfig {
     /** Repo root for the default `data/runs` state root. */

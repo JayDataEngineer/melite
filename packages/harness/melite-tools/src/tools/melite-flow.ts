@@ -897,16 +897,31 @@ export async function observeAndAttribute(
           if (p !== '') arts.push(p)
         }
       }
-      const names: string[] = []
+      // THE GALLERY ROWS (queue 12's label law): each row carries its
+      // file `name` (the media key) and may carry a display `label`
+      // (the output_name mint at settle) — the artifacts map keys by
+      // label-first, one law with cards-resource's builder.
+      const galleryRows: Array<{ name: string; label?: string }> = []
+      const galleryNames: string[] = []
       const gallery = st !== undefined && Array.isArray(st['gallery'])
-        ? (st['gallery'] as unknown[]).flatMap((entry): string[] => {
+        ? (st['gallery'] as unknown[]).flatMap((entry): Array<{ name: string; label?: string }> => {
             if (typeof entry !== 'object' || entry === null || Array.isArray(entry)) return []
             const name = (entry as { name?: unknown }).name
-            return typeof name === 'string' && name !== '' ? [name] : []
+            if (typeof name !== 'string' || name === '') return []
+            const rawLabel = (entry as { label?: unknown }).label
+            return typeof rawLabel === 'string' && rawLabel !== ''
+              ? [{ name, label: rawLabel }] : [{ name }]
           })
         : []
-      for (const name of [...gallery, ...arts]) {
-        if (!names.includes(name)) names.push(name)
+      for (const g of gallery) {
+        if (!galleryNames.includes(g.name)) {
+          galleryNames.push(g.name)
+          galleryRows.push(g)
+        }
+      }
+      const names: string[] = []
+      for (const row of [...galleryRows, ...arts.map((a: string): { name: string } => ({ name: a }))]) {
+        if (!names.includes(row.name)) names.push(row.name)
       }
       for (const name of names) {
         const host = canonicalHostPath(name, runId, test)
@@ -923,7 +938,8 @@ export async function observeAndAttribute(
       for (const name of names) {
         const mediaUrl = toMediaUrl(name)
         if (assetUrls.includes(mediaUrl)) continue
-        artifacts[name] = mediaUrl
+        const g = galleryRows.find((row) => row.name === name)
+        artifacts[g?.label ?? name] = mediaUrl
         assetUrls.push(mediaUrl)
       }
       if (url !== '' && !assetUrls.includes(url)) assetUrls.unshift(url)

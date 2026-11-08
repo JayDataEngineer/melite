@@ -1,4 +1,4 @@
-import type { ManageCtx } from "./managePlane.js";
+import type { ManageCtx } from "./managePlane.ts";
 /** Sidecar scan: run dirs whose _flow.json reads running|queued.
  *  THE ROOTS UNIFICATION (2026-09-25, the handoff item): the scan
  *  walks the SAME roots manifest as every run-resolving door — own

@@ -1,4 +1,4 @@
-import type { EndpointConfig } from "./provision-config.js";
+import type { EndpointConfig } from "./provision-config.ts";
 /** The custom_nodes directory whose git remote IS this url — the only
  *  reliable identity of a Manager install. Manager renames install
  *  dirs (lrzjason/Comfyui-QwenEditUtils landed as "qweneditutils",

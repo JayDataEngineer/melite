@@ -1,6 +1,6 @@
 import type { ModelRow } from '@melite/comfyui-card-kit/model-contract';
 import type { CellRow, ModelDecl, DeclVariantRow } from '@melite/comfyui-card-kit/model-contract';
-export { assertAddressesServe, assertFactsCallers, assertModInterlock, bootModels, modelsBooted, modelsService, resolveCascade, MODELS_SERVICE, ModelsService, modelsProvider, needModels } from "./service.js";
+export { assertAddressesServe, assertFactsCallers, assertModInterlock, bootModels, modelsBooted, modelsService, resolveCascade, MODELS_SERVICE, ModelsService, modelsProvider, needModels } from "./service.ts";
 /** The shared once-per-process boot entry: fires bootModels() on
  * first call, memoizes, never at import. A REJECTED boot clears
  * the memo — the next call re-boots (bootModels' own retry law).

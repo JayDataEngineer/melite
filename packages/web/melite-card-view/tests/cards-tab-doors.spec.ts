@@ -391,4 +391,51 @@ describe("terminalOutcomeOf — the terminal row builder, contract-fenced", () =
     expect(none["reports"]).toBeUndefined();
     expect(benchResultDefects(none)).toEqual([]);
   });
+
+  // THE LABEL LAW (queue 12, operator 2026-11-08: "there is no
+  // place for the ai agent or the user through the card UI to label
+  // output names"): a gallery row's `label` (the output_name mint at
+  // settle) is the DISPLAY name — the artifacts map KEYS carry it;
+  // the `name` stays the media-route key, so the urls never move.
+  test("THE LABEL KEYS THE MAP: labeled rows key artifacts by label, urls stay the name's media route", () => {
+    const { result } = terminalOutcomeOf(
+      "run-l", "completed",
+      { url: "/melite-media/runs/run-l/film.mp4",
+        gallery: [
+          { name: "film.mp4", label: "golden hour" },
+          { name: "win1.mp4", label: "golden hour · 2" },
+        ] },
+      undefined,
+    );
+    expect(result["artifacts"]).toEqual({
+      "golden hour": "/melite-media/runs/run-l/film.mp4",
+      "golden hour · 2": "/melite-media/runs/run-l/win1.mp4",
+    });
+    expect(result["assetUrls"]).toEqual([
+      "/melite-media/runs/run-l/film.mp4",
+      "/melite-media/runs/run-l/win1.mp4",
+    ]);
+    expect(benchResultDefects(result)).toEqual([]);
+  });
+
+  test("a mixed gallery (a labeled row beside an unlabeled one) keys by label where present, by name where not", () => {
+    const { result } = terminalOutcomeOf(
+      "run-m", "completed",
+      { url: "/melite-media/runs/run-m/film.mp4",
+        gallery: [{ name: "film.mp4", label: "the cut" }, { name: "extra.png" }] },
+      undefined,
+    );
+    expect(Object.keys(result["artifacts"] as Record<string, string>)).toEqual(["the cut", "extra.png"]);
+    expect(benchResultDefects(result)).toEqual([]);
+  });
+
+  test("an empty-string label is NO label (the name keys the map — never a blank display key)", () => {
+    const { result } = terminalOutcomeOf(
+      "run-b", "completed",
+      { url: "/melite-media/runs/run-b/a.png", gallery: [{ name: "a.png", label: "" }] },
+      undefined,
+    );
+    expect(result["artifacts"]).toEqual({ "a.png": "/melite-media/runs/run-b/a.png" });
+    expect(benchResultDefects(result)).toEqual([]);
+  });
 });

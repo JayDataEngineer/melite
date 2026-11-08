@@ -276,8 +276,15 @@ function assertAcyclic(
  * Admission is the declared CARD surface (cardAdmits stays the law for
  * card knobs), so the compose door lifts these out of the card walk
  * and carries them onto the COMPOSED row's params — planMerge's
- * paramsByStage reads exactly the bag the bench stored. */
-export const STAGE_RESERVED_PARAMS = ["boundary_unload_models", "vram_budget_mb"] as const
+ * paramsByStage reads exactly the bag the bench stored.
+ * `output_name` (queue 12, operator 2026-11-08: "there is no place
+ * for the ai agent or the user through the card UI to label output
+ * names") is the ESTATE's output-label seat — one reserved key serves
+ * EVERY card (no family schema declares it, the agent can patch it on
+ * any stage); the run settle reads it and mints gallery-row labels
+ * (the display plane — file names stay machine-minted, the filesystem
+ * name cap law holds: nothing parses the filename). */
+export const STAGE_RESERVED_PARAMS = ["boundary_unload_models", "vram_budget_mb", "output_name"] as const
 
 export function planMerge(
   rows: MergeRow[],

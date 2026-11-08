@@ -32,7 +32,10 @@ export interface SidecarStage {
   readonly status: string;
   readonly engine?: string;
   readonly url?: string;
-  readonly gallery?: Array<{ name: string }>;
+  /** A gallery row's file `name` is the media-route key; `label`
+   *  (queue 12's output_name mint at settle) is the display name a
+   *  face reads — absent when the run spelled no output_name. */
+  readonly gallery?: Array<{ name: string; label?: string }>;
   readonly result_outputs?: Record<string, unknown>;
   /** THE SETTLED RESULT'S METADATA (the h3 history-load audit's cure
    *  3, dev_docs/audits/journey/h3-history-load-video-2026-11-05.md):
@@ -65,7 +68,7 @@ export function sidecarStageOf(stage: {
     status: string;
     engine?: string;
     url?: string;
-    gallery?: Array<{ name: string }>;
+    gallery?: Array<{ name: string; label?: string }>;
     result_outputs?: Record<string, unknown>;
     result_metadata?: Record<string, unknown>;
     error?: string;
@@ -84,7 +87,11 @@ export function sidecarStageOf(stage: {
   if (typeof stage.engine === 'string') out.engine = stage.engine;
   if (typeof stage.url === 'string') out.url = stage.url;
   if (Array.isArray(stage.gallery)) {
-    const gallery = stage.gallery.filter((entry): entry is { name: string } =>
+    // THE LABEL CARRY (queue 12): a gallery row may carry a display
+    // `label` (the output_name mint at settle) beside its file `name`
+    // — the name is the media-route key, the label is what faces
+    // read. Both ride the sidecar so a restored row renders labeled.
+    const gallery = stage.gallery.filter((entry): entry is { name: string; label?: string } =>
       typeof entry === 'object' && entry !== null && !Array.isArray(entry)
       && typeof (entry as { name?: unknown }).name === 'string'
       && (entry as { name: string }).name !== '',

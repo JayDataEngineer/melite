@@ -6974,7 +6974,9 @@ window.__ModuleLoader__.load({
 					const u = toRunMediaUrl(runId, n);
 					if (mediaUrls.includes(u)) continue;
 					mediaUrls.push(u);
-					artifacts[n] = u;
+					const row = gallery.find((g) => g?.name === n);
+					const label = typeof row?.label === "string" && row.label !== "" ? row.label : n;
+					artifacts[label] = u;
 				}
 				result["artifacts"] = artifacts;
 				result["assetUrls"] = url !== "" && !mediaUrls.includes(url) ? [url, ...mediaUrls] : mediaUrls;

@@ -1056,8 +1056,13 @@ export function terminalOutcomeOf(
   // rides the row so studio adapters read REAL data; gallery names
   // rewrite onto the media route with the same one-rewrite law as
   // the stage url.
-  const gallery: ReadonlyArray<{ name?: unknown }> = Array.isArray(stage?.gallery)
-    ? (stage.gallery as ReadonlyArray<{ name?: unknown }>) : []
+  // THE LABEL LAW (queue 12, operator 2026-11-08: "there is no
+  // place for the ai agent or the user through the card UI to label
+  // output names"): a gallery row's `label` (the output_name mint at
+  // settle) is the DISPLAY name — the artifacts map KEYS carry it;
+  // the `name` stays the media-route key (urls below never move).
+  const gallery: ReadonlyArray<{ name?: unknown; label?: unknown }> = Array.isArray(stage?.gallery)
+    ? (stage.gallery as ReadonlyArray<{ name?: unknown; label?: unknown }>) : []
   const artNames: string[] = []
   for (const g of gallery) {
     if (typeof g?.name === 'string' && g.name !== '') artNames.push(g.name)
@@ -1086,7 +1091,9 @@ export function terminalOutcomeOf(
       const u = toRunMediaUrl(runId, n)
       if (mediaUrls.includes(u)) continue
       mediaUrls.push(u)
-      artifacts[n] = u
+      const row = gallery.find((g) => g?.name === n)
+      const label = typeof row?.label === 'string' && row.label !== '' ? row.label : n
+      artifacts[label] = u
     }
     result['artifacts'] = artifacts
     result['assetUrls'] = url !== '' && !mediaUrls.includes(url) ? [url, ...mediaUrls] : mediaUrls

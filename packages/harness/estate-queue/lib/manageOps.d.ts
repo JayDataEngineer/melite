@@ -1,6 +1,6 @@
-import { ManagerApiError } from "./managerRail.js";
-import { Refused } from "./managePlane.js";
-import type { ManageCtx, ManageEnvelope, Req } from "./managePlane.js";
+import { ManagerApiError } from "./managerRail.ts";
+import { Refused } from "./managePlane.ts";
+import type { ManageCtx, ManageEnvelope, Req } from "./managePlane.ts";
 export declare function base(ctx: ManageCtx): string;
 /** Map a manager refusal to the estate envelope (the vendor's own
  *  security texts ride verbatim — this door never reinterprets a

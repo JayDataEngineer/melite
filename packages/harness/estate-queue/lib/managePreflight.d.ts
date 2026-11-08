@@ -1,4 +1,4 @@
-import type { ManageCtx } from "./managePlane.js";
+import type { ManageCtx } from "./managePlane.ts";
 /** One axis verdict: green, or a miss naming the door that closes
  * it. There is no third state — an axis that could not be checked
  * is a miss carrying why (the never-degraded-green law). */

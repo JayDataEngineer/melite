@@ -765,6 +765,64 @@ describe('melite_flow card — the live allowlist', () => {
       ],
     })
   })
+  // THE LABEL LAW (queue 12, operator 2026-11-08: "there is no place
+  // for the ai agent or the user through the card UI to label output
+  // names"): the settled gallery may carry display `label`s (the
+  // output_name mint at settle) beside its file names — the terminal
+  // stamp keys artifacts by LABEL, urls stay the name's media route.
+  test('card mode keys the terminal stamp by the gallery labels (queue 12)', async () => {
+    let patchBody: Record<string, unknown> | undefined
+    let resolvePatch!: () => void
+    const patched = new Promise<void>((resolve) => { resolvePatch = resolve })
+    const seen = mockEstate([
+      okBenchWith('d-headless'),
+      okDraftThenStart('d-headless', 'r-label'),
+      (lane: string, args: unknown[]) => {
+        if (lane === 'runsStatus') {
+          return { status: 200, body: {
+            status: 'completed',
+            stages: [{
+              id: 's_0',
+              url: 'h3-film/film.mp4',
+              gallery: [
+                { name: 'h3-film/film.mp4', label: 'golden hour' },
+                { name: 'h3-film/mix.flac', label: 'golden hour · 2' },
+                { name: 'h3-film/extra.png' },
+              ],
+            }],
+          } }
+        }
+        if (lane === 'draftsStagePatch' && args[1] === 's_0') {
+          patchBody = args[2] as Record<string, unknown>
+          resolvePatch()
+          return { status: 200, body: { delivered: true } }
+        }
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({
+      card: 'h3-timeline',
+      model: 'h3',
+      params: { calls: [{ text: 'a shot', start_frame: 0, end_frame: 56 }] },
+    }, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.run_id, 'r-label')
+    await patched
+    assert.deepEqual(patchBody?.result, {
+      run_id: 'r-label',
+      url: '/melite-media/runs/r-label/h3-film/film.mp4',
+      artifacts: {
+        'golden hour': '/melite-media/runs/r-label/h3-film/film.mp4',
+        'golden hour · 2': '/melite-media/runs/r-label/h3-film/mix.flac',
+        'h3-film/extra.png': '/melite-media/runs/r-label/h3-film/extra.png',
+      },
+      assetUrls: [
+        '/melite-media/runs/r-label/h3-film/film.mp4',
+        '/melite-media/runs/r-label/h3-film/mix.flac',
+        '/melite-media/runs/r-label/h3-film/extra.png',
+      ],
+    })
+  })
 })
 
 describe('melite_flow bench — THE ONE-BENCH LAW (§22)', () => {

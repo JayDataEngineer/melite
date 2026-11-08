@@ -14,6 +14,10 @@ export function sidecarStageOf(stage) {
     if (typeof stage.url === 'string')
         out.url = stage.url;
     if (Array.isArray(stage.gallery)) {
+        // THE LABEL CARRY (queue 12): a gallery row may carry a display
+        // `label` (the output_name mint at settle) beside its file `name`
+        // — the name is the media-route key, the label is what faces
+        // read. Both ride the sidecar so a restored row renders labeled.
         const gallery = stage.gallery.filter((entry) => typeof entry === 'object' && entry !== null && !Array.isArray(entry)
             && typeof entry.name === 'string'
             && entry.name !== '');

@@ -999,6 +999,72 @@ describe("validate", () => {
     }
   });
 
+  it("THE OUTPUT-NAME LIFT (queue 12): the reserved key never meets card admission, rides the composed params, never the graph", async () => {
+    // The operator's seat (2026-11-08: "there is no place for the ai
+    // agent or the user through the card UI to label output names"):
+    // the agent patches `output_name` onto a bench stage's params —
+    // the compose door LIFTS it (STAGE_RESERVED_PARAMS) before the
+    // card walk, so admission never refuses it as an undeclared card
+    // param, and carries it onto the composed row beside the graph.
+    // If the key ever leaves the reserved list, phase1 receives it
+    // and this wall reds on the very seam that protects the seat.
+    const phase1Params: unknown[] = [];
+    const s = seat(
+      {
+        modelFacts: (): unknown => ({ "z-image": {} }),
+        resolveCardFamily: (): unknown => "z-image",
+        modelMids: (): unknown => new Set<string>(),
+        phase1Card: async (params: unknown): Promise<unknown> => {
+          phase1Params.push(params);
+          return { mid: "z-image", fam: "z-image", card: "image-gen", spell: null, params: {} };
+        },
+        phase2Card: async (): Promise<unknown> => ({
+          graph: { "9": { class_type: "EmptySD3LatentImage", inputs: {} } },
+          outputs: {},
+          outputNodes: { default: "9" },
+        }),
+      },
+      { stages: [{ id: "s_0", card: "image-gen", params: { prompt: "x", output_name: "golden hour" } }] },
+    );
+    const engine = engineSeat(s);
+    const ctx = (s.svc as unknown as { ctx: Context }).ctx;
+    (ctx as unknown as Record<string, unknown>)["engines"] = {
+      ids: (): string[] => ["comfyui"],
+      resolve: (): { executor: FakeEngine } => ({ executor: engine }),
+    };
+    engine.onFlow = async (rows) => ({
+      stages: Object.fromEntries(rows.map((r) => [r.stageId, { outputs: {}, artifacts: [] }])),
+      promptId: "p",
+    });
+    const ans = await s.svc.start({ draft_id: "d1", test: false }, sig());
+    const run = await settleWait(s, ans.run_id);
+    assert.equal(run.status, "completed", "the labeled stage composes and settles");
+    // 1. ADMISSION NEVER SAW THE ESTATE KEY — the lift happened
+    assert.ok(phase1Params.length > 0, "the card walk ran");
+    for (const p of phase1Params) {
+      assert.equal(
+        (p as Record<string, unknown>)["output_name"],
+        undefined,
+        "phase1 receives the params WITHOUT the reserved key (the lift's own evidence)",
+      );
+      assert.equal(
+        (p as Record<string, unknown>)["prompt"],
+        "x",
+        "the declared card params still ride admission untouched",
+      );
+    }
+    // 2. THE COMPOSED ROW CARRIES IT BESIDE THE GRAPH
+    const stageParams = run.params[0] as Record<string, unknown>;
+    assert.equal(stageParams["output_name"], "golden hour", "the composed stage's params carry the stem verbatim");
+    assert.ok(typeof stageParams["workflow"] === "object", "the graph still composes");
+    // 3. THE DISPLAY PLANE IS NOT THE ENGINE'S
+    assert.equal(
+      JSON.stringify(stageParams["workflow"]).includes("golden hour"),
+      false,
+      "the stem never lands inside the serialized graph",
+    );
+  });
+
   // ── THE EXTERMINATION WALLS (2026-10-10, the operator's order: NO
   //    SILENT BEHAVIOR — run 880aaa85d928 proved the seam: the bench
   //    wired input_images from s_0, the client's Run sent a

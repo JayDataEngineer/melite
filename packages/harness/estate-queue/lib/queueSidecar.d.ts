@@ -22,8 +22,12 @@ export interface SidecarStage {
     readonly status: string;
     readonly engine?: string;
     readonly url?: string;
+    /** A gallery row's file `name` is the media-route key; `label`
+     *  (queue 12's output_name mint at settle) is the display name a
+     *  face reads — absent when the run spelled no output_name. */
     readonly gallery?: Array<{
         name: string;
+        label?: string;
     }>;
     readonly result_outputs?: Record<string, unknown>;
     /** THE SETTLED RESULT'S METADATA (the h3 history-load audit's cure

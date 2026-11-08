@@ -882,18 +882,34 @@ inputRuns) {
                         arts.push(p);
                 }
             }
-            const names = [];
+            // THE GALLERY ROWS (queue 12's label law): each row carries its
+            // file `name` (the media key) and may carry a display `label`
+            // (the output_name mint at settle) — the artifacts map keys by
+            // label-first, one law with cards-resource's builder.
+            const galleryRows = [];
+            const galleryNames = [];
             const gallery = st !== undefined && Array.isArray(st['gallery'])
                 ? st['gallery'].flatMap((entry) => {
                     if (typeof entry !== 'object' || entry === null || Array.isArray(entry))
                         return [];
                     const name = entry.name;
-                    return typeof name === 'string' && name !== '' ? [name] : [];
+                    if (typeof name !== 'string' || name === '')
+                        return [];
+                    const rawLabel = entry.label;
+                    return typeof rawLabel === 'string' && rawLabel !== ''
+                        ? [{ name, label: rawLabel }] : [{ name }];
                 })
                 : [];
-            for (const name of [...gallery, ...arts]) {
-                if (!names.includes(name))
-                    names.push(name);
+            for (const g of gallery) {
+                if (!galleryNames.includes(g.name)) {
+                    galleryNames.push(g.name);
+                    galleryRows.push(g);
+                }
+            }
+            const names = [];
+            for (const row of [...galleryRows, ...arts.map((a) => ({ name: a }))]) {
+                if (!names.includes(row.name))
+                    names.push(row.name);
             }
             for (const name of names) {
                 const host = canonicalHostPath(name, runId, test);
@@ -914,7 +930,8 @@ inputRuns) {
                 const mediaUrl = toMediaUrl(name);
                 if (assetUrls.includes(mediaUrl))
                     continue;
-                artifacts[name] = mediaUrl;
+                const g = galleryRows.find((row) => row.name === name);
+                artifacts[g?.label ?? name] = mediaUrl;
                 assetUrls.push(mediaUrl);
             }
             if (url !== '' && !assetUrls.includes(url))

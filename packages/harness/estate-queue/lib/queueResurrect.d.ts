@@ -1,4 +1,4 @@
-import type { RunId } from "./queueCore.js";
+import type { RunId } from "./queueCore.ts";
 import { type DraftId } from "@melite/contracts/benchStage";
 export interface ResurrectPlan {
     /** run_ids to re-queue, FIFO by created_at (order survives). */

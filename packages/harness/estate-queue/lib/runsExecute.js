@@ -454,7 +454,7 @@ export async function runOne(run, ctx, settle) {
             stampUnansweredRows(run, refusal, false, missingRows);
             throw new Error(refusal);
         }
-        for (const stage of run.stages) {
+        for (const [stageIdx, stage] of run.stages.entries()) {
             const row = result.stages[stage.id];
             const arts = row.artifacts.filter((a) => a !== "");
             run.artifacts.push(...arts);
@@ -492,7 +492,25 @@ export async function runOne(run, ctx, settle) {
                 // chain + CreateVideo/SaveVideo h3_t4_film); the harness's
                 // only job here is presentation order.)
                 stage["url"] = names[0];
-                stage["gallery"] = names.map((n) => ({ name: n }));
+                // THE OUTPUT-LABEL MINT (queue 12, operator 2026-11-08:
+                // "there is no place for the ai agent or the user through
+                // the card UI to label output names"): the stage's reserved
+                // `output_name` param (spelled by the agent's patch or the
+                // user's field — STAGE_RESERVED_PARAMS carries it onto the
+                // composed row) labels the gallery rows on the DISPLAY
+                // plane. The `name` stays the machine file key (the media
+                // route and every dedup law ride it); the `label` is what
+                // faces read. One artifact wears the stem alone; several
+                // wear the stem on the hero and `stem · 2…n` after (the
+                // hero-led gallery order above decides which is which).
+                const stageParams = run.params[stageIdx];
+                const labelStem = typeof stageParams?.["output_name"] === "string"
+                    && stageParams["output_name"].trim() !== ""
+                    ? stageParams["output_name"].trim()
+                    : null;
+                stage["gallery"] = names.map((n, i) => (labelStem === null
+                    ? { name: n }
+                    : { name: n, label: i === 0 ? labelStem : `${labelStem} · ${i + 1}` }));
             }
             stage["result_outputs"] = { ...row.outputs };
             stage["status"] = "completed";
