@@ -1,4 +1,4 @@
-import type { EngineJson } from "./comfyui-types.ts";
+import type { EngineJson } from "./comfyui-types.js";
 /** No-endpoint refusal — the exact string the queue lane throws. */
 export declare const NO_ENDPOINT_MESSAGE: string;
 /** Repo root: MELITE_REPO_ROOT override (the wall seam — default

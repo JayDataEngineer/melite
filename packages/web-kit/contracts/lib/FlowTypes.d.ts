@@ -1,5 +1,5 @@
-import type { CompoundMode, CompoundBlock } from "./card.ts";
-import type { Provenance } from "./vocab.ts";
+import type { CompoundMode, CompoundBlock } from "./card.js";
+import type { Provenance } from "./vocab.js";
 /** How a stage executes + what card it renders as.
  *
  * ``input`` — the doc-driven media-import family (the input model

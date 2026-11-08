@@ -1,6 +1,6 @@
-import { GraphBuilder, OutputHandle } from '../graph.ts';
-import type { NodeRef } from '../graph.ts';
-import type { LaneInputsFacts } from '../facts.ts';
+import { GraphBuilder, OutputHandle } from '../graph.js';
+import type { NodeRef } from '../graph.js';
+import type { LaneInputsFacts } from '../facts.js';
 /** The text-encode pair: CLIPLoader + VAELoader from lane rows.
  *  Returns OUTPUT HANDLES (never NodeRefs — a ref in an inputs bag
  *  serializes as a scalar and the wall goes red). */

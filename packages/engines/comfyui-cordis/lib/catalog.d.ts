@@ -1,4 +1,4 @@
-import { type EngineJson } from "./comfyui.ts";
+import { type EngineJson } from "./comfyui.js";
 import { type ModelDecl } from '@melite/comfyui-card-kit/model-contract';
 /** One downloadable row — the manage door's download contract. */
 export interface CatalogArtifactRow {

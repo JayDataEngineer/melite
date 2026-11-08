@@ -1,5 +1,5 @@
-import type { GraphBuilder } from './graph.ts';
-import type { DeclVariantRow, RequiredDefaultRow } from './model-contract.ts';
+import type { GraphBuilder } from './graph.js';
+import type { DeclVariantRow, RequiredDefaultRow } from './model-contract.js';
 /** The registry reads derivation renders through — injected, never
  *  imported (this module is evaluation-cycle-clean: models.ts runs
  *  its top-level boot, so any static edge back into it deadlocks

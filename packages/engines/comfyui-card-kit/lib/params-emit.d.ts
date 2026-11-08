@@ -1,4 +1,4 @@
-import type { SemanticModelEntry } from './semanticModelKnob.ts';
+import type { SemanticModelEntry } from './semanticModelKnob.js';
 /** One card-declared modifier kind (the declarer face of the served
  *  ModifierKind — structural, the JSON wire shape). `entry` follows
  *  the served vocabulary: 'option' | 'hybrid' | undefined = field. */

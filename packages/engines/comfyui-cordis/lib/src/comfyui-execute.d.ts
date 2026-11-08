@@ -1,5 +1,5 @@
 import type { Client } from "@stable-canvas/comfyui-client";
-import type { ActivePrompt, EngineJson } from "./comfyui-types.ts";
+import type { ActivePrompt, EngineJson } from "./comfyui-types.js";
 export interface ExecuteOpts {
     /** Seconds; the estate's own budget (default 2400). */
     readonly timeoutS?: number;
