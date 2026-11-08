@@ -17,7 +17,10 @@ file-tail law (windows save, then the estate's concat node stitches
 the saved files — never ffmpeg).
 
 Skills: `timeline-craft` (window planning, seams, audio continuity,
-budget), and for appending seconds AFTER a finished film: the card's
+budget), `mods-recipe` (the video-edit card's recipe grammar — its
+six checkable sections, the ingredient slots and their file kinds,
+the variant dial, the split verb), and for appending seconds AFTER
+a finished film: the card's
 `extend` arm (a fresh window anchored on the film's last frame, joined
 into one file — the extend-flow skill). Compose door:
 `melite_construct` `add_stage` with

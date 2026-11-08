@@ -139,3 +139,92 @@ describe("the timeline-craft doc is the engine's law, derived", () => {
     assert.match(doc, /^---[\s\S]*?name: timeline-craft/um, "the leaf carries its own frontmatter");
   });
 });
+
+// THE MODS-RECIPE FOLD (§0.6 of the timeline plan): the recipe
+// grammar an agent reads — the six checkable sections, the
+// ingredient slots with their file kinds, the variant dial, the
+// split verb. Every arm DERIVES its truth from the card's own
+// source at wall time: a doc that drifts from the served card
+// reds here, and a card that changes without its doc reds too.
+const RECIPE = join(ROOT, "packages/engines/comfyui-cordis/models/video/h3-timeline/agents/skills/mods-recipe/SKILL.md");
+const CARD = join(ROOT, "packages/video/h3-timeline/src/card.ts");
+const recipeDoc = readFileSync(RECIPE, "utf8");
+const cardSrc = readFileSync(CARD, "utf8");
+
+/** The EDIT_MOD block of card.ts (the edit card's own declaration). */
+function editModBlock(): string {
+  const start = cardSrc.indexOf("const EDIT_MOD");
+  assert.ok(start !== -1, "card.ts declares EDIT_MOD");
+  const end = cardSrc.indexOf("const DECLARED_MOD_KINDS", start);
+  assert.ok(end !== -1, "card.ts closes EDIT_MOD before the kinds list");
+  return cardSrc.slice(start, end);
+}
+
+/** The section ids the card serves on the edit door. */
+function servedSectionIds(): string[] {
+  const block = editModBlock();
+  const sec = block.indexOf("sections: [");
+  assert.ok(sec !== -1, "EDIT_MOD declares its sections");
+  const region = block.slice(sec, block.indexOf("]", sec));
+  return [...region.matchAll(/\{ id: '([a-z0-9-]+)'/gu)].map((m) => m[1]!);
+}
+
+/** One field's declaration line off the EDIT_MOD fields. */
+function fieldLine(name: string): string {
+  const block = editModBlock();
+  const line = block.split("\n").find((l) => l.includes(`name: '${name}'`));
+  assert.ok(line !== undefined, `EDIT_MOD declares the ${name} field`);
+  return line!;
+}
+
+describe("the mods-recipe doc is the edit card's grammar, derived", () => {
+  it("ARM 6 — the doc's six sections are the card's own served ids", () => {
+    const ids = servedSectionIds();
+    assert.equal(ids.length, 6, "the edit door serves six sections");
+    for (const id of ids) {
+      expect(recipeDoc.includes(`\`${id}\``), `the recipe doc names the served section ${id}`).toBe(true);
+    }
+  });
+
+  it("ARM 7 — the slot kind laws match the declared field types", () => {
+    const laws: Array<[string, string]> = [
+      ["mask", "PNG"],
+      ["still", "PNG"],
+      ["mannequin", "VIDEO"],
+      ["source_clip", "VIDEO"],
+      ["chain_run", "chain-run"],
+    ];
+    for (const [slot, kindWord] of laws) {
+      const line = fieldLine(slot);
+      expect(recipeDoc.includes(`\`${slot}\``), `the doc names the ${slot} slot`).toBe(true);
+      expect(recipeDoc.includes(kindWord), `the doc names the ${kindWord} kind`).toBe(true);
+      if (kindWord === "PNG") expect(line.includes("type: 'image'"), `${slot} is an image field`).toBe(true);
+      if (kindWord === "VIDEO") expect(line.includes("media: 'video'"), `${slot} is a video field`).toBe(true);
+      if (kindWord === "chain-run") expect(line.includes("type: 'chain-run'"), `${slot} is a chain-run field`).toBe(true);
+    }
+  });
+
+  it("ARM 8 — the split verb states the cut law whole (identity carries, no chaining, refusal)", () => {
+    for (const phrase of [
+      "carries WHOLE into BOTH halves",
+      "states `cut`",
+      "NO chaining",
+      "no chain_run",
+      "REFUSES",
+      "22-frame cut price",
+    ]) {
+      expect(recipeDoc.includes(phrase), `the split prose states: ${phrase}`).toBe(true);
+    }
+    // the cut law's own truth home states the seam word the doc teaches
+    const mutations = readFileSync(join(ROOT, "packages/video/h3-timeline/src/ui/studio/useCallMutations.ts"), "utf8");
+    expect(mutations.includes('transition: "cut"'), "the split branch still writes the cut seam").toBe(true);
+  });
+
+  it("ARM 9 — the fold is served: frontmatter gates use-when and AGENT.md points at both skills", () => {
+    assert.match(recipeDoc, /^---[\s\S]*?name: mods-recipe/um, "the recipe doc carries its frontmatter");
+    assert.match(recipeDoc, /^---[\s\S]*?description:[^\n]*use when/um, "the description gates use-when");
+    const agent = readFileSync(AGENT, "utf8");
+    assert.match(agent, /timeline-craft/u, "AGENT.md still points at the craft skill");
+    assert.match(agent, /mods-recipe/u, "AGENT.md points at the mods-recipe skill");
+  });
+});
