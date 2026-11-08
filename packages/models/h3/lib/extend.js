@@ -4,7 +4,7 @@ export { solveWindowComposition } from './timelineContract.js';
 // the last-frame spelling re-exported from its ONE home (timelineContract —
 // actions.ts reads it there too; the public face keeps this name)
 export { LAST_FRAME_BATCH_INDEX } from './timelineContract.js';
-import { contexMaskedTarget, loadVideo, renderMaskedEditChain } from './chainEdit.js';
+import { contexMaskedTarget, loadVideo, renderMaskedEditChain, sheetRefSlots } from './chainEdit.js';
 /** The tail-frame picker's index: the boot census's OWN max for
  * ImageFromBatch.batch_index (16384 today — the wall derives it from
  * tests/walls/fixtures/object_info.boot.json, never a frozen literal).
@@ -98,7 +98,7 @@ export function renderH3Extend(entry, p, facts, g, runId) {
         assemble: composition.windows >= 2
             ? { audioSource: 'generated', filename: `${runId}/extend_chain` }
             : null,
-        body: ({ cur, clip, vaeVideo, vaeAudio, mutedChainAudio, sliceAudio }) => {
+        body: ({ cur, clip, vaeVideo, vaeAudio, mutedChainAudio, sliceAudio, refImages }) => {
             // The everywhere-generate mask: an all-white SolidMask sized
             // to the chain's own geometry (nothing held — extended
             // seconds are new content). `.out(0)`: a mask SEAT takes an
@@ -120,6 +120,10 @@ export function renderH3Extend(entry, p, facts, g, runId) {
                 'ref_images.ref_image_0': lastFrame,
                 'ref_videos.ref_video_0': priorFrames,
                 'ref_video_audios.ref_video_audio_0': mutedChainAudio,
+                // THE SHEET (P0-1): the pixel anchor owns slot 0 — the
+                // declared sheet follows (the seam pin below is untouched:
+                // it rides the conditioning AFTER the r2v, not this slot).
+                ...sheetRefSlots(refImages, 1),
             });
             const slice = g.node('H3SourceSlice', {
                 source_fps: 24, crop: 'center',

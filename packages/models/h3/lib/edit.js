@@ -1,4 +1,4 @@
-import { contexMaskedTarget, loadVideo, renderMaskedEditChain } from './chainEdit.js';
+import { contexMaskedTarget, loadVideo, renderMaskedEditChain, sheetRefSlots } from './chainEdit.js';
 import { renderH3ChainUpscale } from './chainUpscale.js';
 import { renderH3Extend } from './extend.js';
 import { REFINE_2X_OOM_FRAMES, REFINE_UPSCALE_MODEL } from './refine.js';
@@ -254,7 +254,7 @@ export function renderH3Edit(entry, mask, reference, p, facts, g, runId) {
             audioSource: keepAudio ? 'source' : 'generated',
             filename: `${runId}/edit`,
         },
-        body: ({ cur, clip, vaeVideo, vaeAudio, mutedChainAudio, sliceAudio }) => {
+        body: ({ cur, clip, vaeVideo, vaeAudio, mutedChainAudio, sliceAudio, refImages }) => {
             // ── the reference dial's r2v: the anchors the conditioning
             // rides (swap's pair, or repair's self seat) ──
             const r2v = g.node('MiniMaxH3ReferenceToVideo', {
@@ -269,6 +269,10 @@ export function renderH3Edit(entry, mask, reference, p, facts, g, runId) {
                     }
                     : { 'ref_videos.ref_video_0': srcFrames }),
                 'ref_video_audios.ref_video_audio_0': mutedChainAudio,
+                // THE SHEET (P0-1): after the dial's own anchor — slot 1
+                // under still+mannequin, slot 0 on the self seat (the
+                // repair posture). One grammar, both input slots.
+                ...sheetRefSlots(refImages, reference.mode === 'still+mannequin' ? 1 : 0),
             });
             const slice = g.node('H3SourceSlice', {
                 source_fps: 24, crop: 'center',

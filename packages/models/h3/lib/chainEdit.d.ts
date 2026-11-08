@@ -112,7 +112,21 @@ export interface ChainBodyHandles {
     readonly srcFrames: OutputHandle;
     /** the window's source audio, muted (the slice's audio seat). */
     readonly sliceAudio: OutputHandle;
+    /** THE SHEET (queue 13 P0-1, operator ruling 2026-11-08: "ref_mods
+     *  and ref_images should appear the same to the AI, they are input
+     *  slots"): the declared ref_images, already loaded — the cell
+     *  wires them at its FIRST FREE ref_images slot (after its own
+     *  anchors). Empty array = no seat stated. */
+    readonly refImages: readonly OutputHandle[];
 }
+/** Wire the sheet handles into an r2v creator's image slots at the
+ * cell's first free index (each cell owns its anchor count; the
+ * spine owns the load + the cap). A symmetric input slot to the
+ * agent, machinery to the graph.
+ * @param refImages the declared sheet handles (possibly empty).
+ * @param base the cell's first free ref_images index.
+ * @returns dotted-slot inputs for the creator node. */
+export declare function sheetRefSlots(refImages: readonly OutputHandle[], base: number): Record<string, OutputHandle>;
 /** The seat's masked-edit body: the nodes between ChainCurrent and
  * ChainContext — the r2v anchors, the source slice, the edit latent,
  * the masked target. Returns the two wires ChainContext consumes. */

@@ -57,7 +57,7 @@
 // the clip itself).
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import type { H3Facts } from './actions.js'
-import { contexMaskedTarget, loadVideo, renderMaskedEditChain } from './chainEdit.js'
+import { contexMaskedTarget, loadVideo, renderMaskedEditChain, sheetRefSlots } from './chainEdit.js'
 
 /** The swap entry's required media + text seats (the reshoot idiom:
  *  an armed doc with an empty seat refuses loud naming the seat). */
@@ -135,7 +135,7 @@ export function renderH3Swap(
       audioSource: keepAudio ? 'source' : 'generated',
       filename: `${runId}/swap`,
     },
-    body: ({ cur, clip, vaeVideo, vaeAudio, mutedChainAudio, sliceAudio }) => {
+    body: ({ cur, clip, vaeVideo, vaeAudio, mutedChainAudio, sliceAudio, refImages }) => {
       // ── the masked edit body: the still anchors identity, the
       // mannequin carries motion, the staged PNG masks the edit ──
       const r2v = g.node('MiniMaxH3ReferenceToVideo', {
@@ -146,6 +146,9 @@ export function renderH3Swap(
         'ref_images.ref_image_0': stillImg,
         'ref_videos.ref_video_0': mannequin,
         'ref_video_audios.ref_video_audio_0': mutedChainAudio,
+        // THE SHEET (P0-1): the still owns slot 0 — the declared
+        // sheet follows it, the same input-slot grammar as gen.
+        ...sheetRefSlots(refImages, 1),
       })
       const slice = g.node('H3SourceSlice', {
         source_fps: 24, crop: 'center',

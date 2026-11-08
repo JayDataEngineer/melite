@@ -1,4 +1,4 @@
-import { contexMaskedTarget, loadVideo, renderMaskedEditChain } from './chainEdit.js';
+import { contexMaskedTarget, loadVideo, renderMaskedEditChain, sheetRefSlots } from './chainEdit.js';
 import { assertGridLength } from './timelineContract.js';
 /** The SAM3 checkpoint the mask family declares + hash-pins
  * (packages/models/mask/src/index.ts — auto-provisioned; the track
@@ -107,7 +107,7 @@ export function renderH3Repair(entry, p, facts, g, runId) {
             audioSource: 'source',
             filename: `${runId}/repair`,
         },
-        body: ({ cur, clip, vaeVideo, vaeAudio, mutedChainAudio, sliceAudio }) => {
+        body: ({ cur, clip, vaeVideo, vaeAudio, mutedChainAudio, sliceAudio, refImages }) => {
             // ── F7 — THE PER-SCENE MASK SLICE (2026-11-12): whole-clip
             // parity. The plan head segments the window engine-side (the
             // swap's own choreography — planFromSource rides the same
@@ -140,6 +140,10 @@ export function renderH3Repair(entry, p, facts, g, runId) {
                 clip, vae: vaeVideo, audio_vae: vaeAudio,
                 'ref_videos.ref_video_0': srcFrames,
                 'ref_video_audios.ref_video_audio_0': mutedChainAudio,
+                // THE SHEET (P0-1): repair mounts NO image anchor — the
+                // declared ref_images ride from slot 0, stated exactly as
+                // the gen door states them (an input slot, nothing more).
+                ...sheetRefSlots(refImages, 0),
             });
             const slice = g.node('H3SourceSlice', {
                 source_fps: 24, crop: 'center',

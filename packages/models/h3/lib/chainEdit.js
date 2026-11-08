@@ -1,4 +1,7 @@
 import { LANE_FILES, h3LoraStackOf, h3ShiftVideoOf } from './actions.js';
+import { mountRefModBake } from './refmodBake.js';
+import { wireList } from './schema.js';
+import { REF_CAPS } from './timelineContract.js';
 /** The VHS source loader the slice + timeline read (reference node 5
  *  verbatim: force_rate 24 — the film clock — and the zero/one
  *  passthrough knobs; format 'None'). Slot 0 frames, slot 2 audio.
@@ -185,6 +188,20 @@ export const h3MaskedEditPlane = (g, p, facts, clipSeconds) => {
     const samplerSel = g.node('KSamplerSelect', { sampler_name: 'euler' }).out();
     return { sigmaModel, samplerSel, clip, vaeVideo, vaeAudio };
 };
+/** Wire the sheet handles into an r2v creator's image slots at the
+ * cell's first free index (each cell owns its anchor count; the
+ * spine owns the load + the cap). A symmetric input slot to the
+ * agent, machinery to the graph.
+ * @param refImages the declared sheet handles (possibly empty).
+ * @param base the cell's first free ref_images index.
+ * @returns dotted-slot inputs for the creator node. */
+export function sheetRefSlots(refImages, base) {
+    const out = {};
+    refImages.forEach((h, i) => {
+        out[`ref_images.ref_image_${base + i}`] = h;
+    });
+    return out;
+}
 /** The plan node's own widget band for clip_seconds (live
  * object_info: FLOAT min 2.5 max 15.0). The estate's grid rungs run
  * 22f–362f = 0.917s–15.083s, so the edge rungs (22/39/56f under,
@@ -294,12 +311,30 @@ export function renderMaskedEditChain(g, seat) {
     const mutedChainAudio = g.node('AudioAdjustVolume', {
         volume: -100, audio: cur.out(12),
     }).out(0);
+    // ── THE SHEET (P0-1's second half): ref_images stated once at
+    // the doc level, loaded once here, wired by the cell at its first
+    // free slot. The cap is the one the gen door states (the bag's
+    // own max_stack, REF_CAPS.images): one number for both doors, the
+    // slot INDEX merely shifts under a cell's own anchor. A longer
+    // sheet refuses LOUD (the gen bus law — never a silent clobber
+    // onto the video lane). ──
+    const sheetRefs = wireList(seat.p.ref_images);
+    if (sheetRefs.length > REF_CAPS.images) {
+        throw new Error(`[h3-timeline] ref_images exceeds the reference-image cap (saw ${String(sheetRefs.length)}, max ${String(REF_CAPS.images)})`);
+    }
+    const refImages = sheetRefs.map((src) => g.node('LoadImage', { image: src, upload: 'image' }).out(0));
     // ── the seat's masked-edit body (anchors + slice + edit latent +
     // masked target — the seat's true deltas) ──
-    const { conditioning, targetLatent } = seat.body({
+    const { conditioning: bodyCond, targetLatent } = seat.body({
         cur, clip, vaeVideo, vaeAudio, mutedChainAudio,
-        srcFrames: seat.srcFrames, sliceAudio,
+        srcFrames: seat.srcFrames, sliceAudio, refImages,
     });
+    // ── THE REFMOD BAKE (P0-1's first half): the identical bake the
+    // film path mounts, appended onto the edit conditioning — the
+    // chain applies it to every window (the loop's own conditioning
+    // seat), so the bake is per-window through the chain's own law.
+    // An empty seat returns the handle untouched (byte-stable). ──
+    const conditioning = mountRefModBake(g, { p: seat.p, cond: bodyCond, vaeVideo, vaeAudio });
     const ctx = g.node('MiniMaxH3ChainContext', {
         state: cur.out(0), conditioning,
         vae: vaeVideo, latent: targetLatent, audio_vae: vaeAudio,
