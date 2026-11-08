@@ -433,5 +433,27 @@ describe("THE VIDEO-TO-VIDEO AND CUTS FACE (queue 11 — the cut door)", () => {
       assert.equal(doc[1]!.transition, "extend",
         `the second half's seam states the CARRY (extend) — got ${JSON.stringify(doc[1]!.transition)}`)
     }, { timeout: 4000 })
+    // THE DISCRIMINATOR PRESS (the toggle-proof's teeth): 2s and the
+    // playhead-0 midpoint BOTH resolve to 56 on this doc, and 1s
+    // collides with the midpoint's own snap — a press stating 1.5
+    // SECONDS (frame 36 → nearest legal 39, versus the midpoint
+    // fallthrough's 22) proves the STATED timestamp drives the split,
+    // never the playhead.
+    const splitAt2 = document.querySelector('[data-testid="tl-split-at"]') as HTMLInputElement | null
+    assert.ok(splitAt2, "the timestamp input still serves")
+    fireEvent.change(splitAt2, { target: { value: "1.5" } })
+    fireEvent.input(splitAt2, { target: { value: "1.5" } })
+    saved.length = 0
+    fireEvent.click(document.querySelector('[data-testid="tl-add-cut"]')!)
+    await waitFor(() => {
+      const withCalls = saved.filter((p) => Array.isArray(p.calls)) as Array<{ calls: DocCall[] }>
+      assert.ok(withCalls.length > 0, "the 1.5s press lands the calls write")
+      const doc = withCalls[withCalls.length - 1]!.calls
+      // frame 36 sits interior to the first window [0,56) → the split
+      // cuts THAT window into [0,39)+[39,56): three windows total
+      assert.equal(doc.length, 3, `three windows after the 1.5s split — got ${JSON.stringify(doc)}`)
+      assert.equal(doc[0]!.end_frame, 39,
+        `1.5s→frame 36, snapped to 39 (NOT the midpoint fallthrough's 22) — got end ${doc[0]!.end_frame}`)
+    }, { timeout: 4000 })
   })
 })
