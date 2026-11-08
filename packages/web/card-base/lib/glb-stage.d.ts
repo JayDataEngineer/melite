@@ -1,6 +1,6 @@
 import { createElement as h } from 'react';
 import * as THREE from '@melite/three-client/client';
-import { type FormSpecDoc, type SpecValues } from './spec.ts';
+import { type FormSpecDoc, type SpecValues } from './spec.js';
 /** One stage asset — the old Stage contract's live subset (the four
  *  fields consumers set: id/url/name + the placement override; the
  *  drop-raycast position stays caller-computed). */

@@ -188,6 +188,12 @@ export interface MotionTimelineBarProps {
    *  resolves the row's uuid to its call and toggles carried vs cut.
    *  Absent → the read-only extend dot (the motion card's own bar). */
   onSeamToggle?: (id: string) => void
+  /** THE SPLIT SEAT (§0.5, the window split, 2026-11-16): a visible
+   *  split verb on every clip — the interior split was reachable only
+   *  through a double-click no clip passes through (clips own it for
+   *  inline edit). The tenant resolves the uuid to its call, picks
+   *  the frame, and owns the refusal face. Absent → no seat. */
+  onPromptSplit?: (id: string) => void
   /** prompt uuid → video URL: the window render shown INSIDE the call
    *  clip (first frame at rest, plays on hover — NLE strip behavior).
    *  Best-effort mapping: window index ↔ call index (1:1 unless a
@@ -372,6 +378,7 @@ export function MotionTimelineBar({
   onBeatAdd,
   onPromptAdd,
   onSeamToggle,
+  onPromptSplit,
   previews,
   selectedId = null,
   onSelect,
@@ -458,6 +465,7 @@ export function MotionTimelineBar({
           frameToPx={scale.frameToPx} frameAt={scale.frameAt} startDrag={drag.startDrag} playhead={playhead}
           onPromptUpdate={onPromptUpdate} onPromptDelete={onPromptDelete}
           onSeamToggle={onSeamToggle}
+          onPromptSplit={onPromptSplit}
         />
         {commissions?.map((row) => (
           <CommissionLane

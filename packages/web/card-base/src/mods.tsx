@@ -39,7 +39,7 @@
  */
 import { createElement as h, useEffect, useState } from 'react'
 import type { ReactElement } from 'react'
-import { Button, IconPlusOutlineRegular, Input, Menu, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, Checkbox, IconPlusOutlineRegular, Input, Menu, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import css from './card.module.css'
 import { SpecAtom } from './form.tsx'
 import { useSquareProvider } from './form.tsx'
@@ -1409,17 +1409,23 @@ function ModLeaf(props: {
   const sectionRow = leafSections.length > 0 && props.onSectionToggle !== undefined
     ? h('div', { className: css.modSectionRow, 'data-mod-sections': k.param_key },
         leafSections.map((s) =>
-          h('label', { key: s.id, className: css.modSection, 'data-mod-section': s.id },
-            h('input', {
-              type: 'checkbox',
-              'aria-label': s.label,
-              checked: (leaf.sections ?? []).includes(s.id),
-              onChange: () => { props.onSectionToggle!(s.id) },
-            }),
-            // (the class-4 tip law: hover prose rides the estate Tip,
-            // never a bare native title — the same channel the add
-            // square's hint rides)
-            h(Tip, { tip: s.tooltip ?? s.label, children: h('span', { className: css.modSectionLabel }, s.label) }))))
+          // (the chrome canon, the 2026-11-16 battery triage) the
+          // section checkbox rides the CATALOG Checkbox atom — never
+          // a hand-rolled input; the atom owns its label. Hover prose
+          // still rides the estate Tip (class-4 law: the atom's title
+          // prop is a bare native title in the DOM — this tree's
+          // census forbids it), and the data seat rides the wrapper
+          // span (the atom's props are closed — no rest channel).
+          h('span', { key: s.id, 'data-mod-section': s.id },
+            h(Tip, {
+              tip: s.tooltip ?? s.label,
+              children: h(Checkbox, {
+                checked: (leaf.sections ?? []).includes(s.id),
+                onChange: () => { props.onSectionToggle!(s.id) },
+                label: s.label,
+                className: css.modSection,
+              }),
+            }))))
     : null
   // THE CONDITIONAL-REQUIRED STAR (2026-10-12, the sam3 prompt law):
   // the leaf's captions hand-roll — the star paints HERE too, judged

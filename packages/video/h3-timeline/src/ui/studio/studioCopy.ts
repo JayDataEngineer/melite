@@ -207,6 +207,10 @@ export const studioCopy = {
   /** The strip refusal when a pin lands outside every window (F-B6;
    *  the plan door's own refusal, surfaced). */
   gapRefusal: "that frame is outside every call window — pins ride inside a window",
+  /** (§0.5, the window split) the strip refusal when the split finds
+   *  no legal frame (the 22f base / 17f step windows): the grid's
+   *  shortest halves don't fit — the shared laneErr slot's voice. */
+  splitRefusal: "this window is too short to split — its shortest legal halves don't fit; lengthen it first",
   /** (C6, the imageless pin) a PENDING pin's chip faces — the
    *  double-click authors the frame first; the image rides only
    *  through the picker doors. Until it does, the chip NAMES its

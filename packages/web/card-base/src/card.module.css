@@ -360,14 +360,12 @@ select option {
  * color law: aliases with fallbacks, no literals). */
 .specChips { display: flex; flex-wrap: wrap; gap: 4px; }
 
-/* THE MODIFIER SECTIONS (operator 2026-11-16, §0.8 THE FLOW
- * MODEL): the kind's checkable stages — a column of checkbox
- * labels flowing down the modal's head, above the ingredient
- * slots. Layout only — the native input carries its own theme
- * face (no literal fills on this plane). */
+/* THE MODIFIER SECTIONS (§0.8 the flow model): the kind's checkable
+ * stages — a column of checkbox rows flowing down the modal's head,
+ * above the ingredient slots. Layout only — the atom's checkbox
+ * carries its own theme face (no literal fills on this plane). */
 .modSectionRow { display: flex; flex-direction: column; gap: 4px; margin: 0 0 8px; }
 .modSection { display: flex; align-items: center; gap: 8px; cursor: pointer; }
-.modSectionLabel { user-select: none; }
 
 .modLeafModal { width: min(760px, calc(100vw - 32px)); max-height: min(80vh, 760px); overflow-y: auto; }
 

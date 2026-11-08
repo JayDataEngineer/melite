@@ -1,7 +1,7 @@
 import type * as React from "react";
 import type { TimelineTrack } from "./viser-timeline/types.js";
-import type { AudioLayer, TimelineBeat } from "./MotionTimelineBar.js";
-import { type CommissionRow } from "./CommissionsRail.js";
+import type { AudioLayer, TimelineBeat } from "./MotionTimelineBar.tsx";
+import { type CommissionRow } from "./CommissionsRail.tsx";
 export interface TimelineGutterScale {
     zoom: (factor: number) => void;
     anchorRef: React.MutableRefObject<{

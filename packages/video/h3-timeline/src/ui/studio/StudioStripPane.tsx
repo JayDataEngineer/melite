@@ -87,7 +87,9 @@ export function StudioStripPane({
   handlePromptResize: (id: string, s: number, e: number) => void
   handlePromptDelete: (id: string) => void
   handleExtend: (newTotal: number) => void
-  addCallAt: (frame: number) => void
+  /** (§0.5) the second arg is the no-legal-split refusal — the strip
+   *  routes it to the shared laneErr slot (the mutation owns the law). */
+  addCallAt: (frame: number, onRefuse?: () => void) => void
   handleTimelineSelect: (id: string | null) => void
   layerA: LayerA
   /** THE BLOCKER (2026-09-22): reference audio wired on any call —
@@ -501,6 +503,27 @@ export function StudioStripPane({
               const idx = barPrompts.findIndex((p) => p.uuid === id)
               /* v8 ignore else -- the idx < 0 skip is a type fence: the kit renders a seam chip only for rows of the prompts array it was handed, and the chip arms only where shownPrompts is the unfiltered barPrompts (the dormant face's filter carries no chip — onSeamToggle is undefined there), so every uuid through this door is a barPrompts row; a face that filters prompts while keeping the chip armed would re-arm it */
               if (idx >= 0) setCallTransition(idx, calls[idx]?.transition === "cut" ? "extend" : "cut")
+            }
+      }
+      // THE SPLIT SEAT (§0.5, the window split): the clip's visible
+      // divide verb — the kit hands the tenant the row's uuid, the
+      // write rides addCallAt at the call's own midpoint (the
+      // mutation owns the grid law, the identity carry and the cut
+      // seam), and a window too short to split refuses LOUD in the
+      // shared laneErr slot. Under a DORMANT face the seat stands
+      // down with the other five edit doors (dead authoring).
+      onPromptSplit={
+        callsFace.face === "dormant"
+          ? undefined
+          : (id: string) => {
+              const idx = barPrompts.findIndex((p) => p.uuid === id)
+              /* v8 ignore else -- the idx < 0 skip is a type fence: the kit renders the split seat only for rows of the prompts array it was handed, and the seat arms only where shownPrompts is the unfiltered barPrompts (the dormant face carries no seat — onPromptSplit is undefined there) */
+              if (idx < 0) return
+              const call = calls[idx]
+              if (call === undefined) return
+              const mid = Math.round((call.start_frame + call.end_frame) / 2)
+              setLaneErr(null)
+              addCallAt(mid, () => setLaneErr(studioCopy.splitRefusal))
             }
       }
       previews={callPreviews}

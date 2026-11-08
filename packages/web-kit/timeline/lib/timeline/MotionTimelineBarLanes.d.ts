@@ -1,6 +1,6 @@
 import type * as React from "react";
 import type { TimelineKeyframe, TimelinePrompt, TimelineTrack } from "./viser-timeline/types.js";
-import type { AudioLayer, TimelineBeat } from "./MotionTimelineBar.js";
+import type { AudioLayer, TimelineBeat } from "./MotionTimelineBar.tsx";
 import type { Drag } from "./MotionTimelineBarDrag.js";
 export interface TimelinePromptsLaneProps {
     prompts: TimelinePrompt[];
@@ -26,6 +26,12 @@ export interface TimelinePromptsLaneProps {
      *  to its call index; the lane never assumes 1:1 after a face
      *  filter). Absent → the read-only extend dot, byte-identical. */
     onSeamToggle?: (id: string) => void;
+    /** THE SPLIT SEAT (§0.5, the window split, 2026-11-16): opt-in
+     *  split verb on every clip — the double-click surface never
+     *  reaches an interior split (clips own double-click for inline
+     *  edit). The id is the row's own uuid; the tenant picks the frame
+     *  and owns the refusal. Absent → no seat. */
+    onPromptSplit?: (id: string) => void;
 }
 /** Draggable/resizable prompt clips (bar line 994). */
 export declare function TimelinePromptsLane(props: TimelinePromptsLaneProps): React.JSX.Element;

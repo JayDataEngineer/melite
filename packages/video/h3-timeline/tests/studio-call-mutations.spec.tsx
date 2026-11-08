@@ -2,22 +2,25 @@
  * useCallMutations — call-structure setters (BEHAVIORAL).
  *
  * PINS: extend (empty/shrink/grow, snapped to the grid), addCallAt
- * (interior split on a legal boundary, boundary append, empty-doc
- * seed), guides (set/clear/no-op/range), transition (mode switch
- * re-frames the span by the 22f carry), prev-sec (set/clear/
- * validation), refs (set/clear/prune), span (start/end clamps +
- * neighbor ripple + grid snap), knobs (set/clear/prune).
+ * (interior split on a legal boundary — §0.5: identity carries, the
+ * seam births cut, downstream rebases; refusal on no-legal-splice;
+ * boundary append, empty-doc seed), guides (set/clear/no-op/range),
+ * transition (mode switch re-frames the span by the 22f carry),
+ * prev-sec (set/clear/validation), refs (set/clear/prune), span
+ * (start/end clamps + neighbor ripple + grid snap + the no-legal-
+ * seam fence), snapSplitFrame (null when no interior frame serves
+ * both halves), knobs (set/clear/prune).
  *
  * THE FIXTURES ARE ON THE CARD'S GRID (2026-09-25, the uniform span
  * gate): a first window is 22+17f, a carried window is 17f, and calls
  * tile. `A`/`B` below are the legal pair the card admits.
  */
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 import assert from "node:assert/strict"
 import { act, renderHook } from "@testing-library/react"
 import { useState } from "react"
 import { useCallMutations } from "../src/ui/studio/useCallMutations.ts"
-import { snapCallLength } from "../src/ui/studio/docGrid.ts"
+import { snapCallLength, snapSplitFrame } from "../src/ui/studio/docGrid.ts"
 import { DOC_FPS_DEFAULT } from "@melite/models-h3/timelineContract"
 import type { DocCall } from "../src/ui/studio/docModel.ts"
 
@@ -60,13 +63,80 @@ describe("handleExtend", () => {
 })
 
 describe("addCallAt", () => {
-  it("splits the containing call where BOTH halves are legal", () => {
+  // (§0.5, the window split — re-pinned 2026-11-16) the split is ONE
+  // call becoming ITS OWN two halves, never a fresh TODO spliced in:
+  // identity carries whole, the seam between the halves states cut
+  // (the only seam a split can birth), the right half authors its
+  // 17k content + the 22f cut price (a plain span), and everything
+  // downstream rebases by that price.
+  it("splits the containing call where BOTH halves are legal — identity carries, the new seam is a cut", () => {
     const { result } = harness([A, B])
     // gesture 24 → the nearest frame that leaves a legal left half
-    // (22+17k) and a legal carried right half (17k) is 22
+    // (22+17k) and a legal right CONTENT (17k) is 22
     act(() => { result.current.addCallAt(24) })
-    assert.deepEqual(result.current.calls.map((c) => [c.start_frame, c.end_frame]), [[0, 22], [22, 56], [56, 124]])
-    assert.equal(result.current.calls[1]!.text, "")
+    assert.deepEqual(result.current.calls.map((c) => [c.start_frame, c.end_frame]), [[0, 22], [22, 78], [78, 146]])
+    // the right half is A's second half, not a fresh call: text rides
+    assert.equal(result.current.calls[1]!.text, "a")
+    // the seam between the halves states cut (overlap 0 — the §0.5 glue)
+    assert.equal(result.current.calls[1]!.transition, "cut")
+    // B rebases by the +22f cut price, its own seam untouched
+    assert.equal(result.current.calls[2]!.text, "b")
+    assert.equal(result.current.calls[2]!.start_frame, 78)
+  })
+
+  it("the whole identity carries into BOTH halves (refs, knobs, guides, last_frame)", () => {
+    const full: DocCall = {
+      ...A,
+      refs: { images: "hero.png" },
+      knobs: { denoise: 0.55 },
+      image: "still.png",
+      last_frame: "end.png",
+    }
+    const { result } = harness([full, B])
+    act(() => { result.current.addCallAt(24) })
+    const [left, right] = result.current.calls
+    for (const half of [left, right]) {
+      assert.equal(half!.refs?.images, "hero.png")
+      assert.equal(half!.knobs?.denoise, 0.55)
+      assert.equal(half!.image, "still.png")
+      assert.equal(half!.last_frame, "end.png")
+    }
+    // the halves differ ONLY in span + the cut seam
+    assert.equal(left!.transition, undefined)
+    assert.equal(right!.transition, "cut")
+  })
+
+  it("splitting a carried call keeps ITS seam and births a cut at the split", () => {
+    // B (carried at index 1) splits at its only interior legal frame
+    // (73): left stays carried 17k, right authors 51 content + 22
+    const { result } = harness([A, B, { text: "c", start_frame: 124, end_frame: 190 }] as DocCall[])
+    act(() => { result.current.addCallAt(80) })
+    assert.deepEqual(
+      result.current.calls.map((c) => [c.start_frame, c.end_frame]),
+      [[0, 56], [56, 73], [73, 146], [146, 212]],
+    )
+    assert.equal(result.current.calls[1]!.text, "b")
+    assert.equal(result.current.calls[1]!.transition, undefined)
+    assert.equal(result.current.calls[2]!.text, "b")
+    assert.equal(result.current.calls[2]!.transition, "cut")
+    assert.equal(result.current.calls[3]!.start_frame, 146)
+  })
+
+  it("REFUSAL (§0.5): a window with no legal split refuses loud — onRefuse fires once, the doc keeps identity", () => {
+    // the 22f base window has no interior frame leaving a legal pair
+    const doc: DocCall[] = [{ text: "a", start_frame: 0, end_frame: 22 }]
+    const onRefuse = vi.fn()
+    const { result } = harness(doc)
+    act(() => { result.current.addCallAt(10, onRefuse) })
+    assert.ok(result.current.calls === doc, "the refused write returns the SAME array")
+    expect(onRefuse).toHaveBeenCalledTimes(1)
+    // the carried step (17k authored, no interior legal frame) refuses too
+    const carried: DocCall[] = [A, { text: "b", start_frame: 56, end_frame: 73 }]
+    const onRefuse2 = vi.fn()
+    const r2 = harness(carried)
+    act(() => { r2.result.current.addCallAt(60, onRefuse2) })
+    assert.ok(r2.result.current.calls === carried)
+    expect(onRefuse2).toHaveBeenCalledTimes(1)
   })
 
   it("boundary/past-end frames append a fresh call on the grid (empty TODO, never junk)", () => {
@@ -300,6 +370,35 @@ describe("setCallSpan", () => {
       result.current.setCallSpan(9, "end", 5)
     })
     assert.ok(result.current.calls === before)
+  })
+})
+
+describe("snapSplitFrame (the §0.5 fence)", () => {
+  it("returns null when NO interior frame leaves both halves legal — never the raw gesture", () => {
+    // the 22f base: any interior cut leaves a sub-base left half
+    assert.ok(snapSplitFrame(0, 22, false, true, 10) === null)
+    // the carried step (17k authored): same law one family over
+    assert.ok(snapSplitFrame(56, 73, true, true, 60) === null)
+  })
+
+  it("the nearest legal frame still wins when one exists", () => {
+    assert.equal(snapSplitFrame(0, 56, false, true, 24), 22)
+    assert.equal(snapSplitFrame(56, 124, true, true, 80), 73)
+  })
+
+  it("THE FENCE AT THE OTHER DOOR: a seam gesture with NO legal frame writes nothing (never the raw gesture)", () => {
+    // an off-grid pair (a healed-away spelling): plain wants 22+17k,
+    // plain wants 22+17k, and no interior frame serves both — the
+    // fallthrough used to write the raw gesture and both halves went
+    // off-grid. A legal doc always has its current seam legal, so
+    // this fence fires exactly on the constructed spelling.
+    const doc: DocCall[] = [
+      { text: "a", start_frame: 0, end_frame: 30 },
+      { text: "b", start_frame: 30, end_frame: 60, transition: "cut" },
+    ]
+    const { result } = harness(doc)
+    act(() => { result.current.setCallSpan(1, "start", 35) })
+    assert.ok(result.current.calls === doc, "no legal seam exists — nothing is written")
   })
 })
 

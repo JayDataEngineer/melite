@@ -136,16 +136,20 @@ export function snapCallEnd(call: DocCall, index: number, end: number): number {
 }
 
 /** The splice frame for a split where BOTH halves must be legal — the
- *  gesture's frame when it already qualifies, else the nearest one that
- *  does. Never returns a frame that leaves an off-grid half. */
+ *  gesture's frame when it already qualifies, else the nearest one
+ *  that does. NULL when no interior frame qualifies (the §0.5 fence,
+ *  2026-11-16): the old fallthrough handed back the raw gesture and
+ *  every caller wrote an off-grid half the card would refuse whole.
+ *  A window at its shape's floor (the 22f base, the 17f step) has no
+ *  legal split at all — the caller refuses loud, never repairs. */
 export function snapSplitFrame(
   start: number,
   end: number,
   leftCarried: boolean,
   rightCarried: boolean,
   gesture: number,
-): number {
-  let best = gesture
+): number | null {
+  let best: number | null = null
   let bestDistance = Number.POSITIVE_INFINITY
   for (let frame = start + 1; frame < end; frame++) {
     if (!isLegalCallLength(frame - start, leftCarried)) continue

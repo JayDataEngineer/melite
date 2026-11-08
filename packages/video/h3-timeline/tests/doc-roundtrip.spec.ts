@@ -226,3 +226,60 @@ describe("the keyframes channel roundtrip (pins never drop on close/reopen)", ()
     ])
   })
 })
+
+// THE SPLIT WRITE (§0.5, 2026-11-16): a split call is TWO rows with
+// ONE identity — the operator's burn class is "split the shot, close
+// the card, reopen: the second half came back a blank TODO and the
+// seam chained". The wire form must carry BOTH halves' whole identity
+// (text/refs/knobs/guides) plus the right half's `transition:"cut"`,
+// and the second serialize pass over the reopened doc must be
+// byte-stable (a re-save never drifts the split).
+describe("the window-split roundtrip (§0.5 — both halves keep the identity, the cut keeps its seam)", () => {
+  const splitDoc: DocCall[] = [
+    {
+      text: "a lone figure crosses the ridge at dusk",
+      start_frame: 0, end_frame: 22,
+      image: "https://u/anchor.png",
+      refs: { images: "hero.png" },
+      knobs: { denoise: 0.55 },
+    },
+    {
+      text: "a lone figure crosses the ridge at dusk",
+      start_frame: 22, end_frame: 78,
+      transition: "cut",
+      image: "https://u/anchor.png",
+      refs: { images: "hero.png" },
+      knobs: { denoise: 0.55 },
+      last_frame: "https://u/end.png",
+    },
+  ]
+
+  test("BOTH halves survive whole — identity, refs, knobs, guides, and the cut seam", () => {
+    const back = roundtrip(splitDoc)
+    assert.equal(back.length, 2)
+    for (const half of back) {
+      assert.equal(half.text, "a lone figure crosses the ridge at dusk")
+      assert.equal(half.image, "https://u/anchor.png")
+      assert.equal(half.refs?.images, "hero.png")
+      assert.equal(half.knobs?.denoise, 0.55)
+    }
+    assert.equal(back[0].transition, undefined, "the left half's seam is whatever it was — the split births ONE seam")
+    assert.equal(back[1].transition, "cut", "the seam between the halves states cut on the wire")
+    assert.equal(back[1].last_frame, "https://u/end.png")
+  })
+
+  test("THE SPLIT WRITE IS BYTE-STABLE: serialize∘hydrate∘serialize never drifts", () => {
+    const wire = JSON.stringify(serializeCalls(splitDoc))
+    const reopened = hydrateCalls({ calls: wire })
+    const rewired = JSON.stringify(serializeCalls(reopened))
+    assert.equal(rewired, wire, "a close/reopen/re-save is byte-identical — no field mutates in the ride")
+  })
+
+  test("THE STRING WIRE (the persisted spelling) carries the cut seam too", () => {
+    const wire = JSON.stringify(serializeCalls(splitDoc))
+    const parsed = JSON.parse(wire) as Array<{ transition?: string }>
+    assert.equal(parsed[1].transition, "cut")
+    const back = hydrateCalls({ calls: wire })
+    assert.equal(back[1].transition, "cut")
+  })
+})

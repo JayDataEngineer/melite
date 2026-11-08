@@ -27,9 +27,9 @@ were FIXED cells of this matrix; their names still compose (the
 door translates a legacy doc into its cell at the compose door,
 never a frozen peer), and the free cells compose here.
 
-THE MODIFIER SECTIONS (§0.8 THE FLOW MODEL, 2026-11-16: "It is a
-flow. Check the box, behind the scenes the special nodes are
-used"): the card serves SIX checkable sections over this one schema
+THE MODIFIER SECTIONS (§0.8 the flow model — one verb, checkable
+stages over one schema; the box is the intent, the wire is the bag):
+the card serves SIX checkable sections over this one schema
 — `repair-region` (region × self × 0.32, sound held; the mask slot
 chooses the how — the SAM3 region track or one staged PNG, the
 static read is the MASK DIAL's value, never a second section),

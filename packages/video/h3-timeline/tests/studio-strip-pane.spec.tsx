@@ -987,3 +987,53 @@ describe("THE SEAM CHIP — the tenant's cut choice", () => {
   })
 
 })
+
+// THE SPLIT SEAT (§0.5, 2026-11-16) — the TENANT half: the split is a
+// VISIBLE verb on the clip (the double-click interior path was the
+// only door and it was unreachable — clips swallow double-click for
+// inline edit). The seat hands the tenant the clip's uuid; the write
+// rides addCallAt at the call's own midpoint (the mutation owns the
+// grid law and the refusal — the pane owns only the routing).
+describe("THE SPLIT SEAT — the sixth edit door", () => {
+  // the dormant-face fixture (the seam describe's spelling): an armed
+  // replace commission stands the calls lane down
+  const EDIT: DocCommission = { kind: "replace", seats: [{ key: "source_clip", value: "clips/a.mp4" }] }
+  // 141 = 22+7·17: a legal first window that splits (an off-grid
+  // window has no legal split — the families never intersect)
+  const SPLITTABLE: DocCall[] = [{ text: "she walks on", start_frame: 0, end_frame: 141 }]
+
+  it("the seat rides every clip; the click writes through addCallAt at the call's midpoint", () => {
+    const { rec } = strip({ calls: SPLITTABLE, barPrompts: callsToPrompts(SPLITTABLE) })
+    const seat = document.querySelector('[data-split-toggle="call-0"]') as HTMLElement | null
+    assert.ok(seat, "the split verb is visible on the clip — never a hidden gesture alone")
+    fireEvent.click(seat.querySelector("button") ?? seat)
+    // round((0+141)/2) = 71: the gesture frame; the mutation snaps it
+    assert.deepEqual(rec.addCall, [[71]])
+  })
+
+  it("under a DORMANT face the seat stands down with the other five edit doors", () => {
+    const { rec } = strip({
+      calls: SPLITTABLE, barPrompts: callsToPrompts(SPLITTABLE), commissions: [EDIT],
+    })
+    assert.equal(document.querySelectorAll("[data-split-toggle]").length, 0,
+      "the split is the sixth edit door — the mod-mode calls face's law owns it too")
+    assert.deepEqual(rec.addCall, [])
+  })
+
+  it("the refusal surfaces in the shared laneErr slot — the dictionary's voice, the strip's one refusal face", () => {
+    const TINY: DocCall[] = [{ text: "t", start_frame: 0, end_frame: 22 }]
+    const { rec, els } = strip({
+      calls: TINY,
+      barPrompts: callsToPrompts(TINY),
+      // the mock plays the mutation's own contract: a window with no
+      // legal split fires the refusal callback and writes nothing
+      addCallAt: (f: number, refuse?: () => void) => { rec.addCall.push([f]); refuse?.() },
+    })
+    const seat = document.querySelector('[data-split-toggle="call-0"]') as HTMLElement | null
+    assert.ok(seat)
+    fireEvent.click(seat.querySelector("button") ?? seat)
+    const face = els.container.querySelector('[data-testid="tl-strip-file-error"]')
+    assert.equal(face?.textContent, studioCopy.splitRefusal,
+      "the no-legal-split refusal rides the strip's shared refusal slot")
+  })
+})

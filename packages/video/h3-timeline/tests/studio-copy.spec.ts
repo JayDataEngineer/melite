@@ -159,7 +159,10 @@ describe("SOURCE — the copy dictionary owns the static faces", () => {
     // select died (the STRIP CHIP at the boundary is the one door; its
     // words live in the KIT's timelineCopy, tenant-fed); the function
     // face seamModeLabel rode outside this count by construction.
-    assert.equal(ids.length, 99, `the dictionary holds 99 copy ids (found ${ids.length}) — re-pin this wall when copy is added or removed`)
+    // RE-PIN 2026-11-16 (§0.5, the window split): 99 → 100. +1 flat id
+    // = splitRefusal (the no-legal-split refusal, the shared laneErr
+    // slot's voice).
+    assert.equal(ids.length, 100, `the dictionary holds 100 copy ids (found ${ids.length}) — re-pin this wall when copy is added or removed`)
     // RE-PIN 2026-10-16 (the square-grammar residue): 102 → 101.
     // removePack died with the strip Button (187eaf607 deleted the
     // verb; SourceRow's onEdit("") owns the detach) — a fossil id

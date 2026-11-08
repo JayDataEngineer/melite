@@ -31,18 +31,51 @@ export function useCallMutations(setCalls: Dispatch<SetStateAction<DocCall[]>>, 
    *  button. We can use the timeline to do this"): double-click the ruler
    *  or the calls row's empty area at a frame → split the call containing
    *  that frame there (both halves on the grid), or append a fresh call
-   *  at the tail on the grid. The new call starts EMPTY: a call with no
-   *  prompt is a TODO the plan names before any GPU work — never silent
-   *  junk prompt. */
-  const addCallAt = (frame: number) => {
+   *  at the tail on the grid. The appended call starts EMPTY: a call with
+   *  no prompt is a TODO the plan names before any GPU work — never
+   *  silent junk prompt.
+   *
+   *  THE §0.5 SPLIT (2026-11-16): a split is ONE call becoming its own
+   *  two halves, never a fresh TODO spliced into the middle — text,
+   *  refs, knobs, guides and last_frame carry whole into BOTH halves,
+   *  and the seam the split births states CUT (the only seam a split
+   *  can author: the operator asked for two windows, not a chained
+   *  one). The right half's authored span is its 17k content + the
+   *  22f cut price (the same reframe setCallTransition charges — a
+   *  cut window generates its span verbatim), so the film grows by
+   *  22 frames and every downstream call rebases by that price. A
+   *  window at its shape's floor has NO legal split: the write
+   *  refuses loud through `onRefuse` and the doc keeps its identity.
+   *  (The callback fires from inside the state updater — single-run
+   *  today, no StrictMode on this tree; the once-guard keeps a future
+   *  double-invocation from double-firing.) */
+  const addCallAt = (frame: number, onRefuse?: () => void) => {
+    let refused = false
     setCalls((prev) => {
       const i = prev.findIndex((c) => frame > c.start_frame && frame < c.end_frame)
       if (i >= 0) {
         const cur = prev[i]!
+        // rightCarried = the right half's CONTENT is 17k: the splice
+        // frame must leave a legal left half AND a right content the
+        // cut spelling can author (+22 stays on the grid)
+        const split = snapSplitFrame(cur.start_frame, cur.end_frame, isCarriedShape(i, cur), true, Math.round(frame))
+        if (split === null) {
+          if (!refused) { refused = true; onRefuse?.() }
+          return prev
+        }
+        // the right half's end: the spliced half is a carried window
+        // (17k content authored at index i+1) seating transition cut —
+        // exactly the toggle's own reframe, one owner (reflowSeamSpan)
+        const rightEnd = reflowSeamSpan({ ...cur, start_frame: split, transition: "extend" }, i + 1, "cut")
         const next = [...prev]
-        const split = snapSplitFrame(cur.start_frame, cur.end_frame, isCarriedShape(i, cur), isCarriedShape(i + 1, cur), Math.round(frame))
         next[i] = { ...cur, end_frame: split }
-        next.splice(i + 1, 0, { text: "", start_frame: split, end_frame: cur.end_frame })
+        next.splice(i + 1, 0, { ...cur, start_frame: split, end_frame: rightEnd, transition: "cut" })
+        // the seam price rebases everything downstream (the tiling
+        // holds: start of j+1 = end of j)
+        const delta = rightEnd - cur.end_frame
+        for (let j = i + 2; j < next.length; j++) {
+          next[j] = { ...next[j]!, start_frame: next[j]!.start_frame + delta, end_frame: next[j]!.end_frame + delta }
+        }
         return next
       }
       const T = prev.length ? prev[prev.length - 1]!.end_frame : 0
@@ -141,6 +174,11 @@ export function useCallMutations(setCalls: Dispatch<SetStateAction<DocCall[]>>, 
         const rightCarried = isCarriedShape(i, cur)
         const gesture = Math.round(frame)
         let boundary = snapSplitFrame(prevCall.start_frame, cur.end_frame, leftCarried, rightCarried, gesture)
+        // THE §0.5 FENCE: no interior frame serves both windows (a
+        // constructed/off-grid pair) — the gesture is refused, never
+        // written raw (the fallthrough used to author two off-grid
+        // halves the card would refuse whole)
+        if (boundary === null) return prev
         if (boundary === prevCall.end_frame && gesture !== boundary) {
           const stepped = boundary + GRID_STEP * Math.sign(gesture - boundary)
           if (stepped > prevCall.start_frame && stepped < cur.end_frame &&

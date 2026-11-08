@@ -113,6 +113,12 @@ export declare const timelineCopy: {
     }) => string;
     /** The clip delete button's accessible name. */
     readonly deletePromptCardAria: "Delete this prompt card";
+    /** THE SPLIT SEAT (§0.5, the window split): the clip's divide
+     *  verb — one call becomes its own two halves, identity carried,
+     *  the new seam a cut. */
+    readonly splitClipTip: "split — divide this window in two at the grid's nearest legal frame; both halves keep this call's text, refs and knobs";
+    /** The split seat's accessible name. */
+    readonly splitClipAria: "Split this call in two";
     /** An audio clip's hover title (name · window · gain — drag law). */
     readonly audioClipTitle: (p: {
         name: string;

@@ -96,6 +96,12 @@ export const timelineCopy = {
     refImagesTitle: (p) => `${p.count} reference image${p.count === 1 ? "" : "s"} (guide + extras)`,
     /** The clip delete button's accessible name. */
     deletePromptCardAria: "Delete this prompt card",
+    /** THE SPLIT SEAT (§0.5, the window split): the clip's divide
+     *  verb — one call becomes its own two halves, identity carried,
+     *  the new seam a cut. */
+    splitClipTip: "split — divide this window in two at the grid's nearest legal frame; both halves keep this call's text, refs and knobs",
+    /** The split seat's accessible name. */
+    splitClipAria: "Split this call in two",
     // ── Audio clips + slices ─────────────────────────────────────────────
     /** An audio clip's hover title (name · window · gain — drag law). */
     audioClipTitle: (p) => `${p.name} · ${p.start}–${p.end}s${p.gain !== null ? ` · gain ${p.gain}` : ""} — drag to move`,

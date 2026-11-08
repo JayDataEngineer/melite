@@ -588,6 +588,38 @@
   color: var(--dsw-alias-label-primary);
 }
 
+/* THE SPLIT SEAT (§0.5, the window split): bottom-center — the seat
+   sits where the cut lands. Hover-revealed beside the delete X (the
+   clip's two verbs: delete the window / divide the window). */
+.splitSeat {
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  transform: translateX(-50%);
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 14px;
+  padding: 0 3px;
+  border: 1px solid var(--dsw-alias-line-2);
+  border-radius: 9999px;
+  background: var(--dsw-alias-bg-layer-1);
+  color: var(--dsw-alias-label-primary);
+  font-size: 9px;
+  line-height: 1;
+  opacity: 0;
+  cursor: pointer;
+}
+.splitSeat:hover {
+  filter: brightness(1.25);
+  border-color: var(--dsw-alias-label-primary);
+}
+.promptClip:hover .splitSeat {
+  opacity: 1;
+}
+
 /* ── Beats lane ────────────────────────────────────────────────────── */
 .beatsLane {
   position: relative;

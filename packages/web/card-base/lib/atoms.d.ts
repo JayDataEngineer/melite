@@ -2,7 +2,7 @@
  * operator's DRY audit law: one seam, one small file, one wall). */
 import { createElement as h } from 'react';
 import type { ReactElement } from 'react';
-import { type SpecField } from './spec.ts';
+import { type SpecField } from './spec.js';
 import { type SourceRowProps, type SquareHost } from './square-provider.tsx';
 export declare function SourceRow(props: SourceRowProps): ReturnType<typeof h>;
 /** THE DSH MENU SELECT for one spec field (the axes idiom,

@@ -42,6 +42,12 @@ export interface TimelinePromptsLaneProps {
    *  to its call index; the lane never assumes 1:1 after a face
    *  filter). Absent → the read-only extend dot, byte-identical. */
   onSeamToggle?: (id: string) => void
+  /** THE SPLIT SEAT (§0.5, the window split, 2026-11-16): opt-in
+   *  split verb on every clip — the double-click surface never
+   *  reaches an interior split (clips own double-click for inline
+   *  edit). The id is the row's own uuid; the tenant picks the frame
+   *  and owns the refusal. Absent → no seat. */
+  onPromptSplit?: (id: string) => void
 }
 
 /** Draggable/resizable prompt clips (bar line 994). */
@@ -50,7 +56,7 @@ export function TimelinePromptsLane(props: TimelinePromptsLaneProps) {
     prompts, fps, promptsHeight, emptyPromptsHint, onPromptAdd, dragId,
     lastPromptRef, firstPromptRef, selectedId, previews,
     frameToPx, frameAt, startDrag, playhead,
-    onPromptUpdate, onPromptDelete, onSeamToggle,
+    onPromptUpdate, onPromptDelete, onSeamToggle, onPromptSplit,
   } = props
   // Inline prompt editor: the clip being edited + its local text.
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -347,6 +353,35 @@ export function TimelinePromptsLane(props: TimelinePromptsLaneProps) {
                     <IconCloseOutlineRegular />
                   </Button>
                 </Tip>
+              )}
+              {/* THE SPLIT SEAT (§0.5, the window split): a visible
+                  verb at the clip's BOTTOM-CENTER — the seat sits
+                  where the cut lands. The interior split had no
+                  reachable door: double-click on a clip is inline
+                  edit and never reaches the lane's add surface. The
+                  tenant owns the frame and the refusal face; the
+                  mutation owns the grid law. */}
+              {!isEditing && onPromptSplit !== undefined && (
+                <span
+                  data-split-toggle={p.uuid}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onDoubleClick={(e) => e.stopPropagation()}
+                >
+                  <Tip tip={timelineCopy.splitClipTip}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={css.splitSeat}
+                      aria-label={timelineCopy.splitClipAria}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onPromptSplit(p.uuid)
+                      }}
+                    >
+                      <span aria-hidden>✂</span>
+                    </Button>
+                  </Tip>
+                </span>
               )}
             </div>
             </Tip>

@@ -185,6 +185,49 @@ describe('H3TimelineStudio (the card-package tenant, mounted)', () => {
     const calls = patch['calls'] as Array<{ transition?: string }>
     expect(calls[1]!.transition).toBe('extend')
   })
+
+  // THE SPLIT SEAT WALL (§0.5, 2026-11-16 — the audit's finding: the
+  // split was hidden in a double-click no clip ever passes through,
+  // and the splice it performed stripped the call's identity and
+  // stated no seam). The seat must be VISIBLE on the clip, and its
+  // write must land on the write channel as the §0.5 split: BOTH
+  // halves keep the text, the new seam states cut, the spans ride
+  // the grid (the right half authors its content + the 22f cut price).
+  it('THE SPLIT SEAT WRITES THE §0.5 SPLIT: identity carries, the new seam states cut', async () => {
+    const p = owner({
+      row: {
+        id: 's_4', card: 'h3-timeline', title: 'H3 Timeline',
+        params: {
+          // 141 = 22+7·17, on-grid: the split finds frame 73 (the
+          // nearest legal to the midpoint 71); the right half ends
+          // at 141+22 = 163
+          calls: [{ text: 'shot one', start_frame: 0, end_frame: 141 }],
+          keyframes: [], fps: 24, seed: 7,
+        },
+      },
+    })
+    render(h(H3TimelineStudio, p))
+    const seat = await waitFor(() => {
+      const el = document.querySelector('[data-split-toggle="call-0"]') as HTMLElement | null
+      if (el === null) throw new Error('no split seat on the clip yet')
+      return el
+    })
+    fireEvent.click(seat.querySelector('button') ?? seat)
+    const patch = await waitFor(() => {
+      const hit = (p.onPatch as ReturnType<typeof vi.fn>).mock.calls
+        .map((c) => c[0] as Record<string, unknown>)
+        .filter((x) => Array.isArray(x['calls']))
+        .at(-1)
+      if (hit === undefined) throw new Error('no calls patch fired')
+      return hit
+    })
+    const calls = patch['calls'] as Array<{
+      text?: string, start_frame: number, end_frame: number, transition?: string
+    }>
+    expect(calls.length).toBe(2)
+    expect(calls[0]).toMatchObject({ text: 'shot one', start_frame: 0, end_frame: 73 })
+    expect(calls[1]).toMatchObject({ text: 'shot one', start_frame: 73, end_frame: 163, transition: 'cut' })
+  })
 })
 
 // ── STROKE 35 RETIRED (the generic-seam law): the advanced rail's
