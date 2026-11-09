@@ -1,4 +1,4 @@
-import { loadTextPair, decodeSave, stackLoras, stackControlNets } from "@melite/comfyui-card-kit";
+import { loadTextPair, decodeSave, stackLoras, stackControlNets, statedRegion, regionSegs, genDetailerSave } from "@melite/comfyui-card-kit";
 import { fireLoras, fireControlNets, refuseIPAdapterFiring } from "@melite/comfyui-card-kit/guard";
 import { laneInputsReader, parseDiffusionLaneFacts } from "@melite/comfyui-card-kit/facts";
 import { diffusionParamRows } from "@melite/comfyui-card-kit/paramRows";
@@ -51,6 +51,26 @@ export const t2i = {
         unet = stackControlNets(g, unet, vae, fireControlNets(model, p));
         const pos = g.node("CLIPTextEncode", { clip, text: p.prompt });
         const neg = g.node("CLIPTextEncode", { clip, text: p.negative_prompt ?? "" });
+        // THE GEN DETAILER (operator 2026-11-09, "ANY model can inpaint,
+        // not just krea-2" — the two-family roster was artificial): a
+        // stated region rides the SAME crop_stitch arm krea-2 serves —
+        // the generic DetailerForEach tail over THIS lane's own
+        // conditioning. The card's gate and this build branch on the
+        // kit's ONE stated-region read, so gate and arm never disagree.
+        const region = statedRegion(p);
+        // THE PHOTO ARM (the Impact Pack pair, operator 2026-11-15:
+        // DetailerForEach takes image + segs): input_image stated = the
+        // base to inpaint on is THAT photograph — the detailer reworks
+        // its region and NOTHING generates (no latent, no KSampler node
+        // exists in the graph).
+        if (region !== null && region.basePath !== '') {
+            const photo = g.node("LoadImage", { image: region.basePath }).out();
+            const segs = regionSegs(g, region.merged, photo, region.maskPath);
+            return genDetailerSave(g, p, region.merged, {
+                image: photo, segs, model: unet, clip, vae,
+                positive: pos.out(), negative: neg.out(), seed: p.seed,
+            }, runId).out();
+        }
         const latent = g.node(facts.latent_node, { batch_size: 1, width: p.width, height: p.height });
         const sampled = g.node("KSampler", {
             seed: p.seed,
@@ -64,6 +84,14 @@ export const t2i = {
             positive: pos.out(),
             negative: neg.out(),
         });
+        if (region !== null) {
+            const decoded = g.node("VAEDecode", { samples: sampled.out(), vae }).out();
+            const segs = regionSegs(g, region.merged, decoded, region.maskPath);
+            return genDetailerSave(g, p, region.merged, {
+                image: decoded, segs, model: unet, clip, vae,
+                positive: pos.out(), negative: neg.out(), seed: p.seed,
+            }, runId).out();
+        }
         return decodeSave(g, sampled.out(), vae, `${runId}/gen`).out();
     },
 };

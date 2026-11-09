@@ -180,3 +180,46 @@ describe("the t2i action — the official MOSS-Image template topology", () => {
     }
   });
 });
+
+// THE GEN DETAILER SERVE (operator 2026-11-09, "ANY model can
+// inpaint, not just krea-2" — the two-family roster was artificial):
+// the same two arms krea-2 pins, over THIS lane's own conditioning —
+// the template's own negative default included, never a zeroed
+// unconditional.
+describe("the gen detailer serve — the region arm on the moss-image lane", () => {
+  it("THE FRESH-GEN ARM: a stated mask rides DetailerForEach over the lane's own decoded frame, saved under gen", () => {
+    const action = new GraphBuilder({});
+    instantiateAction(t2i, { ...PARAMS, mask: [{ input_mask: "/v1/assets/region.png" }], mask_mode: "crop_stitch" }, FACTS, action, "probe-region");
+    const nodes = Object.values(graphOf(action));
+    const detailer = nodes.find((n) => n.class_type === "DetailerForEach");
+    assert.ok(detailer, "the stated region mints DetailerForEach (the generic tail serves this lane)");
+    assert.ok(nodes.some((n) => n.class_type === "MaskToSEGS"), "the painted mask converts through MaskToSEGS");
+    assert.match(String(detailer!.inputs.image), /^VAEDecode/, "the detailer reworks the lane's OWN decoded frame");
+    const saved = nodes.find((n) => n.class_type === "SaveImage");
+    assert.strictEqual(saved?.inputs?.filename_prefix, "probe-region/gen", "the detailed image saves under the gen prefix");
+  });
+
+  it("THE PHOTO ARM: input_image + input_mask composes LoadImage→DetailerForEach and NO generation node exists", () => {
+    const action = new GraphBuilder({});
+    instantiateAction(
+      t2i,
+      { ...PARAMS, mask: [{ input_image: "/v1/assets/photo.png", input_mask: "/v1/assets/region.png" }], mask_mode: "crop_stitch" },
+      FACTS,
+      action,
+      "probe-photo",
+    );
+    const nodes = Object.values(graphOf(action));
+    const classes = nodes.map((n) => String(n.class_type));
+    const load = nodes.find((n) => n.class_type === "LoadImage");
+    assert.ok(load, "the stated base photograph loads (the pair's image half)");
+    assert.strictEqual(load!.inputs.image, "/v1/assets/photo.png", "the base seat rides input_image");
+    const detailer = nodes.find((n) => n.class_type === "DetailerForEach");
+    assert.ok(detailer, "the pair mints the region detailer");
+    assert.match(String(detailer!.inputs.image), /^LoadImage/, "DetailerForEach's image input is the LoadImage output (the photo is the base)");
+    for (const gone of ["KSampler", "EmptyFlux2LatentImage"]) {
+      assert.ok(!classes.includes(gone), `no ${gone} node exists in the photo arm (nothing generates)`);
+    }
+    const saved = nodes.find((n) => n.class_type === "SaveImage");
+    assert.strictEqual(saved!.inputs?.filename_prefix, "probe-photo/gen", "the detailed photo saves under the gen prefix");
+  });
+});

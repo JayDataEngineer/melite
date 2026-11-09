@@ -102,21 +102,24 @@ describe("the image-gen compose gate", () => {
     // (the firing arm below proves the refusal that REPLACED it)
   });
 
-  it("THE GEN DETAILER SERVE (operator 2026-11-07, the mod SERVES): a stated region on a served lane composes the DetailerForEach arm — never a refusal, never a silent plain t2i", () => {
-    // the served lanes (the burn's own krea-2 + the declared qwen
-    // slice): the region vocabulary rides the gen card through the
-    // Impact detector chain, crop_stitch via the shared kit arm.
-    for (const [fam, run] of [["krea-2", "r_serve_k"], ["qwen-img-21", "r_serve_q"]] as const) {
+  it("THE GEN DETAILER SERVE (operator 2026-11-07, the mod SERVES; roster widened 2026-11-09): a stated region composes the DetailerForEach arm on EVERY boarded lane — never a refusal, never a silent plain t2i", () => {
+    // THE DERIVED ROSTER (operator 2026-11-09, the face-rail burn:
+    // "ANY model can inpaint, not just krea-2" — the two-family
+    // roster was artificial, the DetailerForEach tail is
+    // family-agnostic): the loop rides the card's own BOARDED array,
+    // so a family added tomorrow inherits the serve wall for free —
+    // a hand-named roster here would pass while the new lane burns.
+    for (const fam of def.boarded) {
       const model = facts.models[fam]!;
       assert.ok(model, `the facts serve ${fam}`);
       const g = new GraphBuilder();
-      def.compose({ prompt: "a cat", mask: [{ input_mask: "/v1/assets/region.png" }], mask_mode: "crop_stitch" }, model, g, run);
+      def.compose({ prompt: "a cat", mask: [{ input_mask: "/v1/assets/region.png" }], mask_mode: "crop_stitch" }, model, g, `r_serve_${fam}`);
       const nodes = Object.values(g.toJSON() as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>);
       const detailer = nodes.find((n) => n.class_type === "DetailerForEach");
       assert.ok(detailer, `the stated region mints DetailerForEach on ${fam} (the gen detailer arm serves)`);
       const saved = nodes.find((n) => n.class_type === "SaveImage");
       assert.ok(
-        typeof saved?.inputs?.filename_prefix === "string" && (saved.inputs.filename_prefix as string).startsWith(run + "/gen"),
+        typeof saved?.inputs?.filename_prefix === "string" && (saved.inputs.filename_prefix as string).startsWith(`r_serve_${fam}/gen`),
         `the detailed image saves under the gen prefix on ${fam}`,
       );
     }
@@ -227,34 +230,45 @@ describe("the image-gen compose gate", () => {
       "the detailed image saves under the gen prefix");
   });
 
-  it("THE REGION FIRING GATE (E2-11, kept for unserved lanes): a stated region where no lane builds the arm refuses LOUD in the teaching voice — never a silent plain t2i", () => {
-    const model = facts.models["anima"]!;
-    assert.ok(model, "the facts serve anima (an unserved lane)");
-    // the unserved lanes keep the refused-fate honesty — the refusal
-    // names the mod's key and teaches the serving lanes.
-    const fires = (e: unknown): boolean =>
-      e instanceof Error && !(e instanceof ComposeRefusal)
-      && /fires on the image-gen card/.test(String((e as Error).message))
-      && /region arm serves/.test(String((e as Error).message));
-    assert.throws(
-      () => def.compose({ prompt: "a cat", mask: [{ input_mask: "/v1/assets/region.png" }] }, model, new GraphBuilder(), "r_bag"),
-      fires,
-    );
-    assert.throws(
-      () => def.compose({ prompt: "a cat", input_mask: "/v1/assets/region.png" }, model, new GraphBuilder(), "r_flat"),
-      fires,
-    );
-    assert.throws(
-      () => def.compose({ prompt: "a cat", mask_detector: "person" }, model, new GraphBuilder(), "r_det"),
-      fires,
-    );
-    // THE DETAILER-KNOB HALF (the impact-2 detailer wrapper burn):
-    // a flat prep/detail knob stated OUTSIDE the bag is authored
-    // intent — the walk fills no rider defaults, presence fires.
-    assert.throws(
-      () => def.compose({ prompt: "a cat", mask_denoise: 0.8 }, model, new GraphBuilder(), "r_knob"),
-      fires,
-    );
+  it("THE REGION REFUSALS SURVIVE THE ROSTER'S DEATH (E2-11's lawful remainder, every boarded lane): a region without its source, and a base without its region half, refuse LOUD in the teaching voice — never a silent plain t2i", () => {
+    // THE ROSTER IS DEAD (operator 2026-11-09, the face-rail burn:
+    // "ANY model can inpaint, not just krea-2" — the unserved-lane
+    // refusal arm died with it). What E2-11 still owns fires for
+    // EVERY boarded family: the pair law and the source law. The
+    // loop rides the card's own BOARDED array — the derived roster,
+    // never a hand-named list.
+    for (const fam of def.boarded) {
+      const model = facts.models[fam]!;
+      assert.ok(model, `the facts serve ${fam}`);
+      // a base without its region half would silently plain-generate
+      // — the D11 burn's exact shape from the other side.
+      assert.throws(
+        () => def.compose({ prompt: "a cat", input_image: "/v1/assets/photo.png" }, model, new GraphBuilder(), `r_pair_${fam}`),
+        (e: unknown): boolean => e instanceof Error && !(e instanceof ComposeRefusal)
+          && /input_image' fires on the image-gen card/.test(String(e.message))
+          && /needs its region half/.test(String(e.message)),
+        `the base-without-region refusal fires on ${fam}`,
+      );
+      // a stated detailer knob with no region at all: authored
+      // intent (the walk fills no rider defaults, presence fires).
+      assert.throws(
+        () => def.compose({ prompt: "a cat", mask_denoise: 0.8 }, model, new GraphBuilder(), `r_knob_${fam}`),
+        (e: unknown): boolean => e instanceof Error && !(e instanceof ComposeRefusal)
+          && /fires on the image-gen card/.test(String(e.message))
+          && /crop_stitch needs a region/.test(String(e.message)),
+        `the knob-without-region refusal fires on ${fam}`,
+      );
+      // the serve itself: the same stated region now COMPOSES on
+      // this lane — the refusal above is the pair law, never a
+      // roster gate (this is the arm that went red on the old
+      // roster for four of these six families).
+      const g = new GraphBuilder();
+      def.compose({ prompt: "a cat", mask: [{ input_mask: "/v1/assets/region.png" }], mask_mode: "crop_stitch" }, model, g, `r_now_serves_${fam}`);
+      assert.ok(
+        Object.values(g.toJSON() as Record<string, { class_type?: string }>).some((n) => n.class_type === "DetailerForEach"),
+        `${fam} composes the region arm (the roster's death made every lane a serving lane)`,
+      );
+    }
     // THE SILENT-DROP GUARD'S OTHER HALF: a doc with NO stated
     // region composes the plain lane untouched (an explicit
     // mask_mode 'auto' is the plain lane's own word — never fires).

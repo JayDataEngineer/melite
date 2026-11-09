@@ -1,4 +1,4 @@
-import { loadTextPair, decodeSave, stackLoras } from "@melite/comfyui-card-kit";
+import { loadTextPair, decodeSave, stackLoras, statedRegion, regionSegs, genDetailerSave } from "@melite/comfyui-card-kit";
 import { fireLoras, refuseIPAdapterFiring } from "@melite/comfyui-card-kit/guard";
 import { diffusionParamRows } from "@melite/comfyui-card-kit/paramRows";
 import { laneInputsReader, parseDiffusionLaneFacts } from "@melite/comfyui-card-kit/facts";
@@ -78,6 +78,28 @@ export const t2i = {
         // the stated text. Never ConditioningZeroOut.
         const negativeText = (p.negative_prompt ?? "").trim() === "" ? TEMPLATE_NEGATIVE : p.negative_prompt;
         const negative = g.node("CLIPTextEncode", { text: negativeText, clip }).out();
+        // THE GEN DETAILER (operator 2026-11-09, "ANY model can inpaint,
+        // not just krea-2" — the two-family roster was artificial): a
+        // stated region rides the SAME crop_stitch arm krea-2 serves —
+        // the generic DetailerForEach tail over THIS lane's own
+        // conditioning (the template's own negative default included,
+        // never a zeroed unconditional). The card's gate and this build
+        // branch on the kit's ONE stated-region read, so gate and arm
+        // never disagree.
+        const region = statedRegion(p);
+        // THE PHOTO ARM (the Impact Pack pair, operator 2026-11-15:
+        // DetailerForEach takes image + segs): input_image stated = the
+        // base to inpaint on is THAT photograph — the detailer reworks
+        // its region and NOTHING generates (no latent, no KSampler node
+        // exists in the graph).
+        if (region !== null && region.basePath !== '') {
+            const photo = g.node("LoadImage", { image: region.basePath }).out();
+            const segs = regionSegs(g, region.merged, photo, region.maskPath);
+            return genDetailerSave(g, p, region.merged, {
+                image: photo, segs, model: unet, clip, vae,
+                positive, negative, seed: p.seed,
+            }, runId).out();
+        }
         const latent = g.node("EmptyFlux2LatentImage", { width: p.width, height: p.height, batch_size: 1 }).out();
         // THE TEMPLATE SAMPLER (the 2026-10-20 weave burn; re-seated by
         // the 2026-11-04 artifact burn): a plain KSampler over the
@@ -92,6 +114,14 @@ export const t2i = {
         // samples through the wrap. The seed is already concrete here
         // (the interpreter mints the -1 sentinel).
         const sampled = g.node("KSampler", { model: unet, positive, negative, latent_image: latent, seed: p.seed, steps: p.steps, cfg: p.cfg, sampler_name: p.sampler, scheduler: p.scheduler, denoise: 1 });
+        if (region !== null) {
+            const decoded = g.node("VAEDecode", { samples: sampled.out(0), vae }).out();
+            const segs = regionSegs(g, region.merged, decoded, region.maskPath);
+            return genDetailerSave(g, p, region.merged, {
+                image: decoded, segs, model: unet, clip, vae,
+                positive, negative, seed: p.seed,
+            }, runId).out();
+        }
         return decodeSave(g, sampled.out(0), vae, `${runId}/gen`).out();
     },
 };

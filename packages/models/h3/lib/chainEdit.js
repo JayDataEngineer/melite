@@ -254,6 +254,43 @@ export function sheetRefSlots(refImages, base) {
  *  engine-side band move can never silently outdate the clamp. */
 export const PLAN_CLIP_BAND = { min: 2.5, max: 15.0 };
 const planClipFeed = (seconds) => Math.min(PLAN_CLIP_BAND.max, Math.max(PLAN_CLIP_BAND.min, seconds));
+/** The plan head's own overlap widget vocabulary — the LIVE engine's
+ * word (object_info H3OneClickSwapPlan.overlap_frames: COMBO
+ * [22, 39, 56], default 39; the bench burn 2026-11-16, run
+ * run-84806ec44694's cell B: a carry:false press landed 0 on this
+ * widget and validate_prompt refused it eight nodes deep — "the
+ * input allows 3 values (22, 39, 56)"). The plan head's slicing is
+ * NOT the edit's join seat: an edit's join (the cut 0, the wider AV
+ * boundaries 90/141/192/243) serves AUTHORED shots' context_length,
+ * never this widget — every join the resolver can derive other than
+ * 39 is unservable here and must die at COMPOSE, not at submit.
+ * @dev Judged against the boot census (served-grid-truth.spec.ts's
+ *  overlap band arm): the fixture's H3OneClickSwapPlan row is the
+ *  engine's own word, and this pin must match it or the wall reds —
+ *  an engine-side vocabulary move can never silently outdate the
+ *  feed. */
+export const PLAN_OVERLAP_CHOICES = [22, 39, 56];
+/** THE PLAN-HEAD OVERLAP FEED (the bench-burn cure): the widget
+ * always rides a legal choice, and the ONLY join a source-slicing
+ * plan head serves is the AV-legal 39 — the one value both
+ * vocabularies share. Authored-shot seats (planFromSource false:
+ * the literal plan_json rules, the plan node's output is unread)
+ * ride the node's own default 39 on the inert widget; a join ≠ 39
+ * there is served where it lives, on the shots' context_length. A
+ * source-slicing seat (planFromSource true) that resolves a join ≠ 39
+ * REFUSES HERE, at the compose door, naming the cure — the run dies
+ * at zero GPU, never eight nodes deep at submit.
+ * @param overlapFrames the resolver's join (resolveCarryOverlap)
+ * @param literalShotsRules whether authored shots rule this run
+ * @returns the widget value: always a legal choice */
+const planOverlapFeed = (overlapFrames, literalShotsRules) => {
+    if (literalShotsRules)
+        return 39;
+    if (overlapFrames !== 39) {
+        throw new Error(`h3-timeline edit chain: the join ${overlapFrames} cannot ride the source-slicing plan head — H3OneClickSwapPlan.overlap_frames carries the live engine's [${PLAN_OVERLAP_CHOICES.join(', ')}] and the AV-legal join a masked edit serves is 39; a CUT (0) serves AUTHORED windows only (the shot's own context_length 0 — split the film on the timeline first, then state carry: false), and the wider AV boundaries (90/141/192/243) belong to authored seams, never the plan head's own slicing. Leave carry unstated (or carry: true) and the join derives 39`);
+    }
+    return 39;
+};
 /** Emit the shared masked-edit chain for one seat. The node
  * parameters are the three seats' historical spellings, verbatim;
  * the seat's deltas arrive through the seat interface. The emission
@@ -284,7 +321,7 @@ export function renderMaskedEditChain(g, seat) {
     // rides default_duration_seconds below, never this seat ──
     const plan = g.node('H3OneClickSwapPlan', {
         clip_seconds: planClipFeed(seat.clipSeconds),
-        overlap_frames: seat.overlapFrames,
+        overlap_frames: planOverlapFeed(seat.overlapFrames, !seat.planFromSource),
         resolution: seat.resolution,
         steps: seat.steps,
         seed: seat.seed,

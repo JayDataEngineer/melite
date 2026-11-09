@@ -1,4 +1,4 @@
-import type { DocCall } from "./docModel.ts";
+import type { DocCall } from "./docModel.js";
 /** The span editors' string→number parse: SpecAtom hands the RAW
  *  edit string (card-base atoms pass strings only, the no-coercion
  *  proof); an empty or non-finite edit is no edit. */

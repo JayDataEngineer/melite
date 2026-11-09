@@ -7,7 +7,7 @@
 // split loader trio, the stock CLIPTextEncode pair, the
 // Flux2Scheduler/KSamplerSelect/CFGGuider/RandomNoise sampling stack.
 import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
-import { loadTextPair, decodeSave, stackLoras } from "@melite/comfyui-card-kit";
+import { loadTextPair, decodeSave, stackLoras, statedRegion, regionSegs, genDetailerSave } from "@melite/comfyui-card-kit";
 import { fireLoras, refuseIPAdapterFiring } from "@melite/comfyui-card-kit/guard";
 import { diffusionParamRows } from "@melite/comfyui-card-kit/paramRows";
 import type { OutputHandle } from "@melite/comfyui-card-kit/graph";
@@ -131,6 +131,29 @@ export const t2i: ComfyActionSpec<T2IParams, T2IFacts> = {
       if (typeof d === "string" && d !== "") return d;
       throw new Error(`flux-klein t2i: ${knob} is stated neither in the doc nor the family defaults — the sampler never composes blind (the engine declares it required)`);
     };
+    // THE GEN DETAILER (operator 2026-11-09, "ANY model can inpaint,
+    // not just krea-2" — the two-family roster was artificial): a
+    // stated region rides the SAME crop_stitch arm krea-2 serves —
+    // the generic DetailerForEach tail over THIS lane's own
+    // conditioning (the distilled ZeroOut negative included — the
+    // lane's own uncond, never a re-encoded blank). The canvas law
+    // resolves the detailer's steps/cfg/seed knobs the same way it
+    // resolves the sampling stack's: stated wins, the family's OWN
+    // DECL defaults seat the unstated, never an undefined input.
+    const region = statedRegion(p as Record<string, unknown>);
+    // THE PHOTO ARM (the Impact Pack pair, operator 2026-11-15:
+    // DetailerForEach takes image + segs): input_image stated = the
+    // base to inpaint on is THAT photograph — the detailer reworks
+    // its region and NOTHING generates (no latent, no sampling
+    // stack node exists in the graph).
+    if (region !== null && region.basePath !== '') {
+      const photo = g.node("LoadImage", { image: region.basePath }).out();
+      const segs = regionSegs(g, region.merged, photo, region.maskPath);
+      return genDetailerSave(g, { ...(p as Record<string, unknown>), steps: canvas(p.steps, "steps"), cfg: canvas(p.cfg, "cfg") }, region.merged, {
+        image: photo, segs, model: unet, clip, vae,
+        positive, negative, seed: canvas(p.seed, "seed"),
+      }, runId).out();
+    }
     const width = canvas(p.width, "width");
     const height = canvas(p.height, "height");
     const latent = g.node("EmptyFlux2LatentImage", { width, height, batch_size: 1 }).out();
@@ -146,6 +169,14 @@ export const t2i: ComfyActionSpec<T2IParams, T2IFacts> = {
     // wired — the engine declares latent_image required and refused
     // the prompt; the canvas rides here, never dangling.)
     const sampled = g.node("SamplerCustomAdvanced", { noise, guider, sampler, sigmas, latent_image: latent });
+    if (region !== null) {
+      const decoded = g.node("VAEDecode", { samples: sampled.out(0), vae }).out();
+      const segs = regionSegs(g, region.merged, decoded, region.maskPath);
+      return genDetailerSave(g, { ...(p as Record<string, unknown>), steps: canvas(p.steps, "steps"), cfg: canvas(p.cfg, "cfg") }, region.merged, {
+        image: decoded, segs, model: unet, clip, vae,
+        positive, negative, seed: canvas(p.seed, "seed"),
+      }, runId).out();
+    }
     return decodeSave(g, sampled.out(0), vae, `${runId}/gen`).out();
   },
 };

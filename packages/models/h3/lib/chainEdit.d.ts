@@ -262,6 +262,22 @@ export declare const PLAN_CLIP_BAND: {
     readonly min: 2.5;
     readonly max: 15;
 };
+/** The plan head's own overlap widget vocabulary — the LIVE engine's
+ * word (object_info H3OneClickSwapPlan.overlap_frames: COMBO
+ * [22, 39, 56], default 39; the bench burn 2026-11-16, run
+ * run-84806ec44694's cell B: a carry:false press landed 0 on this
+ * widget and validate_prompt refused it eight nodes deep — "the
+ * input allows 3 values (22, 39, 56)"). The plan head's slicing is
+ * NOT the edit's join seat: an edit's join (the cut 0, the wider AV
+ * boundaries 90/141/192/243) serves AUTHORED shots' context_length,
+ * never this widget — every join the resolver can derive other than
+ * 39 is unservable here and must die at COMPOSE, not at submit.
+ * @dev Judged against the boot census (served-grid-truth.spec.ts's
+ *  overlap band arm): the fixture's H3OneClickSwapPlan row is the
+ *  engine's own word, and this pin must match it or the wall reds —
+ *  an engine-side vocabulary move can never silently outdate the
+ *  feed. */
+export declare const PLAN_OVERLAP_CHOICES: readonly [22, 39, 56];
 /** Emit the shared masked-edit chain for one seat. The node
  * parameters are the three seats' historical spellings, verbatim;
  * the seat's deltas arrive through the seat interface. The emission

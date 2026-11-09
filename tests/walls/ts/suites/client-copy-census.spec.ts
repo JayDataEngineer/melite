@@ -455,7 +455,16 @@ const PINS: Record<string, number> = {
   // fires the post quartet everywhere; no per-lane dead letter, no
   // re-judge) — the settlement's two arm-A literals died with it.
   // The remaining 4 are the pre-existing S-A1/S-A2/S-A3 seats above.
-  'packages/video/h3-timeline/src/ui': 4,
+  // RE-PIN 4 -> 7 (2026-11-16, the per-row split seats): +3 computed
+  // aria-label suffixes in V2vLeafFace.tsx — the row split seat's
+  // input/button pair and the seam seat's group all append " — W${i+1}"
+  // (the window ordinal) to DICTIONARY-CARRIED copy
+  // (v2vFormSplitLabel/v2vFormCutAria/seamModeAria). The words ride
+  // studioCopy; only the live ordinal is inline — the S-A1 computed
+  // law-wording class (the countTitle pair's own bound), zero is
+  // reached only by forking the ordinal into a per-seat dictionary
+  // entry, which buys nothing the ordinal isn't already saying.
+  'packages/video/h3-timeline/src/ui': 7,
   'packages/image/mask-studio/src/ui': 0,
   // card-base: 36 (the S7j/class-4 merge, argued above) + 6 from the
   // D1 .ts arms — all arm A `message` properties in .ts: the wire

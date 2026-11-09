@@ -50,12 +50,13 @@ export declare function entryCarries(entry: Record<string, unknown>): boolean;
  * operator asked for five times): the join boundary is DERIVED from
  * the engine's AV-continuity vocabulary, never hand-typed. Unstated
  * → the derived 39 (carry on) or 0 (carry: false); an explicitly
- * stated overlap_frames — the expert override, admitted but never
- * served — must be 0 or one of the five legal boundaries and
- * REFUSES HERE, at the compose door, quoting the engine's law and
- * naming the stated value, so the run-1f91718b7cde class (a
- * boundary typed legal-looking, refused eight nodes deep) is dead
- * at zero GPU.
+ * stated overlap_frames — the expert override, served on AUTHORED
+ * seams' context_length (the plan head itself carries only the
+ * AV-legal 39; see chainEdit's planOverlapFeed) — must be 0 or one
+ * of the five legal boundaries and REFUSES HERE, at the compose
+ * door, quoting the engine's law and naming the stated value, so
+ * the run-1f91718b7cde class (a boundary typed legal-looking,
+ * refused eight nodes deep) is dead at zero GPU.
  * @param entry the edit-bag entry (overlap_frames / carry seats)
  * @returns the join boundary in frames: 0, 39, 90, 141, 192 or 243 */
 export declare function resolveCarryOverlap(entry: Record<string, unknown>): number;

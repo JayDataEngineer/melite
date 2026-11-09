@@ -43,9 +43,10 @@ knobs.
      photograph — the detailer reworks its region and NOTHING
      generates (no latent, no sampler: LoadImage → the region segs
      → DetailerForEach → save). This is masked detailing/inpainting
-     of an existing photo, served on krea-2 + qwen-img-21; the base
-     without its region half (no `input_mask`, no detector) refuses
-     loud rather than silently plain-generating.
+     of an existing photo, served on EVERY boarded family — ANY
+     model can inpaint; the base without its region half (no
+     `input_mask`, no detector) refuses loud rather than silently
+     plain-generating.
    The painted region rides `input_mask` — an RGBA PNG whose ALPHA
    channel marks the region (a grayscale shape-on-black PNG is not
    a mask on this estate) — or a detector pick (person/face/hand),

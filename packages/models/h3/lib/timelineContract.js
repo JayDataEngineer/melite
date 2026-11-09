@@ -61,12 +61,13 @@ export function entryCarries(entry) {
  * operator asked for five times): the join boundary is DERIVED from
  * the engine's AV-continuity vocabulary, never hand-typed. Unstated
  * → the derived 39 (carry on) or 0 (carry: false); an explicitly
- * stated overlap_frames — the expert override, admitted but never
- * served — must be 0 or one of the five legal boundaries and
- * REFUSES HERE, at the compose door, quoting the engine's law and
- * naming the stated value, so the run-1f91718b7cde class (a
- * boundary typed legal-looking, refused eight nodes deep) is dead
- * at zero GPU.
+ * stated overlap_frames — the expert override, served on AUTHORED
+ * seams' context_length (the plan head itself carries only the
+ * AV-legal 39; see chainEdit's planOverlapFeed) — must be 0 or one
+ * of the five legal boundaries and REFUSES HERE, at the compose
+ * door, quoting the engine's law and naming the stated value, so
+ * the run-1f91718b7cde class (a boundary typed legal-looking,
+ * refused eight nodes deep) is dead at zero GPU.
  * @param entry the edit-bag entry (overlap_frames / carry seats)
  * @returns the join boundary in frames: 0, 39, 90, 141, 192 or 243 */
 export function resolveCarryOverlap(entry) {
@@ -81,7 +82,7 @@ export function resolveCarryOverlap(entry) {
     }
     if (n === 0 || AV_CONTINUITY_OVERLAPS.includes(n))
         return n;
-    throw new Error(`h3-timeline edit: overlap_frames ${n} is not a boundary the engine accepts — H3 AV generated-audio continuity requires an exact shared video/audio boundary: 39, 90, 141, 192, or 243 frames (0 = the cut join, carry: false; run-1f91718b7cde refused this eight nodes deep). Leave overlap_frames unstated and carry: true (the default) derives the join — never type a boundary`);
+    throw new Error(`h3-timeline edit: overlap_frames ${n} is not a boundary the engine accepts — H3 AV generated-audio continuity requires an exact shared video/audio boundary: 39, 90, 141, 192, or 243 frames on an AUTHORED seam (0 = the cut join, carry: false — authored windows only); run-1f91718b7cde refused this eight nodes deep. Leave overlap_frames unstated and carry: true (the default) derives the join — never type a boundary`);
 }
 /** THE MEDIA-SHAPE PREDICATE (the guide seats' admission law, one
  *  owner for every door that judges it): a guide value names MEDIA —

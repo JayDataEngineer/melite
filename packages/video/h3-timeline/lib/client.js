@@ -5777,7 +5777,7 @@ window.__ModuleLoader__.load({
 				};
 			});
 			const callsFace = callsLaneFace(commissions);
-			const shownPrompts = callsFace.face === "dormant" ? barPrompts.filter((_p, i) => !(calls[i] !== void 0 && isStarterCallText(calls[i].text ?? ""))) : barPrompts;
+			const shownPrompts = callsFace.face === "dormant" || callsFace.face === "v2v" ? barPrompts.filter((_p, i) => !(calls[i] !== void 0 && isStarterCallText(calls[i].text ?? ""))) : barPrompts;
 			const kfChips = barLanes.map((k, i) => {
 				const docFrame = keyframes[i]?.frame;
 				const verdict = typeof docFrame === "number" ? pinDropVerdict(calls, docFrame) : null;
@@ -6382,7 +6382,7 @@ window.__ModuleLoader__.load({
 							style: WINDOW,
 							"data-v2v-window": i,
 							children: [
-								studioCopy.v2vWindowRow(i + 1, secs(c.start_frame), secs(c.end_frame), i > 0 ? c.transition ?? "extend" : "", c.text ?? ""),
+								studioCopy.v2vWindowRow(i + 1, secs(c.start_frame), secs(c.end_frame), i > 0 ? c.transition ?? "extend" : "", isStarterCallText(c.text ?? "") ? "" : c.text ?? ""),
 								/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 									style: ROW_SPLIT,
 									"data-v2v-row-split": i,

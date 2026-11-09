@@ -102,3 +102,48 @@ describe("the t2i action — the official FLUX.2 Klein 4B template topology", ()
     );
   });
 });
+
+// THE GEN DETAILER SERVE (operator 2026-11-09, "ANY model can
+// inpaint, not just krea-2" — the two-family roster was artificial):
+// the same two arms krea-2 pins, over THIS lane's own conditioning —
+// the distilled ZeroOut negative is the lane's own uncond. The
+// canvas law resolves the detailer's steps/cfg/seed exactly like the
+// sampling stack's.
+describe("the gen detailer serve — the region arm on the flux-klein lane", () => {
+  it("THE FRESH-GEN ARM: a stated mask rides DetailerForEach over the lane's own decoded frame, saved under gen", () => {
+    const action = new GraphBuilder({});
+    instantiateAction(t2i, { ...PARAMS, mask: [{ input_mask: "/v1/assets/region.png" }], mask_mode: "crop_stitch" }, FACTS, action, "probe-region");
+    const nodes = Object.values(graphOf(action));
+    const detailer = nodes.find((n) => n.class_type === "DetailerForEach");
+    assert.ok(detailer, "the stated region mints DetailerForEach (the generic tail serves this lane)");
+    assert.ok(nodes.some((n) => n.class_type === "MaskToSEGS"), "the painted mask converts through MaskToSEGS");
+    assert.match(String(detailer!.inputs.image), /^VAEDecode/, "the detailer reworks the lane's OWN decoded frame");
+    assert.equal(detailer!.inputs.steps, PARAMS.steps, "the detailer's steps are the canvas-resolved stated steps");
+    const saved = nodes.find((n) => n.class_type === "SaveImage");
+    assert.strictEqual(saved?.inputs?.filename_prefix, "probe-region/gen", "the detailed image saves under the gen prefix");
+  });
+
+  it("THE PHOTO ARM: input_image + input_mask composes LoadImage→DetailerForEach and NO generation node exists", () => {
+    const action = new GraphBuilder({});
+    instantiateAction(
+      t2i,
+      { ...PARAMS, mask: [{ input_image: "/v1/assets/photo.png", input_mask: "/v1/assets/region.png" }], mask_mode: "crop_stitch" },
+      FACTS,
+      action,
+      "probe-photo",
+    );
+    const nodes = Object.values(graphOf(action));
+    const classes = nodes.map((n) => String(n.class_type));
+    const load = nodes.find((n) => n.class_type === "LoadImage");
+    assert.ok(load, "the stated base photograph loads (the pair's image half)");
+    assert.strictEqual(load!.inputs.image, "/v1/assets/photo.png", "the base seat rides input_image");
+    const detailer = nodes.find((n) => n.class_type === "DetailerForEach");
+    assert.ok(detailer, "the pair mints the region detailer");
+    assert.match(String(detailer!.inputs.image), /^LoadImage/, "DetailerForEach's image input is the LoadImage output (the photo is the base)");
+    for (const gone of ["Flux2Scheduler", "KSamplerSelect", "RandomNoise", "CFGGuider", "SamplerCustomAdvanced", "EmptyFlux2LatentImage"]) {
+      assert.ok(!classes.includes(gone), `no ${gone} node exists in the photo arm (nothing generates)`);
+    }
+    const saved = nodes.find((n) => n.class_type === "SaveImage");
+    assert.strictEqual(saved!.inputs?.filename_prefix, "probe-photo/gen", "the detailed photo saves under the gen prefix");
+  });
+});

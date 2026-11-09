@@ -25,12 +25,15 @@ import { bag } from '@melite/contracts/extraKeys';
  *  not-boarded refusal. The model-knob enum, the tool default, and
  *  the registry row all derive from this array. */
 export const BOARDED = [krea2Decl.id, zImageDecl.id, animaDecl.id, qwenImg21Decl.id, fluxKleinDecl.id, mossImageDecl.id];
-/** THE GEN REGION ROSTER (the gen detailer serve, operator
- *  2026-11-07): the img-gen families whose t2i builds compose the
- *  crop_stitch arm — the operator's burn lane plus the declared
- *  Impact slice. Every other boarded family keeps the E2-11
- *  refusal, naming this roster's seats. */
-export const GEN_REGION_SERVED = new Set([krea2Decl.id, qwenImg21Decl.id]);
+/** THE GEN REGION ROSTER IS DEAD (operator 2026-11-09, the
+ *  face-rail burn: "ANY model can inpaint, not just krea-2" — the
+ *  two-family roster was artificial, the DetailerForEach tail is
+ *  family-agnostic): EVERY boarded family's t2i build composes the
+ *  crop_stitch arm, so no roster seat exists to check against and
+ *  no E2-11 unserved refusal remains — the region vocabulary
+ *  serves wherever the card boards. The pair-law refusals below
+ *  (base without region half, region without source, mode law)
+ *  still fire for every family. */
 /** The served style enum (the semantic model knob): entries derived
  *  from the same five DECLs — labels are their own copy, values
  *  are stable family:variant:cell addresses, routes resolve
@@ -177,9 +180,15 @@ export function registerCard(ctx, comfy) {
         // qwen-img-21 boards 'mask', whose region arm is the Impact
         // detector chain — the compose door gates the ACTIVE family's
         // slice (a plain qwen run on an Impact-less engine refuses
-        // missing-extension with the install rescue; every other
-        // family's slice is empty and unaffected). The flat list
-        // carries the UNION for flat consumers (the H4 law).
+        // missing-extension with the install rescue). Since the roster's
+        // death (operator 2026-11-09) EVERY boarded family composes the
+        // region arm, but only qwen-img-21 declares the always-on slice:
+        // the other families' PLAIN runs must never demand a pack their
+        // graph doesn't carry (an unused arm never blocks a run), so a
+        // region-stated run on an Impact-less engine refuses loud at the
+        // engine door (missing node + the same Manager rescue) instead of
+        // the card door. The flat list carries the UNION for flat
+        // consumers (the H4 law).
         requires: [...IMPACT_PACKS],
         requiresByFamily: {
             [qwenImg21Decl.id]: [...IMPACT_PACKS],
@@ -230,19 +239,17 @@ export function registerCard(ctx, comfy) {
             // fields ride the walk verbatim, exactly like the loras bag
             // (image-edit's own rider shape, one spelling: MASK_RIDERS).
             const doc = gatedResolve('image-gen', schemaFn, ['loras', 'model', ...MASK_RIDERS], p);
-            // THE REGION SERVE/REFUSE GATE (E2-11 refused-fate honesty, the
-            // gen detailer serve 2026-11-07): the stated-region read is the
-            // kit's ONE spelling (statedRegion — the served t2i builds
-            // branch on the same verdict, so the gate and the arm can never
-            // disagree). Served lanes (krea-2, qwen-img-21) compose the
-            // crop_stitch arm; every other lane keeps the E2-11 refusal in
-            // the teaching voice, naming the serving lanes. The walk's
+            // THE REGION GATE (the roster is dead, operator 2026-11-09,
+            // the face-rail burn: "ANY model can inpaint, not just krea-2"
+            // — every boarded lane's t2i build composes the crop_stitch
+            // arm, so no serve/refuse roster check remains): the
+            // stated-region read is the kit's ONE spelling (statedRegion —
+            // every t2i build branches on the same verdict, so the gate
+            // and the arms can never disagree). What still fires here is
+            // the PAIR LAW and the mode law, for every family. The walk's
             // FILLED default (mask_mode 'crop_stitch', detector 'off')
             // never fires: the form stamps defaults on every write.
             const region = statedRegion(doc);
-            if (region !== null && !GEN_REGION_SERVED.has(model.family ?? model.id)) {
-                throw new Error(`'${region.key}' fires on the image-gen card (the region arm serves krea-2 + qwen-img-21 — the region vocabulary composes on the image-edit card and the served gen lanes; this family builds no region arm yet) — refusing instead of silently plain-generating`);
-            }
             if (region !== null) {
                 // THE PAIR LAW (the Impact Pack pair, operator 2026-11-15:
                 // DetailerForEach takes image + segs — the mod's base seat

@@ -666,31 +666,31 @@ test("THE MASK ORDER (operator 2026-11-07): every img-gen family boards mask; st
     assert.ok(svc.flavorRegistrations().some((f) => f.pack === "mask" && f.families.includes(fam)),
       `a 'mask' flavor scopes ${fam} (the boarding's flavor file)`);
   }
-  // THE PLANE-LOCAL FATE (the refused-fate honesty): no image-gen
-  // lane builds a region arm (compose untouched), so a stated mask
-  // on the gen card's UNSERVED lanes refuses LOUD — field-named,
-  // never a silent plain run. E2-11 moved the refusal's LAW, not its
-  // fate: the mask mod's keys are DECLARED surface now (MASK_RIDERS
-  // at the walk — the mod's own keys, never 'undeclared param'), and
-  // the refusal speaks at the card's own REGION FIRING GATE,
-  // teaching the serving lanes. The served lanes (krea-2, qwen-img-21
-  // — the gen detailer serve, operator 2026-11-07) compose the
-  // crop_stitch arm instead of refusing.
+  // THE PLANE-LOCAL FATE (the roster is dead, operator 2026-11-09,
+  // the face-rail burn: "ANY model can inpaint, not just krea-2" —
+  // the unserved-lane refusal died with the roster): every img-gen
+  // lane's t2i build composes the region arm, so a stated mask with
+  // mask_mode crop_stitch SERVES DetailerForEach on every boarding
+  // family. E2-11's surviving law is the MODE law: the mask mod's
+  // keys are DECLARED surface (MASK_RIDERS at the walk — the mod's
+  // own keys, never 'undeclared param'), and a region stated
+  // without crop_stitch refuses LOUD field-named — never a silent
+  // plain run.
   const { GraphBuilder } = await import("../../../../packages/engines/comfyui-cordis/src/index.ts");
   const gen = svc.getCardDef("image-gen") as unknown as {
     compose: (p: unknown, m: unknown, g: unknown, r: string) => unknown;
   };
-  for (const fam of ["qwen-img-21", "krea-2"]) {
+  for (const fam of ["qwen-img-21", "krea-2", "anima", "flux-klein", "z-image", "moss-image"]) {
     const g = new GraphBuilder({});
     gen.compose({ prompt: "a cat", input_mask: "region.png", mask_mode: "crop_stitch" }, getModel(fam) as never, g, "wall-mask-serve-" + fam);
     const nodes = Object.values(g.toJSON() as Record<string, { class_type?: string }>);
-    assert.ok(nodes.some((n) => n.class_type === "DetailerForEach"), `the stated mask serves DetailerForEach on ${fam} (the mod SERVES)`);
+    assert.ok(nodes.some((n) => n.class_type === "DetailerForEach"), `the stated mask serves DetailerForEach on ${fam} (the mod SERVES on every boarded lane — the roster is dead)`);
   }
   assert.throws(
     () => gen.compose({ prompt: "a cat", input_mask: "region.png" }, getModel("anima") as never, new GraphBuilder({}), "wall-mask-c"),
     (err: unknown): boolean =>
-      err instanceof Error && /'input_mask' fires on the image-gen card.*region arm/.test(err.message),
-    "a stated input_mask on image-gen refuses LOUD at the firing gate (the fate this boarding carries)",
+      err instanceof Error && /'input_mask' fires on the image-gen card.*crop_stitch/.test(err.message),
+    "a stated input_mask without crop_stitch refuses LOUD at the firing gate (the mode law this boarding carries)",
   );
 });
 

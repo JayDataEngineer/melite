@@ -1,5 +1,5 @@
 ---
-description: Text-to-image generation card and agent tool across four boarded image families.
+description: Text-to-image generation card and agent tool across six boarded image families.
 kind: package-library
 ---
 
@@ -9,7 +9,7 @@ The image-generation card package: one `image-gen` card plus the `image_gen` age
 
 ## Contract
 
-- `./card` — the card definition (`id: 'image-gen'`, stage row `generate`, sidebar key `image`). Boards four families from their DECLs: krea-2, z-image, anima, and qwen-img-2.1 (`SEMANTIC_MODELS`). Flow seats: `prompt` as text in, `image` out; a model is required. The schema carries the sampler/scheduler vocabulary (`media.comfyui.sampler_vocab`); presets are the families' Recipe rows, with no card-level preset knob. Modifier riders bind per family: loras ride every boarded family (krea-2, z-image, anima, qwen-img-21, flux-klein — each family's own flavor rows; families with no first-party rows serve empty and take user files). `finalizeImageGen` strips family leaks post-compose.
+- `./card` — the card definition (`id: 'image-gen'`, stage row `generate`, sidebar key `image`). Boards six families from their DECLs: krea-2, z-image, anima, qwen-img-2.1, flux-klein, and moss-image (`SEMANTIC_MODELS`). Flow seats: `prompt` as text in, `image` out; a model is required. The schema carries the sampler/scheduler vocabulary (`media.comfyui.sampler_vocab`); presets are the families' Recipe rows, with no card-level preset knob. Modifier riders bind per family: loras ride every boarded family (each family's own flavor rows; families with no first-party rows serve empty and take user files). The region/inpaint vocabulary (`mask` bag or flat riders, `mask_mode: 'crop_stitch'`) composes the gen detailer arm on EVERY boarded family (ANY model can inpaint); the pair law (a base `input_image` needs `input_mask` or a detector) refuses loud for every family. `finalizeImageGen` strips family leaks post-compose.
 - `./tool` — `buildImageGenTool`, the agent tool face; default model `SEMANTIC_MODELS[0]`, preview field `prompt`.
 - `./wire` — browser-safe wire facts: `TOOL_NAME = 'image_gen'` (the tool plane; the registry row plane is `image_gen_card`).
 - `.` — the composition marker; `packages/engines/comfyui-cordis/src/cardDefs.ts` composes the card from `./card`.
