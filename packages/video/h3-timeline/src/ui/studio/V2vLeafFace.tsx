@@ -20,6 +20,7 @@
  *  parity arm in the form's wall (leaf-v2v-face.spec.tsx) judges
  *  both doors against one fixture. */
 import { useState } from 'react'
+import type { CSSProperties } from 'react'
 import { Button, Input, Menu } from '@deepseek-ai/dsh-client-ui-primitives'
 import { studioCopy } from './studioCopy.ts'
 import { splitCallsAt, type SplitCarry } from './v2vSplit.ts'
@@ -41,6 +42,37 @@ const CARRY_LABEL: Record<SplitCarry, string> = {
   extend: studioCopy.splitCarryCarry,
   'carry+keyframe': studioCopy.splitCarryKeyframe,
 }
+
+/**
+ * THE FACE'S OWN APPEARANCE (inline, the paint/bbox/orbit law —
+ * stroke 95: an embedded leaf face styles ITSELF, never a css
+ * module in the emit closure and never the host's stylesheet; the
+ * v2vFace.ts export law "no CSS" stays true). The recipes are the
+ * studio's established vocabulary: the callRefs panel card for
+ * each window row, the modStageCaption voice for the head, the
+ * seamModeRow layout for the split seat — dsw tokens for every
+ * color, the face reads native in any host. (The appearance
+ * audit, operator 2026-11-09: "the modal that appears for vid2vid
+ * … looks awful" — the face previously shipped ZERO styling: the
+ * windows rendered as a browser-default <ol> with decimal
+ * numerals and list indent inside the mod popup's 11px stage
+ * column, and the split seat wrapped as unstyled inline blocks.) */
+const FACE: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 }
+const HEAD: CSSProperties = { fontSize: 10, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', opacity: 0.7 }
+const HINT: CSSProperties = { fontSize: 9, lineHeight: 1.35, color: 'var(--dsw-alias-label-tertiary)' }
+const WINDOWS: CSSProperties = { margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 4 }
+const WINDOW: CSSProperties = {
+  borderRadius: 6,
+  border: '1px solid var(--dsw-alias-border-l1)',
+  background: 'var(--dsw-alias-bg-layer-1)',
+  padding: '4px 6px',
+  fontVariantNumeric: 'tabular-nums',
+  fontSize: 10,
+  lineHeight: 1.4,
+  overflowWrap: 'anywhere',
+}
+const SPLIT_SEAT: CSSProperties = { display: 'flex', alignItems: 'center', gap: 4, padding: '2px 2px 0' }
+const REFUSAL: CSSProperties = { fontSize: 9, lineHeight: 1.35, color: 'var(--dsw-alias-state-error-primary)', overflowWrap: 'anywhere' }
 
 /** The windows face itself: the spans list + the split seat. */
 export function V2vLeafFace(props: { value: { calls: V2vWindowView[]; fps: number }, onChange: (calls: V2vWindowView[]) => void }) {
@@ -64,23 +96,24 @@ export function V2vLeafFace(props: { value: { calls: V2vWindowView[]; fps: numbe
   }
 
   return (
-    <div data-v2v-face="windows">
-      <div data-v2v-head={true}>{studioCopy.v2vFormHead}</div>
-      <div data-v2v-hint={true}>{studioCopy.v2vFormHint}</div>
+    <div style={FACE} data-v2v-face="windows">
+      <div style={HEAD} data-v2v-head={true}>{studioCopy.v2vFormHead}</div>
+      <div style={HINT} data-v2v-hint={true}>{studioCopy.v2vFormHint}</div>
       {calls.length === 0
-        ? <div data-v2v-empty={true}>{studioCopy.v2vFormEmptyNote}</div>
-        : <ol data-v2v-windows={true}>
+        ? <div style={HINT} data-v2v-empty={true}>{studioCopy.v2vFormEmptyNote}</div>
+        : <ol style={WINDOWS} data-v2v-windows={true}>
             {calls.map((c, i) => (
-              <li key={i} data-v2v-window={i}>
+              <li key={i} style={WINDOW} data-v2v-window={i}>
                 {studioCopy.v2vWindowRow(i + 1, secs(c.start_frame), secs(c.end_frame), i > 0 ? (c.transition ?? 'cut') : '', c.text ?? '')}
               </li>
             ))}
           </ol>}
-      <div data-v2v-split-seat={true}>
+      <div style={SPLIT_SEAT} data-v2v-split-seat={true}>
         <Input
           type="number"
           min={0}
           step={0.1}
+          style={{ flex: '1 1 72px', minWidth: 0 }}
           data-testid="v2v-split-at"
           aria-label={studioCopy.v2vFormSplitLabel}
           title={studioCopy.v2vFormSplitTip}
@@ -120,7 +153,7 @@ export function V2vLeafFace(props: { value: { calls: V2vWindowView[]; fps: numbe
           {studioCopy.v2vFormCutAria}
         </Button>
       </div>
-      {refusal !== null ? <div data-v2v-refusal={true}>{refusal}</div> : null}
+      {refusal !== null ? <div style={REFUSAL} data-v2v-refusal={true}>{refusal}</div> : null}
     </div>
   )
 }

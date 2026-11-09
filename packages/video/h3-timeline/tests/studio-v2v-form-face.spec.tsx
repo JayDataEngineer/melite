@@ -347,4 +347,55 @@ describe("THE V2V WINDOWS FORM FACE (queue 11 reopened — the operator's correc
       `the FORM door's write equals the pure verb's array — form ${JSON.stringify(formDoc)} vs pure ${JSON.stringify(PURE)}`)
     assert.deepEqual(formDoc, stripDoc, "the two doors write the IDENTICAL array (one law, two views)")
   })
+
+  it("THE FACE'S OWN APPEARANCE (operator 2026-11-09: 'the modal that appears for vid2vid … looks awful') — the face styles ITSELF inline (the paint/bbox/orbit law: never a css module in the emit closure, never the host's stylesheet), the windows list is NOT a browser-default <ol>, and every row carries the panel-card recipe", () => {
+    const commits: unknown[][] = []
+    const { unmount } = render(
+      <V2vLeafFace
+        value={{ calls: [
+          { text: "a", start_frame: 0, end_frame: 48 },
+          { text: "b", start_frame: 48, end_frame: 96, transition: "carry" },
+        ], fps: 24 }}
+        onChange={(next) => { commits.push(next) }}
+      />,
+    )
+    // THE LIST: no decimal numerals, no list indent — the face owns
+    // the list's look, not the browser's default
+    const list = document.querySelector("[data-v2v-windows]") as HTMLElement
+    const listStyle = list.style
+    assert.equal(listStyle.listStyle, "none", "the ol kills the browser's decimal numerals")
+    assert.equal(listStyle.margin, "0px", "no default list margin")
+    assert.equal(listStyle.padding, "0px", "no default list indent")
+    assert.equal(listStyle.display, "flex", "the windows stack as a flex column, gap-spaced")
+    // THE WINDOW ROWS: the panel-card recipe (hairline border +
+    // layer background + radius), tabular numerals for the spans.
+    // (jsdom cannot serialize a var() inside the border shorthand —
+    // it parks the token in the longhands — so the token is judged
+    // on the element's whole cssText, the honest "the recipe
+    // carries the token" read.)
+    const row = document.querySelector("[data-v2v-window='1']") as HTMLElement
+    assert.ok(row.style.cssText.includes("var(--dsw-alias-border-l1)"), "the window row carries the hairline border token")
+    assert.equal(row.style.background, "var(--dsw-alias-bg-layer-1)", "the window row carries the layer background token")
+    assert.ok(row.style.borderRadius !== "", "the window row is rounded (the panel card voice)")
+    assert.equal(row.style.fontVariantNumeric, "tabular-nums", "the span numerals align (W2 · 2.00s–4.00s reads as a column)")
+    // THE SPLIT SEAT: one flex row — the timestamp input fills, the
+    // carry menu and the split button ride beside it (never unstyled
+    // inline blocks wrapping under each other)
+    const seat = document.querySelector("[data-v2v-split-seat]") as HTMLElement
+    assert.equal(seat.style.display, "flex", "the split seat lays out as one row")
+    const at = document.querySelector('[data-testid="v2v-split-at"]') as HTMLInputElement
+    assert.ok(at.style.flex.startsWith("1"), "the timestamp input fills the row's slack")
+    // THE HEAD + HINT: the caption voice (uppercase, tracking) over
+    // the muted hint — never two undifferentiated body paragraphs
+    const head = document.querySelector("[data-v2v-head]") as HTMLElement
+    assert.equal(head.style.textTransform, "uppercase", "the head is the caption voice")
+    const hint = document.querySelector("[data-v2v-hint]") as HTMLElement
+    assert.equal(hint.style.color, "var(--dsw-alias-label-tertiary)", "the hint is the muted voice")
+    // THE REFUSAL: the error token, never undifferentiated body text
+    fireEvent.click(document.querySelector('[data-testid="v2v-split-cut"]') as HTMLElement)
+    const refusal = document.querySelector("[data-v2v-refusal]") as HTMLElement
+    assert.ok(refusal !== null, "the refused press states itself")
+    assert.equal(refusal.style.color, "var(--dsw-alias-state-error-primary)", "the refusal carries the error token")
+    unmount()
+  })
 })
