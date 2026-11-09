@@ -717,7 +717,12 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // seam-vocabulary gate's plane rebuild (build-plane fixpoint) emits
   // the two newest models/h3 leaves into tracked lib — the census
   // follows the emitted truth.
-  const LIB_CENSUS_PIN = 642;
+  // Repinned 642 -> 643 (2026-11-09, the commissions arc): the
+  // per-row starter-call blanking seats
+  // packages/video/h3-timeline/lib/ui/studio/commissions.js — the
+  // leaf landed with the inpaint-serve commit's lib restage. The
+  // census follows the emitted truth.
+  const LIB_CENSUS_PIN = 643;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {
