@@ -12,6 +12,10 @@ import { appendLedger, writeJsonAtomic } from "./queueLock.ts";
 export interface SweepResult {
   readonly touched: boolean;
   readonly wasQueued: boolean;
+  /** The D-8 hold: the queued face was NOT resettled — the row
+   *  stays queued for the next boot's replay (only a caller that
+   *  passes maxHolds > 0 can hold; the default resettles). */
+  readonly held: boolean;
   readonly doc: Record<string, unknown>;
 }
 
@@ -20,13 +24,37 @@ export interface SweepResult {
  *  becomes failed. Idempotent (an already-swept file has no active
  *  statuses left → touched false, no write). A run still QUEUED
  *  never executed: its sweep note + error say so (queuedWhy)
- *  instead of implying a crash mid-run. */
+ *  instead of implying a crash mid-run.
+ *
+ *  THE D-8 HOLD (defect board 2026-11-18): with maxHolds > 0, a
+ *  still-QUEUED top-level face is HELD instead of failed — the
+ *  press never executed, so it stays queued for the next boot's
+ *  replay (a sweep note + a sweep_holds counter are the only keys
+ *  touched; identity rides verbatim). Bounded: once the counter
+ *  passes maxHolds the row settles failed with the exhausted-holds
+ *  voice — a row no boot can replay must not haunt as queued
+ *  forever (the same haunt law settleReplayRefusal carries). */
 export function sweepSidecar(
   doc: Record<string, unknown>,
   why: string,
   queuedWhy: string = "",
+  maxHolds: number = 0,
 ): SweepResult {
   const wasQueued: boolean = doc["status"] === "queued";
+  if (wasQueued && maxHolds > 0) {
+    const held: number =
+      (typeof doc["sweep_holds"] === "number" ? (doc["sweep_holds"] as number) : 0) + 1;
+    doc["sweep_holds"] = held;
+    if (held <= maxHolds) {
+      const note: string = queuedWhy !== "" ? queuedWhy : why;
+      doc["sweep"] =
+        `${note} — held as queued for the next boot's replay ` +
+        `(hold ${held}/${maxHolds}, defect board D-8)`;
+      return { touched: true, wasQueued, held: true, doc };
+    }
+    // past the bound: fall through to the terminal resettle — the
+    // note below names the exhausted holds (the haunt law)
+  }
   let touched: boolean = false;
   const patch = (o: unknown): void => {
     if (Array.isArray(o)) {
@@ -50,18 +78,32 @@ export function sweepSidecar(
     }
   };
   patch(doc);
-  if (!touched) return { touched: false, wasQueued, doc };
-  const note: string = wasQueued && queuedWhy !== "" ? queuedWhy : why;
+  if (!touched) return { touched: false, wasQueued, held: false, doc };
+  const exhausted: boolean = wasQueued && maxHolds > 0;
+  const note: string = exhausted
+    ? `${queuedWhy !== "" ? queuedWhy : why} — held ${String(doc["sweep_holds"])} boots without a replay; settling failed (resubmit)`
+    : wasQueued && queuedWhy !== ""
+      ? queuedWhy
+      : why;
   doc["sweep"] = note;
-  if (wasQueued && queuedWhy !== "") doc["error"] = queuedWhy;
-  return { touched: true, wasQueued, doc };
+  if (wasQueued && queuedWhy !== "") doc["error"] = note;
+  return { touched: true, wasQueued, held: false, doc };
 }
 
 /** Boot-sweep notes (boot_sweep 2402-2409). */
 export const BOOT_SWEEP_WHY: string =
   "host restarted (boot sweep): stale active sidecar from a dead process";
 export const BOOT_SWEEP_QUEUED_WHY: string =
-  "host restarted before the run started (never executed) — resubmit";
+  "host restarted before the run started (never executed)";
+/** THE D-8 GRACE (defect board 2026-11-18: "the sweep should
+ *  re-queue (or hold as queued) rather than fail: the user's press
+ *  was valid and nothing about the engine changed"): a still-QUEUED
+ *  sidecar at boot holds as queued for this many boots — the next
+ *  boot's reconcile replays it if its request ever answers the
+ *  durable gate. Three grace boots, then the row settles failed
+ *  loud (a row no boot can replay must not haunt as queued
+ *  forever — the haunt law settleReplayRefusal already carries). */
+export const BOOT_SWEEP_MAX_HOLDS: number = 3;
 
 /** Read-time sweep notes + response errors (sidecar_status
  *  2428-2451): the ledger state is ALWAYS "failed" (even for a
@@ -76,9 +118,13 @@ export const READ_SWEEP_RUNNING_ERROR: string = "zombie swept at read time";
 /** Boot-time zombie sweep (boot_sweep 2378-2410, fs half): every
  *  sidecar still claiming running/queued belongs to a DEAD process
  *  — EXCEPT liveRunIds (boot_resurrect just re-queued those; their
- *  queued sidecar is resurrected work, not a zombie). Swept BEFORE
- *  traffic, so the ledger never shows phantom actives. Returns the
- *  swept run ids in sorted order. */
+ *  queued sidecar is resurrected work, not a zombie). A RUNNING
+ *  claim retires failed; a still-QUEUED claim NEVER executed, so it
+ *  HOLDS as queued for the next boot's replay (D-8, bounded by
+ *  BOOT_SWEEP_MAX_HOLDS — past the bound it settles failed loud).
+ *  Swept BEFORE traffic, so the ledger never shows phantom actives.
+ *  Returns the RETIRED run ids in sorted order (held rows are not
+ *  retired and never ride it). */
 export async function bootSweep(
   stateRoot: string,
   liveRunIds: readonly string[] = [],
@@ -149,9 +195,28 @@ export async function bootSweep(
       current as Record<string, unknown>,
       BOOT_SWEEP_WHY,
       wasQueued ? BOOT_SWEEP_QUEUED_WHY : "",
+      BOOT_SWEEP_MAX_HOLDS,
     );
     if (!res.touched) continue;
     await writeJsonAtomic(path, res.doc);
+    if (res.held) {
+      // D-8: the press never executed — the row stays queued for the
+      // next boot's replay, ledgered queued_held (never failed). It
+      // is NOT in the swept return: the sweep retired nothing.
+      appendLedger(
+        stateRoot,
+        "run.swept",
+        {
+          run_id: name,
+          state: "queued_held",
+          error:
+            `boot sweep: held as queued for the next boot's replay ` +
+            `(hold ${String(res.doc["sweep_holds"])}/${BOOT_SWEEP_MAX_HOLDS}) — the press never executed`,
+        },
+        nowS,
+      );
+      continue;
+    }
     appendLedger(
       stateRoot,
       "run.swept",

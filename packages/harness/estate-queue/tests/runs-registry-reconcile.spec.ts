@@ -12,6 +12,7 @@ import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 import { ComfyUIHostService } from "@melite/comfyui-cordis";
 import type { FlowResult, MergeRow, EngineJson } from "@melite/comfyui-cordis";
 import { RunsRuntimeService } from "../src/runsRegistry.ts";
+import { bootSweep } from "../src/queueSweep.ts";
 import { listRuns } from "../src/runsList.ts";
 import { EnginesService } from "@melite/engine-contract";
 import type { EngineRef } from "@melite/engine-contract";
@@ -434,10 +435,12 @@ describe("stroke-83 boot reconcile (resurrect REBORN as a replay)", () => {
     assert.equal(tail["status"], "queued");
   });
 
-  it("a corrupt _request.json never replays — the sweep owns it (the orphan road)", async () => {
+  it("a corrupt _request.json never replays — the sweep HOLDS it, then settles it at the bound (the orphan road, D-8)", async () => {
     // Line 250's road: an unreadable request is NOT a replayable
-    // claim. bootReconcile skips it; bootSweep then sweeps the
-    // stale QUEUED sidecar failed with the never-executed note.
+    // claim. bootReconcile skips it; bootSweep then HOLDS the stale
+    // QUEUED sidecar as queued (D-8: the press never executed —
+    // failed is not an honest first disposition), and the bound
+    // settles it loud once no boot ever replayed it.
     const s = seat();
     const ctx = (s.svc as unknown as { ctx: Context }).ctx;
     const engines = new EnginesService(ctx);
@@ -458,13 +461,24 @@ describe("stroke-83 boot reconcile (resurrect REBORN as a replay)", () => {
     const sidecarPath = join(outRoot, "run-corruptreq", "_flow.json");
     for (let i = 0; i < 200; i++) {
       side = JSON.parse(readFileSync(sidecarPath, "utf8")) as Record<string, unknown>;
-      if (side["status"] === "failed") break;
-      if (i === 199) throw new Error("corrupt-request sidecar never failed");
+      if (side["sweep_holds"] === 1) break;
+      if (i === 199) throw new Error("corrupt-request sidecar never held");
       await new Promise((r): void => { setTimeout(r, 10); });
     }
-    assert.equal(side["status"], "failed");
-    assert.match(String(side["error"]), /never executed/);
+    // D-8: the first boot HOLDS — the press stays queued, ledgered
+    // queued_held, never failed
+    assert.equal(side["status"], "queued");
+    assert.match(String(side["sweep"]), /held as queued for the next boot's replay \(hold 1\/3/);
     assert.equal(s.core.runs.get("run-corruptreq"), undefined, "no in-memory row — it never replayed");
+    const ledgerHeld = readFileSync(join(outRoot, "_ledger.jsonl"), "utf8");
+    assert.match(ledgerHeld, /"state":"queued_held"/);
+    // the bound: three more boots age out the grace — the row
+    // settles failed loud, never haunting as queued forever
+    for (let i = 0; i < 3; i++) await bootSweep(s.state);
+    side = JSON.parse(readFileSync(sidecarPath, "utf8")) as Record<string, unknown>;
+    assert.equal(side["status"], "failed");
+    assert.match(String(side["error"]), /held 4 boots without a replay; settling failed \(resubmit\)/);
+    assert.match(String(side["error"]), /never executed/);
   });
 
   it("a refused replay settles loud in place carrying the old sidecar's identity", async () => {
@@ -532,16 +546,28 @@ describe("stroke-83 boot reconcile (resurrect REBORN as a replay)", () => {
     );
     s.svc.reconciled = false;
     await s.svc.bootReconcile();
-    const side3 = JSON.parse(readFileSync(join(outRoot, "run-junkidentity", "_flow.json"), "utf8")) as Record<string, unknown>;
-    // TORN IDENTITY IS THE SWEEP'S, NOT THE REPLAY'S: a non-number
-    // created_at fails the durable gate — the row is never replayed;
-    // bootSweep settles it failed with the restart note, carrying
-    // the raw sidecar identity verbatim (never guessed, never coerced).
+    const sidecarPath3 = join(outRoot, "run-junkidentity", "_flow.json");
+    let side3 = JSON.parse(readFileSync(sidecarPath3, "utf8")) as Record<string, unknown>;
+    // TORN IDENTITY IS THE SWEEP'S, NOT THE REPLAY'S: a non-array
+    // stages row fails the durable gate — the row is never replayed;
+    // the first boot HOLDS it as queued (D-8: the press never
+    // executed), carrying the raw sidecar identity verbatim (never
+    // guessed, never coerced — the hold touches only the sweep keys).
+    assert.equal(side3["status"], "queued", "the first boot holds the torn row, never fails it");
+    assert.equal(side3["stages"], "s", "the torn row rides verbatim, never replayed");
+    assert.equal(side3["created_at"], "late");
+    assert.equal(side3["pipeline"], 7);
+    assert.equal(side3["sweep_holds"], 1);
+    // the bound settles it failed with the restart note — the
+    // identity STILL verbatim (the sweep road never coerces)
+    for (let i = 0; i < 3; i++) await bootSweep(s.state);
+    side3 = JSON.parse(readFileSync(sidecarPath3, "utf8")) as Record<string, unknown>;
     assert.equal(side3["status"], "failed");
     assert.equal(side3["stages"], "s", "the torn row is swept verbatim, never replayed");
     assert.equal(side3["created_at"], "late");
     assert.equal(side3["pipeline"], 7);
     assert.match(String(side3["error"]), /host restarted before the run started/);
+    assert.match(String(side3["error"]), /held 4 boots without a replay/);
     const side2 = JSON.parse(readFileSync(join(outRoot, "run-junkstages", "_flow.json"), "utf8")) as Record<string, unknown>;
     assert.equal(side2["status"], "failed");
     assert.equal(side2["sweep"], undefined, "not the sweep road: " + JSON.stringify(side2["sweep"]));

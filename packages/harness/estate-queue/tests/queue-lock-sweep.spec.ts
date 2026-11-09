@@ -3,7 +3,8 @@
 // 2026-09-19): acquireLock's fresh/live-pid/stale-steal/unreadable
 // rows, releaseLock, pipelineOf's four resolutions, bootSweep's
 // dispositions (absent root, live row, unreadable flow, non-object
-// flow, running/queued resettle), sweepSidecar's deep resettle.
+// flow, running resettle, the D-8 queued hold + its bound),
+// sweepSidecar's deep resettle.
 import { afterAll, beforeAll, describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -244,13 +245,13 @@ describe("bootSweep (the boot dispositions)", () => {
   it("an absent output root sweeps nothing", async () => {
     assert.deepEqual(await bootSweep(join(ROOT, "nope")), []);
   });
-  it("a live run id is left alone; others resettle", async () => {
+  it("a live run id is left alone; a stale RUNNING claim resettles", async () => {
     const out = join(ROOT, "output");
     rmSync(out, { recursive: true, force: true });
     mkdirSync(join(out, "run-live"), { recursive: true });
     writeFileSync(join(out, "run-live", "_flow.json"), JSON.stringify({ status: "running" }));
     mkdirSync(join(out, "run-stale"), { recursive: true });
-    writeFileSync(join(out, "run-stale", "_flow.json"), JSON.stringify({ status: "queued" }));
+    writeFileSync(join(out, "run-stale", "_flow.json"), JSON.stringify({ status: "running" }));
     const swept = await bootSweep(ROOT, ["run-live"]);
     assert.deepEqual(swept, ["run-stale"]);
     const doc = JSON.parse(readFileSync(join(out, "run-stale", "_flow.json"), "utf8"));
@@ -298,8 +299,100 @@ describe("bootSweep (the boot dispositions)", () => {
   });
 });
 
+// THE D-8 HOLD (defect board 2026-11-18, the verbatim burn:
+// `run.swept — run_id=run-422c4d46a721-c2357165, state=failed,
+// error=boot sweep`): "A run that had already been accepted into the
+// queue was marked failed because the harness restarted before it
+// dispatched. No artifact, no retry. For a GPU queue whose runs cost
+// minutes, the sweep should re-queue (or hold as queued) rather than
+// fail: the user's press was valid and nothing about the engine
+// changed." A still-QUEUED sidecar at boot NEVER executed — it holds
+// as queued (ledgered queued_held, never failed), bounded by
+// BOOT_SWEEP_MAX_HOLDS so a row no boot can replay cannot haunt as
+// queued forever.
+describe("bootSweep holds a queued press (D-8)", () => {
+  const plant = (root: string, run: string, doc: Record<string, unknown>): string => {
+    const dir = join(root, "output", run);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "_flow.json"), JSON.stringify(doc));
+    return join(dir, "_flow.json");
+  };
+  it("a still-QUEUED sidecar holds as queued — never failed, ledgered queued_held", async () => {
+    const root = join(ROOT, "d8-hold");
+    rmSync(root, { recursive: true, force: true });
+    plant(root, "run-press", {
+      status: "queued",
+      draft_id: "d1",
+      created_at: 100,
+      pipeline: "flow_inline",
+      stages: [{ id: "s1", status: "queued" }],
+    });
+    const swept = await bootSweep(root);
+    // the press was never executed: NOTHING retires it
+    assert.deepEqual(swept, [], "a held row is not swept — the sweep retired nothing");
+    const doc = JSON.parse(readFileSync(join(root, "output", "run-press", "_flow.json"), "utf8")) as Record<string, unknown>;
+    assert.equal(doc["status"], "queued", "the press stays queued for the next boot's replay");
+    assert.equal(doc["sweep_holds"], 1);
+    assert.match(String(doc["sweep"]), /held as queued for the next boot's replay \(hold 1\/3/);
+    assert.match(String(doc["sweep"]), /never executed/);
+    assert.equal(doc["error"], undefined, "a held row is not an errored row");
+    // per-stage queued faces stay queued too — the run never started
+    assert.equal((doc["stages"] as { status: string }[])[0]["status"], "queued");
+    const ledger = readFileSync(join(root, "output", "_ledger.jsonl"), "utf8");
+    assert.match(ledger, /"state":"queued_held"/);
+    assert.match(ledger, /the press never executed/);
+    assert.doesNotMatch(ledger, /"state":"failed"/);
+  });
+  it("the hold is bounded — past BOOT_SWEEP_MAX_HOLDS the row settles failed loud (the haunt law)", async () => {
+    const root = join(ROOT, "d8-bound");
+    rmSync(root, { recursive: true, force: true });
+    plant(root, "run-ghost", {
+      status: "queued",
+      draft_id: "d1",
+      created_at: 100,
+      pipeline: "flow_inline",
+      stages: [{ id: "s1", status: "queued" }],
+    });
+    for (let i = 0; i < 3; i++) await bootSweep(root);
+    let doc = JSON.parse(readFileSync(join(root, "output", "run-ghost", "_flow.json"), "utf8")) as Record<string, unknown>;
+    assert.equal(doc["status"], "queued", "three boots held — the grace window is 3");
+    assert.equal(doc["sweep_holds"], 3);
+    const swept = await bootSweep(root);
+    // the 4th boot: no replay ever came — the row settles failed
+    // loud, never haunting as queued forever
+    assert.deepEqual(swept, ["run-ghost"]);
+    doc = JSON.parse(readFileSync(join(root, "output", "run-ghost", "_flow.json"), "utf8")) as Record<string, unknown>;
+    assert.equal(doc["status"], "failed");
+    assert.match(String(doc["error"]), /held 4 boots without a replay; settling failed \(resubmit\)/);
+    assert.match(String(doc["error"]), /never executed/);
+    assert.equal((doc["stages"] as { status: string }[])[0]["status"], "failed");
+    const ledger = readFileSync(join(root, "output", "_ledger.jsonl"), "utf8");
+    assert.match(ledger, /"state":"queued_held"/);
+    assert.match(ledger, /"state":"queued_lost"/);
+  });
+  it("a held row's identity rides verbatim — the hold touches only the sweep keys", async () => {
+    const root = join(ROOT, "d8-identity");
+    rmSync(root, { recursive: true, force: true });
+    plant(root, "run-ident", {
+      status: "queued",
+      draft_id: "d1",
+      created_at: "late",
+      pipeline: 7,
+      stages: "s",
+      skipped_stages: [],
+      artifacts: [],
+    });
+    await bootSweep(root);
+    const doc = JSON.parse(readFileSync(join(root, "output", "run-ident", "_flow.json"), "utf8")) as Record<string, unknown>;
+    assert.equal(doc["status"], "queued");
+    assert.equal(doc["created_at"], "late");
+    assert.equal(doc["pipeline"], 7);
+    assert.equal(doc["stages"], "s", "the row rides verbatim — the hold never rebuilds identity");
+  });
+});
+
 describe("sweepSidecar (the deep resettle)", () => {
-  it("running and queued rows anywhere in the tree resettle to failed", () => {
+  it("running and queued rows anywhere in the tree resettle to failed (the maxHolds-0 default — only a caller that opts in holds)", () => {
     const doc = {
       status: "queued",
       stages: [{ status: "running" }, { status: "queued" }, { status: "completed" }],
@@ -310,6 +403,35 @@ describe("sweepSidecar (the deep resettle)", () => {
     assert.equal((doc["stages"] as { status: string }[])[1]["status"], "failed");
     assert.equal((doc["stages"] as { status: string }[])[2]["status"], "completed");
     assert.equal(r.touched, true);
+    assert.equal(r.wasQueued, true);
+    assert.equal(r.held, false);
+  });
+  it("maxHolds > 0 HOLDS a queued face — status untouched, the counter stamps, the note names the replay", () => {
+    const doc = {
+      status: "queued",
+      stages: [{ id: "s1", status: "queued" }, { id: "s2", status: "completed" }],
+    };
+    const r = sweepSidecar(doc, "server.restart", "queue.requeued", 3);
+    assert.equal(doc["status"], "queued");
+    assert.equal((doc["stages"] as { status: string }[])[0]["status"], "queued");
+    assert.equal(doc["sweep_holds"], 1);
+    assert.match(String(doc["sweep"]), /held as queued for the next boot's replay \(hold 1\/3/);
+    assert.equal(doc["error"], undefined);
+    assert.equal(r.touched, true);
+    assert.equal(r.held, true);
+    // the SECOND hold stacks the counter (boot two of the grace)
+    const r2 = sweepSidecar(doc, "server.restart", "queue.requeued", 3);
+    assert.equal(doc["sweep_holds"], 2);
+    assert.match(String(doc["sweep"]), /hold 2\/3/);
+    assert.equal(r2.held, true);
+  });
+  it("past the bound the resettle fires with the exhausted-holds voice", () => {
+    const doc = { status: "queued", sweep_holds: 3, stages: [{ id: "s1", status: "queued" }] };
+    const r = sweepSidecar(doc, "server.restart", "queue.requeued", 3);
+    assert.equal(doc["status"], "failed");
+    assert.equal((doc["stages"] as { status: string }[])[0]["status"], "failed");
+    assert.match(String(doc["error"]), /held 4 boots without a replay; settling failed \(resubmit\)/);
+    assert.equal(r.held, false);
     assert.equal(r.wasQueued, true);
   });
   it("a stopping row resettles to stopped — the requested stop landed, never failed", () => {
