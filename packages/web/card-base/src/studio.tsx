@@ -284,7 +284,7 @@ export function DeclarativeStudio(props: StageViewOwnerProps & {
         // in the drill: the contract held on the wire and died at
         // the face.
         // THE PICK IS A DISCRETE DOOR WRITE (the settings-eater law,
-        // 2026-11-16, the sweep's img-to-mesh burn): the atomic pick
+        // 2026-11-09, the sweep's img-to-mesh burn): the atomic pick
         // once merged onto the USER STATE alone — no seat, no wire —
         // so a recipe/family pick lived only in the view and died
         // with it (the 2026-09-23 burn's exact shape, probe k: zero
@@ -297,7 +297,7 @@ export function DeclarativeStudio(props: StageViewOwnerProps & {
         // (only FRAME nulls consume), and the patch-first run derives
         // the departed keys' nulls from their absence.
         // THE PICK JUDGES THE SHOWN DOC (the composability cure's
-        // studio half, 2026-11-16, the gate-11 trellis2-native red:
+        // studio half, 2026-11-09, the gate-11 trellis2-native red:
         // the mount once plumbed NEITHER layer — pickHeld undefined —
         // so a CROSS-FAMILY pick's departure judged an empty held and
         // left the departing family's coordinates stated (pixal3d's

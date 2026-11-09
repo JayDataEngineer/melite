@@ -15,7 +15,7 @@ import { describe, expect, test } from 'vitest'
 import { createElement, useState } from 'react'
 import { render, screen, fireEvent, act } from '@testing-library/react'
 import fixture21 from './fixtures/image-edit-spec.json'
-import fixture2511 from './fixtures/image-edit-2511-spec.json'
+import fixtureFibo2 from './fixtures/image-edit-fibo2-spec.json'
 import { assertFormSpecDoc, fieldsOf } from '@melite/card-base/client'
 import {
   CardForm,
@@ -32,7 +32,7 @@ import {
 // model pick refetches the family's own matrix, so the visibility
 // grammar rides the SERVED doc, never a stale one.
 const REAL21 = assertFormSpecDoc(fixture21, 'image-edit')
-const REAL2511 = assertFormSpecDoc(fixture2511, 'image-edit-2511')
+const FIBO2 = assertFormSpecDoc(fixtureFibo2, 'image-edit')
 
 describe('the boundary judgment refuses what the cast used to seat', () => {
   test('a doc without a schema envelope is refused', () => {
@@ -89,10 +89,15 @@ describe('THE REAL image-edit CONTRACT drives the real form', () => {
     expect(REAL21.lanes?.base).toContain('height')
     expect(REAL21.lanes?.bounds?.width).toBeUndefined()
     expect(REAL21.lanes?.bounds).toEqual({ steps: { min: 1, max: 50 } })
-    // the 2511 doc is the sibling fixture (seated above)
-    expect(REAL2511.lanes?.base?.includes('width')).toBe(true)
-    expect(REAL2511.lanes?.base?.includes('height')).toBe(true)
-    expect(REAL2511.lanes?.base?.includes('use_stock_nodes')).toBe(true)
+    // the fibo2 doc is the sibling fixture (seated above — the
+    // card's second lane, welded the same way); the resize pair
+    // rides its lane too, and the variant-class pair is STATED on
+    // this lane's defaults (the resize-tail door refuses unstated
+    // steps/cfg — dev rides 30/5, edit-turbo 8/1)
+    expect(FIBO2.lanes?.base?.includes('width')).toBe(true)
+    expect(FIBO2.lanes?.base?.includes('height')).toBe(true)
+    expect(FIBO2.model_defaults?.steps).toBe(30)
+    expect(FIBO2.model_defaults?.cfg).toBe(5)
   })
 
   test('CardForm renders the real contract: the input stack seats; width/height follow the model grammar', async () => {
@@ -127,7 +132,7 @@ describe('THE REAL image-edit CONTRACT drives the real form', () => {
     // the operator's verbatim burn ("WHEN I FLIP THE SWITCH ... THE
     // NUMBERS TO MODIFY DO NOT APPEAR"). The old arm pinned their
     // ABSENCE (the latent law: flipping revealed nothing). The pick
-    // re-serves the 2511 doc and the input stack + model axis carry.
+    // re-serves the fibo2 doc and the input stack + model axis carry.
     fireEvent.click(screen.getByRole('tab', { name: 'Resolution' }))
     const match = screen.getByRole('switch', { name: 'Match Input Resolution' })
     expect(match.getAttribute('aria-checked')).toBe('true')
@@ -138,11 +143,11 @@ describe('THE REAL image-edit CONTRACT drives the real form', () => {
     expect(screen.getByLabelText('Width')).toBeTruthy()
     expect(screen.getByLabelText('Height')).toBeTruthy()
     expect(screen.getByLabelText('Model')).toBeTruthy()
-    act(() => { setHost!({ spec: REAL2511, user: { model: 'qwen-img-edit-2511', prompt: 'a cat' } }) })
+    act(() => { setHost!({ spec: FIBO2, user: { model: 'fibo2-edit', prompt: 'a cat' } }) })
     expect(screen.queryByLabelText('Width')).toBeNull()
     expect(screen.queryByLabelText('Height')).toBeNull()
-    // the 2511 doc's own axes serve (the re-serve carried)
-    expect((screen.getByLabelText('Model') as HTMLElement).textContent).toContain('Qwen Image Edit 2511')
+    // the fibo2 doc's own axes serve (the re-serve carried)
+    expect((screen.getByLabelText('Model') as HTMLElement).textContent).toContain('Fibo 2.0 Edit')
   })
 
   test('THE MOD LAW on the real contract: the mask pack owns input_mask — never flat, the Modifiers section carries it', () => {

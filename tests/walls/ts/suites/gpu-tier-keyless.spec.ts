@@ -33,7 +33,7 @@ const CARD_VIEW = join(import.meta.dirname, "..", "..", "..", "..", "packages", 
 const REPO = join(import.meta.dirname, "..", "..", "..", "..");
 const LANE = join(REPO, "scripts", "e2e-gpu-lane.sh");
 
-// THE PREREQUISITE ORDER (the 2026-11-16 CI cure): the lane script's
+// THE PREREQUISITE ORDER (the 2026-11-09 CI cure): the lane script's
 // skip laws run in order — port, dsh-on-PATH (scripts/e2e-gpu-lane.sh
 // "no dsh binary on PATH"), THEN the engine probe. A runner without
 // the dsh binary skips BEFORE the engine gate, so the arm's subject

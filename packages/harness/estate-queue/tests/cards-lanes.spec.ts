@@ -214,7 +214,7 @@ describe("lanePresenceRefusal (the gate)", () => {
     arm({ SEEDVR2: "/pack" }); // extras ride the folder union too
     rmSync(MODELS, { recursive: true, force: true });
     try {
-      lanePresenceRefusal("qwen-img-edit-2511");
+      lanePresenceRefusal("qwen-img-edit-21");
       assert.fail("the missing lane file refuses");
     } catch (e) {
       assert.match((e as Error).message, /fetch it: /);

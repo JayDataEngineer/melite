@@ -10124,7 +10124,7 @@ window.__ModuleLoader__.load({
 			return out;
 		}
 		/** THE PICK'S SANCTIONED STAMPS (the tagger burn, gate-11 probe p,
-		*  2026-11-16): a variant row's defaults may name the lane's
+		*  2026-11-09): a variant row's defaults may name the lane's
 		*  INTERNAL coordinates (a checkpoint path the engine resolves from
 		*  the variant stamp itself) — keys the row's own resolved lane does
 		*  not serve. The compose mirror field-names such a key and the door
@@ -11028,7 +11028,7 @@ window.__ModuleLoader__.load({
 		*  @param held the SAVED doc the drill opened.
 		*  @returns the null-patch for the dead carried keys ({} when the
 		*    doc is already stateable on its resolved lane). */
-		/** THE ADMITTED-KEY FOLD (the pre-collapse reopen cure, 2026-11-16):
+		/** THE ADMITTED-KEY FOLD (the pre-collapse reopen cure, 2026-11-09):
 		*  the declared set BOTH judges of a saved doc derive — the compose
 		*  mirror (composeValidate) and the reopen heal
 		*  (dropStaleReopenCarry) — so one spelling sanctions a key at both
@@ -11038,7 +11038,7 @@ window.__ModuleLoader__.load({
 		*  admits every key under the prefix). Before this fold the heal
 		*  judged the doc with a narrower set than the mirror and nulled the
 		*  legacy bags the verdict sanctioned — one silent merge-patch
-		*  delete per reopen (the 2026-11-16 timeline audit's data-loss
+		*  delete per reopen (the 2026-11-09 timeline audit's data-loss
 		*  finding: the operator's saved mod VANISHED at open).
 		*  @param spec the doc's served form-spec.
 		*  @param surface the doc's RESOLVED lane surface (or the legacy
@@ -13079,7 +13079,7 @@ window.__ModuleLoader__.load({
 			*  old mute face (empty string, rendered as nothing) read as a
 			*  dead square (the operator's upload-lag burn). */
 			uploading: (p) => "uploading " + p.name + "…",
-			/** The drop-kind refusal (the modleaf-add journey audit, 2026-11-16):
+			/** The drop-kind refusal (the modleaf-add journey audit, 2026-11-09):
 			*  "a video File dropped on the IMAGE seat reaches onFile
 			*  unrefused" — the OS dialog's accept is a soft filter the drop
 			*  path bypasses; the seat's own kind law refuses loud into the
@@ -14004,7 +14004,7 @@ window.__ModuleLoader__.load({
 			}
 		}
 		/** THE SEAT'S FILE-KIND LAW (the modleaf-add journey audit,
-		* 2026-11-16 — the drop seam had NO judge): the OS dialog's accept
+		* 2026-11-09 — the drop seam had NO judge): the OS dialog's accept
 		* is a SOFT filter the drag-drop path bypasses; this law refuses
 		* loud at onFile (both doors route through it), into the refusal
 		* face — never a value, never a silent drop.
@@ -14024,7 +14024,7 @@ window.__ModuleLoader__.load({
 			});
 		}
 		/** THE SEAT'S ASSET-KIND LAW (the same journey audit's (b) debt,
-		*  2026-11-16): a dragged asset row (the media bar / a run row)
+		*  2026-11-09): a dragged asset row (the media bar / a run row)
 		* carries a URL, not a File — it entered onAsset with NO judge and a
 		* wrong-kind URL landed AS THE VALUE. Same derivation as the file
 		* door (seatFileKindOf × the estate's vocabulary), same refusal

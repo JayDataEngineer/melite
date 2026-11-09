@@ -70,11 +70,46 @@ const REQUIRED_SEATS = [
   ['swap_prompt', 'the swap action text (agent-composed, user-confirmed — the R2V prompt seat; the estate has no in-graph describers)'],
 ] as const
 
-const str = (p: Record<string, unknown>, k: string): string =>
-  typeof p[k] === 'string' ? (p[k] as string) : ''
+/** Reads one required seat NARROWED by its own refusal — the seat
+ * is a string or the door never composes (no fallback arm exists:
+ * a validated seat re-read through a forgiving helper would be a
+ * second, weaker validator below the law — a silent error). */
+const requiredSeat = (entry: Record<string, unknown>, seat: string, what: string): string => {
+  const v = entry[seat]
+  if (typeof v !== 'string' || v.trim() === '') {
+    throw new Error(
+      `h3-timeline replace: '${seat}' names no media — ${what}; a swap needs all five seats bound (source_clip, still, mannequin, mask, swap_prompt)`,
+    )
+  }
+  return v
+}
 
-const num = (p: Record<string, unknown>, k: string, d: number): number =>
-  typeof p[k] === 'number' ? (p[k] as number) : d
+/** An optional number seat: absent falls to the documented default;
+ * a stated non-number REFUSES — a defaulting fallback would swallow
+ * a bypassed door's wrong-typed value as a silent error. */
+const statedNumber = (p: Record<string, unknown>, k: string, d: number): number => {
+  const v = p[k]
+  if (v === undefined) return d
+  if (typeof v !== 'number' || !Number.isFinite(v)) {
+    throw new Error(
+      `h3-timeline replace: '${k}' is stated as ${JSON.stringify(v)} — a number seat carries a number (absent falls to ${d}); a wrong-typed value never silently defaults`,
+    )
+  }
+  return v
+}
+
+/** An optional text seat: absent is the lawful unstated ('' rides
+ * on); a stated non-string REFUSES. */
+const seatString = (p: Record<string, unknown>, k: string): string => {
+  const v = p[k]
+  if (v === undefined) return ''
+  if (typeof v !== 'string') {
+    throw new Error(
+      `h3-timeline replace: '${k}' is stated as ${JSON.stringify(v)} — a text seat carries text; a wrong-typed value never silently reads as unbound`,
+    )
+  }
+  return v
+}
 
 /** The swap renderer: validates the bound entry, then composes the
  * masked-edit chain per the reference map above. The film path
@@ -93,43 +128,42 @@ export function renderH3Swap(
   g: GraphBuilder,
   runId: string,
 ): void {
-  for (const [seat, what] of REQUIRED_SEATS) {
-    const v = entry[seat]
-    if (typeof v !== 'string' || v.trim() === '') {
-      throw new Error(
-        `h3-timeline replace: '${seat}' names no media — ${what}; a swap needs all five seats bound (source_clip, still, mannequin, mask, swap_prompt)`,
-      )
-    }
-  }
+// NO FALLBACK READS: every required seat narrows through its own
+  // refusal; optional seats refuse wrong-typed stated values.
+  const sourceClipSeat = requiredSeat(entry, 'source_clip', REQUIRED_SEATS[0][1])
+  const stillSeat = requiredSeat(entry, 'still', REQUIRED_SEATS[1][1])
+  const mannequinSeat = requiredSeat(entry, 'mannequin', REQUIRED_SEATS[2][1])
+  const maskSeat = requiredSeat(entry, 'mask', REQUIRED_SEATS[3][1])
+  const swapPromptSeat = requiredSeat(entry, 'swap_prompt', REQUIRED_SEATS[4][1])
   const keepAudio = entry.keep_audio !== false
-  const seed = num(entry, 'seed', 0)
-  const steps = num(entry, 'steps', 6)
-  const clipSeconds = num(entry, 'clip_seconds', 6)
+  const seed = statedNumber(entry, 'seed', 0)
+  const steps = statedNumber(entry, 'steps', 6)
+  const clipSeconds = statedNumber(entry, 'clip_seconds', 6)
   const resolution = resolvePlanTier(entry, p)
 
   // ── the staged media (the R0 cards' artifacts: the source clip,
   // the still, the track card's mannequin + grown mask) ──
-  const [srcFrames, srcAudio] = loadVideo(g, str(entry, 'source_clip'))
-  const stillImg = g.node('LoadImage', { image: str(entry, 'still') }).out(0)
+  const [srcFrames, srcAudio] = loadVideo(g, sourceClipSeat)
+  const stillImg = g.node('LoadImage', { image: stillSeat }).out(0)
   const maskOf = g.node('ImageToMask', {
-    image: g.node('LoadImage', { image: str(entry, 'mask') }).out(0),
+    image: g.node('LoadImage', { image: maskSeat }).out(0),
     channel: 'red',
   }).out(0)
-  const [mannequin] = loadVideo(g, str(entry, 'mannequin'))
+  const [mannequin] = loadVideo(g, mannequinSeat)
 
   renderMaskedEditChain(g, {
     p, facts,
     clipSeconds,
     overlapFrames: resolveCarryOverlap(entry),
     resolution, seed, steps,
-    roles: str(entry, 'roles'),
-    sourceClip: str(entry, 'source_clip'),
+    roles: seatString(entry, 'roles'),
+    sourceClip: sourceClipSeat,
     windowStart: 0,
     picture1: stillImg,
     srcFrames, srcAudio,
     // the ignored literal fallback — the plan node's SOURCE-SLICED
     // shots ride plan_json_input (the swap's own semantics)
-    planJson: JSON.stringify({ shots: [{ id: 'swap', prompt: str(entry, 'swap_prompt') }] }),
+    planJson: JSON.stringify({ shots: [{ id: 'swap', prompt: swapPromptSeat }] }),
     planFromSource: true,
     denoise: 1,
     assemble: {
@@ -140,7 +174,7 @@ export function renderH3Swap(
       // ── the masked edit body: the still anchors identity, the
       // mannequin carries motion, the staged PNG masks the edit ──
       const r2v = g.node('MiniMaxH3ReferenceToVideo', {
-        prompt: str(entry, 'swap_prompt'),
+        prompt: swapPromptSeat,
         width: cur.out(8), height: cur.out(9), length: cur.out(6),
         ref_image_size: 'match',
         clip, vae: vaeVideo, audio_vae: vaeAudio,

@@ -109,11 +109,11 @@ export interface MotionTimelineBarProps {
      *  clicks stay inert (the motion card's clips float in slack; its
      *  Add button still carves). */
     onPromptAdd?: (frame: number) => void;
-    /** THE SEAM CHIP (the collapse's cuts, 2026-11-16): the tenant
+    /** THE SEAM CHIP (the collapse's cuts, 2026-11-09): the tenant
      *  resolves the row's uuid to its call and toggles carried vs cut.
      *  Absent → the read-only extend dot (the motion card's own bar). */
     onSeamToggle?: (id: string) => void;
-    /** THE SPLIT SEAT (§0.5, the window split, 2026-11-16): a visible
+    /** THE SPLIT SEAT (§0.5, the window split, 2026-11-09): a visible
      *  split verb on every clip — the interior split was reachable only
      *  through a double-click no clip passes through (clips own it for
      *  inline edit). The tenant resolves the uuid to its call, picks

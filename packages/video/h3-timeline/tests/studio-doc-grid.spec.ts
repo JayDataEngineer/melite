@@ -93,7 +93,7 @@ describe("snapSplitFrame", () => {
   })
 
   it("a window with no legal seam returns NULL (§0.5 fence — the caller refuses, never writes the gesture)", () => {
-    // (re-pin 2026-11-16, the window split) the old fallthrough handed
+    // (re-pin 2026-11-09, the window split) the old fallthrough handed
     // back the raw gesture and every caller authored an off-grid half
     // the card refused whole. Null is the loud spelling.
     // 22→30: no frame leaves a legal carried right half

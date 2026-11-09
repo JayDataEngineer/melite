@@ -135,14 +135,14 @@ const FRAME_DUMP = /(^|_)\d{3,}_?\.png$/i
  *  metadata-preload element, so a full 500-run window at once is the
  *  sidebar's heaviest surface. The drilldown's prev/next still walks
  *  the WHOLE filtered list (its siblings stay `shown`).
- *  THE VIEW DIALS (operator 2026-11-16, "change the size of the
+ *  THE VIEW DIALS (operator 2026-11-09, "change the size of the
  *  previews to something bigger, and set the pagination per page"):
  *  the page size is an OPERATOR SETTING (30/60/120 — 60 the default
  *  this face always had), persisted beside the tile size below. */
 const PAGE_CHOICES = [30, 60, 120] as const
 const DEFAULT_PAGE_SIZE = 60
 
-/** THE TILE SIZE DIAL (operator 2026-11-16): the grid's minmax column
+/** THE TILE SIZE DIAL (operator 2026-11-09): the grid's minmax column
  *  width — S is the face's native 148, M and L widen the previews.
  *  Both dials persist in localStorage (a setting survives the tab;
  *  the useFeed cache's own seat) and refuse foreign stored values. */
@@ -646,7 +646,7 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
   /* PAGINATION (operator 2026-10-22): the grid renders one page; a
    * filter/sort/tab change re-anchors the scan to its first page. */
   const [page, setPage] = useState(0)
-  /* THE VIEW DIALS (operator 2026-11-16): tile size + page size,
+  /* THE VIEW DIALS (operator 2026-11-09): tile size + page size,
    * persisted — the operator's grid, the operator's scale. */
   const [tileSize, setTileSize] = useState<TileSize>(() => readDial('infer-media-tile', ['s', 'm', 'l'] as const, 's'))
   const [pageSize, setPageSize] = useState<number>(() => readDial('infer-media-page', PAGE_CHOICES, DEFAULT_PAGE_SIZE))
@@ -666,7 +666,7 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
   }
   const load = runsFeed.reload
 
-  /* THE FILES FACE (operator 2026-11-16, "no file browser… keeps only
+  /* THE FILES FACE (operator 2026-11-09, "no file browser… keeps only
    * the last 500, all the other media effectively lost in nested
    * folders"): a third tab over GET /infer-gallery/browse — the DISK
    * truth behind the runs window. Every run dir on disk lists at the
@@ -1231,7 +1231,7 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
             >{label}</Pill>
           ))}
         </span>
-        {/* THE VIEW DIALS (operator 2026-11-16): preview size + page
+        {/* THE VIEW DIALS (operator 2026-11-09): preview size + page
             size over the artifacts grid — persisted dials, DSH Pills
             for the chrome. The page dial re-anchors the scan to its
             first page (a wider page must never strand the scan past

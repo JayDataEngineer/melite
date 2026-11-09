@@ -65,7 +65,6 @@ const RESOLVED: Readonly<Record<string, "stamps" | "scoped">> = {
   "h3": "stamps",               // ← h3-timeline card (draft/standard/final)
   "kimodo": "stamps",           // ← motion
   "pixal3d": "stamps",          // ← img-to-mesh
-  "qwen-img-edit-2511": "stamps", // ← image-edit
   "seedvr2-ema": "stamps",      // ← upscale-tools
   "trellis2-native": "stamps",  // ← img-to-mesh
   "flux-klein": "stamps",       // ← image-gen (2026-10-22, the 006-tail cure: BFL's own base defaults 50/4.0 — flux2 util.py — stamp as the author recipe)
@@ -171,7 +170,9 @@ describe("the recipe schema-master (Rule A/B/C — semantic validation over the 
     // like every card-carried declarer.
     // 24 -> 23 (2026-11-12): the openjutsu lane deleted by operator
     // order — viggle-animate's recipe rows leave the table.
-    assert.equal(checked, 23, `the law reaches the table, exactly (checked ${String(checked)})`);
+    // 23 -> 22 (2026-11-09, the removal): the retired edit family's
+    // recipe declarer row dies with its package.
+    assert.equal(checked, 22, `the law reaches the table, exactly (checked ${String(checked)})`);
   });
 
   it("LAW K (k cure, 2026-11-08): every card-carrying Recipe family DECLARES its group default, and the default names an existing Recipe row (the initial-recipe law — DECL-declared, never row-order-emergent; the birth stamp reads this declaration)", async (): Promise<void> => {
@@ -201,7 +202,9 @@ describe("the recipe schema-master (Rule A/B/C — semantic validation over the 
     // the same 23-family census as LAW A (21 -> 23, 2026-11-09,
     // the h3-timeline board==offer cure — see LAW A)
     // 24 -> 23 (2026-11-12): same removal — the k law's table shrinks with it.
-    assert.equal(checked, 23, `the k law reaches the same table (checked ${String(checked)})`);
+    // 23 -> 22 (2026-11-09, the removal): the retired edit family's
+    // declarer row dies with its package.
+    assert.equal(checked, 22, `the k law reaches the same table (checked ${String(checked)})`);
   });
 
   it("DEBT RETIRED: the 15-family census resolutions hold (stamps stamp, scoped stay scoped)", async (): Promise<void> => {
@@ -213,7 +216,8 @@ describe("the recipe schema-master (Rule A/B/C — semantic validation over the 
     // operator's recipe rework — "1 model, 1 variant, 1 quant, and
     // 3 recipes"); the facts row left with it, so the alias
     // resolves nowhere and the map counts the real estate.
-    assert.equal(Object.keys(RESOLVED).length, 14, "the census pins all 14 resolutions (wan-vace + scail2-animate retired 2026-09-21; autoremesher left with the excision 2026-10-13; flux-klein joins stamps 2026-10-22; the h3-keyframe alias left 2026-11-02)");
+    // 14 -> 13 (2026-11-09, the removal): the retired edit family's resolution row dies with its package.
+    assert.equal(Object.keys(RESOLVED).length, 13, "the census pins all 13 resolutions (wan-vace + scail2-animate retired 2026-09-21; autoremesher left with the excision 2026-10-13; flux-klein joins stamps 2026-10-22; the h3-keyframe alias left 2026-11-02)");
     for (const [id, how] of Object.entries(RESOLVED)) {
       const f = getModel(id);
       const groups = (f.variant_groups ?? []).map((g: unknown) => typeof g === "string" ? g : (g as { id?: string }).id);
@@ -241,12 +245,13 @@ describe("the recipe schema-master (Rule A/B/C — semantic validation over the 
     const ALIASES: Record<string, string> = {};
     const atoms = Object.keys(RESOLVED).filter((id) => !(id in ALIASES));
     // 15 -> 14 (2026-10-13, the autoremesher excision — the pack the owner removed from the system).
-    // The atom census now EQUALS the resolution census (14): the
+    // The atom census now EQUALS the resolution census (13): the
     // h3-keyframe alias left BOTH the map and the registry
     // (2026-11-02), so no alias arithmetic remains — every resolved
-    // name is a real atom.
-    assert.equal(atoms.length, 14,
-      `the census carries 14 model ATOMS (saw ${String(atoms.length)}): ${atoms.join(", ")}`);
+    // name is a real atom; 14 -> 13 (2026-11-09, the removal): the
+    // retired edit family's resolution row died with its package.
+    assert.equal(atoms.length, 13,
+      `the census carries 13 model ATOMS (saw ${String(atoms.length)}): ${atoms.join(", ")}`);
     for (const [alias, atom] of Object.entries(ALIASES)) {
       assert.ok(alias in RESOLVED, `${alias} is a resolved name`);
       const aliasRows = (getModel(alias).variants ?? []).map((v: VariantRow) => v.id);

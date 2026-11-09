@@ -108,7 +108,7 @@ export function StudioStripPane({
    *  verb — the track head's add door commits BOTH in one write
    *  (the same law the rail subview's add door rides). */
   addKeyframeWithImage: (image: string, frame: number) => string
-  /** THE SEAM (the collapse's cuts, 2026-11-16): the strip's own
+  /** THE SEAM (the collapse's cuts, 2026-11-09): the strip's own
    *  seam chip writes the call's transition — the add-call surface is
    *  the one home for the cut choice (the rail select retired). */
   setCallTransition: (i: number, t: "extend" | "cut" | "carry+keyframe") => void

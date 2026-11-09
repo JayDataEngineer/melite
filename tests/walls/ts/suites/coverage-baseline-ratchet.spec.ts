@@ -382,7 +382,7 @@ const REGEN_2026_10_23_OLD_FLOORS: Record<string, { statements: number, branches
   '**/packages/web/card-base/src/studio.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/infer-gallery/src/client/bench-load.ts': { statements: 100, branches: 96.89, functions: 100, lines: 100 },
   '**/packages/web/infer-gallery/src/client/useFeed.ts': { statements: 97.72, branches: 87.5, functions: 100, lines: 100 },
-  // MotionTimelineBarDrag LEFT this table 2026-11-16: the seated
+  // MotionTimelineBarDrag LEFT this table 2026-11-09: the seated
   // regen re-measured its branches at 75.57 — back above the argued
   // from face (74.8) — so the cleanup arm demanded the entry leave
   // in the same landing (the ratchet-back landed).
@@ -1528,7 +1528,7 @@ const LANDED_DEBT2_NEW_FLOORS: Record<string, { statements: number, branches: nu
     '**/packages/web/viewer/src/index.ts': { statements: 96.97, branches: 91.67, functions: 87.5, lines: 96.3 },
 }
 
-// OVERLAY-ARGUED DROPS (2026-11-16, the seated regen raised base
+// OVERLAY-ARGUED DROPS (2026-11-09, the seated regen raised base
 // floors past pinned unseated faces): the integer-margin law fences
 // every newly-RELIEVED overlay metric at the integer floor of its
 // observed face — a DOWNWARD move against HEAD the overlay
@@ -1543,7 +1543,7 @@ const OVERLAY_ARGUED_DROPS: Record<string, {
   reviewBy: string,
   reason: string,
 }> = {
-  // The 2026-11-16 seated regen (two stable full-pool faces) minted
+  // The 2026-11-09 seated regen (two stable full-pool faces) minted
   // K=1 margin floors that raised service.ts's base to
   // 95.78/92.2/94.92/97.22 and runsExecute.ts's base to
   // 99.48/96.99/96.88/99.43 — past the overlay's pinned faces.
@@ -1554,14 +1554,14 @@ const OVERLAY_ARGUED_DROPS: Record<string, {
   "**/packages/estate/provisioning/src/service.ts": {
     from: { statements: 95.66, branches: 91, functions: 94.89, lines: 97.1 },
     to: { statements: 95, branches: 91, functions: 94, lines: 97 },
-    roadmapHeading: "The 2026-11-16 seated regen — the unseated overlay re-fenced at the integer floor",
+    roadmapHeading: "The 2026-11-09 seated regen — the unseated overlay re-fenced at the integer floor",
     reviewBy: "2026-12-16",
     reason: "the seated two-face regen raised the base floors past the pinned unseated faces; the integer-margin law fences the relieved metrics at the observed face's integer floor — re-measure the store-absent pool and lift the fence before the review date",
   },
   "**/packages/harness/estate-queue/src/runsExecute.ts": {
     from: { statements: 97, branches: 94, functions: 96, lines: 98.86 },
     to: { statements: 97, branches: 94, functions: 96, lines: 98 },
-    roadmapHeading: "The 2026-11-16 seated regen — the unseated overlay re-fenced at the integer floor",
+    roadmapHeading: "The 2026-11-09 seated regen — the unseated overlay re-fenced at the integer floor",
     reviewBy: "2026-12-16",
     reason: "the seated two-face regen raised the base lines floor past the pinned unseated face; the integer-margin law fences the relieved metric at the observed face's integer floor — re-measure the store-absent pool and lift the fence before the review date",
   },
@@ -2266,7 +2266,7 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     '**/packages/web-kit/timeline/src/timeline/MotionTimelineBarChrome.tsx',
     '**/packages/web-kit/timeline/src/timeline/motionTimelineState.ts',
     // MotionTimelineBarDrag.ts + MotionTimelineBarLanes.tsx left this
-    // list 2026-11-16 (the seated regen): the two-face mint re-seated
+    // list 2026-11-09 (the seated regen): the two-face mint re-seated
     // both rows back over their argued from faces (Drag branches
     // 74.05→75.57; Lanes 70/76.96/66.66/74 → 71.09/78.68/68.75/75), so
     // the cleanup arm demanded the removals in the same landing.
@@ -2367,7 +2367,7 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     '**/packages/web/melite-card-view/src/client/run-rescue-core.ts',
     '**/packages/web/melite-card-view/src/client/run-rescue.tsx',
     '**/packages/web/melite-card-view/src/client/sortable-tile.tsx',
-    // stage-drill.tsx left this list 2026-11-16 (the seated regen):
+    // stage-drill.tsx left this list 2026-11-09 (the seated regen):
     // its row climbed back above the argued from face
     // (99.47/98.77/99.15/99.78), so the cleanup arm demanded the
     // removal in the same landing.
@@ -2456,7 +2456,7 @@ const ARGUED_FLOOR_DROPS: Record<string, {
   // 43/55 vs 44/55 branches) with all tests green, twice at the low
   // face. The row seats at the K=1 mint over the low face:
   // statements 77/88, branches 42/55, lines 68/76; functions kept
-  // (met at the low face exactly). LEFT 2026-11-16 (the seated
+  // (met at the low face exactly). LEFT 2026-11-09 (the seated
   // regen): the two-face mint re-measured every metric at its argued
   // from face exactly (89.77/78.18/89.47/90.79), so the cleanup arm
   // demanded the removal in the same landing.
@@ -2466,7 +2466,7 @@ const ARGUED_FLOOR_DROPS: Record<string, {
   // green — the drag gesture arms decide coverage by event timing
   // under load. The row seats one path below the worst observed
   // branch face: 95/131 = 72.52; the other three metrics held their
-  // floors at every observed face. LEFT 2026-11-16 (the seated
+  // floors at every observed face. LEFT 2026-11-09 (the seated
   // regen): the two-face mint re-seated branches at 75.57, exactly
   // this entry's from face, so the cleanup arm demanded the removal
   // in the same landing (the load-jitter class keeps its watch in the
@@ -2478,7 +2478,7 @@ const ARGUED_FLOOR_DROPS: Record<string, {
   // load-timing class (the view's lazy arms decide paths by
   // wall-clock). The row seats one path below run D's face on the
   // two flapping metrics; branches/lines met their floors at every
-  // observed face. LEFT 2026-11-16 (the seated regen): the two-face
+  // observed face. LEFT 2026-11-09 (the seated regen): the two-face
   // mint re-raised every metric back over the argued from face
   // (99.56/99.4/98.28/99.48 over 99.11/98.31/98.28/98.99), so the
   // cleanup arm demanded the removal in the same landing.
@@ -2752,7 +2752,7 @@ import { emptyTableVerdict } from "../../../../scripts/coverage-rows-tripwire.mj
 // package.json's test:coverage) refuses the lying faces; these arms
 // hold it to its own law and hold the config to the no-negation rule.
 // Registry: gates-coverage-rows-tripwire.
-describe("THE UNSEATED OVERLAY (two seat faces, one gate — the 2026-11-16 margin-debt cure)", () => {
+describe("THE UNSEATED OVERLAY (two seat faces, one gate — the 2026-11-09 margin-debt cure)", () => {
   // Registry: gates-coverage-baseline. The store-seated design (the
   // 2026-11-05 guard) seats the real-weights arms dev-side; CI pools
   // carry no model store, so those describes skip and the

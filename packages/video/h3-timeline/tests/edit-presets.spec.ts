@@ -236,7 +236,7 @@ describe("the edit bag's section chips (stage 3: named cells over the ONE schema
     assert.equal(vw("refine"), "chain_run=null", "the refine switch stands down under the upscale posture");
     assert.equal(vw("continuation"), "chain_run=null", "the continuation switch stands down under the upscale posture");
     assert.equal(vw("segment_crf"), "chain_run!=null", "the HQ segment quality rides the upscale posture (B-2's twelfth guard)");
-    // THE DERIVED CENSUS (the modsystem wall-coverage audit 2026-11-16,
+    // THE DERIVED CENSUS (the modsystem wall-coverage audit 2026-11-09,
     // the census-lie finding): the walk below rode a hand-listed eleven
     // while the kind declared TWELVE — segment_crf (chain_run!=null,
     // card.ts B-2) red nothing when stripped. The loop is DERIVED now:

@@ -122,7 +122,7 @@ describe("§9 — the studio's mod projection (the commission derivation)", () =
     // the kinds constant IS the card's declaration order (the rail's own
     // reading order is a contract, not an accident of object keys); refine
     // + upscale joined 2026-10-31 (modpress-row-face): the quality mods
-    // seat between extend and reshoot; `edit` seats FIRST (2026-11-16,
+    // seat between extend and reshoot; `edit` seats FIRST (2026-11-09,
     // the read-list collapse): the canonical bag leads, the legacy five
     // are its translation
     expect([...COMMISSION_KINDS]).toEqual(["edit", "replace", "repair", "extend", "refine", "upscale", "reshoot", "loras"])
@@ -351,7 +351,7 @@ describe("THE MOD-MODE CALLS FACE (2026-11-14 — the lane's calls-readership)",
   })
 })
 
-// THE READ-LIST COLLAPSE (2026-11-16, the one-door law's UI half): the
+// THE READ-LIST COLLAPSE (2026-11-09, the one-door law's UI half): the
 // canonical bag is `edit` — the spelling the one door's Add writes and
 // the compose door reads (the legacy five are translation at the door
 // for old documents, never UI). A read list without it is the strip
@@ -363,7 +363,7 @@ const EDIT = {
   mask_source: "region", region_prompt: "a person", denoise: 0.55,
 }
 
-describe("THE READ-LIST COLLAPSE (2026-11-16 — the canonical bag rides the rail)", () => {
+describe("THE READ-LIST COLLAPSE (2026-11-09 — the canonical bag rides the rail)", () => {
   it("ARM E1 — an armed `edit` bag derives its row: the canonical spelling is read, named, and seated", () => {
     const rows = deriveCommissions({ edit: [EDIT] })
     expect(rows, "the canonical bag is not blind to the rail").toHaveLength(1)

@@ -126,7 +126,7 @@ export function RunRecipeEngine({
   const wire: SquareWire = {
     candidates: refArtifacts.map((a) => ({ id: a.name, label: a.name, url: a.url })),
     // THE FROM-FLOW KIND FILTER (the modleaf-add journey audit,
-    // 2026-11-16: "From-flow on the studio rail is UNFILTERED — the
+    // 2026-11-09: "From-flow on the studio rail is UNFILTERED — the
     // staged .mp4 was OFFERED to an image seat"): the picker's own
     // candidatesFor seam, threaded at last — the rows a seat offers
     // match the seat's file kind (the same one derivation the OS

@@ -83,11 +83,34 @@ export type EditReferenceDial =
   | { readonly mode: 'still+mannequin'; readonly still: string; readonly mannequin: string }
   | { readonly mode: 'self' }
 
-const str = (p: Record<string, unknown>, k: string): string =>
-  typeof p[k] === 'string' ? (p[k] as string) : ''
+/** NO FALLBACK READS (the silent-error law): a string seat stated
+ * wrong-typed REFUSES — absent is the lawful unbound state ('' rides
+ * to the seat's own refusal), but a wrong-typed value never silently
+ * becomes unbound. */
+const seatString = (p: Record<string, unknown>, k: string): string => {
+  const v = p[k]
+  if (v === undefined) return ''
+  if (typeof v !== 'string') {
+    throw new Error(
+      `h3-timeline edit: '${k}' is stated as ${JSON.stringify(v)} — a text seat carries text; a wrong-typed value never silently reads as unbound`,
+    )
+  }
+  return v
+}
 
-const num = (p: Record<string, unknown>, k: string, d: number): number =>
-  typeof p[k] === 'number' ? (p[k] as number) : d
+/** An optional number seat: absent falls to the documented default;
+ * a stated non-number REFUSES — a defaulting fallback would swallow
+ * a bypassed door's wrong-typed value as a silent error. */
+const statedNumber = (p: Record<string, unknown>, k: string, d: number): number => {
+  const v = p[k]
+  if (v === undefined) return d
+  if (typeof v !== 'number' || !Number.isFinite(v)) {
+    throw new Error(
+      `h3-timeline edit: '${k}' is stated as ${JSON.stringify(v)} — a number seat carries a number (absent falls to ${d}); a wrong-typed value never silently defaults`,
+    )
+  }
+  return v
+}
 
 /** THE VIDEO-EDIT MATRIX RENDERER: composes one free cell of the
  * mask × reference × denoise matrix on the family's one chain
@@ -118,19 +141,19 @@ export function renderH3Edit(
   g: GraphBuilder,
   runId: string,
 ): void {
-  const prompt = str(entry, 'edit_prompt')
+  const prompt = seatString(entry, 'edit_prompt')
   // THE UPSCALE CARVE-OUT: under the loop posture (chain_run
   // stated) a blank prompt is lawful — the second pass reuses the
   // SOURCE RUN'S own per-scene prompts (the conditioning node's
   // documented posture); a bound prompt overrides every scene's
   // pass-2 text.
-  const chainRun = str(entry, 'chain_run')
+  const chainRun = seatString(entry, 'chain_run')
   if (prompt.trim() === '' && chainRun.trim() === '') {
     throw new Error(
       `h3-timeline edit: 'edit_prompt' names no action — the edit needs its text (what the masked region or frame should become; agent-composed, user-confirmed)`,
     )
   }
-  const denoise = num(entry, 'denoise', 1)
+  const denoise = statedNumber(entry, 'denoise', 1)
   if (!(denoise > 0 && denoise <= 1)) {
     throw new Error(
       `h3-timeline edit: denoise ${denoise} — the pole lives (0, 1] (partial holds the unmasked region, 1 re-renders the masked one whole); state the dial inside the band`,
@@ -169,8 +192,8 @@ export function renderH3Edit(
       ...(typeof entry.denoise === 'number'
         ? { denoise: entry.denoise as number }
         : {}),
-      steps: num(entry, 'steps', 20),
-      segment_crf: num(entry, 'segment_crf', 18),
+      steps: statedNumber(entry, 'steps', 20),
+      segment_crf: statedNumber(entry, 'segment_crf', 18),
       prompt,
     }, p, facts, g, runId)
     return
@@ -203,13 +226,13 @@ export function renderH3Edit(
       )
     }
     renderH3Extend({
-      source_clip: str(entry, 'source_clip'),
+      source_clip: seatString(entry, 'source_clip'),
       extend_prompt: prompt,
-      extend_seconds: num(entry, 'extend_seconds', 2.33),
-      seed: num(entry, 'seed', 0),
-      steps: num(entry, 'steps', 6),
+      extend_seconds: statedNumber(entry, 'extend_seconds', 2.33),
+      seed: statedNumber(entry, 'seed', 0),
+      steps: statedNumber(entry, 'steps', 6),
       resolution: resolvePlanTier(entry, p),
-      overlap_frames: num(entry, 'overlap_frames', 39),
+      overlap_frames: statedNumber(entry, 'overlap_frames', 39),
     }, p, facts, g, runId)
     return
   }
@@ -252,8 +275,8 @@ export function renderH3Edit(
       `h3-timeline edit: denoise ${denoise} with keep_audio off — a partial pass holds the unmasked region and its sound (the hold is the point); generated audio rides only the full-denoise pole (state denoise 1 to drop the source soundtrack)`,
     )
   }
-  const windowStart = num(entry, 'window_start', 0)
-  const windowLength = num(entry, 'window_length', 0)
+  const windowStart = statedNumber(entry, 'window_start', 0)
+  const windowLength = statedNumber(entry, 'window_length', 0)
   if (windowStart < 0 || windowLength < 0) {
     throw new Error(
       `h3-timeline edit: window_start ${windowStart} / window_length ${windowLength} — a window seat never goes negative (frames at the film clock, 24 fps; 0/0 is the whole clip)`,
@@ -285,11 +308,11 @@ export function renderH3Edit(
   // `scale` is INERT when refine is off (resolve default-fills it —
   // the default-fill burn's law: presence is never authorship). ──
   const refineOn = entry.refine === true
-  const scale = num(entry, 'scale', 2)
+  const scale = statedNumber(entry, 'scale', 2)
   if (refineOn) {
     const windowFrames = windowLength > 0
       ? Math.round(windowLength)
-      : Math.round(num(entry, 'clip_seconds', 6) * 24)
+      : Math.round(statedNumber(entry, 'clip_seconds', 6) * 24)
     if (scale >= 2 && windowFrames > REFINE_2X_OOM_FRAMES) {
       throw new Error(
         `h3-timeline edit: a ${windowFrames} f window at refine ${scale}x is TOO LONG — the 2x pass was measured OOM at ${REFINE_2X_OOM_FRAMES} f (H3 memory grows with the window; whichever sizing mode upsizes, a window that dies is a window too long). Cut the window (window_length / clip_seconds) or lower scale below 2 for a same-size pass`,
@@ -319,7 +342,7 @@ export function renderH3Edit(
 
   // ── the staged media: the window loader (cap + skip on one VHS
   // seat — frames and audio stay in sync) ──
-  const sourceClip = str(entry, 'source_clip')
+  const sourceClip = seatString(entry, 'source_clip')
   if (sourceClip.trim() === '') {
     throw new Error(
       `h3-timeline edit: 'source_clip' names no media — the edit rides a staged clip (ONE leaf: the VHS window loader + the core LoadVideo read it by staged name)`,
@@ -412,11 +435,11 @@ export function renderH3Edit(
 
   renderMaskedEditChain(g, {
     p, facts,
-    clipSeconds: num(entry, 'clip_seconds', 6),
+    clipSeconds: statedNumber(entry, 'clip_seconds', 6),
     overlapFrames: resolveCarryOverlap(entry),
     resolution: resolvePlanTier(entry, p),
-    seed: num(entry, 'seed', 0),
-    steps: num(entry, 'steps', 6),
+    seed: statedNumber(entry, 'seed', 0),
+    steps: statedNumber(entry, 'steps', 6),
     roles: '',
     sourceClip,
     windowStart,

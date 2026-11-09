@@ -227,7 +227,7 @@ describe("the keyframes channel roundtrip (pins never drop on close/reopen)", ()
   })
 })
 
-// THE SPLIT WRITE (§0.5, 2026-11-16): a split call is TWO rows with
+// THE SPLIT WRITE (§0.5, 2026-11-09): a split call is TWO rows with
 // ONE identity — the operator's burn class is "split the shot, close
 // the card, reopen: the second half came back a blank TODO and the
 // seam chained". The wire form must carry BOTH halves' whole identity

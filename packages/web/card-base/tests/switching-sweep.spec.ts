@@ -60,7 +60,6 @@ import { DECL as music3 } from '../../../models/music3/src/index.ts'
 import { DECL as pixal3d } from '../../../models/pixal3d/src/index.ts'
 import { DECL as qwenImg21 } from '../../../models/qwen-img-21/src/index.ts'
 import { DECL as qwenImgEdit21 } from '../../../models/qwen-img-edit-21/src/index.ts'
-import { DECL as qwenImgEdit2511 } from '../../../models/qwen-img-edit-2511/src/index.ts'
 import { DECL as qwen3Tts } from '../../../models/qwen3-tts/src/index.ts'
 import { DECL as seedvr2 } from '../../../models/seedvr2-ema/src/index.ts'
 import { DECL as skin } from '../../../models/skin/src/index.ts'
@@ -80,7 +79,7 @@ import { DECL as zImage } from '../../../models/z-image/src/index.ts'
 const FAMILIES: readonly ModelDecl[] = [
   anima, anny, concat, fit, florence2, fluxKlein, gemSoma, h3,
   input, joycaption, joytag, kimodo, krea2, mask, mossSfx, music3, pixal3d,
-  qwenImg21, qwenImgEdit21, qwenImgEdit2511, qwen3Tts, seedvr2, skin, somax,
+  qwenImg21, qwenImgEdit21, qwen3Tts, seedvr2, skin, somax,
   transferRig, trellis2, wd14, yue2, zImage,
 ]
 

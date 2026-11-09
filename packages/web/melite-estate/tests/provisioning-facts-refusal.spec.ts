@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { Context, type Plugin } from "@deepseek-ai/cordis";
 import { loadExtensionsYaml } from "@melite/comfyui-cordis/provisioning-manifest";
 
-// THE BOTH-ABSENT REFUSAL (extensionFactsPath's throw, 2026-11-16):
+// THE BOTH-ABSENT REFUSAL (extensionFactsPath's throw, 2026-11-09):
 // the repo-anchored facts read falls back to the shipped package
 // data (the install shape — provisioned-coverage.spec.ts's fallback
 // arm) and BOTH ABSENT refuses loud, never a silent empty node-type

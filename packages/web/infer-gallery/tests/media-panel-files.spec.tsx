@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * THE FILES FACE (operator 2026-11-16, "we have no file browser… media
+ * THE FILES FACE (operator 2026-11-09, "we have no file browser… media
  * browsing keeps only the last 500, meaning all the other media is
  * effectively lost in nested folders"): the MediaPanel's third tab over
  * GET /infer-gallery/browse — the DISK truth behind the runs window.

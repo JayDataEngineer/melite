@@ -79,7 +79,7 @@ describe("the inpaint denoise default — one truth, every seat", () => {
   });
 
   test("the GUI's welded snapshot serves the new default (the fixture is the served truth)", () => {
-    for (const f of ["image-edit-spec.json", "image-edit-2511-spec.json"]) {
+    for (const f of ["image-edit-spec.json", "image-edit-fibo2-spec.json"]) {
       const doc = JSON.parse(readFileSync(join(REPO, "packages/web/melite-card-view/tests/fixtures", f), "utf8")) as {
         mod_schemas: { mask: { refs: Record<string, { meta?: { description?: string; default?: unknown } }> } };
       };

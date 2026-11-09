@@ -385,22 +385,25 @@ describe('live door arms', () => {
       }
     }
     assert.deepEqual(dead, [], 'a Model-axis row with no pickable variant is a dead door — fold it out of the offered face')
-    // THE DRAFT FACE (the same arc's other half): a family-keyed
-    // spec (an old draft resolving its retired family) KEEPS its own
-    // row — the rail names what the draft rides; retirement folds
-    // the OFFER, never the draft's identity.
-    const draftFace = await formSpecArm('qwen-img-edit-2511')
+    // THE REMOVED FAMILY (2026-11-09, superseding the soft-retire
+    // arc): the family package is deleted — the fresh card never
+    // offers it, and even a family-keyed draft face resolves no row
+    // for it (nothing serves the id anywhere). The draft-keyed
+    // half's old object (the soft-retired family keeping its own
+    // row) died with the family: removal folds BOTH the offer and
+    // the address.
+    const draftFace = await formSpecArm('fibo2-edit')
     const draftFamilies = ((draftFace ?? {}) as unknown as { families?: Array<{ id: string }> }).families ?? []
     assert.ok(
-      draftFamilies.some((f) => f.id === 'qwen-img-edit-2511'),
-      'a 2511-keyed draft serves its own family row (addressable, never offered fresh)',
+      draftFamilies.some((f) => f.id === 'fibo2-edit'),
+      'a living family-keyed draft serves its own family row (the draft-face law rides a living witness)',
     )
     const freshFace = await formSpecArm('image-edit')
     const freshFamilies = ((freshFace ?? {}) as unknown as { families?: Array<{ id: string }> }).families ?? []
     assert.equal(
       freshFamilies.some((f) => f.id === 'qwen-img-edit-2511'),
       false,
-      'the fresh card never offers the fully retired family (E2-5)',
+      'the fresh card never offers the removed family (E2-5, hardened to removal)',
     )
   })
 
@@ -475,7 +478,7 @@ describe('live door arms', () => {
     assert.equal(spec['service'], 'qwen3-tts')
     assert.equal(spec['model'], 'qwen3-tts')
     assert.deepEqual(Object.keys(spec).sort(), [
-      // THE CONTRACT ADMITS ROW (the pre-collapse doc law, 2026-11-16):
+      // THE CONTRACT ADMITS ROW (the pre-collapse doc law, 2026-11-09):
       // the served doc carries the card contract's own admits list —
       // the compose mirror AND the reopen heal both read this one
       // spelling (admittedKeys in card-base spec.ts), so a saved

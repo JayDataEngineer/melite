@@ -138,7 +138,7 @@ export function snapCallEnd(call: DocCall, index: number, end: number): number {
 /** The splice frame for a split where BOTH halves must be legal — the
  *  gesture's frame when it already qualifies, else the nearest one
  *  that does. NULL when no interior frame qualifies (the §0.5 fence,
- *  2026-11-16): the old fallthrough handed back the raw gesture and
+ *  2026-11-09): the old fallthrough handed back the raw gesture and
  *  every caller wrote an off-grid half the card would refuse whole.
  *  A window at its shape's floor (the 22f base, the 17f step) has no
  *  legal split at all — the caller refuses loud, never repairs. */

@@ -359,7 +359,7 @@ describe('THE PICK⇄STRIKE LOST UPDATE (2026-11-15 sweep) — the departure rid
     // stamps — design_prompt (the lane's own param, the axis-carry
     // law's to drop) and the family-default mode stamp (off EVERY
     // lane's params surface — but ON the card's `admits` row, so the
-    // 2026-11-16 admitted-key fold sanctions it: the door admits the
+    // 2026-11-09 admitted-key fold sanctions it: the door admits the
     // key, the strike never does)
     const stageRow: Record<string, unknown> = {
       id: 's_0', card: 'qwen3-tts', engine: 'comfyui',
@@ -396,14 +396,14 @@ describe('THE PICK⇄STRIKE LOST UPDATE (2026-11-15 sweep) — the departure rid
       .filter((c) => c.method === 'drafts/patch')
       .map((c) => ((c.args as { patch?: { params?: Record<string, unknown> } }).patch?.params) ?? {})
     // PICK + STRIKE IN ONE WRITE (re-pinned to the admitted-key law,
-    // 2026-11-16): the marriage frame carries the arrival (variant
+    // 2026-11-09): the marriage frame carries the arrival (variant
     // base) and the departed lane's own param (design_prompt, the
     // axis-carry law). `mode` NO LONGER RIDES — the qwen3-tts card's
     // own `admits` row carries it (the estate write door admits the
     // key), so the strike's judge — the same admittedKeys fold as the
     // reopen heal and the mirror — sanctions it at all three seats:
     // striking an admitted key was the pre-cure behavior (the
-    // 2026-11-16 timeline audit's finding class).
+    // 2026-11-09 timeline audit's finding class).
     await waitFor(() => {
       const marriage = patchParams()
         .find((p) => p['variant'] === 'base' && p['design_prompt'] === null)

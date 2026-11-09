@@ -99,7 +99,7 @@ describe("THE BOOT FIXTURE, DERIVED (E8: the double is a census-derived artifact
     );
   });
 
-  // THE CLONE SHAPE (the 2026-11-16 CI cure, the contracts-registry
+  // THE CLONE SHAPE (the 2026-11-09 CI cure, the contracts-registry
   // REGISTRY_PRESENT pattern): the census input is a live machine
   // harvest (data/tmp is untracked) — absent on every fresh clone and
   // on CI, present on every development machine, which is the machine

@@ -55,7 +55,6 @@
     "@melite/models-pixal3d": "workspace:*",
     "@melite/models-qwen-img-21": "workspace:*",
     "@melite/models-qwen-img-edit-21": "workspace:*",
-    "@melite/models-qwen-img-edit-2511": "workspace:*",
     "@melite/models-qwen3-tts": "workspace:*",
     "@melite/models-seedvr2-ema": "workspace:*",
     "@melite/models-skin": "workspace:*",

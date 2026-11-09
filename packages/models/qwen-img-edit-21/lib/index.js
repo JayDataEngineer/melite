@@ -60,9 +60,9 @@ export const DECL = {
     // both axes, toggle OFF — ON + a stated size refuses with the
     // flip in the voice), never this list: surfacing admits, the law
     // refines.
-    // use_stock_nodes/double_reference are 2511's edit-tuning pair
-    // and are NOT here: with a declared surface the bench-write door
-    // refuses them on this family in the field's voice.
+    // the removed family's edit-tuning knobs (deleted with it,
+    // 2026-11-09) are NOT here: with a declared surface the bench-write
+    // door refuses unknown knobs on this family in the field's voice.
     "params": [
         "input_images",
         "image1",
@@ -191,7 +191,7 @@ export const DECL = {
         {
             "id": "turbo",
             "label": "Turbo",
-            "hint": "The distilled turbo weights on the edit lane — 8 steps instead of the base 25 (upstream: 'Turbo uses 8 steps'), both download tiers below, same cache-wrapped edit compose. Requires provisioning: the 2.1 turbo files are NOT on this box by default; without them the engine validation refuses LOUD (the honest face — the 2511 weights are what ship).",
+            "hint": "The distilled turbo weights on the edit lane — 8 steps instead of the base 25 (upstream: 'Turbo uses 8 steps'), both download tiers below, same cache-wrapped edit compose. Requires provisioning: the 2.1 turbo files are NOT on this box by default; without them the engine validation refuses LOUD (the honest face — this lane's weights never shipped by default).",
             "group": "Variant",
             "route": "qwen-img-edit-21-turbo",
             "order": 1,
@@ -274,7 +274,7 @@ export const DECL = {
         {
             "id": "base",
             "label": "Base",
-            "hint": "The 2.1 base checkpoint on the edit lane — 25 steps (the official template's own count), both download tiers below, the cache-wrapped edit compose. Requires provisioning: the 2.1 files are NOT on this box by default; without them the engine validation refuses LOUD (the honest face — the 2511 weights are what ship).",
+            "hint": "The 2.1 base checkpoint on the edit lane — 25 steps (the official template's own count), both download tiers below, the cache-wrapped edit compose. Requires provisioning: the 2.1 files are NOT on this box by default; without them the engine validation refuses LOUD (the honest face — this lane's weights never shipped by default).",
             "group": "Variant",
             "route": "qwen-img-edit-21",
             "order": 0,

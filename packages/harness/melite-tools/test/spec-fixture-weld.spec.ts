@@ -33,9 +33,9 @@ const FIXTURES = {
     dirname(fileURLToPath(import.meta.url)),
     '../../../web/melite-card-view/tests/fixtures/image-edit-spec.json',
   ),
-  'qwen-img-edit-2511': join(
+  'fibo2-edit': join(
     dirname(fileURLToPath(import.meta.url)),
-    '../../../web/melite-card-view/tests/fixtures/image-edit-2511-spec.json',
+    '../../../web/melite-card-view/tests/fixtures/image-edit-fibo2-spec.json',
   ),
 } as const
 

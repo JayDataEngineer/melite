@@ -685,7 +685,7 @@ const QWEN: FormSpecDoc = {
   schema: schemaEnvelope({
     image: { type: 'string', meta: { description: 'Input image', extra: { wtype: 'image', required: true, group: 'input' } } },
   }),
-  model: 'qwen-img-edit-2511',
+  model: 'qwen-img-edit-21',
   features: {
     variant_groups: {
       Variant: { label: 'Variant' },
@@ -694,10 +694,10 @@ const QWEN: FormSpecDoc = {
     },
   },
   variants: [
-    { id: 'lightning', label: 'Lightning', group: 'Variant', defaults: { model: 'qwen-img-edit-2511-lightning4' }, route: 'qwen-img-edit-2511-lightning4', hint: '4-step distilled checkpoint' },
-    { id: 'lightning4', label: 'FP8 Lightning', group: 'Quant', defaults: {}, route: 'qwen-img-edit-2511-lightning4', quant: 'lightning4', owner: 'lightning' },
-    { id: 'standard', label: 'Standard', group: 'Variant', defaults: { model: 'qwen-img-edit-2511' }, route: 'qwen-img-edit-2511', hint: '20 steps, cfg 2.5' },
-    { id: 'int8_convrot', label: 'INT8 ConvRot', group: 'Quant', defaults: {}, route: 'qwen-img-edit-2511-int8', quant: 'int8_convrot', owner: 'standard' },
+    { id: 'turbo', label: 'Turbo', group: 'Variant', defaults: { model: 'qwen-img-edit-21' }, route: 'qwen-img-edit-21', hint: '8-step distilled checkpoint' },
+    { id: 'bf16', label: 'BF16', group: 'Quant', defaults: {}, route: 'qwen-img-edit-21-turbo-bf16', quant: 'bf16', owner: 'turbo' },
+    { id: 'base', label: 'Base', group: 'Variant', defaults: { model: 'qwen-img-edit-21' }, route: 'qwen-img-edit-21', hint: '25 steps, cfg 1' },
+    { id: 'int8_convrot', label: 'INT8 ConvRot', group: 'Quant', defaults: {}, route: 'qwen-img-edit-21-bf16', quant: 'int8_convrot', owner: 'base' },
     { id: 'default', label: 'Default', group: 'Recipe', defaults: {}, route: '', hint: 'no extra stamps' },
   ],
 }
@@ -755,20 +755,20 @@ test('the qwen drill chains Quant by owner — the user layer never gains a reci
     onPick,
   }))
   // THE CLAIMED LANE OPENS (015 C1b, 2026-10-27): this spec is
-  // served AT standard's own route (model 'qwen-img-edit-2511', no
+  // served AT the family's own route (model 'qwen-img-edit-21', no
   // families block) — a fresh drill seeds the CLAIMED coordinate
-  // (standard/int8), never first-declared lightning's silent
+  // (turbo/bf16), never first-declared base's silent
   // neighbor; the run door composes the same lane for the unstated
   // doc.
-  expect(axisFace('Variant')).toContain('Standard')
-  expect(axisFace('Quant')).toContain('INT8 ConvRot')
+  expect(axisFace('Variant')).toContain('Turbo')
+  expect(axisFace('Quant')).toContain('BF16')
   expect(screen.queryByLabelText('Recipe')).toBeNull()
-  // switch to Lightning: the Quant axis re-seeds to lightning4 (the
-  // lightning chain) — and still no recipe key anywhere in the user layer
-  await pickAxisRow('Variant', /^Lightning/)
-  await waitFor(() => { expect(state.user['quant']).toBe('lightning4') })
+  // switch to Base: the Quant axis re-seeds to int8_convrot (the
+  // base chain) — and still no recipe key anywhere in the user layer
+  await pickAxisRow('Variant', /^Base/)
+  await waitFor(() => { expect(state.user['quant']).toBe('int8_convrot') })
   // the model stays the SERVED KEY (a variant route never re-seeds it)
-  expect(state.user['model']).toBe('qwen-img-edit-2511')
+  expect(state.user['model']).toBe('qwen-img-edit-21')
   expect(state.user['recipe']).toBeUndefined()
 })
 
@@ -783,23 +783,23 @@ test('a Recipe pick keeps its declared-knob defaults but NEVER stamps the recipe
 
 test('seedAxisValues seeds the CLAIMED coordinate — never recipe (the card cannot declare it)', async () => {
   const seedQ = seedAxisValues(QWEN, {})
-  // 015 C1b: the spec is served at standard's own route — the seed
-  // claims that lane; first-declared lightning is pool[0]'s silent
+  // 015 C1b: the spec is served at the family's own route — the seed
+  // claims that lane; first-declared base is pool[0]'s silent
   // neighbor under a claimed route
-  expect(seedQ['variant']).toBe('standard')
-  expect(seedQ['quant']).toBe('int8_convrot')
+  expect(seedQ['variant']).toBe('turbo')
+  expect(seedQ['quant']).toBe('bf16')
   expect(seedQ['recipe']).toBeUndefined()
   // the model arm is THE SERVED KEY — never the seeded row's route
-  // (qwen-img-edit-2511-lightning4 is the lightning variant's stamp)
-  expect(seedQ['model']).toBe('qwen-img-edit-2511')
+  // (qwen-img-edit-21-turbo-bf16 is the turbo variant's stamp)
+  expect(seedQ['model']).toBe('qwen-img-edit-21')
 })
 
 test('STROKE 33 HEAL: a held recipe on a card without the field is dropped — the poisoned stage composes again', async () => {
   // the operator's live stage held recipe:'default' (the old seed's
   // stamp) — the drill opens onto a user layer the compose-door admits
-  const healed = seedUser(QWEN, { recipe: 'default', variant: 'lightning' })
+  const healed = seedUser(QWEN, { recipe: 'default', variant: 'base' })
   expect(healed['recipe']).toBeUndefined()
-  expect(healed['variant']).toBe('lightning') // held truth rides untouched
+  expect(healed['variant']).toBe('base') // held truth rides untouched
 })
 
 // ── STROKE 34+38: THE FAMILY MACRO PILLS (recipes are macros,

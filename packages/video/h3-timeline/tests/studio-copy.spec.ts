@@ -154,15 +154,15 @@ describe("SOURCE — the copy dictionary owns the static faces", () => {
     // = commissionDetailJoin (the seats↔geometry separator, moved out
     // of the pane's literal); its sibling faces commissionMalformed /
     // commissionBadEntry ride as functions, outside this count.
-    // RE-PIN 2026-11-16 (the collapse's cuts): 103 → 99. −4 flat ids =
+    // RE-PIN 2026-11-09 (the collapse's cuts): 103 → 99. −4 flat ids =
     // seamCarried + seamCut + seamHelp + seamWord — the rail's seam
     // select died (the STRIP CHIP at the boundary is the one door; its
     // words live in the KIT's timelineCopy, tenant-fed); the function
     // face seamModeLabel rode outside this count by construction.
-    // RE-PIN 2026-11-16 (§0.5, the window split): 99 → 100. +1 flat id
+    // RE-PIN 2026-11-09 (§0.5, the window split): 99 → 100. +1 flat id
     // = splitRefusal (the no-legal-split refusal, the shared laneErr
     // slot's voice).
-    // RE-PIN 2026-11-16 (§0.9, the context-carry modes): 100 → 108.
+    // RE-PIN 2026-11-09 (§0.9, the context-carry modes): 100 → 108.
     // +8 flat ids = seamModeHead + the three mode labels
     // (seamModeStock/Carry/CarryKeyframe) + the three mode tips +
     // seamModeAria — the modal's seam seat names the three-state

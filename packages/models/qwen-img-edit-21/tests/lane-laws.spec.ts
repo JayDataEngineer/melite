@@ -11,7 +11,7 @@
 // yet and the cap reader is kit admission, not lane.)
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
-import { refuseImageEditFiring, editImageCap, editRefs, orderedInputImages, instantiateAction } from "@melite/comfyui-card-kit";
+import { refuseImageEditFiring, editImageCap, editRefs, orderedInputImages, deliverableSizeOf, instantiateAction } from "@melite/comfyui-card-kit";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import { edit } from "../src/actions.ts";
@@ -250,6 +250,31 @@ describe("the 2.1 edit lane — the reference stack (upstream: the node opens im
       "the mixed row composes the exact canonical graph — the stale anchor never reaches a slot",
     );
     assert.deepEqual(orderedInputImages({ input_images: ["in.png", "  ", "r.png"] }), ["in.png", "r.png"], "blanks drop quietly from the canonical list");
+  });
+  it("THE TYPED LIST DOOR: a non-list input_images and a list with non-strings both refuse loud (the TS plane maps every stated image — never drops one quietly)", () => {
+    // (2026-11-09) the arms re-seated from the removed edit lane's
+    // suite: the door's throw is lane-agnostic, these two faces are
+    // its whole typed surface.
+    assert.throws(
+      () => orderedInputImages({ input_images: "in.png" }),
+      (err: unknown): boolean => err instanceof Error && err.message.includes("'input_images' fires on the image-edit card") && err.message.includes("got string"),
+      "a bare string is not a list — the door names the shape it got",
+    );
+    assert.throws(
+      () => orderedInputImages({ input_images: ["in.png", 7] }),
+      (err: unknown): boolean => err instanceof Error && err.message.includes("'input_images' fires on the image-edit card") && err.message.includes("a list with non-strings"),
+      "a list with a non-string member refuses — every stated image maps to a slot",
+    );
+  });
+  it("THE SIZE READ: a stated non-numeric or non-integer pair under match OFF answers NO deliverable (the door owns the refusal — the read never guesses)", () => {
+    // deliverableSizeOf's undefined faces: match OFF + a non-number
+    // axis, and match OFF + a non-integer axis. The REFUSAL voice is
+    // judgeDeliverableSize's own (walled at the stated-size suite);
+    // this read answers undefined so the build falls back to the
+    // render-sized latent, never a rounded guess.
+    assert.equal(deliverableSizeOf({ match_input_resolution: false, width: "1024", height: 1024 }), undefined, "a string axis is no deliverable");
+    assert.equal(deliverableSizeOf({ match_input_resolution: false, width: 1024.5, height: 1024 }), undefined, "a fractional axis is no deliverable");
+    assert.deepEqual(deliverableSizeOf({ match_input_resolution: false, width: 1024, height: 768 }), { width: 1024, height: 768 }, "the integer pair is the deliverable");
   });
   it("exactly 16 total composes (the boundary rides)", () => {
     const g = new GraphBuilder({});

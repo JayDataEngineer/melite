@@ -828,7 +828,7 @@ function specModifiers(
     // absent-bag row rides verbatim — the client renders ONE chip for it
     // while the bag is absent, because the compose door really rides it.
     if (k.default_entry !== undefined) entry.default_entry = k.default_entry
-    // THE MODIFIER SECTIONS (operator 2026-11-16, §0.8 THE FLOW
+    // THE MODIFIER SECTIONS (operator 2026-11-09, §0.8 THE FLOW
     // MODEL): served verbatim after a shape guard — each row is
     // {id, label, tooltip?, patch} (the registration door already
     // judged the patch against the kind's own fields; this guard
@@ -1238,7 +1238,7 @@ export function specBody(
     // declares no studio — the mirror judges as before.
     ...(decl?.studio?.writes !== undefined ? { studio_writes: decl.studio.writes } : {}),
     // THE CARD'S CONTRACT ADMISSION ROW (the pre-collapse doc law,
-    // 2026-11-16): the card's declared admits extras, served verbatim
+    // 2026-11-09): the card's declared admits extras, served verbatim
     // — the row the write door's cardAdmits (cardsFacts.ts) reads as
     // its FIRST disjunct before unioning boarded studio.writes (the
     // mirror sanctions those through the studio rows above), so the

@@ -158,7 +158,7 @@ test('max_stack refuses a second tile LOUD (the mask cap law)', async () => {
  *  keeps its pack ownership (HIDDEN_CARRIER_SPEC below). */
 const QWEN_MOD_SPEC = {
   form: 'image-edit',
-  model: 'qwen-img-edit-2511',
+  model: 'qwen-img-edit-21',
   schema: schemaEnvelope({
     image1: { type: 'string', meta: { description: 'Image 1', extra: { wtype: 'image', required: true, group: 'input' } } },
     input_mask: { type: 'string', meta: { description: 'Region Mask', extra: { wtype: 'image', group: 'mask' } } },

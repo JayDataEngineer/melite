@@ -544,9 +544,6 @@ importers:
       '@melite/models-qwen-img-edit-21':
         specifier: workspace:*
         version: link:../../models/qwen-img-edit-21
-      '@melite/models-qwen-img-edit-2511':
-        specifier: workspace:*
-        version: link:../../models/qwen-img-edit-2511
       '@melite/models-qwen3-tts':
         specifier: workspace:*
         version: link:../../models/qwen3-tts
@@ -1111,9 +1108,6 @@ importers:
       '@melite/models-qwen-img-edit-21':
         specifier: workspace:*
         version: link:../../models/qwen-img-edit-21
-      '@melite/models-qwen-img-edit-2511':
-        specifier: workspace:*
-        version: link:../../models/qwen-img-edit-2511
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.5
@@ -1680,22 +1674,6 @@ importers:
         version: 5.9.3
 
   packages/models/qwen-img-edit-21:
-    dependencies:
-      '@melite/comfyui-card-kit':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-card-kit
-    devDependencies:
-      '@deepseek-ai/cordis':
-        specifier: ^4.0.5
-        version: 4.0.5(@deepseek-ai/cordis-plugin-include@1.0.10)(@deepseek-ai/cordis-plugin-loader@1.0.6)
-      '@types/node':
-        specifier: ^22.20.0
-        version: 22.20.1
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
-  packages/models/qwen-img-edit-2511:
     dependencies:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
@@ -2740,9 +2718,6 @@ importers:
       '@melite/models-qwen-img-edit-21':
         specifier: workspace:*
         version: link:../../models/qwen-img-edit-21
-      '@melite/models-qwen-img-edit-2511':
-        specifier: workspace:*
-        version: link:../../models/qwen-img-edit-2511
       '@melite/models-qwen3-tts':
         specifier: workspace:*
         version: link:../../models/qwen3-tts

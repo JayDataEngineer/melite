@@ -1,4 +1,4 @@
-// @melite/video-h3-timeline — the window-split cut seam (§0.5, 2026-11-16).
+// @melite/video-h3-timeline — the window-split cut seam (§0.5, 2026-11-09).
 // @contract cards-window-split-cut-seam
 //
 // THE INVARIANT: a split births exactly one new seam and that seam is

@@ -6,8 +6,8 @@
 // THE NAMING LAW (operator order 2026-09-21: "the naming convention
 // is extremely poor and leads to confusing labels in the models
 // for edit and the card labels"): a family id names the MODEL and
-// its VERSION — never the operation. The 2511 predecessor baked
-// 'edit' into the model id (qwen-img-edit-2511), which read as "the
+// its VERSION — never the operation. The edit predecessor baked
+// 'edit' into the model id (its family spelling), which read as "the
 // edit model" and collided with card naming downstream. Qwen-Image
 // 2.1 is ONE base checkpoint that does text-to-image AND reference-
 // conditioned edit (the edit rides QwenImage21Cache over the same

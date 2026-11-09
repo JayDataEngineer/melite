@@ -130,7 +130,7 @@ describe('THE EMIT PARITY (the tool face reads the same vocabulary the cards wri
   test('THE DELIVERABLE PAIR: width/height emit on the served face (the size-seat law — both DECLs surface the pair as run params)', () => {
     const emitted = emitParamsSchema(
       carrier as never,
-      ['qwen-img-edit-21', 'qwen-img-edit-2511'],
+      ['qwen-img-edit-21', 'fibo2-edit'],
     ) as { properties: Record<string, Record<string, unknown>> }
     for (const nm of ['width', 'height']) {
       // the size-seat law: the surfaced pair is part of the
@@ -252,14 +252,16 @@ describe("NO WALL AT THE SUBMIT SEAM (the opt is the hack)", () => {
   });
 });
 
-// ── THE LANE CAP NARROW (2026-10-11, the operator's wall: "the
+// ── THE LANE CAP SERVE (2026-10-11, the operator's wall: "the
 // 2511 model is still showing 18 input images even though it only
 // has 3 by design"): a multi-family card declares its stack face
 // at the ROOMIEST boarded cap (image-edit: 16) — the SERVED form
-// narrows it to the boarded lane's own lane_inputs.max_images, so
-// the 2511 face renders 3 and the 2.1 face renders 16. The card's
-// own law says so on its doc face; this pin holds the serve to it.
-describe('THE LANE CAP NARROW (the served stack cap is the boarded lane\'s own)', () => {
+// carries the boarded lane's own lane_inputs.max_images. The
+// narrow's divergent object (the removed lane's 3) died with that
+// family, operator 2026-11-09; every living edit lane declares 16,
+// so the pin holds the serve to the lane's own value, never a hair
+// past it.
+describe('THE LANE CAP SERVE (the served stack cap is the boarded lane\'s own)', () => {
   const capOf = (env: Envelope): number => {
     const root = env.refs[env.uid]
     const id = root.dict?.input_images
@@ -275,18 +277,17 @@ describe('THE LANE CAP NARROW (the served stack cap is the boarded lane\'s own)'
     expect(capOf(schemas!.schema as Envelope)).toBe(16)
   })
 
-  test('the 2511 serve narrows to its own 3 — never the roomiest boarded cap', async () => {
-    const schemas = theService().formSchemas('image-edit', 'qwen-img-edit-2511')
-    expect(capOf(schemas!.schema as Envelope)).toBe(3)
+  test('the fibo2 serve carries its own declared 16 — never a hair past the lane', async () => {
+    await loadCardDefs()
+    const schemas = theService().formSchemas('image-edit', 'fibo2-edit')
+    expect(capOf(schemas!.schema as Envelope)).toBe(16)
   })
 
-  test('the narrow is pure — the card\'s own declaration is untouched', async () => {
+  test('the serve is pure — the card\'s own declaration is untouched', async () => {
     // the card object still declares the roomiest cap; each serve
-    // narrows its own copy (no mutation of the shared schema)
+    // stamps its own copy (no mutation of the shared schema)
     const s21 = theService().formSchemas('image-edit', 'qwen-img-edit-21')
-    const s2511 = theService().formSchemas('image-edit', 'qwen-img-edit-2511')
     expect(capOf(s21!.schema as Envelope)).toBe(16)
-    expect(capOf(s2511!.schema as Envelope)).toBe(3)
     expect((theService().getCardDef('image-edit')?.schema as { toJSON?: () => Envelope })?.toJSON).toBeDefined()
   })
 })

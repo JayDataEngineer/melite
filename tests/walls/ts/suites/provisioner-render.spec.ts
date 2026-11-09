@@ -80,7 +80,7 @@ function pnpmHealthy(): boolean {
 const PNPM_OK = pnpmHealthy();
 const gate = test.skipIf(!PNPM_OK);
 
-// THE SEED SHAPE (the 2026-11-16 CI cure): the S7a/S8 join reads the
+// THE SEED SHAPE (the 2026-11-09 CI cure): the S7a/S8 join reads the
 // @deepseek-ai bundle patches through the SEEDED reference tree —
 // untracked by design (AGENTS.md: a fresh clone carries none of it),
 // so a CI runner has no patch layers to parse and the insert census

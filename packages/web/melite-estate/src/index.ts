@@ -686,7 +686,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       ctx.plugin(row, { agentRoute: config.agentRoute });
       continue;
     }
-    // every remaining row mounts bare (the 2026-11-16 coverage cure):
+    // every remaining row mounts bare (the 2026-11-09 coverage cure):
     // the generic `row.config` pass-through this loop used to carry
     // had NO producer — the estate's rows are this file's own static
     // array and none declares a config face — dead code the

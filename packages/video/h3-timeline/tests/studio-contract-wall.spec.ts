@@ -109,7 +109,7 @@ const LAYER_A_ALL_KEYS: string[] = [
   "interpolate_enabled", "interp_model", "interp_multiplier",
   "sr_switch", "sr_model", "sr_resolution",
   "ref_image_size", "model", "audio_stem", "loras", "audio_clips",
-  // THE OPERATOR-AUTHORED MOD BAGS (the dead-Add cure, 2026-11-16):
+  // THE OPERATOR-AUTHORED MOD BAGS (the dead-Add cure, 2026-11-09):
   // writable Layer A seats — the modleaf journey's own wall owns
   // their write law; here they own their writer-fixture rows.
   "edit", "reshoot",

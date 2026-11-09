@@ -8,7 +8,7 @@
  * IT HAS TO BE ONE LONG CLIP!"
  *
  * THE WALLS (the plan's own spell, dev_docs/agents/plans/
- * 2026-11-16-timeline-plan.md item 11):
+ * 2026-11-09-timeline-plan.md item 11):
  * - THE SWAP — the edit bag's presence swaps the calls lane into the
  *   v2v face (the label + the visible ADD CUT door render); mod
  *   absent keeps the plain calls face; a non-edit dormant kind never

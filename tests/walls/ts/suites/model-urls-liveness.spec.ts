@@ -28,7 +28,7 @@ const OFFLINE = process.env["MELITE_WALLS_OFFLINE"] === "1";
 async function probe(
   url: string,
 ): Promise<{ status: number; length: number | null }> {
-  // A per-request cap (15 s, 2026-11-16): a stalled upstream socket
+  // A per-request cap (15 s, 2026-11-09): a stalled upstream socket
   // is NOT a verdict — without the cap one hung range GET burns the
   // suite's whole 120 s budget and the arm dies as "timed out"
   // naming nothing. With the cap the stall surfaces as a named dead
@@ -86,7 +86,7 @@ describe.skipIf(OFFLINE)("THE URL-LIVENESS GATE (every declared download answers
   // The pinned files the node loads (config + weights) must answer
   // a keyless ranged GET at the pinned revision.
   // Same offline law as the URL arm: MELITE_WALLS_OFFLINE=1 skips.
-  // 300 s (2026-11-16): this arm walks 152 pinned files SEQUENTIALLY
+  // 300 s (2026-11-09): this arm walks 152 pinned files SEQUENTIALLY
   // (range GETs, keyed by declaration order). Solo it finishes in
   // ~40 s; inside the full tier, 220 sibling suites compete for the
   // wire and the walk tripled past the describe's 120 s — a budget

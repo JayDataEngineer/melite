@@ -63,7 +63,7 @@ describe("handleExtend", () => {
 })
 
 describe("addCallAt", () => {
-  // (§0.5, the window split — re-pinned 2026-11-16) the split is ONE
+  // (§0.5, the window split — re-pinned 2026-11-09) the split is ONE
   // call becoming ITS OWN two halves, never a fresh TODO spliced in:
   // identity carries whole, the seam between the halves states cut
   // (the only seam a split can birth), the right half authors its

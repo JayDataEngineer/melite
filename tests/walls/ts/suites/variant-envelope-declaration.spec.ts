@@ -36,7 +36,6 @@ import {
 import { EnvelopeRefusal } from "../../../../packages/harness/estate-queue/src/cardsArmError.ts";
 import type { ModelFactsRow, CardDeclRow } from "../../../../packages/harness/estate-queue/src/cardsFacts.ts";
 import { DECL as anima } from "../../../../packages/models/anima/src/index.ts";
-import { DECL as decl2511 } from "../../../../packages/models/qwen-img-edit-2511/src/index.ts";
 import { judgeSamplerEnvelope } from "@melite/contracts/laneRelations";
 import { loadCardDefs } from "@melite/comfyui-cordis";
 
@@ -73,9 +72,11 @@ function offeredLanes(row: ModelFactsRow) {
 }
 
 /** THE DRAINED DEBTS (CONTRACTS §4 debt 27, drained 2026-10-21):
- *  z-image, qwen-img-21, qwen-img-edit-21 and qwen-img-edit-2511
- *  each declared sampler envelopes on their split-numbers lanes in
- *  the same change that added their door twins below — the carve-out
+ *  z-image, qwen-img-21, qwen-img-edit-21 and the since-removed
+ *  retired edit family (deleted whole 2026-11-09, its hidden-lane
+ *  twin with it) each declared sampler envelopes on their
+ *  split-numbers lanes in the same change that added their door
+ *  twins below — the carve-out
  *  is deleted, never emptied: a future split-numbers family with no
  *  envelope refuses THIS wall by name (the failures list), never
  *  silently exempts. */
@@ -184,9 +185,9 @@ describe("THE ANIMA MARRIAGE DOOR (real rows, the burn shape)", () => {
  *  LOUD, the lane's own numbers ride, the envelope pins verbatim.
  *  Real booted rows through the real selectCardVariant +
  *  stampCardOverlay; the harness-min decl frame carries only the
- *  judged knobs. The 2511 lanes are hidden-by-design (the survivor
- *  arc), so the door cannot seat them — their twin judges the real
- *  DECL envelopes through the same one judge the door asks. */
+ *  judged knobs. (The hidden-lane DECL twin — the survivor arc's
+ *  addressable-but-not-offered pair — died with its family's
+ *  removal, 2026-11-09: no living lane hides from the dropdown.) */
 const knobDecl: CardDeclRow = {
   skeleton: "knob",
   boarded: [],
@@ -304,39 +305,5 @@ describe("THE QWEN-IMG-EDIT-21 MARRIAGE DOOR (debt 27 drain)", () => {
     const byId = new Map((row.variants ?? []).map((v) => [v.id, v] as const));
     expect((byId.get("base") as { sampler_envelope?: unknown }).sampler_envelope).toEqual({ steps: [8, 30], cfg: [1, 2] });
     expect((byId.get("turbo") as { sampler_envelope?: unknown }).sampler_envelope).toEqual({ steps: [4, 8], cfg: [1, 2] });
-  });
-});
-
-describe("THE 2511 MARRIAGE DOOR (debt 27 drain, hidden lanes)", () => {
-  function envelopeOf(id: string): { steps?: readonly number[]; cfg?: readonly number[] } {
-    const v = (decl2511.variants ?? []).find((row) => row.id === id);
-    if (v === undefined) throw new Error(`the 2511 DECL carries no variant ${JSON.stringify(id)} — the twin judges nothing`);
-    const env = (v as { sampler_envelope?: { steps?: readonly number[]; cfg?: readonly number[] } }).sampler_envelope;
-    if (env === undefined) throw new Error(`the 2511 DECL variant ${JSON.stringify(id)} declares no envelope — the census arm owns this red`);
-    return env;
-  }
-
-  it("the standard marriage — 20 steps at CFG 2.5 — is OFF the lightning envelope", () => {
-    const off = judgeSamplerEnvelope({ steps: 20, cfg: 2.5 }, envelopeOf("lightning"), { id: "lightning" });
-    expect(off?.knob).toBe("steps");
-    expect(off?.voice).toContain('variant "lightning"');
-    expect(off?.voice).toContain("[4, 8]");
-  });
-
-  it("the lightning marriage — 4 steps at CFG 1 — is OFF the standard envelope", () => {
-    const off = judgeSamplerEnvelope({ steps: 4, cfg: 1 }, envelopeOf("standard"), { id: "standard" });
-    expect(off?.knob).toBe("steps");
-    expect(off?.voice).toContain('variant "standard"');
-    expect(off?.voice).toContain("[10, 30]");
-  });
-
-  it("each hidden lane's own numbers ride its own envelope", () => {
-    expect(judgeSamplerEnvelope({ steps: 4, cfg: 1 }, envelopeOf("lightning"), { id: "lightning" })).toBeNull();
-    expect(judgeSamplerEnvelope({ steps: 20, cfg: 2.5 }, envelopeOf("standard"), { id: "standard" })).toBeNull();
-  });
-
-  it("the envelopes pin verbatim (the declared domains, not a drifted copy)", () => {
-    expect(envelopeOf("lightning")).toEqual({ steps: [4, 8], cfg: [1, 2] });
-    expect(envelopeOf("standard")).toEqual({ steps: [10, 30], cfg: [2, 4] });
   });
 });

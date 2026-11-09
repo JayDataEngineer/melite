@@ -1,4 +1,4 @@
-// seamChips.spec.tsx — THE SEAM CHIP (the collapse's cuts, 2026-11-16).
+// seamChips.spec.tsx — THE SEAM CHIP (the collapse's cuts, 2026-11-09).
 //
 // The operator's order: "another option to choose the 'cuts', i.e. where
 // the film cuts without auto context carry" — authored ON the strip at

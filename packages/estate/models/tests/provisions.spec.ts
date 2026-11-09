@@ -65,7 +65,7 @@ const BAD_BYTES = Buffer.from("tampered-bytes-that-miss-the-decl-sha");
 // anchoring test below pins that half
 const LIVE_STORE = "/mnt/data/models/image-gen/comfyui";
 
-// THE STATE-HOME SHAPE (the 2026-11-16 CI cure): the download_path
+// THE STATE-HOME SHAPE (the 2026-11-09 CI cure): the download_path
 // arm and the V8 no-env-seam arm judge the OPERATOR'S STATE HOME —
 // a machine-mounted store (data/inference.local.json overlay,
 // untracked) a fresh clone and every CI runner lack; there the

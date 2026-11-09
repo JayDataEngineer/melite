@@ -49,7 +49,7 @@ describe("defaultConfig (the F1 chain — one spelling for every reader)", () =>
     // resolves — a fresh clone/CI proves that half right here); the
     // SHADOW half (a present state home always wins) needs the state
     // home to exist — dev state, untracked — so it judges only where
-    // seated (the 2026-11-16 CI cure; this keeps the first assertion
+    // seated (the 2026-11-09 CI cure; this keeps the first assertion
     // armed on every machine).
     assert.equal(defaultConfig(), existsSync(state) ? state : seed);
     if (existsSync(state)) {

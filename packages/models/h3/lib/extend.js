@@ -18,8 +18,29 @@ const REQUIRED_SEATS = [
     ['source_clip', 'the clip whose seconds are extended — ONE staged leaf: the VHS loader + the core LoadVideo read it by staged name, and the timeline reads it back off the native VIDEO wire'],
     ['extend_prompt', 'the continuation text — MOTION+SOUND for the appended seconds (the R2V prompt seat; agent-composed, user-confirmed)'],
 ];
-const num = (p, k, d) => typeof p[k] === 'number' ? p[k] : d;
-const str = (p, k) => typeof p[k] === 'string' ? p[k] : '';
+/** Reads one optional number seat: absent falls to the documented
+ * default; a stated non-number REFUSES — a defaulting fallback would
+ * swallow a bypassed door's wrong-typed value as a silent error. */
+const statedNumber = (p, k, d) => {
+    const v = p[k];
+    if (v === undefined)
+        return d;
+    if (typeof v !== 'number' || !Number.isFinite(v)) {
+        throw new Error(`h3-timeline extend: '${k}' is stated as ${JSON.stringify(v)} — a number seat carries a number (absent falls to ${d}); a wrong-typed value never silently defaults`);
+    }
+    return v;
+};
+/** Reads one required seat NARROWED by its own refusal — the seat
+ * is a string or the door never composes (no fallback arm exists:
+ * a validated seat re-read through a forgiving helper would be a
+ * second, weaker validator below the law). */
+const requiredSeat = (entry, seat, what) => {
+    const v = entry[seat];
+    if (typeof v !== 'string' || v.trim() === '') {
+        throw new Error(`h3-timeline extend: '${seat}' names no media — ${what}; an extend needs both seats bound (source_clip, extend_prompt)`);
+    }
+    return v;
+};
 /** The extend renderer: validates the bound entry, then composes the
  * fresh-continuation chain plus the join. Like the swap and repair,
  * the film path never reaches here (the card branches on a non-empty
@@ -33,17 +54,19 @@ const str = (p, k) => typeof p[k] === 'string' ? p[k] : '';
  * @param g the run's graph builder
  * @param runId the run tree's id (the join prefixes ride it) */
 export function renderH3Extend(entry, p, facts, g, runId) {
-    for (const [seat, what] of REQUIRED_SEATS) {
-        const v = entry[seat];
-        if (typeof v !== 'string' || v.trim() === '') {
-            throw new Error(`h3-timeline extend: '${seat}' names no media — ${what}; an extend needs both seats bound (source_clip, extend_prompt)`);
-        }
-    }
-    const seed = num(entry, 'seed', 0);
-    const steps = num(entry, 'steps', 6);
+    // NO FALLBACK READS: every required seat narrows through its own
+    // refusal (a validated seat re-read through a forgiving helper is
+    // a second, weaker validator below the law — a silent error). An
+    // absent optional seat falls to its documented default; a STATED
+    // seat of the wrong type refuses loud (the schema walk types every
+    // lawful doc, so a wrong-typed value means a bypassed door).
+    const sourceClipSeat = requiredSeat(entry, 'source_clip', REQUIRED_SEATS[0][1]);
+    const extendPromptSeat = requiredSeat(entry, 'extend_prompt', REQUIRED_SEATS[1][1]);
+    const seed = statedNumber(entry, 'seed', 0);
+    const steps = statedNumber(entry, 'steps', 6);
     const overlapFrames = resolveCarryOverlap(entry);
     const resolution = resolvePlanTier(entry, p);
-    const statedFrames = Math.round(num(entry, 'extend_seconds', 56 / 24) * 24);
+    const statedFrames = Math.round(statedNumber(entry, 'extend_seconds', 56 / 24) * 24);
     // THE COMPOSITION DOOR: one window keeps the landed grid law
     // verbatim; beyond it the solver composes N uniform windows and
     // refuses every non-exact landing by name. The solver ALWAYS
@@ -65,7 +88,7 @@ export function renderH3Extend(entry, p, facts, g, runId) {
     // (force_rate 24 — the one clock) and its LAST FRAME as the
     // in-graph anchor (a positive out-of-band index the engine clamps
     // to the final row — see LAST_FRAME_BATCH_INDEX) ──
-    const [priorFrames, priorAudio] = loadVideo(g, str(entry, 'source_clip'));
+    const [priorFrames, priorAudio] = loadVideo(g, sourceClipSeat);
     const lastFrame = g.node('ImageFromBatch', {
         image: priorFrames, batch_index: LAST_FRAME_BATCH_INDEX, length: 1,
     }).out(0);
@@ -74,7 +97,7 @@ export function renderH3Extend(entry, p, facts, g, runId) {
     // source slicing is the swap's semantics, never a continuation's;
     // the cure for the re-slice bug the unification's survey found) ──
     const shots = Array.from({ length: composition.windows }, (_k, i) => ({
-        id: `extend-${i + 1}`, prompt: str(entry, 'extend_prompt'),
+        id: `extend-${i + 1}`, prompt: extendPromptSeat,
     }));
     const planJson = JSON.stringify({ shots });
     const { trimmed, assemblePath, planShape } = renderMaskedEditChain(g, {
@@ -83,7 +106,7 @@ export function renderH3Extend(entry, p, facts, g, runId) {
         overlapFrames,
         resolution, seed, steps,
         roles: '',
-        sourceClip: str(entry, 'source_clip'),
+        sourceClip: sourceClipSeat,
         windowStart: 0,
         picture1: lastFrame,
         srcFrames: priorFrames,
@@ -113,7 +136,7 @@ export function renderH3Extend(entry, p, facts, g, runId) {
             // (ref_image_0) and the whole clip as the motion identity
             // (ref_video_0), the swap/repair spine's own seats ──
             const r2v = g.node('MiniMaxH3ReferenceToVideo', {
-                prompt: str(entry, 'extend_prompt'),
+                prompt: extendPromptSeat,
                 width: cur.out(8), height: cur.out(9), length: cur.out(6),
                 ref_image_size: 'match',
                 clip, vae: vaeVideo, audio_vae: vaeAudio,

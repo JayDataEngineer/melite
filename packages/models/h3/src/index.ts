@@ -95,7 +95,7 @@ export const DECL: ModelDecl = {
       "refmod_save",
       "loras",
       // THE OPERATOR-AUTHORED MOD BAGS (the modleaf-add journey
-      // audit, 2026-11-16 — the dead Add): the card's mods surface
+      // audit, 2026-11-09 — the dead Add): the card's mods surface
       // LIVES in the studio rail (ModifiersSection), and its only
       // write path IS the Layer-A serializer — the 2026-11-12
       // unification retired these seats saying "the studio projects

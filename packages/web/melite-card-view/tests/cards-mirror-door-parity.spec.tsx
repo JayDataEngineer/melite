@@ -1,6 +1,6 @@
 // cards-mirror-door-parity.spec.tsx — THE TWO-DOOR PARITY LAW (the
 // @contract cards-mirror-door-parity
-// 2026-11-16 timeline audit, client-mirror §4): the estate write
+// 2026-11-09 timeline audit, client-mirror §4): the estate write
 // door's first disjunct is the card's WHOLE schema carrier
 // (cardAdmits → decl.schemaNames, cardsFacts.ts), while the compose
 // mirror judges the doc's RESOLVED lane surface plus its own

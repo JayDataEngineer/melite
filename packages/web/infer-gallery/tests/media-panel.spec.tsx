@@ -862,7 +862,7 @@ describe('MediaPanel — the wand restores the run onto the bench', () => {
       if (u.startsWith('/infer-gallery/flow?run_id=')) {
         return Promise.resolve(new Response(JSON.stringify({
           run_id: 'r1',
-          flow: { draft_id: 'bench-main', card_snapshot: { card: 'image-edit', params: { model: 'qwen-img-edit-2511', prompt: 'red hair', draft_id: 'bench-main', test: false } }, artifacts: ['/x/data/runs/output/run-0f1e2d-r1/edit/out.png'] },
+          flow: { draft_id: 'bench-main', card_snapshot: { card: 'image-edit', params: { model: 'qwen-img-edit-21', prompt: 'red hair', draft_id: 'bench-main', test: false } }, artifacts: ['/x/data/runs/output/run-0f1e2d-r1/edit/out.png'] },
           request: null,
         }), { status: 200 }))
       }
@@ -882,7 +882,7 @@ describe('MediaPanel — the wand restores the run onto the bench', () => {
     expect(hits).not.toContain('/v1/flows/drafts/bench-main')
     expect(ensures[0]?.['expect_rev']).toBe(4)
     expect(ensures[0]?.['stages']).toEqual([
-      { id: 's_0', engine: 'comfyui', card: 'image-edit', params: { model: 'qwen-img-edit-2511', prompt: 'red hair' }, inputs: {}, outputs: {}, provenance: 'restored', result: { run_id: 'r1', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/edit/out.png'), artifacts: { 'run-0f1e2d-r1/edit/out.png': '/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/edit/out.png') }, assetUrls: ['/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/edit/out.png')] } },
+      { id: 's_0', engine: 'comfyui', card: 'image-edit', params: { model: 'qwen-img-edit-21', prompt: 'red hair' }, inputs: {}, outputs: {}, provenance: 'restored', result: { run_id: 'r1', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/edit/out.png'), artifacts: { 'run-0f1e2d-r1/edit/out.png': '/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/edit/out.png') }, assetUrls: ['/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/edit/out.png')] } },
     ])
   })
 

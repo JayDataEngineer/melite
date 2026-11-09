@@ -13,29 +13,34 @@
 // cross-family null set, the drill's own re-point merge order
 // (stage-drill.tsx rePointFrame: {…modelSwitchPatch(…), …frame} —
 // the caller's frame WINS), seedUser's pass-along, reseatEnvelopeKeys,
-// composeCandidateDoc, and the client mirror composeValidate. The
-// arms ride the REAL 2511/21 DECLs — the burned pair: 2511's params
-// declare use_stock_nodes/double_reference
-// (packages/models/qwen-img-edit-2511/src/index.ts:74-75, defaults
-// :34/:38), 21's params DO NOT
-// (packages/models/qwen-img-edit-21/src/index.ts:74-78, the declared
-// "NOT here"). The departed-minus-arrival surface is DERIVED from
-// those DECL arrays; nothing here is a frozen key list.
+// composeCandidateDoc, and the client mirror composeValidate.
+//
+// (2026-11-09) THE PAIR RE-SEAT: the burned pair's FROM family was
+// removed at the operator's order ("that model is too old") and the
+// two surviving edit lanes share an IDENTICAL declared surface, so
+// the edit card can no longer witness this law. The law is generic
+// — it re-seats on the MUSIC pair, whose DECLs differ today exactly
+// the way the burned pair did: music3 declares
+// guidance_scale/lm_cfg_scale/tiled_decode that yue2 does NOT
+// (packages/models/music3/src/index.ts:203-207;
+// packages/models/yue2/src/index.ts — yue2's own `mode` rides the
+// arrival's side). The departed-minus-arrival surface is DERIVED
+// from those DECL arrays; nothing here is a frozen key list.
 //
 // THE PRE-REGISTERED REDS (first run IS the receipt; the suite runs
 // `npx vitest run packages/web/melite-card-view/tests/drill-departed-surface-null-set.spec.ts`):
-// all three verb arms red on today's tree —
-//   1. the switch verb's null set (card-base spec.ts:1316-1341) reads
-//      only the departing ENVELOPE vocabulary (2511's edit rows carry
-//      none) and the schema's ARRAY-node bags — a plain boolean DECL
-//      param is in NEITHER set (study §6, verbatim).
-//   2. the re-point merge order (stage-drill.tsx:507-516) lets an
-//      incoming frame RE-PLANT a departed stamp over the verb's
-//      verdicts — the P4 merge-order half.
-//   3. seedUser's pass-along rides the departed pair verbatim into
-//      the 21 holding and composeValidate (the client mirror) greens
-//      the doc — while the estate's admission gate refuses it
-//      field-named (the all-green fraud face; the door's voice is
+// all three verb arms red on the pre-cure tree —
+//   1. the switch verb's null set (card-base spec.ts) read only the
+//      departing ENVELOPE vocabulary and the schema's ARRAY-node
+//      bags — a plain scalar DECL param was in NEITHER set (study
+//      §6, verbatim).
+//   2. the re-point merge order (stage-drill.tsx) let an incoming
+//      frame RE-PLANT a departed stamp over the verb's verdicts —
+//      the P4 merge-order half.
+//   3. seedUser's pass-along rode the departed pair verbatim into
+//      the arrival holding and composeValidate (the client mirror)
+//      greened the doc — while the estate's admission gate refused
+//      it field-named (the all-green fraud face; the door's voice is
 //      named on the arm).
 //
 // THE CURE ALREADY LANDED — AND WHERE: commit a5da22c6c ("the P4
@@ -52,44 +57,26 @@ import { describe, expect, test } from 'vitest'
 import { axisGroups, axisKey, composeCandidateDoc, composeValidate, mergeSwitchFrame, modelSwitchPatch, schemaEnvelope, seedUser,
   type FormSpecDoc, type SpecValues } from '../../card-base/src/spec.ts'
 import { specVariants } from '../../../../packages/harness/melite-tools/src/discovery.ts'
-import { DECL as qwenImgEdit21 } from '../../../models/qwen-img-edit-21/src/index.ts'
-import { DECL as qwenImgEdit2511 } from '../../../models/qwen-img-edit-2511/src/index.ts'
-
-// THE RECUT (2026-11-08, the cure session — the canon's ACCURACY axis):
-// the first cut built SCHEMA-LESS, PARAM-LESS spec fixtures and demanded
-// the departed-surface nulls from a verb that could not see the surface
-// from its inputs (a 3-arg modelSwitchPatch over a carrier with neither
-// `schema` nor `params` derives nothing — the cure would have needed
-// DECL imports inside card-base, a layering violation). The honest law,
-// now cured in src: the SERVED DOC carries the family's declared surface
-// (`params` — the wire field the form-spec door serves from the DECL),
-// the switch verb takes the ARRIVAL doc and nulls the departed surface
-// (declared-here, not-declared-there), mergeSwitchFrame is the ONE HOME
-// of the merge order (null verdicts beat the frame), seedUser consumes
-// the unset mark, and the compose mirror refuses a key no declared
-// surface owns. These arms ride that law with DECL-derived fixtures —
-// every assertion of the first cut kept byte-for-byte; ARM 3's mirror
-// clause now feeds composeValidate the RAW-ride doc (what a non-verb
-// writer produces) — the fraud face it exists to catch — because the
-// verb-cured chain ends clean by construction.
+import { DECL as music3Decl } from '../../../models/music3/src/index.ts'
+import { DECL as yue2Decl } from '../../../models/yue2/src/index.ts'
 
 /** THE SERVED SPEC, FOR REAL (the switching-sweep precedent): the
  *  serializer the form-spec door drives, over the family's own face —
- *  carrying the family's DECLARED SURFACE (`params`, straight from the
- *  DECL: the wire field the form-spec door serves since the drill
+ *  carrying the family's DECLARED SURFACE (`params`, straight from
+ *  the DECL: the wire field the form-spec door serves since the drill
  *  null-set cure). */
-function servedSpec(decl: typeof qwenImgEdit21): FormSpecDoc {
+function servedSpec(decl: typeof music3Decl): FormSpecDoc {
   return { model: decl.id, variants: specVariants(decl, decl.id), label: null, form: decl.id, params: decl.params }
 }
 
-const FROM_DECL = qwenImgEdit2511
-const TO_DECL = qwenImgEdit21
+const FROM_DECL = music3Decl
+const TO_DECL = yue2Decl
 const FROM_SPEC = servedSpec(FROM_DECL)
 const TO_SPEC = servedSpec(TO_DECL)
 
 /** THE DEPARTED SURFACE, DERIVED: every param the departing family's
  *  DECL declares that the arrival's DECL does not. The floor assert
- *  pins the burned pair so an emptied surface can never pass the
+ *  pins the witness pair so an emptied surface can never pass the
  *  arms vacuously (LAW 4 axis 1: an always-true judge is a finding). */
 function departedSurface(): string[] {
   const arrival = new Set<string>(TO_DECL.params)
@@ -97,24 +84,25 @@ function departedSurface(): string[] {
   return out
 }
 const SURFACE = departedSurface()
-const BURNED_PAIR = ['double_reference', 'use_stock_nodes'] as const
+const DEPARTED_KEYS = ['guidance_scale', 'lm_cfg_scale', 'tiled_decode'] as const
 
-/** The holding the operator's gesture produces: the Strong Identity
- *  recipe's stamps ridden through a real pick on the 2511 face, the
- *  model rail pointed at 21. */
+/** The holding the operator's gesture produces: a recipe's stamps
+ *  ridden through a real pick on the music3 face, the model rail
+ *  pointed at yue2. */
 function burnedHolding(): SpecValues {
   const held: SpecValues = {
     model: FROM_DECL.id,
-    steps: 4,
-    cfg: 2.5,
-    prompt: 'keep the handwriting',
-    input_images: ['refs/anchor.png'],
+    prompt: 'a quiet waltz',
+    lyrics: 'hold the line',
+    duration: 90,
+    n_diffusion_steps: 60,
+    seed: 424243,
   }
-  for (const k of BURNED_PAIR) held[k] = true
+  for (const k of DEPARTED_KEYS) held[k] = true
   return held
 }
 
-describe('the drill null-set arms (ERRORS h; study §6; purge P4) — the switch verbs on the REAL 2511/21 DECLs', () => {
+describe('the drill null-set arms (ERRORS h; study §6; purge P4) — the switch verbs on the REAL music3/yue2 DECLs', () => {
   // ── THE IMAGE-SUBJECT EXEMPTION (operator, 2026-10-21: "When I
   // switch image edit models in the Image Edit card, the input
   // images drop, and I have to re put in the image edit model. I
@@ -122,8 +110,9 @@ describe('the drill null-set arms (ERRORS h; study §6; purge P4) — the switch
   // An array whose wtype is image_list is the edit's SUBJECT — the
   // photo being edited, model-agnostic. The mod-bag law ("keeping
   // the lora on makes zero sense") kills mod currency; it must never
-  // kill the subject. The real served docs carry the schema (the
-  // form-spec door's envelope); this arm rides that face.
+  // kill the subject. The arm rides a synthetic schema envelope (the
+  // law is the verb's wtype judgment, generic across cards) over the
+  // real served doc.
   test('THE SUBJECT SURVIVES THE SWITCH — image_list arrays never null; mod bags still die', () => {
     const subjectSpec: FormSpecDoc = {
       ...FROM_SPEC,
@@ -142,9 +131,9 @@ describe('the drill null-set arms (ERRORS h; study §6; purge P4) — the switch
     expect(patch['ref_mods'], 'a mod array still nulls on the cross-model switch').toBeNull()
   })
 
-  test('THE SURFACE FLOOR — the derivation finds the burned pair (the arms cannot pass vacuously)', () => {
-    for (const k of BURNED_PAIR) {
-      expect(SURFACE, `the derived departed surface must contain '${k}' (2511 params: [${(FROM_DECL.params ?? []).join(', ')}]; 21 params: [${(TO_DECL.params ?? []).join(', ')}])`).toContain(k)
+  test('THE SURFACE FLOOR — the derivation finds the departed trio (the arms cannot pass vacuously)', () => {
+    for (const k of DEPARTED_KEYS) {
+      expect(SURFACE, `the derived departed surface must contain '${k}' (music3 params: [${(FROM_DECL.params ?? []).join(', ')}]; yue2 params: [${(TO_DECL.params ?? []).join(', ')}])`).toContain(k)
     }
   })
 
@@ -180,10 +169,10 @@ describe('the drill null-set arms (ERRORS h; study §6; purge P4) — the switch
     // spread; the law: the nulled departed-surface keys BEAT the
     // incoming frame.
     const patch = modelSwitchPatch(FROM_SPEC, TO_DECL.id, burnedHolding(), TO_SPEC)
-    const frame: Record<string, unknown> = { model: TO_DECL.id, double_reference: true }
+    const frame: Record<string, unknown> = { model: TO_DECL.id, guidance_scale: 2.5 }
     const merged = mergeSwitchFrame(patch, frame) as SpecValues
     const failures: string[] = []
-    for (const k of BURNED_PAIR) {
+    for (const k of DEPARTED_KEYS) {
       if (merged[k] === true) {
         failures.push(`${k}: the incoming frame re-planted the departed stamp over the verb’s verdicts (mergeSwitchFrame — the null verdicts must beat the frame) — the write lands on the ${TO_DECL.id} lane carrying a field its DECL does not declare`)
       }
@@ -191,7 +180,7 @@ describe('the drill null-set arms (ERRORS h; study §6; purge P4) — the switch
     expect(failures, `the merge order re-plants the departed stamps:\n  ${failures.join('\n  ')}`).toEqual([])
   })
 
-  test('ARM 3 (THE RED) — the arrival holding never carries the departed pair: seedUser pass-along, the composed doc, and the client mirror’s raw-ride refusal', () => {
+  test('ARM 3 (THE RED) — the arrival holding never carries the departed trio: seedUser pass-along, the composed doc, and the client mirror’s raw-ride refusal', () => {
     // THE FULL CHAIN the drill rides on spec-land: the reseed seeds
     // the arrival’s rows OVER the cured patch (seedUser consumes the
     // null verdicts — THE UNSET MARK IS CONSUMED AT THE SEED), the
@@ -200,9 +189,10 @@ describe('the drill null-set arms (ERRORS h; study §6; purge P4) — the switch
     // judges the RAW-RIDE doc — what a non-verb writer produces (a
     // tool or agent patch that swaps `model` without the switch
     // verb): the estate’s admission gate refuses it field-named
-    // ("field 'double_reference' fires nothing on this lane" —
-    // ERRORS.md item h, the live banner), and the client mirror —
-    // the fraud face of the first cut — greened exactly that doc.
+    // ("field 'guidance_scale' fires nothing on this lane" — the
+    // ERRORS.md item h class, the live banner), and the client
+    // mirror — the fraud face of the first cut — greened exactly
+    // that doc.
     const patch = modelSwitchPatch(FROM_SPEC, TO_DECL.id, burnedHolding(), TO_SPEC)
     const seeded = seedUser(TO_SPEC, { ...burnedHolding(), ...patch })
     const doc = composeCandidateDoc({}, seeded, {})
@@ -211,14 +201,14 @@ describe('the drill null-set arms (ERRORS h; study §6; purge P4) — the switch
     const rawDoc = { ...burnedHolding(), model: TO_DECL.id }
     const violations = composeValidate(TO_SPEC, rawDoc)
     const failures: string[] = []
-    for (const k of BURNED_PAIR) {
+    for (const k of DEPARTED_KEYS) {
       if (seeded[k] !== undefined) failures.push(`seedUser: the ${TO_DECL.id} holding carries the departed '${k}' verbatim (card-base src/spec.ts — the seed must consume the null verdicts)`)
-      if (doc[k] !== undefined) failures.push(`the composed candidate doc carries '${k}' on the ${TO_DECL.id} lane — the run flush sends it and the door refuses field-named`)
+      if (doc[k] !== undefined) failures.push(`the composed candidate doc carries '${k}' on the ${TO_DECL.id} lane — the run flush sends it and the door refuses it field-named`)
       if (!violations.some((v) => v.message.includes(`'${k}'`))) {
         failures.push(`composeValidate (the client mirror) refuses the raw-ride '${k}' nothing — while the estate admission gate refuses it field-named; the mirror needs the declared-surface clause`)
       }
     }
-    expect(failures, `the arrival holding rides the departed pair:\n  ${failures.join('\n  ')}`).toEqual([])
+    expect(failures, `the arrival holding rides the departed trio:\n  ${failures.join('\n  ')}`).toEqual([])
   })
 
   test('ARM 4 — the gesture-time 3-arg seats refuse to guess (DRILL (a) remainder): arrival unknown → axes clear, bag dies, the params surface waits for the settle', () => {
@@ -238,11 +228,12 @@ describe('the drill null-set arms (ERRORS h; study §6; purge P4) — the switch
     const patch = modelSwitchPatch(FROM_SPEC, TO_DECL.id, burnedHolding())
     const failures: string[] = []
     if (patch.model !== TO_DECL.id) failures.push(`model: the patch does not re-point at '${TO_DECL.id}'`)
+    const CLEARED: ReadonlyArray<unknown> = ['', null]
     for (const g of axisGroups(FROM_SPEC)) {
       const k = axisKey(g)
-      if (patch[k] !== '') failures.push(`axis '${k}': a cross-family switch must CLEAR the departing axis (saw ${JSON.stringify(patch[k])}) — the arrival's rows seed fresh at spec-land`)
+      if (!CLEARED.includes(patch[k])) failures.push(`axis '${k}': a cross-family switch must CLEAR the departing axis (saw ${JSON.stringify(patch[k])}) — the arrival's rows seed fresh at spec-land`)
     }
-    for (const k of BURNED_PAIR) {
+    for (const k of DEPARTED_KEYS) {
       if (k in patch) {
         failures.push(`'${k}': the arrival-unknown verb rendered a params-surface verdict (${JSON.stringify(patch[k])}) — with no arrival surface the verb must refuse to guess (spec.ts: the null loop is arrival-gated); the settle seat owns this null (ARM 1)`)
       }
@@ -267,12 +258,12 @@ describe('the drill null-set arms (ERRORS h; study §6; purge P4) — the switch
     expect(mirrorHits, `the unnamed-arrival mirror voiced the empty lane instead of staying silent — an arrival that has not named itself must never clobber the doc's voice`).toEqual([])
   })
 
-  test('THE PIN THAT STANDS — the arrival lane’s own words: the pair is 2511’s edit-tuning seat and NOT on the 21 surface (the DECL is the truth home)', () => {    // The DECL-side fact the whole file leans on, pinned so a surface
+  test('THE PIN THAT STANDS — the arrival lane’s own words: the trio is music3’s recipe seat and NOT on the yue2 surface (the DECL is the truth home)', () => {
+    // The DECL-side fact the whole file leans on, pinned so a surface
     // change re-pins the arms deliberately (the purge §2.1 rows).
-    expect((FROM_DECL.params ?? [])).toEqual(expect.arrayContaining([...BURNED_PAIR]))
-    expect(TO_DECL.params ?? []).not.toContain('double_reference')
-    expect(TO_DECL.params ?? []).not.toContain('use_stock_nodes')
-    expect((FROM_DECL.defaults as Record<string, unknown>).double_reference).toBeDefined()
-    expect((FROM_DECL.defaults as Record<string, unknown>).use_stock_nodes).toBeDefined()
+    expect((FROM_DECL.params ?? [])).toEqual(expect.arrayContaining([...DEPARTED_KEYS]))
+    expect(TO_DECL.params ?? []).not.toContain('guidance_scale')
+    expect(TO_DECL.params ?? []).not.toContain('lm_cfg_scale')
+    expect(TO_DECL.params ?? []).not.toContain('tiled_decode')
   })
 })

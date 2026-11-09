@@ -29,7 +29,6 @@ import { t2i as zImageT2I } from "../../../../packages/models/z-image/src/action
 import { t2i as animaT2I } from "../../../../packages/models/anima/src/actions.ts";
 import { t2i as krea2T2I } from "../../../../packages/models/krea-2/src/actions.ts";
 import { edit as edit21 } from "../../../../packages/models/qwen-img-edit-21/src/actions.ts";
-import { edit as edit2511 } from "../../../../packages/models/qwen-img-edit-2511/src/actions.ts";
 import { edit as editFibo2 } from "../../../../packages/models/fibo2-edit/src/actions.ts";
 import { t2i as fluxKleinT2I } from "../../../../packages/models/flux-klein/src/actions.ts";
 import { t2i as mossImageT2I } from "../../../../packages/models/moss-image/src/actions.ts";
@@ -57,9 +56,10 @@ const EDIT_OWN_TAIL = [
   // the match-input toggle (2026-10-13): the compose-side default-ON
   // resolution override rides the same surface in both families, so
   // the ParamSpec row leads the tail here and in both actions.ts.
+  // (The retired lane's two tuning booleans left this tail with the
+  // family's removal, 2026-11-09 — the card schema dropped its rows
+  // and the F3 set-equality law took the action rows with them.)
   { name: "match_input_resolution", type: "boolean" },
-  { name: "use_stock_nodes", type: "boolean" },
-  { name: "double_reference", type: "boolean" },
 ];
 const EDIT_ROWS = [...EDIT_OWN_HEAD, ...diffusionParamRows(EDIT_DIFFUSION_BOUNDS), ...EDIT_OWN_TAIL];
 
@@ -76,7 +76,7 @@ const ADOPTERS = readdirSync(modelsDir).filter((f) => {
 
 describe("the shared diffusion param surface (one home)", () => {
   it("every tree adopter is asserted by name here (the census is the tree, not this file)", () => {
-    const asserted = new Set(["qwen-img-21", "z-image", "anima", "krea-2", "qwen-img-edit-21", "qwen-img-edit-2511", "fibo2-edit", "flux-klein", "moss-image"]);
+    const asserted = new Set(["qwen-img-21", "z-image", "anima", "krea-2", "qwen-img-edit-21", "fibo2-edit", "flux-klein", "moss-image"]);
     assert.deepEqual(
       ADOPTERS.filter((f) => !asserted.has(f)),
       [],
@@ -84,7 +84,9 @@ describe("the shared diffusion param surface (one home)", () => {
     );
     // 7 -> 8 (2026-11-07, the operator's drop): moss-image spreads the factory.
     // 8 -> 9 (2026-11-08, the third edit lane): fibo2-edit spreads the factory.
-    assert.deepEqual(ADOPTERS.length, 9, "the adopter census changed — update this pin and the named assertions together");
+    // 9 -> 8 (2026-11-09, the removal): the retired edit lane's package
+    // left the tree with its family.
+    assert.deepEqual(ADOPTERS.length, 8, "the adopter census changed — update this pin and the named assertions together");
   });
 
   it("the five text-to-image families declare the factory's rows, not a hand copy", () => {
@@ -104,15 +106,14 @@ describe("the shared diffusion param surface (one home)", () => {
     }
   });
 
-  it("the two edit families declare the narrowed rows around their own", () => {
+  it("the 2.1 edit family declares the narrowed rows around its own", () => {
     for (const [family, action] of [
       ["qwen-img-edit-21", edit21],
-      ["qwen-img-edit-2511", edit2511],
     ] as const) {
       assert.deepEqual(
         action.params,
         EDIT_ROWS,
-        `${family}'s edit action must wrap the shared rows with its own five head and three tail rows`,
+        `${family}'s edit action must wrap the shared rows with its own five head and one tail row`,
       );
     }
   });

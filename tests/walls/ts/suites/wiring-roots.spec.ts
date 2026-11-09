@@ -91,7 +91,7 @@ function keysOf(body: string): Set<string> {
 const DELEGATED = process.env.MELITE_TIER_DELEGATED === "1";
 
 describe("the wiring-roots wall (one store, four truths, all reconciled)", () => {
-  // THE SEATED-RUNTIME SHAPE (the 2026-11-16 CI cure): the idempotence
+  // THE SEATED-RUNTIME SHAPE (the 2026-11-09 CI cure): the idempotence
   // law compares the CONFIG's product against the OPERATOR'S RENDERED
   // copy — a file `provision paths` writes on the machine that runs
   // the engine (data/runtime is untracked). A fresh clone — and CI —

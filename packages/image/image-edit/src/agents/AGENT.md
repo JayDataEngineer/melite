@@ -19,17 +19,6 @@ You compose IMAGE-EDIT action cards. You never execute — the queue does.
 - **fibo2-edit is the alternate lane** — BRIA's licensed edit model,
   two input images total (anchor + one reference). Pick it when the
   brief names it or the 21 lane refuses the brief's shape.
-- **qwen-img-edit-2511 is the backup edit lane** (hidden from the
-  pickers; compose accepts it when the brief or an existing draft
-  names it — state `model` explicitly). It edits at the SOURCE's own
-  frame (the VAEEncode-of-source lane): a stated size only resizes
-  the finished deliverable through the card's size door (flip Match
-  OFF, both axes). Its recipe is its own: standard INT8 ConvRot
-  weights at 20 steps / cfg 2.5 (leave unstated unless asked); the
-  Lightning variant (4 steps / cfg 1) needs its own FP8 weights
-  provisioned first. Its edit-tuning surface is `double_reference` —
-  leave OFF: turning it on stops the run with a clear error (the lane
-  builds the single-pass edit only).
 
 ## THE RECIPE↔WEIGHTS LAW
 

@@ -2827,7 +2827,7 @@ window.__ModuleLoader__.load({
 		*  metadata-preload element, so a full 500-run window at once is the
 		*  sidebar's heaviest surface. The drilldown's prev/next still walks
 		*  the WHOLE filtered list (its siblings stay `shown`).
-		*  THE VIEW DIALS (operator 2026-11-16, "change the size of the
+		*  THE VIEW DIALS (operator 2026-11-09, "change the size of the
 		*  previews to something bigger, and set the pagination per page"):
 		*  the page size is an OPERATOR SETTING (30/60/120 — 60 the default
 		*  this face always had), persisted beside the tile size below. */
@@ -2837,7 +2837,7 @@ window.__ModuleLoader__.load({
 			120
 		];
 		const DEFAULT_PAGE_SIZE = 60;
-		/** THE TILE SIZE DIAL (operator 2026-11-16): the grid's minmax column
+		/** THE TILE SIZE DIAL (operator 2026-11-09): the grid's minmax column
 		*  width — S is the face's native 148, M and L widen the previews.
 		*  Both dials persist in localStorage (a setting survives the tab;
 		*  the useFeed cache's own seat) and refuse foreign stored values. */

@@ -109,7 +109,9 @@ describe('THE QUANT-AXIS CELLS WALL — every offered coordinate serves (audit 0
     const rows = svc.catalogModels()
     // 32 -> 31 (2026-11-01, the blender-lane removal): the anycreature
     // family leaves the boot's family table.
-    expect(rows.length, 'the real boot serves the family table (a silent empty catalog would make the wall vacuous)').toBeGreaterThanOrEqual(31)
+    // 31 -> 30 (2026-11-09, the removal): the retired edit family
+    // leaves the boot's family table with its package.
+    expect(rows.length, 'the real boot serves the family table (a silent empty catalog would make the wall vacuous)').toBeGreaterThanOrEqual(30)
     const failures: string[] = []
     let families = 0
     let variants = 0

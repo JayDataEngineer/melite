@@ -453,7 +453,7 @@ export function ModifiersSection(props) {
         }
         return out;
     };
-    // THE MASTER-MODAL SECTION OVERLAY (§0.8, 2026-11-16): the
+    // THE MASTER-MODAL SECTION OVERLAY (§0.8, 2026-11-09): the
     // plus box OPENS the leaf unseeded — the sections start
     // unchecked, the operator checks the modifiers they want
     // (the instant commit died with the collapse's one-interface
@@ -782,7 +782,7 @@ export function ModifiersSection(props) {
     // (standalone entries each own their output; order is void).
     const isOrdered = (k) => k.category !== 'standalone';
     const anyOrdered = kinds.some(isOrdered);
-    // THE HINT NAMES THE PRESENT AFFORDANCE (the 2026-11-16 operator
+    // THE HINT NAMES THE PRESENT AFFORDANCE (the 2026-11-09 operator
     // friction: "a modifiers section that does nothing above the mod
     // slots"): the drag hint rides the FIRST ordered ENTRY, never the
     // category alone — an empty section (checkboxes and the add
@@ -816,7 +816,7 @@ export function ModifiersSection(props) {
     // DndContexts are renderless — layout stays one flex-wrap line.
     h('div', { className: css.modRow, 'data-subcard-row': 'flow' }, kinds.map((k) => {
         const entries = entriesOf(k);
-        // ONE DOOR (operator, 2026-11-16: "collapse the mods into
+        // ONE DOOR (operator, 2026-11-09: "collapse the mods into
         // one"): a declared section is a CHECKBOX INSIDE the leaf
         // (the flow face, §0.8) — the chip row that once
         // rendered here was a second entry surface around the kind
@@ -1192,7 +1192,7 @@ function ModLeaf(props) {
     // bag container is a bag container on every pack.
     const leafFields = (k.fields ?? []).filter((f) => f.name !== k.param_key
         && !(hidden?.has(f.name) ?? false) && !(facePresent && f.faceOwned === true)
-        // THE MASTER MODAL'S SUBMENUS (slice 5, 2026-11-16): the riding
+        // THE MASTER MODAL'S SUBMENUS (slice 5, 2026-11-09): the riding
         // fields - scale under the refine switch, extend_seconds under
         // the continuation, the mask fields under their own source -
         // declare their visibility through the ONE grammar every card

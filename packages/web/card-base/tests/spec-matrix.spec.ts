@@ -352,7 +352,7 @@ test('axisPickPatch: the row overlay rides (model-skipped), its axis stamps, bel
 })
 
 test('THE STAMP FILTER (the tagger burn): a row default the picked row\'s lane does not serve never rides the pick frame', () => {
-  // THE BURN (gate-11 probe p, 2026-11-16): the tagger card's variant
+  // THE BURN (gate-11 probe p, 2026-11-09): the tagger card's variant
   // rows carry a `checkpoint` default (the engine's model-file
   // coordinate) that no served lane surfaces. The pick stamped it,
   // the compose mirror field-named it ("field 'checkpoint' fires
@@ -407,7 +407,7 @@ test('modelSwitchPatch: the same family keeps its coordinates; a switch clears e
   // and the lora bag rides untouched — same model, its own mods stay
   expect(modelSwitchPatch(spec, 'krea-2')).toEqual({ model: 'krea-2', variant: 'r-sd', quant: 'q-fp8' })
   // a re-pointed route is still a SWITCH (routes are not models):
-  // EVERY axis departs as a NULL (the gate-11 cure, 2026-11-16 —
+  // EVERY axis departs as a NULL (the gate-11 cure, 2026-11-09 —
   // probe (m)'s door refusal: 'a stated empty selection is not a
   // choice (pick one, or remove the key and let compose default
   // it)'; '' refused the whole frame and the doc never took the
@@ -614,7 +614,7 @@ test('seedAxisValues: an axis with no composing row OMITS its key (never a state
 });
 
 // THE SEED NAMES THE FAMILY AT BIRTH — ABOVE THE GROUPS GUARD (the
-// gate-11 anny burn, 2026-11-16: a family spec with NO axis
+// gate-11 anny burn, 2026-11-09: a family spec with NO axis
 // vocabulary — anny's single group-less variant row — early-returned
 // out of the seed and the stage was born FAMILY-LESS; the sweep's
 // seed-law red: 'anny: the bench doc carries a model coordinate

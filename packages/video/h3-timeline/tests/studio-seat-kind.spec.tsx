@@ -1,5 +1,5 @@
 // THE SEAT'S MEDIA-KIND DISCIPLINE (the modleaf-add journey audit,
-// 2026-11-16, findings 3 and the seat-discipline arm): the drop seam
+// 2026-11-09, findings 3 and the seat-discipline arm): the drop seam
 // had NO judge — a video/mp4 File dropped on the IMAGE seat reached
 // onFile unrefused (the OS dialog's accept is a soft filter the drop
 // path bypasses), and From-flow on the studio rail offered the staged

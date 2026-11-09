@@ -4,18 +4,15 @@
     "input_images": [],
     "match_input_resolution": true,
     "seed": -1,
-    "use_stock_nodes": false,
+    "steps": 30,
     "sampler": "euler",
     "scheduler": "simple",
-    "double_reference": false,
-    "steps": 20,
-    "cfg": 2.5
+    "cfg": 5
   },
   "engine": "comfyui",
   "enhance_prompt": null,
   "enhance_prompts": {
-    "prompt": null,
-    "lyrics": ""
+    "prompt": "You are a Fibo 2.0 Edit prompting expert (BRIA's instruction-editing model). The user wants to edit an existing image.\n\n- This is an INSTRUCTION-BASED EDITING model — describe the CHANGE, not the final scene\n- Write natural-language prose (Fibo's encoder is caption-trained) — no Danbooru tag lists\n- Start with an action verb: add, remove, replace, change, rotate, recolor, relight\n- Be specific about WHAT should change\n- Explicitly state what should STAY THE SAME\n- Cite input images by their slot: the FIRST input image is <image_1>, the second <image_2>, and so on — 'Replace the sky in <image_1> with the sunset from <image_2>'\n- An EMPTY negative prompt is the model's trained null caption — leave it empty unless the user states an exclusion; never invent boilerplate negatives\n- Keep the edit instruction concise — 20-80 words\n- Do NOT describe the entire resulting image — just the modification\n\nWrite the prompt as continuous descriptive prose — NOT comma-separated tag lists. Natural language produces better results than keyword stacks on these models.\n\n## Structure (order matters — lead with what's most important)\n1. Subject identity and core action/pose\n2. Detailed physical description — body, face, hair, clothing, textures\n3. Hand/object interactions and spatial details\n4. Background/environment with depth layers — near, mid, far\n5. Lighting, atmosphere, and color palette\n6. Camera/lens/framing (only if photorealistic)\n\n## Enhancement Methodology\n1. Lock the user's core intent — subject, action, colors, text are IMMUTABLE\n2. If the request is abstract, construct a complete visualizable scene first\n3. Inject professional aesthetics: composition, lighting, material textures, color scheme, spatial depth\n4. Any text that should appear IN the image must be in double quotes: sign reading \"OPEN\"\n5. Output must be objective and concrete. No metaphors or emotional rhetoric\n\n## What to include\n- Specific demographics when relevant: \"young Chinese woman\" not \"woman\"\n- Facial features, expression, gaze direction\n- Hair: style, color, length, accessories\n- Garments named specifically: \"cream-colored wool turtleneck\" not \"sweater\"\n- Fabric behavior: \"slightly wrinkled linen\", \"glossy patent leather\"\n- Spatial positions: \"on the left\", \"in the foreground\", \"behind her\"\n- Light source, direction, color temperature: \"warm golden-hour sunlight from camera left\"\n- Camera details for photorealism: \"85mm portrait lens, shallow depth of field\"\n\n## What NEVER to include\n- Meta-tags: \"8K\", \"masterpiece\", \"best quality\", \"highly detailed\", \"trending on artstation\"\n- Other-model syntax: \"score_9\", \"plms\", \"euler a\", \"dpm++ 2m\"\n- Negation in positive prompts: \"no hat\" → rephrase as \"bareheaded\"\n- Empty/vague backgrounds — always describe the environment\n\nChinese and English both work natively — you may mix them.\n\n## Output format — STRICT\nReturn ONLY a single JSON object. No markdown fences, no explanation, no\ntext before or after. The whole response must be parseable by JSON.parse.\n\nSchema:\n  {\"positive\": \"<the enhanced positive prompt>\", \"negative\": \"<negative prompt or empty string>\"}\n\nRules:\n- \"positive\" is always filled with the enhanced prompt per the methodology above.\n- \"negative\" is filled with an effective negative prompt IF the model uses\n  negatives (you noted whether it does above). Otherwise set \"negative\" to \"\".\n- Both values are plain strings. Escape inner quotes and newlines per JSON.\n- Never wrap the whole response in extra quotes. The JSON object itself is\n  the response.\n"
   },
   "features": {
     "modifiers": [
@@ -27,36 +24,7 @@
         "cardinality": "list",
         "entry": "option",
         "option_key": "id",
-        "options": [
-          {
-            "value": "qwen_edit_lightning_4step",
-            "label": "Lightning 4-Step",
-            "tooltip": "distill — qwen/Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors",
-            "defaults": {
-              "strength": 1,
-              "steps": 4
-            },
-            "model": "qwen/Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors"
-          },
-          {
-            "value": "qwen_edit_multiple_angles",
-            "label": "Multiple Angles",
-            "tooltip": "camera control — prompt with the <sks> position vocabulary (front/back/quarter view × eye/low/high angle × shot size)",
-            "defaults": {
-              "strength": 0.8
-            },
-            "model": "qwen/qwen-image-edit-2511-multiple-angles-lora.safetensors"
-          },
-          {
-            "value": "qwen_edit_plus_mcnsfw",
-            "label": "MCNL Multi-Concept",
-            "tooltip": "nsfw — qwen/qwen-image-edit-plus-nsfw-lora.safetensors",
-            "defaults": {
-              "strength": 0.8
-            },
-            "model": "qwen/qwen-image-edit-plus-nsfw-lora.safetensors"
-          }
-        ]
+        "options": []
       },
       {
         "kind": "mask",
@@ -71,16 +39,11 @@
     "variant_groups": {
       "Variant": {
         "label": "Variant",
-        "tooltip": "Base checkpoint — Lightning (4-step distilled, fast default) or Standard (20-step reference, highest quality)."
+        "tooltip": "The distilled pair — Dev (30 steps, the reference lane) or Edit Turbo (8 steps, the distilled lane). Each lane's sampler pair rides its own checkpoint."
       },
       "Quant": {
         "label": "Quant",
-        "tooltip": "Quantization tier — FP8 Lightning (the distilled checkpoint) or INT8 ConvRot (the reference merge)."
-      },
-      "Recipe": {
-        "label": "Recipe",
-        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
-        "default": "default"
+        "tooltip": "The download tier — INT8 ConvRot (8.4GB) or BF16 (16.5GB). Every edit rides the BF16 text encoder either way (the int8 tower's vision path is the open upstream bug)."
       }
     }
   },
@@ -106,17 +69,17 @@
   "loader_info": null,
   "mod_schemas": {
     "loras": {
-      "uid": 100,
+      "uid": 98,
       "refs": {
-        "95": {
+        "93": {
           "type": "string",
           "meta": {}
         },
-        "96": {
+        "94": {
           "type": "number",
           "meta": {}
         },
-        "97": {
+        "95": {
           "type": "number",
           "meta": {
             "min": 1,
@@ -132,18 +95,18 @@
             }
           }
         },
-        "98": {
+        "96": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "name": 95,
-            "strength": 96,
-            "steps": 97
+            "name": 93,
+            "strength": 94,
+            "steps": 95
           }
         },
-        "99": {
+        "97": {
           "type": "array",
           "meta": {
             "default": [],
@@ -156,15 +119,15 @@
               "order": 0
             }
           },
-          "inner": 98
+          "inner": 96
         },
-        "100": {
+        "98": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "loras": 99
+            "loras": 97
           }
         }
       }
@@ -455,7 +418,7 @@
       }
     }
   },
-  "model": "qwen-img-edit-2511",
+  "model": "fibo2-edit",
   "params": [
     "input_images",
     "image1",
@@ -472,16 +435,14 @@
     "steps",
     "cfg",
     "sampler",
-    "scheduler",
-    "use_stock_nodes",
-    "double_reference"
+    "scheduler"
   ],
   "stage_view": null,
   "outputs": {
     "default": "image"
   },
   "schema": {
-    "uid": 94,
+    "uid": 92,
     "refs": {
       "20": {
         "type": "const",
@@ -768,11 +729,10 @@
             "width": 1,
             "zone": "inputs",
             "wtype": "image_list",
-            "max_stack": 3,
+            "max_stack": 16,
             "serveDefault": true,
             "tooltip": "Ordered input images — the FIRST is the image being edited; the rest are references the prompt can cite as <image2>, <image3>… in order. Capacity follows the boarded model; more than it admits refuses loudly."
-          },
-          "max_stack": 3
+          }
         },
         "inner": 74
       },
@@ -1041,33 +1001,6 @@
         ]
       },
       "92": {
-        "type": "boolean",
-        "meta": {
-          "description": "Use Stock Nodes",
-          "extra": {
-            "order": null,
-            "hidden": true,
-            "group": "edit_tuning",
-            "width": 1,
-            "tooltip": "When true, build_img2img_edit emits the stock Qwen-Image-Edit node graph (no DiffSynth patches, no custom ControlNet wiring). Useful for reproducing upstream behavior exactly.",
-            "zone": "params"
-          }
-        }
-      },
-      "93": {
-        "type": "boolean",
-        "meta": {
-          "description": "Double Reference",
-          "extra": {
-            "order": 2,
-            "group": "edit_tuning",
-            "width": 1,
-            "tooltip": "Not available yet: turning this on stops the run with a clear error — the edit models build the standard single-pass edit only, never a silent plain edit. Leave it off. (Once supported: the input image is encoded twice — VAE + vision encoder — for stronger identity preservation.)",
-            "zone": "params"
-          }
-        }
-      },
-      "94": {
         "type": "object",
         "meta": {
           "default": {}
@@ -1088,16 +1021,136 @@
           "steps": 88,
           "cfg": 89,
           "sampler": 90,
-          "scheduler": 91,
-          "use_stock_nodes": 92,
-          "double_reference": 93
+          "scheduler": 91
         }
       }
     }
   },
-  "service": "qwen-img-edit-2511",
+  "service": "fibo2-edit",
   "size": null,
-  "variants": [],
+  "variants": [
+    {
+      "id": "dev",
+      "label": "Dev",
+      "group": "Variant",
+      "defaults": {
+        "steps": 30,
+        "cfg": 5
+      },
+      "route": "fibo2-edit-dev",
+      "hint": "The 30-step reference checkpoint — the official edit recipe pair (CFG 5, Euler/simple, empty null caption). Both quant tiers below. Requires provisioning: the Fibo files are NOT on this box by default; without them the engine validation refuses LOUD (the honest face).",
+      "engine": "comfyui",
+      "sampler_envelope": {
+        "steps": [
+          20,
+          40
+        ],
+        "cfg": [
+          3.5,
+          6
+        ]
+      },
+      "quant": null,
+      "vram_peak_gb": null,
+      "owner": ""
+    },
+    {
+      "id": "int8_convrot",
+      "label": "INT8 ConvRot",
+      "group": "Quant",
+      "defaults": {},
+      "route": "fibo2-edit-dev-int8",
+      "hint": null,
+      "engine": "comfyui",
+      "quant": "int8_convrot",
+      "vram_peak_gb": null,
+      "owner": "dev"
+    },
+    {
+      "id": "bf16",
+      "label": "BF16",
+      "group": "Quant",
+      "defaults": {},
+      "route": "fibo2-edit-dev-bf16",
+      "hint": null,
+      "engine": "comfyui",
+      "quant": "bf16",
+      "vram_peak_gb": null,
+      "owner": "dev"
+    },
+    {
+      "id": "edit-turbo",
+      "label": "Edit Turbo",
+      "group": "Variant",
+      "defaults": {
+        "steps": 8,
+        "cfg": 1
+      },
+      "route": "fibo2-edit-turbo",
+      "hint": "The 8-step distilled edit checkpoint (CFG 1, Euler/simple) — fast edits at the official pair. The community 4-step report is deliberately NOT pinned (unofficial, drifting). Requires provisioning, same as dev.",
+      "engine": "comfyui",
+      "sampler_envelope": {
+        "steps": [
+          6,
+          12
+        ],
+        "cfg": [
+          1,
+          2
+        ]
+      },
+      "quant": null,
+      "vram_peak_gb": null,
+      "owner": ""
+    },
+    {
+      "id": "int8_convrot",
+      "label": "INT8 ConvRot",
+      "group": "Quant",
+      "defaults": {},
+      "route": "fibo2-edit-turbo-int8",
+      "hint": null,
+      "engine": "comfyui",
+      "quant": "int8_convrot",
+      "vram_peak_gb": null,
+      "owner": "edit-turbo"
+    },
+    {
+      "id": "bf16",
+      "label": "BF16",
+      "group": "Quant",
+      "defaults": {},
+      "route": "fibo2-edit-turbo-bf16",
+      "hint": null,
+      "engine": "comfyui",
+      "quant": "bf16",
+      "vram_peak_gb": null,
+      "owner": "edit-turbo"
+    },
+    {
+      "id": "dev__head",
+      "label": "Dev",
+      "group": "Variant",
+      "defaults": {},
+      "route": "fibo2-edit",
+      "hint": "The 30-step reference checkpoint — the official edit recipe pair (CFG 5, Euler/simple, empty null caption). Both quant tiers below. Requires provisioning: the Fibo files are NOT on this box by default; without them the engine validation refuses LOUD (the honest face).",
+      "engine": "comfyui",
+      "sampler_envelope": {
+        "steps": [
+          20,
+          40
+        ],
+        "cfg": [
+          3.5,
+          6
+        ]
+      },
+      "quant": null,
+      "vram_peak_gb": null,
+      "owner": "",
+      "alias": true
+    }
+  ],
   "lanes": {
     "base": [
       "input_images",
@@ -1115,9 +1168,7 @@
       "steps",
       "cfg",
       "sampler",
-      "scheduler",
-      "use_stock_nodes",
-      "double_reference"
+      "scheduler"
     ],
     "relations": {
       "required": [
@@ -1147,11 +1198,33 @@
       }
     },
     "variants": {
-      "lightning": {
+      "dev": {
         "bounds": {
           "steps": {
-            "min": 4,
-            "max": 8
+            "min": 20,
+            "max": 40
+          },
+          "cfg": {
+            "min": 3.5,
+            "max": 6
+          }
+        },
+        "sampler_envelope": {
+          "steps": [
+            20,
+            40
+          ],
+          "cfg": [
+            3.5,
+            6
+          ]
+        }
+      },
+      "edit-turbo": {
+        "bounds": {
+          "steps": {
+            "min": 6,
+            "max": 12
           },
           "cfg": {
             "min": 1,
@@ -1160,34 +1233,12 @@
         },
         "sampler_envelope": {
           "steps": [
-            4,
-            8
+            6,
+            12
           ],
           "cfg": [
             1,
             2
-          ]
-        }
-      },
-      "standard": {
-        "bounds": {
-          "steps": {
-            "min": 10,
-            "max": 30
-          },
-          "cfg": {
-            "min": 2,
-            "max": 4
-          }
-        },
-        "sampler_envelope": {
-          "steps": [
-            10,
-            30
-          ],
-          "cfg": [
-            2,
-            4
           ]
         }
       }
@@ -1198,10 +1249,6 @@
     {
       "id": "qwen-img-edit-21",
       "label": "Qwen Image Edit 2.1"
-    },
-    {
-      "id": "qwen-img-edit-2511",
-      "label": "Qwen Image Edit 2511"
     },
     {
       "id": "fibo2-edit",

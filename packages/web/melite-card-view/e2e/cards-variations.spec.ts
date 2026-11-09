@@ -1,11 +1,14 @@
 // cards-variations.spec.ts — THE LAW PINS at the browser plane
-// (2026-10-12): the operator's three named breaks, each now held
-// against the REAL lane UI — the image-edit cap face (2511 admits 3,
-// 2.1 admits 16 — never a stated 18 on a 3-cap lane), the ONE
-// lane-warn strip (a refusal voiced once, not doubled), and krea-2's
-// variant envelopes served on the browser's own wire (turbo 4–8/1–2,
-// raw 30–60/2–6 — the envelope-blind form's cure). Every assertion
-// reads the drill's own DOM or the form-spec the page itself fetched.
+// (2026-10-12; the image-edit pair re-seated 2026-11-09 when the
+// edit card's retired lane was removed whole — both living lanes
+// admit 16): the operator's three named breaks, each now held
+// against the REAL lane UI — the image-edit cap face (each lane
+// serves its own cap on the wire, never a stated 18 on a narrower
+// lane), the ONE lane-warn strip (a refusal voiced once, not
+// doubled), and krea-2's variant envelopes served on the browser's
+// own wire (turbo 4–8/1–2, raw 30–60/2–6 — the envelope-blind
+// form's cure). Every assertion reads the drill's own DOM or the
+// form-spec the page itself fetched.
 import { expect, test, type Page } from '@playwright/test'
 import { callBench, collectPageErrors, expectNoPageErrors, openAConversation, settle, STUDIO_URL } from './tour.ts'
 
@@ -85,7 +88,7 @@ async function servedImageCap(page: Page, model: string): Promise<number> {
 }
 
 test.describe("the variation law pins (the operator's three breaks, held at the browser)", () => {
-  test('image-edit: 2511 admits 3, 2.1 admits 16, the fresh face is clean, the variant axis reseeds', async ({ page }) => {
+  test('image-edit: both living lanes admit 16 on their own wire, the fresh face is clean, the variant axis reseeds', async ({ page }) => {
     // THE DEEPEST STACK IN THE SUITE (drive-17 #3 red): mint + two
     // sequential boards + two drilled faces + a variant switch with
     // served-cap receipts — under full-drive load the stack outgrew
@@ -99,11 +102,11 @@ test.describe("the variation law pins (the operator's three breaks, held at the 
     // board one at a time — each drive opens the bench's newest
     // tile, and the drilled Model value is the face receipt.
     const { key, rail } = await openBench(page, [
-      { card: 'image-edit', params: { model: 'qwen-img-edit-2511' } },
+      { card: 'image-edit', params: { model: 'fibo2-edit' } },
     ])
-    expect(await rail.count(), 'the 2511 variation boarded').toBe(1)
+    expect(await rail.count(), 'the fibo2 variation boarded').toBe(1)
 
-    // —— THE 2511 FACE ——————————————————————————————
+    // —— THE FIBO2 FACE —————————————————————————————————
     await rail.first().click({ timeout: 15_000, force: true })
     await page.waitForTimeout(3_500)
     // THE MENU AXES (S7e): the Model select is a DSH Menu — the
@@ -112,23 +115,22 @@ test.describe("the variation law pins (the operator's three breaks, held at the 
     // axes-field groups Variant/Quant/Recipe do, axes.tsx:330) —
     // the value assert reads the trigger's face by role, never a
     // <select> that no longer rides.
-    await expect(page.getByRole('button', { name: 'Model', exact: true })).toContainText('Qwen Image Edit 2511')
-    // THE SOFT-RETIRED FACE (drive-12→14's standing #3 red, named):
-    // BOTH 2511 variants carry hide_from_dropdown (the survivor arc,
-    // 2026-11-08 — "the 2.1 lane won: addressable, not offered") so
-    // the drill's Variant group renders NOTHING (axisField returns
-    // null on zero visible rows, card-base axes.tsx). The old asserts
-    // (two offered variants lightning/standard) pinned a retired
-    // truth; the LIVE law is the retire itself — the axis is absent,
-    // addressability rides the 2.1 face below.
-    await expect(page.locator('button[data-axis="Variant"]'), '2511 offers no variant axis (both rows soft-retired)').toHaveCount(0)
-    // THE CAP TRUTH, served on the browser's own wire: 2511 admits 3
-    expect(await servedImageCap(page, 'qwen-img-edit-2511'), 'the 2511 lane admits exactly 3 images').toBe(3)
+    await expect(page.getByRole('button', { name: 'Model', exact: true })).toContainText('Fibo 2.0 Edit')
+    // THE VARIANT-CLASS FACE: fibo2's Variant axis is the
+    // stated-pair door (dev 30/5, edit-turbo 8/1 — the resize-tail
+    // lane refuses unstated steps/cfg), so the axis RENDERS with
+    // both rows offered (the removed lane's soft-retired absence
+    // face died with its family, 2026-11-09).
+    const variantsFibo = await variantOptions(page)
+    expect(variantsFibo.some((v) => /dev/i.test(v)), 'fibo2 offers its dev row').toBe(true)
+    expect(variantsFibo.some((v) => /edit.?turbo/i.test(v)), 'fibo2 offers its edit-turbo row').toBe(true)
+    // THE CAP TRUTH, served on the browser's own wire: fibo2 admits 16
+    expect(await servedImageCap(page, 'fibo2-edit'), 'the fibo2 lane admits exactly 16 images').toBe(16)
     // THE FRESH FACE IS CLEAN (2026-10-18, the operator's law): the
     // prompt law AND the anchor law are the UNSTATED class — bench
     // state under construction, voiced only at the Run press, never
     // as an open-time strip (fresh-open.spec.ts holds the same wall)
-    await expect(page.locator('[data-lane-warn]'), '2511: no lane-warn strip on a fresh open').toHaveCount(0)
+    await expect(page.locator('[data-lane-warn]'), 'fibo2: no lane-warn strip on a fresh open').toHaveCount(0)
     await page.getByRole('button', { name: 'Collapse card' }).click({ timeout: 10_000 })
 
     // —— THE 2.1 FACE ————————————————————————————————
@@ -141,28 +143,23 @@ test.describe("the variation law pins (the operator's three breaks, held at the 
     // LIVE axis vocabulary (drive-15's receipt): the 2026-11-09
     // quant-pool restructure moved the int8/bf16 TIERS off the
     // Variant axis onto the QUANT axis (trigger face 'INT8 ConvRot')
-    // — 2.1's Variant rows are now [Base, …]. The reseed law itself
-    // is STRONGER under the soft-retire above: the switch 2511→2.1
-    // goes ABSENCE → PRESENCE, so any row here is 2.1's own — a
-    // carried-over 2511 row (lightning/standard) is the named break.
+    // — 2.1's Variant rows are now [Base, …]. Any row here is 2.1's
+    // own — a carried-over row from the other lane's vocabulary
+    // (dev/edit-turbo) is the named break.
     const variants21 = await variantOptions(page)
-    expect(variants21.length, '2.1 offers its own variant rows (the axis appears on the switch)').toBeGreaterThan(0)
+    expect(variants21.length, '2.1 offers its own variant rows').toBeGreaterThan(0)
     expect(variants21.some((v) => /base/i.test(v)), '2.1 base variant is offered').toBe(true)
-    expect(variants21.some((v) => /lightning|standard/i.test(v)), 'no soft-retired 2511 row carried over').toBe(false)
+    expect(variants21.some((v) => /dev|edit.?turbo/i.test(v)), 'no fibo2 variant row carried over').toBe(false)
     await expect(page.getByRole('button', { name: 'Quant', exact: true }), 'the tier vocabulary lives on the Quant axis now').toContainText('INT8')
     expect(await servedImageCap(page, 'qwen-img-edit-21'), 'the 2.1 lane admits 16 images').toBe(16)
     await expect(page.locator('[data-lane-warn]'), '2.1: no lane-warn strip on a fresh open').toHaveCount(0)
 
     // —— THE VARIANT SWITCH, ON THE OPEN 2.1 DRILL ————————
-    // THE LAWFUL RESEED DOOR (drive-18's 10.0m corpse): the model
-    // menu SKIPS hide_from_dropdown rows by the door's own law
-    // (discovery.ts:287-290 — the soft-retire means nobody may
-    // hand-pick 2511 anymore), so a 2.1→2511 menu switch is a UI
-    // path the estate forbids — the old block died waiting for a
-    // menuitem the roster never serves. The reseed law rides the
-    // switch the UI DOES offer: Base→Turbo, both served rows of
-    // 2.1's own Variant axis. The absence direction stays receipted
-    // at the 2511 face above (axis count 0 at a lawful door).
+    // THE LAWFUL RESEED DOOR (drive-18's 10.0m corpse): the switch
+    // rides the rows the UI DOES offer — Base→Turbo, both served
+    // rows of 2.1's own Variant axis. (The removed lane's
+    // hand-pick-forbidden direction died with its family,
+    // 2026-11-09; the roster no longer carries the id at all.)
     // THE PICK IS A PATCH, NOT A REFETCH (drive-18c: the axis pick
     // rides onPick — a bench params write (axes.tsx:101); no
     // form-spec frame crosses the wire, so the receipt is the

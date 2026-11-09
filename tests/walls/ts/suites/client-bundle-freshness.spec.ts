@@ -78,7 +78,7 @@ function isStale(bundleMtime: number, newestSrcMtime: number): boolean {
   return bundleMtime < newestSrcMtime;
 }
 
-// THE CHECKOUT-MTIME CLASS (the 2026-11-16 CI cure): this arm's mtime
+// THE CHECKOUT-MTIME CLASS (the 2026-11-09 CI cure): this arm's mtime
 // signal is meaningful only AFTER a build act. A fresh checkout
 // materializes the committed lib/client.js and every src byte within
 // the same second in readdir order — the bundle's mtime there is the

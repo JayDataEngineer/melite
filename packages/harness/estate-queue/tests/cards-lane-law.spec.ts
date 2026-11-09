@@ -1751,12 +1751,13 @@ describe("THE STATED-SIZE WALL (the size door, 2026-11-12 — a stated pair SIZE
     ).toEqual({ ok: true });
   });
 
-  it("a stated size on 2511 diverts at the write seat and refuses at the RUN door (the soft-retire posture)", () => {
-    // THE DIVERSION (pinned deliberately — nobody "fixes" the
-    // tolerance): a 2511-addressed state throws the hidden-address
-    // refusal inside prepareCardParams, and the write seat's
-    // selection-tolerance admits it (ok:true) so old drafts keep
-    // their addresses. The RUN door voices the refusal loud.
+  it("a legacy draft on the removed edit lane refuses LOUD at the run door (the removal posture, operator 2026-11-09)", () => {
+    // THE REMOVAL (the family package is deleted — "too old"): the
+    // write seat's selection-tolerance still admits the address (an
+    // old draft keeps its words; ok:true), and the RUN door voices
+    // the refusal loud in the unknown-model voice — nothing serves
+    // the id: no catalog row, no family route. The dead lane never
+    // silently re-composes onto a living family.
     const verdict = svc.admitStageRelations("image-edit", {
       model: "qwen-img-edit-2511",
       prompt: "make it night",
@@ -1772,20 +1773,10 @@ describe("THE STATED-SIZE WALL (the size door, 2026-11-12 — a stated pair SIZE
         "qwen-img-edit-2511",
         "run",
       ),
-    ).toThrow("is not offered (the variant route is hidden from the dropdown)");
+    ).toThrow(/no model unit for model: qwen-img-edit-2511 .*no family declares route/s);
   });
 
-  it("2511's own tuning pair admits (the tuning knobs are ITS surface)", () => {
-    const verdict = svc.admitStageRelations("image-edit", {
-      model: "qwen-img-edit-2511",
-      prompt: "make it night",
-      image1: "x.png",
-      use_stock_nodes: true,
-    });
-    expect(verdict.ok).toBe(true);
-  });
-
-  it("the 2511 tuning pair on the 2.1 family refuses on the SURFACE (the sibling owns it)", () => {
+  it("the edit-tuning pair on the 2.1 family refuses on the SURFACE (no served lane owns it)", () => {
     const verdict = svc.admitStageRelations("image-edit", {
       model: "qwen-img-edit-21",
       prompt: "make it night",
@@ -1795,7 +1786,10 @@ describe("THE STATED-SIZE WALL (the size door, 2026-11-12 — a stated pair SIZE
     expect(verdict.ok).toBe(false);
     if (!verdict.ok) {
       expect(verdict.error).toContain("double_reference");
-      expect(verdict.error).toContain("fires nothing on this lane");
+      // (2026-11-09) the rows died with the removed lane — the
+      // declared-surface voice owns the refusal now (the schema
+      // itself no longer declares the knob)
+      expect(verdict.error).toContain("unknown param");
     }
   });
 });
@@ -2073,13 +2067,15 @@ describe.skipIf(!ESTATE_STORE_SEATED)("F2 — THE DOORS AGREE ON OUTPUT RESOLUTI
   });
 });
 
-describe("THE SWITCH WEDGES (operator 2026-11-05 — REAL registry, REAL 2511/21 DECLs, no mocks)", () => {
+describe("THE SWITCH WEDGES (operator 2026-11-05 — REAL registry, REAL DECLs, no mocks)", () => {
   // Two live wedges, one seat (laneMigrate):
-  // (1) 2511 → 21 with a model-less prior: the stage's family is
-  // spec-implied, so `model` was never stated; the old seat
-  // returned early and the write refused `use_stock_nodes` /
-  // `double_reference` (2511 defaults the doc still carries) with
-  // "fires nothing on this lane".
+  // (1) a cross-family switch with a model-less prior: the stage's
+  // family is spec-implied; the seat drops the departed surface's
+  // knobs so the write never refuses stale carries. (The arm's
+  // original object — the removed edit lane's tuning pair — died
+  // with that family, operator 2026-11-09; the drop law itself
+  // stays pinned live on the tts families at the stuck-switch wall
+  // above and in card-base's departed-surface null-set law.)
   // (2) a recipe switch that re-points the family: the held `loras`
   // rider is in no lane surface, so no surface-keyed rule can drop
   // it — the taken sets (surface + card statics + the absorbed mod
@@ -2094,48 +2090,6 @@ describe("THE SWITCH WEDGES (operator 2026-11-05 — REAL registry, REAL 2511/21
     quant: "bf16",
     prompt: "turn the sky crimson at dusk",
   };
-
-  it("a model-less prior still migrates: 2511 carry drops, the write lands", () => {
-    const prior: Record<string, unknown> = {
-      // spec-implied 2511: the family defaults landed, `model` never
-      // stated (seedAxisValues seeds axes, never the model member)
-      variant: "standard",
-      quant: "int8",
-      prompt: "turn the sky crimson at dusk",
-        steps: 20,
-      cfg: 2.5,
-      sampler: "euler",
-      scheduler: "simple",
-      use_stock_nodes: false,
-      double_reference: false,
-    };
-    const next = { ...EDIT_21, use_stock_nodes: false, double_reference: false };
-    const migrated = svc.laneMigrate("image-edit", next, prior);
-    expect(migrated).not.toHaveProperty("use_stock_nodes");
-    expect(migrated).not.toHaveProperty("double_reference");
-    expect(migrated.prompt).toBe("turn the sky crimson at dusk");
-    expect(migrated.model).toBe("qwen-img-edit-21");
-    // and the write door lands it: the lane admission passes
-    const verdict = svc.admitStageRelations("image-edit", migrated);
-    expect(verdict.ok, JSON.stringify(verdict)).toBe(true);
-  });
-
-  it("a model-ful prior migrates exactly as before (the resolved path is untouched)", () => {
-    const prior: Record<string, unknown> = {
-      model: "qwen-img-edit-2511",
-      variant: "standard",
-      quant: "int8",
-      prompt: "turn the sky crimson at dusk",
-        use_stock_nodes: false,
-      double_reference: false,
-    };
-    const next = { ...EDIT_21, use_stock_nodes: false, double_reference: false };
-    const migrated = svc.laneMigrate("image-edit", next, prior);
-    expect(migrated).not.toHaveProperty("use_stock_nodes");
-    expect(migrated).not.toHaveProperty("double_reference");
-    const verdict = svc.admitStageRelations("image-edit", migrated);
-    expect(verdict.ok, JSON.stringify(verdict)).toBe(true);
-  });
 
   it("authored state still refuses: a member no lane declares survives the migration and fires downstream", () => {
     const prior: Record<string, unknown> = {
@@ -2165,18 +2119,18 @@ describe("THE SWITCH WEDGES (operator 2026-11-05 — REAL registry, REAL 2511/21
 
   it("a same-family variant switch that moves no surface is a no-op (the guard's variant half)", () => {
     const prior: Record<string, unknown> = {
-      model: "qwen-img-edit-2511",
-      variant: "standard",
-      quant: "int8",
+      model: "qwen-img-edit-21",
+      variant: "base",
+      quant: "bf16",
       prompt: "turn the sky crimson at dusk",
-      use_stock_nodes: false,
+      steps: 25,
     };
     const next: Record<string, unknown> = {
-      model: "qwen-img-edit-2511",
-      variant: "lightning",
-      quant: "lightning4",
+      model: "qwen-img-edit-21",
+      variant: "turbo",
+      quant: "bf16",
       prompt: "turn the sky crimson at dusk",
-      use_stock_nodes: false,
+      steps: 25,
     };
     const migrated = svc.laneMigrate("image-edit", next, prior);
     expect(migrated).toBe(next);
@@ -2215,14 +2169,16 @@ describe("THE SWITCH WEDGES (operator 2026-11-05 — REAL registry, REAL 2511/21
   });
 
   it("a prior the facts do not know at all stands aside (the tolerance law's own shape)", () => {
-    // A stored row addressing a fully retired mid: prepareCardParams
-    // refuses "no model unit", the catch finds no facts row under the
-    // retired id, and the seat stands aside exactly as before — the
-    // merged view passes through untouched and the admission judges
-    // it with its own voice. (The retired id names no live unit by
-    // construction: the law is the unknown-prior shape, not the id.)
+    // A stored row addressing a fully removed mid — the edit lane
+    // the operator ordered deleted (2026-11-09), kept here as the
+    // REAL retired id, not a fictional spelling: prepareCardParams
+    // refuses "no model unit", the catch finds no facts row under
+    // the retired id, and the seat stands aside exactly as before —
+    // the merged view passes through untouched and the admission
+    // judges it with its own voice. (The retired id names no live
+    // unit by construction: the law is the unknown-prior shape.)
     const prior: Record<string, unknown> = {
-      model: "qwen-img-edit-2511-retired",
+      model: "qwen-img-edit-2511",
       variant: "standard",
       quant: "int8",
       prompt: "turn the sky crimson at dusk",

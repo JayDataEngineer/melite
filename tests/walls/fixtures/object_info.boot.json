@@ -15590,81 +15590,6 @@
   "python_module": "comfy_extras.nodes_qwen",
   "search_aliases": null
  },
- "TextEncodeQwenImageEditPlus": {
-  "api_node": false,
-  "category": "model/conditioning/qwen image",
-  "deprecated": false,
-  "description": "",
-  "dev_only": false,
-  "display_name": "Text Encode Qwen Image Edit Plus",
-  "essentials_category": null,
-  "experimental": false,
-  "has_intermediate_output": false,
-  "input": {
-   "optional": {
-    "image1": [
-     "IMAGE",
-     {}
-    ],
-    "image2": [
-     "IMAGE",
-     {}
-    ],
-    "image3": [
-     "IMAGE",
-     {}
-    ],
-    "vae": [
-     "VAE",
-     {}
-    ]
-   },
-   "required": {
-    "clip": [
-     "CLIP",
-     {}
-    ],
-    "prompt": [
-     "STRING",
-     {
-      "dynamicPrompts": true,
-      "multiline": true
-     }
-    ]
-   }
-  },
-  "input_order": {
-   "optional": [
-    "vae",
-    "image1",
-    "image2",
-    "image3"
-   ],
-   "required": [
-    "clip",
-    "prompt"
-   ]
-  },
-  "is_input_list": false,
-  "name": "TextEncodeQwenImageEditPlus",
-  "output": [
-   "CONDITIONING"
-  ],
-  "output_is_list": [
-   false
-  ],
-  "output_matchtypes": null,
-  "output_name": [
-   "CONDITIONING"
-  ],
-  "output_node": false,
-  "output_tooltips": [
-   null
-  ],
-  "price_badge": null,
-  "python_module": "comfy_extras.nodes_qwen",
-  "search_aliases": null
- },
  "Trellis2Conditioning": {
   "api_node": false,
   "category": "model/conditioning/trellis",
@@ -16536,46 +16461,6 @@
   "python_module": "comfy_extras.nodes_audio",
   "search_aliases": [
    "latent to audio"
-  ]
- },
- "VAEEncode": {
-  "category": "model/latent",
-  "description": "",
-  "display_name": "VAE Encode",
-  "has_intermediate_output": false,
-  "input": {
-   "required": {
-    "pixels": [
-     "IMAGE"
-    ],
-    "vae": [
-     "VAE"
-    ]
-   }
-  },
-  "input_order": {
-   "required": [
-    "pixels",
-    "vae"
-   ]
-  },
-  "is_input_list": false,
-  "name": "VAEEncode",
-  "output": [
-   "LATENT"
-  ],
-  "output_is_list": [
-   false
-  ],
-  "output_name": [
-   "LATENT"
-  ],
-  "output_node": false,
-  "python_module": "nodes",
-  "search_aliases": [
-   "encode",
-   "encode image",
-   "image to latent"
   ]
  },
  "VAELoader": {

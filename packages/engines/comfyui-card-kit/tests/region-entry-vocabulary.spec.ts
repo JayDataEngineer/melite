@@ -21,7 +21,7 @@
 import { describe, test } from "vitest";
 import assert from "node:assert/strict";
 import { REGION_ENTRY_FIELDS, MaskFields } from "../src/pack-fields.ts";
-import { refuseImageEditFiring, refuseRegionEntryFields, statedRegion } from "../src/lanes-image.ts";
+import { refuseImageEditFiring, refuseRegionEntryFields, statedRegion, regionSegs, isSpell } from "../src/lanes-image.ts";
 
 /** The burn's exact entry (the edit-suite press, verbatim shape). */
 const BURN_ENTRY = {
@@ -131,5 +131,31 @@ describe("the region entry-vocabulary door (a stated field that fires nothing ne
       },
       "two bases never ride the edit card — its anchor already is one",
     );
+  });
+
+  // ── THE MERGE PRECEDENCE + THE NORMALIZATION + THE SPELL (seated
+  // 2026-11-09 from the removed edit lane's suite — the laws are
+  // statedRegion's own, they outlive their first witness family). ──
+  test("THE MERGE: an explicit flat key WINS over the same key in the bag entry (the bag merges UNDER flat params)", () => {
+    const region = statedRegion({
+      prompt: "p",
+      mask_grow: 4,
+      mask: [{ input_mask: "m.png", mask_mode: "crop_stitch", mask_grow: 8 }],
+    });
+    assert.ok(region, "the pair states a region");
+    assert.equal(region!.merged["mask_grow"], 4, "the flat authoring wins — the bag never overrides an explicit flat key");
+    assert.equal(region!.maskPath, "m.png");
+  });
+  test("THE NORMALIZATION: mask_mode full_frame reads as auto (the edit precedent — one lane word, never a third mode)", () => {
+    const region = statedRegion({ prompt: "p", input_mask: "m.png", mask_mode: "full_frame" });
+    assert.ok(region, "a stated mask states a region whatever its mode word");
+    assert.equal(region!.mode, "auto", "full_frame normalizes to auto at the read — the build arms never see a third mode");
+  });
+  test("THE SPELL: a bench-wired mask (a $-spell from an upstream stage) rides regionSegs as the tensor itself — never a LoadImageMask disk handoff", () => {
+    const spell = "$s_0.region_mask";
+    assert.ok(isSpell(spell), "the seat: the spell is a wired channel, not a path");
+    const g = { node: () => ({ out: () => ({}) }) } as never;
+    const segs = regionSegs(g, { mask_grow: 0, mask_invert: false }, {} as never, spell);
+    assert.ok(segs !== undefined, "the spell rides the mask consumers untouched — GrowMask/MaskToSEGS take tensors");
   });
 });

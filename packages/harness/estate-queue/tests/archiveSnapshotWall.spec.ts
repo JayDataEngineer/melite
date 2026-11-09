@@ -79,7 +79,7 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 }
 
 describe("THE ARCHIVE WALL — every real sidecar's snapshot parses under the contract", () => {
-  // THE DELEGATED SEAT (the 2026-11-16 CI cure, the wiring-roots S3
+  // THE DELEGATED SEAT (the 2026-11-09 CI cure, the wiring-roots S3
   // seam): the wall's subject is the OPERATOR'S REAL RUNS TREE —
   // machine history the estate box accumulates, untracked by design,
   // and no CI runner owns that truth (a runner's data/runs is debris

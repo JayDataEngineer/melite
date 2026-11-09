@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * THE VIEW DIALS (operator 2026-11-16, "change the size of the
+ * THE VIEW DIALS (operator 2026-11-09, "change the size of the
  * previews to something bigger, and option to set the pagination per
  * page"): two persisted settings over the artifacts grid — the tile
  * size (the grid's minmax column width: S=148 native, M=220, L=320)

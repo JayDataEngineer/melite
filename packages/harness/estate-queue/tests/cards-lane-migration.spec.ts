@@ -134,17 +134,9 @@ const CENSUS_SKIP_ROSTER: readonly string[] = [
   // int8_convrot lanes' selections compose — the addresses are no
   // longer dropdown-less dead doors. A 3D lane re-entering the skip
   // set reds here.
-  // qwen-img-edit-2511 (the soft-retire, 2026-11-08): all five
-  // variants carry hide_from_dropdown, so every lane's selection
-  // throws and no 2511 lane composes — same never-compose posture
-  // as the 3D families above. Un-retiring a variant (re-offering a
-  // lane) reds here until the pin shrinks.
-  ...["qwen-img-edit-2511-int8", "qwen-img-edit-2511-lightning4"].flatMap((fam) =>
-    ["default", "standard", "strong-identity", "upstream-solvers"].map((lane) => fam + "/" + lane),
-  ),
-  ...["default", "lightning", "standard", "strong-identity", "upstream-solvers"].map(
-    (lane) => "qwen-img-edit-2511/" + lane,
-  ),
+  // (2026-11-09) the removed edit lane's five skip rows died with
+  // the family package — the census no longer sees the family at
+  // all, so no skip rows exist to pin.
   // (2026-10-28) seedvr2-ema/vae-fp16: the fp16 VAE face went
   // hide_from_dropdown (DECL row) — its selection throws in the
   // census, so the lane never composes. Re-offering it reds here.

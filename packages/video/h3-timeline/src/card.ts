@@ -250,7 +250,7 @@ const EDIT_MOD: DeclaredModifierKind = {
   fields: EDIT_FIELDS,
   // THE PRESET CHIPS (stage 3): the retired bag NAMES live on as
   // starting cells over this ONE schema — each chip is a named
-  // THE MODIFIER SECTIONS (operator 2026-11-16, §0.8 THE FLOW
+  // THE MODIFIER SECTIONS (operator 2026-11-09, §0.8 THE FLOW
   // MODEL — "check the box, behind the scenes the special nodes
   // are used"): each row is a CHECKABLE stage on the source video.
   // The patch is a matrix cell (mask source × identity anchors ×
@@ -864,7 +864,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
     // produce. A doc carrying it now refuses LOUD at the door
     // ('unknown-param') instead of riding as an inert rider; seedUser
     // already deletes it on drill-open (the dead-layer law).
-    // `last_frame` JOINED THIS LIST (2026-11-16, the two-door parity
+    // `last_frame` JOINED THIS LIST (2026-11-09, the two-door parity
     // cure, audit client-mirror §4): the FL2VA end-anchor wiring slot
     // (wired as an INPUTS image slot at the flowKinds row below) rides
     // the schema carrier, so the WRITE DOOR admits any doc carrying

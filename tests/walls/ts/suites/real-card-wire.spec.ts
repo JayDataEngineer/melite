@@ -40,7 +40,7 @@ import { installLaneStoreOverlay, restoreLaneStoreOverlay } from "../../../helpe
 import { startObjectInfoStub, stopObjectInfoStub } from "../../../helpers/object-info-stub.ts";
 import { cascadeInit } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
 
-// THE KEYLESS CENSUS + THE HERMETIC STORE (the 2026-11-16 CI cure):
+// THE KEYLESS CENSUS + THE HERMETIC STORE (the 2026-11-09 CI cure):
 // the REAL compose door this wall spawns boots against the engine and
 // composes through the lane-presence walk — a fresh clone has neither
 // the engine nor the store, so every compose died on "fetch failed" /
@@ -171,7 +171,7 @@ describe("a wire between REAL composed cards resolves to a node that EXISTS", ()
   // oversubscription (a 30s cap starved under the fleet's load;
   // idle the compose is quick — the budget holds the runner)
   it("the consuming card's spell rides its REAL graph (nothing drops it at compose)", { timeout: 90_000 }, () => {
-    const graph = compose("image-edit", "qwen-img-edit-2511", {
+    const graph = compose("image-edit", "qwen-img-edit-21", {
       prompt: "zoom out",
       input_images: "$input_images",
     });
@@ -196,7 +196,7 @@ describe("a wire between REAL composed cards resolves to a node that EXISTS", ()
   it("THE WHOLE WIRE: real image-gen → real image-edit, through the real merge", () => {
     const genChannels = declaredOutputs("image-gen");
     const genGraph = compose("image-gen", "z-image", { prompt: "a harbour at dusk" });
-    const editGraph = compose("image-edit", "qwen-img-edit-2511", {
+    const editGraph = compose("image-edit", "qwen-img-edit-21", {
       prompt: "zoom out",
       input_images: "$input_images",
     });
@@ -276,7 +276,7 @@ describe("a wire between REAL composed cards resolves to a node that EXISTS", ()
     // a hand-made fixture would keep passing and the operator's own
     // bench would break.
     const genGraph = compose("image-gen", "z-image", { prompt: "a harbour at dusk" });
-    const editGraph = compose("image-edit", "qwen-img-edit-2511", {
+    const editGraph = compose("image-edit", "qwen-img-edit-21", {
       prompt: "zoom out",
       input_images: "$input_images",
     });

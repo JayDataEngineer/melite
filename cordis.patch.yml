@@ -68,8 +68,6 @@
       name: "@melite/models-qwen-img-21"
     - id: family-qwen-img-edit-21
       name: "@melite/models-qwen-img-edit-21"
-    - id: family-qwen-img-edit-2511
-      name: "@melite/models-qwen-img-edit-2511"
     - id: family-seedvr2-ema
       name: "@melite/models-seedvr2-ema"
     - id: family-wd14

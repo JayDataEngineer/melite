@@ -13,12 +13,12 @@ import { TOOL_NAME, buildImageEditTool as FACE } from "../src/tool.ts";
 import { registerExecutorBattery } from "@melite/estate-call/executorHarness";
 
 // THE MODEL ORDER (operator catch e): 2.1 is the default lane —
-// 2511 boards second (the backup).
+// (the backup lane was removed 2026-11-09; the alternate is fibo2-edit).
 const harness = registerExecutorBattery({
   makeTool: FACE,
   goodArgs: { prompt: "make it night", image1: "/m/i.png" },
   defaultModel: "qwen-img-edit-21",
-  explicitModel: "qwen-img-edit-2511",
+  explicitModel: "fibo2-edit",
   explicitAnchor: "\\s",
   draftIntent: "image-edit",
   flow: "image-edit",

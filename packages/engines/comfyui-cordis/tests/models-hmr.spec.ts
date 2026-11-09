@@ -41,7 +41,6 @@ import { DECL as declMossSfx, family as familyMossSfx } from '../../../models/mo
 import { DECL as declMusic3, family as familyMusic3 } from '../../../models/music3/src/index.ts'
 import { DECL as declPixal3d, family as familyPixal3d } from '../../../models/pixal3d/src/index.ts'
 import { DECL as declQwen3Tts, family as familyQwen3Tts } from '../../../models/qwen3-tts/src/index.ts'
-import { DECL as declQwenImgEdit2511, family as familyQwenImgEdit2511 } from '../../../models/qwen-img-edit-2511/src/index.ts'
 import { DECL as declSeedvr2Ema, family as familySeedvr2Ema } from '../../../models/seedvr2-ema/src/index.ts'
 import { DECL as declSomax, family as familySomax } from '../../../models/somax/src/index.ts'
 import { DECL as declTransferRig, family as familyTransferRig } from '../../../models/transfer-rig/src/index.ts'
@@ -65,7 +64,6 @@ const FAMILIES: Array<{ id: string; decl: { id: string }; family: { name: string
   { id: 'music3', decl: declMusic3 as never, family: familyMusic3 as never },
   { id: 'pixal3d', decl: declPixal3d as never, family: familyPixal3d as never },
   { id: 'qwen3-tts', decl: declQwen3Tts as never, family: familyQwen3Tts as never },
-  { id: 'qwen-img-edit-2511', decl: declQwenImgEdit2511 as never, family: familyQwenImgEdit2511 as never },
   { id: 'seedvr2-ema', decl: declSeedvr2Ema as never, family: familySeedvr2Ema as never },
   { id: 'somax', decl: declSomax as never, family: familySomax as never },
   { id: 'transfer-rig', decl: declTransferRig as never, family: familyTransferRig as never },

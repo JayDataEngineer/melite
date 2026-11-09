@@ -2221,7 +2221,7 @@ const PACK_SHARPEN_NODES_PY = join(
   "nodes", "sharpen_nodes.py",
 );
 
-// THE RUNTIME-DEPLOY SHAPE (the 2026-11-16 CI cure, the engine-tree-
+// THE RUNTIME-DEPLOY SHAPE (the 2026-11-09 CI cure, the engine-tree-
 // sync precedent): ARMs 48-50 parse the INSTALLED vendored pack — a
 // runtime deploy under data/runtime/, untracked developer state a
 // fresh clone (and every CI runner) carries none of. The served-truth

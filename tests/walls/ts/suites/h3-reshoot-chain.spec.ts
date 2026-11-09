@@ -206,7 +206,7 @@ describe("the h3 camera re-shoot wall (the fourth mod bag, official rework)", ()
     // JOURNEY hop 2: the doc that lands on the bench is hydrated into
     // Layer A and serialized back as a merge-patch over the saved
     // stage.params. TWO paths, both law (the modleaf-add journey
-    // audit, 2026-11-16 — the dead Add): (1) the OPERATOR authors the
+    // audit, 2026-11-09 — the dead Add): (1) the OPERATOR authors the
     // modern bags (edit/reshoot) THROUGH the Layer-A serializer — a
     // declared kind with no writable seat is a press that dies
     // silently at the canonical no-op law; (2) the AGENT path's

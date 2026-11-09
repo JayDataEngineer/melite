@@ -704,18 +704,20 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // Repinned 636 -> 637 (2026-11-15, deliberate): the video-edit matrix
   // seat (timeline rework stage 2a) emits packages/models/h3/lib/edit.js
   // — the 637th tracked .js.
-  // Repinned 637 -> 638 (2026-11-16, deliberate): §0.4's SECOND_PASS
+  // Repinned 637 -> 638 (2026-11-09, deliberate): §0.4's SECOND_PASS
   // seat emits packages/models/h3/lib/secondPass.js — the 638th
   // tracked .js (the shared gate module the four call sites read).
-  // Repinned 638 -> 644 (2026-11-16, deliberate): queue 11's form cure
+  // Repinned 638 -> 644 (2026-11-09, deliberate): queue 11's form cure
   // seats the light emit leaf packages/video/h3-timeline/lib/ui/v2vFace.js
   // (the ./v2v-face host-delivery face); its tsc dependency closure
   // emits the pure plane beside it — six tracked .js in all.
-  // Repinned 644 -> 646 (2026-11-09 machine clock, deliberate): the
+  // Repinned 646 -> 642 (2026-11-09, the removal): the retired edit
+  // family's emitted lib files die with its package. (644 -> 646
+  // (2026-11-09 machine clock, deliberate): the
   // seam-vocabulary gate's plane rebuild (build-plane fixpoint) emits
   // the two newest models/h3 leaves into tracked lib — the census
   // follows the emitted truth.
-  const LIB_CENSUS_PIN = 646;
+  const LIB_CENSUS_PIN = 642;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {

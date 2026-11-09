@@ -54,6 +54,25 @@ const EDIT = (g: GraphBuilder, entry: Record<string, unknown>, runId: string): v
 };
 
 describe("P1-4 carry split — segments come from the film, the boundary from the engine's law", () => {
+  it("NO FALLBACK READS: a wrong-typed repair seat refuses loud (never silently defaults/unbinds)", () => {
+    const g = new GraphBuilder();
+    assert.throws(
+      () => renderH3Repair({ ...REPAIR(), steps: true }, FILM, FACTS, g, "run_typed_repair"),
+      /'steps' is stated as true.*a number seat carries a number.*never silently defaults/s,
+    );
+  });
+
+  it("NO FALLBACK READS: a wrong-typed swap seat refuses loud (never silently defaults/unbinds)", () => {
+    const g = new GraphBuilder();
+    assert.throws(
+      () => renderH3Swap({
+        source_clip: "clips/take.mp4", still: "stills/a.png", mannequin: "clips/m.mp4",
+        mask: "masks/m.png", swap_prompt: "swap",
+        clip_seconds: null,
+      }, FILM, FACTS, g, "run_typed_swap"),
+      /'clip_seconds' is stated as null.*a number seat carries a number.*never silently defaults/s,
+    );
+  });
   it("THE DEFAULT PRESS: nothing stated composes the WHOLE film (loader cap 0) joined at the derived 39 — every cell", () => {
     for (const [name, compose] of [
       ["repair", (g: GraphBuilder, r: string) => renderH3Repair(REPAIR(), FILM, FACTS, g, r)],

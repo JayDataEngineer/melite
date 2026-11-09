@@ -19,14 +19,14 @@ export interface TimelinePromptsLaneProps {
     playhead: string;
     onPromptUpdate: (id: string, text: string) => void;
     onPromptDelete: (id: string) => void;
-    /** THE SEAM CHIP (the collapse's cuts, 2026-11-16): opt-in
+    /** THE SEAM CHIP (the collapse's cuts, 2026-11-09): opt-in
      *  click-to-toggle on every non-first boundary — carried (the
      *  latent tail continues; the default) vs cut (overlap 0, nothing
      *  carries). The id is the row's own uuid (the tenant resolves it
      *  to its call index; the lane never assumes 1:1 after a face
      *  filter). Absent → the read-only extend dot, byte-identical. */
     onSeamToggle?: (id: string) => void;
-    /** THE SPLIT SEAT (§0.5, the window split, 2026-11-16): opt-in
+    /** THE SPLIT SEAT (§0.5, the window split, 2026-11-09): opt-in
      *  split verb on every clip — the double-click surface never
      *  reaches an interior split (clips own double-click for inline
      *  edit). The id is the row's own uuid; the tenant picks the frame

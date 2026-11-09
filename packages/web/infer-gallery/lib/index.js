@@ -866,7 +866,7 @@ export function apply(ctx, config = {}) {
             }
         },
     }), 'infer-gallery: /infer-gallery/artifact-restore route');
-    /* THE BROWSE FACE (operator order, 2026-11-16: "no file browser …
+    /* THE BROWSE FACE (operator order, 2026-11-09: "no file browser …
      * media browsing cuts off, only keeps the last 500"). The runs
      * LIST rides the queue seat's 500-row window (the runs-window
      * law — an interactive-read convenience, rows evict past 500),

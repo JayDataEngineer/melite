@@ -48,7 +48,6 @@ export const FAMILY_PKGS: readonly string[] = [
   "@melite/models-moss-image",
   "@melite/models-qwen-img-21",
   "@melite/models-qwen-img-edit-21",
-  "@melite/models-qwen-img-edit-2511",
   "@melite/models-seedvr2-ema",
   "@melite/models-wd14",
   "@melite/models-z-image",

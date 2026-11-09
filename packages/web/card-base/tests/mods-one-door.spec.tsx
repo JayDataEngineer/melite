@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// mods-one-door.spec.tsx — THE ONE-DOOR LAW (operator, 2026-11-16:
+// mods-one-door.spec.tsx — THE ONE-DOOR LAW (operator, 2026-11-09:
 // "collapse the mods into one"): the mod system has ONE entry — the
 // plus square and the kind picker, the grammar every kind rides
 // (Loras prove it). A declared section is a STARTING CELL INSIDE the

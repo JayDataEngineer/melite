@@ -21,7 +21,7 @@ extensions:
     desc: H3PeopleMask + H3GreyMannequins + H3SourceSlice (the Source Slice commit is HEAD) + swap/montage plans — the mask + mannequin + slice seats. No extra pip deps (upstream: torch/numpy/Pillow ride ComfyUI).
   - name: ComfyUI-MiniMaxH3-Context-Loop
     url: https://github.com/JayDataEngineer/ComfyUI-MiniMaxH3-Context-Loop
-    # 2026-11-16: 1dd6cfb — MiniMaxH3ContexLoopMaskLengthCheck, the
+    # 2026-11-09: 1dd6cfb — MiniMaxH3ContexLoopMaskLengthCheck, the
     # own-video mask door's length-match gate: a per-frame mask
     # timeline whose frame count is not the loaded clip's refuses
     # naming both counts (short, long, or a single broadcast frame);

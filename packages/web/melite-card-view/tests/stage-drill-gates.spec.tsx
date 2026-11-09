@@ -1422,8 +1422,9 @@ describe("the re-point seam (one switch semantics at the drill's write seat)", (
   });
 
   test("a departed SCALAR the arrival never declares dies with its model (B8's cure — the purge's P4): the seed drops it, the run flush nulls the bench key, shared words ride", async () => {
-    // The live injury (operator 2026-11-08, item h): a 2511 recipe
-    // holding double_reference, the model switched to 21 — the
+    // The live injury (operator 2026-11-08, item h — the burned pair's
+    // FROM family was since removed whole, 2026-11-09): a recipe
+    // holding a departed knob, the model switched — the
     // departed knob rode the arrival holding (the arrival form does
     // not render it) and the door refused field-named LIVE. The cure
     // deletes every departed schema field the arrival's schema does
@@ -1486,8 +1487,10 @@ describe("the re-point seam (one switch semantics at the drill's write seat)", (
     // and the rescope (:357) is the seat that HOLDS the arrival doc. The
     // 3-arg call leaves the pair riding the user map and the run door
     // refuses it field-named live (ERRORS item h, the operator's burn).
-    // Fixtures: schema faces EQUAL on both docs (the real 2511/21 shape),
-    // declared `params` surfaces DERIVED from the DECL files themselves
+    // Fixtures: schema faces EQUAL on both docs (the burned pair's original
+    // shape; the edit card's two living lanes now share one surface,
+    // so the pair re-seats on the music DECLs — music3 declares the
+    // trio, yue2 does not), declared `params` surfaces DERIVED from the DECL files themselves
     // (text-parse, zero engine-graph imports in this env — the verb wall
     // in drill-departed-surface-null-set.spec.ts already proves the verb
     // against the live DECL modules; this arm proves the SEAT passes its
@@ -1503,24 +1506,25 @@ describe("the re-point seam (one switch semantics at the drill's write seat)", (
       if (out.length === 0) throw new Error(`empty params parsed from ${id}/src/index.ts`);
       return out;
     };
-    const FROM = "qwen-img-edit-2511";
-    const TO = "qwen-img-edit-21";
+    const FROM = "music3";
+    const TO = "yue2";
     const fromParams = paramsOf(FROM);
     const toParams = paramsOf(TO);
     // THE DERIVED FLOOR (never vacuously green): the burn's pair is the
     // params-surface difference of the two DECLs.
-    for (const k of ["double_reference", "use_stock_nodes"]) {
+    for (const k of ["guidance_scale", "lm_cfg_scale", "tiled_decode"]) {
       expect(fromParams, `${FROM} params must declare ${k}`).toContain(k);
       expect(toParams, `${TO} params must not declare ${k}`).not.toContain(k);
     }
     const servedDoc = (id: string, params: string[]): Record<string, unknown> => ({
-      form: "image-edit", genre: "image", engine: "comfyui", model: id,
+      form: "music", genre: "audio", engine: "comfyui", model: id,
       // EQUAL faces: both schemas declare the departed knobs (finding 3).
       schema: schemaEnvelope({
         prompt: { type: "string", meta: { description: "Prompt", extra: { wtype: "textarea" } } },
         model: { consts: [FROM, TO], meta: { description: "Serving family", default: id, extra: { wtype: "select" } } },
-        double_reference: { type: "boolean", meta: { description: "Double reference", default: false } },
-        use_stock_nodes: { type: "boolean", meta: { description: "Use stock nodes", default: false } },
+        guidance_scale: { type: "boolean", meta: { description: "Guidance", default: false } },
+        lm_cfg_scale: { type: "boolean", meta: { description: "LM CFG", default: false } },
+        tiled_decode: { type: "boolean", meta: { description: "Tiled", default: false } },
       }),
       // scaffolding rows (the judged surfaces are schema faces + params,
       // never the matrix): one Variant row per doc routing at its model.
@@ -1545,7 +1549,7 @@ describe("the re-point seam (one switch semantics at the drill's write seat)", (
         return new Response(JSON.stringify(doc), { status: 200, headers: { "content-type": "application/json" } });
       }
       if (path.includes("/v1/forms")) {
-        return new Response(JSON.stringify({ "image-edit": { outputs: { default: "image" } } }), { status: 200, headers: { "content-type": "application/json" } });
+        return new Response(JSON.stringify({ "music": { outputs: { default: "audio" } } }), { status: 200, headers: { "content-type": "application/json" } });
       }
       if (path.includes("/v1/model-catalog")) {
         return new Response(JSON.stringify({ cards: {} }), { status: 200, headers: { "content-type": "application/json" } });
@@ -1556,8 +1560,8 @@ describe("the re-point seam (one switch semantics at the drill's write seat)", (
     let runs = 0;
     let bound: () => void = () => { throw new Error("bindRun never fired"); };
     fakes = mountEstateFakes({});
-    const stageA = stage({ model: FROM, double_reference: true, use_stock_nodes: true, prompt: "keep the handwriting" });
-    (stageA as { card: string }).card = "image-edit";
+    const stageA = stage({ model: FROM, guidance_scale: true, lm_cfg_scale: true, tiled_decode: true, prompt: "keep the handwriting" });
+    (stageA as { card: string }).card = "music";
     render(h(StageDrill, {
       stage: stageA,
       bench: { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages: [stageA], sessionKey: "main" },
@@ -1572,10 +1576,10 @@ describe("the re-point seam (one switch semantics at the drill's write seat)", (
     fireEvent.click(knob);
     const items = screen.getAllByRole("menuitem");
     const target = items.find((el) => {
-      const t = el.textContent ?? "";
-      return t.includes("21") && !t.includes("2511");
+      const t = (el.textContent ?? "").toLowerCase();
+      return t.includes("yue2");
     });
-    if (target === undefined) throw new Error("no 21 menuitem; items: " + items.map((el) => el.textContent).join(" | "));
+    if (target === undefined) throw new Error("no yue2 menuitem; items: " + items.map((el) => el.textContent).join(" | "));
     fireEvent.click(target);
     // the re-point write landed (the gesture's own 3-arg frame — the pair
     // still rides it; the rescope's 4-arg verdict is what cleans the seat)
@@ -1594,10 +1598,11 @@ describe("the re-point seam (one switch semantics at the drill's write seat)", (
     // field-named refusal of the live burn is impossible).
     bound();
     await waitFor(() => {
-      const sync = patchParamsOf(patchCalls()).find((p) => "double_reference" in p);
+      const sync = patchParamsOf(patchCalls()).find((p) => "guidance_scale" in p);
       if (sync === undefined) throw new Error("run-flush null not landed; patches: " + JSON.stringify(patchCalls()));
-      expect(sync["double_reference"]).toBeNull();
-      expect(sync["use_stock_nodes"]).toBeNull();
+      expect(sync["guidance_scale"]).toBeNull();
+      expect(sync["lm_cfg_scale"]).toBeNull();
+      expect(sync["tiled_decode"]).toBeNull();
       expect(sync).not.toHaveProperty("prompt");
     }, { timeout: 8000 });
     await awaitWriteSettled();
@@ -1609,14 +1614,15 @@ describe("the arrival window (the gesture→settle one-round-trip gap, P4 remain
   // THE BURN: the re-point gesture fires the arrival fetch, but the
   // press does not know a newer spec is coming — run pressed while
   // the arrival fetch pends judges the flush against the STALE
-  // (departing) spec and fires the start under it: 2511's
-  // double_reference/use_stock_nodes ride the run and the door
+  // (departing) spec and fires the start under it: the departed
+  // trio rides the run and the door
   // refuses field-named (ERRORS h live). The rescope gate (DRILL a
   // above) owns the settle; THIS wall owns the window: a press
   // inside it must fence LOUD (no start, a named voice), and the
   // same press after the settle must start clean (the fence lifts
   // with the spec — never a latch). Fixtures ride the DRILL-a
-  // 2511→21 pair: equal schema faces, params surfaces derived from
+  // music3→yue2 pair (re-seated from the removed edit family,
+  // 2026-11-09): equal schema faces, params surfaces derived from
   // the live DECL files.
   function windowDocs(): { servedByModel: Record<string, Record<string, unknown>>; FROM: string; TO: string } {
     const paramsOf = (id: string): string[] => {
@@ -1627,21 +1633,22 @@ describe("the arrival window (the gesture→settle one-round-trip gap, P4 remain
       if (out.length === 0) throw new Error(`empty params parsed from ${id}/src/index.ts`);
       return out;
     };
-    const FROM = "qwen-img-edit-2511";
-    const TO = "qwen-img-edit-21";
+    const FROM = "music3";
+    const TO = "yue2";
     const fromParams = paramsOf(FROM);
     const toParams = paramsOf(TO);
-    for (const k of ["double_reference", "use_stock_nodes"]) {
+    for (const k of ["guidance_scale", "lm_cfg_scale", "tiled_decode"]) {
       expect(fromParams, `${FROM} params must declare ${k}`).toContain(k);
       expect(toParams, `${TO} params must not declare ${k}`).not.toContain(k);
     }
     const servedDoc = (id: string, params: string[]): Record<string, unknown> => ({
-      form: "image-edit", genre: "image", engine: "comfyui", model: id,
+      form: "music", genre: "audio", engine: "comfyui", model: id,
       schema: schemaEnvelope({
         prompt: { type: "string", meta: { description: "Prompt", extra: { wtype: "textarea" } } },
         model: { consts: [FROM, TO], meta: { description: "Serving family", default: id, extra: { wtype: "select" } } },
-        double_reference: { type: "boolean", meta: { description: "Double reference", default: false } },
-        use_stock_nodes: { type: "boolean", meta: { description: "Use stock nodes", default: false } },
+        guidance_scale: { type: "boolean", meta: { description: "Guidance", default: false } },
+        lm_cfg_scale: { type: "boolean", meta: { description: "LM CFG", default: false } },
+        tiled_decode: { type: "boolean", meta: { description: "Tiled", default: false } },
       }),
       variants: [
         { id: "v", label: "V", group: "Variant", defaults: { model: id }, route: id },
@@ -1685,7 +1692,7 @@ describe("the arrival window (the gesture→settle one-round-trip gap, P4 remain
       }
       if (path.includes("/v1/forms")) {
         return Promise.resolve(new Response(JSON.stringify({
-          "image-edit": { outputs: { default: "image" } },
+          "music": { outputs: { default: "audio" } },
         }), { status: 200, headers: { "content-type": "application/json" } }));
       }
       if (path.includes("/v1/model-catalog")) {
@@ -1705,8 +1712,8 @@ describe("the arrival window (the gesture→settle one-round-trip gap, P4 remain
     let runs = 0;
     let bound: () => void = () => { throw new Error("bindRun never fired"); };
     fakes = mountEstateFakes({});
-    const stageA = stage({ model: FROM, double_reference: true, use_stock_nodes: true, prompt: "keep the handwriting" });
-    (stageA as { card: string }).card = "image-edit";
+    const stageA = stage({ model: FROM, guidance_scale: true, lm_cfg_scale: true, tiled_decode: true, prompt: "keep the handwriting" });
+    (stageA as { card: string }).card = "music";
     render(h(StageDrill, {
       stage: stageA,
       bench: { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages: [stageA], sessionKey: "main" },
@@ -1721,10 +1728,10 @@ describe("the arrival window (the gesture→settle one-round-trip gap, P4 remain
     fireEvent.click(knob);
     const items = screen.getAllByRole("menuitem");
     const target = items.find((el) => {
-      const t = el.textContent ?? "";
-      return t.includes("21") && !t.includes("2511");
+      const t = (el.textContent ?? "").toLowerCase();
+      return t.includes("yue2");
     });
-    if (target === undefined) throw new Error("no 21 menuitem; items: " + items.map((el) => el.textContent).join(" | "));
+    if (target === undefined) throw new Error("no yue2 menuitem; items: " + items.map((el) => el.textContent).join(" | "));
     fireEvent.click(target);
     // the re-point write landed AND the arrival fetch started — but
     // the arrival doc has NOT settled (the gate holds its promise).
@@ -1752,8 +1759,8 @@ describe("the arrival window (the gesture→settle one-round-trip gap, P4 remain
     let runs = 0;
     let bound: () => void = () => { throw new Error("bindRun never fired"); };
     fakes = mountEstateFakes({});
-    const stageA = stage({ model: FROM, double_reference: true, use_stock_nodes: true, prompt: "keep the handwriting" });
-    (stageA as { card: string }).card = "image-edit";
+    const stageA = stage({ model: FROM, guidance_scale: true, lm_cfg_scale: true, tiled_decode: true, prompt: "keep the handwriting" });
+    (stageA as { card: string }).card = "music";
     render(h(StageDrill, {
       stage: stageA,
       bench: { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages: [stageA], sessionKey: "main" },
@@ -1768,10 +1775,10 @@ describe("the arrival window (the gesture→settle one-round-trip gap, P4 remain
     fireEvent.click(knob);
     const items = screen.getAllByRole("menuitem");
     const target = items.find((el) => {
-      const t = el.textContent ?? "";
-      return t.includes("21") && !t.includes("2511");
+      const t = (el.textContent ?? "").toLowerCase();
+      return t.includes("yue2");
     });
-    if (target === undefined) throw new Error("no 21 menuitem; items: " + items.map((el) => el.textContent).join(" | "));
+    if (target === undefined) throw new Error("no yue2 menuitem; items: " + items.map((el) => el.textContent).join(" | "));
     fireEvent.click(target);
     await waitFor(() => {
       if (!fetched.some((k) => k === TO)) throw new Error("arrival fetch not started; fetched: " + JSON.stringify(fetched));
@@ -1787,10 +1794,11 @@ describe("the arrival window (the gesture→settle one-round-trip gap, P4 remain
     // departed pair and the start fires exactly once.
     bound();
     await waitFor(() => {
-      const sync = patchParamsOf(patchCalls()).find((p) => "double_reference" in p);
+      const sync = patchParamsOf(patchCalls()).find((p) => "guidance_scale" in p);
       if (sync === undefined) throw new Error("run-flush null not landed; patches: " + JSON.stringify(patchCalls()));
-      expect(sync["double_reference"]).toBeNull();
-      expect(sync["use_stock_nodes"]).toBeNull();
+      expect(sync["guidance_scale"]).toBeNull();
+      expect(sync["lm_cfg_scale"]).toBeNull();
+      expect(sync["tiled_decode"]).toBeNull();
     }, { timeout: 8000 });
     await awaitWriteSettled();
     expect(writeFace()).toBe(null);
@@ -1817,8 +1825,8 @@ describe("the arrival window (the gesture→settle one-round-trip gap, P4 remain
     let runs = 0;
     let bound: () => void = () => { throw new Error("bindRun never fired"); };
     fakes = mountEstateFakes({});
-    const stageA = stage({ model: FROM, double_reference: true, use_stock_nodes: true, prompt: "keep the handwriting" });
-    (stageA as { card: string }).card = "image-edit";
+    const stageA = stage({ model: FROM, guidance_scale: true, lm_cfg_scale: true, tiled_decode: true, prompt: "keep the handwriting" });
+    (stageA as { card: string }).card = "music";
     render(h(StageDrill, {
       stage: stageA,
       bench: { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages: [stageA], sessionKey: "main" },
@@ -1833,10 +1841,10 @@ describe("the arrival window (the gesture→settle one-round-trip gap, P4 remain
     fireEvent.click(knob);
     const items = screen.getAllByRole("menuitem");
     const target = items.find((el) => {
-      const t = el.textContent ?? "";
-      return t.includes("21") && !t.includes("2511");
+      const t = (el.textContent ?? "").toLowerCase();
+      return t.includes("yue2");
     });
-    if (target === undefined) throw new Error("no 21 menuitem; items: " + items.map((el) => el.textContent).join(" | "));
+    if (target === undefined) throw new Error("no yue2 menuitem; items: " + items.map((el) => el.textContent).join(" | "));
     fireEvent.click(target);
     await waitFor(() => {
       if (!fetched.some((k) => k === TO)) throw new Error("arrival fetch not started; fetched: " + JSON.stringify(fetched));
@@ -1857,7 +1865,7 @@ describe("the arrival window (the gesture→settle one-round-trip gap, P4 remain
     for (const p of patchParamsOf(patchCalls())) {
       expect(p["model"] ?? TO).not.toBe("");
     }
-    const strips = await screen.findAllByText(/double_reference/, {}, { timeout: 8000 });
+    const strips = await screen.findAllByText(/guidance_scale/, {}, { timeout: 8000 });
     expect(strips.length).toBeGreaterThan(0);
     // the run strip carries the gate's field-named refusal (a second
     // face, the form banner, carries the same voice — both loud).

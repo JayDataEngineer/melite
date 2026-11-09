@@ -264,7 +264,7 @@ describe("every served mod bag has a skill leaf an agent can read", () => {
     }
   });
 
-  it("ARM 7 — the measured craft lives in the ONE edit leaf (the skills collapse, 2026-11-16): the seam law, the worked recipe, and the OOM ceilings", () => {
+  it("ARM 7 — the measured craft lives in the ONE edit leaf (the skills collapse, 2026-11-09): the seam law, the worked recipe, and the OOM ceilings", () => {
     // RE-PIN (the collapse's skills pass): the five legacy leaves are
     // THIN ALIASES now - a PRESET CELL banner, the translation, and a
     // pointer - because they all serve the SAME interface. The

@@ -221,7 +221,7 @@ describe('THE S7 CLASS-4 WALL · card-base · TIP GRAMMAR', () => {
     //    truncation spans): atoms.tsx:76 error text + :78 uploading
     //    filename (the 2026-10-28 uploading face — the long clip name
     //    truncates under the square, same idiom), + the SpecAtom
-    //    square's OWN pair (the seat-kind judge's faces, 2026-11-16:
+    //    square's OWN pair (the seat-kind judge's faces, 2026-11-09:
     //    the mod leaf's seats render the provider's busy/refusal
     //    under the square — the same two titles SourceRow carries,
     //    on the leaf's seats), preview.tsx:208

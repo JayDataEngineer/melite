@@ -138,7 +138,7 @@ THE DOM LAWS the wall encodes (each probed, not guessed):
 ## The law pins (cards-variations.spec.ts)
 
 The operator's three named breaks held at the BROWSER plane: the
-image-edit cap face (2511 admits exactly 3, 2.1 admits 16, read off
+image-edit cap face (each living lane serves its own cap, read off
 the form-spec the page itself fetched), the ONE lane-warn strip
 (each required law voiced exactly once — the double-red cure), and
 krea-2's variant envelopes served on the wire the browser reads

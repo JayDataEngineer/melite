@@ -1248,7 +1248,13 @@ describe("bootModels (the transactional boot)", () => {
       judged++;
     }
     assert.ok(judged > 10, `the sweep judged the estate (saw ${judged} pooled families — a vacuous pass is the hole this wall closes)`);
-    assert.ok(exempt >= 1, `the empty-pool exempt is real (saw ${exempt} — the 2511 fully-hidden shape; 0 means the exempt class emptied and the law's carve-out is stale)`);
+    // The fully-hidden exempt class died with the 2511 removal
+    // (2026-11-09): a family whose every variant is hidden is
+    // REMOVED, never parked hidden — so the census now pins the
+    // estate at zero empty pools. A family re-landing fully-hidden
+    // reds here on purpose: the cure is removal (or un-hiding),
+    // not a carve-out floor.
+    assert.equal(exempt, 0, `the estate carries ${exempt} fully-hidden family(ies) — the soft-retire shape is dead; remove the family or offer its variants`);
   }, 240000);
 });
 

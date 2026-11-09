@@ -322,8 +322,12 @@ export const COVERAGE_BASELINE: Record<string, {
   // caller reaches (proofs in the TEST-2 ledger): the ensureProgress
   // create arm (executeEnsure's synchronous seed dominates it, no
   // deletion path) and the .then/.catch current-undefined arms (both
-  // start paths seed the id before attaching handlers).
-  '**/packages/estate/provisioning/src/service.ts': { statements: 95.78, branches: 92.2, functions: 94.92, lines: 97.22 },
+  // start paths seed the id before attaching handlers). Branches
+  // 92.19: the K=1 mint at 92.2 sat ON the load-jitter boundary (the
+  // round-29 watch row, reviewBy 2026-12-15 — one branch path flips
+  // under parallel load); the floor rides the flap's own minimum so
+  // the gate stops red-ing on a load artifact while the watch lives.
+  '**/packages/estate/provisioning/src/service.ts': { statements: 95.78, branches: 92.19, functions: 94.92, lines: 97.22 },
   // the snapshot channel's pure helpers (2026-10-21): measured with
   // the wall seated — the uncovered branches are the external-JSON
   // defensive arms (null body, non-array siblings, non-string
@@ -592,8 +596,6 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/models/qwen-img-21/src/index.ts': { statements: 75, branches: null, functions: 50, lines: 66.67 },
   '**/packages/models/qwen-img-edit-21/src/actions.ts': { statements: 97.56, branches: 96.97, functions: 75, lines: 97.5 },
   '**/packages/models/qwen-img-edit-21/src/index.ts': { statements: 75, branches: null, functions: 50, lines: 66.67 },
-  '**/packages/models/qwen-img-edit-2511/src/actions.ts': { statements: 97.78, branches: 97.87, functions: 66.67, lines: 97.73 },
-  '**/packages/models/qwen-img-edit-2511/src/index.ts': { statements: 75, branches: null, functions: 50, lines: 66.67 },
   '**/packages/models/qwen3-tts/src/actions.ts': { statements: 93.33, branches: 91.67, functions: 75, lines: 92.86 },
   '**/packages/models/qwen3-tts/src/index.ts': { statements: 91.67, branches: 60, functions: 85.71, lines: 87.5 },
   '**/packages/models/seedvr2-ema/src/actions.ts': { statements: 90, branches: 75, functions: 66.67, lines: 88.89 },

@@ -19,10 +19,7 @@
 // decodeSave, stackLoras): the lane reads ONE ordered list —
 // input_images verbatim, else the legacy merge (image1 the anchor,
 // then image2/image3, then the reference_images stack) — and
-// maps it per lane:
-// 2511 onto the STOCK node's native image2/image3 optionals (blank
-// refs stay out of the inputs entirely, so plain and legacy-only
-// graphs are byte-stable); 2.1 contiguously onto the encoder's
+// maps it per lane: 2.1 contiguously onto the encoder's
 // images.image_2+ autogrow slots, in order (the node opens inputs
 // as filled, up to 16; the form's add-cell IS that UX). NOTE the
 // one renumber: pre-unification 2.1 drafts with a STACK mapped it
@@ -34,8 +31,7 @@
 // nothing else (the stock-only verdict below), so true asks for
 // exactly what it gets and false's patches can never trigger (every
 // patch trigger refuses). Everything else that would change the
-// graph (the 2511 lane's over-2 references — the 2.1 arm maps the
-// full order, double_reference's second
+// graph (double_reference's second
 // encode, the outpaint pad chain, the
 // mask prep/region flow) REFUSES field-named instead of silently
 // plain-editing (the retired python MOD FIRING LAW, ported 1:1 —
@@ -50,7 +46,6 @@ import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import { SAMPLERS, SCHEDULERS } from '@melite/comfyui-card-kit/vocab'
 import { promptPairExtra, samplingExtra, seedExtra } from '@melite/comfyui-card-kit/fields'
 import { DECL as qwenImgEdit21Decl } from '@melite/models-qwen-img-edit-21'
-import { DECL as qwenImgEdit2511Decl } from '@melite/models-qwen-img-edit-2511'
 import { DECL as fibo2EditDecl } from '@melite/models-fibo2-edit'
 import { bag } from '@melite/contracts/extraKeys'
 import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission'
@@ -67,7 +62,7 @@ export const declCap = (d: { id: string; lane_inputs?: Record<string, unknown> }
   if (typeof v === 'number' && Number.isFinite(v) && v >= 1) return Math.floor(v)
   throw new Error(`image-edit card: boarded family '${d.id}' declares no lane_inputs.max_images (the max_images law — the node's own image-input count)`)
 }
-const EDIT_LIST_CAP = Math.max(declCap(qwenImgEdit2511Decl), declCap(qwenImgEdit21Decl), declCap(fibo2EditDecl))
+const EDIT_LIST_CAP = Math.max(declCap(qwenImgEdit21Decl), declCap(fibo2EditDecl))
 
 export const schema = z.object({  // CARD-OWNED SURFACE ONLY (2026-09-08, the 1:1 port): declaration
   // order = the field order. image1 IS THE PLAIN ANCHOR (2026-09-21,
@@ -138,30 +133,13 @@ export const schema = z.object({  // CARD-OWNED SURFACE ONLY (2026-09-08, the 1:
   seed: z.number().description("Seed").step(1).default(-1).extra('extra', bag(seedExtra({ order: 4, group: 'sampling', width: 1, zone: 'params' }))),
   // RIDE-THE-MODEL (operator catch e, 2026-09-22): steps/cfg carry
   // NO schema default — a default here is one lane's recipe served
-  // as universal (4/1 is the LIGHTNING recipe; standard weights
-  // sampled at 4 steps made the washed-out edits the operator
-  // caught). The family DECL owns the default (2511 standard
-  // 20/2.5, 2.1 25/1) through the service cascade, and the served
-  // tool face advertises none.
+  // as universal. The family DECL owns the default (2.1 25/1)
+  // through the service cascade, and the served tool face
+  // advertises none.
   steps: z.number().description("Steps").min(1).max(50).step(1).extra('extra', samplingExtra('steps')),
   cfg: z.number().description("Guidance Scale").min(0.1).max(10).step(0.1).extra('extra', samplingExtra('cfg', { tooltip: "Qwen-Image-Edit uses low CFG (flow-matching); leave unset — the model's own recipe is the default." })),
   sampler: SAMPLERS.description("Sampler").extra('extra', samplingExtra('sampler')),
   scheduler: SCHEDULERS.description("Scheduler").extra('extra', samplingExtra('scheduler')),
-  // THE EDIT-TUNING PAIR (the visible_when guard is DEAD — fix
-  // shape 2): these rows are the 2511 DECL's params surface — the
-  // form serves them only when the 2511 lane is boarded (the
-  // declaration owns the field list), and the bench-write door
-  // refuses them on the 2.1 family in the field's voice.
-  // use_stock_nodes rides HIDDEN (the one-seat register's first
-  // retirement, the seamless charter 2026-11-12): an EXECUTION
-  // INTERNAL dead at compose (E9: BOTH values emit the stock graph —
-  // the knob is a future-arm validation key, never a face row). The
-  // hidden law (params-emit: extra.hidden stays out of BOTH
-  // projections) retires it from the agent face and the form in one
-  // spelling; the 2511 DECL surface keeps declaring it (old drafts
-  // validate; the bench-write gate keeps its family scoping).
-  use_stock_nodes: z.boolean().description("Use Stock Nodes").extra('extra', bag({ order: null, hidden: true, group: "edit_tuning", width: 1, tooltip: "When true, build_img2img_edit emits the stock Qwen-Image-Edit node graph (no DiffSynth patches, no custom ControlNet wiring). Useful for reproducing upstream behavior exactly.", zone: 'params' })),
-  double_reference: z.boolean().description("Double Reference").extra('extra', bag({ order: 2, group: "edit_tuning", width: 1, tooltip: "Not available yet: turning this on stops the run with a clear error — the edit models build the standard single-pass edit only, never a silent plain edit. Leave it off. (Once supported: the input image is encoded twice — VAE + vision encoder — for stronger identity preservation.)", zone: 'params' })),
 })
 
 const schemaFn = callableSchema(schema)
@@ -171,14 +149,14 @@ const schemaFn = callableSchema(schema)
 // models+versions, never operations. 2.1 IS THE DEFAULT (first =
 // the tool's defaultModel, the GUI enum's head, discovery's face):
 // it is the LATEST lane and the one whose weights this box ships.
-// 2511 is the BACKUP — the dedicated edit checkpoint
-// (VAEEncode-of-source lane); its standard INT8 ConvRot weights
-// ride provision, its Lightning variant needs its own FP8 file.
 // 2.1's edit arm branches by lane_inputs.text_encode_node.
-// BOTH IDS COME FROM THEIR DECLS (the card audit's M1): the 2511 DECL
-// was imported and its id retyped as a literal, so a rename broke the card
-// at runtime (not-boarded) with every wall green.
-export const BOARDED: string[] = [qwenImgEdit21Decl.id, qwenImgEdit2511Decl.id, fibo2EditDecl.id]
+// (2026-11-09: the backup edit-checkpoint lane was removed at the
+// operator's order — the model was too old; the boarded roster is
+// the two living lanes.)
+// BOTH IDS COME FROM THEIR DECLS (the card audit's M1): a boarded
+// id is the DECL's own, so a rename breaks the card at runtime
+// (not-boarded) with every wall green.
+export const BOARDED: string[] = [qwenImgEdit21Decl.id, fibo2EditDecl.id]
 
 /** The action bindings (the atom vocabulary, stroke 3): a boarded
  *  family with a bound action composes through the atom's own
@@ -192,9 +170,6 @@ export const BOARDED: string[] = [qwenImgEdit21Decl.id, qwenImgEdit2511Decl.id, 
 export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string) => void> = {
   [qwenImgEdit21Decl.id]: (p, model, g, runId) => {
     instantiateAction(declaredAction(qwenImgEdit21Decl, 'edit'), p, model, g, runId)
-  },
-  [qwenImgEdit2511Decl.id]: (p, model, g, runId) => {
-    instantiateAction(declaredAction(qwenImgEdit2511Decl, 'edit'), p, model, g, runId)
   },
   [fibo2EditDecl.id]: (p, model, g, runId) => {
     instantiateAction(declaredAction(fibo2EditDecl, 'edit'), p, model, g, runId)
@@ -351,17 +326,17 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
       // THE GEOMETRY LAW (the latent law, 2026-11-08 + the resize
       // order, 2026-11-12): the edit always runs at the source's own
       // frame — the 2.1 lane samples the ENCODER'S OWN anchor-sized
-      // latent (any other size shifts the edit, the node's own law)
-      // and 2511 encodes the source outright. A stated size is a
-      // DELIVERABLE resize (degrees-freed from the latent): decode →
-      // lanczos ImageScale → save, one artifact.
+      // latent (any other size shifts the edit, the node's own law).
+      // A stated size is a DELIVERABLE resize (degrees-freed from
+      // the latent): decode → lanczos ImageScale → save, one
+      // artifact.
       const bound = ACTION_BINDINGS[model.family ?? model.id]
       if (bound) {
         bound(doc, model, g, runId)
         return
       }
       throw new Error(
-        `no declared action for family '${String(model.family ?? model.id)}' on the image-edit card — every boarded family (qwen-img-edit-21, qwen-img-edit-2511, fibo2-edit) composes its own declared segment; this address owns none. State params.model (one of those families) on the stage to compose it (session 7a82: the add_stage landed familyless and only the operator's press met this refusal).`)
+        `no declared action for family '${String(model.family ?? model.id)}' on the image-edit card — every boarded family (qwen-img-edit-21, fibo2-edit) composes its own declared segment; this address owns none. State params.model (one of those families) on the stage to compose it (session 7a82: the add_stage landed familyless and only the operator's press met this refusal).`)
     },
     finalize: finalizeImageEdit,
   }))

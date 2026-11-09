@@ -206,8 +206,6 @@ export const composeModPlane = async (ctx) => {
         ['@melite/models-anny/mods/verbs', 'anny verbs'],
         ['@melite/models-qwen3-tts/mods/qvoice', 'qwen3-tts qvoice'],
         ['@melite/models-qwen3-tts/mods/qvoice_save', 'qwen3-tts qvoice_save'],
-        ['@melite/models-qwen-img-edit-2511/mods/loras', 'qwen-img-edit-2511 loras'],
-        ['@melite/models-qwen-img-edit-2511/mods/mask', 'qwen-img-edit-2511 mask'],
         // THE THIRD EDIT LANE (fibo2-edit): the same boarding pair the
         // qwen edit lanes carry — the loras seed (user files ride) and
         // the mask bare flavor (the crop_stitch detailer arm).

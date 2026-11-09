@@ -364,7 +364,7 @@ describe("registerCard (one card, one plugin)", () => {
     // the refused card never landed; the owner stands
     assert.deepEqual(svc.cardIds(), ["image-gen"]);
     // distinct families still compose side by side
-    svc.registerCard(card({ id: "image-edit", boarded: ["qwen-img-edit-2511"] }));
+    svc.registerCard(card({ id: "image-edit", boarded: ["qwen-img-edit-21"] }));
     assert.deepEqual(svc.cardIds(), ["image-edit", "image-gen"]);
   });
 

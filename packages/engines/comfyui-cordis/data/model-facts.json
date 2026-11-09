@@ -435,9 +435,6 @@
     "qwen-img-edit-21": {
       "card": "image-edit"
     },
-    "qwen-img-edit-2511": {
-      "card": "image-edit"
-    },
     "qwen3-tts": {
       "card": "tts"
     },

@@ -1,6 +1,6 @@
 /**
  * img-mesh-blank-departure.spec.tsx — THE BLANK DEPARTURE ON A
- * BASE-STAMPED DOC (the gate-11 sweep red, 2026-11-16: img-to-mesh
+ * BASE-STAMPED DOC (the gate-11 sweep red, 2026-11-09: img-to-mesh
  * landed with its family-default recipe High stamped in the BASE —
  * the D12 seed — and the blank round-trip NEVER WROTE: no wire
  * patch, no refusal voice, the face held 'High' for 15 s (probe k:
@@ -90,7 +90,7 @@ describe("THE img-to-mesh BLANK DEPARTURE (gate-11 sweep red): a base-held recip
     expect(face).toMatch(/--\s*recipe\s*--/)
   })
 
-  // THE STUDIO SEAT (the gate-11 burn's own seat, 2026-11-16): the
+  // THE STUDIO SEAT (the gate-11 burn's own seat, 2026-11-09): the
   // img-to-mesh card renders DeclarativeStudio (the shared studio
   // base), whose ModelAxes onPick once merged onto USER STATE ALONE
   // — no seat, no wire (probe k: zero drafts writes, zero voices,

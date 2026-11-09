@@ -280,6 +280,12 @@ describe("renderH3Edit — the video-edit matrix on the one spine (stage 2a)", (
       () => renderH3Edit({ ...base, source_clip: "" }, STATIC_PNG, SELF, {}, FACTS, g5, "r"),
       /source_clip.*names no media/,
     );
+    const g6 = new GraphBuilder();
+    assert.throws(
+      () => renderH3Edit({ ...base, scale: "two" }, STATIC_PNG, SELF, {}, FACTS, g6, "r"),
+      /'scale' is stated as "two".*a number seat carries a number.*never silently defaults/s,
+      "NO FALLBACK READS: a wrong-typed stated value refuses loud — a defaulting helper would swallow it as a silent error",
+    );
   });
 
   it("THE DENOISE BAND refuses both shores naming the pole's own band (the coverage-arm law, 2026-11-07)", () => {

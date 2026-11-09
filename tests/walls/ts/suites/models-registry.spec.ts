@@ -297,9 +297,6 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
   "qwen-img-edit-21-turbo",
   "qwen-img-edit-21-turbo-bf16",
   "qwen-img-edit-21-turbo-int8",
-  "qwen-img-edit-2511",
-  "qwen-img-edit-2511-int8",
-  "qwen-img-edit-2511-lightning4",
   "qwen3-tts",
   "qwen3-tts-base",
   "qwen3-tts-voicedesign",
@@ -356,7 +353,7 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     assert.equal(art.dest_sub, "diffusion_models");
   });
 
-  it("the mods set survived (10 families declare capability packs — h3 boards loras with the mod-plane stroke, renamed with the survivor-id correction 2026-09-22; qwen3-tts boards qvoice_save across its folded lanes, 2026-09-21; qwen-img-edit-21 boards the mask pack with the 2.1 region-detailer re-scope, 2026-09-23; qwen-img-21 boards the mask pack with the bare edit-21 twin flavor, mask-c 2026-10-12; THE LORAS REFUSAL 2026-11-06 8153a8a37 — every image family boards the pack, anima + flux-klein's authored nothing cured with DECL.mods += loras + first-party adapter seeds)", (): void => {
+  it("the mods set survived (9 families declare capability packs — the retired edit family left the tree 2026-11-09 — h3 boards loras with the mod-plane stroke, renamed with the survivor-id correction 2026-09-22; qwen3-tts boards qvoice_save across its folded lanes, 2026-09-21; qwen-img-edit-21 boards the mask pack with the 2.1 region-detailer re-scope, 2026-09-23; qwen-img-21 boards the mask pack with the bare edit-21 twin flavor, mask-c 2026-10-12; THE LORAS REFUSAL 2026-11-06 8153a8a37 — every image family boards the pack, anima + flux-klein's authored nothing cured with DECL.mods += loras + first-party adapter seeds)", (): void => {
     const withMods = registryIds().filter((id) => (registryModel(id).mods ?? []).length > 0);
     assert.deepEqual(withMods, [
       "anima",
@@ -373,7 +370,6 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
       "moss-image",
       "qwen-img-21",
       "qwen-img-edit-21",
-      "qwen-img-edit-2511",
       "qwen3-tts",
       // (removed 2026-11-12: viggle-animate deleted with the openjutsu
       //  lane — operator order; the h3 married-bag law stays the owner)
@@ -505,7 +501,9 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // resolver pair — no Recipe group, the scoped judgment).
     // 67 -> 66 (2026-11-12: the openjutsu lane deleted by operator
     // order — viggle-animate's one variant died with the lane).
-    assert.equal(variants, 66);
+    // 66 -> 64 (2026-11-09, the removal): the retired edit family's
+    // two serving variants die with its package.
+    assert.equal(variants, 64);
     // 85 -> 84 (2026-10-13, the autoremesher excision): the family's
     // one cell left with the pack the owner removed.
     // 84 -> 86 (2026-10-23): the turbo cells join (turbo_int8_convrot + turbo_bf16).
@@ -535,6 +533,8 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // joins on the music3 route (the int8 body rides music3-int8).
     // 84 -> 83 (2026-11-12): the openjutsu lane deleted by operator
     // order — viggle-animate's int8_convrot_pruned cell dies with it.
-    assert.equal(cells, 83);
+    // 83 -> 81 (2026-11-09, the removal): the retired edit family's
+    // two quant cells die with its package.
+    assert.equal(cells, 81);
   });
 });

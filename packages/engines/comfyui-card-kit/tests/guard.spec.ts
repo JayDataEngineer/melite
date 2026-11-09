@@ -310,23 +310,24 @@ describe("THE TYPED LANE READER over the real DECLs — every family row reads c
   );
   const facts = loadFacts(FACTS_PATH, { getModel, registryIds, registryModel });
 
-  // THE DIFFUSION NINE: the families whose doors ride the typed
+  // THE DIFFUSION EIGHT: the families whose doors ride the typed
   // reader today — asserted BY FAMILY KEY (row.family, the roster's
-  // own attribution), whatever the served addresses spell.
-  const NINE = [
+  // own attribution), whatever the served addresses spell. (The
+  // ninth member died with its family, operator 2026-11-09.)
+  const EIGHT = [
     "anima", "z-image", "krea-2", "flux-klein", "moss-image",
-    "qwen-img-21", "qwen-img-edit-21", "qwen-img-edit-2511", "fibo2-edit",
+    "qwen-img-21", "qwen-img-edit-21", "fibo2-edit",
   ];
 
-  it("declaredLaneKeys is non-empty for every lane-declaring family — the diffusion nine at minimum", () => {
+  it("declaredLaneKeys is non-empty for every lane-declaring family — the diffusion eight at minimum", () => {
     const declaring = new Set<string>();
     for (const row of Object.values(facts.models)) {
       if (declaredLaneKeys(row).size > 0) declaring.add(row.family ?? row.id);
     }
-    for (const family of NINE) {
+    for (const family of EIGHT) {
       assert.ok(declaring.has(family), `the diffusion nine: '${family}' declares no lane keys (families declaring: ${[...declaring].sort().join(", ")})`);
     }
-    assert.ok(declaring.size >= NINE.length, "the derived roster carries the nine");
+    assert.ok(declaring.size >= EIGHT.length, "the derived roster carries the nine");
   });
 
   it("every declared key of every row reads through the reader without refusal — and the undeclared probe refuses for EVERY family", () => {
@@ -353,7 +354,7 @@ describe("THE TYPED LANE READER over the real DECLs — every family row reads c
     }
     assert.ok(rows > 0, "the facts file serves rows");
     assert.ok(keys > 0, "the roster carries declared keys");
-    for (const family of NINE) {
+    for (const family of EIGHT) {
       assert.ok(probed.has(family), `the probe sweep covers '${family}'`);
     }
   });

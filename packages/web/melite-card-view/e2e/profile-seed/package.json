@@ -52,7 +52,6 @@
     "@melite/models-moss-sfx": "link:../../../../models/moss-sfx",
     "@melite/models-music3": "link:../../../../models/music3",
     "@melite/models-pixal3d": "link:../../../../models/pixal3d",
-    "@melite/models-qwen-img-edit-2511": "link:../../../../models/qwen-img-edit-2511",
     "@melite/models-qwen3-tts": "link:../../../../models/qwen3-tts",
     "@melite/models-seedvr2-ema": "link:../../../../models/seedvr2-ema",
     "@melite/models-somax": "link:../../../../models/somax",

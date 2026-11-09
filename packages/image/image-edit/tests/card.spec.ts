@@ -6,6 +6,15 @@
 // no lane inpaints in place: a stated region in auto refuses
 // field-named, and stale inpaint/outpaint knobs refuse as
 // undeclared params at admission).
+//
+// (2026-11-09) the family rework: the qwen-img-edit-2511 backup
+// lane was REMOVED at the operator's order ("that model is too
+// old") — every arm here re-seats on the two living lanes
+// (qwen-img-edit-21 the default, fibo2-edit the alternate). The
+// dead lane's stock-graph arms died with the family; the LAWS
+// (admissions, firing refusals, region detailer, deliverable size
+// door, spell arms, every-address wall) all survive on the living
+// lanes.
 import "../../../../tests/helpers/boot-models.ts";
 import { describe, it, beforeAll } from "vitest";
 import assert from "node:assert/strict";
@@ -48,8 +57,8 @@ let model: ModelFacts;
 beforeAll(async () => {
   def = (await loadCardDefs()).get("image-edit")!;
   assert.ok(def, "the composition root serves the image-edit card");
-  model = facts.models["qwen-img-edit-2511"]!;
-  assert.ok(model, "the qwen-img-edit-2511 facts row serves");
+  model = facts.models["qwen-img-edit-21"]!;
+  assert.ok(model, "the qwen-img-edit-21 facts row serves");
 });
 
 describe("the image-edit compose gate", () => {
@@ -82,11 +91,10 @@ describe("the image-edit compose gate", () => {
   });
 
   // RIDE-THE-MODEL (operator catch e, 2026-09-22): the schema pins
-  // NO steps/cfg default — one lane's lightning recipe (4/1) served
-  // as universal made the washed-out edits. The model DECL owns the
-  // default through the service cascade (2511 standard 20/2.5,
-  // 2.1 25/1); raw compose calls state them like the estate's
-  // merged params always do.
+  // NO steps/cfg default — one lane's recipe served as universal
+  // made the washed-out edits. The model DECL owns the default
+  // through the service cascade (2.1 25/1); raw compose calls state
+  // them like the estate's merged params always do.
   it("THE SCHEMA GATE: steps/cfg carry NO schema default (the model's DECL owns the recipe)", () => {
     const walked = def.schema({ prompt: "make it night", image1: "/m/i.png" }) as Record<string, unknown>;
     assert.equal(walked.steps, undefined, "no universal steps default on the walk");
@@ -98,20 +106,21 @@ describe("the image-edit compose gate", () => {
     assert.equal(graph["KSampler.0"]?.inputs.cfg, 2.5, "stated values ride verbatim");
   });
 
-  it("THE MODEL ORDER (operator catch e): 2.1 boards FIRST — the tool's default and the GUI's head", () => {
+  it("THE MODEL ORDER (operator catch e): 2.1 boards FIRST — the tool's default and the GUI's head; fibo2 is the alternate", () => {
     assert.equal(BOARDED[0], "qwen-img-edit-21", "2.1 is the LATEST lane — the default");
-    assert.equal(BOARDED[1], "qwen-img-edit-2511", "2511 is the BACKUP");
+    assert.equal(BOARDED[1], "fibo2-edit", "fibo2 is the alternate lane");
+    assert.equal(BOARDED.length, 2, "two living lanes (the backup edit lane was removed 2026-11-09)");
   });
 
   // THE SIZE LAW AT THE CARD (2026-11-08, restated by the
   // ground-truth cure 2026-11-12): a stated pair SIZES THE RENDER —
   // the 2.1 lane derives the encoder's pixel budget from w·h and
   // samples an exact w×h empty latent (the delivered frame is the
-  // rendered frame, NO post-decode ImageScale); 2511 (legacy)
-  // keeps its own post-decode resize. The match toggle owns the
-  // door: ON + a stated axis refuses field-named with the flip in
-  // the voice (the clean compose builds no stated-size latent);
-  // OFF + both axes composes the render-sizing on the graph.
+  // rendered frame, NO post-decode ImageScale). The match toggle
+  // owns the door: ON + a stated axis refuses field-named with the
+  // flip in the voice (the clean compose builds no stated-size
+  // latent); OFF + both axes composes the render-sizing on the
+  // graph.
   it("THE SIZE LAW AT THE CARD: a stated pair sizes the render — match ON refuses with the flip in the voice, match OFF + both axes renders at the stated canvas", () => {
     const model21 = facts.models["qwen-img-edit-21"]!;
     assert.ok(model21, "the qwen-img-edit-21 facts row serves");
@@ -121,12 +130,6 @@ describe("the image-edit compose gate", () => {
       () => def.compose({ prompt: "make it night", image1: "/m/i.png", width: 512, height: 512, steps: 25, cfg: 1 }, model21, new GraphBuilder(), "r_size21"),
       /match_input_resolution is ON/,
       "the 2.1 lane refuses the stated pair field-named, teaching the flip",
-    );
-    // …and on the 2511 lane (the same never-lie voice).
-    assert.throws(
-      () => def.compose(def.schema({ prompt: "dress the mannequin", image1: "/m/anchor.png", width: 512, height: 512 }), model, new GraphBuilder(), "r_size2511"),
-      /match_input_resolution is ON/,
-      "the 2511 lane refuses the stated pair field-named, teaching the flip",
     );
     // The clean compose builds NO stated-size latent and NO resize:
     // its KSampler rides the encoder's own third output.
@@ -190,26 +193,30 @@ describe("the image-edit compose gate", () => {
     assert.equal(walked.match_input_resolution, true, "the toggle defaults ON — no typing needed");
   });
 
-  // THE 2511 POLE: the toggle is admitted on the 2511 lane (a
-  // default-ON draft never refuses there); ON edits and delivers at
-  // source resolution, OFF + both axes resizes the deliverable.
-  it("THE 2511 POLE: match_input_resolution ON composes clean, OFF demands the pair and resizes the deliverable", () => {
+  // THE FIBO2 POLE (re-seated from the removed lane, 2026-11-09 —
+  // the law outlives its first witness): fibo2 is the RESIZE-TAIL
+  // lane — the render keeps the source's frame and a stated pair
+  // resizes the DELIVERABLE (one post-decode ImageScale).
+  it("THE FIBO2 POLE: match ON composes clean (no resize), OFF + both axes resizes the deliverable", () => {
+    const fibo2 = facts.models["fibo2-edit"]!;
+    assert.ok(fibo2, "the fibo2-edit facts row serves");
     const g = new GraphBuilder();
     def.compose(
-      def.schema({ prompt: "dress the mannequin", image1: "/m/anchor.png", match_input_resolution: true }),
-      model, g, "r_match2511",
+      def.schema({ prompt: "recolor the jacket", image1: "/m/anchor.png", steps: 8, cfg: 1, match_input_resolution: true }),
+      fibo2, g, "r_matchfibo",
     );
     const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
-    assert.ok(Object.values(graph).some((n) => n.class_type === "TextEncodeQwenImageEditPlus"), "the 2511 lane still composes with the toggle on");
-    assert.ok(!Object.values(graph).some((n) => n.class_type === "EmptyLatentImage"), "the 2511 lane builds no target latent — the toggle changes nothing while ON");
+    assert.ok(Object.values(graph).some((n) => n.class_type === "TextEncodeFibo2"), "the fibo2 lane composes with the toggle on");
     assert.ok(!Object.values(graph).some((n) => n.class_type === "ImageScale"), "no resize — ON delivers at the source's frame");
     const gOff = new GraphBuilder();
     def.compose(
-      def.schema({ prompt: "dress the mannequin", image1: "/m/anchor.png", match_input_resolution: false, width: 1024, height: 1024 }),
-      model, gOff, "r_match2511off",
+      def.schema({ prompt: "recolor the jacket", image1: "/m/anchor.png", steps: 8, cfg: 1, match_input_resolution: false, width: 1024, height: 1024 }),
+      fibo2, gOff, "r_matchfibooff",
     );
     const offGraph = gOff.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
-    assert.ok(Object.values(offGraph).some((n) => n.class_type === "ImageScale"), "match OFF + both axes resizes the 2511 deliverable too");
+    const scales = Object.values(offGraph).filter((n) => n.class_type === "ImageScale");
+    assert.equal(scales.length, 1, "match OFF + both axes resizes the fibo2 deliverable");
+    assert.deepEqual([scales[0]?.inputs?.width, scales[0]?.inputs?.height], [1024, 1024], "the stated pair lands on the deliverable resize");
   });
 
   it("the edit-scope field names whole-image and masked-region choices", () => {
@@ -270,7 +277,11 @@ describe("the image-edit compose gate", () => {
       // (the merge's old mixed-vocab refusal is RETIRED — the
       // migration law folds legacy keys under a stated input_images;
       // pinned in its own test below)
-      [{ double_reference: true }, /'double_reference' fires .*\(the second encode/],
+      // (2026-11-09) double_reference died with the removed lane —
+      // the rows left the declaration, so the declared-surface
+      // admission owns the refusal.
+      [{ double_reference: true }, undeclared("double_reference")],
+      [{ use_stock_nodes: true }, undeclared("use_stock_nodes")],
       // the retired arm's knobs are undeclared — admission refuses.
       [{ lanpaint_enabled: true }, undeclared("lanpaint_enabled")],
       [{ lanpaint_beta: 0.9 }, undeclared("lanpaint_beta")],
@@ -302,11 +313,11 @@ describe("the image-edit compose gate", () => {
         voice,
       );
     }
-    // THE NARROW END, canonical spelling (no legacy key): 2511's
-    // DECL caps at 3 — a FOURTH list entry refuses loud.
+    // THE CAP END, canonical spelling (no legacy key): 2.1's DECL
+    // caps at 16 — a SEVENTEENTH list entry refuses loud.
     assert.throws(
-      () => def.compose(def.schema({ prompt: "x", input_images: ["/m/in.png", "/m/a.png", "/m/b.png", "/m/c.png"] }), model, new GraphBuilder(), "r1"),
-      /'input_images' fires .*\(this lane takes 3 input images total/,
+      () => def.compose(def.schema({ prompt: "x", input_images: Array.from({ length: 17 }, (_, i) => `/m/i${String(i)}.png`) }), model, new GraphBuilder(), "r1"),
+      /'input_images' fires .*\(this lane takes 16 input images total/,
     );
   });
 
@@ -399,12 +410,12 @@ describe("the image-edit compose gate", () => {
   // input: the spell rides the tensor slots VERBATIM (the merge's
   // rewriteSpells lands the producer link there) and NO loader is
   // built for it — the spell IS the tensor.
-  it("THE SPELL ARM: a wired anchor ($spell) rides tensor slots verbatim — no LoadImage, the merge lands the link", () => {
+  it("THE SPELL ARM: a wired anchor ($spell) rides the encoder's dotted slots verbatim — no LoadImage, the merge lands the link", () => {
     const g = new GraphBuilder();
     def.compose(
       def.schema({
         prompt: "edit the upstream", image1: "$up", reference_images: ["$ref1"],
-        seed: 42, steps: 20, cfg: 2.5,
+        seed: 42, steps: 25, cfg: 1,
       }),
       model, g, "r_spell",
     );
@@ -413,55 +424,28 @@ describe("the image-edit compose gate", () => {
     // spelled — a loader would refuse at the merge (ROW-4)
     const loaders = Object.entries(graph).filter(([, n]) => n.class_type.startsWith("Load"));
     assert.equal(loaders.length, 0, "a spelled anchor builds no LoadImage (ROW-4: producer links never land in file slots)");
-    // the anchor spell rides the encoder's image1 TENSOR slots (pos+neg)
-    assert.equal(graph["TextEncodeQwenImageEditPlus.0"].inputs.image1, "$up", "pos encode carries the spell");
-    assert.equal(graph["TextEncodeQwenImageEditPlus.1"].inputs.image1, "$up", "neg encode carries the spell");
-    // the ref spell rides the stock node's image2 slot
-    assert.equal(graph["TextEncodeQwenImageEditPlus.0"].inputs.image2, "$ref1", "the spelled ref rides its tensor slot");
-    // the 2511 lane encodes the source at its own resolution — the
-    // spelled anchor rides the VAEEncode pixels tensor too
-    assert.equal(graph["VAEEncode.0"].inputs.pixels, "$up", "the encode pixels carry the spell");
+    // the anchor spell rides the encoder's first dotted slot; the ref
+    // spell rides the second — verbatim, both lanes' one order.
+    assert.equal(graph["TextEncodeQwenImage21.0"].inputs["images.image_1"], "$up", "the anchor spell rides the first dotted slot");
+    assert.equal(graph["TextEncodeQwenImage21.0"].inputs["images.image_2"], "$ref1", "the ref spell rides the second dotted slot");
   });
 
   it("THE SPELL ARM: an unwired file path keeps the LoadImage handoff (the disk path owns files)", () => {
     const g = new GraphBuilder();
     def.compose(
-      def.schema({ prompt: "edit the file", image1: "/m/i.png", seed: 42, steps: 20, cfg: 2.5 }),
+      def.schema({ prompt: "edit the file", image1: "/m/i.png", seed: 42, steps: 25, cfg: 1 }),
       model, g, "r_file",
     );
     const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
     assert.equal(graph["LoadImage.0"].inputs.image, "/m/i.png", "the file anchor keeps its loader");
-    assert.ok(Array.isArray(graph["VAEEncode.0"].inputs.pixels), "the encode wires the loader's handle");
-  });
-
-  it("THE SPELL ARM (2.1 lane): spelled anchor+ref ride the encoder's dotted slots — parity with 2511, never a loader", () => {
-    // THE AUDIT'S LOW (the independent audit's gap 4): parity was
-    // construction-only — no wall pinned a spell through the 2.1
-    // dotted-slot path, one refactor from silent divergence. The
-    // shared preamble loads spelled values (no LoadImage); the
-    // 2.1 arm maps them onto images.image_1 + image_2+ in order.
-    const model21 = facts.models["qwen-img-edit-21"]!;
-    const g = new GraphBuilder();
-    def.compose(
-      def.schema({
-        prompt: "edit the upstream", image1: "$up", reference_images: ["$ref1"],
-        seed: 42, steps: 20, cfg: 2.5,
-      }),
-      model21, g, "r_spell21",
-    );
-    const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
-    const loaders = Object.entries(graph).filter(([, n]) => n.class_type.startsWith("Load"));
-    assert.equal(loaders.length, 0, "a spelled 2.1 run builds no loader");
-    const enc = graph["TextEncodeQwenImage21.0"]!;
-    assert.equal(enc.inputs["images.image_1"], "$up", "the anchor spell rides the first dotted slot");
-    assert.equal(enc.inputs["images.image_2"], "$ref1", "the ref spell rides the second dotted slot");
+    assert.ok(Array.isArray(graph["TextEncodeQwenImage21.0"].inputs["images.image_1"]), "the encoder wires the loader's handle");
   });
 
   it("crop_stitch with zero halo builds no GrowMask, invert splices before the SEGS", () => {
     const g = new GraphBuilder();
     def.compose(
       def.schema({
-        prompt: "x", image1: "/m/i.png", seed: 7, steps: 20, cfg: 2.5,
+        prompt: "x", image1: "/m/i.png", seed: 7, steps: 25, cfg: 1,
         input_mask: "/m/r.png", mask_mode: "crop_stitch",
         mask_grow: 0, mask_context_pad: 0, mask_feather: 0, mask_invert: true,
       }),
@@ -477,7 +461,7 @@ describe("the image-edit compose gate", () => {
     const g = new GraphBuilder();
     def.compose(
       def.schema({
-        prompt: "studio portrait", image1: "/m/i.png", seed: 7, steps: 20, cfg: 2.5,
+        prompt: "studio portrait", image1: "/m/i.png", seed: 7, steps: 25, cfg: 1,
         mask_mode: "crop_stitch", mask_detector: "face", mask_detector_threshold: 0.7,
       }),
       model, g, "run_face",
@@ -495,7 +479,7 @@ describe("the image-edit compose gate", () => {
     const g = new GraphBuilder();
     def.compose(
       def.schema({
-        prompt: "new jacket", image1: "/m/i.png", seed: 7, steps: 20, cfg: 2.5,
+        prompt: "new jacket", image1: "/m/i.png", seed: 7, steps: 25, cfg: 1,
         mask_mode: "crop_stitch", mask_detector: "person",
       }),
       model, g, "run_person",
@@ -506,11 +490,11 @@ describe("the image-edit compose gate", () => {
     assert.ok(graph["DetailerForEach.0"], "the detailer pastes the person crop back");
   });
 
-  // ── THE 2.1 LANE (the operator's lane, 2026-09-22: "2511 is the
-  // legacy model… 2.1 is the new Qwen edit model") — the SAME generic
-  // region detailer rides the cache-wrapped model + the 2.1 encoder's
-  // conditioning; no EmptyLatentImage (the detailer sizes each crop
-  // itself), no source VAEEncode (this lane never encodes the source).
+  // ── THE 2.1 LANE (the operator's lane, 2026-09-22) — the generic
+  // region detailer rides the cache-wrapped model + the 2.1
+  // encoder's conditioning; no EmptyLatentImage (the detailer sizes
+  // each crop itself), no source VAEEncode (this lane never encodes
+  // the source).
   it("crop_stitch on the 2.1 lane rides the cache model + encoder conditioning (the operator's lane)", () => {
     const model21 = facts.models["qwen-img-edit-21"]!;
     assert.ok(model21, "the qwen-img-edit-21 facts row serves");
@@ -585,7 +569,7 @@ describe("the image-edit compose gate", () => {
     const g = new GraphBuilder();
     def.compose(
       def.schema({
-        prompt: "fix the fingers", image1: "/m/i.png", seed: 7, steps: 20, cfg: 2.5,
+        prompt: "fix the fingers", image1: "/m/i.png", seed: 7, steps: 25, cfg: 1,
         mask_mode: "crop_stitch", mask_detector: "hand",
       }),
       model, g, "run_hand",
@@ -599,7 +583,7 @@ describe("the image-edit compose gate", () => {
     const g = new GraphBuilder();
     def.compose(
       def.schema({
-        prompt: "x", image1: "/m/i.png", seed: 7, steps: 20, cfg: 2.5,
+        prompt: "x", image1: "/m/i.png", seed: 7, steps: 25, cfg: 1,
         mask_mode: "crop_stitch", mask: [{ mask_detector: "hand" }],
       }),
       model, g, "run_bagdet",
@@ -665,14 +649,14 @@ describe("the image-edit compose gate", () => {
       model, g, "run_1",
     );
     const graph = g.toJSON();
-    assert.ok(graph["TextEncodeQwenImageEditPlus.0"], "the family edit encoder rides");
+    assert.ok(graph["TextEncodeQwenImage21.0"], "the family edit encoder rides");
     assert.ok(graph["LoadImage.0"], "the anchor loads");
     assert.ok(graph["KSampler.0"], "the stock sampler rides when no region is stated");
     assert.ok(Object.values(graph).every((n) => !(n as { class_type: string }).class_type.startsWith("LanPaint")), "no legacy inpaint arm without a region");
   });
 
   it("full_frame and auto produce the same whole-image graph", () => {
-    const params = { prompt: "make it night", image1: "/m/i.png", seed: 7, steps: 20, cfg: 2.5 };
+    const params = { prompt: "make it night", image1: "/m/i.png", seed: 7, steps: 25, cfg: 1 };
     const defaultMode = new GraphBuilder();
     const auto = new GraphBuilder();
     const fullFrame = new GraphBuilder();
@@ -683,8 +667,8 @@ describe("the image-edit compose gate", () => {
     assert.deepEqual(auto.toJSON(), fullFrame.toJSON());
     const graph = fullFrame.toJSON() as Record<string, { class_type: string }>;
     const classes = Object.values(graph).map((node) => node.class_type);
-    assert.ok(classes.includes("VAEEncode"), "the existing whole-image encode remains");
     assert.ok(classes.includes("KSampler"), "the existing whole-image sampler remains");
+    assert.ok(classes.includes("VAEDecode"), "the whole-image decode remains");
     assert.ok(!classes.includes("LoadImageMask"), "no mask topology is added");
     assert.ok(!classes.includes("DetailerForEach"), "no region topology is added");
     assert.ok(!classes.includes("LanPaint_KSamplerAdvanced"), "no legacy inpaint topology is added");
@@ -694,7 +678,7 @@ describe("the image-edit compose gate", () => {
     const g = new GraphBuilder();
     def.compose(
       def.schema({
-        prompt: "repaint the sign", image1: "/m/i.png", seed: 7, steps: 20, cfg: 2.5,
+        prompt: "repaint the sign", image1: "/m/i.png", seed: 7, steps: 25, cfg: 1,
         mask: [{ input_mask: "/m/region.png", mask_mode: "crop_stitch" }],
       }),
       model, g, "run_mask_modifier",
@@ -702,12 +686,12 @@ describe("the image-edit compose gate", () => {
     const graph = g.toJSON() as Record<string, { class_type: string }>;
     assert.ok(Object.values(graph).some((node) => node.class_type === "MaskToSEGS"), "the modifier feeds the region segmenter");
     assert.ok(Object.values(graph).some((node) => node.class_type === "DetailerForEach"), "the modifier keeps the region detailer");
-    assert.ok(!Object.values(graph).some((node) => node.class_type === "VAEEncode"), "the region lane does not use the whole-image encode");
+    assert.ok(!Object.values(graph).some((node) => node.class_type === "KSampler"), "the region lane carries no plain sampler");
   });
 });
 
 describe("the lane-bespoke leaves (the DECL surface — fix shape 2's successor)", () => {
-  it("THE LEAVES RIDE THEIR DECL SURFACE: the deliverable pair is surfaced on every edit lane (the size door), use_stock_nodes/double_reference are 2511's — the card carries NO model guard; references are ONE unguarded stack", () => {
+  it("THE LEAVES RIDE THEIR DECL SURFACE: the deliverable pair is surfaced on every edit lane (the size door); the retired tuning pair left the declaration entirely — the card carries NO model guard; references are ONE unguarded stack", () => {
     // the carrier dance (same as formSchemas: schemaCarrier ?? schema)
     const carrier = (def.schemaCarrier ?? def.schema) as unknown as { toJSON(): { refs: Record<number, { type?: string; dict?: Record<string, number>; meta?: { extra?: { visible_when?: string; max_stack?: number; hidden?: boolean; zone?: string } } }> } };
     const json = carrier.toJSON();
@@ -723,8 +707,15 @@ describe("the lane-bespoke leaves (the DECL surface — fix shape 2's successor)
     // judged at bench-write and rendered from the declaration. A
     // model guard here would be a second declaration drifting beside
     // the first.
-    for (const name of ["match_input_resolution", "use_stock_nodes", "double_reference"]) {
+    for (const name of ["match_input_resolution"]) {
       assert.equal(leaf(name), undefined, `${name} carries no model guard — its family is its DECL params surface`);
+    }
+    // (2026-11-09) the removed lane's tuning pair left the
+    // declaration entirely: no key, no hidden alias, nothing to
+    // validate — a stated knob refuses at the declared-surface
+    // admission (pinned in the firing-refusals arm).
+    for (const gone of ["use_stock_nodes", "double_reference"]) {
+      assert.equal(root!.dict![gone], undefined, `${gone} left the declaration — the rows died with the removed lane`);
     }
     // WIDTH/HEIGHT (served by the size door, 2026-11-12): the pair
     // is a SERVED face row, visible only when
@@ -743,18 +734,15 @@ describe("the lane-bespoke leaves (the DECL surface — fix shape 2's successor)
     // the DECL surfaces themselves (the one truth): EVERY edit
     // lane lists the deliverable pair (the size door — 2.1 sizes
     // its render through the pair: encoder budget + exact latent;
-    // 2511 and fibo2 keep their own deliverable tails). 2511 owns
-    // the edit-tuning pair. The
-    // match toggle is SHARED (all lanes admit it as the deliverable
-    // switch).
+    // fibo2 keeps its own deliverable tail). The match toggle is
+    // SHARED (all lanes admit it as the deliverable switch).
     const decl21 = facts.models["qwen-img-edit-21"]!;
-    const decl2511 = facts.models["qwen-img-edit-2511"]!;
+    const declFibo2 = facts.models["fibo2-edit"]!;
     const surf = (m: { params?: string[] }): ReadonlySet<string> => new Set(m.params ?? []);
     assert.ok(surf(decl21).has("width") && surf(decl21).has("height"), "2.1's surface lists the deliverable pair (run params, kit tail)");
-    assert.ok(surf(decl2511).has("width") && surf(decl2511).has("height"), "2511's surface lists the deliverable pair (source-resolution lane, deliverable tail)");
-    assert.ok(surf(decl21).has("match_input_resolution") && surf(decl2511).has("match_input_resolution"), "both lanes admit the match toggle (the deliverable switch)");
-    assert.ok(surf(decl2511).has("use_stock_nodes") && surf(decl2511).has("double_reference"), "2511's surface owns the edit-tuning pair");
-    assert.ok(!surf(decl21).has("use_stock_nodes") && !surf(decl21).has("double_reference"), "2.1's surface excludes the 2511 tuning pair");
+    assert.ok(surf(declFibo2).has("width") && surf(declFibo2).has("height"), "fibo2's surface lists the deliverable pair (resize-tail lane)");
+    assert.ok(surf(decl21).has("match_input_resolution") && surf(declFibo2).has("match_input_resolution"), "both lanes admit the match toggle (the deliverable switch)");
+    assert.ok(!surf(decl21).has("use_stock_nodes") && !surf(declFibo2).has("use_stock_nodes"), "no living lane owns a retired tuning knob");
     // the SHARED surface never hides (no guard on the plain knobs)
     assert.equal(leaf("prompt"), undefined, "the shared surface never carries a model guard");
     assert.equal(leaf("image1"), undefined, "the anchor is every edit lane's surface");
@@ -776,9 +764,9 @@ describe("the lane-bespoke leaves (the DECL surface — fix shape 2's successor)
     // THE DECL CAPS (the max_images law): each lane's own node truth
     // rides its DECL into the runtime facts — the gate and the lane
     // read them, never a hardcoded count.
-    assert.equal((model.lane_inputs as Record<string, unknown>).max_images, 3, "2511 declares its stock node: 3 total");
     const model21 = facts.models["qwen-img-edit-21"]!;
     assert.equal((model21.lane_inputs as Record<string, unknown>).max_images, 16, "2.1 declares its encoder: 16 total");
+    assert.equal((declFibo2.lane_inputs as Record<string, unknown>).max_images, 16, "fibo2 declares 16 total");
     // THE LEGACY ALIASES: image2/image3 stay declared for old
     // drafts/agents/flows but NEVER render (hidden — validation-only
     // gate keys; compose merges them to the reference front).
@@ -847,16 +835,16 @@ describe("the lane-bespoke leaves (the DECL surface — fix shape 2's successor)
     assert.equal(json.refs[root!.dict!["image1"]]?.meta?.extra?.zone, undefined, "the legacy anchor carries no zone — hidden, unserved");
   });
 
-  it("a 2-entry stack RIDES the 2511 lane through the card door (the narrow end, no refusal)", () => {
+  it("a 2-entry stack RIDES the 2.1 lane through the card door (the contiguous dotted slots, no refusal)", () => {
     const g = new GraphBuilder();
     def.compose(
       def.schema({ prompt: "dress the mannequin", image1: "/m/anchor.png", reference_images: ["/m/pose.png", "/m/fabric.png"] }),
-      model, g, "r_stack2511",
+      model, g, "r_stack21",
     );
     const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
-    const enc = Object.values(graph).find((n) => n.class_type === "TextEncodeQwenImageEditPlus");
-    assert.ok(enc, "the stock encoder renders through the card door");
-    assert.ok("image2" in enc!.inputs && "image3" in enc!.inputs, "the stack's refs ride the stock slots");
+    const enc = Object.values(graph).find((n) => n.class_type === "TextEncodeQwenImage21");
+    assert.ok(enc, "the 2.1 encoder renders through the card door");
+    assert.ok(enc!.inputs["images.image_2"] && enc!.inputs["images.image_3"], "the stack's refs ride the contiguous dotted slots");
   });
 });
 
@@ -881,9 +869,9 @@ describe("the reference stack composes on the 2.1 lane (contiguous from image_2,
 });
 
 describe("the rail labels (the naming law: version-explicit, never the bare genre)", () => {
-  it("the two edit families are distinguishable by label alone", () => {
-    assert.equal(registryModel("qwen-img-edit-2511").label, "Qwen Image Edit 2511");
+  it("the two living edit families are distinguishable by label alone", () => {
     assert.equal(registryModel("qwen-img-edit-21").label, "Qwen Image Edit 2.1");
+    assert.notEqual(registryModel("fibo2-edit").label, registryModel("qwen-img-edit-21").label, "the alternate lane's label never collides with the default's");
   });
 });
 
@@ -908,13 +896,13 @@ describe("declCap (the max_images law — the card face rides the DECLs, missing
 // (2) the row composes ITS OWN declared truth — the unet the row
 // spells is the unet the graph loads (the wrong-weights half), and
 // the encoder class the row spells is the class the graph builds
-// (the 2.1/EditPlus split). The row's lane_inputs are the oracle;
+// (the 2.1/Fibo2 split). The row's lane_inputs are the oracle;
 // the graph is the accused.
 describe("THE EVERY-ADDRESS WALL — every served address composes its own declared segment", () => {
   const editRows = Object.values(facts.models).filter((m) => m.card === "image-edit");
 
   it("the card serves every boarded family (the wall's own footing)", () => {
-    assert.ok(editRows.length >= 4, `expected the served edit addresses (families + routes), found ${String(editRows.length)}`);
+    assert.ok(editRows.length >= 2, `expected the served edit addresses (families + routes), found ${String(editRows.length)}`);
   });
 
   for (const row of editRows) {
@@ -952,11 +940,6 @@ describe("THE EVERY-ADDRESS WALL — every served address composes its own decla
     assert.equal(bf16.family, "qwen-img-edit-21");
     assert.equal(bf16.lane_inputs.unet, "qwen_image_2.1_bf16.safetensors",
       "the bf16 route's derived row carries the merged lane view");
-    const lw = facts.models["qwen-img-edit-2511-lightning4"]!;
-    assert.ok(lw, "the lightning route's derived row serves");
-    assert.equal(lw.family, "qwen-img-edit-2511");
-    assert.equal(lw.lane_inputs.unet, "qwen_image_edit_2511_fp8_e4m3fn_scaled_lightning_comfyui_4steps_v1.0.safetensors",
-      "the lightning route's derived row carries the recipe↔weights merge");
   });
 
   it("THE DECLARED FALLBACK: a row with no owning family REFUSES — the card never guesses a lane", () => {
@@ -964,13 +947,13 @@ describe("THE EVERY-ADDRESS WALL — every served address composes its own decla
     // shape — the derived rows all resolve family): the dispatch
     // refuses loud rather than riding a legacy lane in the open
     // (the interlock).
-    const row = { ...facts.models["qwen-img-edit-2511"]!, id: "synthetic-edit", family: undefined };
+    const row = { ...facts.models["qwen-img-edit-21"]!, id: "synthetic-edit", family: undefined };
     assert.throws(
       () => def.compose(
         def.schema({ prompt: "make the hallway blue", input_images: ["/m/anchor.png"], seed: 5 }),
         row as never, new GraphBuilder(), "wall_fallback",
       ),
-      /no declared action for family 'synthetic-edit' on the image-edit card — every boarded family \(qwen-img-edit-21, qwen-img-edit-2511, fibo2-edit\).*State params\.model \(one of those families\)/,
+      /no declared action for family 'synthetic-edit' on the image-edit card — every boarded family \(qwen-img-edit-21, fibo2-edit\).*State params\.model \(one of those families\)/,
     );
   });
 });

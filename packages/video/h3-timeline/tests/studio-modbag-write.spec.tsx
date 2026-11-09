@@ -1,5 +1,5 @@
 // THE MOD-BAG WRITE JOURNEY (the modleaf-add journey audit,
-// 2026-11-16 — the operator's burn: "literally does nothing after I
+// 2026-11-09 — the operator's burn: "literally does nothing after I
 // press add"). The death hop the audit named: the leaf's Add commits
 // the bag through CardForm's edit verb into Layer A state, and
 // serializeLayerA's hand-maintained vocabulary (LAYERA_EMIT_LOOP_KEYS
@@ -81,7 +81,7 @@ describe("the mod bag's write journey (the dead Add)", () => {
     await serveReal()
     const saved: Array<Record<string, unknown>> = []
     mountStudio(saved)
-    // THE ONE DOOR (2026-11-16): the mod system's entry is the +
+    // THE ONE DOOR (2026-11-09): the mod system's entry is the +
     // square and the kind picker — the outer chip row is deleted.
     // (2026-11-08 re-rule) the leaf's face is the kind's OWN field
     // grammar — the §0.8 posture switch is gone; the press states

@@ -42,7 +42,10 @@ describe("the families provider (the lanes' models seat)", () => {
     // Earlier: 33 -> 32 (2026-11-12, the openjutsu lane deleted by
     // operator order — viggle-animate dies); 32 -> 33 (2026-10-27,
     // the swap family, audit 023).
-    expect(ids.length).toBe(31);
+    // 31 -> 30 (2026-11-09): qwen-img-edit-2511 removed whole by
+    // operator order ("that model is too old") — the family package
+    // is gone, the table counts what boots.
+    expect(ids.length).toBe(30);
     for (const family of ["anny", "skin", "fit"]) {
       expect(ids, `family ${family} boards the lane seat`).toContain(family);
     }
@@ -66,7 +69,8 @@ describe("the families provider (the lanes' models seat)", () => {
     // THE KILL SWEEP (12 fossils deleted 2026-10-12): 35, not 47.
     // 32 -> 31 (2026-11-01): the anyCreature deletion (f0feefd46,
     // the blender-lane estate cut) — same census as the arm above.
-    expect(seat.familyCount()).toBe(31);
+    // 31 -> 30 (2026-11-09): qwen-img-edit-2511 removed whole.
+    expect(seat.familyCount()).toBe(30);
     await ctx.fiber.dispose();
     // ctx.plugin children are parent-owned: the provider's fiber
     // disposes recursively — the ModelsService registration and

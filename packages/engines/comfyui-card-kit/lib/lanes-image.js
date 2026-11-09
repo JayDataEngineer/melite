@@ -46,7 +46,7 @@ export function finalizeImageEdit(graph) {
 }
 /** THE IMAGE CAPACITY (the max_images law — the card and the lane
  *  RIDE the model's DECL, never a hardcoded count): total image
- *  inputs the lane opens, anchor included (2511's stock node: 3;
+ *  inputs the lane opens, anchor included (the stock node: 3;
  *  2.1's encoder: 16). A lane that never declared max_images gets
  *  the NARROW end (3) — loud-safe by construction: over-refusal is
  *  field-named and names the missing DECL, while guessing roomy
@@ -127,7 +127,7 @@ export function orderedInputImages(p) {
  *  THE SECOND SEAT (the max_images law): the gate reads
  *  the CAP off the model (lane_inputs.max_images — the DECL's own
  *  node truth, never a hardcoded count, never a family-id switch).
- *  Refs past cap - 1 refuse LOUD on every lane (2511: 2, 2.1: 15);
+ *  Refs past cap - 1 refuse LOUD on every lane (2.1: 15);
  *  the lane re-pins the same ceiling for direct callers. An absent
  *  model refuses (the old law — direct lane callers pin it). */
 /** THE REGION ENTRY-VOCABULARY DOOR (the D11 edit-suite burn,
@@ -221,8 +221,8 @@ export function refuseImageEditFiring(p, model) {
     // never change). A wider canvas is NOT a masked edit: the size
     // law's own door below owns it — on qwen-img-edit-2.1 a stated
     // pair renders the wider canvas NATIVELY (the outpaint path
-    // itself, the D11 proof 2026-11-04), on 2511/fibo2 it resizes the
-    // deliverable (their outpaint stays pad-and-instruct).
+    // itself, the D11 proof 2026-11-04), on fibo2 it resizes the
+    // deliverable (its outpaint stays pad-and-instruct).
     fire('input_mask', maskStated && effectiveMode === 'auto', 'no edit lane inpaints in place (inline inpainting is retired) — for a region state mask_mode crop_stitch (the region detailer)');
     // THE DELIVERABLE-SIZE LAW (the resize order, 2026-11-12): the
     // shared door below — one law, the firing gate and every build.
@@ -424,10 +424,9 @@ export function genDetailerSave(g, p, region, io, runId) {
  *  file on disk. */
 export const isSpell = (s) => s.startsWith('$');
 // THE IMAGE-EDIT LANE IS FAMILY-OWNED (the kit-arm retirement,
-// 2026-09-30): the qwen-img-edit-21 and qwen-img-edit-2511 families
+// 2026-09-30): the qwen-img-edit-21 and fibo2-edit families
 // compose their own edit lanes in their declared actions
-// (packages/models/qwen-img-edit-21/src/actions.ts and
-// .../qwen-img-edit-2511/src/actions.ts, each pinned to committed
+// (each family's src/actions.ts, pinned to committed
 // goldens in that family's tests/golden/). This arm is deleted. What
 // stays is admission, not lane: refuseImageEditFiring (the card's
 // firing gate, which reads the cap off the row) and finalizeImageEdit

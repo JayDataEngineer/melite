@@ -107,7 +107,7 @@ export interface DeclaredModifierKind {
    *  so the declarer stamps its own kind name. Served verbatim;
    *  absent = unattributed (the wall reds the lane). */
   schema_key?: string
-  /** THE MODIFIER SECTIONS (operator 2026-11-16, §0.8 THE FLOW
+  /** THE MODIFIER SECTIONS (operator 2026-11-09, §0.8 THE FLOW
    *  MODEL): checkable stages over the kind's ONE schema — each
    *  patch touches only this kind's own declared fields (the
    *  registration door validateDeclaredMods refuses any other key

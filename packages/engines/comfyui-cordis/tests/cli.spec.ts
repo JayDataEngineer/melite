@@ -12,7 +12,7 @@ import { describe, it, beforeAll, afterAll } from "vitest";
 // plane — its rows read must be isolated from operator machine state
 import { isolateOperatorModState } from "../../../../tests/helpers/operator-modstate-isolation.ts";
 isolateOperatorModState();
-// THE KEYLESS CENSUS (the 2026-11-16 CI cure) + THE HERMETIC STORE:
+// THE KEYLESS CENSUS (the 2026-11-09 CI cure) + THE HERMETIC STORE:
 // the spawned door boots against the engine (GET /object_info) and
 // composes through the lane-presence walk — a fresh clone has NEITHER
 // the engine NOR the downloaded store, so every compose arm died on

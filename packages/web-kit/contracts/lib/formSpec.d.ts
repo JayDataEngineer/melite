@@ -212,7 +212,7 @@ export interface ModifierKind {
      *  verbatim; the compose door enforces them only when the kind's
      *  bag is non-empty (an unused arm never blocks a run). */
     requires?: readonly string[];
-    /** THE MODIFIER SECTIONS (operator, 2026-11-16 §0.8 THE FLOW
+    /** THE MODIFIER SECTIONS (operator, 2026-11-09 §0.8 THE FLOW
      *  MODEL: "It is a flow. We have a source video. Then we have
      *  modifiers on top of it. So it flows down a chain"): each kind
      *  declares its CHECKABLE modifier stages — a checkbox + its
@@ -419,7 +419,7 @@ export interface FormSpecDoc {
      *  studio (the mirror judges as before — never a guess). */
     studio_writes?: ReadonlyArray<string>;
     /** THE CARD'S CONTRACT ADMISSION ROW (the pre-collapse doc law,
-     * 2026-11-16 — the operator burn: "the video cards from before
+     * 2026-11-09 — the operator burn: "the video cards from before
      * with mods are broken"): the card's declared `admits` extras,
      * served VERBATIM off the CardDefinition — the same list the
      * estate's admission predicate (cardAdmits, cardsFacts.ts) reads

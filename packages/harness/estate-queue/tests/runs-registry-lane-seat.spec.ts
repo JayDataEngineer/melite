@@ -90,7 +90,10 @@ describe("the runs door through the lane's models seat", () => {
     // 33 -> 32 (2026-11-12): the openjutsu lane deleted — viggle-animate dies.
     // 32 -> 31 (2026-11-01, the blender-lane removal): anycreature dies
     // with the species lane (RayCreatureRigBridge, the pack side).
-    assert.equal(seat.allDecls().length, 31, "the booted table, not a bare service (the FAMILY_PKGS census)");
+    // 31 -> 30 (2026-11-09): qwen-img-edit-2511 removed whole by
+    // operator order ("that model is too old") — the census follows
+    // the booted table.
+    assert.equal(seat.allDecls().length, 30, "the booted table, not a bare service (the FAMILY_PKGS census)");
     const err = await remote(() =>
       svc.start({ draft_id: "d1", test: false, flow: "fit-seat" }, new AbortController().signal),
     );

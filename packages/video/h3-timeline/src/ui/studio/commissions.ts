@@ -41,7 +41,7 @@ import { STARTER_CALLS } from './docModel.ts'
  *  2026-10-31-modpress-row-face): five of seven declared kinds had
  *  no row, so a refine/upscale-only row drew an EMPTY rail — its
  *  whole authored truth invisible beside the starter lie.
- *  `edit` joined on 2026-11-16 (THE READ-LIST COLLAPSE, the one-door
+ *  `edit` joined on 2026-11-09 (THE READ-LIST COLLAPSE, the one-door
  *  law's UI half): `edit` is the CANONICAL bag — the spelling the
  *  one door's Add writes and the compose door reads. The legacy five
  *  after it are the door's translation for old documents; they ride

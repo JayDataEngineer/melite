@@ -493,7 +493,7 @@ function validateDecl(decl: ModelDecl): void {
   // declared before the pool's head — the engine head claims the
   // family address onto it while every unstated compose resolves
   // pool[0]. An EMPTY pool is the exempt shape (a fully-hidden
-  // family — qwen-img-edit-2511 — offers no default to diverge
+  // family offers no default to diverge
   // from; the head claim is vacuous there). Judged LAST, after
   // servability + the plane canon: a dead row or a canon break
   // refuses first, in its own voice.

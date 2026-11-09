@@ -340,10 +340,10 @@ test.describe('the every-card wall (live catalog, every family a variation)', ()
       // family in the card's VARIANT MATRIX (axes.tsx: familyRows
       // flatMap f.inMatrix ? [] : [row]) is lawfully ABSENT from the
       // Model menu — it boards through a seated family's Variant
-      // axis (image-edit: 2511 rides 2.1's variant rail, proven by
-      // cards-variations' reseed arm). A declared family is
-      // REACHABLE through EITHER menu; the reachability of the
-      // matrix lane itself is the variations wall's own receipt.
+      // axis. A declared family is REACHABLE through EITHER menu;
+      // the reachability of the matrix lane itself is the variations
+      // wall's own receipt. (The edit card's retired lane that
+      // exemplified this seat was removed whole, 2026-11-09.)
       const seatedOnModelMenu = (menuFaces: string[], ff: (id: string) => RegExp, norm: (f: string) => string) =>
         (fam: string) => menuFaces.some((f) => f === titleCaseId(fam) || ff(fam).test(norm(f)))
       const variantTrigger = page.locator('button[data-axis="Variant"]').first()
@@ -370,7 +370,7 @@ test.describe('the every-card wall (live catalog, every family a variation)', ()
       // THE PARSED ROSTER (dry-audit F5): the door answers the card
       // CATALOG — each card's `covers` array IS its family roster
       // (live receipt: image-edit covers [qwen-img-edit-21,
-      // qwen-img-edit-2511, fibo2-edit]). A substring match over the
+      // fibo2-edit]). A substring match over the
       // raw body could false-positive a prefix family ('fibo2' inside
       // 'fibo2-edit'); the roster membership is exact.
       const doorCovers = ((): string[] => {

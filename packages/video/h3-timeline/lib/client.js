@@ -5186,7 +5186,7 @@ window.__ModuleLoader__.load({
 		*  2026-10-31-modpress-row-face): five of seven declared kinds had
 		*  no row, so a refine/upscale-only row drew an EMPTY rail — its
 		*  whole authored truth invisible beside the starter lie.
-		*  `edit` joined on 2026-11-16 (THE READ-LIST COLLAPSE, the one-door
+		*  `edit` joined on 2026-11-09 (THE READ-LIST COLLAPSE, the one-door
 		*  law's UI half): `edit` is the CANONICAL bag — the spelling the
 		*  one door's Add writes and the compose door reads. The legacy five
 		*  after it are the door's translation for old documents; they ride
@@ -5548,7 +5548,7 @@ window.__ModuleLoader__.load({
 		/** The splice frame for a split where BOTH halves must be legal — the
 		*  gesture's frame when it already qualifies, else the nearest one
 		*  that does. NULL when no interior frame qualifies (the §0.5 fence,
-		*  2026-11-16): the old fallthrough handed back the raw gesture and
+		*  2026-11-09): the old fallthrough handed back the raw gesture and
 		*  every caller wrote an off-grid half the card would refuse whole.
 		*  A window at its shape's floor (the 22f base, the 17f step) has no
 		*  legal split at all — the caller refuses loud, never repairs. */
@@ -7896,7 +7896,7 @@ window.__ModuleLoader__.load({
 			"model",
 			"audio_stem"
 		];
-		/** THE WRITABLE MOD BAGS (the modleaf-add journey audit, 2026-11-16
+		/** THE WRITABLE MOD BAGS (the modleaf-add journey audit, 2026-11-09
 		* — the operator's burn: "literally does nothing after I press
 		* add"). The doc-plane bag keys the studio can author — ONE roster
 		* for the emit loop, the delete-ride universe, and the Layer A
@@ -17795,7 +17795,7 @@ window.__ModuleLoader__.load({
 			*  no prompt is a TODO the plan names before any GPU work — never
 			*  silent junk prompt.
 			*
-			*  THE §0.5 SPLIT (2026-11-16): a split is ONE call becoming its own
+			*  THE §0.5 SPLIT (2026-11-09): a split is ONE call becoming its own
 			*  two halves, never a fresh TODO spliced into the middle — text,
 			*  refs, knobs, guides and last_frame carry whole into BOTH halves,
 			*  and the seam the split births states CUT (the only seam a split

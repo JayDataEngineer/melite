@@ -82,7 +82,7 @@ describe("THE WEIGHT-OFFER PARITY WALL — a Download button may exist only wher
       return;
     }
     const sentence = miss.message;
-    // ORDER-INDEPENDENT SUBJECT (the 2026-11-16 CI cure): the walk
+    // ORDER-INDEPENDENT SUBJECT (the 2026-11-09 CI cure): the walk
     // reports the FIRST missing declared row, and which hand-only tree
     // leads the report is machine state (the operator's store carries
     // hand-placed copies the clone lacks — on CI CustomVoice leads,

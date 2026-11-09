@@ -92,7 +92,7 @@ export declare const squareCopy: {
     uploading: (p: {
         name: string;
     }) => string;
-    /** The drop-kind refusal (the modleaf-add journey audit, 2026-11-16):
+    /** The drop-kind refusal (the modleaf-add journey audit, 2026-11-09):
      *  "a video File dropped on the IMAGE seat reaches onFile
      *  unrefused" — the OS dialog's accept is a soft filter the drop
      *  path bypasses; the seat's own kind law refuses loud into the

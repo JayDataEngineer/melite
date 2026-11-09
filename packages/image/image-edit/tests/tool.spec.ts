@@ -37,18 +37,18 @@ describe("the image-edit tool face", () => {
 
   it("presentationMeta projects the run arm, empty keys omitted", () => {
     const out = tool.output.presentationMeta?.(undefined, {
-      flow: "image-edit", model: "qwen-img-edit-2511", run_id: "r1", draft_id: "d1", status: "queued",
+      flow: "image-edit", model: "fibo2-edit", run_id: "r1", draft_id: "d1", status: "queued",
     });
     assert.deepEqual(out, {
-      flow: "image-edit", model: "qwen-img-edit-2511", run_id: "r1", draft_id: "d1", status: "queued",
+      flow: "image-edit", model: "fibo2-edit", run_id: "r1", draft_id: "d1", status: "queued",
     });
   });
 
   it("presentationMeta projects the refusal arm (error rides, no ids)", () => {
     const out = tool.output.presentationMeta?.(undefined, {
-      flow: "image-edit", model: "qwen-img-edit-2511", error: "no_such_model",
+      flow: "image-edit", model: "fibo2-edit", error: "no_such_model",
     });
-    assert.deepEqual(out, { flow: "image-edit", model: "qwen-img-edit-2511", error: "no_such_model" });
+    assert.deepEqual(out, { flow: "image-edit", model: "fibo2-edit", error: "no_such_model" });
   });
 
   it("presentResult: meta-less result → undefined (the raw arm); run arm titles the label", () => {
@@ -58,9 +58,9 @@ describe("the image-edit tool face", () => {
     assert.equal(tool.presentResult?.(ARGS, {} as never), undefined);
     const view = tool.presentResult?.(ARGS, {
       content: [], isError: false,
-      meta: { flow: "image-edit", model: "qwen-img-edit-2511", run_id: "r9" },
+      meta: { flow: "image-edit", model: "fibo2-edit", run_id: "r9" },
     });
-    assert.equal(view?.title, "Edit Image [qwen-img-edit-2511] → r9");
+    assert.equal(view?.title, "Edit Image [fibo2-edit] → r9");
     assert.ok(view?.card === "generic", "the generic card view");
     assert.equal((view as { content?: unknown }).content, undefined, "content omitted — the raw result renders");
   });

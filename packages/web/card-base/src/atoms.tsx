@@ -412,7 +412,7 @@ export function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder
         ...square.verbs,
       }),
       // THE ATTEMPT + REFUSAL FACES (the seat-kind judge's law, the
-      // modleaf-add journey audit 2026-11-16): a square that carries
+      // modleaf-add journey audit 2026-11-09): a square that carries
       // the provider's verbs carries its FACES too — SourceRow's own
       // pair, verbatim (busy = the neutral in-flight line under the
       // square, error = the danger-colored refusal). Before this,

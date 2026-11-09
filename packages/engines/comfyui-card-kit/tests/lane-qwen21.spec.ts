@@ -30,17 +30,15 @@ const FACTS_21 = {
   },
 } as never;
 
-const FACTS_2511 = {
-  id: "qwen-img-edit-2511", card: "image-edit", defaults: {}, card_knobs: [], variants: [],
+const FACTS_NARROW = {
+  id: "narrow-lane-stub", card: "image-edit", defaults: {}, card_knobs: [], variants: [],
   variant_groups: [], outputs: [], mods: [],
   lane_inputs: {
-    unet: "qwen_image_edit_2511_int8_convrot.safetensors",
-    vae: "qwen_image_vae.safetensors",
-    text_encoder: "qwen_2.5_vl_7b_fp8_scaled.safetensors",
-    clip_type: "qwen_image",
-    latent_node: "EmptySD3LatentImage",
-    // THE DECLARED CAP (the max_images law): the stock node takes
-    // image1/2/3 — 3 total. The lane rides this, never a hardcoded 2.
+    // THE DECLARED CAP (the max_images law): a lane may declare any
+    // capacity — 3 total here. The lane rides this, never a
+    // hardcoded 16 (the removed edit lane was the original 3-cap
+    // object, operator 2026-11-09; the law outlives its first
+    // witness, so the stub stays).
     max_images: 3,
   },
 } as never;
@@ -57,7 +55,7 @@ const graphOf = (g: GraphBuilder): Record<string, { class_type: string; inputs: 
 describe("editImageCap (the max_images law — the lane rides the DECL, never a hardcoded count)", () => {
   it("a declared cap wins on every lane", () => {
     assert.equal(editImageCap(FACTS_21), 16, "2.1 declares 16");
-    assert.equal(editImageCap(FACTS_2511), 3, "2511 declares 3");
+    assert.equal(editImageCap(FACTS_NARROW), 3, "a 3-declared lane serves 3");
   });
   it("lanes that never declared capacity ride the narrow end (loud-safe: over-refusal names the lane, never a silent drop)", () => {
     const noCap21 = { lane_inputs: { text_encode_node: "TextEncodeQwenImage21" } };

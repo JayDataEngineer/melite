@@ -49,17 +49,21 @@ describe('form-spec read (keyless replay)', () => {
     }
     assert.deepEqual(served, ['/v1/form-spec?model=image-edit'])
 
-    // The envelope's own census — exact, from the recorded doc.
-    assert.equal(spec.schema.uid, 3385)
-    assert.equal(Object.keys(spec.schema.refs).length, 74)
-    assert.equal(Object.keys(spec.variants).length, 7)
-    assert.deepEqual(Object.keys(spec.mod_schemas), ['mask'])
+    // The envelope's own census — exact, from the recorded doc
+    // (re-recorded 2026-11-09: the edit card's retired lane was
+    // removed whole — its knob rows left the envelope — and the
+    // loras pack rows the 2026-11-08 boarding added are the doc's
+    // own shape, refreshed from the welded fixture).
+    assert.equal(spec.schema.uid, 92)
+    assert.equal(Object.keys(spec.schema.refs).length, 73)
+    assert.equal(Object.keys(spec.variants).length, 10)
+    assert.deepEqual(Object.keys(spec.mod_schemas), ['loras', 'mask'])
 
     // THE PROJECTION (B3's law rides the snapshot tier): every dict id
     // in the recorded envelope resolves — the walk projects, never a
     // hole, never the refusal.
     const fields = fieldsOfEnvelope(spec.schema)
-    assert.equal(fields.length, 12)
+    assert.equal(fields.length, 11)
 
     // The refusal is pinned from the recorded shape itself: one dangling
     // dict id (a ref the table does not carry) refuses the whole form.

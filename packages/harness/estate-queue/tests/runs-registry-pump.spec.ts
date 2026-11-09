@@ -263,7 +263,7 @@ describe("pump + engine", () => {
   // row instead of naming the missing binary.
   const ffmpegOk = (): boolean =>
     spawnSync("ffmpeg", ["-version"], { encoding: "utf8" }).status === 0;
-  // THE TOOL GATE (the 2026-11-16 CI cure): the film arms write REAL
+  // THE TOOL GATE (the 2026-11-09 CI cure): the film arms write REAL
   // tiny mp4s — ffmpeg is their material, not their subject. The two
   // arms skip LOUD on a host without the binary (CI); the mux-valve
   // law's engine-side arms above and below judge everywhere.

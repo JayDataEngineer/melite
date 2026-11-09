@@ -71,7 +71,7 @@ test('THE CHROME: one flowing row — title, hint, and the add square when addab
   expect(document.querySelector('[data-subcard-add="mod"]')).not.toBeNull()
 })
 
-test('THE HINT NAMES THE PRESENT AFFORDANCE (the 2026-11-16 operator friction: "a modifiers section that does nothing above the mod slots") — an EMPTY section never voices the drag hint', () => {
+test('THE HINT NAMES THE PRESENT AFFORDANCE (the 2026-11-09 operator friction: "a modifiers section that does nothing above the mod slots") — an EMPTY section never voices the drag hint', () => {
   // the burn shape verbatim: ordered kinds served, ZERO entries —
   // the preset chips and the add square render, but nothing is
   // draggable, and a hint naming a drag that does not exist reads

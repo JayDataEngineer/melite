@@ -127,7 +127,7 @@ export function installLaneStoreOverlay(): string {
     const decl = getModel(fam) as unknown as DeclShape;
     const homes = decl.lane_homes ?? {};
     const noFetch = handOnlyNames(decl);
-    // THE STOCK-MAP LEG (the 2026-11-16 CI cure): the gate's stock
+    // THE STOCK-MAP LEG (the 2026-11-09 CI cure): the gate's stock
     // loop probes LANE_FOLDERS folders for every declared slot, and
     // the mirrored store only carries what the REAL store carries —
     // on a fresh clone that is nothing, so every stock-map row

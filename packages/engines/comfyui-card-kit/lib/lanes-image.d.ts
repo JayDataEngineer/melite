@@ -14,7 +14,7 @@ export declare const IMAGE_EDIT_STRIP: StripTable;
 export declare function finalizeImageEdit(graph: PromptGraph): PromptGraph;
 /** THE IMAGE CAPACITY (the max_images law — the card and the lane
  *  RIDE the model's DECL, never a hardcoded count): total image
- *  inputs the lane opens, anchor included (2511's stock node: 3;
+ *  inputs the lane opens, anchor included (the stock node: 3;
  *  2.1's encoder: 16). A lane that never declared max_images gets
  *  the NARROW end (3) — loud-safe by construction: over-refusal is
  *  field-named and names the missing DECL, while guessing roomy
@@ -50,7 +50,7 @@ export declare function orderedInputImages(p: Record<string, unknown>): string[]
  *  THE SECOND SEAT (the max_images law): the gate reads
  *  the CAP off the model (lane_inputs.max_images — the DECL's own
  *  node truth, never a hardcoded count, never a family-id switch).
- *  Refs past cap - 1 refuse LOUD on every lane (2511: 2, 2.1: 15);
+ *  Refs past cap - 1 refuse LOUD on every lane (2.1: 15);
  *  the lane re-pins the same ceiling for direct callers. An absent
  *  model refuses (the old law — direct lane callers pin it). */
 /** THE REGION ENTRY-VOCABULARY DOOR (the D11 edit-suite burn,

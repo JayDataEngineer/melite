@@ -821,7 +821,7 @@ export function laneRelationsFor(
 }
 
 /** THE PICK'S SANCTIONED STAMPS (the tagger burn, gate-11 probe p,
- *  2026-11-16): a variant row's defaults may name the lane's
+ *  2026-11-09): a variant row's defaults may name the lane's
  *  INTERNAL coordinates (a checkpoint path the engine resolves from
  *  the variant stamp itself) — keys the row's own resolved lane does
  *  not serve. The compose mirror field-names such a key and the door
@@ -1536,7 +1536,7 @@ export function modelSwitchPatch(spec: FormSpecDoc, model: string, held?: SpecVa
     const composing = composingRows(spec, g, active)
     if (composing.length === 0 || crossSpec) {
       // cross-spec: EVERY axis departs as a NULL (the gate-11 cure,
-      // 2026-11-16, probe (m)'s verbatim burn: the door answered
+      // 2026-11-09, probe (m)'s verbatim burn: the door answered
       // "unknown variant \"\" for model \"trellis2-native\" — a
       // stated empty selection is not a choice (pick one, or remove
       // the key and let compose default it)" and refused the whole
@@ -1609,7 +1609,7 @@ export function modelSwitchPatch(spec: FormSpecDoc, model: string, held?: SpecVa
       if (!(k in patch)) patch[k] = null
     }
     // THE DEPARTED SURFACE DIES WITH ITS MODEL (the drill null-set
-    // cure, 2026-11-08 — ERRORS item h / B8: 2511's double_reference
+    // cure, 2026-11-08 — ERRORS item h / B8: a departed lane's double_reference
     // rode a 21 arrival until the run door refused it field-named):
     // a key the DEPARTED family declares that the ARRIVAL does not
     // declare is the departed family's own knob — it nulls in the
@@ -1677,13 +1677,13 @@ export function seedAxisValues(spec: FormSpecDoc, held: SpecValues): SpecValues 
   const out: SpecValues = {}
   const groups = axisGroups(spec)
   // THE MODEL ARM IS THE FAMILY (stroke 21) and rides ABOVE the
-  // groups guard (the gate-11 anny burn, 2026-11-16: a family spec
+  // groups guard (the gate-11 anny burn, 2026-11-09: a family spec
   // with NO axis vocabulary — anny's single group-less variant row —
   // early-returned here and the stage was born FAMILY-LESS, the
   // sweep's seed-law red 'the bench doc carries a model coordinate
   // (doc null)'. The family names itself at birth for every spec
   // that carries one, independent of the axis walk). The seeded
-  // row's re-point (qwen-img-edit-2511-lightning4) is the server's
+  // row's re-point (the departed edit lane's lightning variant) is the server's
   // compose stamp — the user plane never holds a route.
   {
     const heldModel = held['model']
@@ -2177,7 +2177,7 @@ function resolvedLaneSurface(
  *  @param held the SAVED doc the drill opened.
  *  @returns the null-patch for the dead carried keys ({} when the
  *    doc is already stateable on its resolved lane). */
-/** THE ADMITTED-KEY FOLD (the pre-collapse reopen cure, 2026-11-16):
+/** THE ADMITTED-KEY FOLD (the pre-collapse reopen cure, 2026-11-09):
  *  the declared set BOTH judges of a saved doc derive — the compose
  *  mirror (composeValidate) and the reopen heal
  *  (dropStaleReopenCarry) — so one spelling sanctions a key at both
@@ -2187,7 +2187,7 @@ function resolvedLaneSurface(
  *  admits every key under the prefix). Before this fold the heal
  *  judged the doc with a narrower set than the mirror and nulled the
  *  legacy bags the verdict sanctioned — one silent merge-patch
- *  delete per reopen (the 2026-11-16 timeline audit's data-loss
+ *  delete per reopen (the 2026-11-09 timeline audit's data-loss
  *  finding: the operator's saved mod VANISHED at open).
  *  @param spec the doc's served form-spec.
  *  @param surface the doc's RESOLVED lane surface (or the legacy
@@ -2216,7 +2216,7 @@ export function dropStaleReopenCarry(
   const surface = resolvedLaneSurface(spec, held)
   if (surface === null) return out
   const axisKeys = new Set<string>(axisGroups(spec).map((g) => axisKey(g)))
-  // THE ADMITTED-KEY FOLD (the pre-collapse reopen cure, 2026-11-16):
+  // THE ADMITTED-KEY FOLD (the pre-collapse reopen cure, 2026-11-09):
   // the mirror's own declared set — surface, transport, studio
   // writes, mod fields, and the contract `admits` row with its glob
   // law — is THIS heal's sanction too. The heal once judged a
@@ -2306,7 +2306,7 @@ export function composeValidate(
     const surface = resolved ?? legacy
     if (surface !== null) {
       // THE DECLARED SET (one spelling, both judges — the
-      // pre-collapse reopen cure, 2026-11-16): the same
+      // pre-collapse reopen cure, 2026-11-09): the same
       // admittedKeys fold the reopen heal sanctions by. The seats
       // the fold composes: the resolved surface, the axis keys, the
       // transport's model key, the studio-owned writes (h¹, the
@@ -2314,7 +2314,7 @@ export function composeValidate(
       // names), the mod-surface sanction (E2-11: a card-declared mod
       // kind's param_key bag plus its envelope's field names), and
       // the CONTRACT-ADMITS sanction (the pre-collapse doc law,
-      // 2026-11-16): the card's `admits` row is the write door's own
+      // 2026-11-09): the card's `admits` row is the write door's own
       // surface (cardAdmits, cardsFacts.ts — the same predicate
       // compose/start/variant-stamp ride, glob rows and all), served
       // verbatim on the spec. The mirror sanctions the same names or

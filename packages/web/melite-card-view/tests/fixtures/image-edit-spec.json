@@ -85,17 +85,17 @@
   "loader_info": null,
   "mod_schemas": {
     "loras": {
-      "uid": 100,
+      "uid": 98,
       "refs": {
-        "95": {
+        "93": {
           "type": "string",
           "meta": {}
         },
-        "96": {
+        "94": {
           "type": "number",
           "meta": {}
         },
-        "97": {
+        "95": {
           "type": "number",
           "meta": {
             "min": 1,
@@ -111,18 +111,18 @@
             }
           }
         },
-        "98": {
+        "96": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "name": 95,
-            "strength": 96,
-            "steps": 97
+            "name": 93,
+            "strength": 94,
+            "steps": 95
           }
         },
-        "99": {
+        "97": {
           "type": "array",
           "meta": {
             "default": [],
@@ -135,15 +135,15 @@
               "order": 0
             }
           },
-          "inner": 98
+          "inner": 96
         },
-        "100": {
+        "98": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "loras": 99
+            "loras": 97
           }
         }
       }
@@ -458,7 +458,7 @@
     "default": "image"
   },
   "schema": {
-    "uid": 94,
+    "uid": 92,
     "refs": {
       "20": {
         "type": "const",
@@ -1017,33 +1017,6 @@
         ]
       },
       "92": {
-        "type": "boolean",
-        "meta": {
-          "description": "Use Stock Nodes",
-          "extra": {
-            "order": null,
-            "hidden": true,
-            "group": "edit_tuning",
-            "width": 1,
-            "tooltip": "When true, build_img2img_edit emits the stock Qwen-Image-Edit node graph (no DiffSynth patches, no custom ControlNet wiring). Useful for reproducing upstream behavior exactly.",
-            "zone": "params"
-          }
-        }
-      },
-      "93": {
-        "type": "boolean",
-        "meta": {
-          "description": "Double Reference",
-          "extra": {
-            "order": 2,
-            "group": "edit_tuning",
-            "width": 1,
-            "tooltip": "Not available yet: turning this on stops the run with a clear error — the edit models build the standard single-pass edit only, never a silent plain edit. Leave it off. (Once supported: the input image is encoded twice — VAE + vision encoder — for stronger identity preservation.)",
-            "zone": "params"
-          }
-        }
-      },
-      "94": {
         "type": "object",
         "meta": {
           "default": {}
@@ -1064,9 +1037,7 @@
           "steps": 88,
           "cfg": 89,
           "sampler": 90,
-          "scheduler": 91,
-          "use_stock_nodes": 92,
-          "double_reference": 93
+          "scheduler": 91
         }
       }
     }
@@ -1083,7 +1054,7 @@
         "cfg": 1
       },
       "route": "qwen-img-edit-21-turbo",
-      "hint": "The distilled turbo weights on the edit lane — 8 steps instead of the base 25 (upstream: 'Turbo uses 8 steps'), both download tiers below, same cache-wrapped edit compose. Requires provisioning: the 2.1 turbo files are NOT on this box by default; without them the engine validation refuses LOUD (the honest face — the 2511 weights are what ship).",
+      "hint": "The distilled turbo weights on the edit lane — 8 steps instead of the base 25 (upstream: 'Turbo uses 8 steps'), both download tiers below, same cache-wrapped edit compose. Requires provisioning: the 2.1 turbo files are NOT on this box by default; without them the engine validation refuses LOUD (the honest face — this lane's weights never shipped by default).",
       "engine": "comfyui",
       "sampler_envelope": {
         "steps": [
@@ -1195,7 +1166,7 @@
         "cfg": 1
       },
       "route": "qwen-img-edit-21",
-      "hint": "The 2.1 base checkpoint on the edit lane — 25 steps (the official template's own count), both download tiers below, the cache-wrapped edit compose. Requires provisioning: the 2.1 files are NOT on this box by default; without them the engine validation refuses LOUD (the honest face — the 2511 weights are what ship).",
+      "hint": "The 2.1 base checkpoint on the edit lane — 25 steps (the official template's own count), both download tiers below, the cache-wrapped edit compose. Requires provisioning: the 2.1 files are NOT on this box by default; without them the engine validation refuses LOUD (the honest face — this lane's weights never shipped by default).",
       "engine": "comfyui",
       "sampler_envelope": {
         "steps": [

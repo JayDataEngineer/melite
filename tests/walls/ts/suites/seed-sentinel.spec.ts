@@ -29,8 +29,8 @@ import { join } from "node:path";
 import { GraphBuilder } from "../../../../packages/engines/comfyui-card-kit/src/graph.ts";
 import { instantiateAction, mintSeed } from "../../../../packages/engines/comfyui-card-kit/src/kit.ts";
 // the edit lane is the family's declared action now (the kit-arm retirement)
-import { edit as qwenEdit } from "../../../../packages/models/qwen-img-edit-2511/src/actions.ts";
-import { DECL as qwenEdit2511Decl } from "../../../../packages/models/qwen-img-edit-2511/src/index.ts";
+import { edit as qwenEdit } from "../../../../packages/models/qwen-img-edit-21/src/actions.ts";
+import { DECL as qwenEdit21Decl } from "../../../../packages/models/qwen-img-edit-21/src/index.ts";
 import { compose as musicCompose } from "../../../../packages/models/music3/src/actions.ts";
 import type { ModelFacts } from "../../../../packages/engines/comfyui-card-kit/src/facts.ts";
 
@@ -114,19 +114,19 @@ describe("GATE S: the seed sentinel mints at render", () => {
     assert.deepEqual(Object.keys(g.toJSON() as unknown as object), [], "nothing emitted");
   });
 
-  it("the 2511 edit action with -1 mints the KSampler seed", (): void => {
+  it("the 2.1 edit action with -1 mints the KSampler seed (re-seated 2026-11-09: the retired edit lane's family left the tree)", (): void => {
     const g = new GraphBuilder();
     // the family's OWN lane truth (a hand-copied row here would be a
     // second truth the moment a weight or a node class is renamed)
     const model = {
-      id: "qwen-img-edit-2511",
+      id: "qwen-img-edit-21",
       card: "image-edit",
       defaults: {},
       variants: [],
       variant_groups: [],
       outputs: [],
       mods: [],
-      lane_inputs: (qwenEdit2511Decl as { lane_inputs: Record<string, unknown> }).lane_inputs,
+      lane_inputs: (qwenEdit21Decl as { lane_inputs: Record<string, unknown> }).lane_inputs,
     } as unknown as ModelFacts;
     instantiateAction(qwenEdit,
       { prompt: "make it dusk", image1: "in.png", seed: -1 } as Record<string, unknown>,
@@ -214,7 +214,6 @@ describe("GATE S: the seed sentinel mints at render", () => {
         "pixal3d/src/actions.ts",
         "qwen-img-21/src/actions.ts",
         "qwen-img-edit-21/src/actions.ts",
-        "qwen-img-edit-2511/src/actions.ts",
         // THE QWEN FOLD (2026-10-26: qwen3-tts + qwen3-tts-voicedesign
         // merged into ONE family qwen3-tts — the dead
         // qwen3-tts-voicedesign/src/actions.ts row leaves with the

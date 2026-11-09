@@ -47,8 +47,6 @@ export const edit = {
         { name: "reference_images", type: "image_list" },
         ...diffusionParamRows(EDIT_DIFFUSION_BOUNDS),
         { name: "match_input_resolution", type: "boolean" },
-        { name: "use_stock_nodes", type: "boolean" },
-        { name: "double_reference", type: "boolean" },
     ],
     facts: parseEditFacts,
     build({ p, facts, model, g, runId }) {

@@ -38,7 +38,7 @@ describe("THE POSITIVE CATALOG→PROVISIONS JOIN (A6)", () => {
     // empty catalog would make the join vacuously green)
     // 32 -> 31 (2026-11-01, the blender-lane removal): the anycreature
     // family leaves the boot's family table.
-    assert.ok(rows.length >= 31, `the real boot serves the family table (got ${rows.length})`);
+    assert.ok(rows.length >= 30, `the real boot serves the family table (got ${rows.length})`); // 31→30 2026-11-09: the retired edit family leaves the boot's family table
 
     const drift: string[] = [];
     const defaultMisses: string[] = [];

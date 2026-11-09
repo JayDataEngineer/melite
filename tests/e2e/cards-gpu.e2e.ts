@@ -70,25 +70,25 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: image-gen (the uncovered families)', (
   }, 240_000)
 })
 
-describe.skipIf(!ENGINE_FREE)('cards-gpu: image-edit (the 2511 lane)', () => {
-  // THE SOFT-RETIRE POSTURE, LIVE (2026-11-08 survivor arc: the 2.1
-  // lane won — both 2511 variants carry hide_from_dropdown; the unit
-  // wall cards-lane-law.spec pins the prepareCardParams throw, this
-  // row pins it through the REAL compose door). The lane's live
-  // coverage rides the surviving family: recipes-gpu's
-  // 'qwen-img-edit-21 edit' rows. A retired address must refuse
-  // LOUD forever, never queue a run — the old row pressed the
-  // retired coordinate and could only red.
-  it('qwen-img-edit-2511: the soft-retired address refuses LOUD at the compose door (never queues)', async () => {
-    await withWorld('cards-gpu-2511-retired', async (w) => {
-      const anchor = await uploadAnchorPng('2511 retired')
+describe.skipIf(!ENGINE_FREE)('cards-gpu: image-edit (the removed lane\'s address)', () => {
+  // THE REMOVAL POSTURE, LIVE (2026-11-09, superseding the 2026-11-08
+  // soft-retire arc: the family package is deleted whole — no
+  // successor tombstone in src, the generic refusal voice is the
+  // truth. The unit wall cards-lane-law.spec pins the same voice at
+  // prepareCardParams; this row pins it through the REAL compose
+  // door). The lane's live coverage rides the surviving families:
+  // recipes-gpu's 'qwen-img-edit-21 edit' rows. A removed address
+  // must refuse LOUD forever, never queue a run.
+  it('qwen-img-edit-2511: the removed address refuses LOUD at the compose door (never queues)', async () => {
+    await withWorld('cards-gpu-2511-removed', async (w) => {
+      const anchor = await uploadAnchorPng('2511 removed')
       await assert.rejects(
         () => w.svc.start(
           { draft_id: 'd1', test: false, model: 'qwen-img-edit-2511', prompt: 'make the cube blue', image1: anchor } as never,
           new AbortController().signal,
         ),
-        /is not offered \(the variant route is hidden from the dropdown\)/,
-        'the retired address refuses with the hidden-route voice',
+        /no model unit for model: qwen-img-edit-2511/,
+        'the removed address refuses with the no-model-unit voice',
       )
     })
   }, 60_000)

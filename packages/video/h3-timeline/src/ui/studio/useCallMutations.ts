@@ -35,7 +35,7 @@ export function useCallMutations(setCalls: Dispatch<SetStateAction<DocCall[]>>, 
    *  no prompt is a TODO the plan names before any GPU work — never
    *  silent junk prompt.
    *
-   *  THE §0.5 SPLIT (2026-11-16): a split is ONE call becoming its own
+   *  THE §0.5 SPLIT (2026-11-09): a split is ONE call becoming its own
    *  two halves, never a fresh TODO spliced into the middle — text,
    *  refs, knobs, guides and last_frame carry whole into BOTH halves,
    *  and the seam the split births states CUT (the only seam a split

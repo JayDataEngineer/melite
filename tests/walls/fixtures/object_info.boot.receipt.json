@@ -1,5 +1,5 @@
 {
- "derived_at": "2026-11-05T06:46:08.229Z",
+ "derived_at": "2026-11-09T14:23:50.497Z",
  "tool": "scripts/regen-node-vocab.mjs --boot",
  "source": {
   "path": "data/tmp/object_info_prod.json",
@@ -15,40 +15,19 @@
  },
  "derivation": {
   "facts_path": "packages/engines/comfyui-cordis/data/model-facts.json",
-  "addressed_class_count": 94,
+  "addressed_class_count": 92,
   "bootstrap_class_count": 97,
-  "fixture_class_count": 190,
-  "rows_probed": 31,
+  "fixture_class_count": 188,
+  "rows_probed": 30,
   "refused_rows": 0
  },
  "delta": {
   "added": [],
-  "pruned": [],
-  "updated": [
-   "AudiocoreFamilyInfo",
-   "AudiocoreMusic",
-   "AudiocoreVoiceEmbedding",
-   "DisableNoise",
-   "H3ConditioningSyncFromLatents",
-   "ImageConcatMulti",
-   "MeliteLoudness",
-   "MeliteQVoiceCopy",
-   "MiniMaxH3ChainAssemble",
-   "MiniMaxH3ChainCheckpointManager",
-   "MiniMaxH3ChainCurrent",
-   "MiniMaxH3ChainPass2Prepare",
-   "MiniMaxH3ChainUpscaleAdapter",
-   "MiniMaxH3ChainUpscaleCurrent",
-   "MiniMaxH3ChainUpscaleLoopEnd",
-   "MiniMaxH3ChainUpscaleReferenceConditioning",
-   "MiniMaxH3ChainUpscaleSegmentSave",
-   "MiniMaxH3ContexMaskGridPreview",
-   "MiniMaxH3ContexMaskedTarget",
-   "MinimaxH3LatentUpscaler3D",
-   "MinimaxH3LatentUpscaler3DProvider",
-   "MinimaxH3LatentUpscalerNode2D",
-   "UnloadAudiocoreModel"
+  "pruned": [
+   "TextEncodeQwenImageEditPlus",
+   "VAEEncode"
   ],
-  "reordered_keys": 0
+  "updated": [],
+  "reordered_keys": 26
  }
 }

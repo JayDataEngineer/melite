@@ -1,7 +1,7 @@
 {
   "tag": "v0.2.2-alpha",
   "version": "0.2.2-alpha",
-  "count": 80,
+  "count": 79,
   "names": [
     "@melite-plugin/dsh-card-deck",
     "@melite-plugin/dsh-card-view",
@@ -65,7 +65,6 @@
     "@melite/models-pixal3d",
     "@melite/models-qwen-img-21",
     "@melite/models-qwen-img-edit-21",
-    "@melite/models-qwen-img-edit-2511",
     "@melite/models-qwen3-tts",
     "@melite/models-seedvr2-ema",
     "@melite/models-skin",

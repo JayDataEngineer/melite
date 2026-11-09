@@ -162,7 +162,7 @@ describe('H3TimelineStudio (the card-package tenant, mounted)', () => {
       },
     })
     render(h(H3TimelineStudio, p))
-    // (re-pin 2026-11-16, the collapse's cuts) the rail's seam select
+    // (re-pin 2026-11-09, the collapse's cuts) the rail's seam select
     // retired — the STRIP CHIP at the boundary is the one door. The
     // chip paints from the doc (cut) and its click writes the toggle.
     const chip = await waitFor(() => {
@@ -186,7 +186,7 @@ describe('H3TimelineStudio (the card-package tenant, mounted)', () => {
     expect(calls[1]!.transition).toBe('extend')
   })
 
-  // THE SPLIT SEAT WALL (§0.5, 2026-11-16 — the audit's finding: the
+  // THE SPLIT SEAT WALL (§0.5, 2026-11-09 — the audit's finding: the
   // split was hidden in a double-click no clip ever passes through,
   // and the splice it performed stripped the call's identity and
   // stated no seam). The seat must be VISIBLE on the clip, and its

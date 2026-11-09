@@ -85,7 +85,7 @@ import { factsPath } from "../../../../packages/harness/estate-queue/src/cardsFa
 import { loadFacts } from "../../../../packages/engines/comfyui-card-kit/src/facts.ts";
 import { ComposeRefusal } from "../../../../packages/engines/comfyui-card-kit/src/errors.ts";
 
-// THE LIVE-SEAT GATE (the e2e engine-gate.ts pattern, 2026-11-16):
+// THE LIVE-SEAT GATE (the e2e engine-gate.ts pattern, 2026-11-09):
 // arm 1 needs a LIVE engine. MELITE_WALLS_OFFLINE=1 forces the loud
 // skip; a machine with no seated endpoint and nothing answering the
 // engine URL (a fresh clone, CI) is the same no-engine state and skips

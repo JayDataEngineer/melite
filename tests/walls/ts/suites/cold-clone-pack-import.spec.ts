@@ -24,7 +24,7 @@ import { tmpdir } from "node:os";
 const ROOT = join(import.meta.dirname, "..", "..", "..", "..");
 const VENDOR = join(ROOT, "vendor", "comfyui_extensions");
 
-// THE PYTHON-ENV SHAPE (the 2026-11-16 CI cure): the kimodo import
+// THE PYTHON-ENV SHAPE (the 2026-11-09 CI cure): the kimodo import
 // arms exec the pack's real __init__.py, whose module chain imports
 // numpy — a requirement the COLD clone's pip leg names, and a
 // developer machine carries, but a bare CI interpreter does not.

@@ -74,7 +74,7 @@ const RESHOOT: DocCommission = {
   kind: "reshoot",
   seats: [{ key: "source_clip", value: "clips/t4.mp4" }, { key: "orbit", value: "30" }],
 }
-// THE READ-LIST COLLAPSE (2026-11-16): the canonical bag's own render
+// THE READ-LIST COLLAPSE (2026-11-09): the canonical bag's own render
 // hop — an `edit` commission draws its row with the operator's word.
 const EDIT: DocCommission = {
   kind: "edit",

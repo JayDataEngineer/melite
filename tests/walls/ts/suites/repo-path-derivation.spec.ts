@@ -43,7 +43,7 @@ describe("THE OS-ABSOLUTE PATH DERIVATION LAW (windows CI class C, 2026-10-31)",
     // presence at every derivation site).
     const fixed = fileURLToPath(new URL("../../../../", import.meta.url)).replace(/[\\/]$/, "");
     assert.equal(isAbsolute(fixed), true, "fileURLToPath derives an absolute path on the running platform");
-    // THE REPO, NOT A DIRECTORY NAME (the 2026-11-16 CI cure — this
+    // THE REPO, NOT A DIRECTORY NAME (the 2026-11-09 CI cure — this
     // arm red on every runner whose checkout directory is not the dev
     // box's). The derivation's law is that it names THIS repo's root,
     // judged by the repo's own markers, never a frozen checkout-dir

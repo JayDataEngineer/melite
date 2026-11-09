@@ -15,7 +15,7 @@ export declare function seatFileKindOf(f: SpecField): 'image' | 'video' | 'mesh'
  * artifact's content truth is the door's, never the picker's). */
 export declare function urlKindOf(url: string): 'video' | 'image' | 'mesh' | '';
 /** THE SEAT'S FILE-KIND LAW (the modleaf-add journey audit,
- * 2026-11-16 — the drop seam had NO judge): the OS dialog's accept
+ * 2026-11-09 — the drop seam had NO judge): the OS dialog's accept
  * is a SOFT filter the drag-drop path bypasses; this law refuses
  * loud at onFile (both doors route through it), into the refusal
  * face — never a value, never a silent drop.
@@ -24,7 +24,7 @@ export declare function urlKindOf(url: string): 'video' | 'image' | 'mesh' | '';
  * @returns null when the kind matches; the refusal sentence otherwise */
 export declare function fileKindRefusal(f: SpecField, file: File): string | null;
 /** THE SEAT'S ASSET-KIND LAW (the same journey audit's (b) debt,
- *  2026-11-16): a dragged asset row (the media bar / a run row)
+ *  2026-11-09): a dragged asset row (the media bar / a run row)
  * carries a URL, not a File — it entered onAsset with NO judge and a
  * wrong-kind URL landed AS THE VALUE. Same derivation as the file
  * door (seatFileKindOf × the estate's vocabulary), same refusal

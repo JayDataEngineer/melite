@@ -1,6 +1,6 @@
 // @contract cards-mirror-admits
 // cards-mirror-admits.spec.tsx — THE PRE-COLLAPSE DOC LAW (the
-// operator burn, 2026-11-16: "when I look at the video cards from
+// operator burn, 2026-11-09: "when I look at the video cards from
 // before with mods, they are broken").
 //
 // THE BURN: a doc saved before the mod collapse carries a legacy bag

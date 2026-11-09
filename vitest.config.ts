@@ -803,7 +803,7 @@ export default defineConfig({
         // classification law instead (a null floor whose metric
         // later carries >0 paths refuses the regen).
         //
-        // THE SEAT FACE (2026-11-16): the floors ride
+        // THE SEAT FACE (2026-11-09): the floors ride
         // effectiveBaseline(ESTATE_STORE_SEATED) — the dev battery
         // judges the pinned seated table; a store-absent pool (CI)
         // judges the same table with the unseated overlay riding on

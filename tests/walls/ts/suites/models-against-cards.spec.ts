@@ -63,7 +63,7 @@ import { describe, it } from "vitest";
 // route).
 // 67 -> 74 (2026-11-08, the third edit lane): fibo2-edit serves its
 // family route + two lanes × variant/cell routes (7 addresses).
-const SERVED_ADDR_CENSUS = 74 // 75→74 2026-11-12: the openjutsu lane deleted (operator order) — viggle-animate's route address dies with its only card; earlier: 74→75 2026-10-27: the openjutsu lane serves viggle-animate (feature 023) — the ref2va INT8 body's route address joins; 74→73 2026-11-12: seedvr2-ema-7b died (the 7B death — no cells, no provision); 73→74 2026-10-27: music3-int8 joins — the wave's music3 quant work (2164b71a3, audit 014 C5) serves the int8_convrot cell's own route address
+const SERVED_ADDR_CENSUS = 71 // 74→71 2026-11-09: the retired edit family removed whole — its route and quant-cell addresses die with the package. (75→74 2026-11-12: the openjutsu lane deleted (operator order) — viggle-animate's route address dies with its only card; earlier: 74→75 2026-10-27: the openjutsu lane serves viggle-animate (feature 023) — the ref2va INT8 body's route address joins; 74→73 2026-11-12: seedvr2-ema-7b died (the 7B death — no cells, no provision); 73→74 2026-10-27: music3-int8 joins — the wave's music3 quant work (2164b71a3, audit 014 C5) serves the int8_convrot cell's own route address
 // 24 -> 25 (2026-10-22, audit 006/U1): flux-klein claims its own
 // atom (the family's routes resolve to its declared owners)
 // 25 -> 24 (2026-10-13, the autoremesher excision — the pack the owner removed from the system)
@@ -83,7 +83,7 @@ const SERVED_ADDR_CENSUS = 74 // 75→74 2026-11-12: the openjutsu lane deleted 
 // own atom (its routes resolve to their declared owner).
 // 26 -> 25 (2026-11-12): the openjutsu lane deleted by operator
 // order — viggle-animate's claimed atom dies with its only card.
-const OWNER_ATOM_CENSUS = 25
+const OWNER_ATOM_CENSUS = 24 // 25→24 2026-11-09: the retired edit family's atom dies with its package
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -517,7 +517,10 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // judged params face.
     // (Earlier: 502 -> 513, 2026-10-28 swap build R0a — the track
     // card's eleven fields joined.)
-    assert.equal(walked, 482,
+    // 482 -> 480 (2026-11-09, the removal): the retired edit family
+    // left the tree — its two tuning-boolean schema rows died with the
+    // card's claim-law drop.
+    assert.equal(walked, 480,
       `the census walked the estate's fields (${String(walked)} — a re-zoned or re-typed field set MOVES this number; growth is argued here, loss means the census emptied an arm)`);
     // judged 8 -> 6 (2026-11-08, the latent law): the image-edit
     // card's width/height leave the params zone (hidden compatibility
@@ -556,13 +559,15 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // 6 -> 0 (2026-11-12, the final shape): the lanes surface the
     // pair as run params, so the skip class empties again — and the
     // starving question moves to the opt-in-toggle gate above (2
-    // knobs × 3 surfaced families = 6 counted skips). GROWTH in
+    // knobs × the surfaced families = the counted skips). GROWTH in
     // either counter means a surface emptied or a new opt-in knob
-    // landed, and every skip is argued here.
+    // landed, and every skip is argued here. 6 -> 4 (2026-11-09,
+    // the removal): the retired edit family's surface died with
+    // its package.
     assert.equal(surfaceSkips, 0,
       `surface-successor skips are 0 today — the edit lanes surface the deliverable pair (saw ${String(surfaceSkips)}: growth means a family emptied its params surface, and every skip is a knob the starving law no longer judges)`);
-    assert.equal(toggleSkips, 6,
-      `opt-in-toggle skips are 6 today — the deliverable pair under the default-ON match toggle on all three edit families (saw ${String(toggleSkips)}: growth means a new opt-in numeric landed, and every skip is argued here)`);
+    assert.equal(toggleSkips, 4,
+      `opt-in-toggle skips are 4 today — the deliverable pair under the default-ON match toggle on both edit families (saw ${String(toggleSkips)}: growth means a new opt-in numeric landed, and every skip is argued here)`);
     assert.deepEqual(handWritten, HAND_WRITTEN_CARRIERS,
       `the hand-written-carrier exemption is pinned (seen ${handWritten.join(", ") || "—"} vs the named ${HAND_WRITTEN_CARRIERS.join(", ") || "—"} — a card that rewrites itself out of the census must be argued in this list)`);
   });
@@ -654,15 +659,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     const LEDGER: Record<string, { home: string; anchor: string }> = {
       "image-edit.match_input_resolution (boolean)": {
         home: "packages/image/image-edit/tests/value-roundtrip.spec.ts",
-        anchor: "E8 (the resize pole): match_input_resolution ON/OFF compose structurally identical graphs with NO stated size",
-      },
-      "image-edit.use_stock_nodes (boolean)": {
-        home: "packages/image/image-edit/tests/value-roundtrip.spec.ts",
-        anchor: "E9 (single-plane law): use_stock_nodes takes no branch",
-      },
-      "image-edit.double_reference (boolean)": {
-        home: "packages/image/image-edit/tests/value-roundtrip.spec.ts",
-        anchor: "E10 (unbuildable, honest): a stated double_reference=true REFUSES loud naming the knob",
+        anchor: "E8 (the resize pole, fibo2): match_input_resolution ON/OFF compose structurally identical graphs with NO stated size",
       },
       "image-gen.reference_images (array)": {
         home: "packages/image/image-gen/tests/card.spec.ts",
@@ -961,8 +958,8 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // provisions.
     const PROVISION_DECLARERS = ["anima", "anny", "fibo2-edit", "flux-klein", "h3", "joytag", "kimodo",
       "krea-2", "mask-select", "moss-image", "music3", "pixal3d", "qwen-img-21", "qwen-img-edit-21",
-      "qwen-img-edit-2511", "seedvr2-ema", "transfer-rig",
-      "trellis2-native", "wd14", "yue2", "z-image"]; // 2026-11-12: viggle-animate removed (the openjutsu lane deleted, operator order)
+      "seedvr2-ema", "transfer-rig",
+      "trellis2-native", "wd14", "yue2", "z-image"]; // 2026-11-09: the retired edit family's rows die with its package (2026-11-12: viggle-animate removed — the openjutsu lane deleted, operator order)
     // the rows those families declare, exactly (D-M12: a floor let a
     // family's whole table go unjudged) — 2026-10-12, the ghost-debt
     // landing: 42 -> 59 (17 new rows across 8 families; the dino
@@ -1009,7 +1006,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
 // VDA-Small secondary-path files, the video VAE (h3's digest,
 // re-declared: the family owns every weight its lane loads) and the
 // frozen text embed (the pack repo's text_cond row).
-const PROVISION_ROW_COUNT = 97; // 95→96 2026-11-13: the reshoot official rework — h3 provisions the CrossView LoRA (Cseti/MiniMax-H3_Ref2VA-LoRA-CrossView-Warp_v1); 96→97 2026-11-01: the silver-dareties default cure — h3 provisions the official silver_official_releases DARE-TIES merge (silveroxides minimax_h3_fl2v_turbo_silver_dareties_comfy_pruned_v2)
+const PROVISION_ROW_COUNT = 95; // 97→95 2026-11-09: the retired edit family's two provision rows die with its package. ( // 95→96 2026-11-13: the reshoot official rework — h3 provisions the CrossView LoRA (Cseti/MiniMax-H3_Ref2VA-LoRA-CrossView-Warp_v1); 96→97 2026-11-01: the silver-dareties default cure — h3 provisions the official silver_official_releases DARE-TIES merge (silveroxides minimax_h3_fl2v_turbo_silver_dareties_comfy_pruned_v2)
     const declarers: string[] = [];
     let judged = 0;
     for (const id of registryIds()) {
@@ -1065,7 +1062,7 @@ const PROVISION_ROW_COUNT = 97; // 95→96 2026-11-13: the reshoot official rewo
     // EVERY img-gen model — the 2.1-only MASK-C roster is history.
     const MASK_DECLARERS = [
       "anima", "fibo2-edit", "flux-klein", "krea-2", "moss-image", "qwen-img-21",
-      "qwen-img-edit-21", "qwen-img-edit-2511", "z-image",
+      "qwen-img-edit-21", "z-image",
     ];
     const declarers: string[] = [];
     for (const id of registryIds()) {
@@ -1144,7 +1141,7 @@ const PROVISION_ROW_COUNT = 97; // 95→96 2026-11-13: the reshoot official rewo
     // their 7 distinct upstream urls die with the families.
     // +1 (2026-10-26 machine, the quant cure): h3's 34 GB non-pruned
     // ConvRot tier boards as a per-cell artifact (the three-member offer).
-    const ARTIFACT_ROW_COUNT = 21 - 7 + 5 + 5 + 4 + 1; // +2 (2026-10-23, the operator's turbo call): the qwen 2.1 turbo cells // +2 (2026-10-24, THE 2.1 MATRIX RESHAPE): the edit lane's turbo cells join with the fold // +5 (2026-10-16, the anima three checkpoints): three Bedovyy convrot + two official bf16 // +5 (2026-11-07, the operator's drop): kroma's two turbo quants + kroma-base's dtype-mapped cell, and moss-image's int8 + bf16 pair // +4 (2026-11-08, the third edit lane): fibo2-edit's dev + edit-turbo, each int8_convrot + bf16
+    const ARTIFACT_ROW_COUNT = 21 - 7 + 5 + 5 + 4 + 1 - 2; // -2 (2026-11-09, the removal): the retired edit family's two turbo cells die with its package // +2 (2026-10-23, the operator's turbo call): the qwen 2.1 turbo cells // +2 (2026-10-24, THE 2.1 MATRIX RESHAPE): the edit lane's turbo cells join with the fold // +5 (2026-10-16, the anima three checkpoints): three Bedovyy convrot + two official bf16 // +5 (2026-11-07, the operator's drop): kroma's two turbo quants + kroma-base's dtype-mapped cell, and moss-image's int8 + bf16 pair // +4 (2026-11-08, the third edit lane): fibo2-edit's dev + edit-turbo, each int8_convrot + bf16
     const artifacts: Array<{ id: string; url: string }> = [];
     for (const id of registryIds()) {
       const decl = registryModel(id) as { variants?: Array<{ cells?: Array<{ artifact?: unknown }> }> };
@@ -1186,8 +1183,8 @@ const PROVISION_ROW_COUNT = 97; // 95→96 2026-11-13: the reshoot official rewo
     // gains the 34 GB non-pruned ConvRot tier as a per-cell
     // artifact (the three-member offer — digest from the HF tree).
     // 8 -> 9: the named roster carries h3.
-    assert.deepEqual(ARTIFACT_DECLARERS, ["anima", "fibo2-edit", "flux-klein", "h3", "krea-2", "moss-image", "qwen-img-21", "qwen-img-edit-21", "qwen-img-edit-2511"],
-      `the artifact declarers are the named 9 (saw ${ARTIFACT_DECLARERS.join(", ")}) — a family starting or stopping its cell-artifact channel is a deliberate edit`);
+    assert.deepEqual(ARTIFACT_DECLARERS, ["anima", "fibo2-edit", "flux-klein", "h3", "krea-2", "moss-image", "qwen-img-21", "qwen-img-edit-21"],
+      `the artifact declarers are the named 8 (saw ${ARTIFACT_DECLARERS.join(", ")}) — a family starting or stopping its cell-artifact channel is a deliberate edit`);
     assert.equal(artifacts.length, ARTIFACT_ROW_COUNT,
       `the variant-cell artifact rows are exactly ${String(ARTIFACT_ROW_COUNT)} (saw ${String(artifacts.length)}) — a cell appearing or leaving is a deliberate edit`);
     // deduped by url the same way the union walk dedupes —
@@ -1221,7 +1218,6 @@ const PROVISION_ROW_COUNT = 97; // 95→96 2026-11-13: the reshoot official rewo
       "moss-image": 2,
       "qwen-img-21": 4,
       "qwen-img-edit-21": 4,
-      "qwen-img-edit-2511": 2,
     } as Record<string, number>,
       `the per-family distinct artifact urls drifted from the named roster (saw ${JSON.stringify(roster)}) — a cell appearing, leaving, or sharing differently is a deliberate edit to THIS roster`);
     // THE CROSS-FAMILY SHARING ROSTER (the fact the old 17-7+5 sum
@@ -1760,9 +1756,11 @@ describe("THE BOUNDS-SANITY WALL (every declared numeric row is real, surfaced, 
     // 9 -> 16 (2026-11-08, the third edit lane): fibo2-edit's
     // family row + its 6 lane routes all carry the same solver
     // span (the routes ride the family bounds row).
-    assert.equal(judgedFamilies, 16,
-      `the bounds census is EXACT: the edit lanes' solver span over their 16 route ids (saw ${String(judgedFamilies)})`);
-    assert.equal(judged, 16,
+    // 16 -> 13 (2026-11-09, the removal): the retired edit family's
+    // family row + its 3 route rows die with its package.
+    assert.equal(judgedFamilies, 13,
+      `the bounds census is EXACT: the edit lanes' solver span over their 13 route ids (saw ${String(judgedFamilies)})`);
+    assert.equal(judged, 13,
       `the bounds row census is exact (saw ${String(judged)} — a schema change that empties a bounds table is a deliberate edit, never silent)`);
   });
 
@@ -1997,7 +1995,7 @@ describe("THE TWO-HOMES BOUNDS-SYNC WALL (card schema == action ParamSpec, every
     // ParamSpec rows sync against the card schema per carried
     // address (length/width/height/steps/shift_video/shift_audio
     // bounds + the seed sentinel; offenders empty).
-    assert.equal(pairs, 791, "the shared-name pair census changed — update this pin deliberately"); // 829→796 2026-11-12 (§8): the eleven flat reshoot_* knobs retire from the h3 schema AND its three action ParamSpec faces — 11 × 3 shared-name pairs leave both homes together
+    assert.equal(pairs, 774, "the shared-name pair census changed — update this pin deliberately"); // 791→774 2026-11-09: the retired edit family leaves both homes together — its schema rows and action ParamSpec rows die with the package. (829→796 2026-11-12 (§8): the eleven flat reshoot_* knobs retire from the h3 schema AND its three action ParamSpec faces — 11 × 3 shared-name pairs leave both homes together
     // 796→791 2026-11-01 (the blender-lane removal): the rig card's fbx/decimate/species knobs and gem-soma's two export knobs leave both homes together
     assert.deepEqual(offenders, [], `two-homes drift (card schema vs action ParamSpec):\n${offenders.join("\n")}`);
   });

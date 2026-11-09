@@ -55,7 +55,7 @@ export function seatFileKindOf(f: SpecField): 'image' | 'video' | 'mesh' | 'all'
  * vocabulary. Unknown extensions ride ('' matches every seat: the
  * artifact's content truth is the door's, never the picker's). */
 export function urlKindOf(url: string): 'video' | 'image' | 'mesh' | '' {
-  // THE ESTATE'S OWN VOCABULARY (2026-11-16: the private extension
+  // THE ESTATE'S OWN VOCABULARY (2026-11-09: the private extension
   // regex had already drifted — svg and avif were images to the
   // estate and '' to the picker, so an avif artifact was INVISIBLE
   // to an image seat's from-flow rows). Query and fragment strip
@@ -70,7 +70,7 @@ export function urlKindOf(url: string): 'video' | 'image' | 'mesh' | '' {
 }
 
 /** THE SEAT'S FILE-KIND LAW (the modleaf-add journey audit,
- * 2026-11-16 — the drop seam had NO judge): the OS dialog's accept
+ * 2026-11-09 — the drop seam had NO judge): the OS dialog's accept
  * is a SOFT filter the drag-drop path bypasses; this law refuses
  * loud at onFile (both doors route through it), into the refusal
  * face — never a value, never a silent drop.
@@ -92,7 +92,7 @@ export function fileKindRefusal(f: SpecField, file: File): string | null {
 }
 
 /** THE SEAT'S ASSET-KIND LAW (the same journey audit's (b) debt,
- *  2026-11-16): a dragged asset row (the media bar / a run row)
+ *  2026-11-09): a dragged asset row (the media bar / a run row)
  * carries a URL, not a File — it entered onAsset with NO judge and a
  * wrong-kind URL landed AS THE VALUE. Same derivation as the file
  * door (seatFileKindOf × the estate's vocabulary), same refusal
@@ -177,7 +177,7 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
   // on failure, deleted on success).
   const [uploadBusy, setUploadBusy] = useState<Record<string, string>>({})
   const onFile = useCallback(async (f: SpecField, file: File): Promise<void> => {
-    // THE DROP-KIND JUDGE (2026-11-16, see fileKindRefusal): both
+    // THE DROP-KIND JUDGE (2026-11-09, see fileKindRefusal): both
     // doors (OS dialog + drop) route here; a wrong-kind file refuses
     // into the seat's refusal face and never reaches a door.
     const refusal = fileKindRefusal(f, file)

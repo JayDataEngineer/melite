@@ -37,7 +37,7 @@ describe("SOURCE — the datalist hand-roll is dead, the grammar rides", () => {
   })
 
   it("the seam subcard is DEAD — the strip's seam chip is the one door; every pick/upload law is the shared SourceRow law", () => {
-    // (re-pin 2026-11-16, the collapse's cuts) the rail's SeamControls
+    // (re-pin 2026-11-09, the collapse's cuts) the rail's SeamControls
     // select retired: the seam is authored on the strip at the add-call
     // surface (the seam chip), and the subcard file is gone with it.
     // (re-pin 2026-11-06, 6e20a7546) the subcard owned NO slots —

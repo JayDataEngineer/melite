@@ -64,7 +64,7 @@ describe('THE SERVED-DOC PROVENANCE BAN WALL (agent docs teach law, never histor
   });
 
   // THE CLONE SHAPE (the contracts-registry REGISTRY_PRESENT pattern,
-  // 2026-11-16 CI cure): the law's seat is the registry row, and the
+  // 2026-11-09 CI cure): the law's seat is the registry row, and the
   // registry lives in dev_docs/ — deliberately untracked, absent on
   // every fresh clone and on CI. The corpus ban arm above judges
   // everywhere (its subject is the tracked packages/ tree); this arm

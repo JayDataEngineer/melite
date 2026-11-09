@@ -48,11 +48,10 @@ const read = (rel: string): string =>
   readFileSync(join(ROOT, ...rel.split('/')), 'utf8')
 
 // ── THE DERIVED ROSTER ──────────────────────────────────────────────
-// The five purge-lane DECLs (image-edit 21/2511, music music3/yue2,
+// The four purge-lane DECLs (image-edit 21, music music3/yue2,
 // h3-timeline h3). Params rows parsed live, never listed.
 const DECL_FILES: Record<string, string> = {
   'qwen-img-edit-21': 'packages/models/qwen-img-edit-21/src/index.ts',
-  'qwen-img-edit-2511': 'packages/models/qwen-img-edit-2511/src/index.ts',
   music3: 'packages/models/music3/src/index.ts',
   yue2: 'packages/models/yue2/src/index.ts',
   h3: 'packages/models/h3/src/index.ts',
@@ -146,7 +145,6 @@ function valueCells(): Cell[] {
   // params through the compose door) is the owed extension.
   const EDIT_TEXT_ANCHOR: Record<string, string> = {
     'qwen-img-edit-21': 'E1 (21): the LONG prompt + negative ride verbatim into TextEncodeQwenImage21',
-    'qwen-img-edit-2511': 'E2 (2511): the LONG prompt + negative ride verbatim into the EditPlus pair',
   }
   const EDIT_NUMERIC_ANCHOR =
     'E3 (both): seed/steps/cfg + the stated solver ride verbatim into KSampler'
@@ -157,17 +155,15 @@ function valueCells(): Cell[] {
   // specialty seats, each pinned by its E-arm (anchors are
   // SUBSTRING-matched by the witness rule — keep them verbatim).
   const EDIT_CLASS_ARM: Record<string, { anchor: string, note: string }> = {
-    image2: { anchor: 'E6 (both): the alias seats ride their encoder slots', note: 'LoadImage + the encoder numbered arm (21: images.image_2; 2511: image2)' },
-    image3: { anchor: 'E6 (both): the alias seats ride their encoder slots', note: 'LoadImage + the encoder numbered arm (21: images.image_3; 2511 folds under the 3-slot cap)' },
-    reference_images: { anchor: 'E6 (both): the alias seats ride their encoder slots', note: 'each stated ref at LoadImage + the encoder slots after the numbered aliases (the merge order)' },
-    input_mask: { anchor: "E7 (operator's region seat): a stated input_mask in auto REFUSES loud on BOTH lanes naming the knob — and under crop_stitch it reaches LoadImageMask + the region detailer (never a silent text-only render)", note: 'the region detailer (2511 + 21 both served); auto+mask REFUSES loud naming the knob' },
-    match_input_resolution: { anchor: 'E8 (the resize pole): match_input_resolution ON/OFF compose structurally identical graphs with NO stated size', note: 'structural-identity pin — the toggle alone switches nothing (the resize rides the stated pair, not the switch); match OFF + both axes mounts the deliverable resize' },
-    width: { anchor: 'E12 (the size door, ground-truth cure 2026-11-12): the stated pair lands VERBATIM at its consumer on BOTH lanes', note: 'the 2.1 render\u2019s exact latent + derived budget; the 2511 legacy tail (lanczos, crop disabled) \u2014 the value IS the witness' },
-    height: { anchor: 'E12 (the size door, ground-truth cure 2026-11-12): the stated pair lands VERBATIM at its consumer on BOTH lanes', note: 'the 2.1 render\u2019s exact latent + derived budget; the 2511 legacy tail (lanczos, crop disabled) \u2014 the value IS the witness' },
-    use_stock_nodes: { anchor: 'E9 (single-plane law): use_stock_nodes takes no branch', note: 'structural-identity pin — both values compose the stock graph (the plane\'s only edit graph)' },
-    double_reference: { anchor: 'E10 (unbuildable, honest): a stated double_reference=true REFUSES loud naming the knob', note: 'the refusal IS the witness — never a silent plain-edit' },
+    image2: { anchor: 'E6 (21): the alias seats ride their encoder slots', note: 'LoadImage + the encoder numbered arm (images.image_2)' },
+    image3: { anchor: 'E6 (21): the alias seats ride their encoder slots', note: 'LoadImage + the encoder numbered arm (images.image_3)' },
+    reference_images: { anchor: 'E6 (21): the alias seats ride their encoder slots', note: 'each stated ref at LoadImage + the encoder slots after the numbered aliases (the merge order)' },
+    input_mask: { anchor: "E7 (operator's region seat): a stated input_mask in auto REFUSES loud on BOTH lanes naming the knob — and under crop_stitch it reaches LoadImageMask + the region detailer (never a silent text-only render)", note: 'the region detailer (both living lanes serve); auto+mask REFUSES loud naming the knob' },
+    match_input_resolution: { anchor: 'E8 (the resize pole, fibo2): match_input_resolution ON/OFF compose structurally identical graphs with NO stated size', note: 'structural-identity pin — the toggle alone switches nothing (the resize rides the stated pair, not the switch); match OFF + both axes mounts the deliverable resize' },
+    width: { anchor: 'E12 (the size door, ground-truth cure 2026-11-12): the stated pair lands VERBATIM at its consumer on BOTH lanes', note: 'the 2.1 render\u2019s exact latent + derived budget; the fibo2 deliverable tail \u2014 the value IS the witness' },
+    height: { anchor: 'E12 (the size door, ground-truth cure 2026-11-12): the stated pair lands VERBATIM at its consumer on BOTH lanes', note: 'the 2.1 render\u2019s exact latent + derived budget; the fibo2 deliverable tail \u2014 the value IS the witness' },
   }
-  for (const family of ['qwen-img-edit-21', 'qwen-img-edit-2511'] as const) {
+  for (const family of ['qwen-img-edit-21'] as const) {
     for (const knob of paramsOf(family)) {
       if (EDIT_PINNED.has(knob)) {
         if (knob === 'prompt' || knob === 'negative_prompt') {
@@ -307,13 +303,13 @@ function valueCells(): Cell[] {
 function switchCells(): Cell[] {
   return [
     {
-      id: '2511→21 double_reference/use_stock_nodes departed-null', status: 'W', sd: 'SD-1',
+      id: 'music3→yue2 departed-trio null-set (re-seated 2026-11-09; the edit-family pair was removed whole)', status: 'W', sd: 'SD-1',
       wall: WALL.drillNullSet,
-      anchor: 'the drill null-set arms (ERRORS h; study §6; purge P4) — the switch verbs on the REAL 2511/21 DECLs',
+      anchor: 'the drill null-set arms (ERRORS h; study §6; purge P4) — the switch verbs on the REAL music3/yue2 DECLs',
       note: 'B8 loud at the door (in-tree; landing tracked by commit, the census judges the tree)',
     },
     {
-      id: '2511→21 press-inside-arrival-window fences loud', status: 'W', sd: 'SD-1',
+      id: 'departed-surface press-inside-arrival-window fences loud (rides music3→yue2 since 2026-11-09)', status: 'W', sd: 'SD-1',
       wall: WALL.arrivalWindow,
       anchor: 'the arrival window (the gesture→settle one-round-trip gap, P4 remainder)',
       note: 'W1 fence + W2 post-settle start (in-tree; landing tracked by commit)',
@@ -480,10 +476,10 @@ function sdCells(): Cell[] {
       anchor: 'the seed seam is exactly switch → seed → arrival, each occurring once inside it, and the reseat is arrival-gated (never a fresh open)',
       note: "CURED: the seam is a census over the card-view source (each station exactly once inside the seed seam, the reseat arrival-gated) and the reconciler is load-bearing — the re-key residue it re-seats is the exact shape the gate passes it; toggle-proved (gate caller's residue surgery → the arrival shape red)" },
     {
-      id: 'SD-11 dead opinions (2511 lightning steps:4; ×6 hide_from_dropdown; blank-ref trim; alias pass-along)', status: 'W', sd: 'SD-11',
+      id: 'SD-11 dead opinions (lora metadata never rewrites the sampler; blank-ref trim; alias pass-along)', status: 'W', sd: 'SD-11',
       wall: WALL.editValues,
-      anchor: "E11 (SD-11, the dead opinions): the lightning lora row's steps:4 is DATA-only",
-      note: 'WITNESSED — E11 pins the steps:4 opinion DATA-only (the stated pick mounts its loader, the sampler keeps its stated/recipe steps; TOGGLE I wired the marriage → red) and the blank alias as the DOCUMENTED trim (TOGGLE J dropped it → red); the alias pass-along quarter rides E6 (the merge-order arms); the hide_from_dropdown quarter rides the 2511 decl.spec soft-retire arm ("every variant is soft-retired — hidden from the dropdown, still declared")',
+      anchor: "E11 (SD-11, the dead opinions): a lora row's metadata is DATA-only",
+      note: 'WITNESSED — E11 pins the steps:4 opinion DATA-only (the stated pick mounts its loader, the sampler keeps its stated/recipe steps; TOGGLE I wired the marriage → red) and the blank alias as the DOCUMENTED trim (TOGGLE J dropped it → red); the alias pass-along quarter rides E6 (the merge-order arms); the hide_from_dropdown quarter closed by REMOVAL (the family deleted whole 2026-11-09 — no variant left to hide; the soft-retire arm it rode is gone with the decl.spec)',
     },
   ]
 }
@@ -498,12 +494,15 @@ describe('P0 THE UNWITNESSED-HOP CENSUS (purge §7 — the class wall)', () => {
     expect(roster['music3']).toBeGreaterThan(0)
     expect(roster['yue2']).toBeGreaterThan(0)
     expect(roster['qwen-img-edit-21']).toBeGreaterThan(0)
-    expect(roster['qwen-img-edit-2511']).toBeGreaterThan(0)
     expect(roster['h3']).toBeGreaterThan(0)
-    // The wedge's own precondition (DRILL-a precedent): the 2511→21
-    // pair must differ exactly where B8 burned.
-    expect(paramsOf('qwen-img-edit-2511')).toContain('double_reference')
-    expect(paramsOf('qwen-img-edit-21')).not.toContain('double_reference')
+    // The wedge's own precondition (DRILL-a precedent): the
+    // departed-surface pair must differ exactly where the burn class
+    // lives. The original edit-family pair was REMOVED whole
+    // (2026-11-09, operator ruling: the 2511 model is too old); the
+    // law re-seats on the music pair — the two living edit lanes
+    // share one surface, so no edit pair can witness it.
+    expect(paramsOf('music3')).toContain('guidance_scale')
+    expect(paramsOf('yue2')).not.toContain('guidance_scale')
   })
 
   it('hop-[5] VALUE census: every derived knob answers at its consumer or stands UNWITNESSED', () => {

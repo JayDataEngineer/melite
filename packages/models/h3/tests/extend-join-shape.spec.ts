@@ -63,6 +63,13 @@ const muxBehind = (out: Record<string, Node>, save: [string, Node]): Node => {
 };
 
 describe("the extend join's shape-true law (the F34 cure)", () => {
+  it("NO FALLBACK READS: a wrong-typed stated number refuses loud, never silently defaults", () => {
+    assert.throws(
+      () => composeExtend({ seed: "zero" } as unknown as Record<string, unknown>, "run_typed_seed"),
+      /'seed' is stated as "zero".*a number seat carries a number.*never silently defaults/s,
+    );
+  });
+
   it("the prior member of the join rides the CHAIN PLAN's own shot geometry (the burn's own shape: default tier)", () => {
     const out = composeExtend({ extend_seconds: 2.33 }, "run_shape");
     const plans = ofClass(out, "H3OneClickSwapPlan");
@@ -292,6 +299,17 @@ describe("THE NON-EMPTY TAIL (the 2026-11-19 live burn: \"Extend is completely b
       () => composeExtend({ extend_seconds: 379 / 24, overlap_frames: 38 }, "run_overlap_38"),
       /overlap_frames 38 is not a boundary the engine accepts.*39, 90, 141, 192, or 243/s,
       "a 38f knob now refuses AT COMPOSE with the engine's AV-continuity law (the P1-4 resolver: every boundary is derived or vocabulary-legal — the multi-window 39-pin law still binds downstream for legal values that are not 39)",
+    );
+  });
+
+  it("THE MULTI-WINDOW OVERLAP LAW's own throw: a vocabulary-LEGAL carry ≠ 39 still refuses (90 is AV-legal)", () => {
+    // 38 dies at the carry resolver before the composition law ever
+    // sees it — this arm rides a value the resolver ACCEPTS, so the
+    // refusal it hits is the multi-window 39-pin itself (the MED-1
+    // throw's own firing arm, every law-home pins 39).
+    assert.throws(
+      () => composeExtend({ extend_seconds: 379 / 24, overlap_frames: 90 }, "run_overlap_90"),
+      /multi-window composition law carries the policy's 39f context overlap.*re-state overlap_frames 39/s,
     );
   });
 });

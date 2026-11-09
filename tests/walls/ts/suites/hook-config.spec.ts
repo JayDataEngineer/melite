@@ -183,7 +183,7 @@ function runProbe(matrix: ProbeMatrix): ProbeResult {
 // delegation text gone, or a silent-skip shim replacing the exec.
 
 function hooksDir(): string {
-  // THE CANONICAL FALLBACK (the 2026-11-16 CI cure): a fresh clone —
+  // THE CANONICAL FALLBACK (the 2026-11-09 CI cure): a fresh clone —
   // and CI — carries no local core.hooksPath (tools/install-lefthook.mjs
   // deliberately skips on CI), and the old `.git/hooks` default threw
   // `git config`'s exit-1 into the wall before any wire byte was

@@ -702,7 +702,7 @@ describe.skipIf(!ENGINE_FREE)('the qwen 2.1 pair on the GPU (with live ComfyUI)'
         }, 'qwen-img-edit-21 edit')
         assert.ok(byClass(s2, 'QwenImage21Cache').length === 1, 'the RUN workflow wraps the unet in the 2.1 cache')
         assert.ok(byClass(s2, 'TextEncodeQwenImage21').length === 1)
-        assert.equal(byClass(s2, 'VAEEncode').length, 0, 'the 2.1 edit NEVER VAEEncodes the source (the 2511 lane\'s move)')
+        assert.equal(byClass(s2, 'VAEEncode').length, 0, 'the 2.1 edit NEVER VAEEncodes the source (the removed lane\'s move)')
         assert.equal(firstBytes(s2).readUInt32BE(0), 0x89504e47, 'the edit artifact is a real PNG')
 
         // THE OFFICIAL BACKGROUND-REMOVAL ONE-CLICK (roadmap §10's

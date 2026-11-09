@@ -9,7 +9,8 @@
 //   - ABSORPTION: the absorbed envelope is pinned by live
 //     literals (field order IS the contract — schemastery
 //     preserves declaration order) for the two hardest keys —
-//     image-edit/qwen-img-edit-2511 (loras + mask) and
+//     image-edit/qwen-img-edit-21 (loras + mask; re-seated
+//     2026-11-09 when the retired edit family left the tree) and
 //     image-gen/krea-2 (loras with rows);
 //   - FAMILY SCOPING: krea-2's loras never leak onto other
 //     families (the interlock's whole point);
@@ -115,8 +116,8 @@ const envelopeNames = (card: string, fam: string): string[] => {
   return Object.keys(root?.dict ?? {});
 };
 
-test("absorption: image-edit/qwen-img-edit-2511 envelope pinned (declaration order)", () => {
-  const live = envelopeNames("image-edit", "qwen-img-edit-2511");
+test("absorption: image-edit/qwen-img-edit-21 envelope pinned (declaration order)", () => {
+  const live = envelopeNames("image-edit", "qwen-img-edit-21");
   assert.deepEqual(live, [
     // THE ONE LIST (the merge, 2026-10-10): input_images is the one
     // visible face; every legacy spelling rides after it, hidden.
@@ -125,9 +126,10 @@ test("absorption: image-edit/qwen-img-edit-2511 envelope pinned (declaration ord
     "image2", "image3", "reference_images", // legacy spellings (hidden)
     "input_mask", // the mask-seat gate key (hidden, validation-only — the mask pack owns the visible row)
     "prompt", "negative_prompt",
-    "width", "height", "match_input_resolution", // the resolution group: 2.1's target pair + the card-owned match toggle (ON by default; 2511 holds it as a no-op)
-    "seed", "steps", "cfg", "sampler", "scheduler", "use_stock_nodes",
-    "double_reference",
+    "width", "height", "match_input_resolution", // the resolution group: 2.1's target pair + the card-owned match toggle (ON by default)
+    "seed", "steps", "cfg", "sampler", "scheduler",
+    // (the retired lane's two tuning booleans left the envelope
+    // with the family's removal, 2026-11-09)
   ]);
 });
 
@@ -195,31 +197,30 @@ test("krea lora rows: the 12 rows pinned (id/label/strength)", () => {
   );
 });
 
-test("THE OWN-ROWS LAW: qwen serves its own rows; family rows win", () => {
-  // 2026-10-15 (the lora audit's B4): qwen registered an EMPTY
-  // runtime flavor, so the picker served the union of OTHER
-  // families' rows while the LoRAs actually on disk for qwen were
+test("THE OWN-ROWS LAW: the edit lane serves its own rows; family rows win", () => {
+  // 2026-10-15 (the lora audit's B4): the burned family registered
+  // an EMPTY runtime flavor, so the picker served the union of OTHER
+  // families' rows while the LoRAs actually on disk for it were
   // offered to no one — a family with an empty runtime flavor
-  // serves an empty picker. The rows are declared now (Lightning
-  // 4-step distill, fal's Multiple Angles camera control, the MCNL
-  // multi-concept) and family rows ALWAYS WIN over the union (the
+  // serves an empty picker. That family left the tree (2026-11-09);
+  // the law re-seats on the surviving edit lane, whose own row (the
+  // first-party Consistency LoRA, operator 2026-11-08) proves the
+  // same two halves: family rows ALWAYS WIN over the union (the
   // runtimeCatalog arm only serves a family that declares none).
-  const own = svc.modRows("loras", "qwen-img-edit-2511");
+  const own = svc.modRows("loras", "qwen-img-edit-21");
   assert.deepEqual(
     own.map((r) => ({ id: r.id, s: r.default_strength })),
     [
-      { id: "qwen_edit_lightning_4step", s: 1 },
-      { id: "qwen_edit_multiple_angles", s: 0.8 },
-      { id: "qwen_edit_plus_mcnsfw", s: 0.8 },
+      { id: "qwen21_consistency", s: 1 },
     ],
   );
-  // no link, no row — the wall's own law, now for qwen too
+  // no link, no row — the wall's own law, now for the edit lane too
   assert.ok(own.every((r) => r.source_url!.startsWith("https://")), "no link, no row");
-  // the union is RETIRED for qwen: another family's row must not
-  // serve here, and qwen's rows must not serve there
+  // the union is RETIRED here: another family's row must not serve
+  // on the edit lane, and the edit lane's rows must not serve there
   assert.ok(!own.some((r) => r.id === "krea2_realism_lora"), "krea's rows stay krea's");
   const krea = svc.modRows("loras", "krea-2");
-  assert.ok(!krea.some((r) => r.id === "qwen_edit_lightning_4step"), "qwen's rows stay qwen's");
+  assert.ok(!krea.some((r) => r.id === "qwen21_consistency"), "the edit lane's rows stay its own");
   assert.equal(krea.length, 12, "family rows unchanged");
 });
 

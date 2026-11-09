@@ -116,6 +116,20 @@ describe("the Extend name — the continuation posture of the one edit bag (the 
     );
   });
 
+  it("a MULTI-WINDOW extension under a stated non-39 carry refuses the composition law (MED-1)", () => {
+    // 90 is AV-legal (resolveCarryOverlap accepts it) — so this arm
+    // reaches the composition door itself: the solver always carries
+    // the policy's 39f overlap; a stated knob never rides seam math
+    // in a multi-window composition.
+    assert.throws(
+      () => compose(
+        { extend: [{ ...EXTEND_ENTRY(), extend_seconds: 379 / 24, overlap_frames: 90 }] },
+        "run_extend_multi_carry",
+      ),
+      /multi-window composition law carries the policy's 39f context overlap.*re-state overlap_frames 39/s,
+    );
+  });
+
   it("ONE DOOR: extend beside an armed edit bag refuses", () => {
     assert.throws(
       () => compose({ extend: [EXTEND_ENTRY()], edit: [EDIT_EQUIVALENT()] }, "run_extend_race"),

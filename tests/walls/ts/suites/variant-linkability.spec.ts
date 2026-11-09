@@ -269,7 +269,7 @@ describe("THE LINKABILITY WALL (burn d: no-link variants never sail green)", () 
     for (const row of KREA_ROWS) {
       if (loraFate(row as unknown as Record<string, unknown>).never) loraNever += 1;
     }
-    assert.equal(selectable, 183, "the selectable-variant census moved — update this pin deliberately"); // 184→183 2026-11-01: the blender-lane removal — the anycreature family (its one selectable variant) is deleted // 185→184 2026-11-12: the openjutsu lane deleted (operator order) — viggle-animate's variant dies // 184→185 2026-10-27: viggle-animate serves (the openjutsu lane, feature 023); 189→183 2026-11-12: the seedvr2 7B death (audit 018's live burn) — the row died at every seedvr2 address view (-6); 183→184 2026-10-27: music3-int8 serves (audit 014 C5, the int8 low-VRAM lane)
+    assert.equal(selectable, 177, "the selectable-variant census moved — update this pin deliberately"); // 183→177 2026-11-09: the retired edit family removed whole — its six selectable variant rows die with the package. (184→183 2026-11-01: the blender-lane removal — the anycreature family (its one selectable variant) is deleted // 185→184 2026-11-12: the openjutsu lane deleted (operator order) — viggle-animate's variant dies // 184→185 2026-10-27: viggle-animate serves (the openjutsu lane, feature 023); 189→183 2026-11-12: the seedvr2 7B death (audit 018's live burn) — the row died at every seedvr2 address view (-6); 183→184 2026-10-27: music3-int8 serves (audit 014 C5, the int8 low-VRAM lane)
     assert.deepEqual(
       [...diskOnlyByFamily.entries()].sort(),
       [["moss-sfx", 1], ["qwen3-tts", 5], ["qwen3-tts-base", 5], ["qwen3-tts-voicedesign", 5], ["qwen3-tts-voicedesign-base", 5], ["qwen3-tts-voicedesign-design", 5]],

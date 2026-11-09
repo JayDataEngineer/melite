@@ -904,7 +904,7 @@ describe("the Music row (drops land positioned; foreign writes nothing)", () => 
   })
 })
 
-// THE SEAM CHIP (the collapse's cuts, 2026-11-16) — the TENANT half:
+// THE SEAM CHIP (the collapse's cuts, 2026-11-09) — the TENANT half:
 // the strip's add-call surface is the one home for the cut choice. The
 // chip's uuid resolves to the call through barPrompts (barPrompts[i] ↔
 // calls[i]), so a dormant face that filters the starter row never
@@ -988,7 +988,7 @@ describe("THE SEAM CHIP — the tenant's cut choice", () => {
 
 })
 
-// THE SPLIT SEAT (§0.5, 2026-11-16) — the TENANT half: the split is a
+// THE SPLIT SEAT (§0.5, 2026-11-09) — the TENANT half: the split is a
 // VISIBLE verb on the clip (the double-click interior path was the
 // only door and it was unreachable — clips swallow double-click for
 // inline edit). The seat hands the tenant the clip's uuid; the write

@@ -1,5 +1,5 @@
 // img-mesh-blank-departure.spec.tsx — THE DRILL-SEAT BLANK DEPARTURE
-// (the gate-11 sweep red, 2026-11-16). THE BURN: the img-to-mesh
+// (the gate-11 sweep red, 2026-11-09). THE BURN: the img-to-mesh
 // card landed with its family-default recipe (High) stamped in the
 // BASE — the D12 seed — and the blank round-trip NEVER WROTE: zero
 // drafts/patch frames (probe k over the live lane), zero refusal
@@ -14,7 +14,7 @@
 // no error — the sweep's exact red).
 //
 // The spec fixture is the LIVE door's img-to-mesh serve verbatim
-// (fixtures/img-mesh-form-spec.json, captured 2026-11-16 — the real
+// (fixtures/img-mesh-form-spec.json, captured 2026-11-09 — the real
 // Recipe rows high/standard/fast/quality with their exact stamps).
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";

@@ -344,7 +344,7 @@ const LAYERA_EMIT_LOOP_KEYS = [
   "ref_image_size", "model", "audio_stem",
 ] as const
 
-/** THE WRITABLE MOD BAGS (the modleaf-add journey audit, 2026-11-16
+/** THE WRITABLE MOD BAGS (the modleaf-add journey audit, 2026-11-09
  * — the operator's burn: "literally does nothing after I press
  * add"). The doc-plane bag keys the studio can author — ONE roster
  * for the emit loop, the delete-ride universe, and the Layer A
@@ -416,7 +416,7 @@ export function serializeLayerA(a: LayerA, base?: Record<string, unknown>): Reco
   // compose stamped the DMAD default the UI never showed). `[]` is
   // the operator's off override; ABSENT is unset. The delete ride
   // skips keys already in `out`, so [] rides as [] — never as a
-  // delete. (The modleaf-add journey audit, 2026-11-16: before this
+  // delete. (The modleaf-add journey audit, 2026-11-09: before this
   // roster the leaf's Add press landed the bag in Layer A state and
   // the vocabulary stripped it — the canonical no-op law swallowed
   // the write whole: no op, no save, no voice, the leaf already

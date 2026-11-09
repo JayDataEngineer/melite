@@ -1,4 +1,4 @@
-// THE FILM CLOCK (F55, 2026-11-16 — the join shares ONE clock).
+// THE FILM CLOCK (F55, 2026-11-09 — the join shares ONE clock).
 // MeliteConcatVideos refuses members at mixed fps LOUD at execute
 // (nodes.py: the concat's fps arm — "every member must share the
 // clock (never a silently-restamped film)"), AFTER every window's

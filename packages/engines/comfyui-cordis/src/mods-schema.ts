@@ -111,7 +111,7 @@ const ModKind = z.object({
   // while the bag is ABSENT. An explicit `[]` stays the operator's
   // off. Resolved by the family, never hand-typed by the card.
   default_entry: z.object({ id: z.string(), strength: z.number(), steps: z.number() }),
-  // THE MODIFIER SECTIONS (operator 2026-11-16, §0.8 THE FLOW
+  // THE MODIFIER SECTIONS (operator 2026-11-09, §0.8 THE FLOW
   // MODEL): checkable stages over the kind's ONE schema — the
   // patch's keys and value types are judged against the kind's own
   // fields below (checkSections), never trusted from the
@@ -195,7 +195,7 @@ export function validateDeclaredMods(cardId: string, mods: readonly DeclaredModi
   }
 }
 
-/** THE SECTION LAW (operator 2026-11-16, §0.8): a section is a
+/** THE SECTION LAW (operator 2026-11-09, §0.8): a section is a
  *  checkable stage over the kind's OWN schema — every patch key names
  *  a declared field of the kind (fields ∪ kindFields), every value
  *  carries that field's declared wire type, and a select's value

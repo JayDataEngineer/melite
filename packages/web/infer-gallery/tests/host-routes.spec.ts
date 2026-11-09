@@ -1078,7 +1078,7 @@ describe('the run-file doors across roots (the §23 manifest)', () => {
   })
 })
 
-describe('GET /infer-gallery/browse (the file-browser face, 2026-11-16)', () => {
+describe('GET /infer-gallery/browse (the file-browser face, 2026-11-09)', () => {
   // THE OPERATOR BURN: the runs list rides the queue seat's 500-row
   // window, so older runs' media was unreachable while its bytes
   // lived on disk ("effectively lost in nested folders"). These arms

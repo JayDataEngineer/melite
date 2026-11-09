@@ -850,7 +850,7 @@ describe('melite_construct refusals — the CAS voice', () => {
     })
     const tool = meliteConstruct(estate)
     const out = await tool.execute(
-      { verb: 'patch', stage: 's_0', params: { model: 'qwen-img-edit-2511' }, expect_rev: 58 },
+      { verb: 'patch', stage: 's_0', params: { model: 'fibo2-edit' }, expect_rev: 58 },
       exec(),
     ) as Record<string, unknown>
     assert.equal(out.ok, false, 'the stale stated hold never lands')
@@ -884,7 +884,7 @@ describe('melite_construct refusals — the CAS voice', () => {
     })
     const tool = meliteConstruct(estate)
     const out = await tool.execute(
-      { verb: 'patch', stage: 's_0', params: { model: 'qwen-img-edit-2511' } },
+      { verb: 'patch', stage: 's_0', params: { model: 'fibo2-edit' } },
       exec(),
     ) as Record<string, unknown>
     assert.equal(out.verb, 'patch')
@@ -910,7 +910,7 @@ describe('melite_construct refusals — the CAS voice', () => {
     })
     const tool = meliteConstruct(estate)
     const out = await tool.execute(
-      { verb: 'patch', stage: 's_0', params: { model: 'qwen-img-edit-2511' } },
+      { verb: 'patch', stage: 's_0', params: { model: 'fibo2-edit' } },
       exec(),
     ) as Record<string, unknown>
     assert.equal(out.ok, false)

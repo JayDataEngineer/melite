@@ -12,8 +12,29 @@ const REQUIRED_SEATS = [
     ['repair_prompt', 'the repair action text — what the masked region should become (the R2V prompt seat; agent-composed, user-confirmed)'],
     ['mask', "ONE staged PNG the repair RECEIVES (the operator's contract, defect board row 2: a repair errors without one) — the track run's pixel-max union is the recommended bridge; the chain resizes it to its own geometry in-graph, prose manufactures nothing"],
 ];
-const num = (p, k, d) => typeof p[k] === 'number' ? p[k] : d;
-const str = (p, k) => typeof p[k] === 'string' ? p[k] : '';
+/** Reads one required seat NARROWED by its own refusal — the seat
+ * is a string or the door never composes (no fallback arm exists:
+ * a validated seat re-read through a forgiving helper would be a
+ * second, weaker validator below the law — a silent error). */
+const requiredSeat = (entry, seat, what) => {
+    const v = entry[seat];
+    if (typeof v !== 'string' || v.trim() === '') {
+        throw new Error(`h3-timeline repair: '${seat}' names no media — ${what}; a repair needs all three seats bound (source_clip, repair_prompt, mask)`);
+    }
+    return v;
+};
+/** Reads one optional number seat: absent falls to the documented
+ * default; a stated non-number REFUSES — a defaulting fallback would
+ * swallow a bypassed door's wrong-typed value as a silent error. */
+const statedNumber = (p, k, d) => {
+    const v = p[k];
+    if (v === undefined)
+        return d;
+    if (typeof v !== 'number' || !Number.isFinite(v)) {
+        throw new Error(`h3-timeline repair: '${k}' is stated as ${JSON.stringify(v)} — a number seat carries a number (absent falls to ${d}); a wrong-typed value never silently defaults`);
+    }
+    return v;
+};
 /** The repair renderer: validates the bound entry, then composes the
  * masked second-pass chain. Like the swap, the film path never
  * reaches here (the card branches on a non-empty repair bag, refuses
@@ -26,22 +47,23 @@ const str = (p, k) => typeof p[k] === 'string' ? p[k] : '';
  * @param g the run's graph builder
  * @param runId the run tree's id (the assemble filename rides it) */
 export function renderH3Repair(entry, p, facts, g, runId) {
-    for (const [seat, what] of REQUIRED_SEATS) {
-        const v = entry[seat];
-        if (typeof v !== 'string' || v.trim() === '') {
-            throw new Error(`h3-timeline repair: '${seat}' names no media — ${what}; a repair needs all three seats bound (source_clip, repair_prompt, mask)`);
-        }
-    }
-    const denoise = num(entry, 'denoise', 0.32);
+    // NO FALLBACK READS: every required seat narrows through its own
+    // refusal; every optional number refuses a wrong-typed stated
+    // value instead of silently defaulting (the schema walk types
+    // every lawful doc — a wrong-typed value means a bypassed door).
+    const sourceClipSeat = requiredSeat(entry, 'source_clip', REQUIRED_SEATS[0][1]);
+    const repairPromptSeat = requiredSeat(entry, 'repair_prompt', REQUIRED_SEATS[1][1]);
+    const maskSeat = requiredSeat(entry, 'mask', REQUIRED_SEATS[2][1]);
+    const denoise = statedNumber(entry, 'denoise', 0.32);
     if (denoise >= 1) {
         throw new Error(`h3-timeline repair: denoise ${denoise} >= 1 — a masked second pass is a refine, never a re-render (the partial-denoise window is 0.05–0.50; denoise 1 would boil the held region into a new take — that is a reshoot, and the reshoot door exists)`);
     }
-    const seed = num(entry, 'seed', 0);
-    const steps = num(entry, 'steps', 6);
-    const clipSeconds = num(entry, 'clip_seconds', 6);
+    const seed = statedNumber(entry, 'seed', 0);
+    const steps = statedNumber(entry, 'steps', 6);
+    const clipSeconds = statedNumber(entry, 'clip_seconds', 6);
     const resolution = resolvePlanTier(entry, p);
-    const windowStart = num(entry, 'window_start', 0);
-    const windowLength = num(entry, 'window_length', 0);
+    const windowStart = statedNumber(entry, 'window_start', 0);
+    const windowLength = statedNumber(entry, 'window_length', 0);
     // No silent clamps (the no-silent-repair law): a negative window
     // is a caller bug — refuse loud, never round it into a render.
     // F3 — THE GRID LAW ON THE WINDOW (2026-11-13): the plan's scene
@@ -58,7 +80,7 @@ export function renderH3Repair(entry, p, facts, g, runId) {
     // ── the staged media: the WINDOW loader (cap + skip on the same
     // VHS seat, so frames and audio stay in sync) and the inline
     // per-frame SAM3 mask that replaces the swap's staged PNG ──
-    const [srcFrames, srcAudio] = loadVideo(g, str(entry, 'source_clip'), Math.round(windowLength), Math.round(windowStart));
+    const [srcFrames, srcAudio] = loadVideo(g, sourceClipSeat, Math.round(windowLength), Math.round(windowStart));
     // picture_1 for the plan head: the window's own first frame. The
     // plan node REQUIRES a picture (its describer vocabulary); the
     // repair's "replacement" is the source's own person, so the
@@ -74,13 +96,13 @@ export function renderH3Repair(entry, p, facts, g, runId) {
         overlapFrames: resolveCarryOverlap(entry),
         resolution, seed, steps,
         roles: '',
-        sourceClip: str(entry, 'source_clip'),
+        sourceClip: sourceClipSeat,
         windowStart,
         picture1: anchorFrame,
         srcFrames, srcAudio,
         // the ignored literal fallback — the plan node's WINDOW-RE-SLICED
         // shots ride plan_json_input (the repair's geometry law)
-        planJson: JSON.stringify({ shots: [{ id: 'repair', prompt: str(entry, 'repair_prompt') }] }),
+        planJson: JSON.stringify({ shots: [{ id: 'repair', prompt: repairPromptSeat }] }),
         planFromSource: true,
         denoise,
         assemble: {
@@ -99,7 +121,7 @@ export function renderH3Repair(entry, p, facts, g, runId) {
             // chain's — resize to the plan geometry in-graph, never trust
             // the file. The recommended bridge (the track run's pixel-max
             // union) arrives already grown; prose manufactures nothing. ──
-            const raw = g.node('LoadImage', { image: str(entry, 'mask') }).out(0);
+            const raw = g.node('LoadImage', { image: maskSeat }).out(0);
             const channel = g.node('ImageToMask', { image: raw, channel: 'red' }).out(0);
             const editMask = g.node('ImageResize', {
                 image: channel, width: cur.out(8), height: cur.out(9),
@@ -110,7 +132,7 @@ export function renderH3Repair(entry, p, facts, g, runId) {
             // anchor of a repair is the person already in the frame — the
             // zero-new-pixels law) ──
             const r2v = g.node('MiniMaxH3ReferenceToVideo', {
-                prompt: str(entry, 'repair_prompt'),
+                prompt: repairPromptSeat,
                 width: cur.out(8), height: cur.out(9), length: cur.out(6),
                 ref_image_size: 'match',
                 clip, vae: vaeVideo, audio_vae: vaeAudio,

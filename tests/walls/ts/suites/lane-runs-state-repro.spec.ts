@@ -61,7 +61,7 @@ import { QueueService } from "../../../../packages/harness/estate-queue/src/serv
 
 const REAL_RUNS = join(import.meta.dirname, "..", "..", "..", "..", "data", "runs");
 
-// THE LANE-STATE SHAPE (the 2026-11-16 CI cure): laws 2 and 5 copy the
+// THE LANE-STATE SHAPE (the 2026-11-09 CI cure): laws 2 and 5 copy the
 // OPERATOR'S REAL runs tree — machine history the estate box
 // accumulates, untracked by design. A fresh clone — and every CI
 // runner — carries no seated tree, so there is no state history to
@@ -358,7 +358,7 @@ describe("the false-death hunt's four laws", () => {
 
   it("4. THE LOCK LAW: a live-pid lock refuses the gate; dead is stolen; clean acquires", { timeout: 20_000 }, async (t) => {
     const root = join(sandbox("law4-lock"), "runs");
-    // HERMETIC SEED (the 2026-11-16 CI cure): the arm's subject is
+    // HERMETIC SEED (the 2026-11-09 CI cure): the arm's subject is
     // acquireLock's pid logic on this synthetic root — the real-tree
     // copy seeded no state the assertions read, so the fresh-clone
     // dependency it carried was incidental. A bare runs dir serves

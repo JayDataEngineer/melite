@@ -206,7 +206,7 @@ describe("span + guides", () => {
     assert.equal(screen.queryByLabelText("anchor ref · slot 1 source"), null, "no anchor square")
     assert.equal(screen.queryByTestId("tl-first-frame"), null, "no first-frame slot")
     assert.equal(screen.queryByTestId("tl-anchor-truth"), null, "no anchor-truth prose")
-    // (re-pin 2026-11-16, the collapse's cuts) the card's seam select
+    // (re-pin 2026-11-09, the collapse's cuts) the card's seam select
     // retired — the write lives on the STRIP chip (studio-strip-pane's
     // seam arms own the write channel); the card carries no join face
     assert.equal(screen.queryByLabelText("Call 1 seam mode"), null, "no seam select on the card")
@@ -222,7 +222,7 @@ describe("span + guides", () => {
     const files = buckets.map((b) => b.querySelector("input[type=file]")!.getAttribute("accept"))
     assert.deepEqual(files, ["image/png,image/jpeg,image/webp", "video/*", "audio/*"],
       "each lane's OS picker accepts its own MIME family (the two-audio fix)")
-    // (re-pin 2026-11-16) the bus is the card's last lane — the seam
+    // (re-pin 2026-11-09) the bus is the card's last lane — the seam
     // face died with the strip chip (the call's join is authored at
     // the boundary on the strip, never in a lane between lanes)
     assert.equal(screen.queryByLabelText("Call 1 seam mode"), null, "no seam lane after the bus")
@@ -360,7 +360,7 @@ describe("identity refs + knob fold", () => {
     // seam is automatic; the first call simply has nothing to carry)
   })
 
-  it("the seam face is gone from the card — cut is authored at the strip boundary (the collapse's cuts, 2026-11-16)", () => {
+  it("the seam face is gone from the card — cut is authored at the strip boundary (the collapse's cuts, 2026-11-09)", () => {
     const { d, calls } = deps()
     render(<CallCard c={BASE} i={1} deps={d} />)
     // the select died with the subcard: the strip chip (paint from the

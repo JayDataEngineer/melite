@@ -1,4 +1,4 @@
-// splitSeat.spec.tsx — THE SPLIT SEAT (§0.5, the window split, 2026-11-16).
+// splitSeat.spec.tsx — THE SPLIT SEAT (§0.5, the window split, 2026-11-09).
 //
 // The audit's finding: the interior split lived behind a double-click no
 // clip ever passes through (clips own double-click for inline edit), and

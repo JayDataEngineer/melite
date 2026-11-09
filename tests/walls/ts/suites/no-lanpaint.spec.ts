@@ -18,7 +18,8 @@
  *   3. DECL boardings (no family boards the retired pack)
  *   4. the compose door (stale keys refuse as undeclared params)
  *   5. shipped data pins (manifest + facts extension map)
- *   6. alias + preset residue (tsconfigs, facade rows, 2511 exports)
+ *   6. alias + preset residue (tsconfigs, facade rows, every model
+ *      package's exports — the burned family left the tree 2026-11-09)
  *
  * RED-PROOF: restore the retired nodes.yaml pin (a ComfyUI-LanPaint
  * row under models/image/qwen-img-edit-2511/), regen the manifest,
@@ -29,7 +30,7 @@
 import "../../../helpers/boot-models.ts";
 import assert from "node:assert/strict";
 import { test } from "vitest";
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { loadCardDefs, theService } from "../../../../packages/engines/comfyui-cordis/src/index.ts";
 import { getModel, registryIds } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
@@ -104,7 +105,9 @@ test("THE RETIREMENT, door plane: stale inpaint keys refuse as undeclared params
     schema: (p: unknown) => unknown;
     compose: (p: unknown, m: unknown, g: unknown, r: string) => unknown;
   };
-  const model = getModel("qwen-img-edit-2511") as never;
+  // (re-seated 2026-11-09: the burned family was removed whole — the
+  // refusal law rides the surviving default edit lane)
+  const model = getModel("qwen-img-edit-21") as never;
   for (const stale of ["lanpaint_enabled", "lanpaint_num_steps", "lanpaint_lambda", "outpaint_top", "outpaint_overlap"]) {
     assert.throws(
       () => def.compose(def.schema({ prompt: "x", image1: "/m/i.png", [stale]: 1 }), model, new GraphBuilder(), "r_no_lanpaint"),
@@ -134,11 +137,17 @@ test("THE RETIREMENT, residue plane: no alias, export, or preset names the retir
   assert.ok(!/mods\/lanpaint/i.test(base), "tsconfig.base.json carries a lanpaint alias");
   const facade = readFileSync(join(ROOT, "tools/facade-rows.json"), "utf8");
   assert.ok(!/mods\/lanpaint/i.test(facade), "tools/facade-rows.json carries a lanpaint row");
-  const pkg = JSON.parse(readFileSync(join(ROOT, "packages/models/qwen-img-edit-2511/package.json"), "utf8")) as {
-    exports?: Record<string, unknown>;
-  };
-  for (const key of Object.keys(pkg.exports ?? {})) {
-    assert.ok(!/lanpaint/i.test(key), `the 2511 package exports the retired mod '${key}'`);
+  // every model package's exports, derived (the burned family's own
+  // export row died with its package, 2026-11-09 — the residue law
+  // generalizes to the whole models tree)
+  for (const dir of readdirSync(join(ROOT, "packages/models"), { withFileTypes: true })) {
+    if (!dir.isDirectory()) continue;
+    const pkgPath = join(ROOT, "packages/models", dir.name, "package.json");
+    if (!existsSync(pkgPath)) continue;
+    const pkg = JSON.parse(readFileSync(pkgPath, "utf8")) as { exports?: Record<string, unknown> };
+    for (const key of Object.keys(pkg.exports ?? {})) {
+      assert.ok(!/lanpaint/i.test(key), `models/${dir.name} exports the retired mod '${key}'`);
+    }
   }
   for (const { file } of nodesYaml()) {
     assert.ok(!/inpaint_lanpaint/i.test(file), `the orphaned preset survives at ${file}`);

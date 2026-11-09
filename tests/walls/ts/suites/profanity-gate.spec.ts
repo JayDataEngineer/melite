@@ -229,7 +229,7 @@ describe('THE DIRTY FIXTURE — several kinds, file+line+list named', () => {
     }
   })
 
-  // THE WHOLE-TREE SWEEP (the 2026-11-16 CI cure): the arm scans the
+  // THE WHOLE-TREE SWEEP (the 2026-11-09 CI cure): the arm scans the
   // FULL authored tree through the gate binary — under CI's cold cache
   // the sweep's tail crossed vitest's 30s default and the gate died as
   // a timeout, not a verdict. The budget names the sweep reality

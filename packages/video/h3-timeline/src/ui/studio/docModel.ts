@@ -367,7 +367,7 @@ export interface LayerA {
    * writes and the family's recipe pills stamp (Rule A). */
   loras?: Array<{ id: string, strength?: number, steps?: number }>
   /** THE OPERATOR-AUTHORED MOD BAGS (the modleaf-add journey audit,
-   * 2026-11-16 — the dead Add): the edit and reshoot kinds' doc-plane
+   * 2026-11-09 — the dead Add): the edit and reshoot kinds' doc-plane
    * arrays. The 2026-11-12 unification retired Layer A's flat
    * re-shoot keys saying "the bag rides the doc, preserved by the
    * bench merge-patch" — true for the AGENT path (the estate writes

@@ -209,7 +209,7 @@ export interface DeclaredModifierKind {
    *  renders nothing (the honest-empty kinds: replace, repair). */
   default_entry?: { id: string; strength: number; steps: number }
   /** THE PRESET CHIPS (the timeline rework stage 3, 2026-11-15):
-  /** THE MODIFIER SECTIONS (operator 2026-11-16, §0.8 THE FLOW
+  /** THE MODIFIER SECTIONS (operator 2026-11-09, §0.8 THE FLOW
    *  MODEL): checkable stages over the kind's ONE schema — every
    *  patch key a declared field, every value its wire type, every
    *  select value a served option (judged at the registration

@@ -63,7 +63,7 @@ describe("qa8 F4 — the moss-sfx lane seat resolves via folder_paths, never env
     assert.equal(homes["model_path"], "audiocpp", "the lane home names the folder_paths category");
   });
 
-  // THE SEATED STATEMENT (the 2026-11-16 CI cure): the endpoint
+  // THE SEATED STATEMENT (the 2026-11-09 CI cure): the endpoint
   // statement and the rendered wiring yaml are machine state the
   // provisioner writes on the box that runs the engine — both
   // untracked, absent on a fresh clone and on CI. Nothing was ever

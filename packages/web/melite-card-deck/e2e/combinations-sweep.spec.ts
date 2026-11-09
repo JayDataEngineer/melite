@@ -70,7 +70,7 @@ import { expect, test, type Page } from '@playwright/test'
 
 const LANE_URL = process.env.SWEEP_LANE_URL ?? ''
 const OPT_IN = process.env.SWEEP_COMBINATIONS === '1'
-// THE RUN TAG (the stale-marker cure, 2026-11-16): every combo's
+// THE RUN TAG (the stale-marker cure, 2026-11-09): every combo's
 // marker carries the run's own tag so the verdict's marker search
 // matches THIS run's stage only — the shared bench draft keeps
 // every earlier run's identical combo strings, and an untagged
@@ -369,7 +369,7 @@ async function sweepAxis(page: Page, group: string, tag: string, card: string): 
   }, { group, cardId: card })
   const bound = process.env.SWEEP_AXIS_ROWS === 'first' ? 1 : Number.MAX_SAFE_INTEGER
   // THE INVALID-ROW ANNOTATION (the h3-timeline Quant burn,
-  // 2026-11-16): the menu voices the HELD row even when the
+  // 2026-11-09): the menu voices the HELD row even when the
   // composed family does not own it, annotated
   // 'Int8 — invalid quant for H3' — the seat showing the hold it
   // refuses to silently drop, not a ghost voice. The door admits
@@ -753,7 +753,7 @@ test('the real-usage combination sweep — derived roster, 1:1 gestures, zero si
       // is a product finding (the seat the spec serves but the drill
       // never renders), never a skip.
       // the combo's ARRIVAL family, never the card (the fibo2-edit
-      // burn, 2026-11-16: the roster derives recipes from the CARD
+      // burn, 2026-11-09: the roster derives recipes from the CARD
       // coordinate — the card default's stamped rows — but the fibo
       // arrival serves ZERO Recipe rows, so the card-coordinate
       // promise demanded a seat the arrival never owes. The served
@@ -920,7 +920,7 @@ test('the real-usage combination sweep — derived roster, 1:1 gestures, zero si
         }).toEqual([])
       }
 
-      // ASSERT CLASS (a) — arm 4, THE WRITE FACE (the 2026-11-16
+      // ASSERT CLASS (a) — arm 4, THE WRITE FACE (the 2026-11-09
       // qwen-marker hunt): every drill write path paints exactly one
       // banner when its write never lands ('THE WRITE DID NOT LAND —
       // ...', the ledger's voice — draft.ts unlandedWriteVoice). A

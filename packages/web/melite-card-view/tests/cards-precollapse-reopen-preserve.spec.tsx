@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 // cards-precollapse-reopen-preserve.spec.tsx — THE PRE-COLLAPSE DOC'S
-// OPEN JOURNEY (the 2026-11-16 timeline audit, client-mirror §3):
+// OPEN JOURNEY (the 2026-11-09 timeline audit, client-mirror §3):
 // the verdict plane sanctions the legacy bags (cards-mirror-admits),
 // but the drill's REOPEN HEAL judged the same doc with a NARROWER
 // set and nulled the bags as "dead carry" — one silent bench write at
@@ -32,7 +32,7 @@ import { formSpecArm } from '../../../../packages/harness/melite-tools/src/disco
 
 // The pre-collapse doc: a repair bag the compose door translates into
 // the one edit entry (resolveLegacyEditAliases) — the exact shape the
-// 2026-11-16 burn opened ("the video cards from before with mods").
+// 2026-11-09 burn opened ("the video cards from before with mods").
 const LEGACY_PARAMS: Record<string, unknown> = {
   model: 'h3-timeline',
   steps: 6,
