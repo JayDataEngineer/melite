@@ -57,7 +57,14 @@ Developer-local material (working plan, conformance ledger, roadmap,
 runbooks, audits) lives in `dev_docs/` — untracked, present on
 development machines only. The compact law (operator 2026-09-20):
 READ `dev_docs/ROADMAP.md` FIRST on any new session or goal round,
-before planning work; it survives context compaction.
+before planning work; it survives context compaction. THE TIMELINE
+PLAN LAW (operator 2026-11-09, after the chip relapse): any session
+or goal round touching vid2vid / the h3 timeline / the edit mod
+READS `dev_docs/agents/plans/2026-11-16-timeline-plan.md` §-1 FIRST
+— the founding axiom (ALL ROUTES ARE EXTREMELY SIMILAR; the UI
+mirrors the chain, one verb + parameters, posture chips are the
+named disease) governs every design decision in that arc; the file
+is the operating law, not a reference.
 
 # Subagents
 
