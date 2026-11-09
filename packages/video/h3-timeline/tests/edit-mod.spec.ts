@@ -113,6 +113,41 @@ describe("the edit bag's door (stage 2b: one bag, the whole matrix)", () => {
     assert.equal(ofClass(out, "SAM3_VideoTrack").length, 0, "no tracker on the static-png dial");
   });
 
+  it("the video dial rides the length-match check through the door (the operator's own mask)", () => {
+    const entry = {
+      ...EDIT_ENTRY(), mask_source: "video", mask_video: "masks/take_mask.mp4",
+      mask_grow: 20, mask_blur: 5,
+    };
+    const walked = def.schema({ edit: [entry] }) as Record<string, unknown>;
+    const g = new GraphBuilder();
+    def.compose(walked, model, g, "run_edit_vmask");
+    const out = graphOf(g);
+    const loader = ofClass(out, "VHS_LoadVideo")
+      .find(([, n]) => (n.inputs.video as string)?.includes("take_mask.mp4"));
+    assert.ok(loader !== undefined, "the mask video loads on its own leaf through the door");
+    const check = ofClass(out, "MiniMaxH3ContexLoopMaskLengthCheck");
+    assert.equal(check.length, 1, "THE LENGTH-MATCH CHECK composes on the video dial — the mask's frames must equal the clip's, refused loud naming both counts");
+    const grow = ofClass(out, "GrowMaskWithBlur");
+    assert.equal(grow.length, 1, "the grown/feathered seat rides the video door too");
+    assert.equal(grow[0]![1].inputs.expand, 20, "mask_grow flows through the video resolution");
+    assert.equal(grow[0]![1].inputs.blur_radius, 5, "mask_blur flows through the video resolution");
+    assert.equal(ofClass(out, "SAM3_VideoTrack").length, 0, "no tracker — the mask is the operator's own");
+  });
+
+  it("a video entry naming no mask video refuses through the door", () => {
+    assert.throws(
+      () => {
+        const entry = {
+          ...EDIT_ENTRY(), mask_source: "video", region_prompt: undefined, mask: undefined,
+        };
+        const walked = def.schema({ edit: [entry] }) as Record<string, unknown>;
+        const g = new GraphBuilder();
+        def.compose(walked, model, g, "run_edit_vmask_empty");
+      },
+      /the video mask dial names no media.*length-match the clip/i,
+    );
+  });
+
   it("the still+mannequin dial seats both reference loaders", () => {
     const entry = {
       ...EDIT_ENTRY(), reference: "still+mannequin",

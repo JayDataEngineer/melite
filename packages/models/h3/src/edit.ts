@@ -47,8 +47,14 @@ export const EDIT_IDENTITY_BOIL_FLOOR = 0.8
  * `static-png`: ONE staged PNG (the track run's pixel-max union is
  * the recommended bridge — per-frame motion is the region dial's
  * own door, N7). `region`: the free-text SAM3 per-frame track
- * (repair's own chain, tuning seats exposed — N8). `whole-frame`:
- * the all-white SolidMask (extend's spelling — nothing held). */
+ * (repair's own chain, tuning seats exposed — N8). `video`: the
+ * operator's OWN per-frame mask staged as a video (the track card's
+ * mask export or any greyscale ride) — decoded red-channel per
+ * frame, geometry-cured in-graph, then THE LENGTH-MATCH CHECK: the
+ * mask's frames must equal the clip's as loaded, refused loud
+ * engine-side naming both counts (a staged file's frame count is
+ * engine knowledge, never compose knowledge). `whole-frame`: the
+ * all-white SolidMask (extend's spelling — nothing held). */
 export type EditMaskDial =
   | { readonly source: 'static-png'; readonly image: string }
   | {
@@ -58,6 +64,7 @@ export type EditMaskDial =
       readonly blur: number
       readonly detectionThreshold: number
     }
+  | { readonly source: 'video'; readonly video: string; readonly grow: number; readonly blur: number }
   | { readonly source: 'whole-frame' }
 
 /** THE REFERENCE DIAL — the identity anchors the r2v rides.
@@ -299,6 +306,11 @@ export function renderH3Edit(
       `h3-timeline edit: the region mask dial names no target — state the free-text SAM3 detection prompt ("hands", "a person", "a face")`,
     )
   }
+  if (mask.source === 'video' && mask.video.trim() === '') {
+    throw new Error(
+      `h3-timeline edit: the video mask dial names no media — bind ONE staged mask video (per-frame, white = edit; the track card's mask export is the recommended bridge), and it must length-match the clip's own frame count or the run refuses naming both counts`,
+    )
+  }
   if (reference.mode === 'still+mannequin' && (reference.still.trim() === '' || reference.mannequin.trim() === '')) {
     throw new Error(
       `h3-timeline edit: the still+mannequin reference dial needs both seats bound (the still anchors appearance, the mannequin carries motion); a self-anchored edit states the self reference`,
@@ -473,6 +485,35 @@ export function renderH3Edit(
         editMask = g.node('ImageResize', {
           image: channel, width: cur.out(8), height: cur.out(9),
           upscale_method: 'bilinear', keep_proportion: false, crop: 'disabled',
+        }).out(0)
+      } else if (mask.source === 'video') {
+        // THE OWN-VIDEO MASK DOOR: the operator's staged per-frame
+        // mask (the track card's export or their own greyscale
+        // ride). Three laws ride before the slice: decode the red
+        // channel per frame; cure the geometry in-graph (F3-16
+        // defect 1's law owns this door too — a staged file's shape
+        // is never the chain's); then THE LENGTH-MATCH CHECK — the
+        // mask's frames must equal the clip's frames AS LOADED
+        // (window caps included), refused loud engine-side naming
+        // both counts. The check GATES the door: the slice rides
+        // the verified timeline, never the raw decode.
+        const [maskFrames] = loadVideo(g, mask.video)
+        const decoded = g.node('ImageToMask', {
+          image: maskFrames, channel: 'red',
+        }).out(0)
+        const fitted = g.node('ImageResize', {
+          image: decoded, width: cur.out(8), height: cur.out(9),
+          upscale_method: 'bilinear', keep_proportion: false, crop: 'disabled',
+        }).out(0)
+        const verified = g.node('MiniMaxH3ContexLoopMaskLengthCheck', {
+          source_frames: srcFrames, mask: fitted,
+        }).out(0)
+        const sceneMask = g.node('MiniMaxH3ContexLoopMaskSlice', {
+          state: cur.out(0), mask: verified, source_fps: 24,
+        })
+        editMask = g.node('GrowMaskWithBlur', {
+          mask: sceneMask.out(0), expand: mask.grow,
+          tapered_corners: true, blur_radius: mask.blur,
         }).out(0)
       } else {
         editMask = g.node('SolidMask', {

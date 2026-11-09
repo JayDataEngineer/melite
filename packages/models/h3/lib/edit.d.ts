@@ -35,8 +35,14 @@ export declare const EDIT_IDENTITY_BOIL_FLOOR = 0.8;
  * `static-png`: ONE staged PNG (the track run's pixel-max union is
  * the recommended bridge — per-frame motion is the region dial's
  * own door, N7). `region`: the free-text SAM3 per-frame track
- * (repair's own chain, tuning seats exposed — N8). `whole-frame`:
- * the all-white SolidMask (extend's spelling — nothing held). */
+ * (repair's own chain, tuning seats exposed — N8). `video`: the
+ * operator's OWN per-frame mask staged as a video (the track card's
+ * mask export or any greyscale ride) — decoded red-channel per
+ * frame, geometry-cured in-graph, then THE LENGTH-MATCH CHECK: the
+ * mask's frames must equal the clip's as loaded, refused loud
+ * engine-side naming both counts (a staged file's frame count is
+ * engine knowledge, never compose knowledge). `whole-frame`: the
+ * all-white SolidMask (extend's spelling — nothing held). */
 export type EditMaskDial = {
     readonly source: 'static-png';
     readonly image: string;
@@ -46,6 +52,11 @@ export type EditMaskDial = {
     readonly grow: number;
     readonly blur: number;
     readonly detectionThreshold: number;
+} | {
+    readonly source: 'video';
+    readonly video: string;
+    readonly grow: number;
+    readonly blur: number;
 } | {
     readonly source: 'whole-frame';
 };

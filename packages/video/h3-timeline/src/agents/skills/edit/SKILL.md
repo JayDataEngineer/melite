@@ -1,6 +1,6 @@
 ---
 name: edit
-description: "The video-edit matrix on the h3-timeline: ONE bag whose dials state the cell — mask source (per-frame SAM3 region, whole frame, or one staged PNG resized in-graph), identity anchors (the source itself, or a still + mannequin pair), and the denoise pole. The five legacy edit names (replace, repair, extend, refine, upscale) do not stay as doors: a doc stating one composes through to its cell here, and an unstated dial refuses loud (never a silent drop). NOT a new camera (Reshoot) — the refine pass (refine + scale), the continuation (continuation + extend_seconds), and the deferred 2x upscale of a prior chain run (chain_run) are dials ON this door."
+description: "The video-edit matrix on the h3-timeline: ONE bag whose dials state the cell — mask source (per-frame SAM3 region, whole frame, one staged PNG resized in-graph, or the user's own per-frame mask video length-matched against the clip), identity anchors (the source itself, or a still + mannequin pair), and the denoise pole. The five legacy edit names (replace, repair, extend, refine, upscale) do not stay as doors: a doc stating one composes through to its cell here, and an unstated dial refuses loud (never a silent drop). NOT a new camera (Reshoot) — the refine pass (refine + scale), the continuation (continuation + extend_seconds), and the deferred 2x upscale of a prior chain run (chain_run) are dials ON this door."
 genre: video
 ---
 
@@ -48,8 +48,9 @@ bag; cells COMPOSE — repair + upscale in the same run is both
 cells' dials in the one bag, never a combined route. The wire is
 the bag — cell ids never ride it. The user states the same matrix
 through the bag's own seats: the Mask source menu (region /
-whole-frame / static-png opens the staged-PNG MASK SLOT), the
-Identity anchors menu (still+mannequin opens the still + mannequin
+whole-frame / static-png opens the staged-PNG MASK SLOT / video
+opens the MASK VIDEO slot), the Identity anchors menu
+(still+mannequin opens the still + mannequin
 slots), the Denoise pole, the Refine switch (opens scale), the
 Continuation switch (opens extend_seconds).
 
@@ -75,7 +76,7 @@ loop — a different mechanism than the refine switch).
    `params.edit = [entry]` — never flat. `source_clip` and
    `edit_prompt` are required: an empty dial refuses LOUD naming the
    dial.
-3. **State the mask.** `mask_source` picks the door's three mask
+3. **State the mask.** `mask_source` picks the door's four mask
    derivations:
    - `region` (the default) — `region_prompt` is the SAM3 detection
      target ("hands", "a person", "a face"); the mask tracks every
@@ -89,6 +90,15 @@ loop — a different mechanism than the refine switch).
      union is the recommended bridge). The chain decodes it and
      RESIZES it to the plan geometry in-graph: the file's own
      resolution never has to match the clip.
+   - `video` — the user's OWN per-frame mask staged as a video
+     (`mask_video`; the track card's mask export is the ready-made
+     one, or any greyscale ride — white = edit, black = hold). The
+     chain decodes it frame by frame, resizes it to the plan
+     geometry, and LENGTH-MATCHES it against the clip: a mask whose
+     frame count differs from the clip's refuses before a single
+     frame renders, naming both counts. Restage the mask at the
+     clip's own frame count (the track export already carries it);
+     never pad or truncate it by hand.
 4. **State the anchors.** `reference` picks the identity posture:
    - `self` (the default) — the source clip rides its own reference
      seat; the identity anchor is the person already in the frame

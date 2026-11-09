@@ -4787,9 +4787,13 @@ window.__ModuleLoader__.load({
 					{
 						value: "static-png",
 						label: "Static PNG — one staged mask"
+					},
+					{
+						value: "video",
+						label: "Video — your own per-frame mask"
 					}
 				],
-				tooltip: "WHERE the edit lands: a per-frame SAM3 track of a free-text region (the per-frame door — a moving subject stays masked frame by frame), the whole frame (an all-white mask, nothing held), or ONE staged PNG (the track run's pixel-max union is the recommended bridge — the chain resizes it to its own geometry, so the file's own shape never matters)."
+				tooltip: "WHERE the edit lands: a per-frame SAM3 track of a free-text region (the per-frame door — a moving subject stays masked frame by frame), the whole frame (an all-white mask, nothing held), ONE staged PNG (the track run's pixel-max union is the recommended bridge — the chain resizes it to its own geometry, so the file's own shape never matters), or YOUR OWN mask video (a per-frame timeline — the track card's mask export is the ready-made one)."
 			},
 			{
 				name: "region_prompt",
@@ -4806,6 +4810,15 @@ window.__ModuleLoader__.load({
 				default: "",
 				visible_when: "mask_source=static-png",
 				tooltip: "ONE staged PNG under the static-png mask source — the track run's pixel-max UNION is recommended (per-frame motion is the region source's own door). The chain decodes it off the red channel and RESIZES it to the plan geometry in-graph: the file's own resolution never has to match the clip."
+			},
+			{
+				name: "mask_video",
+				label: "Mask video",
+				type: "file",
+				media: "video",
+				default: "",
+				visible_when: "mask_source=video",
+				tooltip: "YOUR OWN per-frame mask staged as a video under the video mask source — the track card's mask export is the ready-made one, or any greyscale ride (white = edit, black = hold). The chain decodes it frame by frame and resizes it to its own geometry, then LENGTH-MATCHES it against the clip: a mask whose frame count differs from the clip's refuses before a single frame renders, naming both counts — restage the mask at the clip's own frame count (the track export already carries it)."
 			},
 			{
 				name: "mask_grow",

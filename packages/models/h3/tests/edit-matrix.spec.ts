@@ -46,6 +46,7 @@ const STATIC_PNG = { source: "static-png", image: "masks/union.png" } as const;
 const REGION = {
   source: "region", prompt: "hands", grow: 24, blur: 6, detectionThreshold: 0.4,
 } as const;
+const VIDEO = { source: "video", video: "masks/take_mask.mp4", grow: 16, blur: 4 } as const;
 const SELF = { mode: "self" } as const;
 const PAIR = { mode: "still+mannequin", still: "stills/girl.png", mannequin: "clips/mannequin.mp4" } as const;
 
@@ -95,6 +96,37 @@ describe("renderH3Edit — the video-edit matrix on the one spine (stage 2a)", (
     assert.equal(sliceMask.length, 1, "the per-scene mask slice (F7's law — the tracked timeline slices before the grow)");
     assert.equal(ofClass(o, "ImageResize").length, 0, "no resize — the tracked mask already lives at the window's shape");
     assert.equal(ofClass(o, "ImageToMask").length, 0, "no staged-PNG decoder on the region door");
+  });
+
+  it("THE MASK DIAL video: the staged mask VIDEO decodes per frame, length-checks against the clip, and rides the tracked-mask slice (own-mask door)", () => {
+    const g = new GraphBuilder();
+    renderH3Edit(ENTRY(), VIDEO, SELF, {}, FACTS, g, "run_vmask");
+    const o = out(g);
+    const maskLoader = ofClass(o, "VHS_LoadVideo")
+      .filter(([, n]) => n.inputs.video === "masks/take_mask.mp4");
+    assert.equal(maskLoader.length, 1, "one mask-video loader leaf — the dial's own staged file");
+    const dec = ofClass(o, "ImageToMask");
+    assert.equal(dec.length, 1, "the mask frames decode off the red channel, per frame");
+    assert.equal(dec[0]![1].inputs.channel, "red", "a mask video is a greyscale ride on the red plane");
+    const resize = ofClass(o, "ImageResize");
+    assert.equal(resize.length, 1, "THE GEOMETRY CURE rides the per-frame door too — the staged mask's own shape never rides the chain raw");
+    assert.equal(resize[0]![1].inputs.keep_proportion, false, "the mask fills the chain canvas exactly, frame by frame");
+    const check = ofClass(o, "MiniMaxH3ContexLoopMaskLengthCheck");
+    assert.equal(check.length, 1, "THE LENGTH-MATCH CHECK — the operator's own law: the mask's frames must equal the clip's frames, refused loud naming both counts");
+    const clipLoader = ofClass(o, "VHS_LoadVideo")
+      .filter(([, n]) => n.inputs.video === "clips/take.mp4");
+    const checkInputs = check[0]![1].inputs as Record<string, [string, number]>;
+    assert.equal(checkInputs.source_frames[0], clipLoader[0]![0], "the check judges the CLIP as loaded — window caps included, not the raw file");
+    const sliceMask = ofClass(o, "MiniMaxH3ContexLoopMaskSlice");
+    assert.equal(sliceMask.length, 1, "the per-scene slice — a video mask is a tracked timeline, sliced per scene like the region door's");
+    const sliceInputs = sliceMask[0]![1].inputs as Record<string, [string, number]>;
+    assert.equal(sliceInputs.mask[0], check[0]![0], "the slice rides the VERIFIED timeline — the check gates the door, never sits beside it");
+    const grow = ofClass(o, "GrowMaskWithBlur");
+    assert.equal(grow.length, 1, "the grow seat before the edit");
+    assert.equal(grow[0]![1].inputs.expand, 16, "the grow dial carries on the video door");
+    assert.equal(grow[0]![1].inputs.blur_radius, 4, "the blur dial carries — feathering is the door's own seat");
+    assert.equal(ofClass(o, "SAM3_VideoTrack").length, 0, "no tracker — the mask is the operator's own, not a detected one");
+    assert.equal(ofClass(o, "SolidMask").length, 0, "no white mask — the dial is the staged video");
   });
 
   it("THE MASK DIAL whole-frame: the all-white SolidMask sized to the chain's own geometry", () => {
@@ -232,6 +264,11 @@ describe("renderH3Edit — the video-edit matrix on the one spine (stage 2a)", (
     assert.throws(
       () => renderH3Edit(base, { ...REGION, prompt: "" }, SELF, {}, FACTS, g3, "r"),
       /region mask dial names no target.*SAM3 detection prompt/,
+    );
+    const g3v = new GraphBuilder();
+    assert.throws(
+      () => renderH3Edit(base, { ...VIDEO, video: "" }, SELF, {}, FACTS, g3v, "r"),
+      /video mask dial names no media.*length-match the clip/i,
     );
     const g4 = new GraphBuilder();
     assert.throws(

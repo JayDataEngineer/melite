@@ -598,13 +598,20 @@ export const ACTION_BINDINGS = {
                 ? { source: 'static-png', image: typeof entry.mask === 'string' ? entry.mask : '' }
                 : maskSource === 'whole-frame'
                     ? { source: 'whole-frame' }
-                    : {
-                        source: 'region',
-                        prompt: typeof entry.region_prompt === 'string' ? entry.region_prompt : '',
-                        grow: typeof entry.mask_grow === 'number' ? entry.mask_grow : 16,
-                        blur: typeof entry.mask_blur === 'number' ? entry.mask_blur : 0,
-                        detectionThreshold: typeof entry.detection_threshold === 'number' ? entry.detection_threshold : 0.5,
-                    };
+                    : maskSource === 'video'
+                        ? {
+                            source: 'video',
+                            video: typeof entry.mask_video === 'string' ? entry.mask_video : '',
+                            grow: typeof entry.mask_grow === 'number' ? entry.mask_grow : 16,
+                            blur: typeof entry.mask_blur === 'number' ? entry.mask_blur : 0,
+                        }
+                        : {
+                            source: 'region',
+                            prompt: typeof entry.region_prompt === 'string' ? entry.region_prompt : '',
+                            grow: typeof entry.mask_grow === 'number' ? entry.mask_grow : 16,
+                            blur: typeof entry.mask_blur === 'number' ? entry.mask_blur : 0,
+                            detectionThreshold: typeof entry.detection_threshold === 'number' ? entry.detection_threshold : 0.5,
+                        };
             const referenceMode = typeof entry.reference === 'string' ? entry.reference : 'self';
             const reference = referenceMode === 'still+mannequin'
                 ? {

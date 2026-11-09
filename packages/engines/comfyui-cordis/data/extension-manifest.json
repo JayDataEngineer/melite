@@ -206,7 +206,7 @@
   {
     "name": "ComfyUI-MiniMaxH3-Context-Loop",
     "url": "https://github.com/JayDataEngineer/ComfyUI-MiniMaxH3-Context-Loop",
-    "ref": "c4d3371e5fe7106bdfc07dc47c02e61c1394573c",
+    "ref": "1dd6cfb7e51b291708bed248f0c7d71aed776bbe",
     "required": true,
     "desc": "Clip chaining, checkpoints, masked targets (ContexMaskedTarget), MaskGridPreview, final assembly — the edit-target + loop seats. Estate-maintained fork (GPL-3.0, upstream history preserved): ethanfel force-pushed past the estate h3-chain gap cures (e6d700d7), orphaning the pinned line — the fork carries those bytes. Upstream floor 0.7.3+. No requirements file.",
     "pip": [],
