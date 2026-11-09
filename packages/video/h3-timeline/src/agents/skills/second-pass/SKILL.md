@@ -8,11 +8,10 @@ genre: video
 
 > The group, bands and defaults
 > below are read off `packages/models/h3/src/schema.ts` (`paramSchema`),
-> and the composition arms that fire on them live in
-> `packages/models/h3/tests/value-roundtrip.spec.ts` (ARM 4 mounts the
-> refine rider; ARM 5 proves master-off composes the plain pass; the
-> latent-route describe proves the in-band upscaler mounts only behind
-> the master + `upscale_route`).
+> and the composition arms that fire on them are the compose path's
+> own: the refine rider mounts behind the master, master-off composes
+> the plain pass, and the latent-route upscaler mounts only behind the
+> master + `upscale_route`.
 > NOT yet verified live: a GPU press with the WHOLE chain armed
 > (sharpen + interp + super-res together). Each group has code arms; a
 > press that walks all of them in one render is owed.
@@ -89,9 +88,11 @@ owns them, so an unstated dial never silently overrides the instrument's
 own operating point. Set them only to deviate.
 
 This rider is the FILM's own closing pass (it applies inside the render),
-and it is NOT the `refine` mod bag: that bag is a whole separate run over
-a staged clip (see the `refine` skill). They can both exist; they are
-different doors.
+and it is NOT the edit bag's `refine` dial: that dial is the edit door's
+same-run learned second pass (the 3D-conv latent upscale + low-sigma
+refine ride the edit's own latents — see the `refine` skill). They are
+different seats on different doors: this rider rides the master here;
+the dial rides the edit bag.
 
 ### E. The latent-upscale route (part of the master's group)
 
@@ -118,8 +119,9 @@ The route (and every other finish key) is lane-blind: the t4r arm mounts
 the same post chain as the film and open arms, so a keyframe-pinned doc stating the pair composes and
 fires the handoff. There is no per-lane dead letter left to reseat or null
 — the studio's rail and the walk agree on every lane.
-It is NOT the same as `scale` on the refine bag and NOT the
-`upscale` mod arm (that one resumes a prior chain run's latents).
+It is NOT the same as `scale` on the edit bag (the refine dial's own
+multiplier) and NOT the edit bag's `chain_run` posture (that one
+resumes a prior chain run's scenes through the requeue loop).
 
 ## How to compose it
 
@@ -150,6 +152,8 @@ It is NOT the same as `scale` on the refine bag and NOT the
 ## Companion surfaces
 
 - `video-timeline` — the film doc, its windows and the grid law.
-- `refine` — the separate-run second pass over ONE staged window.
-- `upscale` — the whole-film route over a PRIOR chain run.
+- `refine` — the edit bag's same-run refine dial (the learned second
+  pass on the edit's own latents).
+- `upscale` — the edit bag's `chain_run` posture (the deferred 2x of a
+  PRIOR chain run).
 - `loras` — the catalog the refine rider's `refine_lora` picks from.

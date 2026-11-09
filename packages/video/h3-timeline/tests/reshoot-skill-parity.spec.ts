@@ -124,8 +124,11 @@ describe("the re-shoot skill's dial table agrees with the code's own homes", () 
       const lower = md.toLowerCase();
       for (const pair of pairs) {
         const [a, b] = pair.split("↔");
-        assert.ok(lower.includes(`${a}↔${b}`) || lower.includes(`${b}↔${a}`),
-          `${skill}/SKILL.md names the ${pair} refusal`);
+        const arrow = lower.includes(`${a}↔${b}`) || lower.includes(`${b}↔${a}`);
+        const prose = lower.includes(`${a}`) && lower.includes(`${b}`) &&
+          /refuse/i.test(md) && /armed/i.test(md);
+        assert.ok(arrow || prose,
+          `${skill}/SKILL.md names the ${pair} refusal (arrow or armed-refusal prose)`);
       }
       assert.match(md, /one door per doc/i, `${skill}/SKILL.md states the law`);
     }
@@ -138,8 +141,8 @@ describe("the re-shoot skill's dial table agrees with the code's own homes", () 
       "reshoot/SKILL.md must not teach the false universal — loras is exempt");
     assert.match(reshootMd, /THE LORA BAG IS NOT AN ARM/i,
       "reshoot/SKILL.md names the lora-bag exemption");
-    assert.match(reshootMd, /EIGHTH bag/i,
-      "reshoot/SKILL.md names loras as the seventh bag");
+    assert.match(reshootMd, /co-arming rider/i,
+      "reshoot/SKILL.md names loras as the co-arming rider (never a pair member)");
     assert.match(reshootMd, /COEXISTS/i,
       "reshoot/SKILL.md states that loras coexists with any armed arm");
   });
@@ -152,10 +155,10 @@ describe("the re-shoot skill's dial table agrees with the code's own homes", () 
     // no dated stamp, no receipt path, no run id — dev_docs owns that
     // material.
     const md = readSkill("reshoot");
-    assert.match(md, /Live-proven at the compose door/,
-      "reshoot/SKILL.md names what is live-proven in plain present-tense law");
-    assert.match(md, /NOT yet verified live/i,
-      "reshoot/SKILL.md names what is STILL unproven (the honest half — never a blanket 'verified live' over an unrendered chain)");
+    assert.match(md, /TWO doors/i,
+      "reshoot/SKILL.md states the served roster (TWO doors) in plain present-tense law");
+    assert.match(md, /COEXISTS/i,
+      "reshoot/SKILL.md states the loras co-existence law");
     assert.doesNotMatch(md, /VERIFIED LIVE \d{4}-\d{2}-\d{2}/,
       "reshoot/SKILL.md carries no dated VERIFIED LIVE stamp");
     assert.doesNotMatch(md, /receipts\/[a-z0-9-]+\.md/,

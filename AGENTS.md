@@ -76,7 +76,10 @@ audio, a mesh, an edit — you compose it on the estate; you never
 hand-roll the engine. THE FLOW, in order:
 
 1. `melite_discover` — find the card or flow for the request.
-2. `melite_load` — open it: params, models, skills.
+2. `melite_load` — open it: params, models, skills. THE EXPANSION
+   LAW: the estate's deeper doors (`melite_view`,
+   `melite_skill_read`, `melite_read`, `ledger_tail`) seat
+   themselves on this call — never missing, only deferred.
 3. `melite_construct` (`add_stage`, then `patch`/`rewire`/… as the
    user refines) — the flow lands on THE SHARED BENCH, live in the
    user's cards tab (right sidebar). The user watches it land and

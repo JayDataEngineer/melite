@@ -125,12 +125,14 @@ case would demand a `17k` span; the keyframes pin seats the door close-up
 at film-absolute frame 124, the incoming window's head, so the cut lands
 on the intended framing.
 
-### "Orbit halfway around the parked car, then hold low over the hood."
+### "Orbit partway around the parked car, then hold low over the hood."
 
 The move is re-angling existing footage, so the reshoot mod bag owns the
-orbit: bind ONE `reshoot` entry on the source clip at a half-turn —
-inside the honest ceiling (small-to-moderate arc, 2.5D parallax; a full
-orbit hallucinates fill). Then compose the delivered film:
+orbit: bind ONE `reshoot` entry on the source clip at a moderate arc —
+inside the honest ceiling. The tested orbit band is ±45°; past 90° the
+hidden side is invented (a half-turn, 180°, hallucinates fill — if the
+brief asks that far, say what the door can honestly deliver and press
+the arc it can track). Then compose the delivered film:
 
 ```json
 {
@@ -152,7 +154,7 @@ orbit hallucinates fill). Then compose the delivered film:
     "reshoot": [
       {
         "source_clip": "parked-car-source.mp4",
-        "orbit": -90,
+        "orbit": -40,
         "tilt": 0,
         "dolly": 1,
         "zoom": 50,
@@ -164,9 +166,9 @@ orbit hallucinates fill). Then compose the delivered film:
 }
 ```
 
-The bag entry IS the orbit: `orbit` -90° walks the camera a half-turn
-around the source clip (inside the honest ceiling — past 90° the hidden
-side is invented), and the film's calls then direct the hold that
+The bag entry IS the orbit: `orbit` -40° walks the camera a moderate
+arc around the source clip (inside the ±45° tested band; past 90° the
+hidden side is invented), and the film's calls then direct the hold that
 follows. The carry into window two (span 34, legal `17k`) continues it
 with no cut. When NO footage exists yet —
 composing fresh — the same orbit is prose-only: say the move, keep the
@@ -175,8 +177,8 @@ window long, and expect an impressionistic arc, not a tracked path.
 ### "Swap in the red-jacket character and lift the dolly from this clip."
 
 Two lanes, one film. WHO changes (the h3-timeline's own `swap` skill —
-it binds the `replace` mod bag and drives the character swap through the
-masked-edit chain) and HOW the frame moves (this skill). The swap produces the identity
+the identity cell of the ONE edit bag, driving the character swap
+through the masked-edit chain) and HOW the frame moves (this skill). The swap produces the identity
 reference; the reference clip donates the camera move:
 
 ```json
@@ -242,7 +244,7 @@ judge it.
 - **Camera ask** (a move, a size, a cut, a rhythm): this skill. The
   frame changes; the subject's identity is already settled.
 - **Subject ask** (replace the actor, put this character in that clip):
-  the h3-timeline's `swap` skill (the `replace` mod bag). The
+  the h3-timeline's `swap` skill (the edit bag's identity cell). The
   performance stays the source's; the WHO changes.
 - **Both** (the music-video shape): swap first (the `swap` skill produces the
   identity reference), then direct (this skill composes the move —

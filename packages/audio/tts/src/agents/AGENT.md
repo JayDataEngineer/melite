@@ -114,13 +114,9 @@ every line of the character is the same voice under any direction.
 - Compose: `melite_construct` — `add_stage` this card onto the shared
   bench (`patch` / `rewire` to refine). The flow is live in the user's
   cards tab; keep editing it there as the user asks.
-- Run: THE USER'S Run press on the card — never yours.
-  THE LANE LAW: when both lanes feel true, the
-  LANE TEST decides — is the brief addressed to you as a
-  DELIVERABLE? Execute. As a DRAFT to co-edit? Compose. That is
-  the CHAT session's law; on a HEADLESS commission lane (the
-  maker lane) the brief IS the user's press — `melite_flow`
-  starts the run there lawfully, and the runbook owns the proof.
-  Never confused: chat = compose-only, headless commission =
-  execute the brief — the Run press stays the user's.
+- Run: THE USER'S Run press on the card — never yours. When both
+  lanes feel true, compose: your contract ends at `melite_construct`
+  and the Run press stays the user's. Execution is never the chat
+  agent's arm — no run tool is yours to call; the Run press stays
+  the user's.
 - Progress: on the card itself (the user watches it run).

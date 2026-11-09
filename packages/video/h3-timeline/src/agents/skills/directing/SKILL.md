@@ -16,9 +16,8 @@ melite_discover → melite_load → melite_construct
 ```
 
 Use `melite_construct` with `verb: "add_stage"`, card `h3-timeline`, and
-`params.calls`. Browser sessions stop at the user's Run press. A sanctioned
-headless commission may use `melite_flow` and `run_status` under the maker
-runbook. Never shell out to ComfyUI or hand-build a graph.
+`params.calls`. The run starts at the user's Run press — agent mode
+carries no run tool. Never shell out to ComfyUI or hand-build a graph.
 
 ## Direct card shape
 
@@ -38,8 +37,7 @@ runbook. Never shell out to ComfyUI or hand-build a graph.
       {
         "text": "The camera continues over the same water; the light warms as a small boat enters from the left.",
         "start_frame": 124,
-        "end_frame": 243,
-        "transition": "extend"
+        "end_frame": 243
       }
     ],
     "audio_clips": [
@@ -84,9 +82,6 @@ a display name or an invented placeholder.
 - A POSITIONED audio row with no `src` is refused at the compose door (the film
   mix cannot place a source-less row) — bind the returned asset before you place
   it, and verify the returned manifest and final audio.
-
-These gaps are recorded as owed work. The current card source and focused
-tests are authoritative over this prose.
 
 ## Audio guidance
 

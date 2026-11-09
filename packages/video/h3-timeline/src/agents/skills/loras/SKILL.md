@@ -27,10 +27,13 @@ CrossView camera row the re-shoot chain needs. The `loras` bag states
 which adapters this film stacks and at what strength.
 
 It is NOT:
-- **one of the edit bags** — replace/repair/extend/refine/reshoot/
-  upscale are the six ONE-DOOR bags (arming any two refuses loud). The
+- **one of the edit doors** — the family serves TWO mod doors: the
+  edit bag (the ONE masked-edit door — the legacy names replace/
+  repair/extend/refine/upscale are its preset cells, not doors) and
+  `reshoot` (the camera door). Edit↔Reshoot is the one live pair, and
+  arming both refuses loud. The
   loras bag is a model-plane statement: it stacks on top of the film or
-  of any single armed arm, and it never competes for the emission;
+  of either door, and it never competes for the emission;
 - **a prompt or an identity seat** — an adapter changes how the model
   samples, not what it is told (the prompt) or who is in frame (the
   subject art);
@@ -64,8 +67,8 @@ It is NOT:
    commission the brief IS the confirmation (state the values in the
    run record, then execute; never stall a commission waiting for a
    watcher who isn't there).
-4. **Press.** The user presses Run. Browser/chat agents never execute;
-   headless commissions ride `melite_flow` per the maker runbook.
+4. **Press.** The user presses Run. Browser/chat agents never
+   execute — no run tool is yours to call.
 
 ## Worked stacks (the shapes that ship)
 
@@ -92,21 +95,18 @@ widget ceiling (max 50) while the row domain owns the floor and the
 default, and the door wins. State a number only inside the row's
 domain, when the schedule must bend.
 
-## The default seat — SETTLED (the silveroxides merge)
+## The default seat — SETTLED (the DARE-TIES merge)
 
-An EMPTY bag applies the SILVEROXIDES MERGE: `h3_silver_dareties` —
-silveroxides' OFFICIAL DARE-TIES merge
-(`silver_official_releases/minimax_h3_fl2v_turbo_silver_dareties_comfy_pruned_v2.safetensors`,
-the v2 attention-config build — his README: no attention backend
-patcher needed), catalog strength 0.8, married 8 steps (designed
-6–8, usable to 4). SILVEROXIDES IS THE MERGE, LIGHTX2V IS NOT: the
-default chip reads "Silveroxides DARE-TIES Merge". The row IS the
-absent-bag default (`H3_DEFAULT_LORA_ID`), the file the engine serves
+An EMPTY bag applies the default row: `h3_silver_dareties` — the
+DARE-TIES merge
 (`h3/minimax_h3_fl2v_turbo_silver_dareties_comfy_pruned_v2.safetensors`),
+catalog strength 0.8, married 8 steps (designed
+6–8, usable to 4). The default chip reads "Silveroxides DARE-TIES
+Merge". The row IS the
+absent-bag default (`H3_DEFAULT_LORA_ID`), the file the engine serves,
 and every fresh card is born with it (the recipe trio stamps it,
-selection only). The old default's file — silveroxides' EXPERIMENTAL
-LightX2V-turbo × dareties row (`h3_lightx2v_turbo`, labelled
-"silveroxides experimental") — stays a PICK, never the default.
+selection only). The LightX2V-turbo row (`h3_lightx2v_turbo`) stays a
+PICK, never the default.
 Relying on the default is safe: state a row only to
 deviate, and record in the run what the graph composed when you deviate.
 

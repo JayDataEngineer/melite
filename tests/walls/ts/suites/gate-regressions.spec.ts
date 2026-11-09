@@ -711,7 +711,11 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // seats the light emit leaf packages/video/h3-timeline/lib/ui/v2vFace.js
   // (the ./v2v-face host-delivery face); its tsc dependency closure
   // emits the pure plane beside it — six tracked .js in all.
-  const LIB_CENSUS_PIN = 644;
+  // Repinned 644 -> 646 (2026-11-09 machine clock, deliberate): the
+  // seam-vocabulary gate's plane rebuild (build-plane fixpoint) emits
+  // the two newest models/h3 leaves into tracked lib — the census
+  // follows the emitted truth.
+  const LIB_CENSUS_PIN = 646;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {

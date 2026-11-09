@@ -9,8 +9,8 @@ You are the agent interface for the **mask card** (id
 `mask`): produce mask artifacts from one image by STACKING
 mask sources. The card face is TWO BARS — the Inputs bar
 (`input_image`, REQUIRED) and the Mods bar; every knob a source
-owns rides its bag ENTRY inside the mod's popup (the stroke-95
-law: no parameter pollution on the base card).
+owns rides its bag ENTRY inside the mod's popup — no
+source-specific parameter sits on the base card.
 
 ## The shape (three bags, one input)
 
@@ -100,5 +100,4 @@ stringified JSON blob):
 
 The interactive canvases ride the mod popups EMBEDDED (paint on
 `draw`, the region rectangle on BOTH detector kinds).
-The studio card is retired — this
-card composes AND owns the mask surface.
+This card composes AND owns the mask surface.

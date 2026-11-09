@@ -106,10 +106,8 @@ What these SHOW beyond the schema: style words live INSIDE the prompt as a suffi
 - Run: THE USER'S Run press on the card — never yours.
   THE LANE LAW: when both lanes feel true, the
   LANE TEST decides — is the brief addressed to you as a
-  DELIVERABLE? Execute. As a DRAFT to co-edit? Compose. That is
-  the CHAT session's law; on a HEADLESS commission lane (the
-  maker lane) the brief IS the user's press — `melite_flow`
-  starts the run there lawfully, and the runbook owns the proof.
-  Never confused: chat = compose-only, headless commission =
-  execute the brief — the Run press stays the user's.
+  DELIVERABLE? Then compose it fully and say it is ready to run.
+  As a DRAFT to co-edit? Compose and keep refining. Either way
+  the Run press stays the user's — your contract ends at
+  `melite_construct`, and no run tool is yours to call.
 - Progress: on the card itself (the user watches it run).

@@ -1,6 +1,6 @@
 ---
 name: reshoot
-description: "Camera re-shoot on the h3-timeline: seat a source clip plus one camera intent (orbit/tilt/dolly/zoom/pan) on the reshoot mod bag; the official comfy-reshoot chain reprojects the scene from MoGe metric depth and H3 re-renders it from the moved camera (warp guide + the CrossView LoRA, trigger `crossview`). Mod-bag door — NOT a fresh regen and NOT the replace mod."
+description: "Camera re-shoot on the h3-timeline: seat a source clip plus one camera intent (orbit/tilt/dolly/zoom/pan) on the reshoot mod bag; the official comfy-reshoot chain reprojects the scene from MoGe metric depth and H3 re-renders it from the moved camera (warp guide + the CrossView LoRA, trigger `crossview`). Mod-bag door — NOT a fresh regen and NOT the edit bag's identity pass."
 genre: video
 ---
 
@@ -15,10 +15,7 @@ genre: video
 > window's model. Prose never overrides the loaded bundle: the
 > fields below are quoted off the card's served reshoot kind.
 >
-> Live-proven at the compose door + the bag surface (orbit and dolly
-> dials composed live). NOT yet verified live: a rendered re-shoot on
-> the GPU lane — treat the chain's visual output as unproven until a
-> render press lands.
+
 
 ## What it is (and is NOT)
 
@@ -39,28 +36,28 @@ carries each window's seams.
 It is NOT:
 - **a fresh regen** — re-rolling the same shot is a new seed on an
   ordinary film run; reshoot MOVES the camera, it does not re-roll;
-- **the replace mod** — replace swaps a person (a different render
-  branch with its own terminal); reshoot augments the normal film:
+- **the edit bag's identity pass** — an anchored edit swaps a
+  person (a different render branch with its own terminal); reshoot
+  augments the normal film:
   calls, windows, and audio compose exactly as before, every window's
   model stack just renders from the moved camera.
 
-One door per doc: ANY two of the SEVEN armed mod bags REFUSE loud naming both —
-the twenty-one pairs are replace↔repair, replace↔extend, repair↔extend,
-replace↔reshoot, repair↔reshoot, extend↔reshoot, replace↔refine,
-repair↔refine, extend↔refine, reshoot↔refine, replace↔upscale,
-repair↔upscale, extend↔upscale, refine↔upscale, reshoot↔upscale,
-plus the edit-matrix door: edit↔replace, edit↔repair, edit↔extend,
-edit↔refine, edit↔upscale, edit↔reshoot.
-THE LORA BAG IS NOT AN ARM: `loras` is the EIGHTH bag and it
+One door per doc. The served roster is TWO doors:
+- **edit** (`params.edit`) — the mask × anchors × denoise matrix. The
+  legacy names (replace, repair, extend, refine, upscale) are its
+  preset CELLS, not doors; a legacy spelling resolves into the ONE
+  bag at the compose door (one entry; two armed legacy arms refuse).
+- **reshoot** (`params.reshoot`) — this door.
+
+Edit and Reshoot armed in the SAME doc refuse loud: the edit branch
+returns before the film action, so an armed reshoot under it would be
+silently dropped — pick one door and empty the other.
+THE LORA BAG IS NOT AN ARM: `loras` is the co-arming rider and it
 COEXISTS with any armed arm — it never disarms a pair (the lora
-plane rides every arm; only the six arm bags refuse).
-The three edit branches, the refine branch, and the upscale branch
-each return before the film action, so an armed reshoot under any of
-them would be silently dropped; two edit arms would race for one
-emission. Pick one and empty the
-others. (Armed = the bag is PRESENT and non-empty; an absent or
-empty `reshoot` bag is an unused arm — the film composes exactly
-as before, byte-identical.)
+plane rides every arm).
+(Armed = the bag is PRESENT and non-empty; an absent or empty
+`reshoot` bag is an unused arm — the film composes exactly as
+before, byte-identical.)
 
 ## The flow (bind, confirm, press)
 
@@ -114,25 +111,23 @@ as before, byte-identical.)
    PREPARED source clip is `ref_videos.ref_video_0` as the
    appearance/identity prior, and nothing fills the holes.
 4. **Confirm.** Show the bound clip, the camera intent in words
-   ("orbit 30° right, dolly to 0.8"), and that replace is empty.
+   ("orbit 30° right, dolly to 0.8"), and that the edit arm is empty.
    THE LANE CLAUSE: that wait is chat-lane law — on a headless
    commission the brief IS the confirmation (state the values in
    the run record, then execute; never stall a commission waiting
    for a watcher who isn't there).
 5. **Press.** The user presses Run. Browser/chat agents never
-   execute; headless commissions ride `melite_flow` per the maker
-   runbook.
+   execute — the run starts at the user's Run press, never yours.
 
 ## What the run writes (the witnesses)
 
 The chain saves TWO supporting stills beside the film, under the run
 tree at `h3-film/`:
 
-- `<runId>/reshoot_warp` — ONE frame: the raw warp plate the guide
-  pins (`ImageFromBatch` batch_index 0, length 1 — the exact frame
-  `MiniMaxH3AddGuide` reads at 0). Earlier builds saved every warped
-  frame here and buried the run tree in 90 PNGs of one still; that is
-  fixed, and the wall pins the one-frame selector.
+- `<runId>/reshoot_warp` — ONE frame only: the raw warp plate the
+  guide pins (`ImageFromBatch` batch_index 0, length 1 — the exact
+  frame `MiniMaxH3AddGuide` reads at 0; the one-frame selector is
+  walled — this plate never becomes a per-frame dump).
 - `<runId>/reshoot_orbit` — the camera gizmo (the orbit view), the
   operator's visual check that the pose is what was authored.
 
@@ -146,9 +141,9 @@ The camera guide needs a floor: `crossviewGuideSeconds` derives the
 prepare clip's duration from the SHORTEST window at 24 fps and REFUSES
 at COMPOSE below **24 frames (1 s)** — a shorter window cannot carry the
 camera. In practice author a re-shoot call on a ≥ 39-frame window
-(clip_seconds ≥ 1.625 at 24 fps): the 22-frame minimum first-window
-span snaps below the floor and refuses, while a normal 90-frame window
-(3.75 s) is the measured shape.
+(a window of at least 1.625 s at 24 fps): the 22-frame minimum
+first-window span snaps below the floor and refuses, while a normal
+90-frame window (3.75 s) is the measured shape.
 
 ## Companion surfaces
 

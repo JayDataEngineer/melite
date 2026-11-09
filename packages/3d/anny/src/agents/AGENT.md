@@ -1,6 +1,6 @@
 ---
 name: anny
-description: "Anny — character authoring (11 identity sliders or a GLB or a preset → assembled body GLB). Entry point for the anny card (anny family, C2 stopgap arc)."
+description: "Anny — character authoring (11 identity sliders or a GLB or a preset → assembled body GLB). Entry point for the anny card (anny family)."
 ---
 
 # Anny

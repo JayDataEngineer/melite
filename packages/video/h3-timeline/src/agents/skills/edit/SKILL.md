@@ -14,9 +14,8 @@ genre: video
 > card's served edit kind.
 >
 > Live-proven: the wall tier pins every dial's emission and every
-> refusal on its own path (edit-matrix.spec.ts, 14 arms,
-> toggle-proven). NOT yet verified live: a GPU render through this
-> door — treat the first press as the lane proof.
+> refusal on its own path. NOT yet verified live: a GPU render through
+> this door — treat the first press as the lane proof.
 
 ## What it is (and is NOT)
 
@@ -27,7 +26,7 @@ were FIXED cells of this matrix; their names still compose (the
 door translates a legacy doc into its cell at the compose door,
 never a frozen peer), and the free cells compose here.
 
-THE EDIT BAG'S STARTING CELLS (§0.8's flow model): the cells are
+THE EDIT BAG'S STARTING CELLS: the cells are
 DIAL VALUES an agent stages into the one bag — the UI face is the
 four-axes field grammar itself, no checkbox layer; a cell never
 renders. The six named cells over
@@ -125,7 +124,8 @@ loop — a different mechanism than the refine switch).
      the learned upscaler's multiplier. 1 is the same-size sharpening
      pass (the capacity cure); 2 the classic second pass — a >=2x
      window past the measured 141 f OOM REFUSES naming both cures
-     (cut window_length / clip_seconds, or drop under 2).
+     (press the 2.33 s design window instead, or drop scale under 2;
+     the frame fields are internal engine seats — never the cure).
    - `continuation` (boolean, false) — THE CONTINUATION SWITCH: ON
      turns the edit into an EXTEND — fresh full-denoise seconds
      appended to the source's last frame (the forced seam), joined
@@ -151,10 +151,6 @@ loop — a different mechanism than the refine switch).
      REFUSE under this posture — one second-pass mechanism, one
      source posture. Mask, anchor, and window dials are inert
      here (no clip rides).
-   - `segment_crf` (0–51, 18) — the H.264 quality of the persisted
-     HQ scene segments the resumed run re-encodes (the adapter's
-     own seat; 18 is its default). Rides ONLY the upscale posture —
-     a fresh edit never states it.
    - `carry` (boolean, true) — THE ONE SPLIT CONCEPT. ON (the
      default): the edit runs the WHOLE film — the engine splits it
      into segments on the film's own timeline and each segment
@@ -166,11 +162,6 @@ loop — a different mechanism than the refine switch).
      `overlap_frames` are internal engine seats now (an unstated
      window IS the whole film; an off-grid or out-of-vocabulary
      value refuses at compose, naming the cure — `carry: true`).
-     The burn this law buries: an agent once typed
-     `window_length: 90` on a 243 f film, repaired 90 of 243
-     frames, and reported it as a repair pass (run-e79f3b304e4b);
-     another typed `overlap_frames: 22` and the engine refused
-     eight nodes deep (run-1f91718b7cde).
    - `resolution` (select, 'auto') — the plan's resolution tier.
      AUTO (the default) derives the source film's own tier - never
      state it unless you deliberately want another regime (480p
@@ -207,8 +198,8 @@ each segment continues from the last frame of the previous, and the
 joined film comes back in ONE press. No frame numbers, no splice, no
 second press. Everything outside the tracked mask (and the audio) is
 held from the source. THE LAW: if you find yourself computing
-`window_start` from a timestamp, STOP - that arithmetic is the burn
-this door was rebuilt to make impossible. State the transformation
+`window_start` from a timestamp, STOP — frame arithmetic is the
+internal engine's own job, never the edit's. State the transformation
 once; the film's own timeline does the splitting.
 
 **B. A region on a composed film - the same press.** A film built
@@ -217,10 +208,7 @@ of it: the SAME entry as A. The engine's plan reads the source film
 itself (its spans, its geometry, its soundtrack) and re-joins with
 the derived AV-legal overlap - there are no seam numbers to copy, no
 window slots to replace, no editor re-join. The composed-film case
-and the single-clip case are now literally the same statement. (The
-old splice craft - copy the build's own `window_start`/`overlap`
-numbers by hand - is RETIRED: it repaired 90 of 243 frames once and
-called itself a repair pass.)
+and the single-clip case are literally the same statement.
 
 ## The seam craft (measured, one home)
 

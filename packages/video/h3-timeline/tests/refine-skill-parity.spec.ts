@@ -67,7 +67,8 @@ describe("the refine name's surviving homes (the collapse, slice 4)", () => {
     assert.match(md, /whole-frame/, "the translation's blank mask is stated");
     assert.match(md, /0\.32/, "the arm's declared default is stated");
     assert.match(md, /ONE window per/i, "the one-window law is stated");
-    assert.match(md, /RETIRED refine arm/, "the retired tiling is named, never taught as live");
+    assert.match(md, /multi-entry[\s\S]*?tilting refuses|tiling refuses/i,
+      "the retired tiling appears only as a refusal, never taught as live");
   });
 
   it("ARM 2 — the surviving DIAL TABLE: every bounded edit dial quotes the card's own band and default", () => {
@@ -115,12 +116,12 @@ describe("the refine name's surviving homes (the collapse, slice 4)", () => {
     assert.match(tooltip, /partial denoise only/, "the served switch states the partial-only law");
   });
 
-  it("ARM 5 — THE STAMP LAW: the alias leaf names what is live-proven, says what is unproven, and cites no archaeology", () => {
+  it("ARM 5 — THE STAMP LAW (recured by the 2026-11-09 docs audit: provenance narration is history — the leaf states the walled fact and cites no archaeology)", () => {
     const md = readSkill("refine");
-    assert.match(md, /Live-proven/,
-      "refine/SKILL.md names what is live-proven in plain present-tense law");
-    assert.match(md, /NOT yet (?:proven|verified) live/i,
-      "refine/SKILL.md names what is STILL unproven");
+    assert.match(md, /walled/,
+      "refine/SKILL.md states its suite-side wall in plain present-tense law");
+    assert.match(md, /one window per doc/i,
+      "the one-window law is restated where the hedge lived");
     assert.doesNotMatch(md, /VERIFIED LIVE \d{4}-\d{2}-\d{2}/,
       "refine/SKILL.md carries no dated VERIFIED LIVE stamp");
     assert.doesNotMatch(md, /receipts\/[a-z0-9-]+\.md/,

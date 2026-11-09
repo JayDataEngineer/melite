@@ -29,8 +29,7 @@ The executable contract is `packages/video/h3-timeline/src/card.ts` and
       {
         "text": "The camera continues over the same water; a small boat enters from the left.",
         "start_frame": 124,
-        "end_frame": 243,
-        "transition": "extend"
+        "end_frame": 243
       }
     ],
     "audio_clips": [
@@ -77,10 +76,6 @@ Do not send retired `context`, seam-keyframe, `bed_audio`, or other undeclared
 fields. Top-level unknown fields are refused; some per-call compatibility keys
 may be retained, so do not use them to add behavior.
 
-Do not send retired `context`, seam-keyframe, `bed_audio`, or other undeclared
-fields. Top-level unknown fields are refused; some per-call compatibility keys
-may be retained, so do not use them to add behavior.
-
 ## Identity anchoring — the character sheet
 
 People in a multi-window film drift unless every generation window carries the
@@ -99,8 +94,9 @@ sheet to the GEN WINDOWS through the keyframes lane — `keyframes:
 - `params.image` is NOT enough: it is the frame-0 shorthand and anchors WINDOW
   1 ONLY. `ref_images` rails also ride one window. The per-window pin lane is
   the only mechanism that reaches every window.
-- The same sheet is the identity seat downstream: it feeds `replace[]`'s
-  `still` seat (the swap's R2V reference) — see `skills/recipe/SKILL.md` for
+- The same sheet is the identity seat downstream: it feeds the edit bag's
+  `still` seat (the identity-swap cell's replacement-still reference) — see
+  `skills/recipe/SKILL.md` for
   the production order and the limits of masked passes over an unpinned source
   (the mannequin silhouette carries the source's shapes, so
   anchor the sheet at GENERATION time, not only at swap time).
@@ -141,8 +137,7 @@ missing source is a load/compose refusal, not a reason to guess a path.
    `validate` is for a bench you did not just write (or one patched
    without a verdict); surface its exact refusal when you do run it.
 3. Patch the named field and revalidate.
-4. In browser mode, stop at the user's **Run** press.
-5. In a sanctioned headless commission, use `melite_flow` and `run_status`.
+4. Stop at the user's **Run** press — agent mode carries no run tool.
 
 There is no current `plan_timeline` tool in the base agent surface. A
 multi-window H3 card is one queue stage and one film; it is not an executable

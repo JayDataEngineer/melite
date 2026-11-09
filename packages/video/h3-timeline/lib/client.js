@@ -5014,7 +5014,7 @@ window.__ModuleLoader__.load({
 				max: 243,
 				step: 1,
 				internal: true,
-				tooltip: "INTERNAL (the expert override, admitted but never served): the carry join boundary. The engine accepts exactly 0 (cut) or 39/90/141/192/243 (the AV-continuity law); anything else refuses at the compose door. Unstated — the default — derives 39 under carry: true, 0 under carry: false."
+				tooltip: "INTERNAL (the expert override, admitted but never served): the carry join boundary. The engine accepts exactly 0 (cut) or 39/90/141/192/243 (the AV-continuity law); anything else is refused before a single frame renders. Unstated — the default — derives 39 under carry: true, 0 under carry: false."
 			},
 			{
 				name: "resolution",

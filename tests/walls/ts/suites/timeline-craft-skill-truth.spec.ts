@@ -169,11 +169,18 @@ function servedSectionIds(): string[] {
   return [...region.matchAll(/\{ id: '([a-z0-9-]+)'/gu)].map((m) => m[1]!);
 }
 
-/** One field's declaration line off the EDIT_MOD fields. */
+/** One field's declaration line off the edit door's declared
+ *  fields. The fields SEAT in the client-safe leaf editDecl.ts
+ *  (EDIT_FIELDS — moved out of card.ts's EDIT_MOD at the rail
+ *  cure; the leaf is the declaration's truth home, imported
+ *  verbatim by EDIT_MOD.fields). */
+const editDeclSrc = readFileSync(
+  join(ROOT, "packages/video/h3-timeline/src/editDecl.ts"), "utf8");
+
 function fieldLine(name: string): string {
-  const block = editModBlock();
+  const block = editDeclSrc;
   const line = block.split("\n").find((l) => l.includes(`name: '${name}'`));
-  assert.ok(line !== undefined, `EDIT_MOD declares the ${name} field`);
+  assert.ok(line !== undefined, `the edit door's declared fields include the ${name} field`);
   return line!;
 }
 

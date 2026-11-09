@@ -37,9 +37,8 @@ genre: video
 - The full dial table and the posture's refusal laws live in ONE place: the `edit` skill.
 
 THE DOOR REFUSES CLEANLY PAST VALIDATION: an unknown run name
-refuses loud at the execute door, never a silent empty pass. Do not
-Do not promise an upscale: NOT yet verified live: an END-TO-END upscaled render
-(the loop's own resumption has not been pressed on the GPU lane).
-Live-proven: the legacy spelling's translation into the edit cell is
-walled suite-side, and the bare run name law rides the execute door. — the edit
+refuses loud at the execute door, never a silent empty pass. Do not promise an upscale: NOT yet verified live: an END-TO-END upscaled render
+(the loop's own resumption has not been pressed on the GPU lane) — the edit
 door's lane proof is the one that counts.
+Live-proven: the legacy spelling's translation into the edit cell is
+walled suite-side, and the bare run name law rides the execute door.

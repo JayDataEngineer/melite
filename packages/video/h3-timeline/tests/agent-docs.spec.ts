@@ -72,10 +72,16 @@ describe("THE AGENT-DOCS WALL (the live law, where agents load it)", () => {
     expect(md).toMatch(/brief IS the confirmation/);
   });
 
-  it("AGENT.md teaches the lane test (friction-report #5: deliverable = execute, draft = compose)", () => {
+  it("AGENT.md teaches the lane test (friction-report #5, recured by the 2026-11-09 docs audit: the deliverable starts at the user's Run press, the draft at construct)", () => {
     const md = read("agents/AGENT.md");
     expect(md).toMatch(/THE LANE TEST/);
-    expect(md).toMatch(/DELIVERABLE\? Execute/);
+    // the run-press law: the agent composes, the user presses Run —
+    // the execute arm is maker-lane law, never taught to this reader
+    expect(md).toMatch(/user'?s Run press/i);
+    expect(md).not.toMatch(/DELIVERABLE\? Execute/);
+    // naming the flow tool to refuse it is law; teaching its use is not
+    const taught = md.split("\n").filter((l) => /\bmelite_flow\b/.test(l) && !/not in your tools|do not hunt|never yours/i.test(l));
+    expect(taught).toEqual([]);
   });
 
   it("the reshoot skill teaches the mod-bag door, the not-a-regen boundary, and the mutual refusal", () => {
@@ -86,7 +92,7 @@ describe("THE AGENT-DOCS WALL (the live law, where agents load it)", () => {
     expect(md).toMatch(/params\.reshoot = \[entry\]/);
     expect(md).toMatch(/never flat/);
     expect(md).toMatch(/NOT.*fresh regen/i);
-    expect(md).toMatch(/NOT.*replace mod/i);
+    expect(md).toMatch(/NOT.*identity pass/i);
     // one door per doc: armed replace + armed reshoot refuses loud.
     expect(md).toMatch(/One door per doc/);
     // the armed-missing-clip law: loud refusal naming the seat,
@@ -94,9 +100,9 @@ describe("THE AGENT-DOCS WALL (the live law, where agents load it)", () => {
     expect(md).toMatch(/refuses LOUD naming the seat/);
     // the identity camera: untouched knobs re-render the same view.
     expect(md).toMatch(/identity camera/);
-    // generic lane law: the maker runbook, no machine-specific
-    // ports or service names anywhere in the doc.
-    expect(md).toMatch(/maker\s+runbook/);
+    // no machine-specific ports or service names anywhere in the
+    // doc (the maker runbook pointer left with the melite_flow clause
+    // at the 2026-11-09 docs audit — maker-lane law is not served copy)
     expect(md).not.toMatch(/3088|33081|systemctl|127\.0\.0\.1|localhost/);
   });
   it("no agent-facing doc routes to the exterminated viggle-animate family — the subject door is this card's own swap skill", () => {

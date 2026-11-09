@@ -4,9 +4,9 @@ description: "Person-swap — the LEGACY `replace` spelling of the one Video edi
 genre: video
 ---
 
-> THE COLLAPSE — THIS NAME IS A PRESET CELL, NOT A DOOR. The
-> operator's ruling: repair and replace are the same operation;
-> repair just uses the original. This leaf documents the LEGACY
+> THE COLLAPSE — THIS NAME IS A PRESET CELL, NOT A DOOR. Repair and
+> replace are the same operation; repair just uses the original. This
+> leaf documents the LEGACY
 > spelling so old docs keep composing: state the cell on the ONE
 > Video edit bag (`params.edit`). `replace: [{...}]` resolves to
 > `edit: [{ mask_source: "static-png", reference: "still+mannequin",
@@ -28,8 +28,8 @@ genre: video
    masks is recommended. There is no `mask_sequence` seat. New docs
    state the same seats on `params.edit` (the translation binds
    them node for node).
-3. **Confirm.** Show the bound values — roles, seed, prompt,
-   keep_audio — and wait. THE LANE CLAUSE: that wait is chat-lane
+3. **Confirm.** Show the bound values — still, mannequin, mask,
+   edit_prompt, keep_audio — and wait. THE LANE CLAUSE: that wait is chat-lane
    law — on a headless commission the brief IS the confirmation
    (state the bound values in the run record, then execute; never
    stall a commission waiting for a watcher who isn't there).

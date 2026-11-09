@@ -1,6 +1,6 @@
 ---
 name: motion
-description: "Motion — text → 3D human motion (SOMA-77 NPZ). Entry point for the motion card (kimodo family, stopgap arc)."
+description: "Motion — text → 3D human motion (SOMA-77 NPZ). Entry point for the motion card (kimodo family)."
 ---
 
 # Motion
@@ -36,7 +36,7 @@ across segments, skinnable onto SOMAX-rigged character GLBs.
 - When `preview_glb` is set: `somax_bake*.glb` — the motion skinned
   onto the character.
 
-## Honest edges (v1 stopgap)
+## Honest edges
 
 - The `render_*`/`openpose_*` knobs are the STUDIO body's client-
   side preview bake (in-browser LBS); they are not graph params
