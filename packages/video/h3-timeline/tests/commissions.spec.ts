@@ -100,8 +100,11 @@ describe("§9 — the studio's mod projection (the commission derivation)", () =
       const rows = deriveCommissions({ [kind]: [entry] })
       expect(rows, `${kind}: one armed bag is one row`).toHaveLength(1)
       expect(rows[0]!.kind).toBe(kind)
-      // the seats are the entry's OWN keys — nothing added, nothing dropped
-      expect(rows[0]!.seats.map((s) => s.key).sort()).toEqual(Object.keys(entry).sort())
+      // the seats are the entry's OWN keys — nothing dropped; the
+      // edit row alone ADDS the carry lead seat (its law, 2026-11-09:
+      // the split states itself on every edit row)
+      const expectedKeys = Object.keys(entry).concat(kind === "edit" ? ["carry"] : []).sort()
+      expect(rows[0]!.seats.map((s) => s.key).sort()).toEqual(expectedKeys)
       // every entry seat rides verbatim; the LoRA bag's own keys are id +
       // strength (no source_clip on that arm)
       const anchor = kind === "loras" ? "id" : "source_clip"
@@ -365,7 +368,7 @@ describe("THE READ-LIST COLLAPSE (2026-11-16 — the canonical bag rides the rai
     const rows = deriveCommissions({ edit: [EDIT] })
     expect(rows, "the canonical bag is not blind to the rail").toHaveLength(1)
     expect(rows[0]!.kind).toBe("edit")
-    expect(rows[0]!.seats.map((s) => s.key).sort()).toEqual(Object.keys(EDIT).sort())
+    expect(rows[0]!.seats.map((s) => s.key).sort()).toEqual(Object.keys(EDIT).concat(["carry"]).sort())
     const seats = new Map(rows[0]!.seats.map((s) => [s.key, s.value]))
     expect(seats.get("edit_prompt")).toBe("make it night")
     expect(seats.get("denoise")).toBe("0.55")
@@ -399,5 +402,99 @@ describe("THE READ-LIST COLLAPSE (2026-11-16 — the canonical bag rides the rai
     ])
     // the unused arm stays surface: an empty edit bag is NO row
     expect(deriveCommissions({ edit: [] })).toEqual([])
+  })
+})
+
+describe("THE EDIT ROW SPEAKS THE SPLIT (2026-11-09 — the pasted timeline DOM)", () => {
+  // THE BURN, verbatim from the operator's timeline: the edit
+  // commission row read "window_start 0 · window_length 0 ·
+  // clip_seconds 6 · overlap_frames 39 · segment_crf 18 · scale 2 ·
+  // extend_seconds 2.33" — the frame dialect under the row's label,
+  // while the carry split (the one concept the edit door adds) had
+  // NO seat anywhere on the face.
+  const STAMPED_DEFAULTS = {
+    source_clip: "clips/take8.mp4",
+    edit_prompt: "clean the jacket",
+    mask_source: "static-png",
+    reference: "self",
+    denoise: 0.32,
+    keep_audio: true,
+    refine: false,
+    continuation: false,
+    window_start: 0,
+    window_length: 0,
+    clip_seconds: 6,
+    overlap_frames: 39,
+    segment_crf: 18,
+    scale: 2,
+    extend_seconds: 2.33,
+    seed: 0,
+    steps: 6,
+  }
+  /** The rail's own rendered string for the edit row (the same
+   *  join StudioStripPane hands the dumb rail). */
+  const editDetail = (entry: Record<string, unknown>): string => {
+    const rows = deriveCommissions({ edit: [entry] })
+    assert.equal(rows.length, 1, "one edit row")
+    return studioCopy.commissionSeats(rows[0]!.seats)
+  }
+
+  it("ARM C1 — the pasted DOM doc renders with ZERO dialect: none of the seven spewed keys print, carry LEADS", () => {
+    const detail = editDetail(STAMPED_DEFAULTS)
+    for (const dialect of ["window_start", "window_length", "clip_seconds", "overlap_frames", "segment_crf", "scale", "extend_seconds"]) {
+      expect(detail).not.toContain(dialect)
+    }
+    expect(detail.startsWith("carry ")).toBe(true)
+  })
+
+  it("ARM C2 — carry ABSENT is ON (the compose door's own default): the lead seat names the whole-film split and the derived join", () => {
+    const rows = deriveCommissions({ edit: [STAMPED_DEFAULTS] })
+    expect(rows[0]!.seats[0]).toEqual({ key: "carry", value: "on — whole film, derived join" })
+  })
+
+  it("ARM C3 — carry FALSE names the cut joins (the row states the split for EVERY doc, both ways)", () => {
+    const rows = deriveCommissions({ edit: [{ ...STAMPED_DEFAULTS, carry: false }] })
+    expect(rows[0]!.seats[0]).toEqual({ key: "carry", value: "off — cut joins" })
+  })
+
+  it("ARM C4 — carry TRUE explicit states the split ONCE (no duplicate raw boolean beside the lead seat)", () => {
+    const rows = deriveCommissions({ edit: [{ ...STAMPED_DEFAULTS, carry: true }] })
+    const carrySeats = rows[0]!.seats.filter((s) => s.key === "carry")
+    assert.equal(carrySeats.length, 1, "the carry seat appears exactly once")
+    expect(carrySeats[0]!.value).toBe("on — whole film, derived join")
+  })
+
+  it("ARM C5 — a posture-LIVE seat still prints: scale under refine=true, extend_seconds under continuation=true (the run reads them)", () => {
+    const refineDetail = editDetail({ ...STAMPED_DEFAULTS, refine: true })
+    expect(refineDetail).toContain("scale 2")
+    const continuationDetail = editDetail({ ...STAMPED_DEFAULTS, continuation: true })
+    expect(continuationDetail).toContain("extend_seconds 2.33")
+  })
+
+  it("ARM C6 — internal is stronger than posture: segment_crf NEVER prints, even stated under its own chain_run posture", () => {
+    const detail = editDetail({ ...STAMPED_DEFAULTS, chain_run: "prior-run" })
+    expect(detail).not.toContain("segment_crf")
+    expect(detail).toContain("chain_run prior-run")
+  })
+
+  it("ARM C7 — a stated expert override stays off the rail but rides the door: window_length 141 never prints, the compose still reads it", () => {
+    const entry = { ...STAMPED_DEFAULTS, mask: "clips/mask8.png", window_length: 141 }
+    expect(editDetail(entry)).not.toContain("window_length")
+    // the compose door still admits the declared override (internal
+    // = never the operator's FACE, never dropped from admission)
+    const g = new GraphBuilder()
+    def.compose(def.schema({ edit: [entry] }) as Record<string, unknown>, model, g, "run_c7")
+    assert.ok(g.toJSON(), "the expert-override doc still composes")
+  })
+
+  it("ARM C8 — an undeclared key the doc carries still states itself (the no-silent-drop law: drift shows, never hides)", () => {
+    expect(editDetail({ ...STAMPED_DEFAULTS, ghost_seat: "drift" })).toContain("ghost_seat drift")
+  })
+
+  it("ARM C9 — a non-boolean carry states the compose door's refusal on the row (armed-and-doomed shows as itself)", () => {
+    const rows = deriveCommissions({ edit: [{ ...STAMPED_DEFAULTS, carry: "yes" }] })
+    const lead = rows[0]!.seats[0]!
+    expect(lead.key).toBe("carry")
+    expect(lead.value).toContain("refuses")
   })
 })

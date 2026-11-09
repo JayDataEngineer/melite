@@ -28,8 +28,9 @@
  * durable row and holds no state of its own.
  */
 import {
-  assertGridLength, CONTEXT_OVERLAP_FRAMES, GRID_MAX_FRAMES, solveWindowComposition, type WindowComposition,
+  assertGridLength, CONTEXT_OVERLAP_FRAMES, entryCarries, GRID_MAX_FRAMES, solveWindowComposition, type WindowComposition,
 } from '@melite/models-h3/timelineContract'
+import { editRailSeats } from '../../editDecl.ts'
 import { STARTER_CALLS } from './docModel.ts'
 
 /** Every mod bag the rail projects, in the card's own declaration
@@ -183,6 +184,30 @@ function geometryOf(entry: Record<string, unknown>): {
   }
 }
 
+/** The edit row's LEAD seat — the carry split, the one concept the
+ *  edit door adds (operator 2026-11-09: the row printed the frame
+ *  dialect and never the split). `carry` ABSENT is ON (the compose
+ *  door's own default), so the row states the split for EVERY doc:
+ *  on names the whole-film run — segments split on the film's own
+ *  timeline, each continuing from the last frame of the previous,
+ *  joined at the derived AV-legal boundary; off names the cut
+ *  joins. A non-boolean carry refuses at the compose door; the
+ *  rail states that refusal instead of guessing (the geometryOf
+ *  precedent: armed-and-doomed shows as itself).
+ *  @param entry the edit bag's first entry
+ *  @returns the carry seat, first on the row */
+function carrySeat(entry: Record<string, unknown>): CommissionSeat {
+  let carries: boolean
+  try {
+    carries = entryCarries(entry)
+  } catch (err) {
+    return { key: 'carry', value: `refuses — ${err instanceof Error ? err.message : String(err)}` }
+  }
+  return carries
+    ? { key: 'carry', value: 'on — whole film, derived join' }
+    : { key: 'carry', value: 'off — cut joins' }
+}
+
 /** Derive the doc's armed commissions, in the card's bag order.
  *  Disarmed bags contribute nothing — the rail's empty state is the
  *  honest "no commission" lane, never a placeholder row.
@@ -214,6 +239,19 @@ export function deriveCommissions(params: Record<string, unknown> | undefined): 
           ? { kind, seats: [], note: 'bad-entry' }
           : { kind, seats: seatsOf(stacked) })
       }
+      continue
+    }
+    // THE EDIT ROW SPEAKS THE SPLIT (2026-11-09): the card's own
+    // projection — the internal frame dialect never prints, a
+    // posture-guarded seat prints only when the run reads it, and
+    // the carry statement LEADS — so the row reads as the carry
+    // commission it is, never a second window dialect beside the
+    // v2v lane.
+    if (kind === 'edit') {
+      const editEntry = bagEntry(bag)
+      out.push(editEntry === undefined
+        ? { kind, seats: [], note: 'bad-entry' }
+        : { kind, seats: [carrySeat(editEntry), ...editRailSeats(editEntry)] })
       continue
     }
     const entry = bagEntry(bag)

@@ -8,6 +8,7 @@ import { renderH3Edit } from '@melite/models-h3';
 import { reshootArmed } from '@melite/models-h3';
 import { parseH3Facts } from '@melite/models-h3/actions';
 import { assertOverlayGated } from '@melite/models-h3';
+import { EDIT_FIELDS } from "./editDecl.js";
 export { assertCarriedSpanGrid, assertGridLength, assertSpanGrid, gridSnap } from '@melite/models-h3/timelineContract';
 export { carrier, JSON_ARRAY_PARAMS, schema } from '@melite/models-h3/schema';
 // THE CARRIER'S CALLABLE FACE — ONE cast serving the compose strict
@@ -196,53 +197,11 @@ const EDIT_MOD = {
         'comfyui-h3-oneclick-swap',
     ],
     section: 'Video edit — ONE bag, the whole edit matrix: state the MASK (a per-frame SAM3 region with tuning seats, the whole frame, or one staged PNG resized to the chain), the IDENTITY ANCHORS (the source itself, or a still + mannequin pair), the DENOISE pole (partial holds the unmasked region and its sound; 1 re-renders the masked side whole), and the REFINE switch (the learned second pass rides this chain\'s own latents, same run). A continuation is a posture of this door (continuation ON: fresh seconds appended at full denoise, joined into one film); a deferred 2x upscale of a PRIOR chain run is a posture of this door too (chain_run stated: the prior run resumes its checkpointed scenes through the requeue loop); a new camera is the Reshoot door — it refuses here naming its door. The classic refine posture composes here: blank mask + partial denoise + refine on. Film runs leave this arm empty.',
-    fields: [
-        // The seat TYPES (the picker law, the siblings' own): video
-        // seats are `file` + media 'video'; image seats claim the
-        // image square; the two prompt seats are text
-        // (agent-composed, user-confirmed).
-        { name: 'source_clip', label: 'Source clip', type: 'file', media: 'video', default: '', tooltip: 'The clip the edit rides. Binds ONE staged leaf: the VHS window loader + the core LoadVideo both read it by staged name, and the timeline reads it back off the native VIDEO wire.' },
-        { name: 'edit_prompt', label: 'Edit prompt', type: 'text', default: '', tooltip: 'The edit action text — what the masked region or frame should become (agent-composed, user-confirmed; rides the reference-video prompt seat — no in-graph describer ever rewrites your words).' },
-        { name: 'mask_source', label: 'Mask source', type: 'select', default: 'region', options: [
-                { value: 'region', label: 'Region — per-frame SAM3 track' },
-                { value: 'whole-frame', label: 'Whole frame — nothing held' },
-                { value: 'static-png', label: 'Static PNG — one staged mask' },
-            ], tooltip: 'WHERE the edit lands: a per-frame SAM3 track of a free-text region (the per-frame door — a moving subject stays masked frame by frame), the whole frame (an all-white mask, nothing held), or ONE staged PNG (the track run\'s pixel-max union is the recommended bridge — the chain resizes it to its own geometry, so the file\'s own shape never matters).' },
-        { name: 'region_prompt', label: 'Region prompt', type: 'text', default: '', visible_when: 'mask_source=region', tooltip: 'The free-text SAM3 detection target naming the region — "hands", "a person", "a face" are param VALUES, never card kinds. The mask tracks every matching object frame by frame. RIDES ONLY the region mask source (refuses empty there).' },
-        { name: 'mask', label: 'Mask PNG', type: 'image', default: '', visible_when: 'mask_source=static-png', tooltip: 'ONE staged PNG under the static-png mask source — the track run\'s pixel-max UNION is recommended (per-frame motion is the region source\'s own door). The chain decodes it off the red channel and RESIZES it to the plan geometry in-graph: the file\'s own resolution never has to match the clip.' },
-        { name: 'mask_grow', label: 'Mask grow px', type: 'number', visible_when: 'mask_source!=whole-frame', default: 16, min: 0, max: 96, step: 1, tooltip: 'Pixels the mask grows before the edit (seam ring protection; 0 edits exactly the detected region — the grow-0 seam test). Thin structures (handles, caps) lost to a coarse track grow here first — the tuning seat the coarse-mask burn asked for.' },
-        { name: 'mask_blur', label: 'Mask blur px', type: 'number', visible_when: 'mask_source!=whole-frame', default: 0, min: 0, max: 48, step: 1, tooltip: 'Edge softness of the grown mask (blur radius): 0 is a hard edge, a few px feathers the boundary into the hold — the second tuning seat the coarse-mask burn asked for.' },
-        { name: 'detection_threshold', label: 'Detection threshold', type: 'number', visible_when: 'mask_source=region', default: 0.5, min: 0, max: 1, step: 0.01, tooltip: 'The SAM3 text-detection score threshold (lower finds more objects, noisier masks; higher only the confident ones).' },
-        { name: 'reference', label: 'Identity anchors', type: 'select', default: 'self', options: [
-                { value: 'self', label: 'Source clip itself — repair posture' },
-                { value: 'still+mannequin', label: 'Still + mannequin — swap posture' },
-            ], tooltip: 'WHO the edit keeps: the source clip on its own reference seat (the identity anchor is the person already in the frame — zero new pixels), or a replacement still + the track run\'s mannequin video (the still anchors appearance, the mannequin carries motion; the still must show the person WEARING the target — a garment alone hallucinates the uncovered body, the outfit-swap burn).' },
-        { name: 'still', label: 'Replacement still', type: 'image', default: '', visible_when: 'reference=still+mannequin', tooltip: 'The replacement still under the still+mannequin anchors (the R2V ref_images seat + the plan\'s geometry anchor — the person wearing the target look).' },
-        { name: 'mannequin', label: 'Mannequin video', type: 'file', media: 'video', visible_when: 'reference=still+mannequin', default: '', tooltip: 'The mannequin video from the track-card run under the still+mannequin anchors (the R2V ref_videos seat — motion the still cannot carry).' },
-        { name: 'denoise', label: 'Denoise', type: 'number', default: 0.32, min: 0.05, max: 1, step: 0.01, tooltip: 'The edit pole: partial (0.05–0.5 is the repair window) holds the unmasked region AND its sound; 1 re-renders the masked side whole (the keep_audio dial rides only here). Whole-frame × self at >= 0.8 is the identity boil and refuses — anchor the identity or use the reshoot door.' },
-        { name: 'keep_audio', label: 'Keep source audio', type: 'boolean', default: true, tooltip: 'ON: the source soundtrack rides the edit unchanged. OFF (full denoise only): the soundtrack is generated fresh with the edit — a partial pass never drops it (the hold is the point).' },
-        { name: 'carry', label: 'Carry', type: 'boolean', default: true, tooltip: 'THE SPLIT LAW (the one concept the edit door adds): ON (the default) the edit runs the WHOLE film — segments split on the source film\'s own timeline and each continues from the last frame of the previous, joined with the derived AV-legal overlap (39/90/141/192/243 frames — the engine\'s law, never typed). OFF cuts the joins: each segment stands alone. Frame arithmetic (window_start/window_length) is the expert override, never the agent\'s job — typing it wrong repaired 90 of 243 frames once (run-e79f3b304e4b).' },
-        { name: 'refine', label: 'Refine pass', type: 'boolean', default: false, visible_when: 'chain_run=null', tooltip: "THE FOURTH DIAL — the refine switch: ON adds the learned second pass to THIS chain (the 3D-conv latent upscale + the low-sigma refine pass ride the edit's OWN latents — same run, no re-encode of a saved clip; partial denoise only). Blank mask + partial denoise + refine on = the classic refine posture." },
-        { name: 'scale', label: 'Refine scale', type: 'number', default: 2, visible_when: 'refine=true', min: 1, max: 4, step: 0.05, tooltip: "RIDES ONLY the refine pass (inert when refine is off): the learned upscaler's multiplier — 1 is the same-size sharpening pass (the capacity cure), 2 the classic second pass. A >=2x window past the measured OOM (5.875 s = 141f) refuses naming both cures." },
-        { name: 'continuation', label: 'Continuation', type: 'boolean', default: false, visible_when: 'chain_run=null', tooltip: "THE CONTINUATION SWITCH: ON turns this edit into an EXTEND — fresh full-denoise seconds appended to the source's last frame (the forced seam: anything new develops from it frame by frame, never appears whole), joined with the prior into one film. Rides the blank mask + self anchors + denoise 1 (each refused loud otherwise)." },
-        { name: 'extend_seconds', label: 'Extend seconds', type: 'number', default: 2.33, visible_when: 'continuation=true', min: 0.91, max: 432.29, step: 0.01, tooltip: 'RIDES ONLY the continuation (inert when off): seconds appended — a single window lands on the engine grid at 24fps (22+17k frames; 2.33s = 56f, 15.08s = 362f the largest single window); above 362f the door joins N uniform windows under the 39f context overlap, exact delivery or a refusal naming the neighbors (ceiling 432.29s).' },
-        { name: 'chain_run', label: 'Prior chain run', type: 'chain-run', default: '', tooltip: "THE UPSCALE POSTURE'S SEAT: the prior chain run resumed as the deferred 2x pass (denoise 0.24, steps 20); empty = a fresh edit." },
-        { name: 'segment_crf', label: 'Segment CRF', type: 'number', default: 18, min: 0, max: 51, step: 1, visible_when: 'chain_run!=null', internal: true, tooltip: 'The H.264 quality of the persisted HQ scene segments the resumed run re-encodes (the adapter\'s own seat; 18 is its default). Rides only the upscale posture — a fresh edit never states it.' },
-        { name: 'window_start', label: 'Window start (frames)', type: 'number', default: 0, min: 0, max: 100000, step: 1, internal: true, tooltip: 'Frames (at the film clock, 24 fps) to skip before the edit window — 0 starts at the clip head.' },
-        { name: 'window_length', label: 'Window length (frames)', type: 'number', default: 0, min: 0, max: 100000, step: 1, internal: true, tooltip: 'Frames in the edit window — 0 runs to the end of the clip. A stated length must land on the engine grid 22+17k (56, 73, 90, 107, 124, 141…; off-grid refuses naming the nearest legal value) because the plan snap and the tracked mask must cut the same frames. The design window is 2.33 s = 56f (the 2 s class rung).' },
-        { name: 'seed', label: 'Plan seed', type: 'number', default: 0, min: 0, max: 4294967295, step: 1, tooltip: 'The chain plan base_seed (the reference runs 0; the sampler seed stays the doc seed).' },
-        { name: 'steps', label: 'Plan steps', type: 'number', default: 6, min: 1, max: 30, step: 1, tooltip: 'The chain plan default_steps (reference 6; the sampler steps stay the doc marriage).' },
-        { name: 'clip_seconds', label: 'Clip seconds', type: 'number', default: 6, min: 2.5, max: 15, step: 0.1, internal: true, tooltip: 'The plan clip_seconds (reference 6) — the render budget the window is cut within; the plan node\'s own widget band [2.5, 15] is the law.' },
-        { name: 'overlap_frames', label: 'Overlap frames', type: 'number', default: 39, min: 0, max: 243, step: 1, internal: true, tooltip: 'INTERNAL (the expert override, admitted but never served): the carry join boundary. The engine accepts exactly 0 (cut) or 39/90/141/192/243 (the AV-continuity law); anything else refuses at the compose door. Unstated — the default — derives 39 under carry: true, 0 under carry: false.' },
-        { name: 'resolution', label: 'Plan resolution', type: 'select', default: 'auto', options: [
-                { value: 'auto', label: 'auto — the film\u2019s own tier (derived; never a cross-regime join)' },
-                { value: '480p', label: '480p — quick preview' },
-                { value: '576p', label: '576p' },
-                { value: '736p', label: '736p — reference default' },
-                { value: '768p', label: '768p' },
-                { value: '1080p', label: '1080p — ~2.5× slower, needs much more memory' },
-            ], tooltip: "The plan resolution tier (reference '736p')." },
-    ],
+    // THE DECLARATION DATA lives in the client-safe leaf (editDecl.ts,
+    // 2026-11-09): the studio rail projects the SAME field rows the
+    // card serves, and a client value-import of THIS module refuses
+    // the client-bundle purity gate (the compose plane rides here).
+    fields: EDIT_FIELDS,
     // THE PRESET CHIPS (stage 3): the retired bag NAMES live on as
     // starting cells over this ONE schema — each chip is a named
     // THE MODIFIER SECTIONS (operator 2026-11-16, §0.8 THE FLOW
