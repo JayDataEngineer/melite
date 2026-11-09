@@ -208,3 +208,43 @@ describe("the fourth dial — the refine switch on the one edit bag (the collaps
     );
   });
 });
+
+describe("D-4 THE REFINE-2X FLOOR RELAX (defect board 2026-11-16: at scale 2 the longest legal window is 56 f = 2.33 s and the plan node's own floor is 2.5 — NO 2x press satisfied both; every possible value illegal under one rule or the other)", () => {
+  it("THE CURE: 2.3333 walks the refine-2x door — the plan node's 2.5 floor relaxes to the 56 f rung under refine + scale >= 2", () => {
+    assert.doesNotThrow(
+      () => judgeDeclaredBands({ edit: [{ clip_seconds: 2.3333, refine: true, scale: 2 }] }),
+      "the 2.33 s press is the memory law's own rung — admitted",
+    );
+  });
+
+  it("the press's own floor 2.33 binds exactly; below it still refuses naming the relax", () => {
+    assert.doesNotThrow(() => judgeDeclaredBands({ edit: [{ clip_seconds: 2.33, refine: true, scale: 2 }] }));
+    assert.throws(
+      () => judgeDeclaredBands({ edit: [{ clip_seconds: 2.3, refine: true, scale: 2 }] }),
+      /'clip_seconds': 2\.3 is outside this seat's refine-2x band 2\.33–15 \(the 56 f rung relaxes the plan node's 2\.5 floor under refine \+ scale ≥ 2\) — the declaration binds, not the tooltip/,
+      "below the rung the refusal names the relax, never the naked band",
+    );
+  });
+
+  it("outside the posture the plan node's own 2.5 floor still binds verbatim (refine OFF, scale 1, unstated scale default-fill)", () => {
+    for (const entry of [
+      { clip_seconds: 2.3333, refine: false, scale: 2 },
+      { clip_seconds: 2.3333, refine: true, scale: 1 },
+      { clip_seconds: 2.3333, refine: true },
+    ]) {
+      assert.throws(
+        () => judgeDeclaredBands({ edit: [entry] }),
+        /'clip_seconds': 2\.3333 is outside this seat's declared band 2\.5–15 — the declaration binds, not the tooltip/,
+        `the old voice binds outside the posture (${JSON.stringify(entry)})`,
+      );
+    }
+  });
+
+  it("the relax never raises the ceiling (15 still binds, refine-2x or not)", () => {
+    assert.throws(
+      () => judgeDeclaredBands({ edit: [{ clip_seconds: 16, refine: true, scale: 2 }] }),
+      /refine-2x band 2\.33–15/,
+      "the ceiling survives the relax",
+    );
+  });
+});

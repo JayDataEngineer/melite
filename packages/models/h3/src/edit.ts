@@ -34,7 +34,7 @@ import { renderH3ChainUpscale } from './chainUpscale.js'
 import { renderH3Extend } from './extend.js'
 import { REFINE_2X_OOM_FRAMES, REFINE_UPSCALE_MODEL } from './refine.js'
 import { FULL_NOISE_REASON, fullNoiseClause, refuseCompetingSecondPass } from './secondPass.js'
-import { assertGridLength, resolveCarryOverlap, entryCarries, isGridLength, gridSnap, GRID_BASE_FRAMES, GRID_MAX_FRAMES } from './timelineContract.js'
+import { assertGridLength, resolveCarryOverlap, entryCarries, isGridLength, gridSnap, GRID_BASE_FRAMES, GRID_MAX_FRAMES, solveWindowComposition } from './timelineContract.js'
 
 /** SAM3's checkpoint row — repair.ts's own spelling (the family's
  * one tracked-mask door; the card's constant cites the same file). */
@@ -426,6 +426,47 @@ export function renderH3Edit(
         }
       })
     : null
+
+  // THE MULTI-SEGMENT 2X GUARD (defect board D-2, 2026-11-16: the
+  // engine burn `h3_masked_prefix: previous/target video latent
+  // geometry differs: (1, 24, 17, 168, 96) vs (1, 24, 17, 84, 48)` —
+  // segment 0 refined emits a 2x latent, segment 1's prefix builds
+  // at 1x, and the chain divides at 1x to re-join at 2x, which can
+  // never match; the first segment renders, the second aborts the
+  // whole run AFTER the GPU bill): refine + scale >= 2 over a plan
+  // the film splits into 2+ windows refuses HERE, zero GPU. The
+  // single-window press is the measured posture (56 f at 768×1344 →
+  // 1536×2688, AAC kept, ~3 min, a pre-trimmed clip or a stated
+  // window) — refine is an output-space pass; the full-film 2x tile
+  // owes the assembler its own upscale-after-assembly door. The
+  // guard counts the plan's own two faces: AUTHORED calls (the
+  // literal shots) count directly; the source-sliced plan — a film
+  // LONGER than its first plan slice (probed total past the slice,
+  // exactly the press the engine dies on) — tiles through the D-5
+  // probe stamp and counts through the solver (an unprobed source
+  // stays the engine's belt — the same posture every probe arm here
+  // rides). The plan SLICE fits or the D-5 per-window ceiling has
+  // the next word — the wrong cure applied in the wrong order is
+  // the silent error a wall must refuse.
+  const planFramesGuard = Math.round(statedNumber(entry, 'clip_seconds', 6) * 24)
+  if (refineOn && scale >= 2) {
+    // A STATED window caps the plan at one segment (the measured
+    // single-window press) — the guard only judges plans the film
+    // or the calls actually split.
+    const probedTotal = probedSourceFrames(entry, windowStart)
+    const planWindows: number | null = windowLength > 0
+      ? 1
+      : (seamShots !== null
+          ? seamShots.length
+          : (probedTotal !== undefined && probedTotal > planFramesGuard
+              ? solveWindowComposition(probedTotal, 'edit', carryJoin).windows
+              : null))
+    if (planWindows !== null && planWindows >= 2) {
+      throw new Error(
+        `h3-timeline edit: refine ${scale}x over a ${planWindows}-window plan cannot tile — the chain joins its segments at 1x geometry while each refined window emits ${scale}x latents (the engine dies mid-run: h3_masked_prefix 'previous/target video latent geometry differs'), so a multi-window refine press burns GPU on the first segment to abort on the second. Refine ONE window per press (a stated window_length, or a pre-trimmed clip — the measured posture: 56 f at 2x, ~3 min, AAC kept); the full-film 2x tile owes the assembler its own upscale-after-assembly door`,
+      )
+    }
+  }
 
   // ── the mask dial's own derivation (outside the body, the
   // presets' posture: repair's SAM3 chain, swap's staged PNG) ──

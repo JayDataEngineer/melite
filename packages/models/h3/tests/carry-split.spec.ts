@@ -377,3 +377,75 @@ describe("D-5 THE PROBED WINDOW (defect board 2026-11-16: the refine 2x press on
     assert.doesNotThrow(() => compose(REFINE_ENTRY({ __source_frames: 100 })));
   });
 });
+
+describe("D-2 THE MULTI-SEGMENT 2X GUARD (defect board 2026-11-16: refine + scale 2 over a multi-window plan burned the engine mid-run — `h3_masked_prefix: previous/target video latent geometry differs: (1, 24, 17, 168, 96) vs (1, 24, 17, 84, 48)`. The chain joins at 1x, each window emits 2x.)", () => {
+  /** The board's own press shape: the whole 141 f film, clip_seconds 2.5, OVERLAP 39 → 5 segments. */
+  const BOARD_PRESS = (extra: Record<string, unknown>): Record<string, unknown> => ({
+    source_clip: "clips/take.mp4", edit_prompt: "upscale the yard", denoise: 0.32, mask: "masks/j.png",
+    refine: true, scale: 2, ...extra,
+  });
+  const composeEdit = (entry: Record<string, unknown>, p: Record<string, unknown> = { ...FILM }): Record<string, Node> => {
+    const g = new GraphBuilder();
+    renderH3Edit(entry, { source: "static-png", image: "k.png" } as never, { mode: "self" } as never, p, FACTS, g, "run_d2");
+    return out(g);
+  };
+  const TWO_CALLS: Array<Record<string, unknown>> = [
+    { text: "a", start_frame: 0, end_frame: 56 },
+    { text: "b", start_frame: 56, end_frame: 112, transition: "extend" },
+  ];
+
+  it("THE CURE: the board's own press refuses at compose — the sentence names the join burn and the one-window cure (zero GPU)", () => {
+    assert.throws(
+      () => composeEdit(BOARD_PRESS({
+        clip_seconds: 2.5, overlap_frames: 39, __source_frames: 141,
+      }), { ...FILM, calls: TWO_CALLS }),
+      /refine 2x over a 2-window plan cannot tile — the chain joins its segments at 1x geometry while each refined window emits 2x latents \(the engine dies mid-run: h3_masked_prefix 'previous\/target video latent geometry differs'\), so a multi-window refine press burns GPU on the first segment to abort on the second\. Refine ONE window per press/,
+      "the sentence names the burn and the measured cure, never a naked refusal",
+    );
+  });
+
+  it("the source-sliced face counts through the probe stamp (an unprobed source stays the engine's belt — the same posture every probe arm rides)", () => {
+    // a 464 f film tiles 5 uniform 124 f windows under the 39 join — under the OOM line, EVERY slice fits (the solver's own verdict)
+    // yet the press still refuses BY WINDOW COUNT: this is the guard's whole law (the join burns whatever the slice length)
+    assert.throws(
+      () => composeEdit(BOARD_PRESS({ clip_seconds: 3.04, __source_frames: 464 })),
+      /refine 2x over a 5-window plan cannot tile/,
+      "the source-sliced multi-window press refuses through the stamp",
+    );
+  });
+
+  it("ONE window composes (the measured posture: single 56 f press, 2x, ~3 min)", () => {
+    assert.doesNotThrow(() => composeEdit(BOARD_PRESS({ clip_seconds: 2.5, overlap_frames: 39, __source_frames: 56 })));
+  });
+
+  it("a STATED window is its own single press (caps the loader — the guard never counts past it)", () => {
+    assert.doesNotThrow(() => composeEdit(BOARD_PRESS({ window_length: 56, __source_frames: 400 })));
+  });
+
+  it("scale below 2 never guards (the same-size pass is exempt — the OOM law's own carve-out)", () => {
+    assert.doesNotThrow(() => composeEdit(BOARD_PRESS({
+      scale: 1, clip_seconds: 2.5, overlap_frames: 39, __source_frames: 141,
+    }), { ...FILM, calls: TWO_CALLS }));
+  });
+
+  it("refine OFF never guards (the plain edit tiles whole films end to end)", () => {
+    assert.doesNotThrow(() => composeEdit(BOARD_PRESS({
+      refine: false, clip_seconds: 2.5, overlap_frames: 39, __source_frames: 141,
+    }), { ...FILM, calls: TWO_CALLS }));
+  });
+});
+
+describe("THE UNPROBED STAMP ABSENCE (every probe arm's own posture: no stamp, no tiling claim, the render's own ceilings speak)", () => {
+  it("an unprobed source stays the belt on BOTH refine faces (the slice ceiling at 144, the carry face silent)", () => {
+    const g = new GraphBuilder();
+    // the 6 s default plan, no stamp: the only question is the slice
+    assert.throws(
+      () => renderH3Edit({
+        source_clip: "clips/take.mp4", edit_prompt: "upscale the yard", denoise: 0.32, mask: "masks/j.png",
+        refine: true, scale: 2,
+      }, { source: "static-png", image: "k.png" } as never, { mode: "self" } as never, { width: 1344, height: 768 }, FACTS, g, "run_unprobed"),
+      /a 144 f window at refine 2x is TOO LONG/,
+      "no stamp: the render's own slice ceiling speaks (never a guard's guess about a tiling nobody proved)",
+    );
+  });
+});

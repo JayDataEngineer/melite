@@ -593,9 +593,29 @@ export function judgeDeclaredBands(p: Record<string, unknown>): void {
            above), so the step-aside never fires; kept because a future sub-1
            band must still defer to the family door's re-render voice */
         if (v >= 1 && max < 1) continue // the re-render pole — the family door's own voice
-        if (v < min || v > max) {
+        // THE REFINE-2X FLOOR RELAX (defect board D-4, 2026-11-16: at
+        // scale 2 the longest legal window is 56 f = 2.33 s and the
+        // plan node's own floor is 2.5 — NO 2x plan satisfies both,
+        // every possible value illegal under one rule or the other):
+        // the band is a property of the SEAT, the memory limit of the
+        // PASS — under refine + scale >= 2 the floor relaxes to the
+        // declared refine_2x_min rung (2.33, the 56 f grid floor the
+        // engine itself serves), stated on the same field row as a
+        // number; outside that posture the plan node's 2.5 binds.
+        // The relax is a floor MOVE, not a bypass: above-range values
+        // still refuse, and the engine-facing 141 f ceiling has its
+        // own voice downstream (the D-5 probed window).
+        let floor = min
+        if (kind.kind === 'edit' && String(f.name) === 'clip_seconds'
+          && entry['refine'] === true && typeof entry['scale'] === 'number' && (entry['scale'] as number) >= 2
+          && typeof f['refine_2x_min'] === 'number') {
+          floor = Math.min(min, f['refine_2x_min'] as number)
+        }
+        if (v < floor || v > max) {
           throw new Error(
-            `h3-timeline ${kind.kind} entry ${i}: '${String(f.name)}': ${v} is outside this seat's declared band ${min}–${max} — the declaration binds, not the tooltip`,
+            kind.kind === 'edit' && String(f.name) === 'clip_seconds' && floor !== min
+              ? `h3-timeline edit entry ${i}: 'clip_seconds': ${v} is outside this seat's refine-2x band ${floor}–${max} (the 56 f rung relaxes the plan node's 2.5 floor under refine + scale ≥ 2) — the declaration binds, not the tooltip`
+              : `h3-timeline ${kind.kind} entry ${i}: '${String(f.name)}': ${v} is outside this seat's declared band ${min}–${max} — the declaration binds, not the tooltip`,
           )
         }
       }

@@ -5045,7 +5045,8 @@ window.__ModuleLoader__.load({
 				max: 15,
 				step: .1,
 				internal: true,
-				tooltip: "The plan clip_seconds (reference 6) — the render budget the window is cut within; the plan node's own widget band [2.5, 15] is the law."
+				refine_2x_min: 2.33,
+				tooltip: "The plan clip_seconds (reference 6) — the render budget the window is cut within; the plan node's own widget band [2.5, 15] is the law. THE REFINE-2X RELAX (defect board D-4): under refine + scale ≥ 2 the floor relaxes to the 56 f rung 2.33 s — the memory limit is a property of the PASS (the 2x ceiling), the band of the SEAT; outside that posture the plan node's own 2.5 floor binds."
 			},
 			{
 				name: "overlap_frames",
